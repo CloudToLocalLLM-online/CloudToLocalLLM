@@ -42,6 +42,18 @@ HTTPS_OK=false
 SSL_CERTS_OK=false
 DEPLOYMENT_SUCCESS=false
 
+# VPS Safety: Prevent accidental git pushes
+# The VPS should only consume code, never contribute back to the repository
+setup_vps_git_safety() {
+    # Disable git push operations for safety
+    # This prevents accidental commits/pushes from the VPS deployment environment
+    git config --local push.default nothing 2>/dev/null || true
+    git config --local receive.denyCurrentBranch refuse 2>/dev/null || true
+
+    # Add a git alias that prevents pushes with a clear error message
+    git config --local alias.push '!echo "ERROR: Git push is disabled on VPS deployment environment. VPS should only consume code from repository." && false' 2>/dev/null || true
+}
+
 # Logging functions
 log() {
     echo -e "${BLUE}[$(date '+%H:%M:%S')]${NC} $1"
@@ -174,10 +186,43 @@ pull_latest_changes() {
     log "Pulling latest changes from GitHub..."
 
     if [[ "$DRY_RUN" == "true" ]]; then
-        log "DRY RUN: Would execute: git pull origin master"
+        log "DRY RUN: Would execute: git reset --hard HEAD && git clean -fd && git pull origin master"
         return 0
     fi
 
+    # VPS deployment environment is ephemeral - discard any local changes
+    # This ensures the VPS only consumes code from the repository, never contributes back
+    log_verbose "Ensuring clean working directory before pull..."
+
+    # Check if there are any uncommitted changes
+    if ! git diff --quiet || ! git diff --cached --quiet || [[ -n "$(git ls-files --others --exclude-standard)" ]]; then
+        log_verbose "Found uncommitted changes, cleaning working directory..."
+        log_verbose "VPS deployment target discarding local changes (build artifacts, temporary files, etc.)"
+
+        # Reset any staged changes
+        if ! git reset HEAD . &> /dev/null; then
+            log_verbose "No staged changes to reset"
+        fi
+
+        # Discard all uncommitted changes (including build-time version injections)
+        if ! git reset --hard HEAD; then
+            log_error "Failed to reset working directory"
+            exit 4
+        fi
+
+        # Remove untracked files and directories (build artifacts, temporary files)
+        # Use -f to force removal, -d to remove directories
+        # Preserve important directories like certbot that may have permission restrictions
+        if ! git clean -fd --exclude=certbot/ --exclude=config/dkim/ 2>/dev/null; then
+            log_verbose "Some files could not be cleaned (likely permission-protected SSL certificates)"
+        fi
+
+        log_verbose "Working directory cleaned - VPS ready for fresh code pull"
+    else
+        log_verbose "Working directory already clean"
+    fi
+
+    # Now perform the git pull with a clean working directory
     # Use enhanced git operations if available, otherwise fallback to basic git
     if command -v git_execute &> /dev/null; then
         if ! git_execute pull origin master; then
@@ -906,6 +951,9 @@ display_summary() {
 main() {
     # Parse command line arguments
     parse_arguments "$@"
+
+    # Setup VPS git safety to prevent accidental pushes
+    setup_vps_git_safety
 
     # Non-interactive execution - no prompts allowed
     # Use --force flag to bypass safety checks in automated environments
