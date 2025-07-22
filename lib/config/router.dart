@@ -1,0 +1,301 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
+import '../services/auth_service.dart';
+import '../screens/home_screen.dart';
+import '../screens/login_screen.dart';
+import '../screens/loading_screen.dart';
+import '../screens/callback_screen.dart';
+import '../screens/ollama_test_screen.dart';
+
+// No web-specific imports needed - using platform-safe approach
+
+import '../screens/settings/llm_provider_settings_screen.dart';
+import '../screens/settings/daemon_settings_screen.dart';
+import '../screens/settings/connection_status_screen.dart';
+import '../screens/tunnel_settings_screen.dart';
+import '../screens/unified_settings_screen.dart';
+
+// Admin screens
+import '../screens/admin/admin_panel_screen.dart';
+import '../screens/admin/admin_data_flush_screen.dart';
+
+// Marketing screens (web-only)
+import '../screens/marketing/homepage_screen.dart';
+import '../screens/marketing/download_screen.dart';
+import '../screens/marketing/documentation_screen.dart';
+
+/// Utility function to get the current hostname in web environment
+String _getCurrentHostname() {
+  if (kIsWeb) {
+    try {
+      // Use Uri.base as the primary method for hostname detection
+      final currentUrl = Uri.base.toString();
+      final uri = Uri.parse(currentUrl);
+      return uri.host;
+    } catch (e) {
+      // If Uri.base fails, return empty string
+      return '';
+    }
+  }
+  return '';
+}
+
+/// Check if current hostname indicates app subdomain
+bool _isAppSubdomain() {
+  if (!kIsWeb) return false;
+
+  final hostname = _getCurrentHostname();
+  final isApp =
+      hostname.startsWith('app.') || hostname == 'app.cloudtolocalllm.online';
+
+  return isApp;
+}
+
+/// Application router configuration using GoRouter
+class AppRouter {
+  static GoRouter createRouter({GlobalKey<NavigatorState>? navigatorKey}) {
+    return GoRouter(
+      navigatorKey: navigatorKey,
+      initialLocation: '/',
+      debugLogDiagnostics: false,
+      routes: [
+        // Home route - platform-specific routing
+        GoRoute(
+          path: '/',
+          name: 'home',
+          builder: (context, state) {
+            // Web: Domain detection handled by redirect logic
+            // Desktop: Chat interface
+            if (kIsWeb) {
+              // Use robust hostname detection
+              final isAppSubdomain = _isAppSubdomain();
+
+              if (isAppSubdomain) {
+                // App subdomain - show chat interface (auth handled by redirect)
+                return const HomeScreen();
+              } else {
+                // Root domain - show marketing homepage
+                return const HomepageScreen();
+              }
+            } else {
+              // For desktop, home is the chat interface
+              return const HomeScreen();
+            }
+          },
+        ),
+
+        // Chat route - main app interface (accessible via app subdomain)
+        GoRoute(
+          path: '/chat',
+          name: 'chat',
+          builder: (context, state) => const HomeScreen(),
+        ),
+
+        // Download route - web-only marketing page
+        GoRoute(
+          path: '/download',
+          name: 'download',
+          builder: (context, state) {
+            // Only available on web platform
+            if (kIsWeb) {
+              return const DownloadScreen();
+            } else {
+              // Redirect desktop users to main app
+              return const HomeScreen();
+            }
+          },
+        ),
+
+        // Documentation route - web-only
+        GoRoute(
+          path: '/docs',
+          name: 'docs',
+          builder: (context, state) {
+            // Only available on web platform
+            if (kIsWeb) {
+              return const DocumentationScreen();
+            } else {
+              // Redirect desktop users to main app
+              return const HomeScreen();
+            }
+          },
+        ),
+
+        // Login route
+        GoRoute(
+          path: '/login',
+          name: 'login',
+          builder: (context, state) => const LoginScreen(),
+        ),
+
+        // Auth callback route
+        GoRoute(
+          path: '/callback',
+          name: 'callback',
+          builder: (context, state) => const CallbackScreen(),
+        ),
+
+        // Loading route
+        GoRoute(
+          path: '/loading',
+          name: 'loading',
+          builder: (context, state) {
+            final message =
+                state.uri.queryParameters['message'] ?? 'Loading...';
+            return LoadingScreen(message: message);
+          },
+        ),
+
+        // Ollama test route
+        GoRoute(
+          path: '/ollama-test',
+          name: 'ollama-test',
+          builder: (context, state) => const OllamaTestScreen(),
+        ),
+
+        // Settings route - unified settings interface with sidebar layout
+        GoRoute(
+          path: '/settings',
+          name: 'settings',
+          builder: (context, state) => const UnifiedSettingsScreen(),
+        ),
+
+        // Settings with specific section
+        GoRoute(
+          path: '/settings/downloads',
+          name: 'settings-downloads',
+          builder: (context, state) =>
+              const UnifiedSettingsScreen(initialSection: 'downloads'),
+        ),
+
+        // Tunnel Settings route (legacy/advanced tunnel configuration)
+        GoRoute(
+          path: '/settings/tunnels',
+          name: 'tunnel-settings',
+          builder: (context, state) => const TunnelSettingsScreen(),
+        ),
+
+        // LLM Provider Settings route
+        GoRoute(
+          path: '/settings/llm-provider',
+          name: 'llm-provider-settings',
+          builder: (context, state) => const LLMProviderSettingsScreen(),
+        ),
+
+        // Daemon Settings route
+        GoRoute(
+          path: '/settings/daemon',
+          name: 'daemon-settings',
+          builder: (context, state) {
+            debugPrint("🔧 [Router] Building DaemonSettingsScreen");
+            return const DaemonSettingsScreen();
+          },
+        ),
+
+        // Connection Status route
+        GoRoute(
+          path: '/settings/connection-status',
+          name: 'connection-status',
+          builder: (context, state) {
+            debugPrint("📊 [Router] Building ConnectionStatusScreen");
+            return const ConnectionStatusScreen();
+          },
+        ),
+
+        // Admin Panel route (requires admin privileges)
+        GoRoute(
+          path: '/admin',
+          name: 'admin-panel',
+          builder: (context, state) {
+            debugPrint("🔧 [AdminPanel] Building AdminPanelScreen");
+            return const AdminPanelScreen();
+          },
+        ),
+
+        // Admin Data Flush route (requires admin privileges)
+        GoRoute(
+          path: '/admin/data-flush',
+          name: 'admin-data-flush',
+          builder: (context, state) {
+            debugPrint("🗑️ [Router] Building AdminDataFlushScreen");
+            return const AdminDataFlushScreen();
+          },
+        ),
+      ],
+
+      // Redirect logic for authentication and domain-based routing
+      redirect: (context, state) {
+        final authService = context.read<AuthService>();
+        final isAuthenticated = authService.isAuthenticated.value;
+        final isLoggingIn = state.matchedLocation == '/login';
+        final isCallback = state.matchedLocation == '/callback';
+        final isLoading = state.matchedLocation == '/loading';
+        final isHomepage = state.matchedLocation == '/' && kIsWeb;
+        final isDownload = state.matchedLocation == '/download' && kIsWeb;
+        final isDocs = state.matchedLocation == '/docs' && kIsWeb;
+
+        // Use robust hostname detection
+        final isAppSubdomain = _isAppSubdomain();
+
+        debugPrint('🔄 [Router] Redirect check: ${state.matchedLocation}');
+        debugPrint(
+          '🔄 [Router] Auth state: $isAuthenticated, App subdomain: $isAppSubdomain',
+        );
+
+        // Allow access to marketing pages on web root domain without authentication
+        if (kIsWeb && !isAppSubdomain && (isHomepage || isDownload || isDocs)) {
+          debugPrint('🔄 [Router] Allowing access to marketing page');
+          return null;
+        }
+
+        // Allow access to login, callback, and loading pages
+        if (isLoggingIn || isCallback || isLoading) {
+          debugPrint('🔄 [Router] Allowing access to auth/loading page');
+          return null;
+        }
+
+        // For app subdomain or desktop, require authentication
+        if (!isAuthenticated && (isAppSubdomain || !kIsWeb)) {
+          debugPrint(
+            '🔄 [Router] Redirecting to login - user not authenticated',
+          );
+          return '/login';
+        }
+
+        // Allow access to protected routes
+        debugPrint('🔄 [Router] Allowing access to protected route');
+        return null;
+      },
+
+      // Error handling
+      errorBuilder: (context, state) => Scaffold(
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.error_outline, size: 64, color: Colors.red),
+              const SizedBox(height: 16),
+              Text(
+                'Page Not Found',
+                style: Theme.of(context).textTheme.headlineMedium,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'The page "${state.matchedLocation}" could not be found.',
+                style: Theme.of(context).textTheme.bodyMedium,
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 24),
+              ElevatedButton(
+                onPressed: () => context.go('/'),
+                child: const Text('Go Home'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}

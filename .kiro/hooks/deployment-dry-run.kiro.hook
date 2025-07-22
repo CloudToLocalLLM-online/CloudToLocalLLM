@@ -1,0 +1,119 @@
+{
+  "enabled": true,
+  "name": "Deployment Dry Run",
+  "description": "Preview deployment actions without executing actual changes. Validates environment, checks dependencies, and shows what would be deployed without making any modifications to the system.",
+  "version": "1.0.0",
+  "when": {
+    "type": "manual",
+    "displayName": "Preview Deployment",
+    "icon": "eye",
+    "category": "Testing"
+  },
+  "then": {
+    "type": "executeScript",
+    "script": {
+      "command": "powershell.exe",
+      "args": [
+        "-ExecutionPolicy",
+        "Bypass",
+        "-NoProfile",
+        "-File",
+        "scripts/powershell/Deploy-CloudToLocalLLM.ps1",
+        "-Environment",
+        "{{environment}}",
+        "-DryRun",
+        "-Verbose"
+      ],
+      "workingDirectory": ".",
+      "timeout": 300,
+      "killSignal": "SIGTERM",
+      "encoding": "utf8"
+    },
+    "parameters": [
+      {
+        "name": "environment",
+        "displayName": "Target Environment",
+        "description": "Environment to preview deployment for",
+        "type": "select",
+        "required": true,
+        "default": "Production",
+        "options": [
+          {
+            "label": "Production",
+            "value": "Production"
+          },
+          {
+            "label": "Staging",
+            "value": "Staging"
+          },
+          {
+            "label": "Local",
+            "value": "Local"
+          }
+        ]
+      }
+    ],
+    "outputHandling": {
+      "streamOutput": true,
+      "captureStdout": true,
+      "captureStderr": true,
+      "logLevel": "debug",
+      "progressIndicators": [
+        {
+          "pattern": "\\[DRY-RUN\\]\\s+(.+)",
+          "type": "info",
+          "extractMessage": true
+        },
+        {
+          "pattern": "\\[WOULD-DO\\]\\s+(.+)",
+          "type": "preview",
+          "extractMessage": true
+        },
+        {
+          "pattern": "\\[CHECK\\]\\s+(.+)",
+          "type": "validation",
+          "extractMessage": true
+        }
+      ]
+    },
+    "errorHandling": {
+      "retryCount": 0,
+      "failureActions": [
+        {
+          "condition": "exitCode != 0",
+          "action": "showError",
+          "message": "Dry run validation failed. Review the issues before attempting actual deployment."
+        }
+      ]
+    },
+    "notifications": {
+      "onStart": {
+        "enabled": true,
+        "message": "Starting deployment preview for {{environment}}..."
+      },
+      "onSuccess": {
+        "enabled": true,
+        "message": "Deployment preview completed. Review the output to understand what would be deployed."
+      },
+      "onFailure": {
+        "enabled": true,
+        "message": "Deployment preview failed. Fix the issues before attempting deployment."
+      }
+    }
+  },
+  "requirements": {
+    "platform": ["windows"],
+    "dependencies": [
+      {
+        "name": "PowerShell",
+        "version": ">=5.1"
+      }
+    ]
+  },
+  "metadata": {
+    "author": "CloudToLocalLLM Development Team",
+    "created": "2025-01-18",
+    "tags": ["dry-run", "preview", "validation"],
+    "documentation": "docs/DEPLOYMENT/automated-deployment-workflow.md"
+  }
+}

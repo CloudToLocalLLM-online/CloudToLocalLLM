@@ -1,0 +1,9 @@
+{
+  "name": "Deploy to Staging",
+  "description": "Deploy CloudToLocalLLM to staging environment",
+  "trigger": "manual",
+  "command": "powershell",
+  "args": ["-ExecutionPolicy", "Bypass", "-File", "scripts/powershell/Deploy-CloudToLocalLLM.ps1", "-Environment", "Staging", "-Force", "-KiroHookMode"],
+  "workingDirectory": ".",
+  "timeout": 1800
+}

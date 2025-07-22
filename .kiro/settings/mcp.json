@@ -1,0 +1,155 @@
+{
+  "mcpServers": {
+    "everything": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-everything"
+      ],
+      "env": {
+        "FASTMCP_LOG_LEVEL": "ERROR"
+      },
+      "disabled": false,
+      "autoApprove": [
+        "echo",
+        "add",
+        "getTinyImage"
+      ]
+    },
+    "fetch": {
+      "command": "C:\\Users\\chris\\.local\\bin\\uvx.exe",
+      "args": [
+        "mcp-server-fetch"
+      ],
+      "env": {
+        "FASTMCP_LOG_LEVEL": "ERROR",
+        "PATH": "C:\\Users\\chris\\.local\\bin;%PATH%"
+      },
+      "disabled": false,
+      "autoApprove": [
+        "fetch"
+      ]
+    },
+    "filesystem": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-filesystem",
+        "C:\\Users\\chris\\Dev\\CloudToLocalLLM"
+      ],
+      "env": {
+        "FASTMCP_LOG_LEVEL": "ERROR"
+      },
+      "disabled": false,
+      "autoApprove": [
+        "list_allowed_directories",
+        "list_directory",
+        "read_file",
+        "write_file",
+        "search_files",
+        "create_directory",
+        "read_multiple_files",
+        "edit_file",
+        "directory_tree"
+      ]
+    },
+    "git": {
+      "command": "C:\\Users\\chris\\.local\\bin\\uvx.exe",
+      "args": [
+        "mcp-server-git",
+        "--repository",
+        "C:\\Users\\chris\\Dev\\CloudToLocalLLM"
+      ],
+      "env": {
+        "FASTMCP_LOG_LEVEL": "ERROR",
+        "PATH": "C:\\Program Files\\Git\\cmd;C:\\Users\\chris\\.local\\bin;%PATH%",
+        "GIT_PYTHON_GIT_EXECUTABLE": "C:\\Program Files\\Git\\cmd\\git.exe"
+      },
+      "disabled": false,
+      "autoApprove": [
+        "git_status",
+        "git_log",
+        "git_add",
+        "git_commit",
+        "git_push"
+      ]
+    },
+    "memory": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-memory"
+      ],
+      "env": {
+        "FASTMCP_LOG_LEVEL": "ERROR"
+      },
+      "disabled": false,
+      "autoApprove": [
+        "read_graph",
+        "create_entities",
+        "create_relations",
+        "add_observations"
+      ]
+    },
+    "sequential-thinking": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-sequential-thinking"
+      ],
+      "env": {
+        "FASTMCP_LOG_LEVEL": "ERROR"
+      },
+      "disabled": false,
+      "autoApprove": [
+        "sequentialthinking"
+      ]
+    },
+    "time": {
+      "command": "C:\\Users\\chris\\.local\\bin\\uvx.exe",
+      "args": [
+        "mcp-server-time"
+      ],
+      "env": {
+        "FASTMCP_LOG_LEVEL": "ERROR",
+        "PATH": "C:\\Users\\chris\\.local\\bin;%PATH%"
+      },
+      "disabled": false,
+      "autoApprove": [
+        "get_current_time",
+        "convert_time"
+      ]
+    },
+    "auth0": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@auth0/auth0-mcp-server",
+        "run"
+      ],
+      "env": {
+        "DEBUG": "auth0-mcp",
+        "FASTMCP_LOG_LEVEL": "ERROR"
+      },
+      "disabled": false,
+      "autoApprove": [
+        "auth0_list_applications"
+      ]
+    },
+    "context7": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@upstash/context7-mcp"
+      ],
+      "env": {
+        "FASTMCP_LOG_LEVEL": "ERROR"
+      },
+      "disabled": false,
+      "autoApprove": [
+        "resolve-library-id",
+        "get-library-docs"
+      ]
+    }
+  }
+}

@@ -1,0 +1,56 @@
+# The docker-compose configuration for the CloudToLocalLLM monitoring services
+
+version: '3.8'
+services:
+  netdata:
+    image: netdata/netdata:latest
+    container_name: cloudtolocalllm_monitor
+    hostname: cloudtolocalllm
+    ports:
+      - "19999:19999"
+    restart: unless-stopped
+    cap_add:
+      - SYS_PTRACE
+      - SYS_ADMIN
+    security_opt:
+      - apparmor:unconfined
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /sys/fs/cgroup:/host/sys/fs/cgroup:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - netdata-lib:/var/lib/netdata
+      - netdata-cache:/var/cache/netdata
+      - /etc/passwd:/host/etc/passwd:ro
+      - /etc/group:/host/etc/group:ro
+      - /etc/os-release:/host/etc/os-release:ro
+    environment:
+      - NETDATA_CLAIM_TOKEN=${NETDATA_CLAIM_TOKEN:-}
+      - NETDATA_CLAIM_URL=https://app.netdata.cloud
+      - NETDATA_CLAIM_ROOMS=${NETDATA_CLAIM_ROOMS:-}
+      - DISABLE_PLUGINS=cgroups
+      - NETDATA_DISABLE_CGROUP_NETWORK_HELPER=1
+    user: "1000:1000"
+    networks:
+      - cloudllm_mon_network
+      - cloudllm_external_network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:19999/api/v1/info"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+volumes:
+  netdata-config:
+  netdata-lib:
+  netdata-cache:
+
+networks:
+  cloudllm_mon_network:
+    driver: bridge
+  cloudllm_external_network:
+    external: true
+    name: ctl_services_cloudllm-network
+  # webnet:
+  #   driver: bridge 

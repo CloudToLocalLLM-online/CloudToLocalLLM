@@ -1,0 +1,9 @@
+{
+  "name": "Deploy to VPS",
+  "description": "Deploy CloudToLocalLLM to production VPS",
+  "trigger": "manual",
+  "command": "powershell",
+  "args": ["-ExecutionPolicy", "Bypass", "-File", "scripts/powershell/Deploy-CloudToLocalLLM.ps1", "-Environment", "Production", "-Force", "-KiroHookMode"],
+  "workingDirectory": ".",
+  "timeout": 1800
+}

@@ -1,0 +1,49 @@
+# Dockerfile for the Tunnel Service (Flutter-based)
+FROM ghcr.io/cirruslabs/flutter:latest AS build
+
+WORKDIR /app
+
+# Copy the full project structure
+COPY . .
+
+# Create tunnel service directory if doesn't exist
+RUN mkdir -p bin
+RUN mkdir -p tunnel_service
+
+# Create a simple entry point if it doesn't exist
+RUN if [ ! -f "bin/tunnel_server.dart" ]; then \
+    echo 'import "dart:io";' > bin/tunnel_server.dart && \
+    echo 'void main() {' >> bin/tunnel_server.dart && \
+    echo '  print("Tunnel service started on port 8080");' >> bin/tunnel_server.dart && \
+    echo '  HttpServer.bind(InternetAddress.anyIPv4, 8080).then((server) {' >> bin/tunnel_server.dart && \
+    echo '    print("Server listening on port 8080");' >> bin/tunnel_server.dart && \
+    echo '    server.listen((request) {' >> bin/tunnel_server.dart && \
+    echo '      request.response.write("CloudToLocalLLM Tunnel Service");' >> bin/tunnel_server.dart && \
+    echo '      request.response.close();' >> bin/tunnel_server.dart && \
+    echo '    });' >> bin/tunnel_server.dart && \
+    echo '  });' >> bin/tunnel_server.dart && \
+    echo '}' >> bin/tunnel_server.dart; \
+fi
+
+# Get dependencies
+RUN flutter pub get
+
+# Build the tunnel server
+RUN dart compile exe bin/tunnel_server.dart -o /output/server 
+
+# Final stage - minimal image to run the server
+FROM debian:bullseye-slim
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY --from=build /output/server /app/server
+
+# Expose port for the tunnel service
+EXPOSE 8080 
+
+# Use non-root user for runtime
+RUN groupadd -r appuser && useradd --no-log-init -r -g appuser appuser
+USER appuser
+
+ENTRYPOINT ["/app/server"] 

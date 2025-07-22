@@ -1,0 +1,112 @@
+{
+  "enabled": true,
+  "name": "Staging Deployment",
+  "description": "Quick deployment to staging environment for testing and validation. Includes build verification but skips some production-only checks for faster iteration during development.",
+  "version": "1.0.0",
+  "when": {
+    "type": "manual",
+    "displayName": "Deploy to Staging",
+    "icon": "test-tube",
+    "category": "Development"
+  },
+  "then": {
+    "type": "executeScript",
+    "script": {
+      "command": "powershell.exe",
+      "args": [
+        "-ExecutionPolicy",
+        "Bypass",
+        "-NoProfile",
+        "-File",
+        "scripts/powershell/Deploy-CloudToLocalLLM.ps1",
+        "-Environment",
+        "Staging",
+        "-VersionIncrement",
+        "build",
+        "-Force",
+        "-AutoRollback",
+        "-Verbose"
+      ],
+      "workingDirectory": ".",
+      "timeout": 1200,
+      "killSignal": "SIGTERM",
+      "encoding": "utf8"
+    },
+    "outputHandling": {
+      "streamOutput": true,
+      "captureStdout": true,
+      "captureStderr": true,
+      "logLevel": "info",
+      "progressIndicators": [
+        {
+          "pattern": "\\[INFO\\]\\s+(.+)",
+          "type": "info",
+          "extractMessage": true
+        },
+        {
+          "pattern": "\\[SUCCESS\\]\\s+(.+)",
+          "type": "success",
+          "extractMessage": true
+        },
+        {
+          "pattern": "\\[WARNING\\]\\s+(.+)",
+          "type": "warning",
+          "extractMessage": true
+        },
+        {
+          "pattern": "\\[ERROR\\]\\s+(.+)",
+          "type": "error",
+          "extractMessage": true
+        },
+        {
+          "pattern": "Phase:\\s+(.+)",
+          "type": "phase",
+          "extractMessage": true
+        }
+      ]
+    },
+    "errorHandling": {
+      "retryCount": 1,
+      "retryDelay": 30,
+      "failureActions": [
+        {
+          "condition": "exitCode != 0",
+          "action": "showError",
+          "message": "Staging deployment failed. This is expected during development - check logs and retry if needed."
+        }
+      ]
+    },
+    "notifications": {
+      "onStart": {
+        "enabled": true,
+        "message": "Starting staging deployment..."
+      },
+      "onSuccess": {
+        "enabled": true,
+        "message": "Staging deployment completed successfully!"
+      },
+      "onFailure": {
+        "enabled": false
+      }
+    }
+  },
+  "requirements": {
+    "platform": ["windows"],
+    "dependencies": [
+      {
+        "name": "PowerShell",
+        "version": ">=5.1"
+      },
+      {
+        "name": "WSL2",
+        "description": "Windows Subsystem for Linux 2 with Ubuntu 24.04"
+      }
+    ]
+  },
+  "metadata": {
+    "author": "CloudToLocalLLM Development Team",
+    "created": "2025-01-18",
+    "tags": ["staging", "development", "testing"],
+    "documentation": "docs/DEPLOYMENT/automated-deployment-workflow.md"
+  }
+}

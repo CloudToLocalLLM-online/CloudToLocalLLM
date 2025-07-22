@@ -1,0 +1,9 @@
+{
+  "name": "Deployment Dry Run",
+  "description": "Preview deployment actions without executing",
+  "trigger": "manual",
+  "command": "powershell",
+  "args": ["-ExecutionPolicy", "Bypass", "-File", "scripts/powershell/Deploy-CloudToLocalLLM.ps1", "-DryRun", "-Verbose", "-KiroHookMode"],
+  "workingDirectory": ".",
+  "timeout": 600
+}

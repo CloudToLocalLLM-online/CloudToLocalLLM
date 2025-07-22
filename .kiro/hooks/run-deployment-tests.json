@@ -1,0 +1,9 @@
+{
+  "name": "Run Deployment Tests",
+  "description": "Run comprehensive tests for the automated deployment workflow",
+  "trigger": "manual",
+  "command": "cmd",
+  "args": ["/c", "scripts\\run-deployment-tests.bat", "-TestSuite", "All", "-GenerateReport"],
+  "workingDirectory": ".",
+  "timeout": 1800
+}

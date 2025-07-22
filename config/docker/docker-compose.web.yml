@@ -1,0 +1,35 @@
+# The docker-compose configuration for the CloudToLocalLLM web service
+
+services:
+  webapp:
+    build:
+      context: ../../
+      dockerfile: config/docker/Dockerfile.web
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./certbot/conf:/etc/letsencrypt
+      - ./certbot/www:/var/www/certbot
+    environment:
+      - SSL_CERT_PATH=/etc/letsencrypt/live/cloudtolocalllm.online/fullchain.pem
+      - SSL_KEY_PATH=/etc/letsencrypt/live/cloudtolocalllm.online/privkey.pem
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - cloud_default_net
+
+# We've removed the certbot service as we're now using standalone mode
+
+# Define the shared network externally (or define it here if this is the primary compose)
+networks:
+  cloud_default_net:
+    driver: bridge # Or make external: true if defined elsewhere
+
+# Remove specific network definition if no other services use it exclusively
+# networks:
+#  web_net:
+#    driver: bridge 

@@ -1,0 +1,35 @@
+{
+  "name": "cloudtolocalllm-tunnel-container",
+  "version": "1.0.0",
+  "description": "Simplified tunnel-aware container for CloudToLocalLLM using standard HTTP libraries",
+  "main": "proxy-server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node proxy-server.js",
+    "health": "node health-check.js",
+    "test-tunnel": "node test-tunnel.js",
+    "dev": "node --inspect proxy-server.js",
+    "test": "echo \"No tests specified\" && exit 0",
+    "lint": "eslint .",
+    "format": "eslint . --fix"
+  },
+  "keywords": [
+    "tunnel",
+    "container",
+    "http-client",
+    "multi-tenant",
+    "cloudtolocalllm"
+  ],
+  "author": "CloudToLocalLLM",
+  "license": "MIT",
+  "dependencies": {
+    "winston": "^3.11.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.28.0",
+    "eslint": "^9.28.0"
+  }
+}
