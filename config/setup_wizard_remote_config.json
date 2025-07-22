@@ -1,0 +1,329 @@
+{
+  "setup_wizard_feature_flags": {
+    "description": "Remote configuration for CloudToLocalLLM First-Time Setup Wizard",
+    "version": "1.0.0",
+    "last_updated": "2024-01-01T00:00:00Z",
+    "flags": {
+      "setup_wizard_enabled": {
+        "type": "boolean",
+        "default": false,
+        "description": "Master switch to enable/disable the setup wizard globally",
+        "environments": {
+          "development": true,
+          "staging": true,
+          "production": false
+        }
+      },
+      "setup_wizard_rollout_percentage": {
+        "type": "integer",
+        "default": 0,
+        "min": 0,
+        "max": 100,
+        "description": "Percentage of users who should see the setup wizard (0-100)",
+        "environments": {
+          "development": 100,
+          "staging": 100,
+          "production": 0
+        },
+        "rollout_plan": {
+          "phase_1_internal": 0,
+          "phase_2_beta": 10,
+          "phase_3_limited": 25,
+          "phase_4_moderate": 50,
+          "phase_5_full": 100
+        }
+      },
+      "setup_wizard_allow_skip": {
+        "type": "boolean",
+        "default": true,
+        "description": "Whether users can skip steps in the setup wizard",
+        "environments": {
+          "development": true,
+          "staging": true,
+          "production": true
+        }
+      },
+      "setup_wizard_max_retries": {
+        "type": "integer",
+        "default": 3,
+        "min": 1,
+        "max": 10,
+        "description": "Maximum number of retries for failed operations",
+        "environments": {
+          "development": 5,
+          "staging": 3,
+          "production": 3
+        }
+      },
+      "setup_wizard_step_timeout": {
+        "type": "integer",
+        "default": 300,
+        "min": 30,
+        "max": 1800,
+        "description": "Timeout for each setup step in seconds",
+        "environments": {
+          "development": 600,
+          "staging": 300,
+          "production": 300
+        }
+      },
+      "setup_wizard_analytics_enabled": {
+        "type": "boolean",
+        "default": true,
+        "description": "Whether analytics collection is enabled for the setup wizard",
+        "environments": {
+          "development": false,
+          "staging": true,
+          "production": true
+        }
+      },
+      "setup_wizard_container_creation_enabled": {
+        "type": "boolean",
+        "default": true,
+        "description": "Whether container creation is enabled (can be disabled for maintenance)",
+        "environments": {
+          "development": true,
+          "staging": true,
+          "production": true
+        }
+      },
+      "setup_wizard_platform_detection_enabled": {
+        "type": "boolean",
+        "default": true,
+        "description": "Whether automatic platform detection is enabled",
+        "environments": {
+          "development": true,
+          "staging": true,
+          "production": true
+        }
+      },
+      "setup_wizard_download_tracking_enabled": {
+        "type": "boolean",
+        "default": true,
+        "description": "Whether download tracking is enabled",
+        "environments": {
+          "development": false,
+          "staging": true,
+          "production": true
+        }
+      },
+      "setup_wizard_debug_mode": {
+        "type": "boolean",
+        "default": false,
+        "description": "Enable debug mode with additional logging and error details",
+        "environments": {
+          "development": true,
+          "staging": true,
+          "production": false
+        }
+      },
+      "setup_wizard_force_platform": {
+        "type": "string",
+        "default": "",
+        "description": "Force a specific platform for testing (windows, linux, macos, or empty for auto-detect)",
+        "environments": {
+          "development": "",
+          "staging": "",
+          "production": ""
+        }
+      },
+      "setup_wizard_container_timeout": {
+        "type": "integer",
+        "default": 120,
+        "min": 30,
+        "max": 300,
+        "description": "Timeout for container creation in seconds",
+        "environments": {
+          "development": 180,
+          "staging": 120,
+          "production": 120
+        }
+      },
+      "setup_wizard_download_timeout": {
+        "type": "integer",
+        "default": 300,
+        "min": 60,
+        "max": 1800,
+        "description": "Timeout for download operations in seconds",
+        "environments": {
+          "development": 600,
+          "staging": 300,
+          "production": 300
+        }
+      },
+      "setup_wizard_validation_timeout": {
+        "type": "integer",
+        "default": 180,
+        "min": 30,
+        "max": 600,
+        "description": "Timeout for connection validation in seconds",
+        "environments": {
+          "development": 300,
+          "staging": 180,
+          "production": 180
+        }
+      },
+      "setup_wizard_show_advanced_options": {
+        "type": "boolean",
+        "default": false,
+        "description": "Show advanced configuration options in the wizard",
+        "environments": {
+          "development": true,
+          "staging": false,
+          "production": false
+        }
+      },
+      "setup_wizard_enable_beta_features": {
+        "type": "boolean",
+        "default": false,
+        "description": "Enable beta features in the setup wizard",
+        "environments": {
+          "development": true,
+          "staging": true,
+          "production": false
+        }
+      }
+    },
+    "monitoring": {
+      "success_rate_threshold": 0.85,
+      "error_rate_threshold": 0.05,
+      "completion_time_threshold_minutes": 10,
+      "alert_channels": [
+        "slack-engineering",
+        "email-oncall"
+      ]
+    },
+    "rollback_triggers": {
+      "success_rate_below": 0.75,
+      "error_rate_above": 0.10,
+      "critical_errors": [
+        "container_creation_failure_rate_high",
+        "database_connection_failure",
+        "download_service_unavailable"
+      ]
+    },
+    "a_b_testing": {
+      "experiments": {
+        "wizard_ui_variant": {
+          "enabled": false,
+          "variants": {
+            "control": 50,
+            "simplified": 25,
+            "detailed": 25
+          },
+          "success_metric": "completion_rate"
+        },
+        "skip_button_placement": {
+          "enabled": false,
+          "variants": {
+            "top_right": 50,
+            "bottom_left": 50
+          },
+          "success_metric": "skip_rate"
+        }
+      }
+    }
+  },
+  "deployment_instructions": {
+    "phase_1_internal": {
+      "description": "Internal testing phase",
+      "duration": "1 week",
+      "rollout_percentage": 0,
+      "target_users": "internal_team",
+      "success_criteria": [
+        "All wizard steps complete successfully",
+        "No critical errors in logs",
+        "Performance within acceptable limits"
+      ]
+    },
+    "phase_2_beta": {
+      "description": "Beta user testing",
+      "duration": "1 week",
+      "rollout_percentage": 10,
+      "target_users": "beta_users",
+      "success_criteria": [
+        "Completion rate > 80%",
+        "Error rate < 10%",
+        "Positive user feedback"
+      ]
+    },
+    "phase_3_limited": {
+      "description": "Limited rollout",
+      "duration": "1 week",
+      "rollout_percentage": 25,
+      "target_users": "general_users",
+      "success_criteria": [
+        "Completion rate > 85%",
+        "Error rate < 5%",
+        "Support ticket volume manageable"
+      ]
+    },
+    "phase_4_moderate": {
+      "description": "Moderate rollout",
+      "duration": "1 week",
+      "rollout_percentage": 50,
+      "target_users": "general_users",
+      "success_criteria": [
+        "Completion rate > 85%",
+        "Error rate < 5%",
+        "System performance stable"
+      ]
+    },
+    "phase_5_full": {
+      "description": "Full rollout",
+      "duration": "ongoing",
+      "rollout_percentage": 100,
+      "target_users": "all_users",
+      "success_criteria": [
+        "Completion rate > 85%",
+        "Error rate < 5%",
+        "User satisfaction > 4.0/5.0"
+      ]
+    }
+  },
+  "integration_examples": {
+    "firebase_remote_config": {
+      "setup": "firebase_remote_config: ^4.3.8",
+      "initialization": "await FirebaseRemoteConfig.instance.fetchAndActivate();",
+      "usage": "FirebaseRemoteConfig.instance.getBool('setup_wizard_enabled')"
+    },
+    "aws_app_config": {
+      "setup": "aws_app_config: ^1.0.0",
+      "initialization": "await AppConfig.initialize();",
+      "usage": "AppConfig.getBool('setup_wizard_enabled')"
+    },
+    "custom_api": {
+      "endpoint": "GET /api/config/setup-wizard",
+      "headers": {
+        "Authorization": "Bearer {token}",
+        "Content-Type": "application/json"
+      },
+      "response_format": {
+        "flags": {
+          "setup_wizard_enabled": true,
+          "setup_wizard_rollout_percentage": 25
+        }
+      }
+    }
+  },
+  "testing_scenarios": {
+    "unit_tests": [
+      "Feature flag default values",
+      "Rollout percentage calculation",
+      "User hash consistency",
+      "Environment detection"
+    ],
+    "integration_tests": [
+      "Remote config integration",
+      "Feature flag updates",
+      "Rollout targeting accuracy",
+      "Fallback behavior"
+    ],
+    "manual_tests": [
+      "Feature flag toggle in production",
+      "Gradual rollout progression",
+      "Emergency rollback",
+      "A/B test variant assignment"
+    ]
+  }
+}

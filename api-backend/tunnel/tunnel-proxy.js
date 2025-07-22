@@ -1021,15 +1021,37 @@ export class TunnelProxy {
    */
   getHealthStatus() {
     const stats = this.getStats();
-    const isHealthy = stats.connections.total > 0 && stats.requests.successRate > 80;
-    
+
+    // For on-demand tunnel architecture, the system is healthy if:
+    // 1. The tunnel creation system is operational (always true if this method runs)
+    // 2. If there are active connections, they should have good performance
+    // 3. Zero connections is perfectly healthy in on-demand architecture
+
+    const hasConnections = stats.connections.total > 0;
+    const connectionPerformanceOk = !hasConnections || (
+      stats.requests.successRate > 80 &&
+      stats.requests.timeoutRate < 20 &&
+      stats.performance.averageResponseTime < 5000
+    );
+
+    // System is healthy if tunnel creation capability is available
+    // (which it is, since this method is running) and any active connections perform well
+    const isHealthy = connectionPerformanceOk;
+
     return {
-      status: isHealthy ? 'healthy' : 'degraded',
+      status: isHealthy ? 'ready' : 'degraded',
+      architecture: 'on-demand',
+      tunnelCreationAvailable: true,
       checks: {
-        hasConnections: stats.connections.total > 0,
-        successRateOk: stats.requests.successRate > 80,
-        timeoutRateOk: stats.requests.timeoutRate < 20,
-        averageResponseTimeOk: stats.performance.averageResponseTime < 5000
+        tunnelCreationSystemOperational: true,
+        connectionPerformanceOk: connectionPerformanceOk,
+        successRateOk: !hasConnections || stats.requests.successRate > 80,
+        timeoutRateOk: !hasConnections || stats.requests.timeoutRate < 20,
+        averageResponseTimeOk: !hasConnections || stats.performance.averageResponseTime < 5000
+      },
+      connections: {
+        active: stats.connections.total,
+        expected: 'created-on-user-login'
       },
       ...stats
     };

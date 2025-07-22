@@ -1,8 +1,34 @@
-# Simplified Tunnel System Deployment Guide
+# Simplified Tunnel System Deployment Guide - On-Demand Architecture
 
 ## Overview
 
 This guide covers the deployment process for the new Simplified Tunnel System, which replaces the complex multi-layered tunnel architecture with a streamlined design. The deployment involves updating both cloud infrastructure and desktop client applications.
+
+## 🏗️ On-Demand Tunnel Architecture
+
+**Important**: The Simplified Tunnel System uses an **on-demand architecture** where tunnels are created only when users first log in, not during deployment.
+
+### Key Architectural Principles
+
+1. **Tunnel Creation on User Login**: Tunnels are established when users authenticate and connect their desktop clients
+2. **Zero Active Tunnels During Deployment**: A successful deployment will have zero active tunnels, which is expected and healthy
+3. **Tunnel Creation System Ready**: Deployment verification checks that the tunnel creation infrastructure is ready, not that tunnels are active
+4. **User-Triggered Tunnel Lifecycle**: Tunnels are created, maintained, and destroyed based on user activity
+
+### Deployment vs. Runtime Behavior
+
+| Phase | Expected Tunnel State | Verification Criteria |
+|-------|----------------------|----------------------|
+| **Deployment** | Zero active tunnels | Tunnel creation system ready |
+| **User Login** | Tunnel created on-demand | WebSocket connection established |
+| **User Activity** | Tunnel maintained | Requests proxied successfully |
+| **User Logout** | Tunnel destroyed | Connection cleaned up |
+
+### Verification Endpoints
+
+- **Deployment Health**: `/api/tunnel/health` - Checks tunnel creation capability (no auth required)
+- **User Tunnel Status**: `/api/tunnel/status` - Checks user's specific tunnel (auth required)
+- **User Tunnel Health**: `/api/tunnel/health/:userId` - Checks specific user tunnel (auth required)
 
 ## Pre-Deployment Checklist
 

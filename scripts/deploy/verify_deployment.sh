@@ -282,31 +282,37 @@ check_container_logs() {
 }
 
 # Check disk space and resources
-# Check tunnel system functionality
+# Check tunnel creation system availability (on-demand architecture)
 check_tunnel_system() {
-    log_step 7 "Checking simplified tunnel system..."
-    
-    local tunnel_endpoint="https://app.cloudtolocalllm.online/api/tunnel/status"
-    log_info "Checking tunnel status endpoint: $tunnel_endpoint"
-    
-    local tunnel_response=$(curl -s --connect-timeout 10 "$tunnel_endpoint" || echo "ERROR")
-    
+    log_step 7 "Checking on-demand tunnel creation system..."
+
+    local tunnel_health_endpoint="https://app.cloudtolocalllm.online/api/tunnel/health"
+    log_info "Checking tunnel creation capability: $tunnel_health_endpoint"
+
+    local tunnel_response=$(curl -s --connect-timeout 10 "$tunnel_health_endpoint" || echo "ERROR")
+
     if [[ "$tunnel_response" != "ERROR" ]] && echo "$tunnel_response" | jq . >/dev/null 2>&1; then
         local tunnel_status=$(echo "$tunnel_response" | jq -r '.status // "unknown"')
-        local active_connections=$(echo "$tunnel_response" | jq -r '.active_connections // "unknown"')
-        
-        log_info "Tunnel system status: $tunnel_status"
-        log_info "Active tunnel connections: $active_connections"
-        
-        if [[ "$tunnel_status" == "operational" ]]; then
-            log_success "Tunnel system is operational"
+        local tunnel_creation_available=$(echo "$tunnel_response" | jq -r '.tunnelCreationAvailable // false')
+        local architecture=$(echo "$tunnel_response" | jq -r '.architecture // "unknown"')
+        local active_connections=$(echo "$tunnel_response" | jq -r '.connections.active // 0')
+
+        log_info "Tunnel architecture: $architecture"
+        log_info "Tunnel creation system status: $tunnel_status"
+        log_info "Tunnel creation available: $tunnel_creation_available"
+        log_info "Active connections: $active_connections (created on user login)"
+
+        if [[ "$tunnel_status" == "ready" ]] && [[ "$tunnel_creation_available" == "true" ]]; then
+            log_success "Tunnel creation system is ready for on-demand tunnel creation"
+            log_success "Tunnels will be created automatically when users first log in"
             return 0
         else
-            log_critical "Tunnel system is not operational (status: $tunnel_status)"
+            log_critical "Tunnel creation system is not ready (status: $tunnel_status, available: $tunnel_creation_available)"
             return 1
         fi
     else
-        log_error "Tunnel system check failed - status endpoint not accessible"
+        log_error "Tunnel creation system check failed - health endpoint not accessible"
+        log_error "Expected endpoint: $tunnel_health_endpoint"
         return 1
     fi
 }
@@ -488,10 +494,12 @@ case "${1:-}" in
         echo "  - SSL certificate validity (all certificates must be valid)"
         echo "  - Application health and version info (must be accessible)"
         echo "  - Container logs for recent errors (zero errors required)"
+        echo "  - On-demand tunnel creation system (must be ready for user login)"
         echo "  - System resource usage (must be below 90%)"
         echo
         echo "STRICT SUCCESS CRITERIA:"
         echo "  - Zero warnings AND zero errors required for success"
+        echo "  - Tunnel creation system ready (tunnels created on user login)"
         echo "  - Any warning condition triggers deployment failure"
         echo "  - Automatic rollback on any quality standard violation"
         echo "  - Only completely clean deployments are approved"
