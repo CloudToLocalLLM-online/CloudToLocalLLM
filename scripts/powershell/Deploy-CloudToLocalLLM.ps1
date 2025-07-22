@@ -166,7 +166,8 @@ if (-not $SkipBuild) {
     # Commit and push built assets
     Write-Host "Committing built assets..."
     if (-not $DryRun) {
-        git add build/web/
+        # Force add build/web/ since build/ is in .gitignore but build/web/ is explicitly allowed
+        git add -f build/web/
         if ($LASTEXITCODE -ne 0) {
             Write-Host "ERROR: Failed to stage build assets" -ForegroundColor Red
             exit 1
