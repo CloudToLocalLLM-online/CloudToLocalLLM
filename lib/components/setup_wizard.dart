@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'dart:html' as html;
 import '../config/theme.dart';
 import '../services/desktop_client_detection_service.dart';
 import '../services/user_container_service.dart';
@@ -1116,21 +1115,11 @@ class _SetupWizardState extends State<SetupWizard> {
       // Open the download URL
       final url = Uri.parse(option.downloadUrl);
 
-      if (kIsWeb) {
-        // For web, create a download link and click it
-        final anchor = html.AnchorElement(href: option.downloadUrl)
-          ..setAttribute('download', '')
-          ..style.display = 'none';
-        html.document.body?.children.add(anchor);
-        anchor.click();
-        html.document.body?.children.remove(anchor);
+      // For all platforms, use url_launcher
+      if (await canLaunchUrl(url)) {
+        await launchUrl(url, mode: LaunchMode.externalApplication);
       } else {
-        // For desktop, use url_launcher
-        if (await canLaunchUrl(url)) {
-          await launchUrl(url, mode: LaunchMode.externalApplication);
-        } else {
-          throw Exception('Could not launch download URL');
-        }
+        throw Exception('Could not launch download URL');
       }
 
       debugPrint('📥 [SetupWizard] Download initiated: ${option.downloadUrl}');

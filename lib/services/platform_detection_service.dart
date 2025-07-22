@@ -1,5 +1,4 @@
 import 'package:flutter/foundation.dart';
-import 'dart:html' as html show window;
 import '../models/platform_config.dart';
 import '../models/download_option.dart';
 import '../models/installation_step.dart';
@@ -46,11 +45,12 @@ class PlatformDetectionService extends ChangeNotifier {
     }
 
     try {
-      final userAgent = html.window.navigator.userAgent;
-      _detectedPlatform = PlatformType.fromUserAgent(userAgent);
+      // For non-web platforms, we can't detect from user agent
+      // Default to unknown and let user select manually
+      _detectedPlatform = PlatformType.unknown;
 
       debugPrint(
-        '🔍 [PlatformDetection] Detected platform: $_detectedPlatform from UA: $userAgent',
+        '🔍 [PlatformDetection] Non-web platform detected, defaulting to unknown',
       );
       notifyListeners();
       return _detectedPlatform!;
