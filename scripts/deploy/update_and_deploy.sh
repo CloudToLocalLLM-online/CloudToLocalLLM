@@ -415,6 +415,34 @@ build_flutter_web() {
         return 0
     fi
 
+    # Check if pre-built web assets already exist (from local Windows build)
+    if [[ -d "build/web" && -f "build/web/index.html" ]]; then
+        log_verbose "Pre-built Flutter web assets found"
+        log_verbose "Checking if assets are recent and complete..."
+
+        # Verify essential files exist
+        local essential_files=("build/web/index.html" "build/web/main.dart.js" "build/web/flutter.js")
+        local assets_complete=true
+
+        for file in "${essential_files[@]}"; do
+            if [[ ! -f "$file" ]]; then
+                log_verbose "Missing essential file: $file"
+                assets_complete=false
+                break
+            fi
+        done
+
+        if [[ "$assets_complete" == "true" ]]; then
+            log_success "Using pre-built Flutter web assets (built locally on Windows)"
+            log_verbose "Skipping VPS Flutter build - assets already available"
+            return 0
+        else
+            log_warning "Pre-built assets incomplete, will rebuild on VPS"
+        fi
+    else
+        log_verbose "No pre-built assets found, will build on VPS"
+    fi
+
     # Clean previous builds
     log_verbose "Cleaning previous builds..."
     if [[ "$VERBOSE" == "true" ]]; then
