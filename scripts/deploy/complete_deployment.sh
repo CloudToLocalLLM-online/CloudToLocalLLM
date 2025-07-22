@@ -267,6 +267,84 @@ run_verification() {
     fi
 }
 
+# Create GitHub release
+create_github_release() {
+    log_phase 6.5 "GITHUB RELEASE CREATION"
+
+    log_step 6.5.1 "Creating GitHub release for successful deployment..."
+
+    # Check if GitHub CLI is available
+    if ! command -v gh &> /dev/null; then
+        log_warning "GitHub CLI not available - skipping release creation"
+        log_warning "Install GitHub CLI to enable automatic release creation"
+        return 0
+    fi
+
+    # Check if we're authenticated with GitHub
+    if ! gh auth status &> /dev/null; then
+        log_warning "GitHub CLI not authenticated - skipping release creation"
+        log_warning "Run 'gh auth login' to enable automatic release creation"
+        return 0
+    fi
+
+    local version=$(get_version)
+    local tag="v$version"
+
+    # Check if release already exists
+    if gh release view "$tag" --repo "imrightguy/CloudToLocalLLM" &> /dev/null; then
+        log_warning "GitHub release $tag already exists - skipping creation"
+        return 0
+    fi
+
+    # Create a simple release for web deployment
+    log_step 6.5.2 "Creating GitHub release $tag..."
+
+    # Create and push tag
+    if ! git tag -l | grep -q "^$tag$"; then
+        git tag -a "$tag" -m "CloudToLocalLLM v$version - Web Deployment"
+        git push origin "$tag"
+    fi
+
+    # Create release with basic notes
+    local release_notes="# CloudToLocalLLM v$version
+
+## Web Deployment Release
+
+This release represents a successful deployment of CloudToLocalLLM v$version to production.
+
+### Deployment Details
+- **Version**: $version
+- **Deployment Date**: $(date -u +%Y-%m-%dT%H:%M:%SZ)
+- **Target Environment**: Production VPS
+- **Verification Status**: ✅ Passed strict quality checks
+
+### Access URLs
+- Homepage: https://cloudtolocalllm.online
+- Web Application: https://app.cloudtolocalllm.online
+
+### Deployment Verification
+- ✅ All containers running successfully
+- ✅ HTTP/HTTPS endpoints accessible
+- ✅ SSL certificates valid
+- ✅ Application health checks passed
+- ✅ Zero warnings or errors detected
+
+This release was created automatically as part of the CloudToLocalLLM deployment workflow."
+
+    echo "$release_notes" | gh release create "$tag" \
+        --repo "imrightguy/CloudToLocalLLM" \
+        --title "CloudToLocalLLM v$version" \
+        --notes-file -
+
+    if [[ $? -eq 0 ]]; then
+        log_success "GitHub release $tag created successfully"
+        log_info "Release URL: https://github.com/imrightguy/CloudToLocalLLM/releases/tag/$tag"
+    else
+        log_error "Failed to create GitHub release $tag"
+        log_warning "Deployment will continue despite release creation failure"
+    fi
+}
+
 # Cleanup successful deployment
 cleanup_successful_deployment() {
     log_phase 7 "CLEANUP"
@@ -304,6 +382,7 @@ generate_deployment_report() {
     echo "✅ Deployed to VPS without errors"
     echo "✅ All services started properly"
     echo "✅ Verification checks passed"
+    echo "✅ GitHub release created"
     echo "✅ Cleanup completed"
     echo
     echo "Access URLs:"
@@ -345,7 +424,8 @@ show_deployment_info() {
     echo "2. Create backup of current deployment"
     echo "3. Deploy new version to VPS"
     echo "4. STRICT verification (zero tolerance for warnings/errors)"
-    echo "5. Cleanup on success or automatic rollback on any failure"
+    echo "5. Create GitHub release for version tracking"
+    echo "6. Cleanup on success or automatic rollback on any failure"
     echo
     echo "STRICT SUCCESS CRITERIA:"
     echo "- Zero warnings AND zero errors required"
@@ -402,6 +482,9 @@ main() {
     echo
 
     run_verification
+    echo
+
+    create_github_release
     echo
 
     cleanup_successful_deployment

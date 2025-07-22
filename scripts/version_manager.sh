@@ -88,16 +88,10 @@ increment_build_number() {
 # Check if version qualifies for GitHub release
 should_create_github_release() {
     local version="$1"
-    local major=$(echo "$version" | cut -d. -f1)
-    local minor=$(echo "$version" | cut -d. -f2)
-    local patch=$(echo "$version" | cut -d. -f3)
 
-    # Only create GitHub releases for major version updates (x.0.0)
-    if [[ "$minor" == "0" && "$patch" == "0" ]]; then
-        return 0  # true
-    else
-        return 1  # false
-    fi
+    # Always create GitHub releases for all versions as part of standard deployment workflow
+    # GitHub releases are mandatory for version management and deployment tracking
+    return 0  # true - always create releases
 }
 
 # Get release type based on version change
@@ -383,12 +377,12 @@ main() {
                 update_shared_pubspec_version "$new_version" "$new_build_number"
                 update_assets_version_json "$new_version" "$new_build_number"
 
-                # Check if GitHub release should be created
+                # GitHub release creation is mandatory for all versions
                 if should_create_github_release "$new_version"; then
-                    log_warning "This is a MAJOR version update - GitHub release should be created!"
+                    log_info "GitHub release will be created for version v$new_version"
                     log_info "Run: git tag v$new_version && git push origin v$new_version"
                 else
-                    log_info "Minor/patch update - no GitHub release needed"
+                    log_error "GitHub release creation failed - this should not happen"
                 fi
             fi
 
@@ -442,12 +436,12 @@ main() {
                 update_shared_pubspec_version "$new_version" "$placeholder_build"
                 update_assets_version_json "$new_version" "$placeholder_build"
 
-                # Check if GitHub release should be created
+                # GitHub release creation is mandatory for all versions
                 if should_create_github_release "$new_version"; then
-                    log_warning "This is a MAJOR version update - GitHub release should be created!"
+                    log_info "GitHub release will be created for version v$new_version"
                     log_info "Run: git tag v$new_version && git push origin v$new_version"
                 else
-                    log_info "Minor/patch update - no GitHub release needed"
+                    log_error "GitHub release creation failed - this should not happen"
                 fi
             fi
 

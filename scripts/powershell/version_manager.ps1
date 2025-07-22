@@ -108,17 +108,10 @@ function Test-GitHubReleaseRequired {
         [Parameter(Mandatory = $true)]
         [string]$Version
     )
-    
-    $parts = $Version -split '\.'
-    if ($parts.Count -ge 3) {
-        $minor = [int]$parts[1]
-        $patch = [int]$parts[2]
-        
-        # Only create GitHub releases for major version updates (x.0.0)
-        return ($minor -eq 0 -and $patch -eq 0)
-    }
-    
-    return $false
+
+    # Always create GitHub releases for all versions as part of standard deployment workflow
+    # GitHub releases are mandatory for version management and deployment tracking
+    return $true
 }
 
 # Increment version based on type (major, minor, patch, build)
@@ -440,13 +433,13 @@ switch ($Command) {
             Update-SharedPubspecVersion -NewVersion $newVersion -NewBuildNumber $newBuildNumber
             Update-AssetsVersionJson -NewVersion $newVersion -NewBuildNumber $newBuildNumber
 
-            # Check if GitHub release should be created
+            # GitHub release creation is mandatory for all versions
             if (Test-GitHubReleaseRequired -Version $newVersion) {
-                Write-LogWarning "This is a MAJOR version update - GitHub release should be created!"
+                Write-LogInfo "GitHub release will be created for version v$newVersion"
                 Write-LogInfo "Run: git tag v$newVersion && git push origin v$newVersion"
             }
             else {
-                Write-LogInfo "Minor/patch update - no GitHub release needed"
+                Write-LogError "GitHub release creation failed - this should not happen"
             }
         }
 
@@ -498,13 +491,13 @@ switch ($Command) {
             Update-SharedPubspecVersion -NewVersion $newVersion -NewBuildNumber $placeholderBuild
             Update-AssetsVersionJson -NewVersion $newVersion -NewBuildNumber $placeholderBuild
 
-            # Check if GitHub release should be created
+            # GitHub release creation is mandatory for all versions
             if (Test-GitHubReleaseRequired -Version $newVersion) {
-                Write-LogWarning "This is a MAJOR version update - GitHub release should be created!"
+                Write-LogInfo "GitHub release will be created for version v$newVersion"
                 Write-LogInfo "Run: git tag v$newVersion && git push origin v$newVersion"
             }
             else {
-                Write-LogInfo "Minor/patch update - no GitHub release needed"
+                Write-LogError "GitHub release creation failed - this should not happen"
             }
         }
 
