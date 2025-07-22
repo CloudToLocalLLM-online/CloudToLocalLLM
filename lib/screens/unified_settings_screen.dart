@@ -703,29 +703,6 @@ class _UnifiedSettingsScreenState extends State<UnifiedSettingsScreen> {
             ).textTheme.bodyMedium?.copyWith(color: AppTheme.textColor),
           ),
           SizedBox(height: AppTheme.spacingS),
-          Container(
-            padding: EdgeInsets.all(AppTheme.spacingS),
-            decoration: BoxDecoration(
-              color: Colors.blue.withValues(alpha: 0.1),
-              border: Border.all(color: Colors.blue.withValues(alpha: 0.3)),
-              borderRadius: BorderRadius.circular(AppTheme.borderRadiusS),
-            ),
-            child: Row(
-              children: [
-                Icon(Icons.info_outline, color: Colors.blue, size: 16),
-                SizedBox(width: AppTheme.spacingS),
-                Expanded(
-                  child: Text(
-                    'Windows v3.6.3 packages are being prepared. Current downloads link to the latest available release.',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Colors.blue,
-                      fontSize: 12,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
           SizedBox(height: AppTheme.spacingM),
           SizedBox(
             width: double.infinity,
