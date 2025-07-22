@@ -55,12 +55,13 @@ if (-not $DryRun) {
     }
 }
 
+# Define version manager path (used throughout script)
+$versionManagerPath = Join-Path $PSScriptRoot "version_manager.ps1"
+
 # Step 2: Version management
 if (-not $SkipVersionUpdate) {
     Write-Host ""
     Write-Host "=== STEP 2: VERSION MANAGEMENT ===" -ForegroundColor Yellow
-    
-    $versionManagerPath = Join-Path $PSScriptRoot "version_manager.ps1"
     
     Write-Host "Getting current version..."
     & $versionManagerPath get-semantic
@@ -250,6 +251,143 @@ if (-not $SkipBuild) {
     }
 
     Write-Host "✓ Local Flutter desktop build completed successfully"
+}
+
+# Step 3.6: GitHub Release Creation
+Write-Host ""
+Write-Host "=== STEP 3.6: GITHUB RELEASE CREATION ===" -ForegroundColor Yellow
+
+if (-not $SkipBuild) {
+    # Check if new desktop application packages were built
+    $distPath = Join-Path $ProjectRoot "dist"
+    $hasNewPackages = $false
+
+    if (Test-Path $distPath) {
+        $windowsPackage = Get-ChildItem -Path $distPath -Filter "cloudtolocalllm-windows-v*.zip" | Sort-Object LastWriteTime -Descending | Select-Object -First 1
+        if ($windowsPackage -and $windowsPackage.LastWriteTime -gt (Get-Date).AddHours(-1)) {
+            $hasNewPackages = $true
+        }
+    }
+
+    if ($hasNewPackages) {
+        Write-Host "New desktop application packages detected, creating GitHub release..."
+
+        if (-not $DryRun) {
+            try {
+                # Get current version
+                $currentVersion = & $versionManagerPath get-semantic
+                $releaseTag = "v$currentVersion"
+
+                # Check if GitHub CLI is available and authenticated
+                $ghAvailable = $false
+                try {
+                    $ghStatus = & gh auth status 2>&1
+                    if ($LASTEXITCODE -eq 0) {
+                        $ghAvailable = $true
+                        Write-Host "✓ GitHub CLI authenticated"
+                    }
+                } catch {
+                    Write-Host "⚠️ GitHub CLI not available or not authenticated" -ForegroundColor Yellow
+                }
+
+                if ($ghAvailable) {
+                    # Check if release already exists
+                    $releaseExists = $false
+                    try {
+                        & gh release view $releaseTag --repo imrightguy/CloudToLocalLLM 2>&1 | Out-Null
+                        if ($LASTEXITCODE -eq 0) {
+                            $releaseExists = $true
+                        }
+                    } catch {
+                        # Release doesn't exist, which is expected
+                    }
+
+                    if (-not $releaseExists) {
+                        Write-Host "Creating GitHub release $releaseTag..."
+
+                        # Create simple release notes
+                        $releaseNotes = @"
+# CloudToLocalLLM $releaseTag
+
+## 🚀 Desktop Application Release
+
+This release provides cross-platform desktop applications for CloudToLocalLLM.
+
+### 📦 What's Included
+- Windows Desktop Application (cloudtolocalllm-windows-$currentVersion.zip)
+
+### 🔧 Installation
+1. Download the appropriate package for your platform
+2. Extract and run the application
+3. Authenticate with your CloudToLocalLLM account
+
+### 🌐 Integration
+Works seamlessly with https://app.cloudtolocalllm.online
+
+### 📋 System Requirements
+- Windows 10+ (64-bit) / Linux (64-bit)
+- 4GB RAM minimum, 8GB recommended
+- Internet connection for authentication
+
+---
+**Version**: $currentVersion
+**Build Date**: $(Get-Date -Format 'yyyy-MM-dd')
+"@
+
+                        # Save release notes to temporary file
+                        $releaseNotesFile = Join-Path $ProjectRoot "temp_release_notes.md"
+                        Set-Content -Path $releaseNotesFile -Value $releaseNotes -Encoding UTF8
+
+                        # Find desktop application packages to attach
+                        $assetsToUpload = @()
+                        if ($windowsPackage) {
+                            $assetsToUpload += $windowsPackage.FullName
+                        }
+
+                        # Create GitHub release with assets
+                        if ($assetsToUpload.Count -gt 0) {
+                            $ghCommand = "gh release create `"$releaseTag`" --repo imrightguy/CloudToLocalLLM --title `"CloudToLocalLLM $releaseTag`" --notes-file `"$releaseNotesFile`""
+                            foreach ($asset in $assetsToUpload) {
+                                $ghCommand += " `"$asset`""
+                            }
+
+                            Write-Host "Executing: $ghCommand"
+                            Invoke-Expression $ghCommand
+
+                            if ($LASTEXITCODE -eq 0) {
+                                Write-Host "✓ GitHub release $releaseTag created successfully" -ForegroundColor Green
+                                Write-Host "✓ Desktop application packages uploaded" -ForegroundColor Green
+                            } else {
+                                Write-Host "⚠️ GitHub release creation failed (non-blocking)" -ForegroundColor Yellow
+                                Write-Host "   Deployment will continue, but manual release creation may be needed" -ForegroundColor Yellow
+                            }
+                        } else {
+                            Write-Host "⚠️ No desktop application packages found to upload" -ForegroundColor Yellow
+                        }
+
+                        # Clean up temporary file
+                        if (Test-Path $releaseNotesFile) {
+                            Remove-Item $releaseNotesFile -Force
+                        }
+                    } else {
+                        Write-Host "✓ GitHub release $releaseTag already exists" -ForegroundColor Green
+                    }
+                } else {
+                    Write-Host "⚠️ GitHub release creation skipped (GitHub CLI not available)" -ForegroundColor Yellow
+                    Write-Host "   To enable automatic releases, install GitHub CLI and run: gh auth login" -ForegroundColor Yellow
+                }
+            } catch {
+                Write-Host "⚠️ GitHub release creation failed: $($_.Exception.Message)" -ForegroundColor Yellow
+                Write-Host "   Deployment will continue, but manual release creation may be needed" -ForegroundColor Yellow
+            }
+        } else {
+            Write-Host "[DRY RUN] Would create GitHub release for new desktop packages"
+        }
+    } else {
+        Write-Host "✓ No new desktop application packages detected, skipping GitHub release creation"
+    }
+} else {
+    Write-Host "✓ Build skipped, GitHub release creation not needed"
 }
 
 # Step 4: VPS Deployment

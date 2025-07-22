@@ -190,11 +190,11 @@ function Update-SharedVersionFile {
     # Update all version constants
     $content = Get-Content $SharedVersionFile -Raw
     $content = $content -replace "static const String mainAppVersion = '[^']*';", "static const String mainAppVersion = '$SemanticVersion';"
-    $content = $content -replace "static const int mainAppBuildNumber = \d+;", "static const int mainAppBuildNumber = $BuildTimestamp;"
+    $content = $content -replace "static const int mainAppBuildNumber = (\d+|BUILD_TIME_PLACEHOLDER);", "static const int mainAppBuildNumber = $BuildTimestamp;"
     $content = $content -replace "static const String tunnelManagerVersion = '[^']*';", "static const String tunnelManagerVersion = '$SemanticVersion';"
-    $content = $content -replace "static const int tunnelManagerBuildNumber = \d+;", "static const int tunnelManagerBuildNumber = $BuildTimestamp;"
+    $content = $content -replace "static const int tunnelManagerBuildNumber = (\d+|BUILD_TIME_PLACEHOLDER);", "static const int tunnelManagerBuildNumber = $BuildTimestamp;"
     $content = $content -replace "static const String sharedLibraryVersion = '[^']*';", "static const String sharedLibraryVersion = '$SemanticVersion';"
-    $content = $content -replace "static const int sharedLibraryBuildNumber = \d+;", "static const int sharedLibraryBuildNumber = $BuildTimestamp;"
+    $content = $content -replace "static const int sharedLibraryBuildNumber = (\d+|BUILD_TIME_PLACEHOLDER);", "static const int sharedLibraryBuildNumber = $BuildTimestamp;"
     $content = $content -replace "static const String buildTimestamp = '[^']*';", "static const String buildTimestamp = '$ISOTimestamp';"
     
     Set-Content -Path $SharedVersionFile -Value $content -Encoding UTF8 -NoNewline

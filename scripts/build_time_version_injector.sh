@@ -153,11 +153,11 @@ update_shared_version_file() {
     
     # Update all version constants
     sed -i "s/static const String mainAppVersion = '[^']*';/static const String mainAppVersion = '$semantic_version';/" "$SHARED_VERSION_FILE"
-    sed -i "s/static const int mainAppBuildNumber = [0-9]*;/static const int mainAppBuildNumber = $build_timestamp;/" "$SHARED_VERSION_FILE"
+    sed -i "s/static const int mainAppBuildNumber = \([0-9]*\|BUILD_TIME_PLACEHOLDER\);/static const int mainAppBuildNumber = $build_timestamp;/" "$SHARED_VERSION_FILE"
     sed -i "s/static const String tunnelManagerVersion = '[^']*';/static const String tunnelManagerVersion = '$semantic_version';/" "$SHARED_VERSION_FILE"
-    sed -i "s/static const int tunnelManagerBuildNumber = [0-9]*;/static const int tunnelManagerBuildNumber = $build_timestamp;/" "$SHARED_VERSION_FILE"
+    sed -i "s/static const int tunnelManagerBuildNumber = \([0-9]*\|BUILD_TIME_PLACEHOLDER\);/static const int tunnelManagerBuildNumber = $build_timestamp;/" "$SHARED_VERSION_FILE"
     sed -i "s/static const String sharedLibraryVersion = '[^']*';/static const String sharedLibraryVersion = '$semantic_version';/" "$SHARED_VERSION_FILE"
-    sed -i "s/static const int sharedLibraryBuildNumber = [0-9]*;/static const int sharedLibraryBuildNumber = $build_timestamp;/" "$SHARED_VERSION_FILE"
+    sed -i "s/static const int sharedLibraryBuildNumber = \([0-9]*\|BUILD_TIME_PLACEHOLDER\);/static const int sharedLibraryBuildNumber = $build_timestamp;/" "$SHARED_VERSION_FILE"
     sed -i "s/static const String buildTimestamp = '[^']*';/static const String buildTimestamp = '$iso_timestamp';/" "$SHARED_VERSION_FILE"
     
     log_success "Updated lib/shared/lib/version.dart"

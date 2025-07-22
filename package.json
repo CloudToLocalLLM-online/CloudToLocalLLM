@@ -1,0 +1,21 @@
+{
+  "name": "cloudtolocalllm-e2e-tests",
+  "version": "3.11.1",
+  "description": "End-to-end testing for CloudToLocalLLM",
+  "private": true,
+  "scripts": {
+    "test": "playwright test",
+    "test:headed": "playwright test --headed",
+    "test:debug": "playwright test --debug",
+    "test:auth": "playwright test auth-loop-analysis.spec.js",
+    "test:tunnel": "playwright test tunnel-verification.spec.js",
+    "install-browsers": "playwright install",
+    "install-deps": "playwright install-deps"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.40.0"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  }
+}
