@@ -1,4 +1,4 @@
-name: cloudtolocalllm
+﻿name: cloudtolocalllm
 description: Manage and run powerful Large Language Models locally, orchestrated via a cloud interface.
 publish_to: none
 homepage: https://cloudtolocalllm.online

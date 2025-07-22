@@ -1,4 +1,4 @@
-name: cloudtolocalllm_shared
+﻿name: cloudtolocalllm_shared
 description: Shared libraries and utilities for CloudToLocalLLM applications
 publish_to: none
 version: 3.11.0+BUILD_TIME_PLACEHOLDER

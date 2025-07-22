@@ -1,4 +1,4 @@
-# CloudToLocalLLM Deployment Script - Raw Output Version
+﻿# CloudToLocalLLM Deployment Script - Raw Output Version
 # Shows all command output without any hiding or filtering
 
 [CmdletBinding()]
@@ -82,7 +82,7 @@ if (-not $SkipVersionUpdate) {
 if (-not $SkipBuild) {
     Write-Host ""
     Write-Host "=== STEP 3: SOURCE PREPARATION ===" -ForegroundColor Yellow
-    
+
     $requiredFiles = @("pubspec.yaml", "lib/main.dart", "docker-compose.yml", "scripts/deploy/update_and_deploy.sh")
     foreach ($file in $requiredFiles) {
         $filePath = Join-Path $ProjectRoot $file

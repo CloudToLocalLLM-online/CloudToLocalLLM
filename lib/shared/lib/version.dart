@@ -1,4 +1,4 @@
-/// CloudToLocalLLM Shared Version Management
+﻿/// CloudToLocalLLM Shared Version Management
 ///
 /// Provides version constants and compatibility checks across all applications
 library;
@@ -23,7 +23,7 @@ class CloudToLocalLLMVersions {
   static const String trayDaemonVersion = 'deprecated';
 
   // Build timestamp (updated during build process)
-  static const String buildTimestamp = '2025-07-22T01:49:08Z';
+  static const String buildTimestamp = '2025-07-22T02:07:58Z';
 
   // Git commit hash (updated during build process)
   static const String gitCommitHash = 'production-v3.10.1';
