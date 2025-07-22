@@ -28,7 +28,7 @@
 # ============================================================================
 
 # Distribution and build directories
-dist/
+# dist/ - Allow distribution directory for desktop app packages
 build/
 !build/web/  # Allow web build for deployment
 
