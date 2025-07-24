@@ -130,8 +130,8 @@ context7-mcp --test-connection
 ```javascript
 // Auth0 Configuration
 const auth0Config = {
-  domain: 'dev-xafu7oedkd5wlrbo.us.auth0.com',
-  clientId: 'ESfES9tnQ4qGxFlwzXpDuRVXCyk0KF29',
+  domain: 'dev-v2f2p008x3dr74ww.us.auth0.com',
+  clientId: 'FuXPnevXpp311CdYHGsbNZe9t3D8Ts7A',
   audience: 'https://app.cloudtolocalllm.online',
   redirectUri: {
     web: 'https://app.cloudtolocalllm.online/callback',

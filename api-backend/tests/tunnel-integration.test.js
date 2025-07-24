@@ -15,7 +15,7 @@ describe('Tunnel Integration', () => {
       info: jest.fn(),
       warn: jest.fn(),
       error: jest.fn(),
-      debug: jest.fn()
+      debug: jest.fn(),
     };
 
     tunnelProxy = new TunnelProxy(mockLogger);
@@ -34,19 +34,19 @@ describe('Tunnel Integration', () => {
 
     it('should return correct stats for empty proxy', () => {
       const stats = tunnelProxy.getStats();
-      
+
       expect(stats).toEqual({
         totalConnections: 0,
         totalPendingRequests: 0,
-        connectedUsers: 0
+        connectedUsers: 0,
       });
     });
 
     it('should return disconnected status for unknown user', () => {
       const status = tunnelProxy.getUserConnectionStatus('unknown-user');
-      
+
       expect(status).toEqual({
-        connected: false
+        connected: false,
       });
     });
 
@@ -60,7 +60,7 @@ describe('Tunnel Integration', () => {
       const httpRequest = {
         method: 'GET',
         path: '/api/models',
-        headers: { 'accept': 'application/json' }
+        headers: { 'accept': 'application/json' },
       };
 
       const message = MessageProtocol.createRequestMessage(httpRequest);
@@ -77,7 +77,7 @@ describe('Tunnel Integration', () => {
       const httpResponse = {
         status: 200,
         headers: { 'content-type': 'application/json' },
-        body: '{"success": true}'
+        body: '{"success": true}',
       };
 
       const message = MessageProtocol.createResponseMessage(requestId, httpResponse);
@@ -132,14 +132,14 @@ describe('Tunnel Integration', () => {
         method: 'POST',
         path: '/api/chat',
         headers: { 'content-type': 'application/json' },
-        body: '{"message": "hello"}'
+        body: '{"message": "hello"}',
       };
 
       expect(MessageProtocol.validateHttpRequest(validRequest)).toBe(true);
 
       const invalidRequest = {
         method: 'INVALID',
-        path: '/api/chat'
+        path: '/api/chat',
       };
 
       expect(MessageProtocol.validateHttpRequest(invalidRequest)).toBe(false);
@@ -149,7 +149,7 @@ describe('Tunnel Integration', () => {
       const validResponse = {
         status: 200,
         headers: { 'content-type': 'application/json' },
-        body: '{"result": "success"}'
+        body: '{"result": "success"}',
       };
 
       expect(MessageProtocol.validateHttpResponse(validResponse)).toBe(true);
@@ -157,7 +157,7 @@ describe('Tunnel Integration', () => {
       const invalidResponse = {
         status: 999, // Invalid status code
         headers: { 'content-type': 'application/json' },
-        body: '{"result": "success"}'
+        body: '{"result": "success"}',
       };
 
       expect(MessageProtocol.validateHttpResponse(invalidResponse)).toBe(false);
@@ -167,7 +167,7 @@ describe('Tunnel Integration', () => {
       const httpRequest = {
         method: 'GET',
         path: '/api/models',
-        headers: { 'accept': 'application/json' }
+        headers: { 'accept': 'application/json' },
       };
 
       const tunnelMessage = MessageProtocol.createRequestMessage(httpRequest);
@@ -180,7 +180,7 @@ describe('Tunnel Integration', () => {
       const httpResponse = {
         status: 200,
         headers: { 'content-type': 'application/json' },
-        body: '{"success": true}'
+        body: '{"success": true}',
       };
 
       const tunnelMessage = MessageProtocol.createResponseMessage('req-123', httpResponse);

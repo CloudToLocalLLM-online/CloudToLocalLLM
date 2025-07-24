@@ -125,6 +125,9 @@ class SimpleTunnelClient extends ChangeNotifier {
     : _authService = authService {
     _correlationId = _logger.generateCorrelationId();
     _userId = _authService.currentUser?.id;
+
+    // Listen for authentication state changes
+    _authService.addListener(_onAuthenticationChanged);
   }
 
   /// Whether the tunnel is connected
@@ -160,7 +163,21 @@ class SimpleTunnelClient extends ChangeNotifier {
   /// Initialize the tunnel client (for compatibility with TunnelManagerService interface)
   Future<void> initialize() async {
     if (!kIsWeb) {
-      await connect();
+      // Only attempt to connect if user is authenticated
+      if (_shouldAttemptConnection()) {
+        _logger.debug(
+          'User is authenticated, attempting to connect',
+          correlationId: _correlationId,
+          userId: _userId,
+        );
+        await connect();
+      } else {
+        _logger.debug(
+          'User not authenticated, waiting for authentication',
+          correlationId: _correlationId,
+          userId: _userId,
+        );
+      }
     }
   }
 
@@ -199,10 +216,19 @@ class SimpleTunnelClient extends ChangeNotifier {
       // Get authentication token
       final accessToken = _authService.getAccessToken();
       if (accessToken == null) {
-        throw TunnelException.authError(
-          'No authentication token available',
-          code: TunnelErrorCodes.authTokenMissing,
+        // Don't throw exception during startup - log and return gracefully
+        _lastError = 'No authentication token available';
+        _isConnecting = false;
+
+        _logger.debug(
+          'No authentication token available, cannot connect',
+          correlationId: _correlationId,
+          userId: _userId,
+          context: {'reason': 'User not authenticated'},
         );
+
+        notifyListeners();
+        return; // Return gracefully instead of throwing
       }
 
       // Build WebSocket URL
@@ -1044,9 +1070,80 @@ class SimpleTunnelClient extends ChangeNotifier {
     return alerts;
   }
 
+  /// Check if we should attempt to connect based on authentication state
+  bool _shouldAttemptConnection() {
+    final isAuthenticated = _authService.isAuthenticated.value;
+    final hasAccessToken = _authService.getAccessToken() != null;
+
+    _logger.debug(
+      'Checking connection requirements',
+      correlationId: _correlationId,
+      userId: _userId,
+      context: {
+        'isAuthenticated': isAuthenticated,
+        'hasAccessToken': hasAccessToken,
+      },
+    );
+
+    return isAuthenticated && hasAccessToken;
+  }
+
+  /// Handle authentication state changes
+  void _onAuthenticationChanged() {
+    final wasAuthenticated = _userId != null;
+    final isNowAuthenticated = _authService.isAuthenticated.value;
+    final accessToken = _authService.getAccessToken();
+    _userId = _authService.currentUser?.id;
+
+    _logger.debug(
+      'Authentication state changed',
+      correlationId: _correlationId,
+      userId: _userId,
+      context: {
+        'wasAuthenticated': wasAuthenticated,
+        'isNowAuthenticated': isNowAuthenticated,
+        'hasAccessToken': accessToken != null,
+        'tokenLength': accessToken?.length ?? 0,
+        'platformServiceType': _authService.runtimeType.toString(),
+      },
+    );
+
+    if (isNowAuthenticated && !_isConnected && !_isConnecting) {
+      // User just authenticated and we're not connected - attempt to connect
+      _logger.debug(
+        'User authenticated, attempting to connect tunnel',
+        correlationId: _correlationId,
+        userId: _userId,
+      );
+
+      if (!kIsWeb) {
+        connect().catchError((e) {
+          _logger.logTunnelError(
+            TunnelErrorCodes.connectionFailed,
+            'Failed to connect after authentication',
+            correlationId: _correlationId,
+            userId: _userId,
+            error: e,
+          );
+        });
+      }
+    } else if (!isNowAuthenticated && (_isConnected || _isConnecting)) {
+      // User logged out - disconnect
+      _logger.debug(
+        'User logged out, disconnecting tunnel',
+        correlationId: _correlationId,
+        userId: _userId,
+      );
+      disconnect();
+    }
+  }
+
   @override
   void dispose() {
     _isDisposed = true;
+
+    // Remove authentication listener
+    _authService.removeListener(_onAuthenticationChanged);
 
     // Clean up connection pool
     for (final connection in _connectionPool) {

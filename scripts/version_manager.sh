@@ -235,13 +235,13 @@ update_shared_version_file() {
     # Use the provided build_number parameter which should already be in YYYYMMDDHHMM format
     local build_number_int="$new_build_number"
 
-    # Update all version constants
+    # Update all version constants - handle both numeric build numbers and BUILD_TIME_PLACEHOLDER
     sed -i "s/static const String mainAppVersion = '[^']*';/static const String mainAppVersion = '$new_version';/" "$SHARED_VERSION_FILE"
-    sed -i "s/static const int mainAppBuildNumber = [0-9]*;/static const int mainAppBuildNumber = $build_number_int;/" "$SHARED_VERSION_FILE"
+    sed -i "s/static const int mainAppBuildNumber = \([0-9]*\|BUILD_TIME_PLACEHOLDER\);/static const int mainAppBuildNumber = $build_number_int;/" "$SHARED_VERSION_FILE"
     sed -i "s/static const String tunnelManagerVersion = '[^']*';/static const String tunnelManagerVersion = '$new_version';/" "$SHARED_VERSION_FILE"
-    sed -i "s/static const int tunnelManagerBuildNumber = [0-9]*;/static const int tunnelManagerBuildNumber = $build_number_int;/" "$SHARED_VERSION_FILE"
+    sed -i "s/static const int tunnelManagerBuildNumber = \([0-9]*\|BUILD_TIME_PLACEHOLDER\);/static const int tunnelManagerBuildNumber = $build_number_int;/" "$SHARED_VERSION_FILE"
     sed -i "s/static const String sharedLibraryVersion = '[^']*';/static const String sharedLibraryVersion = '$new_version';/" "$SHARED_VERSION_FILE"
-    sed -i "s/static const int sharedLibraryBuildNumber = [0-9]*;/static const int sharedLibraryBuildNumber = $build_number_int;/" "$SHARED_VERSION_FILE"
+    sed -i "s/static const int sharedLibraryBuildNumber = \([0-9]*\|BUILD_TIME_PLACEHOLDER\);/static const int sharedLibraryBuildNumber = $build_number_int;/" "$SHARED_VERSION_FILE"
     sed -i "s/static const String buildTimestamp = '[^']*';/static const String buildTimestamp = '$build_timestamp';/" "$SHARED_VERSION_FILE"
 
     log_success "Updated shared/lib/version.dart to $new_version"
@@ -406,6 +406,30 @@ main() {
             local version=$(get_semantic_version)
             validate_version_format "$version"
             ;;
+        "validate-placeholders")
+            log_info "Validating that no BUILD_TIME_PLACEHOLDER remains in version files"
+
+            local files_to_check=("$PUBSPEC_FILE" "$SHARED_PUBSPEC_FILE" "$SHARED_VERSION_FILE" "$ASSETS_VERSION_FILE")
+            local placeholder_found=false
+
+            for file in "${files_to_check[@]}"; do
+                if [[ -f "$file" ]]; then
+                    if grep -q "BUILD_TIME_PLACEHOLDER" "$file"; then
+                        log_error "BUILD_TIME_PLACEHOLDER found in: $file"
+                        placeholder_found=true
+                    else
+                        log_info "✓ No placeholders in: $file"
+                    fi
+                fi
+            done
+
+            if [[ "$placeholder_found" == "true" ]]; then
+                log_error "Validation failed: BUILD_TIME_PLACEHOLDER instances remain in version files"
+                exit 1
+            else
+                log_success "Validation passed: All BUILD_TIME_PLACEHOLDER instances have been replaced"
+            fi
+            ;;
         "prepare")
             if [[ -z "${2:-}" ]]; then
                 log_error "Usage: $0 prepare <major|minor|patch|build>"
@@ -462,6 +486,7 @@ main() {
             echo "  prepare <type>   Prepare version (major|minor|patch|build) - build-time timestamp"
             echo "  set <version>    Set specific version (MAJOR.MINOR.PATCH)"
             echo "  validate         Validate current version format"
+            echo "  validate-placeholders  Validate no BUILD_TIME_PLACEHOLDER remains"
             echo "  help             Show this help message"
             echo ""
             echo "CloudToLocalLLM Semantic Versioning Strategy:"

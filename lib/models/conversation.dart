@@ -29,7 +29,7 @@ class Conversation {
       messages: [],
       createdAt: now,
       updatedAt: now,
-      model: model,
+      model: model ?? 'default', // Ensure model is never null for database constraints
     );
   }
 

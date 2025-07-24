@@ -11,8 +11,8 @@ import jwt from 'jsonwebtoken';
 // Mock dependencies before importing
 const mockJwksClient = {
   getSigningKey: jest.fn().mockResolvedValue({
-    getPublicKey: () => 'mock-public-key'
-  })
+    getPublicKey: () => 'mock-public-key',
+  }),
 };
 
 const mockTunnelProxy = {
@@ -21,12 +21,12 @@ const mockTunnelProxy = {
   getStats: jest.fn(),
   forwardRequest: jest.fn(),
   handleConnection: jest.fn(),
-  cleanup: jest.fn()
+  cleanup: jest.fn(),
 };
 
 jest.mock('jwks-client', () => jest.fn(() => mockJwksClient));
 jest.mock('../tunnel/tunnel-proxy.js', () => ({
-  TunnelProxy: jest.fn(() => mockTunnelProxy)
+  TunnelProxy: jest.fn(() => mockTunnelProxy),
 }));
 
 // Import after mocking
@@ -39,7 +39,7 @@ describe('Tunnel Routes', () => {
 
   const mockConfig = {
     AUTH0_DOMAIN: 'test-domain.auth0.com',
-    AUTH0_AUDIENCE: 'https://test-api.example.com'
+    AUTH0_AUDIENCE: 'https://test-api.example.com',
   };
 
   const mockUserId = 'auth0|test-user-123';
@@ -49,7 +49,7 @@ describe('Tunnel Routes', () => {
     // Mock jwt.verify
     jest.spyOn(jwt, 'verify').mockReturnValue({ sub: mockUserId });
     jest.spyOn(jwt, 'decode').mockReturnValue({
-      header: { kid: 'test-key-id' }
+      header: { kid: 'test-key-id' },
     });
 
     // Create Express app and server
@@ -72,18 +72,18 @@ describe('Tunnel Routes', () => {
   });
 
   describe('Authentication Middleware', () => {
-    it('should reject requests without authorization header', async () => {
+    it('should reject requests without authorization header', async() => {
       const response = await request(app)
         .get('/api/tunnel/status')
         .expect(401);
 
       expect(response.body).toEqual({
         error: 'Access token required',
-        message: 'Authorization header with Bearer token is required'
+        message: 'Authorization header with Bearer token is required',
       });
     });
 
-    it('should reject requests with invalid token format', async () => {
+    it('should reject requests with invalid token format', async() => {
       jwt.decode.mockReturnValueOnce(null);
 
       const response = await request(app)
@@ -93,20 +93,20 @@ describe('Tunnel Routes', () => {
 
       expect(response.body).toEqual({
         error: 'Invalid or expired token',
-        message: 'The provided token is invalid or has expired'
+        message: 'The provided token is invalid or has expired',
       });
     });
 
-    it('should accept requests with valid token', async () => {
+    it('should accept requests with valid token', async() => {
       tunnelProxy.getUserConnectionStatus.mockReturnValue({
         connected: true,
         lastPing: new Date(),
-        pendingRequests: 0
+        pendingRequests: 0,
       });
       tunnelProxy.getStats.mockReturnValue({
         totalConnections: 1,
         connectedUsers: 1,
-        totalPendingRequests: 0
+        totalPendingRequests: 0,
       });
 
       const response = await request(app)
@@ -119,11 +119,11 @@ describe('Tunnel Routes', () => {
   });
 
   describe('Health Check Endpoint', () => {
-    it('should return user tunnel status', async () => {
+    it('should return user tunnel status', async() => {
       const mockStatus = {
         connected: true,
         lastPing: new Date(),
-        pendingRequests: 2
+        pendingRequests: 2,
       };
       tunnelProxy.getUserConnectionStatus.mockReturnValue(mockStatus);
 
@@ -135,11 +135,11 @@ describe('Tunnel Routes', () => {
       expect(response.body).toEqual({
         userId: mockUserId,
         ...mockStatus,
-        timestamp: expect.any(String)
+        timestamp: expect.any(String),
       });
     });
 
-    it('should reject access to other users tunnel status', async () => {
+    it('should reject access to other users tunnel status', async() => {
       const otherUserId = 'auth0|other-user-456';
 
       const response = await request(app)
@@ -149,22 +149,22 @@ describe('Tunnel Routes', () => {
 
       expect(response.body).toEqual({
         error: 'Access denied',
-        message: 'You can only check your own tunnel status'
+        message: 'You can only check your own tunnel status',
       });
     });
   });
 
   describe('Status Endpoint', () => {
-    it('should return user and system status', async () => {
+    it('should return user and system status', async() => {
       const mockUserStatus = {
         connected: true,
         lastPing: new Date(),
-        pendingRequests: 1
+        pendingRequests: 1,
       };
       const mockStats = {
         totalConnections: 5,
         connectedUsers: 3,
-        totalPendingRequests: 10
+        totalPendingRequests: 10,
       };
 
       tunnelProxy.getUserConnectionStatus.mockReturnValue(mockUserStatus);
@@ -178,10 +178,10 @@ describe('Tunnel Routes', () => {
       expect(response.body).toEqual({
         user: {
           userId: mockUserId,
-          ...mockUserStatus
+          ...mockUserStatus,
         },
         system: mockStats,
-        timestamp: expect.any(String)
+        timestamp: expect.any(String),
       });
     });
   });
@@ -191,11 +191,11 @@ describe('Tunnel Routes', () => {
       tunnelProxy.isUserConnected.mockReturnValue(true);
     });
 
-    it('should forward GET request to desktop client', async () => {
+    it('should forward GET request to desktop client', async() => {
       const mockResponse = {
         status: 200,
         headers: { 'content-type': 'application/json' },
-        body: '{"models": ["llama2"]}'
+        body: '{"models": ["llama2"]}',
       };
       tunnelProxy.forwardRequest.mockResolvedValue(mockResponse);
 
@@ -208,19 +208,19 @@ describe('Tunnel Routes', () => {
         method: 'GET',
         path: '/api/models',
         headers: expect.objectContaining({
-          accept: expect.any(String)
-        })
+          accept: expect.any(String),
+        }),
       });
 
       expect(response.body).toEqual({ models: ['llama2'] });
     });
 
-    it('should forward POST request with body', async () => {
+    it('should forward POST request with body', async() => {
       const requestBody = { model: 'llama2', prompt: 'Hello' };
       const mockResponse = {
         status: 200,
         headers: { 'content-type': 'application/json' },
-        body: '{"response": "Hi there!"}'
+        body: '{"response": "Hi there!"}',
       };
       tunnelProxy.forwardRequest.mockResolvedValue(mockResponse);
 
@@ -234,15 +234,15 @@ describe('Tunnel Routes', () => {
         method: 'POST',
         path: '/api/chat',
         headers: expect.objectContaining({
-          'content-type': 'application/json'
+          'content-type': 'application/json',
         }),
-        body: JSON.stringify(requestBody)
+        body: JSON.stringify(requestBody),
       });
 
       expect(response.body).toEqual({ response: 'Hi there!' });
     });
 
-    it('should reject access to other users tunnel', async () => {
+    it('should reject access to other users tunnel', async() => {
       const otherUserId = 'auth0|other-user-456';
 
       const response = await request(app)
@@ -252,11 +252,11 @@ describe('Tunnel Routes', () => {
 
       expect(response.body).toEqual({
         error: 'Access denied',
-        message: 'You can only access your own tunnel'
+        message: 'You can only access your own tunnel',
       });
     });
 
-    it('should return 503 when desktop client not connected', async () => {
+    it('should return 503 when desktop client not connected', async() => {
       tunnelProxy.isUserConnected.mockReturnValue(false);
 
       const response = await request(app)
@@ -266,11 +266,11 @@ describe('Tunnel Routes', () => {
 
       expect(response.body).toEqual({
         error: 'Desktop client not connected',
-        message: 'Please ensure the CloudToLocalLLM desktop client is running and connected'
+        message: 'Please ensure the CloudToLocalLLM desktop client is running and connected',
       });
     });
 
-    it('should handle desktop client connection error', async () => {
+    it('should handle desktop client connection error', async() => {
       tunnelProxy.forwardRequest.mockRejectedValue(new Error('Desktop client not connected'));
 
       const response = await request(app)
@@ -280,11 +280,11 @@ describe('Tunnel Routes', () => {
 
       expect(response.body).toEqual({
         error: 'Service unavailable',
-        message: 'Desktop client is not connected'
+        message: 'Desktop client is not connected',
       });
     });
 
-    it('should handle request timeout', async () => {
+    it('should handle request timeout', async() => {
       tunnelProxy.forwardRequest.mockRejectedValue(new Error('Request timeout'));
 
       const response = await request(app)
@@ -294,11 +294,11 @@ describe('Tunnel Routes', () => {
 
       expect(response.body).toEqual({
         error: 'Gateway timeout',
-        message: 'Request timed out after 30 seconds'
+        message: 'Request timed out after 30 seconds',
       });
     });
 
-    it('should handle general server errors', async () => {
+    it('should handle general server errors', async() => {
       tunnelProxy.forwardRequest.mockRejectedValue(new Error('Unexpected error'));
 
       const response = await request(app)
@@ -308,15 +308,15 @@ describe('Tunnel Routes', () => {
 
       expect(response.body).toEqual({
         error: 'Internal server error',
-        message: 'Failed to process tunnel request'
+        message: 'Failed to process tunnel request',
       });
     });
 
-    it('should handle non-JSON response body', async () => {
+    it('should handle non-JSON response body', async() => {
       const mockResponse = {
         status: 200,
         headers: { 'content-type': 'text/plain' },
-        body: 'Plain text response'
+        body: 'Plain text response',
       };
       tunnelProxy.forwardRequest.mockResolvedValue(mockResponse);
 
@@ -328,11 +328,11 @@ describe('Tunnel Routes', () => {
       expect(response.text).toBe('Plain text response');
     });
 
-    it('should handle empty response body', async () => {
+    it('should handle empty response body', async() => {
       const mockResponse = {
         status: 204,
         headers: {},
-        body: ''
+        body: '',
       };
       tunnelProxy.forwardRequest.mockResolvedValue(mockResponse);
 
@@ -344,11 +344,11 @@ describe('Tunnel Routes', () => {
       expect(response.text).toBe('');
     });
 
-    it('should remove proxy-specific headers', async () => {
+    it('should remove proxy-specific headers', async() => {
       const mockResponse = {
         status: 200,
         headers: { 'content-type': 'application/json' },
-        body: '{"success": true}'
+        body: '{"success": true}',
       };
       tunnelProxy.forwardRequest.mockResolvedValue(mockResponse);
 

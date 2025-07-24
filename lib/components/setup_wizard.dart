@@ -8,6 +8,9 @@ import '../services/desktop_client_detection_service.dart';
 import '../services/user_container_service.dart';
 import '../services/platform_detection_service.dart';
 import '../services/download_management_service.dart';
+import '../services/tunnel_configuration_service.dart';
+import '../services/connection_validation_service.dart';
+import '../services/auth_service.dart';
 import '../models/container_creation_result.dart';
 import '../models/platform_config.dart';
 import '../models/download_option.dart';
@@ -42,6 +45,17 @@ class SetupWizard extends StatefulWidget {
 class _SetupWizardState extends State<SetupWizard> {
   int _currentStep = 0;
   bool _isDismissed = false;
+
+  // Tunnel configuration state
+  bool _isTunnelConfiguring = false;
+  bool _isTunnelValidating = false;
+  bool _tunnelConfigured = false;
+  String? _tunnelError;
+
+  // Connection validation state
+  bool _isValidatingConnection = false;
+  bool _connectionValidated = false;
+  String? _validationError;
 
   final List<SetupStep> _steps = [
     SetupStep(
@@ -1454,53 +1468,593 @@ class _SetupWizardState extends State<SetupWizard> {
   ) {
     final hasConnectedClients = clientDetection.hasConnectedClients;
 
-    return Center(
+    return SingleChildScrollView(
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(
-            hasConnectedClients ? Icons.check_circle : Icons.pending,
-            size: 64,
-            color: hasConnectedClients
-                ? AppTheme.successColor
-                : AppTheme.warningColor,
+          // Desktop Client Status
+          _buildConnectionStatusCard(
+            title: 'Desktop Client Connection',
+            isConnected: hasConnectedClients,
+            connectedMessage: 'Desktop client is connected and ready',
+            waitingMessage: 'Waiting for desktop client connection...',
+            icon: Icons.desktop_windows,
           ),
-          SizedBox(height: AppTheme.spacingL),
-          Text(
-            hasConnectedClients
-                ? 'Desktop Client Connected!'
-                : 'Waiting for Desktop Client...',
-            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-              color: AppTheme.textColor,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
+
           SizedBox(height: AppTheme.spacingM),
-          Text(
-            hasConnectedClients
-                ? 'Your desktop client is successfully connected. You can now use your local Ollama models!'
-                : 'Please launch the desktop client to complete the setup.',
-            style: Theme.of(
-              context,
-            ).textTheme.bodyMedium?.copyWith(color: AppTheme.textColorLight),
-            textAlign: TextAlign.center,
-          ),
-          if (hasConnectedClients) ...[
+
+          // Tunnel Configuration Status
+          _buildTunnelConfigurationCard(hasConnectedClients),
+
+          SizedBox(height: AppTheme.spacingM),
+
+          // Connection Validation Status
+          _buildConnectionValidationCard(hasConnectedClients && _tunnelConfigured),
+
+          if (hasConnectedClients && _tunnelConfigured && _connectionValidated) ...[
             SizedBox(height: AppTheme.spacingL),
-            ElevatedButton.icon(
-              onPressed: _completeWizard,
-              icon: const Icon(Icons.check_circle),
-              label: const Text('Complete Setup'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.successColor,
-                foregroundColor: Colors.white,
-                padding: EdgeInsets.symmetric(
-                  horizontal: AppTheme.spacingL,
-                  vertical: AppTheme.spacingM,
+            Center(
+              child: ElevatedButton.icon(
+                onPressed: _completeWizard,
+                icon: const Icon(Icons.check_circle),
+                label: const Text('Complete Setup'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.successColor,
+                  foregroundColor: Colors.white,
+                  padding: EdgeInsets.symmetric(
+                    horizontal: AppTheme.spacingL,
+                    vertical: AppTheme.spacingM,
+                  ),
                 ),
               ),
             ),
           ],
+
+          if (!hasConnectedClients) ...[
+            SizedBox(height: AppTheme.spacingL),
+            _buildConnectionInstructions(),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildConnectionStatusCard({
+    required String title,
+    required bool isConnected,
+    required String connectedMessage,
+    required String waitingMessage,
+    required IconData icon,
+  }) {
+    return Card(
+      child: Padding(
+        padding: EdgeInsets.all(AppTheme.spacingM),
+        child: Row(
+          children: [
+            Icon(
+              isConnected ? Icons.check_circle : Icons.pending,
+              size: 32,
+              color: isConnected ? AppTheme.successColor : AppTheme.warningColor,
+            ),
+            SizedBox(width: AppTheme.spacingM),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  SizedBox(height: AppTheme.spacingS),
+                  Text(
+                    isConnected ? connectedMessage : waitingMessage,
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: AppTheme.textColorLight,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Icon(
+              icon,
+              color: AppTheme.textColorLight,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTunnelConfigurationCard(bool hasConnectedClients) {
+    return Card(
+      child: Padding(
+        padding: EdgeInsets.all(AppTheme.spacingM),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  _tunnelConfigured ? Icons.check_circle :
+                  _isTunnelConfiguring || _isTunnelValidating ? Icons.sync : Icons.pending,
+                  size: 32,
+                  color: _tunnelConfigured ? AppTheme.successColor :
+                         _tunnelError != null ? AppTheme.dangerColor : AppTheme.warningColor,
+                ),
+                SizedBox(width: AppTheme.spacingM),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Tunnel Configuration',
+                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      SizedBox(height: AppTheme.spacingS),
+                      Text(
+                        _getTunnelStatusMessage(),
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: AppTheme.textColorLight,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Icon(
+                  Icons.vpn_lock,
+                  color: AppTheme.textColorLight,
+                ),
+              ],
+            ),
+
+            if (_tunnelError != null) ...[
+              SizedBox(height: AppTheme.spacingM),
+              Container(
+                padding: EdgeInsets.all(AppTheme.spacingS),
+                decoration: BoxDecoration(
+                  color: AppTheme.dangerColor.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(4),
+                  border: Border.all(color: AppTheme.dangerColor.withValues(alpha: 0.3)),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.error, color: AppTheme.dangerColor, size: 16),
+                    SizedBox(width: AppTheme.spacingS),
+                    Expanded(
+                      child: Text(
+                        _tunnelError!,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: AppTheme.dangerColor,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+
+            if (hasConnectedClients && !_tunnelConfigured && !_isTunnelConfiguring && !_isTunnelValidating) ...[
+              SizedBox(height: AppTheme.spacingM),
+              ElevatedButton.icon(
+                onPressed: _configureTunnel,
+                icon: const Icon(Icons.settings),
+                label: const Text('Configure Tunnel'),
+              ),
+            ],
+
+            if (_isTunnelConfiguring || _isTunnelValidating) ...[
+              SizedBox(height: AppTheme.spacingM),
+              LinearProgressIndicator(
+                backgroundColor: AppTheme.primaryColor.withValues(alpha: 0.2),
+                valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryColor),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildConnectionValidationCard(bool canValidate) {
+    return Card(
+      child: Padding(
+        padding: EdgeInsets.all(AppTheme.spacingM),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  _connectionValidated ? Icons.check_circle :
+                  _isValidatingConnection ? Icons.sync : Icons.pending,
+                  size: 32,
+                  color: _connectionValidated ? AppTheme.successColor :
+                         _validationError != null ? AppTheme.dangerColor : AppTheme.warningColor,
+                ),
+                SizedBox(width: AppTheme.spacingM),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Connection Validation',
+                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      SizedBox(height: AppTheme.spacingS),
+                      Text(
+                        _getValidationStatusMessage(),
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: AppTheme.textColorLight,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Icon(
+                  Icons.verified_user,
+                  color: AppTheme.textColorLight,
+                ),
+              ],
+            ),
+
+            if (_validationError != null) ...[
+              SizedBox(height: AppTheme.spacingM),
+              Container(
+                padding: EdgeInsets.all(AppTheme.spacingS),
+                decoration: BoxDecoration(
+                  color: AppTheme.dangerColor.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(4),
+                  border: Border.all(color: AppTheme.dangerColor.withValues(alpha: 0.3)),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.error, color: AppTheme.dangerColor, size: 16),
+                    SizedBox(width: AppTheme.spacingS),
+                    Expanded(
+                      child: Text(
+                        _validationError!,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: AppTheme.dangerColor,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+
+            if (canValidate && !_connectionValidated && !_isValidatingConnection) ...[
+              SizedBox(height: AppTheme.spacingM),
+              ElevatedButton.icon(
+                onPressed: _validateConnection,
+                icon: const Icon(Icons.verified_user),
+                label: const Text('Validate Connection'),
+              ),
+            ],
+
+            if (_isValidatingConnection) ...[
+              SizedBox(height: AppTheme.spacingM),
+              LinearProgressIndicator(
+                backgroundColor: AppTheme.primaryColor.withValues(alpha: 0.2),
+                valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryColor),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildConnectionInstructions() {
+    return Card(
+      child: Padding(
+        padding: EdgeInsets.all(AppTheme.spacingM),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.info, color: AppTheme.primaryColor),
+                SizedBox(width: AppTheme.spacingS),
+                Text(
+                  'Connection Instructions',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(height: AppTheme.spacingM),
+            Text(
+              'To complete the setup:',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            SizedBox(height: AppTheme.spacingS),
+            _buildInstructionStep('1', 'Launch the CloudToLocalLLM desktop client'),
+            _buildInstructionStep('2', 'Ensure Ollama is running on your system'),
+            _buildInstructionStep('3', 'Wait for the connection to be established'),
+            _buildInstructionStep('4', 'The tunnel will be configured automatically'),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInstructionStep(String number, String instruction) {
+    return Padding(
+      padding: EdgeInsets.only(bottom: AppTheme.spacingS),
+      child: Row(
+        children: [
+          Container(
+            width: 20,
+            height: 20,
+            decoration: BoxDecoration(
+              color: AppTheme.primaryColor,
+              shape: BoxShape.circle,
+            ),
+            child: Center(
+              child: Text(
+                number,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ),
+          SizedBox(width: AppTheme.spacingS),
+          Expanded(
+            child: Text(
+              instruction,
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _getTunnelStatusMessage() {
+    if (_tunnelConfigured) {
+      return 'Tunnel is configured and ready for secure communication';
+    } else if (_isTunnelValidating) {
+      return 'Validating tunnel connection...';
+    } else if (_isTunnelConfiguring) {
+      return 'Configuring secure tunnel...';
+    } else if (_tunnelError != null) {
+      return 'Tunnel configuration failed';
+    } else {
+      return 'Tunnel configuration pending';
+    }
+  }
+
+  String _getValidationStatusMessage() {
+    if (_connectionValidated) {
+      return 'All connection tests passed successfully';
+    } else if (_isValidatingConnection) {
+      return 'Running comprehensive connection tests...';
+    } else if (_validationError != null) {
+      return 'Connection validation failed';
+    } else {
+      return 'Connection validation pending';
+    }
+  }
+
+  Future<void> _configureTunnel() async {
+    final authService = context.read<AuthService>();
+    final userId = authService.currentUser?.id;
+
+    if (userId == null) {
+      setState(() {
+        _tunnelError = 'User not authenticated';
+      });
+      return;
+    }
+
+    setState(() {
+      _isTunnelConfiguring = true;
+      _tunnelError = null;
+    });
+
+    try {
+      // Create tunnel configuration service
+      final tunnelService = TunnelConfigurationService(
+        authService: authService,
+      );
+
+      // Generate tunnel configuration
+      final config = await tunnelService.generateTunnelConfig(userId);
+
+      setState(() {
+        _isTunnelConfiguring = false;
+        _isTunnelValidating = true;
+      });
+
+      // Test tunnel connection
+      final validationResult = await tunnelService.testTunnelConnection(config);
+
+      setState(() {
+        _isTunnelValidating = false;
+        _tunnelConfigured = validationResult.isSuccess;
+        if (!validationResult.isSuccess) {
+          _tunnelError = validationResult.message;
+        }
+      });
+
+      if (validationResult.isSuccess) {
+        // Show success message
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  const Icon(Icons.check_circle, color: Colors.white),
+                  SizedBox(width: AppTheme.spacingS),
+                  const Expanded(child: Text('Tunnel configured successfully!')),
+                ],
+              ),
+              backgroundColor: AppTheme.successColor,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      setState(() {
+        _isTunnelConfiguring = false;
+        _isTunnelValidating = false;
+        _tunnelError = 'Configuration failed: ${e.toString()}';
+      });
+    }
+  }
+
+  Future<void> _validateConnection() async {
+    final authService = context.read<AuthService>();
+    final userId = authService.currentUser?.id;
+
+    if (userId == null) {
+      setState(() {
+        _validationError = 'User not authenticated';
+      });
+      return;
+    }
+
+    setState(() {
+      _isValidatingConnection = true;
+      _validationError = null;
+    });
+
+    try {
+      // Create connection validation service
+      final validationService = ConnectionValidationService(
+        authService: authService,
+      );
+
+      // Run comprehensive validation
+      final validationResult = await validationService.runComprehensiveValidation(userId);
+
+      setState(() {
+        _isValidatingConnection = false;
+        _connectionValidated = validationResult.isSuccess;
+        if (!validationResult.isSuccess) {
+          _validationError = validationResult.message;
+        }
+      });
+
+      if (validationResult.isSuccess) {
+        // Show success message with test details
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  const Icon(Icons.check_circle, color: Colors.white),
+                  SizedBox(width: AppTheme.spacingS),
+                  Expanded(
+                    child: Text(
+                      'All ${validationResult.tests.length} validation tests passed!',
+                    ),
+                  ),
+                ],
+              ),
+              backgroundColor: AppTheme.successColor,
+              duration: const Duration(seconds: 3),
+            ),
+          );
+        }
+      } else {
+        // Show detailed error information
+        final failedTests = validationResult.failedTests;
+        if (mounted && failedTests.isNotEmpty) {
+          _showValidationDetailsDialog(validationResult);
+        }
+      }
+    } catch (e) {
+      setState(() {
+        _isValidatingConnection = false;
+        _validationError = 'Validation failed: ${e.toString()}';
+      });
+    }
+  }
+
+  void _showValidationDetailsDialog(dynamic validationResult) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Validation Results'),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Tests: ${validationResult.successfulTestCount}/${validationResult.tests.length} passed',
+                style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              SizedBox(height: AppTheme.spacingM),
+              if (validationResult.failedTests.isNotEmpty) ...[
+                Text(
+                  'Failed Tests:',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: AppTheme.dangerColor,
+                  ),
+                ),
+                SizedBox(height: AppTheme.spacingS),
+                ...validationResult.failedTests.map<Widget>((test) => Padding(
+                  padding: EdgeInsets.only(bottom: AppTheme.spacingS),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(Icons.error, color: AppTheme.dangerColor, size: 16),
+                      SizedBox(width: AppTheme.spacingS),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              test.name,
+                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            Text(
+                              test.message,
+                              style: Theme.of(context).textTheme.bodySmall,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                )).toList(),
+              ],
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Close'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              _validateConnection(); // Retry validation
+            },
+            child: const Text('Retry'),
+          ),
         ],
       ),
     );

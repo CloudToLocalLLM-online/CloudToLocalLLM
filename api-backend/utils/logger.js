@@ -13,7 +13,7 @@ export const LOG_LEVELS = {
   ERROR: 'error',
   WARN: 'warn',
   INFO: 'info',
-  DEBUG: 'debug'
+  DEBUG: 'debug',
 };
 
 /**
@@ -24,25 +24,25 @@ export const ERROR_CODES = {
   AUTH_TOKEN_MISSING: 'AUTH_TOKEN_MISSING',
   AUTH_TOKEN_INVALID: 'AUTH_TOKEN_INVALID',
   AUTH_TOKEN_EXPIRED: 'AUTH_TOKEN_EXPIRED',
-  
+
   // Connection errors (503)
   DESKTOP_CLIENT_DISCONNECTED: 'DESKTOP_CLIENT_DISCONNECTED',
   WEBSOCKET_CONNECTION_FAILED: 'WEBSOCKET_CONNECTION_FAILED',
   CONNECTION_LOST: 'CONNECTION_LOST',
-  
+
   // Request errors (400)
   INVALID_REQUEST_FORMAT: 'INVALID_REQUEST_FORMAT',
   INVALID_MESSAGE_FORMAT: 'INVALID_MESSAGE_FORMAT',
   MISSING_REQUIRED_FIELD: 'MISSING_REQUIRED_FIELD',
-  
+
   // Timeout errors (504)
   REQUEST_TIMEOUT: 'REQUEST_TIMEOUT',
   PING_TIMEOUT: 'PING_TIMEOUT',
-  
+
   // Server errors (500)
   MESSAGE_SERIALIZATION_FAILED: 'MESSAGE_SERIALIZATION_FAILED',
   INTERNAL_SERVER_ERROR: 'INTERNAL_SERVER_ERROR',
-  WEBSOCKET_SEND_FAILED: 'WEBSOCKET_SEND_FAILED'
+  WEBSOCKET_SEND_FAILED: 'WEBSOCKET_SEND_FAILED',
 };
 
 /**
@@ -55,7 +55,7 @@ export const HTTP_STATUS_CODES = {
   NOT_FOUND: 404,
   INTERNAL_SERVER_ERROR: 500,
   SERVICE_UNAVAILABLE: 503,
-  GATEWAY_TIMEOUT: 504
+  GATEWAY_TIMEOUT: 504,
 };
 
 /**
@@ -78,10 +78,10 @@ export class TunnelLogger {
             message,
             ...(correlationId && { correlationId }),
             ...(userId && { userId: this.hashUserId(userId) }),
-            ...meta
+            ...meta,
           };
           return JSON.stringify(logEntry);
-        })
+        }),
       ),
       defaultMeta: { service: this.service },
       transports: [
@@ -93,10 +93,10 @@ export class TunnelLogger {
               const correlationStr = correlationId ? ` [${correlationId}]` : '';
               const userStr = userId ? ` [user:${userId.substring(0, 8)}...]` : '';
               return `${timestamp} ${level}:${correlationStr}${userStr} ${message}`;
-            })
-          )
-        })
-      ]
+            }),
+          ),
+        }),
+      ],
     });
   }
 
@@ -106,7 +106,9 @@ export class TunnelLogger {
    * @returns {string} Hashed user ID
    */
   hashUserId(userId) {
-    if (!userId) return null;
+    if (!userId) {
+      return null;
+    }
     // Simple hash for logging - first 8 chars + hash of full ID
     const crypto = require('crypto');
     const hash = crypto.createHash('sha256').update(userId).digest('hex');
@@ -162,12 +164,12 @@ export class TunnelLogger {
           name: error.name,
           message: error.message,
           stack: error.stack,
-          code: error.code
-        }
+          code: error.code,
+        },
       }),
-      ...(!(error instanceof Error) && { error })
+      ...(!(error instanceof Error) && { error }),
     };
-    
+
     this.logger.error(message, errorMeta);
   }
 
@@ -184,7 +186,7 @@ export class TunnelLogger {
       connectionEvent: event,
       connectionId,
       userId,
-      ...meta
+      ...meta,
     });
   }
 
@@ -202,7 +204,7 @@ export class TunnelLogger {
       requestEvent: event,
       correlationId: requestId,
       userId,
-      ...meta
+      ...meta,
     });
   }
 
@@ -216,7 +218,7 @@ export class TunnelLogger {
     this.error(`Tunnel error: ${message}`, {
       event: 'tunnel_error',
       errorCode,
-      ...context
+      ...context,
     });
   }
 
@@ -231,7 +233,7 @@ export class TunnelLogger {
       event: 'performance',
       operation,
       duration,
-      ...meta
+      ...meta,
     });
   }
 
@@ -246,7 +248,7 @@ export class TunnelLogger {
       event: 'security',
       securityEvent: event,
       userId,
-      ...meta
+      ...meta,
     });
   }
 
@@ -280,8 +282,8 @@ export class ErrorResponseBuilder {
         code: errorCode,
         message,
         timestamp: new Date().toISOString(),
-        ...details
-      }
+        ...details,
+      },
     };
   }
 
@@ -295,7 +297,7 @@ export class ErrorResponseBuilder {
     return this.createErrorResponse(
       errorCode,
       message,
-      HTTP_STATUS_CODES.UNAUTHORIZED
+      HTTP_STATUS_CODES.UNAUTHORIZED,
     );
   }
 
@@ -309,7 +311,7 @@ export class ErrorResponseBuilder {
     return this.createErrorResponse(
       errorCode,
       message,
-      HTTP_STATUS_CODES.SERVICE_UNAVAILABLE
+      HTTP_STATUS_CODES.SERVICE_UNAVAILABLE,
     );
   }
 
@@ -323,7 +325,7 @@ export class ErrorResponseBuilder {
     return this.createErrorResponse(
       errorCode,
       message,
-      HTTP_STATUS_CODES.GATEWAY_TIMEOUT
+      HTTP_STATUS_CODES.GATEWAY_TIMEOUT,
     );
   }
 
@@ -337,7 +339,7 @@ export class ErrorResponseBuilder {
     return this.createErrorResponse(
       errorCode,
       message,
-      HTTP_STATUS_CODES.BAD_REQUEST
+      HTTP_STATUS_CODES.BAD_REQUEST,
     );
   }
 
@@ -351,7 +353,7 @@ export class ErrorResponseBuilder {
     return this.createErrorResponse(
       errorCode,
       message,
-      HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR
+      HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR,
     );
   }
 }

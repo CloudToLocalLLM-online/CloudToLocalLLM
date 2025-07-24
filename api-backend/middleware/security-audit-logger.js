@@ -18,46 +18,46 @@ export const AUDIT_EVENT_TYPES = {
   AUTH_TOKEN_INVALID: 'auth_token_invalid',
   AUTH_TOKEN_MISSING: 'auth_token_missing',
   AUTH_RATE_LIMITED: 'auth_rate_limited',
-  
+
   // Authorization events
   AUTHZ_SUCCESS: 'authz_success',
   AUTHZ_FAILURE: 'authz_failure',
   AUTHZ_INSUFFICIENT_PERMISSIONS: 'authz_insufficient_permissions',
   AUTHZ_CROSS_USER_ACCESS_ATTEMPT: 'authz_cross_user_access_attempt',
-  
+
   // Connection events
   CONNECTION_ESTABLISHED: 'connection_established',
   CONNECTION_TERMINATED: 'connection_terminated',
   CONNECTION_REJECTED: 'connection_rejected',
   WEBSOCKET_CONNECTION_ESTABLISHED: 'websocket_connection_established',
   WEBSOCKET_CONNECTION_TERMINATED: 'websocket_connection_terminated',
-  
+
   // Security events
   SECURITY_VIOLATION: 'security_violation',
   SUSPICIOUS_ACTIVITY: 'suspicious_activity',
   RATE_LIMIT_EXCEEDED: 'rate_limit_exceeded',
   IP_BLOCKED: 'ip_blocked',
   MALICIOUS_REQUEST: 'malicious_request',
-  
+
   // TLS/SSL events
   TLS_HANDSHAKE_SUCCESS: 'tls_handshake_success',
   TLS_HANDSHAKE_FAILURE: 'tls_handshake_failure',
   CERTIFICATE_VALIDATION_SUCCESS: 'certificate_validation_success',
   CERTIFICATE_VALIDATION_FAILURE: 'certificate_validation_failure',
-  
+
   // Data access events
   DATA_ACCESS: 'data_access',
   DATA_MODIFICATION: 'data_modification',
   SENSITIVE_DATA_ACCESS: 'sensitive_data_access',
-  
+
   // Administrative events
   ADMIN_ACCESS: 'admin_access',
   ADMIN_ACTION: 'admin_action',
   CONFIG_CHANGE: 'config_change',
-  
+
   // Error events
   SYSTEM_ERROR: 'system_error',
-  SECURITY_ERROR: 'security_error'
+  SECURITY_ERROR: 'security_error',
 };
 
 /**
@@ -67,7 +67,7 @@ export const AUDIT_SEVERITY = {
   LOW: 'low',
   MEDIUM: 'medium',
   HIGH: 'high',
-  CRITICAL: 'critical'
+  CRITICAL: 'critical',
 };
 
 /**
@@ -81,28 +81,28 @@ export class SecurityAuditLogger {
       enableConsoleOutput: config.enableConsoleOutput !== false,
       enableFileOutput: config.enableFileOutput || false,
       auditLogFile: config.auditLogFile || 'security-audit.log',
-      
+
       // Data retention
       maxLogAge: config.maxLogAge || 90, // days
       maxLogSize: config.maxLogSize || '100MB',
-      
+
       // Privacy settings
       hashUserIds: config.hashUserIds !== false,
       hashIpAddresses: config.hashIpAddresses !== false,
       includeUserAgent: config.includeUserAgent !== false,
       includeRequestHeaders: config.includeRequestHeaders || false,
-      
+
       // Alert settings
       enableRealTimeAlerts: config.enableRealTimeAlerts || false,
       alertThresholds: {
         failedAuthAttempts: config.alertThresholds?.failedAuthAttempts || 10,
         suspiciousActivity: config.alertThresholds?.suspiciousActivity || 5,
-        rateLimitViolations: config.alertThresholds?.rateLimitViolations || 20
+        rateLimitViolations: config.alertThresholds?.rateLimitViolations || 20,
       },
-      
+
       // Compliance settings
       includeComplianceFields: config.includeComplianceFields || false,
-      complianceStandards: config.complianceStandards || ['SOC2', 'GDPR']
+      complianceStandards: config.complianceStandards || ['SOC2', 'GDPR'],
     };
 
     // Initialize Winston logger for audit events
@@ -118,12 +118,12 @@ export class SecurityAuditLogger {
             level,
             message,
             eventType: 'security_audit',
-            ...meta
+            ...meta,
           };
           return JSON.stringify(auditEntry);
-        })
+        }),
       ),
-      transports: []
+      transports: [],
     });
 
     // Add console transport if enabled
@@ -137,8 +137,8 @@ export class SecurityAuditLogger {
             const ipStr = ip ? ` [ip:${ip}]` : '';
             const severityStr = severity ? ` [${severity.toUpperCase()}]` : '';
             return `${timestamp} ${level}: [AUDIT]${severityStr}${userStr}${ipStr} ${message}`;
-          })
-        )
+          }),
+        ),
       }));
     }
 
@@ -148,17 +148,17 @@ export class SecurityAuditLogger {
         filename: this.config.auditLogFile,
         maxsize: this.parseSize(this.config.maxLogSize),
         maxFiles: 10,
-        tailable: true
+        tailable: true,
       }));
     }
 
     // Initialize base logger for non-audit logging
     this.logger = new TunnelLogger('security-audit');
-    
+
     // Event counters for alerting
     this.eventCounters = new Map();
     this.alertHistory = [];
-    
+
     // Start cleanup interval
     this.cleanupInterval = setInterval(() => {
       this.cleanupEventCounters();
@@ -169,7 +169,7 @@ export class SecurityAuditLogger {
       enableConsoleOutput: this.config.enableConsoleOutput,
       enableFileOutput: this.config.enableFileOutput,
       hashUserIds: this.config.hashUserIds,
-      hashIpAddresses: this.config.hashIpAddresses
+      hashIpAddresses: this.config.hashIpAddresses,
     });
   }
 
@@ -183,7 +183,7 @@ export class SecurityAuditLogger {
   logAuditEvent(eventType, severity, message, context = {}) {
     const correlationId = context.correlationId || this.generateCorrelationId();
     const timestamp = new Date();
-    
+
     // Prepare audit entry
     const auditEntry = {
       correlationId,
@@ -191,69 +191,69 @@ export class SecurityAuditLogger {
       severity,
       message,
       timestamp: timestamp.toISOString(),
-      
+
       // User context (with privacy protection)
       userId: context.userId ? this.hashUserId(context.userId) : null,
       userEmail: context.userEmail ? this.hashEmail(context.userEmail) : null,
       userRole: context.userRole || null,
-      
+
       // Network context (with privacy protection)
       ip: context.ip ? this.hashIP(context.ip) : null,
       userAgent: this.config.includeUserAgent ? context.userAgent : null,
       origin: context.origin || null,
-      
+
       // Request context
       method: context.method || null,
       path: context.path || null,
       statusCode: context.statusCode || null,
       responseTime: context.responseTime || null,
-      
+
       // Security context
       authMethod: context.authMethod || null,
       tokenType: context.tokenType || null,
       tlsVersion: context.tlsVersion || null,
       cipher: context.cipher || null,
-      
+
       // Error context
       errorCode: context.errorCode || null,
       errorMessage: context.errorMessage || null,
-      
+
       // Additional metadata
       sessionId: context.sessionId || null,
       requestId: context.requestId || null,
       resource: context.resource || null,
       action: context.action || null,
-      
+
       // Compliance fields
       ...(this.config.includeComplianceFields && {
         complianceStandards: this.config.complianceStandards,
         dataClassification: context.dataClassification || 'internal',
-        retentionPeriod: context.retentionPeriod || '90d'
+        retentionPeriod: context.retentionPeriod || '90d',
       }),
-      
+
       // Request headers (if enabled and sanitized)
       ...(this.config.includeRequestHeaders && context.headers && {
-        headers: this.sanitizeHeaders(context.headers)
-      })
+        headers: this.sanitizeHeaders(context.headers),
+      }),
     };
 
     // Log the audit event
     this.auditLogger.info(message, auditEntry);
-    
+
     // Update event counters for alerting
     this.updateEventCounters(eventType, severity, context.ip, context.userId);
-    
+
     // Check for alert conditions
     if (this.config.enableRealTimeAlerts) {
       this.checkAlertConditions(eventType, severity, context);
     }
-    
+
     // Log to base logger for debugging
     this.logger.debug('Security audit event logged', {
       correlationId,
       eventType,
       severity,
-      userId: context.userId ? this.hashUserId(context.userId) : null
+      userId: context.userId ? this.hashUserId(context.userId) : null,
     });
   }
 
@@ -269,8 +269,8 @@ export class SecurityAuditLogger {
       {
         ...context,
         authMethod: context.authMethod || 'jwt',
-        tokenType: context.tokenType || 'bearer'
-      }
+        tokenType: context.tokenType || 'bearer',
+      },
     );
   }
 
@@ -286,8 +286,8 @@ export class SecurityAuditLogger {
       {
         ...context,
         authMethod: context.authMethod || 'jwt',
-        tokenType: context.tokenType || 'bearer'
-      }
+        tokenType: context.tokenType || 'bearer',
+      },
     );
   }
 
@@ -303,8 +303,8 @@ export class SecurityAuditLogger {
       {
         ...context,
         resource: context.resource || context.path,
-        action: context.action || context.method
-      }
+        action: context.action || context.method,
+      },
     );
   }
 
@@ -320,8 +320,8 @@ export class SecurityAuditLogger {
       {
         ...context,
         resource: context.resource || context.path,
-        action: context.action || context.method
-      }
+        action: context.action || context.method,
+      },
     );
   }
 
@@ -337,8 +337,8 @@ export class SecurityAuditLogger {
       {
         ...context,
         requestedUserId: context.requestedUserId ? this.hashUserId(context.requestedUserId) : null,
-        actualUserId: context.actualUserId ? this.hashUserId(context.actualUserId) : null
-      }
+        actualUserId: context.actualUserId ? this.hashUserId(context.actualUserId) : null,
+      },
     );
   }
 
@@ -351,7 +351,7 @@ export class SecurityAuditLogger {
       AUDIT_EVENT_TYPES.SECURITY_VIOLATION,
       AUDIT_SEVERITY.CRITICAL,
       'Security violation detected',
-      context
+      context,
     );
   }
 
@@ -364,7 +364,7 @@ export class SecurityAuditLogger {
       AUDIT_EVENT_TYPES.SUSPICIOUS_ACTIVITY,
       AUDIT_SEVERITY.HIGH,
       'Suspicious activity detected',
-      context
+      context,
     );
   }
 
@@ -381,8 +381,8 @@ export class SecurityAuditLogger {
         ...context,
         limitType: context.limitType || 'request',
         limitValue: context.limitValue || null,
-        currentValue: context.currentValue || null
-      }
+        currentValue: context.currentValue || null,
+      },
     );
   }
 
@@ -392,10 +392,10 @@ export class SecurityAuditLogger {
    */
   logDataAccess(context) {
     const severity = context.sensitive ? AUDIT_SEVERITY.MEDIUM : AUDIT_SEVERITY.LOW;
-    const eventType = context.sensitive ? 
-      AUDIT_EVENT_TYPES.SENSITIVE_DATA_ACCESS : 
+    const eventType = context.sensitive ?
+      AUDIT_EVENT_TYPES.SENSITIVE_DATA_ACCESS :
       AUDIT_EVENT_TYPES.DATA_ACCESS;
-    
+
     this.logAuditEvent(
       eventType,
       severity,
@@ -403,8 +403,8 @@ export class SecurityAuditLogger {
       {
         ...context,
         dataType: context.dataType || 'unknown',
-        dataClassification: context.dataClassification || 'internal'
-      }
+        dataClassification: context.dataClassification || 'internal',
+      },
     );
   }
 
@@ -420,8 +420,8 @@ export class SecurityAuditLogger {
       {
         ...context,
         adminAction: context.adminAction || 'access',
-        targetResource: context.targetResource || null
-      }
+        targetResource: context.targetResource || null,
+      },
     );
   }
 
@@ -434,7 +434,7 @@ export class SecurityAuditLogger {
     if (!this.config.hashUserIds || !userId) {
       return userId;
     }
-    
+
     // Keep first 8 characters + hash for debugging while protecting privacy
     const hash = crypto.createHash('sha256').update(userId).digest('hex');
     return `${userId.substring(0, 8)}...${hash.substring(0, 8)}`;
@@ -449,7 +449,7 @@ export class SecurityAuditLogger {
     if (!this.config.hashUserIds || !email) {
       return email;
     }
-    
+
     const [local, domain] = email.split('@');
     const hash = crypto.createHash('sha256').update(email).digest('hex');
     return `${local.substring(0, 2)}...@${domain}[${hash.substring(0, 8)}]`;
@@ -464,7 +464,7 @@ export class SecurityAuditLogger {
     if (!this.config.hashIpAddresses || !ip) {
       return ip;
     }
-    
+
     const hash = crypto.createHash('sha256').update(ip).digest('hex');
     return `${ip.split('.')[0]}.xxx.xxx.xxx[${hash.substring(0, 8)}]`;
   }
@@ -480,14 +480,14 @@ export class SecurityAuditLogger {
       'cookie',
       'x-api-key',
       'x-auth-token',
-      'x-access-token'
+      'x-access-token',
     ];
-    
+
     const sanitized = {};
-    
+
     for (const [key, value] of Object.entries(headers)) {
       const lowerKey = key.toLowerCase();
-      
+
       if (sensitiveHeaders.includes(lowerKey)) {
         sanitized[key] = '[REDACTED]';
       } else if (lowerKey === 'user-agent') {
@@ -497,7 +497,7 @@ export class SecurityAuditLogger {
         sanitized[key] = value;
       }
     }
-    
+
     return sanitized;
   }
 
@@ -511,33 +511,33 @@ export class SecurityAuditLogger {
   updateEventCounters(eventType, severity, ip, userId) {
     const now = new Date();
     const windowStart = new Date(now.getTime() - (60 * 60 * 1000)); // 1 hour window
-    
+
     // Initialize counters if needed
     if (!this.eventCounters.has('global')) {
       this.eventCounters.set('global', []);
     }
-    
+
     if (ip && !this.eventCounters.has(`ip:${ip}`)) {
       this.eventCounters.set(`ip:${ip}`, []);
     }
-    
+
     if (userId && !this.eventCounters.has(`user:${userId}`)) {
       this.eventCounters.set(`user:${userId}`, []);
     }
-    
+
     // Add event to counters
     const eventData = { eventType, severity, timestamp: now };
-    
+
     this.eventCounters.get('global').push(eventData);
-    
+
     if (ip) {
       this.eventCounters.get(`ip:${ip}`).push(eventData);
     }
-    
+
     if (userId) {
       this.eventCounters.get(`user:${userId}`).push(eventData);
     }
-    
+
     // Clean up old events
     for (const [key, events] of this.eventCounters.entries()) {
       this.eventCounters.set(key, events.filter(event => event.timestamp > windowStart));
@@ -554,51 +554,51 @@ export class SecurityAuditLogger {
     const now = new Date();
     const ip = context.ip;
     const userId = context.userId;
-    
+
     // Check failed authentication attempts
     if (eventType === AUDIT_EVENT_TYPES.AUTH_FAILURE) {
       const ipEvents = this.eventCounters.get(`ip:${ip}`) || [];
-      const failedAuths = ipEvents.filter(event => 
-        event.eventType === AUDIT_EVENT_TYPES.AUTH_FAILURE
+      const failedAuths = ipEvents.filter(event =>
+        event.eventType === AUDIT_EVENT_TYPES.AUTH_FAILURE,
       ).length;
-      
+
       if (failedAuths >= this.config.alertThresholds.failedAuthAttempts) {
         this.generateAlert('EXCESSIVE_AUTH_FAILURES', {
           ip: this.hashIP(ip),
           failedAttempts: failedAuths,
-          threshold: this.config.alertThresholds.failedAuthAttempts
+          threshold: this.config.alertThresholds.failedAuthAttempts,
         });
       }
     }
-    
+
     // Check suspicious activity
     if (severity === AUDIT_SEVERITY.HIGH || severity === AUDIT_SEVERITY.CRITICAL) {
       const ipEvents = this.eventCounters.get(`ip:${ip}`) || [];
-      const suspiciousEvents = ipEvents.filter(event => 
-        event.severity === AUDIT_SEVERITY.HIGH || event.severity === AUDIT_SEVERITY.CRITICAL
+      const suspiciousEvents = ipEvents.filter(event =>
+        event.severity === AUDIT_SEVERITY.HIGH || event.severity === AUDIT_SEVERITY.CRITICAL,
       ).length;
-      
+
       if (suspiciousEvents >= this.config.alertThresholds.suspiciousActivity) {
         this.generateAlert('SUSPICIOUS_ACTIVITY_PATTERN', {
           ip: this.hashIP(ip),
           suspiciousEvents,
-          threshold: this.config.alertThresholds.suspiciousActivity
+          threshold: this.config.alertThresholds.suspiciousActivity,
         });
       }
     }
-    
+
     // Check rate limit violations
     if (eventType === AUDIT_EVENT_TYPES.RATE_LIMIT_EXCEEDED) {
       const ipEvents = this.eventCounters.get(`ip:${ip}`) || [];
-      const rateLimitEvents = ipEvents.filter(event => 
-        event.eventType === AUDIT_EVENT_TYPES.RATE_LIMIT_EXCEEDED
+      const rateLimitEvents = ipEvents.filter(event =>
+        event.eventType === AUDIT_EVENT_TYPES.RATE_LIMIT_EXCEEDED,
       ).length;
-      
+
       if (rateLimitEvents >= this.config.alertThresholds.rateLimitViolations) {
         this.generateAlert('EXCESSIVE_RATE_LIMIT_VIOLATIONS', {
           ip: this.hashIP(ip),
           violations: rateLimitEvents,
-          threshold: this.config.alertThresholds.rateLimitViolations
+          threshold: this.config.alertThresholds.rateLimitViolations,
         });
       }
     }
@@ -614,24 +614,24 @@ export class SecurityAuditLogger {
       alertType,
       timestamp: new Date().toISOString(),
       severity: AUDIT_SEVERITY.CRITICAL,
-      data: alertData
+      data: alertData,
     };
-    
+
     this.alertHistory.push(alert);
-    
+
     // Keep only recent alerts (last 100)
     if (this.alertHistory.length > 100) {
       this.alertHistory = this.alertHistory.slice(-100);
     }
-    
+
     // Log the alert
     this.auditLogger.error('Security alert generated', {
       eventType: 'security_alert',
       alertType,
       severity: AUDIT_SEVERITY.CRITICAL,
-      ...alertData
+      ...alertData,
     });
-    
+
     // In a real implementation, you would send alerts to:
     // - Security team via email/Slack
     // - SIEM system
@@ -644,10 +644,10 @@ export class SecurityAuditLogger {
    */
   cleanupEventCounters() {
     const cutoff = new Date(Date.now() - (24 * 60 * 60 * 1000)); // 24 hours
-    
+
     for (const [key, events] of this.eventCounters.entries()) {
       const recentEvents = events.filter(event => event.timestamp > cutoff);
-      
+
       if (recentEvents.length === 0) {
         this.eventCounters.delete(key);
       } else {
@@ -664,11 +664,11 @@ export class SecurityAuditLogger {
   parseSize(sizeStr) {
     const units = { B: 1, KB: 1024, MB: 1024 * 1024, GB: 1024 * 1024 * 1024 };
     const match = sizeStr.match(/^(\d+)([A-Z]{1,2})$/);
-    
+
     if (!match) {
       return 100 * 1024 * 1024; // Default 100MB
     }
-    
+
     const [, size, unit] = match;
     return parseInt(size) * (units[unit] || 1);
   }
@@ -690,32 +690,32 @@ export class SecurityAuditLogger {
       eventCounters: {},
       alerts: {
         total: this.alertHistory.length,
-        recent: this.alertHistory.filter(alert => 
-          Date.now() - new Date(alert.timestamp).getTime() < (24 * 60 * 60 * 1000)
-        ).length
+        recent: this.alertHistory.filter(alert =>
+          Date.now() - new Date(alert.timestamp).getTime() < (24 * 60 * 60 * 1000),
+        ).length,
       },
       config: {
         logLevel: this.config.logLevel,
         enableConsoleOutput: this.config.enableConsoleOutput,
         enableFileOutput: this.config.enableFileOutput,
         hashUserIds: this.config.hashUserIds,
-        hashIpAddresses: this.config.hashIpAddresses
-      }
+        hashIpAddresses: this.config.hashIpAddresses,
+      },
     };
-    
+
     // Count events by type
     for (const [key, events] of this.eventCounters.entries()) {
       stats.eventCounters[key] = {
         total: events.length,
-        byType: {}
+        byType: {},
       };
-      
+
       for (const event of events) {
-        stats.eventCounters[key].byType[event.eventType] = 
+        stats.eventCounters[key].byType[event.eventType] =
           (stats.eventCounters[key].byType[event.eventType] || 0) + 1;
       }
     }
-    
+
     return stats;
   }
 
@@ -727,7 +727,7 @@ export class SecurityAuditLogger {
       clearInterval(this.cleanupInterval);
       this.cleanupInterval = null;
     }
-    
+
     this.auditLogger.close();
     this.logger.info('Security audit logger destroyed');
   }
@@ -740,18 +740,18 @@ export class SecurityAuditLogger {
  */
 export function createSecurityAuditMiddleware(config = {}) {
   const auditLogger = new SecurityAuditLogger(config);
-  
+
   return (req, res, next) => {
     const startTime = Date.now();
-    
+
     // Store audit logger in request for use by other middleware
     req.auditLogger = auditLogger;
-    
+
     // Override res.end to capture response details
     const originalEnd = res.end;
     res.end = function(...args) {
       const responseTime = Date.now() - startTime;
-      
+
       // Log successful request completion
       if (req.user && res.statusCode < 400) {
         auditLogger.logDataAccess({
@@ -766,13 +766,13 @@ export function createSecurityAuditMiddleware(config = {}) {
           responseTime,
           resource: req.path,
           action: req.method.toLowerCase(),
-          sensitive: req.path.includes('/admin') || req.path.includes('/sensitive')
+          sensitive: req.path.includes('/admin') || req.path.includes('/sensitive'),
         });
       }
-      
+
       originalEnd.apply(this, args);
     };
-    
+
     next();
   };
 }

@@ -4,6 +4,9 @@ import '../models/download_option.dart';
 import '../models/installation_step.dart';
 import '../config/app_config.dart';
 
+// Conditional imports for web platform detection
+import 'auth_logger_web.dart' if (dart.library.io) 'auth_logger_stub.dart';
+
 /// Service for detecting user's platform and providing appropriate download options
 class PlatformDetectionService extends ChangeNotifier {
   PlatformType? _detectedPlatform;
@@ -15,9 +18,8 @@ class PlatformDetectionService extends ChangeNotifier {
 
   PlatformDetectionService() {
     _initializePlatformConfigs();
-    if (kIsWeb) {
-      detectPlatform();
-    }
+    // Always detect platform during initialization
+    detectPlatform();
   }
 
   // Getters
@@ -40,23 +42,39 @@ class PlatformDetectionService extends ChangeNotifier {
   /// Detect platform from browser user agent
   PlatformType detectPlatform() {
     if (!kIsWeb) {
-      _detectedPlatform = PlatformType.unknown;
-      return _detectedPlatform!;
-    }
-
-    try {
       // For non-web platforms, we can't detect from user agent
       // Default to unknown and let user select manually
       _detectedPlatform = PlatformType.unknown;
-
+      _isInitialized = true;
       debugPrint(
         '🔍 [PlatformDetection] Non-web platform detected, defaulting to unknown',
       );
       notifyListeners();
       return _detectedPlatform!;
+    }
+
+    try {
+      // Web platform - detect from browser user agent
+      final window = Window();
+      final userAgent = window.navigator.userAgent;
+
+      debugPrint(
+        '🔍 [PlatformDetection] Web platform detected, user agent: $userAgent',
+      );
+
+      _detectedPlatform = PlatformType.fromUserAgent(userAgent);
+
+      debugPrint(
+        '🔍 [PlatformDetection] Detected platform: $_detectedPlatform',
+      );
+
+      _isInitialized = true;
+      notifyListeners();
+      return _detectedPlatform!;
     } catch (e) {
       debugPrint('🔍 [PlatformDetection] Error detecting platform: $e');
       _detectedPlatform = PlatformType.unknown;
+      _isInitialized = true;
       notifyListeners();
       return _detectedPlatform!;
     }
@@ -425,5 +443,32 @@ class PlatformDetectionService extends ChangeNotifier {
   /// Re-detect platform (useful for testing or manual refresh)
   void refreshDetection() {
     detectPlatform();
+  }
+
+  /// Get the current user agent string (web only)
+  String? getUserAgent() {
+    if (!kIsWeb) {
+      return null;
+    }
+
+    try {
+      final window = Window();
+      return window.navigator.userAgent;
+    } catch (e) {
+      debugPrint('🔍 [PlatformDetection] Error getting user agent: $e');
+      return null;
+    }
+  }
+
+  /// Get platform detection information for debugging
+  Map<String, dynamic> getDetectionInfo() {
+    return {
+      'isWeb': kIsWeb,
+      'detectedPlatform': _detectedPlatform?.name,
+      'selectedPlatform': _selectedPlatform?.name,
+      'currentPlatform': currentPlatform.name,
+      'isInitialized': _isInitialized,
+      'userAgent': kIsWeb ? getUserAgent() : 'N/A (non-web)',
+    };
   }
 }

@@ -71,7 +71,7 @@ export const MESSAGE_TYPES = {
   HTTP_RESPONSE: 'http_response',
   PING: 'ping',
   PONG: 'pong',
-  ERROR: 'error'
+  ERROR: 'error',
 };
 
 // HTTP methods
@@ -82,7 +82,7 @@ export const HTTP_METHODS = {
   DELETE: 'DELETE',
   PATCH: 'PATCH',
   HEAD: 'HEAD',
-  OPTIONS: 'OPTIONS'
+  OPTIONS: 'OPTIONS',
 };
 
 export const VALID_HTTP_METHODS = Object.values(HTTP_METHODS);
@@ -108,7 +108,7 @@ export class MessageProtocol {
       method: httpRequest.method,
       path: httpRequest.path,
       headers: httpRequest.headers || {},
-      ...(httpRequest.body && { body: httpRequest.body })
+      ...(httpRequest.body && { body: httpRequest.body }),
     };
   }
 
@@ -132,7 +132,7 @@ export class MessageProtocol {
       id: requestId,
       status: httpResponse.status,
       headers: httpResponse.headers || {},
-      body: httpResponse.body || ''
+      body: httpResponse.body || '',
     };
   }
 
@@ -144,7 +144,7 @@ export class MessageProtocol {
     return {
       type: MESSAGE_TYPES.PING,
       id: uuidv4(),
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     };
   }
 
@@ -161,7 +161,7 @@ export class MessageProtocol {
     return {
       type: MESSAGE_TYPES.PONG,
       id: pingId,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     };
   }
 
@@ -185,7 +185,7 @@ export class MessageProtocol {
       type: MESSAGE_TYPES.ERROR,
       id: requestId,
       error,
-      ...(code && { code })
+      ...(code && { code }),
     };
   }  /*
 *
@@ -318,18 +318,18 @@ export class MessageProtocol {
 
     // Validate based on message type
     switch (message.type) {
-      case MESSAGE_TYPES.HTTP_REQUEST:
-        return this.validateRequestMessage(message);
-      case MESSAGE_TYPES.HTTP_RESPONSE:
-        return this.validateResponseMessage(message);
-      case MESSAGE_TYPES.PING:
-        return this.validatePingMessage(message);
-      case MESSAGE_TYPES.PONG:
-        return this.validatePongMessage(message);
-      case MESSAGE_TYPES.ERROR:
-        return this.validateErrorMessage(message);
-      default:
-        return false;
+    case MESSAGE_TYPES.HTTP_REQUEST:
+      return this.validateRequestMessage(message);
+    case MESSAGE_TYPES.HTTP_RESPONSE:
+      return this.validateResponseMessage(message);
+    case MESSAGE_TYPES.PING:
+      return this.validatePingMessage(message);
+    case MESSAGE_TYPES.PONG:
+      return this.validatePongMessage(message);
+    case MESSAGE_TYPES.ERROR:
+      return this.validateErrorMessage(message);
+    default:
+      return false;
     }
   }
 
@@ -448,7 +448,7 @@ export class MessageProtocol {
       method: message.method,
       path: message.path,
       headers: message.headers || {},
-      ...(message.body && { body: message.body })
+      ...(message.body && { body: message.body }),
     };
   }
 
@@ -465,7 +465,7 @@ export class MessageProtocol {
     return {
       status: message.status,
       headers: message.headers || {},
-      body: message.body
+      body: message.body,
     };
   }
 }

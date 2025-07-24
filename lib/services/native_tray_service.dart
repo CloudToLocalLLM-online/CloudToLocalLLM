@@ -103,6 +103,7 @@ class NativeTrayService with TrayListener {
         debugPrint('🖥️ [NativeTray] Context menu set successfully');
       } catch (e) {
         debugPrint('🖥️ [NativeTray] Failed to set context menu: $e');
+        // Context menu setup failure is not critical for basic functionality
       }
 
       // Add listener for tray events
@@ -255,6 +256,8 @@ class NativeTrayService with TrayListener {
   /// Update context menu with current connection status
   Future<void> _updateContextMenu() async {
     try {
+      debugPrint('🖥️ [NativeTray] Updating context menu...');
+
       // Get current connection status for dynamic menu items
       String localStatus = 'Disconnected';
       String cloudStatus = 'Disconnected';
@@ -287,8 +290,10 @@ class NativeTrayService with TrayListener {
       );
 
       await trayManager.setContextMenu(menu);
+      debugPrint('🖥️ [NativeTray] Context menu updated successfully with ${menu.items?.length ?? 0} items');
     } catch (e) {
       debugPrint('🖥️ [NativeTray] Failed to update context menu: $e');
+      rethrow; // Re-throw to allow caller to handle the error
     }
   }
 
@@ -327,7 +332,31 @@ class NativeTrayService with TrayListener {
   @override
   void onTrayIconRightMouseDown() {
     debugPrint('🖥️ [NativeTray] Tray icon right-clicked');
-    // Context menu will be shown automatically
+    _showContextMenu();
+  }
+
+  @override
+  void onTrayIconRightMouseUp() {
+    debugPrint('🖥️ [NativeTray] Tray icon right-click released');
+    // Fallback: if context menu wasn't shown on mouse down, try on mouse up
+    // This helps with platform-specific timing issues
+    _showContextMenu();
+  }
+
+  /// Explicitly show the context menu
+  ///
+  /// This method manually triggers the context menu display, which is necessary
+  /// on Windows where the context menu doesn't automatically appear on right-click
+  /// with tray_manager 0.5.0.
+  Future<void> _showContextMenu() async {
+    try {
+      debugPrint('🖥️ [NativeTray] Manually triggering context menu');
+      await trayManager.popUpContextMenu();
+      debugPrint('🖥️ [NativeTray] Context menu displayed successfully');
+    } catch (e) {
+      debugPrint('🖥️ [NativeTray] Failed to show context menu: $e');
+      // Context menu failure is not critical - the user can still left-click to show the app
+    }
   }
 
   @override

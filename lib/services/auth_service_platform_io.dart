@@ -115,15 +115,22 @@ class AuthServicePlatform extends ChangeNotifier {
   /// Get the current access token for API authentication
   String? getAccessToken() {
     // Delegate to platform-specific service
-    if (_platformService.runtimeType.toString() == 'AuthServiceDesktop') {
-      // For desktop, get token from credential
+    final serviceType = _platformService.runtimeType.toString();
+
+    if (serviceType == 'AuthServiceDesktop') {
+      // For desktop (macOS/Linux), get token from credential
       return _platformService.credential?.accessToken;
-    } else if (_platformService.runtimeType.toString() == 'AuthServiceMobile') {
+    } else if (serviceType == 'AuthServiceDesktopWindows') {
+      // For Windows desktop, get token directly from accessToken property
+      return _platformService.accessToken;
+    } else if (serviceType == 'AuthServiceMobile') {
       // For mobile, get token from stored credentials
       // Note: This is a stub implementation - actual mobile implementation
       // would need to access stored credentials from Auth0 CredentialsManager
       return _platformService.accessToken;
     }
+
+    debugPrint('🔐 [AuthPlatform] Unknown service type: $serviceType');
     return null;
   }
 

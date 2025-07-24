@@ -50,8 +50,8 @@ class _ResponsiveSetupWizardState extends State<ResponsiveSetupWizard>
   final FocusNode _skipButtonFocusNode = FocusNode();
 
   // Loading states
-  bool _isLoading = false;
-  String _loadingMessage = '';
+  final bool _isLoading = false;
+  final String _loadingMessage = '';
 
   final List<SetupStep> _steps = [
     SetupStep(

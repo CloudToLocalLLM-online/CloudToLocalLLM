@@ -45,7 +45,7 @@ describe('TunnelLogger', () => {
     it('should generate unique correlation IDs', () => {
       const id1 = logger.generateCorrelationId();
       const id2 = logger.generateCorrelationId();
-      
+
       expect(id1).toBeTruthy();
       expect(id2).toBeTruthy();
       expect(id1).not.toBe(id2);
@@ -56,7 +56,7 @@ describe('TunnelLogger', () => {
     it('should hash user ID for privacy', () => {
       const userId = 'auth0|1234567890abcdef';
       const hashedId = logger.hashUserId(userId);
-      
+
       expect(hashedId).toBeTruthy();
       expect(hashedId).toContain('auth0|12...');
       expect(hashedId).not.toBe(userId);
@@ -71,13 +71,13 @@ describe('TunnelLogger', () => {
   describe('structured logging', () => {
     it('should log info messages with context', () => {
       const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
-      
+
       logger.info('Test message', {
         correlationId: 'test-correlation-id',
         userId: 'test-user',
-        context: { key: 'value' }
+        context: { key: 'value' },
       });
-      
+
       expect(consoleSpy).toHaveBeenCalled();
       consoleSpy.mockRestore();
     });
@@ -85,41 +85,41 @@ describe('TunnelLogger', () => {
     it('should log errors with stack traces', () => {
       const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
       const error = new Error('Test error');
-      
+
       logger.error('Test error message', error, {
         correlationId: 'test-correlation-id',
-        userId: 'test-user'
+        userId: 'test-user',
       });
-      
+
       expect(consoleSpy).toHaveBeenCalled();
       consoleSpy.mockRestore();
     });
 
     it('should log tunnel errors with structured context', () => {
       const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
-      
+
       logger.logTunnelError(
         ERROR_CODES.CONNECTION_LOST,
         'Connection lost',
         {
           correlationId: 'test-correlation-id',
           userId: 'test-user',
-          connectionId: 'conn-123'
-        }
+          connectionId: 'conn-123',
+        },
       );
-      
+
       expect(consoleSpy).toHaveBeenCalled();
       consoleSpy.mockRestore();
     });
 
     it('should log performance metrics', () => {
       const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
-      
+
       logger.logPerformance('test_operation', 500, {
         correlationId: 'test-correlation-id',
-        userId: 'test-user'
+        userId: 'test-user',
       });
-      
+
       expect(consoleSpy).toHaveBeenCalled();
       consoleSpy.mockRestore();
     });
@@ -133,7 +133,7 @@ describe('ErrorResponseBuilder', () => {
         ERROR_CODES.INVALID_REQUEST_FORMAT,
         'Invalid request',
         400,
-        { field: 'method' }
+        { field: 'method' },
       );
 
       expect(response.error.code).toBe(ERROR_CODES.INVALID_REQUEST_FORMAT);
@@ -147,7 +147,7 @@ describe('ErrorResponseBuilder', () => {
     it('should create authentication error', () => {
       const response = ErrorResponseBuilder.authenticationError(
         'Token expired',
-        ERROR_CODES.AUTH_TOKEN_EXPIRED
+        ERROR_CODES.AUTH_TOKEN_EXPIRED,
       );
 
       expect(response.error.code).toBe(ERROR_CODES.AUTH_TOKEN_EXPIRED);
@@ -157,7 +157,7 @@ describe('ErrorResponseBuilder', () => {
     it('should create service unavailable error', () => {
       const response = ErrorResponseBuilder.serviceUnavailableError(
         'Desktop client disconnected',
-        ERROR_CODES.DESKTOP_CLIENT_DISCONNECTED
+        ERROR_CODES.DESKTOP_CLIENT_DISCONNECTED,
       );
 
       expect(response.error.code).toBe(ERROR_CODES.DESKTOP_CLIENT_DISCONNECTED);
@@ -167,7 +167,7 @@ describe('ErrorResponseBuilder', () => {
     it('should create gateway timeout error', () => {
       const response = ErrorResponseBuilder.gatewayTimeoutError(
         'Request timed out',
-        ERROR_CODES.REQUEST_TIMEOUT
+        ERROR_CODES.REQUEST_TIMEOUT,
       );
 
       expect(response.error.code).toBe(ERROR_CODES.REQUEST_TIMEOUT);
@@ -177,7 +177,7 @@ describe('ErrorResponseBuilder', () => {
     it('should create bad request error', () => {
       const response = ErrorResponseBuilder.badRequestError(
         'Invalid format',
-        ERROR_CODES.INVALID_REQUEST_FORMAT
+        ERROR_CODES.INVALID_REQUEST_FORMAT,
       );
 
       expect(response.error.code).toBe(ERROR_CODES.INVALID_REQUEST_FORMAT);
@@ -187,7 +187,7 @@ describe('ErrorResponseBuilder', () => {
     it('should create internal server error', () => {
       const response = ErrorResponseBuilder.internalServerError(
         'Server error',
-        ERROR_CODES.INTERNAL_SERVER_ERROR
+        ERROR_CODES.INTERNAL_SERVER_ERROR,
       );
 
       expect(response.error.code).toBe(ERROR_CODES.INTERNAL_SERVER_ERROR);
@@ -237,7 +237,7 @@ describe('TunnelProxy Error Handling', () => {
       const userId = 'test-user-123';
 
       const connectionId = tunnelProxy.handleConnection(mockWs, userId);
-      
+
       // Simulate WebSocket error
       mockWs.simulateError(new Error('Connection error'));
 
@@ -261,7 +261,7 @@ describe('TunnelProxy Error Handling', () => {
       const responseMessage = MessageProtocol.createResponseMessage(requestId, {
         status: 200,
         headers: { 'content-type': 'application/json' },
-        body: '{"result": "success"}'
+        body: '{"result": "success"}',
       });
 
       // Set up a pending request
@@ -272,7 +272,7 @@ describe('TunnelProxy Error Handling', () => {
         timestamp: new Date(),
         timeout: setTimeout(() => {}, 1000),
         resolve: mockResolve,
-        reject: jest.fn()
+        reject: jest.fn(),
       });
 
       mockWs.simulateMessage(MessageProtocol.serialize(responseMessage));
@@ -297,7 +297,7 @@ describe('TunnelProxy Error Handling', () => {
       const errorMessage = MessageProtocol.createErrorMessage(
         requestId,
         'Request failed',
-        500
+        500,
       );
 
       // Set up a pending request
@@ -308,7 +308,7 @@ describe('TunnelProxy Error Handling', () => {
         timestamp: new Date(),
         timeout: setTimeout(() => {}, 1000),
         resolve: jest.fn(),
-        reject: mockReject
+        reject: mockReject,
       });
 
       mockWs.simulateMessage(MessageProtocol.serialize(errorMessage));
@@ -338,7 +338,7 @@ describe('TunnelProxy Error Handling', () => {
       const responseMessage = MessageProtocol.createResponseMessage('unknown-req', {
         status: 200,
         headers: {},
-        body: 'OK'
+        body: 'OK',
       });
 
       // Should not throw when receiving response for unknown request
@@ -359,11 +359,11 @@ describe('TunnelProxy Error Handling', () => {
       connectionId = tunnelProxy.handleConnection(mockWs, userId);
     });
 
-    it('should forward requests to connected clients', async () => {
+    it('should forward requests to connected clients', async() => {
       const httpRequest = {
         method: 'GET',
         path: '/api/test',
-        headers: { 'content-type': 'application/json' }
+        headers: { 'content-type': 'application/json' },
       };
 
       // Start the request (will timeout, but we can check it was sent)
@@ -371,7 +371,7 @@ describe('TunnelProxy Error Handling', () => {
 
       // Check that message was sent
       expect(mockWs.messages.length).toBe(1);
-      
+
       // Parse the sent message
       const sentMessage = JSON.parse(mockWs.messages[0]);
       expect(sentMessage.type).toBe(MESSAGE_TYPES.HTTP_REQUEST);
@@ -389,21 +389,21 @@ describe('TunnelProxy Error Handling', () => {
       await expect(requestPromise).rejects.toThrow();
     });
 
-    it('should reject requests for disconnected clients', async () => {
+    it('should reject requests for disconnected clients', async() => {
       // Disconnect the client
       mockWs.close();
 
       const httpRequest = {
         method: 'GET',
         path: '/api/test',
-        headers: {}
+        headers: {},
       };
 
       await expect(tunnelProxy.forwardRequest(userId, httpRequest))
         .rejects.toThrow('Desktop client not connected');
     });
 
-    it('should handle request timeout', async () => {
+    it('should handle request timeout', async() => {
       // Mock a very short timeout for testing
       const originalTimeout = tunnelProxy.REQUEST_TIMEOUT;
       tunnelProxy.REQUEST_TIMEOUT = 10; // 10ms
@@ -411,7 +411,7 @@ describe('TunnelProxy Error Handling', () => {
       const httpRequest = {
         method: 'GET',
         path: '/api/test',
-        headers: {}
+        headers: {},
       };
 
       await expect(tunnelProxy.forwardRequest(userId, httpRequest))
@@ -421,7 +421,7 @@ describe('TunnelProxy Error Handling', () => {
       tunnelProxy.REQUEST_TIMEOUT = originalTimeout;
     });
 
-    it('should handle WebSocket send failures', async () => {
+    it('should handle WebSocket send failures', async() => {
       // Mock WebSocket send to throw error
       mockWs.send = jest.fn().mockImplementation(() => {
         throw new Error('Send failed');
@@ -430,7 +430,7 @@ describe('TunnelProxy Error Handling', () => {
       const httpRequest = {
         method: 'GET',
         path: '/api/test',
-        headers: {}
+        headers: {},
       };
 
       await expect(tunnelProxy.forwardRequest(userId, httpRequest))
@@ -448,21 +448,21 @@ describe('TunnelProxy Error Handling', () => {
       const connection = tunnelProxy.connections.get(connectionId);
       const mockReject1 = jest.fn();
       const mockReject2 = jest.fn();
-      
+
       connection.pendingRequests.set('req-1', {
         id: 'req-1',
         timestamp: new Date(),
         timeout: setTimeout(() => {}, 1000),
         resolve: jest.fn(),
-        reject: mockReject1
+        reject: mockReject1,
       });
-      
+
       connection.pendingRequests.set('req-2', {
         id: 'req-2',
         timestamp: new Date(),
         timeout: setTimeout(() => {}, 1000),
         resolve: jest.fn(),
-        reject: mockReject2
+        reject: mockReject2,
       });
 
       // Simulate disconnection
@@ -491,7 +491,7 @@ describe('TunnelProxy Error Handling', () => {
     it('should send ping messages periodically', (done) => {
       const mockWs = new MockWebSocket();
       const userId = 'test-user-123';
-      
+
       // Mock shorter ping interval for testing
       const originalInterval = tunnelProxy.PING_INTERVAL;
       tunnelProxy.PING_INTERVAL = 10; // 10ms
@@ -500,11 +500,11 @@ describe('TunnelProxy Error Handling', () => {
 
       setTimeout(() => {
         expect(mockWs.messages.length).toBeGreaterThan(0);
-        
+
         // Check that ping message was sent
         const pingMessage = JSON.parse(mockWs.messages[mockWs.messages.length - 1]);
         expect(pingMessage.type).toBe(MESSAGE_TYPES.PING);
-        
+
         // Restore original interval and cleanup
         tunnelProxy.PING_INTERVAL = originalInterval;
         tunnelProxy.cleanup();
@@ -515,7 +515,7 @@ describe('TunnelProxy Error Handling', () => {
     it('should handle pong timeout', (done) => {
       const mockWs = new MockWebSocket();
       const userId = 'test-user-123';
-      
+
       // Mock very short timeouts for testing
       const originalPingInterval = tunnelProxy.PING_INTERVAL;
       const originalPongTimeout = tunnelProxy.PONG_TIMEOUT;
@@ -527,7 +527,7 @@ describe('TunnelProxy Error Handling', () => {
       setTimeout(() => {
         // Should have disconnected due to pong timeout
         expect(tunnelProxy.isUserConnected(userId)).toBe(false);
-        
+
         // Restore original timeouts
         tunnelProxy.PING_INTERVAL = originalPingInterval;
         tunnelProxy.PONG_TIMEOUT = originalPongTimeout;
@@ -551,7 +551,7 @@ describe('TunnelProxy Error Handling', () => {
       expect(stats.connections.connectedUsers).toBe(2);
     });
 
-    it('should track request metrics', async () => {
+    it('should track request metrics', async() => {
       const mockWs = new MockWebSocket();
       const userId = 'test-user';
       tunnelProxy.handleConnection(mockWs, userId);
@@ -608,7 +608,7 @@ describe('MessageProtocol Error Handling', () => {
         id: 'test-id',
         method: 'GET',
         path: '/test',
-        headers: {}
+        headers: {},
       };
       circularMessage.circular = circularMessage;
 
@@ -645,7 +645,7 @@ describe('MessageProtocol Error Handling', () => {
       const validRequest = {
         method: 'GET',
         path: '/api/test',
-        headers: {}
+        headers: {},
       };
       expect(MessageProtocol.validateHttpRequest(validRequest)).toBe(true);
 
@@ -653,14 +653,14 @@ describe('MessageProtocol Error Handling', () => {
       const invalidMethod = {
         method: 'INVALID',
         path: '/api/test',
-        headers: {}
+        headers: {},
       };
       expect(MessageProtocol.validateHttpRequest(invalidMethod)).toBe(false);
 
       // Missing path
       const missingPath = {
         method: 'GET',
-        headers: {}
+        headers: {},
       };
       expect(MessageProtocol.validateHttpRequest(missingPath)).toBe(false);
     });
@@ -670,7 +670,7 @@ describe('MessageProtocol Error Handling', () => {
       const validResponse = {
         status: 200,
         headers: {},
-        body: 'OK'
+        body: 'OK',
       };
       expect(MessageProtocol.validateHttpResponse(validResponse)).toBe(true);
 
@@ -678,14 +678,14 @@ describe('MessageProtocol Error Handling', () => {
       const invalidStatus = {
         status: 99, // Invalid status code
         headers: {},
-        body: 'OK'
+        body: 'OK',
       };
       expect(MessageProtocol.validateHttpResponse(invalidStatus)).toBe(false);
 
       // Missing status
       const missingStatus = {
         headers: {},
-        body: 'OK'
+        body: 'OK',
       };
       expect(MessageProtocol.validateHttpResponse(missingStatus)).toBe(false);
     });
@@ -697,7 +697,7 @@ describe('MessageProtocol Error Handling', () => {
         id: 'req-123',
         method: 'GET',
         path: '/api/test',
-        headers: {}
+        headers: {},
       };
       expect(MessageProtocol.validateTunnelMessage(validMessage)).toBe(true);
 
@@ -707,7 +707,7 @@ describe('MessageProtocol Error Handling', () => {
         id: 'req-123',
         method: 'GET',
         path: '/api/test',
-        headers: {}
+        headers: {},
       };
       expect(MessageProtocol.validateTunnelMessage(invalidType)).toBe(false);
 
@@ -716,7 +716,7 @@ describe('MessageProtocol Error Handling', () => {
         type: MESSAGE_TYPES.HTTP_REQUEST,
         method: 'GET',
         path: '/api/test',
-        headers: {}
+        headers: {},
       };
       expect(MessageProtocol.validateTunnelMessage(missingId)).toBe(false);
     });

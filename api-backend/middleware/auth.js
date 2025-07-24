@@ -1,6 +1,6 @@
 /**
  * Authentication Middleware for CloudToLocalLLM API Backend
- * 
+ *
  * Provides JWT authentication and authorization for API endpoints
  * with Auth0 integration and user ID extraction utilities.
  */
@@ -10,7 +10,7 @@ import jwksClient from 'jwks-client';
 import logger from '../logger.js';
 
 // Configuration
-const AUTH0_DOMAIN = process.env.AUTH0_DOMAIN || 'dev-xafu7oedkd5wlrbo.us.auth0.com';
+const AUTH0_DOMAIN = process.env.AUTH0_DOMAIN || 'dev-v2f2p008x3dr74ww.us.auth0.com';
 const AUTH0_AUDIENCE = process.env.AUTH0_AUDIENCE || 'https://app.cloudtolocalllm.online';
 
 // JWKS client for Auth0 token verification
@@ -20,7 +20,7 @@ const jwksClientInstance = jwksClient({
   timeout: 30000,
   cache: true,
   rateLimit: true,
-  jwksRequestsPerMinute: 5
+  jwksRequestsPerMinute: 5,
 });
 
 /**
@@ -32,9 +32,9 @@ export async function authenticateJWT(req, res, next) {
   const token = authHeader && authHeader.split(' ')[1];
 
   if (!token) {
-    return res.status(401).json({ 
+    return res.status(401).json({
       error: 'Access token required',
-      code: 'MISSING_TOKEN'
+      code: 'MISSING_TOKEN',
     });
   }
 
@@ -42,9 +42,9 @@ export async function authenticateJWT(req, res, next) {
     // Get the signing key
     const decoded = jwt.decode(token, { complete: true });
     if (!decoded || !decoded.header.kid) {
-      return res.status(401).json({ 
+      return res.status(401).json({
         error: 'Invalid token format',
-        code: 'INVALID_TOKEN_FORMAT'
+        code: 'INVALID_TOKEN_FORMAT',
       });
     }
 
@@ -55,22 +55,22 @@ export async function authenticateJWT(req, res, next) {
     const verified = jwt.verify(token, signingKey, {
       audience: AUTH0_AUDIENCE,
       issuer: `https://${AUTH0_DOMAIN}/`,
-      algorithms: ['RS256']
+      algorithms: ['RS256'],
     });
 
     // Attach user info to request
     req.user = verified;
     req.userId = verified.sub;
-    
+
     logger.debug(`🔐 [Auth] User authenticated: ${verified.sub}`);
     next();
 
   } catch (error) {
     logger.error('🔐 [Auth] Token verification failed:', error);
-    
+
     let errorCode = 'TOKEN_VERIFICATION_FAILED';
     let errorMessage = 'Invalid or expired token';
-    
+
     if (error.name === 'TokenExpiredError') {
       errorCode = 'TOKEN_EXPIRED';
       errorMessage = 'Token has expired';
@@ -81,10 +81,10 @@ export async function authenticateJWT(req, res, next) {
       errorCode = 'TOKEN_NOT_ACTIVE';
       errorMessage = 'Token not active';
     }
-    
-    return res.status(403).json({ 
+
+    return res.status(403).json({
       error: errorMessage,
-      code: errorCode
+      code: errorCode,
     });
   }
 }
@@ -120,18 +120,18 @@ export function requireScope(requiredScope) {
     if (!req.user) {
       return res.status(401).json({
         error: 'Authentication required',
-        code: 'AUTHENTICATION_REQUIRED'
+        code: 'AUTHENTICATION_REQUIRED',
       });
     }
 
     const userScopes = req.user.scope ? req.user.scope.split(' ') : [];
-    
+
     if (!userScopes.includes(requiredScope)) {
       logger.warn(`🔐 [Auth] User ${req.user.sub} missing required scope: ${requiredScope}`);
       return res.status(403).json({
         error: 'Insufficient permissions',
         code: 'INSUFFICIENT_PERMISSIONS',
-        requiredScope
+        requiredScope,
       });
     }
 
@@ -162,7 +162,7 @@ export async function optionalAuth(req, res, next) {
       const verified = jwt.verify(token, signingKey, {
         audience: AUTH0_AUDIENCE,
         issuer: `https://${AUTH0_DOMAIN}/`,
-        algorithms: ['RS256']
+        algorithms: ['RS256'],
       });
 
       req.user = verified;
@@ -188,7 +188,7 @@ export function authenticateContainer(req, res, next) {
   if (!containerToken || !containerId) {
     return res.status(401).json({
       error: 'Container authentication required',
-      code: 'CONTAINER_AUTH_REQUIRED'
+      code: 'CONTAINER_AUTH_REQUIRED',
     });
   }
 
@@ -197,13 +197,13 @@ export function authenticateContainer(req, res, next) {
   if (!validateContainerToken(containerToken, containerId)) {
     return res.status(403).json({
       error: 'Invalid container credentials',
-      code: 'INVALID_CONTAINER_CREDENTIALS'
+      code: 'INVALID_CONTAINER_CREDENTIALS',
     });
   }
 
   req.containerId = containerId;
   req.containerToken = containerToken;
-  
+
   logger.debug(`🔐 [Auth] Container authenticated: ${containerId}`);
   next();
 }
@@ -227,7 +227,7 @@ export function requireAdmin(req, res, next) {
     if (!req.user) {
       return res.status(401).json({
         error: 'Authentication required',
-        code: 'AUTH_REQUIRED'
+        code: 'AUTH_REQUIRED',
       });
     }
 
@@ -255,32 +255,32 @@ export function requireAdmin(req, res, next) {
         userScopes,
         permissions: req.user.permissions,
         userAgent: req.get('User-Agent'),
-        ipAddress: req.ip
+        ipAddress: req.ip,
       });
 
       return res.status(403).json({
         error: 'Admin access required',
         code: 'ADMIN_ACCESS_REQUIRED',
-        message: 'This operation requires administrative privileges'
+        message: 'This operation requires administrative privileges',
       });
     }
 
     logger.info('🔥 [AdminAuth] Admin access granted', {
       userId: req.user.sub,
       role: userMetadata.role || appMetadata.role || 'admin',
-      userAgent: req.get('User-Agent')
+      userAgent: req.get('User-Agent'),
     });
 
     next();
   } catch (error) {
     logger.error('🔥 [AdminAuth] Admin role check failed', {
       error: error.message,
-      userId: req.user?.sub
+      userId: req.user?.sub,
     });
 
     res.status(500).json({
       error: 'Admin role verification failed',
-      code: 'ADMIN_CHECK_FAILED'
+      code: 'ADMIN_CHECK_FAILED',
     });
   }
 }
@@ -297,31 +297,31 @@ export function rateLimitByUser(options = {}) {
   return (req, res, next) => {
     const userId = req.userId || req.ip; // Fallback to IP if no user ID
     const now = Date.now();
-    
+
     // Clean up old entries
     for (const [key, data] of userRequests.entries()) {
       if (now - data.windowStart > windowMs) {
         userRequests.delete(key);
       }
     }
-    
+
     // Get or create user request data
     let userData = userRequests.get(userId);
     if (!userData || now - userData.windowStart > windowMs) {
       userData = { count: 0, windowStart: now };
       userRequests.set(userId, userData);
     }
-    
+
     userData.count++;
-    
+
     if (userData.count > max) {
       return res.status(429).json({
         error: 'Too many requests',
         code: 'RATE_LIMIT_EXCEEDED',
-        retryAfter: Math.ceil((windowMs - (now - userData.windowStart)) / 1000)
+        retryAfter: Math.ceil((windowMs - (now - userData.windowStart)) / 1000),
       });
     }
-    
+
     next();
   };
 }

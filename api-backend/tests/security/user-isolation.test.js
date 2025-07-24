@@ -16,7 +16,7 @@ import { MessageProtocol, MESSAGE_TYPES } from '../../tunnel/message-protocol.js
 // Mock configuration
 const TEST_CONFIG = {
   AUTH0_DOMAIN: 'test-domain.auth0.com',
-  AUTH0_AUDIENCE: 'https://test.example.com'
+  AUTH0_AUDIENCE: 'https://test.example.com',
 };
 
 // Test JWT tokens for different users
@@ -31,8 +31,8 @@ const TEST_USERS = {
       exp: Math.floor(Date.now() / 1000) + 3600,
       iat: Math.floor(Date.now() / 1000),
       email: 'user1@test.com',
-      scope: 'read:profile'
-    }
+      scope: 'read:profile',
+    },
   },
   user2: {
     id: 'auth0|user2',
@@ -44,8 +44,8 @@ const TEST_USERS = {
       exp: Math.floor(Date.now() / 1000) + 3600,
       iat: Math.floor(Date.now() / 1000),
       email: 'user2@test.com',
-      scope: 'read:profile'
-    }
+      scope: 'read:profile',
+    },
   },
   admin: {
     id: 'auth0|admin',
@@ -57,16 +57,16 @@ const TEST_USERS = {
       exp: Math.floor(Date.now() / 1000) + 3600,
       iat: Math.floor(Date.now() / 1000),
       email: 'admin@test.com',
-      scope: 'read:profile admin:access'
-    }
-  }
+      scope: 'read:profile admin:access',
+    },
+  },
 };
 
 // Mock JWKS client
 const mockJwksClient = {
   getSigningKey: jest.fn().mockResolvedValue({
-    getPublicKey: () => 'mock-public-key'
-  })
+    getPublicKey: () => 'mock-public-key',
+  }),
 };
 
 // Mock JWT verification
@@ -87,9 +87,9 @@ jest.mock('jsonwebtoken', () => ({
     }
     return {
       header: { kid: 'test-key-id' },
-      payload: user.claims
+      payload: user.claims,
     };
-  })
+  }),
 }));
 
 // Mock JWKS client
@@ -104,7 +104,7 @@ describe('User Isolation Security Tests', () => {
   let wss;
   let testConnections = new Map();
 
-  beforeEach(async () => {
+  beforeEach(async() => {
     // Generate test tokens
     Object.values(TEST_USERS).forEach(user => {
       user.token = `test-token-${user.id}`;
@@ -121,7 +121,7 @@ describe('User Isolation Security Tests', () => {
     const { router, tunnelProxy: proxy, wss: websocketServer } = createTunnelRoutes(
       server,
       TEST_CONFIG,
-      { info: jest.fn(), debug: jest.fn(), warn: jest.fn(), error: jest.fn() }
+      { info: jest.fn(), debug: jest.fn(), warn: jest.fn(), error: jest.fn() },
     );
 
     tunnelProxy = proxy;
@@ -137,7 +137,7 @@ describe('User Isolation Security Tests', () => {
     testConnections.clear();
   });
 
-  afterEach(async () => {
+  afterEach(async() => {
     // Close all test connections
     for (const [userId, connection] of testConnections.entries()) {
       if (connection.ws && connection.ws.readyState === WebSocket.OPEN) {
@@ -163,15 +163,15 @@ describe('User Isolation Security Tests', () => {
       send: jest.fn(),
       close: jest.fn(),
       on: jest.fn(),
-      removeAllListeners: jest.fn()
+      removeAllListeners: jest.fn(),
     };
 
     const connectionId = tunnelProxy.handleConnection(mockWs, userId);
-    
+
     testConnections.set(userId, {
       ws: mockWs,
       connectionId,
-      userId
+      userId,
     });
 
     return { ws: mockWs, connectionId };
@@ -194,7 +194,7 @@ describe('User Isolation Security Tests', () => {
   }
 
   describe('Cross-User Request Prevention', () => {
-    it('should prevent user from accessing another user\'s tunnel', async () => {
+    it('should prevent user from accessing another user\'s tunnel', async() => {
       // Create connections for both users
       await createMockConnection(TEST_USERS.user1.id);
       await createMockConnection(TEST_USERS.user2.id);
@@ -209,7 +209,7 @@ describe('User Isolation Security Tests', () => {
       expect(response.body.error.message).toContain('You can only access your own tunnel');
     });
 
-    it('should allow user to access their own tunnel', async () => {
+    it('should allow user to access their own tunnel', async() => {
       // Create connection for user 1
       const { connectionId } = await createMockConnection(TEST_USERS.user1.id);
 
@@ -224,7 +224,7 @@ describe('User Isolation Security Tests', () => {
         simulateDesktopResponse(TEST_USERS.user1.id, expect.any(String), {
           status: 200,
           headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({ models: ['test-model'] })
+          body: JSON.stringify({ models: ['test-model'] }),
         });
       }, 100);
 
@@ -232,7 +232,7 @@ describe('User Isolation Security Tests', () => {
       expect(response.body.models).toEqual(['test-model']);
     });
 
-    it('should prevent admin from accessing user tunnels without proper user context', async () => {
+    it('should prevent admin from accessing user tunnels without proper user context', async() => {
       // Create connection for user 1
       await createMockConnection(TEST_USERS.user1.id);
 
@@ -247,14 +247,14 @@ describe('User Isolation Security Tests', () => {
   });
 
   describe('Connection Isolation', () => {
-    it('should maintain separate connections for different users', async () => {
+    it('should maintain separate connections for different users', async() => {
       // Create connections for multiple users
       const conn1 = await createMockConnection(TEST_USERS.user1.id);
       const conn2 = await createMockConnection(TEST_USERS.user2.id);
 
       // Verify connections are separate
       expect(conn1.connectionId).not.toBe(conn2.connectionId);
-      
+
       // Verify each user can only see their own connection status
       const status1 = tunnelProxy.getUserConnectionStatus(TEST_USERS.user1.id);
       const status2 = tunnelProxy.getUserConnectionStatus(TEST_USERS.user2.id);
@@ -272,7 +272,7 @@ describe('User Isolation Security Tests', () => {
       expect(user1Stats.body.user.connected).toBe(true);
     });
 
-    it('should prevent connection hijacking between users', async () => {
+    it('should prevent connection hijacking between users', async() => {
       // Create connection for user 1
       const conn1 = await createMockConnection(TEST_USERS.user1.id);
 
@@ -283,7 +283,7 @@ describe('User Isolation Security Tests', () => {
           type: MESSAGE_TYPES.HTTP_RESPONSE,
           id: 'test-request',
           status: 200,
-          body: 'hijacked-response'
+          body: 'hijacked-response',
         })));
       }).not.toThrow();
 
@@ -294,7 +294,7 @@ describe('User Isolation Security Tests', () => {
   });
 
   describe('Request/Response Isolation', () => {
-    it('should prevent cross-user request correlation', async () => {
+    it('should prevent cross-user request correlation', async() => {
       // Create connections for both users
       await createMockConnection(TEST_USERS.user1.id);
       await createMockConnection(TEST_USERS.user2.id);
@@ -314,19 +314,19 @@ describe('User Isolation Security Tests', () => {
         simulateDesktopResponse(TEST_USERS.user1.id, expect.any(String), {
           status: 200,
           headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({ models: ['user1-model'] })
+          body: JSON.stringify({ models: ['user1-model'] }),
         });
 
         simulateDesktopResponse(TEST_USERS.user2.id, expect.any(String), {
           status: 200,
           headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({ models: ['user2-model'] })
+          body: JSON.stringify({ models: ['user2-model'] }),
         });
       }, 100);
 
       const [user1Response, user2Response] = await Promise.all([
         user1RequestPromise,
-        user2RequestPromise
+        user2RequestPromise,
       ]);
 
       // Verify each user gets their own response
@@ -334,7 +334,7 @@ describe('User Isolation Security Tests', () => {
       expect(user2Response.body.models).toEqual(['user2-model']);
     });
 
-    it('should timeout requests independently per user', async () => {
+    it('should timeout requests independently per user', async() => {
       // Create connection for user 1 only
       await createMockConnection(TEST_USERS.user1.id);
 
@@ -354,13 +354,13 @@ describe('User Isolation Security Tests', () => {
         simulateDesktopResponse(TEST_USERS.user1.id, expect.any(String), {
           status: 200,
           headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({ models: ['user1-model'] })
+          body: JSON.stringify({ models: ['user1-model'] }),
         });
       }, 100);
 
       const [user1Response, user2Response] = await Promise.all([
         user1RequestPromise,
-        user2RequestPromise
+        user2RequestPromise,
       ]);
 
       expect(user1Response.status).toBe(200);
@@ -370,7 +370,7 @@ describe('User Isolation Security Tests', () => {
   });
 
   describe('Data Leakage Prevention', () => {
-    it('should not expose user data in error messages', async () => {
+    it('should not expose user data in error messages', async() => {
       // Create connection for user 1
       await createMockConnection(TEST_USERS.user1.id);
 
@@ -386,7 +386,7 @@ describe('User Isolation Security Tests', () => {
       expect(response.body.error.message).not.toContain('user1');
     });
 
-    it('should not expose connection details across users', async () => {
+    it('should not expose connection details across users', async() => {
       // Create connections for both users
       await createMockConnection(TEST_USERS.user1.id);
       await createMockConnection(TEST_USERS.user2.id);
@@ -400,17 +400,17 @@ describe('User Isolation Security Tests', () => {
       // Verify response only contains user 1's information
       expect(user1Status.body.user.userId).toBe(TEST_USERS.user1.id);
       expect(user1Status.body.system).toBeDefined();
-      
+
       // Verify no user 2 information is leaked
       const responseStr = JSON.stringify(user1Status.body);
       expect(responseStr).not.toContain(TEST_USERS.user2.id);
       expect(responseStr).not.toContain(TEST_USERS.user2.claims.email);
     });
 
-    it('should sanitize logs to prevent user data exposure', async () => {
+    it('should sanitize logs to prevent user data exposure', async() => {
       // This test would verify that logging doesn't expose sensitive user data
       // In a real implementation, you would check log outputs
-      
+
       // Create connection for user 1
       await createMockConnection(TEST_USERS.user1.id);
 
@@ -428,19 +428,19 @@ describe('User Isolation Security Tests', () => {
   });
 
   describe('Rate Limiting Isolation', () => {
-    it('should apply rate limits per user independently', async () => {
+    it('should apply rate limits per user independently', async() => {
       // Create connections for both users
       await createMockConnection(TEST_USERS.user1.id);
       await createMockConnection(TEST_USERS.user2.id);
 
       // This test would verify that rate limits are applied per user
       // and one user hitting rate limits doesn't affect another user
-      
+
       // Make multiple requests as user 1 (would hit rate limit in real scenario)
       const user1Requests = Array.from({ length: 5 }, () =>
         request(app)
           .get(`/api/tunnel/${TEST_USERS.user1.id}/api/models`)
-          .set('Authorization', `Bearer ${TEST_USERS.user1.token}`)
+          .set('Authorization', `Bearer ${TEST_USERS.user1.token}`),
       );
 
       // Make request as user 2 (should not be affected by user 1's rate limit)
@@ -450,14 +450,14 @@ describe('User Isolation Security Tests', () => {
 
       // In a real scenario with actual rate limiting, user 2's request should succeed
       // even if user 1 is rate limited
-      
+
       expect(user1Requests.length).toBe(5);
       expect(user2Request).toBeDefined();
     });
   });
 
   describe('WebSocket Connection Isolation', () => {
-    it('should prevent WebSocket message cross-contamination', async () => {
+    it('should prevent WebSocket message cross-contamination', async() => {
       // Create connections for both users
       const conn1 = await createMockConnection(TEST_USERS.user1.id);
       const conn2 = await createMockConnection(TEST_USERS.user2.id);
@@ -467,7 +467,7 @@ describe('User Isolation Security Tests', () => {
         type: MESSAGE_TYPES.HTTP_RESPONSE,
         id: 'test-request-1',
         status: 200,
-        body: 'user1-response'
+        body: 'user1-response',
       };
 
       tunnelProxy.handleMessage(conn1.connectionId, Buffer.from(JSON.stringify(testMessage)));
@@ -478,7 +478,7 @@ describe('User Isolation Security Tests', () => {
       expect(user2Status.pendingRequests).toBe(0);
     });
 
-    it('should handle connection cleanup without affecting other users', async () => {
+    it('should handle connection cleanup without affecting other users', async() => {
       // Create connections for both users
       const conn1 = await createMockConnection(TEST_USERS.user1.id);
       const conn2 = await createMockConnection(TEST_USERS.user2.id);
@@ -496,7 +496,7 @@ describe('User Isolation Security Tests', () => {
   });
 
   describe('Security Headers and Metadata', () => {
-    it('should not expose internal user identifiers in headers', async () => {
+    it('should not expose internal user identifiers in headers', async() => {
       // Create connection for user 1
       await createMockConnection(TEST_USERS.user1.id);
 
@@ -508,12 +508,12 @@ describe('User Isolation Security Tests', () => {
       // Verify headers don't contain sensitive information
       const headers = response.headers;
       const headerStr = JSON.stringify(headers);
-      
+
       expect(headerStr).not.toContain(TEST_USERS.user1.claims.email);
       expect(headerStr).not.toContain('auth0|user1');
     });
 
-    it('should include appropriate security headers', async () => {
+    it('should include appropriate security headers', async() => {
       const response = await request(app)
         .get('/api/tunnel/health')
         .expect(200);
@@ -530,7 +530,7 @@ describe('User Isolation Edge Cases', () => {
   let server;
   let tunnelProxy;
 
-  beforeEach(async () => {
+  beforeEach(async() => {
     // Setup similar to main test suite
     Object.values(TEST_USERS).forEach(user => {
       user.token = `test-token-${user.id}`;
@@ -543,7 +543,7 @@ describe('User Isolation Edge Cases', () => {
     const { router, tunnelProxy: proxy } = createTunnelRoutes(
       server,
       TEST_CONFIG,
-      { info: jest.fn(), debug: jest.fn(), warn: jest.fn(), error: jest.fn() }
+      { info: jest.fn(), debug: jest.fn(), warn: jest.fn(), error: jest.fn() },
     );
 
     tunnelProxy = proxy;
@@ -554,7 +554,7 @@ describe('User Isolation Edge Cases', () => {
     });
   });
 
-  afterEach(async () => {
+  afterEach(async() => {
     if (server) {
       await new Promise((resolve) => {
         server.close(resolve);
@@ -562,14 +562,14 @@ describe('User Isolation Edge Cases', () => {
     }
   });
 
-  it('should handle malformed user IDs in URLs', async () => {
+  it('should handle malformed user IDs in URLs', async() => {
     const malformedUserIds = [
       '../admin',
       'user1/../user2',
       'user1%2F..%2Fuser2',
       'user1;DROP TABLE users;',
       '<script>alert("xss")</script>',
-      'user1\x00user2'
+      'user1\x00user2',
     ];
 
     for (const malformedId of malformedUserIds) {
@@ -582,16 +582,16 @@ describe('User Isolation Edge Cases', () => {
     }
   });
 
-  it('should handle concurrent requests from same user safely', async () => {
+  it('should handle concurrent requests from same user safely', async() => {
     // This test verifies that concurrent requests from the same user
     // don't interfere with each other or cause race conditions
-    
+
     const mockWs = {
       readyState: WebSocket.OPEN,
       send: jest.fn(),
       close: jest.fn(),
       on: jest.fn(),
-      removeAllListeners: jest.fn()
+      removeAllListeners: jest.fn(),
     };
 
     tunnelProxy.handleConnection(mockWs, TEST_USERS.user1.id);
@@ -601,11 +601,11 @@ describe('User Isolation Edge Cases', () => {
       request(app)
         .get(`/api/tunnel/${TEST_USERS.user1.id}/api/models?request=${i}`)
         .set('Authorization', `Bearer ${TEST_USERS.user1.token}`)
-        .expect(503) // Will timeout without desktop response
+        .expect(503), // Will timeout without desktop response
     );
 
     const responses = await Promise.all(requests);
-    
+
     // All requests should fail with the same error (no desktop response)
     responses.forEach(response => {
       expect(response.status).toBe(503);

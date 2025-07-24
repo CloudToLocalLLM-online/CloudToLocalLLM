@@ -1,9 +1,9 @@
 /**
  * Administrative Data Flush Service for CloudToLocalLLM
- * 
+ *
  * Provides secure administrative functionality to completely clear all user data
  * when needed for maintenance, testing, or emergency scenarios.
- * 
+ *
  * Features:
  * - Complete user data clearing (tokens, conversations, preferences, cache)
  * - Docker container and network cleanup
@@ -36,12 +36,12 @@ export class AdminDataFlushService {
     const timestamp = Date.now();
     const randomBytes = crypto.randomBytes(16).toString('hex');
     const payload = `${adminUserId}:${targetScope}:${timestamp}:${randomBytes}`;
-    
+
     return {
       token: crypto.createHash('sha256').update(payload).digest('hex'),
       expiresAt: new Date(timestamp + 5 * 60 * 1000), // 5 minutes
       scope: targetScope,
-      adminUserId
+      adminUserId,
     };
   }
 
@@ -60,20 +60,20 @@ export class AdminDataFlushService {
   async clearUserAuthenticationData(targetUserId = null) {
     logger.info('🔥 [AdminFlush] Starting authentication data clearing', {
       targetUserId: targetUserId || 'ALL_USERS',
-      operation: 'clear_auth_data'
+      operation: 'clear_auth_data',
     });
 
     const clearedData = {
       tokens: 0,
       sessions: 0,
-      authCache: 0
+      authCache: 0,
     };
 
     try {
       // Note: CloudToLocalLLM uses zero-storage design
       // Authentication tokens are stored client-side only
       // Server-side: Clear any cached JWT validation data
-      
+
       if (targetUserId) {
         // Clear specific user's server-side auth cache
         // Implementation depends on caching strategy (Redis, memory, etc.)
@@ -91,7 +91,7 @@ export class AdminDataFlushService {
     } catch (error) {
       logger.error('🔥 [AdminFlush] Failed to clear authentication data', {
         error: error.message,
-        targetUserId
+        targetUserId,
       });
       throw error;
     }
@@ -103,19 +103,19 @@ export class AdminDataFlushService {
   async clearUserConversationData(targetUserId = null) {
     logger.info('🔥 [AdminFlush] Starting conversation data clearing', {
       targetUserId: targetUserId || 'ALL_USERS',
-      operation: 'clear_conversation_data'
+      operation: 'clear_conversation_data',
     });
 
     const clearedData = {
       conversations: 0,
       messages: 0,
-      chatHistory: 0
+      chatHistory: 0,
     };
 
     try {
       // Note: CloudToLocalLLM stores conversations client-side in SQLite
       // Server-side: Clear any cached conversation metadata or temporary data
-      
+
       if (targetUserId) {
         logger.info('🔥 [AdminFlush] Clearing conversation cache for specific user', { targetUserId });
         // Clear user-specific conversation cache
@@ -132,7 +132,7 @@ export class AdminDataFlushService {
     } catch (error) {
       logger.error('🔥 [AdminFlush] Failed to clear conversation data', {
         error: error.message,
-        targetUserId
+        targetUserId,
       });
       throw error;
     }
@@ -144,19 +144,19 @@ export class AdminDataFlushService {
   async clearUserPreferencesData(targetUserId = null) {
     logger.info('🔥 [AdminFlush] Starting preferences data clearing', {
       targetUserId: targetUserId || 'ALL_USERS',
-      operation: 'clear_preferences_data'
+      operation: 'clear_preferences_data',
     });
 
     const clearedData = {
       preferences: 0,
       settings: 0,
-      configuration: 0
+      configuration: 0,
     };
 
     try {
       // Note: CloudToLocalLLM stores preferences client-side
       // Server-side: Clear any cached preference data
-      
+
       if (targetUserId) {
         logger.info('🔥 [AdminFlush] Clearing preferences cache for specific user', { targetUserId });
         clearedData.preferences = 1;
@@ -171,7 +171,7 @@ export class AdminDataFlushService {
     } catch (error) {
       logger.error('🔥 [AdminFlush] Failed to clear preferences data', {
         error: error.message,
-        targetUserId
+        targetUserId,
       });
       throw error;
     }
@@ -183,13 +183,13 @@ export class AdminDataFlushService {
   async clearUserCacheData(targetUserId = null) {
     logger.info('🔥 [AdminFlush] Starting cache data clearing', {
       targetUserId: targetUserId || 'ALL_USERS',
-      operation: 'clear_cache_data'
+      operation: 'clear_cache_data',
     });
 
     const clearedData = {
       memoryCache: 0,
       temporaryFiles: 0,
-      sessionData: 0
+      sessionData: 0,
     };
 
     try {
@@ -209,7 +209,7 @@ export class AdminDataFlushService {
     } catch (error) {
       logger.error('🔥 [AdminFlush] Failed to clear cache data', {
         error: error.message,
-        targetUserId
+        targetUserId,
       });
       throw error;
     }
@@ -221,13 +221,13 @@ export class AdminDataFlushService {
   async clearUserContainersAndNetworks(targetUserId = null) {
     logger.info('🔥 [AdminFlush] Starting container and network clearing', {
       targetUserId: targetUserId || 'ALL_USERS',
-      operation: 'clear_containers_networks'
+      operation: 'clear_containers_networks',
     });
 
     const clearedData = {
       containers: 0,
       networks: 0,
-      volumes: 0
+      volumes: 0,
     };
 
     try {
@@ -235,8 +235,8 @@ export class AdminDataFlushService {
       const containers = await docker.listContainers({
         all: true,
         filters: {
-          label: ['cloudtolocalllm.type']
-        }
+          label: ['cloudtolocalllm.type'],
+        },
       });
 
       // Filter containers by user if specified
@@ -249,11 +249,11 @@ export class AdminDataFlushService {
       for (const containerInfo of targetContainers) {
         try {
           const container = docker.getContainer(containerInfo.Id);
-          
+
           logger.info('🔥 [AdminFlush] Stopping container', {
             containerId: containerInfo.Id,
             containerName: containerInfo.Names[0],
-            user: containerInfo.Labels['cloudtolocalllm.user']
+            user: containerInfo.Labels['cloudtolocalllm.user'],
           });
 
           // Stop container with grace period
@@ -268,7 +268,7 @@ export class AdminDataFlushService {
         } catch (containerError) {
           logger.warn('🔥 [AdminFlush] Failed to remove container', {
             containerId: containerInfo.Id,
-            error: containerError.message
+            error: containerError.message,
           });
         }
       }
@@ -276,8 +276,8 @@ export class AdminDataFlushService {
       // Get all CloudToLocalLLM networks
       const networks = await docker.listNetworks({
         filters: {
-          label: ['cloudtolocalllm.type=user-network']
-        }
+          label: ['cloudtolocalllm.type=user-network'],
+        },
       });
 
       // Filter networks by user if specified
@@ -290,11 +290,11 @@ export class AdminDataFlushService {
       for (const networkInfo of targetNetworks) {
         try {
           const network = docker.getNetwork(networkInfo.Id);
-          
+
           logger.info('🔥 [AdminFlush] Removing network', {
             networkId: networkInfo.Id,
             networkName: networkInfo.Name,
-            user: networkInfo.Labels['cloudtolocalllm.user']
+            user: networkInfo.Labels['cloudtolocalllm.user'],
           });
 
           await network.remove();
@@ -303,7 +303,7 @@ export class AdminDataFlushService {
         } catch (networkError) {
           logger.warn('🔥 [AdminFlush] Failed to remove network', {
             networkId: networkInfo.Id,
-            error: networkError.message
+            error: networkError.message,
           });
         }
       }
@@ -314,7 +314,7 @@ export class AdminDataFlushService {
     } catch (error) {
       logger.error('🔥 [AdminFlush] Failed to clear containers and networks', {
         error: error.message,
-        targetUserId
+        targetUserId,
       });
       throw error;
     }
@@ -331,7 +331,7 @@ export class AdminDataFlushService {
       operationId,
       adminUserId,
       targetUserId: targetUserId || 'ALL_USERS',
-      options
+      options,
     });
 
     // Validate confirmation token
@@ -346,7 +346,7 @@ export class AdminDataFlushService {
       startTime,
       status: 'in_progress',
       results: {},
-      errors: []
+      errors: [],
     };
 
     this.activeFlushOperations.set(operationId, operation);
@@ -388,20 +388,20 @@ export class AdminDataFlushService {
       // Add to audit trail
       this.flushHistory.push({
         ...operation,
-        duration: operation.endTime - operation.startTime
+        duration: operation.endTime - operation.startTime,
       });
 
       logger.info('🔥 [AdminFlush] Data flush operation completed successfully', {
         operationId,
         duration: operation.endTime - operation.startTime,
-        results
+        results,
       });
 
       return {
         success: true,
         operationId,
         results,
-        duration: operation.endTime - operation.startTime
+        duration: operation.endTime - operation.startTime,
       };
 
     } catch (error) {
@@ -412,7 +412,7 @@ export class AdminDataFlushService {
       logger.error('🔥 [AdminFlush] Data flush operation failed', {
         operationId,
         error: error.message,
-        duration: operation.endTime - operation.startTime
+        duration: operation.endTime - operation.startTime,
       });
 
       throw error;
@@ -446,22 +446,22 @@ export class AdminDataFlushService {
       const containers = await docker.listContainers({
         all: true,
         filters: {
-          label: ['cloudtolocalllm.type']
-        }
+          label: ['cloudtolocalllm.type'],
+        },
       });
 
       const networks = await docker.listNetworks({
         filters: {
-          label: ['cloudtolocalllm.type=user-network']
-        }
+          label: ['cloudtolocalllm.type=user-network'],
+        },
       });
 
-      const userContainers = containers.filter(c => 
-        c.Labels['cloudtolocalllm.type'] === 'streaming-proxy'
+      const userContainers = containers.filter(c =>
+        c.Labels['cloudtolocalllm.type'] === 'streaming-proxy',
       );
 
       const activeUsers = new Set(
-        userContainers.map(c => c.Labels['cloudtolocalllm.user'])
+        userContainers.map(c => c.Labels['cloudtolocalllm.user']),
       ).size;
 
       return {
@@ -469,8 +469,8 @@ export class AdminDataFlushService {
         userContainers: userContainers.length,
         userNetworks: networks.length,
         activeUsers,
-        lastFlushOperation: this.flushHistory.length > 0 ? 
-          this.flushHistory[this.flushHistory.length - 1].startTime : null
+        lastFlushOperation: this.flushHistory.length > 0 ?
+          this.flushHistory[this.flushHistory.length - 1].startTime : null,
       };
 
     } catch (error) {

@@ -23,24 +23,24 @@ export function createMonitoringRoutes(tunnelProxy, logger) {
   router.get('/performance', (req, res) => {
     try {
       const performanceMetrics = tunnelProxy.getPerformanceMetrics();
-      
+
       res.json({
         success: true,
         data: performanceMetrics,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
     } catch (error) {
       tunnelLogger.logTunnelError(
         ERROR_CODES.INTERNAL_SERVER_ERROR,
         'Failed to get performance metrics',
-        { error: error.message }
+        { error: error.message },
       );
-      
+
       res.status(500).json(
         ErrorResponseBuilder.internalServerError(
           'Failed to retrieve performance metrics',
-          ERROR_CODES.INTERNAL_SERVER_ERROR
-        )
+          ERROR_CODES.INTERNAL_SERVER_ERROR,
+        ),
       );
     }
   });
@@ -52,24 +52,24 @@ export function createMonitoringRoutes(tunnelProxy, logger) {
     try {
       const healthStatus = tunnelProxy.getHealthStatus();
       const statusCode = healthStatus.status === 'healthy' ? 200 : 503;
-      
+
       res.status(statusCode).json({
         success: true,
         data: healthStatus,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
     } catch (error) {
       tunnelLogger.logTunnelError(
         ERROR_CODES.INTERNAL_SERVER_ERROR,
         'Failed to get health status',
-        { error: error.message }
+        { error: error.message },
       );
-      
+
       res.status(500).json(
         ErrorResponseBuilder.internalServerError(
           'Failed to retrieve health status',
-          ERROR_CODES.INTERNAL_SERVER_ERROR
-        )
+          ERROR_CODES.INTERNAL_SERVER_ERROR,
+        ),
       );
     }
   });
@@ -92,22 +92,22 @@ export function createMonitoringRoutes(tunnelProxy, logger) {
           alerts: activeAlerts,
           totalAlerts: alerts.length,
           activeAlerts: activeAlerts.length,
-          lastCheck: tunnelProxy.lastPerformanceCheck
+          lastCheck: tunnelProxy.lastPerformanceCheck,
         },
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
     } catch (error) {
       tunnelLogger.logTunnelError(
         ERROR_CODES.INTERNAL_SERVER_ERROR,
         'Failed to get performance alerts',
-        { error: error.message }
+        { error: error.message },
       );
-      
+
       res.status(500).json(
         ErrorResponseBuilder.internalServerError(
           'Failed to retrieve performance alerts',
-          ERROR_CODES.INTERNAL_SERVER_ERROR
-        )
+          ERROR_CODES.INTERNAL_SERVER_ERROR,
+        ),
       );
     }
   });
@@ -129,7 +129,7 @@ export function createMonitoringRoutes(tunnelProxy, logger) {
           connectedAt: connection.connectedAt,
           lastActivity: connection.lastActivity,
           lastPing: connection.lastPing,
-          pendingRequests: connection.pendingRequests.size
+          pendingRequests: connection.pendingRequests.size,
         });
       }
 
@@ -138,22 +138,22 @@ export function createMonitoringRoutes(tunnelProxy, logger) {
         data: {
           summary: stats.connections,
           connections: connectionDetails,
-          userConnections: tunnelProxy.userConnections.size
+          userConnections: tunnelProxy.userConnections.size,
         },
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
     } catch (error) {
       tunnelLogger.logTunnelError(
         ERROR_CODES.INTERNAL_SERVER_ERROR,
         'Failed to get connection statistics',
-        { error: error.message }
+        { error: error.message },
       );
-      
+
       res.status(500).json(
         ErrorResponseBuilder.internalServerError(
           'Failed to retrieve connection statistics',
-          ERROR_CODES.INTERNAL_SERVER_ERROR
-        )
+          ERROR_CODES.INTERNAL_SERVER_ERROR,
+        ),
       );
     }
   });
@@ -170,11 +170,11 @@ export function createMonitoringRoutes(tunnelProxy, logger) {
       // Calculate timeframe-specific metrics
       let timeframeMs;
       switch (timeframe) {
-        case '5m': timeframeMs = 5 * 60 * 1000; break;
-        case '15m': timeframeMs = 15 * 60 * 1000; break;
-        case '1h': timeframeMs = 60 * 60 * 1000; break;
-        case '24h': timeframeMs = 24 * 60 * 60 * 1000; break;
-        default: timeframeMs = 60 * 60 * 1000; // Default to 1 hour
+      case '5m': timeframeMs = 5 * 60 * 1000; break;
+      case '15m': timeframeMs = 15 * 60 * 1000; break;
+      case '1h': timeframeMs = 60 * 60 * 1000; break;
+      case '24h': timeframeMs = 24 * 60 * 60 * 1000; break;
+      default: timeframeMs = 60 * 60 * 1000; // Default to 1 hour
       }
 
       const cutoff = new Date(Date.now() - timeframeMs);
@@ -191,23 +191,23 @@ export function createMonitoringRoutes(tunnelProxy, logger) {
           recentActivity: {
             requestCount: recentRequests.length,
             requestsPerMinute: recentRequests.length / (timeframeMs / 60000),
-            timeframe: timeframe
-          }
+            timeframe: timeframe,
+          },
         },
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
     } catch (error) {
       tunnelLogger.logTunnelError(
         ERROR_CODES.INTERNAL_SERVER_ERROR,
         'Failed to get request statistics',
-        { error: error.message }
+        { error: error.message },
       );
-      
+
       res.status(500).json(
         ErrorResponseBuilder.internalServerError(
           'Failed to retrieve request statistics',
-          ERROR_CODES.INTERNAL_SERVER_ERROR
-        )
+          ERROR_CODES.INTERNAL_SERVER_ERROR,
+        ),
       );
     }
   });
@@ -219,7 +219,7 @@ export function createMonitoringRoutes(tunnelProxy, logger) {
     try {
       const performanceMetrics = tunnelProxy.getPerformanceMetrics();
       const processMemory = process.memoryUsage();
-      
+
       res.json({
         success: true,
         data: {
@@ -227,35 +227,35 @@ export function createMonitoringRoutes(tunnelProxy, logger) {
             memoryUsageMB: performanceMetrics.enhanced.memoryUsageMB,
             peakMemoryUsageMB: performanceMetrics.enhanced.peakMemoryUsageMB,
             connectionPoolStats: performanceMetrics.enhanced.connectionPoolStats,
-            queueStats: performanceMetrics.enhanced.queueStats
+            queueStats: performanceMetrics.enhanced.queueStats,
           },
           process: {
             rss: Math.round(processMemory.rss / 1024 / 1024 * 100) / 100,
             heapUsed: Math.round(processMemory.heapUsed / 1024 / 1024 * 100) / 100,
             heapTotal: Math.round(processMemory.heapTotal / 1024 / 1024 * 100) / 100,
-            external: Math.round(processMemory.external / 1024 / 1024 * 100) / 100
+            external: Math.round(processMemory.external / 1024 / 1024 * 100) / 100,
           },
           system: {
             uptime: process.uptime(),
             nodeVersion: process.version,
             platform: process.platform,
-            arch: process.arch
-          }
+            arch: process.arch,
+          },
         },
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
     } catch (error) {
       tunnelLogger.logTunnelError(
         ERROR_CODES.INTERNAL_SERVER_ERROR,
         'Failed to get resource usage',
-        { error: error.message }
+        { error: error.message },
       );
-      
+
       res.status(500).json(
         ErrorResponseBuilder.internalServerError(
           'Failed to retrieve resource usage',
-          ERROR_CODES.INTERNAL_SERVER_ERROR
-        )
+          ERROR_CODES.INTERNAL_SERVER_ERROR,
+        ),
       );
     }
   });
@@ -268,16 +268,16 @@ export function createMonitoringRoutes(tunnelProxy, logger) {
       const performanceMetrics = tunnelProxy.getPerformanceMetrics();
       const healthStatus = tunnelProxy.getHealthStatus();
       const alerts = tunnelProxy.performanceAlerts || [];
-      
+
       // Calculate key performance indicators
       const kpis = {
-        availability: healthStatus.status === 'healthy' ? 100 : 
-                     healthStatus.status === 'degraded' ? 75 : 0,
+        availability: healthStatus.status === 'healthy' ? 100 :
+          healthStatus.status === 'degraded' ? 75 : 0,
         responseTime: performanceMetrics.performance.averageResponseTime,
         throughput: performanceMetrics.enhanced.throughputPerMinute,
         errorRate: 100 - performanceMetrics.requests.successRate,
         activeConnections: performanceMetrics.connections.total,
-        alertCount: alerts.length
+        alertCount: alerts.length,
       };
 
       // Recent trends (simplified)
@@ -285,7 +285,7 @@ export function createMonitoringRoutes(tunnelProxy, logger) {
         responseTime: 'stable', // Would calculate from historical data
         throughput: 'stable',
         errorRate: 'stable',
-        connections: 'stable'
+        connections: 'stable',
       };
 
       res.json({
@@ -295,30 +295,30 @@ export function createMonitoringRoutes(tunnelProxy, logger) {
           trends,
           health: {
             status: healthStatus.status,
-            checks: healthStatus.checks
+            checks: healthStatus.checks,
           },
           alerts: alerts.slice(0, 5), // Latest 5 alerts
           performance: {
             p95ResponseTime: performanceMetrics.enhanced.p95ResponseTime,
             p99ResponseTime: performanceMetrics.enhanced.p99ResponseTime,
             memoryUsageMB: performanceMetrics.enhanced.memoryUsageMB,
-            poolEfficiency: performanceMetrics.enhanced.connectionPoolStats.poolEfficiency
-          }
+            poolEfficiency: performanceMetrics.enhanced.connectionPoolStats.poolEfficiency,
+          },
         },
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
     } catch (error) {
       tunnelLogger.logTunnelError(
         ERROR_CODES.INTERNAL_SERVER_ERROR,
         'Failed to get dashboard data',
-        { error: error.message }
+        { error: error.message },
       );
-      
+
       res.status(500).json(
         ErrorResponseBuilder.internalServerError(
           'Failed to retrieve dashboard data',
-          ERROR_CODES.INTERNAL_SERVER_ERROR
-        )
+          ERROR_CODES.INTERNAL_SERVER_ERROR,
+        ),
       );
     }
   });
@@ -330,31 +330,31 @@ export function createMonitoringRoutes(tunnelProxy, logger) {
     try {
       tunnelProxy.checkPerformanceAlerts();
       tunnelProxy.updateMemoryUsage();
-      
+
       const alerts = tunnelProxy.performanceAlerts || [];
-      
+
       res.json({
         success: true,
         message: 'Performance check completed',
         data: {
           alertsGenerated: alerts.length,
           alerts: alerts,
-          lastCheck: tunnelProxy.lastPerformanceCheck
+          lastCheck: tunnelProxy.lastPerformanceCheck,
         },
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
     } catch (error) {
       tunnelLogger.logTunnelError(
         ERROR_CODES.INTERNAL_SERVER_ERROR,
         'Failed to perform performance check',
-        { error: error.message }
+        { error: error.message },
       );
-      
+
       res.status(500).json(
         ErrorResponseBuilder.internalServerError(
           'Failed to perform performance check',
-          ERROR_CODES.INTERNAL_SERVER_ERROR
-        )
+          ERROR_CODES.INTERNAL_SERVER_ERROR,
+        ),
       );
     }
   });

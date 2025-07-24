@@ -108,9 +108,20 @@ class StreamingChatService extends ChangeNotifier {
 
   /// Create a welcome conversation when no conversations exist
   void _createWelcomeConversation() {
+    // Ensure we have a model selected before creating conversation
+    final availableModels = _connectionManager.availableModels;
+    final modelToUse = _selectedModel ??
+                      (availableModels.isNotEmpty ? availableModels.first : 'default');
+
+    // Update selected model if it was null
+    if (_selectedModel == null && availableModels.isNotEmpty) {
+      _selectedModel = availableModels.first;
+      debugPrint('💬 [StreamingChat] Auto-selected model for welcome conversation: $_selectedModel');
+    }
+
     final sampleConversation = Conversation.create(
       title: 'Welcome Chat',
-      model: _selectedModel,
+      model: modelToUse,
     );
 
     final welcomeMessage = Message.system(

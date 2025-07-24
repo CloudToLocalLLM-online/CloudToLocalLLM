@@ -67,15 +67,16 @@ if (-not $SkipVersionUpdate) {
     & $versionManagerPath get-semantic
     
     if (-not $DryRun) {
-        Write-Host "Incrementing version ($VersionIncrement)..."
-        & $versionManagerPath increment $VersionIncrement
+        Write-Host "Preparing version ($VersionIncrement) for build-time injection..."
+        & $versionManagerPath prepare $VersionIncrement
         if ($LASTEXITCODE -ne 0) {
-            Write-Host "ERROR: Version increment failed" -ForegroundColor Red
+            Write-Host "ERROR: Version preparation failed" -ForegroundColor Red
             exit 1
         }
-        
-        Write-Host "New version:"
+
+        Write-Host "Version prepared with placeholder:"
         & $versionManagerPath get-semantic
+        Write-Host "Note: BUILD_TIME_PLACEHOLDER will be replaced during build process"
     }
 }
 
@@ -415,18 +416,37 @@ if ($DryRun) {
     }
 }
 
-# Step 5: Cleanup and Verification
+# Step 5: Build Validation and Cleanup
 if (-not $SkipBuild -and -not $DryRun) {
     Write-Host ""
-    Write-Host "=== STEP 5: BUILD CLEANUP ===" -ForegroundColor Yellow
+    Write-Host "=== STEP 5: BUILD VALIDATION ===" -ForegroundColor Yellow
 
-    # Restore version files to remove build-time timestamps
-    Write-Host "Restoring version files..."
-    & $buildInjectorPath restore
-    if ($LASTEXITCODE -ne 0) {
-        Write-Host "WARNING: Failed to restore version files" -ForegroundColor Yellow
+    # Validate that no BUILD_TIME_PLACEHOLDER remains in version files
+    Write-Host "Validating build-time injection..."
+    $validationFailed = $false
+
+    $filesToCheck = @("pubspec.yaml", "lib/shared/pubspec.yaml", "lib/shared/lib/version.dart", "assets/version.json")
+    foreach ($file in $filesToCheck) {
+        $filePath = Join-Path $ProjectRoot $file
+        if (Test-Path $filePath) {
+            $content = Get-Content $filePath -Raw
+            if ($content -match "BUILD_TIME_PLACEHOLDER") {
+                Write-Host "ERROR: BUILD_TIME_PLACEHOLDER found in: $file" -ForegroundColor Red
+                $validationFailed = $true
+            } else {
+                Write-Host "✓ No placeholders in: $file"
+            }
+        }
+    }
+
+    if ($validationFailed) {
+        Write-Host "ERROR: Build validation failed - placeholders remain in version files" -ForegroundColor Red
+        Write-Host "Restoring backup files to clean state..." -ForegroundColor Yellow
+        & $buildInjectorPath restore
+        exit 1
     } else {
-        Write-Host "✓ Version files restored"
+        Write-Host "✓ Build validation passed - all placeholders replaced with actual build numbers" -ForegroundColor Green
+        Write-Host "Note: Version files retain build timestamps for deployment consistency" -ForegroundColor Cyan
     }
 }
 

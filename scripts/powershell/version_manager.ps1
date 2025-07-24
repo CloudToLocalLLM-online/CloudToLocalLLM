@@ -242,13 +242,13 @@ function Update-SharedVersionFile {
     # Read current content
     $content = Get-Content $SharedVersionFile -Raw
 
-    # Update all version constants
+    # Update all version constants - handle both numeric build numbers and BUILD_TIME_PLACEHOLDER
     $content = $content -replace "static const String mainAppVersion = '[^']*';", "static const String mainAppVersion = '$NewVersion';"
-    $content = $content -replace "static const int mainAppBuildNumber = [0-9]*;", "static const int mainAppBuildNumber = $buildNumberInt;"
+    $content = $content -replace "static const int mainAppBuildNumber = (\d+|BUILD_TIME_PLACEHOLDER);", "static const int mainAppBuildNumber = $buildNumberInt;"
     $content = $content -replace "static const String tunnelManagerVersion = '[^']*';", "static const String tunnelManagerVersion = '$NewVersion';"
-    $content = $content -replace "static const int tunnelManagerBuildNumber = [0-9]*;", "static const int tunnelManagerBuildNumber = $buildNumberInt;"
+    $content = $content -replace "static const int tunnelManagerBuildNumber = (\d+|BUILD_TIME_PLACEHOLDER);", "static const int tunnelManagerBuildNumber = $buildNumberInt;"
     $content = $content -replace "static const String sharedLibraryVersion = '[^']*';", "static const String sharedLibraryVersion = '$NewVersion';"
-    $content = $content -replace "static const int sharedLibraryBuildNumber = [0-9]*;", "static const int sharedLibraryBuildNumber = $buildNumberInt;"
+    $content = $content -replace "static const int sharedLibraryBuildNumber = (\d+|BUILD_TIME_PLACEHOLDER);", "static const int sharedLibraryBuildNumber = $buildNumberInt;"
     $content = $content -replace "static const String buildTimestamp = '[^']*';", "static const String buildTimestamp = '$buildTimestamp';"
 
     Set-Content -Path $SharedVersionFile -Value $content -Encoding UTF8 -NoNewline
@@ -508,20 +508,46 @@ switch ($Command) {
         $version = Get-SemanticVersion
         Test-VersionFormat -Version $version
     }
+    'validate-placeholders' {
+        Write-LogInfo "Validating that no BUILD_TIME_PLACEHOLDER remains in version files"
+
+        $filesToCheck = @($PubspecFile, $SharedPubspecFile, $SharedVersionFile, $AssetsVersionFile)
+        $placeholderFound = $false
+
+        foreach ($file in $filesToCheck) {
+            if (Test-Path $file) {
+                $content = Get-Content $file -Raw
+                if ($content -match "BUILD_TIME_PLACEHOLDER") {
+                    Write-LogError "BUILD_TIME_PLACEHOLDER found in: $file"
+                    $placeholderFound = $true
+                } else {
+                    Write-LogInfo "✓ No placeholders in: $file"
+                }
+            }
+        }
+
+        if ($placeholderFound) {
+            Write-LogError "Validation failed: BUILD_TIME_PLACEHOLDER instances remain in version files"
+            exit 1
+        } else {
+            Write-LogSuccess "Validation passed: All BUILD_TIME_PLACEHOLDER instances have been replaced"
+        }
+    }
     'help' {
         Write-Host "CloudToLocalLLM Version Manager (PowerShell)" -ForegroundColor Cyan
         Write-Host ""
-        Write-Host "Usage: .\version_manager.ps1 <command> [arguments]" -ForegroundColor White
+        Write-Host "Usage: .\version_manager.ps1 [command] [arguments]" -ForegroundColor White
         Write-Host ""
         Write-Host "Commands:" -ForegroundColor Yellow
         Write-Host "  get              Get full version (MAJOR.MINOR.PATCH+BUILD)"
         Write-Host "  get-semantic     Get semantic version (MAJOR.MINOR.PATCH)"
         Write-Host "  get-build        Get build number"
         Write-Host "  info             Show detailed version information"
-        Write-Host "  increment <type> Increment version (major|minor|patch|build) - immediate timestamp"
-        Write-Host "  prepare <type>   Prepare version (major|minor|patch|build) - build-time timestamp"
-        Write-Host "  set <version>    Set specific version (MAJOR.MINOR.PATCH)"
+        Write-Host "  increment [type] Increment version (major|minor|patch|build) - immediate timestamp"
+        Write-Host "  prepare [type]   Prepare version (major|minor|patch|build) - build-time timestamp"
+        Write-Host "  set [version]    Set specific version (MAJOR.MINOR.PATCH)"
         Write-Host "  validate         Validate current version format"
+        Write-Host "  validate-placeholders  Validate no BUILD_TIME_PLACEHOLDER remains"
         Write-Host "  help             Show this help message"
         Write-Host ""
         Write-Host "Examples:" -ForegroundColor Yellow
@@ -532,32 +558,32 @@ switch ($Command) {
         Write-Host ""
         Write-Host "CloudToLocalLLM Semantic Versioning Strategy:" -ForegroundColor Yellow
         Write-Host ""
-        Write-Host "  PATCH (0.0.X+YYYYMMDDHHMM) - URGENT FIXES:"
-        Write-Host "    • Hotfixes and critical bug fixes requiring immediate deployment"
-        Write-Host "    • Security updates and emergency patches"
-        Write-Host "    • Critical stability fixes that can't wait for next minor release"
+        Write-Host "  PATCH - 0.0.X+YYYYMMDDHHMM - URGENT FIXES:"
+        Write-Host "    - Hotfixes and critical bug fixes requiring immediate deployment"
+        Write-Host "    - Security updates and emergency patches"
+        Write-Host "    - Critical stability fixes that cannot wait for next minor release"
         Write-Host ""
-        Write-Host "  MINOR (0.X.0+YYYYMMDDHHMM) - PLANNED FEATURES:"
-        Write-Host "    • Feature additions and new functionality"
-        Write-Host "    • Quality of life improvements and UI enhancements"
-        Write-Host "    • Planned feature releases and capability expansions"
+        Write-Host "  MINOR - 0.X.0+YYYYMMDDHHMM - PLANNED FEATURES:"
+        Write-Host "    - Feature additions and new functionality"
+        Write-Host "    - Quality of life improvements and UI enhancements"
+        Write-Host "    - Planned feature releases and capability expansions"
         Write-Host ""
-        Write-Host "  MAJOR (X.0.0+YYYYMMDDHHMM) - BREAKING CHANGES:"
-        Write-Host "    • Breaking changes and architectural overhauls"
-        Write-Host "    • Significant API changes requiring user adaptation"
-        Write-Host "    • Major platform or framework migrations"
+        Write-Host "  MAJOR - X.0.0+YYYYMMDDHHMM - BREAKING CHANGES:"
+        Write-Host "    - Breaking changes and architectural overhauls"
+        Write-Host "    - Significant API changes requiring user adaptation"
+        Write-Host "    - Major platform or framework migrations"
         Write-Host "    • Creates GitHub release automatically"
         Write-Host ""
-        Write-Host "  BUILD (X.Y.Z+YYYYMMDDHHMM) - TIMESTAMP ONLY:"
-        Write-Host "    • No semantic version change, only build timestamp update"
-        Write-Host "    • Used for CI/CD builds and testing iterations"
+        Write-Host "  BUILD - X.Y.Z+YYYYMMDDHHMM - TIMESTAMP ONLY:"
+        Write-Host "    - No semantic version change, only build timestamp update"
+        Write-Host "    - Used for CI/CD builds and testing iterations"
         Write-Host ""
         Write-Host "Build Number Format:"
         Write-Host "  YYYYMMDDHHMM     Timestamp format representing build creation time"
     }
     default {
         Write-LogError "Unknown command: $Command"
-        Write-Host "Use '.\version_manager.ps1 help' for usage information"
+        Write-Host "Use .\version_manager.ps1 help for usage information"
         exit 1
     }
 }

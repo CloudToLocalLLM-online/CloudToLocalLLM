@@ -270,6 +270,9 @@ function Invoke-BuildTimestampInjection {
     Update-SharedPubspecVersion -SemanticVersion $semanticVersion -BuildTimestamp $buildTimestamp
     Update-AppConfigVersion -SemanticVersion $semanticVersion
 
+    # Validate that all placeholders have been replaced
+    Test-PlaceholderRemoval
+
     Write-LogSuccess "✅ Build timestamp injection completed: $semanticVersion+$buildTimestamp"
 }
 
@@ -305,6 +308,33 @@ function Remove-BackupFiles {
     }
 
     Write-LogSuccess "✅ Backup files cleaned up"
+}
+
+# Validate that no BUILD_TIME_PLACEHOLDER remains in version files
+function Test-PlaceholderRemoval {
+    Write-LogInfo "Validating that all BUILD_TIME_PLACEHOLDER instances have been replaced"
+
+    $filesToCheck = @($PubspecFile, $SharedPubspecFile, $SharedVersionFile, $AssetsVersionFile)
+    $placeholderFound = $false
+
+    foreach ($file in $filesToCheck) {
+        if (Test-Path $file) {
+            $content = Get-Content $file -Raw
+            if ($content -match "BUILD_TIME_PLACEHOLDER") {
+                Write-LogError "BUILD_TIME_PLACEHOLDER found in: $file"
+                $placeholderFound = $true
+            } else {
+                Write-LogInfo "No placeholders in: $file"
+            }
+        }
+    }
+
+    if ($placeholderFound) {
+        Write-LogError "Validation failed: BUILD_TIME_PLACEHOLDER instances remain in version files"
+        exit 1
+    } else {
+        Write-LogSuccess "Validation passed: All BUILD_TIME_PLACEHOLDER instances have been replaced"
+    }
 }
 
 # Main command dispatcher

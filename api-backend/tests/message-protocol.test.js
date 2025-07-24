@@ -13,7 +13,7 @@ describe('MessageProtocol', () => {
         method: 'POST',
         path: '/api/chat',
         headers: { 'content-type': 'application/json' },
-        body: '{"message": "hello"}'
+        body: '{"message": "hello"}',
       };
 
       const message = MessageProtocol.createRequestMessage(httpRequest);
@@ -30,7 +30,7 @@ describe('MessageProtocol', () => {
       const httpRequest = {
         method: 'GET',
         path: '/api/status',
-        headers: {}
+        headers: {},
       };
 
       const message = MessageProtocol.createRequestMessage(httpRequest);
@@ -44,7 +44,7 @@ describe('MessageProtocol', () => {
     test('should throw error for invalid HTTP request', () => {
       const invalidRequest = {
         method: 'INVALID',
-        path: '/api/test'
+        path: '/api/test',
       };
 
       expect(() => MessageProtocol.createRequestMessage(invalidRequest))
@@ -53,7 +53,7 @@ describe('MessageProtocol', () => {
 
     test('should throw error for missing required fields', () => {
       const incompleteRequest = {
-        method: 'GET'
+        method: 'GET',
         // missing path
       };
 
@@ -68,7 +68,7 @@ describe('MessageProtocol', () => {
       const httpResponse = {
         status: 200,
         headers: { 'content-type': 'application/json' },
-        body: '{"result": "success"}'
+        body: '{"result": "success"}',
       };
 
       const message = MessageProtocol.createResponseMessage(requestId, httpResponse);
@@ -84,7 +84,7 @@ describe('MessageProtocol', () => {
       const httpResponse = {
         status: 200,
         headers: {},
-        body: 'OK'
+        body: 'OK',
       };
 
       expect(() => MessageProtocol.createResponseMessage('', httpResponse))
@@ -98,7 +98,7 @@ describe('MessageProtocol', () => {
       const invalidResponse = {
         status: 999, // invalid status code
         headers: {},
-        body: 'test'
+        body: 'test',
       };
 
       expect(() => MessageProtocol.createResponseMessage('test-id', invalidResponse))
@@ -178,7 +178,7 @@ describe('MessageProtocol', () => {
         method: 'POST',
         path: '/api/test',
         headers: { 'content-type': 'application/json' },
-        body: '{"test": true}'
+        body: '{"test": true}',
       });
 
       const serialized = MessageProtocol.serialize(original);
@@ -191,7 +191,7 @@ describe('MessageProtocol', () => {
       const original = MessageProtocol.createResponseMessage('req-123', {
         status: 200,
         headers: { 'content-type': 'text/plain' },
-        body: 'OK'
+        body: 'OK',
       });
 
       const serialized = MessageProtocol.serialize(original);
@@ -234,7 +234,7 @@ describe('MessageProtocol', () => {
         const validRequest = {
           method: 'GET',
           path: '/api/test',
-          headers: {}
+          headers: {},
         };
 
         expect(MessageProtocol.validateHttpRequest(validRequest)).toBe(true);
@@ -244,7 +244,7 @@ describe('MessageProtocol', () => {
         const invalidRequest = {
           method: 'INVALID',
           path: '/api/test',
-          headers: {}
+          headers: {},
         };
 
         expect(MessageProtocol.validateHttpRequest(invalidRequest)).toBe(false);
@@ -260,7 +260,7 @@ describe('MessageProtocol', () => {
         const invalidRequest = {
           method: 'GET',
           path: '/test',
-          headers: 'not an object'
+          headers: 'not an object',
         };
 
         expect(MessageProtocol.validateHttpRequest(invalidRequest)).toBe(false);
@@ -272,7 +272,7 @@ describe('MessageProtocol', () => {
         const validResponse = {
           status: 200,
           headers: {},
-          body: 'OK'
+          body: 'OK',
         };
 
         expect(MessageProtocol.validateHttpResponse(validResponse)).toBe(true);
@@ -282,7 +282,7 @@ describe('MessageProtocol', () => {
         const invalidResponse = {
           status: 999,
           headers: {},
-          body: 'OK'
+          body: 'OK',
         };
 
         expect(MessageProtocol.validateHttpResponse(invalidResponse)).toBe(false);
@@ -291,7 +291,7 @@ describe('MessageProtocol', () => {
       test('should reject missing status', () => {
         const invalidResponse = {
           headers: {},
-          body: 'OK'
+          body: 'OK',
         };
 
         expect(MessageProtocol.validateHttpResponse(invalidResponse)).toBe(false);
@@ -303,13 +303,13 @@ describe('MessageProtocol', () => {
         const requestMessage = MessageProtocol.createRequestMessage({
           method: 'GET',
           path: '/test',
-          headers: {}
+          headers: {},
         });
 
         const responseMessage = MessageProtocol.createResponseMessage('req-123', {
           status: 200,
           headers: {},
-          body: 'OK'
+          body: 'OK',
         });
 
         const pingMessage = MessageProtocol.createPingMessage();
@@ -326,7 +326,7 @@ describe('MessageProtocol', () => {
       test('should reject invalid message types', () => {
         const invalidMessage = {
           type: 'invalid',
-          id: 'test-123'
+          id: 'test-123',
         };
 
         expect(MessageProtocol.validateTunnelMessage(invalidMessage)).toBe(false);
@@ -335,7 +335,7 @@ describe('MessageProtocol', () => {
       test('should reject messages without ID', () => {
         const invalidMessage = {
           type: MESSAGE_TYPES.PING,
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
         };
 
         expect(MessageProtocol.validateTunnelMessage(invalidMessage)).toBe(false);
@@ -349,7 +349,7 @@ describe('MessageProtocol', () => {
         method: 'POST',
         path: '/api/test',
         headers: { 'content-type': 'application/json' },
-        body: '{"test": true}'
+        body: '{"test": true}',
       };
 
       const tunnelMessage = MessageProtocol.createRequestMessage(original);
@@ -362,7 +362,7 @@ describe('MessageProtocol', () => {
       const original = {
         status: 200,
         headers: { 'content-type': 'text/plain' },
-        body: 'OK'
+        body: 'OK',
       };
 
       const tunnelMessage = MessageProtocol.createResponseMessage('req-123', original);
@@ -376,7 +376,7 @@ describe('MessageProtocol', () => {
         type: MESSAGE_TYPES.HTTP_REQUEST,
         id: 'test',
         method: 'INVALID',
-        path: '/test'
+        path: '/test',
       };
 
       expect(() => MessageProtocol.extractHttpRequest(invalidMessage))
@@ -389,7 +389,7 @@ describe('MessageProtocol', () => {
       const request = MessageProtocol.createRequestMessage({
         method: 'GET',
         path: '/test',
-        headers: {}
+        headers: {},
       });
 
       expect(request.headers).toEqual({});
@@ -399,7 +399,7 @@ describe('MessageProtocol', () => {
       const request = MessageProtocol.createRequestMessage({
         method: 'GET',
         path: '/test',
-        headers: {}
+        headers: {},
       });
 
       expect(request.body).toBeUndefined();
@@ -410,7 +410,7 @@ describe('MessageProtocol', () => {
         const request = MessageProtocol.createRequestMessage({
           method,
           path: '/test',
-          headers: {}
+          headers: {},
         });
 
         expect(request.method).toBe(method);
@@ -425,7 +425,7 @@ describe('MessageProtocol', () => {
         const response = MessageProtocol.createResponseMessage('req-123', {
           status,
           headers: {},
-          body: 'test'
+          body: 'test',
         });
 
         expect(response.status).toBe(status);
@@ -439,7 +439,7 @@ describe('MessageProtocol', () => {
         method: 'POST',
         path: '/test',
         headers: { 'content-length': largeBody.length.toString() },
-        body: largeBody
+        body: largeBody,
       });
 
       const serialized = MessageProtocol.serialize(request);
@@ -452,7 +452,7 @@ describe('MessageProtocol', () => {
       const request = MessageProtocol.createRequestMessage({
         method: 'GET',
         path: '/api/test?param=value&other=测试',
-        headers: { 'x-custom-header': 'special-value-测试' }
+        headers: { 'x-custom-header': 'special-value-测试' },
       });
 
       const serialized = MessageProtocol.serialize(request);
@@ -467,7 +467,7 @@ describe('MessageProtocol', () => {
       const requestWithNullHeaders = {
         method: 'GET',
         path: '/test',
-        headers: null
+        headers: null,
       };
       expect(MessageProtocol.validateHttpRequest(requestWithNullHeaders)).toBe(true);
 
@@ -476,7 +476,7 @@ describe('MessageProtocol', () => {
         method: 'GET',
         path: '/test',
         headers: {},
-        body: undefined
+        body: undefined,
       };
       expect(MessageProtocol.validateHttpRequest(requestWithUndefinedBody)).toBe(true);
 
@@ -484,7 +484,7 @@ describe('MessageProtocol', () => {
       const responseWithNullHeaders = {
         status: 200,
         headers: null,
-        body: 'OK'
+        body: 'OK',
       };
       expect(MessageProtocol.validateHttpResponse(responseWithNullHeaders)).toBe(true);
 
@@ -492,7 +492,7 @@ describe('MessageProtocol', () => {
       const requestWithStringHeaders = {
         method: 'GET',
         path: '/test',
-        headers: 'not an object'
+        headers: 'not an object',
       };
       expect(MessageProtocol.validateHttpRequest(requestWithStringHeaders)).toBe(false);
     });
@@ -502,7 +502,7 @@ describe('MessageProtocol', () => {
       const requestWithEmptyPath = {
         method: 'GET',
         path: '',
-        headers: {}
+        headers: {},
       };
       expect(MessageProtocol.validateHttpRequest(requestWithEmptyPath)).toBe(false);
 
@@ -510,7 +510,7 @@ describe('MessageProtocol', () => {
       const requestWithEmptyMethod = {
         method: '',
         path: '/test',
-        headers: {}
+        headers: {},
       };
       expect(MessageProtocol.validateHttpRequest(requestWithEmptyMethod)).toBe(false);
 
@@ -519,7 +519,7 @@ describe('MessageProtocol', () => {
         method: 'POST',
         path: '/test',
         headers: {},
-        body: ''
+        body: '',
       };
       expect(MessageProtocol.validateHttpRequest(requestWithEmptyBody)).toBe(true);
     });
@@ -527,14 +527,14 @@ describe('MessageProtocol', () => {
     test('should handle boundary status codes', () => {
       // Test boundary status codes
       const boundaryStatusCodes = [99, 100, 599, 600];
-      
+
       boundaryStatusCodes.forEach(status => {
         const response = {
           status,
           headers: {},
-          body: 'test'
+          body: 'test',
         };
-        
+
         if (status >= 100 && status <= 599) {
           expect(MessageProtocol.validateHttpResponse(response)).toBe(true);
         } else {
@@ -548,7 +548,7 @@ describe('MessageProtocol', () => {
       const lowercaseRequest = {
         method: 'get',
         path: '/test',
-        headers: {}
+        headers: {},
       };
       expect(MessageProtocol.validateHttpRequest(lowercaseRequest)).toBe(true);
 
@@ -556,7 +556,7 @@ describe('MessageProtocol', () => {
       const mixedCaseRequest = {
         method: 'PoSt',
         path: '/test',
-        headers: {}
+        headers: {},
       };
       expect(MessageProtocol.validateHttpRequest(mixedCaseRequest)).toBe(true);
     });
@@ -566,12 +566,12 @@ describe('MessageProtocol', () => {
       const circularMessage = MessageProtocol.createRequestMessage({
         method: 'GET',
         path: '/test',
-        headers: {}
+        headers: {},
       });
-      
+
       // Add circular reference
       circularMessage.circular = circularMessage;
-      
+
       expect(() => MessageProtocol.serialize(circularMessage))
         .toThrow('Failed to serialize message');
     });
@@ -579,11 +579,11 @@ describe('MessageProtocol', () => {
     test('should handle extremely long paths and headers', () => {
       const longPath = '/api/' + 'a'.repeat(10000);
       const longHeaderValue = 'b'.repeat(10000);
-      
+
       const request = MessageProtocol.createRequestMessage({
         method: 'GET',
         path: longPath,
-        headers: { 'x-long-header': longHeaderValue }
+        headers: { 'x-long-header': longHeaderValue },
       });
 
       const serialized = MessageProtocol.serialize(request);
@@ -598,7 +598,7 @@ describe('MessageProtocol', () => {
       const invalidPingMessage = {
         type: MESSAGE_TYPES.PING,
         id: 'ping-123',
-        timestamp: 'invalid-timestamp'
+        timestamp: 'invalid-timestamp',
       };
       expect(MessageProtocol.validateTunnelMessage(invalidPingMessage)).toBe(false);
 
@@ -606,7 +606,7 @@ describe('MessageProtocol', () => {
       const numericTimestampMessage = {
         type: MESSAGE_TYPES.PING,
         id: 'ping-123',
-        timestamp: Date.now()
+        timestamp: Date.now(),
       };
       expect(MessageProtocol.validateTunnelMessage(numericTimestampMessage)).toBe(false);
 
@@ -614,7 +614,7 @@ describe('MessageProtocol', () => {
       const validPingMessage = {
         type: MESSAGE_TYPES.PING,
         id: 'ping-123',
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       };
       expect(MessageProtocol.validateTunnelMessage(validPingMessage)).toBe(true);
     });
@@ -624,7 +624,7 @@ describe('MessageProtocol', () => {
       const requestWithArrayHeader = {
         method: 'GET',
         path: '/test',
-        headers: { 'x-array': ['value1', 'value2'] }
+        headers: { 'x-array': ['value1', 'value2'] },
       };
       expect(MessageProtocol.validateHttpRequest(requestWithArrayHeader)).toBe(true);
 
@@ -632,7 +632,7 @@ describe('MessageProtocol', () => {
       const requestWithObjectHeader = {
         method: 'GET',
         path: '/test',
-        headers: { 'x-object': { nested: 'value' } }
+        headers: { 'x-object': { nested: 'value' } },
       };
       expect(MessageProtocol.validateHttpRequest(requestWithObjectHeader)).toBe(true);
 
@@ -640,7 +640,7 @@ describe('MessageProtocol', () => {
       const requestWithStringHeader = {
         method: 'GET',
         path: '/test',
-        headers: { 'x-string': 'value' }
+        headers: { 'x-string': 'value' },
       };
       expect(MessageProtocol.validateHttpRequest(requestWithStringHeader)).toBe(true);
     });
@@ -651,7 +651,7 @@ describe('MessageProtocol', () => {
         method: 'POST',
         path: '/test',
         headers: {},
-        body: 123
+        body: 123,
       };
       expect(MessageProtocol.validateHttpRequest(requestWithNumericBody)).toBe(false);
 
@@ -660,7 +660,7 @@ describe('MessageProtocol', () => {
         method: 'POST',
         path: '/test',
         headers: {},
-        body: { data: 'value' }
+        body: { data: 'value' },
       };
       expect(MessageProtocol.validateHttpRequest(requestWithObjectBody)).toBe(false);
 
@@ -669,7 +669,7 @@ describe('MessageProtocol', () => {
         method: 'POST',
         path: '/test',
         headers: {},
-        body: ['item1', 'item2']
+        body: ['item1', 'item2'],
       };
       expect(MessageProtocol.validateHttpRequest(requestWithArrayBody)).toBe(false);
     });
@@ -678,14 +678,14 @@ describe('MessageProtocol', () => {
       // Request without headers field should be valid (headers are optional)
       const requestWithoutHeaders = {
         method: 'GET',
-        path: '/test'
+        path: '/test',
       };
       expect(MessageProtocol.validateHttpRequest(requestWithoutHeaders)).toBe(true);
 
       // Response without headers field should be valid (headers are optional)
       const responseWithoutHeaders = {
         status: 200,
-        body: 'OK'
+        body: 'OK',
       };
       expect(MessageProtocol.validateHttpResponse(responseWithoutHeaders)).toBe(true);
     });
@@ -695,7 +695,7 @@ describe('MessageProtocol', () => {
       const requestWithWhitespacePath = {
         method: 'GET',
         path: '   ',
-        headers: {}
+        headers: {},
       };
       expect(MessageProtocol.validateHttpRequest(requestWithWhitespacePath)).toBe(true);
 
@@ -703,7 +703,7 @@ describe('MessageProtocol', () => {
       const requestWithWhitespaceMethod = {
         method: '   ',
         path: '/test',
-        headers: {}
+        headers: {},
       };
       expect(MessageProtocol.validateHttpRequest(requestWithWhitespaceMethod)).toBe(false);
     });
@@ -722,7 +722,7 @@ describe('MessageProtocol', () => {
         type: MESSAGE_TYPES.ERROR,
         id: 'req-123',
         error: 'Error message',
-        code: '500'
+        code: '500',
       };
       expect(MessageProtocol.validateTunnelMessage(errorWithStringCode)).toBe(false);
     });
@@ -732,7 +732,7 @@ describe('MessageProtocol', () => {
       const messageWithEmptyId = {
         type: MESSAGE_TYPES.PING,
         id: '',
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       };
       expect(MessageProtocol.validateTunnelMessage(messageWithEmptyId)).toBe(false);
 
@@ -740,7 +740,7 @@ describe('MessageProtocol', () => {
       const messageWithNumericId = {
         type: MESSAGE_TYPES.PING,
         id: 123,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       };
       expect(MessageProtocol.validateTunnelMessage(messageWithNumericId)).toBe(false);
 
@@ -748,7 +748,7 @@ describe('MessageProtocol', () => {
       const messageWithLongId = {
         type: MESSAGE_TYPES.PING,
         id: 'a'.repeat(1000),
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       };
       expect(MessageProtocol.validateTunnelMessage(messageWithLongId)).toBe(true);
     });
@@ -757,7 +757,7 @@ describe('MessageProtocol', () => {
       // Response with missing body should be valid (body is optional in validation)
       const responseWithoutBody = {
         status: 200,
-        headers: {}
+        headers: {},
       };
       expect(MessageProtocol.validateHttpResponse(responseWithoutBody)).toBe(true);
 
@@ -765,7 +765,7 @@ describe('MessageProtocol', () => {
       const responseWithNullBody = {
         status: 200,
         headers: {},
-        body: null
+        body: null,
       };
       expect(MessageProtocol.validateHttpResponse(responseWithNullBody)).toBe(true);
 
@@ -773,7 +773,7 @@ describe('MessageProtocol', () => {
       const responseWithUndefinedBody = {
         status: 200,
         headers: {},
-        body: undefined
+        body: undefined,
       };
       expect(MessageProtocol.validateHttpResponse(responseWithUndefinedBody)).toBe(true);
 
@@ -781,7 +781,7 @@ describe('MessageProtocol', () => {
       const responseWithEmptyBody = {
         status: 200,
         headers: {},
-        body: ''
+        body: '',
       };
       expect(MessageProtocol.validateHttpResponse(responseWithEmptyBody)).toBe(true);
 
@@ -789,7 +789,7 @@ describe('MessageProtocol', () => {
       const responseWithNumericBody = {
         status: 200,
         headers: {},
-        body: 123
+        body: 123,
       };
       expect(MessageProtocol.validateHttpResponse(responseWithNumericBody)).toBe(false);
     });
@@ -800,7 +800,7 @@ describe('MessageProtocol', () => {
         method: 'POST',
         path: '/api/测试',
         headers: { 'x-unicode': '🚀 rocket' },
-        body: '{"emoji": "🎉", "chinese": "测试"}'
+        body: '{"emoji": "🎉", "chinese": "测试"}',
       });
 
       const serialized = MessageProtocol.serialize(unicodeRequest);
@@ -820,7 +820,7 @@ describe('MessageProtocol', () => {
 
       const ids = messages.map(msg => msg.id);
       const uniqueIds = new Set(ids);
-      
+
       expect(uniqueIds.size).toBe(100); // All IDs should be unique
     });
 
@@ -832,7 +832,7 @@ describe('MessageProtocol', () => {
         method: 'GET',
         path: '/test',
         headers: {},
-        extraProperty: 'should be ignored'
+        extraProperty: 'should be ignored',
       };
       expect(MessageProtocol.validateTunnelMessage(requestWithExtraProps)).toBe(true);
 
@@ -843,7 +843,7 @@ describe('MessageProtocol', () => {
         status: 200,
         headers: {},
         body: 'OK',
-        extraProperty: 'should be ignored'
+        extraProperty: 'should be ignored',
       };
       expect(MessageProtocol.validateTunnelMessage(responseWithExtraProps)).toBe(true);
     });
@@ -859,7 +859,7 @@ describe('MessageProtocol', () => {
         '[1,2,3]', // Valid JSON but not an object
         'true', // Valid JSON but not an object
         '"string"', // Valid JSON but not an object
-        '123' // Valid JSON but not an object
+        '123', // Valid JSON but not an object
       ];
 
       malformedJsonStrings.forEach(jsonString => {
@@ -875,7 +875,7 @@ describe('MessageProtocol', () => {
       const deserialized = MessageProtocol.deserialize(serialized);
 
       expect(deserialized.timestamp).toBe(originalPing.timestamp);
-      
+
       // Test that the timestamp is a valid ISO string
       const date = new Date(deserialized.timestamp);
       expect(date.toISOString()).toBe(deserialized.timestamp);

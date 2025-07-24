@@ -742,6 +742,14 @@ class MockPlatformDetectionService extends _i1.Mock
   );
 
   @override
+  Map<String, dynamic> getDetectionInfo() =>
+      (super.noSuchMethod(
+            Invocation.method(#getDetectionInfo, []),
+            returnValue: <String, dynamic>{},
+          )
+          as Map<String, dynamic>);
+
+  @override
   void addListener(_i10.VoidCallback? listener) => super.noSuchMethod(
     Invocation.method(#addListener, [listener]),
     returnValueForMissingStub: null,
@@ -951,14 +959,21 @@ class MockDownloadManagementService extends _i1.Mock
           as _i6.Future<List<String>>);
 
   @override
-  void trackDownloadEvent(
+  _i6.Future<void> trackDownloadEvent(
     String? userId,
     String? platform,
     String? packageType,
-  ) => super.noSuchMethod(
-    Invocation.method(#trackDownloadEvent, [userId, platform, packageType]),
-    returnValueForMissingStub: null,
-  );
+  ) =>
+      (super.noSuchMethod(
+            Invocation.method(#trackDownloadEvent, [
+              userId,
+              platform,
+              packageType,
+            ]),
+            returnValue: _i6.Future<void>.value(),
+            returnValueForMissingStub: _i6.Future<void>.value(),
+          )
+          as _i6.Future<void>);
 
   @override
   Map<String, dynamic> getDownloadStatistics() =>

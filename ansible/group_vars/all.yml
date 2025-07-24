@@ -152,7 +152,7 @@ vps:
 # Security Configuration
 security:
   auth0:
-    domain: dev-xafu7oedkd5wlrbo.us.auth0.com
+    domain: dev-v2f2p008x3dr74ww.us.auth0.com
     audience: https://app.cloudtolocalllm.online
   
   ssl:

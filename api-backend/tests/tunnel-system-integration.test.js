@@ -17,7 +17,7 @@ describe('Tunnel System Integration', () => {
       info: jest.fn(),
       warn: jest.fn(),
       error: jest.fn(),
-      debug: jest.fn()
+      debug: jest.fn(),
     };
 
     tunnelProxy = new TunnelProxy(mockLogger);
@@ -28,15 +28,15 @@ describe('Tunnel System Integration', () => {
   });
 
   describe('Complete Request/Response Flow', () => {
-    it('should handle complete tunnel request flow', async () => {
+    it('should handle complete tunnel request flow', async() => {
       const userId = 'test-user-123';
-      
+
       // Mock WebSocket
       const mockWebSocket = {
         readyState: WebSocket.OPEN,
         send: jest.fn(),
         on: jest.fn(),
-        close: jest.fn()
+        close: jest.fn(),
       };
 
       // Set up connection
@@ -47,7 +47,7 @@ describe('Tunnel System Integration', () => {
       const httpRequest = {
         method: 'GET',
         path: '/api/models',
-        headers: { 'accept': 'application/json' }
+        headers: { 'accept': 'application/json' },
       };
 
       // Start forwarding request (this will be async)
@@ -64,7 +64,7 @@ describe('Tunnel System Integration', () => {
       const responseMessage = MessageProtocol.createResponseMessage(sentMessage.id, {
         status: 200,
         headers: { 'content-type': 'application/json' },
-        body: '{"models": ["llama2", "codellama"]}'
+        body: '{"models": ["llama2", "codellama"]}',
       });
 
       // Simulate receiving the response
@@ -80,15 +80,15 @@ describe('Tunnel System Integration', () => {
       expect(httpResponse.body).toBe('{"models": ["llama2", "codellama"]}');
     });
 
-    it('should handle request timeout', async () => {
+    it('should handle request timeout', async() => {
       const userId = 'test-user-123';
-      
+
       // Mock WebSocket
       const mockWebSocket = {
         readyState: WebSocket.OPEN,
         send: jest.fn(),
         on: jest.fn(),
-        close: jest.fn()
+        close: jest.fn(),
       };
 
       // Set up connection
@@ -100,7 +100,7 @@ describe('Tunnel System Integration', () => {
       const httpRequest = {
         method: 'GET',
         path: '/api/models',
-        headers: {}
+        headers: {},
       };
 
       // Start request
@@ -117,13 +117,13 @@ describe('Tunnel System Integration', () => {
 
     it('should handle ping/pong health checks', () => {
       const userId = 'test-user-123';
-      
+
       // Mock WebSocket
       const mockWebSocket = {
         readyState: WebSocket.OPEN,
         send: jest.fn(),
         on: jest.fn(),
-        close: jest.fn()
+        close: jest.fn(),
       };
 
       // Set up connection
@@ -138,21 +138,21 @@ describe('Tunnel System Integration', () => {
 
       // Verify connection is still healthy
       expect(tunnelProxy.isUserConnected(userId)).toBe(true);
-      
+
       const status = tunnelProxy.getUserConnectionStatus(userId);
       expect(status.connected).toBe(true);
       expect(status.lastPing).toBeInstanceOf(Date);
     });
 
-    it('should handle error responses from desktop client', async () => {
+    it('should handle error responses from desktop client', async() => {
       const userId = 'test-user-123';
-      
+
       // Mock WebSocket
       const mockWebSocket = {
         readyState: WebSocket.OPEN,
         send: jest.fn(),
         on: jest.fn(),
-        close: jest.fn()
+        close: jest.fn(),
       };
 
       // Set up connection
@@ -162,7 +162,7 @@ describe('Tunnel System Integration', () => {
         method: 'POST',
         path: '/api/chat',
         headers: { 'content-type': 'application/json' },
-        body: '{"model": "invalid"}'
+        body: '{"model": "invalid"}',
       };
 
       // Start request
@@ -173,9 +173,9 @@ describe('Tunnel System Integration', () => {
 
       // Simulate error response from desktop client
       const errorMessage = MessageProtocol.createErrorMessage(
-        sentMessage.id, 
-        'Model not found', 
-        404
+        sentMessage.id,
+        'Model not found',
+        404,
       );
 
       const errorData = Buffer.from(MessageProtocol.serialize(errorMessage));
@@ -187,13 +187,13 @@ describe('Tunnel System Integration', () => {
 
     it('should handle connection disconnection gracefully', () => {
       const userId = 'test-user-123';
-      
+
       // Mock WebSocket
       const mockWebSocket = {
         readyState: WebSocket.OPEN,
         send: jest.fn(),
         on: jest.fn(),
-        close: jest.fn()
+        close: jest.fn(),
       };
 
       // Set up connection
@@ -205,7 +205,7 @@ describe('Tunnel System Integration', () => {
 
       // Verify connection is cleaned up
       expect(tunnelProxy.isUserConnected(userId)).toBe(false);
-      
+
       const status = tunnelProxy.getUserConnectionStatus(userId);
       expect(status.connected).toBe(false);
     });
@@ -213,20 +213,20 @@ describe('Tunnel System Integration', () => {
     it('should maintain connection statistics', () => {
       const userId1 = 'user-1';
       const userId2 = 'user-2';
-      
+
       // Mock WebSockets
       const mockWs1 = {
         readyState: WebSocket.OPEN,
         send: jest.fn(),
         on: jest.fn(),
-        close: jest.fn()
+        close: jest.fn(),
       };
-      
+
       const mockWs2 = {
         readyState: WebSocket.OPEN,
         send: jest.fn(),
         on: jest.fn(),
-        close: jest.fn()
+        close: jest.fn(),
       };
 
       // Set up connections
@@ -248,7 +248,7 @@ describe('Tunnel System Integration', () => {
         method: 'POST',
         path: '/api/generate',
         headers: { 'content-type': 'application/json' },
-        body: '{"prompt": "Hello"}'
+        body: '{"prompt": "Hello"}',
       });
       expect(MessageProtocol.validateTunnelMessage(requestMessage)).toBe(true);
 
@@ -256,7 +256,7 @@ describe('Tunnel System Integration', () => {
       const responseMessage = MessageProtocol.createResponseMessage('req-123', {
         status: 200,
         headers: { 'content-type': 'application/json' },
-        body: '{"response": "Hi there!"}'
+        body: '{"response": "Hi there!"}',
       });
       expect(MessageProtocol.validateTunnelMessage(responseMessage)).toBe(true);
 
@@ -277,7 +277,7 @@ describe('Tunnel System Integration', () => {
       const originalMessage = MessageProtocol.createRequestMessage({
         method: 'GET',
         path: '/api/status',
-        headers: { 'user-agent': 'CloudToLocalLLM/1.0' }
+        headers: { 'user-agent': 'CloudToLocalLLM/1.0' },
       });
 
       const serialized = MessageProtocol.serialize(originalMessage);
@@ -290,12 +290,12 @@ describe('Tunnel System Integration', () => {
   describe('Error Handling', () => {
     it('should handle invalid JSON messages', () => {
       const userId = 'test-user-123';
-      
+
       const mockWebSocket = {
         readyState: WebSocket.OPEN,
         send: jest.fn(),
         on: jest.fn(),
-        close: jest.fn()
+        close: jest.fn(),
       };
 
       const connectionId = tunnelProxy.handleConnection(mockWebSocket, userId);
@@ -310,12 +310,12 @@ describe('Tunnel System Integration', () => {
 
     it('should handle unknown message types', () => {
       const userId = 'test-user-123';
-      
+
       const mockWebSocket = {
         readyState: WebSocket.OPEN,
         send: jest.fn(),
         on: jest.fn(),
-        close: jest.fn()
+        close: jest.fn(),
       };
 
       const connectionId = tunnelProxy.handleConnection(mockWebSocket, userId);
@@ -323,7 +323,7 @@ describe('Tunnel System Integration', () => {
       // Send message with invalid format (this will trigger error handling)
       const invalidMessage = {
         type: 'http_request', // Valid type but missing required fields
-        id: 'test-123'
+        id: 'test-123',
         // Missing method and path
       };
       const messageData = Buffer.from(JSON.stringify(invalidMessage));
@@ -333,11 +333,11 @@ describe('Tunnel System Integration', () => {
       expect(mockLogger.error).toHaveBeenCalled();
     });
 
-    it('should reject requests when user not connected', async () => {
+    it('should reject requests when user not connected', async() => {
       const httpRequest = {
         method: 'GET',
         path: '/api/models',
-        headers: {}
+        headers: {},
       };
 
       await expect(tunnelProxy.forwardRequest('unknown-user', httpRequest))

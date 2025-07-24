@@ -21,20 +21,20 @@ const DEFAULT_CONFIG = {
     'ECDHE-RSA-AES128-SHA256',
     'ECDHE-RSA-AES256-SHA384',
     'DHE-RSA-AES128-GCM-SHA256',
-    'DHE-RSA-AES256-GCM-SHA384'
+    'DHE-RSA-AES256-GCM-SHA384',
   ],
-  
+
   // Certificate validation
   validateClientCertificates: false, // Set to true for mutual TLS
   allowSelfSignedCerts: process.env.NODE_ENV !== 'production',
   certificateRevocationCheck: true,
-  
+
   // Connection security
   maxConnectionsPerIP: 100,
   connectionTimeoutMs: 30000,
   keepAliveTimeout: 65000,
   headersTimeout: 60000,
-  
+
   // Security headers
   securityHeaders: {
     'Strict-Transport-Security': 'max-age=31536000; includeSubDomains; preload',
@@ -42,22 +42,22 @@ const DEFAULT_CONFIG = {
     'X-Frame-Options': 'DENY',
     'X-XSS-Protection': '1; mode=block',
     'Referrer-Policy': 'strict-origin-when-cross-origin',
-    'Content-Security-Policy': "default-src 'self'; connect-src 'self' wss: https:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'"
+    'Content-Security-Policy': 'default-src \'self\'; connect-src \'self\' wss: https:; script-src \'self\' \'unsafe-inline\'; style-src \'self\' \'unsafe-inline\'',
   },
-  
+
   // WebSocket security
   websocketOriginCheck: true,
   allowedOrigins: [
     'https://app.cloudtolocalllm.online',
     'https://cloudtolocalllm.online',
-    'https://docs.cloudtolocalllm.online'
+    'https://docs.cloudtolocalllm.online',
   ],
-  
+
   // Rate limiting for security events
   securityEventRateLimit: {
     windowMs: 15 * 60 * 1000, // 15 minutes
-    maxEvents: 10 // max security events per IP per window
-  }
+    maxEvents: 10, // max security events per IP per window
+  },
 };
 
 /**
@@ -82,7 +82,7 @@ class ConnectionTracker {
         count: 0,
         firstConnection: new Date(),
         lastConnection: new Date(),
-        connections: []
+        connections: [],
       });
     }
 
@@ -94,7 +94,7 @@ class ConnectionTracker {
       userAgent: connectionInfo.userAgent,
       protocol: connectionInfo.protocol,
       tlsVersion: connectionInfo.tlsVersion,
-      cipher: connectionInfo.cipher
+      cipher: connectionInfo.cipher,
     });
 
     // Keep only recent connections (last 100)
@@ -118,7 +118,7 @@ class ConnectionTracker {
     events.push({
       type: eventType,
       timestamp: new Date(),
-      details
+      details,
     });
 
     // Keep only recent events (last 50)
@@ -136,8 +136,8 @@ class ConnectionTracker {
    */
   evaluateIPSuspicion(ip) {
     const events = this.securityEvents.get(ip) || [];
-    const recentEvents = events.filter(event => 
-      Date.now() - event.timestamp.getTime() < DEFAULT_CONFIG.securityEventRateLimit.windowMs
+    const recentEvents = events.filter(event =>
+      Date.now() - event.timestamp.getTime() < DEFAULT_CONFIG.securityEventRateLimit.windowMs,
     );
 
     if (recentEvents.length >= DEFAULT_CONFIG.securityEventRateLimit.maxEvents) {
@@ -145,8 +145,8 @@ class ConnectionTracker {
     }
 
     // Auto-block IPs with excessive security events
-    const criticalEvents = recentEvents.filter(event => 
-      ['certificate_validation_failed', 'tls_handshake_failed', 'malicious_request'].includes(event.type)
+    const criticalEvents = recentEvents.filter(event =>
+      ['certificate_validation_failed', 'tls_handshake_failed', 'malicious_request'].includes(event.type),
     );
 
     if (criticalEvents.length >= 5) {
@@ -187,7 +187,7 @@ class ConnectionTracker {
       count: tracker.count,
       firstConnection: tracker.firstConnection,
       lastConnection: tracker.lastConnection,
-      recentConnections: tracker.connections.slice(-10)
+      recentConnections: tracker.connections.slice(-10),
     };
   }
 
@@ -235,7 +235,7 @@ export class ConnectionSecurityManager {
     this.config = { ...DEFAULT_CONFIG, ...config };
     this.logger = new TunnelLogger('connection-security');
     this.connectionTracker = new ConnectionTracker();
-    
+
     // Start cleanup interval
     this.cleanupInterval = setInterval(() => {
       this.connectionTracker.cleanup();
@@ -245,7 +245,7 @@ export class ConnectionSecurityManager {
       enforceHttps: this.config.enforceHttps,
       minTlsVersion: this.config.minTlsVersion,
       validateClientCertificates: this.config.validateClientCertificates,
-      allowSelfSignedCerts: this.config.allowSelfSignedCerts
+      allowSelfSignedCerts: this.config.allowSelfSignedCerts,
     });
   }
 
@@ -257,23 +257,23 @@ export class ConnectionSecurityManager {
    */
   validateTLSConnection(socket, ip) {
     const correlationId = this.logger.generateCorrelationId();
-    
+
     try {
       // Check if connection uses TLS
       if (!socket.encrypted) {
         if (this.config.enforceHttps) {
           this.connectionTracker.recordSecurityEvent(ip, 'non_tls_connection', {
             correlationId,
-            enforceHttps: this.config.enforceHttps
+            enforceHttps: this.config.enforceHttps,
           });
-          
+
           return {
             valid: false,
             reason: 'TLS connection required',
-            errorCode: 'TLS_REQUIRED'
+            errorCode: 'TLS_REQUIRED',
           };
         }
-        
+
         // Allow non-TLS in development
         return { valid: true, reason: 'Non-TLS allowed in development' };
       }
@@ -284,13 +284,13 @@ export class ConnectionSecurityManager {
         this.connectionTracker.recordSecurityEvent(ip, 'invalid_tls_version', {
           correlationId,
           tlsVersion,
-          minRequired: this.config.minTlsVersion
+          minRequired: this.config.minTlsVersion,
         });
-        
+
         return {
           valid: false,
           reason: `TLS version ${tlsVersion} not allowed. Minimum: ${this.config.minTlsVersion}`,
-          errorCode: 'INVALID_TLS_VERSION'
+          errorCode: 'INVALID_TLS_VERSION',
         };
       }
 
@@ -300,13 +300,13 @@ export class ConnectionSecurityManager {
         this.connectionTracker.recordSecurityEvent(ip, 'weak_cipher', {
           correlationId,
           cipher: cipher.name,
-          allowedCiphers: this.config.allowedCiphers
+          allowedCiphers: this.config.allowedCiphers,
         });
-        
+
         return {
           valid: false,
           reason: `Cipher ${cipher.name} not allowed`,
-          errorCode: 'WEAK_CIPHER'
+          errorCode: 'WEAK_CIPHER',
         };
       }
 
@@ -324,31 +324,31 @@ export class ConnectionSecurityManager {
         ip,
         tlsVersion,
         cipher: cipher?.name,
-        authorized: socket.authorized
+        authorized: socket.authorized,
       });
 
       return {
         valid: true,
         tlsVersion,
         cipher: cipher?.name,
-        authorized: socket.authorized
+        authorized: socket.authorized,
       };
 
     } catch (error) {
       this.connectionTracker.recordSecurityEvent(ip, 'tls_validation_error', {
         correlationId,
-        error: error.message
+        error: error.message,
       });
-      
+
       this.logger.error('TLS connection validation failed', error, {
         correlationId,
-        ip
+        ip,
       });
-      
+
       return {
         valid: false,
         reason: 'TLS validation failed',
-        errorCode: 'TLS_VALIDATION_FAILED'
+        errorCode: 'TLS_VALIDATION_FAILED',
       };
     }
   }
@@ -363,13 +363,13 @@ export class ConnectionSecurityManager {
   validateClientCertificate(cert, ip, correlationId) {
     if (!cert || Object.keys(cert).length === 0) {
       this.connectionTracker.recordSecurityEvent(ip, 'missing_client_certificate', {
-        correlationId
+        correlationId,
       });
-      
+
       return {
         valid: false,
         reason: 'Client certificate required',
-        errorCode: 'CLIENT_CERT_REQUIRED'
+        errorCode: 'CLIENT_CERT_REQUIRED',
       };
     }
 
@@ -383,30 +383,30 @@ export class ConnectionSecurityManager {
         correlationId,
         validFrom: cert.valid_from,
         validTo: cert.valid_to,
-        currentTime: now.toISOString()
+        currentTime: now.toISOString(),
       });
-      
+
       return {
         valid: false,
         reason: 'Client certificate expired or not yet valid',
-        errorCode: 'CLIENT_CERT_EXPIRED'
+        errorCode: 'CLIENT_CERT_EXPIRED',
       };
     }
 
     // Check if certificate is self-signed
-    if (cert.issuer && cert.subject && 
+    if (cert.issuer && cert.subject &&
         JSON.stringify(cert.issuer) === JSON.stringify(cert.subject)) {
       if (!this.config.allowSelfSignedCerts) {
         this.connectionTracker.recordSecurityEvent(ip, 'self_signed_certificate', {
           correlationId,
           subject: cert.subject,
-          issuer: cert.issuer
+          issuer: cert.issuer,
         });
-        
+
         return {
           valid: false,
           reason: 'Self-signed certificates not allowed',
-          errorCode: 'SELF_SIGNED_CERT_NOT_ALLOWED'
+          errorCode: 'SELF_SIGNED_CERT_NOT_ALLOWED',
         };
       }
     }
@@ -419,13 +419,13 @@ export class ConnectionSecurityManager {
         this.connectionTracker.recordSecurityEvent(ip, 'revoked_certificate', {
           correlationId,
           serialNumber: cert.serialNumber,
-          fingerprint: cert.fingerprint
+          fingerprint: cert.fingerprint,
         });
-        
+
         return {
           valid: false,
           reason: 'Certificate has been revoked',
-          errorCode: 'CLIENT_CERT_REVOKED'
+          errorCode: 'CLIENT_CERT_REVOKED',
         };
       }
     }
@@ -436,7 +436,7 @@ export class ConnectionSecurityManager {
       subject: cert.subject,
       issuer: cert.issuer,
       validFrom: cert.valid_from,
-      validTo: cert.valid_to
+      validTo: cert.valid_to,
     });
 
     return { valid: true };
@@ -449,11 +449,11 @@ export class ConnectionSecurityManager {
    */
   isValidTLSVersion(tlsVersion) {
     const validVersions = ['TLSv1.2', 'TLSv1.3'];
-    
+
     if (this.config.minTlsVersion === 'TLSv1.3') {
       return tlsVersion === 'TLSv1.3';
     }
-    
+
     return validVersions.includes(tlsVersion);
   }
 
@@ -466,9 +466,9 @@ export class ConnectionSecurityManager {
     if (this.config.allowedCiphers.length === 0) {
       return true; // Allow all if no restrictions
     }
-    
-    return this.config.allowedCiphers.some(allowed => 
-      cipherName.includes(allowed) || allowed.includes(cipherName)
+
+    return this.config.allowedCiphers.some(allowed =>
+      cipherName.includes(allowed) || allowed.includes(cipherName),
     );
   }
 
@@ -482,7 +482,7 @@ export class ConnectionSecurityManager {
     // - Certificate Revocation List (CRL)
     // - Online Certificate Status Protocol (OCSP)
     // - Internal revocation database
-    
+
     // For now, return false (not revoked)
     return false;
   }
@@ -500,13 +500,15 @@ export class ConnectionSecurityManager {
 
     if (!origin) {
       this.connectionTracker.recordSecurityEvent(ip, 'missing_origin_header', {
-        expectedOrigins: this.config.allowedOrigins
+        expectedOrigins: this.config.allowedOrigins,
       });
       return false;
     }
 
     const isAllowed = this.config.allowedOrigins.some(allowed => {
-      if (allowed === '*') return true;
+      if (allowed === '*') {
+        return true;
+      }
       if (allowed.endsWith('*')) {
         return origin.startsWith(allowed.slice(0, -1));
       }
@@ -516,7 +518,7 @@ export class ConnectionSecurityManager {
     if (!isAllowed) {
       this.connectionTracker.recordSecurityEvent(ip, 'invalid_origin', {
         origin,
-        allowedOrigins: this.config.allowedOrigins
+        allowedOrigins: this.config.allowedOrigins,
       });
     }
 
@@ -532,21 +534,21 @@ export class ConnectionSecurityManager {
       connections: {
         total: this.connectionTracker.connections.size,
         suspicious: this.connectionTracker.suspiciousIPs.size,
-        blocked: this.connectionTracker.blockedIPs.size
+        blocked: this.connectionTracker.blockedIPs.size,
       },
       securityEvents: {
         total: 0,
-        byType: {}
+        byType: {},
       },
-      topSuspiciousIPs: []
+      topSuspiciousIPs: [],
     };
 
     // Count security events
     for (const events of this.connectionTracker.securityEvents.values()) {
       stats.securityEvents.total += events.length;
-      
+
       for (const event of events) {
-        stats.securityEvents.byType[event.type] = 
+        stats.securityEvents.byType[event.type] =
           (stats.securityEvents.byType[event.type] || 0) + 1;
       }
     }
@@ -559,7 +561,7 @@ export class ConnectionSecurityManager {
         eventCount: events.length,
         lastEvent: events[events.length - 1]?.timestamp,
         isSuspicious: this.connectionTracker.isSuspicious(ip),
-        isBlocked: this.connectionTracker.isBlocked(ip)
+        isBlocked: this.connectionTracker.isBlocked(ip),
       });
     }
 
@@ -587,7 +589,7 @@ export class ConnectionSecurityManager {
       clearInterval(this.cleanupInterval);
       this.cleanupInterval = null;
     }
-    
+
     this.logger.info('Connection security manager destroyed');
   }
 }
@@ -599,26 +601,26 @@ export class ConnectionSecurityManager {
  */
 export function createConnectionSecurityMiddleware(config = {}) {
   const securityManager = new ConnectionSecurityManager(config);
-  
+
   return (req, res, next) => {
     const ip = req.ip || req.connection.remoteAddress;
     const correlationId = req.correlationId || securityManager.logger.generateCorrelationId();
-    
+
     // Check if IP is blocked
     if (securityManager.connectionTracker.isBlocked(ip)) {
       securityManager.logger.logSecurity('blocked_ip_access_attempt', null, {
         correlationId,
         ip: securityManager.hashIP(ip),
         path: req.path,
-        userAgent: req.get('User-Agent')
+        userAgent: req.get('User-Agent'),
       });
-      
+
       return res.status(403).json(
         ErrorResponseBuilder.createErrorResponse(
           'IP_BLOCKED',
           'Access denied due to security violations',
-          403
-        )
+          403,
+        ),
       );
     }
 
@@ -632,7 +634,7 @@ export function createConnectionSecurityMiddleware(config = {}) {
       userAgent: req.get('User-Agent'),
       protocol: req.protocol,
       tlsVersion: req.socket?.getProtocol?.() || 'unknown',
-      cipher: req.socket?.getCipher?.()?.name || 'unknown'
+      cipher: req.socket?.getCipher?.()?.name || 'unknown',
     });
 
     // Validate TLS connection if available
@@ -643,15 +645,15 @@ export function createConnectionSecurityMiddleware(config = {}) {
           correlationId,
           ip: securityManager.hashIP(ip),
           reason: tlsValidation.reason,
-          errorCode: tlsValidation.errorCode
+          errorCode: tlsValidation.errorCode,
         });
-        
+
         return res.status(400).json(
           ErrorResponseBuilder.createErrorResponse(
             tlsValidation.errorCode,
             tlsValidation.reason,
-            400
-          )
+            400,
+          ),
         );
       }
     }
@@ -663,7 +665,7 @@ export function createConnectionSecurityMiddleware(config = {}) {
         correlationId,
         ip: securityManager.hashIP(ip),
         path: req.path,
-        method: req.method
+        method: req.method,
       });
     }
 
@@ -678,16 +680,16 @@ export function createConnectionSecurityMiddleware(config = {}) {
  */
 export function createWebSocketSecurityValidator(config = {}) {
   const securityManager = new ConnectionSecurityManager(config);
-  
+
   return (info) => {
     const ip = info.req.socket.remoteAddress;
     const origin = info.req.headers.origin;
-    
+
     // Check if IP is blocked
     if (securityManager.connectionTracker.isBlocked(ip)) {
       securityManager.logger.logSecurity('blocked_ip_websocket_attempt', null, {
         ip: securityManager.hashIP(ip),
-        origin
+        origin,
       });
       return false;
     }

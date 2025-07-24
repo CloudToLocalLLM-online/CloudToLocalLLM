@@ -57,6 +57,8 @@ class TestConfig {
               return null;
             case 'setToolTip':
               return null;
+            case 'popUpContextMenu':
+              return null;
             case 'destroy':
               return null;
             default:

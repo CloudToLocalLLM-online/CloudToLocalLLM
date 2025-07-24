@@ -126,17 +126,16 @@ class SetupWizardFeatureFlags {
   /// Get custom configuration value with fallback
   T getCustomConfig<T>(String key, T defaultValue) {
     try {
-      switch (T) {
-        case bool:
-          return (_remoteConfig?.getBool(key) ?? defaultValue) as T;
-        case int:
-          return (_remoteConfig?.getInt(key) ?? defaultValue) as T;
-        case double:
-          return (_remoteConfig?.getDouble(key) ?? defaultValue) as T;
-        case String:
-          return (_remoteConfig?.getString(key) ?? defaultValue) as T;
-        default:
-          return defaultValue;
+      if (T == bool) {
+        return (_remoteConfig?.getBool(key) ?? defaultValue) as T;
+      } else if (T == int) {
+        return (_remoteConfig?.getInt(key) ?? defaultValue) as T;
+      } else if (T == double) {
+        return (_remoteConfig?.getDouble(key) ?? defaultValue) as T;
+      } else if (T == String) {
+        return (_remoteConfig?.getString(key) ?? defaultValue) as T;
+      } else {
+        return defaultValue;
       }
     } catch (e) {
       debugPrint('Error reading custom config $key: $e');

@@ -35,19 +35,19 @@ export class TunnelProxy {
   constructor(logger = winston.createLogger()) {
     // Use enhanced logger if winston logger provided, otherwise create new TunnelLogger
     this.logger = logger instanceof TunnelLogger ? logger : new TunnelLogger('tunnel-proxy');
-    
+
     /** @type {Map<string, TunnelConnection>} */
     this.connections = new Map();
-    
+
     /** @type {Map<string, TunnelConnection>} */
     this.userConnections = new Map();
-    
+
     this.REQUEST_TIMEOUT = 30000; // 30 seconds
     this.PING_INTERVAL = 30000; // 30 seconds
     this.PONG_TIMEOUT = 10000; // 10 seconds
     this.pingIntervals = new Map();
     this.pongTimeouts = new Map();
-    
+
     // Enhanced performance metrics with connection pooling
     this.metrics = {
       totalRequests: 0,
@@ -65,24 +65,24 @@ export class TunnelProxy {
       connectionPoolHits: 0,
       connectionPoolMisses: 0,
       queuedMessages: 0,
-      peakQueuedMessages: 0
+      peakQueuedMessages: 0,
     };
-    
+
     // Connection pooling for efficient resource management
     this.connectionPool = new Map(); // userId -> pooled connections
     this.MAX_POOL_SIZE_PER_USER = 3;
     this.POOL_CLEANUP_INTERVAL = 60000; // 1 minute
-    
+
     // Message queuing for performance optimization
     this.messageQueues = new Map(); // connectionId -> message queue
     this.MAX_QUEUE_SIZE = 500;
     this.isProcessingQueues = false;
-    
+
     // Performance monitoring
     this.performanceAlerts = [];
     this.lastPerformanceCheck = new Date();
     this.PERFORMANCE_CHECK_INTERVAL = 30000; // 30 seconds
-    
+
     // Start performance monitoring
     this.startPerformanceMonitoring();
   }
@@ -96,7 +96,7 @@ export class TunnelProxy {
   handleConnection(ws, userId) {
     const connectionId = uuidv4();
     const correlationId = this.logger.generateCorrelationId();
-    
+
     try {
       // Check if user already has a connection
       const existingConnection = this.userConnections.get(userId);
@@ -105,14 +105,14 @@ export class TunnelProxy {
           correlationId,
           previousConnectionId: Array.from(this.connections.entries())
             .find(([id, conn]) => conn === existingConnection)?.[0],
-          reason: 'User reconnected with new connection'
+          reason: 'User reconnected with new connection',
         });
-        
+
         // Clean up existing connection
         this.handleDisconnection(Array.from(this.connections.entries())
           .find(([id, conn]) => conn === existingConnection)?.[0]);
       }
-      
+
       const connection = {
         userId,
         websocket: ws,
@@ -122,7 +122,7 @@ export class TunnelProxy {
         connectionId,
         correlationId,
         connectedAt: new Date(),
-        lastActivity: new Date()
+        lastActivity: new Date(),
       };
 
       // Store connection
@@ -133,7 +133,7 @@ export class TunnelProxy {
       this.logger.logConnection('connected', connectionId, userId, {
         correlationId,
         totalConnections: this.connections.size,
-        userConnections: this.userConnections.size
+        userConnections: this.userConnections.size,
       });
 
       // Set up message handler with error handling
@@ -145,7 +145,7 @@ export class TunnelProxy {
           this.logger.logTunnelError(
             ERROR_CODES.MESSAGE_SERIALIZATION_FAILED,
             'Failed to handle WebSocket message',
-            { connectionId, userId, correlationId, error: error.message }
+            { connectionId, userId, correlationId, error: error.message },
           );
         }
       });
@@ -155,7 +155,7 @@ export class TunnelProxy {
         this.logger.logConnection('disconnected', connectionId, userId, {
           correlationId,
           closeCode: code,
-          closeReason: reason?.toString() || 'Unknown'
+          closeReason: reason?.toString() || 'Unknown',
         });
         this.handleDisconnection(connectionId);
       });
@@ -165,7 +165,7 @@ export class TunnelProxy {
         this.logger.logTunnelError(
           ERROR_CODES.WEBSOCKET_CONNECTION_FAILED,
           'WebSocket connection error',
-          { connectionId, userId, correlationId, error: error.message }
+          { connectionId, userId, correlationId, error: error.message },
         );
         this.handleDisconnection(connectionId);
       });
@@ -181,7 +181,7 @@ export class TunnelProxy {
         this.logger.logTunnelError(
           ERROR_CODES.WEBSOCKET_SEND_FAILED,
           'Failed to send welcome message',
-          { connectionId, userId, correlationId, error: error.message }
+          { connectionId, userId, correlationId, error: error.message },
         );
         throw error;
       }
@@ -191,7 +191,7 @@ export class TunnelProxy {
       this.logger.logTunnelError(
         ERROR_CODES.WEBSOCKET_CONNECTION_FAILED,
         'Failed to handle new connection',
-        { connectionId, userId, correlationId, error: error.message }
+        { connectionId, userId, correlationId, error: error.message },
       );
       throw error;
     }
@@ -208,7 +208,7 @@ export class TunnelProxy {
       this.logger.logTunnelError(
         ERROR_CODES.INVALID_MESSAGE_FORMAT,
         'Message from unknown connection',
-        { connectionId, dataLength: data?.length || 0 }
+        { connectionId, dataLength: data?.length || 0 },
       );
       return;
     }
@@ -219,54 +219,54 @@ export class TunnelProxy {
         this.logger.logTunnelError(
           ERROR_CODES.INVALID_MESSAGE_FORMAT,
           'Empty message received',
-          { connectionId, userId: connection.userId, correlationId: connection.correlationId }
+          { connectionId, userId: connection.userId, correlationId: connection.correlationId },
         );
         return;
       }
 
       const message = MessageProtocol.deserialize(messageStr);
-      
+
       this.logger.debug('Message received', {
         connectionId,
         userId: connection.userId,
         messageType: message.type,
         messageId: message.id,
-        correlationId: connection.correlationId
+        correlationId: connection.correlationId,
       });
-      
+
       switch (message.type) {
-        case MESSAGE_TYPES.HTTP_RESPONSE:
-          this.handleHttpResponse(connectionId, message);
-          break;
-        case MESSAGE_TYPES.PONG:
-          this.handlePong(connectionId, message);
-          break;
-        case MESSAGE_TYPES.ERROR:
-          this.handleError(connectionId, message);
-          break;
-        default:
-          this.logger.logTunnelError(
-            ERROR_CODES.INVALID_MESSAGE_FORMAT,
-            'Unknown message type received',
-            { 
-              connectionId, 
-              userId: connection.userId, 
-              messageType: message.type,
-              correlationId: connection.correlationId
-            }
-          );
+      case MESSAGE_TYPES.HTTP_RESPONSE:
+        this.handleHttpResponse(connectionId, message);
+        break;
+      case MESSAGE_TYPES.PONG:
+        this.handlePong(connectionId, message);
+        break;
+      case MESSAGE_TYPES.ERROR:
+        this.handleError(connectionId, message);
+        break;
+      default:
+        this.logger.logTunnelError(
+          ERROR_CODES.INVALID_MESSAGE_FORMAT,
+          'Unknown message type received',
+          {
+            connectionId,
+            userId: connection.userId,
+            messageType: message.type,
+            correlationId: connection.correlationId,
+          },
+        );
       }
     } catch (error) {
       this.logger.logTunnelError(
         ERROR_CODES.MESSAGE_SERIALIZATION_FAILED,
         'Failed to process WebSocket message',
-        { 
-          connectionId, 
-          userId: connection.userId, 
+        {
+          connectionId,
+          userId: connection.userId,
           error: error.message,
           correlationId: connection.correlationId,
-          dataLength: data?.length || 0
-        }
+          dataLength: data?.length || 0,
+        },
       );
     }
   }
@@ -282,7 +282,7 @@ export class TunnelProxy {
       this.logger.logTunnelError(
         ERROR_CODES.INVALID_MESSAGE_FORMAT,
         'HTTP response from unknown connection',
-        { connectionId, messageId: message.id }
+        { connectionId, messageId: message.id },
       );
       return;
     }
@@ -292,13 +292,13 @@ export class TunnelProxy {
       this.logger.logTunnelError(
         ERROR_CODES.INVALID_REQUEST_FORMAT,
         'Response for unknown or expired request',
-        { 
-          connectionId, 
-          userId: connection.userId, 
+        {
+          connectionId,
+          userId: connection.userId,
           messageId: message.id,
           correlationId: connection.correlationId,
-          pendingRequestsCount: connection.pendingRequests.size
-        }
+          pendingRequestsCount: connection.pendingRequests.size,
+        },
       );
       return;
     }
@@ -306,18 +306,18 @@ export class TunnelProxy {
     try {
       // Calculate response time
       const responseTime = Date.now() - pendingRequest.timestamp.getTime();
-      
+
       // Clear timeout and remove from pending requests
       clearTimeout(pendingRequest.timeout);
       connection.pendingRequests.delete(message.id);
 
       // Extract and validate HTTP response
       const httpResponse = MessageProtocol.extractHttpResponse(message);
-      
+
       // Update metrics
       this.metrics.successfulRequests++;
       this.updateAverageResponseTime(responseTime);
-      
+
       // Resolve the promise with the HTTP response
       pendingRequest.resolve(httpResponse);
 
@@ -326,27 +326,27 @@ export class TunnelProxy {
         correlationId: connection.correlationId,
         responseTime,
         statusCode: httpResponse.status,
-        pendingRequestsCount: connection.pendingRequests.size
+        pendingRequestsCount: connection.pendingRequests.size,
       });
     } catch (error) {
       // Clear timeout and remove from pending requests
       clearTimeout(pendingRequest.timeout);
       connection.pendingRequests.delete(message.id);
-      
+
       this.metrics.failedRequests++;
-      
+
       this.logger.logTunnelError(
         ERROR_CODES.INVALID_MESSAGE_FORMAT,
         'Failed to process HTTP response',
-        { 
-          connectionId, 
-          userId: connection.userId, 
+        {
+          connectionId,
+          userId: connection.userId,
           messageId: message.id,
           correlationId: connection.correlationId,
-          error: error.message
-        }
+          error: error.message,
+        },
       );
-      
+
       pendingRequest.reject(new Error(`Invalid response format: ${error.message}`));
     }
   }
@@ -362,7 +362,7 @@ export class TunnelProxy {
       this.logger.logTunnelError(
         ERROR_CODES.INVALID_MESSAGE_FORMAT,
         'Pong from unknown connection',
-        { connectionId, messageId: message.id }
+        { connectionId, messageId: message.id },
       );
       return;
     }
@@ -376,12 +376,12 @@ export class TunnelProxy {
 
     connection.lastPing = new Date();
     connection.lastActivity = new Date();
-    
+
     this.logger.debug('Pong received', {
       connectionId,
       userId: connection.userId,
       messageId: message.id,
-      correlationId: connection.correlationId
+      correlationId: connection.correlationId,
     });
   }
 
@@ -396,7 +396,7 @@ export class TunnelProxy {
       this.logger.logTunnelError(
         ERROR_CODES.INVALID_MESSAGE_FORMAT,
         'Error message from unknown connection',
-        { connectionId, messageId: message.id }
+        { connectionId, messageId: message.id },
       );
       return;
     }
@@ -406,13 +406,13 @@ export class TunnelProxy {
       this.logger.logTunnelError(
         ERROR_CODES.INVALID_REQUEST_FORMAT,
         'Error for unknown or expired request',
-        { 
-          connectionId, 
-          userId: connection.userId, 
+        {
+          connectionId,
+          userId: connection.userId,
           messageId: message.id,
           correlationId: connection.correlationId,
-          errorMessage: message.error
-        }
+          errorMessage: message.error,
+        },
       );
       return;
     }
@@ -442,7 +442,7 @@ export class TunnelProxy {
       responseTime,
       errorCode: message.code,
       errorMessage: message.error,
-      pendingRequestsCount: connection.pendingRequests.size
+      pendingRequestsCount: connection.pendingRequests.size,
     });
   }
 
@@ -462,7 +462,7 @@ export class TunnelProxy {
     this.logger.logConnection('disconnected', connectionId, connection.userId, {
       correlationId: connection.correlationId,
       sessionDuration,
-      pendingRequestsCount: connection.pendingRequests.size
+      pendingRequestsCount: connection.pendingRequests.size,
     });
 
     // Mark connection as disconnected
@@ -480,18 +480,18 @@ export class TunnelProxy {
     const pendingRequestsCount = connection.pendingRequests.size;
     for (const [requestId, pendingRequest] of connection.pendingRequests) {
       clearTimeout(pendingRequest.timeout);
-      
+
       const error = new Error('Connection closed');
       error.code = ERROR_CODES.CONNECTION_LOST;
       error.requestId = requestId;
-      
+
       pendingRequest.reject(error);
-      
+
       this.logger.logRequest('failed', requestId, connection.userId, {
         connectionId,
         correlationId: connection.correlationId,
         reason: 'Connection closed',
-        errorCode: ERROR_CODES.CONNECTION_LOST
+        errorCode: ERROR_CODES.CONNECTION_LOST,
       });
     }
     connection.pendingRequests.clear();
@@ -528,29 +528,29 @@ export class TunnelProxy {
     return new Promise((resolve, reject) => {
       const requestMessage = MessageProtocol.createRequestMessage(httpRequest);
       const startTime = Date.now();
-      
+
       // Set up timeout with enhanced error handling
       const timeout = setTimeout(() => {
         connection.pendingRequests.delete(requestMessage.id);
-        
+
         // Update metrics
         this.metrics.timeoutRequests++;
         this.metrics.failedRequests++;
-        
+
         const error = new Error('Request timeout');
         error.code = ERROR_CODES.REQUEST_TIMEOUT;
         error.requestId = requestMessage.id;
         error.timeout = this.REQUEST_TIMEOUT;
-        
+
         this.logger.logRequest('timeout', requestMessage.id, userId, {
           connectionId: connection.connectionId,
           correlationId: connection.correlationId,
           method: httpRequest.method,
           path: httpRequest.path,
           timeout: this.REQUEST_TIMEOUT,
-          pendingRequestsCount: connection.pendingRequests.size
+          pendingRequestsCount: connection.pendingRequests.size,
         });
-        
+
         reject(error);
       }, this.REQUEST_TIMEOUT);
 
@@ -563,28 +563,28 @@ export class TunnelProxy {
         reject,
         method: httpRequest.method,
         path: httpRequest.path,
-        startTime
+        startTime,
       });
 
       // Send request to desktop client with error handling
       try {
         this.sendMessage(connection, requestMessage);
-        
+
         this.logger.logRequest('started', requestMessage.id, userId, {
           connectionId: connection.connectionId,
           correlationId: connection.correlationId,
           method: httpRequest.method,
           path: httpRequest.path,
-          pendingRequestsCount: connection.pendingRequests.size
+          pendingRequestsCount: connection.pendingRequests.size,
         });
       } catch (error) {
         // Clean up on send failure
         clearTimeout(timeout);
         connection.pendingRequests.delete(requestMessage.id);
-        
+
         // Update metrics
         this.metrics.failedRequests++;
-        
+
         this.logger.logTunnelError(
           ERROR_CODES.WEBSOCKET_SEND_FAILED,
           'Failed to send request to desktop client',
@@ -593,15 +593,15 @@ export class TunnelProxy {
             userId,
             correlationId: connection.correlationId,
             requestId: requestMessage.id,
-            error: error.message
-          }
+            error: error.message,
+          },
         );
-        
+
         const enhancedError = new Error(`Failed to send request: ${error.message}`);
         enhancedError.code = ERROR_CODES.WEBSOCKET_SEND_FAILED;
         enhancedError.requestId = requestMessage.id;
         enhancedError.originalError = error;
-        
+
         reject(enhancedError);
       }
     });
@@ -634,7 +634,7 @@ export class TunnelProxy {
     return {
       connected: connection.isConnected,
       lastPing: connection.lastPing,
-      pendingRequests: connection.pendingRequests.size
+      pendingRequests: connection.pendingRequests.size,
     };
   }
 
@@ -674,7 +674,7 @@ export class TunnelProxy {
       try {
         const pingMessage = MessageProtocol.createPingMessage();
         this.sendMessage(connection, pingMessage);
-        
+
         // Set up pong timeout
         const pongTimeout = setTimeout(() => {
           this.logger.logTunnelError(
@@ -684,19 +684,19 @@ export class TunnelProxy {
               connectionId,
               userId: connection.userId,
               correlationId: connection.correlationId,
-              pingId: pingMessage.id
-            }
+              pingId: pingMessage.id,
+            },
           );
           this.handleDisconnection(connectionId);
         }, this.PONG_TIMEOUT);
-        
+
         this.pongTimeouts.set(connectionId, pongTimeout);
-        
+
         this.logger.debug('Ping sent', {
           connectionId,
           userId: connection.userId,
           pingId: pingMessage.id,
-          correlationId: connection.correlationId
+          correlationId: connection.correlationId,
         });
       } catch (error) {
         this.logger.logTunnelError(
@@ -706,8 +706,8 @@ export class TunnelProxy {
             connectionId,
             userId: connection.userId,
             correlationId: connection.correlationId,
-            error: error.message
-          }
+            error: error.message,
+          },
         );
         this.stopPingInterval(connectionId);
         this.handleDisconnection(connectionId);
@@ -739,16 +739,16 @@ export class TunnelProxy {
       this.metrics.averageResponseTime = responseTime;
     } else {
       // Calculate running average
-      this.metrics.averageResponseTime = 
+      this.metrics.averageResponseTime =
         ((this.metrics.averageResponseTime * (totalSuccessful - 1)) + responseTime) / totalSuccessful;
     }
-    
+
     // Track recent response times for performance analysis
     this.metrics.recentResponseTimes.push(responseTime);
     if (this.metrics.recentResponseTimes.length > 100) {
       this.metrics.recentResponseTimes.shift();
     }
-    
+
     // Track request timestamps for throughput calculation
     this.metrics.requestTimestamps.push(new Date());
     this.cleanupOldTimestamps();
@@ -781,7 +781,7 @@ export class TunnelProxy {
 
     this.logger.info('Performance monitoring started', {
       checkInterval: this.PERFORMANCE_CHECK_INTERVAL,
-      poolCleanupInterval: this.POOL_CLEANUP_INTERVAL
+      poolCleanupInterval: this.POOL_CLEANUP_INTERVAL,
     });
   }
 
@@ -791,37 +791,37 @@ export class TunnelProxy {
   checkPerformanceAlerts() {
     const stats = this.getStats();
     const alerts = [];
-    
+
     // Check success rate
     if (stats.requests.successRate < 80) {
       alerts.push({
         type: 'LOW_SUCCESS_RATE',
         message: `Success rate is ${stats.requests.successRate}% (below 80%)`,
         severity: 'high',
-        timestamp: new Date()
+        timestamp: new Date(),
       });
     }
-    
+
     // Check timeout rate
     if (stats.requests.timeoutRate > 20) {
       alerts.push({
         type: 'HIGH_TIMEOUT_RATE',
         message: `Timeout rate is ${stats.requests.timeoutRate}% (above 20%)`,
         severity: 'high',
-        timestamp: new Date()
+        timestamp: new Date(),
       });
     }
-    
+
     // Check response time
     if (stats.performance.averageResponseTime > 5000) {
       alerts.push({
         type: 'HIGH_RESPONSE_TIME',
         message: `Average response time is ${stats.performance.averageResponseTime}ms (above 5000ms)`,
         severity: 'medium',
-        timestamp: new Date()
+        timestamp: new Date(),
       });
     }
-    
+
     // Check memory usage
     const memoryUsageMB = this.metrics.memoryUsage / (1024 * 1024);
     if (memoryUsageMB > 100) {
@@ -829,33 +829,33 @@ export class TunnelProxy {
         type: 'HIGH_MEMORY_USAGE',
         message: `Memory usage is ${memoryUsageMB.toFixed(2)}MB (above 100MB)`,
         severity: 'medium',
-        timestamp: new Date()
+        timestamp: new Date(),
       });
     }
-    
+
     // Check queue size
     if (this.metrics.queuedMessages > 200) {
       alerts.push({
         type: 'HIGH_QUEUE_SIZE',
         message: `Message queue size is ${this.metrics.queuedMessages} (above 200)`,
         severity: 'high',
-        timestamp: new Date()
+        timestamp: new Date(),
       });
     }
-    
+
     // Update alerts and log if new alerts found
     if (alerts.length > 0) {
       this.performanceAlerts = alerts;
       this.logger.warn('Performance alerts detected', {
         alertCount: alerts.length,
-        alerts: alerts.map(a => ({ type: a.type, severity: a.severity }))
+        alerts: alerts.map(a => ({ type: a.type, severity: a.severity })),
       });
     } else if (this.performanceAlerts.length > 0) {
       // Clear alerts if performance is back to normal
       this.performanceAlerts = [];
       this.logger.info('Performance alerts cleared - system performance normalized');
     }
-    
+
     this.lastPerformanceCheck = new Date();
   }
 
@@ -864,33 +864,33 @@ export class TunnelProxy {
    */
   updateMemoryUsage() {
     let memoryBytes = 0;
-    
+
     // Base proxy overhead
     memoryBytes += 5 * 1024 * 1024; // 5MB base
-    
+
     // Connection overhead
     memoryBytes += this.connections.size * 4096; // ~4KB per connection
-    
+
     // Pending requests
     const totalPendingRequests = Array.from(this.connections.values())
       .reduce((sum, conn) => sum + conn.pendingRequests.size, 0);
     memoryBytes += totalPendingRequests * 1024; // ~1KB per pending request
-    
+
     // Message queues
     const totalQueuedMessages = Array.from(this.messageQueues.values())
       .reduce((sum, queue) => sum + queue.length, 0);
     memoryBytes += totalQueuedMessages * 512; // ~512B per queued message
-    
+
     // Connection pool
     const totalPooledConnections = Array.from(this.connectionPool.values())
       .reduce((sum, pool) => sum + pool.length, 0);
     memoryBytes += totalPooledConnections * 2048; // ~2KB per pooled connection
-    
+
     this.metrics.memoryUsage = memoryBytes;
     if (memoryBytes > this.metrics.peakMemoryUsage) {
       this.metrics.peakMemoryUsage = memoryBytes;
     }
-    
+
     this.metrics.queuedMessages = totalQueuedMessages;
     if (totalQueuedMessages > this.metrics.peakQueuedMessages) {
       this.metrics.peakQueuedMessages = totalQueuedMessages;
@@ -902,12 +902,12 @@ export class TunnelProxy {
    */
   cleanupConnectionPool() {
     let cleanedConnections = 0;
-    
+
     for (const [userId, pool] of this.connectionPool.entries()) {
-      const activeConnections = pool.filter(conn => 
-        conn.readyState === WebSocket.OPEN || conn.readyState === WebSocket.CONNECTING
+      const activeConnections = pool.filter(conn =>
+        conn.readyState === WebSocket.OPEN || conn.readyState === WebSocket.CONNECTING,
       );
-      
+
       if (activeConnections.length !== pool.length) {
         cleanedConnections += pool.length - activeConnections.length;
         if (activeConnections.length > 0) {
@@ -917,12 +917,12 @@ export class TunnelProxy {
         }
       }
     }
-    
+
     if (cleanedConnections > 0) {
       this.logger.debug('Connection pool cleanup completed', {
         cleanedConnections,
         remainingPoolSize: Array.from(this.connectionPool.values())
-          .reduce((sum, pool) => sum + pool.length, 0)
+          .reduce((sum, pool) => sum + pool.length, 0),
       });
     }
   }
@@ -934,7 +934,7 @@ export class TunnelProxy {
   getPerformanceMetrics() {
     const stats = this.getStats();
     const recentResponseTimes = this.metrics.recentResponseTimes;
-    
+
     // Calculate percentiles
     let p95ResponseTime = 0;
     let p99ResponseTime = 0;
@@ -945,10 +945,10 @@ export class TunnelProxy {
       p95ResponseTime = sorted[p95Index] || 0;
       p99ResponseTime = sorted[p99Index] || 0;
     }
-    
+
     // Calculate throughput (requests per minute)
     const throughput = this.metrics.requestTimestamps.length;
-    
+
     return {
       ...stats,
       enhanced: {
@@ -964,15 +964,15 @@ export class TunnelProxy {
           poolMisses: this.metrics.connectionPoolMisses,
           poolEfficiency: this.metrics.connectionPoolHits + this.metrics.connectionPoolMisses > 0
             ? Math.round((this.metrics.connectionPoolHits / (this.metrics.connectionPoolHits + this.metrics.connectionPoolMisses)) * 10000) / 100
-            : 0
+            : 0,
         },
         queueStats: {
           currentQueueSize: this.metrics.queuedMessages,
-          peakQueueSize: this.metrics.peakQueuedMessages
+          peakQueueSize: this.metrics.peakQueuedMessages,
         },
         alerts: this.performanceAlerts,
-        lastPerformanceCheck: this.lastPerformanceCheck
-      }
+        lastPerformanceCheck: this.lastPerformanceCheck,
+      },
     };
   }
 
@@ -985,19 +985,19 @@ export class TunnelProxy {
     const totalPendingRequests = Array.from(this.connections.values())
       .reduce((sum, conn) => sum + conn.pendingRequests.size, 0);
 
-    const successRate = this.metrics.totalRequests > 0 
-      ? (this.metrics.successfulRequests / this.metrics.totalRequests) * 100 
+    const successRate = this.metrics.totalRequests > 0
+      ? (this.metrics.successfulRequests / this.metrics.totalRequests) * 100
       : 0;
 
-    const timeoutRate = this.metrics.totalRequests > 0 
-      ? (this.metrics.timeoutRequests / this.metrics.totalRequests) * 100 
+    const timeoutRate = this.metrics.totalRequests > 0
+      ? (this.metrics.timeoutRequests / this.metrics.totalRequests) * 100
       : 0;
 
     return {
       connections: {
         total: totalConnections,
         connectedUsers: this.userConnections.size,
-        totalCreated: this.metrics.connectionCount
+        totalCreated: this.metrics.connectionCount,
       },
       requests: {
         total: this.metrics.totalRequests,
@@ -1006,12 +1006,12 @@ export class TunnelProxy {
         timeout: this.metrics.timeoutRequests,
         pending: totalPendingRequests,
         successRate: Math.round(successRate * 100) / 100,
-        timeoutRate: Math.round(timeoutRate * 100) / 100
+        timeoutRate: Math.round(timeoutRate * 100) / 100,
       },
       performance: {
-        averageResponseTime: Math.round(this.metrics.averageResponseTime * 100) / 100
+        averageResponseTime: Math.round(this.metrics.averageResponseTime * 100) / 100,
       },
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     };
   }
 
@@ -1047,13 +1047,13 @@ export class TunnelProxy {
         connectionPerformanceOk: connectionPerformanceOk,
         successRateOk: !hasConnections || stats.requests.successRate > 80,
         timeoutRateOk: !hasConnections || stats.requests.timeoutRate < 20,
-        averageResponseTimeOk: !hasConnections || stats.performance.averageResponseTime < 5000
+        averageResponseTimeOk: !hasConnections || stats.performance.averageResponseTime < 5000,
       },
       connections: {
         active: stats.connections.total,
-        expected: 'created-on-user-login'
+        expected: 'created-on-user-login',
       },
-      ...stats
+      ...stats,
     };
   }
 
@@ -1072,7 +1072,7 @@ export class TunnelProxy {
       if (connection.websocket.readyState === WebSocket.OPEN) {
         connection.websocket.close();
       }
-      
+
       // Clean up pending requests
       for (const pendingRequest of connection.pendingRequests.values()) {
         clearTimeout(pendingRequest.timeout);

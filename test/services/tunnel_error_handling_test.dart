@@ -246,20 +246,15 @@ void main() {
       tunnelClient.dispose();
     });
 
-    test('should handle missing authentication token', () async {
+    test('should handle missing authentication token gracefully', () async {
       when(mockAuthService.getAccessToken()).thenReturn(null);
-      when(mockAuthService.getUserId()).thenReturn('test-user');
 
-      expect(
-        () => tunnelClient.connect(),
-        throwsA(
-          isA<TunnelException>().having(
-            (e) => e.code,
-            'code',
-            TunnelErrorCodes.authTokenMissing,
-          ),
-        ),
-      );
+      // Should not throw exception, but return gracefully
+      await tunnelClient.connect();
+
+      // Should not be connected
+      expect(tunnelClient.isConnected, false);
+      expect(tunnelClient.isConnecting, false);
     });
 
     test('should handle WebSocket connection failure', () async {

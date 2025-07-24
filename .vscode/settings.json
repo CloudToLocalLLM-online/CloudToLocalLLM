@@ -1,5 +1,17 @@
 {
     "cmake.sourceDirectory": "C:/Users/chris/Dev/CloudToLocalLLM/windows",
     "bitoAI.codeCompletion.enableAutoCompletion": false,
-    "zencoder.enableRepoIndexing": true
+    "zencoder.enableRepoIndexing": true,
+    "mcp.servers": {
+        "auth0": {
+            "command": "npx",
+            "args": [
+                "@auth0/auth0-mcp-server",
+                "run"
+            ],
+            "env": {
+                "NODE_ENV": "production"
+            }
+        }
+    }
 }

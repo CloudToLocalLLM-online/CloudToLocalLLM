@@ -169,82 +169,97 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
 
-          // Logo and app name
-          const AppLogo.small(
-            backgroundColor: Colors.white,
-            textColor: Color(0xFF6e8efb),
-            borderColor: Color(0xFFa777e3),
-          ),
-
-          SizedBox(width: AppTheme.spacingS),
-
-          Text(
-            AppConfig.appName,
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
+          // Logo and app name (flexible to prevent overflow)
+          Flexible(
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const AppLogo.small(
+                  backgroundColor: Colors.white,
+                  textColor: Color(0xFF6e8efb),
+                  borderColor: Color(0xFFa777e3),
+                ),
+                SizedBox(width: AppTheme.spacingS),
+                Flexible(
+                  child: Text(
+                    AppConfig.appName,
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
             ),
           ),
 
           const Spacer(),
 
-          // Model selector
-          Consumer2<StreamingChatService, ConnectionManagerService>(
-            builder: (context, chatService, connectionManager, child) {
-              final models = connectionManager.availableModels;
-              return Container(
-                padding: EdgeInsets.symmetric(horizontal: AppTheme.spacingS),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(AppTheme.borderRadiusS),
-                  border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.3),
-                    width: 1,
+          // Model selector (flexible to prevent overflow)
+          Flexible(
+            child: Consumer2<StreamingChatService, ConnectionManagerService>(
+              builder: (context, chatService, connectionManager, child) {
+                final models = connectionManager.availableModels;
+                return Container(
+                  constraints: const BoxConstraints(minWidth: 120, maxWidth: 200),
+                  padding: EdgeInsets.symmetric(horizontal: AppTheme.spacingS),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(AppTheme.borderRadiusS),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.3),
+                      width: 1,
+                    ),
                   ),
-                ),
-                child: DropdownButtonHideUnderline(
-                  child: DropdownButton<String>(
-                    value: chatService.selectedModel,
-                    hint: Text(
-                      'Select Model',
-                      style: TextStyle(
+                  child: DropdownButtonHideUnderline(
+                    child: DropdownButton<String>(
+                      value: chatService.selectedModel,
+                      hint: Text(
+                        'Select Model',
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.8),
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      items: models.map((model) {
+                        return DropdownMenuItem(
+                          value: model,
+                          child: Text(
+                            model,
+                            style: const TextStyle(color: Colors.black),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        );
+                      }).toList(),
+                      onChanged: (model) {
+                        if (model != null) {
+                          chatService.setSelectedModel(model);
+                        }
+                      },
+                      dropdownColor: Colors.white,
+                      icon: Icon(
+                        Icons.arrow_drop_down,
                         color: Colors.white.withValues(alpha: 0.8),
                       ),
-                    ),
-                    items: models.map((model) {
-                      return DropdownMenuItem(
-                        value: model,
-                        child: Text(
-                          model,
-                          style: const TextStyle(color: Colors.black),
-                        ),
-                      );
-                    }).toList(),
-                    onChanged: (model) {
-                      if (model != null) {
-                        chatService.setSelectedModel(model);
-                      }
-                    },
-                    dropdownColor: Colors.white,
-                    icon: Icon(
-                      Icons.arrow_drop_down,
-                      color: Colors.white.withValues(alpha: 0.8),
+                      isExpanded: true, // Ensure dropdown uses available width
                     ),
                   ),
-                ),
-              );
-            },
+                );
+              },
+            ),
           ),
 
           SizedBox(width: AppTheme.spacingM),
 
-          // User menu
-          Consumer<AuthService>(
-            builder: (context, authService, child) {
-              final user = authService.currentUser;
-              return SizedBox(
-                width: 180, // Fixed width to ensure consistent dropdown width
-                child: PopupMenuButton<String>(
+          // User menu (flexible to prevent overflow)
+          Flexible(
+            child: Consumer<AuthService>(
+              builder: (context, authService, child) {
+                final user = authService.currentUser;
+                return ConstrainedBox(
+                  constraints: const BoxConstraints(minWidth: 120, maxWidth: 180),
+                  child: PopupMenuButton<String>(
                   onSelected: (value) async {
                     switch (value) {
                       case 'settings':
@@ -339,6 +354,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               );
             },
+            ),
           ),
         ],
       ),

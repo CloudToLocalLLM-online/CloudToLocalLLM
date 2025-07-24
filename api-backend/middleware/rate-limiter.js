@@ -12,21 +12,21 @@ const DEFAULT_CONFIG = {
   // Standard rate limits
   windowMs: 15 * 60 * 1000, // 15 minutes
   maxRequests: 1000, // requests per window
-  
+
   // Burst protection
   burstWindowMs: 60 * 1000, // 1 minute
   maxBurstRequests: 100, // requests per burst window
-  
+
   // Connection limits
   maxConcurrentRequests: 50, // concurrent requests per user
-  
+
   // Cleanup intervals
   cleanupIntervalMs: 5 * 60 * 1000, // 5 minutes
-  
+
   // Headers
   includeHeaders: true,
   skipSuccessfulRequests: false,
-  skipFailedRequests: false
+  skipFailedRequests: false,
 };
 
 /**
@@ -54,7 +54,7 @@ class UserRequestTracker {
     this.concurrentRequests++;
     this.totalRequests++;
     this.lastRequestTime = timestamp;
-    
+
     if (this.totalRequests === 1) {
       this.firstRequestTime = timestamp;
     }
@@ -86,10 +86,10 @@ class UserRequestTracker {
     const now = new Date();
     const windowCutoff = new Date(now.getTime() - windowMs);
     const burstCutoff = new Date(now.getTime() - burstWindowMs);
-    
+
     // Clean up main window requests
     this.requests = this.requests.filter(timestamp => timestamp > windowCutoff);
-    
+
     // Clean up burst window requests
     this.burstRequests = this.burstRequests.filter(timestamp => timestamp > burstCutoff);
   }
@@ -102,13 +102,13 @@ class UserRequestTracker {
    */
   getCounts(windowMs, burstWindowMs) {
     this.cleanup(windowMs, burstWindowMs);
-    
+
     return {
       windowRequests: this.requests.length,
       burstRequests: this.burstRequests.length,
       concurrentRequests: this.concurrentRequests,
       totalRequests: this.totalRequests,
-      blockedRequests: this.blockedRequests
+      blockedRequests: this.blockedRequests,
     };
   }
 
@@ -119,18 +119,18 @@ class UserRequestTracker {
   getStats() {
     const now = new Date();
     const sessionDuration = now.getTime() - this.firstRequestTime.getTime();
-    
+
     return {
       userId: this.userId,
       totalRequests: this.totalRequests,
       blockedRequests: this.blockedRequests,
       concurrentRequests: this.concurrentRequests,
-      successRate: this.totalRequests > 0 ? 
+      successRate: this.totalRequests > 0 ?
         ((this.totalRequests - this.blockedRequests) / this.totalRequests * 100).toFixed(2) : 100,
       sessionDuration: Math.round(sessionDuration / 1000), // seconds
       lastRequestTime: this.lastRequestTime,
-      requestsPerMinute: sessionDuration > 0 ? 
-        Math.round((this.totalRequests * 60000) / sessionDuration) : 0
+      requestsPerMinute: sessionDuration > 0 ?
+        Math.round((this.totalRequests * 60000) / sessionDuration) : 0,
     };
   }
 }
@@ -143,18 +143,18 @@ export class TunnelRateLimiter {
     this.config = { ...DEFAULT_CONFIG, ...config };
     this.userTrackers = new Map();
     this.logger = new TunnelLogger('rate-limiter');
-    
+
     // Start cleanup interval
     this.cleanupInterval = setInterval(() => {
       this.cleanup();
     }, this.config.cleanupIntervalMs);
-    
+
     this.logger.info('Tunnel rate limiter initialized', {
       windowMs: this.config.windowMs,
       maxRequests: this.config.maxRequests,
       burstWindowMs: this.config.burstWindowMs,
       maxBurstRequests: this.config.maxBurstRequests,
-      maxConcurrentRequests: this.config.maxConcurrentRequests
+      maxConcurrentRequests: this.config.maxConcurrentRequests,
     });
   }
 
@@ -179,19 +179,19 @@ export class TunnelRateLimiter {
   checkRateLimit(userId, correlationId) {
     const tracker = this.getUserTracker(userId);
     const counts = tracker.getCounts(this.config.windowMs, this.config.burstWindowMs);
-    
+
     // Check concurrent requests limit
     if (counts.concurrentRequests >= this.config.maxConcurrentRequests) {
       tracker.blockRequest();
-      
+
       this.logger.logSecurity('rate_limit_concurrent_exceeded', userId, {
         correlationId,
         concurrentRequests: counts.concurrentRequests,
         maxConcurrentRequests: this.config.maxConcurrentRequests,
         totalRequests: counts.totalRequests,
-        blockedRequests: counts.blockedRequests
+        blockedRequests: counts.blockedRequests,
       });
-      
+
       return {
         allowed: false,
         reason: 'concurrent_limit_exceeded',
@@ -199,25 +199,25 @@ export class TunnelRateLimiter {
         limits: {
           concurrent: {
             current: counts.concurrentRequests,
-            max: this.config.maxConcurrentRequests
-          }
-        }
+            max: this.config.maxConcurrentRequests,
+          },
+        },
       };
     }
-    
+
     // Check burst rate limit
     if (counts.burstRequests >= this.config.maxBurstRequests) {
       tracker.blockRequest();
-      
+
       this.logger.logSecurity('rate_limit_burst_exceeded', userId, {
         correlationId,
         burstRequests: counts.burstRequests,
         maxBurstRequests: this.config.maxBurstRequests,
         burstWindowMs: this.config.burstWindowMs,
         totalRequests: counts.totalRequests,
-        blockedRequests: counts.blockedRequests
+        blockedRequests: counts.blockedRequests,
       });
-      
+
       return {
         allowed: false,
         reason: 'burst_limit_exceeded',
@@ -226,25 +226,25 @@ export class TunnelRateLimiter {
           burst: {
             current: counts.burstRequests,
             max: this.config.maxBurstRequests,
-            windowMs: this.config.burstWindowMs
-          }
-        }
+            windowMs: this.config.burstWindowMs,
+          },
+        },
       };
     }
-    
+
     // Check main window rate limit
     if (counts.windowRequests >= this.config.maxRequests) {
       tracker.blockRequest();
-      
+
       this.logger.logSecurity('rate_limit_window_exceeded', userId, {
         correlationId,
         windowRequests: counts.windowRequests,
         maxRequests: this.config.maxRequests,
         windowMs: this.config.windowMs,
         totalRequests: counts.totalRequests,
-        blockedRequests: counts.blockedRequests
+        blockedRequests: counts.blockedRequests,
       });
-      
+
       return {
         allowed: false,
         reason: 'window_limit_exceeded',
@@ -253,41 +253,41 @@ export class TunnelRateLimiter {
           window: {
             current: counts.windowRequests,
             max: this.config.maxRequests,
-            windowMs: this.config.windowMs
-          }
-        }
+            windowMs: this.config.windowMs,
+          },
+        },
       };
     }
-    
+
     // Request is allowed
     tracker.addRequest();
-    
+
     this.logger.debug('Rate limit check passed', {
       correlationId,
       userId,
       windowRequests: counts.windowRequests,
       burstRequests: counts.burstRequests,
-      concurrentRequests: counts.concurrentRequests
+      concurrentRequests: counts.concurrentRequests,
     });
-    
+
     return {
       allowed: true,
       limits: {
         window: {
           current: counts.windowRequests + 1,
           max: this.config.maxRequests,
-          windowMs: this.config.windowMs
+          windowMs: this.config.windowMs,
         },
         burst: {
           current: counts.burstRequests + 1,
           max: this.config.maxBurstRequests,
-          windowMs: this.config.burstWindowMs
+          windowMs: this.config.burstWindowMs,
         },
         concurrent: {
           current: counts.concurrentRequests + 1,
-          max: this.config.maxConcurrentRequests
-        }
-      }
+          max: this.config.maxConcurrentRequests,
+        },
+      },
     };
   }
 
@@ -317,10 +317,10 @@ export class TunnelRateLimiter {
         concurrentRequests: 0,
         successRate: 100,
         sessionDuration: 0,
-        requestsPerMinute: 0
+        requestsPerMinute: 0,
       };
     }
-    
+
     return tracker.getStats();
   }
 
@@ -336,27 +336,27 @@ export class TunnelRateLimiter {
       totalConcurrentRequests: 0,
       averageRequestsPerUser: 0,
       averageSuccessRate: 0,
-      topUsers: []
+      topUsers: [],
     };
-    
+
     const userStats = [];
-    
+
     for (const tracker of this.userTrackers.values()) {
       const userStat = tracker.getStats();
       userStats.push(userStat);
-      
+
       stats.totalRequests += userStat.totalRequests;
       stats.totalBlockedRequests += userStat.blockedRequests;
       stats.totalConcurrentRequests += userStat.concurrentRequests;
     }
-    
+
     if (stats.totalUsers > 0) {
       stats.averageRequestsPerUser = Math.round(stats.totalRequests / stats.totalUsers);
-      stats.averageSuccessRate = userStats.reduce((sum, stat) => 
+      stats.averageSuccessRate = userStats.reduce((sum, stat) =>
         sum + parseFloat(stat.successRate), 0) / stats.totalUsers;
       stats.averageSuccessRate = stats.averageSuccessRate.toFixed(2);
     }
-    
+
     // Get top 10 users by request count
     stats.topUsers = userStats
       .sort((a, b) => b.totalRequests - a.totalRequests)
@@ -366,9 +366,9 @@ export class TunnelRateLimiter {
         totalRequests: stat.totalRequests,
         blockedRequests: stat.blockedRequests,
         successRate: stat.successRate,
-        requestsPerMinute: stat.requestsPerMinute
+        requestsPerMinute: stat.requestsPerMinute,
       }));
-    
+
     return stats;
   }
 
@@ -379,26 +379,26 @@ export class TunnelRateLimiter {
     const now = new Date();
     const inactiveThreshold = new Date(now.getTime() - (this.config.windowMs * 2));
     const trackersToRemove = [];
-    
+
     for (const [userId, tracker] of this.userTrackers.entries()) {
       // Clean up old requests
       tracker.cleanup(this.config.windowMs, this.config.burstWindowMs);
-      
+
       // Mark inactive trackers for removal
       if (tracker.lastRequestTime < inactiveThreshold && tracker.concurrentRequests === 0) {
         trackersToRemove.push(userId);
       }
     }
-    
+
     // Remove inactive trackers
     for (const userId of trackersToRemove) {
       this.userTrackers.delete(userId);
     }
-    
+
     if (trackersToRemove.length > 0) {
       this.logger.debug('Cleaned up inactive user trackers', {
         removedTrackers: trackersToRemove.length,
-        activeTrackers: this.userTrackers.size
+        activeTrackers: this.userTrackers.size,
       });
     }
   }
@@ -411,7 +411,7 @@ export class TunnelRateLimiter {
       clearInterval(this.cleanupInterval);
       this.cleanupInterval = null;
     }
-    
+
     this.userTrackers.clear();
     this.logger.info('Tunnel rate limiter destroyed');
   }
@@ -424,32 +424,32 @@ export class TunnelRateLimiter {
  */
 export function createTunnelRateLimitMiddleware(config = {}) {
   const rateLimiter = new TunnelRateLimiter(config);
-  
+
   return (req, res, next) => {
     const userId = req.userId;
     const correlationId = req.correlationId;
-    
+
     if (!userId) {
       // If no user ID, skip rate limiting (should be handled by auth middleware)
       return next();
     }
-    
+
     const result = rateLimiter.checkRateLimit(userId, correlationId);
-    
+
     if (!result.allowed) {
       // Set rate limit headers
       if (rateLimiter.config.includeHeaders) {
         res.set({
           'X-RateLimit-Limit': result.limits?.window?.max || rateLimiter.config.maxRequests,
-          'X-RateLimit-Remaining': Math.max(0, 
-            (result.limits?.window?.max || rateLimiter.config.maxRequests) - 
-            (result.limits?.window?.current || 0)
+          'X-RateLimit-Remaining': Math.max(0,
+            (result.limits?.window?.max || rateLimiter.config.maxRequests) -
+            (result.limits?.window?.current || 0),
           ),
           'X-RateLimit-Reset': new Date(Date.now() + (result.retryAfter * 1000)).toISOString(),
-          'Retry-After': result.retryAfter
+          'Retry-After': result.retryAfter,
         });
       }
-      
+
       const errorResponse = ErrorResponseBuilder.createErrorResponse(
         ERROR_CODES.RATE_LIMIT_EXCEEDED || 'RATE_LIMIT_EXCEEDED',
         `Rate limit exceeded: ${result.reason.replace(/_/g, ' ')}`,
@@ -457,32 +457,32 @@ export function createTunnelRateLimitMiddleware(config = {}) {
         {
           reason: result.reason,
           retryAfter: result.retryAfter,
-          limits: result.limits
-        }
+          limits: result.limits,
+        },
       );
-      
+
       return res.status(429).json(errorResponse);
     }
-    
+
     // Set rate limit headers for successful requests
     if (rateLimiter.config.includeHeaders) {
       res.set({
         'X-RateLimit-Limit': result.limits.window.max,
         'X-RateLimit-Remaining': Math.max(0, result.limits.window.max - result.limits.window.current),
-        'X-RateLimit-Reset': new Date(Date.now() + result.limits.window.windowMs).toISOString()
+        'X-RateLimit-Reset': new Date(Date.now() + result.limits.window.windowMs).toISOString(),
       });
     }
-    
+
     // Store rate limiter in request for cleanup
     req.rateLimiter = rateLimiter;
-    
+
     // Set up response completion handler
     const originalEnd = res.end;
     res.end = function(...args) {
       rateLimiter.completeRequest(userId);
       originalEnd.apply(this, args);
     };
-    
+
     next();
   };
 }

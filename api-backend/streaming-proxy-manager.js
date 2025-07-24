@@ -11,17 +11,17 @@ const logger = winston.createLogger({
   format: winston.format.combine(
     winston.format.timestamp(),
     winston.format.errors({ stack: true }),
-    winston.format.json()
+    winston.format.json(),
   ),
   defaultMeta: { service: 'proxy-manager' },
   transports: [
     new winston.transports.Console({
       format: winston.format.combine(
         winston.format.timestamp(),
-        winston.format.simple()
-      )
-    })
-  ]
+        winston.format.simple(),
+      ),
+    }),
+  ],
 });
 
 /**
@@ -63,7 +63,7 @@ export class StreamingProxyManager {
     try {
       // Check if network already exists
       const networks = await docker.listNetworks({
-        filters: { name: [networkName] }
+        filters: { name: [networkName] },
       });
 
       if (networks.length > 0) {
@@ -79,14 +79,14 @@ export class StreamingProxyManager {
         IPAM: {
           Driver: 'default',
           Config: [{
-            Subnet: `172.${20 + Math.floor(Math.random() * 200)}.0.0/24`
-          }]
+            Subnet: `172.${20 + Math.floor(Math.random() * 200)}.0.0/24`,
+          }],
         },
         Labels: {
           'cloudtolocalllm.user': userId,
           'cloudtolocalllm.type': 'user-network',
-          'cloudtolocalllm.created': new Date().toISOString()
-        }
+          'cloudtolocalllm.created': new Date().toISOString(),
+        },
       });
 
       logger.info(`Created isolated network for user: ${networkName}`);
@@ -126,26 +126,26 @@ export class StreamingProxyManager {
           'LOG_LEVEL=info',
           // Set OLLAMA_BASE_URL to point to tunnel proxy endpoint
           `OLLAMA_BASE_URL=http://api-backend:8080/api/tunnel/${userId}`,
-          `API_BASE_URL=http://api-backend:8080`
+          'API_BASE_URL=http://api-backend:8080',
         ],
         Labels: {
           'cloudtolocalllm.user': userId,
           'cloudtolocalllm.type': 'streaming-proxy',
-          'cloudtolocalllm.created': new Date().toISOString()
+          'cloudtolocalllm.created': new Date().toISOString(),
         },
         HostConfig: {
           Memory: 512 * 1024 * 1024, // 512MB RAM limit
           CpuShares: 512, // 0.5 CPU core limit
           NetworkMode: networkName,
           RestartPolicy: { Name: 'no' }, // No restart - ephemeral by design
-          AutoRemove: true // Auto-remove when stopped
+          AutoRemove: true, // Auto-remove when stopped
         },
         NetworkingConfig: {
           EndpointsConfig: {
             [networkName]: {},
-            'cloudtolocalllm-network': {} // Connect to main network for API access
-          }
-        }
+            'cloudtolocalllm-network': {}, // Connect to main network for API access
+          },
+        },
       };
 
       // Create and start container
@@ -166,7 +166,7 @@ export class StreamingProxyManager {
         port: proxyPort,
         createdAt: new Date(),
         lastActivity: new Date(),
-        status: 'running'
+        status: 'running',
       };
 
       this.activeProxies.set(userId, proxyMetadata);
@@ -175,7 +175,7 @@ export class StreamingProxyManager {
       logger.info(`Provisioned streaming proxy for user: ${userId}`, {
         proxyId,
         containerId: container.id,
-        networkName
+        networkName,
       });
 
       return proxyMetadata;
@@ -219,7 +219,7 @@ export class StreamingProxyManager {
 
       logger.info(`Terminated streaming proxy for user: ${userId}`, {
         proxyId: proxyMetadata.proxyId,
-        duration: Date.now() - proxyMetadata.createdAt.getTime()
+        duration: Date.now() - proxyMetadata.createdAt.getTime(),
       });
 
       return true;
@@ -249,7 +249,7 @@ export class StreamingProxyManager {
         proxyId: proxyMetadata.proxyId,
         createdAt: proxyMetadata.createdAt,
         lastActivity: proxyMetadata.lastActivity,
-        health: containerInfo.State.Health?.Status || 'unknown'
+        health: containerInfo.State.Health?.Status || 'unknown',
       };
     } catch (error) {
       logger.error(`Failed to get proxy status for user: ${userId}`, error);
@@ -291,7 +291,7 @@ export class StreamingProxyManager {
       if (inactiveTime > staleThreshold) {
         logger.info(`Cleaning up stale proxy for user: ${userId}`, {
           proxyId: proxyMetadata.proxyId,
-          inactiveTime: Math.floor(inactiveTime / 1000) + 's'
+          inactiveTime: Math.floor(inactiveTime / 1000) + 's',
         });
 
         await this.terminateProxy(userId);
@@ -305,7 +305,7 @@ export class StreamingProxyManager {
   getAllActiveProxies() {
     return Array.from(this.activeProxies.entries()).map(([userId, metadata]) => ({
       userId,
-      ...metadata
+      ...metadata,
     }));
   }
 
@@ -319,7 +319,7 @@ export class StreamingProxyManager {
 
     // Terminate all active proxies
     const terminationPromises = Array.from(this.activeProxies.keys()).map(
-      userId => this.terminateProxy(userId)
+      userId => this.terminateProxy(userId),
     );
 
     await Promise.allSettled(terminationPromises);

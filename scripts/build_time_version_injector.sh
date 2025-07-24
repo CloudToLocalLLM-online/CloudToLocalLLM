@@ -222,7 +222,10 @@ inject_build_timestamp() {
     update_shared_version_file "$semantic_version" "$build_timestamp" "$iso_timestamp"
     update_shared_pubspec_version "$semantic_version" "$build_timestamp"
     update_app_config_version "$semantic_version"
-    
+
+    # Validate that all placeholders have been replaced
+    validate_placeholder_removal
+
     log_success "✅ Build timestamp injection completed: $semantic_version+$build_timestamp"
 }
 
@@ -250,6 +253,32 @@ cleanup_backups() {
     rm -f "$APP_CONFIG_FILE.build-backup"
     
     log_success "✅ Backup files cleaned up"
+}
+
+# Validate that no BUILD_TIME_PLACEHOLDER remains in version files
+validate_placeholder_removal() {
+    log_info "🔍 Validating that all BUILD_TIME_PLACEHOLDER instances have been replaced"
+
+    local files_to_check=("$PUBSPEC_FILE" "$SHARED_PUBSPEC_FILE" "$SHARED_VERSION_FILE" "$ASSETS_VERSION_FILE")
+    local placeholder_found=false
+
+    for file in "${files_to_check[@]}"; do
+        if [[ -f "$file" ]]; then
+            if grep -q "BUILD_TIME_PLACEHOLDER" "$file"; then
+                log_error "❌ BUILD_TIME_PLACEHOLDER found in: $file"
+                placeholder_found=true
+            else
+                log_info "✅ No placeholders in: $file"
+            fi
+        fi
+    done
+
+    if [[ "$placeholder_found" == "true" ]]; then
+        log_error "❌ Validation failed: BUILD_TIME_PLACEHOLDER instances remain in version files"
+        exit 1
+    else
+        log_success "✅ Validation passed: All BUILD_TIME_PLACEHOLDER instances have been replaced"
+    fi
 }
 
 # Main command dispatcher

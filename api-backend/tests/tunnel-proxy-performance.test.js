@@ -40,9 +40,9 @@ describe('TunnelProxy Performance Tests', () => {
   });
 
   describe('Performance Metrics', () => {
-    it('should track basic performance metrics', async () => {
+    it('should track basic performance metrics', async() => {
       const stats = tunnelProxy.getStats();
-      
+
       expect(stats.connections.total).toBe(0);
       expect(stats.requests.total).toBe(0);
       expect(stats.requests.successful).toBe(0);
@@ -50,23 +50,23 @@ describe('TunnelProxy Performance Tests', () => {
       expect(stats.performance.averageResponseTime).toBe(0);
     });
 
-    it('should calculate response time percentiles', async () => {
+    it('should calculate response time percentiles', async() => {
       // Simulate response times
       const responseTimes = [50, 100, 150, 200, 250, 300, 350, 400, 450, 500];
-      
+
       for (const time of responseTimes) {
         tunnelProxy.updateAverageResponseTime(time);
         tunnelProxy.metrics.successfulRequests++;
       }
 
       const performanceMetrics = tunnelProxy.getPerformanceMetrics();
-      
+
       expect(performanceMetrics.enhanced.p95ResponseTime).toBeGreaterThan(0);
       expect(performanceMetrics.enhanced.p99ResponseTime).toBeGreaterThan(0);
       expect(performanceMetrics.performance.averageResponseTime).toBeGreaterThan(0);
     });
 
-    it('should track throughput correctly', async () => {
+    it('should track throughput correctly', async() => {
       // Simulate requests over time
       for (let i = 0; i < 20; i++) {
         tunnelProxy.metrics.requestTimestamps.push(new Date());
@@ -78,19 +78,19 @@ describe('TunnelProxy Performance Tests', () => {
       expect(performanceMetrics.enhanced.throughputPerMinute).toBeGreaterThan(0);
     });
 
-    it('should track memory usage', async () => {
+    it('should track memory usage', async() => {
       tunnelProxy.updateMemoryUsage();
-      
+
       const performanceMetrics = tunnelProxy.getPerformanceMetrics();
       expect(performanceMetrics.enhanced.memoryUsageMB).toBeGreaterThan(0);
       expect(performanceMetrics.enhanced.peakMemoryUsageMB).toBeGreaterThanOrEqual(
-        performanceMetrics.enhanced.memoryUsageMB
+        performanceMetrics.enhanced.memoryUsageMB,
       );
     });
   });
 
   describe('Performance Alerts', () => {
-    it('should detect low success rate', async () => {
+    it('should detect low success rate', async() => {
       // Simulate low success rate
       tunnelProxy.metrics.totalRequests = 100;
       tunnelProxy.metrics.successfulRequests = 70; // 70% success rate
@@ -99,12 +99,12 @@ describe('TunnelProxy Performance Tests', () => {
       tunnelProxy.checkPerformanceAlerts();
 
       expect(tunnelProxy.performanceAlerts.length).toBeGreaterThan(0);
-      expect(tunnelProxy.performanceAlerts.some(alert => 
-        alert.type === 'LOW_SUCCESS_RATE'
+      expect(tunnelProxy.performanceAlerts.some(alert =>
+        alert.type === 'LOW_SUCCESS_RATE',
       )).toBe(true);
     });
 
-    it('should detect high timeout rate', async () => {
+    it('should detect high timeout rate', async() => {
       // Simulate high timeout rate
       tunnelProxy.metrics.totalRequests = 100;
       tunnelProxy.metrics.timeoutRequests = 25; // 25% timeout rate
@@ -112,40 +112,40 @@ describe('TunnelProxy Performance Tests', () => {
 
       tunnelProxy.checkPerformanceAlerts();
 
-      expect(tunnelProxy.performanceAlerts.some(alert => 
-        alert.type === 'HIGH_TIMEOUT_RATE'
+      expect(tunnelProxy.performanceAlerts.some(alert =>
+        alert.type === 'HIGH_TIMEOUT_RATE',
       )).toBe(true);
     });
 
-    it('should detect high response time', async () => {
+    it('should detect high response time', async() => {
       // Simulate high response time
       tunnelProxy.metrics.averageResponseTime = 6000; // 6 seconds
 
       tunnelProxy.checkPerformanceAlerts();
 
-      expect(tunnelProxy.performanceAlerts.some(alert => 
-        alert.type === 'HIGH_RESPONSE_TIME'
+      expect(tunnelProxy.performanceAlerts.some(alert =>
+        alert.type === 'HIGH_RESPONSE_TIME',
       )).toBe(true);
     });
 
-    it('should detect high memory usage', async () => {
+    it('should detect high memory usage', async() => {
       // Simulate high memory usage
       tunnelProxy.metrics.memoryUsage = 150 * 1024 * 1024; // 150MB
 
       tunnelProxy.checkPerformanceAlerts();
 
-      expect(tunnelProxy.performanceAlerts.some(alert => 
-        alert.type === 'HIGH_MEMORY_USAGE'
+      expect(tunnelProxy.performanceAlerts.some(alert =>
+        alert.type === 'HIGH_MEMORY_USAGE',
       )).toBe(true);
     });
 
-    it('should clear alerts when performance improves', async () => {
+    it('should clear alerts when performance improves', async() => {
       // First, create alerts
       tunnelProxy.metrics.totalRequests = 100;
       tunnelProxy.metrics.successfulRequests = 70;
       tunnelProxy.metrics.failedRequests = 30;
       tunnelProxy.checkPerformanceAlerts();
-      
+
       expect(tunnelProxy.performanceAlerts.length).toBeGreaterThan(0);
 
       // Then improve performance
@@ -158,7 +158,7 @@ describe('TunnelProxy Performance Tests', () => {
   });
 
   describe('Connection Pool Performance', () => {
-    it('should track connection pool efficiency', async () => {
+    it('should track connection pool efficiency', async() => {
       // Simulate pool operations
       tunnelProxy.metrics.connectionPoolHits = 80;
       tunnelProxy.metrics.connectionPoolMisses = 20;
@@ -167,17 +167,17 @@ describe('TunnelProxy Performance Tests', () => {
       expect(performanceMetrics.enhanced.connectionPoolStats.poolEfficiency).toBe(80);
     });
 
-    it('should clean up stale connections from pool', async () => {
+    it('should clean up stale connections from pool', async() => {
       const userId = 'test-user';
       const staleConnection = new MockWebSocket();
       staleConnection.readyState = WebSocket.CLOSED;
-      
+
       const activeConnection = new MockWebSocket();
-      
+
       tunnelProxy.connectionPool.set(userId, [staleConnection, activeConnection]);
-      
+
       tunnelProxy.cleanupConnectionPool();
-      
+
       const remainingConnections = tunnelProxy.connectionPool.get(userId);
       expect(remainingConnections.length).toBe(1);
       expect(remainingConnections[0]).toBe(activeConnection);
@@ -185,7 +185,7 @@ describe('TunnelProxy Performance Tests', () => {
   });
 
   describe('Load Testing', () => {
-    it('should handle high connection count', async () => {
+    it('should handle high connection count', async() => {
       const connectionCount = 100;
       const connections = [];
 
@@ -206,7 +206,7 @@ describe('TunnelProxy Performance Tests', () => {
       }
     });
 
-    it('should handle high request volume', async () => {
+    it('should handle high request volume', async() => {
       const ws = new MockWebSocket();
       const userId = 'test-user';
       const connectionId = tunnelProxy.handleConnection(ws, userId);
@@ -219,9 +219,9 @@ describe('TunnelProxy Performance Tests', () => {
         const request = tunnelProxy.forwardRequest(userId, {
           method: 'GET',
           path: `/test/${i}`,
-          headers: { 'content-type': 'application/json' }
+          headers: { 'content-type': 'application/json' },
         }).catch(() => {}); // Ignore timeout errors for this test
-        
+
         requests.push(request);
       }
 
@@ -233,7 +233,7 @@ describe('TunnelProxy Performance Tests', () => {
       await Promise.allSettled(requests);
     });
 
-    it('should maintain performance under sustained load', async () => {
+    it('should maintain performance under sustained load', async() => {
       const ws = new MockWebSocket();
       const userId = 'test-user';
       const connectionId = tunnelProxy.handleConnection(ws, userId);
@@ -248,11 +248,11 @@ describe('TunnelProxy Performance Tests', () => {
           tunnelProxy.forwardRequest(userId, {
             method: 'GET',
             path: `/test/${requestCount}`,
-            headers: { 'content-type': 'application/json' }
+            headers: { 'content-type': 'application/json' },
           }).catch(() => {}); // Ignore timeout errors
-          
+
           requestCount++;
-          
+
           // Small delay to prevent overwhelming
           await new Promise(resolve => setTimeout(resolve, 1));
         } catch (error) {
@@ -261,7 +261,7 @@ describe('TunnelProxy Performance Tests', () => {
       }
 
       expect(requestCount).toBeGreaterThan(0);
-      
+
       const stats = tunnelProxy.getStats();
       expect(stats.requests.total).toBeGreaterThan(0);
 
@@ -271,7 +271,7 @@ describe('TunnelProxy Performance Tests', () => {
   });
 
   describe('Memory Management', () => {
-    it('should track memory usage accurately', async () => {
+    it('should track memory usage accurately', async() => {
       // Create connections and requests to increase memory usage
       const connections = [];
       for (let i = 0; i < 10; i++) {
@@ -279,19 +279,19 @@ describe('TunnelProxy Performance Tests', () => {
         const userId = `user-${i}`;
         const connectionId = tunnelProxy.handleConnection(ws, userId);
         connections.push({ connectionId, userId });
-        
+
         // Add pending requests
         for (let j = 0; j < 5; j++) {
           tunnelProxy.forwardRequest(userId, {
             method: 'GET',
             path: `/test/${j}`,
-            headers: {}
+            headers: {},
           }).catch(() => {});
         }
       }
 
       tunnelProxy.updateMemoryUsage();
-      
+
       const performanceMetrics = tunnelProxy.getPerformanceMetrics();
       expect(performanceMetrics.enhanced.memoryUsageMB).toBeGreaterThan(5); // Should have some memory usage
 
@@ -301,20 +301,20 @@ describe('TunnelProxy Performance Tests', () => {
       }
     });
 
-    it('should handle memory pressure gracefully', async () => {
+    it('should handle memory pressure gracefully', async() => {
       // Simulate high memory usage
       tunnelProxy.metrics.memoryUsage = 200 * 1024 * 1024; // 200MB
-      
+
       tunnelProxy.checkPerformanceAlerts();
-      
-      expect(tunnelProxy.performanceAlerts.some(alert => 
-        alert.type === 'HIGH_MEMORY_USAGE'
+
+      expect(tunnelProxy.performanceAlerts.some(alert =>
+        alert.type === 'HIGH_MEMORY_USAGE',
       )).toBe(true);
     });
   });
 
   describe('Health Status', () => {
-    it('should report healthy status with good performance', async () => {
+    it('should report healthy status with good performance', async() => {
       // Set up good performance metrics
       tunnelProxy.metrics.totalRequests = 100;
       tunnelProxy.metrics.successfulRequests = 95;
@@ -326,14 +326,14 @@ describe('TunnelProxy Performance Tests', () => {
       tunnelProxy.handleConnection(ws, 'test-user');
 
       const healthStatus = tunnelProxy.getHealthStatus();
-      
+
       expect(healthStatus.status).toBe('healthy');
       expect(healthStatus.checks.hasConnections).toBe(true);
       expect(healthStatus.checks.successRateOk).toBe(true);
       expect(healthStatus.checks.averageResponseTimeOk).toBe(true);
     });
 
-    it('should report degraded status with poor performance', async () => {
+    it('should report degraded status with poor performance', async() => {
       // Set up poor performance metrics
       tunnelProxy.metrics.totalRequests = 100;
       tunnelProxy.metrics.successfulRequests = 70; // 70% success rate
@@ -341,7 +341,7 @@ describe('TunnelProxy Performance Tests', () => {
       tunnelProxy.metrics.averageResponseTime = 6000; // 6 seconds
 
       const healthStatus = tunnelProxy.getHealthStatus();
-      
+
       expect(healthStatus.status).toBe('degraded');
       expect(healthStatus.checks.successRateOk).toBe(false);
       expect(healthStatus.checks.averageResponseTimeOk).toBe(false);
@@ -349,7 +349,7 @@ describe('TunnelProxy Performance Tests', () => {
   });
 
   describe('Benchmarks', () => {
-    it('should handle message processing efficiently', async () => {
+    it('should handle message processing efficiently', async() => {
       const messageCount = 10000;
       const startTime = Date.now();
 
@@ -364,11 +364,11 @@ describe('TunnelProxy Performance Tests', () => {
       const messagesPerSecond = messageCount / (processingTime / 1000);
 
       expect(messagesPerSecond).toBeGreaterThan(1000); // Should process at least 1000 messages/second
-      
+
       console.log(`Processed ${messageCount} messages in ${processingTime}ms (${messagesPerSecond.toFixed(0)} msg/sec)`);
     });
 
-    it('should calculate statistics efficiently', async () => {
+    it('should calculate statistics efficiently', async() => {
       // Add many data points
       for (let i = 0; i < 10000; i++) {
         tunnelProxy.updateAverageResponseTime(50 + Math.random() * 200);
@@ -382,7 +382,7 @@ describe('TunnelProxy Performance Tests', () => {
       const calculationTime = endTime - startTime;
       expect(calculationTime).toBeLessThan(100); // Should calculate stats in less than 100ms
       expect(stats.requests.total).toBe(10000);
-      
+
       console.log(`Statistics calculation time: ${calculationTime}ms`);
     });
   });

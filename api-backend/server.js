@@ -24,22 +24,22 @@ const logger = winston.createLogger({
   format: winston.format.combine(
     winston.format.timestamp(),
     winston.format.errors({ stack: true }),
-    winston.format.json()
+    winston.format.json(),
   ),
   defaultMeta: { service: 'cloudtolocalllm-api' },
   transports: [
     new winston.transports.Console({
       format: winston.format.combine(
         winston.format.timestamp(),
-        winston.format.simple()
-      )
-    })
-  ]
+        winston.format.simple(),
+      ),
+    }),
+  ],
 });
 
 // Configuration
 const PORT = process.env.PORT || 8080;
-const AUTH0_DOMAIN = process.env.AUTH0_DOMAIN || 'dev-xafu7oedkd5wlrbo.us.auth0.com';
+const AUTH0_DOMAIN = process.env.AUTH0_DOMAIN || 'dev-v2f2p008x3dr74ww.us.auth0.com';
 const AUTH0_AUDIENCE = process.env.AUTH0_AUDIENCE || 'https://app.cloudtolocalllm.online';
 
 // JWKS client for Auth0 token verification
@@ -49,7 +49,7 @@ const jwksClientInstance = jwksClient({
   timeout: 30000,
   cache: true,
   rateLimit: true,
-  jwksRequestsPerMinute: 5
+  jwksRequestsPerMinute: 5,
 });
 
 // Express app setup
@@ -64,9 +64,9 @@ app.use(helmet({
       connectSrc: ['\'self\'', 'wss:', 'https:'],
       scriptSrc: ['\'self\'', '\'unsafe-inline\''],
       styleSrc: ['\'self\'', '\'unsafe-inline\''],
-      imgSrc: ['\'self\'', 'data:', 'https:']
-    }
-  }
+      imgSrc: ['\'self\'', 'data:', 'https:'],
+    },
+  },
 }));
 
 // CORS configuration
@@ -76,11 +76,11 @@ app.use(cors({
     'https://cloudtolocalllm.online',
     'https://docs.cloudtolocalllm.online',
     'http://localhost:3000', // Development
-    'http://localhost:8080'  // Development
+    'http://localhost:8080',  // Development
   ],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  allowedHeaders: ['Content-Type', 'Authorization'],
 }));
 
 // Rate limiting
@@ -89,7 +89,7 @@ const limiter = rateLimit({
   max: 100, // limit each IP to 100 requests per windowMs
   message: 'Too many requests from this IP, please try again later.',
   standardHeaders: true,
-  legacyHeaders: false
+  legacyHeaders: false,
 });
 
 app.use(limiter);
@@ -121,7 +121,7 @@ async function authenticateToken(req, res, next) {
     const verified = jwt.verify(token, signingKey, {
       audience: AUTH0_AUDIENCE,
       issuer: `https://${AUTH0_DOMAIN}/`,
-      algorithms: ['RS256']
+      algorithms: ['RS256'],
     });
 
     req.user = verified;
@@ -165,7 +165,7 @@ const wss = new WebSocketServer({
       const verified = jwt.verify(token, signingKey, {
         audience: AUTH0_AUDIENCE,
         issuer: `https://${AUTH0_DOMAIN}/`,
-        algorithms: ['RS256']
+        algorithms: ['RS256'],
       });
 
       // Store user info for the connection
@@ -175,7 +175,7 @@ const wss = new WebSocketServer({
       logger.error('WebSocket token verification failed:', error);
       return false;
     }
-  }
+  },
 });
 
 wss.on('connection', (ws, req) => {
@@ -196,7 +196,7 @@ wss.on('connection', (ws, req) => {
     userId,
     bridgeId,
     connectedAt: new Date(),
-    lastPing: new Date()
+    lastPing: new Date(),
   });
 
   // Send welcome message
@@ -204,7 +204,7 @@ wss.on('connection', (ws, req) => {
     type: 'auth',
     id: uuidv4(),
     data: { success: true, bridgeId },
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
   }));
 
   // Handle messages from bridge
@@ -241,7 +241,7 @@ wss.on('connection', (ws, req) => {
       ws.send(JSON.stringify({
         type: 'ping',
         id: uuidv4(),
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       }));
     } else {
       clearInterval(pingInterval);
@@ -275,7 +275,7 @@ function cleanupPendingRequestsForBridge(bridgeId) {
       // Send error response to client
       handler.res.status(503).json({
         error: 'Bridge disconnected',
-        message: 'The bridge connection was lost while processing your request.'
+        message: 'The bridge connection was lost while processing your request.',
       });
 
       logger.warn(`Cleaned up pending request ${requestId} due to bridge ${bridgeId} disconnect`);
@@ -299,7 +299,7 @@ function handleBridgeMessage(bridgeId, message) {
     logger.debug(`Received pong from bridge ${bridgeId}`);
     break;
 
-  case 'response':
+  case 'response': {
     // Handle Ollama response from bridge
     const requestId = message.id;
     const responseHandler = pendingRequests.get(requestId);
@@ -340,6 +340,7 @@ function handleBridgeMessage(bridgeId, message) {
       logger.warn(`Received response for unknown request: ${requestId}`);
     }
     break;
+  }
 
   default:
     logger.warn(`Unknown message type from bridge ${bridgeId}: ${message.type}`);
@@ -349,7 +350,7 @@ function handleBridgeMessage(bridgeId, message) {
 // Create simplified tunnel routes and WebSocket server
 const { router: tunnelRouter, tunnelProxy } = createTunnelRoutes(server, {
   AUTH0_DOMAIN,
-  AUTH0_AUDIENCE
+  AUTH0_AUDIENCE,
 }, logger);
 
 // Create monitoring routes
@@ -373,7 +374,7 @@ app.get('/health', (req, res) => {
   res.json({
     status: 'healthy',
     timestamp: new Date().toISOString(),
-    bridges: bridgeConnections.size
+    bridges: bridgeConnections.size,
   });
 });
 
@@ -387,8 +388,8 @@ app.get('/ollama/bridge/status', authenticateToken, (req, res) => {
     bridges: userBridges.map(bridge => ({
       bridgeId: bridge.bridgeId,
       connectedAt: bridge.connectedAt,
-      lastPing: bridge.lastPing
-    }))
+      lastPing: bridge.lastPing,
+    })),
   });
 });
 
@@ -401,7 +402,7 @@ app.post('/ollama/bridge/register', authenticateToken, (req, res) => {
   res.json({
     success: true,
     message: 'Bridge registered successfully',
-    bridgeId: bridge_id
+    bridgeId: bridge_id,
   });
 });
 
@@ -423,14 +424,14 @@ app.post('/api/proxy/start', authenticateToken, async(req, res) => {
       proxy: {
         proxyId: proxyMetadata.proxyId,
         status: proxyMetadata.status,
-        createdAt: proxyMetadata.createdAt
-      }
+        createdAt: proxyMetadata.createdAt,
+      },
     });
   } catch (error) {
     logger.error(`Failed to start proxy for user ${req.user.sub}:`, error);
     res.status(500).json({
       error: 'Failed to start streaming proxy',
-      message: error.message
+      message: error.message,
     });
   }
 });
@@ -447,19 +448,19 @@ app.post('/api/proxy/stop', authenticateToken, async(req, res) => {
     if (success) {
       res.json({
         success: true,
-        message: 'Streaming proxy stopped successfully'
+        message: 'Streaming proxy stopped successfully',
       });
     } else {
       res.status(404).json({
         error: 'No active proxy found',
-        message: 'No streaming proxy is currently running for this user'
+        message: 'No streaming proxy is currently running for this user',
       });
     }
   } catch (error) {
     logger.error(`Failed to stop proxy for user ${req.user.sub}:`, error);
     res.status(500).json({
       error: 'Failed to stop streaming proxy',
-      message: error.message
+      message: error.message,
     });
   }
 });
@@ -485,8 +486,8 @@ app.post('/api/streaming-proxy/provision', authenticateToken, async(req, res) =>
         proxy: {
           proxyId: `test-proxy-${userId}`,
           status: 'simulated',
-          createdAt: new Date().toISOString()
-        }
+          createdAt: new Date().toISOString(),
+        },
       });
       return;
     }
@@ -502,15 +503,15 @@ app.post('/api/streaming-proxy/provision', authenticateToken, async(req, res) =>
       proxy: {
         proxyId: proxyMetadata.proxyId,
         status: proxyMetadata.status,
-        createdAt: proxyMetadata.createdAt
-      }
+        createdAt: proxyMetadata.createdAt,
+      },
     });
   } catch (error) {
     logger.error(`Failed to provision proxy for user ${req.user.sub}:`, error);
     res.status(500).json({
       error: 'Failed to provision streaming proxy',
       message: error.message,
-      testMode: req.body.testMode || false
+      testMode: req.body.testMode || false,
     });
   }
 });
@@ -531,7 +532,7 @@ app.get('/api/proxy/status', authenticateToken, async(req, res) => {
     logger.error(`Failed to get proxy status for user ${req.user.sub}:`, error);
     res.status(500).json({
       error: 'Failed to get proxy status',
-      message: error.message
+      message: error.message,
     });
   }
 });
@@ -544,7 +545,7 @@ app.all('/ollama/*', authenticateToken, async(req, res) => {
   if (userBridges.length === 0) {
     return res.status(503).json({
       error: 'No bridge connected',
-      message: 'Please ensure the CloudToLocalLLM desktop bridge is running and connected.'
+      message: 'Please ensure the CloudToLocalLLM desktop bridge is running and connected.',
     });
   }
 
@@ -560,7 +561,7 @@ app.all('/ollama/*', authenticateToken, async(req, res) => {
       logger.warn(`Request timeout for ${requestId}`);
       res.status(504).json({
         error: 'Gateway timeout',
-        message: 'The bridge did not respond within the timeout period.'
+        message: 'The bridge did not respond within the timeout period.',
       });
     }
   }, 30000);
@@ -570,7 +571,7 @@ app.all('/ollama/*', authenticateToken, async(req, res) => {
     res,
     timeout,
     bridgeId: bridge.bridgeId,
-    startTime: new Date()
+    startTime: new Date(),
   });
 
   // Forward request to bridge
@@ -581,9 +582,9 @@ app.all('/ollama/*', authenticateToken, async(req, res) => {
       method: req.method,
       path: req.path.replace('/ollama', ''),
       headers: req.headers,
-      body: req.body ? JSON.stringify(req.body) : undefined
+      body: req.body ? JSON.stringify(req.body) : undefined,
     },
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
   };
 
   try {
@@ -604,7 +605,7 @@ app.use((error, req, res, _next) => {
   logger.error('Unhandled error:', error);
   res.status(500).json({
     error: 'Internal server error',
-    message: process.env.NODE_ENV === 'development' ? error.message : 'Something went wrong'
+    message: process.env.NODE_ENV === 'development' ? error.message : 'Something went wrong',
   });
 });
 

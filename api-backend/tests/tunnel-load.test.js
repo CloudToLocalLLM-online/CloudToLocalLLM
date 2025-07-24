@@ -22,7 +22,7 @@ describe('Tunnel Load Tests', () => {
       info: jest.fn(),
       warn: jest.fn(),
       error: jest.fn(),
-      debug: jest.fn()
+      debug: jest.fn(),
     };
 
     tunnelProxy = new TunnelProxy(mockLogger);
@@ -44,12 +44,12 @@ describe('Tunnel Load Tests', () => {
           readyState: WebSocket.OPEN,
           send: jest.fn(),
           on: jest.fn(),
-          close: jest.fn()
+          close: jest.fn(),
         };
 
         const userId = `user-${i}`;
         const connectionId = tunnelProxy.handleConnection(mockWebSocket, userId);
-        
+
         connections.push({ connectionId, userId, mockWebSocket });
       }
 
@@ -80,7 +80,7 @@ describe('Tunnel Load Tests', () => {
           readyState: WebSocket.OPEN,
           send: jest.fn(),
           on: jest.fn(),
-          close: jest.fn()
+          close: jest.fn(),
         };
 
         const userId = `user-${i}`;
@@ -115,7 +115,7 @@ describe('Tunnel Load Tests', () => {
       }
     });
 
-    it('should isolate requests between users', async () => {
+    it('should isolate requests between users', async() => {
       const userCount = 10;
       const connections = [];
 
@@ -125,7 +125,7 @@ describe('Tunnel Load Tests', () => {
           readyState: WebSocket.OPEN,
           send: jest.fn(),
           on: jest.fn(),
-          close: jest.fn()
+          close: jest.fn(),
         };
 
         const userId = `user-${i}`;
@@ -137,16 +137,16 @@ describe('Tunnel Load Tests', () => {
       const requestPromises = [];
       for (let i = 0; i < userCount; i++) {
         const { userId, mockWebSocket } = connections[i];
-        
+
         const httpRequest = {
           method: 'GET',
           path: `/api/user-${i}/data`,
-          headers: { 'user-id': userId }
+          headers: { 'user-id': userId },
         };
 
         // Mock response for this user
         const responsePromise = tunnelProxy.forwardRequest(userId, httpRequest);
-        
+
         // Simulate response from desktop client
         setTimeout(() => {
           const connection = tunnelProxy.userConnections.get(userId);
@@ -156,7 +156,7 @@ describe('Tunnel Load Tests', () => {
               const httpResponse = {
                 status: 200,
                 headers: { 'content-type': 'application/json' },
-                body: JSON.stringify({ userId, data: `user-${i}-data` })
+                body: JSON.stringify({ userId, data: `user-${i}-data` }),
               };
               pendingRequest.resolve(httpResponse);
             }
@@ -173,7 +173,7 @@ describe('Tunnel Load Tests', () => {
       for (let i = 0; i < userCount; i++) {
         const response = responses[i];
         expect(response.status).toBe(200);
-        
+
         const responseBody = JSON.parse(response.body);
         expect(responseBody.userId).toBe(`user-${i}`);
         expect(responseBody.data).toBe(`user-${i}-data`);
@@ -187,7 +187,7 @@ describe('Tunnel Load Tests', () => {
   });
 
   describe('High Request Volume', () => {
-    it('should handle 1000 requests per user', async () => {
+    it('should handle 1000 requests per user', async() => {
       const userCount = 5;
       const requestsPerUser = 1000;
       const connections = [];
@@ -198,7 +198,7 @@ describe('Tunnel Load Tests', () => {
           readyState: WebSocket.OPEN,
           send: jest.fn(),
           on: jest.fn(),
-          close: jest.fn()
+          close: jest.fn(),
         };
 
         const userId = `load-user-${i}`;
@@ -208,15 +208,15 @@ describe('Tunnel Load Tests', () => {
 
       // Send many requests for each user
       const allRequestPromises = [];
-      
+
       for (let userIndex = 0; userIndex < userCount; userIndex++) {
         const { userId } = connections[userIndex];
-        
+
         for (let reqIndex = 0; reqIndex < requestsPerUser; reqIndex++) {
           const httpRequest = {
             method: 'GET',
             path: `/api/request-${reqIndex}`,
-            headers: { 'request-id': `${userId}-${reqIndex}` }
+            headers: { 'request-id': `${userId}-${reqIndex}` },
           };
 
           const responsePromise = tunnelProxy.forwardRequest(userId, httpRequest);
@@ -234,7 +234,7 @@ describe('Tunnel Load Tests', () => {
               const httpResponse = {
                 status: 200,
                 headers: { 'content-type': 'application/json' },
-                body: JSON.stringify({ requestId, result: 'success' })
+                body: JSON.stringify({ requestId, result: 'success' }),
               };
               pendingRequest.resolve(httpResponse);
             }
@@ -245,7 +245,7 @@ describe('Tunnel Load Tests', () => {
       // Wait for all responses
       const startTime = Date.now();
       const responses = await Promise.all(
-        allRequestPromises.map(({ promise }) => promise)
+        allRequestPromises.map(({ promise }) => promise),
       );
       const endTime = Date.now();
 
@@ -260,7 +260,7 @@ describe('Tunnel Load Tests', () => {
       const requestsPerSecond = (totalRequests / duration) * 1000;
 
       console.log(`Processed ${totalRequests} requests in ${duration}ms (${requestsPerSecond.toFixed(2)} req/s)`);
-      
+
       // Should handle at least 100 requests per second
       expect(requestsPerSecond).toBeGreaterThan(100);
     });
@@ -275,7 +275,7 @@ describe('Tunnel Load Tests', () => {
           readyState: WebSocket.OPEN,
           send: jest.fn(),
           on: jest.fn(),
-          close: jest.fn()
+          close: jest.fn(),
         };
 
         const userId = `cycle-user-${i}`;
@@ -299,7 +299,7 @@ describe('Tunnel Load Tests', () => {
       expect(stats.connectedUsers).toBe(0);
     });
 
-    it('should handle mixed request types under load', async () => {
+    it('should handle mixed request types under load', async() => {
       const userCount = 10;
       const requestsPerUser = 100;
       const connections = [];
@@ -310,7 +310,7 @@ describe('Tunnel Load Tests', () => {
           readyState: WebSocket.OPEN,
           send: jest.fn(),
           on: jest.fn(),
-          close: jest.fn()
+          close: jest.fn(),
         };
 
         const userId = `mixed-user-${i}`;
@@ -321,18 +321,18 @@ describe('Tunnel Load Tests', () => {
       // Send mixed request types
       const allRequestPromises = [];
       const methods = ['GET', 'POST', 'PUT', 'DELETE'];
-      
+
       for (let userIndex = 0; userIndex < userCount; userIndex++) {
         const { userId } = connections[userIndex];
-        
+
         for (let reqIndex = 0; reqIndex < requestsPerUser; reqIndex++) {
           const method = methods[reqIndex % methods.length];
           const httpRequest = {
             method,
             path: `/api/${method.toLowerCase()}-endpoint`,
             headers: { 'content-type': 'application/json' },
-            body: method === 'POST' || method === 'PUT' ? 
-              JSON.stringify({ data: `request-${reqIndex}` }) : undefined
+            body: method === 'POST' || method === 'PUT' ?
+              JSON.stringify({ data: `request-${reqIndex}` }) : undefined,
           };
 
           const responsePromise = tunnelProxy.forwardRequest(userId, httpRequest);
@@ -349,7 +349,7 @@ describe('Tunnel Load Tests', () => {
               const httpResponse = {
                 status: 200,
                 headers: { 'content-type': 'application/json' },
-                body: JSON.stringify({ requestId, method: 'processed' })
+                body: JSON.stringify({ requestId, method: 'processed' }),
               };
               pendingRequest.resolve(httpResponse);
             }
@@ -359,12 +359,12 @@ describe('Tunnel Load Tests', () => {
 
       // Wait for all responses
       const responses = await Promise.all(
-        allRequestPromises.map(({ promise }) => promise)
+        allRequestPromises.map(({ promise }) => promise),
       );
 
       // Verify all requests succeeded
       expect(responses).toHaveLength(userCount * requestsPerUser);
-      
+
       // Count requests by method
       const methodCounts = {};
       for (const { method } of allRequestPromises) {
@@ -389,7 +389,7 @@ describe('Tunnel Load Tests', () => {
           readyState: WebSocket.OPEN,
           send: jest.fn(),
           on: jest.fn(),
-          close: jest.fn()
+          close: jest.fn(),
         };
 
         const userId = `cleanup-user-${i}`;
@@ -406,7 +406,7 @@ describe('Tunnel Load Tests', () => {
             timestamp: new Date(),
             timeout: mockTimeout,
             resolve: jest.fn(),
-            reject: jest.fn()
+            reject: jest.fn(),
           });
         }
       }
@@ -444,12 +444,12 @@ describe('Tunnel Load Tests', () => {
           readyState: WebSocket.OPEN,
           send: jest.fn(),
           on: jest.fn(),
-          close: jest.fn()
+          close: jest.fn(),
         };
 
         const userId = `memory-user-${i}`;
         const connectionId = tunnelProxy.handleConnection(mockWebSocket, userId);
-        
+
         // Add many pending requests
         const connection = tunnelProxy.connections.get(connectionId);
         for (let j = 0; j < pendingRequestsPerConnection; j++) {
@@ -460,14 +460,14 @@ describe('Tunnel Load Tests', () => {
             timestamp: new Date(),
             timeout: mockTimeout,
             resolve: jest.fn(),
-            reject: jest.fn()
+            reject: jest.fn(),
           });
         }
       }
 
       // Verify system can handle the load
       expect(tunnelProxy.connections.size).toBe(connectionCount);
-      
+
       const stats = tunnelProxy.getStats();
       expect(stats.totalConnections).toBe(connectionCount);
       expect(stats.totalPendingRequests).toBe(connectionCount * pendingRequestsPerConnection);
@@ -478,7 +478,7 @@ describe('Tunnel Load Tests', () => {
         readyState: WebSocket.OPEN,
         send: jest.fn(),
         on: jest.fn(),
-        close: jest.fn()
+        close: jest.fn(),
       };
 
       const newConnectionId = tunnelProxy.handleConnection(newMockWebSocket, newUserId);
@@ -491,7 +491,7 @@ describe('Tunnel Load Tests', () => {
   });
 
   describe('Performance Benchmarks', () => {
-    it('should maintain low latency under load', async () => {
+    it('should maintain low latency under load', async() => {
       const userCount = 20;
       const requestsPerUser = 50;
       const connections = [];
@@ -503,7 +503,7 @@ describe('Tunnel Load Tests', () => {
           readyState: WebSocket.OPEN,
           send: jest.fn(),
           on: jest.fn(),
-          close: jest.fn()
+          close: jest.fn(),
         };
 
         const userId = `perf-user-${i}`;
@@ -514,18 +514,18 @@ describe('Tunnel Load Tests', () => {
       // Send requests and measure latency
       for (let userIndex = 0; userIndex < userCount; userIndex++) {
         const { userId } = connections[userIndex];
-        
+
         for (let reqIndex = 0; reqIndex < requestsPerUser; reqIndex++) {
           const startTime = Date.now();
-          
+
           const httpRequest = {
             method: 'GET',
-            path: `/api/perf-test`,
-            headers: { 'request-index': reqIndex.toString() }
+            path: '/api/perf-test',
+            headers: { 'request-index': reqIndex.toString() },
           };
 
           const responsePromise = tunnelProxy.forwardRequest(userId, httpRequest);
-          
+
           // Simulate immediate response
           setTimeout(() => {
             const connection = tunnelProxy.userConnections.get(userId);
@@ -534,7 +534,7 @@ describe('Tunnel Load Tests', () => {
               const httpResponse = {
                 status: 200,
                 headers: { 'content-type': 'application/json' },
-                body: JSON.stringify({ result: 'ok' })
+                body: JSON.stringify({ result: 'ok' }),
               };
               pendingRequest.resolve(httpResponse);
             }
@@ -563,21 +563,21 @@ describe('Tunnel Load Tests', () => {
       expect(latencies.length).toBe(userCount * requestsPerUser); // All requests completed
     });
 
-    it('should scale linearly with user count', async () => {
+    it('should scale linearly with user count', async() => {
       const userCounts = [10, 50, 100];
       const requestsPerUser = 20;
       const results = [];
 
       for (const userCount of userCounts) {
         const connections = [];
-        
+
         // Create connections
         for (let i = 0; i < userCount; i++) {
           const mockWebSocket = {
             readyState: WebSocket.OPEN,
             send: jest.fn(),
             on: jest.fn(),
-            close: jest.fn()
+            close: jest.fn(),
           };
 
           const userId = `scale-user-${i}`;
@@ -591,12 +591,12 @@ describe('Tunnel Load Tests', () => {
 
         for (let userIndex = 0; userIndex < userCount; userIndex++) {
           const { userId } = connections[userIndex];
-          
+
           for (let reqIndex = 0; reqIndex < requestsPerUser; reqIndex++) {
             const httpRequest = {
               method: 'GET',
-              path: `/api/scale-test`,
-              headers: {}
+              path: '/api/scale-test',
+              headers: {},
             };
 
             const responsePromise = tunnelProxy.forwardRequest(userId, httpRequest);
@@ -613,7 +613,7 @@ describe('Tunnel Load Tests', () => {
                 const httpResponse = {
                   status: 200,
                   headers: { 'content-type': 'application/json' },
-                  body: JSON.stringify({ result: 'ok' })
+                  body: JSON.stringify({ result: 'ok' }),
                 };
                 pendingRequest.resolve(httpResponse);
               }
@@ -623,7 +623,7 @@ describe('Tunnel Load Tests', () => {
 
         await Promise.all(requestPromises);
         const endTime = Date.now();
-        
+
         const totalRequests = userCount * requestsPerUser;
         const duration = endTime - startTime;
         const throughput = (totalRequests / duration) * 1000;

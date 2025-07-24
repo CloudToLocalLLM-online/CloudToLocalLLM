@@ -28,10 +28,10 @@ const router = express.Router();
  */
 export function createTunnelRoutes(server, config, logger = winston.createLogger()) {
   const { AUTH0_DOMAIN, AUTH0_AUDIENCE } = config;
-  
+
   // Use enhanced logger if winston logger provided, otherwise create new TunnelLogger
   const tunnelLogger = logger instanceof TunnelLogger ? logger : new TunnelLogger('tunnel-routes');
-  
+
   // JWKS client for token verification
   const jwksClientInstance = jwksClient({
     jwksUri: `https://${AUTH0_DOMAIN}/.well-known/jwks.json`,
@@ -39,7 +39,7 @@ export function createTunnelRoutes(server, config, logger = winston.createLogger
     timeout: 30000,
     cache: true,
     rateLimit: true,
-    jwksRequestsPerMinute: 5
+    jwksRequestsPerMinute: 5,
   });
 
   // Create tunnel proxy instance with enhanced logger
@@ -52,7 +52,7 @@ export function createTunnelRoutes(server, config, logger = winston.createLogger
     burstWindowMs: 60 * 1000, // 1 minute
     maxBurstRequests: 100, // requests per burst window per user
     maxConcurrentRequests: 50, // concurrent requests per user
-    includeHeaders: true
+    includeHeaders: true,
   });
 
   // Create enhanced JWT validation middleware
@@ -65,7 +65,7 @@ export function createTunnelRoutes(server, config, logger = winston.createLogger
     enableCaching: true,
     cacheMaxAge: 5 * 60 * 1000, // 5 minutes
     maxValidationAttempts: 10,
-    validationWindowMs: 60 * 1000 // 1 minute
+    validationWindowMs: 60 * 1000, // 1 minute
   });
 
   // Create connection security middleware
@@ -78,8 +78,8 @@ export function createTunnelRoutes(server, config, logger = winston.createLogger
       'https://app.cloudtolocalllm.online',
       'https://cloudtolocalllm.online',
       'https://docs.cloudtolocalllm.online',
-      ...(process.env.NODE_ENV !== 'production' ? ['http://localhost:3000', 'http://localhost:8080'] : [])
-    ]
+      ...(process.env.NODE_ENV !== 'production' ? ['http://localhost:3000', 'http://localhost:8080'] : []),
+    ],
   });
 
   // Create security audit middleware
@@ -95,8 +95,8 @@ export function createTunnelRoutes(server, config, logger = winston.createLogger
     alertThresholds: {
       failedAuthAttempts: 10,
       suspiciousActivity: 5,
-      rateLimitViolations: 20
-    }
+      rateLimitViolations: 20,
+    },
   });
 
   /**
@@ -116,7 +116,7 @@ export function createTunnelRoutes(server, config, logger = winston.createLogger
     const verified = jwt.verify(token, signingKey, {
       audience: AUTH0_AUDIENCE,
       issuer: `https://${AUTH0_DOMAIN}/`,
-      algorithms: ['RS256']
+      algorithms: ['RS256'],
     });
 
     return verified.sub;
@@ -128,42 +128,42 @@ export function createTunnelRoutes(server, config, logger = winston.createLogger
   async function authenticateToken(req, res, next) {
     const correlationId = tunnelLogger.generateCorrelationId();
     req.correlationId = correlationId;
-    
+
     const authHeader = req.headers['authorization'];
     const token = authHeader && authHeader.split(' ')[1];
 
     if (!token) {
       const errorResponse = ErrorResponseBuilder.authenticationError(
         'Authorization header with Bearer token is required',
-        ERROR_CODES.AUTH_TOKEN_MISSING
+        ERROR_CODES.AUTH_TOKEN_MISSING,
       );
-      
+
       tunnelLogger.logSecurity('auth_token_missing', null, {
         correlationId,
         ip: req.ip,
         userAgent: req.get('User-Agent'),
-        path: req.path
+        path: req.path,
       });
-      
+
       return res.status(401).json(errorResponse);
     }
 
     try {
       const userId = await verifyToken(token);
       req.userId = userId;
-      
+
       tunnelLogger.debug('Authentication successful', {
         correlationId,
         userId,
         path: req.path,
-        method: req.method
+        method: req.method,
       });
-      
+
       next();
     } catch (error) {
       let errorCode = ERROR_CODES.AUTH_TOKEN_INVALID;
       let message = 'The provided token is invalid or has expired';
-      
+
       if (error.name === 'TokenExpiredError') {
         errorCode = ERROR_CODES.AUTH_TOKEN_EXPIRED;
         message = 'The provided token has expired';
@@ -171,18 +171,18 @@ export function createTunnelRoutes(server, config, logger = winston.createLogger
         errorCode = ERROR_CODES.AUTH_TOKEN_INVALID;
         message = 'The provided token is malformed or invalid';
       }
-      
+
       const errorResponse = ErrorResponseBuilder.authenticationError(message, errorCode);
-      
+
       tunnelLogger.logSecurity('auth_token_invalid', null, {
         correlationId,
         error: error.message,
         errorName: error.name,
         ip: req.ip,
         userAgent: req.get('User-Agent'),
-        path: req.path
+        path: req.path,
       });
-      
+
       return res.status(403).json(errorResponse);
     }
   }
@@ -194,16 +194,16 @@ export function createTunnelRoutes(server, config, logger = winston.createLogger
     if (!tunnelProxy.isUserConnected(req.userId)) {
       const errorResponse = ErrorResponseBuilder.serviceUnavailableError(
         'Please ensure the CloudToLocalLLM desktop client is running and connected',
-        ERROR_CODES.DESKTOP_CLIENT_DISCONNECTED
+        ERROR_CODES.DESKTOP_CLIENT_DISCONNECTED,
       );
-      
+
       tunnelLogger.logRequest('failed', req.correlationId, req.userId, {
         correlationId: req.correlationId,
         reason: 'Desktop client not connected',
         path: req.path,
-        method: req.method
+        method: req.method,
       });
-      
+
       return res.status(503).json(errorResponse);
     }
     next();
@@ -219,17 +219,17 @@ export function createTunnelRoutes(server, config, logger = winston.createLogger
       'https://app.cloudtolocalllm.online',
       'https://cloudtolocalllm.online',
       'https://docs.cloudtolocalllm.online',
-      ...(process.env.NODE_ENV !== 'production' ? ['http://localhost:3000', 'http://localhost:8080'] : [])
-    ]
+      ...(process.env.NODE_ENV !== 'production' ? ['http://localhost:3000', 'http://localhost:8080'] : []),
+    ],
   });
 
   // WebSocket server for tunnel connections
   const wss = new WebSocketServer({
     server,
     path: '/ws/tunnel',
-    verifyClient: async (info) => {
+    verifyClient: async(info) => {
       const correlationId = tunnelLogger.generateCorrelationId();
-      
+
       try {
         // First check connection security
         if (!websocketSecurityValidator(info)) {
@@ -237,7 +237,7 @@ export function createTunnelRoutes(server, config, logger = winston.createLogger
             correlationId,
             ip: info.req.socket.remoteAddress,
             origin: info.req.headers.origin,
-            userAgent: info.req.headers['user-agent']
+            userAgent: info.req.headers['user-agent'],
           });
           return false;
         }
@@ -249,7 +249,7 @@ export function createTunnelRoutes(server, config, logger = winston.createLogger
           tunnelLogger.logSecurity('websocket_auth_token_missing', null, {
             correlationId,
             ip: info.req.socket.remoteAddress,
-            userAgent: info.req.headers['user-agent']
+            userAgent: info.req.headers['user-agent'],
           });
           return false;
         }
@@ -257,12 +257,12 @@ export function createTunnelRoutes(server, config, logger = winston.createLogger
         const userId = await verifyToken(token);
         info.req.userId = userId;
         info.req.correlationId = correlationId;
-        
+
         tunnelLogger.debug('WebSocket authentication successful', {
           correlationId,
-          userId
+          userId,
         });
-        
+
         return true;
       } catch (error) {
         tunnelLogger.logSecurity('websocket_auth_failed', null, {
@@ -270,23 +270,23 @@ export function createTunnelRoutes(server, config, logger = winston.createLogger
           error: error.message,
           errorName: error.name,
           ip: info.req.socket.remoteAddress,
-          userAgent: info.req.headers['user-agent']
+          userAgent: info.req.headers['user-agent'],
         });
         return false;
       }
-    }
+    },
   });
 
   // Handle WebSocket connections
   wss.on('connection', (ws, req) => {
     const userId = req.userId;
     const correlationId = req.correlationId;
-    
+
     if (!userId) {
       tunnelLogger.logTunnelError(
         ERROR_CODES.AUTH_TOKEN_INVALID,
         'WebSocket connection without user ID',
-        { correlationId }
+        { correlationId },
       );
       ws.close(1008, 'Authentication failed');
       return;
@@ -295,17 +295,17 @@ export function createTunnelRoutes(server, config, logger = winston.createLogger
     try {
       const connectionId = tunnelProxy.handleConnection(ws, userId);
       tunnelLogger.logConnection('websocket_established', connectionId, userId, {
-        correlationId
+        correlationId,
       });
     } catch (error) {
       tunnelLogger.logTunnelError(
         ERROR_CODES.WEBSOCKET_CONNECTION_FAILED,
         'Failed to handle tunnel WebSocket connection',
-        { 
+        {
           correlationId,
           userId,
-          error: error.message
-        }
+          error: error.message,
+        },
       );
       ws.close(1011, 'Internal server error');
     }
@@ -318,12 +318,12 @@ export function createTunnelRoutes(server, config, logger = winston.createLogger
   // Health check endpoint for specific user's tunnel
   router.get('/health/:userId', jwtValidationMiddleware, (req, res) => {
     const { userId } = req.params;
-    
+
     // Verify user can only check their own tunnel
     if (userId !== req.userId) {
       return res.status(403).json({
         error: 'Access denied',
-        message: 'You can only check your own tunnel status'
+        message: 'You can only check your own tunnel status',
       });
     }
 
@@ -331,7 +331,7 @@ export function createTunnelRoutes(server, config, logger = winston.createLogger
     res.json({
       userId,
       ...status,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
   });
 
@@ -339,14 +339,14 @@ export function createTunnelRoutes(server, config, logger = winston.createLogger
   router.get('/status', jwtValidationMiddleware, (req, res) => {
     const status = tunnelProxy.getUserConnectionStatus(req.userId);
     const stats = tunnelProxy.getStats();
-    
+
     res.json({
       user: {
         userId: req.userId,
-        ...status
+        ...status,
       },
       system: stats,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
   });
 
@@ -355,20 +355,20 @@ export function createTunnelRoutes(server, config, logger = winston.createLogger
     try {
       const healthStatus = tunnelProxy.getHealthStatus();
       const statusCode = healthStatus.status === 'healthy' ? 200 : 503;
-      
+
       res.status(statusCode).json(healthStatus);
     } catch (error) {
       tunnelLogger.logTunnelError(
         ERROR_CODES.INTERNAL_SERVER_ERROR,
         'Failed to get tunnel health status',
-        { error: error.message }
+        { error: error.message },
       );
-      
+
       res.status(500).json(
         ErrorResponseBuilder.internalServerError(
           'Failed to retrieve health status',
-          ERROR_CODES.INTERNAL_SERVER_ERROR
-        )
+          ERROR_CODES.INTERNAL_SERVER_ERROR,
+        ),
       );
     }
   });
@@ -378,45 +378,45 @@ export function createTunnelRoutes(server, config, logger = winston.createLogger
     try {
       const stats = tunnelProxy.getStats();
       const userStatus = tunnelProxy.getUserConnectionStatus(req.userId);
-      
+
       res.json({
         user: {
           userId: req.userId,
-          ...userStatus
+          ...userStatus,
         },
         system: stats,
         performance: {
           averageResponseTime: stats.performance.averageResponseTime,
           successRate: stats.requests.successRate,
-          timeoutRate: stats.requests.timeoutRate
+          timeoutRate: stats.requests.timeoutRate,
         },
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
     } catch (error) {
       tunnelLogger.logTunnelError(
         ERROR_CODES.INTERNAL_SERVER_ERROR,
         'Failed to get tunnel metrics',
-        { 
+        {
           userId: req.userId,
           correlationId: req.correlationId,
-          error: error.message 
-        }
+          error: error.message,
+        },
       );
-      
+
       res.status(500).json(
         ErrorResponseBuilder.internalServerError(
           'Failed to retrieve metrics',
-          ERROR_CODES.INTERNAL_SERVER_ERROR
-        )
+          ERROR_CODES.INTERNAL_SERVER_ERROR,
+        ),
       );
     }
   });
 
   // Proxy middleware for tunnel requests with rate limiting
-  router.all('/:userId/*', jwtValidationMiddleware, rateLimitMiddleware, requireTunnelConnection, async (req, res) => {
+  router.all('/:userId/*', jwtValidationMiddleware, rateLimitMiddleware, requireTunnelConnection, async(req, res) => {
     const { userId } = req.params;
     const startTime = Date.now();
-    
+
     // Verify user can only access their own tunnel
     if (userId !== req.userId) {
       // Log cross-user access attempt to audit logger
@@ -430,39 +430,39 @@ export function createTunnelRoutes(server, config, logger = winston.createLogger
           path: req.path,
           method: req.method,
           resource: req.path,
-          action: req.method.toLowerCase()
+          action: req.method.toLowerCase(),
         });
       }
-      
+
       const errorResponse = ErrorResponseBuilder.createErrorResponse(
         ERROR_CODES.AUTH_TOKEN_INVALID,
         'You can only access your own tunnel',
-        403
+        403,
       );
-      
+
       tunnelLogger.logSecurity('unauthorized_tunnel_access', req.userId, {
         correlationId: req.correlationId,
         requestedUserId: userId,
         actualUserId: req.userId,
         path: req.path,
-        method: req.method
+        method: req.method,
       });
-      
+
       return res.status(403).json(errorResponse);
     }
 
     // Extract the target path (everything after /:userId)
     const targetPath = '/' + req.params[0];
-    
+
     // Build HTTP request object with validation
     try {
       const httpRequest = {
         method: req.method,
         path: targetPath,
         headers: { ...req.headers },
-        ...(req.body && Object.keys(req.body).length > 0 && { 
-          body: typeof req.body === 'string' ? req.body : JSON.stringify(req.body) 
-        })
+        ...(req.body && Object.keys(req.body).length > 0 && {
+          body: typeof req.body === 'string' ? req.body : JSON.stringify(req.body),
+        }),
       };
 
       // Remove proxy-specific headers
@@ -477,12 +477,12 @@ export function createTunnelRoutes(server, config, logger = winston.createLogger
         method: req.method,
         path: targetPath,
         headersCount: Object.keys(httpRequest.headers).length,
-        hasBody: !!httpRequest.body
+        hasBody: !!httpRequest.body,
       });
-      
+
       const httpResponse = await tunnelProxy.forwardRequest(userId, httpRequest);
       const responseTime = Date.now() - startTime;
-      
+
       // Set response headers
       Object.entries(httpResponse.headers || {}).forEach(([key, value]) => {
         try {
@@ -493,14 +493,14 @@ export function createTunnelRoutes(server, config, logger = winston.createLogger
             userId,
             headerKey: key,
             headerValue: value,
-            error: headerError.message
+            error: headerError.message,
           });
         }
       });
 
       // Send response
       res.status(httpResponse.status);
-      
+
       if (httpResponse.body) {
         // Try to parse as JSON first, fallback to plain text
         try {
@@ -519,56 +519,56 @@ export function createTunnelRoutes(server, config, logger = winston.createLogger
         method: req.method,
         path: targetPath,
         statusCode: httpResponse.status,
-        responseSize: httpResponse.body?.length || 0
+        responseSize: httpResponse.body?.length || 0,
       });
     } catch (error) {
       const responseTime = Date.now() - startTime;
-      
+
       tunnelLogger.logRequest('failed', req.correlationId, userId, {
         correlationId: req.correlationId,
         method: req.method,
         path: targetPath,
         responseTime,
         error: error.message,
-        errorCode: error.code
+        errorCode: error.code,
       });
-      
+
       // Determine appropriate error response based on error code
       let errorResponse;
       let statusCode;
-      
+
       if (error.code === ERROR_CODES.DESKTOP_CLIENT_DISCONNECTED) {
         statusCode = 503;
         errorResponse = ErrorResponseBuilder.serviceUnavailableError(
           'Desktop client is not connected',
-          ERROR_CODES.DESKTOP_CLIENT_DISCONNECTED
+          ERROR_CODES.DESKTOP_CLIENT_DISCONNECTED,
         );
       } else if (error.code === ERROR_CODES.REQUEST_TIMEOUT) {
         statusCode = 504;
         errorResponse = ErrorResponseBuilder.gatewayTimeoutError(
           'Request timed out after 30 seconds',
-          ERROR_CODES.REQUEST_TIMEOUT
+          ERROR_CODES.REQUEST_TIMEOUT,
         );
       } else if (error.code === ERROR_CODES.WEBSOCKET_SEND_FAILED) {
         statusCode = 503;
         errorResponse = ErrorResponseBuilder.serviceUnavailableError(
           'Failed to communicate with desktop client',
-          ERROR_CODES.WEBSOCKET_SEND_FAILED
+          ERROR_CODES.WEBSOCKET_SEND_FAILED,
         );
       } else if (error.code === ERROR_CODES.INVALID_REQUEST_FORMAT) {
         statusCode = 400;
         errorResponse = ErrorResponseBuilder.badRequestError(
           'Invalid request format',
-          ERROR_CODES.INVALID_REQUEST_FORMAT
+          ERROR_CODES.INVALID_REQUEST_FORMAT,
         );
       } else {
         statusCode = 500;
         errorResponse = ErrorResponseBuilder.internalServerError(
           'Failed to process tunnel request',
-          ERROR_CODES.INTERNAL_SERVER_ERROR
+          ERROR_CODES.INTERNAL_SERVER_ERROR,
         );
       }
-      
+
       res.status(statusCode).json(errorResponse);
     }
   });
@@ -576,7 +576,7 @@ export function createTunnelRoutes(server, config, logger = winston.createLogger
   return {
     router,
     tunnelProxy,
-    wss
+    wss,
   };
 }
 

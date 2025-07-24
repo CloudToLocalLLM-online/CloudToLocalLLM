@@ -23,14 +23,7 @@
     - _Requirements: 1.3, 1.4, 6.5_
 
 - [x] 3. Create user container creation service
-
-
-
-
-
   - [x] 3.1 Implement Flutter service for container management
-
-
     - Create UserContainerService to interface with existing StreamingProxyManager
     - Implement createUserContainer method that calls API backend container provisioning
     - Add container status checking and health validation methods
@@ -38,9 +31,6 @@
     - _Requirements: 10.1, 10.2_
 
   - [x] 3.2 Integrate container creation into wizard flow
-
-
-
     - Add container creation step to setup wizard after welcome
     - Implement real-time container creation progress tracking
     - Add error handling and retry logic for container creation failures
@@ -48,13 +38,7 @@
     - _Requirements: 10.3, 10.4, 10.5_
 
 - [x] 4. Implement platform detection and download management
-
-
-
-
   - [x] 4.1 Create platform detection service
-
-
     - Build PlatformDetectionService with browser-based OS detection using user agent
     - Implement fallback manual platform selection interface in wizard
     - Create DownloadOption model with platform-specific download details
@@ -62,8 +46,6 @@
     - _Requirements: 2.1, 2.2, 2.5_
 
   - [x] 4.2 Build download management system
-
-
     - Create DownloadManagementService for secure download URL generation
     - Integrate with existing GitHub releases for download links
     - Add download tracking and analytics integration
@@ -71,16 +53,14 @@
     - _Requirements: 2.3, 2.4, 6.2_
 
   - [x] 4.3 Integrate platform detection into wizard
-
-
     - Update setup wizard to use automatic platform detection
     - Replace static platform buttons with dynamic detection
     - Add manual override option for incorrect detection
     - Integrate with existing download screen for consistency
     - _Requirements: 2.1, 2.2, 8.4_
 
-- [ ] 5. Create installation guide and tutorial system
-  - [ ] 5.1 Build installation guide components
+- [x] 5. Create installation guide and tutorial system
+  - [x] 5.1 Build installation guide components
     - Create InstallationGuide widget with platform-specific instructions
     - Implement InstallationStep model with visual aids and commands
     - Add screenshot/animation support for installation steps
@@ -132,22 +112,22 @@
     - Verify homepage loads correctly without download prompts
     - _Requirements: 8.1, 8.2_
 
-  - [x] 8.2 Create settings download section
+  - [ ] 8.2 Create settings download section
     - Add download link section to web application settings page
     - Implement settings-based download access with platform detection
     - Create simple download interface within settings context
     - Add download tracking for settings-initiated downloads
     - _Requirements: 8.5_
 
-- [x] 9. Build dedicated download page
-  - [x] 9.1 Create standalone download page
+- [ ] 9. Build dedicated download page
+  - [ ] 9.1 Create standalone download page
     - Build DownloadPage component with clean, minimal design
     - Implement automatic platform detection with manual override options
     - Create platform-specific download sections (Windows, Linux, macOS)
     - Add basic installation instructions and file descriptions
     - _Requirements: 8.4, 8.5_
 
-  - [x] 9.2 Add download page routing and access
+  - [ ] 9.2 Add download page routing and access
     - Create routing for dedicated download page (/downloads)
     - Ensure page is accessible without authentication
     - Add download page links from appropriate locations (settings, help)
@@ -155,14 +135,7 @@
     - _Requirements: 8.4, 8.5_
 
 - [x] 10. Enhance error handling and troubleshooting system
-
-
-
-
-
   - [x] 10.1 Improve comprehensive error handling
-
-
     - Enhance existing error handling with category-specific error management
     - Implement error recovery mechanisms for each setup step
     - Add user-friendly error messages with actionable troubleshooting steps
@@ -170,8 +143,6 @@
     - _Requirements: 6.1, 6.2, 6.3_
 
   - [x] 10.2 Add troubleshooting and support integration
-
-
     - Implement context-sensitive help and troubleshooting guides
     - Add links to documentation and support resources
     - Create escalation paths for complex setup issues
@@ -209,13 +180,7 @@
     - _Requirements: 9.2, 9.4, 9.5_
 
 - [x] 13. Create comprehensive testing suite
-
-
-
-
   - [x] 13.1 Implement unit and integration tests
-
-
     - Write unit tests for all service classes and data models
     - Create integration tests for wizard flow and step transitions
     - Add platform detection and download management testing
@@ -223,8 +188,6 @@
     - _Requirements: 1.4, 2.5, 4.5, 5.5_
 
   - [x] 13.2 Add end-to-end and user experience testing
-
-
     - Create end-to-end tests for complete setup wizard flow
     - Add cross-platform compatibility testing for all supported platforms
     - Implement accessibility testing and compliance validation
@@ -232,17 +195,7 @@
     - _Requirements: 1.5, 8.6_
 
 - [x] 14. Polish user interface and experience
-
-
-
-
-
   - [x] 14.1 Implement responsive design and accessibility
-
-
-
-
-
     - Create mobile-friendly wizard layout with touch-friendly controls
     - Add accessibility features (screen reader support, keyboard navigation)
     - Implement proper color contrast and visual design consistency
@@ -250,8 +203,6 @@
     - _Requirements: 1.3, 8.1_
 
   - [x] 14.2 Add animations and visual feedback
-
-
     - Create smooth step transitions and progress animations
     - Add success/failure visual feedback with appropriate icons and colors
     - Implement loading spinners and progress bars for long operations
@@ -259,20 +210,82 @@
     - _Requirements: 8.1, 8.2_
 
 - [x] 15. Complete documentation and deployment preparation
-
-
-
-
-
-
-
-
-
-
-
-
   - Create comprehensive setup wizard documentation for users and developers
   - Add troubleshooting guides and FAQ for common setup issues
   - Create deployment checklist for setup wizard feature rollout
   - Add feature flags and gradual rollout configuration for safe deployment
   - _Requirements: 6.5, 10.5_
+
+- [ ] 16. Complete missing core functionality
+  - [ ] 16.1 Implement clipboard functionality in installation guide
+    - Add clipboard copy functionality for command snippets in InstallationGuide widget
+    - Replace TODO comment with actual clipboard implementation using flutter/services
+    - Add visual feedback for successful copy operations
+    - Ensure cross-platform clipboard support for web and desktop
+    - _Requirements: 3.2, 3.3_
+
+  - [ ] 16.2 Add documentation links and support integration
+    - Implement proper documentation link opening functionality in InstallationGuide
+    - Replace TODO comment with actual URL launcher implementation
+    - Add context-sensitive help links throughout installation steps
+    - Create support contact integration for complex installation issues
+    - _Requirements: 3.4, 3.5, 6.3_
+
+  - [ ] 16.3 Complete platform detection for web browsers
+    - Implement actual browser user agent detection in PlatformDetectionService
+    - Replace current unknown platform default with proper web-based detection
+    - Add fallback manual platform selection when detection fails
+    - Test detection accuracy across different browsers and operating systems
+    - _Requirements: 2.1, 2.2_
+
+- [ ] 17. Implement missing services for complete setup flow
+  - [ ] 17.1 Create TunnelConfigurationService for connection setup
+    - Build TunnelConfigurationService with connection parameter generation
+    - Implement tunnel connectivity testing and validation methods
+    - Create TunnelConfig model with authentication and connection details
+    - Add real-time connection status monitoring during setup
+    - _Requirements: 4.1, 4.2, 4.3_
+
+  - [ ] 17.2 Create ConnectionValidationService for comprehensive testing
+    - Build ConnectionValidationService with comprehensive testing suite
+    - Implement ValidationResult and ValidationTest models for test reporting
+    - Add desktop client communication testing and LLM connectivity tests
+    - Create streaming functionality validation and error reporting
+    - _Requirements: 5.1, 5.2, 5.3, 5.4_
+
+  - [ ] 17.3 Create SetupStatusService for user setup tracking
+    - Implement SetupStatusService with database integration for user setup status
+    - Add methods for isFirstTimeUser, markSetupComplete, and resetSetupStatus
+    - Create UserSetupStatus data model with completion tracking and preferences
+    - Integrate with existing SetupWizardService for comprehensive status management
+    - _Requirements: 1.1, 9.1, 9.2_
+
+- [ ] 18. Build dedicated download page and settings integration
+  - [ ] 18.1 Create standalone download page
+    - Build DownloadPage component with clean, minimal design
+    - Implement automatic platform detection with manual override options
+    - Create platform-specific download sections (Windows, Linux, macOS)
+    - Add basic installation instructions and file descriptions
+    - _Requirements: 8.4, 8.5_
+
+  - [ ] 18.2 Add download page routing and settings integration
+    - Create routing for dedicated download page (/downloads)
+    - Ensure page is accessible without authentication
+    - Add download link section to web application settings page
+    - Implement settings-based download access with platform detection
+    - _Requirements: 8.4, 8.5_
+
+- [ ] 19. Complete download management enhancements
+  - [ ] 19.1 Implement file validation for desktop platforms
+    - Add file integrity validation using checksums or signatures
+    - Implement file size validation and corruption detection
+    - Create platform-specific file format validation
+    - Add security scanning integration where possible
+    - _Requirements: 2.4, 6.2_
+
+  - [ ] 19.2 Complete analytics integration
+    - Implement backend analytics endpoint integration
+    - Add privacy-compliant download tracking and metrics
+    - Create analytics dashboard for download success monitoring
+    - Add error reporting and improvement feedback loops
+    - _Requirements: 10.1, 10.2, 10.3_
