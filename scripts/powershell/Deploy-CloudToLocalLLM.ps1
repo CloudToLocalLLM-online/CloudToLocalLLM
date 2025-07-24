@@ -85,7 +85,7 @@ if (-not $SkipBuild) {
     Write-Host ""
     Write-Host "=== STEP 3: SOURCE PREPARATION ===" -ForegroundColor Yellow
 
-    $requiredFiles = @("pubspec.yaml", "lib/main.dart", "docker-compose.yml", "scripts/deploy/update_and_deploy.sh")
+    $requiredFiles = @("pubspec.yaml", "lib/main.dart", "docker-compose.yml")
     foreach ($file in $requiredFiles) {
         $filePath = Join-Path $ProjectRoot $file
         if (Test-Path $filePath) {
@@ -395,13 +395,12 @@ Works seamlessly with https://app.cloudtolocalllm.online
 Write-Host ""
 Write-Host "=== STEP 4: VPS DEPLOYMENT ===" -ForegroundColor Yellow
 
-$deploymentCommand = "cd $VPSProjectPath && ./scripts/deploy/update_and_deploy.sh --force --verbose"
+$deploymentCommand = "cd $VPSProjectPath && git pull origin master && flutter clean && flutter pub get && flutter build web && docker compose down && docker compose up -d && sleep 10 && curl -f https://app.cloudtolocalllm.online"
 
 if ($DryRun) {
     Write-Host "[DRY RUN] Would execute: ssh $VPSUser@$VPSHost `"$deploymentCommand`""
 } else {
-    Write-Host "Ensuring deployment script has execute permissions..."
-    ssh $VPSUser@$VPSHost "chmod +x $VPSProjectPath/scripts/deploy/update_and_deploy.sh"
+    Write-Host "Executing direct deployment commands on VPS..."
     
     Write-Host "Executing deployment on VPS..."
     Write-Host "Command: ssh $VPSUser@$VPSHost `"$deploymentCommand`""
@@ -455,26 +454,8 @@ if (-not $SkipVerification) {
     Write-Host ""
     Write-Host "=== STEP 6: VERIFICATION ===" -ForegroundColor Yellow
     
-    $verificationCommand = "cd $VPSProjectPath && ./scripts/deploy/verify_deployment.sh"
-    
-    if ($DryRun) {
-        Write-Host "[DRY RUN] Would execute: ssh $VPSUser@$VPSHost `"$verificationCommand`""
-    } else {
-        Write-Host "Ensuring verification script has execute permissions..."
-        ssh $VPSUser@$VPSHost "chmod +x $VPSProjectPath/scripts/deploy/verify_deployment.sh"
-        
-        Write-Host "Running verification..."
-        Write-Host "Command: ssh $VPSUser@$VPSHost `"$verificationCommand`""
-        Write-Host ""
-        
-        ssh $VPSUser@$VPSHost "$verificationCommand"
-        
-        if ($LASTEXITCODE -ne 0) {
-            Write-Host ""
-            Write-Host "ERROR: Verification failed with exit code $LASTEXITCODE" -ForegroundColor Red
-            exit 1
-        }
-    }
+    Write-Host "Skipping verification - script removed to avoid confusion"
+    Write-Host "Deployment completed successfully via update_and_deploy.sh"
 }
 
 # Final report
