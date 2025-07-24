@@ -373,7 +373,7 @@ Works seamlessly with https://app.cloudtolocalllm.online
                         }
 
                         # Find Windows installer files
-                        $installerFiles = Get-ChildItem -Path $distPath -Filter "*Setup*.exe" -ErrorAction SilentlyContinue
+                        $installerFiles = Get-ChildItem -Path $distPath -Filter "*Setup*.exe" -Recurse -ErrorAction SilentlyContinue
                         foreach ($installer in $installerFiles) {
                             if ($installer.LastWriteTime -gt (Get-Date).AddHours(-1)) {
                                 $assetsToUpload += $installer.FullName
@@ -431,7 +431,7 @@ Works seamlessly with https://app.cloudtolocalllm.online
 Write-Host ""
 Write-Host "=== STEP 4: VPS DEPLOYMENT ===" -ForegroundColor Yellow
 
-$deploymentCommand = "cd $VPSProjectPath && git pull origin master && flutter clean && flutter pub get && flutter build web && docker compose down && docker compose up -d && sleep 10 && curl -f https://app.cloudtolocalllm.online"
+$deploymentCommand = "cd $VPSProjectPath && git reset --hard HEAD && git clean -fd && git pull origin master && flutter clean && flutter pub get && flutter build web && docker compose down && docker compose up -d && sleep 10 && curl -f https://app.cloudtolocalllm.online"
 
 if ($DryRun) {
     Write-Host "[DRY RUN] Would execute: ssh $VPSUser@$VPSHost `"$deploymentCommand`""
