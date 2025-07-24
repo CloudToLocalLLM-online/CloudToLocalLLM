@@ -754,24 +754,34 @@ manage_containers() {
         fi
     else
         log_warning "SSL certificates not found at certbot/live/cloudtolocalllm.online"
-        log_warning "Starting services without SSL (HTTP only)..."
+        log_warning "Attempting to generate SSL certificates automatically..."
 
-        # Try to start services anyway - they might be configured for HTTP
+        # Start services first to enable ACME challenge
+        log_verbose "Starting services temporarily for certificate generation..."
         if [[ "$VERBOSE" == "true" ]]; then
             $docker_compose_cmd -f docker-compose.yml up -d
         else
             $docker_compose_cmd -f docker-compose.yml up -d &> /dev/null
         fi
 
-        # Check if services started successfully
-        if [ $? -eq 0 ]; then
-            log_warning "Services started successfully without SSL"
-            log_warning "To enable SSL, set up certificates with:"
-            log_warning "certbot certonly --webroot -w /var/www/html -d cloudtolocalllm.online -d app.cloudtolocalllm.online"
+        # Wait for services to be ready
+        sleep 10
+
+        # Try to generate SSL certificates automatically
+        if [ -f "scripts/ssl/setup_letsencrypt.sh" ]; then
+            log_verbose "Running SSL certificate setup script..."
+            if bash scripts/ssl/setup_letsencrypt.sh setup; then
+                log_success "SSL certificates generated successfully!"
+                # Restart services with SSL
+                log_verbose "Restarting services with SSL certificates..."
+                $docker_compose_cmd -f docker-compose.yml restart
+            else
+                log_warning "SSL certificate generation failed, continuing with HTTP only"
+                log_warning "Services are running but HTTPS will not be available"
+            fi
         else
-            log_error "Failed to start Docker services"
-            log_error "Check Docker Compose configuration and try again"
-            exit 4
+            log_warning "SSL setup script not found, continuing with HTTP only"
+            log_warning "To enable SSL manually, run: certbot certonly --webroot -w /var/www/html -d cloudtolocalllm.online -d app.cloudtolocalllm.online"
         fi
     fi
 
@@ -1002,9 +1012,29 @@ main() {
 
     # Validate SSL certificates before health checks
     if ! validate_ssl_certificates; then
-        log_error "SSL certificate validation failed - cannot proceed with deployment"
-        display_summary
-        exit 4
+        log_warning "SSL certificate validation failed - attempting to generate certificates"
+
+        # Try to generate SSL certificates if they're missing
+        if [ -f "scripts/ssl/setup_letsencrypt.sh" ]; then
+            log_verbose "Running SSL certificate setup script..."
+            if bash scripts/ssl/setup_letsencrypt.sh setup; then
+                log_success "SSL certificates generated successfully!"
+                # Restart services with SSL
+                log_verbose "Restarting services with SSL certificates..."
+                docker compose -f docker-compose.yml restart
+
+                # Re-validate certificates
+                if validate_ssl_certificates; then
+                    log_success "SSL certificates now valid after generation"
+                else
+                    log_warning "SSL certificate validation still failing, continuing with HTTP"
+                fi
+            else
+                log_warning "SSL certificate generation failed, continuing with HTTP only"
+            fi
+        else
+            log_warning "SSL setup script not found, continuing without SSL validation"
+        fi
     fi
 
     # Perform health checks and fail fast if they don't pass

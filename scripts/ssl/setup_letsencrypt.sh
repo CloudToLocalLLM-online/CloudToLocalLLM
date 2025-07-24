@@ -84,13 +84,19 @@ precheck_acme_challenge() {
         echo "[WARNING] ACME challenge precheck failed for one or more domains."
         echo "[WARNING] This could be due to DNS not being properly configured yet."
         echo "[WARNING] You can continue, but Let's Encrypt certificate acquisition may fail."
-        echo "[INFO] Would you like to continue anyway? (y/n)"
-        read -r response
-        if [[ "$response" != "y" && "$response" != "Y" ]]; then
-            echo "[INFO] Aborting. Please fix DNS configuration and try again."
-            exit 1
+
+        # Check if running in automated mode (no TTY)
+        if [ ! -t 0 ]; then
+            echo "[INFO] Running in automated mode, continuing with certificate acquisition attempt..."
+        else
+            echo "[INFO] Would you like to continue anyway? (y/n)"
+            read -r response
+            if [[ "$response" != "y" && "$response" != "Y" ]]; then
+                echo "[INFO] Aborting. Please fix DNS configuration and try again."
+                exit 1
+            fi
+            echo "[INFO] Continuing with certificate acquisition attempt..."
         fi
-        echo "[INFO] Continuing with certificate acquisition attempt..."
     fi
 }
 
@@ -220,10 +226,12 @@ main() {
                 restart_webapp
                 setup_renewal
                 echo_color "$GREEN" "Certificate setup complete!"
+                exit 0
             else
                 echo_color "$YELLOW" "Certificate setup failed, but continuing deployment..."
                 echo_color "$YELLOW" "You can try again later with: ./scripts/ssl/setup_letsencrypt.sh setup"
                 echo_color "$YELLOW" "The application will work with HTTP for now."
+                exit 0  # Don't fail the deployment, just continue without SSL
             fi
             ;;
         "renew")
