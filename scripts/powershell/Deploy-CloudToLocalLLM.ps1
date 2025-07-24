@@ -58,11 +58,27 @@ if (-not $DryRun) {
 # Define version manager path (used throughout script)
 $versionManagerPath = Join-Path $PSScriptRoot "version_manager.ps1"
 
-# Step 2: Version management (DISABLED - syntax error in version_manager.ps1)
+# Step 2: Version management
 if (-not $SkipVersionUpdate) {
     Write-Host ""
     Write-Host "=== STEP 2: VERSION MANAGEMENT ===" -ForegroundColor Yellow
-    Write-Host "Skipping version management due to syntax errors in version_manager.ps1"
+
+    if (-not $DryRun) {
+        try {
+            Write-Host "Incrementing version ($VersionIncrement)..."
+            & $versionManagerPath increment $VersionIncrement
+            if ($LASTEXITCODE -ne 0) {
+                Write-Host "ERROR: Version increment failed" -ForegroundColor Red
+                exit 1
+            }
+            Write-Host "✓ Version incremented successfully"
+        } catch {
+            Write-Host "ERROR: Version management failed: $($_.Exception.Message)" -ForegroundColor Red
+            exit 1
+        }
+    } else {
+        Write-Host "[DRY RUN] Would increment version ($VersionIncrement)"
+    }
 }
 
 # Step 3: Source preparation
@@ -198,8 +214,26 @@ if (-not $SkipBuild) {
             Compress-Archive -Path (Join-Path $distPath "windows\*") -DestinationPath $windowsZipPath -Force
             Write-Host "✓ Windows ZIP package created: cloudtolocalllm-windows-v$currentVersion.zip"
         }
+
+        # Create Windows installer
+        Write-Host "Creating Windows installer..."
+        try {
+            $installerScriptPath = Join-Path $PSScriptRoot "Create-WindowsInstaller.ps1"
+            if (Test-Path $installerScriptPath) {
+                & $installerScriptPath -Version $currentVersion
+                if ($LASTEXITCODE -eq 0) {
+                    Write-Host "✓ Windows installer created successfully"
+                } else {
+                    Write-Host "⚠️ Windows installer creation failed (non-blocking)" -ForegroundColor Yellow
+                }
+            } else {
+                Write-Host "⚠️ Windows installer script not found, skipping installer creation" -ForegroundColor Yellow
+            }
+        } catch {
+            Write-Host "⚠️ Windows installer creation failed: $($_.Exception.Message)" -ForegroundColor Yellow
+        }
     } else {
-        Write-Host "[DRY RUN] Would package desktop applications"
+        Write-Host "[DRY RUN] Would package desktop applications and create installer"
     }
 
     # Commit and push distribution assets
@@ -300,10 +334,18 @@ if (-not $SkipBuild) {
 This release provides cross-platform desktop applications for CloudToLocalLLM.
 
 ### 📦 What's Included
-- Windows Desktop Application (cloudtolocalllm-windows-$currentVersion.zip)
+- Windows Desktop Application (cloudtolocalllm-windows-$currentVersion.zip) - Portable ZIP package
+- Windows Installer (CloudToLocalLLM-Windows-$currentVersion-Setup.exe) - Easy installation
 
 ### 🔧 Installation
-1. Download the appropriate package for your platform
+
+**Option 1: Windows Installer (Recommended)**
+1. Download the Setup.exe file
+2. Run the installer and follow the setup wizard
+3. Launch CloudToLocalLLM from Start Menu or Desktop
+
+**Option 2: Portable ZIP**
+1. Download the ZIP package for your platform
 2. Extract and run the application
 3. Authenticate with your CloudToLocalLLM account
 
@@ -328,6 +370,15 @@ Works seamlessly with https://app.cloudtolocalllm.online
                         $assetsToUpload = @()
                         if ($windowsPackage) {
                             $assetsToUpload += $windowsPackage.FullName
+                        }
+
+                        # Find Windows installer files
+                        $installerFiles = Get-ChildItem -Path $distPath -Filter "*Setup*.exe" -ErrorAction SilentlyContinue
+                        foreach ($installer in $installerFiles) {
+                            if ($installer.LastWriteTime -gt (Get-Date).AddHours(-1)) {
+                                $assetsToUpload += $installer.FullName
+                                Write-Host "Found installer asset: $($installer.Name)"
+                            }
                         }
 
                         # Create GitHub release with assets

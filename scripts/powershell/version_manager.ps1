@@ -508,31 +508,6 @@ switch ($Command) {
         $version = Get-SemanticVersion
         Test-VersionFormat -Version $version
     }
-    'validate-placeholders' {
-        Write-LogInfo "Validating that no BUILD_TIME_PLACEHOLDER remains in version files"
-
-        $filesToCheck = @($PubspecFile, $SharedPubspecFile, $SharedVersionFile, $AssetsVersionFile)
-        $placeholderFound = $false
-
-        foreach ($file in $filesToCheck) {
-            if (Test-Path $file) {
-                $content = Get-Content $file -Raw
-                if ($content -match "BUILD_TIME_PLACEHOLDER") {
-                    Write-LogError "BUILD_TIME_PLACEHOLDER found in: $file"
-                    $placeholderFound = $true
-                } else {
-                    Write-LogInfo "✓ No placeholders in: $file"
-                }
-            }
-        }
-
-        if ($placeholderFound) {
-            Write-LogError "Validation failed: BUILD_TIME_PLACEHOLDER instances remain in version files"
-            exit 1
-        } else {
-            Write-LogSuccess "Validation passed: All BUILD_TIME_PLACEHOLDER instances have been replaced"
-        }
-    }
     'help' {
         Write-Host "CloudToLocalLLM Version Manager (PowerShell)" -ForegroundColor Cyan
         Write-Host ""
