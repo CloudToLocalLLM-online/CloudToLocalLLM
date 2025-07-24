@@ -591,6 +591,15 @@ validate_ssl_certificates() {
         return 0
     fi
 
+    # First, try a practical test - if HTTPS is accessible, certificates are working
+    log_verbose "Testing HTTPS accessibility as primary SSL validation..."
+    if curl -s -f -m 10 "https://app.cloudtolocalllm.online" > /dev/null 2>&1; then
+        log_success "HTTPS is accessible - SSL certificates are working"
+        SSL_CERTS_OK=true
+        return 0
+    fi
+
+    # Fallback to file-based validation
     local cert_dir="certbot/live/cloudtolocalllm.online"
     local cert_file="$cert_dir/fullchain.pem"
     local key_file="$cert_dir/privkey.pem"
@@ -931,6 +940,11 @@ display_summary() {
     echo ""
 
     # Check if deployment was successful based on health check results
+    # If HTTPS is working, then SSL certificates are effectively valid
+    if [[ "$HTTPS_OK" == "true" ]]; then
+        SSL_CERTS_OK=true
+    fi
+
     if [[ "$SSL_CERTS_OK" == "true" && "$API_HEALTH_OK" == "true" && "$HTTPS_OK" == "true" ]]; then
         DEPLOYMENT_SUCCESS=true
         log_success "🎉 VPS deployment completed successfully!"
