@@ -4,7 +4,7 @@
 class AppConfig {
   // App Information
   static const String appName = 'CloudToLocalLLM';
-  static const String appVersion = '3.11.1'; // Updated by build scripts
+  static const String appVersion = '3.11.2'; // Updated by build scripts
   static const String appDescription =
       'Manage and run powerful Large Language Models locally, orchestrated via a cloud interface.';
 
@@ -17,13 +17,13 @@ class AppConfig {
       'https://github.com/imrightguy/CloudToLocalLLM/releases/latest';
 
   // Auth0 Configuration
-  static const String auth0Domain = 'dev-xafu7oedkd5wlrbo.us.auth0.com';
+  static const String auth0Domain = 'dev-v2f2p008x3dr74ww.us.auth0.com';
   static const String auth0Audience = 'https://app.cloudtolocalllm.online';
   static const String auth0Issuer =
-      'https://dev-xafu7oedkd5wlrbo.us.auth0.com/';
+      'https://dev-v2f2p008x3dr74ww.us.auth0.com/';
 
   // Universal Client Configuration (works for both web and desktop)
-  static const String auth0ClientId = 'ESfES9tnQ4qGxFlwzXpDuRVXCyk0KF29';
+  static const String auth0ClientId = 'FuXPnevXpp311CdYHGsbNZe9t3D8Ts7A';
 
   // Platform-specific redirect URIs
   static const String auth0WebRedirectUri =
