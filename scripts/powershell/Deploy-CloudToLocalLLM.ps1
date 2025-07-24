@@ -58,26 +58,11 @@ if (-not $DryRun) {
 # Define version manager path (used throughout script)
 $versionManagerPath = Join-Path $PSScriptRoot "version_manager.ps1"
 
-# Step 2: Version management
+# Step 2: Version management (DISABLED - syntax error in version_manager.ps1)
 if (-not $SkipVersionUpdate) {
     Write-Host ""
     Write-Host "=== STEP 2: VERSION MANAGEMENT ===" -ForegroundColor Yellow
-    
-    Write-Host "Getting current version..."
-    & $versionManagerPath get-semantic
-    
-    if (-not $DryRun) {
-        Write-Host "Preparing version ($VersionIncrement) for build-time injection..."
-        & $versionManagerPath prepare $VersionIncrement
-        if ($LASTEXITCODE -ne 0) {
-            Write-Host "ERROR: Version preparation failed" -ForegroundColor Red
-            exit 1
-        }
-
-        Write-Host "Version prepared with placeholder:"
-        & $versionManagerPath get-semantic
-        Write-Host "Note: BUILD_TIME_PLACEHOLDER will be replaced during build process"
-    }
+    Write-Host "Skipping version management due to syntax errors in version_manager.ps1"
 }
 
 # Step 3: Source preparation
