@@ -238,22 +238,22 @@
     - Test detection accuracy across different browsers and operating systems
     - _Requirements: 2.1, 2.2_
 
-- [ ] 17. Implement missing services for complete setup flow
-  - [ ] 17.1 Create TunnelConfigurationService for connection setup
+- [x] 17. Implement missing services for complete setup flow
+  - [x] 17.1 Create TunnelConfigurationService for connection setup
     - Build TunnelConfigurationService with connection parameter generation
     - Implement tunnel connectivity testing and validation methods
     - Create TunnelConfig model with authentication and connection details
     - Add real-time connection status monitoring during setup
     - _Requirements: 4.1, 4.2, 4.3_
 
-  - [ ] 17.2 Create ConnectionValidationService for comprehensive testing
+  - [x] 17.2 Create ConnectionValidationService for comprehensive testing
     - Build ConnectionValidationService with comprehensive testing suite
     - Implement ValidationResult and ValidationTest models for test reporting
     - Add desktop client communication testing and LLM connectivity tests
     - Create streaming functionality validation and error reporting
     - _Requirements: 5.1, 5.2, 5.3, 5.4_
 
-  - [ ] 17.3 Create SetupStatusService for user setup tracking
+  - [x] 17.3 Create SetupStatusService for user setup tracking
     - Implement SetupStatusService with database integration for user setup status
     - Add methods for isFirstTimeUser, markSetupComplete, and resetSetupStatus
     - Create UserSetupStatus data model with completion tracking and preferences
@@ -289,3 +289,40 @@
     - Create analytics dashboard for download success monitoring
     - Add error reporting and improvement feedback loops
     - _Requirements: 10.1, 10.2, 10.3_
+
+- [ ] 20. Complete setup wizard UI components
+  - [ ] 20.1 Finish setup wizard main component implementation
+    - Complete the truncated SetupWizard component with all step implementations
+    - Ensure all wizard steps have proper content and functionality
+    - Add proper error handling and loading states for all steps
+    - Integrate all services properly with the wizard UI
+    - _Requirements: 1.1, 1.3, 1.4_
+
+  - [ ] 20.2 Complete responsive setup wizard implementation
+    - Finish the ResponsiveSetupWizard component with all step content
+    - Implement all placeholder methods for step-specific content
+    - Add proper accessibility features and keyboard navigation
+    - Ensure mobile-friendly responsive design works correctly
+    - _Requirements: 1.3, 8.1_
+
+  - [ ] 20.3 Complete tunnel connection wizard implementation
+    - Finish the TunnelConnectionWizard component implementation
+    - Add proper integration with tunnel services and validation
+    - Implement all wizard modes (first-time, reconfigure, troubleshoot)
+    - Add comprehensive error handling and recovery options
+    - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5_
+
+- [ ] 21. Enhance platform detection and browser compatibility
+  - [ ] 21.1 Implement proper web browser platform detection
+    - Replace placeholder platform detection with actual user agent parsing
+    - Add support for detecting specific browser capabilities
+    - Implement fallback detection methods for edge cases
+    - Add comprehensive testing for different browsers and operating systems
+    - _Requirements: 2.1, 2.2_
+
+  - [ ] 21.2 Add browser-specific download optimizations
+    - Implement browser-specific download handling and validation
+    - Add support for different download methods based on browser capabilities
+    - Implement progress tracking where supported by browser APIs
+    - Add fallback methods for browsers with limited download API support
+    - _Requirements: 2.3, 2.4_
