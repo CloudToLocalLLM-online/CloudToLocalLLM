@@ -413,7 +413,7 @@ switch ($Command) {
 
         if ($incrementType -eq 'build') {
             # For build increments, keep same semantic version but increment build number
-            $newBuildNumber = New-IncrementBuildNumber
+            $newBuildNumber = New-BuildNumber
             Test-VersionFormat -Version $currentVersion
             Update-PubspecVersion -NewVersion $currentVersion -NewBuildNumber $newBuildNumber
             Update-AppConfigVersion -NewVersion $currentVersion

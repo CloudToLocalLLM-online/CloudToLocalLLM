@@ -7,7 +7,7 @@ param(
     [string]$Environment = 'Production',
     
     [ValidateSet('build', 'patch', 'minor', 'major')]
-    [string]$VersionIncrement = 'build',
+    [string]$VersionIncrement = 'patch',
     
     [switch]$SkipBuild,
     [switch]$SkipVerification,
