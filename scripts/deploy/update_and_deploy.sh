@@ -16,6 +16,7 @@ BACKUP_DIR="$PROJECT_DIR/backups"
 VPS_USER="$(whoami)"
 DOMAIN="cloudtolocalllm.online"
 APP_URL="https://app.cloudtolocalllm.online"
+FLUTTER_BIN="/opt/flutter/bin/flutter"
 
 # Default settings
 FORCE=false
@@ -171,13 +172,19 @@ check_prerequisites() {
     fi
 
     # Check required commands
-    local required_commands=("git" "flutter" "docker" "docker-compose" "curl")
+    local required_commands=("git" "docker" "docker-compose" "curl")
     for cmd in "${required_commands[@]}"; do
         if ! command -v "$cmd" &> /dev/null; then
             log_error "Required command not found: $cmd"
             exit 1
         fi
     done
+
+    # Check Flutter separately with full path
+    if [[ ! -x "$FLUTTER_BIN" ]]; then
+        log_error "Flutter not found or not executable: $FLUTTER_BIN"
+        exit 1
+    fi
 
     # Check Docker daemon
     if ! docker info &> /dev/null; then
