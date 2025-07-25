@@ -431,7 +431,7 @@ Works seamlessly with https://app.cloudtolocalllm.online
 Write-Host ""
 Write-Host "=== STEP 4: VPS DEPLOYMENT ===" -ForegroundColor Yellow
 
-$deploymentCommand = "cd $VPSProjectPath && sudo rm -rf certbot/ && git reset --hard HEAD && git clean -fd && git pull origin master && /opt/flutter/bin/flutter clean && /opt/flutter/bin/flutter pub get && /opt/flutter/bin/flutter build web && docker compose down && docker compose up -d && sleep 10 && curl -k -f https://app.cloudtolocalllm.online"
+$deploymentCommand = "cd $VPSProjectPath && git reset --hard HEAD && git clean -fd && git pull origin master && /opt/flutter/bin/flutter clean && /opt/flutter/bin/flutter pub get && /opt/flutter/bin/flutter build web && docker compose restart webapp && sleep 10 && curl -k -f https://app.cloudtolocalllm.online"
 
 if ($DryRun) {
     Write-Host "[DRY RUN] Would execute: ssh $VPSUser@$VPSHost `"$deploymentCommand`""
