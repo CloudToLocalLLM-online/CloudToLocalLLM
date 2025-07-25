@@ -6,7 +6,6 @@ import 'package:url_launcher/url_launcher.dart';
 import '../config/app_config.dart';
 import '../config/theme.dart';
 import '../services/desktop_client_detection_service.dart';
-import '../services/simple_tunnel_client.dart';
 import 'tunnel_connection_wizard.dart';
 
 /// Prominent banner component that appears when no desktop client is connected

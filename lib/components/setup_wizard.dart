@@ -96,26 +96,27 @@ class _SetupWizardState extends State<SetupWizard> {
 
   @override
   Widget build(BuildContext context) {
-    // Only show on web platform
-    if (!kIsWeb) {
-      return const SizedBox.shrink();
-    }
-
     // Don't show if dismissed
     if (_isDismissed) {
       return const SizedBox.shrink();
     }
 
-    return Consumer<DesktopClientDetectionService>(
-      builder: (context, clientDetection, child) {
-        // Don't show if clients are connected (unless it's first time user)
-        if (clientDetection.hasConnectedClients && !widget.isFirstTimeUser) {
-          return const SizedBox.shrink();
-        }
+    // For web platform, use the existing download-focused wizard
+    if (kIsWeb) {
+      return Consumer<DesktopClientDetectionService>(
+        builder: (context, clientDetection, child) {
+          // Don't show if clients are connected (unless it's first time user)
+          if (clientDetection.hasConnectedClients && !widget.isFirstTimeUser) {
+            return const SizedBox.shrink();
+          }
 
-        return _buildWizardDialog(context, clientDetection);
-      },
-    );
+          return _buildWizardDialog(context, clientDetection);
+        },
+      );
+    }
+
+    // For desktop platform, show desktop-specific setup wizard
+    return _buildDesktopWizardDialog(context);
   }
 
   Widget _buildWizardDialog(
@@ -1489,9 +1490,13 @@ class _SetupWizardState extends State<SetupWizard> {
           SizedBox(height: AppTheme.spacingM),
 
           // Connection Validation Status
-          _buildConnectionValidationCard(hasConnectedClients && _tunnelConfigured),
+          _buildConnectionValidationCard(
+            hasConnectedClients && _tunnelConfigured,
+          ),
 
-          if (hasConnectedClients && _tunnelConfigured && _connectionValidated) ...[
+          if (hasConnectedClients &&
+              _tunnelConfigured &&
+              _connectionValidated) ...[
             SizedBox(height: AppTheme.spacingL),
             Center(
               child: ElevatedButton.icon(
@@ -1534,7 +1539,9 @@ class _SetupWizardState extends State<SetupWizard> {
             Icon(
               isConnected ? Icons.check_circle : Icons.pending,
               size: 32,
-              color: isConnected ? AppTheme.successColor : AppTheme.warningColor,
+              color: isConnected
+                  ? AppTheme.successColor
+                  : AppTheme.warningColor,
             ),
             SizedBox(width: AppTheme.spacingM),
             Expanded(
@@ -1557,10 +1564,7 @@ class _SetupWizardState extends State<SetupWizard> {
                 ],
               ),
             ),
-            Icon(
-              icon,
-              color: AppTheme.textColorLight,
-            ),
+            Icon(icon, color: AppTheme.textColorLight),
           ],
         ),
       ),
@@ -1577,11 +1581,17 @@ class _SetupWizardState extends State<SetupWizard> {
             Row(
               children: [
                 Icon(
-                  _tunnelConfigured ? Icons.check_circle :
-                  _isTunnelConfiguring || _isTunnelValidating ? Icons.sync : Icons.pending,
+                  _tunnelConfigured
+                      ? Icons.check_circle
+                      : _isTunnelConfiguring || _isTunnelValidating
+                      ? Icons.sync
+                      : Icons.pending,
                   size: 32,
-                  color: _tunnelConfigured ? AppTheme.successColor :
-                         _tunnelError != null ? AppTheme.dangerColor : AppTheme.warningColor,
+                  color: _tunnelConfigured
+                      ? AppTheme.successColor
+                      : _tunnelError != null
+                      ? AppTheme.dangerColor
+                      : AppTheme.warningColor,
                 ),
                 SizedBox(width: AppTheme.spacingM),
                 Expanded(
@@ -1590,9 +1600,8 @@ class _SetupWizardState extends State<SetupWizard> {
                     children: [
                       Text(
                         'Tunnel Configuration',
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(fontWeight: FontWeight.bold),
                       ),
                       SizedBox(height: AppTheme.spacingS),
                       Text(
@@ -1604,10 +1613,7 @@ class _SetupWizardState extends State<SetupWizard> {
                     ],
                   ),
                 ),
-                Icon(
-                  Icons.vpn_lock,
-                  color: AppTheme.textColorLight,
-                ),
+                Icon(Icons.vpn_lock, color: AppTheme.textColorLight),
               ],
             ),
 
@@ -1618,7 +1624,9 @@ class _SetupWizardState extends State<SetupWizard> {
                 decoration: BoxDecoration(
                   color: AppTheme.dangerColor.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(4),
-                  border: Border.all(color: AppTheme.dangerColor.withValues(alpha: 0.3)),
+                  border: Border.all(
+                    color: AppTheme.dangerColor.withValues(alpha: 0.3),
+                  ),
                 ),
                 child: Row(
                   children: [
@@ -1637,7 +1645,10 @@ class _SetupWizardState extends State<SetupWizard> {
               ),
             ],
 
-            if (hasConnectedClients && !_tunnelConfigured && !_isTunnelConfiguring && !_isTunnelValidating) ...[
+            if (hasConnectedClients &&
+                !_tunnelConfigured &&
+                !_isTunnelConfiguring &&
+                !_isTunnelValidating) ...[
               SizedBox(height: AppTheme.spacingM),
               ElevatedButton.icon(
                 onPressed: _configureTunnel,
@@ -1650,7 +1661,9 @@ class _SetupWizardState extends State<SetupWizard> {
               SizedBox(height: AppTheme.spacingM),
               LinearProgressIndicator(
                 backgroundColor: AppTheme.primaryColor.withValues(alpha: 0.2),
-                valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryColor),
+                valueColor: AlwaysStoppedAnimation<Color>(
+                  AppTheme.primaryColor,
+                ),
               ),
             ],
           ],
@@ -1669,11 +1682,17 @@ class _SetupWizardState extends State<SetupWizard> {
             Row(
               children: [
                 Icon(
-                  _connectionValidated ? Icons.check_circle :
-                  _isValidatingConnection ? Icons.sync : Icons.pending,
+                  _connectionValidated
+                      ? Icons.check_circle
+                      : _isValidatingConnection
+                      ? Icons.sync
+                      : Icons.pending,
                   size: 32,
-                  color: _connectionValidated ? AppTheme.successColor :
-                         _validationError != null ? AppTheme.dangerColor : AppTheme.warningColor,
+                  color: _connectionValidated
+                      ? AppTheme.successColor
+                      : _validationError != null
+                      ? AppTheme.dangerColor
+                      : AppTheme.warningColor,
                 ),
                 SizedBox(width: AppTheme.spacingM),
                 Expanded(
@@ -1682,9 +1701,8 @@ class _SetupWizardState extends State<SetupWizard> {
                     children: [
                       Text(
                         'Connection Validation',
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(fontWeight: FontWeight.bold),
                       ),
                       SizedBox(height: AppTheme.spacingS),
                       Text(
@@ -1696,10 +1714,7 @@ class _SetupWizardState extends State<SetupWizard> {
                     ],
                   ),
                 ),
-                Icon(
-                  Icons.verified_user,
-                  color: AppTheme.textColorLight,
-                ),
+                Icon(Icons.verified_user, color: AppTheme.textColorLight),
               ],
             ),
 
@@ -1710,7 +1725,9 @@ class _SetupWizardState extends State<SetupWizard> {
                 decoration: BoxDecoration(
                   color: AppTheme.dangerColor.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(4),
-                  border: Border.all(color: AppTheme.dangerColor.withValues(alpha: 0.3)),
+                  border: Border.all(
+                    color: AppTheme.dangerColor.withValues(alpha: 0.3),
+                  ),
                 ),
                 child: Row(
                   children: [
@@ -1729,7 +1746,9 @@ class _SetupWizardState extends State<SetupWizard> {
               ),
             ],
 
-            if (canValidate && !_connectionValidated && !_isValidatingConnection) ...[
+            if (canValidate &&
+                !_connectionValidated &&
+                !_isValidatingConnection) ...[
               SizedBox(height: AppTheme.spacingM),
               ElevatedButton.icon(
                 onPressed: _validateConnection,
@@ -1742,7 +1761,9 @@ class _SetupWizardState extends State<SetupWizard> {
               SizedBox(height: AppTheme.spacingM),
               LinearProgressIndicator(
                 backgroundColor: AppTheme.primaryColor.withValues(alpha: 0.2),
-                valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryColor),
+                valueColor: AlwaysStoppedAnimation<Color>(
+                  AppTheme.primaryColor,
+                ),
               ),
             ],
           ],
@@ -1773,15 +1794,27 @@ class _SetupWizardState extends State<SetupWizard> {
             SizedBox(height: AppTheme.spacingM),
             Text(
               'To complete the setup:',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                fontWeight: FontWeight.w500,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w500),
             ),
             SizedBox(height: AppTheme.spacingS),
-            _buildInstructionStep('1', 'Launch the CloudToLocalLLM desktop client'),
-            _buildInstructionStep('2', 'Ensure Ollama is running on your system'),
-            _buildInstructionStep('3', 'Wait for the connection to be established'),
-            _buildInstructionStep('4', 'The tunnel will be configured automatically'),
+            _buildInstructionStep(
+              '1',
+              'Launch the CloudToLocalLLM desktop client',
+            ),
+            _buildInstructionStep(
+              '2',
+              'Ensure Ollama is running on your system',
+            ),
+            _buildInstructionStep(
+              '3',
+              'Wait for the connection to be established',
+            ),
+            _buildInstructionStep(
+              '4',
+              'The tunnel will be configured automatically',
+            ),
           ],
         ),
       ),
@@ -1899,7 +1932,9 @@ class _SetupWizardState extends State<SetupWizard> {
                 children: [
                   const Icon(Icons.check_circle, color: Colors.white),
                   SizedBox(width: AppTheme.spacingS),
-                  const Expanded(child: Text('Tunnel configured successfully!')),
+                  const Expanded(
+                    child: Text('Tunnel configured successfully!'),
+                  ),
                 ],
               ),
               backgroundColor: AppTheme.successColor,
@@ -1939,7 +1974,8 @@ class _SetupWizardState extends State<SetupWizard> {
       );
 
       // Run comprehensive validation
-      final validationResult = await validationService.runComprehensiveValidation(userId);
+      final validationResult = await validationService
+          .runComprehensiveValidation(userId);
 
       setState(() {
         _isValidatingConnection = false;
@@ -1998,9 +2034,9 @@ class _SetupWizardState extends State<SetupWizard> {
             children: [
               Text(
                 'Tests: ${validationResult.successfulTestCount}/${validationResult.tests.length} passed',
-                style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
+                style: Theme.of(
+                  context,
+                ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
               ),
               SizedBox(height: AppTheme.spacingM),
               if (validationResult.failedTests.isNotEmpty) ...[
@@ -2012,33 +2048,42 @@ class _SetupWizardState extends State<SetupWizard> {
                   ),
                 ),
                 SizedBox(height: AppTheme.spacingS),
-                ...validationResult.failedTests.map<Widget>((test) => Padding(
-                  padding: EdgeInsets.only(bottom: AppTheme.spacingS),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Icon(Icons.error, color: AppTheme.dangerColor, size: 16),
-                      SizedBox(width: AppTheme.spacingS),
-                      Expanded(
-                        child: Column(
+                ...validationResult.failedTests
+                    .map<Widget>(
+                      (test) => Padding(
+                        padding: EdgeInsets.only(bottom: AppTheme.spacingS),
+                        child: Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              test.name,
-                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                fontWeight: FontWeight.bold,
-                              ),
+                            Icon(
+                              Icons.error,
+                              color: AppTheme.dangerColor,
+                              size: 16,
                             ),
-                            Text(
-                              test.message,
-                              style: Theme.of(context).textTheme.bodySmall,
+                            SizedBox(width: AppTheme.spacingS),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    test.name,
+                                    style: Theme.of(context).textTheme.bodySmall
+                                        ?.copyWith(fontWeight: FontWeight.bold),
+                                  ),
+                                  Text(
+                                    test.message,
+                                    style: Theme.of(
+                                      context,
+                                    ).textTheme.bodySmall,
+                                  ),
+                                ],
+                              ),
                             ),
                           ],
                         ),
                       ),
-                    ],
-                  ),
-                )).toList(),
+                    )
+                    .toList(),
               ],
             ],
           ),
@@ -2447,6 +2492,171 @@ class _SetupWizardState extends State<SetupWizard> {
       default:
         return true;
     }
+  }
+
+  /// Build desktop-specific setup wizard dialog
+  Widget _buildDesktopWizardDialog(BuildContext context) {
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      child: Container(
+        width: 600,
+        height: 500,
+        decoration: BoxDecoration(
+          color: Theme.of(context).scaffoldBackgroundColor,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.3),
+              blurRadius: 20,
+              offset: const Offset(0, 10),
+            ),
+          ],
+        ),
+        child: Column(
+          children: [
+            // Header
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: AppTheme.primaryColor,
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(16),
+                  topRight: Radius.circular(16),
+                ),
+              ),
+              child: Row(
+                children: [
+                  const Icon(
+                    Icons.rocket_launch,
+                    color: Colors.white,
+                    size: 32,
+                  ),
+                  const SizedBox(width: 16),
+                  const Expanded(
+                    child: Text(
+                      'Welcome to CloudToLocalLLM',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: _dismissWizard,
+                    icon: const Icon(Icons.close, color: Colors.white),
+                  ),
+                ],
+              ),
+            ),
+            // Content
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Let\'s get you set up!',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    const Text(
+                      'CloudToLocalLLM connects to your local Ollama instance to provide secure, private AI conversations. Let\'s configure your setup.',
+                      style: TextStyle(fontSize: 16),
+                    ),
+                    const SizedBox(height: 24),
+                    _buildDesktopSetupSteps(),
+                  ],
+                ),
+              ),
+            ),
+            // Footer
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade50,
+                borderRadius: const BorderRadius.only(
+                  bottomLeft: Radius.circular(16),
+                  bottomRight: Radius.circular(16),
+                ),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  TextButton(
+                    onPressed: _dismissWizard,
+                    child: const Text('Skip Setup'),
+                  ),
+                  ElevatedButton(
+                    onPressed: _completeDesktopSetup,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppTheme.primaryColor,
+                      foregroundColor: Colors.white,
+                    ),
+                    child: const Text('Start Setup'),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Build desktop setup steps
+  Widget _buildDesktopSetupSteps() {
+    final steps = [
+      'Configure Ollama connection',
+      'Set up authentication',
+      'Test local model access',
+      'Complete initial configuration',
+    ];
+
+    return Column(
+      children: steps.asMap().entries.map((entry) {
+        final index = entry.key;
+        final step = entry.value;
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: Row(
+            children: [
+              Container(
+                width: 24,
+                height: 24,
+                decoration: BoxDecoration(
+                  color: AppTheme.primaryColor.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Center(
+                  child: Text(
+                    '${index + 1}',
+                    style: TextStyle(
+                      color: AppTheme.primaryColor,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(child: Text(step, style: const TextStyle(fontSize: 14))),
+            ],
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+  /// Complete desktop setup
+  void _completeDesktopSetup() {
+    // Mark wizard as seen and setup as completed
+    widget.onComplete?.call();
+    _dismissWizard();
   }
 }
 

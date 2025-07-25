@@ -161,10 +161,10 @@ class _WebDownloadPromptState extends State<WebDownloadPrompt> {
                         width: double.infinity,
                         child: TextButton(
                           onPressed: _dismissPrompt,
-                          child: const Text('Continue without desktop app'),
                           style: TextButton.styleFrom(
                             foregroundColor: AppTheme.textColorLight,
                           ),
+                          child: const Text('Continue without desktop app'),
                         ),
                       ),
                     ],

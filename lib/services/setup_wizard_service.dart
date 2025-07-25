@@ -56,11 +56,6 @@ class SetupWizardService extends ChangeNotifier {
 
   /// Initialize the service and check setup state
   Future<void> _initialize() async {
-    if (!kIsWeb) {
-      _isInitialized = true;
-      return;
-    }
-
     debugPrint('🧙 [SetupWizard] Initializing setup wizard service...');
 
     try {
@@ -184,7 +179,7 @@ class SetupWizardService extends ChangeNotifier {
 
   /// Check if the setup wizard should be shown
   Future<void> _checkShouldShowWizard() async {
-    // Never show setup wizard on web platform - web users should get download prompt instead
+    // Web platform uses download prompt instead of setup wizard
     if (kIsWeb) {
       _shouldShowWizard = false;
       debugPrint(
@@ -194,25 +189,19 @@ class SetupWizardService extends ChangeNotifier {
       return;
     }
 
-    // For desktop platform, check authentication
-    if (!_authService.isAuthenticated.value) {
-      _shouldShowWizard = false;
-      notifyListeners();
-      return;
-    }
+    // For desktop platform, show wizard for first-time users regardless of authentication
+    // This allows the wizard to guide users through initial setup including authentication
 
-    final hasConnectedClients =
-        _clientDetectionService?.hasConnectedClients ?? false;
-
-    // Show wizard only if:
+    // For desktop platform, show wizard if:
     // 1. User is first-time AND hasn't seen the wizard yet
-    // Don't show wizard just because no clients are connected - that's handled by DesktopClientPrompt
-    final shouldShow = _isFirstTimeUser && !_hasUserSeenWizard;
+    // 2. Setup is not completed
+    final shouldShow =
+        (_isFirstTimeUser && !_hasUserSeenWizard) || !_isSetupCompleted;
 
     if (_shouldShowWizard != shouldShow) {
       _shouldShowWizard = shouldShow;
       debugPrint(
-        '🧙 [SetupWizard] Should show wizard: $_shouldShowWizard (firstTime: $_isFirstTimeUser, hasSeenWizard: $_hasUserSeenWizard, hasClients: $hasConnectedClients, completed: $_isSetupCompleted)',
+        '🧙 [SetupWizard] Should show wizard: $_shouldShowWizard (firstTime: $_isFirstTimeUser, hasSeenWizard: $_hasUserSeenWizard, completed: $_isSetupCompleted)',
       );
       notifyListeners();
     }

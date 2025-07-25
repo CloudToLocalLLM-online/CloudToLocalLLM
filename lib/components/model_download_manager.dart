@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../config/theme.dart';
 import '../services/ollama_service.dart';
 import 'modern_card.dart';
@@ -357,7 +358,7 @@ class _ModelDownloadManagerState extends State<ModelDownloadManager> {
             isDense: true,
           ),
           onChanged: (value) {
-            // TODO: Save host address to settings
+            _saveOllamaHostAddress(value);
           },
         ),
         const SizedBox(height: 12),
@@ -373,7 +374,7 @@ class _ModelDownloadManagerState extends State<ModelDownloadManager> {
           ),
           keyboardType: TextInputType.number,
           onChanged: (value) {
-            // TODO: Save port to settings
+            _saveOllamaPort(value);
           },
         ),
         const SizedBox(height: 12),
@@ -1020,6 +1021,36 @@ class _ModelDownloadManagerState extends State<ModelDownloadManager> {
           duration: Duration(seconds: 5),
         ),
       );
+    }
+  }
+
+  /// Save Ollama host address to shared preferences
+  Future<void> _saveOllamaHostAddress(String hostAddress) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('ollama_host_address', hostAddress);
+      debugPrint(
+        '💾 [ModelDownloadManager] Saved Ollama host address: $hostAddress',
+      );
+    } catch (e) {
+      debugPrint('❌ [ModelDownloadManager] Failed to save host address: $e');
+    }
+  }
+
+  /// Save Ollama port to shared preferences
+  Future<void> _saveOllamaPort(String port) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      // Validate port number
+      final portNumber = int.tryParse(port);
+      if (portNumber != null && portNumber > 0 && portNumber <= 65535) {
+        await prefs.setInt('ollama_port', portNumber);
+        debugPrint('💾 [ModelDownloadManager] Saved Ollama port: $portNumber');
+      } else {
+        debugPrint('⚠️ [ModelDownloadManager] Invalid port number: $port');
+      }
+    } catch (e) {
+      debugPrint('❌ [ModelDownloadManager] Failed to save port: $e');
     }
   }
 }

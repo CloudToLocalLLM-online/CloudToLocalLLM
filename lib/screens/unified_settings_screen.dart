@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -54,8 +52,6 @@ class _UnifiedSettingsScreenState extends State<UnifiedSettingsScreen> {
   String? _connectionError;
   DateTime? _lastConnectionTest;
   double? _connectionLatency;
-  List<String> _availableModels = [];
-  bool _isLoadingModels = false;
 
   // Error handling state
   String? _initializationError;
@@ -1490,89 +1486,6 @@ class _UnifiedSettingsScreenState extends State<UnifiedSettingsScreen> {
                   ),
                 ),
               ),
-
-              SizedBox(height: AppTheme.spacingM),
-
-              // Refresh Models Button
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  onPressed: isAuthenticated && !_isLoadingModels
-                      ? _refreshAvailableModels
-                      : null,
-                  icon: _isLoadingModels
-                      ? SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(
-                              Colors.white,
-                            ),
-                          ),
-                        )
-                      : const Icon(Icons.refresh),
-                  label: Text(
-                    _isLoadingModels ? 'Loading...' : 'Refresh Models',
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppTheme.secondaryColor,
-                    foregroundColor: Colors.white,
-                    padding: EdgeInsets.all(AppTheme.spacingM),
-                  ),
-                ),
-              ),
-
-              // Available Models Display
-              if (_availableModels.isNotEmpty) ...[
-                SizedBox(height: AppTheme.spacingM),
-                Text(
-                  'Available Models (${_availableModels.length})',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    color: AppTheme.textColor,
-                  ),
-                ),
-                SizedBox(height: AppTheme.spacingS),
-                Container(
-                  padding: EdgeInsets.all(AppTheme.spacingS),
-                  decoration: BoxDecoration(
-                    color: AppTheme.backgroundCard,
-                    borderRadius: BorderRadius.circular(AppTheme.borderRadiusS),
-                    border: Border.all(
-                      color: AppTheme.secondaryColor.withValues(alpha: 0.3),
-                    ),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: _availableModels
-                        .map(
-                          (model) => Padding(
-                            padding: EdgeInsets.symmetric(vertical: 2),
-                            child: Row(
-                              children: [
-                                Icon(
-                                  Icons.memory,
-                                  size: 12,
-                                  color: AppTheme.textColorLight,
-                                ),
-                                SizedBox(width: AppTheme.spacingXS),
-                                Text(
-                                  model,
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: AppTheme.textColorLight,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        )
-                        .toList(),
-                  ),
-                ),
-              ],
             ],
           ),
         );
@@ -1741,66 +1654,6 @@ class _UnifiedSettingsScreenState extends State<UnifiedSettingsScreen> {
     } finally {
       setState(() {
         _isTestingConnection = false;
-      });
-    }
-  }
-
-  Future<void> _refreshAvailableModels() async {
-    if (_isLoadingModels) return;
-
-    setState(() {
-      _isLoadingModels = true;
-      _connectionError = null;
-    });
-
-    try {
-      final authService = Provider.of<AuthService>(context, listen: false);
-      final accessToken = authService.getAccessToken();
-
-      if (accessToken == null) {
-        throw Exception('No authentication token available');
-      }
-
-      // Get available models through tunnel API
-      final response = await http
-          .get(
-            Uri.parse('${AppConfig.appUrl}/ollama/api/tags'),
-            headers: {
-              'Authorization': 'Bearer $accessToken',
-              'Content-Type': 'application/json',
-            },
-          )
-          .timeout(const Duration(seconds: 30));
-
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        final models =
-            (data['models'] as List?)
-                ?.map((model) => model['name'] as String)
-                .toList() ??
-            [];
-
-        setState(() {
-          _availableModels = models;
-          _connectionError = null;
-        });
-      } else if (response.statusCode == 503) {
-        setState(() {
-          _availableModels = [];
-          _connectionError =
-              'No local Ollama bridge connected. Please ensure CloudToLocalLLM desktop app is running.';
-        });
-      } else {
-        throw Exception('HTTP ${response.statusCode}: ${response.body}');
-      }
-    } catch (e) {
-      setState(() {
-        _availableModels = [];
-        _connectionError = 'Failed to load models: ${e.toString()}';
-      });
-    } finally {
-      setState(() {
-        _isLoadingModels = false;
       });
     }
   }

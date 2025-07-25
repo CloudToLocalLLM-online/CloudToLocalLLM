@@ -2,7 +2,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../config/theme.dart';
 import '../services/simple_tunnel_client.dart';
 import '../services/desktop_client_detection_service.dart';
 import 'tunnel_management_panel.dart';
@@ -42,8 +41,11 @@ class _TunnelStatusIndicatorState extends State<TunnelStatusIndicator> {
       builder: (context, tunnelClient, child) {
         return Consumer<DesktopClientDetectionService>(
           builder: (context, clientDetection, child) {
-            final tunnelStatus = _getTunnelStatus(tunnelClient, clientDetection);
-            
+            final tunnelStatus = _getTunnelStatus(
+              tunnelClient,
+              clientDetection,
+            );
+
             return Tooltip(
               message: tunnelStatus.tooltip,
               child: InkWell(
@@ -77,9 +79,9 @@ class _TunnelStatusIndicatorState extends State<TunnelStatusIndicator> {
                           ],
                         ),
                       ),
-                      
+
                       const SizedBox(width: 8),
-                      
+
                       // Status text
                       Text(
                         tunnelStatus.text,
@@ -89,12 +91,14 @@ class _TunnelStatusIndicatorState extends State<TunnelStatusIndicator> {
                           fontWeight: FontWeight.w500,
                         ),
                       ),
-                      
+
                       const SizedBox(width: 4),
-                      
+
                       // Dropdown arrow
                       Icon(
-                        _isPanelOpen ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
+                        _isPanelOpen
+                            ? Icons.keyboard_arrow_up
+                            : Icons.keyboard_arrow_down,
                         color: Colors.white.withValues(alpha: 0.7),
                         size: 16,
                       ),
@@ -124,7 +128,8 @@ class _TunnelStatusIndicatorState extends State<TunnelStatusIndicator> {
         icon: Icons.check_circle,
         color: Colors.green,
         text: 'Connected',
-        tooltip: 'Tunnel connected with $clientCount desktop client${clientCount == 1 ? '' : 's'}',
+        tooltip:
+            'Tunnel connected with $clientCount desktop client${clientCount == 1 ? '' : 's'}',
         isConnecting: false,
       );
     } else if (isConnecting) {
@@ -148,7 +153,8 @@ class _TunnelStatusIndicatorState extends State<TunnelStatusIndicator> {
         icon: Icons.desktop_access_disabled,
         color: Colors.orange,
         text: 'No Client',
-        tooltip: 'No desktop client connected. Download and run the desktop client.',
+        tooltip:
+            'No desktop client connected. Download and run the desktop client.',
         isConnecting: false,
       );
     } else {
@@ -174,9 +180,7 @@ class _TunnelStatusIndicatorState extends State<TunnelStatusIndicator> {
     if (_isPanelOpen) return;
 
     _overlayEntry = OverlayEntry(
-      builder: (context) => TunnelManagementPanel(
-        onClose: _closePanel,
-      ),
+      builder: (context) => TunnelManagementPanel(onClose: _closePanel),
     );
 
     Overlay.of(context).insert(_overlayEntry!);
