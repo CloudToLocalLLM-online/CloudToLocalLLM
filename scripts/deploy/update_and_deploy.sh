@@ -10,10 +10,10 @@ SCRIPT_VERSION="4.0.0"
 SCRIPT_NAME="CloudToLocalLLM VPS Deployment"
 
 # Configuration
-PROJECT_DIR="/opt/cloudtolocalllm"
+PROJECT_DIR="$(pwd)"
 COMPOSE_FILE="docker-compose.yml"
-BACKUP_DIR="/opt/cloudtolocalllm/backups"
-VPS_USER="cloudllm"
+BACKUP_DIR="$PROJECT_DIR/backups"
+VPS_USER="$(whoami)"
 DOMAIN="cloudtolocalllm.online"
 APP_URL="https://app.cloudtolocalllm.online"
 

@@ -10,9 +10,9 @@ SCRIPT_VERSION="4.0.0"
 SCRIPT_NAME="CloudToLocalLLM Complete Deployment"
 
 # Configuration
-PROJECT_DIR="/opt/cloudtolocalllm"
+PROJECT_DIR="$(pwd)"
 SCRIPTS_DIR="$PROJECT_DIR/scripts/deploy"
-VPS_USER="cloudllm"
+VPS_USER="$(whoami)"
 DOMAIN="cloudtolocalllm.online"
 APP_URL="https://app.cloudtolocalllm.online"
 
