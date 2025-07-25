@@ -176,10 +176,11 @@ if (-not $SkipBuild) {
             Invoke-WindowsFlutterCommand -FlutterArgs "pub get" -WorkingDirectory $ProjectRoot
             Write-Host "✓ Flutter dependencies updated"
 
-            # Build Windows desktop application
-            Write-Host "Building Windows desktop application..."
-            Invoke-WindowsFlutterCommand -FlutterArgs "build windows --release" -WorkingDirectory $ProjectRoot
-            Write-Host "✓ Flutter Windows desktop build completed"
+            # Build Windows desktop application with size optimizations
+            Write-Host "Building Windows desktop application with size optimizations..."
+            $windowsBuildArgs = "build windows --release --tree-shake-icons --split-debug-info=build/debug-info"
+            Invoke-WindowsFlutterCommand -FlutterArgs $windowsBuildArgs -WorkingDirectory $ProjectRoot
+            Write-Host "✓ Flutter Windows desktop build completed with optimizations"
 
             # Verify Windows build output
             $buildWindowsPath = Join-Path $ProjectRoot "build\windows\x64\runner\Release"
@@ -545,6 +546,40 @@ if (-not $SkipBuild -and -not $DryRun) {
     } else {
         Write-Host "✓ Build validation passed - all placeholders replaced with actual build numbers" -ForegroundColor Green
         Write-Host "Note: Version files retain build timestamps for deployment consistency" -ForegroundColor Cyan
+
+        # Commit build-time injected version files
+        Write-Host "Committing build-time injected version files..."
+        if (-not $DryRun) {
+            git add pubspec.yaml assets/version.json lib/shared/lib/version.dart lib/shared/pubspec.yaml lib/config/app_config.dart
+            if ($LASTEXITCODE -ne 0) {
+                Write-Host "ERROR: Failed to stage build-time injected files" -ForegroundColor Red
+                exit 1
+            }
+
+            # Check if there are changes to commit
+            git diff --cached --quiet
+            if ($LASTEXITCODE -ne 0) {
+                # There are staged changes, commit them
+                $buildTimestampCommitMessage = "Inject build-time timestamps for deployment v$(& $versionManagerPath get-semantic)"
+                git commit -m $buildTimestampCommitMessage
+                if ($LASTEXITCODE -ne 0) {
+                    Write-Host "ERROR: Failed to commit build-time injected files" -ForegroundColor Red
+                    exit 1
+                }
+
+                git push origin master
+                if ($LASTEXITCODE -ne 0) {
+                    Write-Host "ERROR: Failed to push build-time injected files" -ForegroundColor Red
+                    exit 1
+                }
+
+                Write-Host "✓ Build-time injected files committed and pushed"
+            } else {
+                Write-Host "✓ No build-time injection changes to commit"
+            }
+        } else {
+            Write-Host "[DRY RUN] Would commit and push build-time injected files"
+        }
     }
 }
 

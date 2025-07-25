@@ -44,8 +44,8 @@ build:
     enable_linux: true
     build_args:
       web: "--release --no-tree-shake-icons"
-      windows: "--release"
-      linux: "--release"
+      windows: "--release --tree-shake-icons --split-debug-info=build/debug-info"
+      linux: "--release --tree-shake-icons --split-debug-info=build/debug-info"
   
   packages:
     windows:

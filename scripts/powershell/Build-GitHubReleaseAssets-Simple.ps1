@@ -87,8 +87,9 @@ function Build-FlutterWindows {
         Write-LogInfo "Running flutter pub get..."
         Invoke-WindowsFlutterCommand -FlutterArgs "pub get" -WorkingDirectory $ProjectRoot
 
-        Write-LogInfo "Running flutter build windows --release..."
-        Invoke-WindowsFlutterCommand -FlutterArgs "build windows --release" -WorkingDirectory $ProjectRoot
+        Write-LogInfo "Running flutter build windows --release with size optimizations..."
+        $buildArgs = "build windows --release --tree-shake-icons --split-debug-info=build/debug-info"
+        Invoke-WindowsFlutterCommand -FlutterArgs $buildArgs -WorkingDirectory $ProjectRoot
 
         $mainExecutable = Join-Path $WindowsBuildDir "cloudtolocalllm.exe"
         if (-not (Test-Path $mainExecutable)) {
