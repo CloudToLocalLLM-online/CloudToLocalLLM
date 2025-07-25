@@ -171,13 +171,13 @@ class PlatformDetectionService extends ChangeNotifier {
       iconPath: 'assets/images/windows-icon.png',
       downloadOptions: [
         DownloadOption(
-          name: 'Windows Installer (MSI)',
+          name: 'Windows Installer (Setup.exe)',
           description:
               'Recommended for most users. Includes automatic updates and system integration.',
           downloadUrl:
-              'https://github.com/imrightguy/CloudToLocalLLM/releases/latest/download/cloudtolocalllm-${AppConfig.appVersion}-windows-x64.msi',
-          fileSize: '~45 MB',
-          installationType: 'msi',
+              'https://github.com/imrightguy/CloudToLocalLLM/releases/latest/download/CloudToLocalLLM-Windows-${AppConfig.appVersion}-Setup.exe',
+          fileSize: '~10 MB',
+          installationType: 'exe',
           isRecommended: true,
           requirements: [
             'Windows 10 or later',
@@ -188,8 +188,8 @@ class PlatformDetectionService extends ChangeNotifier {
           name: 'Portable ZIP',
           description: 'No installation required. Extract and run directly.',
           downloadUrl:
-              'https://github.com/imrightguy/CloudToLocalLLM/releases/latest/download/cloudtolocalllm-${AppConfig.appVersion}-windows-x64-portable.zip',
-          fileSize: '~42 MB',
+              'https://github.com/imrightguy/CloudToLocalLLM/releases/latest/download/cloudtolocalllm-windows-v${AppConfig.appVersion}.zip',
+          fileSize: '~12 MB',
           installationType: 'zip',
           requirements: ['Windows 10 or later'],
         ),

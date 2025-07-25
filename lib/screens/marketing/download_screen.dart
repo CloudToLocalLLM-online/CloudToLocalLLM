@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../config/app_config.dart';
 
 /// Download screen - web-only marketing page
@@ -119,6 +120,8 @@ class DownloadScreen extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 16),
       child: Column(
         children: [
+          _buildDownloadButtons(context),
+          const SizedBox(height: 40),
           _buildSystemRequirements(context),
           const SizedBox(height: 40),
           _buildSnapPackage(context),
@@ -132,6 +135,88 @@ class DownloadScreen extends StatelessWidget {
           _buildPrebuiltBinary(context),
           const SizedBox(height: 40),
           _buildGettingStarted(context),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDownloadButtons(BuildContext context) {
+    return _buildCard(
+      context,
+      title: '📥 Quick Downloads',
+      description:
+          'Download the latest version of CloudToLocalLLM for your platform',
+      child: Column(
+        children: [
+          const SizedBox(height: 24),
+
+          // Primary GitHub Releases button
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: () => _launchUrl(AppConfig.githubReleasesUrl),
+              icon: const Icon(Icons.download),
+              label: const Text('View All Downloads on GitHub'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF6e8efb),
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(
+                  vertical: 16,
+                  horizontal: 24,
+                ),
+                textStyle: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 24),
+
+          // Platform-specific download buttons
+          Row(
+            children: [
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: () => _launchUrl(
+                    'https://github.com/imrightguy/CloudToLocalLLM/releases/latest/download/CloudToLocalLLM-Windows-${AppConfig.appVersion}-Setup.exe',
+                  ),
+                  icon: const Icon(Icons.desktop_windows),
+                  label: const Text('Windows Installer'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF00c58e),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: () => _launchUrl(
+                    'https://github.com/imrightguy/CloudToLocalLLM/releases/latest/download/cloudtolocalllm-windows-v${AppConfig.appVersion}.zip',
+                  ),
+                  icon: const Icon(Icons.archive),
+                  label: const Text('Windows Portable'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFa777e3),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 16),
+
+          // Info text
+          const Text(
+            'For Linux and macOS downloads, visit the GitHub releases page above.',
+            style: TextStyle(color: Color(0xFFb0b0b0), fontSize: 14),
+            textAlign: TextAlign.center,
+          ),
         ],
       ),
     );
@@ -459,5 +544,19 @@ cd cloudtolocalllm-${AppConfig.appVersion}-x86_64
         ),
       ),
     );
+  }
+
+  /// Launch URL in external browser
+  Future<void> _launchUrl(String url) async {
+    try {
+      final uri = Uri.parse(url);
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      } else {
+        debugPrint('Could not launch URL: $url');
+      }
+    } catch (e) {
+      debugPrint('Error launching URL: $e');
+    }
   }
 }
