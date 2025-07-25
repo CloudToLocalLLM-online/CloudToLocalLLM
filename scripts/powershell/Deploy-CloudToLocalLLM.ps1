@@ -244,11 +244,16 @@ if (-not $SkipBuild) {
         Write-Host "Creating distribution packages..."
         $currentVersion = & $versionManagerPath get-semantic
 
-        # Create Windows ZIP package
-        if (Test-Path (Join-Path $distPath "windows")) {
+        # Create Windows ZIP package from build output (portable version)
+        $windowsBuildPath = Join-Path $ProjectRoot "build\windows\x64\runner\Release"
+        if (Test-Path $windowsBuildPath) {
             $windowsZipPath = Join-Path $distPath "cloudtolocalllm-windows-v$currentVersion.zip"
-            Compress-Archive -Path (Join-Path $distPath "windows\*") -DestinationPath $windowsZipPath -Force
+            Compress-Archive -Path (Join-Path $windowsBuildPath "*") -DestinationPath $windowsZipPath -Force
             Write-Host "✓ Windows ZIP package created: cloudtolocalllm-windows-v$currentVersion.zip"
+
+            # Verify ZIP size for optimization tracking
+            $zipSize = [math]::Round((Get-Item $windowsZipPath).Length/1MB,2)
+            Write-Host "  ZIP size: $zipSize MB (optimized with --tree-shake-icons and --split-debug-info)"
         }
 
         # Create Windows installer
