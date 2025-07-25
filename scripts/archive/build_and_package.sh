@@ -10,7 +10,7 @@ get_version() {
 VERSION=$(get_version)
 DEB_VERSION=$(echo $VERSION | cut -d '+' -f 1)
 BUILD_NUMBER=$(echo $VERSION | cut -d '+' -f 2)
-PACKAGE_NAME="cloudtolocalllm_${DEB_VERSION}-${BUILD_NUMBER}_amd64.deb"
+PACKAGE_NAME="cloudtolocalllm_${DEB_VERSION}_amd64.deb"
 BUILD_DIR="/tmp/cloudtolocalllm-deb-build"
 OUTPUT_DIR="dist/linux/deb"
 OUTPUT_PATH="$OUTPUT_DIR/$PACKAGE_NAME"

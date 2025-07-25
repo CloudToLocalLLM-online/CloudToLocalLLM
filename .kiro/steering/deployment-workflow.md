@@ -11,7 +11,7 @@ CloudToLocalLLM uses a Windows-to-Linux VPS deployment workflow with the followi
 
 ### Deployment Flow
 ```
-Windows Development → WSL2 Ubuntu 24.04 → SSH to VPS → Docker Containers
+Windows Development → PowerShell → SSH to VPS → Docker Containers
 ```
 
 1. **Windows PowerShell Script** (`Deploy-CloudToLocalLLM.ps1`)
@@ -46,10 +46,16 @@ Windows Development → WSL2 Ubuntu 24.04 → SSH to VPS → Docker Containers
 - **postfix-mail**: Email server for notifications
 - **certbot**: SSL certificate management
 
-### WSL Requirements
-- **Distribution**: Ubuntu-24.04
-- **Flutter Path**: /opt/flutter/bin/flutter
-- **SSH Keys**: Synced between Windows and WSL
+### Windows PowerShell Requirements
+- **PowerShell Version**: 5.1+ (Windows PowerShell or PowerShell Core)
+- **Flutter Path**: C:\tools\flutter\bin\flutter (or system PATH)
+- **SSH Client**: OpenSSH for Windows (usually pre-installed)
+- **Git**: Git for Windows with SSH key configuration
+
+### Linux Build Requirements (Optional)
+**Note**: Only required when building Linux versions of the application
+- **WSL Distribution**: Ubuntu-24.04 (for Linux builds only)
+- **Flutter Path in WSL**: /opt/flutter/bin/flutter (for Linux builds only)
 
 ## Deployment Commands
 
@@ -81,8 +87,8 @@ cd /opt/cloudtolocalllm
 ## Deployment Phases
 
 1. **Pre-flight Validation**
-   - Check WSL Ubuntu 24.04 availability
-   - Validate Flutter installation in WSL
+   - Check PowerShell execution policy and capabilities
+   - Validate Flutter installation on Windows
    - Test SSH connectivity to VPS
    - Verify Git repository status
 
@@ -92,7 +98,7 @@ cd /opt/cloudtolocalllm
    - Commit version changes to Git
 
 3. **Flutter Build**
-   - Execute `flutter pub get` in WSL
+   - Execute `flutter pub get` in PowerShell
    - Build web app: `flutter build web --release`
    - Validate build output in build/web/
 
@@ -176,25 +182,28 @@ cd /opt/cloudtolocalllm
 ## Troubleshooting
 
 ### Common Issues
-1. **WSL Ubuntu 24.04 not available**: Install/start WSL distribution
-2. **Flutter not found in WSL**: Install Flutter in /opt/flutter/
+1. **PowerShell execution policy**: Set execution policy to allow scripts
+2. **Flutter not found on Windows**: Install Flutter and add to PATH
 3. **SSH connection failed**: Check SSH keys and VPS connectivity
 4. **Docker build failures**: Check VPS Docker service status
 5. **SSL certificate issues**: Check Let's Encrypt configuration
 
 ### Debug Commands
 ```powershell
-# Test WSL availability
-wsl -l -v
+# Test PowerShell capabilities
+$PSVersionTable
 
 # Test SSH connection
 ssh cloudllm@cloudtolocalllm.online "echo 'Connection successful'"
 
-# Check Flutter in WSL
-wsl -d Ubuntu-24.04 /opt/flutter/bin/flutter --version
+# Check Flutter on Windows
+flutter --version
 
 # View deployment logs
 Get-Content logs/deployment_*.log -Tail 50
+
+# Test WSL availability (only for Linux builds)
+wsl -l -v
 ```
 
 ## File Locations

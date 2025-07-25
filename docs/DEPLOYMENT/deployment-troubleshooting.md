@@ -16,53 +16,53 @@ When troubleshooting deployment issues, follow this systematic approach:
 
 ### Pre-flight Validation Issues
 
-#### WSL2 Not Available or Not Configured
+#### PowerShell Execution Policy Issues
 
 **Symptoms:**
-- Error: "WSL2 is not available on this system"
-- Error: "WSL Ubuntu 24.04 distribution is not available or not running"
+- Error: "Execution of scripts is disabled on this system"
+- Error: "PowerShell script cannot be loaded because running scripts is disabled"
 
 **Solutions:**
-1. Install WSL2 if not already installed:
+1. Check current execution policy:
    ```powershell
-   wsl --install
+   Get-ExecutionPolicy
    ```
 
-2. Install Ubuntu 24.04 distribution:
+2. Set execution policy to allow script execution:
    ```powershell
-   wsl --install -d Ubuntu-24.04
+   Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
    ```
 
-3. Ensure WSL2 is set as the default version:
+3. For temporary bypass (single session):
    ```powershell
-   wsl --set-default-version 2
+   Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope Process
    ```
 
-4. Set Ubuntu 24.04 as the default distribution:
-   ```powershell
-   wsl --set-default Ubuntu-24.04
-   ```
-
-#### Flutter Not Found in WSL
+#### Flutter Not Found on Windows
 
 **Symptoms:**
-- Error: "Flutter is not installed or not accessible in WSL Ubuntu 24.04"
+- Error: "Flutter is not installed or not accessible on Windows"
+- Error: "flutter command not found"
 
 **Solutions:**
-1. Install Flutter in WSL:
-   ```bash
-   # Inside WSL Ubuntu 24.04
-   cd ~
-   wget https://storage.googleapis.com/flutter_infra_release/releases/stable/linux/flutter_linux_3.8.0-stable.tar.xz
-   tar xf flutter_linux_3.8.0-stable.tar.xz
-   export PATH="$PATH:`pwd`/flutter/bin"
-   echo 'export PATH="$PATH:$HOME/flutter/bin"' >> ~/.bashrc
-   flutter doctor
+1. Install Flutter for Windows:
+   ```powershell
+   # Using Chocolatey (recommended)
+   choco install flutter
+
+   # Or download manually from https://flutter.dev/docs/get-started/install/windows
    ```
 
 2. Verify Flutter installation:
-   ```bash
+   ```powershell
    flutter --version
+   flutter doctor
+   ```
+
+3. Add Flutter to PATH if needed:
+   ```powershell
+   $env:PATH += ";C:\tools\flutter\bin"
+   # Or add permanently through System Properties > Environment Variables
    ```
 
 #### SSH Connectivity Issues
@@ -416,22 +416,46 @@ $DebugPreference = "Continue"
 .\scripts\powershell\Deploy-CloudToLocalLLM.ps1 -Verbose
 ```
 
-### WSL Debugging
+### PowerShell Deployment Debugging
 
-To troubleshoot WSL integration issues:
+To troubleshoot PowerShell deployment issues:
 
 ```powershell
-# Check WSL status
+# Check PowerShell version and capabilities
+$PSVersionTable
+
+# Test module imports
+Import-Module -Name Microsoft.PowerShell.Management -Force
+Import-Module -Name Microsoft.PowerShell.Utility -Force
+
+# Check available cmdlets
+Get-Command -Module Microsoft.PowerShell.*
+
+# Test network connectivity to VPS
+Test-NetConnection cloudtolocalllm.online -Port 22 -InformationLevel Detailed
+
+# Check PowerShell execution context
+Get-ExecutionPolicy -List
+```
+
+### Linux Build Environment (WSL) Debugging
+
+**Note**: WSL is only required for building Linux versions of the application, not for deployment operations.
+
+To troubleshoot Linux build issues when building Linux packages:
+
+```powershell
+# Check WSL status (only needed for Linux builds)
 wsl --status
 
-# List WSL distributions
+# List WSL distributions (only needed for Linux builds)
 wsl --list --verbose
 
-# Restart WSL
+# Restart WSL (only needed for Linux builds)
 wsl --shutdown
 wsl -d Ubuntu-24.04
 
-# Check WSL logs
+# Check WSL logs (only needed for Linux builds)
 Get-EventLog Application -Source "WSL" -Newest 20
 ```
 

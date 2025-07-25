@@ -153,7 +153,7 @@ class DownloadManagementService extends ChangeNotifier {
           case 'deb':
             return '$baseUrl/cloudtolocalllm_${version}_amd64.deb';
           case 'tar.gz':
-            return '$baseUrl/cloudtolocalllm-$version-linux-x64.tar.gz';
+            return '$baseUrl/cloudtolocalllm-$version-x86_64.tar.gz';
           default:
             return '$baseUrl/cloudtolocalllm-$version-x86_64.AppImage';
         }
@@ -197,14 +197,27 @@ class DownloadManagementService extends ChangeNotifier {
 
         // Basic file format validation based on extension
         final extension = filePath.split('.').last.toLowerCase();
-        final validExtensions = ['exe', 'msi', 'dmg', 'pkg', 'deb', 'rpm', 'tar.gz', 'zip'];
+        final validExtensions = [
+          'exe',
+          'msi',
+          'dmg',
+          'pkg',
+          'deb',
+          'rpm',
+          'tar.gz',
+          'zip',
+        ];
 
         if (!validExtensions.contains(extension)) {
-          debugPrint('📥 [DownloadManagement] Invalid file extension: $extension');
+          debugPrint(
+            '📥 [DownloadManagement] Invalid file extension: $extension',
+          );
           return false;
         }
 
-        debugPrint('📥 [DownloadManagement] File validation passed for: $filePath');
+        debugPrint(
+          '📥 [DownloadManagement] File validation passed for: $filePath',
+        );
         return true;
       } catch (e) {
         debugPrint('📥 [DownloadManagement] File validation error: $e');
@@ -238,10 +251,7 @@ class DownloadManagementService extends ChangeNotifier {
         case 'linux':
           alternatives.add('$baseUrl/cloudtolocalllm-$version-x86_64.AppImage');
           alternatives.add('$baseUrl/cloudtolocalllm_${version}_amd64.deb');
-          // Add AUR link for Arch Linux
-          alternatives.add(
-            'https://aur.archlinux.org/packages/cloudtolocalllm',
-          );
+          alternatives.add('$baseUrl/cloudtolocalllm-$version-x86_64.tar.gz');
           break;
         case 'macos':
           alternatives.add('$baseUrl/cloudtolocalllm-$version-macos.dmg');
@@ -261,7 +271,11 @@ class DownloadManagementService extends ChangeNotifier {
   }
 
   /// Track download event for analytics
-  Future<void> trackDownloadEvent(String userId, String platform, String packageType) async {
+  Future<void> trackDownloadEvent(
+    String userId,
+    String platform,
+    String packageType,
+  ) async {
     final trackingInfo = DownloadTrackingInfo(
       userId: userId,
       platform: platform,
@@ -313,7 +327,9 @@ class DownloadManagementService extends ChangeNotifier {
 
       // For now, just log the analytics data
       // In production, this would send to an analytics service
-      debugPrint('📥 [DownloadManagement] Analytics data: ${jsonEncode(analyticsData)}');
+      debugPrint(
+        '📥 [DownloadManagement] Analytics data: ${jsonEncode(analyticsData)}',
+      );
 
       // Future implementation would include:
       // final response = await http.post(
@@ -321,7 +337,6 @@ class DownloadManagementService extends ChangeNotifier {
       //   headers: {'Content-Type': 'application/json'},
       //   body: jsonEncode(analyticsData),
       // );
-
     } catch (e) {
       debugPrint('📥 [DownloadManagement] Error sending analytics: $e');
     }

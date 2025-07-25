@@ -156,7 +156,7 @@ jobs:
               tar -czf dist/${{ matrix.platform }}/cloudtolocalllm-web-${{ inputs.version }}.tar.gz -C build/web .
               ;;
             "linux")
-              tar -czf dist/${{ matrix.platform }}/cloudtolocalllm-linux-${{ inputs.version }}.tar.gz -C build/linux/x64/release/bundle .
+              tar -czf dist/${{ matrix.platform }}/cloudtolocalllm-${{ inputs.version }}-x86_64.tar.gz -C build/linux/x64/release/bundle .
               ;;
             "windows")
               cd build/windows/x64/runner/Release

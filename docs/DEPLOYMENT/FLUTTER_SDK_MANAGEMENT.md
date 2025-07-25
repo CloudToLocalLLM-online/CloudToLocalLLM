@@ -134,20 +134,27 @@ The deployment pipeline automatically verifies:
 
 ### Standard VPS Deployment
 
-**VPS deployment must use WSL/Linux environment:**
+**VPS deployment uses PowerShell orchestration:**
+```powershell
+# From Windows PowerShell
+cd C:\Users\chris\Dev\CloudToLocalLLM
+.\scripts\powershell\Deploy-CloudToLocalLLM.ps1 -Force
+```
+
+**Alternative: Direct VPS deployment (on VPS itself):**
 ```bash
-# From WSL or Linux terminal
+# SSH to VPS and run deployment script directly
+ssh cloudllm@cloudtolocalllm.online
 cd /opt/cloudtolocalllm
 bash scripts/deploy/update_and_deploy.sh --force --verbose
 ```
 
-**Windows users should use WSL:**
-```powershell
-# From Windows PowerShell, access WSL
-wsl -d Ubuntu-24.04
-# Then run the bash deployment script
-cd /opt/cloudtolocalllm
-bash scripts/deploy/update_and_deploy.sh --force --verbose
+**Linux Application Building (when building Linux packages):**
+```bash
+# Only needed when building Linux versions of the application
+# From WSL Ubuntu 24.04 (if building Linux packages)
+cd /mnt/c/Users/chris/Dev/CloudToLocalLLM
+flutter build linux --release
 ```
 
 ### Docker-based Build

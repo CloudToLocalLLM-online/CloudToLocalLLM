@@ -279,21 +279,13 @@ jobs:
       - name: Build package
         run: |
           chmod +x scripts/packaging/build_${{ matrix.package_type }}.sh
-          if [ "${{ matrix.package_type }}" = "aur" ]; then
-            chmod +x scripts/packaging/build_aur_universal.sh
-            ./scripts/packaging/build_aur_universal.sh --verbose || echo "AUR build failed, continuing..."
-          else
-            ./scripts/packaging/build_${{ matrix.package_type }}.sh --verbose || echo "${{ matrix.package_type }} build failed, continuing..."
-          fi
+          ./scripts/packaging/build_${{ matrix.package_type }}.sh --verbose || echo "${{ matrix.package_type }} build failed, continuing..."
 
       - name: Upload package artifacts
         uses: actions/upload-artifact@v4
         with:
           name: nightly-package-${{ matrix.package_type }}-${{ needs.version-management.outputs.nightly_tag }}
-          path: |
-            dist/linux/
-            aur-package/*.tar.gz
-            aur-package/*.sha256
+          path: dist/linux/
           retention-days: 14
 
   # Staging deployment (optional)

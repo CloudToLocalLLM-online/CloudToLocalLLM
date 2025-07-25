@@ -40,8 +40,7 @@ jobs:
     strategy:
       fail-fast: ${{ inputs.fail_fast }}
       matrix:
-        package_type: 
-          # AUR removed - decommissioned
+        package_type:
           - ${{ contains(inputs.package_types, 'deb') && 'deb' || '' }}
           - ${{ contains(inputs.package_types, 'appimage') && 'appimage' || '' }}
           - ${{ contains(inputs.package_types, 'snap') && 'snap' || '' }}
@@ -59,8 +58,6 @@ jobs:
 
       - name: Install dependencies
         run: flutter pub get
-
-      # AUR Docker setup removed - AUR is decommissioned
 
       - name: Setup DEB build dependencies
         if: matrix.package_type == 'deb'
@@ -98,8 +95,6 @@ jobs:
           # Make build script executable
           if [ -f "scripts/packaging/build_${{ matrix.package_type }}.sh" ]; then
             chmod +x scripts/packaging/build_${{ matrix.package_type }}.sh
-            
-            # AUR universal builder removed - AUR is decommissioned
             ./scripts/packaging/build_${{ matrix.package_type }}.sh --verbose
           else
             echo "❌ Build script not found: scripts/packaging/build_${{ matrix.package_type }}.sh"
@@ -111,7 +106,6 @@ jobs:
           echo "🔍 Verifying ${{ matrix.package_type }} package creation..."
           
           case "${{ matrix.package_type }}" in
-            # AUR package verification removed - AUR is decommissioned
             "deb")
               if ls dist/linux/*.deb 1> /dev/null 2>&1; then
                 echo "✅ DEB package created successfully"
@@ -148,7 +142,6 @@ jobs:
           echo "🔐 Generating checksums for ${{ matrix.package_type }} package..."
           
           case "${{ matrix.package_type }}" in
-            # AUR checksum generation removed - AUR is decommissioned
             *)
               if [ -d "dist/linux" ]; then
                 cd dist/linux
@@ -166,9 +159,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ${{ inputs.artifact_name_prefix }}-${{ matrix.package_type }}-${{ inputs.version }}
-          path: |
-            dist/linux/
-            # AUR package paths removed - AUR is decommissioned
+          path: dist/linux/
           retention-days: ${{ inputs.retention_days }}
 
   # Package build summary

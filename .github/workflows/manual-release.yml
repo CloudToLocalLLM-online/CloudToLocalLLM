@@ -233,23 +233,12 @@ jobs:
           find . -name "*.tar.gz" -o -name "*.zip" -o -name "*.deb" -o -name "*.AppImage" | while read file; do
             sha256sum "$file" > "$file.sha256"
           done
-          
-          # Also include AUR packages if they exist
-          if [ -d "../aur-package" ]; then
-            cd ../aur-package
-            find . -name "*.tar.gz" | while read file; do
-              sha256sum "$file" > "$file.sha256"
-            done
-          fi
 
       - name: Upload release artifacts
         uses: actions/upload-artifact@v4
         with:
           name: release-${{ matrix.platform }}-${{ needs.version-management.outputs.version }}
-          path: |
-            dist/
-            aur-package/*.tar.gz
-            aur-package/*.sha256
+          path: dist/
           retention-days: 90
 
   # Create GitHub Release

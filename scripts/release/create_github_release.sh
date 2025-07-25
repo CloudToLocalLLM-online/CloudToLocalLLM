@@ -235,9 +235,9 @@ create_release() {
     fi
 
     # Linux packages
-    if [[ -f "$PROJECT_ROOT/dist/linux/cloudtolocalllm-$version-amd64.deb" ]]; then
-        assets+=("$PROJECT_ROOT/dist/linux/cloudtolocalllm-$version-amd64.deb")
-        assets+=("$PROJECT_ROOT/dist/linux/cloudtolocalllm-$version-amd64.deb.sha256")
+    if [[ -f "$PROJECT_ROOT/dist/linux/cloudtolocalllm_${version}_amd64.deb" ]]; then
+        assets+=("$PROJECT_ROOT/dist/linux/cloudtolocalllm_${version}_amd64.deb")
+        assets+=("$PROJECT_ROOT/dist/linux/cloudtolocalllm_${version}_amd64.deb.sha256")
     fi
 
     if [[ -f "$PROJECT_ROOT/dist/linux/cloudtolocalllm-$version-x86_64.AppImage" ]]; then

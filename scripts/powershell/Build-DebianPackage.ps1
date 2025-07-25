@@ -45,7 +45,7 @@ Write-Host "Flutter build completed."
 $version = Get-VersionFromPubspec
 $debVersion = $version.Split('+')[0]
 $buildNumber = "1" # Debian revision
-$packageName = "cloudtolocalllm_${debVersion}-${buildNumber}_amd64.deb"
+$packageName = "cloudtolocalllm_${debVersion}_amd64.deb"
 
 # PowerShell does not have a direct equivalent of /tmp, so we use the temp directory in the user's profile.
 # We use WSL path translation to ensure the path is correct inside WSL.

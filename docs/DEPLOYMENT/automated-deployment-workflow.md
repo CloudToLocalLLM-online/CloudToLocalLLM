@@ -23,9 +23,9 @@ Before using the deployment workflow, ensure your environment meets these requir
 - **Windows Development Environment**:
   - PowerShell 5.1+ with execution policy allowing scripts
   - Git installed and configured
-  - WSL2 with Ubuntu 24.04 distribution
-  - Flutter SDK installed in WSL
+  - Flutter SDK installed on Windows
   - SSH key-based access to target VPS configured
+  - WSL2 with Ubuntu 24.04 distribution (only for Linux builds)
 
 - **VPS Environment**:
   - Linux VPS with Docker and Docker Compose
@@ -165,13 +165,14 @@ This ensures only high-quality deployments reach production.
 
 | Issue | Possible Solution |
 |-------|------------------|
-| WSL2 not available | Install WSL2 and Ubuntu 24.04 distribution |
-| Flutter not found in WSL | Install Flutter SDK in WSL environment |
+| PowerShell execution policy | Set execution policy to allow scripts |
+| Flutter not found on Windows | Install Flutter SDK and add to PATH |
 | SSH connectivity failure | Check SSH key configuration and network connectivity |
 | Version update failure | Ensure Git repository is clean and properly configured |
-| Build failure | Check Flutter dependencies and WSL environment |
+| Build failure | Check Flutter dependencies and Windows environment |
 | Deployment timeout | Increase timeout with `-TimeoutSeconds` parameter |
 | Verification failure | Check VPS logs and container status |
+| WSL2 not available (Linux builds) | Install WSL2 and Ubuntu 24.04 distribution (only for Linux builds) |
 
 ### Rollback Procedure
 

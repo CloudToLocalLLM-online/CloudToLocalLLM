@@ -6,18 +6,19 @@ CloudToLocalLLM uses a clear separation between Windows and Linux environments t
 
 ## Architecture Separation
 
-### VPS Deployment (Linux-only)
+### VPS Deployment (PowerShell-orchestrated)
 
-**Environment**: WSL (Ubuntu-24.04 distribution) → SSH → Linux VPS
-**Purpose**: Deploy web applications to cloudtolocalllm.online VPS  
-**Tools**: Bash scripts (.sh files) exclusively  
+**Environment**: Windows PowerShell → SSH → Linux VPS
+**Purpose**: Deploy web applications to cloudtolocalllm.online VPS
+**Tools**: PowerShell scripts (.ps1 files) for orchestration, bash scripts (.sh files) on VPS
 
 **Key Principles:**
-- All VPS deployment operations use bash scripts in `scripts/deploy/` directory
-- Must be executed via WSL (Ubuntu distribution) from Windows
-- SSH operations to cloudtolocalllm.online VPS go through WSL
-- Flutter web builds, Docker container management, and git operations use Linux commands only
-- No PowerShell scripts for VPS deployment
+- VPS deployment operations are orchestrated by PowerShell scripts in `scripts/powershell/` directory
+- PowerShell scripts handle version management, build processes, and SSH operations to VPS
+- SSH operations to cloudtolocalllm.online VPS are executed from PowerShell
+- Flutter web builds are performed using PowerShell on Windows
+- VPS-side operations use bash scripts for Docker container management and Linux-specific tasks
+- PowerShell is the primary deployment environment for Windows users
 
 **Main Scripts:**
 - `scripts/deploy/update_and_deploy.sh` - Primary VPS deployment script
@@ -48,24 +49,21 @@ CloudToLocalLLM uses a clear separation between Windows and Linux environments t
 
 ### VPS Deployment Workflow
 
-**From Windows:**
+**From Windows PowerShell:**
 ```powershell
-# 1. Open Windows Terminal
-# 2. Access WSL Arch Linux distribution
-wsl -d Ubuntu-24.04
+# 1. Open Windows Terminal (PowerShell)
+# 2. Navigate to project directory
+cd C:\Users\chris\Dev\CloudToLocalLLM
 
-# 3. Navigate to project directory
-cd /opt/cloudtolocalllm
-
-# 4. Execute VPS deployment
+# 3. Execute VPS deployment using PowerShell orchestration
 # For fully automatic deployment (no prompts/delays)
-bash scripts/deploy/update_and_deploy.sh --force --verbose
+.\scripts\powershell\Deploy-CloudToLocalLLM.ps1 -Force
 
-# For interactive deployment (includes 3-second safety delay)
-# bash scripts/deploy/update_and_deploy.sh --verbose
+# For interactive deployment with prompts
+.\scripts\powershell\Deploy-CloudToLocalLLM.ps1
 
-# 5. Verify deployment
-curl -s https://app.cloudtolocalllm.online/version.json | jq '.version'
+# 4. Verify deployment
+Invoke-RestMethod -Uri "https://app.cloudtolocalllm.online/version.json" | Select-Object version
 ```
 
 **Direct on VPS:**
@@ -138,10 +136,11 @@ CloudToLocalLLM/
 ## Environment Requirements
 
 ### For VPS Deployment
-- WSL with Ubuntu-24.04 distribution installed
+- Windows 10/11 with PowerShell 5.1+
 - SSH access to cloudtolocalllm.online VPS
-- Git configured in WSL
-- Flutter SDK in WSL (auto-installed with scripts)
+- Git configured on Windows
+- Flutter SDK for Windows (auto-installed with scripts)
+- OpenSSH client for Windows (usually pre-installed)
 
 ### For Windows Package Management
 - Windows 10/11 with PowerShell 5.1+
@@ -151,15 +150,21 @@ CloudToLocalLLM/
 - WiX Toolset for MSI packages (auto-installed)
 - NSIS for NSIS installers (auto-installed)
 
+### For Linux Application Building (Optional)
+**Note**: WSL is only required when building Linux versions of the application, not for deployment operations.
+- WSL with Ubuntu-24.04 distribution (only for Linux builds)
+- Flutter SDK in WSL (only for Linux builds)
+- Git configured in WSL (only for Linux builds)
+
 ## Best Practices
 
 ### Do's
-✅ Use bash scripts for all VPS deployment operations  
-✅ Use PowerShell scripts for all Windows packaging operations  
-✅ Execute VPS deployments via WSL from Windows  
-✅ Use -AutoInstall parameter for dependency management  
-✅ Follow the established script naming conventions  
-✅ Test deployments with --dry-run flags when available  
+✅ Use PowerShell scripts for Windows deployment orchestration
+✅ Use PowerShell scripts for all Windows packaging operations
+✅ Execute VPS deployments via PowerShell SSH from Windows
+✅ Use -AutoInstall parameter for dependency management
+✅ Follow the established script naming conventions
+✅ Test deployments with --dry-run flags when available
 
 ### Don'ts
 ❌ Create PowerShell scripts for VPS deployment  
@@ -179,9 +184,10 @@ CloudToLocalLLM/
 
 ### Windows Package Issues
 1. **Build Tools Missing**: Use -AutoInstall parameter
-2. **WSL Not Available**: Install WSL for Linux package creation
+2. **WSL Not Available**: Only needed for Linux package creation (optional)
 3. **Permission Denied**: Run PowerShell as Administrator if needed
 4. **Flutter SDK Issues**: Verify Flutter installation and PATH
+5. **SSH Connection Issues**: Verify OpenSSH client and SSH keys
 
 ## Migration Notes
 

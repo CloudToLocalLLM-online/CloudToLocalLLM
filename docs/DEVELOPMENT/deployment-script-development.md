@@ -258,26 +258,47 @@ After modifying the deployment script:
 5. **Test in staging environment** before using in production
 6. **Test Kiro hook integration** if applicable
 
-## WSL Integration
+## Linux Build Integration (WSL)
 
-When working with WSL integration:
+**Important**: WSL integration is only required for building Linux versions of the application, not for deployment operations.
 
-1. **Use the provided wrapper functions**:
-   - `Invoke-WSLCommand` for executing commands in WSL
-   - `Test-WSLDistribution` for checking WSL distribution availability
-   - `Convert-WindowsPathToWSL` for path conversion
+When building Linux packages using WSL:
 
-2. **Handle path conversions carefully**:
-   - Windows paths need to be converted to WSL paths
+1. **Use WSL wrapper functions only for Linux builds**:
+   - `Invoke-WSLCommand` for executing Linux build commands
+   - `Test-WSLDistribution` for checking WSL availability (Linux builds only)
+   - `Convert-WindowsPathToWSL` for path conversion (Linux builds only)
+
+2. **Handle path conversions for Linux builds**:
+   - Windows paths need to be converted to WSL paths for Linux builds
    - Use proper quoting for paths with spaces
    - Consider using absolute paths where possible
 
-Example WSL integration:
+Example WSL integration for Linux builds:
 
 ```powershell
-$wslPath = Convert-WindowsPathToWSL $Script:ProjectRoot
-$command = "cd $wslPath && flutter build web --release"
-$result = Invoke-WSLCommand -DistroName $Script:DeploymentConfig.WSLDistribution -Command $command -WorkingDirectory $Script:ProjectRoot -PassThru
+# Only use WSL for Linux application builds, not deployment
+if ($BuildLinuxPackages) {
+    $wslPath = Convert-WindowsPathToWSL $Script:ProjectRoot
+    $command = "cd $wslPath && flutter build linux --release"
+    $result = Invoke-WSLCommand -DistroName "Ubuntu-24.04" -Command $command -WorkingDirectory $Script:ProjectRoot -PassThru
+}
+```
+
+## PowerShell Deployment Integration
+
+For deployment operations, use native PowerShell capabilities:
+
+1. **Use PowerShell for deployment operations**:
+   - `Invoke-Command` for remote PowerShell sessions
+   - `ssh` command for VPS operations
+   - Native PowerShell cmdlets for file operations
+
+2. **Example PowerShell deployment**:
+```powershell
+# Use PowerShell for deployment, not WSL
+$sshCommand = "ssh cloudllm@cloudtolocalllm.online 'cd /opt/cloudtolocalllm && bash scripts/deploy/complete_deployment.sh'"
+Invoke-Expression $sshCommand
 ```
 
 ## SSH Integration
