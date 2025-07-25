@@ -97,6 +97,9 @@ yarn-error.log*
 flutter.tar.xz
 *.tar.xz
 
+# Large distribution ZIP files
+*.zip
+
 # Large directories that shouldn't be in Git
 streaming-proxy/node_modules/
 api-backend/node_modules/
