@@ -172,13 +172,19 @@ check_prerequisites() {
     fi
 
     # Check required commands
-    local required_commands=("git" "docker" "docker-compose" "curl")
+    local required_commands=("git" "docker" "curl")
     for cmd in "${required_commands[@]}"; do
         if ! command -v "$cmd" &> /dev/null; then
             log_error "Required command not found: $cmd"
             exit 1
         fi
     done
+
+    # Check Docker Compose v2
+    if ! docker compose version &> /dev/null; then
+        log_error "Docker Compose v2 not available (tried 'docker compose')"
+        exit 1
+    fi
 
     # Check Flutter separately with full path
     if [[ ! -x "$FLUTTER_BIN" ]]; then
@@ -306,7 +312,7 @@ manage_containers() {
 
     # Stop existing containers
     log_verbose "Stopping existing containers..."
-    docker-compose -f "$COMPOSE_FILE" down --timeout 30 --remove-orphans 2>/dev/null || true
+    docker compose -f "$COMPOSE_FILE" down --timeout 30 --remove-orphans 2>/dev/null || true
 
     # Remove orphaned containers
     log_verbose "Removing orphaned containers..."
@@ -314,7 +320,7 @@ manage_containers() {
 
     # Build and start containers
     log_verbose "Building and starting containers..."
-    if ! docker-compose -f "$COMPOSE_FILE" up -d --build; then
+    if ! docker compose -f "$COMPOSE_FILE" up -d --build; then
         log_error "Failed to start Docker containers"
         return 1
     fi
@@ -324,8 +330,8 @@ manage_containers() {
     sleep 10
 
     # Check container status
-    local running_containers=$(docker-compose -f "$COMPOSE_FILE" ps -q | wc -l)
-    local total_containers=$(docker-compose -f "$COMPOSE_FILE" config --services | wc -l)
+    local running_containers=$(docker compose -f "$COMPOSE_FILE" ps -q | wc -l)
+    local total_containers=$(docker compose -f "$COMPOSE_FILE" config --services | wc -l)
 
     log_verbose "Container status: $running_containers/$total_containers running"
 
@@ -334,7 +340,7 @@ manage_containers() {
     else
         log_error "Some containers failed to start ($running_containers/$total_containers)"
         log_info "Container details:"
-        docker-compose -f "$COMPOSE_FILE" ps
+        docker compose -f "$COMPOSE_FILE" ps
         return 1
     fi
 }
@@ -384,7 +390,7 @@ perform_health_checks() {
 
     # Check container health
     log_verbose "Checking container health..."
-    local unhealthy_containers=$(docker-compose -f "$COMPOSE_FILE" ps --filter "health=unhealthy" -q | wc -l)
+    local unhealthy_containers=$(docker compose -f "$COMPOSE_FILE" ps --filter "health=unhealthy" -q | wc -l)
 
     if [[ $unhealthy_containers -eq 0 ]]; then
         log_success "All containers are healthy"
@@ -435,7 +441,7 @@ rollback_deployment() {
 
     # Stop current containers
     log_verbose "Stopping failed containers..."
-    docker-compose -f "$COMPOSE_FILE" down --timeout 30 2>/dev/null || true
+    docker compose -f "$COMPOSE_FILE" down --timeout 30 2>/dev/null || true
 
     # Restore from backup if available
     local latest_backup=$(ls -t "$BACKUP_DIR"/ 2>/dev/null | head -n1)
@@ -445,7 +451,7 @@ rollback_deployment() {
         cp -r "$BACKUP_DIR/$latest_backup" build/web
 
         # Restart containers with backup
-        docker-compose -f "$COMPOSE_FILE" up -d 2>/dev/null || true
+        docker compose -f "$COMPOSE_FILE" up -d 2>/dev/null || true
         log_warning "Rollback completed using backup: $latest_backup"
     else
         log_warning "No backup available for rollback"
@@ -514,7 +520,7 @@ main() {
         log_info "Next steps:"
         log_info "  1. Verify application functionality"
         log_info "  2. Monitor container logs if needed:"
-        log_info "     docker-compose -f $COMPOSE_FILE logs -f"
+        log_info "     docker compose -f $COMPOSE_FILE logs -f"
         echo
     fi
 }
