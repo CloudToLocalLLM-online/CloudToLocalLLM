@@ -151,31 +151,33 @@ execute_script() {
     local script_path="$1"
     local script_name="$2"
     local script_args="${3:-}"
-    
+
     log_step "Executing $script_name..."
-    
+
     if [[ ! -f "$script_path" ]]; then
         log_error "$script_name not found: $script_path"
         return 1
     fi
-    
+
     if [[ ! -x "$script_path" ]]; then
         log_error "$script_name is not executable: $script_path"
         return 1
     fi
-    
+
     local cmd="$script_path"
-    
-    # Add common flags
+    local script_basename=$(basename "$script_path")
+
+    # Add flags based on script support
     if [[ "$VERBOSE" == "true" ]]; then
         cmd="$cmd --verbose"
     fi
-    
+
     if [[ "$DRY_RUN" == "true" ]]; then
         cmd="$cmd --dry-run"
     fi
-    
-    if [[ "$FORCE" == "true" ]]; then
+
+    # Only add --force to scripts that support it (not sync_versions.sh)
+    if [[ "$FORCE" == "true" && "$script_basename" != "sync_versions.sh" ]]; then
         cmd="$cmd --force"
     fi
     
