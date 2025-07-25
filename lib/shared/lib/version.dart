@@ -23,7 +23,7 @@ class CloudToLocalLLMVersions {
   static const String trayDaemonVersion = 'deprecated';
 
   // Build timestamp (updated during build process)
-  static const String buildTimestamp = '2025-07-25T23:28:04Z';
+  static const String buildTimestamp = '2025-07-25T23:28:08Z';
 
   // Git commit hash (updated during build process)
   static const String gitCommitHash = 'production-v3.10.1';
