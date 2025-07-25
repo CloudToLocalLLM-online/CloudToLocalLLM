@@ -6,6 +6,20 @@ This directory contains the complete deployment documentation for CloudToLocalLL
 
 ## 🎯 Primary Documentation (Start Here)
 
+### **[RESTORED_VPS_DEPLOYMENT_GUIDE.md](./RESTORED_VPS_DEPLOYMENT_GUIDE.md)** ⭐ **NEW**
+**Complete restored VPS deployment methodology** - Augment agent-powered automation with Windows-to-VPS orchestration.
+- **Purpose**: Primary deployment guide for the restored VPS-based system
+- **Audience**: All developers and deployment operators
+- **Content**: Complete workflows, scripts, quality gates, and automation
+- **When to use**: For all deployment activities (replaces GitHub Actions)
+
+### **[VPS_QUALITY_GATES_SPECIFICATION.md](./VPS_QUALITY_GATES_SPECIFICATION.md)** ⭐ **NEW**
+**Zero-tolerance quality gates specification** - Comprehensive quality assurance and rollback mechanisms.
+- **Purpose**: Understand quality gates, rollback procedures, and monitoring
+- **Audience**: DevOps engineers and deployment operators
+- **Content**: Quality gate architecture, rollback mechanisms, monitoring
+- **When to use**: When implementing or troubleshooting quality gates
+
 ### **[ENVIRONMENT_SEPARATION_GUIDE.md](./ENVIRONMENT_SEPARATION_GUIDE.md)**
 **Architecture separation guide** - Clear separation between Windows and Linux deployment environments.
 - **Purpose**: Understand the deployment architecture and environment boundaries
@@ -58,21 +72,24 @@ This directory contains the complete deployment documentation for CloudToLocalLL
 
 ## 📋 Documentation Hierarchy
 
-### **Information Flow**
+### **Information Flow** ⚡ **UPDATED**
 ```
-1. Start with VERSIONING_STRATEGY.md → Determine version increment
-2. Use COMPLETE_DEPLOYMENT_WORKFLOW.md → Execute deployment
-3. Reference specialized docs as needed → Troubleshoot or understand specifics
-4. Follow SCRIPT_FIRST_RESOLUTION_GUIDE.md → Resolve issues through automation
+1. Start with RESTORED_VPS_DEPLOYMENT_GUIDE.md → Primary deployment methodology
+2. Reference VPS_QUALITY_GATES_SPECIFICATION.md → Quality gates and rollback
+3. Use VERSIONING_STRATEGY.md → Determine version increment
+4. Reference specialized docs as needed → Troubleshoot or understand specifics
+5. Follow SCRIPT_FIRST_RESOLUTION_GUIDE.md → Resolve issues through automation
 ```
 
-### **Single Source of Truth Principle**
-- **Deployment Process**: `COMPLETE_DEPLOYMENT_WORKFLOW.md`
+### **Single Source of Truth Principle** ⚡ **UPDATED**
+- **Primary Deployment**: `RESTORED_VPS_DEPLOYMENT_GUIDE.md` ⭐ **NEW**
+- **Quality Gates**: `VPS_QUALITY_GATES_SPECIFICATION.md` ⭐ **NEW**
 - **Versioning Decisions**: `VERSIONING_STRATEGY.md`
 - **Automation Principles**: `SCRIPT_FIRST_RESOLUTION_GUIDE.md`
-- **AUR Procedures**: Removed - AUR is decommissioned
+- **Environment Separation**: `ENVIRONMENT_SEPARATION_GUIDE.md`
 - **Visual Workflows**: `DEPLOYMENT_WORKFLOW_DIAGRAM.md`
 - **Build Features**: `SIX_PHASE_BUILD_TIME_INJECTION_INTEGRATION.md`
+- **Legacy Reference**: `COMPLETE_DEPLOYMENT_WORKFLOW.md` (GitHub Actions era)
 
 ## 🚫 Removed Documentation
 
@@ -84,10 +101,11 @@ The following files were removed during consolidation to eliminate redundancy:
 
 ## 🔍 Quick Reference
 
-### **For New Deployments**
-1. Read [`VERSIONING_STRATEGY.md`](./VERSIONING_STRATEGY.md) → Choose version increment
-2. Follow [`COMPLETE_DEPLOYMENT_WORKFLOW.md`](./COMPLETE_DEPLOYMENT_WORKFLOW.md) → Execute deployment
-3. Reference [`DEPLOYMENT_WORKFLOW_DIAGRAM.md`](./DEPLOYMENT_WORKFLOW_DIAGRAM.md) → Visual guidance
+### **For New Deployments** ⚡ **UPDATED**
+1. Read [`RESTORED_VPS_DEPLOYMENT_GUIDE.md`](./RESTORED_VPS_DEPLOYMENT_GUIDE.md) → Complete deployment methodology ⭐ **NEW**
+2. Reference [`VPS_QUALITY_GATES_SPECIFICATION.md`](./VPS_QUALITY_GATES_SPECIFICATION.md) → Quality gates ⭐ **NEW**
+3. Read [`VERSIONING_STRATEGY.md`](./VERSIONING_STRATEGY.md) → Choose version increment
+4. Reference [`DEPLOYMENT_WORKFLOW_DIAGRAM.md`](./DEPLOYMENT_WORKFLOW_DIAGRAM.md) → Visual guidance
 
 ### **For Troubleshooting**
 1. Check [`SCRIPT_FIRST_RESOLUTION_GUIDE.md`](./SCRIPT_FIRST_RESOLUTION_GUIDE.md) → Automation principles
