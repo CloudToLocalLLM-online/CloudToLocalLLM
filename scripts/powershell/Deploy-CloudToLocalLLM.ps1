@@ -504,34 +504,10 @@ Works seamlessly with https://app.cloudtolocalllm.online
         Write-Host "   To create releases, ensure desktop packages are built first"
     }
 
-# Step 4: VPS Deployment
-Write-Host ""
-Write-Host "=== STEP 4: VPS DEPLOYMENT ===" -ForegroundColor Yellow
-
-$deploymentCommand = "cd $VPSProjectPath && git reset --hard HEAD && git clean -fd -e certbot/ && git pull origin master && /opt/flutter/bin/flutter clean && /opt/flutter/bin/flutter pub get && /opt/flutter/bin/flutter build web && docker compose restart webapp && sleep 10 && curl -k -f https://app.cloudtolocalllm.online"
-
-if ($DryRun) {
-    Write-Host "[DRY RUN] Would execute: ssh $VPSUser@$VPSHost `"$deploymentCommand`""
-} else {
-    Write-Host "Executing direct deployment commands on VPS..."
-    
-    Write-Host "Executing deployment on VPS..."
-    Write-Host "Command: ssh $VPSUser@$VPSHost `"$deploymentCommand`""
-    Write-Host ""
-    
-    ssh $VPSUser@$VPSHost "$deploymentCommand"
-    
-    if ($LASTEXITCODE -ne 0) {
-        Write-Host ""
-        Write-Host "ERROR: VPS deployment failed with exit code $LASTEXITCODE" -ForegroundColor Red
-        exit 1
-    }
-}
-
-# Step 5: Build Validation and Cleanup
+# Step 4: Commit and Push Build-Time Injected Files
 if (-not $SkipBuild -and -not $DryRun) {
     Write-Host ""
-    Write-Host "=== STEP 5: BUILD VALIDATION ===" -ForegroundColor Yellow
+    Write-Host "=== STEP 4: COMMIT BUILD-TIME INJECTION ===" -ForegroundColor Yellow
 
     # Validate that no BUILD_TIME_PLACEHOLDER remains in version files
     Write-Host "Validating build-time injection..."
@@ -558,51 +534,72 @@ if (-not $SkipBuild -and -not $DryRun) {
         exit 1
     } else {
         Write-Host "✓ Build validation passed - all placeholders replaced with actual build numbers" -ForegroundColor Green
-        Write-Host "Note: Version files retain build timestamps for deployment consistency" -ForegroundColor Cyan
 
         # Commit build-time injected version files
         Write-Host "Committing build-time injected version files..."
-        if (-not $DryRun) {
-            git add pubspec.yaml assets/version.json lib/shared/lib/version.dart lib/shared/pubspec.yaml lib/config/app_config.dart
+        git add pubspec.yaml assets/version.json lib/shared/lib/version.dart lib/shared/pubspec.yaml lib/config/app_config.dart
+        if ($LASTEXITCODE -ne 0) {
+            Write-Host "ERROR: Failed to stage build-time injected files" -ForegroundColor Red
+            exit 1
+        }
+
+        # Check if there are changes to commit
+        git diff --cached --quiet
+        if ($LASTEXITCODE -ne 0) {
+            # There are staged changes, commit them
+            $buildTimestampCommitMessage = "Inject build-time timestamps for deployment v$(& $versionManagerPath get-semantic)"
+            git commit -m $buildTimestampCommitMessage
             if ($LASTEXITCODE -ne 0) {
-                Write-Host "ERROR: Failed to stage build-time injected files" -ForegroundColor Red
+                Write-Host "ERROR: Failed to commit build-time injected files" -ForegroundColor Red
                 exit 1
             }
 
-            # Check if there are changes to commit
-            git diff --cached --quiet
+            # Push the build-time injected changes
+            git push origin master
             if ($LASTEXITCODE -ne 0) {
-                # There are staged changes, commit them
-                $buildTimestampCommitMessage = "Inject build-time timestamps for deployment v$(& $versionManagerPath get-semantic)"
-                git commit -m $buildTimestampCommitMessage
-                if ($LASTEXITCODE -ne 0) {
-                    Write-Host "ERROR: Failed to commit build-time injected files" -ForegroundColor Red
-                    exit 1
-                }
-
-                git push origin master
-                if ($LASTEXITCODE -ne 0) {
-                    Write-Host "ERROR: Failed to push build-time injected files" -ForegroundColor Red
-                    exit 1
-                }
-
-                Write-Host "✓ Build-time injected files committed and pushed"
-            } else {
-                Write-Host "✓ No build-time injection changes to commit"
+                Write-Host "ERROR: Failed to push build-time injected files" -ForegroundColor Red
+                exit 1
             }
+            Write-Host "✓ Build-time injected files committed and pushed to GitHub"
         } else {
-            Write-Host "[DRY RUN] Would commit and push build-time injected files"
+            Write-Host "✓ No build-time injection changes to commit"
         }
     }
 }
+
+# Step 5: VPS Deployment
+Write-Host ""
+Write-Host "=== STEP 5: VPS DEPLOYMENT ===" -ForegroundColor Yellow
+
+$deploymentCommand = "cd $VPSProjectPath && git reset --hard HEAD && git clean -fd -e certbot/ && git pull origin master && /opt/flutter/bin/flutter clean && /opt/flutter/bin/flutter pub get && /opt/flutter/bin/flutter build web && docker compose restart webapp && sleep 10 && curl -k -f https://app.cloudtolocalllm.online"
+
+if ($DryRun) {
+    Write-Host "[DRY RUN] Would execute: ssh $VPSUser@$VPSHost `"$deploymentCommand`""
+} else {
+    Write-Host "Executing direct deployment commands on VPS..."
+
+    Write-Host "Executing deployment on VPS..."
+    Write-Host "Command: ssh $VPSUser@$VPSHost `"$deploymentCommand`""
+    Write-Host ""
+
+    ssh $VPSUser@$VPSHost "$deploymentCommand"
+
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host ""
+        Write-Host "ERROR: VPS deployment failed with exit code $LASTEXITCODE" -ForegroundColor Red
+        exit 1
+    }
+}
+
+
 
 # Step 6: Verification
 if (-not $SkipVerification) {
     Write-Host ""
     Write-Host "=== STEP 6: VERIFICATION ===" -ForegroundColor Yellow
-    
-    Write-Host "Skipping verification - script removed to avoid confusion"
-    Write-Host "Deployment completed successfully via update_and_deploy.sh"
+
+    Write-Host "✓ VPS deployment completed successfully" -ForegroundColor Green
+    Write-Host "✓ Application should be available at https://app.cloudtolocalllm.online" -ForegroundColor Green
 }
 
 # Final report
