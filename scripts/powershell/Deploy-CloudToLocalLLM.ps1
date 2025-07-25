@@ -571,14 +571,28 @@ if (-not $SkipBuild -and -not $DryRun) {
 Write-Host ""
 Write-Host "=== STEP 5: VPS DEPLOYMENT ===" -ForegroundColor Yellow
 
-$deploymentCommand = "cd $VPSProjectPath && git reset --hard HEAD && git clean -fd -e certbot/ && git pull origin master && /opt/flutter/bin/flutter clean && /opt/flutter/bin/flutter pub get && /opt/flutter/bin/flutter build web && docker compose up -d --build api-backend && docker compose restart webapp && sleep 10 && curl -k -f https://app.cloudtolocalllm.online"
+# Use the new VPS deployment scripts for better error handling and rollback
+$vpsDeploymentScript = "$VPSProjectPath/scripts/deploy/complete_deployment.sh"
+$deploymentFlags = "--force"
+
+if ($Verbose) {
+    $deploymentFlags += " --verbose"
+}
+
+if ($DryRun) {
+    $deploymentFlags += " --dry-run"
+}
+
+$deploymentCommand = "cd $VPSProjectPath && $vpsDeploymentScript $deploymentFlags"
 
 if ($DryRun) {
     Write-Host "[DRY RUN] Would execute: ssh $VPSUser@$VPSHost `"$deploymentCommand`""
 } else {
-    Write-Host "Executing direct deployment commands on VPS..."
+    Write-Host "Executing enhanced VPS deployment with rollback capabilities..."
+    Write-Host "Using deployment script: $vpsDeploymentScript"
+    Write-Host "Deployment flags: $deploymentFlags"
+    Write-Host ""
 
-    Write-Host "Executing deployment on VPS..."
     Write-Host "Command: ssh $VPSUser@$VPSHost `"$deploymentCommand`""
     Write-Host ""
 
@@ -587,7 +601,13 @@ if ($DryRun) {
     if ($LASTEXITCODE -ne 0) {
         Write-Host ""
         Write-Host "ERROR: VPS deployment failed with exit code $LASTEXITCODE" -ForegroundColor Red
+        Write-Host "The VPS deployment script includes automatic rollback on failure" -ForegroundColor Yellow
+        Write-Host "Check VPS logs for detailed error information" -ForegroundColor Yellow
         exit 1
+    } else {
+        Write-Host ""
+        Write-Host "✓ VPS deployment completed successfully" -ForegroundColor Green
+        Write-Host "Application URL: https://app.cloudtolocalllm.online" -ForegroundColor Green
     }
 }
 
