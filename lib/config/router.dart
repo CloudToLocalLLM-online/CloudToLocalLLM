@@ -15,6 +15,7 @@ import '../screens/settings/llm_provider_settings_screen.dart';
 import '../screens/settings/daemon_settings_screen.dart';
 import '../screens/settings/connection_status_screen.dart';
 import '../screens/tunnel_settings_screen.dart';
+import '../screens/tunnel_status_screen.dart';
 import '../screens/unified_settings_screen.dart';
 
 // Admin screens
@@ -201,6 +202,16 @@ class AppRouter {
           builder: (context, state) {
             debugPrint("📊 [Router] Building ConnectionStatusScreen");
             return const ConnectionStatusScreen();
+          },
+        ),
+
+        // Tunnel Status route
+        GoRoute(
+          path: '/tunnel-status',
+          name: 'tunnel-status',
+          builder: (context, state) {
+            debugPrint("🔧 [Router] Building TunnelStatusScreen");
+            return const TunnelStatusScreen();
           },
         ),
 

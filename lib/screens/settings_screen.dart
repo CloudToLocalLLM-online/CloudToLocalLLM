@@ -446,8 +446,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
         children: [
           _buildSectionHeader(
             context,
-            'LLM Provider',
-            Icons.computer,
+            'Model Manager',
+            Icons.download_for_offline,
             AppTheme.secondaryColor,
           ),
           SizedBox(height: AppTheme.spacingM),
@@ -474,13 +474,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
           SizedBox(height: AppTheme.spacingM),
 
-          // Navigate to LLM Provider Settings button
+          // Navigate to Model Manager button
           SizedBox(
             width: double.infinity,
             child: ElevatedButton.icon(
-              onPressed: () => context.go('/settings/llm-provider'),
-              icon: const Icon(Icons.settings),
-              label: const Text('Configure & Test Connection'),
+              onPressed: () => context.go('/settings/model-download-manager'),
+              icon: const Icon(Icons.download_for_offline),
+              label: const Text('Manage Models & Connection'),
               style: ElevatedButton.styleFrom(
                 padding: EdgeInsets.all(AppTheme.spacingM),
               ),
@@ -491,7 +491,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
           // Quick info about what's in the detailed settings
           Text(
-            'Configure connection settings, test connectivity, and manage models',
+            'Configure Ollama connection, download models, and test connectivity',
             style: Theme.of(
               context,
             ).textTheme.bodySmall?.copyWith(color: AppTheme.textColorLight),
@@ -550,11 +550,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
               // Connection status overview
               _buildConnectionStatusCard(context, tunnelClient),
-
-              SizedBox(height: AppTheme.spacingM),
-
-              // Local Ollama configuration
-              _buildOllamaConfigCard(context, tunnelClient),
 
               SizedBox(height: AppTheme.spacingM),
 
@@ -854,64 +849,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
               color: Theme.of(context).colorScheme.onSurface,
             ),
             textAlign: TextAlign.center,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildOllamaConfigCard(
-    BuildContext context,
-    SimpleTunnelClient tunnelClient,
-  ) {
-    // Local Ollama configuration is now managed independently
-
-    return Container(
-      padding: EdgeInsets.all(AppTheme.spacingM),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(AppTheme.borderRadiusS),
-        border: Border.all(
-          color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.2),
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(Icons.computer, color: AppTheme.secondaryColor, size: 20),
-              SizedBox(width: AppTheme.spacingS),
-              Text(
-                'Local Ollama Configuration',
-                style: Theme.of(
-                  context,
-                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-              ),
-            ],
-          ),
-          SizedBox(height: AppTheme.spacingM),
-
-          // Local Ollama configuration is now managed independently
-          Container(
-            padding: EdgeInsets.all(AppTheme.spacingS),
-            decoration: BoxDecoration(
-              color: Colors.blue.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(AppTheme.borderRadiusS),
-              border: Border.all(color: Colors.blue.withValues(alpha: 0.3)),
-            ),
-            child: Row(
-              children: [
-                Icon(Icons.info_outline, color: Colors.blue, size: 16),
-                SizedBox(width: AppTheme.spacingS),
-                Expanded(
-                  child: Text(
-                    'Local Ollama connections are now managed independently through the LocalOllamaConnectionService. Use the unified settings screen for configuration.',
-                    style: TextStyle(color: Colors.blue[700], fontSize: 12),
-                  ),
-                ),
-              ],
-            ),
           ),
         ],
       ),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../config/theme.dart';
+import 'tunnel_status_indicator.dart';
 
 /// Reusable app header component with consistent styling
 /// Used across different screens to maintain design consistency
@@ -48,7 +49,10 @@ class AppHeader extends StatelessWidget {
             ),
           ),
 
-          // Actions
+          // Tunnel status indicator (always shown)
+          const TunnelStatusIndicator(),
+
+          // Additional actions
           if (actions != null) ...actions!,
         ],
       ),

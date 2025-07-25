@@ -50,19 +50,19 @@ class SettingsSidebar extends StatelessWidget {
           icon: Icons.palette,
           subtitle: 'Display settings',
         ),
-        // Renamed from 'LLM Provider' to 'Tunnel Connection'
+        // Tunnel Connection - cloud proxy only
         const SettingsSection(
-          id: 'tunnel-connection', // Changed ID
-          title: 'Tunnel Connection', // Changed title
-          icon: Icons.settings_ethernet, // Changed icon to reflect tunneling
-          subtitle: 'Cloud proxy & Ollama', // Updated subtitle
+          id: 'tunnel-connection',
+          title: 'Tunnel Connection',
+          icon: Icons.settings_ethernet,
+          subtitle: 'Cloud proxy settings',
         ),
-        // Added 'Model Download Manager' for web
+        // Model Manager - Ollama connection & models
         const SettingsSection(
           id: 'model-download-manager',
           title: 'Model Manager',
           icon: Icons.download_for_offline,
-          subtitle: 'View Ollama models',
+          subtitle: 'Ollama connection & models',
         ),
         // Added 'Downloads' section for web platform
         const SettingsSection(
@@ -99,19 +99,19 @@ class SettingsSidebar extends StatelessWidget {
           icon: Icons.palette,
           subtitle: 'Display settings',
         ),
-        // Renamed from 'LLM Provider' to 'Tunnel Connection'
+        // Tunnel Connection - cloud proxy only
         const SettingsSection(
-          id: 'tunnel-connection', // Changed ID
-          title: 'Tunnel Connection', // Changed title
-          icon: Icons.settings_ethernet, // Changed icon
-          subtitle: 'Local & cloud config', // Updated subtitle
+          id: 'tunnel-connection',
+          title: 'Tunnel Connection',
+          icon: Icons.settings_ethernet,
+          subtitle: 'Cloud proxy settings',
         ),
-        // Added 'Model Download Manager' for desktop
+        // Model Manager - Ollama connection & models
         const SettingsSection(
           id: 'model-download-manager',
           title: 'Model Manager',
           icon: Icons.download_for_offline,
-          subtitle: 'Manage Ollama models',
+          subtitle: 'Ollama connection & models',
         ),
         const SettingsSection(
           id: 'system-tray',

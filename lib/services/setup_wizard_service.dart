@@ -184,7 +184,18 @@ class SetupWizardService extends ChangeNotifier {
 
   /// Check if the setup wizard should be shown
   Future<void> _checkShouldShowWizard() async {
-    if (!kIsWeb || !_authService.isAuthenticated.value) {
+    // Never show setup wizard on web platform - web users should get download prompt instead
+    if (kIsWeb) {
+      _shouldShowWizard = false;
+      debugPrint(
+        '🧙 [SetupWizard] Setup wizard disabled for web platform - users should download desktop app instead',
+      );
+      notifyListeners();
+      return;
+    }
+
+    // For desktop platform, check authentication
+    if (!_authService.isAuthenticated.value) {
       _shouldShowWizard = false;
       notifyListeners();
       return;

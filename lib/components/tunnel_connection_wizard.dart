@@ -10,11 +10,26 @@ import '../services/simple_tunnel_client.dart';
 /// 2. Server Selection
 /// 3. Connection Testing
 /// 4. Configuration Save
+///
+/// Supports multiple modes:
+/// - firstTime: Complete setup for new users
+/// - reconfigure: Reconfiguration for existing users
+/// - troubleshoot: Guided troubleshooting for connection issues
+enum TunnelWizardMode { firstTime, reconfigure, troubleshoot }
+
 class TunnelConnectionWizard extends StatefulWidget {
   final VoidCallback? onComplete;
   final VoidCallback? onCancel;
+  final TunnelWizardMode mode;
+  final String? title;
 
-  const TunnelConnectionWizard({super.key, this.onComplete, this.onCancel});
+  const TunnelConnectionWizard({
+    super.key,
+    this.onComplete,
+    this.onCancel,
+    this.mode = TunnelWizardMode.firstTime,
+    this.title,
+  });
 
   @override
   State<TunnelConnectionWizard> createState() => _TunnelConnectionWizardState();
@@ -36,28 +51,95 @@ class _TunnelConnectionWizardState extends State<TunnelConnectionWizard> {
   bool? _connectionTestResult;
   String? _serverVersion;
 
-  final List<WizardStep> _steps = [
-    WizardStep(
-      title: 'Authentication',
-      description: 'Authenticate with CloudToLocalLLM services',
-      icon: Icons.login,
-    ),
-    WizardStep(
-      title: 'Server Selection',
-      description: 'Choose your tunnel server configuration',
-      icon: Icons.dns,
-    ),
-    WizardStep(
-      title: 'Connection Testing',
-      description: 'Test the tunnel connection',
-      icon: Icons.network_check,
-    ),
-    WizardStep(
-      title: 'Configuration Save',
-      description: 'Save and activate your tunnel configuration',
-      icon: Icons.save,
-    ),
-  ];
+  // Mode-specific state
+  late List<WizardStep> _steps;
+  late String _wizardTitle;
+
+  @override
+  void initState() {
+    super.initState();
+    _initializeWizardForMode();
+  }
+
+  void _initializeWizardForMode() {
+    switch (widget.mode) {
+      case TunnelWizardMode.firstTime:
+        _wizardTitle = widget.title ?? 'Tunnel Setup Wizard';
+        _steps = [
+          WizardStep(
+            title: 'Authentication',
+            description: 'Authenticate with CloudToLocalLLM services',
+            icon: Icons.login,
+          ),
+          WizardStep(
+            title: 'Server Selection',
+            description: 'Choose your tunnel server configuration',
+            icon: Icons.dns,
+          ),
+          WizardStep(
+            title: 'Connection Testing',
+            description: 'Test the tunnel connection',
+            icon: Icons.network_check,
+          ),
+          WizardStep(
+            title: 'Configuration Save',
+            description: 'Save and activate your tunnel configuration',
+            icon: Icons.save,
+          ),
+        ];
+        break;
+      case TunnelWizardMode.reconfigure:
+        _wizardTitle = widget.title ?? 'Reconfigure Tunnel';
+        _steps = [
+          WizardStep(
+            title: 'Current Configuration',
+            description: 'Review your current tunnel settings',
+            icon: Icons.settings,
+          ),
+          WizardStep(
+            title: 'Update Settings',
+            description: 'Modify tunnel configuration',
+            icon: Icons.edit,
+          ),
+          WizardStep(
+            title: 'Test Changes',
+            description: 'Verify updated configuration',
+            icon: Icons.network_check,
+          ),
+          WizardStep(
+            title: 'Apply Changes',
+            description: 'Save and apply new configuration',
+            icon: Icons.save,
+          ),
+        ];
+        break;
+      case TunnelWizardMode.troubleshoot:
+        _wizardTitle = widget.title ?? 'Tunnel Troubleshooting';
+        _steps = [
+          WizardStep(
+            title: 'Diagnose Issue',
+            description: 'Identify connection problems',
+            icon: Icons.search,
+          ),
+          WizardStep(
+            title: 'Test Components',
+            description: 'Check individual system components',
+            icon: Icons.build,
+          ),
+          WizardStep(
+            title: 'Apply Fixes',
+            description: 'Implement recommended solutions',
+            icon: Icons.healing,
+          ),
+          WizardStep(
+            title: 'Verify Resolution',
+            description: 'Confirm issues are resolved',
+            icon: Icons.check_circle,
+          ),
+        ];
+        break;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -87,26 +169,40 @@ class _TunnelConnectionWizardState extends State<TunnelConnectionWizard> {
   }
 
   Widget _buildHeader() {
+    IconData headerIcon;
+    String subtitle;
+
+    switch (widget.mode) {
+      case TunnelWizardMode.firstTime:
+        headerIcon = Icons.settings_ethernet;
+        subtitle = 'Configure your CloudToLocalLLM tunnel connection';
+        break;
+      case TunnelWizardMode.reconfigure:
+        headerIcon = Icons.edit;
+        subtitle = 'Update your existing tunnel configuration';
+        break;
+      case TunnelWizardMode.troubleshoot:
+        headerIcon = Icons.build;
+        subtitle = 'Diagnose and fix tunnel connection issues';
+        break;
+    }
+
     return Row(
       children: [
-        Icon(
-          Icons.settings_ethernet,
-          size: 32,
-          color: Theme.of(context).primaryColor,
-        ),
+        Icon(headerIcon, size: 32, color: Theme.of(context).primaryColor),
         const SizedBox(width: 16),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Tunnel Connection Setup',
+                _wizardTitle,
                 style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                   fontWeight: FontWeight.bold,
                 ),
               ),
               Text(
-                'Configure your CloudToLocalLLM tunnel connection',
+                subtitle,
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: Theme.of(context).textTheme.bodySmall?.color,
                 ),

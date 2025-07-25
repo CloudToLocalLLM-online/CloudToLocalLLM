@@ -18,6 +18,7 @@ import 'services/native_tray_service.dart';
 import 'services/window_manager_service.dart';
 import 'services/desktop_client_detection_service.dart';
 import 'services/setup_wizard_service.dart';
+import 'services/web_download_prompt_service.dart';
 import 'services/user_container_service.dart';
 import 'services/admin_service.dart';
 import 'services/admin_data_flush_service.dart';
@@ -216,7 +217,7 @@ class _CloudToLocalLLMAppState extends State<CloudToLocalLLMApp> {
           },
         ),
 
-        // Setup wizard service (web platform only)
+        // Setup wizard service (desktop platform only)
         ChangeNotifierProvider(
           create: (context) {
             final authService = context.read<AuthService>();
@@ -227,6 +228,22 @@ class _CloudToLocalLLMAppState extends State<CloudToLocalLLMApp> {
               clientDetectionService: clientDetection,
             );
             return setupWizard;
+          },
+        ),
+
+        // Web download prompt service (web platform only)
+        ChangeNotifierProvider(
+          create: (context) {
+            final authService = context.read<AuthService>();
+            final clientDetection = context
+                .read<DesktopClientDetectionService>();
+            final webDownloadPrompt = WebDownloadPromptService(
+              authService: authService,
+              clientDetectionService: clientDetection,
+            );
+            // Initialize the service asynchronously
+            webDownloadPrompt.initialize();
+            return webDownloadPrompt;
           },
         ),
 

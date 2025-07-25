@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
@@ -9,11 +10,13 @@ import '../services/auth_service.dart';
 import '../services/streaming_chat_service.dart';
 import '../services/connection_manager_service.dart';
 import '../services/setup_wizard_service.dart';
+import '../services/web_download_prompt_service.dart';
 import '../components/conversation_list.dart';
 import '../components/message_bubble.dart';
 import '../components/message_input.dart';
 import '../components/app_logo.dart';
 import '../components/setup_wizard.dart';
+import '../components/web_download_prompt.dart';
 
 /// Modern ChatGPT-like chat interface
 class HomeScreen extends StatefulWidget {
@@ -115,25 +118,44 @@ class _HomeScreenState extends State<HomeScreen> {
             ],
           ),
 
-          // Setup wizard overlay (web platform only)
-          Consumer<SetupWizardService>(
-            builder: (context, setupWizard, child) {
-              if (!setupWizard.shouldShowWizard) {
-                return const SizedBox.shrink();
-              }
+          // Platform-specific overlays
+          if (kIsWeb)
+            // Web download prompt (web platform only)
+            Consumer<WebDownloadPromptService>(
+              builder: (context, webDownloadPrompt, child) {
+                if (!webDownloadPrompt.shouldShowPrompt) {
+                  return const SizedBox.shrink();
+                }
 
-              return SetupWizard(
-                isFirstTimeUser: setupWizard.isFirstTimeUser,
-                onDismiss: () {
-                  setupWizard.markWizardSeen();
-                  setupWizard.hideWizard();
-                },
-                onComplete: () {
-                  setupWizard.markSetupCompleted();
-                },
-              );
-            },
-          ),
+                return WebDownloadPrompt(
+                  isFirstTimeUser: webDownloadPrompt.isFirstTimeUser,
+                  onDismiss: () {
+                    webDownloadPrompt.markPromptSeen();
+                    webDownloadPrompt.hidePrompt();
+                  },
+                );
+              },
+            )
+          else
+            // Setup wizard overlay (desktop platform only)
+            Consumer<SetupWizardService>(
+              builder: (context, setupWizard, child) {
+                if (!setupWizard.shouldShowWizard) {
+                  return const SizedBox.shrink();
+                }
+
+                return SetupWizard(
+                  isFirstTimeUser: setupWizard.isFirstTimeUser,
+                  onDismiss: () {
+                    setupWizard.markWizardSeen();
+                    setupWizard.hideWizard();
+                  },
+                  onComplete: () {
+                    setupWizard.markSetupCompleted();
+                  },
+                );
+              },
+            ),
         ],
       ),
       floatingActionButton: isMobile && _isSidebarCollapsed

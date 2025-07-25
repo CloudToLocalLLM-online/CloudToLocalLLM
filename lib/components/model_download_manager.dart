@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../config/theme.dart';
@@ -127,8 +128,8 @@ class _ModelDownloadManagerState extends State<ModelDownloadManager> {
             _buildSearchAndFilter(),
             const SizedBox(height: 16),
 
-            // Connection status
-            _buildConnectionStatus(ollamaService),
+            // Connection configuration and status
+            _buildConnectionConfiguration(ollamaService),
             const SizedBox(height: 16),
 
             // Installed models section
@@ -232,35 +233,40 @@ class _ModelDownloadManagerState extends State<ModelDownloadManager> {
     );
   }
 
-  Widget _buildConnectionStatus(OllamaService ollamaService) {
+  Widget _buildConnectionConfiguration(OllamaService ollamaService) {
     return ModernCard(
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(
-            ollamaService.isConnected ? Icons.check_circle : Icons.error,
-            color: ollamaService.isConnected ? Colors.green : Colors.red,
+          // Header
+          Row(
+            children: [
+              Icon(Icons.settings_ethernet, color: AppTheme.accentColor),
+              const SizedBox(width: 8),
+              Text(
+                'Ollama Connection',
+                style: Theme.of(
+                  context,
+                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+              ),
+            ],
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  ollamaService.isConnected
-                      ? 'Connected to Ollama'
-                      : 'Not connected to Ollama',
-                  style: const TextStyle(fontWeight: FontWeight.bold),
-                ),
-                if (ollamaService.error != null)
-                  Text(
-                    ollamaService.error!,
-                    style: TextStyle(color: Colors.red, fontSize: 12),
-                  ),
-              ],
-            ),
-          ),
-          if (!ollamaService.isConnected)
-            ElevatedButton.icon(
+          const SizedBox(height: 16),
+
+          // Connection status
+          _buildConnectionStatusRow(ollamaService),
+          const SizedBox(height: 16),
+
+          // Connection settings (desktop only)
+          if (!kIsWeb) ...[
+            _buildConnectionSettings(),
+            const SizedBox(height: 16),
+          ],
+
+          // Connection test button
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
               onPressed: ollamaService.isLoading
                   ? null
                   : () => ollamaService.testConnection(),
@@ -271,10 +277,117 @@ class _ModelDownloadManagerState extends State<ModelDownloadManager> {
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
                   : const Icon(Icons.refresh),
-              label: Text(ollamaService.isLoading ? 'Connecting...' : 'Retry'),
+              label: Text(
+                ollamaService.isLoading ? 'Testing...' : 'Test Connection',
+              ),
             ),
+          ),
         ],
       ),
+    );
+  }
+
+  Widget _buildConnectionStatusRow(OllamaService ollamaService) {
+    return Row(
+      children: [
+        Icon(
+          ollamaService.isConnected ? Icons.check_circle : Icons.error,
+          color: ollamaService.isConnected ? Colors.green : Colors.red,
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                ollamaService.isConnected
+                    ? 'Connected to Ollama'
+                    : 'Not connected to Ollama',
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+              if (ollamaService.error != null)
+                Text(
+                  ollamaService.error!,
+                  style: TextStyle(color: Colors.red, fontSize: 12),
+                ),
+            ],
+          ),
+        ),
+        if (ollamaService.isConnected) ...[
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: Colors.green.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.green.withValues(alpha: 0.3)),
+            ),
+            child: Text(
+              'Ready',
+              style: TextStyle(
+                color: Colors.green,
+                fontWeight: FontWeight.w500,
+                fontSize: 12,
+              ),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildConnectionSettings() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Connection Settings',
+          style: Theme.of(
+            context,
+          ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 12),
+
+        // Host address field
+        TextFormField(
+          initialValue: 'localhost',
+          decoration: const InputDecoration(
+            labelText: 'Host Address',
+            hintText: 'localhost',
+            border: OutlineInputBorder(),
+            isDense: true,
+          ),
+          onChanged: (value) {
+            // TODO: Save host address to settings
+          },
+        ),
+        const SizedBox(height: 12),
+
+        // Port field
+        TextFormField(
+          initialValue: '11434',
+          decoration: const InputDecoration(
+            labelText: 'Port',
+            hintText: '11434',
+            border: OutlineInputBorder(),
+            isDense: true,
+          ),
+          keyboardType: TextInputType.number,
+          onChanged: (value) {
+            // TODO: Save port to settings
+          },
+        ),
+        const SizedBox(height: 12),
+
+        // Info text
+        Text(
+          'Configure the connection to your local Ollama instance. Default settings work for most installations.',
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+            color: Theme.of(
+              context,
+            ).colorScheme.onSurface.withValues(alpha: 0.6),
+          ),
+        ),
+      ],
     );
   }
 

@@ -6,6 +6,8 @@ import 'package:url_launcher/url_launcher.dart';
 import '../config/app_config.dart';
 import '../config/theme.dart';
 import '../services/desktop_client_detection_service.dart';
+import '../services/simple_tunnel_client.dart';
+import 'tunnel_connection_wizard.dart';
 
 /// Prominent banner component that appears when no desktop client is connected
 ///
@@ -152,9 +154,11 @@ class DesktopClientPrompt extends StatelessWidget {
             SizedBox(height: AppTheme.spacingM),
 
             // Action buttons
-            Row(
+            Column(
               children: [
-                Expanded(
+                // Primary action - Download Desktop Client
+                SizedBox(
+                  width: double.infinity,
                   child: ElevatedButton.icon(
                     onPressed: () {
                       _launchGitHubReleases();
@@ -173,25 +177,52 @@ class DesktopClientPrompt extends StatelessWidget {
                     ),
                   ),
                 ),
-                SizedBox(width: AppTheme.spacingM),
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: () {
-                      context.go('/settings');
-                    },
-                    icon: const Icon(Icons.settings),
-                    label: const Text('View Settings'),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: AppTheme.primaryColor,
-                      side: BorderSide(color: AppTheme.primaryColor),
-                      padding: EdgeInsets.all(AppTheme.spacingM),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(
-                          AppTheme.borderRadiusM,
+
+                SizedBox(height: AppTheme.spacingS),
+
+                // Secondary actions row
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: () {
+                          _showTunnelWizard(context);
+                        },
+                        icon: const Icon(Icons.settings_ethernet),
+                        label: const Text('Setup Tunnel'),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: AppTheme.primaryColor,
+                          side: BorderSide(color: AppTheme.primaryColor),
+                          padding: EdgeInsets.all(AppTheme.spacingS),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(
+                              AppTheme.borderRadiusM,
+                            ),
+                          ),
                         ),
                       ),
                     ),
-                  ),
+                    SizedBox(width: AppTheme.spacingS),
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: () {
+                          context.go('/settings/tunnels');
+                        },
+                        icon: const Icon(Icons.help_outline),
+                        label: const Text('Help'),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: AppTheme.textColor,
+                          side: BorderSide(color: AppTheme.textColorLight),
+                          padding: EdgeInsets.all(AppTheme.spacingS),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(
+                              AppTheme.borderRadiusM,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -243,22 +274,48 @@ class DesktopClientPrompt extends StatelessWidget {
               ),
             ),
             SizedBox(width: AppTheme.spacingM),
-            ElevatedButton(
-              onPressed: () {
-                _launchGitHubReleases();
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.primaryColor,
-                foregroundColor: Colors.white,
-                padding: EdgeInsets.symmetric(
-                  horizontal: AppTheme.spacingM,
-                  vertical: AppTheme.spacingS,
+            Row(
+              children: [
+                ElevatedButton(
+                  onPressed: () {
+                    _launchGitHubReleases();
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.primaryColor,
+                    foregroundColor: Colors.white,
+                    padding: EdgeInsets.symmetric(
+                      horizontal: AppTheme.spacingS,
+                      vertical: AppTheme.spacingS,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(
+                        AppTheme.borderRadiusS,
+                      ),
+                    ),
+                  ),
+                  child: const Text('Download'),
                 ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(AppTheme.borderRadiusS),
+                SizedBox(width: AppTheme.spacingS),
+                OutlinedButton(
+                  onPressed: () {
+                    _showTunnelWizard(context);
+                  },
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppTheme.primaryColor,
+                    side: BorderSide(color: AppTheme.primaryColor),
+                    padding: EdgeInsets.symmetric(
+                      horizontal: AppTheme.spacingS,
+                      vertical: AppTheme.spacingS,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(
+                        AppTheme.borderRadiusS,
+                      ),
+                    ),
+                  ),
+                  child: const Text('Setup'),
                 ),
-              ),
-              child: const Text('Download'),
+              ],
             ),
             if (onDismiss != null) ...[
               SizedBox(width: AppTheme.spacingS),
@@ -288,6 +345,30 @@ class DesktopClientPrompt extends StatelessWidget {
       // Note: This requires a BuildContext, so we'll handle it in the UI
       debugPrint('Failed to launch GitHub releases: $e');
     }
+  }
+
+  // Helper method to show tunnel setup wizard
+  void _showTunnelWizard(BuildContext context) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => TunnelConnectionWizard(
+        mode: TunnelWizardMode.firstTime,
+        title: 'Setup Tunnel Connection',
+        onComplete: () {
+          Navigator.of(context).pop();
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Tunnel connection configured successfully!'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        },
+        onCancel: () {
+          Navigator.of(context).pop();
+        },
+      ),
+    );
   }
 }
 

@@ -545,6 +545,10 @@ class _UnifiedSettingsScreenState extends State<UnifiedSettingsScreen> {
 
           return Column(
             children: [
+              // Prominent Tunnel Status Summary
+              _buildTunnelStatusSummaryCard(simpleTunnelClient, needsSetup),
+              SizedBox(height: AppTheme.spacingM),
+
               // Compact info about the tunnel service
               _buildCompactTunnelInfoCard(),
               SizedBox(height: AppTheme.spacingS),
@@ -1061,6 +1065,122 @@ class _UnifiedSettingsScreenState extends State<UnifiedSettingsScreen> {
                     : 'Secure tunnel allowing web access to your local Ollama instance',
                 style: TextStyle(color: AppTheme.textColorLight, fontSize: 12),
               ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // Prominent Tunnel Status Summary Card
+  Widget _buildTunnelStatusSummaryCard(
+    SimpleTunnelClient tunnelClient,
+    bool needsSetup,
+  ) {
+    final isConnected = tunnelClient.isConnected;
+    final isConnecting = tunnelClient.isConnecting;
+    final error = tunnelClient.lastError;
+
+    Color statusColor;
+    IconData statusIcon;
+    String statusText;
+    String statusDescription;
+
+    if (isConnected) {
+      statusColor = Colors.green;
+      statusIcon = Icons.check_circle;
+      statusText = 'Tunnel Connected';
+      statusDescription =
+          'Your tunnel is active and ready for secure communication';
+    } else if (isConnecting) {
+      statusColor = Colors.orange;
+      statusIcon = Icons.sync;
+      statusText = 'Connecting...';
+      statusDescription = 'Establishing tunnel connection';
+    } else if (error != null) {
+      statusColor = Colors.red;
+      statusIcon = Icons.error;
+      statusText = 'Connection Error';
+      statusDescription = 'Tunnel connection failed: $error';
+    } else if (needsSetup) {
+      statusColor = Colors.orange;
+      statusIcon = Icons.settings_ethernet;
+      statusText = 'Setup Required';
+      statusDescription = 'Configure your tunnel connection to get started';
+    } else {
+      statusColor = Colors.red;
+      statusIcon = Icons.cloud_off;
+      statusText = 'Disconnected';
+      statusDescription = 'Tunnel is not connected';
+    }
+
+    return ModernCard(
+      child: Container(
+        padding: EdgeInsets.all(AppTheme.spacingM),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              statusColor.withValues(alpha: 0.1),
+              statusColor.withValues(alpha: 0.05),
+            ],
+          ),
+          border: Border.all(color: statusColor.withValues(alpha: 0.3)),
+          borderRadius: BorderRadius.circular(AppTheme.borderRadiusM),
+        ),
+        child: Column(
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: EdgeInsets.all(AppTheme.spacingS),
+                  decoration: BoxDecoration(
+                    color: statusColor.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(AppTheme.borderRadiusS),
+                  ),
+                  child: Icon(statusIcon, color: statusColor, size: 24),
+                ),
+                SizedBox(width: AppTheme.spacingM),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        statusText,
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: statusColor,
+                            ),
+                      ),
+                      SizedBox(height: AppTheme.spacingXS),
+                      Text(
+                        statusDescription,
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: AppTheme.textColorLight,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                // Quick action button
+                if (needsSetup || !isConnected) ...[
+                  ElevatedButton.icon(
+                    onPressed: _showTunnelWizard,
+                    icon: Icon(needsSetup ? Icons.play_arrow : Icons.refresh),
+                    label: Text(needsSetup ? 'Setup' : 'Reconnect'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: statusColor,
+                      foregroundColor: Colors.white,
+                      padding: EdgeInsets.symmetric(
+                        horizontal: AppTheme.spacingM,
+                        vertical: AppTheme.spacingS,
+                      ),
+                    ),
+                  ),
+                ],
+              ],
             ),
           ],
         ),
