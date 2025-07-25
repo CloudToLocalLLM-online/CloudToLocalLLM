@@ -571,7 +571,7 @@ if (-not $SkipBuild -and -not $DryRun) {
 Write-Host ""
 Write-Host "=== STEP 5: VPS DEPLOYMENT ===" -ForegroundColor Yellow
 
-$deploymentCommand = "cd $VPSProjectPath && git reset --hard HEAD && git clean -fd -e certbot/ && git pull origin master && /opt/flutter/bin/flutter clean && /opt/flutter/bin/flutter pub get && /opt/flutter/bin/flutter build web && docker compose restart webapp && sleep 10 && curl -k -f https://app.cloudtolocalllm.online"
+$deploymentCommand = "cd $VPSProjectPath && git reset --hard HEAD && git clean -fd -e certbot/ && git pull origin master && /opt/flutter/bin/flutter clean && /opt/flutter/bin/flutter pub get && /opt/flutter/bin/flutter build web && docker compose up -d --build api-backend && docker compose restart webapp && sleep 10 && curl -k -f https://app.cloudtolocalllm.online"
 
 if ($DryRun) {
     Write-Host "[DRY RUN] Would execute: ssh $VPSUser@$VPSHost `"$deploymentCommand`""
