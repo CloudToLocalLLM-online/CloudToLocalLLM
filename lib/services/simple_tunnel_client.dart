@@ -55,7 +55,7 @@ class TunnelConfig {
   /// Create default configuration
   factory TunnelConfig.defaultConfig() {
     return const TunnelConfig(
-      cloudProxyUrl: 'wss://api.cloudtolocalllm.online',
+      cloudProxyUrl: 'wss://app.cloudtolocalllm.online/api',
       localOllamaUrl: 'http://localhost:11434',
       enableCloudProxy: true,
       connectionTimeout: 10,

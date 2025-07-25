@@ -44,7 +44,7 @@ class UserContainerService extends ChangeNotifier {
     if (kDebugMode) {
       return 'http://localhost:8080';
     } else {
-      return 'https://api.cloudtolocalllm.online';
+      return 'https://app.cloudtolocalllm.online/api';
     }
   }
 

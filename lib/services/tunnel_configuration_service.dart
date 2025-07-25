@@ -7,7 +7,6 @@ import '../models/tunnel_validation_result.dart';
 import '../services/auth_service.dart';
 import '../services/simple_tunnel_client.dart' show SimpleTunnelClient;
 
-
 /// Service for tunnel configuration and connection setup during first-time wizard
 ///
 /// This service helps users establish and validate tunnel connections between
@@ -22,7 +21,7 @@ class TunnelConfigurationService extends ChangeNotifier {
   bool _isConfiguring = false;
   bool _isTestingConnection = false;
   String? _lastError;
-  
+
   // Connection monitoring
   Timer? _connectionMonitor;
   bool _isMonitoring = false;
@@ -49,7 +48,7 @@ class TunnelConfigurationService extends ChangeNotifier {
     if (kDebugMode) {
       return 'http://localhost:8080';
     } else {
-      return 'https://api.cloudtolocalllm.online';
+      return 'https://app.cloudtolocalllm.online/api';
     }
   }
 
@@ -57,7 +56,9 @@ class TunnelConfigurationService extends ChangeNotifier {
   ///
   /// Creates a complete tunnel configuration with authentication details,
   /// connection parameters, and platform-specific settings.
-  Future<setup_config.SetupTunnelConfig> generateTunnelConfig(String userId) async {
+  Future<setup_config.SetupTunnelConfig> generateTunnelConfig(
+    String userId,
+  ) async {
     if (!_authService.isAuthenticated.value) {
       throw Exception('User not authenticated');
     }
@@ -67,7 +68,9 @@ class TunnelConfigurationService extends ChangeNotifier {
     notifyListeners();
 
     try {
-      debugPrint('🔧 [TunnelConfig] Generating tunnel configuration for user: $userId');
+      debugPrint(
+        '🔧 [TunnelConfig] Generating tunnel configuration for user: $userId',
+      );
 
       final token = await _authService.getValidatedAccessToken();
       if (token == null) {
@@ -108,7 +111,9 @@ class TunnelConfigurationService extends ChangeNotifier {
   /// - Authentication validation
   /// - Basic communication test
   /// - Latency measurement
-  Future<TunnelValidationResult> testTunnelConnection(setup_config.SetupTunnelConfig config) async {
+  Future<TunnelValidationResult> testTunnelConnection(
+    setup_config.SetupTunnelConfig config,
+  ) async {
     _isTestingConnection = true;
     _lastError = null;
     notifyListeners();
@@ -146,8 +151,10 @@ class TunnelConfigurationService extends ChangeNotifier {
       }
 
       final duration = DateTime.now().difference(startTime);
-      
-      debugPrint('🔧 [TunnelConfig] Tunnel connection test completed successfully in ${duration.inMilliseconds}ms');
+
+      debugPrint(
+        '🔧 [TunnelConfig] Tunnel connection test completed successfully in ${duration.inMilliseconds}ms',
+      );
 
       return TunnelValidationResult.success(
         'Tunnel connection established successfully',
@@ -157,7 +164,7 @@ class TunnelConfigurationService extends ChangeNotifier {
     } catch (e) {
       _lastError = 'Tunnel connection test failed: ${e.toString()}';
       debugPrint('🔧 [TunnelConfig] Error testing tunnel connection: $e');
-      
+
       return TunnelValidationResult.failure(
         'Unexpected error during connection test: ${e.toString()}',
       );
@@ -173,33 +180,43 @@ class TunnelConfigurationService extends ChangeNotifier {
   /// through the tunnel.
   Future<bool> validateDesktopClientConnection(String userId) async {
     try {
-      debugPrint('🔧 [TunnelConfig] Validating desktop client connection for user: $userId');
+      debugPrint(
+        '🔧 [TunnelConfig] Validating desktop client connection for user: $userId',
+      );
 
       final token = await _authService.getValidatedAccessToken();
       if (token == null) {
         throw Exception('Failed to get valid access token');
       }
 
-      final response = await http.get(
-        Uri.parse('$_baseUrl/api/tunnel/status'),
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Content-Type': 'application/json',
-        },
-      ).timeout(const Duration(seconds: 10));
+      final response = await http
+          .get(
+            Uri.parse('$_baseUrl/api/tunnel/status'),
+            headers: {
+              'Authorization': 'Bearer $token',
+              'Content-Type': 'application/json',
+            },
+          )
+          .timeout(const Duration(seconds: 10));
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body) as Map<String, dynamic>;
         final isConnected = data['connected'] == true;
-        
-        debugPrint('🔧 [TunnelConfig] Desktop client connection status: $isConnected');
+
+        debugPrint(
+          '🔧 [TunnelConfig] Desktop client connection status: $isConnected',
+        );
         return isConnected;
       } else {
-        debugPrint('🔧 [TunnelConfig] Failed to check desktop client status: ${response.statusCode}');
+        debugPrint(
+          '🔧 [TunnelConfig] Failed to check desktop client status: ${response.statusCode}',
+        );
         return false;
       }
     } catch (e) {
-      debugPrint('🔧 [TunnelConfig] Error validating desktop client connection: $e');
+      debugPrint(
+        '🔧 [TunnelConfig] Error validating desktop client connection: $e',
+      );
       return false;
     }
   }
@@ -209,7 +226,9 @@ class TunnelConfigurationService extends ChangeNotifier {
   /// Provides context-sensitive troubleshooting guidance based on the
   /// type of connection error encountered.
   Future<List<String>> getTroubleshootingSteps(String errorType) async {
-    debugPrint('🔧 [TunnelConfig] Getting troubleshooting steps for error: $errorType');
+    debugPrint(
+      '🔧 [TunnelConfig] Getting troubleshooting steps for error: $errorType',
+    );
 
     switch (errorType.toLowerCase()) {
       case 'websocket_connection_failed':
@@ -275,7 +294,9 @@ class TunnelConfigurationService extends ChangeNotifier {
     _isMonitoring = true;
     debugPrint('🔧 [TunnelConfig] Starting connection monitoring');
 
-    _connectionMonitor = Timer.periodic(const Duration(seconds: 5), (timer) async {
+    _connectionMonitor = Timer.periodic(const Duration(seconds: 5), (
+      timer,
+    ) async {
       await _updateConnectionStatus();
     });
 
@@ -291,7 +312,7 @@ class TunnelConfigurationService extends ChangeNotifier {
     _isMonitoring = false;
     _connectionMonitor?.cancel();
     _connectionMonitor = null;
-    
+
     debugPrint('🔧 [TunnelConfig] Stopped connection monitoring');
     notifyListeners();
   }
@@ -311,7 +332,9 @@ class TunnelConfigurationService extends ChangeNotifier {
         'desktopClientConnected': isDesktopConnected,
         'tunnelConnected': tunnelStatus,
         'lastUpdate': DateTime.now().toIso8601String(),
-        'overallStatus': isDesktopConnected && tunnelStatus ? 'connected' : 'disconnected',
+        'overallStatus': isDesktopConnected && tunnelStatus
+            ? 'connected'
+            : 'disconnected',
       };
 
       notifyListeners();
@@ -321,7 +344,9 @@ class TunnelConfigurationService extends ChangeNotifier {
   }
 
   /// Test WebSocket connectivity
-  Future<ValidationTest> _testWebSocketConnectivity(setup_config.SetupTunnelConfig config) async {
+  Future<ValidationTest> _testWebSocketConnectivity(
+    setup_config.SetupTunnelConfig config,
+  ) async {
     // Implementation would test WebSocket connection
     // For now, return a mock result
     await Future.delayed(const Duration(milliseconds: 500));
@@ -333,7 +358,9 @@ class TunnelConfigurationService extends ChangeNotifier {
   }
 
   /// Test authentication
-  Future<ValidationTest> _testAuthentication(setup_config.SetupTunnelConfig config) async {
+  Future<ValidationTest> _testAuthentication(
+    setup_config.SetupTunnelConfig config,
+  ) async {
     // Implementation would test authentication
     await Future.delayed(const Duration(milliseconds: 300));
     return ValidationTest(
@@ -344,7 +371,9 @@ class TunnelConfigurationService extends ChangeNotifier {
   }
 
   /// Test basic communication
-  Future<ValidationTest> _testBasicCommunication(setup_config.SetupTunnelConfig config) async {
+  Future<ValidationTest> _testBasicCommunication(
+    setup_config.SetupTunnelConfig config,
+  ) async {
     // Implementation would test basic communication
     await Future.delayed(const Duration(milliseconds: 400));
     return ValidationTest(

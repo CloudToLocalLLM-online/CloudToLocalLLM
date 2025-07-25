@@ -36,7 +36,7 @@ class SetupTunnelConfig {
   }) {
     return SetupTunnelConfig(
       userId: userId,
-      cloudProxyUrl: 'wss://api.cloudtolocalllm.online/ws/tunnel',
+      cloudProxyUrl: 'wss://app.cloudtolocalllm.online/api/ws/tunnel',
       localOllamaUrl: 'http://localhost:11434',
       authToken: authToken,
       enableCloudProxy: true,
@@ -134,17 +134,18 @@ class SetupTunnelConfig {
 
   /// Get WebSocket URL for connection
   String get webSocketUrl {
-    if (cloudProxyUrl.startsWith('ws://') || cloudProxyUrl.startsWith('wss://')) {
+    if (cloudProxyUrl.startsWith('ws://') ||
+        cloudProxyUrl.startsWith('wss://')) {
       return cloudProxyUrl;
     }
-    
+
     // Convert HTTP(S) URL to WebSocket URL
     if (cloudProxyUrl.startsWith('https://')) {
       return cloudProxyUrl.replaceFirst('https://', 'wss://');
     } else if (cloudProxyUrl.startsWith('http://')) {
       return cloudProxyUrl.replaceFirst('http://', 'ws://');
     }
-    
+
     return cloudProxyUrl;
   }
 
@@ -165,13 +166,13 @@ class SetupTunnelConfig {
   /// Validate configuration
   bool get isValid {
     return userId.isNotEmpty &&
-           cloudProxyUrl.isNotEmpty &&
-           localOllamaUrl.isNotEmpty &&
-           authToken.isNotEmpty &&
-           connectionTimeout > 0 &&
-           healthCheckInterval > 0 &&
-           retryAttempts >= 0 &&
-           retryDelay >= 0;
+        cloudProxyUrl.isNotEmpty &&
+        localOllamaUrl.isNotEmpty &&
+        authToken.isNotEmpty &&
+        connectionTimeout > 0 &&
+        healthCheckInterval > 0 &&
+        retryAttempts >= 0 &&
+        retryDelay >= 0;
   }
 
   /// Get configuration summary for debugging
@@ -194,25 +195,25 @@ class SetupTunnelConfig {
   @override
   String toString() {
     return 'SetupTunnelConfig(userId: $userId, cloudProxyUrl: $cloudProxyUrl, '
-           'localOllamaUrl: $localOllamaUrl, enableCloudProxy: $enableCloudProxy, '
-           'connectionTimeout: ${connectionTimeout}s, healthCheckInterval: ${healthCheckInterval}s, '
-           'retryAttempts: $retryAttempts, retryDelay: ${retryDelay}s, isValid: $isValid)';
+        'localOllamaUrl: $localOllamaUrl, enableCloudProxy: $enableCloudProxy, '
+        'connectionTimeout: ${connectionTimeout}s, healthCheckInterval: ${healthCheckInterval}s, '
+        'retryAttempts: $retryAttempts, retryDelay: ${retryDelay}s, isValid: $isValid)';
   }
 
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
-    
+
     return other is SetupTunnelConfig &&
-           other.userId == userId &&
-           other.cloudProxyUrl == cloudProxyUrl &&
-           other.localOllamaUrl == localOllamaUrl &&
-           other.authToken == authToken &&
-           other.enableCloudProxy == enableCloudProxy &&
-           other.connectionTimeout == connectionTimeout &&
-           other.healthCheckInterval == healthCheckInterval &&
-           other.retryAttempts == retryAttempts &&
-           other.retryDelay == retryDelay;
+        other.userId == userId &&
+        other.cloudProxyUrl == cloudProxyUrl &&
+        other.localOllamaUrl == localOllamaUrl &&
+        other.authToken == authToken &&
+        other.enableCloudProxy == enableCloudProxy &&
+        other.connectionTimeout == connectionTimeout &&
+        other.healthCheckInterval == healthCheckInterval &&
+        other.retryAttempts == retryAttempts &&
+        other.retryDelay == retryDelay;
   }
 
   @override

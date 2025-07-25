@@ -39,7 +39,7 @@ class AppConfig {
   static const String devModeUser = 'dev@cloudtolocalllm.online';
 
   // API Configuration
-  static const String apiBaseUrl = 'https://api.cloudtolocalllm.online';
+  static const String apiBaseUrl = 'https://app.cloudtolocalllm.online/api';
   static const Duration apiTimeout = Duration(seconds: 30);
 
   // UI Configuration
