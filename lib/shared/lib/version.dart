@@ -1,4 +1,4 @@
-/// CloudToLocalLLM Shared Version Management
+﻿/// CloudToLocalLLM Shared Version Management
 ///
 /// Provides version constants and compatibility checks across all applications
 library;
@@ -9,21 +9,21 @@ import 'package:package_info_plus/package_info_plus.dart';
 class CloudToLocalLLMVersions {
   // Main application version
   static const String mainAppVersion = '3.11.22';
-  static const int mainAppBuildNumber = 202507250739;
+  static const int mainAppBuildNumber = BUILD_TIME_PLACEHOLDER;
 
   // Tunnel manager version (integrated in v3.5.0+)
   static const String tunnelManagerVersion = '3.11.22';
-  static const int tunnelManagerBuildNumber = 202507250739;
+  static const int tunnelManagerBuildNumber = BUILD_TIME_PLACEHOLDER;
 
   // Shared library version
   static const String sharedLibraryVersion = '3.11.22';
-  static const int sharedLibraryBuildNumber = 202507250739;
+  static const int sharedLibraryBuildNumber = BUILD_TIME_PLACEHOLDER;
 
   // Tray daemon version (deprecated - now integrated)
   static const String trayDaemonVersion = 'deprecated';
 
   // Build timestamp (updated during build process)
-  static const String buildTimestamp = '2025-07-25T11:39:45Z';
+  static const String buildTimestamp = '2025-07-25T14:56:11Z';
 
   // Git commit hash (updated during build process)
   static const String gitCommitHash = 'production-v3.10.1';
