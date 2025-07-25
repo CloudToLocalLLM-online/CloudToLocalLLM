@@ -318,26 +318,31 @@ if (-not $SkipBuild) {
 Write-Host ""
 Write-Host "=== STEP 3.6: GITHUB RELEASE CREATION ===" -ForegroundColor Yellow
 
-if (-not $SkipBuild) {
-    # Check if new desktop application packages were built
-    $distPath = Join-Path $ProjectRoot "dist"
-    $hasNewPackages = $false
+# Always check for GitHub release creation, regardless of build status
+# This allows creating releases for existing packages or when build was skipped
+$distPath = Join-Path $ProjectRoot "dist"
+$currentVersion = & $versionManagerPath get-semantic
+$releaseTag = "v$currentVersion"
 
-    if (Test-Path $distPath) {
-        $windowsPackage = Get-ChildItem -Path $distPath -Filter "cloudtolocalllm-windows-v*.zip" | Sort-Object LastWriteTime -Descending | Select-Object -First 1
-        if ($windowsPackage -and $windowsPackage.LastWriteTime -gt (Get-Date).AddHours(-1)) {
-            $hasNewPackages = $true
+# Check if desktop application packages exist for current version
+$hasPackagesForCurrentVersion = $false
+if (Test-Path $distPath) {
+    $versionPattern = "*$currentVersion*"
+    $packageFiles = Get-ChildItem -Path $distPath -Filter $versionPattern -Recurse -ErrorAction SilentlyContinue
+    if ($packageFiles.Count -gt 0) {
+        $hasPackagesForCurrentVersion = $true
+        Write-Host "Found $($packageFiles.Count) package(s) for version $currentVersion"
+        foreach ($package in $packageFiles) {
+            Write-Host "  - $($package.Name)"
         }
     }
+}
 
-    if ($hasNewPackages) {
-        Write-Host "New desktop application packages detected, creating GitHub release..."
+if ($hasPackagesForCurrentVersion) {
+        Write-Host "Desktop application packages found for version $currentVersion, checking GitHub release..."
 
         if (-not $DryRun) {
             try {
-                # Get current version
-                $currentVersion = & $versionManagerPath get-semantic
-                $releaseTag = "v$currentVersion"
 
                 # Check if GitHub CLI is available and authenticated
                 $ghAvailable = $false
@@ -430,24 +435,29 @@ Works seamlessly with https://app.cloudtolocalllm.online
 
                         # Find desktop application packages to attach
                         $assetsToUpload = @()
-                        if ($windowsPackage) {
-                            $assetsToUpload += $windowsPackage.FullName
-                        }
 
-                        # Find Windows installer files matching current version only
-                        $versionPattern = "CloudToLocalLLM-Windows-$currentVersion-Setup.exe"
-                        $installerFiles = Get-ChildItem -Path $distPath -Filter $versionPattern -Recurse -ErrorAction SilentlyContinue
-                        foreach ($installer in $installerFiles) {
-                            $assetsToUpload += $installer.FullName
-                            Write-Host "Found installer asset: $($installer.Name)"
-                        }
-
-                        # Also look for ZIP packages matching current version
+                        # Find Windows ZIP packages matching current version
                         $zipPattern = "cloudtolocalllm-windows-v$currentVersion.zip"
                         $zipFiles = Get-ChildItem -Path $distPath -Filter $zipPattern -Recurse -ErrorAction SilentlyContinue
                         foreach ($zipFile in $zipFiles) {
                             $assetsToUpload += $zipFile.FullName
                             Write-Host "Found ZIP asset: $($zipFile.Name)"
+                        }
+
+                        # Find Windows installer files matching current version
+                        $installerPattern = "CloudToLocalLLM-Windows-$currentVersion-Setup.exe"
+                        $installerFiles = Get-ChildItem -Path $distPath -Filter $installerPattern -Recurse -ErrorAction SilentlyContinue
+                        foreach ($installer in $installerFiles) {
+                            $assetsToUpload += $installer.FullName
+                            Write-Host "Found installer asset: $($installer.Name)"
+                        }
+
+                        # Find checksum files for installers
+                        $checksumPattern = "CloudToLocalLLM-Windows-$currentVersion-Setup.exe.sha256"
+                        $checksumFiles = Get-ChildItem -Path $distPath -Filter $checksumPattern -Recurse -ErrorAction SilentlyContinue
+                        foreach ($checksum in $checksumFiles) {
+                            $assetsToUpload += $checksum.FullName
+                            Write-Host "Found checksum asset: $($checksum.Name)"
                         }
 
                         # Create GitHub release with assets
@@ -487,14 +497,12 @@ Works seamlessly with https://app.cloudtolocalllm.online
                 Write-Host "   Deployment will continue, but manual release creation may be needed" -ForegroundColor Yellow
             }
         } else {
-            Write-Host "[DRY RUN] Would create GitHub release for new desktop packages"
+            Write-Host "[DRY RUN] Would create GitHub release for desktop packages version $currentVersion"
         }
     } else {
-        Write-Host "✓ No new desktop application packages detected, skipping GitHub release creation"
+        Write-Host "✓ No desktop application packages found for version $currentVersion, skipping GitHub release creation"
+        Write-Host "   To create releases, ensure desktop packages are built first"
     }
-} else {
-    Write-Host "✓ Build skipped, GitHub release creation not needed"
-}
 
 # Step 4: VPS Deployment
 Write-Host ""
