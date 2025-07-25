@@ -24,7 +24,7 @@ OutputBaseFilename=CloudToLocalLLM-Windows-{#MyAppVersion}-AdminSetup
 Compression=lzma
 SolidCompression=yes
 WizardStyle=modern
-ArchitecturesInstallIn64BitMode=x64
+ArchitecturesInstallIn64BitMode=x64compatible
 ; Administrative install message
 SetupMutex=CloudToLocalLLMAdminInstaller
 
