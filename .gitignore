@@ -234,4 +234,7 @@ backups/
 # Git-based distribution tracking - all distribution files now tracked
 # Large executables excluded but compressed archives allowed
 dist/**/cloudtolocalllm-enhanced-tray
+
+# Build backup files created during deployment
+*.build-backup
 dist/**/cloudtolocalllm-settings
