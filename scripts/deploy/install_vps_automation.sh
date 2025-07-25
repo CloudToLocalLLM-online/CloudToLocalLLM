@@ -142,13 +142,25 @@ validate_environment() {
     fi
     
     # Check required commands
-    local required_commands=("git" "flutter" "docker" "docker-compose" "curl" "systemctl")
+    local required_commands=("git" "docker" "curl" "systemctl")
     for cmd in "${required_commands[@]}"; do
         if ! command -v "$cmd" &> /dev/null; then
             log_error "Required command not found: $cmd"
             exit 1
         fi
     done
+
+    # Check Flutter installation
+    if ! /opt/flutter/bin/flutter --version &> /dev/null; then
+        log_error "Flutter not properly installed at /opt/flutter/bin/flutter"
+        exit 1
+    fi
+
+    # Check Docker Compose (v2 syntax)
+    if ! docker compose version &> /dev/null; then
+        log_error "Docker Compose not available (tried 'docker compose')"
+        exit 1
+    fi
     
     # Check Docker daemon
     if ! docker info &> /dev/null; then
