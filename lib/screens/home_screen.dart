@@ -154,51 +154,51 @@ class _HomeScreenState extends State<HomeScreen> {
     return Container(
       padding: EdgeInsets.all(AppTheme.spacingM),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           // Left side: Sidebar toggle + Logo and app name
-          Expanded(
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Sidebar toggle (mobile)
-                if (MediaQuery.of(context).size.width <
-                    AppConfig.mobileBreakpoint)
-                  IconButton(
-                    onPressed: () {
-                      setState(() {
-                        _isSidebarCollapsed = !_isSidebarCollapsed;
-                      });
-                    },
-                    icon: Icon(
-                      _isSidebarCollapsed ? Icons.menu : Icons.menu_open,
-                      color: Colors.white,
-                    ),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Sidebar toggle (mobile)
+              if (MediaQuery.of(context).size.width <
+                  AppConfig.mobileBreakpoint)
+                IconButton(
+                  onPressed: () {
+                    setState(() {
+                      _isSidebarCollapsed = !_isSidebarCollapsed;
+                    });
+                  },
+                  icon: Icon(
+                    _isSidebarCollapsed ? Icons.menu : Icons.menu_open,
+                    color: Colors.white,
                   ),
-
-                // Logo and app name
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const AppLogo.small(
-                      backgroundColor: Colors.white,
-                      textColor: Color(0xFF6e8efb),
-                      borderColor: Color(0xFFa777e3),
-                    ),
-                    SizedBox(width: AppTheme.spacingS),
-                    Text(
-                      AppConfig.appName,
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
                 ),
-              ],
-            ),
+
+              // Logo and app name
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const AppLogo.small(
+                    backgroundColor: Colors.white,
+                    textColor: Color(0xFF6e8efb),
+                    borderColor: Color(0xFFa777e3),
+                  ),
+                  SizedBox(width: AppTheme.spacingS),
+                  Text(
+                    AppConfig.appName,
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ],
           ),
+
+          // Spacer to push right side components to the right
+          const Spacer(),
 
           // Right side: Model selector and user menu
           Row(
