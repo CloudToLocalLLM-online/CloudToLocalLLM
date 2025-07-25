@@ -263,104 +263,79 @@ class _HomeScreenState extends State<HomeScreen> {
 
               SizedBox(width: AppTheme.spacingM),
 
-              // User menu
+              // User menu - Profile picture only
               Consumer<AuthService>(
                 builder: (context, authService, child) {
                   final user = authService.currentUser;
-                  return SizedBox(
-                    width: 180, // Fixed width for consistent layout
-                    child: PopupMenuButton<String>(
-                      onSelected: (value) async {
-                        switch (value) {
-                          case 'settings':
-                            context.go('/settings');
-                            break;
-                          case 'logout':
-                            await authService.logout();
-                            if (context.mounted) {
-                              context.go('/login');
-                            }
-                            break;
-                        }
-                      },
-                      itemBuilder: (context) => [
-                        PopupMenuItem(
-                          value: 'settings',
-                          child: Row(
-                            children: [
-                              const Icon(Icons.settings, size: 18),
-                              SizedBox(width: AppTheme.spacingS),
-                              const Text('Settings'),
-                            ],
-                          ),
-                        ),
-                        const PopupMenuDivider(),
-                        PopupMenuItem(
-                          value: 'logout',
-                          child: Row(
-                            children: [
-                              const Icon(Icons.logout, size: 18),
-                              SizedBox(width: AppTheme.spacingS),
-                              const Text('Sign Out'),
-                            ],
-                          ),
-                        ),
-                      ],
-                      elevation: 8,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(
-                          AppTheme.borderRadiusM,
+                  return PopupMenuButton<String>(
+                    onSelected: (value) async {
+                      switch (value) {
+                        case 'settings':
+                          context.go('/settings');
+                          break;
+                        case 'logout':
+                          await authService.logout();
+                          if (context.mounted) {
+                            context.go('/login');
+                          }
+                          break;
+                      }
+                    },
+                    itemBuilder: (context) => [
+                      PopupMenuItem(
+                        value: 'settings',
+                        child: Row(
+                          children: [
+                            const Icon(Icons.settings, size: 18),
+                            SizedBox(width: AppTheme.spacingS),
+                            const Text('Settings'),
+                          ],
                         ),
                       ),
-                      color: AppTheme.backgroundCard,
-                      shadowColor: AppTheme.primaryColor.withValues(alpha: 0.3),
-                      // Fix dropdown positioning to appear below the button
-                      position: PopupMenuPosition.under,
-                      // Ensure proper offset from the button
-                      offset: const Offset(0, 8),
-                      child: Container(
-                        padding: EdgeInsets.all(AppTheme.spacingS),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.2),
-                          borderRadius: BorderRadius.circular(
-                            AppTheme.borderRadiusS,
-                          ),
-                          border: Border.all(
-                            color: Colors.white.withValues(alpha: 0.3),
-                            width: 1,
-                          ),
-                        ),
+                      const PopupMenuDivider(),
+                      PopupMenuItem(
+                        value: 'logout',
                         child: Row(
-                          mainAxisSize: MainAxisSize.min,
                           children: [
-                            CircleAvatar(
-                              radius: 12,
-                              backgroundColor: AppTheme.primaryColor,
-                              child: Text(
-                                user?.initials ?? '?',
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
+                            const Icon(Icons.logout, size: 18),
                             SizedBox(width: AppTheme.spacingS),
-                            Text(
-                              user?.displayName ?? 'User',
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 14,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                            SizedBox(width: AppTheme.spacingS),
-                            const Icon(
-                              Icons.arrow_drop_down,
-                              color: Colors.white,
-                              size: 18,
-                            ),
+                            const Text('Sign Out'),
                           ],
+                        ),
+                      ),
+                    ],
+                    elevation: 8,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(
+                        AppTheme.borderRadiusM,
+                      ),
+                    ),
+                    color: AppTheme.backgroundCard,
+                    shadowColor: AppTheme.primaryColor.withValues(alpha: 0.3),
+                    position: PopupMenuPosition.under,
+                    offset: const Offset(0, 8),
+                    child: Container(
+                      padding: EdgeInsets.all(AppTheme.spacingXS),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(
+                          20,
+                        ), // Circular button
+                        border: Border.all(
+                          color: Colors.white.withValues(alpha: 0.3),
+                          width: 1,
+                        ),
+                      ),
+                      child: CircleAvatar(
+                        radius: 16, // Slightly larger for better visibility
+                        backgroundColor: AppTheme.primaryColor,
+                        child: Text(
+                          user?.initials ?? '?',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
                     ),
