@@ -1,6 +1,6 @@
 #!/bin/bash
 # CloudToLocalLLM VPS Automation Installation Script
-# Sets up the complete Augment agent-powered VPS deployment system
+# Sets up the complete autonomous VPS deployment system
 # Installs Git monitoring, deployment scripts, and systemd services
 
 set -euo pipefail
@@ -59,10 +59,10 @@ OPTIONS:
     --help              Show this help message
 
 DESCRIPTION:
-    Sets up the complete VPS automation system:
+    Sets up the complete autonomous VPS deployment system:
     1. Validates VPS environment and prerequisites
     2. Sets up deployment scripts and permissions
-    3. Configures Git monitoring system
+    3. Configures autonomous Git monitoring system
     4. Optionally installs systemd service
     5. Tests the deployment pipeline
 
@@ -71,13 +71,13 @@ COMPONENTS INSTALLED:
     - complete_deployment.sh    (Enhanced deployment with rollback)
     - verify_deployment.sh      (Deployment verification)
     - sync_versions.sh          (Version synchronization)
-    - git_monitor.sh           (Augment agent Git monitoring)
+    - git_monitor.sh           (Autonomous Git monitoring)
 
 SYSTEMD SERVICE:
     cloudtolocalllm-git-monitor.service
-    - Monitors Git repository for changes
-    - Automatically triggers deployments
-    - Comprehensive logging and error handling
+    - Autonomous Git repository monitoring
+    - Automatically triggers deployments on new commits
+    - Self-contained with comprehensive logging and error handling
 
 EXAMPLES:
     $0                          # Basic installation

@@ -2,7 +2,7 @@
 
 ## Overview
 
-This guide documents the restored VPS-based deployment methodology for CloudToLocalLLM, featuring Augment agent-powered automation while preserving the proven Windows-to-VPS orchestration model that existed before GitHub Actions.
+This guide documents the restored VPS-based deployment methodology for CloudToLocalLLM, featuring autonomous VPS-based automation while preserving the proven Windows-to-VPS orchestration model that existed before GitHub Actions.
 
 ## Architecture Overview
 
@@ -34,7 +34,7 @@ graph TD
     H -->|Yes| I[Deployment Success]
     H -->|No| J[Automatic Rollback]
     
-    K[Augment Agent Monitor] --> L[Git Changes Detected]
+    K[Autonomous Git Monitor] --> L[Git Changes Detected]
     L --> D
 ```
 
@@ -66,10 +66,10 @@ cd /opt/cloudtolocalllm
 ./scripts/deploy/complete_deployment.sh --force --verbose
 ```
 
-### 3. Install Augment Agent Automation
+### 3. Install Autonomous Git Monitoring
 
 ```bash
-# On VPS: Install Git monitoring system
+# On VPS: Install autonomous Git monitoring system
 cd /opt/cloudtolocalllm
 ./scripts/deploy/install_vps_automation.sh --install-service --enable-service
 
@@ -145,9 +145,9 @@ sudo systemctl status cloudtolocalllm-git-monitor
 - `lib/config/app_config.dart`
 - `lib/shared/pubspec.yaml`
 
-### Augment Agent Integration
+### Autonomous Git Monitoring
 
-#### `git_monitor.sh` - Automated Git Monitoring
+#### `git_monitor.sh` - Autonomous Git Monitoring
 ```bash
 # Start monitoring daemon
 ./scripts/deploy/git_monitor.sh start --verbose
@@ -243,9 +243,9 @@ Use the provided integration test script to verify Windows-to-VPS connectivity:
 
 ### Automated Deployment Workflow
 
-1. **Install Augment Agent**
+1. **Install Autonomous Git Monitor**
    ```bash
-   # On VPS: Install Git monitoring
+   # On VPS: Install autonomous Git monitoring
    ./scripts/deploy/install_vps_automation.sh --install-service --enable-service
    ```
 
@@ -258,7 +258,7 @@ Use the provided integration test script to verify Windows-to-VPS connectivity:
    ```
 
 3. **Automatic Deployment**
-   - Augment agent detects Git changes
+   - Autonomous monitor detects Git changes
    - Automatically triggers VPS deployment
    - Monitors deployment success/failure
    - Logs all activities
@@ -426,7 +426,7 @@ docker-compose logs -f
    - Windows development, VPS production
 
 3. **Enhanced Automation**
-   - Augment agent Git monitoring
+   - Autonomous Git monitoring
    - Automatic deployment on commits
    - Comprehensive quality gates
 
@@ -457,4 +457,4 @@ docker-compose logs -f
    sudo systemctl status cloudtolocalllm-git-monitor
    ```
 
-The restored VPS-based deployment methodology provides enterprise-grade reliability while maintaining the simplicity and directness of the original Windows-to-VPS orchestration model, enhanced with modern Augment agent automation capabilities.
+The restored VPS-based deployment methodology provides enterprise-grade reliability while maintaining the simplicity and directness of the original Windows-to-VPS orchestration model, enhanced with modern autonomous automation capabilities.

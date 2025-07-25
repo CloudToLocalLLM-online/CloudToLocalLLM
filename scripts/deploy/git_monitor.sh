@@ -1,13 +1,13 @@
 #!/bin/bash
 # CloudToLocalLLM VPS Git Monitoring System
-# Augment agent-powered Git monitoring for automatic deployment
-# Monitors master branch for new commits and triggers deployment
+# Autonomous VPS-based Git monitoring for automatic deployment
+# Self-contained monitoring system that watches master branch for changes
 
 set -euo pipefail
 
 # Script metadata
 SCRIPT_VERSION="4.0.0"
-SCRIPT_NAME="CloudToLocalLLM VPS Git Monitor"
+SCRIPT_NAME="CloudToLocalLLM Autonomous Git Monitor"
 
 # Configuration
 PROJECT_DIR="/opt/cloudtolocalllm"
@@ -91,15 +91,17 @@ OPTIONS:
     --help               Show this help message
 
 DESCRIPTION:
-    Monitors the Git repository for new commits on the master branch
-    and automatically triggers deployment when changes are detected.
-    
+    Autonomous VPS-based Git monitoring system that watches the local
+    Git repository for new commits on the master branch and automatically
+    triggers deployment when changes are detected.
+
     Features:
+    - Self-contained monitoring (no external dependencies)
     - Automatic deployment on new commits
     - Deployment cooldown to prevent rapid deployments
     - Lock file to prevent concurrent deployments
-    - Comprehensive logging
-    - Systemd service integration
+    - Comprehensive logging and state tracking
+    - Systemd service integration for reliability
 
 EXAMPLES:
     $0 start                    # Start monitoring daemon
@@ -382,7 +384,7 @@ install_service() {
 
     sudo tee "$service_file" > /dev/null << EOF
 [Unit]
-Description=CloudToLocalLLM Git Monitor
+Description=CloudToLocalLLM Autonomous Git Monitor
 After=network.target
 Wants=network.target
 
