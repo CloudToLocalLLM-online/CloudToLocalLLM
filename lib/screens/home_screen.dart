@@ -154,160 +154,67 @@ class _HomeScreenState extends State<HomeScreen> {
     return Container(
       padding: EdgeInsets.all(AppTheme.spacingM),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          // Sidebar toggle (mobile)
-          if (MediaQuery.of(context).size.width < AppConfig.mobileBreakpoint)
-            IconButton(
-              onPressed: () {
-                setState(() {
-                  _isSidebarCollapsed = !_isSidebarCollapsed;
-                });
-              },
-              icon: Icon(
-                _isSidebarCollapsed ? Icons.menu : Icons.menu_open,
-                color: Colors.white,
-              ),
-            ),
-
-          // Logo and app name (flexible to prevent overflow)
-          Flexible(
+          // Left side: Sidebar toggle + Logo and app name
+          Expanded(
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const AppLogo.small(
-                  backgroundColor: Colors.white,
-                  textColor: Color(0xFF6e8efb),
-                  borderColor: Color(0xFFa777e3),
-                ),
-                SizedBox(width: AppTheme.spacingS),
-                Flexible(
-                  child: Text(
-                    AppConfig.appName,
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                // Sidebar toggle (mobile)
+                if (MediaQuery.of(context).size.width <
+                    AppConfig.mobileBreakpoint)
+                  IconButton(
+                    onPressed: () {
+                      setState(() {
+                        _isSidebarCollapsed = !_isSidebarCollapsed;
+                      });
+                    },
+                    icon: Icon(
+                      _isSidebarCollapsed ? Icons.menu : Icons.menu_open,
                       color: Colors.white,
-                      fontWeight: FontWeight.bold,
                     ),
-                    overflow: TextOverflow.ellipsis,
                   ),
+
+                // Logo and app name
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const AppLogo.small(
+                      backgroundColor: Colors.white,
+                      textColor: Color(0xFF6e8efb),
+                      borderColor: Color(0xFFa777e3),
+                    ),
+                    SizedBox(width: AppTheme.spacingS),
+                    Text(
+                      AppConfig.appName,
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
                 ),
               ],
             ),
           ),
 
-          SizedBox(width: AppTheme.spacingL),
-
-          // Model selector
-          Consumer2<StreamingChatService, ConnectionManagerService>(
-            builder: (context, chatService, connectionManager, child) {
-              final models = connectionManager.availableModels;
-              return Container(
-                width: 200, // Fixed width for consistent layout
-                padding: EdgeInsets.symmetric(horizontal: AppTheme.spacingS),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(AppTheme.borderRadiusS),
-                  border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.3),
-                    width: 1,
-                  ),
-                ),
-                child: DropdownButtonHideUnderline(
-                  child: DropdownButton<String>(
-                    value: chatService.selectedModel,
-                    hint: Text(
-                      'Select Model',
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.8),
-                      ),
-                      overflow: TextOverflow.ellipsis,
+          // Right side: Model selector and user menu
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Model selector
+              Consumer2<StreamingChatService, ConnectionManagerService>(
+                builder: (context, chatService, connectionManager, child) {
+                  final models = connectionManager.availableModels;
+                  return Container(
+                    width: 200, // Fixed width for consistent layout
+                    padding: EdgeInsets.symmetric(
+                      horizontal: AppTheme.spacingS,
                     ),
-                    items: models.map((model) {
-                      return DropdownMenuItem(
-                        value: model,
-                        child: Text(
-                          model,
-                          style: const TextStyle(color: Colors.black),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      );
-                    }).toList(),
-                    onChanged: (model) {
-                      if (model != null) {
-                        chatService.setSelectedModel(model);
-                      }
-                    },
-                    dropdownColor: Colors.white,
-                    icon: Icon(
-                      Icons.arrow_drop_down,
-                      color: Colors.white.withValues(alpha: 0.8),
-                    ),
-                    isExpanded: true, // Ensure dropdown uses available width
-                  ),
-                ),
-              );
-            },
-          ),
-
-          SizedBox(width: AppTheme.spacingM),
-
-          // User menu
-          Consumer<AuthService>(
-            builder: (context, authService, child) {
-              final user = authService.currentUser;
-              return SizedBox(
-                width: 180, // Fixed width for consistent layout
-                child: PopupMenuButton<String>(
-                  onSelected: (value) async {
-                    switch (value) {
-                      case 'settings':
-                        context.go('/settings');
-                        break;
-                      case 'logout':
-                        await authService.logout();
-                        if (context.mounted) {
-                          context.go('/login');
-                        }
-                        break;
-                    }
-                  },
-                  itemBuilder: (context) => [
-                    PopupMenuItem(
-                      value: 'settings',
-                      child: Row(
-                        children: [
-                          const Icon(Icons.settings, size: 18),
-                          SizedBox(width: AppTheme.spacingS),
-                          const Text('Settings'),
-                        ],
-                      ),
-                    ),
-                    const PopupMenuDivider(),
-                    PopupMenuItem(
-                      value: 'logout',
-                      child: Row(
-                        children: [
-                          const Icon(Icons.logout, size: 18),
-                          SizedBox(width: AppTheme.spacingS),
-                          const Text('Sign Out'),
-                        ],
-                      ),
-                    ),
-                  ],
-                  elevation: 8,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(AppTheme.borderRadiusM),
-                  ),
-                  color: AppTheme.backgroundCard,
-                  shadowColor: AppTheme.primaryColor.withValues(alpha: 0.3),
-                  // Fix dropdown positioning to appear below the button
-                  position: PopupMenuPosition.under,
-                  // Ensure proper offset from the button
-                  offset: const Offset(0, 8),
-                  child: Container(
-                    padding: EdgeInsets.all(AppTheme.spacingS),
                     decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.2),
+                      color: Colors.white.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(
                         AppTheme.borderRadiusS,
                       ),
@@ -316,42 +223,151 @@ class _HomeScreenState extends State<HomeScreen> {
                         width: 1,
                       ),
                     ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        CircleAvatar(
-                          radius: 12,
-                          backgroundColor: AppTheme.primaryColor,
-                          child: Text(
-                            user?.initials ?? '?',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
+                    child: DropdownButtonHideUnderline(
+                      child: DropdownButton<String>(
+                        value: chatService.selectedModel,
+                        hint: Text(
+                          'Select Model',
+                          style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.8),
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        items: models.map((model) {
+                          return DropdownMenuItem(
+                            value: model,
+                            child: Text(
+                              model,
+                              style: const TextStyle(color: Colors.black),
+                              overflow: TextOverflow.ellipsis,
                             ),
-                          ),
-                        ),
-                        SizedBox(width: AppTheme.spacingS),
-                        Text(
-                          user?.displayName ?? 'User',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                        SizedBox(width: AppTheme.spacingS),
-                        const Icon(
+                          );
+                        }).toList(),
+                        onChanged: (model) {
+                          if (model != null) {
+                            chatService.setSelectedModel(model);
+                          }
+                        },
+                        dropdownColor: Colors.white,
+                        icon: Icon(
                           Icons.arrow_drop_down,
-                          color: Colors.white,
-                          size: 18,
+                          color: Colors.white.withValues(alpha: 0.8),
+                        ),
+                        isExpanded:
+                            true, // Ensure dropdown uses available width
+                      ),
+                    ),
+                  );
+                },
+              ),
+
+              SizedBox(width: AppTheme.spacingM),
+
+              // User menu
+              Consumer<AuthService>(
+                builder: (context, authService, child) {
+                  final user = authService.currentUser;
+                  return SizedBox(
+                    width: 180, // Fixed width for consistent layout
+                    child: PopupMenuButton<String>(
+                      onSelected: (value) async {
+                        switch (value) {
+                          case 'settings':
+                            context.go('/settings');
+                            break;
+                          case 'logout':
+                            await authService.logout();
+                            if (context.mounted) {
+                              context.go('/login');
+                            }
+                            break;
+                        }
+                      },
+                      itemBuilder: (context) => [
+                        PopupMenuItem(
+                          value: 'settings',
+                          child: Row(
+                            children: [
+                              const Icon(Icons.settings, size: 18),
+                              SizedBox(width: AppTheme.spacingS),
+                              const Text('Settings'),
+                            ],
+                          ),
+                        ),
+                        const PopupMenuDivider(),
+                        PopupMenuItem(
+                          value: 'logout',
+                          child: Row(
+                            children: [
+                              const Icon(Icons.logout, size: 18),
+                              SizedBox(width: AppTheme.spacingS),
+                              const Text('Sign Out'),
+                            ],
+                          ),
                         ),
                       ],
+                      elevation: 8,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(
+                          AppTheme.borderRadiusM,
+                        ),
+                      ),
+                      color: AppTheme.backgroundCard,
+                      shadowColor: AppTheme.primaryColor.withValues(alpha: 0.3),
+                      // Fix dropdown positioning to appear below the button
+                      position: PopupMenuPosition.under,
+                      // Ensure proper offset from the button
+                      offset: const Offset(0, 8),
+                      child: Container(
+                        padding: EdgeInsets.all(AppTheme.spacingS),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.2),
+                          borderRadius: BorderRadius.circular(
+                            AppTheme.borderRadiusS,
+                          ),
+                          border: Border.all(
+                            color: Colors.white.withValues(alpha: 0.3),
+                            width: 1,
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            CircleAvatar(
+                              radius: 12,
+                              backgroundColor: AppTheme.primaryColor,
+                              child: Text(
+                                user?.initials ?? '?',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                            SizedBox(width: AppTheme.spacingS),
+                            Text(
+                              user?.displayName ?? 'User',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            SizedBox(width: AppTheme.spacingS),
+                            const Icon(
+                              Icons.arrow_drop_down,
+                              color: Colors.white,
+                              size: 18,
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
-                  ),
-                ),
-              );
-            },
+                  );
+                },
+              ),
+            ],
           ),
         ],
       ),
