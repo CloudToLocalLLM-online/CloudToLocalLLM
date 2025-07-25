@@ -37,6 +37,19 @@ if (-not (Test-Path (Join-Path $ProjectRoot "pubspec.yaml"))) {
     Write-Host "ERROR: pubspec.yaml not found" -ForegroundColor Red
     exit 1
 }
+
+# Check if there are uncommitted changes
+Write-Host "Checking for uncommitted changes..."
+git status --porcelain
+if ($LASTEXITCODE -eq 0) {
+    $uncommittedChanges = git status --porcelain
+    if ($uncommittedChanges) {
+        Write-Host "ERROR: You have uncommitted changes. Commit and push all changes before deployment:" -ForegroundColor Red
+        Write-Host $uncommittedChanges -ForegroundColor Red
+        Write-Host "Run: git add . && git commit -m 'message' && git push origin master" -ForegroundColor Yellow
+        exit 1
+    }
+}
 Write-Host "✓ Found pubspec.yaml"
 
 Write-Host "Checking Git status..."
