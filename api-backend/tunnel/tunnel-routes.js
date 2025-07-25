@@ -579,5 +579,3 @@ export function createTunnelRoutes(server, config, logger = winston.createLogger
     wss,
   };
 }
-
-export default router;
