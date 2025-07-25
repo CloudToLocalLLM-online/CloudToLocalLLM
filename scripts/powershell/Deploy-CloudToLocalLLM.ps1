@@ -401,19 +401,47 @@ Works seamlessly with https://app.cloudtolocalllm.online
                         $releaseNotesFile = Join-Path $ProjectRoot "temp_release_notes.md"
                         Set-Content -Path $releaseNotesFile -Value $releaseNotes -Encoding UTF8
 
+                        # Clean up old installer files to prevent version conflicts
+                        $archiveDir = Join-Path $distPath "archive"
+                        if (-not (Test-Path $archiveDir)) {
+                            New-Item -ItemType Directory -Path $archiveDir -Force | Out-Null
+                        }
+
+                        # Move old installer files to archive (keep only current version)
+                        $oldInstallers = Get-ChildItem -Path $distPath -Filter "*Setup*.exe" -ErrorAction SilentlyContinue | Where-Object {
+                            $_.Name -notlike "*$currentVersion*"
+                        }
+                        foreach ($oldInstaller in $oldInstallers) {
+                            $archivePath = Join-Path $archiveDir $oldInstaller.Name
+                            Move-Item -Path $oldInstaller.FullName -Destination $archivePath -Force -ErrorAction SilentlyContinue
+                            # Also move corresponding .sha256 files
+                            $sha256File = "$($oldInstaller.FullName).sha256"
+                            if (Test-Path $sha256File) {
+                                Move-Item -Path $sha256File -Destination "$archivePath.sha256" -Force -ErrorAction SilentlyContinue
+                            }
+                            Write-Host "Archived old installer: $($oldInstaller.Name)" -ForegroundColor Yellow
+                        }
+
                         # Find desktop application packages to attach
                         $assetsToUpload = @()
                         if ($windowsPackage) {
                             $assetsToUpload += $windowsPackage.FullName
                         }
 
-                        # Find Windows installer files
-                        $installerFiles = Get-ChildItem -Path $distPath -Filter "*Setup*.exe" -Recurse -ErrorAction SilentlyContinue
+                        # Find Windows installer files matching current version only
+                        $versionPattern = "CloudToLocalLLM-Windows-$currentVersion-Setup.exe"
+                        $installerFiles = Get-ChildItem -Path $distPath -Filter $versionPattern -Recurse -ErrorAction SilentlyContinue
                         foreach ($installer in $installerFiles) {
-                            if ($installer.LastWriteTime -gt (Get-Date).AddHours(-1)) {
-                                $assetsToUpload += $installer.FullName
-                                Write-Host "Found installer asset: $($installer.Name)"
-                            }
+                            $assetsToUpload += $installer.FullName
+                            Write-Host "Found installer asset: $($installer.Name)"
+                        }
+
+                        # Also look for ZIP packages matching current version
+                        $zipPattern = "cloudtolocalllm-windows-v$currentVersion.zip"
+                        $zipFiles = Get-ChildItem -Path $distPath -Filter $zipPattern -Recurse -ErrorAction SilentlyContinue
+                        foreach ($zipFile in $zipFiles) {
+                            $assetsToUpload += $zipFile.FullName
+                            Write-Host "Found ZIP asset: $($zipFile.Name)"
                         }
 
                         # Create GitHub release with assets
