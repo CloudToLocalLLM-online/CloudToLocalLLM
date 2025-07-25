@@ -85,6 +85,28 @@ if (-not $SkipVersionUpdate) {
                 exit 1
             }
             Write-Host "✓ Version incremented successfully"
+
+            # Commit and push version changes
+            Write-Host "Committing version changes..."
+            git add .
+            if ($LASTEXITCODE -ne 0) {
+                Write-Host "ERROR: Failed to stage version changes" -ForegroundColor Red
+                exit 1
+            }
+
+            $versionCommitMessage = "Update version to $(& $versionManagerPath get-semantic)"
+            git commit -m $versionCommitMessage
+            if ($LASTEXITCODE -ne 0) {
+                Write-Host "ERROR: Failed to commit version changes" -ForegroundColor Red
+                exit 1
+            }
+
+            git push origin master
+            if ($LASTEXITCODE -ne 0) {
+                Write-Host "ERROR: Failed to push version changes" -ForegroundColor Red
+                exit 1
+            }
+            Write-Host "✓ Version changes committed and pushed"
         } catch {
             Write-Host "ERROR: Version management failed: $($_.Exception.Message)" -ForegroundColor Red
             exit 1
