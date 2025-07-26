@@ -89,7 +89,7 @@ cd C:\Users\chris\Dev\CloudToLocalLLM
 # 3. Create Windows packages only
 .\scripts\powershell\Create-UnifiedPackages.ps1 -WindowsOnly -AutoInstall
 
-# 4. Create all packages (Windows + Linux via WSL)
+# 4. Create all packages (Windows + Linux via WSL for Linux builds only)
 .\scripts\powershell\Create-UnifiedPackages.ps1 -AutoInstall
 
 # 5. Build specific Windows package

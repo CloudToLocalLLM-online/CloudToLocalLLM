@@ -258,14 +258,14 @@ version: 3.5.5+202506111430
 ### From Immediate to Build-Time Timestamps
 
 #### **Old Workflow**
-```bash
-./scripts/version_manager.sh increment build
+```powershell
+./scripts/powershell/version_manager.ps1 increment build
 flutter build web --release
 ```
 
 #### **New Workflow**
-```bash
-./scripts/version_manager.sh prepare build
+```powershell
+./scripts/powershell/version_manager.ps1 prepare build
 ./scripts/flutter_build_with_timestamp.sh web --release
 ```
 

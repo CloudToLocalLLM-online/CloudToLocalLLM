@@ -1,10 +1,18 @@
 # CloudToLocalLLM PowerShell Build Scripts
 
-This directory contains PowerShell equivalents of the Linux build scripts, designed to work natively on Windows with optional WSL integration for Linux-specific tasks.
+This directory contains PowerShell scripts designed to work natively on Windows with limited WSL integration only for Linux application builds.
 
 ## Overview
 
-The PowerShell scripts provide the same functionality as their bash counterparts while leveraging Windows-native tools where possible and WSL for Linux-specific operations like AUR and Debian packaging.
+The PowerShell scripts provide Windows-native functionality while leveraging WSL only for:
+- **Linux application builds** (Debian packages, AppImage, etc.)
+- **VPS deployment operations** that require Linux-specific commands
+
+WSL is **NOT used** for:
+- Windows development workflows
+- Version management
+- Local file operations
+- Git operations
 
 ## Scripts
 
@@ -23,7 +31,7 @@ The PowerShell scripts provide the same functionality as their bash counterparts
 - **`Push-Dev.ps1`** - Development push utility
 - **`launcher.ps1`** - Smart script launcher with auto-detection
 
-**Note**: VPS deployment operations should use the bash scripts in `scripts/deploy/` directory via WSL, not PowerShell scripts.
+**Note**: VPS deployment operations use SSH from Windows PowerShell to execute bash scripts on the remote Linux VPS, not local WSL.
 
 ### Dependencies
 
@@ -106,11 +114,9 @@ The PowerShell scripts provide the same functionality as their bash counterparts
 ### VPS Deployment
 **Note**: VPS deployment is handled by bash scripts via WSL, not PowerShell scripts.
 
-```bash
-# From Windows, access WSL for VPS deployment
-wsl -d Ubuntu-24.04
-cd /opt/cloudtolocalllm
-bash scripts/deploy/update_and_deploy.sh --force --verbose
+```powershell
+# From Windows PowerShell, deploy to VPS via SSH
+ssh cloudllm@cloudtolocalllm.online "cd /opt/cloudtolocalllm && ./scripts/deploy/update_and_deploy.sh --force --verbose"
 ```
 
 ### Environment Testing

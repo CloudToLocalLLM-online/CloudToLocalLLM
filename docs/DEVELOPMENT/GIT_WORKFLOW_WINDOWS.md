@@ -105,8 +105,8 @@ git commit -m "Implement feature X with documentation updates
 - Updated documentation in docs/
 - Version files synchronized by scripts"
 
-# 5. Push using Git Bash (Windows-specific)
-bash -c "git push origin master"
+# 5. Push using native git command
+git push origin master
 
 # 6. Verify success
 git status
@@ -195,8 +195,8 @@ Continue using PowerShell for:
 - Build operations: `flutter build`, `flutter clean`
 - File operations: `Get-Content`, `Test-Path`
 
-### Git Bash Usage
-Use Git Bash specifically for:
-- Push operations: `bash -c "git push origin master"`
-- SSH testing: `bash -c "ssh -T git@github.com"`
-- Complex git operations requiring SSH authentication
+### Git Usage
+Use native git commands for all operations:
+- Push operations: `git push origin master`
+- SSH testing: `ssh -T git@github.com`
+- All git operations work natively in PowerShell

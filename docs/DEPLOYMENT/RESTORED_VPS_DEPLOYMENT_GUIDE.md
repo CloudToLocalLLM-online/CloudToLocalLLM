@@ -10,7 +10,7 @@ This guide documents the restored VPS-based deployment methodology for CloudToLo
 
 **Windows Development Environment:**
 - **Role**: Development, orchestration, and build coordination
-- **Tools**: PowerShell scripts, Git Bash for SSH operations
+- **Tools**: PowerShell scripts, native git commands, SSH operations
 - **Responsibilities**: Version management, Flutter builds, SSH orchestration
 - **Key Script**: `scripts/powershell/Deploy-CloudToLocalLLM.ps1`
 
@@ -129,14 +129,16 @@ sudo systemctl status cloudtolocalllm-git-monitor
 - Security header validation
 - Performance benchmarks
 
-#### `sync_versions.sh` - Version Synchronization
+#### `sync_versions.sh` - Version Synchronization (VPS/Linux Only)
 ```bash
-# Synchronize all version files
+# Synchronize all version files (VPS/Linux environment only)
 ./scripts/deploy/sync_versions.sh
 
-# Check consistency without changes
+# Check consistency without changes (VPS/Linux environment only)
 ./scripts/deploy/sync_versions.sh --check-only
 ```
+
+**Note**: For Windows development, use PowerShell version manager which automatically synchronizes all files.
 
 **Synchronizes:**
 - `pubspec.yaml` (master version)

@@ -90,9 +90,9 @@ CloudToLocalLLM follows a strict semantic versioning scheme that aligns release 
 
 ### Using the Version Manager Script
 
-```bash
-# Show current version information
-./scripts/version_manager.sh info
+```powershell
+# Show current version information (Windows PowerShell)
+./scripts/powershell/version_manager.ps1 info
 
 # Manual version increment (AFTER deployment verification)
 ./scripts/powershell/version_manager.ps1 increment patch    # For urgent fixes
@@ -101,8 +101,8 @@ CloudToLocalLLM follows a strict semantic versioning scheme that aligns release 
 ./scripts/powershell/version_manager.ps1 increment build    # For timestamp updates
 
 # Prepare versions for build-time injection (during deployment)
-./scripts/version_manager.sh prepare patch      # Prepare with placeholder
-./scripts/version_manager.sh prepare minor      # Build-time timestamp injection
+./scripts/powershell/version_manager.ps1 prepare patch      # Prepare with placeholder
+./scripts/powershell/version_manager.ps1 prepare minor      # Build-time timestamp injection
 ```
 
 ### Decision Matrix
@@ -169,9 +169,9 @@ bash -c "git push origin master"  # Use Git Bash for Windows SSH compatibility
 
 **MAJOR versions only** (X.0.0) automatically trigger GitHub release creation:
 
-```bash
-# Major version increment automatically suggests GitHub release
-./scripts/version_manager.sh increment major
+```powershell
+# Major version increment automatically suggests GitHub release (Windows PowerShell)
+./scripts/powershell/version_manager.ps1 increment major
 # Output: "This is a MAJOR version update - GitHub release should be created!"
 # Output: "Run: git tag v3.0.0 && git push origin v3.0.0"
 ```

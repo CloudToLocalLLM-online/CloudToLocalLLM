@@ -87,52 +87,52 @@ The timestamp-based build number is synchronized across:
 ### Version Manager Commands
 
 #### Increment Build Number
-```bash
-# Generates new timestamp-based build number
-./scripts/version_manager.sh increment build
+```powershell
+# Generates new timestamp-based build number (Windows PowerShell)
+./scripts/powershell/version_manager.ps1 increment build
 ```
 
 #### Increment Semantic Version
-```bash
-# Generates new semantic version with timestamp build number
-./scripts/version_manager.sh increment patch
-./scripts/version_manager.sh increment minor
-./scripts/version_manager.sh increment major
+```powershell
+# Generates new semantic version with timestamp build number (Windows PowerShell)
+./scripts/powershell/version_manager.ps1 increment patch
+./scripts/powershell/version_manager.ps1 increment minor
+./scripts/powershell/version_manager.ps1 increment major
 ```
 
 #### Set Specific Version
-```bash
-# Sets version with new timestamp build number
-./scripts/version_manager.sh set 3.6.0
+```powershell
+# Sets version with new timestamp build number (Windows PowerShell)
+./scripts/powershell/version_manager.ps1 set 3.6.0
 ```
 
 #### Get Version Information
-```bash
-# Display current version information
-./scripts/version_manager.sh info
+```powershell
+# Display current version information (Windows PowerShell)
+./scripts/powershell/version_manager.ps1 info
 
-# Get full version string
-./scripts/version_manager.sh get
+# Get full version string (Windows PowerShell)
+./scripts/powershell/version_manager.ps1 get
 
-# Get semantic version only
-./scripts/version_manager.sh get-semantic
+# Get semantic version only (Windows PowerShell)
+./scripts/powershell/version_manager.ps1 get-semantic
 
-# Get build number only
-./scripts/version_manager.sh get-build
+# Get build number only (Windows PowerShell)
+./scripts/powershell/version_manager.ps1 get-build
 ```
 
 ### Synchronization Commands
 
 #### Automatic Synchronization
-```bash
-# Synchronize all version files
-./scripts/deploy/sync_versions.sh
+```powershell
+# PowerShell version manager automatically synchronizes all files
+./scripts/powershell/version_manager.ps1 info
 ```
 
 #### Manual Verification
-```bash
-# Test timestamp versioning system
-./scripts/version_manager.sh get-build
+```powershell
+# Test timestamp versioning system (Windows PowerShell)
+./scripts/powershell/version_manager.ps1 get-build
 ```
 
 ## Benefits

@@ -260,7 +260,15 @@ After modifying the deployment script:
 
 ## Linux Build Integration (WSL)
 
-**Important**: WSL integration is only required for building Linux versions of the application, not for deployment operations.
+**Important**: WSL integration is only required for:
+1. **Building Linux application packages** (Debian, AppImage, etc.)
+2. **VPS deployment operations** that require Linux-specific commands
+
+WSL should **NOT** be used for:
+- Windows development workflows
+- Version management on Windows
+- Local file operations on Windows
+- Git operations on Windows
 
 When building Linux packages using WSL:
 
@@ -289,10 +297,10 @@ if ($BuildLinuxPackages) {
 
 For deployment operations, use native PowerShell capabilities:
 
-1. **Use PowerShell for deployment operations**:
-   - `Invoke-Command` for remote PowerShell sessions
-   - `ssh` command for VPS operations
+1. **Use PowerShell for Windows deployment operations**:
    - Native PowerShell cmdlets for file operations
+   - `ssh` command for VPS operations (from Windows to Linux VPS)
+   - PowerShell version manager for version operations
 
 2. **Example PowerShell deployment**:
 ```powershell

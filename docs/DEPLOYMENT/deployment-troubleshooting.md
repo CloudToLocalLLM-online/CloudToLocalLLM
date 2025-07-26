@@ -132,7 +132,7 @@ When troubleshooting deployment issues, follow this systematic approach:
 **Solutions:**
 1. Manually synchronize version files:
    ```powershell
-   .\scripts\version_manager.sh sync
+   .\scripts\powershell\version_manager.ps1 info
    ```
 
 2. Check version files for consistency:

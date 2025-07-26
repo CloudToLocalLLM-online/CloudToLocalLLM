@@ -151,15 +151,14 @@ Complete production-ready multi-tenant streaming architecture with user isolatio
 8. **Announcement**: Release announcement and documentation updates
 
 ### **Version Management**
-```bash
-# Version increment using version manager
-./scripts/version_manager.sh increment major    # x.0.0
-./scripts/version_manager.sh increment minor    # x.y.0
-./scripts/version_manager.sh increment patch    # x.y.z
-./scripts/version_manager.sh increment build    # x.y.z+nnn
+```powershell
+# Version increment using PowerShell version manager
+./scripts/powershell/version_manager.ps1 increment major    # x.0.0
+./scripts/powershell/version_manager.ps1 increment minor    # x.y.0
+./scripts/powershell/version_manager.ps1 increment patch    # x.y.z
+./scripts/powershell/version_manager.ps1 increment build    # x.y.z+nnn
 
-# Synchronize versions across all components
-./scripts/deploy/sync_versions.sh
+# PowerShell version manager automatically synchronizes all components
 
 # Verify version consistency
 ./scripts/deploy/verify_deployment.sh

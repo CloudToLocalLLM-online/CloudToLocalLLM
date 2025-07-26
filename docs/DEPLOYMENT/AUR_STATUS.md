@@ -98,13 +98,12 @@ sudo cp -r dist/cloudtolocalllm-3.10.3 /usr/share/cloudtolocalllm
 sudo ln -sf /usr/share/cloudtolocalllm/bin/* /usr/bin/
 ```
 
-### Option 3: PowerShell via WSL (Advanced)
-```bash
-# Install WSL with Ubuntu
-wsl --install -d Ubuntu-24.04
+### Option 3: PowerShell Build (Advanced)
+```powershell
+# Use PowerShell to build Linux packages (requires WSL for Linux builds only)
+.\scripts\powershell\build_unified_package.ps1 linux -AutoInstall
 
-# Use PowerShell AUR scripts from Windows
-# (Requires complex WSL/Windows integration setup)
+# Note: WSL is only used for Linux application builds, not deployment
 ```
 
 ## 📞 Community Feedback

@@ -92,8 +92,8 @@ Choose your deployment scenario:
 # Commit version changes
 git add . && git commit -m "Increment version after deployment"
 
-# Push using Git Bash (Windows SSH compatibility)
-bash -c "git push origin master"
+# Push using native git command
+git push origin master
 ```
 
 **Expected Output:**
@@ -115,9 +115,9 @@ Before ANY deployment, verify these files match pubspec.yaml version:
 **Note**: AUR PKGBUILD version checking temporarily disabled. See [AUR Status](./AUR_STATUS.md).
 
 ### **Automated Version Synchronization**
-```bash
-# Synchronize all version references automatically
-./scripts/deploy/sync_versions.sh
+```powershell
+# PowerShell version manager automatically synchronizes all files
+./scripts/powershell/version_manager.ps1 info
 
 # Expected output:
 # ✅ All versions synchronized to 3.1.3+001
@@ -130,17 +130,16 @@ Before ANY deployment, verify these files match pubspec.yaml version:
 ### **Phase 1: Local Development & Pre-Deployment Preparation** (⏱️ 8 minutes)
 
 #### **Step 1.1: Verify Current Version** ✅
-```bash
-# Check current version status
-./scripts/version_manager.sh info
+```powershell
+# Check current version status (Windows PowerShell)
+./scripts/powershell/version_manager.ps1 info
 
-# Verify all version files are synchronized
-./scripts/deploy/sync_versions.sh
+# PowerShell version manager automatically handles synchronization
 ```
 
 **Note:** Version incrementing is now performed **manually after deployment verification** to give developers control over when versions are committed.
 
-**Windows Git Push:** All `git push` operations use Git Bash (`bash -c "git push ..."`) to resolve SSH authentication issues on Windows.
+**Windows Git Push:** All `git push` operations use native git commands from PowerShell.
 
 **⚠️ IMPORTANT**: For truly automatic deployment without any prompts or delays, use the `--force` flag:
 ```bash
@@ -158,14 +157,14 @@ Source File:      pubspec.yaml
 ```
 
 #### **Step 1.2: Synchronize All Version References** ✅
-```bash
-# Automated synchronization (RECOMMENDED)
-./scripts/deploy/sync_versions.sh
+```powershell
+# Automated synchronization (RECOMMENDED) - PowerShell version manager handles all files
+./scripts/powershell/version_manager.ps1 info
 
-# Manual verification (if sync script fails)
-grep "version:" pubspec.yaml
-grep "version" assets/version.json
-grep "pkgver=" aur-package/PKGBUILD
+# Manual verification (if needed)
+Select-String "version:" pubspec.yaml
+Select-String "version" assets/version.json
+Select-String "pkgver=" aur-package/PKGBUILD
 ```
 
 **Expected Output:**
@@ -707,7 +706,7 @@ bash -c "git push --force-with-lease origin master"
 ```
 
 #### **Step 3: Commit Version Changes** ✅
-```bash
+```powershell
 # Add all version-related files
 git add pubspec.yaml assets/version.json lib/shared/lib/version.dart lib/config/app_config.dart lib/shared/pubspec.yaml
 
@@ -718,8 +717,8 @@ git commit -m "Increment version after successful deployment
 - Prepare repository for next development cycle
 - Automated version synchronization across all files"
 
-# Push to repository using Git Bash (Windows SSH compatibility)
-bash -c "git push origin master"
+# Push to repository using native git command
+git push origin master
 ```
 
 #### **Step 4: Verify Version Increment** ✅
@@ -727,8 +726,8 @@ bash -c "git push origin master"
 # Confirm new version is set correctly
 ./scripts/powershell/version_manager.ps1 info
 
-# Verify all files are synchronized
-./scripts/deploy/sync_versions.sh
+# PowerShell version manager automatically synchronizes all files
+# No additional sync step needed for Windows workflows
 ```
 
 ### **🎉 Deployment Complete!**
@@ -748,24 +747,24 @@ bash -c "git push origin master"
 ### **🔄 Version Mismatch Issues**
 
 #### **Symptom:** Different versions across components
-```bash
-# Diagnosis
-./scripts/version_manager.sh info
-grep "version" assets/version.json
-grep "pkgver=" aur-package/PKGBUILD
-curl -s https://app.cloudtolocalllm.online/version.json | jq '.version'
+```powershell
+# Diagnosis (Windows PowerShell)
+./scripts/powershell/version_manager.ps1 info
+Get-Content assets/version.json | Select-String "version"
+Get-Content aur-package/PKGBUILD | Select-String "pkgver="
+curl -s https://app.cloudtolocalllm.online/version.json | ConvertFrom-Json | Select-Object version
 ```
 
 #### **Solution:** Automated synchronization
-```bash
-# Reset all versions to pubspec.yaml
-./scripts/version_manager.sh validate
-./scripts/deploy/sync_versions.sh
+```powershell
+# Reset all versions to pubspec.yaml (Windows PowerShell)
+./scripts/powershell/version_manager.ps1 info
+# PowerShell version manager automatically synchronizes all files when setting versions
 
 # Manual fix if automation fails
-CORRECT_VERSION=$(./scripts/version_manager.sh get-semantic)
-sed -i "s/\"version\": \".*\"/\"version\": \"$CORRECT_VERSION\"/" assets/version.json
-sed -i "s/^pkgver=.*/pkgver=$CORRECT_VERSION/" aur-package/PKGBUILD
+$CORRECT_VERSION = & ./scripts/powershell/version_manager.ps1 get-semantic
+(Get-Content assets/version.json) -replace '"version": ".*"', "`"version`": `"$CORRECT_VERSION`"" | Set-Content assets/version.json
+(Get-Content aur-package/PKGBUILD) -replace '^pkgver=.*', "pkgver=$CORRECT_VERSION" | Set-Content aur-package/PKGBUILD
 ```
 
 ### **📦 AUR Package Issues**
@@ -1178,23 +1177,23 @@ Resolution: [steps taken]
 # Custom script: quick_update.sh
 set -e
 
-echo "🚀 Quick Update Deployment"
-# Deploy current version without incrementing
-./scripts/deploy/sync_versions.sh
+Write-Host "🚀 Quick Update Deployment"
+# Deploy current version without incrementing (Windows PowerShell)
+./scripts/powershell/version_manager.ps1 info
 git add -A && git commit -m "Quick update deployment"
-bash -c "git push origin master"
+git push origin master
 flutter build web --release
 ssh cloudllm@cloudtolocalllm.online "cd /opt/cloudtolocalllm && git pull && ./scripts/deploy/update_and_deploy.sh"
-./scripts/deploy/verify_deployment.sh
-echo "✅ Quick update completed!"
-echo "📋 Next: Run manual version increment when ready:"
-echo "   ./scripts/powershell/version_manager.ps1 increment patch"
+# Note: verify_deployment.sh runs on VPS, not locally
+Write-Host "✅ Quick update completed!"
+Write-Host "📋 Next: Run manual version increment when ready:"
+Write-Host "   ./scripts/powershell/version_manager.ps1 increment patch"
 ```
 
 #### **AUR-Only Update**
 ```bash
 #!/bin/bash
-# Custom script: aur_update.sh
+# Custom script: aur_update.sh (VPS/Linux only)
 set -e
 
 echo "📦 AUR Package Update"
@@ -1230,7 +1229,7 @@ echo "✅ VPS deployment completed!"
 ### **🎯 Primary Documentation (ACTIVE)**
 - **THIS DOCUMENT** (`docs/DEPLOYMENT/COMPLETE_DEPLOYMENT_WORKFLOW.md`) - **THE ONLY DEPLOYMENT GUIDE**
 - `docs/DEPLOYMENT/VERSIONING_STRATEGY.md` - Version format reference and strategy
-- `scripts/version_manager.sh` - Version management tool documentation
+- `scripts/powershell/version_manager.ps1` - Version management tool documentation
 
 ### **🗂️ Supporting Documentation**
 - `scripts/deploy/README.md` - Deployment scripts overview

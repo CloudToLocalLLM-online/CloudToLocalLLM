@@ -137,13 +137,13 @@ gh release upload v3.8.0 dist/windows/cloudtolocalllm-3.8.0-portable.zip.sha256
 
 ### Step 7: Deploy to VPS
 
-1. **Deploy via WSL**:
-   ```bash
-   wsl -d Ubuntu-24.04 -- ssh cloudllm@cloudtolocalllm.online "cd /opt/cloudtolocalllm && git pull origin master && flutter build web --release && docker-compose -f docker-compose.multi.yml down && docker-compose -f docker-compose.multi.yml up -d"
+1. **Deploy via SSH from Windows PowerShell**:
+   ```powershell
+   ssh cloudllm@cloudtolocalllm.online "cd /opt/cloudtolocalllm && git pull origin master && flutter build web --release && docker-compose -f docker-compose.multi.yml down && docker-compose -f docker-compose.multi.yml up -d"
    ```
 
 2. **Verify Deployment**:
-   ```bash
+   ```powershell
    curl -s https://app.cloudtolocalllm.online/version.json
    # Should show new version number
    ```

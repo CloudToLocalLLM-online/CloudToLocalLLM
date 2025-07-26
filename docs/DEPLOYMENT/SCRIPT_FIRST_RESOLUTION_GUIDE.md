@@ -143,16 +143,15 @@ git add . && git commit && git push
 ## Script Inventory
 
 ### Version Management
-- `./scripts/version_manager.sh` - Version operations (Linux/WSL)
 - `./scripts/powershell/version_manager.ps1` - Version operations (Windows/PowerShell) - **Primary tool**
-- `./scripts/deploy/sync_versions.sh` - Cross-file version consistency
+- `./scripts/deploy/sync_versions.sh` - Cross-file version consistency (VPS/Linux only)
 
 **Manual Version Increment Workflow:**
 ```powershell
 # After successful deployment verification
 ./scripts/powershell/version_manager.ps1 increment <type>  # patch|minor|major
 git add . && git commit -m "Increment version after deployment"
-bash -c "git push origin master"  # Use Git Bash for Windows SSH compatibility
+git push origin master  # Native git command
 ```
 
 ### Build and Distribution
