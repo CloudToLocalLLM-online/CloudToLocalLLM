@@ -585,9 +585,30 @@ if ($DryRun) {
 
 $deploymentCommand = "cd $VPSProjectPath && $vpsDeploymentScript $deploymentFlags"
 
+# VPS Deployment Preparation: Fix script permissions
+$permissionFixCommand = "chmod +x $VPSProjectPath/scripts/deploy/*.sh"
+
 if ($DryRun) {
+    Write-Host "[DRY RUN] Would fix VPS script permissions: ssh $VPSUser@$VPSHost `"$permissionFixCommand`""
     Write-Host "[DRY RUN] Would execute: ssh $VPSUser@$VPSHost `"$deploymentCommand`""
 } else {
+    Write-Host "Preparing VPS deployment environment..."
+    Write-Host "Fixing executable permissions for deployment scripts..."
+    Write-Host "Command: ssh $VPSUser@$VPSHost `"$permissionFixCommand`""
+
+    ssh $VPSUser@$VPSHost "$permissionFixCommand"
+
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host ""
+        Write-Host "ERROR: Failed to fix VPS script permissions with exit code $LASTEXITCODE" -ForegroundColor Red
+        Write-Host "This may cause deployment script execution failures" -ForegroundColor Yellow
+        Write-Host "Continuing with deployment attempt..." -ForegroundColor Yellow
+        Write-Host ""
+    } else {
+        Write-Host "✓ VPS script permissions fixed successfully" -ForegroundColor Green
+        Write-Host ""
+    }
+
     Write-Host "Executing enhanced VPS deployment with rollback capabilities..."
     Write-Host "Using deployment script: $vpsDeploymentScript"
     Write-Host "Deployment flags: $deploymentFlags"
