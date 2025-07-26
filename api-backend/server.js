@@ -416,7 +416,8 @@ app.post('/api/proxy/start', authenticateToken, async(req, res) => {
 
     logger.info(`Starting streaming proxy for user: ${userId}`);
 
-    const proxyMetadata = await proxyManager.provisionProxy(userId, userToken);
+    // Pass the user object for tier checking
+    const proxyMetadata = await proxyManager.provisionProxy(userId, userToken, req.user);
 
     res.json({
       success: true,
@@ -425,6 +426,9 @@ app.post('/api/proxy/start', authenticateToken, async(req, res) => {
         proxyId: proxyMetadata.proxyId,
         status: proxyMetadata.status,
         createdAt: proxyMetadata.createdAt,
+        directTunnel: proxyMetadata.directTunnel || false,
+        endpoint: proxyMetadata.endpoint || null,
+        userTier: proxyMetadata.userTier || 'free',
       },
     });
   } catch (error) {
@@ -493,7 +497,7 @@ app.post('/api/streaming-proxy/provision', authenticateToken, async(req, res) =>
     }
 
     // Normal mode - provision actual proxy
-    const proxyMetadata = await proxyManager.provisionProxy(userId, userToken);
+    const proxyMetadata = await proxyManager.provisionProxy(userId, userToken, req.user);
 
     res.json({
       success: true,
@@ -504,6 +508,9 @@ app.post('/api/streaming-proxy/provision', authenticateToken, async(req, res) =>
         proxyId: proxyMetadata.proxyId,
         status: proxyMetadata.status,
         createdAt: proxyMetadata.createdAt,
+        directTunnel: proxyMetadata.directTunnel || false,
+        endpoint: proxyMetadata.endpoint || null,
+        userTier: proxyMetadata.userTier || 'free',
       },
     });
   } catch (error) {

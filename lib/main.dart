@@ -7,6 +7,7 @@ import 'config/theme.dart';
 import 'config/router.dart';
 import 'config/app_config.dart';
 import 'services/auth_service.dart';
+import 'services/user_tier_service.dart';
 import 'services/ollama_service.dart';
 import 'services/streaming_proxy_service.dart';
 import 'services/unified_connection_service.dart';
@@ -185,6 +186,12 @@ class _CloudToLocalLLMAppState extends State<CloudToLocalLLMApp> {
       providers: [
         // Authentication service
         ChangeNotifierProvider(create: (_) => AuthService()),
+        // User tier service
+        ChangeNotifierProvider(
+          create: (context) => UserTierService(
+            authService: context.read<AuthService>(),
+          ),
+        ),
         // Streaming proxy service
         ChangeNotifierProvider(
           create: (context) =>

@@ -1,6 +1,7 @@
 import Docker from 'dockerode';
 import crypto from 'crypto';
 import winston from 'winston';
+import { getUserTier, shouldUseDirectTunnel } from './middleware/tier-check.js';
 
 // Initialize Docker client
 const docker = new Docker();
@@ -98,13 +99,69 @@ export class StreamingProxyManager {
   }
 
   /**
-   * Provision streaming proxy container for user
+   * Provision streaming proxy container for user with tier-aware logic
+   * For free tier users, returns direct tunnel configuration instead of container
+   * For premium/enterprise users, provisions isolated container environment
+   *
+   * @param {string} userId - User identifier from Auth0
+   * @param {string} _userToken - User authentication token (unused but kept for compatibility)
+   * @param {Object} user - Decoded JWT user object for tier detection
+   * @returns {Promise<Object>} Proxy configuration object
+   * @throws {Error} If provisioning fails
    */
-  async provisionProxy(userId, _userToken) {
+  async provisionProxy(userId, _userToken, user = null) {
+    // Input validation
+    if (!userId || typeof userId !== 'string') {
+      throw new Error('Valid userId is required for proxy provisioning');
+    }
+
     const proxyId = this.generateProxyId(userId);
+    const startTime = Date.now();
 
     try {
-      // Check if proxy already exists
+      // Check user tier - free tier users get direct tunnel access
+      if (user && shouldUseDirectTunnel(user)) {
+        const userTier = getUserTier(user);
+
+        logger.info('🆓 [StreamingProxy] Free tier user detected, providing direct tunnel access', {
+          userTier,
+          userId,
+          proxyId,
+        });
+
+        // Return direct tunnel configuration instead of container
+        const directTunnelConfig = {
+          userId,
+          proxyId: `direct-tunnel-${userId}`,
+          directTunnel: true,
+          endpoint: `/api/direct-proxy/${userId}`,
+          port: null, // No container port needed
+          createdAt: new Date(),
+          lastActivity: new Date(),
+          status: 'direct-tunnel',
+          userTier,
+          type: 'direct-tunnel',
+        };
+
+        // Log successful direct tunnel provision
+        logger.info('✅ [StreamingProxy] Direct tunnel configured successfully', {
+          userId,
+          userTier,
+          proxyId: directTunnelConfig.proxyId,
+          duration: Date.now() - startTime,
+        });
+
+        return directTunnelConfig;
+      }
+
+      // Premium/Enterprise tier container provisioning
+      logger.info('🐳 [StreamingProxy] Premium tier user detected, provisioning container', {
+        userId,
+        userTier: getUserTier(user),
+        proxyId,
+      });
+
+      // Check if proxy already exists (for premium/enterprise users)
       if (this.activeProxies.has(userId)) {
         const existingProxy = this.activeProxies.get(userId);
         logger.info(`Proxy already exists for user: ${userId}`);

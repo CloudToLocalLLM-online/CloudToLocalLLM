@@ -11,8 +11,8 @@ CloudToLocalLLM bridges the gap between powerful cloud-based Large Language Mode
 This project is well-documented. Below is a curated list of essential resources to understand the architecture, development practices, and operational procedures.
 
 ### Core Project Documentation
-*   **[`README.md`](README.md:1):** The main entry point for understanding the project's vision, features, and high-level architecture.
-*   **[`CONTRIBUTING.md`](CONTRIBUTING.md:1):** Essential guidelines for setting up the development environment, coding standards, and the pull request process.
+*   **[`README.md`](../../README.md:1):** The main entry point for understanding the project's vision, features, and high-level architecture.
+*   **[`CONTRIBUTING.md`](../../CONTRIBUTING.md:1):** Essential guidelines for setting up the development environment, coding standards, and the pull request process.
 *   **`CHANGELOG.md`**: A log of all changes, new features, and bug fixes for each version.
 *   **`LICENSE`**: The MIT License under which the project is distributed.
 

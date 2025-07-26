@@ -11,9 +11,11 @@ import winston from 'winston';
 import { TunnelProxy } from './tunnel-proxy.js';
 import { TunnelLogger, ERROR_CODES, ErrorResponseBuilder } from '../utils/logger.js';
 import { createTunnelRateLimitMiddleware } from '../middleware/rate-limiter.js';
-import { createJWTValidationMiddleware } from '../middleware/jwt-validator.js';
+// JWT validation is handled by the custom authenticateToken function below
 import { createConnectionSecurityMiddleware, createWebSocketSecurityValidator } from '../middleware/connection-security.js';
 import { createSecurityAuditMiddleware } from '../middleware/security-audit-logger.js';
+import { createDirectProxyRoutes } from '../routes/direct-proxy-routes.js';
+import { addTierInfo, requireFeature } from '../middleware/tier-check.js';
 
 const router = express.Router();
 
@@ -55,18 +57,7 @@ export function createTunnelRoutes(server, config, logger = winston.createLogger
     includeHeaders: true,
   });
 
-  // Create enhanced JWT validation middleware
-  const jwtValidationMiddleware = createJWTValidationMiddleware({
-    domain: AUTH0_DOMAIN,
-    audience: AUTH0_AUDIENCE,
-    clockTolerance: 30,
-    maxAge: '1h',
-    refreshThreshold: 5 * 60, // 5 minutes
-    enableCaching: true,
-    cacheMaxAge: 5 * 60 * 1000, // 5 minutes
-    maxValidationAttempts: 10,
-    validationWindowMs: 60 * 1000, // 1 minute
-  });
+  // JWT validation is handled by the custom authenticateToken function defined below
 
   // Create connection security middleware
   const connectionSecurityMiddleware = createConnectionSecurityMiddleware({
@@ -315,8 +306,11 @@ export function createTunnelRoutes(server, config, logger = winston.createLogger
   router.use(connectionSecurityMiddleware);
   router.use(securityAuditMiddleware);
 
+  // Add tier information to all authenticated requests
+  router.use(authenticateToken, addTierInfo);
+
   // Health check endpoint for specific user's tunnel
-  router.get('/health/:userId', jwtValidationMiddleware, (req, res) => {
+  router.get('/health/:userId', authenticateToken, (req, res) => {
     const { userId } = req.params;
 
     // Verify user can only check their own tunnel
@@ -336,7 +330,7 @@ export function createTunnelRoutes(server, config, logger = winston.createLogger
   });
 
   // General tunnel status endpoint
-  router.get('/status', jwtValidationMiddleware, (req, res) => {
+  router.get('/status', authenticateToken, (req, res) => {
     const status = tunnelProxy.getUserConnectionStatus(req.userId);
     const stats = tunnelProxy.getStats();
 
@@ -373,8 +367,22 @@ export function createTunnelRoutes(server, config, logger = winston.createLogger
     }
   });
 
+  // Direct proxy routes for free tier users (no containers)
+  const directProxyRouter = createDirectProxyRoutes(tunnelProxy);
+  router.use('/direct-proxy/:userId', (req, res, next) => {
+    // Verify user can only access their own direct proxy
+    if (req.params.userId !== req.userId) {
+      return res.status(403).json({
+        error: 'Access denied',
+        message: 'You can only access your own direct proxy',
+        code: 'DIRECT_PROXY_ACCESS_DENIED',
+      });
+    }
+    next();
+  }, directProxyRouter);
+
   // Performance metrics endpoint
-  router.get('/metrics', jwtValidationMiddleware, (req, res) => {
+  router.get('/metrics', authenticateToken, (req, res) => {
     try {
       const stats = tunnelProxy.getStats();
       const userStatus = tunnelProxy.getUserConnectionStatus(req.userId);
@@ -412,8 +420,8 @@ export function createTunnelRoutes(server, config, logger = winston.createLogger
     }
   });
 
-  // Proxy middleware for tunnel requests with rate limiting
-  router.all('/:userId/*', jwtValidationMiddleware, rateLimitMiddleware, requireTunnelConnection, async(req, res) => {
+  // Proxy middleware for tunnel requests with rate limiting (premium/enterprise users)
+  router.all('/:userId/*', authenticateToken, rateLimitMiddleware, requireFeature('containerOrchestration'), requireTunnelConnection, async(req, res) => {
     const { userId } = req.params;
     const startTime = Date.now();
 

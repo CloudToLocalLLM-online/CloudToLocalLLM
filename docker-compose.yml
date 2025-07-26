@@ -3,7 +3,7 @@ services:
   webapp:
     build:
       context: .
-      dockerfile: Dockerfile.nginx
+      dockerfile: config/docker/Dockerfile.nginx
     image: cloudtolocalllm-nginx
     container_name: cloudtolocalllm-webapp
     ports:

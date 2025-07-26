@@ -56,6 +56,11 @@ class AppConfig {
   static const bool showTunnelDebugInfo = true;
   static const bool enableVerboseLogging = true;
 
+  // Tier-based feature flags
+  static const bool enableTierDetection = true;
+  static const bool showTierInformation = true;
+  static const bool enableDirectTunnelMode = true;
+
   // Ollama Configuration (Direct Local Connection for Desktop)
   static const String defaultOllamaHost = 'localhost';
   static const int defaultOllamaPort = 11434;
