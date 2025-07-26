@@ -4,7 +4,7 @@
 class AppConfig {
   // App Information
   static const String appName = 'CloudToLocalLLM';
-  static const String appVersion = '3.12.17'; // Updated by build scripts
+  static const String appVersion = '3.12.18'; // Updated by build scripts
   static const String appDescription =
       'Manage and run powerful Large Language Models locally, orchestrated via a cloud interface.';
 
@@ -55,6 +55,11 @@ class AppConfig {
   // Enhanced debug features for v3.5.2
   static const bool showTunnelDebugInfo = true;
   static const bool enableVerboseLogging = true;
+
+  // Tier-based feature flags
+  static const bool enableTierDetection = true;
+  static const bool showTierInformation = true;
+  static const bool enableDirectTunnelMode = true;
 
   // Ollama Configuration (Direct Local Connection for Desktop)
   static const String defaultOllamaHost = 'localhost';
