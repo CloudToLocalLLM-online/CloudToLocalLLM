@@ -30,7 +30,6 @@
 # Distribution and build directories
 # dist/ - Allow distribution directory for desktop app packages
 build/
-!build/web/  # Allow web build for deployment
 
 # Tray daemon build artifacts
 tray_daemon/build/
