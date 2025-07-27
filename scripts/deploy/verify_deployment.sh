@@ -70,8 +70,10 @@ test_pass() {
     echo "[DEBUG] Setting TEST_RESULTS..." >&2
     TEST_RESULTS["$test_name"]="PASS"
     echo "[DEBUG] Incrementing counters..." >&2
-    ((PASSED_TESTS++))
-    ((TOTAL_TESTS++))
+    PASSED_TESTS=$((PASSED_TESTS + 1))
+    echo "[DEBUG] PASSED_TESTS incremented to $PASSED_TESTS" >&2
+    TOTAL_TESTS=$((TOTAL_TESTS + 1))
+    echo "[DEBUG] TOTAL_TESTS incremented to $TOTAL_TESTS" >&2
     echo "[DEBUG] Calling log_success..." >&2
     log_success "✅ $test_name"
     echo "[DEBUG] test_pass completed" >&2
