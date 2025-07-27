@@ -22,7 +22,7 @@ else {
 
 # Configuration
 $ProjectRoot = Get-ProjectRoot
-$InstallerScriptPath = Join-Path $ProjectRoot "installers\windows\Basic.iss"
+$InstallerScriptPath = Join-Path $ProjectRoot "build-tools\installers\windows\Basic.iss"
 $OutputDir = Join-Path $ProjectRoot "dist\windows"
 
 # Show help information

@@ -53,7 +53,7 @@ test('Dockerfile.streaming-proxy updated for simplified tunnel', () => {
  * Verify streaming-proxy/proxy-server.js has been updated
  */
 test('proxy-server.js updated to use standard HTTP client', () => {
-  const serverPath = path.join(__dirname, '../streaming-proxy/proxy-server.js');
+  const serverPath = path.join(__dirname, '../services/streaming-proxy/proxy-server.js');
   const content = fs.readFileSync(serverPath, 'utf8');
   
   // Should not contain WebSocket server code
@@ -91,7 +91,7 @@ test('package.json updated with simplified dependencies', () => {
  * Verify streaming-proxy-manager.js has been updated
  */
 test('streaming-proxy-manager.js updated with OLLAMA_BASE_URL', () => {
-  const managerPath = path.join(__dirname, '../api-backend/streaming-proxy-manager.js');
+  const managerPath = path.join(__dirname, '../services/api-backend/streaming-proxy-manager.js');
   const content = fs.readFileSync(managerPath, 'utf8');
   
   // Should contain OLLAMA_BASE_URL environment variable

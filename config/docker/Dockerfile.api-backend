@@ -5,7 +5,7 @@ FROM node:18-alpine AS builder
 WORKDIR /app
 
 # Copy package files
-COPY api-backend/package*.json ./
+COPY services/api-backend/package*.json ./
 # Use npm install if package-lock.json doesn't exist, otherwise use npm ci
 RUN if [ -f package-lock.json ]; then npm ci --omit=dev; else npm install --omit=dev; fi
 
@@ -26,7 +26,7 @@ WORKDIR /app
 COPY --from=builder /app/node_modules ./node_modules
 
 # Copy application code
-COPY api-backend/ ./
+COPY services/api-backend/ ./
 
 # Set proper ownership
 RUN chown -R nodejs:nodejs /app

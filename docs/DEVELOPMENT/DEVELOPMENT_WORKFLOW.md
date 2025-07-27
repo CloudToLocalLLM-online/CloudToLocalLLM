@@ -145,9 +145,9 @@ CloudToLocalLLM follows an organized directory structure for better maintainabil
 ### 🏗️ **Core Directories**
 
 #### **Application Code**
-- `api-backend/`: Node.js backend for API, Auth0 integration, and streaming proxy management
+- `services/api-backend/`: Node.js backend for API, Auth0 integration, and streaming proxy management
+- `services/streaming-proxy/`: Node.js code for lightweight, ephemeral proxy servers
 - `lib/`: Unified Flutter application code (UI, chat, system tray, settings, services)
-- `streaming-proxy/`: Node.js code for lightweight, ephemeral proxy servers
 - `web/`: Entry point and configuration for the Flutter web application
 - `assets/`: Static assets for the Flutter application (images, fonts, version info)
 
@@ -171,7 +171,6 @@ CloudToLocalLLM follows an organized directory structure for better maintainabil
 #### **Configuration & Infrastructure**
 - `config/`: Configuration files for various platforms and services
 - `docker/`: Dockerfiles and related files for building service containers
-- `static_homepage/`: **Legacy** static HTML files (now served by Flutter app)
 
 #### **Development Tools**
 - `.vscode/`: VS Code editor configurations, launch settings, recommended extensions

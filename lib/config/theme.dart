@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 /// Modern Material Design 3 theme configuration matching homepage design
 class AppTheme {
-  // Color scheme matching static_homepage/css/theme.css
+  // Color scheme matching homepage design
   static const Color primaryColor = Color(
     0xFFa777e3,
   ); // --color-primary: #a777e3

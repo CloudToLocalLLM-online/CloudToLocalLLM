@@ -80,12 +80,21 @@ CloudToLocalLLM/
 │   ├── services/          # Core services
 │   ├── shared/            # Shared utilities
 │   └── widgets/           # Custom widgets
-├── api-backend/           # Node.js API backend
-├── streaming-proxy/       # Ephemeral proxy containers
+├── services/              # Backend services
+│   ├── api-backend/       # Node.js API backend
+│   └── streaming-proxy/   # Ephemeral proxy containers
+├── config/                # Unified configuration
+│   ├── augment/           # AI assistant rules
+│   ├── docker/            # Docker configurations
+│   └── nginx/             # Web server configurations
+├── build-tools/           # Build infrastructure
+│   ├── installers/        # Platform installers
+│   └── packaging/         # Package configurations
 ├── web/                   # Flutter web configuration
 ├── assets/                # Static assets
 ├── docs/                  # Documentation
-└── scripts/               # Build and deployment scripts
+├── scripts/               # Build and deployment scripts
+└── archive/               # Archived files and logs
 ```
 
 ### **Core Services**
