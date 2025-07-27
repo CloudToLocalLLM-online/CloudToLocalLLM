@@ -311,7 +311,7 @@ performance_test() {
 
         if [[ "$status_code" == "200" ]]; then
             total_time=$((total_time + request_time))
-            ((successful_requests++))
+            successful_requests=$((successful_requests + 1))
         fi
     done
 
