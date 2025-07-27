@@ -169,12 +169,18 @@ http_test() {
         local response=$(curl -k -s -o /dev/null -w "%{http_code}|%{time_total}" --max-time "$TIMEOUT_SECONDS" "$url" 2>/dev/null || echo "000|0")
         local end_time=$(date +%s%3N)
         echo "[DEBUG] Curl response: $response" >&2
-        
-        local status_code=$(echo "$response" | cut -d'|' -f1)
-        local response_time_seconds=$(echo "$response" | cut -d'|' -f2)
-        local response_time_ms=$(printf "%.0f" $(echo "$response_time_seconds * 1000" | bc 2>/dev/null || echo "0"))
 
+        echo "[DEBUG] Parsing response..." >&2
+        local status_code=$(echo "$response" | cut -d'|' -f1)
+        echo "[DEBUG] Status code: $status_code" >&2
+        local response_time_seconds=$(echo "$response" | cut -d'|' -f2)
+        echo "[DEBUG] Response time seconds: $response_time_seconds" >&2
+        local response_time_ms=$(printf "%.0f" $(echo "$response_time_seconds * 1000" | bc 2>/dev/null || echo "0"))
+        echo "[DEBUG] Response time ms: $response_time_ms" >&2
+
+        echo "[DEBUG] Checking status code $status_code against expected $expected_status" >&2
         if [[ "$status_code" == "$expected_status" ]]; then
+            echo "[DEBUG] Status code matches, checking response time..." >&2
             if (( response_time_ms > MAX_RESPONSE_TIME )); then
                 test_warning "$test_name" "Slow response: ${response_time_ms}ms (threshold: ${MAX_RESPONSE_TIME}ms)"
             else
