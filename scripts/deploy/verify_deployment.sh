@@ -181,11 +181,16 @@ http_test() {
         echo "[DEBUG] Checking status code $status_code against expected $expected_status" >&2
         if [[ "$status_code" == "$expected_status" ]]; then
             echo "[DEBUG] Status code matches, checking response time..." >&2
+            echo "[DEBUG] response_time_ms=$response_time_ms, MAX_RESPONSE_TIME=$MAX_RESPONSE_TIME" >&2
+            echo "[DEBUG] About to do arithmetic comparison..." >&2
             if (( response_time_ms > MAX_RESPONSE_TIME )); then
+                echo "[DEBUG] Response time is slow" >&2
                 test_warning "$test_name" "Slow response: ${response_time_ms}ms (threshold: ${MAX_RESPONSE_TIME}ms)"
             else
+                echo "[DEBUG] Response time is fast" >&2
                 test_pass "$test_name (${response_time_ms}ms)"
             fi
+            echo "[DEBUG] After arithmetic comparison" >&2
             return 0
         fi
         
