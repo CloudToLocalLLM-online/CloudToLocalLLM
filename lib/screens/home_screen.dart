@@ -17,6 +17,7 @@ import '../components/message_input.dart';
 import '../components/app_logo.dart';
 import '../components/setup_wizard.dart';
 import '../components/web_download_prompt.dart';
+import '../components/tunnel_setup_banner.dart';
 
 /// Modern ChatGPT-like chat interface
 class HomeScreen extends StatefulWidget {
@@ -384,6 +385,9 @@ class _HomeScreenState extends State<HomeScreen> {
           color: AppTheme.backgroundMain,
           child: Column(
             children: [
+              // Tunnel setup banner (web only)
+              if (kIsWeb) const TunnelSetupBanner(showDismiss: true),
+
               // Chat messages
               Expanded(
                 child: Container(
@@ -414,6 +418,9 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildEmptyState(BuildContext context) {
     return Column(
       children: [
+        // Tunnel setup banner (web only)
+        if (kIsWeb) const TunnelSetupBanner(),
+
         // Main empty state content
         Expanded(
           child: Center(

@@ -12,6 +12,7 @@ import '../services/ollama_service.dart';
 import '../services/local_ollama_connection_service.dart';
 import '../services/setup_wizard_service.dart';
 import '../components/modern_card.dart';
+import '../components/llm_provider_selector.dart';
 
 /// Modern settings screen with comprehensive configuration options
 class SettingsScreen extends StatefulWidget {
@@ -24,7 +25,6 @@ class SettingsScreen extends StatefulWidget {
 class _SettingsScreenState extends State<SettingsScreen> {
   // Settings state
   String _selectedTheme = 'dark';
-  String _selectedLLMProvider = 'ollama';
   bool _enableNotifications = true;
 
   @override
@@ -446,31 +446,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
         children: [
           _buildSectionHeader(
             context,
-            'Model Manager',
-            Icons.download_for_offline,
+            'LLM Provider',
+            Icons.smart_toy,
             AppTheme.secondaryColor,
           ),
           SizedBox(height: AppTheme.spacingM),
 
-          // Provider selection
-          _buildSettingItem(
-            context,
-            'Provider',
-            'Choose your LLM provider',
-            DropdownButton<String>(
-              value: _selectedLLMProvider,
-              isExpanded: true,
-              items: const [
-                DropdownMenuItem(value: 'ollama', child: Text('Ollama')),
-                DropdownMenuItem(value: 'lmstudio', child: Text('LM Studio')),
-              ],
-              onChanged: (value) {
-                setState(() {
-                  _selectedLLMProvider = value ?? 'ollama';
-                });
-              },
-            ),
-          ),
+          // LLM Provider Selector
+          const LLMProviderSelector(showStatus: true, showModels: true),
 
           SizedBox(height: AppTheme.spacingM),
 
@@ -491,7 +474,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
           // Quick info about what's in the detailed settings
           Text(
-            'Configure Ollama connection, download models, and test connectivity',
+            'Configure LLM connections, download models, and test connectivity',
             style: Theme.of(
               context,
             ).textTheme.bodySmall?.copyWith(color: AppTheme.textColorLight),

@@ -42,13 +42,14 @@ export class TunnelProxy {
     /** @type {Map<string, TunnelConnection>} */
     this.userConnections = new Map();
 
-    this.REQUEST_TIMEOUT = 30000; // 30 seconds
+    this.REQUEST_TIMEOUT = 30000; // 30 seconds (default)
+    this.LLM_REQUEST_TIMEOUT = 120000; // 2 minutes for LLM requests
     this.PING_INTERVAL = 30000; // 30 seconds
     this.PONG_TIMEOUT = 10000; // 10 seconds
     this.pingIntervals = new Map();
     this.pongTimeouts = new Map();
 
-    // Enhanced performance metrics with connection pooling
+    // Enhanced performance metrics with connection pooling and LLM-specific tracking
     this.metrics = {
       totalRequests: 0,
       successfulRequests: 0,
@@ -66,6 +67,26 @@ export class TunnelProxy {
       connectionPoolMisses: 0,
       queuedMessages: 0,
       peakQueuedMessages: 0,
+      // LLM-specific metrics
+      llmRequests: 0,
+      llmSuccessfulRequests: 0,
+      llmFailedRequests: 0,
+      llmTimeoutRequests: 0,
+      llmAverageResponseTime: 0,
+      llmRecentResponseTimes: [],
+      streamingRequests: 0,
+      modelOperations: {
+        list: 0,
+        pull: 0,
+        delete: 0,
+        show: 0,
+      },
+      providerStats: {
+        ollama: 0,
+        lmstudio: 0,
+        openai: 0,
+        other: 0,
+      },
     };
 
     // Connection pooling for efficient resource management
@@ -318,6 +339,15 @@ export class TunnelProxy {
       this.metrics.successfulRequests++;
       this.updateAverageResponseTime(responseTime);
 
+      // Track LLM-specific metrics if applicable
+      if (pendingRequest.method && pendingRequest.path) {
+        this.trackLLMRequest(
+          { path: pendingRequest.path, method: pendingRequest.method, body: pendingRequest.body },
+          responseTime,
+          true
+        );
+      }
+
       // Resolve the promise with the HTTP response
       pendingRequest.resolve(httpResponse);
 
@@ -509,12 +539,25 @@ export class TunnelProxy {
   }
 
   /**
-   * Forward HTTP request to desktop client
+   * Forward LLM request to desktop client with extended timeout
    * @param {string} userId - User ID
    * @param {Object} httpRequest - HTTP request object
    * @returns {Promise<Object>} HTTP response object
    */
-  async forwardRequest(userId, httpRequest) {
+  async forwardLLMRequest(userId, httpRequest) {
+    return this.forwardRequestWithTimeout(userId, httpRequest, this.LLM_REQUEST_TIMEOUT);
+  }
+
+  /**
+   * Forward HTTP request to desktop client with custom timeout
+   * @param {string} userId - User ID
+   * @param {Object} httpRequest - HTTP request object
+   * @param {number} customTimeout - Custom timeout in milliseconds
+   * @returns {Promise<Object>} HTTP response object
+   */
+  async forwardRequestWithTimeout(userId, httpRequest, customTimeout = null) {
+    const timeoutMs = customTimeout || (httpRequest.timeout || this.REQUEST_TIMEOUT);
+
     const connection = this.userConnections.get(userId);
     if (!connection || !connection.isConnected) {
       const error = new Error('Desktop client not connected');
@@ -537,22 +580,31 @@ export class TunnelProxy {
         this.metrics.timeoutRequests++;
         this.metrics.failedRequests++;
 
+        // Track LLM timeout if applicable
+        if (httpRequest.path && httpRequest.method) {
+          this.trackLLMRequest(httpRequest, null, false);
+          if (this.isLLMPath(httpRequest.path)) {
+            this.metrics.llmTimeoutRequests++;
+          }
+        }
+
         const error = new Error('Request timeout');
         error.code = ERROR_CODES.REQUEST_TIMEOUT;
         error.requestId = requestMessage.id;
-        error.timeout = this.REQUEST_TIMEOUT;
+        error.timeout = timeoutMs;
 
         this.logger.logRequest('timeout', requestMessage.id, userId, {
           connectionId: connection.connectionId,
           correlationId: connection.correlationId,
           method: httpRequest.method,
           path: httpRequest.path,
-          timeout: this.REQUEST_TIMEOUT,
+          timeout: timeoutMs,
+          isLLMRequest: timeoutMs > this.REQUEST_TIMEOUT,
           pendingRequestsCount: connection.pendingRequests.size,
         });
 
         reject(error);
-      }, this.REQUEST_TIMEOUT);
+      }, timeoutMs);
 
       // Store pending request with enhanced metadata
       connection.pendingRequests.set(requestMessage.id, {
@@ -564,6 +616,7 @@ export class TunnelProxy {
         method: httpRequest.method,
         path: httpRequest.path,
         startTime,
+        isLLMRequest: timeoutMs > this.REQUEST_TIMEOUT,
       });
 
       // Send request to desktop client with error handling
@@ -575,6 +628,8 @@ export class TunnelProxy {
           correlationId: connection.correlationId,
           method: httpRequest.method,
           path: httpRequest.path,
+          timeout: timeoutMs,
+          isLLMRequest: timeoutMs > this.REQUEST_TIMEOUT,
           pendingRequestsCount: connection.pendingRequests.size,
         });
       } catch (error) {
@@ -594,17 +649,25 @@ export class TunnelProxy {
             correlationId: connection.correlationId,
             requestId: requestMessage.id,
             error: error.message,
+            isLLMRequest: timeoutMs > this.REQUEST_TIMEOUT,
           },
         );
 
         const enhancedError = new Error(`Failed to send request: ${error.message}`);
         enhancedError.code = ERROR_CODES.WEBSOCKET_SEND_FAILED;
-        enhancedError.requestId = requestMessage.id;
-        enhancedError.originalError = error;
-
         reject(enhancedError);
       }
     });
+  }
+
+  /**
+   * Forward HTTP request to desktop client
+   * @param {string} userId - User ID
+   * @param {Object} httpRequest - HTTP request object
+   * @returns {Promise<Object>} HTTP response object
+   */
+  async forwardRequest(userId, httpRequest) {
+    return this.forwardRequestWithTimeout(userId, httpRequest, null);
   }
 
   /**
@@ -761,6 +824,119 @@ export class TunnelProxy {
     const cutoff = new Date(Date.now() - 60000); // 1 minute window
     this.metrics.requestTimestamps = this.metrics.requestTimestamps
       .filter(timestamp => timestamp > cutoff);
+  }
+
+  /**
+   * Track LLM-specific request metrics
+   * @param {Object} httpRequest - HTTP request object
+   * @param {number} responseTime - Response time in milliseconds
+   * @param {boolean} success - Whether the request was successful
+   */
+  trackLLMRequest(httpRequest, responseTime = null, success = true) {
+    // Detect if this is an LLM request based on path
+    const isLLMRequest = this.isLLMPath(httpRequest.path);
+    if (!isLLMRequest) return;
+
+    this.metrics.llmRequests++;
+
+    if (success && responseTime !== null) {
+      this.metrics.llmSuccessfulRequests++;
+      this.updateLLMAverageResponseTime(responseTime);
+    } else if (!success) {
+      this.metrics.llmFailedRequests++;
+    }
+
+    // Track model operations
+    this.trackModelOperation(httpRequest.path, httpRequest.method);
+
+    // Track provider usage
+    this.trackProviderUsage(httpRequest);
+
+    // Track streaming requests
+    if (this.isStreamingRequest(httpRequest)) {
+      this.metrics.streamingRequests++;
+    }
+  }
+
+  /**
+   * Check if a request path is LLM-related
+   * @param {string} path - Request path
+   * @returns {boolean} True if LLM-related
+   */
+  isLLMPath(path) {
+    const llmPaths = [
+      '/api/chat', '/api/generate', '/api/embeddings',
+      '/api/models', '/api/pull', '/api/push', '/api/delete',
+      '/api/show', '/api/copy', '/api/create'
+    ];
+    return llmPaths.some(llmPath => path.startsWith(llmPath));
+  }
+
+  /**
+   * Check if a request is for streaming
+   * @param {Object} httpRequest - HTTP request object
+   * @returns {boolean} True if streaming request
+   */
+  isStreamingRequest(httpRequest) {
+    if (httpRequest.body) {
+      try {
+        const body = typeof httpRequest.body === 'string'
+          ? JSON.parse(httpRequest.body)
+          : httpRequest.body;
+        return body.stream === true;
+      } catch (e) {
+        return false;
+      }
+    }
+    return false;
+  }
+
+  /**
+   * Track model operations (list, pull, delete, etc.)
+   * @param {string} path - Request path
+   * @param {string} method - HTTP method
+   */
+  trackModelOperation(path, method) {
+    if (path.includes('/api/models') && method === 'GET') {
+      this.metrics.modelOperations.list++;
+    } else if (path.includes('/api/pull') && method === 'POST') {
+      this.metrics.modelOperations.pull++;
+    } else if (path.includes('/api/delete') && method === 'DELETE') {
+      this.metrics.modelOperations.delete++;
+    } else if (path.includes('/api/show') && method === 'POST') {
+      this.metrics.modelOperations.show++;
+    }
+  }
+
+  /**
+   * Track provider usage based on request characteristics
+   * @param {Object} httpRequest - HTTP request object
+   */
+  trackProviderUsage(httpRequest) {
+    // Default to Ollama since that's the primary target
+    // This could be enhanced to detect other providers based on headers or request format
+    this.metrics.providerStats.ollama++;
+  }
+
+  /**
+   * Update LLM average response time
+   * @param {number} responseTime - Response time in milliseconds
+   */
+  updateLLMAverageResponseTime(responseTime) {
+    const totalSuccessful = this.metrics.llmSuccessfulRequests;
+    if (totalSuccessful === 1) {
+      this.metrics.llmAverageResponseTime = responseTime;
+    } else {
+      // Calculate running average
+      this.metrics.llmAverageResponseTime =
+        ((this.metrics.llmAverageResponseTime * (totalSuccessful - 1)) + responseTime) / totalSuccessful;
+    }
+
+    // Track recent LLM response times
+    this.metrics.llmRecentResponseTimes.push(responseTime);
+    if (this.metrics.llmRecentResponseTimes.length > 50) {
+      this.metrics.llmRecentResponseTimes.shift();
+    }
   }
 
   /**

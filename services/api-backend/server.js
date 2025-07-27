@@ -378,6 +378,204 @@ app.use('/api/monitoring', monitoringRouter);
 // Administrative routes
 app.use('/api/admin', adminRoutes);
 
+// LLM Tunnel Cloud Proxy Endpoints
+// These endpoints provide the missing /api/ollama/* routes that the web platform expects
+app.all('/api/ollama/*', authenticateJWT, addTierInfo, async(req, res) => {
+  const startTime = Date.now();
+  const requestId = `llm-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+  const userId = req.user?.sub;
+  const userTier = getUserTier(req.user);
+
+  if (!userId) {
+    return res.status(401).json({
+      error: 'Authentication required',
+      code: 'AUTH_REQUIRED',
+      message: 'Please authenticate to access LLM services.',
+    });
+  }
+
+  // Rate limiting based on user tier
+  const rateLimits = getRateLimitsForTier(userTier);
+  if (!checkRateLimit(userId, 'ollama', rateLimits)) {
+    return res.status(429).json({
+      error: 'Rate limit exceeded',
+      code: 'RATE_LIMIT_EXCEEDED',
+      message: 'You have exceeded the rate limit for your tier. Please try again later.',
+      tier: userTier,
+      limits: rateLimits,
+      requestId,
+    });
+  }
+
+  try {
+    logger.info('🦙 [LLMTunnel] Processing LLM request', {
+      userId,
+      userTier,
+      method: req.method,
+      path: req.path,
+      requestId,
+    });
+
+    // Extract the Ollama API path (remove /api/ollama prefix)
+    const ollamaPath = req.path.replace('/api/ollama', '') || '/';
+
+    // Prepare headers for forwarding (remove hop-by-hop headers)
+    const forwardHeaders = { ...req.headers };
+    const headersToRemove = [
+      'host', 'connection', 'upgrade', 'proxy-authenticate',
+      'proxy-authorization', 'te', 'trailers', 'transfer-encoding'
+    ];
+    headersToRemove.forEach(header => {
+      delete forwardHeaders[header];
+    });
+
+    // Create HTTP request object for tunnel proxy
+    const httpRequest = {
+      id: requestId,
+      method: req.method,
+      path: ollamaPath,
+      headers: forwardHeaders,
+      body: req.method !== 'GET' && req.method !== 'HEAD' ? JSON.stringify(req.body) : undefined,
+      query: req.query,
+      timeout: 60000, // 60 seconds for LLM requests (longer than standard)
+    };
+
+    logger.debug('🔄 [LLMTunnel] Forwarding request through tunnel', {
+      userId,
+      userTier,
+      method: req.method,
+      path: ollamaPath,
+      requestId,
+      hasBody: !!httpRequest.body,
+    });
+
+    // Forward request through tunnel proxy using LLM-optimized method
+    const response = await tunnelProxy.forwardLLMRequest(userId, httpRequest);
+
+    const duration = Date.now() - startTime;
+
+    // Record successful request for rate limiting
+    recordRequest(userId, 'ollama');
+
+    // Log audit event
+    logLLMAuditEvent({
+      userId,
+      providerId: 'ollama',
+      requestType: req.method,
+      requestPath: ollamaPath,
+      requestSize: httpRequest.body ? httpRequest.body.length : 0,
+      responseSize: response.body ? response.body.length : 0,
+      responseTime: duration,
+      success: true,
+      userTier,
+      requestId,
+    });
+
+    logger.info('✅ [LLMTunnel] Request completed successfully', {
+      userId,
+      userTier,
+      method: req.method,
+      path: ollamaPath,
+      requestId,
+      statusCode: response.statusCode,
+      duration,
+    });
+
+    // Set response headers
+    if (response.headers) {
+      Object.entries(response.headers).forEach(([key, value]) => {
+        if (key.toLowerCase() !== 'transfer-encoding') {
+          res.set(key, value);
+        }
+      });
+    }
+
+    // Send response
+    res.status(response.statusCode || 200);
+    if (response.body) {
+      res.send(response.body);
+    } else {
+      res.end();
+    }
+
+  } catch (error) {
+    const duration = Date.now() - startTime;
+
+    // Log audit event for failed request
+    logLLMAuditEvent({
+      userId,
+      providerId: 'ollama',
+      requestType: req.method,
+      requestPath: req.path.replace('/api/ollama', ''),
+      requestSize: httpRequest?.body ? httpRequest.body.length : 0,
+      responseTime: duration,
+      success: false,
+      errorMessage: error.message,
+      userTier,
+      requestId,
+    });
+
+    logger.error('❌ [LLMTunnel] Request failed', {
+      userId,
+      userTier,
+      method: req.method,
+      path: req.path,
+      error: error.message,
+      code: error.code,
+      duration,
+      requestId,
+    });
+
+    // Handle specific tunnel errors with appropriate HTTP status codes
+    if (error.message === 'LLM request timeout' || error.code === 'REQUEST_TIMEOUT') {
+      return res.status(504).json({
+        error: 'LLM request timeout',
+        code: 'LLM_REQUEST_TIMEOUT',
+        message: 'The request to your local LLM service timed out. This may happen with complex queries.',
+        timeout: 60000,
+        requestId,
+      });
+    }
+
+    if (error.code === 'DESKTOP_CLIENT_DISCONNECTED' || error.message.includes('not connected')) {
+      return res.status(503).json({
+        error: 'Desktop client not connected',
+        code: 'DESKTOP_CLIENT_DISCONNECTED',
+        message: 'Please ensure your CloudToLocalLLM desktop client is running and connected.',
+        requestId,
+        troubleshooting: [
+          'Download and install the CloudToLocalLLM desktop client',
+          'Ensure the desktop client is running and authenticated',
+          'Check that your local LLM service (Ollama) is running',
+          'Verify your firewall allows the desktop client to connect',
+        ],
+      });
+    }
+
+    if (error.code === 'ECONNREFUSED' || error.code === 'ENOTFOUND') {
+      return res.status(502).json({
+        error: 'Local LLM service unavailable',
+        code: 'LOCAL_LLM_UNAVAILABLE',
+        message: 'Unable to connect to your local LLM service.',
+        requestId,
+        troubleshooting: [
+          'Ensure Ollama or your LLM service is running',
+          'Check that the service is accessible on the expected port',
+          'Verify the desktop client configuration',
+        ],
+      });
+    }
+
+    // Generic error response
+    res.status(500).json({
+      error: 'LLM tunnel error',
+      code: 'LLM_TUNNEL_ERROR',
+      message: 'An error occurred while processing your LLM request.',
+      requestId,
+    });
+  }
+});
+
 // User tier endpoint
 app.get('/api/user/tier', authenticateJWT, addTierInfo, (req, res) => {
   try {
@@ -651,10 +849,153 @@ app.use((req, res) => {
   res.status(404).json({ error: 'Not found' });
 });
 
+// LLM Security and Monitoring Helper Functions
+
+// Rate limiting storage
+const rateLimitStorage = new Map();
+
+// Get rate limits based on user tier
+function getRateLimitsForTier(tier) {
+  const limits = {
+    free: {
+      requestsPerMinute: 10,
+      requestsPerHour: 100,
+      requestsPerDay: 500,
+      maxTokensPerRequest: 2000,
+    },
+    pro: {
+      requestsPerMinute: 60,
+      requestsPerHour: 1000,
+      requestsPerDay: 10000,
+      maxTokensPerRequest: 4000,
+    },
+    enterprise: {
+      requestsPerMinute: 120,
+      requestsPerHour: 5000,
+      requestsPerDay: 50000,
+      maxTokensPerRequest: 8000,
+    },
+  };
+
+  return limits[tier] || limits.free;
+}
+
+// Check rate limit for user
+function checkRateLimit(userId, providerId, limits) {
+  const key = `${userId}:${providerId}`;
+  const now = Date.now();
+
+  // Get or create request history
+  let history = rateLimitStorage.get(key) || [];
+
+  // Clean old requests (older than 24 hours)
+  history = history.filter(timestamp => now - timestamp < 24 * 60 * 60 * 1000);
+
+  // Check per-minute limit
+  const minuteRequests = history.filter(timestamp => now - timestamp < 60 * 1000).length;
+  if (minuteRequests >= limits.requestsPerMinute) {
+    logger.warn(`Rate limit exceeded for ${userId}:${providerId} - per minute`, {
+      userId,
+      providerId,
+      minuteRequests,
+      limit: limits.requestsPerMinute,
+    });
+    return false;
+  }
+
+  // Check per-hour limit
+  const hourRequests = history.filter(timestamp => now - timestamp < 60 * 60 * 1000).length;
+  if (hourRequests >= limits.requestsPerHour) {
+    logger.warn(`Rate limit exceeded for ${userId}:${providerId} - per hour`, {
+      userId,
+      providerId,
+      hourRequests,
+      limit: limits.requestsPerHour,
+    });
+    return false;
+  }
+
+  // Check per-day limit
+  const dayRequests = history.length;
+  if (dayRequests >= limits.requestsPerDay) {
+    logger.warn(`Rate limit exceeded for ${userId}:${providerId} - per day`, {
+      userId,
+      providerId,
+      dayRequests,
+      limit: limits.requestsPerDay,
+    });
+    return false;
+  }
+
+  return true;
+}
+
+// Record a request for rate limiting
+function recordRequest(userId, providerId) {
+  const key = `${userId}:${providerId}`;
+  const history = rateLimitStorage.get(key) || [];
+
+  history.push(Date.now());
+  rateLimitStorage.set(key, history);
+}
+
+// Log LLM audit event
+function logLLMAuditEvent(eventData) {
+  const auditEvent = {
+    id: `audit-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+    timestamp: new Date().toISOString(),
+    type: 'llm_interaction',
+    ...eventData,
+  };
+
+  // Log to Winston for persistence
+  logger.info('LLM Audit Event', auditEvent);
+
+  // Additional security logging for failed requests
+  if (!eventData.success) {
+    logger.warn('LLM Request Failed', {
+      userId: eventData.userId,
+      providerId: eventData.providerId,
+      error: eventData.errorMessage,
+      requestId: eventData.requestId,
+    });
+  }
+
+  // Log suspicious activity
+  if (eventData.responseTime > 60000) { // Requests taking longer than 1 minute
+    logger.warn('Long-running LLM request detected', {
+      userId: eventData.userId,
+      providerId: eventData.providerId,
+      responseTime: eventData.responseTime,
+      requestId: eventData.requestId,
+    });
+  }
+}
+
+// Clean up rate limiting storage periodically (every hour)
+setInterval(() => {
+  const now = Date.now();
+  const cutoff = 24 * 60 * 60 * 1000; // 24 hours
+
+  for (const [key, history] of rateLimitStorage.entries()) {
+    const filteredHistory = history.filter(timestamp => now - timestamp < cutoff);
+    if (filteredHistory.length === 0) {
+      rateLimitStorage.delete(key);
+    } else {
+      rateLimitStorage.set(key, filteredHistory);
+    }
+  }
+
+  logger.debug('Rate limiting storage cleaned up', {
+    activeKeys: rateLimitStorage.size,
+  });
+}, 60 * 60 * 1000); // Run every hour
+
 // Start server
 server.listen(PORT, () => {
   logger.info(`CloudToLocalLLM API Backend listening on port ${PORT}`);
   logger.info(`Environment: ${process.env.NODE_ENV || 'development'}`);
   logger.info(`Auth0 Domain: ${AUTH0_DOMAIN}`);
   logger.info(`Auth0 Audience: ${AUTH0_AUDIENCE}`);
+  logger.info('LLM Security and Monitoring enabled');
 });

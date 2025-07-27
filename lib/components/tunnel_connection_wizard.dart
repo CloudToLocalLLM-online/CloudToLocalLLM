@@ -149,6 +149,7 @@ class _TunnelConnectionWizardState extends State<TunnelConnectionWizard> {
 
     return Dialog(
       child: Container(
+        key: const Key('tunnel-connection-wizard'),
         width: dialogWidth,
         height: dialogHeight,
         padding: const EdgeInsets.all(24),

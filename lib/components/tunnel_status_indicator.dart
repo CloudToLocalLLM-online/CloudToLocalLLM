@@ -52,7 +52,25 @@ class _TunnelStatusIndicatorState extends State<TunnelStatusIndicator> {
                 onTap: _togglePanel,
                 borderRadius: BorderRadius.circular(20),
                 child: Container(
+                  key: const Key('tunnel-status-indicator'),
                   padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(20),
+                    // Add subtle background for better visibility
+                    color:
+                        tunnelStatus.isConnecting ||
+                            !tunnelStatus.text.contains('Connected')
+                        ? tunnelStatus.color.withValues(alpha: 0.1)
+                        : null,
+                    border:
+                        tunnelStatus.text.contains('No Client') ||
+                            tunnelStatus.text.contains('Disconnected')
+                        ? Border.all(
+                            color: tunnelStatus.color.withValues(alpha: 0.5),
+                            width: 1,
+                          )
+                        : null,
+                  ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [

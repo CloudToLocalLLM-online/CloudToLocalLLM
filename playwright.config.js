@@ -38,7 +38,7 @@ module.exports = defineConfig({
   // Shared settings for all projects
   use: {
     // Base URL for tests
-    baseURL: process.env.DEPLOYMENT_URL || 'https://your-vercel-app.vercel.app',
+    baseURL: process.env.DEPLOYMENT_URL || 'https://app.cloudtolocalllm.online',
     
     // Collect trace when retrying the failed test
     trace: 'retain-on-failure',

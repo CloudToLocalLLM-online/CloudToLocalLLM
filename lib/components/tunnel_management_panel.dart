@@ -68,6 +68,7 @@ class _TunnelManagementPanelState extends State<TunnelManagementPanel>
           child: SlideTransition(
             position: _slideAnimation,
             child: Container(
+              key: const Key('tunnel-management-panel'),
               width: 400,
               decoration: BoxDecoration(
                 color: Theme.of(context).scaffoldBackgroundColor,
@@ -312,6 +313,7 @@ class _TunnelManagementPanelState extends State<TunnelManagementPanel>
                 SizedBox(
                   width: double.infinity,
                   child: OutlinedButton.icon(
+                    key: const Key('configure-tunnel-button'),
                     onPressed: _showTunnelWizard,
                     icon: const Icon(Icons.settings),
                     label: const Text('Configure Tunnel'),

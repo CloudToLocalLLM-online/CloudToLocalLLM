@@ -116,6 +116,7 @@ class _TunnelStatusScreenState extends State<TunnelStatusScreen> {
 
         return ModernCard(
           child: Container(
+            key: const Key('tunnel-status-card'),
             padding: EdgeInsets.all(AppTheme.spacingL),
             decoration: BoxDecoration(
               gradient: LinearGradient(

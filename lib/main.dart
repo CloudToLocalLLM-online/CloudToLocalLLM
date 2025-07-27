@@ -26,6 +26,8 @@ import 'services/admin_data_flush_service.dart';
 import 'services/langchain_ollama_service.dart';
 import 'services/langchain_prompt_service.dart';
 import 'services/langchain_rag_service.dart';
+import 'services/llm_provider_manager.dart';
+import 'services/llm_audit_service.dart';
 
 import 'widgets/window_listener_widget.dart';
 
@@ -328,6 +330,30 @@ class _CloudToLocalLLMAppState extends State<CloudToLocalLLMApp> {
             // Initialize asynchronously
             ragService.initialize();
             return ragService;
+          },
+        ),
+
+        // LLM Provider Manager
+        ChangeNotifierProvider(
+          create: (context) {
+            final connectionManager = context.read<ConnectionManagerService>();
+            final providerManager = LLMProviderManager(
+              connectionManager: connectionManager,
+            );
+            // Initialize asynchronously
+            providerManager.initialize();
+            return providerManager;
+          },
+        ),
+
+        // LLM Audit Service
+        ChangeNotifierProvider(
+          create: (context) {
+            final authService = context.read<AuthService>();
+            final auditService = LLMAuditService(authService: authService);
+            // Initialize asynchronously
+            auditService.initialize();
+            return auditService;
           },
         ),
 

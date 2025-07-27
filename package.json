@@ -9,6 +9,10 @@
     "test:debug": "playwright test --debug",
     "test:auth": "playwright test auth-loop-analysis.spec.js",
     "test:tunnel": "playwright test tunnel-verification.spec.js",
+    "test:tunnel-diagnosis": "playwright test tunnel-comprehensive-diagnosis.spec.js",
+    "test:tunnel-performance": "playwright test tunnel-performance-analysis.spec.js",
+    "test:tunnel-auth": "playwright test tunnel-auth-integration.spec.js",
+    "test:tunnel-all": "playwright test tunnel-comprehensive-diagnosis.spec.js tunnel-performance-analysis.spec.js tunnel-auth-integration.spec.js",
     "install-browsers": "playwright install",
     "install-deps": "playwright install-deps"
   },
