@@ -5,7 +5,7 @@ const { defineConfig, devices } = require('@playwright/test');
 
 module.exports = defineConfig({
   // Test directory
-  testDir: './tests/e2e',
+  testDir: './test/e2e',
   
   // Global test timeout
   timeout: 60000, // 60 seconds for complex auth flows
@@ -33,7 +33,7 @@ module.exports = defineConfig({
   ],
   
   // Global test setup
-  globalSetup: require.resolve('./tests/e2e/global-setup.js'),
+  globalSetup: require.resolve('./test/e2e/global-setup.js'),
   
   // Shared settings for all projects
   use: {
