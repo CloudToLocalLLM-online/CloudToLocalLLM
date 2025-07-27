@@ -600,7 +600,7 @@ if ($DryRun) {
     Write-Host "Fixing executable permissions for deployment scripts..."
     Write-Host "Command: ssh $VPSUser@$VPSHost `"$permissionFixCommand`""
 
-    ssh $VPSUser@$VPSHost "$permissionFixCommand"
+    ssh -o BatchMode=yes -o ConnectTimeout=30 -o ServerAliveInterval=10 -o ServerAliveCountMax=3 $VPSUser@$VPSHost "$permissionFixCommand"
 
     if ($LASTEXITCODE -ne 0) {
         Write-Host ""
@@ -621,7 +621,7 @@ if ($DryRun) {
     Write-Host "Command: ssh $VPSUser@$VPSHost `"$deploymentCommand`""
     Write-Host ""
 
-    ssh $VPSUser@$VPSHost "$deploymentCommand"
+    ssh -o BatchMode=yes -o ConnectTimeout=30 -o ServerAliveInterval=10 -o ServerAliveCountMax=3 $VPSUser@$VPSHost "$deploymentCommand"
 
     if ($LASTEXITCODE -ne 0) {
         Write-Host ""
