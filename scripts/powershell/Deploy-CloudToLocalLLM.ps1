@@ -371,20 +371,50 @@ if ($hasPackagesForCurrentVersion) {
                     if (-not $releaseExists) {
                         Write-Host "Creating GitHub release $releaseTag..."
 
-                        # Create simple release notes
-                        $releaseNotes = @"
-# CloudToLocalLLM $releaseTag
+                        # Find desktop application packages to attach BEFORE creating release notes
+                        $assetsToUpload = @()
+                        $availableAssets = @()
 
-## 🚀 Desktop Application Release
+                        # Find Windows ZIP packages matching current version
+                        $zipPattern = "cloudtolocalllm-windows-v$currentVersion.zip"
+                        $zipFiles = Get-ChildItem -Path $distPath -Filter $zipPattern -Recurse -ErrorAction SilentlyContinue
+                        foreach ($zipFile in $zipFiles) {
+                            $assetsToUpload += $zipFile.FullName
+                            $availableAssets += "- Windows Desktop Application (cloudtolocalllm-windows-$currentVersion.zip) - Portable ZIP package"
+                            Write-Host "Found ZIP asset: $($zipFile.Name)"
+                        }
 
-This release provides cross-platform desktop applications for CloudToLocalLLM.
+                        # Find Windows installer files matching current version
+                        $installerPattern = "CloudToLocalLLM-Windows-$currentVersion-Setup.exe"
+                        $installerFiles = Get-ChildItem -Path $distPath -Filter $installerPattern -Recurse -ErrorAction SilentlyContinue
+                        foreach ($installer in $installerFiles) {
+                            $assetsToUpload += $installer.FullName
+                            $availableAssets += "- Windows Installer (CloudToLocalLLM-Windows-$currentVersion-Setup.exe) - Easy installation"
+                            Write-Host "Found installer asset: $($installer.Name)"
+                        }
 
-### 📦 What's Included
-- Windows Desktop Application (cloudtolocalllm-windows-$currentVersion.zip) - Portable ZIP package
-- Windows Installer (CloudToLocalLLM-Windows-$currentVersion-Setup.exe) - Easy installation
+                        # Find checksum files for installers
+                        $checksumPattern = "CloudToLocalLLM-Windows-$currentVersion-Setup.exe.sha256"
+                        $checksumFiles = Get-ChildItem -Path $distPath -Filter $checksumPattern -Recurse -ErrorAction SilentlyContinue
+                        foreach ($checksum in $checksumFiles) {
+                            $assetsToUpload += $checksum.FullName
+                            Write-Host "Found checksum asset: $($checksum.Name)"
+                        }
 
-### 🔧 Installation
+                        # Create dynamic release notes based on actually available assets
+                        $assetsSection = if ($availableAssets.Count -gt 0) {
+                            ($availableAssets -join "`r`n")
+                        } else {
+                            "- No desktop application packages available for this release"
+                        }
 
+                        # Determine installation instructions based on available assets
+                        $hasInstaller = $installerFiles.Count -gt 0
+                        $hasZip = $zipFiles.Count -gt 0
+
+                        $installationInstructions = ""
+                        if ($hasInstaller -and $hasZip) {
+                            $installationInstructions = @"
 **Option 1: Windows Installer (Recommended)**
 1. Download the Setup.exe file
 2. Run the installer and follow the setup wizard
@@ -394,6 +424,43 @@ This release provides cross-platform desktop applications for CloudToLocalLLM.
 1. Download the ZIP package for your platform
 2. Extract and run the application
 3. Authenticate with your CloudToLocalLLM account
+"@
+                        } elseif ($hasZip) {
+                            $installationInstructions = @"
+**Portable ZIP Installation**
+1. Download the ZIP package
+2. Extract and run the application
+3. Authenticate with your CloudToLocalLLM account
+
+*Note: Windows installer not available for this release*
+"@
+                        } elseif ($hasInstaller) {
+                            $installationInstructions = @"
+**Windows Installer**
+1. Download the Setup.exe file
+2. Run the installer and follow the setup wizard
+3. Launch CloudToLocalLLM from Start Menu or Desktop
+"@
+                        } else {
+                            $installationInstructions = @"
+**No desktop applications available for this release**
+Please use the web application at https://app.cloudtolocalllm.online
+"@
+                        }
+
+                        $releaseNotes = @"
+# CloudToLocalLLM $releaseTag
+
+## 🚀 Desktop Application Release
+
+This release provides cross-platform desktop applications for CloudToLocalLLM.
+
+### 📦 What's Included
+$assetsSection
+
+### 🔧 Installation
+
+$installationInstructions
 
 ### 🌐 Integration
 Works seamlessly with https://app.cloudtolocalllm.online
@@ -433,32 +500,7 @@ Works seamlessly with https://app.cloudtolocalllm.online
                             Write-Host "Archived old installer: $($oldInstaller.Name)" -ForegroundColor Yellow
                         }
 
-                        # Find desktop application packages to attach
-                        $assetsToUpload = @()
 
-                        # Find Windows ZIP packages matching current version
-                        $zipPattern = "cloudtolocalllm-windows-v$currentVersion.zip"
-                        $zipFiles = Get-ChildItem -Path $distPath -Filter $zipPattern -Recurse -ErrorAction SilentlyContinue
-                        foreach ($zipFile in $zipFiles) {
-                            $assetsToUpload += $zipFile.FullName
-                            Write-Host "Found ZIP asset: $($zipFile.Name)"
-                        }
-
-                        # Find Windows installer files matching current version
-                        $installerPattern = "CloudToLocalLLM-Windows-$currentVersion-Setup.exe"
-                        $installerFiles = Get-ChildItem -Path $distPath -Filter $installerPattern -Recurse -ErrorAction SilentlyContinue
-                        foreach ($installer in $installerFiles) {
-                            $assetsToUpload += $installer.FullName
-                            Write-Host "Found installer asset: $($installer.Name)"
-                        }
-
-                        # Find checksum files for installers
-                        $checksumPattern = "CloudToLocalLLM-Windows-$currentVersion-Setup.exe.sha256"
-                        $checksumFiles = Get-ChildItem -Path $distPath -Filter $checksumPattern -Recurse -ErrorAction SilentlyContinue
-                        foreach ($checksum in $checksumFiles) {
-                            $assetsToUpload += $checksum.FullName
-                            Write-Host "Found checksum asset: $($checksum.Name)"
-                        }
 
                         # Create GitHub release with assets
                         if ($assetsToUpload.Count -gt 0) {
