@@ -9,7 +9,7 @@ Successfully implemented a comprehensive tier-based architecture for CloudToLoca
 ### Files Created/Modified
 
 #### New Files Created
-1. **`lib/services/user_tier_service.dart`** - Flutter service for tier detection and management
+1. **`lib/services/enhanced_user_tier_service.dart`** - Flutter service for tier detection and management with API integration
 2. **`api-backend/middleware/tier-check.js`** - Comprehensive tier validation middleware
 3. **`api-backend/routes/direct-proxy-routes.js`** - Direct proxy routes for free tier users
 4. **`lib/components/tier_aware_setup_wizard.dart`** - Tier-aware setup wizard component

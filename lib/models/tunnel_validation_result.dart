@@ -109,9 +109,13 @@ class TunnelValidationResult {
       isSuccess: json['isSuccess'] as bool,
       message: json['message'] as String,
       latency: json['latency'] as int?,
-      tests: (json['tests'] as List<dynamic>?)
-          ?.map((test) => ValidationTest.fromJson(test as Map<String, dynamic>))
-          .toList() ?? [],
+      tests:
+          (json['tests'] as List<dynamic>?)
+              ?.map(
+                (test) => ValidationTest.fromJson(test as Map<String, dynamic>),
+              )
+              .toList() ??
+          [],
       timestamp: DateTime.parse(json['timestamp'] as String),
       metadata: json['metadata'] as Map<String, dynamic>?,
     );
@@ -120,7 +124,7 @@ class TunnelValidationResult {
   @override
   String toString() {
     return 'TunnelValidationResult(isSuccess: $isSuccess, message: $message, '
-           'latency: ${latency}ms, tests: ${tests.length}, timestamp: $timestamp)';
+        'latency: ${latency}ms, tests: ${tests.length}, timestamp: $timestamp)';
   }
 }
 
@@ -203,19 +207,19 @@ class ValidationTest {
   @override
   String toString() {
     return 'ValidationTest(name: $name, isSuccess: $isSuccess, message: $message, '
-           'duration: ${duration}ms, error: $error)';
+        'duration: ${duration}ms, error: $error)';
   }
 
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
-    
+
     return other is ValidationTest &&
-           other.name == name &&
-           other.isSuccess == isSuccess &&
-           other.message == message &&
-           other.duration == duration &&
-           other.error == error;
+        other.name == name &&
+        other.isSuccess == isSuccess &&
+        other.message == message &&
+        other.duration == duration &&
+        other.error == error;
   }
 
   @override

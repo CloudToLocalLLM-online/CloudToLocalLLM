@@ -222,7 +222,6 @@ cloudtolocalllm-v*.tar.gz
 # Version-specific binaries
 cloudtolocalllm-*-stable.tar.gz
 cloudtolocalllm-*-robust.tar.gz
-cloudtolocalllm-*-fixed.tar.gz
 
 # ============================================================================
 # AUR PACKAGE BUILD ARTIFACTS - REMOVED (AUR DECOMMISSIONED)

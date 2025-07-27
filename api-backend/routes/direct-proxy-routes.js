@@ -12,7 +12,7 @@
  */
 
 import express from 'express';
-import { requireAuth } from '../middleware/auth.js';
+import { authenticateJWT } from '../middleware/auth.js';
 import { addTierInfo, shouldUseDirectTunnel, getUserTier } from '../middleware/tier-check.js';
 import { logger } from '../utils/logger.js';
 
@@ -45,7 +45,7 @@ export function createDirectProxyRoutes(tunnelProxy) {
   /**
    * Health check endpoint for direct proxy with comprehensive status
    */
-  router.get('/health', requireAuth, addTierInfo, (req, res) => {
+  router.get('/health', authenticateJWT, addTierInfo, (req, res) => {
     try {
       const userTier = getUserTier(req.user);
       const useDirectTunnel = shouldUseDirectTunnel(req.user);
@@ -87,7 +87,7 @@ export function createDirectProxyRoutes(tunnelProxy) {
    * Direct proxy endpoint for Ollama API calls with comprehensive security
    * Routes: /api/direct-proxy/:userId/ollama/*
    */
-  router.all('/ollama/*', requireAuth, addTierInfo, async(req, res) => {
+  router.all('/ollama/*', authenticateJWT, addTierInfo, async(req, res) => {
     const startTime = Date.now();
     const requestId = `dp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
@@ -348,7 +348,7 @@ export function createDirectProxyRoutes(tunnelProxy) {
    * Direct proxy endpoint for general API calls
    * Routes: /api/direct-proxy/:userId/api/*
    */
-  router.all('/api/*', requireAuth, addTierInfo, async(req, res) => {
+  router.all('/api/*', authenticateJWT, addTierInfo, async(req, res) => {
     const userId = req.user.sub;
     const userTier = getUserTier(req.user);
 
@@ -431,7 +431,7 @@ export function createDirectProxyRoutes(tunnelProxy) {
   /**
    * Catch-all route for unsupported paths
    */
-  router.all('*', requireAuth, addTierInfo, (req, res) => {
+  router.all('*', authenticateJWT, addTierInfo, (req, res) => {
     const userTier = getUserTier(req.user);
 
     res.status(404).json({

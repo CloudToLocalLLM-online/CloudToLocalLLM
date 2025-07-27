@@ -11,7 +11,7 @@ void main() {
     test('should create new user status', () {
       const userId = 'test-user-123';
       final status = UserSetupStatus.newUser(userId);
-      
+
       expect(status.userId, userId);
       expect(status.isFirstTimeUser, true);
       expect(status.setupCompleted, false);
@@ -28,7 +28,7 @@ void main() {
         hasActiveDesktopConnection: true,
         preferences: {'theme': 'dark'},
       );
-      
+
       expect(status.userId, userId);
       expect(status.isFirstTimeUser, false);
       expect(status.setupCompleted, true);
@@ -41,24 +41,23 @@ void main() {
     test('should detect recently completed setup', () {
       const userId = 'test-user-123';
       final status = UserSetupStatus.completed(userId);
-      
+
       expect(status.isRecentlyCompleted, true);
     });
 
     test('should handle preferences correctly', () {
       final status = UserSetupStatus.newUser('test-user');
       final updatedStatus = status.copyWith(
-        preferences: {
-          'theme': 'dark',
-          'language': 'en',
-          'notifications': true,
-        },
+        preferences: {'theme': 'dark', 'language': 'en', 'notifications': true},
       );
-      
+
       expect(updatedStatus.getPreference<String>('theme'), 'dark');
       expect(updatedStatus.getPreference<String>('language'), 'en');
       expect(updatedStatus.getPreference<bool>('notifications'), true);
-      expect(updatedStatus.getPreference<String>('unknown', 'default'), 'default');
+      expect(
+        updatedStatus.getPreference<String>('unknown', 'default'),
+        'default',
+      );
       expect(updatedStatus.hasPreference('theme'), true);
       expect(updatedStatus.hasPreference('unknown'), false);
     });
@@ -69,14 +68,17 @@ void main() {
         hasActiveDesktopConnection: true,
         preferences: {'theme': 'dark', 'language': 'en'},
       );
-      
+
       final json = original.toJson();
       final restored = UserSetupStatus.fromJson(json);
-      
+
       expect(restored.userId, original.userId);
       expect(restored.isFirstTimeUser, original.isFirstTimeUser);
       expect(restored.setupCompleted, original.setupCompleted);
-      expect(restored.hasActiveDesktopConnection, original.hasActiveDesktopConnection);
+      expect(
+        restored.hasActiveDesktopConnection,
+        original.hasActiveDesktopConnection,
+      );
       expect(restored.preferences, original.preferences);
       expect(restored.setupVersion, original.setupVersion);
     });
@@ -85,7 +87,7 @@ void main() {
       final validStatus = UserSetupStatus.completed('test-user');
       expect(validStatus.isValid, true);
       expect(validStatus.validationErrors, isEmpty);
-      
+
       final invalidStatus = UserSetupStatus(
         userId: '', // Invalid empty userId
         isFirstTimeUser: false,
@@ -96,10 +98,13 @@ void main() {
         setupVersion: '', // Invalid empty version
         preferences: {},
       );
-      
+
       expect(invalidStatus.isValid, false);
       expect(invalidStatus.validationErrors, isNotEmpty);
-      expect(invalidStatus.validationErrors.length, 3); // userId, setupCompletedAt, setupVersion
+      expect(
+        invalidStatus.validationErrors.length,
+        3,
+      ); // userId, setupCompletedAt, setupVersion
     });
 
     test('should create status summary correctly', () {
@@ -107,9 +112,9 @@ void main() {
         'test-user-123',
         preferences: {'theme': 'dark'},
       );
-      
+
       final summary = status.statusSummary;
-      
+
       expect(summary['userId'], 'test-user-123');
       expect(summary['isFirstTimeUser'], false);
       expect(summary['setupCompleted'], true);
@@ -128,7 +133,7 @@ void main() {
         hasActiveDesktopConnection: true,
         preferences: {'theme': 'dark'},
       );
-      
+
       expect(updated.userId, original.userId); // Unchanged
       expect(updated.isFirstTimeUser, original.isFirstTimeUser); // Unchanged
       expect(updated.setupCompleted, true); // Changed
@@ -147,7 +152,7 @@ void main() {
           'analyticsEnabled': false,
         },
       );
-      
+
       expect(status.preferredPlatform, 'windows');
       expect(status.hasSkippedValidation, true);
       expect(status.showAdvancedOptions, false);
@@ -157,7 +162,7 @@ void main() {
 
     test('should handle extension method defaults correctly', () {
       final status = UserSetupStatus.newUser('test-user');
-      
+
       expect(status.preferredPlatform, isNull);
       expect(status.hasSkippedValidation, false); // Default
       expect(status.showAdvancedOptions, false); // Default

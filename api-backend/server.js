@@ -15,6 +15,9 @@ import adminRoutes from './routes/admin.js';
 // Removed encrypted tunnel routes - using simplified tunnel system
 import { createTunnelRoutes } from './tunnel/tunnel-routes.js';
 import { createMonitoringRoutes } from './routes/monitoring.js';
+import { createDirectProxyRoutes } from './routes/direct-proxy-routes.js';
+import { authenticateJWT } from './middleware/auth.js';
+import { addTierInfo, getUserTier, getTierFeatures } from './middleware/tier-check.js';
 
 dotenv.config();
 
@@ -353,6 +356,9 @@ const { router: tunnelRouter, tunnelProxy } = createTunnelRoutes(server, {
   AUTH0_AUDIENCE,
 }, logger);
 
+// Create direct proxy routes for free tier users
+const directProxyRouter = createDirectProxyRoutes(tunnelProxy);
+
 // Create monitoring routes
 const monitoringRouter = createMonitoringRoutes(tunnelProxy, logger);
 
@@ -361,6 +367,9 @@ const monitoringRouter = createMonitoringRoutes(tunnelProxy, logger);
 // Simplified tunnel routes
 app.use('/api/tunnel', tunnelRouter);
 
+// Direct proxy routes for free tier users
+app.use('/api/direct-proxy', directProxyRouter);
+
 // Performance monitoring routes
 app.use('/api/monitoring', monitoringRouter);
 
@@ -368,6 +377,27 @@ app.use('/api/monitoring', monitoringRouter);
 
 // Administrative routes
 app.use('/api/admin', adminRoutes);
+
+// User tier endpoint
+app.get('/api/user/tier', authenticateJWT, addTierInfo, (req, res) => {
+  try {
+    const userTier = getUserTier(req.user);
+    const features = getTierFeatures(userTier);
+
+    res.json({
+      tier: userTier,
+      features: features,
+      upgradeUrl: process.env.UPGRADE_URL || 'https://app.cloudtolocalllm.online/upgrade',
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    logger.error('Error getting user tier:', error);
+    res.status(500).json({
+      error: 'Failed to determine user tier',
+      code: 'TIER_ERROR',
+    });
+  }
+});
 
 // Health check
 app.get('/health', (req, res) => {

@@ -109,7 +109,9 @@ class SetupStatusService extends ChangeNotifier {
   /// Check if the user is a first-time user
   Future<bool> isFirstTimeUser(String userId) async {
     try {
-      debugPrint('🔧 [SetupStatus] Checking first-time user status for: $userId');
+      debugPrint(
+        '🔧 [SetupStatus] Checking first-time user status for: $userId',
+      );
 
       // Load status for this user if not already loaded
       if (_currentStatus?.userId != userId) {
@@ -118,7 +120,7 @@ class SetupStatusService extends ChangeNotifier {
 
       final isFirstTime = _currentStatus?.isFirstTimeUser ?? true;
       debugPrint('🔧 [SetupStatus] User $userId is first-time: $isFirstTime');
-      
+
       return isFirstTime;
     } catch (e) {
       debugPrint('🔧 [SetupStatus] Error checking first-time user: $e');
@@ -144,7 +146,7 @@ class SetupStatusService extends ChangeNotifier {
       );
 
       await _saveSetupStatus();
-      
+
       // Clear progress since setup is complete
       _setupProgress.clear();
       await _saveSetupProgress();
@@ -162,7 +164,9 @@ class SetupStatusService extends ChangeNotifier {
   Future<bool> hasActiveDesktopConnection(String userId) async {
     try {
       final hasConnection = await _checkDesktopConnection();
-      debugPrint('🔧 [SetupStatus] Desktop connection status for $userId: $hasConnection');
+      debugPrint(
+        '🔧 [SetupStatus] Desktop connection status for $userId: $hasConnection',
+      );
       return hasConnection;
     } catch (e) {
       debugPrint('🔧 [SetupStatus] Error checking desktop connection: $e');
@@ -186,7 +190,7 @@ class SetupStatusService extends ChangeNotifier {
       );
 
       await _saveSetupStatus();
-      
+
       // Clear progress
       _setupProgress.clear();
       await _saveSetupProgress();
@@ -216,7 +220,10 @@ class SetupStatusService extends ChangeNotifier {
   }
 
   /// Save setup progress for a user
-  Future<void> saveSetupProgress(String userId, Map<String, dynamic> progress) async {
+  Future<void> saveSetupProgress(
+    String userId,
+    Map<String, dynamic> progress,
+  ) async {
     try {
       debugPrint('🔧 [SetupStatus] Saving setup progress for user: $userId');
 
@@ -237,7 +244,10 @@ class SetupStatusService extends ChangeNotifier {
   }
 
   /// Update user preferences
-  Future<void> updateUserPreferences(String userId, Map<String, dynamic> preferences) async {
+  Future<void> updateUserPreferences(
+    String userId,
+    Map<String, dynamic> preferences,
+  ) async {
     try {
       if (_currentStatus?.userId == userId) {
         _currentStatus = _currentStatus!.copyWith(
@@ -273,7 +283,9 @@ class SetupStatusService extends ChangeNotifier {
       if (statusJson != null) {
         final statusData = jsonDecode(statusJson) as Map<String, dynamic>;
         _currentStatus = UserSetupStatus.fromJson(statusData);
-        debugPrint('🔧 [SetupStatus] Loaded setup status for user: ${_currentStatus?.userId}');
+        debugPrint(
+          '🔧 [SetupStatus] Loaded setup status for user: ${_currentStatus?.userId}',
+        );
       }
     } catch (e) {
       debugPrint('🔧 [SetupStatus] Error loading setup status: $e');
@@ -365,7 +377,8 @@ class SetupStatusService extends ChangeNotifier {
   /// Handle client detection changes
   void _onClientDetectionChanged() {
     if (_currentStatus != null) {
-      final hasConnection = _clientDetectionService?.hasConnectedClients ?? false;
+      final hasConnection =
+          _clientDetectionService?.hasConnectedClients ?? false;
       if (_currentStatus!.hasActiveDesktopConnection != hasConnection) {
         _currentStatus = _currentStatus!.copyWith(
           hasActiveDesktopConnection: hasConnection,

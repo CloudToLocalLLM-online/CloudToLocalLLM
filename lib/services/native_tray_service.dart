@@ -290,7 +290,9 @@ class NativeTrayService with TrayListener {
       );
 
       await trayManager.setContextMenu(menu);
-      debugPrint('🖥️ [NativeTray] Context menu updated successfully with ${menu.items?.length ?? 0} items');
+      debugPrint(
+        '🖥️ [NativeTray] Context menu updated successfully with ${menu.items?.length ?? 0} items',
+      );
     } catch (e) {
       debugPrint('🖥️ [NativeTray] Failed to update context menu: $e');
       rethrow; // Re-throw to allow caller to handle the error

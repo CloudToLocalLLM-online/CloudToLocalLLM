@@ -5,11 +5,11 @@ import '../config/app_config.dart';
 import 'auth_service.dart';
 
 /// Enhanced user tier service with container management and privacy controls
-/// 
+///
 /// TIER-BASED ARCHITECTURE:
 /// - Free Tier: Ephemeral containers, local storage only, web platform only
 /// - Premium Tier: Persistent containers, optional cloud sync, all platforms
-/// 
+///
 /// PRIVACY ENFORCEMENT:
 /// - Free tier: No cloud data transmission except authentication
 /// - Premium tier: Optional encrypted cloud sync with user control
@@ -22,25 +22,25 @@ class EnhancedUserTierService extends ChangeNotifier {
   bool _isPremiumTier = false;
   DateTime? _tierExpiryDate;
   Map<String, dynamic> _tierFeatures = {};
-  
+
   // Container management
   String? _containerStatus = 'none';
   String? _containerId;
   DateTime? _containerCreatedAt;
   bool _hasAlwaysOnContainer = false;
-  
+
   // Connection management
   int _connectionPriority = 1; // 1=low, 5=high
   Duration _connectionTimeout = const Duration(seconds: 30);
   int _requestQueueLimit = 5;
-  
+
   // Service status
   bool _isInitialized = false;
   String? _error;
   DateTime? _lastTierCheck;
 
   EnhancedUserTierService({required AuthService authService})
-      : _authService = authService {
+    : _authService = authService {
     _httpClient = http.Client();
     _initializeTierFeatures();
   }
@@ -61,6 +61,12 @@ class EnhancedUserTierService extends ChangeNotifier {
   String? get error => _error;
   DateTime? get lastTierCheck => _lastTierCheck;
 
+  // Compatibility getters for existing components
+  bool get isFree => _currentTier == 'free';
+  bool get isPremium => _currentTier == 'premium';
+  bool get isEnterprise => _currentTier == 'enterprise';
+  bool get isLoading => !_isInitialized;
+
   /// Initialize tier service and check user tier
   Future<void> initialize() async {
     if (_isInitialized) {
@@ -70,18 +76,18 @@ class EnhancedUserTierService extends ChangeNotifier {
 
     try {
       debugPrint('🎯 [UserTier] Initializing enhanced user tier service...');
-      
-      if (_authService.isAuthenticated) {
+
+      if (_authService.isAuthenticated.value) {
         await checkUserTier();
       } else {
         _setFreeTierDefaults();
       }
-      
+
       _isInitialized = true;
       debugPrint('🎯 [UserTier] Enhanced user tier service initialized');
       debugPrint('🎯 [UserTier] Current tier: $_currentTier');
       debugPrint('🎯 [UserTier] Container status: $_containerStatus');
-      
+
       notifyListeners();
     } catch (e) {
       debugPrint('🎯 [UserTier] Failed to initialize: $e');
@@ -137,7 +143,7 @@ class EnhancedUserTierService extends ChangeNotifier {
 
   /// Check user tier from backend
   Future<void> checkUserTier() async {
-    if (!_authService.isAuthenticated) {
+    if (!_authService.isAuthenticated.value) {
       _setFreeTierDefaults();
       notifyListeners();
       return;
@@ -145,7 +151,7 @@ class EnhancedUserTierService extends ChangeNotifier {
 
     try {
       debugPrint('🎯 [UserTier] Checking user tier...');
-      
+
       final response = await _httpClient
           .get(
             Uri.parse('${AppConfig.apiBaseUrl}/user/tier'),
@@ -161,7 +167,7 @@ class EnhancedUserTierService extends ChangeNotifier {
         await _updateTierFromResponse(data);
         _lastTierCheck = DateTime.now();
         _error = null;
-        
+
         debugPrint('🎯 [UserTier] Tier check successful: $_currentTier');
       } else if (response.statusCode == 401) {
         debugPrint('🎯 [UserTier] Authentication failed, setting free tier');
@@ -169,12 +175,12 @@ class EnhancedUserTierService extends ChangeNotifier {
       } else {
         throw Exception('HTTP ${response.statusCode}: ${response.body}');
       }
-      
+
       notifyListeners();
     } catch (e) {
       debugPrint('🎯 [UserTier] Error checking tier: $e');
       _error = e.toString();
-      
+
       // Fallback to free tier on error
       if (_currentTier != 'free') {
         debugPrint('🎯 [UserTier] Falling back to free tier due to error');
@@ -188,23 +194,23 @@ class EnhancedUserTierService extends ChangeNotifier {
   Future<void> _updateTierFromResponse(Map<String, dynamic> data) async {
     _currentTier = data['tier'] ?? 'free';
     _isPremiumTier = _currentTier != 'free';
-    
+
     if (data['expiry_date'] != null) {
       _tierExpiryDate = DateTime.parse(data['expiry_date']);
     }
-    
+
     // Update container information
     final containerInfo = data['container'] as Map<String, dynamic>?;
     if (containerInfo != null) {
       _containerStatus = containerInfo['status'];
       _containerId = containerInfo['id'];
       _hasAlwaysOnContainer = containerInfo['always_on'] ?? false;
-      
+
       if (containerInfo['created_at'] != null) {
         _containerCreatedAt = DateTime.parse(containerInfo['created_at']);
       }
     }
-    
+
     // Update connection settings based on tier
     _updateConnectionSettings();
   }
@@ -214,21 +220,23 @@ class EnhancedUserTierService extends ChangeNotifier {
     final features = _tierFeatures[_currentTier] as Map<String, dynamic>?;
     if (features != null) {
       _connectionPriority = _isPremiumTier ? 5 : 1;
-      _connectionTimeout = Duration(seconds: features['connection_timeout'] ?? 30);
+      _connectionTimeout = Duration(
+        seconds: features['connection_timeout'] ?? 30,
+      );
       _requestQueueLimit = features['request_queue_limit'] ?? 5;
     }
   }
 
   /// Request container allocation
   Future<bool> requestContainer() async {
-    if (!_authService.isAuthenticated) {
+    if (!_authService.isAuthenticated.value) {
       debugPrint('🎯 [UserTier] Container request requires authentication');
       return false;
     }
 
     try {
       debugPrint('🎯 [UserTier] Requesting container allocation...');
-      
+
       final response = await _httpClient
           .post(
             Uri.parse('${AppConfig.apiBaseUrl}/container/allocate'),
@@ -245,15 +253,17 @@ class EnhancedUserTierService extends ChangeNotifier {
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        
+
         _containerStatus = data['status'];
         _containerId = data['container_id'];
         _hasAlwaysOnContainer = data['always_on'] ?? false;
         _containerCreatedAt = DateTime.now();
-        
+
         debugPrint('🎯 [UserTier] Container allocated: $_containerId');
-        debugPrint('🎯 [UserTier] Container type: ${_isPremiumTier ? "persistent" : "ephemeral"}');
-        
+        debugPrint(
+          '🎯 [UserTier] Container type: ${_isPremiumTier ? "persistent" : "ephemeral"}',
+        );
+
         notifyListeners();
         return true;
       } else {
@@ -276,7 +286,7 @@ class EnhancedUserTierService extends ChangeNotifier {
 
     try {
       debugPrint('🎯 [UserTier] Releasing container: $_containerId');
-      
+
       final response = await _httpClient
           .post(
             Uri.parse('${AppConfig.apiBaseUrl}/container/release'),
@@ -284,9 +294,7 @@ class EnhancedUserTierService extends ChangeNotifier {
               'Authorization': 'Bearer ${_authService.getAccessToken()}',
               'Content-Type': 'application/json',
             },
-            body: json.encode({
-              'container_id': _containerId,
-            }),
+            body: json.encode({'container_id': _containerId}),
           )
           .timeout(const Duration(seconds: 15));
 
@@ -295,7 +303,7 @@ class EnhancedUserTierService extends ChangeNotifier {
         _containerId = null;
         _containerCreatedAt = null;
         _hasAlwaysOnContainer = false;
-        
+
         debugPrint('🎯 [UserTier] Container released successfully');
         notifyListeners();
         return true;
@@ -370,10 +378,10 @@ class EnhancedUserTierService extends ChangeNotifier {
   String get formattedContainerUptime {
     final uptime = containerUptime;
     if (uptime == null) return 'N/A';
-    
+
     final hours = uptime.inHours;
     final minutes = uptime.inMinutes % 60;
-    
+
     if (hours > 0) {
       return '${hours}h ${minutes}m';
     } else {

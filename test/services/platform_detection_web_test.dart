@@ -18,7 +18,7 @@ void main() {
     test('should provide user agent access method', () {
       // This test verifies the getUserAgent method exists and handles non-web gracefully
       final userAgent = service.getUserAgent();
-      
+
       if (kIsWeb) {
         expect(userAgent, isNotNull);
         expect(userAgent, isA<String>());
@@ -29,7 +29,7 @@ void main() {
 
     test('should provide detection info for debugging', () {
       final info = service.getDetectionInfo();
-      
+
       expect(info, isA<Map<String, dynamic>>());
       expect(info.containsKey('isWeb'), true);
       expect(info.containsKey('detectedPlatform'), true);
@@ -37,10 +37,10 @@ void main() {
       expect(info.containsKey('currentPlatform'), true);
       expect(info.containsKey('isInitialized'), true);
       expect(info.containsKey('userAgent'), true);
-      
+
       expect(info['isWeb'], kIsWeb);
       expect(info['isInitialized'], true);
-      
+
       if (kIsWeb) {
         expect(info['userAgent'], isA<String>());
       } else {

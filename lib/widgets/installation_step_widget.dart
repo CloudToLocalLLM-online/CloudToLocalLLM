@@ -34,7 +34,6 @@ class _InstallationStepWidgetState extends State<InstallationStepWidget>
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
 
-
   @override
   void initState() {
     super.initState();
@@ -111,8 +110,8 @@ class _InstallationStepWidgetState extends State<InstallationStepWidget>
         backgroundColor: widget.isCompleted
             ? Colors.green
             : widget.isCurrent
-                ? Theme.of(context).primaryColor
-                : Colors.grey.shade400,
+            ? Theme.of(context).primaryColor
+            : Colors.grey.shade400,
         child: widget.isCompleted
             ? const Icon(Icons.check, color: Colors.white, size: 20)
             : Text(
@@ -134,8 +133,8 @@ class _InstallationStepWidgetState extends State<InstallationStepWidget>
         color: widget.isCompleted
             ? Colors.green.shade700
             : widget.isCurrent
-                ? Theme.of(context).primaryColor
-                : null,
+            ? Theme.of(context).primaryColor
+            : null,
       ),
     );
   }
@@ -213,9 +212,9 @@ class _InstallationStepWidgetState extends State<InstallationStepWidget>
       children: [
         Text(
           'Commands:',
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-            fontWeight: FontWeight.w600,
-          ),
+          style: Theme.of(
+            context,
+          ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
         ),
         const SizedBox(height: 8),
         Container(
@@ -262,22 +261,28 @@ class _InstallationStepWidgetState extends State<InstallationStepWidget>
       children: [
         Text(
           'Troubleshooting Tips:',
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-            fontWeight: FontWeight.w600,
-          ),
+          style: Theme.of(
+            context,
+          ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
         ),
         const SizedBox(height: 8),
-        ...widget.step.troubleshootingTips.map((tip) => Padding(
-          padding: const EdgeInsets.only(bottom: 4),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Icon(Icons.lightbulb_outline, size: 16, color: Colors.orange),
-              const SizedBox(width: 8),
-              Expanded(child: Text(tip)),
-            ],
+        ...widget.step.troubleshootingTips.map(
+          (tip) => Padding(
+            padding: const EdgeInsets.only(bottom: 4),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Icon(
+                  Icons.lightbulb_outline,
+                  size: 16,
+                  color: Colors.orange,
+                ),
+                const SizedBox(width: 8),
+                Expanded(child: Text(tip)),
+              ],
+            ),
           ),
-        )),
+        ),
       ],
     );
   }

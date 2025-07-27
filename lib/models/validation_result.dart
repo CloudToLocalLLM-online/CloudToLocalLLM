@@ -115,7 +115,7 @@ class ValidationResult {
   /// Get test categories and their success rates
   Map<String, Map<String, dynamic>> _getTestCategories() {
     final categories = <String, List<ValidationTest>>{};
-    
+
     for (final test in tests) {
       final category = test.category ?? 'general';
       categories.putIfAbsent(category, () => []).add(test);
@@ -149,9 +149,13 @@ class ValidationResult {
     return ValidationResult(
       isSuccess: json['isSuccess'] as bool,
       message: json['message'] as String,
-      tests: (json['tests'] as List<dynamic>?)
-          ?.map((test) => ValidationTest.fromJson(test as Map<String, dynamic>))
-          .toList() ?? [],
+      tests:
+          (json['tests'] as List<dynamic>?)
+              ?.map(
+                (test) => ValidationTest.fromJson(test as Map<String, dynamic>),
+              )
+              .toList() ??
+          [],
       duration: json['duration'] as int?,
       timestamp: DateTime.parse(json['timestamp'] as String),
       metadata: json['metadata'] as Map<String, dynamic>?,
@@ -180,18 +184,18 @@ class ValidationResult {
   @override
   String toString() {
     return 'ValidationResult(isSuccess: $isSuccess, message: $message, '
-           'tests: ${tests.length}, duration: ${duration}ms, timestamp: $timestamp)';
+        'tests: ${tests.length}, duration: ${duration}ms, timestamp: $timestamp)';
   }
 
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
-    
+
     return other is ValidationResult &&
-           other.isSuccess == isSuccess &&
-           other.message == message &&
-           other.duration == duration &&
-           other.timestamp == timestamp;
+        other.isSuccess == isSuccess &&
+        other.message == message &&
+        other.duration == duration &&
+        other.timestamp == timestamp;
   }
 
   @override

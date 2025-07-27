@@ -2,7 +2,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 
 /// Platform service manager for graceful degradation of platform-specific features
-/// 
+///
 /// Handles initialization and management of platform-specific services with
 /// proper error handling and fallback mechanisms for unsupported platforms.
 class PlatformServiceManager extends ChangeNotifier {
@@ -11,17 +11,17 @@ class PlatformServiceManager extends ChangeNotifier {
   bool _isDesktop = false;
   bool _isMobile = false;
   String _platformName = 'unknown';
-  
+
   // Service availability
   bool _nativeTrayAvailable = false;
   bool _windowManagerAvailable = false;
   bool _fileSystemAvailable = false;
   bool _localOllamaAvailable = false;
-  
+
   // Initialization status
   bool _isInitialized = false;
-  List<String> _initializationErrors = [];
-  Map<String, bool> _serviceStatus = {};
+  final List<String> _initializationErrors = [];
+  final Map<String, bool> _serviceStatus = {};
 
   // Getters
   bool get isWeb => _isWeb;
@@ -33,7 +33,8 @@ class PlatformServiceManager extends ChangeNotifier {
   bool get fileSystemAvailable => _fileSystemAvailable;
   bool get localOllamaAvailable => _localOllamaAvailable;
   bool get isInitialized => _isInitialized;
-  List<String> get initializationErrors => List.unmodifiable(_initializationErrors);
+  List<String> get initializationErrors =>
+      List.unmodifiable(_initializationErrors);
   Map<String, bool> get serviceStatus => Map.unmodifiable(_serviceStatus);
 
   /// Initialize platform detection and service availability
@@ -44,16 +45,20 @@ class PlatformServiceManager extends ChangeNotifier {
     }
 
     try {
-      debugPrint('🖥️ [PlatformService] Initializing platform service manager...');
-      
+      debugPrint(
+        '🖥️ [PlatformService] Initializing platform service manager...',
+      );
+
       await _detectPlatform();
       await _checkServiceAvailability();
-      
+
       _isInitialized = true;
       debugPrint('🖥️ [PlatformService] Platform service manager initialized');
       debugPrint('🖥️ [PlatformService] Platform: $_platformName');
-      debugPrint('🖥️ [PlatformService] Available services: ${_getAvailableServices()}');
-      
+      debugPrint(
+        '🖥️ [PlatformService] Available services: ${_getAvailableServices()}',
+      );
+
       notifyListeners();
     } catch (e) {
       debugPrint('🖥️ [PlatformService] Failed to initialize: $e');
@@ -66,7 +71,7 @@ class PlatformServiceManager extends ChangeNotifier {
   Future<void> _detectPlatform() async {
     try {
       _isWeb = kIsWeb;
-      
+
       if (_isWeb) {
         _platformName = 'web';
         _isDesktop = false;
@@ -91,7 +96,7 @@ class PlatformServiceManager extends ChangeNotifier {
         } else {
           _platformName = 'unknown';
         }
-        
+
         debugPrint('🖥️ [PlatformService] Detected platform: $_platformName');
       }
     } catch (e) {
@@ -106,15 +111,15 @@ class PlatformServiceManager extends ChangeNotifier {
     // Native tray service
     _nativeTrayAvailable = await _checkNativeTrayAvailability();
     _serviceStatus['native_tray'] = _nativeTrayAvailable;
-    
+
     // Window manager service
     _windowManagerAvailable = await _checkWindowManagerAvailability();
     _serviceStatus['window_manager'] = _windowManagerAvailable;
-    
+
     // File system access
     _fileSystemAvailable = await _checkFileSystemAvailability();
     _serviceStatus['file_system'] = _fileSystemAvailable;
-    
+
     // Local Ollama availability
     _localOllamaAvailable = await _checkLocalOllamaAvailability();
     _serviceStatus['local_ollama'] = _localOllamaAvailable;
@@ -124,19 +129,27 @@ class PlatformServiceManager extends ChangeNotifier {
   Future<bool> _checkNativeTrayAvailability() async {
     try {
       if (_isWeb) {
-        debugPrint('🖥️ [PlatformService] Native tray not available on web platform');
+        debugPrint(
+          '🖥️ [PlatformService] Native tray not available on web platform',
+        );
         return false;
       }
-      
+
       if (_isDesktop) {
-        debugPrint('🖥️ [PlatformService] Native tray available on desktop platform');
+        debugPrint(
+          '🖥️ [PlatformService] Native tray available on desktop platform',
+        );
         return true;
       }
-      
-      debugPrint('🖥️ [PlatformService] Native tray not available on mobile platform');
+
+      debugPrint(
+        '🖥️ [PlatformService] Native tray not available on mobile platform',
+      );
       return false;
     } catch (e) {
-      debugPrint('🖥️ [PlatformService] Error checking native tray availability: $e');
+      debugPrint(
+        '🖥️ [PlatformService] Error checking native tray availability: $e',
+      );
       _initializationErrors.add('Native tray check failed: $e');
       return false;
     }
@@ -146,19 +159,27 @@ class PlatformServiceManager extends ChangeNotifier {
   Future<bool> _checkWindowManagerAvailability() async {
     try {
       if (_isWeb) {
-        debugPrint('🖥️ [PlatformService] Window manager not available on web platform');
+        debugPrint(
+          '🖥️ [PlatformService] Window manager not available on web platform',
+        );
         return false;
       }
-      
+
       if (_isDesktop) {
-        debugPrint('🖥️ [PlatformService] Window manager available on desktop platform');
+        debugPrint(
+          '🖥️ [PlatformService] Window manager available on desktop platform',
+        );
         return true;
       }
-      
-      debugPrint('🖥️ [PlatformService] Window manager not available on mobile platform');
+
+      debugPrint(
+        '🖥️ [PlatformService] Window manager not available on mobile platform',
+      );
       return false;
     } catch (e) {
-      debugPrint('🖥️ [PlatformService] Error checking window manager availability: $e');
+      debugPrint(
+        '🖥️ [PlatformService] Error checking window manager availability: $e',
+      );
       _initializationErrors.add('Window manager check failed: $e');
       return false;
     }
@@ -168,14 +189,18 @@ class PlatformServiceManager extends ChangeNotifier {
   Future<bool> _checkFileSystemAvailability() async {
     try {
       if (_isWeb) {
-        debugPrint('🖥️ [PlatformService] Limited file system access on web platform');
+        debugPrint(
+          '🖥️ [PlatformService] Limited file system access on web platform',
+        );
         return false; // Limited access through browser APIs
       }
-      
+
       debugPrint('🖥️ [PlatformService] Full file system access available');
       return true;
     } catch (e) {
-      debugPrint('🖥️ [PlatformService] Error checking file system availability: $e');
+      debugPrint(
+        '🖥️ [PlatformService] Error checking file system availability: $e',
+      );
       _initializationErrors.add('File system check failed: $e');
       return false;
     }
@@ -185,19 +210,27 @@ class PlatformServiceManager extends ChangeNotifier {
   Future<bool> _checkLocalOllamaAvailability() async {
     try {
       if (_isWeb) {
-        debugPrint('🖥️ [PlatformService] Local Ollama not available on web platform (CORS restrictions)');
+        debugPrint(
+          '🖥️ [PlatformService] Local Ollama not available on web platform (CORS restrictions)',
+        );
         return false;
       }
-      
+
       if (_isDesktop) {
-        debugPrint('🖥️ [PlatformService] Local Ollama potentially available on desktop platform');
+        debugPrint(
+          '🖥️ [PlatformService] Local Ollama potentially available on desktop platform',
+        );
         return true; // Actual availability depends on Ollama installation
       }
-      
-      debugPrint('🖥️ [PlatformService] Local Ollama not typically available on mobile platform');
+
+      debugPrint(
+        '🖥️ [PlatformService] Local Ollama not typically available on mobile platform',
+      );
       return false;
     } catch (e) {
-      debugPrint('🖥️ [PlatformService] Error checking local Ollama availability: $e');
+      debugPrint(
+        '🖥️ [PlatformService] Error checking local Ollama availability: $e',
+      );
       _initializationErrors.add('Local Ollama check failed: $e');
       return false;
     }
@@ -206,48 +239,58 @@ class PlatformServiceManager extends ChangeNotifier {
   /// Get list of available services
   List<String> _getAvailableServices() {
     final services = <String>[];
-    
+
     if (_nativeTrayAvailable) services.add('native_tray');
     if (_windowManagerAvailable) services.add('window_manager');
     if (_fileSystemAvailable) services.add('file_system');
     if (_localOllamaAvailable) services.add('local_ollama');
-    
+
     return services;
   }
 
   /// Initialize service with platform check
-  Future<bool> initializeServiceSafely(String serviceName, Future<void> Function() initializer) async {
+  Future<bool> initializeServiceSafely(
+    String serviceName,
+    Future<void> Function() initializer,
+  ) async {
     try {
-      debugPrint('🖥️ [PlatformService] Attempting to initialize $serviceName...');
-      
+      debugPrint(
+        '🖥️ [PlatformService] Attempting to initialize $serviceName...',
+      );
+
       // Check if service is available on current platform
       switch (serviceName) {
         case 'native_tray':
           if (!_nativeTrayAvailable) {
-            debugPrint('🖥️ [PlatformService] Skipping $serviceName - not available on $_platformName');
+            debugPrint(
+              '🖥️ [PlatformService] Skipping $serviceName - not available on $_platformName',
+            );
             return false;
           }
           break;
         case 'window_manager':
           if (!_windowManagerAvailable) {
-            debugPrint('🖥️ [PlatformService] Skipping $serviceName - not available on $_platformName');
+            debugPrint(
+              '🖥️ [PlatformService] Skipping $serviceName - not available on $_platformName',
+            );
             return false;
           }
           break;
         case 'local_ollama':
           if (!_localOllamaAvailable) {
-            debugPrint('🖥️ [PlatformService] Skipping $serviceName - not available on $_platformName');
+            debugPrint(
+              '🖥️ [PlatformService] Skipping $serviceName - not available on $_platformName',
+            );
             return false;
           }
           break;
       }
-      
+
       // Attempt initialization
       await initializer();
       _serviceStatus[serviceName] = true;
       debugPrint('🖥️ [PlatformService] Successfully initialized $serviceName');
       return true;
-      
     } catch (e) {
       debugPrint('🖥️ [PlatformService] Failed to initialize $serviceName: $e');
       _serviceStatus[serviceName] = false;
@@ -273,7 +316,7 @@ class PlatformServiceManager extends ChangeNotifier {
   /// Get platform-specific limitations
   List<String> get platformLimitations {
     final limitations = <String>[];
-    
+
     if (_isWeb) {
       limitations.add('No system tray integration');
       limitations.add('No window management controls');
@@ -281,31 +324,31 @@ class PlatformServiceManager extends ChangeNotifier {
       limitations.add('No local Ollama connection (CORS restrictions)');
       limitations.add('Cloud proxy required for LLM access');
     }
-    
+
     if (_isMobile) {
       limitations.add('No system tray integration');
       limitations.add('Limited window management');
       limitations.add('No local Ollama support');
     }
-    
+
     return limitations;
   }
 
   /// Get platform-specific recommendations
   List<String> get platformRecommendations {
     final recommendations = <String>[];
-    
+
     if (_isWeb) {
       recommendations.add('Use desktop app for full feature access');
       recommendations.add('Enable cloud proxy for LLM connectivity');
       recommendations.add('Consider premium tier for enhanced features');
     }
-    
+
     if (_isDesktop) {
       recommendations.add('Install Ollama locally for best performance');
       recommendations.add('Enable system tray for background operation');
     }
-    
+
     return recommendations;
   }
 

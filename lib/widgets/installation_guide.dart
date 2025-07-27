@@ -49,14 +49,19 @@ class _InstallationGuideState extends State<InstallationGuide> {
 
   void _loadInstallationSteps() {
     try {
-      final platformConfig = _platformService.getPlatformConfig(widget.platform);
+      final platformConfig = _platformService.getPlatformConfig(
+        widget.platform,
+      );
       if (platformConfig != null) {
-        _installationSteps = platformConfig.getInstallationSteps(widget.installationType);
+        _installationSteps = platformConfig.getInstallationSteps(
+          widget.installationType,
+        );
         _installationSteps.sort((a, b) => a.order.compareTo(b.order));
       }
 
       if (_installationSteps.isEmpty) {
-        _errorMessage = 'No installation steps found for ${widget.platform.displayName} (${widget.installationType})';
+        _errorMessage =
+            'No installation steps found for ${widget.platform.displayName} (${widget.installationType})';
       }
 
       setState(() {
@@ -74,9 +79,7 @@ class _InstallationGuideState extends State<InstallationGuide> {
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return const Center(
-        child: CircularProgressIndicator(),
-      );
+      return const Center(child: CircularProgressIndicator());
     }
 
     if (_errorMessage != null) {
@@ -109,10 +112,7 @@ class _InstallationGuideState extends State<InstallationGuide> {
           children: [
             const Icon(Icons.error, color: Colors.red, size: 48),
             const SizedBox(height: 16),
-            Text(
-              'Error',
-              style: Theme.of(context).textTheme.titleLarge,
-            ),
+            Text('Error', style: Theme.of(context).textTheme.titleLarge),
             const SizedBox(height: 8),
             Text(_errorMessage ?? 'Unknown error'),
             const SizedBox(height: 16),
@@ -185,9 +185,9 @@ class _InstallationGuideState extends State<InstallationGuide> {
               const SizedBox(height: 8),
               Text(
                 'Requirements:',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
+                style: Theme.of(
+                  context,
+                ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
               ),
               const SizedBox(height: 4),
               ...widget.downloadOption.requirements.map(
@@ -218,9 +218,9 @@ class _InstallationGuideState extends State<InstallationGuide> {
             width: 60,
             child: Text(
               label,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
             ),
           ),
           Expanded(child: Text(value)),
@@ -253,23 +253,21 @@ class _InstallationGuideState extends State<InstallationGuide> {
       margin: const EdgeInsets.only(bottom: 12),
       elevation: isCurrent ? 4 : 1,
       child: Theme(
-        data: Theme.of(context).copyWith(
-          dividerColor: Colors.transparent,
-        ),
+        data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
         child: ExpansionTile(
           initiallyExpanded: isCurrent,
           leading: CircleAvatar(
             backgroundColor: isCompleted
-              ? Colors.green
-              : isCurrent
+                ? Colors.green
+                : isCurrent
                 ? Theme.of(context).primaryColor
                 : Colors.grey,
             child: isCompleted
-              ? const Icon(Icons.check, color: Colors.white)
-              : Text(
-                  '${index + 1}',
-                  style: const TextStyle(color: Colors.white),
-                ),
+                ? const Icon(Icons.check, color: Colors.white)
+                : Text(
+                    '${index + 1}',
+                    style: const TextStyle(color: Colors.white),
+                  ),
           ),
           title: Text(
             step.title,
@@ -278,9 +276,7 @@ class _InstallationGuideState extends State<InstallationGuide> {
               color: isCompleted ? Colors.green : null,
             ),
           ),
-          subtitle: step.isOptional
-            ? const Text('Optional')
-            : null,
+          subtitle: step.isOptional ? const Text('Optional') : null,
           children: [
             Padding(
               padding: const EdgeInsets.all(16),
@@ -357,9 +353,9 @@ class _InstallationGuideState extends State<InstallationGuide> {
       children: [
         Text(
           'Commands:',
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-            fontWeight: FontWeight.w600,
-          ),
+          style: Theme.of(
+            context,
+          ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
         ),
         const SizedBox(height: 8),
         Container(
@@ -406,22 +402,28 @@ class _InstallationGuideState extends State<InstallationGuide> {
       children: [
         Text(
           'Troubleshooting Tips:',
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-            fontWeight: FontWeight.w600,
-          ),
+          style: Theme.of(
+            context,
+          ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
         ),
         const SizedBox(height: 8),
-        ...tips.map((tip) => Padding(
-          padding: const EdgeInsets.only(bottom: 4),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Icon(Icons.lightbulb_outline, size: 16, color: Colors.orange),
-              const SizedBox(width: 8),
-              Expanded(child: Text(tip)),
-            ],
+        ...tips.map(
+          (tip) => Padding(
+            padding: const EdgeInsets.only(bottom: 4),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Icon(
+                  Icons.lightbulb_outline,
+                  size: 16,
+                  color: Colors.orange,
+                ),
+                const SizedBox(width: 8),
+                Expanded(child: Text(tip)),
+              ],
+            ),
           ),
-        )),
+        ),
       ],
     );
   }
@@ -439,7 +441,9 @@ class _InstallationGuideState extends State<InstallationGuide> {
           const SizedBox(),
         ElevatedButton(
           onPressed: () => _markStepComplete(stepIndex),
-          child: Text(stepIndex == _installationSteps.length - 1 ? 'Complete' : 'Next'),
+          child: Text(
+            stepIndex == _installationSteps.length - 1 ? 'Complete' : 'Next',
+          ),
         ),
       ],
     );
@@ -459,7 +463,9 @@ class _InstallationGuideState extends State<InstallationGuide> {
           Padding(
             padding: const EdgeInsets.all(16),
             child: Column(
-              children: platformConfig!.troubleshootingGuides.entries.map((entry) {
+              children: platformConfig!.troubleshootingGuides.entries.map((
+                entry,
+              ) {
                 return Padding(
                   padding: const EdgeInsets.only(bottom: 12),
                   child: Column(
@@ -499,7 +505,9 @@ class _InstallationGuideState extends State<InstallationGuide> {
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  _installationValidated ? 'Installation Complete!' : 'Ready to Complete Installation',
+                  _installationValidated
+                      ? 'Installation Complete!'
+                      : 'Ready to Complete Installation',
                   style: Theme.of(context).textTheme.titleMedium,
                 ),
               ],
@@ -526,7 +534,10 @@ class _InstallationGuideState extends State<InstallationGuide> {
                     Expanded(
                       child: Text(
                         _validationError!,
-                        style: TextStyle(color: Colors.red.shade700, fontSize: 12),
+                        style: TextStyle(
+                          color: Colors.red.shade700,
+                          fontSize: 12,
+                        ),
                       ),
                     ),
                   ],
@@ -544,7 +555,9 @@ class _InstallationGuideState extends State<InstallationGuide> {
                 ),
                 if (!_installationValidated && widget.enableValidation)
                   ElevatedButton.icon(
-                    onPressed: _isValidatingInstallation ? null : _validateInstallation,
+                    onPressed: _isValidatingInstallation
+                        ? null
+                        : _validateInstallation,
                     icon: _isValidatingInstallation
                         ? const SizedBox(
                             width: 16,
@@ -552,7 +565,11 @@ class _InstallationGuideState extends State<InstallationGuide> {
                             child: CircularProgressIndicator(strokeWidth: 2),
                           )
                         : const Icon(Icons.verified),
-                    label: Text(_isValidatingInstallation ? 'Validating...' : 'Validate Installation'),
+                    label: Text(
+                      _isValidatingInstallation
+                          ? 'Validating...'
+                          : 'Validate Installation',
+                    ),
                   )
                 else
                   ElevatedButton.icon(
@@ -644,7 +661,9 @@ class _InstallationGuideState extends State<InstallationGuide> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Could not open documentation. Please visit docs.cloudtolocalllm.online'),
+              content: Text(
+                'Could not open documentation. Please visit docs.cloudtolocalllm.online',
+              ),
               duration: Duration(seconds: 3),
             ),
           );
@@ -688,7 +707,9 @@ class _InstallationGuideState extends State<InstallationGuide> {
       if (validationResult.isValid) {
         _markInstallationComplete();
       } else {
-        _showValidationErrorDialog(validationResult.error ?? 'Installation validation failed');
+        _showValidationErrorDialog(
+          validationResult.error ?? 'Installation validation failed',
+        );
       }
     } catch (e) {
       setState(() {
@@ -707,7 +728,9 @@ class _InstallationGuideState extends State<InstallationGuide> {
     // 3. Test basic application functionality
     // 4. Validate required dependencies
 
-    await Future.delayed(const Duration(seconds: 2)); // Simulate validation time
+    await Future.delayed(
+      const Duration(seconds: 2),
+    ); // Simulate validation time
 
     switch (widget.platform) {
       case PlatformType.windows:
@@ -719,7 +742,8 @@ class _InstallationGuideState extends State<InstallationGuide> {
       default:
         return InstallationValidationResult(
           isValid: true,
-          message: 'Manual validation required for ${widget.platform.displayName}',
+          message:
+              'Manual validation required for ${widget.platform.displayName}',
         );
     }
   }
@@ -821,7 +845,8 @@ class _InstallationGuideState extends State<InstallationGuide> {
 
   /// Open troubleshooting guide
   void _openTroubleshootingGuide() async {
-    const troubleshootingUrl = 'https://docs.cloudtolocalllm.online/troubleshooting/installation';
+    const troubleshootingUrl =
+        'https://docs.cloudtolocalllm.online/troubleshooting/installation';
     try {
       final uri = Uri.parse(troubleshootingUrl);
       if (await canLaunchUrl(uri)) {
@@ -830,7 +855,9 @@ class _InstallationGuideState extends State<InstallationGuide> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Could not open troubleshooting guide. Please visit docs.cloudtolocalllm.online'),
+              content: Text(
+                'Could not open troubleshooting guide. Please visit docs.cloudtolocalllm.online',
+              ),
               duration: Duration(seconds: 3),
             ),
           );
@@ -864,4 +891,3 @@ class InstallationValidationResult {
     this.details,
   });
 }
-        

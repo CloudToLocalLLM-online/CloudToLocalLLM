@@ -19,7 +19,7 @@ class ConnectionValidationService extends ChangeNotifier {
   ValidationResult? _lastValidationResult;
   String? _lastError;
   DateTime? _lastValidationTime;
-  
+
   // Test tracking
   final List<ValidationTest> _runningTests = [];
   final Map<String, ValidationTest> _completedTests = {};
@@ -36,7 +36,8 @@ class ConnectionValidationService extends ChangeNotifier {
   String? get lastError => _lastError;
   DateTime? get lastValidationTime => _lastValidationTime;
   List<ValidationTest> get runningTests => List.unmodifiable(_runningTests);
-  Map<String, ValidationTest> get completedTests => Map.unmodifiable(_completedTests);
+  Map<String, ValidationTest> get completedTests =>
+      Map.unmodifiable(_completedTests);
 
   /// Get the default base URL based on environment
   static String _getDefaultBaseUrl() {
@@ -66,7 +67,9 @@ class ConnectionValidationService extends ChangeNotifier {
     final tests = <ValidationTest>[];
 
     try {
-      debugPrint('🔍 [ConnectionValidation] Starting comprehensive validation for user: $userId');
+      debugPrint(
+        '🔍 [ConnectionValidation] Starting comprehensive validation for user: $userId',
+      );
 
       // Test 1: Desktop Client Communication
       final desktopTest = await _testDesktopClientCommunication(userId);
@@ -99,7 +102,7 @@ class ConnectionValidationService extends ChangeNotifier {
 
       _lastValidationResult = ValidationResult(
         isSuccess: isOverallSuccess,
-        message: isOverallSuccess 
+        message: isOverallSuccess
             ? 'All validation tests passed successfully'
             : 'Some validation tests failed',
         tests: tests,
@@ -115,19 +118,23 @@ class ConnectionValidationService extends ChangeNotifier {
 
       _lastValidationTime = DateTime.now();
 
-      debugPrint('🔍 [ConnectionValidation] Validation completed in ${duration.inMilliseconds}ms');
-      debugPrint('🔍 [ConnectionValidation] Results: $successfulTests/${tests.length} tests passed');
+      debugPrint(
+        '🔍 [ConnectionValidation] Validation completed in ${duration.inMilliseconds}ms',
+      );
+      debugPrint(
+        '🔍 [ConnectionValidation] Results: $successfulTests/${tests.length} tests passed',
+      );
 
       return _lastValidationResult!;
     } catch (e) {
       _lastError = 'Validation failed: ${e.toString()}';
       debugPrint('🔍 [ConnectionValidation] Error during validation: $e');
-      
+
       _lastValidationResult = ValidationResult.failure(
         'Unexpected error during validation: ${e.toString()}',
         tests: tests,
       );
-      
+
       return _lastValidationResult!;
     } finally {
       _isValidating = false;
@@ -138,9 +145,11 @@ class ConnectionValidationService extends ChangeNotifier {
   /// Test desktop client communication
   Future<ValidationTest> _testDesktopClientCommunication(String userId) async {
     final startTime = DateTime.now();
-    
+
     try {
-      debugPrint('🔍 [ConnectionValidation] Testing desktop client communication...');
+      debugPrint(
+        '🔍 [ConnectionValidation] Testing desktop client communication...',
+      );
 
       final token = await _authService.getValidatedAccessToken();
       if (token == null) {
@@ -151,20 +160,22 @@ class ConnectionValidationService extends ChangeNotifier {
         );
       }
 
-      final response = await http.get(
-        Uri.parse('$_baseUrl/api/tunnel/status'),
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Content-Type': 'application/json',
-        },
-      ).timeout(const Duration(seconds: 10));
+      final response = await http
+          .get(
+            Uri.parse('$_baseUrl/api/tunnel/status'),
+            headers: {
+              'Authorization': 'Bearer $token',
+              'Content-Type': 'application/json',
+            },
+          )
+          .timeout(const Duration(seconds: 10));
 
       final duration = DateTime.now().difference(startTime).inMilliseconds;
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body) as Map<String, dynamic>;
         final isConnected = data['connected'] == true;
-        
+
         if (isConnected) {
           return ValidationTest.success(
             'Desktop Client Communication',
@@ -199,7 +210,7 @@ class ConnectionValidationService extends ChangeNotifier {
   /// Test LLM connectivity
   Future<ValidationTest> _testLLMConnectivity(String userId) async {
     final startTime = DateTime.now();
-    
+
     try {
       debugPrint('🔍 [ConnectionValidation] Testing LLM connectivity...');
 
@@ -213,20 +224,22 @@ class ConnectionValidationService extends ChangeNotifier {
       }
 
       // Test basic LLM endpoint connectivity
-      final response = await http.get(
-        Uri.parse('$_baseUrl/api/ollama/tags'),
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Content-Type': 'application/json',
-        },
-      ).timeout(const Duration(seconds: 15));
+      final response = await http
+          .get(
+            Uri.parse('$_baseUrl/api/ollama/tags'),
+            headers: {
+              'Authorization': 'Bearer $token',
+              'Content-Type': 'application/json',
+            },
+          )
+          .timeout(const Duration(seconds: 15));
 
       final duration = DateTime.now().difference(startTime).inMilliseconds;
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body) as Map<String, dynamic>;
         final models = data['models'] as List?;
-        
+
         return ValidationTest.success(
           'LLM Connectivity',
           'LLM service is accessible and responding',
@@ -256,9 +269,11 @@ class ConnectionValidationService extends ChangeNotifier {
   /// Test streaming functionality
   Future<ValidationTest> _testStreamingFunctionality(String userId) async {
     final startTime = DateTime.now();
-    
+
     try {
-      debugPrint('🔍 [ConnectionValidation] Testing streaming functionality...');
+      debugPrint(
+        '🔍 [ConnectionValidation] Testing streaming functionality...',
+      );
 
       // For now, we'll do a basic test of the streaming endpoint
       // In a real implementation, this would test actual streaming
@@ -272,18 +287,22 @@ class ConnectionValidationService extends ChangeNotifier {
       }
 
       // Test streaming endpoint availability
-      final response = await http.post(
-        Uri.parse('$_baseUrl/api/chat/stream'),
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Content-Type': 'application/json',
-        },
-        body: jsonEncode({
-          'model': 'test',
-          'messages': [{'role': 'user', 'content': 'test'}],
-          'stream': true,
-        }),
-      ).timeout(const Duration(seconds: 10));
+      final response = await http
+          .post(
+            Uri.parse('$_baseUrl/api/chat/stream'),
+            headers: {
+              'Authorization': 'Bearer $token',
+              'Content-Type': 'application/json',
+            },
+            body: jsonEncode({
+              'model': 'test',
+              'messages': [
+                {'role': 'user', 'content': 'test'},
+              ],
+              'stream': true,
+            }),
+          )
+          .timeout(const Duration(seconds: 10));
 
       final duration = DateTime.now().difference(startTime).inMilliseconds;
 
@@ -294,7 +313,10 @@ class ConnectionValidationService extends ChangeNotifier {
           'Streaming Functionality',
           'Streaming endpoint is accessible',
           duration: duration,
-          details: {'responseTime': duration, 'statusCode': response.statusCode},
+          details: {
+            'responseTime': duration,
+            'statusCode': response.statusCode,
+          },
         );
       } else {
         return ValidationTest.failure(
@@ -315,9 +337,11 @@ class ConnectionValidationService extends ChangeNotifier {
   /// Test authentication validation
   Future<ValidationTest> _testAuthenticationValidation(String userId) async {
     final startTime = DateTime.now();
-    
+
     try {
-      debugPrint('🔍 [ConnectionValidation] Testing authentication validation...');
+      debugPrint(
+        '🔍 [ConnectionValidation] Testing authentication validation...',
+      );
 
       final token = await _authService.getValidatedAccessToken();
       if (token == null) {
@@ -329,20 +353,22 @@ class ConnectionValidationService extends ChangeNotifier {
       }
 
       // Test token validation endpoint
-      final response = await http.get(
-        Uri.parse('$_baseUrl/api/auth/validate'),
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Content-Type': 'application/json',
-        },
-      ).timeout(const Duration(seconds: 10));
+      final response = await http
+          .get(
+            Uri.parse('$_baseUrl/api/auth/validate'),
+            headers: {
+              'Authorization': 'Bearer $token',
+              'Content-Type': 'application/json',
+            },
+          )
+          .timeout(const Duration(seconds: 10));
 
       final duration = DateTime.now().difference(startTime).inMilliseconds;
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body) as Map<String, dynamic>;
         final isValid = data['valid'] == true;
-        
+
         if (isValid) {
           return ValidationTest.success(
             'Authentication Validation',
@@ -376,14 +402,14 @@ class ConnectionValidationService extends ChangeNotifier {
   /// Test network connectivity
   Future<ValidationTest> _testNetworkConnectivity() async {
     final startTime = DateTime.now();
-    
+
     try {
       debugPrint('🔍 [ConnectionValidation] Testing network connectivity...');
 
       // Test basic network connectivity to the API
-      final response = await http.get(
-        Uri.parse('$_baseUrl/health'),
-      ).timeout(const Duration(seconds: 10));
+      final response = await http
+          .get(Uri.parse('$_baseUrl/health'))
+          .timeout(const Duration(seconds: 10));
 
       final duration = DateTime.now().difference(startTime).inMilliseconds;
 

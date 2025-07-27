@@ -1,13 +1,14 @@
 import 'package:flutter/foundation.dart';
 
 /// Feature flags for the first-time setup wizard
-/// 
+///
 /// This class manages feature flags that control the rollout and behavior
 /// of the setup wizard. It integrates with remote configuration to allow
 /// dynamic control without app updates.
 class SetupWizardFeatureFlags {
   // Singleton pattern for global access
-  static final SetupWizardFeatureFlags _instance = SetupWizardFeatureFlags._internal();
+  static final SetupWizardFeatureFlags _instance =
+      SetupWizardFeatureFlags._internal();
   factory SetupWizardFeatureFlags() => _instance;
   SetupWizardFeatureFlags._internal();
 
@@ -43,7 +44,9 @@ class SetupWizardFeatureFlags {
   /// Percentage of users who should see the setup wizard (0-100)
   int get rolloutPercentage {
     try {
-      final percentage = _remoteConfig?.getInt('setup_wizard_rollout_percentage') ?? _defaultRolloutPercentage;
+      final percentage =
+          _remoteConfig?.getInt('setup_wizard_rollout_percentage') ??
+          _defaultRolloutPercentage;
       return percentage.clamp(0, 100);
     } catch (e) {
       debugPrint('Error reading setup_wizard_rollout_percentage flag: $e');
@@ -54,7 +57,8 @@ class SetupWizardFeatureFlags {
   /// Whether users can skip steps in the setup wizard
   bool get allowSkipping {
     try {
-      return _remoteConfig?.getBool('setup_wizard_allow_skip') ?? _defaultAllowSkip;
+      return _remoteConfig?.getBool('setup_wizard_allow_skip') ??
+          _defaultAllowSkip;
     } catch (e) {
       debugPrint('Error reading setup_wizard_allow_skip flag: $e');
       return _defaultAllowSkip;
@@ -64,7 +68,9 @@ class SetupWizardFeatureFlags {
   /// Maximum number of retries for failed operations
   int get maxRetries {
     try {
-      final retries = _remoteConfig?.getInt('setup_wizard_max_retries') ?? _defaultMaxRetries;
+      final retries =
+          _remoteConfig?.getInt('setup_wizard_max_retries') ??
+          _defaultMaxRetries;
       return retries.clamp(1, 10);
     } catch (e) {
       debugPrint('Error reading setup_wizard_max_retries flag: $e');
@@ -75,8 +81,12 @@ class SetupWizardFeatureFlags {
   /// Timeout for each setup step in seconds
   Duration get stepTimeout {
     try {
-      final seconds = _remoteConfig?.getInt('setup_wizard_step_timeout') ?? _defaultStepTimeoutSeconds;
-      return Duration(seconds: seconds.clamp(30, 1800)); // 30 seconds to 30 minutes
+      final seconds =
+          _remoteConfig?.getInt('setup_wizard_step_timeout') ??
+          _defaultStepTimeoutSeconds;
+      return Duration(
+        seconds: seconds.clamp(30, 1800),
+      ); // 30 seconds to 30 minutes
     } catch (e) {
       debugPrint('Error reading setup_wizard_step_timeout flag: $e');
       return Duration(seconds: _defaultStepTimeoutSeconds);
@@ -86,7 +96,8 @@ class SetupWizardFeatureFlags {
   /// Whether analytics collection is enabled for the setup wizard
   bool get analyticsEnabled {
     try {
-      return _remoteConfig?.getBool('setup_wizard_analytics_enabled') ?? _defaultAnalyticsEnabled;
+      return _remoteConfig?.getBool('setup_wizard_analytics_enabled') ??
+          _defaultAnalyticsEnabled;
     } catch (e) {
       debugPrint('Error reading setup_wizard_analytics_enabled flag: $e');
       return _defaultAnalyticsEnabled;
@@ -96,9 +107,14 @@ class SetupWizardFeatureFlags {
   /// Whether container creation is enabled (can be disabled for maintenance)
   bool get containerCreationEnabled {
     try {
-      return _remoteConfig?.getBool('setup_wizard_container_creation_enabled') ?? _defaultContainerCreationEnabled;
+      return _remoteConfig?.getBool(
+            'setup_wizard_container_creation_enabled',
+          ) ??
+          _defaultContainerCreationEnabled;
     } catch (e) {
-      debugPrint('Error reading setup_wizard_container_creation_enabled flag: $e');
+      debugPrint(
+        'Error reading setup_wizard_container_creation_enabled flag: $e',
+      );
       return _defaultContainerCreationEnabled;
     }
   }
@@ -106,9 +122,14 @@ class SetupWizardFeatureFlags {
   /// Whether automatic platform detection is enabled
   bool get platformDetectionEnabled {
     try {
-      return _remoteConfig?.getBool('setup_wizard_platform_detection_enabled') ?? _defaultPlatformDetectionEnabled;
+      return _remoteConfig?.getBool(
+            'setup_wizard_platform_detection_enabled',
+          ) ??
+          _defaultPlatformDetectionEnabled;
     } catch (e) {
-      debugPrint('Error reading setup_wizard_platform_detection_enabled flag: $e');
+      debugPrint(
+        'Error reading setup_wizard_platform_detection_enabled flag: $e',
+      );
       return _defaultPlatformDetectionEnabled;
     }
   }
@@ -116,9 +137,12 @@ class SetupWizardFeatureFlags {
   /// Whether download tracking is enabled
   bool get downloadTrackingEnabled {
     try {
-      return _remoteConfig?.getBool('setup_wizard_download_tracking_enabled') ?? _defaultDownloadTrackingEnabled;
+      return _remoteConfig?.getBool('setup_wizard_download_tracking_enabled') ??
+          _defaultDownloadTrackingEnabled;
     } catch (e) {
-      debugPrint('Error reading setup_wizard_download_tracking_enabled flag: $e');
+      debugPrint(
+        'Error reading setup_wizard_download_tracking_enabled flag: $e',
+      );
       return _defaultDownloadTrackingEnabled;
     }
   }
@@ -181,7 +205,11 @@ class SetupWizardRollout {
   }
 
   /// Check if user is in a specific rollout group (for A/B testing)
-  static bool isInRolloutGroup(String userId, String groupName, int percentage) {
+  static bool isInRolloutGroup(
+    String userId,
+    String groupName,
+    int percentage,
+  ) {
     if (percentage <= 0) return false;
     if (percentage >= 100) return true;
 
@@ -198,7 +226,7 @@ class SetupWizardEnvironmentConfig {
   /// Get environment-specific configuration
   static Map<String, dynamic> getEnvironmentConfig() {
     final env = _getEnvironment();
-    
+
     switch (env) {
       case 'development':
         return {
@@ -210,7 +238,7 @@ class SetupWizardEnvironmentConfig {
           'analytics_enabled': false,
           'debug_mode': true,
         };
-      
+
       case 'staging':
         return {
           'enabled': true,
@@ -221,7 +249,7 @@ class SetupWizardEnvironmentConfig {
           'analytics_enabled': true,
           'debug_mode': true,
         };
-      
+
       case 'production':
         return {
           'enabled': _flags.isEnabled,
@@ -232,7 +260,7 @@ class SetupWizardEnvironmentConfig {
           'analytics_enabled': _flags.analyticsEnabled,
           'debug_mode': false,
         };
-      
+
       default:
         return {
           'enabled': false,
@@ -251,17 +279,17 @@ class SetupWizardEnvironmentConfig {
     if (kDebugMode) {
       return 'development';
     }
-    
+
     // Check for staging environment indicators
     const stagingIndicators = ['staging', 'test', 'dev'];
     final currentUrl = Uri.base.host.toLowerCase();
-    
+
     for (final indicator in stagingIndicators) {
       if (currentUrl.contains(indicator)) {
         return 'staging';
       }
     }
-    
+
     return 'production';
   }
 }
@@ -308,7 +336,8 @@ class SetupWizardFeatureFlagDebug {
       issues.add('Max retries must be between 1 and 10');
     }
 
-    if (_flags.stepTimeout.inSeconds < 30 || _flags.stepTimeout.inSeconds > 1800) {
+    if (_flags.stepTimeout.inSeconds < 30 ||
+        _flags.stepTimeout.inSeconds > 1800) {
       issues.add('Step timeout must be between 30 seconds and 30 minutes');
     }
 

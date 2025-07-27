@@ -16,11 +16,12 @@ class PlatformTroubleshootingSection extends StatefulWidget {
   });
 
   @override
-  State<PlatformTroubleshootingSection> createState() => _PlatformTroubleshootingSectionState();
+  State<PlatformTroubleshootingSection> createState() =>
+      _PlatformTroubleshootingSectionState();
 }
 
-class _PlatformTroubleshootingSectionState extends State<PlatformTroubleshootingSection> {
-
+class _PlatformTroubleshootingSectionState
+    extends State<PlatformTroubleshootingSection> {
   @override
   Widget build(BuildContext context) {
     if (widget.platformConfig.troubleshootingGuides.isEmpty) {
@@ -53,11 +54,7 @@ class _PlatformTroubleshootingSectionState extends State<PlatformTroubleshooting
       ),
       child: Row(
         children: [
-          Icon(
-            Icons.help_outline,
-            color: Colors.orange.shade700,
-            size: 24,
-          ),
+          Icon(Icons.help_outline, color: Colors.orange.shade700, size: 24),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -89,9 +86,7 @@ class _PlatformTroubleshootingSectionState extends State<PlatformTroubleshooting
 
     return Container(
       decoration: BoxDecoration(
-        border: Border(
-          bottom: BorderSide(color: Colors.grey.shade200),
-        ),
+        border: Border(bottom: BorderSide(color: Colors.grey.shade200)),
       ),
       child: ExpansionTile(
         initiallyExpanded: isCurrentError,
@@ -171,10 +166,12 @@ class _PlatformTroubleshootingSectionState extends State<PlatformTroubleshooting
 
   void _markSolutionTried(String errorType) {
     widget.onSolutionTried?.call(errorType);
-    
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('Marked "${_formatErrorTitle(errorType)}" solution as tried'),
+        content: Text(
+          'Marked "${_formatErrorTitle(errorType)}" solution as tried',
+        ),
         duration: const Duration(seconds: 2),
       ),
     );
@@ -226,7 +223,8 @@ class _PlatformTroubleshootingSectionState extends State<PlatformTroubleshooting
 
   /// Opens the support link in the default browser
   Future<void> _openSupportLink() async {
-    const supportUrl = 'https://github.com/imrightguy/CloudToLocalLLM/issues/new?template=setup_issue.md&labels=setup,help-wanted';
+    const supportUrl =
+        'https://github.com/imrightguy/CloudToLocalLLM/issues/new?template=setup_issue.md&labels=setup,help-wanted';
 
     try {
       final uri = Uri.parse(supportUrl);

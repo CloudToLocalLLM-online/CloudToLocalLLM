@@ -89,7 +89,7 @@ The CloudToLocalLLM tier-based architecture implementation has been **successful
 ### New Files Created (8 files):
 1. **`api-backend/middleware/tier-check.js`** - Tier detection and validation
 2. **`api-backend/routes/direct-proxy-routes.js`** - Free tier proxy endpoints
-3. **`lib/services/user_tier_service.dart`** - Flutter tier management
+3. **`lib/services/enhanced_user_tier_service.dart`** - Flutter tier management with API integration
 4. **`lib/components/tier_aware_setup_wizard.dart`** - Adaptive setup wizard
 5. **`test/unit/tier_detection_test.js`** - Comprehensive unit tests
 6. **`test/integration/direct_proxy_test.js`** - Integration test suite

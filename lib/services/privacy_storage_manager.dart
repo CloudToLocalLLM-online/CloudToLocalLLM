@@ -1,12 +1,11 @@
-import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'conversation_storage_service.dart';
-import 'user_tier_service.dart';
+import 'enhanced_user_tier_service.dart';
 import 'auth_service.dart';
 
 /// Privacy-first storage manager that enforces tier-based data policies
-/// 
+///
 /// PRIVACY ARCHITECTURE:
 /// - Free Tier: Local storage only, no cloud sync
 /// - Premium Tier: Optional encrypted cloud sync with user control
@@ -14,7 +13,7 @@ import 'auth_service.dart';
 /// - Transparent storage location indicators for users
 class PrivacyStorageManager extends ChangeNotifier {
   final ConversationStorageService _conversationStorage;
-  final UserTierService _userTierService;
+  final EnhancedUserTierService _userTierService;
   final AuthService _authService;
 
   // Privacy settings
@@ -22,7 +21,7 @@ class PrivacyStorageManager extends ChangeNotifier {
   bool _encryptionEnabled = false;
   String _storageLocation = 'local_only';
   DateTime? _lastSyncTime;
-  
+
   // Storage statistics
   int _totalConversations = 0;
   int _totalMessages = 0;
@@ -30,7 +29,7 @@ class PrivacyStorageManager extends ChangeNotifier {
 
   PrivacyStorageManager({
     required ConversationStorageService conversationStorage,
-    required UserTierService userTierService,
+    required EnhancedUserTierService userTierService,
     required AuthService authService,
   }) : _conversationStorage = conversationStorage,
        _userTierService = userTierService,
@@ -49,19 +48,21 @@ class PrivacyStorageManager extends ChangeNotifier {
   Future<void> initialize() async {
     try {
       debugPrint('🔒 [PrivacyStorage] Initializing privacy storage manager...');
-      
+
       // Initialize conversation storage first
       await _conversationStorage.initialize();
-      
+
       // Load privacy settings
       await _loadPrivacySettings();
-      
+
       // Update storage statistics
       await _updateStorageStatistics();
-      
+
       debugPrint('🔒 [PrivacyStorage] Privacy storage manager initialized');
       debugPrint('🔒 [PrivacyStorage] Storage location: $_storageLocation');
-      debugPrint('🔒 [PrivacyStorage] Cloud sync: ${_cloudSyncEnabled ? 'enabled' : 'disabled'}');
+      debugPrint(
+        '🔒 [PrivacyStorage] Cloud sync: ${_cloudSyncEnabled ? 'enabled' : 'disabled'}',
+      );
     } catch (e) {
       debugPrint('🔒 [PrivacyStorage] Failed to initialize: $e');
       rethrow;
@@ -72,16 +73,16 @@ class PrivacyStorageManager extends ChangeNotifier {
   Future<void> _loadPrivacySettings() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      
+
       _cloudSyncEnabled = prefs.getBool('cloud_sync_enabled') ?? false;
       _encryptionEnabled = prefs.getBool('encryption_enabled') ?? false;
       _storageLocation = prefs.getString('storage_location') ?? 'local_only';
-      
+
       final lastSyncTimestamp = prefs.getInt('last_sync_time');
       if (lastSyncTimestamp != null) {
         _lastSyncTime = DateTime.fromMillisecondsSinceEpoch(lastSyncTimestamp);
       }
-      
+
       debugPrint('🔒 [PrivacyStorage] Privacy settings loaded');
     } catch (e) {
       debugPrint('🔒 [PrivacyStorage] Failed to load privacy settings: $e');
@@ -96,15 +97,18 @@ class PrivacyStorageManager extends ChangeNotifier {
   Future<void> _savePrivacySettings() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      
+
       await prefs.setBool('cloud_sync_enabled', _cloudSyncEnabled);
       await prefs.setBool('encryption_enabled', _encryptionEnabled);
       await prefs.setString('storage_location', _storageLocation);
-      
+
       if (_lastSyncTime != null) {
-        await prefs.setInt('last_sync_time', _lastSyncTime!.millisecondsSinceEpoch);
+        await prefs.setInt(
+          'last_sync_time',
+          _lastSyncTime!.millisecondsSinceEpoch,
+        );
       }
-      
+
       debugPrint('🔒 [PrivacyStorage] Privacy settings saved');
     } catch (e) {
       debugPrint('🔒 [PrivacyStorage] Failed to save privacy settings: $e');
@@ -117,12 +121,12 @@ class PrivacyStorageManager extends ChangeNotifier {
       final stats = await _conversationStorage.getDatabaseStats();
       _totalConversations = stats['total_conversations'] ?? 0;
       _totalMessages = stats['total_messages'] ?? 0;
-      
+
       // Calculate approximate database size (simplified)
       final avgMessageSize = 100; // bytes
       final estimatedSize = _totalMessages * avgMessageSize;
       _databaseSize = _formatBytes(estimatedSize);
-      
+
       notifyListeners();
     } catch (e) {
       debugPrint('🔒 [PrivacyStorage] Failed to update storage statistics: $e');
@@ -133,7 +137,9 @@ class PrivacyStorageManager extends ChangeNotifier {
   String _formatBytes(int bytes) {
     if (bytes < 1024) return '$bytes B';
     if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
-    if (bytes < 1024 * 1024 * 1024) return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
+    if (bytes < 1024 * 1024 * 1024) {
+      return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
+    }
     return '${(bytes / (1024 * 1024 * 1024)).toStringAsFixed(1)} GB';
   }
 
@@ -147,17 +153,17 @@ class PrivacyStorageManager extends ChangeNotifier {
       }
 
       // Verify user authentication
-      if (!_authService.isAuthenticated) {
+      if (!_authService.isAuthenticated.value) {
         debugPrint('🔒 [PrivacyStorage] Cloud sync requires authentication');
         return false;
       }
 
       _cloudSyncEnabled = true;
       _storageLocation = 'local_with_cloud_sync';
-      
+
       await _savePrivacySettings();
       await _conversationStorage.setStorageLocation(_storageLocation);
-      
+
       debugPrint('🔒 [PrivacyStorage] Cloud sync enabled');
       notifyListeners();
       return true;
@@ -173,14 +179,52 @@ class PrivacyStorageManager extends ChangeNotifier {
       _cloudSyncEnabled = false;
       _storageLocation = 'local_only';
       _lastSyncTime = null;
-      
+
       await _savePrivacySettings();
       await _conversationStorage.setStorageLocation(_storageLocation);
-      
+
       debugPrint('🔒 [PrivacyStorage] Cloud sync disabled');
       notifyListeners();
     } catch (e) {
       debugPrint('🔒 [PrivacyStorage] Failed to disable cloud sync: $e');
+    }
+  }
+
+  /// Enable encryption for stored conversations
+  Future<bool> enableEncryption() async {
+    try {
+      // Check if user has premium tier (encryption is premium feature)
+      if (!_userTierService.isPremiumTier) {
+        debugPrint('🔒 [PrivacyStorage] Encryption requires premium tier');
+        return false;
+      }
+
+      _encryptionEnabled = true;
+      await _savePrivacySettings();
+      // TODO: Implement encryption in ConversationStorageService
+      // await _conversationStorage.setEncryptionEnabled(true);
+
+      debugPrint('🔒 [PrivacyStorage] Encryption enabled');
+      notifyListeners();
+      return true;
+    } catch (e) {
+      debugPrint('🔒 [PrivacyStorage] Failed to enable encryption: $e');
+      return false;
+    }
+  }
+
+  /// Disable encryption for stored conversations
+  Future<void> disableEncryption() async {
+    try {
+      _encryptionEnabled = false;
+      await _savePrivacySettings();
+      // TODO: Implement encryption in ConversationStorageService
+      // await _conversationStorage.setEncryptionEnabled(false);
+
+      debugPrint('🔒 [PrivacyStorage] Encryption disabled');
+      notifyListeners();
+    } catch (e) {
+      debugPrint('🔒 [PrivacyStorage] Failed to disable encryption: $e');
     }
   }
 
@@ -215,9 +259,9 @@ class PrivacyStorageManager extends ChangeNotifier {
   Future<Map<String, dynamic>> exportConversations() async {
     try {
       debugPrint('🔒 [PrivacyStorage] Exporting conversations for backup...');
-      
+
       final exportData = await _conversationStorage.exportConversations();
-      
+
       // Add privacy metadata
       exportData['privacy_info'] = {
         'storage_location': _storageLocation,
@@ -225,7 +269,7 @@ class PrivacyStorageManager extends ChangeNotifier {
         'export_timestamp': DateTime.now().toIso8601String(),
         'user_tier': _userTierService.currentTier,
       };
-      
+
       debugPrint('🔒 [PrivacyStorage] Conversations exported successfully');
       return exportData;
     } catch (e) {
@@ -236,7 +280,12 @@ class PrivacyStorageManager extends ChangeNotifier {
 
   /// Check if cloud sync is available for current user
   bool get isCloudSyncAvailable {
-    return _userTierService.isPremiumTier && _authService.isAuthenticated;
+    return _userTierService.isPremiumTier && _authService.isAuthenticated.value;
+  }
+
+  /// Check if encryption is available for current user
+  bool get isEncryptionAvailable {
+    return _userTierService.isPremiumTier;
   }
 
   /// Get tier-specific storage limitations
@@ -269,18 +318,18 @@ class PrivacyStorageManager extends ChangeNotifier {
   Future<void> clearAllLocalData() async {
     try {
       debugPrint('🔒 [PrivacyStorage] Clearing all local data...');
-      
+
       await _conversationStorage.clearAllConversations();
-      
+
       // Reset privacy settings to defaults
       _cloudSyncEnabled = false;
       _encryptionEnabled = false;
       _storageLocation = 'local_only';
       _lastSyncTime = null;
-      
+
       await _savePrivacySettings();
       await _updateStorageStatistics();
-      
+
       debugPrint('🔒 [PrivacyStorage] All local data cleared');
       notifyListeners();
     } catch (e) {

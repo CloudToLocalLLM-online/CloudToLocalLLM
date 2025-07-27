@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../services/user_tier_service.dart';
+import '../services/enhanced_user_tier_service.dart';
 import '../services/auth_service.dart';
 import '../config/theme.dart';
 
@@ -9,11 +9,7 @@ class TierAwareSetupWizard extends StatefulWidget {
   final VoidCallback? onComplete;
   final VoidCallback? onDismiss;
 
-  const TierAwareSetupWizard({
-    super.key,
-    this.onComplete,
-    this.onDismiss,
-  });
+  const TierAwareSetupWizard({super.key, this.onComplete, this.onDismiss});
 
   @override
   State<TierAwareSetupWizard> createState() => _TierAwareSetupWizardState();
@@ -25,7 +21,7 @@ class _TierAwareSetupWizardState extends State<TierAwareSetupWizard> {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer2<UserTierService, AuthService>(
+    return Consumer2<EnhancedUserTierService, AuthService>(
       builder: (context, tierService, authService, child) {
         if (!authService.isAuthenticated.value) {
           return _buildAuthenticationStep(context, authService);
@@ -40,7 +36,10 @@ class _TierAwareSetupWizardState extends State<TierAwareSetupWizard> {
     );
   }
 
-  Widget _buildAuthenticationStep(BuildContext context, AuthService authService) {
+  Widget _buildAuthenticationStep(
+    BuildContext context,
+    AuthService authService,
+  ) {
     return Card(
       margin: EdgeInsets.all(AppTheme.spacingL),
       child: Padding(
@@ -48,17 +47,13 @@ class _TierAwareSetupWizardState extends State<TierAwareSetupWizard> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              Icons.login,
-              size: 64,
-              color: AppTheme.accentColor,
-            ),
+            Icon(Icons.login, size: 64, color: AppTheme.accentColor),
             SizedBox(height: AppTheme.spacingM),
             Text(
               'Authentication Required',
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
             ),
             SizedBox(height: AppTheme.spacingM),
             Text(
@@ -106,7 +101,10 @@ class _TierAwareSetupWizardState extends State<TierAwareSetupWizard> {
     );
   }
 
-  Widget _buildSetupWizard(BuildContext context, UserTierService tierService) {
+  Widget _buildSetupWizard(
+    BuildContext context,
+    EnhancedUserTierService tierService,
+  ) {
     final steps = _getStepsForTier(tierService);
 
     return Card(
@@ -166,18 +164,21 @@ class _TierAwareSetupWizardState extends State<TierAwareSetupWizard> {
     );
   }
 
-  Widget _buildTierHeader(BuildContext context, UserTierService tierService) {
+  Widget _buildTierHeader(
+    BuildContext context,
+    EnhancedUserTierService tierService,
+  ) {
     final tierColor = tierService.isFree
         ? Colors.grey
         : tierService.isPremium
-            ? AppTheme.accentColor
-            : Colors.amber;
+        ? AppTheme.accentColor
+        : Colors.amber;
 
     final tierIcon = tierService.isFree
         ? Icons.person
         : tierService.isPremium
-            ? Icons.star
-            : Icons.diamond;
+        ? Icons.star
+        : Icons.diamond;
 
     return Container(
       padding: EdgeInsets.all(AppTheme.spacingM),
@@ -195,7 +196,7 @@ class _TierAwareSetupWizardState extends State<TierAwareSetupWizard> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  '${tierService.currentTier.value.toUpperCase()} TIER',
+                  '${tierService.currentTier.toUpperCase()} TIER',
                   style: Theme.of(context).textTheme.labelLarge?.copyWith(
                     color: tierColor,
                     fontWeight: FontWeight.bold,
@@ -213,7 +214,7 @@ class _TierAwareSetupWizardState extends State<TierAwareSetupWizard> {
     );
   }
 
-  String _getTierDescription(UserTierService tierService) {
+  String _getTierDescription(EnhancedUserTierService tierService) {
     if (tierService.isFree) {
       return 'Basic tunnel functionality with direct connection';
     } else if (tierService.isPremium) {
@@ -223,7 +224,7 @@ class _TierAwareSetupWizardState extends State<TierAwareSetupWizard> {
     }
   }
 
-  List<Step> _getStepsForTier(UserTierService tierService) {
+  List<Step> _getStepsForTier(EnhancedUserTierService tierService) {
     final steps = <Step>[
       Step(
         title: const Text('Welcome'),
@@ -264,7 +265,7 @@ class _TierAwareSetupWizardState extends State<TierAwareSetupWizard> {
     return steps;
   }
 
-  Widget _buildWelcomeStep(UserTierService tierService) {
+  Widget _buildWelcomeStep(EnhancedUserTierService tierService) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -332,7 +333,7 @@ class _TierAwareSetupWizardState extends State<TierAwareSetupWizard> {
     );
   }
 
-  Widget _buildTunnelConfigurationStep(UserTierService tierService) {
+  Widget _buildTunnelConfigurationStep(EnhancedUserTierService tierService) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -375,10 +376,7 @@ class _TierAwareSetupWizardState extends State<TierAwareSetupWizard> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Container Setup',
-          style: Theme.of(context).textTheme.titleMedium,
-        ),
+        Text('Container Setup', style: Theme.of(context).textTheme.titleMedium),
         SizedBox(height: AppTheme.spacingM),
         const Text(
           'Configuring container orchestration for advanced features.',
@@ -387,14 +385,11 @@ class _TierAwareSetupWizardState extends State<TierAwareSetupWizard> {
     );
   }
 
-  Widget _buildCompletionStep(UserTierService tierService) {
+  Widget _buildCompletionStep(EnhancedUserTierService tierService) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Setup Complete!',
-          style: Theme.of(context).textTheme.titleMedium,
-        ),
+        Text('Setup Complete!', style: Theme.of(context).textTheme.titleMedium),
         SizedBox(height: AppTheme.spacingM),
         Text(
           tierService.isFree
@@ -411,7 +406,10 @@ class _TierAwareSetupWizardState extends State<TierAwareSetupWizard> {
       padding: EdgeInsets.all(AppTheme.spacingM),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [AppTheme.accentColor.withValues(alpha: 0.1), Colors.transparent],
+          colors: [
+            AppTheme.accentColor.withValues(alpha: 0.1),
+            Colors.transparent,
+          ],
         ),
         borderRadius: BorderRadius.circular(8),
       ),
@@ -425,9 +423,9 @@ class _TierAwareSetupWizardState extends State<TierAwareSetupWizard> {
               children: [
                 Text(
                   'Upgrade to Premium',
-                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
                 ),
                 Text(
                   'Get container orchestration, team features, and priority support.',
@@ -464,7 +462,7 @@ class _TierAwareSetupWizardState extends State<TierAwareSetupWizard> {
     });
 
     // Get tier service before async gap
-    final tierService = context.read<UserTierService>();
+    final tierService = context.read<EnhancedUserTierService>();
     final maxSteps = _getStepsForTier(tierService).length - 1;
 
     // Move to next step
@@ -494,7 +492,9 @@ class _TierAwareSetupWizardState extends State<TierAwareSetupWizard> {
               const Text('• Priority support'),
               const Text('• Advanced networking options'),
               const SizedBox(height: 16),
-              const Text('Contact us to learn more about upgrading your account.'),
+              const Text(
+                'Contact us to learn more about upgrading your account.',
+              ),
             ],
           ),
           actions: [

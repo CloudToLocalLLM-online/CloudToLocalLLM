@@ -17,7 +17,8 @@ class PlatformTroubleshootingWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     final platformConfig = platformService.getPlatformConfig(platform);
 
-    if (platformConfig == null || platformConfig.troubleshootingGuides.isEmpty) {
+    if (platformConfig == null ||
+        platformConfig.troubleshootingGuides.isEmpty) {
       return const SizedBox.shrink();
     }
 
@@ -44,9 +45,8 @@ class PlatformTroubleshootingWidget extends StatelessWidget {
                       children: [
                         Text(
                           entry.key,
-                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            fontWeight: FontWeight.w600,
-                          ),
+                          style: Theme.of(context).textTheme.bodyMedium
+                              ?.copyWith(fontWeight: FontWeight.w600),
                         ),
                         const SizedBox(height: 4),
                         Text(
@@ -69,7 +69,11 @@ class PlatformTroubleshootingWidget extends StatelessWidget {
                       padding: const EdgeInsets.only(bottom: 4),
                       child: Row(
                         children: [
-                          const Icon(Icons.check_circle, size: 16, color: Colors.green),
+                          const Icon(
+                            Icons.check_circle,
+                            size: 16,
+                            color: Colors.green,
+                          ),
                           const SizedBox(width: 8),
                           Expanded(child: Text(dependency)),
                         ],

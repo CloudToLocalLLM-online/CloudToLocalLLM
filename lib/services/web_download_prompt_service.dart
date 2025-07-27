@@ -23,8 +23,8 @@ class WebDownloadPromptService extends ChangeNotifier {
   WebDownloadPromptService({
     required AuthService authService,
     DesktopClientDetectionService? clientDetectionService,
-  })  : _authService = authService,
-        _clientDetectionService = clientDetectionService;
+  }) : _authService = authService,
+       _clientDetectionService = clientDetectionService;
 
   /// Initialize the service
   Future<void> initialize() async {
@@ -48,7 +48,9 @@ class WebDownloadPromptService extends ChangeNotifier {
       await _checkShouldShowPrompt();
 
       _isInitialized = true;
-      debugPrint('🌐 [WebDownloadPrompt] Web download prompt service initialized');
+      debugPrint(
+        '🌐 [WebDownloadPrompt] Web download prompt service initialized',
+      );
       notifyListeners();
     } catch (e) {
       debugPrint('🌐 [WebDownloadPrompt] Error initializing service: $e');
@@ -62,8 +64,11 @@ class WebDownloadPromptService extends ChangeNotifier {
       final userId = _authService.currentUser?.id;
 
       if (userId != null) {
-        _hasUserSeenPrompt = prefs.getBool('web_download_prompt_seen_$userId') ?? false;
-        debugPrint('🌐 [WebDownloadPrompt] Loaded state for user $userId: hasSeenPrompt=$_hasUserSeenPrompt');
+        _hasUserSeenPrompt =
+            prefs.getBool('web_download_prompt_seen_$userId') ?? false;
+        debugPrint(
+          '🌐 [WebDownloadPrompt] Loaded state for user $userId: hasSeenPrompt=$_hasUserSeenPrompt',
+        );
       }
     } catch (e) {
       debugPrint('🌐 [WebDownloadPrompt] Error loading prompt state: $e');
@@ -78,8 +83,13 @@ class WebDownloadPromptService extends ChangeNotifier {
       final userId = _authService.currentUser?.id;
 
       if (userId != null) {
-        await prefs.setBool('web_download_prompt_seen_$userId', _hasUserSeenPrompt);
-        debugPrint('🌐 [WebDownloadPrompt] Saved state for user $userId: hasSeenPrompt=$_hasUserSeenPrompt');
+        await prefs.setBool(
+          'web_download_prompt_seen_$userId',
+          _hasUserSeenPrompt,
+        );
+        debugPrint(
+          '🌐 [WebDownloadPrompt] Saved state for user $userId: hasSeenPrompt=$_hasUserSeenPrompt',
+        );
       }
     } catch (e) {
       debugPrint('🌐 [WebDownloadPrompt] Error saving prompt state: $e');
@@ -88,7 +98,9 @@ class WebDownloadPromptService extends ChangeNotifier {
 
   /// Handle authentication state changes
   void _onAuthStateChanged() {
-    debugPrint('🌐 [WebDownloadPrompt] Auth state changed: ${_authService.isAuthenticated.value}');
+    debugPrint(
+      '🌐 [WebDownloadPrompt] Auth state changed: ${_authService.isAuthenticated.value}',
+    );
 
     if (_authService.isAuthenticated.value) {
       // User just logged in, check if they're a first-time user
@@ -104,7 +116,9 @@ class WebDownloadPromptService extends ChangeNotifier {
 
   /// Handle client detection changes
   void _onClientDetectionChanged() {
-    debugPrint('🌐 [WebDownloadPrompt] Client detection changed: ${_clientDetectionService?.hasConnectedClients}');
+    debugPrint(
+      '🌐 [WebDownloadPrompt] Client detection changed: ${_clientDetectionService?.hasConnectedClients}',
+    );
     _checkShouldShowPrompt();
   }
 
@@ -121,7 +135,9 @@ class WebDownloadPromptService extends ChangeNotifier {
       _isFirstTimeUser = true;
     }
 
-    debugPrint('🌐 [WebDownloadPrompt] First time user: $_isFirstTimeUser (hasSeenPrompt: $_hasUserSeenPrompt)');
+    debugPrint(
+      '🌐 [WebDownloadPrompt] First time user: $_isFirstTimeUser (hasSeenPrompt: $_hasUserSeenPrompt)',
+    );
   }
 
   /// Check if the download prompt should be shown
@@ -133,12 +149,14 @@ class WebDownloadPromptService extends ChangeNotifier {
       return;
     }
 
-    final hasConnectedClients = _clientDetectionService?.hasConnectedClients ?? false;
+    final hasConnectedClients =
+        _clientDetectionService?.hasConnectedClients ?? false;
 
     // Show prompt only if:
     // 1. User is first-time AND hasn't seen the prompt yet
     // 2. OR no clients are connected (to encourage desktop app download)
-    final shouldShow = (_isFirstTimeUser && !_hasUserSeenPrompt) || !hasConnectedClients;
+    final shouldShow =
+        (_isFirstTimeUser && !_hasUserSeenPrompt) || !hasConnectedClients;
 
     if (_shouldShowPrompt != shouldShow) {
       _shouldShowPrompt = shouldShow;
@@ -173,7 +191,8 @@ class WebDownloadPromptService extends ChangeNotifier {
 
   /// Get prompt progress information
   Map<String, dynamic> getPromptProgress() {
-    final hasConnectedClients = _clientDetectionService?.hasConnectedClients ?? false;
+    final hasConnectedClients =
+        _clientDetectionService?.hasConnectedClients ?? false;
 
     return {
       'hasUserSeenPrompt': _hasUserSeenPrompt,
@@ -181,7 +200,8 @@ class WebDownloadPromptService extends ChangeNotifier {
       'isFirstTimeUser': _isFirstTimeUser,
       'hasConnectedClients': hasConnectedClients,
       'isAuthenticated': _authService.isAuthenticated.value,
-      'connectedClientCount': _clientDetectionService?.connectedClientCount ?? 0,
+      'connectedClientCount':
+          _clientDetectionService?.connectedClientCount ?? 0,
     };
   }
 

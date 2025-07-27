@@ -9,6 +9,11 @@ import 'auth_service.dart';
 ///
 /// On web platform, this service monitors active bridge connections
 /// to determine if any desktop clients are currently connected.
+///
+/// PRIVACY POLICY:
+/// - Only checks connection status, no personal data transmitted
+/// - Uses authenticated API calls with JWT tokens only
+/// - No conversation or user data involved in detection
 class DesktopClientDetectionService extends ChangeNotifier {
   final AuthService _authService;
 
@@ -103,9 +108,12 @@ class DesktopClientDetectionService extends ChangeNotifier {
         return;
       }
 
+      // Fixed: Corrected API endpoint path
       final response = await _httpClient
           .get(
-            Uri.parse('${AppConfig.appUrl}/ollama/bridge/status'),
+            Uri.parse(
+              '${AppConfig.appUrl}/api/ollama/bridge/status',
+            ), // Fixed: added /api/
             headers: {
               'Authorization': 'Bearer $accessToken',
               'Content-Type': 'application/json',

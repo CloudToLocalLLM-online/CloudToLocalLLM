@@ -176,17 +176,17 @@ class ValidationTest {
   /// Get detailed error information
   String get detailedError {
     if (!hasError) return 'No error information available';
-    
+
     final buffer = StringBuffer();
     buffer.writeln('Error: $error');
-    
+
     if (hasDetails) {
       buffer.writeln('Details:');
       details!.forEach((key, value) {
         buffer.writeln('  $key: $value');
       });
     }
-    
+
     return buffer.toString().trim();
   }
 
@@ -196,48 +196,48 @@ class ValidationTest {
     buffer.writeln('Test: $name');
     buffer.writeln('Status: $status');
     buffer.writeln('Message: $message');
-    
+
     if (duration != null) {
       buffer.writeln('Duration: $durationString');
     }
-    
+
     if (category != null) {
       buffer.writeln('Category: $category');
     }
-    
+
     if (hasError) {
       buffer.writeln('Error: $error');
     }
-    
+
     if (hasDetails) {
       buffer.writeln('Details:');
       details!.forEach((key, value) {
         buffer.writeln('  $key: $value');
       });
     }
-    
+
     buffer.writeln('Timestamp: ${timestamp.toIso8601String()}');
-    
+
     return buffer.toString().trim();
   }
 
   @override
   String toString() {
     return 'ValidationTest(name: $name, isSuccess: $isSuccess, message: $message, '
-           'duration: ${duration}ms, category: $category, error: $error)';
+        'duration: ${duration}ms, category: $category, error: $error)';
   }
 
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
-    
+
     return other is ValidationTest &&
-           other.name == name &&
-           other.isSuccess == isSuccess &&
-           other.message == message &&
-           other.duration == duration &&
-           other.error == error &&
-           other.category == category;
+        other.name == name &&
+        other.isSuccess == isSuccess &&
+        other.message == message &&
+        other.duration == duration &&
+        other.error == error &&
+        other.category == category;
   }
 
   @override

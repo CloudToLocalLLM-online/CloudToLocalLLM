@@ -124,7 +124,8 @@ class UserSetupStatus {
       setupCompleted: setupCompleted ?? this.setupCompleted,
       setupCompletedAt: setupCompletedAt ?? this.setupCompletedAt,
       lastUpdated: lastUpdated ?? this.lastUpdated,
-      hasActiveDesktopConnection: hasActiveDesktopConnection ?? this.hasActiveDesktopConnection,
+      hasActiveDesktopConnection:
+          hasActiveDesktopConnection ?? this.hasActiveDesktopConnection,
       setupVersion: setupVersion ?? this.setupVersion,
       preferences: preferences ?? this.preferences,
       metadata: metadata ?? this.metadata,
@@ -168,51 +169,53 @@ class UserSetupStatus {
   /// Validate the setup status data
   bool get isValid {
     return userId.isNotEmpty &&
-           setupVersion.isNotEmpty &&
-           (!setupCompleted || setupCompletedAt != null);
+        setupVersion.isNotEmpty &&
+        (!setupCompleted || setupCompletedAt != null);
   }
 
   /// Get validation errors
   List<String> get validationErrors {
     final errors = <String>[];
-    
+
     if (userId.isEmpty) {
       errors.add('User ID cannot be empty');
     }
-    
+
     if (setupVersion.isEmpty) {
       errors.add('Setup version cannot be empty');
     }
-    
+
     if (setupCompleted && setupCompletedAt == null) {
-      errors.add('Setup completed timestamp is required when setup is marked complete');
+      errors.add(
+        'Setup completed timestamp is required when setup is marked complete',
+      );
     }
-    
+
     if (setupCompletedAt != null && setupCompletedAt!.isAfter(DateTime.now())) {
       errors.add('Setup completed timestamp cannot be in the future');
     }
-    
+
     return errors;
   }
 
   @override
   String toString() {
     return 'UserSetupStatus(userId: $userId, isFirstTimeUser: $isFirstTimeUser, '
-           'setupCompleted: $setupCompleted, hasActiveDesktopConnection: $hasActiveDesktopConnection, '
-           'setupVersion: $setupVersion, lastUpdated: $lastUpdated)';
+        'setupCompleted: $setupCompleted, hasActiveDesktopConnection: $hasActiveDesktopConnection, '
+        'setupVersion: $setupVersion, lastUpdated: $lastUpdated)';
   }
 
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
-    
+
     return other is UserSetupStatus &&
-           other.userId == userId &&
-           other.isFirstTimeUser == isFirstTimeUser &&
-           other.setupCompleted == setupCompleted &&
-           other.setupCompletedAt == setupCompletedAt &&
-           other.hasActiveDesktopConnection == hasActiveDesktopConnection &&
-           other.setupVersion == setupVersion;
+        other.userId == userId &&
+        other.isFirstTimeUser == isFirstTimeUser &&
+        other.setupCompleted == setupCompleted &&
+        other.setupCompletedAt == setupCompletedAt &&
+        other.hasActiveDesktopConnection == hasActiveDesktopConnection &&
+        other.setupVersion == setupVersion;
   }
 
   @override
@@ -232,16 +235,20 @@ class UserSetupStatus {
 extension UserSetupStatusExtensions on UserSetupStatus {
   /// Check if user prefers a specific platform
   String? get preferredPlatform => getPreference<String>('preferredPlatform');
-  
+
   /// Check if user has skipped validation
-  bool get hasSkippedValidation => getPreference<bool>('skippedValidation', false) ?? false;
+  bool get hasSkippedValidation =>
+      getPreference<bool>('skippedValidation', false) ?? false;
 
   /// Check if user wants to see advanced options
-  bool get showAdvancedOptions => getPreference<bool>('showAdvancedOptions', false) ?? false;
+  bool get showAdvancedOptions =>
+      getPreference<bool>('showAdvancedOptions', false) ?? false;
 
   /// Get user's preferred language
-  String get preferredLanguage => getPreference<String>('language', 'en') ?? 'en';
+  String get preferredLanguage =>
+      getPreference<String>('language', 'en') ?? 'en';
 
   /// Check if user has enabled analytics
-  bool get analyticsEnabled => getPreference<bool>('analyticsEnabled', true) ?? true;
+  bool get analyticsEnabled =>
+      getPreference<bool>('analyticsEnabled', true) ?? true;
 }

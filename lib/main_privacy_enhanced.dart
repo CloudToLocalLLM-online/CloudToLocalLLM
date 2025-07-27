@@ -17,13 +17,13 @@ import 'services/connection_manager_service.dart';
 import 'services/streaming_chat_service.dart';
 import 'services/native_tray_service.dart';
 import 'services/window_manager_service.dart';
-import 'services/desktop_client_detection_service_fixed.dart';
+import 'services/desktop_client_detection_service.dart';
 import 'services/setup_wizard_service.dart';
 import 'services/web_download_prompt_service.dart';
 import 'services/user_container_service.dart';
 import 'services/admin_service.dart';
 import 'services/admin_data_flush_service.dart';
-import 'services/conversation_storage_service_fixed.dart';
+import 'services/conversation_storage_service.dart';
 import 'services/privacy_storage_manager.dart';
 import 'services/platform_service_manager.dart';
 import 'widgets/window_listener_widget.dart';
@@ -44,14 +44,12 @@ void main() async {
 /// Privacy-enhanced main application widget with comprehensive data protection
 class CloudToLocalLLMPrivacyApp extends StatefulWidget {
   final PlatformServiceManager platformManager;
-  
-  const CloudToLocalLLMPrivacyApp({
-    super.key,
-    required this.platformManager,
-  });
+
+  const CloudToLocalLLMPrivacyApp({super.key, required this.platformManager});
 
   @override
-  State<CloudToLocalLLMPrivacyApp> createState() => _CloudToLocalLLMPrivacyAppState();
+  State<CloudToLocalLLMPrivacyApp> createState() =>
+      _CloudToLocalLLMPrivacyAppState();
 }
 
 class _CloudToLocalLLMPrivacyAppState extends State<CloudToLocalLLMPrivacyApp> {
@@ -121,20 +119,28 @@ class _CloudToLocalLLMPrivacyAppState extends State<CloudToLocalLLMPrivacyApp> {
       context ??= navigatorKey.currentState?.context;
 
       if (context != null && context.mounted) {
-        debugPrint("✅ [Navigation] Context available, executing navigation to: $route");
+        debugPrint(
+          "✅ [Navigation] Context available, executing navigation to: $route",
+        );
 
         WidgetsBinding.instance.addPostFrameCallback((_) {
           try {
             if (context!.mounted) {
               context.go(route);
-              debugPrint("✅ [Navigation] Navigation command sent for route: $route");
+              debugPrint(
+                "✅ [Navigation] Navigation command sent for route: $route",
+              );
             }
           } catch (e) {
-            debugPrint("💥 [Navigation] Post-frame navigation error for $route: $e");
+            debugPrint(
+              "💥 [Navigation] Post-frame navigation error for $route: $e",
+            );
           }
         });
       } else {
-        debugPrint("❌ [Navigation] Cannot navigate to $route: no valid context available");
+        debugPrint(
+          "❌ [Navigation] Cannot navigate to $route: no valid context available",
+        );
         Future.delayed(const Duration(milliseconds: 500), () {
           _retryNavigation(route, 1);
         });
@@ -153,7 +159,8 @@ class _CloudToLocalLLMPrivacyAppState extends State<CloudToLocalLLMPrivacyApp> {
 
     debugPrint("🔄 [Navigation] Retry attempt $attempt for route: $route");
 
-    final context = navigatorKey.currentContext ?? navigatorKey.currentState?.context;
+    final context =
+        navigatorKey.currentContext ?? navigatorKey.currentState?.context;
     if (context != null && context.mounted) {
       try {
         context.go(route);
@@ -177,19 +184,18 @@ class _CloudToLocalLLMPrivacyAppState extends State<CloudToLocalLLMPrivacyApp> {
       providers: [
         // Platform service manager (already initialized)
         ChangeNotifierProvider.value(value: widget.platformManager),
-        
+
         // Authentication service
         ChangeNotifierProvider(create: (_) => AuthService()),
-        
+
         // Enhanced user tier service with container management
         ChangeNotifierProvider(
-          create: (context) => EnhancedUserTierService(
-            authService: context.read<AuthService>(),
-          ),
+          create: (context) =>
+              EnhancedUserTierService(authService: context.read<AuthService>()),
         ),
-        
+
         // Privacy-first conversation storage
-        ChangeNotifierProvider(
+        Provider(
           create: (_) {
             final storage = ConversationStorageService();
             // Initialize asynchronously
@@ -199,7 +205,7 @@ class _CloudToLocalLLMPrivacyAppState extends State<CloudToLocalLLMPrivacyApp> {
             return storage;
           },
         ),
-        
+
         // Privacy storage manager
         ChangeNotifierProvider(
           create: (context) {
@@ -215,21 +221,19 @@ class _CloudToLocalLLMPrivacyAppState extends State<CloudToLocalLLMPrivacyApp> {
             return privacyManager;
           },
         ),
-        
+
         // Streaming proxy service
         ChangeNotifierProvider(
-          create: (context) => StreamingProxyService(
-            authService: context.read<AuthService>(),
-          ),
+          create: (context) =>
+              StreamingProxyService(authService: context.read<AuthService>()),
         ),
-        
+
         // Ollama service
         ChangeNotifierProvider(
-          create: (context) => OllamaService(
-            authService: context.read<AuthService>(),
-          ),
+          create: (context) =>
+              OllamaService(authService: context.read<AuthService>()),
         ),
-        
+
         // Local Ollama connection service (platform-aware)
         ChangeNotifierProvider(
           create: (context) {
@@ -238,12 +242,14 @@ class _CloudToLocalLLMPrivacyAppState extends State<CloudToLocalLLMPrivacyApp> {
             if (widget.platformManager.localOllamaAvailable) {
               localOllama.initialize();
             } else {
-              debugPrint('🔗 [LocalOllama] Skipping initialization - not available on this platform');
+              debugPrint(
+                '🔗 [LocalOllama] Skipping initialization - not available on this platform',
+              );
             }
             return localOllama;
           },
         ),
-        
+
         // Desktop client detection service (web platform only)
         ChangeNotifierProvider(
           create: (context) {
@@ -258,24 +264,26 @@ class _CloudToLocalLLMPrivacyAppState extends State<CloudToLocalLLMPrivacyApp> {
             return clientDetection;
           },
         ),
-        
+
         // Setup wizard service
         ChangeNotifierProvider(
           create: (context) {
             final authService = context.read<AuthService>();
-            final clientDetection = context.read<DesktopClientDetectionService>();
+            final clientDetection = context
+                .read<DesktopClientDetectionService>();
             return SetupWizardService(
               authService: authService,
               clientDetectionService: clientDetection,
             );
           },
         ),
-        
+
         // Web download prompt service (web platform only)
         ChangeNotifierProvider(
           create: (context) {
             final authService = context.read<AuthService>();
-            final clientDetection = context.read<DesktopClientDetectionService>();
+            final clientDetection = context
+                .read<DesktopClientDetectionService>();
             final webDownloadPrompt = WebDownloadPromptService(
               authService: authService,
               clientDetectionService: clientDetection,
@@ -287,7 +295,7 @@ class _CloudToLocalLLMPrivacyAppState extends State<CloudToLocalLLMPrivacyApp> {
             return webDownloadPrompt;
           },
         ),
-        
+
         // User container service
         ChangeNotifierProvider(
           create: (context) {
@@ -295,7 +303,7 @@ class _CloudToLocalLLMPrivacyAppState extends State<CloudToLocalLLMPrivacyApp> {
             return UserContainerService(authService: authService);
           },
         ),
-        
+
         // Simple tunnel client (desktop platform only)
         ChangeNotifierProvider(
           create: (context) {
@@ -310,7 +318,7 @@ class _CloudToLocalLLMPrivacyAppState extends State<CloudToLocalLLMPrivacyApp> {
             return simpleTunnelClient;
           },
         ),
-        
+
         // Connection manager service
         ChangeNotifierProvider(
           create: (context) {
@@ -326,7 +334,7 @@ class _CloudToLocalLLMPrivacyAppState extends State<CloudToLocalLLMPrivacyApp> {
             return connectionManager;
           },
         ),
-        
+
         // Streaming chat service
         ChangeNotifierProvider(
           create: (context) {
@@ -334,7 +342,7 @@ class _CloudToLocalLLMPrivacyAppState extends State<CloudToLocalLLMPrivacyApp> {
             return StreamingChatService(connectionManager);
           },
         ),
-        
+
         // Unified connection service
         ChangeNotifierProvider(
           create: (context) {
@@ -345,7 +353,7 @@ class _CloudToLocalLLMPrivacyAppState extends State<CloudToLocalLLMPrivacyApp> {
             return unifiedService;
           },
         ),
-        
+
         // Admin services
         ChangeNotifierProvider(
           create: (context) {
@@ -372,3 +380,101 @@ class _CloudToLocalLLMPrivacyAppState extends State<CloudToLocalLLMPrivacyApp> {
       ),
     );
   }
+
+  Widget _buildMainApp() {
+    return Consumer<AuthService>(
+      builder: (context, authService, child) {
+        // Initialize tray service after providers are available
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _initializeTrayService(context);
+        });
+
+        return WindowListenerWidget(
+          child: MaterialApp.router(
+            // App configuration
+            title: AppConfig.appName,
+            debugShowCheckedModeBanner: false,
+
+            // Theme configuration
+            theme: AppTheme.lightTheme,
+            darkTheme: AppTheme.darkTheme,
+            themeMode: AppConfig.enableDarkMode
+                ? ThemeMode.dark
+                : ThemeMode.light,
+
+            // Router configuration
+            routerConfig: AppRouter.createRouter(navigatorKey: navigatorKey),
+
+            // Builder for additional configuration
+            builder: (context, child) {
+              return MediaQuery(
+                // Ensure text scaling doesn't break the UI
+                data: MediaQuery.of(context).copyWith(
+                  textScaler: TextScaler.linear(
+                    MediaQuery.of(
+                      context,
+                    ).textScaler.scale(1.0).clamp(0.8, 1.2),
+                  ),
+                ),
+                child: child!,
+              );
+            },
+          ),
+        );
+      },
+    );
+  }
+
+  bool _trayInitialized = false;
+
+  Future<void> _initializeTrayService(BuildContext context) async {
+    if (_trayInitialized) return;
+    _trayInitialized = true;
+
+    try {
+      debugPrint("🔧 [SystemTray] Initializing tray service...");
+
+      final connectionManager = context.read<ConnectionManagerService>();
+      final localOllama = context.read<LocalOllamaConnectionService>();
+      final simpleTunnelClient = context.read<SimpleTunnelClient>();
+      final windowManager = context.read<WindowManagerService>();
+
+      // Initialize native tray service
+      final nativeTray = NativeTrayService();
+      final success = await nativeTray.initialize(
+        connectionManager: connectionManager,
+        localOllama: localOllama,
+        tunnelManager: simpleTunnelClient,
+        onShowWindow: () {
+          debugPrint("🪟 [SystemTray] Native tray requested to show window");
+          windowManager.showWindow();
+        },
+        onHideWindow: () {
+          debugPrint("🫥 [SystemTray] Native tray requested to hide window");
+          windowManager.hideToTray();
+        },
+        onSettings: () {
+          debugPrint("⚙️ [SystemTray] Native tray requested to open settings");
+          _navigateToRoute('/settings');
+        },
+        onQuit: () {
+          debugPrint(
+            "🚪 [SystemTray] Native tray requested to quit application",
+          );
+          windowManager.forceClose();
+        },
+      );
+
+      if (success) {
+        debugPrint(
+          "✅ [SystemTray] Native tray service initialized successfully",
+        );
+      } else {
+        debugPrint("❌ [SystemTray] Failed to initialize native tray service");
+      }
+    } catch (e, stackTrace) {
+      debugPrint("💥 [SystemTray] Failed to initialize desktop services: $e");
+      debugPrint("💥 [SystemTray] Stack trace: $stackTrace");
+    }
+  }
+}

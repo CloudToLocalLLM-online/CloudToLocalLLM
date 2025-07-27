@@ -4,7 +4,6 @@ import 'package:cloudtolocalllm/models/tunnel_validation_result.dart';
 
 void main() {
   group('TunnelConfigurationService', () {
-
     // Note: Full service tests would require mocking AuthService and SimpleTunnelClient
     // For now, we'll focus on testing the models and basic functionality
 
@@ -17,7 +16,7 @@ void main() {
         userId: 'test-user',
         authToken: 'test-token',
       );
-      
+
       expect(config.isValid, true);
       expect(config.userId, 'test-user');
       expect(config.authToken, 'test-token');
@@ -29,7 +28,7 @@ void main() {
         userId: 'test-user',
         authToken: 'test-token',
       );
-      
+
       expect(config.isValid, true);
       expect(config.cloudProxyUrl, contains('localhost'));
       expect(config.connectionTimeout, 10);
@@ -42,7 +41,7 @@ void main() {
         localOllamaUrl: 'http://localhost:11434',
         authToken: 'test-token',
       );
-      
+
       expect(config.webSocketUrl, 'wss://api.example.com/ws');
     });
 
@@ -51,7 +50,7 @@ void main() {
         userId: 'test-user',
         authToken: 'test-token',
       );
-      
+
       final headers = config.connectionHeaders;
       expect(headers['Authorization'], 'Bearer test-token');
       expect(headers['User-Agent'], contains('CloudToLocalLLM'));
@@ -64,17 +63,15 @@ void main() {
         'Connection successful',
         latency: 150,
       );
-      
+
       expect(result.isSuccess, true);
       expect(result.message, 'Connection successful');
       expect(result.latency, 150);
     });
 
     test('should create failed result', () {
-      final result = TunnelValidationResult.failure(
-        'Connection failed',
-      );
-      
+      final result = TunnelValidationResult.failure('Connection failed');
+
       expect(result.isSuccess, false);
       expect(result.message, 'Connection failed');
       expect(result.latency, isNull);
@@ -86,12 +83,12 @@ void main() {
         ValidationTest.failure('Test 2', 'Failed'),
         ValidationTest.success('Test 3', 'Passed'),
       ];
-      
+
       final result = TunnelValidationResult.success(
         'Partial success',
         tests: tests,
       );
-      
+
       expect(result.successRate, closeTo(0.67, 0.01));
       expect(result.successfulTestCount, 2);
       expect(result.failedTestCount, 1);
