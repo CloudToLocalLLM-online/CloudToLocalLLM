@@ -117,7 +117,7 @@ function Test-DocumentationCompleteness {
     $requiredDocs = @(
         "README.md",
         "docs/RELEASE_WORKFLOW.md",
-        "docs/BUILD_SCRIPTS_GUIDE.md"
+        "docs/BUILD_SCRIPTS.md"
     )
     
     $missingDocs = @()

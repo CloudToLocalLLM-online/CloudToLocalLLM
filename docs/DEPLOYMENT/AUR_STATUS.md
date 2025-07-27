@@ -126,7 +126,7 @@ Developers interested in helping restore AUR support:
 ## 🔗 Related Documentation
 
 - [Deployment Workflow Guide](COMPLETE_DEPLOYMENT_WORKFLOW.md)
-- [Package Building Guide](../BUILD_SCRIPTS_GUIDE.md)
+- [Package Building Guide](../BUILD_SCRIPTS.md)
 - [Architecture Documentation](../ARCHITECTURE/SYSTEM_ARCHITECTURE.md)
 - [Installation Guide](../USER_DOCUMENTATION/INSTALLATION_GUIDE.md)
 

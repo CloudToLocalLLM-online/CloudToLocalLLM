@@ -6,9 +6,9 @@ This directory contains the complete deployment documentation for CloudToLocalLL
 
 ## 🎯 Primary Documentation (Start Here)
 
-### **[RESTORED_VPS_DEPLOYMENT_GUIDE.md](./RESTORED_VPS_DEPLOYMENT_GUIDE.md)** ⭐ **NEW**
-**Complete restored VPS deployment methodology** - Augment agent-powered automation with Windows-to-VPS orchestration.
-- **Purpose**: Primary deployment guide for the restored VPS-based system
+### **[VPS_DEPLOYMENT.md](./VPS_DEPLOYMENT.md)** ⭐ **PRIMARY**
+**Complete VPS deployment methodology** - Augment agent-powered automation with Windows-to-VPS orchestration.
+- **Purpose**: Primary deployment guide for the VPS-based system
 - **Audience**: All developers and deployment operators
 - **Content**: Complete workflows, scripts, quality gates, and automation
 - **When to use**: For all deployment activities (replaces GitHub Actions)
@@ -74,21 +74,21 @@ This directory contains the complete deployment documentation for CloudToLocalLL
 
 ### **Information Flow** ⚡ **UPDATED**
 ```
-1. Start with RESTORED_VPS_DEPLOYMENT_GUIDE.md → Primary deployment methodology
+1. Start with VPS_DEPLOYMENT.md → Primary deployment methodology
 2. Reference VPS_QUALITY_GATES_SPECIFICATION.md → Quality gates and rollback
 3. Use VERSIONING_STRATEGY.md → Determine version increment
 4. Reference specialized docs as needed → Troubleshoot or understand specifics
-5. Follow SCRIPT_FIRST_RESOLUTION_GUIDE.md → Resolve issues through automation
+5. Follow SCRIPT_RESOLUTION.md → Resolve issues through automation
 ```
 
 ### **Single Source of Truth Principle** ⚡ **UPDATED**
-- **Primary Deployment**: `RESTORED_VPS_DEPLOYMENT_GUIDE.md` ⭐ **NEW**
+- **Primary Deployment**: `VPS_DEPLOYMENT.md` ⭐ **PRIMARY**
 - **Quality Gates**: `VPS_QUALITY_GATES_SPECIFICATION.md` ⭐ **NEW**
 - **Versioning Decisions**: `VERSIONING_STRATEGY.md`
-- **Automation Principles**: `SCRIPT_FIRST_RESOLUTION_GUIDE.md`
+- **Automation Principles**: `SCRIPT_RESOLUTION.md`
 - **Environment Separation**: `ENVIRONMENT_SEPARATION_GUIDE.md`
 - **Visual Workflows**: `DEPLOYMENT_WORKFLOW_DIAGRAM.md`
-- **Build Features**: `SIX_PHASE_BUILD_TIME_INJECTION_INTEGRATION.md`
+- **Build Features**: `BUILD_INJECTION.md`
 - **Legacy Reference**: `COMPLETE_DEPLOYMENT_WORKFLOW.md` (GitHub Actions era)
 
 ## 🚫 Removed Documentation
@@ -102,7 +102,7 @@ The following files were removed during consolidation to eliminate redundancy:
 ## 🔍 Quick Reference
 
 ### **For New Deployments** ⚡ **UPDATED**
-1. Read [`RESTORED_VPS_DEPLOYMENT_GUIDE.md`](./RESTORED_VPS_DEPLOYMENT_GUIDE.md) → Complete deployment methodology ⭐ **NEW**
+1. Read [`VPS_DEPLOYMENT.md`](./VPS_DEPLOYMENT.md) → Complete deployment methodology ⭐ **PRIMARY**
 2. Reference [`VPS_QUALITY_GATES_SPECIFICATION.md`](./VPS_QUALITY_GATES_SPECIFICATION.md) → Quality gates ⭐ **NEW**
 3. Read [`VERSIONING_STRATEGY.md`](./VERSIONING_STRATEGY.md) → Choose version increment
 4. Reference [`DEPLOYMENT_WORKFLOW_DIAGRAM.md`](./DEPLOYMENT_WORKFLOW_DIAGRAM.md) → Visual guidance

@@ -30,7 +30,7 @@ This project is well-documented. Below is a curated list of essential resources 
 *   **[`docs/USER_DOCUMENTATION/INSTALLATION_GUIDE.md`](docs/USER_DOCUMENTATION/INSTALLATION_GUIDE.md:1):** Step-by-step instructions for end-users to install the client application.
 *   **[`docs/USER_DOCUMENTATION/FIRST_TIME_SETUP.md`](docs/USER_DOCUMENTATION/FIRST_TIME_SETUP.md:1):** A guide for users on configuring the application for the first time.
 *   **[`docs/OPERATIONS/SELF_HOSTING.md`](docs/OPERATIONS/SELF_HOSTING.md:1):** A comprehensive guide for advanced users who want to self-host the entire application stack.
-*   **[`docs/OPERATIONS/INFRASTRUCTURE_GUIDE.md`](docs/OPERATIONS/INFRASTRUCTURE_GUIDE.md:1):** Details on the infrastructure requirements for self-hosting.
+*   **[`docs/OPERATIONS/INFRASTRUCTURE.md`](docs/OPERATIONS/INFRASTRUCTURE.md:1):** Details on the infrastructure requirements for self-hosting.
 
 ### Automation Scripts
 *   **[`scripts/build_unified_package.sh`](scripts/build_unified_package.sh:1):** A script to build and package the unified Flutter application for distribution.

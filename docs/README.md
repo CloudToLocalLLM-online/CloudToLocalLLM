@@ -50,7 +50,7 @@ Welcome to the CloudToLocalLLM documentation! This directory contains comprehens
 - **[Contribution Guidelines](../CONTRIBUTING.md)** - How to contribute to the project
 
 ### 🔧 Operations Documentation
-- **[Infrastructure Guide](OPERATIONS/INFRASTRUCTURE_GUIDE.md)** - Infrastructure management
+- **[Infrastructure Guide](OPERATIONS/INFRASTRUCTURE.md)** - Infrastructure management
 - **[Self-Hosting Guide](OPERATIONS/SELF_HOSTING.md)** - Self-hosting instructions
 
 ### 📋 **Additional Resources**
@@ -124,7 +124,7 @@ See our [Contribution Guidelines](../CONTRIBUTING.md) for detailed information o
 5. Reference [API Documentation](DEVELOPMENT/API_DOCUMENTATION.md)
 
 ### For System Administrators
-1. Study [Infrastructure Guide](OPERATIONS/INFRASTRUCTURE_GUIDE.md)
+1. Study [Infrastructure Guide](OPERATIONS/INFRASTRUCTURE.md)
 2. Review [Deployment Workflow](DEPLOYMENT/COMPLETE_DEPLOYMENT_WORKFLOW.md)
 3. Configure [Environment Separation](DEPLOYMENT/ENVIRONMENT_SEPARATION_GUIDE.md)
 4. Set up monitoring and maintenance procedures

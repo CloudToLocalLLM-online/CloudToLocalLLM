@@ -137,7 +137,7 @@ Your Computer          Secure Tunnel          Cloud Interface
 
 ### 🔧 **For Self-Hosters**
 - **[Self-Hosting Guide](docs/OPERATIONS/SELF_HOSTING.md)** - Deploy your own instance
-- **[Infrastructure Guide](docs/OPERATIONS/INFRASTRUCTURE_GUIDE.md)** - Server requirements and setup
+- **[Infrastructure Guide](docs/OPERATIONS/INFRASTRUCTURE.md)** - Server requirements and setup
 - **[Deployment Guide](docs/DEPLOYMENT/)** - Automated deployment tools
 
 ### 👨‍💻 **For Developers**
