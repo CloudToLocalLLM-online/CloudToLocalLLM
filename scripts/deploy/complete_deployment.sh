@@ -176,8 +176,8 @@ execute_script() {
         cmd="$cmd --dry-run"
     fi
 
-    # Only add --force to scripts that support it (not sync_versions.sh)
-    if [[ "$FORCE" == "true" && "$script_basename" != "sync_versions.sh" ]]; then
+    # Only add --force to scripts that support it (not sync_versions.sh or verify_deployment.sh)
+    if [[ "$FORCE" == "true" && "$script_basename" != "sync_versions.sh" && "$script_basename" != "verify_deployment.sh" ]]; then
         cmd="$cmd --force"
     fi
     
