@@ -1,9 +1,9 @@
-﻿name: cloudtolocalllm
+name: cloudtolocalllm
 description: Manage and run powerful Large Language Models locally, orchestrated via a cloud interface.
 publish_to: none
 homepage: https://cloudtolocalllm.online
 repository: https://github.com/imrightguy/CloudToLocalLLM
-version: 3.12.20+202507261346
+version: 3.12.21+202507262059
 
 environment:
   sdk: '>=3.8.0 <4.0.0'
@@ -69,6 +69,11 @@ dependencies:
 
   # UUID generation
   uuid: ^4.5.1
+
+  # LangChain Integration
+  langchain: ^0.7.8
+  langchain_ollama: ^0.3.3
+  langchain_community: ^0.3.4
 
 dev_dependencies:
   flutter_lints: ^6.0.0
