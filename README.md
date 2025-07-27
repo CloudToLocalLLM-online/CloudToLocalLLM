@@ -1,352 +1,182 @@
 # CloudToLocalLLM: Your Personal AI Powerhouse 🌩️💻
 
-[![Version](https://img.shields.io/badge/version-3.10.3-blue.svg)](https://github.com/imrightguy/CloudToLocalLLM/releases)
+[![Version](https://img.shields.io/badge/version-3.13.0-blue.svg)](https://github.com/imrightguy/CloudToLocalLLM/releases)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Flutter](https://img.shields.io/badge/Flutter-3.8+-blue.svg)](https://flutter.dev)
 [![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20Windows%20%7C%20Web-lightgrey.svg)](https://github.com/imrightguy/CloudToLocalLLM)
 
 **Website: [https://cloudtolocalllm.online](https://cloudtolocalllm.online)**
+**Web App: [https://app.cloudtolocalllm.online](https://app.cloudtolocalllm.online)**
 
-**CloudToLocalLLM** bridges the gap between powerful cloud-based Large Language Models (LLMs) and the privacy and control of local execution. It offers a seamless, multi-tenant experience for interacting with local LLMs via a sophisticated cloud-hosted web interface and a robust system tray application.
+**CloudToLocalLLM** bridges the gap between powerful cloud-based Large Language Models (LLMs) and the privacy and control of local execution. Access your local AI models from anywhere through our secure web interface, while keeping your data and models completely private on your own hardware.
 
-This project is currently in **Alpha (v3.10.3)**. Expect rapid development and potential breaking changes.
+---
 
-## 🌟 Key Highlights (v3.10.3)
+## 📋 Table of Contents
 
-*   **Modern Multi-Container Architecture**: Ensures scalability, resilience, and maintainability. (See [System Architecture](docs/ARCHITECTURE/SYSTEM_ARCHITECTURE.md))
-*   **Unified Flutter-Native Architecture**: Single Flutter application with integrated system tray functionality, eliminating external dependencies.
-*   **Simplified Tunnel System**: Streamlined tunnel architecture using single WebSocket connections and standard HTTP proxy patterns, reducing complexity by ~70% while maintaining security and performance.
-*   **Multi-Tenant Streaming Proxy**: Securely connects web users to their local LLM instances via ephemeral, isolated proxy containers.
-*   **Auth0 Integration**: Robust and secure authentication for web users.
-*   **Comprehensive API**: For bridge communication, proxy management, and tunnel message protocol.
-*   **Cross-Platform Client Support**: Linux (AppImage, Debian) and Windows desktop support. AUR support temporarily removed (reintegration planned).
+- [✨ What is CloudToLocalLLM?](#-what-is-cloudtolocalllm)
+- [🚀 Quick Start](#-quick-start)
+- [💡 Key Features](#-key-features)
+- [📱 How It Works](#-how-it-works)
+- [📦 Installation](#-installation)
+- [📚 Documentation](#-documentation)
+- [🤝 Support & Community](#-support--community)
+- [📜 License](#-license)
 
-## 🏗️ Multi-Container Architecture
-CloudToLocalLLM features a modern multi-container architecture that provides:
-*   **Scalability**: Easily handle multiple users and connections.
-*   **Resilience**: Isolated services prevent cascading failures.
-*   **Maintainability**: Clear separation of concerns simplifies development and updates.
-*   **Security**: Enhanced network policies and container isolation.
+---
 
-Key containers include:
-*   `nginx-proxy`: SSL termination and request routing.
-*   `flutter-app`: The unified Flutter web application (UI, chat, marketing pages).
-*   `api-backend`: Core API, authentication, and streaming proxy management.
-*   `streaming-proxy` (ephemeral): Lightweight proxies for user-to-local-LLM communication.
-*   `certbot`: Automated SSL certificate management.
+## ✨ What is CloudToLocalLLM?
 
-For detailed information, see [System Architecture](docs/ARCHITECTURE/SYSTEM_ARCHITECTURE.md). The system architecture document covers the complete unified Flutter-native implementation including the integrated system tray functionality.
+CloudToLocalLLM lets you **access your local AI models from anywhere** while keeping complete control over your data and privacy. Run powerful language models like Llama, Mistral, or CodeLlama on your own hardware, then chat with them through our secure web interface from any device, anywhere in the world.
 
-## ✨ Features
+### 🎯 Perfect For:
+- **Privacy-conscious users** who want AI without sending data to third parties
+- **Developers** who need AI assistance with sensitive code
+- **Researchers** who want to experiment with different models
+- **Teams** who need shared access to local AI resources
+- **Anyone** who wants the convenience of cloud AI with local privacy
 
-### 🧠 **LLM & AI Features**
-*   **Local LLM Agnostic**: Designed to work with Ollama-compatible LLMs.
-*   **Model Management**: View and select available local models.
-*   **Chat Interface**: Modern, responsive chat UI for interacting with your LLM.
-*   **Streaming Support**: Real-time response streaming from the LLM.
+---
 
-### ☁️ **Cloud & Web Features**
-*   **Web Application**: Access your local LLM from anywhere via a browser.
-*   **Auth0 Authentication**: Secure user login and management.
-*   **Multi-Tenant Design**: Isolates user data and connections.
-*   **Streaming Proxy Architecture**: Securely tunnels web client requests to the correct local bridge via ephemeral, isolated proxy containers managed by the `api-backend`.
+## 🚀 Quick Start
 
-### 🔧 **System Integration Features**
-
-#### **Unified Flutter-Native System Tray**
-
-The Unified Flutter-Native System Tray provides:
-*   **Integrated Operation**: Native Flutter system tray using `tray_manager` package.
-*   **Real-time Connection Status**: Live visual indicators for Ollama and cloud connections.
-*   **Context-Aware Menu**: Dynamic options based on connection and authentication state.
-*   **Cross-Platform Support**: Consistent behavior across Linux, Windows, and macOS.
-*   **Zero External Dependencies**: No separate daemon processes required.
-*   **Instant Updates**: Direct service integration for immediate status changes.
-
-#### **Installation Process**
-
-Streamlined installation across all platforms:
-*   **Linux**:
-    *   **AppImage**: Portable, no-installation-needed package.
-    *   **Debian Package**: For Debian/Ubuntu based systems (`.deb`).
-    *   **AUR Package**: Temporarily removed (reintegration planned - see [AUR Status](docs/DEPLOYMENT/AUR_STATUS.md)).
-*   **Windows**: Desktop application with system tray support.
-*   **macOS**: Planned for future releases.
-
-Self-hosting the entire stack on a VPS is also a deployment option for advanced users.
-
-## Core Features vs Premium Features
-
-### ✅ **Core Features (Included)**
-*   Local LLM connection via Ollama
-*   Secure web interface for chat
-*   System tray client for connection management
-*   Basic conversation history (local)
-*   Multi-container deployment for self-hosting
-
-### 🚀 **Premium Features (Planned)**
-*   Advanced cloud sync (settings, conversations across devices)
-*   Team collaboration features
-*   Priority support
-*   Enhanced security & compliance options
-
-## 📋 Versioning Strategy
-CloudToLocalLLM uses a granular build numbering system:
-*   **Format**: `v<major>.<minor>.<patch>+<build>` (e.g., `v3.3.1+045`)
-*   **`major.minor.patch`**: Semantic versioning for core application.
-*   **`build`**: Incremental build number for CI/CD.
-
-This allows for precise tracking of releases and development builds.
-For detailed information, see [Versioning Strategy](docs/DEPLOYMENT/VERSIONING_STRATEGY.md).
-
-## 🚀 Deployment
-
-### Multi-Container Deployment (Recommended for Self-Hosting)
-Deploy the full CloudToLocalLLM stack to your own Virtual Private Server (VPS) using Docker Compose with **strict quality standards**.
-
+### 1. Install Ollama
+First, install [Ollama](https://ollama.ai/) on your computer and download a model:
 ```bash
-# Automated deployment with zero-tolerance quality verification
-# Use --force flag for fully automatic execution without prompts
-cd /path/to/CloudToLocalLLM
-./scripts/deploy/complete_deployment.sh --force
+# Install a model (example)
+ollama pull llama3.2
 ```
 
-#### 🎯 Strict Deployment Policy
-CloudToLocalLLM enforces a **zero-tolerance deployment policy** for production:
-- ✅ **Success**: Zero warnings AND zero errors required
-- ❌ **Failure**: Any warning condition triggers automatic rollback
-- 🔄 **Rollback**: Immediate restoration of previous version on any issue
-- 🏆 **Quality**: Only perfect deployments reach production
+### 2. Install CloudToLocalLLM Client
+Choose your platform:
+- **Windows**: Download from [Releases](https://github.com/imrightguy/CloudToLocalLLM/releases)
+- **Linux**: See [Installation Guide](docs/INSTALLATION/LINUX.md)
+- **macOS**: Coming soon
 
-**Success Criteria:**
-- Perfect HTTP 200 responses (no redirects)
-- Valid SSL certificates mandatory
-- Clean container logs (no errors)
-- Optimal system resources (<90% usage)
-- Fully functional application health checks
+### 3. Connect & Chat
+1. Launch the CloudToLocalLLM client (appears in system tray)
+2. Visit [app.cloudtolocalllm.online](https://app.cloudtolocalllm.online)
+3. Sign in and start chatting with your local AI models!
 
-See [Strict Deployment Policy](docs/DEPLOYMENT/STRICT_DEPLOYMENT_POLICY.md) for complete details.
+---
 
-This setup provides a scalable and secure environment for multiple users. See `docs/OPERATIONS/SELF_HOSTING.md` for detailed instructions.
+## 💡 Key Features
 
-### Legacy Single Container (Deprecated)
-The legacy single-container deployment is deprecated and no longer supported. Please migrate to the multi-container architecture.
+### 🔒 **Privacy First**
+- Your models and data never leave your hardware
+- Secure encrypted tunnels for remote access
+- No third-party AI services required
 
-## 📁 Project Structure
-CloudToLocalLLM follows an organized directory structure for better maintainability and development:
+### 🌐 **Access Anywhere**
+- Web interface accessible from any device
+- Secure authentication and connection management
+- Real-time streaming responses
 
-### Core Directories
-*   `api-backend/`: Node.js backend for API, Auth0 integration, and `streaming-proxy-manager.js` which orchestrates ephemeral proxy containers.
-*   `lib/`: Unified Flutter application code (UI, chat, system tray, settings, services).
-*   `streaming-proxy/`: Contains the Node.js code for the lightweight, ephemeral proxy server (`proxy-server.js`) that runs in isolated Docker containers.
-*   `web/`: Entry point and configuration for the Flutter web application.
-*   `assets/`: Static assets for the Flutter application (images, fonts, version info).
+### 🖥️ **Easy Setup**
+- Simple desktop client with system tray integration
+- Automatic model detection and configuration
+- Cross-platform support (Windows, Linux, macOS planned)
 
-### Documentation
-*   `docs/`: Comprehensive documentation.
-    *   `ARCHITECTURE/`: System architecture diagrams and explanations.
-    *   `DEPLOYMENT/`: Deployment guides, strategies, and workflows.
-    *   `OPERATIONS/`: Operational guides, maintenance, and troubleshooting.
-    *   `USER_DOCUMENTATION/`: User-facing guides and FAQs.
-    *   `DEVELOPMENT/`: Developer guides, contribution guidelines.
+### 🚀 **Powerful & Flexible**
+- Works with any Ollama-compatible model
+- Multi-user support for teams
+- Self-hosting options for advanced users
 
-### Scripts & Automation
-*   `scripts/`: Organized build, deployment, packaging, and utility scripts.
-    *   `build/`: Scripts for building application components.
-    *   `deploy/`: Scripts for deploying to various environments (VPS, etc.).
-    *   `packaging/`: Scripts for creating distributable packages (AppImage, Deb).
-    *   `release/`: Scripts for managing releases.
-    *   `utils/`: Helper and utility scripts.
-    *   `README.md`: Detailed overview of available scripts.
+---
 
-### Configuration & Infrastructure
-*   `config/`: Configuration files for various platforms and services (Nginx, Docker).
-*   `docker/`: Dockerfiles and related files for building service containers.
-*   `static_homepage/`: **Legacy** static HTML files for the original project website and downloads page. The main website and documentation are now served by the Flutter application (`flutter-app` container).
-*   `aur-package/`: **TEMPORARILY REMOVED** - AUR support temporarily removed, reintegration planned. See [AUR Status](docs/DEPLOYMENT/AUR_STATUS.md).
+## 📱 How It Works
 
-### Development Tools
-*   `.vscode/`: VS Code editor configurations, launch settings, recommended extensions.
-*   `analysis_options.yaml`: Dart static analysis settings.
-*   `pubspec.yaml`: Flutter project dependencies and metadata.
+CloudToLocalLLM creates a secure bridge between your local AI models and the cloud:
 
-For detailed information about any component, see the respective README files in each directory.
+1. **Local Client**: Runs on your computer alongside Ollama
+2. **Secure Tunnel**: Encrypted connection to our cloud infrastructure
+3. **Web Interface**: Access your models through any web browser
+4. **Your Data Stays Local**: Models and conversations remain on your hardware
 
-## Development Workflow
-
-CloudToLocalLLM includes automated development workflow tools to streamline the development process:
-
-### Quick Development Push
-
-When you've completed development work and documentation, use the quick push script:
-
-```bash
-# Auto-commit and push with generated message
-.\push-dev.ps1
-
-# Custom commit message
-.\push-dev.ps1 -m "Complete zrok service implementation"
-
-# Preview changes without committing
-.\push-dev.ps1 -dry
-
-# Force push (skip validation)
-.\push-dev.ps1 -f
+```
+Your Computer          Secure Tunnel          Cloud Interface
+┌─────────────┐       ┌─────────────┐       ┌─────────────┐
+│   Ollama    │◄──────┤ CloudToLocal│◄──────┤   Web App   │
+│   Models    │       │     LLM     │       │ (Browser)   │
+└─────────────┘       └─────────────┘       └─────────────┘
 ```
 
-### Automated Development Workflow
+---
 
-For comprehensive development workflow automation:
+## 📦 Installation
 
-```bash
-# Complete workflow with validation
-.\scripts\powershell\Complete-DevWorkflow.ps1
+### Quick Installation
 
-# Skip static analysis
-.\scripts\powershell\Complete-DevWorkflow.ps1 -SkipAnalysis
+**Windows Users:**
+1. Download the latest release from [GitHub Releases](https://github.com/imrightguy/CloudToLocalLLM/releases)
+2. Run the installer and follow the setup wizard
+3. The app will appear in your system tray
 
-# Create development release
-.\scripts\powershell\Complete-DevWorkflow.ps1 -CreateDevRelease
-```
+**Linux Users:**
+- **Ubuntu/Debian**: [DEB Package Installation](docs/INSTALLATION/LINUX.md#deb-package)
+- **Any Linux**: [AppImage Installation](docs/INSTALLATION/LINUX.md#appimage)
+- **Arch Linux**: AUR package temporarily unavailable ([status update](docs/DEPLOYMENT/AUR_STATUS.md))
 
-### Development Standards
+**macOS Users:**
+- Coming soon! Follow our [releases](https://github.com/imrightguy/CloudToLocalLLM/releases) for updates.
 
-The automated workflow enforces:
-- ✅ Flutter analyze with zero issues
-- ✅ PSScriptAnalyzer compliance for PowerShell scripts
-- ✅ Documentation completeness validation
-- ✅ Platform abstraction pattern compliance
-- ✅ Automatic commit message generation based on changes
+### Advanced Installation
 
-### Git Hooks (Optional)
+- **Self-Hosting**: Deploy the entire stack on your own server - [Self-Hosting Guide](docs/OPERATIONS/SELF_HOSTING.md)
+- **Development Setup**: Build from source - [Developer Guide](docs/DEVELOPMENT/DEVELOPER_ONBOARDING.md)
 
-Install Git hooks for automatic push when documentation is complete:
-
-```bash
-# Copy post-commit hook
-Copy-Item scripts/git-hooks/post-commit .git/hooks/post-commit -Force
-
-# Make executable (Linux/macOS)
-chmod +x .git/hooks/post-commit
-```
-
-This ensures that commits are automatically pushed when documentation markers are present.
-
-## 🚀 Getting Started
-1.  **Install Ollama**: Ensure Ollama is installed and running on your local machine. Download models you wish to use (e.g., `ollama pull llama3.2`).
-2.  **Install CloudToLocalLLM Client**:
-    *   **Linux**: Download static package from [cloudtolocalllm.online/download](https://cloudtolocalllm.online/download/) or build from source. AUR package temporarily removed (see [AUR Status](docs/DEPLOYMENT/AUR_STATUS.md)).
-    *   **Windows**: Download Windows desktop application from releases or build from source.
-    *   **macOS**: Coming soon
-3.  **Launch CloudToLocalLLM**: The unified application starts with integrated system tray functionality.
-4.  **Connect to Local LLM**: The application automatically detects Ollama if running on default ports. Configure if necessary via settings.
-5.  **Access Web UI (Optional for Remote Access)**:
-    *   Visit [app.cloudtolocalllm.online](https://app.cloudtolocalllm.online) for web access.
-    *   Log in using your Auth0 credentials.
-    *   Configure tunnel connection to your local Ollama instance.
-
-
-
-## 🔧 Key Scripts Overview
-This project includes a variety of scripts to automate common tasks. Here are some of the key ones:
-*   `scripts/deploy/complete_deployment.sh`: **RECOMMENDED** - Fully automated deployment with strict quality verification and zero-tolerance policy.
-*   `scripts/deploy/update_and_deploy.sh`: Deploys the multi-container architecture to a VPS.
-*   `scripts/deploy/verify_deployment.sh`: Strict verification script that enforces zero warnings/errors policy.
-*   `scripts/build_unified_package.sh`: Builds and packages the unified Flutter application for static download distribution (e.g., a `.tar.gz` archive).
-*   `scripts/build_unified_package.sh`: A comprehensive script that builds various components (Flutter app, potentially others) and assembles them into a unified structure, often used as a precursor to packaging scripts.
-*   `scripts/version_manager.sh`: Manages project version numbers across different files.
-*   `scripts/deploy/complete_automated_deployment.sh`: Orchestrates a full deployment workflow including versioning, building, and distributing.
-
-Refer to `scripts/README.md` for a more exhaustive list and detailed explanations.
-
-## 📦 Building Client Applications
-
-Instructions for building and packaging client applications for different platforms:
-
-### Linux (General Static Package)
-Uses `scripts/build_unified_package.sh`. This script typically:
-1.  Builds the Flutter application in release mode.
-2.  Copies necessary assets and libraries.
-3.  Creates a distributable archive (e.g., `.tar.gz`).
-```bash
-./scripts/build_unified_package.sh
-```
-The output will be in the `dist/` directory.
-
-### Linux Distribution Methods
-**Available Package Formats**:
-- **DEB Package**: Use `scripts/packaging/build_deb.sh`
-- **AppImage**: Use `scripts/packaging/build_appimage.sh`
-- **Source Build**: Use `scripts/build_unified_package.sh`
-
-**AUR Package**: Temporarily removed - see [AUR Status Documentation](docs/DEPLOYMENT/AUR_STATUS.md) for details and reintegration timeline.
-
-**Recommended for Linux**:
-```bash
-# Build DEB package for Debian/Ubuntu systems
-./scripts/packaging/build_deb.sh
-```
-
-The DEB package provides:
-- Native package management integration
-- Automatic dependency handling
-- System service integration
-- Desktop environment integration
-
-### Windows
-**Status**: Available
-
-1.  **Prerequisites**:
-    *   Install [Ollama](https://ollama.ai/) for local LLM support.
-    *   Ensure Windows 10/11 with latest updates.
-2.  **Install CloudToLocalLLM**:
-    *   Download the latest Windows release from the [releases page](https://github.com/imrightguy/CloudToLocalLLM/releases).
-    *   Or build from source using `flutter build windows --release`.
-3.  **Run CloudToLocalLLM**: Launch the executable - it will appear in the system tray with full desktop integration.
+---
 
 ## 📚 Documentation
-CloudToLocalLLM features comprehensive, well-organized documentation. The documentation has been streamlined into logical topic areas for better discoverability and maintenance.
 
-*   **Core Concepts**:
-    *   [System Architecture](docs/ARCHITECTURE/SYSTEM_ARCHITECTURE.md)
-    *   [Multi-Container Deep Dive](docs/ARCHITECTURE/MULTI_CONTAINER_ARCHITECTURE.md)
-    *   [System Tray Implementation](docs/ARCHITECTURE/UNIFIED_FLUTTER_NATIVE_SYSTEM_TRAY.md)
-    *   [Streaming Proxy Architecture](docs/ARCHITECTURE/STREAMING_PROXY_ARCHITECTURE.md)
-*   **Deployment & Operations**:
-    *   [Complete Deployment Workflow](docs/DEPLOYMENT/COMPLETE_DEPLOYMENT_WORKFLOW.md)
-    *   [Strict Deployment Policy](docs/DEPLOYMENT/STRICT_DEPLOYMENT_POLICY.md)
-    *   [Self-Hosting on VPS](docs/OPERATIONS/SELF_HOSTING.md)
-    *   [Versioning Strategy](docs/DEPLOYMENT/VERSIONING_STRATEGY.md)
-*   **User Guides**:
-    *   [Installation Guide](docs/USER_DOCUMENTATION/INSTALLATION_GUIDE.md)
-    *   [First Time Setup](docs/USER_DOCUMENTATION/FIRST_TIME_SETUP.md)
-    *   [User Troubleshooting Guide](docs/USER_DOCUMENTATION/USER_TROUBLESHOOTING_GUIDE.md)
-*   **Development**:
-    *   [Developer Onboarding](docs/DEVELOPMENT/DEVELOPER_ONBOARDING.md)
-    *   [Contribution Guidelines](CONTRIBUTING.md)
-    *   [API Documentation](docs/DEVELOPMENT/API_DOCUMENTATION.md)
+### 👥 **For Users**
+- **[Installation Guide](docs/INSTALLATION/)** - Platform-specific installation instructions
+- **[User Guide](docs/USER_DOCUMENTATION/USER_GUIDE.md)** - How to use CloudToLocalLLM
+- **[Troubleshooting](docs/USER_DOCUMENTATION/USER_TROUBLESHOOTING_GUIDE.md)** - Common issues and solutions
+- **[Features Guide](docs/USER_DOCUMENTATION/FEATURES_GUIDE.md)** - Detailed feature explanations
 
-- **Self-Hosters**: Use [Self-Hosting Guide](docs/OPERATIONS/SELF_HOSTING.md) → [Infrastructure Guide](docs/OPERATIONS/INFRASTRUCTURE_GUIDE.md)
+### 🔧 **For Self-Hosters**
+- **[Self-Hosting Guide](docs/OPERATIONS/SELF_HOSTING.md)** - Deploy your own instance
+- **[Infrastructure Guide](docs/OPERATIONS/INFRASTRUCTURE_GUIDE.md)** - Server requirements and setup
+- **[Deployment Guide](docs/DEPLOYMENT/)** - Automated deployment tools
 
-### **🏗️ Technical Reference:**
-- [System Architecture](docs/ARCHITECTURE/SYSTEM_ARCHITECTURE.md): Complete technical architecture including enhanced tray, streaming, and containers
-- [Versioning Strategy](docs/DEPLOYMENT/VERSIONING_STRATEGY.md): Version format and management strategy
+### 👨‍💻 **For Developers**
+- **[Developer Onboarding](docs/DEVELOPMENT/DEVELOPER_ONBOARDING.md)** - Get started with development
+- **[API Documentation](docs/DEVELOPMENT/API_DOCUMENTATION.md)** - Technical API reference
+- **[Architecture Overview](docs/ARCHITECTURE/)** - System design and architecture
+- **[Contributing Guide](CONTRIBUTING.md)** - How to contribute to the project
 
-## 🤝 Contributing
-We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on how to contribute to the project, report issues, and submit pull requests.
+---
 
-Key areas for contribution:
-*   Bug fixes and stability improvements
-*   Platform-specific enhancements (Windows, macOS)
-*   New features and integrations
-*   Documentation updates and translations
-*   Testing and quality assurance
+## 🤝 Support & Community
 
-If you encounter further issues, please check the project's issue tracker on GitHub.
+### 💬 **Get Help**
+- **[GitHub Issues](https://github.com/imrightguy/CloudToLocalLLM/issues)** - Report bugs or request features
+- **[Troubleshooting Guide](docs/USER_DOCUMENTATION/USER_TROUBLESHOOTING_GUIDE.md)** - Common issues and solutions
+- **[User Documentation](docs/USER_DOCUMENTATION/)** - Comprehensive user guides
+
+### 🚀 **Contributing**
+We welcome contributions! Whether you're fixing bugs, adding features, or improving documentation:
+- **[Contributing Guide](CONTRIBUTING.md)** - How to contribute
+- **[Developer Onboarding](docs/DEVELOPMENT/DEVELOPER_ONBOARDING.md)** - Get started with development
+- **[Good First Issues](https://github.com/imrightguy/CloudToLocalLLM/labels/good%20first%20issue)** - Perfect for new contributors
+
+### 🌟 **Stay Updated**
+- **[Releases](https://github.com/imrightguy/CloudToLocalLLM/releases)** - Latest versions and updates
+- **[Roadmap](https://github.com/imrightguy/CloudToLocalLLM/projects)** - Upcoming features and improvements
+
+---
 
 ## 📜 License
+
 This project is licensed under the [MIT License](LICENSE).
 
 ---
 
-*CloudToLocalLLM - Bridging the Cloud and Your Local Machine for AI.*
+<div align="center">
+
+**CloudToLocalLLM** - *Your AI, Your Hardware, Your Privacy* 🔒
+
+[Website](https://cloudtolocalllm.online) • [Web App](https://app.cloudtolocalllm.online) • [Documentation](docs/) • [GitHub](https://github.com/imrightguy/CloudToLocalLLM)
+
+</div>

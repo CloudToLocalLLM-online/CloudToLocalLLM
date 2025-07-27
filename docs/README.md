@@ -4,12 +4,18 @@ Welcome to the CloudToLocalLLM documentation! This directory contains comprehens
 
 ## 📚 Documentation Structure
 
-### 🚀 User Documentation
-- **[User Guide](USER_DOCUMENTATION/USER_GUIDE.md)** - Complete user manual
-- **[Installation Guide](USER_DOCUMENTATION/INSTALLATION_GUIDE.md)** - Step-by-step installation
-- **[First Time Setup](USER_DOCUMENTATION/FIRST_TIME_SETUP.md)** - Getting started guide
-- **[Features Guide](USER_DOCUMENTATION/FEATURES_GUIDE.md)** - Feature overview
+### 📦 **Installation & Setup**
+- **[Installation Overview](INSTALLATION/README.md)** - Choose your platform and installation method
+- **[Linux Installation](INSTALLATION/LINUX.md)** - Ubuntu, Debian, Arch, and other distributions
+- **[Windows Installation](INSTALLATION/WINDOWS.md)** - Windows 10/11 desktop application
+- **[macOS Installation](INSTALLATION/MACOS.md)** - Coming soon (development preview available)
+- **[First Time Setup](USER_DOCUMENTATION/FIRST_TIME_SETUP.md)** - Getting started after installation
+
+### 👥 **User Guides**
+- **[User Guide](USER_DOCUMENTATION/USER_GUIDE.md)** - How to use CloudToLocalLLM
+- **[Features Guide](USER_DOCUMENTATION/FEATURES_GUIDE.md)** - Detailed feature explanations
 - **[Troubleshooting Guide](USER_DOCUMENTATION/USER_TROUBLESHOOTING_GUIDE.md)** - Common issues and solutions
+- **[Setup FAQ](USER_DOCUMENTATION/SETUP_TROUBLESHOOTING_FAQ.md)** - Frequently asked questions
 
 ### 🏗️ Architecture Documentation
 - **[System Architecture](ARCHITECTURE/SYSTEM_ARCHITECTURE.md)** - Overall system design
@@ -27,46 +33,87 @@ Welcome to the CloudToLocalLLM documentation! This directory contains comprehens
   - Cross-platform compatibility
   - Troubleshooting and support
 
-### 🚀 Deployment Documentation
-- **[Deployment Workflow](DEPLOYMENT/COMPLETE_DEPLOYMENT_WORKFLOW.md)** - Complete deployment process
-- **[Environment Separation](DEPLOYMENT/ENVIRONMENT_SEPARATION_GUIDE.md)** - Environment management
-- **[AUR Integration](DEPLOYMENT/AUR_INTEGRATION_CHANGES.md)** - Arch Linux packaging (temporarily inactive)
-- **[Flutter SDK Management](DEPLOYMENT/FLUTTER_SDK_MANAGEMENT.md)** - SDK version management
-- **[Versioning Strategy](DEPLOYMENT/VERSIONING_STRATEGY.md)** - Version management
-- **[Deployment README](DEPLOYMENT/README.md)** - Deployment documentation overview
+### 🚀 **Deployment & Operations**
+- **[Deployment Overview](DEPLOYMENT/DEPLOYMENT_OVERVIEW.md)** - All deployment options and strategies
+- **[Scripts Overview](DEPLOYMENT/SCRIPTS_OVERVIEW.md)** - Comprehensive guide to deployment scripts
+- **[Complete Deployment Workflow](DEPLOYMENT/COMPLETE_DEPLOYMENT_WORKFLOW.md)** - End-to-end deployment process
+- **[Strict Deployment Policy](DEPLOYMENT/STRICT_DEPLOYMENT_POLICY.md)** - Zero-tolerance quality standards
+- **[Self-Hosting Guide](OPERATIONS/SELF_HOSTING.md)** - Deploy your own instance
+- **[Infrastructure Guide](OPERATIONS/INFRASTRUCTURE_GUIDE.md)** - Server requirements and setup
+- **[Versioning Strategy](DEPLOYMENT/VERSIONING_STRATEGY.md)** - Version management approach
 
-### 👨‍💻 Development Documentation
-- **[Developer Onboarding](DEVELOPMENT/DEVELOPER_ONBOARDING.md)** - Getting started with development
-- **[API Documentation](DEVELOPMENT/API_DOCUMENTATION.md)** - API reference
+### 👨‍💻 **Development**
+- **[Developer Onboarding](DEVELOPMENT/DEVELOPER_ONBOARDING.md)** - Get started with development
+- **[Development Workflow](DEVELOPMENT/DEVELOPMENT_WORKFLOW.md)** - Development tools and automation
+- **[Building Guide](DEVELOPMENT/BUILDING_GUIDE.md)** - Build applications for all platforms
+- **[API Documentation](DEVELOPMENT/API_DOCUMENTATION.md)** - Technical API reference
+- **[Contribution Guidelines](../CONTRIBUTING.md)** - How to contribute to the project
 
 ### 🔧 Operations Documentation
 - **[Infrastructure Guide](OPERATIONS/INFRASTRUCTURE_GUIDE.md)** - Infrastructure management
 - **[Self-Hosting Guide](OPERATIONS/SELF_HOSTING.md)** - Self-hosting instructions
 
-### 📋 Release Documentation
+### 📋 **Additional Resources**
 - **[Release Notes](RELEASE/RELEASE_NOTES.md)** - Version history and changes
+- **[Legal Documentation](LEGAL/)** - Privacy policy and terms of service
+- **[LangChain Integration](LANGCHAIN_INTEGRATION_PLAN.md)** - Advanced AI capabilities
 
-### ⚖️ Legal Documentation
-- **[Privacy Policy](LEGAL/PRIVACY.md)** - Privacy information
-- **[Terms of Service](LEGAL/TERMS.md)** - Terms and conditions
+## 📖 Documentation Standards
 
-## 🔥 What's New
+This documentation follows these principles:
+- **User-focused**: Written for the intended audience with clear, actionable guidance
+- **Comprehensive**: Covers all aspects of each topic with detailed explanations
+- **Up-to-date**: Regularly updated to reflect the latest changes and features
+- **Cross-referenced**: Extensive linking between related documentation
+- **Searchable**: Well-organized with clear headings and table of contents
+- **Platform-aware**: Specific guidance for different operating systems and environments
 
-### Zrok Tunnel Integration
-CloudToLocalLLM features a robust zrok-based tunnel system:
-- **Automatic Fallback**: Local Ollama → Cloud proxy → Zrok tunnel → Local Ollama
-- **Secure Access**: Auth0 JWT validation for all tunnel access
-- **Platform Abstraction**: Desktop-only with proper stub implementations
-- **Zero Configuration**: Works with free zrok accounts
-- **Production Ready**: Full tunnel lifecycle management
+## 🤝 Contributing to Documentation
+
+We welcome improvements to our documentation! Here's how you can help:
+
+### **📝 Ways to Contribute**
+- **Fix typos and errors** - Submit PRs for corrections
+- **Add missing information** - Fill gaps in existing documentation
+- **Create new guides** - Write documentation for new features
+- **Improve clarity** - Make complex topics easier to understand
+- **Update screenshots** - Keep visual guides current
+
+### **📋 Documentation Guidelines**
+- Follow the existing structure and formatting
+- Include table of contents for longer documents
+- Add cross-references to related documentation
+- Test all instructions before submitting
+- Use clear, concise language appropriate for the target audience
+
+See our [Contribution Guidelines](../CONTRIBUTING.md) for detailed information on contributing.
 
 ## 📖 Quick Navigation
 
-### For End Users
-1. Start with [Installation Guide](USER_DOCUMENTATION/INSTALLATION_GUIDE.md)
-2. Follow [First Time Setup](USER_DOCUMENTATION/FIRST_TIME_SETUP.md)
-3. Configure tunnel settings in the application
-4. Refer to [User Guide](USER_DOCUMENTATION/USER_GUIDE.md) for daily usage
+### **🆕 New Users**
+1. **[Choose Installation Method](INSTALLATION/README.md)** - Pick your platform
+2. **[Install CloudToLocalLLM](INSTALLATION/)** - Follow platform-specific guide
+3. **[First Time Setup](USER_DOCUMENTATION/FIRST_TIME_SETUP.md)** - Configure your installation
+4. **[User Guide](USER_DOCUMENTATION/USER_GUIDE.md)** - Learn how to use the application
+
+### **🏠 Self-Hosters**
+1. **[System Architecture](ARCHITECTURE/SYSTEM_ARCHITECTURE.md)** - Understand the system design
+2. **[Infrastructure Guide](OPERATIONS/INFRASTRUCTURE_GUIDE.md)** - Plan your server setup
+3. **[Self-Hosting Guide](OPERATIONS/SELF_HOSTING.md)** - Deploy your own instance
+4. **[Deployment Overview](DEPLOYMENT/DEPLOYMENT_OVERVIEW.md)** - Choose deployment strategy
+
+### **👨‍💻 Developers**
+1. **[Developer Onboarding](DEVELOPMENT/DEVELOPER_ONBOARDING.md)** - Set up development environment
+2. **[Development Workflow](DEVELOPMENT/DEVELOPMENT_WORKFLOW.md)** - Learn the development process
+3. **[Building Guide](DEVELOPMENT/BUILDING_GUIDE.md)** - Build for different platforms
+4. **[API Documentation](DEVELOPMENT/API_DOCUMENTATION.md)** - Technical API reference
+5. **[Contribution Guidelines](../CONTRIBUTING.md)** - How to contribute
+
+### **🔧 System Administrators**
+1. **[Deployment Overview](DEPLOYMENT/DEPLOYMENT_OVERVIEW.md)** - Understand deployment options
+2. **[Scripts Overview](DEPLOYMENT/SCRIPTS_OVERVIEW.md)** - Learn about automation scripts
+3. **[Strict Deployment Policy](DEPLOYMENT/STRICT_DEPLOYMENT_POLICY.md)** - Quality standards
+4. **[Infrastructure Guide](OPERATIONS/INFRASTRUCTURE_GUIDE.md)** - Server management
 5. Check [Troubleshooting](USER_DOCUMENTATION/USER_TROUBLESHOOTING_GUIDE.md) if issues arise
 
 ### For Developers
