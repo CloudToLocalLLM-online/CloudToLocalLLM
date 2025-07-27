@@ -168,10 +168,10 @@ http_test() {
         
         local status_code=$(echo "$response" | cut -d'|' -f1)
         local response_time_seconds=$(echo "$response" | cut -d'|' -f2)
-        local response_time_ms=$(echo "$response_time_seconds * 1000" | bc 2>/dev/null || echo "0")
-        
+        local response_time_ms=$(printf "%.0f" $(echo "$response_time_seconds * 1000" | bc 2>/dev/null || echo "0"))
+
         if [[ "$status_code" == "$expected_status" ]]; then
-            if (( $(echo "$response_time_ms > $MAX_RESPONSE_TIME" | bc -l) )); then
+            if (( response_time_ms > MAX_RESPONSE_TIME )); then
                 test_warning "$test_name" "Slow response: ${response_time_ms}ms (threshold: ${MAX_RESPONSE_TIME}ms)"
             else
                 test_pass "$test_name (${response_time_ms}ms)"
