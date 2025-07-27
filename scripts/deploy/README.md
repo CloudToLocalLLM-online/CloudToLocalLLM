@@ -2,13 +2,14 @@
 
 This directory contains the deployment scripts for the CloudToLocalLLM application.
 
-## Architecture Separation
+## Architecture Overview
 
-**VPS Deployment (Linux-only):**
-- All VPS deployment operations use bash scripts (.sh files) exclusively
-- Must be executed via WSL (Ubuntu distribution) from Windows
-- SSH operations to cloudtolocalllm.online VPS go through WSL
-- Flutter web builds, Docker container management, and git operations use Linux commands only
+**VPS Deployment (PowerShell-Orchestrated):**
+- VPS deployment is orchestrated by PowerShell scripts from Windows
+- PowerShell scripts use SSH to execute bash scripts on the remote VPS
+- Windows users run `scripts/powershell/Deploy-CloudToLocalLLM.ps1` for deployment
+- VPS-side operations use bash scripts (.sh files) for Linux-specific tasks
+- **WSL is NOT required for deployment operations**
 
 **Windows Package Management:**
 - Windows desktop application packaging (MSI, NSIS, Portable ZIP) handled by PowerShell scripts in `scripts/powershell/`
@@ -27,13 +28,20 @@ The primary deployment script for the VPS. This script handles the complete depl
 5. **SSL Verification**: Ensures SSL certificates are properly configured
 
 #### Usage
-```bash
-# From WSL (Windows users)
-wsl -d Ubuntu-24.04
-cd /opt/cloudtolocalllm
-bash scripts/deploy/update_and_deploy.sh
 
-# On the VPS directly
+**Windows Users (Recommended):**
+```powershell
+# Use PowerShell orchestration script
+.\scripts\powershell\Deploy-CloudToLocalLLM.ps1 -Force
+
+# For interactive deployment
+.\scripts\powershell\Deploy-CloudToLocalLLM.ps1
+```
+
+**Direct VPS Execution:**
+```bash
+# SSH to VPS and run directly
+ssh cloudllm@cloudtolocalllm.online
 cd /opt/cloudtolocalllm
 bash scripts/deploy/update_and_deploy.sh
 ```

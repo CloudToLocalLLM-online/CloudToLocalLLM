@@ -25,7 +25,7 @@ Before using the deployment workflow, ensure your environment meets these requir
   - Git installed and configured
   - Flutter SDK installed on Windows
   - SSH key-based access to target VPS configured
-  - WSL2 with Ubuntu 24.04 distribution (only for Linux application builds)
+  - WSL2 with Ubuntu 24.04 distribution (ONLY for Linux application builds, NOT for deployment)
 
 - **VPS Environment**:
   - Linux VPS with Docker and Docker Compose

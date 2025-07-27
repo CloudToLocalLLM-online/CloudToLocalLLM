@@ -6,13 +6,13 @@ This directory contains PowerShell scripts designed to work natively on Windows 
 
 The PowerShell scripts provide Windows-native functionality while leveraging WSL only for:
 - **Linux application builds** (Debian packages, AppImage, etc.)
-- **VPS deployment operations** that require Linux-specific commands
 
 WSL is **NOT used** for:
 - Windows development workflows
 - Version management
 - Local file operations
 - Git operations
+- **VPS deployment operations** (use PowerShell SSH instead)
 
 ## Scripts
 
@@ -31,7 +31,7 @@ WSL is **NOT used** for:
 - **`Push-Dev.ps1`** - Development push utility
 - **`launcher.ps1`** - Smart script launcher with auto-detection
 
-**Note**: VPS deployment operations use SSH from Windows PowerShell to execute bash scripts on the remote Linux VPS, not local WSL.
+**Note**: VPS deployment operations use SSH from Windows PowerShell to execute bash scripts on the remote Linux VPS. WSL is NOT required for deployment.
 
 ### Dependencies
 

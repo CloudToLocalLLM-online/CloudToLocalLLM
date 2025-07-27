@@ -157,11 +157,12 @@ Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 
 #### Tests Fail with WSL Not Available
 
-Ensure WSL2 with Ubuntu 24.04 is installed and configured:
+WSL is only required for Linux application building, not deployment testing:
 
 ```powershell
-wsl --list --verbose
-wsl --install -d Ubuntu-24.04
+# WSL is optional - only needed for Linux package creation
+# Deployment tests use PowerShell SSH, not WSL
+wsl --list --verbose  # Check if needed for Linux builds
 ```
 
 #### Tests Fail with SSH Connection Issues

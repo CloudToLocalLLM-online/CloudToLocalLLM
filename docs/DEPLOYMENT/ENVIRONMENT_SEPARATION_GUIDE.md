@@ -177,17 +177,17 @@ CloudToLocalLLM/
 ## Troubleshooting
 
 ### VPS Deployment Issues
-1. **SSH Connection Failed**: Ensure SSH keys are properly configured in WSL
-2. **Flutter Build Failed**: Check Flutter SDK installation in WSL
+1. **SSH Connection Failed**: Ensure SSH keys are properly configured for PowerShell SSH client
+2. **Flutter Build Failed**: Check Flutter SDK installation on Windows or VPS
 3. **Docker Issues**: Verify Docker permissions on VPS
 4. **SSL Certificate Issues**: Check Let's Encrypt certificate status
 
 ### Windows Package Issues
 1. **Build Tools Missing**: Use -AutoInstall parameter
-2. **WSL Not Available**: Only needed for Linux package creation (optional)
+2. **WSL Not Available**: Only needed for Linux package creation (optional, NOT for deployment)
 3. **Permission Denied**: Run PowerShell as Administrator if needed
 4. **Flutter SDK Issues**: Verify Flutter installation and PATH
-5. **SSH Connection Issues**: Verify OpenSSH client and SSH keys
+5. **SSH Connection Issues**: Verify OpenSSH client and SSH keys for PowerShell
 
 ## Migration Notes
 

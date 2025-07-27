@@ -262,13 +262,13 @@ After modifying the deployment script:
 
 **Important**: WSL integration is only required for:
 1. **Building Linux application packages** (Debian, AppImage, etc.)
-2. **VPS deployment operations** that require Linux-specific commands
 
 WSL should **NOT** be used for:
 - Windows development workflows
 - Version management on Windows
 - Local file operations on Windows
 - Git operations on Windows
+- **VPS deployment operations** (use PowerShell SSH instead)
 
 When building Linux packages using WSL:
 
@@ -282,15 +282,18 @@ When building Linux packages using WSL:
    - Use proper quoting for paths with spaces
    - Consider using absolute paths where possible
 
-Example WSL integration for Linux builds:
+Example WSL integration for Linux builds only:
 
 ```powershell
-# Only use WSL for Linux application builds, not deployment
+# WSL is ONLY for Linux application builds, NEVER for deployment
 if ($BuildLinuxPackages) {
     $wslPath = Convert-WindowsPathToWSL $Script:ProjectRoot
     $command = "cd $wslPath && flutter build linux --release"
     $result = Invoke-WSLCommand -DistroName "Ubuntu-24.04" -Command $command -WorkingDirectory $Script:ProjectRoot -PassThru
 }
+
+# For VPS deployment, use PowerShell SSH instead:
+# ssh cloudllm@cloudtolocalllm.online "cd /opt/cloudtolocalllm && ./scripts/deploy/complete_deployment.sh --force"
 ```
 
 ## PowerShell Deployment Integration
