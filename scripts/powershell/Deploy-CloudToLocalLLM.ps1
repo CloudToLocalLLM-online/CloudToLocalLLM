@@ -61,7 +61,7 @@ if ($LASTEXITCODE -ne 0) {
 
 if (-not $DryRun) {
     Write-Host "Testing SSH connection..."
-    ssh -o ConnectTimeout=10 -o BatchMode=yes "$VPSUser@$VPSHost" "echo 'SSH test successful'"
+    ssh -o ConnectTimeout=10 -o BatchMode=yes -o StrictHostKeyChecking=no "$VPSUser@$VPSHost" "echo 'SSH test successful'"
     if ($LASTEXITCODE -ne 0) {
         Write-Host "ERROR: SSH connection failed" -ForegroundColor Red
         exit 1
@@ -642,7 +642,7 @@ if ($DryRun) {
     Write-Host "Fixing executable permissions for deployment scripts..."
     Write-Host "Command: ssh $VPSUser@$VPSHost `"$permissionFixCommand`""
 
-    ssh -o BatchMode=yes -o ConnectTimeout=30 -o ServerAliveInterval=10 -o ServerAliveCountMax=3 $VPSUser@$VPSHost "$permissionFixCommand"
+    ssh -o BatchMode=yes -o ConnectTimeout=30 -o ServerAliveInterval=10 -o ServerAliveCountMax=3 -o StrictHostKeyChecking=no $VPSUser@$VPSHost "$permissionFixCommand"
 
     if ($LASTEXITCODE -ne 0) {
         Write-Host ""
@@ -663,7 +663,7 @@ if ($DryRun) {
     Write-Host "Command: ssh $VPSUser@$VPSHost `"$deploymentCommand`""
     Write-Host ""
 
-    ssh -o BatchMode=yes -o ConnectTimeout=30 -o ServerAliveInterval=10 -o ServerAliveCountMax=3 $VPSUser@$VPSHost "$deploymentCommand"
+    ssh -o BatchMode=yes -o ConnectTimeout=30 -o ServerAliveInterval=10 -o ServerAliveCountMax=3 -o StrictHostKeyChecking=no $VPSUser@$VPSHost "$deploymentCommand"
 
     if ($LASTEXITCODE -ne 0) {
         Write-Host ""
