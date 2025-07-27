@@ -66,10 +66,15 @@ log_test() {
 # Test result functions
 test_pass() {
     local test_name="$1"
+    echo "[DEBUG] test_pass called with: $test_name" >&2
+    echo "[DEBUG] Setting TEST_RESULTS..." >&2
     TEST_RESULTS["$test_name"]="PASS"
+    echo "[DEBUG] Incrementing counters..." >&2
     ((PASSED_TESTS++))
     ((TOTAL_TESTS++))
+    echo "[DEBUG] Calling log_success..." >&2
     log_success "✅ $test_name"
+    echo "[DEBUG] test_pass completed" >&2
 }
 
 test_fail() {
