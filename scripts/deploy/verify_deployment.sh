@@ -66,25 +66,18 @@ log_test() {
 # Test result functions
 test_pass() {
     local test_name="$1"
-    echo "[DEBUG] test_pass called with: $test_name" >&2
-    echo "[DEBUG] Setting TEST_RESULTS..." >&2
     TEST_RESULTS["$test_name"]="PASS"
-    echo "[DEBUG] Incrementing counters..." >&2
     PASSED_TESTS=$((PASSED_TESTS + 1))
-    echo "[DEBUG] PASSED_TESTS incremented to $PASSED_TESTS" >&2
     TOTAL_TESTS=$((TOTAL_TESTS + 1))
-    echo "[DEBUG] TOTAL_TESTS incremented to $TOTAL_TESTS" >&2
-    echo "[DEBUG] Calling log_success..." >&2
     log_success "✅ $test_name"
-    echo "[DEBUG] test_pass completed" >&2
 }
 
 test_fail() {
     local test_name="$1"
     local reason="$2"
     TEST_RESULTS["$test_name"]="FAIL"
-    ((FAILED_TESTS++))
-    ((TOTAL_TESTS++))
+    FAILED_TESTS=$((FAILED_TESTS + 1))
+    TOTAL_TESTS=$((TOTAL_TESTS + 1))
     log_error "❌ $test_name: $reason"
 }
 
@@ -92,8 +85,8 @@ test_warning() {
     local test_name="$1"
     local reason="$2"
     TEST_RESULTS["$test_name"]="WARNING"
-    ((WARNING_TESTS++))
-    ((TOTAL_TESTS++))
+    WARNING_TESTS=$((WARNING_TESTS + 1))
+    TOTAL_TESTS=$((TOTAL_TESTS + 1))
     log_warning "⚠️ $test_name: $reason"
 }
 
@@ -165,39 +158,24 @@ http_test() {
     local test_name="$2"
     local expected_status="${3:-200}"
 
-    echo "[DEBUG] Starting http_test for $test_name" >&2
     log_test "Testing $test_name: $url"
-    echo "[DEBUG] After log_test" >&2
     
     local attempt=1
     while [[ $attempt -le $MAX_RETRIES ]]; do
-        echo "[DEBUG] Attempt $attempt, calling curl..." >&2
         local start_time=$(date +%s%3N)
         local response=$(curl -k -s -o /dev/null -w "%{http_code}|%{time_total}" --max-time "$TIMEOUT_SECONDS" "$url" 2>/dev/null || echo "000|0")
         local end_time=$(date +%s%3N)
-        echo "[DEBUG] Curl response: $response" >&2
 
-        echo "[DEBUG] Parsing response..." >&2
         local status_code=$(echo "$response" | cut -d'|' -f1)
-        echo "[DEBUG] Status code: $status_code" >&2
         local response_time_seconds=$(echo "$response" | cut -d'|' -f2)
-        echo "[DEBUG] Response time seconds: $response_time_seconds" >&2
         local response_time_ms=$(printf "%.0f" $(echo "$response_time_seconds * 1000" | bc 2>/dev/null || echo "0"))
-        echo "[DEBUG] Response time ms: $response_time_ms" >&2
 
-        echo "[DEBUG] Checking status code $status_code against expected $expected_status" >&2
         if [[ "$status_code" == "$expected_status" ]]; then
-            echo "[DEBUG] Status code matches, checking response time..." >&2
-            echo "[DEBUG] response_time_ms=$response_time_ms, MAX_RESPONSE_TIME=$MAX_RESPONSE_TIME" >&2
-            echo "[DEBUG] About to do arithmetic comparison..." >&2
             if (( response_time_ms > MAX_RESPONSE_TIME )); then
-                echo "[DEBUG] Response time is slow" >&2
                 test_warning "$test_name" "Slow response: ${response_time_ms}ms (threshold: ${MAX_RESPONSE_TIME}ms)"
             else
-                echo "[DEBUG] Response time is fast" >&2
                 test_pass "$test_name (${response_time_ms}ms)"
             fi
-            echo "[DEBUG] After arithmetic comparison" >&2
             return 0
         fi
         
@@ -250,10 +228,10 @@ container_health_test() {
     
     cd "$PROJECT_DIR"
     
-    local total_containers=$(docker-compose -f "$COMPOSE_FILE" config --services | wc -l)
-    local running_containers=$(docker-compose -f "$COMPOSE_FILE" ps -q | wc -l)
-    local healthy_containers=$(docker-compose -f "$COMPOSE_FILE" ps --filter "health=healthy" -q | wc -l)
-    local unhealthy_containers=$(docker-compose -f "$COMPOSE_FILE" ps --filter "health=unhealthy" -q | wc -l)
+    local total_containers=$(docker compose -f "$COMPOSE_FILE" config --services | wc -l)
+    local running_containers=$(docker compose -f "$COMPOSE_FILE" ps -q | wc -l)
+    local healthy_containers=$(docker compose -f "$COMPOSE_FILE" ps --filter "health=healthy" -q | wc -l)
+    local unhealthy_containers=$(docker compose -f "$COMPOSE_FILE" ps --filter "health=unhealthy" -q | wc -l)
     
     if [[ $running_containers -eq $total_containers ]]; then
         if [[ $unhealthy_containers -eq 0 ]]; then
