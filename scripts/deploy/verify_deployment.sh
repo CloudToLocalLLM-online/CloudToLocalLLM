@@ -157,14 +157,18 @@ http_test() {
     local url="$1"
     local test_name="$2"
     local expected_status="${3:-200}"
-    
+
+    echo "[DEBUG] Starting http_test for $test_name" >&2
     log_test "Testing $test_name: $url"
+    echo "[DEBUG] After log_test" >&2
     
     local attempt=1
     while [[ $attempt -le $MAX_RETRIES ]]; do
+        echo "[DEBUG] Attempt $attempt, calling curl..." >&2
         local start_time=$(date +%s%3N)
         local response=$(curl -k -s -o /dev/null -w "%{http_code}|%{time_total}" --max-time "$TIMEOUT_SECONDS" "$url" 2>/dev/null || echo "000|0")
         local end_time=$(date +%s%3N)
+        echo "[DEBUG] Curl response: $response" >&2
         
         local status_code=$(echo "$response" | cut -d'|' -f1)
         local response_time_seconds=$(echo "$response" | cut -d'|' -f2)
