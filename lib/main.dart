@@ -23,6 +23,9 @@ import 'services/web_download_prompt_service.dart';
 import 'services/user_container_service.dart';
 import 'services/admin_service.dart';
 import 'services/admin_data_flush_service.dart';
+import 'services/langchain_ollama_service.dart';
+import 'services/langchain_prompt_service.dart';
+import 'services/langchain_rag_service.dart';
 
 import 'widgets/window_listener_widget.dart';
 
@@ -298,6 +301,36 @@ class _CloudToLocalLLMAppState extends State<CloudToLocalLLMApp> {
             return connectionManager;
           },
         ),
+
+        // LangChain Prompt Service
+        ChangeNotifierProvider(create: (_) => LangChainPromptService()),
+
+        // LangChain Ollama Service
+        ChangeNotifierProvider(
+          create: (context) {
+            final connectionManager = context.read<ConnectionManagerService>();
+            final langchainOllama = LangChainOllamaService(
+              connectionManager: connectionManager,
+            );
+            // Initialize asynchronously
+            langchainOllama.initialize();
+            return langchainOllama;
+          },
+        ),
+
+        // LangChain RAG Service
+        ChangeNotifierProvider(
+          create: (context) {
+            final langchainOllama = context.read<LangChainOllamaService>();
+            final ragService = LangChainRAGService(
+              ollamaService: langchainOllama,
+            );
+            // Initialize asynchronously
+            ragService.initialize();
+            return ragService;
+          },
+        ),
+
         // Streaming chat service (uses connection manager)
         ChangeNotifierProvider(
           create: (context) {

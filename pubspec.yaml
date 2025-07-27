@@ -70,6 +70,11 @@ dependencies:
   # UUID generation
   uuid: ^4.5.1
 
+  # LangChain Integration
+  langchain: ^0.7.8
+  langchain_ollama: ^0.3.3
+  langchain_community: ^0.3.4
+
 dev_dependencies:
   flutter_lints: ^6.0.0
   flutter_test:

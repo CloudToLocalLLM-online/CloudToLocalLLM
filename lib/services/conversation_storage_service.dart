@@ -26,6 +26,7 @@ class ConversationStorageService {
 
   Database? _database;
   bool _isInitialized = false;
+  bool _encryptionEnabled = false;
 
   /// Initialize the storage service with platform-specific database factory
   Future<void> initialize() async {
@@ -614,6 +615,60 @@ class ConversationStorageService {
       return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
     }
     return '${(bytes / (1024 * 1024 * 1024)).toStringAsFixed(1)} GB';
+  }
+
+  /// Enable encryption for stored conversations
+  Future<void> setEncryptionEnabled(bool enabled) async {
+    if (!isInitialized) {
+      throw StateError('Database not initialized');
+    }
+
+    try {
+      _encryptionEnabled = enabled;
+
+      // Update encryption setting in database
+      await _database!.insert(_settingsTable, {
+        'key': 'encryption_enabled',
+        'value': enabled ? 'true' : 'false',
+        'updated_at': DateTime.now().millisecondsSinceEpoch,
+      }, conflictAlgorithm: ConflictAlgorithm.replace);
+
+      debugPrint(
+        '💾 [ConversationStorage] Encryption ${enabled ? 'enabled' : 'disabled'}',
+      );
+    } catch (e) {
+      debugPrint('💾 [ConversationStorage] Failed to set encryption: $e');
+      rethrow;
+    }
+  }
+
+  /// Get current encryption status
+  Future<bool> isEncryptionEnabled() async {
+    if (!isInitialized) {
+      return false;
+    }
+
+    try {
+      final result = await _database!.query(
+        _settingsTable,
+        where: 'key = ?',
+        whereArgs: ['encryption_enabled'],
+        limit: 1,
+      );
+
+      if (result.isNotEmpty) {
+        final value = result.first['value'] as String;
+        _encryptionEnabled = value == 'true';
+        return _encryptionEnabled;
+      }
+
+      return false;
+    } catch (e) {
+      debugPrint(
+        '💾 [ConversationStorage] Failed to get encryption status: $e',
+      );
+      return false;
+    }
   }
 
   /// Close the database connection

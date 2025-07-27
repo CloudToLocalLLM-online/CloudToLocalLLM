@@ -213,18 +213,18 @@ class SimpleTunnelClient extends ChangeNotifier {
         context: {'attempt': _reconnectAttempts + 1},
       );
 
-      // Get authentication token
-      final accessToken = _authService.getAccessToken();
+      // Get and validate authentication token
+      final accessToken = await _authService.getValidatedAccessToken();
       if (accessToken == null) {
         // Don't throw exception during startup - log and return gracefully
-        _lastError = 'No authentication token available';
+        _lastError = 'No valid authentication token available';
         _isConnecting = false;
 
         _logger.debug(
-          'No authentication token available, cannot connect',
+          'No valid authentication token available, cannot connect',
           correlationId: _correlationId,
           userId: _userId,
-          context: {'reason': 'User not authenticated'},
+          context: {'reason': 'User not authenticated or token expired'},
         );
 
         notifyListeners();

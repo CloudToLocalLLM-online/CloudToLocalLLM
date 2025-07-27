@@ -201,8 +201,8 @@ class PrivacyStorageManager extends ChangeNotifier {
 
       _encryptionEnabled = true;
       await _savePrivacySettings();
-      // TODO: Implement encryption in ConversationStorageService
-      // await _conversationStorage.setEncryptionEnabled(true);
+      // Enable encryption in ConversationStorageService
+      await _conversationStorage.setEncryptionEnabled(true);
 
       debugPrint('🔒 [PrivacyStorage] Encryption enabled');
       notifyListeners();
@@ -218,8 +218,8 @@ class PrivacyStorageManager extends ChangeNotifier {
     try {
       _encryptionEnabled = false;
       await _savePrivacySettings();
-      // TODO: Implement encryption in ConversationStorageService
-      // await _conversationStorage.setEncryptionEnabled(false);
+      // Disable encryption in ConversationStorageService
+      await _conversationStorage.setEncryptionEnabled(false);
 
       debugPrint('🔒 [PrivacyStorage] Encryption disabled');
       notifyListeners();
