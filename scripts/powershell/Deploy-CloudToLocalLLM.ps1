@@ -583,6 +583,10 @@ if ($DryRun) {
     $deploymentFlags += " --dry-run"
 }
 
+if ($SkipVerification) {
+    $deploymentFlags += " --skip-verification"
+}
+
 $deploymentCommand = "cd $VPSProjectPath && $vpsDeploymentScript $deploymentFlags"
 
 # VPS Deployment Preparation: Fix script permissions
