@@ -1,62 +1,62 @@
-import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 
 /// Base interface for all LLM providers
-/// 
+///
 /// This abstract class defines the common interface that all LLM providers
 /// must implement, enabling seamless switching between different providers
 /// like Ollama, LM Studio, OpenAI-compatible APIs, etc.
 abstract class BaseLLMProvider extends ChangeNotifier {
   /// Unique identifier for this provider
   String get providerId;
-  
+
   /// Human-readable name for this provider
   String get providerName;
-  
+
   /// Description of this provider
   String get providerDescription;
-  
+
   /// Icon identifier for this provider
   String get providerIcon;
-  
+
   /// Whether this provider is currently available/connected
   bool get isAvailable;
-  
+
   /// Whether this provider is currently connecting
   bool get isConnecting;
-  
+
   /// Whether this provider is currently loading
   bool get isLoading;
-  
+
   /// Last error message, if any
   String? get lastError;
-  
+
   /// List of available models for this provider
   List<LLMModel> get availableModels;
-  
+
   /// Currently selected model
   LLMModel? get selectedModel;
-  
+
   /// Provider-specific configuration
   Map<String, dynamic> get configuration;
-  
+
   /// Initialize the provider
   Future<void> initialize();
-  
+
   /// Connect to the provider
   Future<void> connect();
-  
+
   /// Disconnect from the provider
   Future<void> disconnect();
-  
+
   /// Test the connection to the provider
   Future<bool> testConnection();
-  
+
   /// Refresh the list of available models
   Future<void> refreshModels();
-  
+
   /// Select a model for this provider
   Future<void> selectModel(String modelId);
-  
+
   /// Send a chat message
   Future<String> sendMessage({
     required String message,
@@ -64,7 +64,7 @@ abstract class BaseLLMProvider extends ChangeNotifier {
     List<Map<String, String>>? history,
     Map<String, dynamic>? options,
   });
-  
+
   /// Send a streaming chat message
   Stream<String> sendStreamingMessage({
     required String message,
@@ -72,25 +72,25 @@ abstract class BaseLLMProvider extends ChangeNotifier {
     List<Map<String, String>>? history,
     Map<String, dynamic>? options,
   });
-  
+
   /// Pull/download a model
   Future<void> pullModel(String modelId, {Function(double)? onProgress});
-  
+
   /// Delete a model
   Future<void> deleteModel(String modelId);
-  
+
   /// Get model information
   Future<LLMModelInfo?> getModelInfo(String modelId);
-  
+
   /// Update provider configuration
   Future<void> updateConfiguration(Map<String, dynamic> config);
-  
+
   /// Validate provider configuration
   bool validateConfiguration(Map<String, dynamic> config);
-  
+
   /// Get provider-specific settings UI
   Widget? getSettingsWidget();
-  
+
   /// Dispose of resources
   @override
   void dispose();
@@ -105,7 +105,7 @@ class LLMModel {
   final int? size;
   final DateTime? modifiedAt;
   final Map<String, dynamic>? metadata;
-  
+
   const LLMModel({
     required this.id,
     required this.name,
@@ -115,15 +115,15 @@ class LLMModel {
     this.modifiedAt,
     this.metadata,
   });
-  
+
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       other is LLMModel && runtimeType == other.runtimeType && id == other.id;
-  
+
   @override
   int get hashCode => id.hashCode;
-  
+
   @override
   String toString() => 'LLMModel(id: $id, name: $name)';
 }
@@ -134,7 +134,7 @@ class LLMModelInfo {
   final Map<String, dynamic> details;
   final List<String>? capabilities;
   final Map<String, dynamic>? parameters;
-  
+
   const LLMModelInfo({
     required this.model,
     required this.details,
@@ -150,7 +150,7 @@ class LLMProviderConfig {
   final Map<String, String>? headers;
   final Duration timeout;
   final Map<String, dynamic> customSettings;
-  
+
   const LLMProviderConfig({
     required this.providerId,
     required this.baseUrl,
@@ -158,7 +158,7 @@ class LLMProviderConfig {
     this.timeout = const Duration(seconds: 30),
     this.customSettings = const {},
   });
-  
+
   Map<String, dynamic> toJson() => {
     'providerId': providerId,
     'baseUrl': baseUrl,
@@ -166,12 +166,12 @@ class LLMProviderConfig {
     'timeout': timeout.inMilliseconds,
     'customSettings': customSettings,
   };
-  
+
   factory LLMProviderConfig.fromJson(Map<String, dynamic> json) {
     return LLMProviderConfig(
       providerId: json['providerId'] as String,
       baseUrl: json['baseUrl'] as String,
-      headers: json['headers'] != null 
+      headers: json['headers'] != null
           ? Map<String, String>.from(json['headers'] as Map)
           : null,
       timeout: Duration(milliseconds: json['timeout'] as int? ?? 30000),
@@ -198,7 +198,7 @@ class LLMProviderCapabilities {
   final bool supportsImageGeneration;
   final bool supportsCodeGeneration;
   final List<String> supportedFormats;
-  
+
   const LLMProviderCapabilities({
     this.supportsStreaming = false,
     this.supportsModelManagement = false,
