@@ -163,7 +163,7 @@ http_test() {
     local attempt=1
     while [[ $attempt -le $MAX_RETRIES ]]; do
         local start_time=$(date +%s%3N)
-        local response=$(curl -k -s -w "%{http_code}|%{time_total}" --max-time "$TIMEOUT_SECONDS" "$url" 2>/dev/null || echo "000|0")
+        local response=$(curl -k -s -o /dev/null -w "%{http_code}|%{time_total}" --max-time "$TIMEOUT_SECONDS" "$url" 2>/dev/null || echo "000|0")
         local end_time=$(date +%s%3N)
         
         local status_code=$(echo "$response" | cut -d'|' -f1)
