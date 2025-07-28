@@ -59,7 +59,6 @@ class AppRouter {
   static GoRouter createRouter({GlobalKey<NavigatorState>? navigatorKey}) {
     return GoRouter(
       navigatorKey: navigatorKey,
-      initialLocation: '/',
       debugLogDiagnostics: false,
       routes: [
         // Home route - platform-specific routing
