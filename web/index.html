@@ -48,14 +48,14 @@
   <!-- Auth0 SPA JS SDK for Flutter Web -->
   <script src="https://cdn.auth0.com/js/auth0-spa-js/2.0/auth0-spa-js.production.js" defer></script>
 
-  <!-- Temporarily disable service worker for debugging -->
+  <!-- Force service worker update -->
   <script>
-    // Temporarily disable service worker to debug routing issues
+    // Force service worker update on version change
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.getRegistrations().then(function(registrations) {
         for(let registration of registrations) {
-          registration.unregister();
-          console.log('Unregistering service worker for debugging');
+          registration.update();
+          console.log('Forcing service worker update');
         }
       });
     }

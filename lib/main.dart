@@ -56,10 +56,13 @@ class CloudToLocalLLMApp extends StatefulWidget {
 
 class _CloudToLocalLLMAppState extends State<CloudToLocalLLMApp> {
   bool _isInitialized = false;
+  late final GoRouter _router;
 
   @override
   void initState() {
     super.initState();
+    // Create router once during initialization
+    _router = AppRouter.createRouter(navigatorKey: navigatorKey);
     _initializeApp();
   }
 
@@ -436,7 +439,7 @@ class _CloudToLocalLLMAppState extends State<CloudToLocalLLMApp> {
                 : ThemeMode.light,
 
             // Router configuration
-            routerConfig: AppRouter.createRouter(navigatorKey: navigatorKey),
+            routerConfig: _router,
 
             // Builder for additional configuration
             builder: (context, child) {
