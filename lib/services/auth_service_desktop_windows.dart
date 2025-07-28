@@ -242,6 +242,9 @@ class AuthServiceDesktopWindows extends ChangeNotifier {
 
       _isAuthenticated.value = true;
       debugPrint('🖥️ [AuthWindows] Authentication successful');
+
+      // Ensure we notify listeners immediately so UI can react
+      notifyListeners();
     } catch (e) {
       debugPrint('🖥️ [AuthWindows] Authentication failed: $e');
       await _stopCallbackServer();

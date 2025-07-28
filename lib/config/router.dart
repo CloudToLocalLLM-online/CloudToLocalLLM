@@ -71,6 +71,12 @@ class AppRouter {
         debugPrint('🔄 [Router] Error getting initial location: $e');
         initialLocation = '/';
       }
+    } else {
+      // For desktop, always start at home unless there's a specific reason not to
+      initialLocation = '/';
+      debugPrint(
+        '🔄 [Router] Desktop platform - setting initial location to: $initialLocation',
+      );
     }
 
     return GoRouter(
@@ -147,11 +153,38 @@ class AppRouter {
           builder: (context, state) => const LoginScreen(),
         ),
 
-        // Auth callback route
+        // Auth callback route (web only)
         GoRoute(
           path: '/callback',
           name: 'callback',
-          builder: (context, state) => const CallbackScreen(),
+          builder: (context, state) {
+            // For desktop platforms, redirect immediately to prevent callback loop
+            if (!kIsWeb) {
+              debugPrint(
+                '🔄 [Router] Desktop platform accessing callback route - redirecting to login',
+              );
+              // Use a post-frame callback to redirect after the current build
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (context.mounted) {
+                  context.go('/login');
+                }
+              });
+              // Return a simple loading screen while redirecting
+              return const Scaffold(
+                body: Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      CircularProgressIndicator(),
+                      SizedBox(height: 16),
+                      Text('Redirecting...'),
+                    ],
+                  ),
+                ),
+              );
+            }
+            return const CallbackScreen();
+          },
         ),
 
         // Loading route
