@@ -64,8 +64,12 @@ class _CallbackScreenState extends State<CallbackScreen> {
       }
 
       // Check if we have callback parameters in the current URL
-      final currentUrl = Uri.base.toString();
-      if (!currentUrl.contains('code=') && !currentUrl.contains('error=')) {
+      // Use GoRouterState to get the current location with query parameters
+      final currentLocation = GoRouterState.of(context).uri.toString();
+      debugPrint('🔐 [Callback] Current location: $currentLocation');
+
+      if (!currentLocation.contains('code=') &&
+          !currentLocation.contains('error=')) {
         debugPrint(
           '🔐 [Callback] No callback parameters found, redirecting to login',
         );
