@@ -1,3 +1,4 @@
+import 'dart:io' show exit;
 import 'package:flutter/foundation.dart';
 import 'package:window_manager/window_manager.dart';
 
@@ -99,12 +100,35 @@ class WindowManagerService {
   Future<void> forceClose() async {
     try {
       if (!kIsWeb && _isInitialized) {
+        debugPrint("🪟 [WindowManager] Initiating force close sequence");
+
+        // Disable close prevention
         await windowManager.setPreventClose(false);
+
+        // Try to close the window gracefully first
+        await windowManager.close();
+
+        // If that doesn't work, destroy the window
+        await Future.delayed(const Duration(milliseconds: 100));
         await windowManager.destroy();
+
+        // As a last resort, exit the process
+        await Future.delayed(const Duration(milliseconds: 100));
+        if (!kIsWeb) {
+          exit(0);
+        }
       }
       debugPrint("🪟 [WindowManager] Application force closed");
     } catch (e) {
       debugPrint("🪟 [WindowManager] Failed to force close: $e");
+      // Emergency exit if all else fails
+      if (!kIsWeb) {
+        try {
+          exit(1);
+        } catch (exitError) {
+          debugPrint("🪟 [WindowManager] Emergency exit failed: $exitError");
+        }
+      }
     }
   }
 

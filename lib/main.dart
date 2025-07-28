@@ -468,6 +468,14 @@ class _CloudToLocalLLMAppState extends State<CloudToLocalLLMApp> {
     if (_trayInitialized) return;
     _trayInitialized = true;
 
+    // Only initialize on desktop platforms
+    if (kIsWeb) {
+      debugPrint(
+        "🌐 [SystemTray] Skipping tray initialization on web platform",
+      );
+      return;
+    }
+
     try {
       debugPrint("🚀 [SystemTray] Initializing native tray service...");
 

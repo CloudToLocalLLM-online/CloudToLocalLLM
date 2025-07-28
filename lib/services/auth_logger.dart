@@ -4,7 +4,7 @@ import 'dart:convert';
 // Conditional import for web package - only import on web platform
 import 'auth_logger_stub.dart'
     as web
-    if (dart.library.html) 'auth_logger_web.dart';
+    if (dart.library.js_interop) 'auth_logger_web.dart';
 
 /// Persistent authentication logger for debugging
 /// Stores logs in browser localStorage and provides download functionality
