@@ -2,7 +2,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
-import 'package:web/web.dart' as web;
 import '../services/auth_service.dart';
 import '../screens/loading_screen.dart';
 
@@ -68,10 +67,6 @@ class _CallbackScreenState extends State<CallbackScreen> {
               debugPrint(
                 '🔐 [Callback] Authentication successful, redirecting to home',
               );
-              // Clear URL parameters before redirecting
-              if (kIsWeb) {
-                web.window.history.replaceState(null, '', '/');
-              }
               context.go('/');
             } else {
               debugPrint(
