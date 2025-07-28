@@ -289,6 +289,7 @@ class AppRouter {
       redirect: (context, state) {
         final authService = context.read<AuthService>();
         final isAuthenticated = authService.isAuthenticated.value;
+        final isAuthLoading = authService.isLoading.value;
         final isLoggingIn = state.matchedLocation == '/login';
         final isCallback = state.matchedLocation == '/callback';
         final isLoading = state.matchedLocation == '/loading';
@@ -301,13 +302,19 @@ class AppRouter {
 
         debugPrint('🔄 [Router] Redirect check: ${state.matchedLocation}');
         debugPrint(
-          '🔄 [Router] Auth state: $isAuthenticated, App subdomain: $isAppSubdomain',
+          '🔄 [Router] Auth state: $isAuthenticated, Auth loading: $isAuthLoading, App subdomain: $isAppSubdomain',
         );
 
         // Allow access to marketing pages on web root domain without authentication
         if (kIsWeb && !isAppSubdomain && (isHomepage || isDownload || isDocs)) {
           debugPrint('🔄 [Router] Allowing access to marketing page');
           return null;
+        }
+
+        // If authentication is still loading, defer redirect decisions
+        if (isAuthLoading && !isCallback) {
+          debugPrint('🔄 [Router] Auth still loading - deferring redirect');
+          return null; // Stay on current route until auth loading completes
         }
 
         // Allow access to login, callback, and loading pages
