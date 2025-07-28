@@ -99,14 +99,11 @@ class AppRouter {
           path: '/download',
           name: 'download',
           builder: (context, state) {
-            debugPrint('🔄 [Router] Building download route, kIsWeb: $kIsWeb');
             // Only available on web platform
             if (kIsWeb) {
-              debugPrint('🔄 [Router] Returning DownloadScreen');
               return const DownloadScreen();
             } else {
               // Redirect desktop users to main app
-              debugPrint('🔄 [Router] Redirecting desktop to HomeScreen');
               return const HomeScreen();
             }
           },
@@ -256,9 +253,6 @@ class AppRouter {
         debugPrint('🔄 [Router] Redirect check: ${state.matchedLocation}');
         debugPrint(
           '🔄 [Router] Auth state: $isAuthenticated, App subdomain: $isAppSubdomain',
-        );
-        debugPrint(
-          '🔄 [Router] Route flags: homepage=$isHomepage, download=$isDownload, docs=$isDocs',
         );
 
         // Allow access to marketing pages on web root domain without authentication

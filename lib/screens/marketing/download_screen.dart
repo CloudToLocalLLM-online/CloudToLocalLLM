@@ -18,63 +18,14 @@ class DownloadScreen extends StatelessWidget {
       );
     }
 
-    // Debug: Add a simple test to see if this route is being reached
-    debugPrint('🔄 [DownloadScreen] Building download screen');
-
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Download CloudToLocalLLM'),
-        backgroundColor: const Color(0xFF6e8efb),
-        foregroundColor: Colors.white,
-      ),
-      body: Container(
-        color: const Color(0xFF181a20),
-        child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.download, size: 64, color: Color(0xFF6e8efb)),
-              const SizedBox(height: 24),
-              const Text(
-                'Download CloudToLocalLLM',
-                style: TextStyle(
-                  fontSize: 32,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
-              ),
-              const SizedBox(height: 16),
-              const Text(
-                'This is the download page - it\'s working!',
-                style: TextStyle(fontSize: 18, color: Color(0xFFb0b0b0)),
-              ),
-              const SizedBox(height: 32),
-              ElevatedButton.icon(
-                onPressed: () => _launchUrl(AppConfig.githubReleasesUrl),
-                icon: const Icon(Icons.download),
-                label: const Text('View All Downloads on GitHub'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF6e8efb),
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(
-                    vertical: 16,
-                    horizontal: 24,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-              TextButton(
-                onPressed: () => context.go('/'),
-                child: const Text(
-                  '← Back to Home',
-                  style: TextStyle(
-                    color: Color(0xFFa777e3),
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-            ],
-          ),
+      body: SingleChildScrollView(
+        child: Column(
+          children: [
+            _buildHeader(context),
+            _buildMainContent(context),
+            _buildFooter(context),
+          ],
         ),
       ),
     );
