@@ -57,8 +57,25 @@ bool _isAppSubdomain() {
 /// Application router configuration using GoRouter
 class AppRouter {
   static GoRouter createRouter({GlobalKey<NavigatorState>? navigatorKey}) {
+    // Get the initial location from the browser URL
+    String? initialLocation;
+    if (kIsWeb) {
+      try {
+        final currentUrl = Uri.base.toString();
+        final uri = Uri.parse(currentUrl);
+        initialLocation = uri.path;
+        debugPrint(
+          '🔄 [Router] Initial location from browser: $initialLocation',
+        );
+      } catch (e) {
+        debugPrint('🔄 [Router] Error getting initial location: $e');
+        initialLocation = '/';
+      }
+    }
+
     return GoRouter(
       navigatorKey: navigatorKey,
+      initialLocation: initialLocation,
       debugLogDiagnostics: true,
       routes: [
         // Home route - platform-specific routing
