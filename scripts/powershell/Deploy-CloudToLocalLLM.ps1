@@ -172,9 +172,9 @@ try {
     Invoke-WindowsFlutterCommand -FlutterArgs "pub get" -WorkingDirectory $ProjectRoot
     Write-Host "? Flutter dependencies updated"
 
-    # Build Windows desktop application with size optimizations
-    Write-Host "Building Windows desktop application with size optimizations..."
-    $windowsBuildArgs = "build windows --release --tree-shake-icons --split-debug-info=build/debug-info"
+    # Build Windows desktop application
+    Write-Host "Building Windows desktop application..."
+    $windowsBuildArgs = "build windows --release"
     Invoke-WindowsFlutterCommand -FlutterArgs $windowsBuildArgs -WorkingDirectory $ProjectRoot
     Write-Host "? Flutter Windows desktop build completed with optimizations"
 
