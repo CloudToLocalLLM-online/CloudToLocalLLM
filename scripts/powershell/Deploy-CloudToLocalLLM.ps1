@@ -8,8 +8,7 @@ param(
     
     [ValidateSet('build', 'patch', 'minor', 'major')]
     [string]$VersionIncrement = 'patch',
-    
-    [switch]$SkipBuild,
+
     [switch]$SkipVerification,
     [switch]$SkipVersionUpdate,
     [switch]$Force,
@@ -117,35 +116,32 @@ if (-not $SkipVersionUpdate) {
 }
 
 # Step 3: Source preparation
-if (-not $SkipBuild) {
-    Write-Host ""
-    Write-Host "=== STEP 3: SOURCE PREPARATION ===" -ForegroundColor Yellow
+Write-Host ""
+Write-Host "=== STEP 3: SOURCE PREPARATION ===" -ForegroundColor Yellow
 
-    $requiredFiles = @("pubspec.yaml", "lib/main.dart", "docker-compose.yml")
-    foreach ($file in $requiredFiles) {
-        $filePath = Join-Path $ProjectRoot $file
-        if (Test-Path $filePath) {
-            Write-Host "✓ Found: $file"
-        } else {
-            Write-Host "✗ Missing: $file" -ForegroundColor Red
-            exit 1
-        }
+$requiredFiles = @("pubspec.yaml", "lib/main.dart", "docker-compose.yml")
+foreach ($file in $requiredFiles) {
+    $filePath = Join-Path $ProjectRoot $file
+    if (Test-Path $filePath) {
+        Write-Host "✓ Found: $file"
+    } else {
+        Write-Host "✗ Missing: $file" -ForegroundColor Red
+        exit 1
     }
 }
 
 # Step 3.5: Local Flutter Desktop Build
-if (-not $SkipBuild) {
-    Write-Host ""
-    Write-Host "=== STEP 3.5: LOCAL FLUTTER DESKTOP BUILD ===" -ForegroundColor Yellow
+Write-Host ""
+Write-Host "=== STEP 3.5: LOCAL FLUTTER DESKTOP BUILD ===" -ForegroundColor Yellow
 
-    # Import build utilities
-    $buildUtilsPath = Join-Path $PSScriptRoot "BuildEnvironmentUtilities.ps1"
-    if (Test-Path $buildUtilsPath) {
-        . $buildUtilsPath
-    } else {
-        Write-Host "ERROR: BuildEnvironmentUtilities.ps1 not found" -ForegroundColor Red
-        exit 1
-    }
+# Import build utilities
+$buildUtilsPath = Join-Path $PSScriptRoot "BuildEnvironmentUtilities.ps1"
+if (Test-Path $buildUtilsPath) {
+    . $buildUtilsPath
+} else {
+    Write-Host "ERROR: BuildEnvironmentUtilities.ps1 not found" -ForegroundColor Red
+    exit 1
+}
 
     # Check if Flutter is available on Windows
     Write-Host "Checking Flutter installation..."
@@ -547,7 +543,7 @@ Works seamlessly with https://app.cloudtolocalllm.online
     }
 
 # Step 4: Commit and Push Build-Time Injected Files
-if (-not $SkipBuild -and -not $DryRun) {
+if (-not $DryRun) {
     Write-Host ""
     Write-Host "=== STEP 4: COMMIT BUILD-TIME INJECTION ===" -ForegroundColor Yellow
 
