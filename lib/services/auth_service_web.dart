@@ -378,15 +378,10 @@ class AuthServiceWeb extends ChangeNotifier {
 
               // Ensure state change has time to propagate through widget tree
               // This is critical to prevent race conditions with router redirect logic
-              await Future.delayed(const Duration(milliseconds: 100));
+              await Future.delayed(const Duration(milliseconds: 200));
 
-              // Clear the URL parameters (web only) after state is set
-              if (kIsWeb) {
-                web.window.history.replaceState(null, '', '/');
-              }
-
-              // Additional delay to ensure all state updates are complete
-              await Future.delayed(const Duration(milliseconds: 100));
+              // Don't clear URL parameters here - let the CallbackScreen handle navigation
+              // This prevents triggering router redirect logic that can cause auth loops
 
               AuthLogger.info('🔐 Authentication completed successfully');
               return true;
