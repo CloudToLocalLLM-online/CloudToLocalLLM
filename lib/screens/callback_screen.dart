@@ -52,6 +52,29 @@ class _CallbackScreenState extends State<CallbackScreen> {
         return;
       }
 
+      // Check if user is already authenticated - if so, just redirect to home
+      if (authService.isAuthenticated.value) {
+        debugPrint(
+          '🔐 [Callback] User already authenticated, redirecting to home',
+        );
+        if (mounted) {
+          context.go('/');
+        }
+        return;
+      }
+
+      // Check if we have callback parameters in the current URL
+      final currentUrl = Uri.base.toString();
+      if (!currentUrl.contains('code=') && !currentUrl.contains('error=')) {
+        debugPrint(
+          '🔐 [Callback] No callback parameters found, redirecting to login',
+        );
+        if (mounted) {
+          context.go('/login');
+        }
+        return;
+      }
+
       // Web platform - process the callback normally
       final success = await authService.handleCallback();
 
@@ -67,7 +90,8 @@ class _CallbackScreenState extends State<CallbackScreen> {
               debugPrint(
                 '🔐 [Callback] Authentication successful, redirecting to home',
               );
-              context.go('/');
+              // Use pushReplacement to clear the callback URL from history
+              context.pushReplacement('/');
             } else {
               debugPrint(
                 '🔐 [Callback] Authentication state not set after success, redirecting to login',
