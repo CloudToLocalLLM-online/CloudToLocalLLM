@@ -130,9 +130,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
                 return WebDownloadPrompt(
                   isFirstTimeUser: webDownloadPrompt.isFirstTimeUser,
-                  onDismiss: () {
-                    webDownloadPrompt.markPromptSeen();
-                    webDownloadPrompt.hidePrompt();
+                  onDismiss: () async {
+                    await webDownloadPrompt.markPromptSeen();
+                    await webDownloadPrompt.hidePrompt();
                   },
                 );
               },

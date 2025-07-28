@@ -182,8 +182,9 @@ class LLMAuditService extends ChangeNotifier {
       if (event.eventType != LLMAuditEventType.interaction) return false;
       if (providerId != null && event.providerId != providerId) return false;
       if (modelId != null && event.modelId != modelId) return false;
-      if (startDate != null && event.timestamp.isBefore(startDate))
+      if (startDate != null && event.timestamp.isBefore(startDate)) {
         return false;
+      }
       if (endDate != null && event.timestamp.isAfter(endDate)) return false;
       return true;
     }).toList();
@@ -224,8 +225,9 @@ class LLMAuditService extends ChangeNotifier {
     LLMAuditEventType? eventType,
   }) {
     var events = _auditLog.where((event) {
-      if (startDate != null && event.timestamp.isBefore(startDate))
+      if (startDate != null && event.timestamp.isBefore(startDate)) {
         return false;
+      }
       if (endDate != null && event.timestamp.isAfter(endDate)) return false;
       if (eventType != null && event.eventType != eventType) return false;
       return true;

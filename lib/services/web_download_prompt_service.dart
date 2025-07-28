@@ -124,15 +124,15 @@ class WebDownloadPromptService extends ChangeNotifier {
 
   /// Check if the user is logging in for the first time
   void _checkIfFirstTimeUser() {
-    // For now, we'll consider a user first-time if they haven't seen the prompt
-    // In a real implementation, you might check Auth0 metadata or user creation date
-    _isFirstTimeUser = !_hasUserSeenPrompt;
-
-    // Additional check: if user is authenticated and we haven't loaded their state yet
-    if (_authService.isAuthenticated.value && !_hasUserSeenPrompt) {
-      // This could be enhanced to check Auth0 user metadata for actual first login
-      // For example: user.metadata?.firstLogin or user.createdAt comparison
-      _isFirstTimeUser = true;
+    // Only consider showing the prompt for truly first-time users
+    // Check if this is their first session by looking at stored preferences
+    final userId = _authService.currentUser?.id;
+    if (userId != null) {
+      // User is first-time only if they have never seen the prompt before
+      // This prevents the circular logic of always showing to users who dismissed it
+      _isFirstTimeUser = !_hasUserSeenPrompt;
+    } else {
+      _isFirstTimeUser = false;
     }
 
     debugPrint(
@@ -154,9 +154,8 @@ class WebDownloadPromptService extends ChangeNotifier {
 
     // Show prompt only if:
     // 1. User is first-time AND hasn't seen the prompt yet
-    // 2. OR no clients are connected (to encourage desktop app download)
-    final shouldShow =
-        (_isFirstTimeUser && !_hasUserSeenPrompt) || !hasConnectedClients;
+    // Don't show just because no clients are connected - let users use web interface
+    final shouldShow = _isFirstTimeUser && !_hasUserSeenPrompt;
 
     if (_shouldShowPrompt != shouldShow) {
       _shouldShowPrompt = shouldShow;
@@ -175,10 +174,14 @@ class WebDownloadPromptService extends ChangeNotifier {
     debugPrint('🌐 [WebDownloadPrompt] Prompt marked as seen');
   }
 
-  /// Hide the prompt
-  void hidePrompt() {
+  /// Hide the prompt permanently
+  Future<void> hidePrompt() async {
     _shouldShowPrompt = false;
-    debugPrint('🌐 [WebDownloadPrompt] Prompt hidden');
+    // Also mark as seen to prevent it from showing again
+    if (!_hasUserSeenPrompt) {
+      await markPromptSeen();
+    }
+    debugPrint('🌐 [WebDownloadPrompt] Prompt hidden permanently');
     notifyListeners();
   }
 

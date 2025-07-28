@@ -6,7 +6,7 @@ import '../services/llm_provider_manager.dart';
 import '../services/llm_providers/base_llm_provider.dart';
 
 /// LLM Provider Selector Widget
-/// 
+///
 /// Allows users to select and switch between different LLM providers
 /// like Ollama, LM Studio, OpenAI-compatible APIs, etc.
 class LLMProviderSelector extends StatefulWidget {
@@ -33,9 +33,7 @@ class _LLMProviderSelectorState extends State<LLMProviderSelector> {
     return Consumer<LLMProviderManager>(
       builder: (context, providerManager, child) {
         if (!providerManager.isInitialized) {
-          return const Center(
-            child: CircularProgressIndicator(),
-          );
+          return const Center(child: CircularProgressIndicator());
         }
 
         return Column(
@@ -43,13 +41,14 @@ class _LLMProviderSelectorState extends State<LLMProviderSelector> {
           children: [
             // Provider selection dropdown
             _buildProviderDropdown(providerManager),
-            
+
             if (widget.showStatus) ...[
               SizedBox(height: AppTheme.spacingS),
               _buildProviderStatus(providerManager),
             ],
-            
-            if (widget.showModels && providerManager.activeProvider != null) ...[
+
+            if (widget.showModels &&
+                providerManager.activeProvider != null) ...[
               SizedBox(height: AppTheme.spacingM),
               _buildModelSelector(providerManager.activeProvider!),
             ],
@@ -85,15 +84,13 @@ class _LLMProviderSelectorState extends State<LLMProviderSelector> {
                       children: [
                         Text(
                           provider.providerName,
-                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            fontWeight: FontWeight.w500,
-                          ),
+                          style: Theme.of(context).textTheme.bodyMedium
+                              ?.copyWith(fontWeight: FontWeight.w500),
                         ),
                         Text(
                           provider.providerDescription,
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: AppTheme.textColorSecondary,
-                          ),
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(color: AppTheme.textColorLight),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -105,11 +102,14 @@ class _LLMProviderSelectorState extends State<LLMProviderSelector> {
               ),
             );
           }).toList(),
-          onChanged: _isLoading ? null : (String? value) {
-            if (value != null && value != providerManager.activeProviderId) {
-              _switchProvider(providerManager, value);
-            }
-          },
+          onChanged: _isLoading
+              ? null
+              : (String? value) {
+                  if (value != null &&
+                      value != providerManager.activeProviderId) {
+                    _switchProvider(providerManager, value);
+                  }
+                },
         ),
       ),
     );
@@ -131,9 +131,9 @@ class _LLMProviderSelectorState extends State<LLMProviderSelector> {
             SizedBox(width: AppTheme.spacingXS),
             Text(
               'No provider selected',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Colors.orange.shade700,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(color: AppTheme.warningColor),
             ),
           ],
         ),
@@ -180,9 +180,9 @@ class _LLMProviderSelectorState extends State<LLMProviderSelector> {
           Expanded(
             child: Text(
               statusText,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: statusColor.shade700,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(color: statusColor),
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
             ),
@@ -190,10 +190,7 @@ class _LLMProviderSelectorState extends State<LLMProviderSelector> {
           if (!isConnected && !isConnecting)
             TextButton(
               onPressed: () => _reconnectProvider(activeProvider),
-              child: Text(
-                'Reconnect',
-                style: TextStyle(color: statusColor),
-              ),
+              child: Text('Reconnect', style: TextStyle(color: statusColor)),
             ),
         ],
       ),
@@ -205,18 +202,18 @@ class _LLMProviderSelectorState extends State<LLMProviderSelector> {
       return Container(
         padding: EdgeInsets.all(AppTheme.spacingS),
         decoration: BoxDecoration(
-          color: AppTheme.backgroundSecondary,
+          color: AppTheme.backgroundCard,
           borderRadius: BorderRadius.circular(6),
         ),
         child: Row(
           children: [
-            Icon(Icons.info_outline, size: 16, color: AppTheme.textColorSecondary),
+            Icon(Icons.info_outline, size: 16, color: AppTheme.textColorLight),
             SizedBox(width: AppTheme.spacingXS),
             Text(
               'No models available',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: AppTheme.textColorSecondary,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(color: AppTheme.textColorLight),
             ),
           ],
         ),
@@ -228,9 +225,9 @@ class _LLMProviderSelectorState extends State<LLMProviderSelector> {
       children: [
         Text(
           'Available Models',
-          style: Theme.of(context).textTheme.titleSmall?.copyWith(
-            fontWeight: FontWeight.w500,
-          ),
+          style: Theme.of(
+            context,
+          ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w500),
         ),
         SizedBox(height: AppTheme.spacingXS),
         Container(
@@ -272,23 +269,11 @@ class _LLMProviderSelectorState extends State<LLMProviderSelector> {
         ),
       );
     } else if (provider.isAvailable) {
-      return Icon(
-        Icons.check_circle,
-        size: 16,
-        color: Colors.green,
-      );
+      return Icon(Icons.check_circle, size: 16, color: Colors.green);
     } else if (provider.lastError != null) {
-      return Icon(
-        Icons.error,
-        size: 16,
-        color: Colors.red,
-      );
+      return Icon(Icons.error, size: 16, color: Colors.red);
     } else {
-      return Icon(
-        Icons.circle_outlined,
-        size: 16,
-        color: Colors.grey,
-      );
+      return Icon(Icons.circle_outlined, size: 16, color: Colors.grey);
     }
   }
 
@@ -299,11 +284,14 @@ class _LLMProviderSelectorState extends State<LLMProviderSelector> {
       case 'lmstudio':
         return Icon(Icons.desktop_windows, color: AppTheme.secondaryColor);
       default:
-        return Icon(Icons.smart_toy, color: AppTheme.textColorSecondary);
+        return Icon(Icons.smart_toy, color: AppTheme.textColorLight);
     }
   }
 
-  Future<void> _switchProvider(LLMProviderManager providerManager, String providerId) async {
+  Future<void> _switchProvider(
+    LLMProviderManager providerManager,
+    String providerId,
+  ) async {
     setState(() {
       _isLoading = true;
     });
@@ -311,11 +299,13 @@ class _LLMProviderSelectorState extends State<LLMProviderSelector> {
     try {
       await providerManager.switchProvider(providerId);
       widget.onProviderChanged?.call(providerId);
-      
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Switched to ${providerManager.activeProvider?.providerName}'),
+            content: Text(
+              'Switched to ${providerManager.activeProvider?.providerName}',
+            ),
             backgroundColor: Colors.green,
           ),
         );

@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:intl/intl.dart';
 
 import '../config/theme.dart';
 import '../services/llm_audit_service.dart';
 import '../components/modern_card.dart';
 
 /// LLM Security and Monitoring Dashboard
-/// 
+///
 /// Displays audit logs, usage statistics, security events,
 /// and performance metrics for LLM interactions.
 class LLMSecurityDashboard extends StatefulWidget {
@@ -20,8 +19,6 @@ class LLMSecurityDashboard extends StatefulWidget {
 class _LLMSecurityDashboardState extends State<LLMSecurityDashboard>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  final DateFormat _dateFormat = DateFormat('MMM dd, HH:mm');
-  final DateFormat _timeFormat = DateFormat('HH:mm:ss');
 
   @override
   void initState() {
@@ -40,9 +37,7 @@ class _LLMSecurityDashboardState extends State<LLMSecurityDashboard>
     return Consumer<LLMAuditService>(
       builder: (context, auditService, child) {
         if (!auditService.isInitialized) {
-          return const Center(
-            child: CircularProgressIndicator(),
-          );
+          return const Center(child: CircularProgressIndicator());
         }
 
         return Column(
@@ -51,16 +46,16 @@ class _LLMSecurityDashboardState extends State<LLMSecurityDashboard>
             // Header
             Text(
               'LLM Security & Monitoring',
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
             ),
             SizedBox(height: AppTheme.spacingS),
             Text(
               'Monitor LLM interactions, security events, and usage patterns',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: AppTheme.textColorSecondary,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(color: AppTheme.textColorLight),
             ),
             SizedBox(height: AppTheme.spacingM),
 
@@ -68,7 +63,7 @@ class _LLMSecurityDashboardState extends State<LLMSecurityDashboard>
             TabBar(
               controller: _tabController,
               labelColor: AppTheme.primaryColor,
-              unselectedLabelColor: AppTheme.textColorSecondary,
+              unselectedLabelColor: AppTheme.textColorLight,
               indicatorColor: AppTheme.primaryColor,
               tabs: const [
                 Tab(text: 'Overview'),
@@ -161,13 +156,15 @@ class _LLMSecurityDashboardState extends State<LLMSecurityDashboard>
                       child: Text(
                         'No recent activity',
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: AppTheme.textColorSecondary,
+                          color: AppTheme.textColorLight,
                         ),
                       ),
                     ),
                   )
                 else
-                  ...recentEvents.take(5).map((event) => _buildEventTile(event)),
+                  ...recentEvents
+                      .take(5)
+                      .map((event) => _buildEventTile(event)),
               ],
             ),
           ),
@@ -188,7 +185,7 @@ class _LLMSecurityDashboardState extends State<LLMSecurityDashboard>
               child: Text(
                 '${events.length} events',
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: AppTheme.textColorSecondary,
+                  color: AppTheme.textColorLight,
                 ),
               ),
             ),
@@ -202,9 +199,7 @@ class _LLMSecurityDashboardState extends State<LLMSecurityDashboard>
               onPressed: () => _clearAuditLog(auditService),
               icon: const Icon(Icons.clear_all),
               label: const Text('Clear'),
-              style: TextButton.styleFrom(
-                foregroundColor: Colors.red,
-              ),
+              style: TextButton.styleFrom(foregroundColor: Colors.red),
             ),
           ],
         ),
@@ -219,16 +214,14 @@ class _LLMSecurityDashboardState extends State<LLMSecurityDashboard>
                     child: Text(
                       'No audit events',
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: AppTheme.textColorSecondary,
+                        color: AppTheme.textColorLight,
                       ),
                     ),
                   )
                 : ListView.separated(
                     itemCount: events.length,
-                    separatorBuilder: (context, index) => Divider(
-                      color: AppTheme.borderColor,
-                      height: 1,
-                    ),
+                    separatorBuilder: (context, index) =>
+                        Divider(color: AppTheme.borderColor, height: 1),
                     itemBuilder: (context, index) {
                       final event = events[index];
                       return _buildEventTile(event, showDetails: true);
@@ -254,7 +247,7 @@ class _LLMSecurityDashboardState extends State<LLMSecurityDashboard>
                 child: Text(
                   'No usage statistics available',
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: AppTheme.textColorSecondary,
+                    color: AppTheme.textColorLight,
                   ),
                 ),
               ),
@@ -277,7 +270,7 @@ class _LLMSecurityDashboardState extends State<LLMSecurityDashboard>
                   ],
                 ),
               );
-            }).toList(),
+            }),
         ],
       ),
     );
@@ -307,10 +300,14 @@ class _LLMSecurityDashboardState extends State<LLMSecurityDashboard>
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      securityEvents.isEmpty ? 'No Security Issues' : 'Security Events Detected',
+                      securityEvents.isEmpty
+                          ? 'No Security Issues'
+                          : 'Security Events Detected',
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.w600,
-                        color: securityEvents.isEmpty ? Colors.green : Colors.orange,
+                        color: securityEvents.isEmpty
+                            ? Colors.green
+                            : Colors.orange,
                       ),
                     ),
                     Text(
@@ -318,7 +315,7 @@ class _LLMSecurityDashboardState extends State<LLMSecurityDashboard>
                           ? 'All LLM interactions are secure'
                           : '${securityEvents.length} security events require attention',
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: AppTheme.textColorSecondary,
+                        color: AppTheme.textColorLight,
                       ),
                     ),
                   ],
@@ -334,19 +331,17 @@ class _LLMSecurityDashboardState extends State<LLMSecurityDashboard>
         if (securityEvents.isNotEmpty) ...[
           Text(
             'Security Events',
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.w600,
-            ),
+            style: Theme.of(
+              context,
+            ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
           ),
           SizedBox(height: AppTheme.spacingS),
           Expanded(
             child: ModernCard(
               child: ListView.separated(
                 itemCount: securityEvents.length,
-                separatorBuilder: (context, index) => Divider(
-                  color: AppTheme.borderColor,
-                  height: 1,
-                ),
+                separatorBuilder: (context, index) =>
+                    Divider(color: AppTheme.borderColor, height: 1),
                 itemBuilder: (context, index) {
                   final event = securityEvents[index];
                   return _buildEventTile(event, showDetails: true);
@@ -359,7 +354,12 @@ class _LLMSecurityDashboardState extends State<LLMSecurityDashboard>
     );
   }
 
-  Widget _buildStatCard(String title, String value, IconData icon, Color color) {
+  Widget _buildStatCard(
+    String title,
+    String value,
+    IconData icon,
+    Color color,
+  ) {
     return ModernCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -370,9 +370,9 @@ class _LLMSecurityDashboardState extends State<LLMSecurityDashboard>
               SizedBox(width: AppTheme.spacingXS),
               Text(
                 title,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: AppTheme.textColorSecondary,
-                ),
+                style: Theme.of(
+                  context,
+                ).textTheme.bodySmall?.copyWith(color: AppTheme.textColorLight),
               ),
             ],
           ),
@@ -390,8 +390,9 @@ class _LLMSecurityDashboardState extends State<LLMSecurityDashboard>
   }
 
   Widget _buildEventTile(LLMAuditEvent event, {bool showDetails = false}) {
-    final isError = !event.success || event.eventType == LLMAuditEventType.security;
-    
+    final isError =
+        !event.success || event.eventType == LLMAuditEventType.security;
+
     return ListTile(
       leading: Icon(
         _getEventIcon(event),
@@ -400,34 +401,34 @@ class _LLMSecurityDashboardState extends State<LLMSecurityDashboard>
       ),
       title: Text(
         '${event.providerId ?? 'Unknown'} - ${event.requestType}',
-        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-          fontWeight: FontWeight.w500,
-        ),
+        style: Theme.of(
+          context,
+        ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w500),
       ),
       subtitle: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            _dateFormat.format(event.timestamp),
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: AppTheme.textColorSecondary,
-            ),
+            '${event.timestamp.month}/${event.timestamp.day} ${event.timestamp.hour}:${event.timestamp.minute.toString().padLeft(2, '0')}',
+            style: Theme.of(
+              context,
+            ).textTheme.bodySmall?.copyWith(color: AppTheme.textColorLight),
           ),
           if (showDetails && event.errorMessage != null)
             Text(
               event.errorMessage!,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Colors.red,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(color: Colors.red),
             ),
         ],
       ),
       trailing: event.responseTime != null
           ? Text(
               '${event.responseTime}ms',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: AppTheme.textColorSecondary,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(color: AppTheme.textColorLight),
             )
           : null,
     );
@@ -443,12 +444,22 @@ class _LLMSecurityDashboardState extends State<LLMSecurityDashboard>
       mainAxisSpacing: AppTheme.spacingS,
       children: [
         _buildStatItem('Total Requests', stats.totalRequests.toString()),
-        _buildStatItem('Success Rate', 
-            '${stats.totalRequests > 0 ? ((stats.successfulRequests / stats.totalRequests) * 100).toStringAsFixed(1) : 0}%'),
+        _buildStatItem(
+          'Success Rate',
+          '${stats.totalRequests > 0 ? ((stats.successfulRequests / stats.totalRequests) * 100).toStringAsFixed(1) : 0}%',
+        ),
         _buildStatItem('Input Tokens', stats.totalInputTokens.toString()),
         _buildStatItem('Output Tokens', stats.totalOutputTokens.toString()),
-        _buildStatItem('Avg Response', '${stats.averageResponseTime.toStringAsFixed(0)}ms'),
-        _buildStatItem('Last Used', stats.lastUsed != null ? _dateFormat.format(stats.lastUsed!) : 'Never'),
+        _buildStatItem(
+          'Avg Response',
+          '${stats.averageResponseTime.toStringAsFixed(0)}ms',
+        ),
+        _buildStatItem(
+          'Last Used',
+          stats.lastUsed != null
+              ? '${stats.lastUsed!.month}/${stats.lastUsed!.day} ${stats.lastUsed!.hour}:${stats.lastUsed!.minute.toString().padLeft(2, '0')}'
+              : 'Never',
+        ),
       ],
     );
   }
@@ -457,7 +468,7 @@ class _LLMSecurityDashboardState extends State<LLMSecurityDashboard>
     return Container(
       padding: EdgeInsets.all(AppTheme.spacingS),
       decoration: BoxDecoration(
-        color: AppTheme.backgroundSecondary,
+        color: AppTheme.backgroundCard,
         borderRadius: BorderRadius.circular(6),
       ),
       child: Column(
@@ -466,15 +477,15 @@ class _LLMSecurityDashboardState extends State<LLMSecurityDashboard>
         children: [
           Text(
             label,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: AppTheme.textColorSecondary,
-            ),
+            style: Theme.of(
+              context,
+            ).textTheme.bodySmall?.copyWith(color: AppTheme.textColorLight),
           ),
           Text(
             value,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              fontWeight: FontWeight.w600,
-            ),
+            style: Theme.of(
+              context,
+            ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
           ),
         ],
       ),
@@ -497,9 +508,7 @@ class _LLMSecurityDashboardState extends State<LLMSecurityDashboard>
   void _exportAuditLog(LLMAuditService auditService) {
     // TODO: Implement audit log export
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Audit log export feature coming soon'),
-      ),
+      const SnackBar(content: Text('Audit log export feature coming soon')),
     );
   }
 
@@ -508,7 +517,9 @@ class _LLMSecurityDashboardState extends State<LLMSecurityDashboard>
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Clear Audit Log'),
-        content: const Text('Are you sure you want to clear all audit events? This action cannot be undone.'),
+        content: const Text(
+          'Are you sure you want to clear all audit events? This action cannot be undone.',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
