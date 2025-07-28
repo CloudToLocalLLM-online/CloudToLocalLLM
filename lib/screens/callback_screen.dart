@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
@@ -24,6 +25,34 @@ class _CallbackScreenState extends State<CallbackScreen> {
   Future<void> _processCallback() async {
     try {
       final authService = context.read<AuthService>();
+
+      // For desktop platforms, the callback route should not be used
+      // Desktop authentication is handled internally by the auth service
+      if (!kIsWeb) {
+        debugPrint(
+          '🔐 [Callback] Desktop platform detected - callback route not needed',
+        );
+        debugPrint(
+          '🔐 [Callback] Checking current authentication state and redirecting',
+        );
+
+        if (mounted) {
+          if (authService.isAuthenticated.value) {
+            debugPrint(
+              '🔐 [Callback] User already authenticated, redirecting to home',
+            );
+            context.go('/');
+          } else {
+            debugPrint(
+              '🔐 [Callback] User not authenticated, redirecting to login',
+            );
+            context.go('/login');
+          }
+        }
+        return;
+      }
+
+      // Web platform - process the callback normally
       final success = await authService.handleCallback();
 
       if (mounted) {

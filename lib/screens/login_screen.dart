@@ -24,6 +24,41 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _isLoading = false;
   DateTime? _lastLoginAttempt;
 
+  @override
+  void initState() {
+    super.initState();
+    // Listen for authentication state changes to handle desktop auth completion
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final authService = context.read<AuthService>();
+      authService.isAuthenticated.addListener(_onAuthStateChanged);
+    });
+  }
+
+  @override
+  void dispose() {
+    // Remove the listener to prevent memory leaks
+    try {
+      final authService = context.read<AuthService>();
+      authService.isAuthenticated.removeListener(_onAuthStateChanged);
+    } catch (e) {
+      // Ignore errors during disposal
+    }
+    super.dispose();
+  }
+
+  void _onAuthStateChanged() {
+    if (mounted) {
+      final authService = context.read<AuthService>();
+      if (authService.isAuthenticated.value) {
+        debugPrint('🔐 [Login] Auth state changed - user now authenticated');
+        if (!authService.isWeb) {
+          debugPrint('🔐 [Login] Desktop auth completed, redirecting to home');
+          context.go('/');
+        }
+      }
+    }
+  }
+
   Future<void> _handleLogin() async {
     // Prevent multiple rapid login attempts
     if (_isLoading) {
@@ -46,17 +81,35 @@ class _LoginScreenState extends State<LoginScreen> {
 
     try {
       final authService = context.read<AuthService>();
+      debugPrint(
+        '🔐 [Login] Platform info: ${authService.isWeb
+            ? "Web"
+            : authService.isMobile
+            ? "Mobile"
+            : "Desktop"}',
+      );
       debugPrint('🔐 [Login] Calling authService.login()');
       await authService.login();
 
       debugPrint(
         '🔐 [Login] Login call completed, checking authentication state',
       );
+      debugPrint(
+        '🔐 [Login] Authentication state: ${authService.isAuthenticated.value}',
+      );
+
       if (mounted && authService.isAuthenticated.value) {
         debugPrint('🔐 [Login] User authenticated, redirecting to home');
         context.go('/');
       } else {
         debugPrint('🔐 [Login] User not authenticated after login call');
+        // For desktop, the login might complete asynchronously
+        // Don't redirect immediately, let the auth state change handle it
+        if (!authService.isWeb) {
+          debugPrint(
+            '🔐 [Login] Desktop platform - waiting for auth state change',
+          );
+        }
       }
     } catch (e) {
       debugPrint('🔐 [Login] Login failed with error: $e');

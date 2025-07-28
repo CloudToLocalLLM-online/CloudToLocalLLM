@@ -278,9 +278,27 @@ class AppRouter {
         }
 
         // Allow access to login, callback, and loading pages
-        if (isLoggingIn || isCallback || isLoading) {
+        if (isLoggingIn || isLoading) {
           debugPrint('🔄 [Router] Allowing access to auth/loading page');
           return null;
+        }
+
+        // For callback route, handle platform-specific logic
+        if (isCallback) {
+          if (kIsWeb) {
+            debugPrint('🔄 [Router] Allowing access to callback page (web)');
+            return null;
+          } else {
+            // Desktop platforms should not use callback route
+            debugPrint(
+              '🔄 [Router] Desktop callback route accessed - redirecting based on auth state',
+            );
+            if (isAuthenticated) {
+              return '/';
+            } else {
+              return '/login';
+            }
+          }
         }
 
         // For app subdomain or desktop, require authentication

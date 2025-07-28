@@ -340,7 +340,18 @@ class AuthServiceDesktopWindows extends ChangeNotifier {
 
   /// Handle authentication callback (compatibility method)
   Future<bool> handleCallback() async {
-    // This method is handled automatically by the local server
+    debugPrint(
+      '🖥️ [AuthWindows] handleCallback called - this should not be used for desktop auth',
+    );
+    debugPrint(
+      '🖥️ [AuthWindows] Desktop authentication is handled internally by login() method',
+    );
+    debugPrint(
+      '🖥️ [AuthWindows] Current authentication state: ${_isAuthenticated.value}',
+    );
+
+    // For desktop, callback handling is done automatically by the local server
+    // This method should only return the current authentication state
     return _isAuthenticated.value;
   }
 
