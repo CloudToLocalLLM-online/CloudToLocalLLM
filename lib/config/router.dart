@@ -76,7 +76,7 @@ class AppRouter {
     return GoRouter(
       navigatorKey: navigatorKey,
       initialLocation: initialLocation,
-      debugLogDiagnostics: true,
+      debugLogDiagnostics: false,
       routes: [
         // Home route - platform-specific routing
         GoRoute(
@@ -115,18 +115,11 @@ class AppRouter {
           path: '/download',
           name: 'download',
           builder: (context, state) {
-            debugPrint(
-              '🔄 [Router] Building download route - kIsWeb: $kIsWeb, location: ${state.matchedLocation}',
-            );
             // Only available on web platform
             if (kIsWeb) {
-              debugPrint(
-                '🔄 [Router] Returning DownloadScreen for web platform',
-              );
               return const DownloadScreen();
             } else {
               // Redirect desktop users to main app
-              debugPrint('🔄 [Router] Redirecting desktop to HomeScreen');
               return const HomeScreen();
             }
           },
