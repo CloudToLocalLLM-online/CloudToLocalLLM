@@ -280,7 +280,7 @@ class AuthServiceMobile extends ChangeNotifier {
   }
 
   /// Handle deep link callback (for custom URL schemes)
-  Future<bool> handleCallback() async {
+  Future<bool> handleCallback({String? callbackUrl}) async {
     try {
       // For mobile, deep links are handled automatically by the Auth0 SDK
       // This method is here for interface compatibility

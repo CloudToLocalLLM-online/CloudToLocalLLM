@@ -140,7 +140,7 @@ class AuthServiceDesktop extends ChangeNotifier {
   }
 
   /// Handle Auth0 callback
-  Future<bool> handleCallback() async {
+  Future<bool> handleCallback({String? callbackUrl}) async {
     try {
       // Desktop apps using flutter_appauth handle callbacks automatically
       // This method is kept for compatibility but may not be needed

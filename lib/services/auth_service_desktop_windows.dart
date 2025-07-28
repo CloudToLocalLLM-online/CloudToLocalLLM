@@ -342,7 +342,7 @@ class AuthServiceDesktopWindows extends ChangeNotifier {
   }
 
   /// Handle authentication callback (compatibility method)
-  Future<bool> handleCallback() async {
+  Future<bool> handleCallback({String? callbackUrl}) async {
     debugPrint(
       '🖥️ [AuthWindows] handleCallback called - this should not be used for desktop auth',
     );

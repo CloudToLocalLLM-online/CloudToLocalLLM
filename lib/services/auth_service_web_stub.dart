@@ -35,7 +35,7 @@ class AuthServiceWeb extends ChangeNotifier {
   }
 
   /// Handle Auth0 callback
-  Future<bool> handleCallback() async {
+  Future<bool> handleCallback({String? callbackUrl}) async {
     throw UnsupportedError(
       'Web authentication service is only supported on web platform',
     );
