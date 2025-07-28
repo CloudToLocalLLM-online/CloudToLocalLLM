@@ -28,33 +28,13 @@ class WebDownloadPromptService extends ChangeNotifier {
 
   /// Initialize the service
   Future<void> initialize() async {
-    if (!kIsWeb) {
-      debugPrint('🌐 [WebDownloadPrompt] Skipping on non-web platform');
-      _isInitialized = true;
-      return;
-    }
-
-    try {
-      // Load stored prompt state
-      await _loadPromptState();
-
-      // Listen to authentication changes
-      _authService.addListener(_onAuthStateChanged);
-
-      // Listen to client detection changes if available
-      _clientDetectionService?.addListener(_onClientDetectionChanged);
-
-      // Check initial state
-      await _checkShouldShowPrompt();
-
-      _isInitialized = true;
-      debugPrint(
-        '🌐 [WebDownloadPrompt] Web download prompt service initialized',
-      );
-      notifyListeners();
-    } catch (e) {
-      debugPrint('🌐 [WebDownloadPrompt] Error initializing service: $e');
-    }
+    // Download prompt service is disabled - tunnel wizard provides download functionality
+    debugPrint(
+      '🌐 [WebDownloadPrompt] Service disabled - using tunnel wizard for downloads',
+    );
+    _isInitialized = true;
+    _shouldShowPrompt = false;
+    notifyListeners();
   }
 
   /// Load prompt state from storage
@@ -98,28 +78,12 @@ class WebDownloadPromptService extends ChangeNotifier {
 
   /// Handle authentication state changes
   void _onAuthStateChanged() {
-    debugPrint(
-      '🌐 [WebDownloadPrompt] Auth state changed: ${_authService.isAuthenticated.value}',
-    );
-
-    if (_authService.isAuthenticated.value) {
-      // User just logged in, check if they're a first-time user
-      _checkIfFirstTimeUser();
-      _checkShouldShowPrompt();
-    } else {
-      // User logged out, reset prompt state
-      _shouldShowPrompt = false;
-      _isFirstTimeUser = false;
-      notifyListeners();
-    }
+    // Service disabled - no action needed
   }
 
   /// Handle client detection changes
   void _onClientDetectionChanged() {
-    debugPrint(
-      '🌐 [WebDownloadPrompt] Client detection changed: ${_clientDetectionService?.hasConnectedClients}',
-    );
-    _checkShouldShowPrompt();
+    // Service disabled - no action needed
   }
 
   /// Check if the user is logging in for the first time
@@ -142,28 +106,13 @@ class WebDownloadPromptService extends ChangeNotifier {
 
   /// Check if the download prompt should be shown
   Future<void> _checkShouldShowPrompt() async {
-    // Only show on web platform
-    if (!kIsWeb || !_authService.isAuthenticated.value) {
-      _shouldShowPrompt = false;
-      notifyListeners();
-      return;
-    }
-
-    final hasConnectedClients =
-        _clientDetectionService?.hasConnectedClients ?? false;
-
-    // Show prompt only if:
-    // 1. User is first-time AND hasn't seen the prompt yet
-    // Don't show just because no clients are connected - let users use web interface
-    final shouldShow = _isFirstTimeUser && !_hasUserSeenPrompt;
-
-    if (_shouldShowPrompt != shouldShow) {
-      _shouldShowPrompt = shouldShow;
-      debugPrint(
-        '🌐 [WebDownloadPrompt] Should show prompt: $_shouldShowPrompt (firstTime: $_isFirstTimeUser, hasSeenPrompt: $_hasUserSeenPrompt, hasClients: $hasConnectedClients)',
-      );
-      notifyListeners();
-    }
+    // Download prompt is disabled - tunnel wizard has download links
+    // Users can access downloads through the tunnel wizard instead
+    _shouldShowPrompt = false;
+    debugPrint(
+      '🌐 [WebDownloadPrompt] Download prompt disabled - use tunnel wizard for downloads',
+    );
+    notifyListeners();
   }
 
   /// Mark the prompt as seen by the user
