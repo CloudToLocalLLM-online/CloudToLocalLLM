@@ -322,7 +322,7 @@ class AuthServiceWeb extends ChangeNotifier {
   }
 
   /// Handle Auth0 callback
-  Future<bool> handleCallback() async {
+  Future<bool> handleCallback({String? callbackUrl}) async {
     try {
       AuthLogger.info('🔐 Web callback handling started');
 
@@ -333,13 +333,15 @@ class AuthServiceWeb extends ChangeNotifier {
         return false;
       }
 
-      // Get current URL parameters
-      final uri = Uri.parse(web.window.location.href);
+      // Get current URL parameters - use provided URL or current window location
+      final urlToUse = callbackUrl ?? web.window.location.href;
+      final uri = Uri.parse(urlToUse);
       AuthLogger.info('🔐 Current URL', {
         'url': uri.toString(),
         'path': uri.path,
         'query': uri.query,
         'fragment': uri.fragment,
+        'source': callbackUrl != null ? 'provided' : 'window.location',
       });
 
       // Check for error parameters

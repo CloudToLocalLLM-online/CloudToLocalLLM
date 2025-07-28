@@ -80,7 +80,10 @@ class _CallbackScreenState extends State<CallbackScreen> {
       }
 
       // Web platform - process the callback normally
-      final success = await authService.handleCallback();
+      // Pass the current location to ensure auth service gets the callback parameters
+      final success = await authService.handleCallback(
+        callbackUrl: currentLocation,
+      );
 
       if (mounted) {
         if (success) {

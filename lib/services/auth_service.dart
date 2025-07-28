@@ -67,8 +67,8 @@ class AuthService extends ChangeNotifier {
   }
 
   /// Handle Auth0 callback using platform-specific implementation
-  Future<bool> handleCallback() async {
-    return await _platformService.handleCallback();
+  Future<bool> handleCallback({String? callbackUrl}) async {
+    return await _platformService.handleCallback(callbackUrl: callbackUrl);
   }
 
   /// Mobile-specific: Login with biometric authentication
