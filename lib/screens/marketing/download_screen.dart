@@ -18,7 +18,15 @@ class DownloadScreen extends StatelessWidget {
       );
     }
 
+    // Debug: Add a simple test to see if this route is being reached
+    debugPrint('🔄 [DownloadScreen] Building download screen');
+
     return Scaffold(
+      appBar: AppBar(
+        title: const Text('Download CloudToLocalLLM'),
+        backgroundColor: const Color(0xFF6e8efb),
+        foregroundColor: Colors.white,
+      ),
       body: SingleChildScrollView(
         child: Column(
           children: [
