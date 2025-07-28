@@ -22,7 +22,7 @@ dependencies:
 
   # HTTP and Web
   http: ^1.4.0
-  intl: ^0.19.0
+  intl: ^0.20.2
 
   # Streaming and WebSocket support
   web_socket_channel: ^3.0.3
@@ -69,8 +69,8 @@ dependencies:
 
   # Cryptography for end-to-end encryption
   cryptography: ^2.7.0
-  pointycastle: ^3.9.1
-  web: ^1.0.0
+  pointycastle: ^4.0.0
+  web: ^1.1.1
 
   # UUID generation
   uuid: ^4.5.1
@@ -84,11 +84,6 @@ dev_dependencies:
   flutter_lints: ^6.0.0
   flutter_test:
     sdk: flutter
-
-  # Streaming and integration testing
-  test: ^1.24.6
-  mockito: ^5.4.2
-  build_runner: ^2.4.9
   integration_test:
     sdk: flutter
 
