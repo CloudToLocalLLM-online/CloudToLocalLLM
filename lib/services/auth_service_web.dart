@@ -60,11 +60,15 @@ class AuthServiceWeb extends ChangeNotifier {
       AuthLogger.info('🔐 Checking authentication status');
 
       // Check if we're on the callback URL (web only)
+      // Don't auto-handle callback during initialization - let CallbackScreen handle it
       if (kIsWeb) {
         final currentUrl = web.window.location.href;
         if (currentUrl.contains('/callback')) {
-          AuthLogger.info('🔐 Detected callback URL during initialization');
-          await handleCallback();
+          AuthLogger.info(
+            '🔐 Detected callback URL during initialization - skipping auto-handle, letting CallbackScreen process it',
+          );
+          // Don't call handleCallback here - let the CallbackScreen handle it
+          // This prevents double processing of the callback
           return;
         }
       }
