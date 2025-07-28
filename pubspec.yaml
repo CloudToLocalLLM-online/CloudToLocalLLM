@@ -37,6 +37,10 @@ dependencies:
   # Connection monitoring
   connectivity_plus: ^6.1.4
 
+  # Web URL strategy
+  flutter_web_plugins:
+    sdk: flutter
+
 
 
   # App Information
