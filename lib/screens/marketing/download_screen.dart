@@ -11,12 +11,18 @@ class DownloadScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    debugPrint(
+      '🔄 [DownloadScreen] Building download screen - kIsWeb: $kIsWeb',
+    );
+
     // Only show on web platform
     if (!kIsWeb) {
       return const Scaffold(
         body: Center(child: Text('This page is only available on web')),
       );
     }
+
+    debugPrint('🔄 [DownloadScreen] Rendering download screen content');
 
     return Scaffold(
       body: SingleChildScrollView(
