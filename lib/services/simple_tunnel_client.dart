@@ -234,9 +234,9 @@ class SimpleTunnelClient extends ChangeNotifier {
       // Build WebSocket URL
       final wsUrl =
           '${AppConfig.apiBaseUrl.replaceFirst('https://', 'wss://')}/ws/tunnel';
-      final uri = Uri.parse(
-        wsUrl,
-      ).replace(queryParameters: {'token': accessToken});
+
+      // Build URI with token parameter - avoid using replace() which can add :0 port
+      final uri = Uri.parse('$wsUrl?token=${Uri.encodeComponent(accessToken)}');
 
       _logger.debug(
         'Connecting to WebSocket',
