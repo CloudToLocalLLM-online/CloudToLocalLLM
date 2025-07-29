@@ -426,7 +426,7 @@ app.all('/api/ollama/*', authenticateJWT, addTierInfo, async(req, res) => {
     const forwardHeaders = { ...req.headers };
     const headersToRemove = [
       'host', 'connection', 'upgrade', 'proxy-authenticate',
-      'proxy-authorization', 'te', 'trailers', 'transfer-encoding'
+      'proxy-authorization', 'te', 'trailers', 'transfer-encoding',
     ];
     headersToRemove.forEach(header => {
       delete forwardHeaders[header];
@@ -510,7 +510,7 @@ app.all('/api/ollama/*', authenticateJWT, addTierInfo, async(req, res) => {
       providerId: 'ollama',
       requestType: req.method,
       requestPath: req.path.replace('/api/ollama', ''),
-      requestSize: httpRequest?.body ? httpRequest.body.length : 0,
+      requestSize: req?.body ? req.body.length : 0,
       responseTime: duration,
       success: false,
       errorMessage: error.message,
@@ -1020,7 +1020,7 @@ async function initializeEnhancedTunnelSystem() {
     // Initialize authentication service
     authService = new AuthService({
       AUTH0_DOMAIN,
-      AUTH0_AUDIENCE
+      AUTH0_AUDIENCE,
     });
     await authService.initialize();
 
@@ -1030,7 +1030,7 @@ async function initializeEnhancedTunnelSystem() {
       AUTH0_AUDIENCE,
       maxConnections: 1000,
       heartbeatInterval: 30000,
-      compressionEnabled: true
+      compressionEnabled: true,
     });
 
     // Start tunnel server
@@ -1045,7 +1045,7 @@ async function initializeEnhancedTunnelSystem() {
   } catch (error) {
     logger.error('Failed to initialize enhanced tunnel system', {
       error: error.message,
-      stack: error.stack
+      stack: error.stack,
     });
     process.exit(1);
   }

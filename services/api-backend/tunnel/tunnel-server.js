@@ -19,7 +19,7 @@ import { TunnelMetrics } from './tunnel-metrics.js';
 export class TunnelServer extends EventEmitter {
   constructor(server, config) {
     super();
-    
+
     this.server = server;
     this.config = {
       maxConnections: 1000,
@@ -27,14 +27,14 @@ export class TunnelServer extends EventEmitter {
       connectionTimeout: 60000,
       messageTimeout: 30000,
       compressionEnabled: true,
-      ...config
+      ...config,
     };
-    
+
     this.logger = new TunnelLogger('tunnel-server');
     this.metrics = new TunnelMetrics();
     this.connections = new Map(); // userId -> WebSocket
     this.pendingRequests = new Map(); // correlationId -> { resolve, reject, timeout }
-    
+
     // JWKS client for JWT validation
     this.jwksClient = jwksClient({
       jwksUri: `https://${config.AUTH0_DOMAIN}/.well-known/jwks.json`,
@@ -42,9 +42,9 @@ export class TunnelServer extends EventEmitter {
       cacheMaxEntries: 5,
       cacheMaxAge: 600000, // 10 minutes
       rateLimit: true,
-      jwksRequestsPerMinute: 10
+      jwksRequestsPerMinute: 10,
     });
-    
+
     // WebSocket security validator
     this.securityValidator = createWebSocketSecurityValidator({
       enforceHttps: process.env.NODE_ENV === 'production',
@@ -55,16 +55,16 @@ export class TunnelServer extends EventEmitter {
         'https://app.cloudtolocalllm.online',
         'https://cloudtolocalllm.online',
         'https://docs.cloudtolocalllm.online',
-        ...(process.env.NODE_ENV !== 'production' ? ['http://localhost:3000', 'http://localhost:8080'] : [])
-      ]
+        ...(process.env.NODE_ENV !== 'production' ? ['http://localhost:3000', 'http://localhost:8080'] : []),
+      ],
     });
-    
+
     this.wss = null;
     this.heartbeatInterval = null;
-    
+
     this.setupEventHandlers();
   }
-  
+
   /**
    * Start the tunnel server
    */
@@ -73,24 +73,24 @@ export class TunnelServer extends EventEmitter {
       server: this.server,
       path: '/ws/tunnel',
       verifyClient: this.verifyClient.bind(this),
-      perMessageDeflate: this.config.compressionEnabled
+      perMessageDeflate: this.config.compressionEnabled,
     });
-    
+
     this.wss.on('connection', this.handleConnection.bind(this));
     this.wss.on('error', this.handleServerError.bind(this));
-    
+
     // Start heartbeat mechanism
     this.startHeartbeat();
-    
+
     this.logger.info('Tunnel server started', {
       path: '/ws/tunnel',
       maxConnections: this.config.maxConnections,
-      compression: this.config.compressionEnabled
+      compression: this.config.compressionEnabled,
     });
-    
+
     this.emit('started');
   }
-  
+
   /**
    * Stop the tunnel server
    */
@@ -99,21 +99,21 @@ export class TunnelServer extends EventEmitter {
       clearInterval(this.heartbeatInterval);
       this.heartbeatInterval = null;
     }
-    
+
     // Close all connections gracefully
     this.connections.forEach((ws, userId) => {
       this.closeConnection(userId, 1001, 'Server shutting down');
     });
-    
+
     if (this.wss) {
       this.wss.close();
       this.wss = null;
     }
-    
+
     this.logger.info('Tunnel server stopped');
     this.emit('stopped');
   }
-  
+
   /**
    * Verify client connection
    */
@@ -123,21 +123,21 @@ export class TunnelServer extends EventEmitter {
       if (!this.securityValidator(info)) {
         this.logger.warn('Connection rejected by security validator', {
           origin: info.origin,
-          ip: info.req.socket.remoteAddress
+          ip: info.req.socket.remoteAddress,
         });
         return false;
       }
-      
+
       // Check connection limit
       if (this.connections.size >= this.config.maxConnections) {
         this.logger.warn('Connection rejected: max connections reached', {
           current: this.connections.size,
-          max: this.config.maxConnections
+          max: this.config.maxConnections,
         });
         this.metrics.incrementCounter('connections_rejected_limit');
         return false;
       }
-      
+
       // Extract and validate JWT token
       const token = this.extractToken(info.req);
       if (!token) {
@@ -145,18 +145,18 @@ export class TunnelServer extends EventEmitter {
         this.metrics.incrementCounter('connections_rejected_auth');
         return false;
       }
-      
+
       const userId = await this.validateToken(token);
       if (!userId) {
         this.logger.warn('Connection rejected: invalid token');
         this.metrics.incrementCounter('connections_rejected_auth');
         return false;
       }
-      
+
       // Store user ID for connection handler
       info.req.userId = userId;
       info.req.token = token;
-      
+
       return true;
     } catch (error) {
       this.logger.error('Error verifying client', { error: error.message });
@@ -164,109 +164,111 @@ export class TunnelServer extends EventEmitter {
       return false;
     }
   }
-  
+
   /**
    * Handle new WebSocket connection
    */
   handleConnection(ws, req) {
     const userId = req.userId;
     const correlationId = this.logger.generateCorrelationId();
-    
+
     // Close existing connection for this user
     if (this.connections.has(userId)) {
       this.closeConnection(userId, 1000, 'New connection established');
     }
-    
+
     // Setup connection
     ws.userId = userId;
     ws.correlationId = correlationId;
     ws.isAlive = true;
     ws.connectedAt = Date.now();
-    
+
     this.connections.set(userId, ws);
     this.metrics.setGauge('active_connections', this.connections.size);
     this.metrics.incrementCounter('connections_established');
-    
+
     this.logger.info('Tunnel connection established', {
       userId,
       correlationId,
-      totalConnections: this.connections.size
+      totalConnections: this.connections.size,
     });
-    
+
     // Setup event handlers
     ws.on('message', (data) => this.handleMessage(ws, data));
     ws.on('close', (code, reason) => this.handleDisconnection(ws, code, reason));
     ws.on('error', (error) => this.handleConnectionError(ws, error));
-    ws.on('pong', () => { ws.isAlive = true; });
-    
+    ws.on('pong', () => {
+      ws.isAlive = true;
+    });
+
     // Send connection acknowledgment
     this.sendMessage(ws, {
       type: 'connection_ack',
       id: correlationId,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
-    
+
     this.emit('connection', { userId, correlationId });
   }
-  
+
   /**
    * Handle incoming WebSocket message
    */
   async handleMessage(ws, data) {
     const startTime = Date.now();
-    
+
     try {
       const message = MessageProtocol.deserialize(data);
-      
+
       this.logger.debug('Received message', {
         userId: ws.userId,
         type: message.type,
-        id: message.id
+        id: message.id,
       });
-      
+
       this.metrics.incrementCounter('messages_received');
-      
+
       switch (message.type) {
-        case MESSAGE_TYPES.HTTP_RESPONSE:
-          await this.handleHttpResponse(message);
-          break;
-          
-        case MESSAGE_TYPES.PONG:
-          // Pong is handled by the 'pong' event
-          break;
-          
-        case MESSAGE_TYPES.ERROR:
-          await this.handleErrorMessage(message);
-          break;
-          
-        default:
-          this.logger.warn('Unknown message type', {
-            userId: ws.userId,
-            type: message.type
-          });
-          this.metrics.incrementCounter('messages_unknown');
+      case MESSAGE_TYPES.HTTP_RESPONSE:
+        await this.handleHttpResponse(message);
+        break;
+
+      case MESSAGE_TYPES.PONG:
+        // Pong is handled by the 'pong' event
+        break;
+
+      case MESSAGE_TYPES.ERROR:
+        await this.handleErrorMessage(message);
+        break;
+
+      default:
+        this.logger.warn('Unknown message type', {
+          userId: ws.userId,
+          type: message.type,
+        });
+        this.metrics.incrementCounter('messages_unknown');
       }
-      
+
       const latency = Date.now() - startTime;
       this.metrics.recordHistogram('message_latency_seconds', latency / 1000);
-      
+
     } catch (error) {
       this.logger.error('Error handling message', {
         userId: ws.userId,
-        error: error.message
+        error: error.message,
       });
       this.metrics.incrementCounter('message_errors');
-      
+
       // Send error response
       this.sendMessage(ws, {
         type: MESSAGE_TYPES.ERROR,
         id: 'error',
         error: 'Message processing failed',
-        code: 500
+        code: 500,
       });
     }
   }
-  
+
   /**
    * Handle HTTP response from desktop client
    */
@@ -276,21 +278,21 @@ export class TunnelServer extends EventEmitter {
       this.logger.warn('Received response for unknown request', { id: message.id });
       return;
     }
-    
+
     // Clear timeout
     clearTimeout(pending.timeout);
     this.pendingRequests.delete(message.id);
-    
+
     // Resolve the pending promise
     pending.resolve({
       status: message.status,
       headers: message.headers,
-      body: message.body
+      body: message.body,
     });
-    
+
     this.metrics.incrementCounter('requests_completed');
   }
-  
+
   /**
    * Handle error message from desktop client
    */
@@ -300,17 +302,17 @@ export class TunnelServer extends EventEmitter {
       this.logger.warn('Received error for unknown request', { id: message.id });
       return;
     }
-    
+
     // Clear timeout
     clearTimeout(pending.timeout);
     this.pendingRequests.delete(message.id);
-    
+
     // Reject the pending promise
     pending.reject(new Error(message.error || 'Unknown error'));
-    
+
     this.metrics.incrementCounter('requests_failed');
   }
-  
+
   /**
    * Send HTTP request to desktop client
    */
@@ -319,9 +321,9 @@ export class TunnelServer extends EventEmitter {
     if (!ws || ws.readyState !== ws.OPEN) {
       throw new Error('User not connected');
     }
-    
+
     const message = MessageProtocol.createRequestMessage(httpRequest);
-    
+
     return new Promise((resolve, reject) => {
       // Set up timeout
       const timeout = setTimeout(() => {
@@ -329,16 +331,16 @@ export class TunnelServer extends EventEmitter {
         reject(new Error('Request timeout'));
         this.metrics.incrementCounter('requests_timeout');
       }, this.config.messageTimeout);
-      
+
       // Store pending request
       this.pendingRequests.set(message.id, { resolve, reject, timeout });
-      
+
       // Send message
       this.sendMessage(ws, message);
       this.metrics.incrementCounter('requests_sent');
     });
   }
-  
+
   /**
    * Send message to WebSocket
    */
@@ -348,40 +350,40 @@ export class TunnelServer extends EventEmitter {
       ws.send(data);
     }
   }
-  
+
   /**
    * Handle connection disconnection
    */
   handleDisconnection(ws, code, reason) {
     const userId = ws.userId;
-    
+
     if (userId && this.connections.has(userId)) {
       this.connections.delete(userId);
       this.metrics.setGauge('active_connections', this.connections.size);
       this.metrics.incrementCounter('connections_closed');
-      
+
       this.logger.info('Tunnel connection closed', {
         userId,
         code,
         reason: reason?.toString(),
-        duration: Date.now() - ws.connectedAt
+        duration: Date.now() - ws.connectedAt,
       });
-      
+
       this.emit('disconnection', { userId, code, reason });
     }
   }
-  
+
   /**
    * Handle connection error
    */
   handleConnectionError(ws, error) {
     this.logger.error('Connection error', {
       userId: ws.userId,
-      error: error.message
+      error: error.message,
     });
     this.metrics.incrementCounter('connection_errors');
   }
-  
+
   /**
    * Handle server error
    */
@@ -390,7 +392,7 @@ export class TunnelServer extends EventEmitter {
     this.metrics.incrementCounter('server_errors');
     this.emit('error', error);
   }
-  
+
   /**
    * Close connection for user
    */
@@ -400,7 +402,7 @@ export class TunnelServer extends EventEmitter {
       ws.close(code, reason);
     }
   }
-  
+
   /**
    * Extract JWT token from request
    */
@@ -409,12 +411,12 @@ export class TunnelServer extends EventEmitter {
     if (authHeader && authHeader.startsWith('Bearer ')) {
       return authHeader.substring(7);
     }
-    
+
     // Check query parameter as fallback
     const url = new URL(req.url, 'http://localhost');
     return url.searchParams.get('token');
   }
-  
+
   /**
    * Validate JWT token and extract user ID
    */
@@ -424,21 +426,21 @@ export class TunnelServer extends EventEmitter {
       if (!decoded || !decoded.header.kid) {
         throw new Error('Invalid token format');
       }
-      
+
       const key = await this.getSigningKey(decoded.header.kid);
       const verified = jwt.verify(token, key, {
         audience: this.config.AUTH0_AUDIENCE,
         issuer: `https://${this.config.AUTH0_DOMAIN}/`,
-        algorithms: ['RS256']
+        algorithms: ['RS256'],
       });
-      
+
       return verified.sub; // User ID
     } catch (error) {
       this.logger.warn('Token validation failed', { error: error.message });
       return null;
     }
   }
-  
+
   /**
    * Get signing key from JWKS
    */
@@ -453,7 +455,7 @@ export class TunnelServer extends EventEmitter {
       });
     });
   }
-  
+
   /**
    * Start heartbeat mechanism
    */
@@ -465,13 +467,13 @@ export class TunnelServer extends EventEmitter {
           this.closeConnection(userId, 1001, 'Heartbeat timeout');
           return;
         }
-        
+
         ws.isAlive = false;
         ws.ping();
       });
     }, this.config.heartbeatInterval);
   }
-  
+
   /**
    * Setup event handlers
    */
@@ -480,7 +482,7 @@ export class TunnelServer extends EventEmitter {
     process.on('SIGTERM', () => this.stop());
     process.on('SIGINT', () => this.stop());
   }
-  
+
   /**
    * Get server statistics
    */
@@ -491,7 +493,7 @@ export class TunnelServer extends EventEmitter {
       pendingRequests: this.pendingRequests.size,
       uptime: process.uptime(),
       memory: process.memoryUsage(),
-      metrics: this.metrics.getMetrics()
+      metrics: this.metrics.getMetrics(),
     };
   }
 }

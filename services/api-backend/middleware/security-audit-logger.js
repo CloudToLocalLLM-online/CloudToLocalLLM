@@ -5,7 +5,7 @@
 
 import winston from 'winston';
 import crypto from 'crypto';
-import { TunnelLogger, ERROR_CODES } from '../utils/logger.js';
+import { TunnelLogger } from '../utils/logger.js';
 
 /**
  * Security audit event types
@@ -132,7 +132,7 @@ export class SecurityAuditLogger {
         format: winston.format.combine(
           winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
           winston.format.colorize(),
-          winston.format.printf(({ timestamp, level, message, eventType, severity, userId, ip }) => {
+          winston.format.printf(({ timestamp, level, message, severity, userId, ip }) => {
             const userStr = userId ? ` [user:${userId}]` : '';
             const ipStr = ip ? ` [ip:${ip}]` : '';
             const severityStr = severity ? ` [${severity.toUpperCase()}]` : '';
@@ -551,9 +551,7 @@ export class SecurityAuditLogger {
    * @param {Object} context - Event context
    */
   checkAlertConditions(eventType, severity, context) {
-    const now = new Date();
     const ip = context.ip;
-    const userId = context.userId;
 
     // Check failed authentication attempts
     if (eventType === AUDIT_EVENT_TYPES.AUTH_FAILURE) {

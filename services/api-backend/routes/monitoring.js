@@ -163,7 +163,7 @@ export function createMonitoringRoutes(tunnelProxy, logger) {
    */
   router.get('/requests', (req, res) => {
     try {
-      const { timeframe = '1h', userId } = req.query;
+      const { timeframe = '1h' } = req.query;
       const stats = tunnelProxy.getStats();
       const performanceMetrics = tunnelProxy.getPerformanceMetrics();
 

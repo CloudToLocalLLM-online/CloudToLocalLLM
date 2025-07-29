@@ -48,7 +48,7 @@ export class AdminDataFlushService {
   /**
    * Validate confirmation token
    */
-  validateConfirmationToken(token, adminUserId, targetScope) {
+  validateConfirmationToken(token, _adminUserId, _targetScope) {
     // In production, store tokens in Redis or secure storage
     // For now, implement basic validation
     return token && token.length === 64; // SHA256 hex length

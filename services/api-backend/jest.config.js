@@ -4,20 +4,20 @@
 export default {
   // Test environment
   testEnvironment: 'node',
-  
+
   // Test file patterns
   testMatch: [
     '**/test/**/*.test.js',
-    '**/?(*.)+(spec|test).js'
+    '**/?(*.)+(spec|test).js',
   ],
-  
+
   // Files to ignore
   testPathIgnorePatterns: [
     '/node_modules/',
     '/build/',
-    '/dist/'
+    '/dist/',
   ],
-  
+
   // Coverage configuration
   collectCoverage: true,
   coverageDirectory: 'coverage',
@@ -26,19 +26,19 @@ export default {
     'lcov',
     'html',
     'json',
-    'cobertura'
+    'cobertura',
   ],
-  
+
   // Coverage thresholds
   coverageThreshold: {
     global: {
       branches: 70,
       functions: 70,
       lines: 70,
-      statements: 70
-    }
+      statements: 70,
+    },
   },
-  
+
   // Files to collect coverage from
   collectCoverageFrom: [
     '**/*.js',
@@ -46,22 +46,22 @@ export default {
     '!**/test/**',
     '!**/coverage/**',
     '!jest.config.js',
-    '!eslint.config.js'
+    '!eslint.config.js',
   ],
-  
+
   // Setup files
   setupFilesAfterEnv: ['<rootDir>/test/setup.js'],
-  
+
   // Module file extensions
   moduleFileExtensions: ['js', 'json'],
-  
+
   // Transform configuration (for ES modules)
   transform: {},
   extensionsToTreatAsEsm: ['.js'],
-  
+
   // Test timeout (increased for CI)
   testTimeout: 30000,
-  
+
   // Reporters for CI
   reporters: [
     'default',
@@ -71,31 +71,31 @@ export default {
       classNameTemplate: '{classname}',
       titleTemplate: '{title}',
       ancestorSeparator: ' › ',
-      usePathForSuiteName: true
-    }]
+      usePathForSuiteName: true,
+    }],
   ],
-  
+
   // Verbose output for CI
   verbose: process.env.CI === 'true',
-  
+
   // Bail on first test failure in CI
   bail: process.env.CI === 'true' ? 1 : 0,
-  
+
   // Force exit after tests complete
   forceExit: true,
-  
+
   // Clear mocks between tests
   clearMocks: true,
-  
+
   // Restore mocks after each test
   restoreMocks: true,
-  
+
   // Global setup/teardown
   globalSetup: '<rootDir>/test/global-setup.js',
   globalTeardown: '<rootDir>/test/global-teardown.js',
-  
+
   // Environment variables for testing
   testEnvironmentOptions: {
-    NODE_ENV: 'test'
-  }
+    NODE_ENV: 'test',
+  },
 };

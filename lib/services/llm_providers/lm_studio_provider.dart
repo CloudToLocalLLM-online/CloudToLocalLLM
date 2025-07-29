@@ -387,7 +387,7 @@ class LMStudioProvider extends BaseLLMProvider {
 
   @override
   Widget? getSettingsWidget() {
-    return null; // TODO: Implement LM Studio settings widget
+    return LMStudioSettingsWidget(provider: this);
   }
 
   // Helper methods
@@ -420,5 +420,232 @@ class LMStudioProvider extends BaseLLMProvider {
   void dispose() {
     _httpClient.close();
     super.dispose();
+  }
+}
+
+/// LM Studio Settings Widget
+///
+/// Provides configuration UI for LM Studio provider settings
+class LMStudioSettingsWidget extends StatefulWidget {
+  final LMStudioProvider provider;
+
+  const LMStudioSettingsWidget({super.key, required this.provider});
+
+  @override
+  State<LMStudioSettingsWidget> createState() => _LMStudioSettingsWidgetState();
+}
+
+class _LMStudioSettingsWidgetState extends State<LMStudioSettingsWidget> {
+  late TextEditingController _baseUrlController;
+  late TextEditingController _timeoutController;
+  bool _isTestingConnection = false;
+  String? _connectionTestResult;
+
+  @override
+  void initState() {
+    super.initState();
+    _baseUrlController = TextEditingController(
+      text: widget.provider._config.baseUrl,
+    );
+    _timeoutController = TextEditingController(
+      text: widget.provider._config.timeout.inSeconds.toString(),
+    );
+  }
+
+  @override
+  void dispose() {
+    _baseUrlController.dispose();
+    _timeoutController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'LM Studio Configuration',
+          style: Theme.of(
+            context,
+          ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 16),
+
+        // Base URL field
+        TextFormField(
+          controller: _baseUrlController,
+          decoration: const InputDecoration(
+            labelText: 'LM Studio API URL',
+            hintText: 'http://localhost:1234',
+            border: OutlineInputBorder(),
+            helperText:
+                'URL where LM Studio is running (usually localhost:1234)',
+          ),
+          onChanged: _onConfigurationChanged,
+        ),
+
+        const SizedBox(height: 16),
+
+        // Timeout field
+        TextFormField(
+          controller: _timeoutController,
+          decoration: const InputDecoration(
+            labelText: 'Request Timeout (seconds)',
+            hintText: '30',
+            border: OutlineInputBorder(),
+            helperText: 'Maximum time to wait for responses',
+          ),
+          keyboardType: TextInputType.number,
+          onChanged: _onConfigurationChanged,
+        ),
+
+        const SizedBox(height: 16),
+
+        // Connection test button
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton.icon(
+            onPressed: _isTestingConnection ? null : _testConnection,
+            icon: _isTestingConnection
+                ? const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.wifi_find),
+            label: Text(
+              _isTestingConnection ? 'Testing...' : 'Test Connection',
+            ),
+          ),
+        ),
+
+        // Connection test result
+        if (_connectionTestResult != null) ...[
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: _connectionTestResult!.startsWith('Success')
+                  ? Colors.green.withValues(alpha: 0.1)
+                  : Colors.red.withValues(alpha: 0.1),
+              border: Border.all(
+                color: _connectionTestResult!.startsWith('Success')
+                    ? Colors.green
+                    : Colors.red,
+              ),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  _connectionTestResult!.startsWith('Success')
+                      ? Icons.check_circle
+                      : Icons.error,
+                  color: _connectionTestResult!.startsWith('Success')
+                      ? Colors.green
+                      : Colors.red,
+                  size: 20,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    _connectionTestResult!,
+                    style: TextStyle(
+                      color: _connectionTestResult!.startsWith('Success')
+                          ? Colors.green[700]
+                          : Colors.red[700],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+
+        const SizedBox(height: 16),
+
+        // Help text
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Colors.blue.withValues(alpha: 0.1),
+            border: Border.all(color: Colors.blue.withValues(alpha: 0.3)),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(Icons.info, color: Colors.blue[700], size: 20),
+                  const SizedBox(width: 8),
+                  Text(
+                    'LM Studio Setup',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.blue[700],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                '1. Download and install LM Studio from lmstudio.ai\n'
+                '2. Load a model in LM Studio\n'
+                '3. Start the local server (usually on port 1234)\n'
+                '4. Use the default URL: http://localhost:1234',
+                style: TextStyle(fontSize: 13),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _onConfigurationChanged(String value) {
+    // Update configuration when fields change
+    final newConfig = LLMProviderConfig(
+      providerId: widget.provider.providerId,
+      baseUrl: _baseUrlController.text.trim(),
+      timeout: Duration(seconds: int.tryParse(_timeoutController.text) ?? 30),
+    );
+
+    widget.provider.updateConfiguration(newConfig.toJson());
+  }
+
+  Future<void> _testConnection() async {
+    setState(() {
+      _isTestingConnection = true;
+      _connectionTestResult = null;
+    });
+
+    try {
+      // Update configuration before testing
+      _onConfigurationChanged('');
+
+      // Test the connection
+      await widget.provider.initialize();
+
+      if (widget.provider.isAvailable) {
+        setState(() {
+          _connectionTestResult = 'Success: Connected to LM Studio';
+        });
+      } else {
+        setState(() {
+          _connectionTestResult =
+              'Failed: ${widget.provider.lastError ?? 'Unknown error'}';
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _connectionTestResult = 'Failed: $e';
+      });
+    } finally {
+      setState(() {
+        _isTestingConnection = false;
+      });
+    }
   }
 }

@@ -487,7 +487,7 @@ app.get('/api/admin/system/performance', authenticateJWT, requireAdmin, async(re
     const networkInterfaces = os.networkInterfaces();
 
     // Calculate CPU usage over time (simplified)
-    const cpuInfo = cpus.map((cpu, index) => ({
+    const cpuInfo = cpus.map((cpu) => ({
       model: cpu.model,
       speed: cpu.speed,
       times: cpu.times,

@@ -3,10 +3,8 @@
  * Implements certificate validation, connection security measures, and TLS/SSL enforcement
  */
 
-import https from 'https';
-import tls from 'tls';
 import crypto from 'crypto';
-import { TunnelLogger, ERROR_CODES, ErrorResponseBuilder } from '../utils/logger.js';
+import { TunnelLogger, ErrorResponseBuilder } from '../utils/logger.js';
 
 /**
  * Connection security configuration
@@ -480,7 +478,7 @@ export class ConnectionSecurityManager {
    * @param {Object} cert - Certificate
    * @returns {boolean} True if revoked
    */
-  isCertificateRevoked(cert) {
+  isCertificateRevoked(_cert) {
     // In a real implementation, this would check against:
     // - Certificate Revocation List (CRL)
     // - Online Certificate Status Protocol (OCSP)

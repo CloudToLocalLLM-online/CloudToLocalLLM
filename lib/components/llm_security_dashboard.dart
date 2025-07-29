@@ -1,5 +1,8 @@
+import 'dart:js_interop';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:web/web.dart' as web;
 
 import '../config/theme.dart';
 import '../services/llm_audit_service.dart';
@@ -506,9 +509,109 @@ class _LLMSecurityDashboardState extends State<LLMSecurityDashboard>
   }
 
   void _exportAuditLog(LLMAuditService auditService) {
-    // TODO: Implement audit log export
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Audit log export feature coming soon')),
+    try {
+      // Generate the audit log export data
+      final exportData = auditService.exportAuditLog();
+
+      // Create filename with timestamp
+      final timestamp = DateTime.now()
+          .toIso8601String()
+          .replaceAll(':', '-')
+          .split('.')[0];
+      final fileName = 'cloudtolocalllm_audit_log_$timestamp.json';
+
+      if (kIsWeb) {
+        // For web platform, use browser download
+        final blob = web.Blob(
+          [exportData.toJS].toJS,
+          web.BlobPropertyBag(type: 'application/json'),
+        );
+        final url = web.URL.createObjectURL(blob);
+
+        final anchor = web.HTMLAnchorElement()
+          ..href = url
+          ..download = fileName
+          ..style.display = 'none';
+
+        web.document.body?.appendChild(anchor);
+        anchor.click();
+        web.document.body?.removeChild(anchor);
+        web.URL.revokeObjectURL(url);
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Audit log exported: $fileName'),
+            backgroundColor: Colors.green,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      } else {
+        // For desktop platforms, we would use file_picker or similar
+        // For now, show the export data in a dialog for desktop
+        _showExportDataDialog(exportData, fileName);
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to export audit log: $e'),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 5),
+        ),
+      );
+    }
+  }
+
+  void _showExportDataDialog(String exportData, String fileName) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Export Data'),
+        content: SizedBox(
+          width: double.maxFinite,
+          height: 400,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'File: $fileName',
+                style: Theme.of(
+                  context,
+                ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'Copy the data below and save it to a file:',
+                style: TextStyle(color: Colors.grey),
+              ),
+              const SizedBox(height: 8),
+              Expanded(
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    border: Border.all(color: Colors.grey),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: SingleChildScrollView(
+                    child: SelectableText(
+                      exportData,
+                      style: const TextStyle(
+                        fontFamily: 'monospace',
+                        fontSize: 12,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
     );
   }
 

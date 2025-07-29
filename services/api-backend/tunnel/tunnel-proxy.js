@@ -7,7 +7,7 @@ import { WebSocket } from 'ws';
 import { v4 as uuidv4 } from 'uuid';
 import winston from 'winston';
 import { MessageProtocol, MESSAGE_TYPES } from './message-protocol.js';
-import { TunnelLogger, ERROR_CODES, ErrorResponseBuilder } from '../utils/logger.js';
+import { TunnelLogger, ERROR_CODES } from '../utils/logger.js';
 
 /**
  * @typedef {Object} TunnelConnection
@@ -125,13 +125,13 @@ export class TunnelProxy {
         this.logger.logConnection('replaced', connectionId, userId, {
           correlationId,
           previousConnectionId: Array.from(this.connections.entries())
-            .find(([id, conn]) => conn === existingConnection)?.[0],
+            .find(([_id, conn]) => conn === existingConnection)?.[0],
           reason: 'User reconnected with new connection',
         });
 
         // Clean up existing connection
         this.handleDisconnection(Array.from(this.connections.entries())
-          .find(([id, conn]) => conn === existingConnection)?.[0]);
+          .find(([_id, conn]) => conn === existingConnection)?.[0]);
       }
 
       const connection = {
@@ -344,7 +344,7 @@ export class TunnelProxy {
         this.trackLLMRequest(
           { path: pendingRequest.path, method: pendingRequest.method, body: pendingRequest.body },
           responseTime,
-          true
+          true,
         );
       }
 
@@ -835,7 +835,9 @@ export class TunnelProxy {
   trackLLMRequest(httpRequest, responseTime = null, success = true) {
     // Detect if this is an LLM request based on path
     const isLLMRequest = this.isLLMPath(httpRequest.path);
-    if (!isLLMRequest) return;
+    if (!isLLMRequest) {
+      return;
+    }
 
     this.metrics.llmRequests++;
 
@@ -867,7 +869,7 @@ export class TunnelProxy {
     const llmPaths = [
       '/api/chat', '/api/generate', '/api/embeddings',
       '/api/models', '/api/pull', '/api/push', '/api/delete',
-      '/api/show', '/api/copy', '/api/create'
+      '/api/show', '/api/copy', '/api/create',
     ];
     return llmPaths.some(llmPath => path.startsWith(llmPath));
   }
@@ -912,7 +914,7 @@ export class TunnelProxy {
    * Track provider usage based on request characteristics
    * @param {Object} httpRequest - HTTP request object
    */
-  trackProviderUsage(httpRequest) {
+  trackProviderUsage(_httpRequest) {
     // Default to Ollama since that's the primary target
     // This could be enhanced to detect other providers based on headers or request format
     this.metrics.providerStats.ollama++;

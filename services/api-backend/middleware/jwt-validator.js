@@ -496,7 +496,7 @@ export class JWTValidator {
     // Clean up validation attempts
     const cutoff = new Date(Date.now() - this.config.validationWindowMs);
     for (const [ip, tracker] of this.validationAttempts.entries()) {
-      const oldCount = tracker.attempts.length;
+
       tracker.attempts = tracker.attempts.filter(timestamp => timestamp > cutoff);
 
       if (tracker.attempts.length === 0) {

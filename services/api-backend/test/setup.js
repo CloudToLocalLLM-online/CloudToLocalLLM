@@ -1,7 +1,7 @@
 // Jest setup file for CloudToLocalLLM API Backend tests
 // Configures test environment and global mocks
 
-import { jest } from '@jest/globals';
+import { jest, afterEach } from '@jest/globals';
 
 // Set test environment variables
 process.env.NODE_ENV = 'test';
@@ -20,7 +20,7 @@ jest.mock('winston', () => ({
     error: jest.fn(),
     warn: jest.fn(),
     debug: jest.fn(),
-    log: jest.fn()
+    log: jest.fn(),
   })),
   format: {
     combine: jest.fn(),
@@ -28,12 +28,12 @@ jest.mock('winston', () => ({
     errors: jest.fn(),
     json: jest.fn(),
     colorize: jest.fn(),
-    simple: jest.fn()
+    simple: jest.fn(),
   },
   transports: {
     Console: jest.fn(),
-    File: jest.fn()
-  }
+    File: jest.fn(),
+  },
 }));
 
 // Mock Docker operations
@@ -43,8 +43,8 @@ jest.mock('dockerode', () => {
     createContainer: jest.fn().mockResolvedValue({
       start: jest.fn().mockResolvedValue(),
       stop: jest.fn().mockResolvedValue(),
-      remove: jest.fn().mockResolvedValue()
-    })
+      remove: jest.fn().mockResolvedValue(),
+    }),
   }));
 });
 
@@ -58,7 +58,7 @@ global.WebSocket = jest.fn().mockImplementation(() => ({
   CONNECTING: 0,
   OPEN: 1,
   CLOSING: 2,
-  CLOSED: 3
+  CLOSED: 3,
 }));
 
 // Global test utilities
@@ -70,9 +70,9 @@ global.testUtils = {
     params: {},
     query: {},
     user: null,
-    ...overrides
+    ...overrides,
   }),
-  
+
   // Create mock response object
   createMockRes: () => {
     const res = {
@@ -81,19 +81,19 @@ global.testUtils = {
       send: jest.fn().mockReturnThis(),
       end: jest.fn().mockReturnThis(),
       setHeader: jest.fn().mockReturnThis(),
-      locals: {}
+      locals: {},
     };
     return res;
   },
-  
+
   // Create mock next function
   createMockNext: () => jest.fn(),
-  
+
   // Wait for async operations
   waitFor: (ms) => new Promise(resolve => setTimeout(resolve, ms)),
-  
+
   // Generate test JWT token
-  generateTestJWT: () => 'test.jwt.token'
+  generateTestJWT: () => 'test.jwt.token',
 };
 
 // Console override for cleaner test output
@@ -103,7 +103,7 @@ global.console = {
   log: jest.fn(),
   info: jest.fn(),
   warn: jest.fn(),
-  error: originalConsole.error // Keep errors visible
+  error: originalConsole.error, // Keep errors visible
 };
 
 // Cleanup after each test

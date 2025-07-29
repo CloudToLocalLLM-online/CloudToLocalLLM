@@ -20,12 +20,12 @@ export class AuthService {
       JWT_SECRET: process.env.JWT_SECRET,
       SESSION_TIMEOUT: parseInt(process.env.SESSION_TIMEOUT) || 3600000, // 1 hour
       MAX_SESSIONS_PER_USER: parseInt(process.env.MAX_SESSIONS_PER_USER) || 5,
-      ...config
+      ...config,
     };
-    
+
     this.logger = new TunnelLogger('auth-service');
     this.db = new DatabaseMigrator();
-    
+
     // JWKS client for Auth0 public key retrieval
     this.jwksClient = jwksClient({
       jwksUri: `https://${this.config.AUTH0_DOMAIN}/.well-known/jwks.json`,
@@ -33,38 +33,40 @@ export class AuthService {
       cacheMaxEntries: 5,
       cacheMaxAge: 600000, // 10 minutes
       rateLimit: true,
-      jwksRequestsPerMinute: 10
+      jwksRequestsPerMinute: 10,
     });
-    
+
     this.initialized = false;
   }
-  
+
   /**
    * Initialize authentication service
    */
   async initialize() {
-    if (this.initialized) return;
-    
+    if (this.initialized) {
+      return;
+    }
+
     try {
       await this.db.initialize();
       this.initialized = true;
-      
+
       this.logger.info('Authentication service initialized', {
         domain: this.config.AUTH0_DOMAIN,
-        audience: this.config.AUTH0_AUDIENCE
+        audience: this.config.AUTH0_AUDIENCE,
       });
-      
+
       // Start session cleanup
       this.startSessionCleanup();
-      
+
     } catch (error) {
       this.logger.error('Failed to initialize authentication service', {
-        error: error.message
+        error: error.message,
       });
       throw error;
     }
   }
-  
+
   /**
    * Validate JWT token
    */
@@ -75,51 +77,51 @@ export class AuthService {
       if (!decoded || !decoded.header.kid) {
         throw new Error('Invalid token format');
       }
-      
+
       // Get signing key
       const key = await this.getSigningKey(decoded.header.kid);
-      
+
       // Verify token
       const verified = jwt.verify(token, key, {
         audience: this.config.AUTH0_AUDIENCE,
         issuer: `https://${this.config.AUTH0_DOMAIN}/`,
-        algorithms: ['RS256']
+        algorithms: ['RS256'],
       });
-      
+
       // Create or update session
       const session = await this.createOrUpdateSession(verified, token, req);
-      
+
       this.logger.info('Token validated successfully', {
         userId: verified.sub,
-        sessionId: session.id
+        sessionId: session.id,
       });
-      
+
       return {
         valid: true,
         payload: verified,
-        session: session
+        session: session,
       };
-      
+
     } catch (error) {
       this.logger.warn('Token validation failed', {
         error: error.message,
-        ip: req.ip
+        ip: req.ip,
       });
-      
+
       // Log security event
       await this.logSecurityEvent('token_validation_failure', {
         error: error.message,
         ip: req.ip,
-        userAgent: req.headers?.['user-agent']
+        userAgent: req.headers?.['user-agent'],
       });
-      
+
       return {
         valid: false,
-        error: error.message
+        error: error.message,
       };
     }
   }
-  
+
   /**
    * Get signing key from JWKS
    */
@@ -134,7 +136,7 @@ export class AuthService {
       });
     });
   }
-  
+
   /**
    * Create or update user session
    */
@@ -144,62 +146,62 @@ export class AuthService {
     const expiresAt = new Date(tokenPayload.exp * 1000);
     const ip = req.ip || req.socket?.remoteAddress;
     const userAgent = req.headers?.['user-agent'];
-    
+
     try {
       // Check for existing session with same token
       const existingSession = await this.db.pool.query(
         'SELECT * FROM user_sessions WHERE user_id = $1 AND jwt_token_hash = $2',
-        [userId, tokenHash]
+        [userId, tokenHash],
       );
-      
+
       if (existingSession.rows.length > 0) {
         // Update existing session
         const session = existingSession.rows[0];
         await this.db.pool.query(
           'UPDATE user_sessions SET last_activity = CURRENT_TIMESTAMP WHERE id = $1',
-          [session.id]
+          [session.id],
         );
-        
+
         return session;
       }
-      
+
       // Clean up old sessions for user
       await this.cleanupUserSessions(userId);
-      
+
       // Create new session
       const result = await this.db.pool.query(
         `INSERT INTO user_sessions (user_id, jwt_token_hash, expires_at, ip_address, user_agent)
          VALUES ($1, $2, $3, $4, $5) RETURNING *`,
-        [userId, tokenHash, expiresAt, ip, userAgent]
+        [userId, tokenHash, expiresAt, ip, userAgent],
       );
-      
+
       const session = result.rows[0];
-      
+
       // Log session creation
       await this.logAuditEvent('session_created', 'authentication', {
         userId,
         sessionId: session.id,
         ip,
-        userAgent
+        userAgent,
       });
-      
+
       this.logger.info('Session created', {
         userId,
         sessionId: session.id,
-        expiresAt
+        expiresAt,
       });
-      
+
       return session;
-      
+
     } catch (error) {
       this.logger.error('Failed to create/update session', {
         userId,
-        error: error.message
+        error: error.message,
       });
       throw error;
     }
   }
-  
+
   /**
    * Get session by ID
    */
@@ -208,19 +210,19 @@ export class AuthService {
       const result = await this.db.pool.query(
         `SELECT * FROM user_sessions 
          WHERE id = $1 AND is_active = true AND expires_at > CURRENT_TIMESTAMP`,
-        [sessionId]
+        [sessionId],
       );
-      
+
       return result.rows[0] || null;
     } catch (error) {
       this.logger.error('Failed to get session', {
         sessionId,
-        error: error.message
+        error: error.message,
       });
       return null;
     }
   }
-  
+
   /**
    * Invalidate session
    */
@@ -228,38 +230,38 @@ export class AuthService {
     try {
       const result = await this.db.pool.query(
         'UPDATE user_sessions SET is_active = false WHERE id = $1 RETURNING user_id',
-        [sessionId]
+        [sessionId],
       );
-      
+
       if (result.rows.length > 0) {
         const userId = result.rows[0].user_id;
-        
+
         // Log session invalidation
         await this.logAuditEvent('session_invalidated', 'authentication', {
           userId,
           sessionId,
-          reason
+          reason,
         });
-        
+
         this.logger.info('Session invalidated', {
           userId,
           sessionId,
-          reason
+          reason,
         });
-        
+
         return true;
       }
-      
+
       return false;
     } catch (error) {
       this.logger.error('Failed to invalidate session', {
         sessionId,
-        error: error.message
+        error: error.message,
       });
       return false;
     }
   }
-  
+
   /**
    * Clean up old sessions for user
    */
@@ -268,15 +270,15 @@ export class AuthService {
       // Get active sessions count
       const countResult = await this.db.pool.query(
         'SELECT COUNT(*) as count FROM user_sessions WHERE user_id = $1 AND is_active = true',
-        [userId]
+        [userId],
       );
-      
+
       const activeCount = parseInt(countResult.rows[0].count);
-      
+
       if (activeCount >= this.config.MAX_SESSIONS_PER_USER) {
         // Remove oldest sessions
         const sessionsToRemove = activeCount - this.config.MAX_SESSIONS_PER_USER + 1;
-        
+
         await this.db.pool.query(
           `UPDATE user_sessions 
            SET is_active = false 
@@ -286,57 +288,57 @@ export class AuthService {
              ORDER BY last_activity ASC 
              LIMIT $2
            )`,
-          [userId, sessionsToRemove]
+          [userId, sessionsToRemove],
         );
-        
+
         this.logger.info('Cleaned up old sessions', {
           userId,
-          removedSessions: sessionsToRemove
+          removedSessions: sessionsToRemove,
         });
       }
     } catch (error) {
       this.logger.error('Failed to cleanup user sessions', {
         userId,
-        error: error.message
+        error: error.message,
       });
     }
   }
-  
+
   /**
    * Check user permissions
    */
   async checkPermissions(userId, resource, action) {
     // For now, implement basic permission checking
     // This can be extended with more sophisticated RBAC
-    
+
     try {
       // Get user roles from token or database
       // For MVP, all authenticated users have basic permissions
       const allowedActions = ['connect', 'send_request', 'receive_response'];
-      
+
       if (allowedActions.includes(action)) {
         return true;
       }
-      
+
       // Log permission denial
       await this.logSecurityEvent('permission_denied', {
         userId,
         resource,
-        action
+        action,
       });
-      
+
       return false;
     } catch (error) {
       this.logger.error('Permission check failed', {
         userId,
         resource,
         action,
-        error: error.message
+        error: error.message,
       });
       return false;
     }
   }
-  
+
   /**
    * Log audit event
    */
@@ -352,17 +354,17 @@ export class AuthService {
           JSON.stringify(metadata),
           metadata.userId || null,
           metadata.ip || null,
-          metadata.userAgent || null
-        ]
+          metadata.userAgent || null,
+        ],
       );
     } catch (error) {
       this.logger.error('Failed to log audit event', {
         eventType,
-        error: error.message
+        error: error.message,
       });
     }
   }
-  
+
   /**
    * Log security event
    */
@@ -376,35 +378,35 @@ export class AuthService {
           metadata.ip || null,
           metadata.userAgent || null,
           JSON.stringify(metadata),
-          metadata.userId || null
-        ]
+          metadata.userId || null,
+        ],
       );
     } catch (error) {
       this.logger.error('Failed to log security event', {
         eventType,
-        error: error.message
+        error: error.message,
       });
     }
   }
-  
+
   /**
    * Hash token for storage
    */
   hashToken(token) {
     return crypto.createHash('sha256').update(token).digest('hex');
   }
-  
+
   /**
    * Start periodic session cleanup
    */
   startSessionCleanup() {
     // Clean up expired sessions every 15 minutes
-    setInterval(async () => {
+    setInterval(async() => {
       try {
         const result = await this.db.pool.query(
-          'SELECT cleanup_expired_sessions() as deleted_count'
+          'SELECT cleanup_expired_sessions() as deleted_count',
         );
-        
+
         const deletedCount = result.rows[0].deleted_count;
         if (deletedCount > 0) {
           this.logger.info('Cleaned up expired sessions', { deletedCount });
@@ -414,7 +416,7 @@ export class AuthService {
       }
     }, 15 * 60 * 1000); // 15 minutes
   }
-  
+
   /**
    * Get authentication statistics
    */
@@ -428,14 +430,14 @@ export class AuthService {
           (SELECT COUNT(*) FROM audit_logs WHERE event_category = 'authentication' AND timestamp > CURRENT_TIMESTAMP - INTERVAL '24 hours') as auth_events_24h,
           (SELECT COUNT(*) FROM security_events WHERE detected_at > CURRENT_TIMESTAMP - INTERVAL '24 hours') as security_events_24h
       `);
-      
+
       return stats.rows[0];
     } catch (error) {
       this.logger.error('Failed to get auth stats', { error: error.message });
       return {};
     }
   }
-  
+
   /**
    * Close authentication service
    */

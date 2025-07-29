@@ -12,15 +12,15 @@ import { EventEmitter } from 'events';
 export class TunnelMetrics extends EventEmitter {
   constructor() {
     super();
-    
+
     this.counters = new Map();
     this.gauges = new Map();
     this.histograms = new Map();
     this.startTime = Date.now();
-    
+
     this.initializeMetrics();
   }
-  
+
   /**
    * Initialize default metrics
    */
@@ -32,57 +32,57 @@ export class TunnelMetrics extends EventEmitter {
     this.counters.set('connections_rejected_auth', 0);
     this.counters.set('connections_rejected_error', 0);
     this.counters.set('connection_errors', 0);
-    
+
     // Message metrics
     this.counters.set('messages_received', 0);
     this.counters.set('messages_sent', 0);
     this.counters.set('messages_unknown', 0);
     this.counters.set('message_errors', 0);
-    
+
     // Request metrics
     this.counters.set('requests_sent', 0);
     this.counters.set('requests_completed', 0);
     this.counters.set('requests_failed', 0);
     this.counters.set('requests_timeout', 0);
-    
+
     // Security metrics
     this.counters.set('auth_attempts_total', 0);
     this.counters.set('auth_failures', 0);
     this.counters.set('security_events', 0);
     this.counters.set('rate_limit_violations', 0);
-    
+
     // Server metrics
     this.counters.set('server_errors', 0);
-    
+
     // Gauges
     this.gauges.set('active_connections', 0);
     this.gauges.set('pending_requests', 0);
     this.gauges.set('memory_usage_bytes', 0);
     this.gauges.set('cpu_usage_percent', 0);
-    
+
     // Histograms (store buckets and counts)
     this.histograms.set('message_latency_seconds', {
       buckets: [0.001, 0.005, 0.01, 0.05, 0.1, 0.5, 1, 5],
       counts: new Array(8).fill(0),
       sum: 0,
-      count: 0
+      count: 0,
     });
-    
+
     this.histograms.set('request_duration_seconds', {
       buckets: [0.1, 0.5, 1, 2, 5, 10, 30],
       counts: new Array(7).fill(0),
       sum: 0,
-      count: 0
+      count: 0,
     });
-    
+
     this.histograms.set('connection_duration_seconds', {
       buckets: [60, 300, 900, 1800, 3600, 7200, 14400],
       counts: new Array(7).fill(0),
       sum: 0,
-      count: 0
+      count: 0,
     });
   }
-  
+
   /**
    * Increment a counter metric
    */
@@ -90,45 +90,45 @@ export class TunnelMetrics extends EventEmitter {
     const key = this.getMetricKey(name, labels);
     const current = this.counters.get(key) || 0;
     this.counters.set(key, current + value);
-    
+
     this.emit('counter_updated', { name, value, labels, total: current + value });
   }
-  
+
   /**
    * Set a gauge metric
    */
   setGauge(name, value, labels = {}) {
     const key = this.getMetricKey(name, labels);
     this.gauges.set(key, value);
-    
+
     this.emit('gauge_updated', { name, value, labels });
   }
-  
+
   /**
    * Record a histogram observation
    */
   recordHistogram(name, value, labels = {}) {
     const key = this.getMetricKey(name, labels);
     const histogram = this.histograms.get(key);
-    
+
     if (!histogram) {
       throw new Error(`Histogram ${name} not found`);
     }
-    
+
     // Update sum and count
     histogram.sum += value;
     histogram.count += 1;
-    
+
     // Update bucket counts
     for (let i = 0; i < histogram.buckets.length; i++) {
       if (value <= histogram.buckets[i]) {
         histogram.counts[i] += 1;
       }
     }
-    
+
     this.emit('histogram_updated', { name, value, labels });
   }
-  
+
   /**
    * Get metric key with labels
    */
@@ -136,30 +136,30 @@ export class TunnelMetrics extends EventEmitter {
     if (Object.keys(labels).length === 0) {
       return name;
     }
-    
+
     const labelString = Object.entries(labels)
       .sort(([a], [b]) => a.localeCompare(b))
       .map(([key, value]) => `${key}="${value}"`)
       .join(',');
-    
+
     return `${name}{${labelString}}`;
   }
-  
+
   /**
    * Get all metrics in Prometheus format
    */
   getPrometheusMetrics() {
     const lines = [];
-    
+
     // Add metadata
     lines.push('# HELP tunnel_info Tunnel server information');
     lines.push('# TYPE tunnel_info gauge');
-    lines.push(`tunnel_info{version="1.0.0"} 1`);
-    
+    lines.push('tunnel_info{version="1.0.0"} 1');
+
     lines.push('# HELP tunnel_uptime_seconds Tunnel server uptime in seconds');
     lines.push('# TYPE tunnel_uptime_seconds gauge');
     lines.push(`tunnel_uptime_seconds ${(Date.now() - this.startTime) / 1000}`);
-    
+
     // Counters
     for (const [key, value] of this.counters) {
       const metricName = `tunnel_${key}`;
@@ -167,7 +167,7 @@ export class TunnelMetrics extends EventEmitter {
       lines.push(`# TYPE ${metricName} counter`);
       lines.push(`${metricName} ${value}`);
     }
-    
+
     // Gauges
     for (const [key, value] of this.gauges) {
       const metricName = `tunnel_${key}`;
@@ -175,27 +175,27 @@ export class TunnelMetrics extends EventEmitter {
       lines.push(`# TYPE ${metricName} gauge`);
       lines.push(`${metricName} ${value}`);
     }
-    
+
     // Histograms
     for (const [key, histogram] of this.histograms) {
       const metricName = `tunnel_${key}`;
       lines.push(`# HELP ${metricName} ${this.getMetricHelp(key)}`);
       lines.push(`# TYPE ${metricName} histogram`);
-      
+
       // Bucket counts
       for (let i = 0; i < histogram.buckets.length; i++) {
         lines.push(`${metricName}_bucket{le="${histogram.buckets[i]}"} ${histogram.counts[i]}`);
       }
       lines.push(`${metricName}_bucket{le="+Inf"} ${histogram.count}`);
-      
+
       // Sum and count
       lines.push(`${metricName}_sum ${histogram.sum}`);
       lines.push(`${metricName}_count ${histogram.count}`);
     }
-    
+
     return lines.join('\n');
   }
-  
+
   /**
    * Get metric help text
    */
@@ -226,12 +226,12 @@ export class TunnelMetrics extends EventEmitter {
       cpu_usage_percent: 'Current CPU usage percentage',
       message_latency_seconds: 'Message processing latency in seconds',
       request_duration_seconds: 'HTTP request duration in seconds',
-      connection_duration_seconds: 'Connection duration in seconds'
+      connection_duration_seconds: 'Connection duration in seconds',
     };
-    
+
     return helpTexts[metricName] || 'No description available';
   }
-  
+
   /**
    * Get metrics summary
    */
@@ -240,16 +240,16 @@ export class TunnelMetrics extends EventEmitter {
       counters: Object.fromEntries(this.counters),
       gauges: Object.fromEntries(this.gauges),
       histograms: this.getHistogramSummary(),
-      uptime: (Date.now() - this.startTime) / 1000
+      uptime: (Date.now() - this.startTime) / 1000,
     };
   }
-  
+
   /**
    * Get histogram summary
    */
   getHistogramSummary() {
     const summary = {};
-    
+
     for (const [name, histogram] of this.histograms) {
       summary[name] = {
         count: histogram.count,
@@ -257,14 +257,14 @@ export class TunnelMetrics extends EventEmitter {
         average: histogram.count > 0 ? histogram.sum / histogram.count : 0,
         buckets: histogram.buckets.map((bucket, i) => ({
           le: bucket,
-          count: histogram.counts[i]
-        }))
+          count: histogram.counts[i],
+        })),
       };
     }
-    
+
     return summary;
   }
-  
+
   /**
    * Calculate percentiles for histogram
    */
@@ -273,20 +273,20 @@ export class TunnelMetrics extends EventEmitter {
     if (!histogram || histogram.count === 0) {
       return 0;
     }
-    
+
     const targetCount = Math.ceil((percentile / 100) * histogram.count);
     let cumulativeCount = 0;
-    
+
     for (let i = 0; i < histogram.buckets.length; i++) {
       cumulativeCount += histogram.counts[i];
       if (cumulativeCount >= targetCount) {
         return histogram.buckets[i];
       }
     }
-    
+
     return histogram.buckets[histogram.buckets.length - 1];
   }
-  
+
   /**
    * Reset all metrics
    */
@@ -296,22 +296,22 @@ export class TunnelMetrics extends EventEmitter {
     this.histograms.clear();
     this.startTime = Date.now();
     this.initializeMetrics();
-    
+
     this.emit('metrics_reset');
   }
-  
+
   /**
    * Update system metrics
    */
   updateSystemMetrics() {
     const memUsage = process.memoryUsage();
     this.setGauge('memory_usage_bytes', memUsage.heapUsed);
-    
+
     // CPU usage would require additional monitoring
     // For now, we'll set it to 0 as a placeholder
     this.setGauge('cpu_usage_percent', 0);
   }
-  
+
   /**
    * Start periodic system metrics collection
    */
@@ -320,7 +320,7 @@ export class TunnelMetrics extends EventEmitter {
       this.updateSystemMetrics();
     }, interval);
   }
-  
+
   /**
    * Stop periodic system metrics collection
    */
