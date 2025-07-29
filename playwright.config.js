@@ -143,6 +143,23 @@ if (process.env.CI) {
   module.exports.use.headless = true;
   module.exports.workers = 1;
   module.exports.retries = 3;
+
+  // CI-specific reporter configuration
+  module.exports.reporter = [
+    ['html', { outputFolder: 'test-results/html-report', open: 'never' }],
+    ['json', { outputFile: 'test-results/test-results.json' }],
+    ['junit', { outputFile: 'test-results/junit.xml' }],
+    ['github'],
+    ['list']
+  ];
+
+  // Reduce timeout for CI
+  module.exports.timeout = 45000;
+  module.exports.expect.timeout = 8000;
+
+  // Fail fast in CI
+  module.exports.maxFailures = 5;
+
 } else {
   // Local development settings
   module.exports.use.headless = false;

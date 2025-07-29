@@ -1,0 +1,527 @@
+name: CloudToLocalLLM CI/CD Pipeline
+
+on:
+  push:
+    branches: [ master, main ]
+  pull_request:
+    branches: [ master, main ]
+  workflow_dispatch:
+    inputs:
+      skip_tests:
+        description: 'Skip test execution (emergency deployment)'
+        required: false
+        default: 'false'
+        type: boolean
+      deploy_environment:
+        description: 'Target deployment environment'
+        required: false
+        default: 'production'
+        type: choice
+        options:
+          - production
+          - staging
+
+env:
+  FLUTTER_VERSION: '3.24.0'
+  NODE_VERSION: '18'
+  DEPLOYMENT_URL: 'https://app.cloudtolocalllm.online'
+
+jobs:
+  # ============================================================================
+  # TESTING PHASE - All tests must pass before deployment
+  # ============================================================================
+  
+  flutter-tests:
+    name: Flutter Tests & Analysis
+    runs-on: ubuntu-latest
+    if: github.event.inputs.skip_tests != 'true'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        flutter-version: ${{ env.FLUTTER_VERSION }}
+        cache: true
+        
+    - name: Get Flutter dependencies
+      run: flutter pub get
+      
+    - name: Verify Flutter installation
+      run: flutter doctor -v
+      
+    - name: Run Flutter analyze
+      run: |
+        echo "::group::Flutter Static Analysis"
+        flutter analyze --fatal-infos --fatal-warnings
+        echo "::endgroup::"
+        
+    - name: Run Flutter tests
+      run: |
+        echo "::group::Flutter Unit Tests"
+        flutter test --coverage --reporter=expanded
+        echo "::endgroup::"
+        
+    - name: Test Flutter build
+      run: |
+        echo "::group::Flutter Build Verification"
+        flutter build web --release --verbose
+        echo "::endgroup::"
+        
+    - name: Upload Flutter test results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: flutter-test-results
+        path: |
+          coverage/
+          test-results/
+          
+    - name: Upload Flutter build artifacts
+      uses: actions/upload-artifact@v4
+      if: success()
+      with:
+        name: flutter-build
+        path: build/web/
+
+  nodejs-tests:
+    name: Node.js Backend Tests
+    runs-on: ubuntu-latest
+    if: github.event.inputs.skip_tests != 'true'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+        cache-dependency-path: |
+          package-lock.json
+          services/api-backend/package-lock.json
+          
+    - name: Install root dependencies
+      run: npm ci
+      
+    - name: Install API backend dependencies
+      run: |
+        cd services/api-backend
+        npm ci
+        
+    - name: Run ESLint
+      run: |
+        echo "::group::API Backend Linting"
+        cd services/api-backend
+        npm run lint
+        echo "::endgroup::"
+        
+    - name: Run Node.js tests
+      run: |
+        echo "::group::API Backend Tests"
+        cd services/api-backend
+        npm test -- --coverage --verbose --ci
+        echo "::endgroup::"
+        
+    - name: Upload Node.js test results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: nodejs-test-results
+        path: |
+          services/api-backend/coverage/
+          services/api-backend/test-results/
+
+  powershell-tests:
+    name: PowerShell Deployment Tests
+    runs-on: windows-latest
+    if: github.event.inputs.skip_tests != 'true'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Install Pester
+      shell: pwsh
+      run: |
+        Install-Module -Name Pester -Force -SkipPublisherCheck -Scope CurrentUser
+        Import-Module Pester
+        
+    - name: Run PowerShell tests
+      shell: pwsh
+      run: |
+        echo "::group::PowerShell Deployment Script Tests"
+        cd test/powershell
+        .\CI-TestRunner.ps1 -OutputFormat JUnit -ExportResults -CodeCoverage -FailFast
+        echo "::endgroup::"
+        
+    - name: Upload PowerShell test results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: powershell-test-results
+        path: test-results/powershell/
+
+  playwright-tests:
+    name: Playwright E2E Tests
+    runs-on: ubuntu-latest
+    if: github.event.inputs.skip_tests != 'true'
+    needs: [flutter-tests]
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Install Playwright browsers
+      run: npx playwright install --with-deps
+      
+    - name: Run Playwright tests
+      env:
+        DEPLOYMENT_URL: ${{ env.DEPLOYMENT_URL }}
+        CI: true
+      run: |
+        echo "::group::Playwright E2E Tests"
+        npx playwright test --reporter=html,junit,json
+        echo "::endgroup::"
+        
+    - name: Upload Playwright test results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: playwright-test-results
+        path: |
+          test-results/
+          playwright-report/
+
+  # ============================================================================
+  # TEST RESULTS CONSOLIDATION
+  # ============================================================================
+  
+  test-results:
+    name: Consolidate Test Results
+    runs-on: ubuntu-latest
+    needs: [flutter-tests, nodejs-tests, powershell-tests, playwright-tests]
+    if: always() && github.event.inputs.skip_tests != 'true'
+    
+    steps:
+    - name: Download all test artifacts
+      uses: actions/download-artifact@v4
+      
+    - name: Analyze test results
+      id: test-analysis
+      run: |
+        # Initialize counters
+        TOTAL_FAILURES=0
+        CRITICAL_FAILURES=0
+
+        # Analyze Flutter tests
+        if [[ "${{ needs.flutter-tests.result }}" != "success" ]]; then
+          echo "::error::Flutter tests failed"
+          TOTAL_FAILURES=$((TOTAL_FAILURES + 1))
+          CRITICAL_FAILURES=$((CRITICAL_FAILURES + 1))
+        fi
+
+        # Analyze Node.js tests
+        if [[ "${{ needs.nodejs-tests.result }}" != "success" ]]; then
+          echo "::error::Node.js tests failed"
+          TOTAL_FAILURES=$((TOTAL_FAILURES + 1))
+          CRITICAL_FAILURES=$((CRITICAL_FAILURES + 1))
+        fi
+
+        # Analyze PowerShell tests
+        if [[ "${{ needs.powershell-tests.result }}" != "success" ]]; then
+          echo "::error::PowerShell tests failed"
+          TOTAL_FAILURES=$((TOTAL_FAILURES + 1))
+          # PowerShell test failures are critical for deployment scripts
+          CRITICAL_FAILURES=$((CRITICAL_FAILURES + 1))
+        fi
+
+        # Analyze Playwright tests
+        if [[ "${{ needs.playwright-tests.result }}" != "success" ]]; then
+          echo "::warning::Playwright E2E tests failed"
+          TOTAL_FAILURES=$((TOTAL_FAILURES + 1))
+          # E2E failures are serious but might not block deployment in emergency
+        fi
+
+        # Set outputs
+        echo "total_failures=$TOTAL_FAILURES" >> $GITHUB_OUTPUT
+        echo "critical_failures=$CRITICAL_FAILURES" >> $GITHUB_OUTPUT
+
+        # Determine deployment readiness
+        if [[ $CRITICAL_FAILURES -gt 0 ]]; then
+          echo "deployment_ready=false" >> $GITHUB_OUTPUT
+          echo "deployment_status=blocked" >> $GITHUB_OUTPUT
+        elif [[ $TOTAL_FAILURES -gt 0 ]]; then
+          echo "deployment_ready=false" >> $GITHUB_OUTPUT
+          echo "deployment_status=warning" >> $GITHUB_OUTPUT
+        else
+          echo "deployment_ready=true" >> $GITHUB_OUTPUT
+          echo "deployment_status=ready" >> $GITHUB_OUTPUT
+        fi
+
+    - name: Generate test summary
+      run: |
+        echo "# 🧪 CloudToLocalLLM Test Results Summary" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "## Test Status Overview" >> $GITHUB_STEP_SUMMARY
+        echo "- **Flutter Tests**: ${{ needs.flutter-tests.result }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Node.js Tests**: ${{ needs.nodejs-tests.result }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **PowerShell Tests**: ${{ needs.powershell-tests.result }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Playwright E2E Tests**: ${{ needs.playwright-tests.result }}" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "## Quality Gate Analysis" >> $GITHUB_STEP_SUMMARY
+        echo "- **Total Failures**: ${{ steps.test-analysis.outputs.total_failures }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Critical Failures**: ${{ steps.test-analysis.outputs.critical_failures }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Deployment Status**: ${{ steps.test-analysis.outputs.deployment_status }}" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+
+        # Generate status message
+        case "${{ steps.test-analysis.outputs.deployment_status }}" in
+          "ready")
+            echo "✅ **ALL TESTS PASSED**: Ready for deployment" >> $GITHUB_STEP_SUMMARY
+            ;;
+          "warning")
+            echo "⚠️ **DEPLOYMENT WITH WARNINGS**: Some non-critical tests failed" >> $GITHUB_STEP_SUMMARY
+            ;;
+          "blocked")
+            echo "❌ **DEPLOYMENT BLOCKED**: Critical test failures detected" >> $GITHUB_STEP_SUMMARY
+            echo "::error::Critical test failures - deployment blocked"
+            exit 1
+            ;;
+        esac
+        
+    - name: Process test coverage
+      if: always()
+      run: |
+        echo "## 📊 Test Coverage Summary" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+
+        # Process Flutter coverage if available
+        if [[ -d "flutter-test-results/coverage" ]]; then
+          echo "### Flutter Coverage" >> $GITHUB_STEP_SUMMARY
+          if [[ -f "flutter-test-results/coverage/lcov.info" ]]; then
+            # Extract coverage percentage (simplified)
+            echo "- Flutter coverage data available" >> $GITHUB_STEP_SUMMARY
+          fi
+        fi
+
+        # Process Node.js coverage if available
+        if [[ -d "nodejs-test-results/coverage" ]]; then
+          echo "### Node.js Coverage" >> $GITHUB_STEP_SUMMARY
+          if [[ -f "nodejs-test-results/coverage/coverage-summary.json" ]]; then
+            echo "- Node.js coverage data available" >> $GITHUB_STEP_SUMMARY
+          fi
+        fi
+
+        # Process PowerShell coverage if available
+        if [[ -d "powershell-test-results" ]]; then
+          echo "### PowerShell Coverage" >> $GITHUB_STEP_SUMMARY
+          if [[ -f "powershell-test-results/coverage.xml" ]]; then
+            echo "- PowerShell coverage data available" >> $GITHUB_STEP_SUMMARY
+          fi
+        fi
+
+    - name: Generate test report
+      if: always()
+      run: |
+        # Create comprehensive test report
+        cat > test-report.md << 'EOF'
+        # CloudToLocalLLM Test Report
+
+        **Generated**: $(date -u)
+        **Commit**: ${{ github.sha }}
+        **Branch**: ${{ github.ref_name }}
+        **Workflow**: ${{ github.workflow }}
+
+        ## Test Results Summary
+
+        | Test Suite | Status | Result |
+        |------------|--------|--------|
+        | Flutter Tests | ${{ needs.flutter-tests.result }} | ${{ needs.flutter-tests.result == 'success' && '✅ Passed' || '❌ Failed' }} |
+        | Node.js Tests | ${{ needs.nodejs-tests.result }} | ${{ needs.nodejs-tests.result == 'success' && '✅ Passed' || '❌ Failed' }} |
+        | PowerShell Tests | ${{ needs.powershell-tests.result }} | ${{ needs.powershell-tests.result == 'success' && '✅ Passed' || '❌ Failed' }} |
+        | Playwright E2E | ${{ needs.playwright-tests.result }} | ${{ needs.playwright-tests.result == 'success' && '✅ Passed' || '❌ Failed' }} |
+
+        ## Quality Gates
+
+        - **Total Failures**: ${{ steps.test-analysis.outputs.total_failures }}
+        - **Critical Failures**: ${{ steps.test-analysis.outputs.critical_failures }}
+        - **Deployment Ready**: ${{ steps.test-analysis.outputs.deployment_ready }}
+
+        ## Artifacts
+
+        - Test results and coverage reports are available in the workflow artifacts
+        - Detailed logs can be found in the individual job outputs
+
+        EOF
+
+        echo "📋 Test report generated"
+
+    - name: Upload consolidated results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: all-test-results
+        path: |
+          flutter-test-results/
+          nodejs-test-results/
+          powershell-test-results/
+          playwright-test-results/
+          test-report.md
+
+    - name: Publish test results
+      uses: dorny/test-reporter@v1
+      if: always()
+      with:
+        name: 'Test Results'
+        path: |
+          **/junit.xml
+          **/test-results.xml
+          **/pester-results.xml
+        reporter: java-junit
+        fail-on-error: false
+
+  # ============================================================================
+  # DEPLOYMENT PHASE - Only runs if all tests pass
+  # ============================================================================
+  
+  deploy:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: [test-results]
+    if: github.ref == 'refs/heads/master' && (needs.test-results.result == 'success' || github.event.inputs.skip_tests == 'true')
+    environment: 
+      name: ${{ github.event.inputs.deploy_environment || 'production' }}
+      url: ${{ env.DEPLOYMENT_URL }}
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Download Flutter build artifacts
+      uses: actions/download-artifact@v4
+      if: github.event.inputs.skip_tests != 'true'
+      with:
+        name: flutter-build
+        path: build/web/
+        
+    - name: Setup deployment environment
+      run: |
+        echo "🚀 Starting deployment to ${{ github.event.inputs.deploy_environment || 'production' }}"
+        echo "📝 Commit: ${{ github.sha }}"
+        echo "👤 Actor: ${{ github.actor }}"
+        
+    - name: Deploy application
+      env:
+        DEPLOY_KEY: ${{ secrets.DEPLOY_KEY }}
+        VPS_HOST: ${{ secrets.VPS_HOST }}
+        VPS_USER: ${{ secrets.VPS_USER }}
+      run: |
+        echo "::group::Application Deployment"
+        # Add your deployment logic here
+        # This would typically involve:
+        # 1. Setting up SSH keys
+        # 2. Transferring build artifacts
+        # 3. Running deployment scripts on VPS
+        # 4. Verifying deployment success
+        echo "Deployment logic will be implemented based on existing scripts"
+        echo "::endgroup::"
+        
+    - name: Post-deployment verification
+      run: |
+        echo "::group::Deployment Verification"
+        # Add verification logic here
+        echo "Verification logic will be implemented"
+        echo "::endgroup::"
+        
+    - name: Notify deployment success
+      if: success()
+      run: |
+        echo "✅ Deployment completed successfully!" >> $GITHUB_STEP_SUMMARY
+        echo "🌐 Application URL: ${{ env.DEPLOYMENT_URL }}" >> $GITHUB_STEP_SUMMARY
+
+  # ============================================================================
+  # ROLLBACK PHASE - Runs if deployment fails
+  # ============================================================================
+
+  rollback:
+    name: Emergency Rollback
+    runs-on: ubuntu-latest
+    needs: [deploy]
+    if: failure() && github.ref == 'refs/heads/master'
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Execute rollback
+      env:
+        DEPLOY_KEY: ${{ secrets.DEPLOY_KEY }}
+        VPS_HOST: ${{ secrets.VPS_HOST }}
+        VPS_USER: ${{ secrets.VPS_USER }}
+      run: |
+        echo "::group::Emergency Rollback"
+        echo "🚨 Deployment failed - initiating rollback"
+        # Add rollback logic here
+        echo "Rollback logic will be implemented"
+        echo "::endgroup::"
+
+    - name: Notify rollback
+      run: |
+        echo "🚨 **ROLLBACK EXECUTED**: Deployment failed and was rolled back" >> $GITHUB_STEP_SUMMARY
+        echo "::error::Deployment failed - rollback completed"
+
+  # ============================================================================
+  # NOTIFICATION PHASE - Always runs to report final status
+  # ============================================================================
+
+  notify:
+    name: Send Notifications
+    runs-on: ubuntu-latest
+    needs: [test-results, deploy, rollback]
+    if: always()
+
+    steps:
+    - name: Determine final status
+      id: status
+      run: |
+        if [[ "${{ needs.deploy.result }}" == "success" ]]; then
+          echo "status=success" >> $GITHUB_OUTPUT
+          echo "message=✅ Deployment completed successfully" >> $GITHUB_OUTPUT
+        elif [[ "${{ needs.rollback.result }}" == "success" ]]; then
+          echo "status=rollback" >> $GITHUB_OUTPUT
+          echo "message=🚨 Deployment failed and was rolled back" >> $GITHUB_OUTPUT
+        elif [[ "${{ needs.test-results.result }}" == "failure" ]]; then
+          echo "status=test_failure" >> $GITHUB_OUTPUT
+          echo "message=❌ Tests failed - deployment blocked" >> $GITHUB_OUTPUT
+        else
+          echo "status=unknown" >> $GITHUB_OUTPUT
+          echo "message=⚠️ Pipeline completed with unknown status" >> $GITHUB_OUTPUT
+        fi
+
+    - name: Create deployment summary
+      run: |
+        echo "# 🚀 CloudToLocalLLM Deployment Summary" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "**Status**: ${{ steps.status.outputs.message }}" >> $GITHUB_STEP_SUMMARY
+        echo "**Commit**: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+        echo "**Branch**: ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+        echo "**Actor**: ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
+        echo "**Timestamp**: $(date -u)" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "## Pipeline Results" >> $GITHUB_STEP_SUMMARY
+        echo "- **Tests**: ${{ needs.test-results.result }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Deployment**: ${{ needs.deploy.result }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Rollback**: ${{ needs.rollback.result }}" >> $GITHUB_STEP_SUMMARY

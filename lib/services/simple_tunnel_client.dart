@@ -274,6 +274,10 @@ class SimpleTunnelClient extends ChangeNotifier {
       // Build URI with token parameter - avoid using replace() which can add :0 port
       final uri = Uri.parse('$wsUrl?token=${Uri.encodeComponent(accessToken)}');
 
+      // Extract user ID from current user for session tracking
+      _userId = _authService.currentUser?.id;
+      _correlationId = _generateCorrelationId();
+
       _logger.debug(
         'Connecting to WebSocket',
         correlationId: _correlationId,
@@ -1172,6 +1176,13 @@ class SimpleTunnelClient extends ChangeNotifier {
       );
       disconnect();
     }
+  }
+
+  /// Generate a unique correlation ID for tracking requests
+  String _generateCorrelationId() {
+    final timestamp = DateTime.now().millisecondsSinceEpoch;
+    final random = Random().nextInt(999999).toString().padLeft(6, '0');
+    return 'tunnel_${timestamp}_$random';
   }
 
   @override

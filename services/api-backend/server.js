@@ -12,7 +12,10 @@ import dotenv from 'dotenv';
 import { StreamingProxyManager } from './streaming-proxy-manager.js';
 
 import adminRoutes from './routes/admin.js';
-// Removed encrypted tunnel routes - using simplified tunnel system
+// Enhanced tunnel system imports
+import { TunnelServer } from './tunnel/tunnel-server.js';
+import { AuthService } from './auth/auth-service.js';
+import { DatabaseMigrator } from './database/migrate.js';
 import { createTunnelRoutes } from './tunnel/tunnel-routes.js';
 import { createMonitoringRoutes } from './routes/monitoring.js';
 import { createDirectProxyRoutes } from './routes/direct-proxy-routes.js';
@@ -991,11 +994,121 @@ setInterval(() => {
   });
 }, 60 * 60 * 1000); // Run every hour
 
-// Start server
-server.listen(PORT, () => {
-  logger.info(`CloudToLocalLLM API Backend listening on port ${PORT}`);
-  logger.info(`Environment: ${process.env.NODE_ENV || 'development'}`);
-  logger.info(`Auth0 Domain: ${AUTH0_DOMAIN}`);
-  logger.info(`Auth0 Audience: ${AUTH0_AUDIENCE}`);
-  logger.info('LLM Security and Monitoring enabled');
-});
+// Initialize enhanced tunnel system
+let tunnelServer = null;
+let authService = null;
+let dbMigrator = null;
+
+async function initializeEnhancedTunnelSystem() {
+  try {
+    logger.info('Initializing enhanced tunnel system...');
+
+    // Initialize database
+    dbMigrator = new DatabaseMigrator();
+    await dbMigrator.initialize();
+    await dbMigrator.createMigrationsTable();
+
+    // Apply initial schema if needed
+    await dbMigrator.applyInitialSchema();
+
+    // Validate schema
+    const validation = await dbMigrator.validateSchema();
+    if (!validation.allValid) {
+      throw new Error('Database schema validation failed');
+    }
+
+    // Initialize authentication service
+    authService = new AuthService({
+      AUTH0_DOMAIN,
+      AUTH0_AUDIENCE
+    });
+    await authService.initialize();
+
+    // Initialize tunnel server
+    tunnelServer = new TunnelServer(server, {
+      AUTH0_DOMAIN,
+      AUTH0_AUDIENCE,
+      maxConnections: 1000,
+      heartbeatInterval: 30000,
+      compressionEnabled: true
+    });
+
+    // Start tunnel server
+    tunnelServer.start();
+
+    // Setup graceful shutdown
+    process.on('SIGTERM', gracefulShutdown);
+    process.on('SIGINT', gracefulShutdown);
+
+    logger.info('Enhanced tunnel system initialized successfully');
+
+  } catch (error) {
+    logger.error('Failed to initialize enhanced tunnel system', {
+      error: error.message,
+      stack: error.stack
+    });
+    process.exit(1);
+  }
+}
+
+async function gracefulShutdown() {
+  logger.info('Received shutdown signal, starting graceful shutdown...');
+
+  try {
+    // Stop tunnel server
+    if (tunnelServer) {
+      tunnelServer.stop();
+    }
+
+    // Close authentication service
+    if (authService) {
+      await authService.close();
+    }
+
+    // Close database connection
+    if (dbMigrator) {
+      await dbMigrator.close();
+    }
+
+    // Close HTTP server
+    server.close(() => {
+      logger.info('Server closed successfully');
+      process.exit(0);
+    });
+
+    // Force exit after 10 seconds
+    setTimeout(() => {
+      logger.error('Forced shutdown after timeout');
+      process.exit(1);
+    }, 10000);
+
+  } catch (error) {
+    logger.error('Error during shutdown', { error: error.message });
+    process.exit(1);
+  }
+}
+
+// Start server with enhanced tunnel system
+async function startServer() {
+  try {
+    // Initialize enhanced tunnel system first
+    await initializeEnhancedTunnelSystem();
+
+    // Start HTTP server
+    server.listen(PORT, () => {
+      logger.info(`CloudToLocalLLM API Backend listening on port ${PORT}`);
+      logger.info(`Environment: ${process.env.NODE_ENV || 'development'}`);
+      logger.info(`Auth0 Domain: ${AUTH0_DOMAIN}`);
+      logger.info(`Auth0 Audience: ${AUTH0_AUDIENCE}`);
+      logger.info('Enhanced tunnel system is ready');
+      logger.info('LLM Security and Monitoring enabled');
+    });
+
+  } catch (error) {
+    logger.error('Failed to start server', { error: error.message });
+    process.exit(1);
+  }
+}
+
+// Start the server
+startServer();

@@ -10,7 +10,7 @@ class WebDownloadPromptService extends ChangeNotifier {
   final DesktopClientDetectionService? _clientDetectionService;
 
   bool _shouldShowPrompt = false;
-  bool _isFirstTimeUser = false;
+  final bool _isFirstTimeUser = false;
   bool _hasUserSeenPrompt = false;
   bool _isInitialized = false;
 
@@ -35,25 +35,6 @@ class WebDownloadPromptService extends ChangeNotifier {
     _isInitialized = true;
     _shouldShowPrompt = false;
     notifyListeners();
-  }
-
-  /// Load prompt state from storage
-  Future<void> _loadPromptState() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final userId = _authService.currentUser?.id;
-
-      if (userId != null) {
-        _hasUserSeenPrompt =
-            prefs.getBool('web_download_prompt_seen_$userId') ?? false;
-        debugPrint(
-          '🌐 [WebDownloadPrompt] Loaded state for user $userId: hasSeenPrompt=$_hasUserSeenPrompt',
-        );
-      }
-    } catch (e) {
-      debugPrint('🌐 [WebDownloadPrompt] Error loading prompt state: $e');
-      _hasUserSeenPrompt = false;
-    }
   }
 
   /// Save prompt state to storage
@@ -84,24 +65,6 @@ class WebDownloadPromptService extends ChangeNotifier {
   /// Handle client detection changes
   void _onClientDetectionChanged() {
     // Service disabled - no action needed
-  }
-
-  /// Check if the user is logging in for the first time
-  void _checkIfFirstTimeUser() {
-    // Only consider showing the prompt for truly first-time users
-    // Check if this is their first session by looking at stored preferences
-    final userId = _authService.currentUser?.id;
-    if (userId != null) {
-      // User is first-time only if they have never seen the prompt before
-      // This prevents the circular logic of always showing to users who dismissed it
-      _isFirstTimeUser = !_hasUserSeenPrompt;
-    } else {
-      _isFirstTimeUser = false;
-    }
-
-    debugPrint(
-      '🌐 [WebDownloadPrompt] First time user: $_isFirstTimeUser (hasSeenPrompt: $_hasUserSeenPrompt)',
-    );
   }
 
   /// Check if the download prompt should be shown

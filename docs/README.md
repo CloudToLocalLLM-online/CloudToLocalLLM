@@ -19,6 +19,7 @@ Welcome to the CloudToLocalLLM documentation! This directory contains comprehens
 
 ### 🏗️ Architecture Documentation
 - **[System Architecture](ARCHITECTURE/SYSTEM_ARCHITECTURE.md)** - Overall system design
+- **[Secure Tunnel & Web Interface Design](ARCHITECTURE/SECURE_TUNNEL_WEB_INTERFACE_DESIGN.md)** - Comprehensive design specification for core infrastructure components
 - **[Simplified Tunnel Architecture](ARCHITECTURE/SIMPLIFIED_TUNNEL_ARCHITECTURE.md)** - New streamlined tunnel system
 - **[Streaming Proxy Architecture](ARCHITECTURE/STREAMING_PROXY_ARCHITECTURE.md)** - Multi-tenant proxy system
 - **[Multi-Container Architecture](ARCHITECTURE/MULTI_CONTAINER_ARCHITECTURE.md)** - Container orchestration

@@ -51,6 +51,9 @@ const DEFAULT_CONFIG = {
     'https://app.cloudtolocalllm.online',
     'https://cloudtolocalllm.online',
     'https://docs.cloudtolocalllm.online',
+    'https://app.cloudtolocalllm.online',
+    'https://cloudtolocalllm.online',
+    'https://docs.cloudtolocalllm.online',
   ],
 
   // Rate limiting for security events

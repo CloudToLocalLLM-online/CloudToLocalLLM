@@ -1,4 +1,5 @@
 import 'dart:convert';
+// ignore: avoid_web_libraries_in_flutter, deprecated_member_use
 import 'dart:html' as html;
 import 'package:http/http.dart' as http;
 import 'package:flutter/foundation.dart';
@@ -8,13 +9,13 @@ class GitHubReleaseService {
   static const String _repoOwner = 'imrightguy';
   static const String _repoName = 'CloudToLocalLLM';
   static const String _baseApiUrl = 'https://api.github.com/repos';
-  
+
   /// Get the latest release information
   Future<GitHubRelease?> getLatestRelease() async {
     try {
       final url = '$_baseApiUrl/$_repoOwner/$_repoName/releases/latest';
       final response = await http.get(Uri.parse(url));
-      
+
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         return GitHubRelease.fromJson(data);
@@ -27,13 +28,13 @@ class GitHubReleaseService {
       return null;
     }
   }
-  
+
   /// Get all releases
   Future<List<GitHubRelease>> getAllReleases() async {
     try {
       final url = '$_baseApiUrl/$_repoOwner/$_repoName/releases';
       final response = await http.get(Uri.parse(url));
-      
+
       if (response.statusCode == 200) {
         final List<dynamic> data = json.decode(response.body);
         return data.map((json) => GitHubRelease.fromJson(json)).toList();
@@ -46,7 +47,7 @@ class GitHubReleaseService {
       return [];
     }
   }
-  
+
   /// Download a file using browser download
   void downloadFile(String downloadUrl, String fileName) {
     try {
@@ -55,11 +56,11 @@ class GitHubReleaseService {
         final anchor = html.AnchorElement(href: downloadUrl)
           ..setAttribute('download', fileName)
           ..style.display = 'none';
-        
+
         html.document.body?.children.add(anchor);
         anchor.click();
         html.document.body?.children.remove(anchor);
-        
+
         debugPrint('Download initiated for: $fileName');
       } else {
         // For desktop/mobile, open URL in browser
@@ -71,12 +72,12 @@ class GitHubReleaseService {
       rethrow;
     }
   }
-  
+
   /// Get download options for the latest release
   Future<List<DownloadOption>> getDownloadOptions() async {
     final release = await getLatestRelease();
     if (release == null) return [];
-    
+
     return release.assets.map((asset) {
       return DownloadOption(
         name: asset.name,
@@ -87,7 +88,7 @@ class GitHubReleaseService {
       );
     }).toList();
   }
-  
+
   String _getAssetDescription(String assetName) {
     if (assetName.contains('Setup.exe')) {
       return 'Windows Installer (Recommended) - Easy installation with desktop shortcuts';
@@ -108,7 +109,7 @@ class GitHubRelease {
   final bool prerelease;
   final DateTime publishedAt;
   final List<GitHubAsset> assets;
-  
+
   GitHubRelease({
     required this.tagName,
     required this.name,
@@ -117,7 +118,7 @@ class GitHubRelease {
     required this.publishedAt,
     required this.assets,
   });
-  
+
   factory GitHubRelease.fromJson(Map<String, dynamic> json) {
     return GitHubRelease(
       tagName: json['tag_name'] ?? '',
@@ -125,9 +126,11 @@ class GitHubRelease {
       body: json['body'] ?? '',
       prerelease: json['prerelease'] ?? false,
       publishedAt: DateTime.parse(json['published_at']),
-      assets: (json['assets'] as List<dynamic>?)
-          ?.map((asset) => GitHubAsset.fromJson(asset))
-          .toList() ?? [],
+      assets:
+          (json['assets'] as List<dynamic>?)
+              ?.map((asset) => GitHubAsset.fromJson(asset))
+              .toList() ??
+          [],
     );
   }
 }
@@ -139,7 +142,7 @@ class GitHubAsset {
   final int size;
   final String contentType;
   final int downloadCount;
-  
+
   GitHubAsset({
     required this.name,
     required this.browserDownloadUrl,
@@ -147,7 +150,7 @@ class GitHubAsset {
     required this.contentType,
     required this.downloadCount,
   });
-  
+
   factory GitHubAsset.fromJson(Map<String, dynamic> json) {
     return GitHubAsset(
       name: json['name'] ?? '',
@@ -166,7 +169,7 @@ class DownloadOption {
   final int size;
   final String contentType;
   final String description;
-  
+
   DownloadOption({
     required this.name,
     required this.downloadUrl,
@@ -174,7 +177,7 @@ class DownloadOption {
     required this.contentType,
     required this.description,
   });
-  
+
   String get formattedSize {
     if (size < 1024) return '${size}B';
     if (size < 1024 * 1024) return '${(size / 1024).toStringAsFixed(1)}KB';

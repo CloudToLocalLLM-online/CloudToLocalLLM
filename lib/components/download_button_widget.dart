@@ -7,14 +7,14 @@ class DownloadButtonWidget extends StatefulWidget {
   final DownloadOption downloadOption;
   final VoidCallback? onDownloadStarted;
   final Function(String)? onError;
-  
+
   const DownloadButtonWidget({
-    Key? key,
+    super.key,
     required this.downloadOption,
     this.onDownloadStarted,
     this.onError,
-  }) : super(key: key);
-  
+  });
+
   @override
   State<DownloadButtonWidget> createState() => _DownloadButtonWidgetState();
 }
@@ -22,7 +22,7 @@ class DownloadButtonWidget extends StatefulWidget {
 class _DownloadButtonWidgetState extends State<DownloadButtonWidget> {
   bool _isDownloading = false;
   final GitHubReleaseService _releaseService = GitHubReleaseService();
-  
+
   @override
   Widget build(BuildContext context) {
     return Card(
@@ -47,9 +47,8 @@ class _DownloadButtonWidgetState extends State<DownloadButtonWidget> {
                     children: [
                       Text(
                         widget.downloadOption.name,
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(fontWeight: FontWeight.bold),
                       ),
                       const SizedBox(height: 4),
                       Text(
@@ -106,7 +105,7 @@ class _DownloadButtonWidgetState extends State<DownloadButtonWidget> {
       ),
     );
   }
-  
+
   IconData _getIconForAsset(String assetName) {
     if (assetName.contains('Setup.exe')) {
       return Icons.install_desktop;
@@ -117,32 +116,34 @@ class _DownloadButtonWidgetState extends State<DownloadButtonWidget> {
     }
     return Icons.download;
   }
-  
+
   Future<void> _handleDownload() async {
     setState(() {
       _isDownloading = true;
     });
-    
+
     try {
       // Validate the download URL
       if (widget.downloadOption.downloadUrl.isEmpty) {
         throw Exception('Download URL is empty');
       }
-      
+
       // Check if URL is accessible
-      if (!widget.downloadOption.downloadUrl.startsWith('https://github.com/')) {
+      if (!widget.downloadOption.downloadUrl.startsWith(
+        'https://github.com/',
+      )) {
         throw Exception('Invalid download URL format');
       }
-      
+
       // Notify that download is starting
       widget.onDownloadStarted?.call();
-      
+
       // Initiate download
       _releaseService.downloadFile(
         widget.downloadOption.downloadUrl,
         widget.downloadOption.name,
       );
-      
+
       // Show success message
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -153,10 +154,9 @@ class _DownloadButtonWidgetState extends State<DownloadButtonWidget> {
           ),
         );
       }
-      
     } catch (e) {
       debugPrint('Download error: $e');
-      
+
       // Show error message
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -172,10 +172,9 @@ class _DownloadButtonWidgetState extends State<DownloadButtonWidget> {
           ),
         );
       }
-      
+
       // Notify error callback
       widget.onError?.call(e.toString());
-      
     } finally {
       if (mounted) {
         setState(() {
@@ -188,8 +187,8 @@ class _DownloadButtonWidgetState extends State<DownloadButtonWidget> {
 
 /// Widget to display all available downloads
 class DownloadOptionsWidget extends StatefulWidget {
-  const DownloadOptionsWidget({Key? key}) : super(key: key);
-  
+  const DownloadOptionsWidget({super.key});
+
   @override
   State<DownloadOptionsWidget> createState() => _DownloadOptionsWidgetState();
 }
@@ -199,13 +198,13 @@ class _DownloadOptionsWidgetState extends State<DownloadOptionsWidget> {
   List<DownloadOption> _downloadOptions = [];
   bool _isLoading = true;
   String? _error;
-  
+
   @override
   void initState() {
     super.initState();
     _loadDownloadOptions();
   }
-  
+
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
@@ -220,17 +219,13 @@ class _DownloadOptionsWidgetState extends State<DownloadOptionsWidget> {
         ),
       );
     }
-    
+
     if (_error != null) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.error_outline,
-              size: 64,
-              color: Colors.red[300],
-            ),
+            Icon(Icons.error_outline, size: 64, color: Colors.red[300]),
             const SizedBox(height: 16),
             Text(
               'Failed to load downloads',
@@ -239,9 +234,9 @@ class _DownloadOptionsWidgetState extends State<DownloadOptionsWidget> {
             const SizedBox(height: 8),
             Text(
               _error!,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Colors.grey[600],
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 16),
@@ -254,13 +249,11 @@ class _DownloadOptionsWidgetState extends State<DownloadOptionsWidget> {
         ),
       );
     }
-    
+
     if (_downloadOptions.isEmpty) {
-      return const Center(
-        child: Text('No downloads available'),
-      );
+      return const Center(child: Text('No downloads available'));
     }
-    
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -268,30 +261,32 @@ class _DownloadOptionsWidgetState extends State<DownloadOptionsWidget> {
           padding: const EdgeInsets.all(16),
           child: Text(
             'Download CloudToLocalLLM Desktop Client',
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-              fontWeight: FontWeight.bold,
-            ),
+            style: Theme.of(
+              context,
+            ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
           ),
         ),
-        ..._downloadOptions.map((option) => DownloadButtonWidget(
-          downloadOption: option,
-          onDownloadStarted: () {
-            debugPrint('Download started: ${option.name}');
-          },
-          onError: (error) {
-            debugPrint('Download error: $error');
-          },
-        )),
+        ..._downloadOptions.map(
+          (option) => DownloadButtonWidget(
+            downloadOption: option,
+            onDownloadStarted: () {
+              debugPrint('Download started: ${option.name}');
+            },
+            onError: (error) {
+              debugPrint('Download error: $error');
+            },
+          ),
+        ),
       ],
     );
   }
-  
+
   Future<void> _loadDownloadOptions() async {
     setState(() {
       _isLoading = true;
       _error = null;
     });
-    
+
     try {
       final options = await _releaseService.getDownloadOptions();
       setState(() {

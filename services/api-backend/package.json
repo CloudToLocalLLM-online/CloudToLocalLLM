@@ -9,9 +9,16 @@
     "dev": "nodemon server.js",
     "test": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js ../test/api-backend/",
     "test:security": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js ../test/api-backend/security/",
+    "test:tunnel": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js ../test/api-backend/tunnel/",
+    "test:tunnel:unit": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js ../test/api-backend/tunnel/unit/",
+    "test:tunnel:integration": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js ../test/api-backend/tunnel/integration/",
+    "test:tunnel:security": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js ../test/api-backend/tunnel/security/",
     "test:user-isolation": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js ../test/api-backend/security/user-isolation.test.js",
     "test:auth": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js ../test/api-backend/security/authentication-authorization.test.js",
     "test:security:verbose": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js ../test/api-backend/security/ --verbose",
+    "db:migrate": "node database/migrate.js init",
+    "db:validate": "node database/migrate.js validate",
+    "db:stats": "node database/migrate.js stats",
     "lint": "eslint .",
     "format": "prettier --write ."
   },
@@ -24,6 +31,7 @@
     "helmet": "^7.1.0",
     "jsonwebtoken": "^9.0.2",
     "jwks-client": "^2.0.0",
+    "pg": "^8.11.3",
     "uuid": "^9.0.1",
     "winston": "^3.11.0",
     "ws": "^8.14.2"
@@ -31,6 +39,7 @@
   "devDependencies": {
     "eslint": "^8.55.0",
     "jest": "^29.7.0",
+    "jest-junit": "^16.0.0",
     "nodemon": "^3.0.2",
     "prettier": "^3.1.0",
     "supertest": "^6.3.4"
