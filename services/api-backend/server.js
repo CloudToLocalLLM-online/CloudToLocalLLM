@@ -47,11 +47,7 @@ const PORT = process.env.PORT || 8080;
 const AUTH0_DOMAIN = process.env.AUTH0_DOMAIN || 'dev-v2f2p008x3dr74ww.us.auth0.com';
 const AUTH0_AUDIENCE = process.env.AUTH0_AUDIENCE || 'https://app.cloudtolocalllm.online';
 
-// AuthService for JWT validation (eliminates jwks-client issues)
-const authService = new AuthService({
-  AUTH0_DOMAIN,
-  AUTH0_AUDIENCE
-});
+// AuthService will be initialized in initializeEnhancedTunnelSystem()
 
 // Express app setup
 const app = express();
@@ -119,7 +115,10 @@ async function authenticateToken(req, res, next) {
       return res.status(401).json({ error: 'Invalid token format' });
     }
 
-    // Verify the token using AuthService
+    // Verify the token using AuthService (fallback if not initialized)
+    if (!authService) {
+      return res.status(503).json({ error: 'Authentication service not ready' });
+    }
     const verified = await authService.validateToken(token);
 
     req.user = verified;
@@ -157,7 +156,11 @@ const wss = new WebSocketServer({
         return false;
       }
 
-      // Verify the token using AuthService
+      // Verify the token using AuthService (fallback if not initialized)
+      if (!authService) {
+        logger.warn('WebSocket connection rejected: Authentication service not ready');
+        return false;
+      }
       const verified = await authService.validateToken(token);
 
       // Store user info for the connection
