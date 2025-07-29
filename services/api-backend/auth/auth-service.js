@@ -66,7 +66,7 @@ export class AuthService {
    */
   async validateToken(token, req = {}) {
     try {
-      this.logger.debug('Starting token validation');
+      this.logger.info('Starting token validation');
 
       // Decode token to get header
       const decoded = jwt.decode(token, { complete: true });
@@ -74,12 +74,12 @@ export class AuthService {
         throw new Error('Invalid token format - missing kid in header');
       }
 
-      this.logger.debug(`Token decoded successfully, kid: ${decoded.header.kid}`);
+      this.logger.info(`Token decoded successfully, kid: ${decoded.header.kid}`);
 
       // Get signing key
       const key = await this.getSigningKey(decoded.header.kid);
 
-      this.logger.debug('Got signing key, verifying token');
+      this.logger.info('Got signing key, verifying token');
 
       // Verify token with full validation
       const verified = jwt.verify(token, key, {
@@ -91,7 +91,7 @@ export class AuthService {
       // Create or update session
       const session = await this.createOrUpdateSession(verified, token, req);
 
-      this.logger.debug('Token verification successful');
+      this.logger.info('Token verification successful');
       this.logger.info('Token validated successfully', {
         userId: verified.sub,
         sessionId: session.id,
@@ -128,16 +128,16 @@ export class AuthService {
    */
   async getSigningKey(kid) {
     try {
-      this.logger.debug(`Getting signing key for kid: ${kid}`);
+      this.logger.info(`Getting signing key for kid: ${kid}`);
 
       // Check cache first (5 minute expiry)
       const now = Date.now();
       if (this.jwksCacheExpiry > now && this.jwksCache.has(kid)) {
-        this.logger.debug(`Using cached key for kid: ${kid}`);
+        this.logger.info(`Using cached key for kid: ${kid}`);
         return this.jwksCache.get(kid);
       }
 
-      this.logger.debug(`Fetching JWKS from: ${this.jwksUri}`);
+      this.logger.info(`Fetching JWKS from: ${this.jwksUri}`);
 
       // Fetch JWKS from Auth0
       const response = await fetch(this.jwksUri);
@@ -146,7 +146,7 @@ export class AuthService {
       }
 
       const jwks = await response.json();
-      this.logger.debug(`Fetched JWKS with ${jwks.keys.length} keys`);
+      this.logger.info(`Fetched JWKS with ${jwks.keys.length} keys`);
 
       // Find the key with matching kid
       const key = jwks.keys.find(k => k.kid === kid);
@@ -155,12 +155,12 @@ export class AuthService {
         throw new Error(`Key with kid '${kid}' not found in JWKS. Available kids: ${availableKids.join(', ')}`);
       }
 
-      this.logger.debug(`Found key for kid: ${kid}, converting to PEM`);
+      this.logger.info(`Found key for kid: ${kid}, converting to PEM`);
 
       // Convert JWK to PEM format
       const publicKey = this.jwkToPem(key);
 
-      this.logger.debug(`Successfully converted key to PEM format`);
+      this.logger.info(`Successfully converted key to PEM format`);
 
       // Cache the result for 5 minutes
       this.jwksCache.set(kid, publicKey);
