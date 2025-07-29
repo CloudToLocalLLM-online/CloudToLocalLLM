@@ -285,8 +285,14 @@ class SimpleTunnelClient extends ChangeNotifier {
           ? AppConfig.tunnelWebSocketUrlDev
           : AppConfig.tunnelWebSocketUrl;
 
-      // Build URI with token parameter - avoid using replace() which can add :0 port
-      final uri = Uri.parse('$wsUrl?token=${Uri.encodeComponent(accessToken)}');
+      // Build URI with token parameter - construct manually to avoid port issues
+      final baseUri = Uri.parse(wsUrl);
+      final uri = Uri(
+        scheme: baseUri.scheme,
+        host: baseUri.host,
+        path: baseUri.path,
+        queryParameters: {'token': accessToken},
+      );
 
       // Extract user ID from current user for session tracking
       _userId = _authService.currentUser?.id;

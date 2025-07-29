@@ -93,31 +93,42 @@ class _TunnelSettingsScreenState extends State<TunnelSettingsScreen> {
           ),
         ],
       ),
-      body: Consumer<SimpleTunnelClient>(
-        builder: (context, simpleTunnelClient, child) {
-          return SingleChildScrollView(
-            padding: const EdgeInsets.all(16.0),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildConnectionStatusCard(simpleTunnelClient),
-                  const SizedBox(height: 24),
-                  _buildCloudProxyConfigSection(),
-                  const SizedBox(height: 24),
-                  _buildNgrokConfigSection(),
-                  const SizedBox(height: 24),
-                  _buildAdvancedSettingsSection(),
-                  const SizedBox(height: 24),
-                  _buildAdditionalSettingsSection(),
-                  const SizedBox(height: 24),
-                  _buildActionButtons(simpleTunnelClient),
-                ],
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16.0),
+        child: Form(
+          key: _formKey,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Connection status - only rebuilds when connection status changes
+              Selector<SimpleTunnelClient, Map<String, dynamic>>(
+                selector: (context, tunnelClient) =>
+                    tunnelClient.connectionStatus,
+                builder: (context, connectionStatus, child) {
+                  final simpleTunnelClient = context.read<SimpleTunnelClient>();
+                  return _buildConnectionStatusCard(simpleTunnelClient);
+                },
               ),
-            ),
-          );
-        },
+              const SizedBox(height: 24),
+              // Static configuration sections - no need to rebuild
+              _buildCloudProxyConfigSection(),
+              const SizedBox(height: 24),
+              _buildNgrokConfigSection(),
+              const SizedBox(height: 24),
+              _buildAdvancedSettingsSection(),
+              const SizedBox(height: 24),
+              _buildAdditionalSettingsSection(),
+              const SizedBox(height: 24),
+              // Action buttons - static content
+              Builder(
+                builder: (context) {
+                  final simpleTunnelClient = context.read<SimpleTunnelClient>();
+                  return _buildActionButtons(simpleTunnelClient);
+                },
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

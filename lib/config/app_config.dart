@@ -44,9 +44,9 @@ class AppConfig {
 
   // Tunnel Configuration
   static const String tunnelWebSocketUrl =
-      'wss://api.cloudtolocalllm.online/ws/tunnel';
+      'wss://app.cloudtolocalllm.online/ws/tunnel';
   static const String tunnelWebSocketUrlDev =
-      'wss://api.cloudtolocalllm.online/ws/tunnel';
+      'wss://app.cloudtolocalllm.online/ws/tunnel';
 
   // UI Configuration
   static const double maxContentWidth = 1200.0;

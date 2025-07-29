@@ -520,67 +520,91 @@ class _UnifiedSettingsScreenState extends State<UnifiedSettingsScreen> {
   Widget _buildDesktopLLMProviderSettings() {
     // This section now represents "Tunnel Connection" settings for desktop.
     // Prioritize setup wizard and streamline the UI
-    return Consumer<SimpleTunnelClient>(
-      builder: (context, simpleTunnelClient, child) {
-        try {
-          debugPrint(
-            '⚙️ [Settings] Building desktop Tunnel Connection settings',
-          );
+    try {
+      // Check if user needs setup wizard (no authentication or first time)
+      final needsSetup = !Provider.of<AuthService>(
+        context,
+        listen: false,
+      ).isAuthenticated.value;
 
-          if (simpleTunnelClient.isConnecting) {
-            return _buildServiceErrorCard(
-              'SimpleTunnelClient is initializing...',
-            );
-          }
+      return Column(
+        children: [
+          // Prominent Tunnel Status Summary - only rebuilds when connection status changes
+          Selector<SimpleTunnelClient, Map<String, dynamic>>(
+            selector: (context, tunnelClient) => tunnelClient.connectionStatus,
+            builder: (context, connectionStatus, child) {
+              final simpleTunnelClient = context.read<SimpleTunnelClient>();
 
-          // Check if user needs setup wizard (no authentication or first time)
-          final needsSetup = !Provider.of<AuthService>(
-            context,
-            listen: false,
-          ).isAuthenticated.value;
+              // Show loading state if connecting
+              if (simpleTunnelClient.isConnecting) {
+                return _buildServiceErrorCard(
+                  'SimpleTunnelClient is initializing...',
+                );
+              }
 
-          return Column(
-            children: [
-              // Prominent Tunnel Status Summary
-              _buildTunnelStatusSummaryCard(simpleTunnelClient, needsSetup),
-              SizedBox(height: AppTheme.spacingM),
+              return _buildTunnelStatusSummaryCard(
+                simpleTunnelClient,
+                needsSetup,
+              );
+            },
+          ),
+          SizedBox(height: AppTheme.spacingM),
 
-              // Compact info about the tunnel service
-              _buildCompactTunnelInfoCard(),
-              SizedBox(height: AppTheme.spacingS),
+          // Compact info about the tunnel service - static content
+          _buildCompactTunnelInfoCard(),
+          SizedBox(height: AppTheme.spacingS),
 
-              // Prioritize Setup Wizard for new users
-              if (needsSetup) ...[
-                _buildTunnelSetupWizardCard(),
-                SizedBox(height: AppTheme.spacingS),
-              ],
+          // Prioritize Setup Wizard for new users - static content
+          if (needsSetup) ...[
+            _buildTunnelSetupWizardCard(),
+            SizedBox(height: AppTheme.spacingS),
+          ],
 
-              // Unified Connection Status (removes duplicate)
-              _buildUnifiedConnectionStatusCard(simpleTunnelClient),
-              SizedBox(height: AppTheme.spacingS),
+          // Unified Connection Status - only rebuilds when connection status changes
+          Selector<SimpleTunnelClient, Map<String, dynamic>>(
+            selector: (context, tunnelClient) => tunnelClient.connectionStatus,
+            builder: (context, connectionStatus, child) {
+              final simpleTunnelClient = context.read<SimpleTunnelClient>();
+              return _buildUnifiedConnectionStatusCard(simpleTunnelClient);
+            },
+          ),
+          SizedBox(height: AppTheme.spacingS),
 
-              // Local Ollama Configuration Card
-              _buildDesktopOllamaConfigCard(simpleTunnelClient),
-              SizedBox(height: AppTheme.spacingS),
+          // Local Ollama Configuration Card - static content
+          Builder(
+            builder: (context) {
+              final simpleTunnelClient = context.read<SimpleTunnelClient>();
+              return _buildDesktopOllamaConfigCard(simpleTunnelClient);
+            },
+          ),
+          SizedBox(height: AppTheme.spacingS),
 
-              // Cloud Proxy Configuration Card (only if authenticated)
-              if (!needsSetup) ...[
-                _buildDesktopCloudProxyConfigCard(simpleTunnelClient),
-                SizedBox(height: AppTheme.spacingS),
-              ],
+          // Cloud Proxy Configuration Card (only if authenticated) - static content
+          if (!needsSetup) ...[
+            Builder(
+              builder: (context) {
+                final simpleTunnelClient = context.read<SimpleTunnelClient>();
+                return _buildDesktopCloudProxyConfigCard(simpleTunnelClient);
+              },
+            ),
+            SizedBox(height: AppTheme.spacingS),
+          ],
 
-              // Advanced Tunnel Settings Card (collapsible)
-              _buildDesktopAdvancedTunnelCard(simpleTunnelClient),
-            ],
-          );
-        } catch (e) {
-          debugPrint(
-            '⚙️ [Settings] Error building desktop Tunnel Connection settings: $e',
-          );
-          return _buildServiceErrorCard('Failed to load tunnel settings: $e');
-        }
-      },
-    );
+          // Advanced Tunnel Settings Card (collapsible) - static content
+          Builder(
+            builder: (context) {
+              final simpleTunnelClient = context.read<SimpleTunnelClient>();
+              return _buildDesktopAdvancedTunnelCard(simpleTunnelClient);
+            },
+          ),
+        ],
+      );
+    } catch (e) {
+      debugPrint(
+        '⚙️ [Settings] Error building desktop Tunnel Connection settings: $e',
+      );
+      return _buildServiceErrorCard('Failed to load tunnel settings: $e');
+    }
   }
 
   // New method to build the Model Download Manager section

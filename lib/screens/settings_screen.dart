@@ -517,36 +517,48 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Widget _buildTunnelConnectionSettings(BuildContext context) {
-    return Consumer<SimpleTunnelClient>(
-      builder: (context, tunnelClient, child) {
-        return ModernCard(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildSectionHeader(
-                context,
-                'Tunnel Connection',
-                Icons.swap_horiz,
-                AppTheme.accentColor,
-              ),
-              SizedBox(height: AppTheme.spacingM),
-
-              // Connection status overview
-              _buildConnectionStatusCard(context, tunnelClient),
-
-              SizedBox(height: AppTheme.spacingM),
-
-              // Cloud proxy configuration
-              _buildCloudProxyConfigCard(context, tunnelClient),
-
-              SizedBox(height: AppTheme.spacingM),
-
-              // Connection test button
-              _buildConnectionTestButton(context, tunnelClient),
-            ],
+    return ModernCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildSectionHeader(
+            context,
+            'Tunnel Connection',
+            Icons.swap_horiz,
+            AppTheme.accentColor,
           ),
-        );
-      },
+          SizedBox(height: AppTheme.spacingM),
+
+          // Connection status overview - only rebuilds when connection status changes
+          Selector<SimpleTunnelClient, Map<String, dynamic>>(
+            selector: (context, tunnelClient) => tunnelClient.connectionStatus,
+            builder: (context, connectionStatus, child) {
+              final tunnelClient = context.read<SimpleTunnelClient>();
+              return _buildConnectionStatusCard(context, tunnelClient);
+            },
+          ),
+
+          SizedBox(height: AppTheme.spacingM),
+
+          // Cloud proxy configuration - static content, no need to rebuild
+          Builder(
+            builder: (context) {
+              final tunnelClient = context.read<SimpleTunnelClient>();
+              return _buildCloudProxyConfigCard(context, tunnelClient);
+            },
+          ),
+
+          SizedBox(height: AppTheme.spacingM),
+
+          // Connection test button - static content, no need to rebuild
+          Builder(
+            builder: (context) {
+              final tunnelClient = context.read<SimpleTunnelClient>();
+              return _buildConnectionTestButton(context, tunnelClient);
+            },
+          ),
+        ],
+      ),
     );
   }
 
