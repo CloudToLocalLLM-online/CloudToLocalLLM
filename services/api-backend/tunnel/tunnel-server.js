@@ -39,10 +39,11 @@ export class TunnelServer extends EventEmitter {
     this.jwksClient = jwksClient({
       jwksUri: `https://${config.AUTH0_DOMAIN}/.well-known/jwks.json`,
       cache: true,
-      cacheMaxEntries: 5,
-      cacheMaxAge: 600000, // 10 minutes
+      cacheMaxEntries: parseInt(process.env.JWKS_CACHE_MAX_ENTRIES) || 5,
+      cacheMaxAge: parseInt(process.env.JWKS_CACHE_MAX_AGE) || 600000, // 10 minutes
       rateLimit: true,
-      jwksRequestsPerMinute: 10,
+      jwksRequestsPerMinute: parseInt(process.env.JWKS_REQUESTS_PER_MINUTE) || 10,
+      timeout: parseInt(process.env.JWKS_TIMEOUT) || 30000,
     });
 
     // WebSocket security validator
