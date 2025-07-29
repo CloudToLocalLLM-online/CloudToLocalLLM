@@ -26,15 +26,13 @@ export class AuthService {
     this.logger = new TunnelLogger('auth-service');
     this.db = new DatabaseMigrator();
 
-    // JWKS client for Auth0 public key retrieval
+    // JWKS client for Auth0 public key retrieval (simplified config to avoid cache issues)
     this.jwksClient = jwksClient({
       jwksUri: `https://${this.config.AUTH0_DOMAIN}/.well-known/jwks.json`,
-      cache: true,
-      cacheMaxEntries: parseInt(process.env.JWKS_CACHE_MAX_ENTRIES) || 5,
-      cacheMaxAge: parseInt(process.env.JWKS_CACHE_MAX_AGE) || 600000, // 10 minutes
+      cache: false, // Disable cache temporarily to avoid maxAge error
       rateLimit: true,
-      jwksRequestsPerMinute: parseInt(process.env.JWKS_REQUESTS_PER_MINUTE) || 10,
-      timeout: parseInt(process.env.JWKS_TIMEOUT) || 30000,
+      jwksRequestsPerMinute: 10,
+      timeout: 30000,
     });
 
     this.initialized = false;

@@ -35,15 +35,13 @@ export class TunnelServer extends EventEmitter {
     this.connections = new Map(); // userId -> WebSocket
     this.pendingRequests = new Map(); // correlationId -> { resolve, reject, timeout }
 
-    // JWKS client for JWT validation
+    // JWKS client for JWT validation (simplified config to avoid cache issues)
     this.jwksClient = jwksClient({
       jwksUri: `https://${config.AUTH0_DOMAIN}/.well-known/jwks.json`,
-      cache: true,
-      cacheMaxEntries: parseInt(process.env.JWKS_CACHE_MAX_ENTRIES) || 5,
-      cacheMaxAge: parseInt(process.env.JWKS_CACHE_MAX_AGE) || 600000, // 10 minutes
+      cache: false, // Disable cache temporarily to avoid maxAge error
       rateLimit: true,
-      jwksRequestsPerMinute: parseInt(process.env.JWKS_REQUESTS_PER_MINUTE) || 10,
-      timeout: parseInt(process.env.JWKS_TIMEOUT) || 30000,
+      jwksRequestsPerMinute: 10,
+      timeout: 30000,
     });
 
     // WebSocket security validator
