@@ -1568,7 +1568,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       TunnelConfig(
         enableCloudProxy: enabled ?? currentConfig.enableCloudProxy,
         cloudProxyUrl: url ?? currentConfig.cloudProxyUrl,
-        localOllamaUrl: currentConfig.localOllamaUrl,
+        localBackendUrl: currentConfig.localBackendUrl,
         connectionTimeout: currentConfig.connectionTimeout,
         healthCheckInterval: currentConfig.healthCheckInterval,
       );

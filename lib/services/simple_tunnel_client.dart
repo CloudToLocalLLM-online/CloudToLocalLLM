@@ -39,14 +39,14 @@ class _QueuedMessage {
 /// Configuration class for tunnel client (for compatibility)
 class TunnelConfig {
   final String cloudProxyUrl;
-  final String localOllamaUrl;
+  final String localBackendUrl;
   final bool enableCloudProxy;
   final int connectionTimeout;
   final int healthCheckInterval;
 
   const TunnelConfig({
     required this.cloudProxyUrl,
-    required this.localOllamaUrl,
+    required this.localBackendUrl,
     this.enableCloudProxy = true,
     this.connectionTimeout = 10,
     this.healthCheckInterval = 30,
@@ -56,7 +56,7 @@ class TunnelConfig {
   factory TunnelConfig.defaultConfig() {
     return TunnelConfig(
       cloudProxyUrl: AppConfig.tunnelWebSocketUrl,
-      localOllamaUrl: 'http://localhost:11434',
+      localBackendUrl: 'http://localhost:11434',
       enableCloudProxy: true,
       connectionTimeout: 10,
       healthCheckInterval: 30,
@@ -171,7 +171,7 @@ class SimpleTunnelClient extends ChangeNotifier {
   /// Configuration (for compatibility with TunnelManagerService interface)
   TunnelConfig get config => TunnelConfig(
     cloudProxyUrl: AppConfig.apiBaseUrl,
-    localOllamaUrl: _localOllamaUrl,
+    localBackendUrl: _localOllamaUrl,
   );
 
   /// Initialize the tunnel client (for compatibility with TunnelManagerService interface)

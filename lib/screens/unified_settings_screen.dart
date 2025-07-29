@@ -8,12 +8,12 @@ import 'package:url_launcher/url_launcher.dart';
 import '../components/app_header.dart';
 import '../components/modern_card.dart';
 import '../components/model_download_manager.dart';
-import '../components/ollama_setup_guide.dart';
+
 import '../components/settings_sidebar.dart';
 import '../components/tunnel_connection_wizard.dart';
 import '../config/app_config.dart';
 import '../config/theme.dart';
-import '../models/ollama_connection_error.dart';
+
 import '../services/auth_service.dart';
 import '../services/local_ollama_connection_service.dart';
 import '../services/ollama_service.dart';
@@ -566,15 +566,6 @@ class _UnifiedSettingsScreenState extends State<UnifiedSettingsScreen> {
             builder: (context, connectionStatus, child) {
               final simpleTunnelClient = context.read<SimpleTunnelClient>();
               return _buildUnifiedConnectionStatusCard(simpleTunnelClient);
-            },
-          ),
-          SizedBox(height: AppTheme.spacingS),
-
-          // Local Ollama Configuration Card - static content
-          Builder(
-            builder: (context) {
-              final simpleTunnelClient = context.read<SimpleTunnelClient>();
-              return _buildDesktopOllamaConfigCard(simpleTunnelClient);
             },
           ),
           SizedBox(height: AppTheme.spacingS),
@@ -1927,165 +1918,6 @@ class _UnifiedSettingsScreenState extends State<UnifiedSettingsScreen> {
     );
   }
 
-  Widget _buildDesktopOllamaConfigCard(SimpleTunnelClient simpleTunnelClient) {
-    // Local Ollama is now managed independently through LocalOllamaConnectionService
-    // This card now redirects to the proper local Ollama settings
-    return Consumer<LocalOllamaConnectionService>(
-      builder: (context, localOllama, child) {
-        final isConnected = localOllama.isConnected;
-        final ollamaUrl = AppConfig.defaultOllamaUrl;
-        final connectionError = localOllama.error;
-
-        return ModernCard(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildStatusSectionHeader(
-                'Local Ollama Configuration',
-                Icons.computer,
-                isConnected ? Colors.green : Colors.red,
-              ),
-              SizedBox(height: AppTheme.spacingM),
-
-              // Simple status display
-              Container(
-                padding: EdgeInsets.all(AppTheme.spacingS),
-                decoration: BoxDecoration(
-                  color: (isConnected ? Colors.green : Colors.red).withValues(
-                    alpha: 0.1,
-                  ),
-                  borderRadius: BorderRadius.circular(AppTheme.borderRadiusS),
-                  border: Border.all(
-                    color: (isConnected ? Colors.green : Colors.red).withValues(
-                      alpha: 0.3,
-                    ),
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      isConnected ? Icons.check_circle : Icons.error,
-                      color: isConnected ? Colors.green : Colors.red,
-                      size: 16,
-                    ),
-                    SizedBox(width: AppTheme.spacingS),
-                    Expanded(
-                      child: Text(
-                        isConnected
-                            ? 'Connected to local Ollama'
-                            : connectionError ??
-                                  'Not connected to local Ollama',
-                        style: TextStyle(
-                          color: isConnected
-                              ? Colors.green[700]
-                              : Colors.red[700],
-                          fontSize: 12,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              SizedBox(height: AppTheme.spacingM),
-
-              // Display read-only URL for local Ollama
-              TextFormField(
-                initialValue: ollamaUrl,
-                decoration: const InputDecoration(
-                  labelText: 'Ollama API URL',
-                  hintText: 'e.g., http://localhost:11434',
-                  border: OutlineInputBorder(),
-                  isDense: true,
-                ),
-                readOnly: true,
-                style: TextStyle(color: Colors.grey[600]),
-              ),
-
-              SizedBox(height: AppTheme.spacingS),
-
-              // Info text about local Ollama management
-              Container(
-                padding: EdgeInsets.all(AppTheme.spacingS),
-                decoration: BoxDecoration(
-                  color: Colors.blue.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(AppTheme.borderRadiusS),
-                  border: Border.all(color: Colors.blue.withValues(alpha: 0.3)),
-                ),
-                child: Row(
-                  children: [
-                    Icon(Icons.info_outline, color: Colors.blue, size: 16),
-                    SizedBox(width: AppTheme.spacingS),
-                    Expanded(
-                      child: Text(
-                        'Local Ollama connections are managed independently. This service connects directly to localhost:11434.',
-                        style: TextStyle(color: Colors.blue[700], fontSize: 12),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              SizedBox(height: AppTheme.spacingM),
-
-              // Action buttons row
-              Row(
-                children: [
-                  Expanded(
-                    child: ElevatedButton.icon(
-                      onPressed: localOllama.isConnecting
-                          ? null
-                          : () async {
-                              await localOllama.testConnection();
-                            },
-                      icon: localOllama.isConnecting
-                          ? const SizedBox(
-                              width: 16,
-                              height: 16,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                valueColor: AlwaysStoppedAnimation<Color>(
-                                  Colors.white,
-                                ),
-                              ),
-                            )
-                          : Icon(isConnected ? Icons.check_circle : Icons.link),
-                      label: Text(
-                        localOllama.isConnecting
-                            ? 'Testing...'
-                            : isConnected
-                            ? 'Connected'
-                            : 'Test Connection',
-                      ),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: isConnected
-                            ? Colors.green
-                            : AppTheme.primaryColor,
-                        foregroundColor: Colors.white,
-                        padding: EdgeInsets.all(AppTheme.spacingM),
-                      ),
-                    ),
-                  ),
-                  SizedBox(width: AppTheme.spacingM),
-                  ElevatedButton.icon(
-                    onPressed: () => _showOllamaSetupGuide(null),
-                    icon: const Icon(Icons.help_outline),
-                    label: const Text('Help'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blue,
-                      foregroundColor: Colors.white,
-                      padding: EdgeInsets.all(AppTheme.spacingM),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
   Widget _buildDesktopCloudProxyConfigCard(SimpleTunnelClient tunnelClient) {
     final cloudStatus = tunnelClient.connectionStatus['cloud'];
     final isProxyEnabled = tunnelClient.config.enableCloudProxy;
@@ -2345,7 +2177,7 @@ class _UnifiedSettingsScreenState extends State<UnifiedSettingsScreen> {
       TunnelConfig(
         enableCloudProxy: enabled ?? currentConfig.enableCloudProxy,
         cloudProxyUrl: url ?? currentConfig.cloudProxyUrl,
-        localOllamaUrl: currentConfig.localOllamaUrl,
+        localBackendUrl: currentConfig.localBackendUrl,
         connectionTimeout: currentConfig.connectionTimeout,
         healthCheckInterval: currentConfig.healthCheckInterval,
       );
@@ -2379,7 +2211,7 @@ class _UnifiedSettingsScreenState extends State<UnifiedSettingsScreen> {
       TunnelConfig(
         enableCloudProxy: currentConfig.enableCloudProxy,
         cloudProxyUrl: currentConfig.cloudProxyUrl,
-        localOllamaUrl: currentConfig.localOllamaUrl,
+        localBackendUrl: currentConfig.localBackendUrl,
         connectionTimeout: connectionTimeout ?? currentConfig.connectionTimeout,
         healthCheckInterval:
             healthCheckInterval ?? currentConfig.healthCheckInterval,
@@ -2425,13 +2257,6 @@ class _UnifiedSettingsScreenState extends State<UnifiedSettingsScreen> {
   }
 
   // Helper methods for settings display
-
-  void _showOllamaSetupGuide(OllamaConnectionError? error) {
-    showDialog(
-      context: context,
-      builder: (context) => OllamaSetupGuide(connectionError: error),
-    );
-  }
 
   /// Build data management settings section
   Widget _buildDataManagementSettings() {

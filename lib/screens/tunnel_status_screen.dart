@@ -199,7 +199,7 @@ class _TunnelStatusScreenState extends State<TunnelStatusScreen> {
                 SizedBox(height: AppTheme.spacingM),
 
                 _buildDetailRow('Cloud Proxy URL', config.cloudProxyUrl),
-                _buildDetailRow('Local Ollama URL', config.localOllamaUrl),
+                _buildDetailRow('Local Backend URL', config.localBackendUrl),
                 _buildDetailRow(
                   'Connection Timeout',
                   '${config.connectionTimeout}s',

@@ -7,7 +7,7 @@ import '../config/app_config.dart';
 class SetupTunnelConfig {
   final String userId;
   final String cloudProxyUrl;
-  final String localOllamaUrl;
+  final String localBackendUrl;
   final String authToken;
   final bool enableCloudProxy;
   final int connectionTimeout;
@@ -20,7 +20,7 @@ class SetupTunnelConfig {
   const SetupTunnelConfig({
     required this.userId,
     required this.cloudProxyUrl,
-    required this.localOllamaUrl,
+    required this.localBackendUrl,
     required this.authToken,
     this.enableCloudProxy = true,
     this.connectionTimeout = 30,
@@ -39,7 +39,7 @@ class SetupTunnelConfig {
     return SetupTunnelConfig(
       userId: userId,
       cloudProxyUrl: AppConfig.tunnelWebSocketUrl,
-      localOllamaUrl: 'http://localhost:11434',
+      localBackendUrl: 'http://localhost:11434',
       authToken: authToken,
       enableCloudProxy: true,
       connectionTimeout: 30,
@@ -57,7 +57,7 @@ class SetupTunnelConfig {
     return SetupTunnelConfig(
       userId: userId,
       cloudProxyUrl: AppConfig.tunnelWebSocketUrlDev,
-      localOllamaUrl: 'http://localhost:11434',
+      localBackendUrl: 'http://localhost:11434',
       authToken: authToken,
       enableCloudProxy: true,
       connectionTimeout: 10,
@@ -84,7 +84,7 @@ class SetupTunnelConfig {
     return SetupTunnelConfig(
       userId: userId ?? this.userId,
       cloudProxyUrl: cloudProxyUrl ?? this.cloudProxyUrl,
-      localOllamaUrl: localOllamaUrl ?? this.localOllamaUrl,
+      localBackendUrl: localOllamaUrl ?? this.localBackendUrl,
       authToken: authToken ?? this.authToken,
       enableCloudProxy: enableCloudProxy ?? this.enableCloudProxy,
       connectionTimeout: connectionTimeout ?? this.connectionTimeout,
@@ -101,7 +101,7 @@ class SetupTunnelConfig {
     return {
       'userId': userId,
       'cloudProxyUrl': cloudProxyUrl,
-      'localOllamaUrl': localOllamaUrl,
+      'localBackendUrl': localBackendUrl,
       'authToken': authToken,
       'enableCloudProxy': enableCloudProxy,
       'connectionTimeout': connectionTimeout,
@@ -118,7 +118,7 @@ class SetupTunnelConfig {
     return SetupTunnelConfig(
       userId: json['userId'] as String,
       cloudProxyUrl: json['cloudProxyUrl'] as String,
-      localOllamaUrl: json['localOllamaUrl'] as String,
+      localBackendUrl: json['localBackendUrl'] as String,
       authToken: json['authToken'] as String,
       enableCloudProxy: json['enableCloudProxy'] as bool? ?? true,
       connectionTimeout: json['connectionTimeout'] as int? ?? 30,
@@ -169,7 +169,7 @@ class SetupTunnelConfig {
   bool get isValid {
     return userId.isNotEmpty &&
         cloudProxyUrl.isNotEmpty &&
-        localOllamaUrl.isNotEmpty &&
+        localBackendUrl.isNotEmpty &&
         authToken.isNotEmpty &&
         connectionTimeout > 0 &&
         healthCheckInterval > 0 &&
@@ -182,7 +182,7 @@ class SetupTunnelConfig {
     return {
       'userId': userId,
       'cloudProxyUrl': cloudProxyUrl,
-      'localOllamaUrl': localOllamaUrl,
+      'localBackendUrl': localBackendUrl,
       'enableCloudProxy': enableCloudProxy,
       'connectionTimeout': connectionTimeout,
       'healthCheckInterval': healthCheckInterval,
@@ -197,7 +197,7 @@ class SetupTunnelConfig {
   @override
   String toString() {
     return 'SetupTunnelConfig(userId: $userId, cloudProxyUrl: $cloudProxyUrl, '
-        'localOllamaUrl: $localOllamaUrl, enableCloudProxy: $enableCloudProxy, '
+        'localBackendUrl: $localBackendUrl, enableCloudProxy: $enableCloudProxy, '
         'connectionTimeout: ${connectionTimeout}s, healthCheckInterval: ${healthCheckInterval}s, '
         'retryAttempts: $retryAttempts, retryDelay: ${retryDelay}s, isValid: $isValid)';
   }
@@ -209,7 +209,7 @@ class SetupTunnelConfig {
     return other is SetupTunnelConfig &&
         other.userId == userId &&
         other.cloudProxyUrl == cloudProxyUrl &&
-        other.localOllamaUrl == localOllamaUrl &&
+        other.localBackendUrl == localBackendUrl &&
         other.authToken == authToken &&
         other.enableCloudProxy == enableCloudProxy &&
         other.connectionTimeout == connectionTimeout &&
@@ -223,7 +223,7 @@ class SetupTunnelConfig {
     return Object.hash(
       userId,
       cloudProxyUrl,
-      localOllamaUrl,
+      localBackendUrl,
       authToken,
       enableCloudProxy,
       connectionTimeout,

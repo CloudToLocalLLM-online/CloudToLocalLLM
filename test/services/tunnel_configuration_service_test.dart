@@ -38,7 +38,7 @@ void main() {
       final config = setup_config.SetupTunnelConfig(
         userId: 'test-user',
         cloudProxyUrl: 'https://api.example.com/ws',
-        localOllamaUrl: 'http://localhost:11434',
+        localBackendUrl: 'http://localhost:11434',
         authToken: 'test-token',
       );
 

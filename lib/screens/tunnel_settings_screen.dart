@@ -446,30 +446,6 @@ class _TunnelSettingsScreenState extends State<TunnelSettingsScreen> {
             ),
             const SizedBox(height: 16),
 
-            // LLM Provider Settings button
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: () {
-                  context.go('/settings/llm-provider');
-                },
-                icon: const Icon(Icons.memory),
-                label: const Text('LLM Provider & Model Settings'),
-                style: ElevatedButton.styleFrom(
-                  alignment: Alignment.centerLeft,
-                ),
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Configure connection settings, test models, and manage Ollama integration',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Theme.of(
-                  context,
-                ).textTheme.bodySmall?.color?.withValues(alpha: 0.7),
-              ),
-            ),
-
             const SizedBox(height: 16),
 
             // Connection Status Settings button
@@ -535,7 +511,7 @@ class _TunnelSettingsScreenState extends State<TunnelSettingsScreen> {
       TunnelConfig(
         enableCloudProxy: _enableCloudProxy,
         cloudProxyUrl: _cloudProxyUrlController.text.trim(),
-        localOllamaUrl: 'http://localhost:11434',
+        localBackendUrl: 'http://localhost:11434',
         connectionTimeout: int.parse(_connectionTimeoutController.text.trim()),
         healthCheckInterval: int.parse(
           _healthCheckIntervalController.text.trim(),

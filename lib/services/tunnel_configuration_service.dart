@@ -84,7 +84,7 @@ class TunnelConfigurationService extends ChangeNotifier {
         cloudProxyUrl: kDebugMode
             ? AppConfig.tunnelWebSocketUrlDev
             : AppConfig.tunnelWebSocketUrl,
-        localOllamaUrl: 'http://localhost:11434',
+        localBackendUrl: 'http://localhost:11434',
         authToken: token,
         enableCloudProxy: true,
         connectionTimeout: 30,
