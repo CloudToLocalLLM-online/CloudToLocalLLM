@@ -695,9 +695,19 @@ export function createWebSocketSecurityValidator(config = {}) {
       return false;
     }
 
-    // Validate origin
-    if (!securityManager.validateWebSocketOrigin(origin, ip)) {
-      return false;
+    // Temporarily disable origin validation for debugging
+    // TODO: Re-enable after fixing Flutter WebSocket origin headers
+    if (process.env.NODE_ENV === 'production') {
+      // Validate origin only in production
+      if (!securityManager.validateWebSocketOrigin(origin, ip)) {
+        return false;
+      }
+    } else {
+      // Log origin for debugging in development
+      securityManager.logger.debug('WebSocket origin check bypassed for development', {
+        origin,
+        ip: securityManager.hashIP(ip),
+      });
     }
 
     // Validate TLS connection

@@ -62,6 +62,9 @@ const jwksClientInstance = jwksClient({
 const app = express();
 const server = http.createServer(app);
 
+// Trust proxy headers (required for rate limiting behind nginx)
+app.set('trust proxy', true);
+
 // Security middleware
 app.use(helmet({
   contentSecurityPolicy: {
