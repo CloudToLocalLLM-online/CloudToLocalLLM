@@ -92,7 +92,9 @@ class SimpleTunnelClient extends ChangeNotifier {
   // Reconnection logic
   Timer? _reconnectTimer;
   int _reconnectAttempts = 0;
-  static const List<int> _reconnectDelays = [1, 2, 4, 8, 16, 30]; // seconds
+  static const List<int> _reconnectDelays = [2, 5, 10, 20, 30, 60]; // seconds
+  static const int _maxReconnectAttempts = 10; // Maximum reconnection attempts
+  DateTime? _lastConnectionTime;
 
   // Health monitoring
   Timer? _pingTimer;
@@ -285,14 +287,9 @@ class SimpleTunnelClient extends ChangeNotifier {
           ? AppConfig.tunnelWebSocketUrlDev
           : AppConfig.tunnelWebSocketUrl;
 
-      // Build URI with token parameter - construct manually to avoid port issues
+      // Build URI with token parameter - use replace to preserve all components
       final baseUri = Uri.parse(wsUrl);
-      final uri = Uri(
-        scheme: baseUri.scheme,
-        host: baseUri.host,
-        path: baseUri.path,
-        queryParameters: {'token': accessToken},
-      );
+      final uri = baseUri.replace(queryParameters: {'token': accessToken});
 
       // Extract user ID from current user for session tracking
       _userId = _authService.currentUser?.id;
@@ -321,6 +318,7 @@ class SimpleTunnelClient extends ChangeNotifier {
       _isConnected = true;
       _isConnecting = false;
       _reconnectAttempts = 0;
+      _lastConnectionTime = DateTime.now();
 
       // Start health monitoring
       _startHealthMonitoring();
@@ -397,6 +395,7 @@ class SimpleTunnelClient extends ChangeNotifier {
     _webSocketSubscription = null;
     _isConnected = false;
     _isConnecting = false;
+    _lastConnectionTime = null;
 
     // Complete pending requests with error
     _completePendingRequestsWithError('Tunnel disconnected');
@@ -969,6 +968,15 @@ class SimpleTunnelClient extends ChangeNotifier {
       return; // Already handling disconnection
     }
 
+    // Check if connection was very short-lived (less than 5 seconds)
+    bool wasShortLived = false;
+    if (_lastConnectionTime != null) {
+      final connectionDuration = DateTime.now().difference(
+        _lastConnectionTime!,
+      );
+      wasShortLived = connectionDuration.inSeconds < 5;
+    }
+
     _logger.logTunnelError(
       TunnelErrorCodes.connectionLost,
       'Connection lost',
@@ -980,6 +988,7 @@ class SimpleTunnelClient extends ChangeNotifier {
         'wasConnecting': _isConnecting,
         'pendingRequests': _pendingRequests.length,
         'reconnectAttempts': _reconnectAttempts,
+        'wasShortLived': wasShortLived,
       },
     );
 
@@ -992,14 +1001,55 @@ class SimpleTunnelClient extends ChangeNotifier {
 
     _debouncedNotifyListeners();
 
-    // Schedule reconnection
-    _scheduleReconnection();
+    // Only schedule reconnection if not at max attempts and not disposed
+    if (!_isDisposed && _reconnectAttempts < _maxReconnectAttempts) {
+      // If connection was short-lived, add extra delay
+      if (wasShortLived) {
+        _reconnectAttempts++; // Penalize short-lived connections
+      }
+      _scheduleReconnection();
+    }
+  }
+
+  /// Stop all reconnection attempts
+  void stopReconnection() {
+    _reconnectTimer?.cancel();
+    _reconnectTimer = null;
+    _reconnectAttempts = _maxReconnectAttempts; // Prevent further attempts
   }
 
   /// Schedule reconnection with exponential backoff
   void _scheduleReconnection() {
     if (_reconnectTimer != null) {
       return; // Already scheduled
+    }
+
+    // Check if we've exceeded maximum reconnection attempts
+    if (_reconnectAttempts >= _maxReconnectAttempts) {
+      _logger.logTunnelError(
+        TunnelErrorCodes.reconnectionFailed,
+        'Maximum reconnection attempts exceeded',
+        correlationId: _correlationId,
+        userId: _userId,
+        context: {
+          'attempts': _reconnectAttempts,
+          'maxAttempts': _maxReconnectAttempts,
+        },
+      );
+      _lastError = 'Connection failed after $_maxReconnectAttempts attempts';
+      _debouncedNotifyListeners();
+      return;
+    }
+
+    // Check if connection was stable (connected for at least 30 seconds)
+    if (_lastConnectionTime != null) {
+      final connectionDuration = DateTime.now().difference(
+        _lastConnectionTime!,
+      );
+      if (connectionDuration.inSeconds >= 30) {
+        // Reset reconnection attempts for stable connections
+        _reconnectAttempts = 0;
+      }
     }
 
     final delayIndex = min(_reconnectAttempts, _reconnectDelays.length - 1);
@@ -1013,7 +1063,7 @@ class SimpleTunnelClient extends ChangeNotifier {
       context: {
         'delay': delay,
         'attempt': _reconnectAttempts + 1,
-        'maxAttempts': _reconnectDelays.length,
+        'maxAttempts': _maxReconnectAttempts,
       },
     );
 

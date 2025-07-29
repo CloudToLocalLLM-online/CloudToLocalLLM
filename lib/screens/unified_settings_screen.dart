@@ -232,26 +232,34 @@ class _UnifiedSettingsScreenState extends State<UnifiedSettingsScreen> {
         children: [
           // Ensure content starts at the top and fills available space
           Expanded(
-            child: SingleChildScrollView(
-              padding: EdgeInsets.only(
-                left: AppTheme.spacingL,
-                right: AppTheme.spacingL,
-                top: AppTheme.spacingM, // Small top padding for breathing room
-                bottom: AppTheme.spacingL,
-              ),
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(
-                  maxWidth: AppConfig.maxContentWidth,
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildSectionHeader(),
-                    SizedBox(height: AppTheme.spacingL),
-                    _buildSectionContentWithErrorHandling(),
-                  ],
-                ),
-              ),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                return SingleChildScrollView(
+                  padding: EdgeInsets.only(
+                    left: AppTheme.spacingL,
+                    right: AppTheme.spacingL,
+                    top: AppTheme.spacingM,
+                    bottom: AppTheme.spacingL,
+                  ),
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(
+                      maxWidth: AppConfig.maxContentWidth,
+                      minHeight:
+                          constraints.maxHeight -
+                          AppTheme.spacingL -
+                          AppTheme.spacingM,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        _buildSectionHeader(),
+                        SizedBox(height: AppTheme.spacingL),
+                        _buildSectionContentWithErrorHandling(),
+                      ],
+                    ),
+                  ),
+                );
+              },
             ),
           ),
         ],
@@ -362,8 +370,9 @@ class _UnifiedSettingsScreenState extends State<UnifiedSettingsScreen> {
 
   Widget _buildGeneralSettings() {
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        ModernCard(
+        _optimizedCard(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -521,79 +530,41 @@ class _UnifiedSettingsScreenState extends State<UnifiedSettingsScreen> {
     // This section now represents "Tunnel Connection" settings for desktop.
     // Prioritize setup wizard and streamline the UI
     try {
-      // Check if user needs setup wizard (no authentication or first time)
       final needsSetup = !Provider.of<AuthService>(
         context,
         listen: false,
       ).isAuthenticated.value;
 
       return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Prominent Tunnel Status Summary - only rebuilds when connection status changes
-          Selector<SimpleTunnelClient, Map<String, dynamic>>(
-            selector: (context, tunnelClient) => tunnelClient.connectionStatus,
-            builder: (context, connectionStatus, child) {
-              final simpleTunnelClient = context.read<SimpleTunnelClient>();
-
-              // Show loading state if connecting
-              if (simpleTunnelClient.isConnecting) {
-                return _buildServiceErrorCard(
-                  'SimpleTunnelClient is initializing...',
-                );
-              }
-
-              return _buildTunnelStatusSummaryCard(
-                simpleTunnelClient,
-                needsSetup,
-              );
-            },
-          ),
-          SizedBox(height: AppTheme.spacingM),
-
-          // Compact info about the tunnel service - static content
-          _buildCompactTunnelInfoCard(),
-          SizedBox(height: AppTheme.spacingS),
-
-          // Prioritize Setup Wizard for new users - static content
+          // Setup wizard for unauthenticated users
           if (needsSetup) ...[
-            _buildTunnelSetupWizardCard(),
-            SizedBox(height: AppTheme.spacingS),
+            _optimizedCard(child: _buildSetupWizardContent()),
+            SizedBox(height: AppTheme.spacingM),
           ],
 
-          // Unified Connection Status - only rebuilds when connection status changes
-          Selector<SimpleTunnelClient, Map<String, dynamic>>(
-            selector: (context, tunnelClient) => tunnelClient.connectionStatus,
-            builder: (context, connectionStatus, child) {
-              final simpleTunnelClient = context.read<SimpleTunnelClient>();
-              return _buildUnifiedConnectionStatusCard(simpleTunnelClient);
-            },
-          ),
-          SizedBox(height: AppTheme.spacingS),
-
-          // Cloud Proxy Configuration Card (only if authenticated) - static content
-          if (!needsSetup) ...[
-            Builder(
-              builder: (context) {
-                final simpleTunnelClient = context.read<SimpleTunnelClient>();
-                return _buildDesktopCloudProxyConfigCard(simpleTunnelClient);
+          // Main tunnel status and controls
+          _optimizedCard(
+            child: Selector<SimpleTunnelClient, Map<String, dynamic>>(
+              selector: (context, tunnelClient) =>
+                  tunnelClient.connectionStatus,
+              builder: (context, connectionStatus, child) {
+                final tunnelClient = context.read<SimpleTunnelClient>();
+                return _buildTunnelMainContent(tunnelClient, needsSetup);
               },
             ),
-            SizedBox(height: AppTheme.spacingS),
-          ],
-
-          // Advanced Tunnel Settings Card (collapsible) - static content
-          Builder(
-            builder: (context) {
-              final simpleTunnelClient = context.read<SimpleTunnelClient>();
-              return _buildDesktopAdvancedTunnelCard(simpleTunnelClient);
-            },
           ),
+
+          // Advanced settings (collapsible)
+          if (!needsSetup) ...[
+            SizedBox(height: AppTheme.spacingM),
+            _optimizedCard(child: _buildTunnelAdvancedContent()),
+          ],
         ],
       );
     } catch (e) {
-      debugPrint(
-        '⚙️ [Settings] Error building desktop Tunnel Connection settings: $e',
-      );
+      debugPrint('⚙️ [Settings] Error building tunnel settings: $e');
       return _buildServiceErrorCard('Failed to load tunnel settings: $e');
     }
   }
@@ -2492,6 +2463,618 @@ class _UnifiedSettingsScreenState extends State<UnifiedSettingsScreen> {
           Navigator.of(context).pop();
         },
       ),
+    );
+  }
+
+  /// Optimized card component that prevents unnecessary rebuilds
+  Widget _optimizedCard({required Widget child}) {
+    return Container(
+      width: double.infinity,
+      margin: EdgeInsets.symmetric(vertical: AppTheme.spacingXS),
+      decoration: BoxDecoration(
+        color: AppTheme.backgroundCard,
+        borderRadius: BorderRadius.circular(AppTheme.borderRadiusM),
+        border: Border.all(
+          color: AppTheme.secondaryColor.withValues(alpha: 0.27),
+          width: 1.5,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.4),
+            blurRadius: 24,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(AppTheme.borderRadiusM),
+        child: Padding(
+          padding: EdgeInsets.all(AppTheme.spacingL),
+          child: child,
+        ),
+      ),
+    );
+  }
+
+  /// Content methods that return only the inner content without card wrapper
+  Widget _buildServiceErrorContent(String message) {
+    return Container(
+      padding: EdgeInsets.all(AppTheme.spacingM),
+      decoration: BoxDecoration(
+        color: Colors.orange.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(AppTheme.borderRadiusS),
+        border: Border.all(color: Colors.orange.withValues(alpha: 0.3)),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.warning, color: Colors.orange, size: 20),
+          SizedBox(width: AppTheme.spacingS),
+          Expanded(
+            child: Text(
+              message,
+              style: TextStyle(color: Colors.orange[700], fontSize: 14),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTunnelStatusSummaryContent(
+    SimpleTunnelClient tunnelClient,
+    bool needsSetup,
+  ) {
+    final isConnected = tunnelClient.isConnected;
+    final isConnecting = tunnelClient.isConnecting;
+    final error = tunnelClient.lastError;
+
+    Color statusColor;
+    IconData statusIcon;
+    String statusText;
+    String statusDescription;
+
+    if (isConnected) {
+      statusColor = Colors.green;
+      statusIcon = Icons.check_circle;
+      statusText = 'Connected';
+      statusDescription = 'Tunnel connection is active and working';
+    } else if (isConnecting) {
+      statusColor = Colors.orange;
+      statusIcon = Icons.sync;
+      statusText = 'Connecting...';
+      statusDescription = 'Establishing tunnel connection';
+    } else if (error != null) {
+      statusColor = Colors.red;
+      statusIcon = Icons.error;
+      statusText = 'Connection Error';
+      statusDescription = error;
+    } else if (needsSetup) {
+      statusColor = Colors.blue;
+      statusIcon = Icons.info;
+      statusText = 'Setup Required';
+      statusDescription = 'Please complete authentication to enable tunnel';
+    } else {
+      statusColor = Colors.grey;
+      statusIcon = Icons.cloud_off;
+      statusText = 'Disconnected';
+      statusDescription = 'Tunnel connection is not active';
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(statusIcon, color: statusColor, size: 24),
+            SizedBox(width: AppTheme.spacingM),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Tunnel Status: $statusText',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: AppTheme.textColor,
+                    ),
+                  ),
+                  SizedBox(height: AppTheme.spacingXS),
+                  Text(
+                    statusDescription,
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: AppTheme.textColorLight,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCompactTunnelInfoContent() {
+    return Row(
+      children: [
+        Icon(Icons.info_outline, color: AppTheme.primaryColor, size: 18),
+        SizedBox(width: AppTheme.spacingS),
+        Expanded(
+          child: Text(
+            kIsWeb
+                ? 'Secure tunnel proxy connecting web interface to local backend'
+                : 'Secure tunnel allowing web access to your local backend instance',
+            style: TextStyle(color: AppTheme.textColorLight, fontSize: 12),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTunnelSetupWizardContent() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(Icons.assistant, color: AppTheme.primaryColor, size: 20),
+            SizedBox(width: AppTheme.spacingS),
+            Text(
+              'Setup Wizard',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: AppTheme.textColor,
+              ),
+            ),
+          ],
+        ),
+        SizedBox(height: AppTheme.spacingS),
+        Text(
+          'Complete authentication to enable tunnel connection',
+          style: TextStyle(color: AppTheme.textColorLight, fontSize: 14),
+        ),
+        SizedBox(height: AppTheme.spacingM),
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton.icon(
+            onPressed: () => context.go('/setup'),
+            icon: const Icon(Icons.play_arrow),
+            label: const Text('Start Setup'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.primaryColor,
+              foregroundColor: Colors.white,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildUnifiedConnectionStatusContent(SimpleTunnelClient tunnelClient) {
+    final connectionStatus = tunnelClient.connectionStatus;
+    final cloudStatus = connectionStatus['cloud'] as Map<String, dynamic>?;
+    final localStatus = connectionStatus['local'] as Map<String, dynamic>?;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Connection Status',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: AppTheme.textColor,
+          ),
+        ),
+        SizedBox(height: AppTheme.spacingM),
+
+        // Cloud connection status
+        if (cloudStatus != null) ...[
+          _buildConnectionStatusRow(
+            'Cloud Tunnel',
+            cloudStatus['connected'] == true,
+            cloudStatus['error']?.toString(),
+          ),
+          SizedBox(height: AppTheme.spacingS),
+        ],
+
+        // Local connection status
+        if (localStatus != null) ...[
+          _buildConnectionStatusRow(
+            'Local Backend',
+            localStatus['connected'] == true,
+            localStatus['error']?.toString(),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildConnectionStatusRow(
+    String label,
+    bool isConnected,
+    String? error,
+  ) {
+    return Row(
+      children: [
+        Icon(
+          isConnected ? Icons.check_circle : Icons.error,
+          color: isConnected ? Colors.green : Colors.red,
+          size: 16,
+        ),
+        SizedBox(width: AppTheme.spacingS),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: AppTheme.textColor,
+                ),
+              ),
+              if (error != null)
+                Text(
+                  error,
+                  style: TextStyle(fontSize: 12, color: Colors.red[700]),
+                ),
+            ],
+          ),
+        ),
+        Text(
+          isConnected ? 'Connected' : 'Disconnected',
+          style: TextStyle(
+            fontSize: 12,
+            color: isConnected ? Colors.green[700] : Colors.red[700],
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDesktopCloudProxyConfigContent(SimpleTunnelClient tunnelClient) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Cloud Proxy Configuration',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: AppTheme.textColor,
+          ),
+        ),
+        SizedBox(height: AppTheme.spacingM),
+        Text(
+          'Tunnel endpoint: ${AppConfig.tunnelWebSocketUrl}',
+          style: TextStyle(
+            fontSize: 12,
+            color: AppTheme.textColorLight,
+            fontFamily: 'monospace',
+          ),
+        ),
+        SizedBox(height: AppTheme.spacingS),
+        Row(
+          children: [
+            Expanded(
+              child: ElevatedButton.icon(
+                onPressed: () => context.go('/settings/tunnel'),
+                icon: const Icon(Icons.settings),
+                label: const Text('Advanced Settings'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.primaryColor,
+                  foregroundColor: Colors.white,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDesktopAdvancedTunnelContent(SimpleTunnelClient tunnelClient) {
+    return ExpansionTile(
+      title: Text(
+        'Advanced Tunnel Settings',
+        style: TextStyle(
+          fontSize: 16,
+          fontWeight: FontWeight.bold,
+          color: AppTheme.textColor,
+        ),
+      ),
+      children: [
+        Padding(
+          padding: EdgeInsets.all(AppTheme.spacingM),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Connection Details',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: AppTheme.textColor,
+                ),
+              ),
+              SizedBox(height: AppTheme.spacingS),
+              Text(
+                'Timeout: ${tunnelClient.config.connectionTimeout}s',
+                style: TextStyle(fontSize: 12, color: AppTheme.textColorLight),
+              ),
+              Text(
+                'Health Check: ${tunnelClient.config.healthCheckInterval}s',
+                style: TextStyle(fontSize: 12, color: AppTheme.textColorLight),
+              ),
+              SizedBox(height: AppTheme.spacingM),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () => context.go('/settings/tunnel'),
+                  icon: const Icon(Icons.tune),
+                  label: const Text('Configure Advanced Settings'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.secondaryColor,
+                    foregroundColor: Colors.white,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// Clean, simplified tunnel content methods
+  Widget _buildSetupWizardContent() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(Icons.assistant, color: AppTheme.primaryColor, size: 24),
+            SizedBox(width: AppTheme.spacingM),
+            Text(
+              'Setup Required',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: AppTheme.textColor,
+              ),
+            ),
+          ],
+        ),
+        SizedBox(height: AppTheme.spacingM),
+        Text(
+          'Complete authentication to enable tunnel connection and access cloud features.',
+          style: TextStyle(color: AppTheme.textColorLight, fontSize: 14),
+        ),
+        SizedBox(height: AppTheme.spacingL),
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton.icon(
+            onPressed: () => context.go('/setup'),
+            icon: const Icon(Icons.play_arrow),
+            label: const Text('Start Setup'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.primaryColor,
+              foregroundColor: Colors.white,
+              padding: EdgeInsets.all(AppTheme.spacingM),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTunnelMainContent(
+    SimpleTunnelClient tunnelClient,
+    bool needsSetup,
+  ) {
+    final isConnected = tunnelClient.isConnected;
+    final isConnecting = tunnelClient.isConnecting;
+    final error = tunnelClient.lastError;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Status header
+        Row(
+          children: [
+            Icon(
+              isConnected
+                  ? Icons.check_circle
+                  : isConnecting
+                  ? Icons.sync
+                  : Icons.cloud_off,
+              color: isConnected
+                  ? Colors.green
+                  : isConnecting
+                  ? Colors.orange
+                  : Colors.grey,
+              size: 24,
+            ),
+            SizedBox(width: AppTheme.spacingM),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Tunnel Connection',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: AppTheme.textColor,
+                    ),
+                  ),
+                  Text(
+                    isConnected
+                        ? 'Connected and active'
+                        : isConnecting
+                        ? 'Connecting...'
+                        : error != null
+                        ? 'Connection error'
+                        : 'Disconnected',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: isConnected
+                          ? Colors.green[700]
+                          : isConnecting
+                          ? Colors.orange[700]
+                          : error != null
+                          ? Colors.red[700]
+                          : AppTheme.textColorLight,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+
+        if (error != null) ...[
+          SizedBox(height: AppTheme.spacingM),
+          Container(
+            padding: EdgeInsets.all(AppTheme.spacingS),
+            decoration: BoxDecoration(
+              color: Colors.red.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(AppTheme.borderRadiusS),
+              border: Border.all(color: Colors.red.withValues(alpha: 0.3)),
+            ),
+            child: Text(
+              error,
+              style: TextStyle(color: Colors.red[700], fontSize: 12),
+            ),
+          ),
+        ],
+
+        if (!needsSetup) ...[
+          SizedBox(height: AppTheme.spacingL),
+          Row(
+            children: [
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: () => context.go('/settings/tunnel'),
+                  icon: const Icon(Icons.settings),
+                  label: const Text('Configure'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.primaryColor,
+                    foregroundColor: Colors.white,
+                  ),
+                ),
+              ),
+              SizedBox(width: AppTheme.spacingS),
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: isConnecting
+                      ? null
+                      : () {
+                          tunnelClient.connect();
+                        },
+                  icon: Icon(isConnecting ? Icons.sync : Icons.link),
+                  label: Text(isConnecting ? 'Testing...' : 'Test'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.secondaryColor,
+                    foregroundColor: Colors.white,
+                  ),
+                ),
+              ),
+            ],
+          ),
+
+          // Show stop reconnection button if reconnecting frequently
+          if (tunnelClient.reconnectAttempts > 3) ...[
+            SizedBox(height: AppTheme.spacingM),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: () {
+                  tunnelClient.stopReconnection();
+                },
+                icon: const Icon(Icons.stop),
+                label: Text(
+                  'Stop Reconnection (${tunnelClient.reconnectAttempts} attempts)',
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.orange,
+                  foregroundColor: Colors.white,
+                ),
+              ),
+            ),
+          ],
+        ],
+      ],
+    );
+  }
+
+  Widget _buildTunnelAdvancedContent() {
+    return ExpansionTile(
+      title: Text(
+        'Advanced Settings',
+        style: TextStyle(
+          fontSize: 16,
+          fontWeight: FontWeight.w500,
+          color: AppTheme.textColor,
+        ),
+      ),
+      children: [
+        Padding(
+          padding: EdgeInsets.all(AppTheme.spacingM),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Tunnel Endpoint',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: AppTheme.textColor,
+                ),
+              ),
+              SizedBox(height: AppTheme.spacingS),
+              Container(
+                padding: EdgeInsets.all(AppTheme.spacingS),
+                decoration: BoxDecoration(
+                  color: AppTheme.backgroundMain,
+                  borderRadius: BorderRadius.circular(AppTheme.borderRadiusS),
+                  border: Border.all(
+                    color: AppTheme.secondaryColor.withValues(alpha: 0.3),
+                  ),
+                ),
+                child: Text(
+                  AppConfig.tunnelWebSocketUrl,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: AppTheme.textColorLight,
+                    fontFamily: 'monospace',
+                  ),
+                ),
+              ),
+              SizedBox(height: AppTheme.spacingL),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () => context.go('/settings/tunnel'),
+                  icon: const Icon(Icons.tune),
+                  label: const Text('Advanced Configuration'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.secondaryColor,
+                    foregroundColor: Colors.white,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }
