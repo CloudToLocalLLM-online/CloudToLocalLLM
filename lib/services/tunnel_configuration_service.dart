@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
+import '../config/app_config.dart';
 import '../models/tunnel_config.dart' as setup_config;
 import '../models/tunnel_validation_result.dart';
 import '../services/auth_service.dart';
@@ -80,7 +81,9 @@ class TunnelConfigurationService extends ChangeNotifier {
       // Generate configuration based on current environment and user settings
       final config = setup_config.SetupTunnelConfig(
         userId: userId,
-        cloudProxyUrl: '${_baseUrl.replaceFirst('http', 'ws')}/ws/tunnel',
+        cloudProxyUrl: kDebugMode
+            ? AppConfig.tunnelWebSocketUrlDev
+            : AppConfig.tunnelWebSocketUrl,
         localOllamaUrl: 'http://localhost:11434',
         authToken: token,
         enableCloudProxy: true,

@@ -111,9 +111,11 @@ class MockSimpleTunnelClient extends _i1.Mock
           as _i4.Future<void>);
 
   @override
-  _i4.Future<void> connect() =>
+  _i4.Future<void> connect({bool forceTokenRefresh = false}) =>
       (super.noSuchMethod(
-            Invocation.method(#connect, []),
+            Invocation.method(#connect, [], {
+              #forceTokenRefresh: forceTokenRefresh,
+            }),
             returnValue: _i4.Future<void>.value(),
             returnValueForMissingStub: _i4.Future<void>.value(),
           )

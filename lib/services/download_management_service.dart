@@ -105,7 +105,7 @@ class DownloadManagementService extends ChangeNotifier {
           case 'msi':
             return 'CloudToLocalLLM-Windows-';
           case 'zip':
-            return 'cloudtolocalllm-windows-v';
+            return 'cloudtolocalllm-';
           default:
             return 'Windows';
         }
@@ -144,7 +144,7 @@ class DownloadManagementService extends ChangeNotifier {
           case 'msi':
             return '$baseUrl/CloudToLocalLLM-Windows-$version-Setup.exe';
           case 'zip':
-            return '$baseUrl/cloudtolocalllm-windows-v$version.zip';
+            return '$baseUrl/cloudtolocalllm-$version-portable.zip';
           default:
             return '$baseUrl/CloudToLocalLLM-Windows-$version-Setup.exe';
         }
@@ -248,7 +248,7 @@ class DownloadManagementService extends ChangeNotifier {
           alternatives.add(
             '$baseUrl/CloudToLocalLLM-Windows-$version-Setup.exe',
           );
-          alternatives.add('$baseUrl/cloudtolocalllm-windows-v$version.zip');
+          alternatives.add('$baseUrl/cloudtolocalllm-$version-portable.zip');
           break;
         case 'linux':
           alternatives.add('$baseUrl/cloudtolocalllm-$version-x86_64.AppImage');

@@ -243,9 +243,9 @@ if (-not $DryRun) {
     # Create Windows ZIP package from build output (portable version)
     $windowsBuildPath = Join-Path $ProjectRoot "build\windows\x64\runner\Release"
     if (Test-Path $windowsBuildPath) {
-        $windowsZipPath = Join-Path $distPath "cloudtolocalllm-windows-v$currentVersion.zip"
+        $windowsZipPath = Join-Path $distPath "cloudtolocalllm-$currentVersion-portable.zip"
         Compress-Archive -Path (Join-Path $windowsBuildPath "*") -DestinationPath $windowsZipPath -Force
-        Write-Host "? Windows ZIP package created: cloudtolocalllm-windows-v$currentVersion.zip"
+        Write-Host "? Windows ZIP package created: cloudtolocalllm-$currentVersion-portable.zip"
 
         # Verify ZIP size for optimization tracking
         $zipSize = [math]::Round((Get-Item $windowsZipPath).Length/1MB,2)
@@ -371,11 +371,11 @@ if ($hasPackagesForCurrentVersion) {
                     $availableAssets = @()
 
                     # Find Windows ZIP packages matching current version
-                    $zipPattern = "cloudtolocalllm-windows-v$currentVersion.zip"
+                    $zipPattern = "cloudtolocalllm-$currentVersion-portable.zip"
                     $zipFiles = Get-ChildItem -Path $distPath -Filter $zipPattern -Recurse -ErrorAction SilentlyContinue
                     foreach ($zipFile in $zipFiles) {
                         $assetsToUpload += $zipFile.FullName
-                        $availableAssets += "- Windows Desktop Application (cloudtolocalllm-windows-$currentVersion.zip) - Portable ZIP package"
+                        $availableAssets += "- Windows Desktop Application (cloudtolocalllm-$currentVersion-portable.zip) - Portable ZIP package"
                         Write-Host "Found ZIP asset: $($zipFile.Name)"
                     }
 

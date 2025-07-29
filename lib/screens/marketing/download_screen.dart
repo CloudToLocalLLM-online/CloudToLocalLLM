@@ -154,7 +154,7 @@ class DownloadScreen extends StatelessWidget {
           SizedBox(
             width: double.infinity,
             child: ElevatedButton.icon(
-              onPressed: () => _launchUrl(AppConfig.githubReleasesUrl),
+              onPressed: () => _launchUrl(AppConfig.githubReleasesUrl, context),
               icon: const Icon(Icons.download),
               label: const Text('View All Downloads on GitHub'),
               style: ElevatedButton.styleFrom(
@@ -181,6 +181,7 @@ class DownloadScreen extends StatelessWidget {
                 child: ElevatedButton.icon(
                   onPressed: () => _launchUrl(
                     'https://github.com/imrightguy/CloudToLocalLLM/releases/latest/download/CloudToLocalLLM-Windows-${AppConfig.appVersion}-Setup.exe',
+                    context,
                   ),
                   icon: const Icon(Icons.desktop_windows),
                   label: const Text('Windows Installer'),
@@ -195,7 +196,8 @@ class DownloadScreen extends StatelessWidget {
               Expanded(
                 child: ElevatedButton.icon(
                   onPressed: () => _launchUrl(
-                    'https://github.com/imrightguy/CloudToLocalLLM/releases/latest/download/cloudtolocalllm-windows-v${AppConfig.appVersion}.zip',
+                    'https://github.com/imrightguy/CloudToLocalLLM/releases/latest/download/cloudtolocalllm-${AppConfig.appVersion}-portable.zip',
+                    context,
                   ),
                   icon: const Icon(Icons.archive),
                   label: const Text('Windows Portable'),
@@ -546,17 +548,85 @@ cd cloudtolocalllm-${AppConfig.appVersion}-x86_64
     );
   }
 
-  /// Launch URL in external browser
-  Future<void> _launchUrl(String url) async {
+  /// Launch URL in external browser with improved error handling
+  Future<void> _launchUrl(String url, [BuildContext? context]) async {
+    // Show loading indicator for download attempts before async operations
+    if (url.contains('/download/') && context != null) {
+      _showDownloadStartedMessage(context);
+    }
+
     try {
       final uri = Uri.parse(url);
+
       if (await canLaunchUrl(uri)) {
         await launchUrl(uri, mode: LaunchMode.externalApplication);
+        debugPrint('Successfully launched URL: $url');
       } else {
         debugPrint('Could not launch URL: $url');
+        // Use a post-frame callback to avoid async context issues
+        if (context != null && context.mounted) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (context.mounted) {
+              _showErrorMessage(
+                context,
+                'Unable to open download link. Please try again or visit GitHub releases page directly.',
+              );
+            }
+          });
+        }
       }
     } catch (e) {
       debugPrint('Error launching URL: $e');
+      // Use a post-frame callback to avoid async context issues
+      if (context != null && context.mounted) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (context.mounted) {
+            _showErrorMessage(
+              context,
+              'Download failed. Please check your internet connection and try again.',
+            );
+          }
+        });
+      }
     }
+  }
+
+  /// Show download started message
+  void _showDownloadStartedMessage(BuildContext context) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Row(
+          children: [
+            Icon(Icons.download, color: Colors.white),
+            SizedBox(width: 8),
+            Text('Download started...'),
+          ],
+        ),
+        backgroundColor: Colors.green,
+        duration: Duration(seconds: 3),
+      ),
+    );
+  }
+
+  /// Show error message
+  void _showErrorMessage(BuildContext context, String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const Icon(Icons.error, color: Colors.white),
+            const SizedBox(width: 8),
+            Expanded(child: Text(message)),
+          ],
+        ),
+        backgroundColor: Colors.red,
+        duration: const Duration(seconds: 5),
+        action: SnackBarAction(
+          label: 'GitHub Releases',
+          textColor: Colors.white,
+          onPressed: () => _launchUrl(AppConfig.githubReleasesUrl),
+        ),
+      ),
+    );
   }
 }

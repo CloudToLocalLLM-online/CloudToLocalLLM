@@ -54,8 +54,8 @@ class TunnelConfig {
 
   /// Create default configuration
   factory TunnelConfig.defaultConfig() {
-    return const TunnelConfig(
-      cloudProxyUrl: 'wss://app.cloudtolocalllm.online/api',
+    return TunnelConfig(
+      cloudProxyUrl: AppConfig.tunnelWebSocketUrl,
       localOllamaUrl: 'http://localhost:11434',
       enableCloudProxy: true,
       connectionTimeout: 10,
@@ -187,8 +187,21 @@ class SimpleTunnelClient extends ChangeNotifier {
     await connect();
   }
 
+  /// Retry connection with token refresh
+  /// Useful when connection fails due to authentication issues
+  Future<void> retryWithTokenRefresh() async {
+    _logger.debug(
+      'Retrying connection with token refresh',
+      correlationId: _correlationId,
+      userId: _userId,
+    );
+
+    await disconnect();
+    await connect(forceTokenRefresh: true);
+  }
+
   /// Connect to the tunnel WebSocket
-  Future<void> connect() async {
+  Future<void> connect({bool forceTokenRefresh = false}) async {
     if (_isConnecting || _isConnected) {
       _logger.debug(
         'Already connecting or connected',
@@ -214,17 +227,39 @@ class SimpleTunnelClient extends ChangeNotifier {
       );
 
       // Get and validate authentication token
-      final accessToken = await _authService.getValidatedAccessToken();
+      final accessToken = await _authService.getValidatedAccessToken(
+        forceRefresh: forceTokenRefresh,
+      );
       if (accessToken == null) {
-        // Don't throw exception during startup - log and return gracefully
-        _lastError = 'No valid authentication token available';
+        // Provide more specific error message based on authentication state
+        final isAuthenticated = _authService.isAuthenticated.value;
+        final hasToken = _authService.getAccessToken() != null;
+
+        String errorMessage;
+        if (!isAuthenticated) {
+          errorMessage =
+              'User not authenticated. Please log in to establish tunnel connection.';
+        } else if (!hasToken) {
+          errorMessage =
+              'Authentication token not available. Please try logging out and back in.';
+        } else {
+          errorMessage =
+              'Authentication token expired. Please refresh your session.';
+        }
+
+        _lastError = errorMessage;
         _isConnecting = false;
 
-        _logger.debug(
-          'No valid authentication token available, cannot connect',
+        _logger.logTunnelError(
+          TunnelErrorCodes.authTokenMissing,
+          'Authentication token validation failed',
           correlationId: _correlationId,
           userId: _userId,
-          context: {'reason': 'User not authenticated or token expired'},
+          context: {
+            'isAuthenticated': isAuthenticated,
+            'hasToken': hasToken,
+            'reason': errorMessage,
+          },
         );
 
         notifyListeners();
@@ -232,8 +267,9 @@ class SimpleTunnelClient extends ChangeNotifier {
       }
 
       // Build WebSocket URL
-      final wsUrl =
-          '${AppConfig.apiBaseUrl.replaceFirst('https://', 'wss://')}/ws/tunnel';
+      final wsUrl = kDebugMode
+          ? AppConfig.tunnelWebSocketUrlDev
+          : AppConfig.tunnelWebSocketUrl;
 
       // Build URI with token parameter - avoid using replace() which can add :0 port
       final uri = Uri.parse('$wsUrl?token=${Uri.encodeComponent(accessToken)}');

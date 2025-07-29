@@ -1,3 +1,5 @@
+import '../config/app_config.dart';
+
 /// Configuration model for tunnel connections with authentication and connection details
 ///
 /// This model contains all the necessary information to establish and maintain
@@ -36,7 +38,7 @@ class SetupTunnelConfig {
   }) {
     return SetupTunnelConfig(
       userId: userId,
-      cloudProxyUrl: 'wss://app.cloudtolocalllm.online/api/ws/tunnel',
+      cloudProxyUrl: AppConfig.tunnelWebSocketUrl,
       localOllamaUrl: 'http://localhost:11434',
       authToken: authToken,
       enableCloudProxy: true,
@@ -54,7 +56,7 @@ class SetupTunnelConfig {
   }) {
     return SetupTunnelConfig(
       userId: userId,
-      cloudProxyUrl: 'ws://localhost:8080/ws/tunnel',
+      cloudProxyUrl: AppConfig.tunnelWebSocketUrlDev,
       localOllamaUrl: 'http://localhost:11434',
       authToken: authToken,
       enableCloudProxy: true,

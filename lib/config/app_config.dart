@@ -42,6 +42,11 @@ class AppConfig {
   static const String apiBaseUrl = 'https://app.cloudtolocalllm.online/api';
   static const Duration apiTimeout = Duration(seconds: 30);
 
+  // Tunnel Configuration
+  static const String tunnelWebSocketUrl =
+      'wss://app.cloudtolocalllm.online/api/ws/tunnel';
+  static const String tunnelWebSocketUrlDev = 'ws://localhost:8080/ws/tunnel';
+
   // UI Configuration
   static const double maxContentWidth = 1200.0;
   static const double mobileBreakpoint = 768.0;
