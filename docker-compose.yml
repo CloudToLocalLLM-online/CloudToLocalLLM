@@ -36,7 +36,7 @@ services:
     environment:
       - NODE_ENV=production
       - PORT=8080
-      - AUTH0_DOMAIN=dev-xafu7oedkd5wlrbo.us.auth0.com
+      - AUTH0_DOMAIN=dev-v2f2p008x3dr74ww.us.auth0.com
       - AUTH0_AUDIENCE=https://app.cloudtolocalllm.online
     restart: unless-stopped
     healthcheck:
