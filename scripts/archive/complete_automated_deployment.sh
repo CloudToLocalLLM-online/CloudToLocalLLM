@@ -923,6 +923,8 @@ main() {
         log_warning "Use --force flag for automated/CI environments"
         log "Proceeding with deployment in 3 seconds..."
         sleep 3
+    elif [[ "$FORCE" == "true" ]]; then
+        log "Force mode enabled - proceeding with automated deployment"
     fi
     
     # Execute six-phase deployment workflow

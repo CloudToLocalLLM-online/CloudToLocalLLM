@@ -329,6 +329,8 @@ main() {
         log_info "Use --force flag for automated/CI environments"
         log_info "Proceeding with deployment in 5 seconds..."
         sleep 5
+    elif [[ "$FORCE" == "true" ]]; then
+        log_info "Force mode enabled - proceeding with automated deployment"
     fi
     
     # Execute deployment phases
