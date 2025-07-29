@@ -116,6 +116,10 @@ class SimpleTunnelClient extends ChangeNotifier {
   // Disposal tracking
   bool _isDisposed = false;
 
+  // UI update debouncing
+  Timer? _notifyTimer;
+  static const Duration _notifyDebounceDelay = Duration(milliseconds: 500);
+
   // Configuration
   static const String _localOllamaUrl = 'http://localhost:11434';
   static const Duration _pingInterval = Duration(seconds: 30);
@@ -128,6 +132,16 @@ class SimpleTunnelClient extends ChangeNotifier {
 
     // Listen for authentication state changes
     _authService.addListener(_onAuthenticationChanged);
+  }
+
+  /// Debounced notify listeners to prevent excessive UI updates
+  void _debouncedNotifyListeners() {
+    _notifyTimer?.cancel();
+    _notifyTimer = Timer(_notifyDebounceDelay, () {
+      if (!_isDisposed) {
+        notifyListeners();
+      }
+    });
   }
 
   /// Whether the tunnel is connected
@@ -262,7 +276,7 @@ class SimpleTunnelClient extends ChangeNotifier {
           },
         );
 
-        notifyListeners();
+        _debouncedNotifyListeners();
         return; // Return gracefully instead of throwing
       }
 
@@ -345,7 +359,7 @@ class SimpleTunnelClient extends ChangeNotifier {
         stackTrace: stackTrace,
       );
 
-      notifyListeners();
+      _debouncedNotifyListeners();
 
       // Schedule reconnection
       _scheduleReconnection();
@@ -970,7 +984,7 @@ class SimpleTunnelClient extends ChangeNotifier {
     _stopHealthMonitoring();
     _completePendingRequestsWithError('Connection lost: $reason');
 
-    notifyListeners();
+    _debouncedNotifyListeners();
 
     // Schedule reconnection
     _scheduleReconnection();
@@ -1191,6 +1205,9 @@ class SimpleTunnelClient extends ChangeNotifier {
 
     // Remove authentication listener
     _authService.removeListener(_onAuthenticationChanged);
+
+    // Cancel timers
+    _notifyTimer?.cancel();
 
     // Clean up connection pool
     for (final connection in _connectionPool) {
