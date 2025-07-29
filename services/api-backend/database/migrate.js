@@ -115,10 +115,9 @@ export class DatabaseMigrator {
     }
 
     const startTime = Date.now();
-    const client = await this.pool.connect();
 
     try {
-      await client.query('BEGIN');
+      await this.db.exec('BEGIN TRANSACTION');
 
       // Read and execute schema file
       const schemaPath = join(__dirname, 'schema.sql');
@@ -128,17 +127,17 @@ export class DatabaseMigrator {
       const checksum = this.calculateChecksum(schemaSQL);
 
       // Execute schema
-      await client.query(schemaSQL);
+      await this.db.exec(schemaSQL);
 
       // Record migration
       const executionTime = Date.now() - startTime;
-      await client.query(
-        `INSERT INTO schema_migrations (version, name, checksum, execution_time_ms) 
-         VALUES ($1, $2, $3, $4)`,
+      await this.db.run(
+        `INSERT INTO schema_migrations (version, name, checksum, execution_time_ms)
+         VALUES (?, ?, ?, ?)`,
         [version, 'Initial tunnel system schema', checksum, executionTime],
       );
 
-      await client.query('COMMIT');
+      await this.db.exec('COMMIT');
 
       this.logger.info('Initial schema applied successfully', {
         version,
@@ -147,14 +146,18 @@ export class DatabaseMigrator {
       });
 
     } catch (error) {
-      await client.query('ROLLBACK');
+      await this.db.exec('ROLLBACK');
 
       // Record failed migration
-      await client.query(
-        `INSERT INTO schema_migrations (version, name, checksum, success) 
-         VALUES ($1, $2, $3, false)`,
-        [version, 'Initial tunnel system schema', 'failed'],
-      );
+      try {
+        await this.db.run(
+          `INSERT INTO schema_migrations (version, name, checksum, success)
+           VALUES (?, ?, ?, 0)`,
+          [version, 'Initial tunnel system schema', 'failed'],
+        );
+      } catch (recordError) {
+        this.logger.error('Failed to record migration failure', { error: recordError.message });
+      }
 
       this.logger.error('Failed to apply initial schema', {
         version,
@@ -162,8 +165,6 @@ export class DatabaseMigrator {
       });
 
       throw error;
-    } finally {
-      client.release();
     }
   }
 
