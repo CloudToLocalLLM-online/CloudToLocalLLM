@@ -66,18 +66,24 @@ export class AuthService {
    */
   async validateToken(token, req = {}) {
     try {
+      this.logger.debug('Starting token validation');
+
       // Decode token to get header
       const decoded = jwt.decode(token, { complete: true });
       if (!decoded || !decoded.header.kid) {
-        throw new Error('Invalid token format');
+        throw new Error('Invalid token format - missing kid in header');
       }
+
+      this.logger.debug(`Token decoded successfully, kid: ${decoded.header.kid}`);
 
       // Get signing key
       const key = await this.getSigningKey(decoded.header.kid);
 
-      // Verify token (temporarily without audience validation)
+      this.logger.debug('Got signing key, verifying token');
+
+      // Verify token with full validation
       const verified = jwt.verify(token, key, {
-        // audience: this.config.AUTH0_AUDIENCE, // Temporarily disabled until Auth0 API is configured
+        audience: this.config.AUTH0_AUDIENCE, // Re-enabled: Auth0 API is now configured
         issuer: `https://${this.config.AUTH0_DOMAIN}/`,
         algorithms: ['RS256'],
       });
@@ -85,6 +91,7 @@ export class AuthService {
       // Create or update session
       const session = await this.createOrUpdateSession(verified, token, req);
 
+      this.logger.debug('Token verification successful');
       this.logger.info('Token validated successfully', {
         userId: verified.sub,
         sessionId: session.id,
@@ -121,28 +128,39 @@ export class AuthService {
    */
   async getSigningKey(kid) {
     try {
+      this.logger.debug(`Getting signing key for kid: ${kid}`);
+
       // Check cache first (5 minute expiry)
       const now = Date.now();
       if (this.jwksCacheExpiry > now && this.jwksCache.has(kid)) {
+        this.logger.debug(`Using cached key for kid: ${kid}`);
         return this.jwksCache.get(kid);
       }
+
+      this.logger.debug(`Fetching JWKS from: ${this.jwksUri}`);
 
       // Fetch JWKS from Auth0
       const response = await fetch(this.jwksUri);
       if (!response.ok) {
-        throw new Error(`Failed to fetch JWKS: ${response.status}`);
+        throw new Error(`Failed to fetch JWKS: ${response.status} ${response.statusText}`);
       }
 
       const jwks = await response.json();
+      this.logger.debug(`Fetched JWKS with ${jwks.keys.length} keys`);
 
       // Find the key with matching kid
       const key = jwks.keys.find(k => k.kid === kid);
       if (!key) {
-        throw new Error(`Key with kid '${kid}' not found in JWKS`);
+        const availableKids = jwks.keys.map(k => k.kid);
+        throw new Error(`Key with kid '${kid}' not found in JWKS. Available kids: ${availableKids.join(', ')}`);
       }
+
+      this.logger.debug(`Found key for kid: ${kid}, converting to PEM`);
 
       // Convert JWK to PEM format
       const publicKey = this.jwkToPem(key);
+
+      this.logger.debug(`Successfully converted key to PEM format`);
 
       // Cache the result for 5 minutes
       this.jwksCache.set(kid, publicKey);
@@ -150,31 +168,59 @@ export class AuthService {
 
       return publicKey;
     } catch (error) {
-      this.logger.error('Failed to get signing key:', error);
+      this.logger.error(`Failed to get signing key for kid '${kid}':`, error);
       throw error;
     }
   }
 
   /**
-   * Convert JWK to PEM format
+   * Convert JWK to PEM format using manual RSA key construction
    */
   jwkToPem(jwk) {
     // For RS256, we need to convert the JWK to PEM
-    // This is a simplified implementation for RSA keys
     if (jwk.kty !== 'RSA') {
       throw new Error('Only RSA keys are supported');
     }
 
-    // Use the node:crypto module to create the key
-    const keyObject = crypto.createPublicKey({
-      key: jwk,
-      format: 'jwk'
-    });
+    try {
+      // Try the modern Node.js crypto approach first
+      const keyObject = crypto.createPublicKey({
+        key: jwk,
+        format: 'jwk'
+      });
 
-    return keyObject.export({
-      type: 'spki',
-      format: 'pem'
-    });
+      return keyObject.export({
+        type: 'spki',
+        format: 'pem'
+      });
+    } catch (error) {
+      this.logger.error('Modern crypto approach failed, trying manual conversion:', error);
+
+      // Fallback: Manual RSA key construction
+      // This is a more compatible approach for older Node.js versions
+      const n = Buffer.from(jwk.n, 'base64url');
+      const e = Buffer.from(jwk.e, 'base64url');
+
+      // Create ASN.1 DER structure for RSA public key
+      // This is a simplified version - for production, consider using a library like 'node-rsa'
+      const modulusLength = n.length;
+      const exponentLength = e.length;
+
+      // For now, let's try using the x5c certificate if available
+      if (jwk.x5c && jwk.x5c.length > 0) {
+        const cert = jwk.x5c[0];
+        const pemCert = `-----BEGIN CERTIFICATE-----\n${cert.match(/.{1,64}/g).join('\n')}\n-----END CERTIFICATE-----`;
+
+        // Extract public key from certificate
+        const certObject = crypto.createPublicKey(pemCert);
+        return certObject.export({
+          type: 'spki',
+          format: 'pem'
+        });
+      }
+
+      throw new Error('Unable to convert JWK to PEM format');
+    }
   }
 
   /**
