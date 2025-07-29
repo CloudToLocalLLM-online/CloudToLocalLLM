@@ -234,34 +234,42 @@ export class AuthService {
     const userAgent = req.headers?.['user-agent'];
 
     try {
+      // Ensure database is initialized
+      if (!this.db.db) {
+        await this.db.initialize();
+      }
+
       // Check for existing session with same token
-      const existingSession = await this.db.pool.query(
-        'SELECT * FROM user_sessions WHERE user_id = $1 AND jwt_token_hash = $2',
+      const existingSession = await this.db.db.get(
+        'SELECT * FROM user_sessions WHERE user_id = ? AND jwt_token_hash = ?',
         [userId, tokenHash],
       );
 
-      if (existingSession.rows.length > 0) {
+      if (existingSession) {
         // Update existing session
-        const session = existingSession.rows[0];
-        await this.db.pool.query(
-          'UPDATE user_sessions SET last_activity = CURRENT_TIMESTAMP WHERE id = $1',
-          [session.id],
+        await this.db.db.run(
+          'UPDATE user_sessions SET last_activity = CURRENT_TIMESTAMP WHERE id = ?',
+          [existingSession.id],
         );
 
-        return session;
+        return existingSession;
       }
 
       // Clean up old sessions for user
       await this.cleanupUserSessions(userId);
 
       // Create new session
-      const result = await this.db.pool.query(
+      const result = await this.db.db.run(
         `INSERT INTO user_sessions (user_id, jwt_token_hash, expires_at, ip_address, user_agent)
-         VALUES ($1, $2, $3, $4, $5) RETURNING *`,
+         VALUES (?, ?, ?, ?, ?)`,
         [userId, tokenHash, expiresAt, ip, userAgent],
       );
 
-      const session = result.rows[0];
+      // Get the created session
+      const session = await this.db.db.get(
+        'SELECT * FROM user_sessions WHERE id = ?',
+        [result.lastID || this.generateSessionId()],
+      );
 
       // Log session creation
       await this.logAuditEvent('session_created', 'authentication', {
@@ -293,13 +301,17 @@ export class AuthService {
    */
   async getSession(sessionId) {
     try {
-      const result = await this.db.pool.query(
-        `SELECT * FROM user_sessions 
-         WHERE id = $1 AND is_active = true AND expires_at > CURRENT_TIMESTAMP`,
+      if (!this.db.db) {
+        await this.db.initialize();
+      }
+
+      const result = await this.db.db.get(
+        `SELECT * FROM user_sessions
+         WHERE id = ? AND is_active = 1 AND expires_at > datetime('now')`,
         [sessionId],
       );
 
-      return result.rows[0] || null;
+      return result || null;
     } catch (error) {
       this.logger.error('Failed to get session', {
         sessionId,
@@ -314,13 +326,24 @@ export class AuthService {
    */
   async invalidateSession(sessionId, reason = 'logout') {
     try {
-      const result = await this.db.pool.query(
-        'UPDATE user_sessions SET is_active = false WHERE id = $1 RETURNING user_id',
+      if (!this.db.db) {
+        await this.db.initialize();
+      }
+
+      // Get user_id before updating
+      const session = await this.db.db.get(
+        'SELECT user_id FROM user_sessions WHERE id = ?',
         [sessionId],
       );
 
-      if (result.rows.length > 0) {
-        const userId = result.rows[0].user_id;
+      if (session) {
+        // Update session to inactive
+        await this.db.db.run(
+          'UPDATE user_sessions SET is_active = 0 WHERE id = ?',
+          [sessionId],
+        );
+
+        const userId = session.user_id;
 
         // Log session invalidation
         await this.logAuditEvent('session_invalidated', 'authentication', {
@@ -353,26 +376,30 @@ export class AuthService {
    */
   async cleanupUserSessions(userId) {
     try {
+      if (!this.db.db) {
+        await this.db.initialize();
+      }
+
       // Get active sessions count
-      const countResult = await this.db.pool.query(
-        'SELECT COUNT(*) as count FROM user_sessions WHERE user_id = $1 AND is_active = true',
+      const countResult = await this.db.db.get(
+        'SELECT COUNT(*) as count FROM user_sessions WHERE user_id = ? AND is_active = 1',
         [userId],
       );
 
-      const activeCount = parseInt(countResult.rows[0].count);
+      const activeCount = parseInt(countResult.count);
 
       if (activeCount >= this.config.MAX_SESSIONS_PER_USER) {
         // Remove oldest sessions
         const sessionsToRemove = activeCount - this.config.MAX_SESSIONS_PER_USER + 1;
 
-        await this.db.pool.query(
-          `UPDATE user_sessions 
-           SET is_active = false 
+        await this.db.db.run(
+          `UPDATE user_sessions
+           SET is_active = 0
            WHERE id IN (
-             SELECT id FROM user_sessions 
-             WHERE user_id = $1 AND is_active = true 
-             ORDER BY last_activity ASC 
-             LIMIT $2
+             SELECT id FROM user_sessions
+             WHERE user_id = ? AND is_active = 1
+             ORDER BY last_activity ASC
+             LIMIT ?
            )`,
           [userId, sessionsToRemove],
         );
@@ -430,9 +457,13 @@ export class AuthService {
    */
   async logAuditEvent(eventType, category, metadata = {}) {
     try {
-      await this.db.pool.query(
+      if (!this.db.db) {
+        await this.db.initialize();
+      }
+
+      await this.db.db.run(
         `INSERT INTO audit_logs (event_type, event_category, action, metadata, user_id, ip_address, user_agent)
-         VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+         VALUES (?, ?, ?, ?, ?, ?, ?)`,
         [
           eventType,
           category,
@@ -456,15 +487,22 @@ export class AuthService {
    */
   async logSecurityEvent(eventType, metadata = {}) {
     try {
-      await this.db.pool.query(
-        `INSERT INTO security_events (event_type, source_ip, user_agent, metadata, user_id)
-         VALUES ($1, $2, $3, $4, $5)`,
+      if (!this.db.db) {
+        await this.db.initialize();
+      }
+
+      // Note: security_events table may not exist in SQLite schema, using audit_logs instead
+      await this.db.db.run(
+        `INSERT INTO audit_logs (event_type, event_category, action, metadata, user_id, ip_address, user_agent)
+         VALUES (?, ?, ?, ?, ?, ?, ?)`,
         [
           eventType,
-          metadata.ip || null,
-          metadata.userAgent || null,
+          'security',
+          eventType,
           JSON.stringify(metadata),
           metadata.userId || null,
+          metadata.ip || null,
+          metadata.userAgent || null,
         ],
       );
     } catch (error) {
@@ -483,17 +521,30 @@ export class AuthService {
   }
 
   /**
+   * Generate session ID (fallback for SQLite)
+   */
+  generateSessionId() {
+    return crypto.randomBytes(16).toString('hex');
+  }
+
+  /**
    * Start periodic session cleanup
    */
   startSessionCleanup() {
     // Clean up expired sessions every 15 minutes
     setInterval(async() => {
       try {
-        const result = await this.db.pool.query(
-          'SELECT cleanup_expired_sessions() as deleted_count',
+        if (!this.db.db) {
+          await this.db.initialize();
+        }
+
+        // SQLite version: manually clean up expired sessions
+        const result = await this.db.db.run(
+          `UPDATE user_sessions SET is_active = 0
+           WHERE expires_at < datetime('now') AND is_active = 1`,
         );
 
-        const deletedCount = result.rows[0].deleted_count;
+        const deletedCount = result.changes || 0;
         if (deletedCount > 0) {
           this.logger.info('Cleaned up expired sessions', { deletedCount });
         }
@@ -508,16 +559,40 @@ export class AuthService {
    */
   async getAuthStats() {
     try {
-      const stats = await this.db.pool.query(`
-        SELECT 
-          (SELECT COUNT(*) FROM user_sessions WHERE is_active = true) as active_sessions,
-          (SELECT COUNT(*) FROM user_sessions WHERE expires_at > CURRENT_TIMESTAMP) as valid_sessions,
-          (SELECT COUNT(DISTINCT user_id) FROM user_sessions WHERE is_active = true) as active_users,
-          (SELECT COUNT(*) FROM audit_logs WHERE event_category = 'authentication' AND timestamp > CURRENT_TIMESTAMP - INTERVAL '24 hours') as auth_events_24h,
-          (SELECT COUNT(*) FROM security_events WHERE detected_at > CURRENT_TIMESTAMP - INTERVAL '24 hours') as security_events_24h
-      `);
+      if (!this.db.db) {
+        await this.db.initialize();
+      }
 
-      return stats.rows[0];
+      // SQLite version: get stats with separate queries
+      const activeSessions = await this.db.db.get(
+        'SELECT COUNT(*) as count FROM user_sessions WHERE is_active = 1',
+      );
+
+      const validSessions = await this.db.db.get(
+        `SELECT COUNT(*) as count FROM user_sessions WHERE expires_at > datetime('now')`,
+      );
+
+      const activeUsers = await this.db.db.get(
+        'SELECT COUNT(DISTINCT user_id) as count FROM user_sessions WHERE is_active = 1',
+      );
+
+      const authEvents = await this.db.db.get(
+        `SELECT COUNT(*) as count FROM audit_logs
+         WHERE event_category = 'authentication' AND timestamp > datetime('now', '-24 hours')`,
+      );
+
+      const securityEvents = await this.db.db.get(
+        `SELECT COUNT(*) as count FROM audit_logs
+         WHERE event_category = 'security' AND timestamp > datetime('now', '-24 hours')`,
+      );
+
+      return {
+        active_sessions: activeSessions.count,
+        valid_sessions: validSessions.count,
+        active_users: activeUsers.count,
+        auth_events_24h: authEvents.count,
+        security_events_24h: securityEvents.count,
+      };
     } catch (error) {
       this.logger.error('Failed to get auth stats', { error: error.message });
       return {};
