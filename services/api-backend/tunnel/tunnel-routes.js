@@ -37,7 +37,7 @@ export function createTunnelRoutes(server, config, logger = winston.createLogger
   // AuthService for JWT validation (eliminates jwks-client issues)
   const authService = new AuthService({
     AUTH0_DOMAIN,
-    AUTH0_AUDIENCE
+    AUTH0_AUDIENCE,
   });
 
   // Create tunnel proxy instance with enhanced logger

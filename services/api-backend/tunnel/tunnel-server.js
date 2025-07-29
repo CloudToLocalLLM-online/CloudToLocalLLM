@@ -5,7 +5,6 @@
  */
 
 import { WebSocketServer } from 'ws';
-import jwt from 'jsonwebtoken';
 import { EventEmitter } from 'events';
 import { TunnelLogger } from '../utils/logger.js';
 import { createWebSocketSecurityValidator } from '../middleware/connection-security.js';

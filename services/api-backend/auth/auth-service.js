@@ -5,6 +5,7 @@
 
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
+import fetch from 'node-fetch';
 import { TunnelLogger } from '../utils/logger.js';
 import { DatabaseMigrator } from '../database/migrate.js';
 
@@ -160,7 +161,7 @@ export class AuthService {
       // Convert JWK to PEM format
       const publicKey = this.jwkToPem(key);
 
-      this.logger.info(`Successfully converted key to PEM format`);
+      this.logger.info('Successfully converted key to PEM format');
 
       // Cache the result for 5 minutes
       this.jwksCache.set(kid, publicKey);
@@ -186,25 +187,22 @@ export class AuthService {
       // Try the modern Node.js crypto approach first
       const keyObject = crypto.createPublicKey({
         key: jwk,
-        format: 'jwk'
+        format: 'jwk',
       });
 
       return keyObject.export({
         type: 'spki',
-        format: 'pem'
+        format: 'pem',
       });
     } catch (error) {
       this.logger.error('Modern crypto approach failed, trying manual conversion:', error);
 
       // Fallback: Manual RSA key construction
       // This is a more compatible approach for older Node.js versions
-      const n = Buffer.from(jwk.n, 'base64url');
-      const e = Buffer.from(jwk.e, 'base64url');
-
-      // Create ASN.1 DER structure for RSA public key
-      // This is a simplified version - for production, consider using a library like 'node-rsa'
-      const modulusLength = n.length;
-      const exponentLength = e.length;
+      // Note: For manual ASN.1 construction, we would use:
+      // const n = Buffer.from(jwk.n, 'base64url');
+      // const e = Buffer.from(jwk.e, 'base64url');
+      // But we're using the x5c certificate approach instead
 
       // For now, let's try using the x5c certificate if available
       if (jwk.x5c && jwk.x5c.length > 0) {
@@ -215,7 +213,7 @@ export class AuthService {
         const certObject = crypto.createPublicKey(pemCert);
         return certObject.export({
           type: 'spki',
-          format: 'pem'
+          format: 'pem',
         });
       }
 
@@ -573,7 +571,7 @@ export class AuthService {
       );
 
       const validSessions = await this.db.db.get(
-        `SELECT COUNT(*) as count FROM user_sessions WHERE expires_at > datetime('now')`,
+        'SELECT COUNT(*) as count FROM user_sessions WHERE expires_at > datetime(\'now\')',
       );
 
       const activeUsers = await this.db.db.get(

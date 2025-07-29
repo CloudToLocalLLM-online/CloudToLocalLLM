@@ -84,7 +84,7 @@ class SetupTunnelConfig {
     return SetupTunnelConfig(
       userId: userId ?? this.userId,
       cloudProxyUrl: cloudProxyUrl ?? this.cloudProxyUrl,
-      localBackendUrl: localOllamaUrl ?? this.localBackendUrl,
+      localBackendUrl: localOllamaUrl ?? localBackendUrl,
       authToken: authToken ?? this.authToken,
       enableCloudProxy: enableCloudProxy ?? this.enableCloudProxy,
       connectionTimeout: connectionTimeout ?? this.connectionTimeout,

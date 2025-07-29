@@ -144,7 +144,7 @@ export class JWTValidator {
     if (!this.authServices.has(key)) {
       const authService = new AuthService({
         AUTH0_DOMAIN: domain,
-        AUTH0_AUDIENCE: audience
+        AUTH0_AUDIENCE: audience,
       });
 
       this.authServices.set(key, authService);

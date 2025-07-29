@@ -96,11 +96,7 @@ class SimpleTunnelClient extends ChangeNotifier {
   static const List<int> _reconnectDelays = [2, 5, 10, 20, 30, 60]; // seconds
   static const int _maxReconnectAttempts = 10; // Maximum reconnection attempts
   static const Duration _connectionStabilityThreshold = Duration(seconds: 30); // Connection must last this long to be considered stable
-  static const int _maxConsecutiveFailures = 5; // Circuit breaker threshold
-  static const Duration _circuitBreakerCooldown = Duration(minutes: 2); // Wait time before retrying after circuit breaker
   DateTime? _lastConnectionTime;
-  int _consecutiveConnectionFailures = 0;
-  DateTime? _circuitBreakerTriggeredAt;
 
   // Health monitoring
   Timer? _pingTimer;
@@ -1043,7 +1039,7 @@ class SimpleTunnelClient extends ChangeNotifier {
       debugPrint(
         '🚇 [SimpleTunnel] Max ping failures reached ($_consecutivePingFailures/$_maxConsecutivePingFailures) - disconnecting',
       );
-      _handleConnectionLoss('$reason (${_consecutivePingFailures} consecutive failures)');
+      _handleConnectionLoss('$reason ($_consecutivePingFailures consecutive failures)');
     } else {
       debugPrint(
         '🚇 [SimpleTunnel] Ping failure ($_consecutivePingFailures/$_maxConsecutivePingFailures): $reason - continuing',

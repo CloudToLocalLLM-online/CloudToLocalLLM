@@ -16,7 +16,7 @@ const AUTH0_AUDIENCE = process.env.AUTH0_AUDIENCE || 'https://app.cloudtolocalll
 // Use AuthService for JWT validation (eliminates jwks-client issues)
 const authService = new AuthService({
   AUTH0_DOMAIN,
-  AUTH0_AUDIENCE
+  AUTH0_AUDIENCE,
 });
 
 /**
