@@ -134,6 +134,7 @@ obtain_certificate() {
         --force-renewal \
         -d "$DOMAIN" \
         -d "app.$DOMAIN" \
+        -d "api.$DOMAIN" \
         -d "docs.$DOMAIN" \
         -d "mail.$DOMAIN" 2>&1
 

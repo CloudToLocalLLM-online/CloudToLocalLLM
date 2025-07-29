@@ -114,7 +114,7 @@ services:
       - ./certbot/logs:/var/log/letsencrypt
     networks:
       - cloudllm-network
-    command: certonly --webroot --webroot-path=/var/www/certbot --email support@cloudtolocalllm.online --agree-tos --no-eff-email -d cloudtolocalllm.online -d app.cloudtolocalllm.online -d docs.cloudtolocalllm.online
+    command: certonly --webroot --webroot-path=/var/www/certbot --email support@cloudtolocalllm.online --agree-tos --no-eff-email -d cloudtolocalllm.online -d app.cloudtolocalllm.online -d api.cloudtolocalllm.online -d docs.cloudtolocalllm.online
     profiles:
       - ssl-setup
 
