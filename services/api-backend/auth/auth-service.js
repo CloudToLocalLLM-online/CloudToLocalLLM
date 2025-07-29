@@ -4,7 +4,6 @@
  */
 
 import jwt from 'jsonwebtoken';
-import jwksClient from 'jwks-client';
 import crypto from 'crypto';
 import { TunnelLogger } from '../utils/logger.js';
 import { DatabaseMigrator } from '../database/migrate.js';
@@ -26,14 +25,10 @@ export class AuthService {
     this.logger = new TunnelLogger('auth-service');
     this.db = new DatabaseMigrator();
 
-    // JWKS client for Auth0 public key retrieval (minimal config to avoid cache issues)
-    this.jwksClient = jwksClient({
-      jwksUri: `https://${this.config.AUTH0_DOMAIN}/.well-known/jwks.json`,
-      // Remove all cache-related options to avoid callback errors
-      rateLimit: true,
-      jwksRequestsPerMinute: 10,
-      timeout: 30000,
-    });
+    // Manual JWKS implementation to avoid jwks-client cache issues
+    this.jwksUri = `https://${this.config.AUTH0_DOMAIN}/.well-known/jwks.json`;
+    this.jwksCache = new Map(); // Simple in-memory cache
+    this.jwksCacheExpiry = 0;
 
     this.initialized = false;
   }
@@ -122,17 +117,63 @@ export class AuthService {
   }
 
   /**
-   * Get signing key from JWKS
+   * Get signing key from JWKS (manual implementation to avoid jwks-client issues)
    */
   async getSigningKey(kid) {
-    return new Promise((resolve, reject) => {
-      this.jwksClient.getSigningKey(kid, (err, key) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve(key.getPublicKey());
-        }
-      });
+    try {
+      // Check cache first (5 minute expiry)
+      const now = Date.now();
+      if (this.jwksCacheExpiry > now && this.jwksCache.has(kid)) {
+        return this.jwksCache.get(kid);
+      }
+
+      // Fetch JWKS from Auth0
+      const response = await fetch(this.jwksUri);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch JWKS: ${response.status}`);
+      }
+
+      const jwks = await response.json();
+
+      // Find the key with matching kid
+      const key = jwks.keys.find(k => k.kid === kid);
+      if (!key) {
+        throw new Error(`Key with kid '${kid}' not found in JWKS`);
+      }
+
+      // Convert JWK to PEM format
+      const publicKey = this.jwkToPem(key);
+
+      // Cache the result for 5 minutes
+      this.jwksCache.set(kid, publicKey);
+      this.jwksCacheExpiry = now + (5 * 60 * 1000);
+
+      return publicKey;
+    } catch (error) {
+      this.logger.error('Failed to get signing key:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Convert JWK to PEM format
+   */
+  jwkToPem(jwk) {
+    // For RS256, we need to convert the JWK to PEM
+    // This is a simplified implementation for RSA keys
+    if (jwk.kty !== 'RSA') {
+      throw new Error('Only RSA keys are supported');
+    }
+
+    // Use the node:crypto module to create the key
+    const keyObject = crypto.createPublicKey({
+      key: jwk,
+      format: 'jwk'
+    });
+
+    return keyObject.export({
+      type: 'spki',
+      format: 'pem'
     });
   }
 
