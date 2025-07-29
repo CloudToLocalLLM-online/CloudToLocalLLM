@@ -26,10 +26,10 @@ export class AuthService {
     this.logger = new TunnelLogger('auth-service');
     this.db = new DatabaseMigrator();
 
-    // JWKS client for Auth0 public key retrieval (simplified config to avoid cache issues)
+    // JWKS client for Auth0 public key retrieval (minimal config to avoid cache issues)
     this.jwksClient = jwksClient({
       jwksUri: `https://${this.config.AUTH0_DOMAIN}/.well-known/jwks.json`,
-      cache: false, // Disable cache temporarily to avoid maxAge error
+      // Remove all cache-related options to avoid callback errors
       rateLimit: true,
       jwksRequestsPerMinute: 10,
       timeout: 30000,
@@ -80,9 +80,9 @@ export class AuthService {
       // Get signing key
       const key = await this.getSigningKey(decoded.header.kid);
 
-      // Verify token
+      // Verify token (temporarily without audience validation)
       const verified = jwt.verify(token, key, {
-        audience: this.config.AUTH0_AUDIENCE,
+        // audience: this.config.AUTH0_AUDIENCE, // Temporarily disabled until Auth0 API is configured
         issuer: `https://${this.config.AUTH0_DOMAIN}/`,
         algorithms: ['RS256'],
       });
