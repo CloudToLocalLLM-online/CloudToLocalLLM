@@ -1,8 +1,7 @@
 import 'dart:convert';
-// ignore: avoid_web_libraries_in_flutter, deprecated_member_use
-import 'dart:html' as html;
 import 'package:http/http.dart' as http;
 import 'package:flutter/foundation.dart';
+import 'package:web/web.dart' as web;
 
 /// Service for managing GitHub releases and downloads
 class GitHubReleaseService {
@@ -53,13 +52,14 @@ class GitHubReleaseService {
     try {
       if (kIsWeb) {
         // For web platform, use browser download
-        final anchor = html.AnchorElement(href: downloadUrl)
-          ..setAttribute('download', fileName)
+        final anchor = web.HTMLAnchorElement()
+          ..href = downloadUrl
+          ..download = fileName
           ..style.display = 'none';
 
-        html.document.body?.children.add(anchor);
+        web.document.body?.appendChild(anchor);
         anchor.click();
-        html.document.body?.children.remove(anchor);
+        web.document.body?.removeChild(anchor);
 
         debugPrint('Download initiated for: $fileName');
       } else {

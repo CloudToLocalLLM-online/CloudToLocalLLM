@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../config/app_config.dart';
+import '../../services/github_release_service.dart';
 
 /// Download screen - web-only marketing page
 /// Comprehensive installation guide for Linux distributions
@@ -179,8 +180,9 @@ class DownloadScreen extends StatelessWidget {
             children: [
               Expanded(
                 child: ElevatedButton.icon(
-                  onPressed: () => _launchUrl(
+                  onPressed: () => _downloadFile(
                     'https://github.com/imrightguy/CloudToLocalLLM/releases/latest/download/CloudToLocalLLM-Windows-${AppConfig.appVersion}-Setup.exe',
+                    'CloudToLocalLLM-Windows-${AppConfig.appVersion}-Setup.exe',
                     context,
                   ),
                   icon: const Icon(Icons.desktop_windows),
@@ -195,8 +197,9 @@ class DownloadScreen extends StatelessWidget {
               const SizedBox(width: 16),
               Expanded(
                 child: ElevatedButton.icon(
-                  onPressed: () => _launchUrl(
+                  onPressed: () => _downloadFile(
                     'https://github.com/imrightguy/CloudToLocalLLM/releases/latest/download/cloudtolocalllm-${AppConfig.appVersion}-portable.zip',
+                    'cloudtolocalllm-${AppConfig.appVersion}-portable.zip',
                     context,
                   ),
                   icon: const Icon(Icons.archive),
@@ -588,6 +591,23 @@ cd cloudtolocalllm-${AppConfig.appVersion}-x86_64
           }
         });
       }
+    }
+  }
+
+  /// Download file using appropriate method for the platform
+  void _downloadFile(
+    String downloadUrl,
+    String fileName,
+    BuildContext context,
+  ) {
+    if (kIsWeb) {
+      // For web platform, use direct download
+      final releaseService = GitHubReleaseService();
+      releaseService.downloadFile(downloadUrl, fileName);
+      _showDownloadStartedMessage(context);
+    } else {
+      // For desktop platforms, use external URL launcher
+      _launchUrl(downloadUrl, context);
     }
   }
 
