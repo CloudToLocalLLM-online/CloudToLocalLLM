@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:flutter/foundation.dart';
-import 'package:web/web.dart' as web;
+import 'package:url_launcher/url_launcher.dart';
 
 /// Service for managing GitHub releases and downloads
 class GitHubReleaseService {
@@ -47,25 +47,18 @@ class GitHubReleaseService {
     }
   }
 
-  /// Download a file using browser download
-  void downloadFile(String downloadUrl, String fileName) {
+  /// Download a file using URL launcher
+  Future<void> downloadFile(String downloadUrl, String fileName) async {
     try {
-      if (kIsWeb) {
-        // For web platform, use browser download
-        final anchor = web.HTMLAnchorElement()
-          ..href = downloadUrl
-          ..download = fileName
-          ..style.display = 'none';
+      final uri = Uri.parse(downloadUrl);
 
-        web.document.body?.appendChild(anchor);
-        anchor.click();
-        web.document.body?.removeChild(anchor);
-
+      if (await canLaunchUrl(uri)) {
+        // Use external application mode to trigger download
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
         debugPrint('Download initiated for: $fileName');
       } else {
-        // For desktop/mobile, open URL in browser
-        // This would need platform-specific implementation
-        debugPrint('Download URL: $downloadUrl');
+        debugPrint('Could not launch download URL: $downloadUrl');
+        throw Exception('Unable to launch download URL');
       }
     } catch (e) {
       debugPrint('Error downloading file: $e');

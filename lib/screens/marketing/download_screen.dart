@@ -595,19 +595,25 @@ cd cloudtolocalllm-${AppConfig.appVersion}-x86_64
   }
 
   /// Download file using appropriate method for the platform
-  void _downloadFile(
+  Future<void> _downloadFile(
     String downloadUrl,
     String fileName,
     BuildContext context,
-  ) {
-    if (kIsWeb) {
-      // For web platform, use direct download
+  ) async {
+    try {
       final releaseService = GitHubReleaseService();
-      releaseService.downloadFile(downloadUrl, fileName);
-      _showDownloadStartedMessage(context);
-    } else {
-      // For desktop platforms, use external URL launcher
-      _launchUrl(downloadUrl, context);
+      await releaseService.downloadFile(downloadUrl, fileName);
+      if (context.mounted) {
+        _showDownloadStartedMessage(context);
+      }
+    } catch (e) {
+      debugPrint('Download failed: $e');
+      if (context.mounted) {
+        _showErrorMessage(
+          context,
+          'Download failed. Please try again or visit GitHub releases page directly.',
+        );
+      }
     }
   }
 

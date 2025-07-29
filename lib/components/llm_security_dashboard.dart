@@ -1,8 +1,6 @@
-import 'dart:js_interop';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:web/web.dart' as web;
 
 import '../config/theme.dart';
 import '../services/llm_audit_service.dart';
@@ -521,30 +519,8 @@ class _LLMSecurityDashboardState extends State<LLMSecurityDashboard>
       final fileName = 'cloudtolocalllm_audit_log_$timestamp.json';
 
       if (kIsWeb) {
-        // For web platform, use browser download
-        final blob = web.Blob(
-          [exportData.toJS].toJS,
-          web.BlobPropertyBag(type: 'application/json'),
-        );
-        final url = web.URL.createObjectURL(blob);
-
-        final anchor = web.HTMLAnchorElement()
-          ..href = url
-          ..download = fileName
-          ..style.display = 'none';
-
-        web.document.body?.appendChild(anchor);
-        anchor.click();
-        web.document.body?.removeChild(anchor);
-        web.URL.revokeObjectURL(url);
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Audit log exported: $fileName'),
-            backgroundColor: Colors.green,
-            duration: const Duration(seconds: 3),
-          ),
-        );
+        // For web platform, show the data in a dialog for manual copy
+        _showExportDataDialog(exportData, fileName);
       } else {
         // For desktop platforms, we would use file_picker or similar
         // For now, show the export data in a dialog for desktop
