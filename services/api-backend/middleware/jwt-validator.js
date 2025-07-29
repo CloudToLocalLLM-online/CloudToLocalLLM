@@ -4,8 +4,8 @@
  */
 
 import jwt from 'jsonwebtoken';
-import jwksClient from 'jwks-client';
 import { TunnelLogger, ERROR_CODES, ErrorResponseBuilder } from '../utils/logger.js';
+import { AuthService } from '../auth/auth-service.js';
 
 /**
  * JWT validation configuration
@@ -116,8 +116,8 @@ export class JWTValidator {
     // Validation attempt tracking
     this.validationAttempts = new Map(); // IP -> ValidationAttemptTracker
 
-    // JWKS clients cache
-    this.jwksClients = new Map();
+    // AuthService for JWT validation (replaces JWKS clients)
+    this.authServices = new Map();
 
     // Start cache cleanup interval
     this.cacheCleanupInterval = setInterval(() => {
@@ -134,27 +134,24 @@ export class JWTValidator {
   }
 
   /**
-   * Get or create JWKS client for domain
+   * Get or create AuthService for domain
    * @param {string} domain - Auth0 domain
-   * @returns {jwksClient.JwksClient} JWKS client
+   * @param {string} audience - Auth0 audience
+   * @returns {AuthService} AuthService instance
    */
-  getJwksClient(domain) {
-    if (!this.jwksClients.has(domain)) {
-      const client = jwksClient({
-        jwksUri: `https://${domain}/.well-known/jwks.json`,
-        requestHeaders: {},
-        timeout: 30000,
-        cache: true,
-        rateLimit: true,
-        jwksRequestsPerMinute: 5,
-        jwksRequestsPerHour: 100,
+  getAuthService(domain, audience) {
+    const key = `${domain}:${audience}`;
+    if (!this.authServices.has(key)) {
+      const authService = new AuthService({
+        AUTH0_DOMAIN: domain,
+        AUTH0_AUDIENCE: audience
       });
 
-      this.jwksClients.set(domain, client);
-      this.logger.debug('Created JWKS client', { domain });
+      this.authServices.set(key, authService);
+      this.logger.debug('Created AuthService', { domain, audience });
     }
 
-    return this.jwksClients.get(domain);
+    return this.authServices.get(key);
   }
 
   /**
@@ -306,27 +303,9 @@ export class JWTValidator {
         throw new Error('Invalid token format - missing payload');
       }
 
-      // Get signing key
-      const jwksClientInstance = this.getJwksClient(domain);
-      const key = await jwksClientInstance.getSigningKey(decoded.header.kid);
-      const signingKey = key.getPublicKey();
-
-      // Verify token with comprehensive options
-      const verifyOptions = {
-        algorithms: ['RS256'],
-        clockTolerance: this.config.clockTolerance,
-        maxAge: this.config.maxAge,
-      };
-
-      if (this.config.requireAudience && audience) {
-        verifyOptions.audience = audience;
-      }
-
-      if (this.config.requireIssuer && issuer) {
-        verifyOptions.issuer = issuer;
-      }
-
-      const verified = jwt.verify(token, signingKey, verifyOptions);
+      // Verify token using AuthService
+      const authService = this.getAuthService(domain, audience);
+      const verified = await authService.validateToken(token);
 
       // Additional security checks
       if (this.config.requireSubject && !verified.sub) {
@@ -535,9 +514,9 @@ export class JWTValidator {
         maxAttemptsPerWindow: this.config.maxValidationAttempts,
         windowMs: this.config.validationWindowMs,
       },
-      jwksClients: {
-        count: this.jwksClients.size,
-        domains: Array.from(this.jwksClients.keys()),
+      authServices: {
+        count: this.authServices.size,
+        keys: Array.from(this.authServices.keys()),
       },
     };
   }
@@ -553,7 +532,7 @@ export class JWTValidator {
 
     this.tokenCache.clear();
     this.validationAttempts.clear();
-    this.jwksClients.clear();
+    this.authServices.clear();
 
     this.logger.info('JWT validator destroyed');
   }
