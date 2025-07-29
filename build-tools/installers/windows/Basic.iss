@@ -1,5 +1,7 @@
 #define MyAppName "CloudToLocalLLM"
-#define MyAppVersion "3.14.45"
+#ifndef MyAppVersion
+#define MyAppVersion "1.0.0"
+#endif
 #define MyAppPublisher "CloudToLocalLLM"
 #define MyAppURL "https://cloudtolocalllm.online"
 #define MyAppExeName "cloudtolocalllm.exe"
