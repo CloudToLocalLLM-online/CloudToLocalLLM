@@ -4,7 +4,7 @@ import 'package:flutter/foundation.dart';
 class AppConfig {
   // App Information
   static const String appName = 'CloudToLocalLLM';
-  static const String appVersion = '3.14.44'; // Updated by build scripts
+  static const String appVersion = '3.14.45'; // Updated by build scripts
   static const String appDescription =
       'Manage and run powerful Large Language Models locally, orchestrated via a cloud interface.';
 
@@ -41,6 +41,11 @@ class AppConfig {
   // API Configuration
   static const String apiBaseUrl = 'https://app.cloudtolocalllm.online/api';
   static const Duration apiTimeout = Duration(seconds: 30);
+
+  // Tunnel Configuration
+  static const String tunnelWebSocketUrl =
+      'wss://app.cloudtolocalllm.online/api/ws/tunnel';
+  static const String tunnelWebSocketUrlDev = 'ws://localhost:8080/ws/tunnel';
 
   // UI Configuration
   static const double maxContentWidth = 1200.0;
