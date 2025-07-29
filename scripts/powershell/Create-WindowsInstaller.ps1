@@ -5,11 +5,11 @@
 param(
     [Parameter(Mandatory = $true)]
     [string]$Version,
-    
+
     [string]$InstallerScript = "build-tools\installers\windows\Basic.iss",
     [string]$OutputDir = "dist\windows",
     [switch]$InstallInnoSetup,
-    [switch]$Verbose
+    [switch]$VerboseOutput
 )
 
 # Import utility functions
@@ -158,7 +158,7 @@ function New-WindowsInstaller {
             "/O`"$outputDirPath`""
         )
         
-        if ($Verbose) {
+        if ($VerboseOutput) {
             Write-LogInfo "Inno Setup command: $innoPath $($installerArgs -join ' ')"
         }
         
