@@ -196,6 +196,7 @@ class AuthServiceDesktopWindows extends ChangeNotifier {
           'client_id': AppConfig.auth0ClientId,
           'redirect_uri': redirectUri,
           'scope': AppConfig.auth0Scopes.join(' '),
+          'audience': AppConfig.auth0Audience, // CRITICAL FIX: Add missing audience parameter
           'state': _state!,
           'code_challenge': pkce['code_challenge']!,
           'code_challenge_method': pkce['code_challenge_method']!,
@@ -269,6 +270,7 @@ class AuthServiceDesktopWindows extends ChangeNotifier {
           'code': code,
           'redirect_uri': redirectUri,
           'code_verifier': _codeVerifier!,
+          'audience': AppConfig.auth0Audience, // CRITICAL FIX: Add audience for proper JWT claims
         },
       );
 
