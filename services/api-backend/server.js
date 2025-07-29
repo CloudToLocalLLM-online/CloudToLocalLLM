@@ -5,7 +5,6 @@ import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import jwt from 'jsonwebtoken';
-import jwksClient from 'jwks-client';
 import { v4 as uuidv4 } from 'uuid';
 import winston from 'winston';
 import dotenv from 'dotenv';
@@ -48,14 +47,10 @@ const PORT = process.env.PORT || 8080;
 const AUTH0_DOMAIN = process.env.AUTH0_DOMAIN || 'dev-v2f2p008x3dr74ww.us.auth0.com';
 const AUTH0_AUDIENCE = process.env.AUTH0_AUDIENCE || 'https://app.cloudtolocalllm.online';
 
-// JWKS client for Auth0 token verification
-const jwksClientInstance = jwksClient({
-  jwksUri: `https://${AUTH0_DOMAIN}/.well-known/jwks.json`,
-  requestHeaders: {},
-  timeout: 30000,
-  cache: true,
-  rateLimit: true,
-  jwksRequestsPerMinute: 5,
+// AuthService for JWT validation (eliminates jwks-client issues)
+const authService = new AuthService({
+  AUTH0_DOMAIN,
+  AUTH0_AUDIENCE
 });
 
 // Express app setup
@@ -124,15 +119,8 @@ async function authenticateToken(req, res, next) {
       return res.status(401).json({ error: 'Invalid token format' });
     }
 
-    const key = await jwksClientInstance.getSigningKey(decoded.header.kid);
-    const signingKey = key.getPublicKey();
-
-    // Verify the token
-    const verified = jwt.verify(token, signingKey, {
-      audience: AUTH0_AUDIENCE,
-      issuer: `https://${AUTH0_DOMAIN}/`,
-      algorithms: ['RS256'],
-    });
+    // Verify the token using AuthService
+    const verified = await authService.validateToken(token);
 
     req.user = verified;
     next();
@@ -169,14 +157,8 @@ const wss = new WebSocketServer({
         return false;
       }
 
-      const key = await jwksClientInstance.getSigningKey(decoded.header.kid);
-      const signingKey = key.getPublicKey();
-
-      const verified = jwt.verify(token, signingKey, {
-        audience: AUTH0_AUDIENCE,
-        issuer: `https://${AUTH0_DOMAIN}/`,
-        algorithms: ['RS256'],
-      });
+      // Verify the token using AuthService
+      const verified = await authService.validateToken(token);
 
       // Store user info for the connection
       info.req.user = verified;

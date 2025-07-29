@@ -6,7 +6,6 @@
 import express from 'express';
 import { WebSocketServer } from 'ws';
 import jwt from 'jsonwebtoken';
-import jwksClient from 'jwks-client';
 import winston from 'winston';
 import { TunnelProxy } from './tunnel-proxy.js';
 import { TunnelLogger, ERROR_CODES, ErrorResponseBuilder } from '../utils/logger.js';
@@ -15,6 +14,7 @@ import { createTunnelRateLimitMiddleware } from '../middleware/rate-limiter.js';
 import { createConnectionSecurityMiddleware, createWebSocketSecurityValidator } from '../middleware/connection-security.js';
 import { createSecurityAuditMiddleware } from '../middleware/security-audit-logger.js';
 import { createDirectProxyRoutes } from '../routes/direct-proxy-routes.js';
+import { AuthService } from '../auth/auth-service.js';
 import { addTierInfo, requireFeature } from '../middleware/tier-check.js';
 
 const router = express.Router();
@@ -34,14 +34,10 @@ export function createTunnelRoutes(server, config, logger = winston.createLogger
   // Use enhanced logger if winston logger provided, otherwise create new TunnelLogger
   const tunnelLogger = logger instanceof TunnelLogger ? logger : new TunnelLogger('tunnel-routes');
 
-  // JWKS client for token verification
-  const jwksClientInstance = jwksClient({
-    jwksUri: `https://${AUTH0_DOMAIN}/.well-known/jwks.json`,
-    requestHeaders: {},
-    timeout: 30000,
-    cache: true,
-    rateLimit: true,
-    jwksRequestsPerMinute: 5,
+  // AuthService for JWT validation (eliminates jwks-client issues)
+  const authService = new AuthService({
+    AUTH0_DOMAIN,
+    AUTH0_AUDIENCE
   });
 
   // Create tunnel proxy instance with enhanced logger
@@ -101,14 +97,8 @@ export function createTunnelRoutes(server, config, logger = winston.createLogger
       throw new Error('Invalid token format');
     }
 
-    const key = await jwksClientInstance.getSigningKey(decoded.header.kid);
-    const signingKey = key.getPublicKey();
-
-    const verified = jwt.verify(token, signingKey, {
-      audience: AUTH0_AUDIENCE,
-      issuer: `https://${AUTH0_DOMAIN}/`,
-      algorithms: ['RS256'],
-    });
+    // Verify the token using AuthService
+    const verified = await authService.validateToken(token);
 
     return verified.sub;
   }
