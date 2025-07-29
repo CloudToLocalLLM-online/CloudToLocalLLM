@@ -63,7 +63,8 @@ const app = express();
 const server = http.createServer(app);
 
 // Trust proxy headers (required for rate limiting behind nginx)
-app.set('trust proxy', true);
+// Use specific proxy configuration to avoid ERR_ERL_PERMISSIVE_TRUST_PROXY
+app.set('trust proxy', 1); // Trust first proxy (nginx)
 
 // Security middleware
 app.use(helmet({
