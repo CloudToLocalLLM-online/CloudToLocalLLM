@@ -6,12 +6,12 @@
 
 import { WebSocketServer } from 'ws';
 import jwt from 'jsonwebtoken';
-import jwksClient from 'jwks-client';
 import { EventEmitter } from 'events';
 import { TunnelLogger } from '../utils/logger.js';
 import { createWebSocketSecurityValidator } from '../middleware/connection-security.js';
 import { MessageProtocol, MESSAGE_TYPES } from './message-protocol.js';
 import { TunnelMetrics } from './tunnel-metrics.js';
+import { AuthService } from '../auth/auth-service.js';
 
 /**
  * Enhanced Tunnel Server with enterprise features
@@ -35,14 +35,8 @@ export class TunnelServer extends EventEmitter {
     this.connections = new Map(); // userId -> WebSocket
     this.pendingRequests = new Map(); // correlationId -> { resolve, reject, timeout }
 
-    // JWKS client for JWT validation (simplified config to avoid cache issues)
-    this.jwksClient = jwksClient({
-      jwksUri: `https://${config.AUTH0_DOMAIN}/.well-known/jwks.json`,
-      cache: false, // Disable cache temporarily to avoid maxAge error
-      rateLimit: true,
-      jwksRequestsPerMinute: 10,
-      timeout: 30000,
-    });
+    // Use AuthService for JWT validation (eliminates jwks-client issues)
+    this.authService = new AuthService(config);
 
     // WebSocket security validator
     this.securityValidator = createWebSocketSecurityValidator({
@@ -417,22 +411,11 @@ export class TunnelServer extends EventEmitter {
   }
 
   /**
-   * Validate JWT token and extract user ID
+   * Validate JWT token and extract user ID using AuthService
    */
   async validateToken(token) {
     try {
-      const decoded = jwt.decode(token, { complete: true });
-      if (!decoded || !decoded.header.kid) {
-        throw new Error('Invalid token format');
-      }
-
-      const key = await this.getSigningKey(decoded.header.kid);
-      const verified = jwt.verify(token, key, {
-        audience: this.config.AUTH0_AUDIENCE,
-        issuer: `https://${this.config.AUTH0_DOMAIN}/`,
-        algorithms: ['RS256'],
-      });
-
+      const verified = await this.authService.validateToken(token);
       return verified.sub; // User ID
     } catch (error) {
       this.logger.warn('Token validation failed', { error: error.message });
@@ -440,20 +423,7 @@ export class TunnelServer extends EventEmitter {
     }
   }
 
-  /**
-   * Get signing key from JWKS
-   */
-  async getSigningKey(kid) {
-    return new Promise((resolve, reject) => {
-      this.jwksClient.getSigningKey(kid, (err, key) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve(key.getPublicKey());
-        }
-      });
-    });
-  }
+  // getSigningKey method removed - now handled by AuthService
 
   /**
    * Start heartbeat mechanism
