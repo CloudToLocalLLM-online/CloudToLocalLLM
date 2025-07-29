@@ -6,6 +6,7 @@
 import { readFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
+import { createHash } from 'crypto';
 import sqlite3 from 'sqlite3';
 import { open } from 'sqlite';
 import { TunnelLogger } from '../utils/logger.js';
@@ -387,8 +388,7 @@ export class DatabaseMigrator {
    * Calculate checksum for SQL content
    */
   calculateChecksum(content) {
-    const crypto = require('crypto');
-    return crypto.createHash('sha256').update(content).digest('hex');
+    return createHash('sha256').update(content).digest('hex');
   }
 
   /**
