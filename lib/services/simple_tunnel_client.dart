@@ -298,9 +298,10 @@ class SimpleTunnelClient extends ChangeNotifier {
           ? AppConfig.tunnelWebSocketUrlDev
           : AppConfig.tunnelWebSocketUrl;
 
-      // Build URI with token parameter - keep original wss:// scheme
+      // Build URI with token parameter - force wss:// with explicit port to avoid library conversion
       final baseUri = Uri.parse(wsUrl);
-      final uriString = '${baseUri.scheme}://${baseUri.host}${baseUri.path}?token=${Uri.encodeComponent(accessToken)}';
+      // Force wss:// scheme with explicit port 443 to prevent library from converting to https:// with :0
+      final uriString = 'wss://${baseUri.host}:443${baseUri.path}?token=${Uri.encodeComponent(accessToken)}';
 
       final uri = Uri.parse(uriString);
 
@@ -325,51 +326,23 @@ class SimpleTunnelClient extends ChangeNotifier {
         },
       );
 
-      // Connect to WebSocket with custom headers to work around nginx proxy issues
+      // Connect to WebSocket - use only the working method to avoid error spam
       try {
-        // Primary method: Use manual WebSocket.connect with proper headers for nginx proxy
-        debugPrint('🚇 [SimpleTunnel] Attempting manual WebSocket.connect with nginx-compatible headers: $uriString');
-        final webSocket = await WebSocket.connect(
-          uriString,
-          protocols: ['tunnel-protocol'],
-          headers: {
-            'Upgrade': 'websocket',
-            'Connection': 'Upgrade',
-            'Sec-WebSocket-Version': '13',
-            'User-Agent': 'CloudToLocalLLM/1.0',
-          },
-        );
-        _webSocket = IOWebSocketChannel(webSocket);
-        debugPrint('🚇 [SimpleTunnel] ✅ Connected successfully with custom headers');
+        // Use IOWebSocketChannel directly since it's the only method that works consistently
+        debugPrint('🚇 [SimpleTunnel] Connecting with IOWebSocketChannel (proven working method): $uriString');
+        _webSocket = IOWebSocketChannel.connect(Uri.parse(uriString));
+        debugPrint('🚇 [SimpleTunnel] ✅ Connected successfully with IOWebSocketChannel');
       } catch (e) {
-        debugPrint('🚇 [SimpleTunnel] ❌ Manual WebSocket with headers failed: $e');
+        debugPrint('🚇 [SimpleTunnel] ❌ IOWebSocketChannel connection failed: $e');
 
+        // Only try one fallback to avoid error spam
         try {
-          // Fallback 1: Try without protocols but with headers
-          debugPrint('🚇 [SimpleTunnel] Attempting manual WebSocket without protocols but with headers');
-          final webSocket = await WebSocket.connect(
-            uriString,
-            headers: {
-              'Upgrade': 'websocket',
-              'Connection': 'Upgrade',
-              'Sec-WebSocket-Version': '13',
-              'User-Agent': 'CloudToLocalLLM/1.0',
-            },
-          );
-          _webSocket = IOWebSocketChannel(webSocket);
-          debugPrint('🚇 [SimpleTunnel] ✅ Connected successfully without protocols but with headers');
+          debugPrint('🚇 [SimpleTunnel] Attempting fallback with standard WebSocketChannel');
+          _webSocket = WebSocketChannel.connect(Uri.parse(uriString));
+          debugPrint('🚇 [SimpleTunnel] ✅ Connected successfully with WebSocketChannel fallback');
         } catch (e2) {
-          debugPrint('🚇 [SimpleTunnel] ❌ Manual WebSocket without protocols failed: $e2');
-
-          try {
-            // Fallback 2: Try IOWebSocketChannel (original approach)
-            debugPrint('🚇 [SimpleTunnel] Attempting IOWebSocketChannel as fallback');
-            _webSocket = IOWebSocketChannel.connect(Uri.parse(uriString));
-            debugPrint('🚇 [SimpleTunnel] ✅ Connected successfully with IOWebSocketChannel fallback');
-          } catch (e3) {
-            debugPrint('🚇 [SimpleTunnel] ❌ All connection methods failed. Nginx proxy configuration issue detected. Last error: $e3');
-            rethrow;
-          }
+          debugPrint('🚇 [SimpleTunnel] ❌ All connection methods failed: $e2');
+          rethrow;
         }
       }
 
@@ -389,8 +362,13 @@ class SimpleTunnelClient extends ChangeNotifier {
       _consecutivePingFailures = 0; // Reset ping failure counter on successful connection
       _lastConnectionTime = DateTime.now();
 
-      // Start health monitoring
-      _startHealthMonitoring();
+      // Start health monitoring after a delay to let connection stabilize
+      Timer(const Duration(seconds: 10), () {
+        if (_isConnected) {
+          debugPrint('🚇 [SimpleTunnel] Starting health monitoring after stabilization period');
+          _startHealthMonitoring();
+        }
+      });
 
       // Process any queued messages
       _processMessageQueue();
