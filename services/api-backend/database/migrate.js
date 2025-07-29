@@ -288,41 +288,25 @@ export class DatabaseMigrator {
   }
 
   /**
-   * Validate database schema
+   * Validate database schema (SQLite version)
    */
   async validateSchema() {
     const validations = [
       {
         name: 'user_sessions_table',
-        query: 'SELECT 1 FROM information_schema.tables WHERE table_name = \'user_sessions\'',
+        query: 'SELECT 1 FROM sqlite_master WHERE type=\'table\' AND name=\'user_sessions\'',
       },
       {
         name: 'tunnel_connections_table',
-        query: 'SELECT 1 FROM information_schema.tables WHERE table_name = \'tunnel_connections\'',
-      },
-      {
-        name: 'tunnel_requests_table',
-        query: 'SELECT 1 FROM information_schema.tables WHERE table_name = \'tunnel_requests\'',
+        query: 'SELECT 1 FROM sqlite_master WHERE type=\'table\' AND name=\'tunnel_connections\'',
       },
       {
         name: 'audit_logs_table',
-        query: 'SELECT 1 FROM information_schema.tables WHERE table_name = \'audit_logs\'',
+        query: 'SELECT 1 FROM sqlite_master WHERE type=\'table\' AND name=\'audit_logs\'',
       },
       {
-        name: 'security_events_table',
-        query: 'SELECT 1 FROM information_schema.tables WHERE table_name = \'security_events\'',
-      },
-      {
-        name: 'performance_metrics_table',
-        query: 'SELECT 1 FROM information_schema.tables WHERE table_name = \'performance_metrics\'',
-      },
-      {
-        name: 'active_connections_view',
-        query: 'SELECT 1 FROM information_schema.views WHERE table_name = \'active_connections\'',
-      },
-      {
-        name: 'uuid_extension',
-        query: 'SELECT 1 FROM pg_extension WHERE extname = \'uuid-ossp\'',
+        name: 'schema_migrations_table',
+        query: 'SELECT 1 FROM sqlite_master WHERE type=\'table\' AND name=\'schema_migrations\'',
       },
     ];
 
@@ -330,8 +314,8 @@ export class DatabaseMigrator {
 
     for (const validation of validations) {
       try {
-        const result = await this.pool.query(validation.query);
-        results[validation.name] = result.rows.length > 0;
+        const result = await this.db.get(validation.query);
+        results[validation.name] = result !== undefined;
       } catch (error) {
         results[validation.name] = false;
         this.logger.warn('Schema validation failed', {
@@ -352,26 +336,22 @@ export class DatabaseMigrator {
   }
 
   /**
-   * Get database statistics
+   * Get database statistics (SQLite version)
    */
   async getDatabaseStats() {
     const queries = {
       totalSessions: 'SELECT COUNT(*) as count FROM user_sessions',
-      activeSessions: 'SELECT COUNT(*) as count FROM user_sessions WHERE is_active = true AND expires_at > CURRENT_TIMESTAMP',
+      activeSessions: 'SELECT COUNT(*) as count FROM user_sessions WHERE is_active = 1 AND expires_at > datetime(\'now\')',
       totalConnections: 'SELECT COUNT(*) as count FROM tunnel_connections',
-      activeConnections: 'SELECT COUNT(*) as count FROM active_connections',
-      totalRequests: 'SELECT COUNT(*) as count FROM tunnel_requests',
       auditLogCount: 'SELECT COUNT(*) as count FROM audit_logs',
-      securityEventCount: 'SELECT COUNT(*) as count FROM security_events',
-      databaseSize: 'SELECT pg_size_pretty(pg_database_size(current_database())) as size',
     };
 
     const stats = {};
 
     for (const [key, query] of Object.entries(queries)) {
       try {
-        const result = await this.pool.query(query);
-        stats[key] = result.rows[0].count || result.rows[0].size;
+        const result = await this.db.get(query);
+        stats[key] = result.count;
       } catch (error) {
         stats[key] = 'error';
         this.logger.warn('Failed to get database stat', {
