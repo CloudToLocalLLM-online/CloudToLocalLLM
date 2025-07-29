@@ -6,21 +6,17 @@
  */
 
 import jwt from 'jsonwebtoken';
-import jwksClient from 'jwks-client';
 import logger from '../logger.js';
+import { AuthService } from '../auth/auth-service.js';
 
 // Configuration
 const AUTH0_DOMAIN = process.env.AUTH0_DOMAIN || 'dev-v2f2p008x3dr74ww.us.auth0.com';
 const AUTH0_AUDIENCE = process.env.AUTH0_AUDIENCE || 'https://app.cloudtolocalllm.online';
 
-// JWKS client for Auth0 token verification
-const jwksClientInstance = jwksClient({
-  jwksUri: `https://${AUTH0_DOMAIN}/.well-known/jwks.json`,
-  requestHeaders: {},
-  timeout: 30000,
-  cache: true,
-  rateLimit: true,
-  jwksRequestsPerMinute: 5,
+// Use AuthService for JWT validation (eliminates jwks-client issues)
+const authService = new AuthService({
+  AUTH0_DOMAIN,
+  AUTH0_AUDIENCE
 });
 
 /**
@@ -48,15 +44,8 @@ export async function authenticateJWT(req, res, next) {
       });
     }
 
-    const key = await jwksClientInstance.getSigningKey(decoded.header.kid);
-    const signingKey = key.getPublicKey();
-
-    // Verify the token
-    const verified = jwt.verify(token, signingKey, {
-      audience: AUTH0_AUDIENCE,
-      issuer: `https://${AUTH0_DOMAIN}/`,
-      algorithms: ['RS256'],
-    });
+    // Verify the token using AuthService
+    const verified = await authService.validateToken(token);
 
     // Attach user info to request
     req.user = verified;
@@ -156,14 +145,8 @@ export async function optionalAuth(req, res, next) {
     // Try to verify token
     const decoded = jwt.decode(token, { complete: true });
     if (decoded && decoded.header.kid) {
-      const key = await jwksClientInstance.getSigningKey(decoded.header.kid);
-      const signingKey = key.getPublicKey();
-
-      const verified = jwt.verify(token, signingKey, {
-        audience: AUTH0_AUDIENCE,
-        issuer: `https://${AUTH0_DOMAIN}/`,
-        algorithms: ['RS256'],
-      });
+      // Verify the token using AuthService
+      const verified = await authService.validateToken(token);
 
       req.user = verified;
       req.userId = verified.sub;
