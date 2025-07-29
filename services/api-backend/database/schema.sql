@@ -1,24 +1,21 @@
--- CloudToLocalLLM Tunnel System Database Schema
+-- CloudToLocalLLM Tunnel System Database Schema (SQLite)
 -- Version: 1.0.0
 -- Description: Database schema for secure tunnel system with user sessions, connections, and audit logging
 
--- Enable UUID extension
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
-
 -- User sessions table
 CREATE TABLE IF NOT EXISTS user_sessions (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    user_id VARCHAR(255) NOT NULL,
-    jwt_token_hash VARCHAR(255) NOT NULL,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
-    last_activity TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    ip_address INET,
+    id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))),
+    user_id TEXT NOT NULL,
+    jwt_token_hash TEXT NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    expires_at DATETIME NOT NULL,
+    last_activity DATETIME DEFAULT CURRENT_TIMESTAMP,
+    ip_address TEXT,
     user_agent TEXT,
-    is_active BOOLEAN DEFAULT true,
-    
-    -- Indexes
-    CONSTRAINT user_sessions_user_id_idx UNIQUE (user_id, jwt_token_hash)
+    is_active INTEGER DEFAULT 1,
+
+    -- Unique constraint
+    UNIQUE (user_id, jwt_token_hash)
 );
 
 -- Create indexes for user_sessions

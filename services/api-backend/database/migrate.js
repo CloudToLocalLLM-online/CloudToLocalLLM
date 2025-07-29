@@ -6,10 +6,9 @@
 import { readFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
-import pg from 'pg';
+import sqlite3 from 'sqlite3';
+import { open } from 'sqlite';
 import { TunnelLogger } from '../utils/logger.js';
-
-const { Pool } = pg;
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 /**
@@ -17,21 +16,15 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
  */
 export class DatabaseMigrator {
   constructor(config) {
+    // SQLite configuration
     this.config = {
-      host: process.env.DB_HOST || 'localhost',
-      port: process.env.DB_PORT || 5432,
-      database: process.env.DB_NAME || 'cloudtolocalllm',
-      user: process.env.DB_USER || 'postgres',
-      password: process.env.DB_PASSWORD || '',
-      ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
-      max: 20,
-      idleTimeoutMillis: 30000,
-      connectionTimeoutMillis: 2000,
+      filename: process.env.DB_PATH || join(__dirname, '../data/cloudtolocalllm.db'),
+      driver: sqlite3.Database,
       ...config,
     };
 
     this.logger = new TunnelLogger('database-migrator');
-    this.pool = null;
+    this.db = null;
   }
 
   /**
@@ -39,24 +32,28 @@ export class DatabaseMigrator {
    */
   async initialize() {
     try {
-      this.pool = new Pool(this.config);
+      // Ensure data directory exists
+      const dataDir = dirname(this.config.filename);
+      const { mkdirSync, existsSync } = await import('fs');
+      if (!existsSync(dataDir)) {
+        mkdirSync(dataDir, { recursive: true });
+      }
+
+      // Open SQLite database
+      this.db = await open(this.config);
 
       // Test connection
-      const client = await this.pool.connect();
-      await client.query('SELECT NOW()');
-      client.release();
+      await this.db.get('SELECT 1');
 
-      this.logger.info('Database connection established', {
-        host: this.config.host,
-        database: this.config.database,
+      this.logger.info('SQLite database connection established', {
+        filename: this.config.filename,
       });
 
       return true;
     } catch (error) {
-      this.logger.error('Failed to connect to database', {
+      this.logger.error('Failed to connect to SQLite database', {
         error: error.message,
-        host: this.config.host,
-        database: this.config.database,
+        filename: this.config.filename,
       });
       throw error;
     }
@@ -68,20 +65,20 @@ export class DatabaseMigrator {
   async createMigrationsTable() {
     const query = `
       CREATE TABLE IF NOT EXISTS schema_migrations (
-        id SERIAL PRIMARY KEY,
-        version VARCHAR(255) UNIQUE NOT NULL,
-        name VARCHAR(255) NOT NULL,
-        applied_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-        checksum VARCHAR(64) NOT NULL,
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        version TEXT UNIQUE NOT NULL,
+        name TEXT NOT NULL,
+        applied_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        checksum TEXT NOT NULL,
         execution_time_ms INTEGER,
-        success BOOLEAN DEFAULT true
+        success INTEGER DEFAULT 1
       );
-      
+
       CREATE INDEX IF NOT EXISTS idx_schema_migrations_version ON schema_migrations(version);
       CREATE INDEX IF NOT EXISTS idx_schema_migrations_applied_at ON schema_migrations(applied_at);
     `;
 
-    await this.pool.query(query);
+    await this.db.exec(query);
     this.logger.info('Migrations table created/verified');
   }
 
@@ -89,21 +86,21 @@ export class DatabaseMigrator {
    * Get applied migrations
    */
   async getAppliedMigrations() {
-    const result = await this.pool.query(
-      'SELECT version, name, applied_at FROM schema_migrations WHERE success = true ORDER BY applied_at',
+    const result = await this.db.all(
+      'SELECT version, name, applied_at FROM schema_migrations WHERE success = 1 ORDER BY applied_at',
     );
-    return result.rows;
+    return result;
   }
 
   /**
    * Check if migration is applied
    */
   async isMigrationApplied(version) {
-    const result = await this.pool.query(
-      'SELECT 1 FROM schema_migrations WHERE version = $1 AND success = true',
+    const result = await this.db.get(
+      'SELECT 1 FROM schema_migrations WHERE version = ? AND success = 1',
       [version],
     );
-    return result.rows.length > 0;
+    return result !== undefined;
   }
 
   /**
