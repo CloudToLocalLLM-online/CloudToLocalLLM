@@ -229,7 +229,8 @@ export class AuthService {
   async createOrUpdateSession(tokenPayload, token, req) {
     const userId = tokenPayload.sub;
     const tokenHash = this.hashToken(token);
-    const expiresAt = new Date(tokenPayload.exp * 1000);
+    // Convert to SQLite-compatible datetime string
+    const expiresAt = new Date(tokenPayload.exp * 1000).toISOString();
     const ip = req.ip || req.socket?.remoteAddress;
     const userAgent = req.headers?.['user-agent'];
 
@@ -291,6 +292,9 @@ export class AuthService {
       this.logger.error('Failed to create/update session', {
         userId,
         error: error.message,
+        stack: error.stack,
+        sqliteError: error.code,
+        sqliteMessage: error.message,
       });
       throw error;
     }
