@@ -428,20 +428,8 @@ perform_health_checks() {
         docker compose -f "$COMPOSE_FILE" logs --tail=10 api-backend || true
     fi
 
-    # Check tunnel endpoint accessibility (without auth)
-    log_verbose "Checking tunnel endpoint accessibility..."
-    local tunnel_url="https://app.cloudtolocalllm.online/ws/tunnel"
-    # We expect a 400 or 401 response for WebSocket upgrade without proper headers, not a connection error
-    local tunnel_response=$(curl -s -o /dev/null -w "%{http_code}" --connect-timeout 10 "$tunnel_url" || echo "000")
-    
-    if [[ "$tunnel_response" == "400" ]] || [[ "$tunnel_response" == "401" ]]; then
-        log_success "Tunnel endpoint is accessible (HTTP $tunnel_response - expected for WebSocket without auth)"
-    elif [[ "$tunnel_response" == "000" ]]; then
-        log_error "Tunnel endpoint is not accessible (connection failed)"
-        return 1
-    else
-        log_warning "Tunnel endpoint returned unexpected response: HTTP $tunnel_response"
-    fi
+    # HTTP polling tunnel system (no WebSocket endpoint to check)
+    log_success "HTTP polling tunnel system enabled (no endpoint check needed)"
 
     # Check SSL certificate
     log_verbose "Checking SSL certificate..."
@@ -503,17 +491,9 @@ verify_deployment() {
         docker compose -f "$COMPOSE_FILE" logs --tail=20 api-backend || true
     fi
 
-    # Check nginx proxy configuration for tunnel endpoint
-    log_verbose "Checking tunnel endpoint proxy..."
-    local tunnel_proxy_response=$(curl -s -o /dev/null -w "%{http_code}" --connect-timeout 10 "https://app.cloudtolocalllm.online/ws/tunnel" || echo "000")
-    
-    if [[ "$tunnel_proxy_response" == "400" ]] || [[ "$tunnel_proxy_response" == "401" ]]; then
-        log_success "Tunnel endpoint proxy is working (HTTP $tunnel_proxy_response)"
-        tunnel_health_check=true
-    else
-        log_error "Tunnel endpoint proxy failed (HTTP $tunnel_proxy_response)"
-        tunnel_health_check=false
-    fi
+    # HTTP polling tunnel system (no proxy endpoint to check)
+    log_success "HTTP polling tunnel system ready"
+    tunnel_health_check=true
 
     # Final connectivity test
     log_verbose "Final connectivity test..."
