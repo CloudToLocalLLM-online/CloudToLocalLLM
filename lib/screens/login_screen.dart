@@ -51,10 +51,10 @@ class _LoginScreenState extends State<LoginScreen> {
       final authService = context.read<AuthService>();
       if (authService.isAuthenticated.value) {
         debugPrint('🔐 [Login] Auth state changed - user now authenticated');
-        if (!authService.isWeb) {
-          debugPrint('🔐 [Login] Desktop auth completed, redirecting to home');
-          context.go('/');
-        }
+        debugPrint(
+          '🔐 [Login] Redirecting to home after successful authentication',
+        );
+        context.go('/');
       }
     }
   }

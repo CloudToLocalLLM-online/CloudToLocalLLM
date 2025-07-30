@@ -318,7 +318,7 @@ class AppRouter {
         }
 
         // Allow access to login, callback, and loading pages
-        if (isLoggingIn || isLoading) {
+        if (isLoggingIn || isCallback || isLoading) {
           debugPrint('🔄 [Router] Allowing access to auth/loading page');
           return null;
         }
@@ -342,7 +342,8 @@ class AppRouter {
         }
 
         // For app subdomain or desktop, require authentication
-        if (!isAuthenticated && (isAppSubdomain || !kIsWeb)) {
+        // Only redirect if auth is not loading to avoid premature redirects
+        if (!isAuthenticated && !isAuthLoading && (isAppSubdomain || !kIsWeb)) {
           debugPrint(
             '🔄 [Router] Redirecting to login - user not authenticated',
           );
