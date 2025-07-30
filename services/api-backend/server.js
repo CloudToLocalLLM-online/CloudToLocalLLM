@@ -180,6 +180,29 @@ app.use('/api/admin', adminRoutes);
 // Bridge polling routes (HTTP fallback for WebSocket tunnel)
 app.use('/api/bridge', bridgePollingRoutes);
 
+// Bridge status endpoint for web app compatibility
+app.get('/api/ollama/bridge/status', authenticateJWT, (req, res) => {
+  const userId = req.user?.sub;
+
+  if (!userId) {
+    return res.status(401).json({
+      error: 'Authentication required',
+      code: 'AUTH_REQUIRED',
+    });
+  }
+
+  // Check if user has any connected bridges
+  const userBridge = getBridgeByUserId(userId);
+  const isConnected = userBridge && isBridgeAvailable(userBridge.bridgeId);
+
+  res.json({
+    connected: isConnected,
+    bridgeId: userBridge?.bridgeId || null,
+    lastSeen: userBridge?.lastSeen || null,
+    timestamp: new Date().toISOString(),
+  });
+});
+
 // LLM Tunnel Cloud Proxy Endpoints
 // These endpoints provide the missing /api/ollama/* routes that the web platform expects
 app.all('/api/ollama/*', authenticateJWT, addTierInfo, async(req, res) => {
@@ -439,12 +462,22 @@ app.get('/api/user/tier', authenticateJWT, addTierInfo, (req, res) => {
   }
 });
 
-// Health check
+// Health check endpoints
 app.get('/health', (req, res) => {
   res.json({
     status: 'healthy',
     timestamp: new Date().toISOString(),
     tunnelSystem: 'http-polling',
+  });
+});
+
+// API health check endpoint (for web app compatibility)
+app.get('/api/health', (req, res) => {
+  res.json({
+    status: 'healthy',
+    timestamp: new Date().toISOString(),
+    tunnelSystem: 'http-polling',
+    service: 'cloudtolocalllm-api',
   });
 });
 
