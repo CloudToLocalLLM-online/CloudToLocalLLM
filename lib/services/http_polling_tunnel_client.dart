@@ -149,9 +149,9 @@ class HttpPollingTunnelClient extends ChangeNotifier {
             'Content-Type': 'application/json',
           },
           body: json.encode({
-            'clientId': 'flutter-desktop-${Platform.operatingSystem}',
-            'platform': Platform.operatingSystem,
-            'version': '3.6.2',
+            'clientId': 'flutter-desktop-${_getPlatformName()}',
+            'platform': _getPlatformName(),
+            'version': '4.0.0',
             'capabilities': ['ollama', 'streaming', 'http-polling'],
           }),
         )
@@ -401,6 +401,20 @@ class HttpPollingTunnelClient extends ChangeNotifier {
       }
     } catch (e) {
       debugPrint('🌉 [HttpPolling] Heartbeat failed: $e');
+    }
+  }
+
+  /// Get platform name safely (web-compatible)
+  String _getPlatformName() {
+    if (kIsWeb) {
+      return 'web';
+    }
+
+    try {
+      return Platform.operatingSystem;
+    } catch (e) {
+      debugPrint('🌉 [HttpPolling] Platform detection failed: $e');
+      return 'unknown';
     }
   }
 
