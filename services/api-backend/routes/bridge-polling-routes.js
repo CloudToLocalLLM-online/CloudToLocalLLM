@@ -5,7 +5,7 @@
 
 import express from 'express';
 import { v4 as uuidv4 } from 'uuid';
-import { authenticateToken } from '../middleware/auth.js';
+import { authenticateJWT } from '../middleware/auth.js';
 import { addTierInfo } from '../middleware/tier-check.js';
 import { createLogger } from '../utils/logger.js';
 
@@ -29,7 +29,7 @@ const MAX_COMPLETED_RESPONSES = 500;
  * Register a desktop client for HTTP polling
  * POST /api/bridge/register
  */
-router.post('/register', authenticateToken, addTierInfo, (req, res) => {
+router.post('/register', authenticateJWT, addTierInfo, (req, res) => {
   const { clientId, platform, version, capabilities } = req.body;
   const userId = req.user.sub;
   const bridgeId = uuidv4();
@@ -88,7 +88,7 @@ router.post('/register', authenticateToken, addTierInfo, (req, res) => {
  * Get bridge status
  * GET /api/bridge/{bridgeId}/status
  */
-router.get('/:bridgeId/status', authenticateToken, (req, res) => {
+router.get('/:bridgeId/status', authenticateJWT, (req, res) => {
   const { bridgeId } = req.params;
   const userId = req.user.sub;
 
@@ -134,7 +134,7 @@ router.get('/:bridgeId/status', authenticateToken, (req, res) => {
  * Poll for pending requests (Desktop client calls this)
  * GET /api/bridge/{bridgeId}/poll
  */
-router.get('/:bridgeId/poll', authenticateToken, (req, res) => {
+router.get('/:bridgeId/poll', authenticateJWT, (req, res) => {
   const { bridgeId } = req.params;
   const userId = req.user.sub;
   const timeout = parseInt(req.query.timeout) || POLLING_TIMEOUT;
@@ -204,7 +204,7 @@ router.get('/:bridgeId/poll', authenticateToken, (req, res) => {
  * Submit response from desktop client
  * POST /api/bridge/{bridgeId}/response
  */
-router.post('/:bridgeId/response', authenticateToken, (req, res) => {
+router.post('/:bridgeId/response', authenticateJWT, (req, res) => {
   const { bridgeId } = req.params;
   const userId = req.user.sub;
   const { requestId, status, headers, body, error } = req.body;
@@ -266,7 +266,7 @@ router.post('/:bridgeId/response', authenticateToken, (req, res) => {
  * Send heartbeat (Desktop client calls this)
  * POST /api/bridge/{bridgeId}/heartbeat
  */
-router.post('/:bridgeId/heartbeat', authenticateToken, (req, res) => {
+router.post('/:bridgeId/heartbeat', authenticateJWT, (req, res) => {
   const { bridgeId } = req.params;
   const userId = req.user.sub;
 
