@@ -322,16 +322,8 @@ main() {
     echo "================================================================"
     echo
     
-    # Safety prompt (unless --force is used)
-    if [[ "$FORCE" != "true" && "$DRY_RUN" != "true" ]]; then
-        log_warning "Complete deployment starting"
-        log_info "This will deploy to production environment"
-        log_info "Use --force flag for automated/CI environments"
-        log_info "Proceeding with deployment in 5 seconds..."
-        sleep 5
-    elif [[ "$FORCE" == "true" ]]; then
-        log_info "Force mode enabled - proceeding with automated deployment"
-    fi
+    # Automatic deployment - no prompts needed
+    log_info "Starting automated deployment to production environment"
     
     # Execute deployment phases
     pre_deployment_checks

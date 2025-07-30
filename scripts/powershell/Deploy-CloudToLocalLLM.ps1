@@ -610,7 +610,7 @@ Write-Host "=== STEP 5: VPS DEPLOYMENT ===" -ForegroundColor Yellow
 
 # Use the new VPS deployment scripts for better error handling and rollback
 $vpsDeploymentScript = "$VPSProjectPath/scripts/deploy/complete_deployment.sh"
-$deploymentFlags = "--force"
+$deploymentFlags = ""
 
 if ($Verbose) {
 $deploymentFlags += " --verbose"
