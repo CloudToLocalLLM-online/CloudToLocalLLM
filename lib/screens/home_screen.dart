@@ -6,6 +6,7 @@ import '../config/theme.dart';
 import '../config/app_config.dart';
 import '../models/conversation.dart';
 import '../models/message.dart';
+import '../services/app_initialization_service.dart';
 import '../services/auth_service.dart';
 import '../services/streaming_chat_service.dart';
 import '../services/connection_manager_service.dart';
@@ -36,6 +37,12 @@ class _HomeScreenState extends State<HomeScreen> {
     super.initState();
     // Services are now provided by the main app providers
     debugPrint('[DEBUG] HomeScreen: Using provider-based services');
+
+    // Trigger service initialization after authentication
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final appInit = context.read<AppInitializationService>();
+      appInit.initializeWithContext(context);
+    });
   }
 
   @override

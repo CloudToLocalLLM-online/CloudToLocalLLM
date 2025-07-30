@@ -8,6 +8,7 @@ import 'screens/loading_screen.dart';
 import 'config/theme.dart';
 import 'config/router.dart';
 import 'config/app_config.dart';
+import 'services/app_initialization_service.dart';
 import 'services/auth_service.dart';
 import 'services/enhanced_user_tier_service.dart';
 import 'services/ollama_service.dart';
@@ -284,9 +285,16 @@ class _CloudToLocalLLMAppState extends State<CloudToLocalLLMApp> {
             final clientDetection = DesktopClientDetectionService(
               authService: authService,
             );
-            // Initialize the client detection service asynchronously
-            clientDetection.initialize();
+            // Don't initialize immediately - let it initialize after auth
             return clientDetection;
+          },
+        ),
+
+        // App initialization service (manages service startup order)
+        ChangeNotifierProvider(
+          create: (context) {
+            final authService = context.read<AuthService>();
+            return AppInitializationService(authService: authService);
           },
         ),
 
@@ -353,8 +361,7 @@ class _CloudToLocalLLMAppState extends State<CloudToLocalLLMApp> {
               httpPollingClient: httpPollingClient,
               authService: authService,
             );
-            // Initialize the connection manager service
-            connectionManager.initialize();
+            // Don't initialize immediately - let it initialize after auth
             return connectionManager;
           },
         ),
