@@ -74,22 +74,42 @@ class AuthServiceWeb extends ChangeNotifier {
       }
 
       // Check for stored tokens
+      print('🔐 [DEBUG] Loading stored tokens...');
       await _loadStoredTokens();
+      print(
+        '🔐 [DEBUG] Access token loaded: ${_accessToken != null ? "YES" : "NO"}',
+      );
 
       if (_accessToken != null) {
         // Validate token expiry
+        print('🔐 [DEBUG] Checking token expiry...');
         if (_tokenExpiry != null && DateTime.now().isBefore(_tokenExpiry!)) {
           // Token is valid, load user profile
-          await _loadUserProfile();
-          _isAuthenticated.value = true;
-          AuthLogger.info('🔐 Valid stored tokens found');
-          notifyListeners();
-          return;
+          print('🔐 [DEBUG] Token valid, loading user profile...');
+          try {
+            await _loadUserProfile();
+            _isAuthenticated.value = true;
+            print(
+              '🔐 [DEBUG] User profile loaded successfully, setting authenticated state',
+            );
+            AuthLogger.info('🔐 Valid stored tokens found');
+            notifyListeners();
+            return;
+          } catch (e) {
+            print('🔐 [DEBUG] User profile loading failed: $e');
+            AuthLogger.error('🔐 User profile loading failed', {
+              'error': e.toString(),
+            });
+            await _clearStoredTokens();
+          }
         } else {
           // Token expired, clear stored data
+          print('🔐 [DEBUG] Token expired, clearing stored data');
           AuthLogger.info('🔐 Stored tokens expired, clearing');
           await _clearStoredTokens();
         }
+      } else {
+        print('🔐 [DEBUG] No stored access token found');
       }
 
       // No valid authentication found
@@ -339,9 +359,6 @@ class AuthServiceWeb extends ChangeNotifier {
 
   /// Handle Auth0 callback
   Future<bool> handleCallback({String? callbackUrl}) async {
-    print(
-      '🔐 [DEBUG] handleCallback called with URL: ${callbackUrl ?? "null"}',
-    );
     try {
       AuthLogger.info('🔐 Web callback handling started');
 
@@ -378,9 +395,6 @@ class AuthServiceWeb extends ChangeNotifier {
       if (uri.queryParameters.containsKey('code')) {
         final code = uri.queryParameters['code'];
         final state = uri.queryParameters['state'];
-        print(
-          '🔐 [DEBUG] Extracted code: ${code != null ? "YES (${code.substring(0, 10)}...)" : "NO"}',
-        );
 
         AuthLogger.info('🔐 Authorization code received', {
           'code': code != null ? '${code.substring(0, 10)}...' : 'null',
