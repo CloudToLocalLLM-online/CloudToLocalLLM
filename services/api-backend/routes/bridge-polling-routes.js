@@ -7,10 +7,10 @@ import express from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import { authenticateJWT } from '../middleware/auth.js';
 import { addTierInfo } from '../middleware/tier-check.js';
-import { createLogger } from '../utils/logger.js';
+import { TunnelLogger } from '../utils/logger.js';
 
 const router = express.Router();
-const logger = createLogger('BridgePolling');
+const logger = new TunnelLogger('BridgePolling');
 
 // In-memory stores for HTTP polling (in production, use Redis)
 const bridgeRegistrations = new Map(); // bridgeId -> bridge info
