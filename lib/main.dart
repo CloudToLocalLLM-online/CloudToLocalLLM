@@ -53,9 +53,8 @@ void main() async {
     // Performance monitoring
     options.tracesSampleRate = 1.0; // 100% of transactions for tracing
 
-    // Session Replay configuration
-    options.replay.sessionSampleRate = 1.0; // 100% of sessions for replay
-    options.replay.onErrorSampleRate = 1.0; // 100% of error sessions
+    // Session Replay configuration (if available)
+    // Note: Session replay may not be available in all Sentry versions
 
     // Additional debugging options
     options.debug = kDebugMode; // Enable debug logging in debug mode
@@ -80,12 +79,14 @@ void main() async {
       if (message.contains('WebSocket') ||
           message.contains('tunnel') ||
           message.contains('HTTP 400')) {
-        // Add custom tags for tunnel-related issues
-        event.tags = {
-          ...?event.tags,
-          'issue_type': 'tunnel_connection',
-          'platform': kIsWeb ? 'web' : 'desktop',
-        };
+        // Add custom tags for tunnel-related issues using copyWith
+        event = event.copyWith(
+          tags: {
+            ...?event.tags,
+            'issue_type': 'tunnel_connection',
+            'platform': kIsWeb ? 'web' : 'desktop',
+          },
+        );
       }
       return event;
     };
