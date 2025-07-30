@@ -440,15 +440,13 @@ class AuthServiceWeb extends ChangeNotifier {
 
   /// Exchange authorization code for access and ID tokens
   Future<bool> _exchangeCodeForTokens(String code) async {
-    print(
-      '🔐 [DEBUG] _exchangeCodeForTokens called with code: ${code.substring(0, 10)}...',
-    );
     try {
       AuthLogger.info('🔐 Exchanging authorization code for tokens', {
         'codeLength': code.length,
         'redirectUri': AppConfig.auth0WebRedirectUri,
       });
 
+      print('🔐 [DEBUG] Making token exchange HTTP request...');
       final response = await http.post(
         Uri.https(AppConfig.auth0Domain, '/oauth/token'),
         headers: {'Content-Type': 'application/json'},
@@ -457,9 +455,11 @@ class AuthServiceWeb extends ChangeNotifier {
           'client_id': AppConfig.auth0ClientId,
           'code': code,
           'redirect_uri': AppConfig.auth0WebRedirectUri,
+          'audience': AppConfig.auth0Audience,
         }),
       );
 
+      print('🔐 [DEBUG] Token exchange HTTP response: ${response.statusCode}');
       AuthLogger.debug('🔐 Token exchange response received', {
         'statusCode': response.statusCode,
         'hasBody': response.body.isNotEmpty,
