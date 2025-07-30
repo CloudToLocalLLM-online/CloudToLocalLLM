@@ -391,15 +391,8 @@ class AuthServiceWeb extends ChangeNotifier {
               await _loadUserProfile();
 
               // Set authentication state and notify listeners
-              print('🔐 [DEBUG] Setting authentication state to true...');
               _isAuthenticated.value = true;
-              print(
-                '🔐 [DEBUG] Notifying listeners of authentication change...',
-              );
               notifyListeners();
-              print(
-                '🔐 [DEBUG] Authentication state change notification complete',
-              );
               AuthLogger.logAuthStateChange(
                 true,
                 'Token exchange and profile loading successful',
@@ -473,12 +466,8 @@ class AuthServiceWeb extends ChangeNotifier {
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
 
-        print('🔐 [DEBUG] Token exchange successful, setting tokens...');
         _accessToken = data['access_token'] as String?;
         _idToken = data['id_token'] as String?;
-        print(
-          '🔐 [DEBUG] Access token set: ${_accessToken?.substring(0, 20)}...',
-        );
 
         if (_accessToken == null) {
           AuthLogger.error('🔐 No access token in response', {
