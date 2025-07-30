@@ -6,7 +6,7 @@
 import express from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import { authenticateToken } from '../middleware/auth.js';
-import { addTierInfo } from '../middleware/tier-info.js';
+import { addTierInfo } from '../middleware/tier-check.js';
 import { createLogger } from '../utils/logger.js';
 
 const router = express.Router();
