@@ -165,6 +165,7 @@ class AuthServiceWeb extends ChangeNotifier {
         'response_type': 'code',
         'scope': AppConfig.auth0Scopes.join(' '),
         'state': state,
+        'prompt': 'consent', // Force consent screen to show new scopes
       });
 
       AuthLogger.info('🔐 Auth0 URL constructed', {
@@ -338,6 +339,9 @@ class AuthServiceWeb extends ChangeNotifier {
 
   /// Handle Auth0 callback
   Future<bool> handleCallback({String? callbackUrl}) async {
+    print(
+      '🔐 [DEBUG] handleCallback called with URL: ${callbackUrl ?? "null"}',
+    );
     try {
       AuthLogger.info('🔐 Web callback handling started');
 
@@ -374,6 +378,9 @@ class AuthServiceWeb extends ChangeNotifier {
       if (uri.queryParameters.containsKey('code')) {
         final code = uri.queryParameters['code'];
         final state = uri.queryParameters['state'];
+        print(
+          '🔐 [DEBUG] Extracted code: ${code != null ? "YES (${code.substring(0, 10)}...)" : "NO"}',
+        );
 
         AuthLogger.info('🔐 Authorization code received', {
           'code': code != null ? '${code.substring(0, 10)}...' : 'null',
