@@ -341,13 +341,11 @@ class AuthServiceWeb extends ChangeNotifier {
   Future<bool> handleCallback({String? callbackUrl}) async {
     try {
       AuthLogger.info('🔐 Web callback handling started');
-      debugPrint('🔐 [DEBUG] Web callback handling started');
 
       if (!kIsWeb) {
         AuthLogger.error(
           '🔐 Callback handling is only supported on web platform',
         );
-        debugPrint('🔐 [DEBUG] Not on web platform');
         return false;
       }
 
@@ -382,12 +380,8 @@ class AuthServiceWeb extends ChangeNotifier {
           'code': code != null ? '${code.substring(0, 10)}...' : 'null',
           'state': state,
         });
-        debugPrint(
-          '🔐 [DEBUG] Authorization code received: ${code?.substring(0, 10)}...',
-        );
 
         if (code != null) {
-          debugPrint('🔐 [DEBUG] Starting token exchange...');
           // Exchange authorization code for tokens
           final success = await _exchangeCodeForTokens(code);
 
@@ -397,8 +391,15 @@ class AuthServiceWeb extends ChangeNotifier {
               await _loadUserProfile();
 
               // Set authentication state and notify listeners
+              print('🔐 [DEBUG] Setting authentication state to true...');
               _isAuthenticated.value = true;
+              print(
+                '🔐 [DEBUG] Notifying listeners of authentication change...',
+              );
               notifyListeners();
+              print(
+                '🔐 [DEBUG] Authentication state change notification complete',
+              );
               AuthLogger.logAuthStateChange(
                 true,
                 'Token exchange and profile loading successful',
@@ -451,7 +452,6 @@ class AuthServiceWeb extends ChangeNotifier {
         'codeLength': code.length,
         'redirectUri': AppConfig.auth0WebRedirectUri,
       });
-      debugPrint('🔐 [DEBUG] Making token exchange request to Auth0...');
 
       final response = await http.post(
         Uri.https(AppConfig.auth0Domain, '/oauth/token'),
@@ -461,6 +461,7 @@ class AuthServiceWeb extends ChangeNotifier {
           'client_id': AppConfig.auth0ClientId,
           'code': code,
           'redirect_uri': AppConfig.auth0WebRedirectUri,
+          'audience': AppConfig.auth0Audience,
         }),
       );
 
@@ -472,8 +473,12 @@ class AuthServiceWeb extends ChangeNotifier {
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
 
+        print('🔐 [DEBUG] Token exchange successful, setting tokens...');
         _accessToken = data['access_token'] as String?;
         _idToken = data['id_token'] as String?;
+        print(
+          '🔐 [DEBUG] Access token set: ${_accessToken?.substring(0, 20)}...',
+        );
 
         if (_accessToken == null) {
           AuthLogger.error('🔐 No access token in response', {
