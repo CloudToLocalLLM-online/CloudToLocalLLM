@@ -233,6 +233,14 @@ export class AuthService {
     const userAgent = req.headers?.['user-agent'];
 
     try {
+      this.logger.info('Creating/updating session', {
+        userId,
+        tokenHashLength: tokenHash.length,
+        expiresAt,
+        ip,
+        userAgent: userAgent?.substring(0, 100),
+      });
+
       // Ensure database is initialized
       if (!this.db.db) {
         await this.db.initialize();
@@ -244,18 +252,37 @@ export class AuthService {
         [userId, tokenHash],
       );
 
+      this.logger.info('Session lookup result', {
+        existingSessionId: existingSession?.id,
+        hasExistingSession: !!existingSession,
+      });
+
       if (existingSession) {
+        this.logger.info('Updating existing session', {
+          sessionId: existingSession.id,
+        });
         // Update existing session
         await this.db.db.run(
           'UPDATE user_sessions SET last_activity = CURRENT_TIMESTAMP WHERE id = ?',
           [existingSession.id],
         );
 
+        this.logger.info('Session updated successfully');
         return existingSession;
       }
 
+      this.logger.info('Creating new session');
+
       // Clean up old sessions for user
       await this.cleanupUserSessions(userId);
+
+      this.logger.info('About to insert new session', {
+        userId,
+        tokenHashLength: tokenHash.length,
+        expiresAt,
+        ip,
+        userAgentLength: userAgent?.length,
+      });
 
       // Create new session
       const result = await this.db.db.run(
@@ -263,6 +290,11 @@ export class AuthService {
          VALUES (?, ?, ?, ?, ?)`,
         [userId, tokenHash, expiresAt, ip, userAgent],
       );
+
+      this.logger.info('Session insert result', {
+        lastID: result.lastID,
+        changes: result.changes,
+      });
 
       // Get the created session
       const session = await this.db.db.get(
@@ -293,7 +325,12 @@ export class AuthService {
         stack: error.stack,
         sqliteError: error.code,
         sqliteMessage: error.message,
+        errorName: error.name,
+        errorConstructor: error.constructor.name,
+        fullError: JSON.stringify(error, Object.getOwnPropertyNames(error)),
       });
+      console.error('DETAILED SESSION ERROR:', error);
+      console.error('ERROR PROPERTIES:', Object.getOwnPropertyNames(error));
       throw error;
     }
   }
