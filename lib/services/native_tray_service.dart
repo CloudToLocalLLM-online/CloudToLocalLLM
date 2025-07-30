@@ -57,12 +57,27 @@ class NativeTrayService with TrayListener {
     try {
       debugPrint('🖥️ [NativeTray] Initializing native tray service...');
 
-      // Check platform support
-      _isSupported = Platform.isLinux || Platform.isWindows || Platform.isMacOS;
-      if (!_isSupported) {
+      // Check platform support - web platforms don't support native tray
+      if (kIsWeb) {
+        _isSupported = false;
         debugPrint(
-          '🖥️ [NativeTray] System tray not supported on this platform',
+          '🖥️ [NativeTray] System tray not supported on web platform',
         );
+        return false;
+      }
+
+      try {
+        _isSupported =
+            Platform.isLinux || Platform.isWindows || Platform.isMacOS;
+        if (!_isSupported) {
+          debugPrint(
+            '🖥️ [NativeTray] System tray not supported on this platform',
+          );
+          return false;
+        }
+      } catch (e) {
+        debugPrint('🖥️ [NativeTray] Platform detection failed: $e');
+        _isSupported = false;
         return false;
       }
 

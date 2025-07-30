@@ -135,12 +135,22 @@ class AuthServicePlatform extends ChangeNotifier {
   }
 
   String getPlatformName() {
-    if (Platform.isAndroid) return 'Android';
-    if (Platform.isIOS) return 'iOS';
-    if (Platform.isWindows) return 'Windows';
-    if (Platform.isLinux) return 'Linux';
-    if (Platform.isMacOS) return 'macOS';
-    return 'Unknown';
+    // Check if running on web first
+    if (kIsWeb) {
+      return 'Web';
+    }
+
+    try {
+      if (Platform.isAndroid) return 'Android';
+      if (Platform.isIOS) return 'iOS';
+      if (Platform.isWindows) return 'Windows';
+      if (Platform.isLinux) return 'Linux';
+      if (Platform.isMacOS) return 'macOS';
+      return 'Unknown';
+    } catch (e) {
+      debugPrint('🔍 [AuthService] Platform detection failed: $e');
+      return 'Unknown';
+    }
   }
 
   /// Platform capability checks
