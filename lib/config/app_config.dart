@@ -32,7 +32,15 @@ class AppConfig {
       'http://localhost:8080/callback';
 
   // OAuth2 Scopes
-  static const List<String> auth0Scopes = ['openid', 'profile', 'email'];
+  static const List<String> auth0Scopes = [
+    'openid',
+    'profile',
+    'email',
+    'read:bridge',
+    'write:bridge',
+    'read:ollama',
+    'write:ollama',
+  ];
 
   // Development mode settings
   static const bool enableDevMode = true; // Set to false for production
