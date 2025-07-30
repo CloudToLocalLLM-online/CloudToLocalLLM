@@ -168,11 +168,11 @@ execute_script() {
     local script_basename=$(basename "$script_path")
 
     # Add flags based on script support
-    if [[ "$VERBOSE" == "true" ]]; then
+    if [[ "$VERBOSE" == "true" && "$script_basename" != "verify_deployment.sh" ]]; then
         cmd="$cmd --verbose"
     fi
 
-    if [[ "$DRY_RUN" == "true" ]]; then
+    if [[ "$DRY_RUN" == "true" && "$script_basename" != "verify_deployment.sh" ]]; then
         cmd="$cmd --dry-run"
     fi
 

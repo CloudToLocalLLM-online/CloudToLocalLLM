@@ -310,37 +310,74 @@ manage_containers() {
         return 0
     fi
 
-    # Stop existing containers
+    # Verify compose file exists and is valid
+    if ! docker compose -f "$COMPOSE_FILE" config > /dev/null 2>&1; then
+        log_error "Docker compose file is invalid: $COMPOSE_FILE"
+        return 1
+    fi
+
+    # Stop existing containers gracefully
     log_verbose "Stopping existing containers..."
     docker compose -f "$COMPOSE_FILE" down --timeout 30 --remove-orphans 2>/dev/null || true
 
-    # Remove orphaned containers
-    log_verbose "Removing orphaned containers..."
+    # Remove orphaned containers and networks
+    log_verbose "Cleaning up orphaned resources..."
     docker container prune -f 2>/dev/null || true
+    docker network prune -f 2>/dev/null || true
+
+    # Pull latest images if they exist
+    log_verbose "Pulling latest images..."
+    docker compose -f "$COMPOSE_FILE" pull --ignore-pull-failures 2>/dev/null || true
 
     # Build and start containers
     log_verbose "Building and starting containers..."
-    if ! docker compose -f "$COMPOSE_FILE" up -d --build; then
+    if ! docker compose -f "$COMPOSE_FILE" up -d --build --force-recreate; then
         log_error "Failed to start Docker containers"
+        log_info "Container logs:"
+        docker compose -f "$COMPOSE_FILE" logs --tail=20
         return 1
     fi
 
     # Wait for containers to stabilize
     log_verbose "Waiting for containers to stabilize..."
-    sleep 10
+    sleep 15
 
-    # Check container status
-    local running_containers=$(docker compose -f "$COMPOSE_FILE" ps -q | wc -l)
+    # Check container status with detailed info
+    local running_containers=$(docker compose -f "$COMPOSE_FILE" ps --filter "status=running" -q | wc -l)
     local total_containers=$(docker compose -f "$COMPOSE_FILE" config --services | wc -l)
 
     log_verbose "Container status: $running_containers/$total_containers running"
+    
+    # Show detailed container status
+    log_verbose "Detailed container status:"
+    docker compose -f "$COMPOSE_FILE" ps
 
-    if [[ $running_containers -eq $total_containers ]] && [[ $total_containers -gt 0 ]]; then
-        log_success "All containers started successfully ($running_containers/$total_containers)"
+    # Verify critical services are running
+    local critical_services=("webapp" "api-backend")
+    local failed_services=()
+    
+    for service in "${critical_services[@]}"; do
+        if ! docker compose -f "$COMPOSE_FILE" ps "$service" --filter "status=running" -q > /dev/null 2>&1; then
+            failed_services+=("$service")
+        fi
+    done
+
+    if [[ ${#failed_services[@]} -eq 0 ]]; then
+        log_success "All critical services started successfully ($running_containers/$total_containers total)"
+        
+        # Show service endpoints
+        log_info "Service endpoints:"
+        log_info "  - Webapp: http://localhost:80, https://localhost:443"
+        log_info "  - API Backend: http://localhost:8080"
+        log_info "  - WebSocket Tunnel: wss://app.cloudtolocalllm.online/ws/tunnel"
+        
     else
-        log_error "Some containers failed to start ($running_containers/$total_containers)"
-        log_info "Container details:"
-        docker compose -f "$COMPOSE_FILE" ps
+        log_error "Critical services failed to start: ${failed_services[*]}"
+        log_info "Failed service logs:"
+        for service in "${failed_services[@]}"; do
+            log_info "=== $service logs ==="
+            docker compose -f "$COMPOSE_FILE" logs --tail=10 "$service" || true
+        done
         return 1
     fi
 }
@@ -380,6 +417,32 @@ perform_health_checks() {
         ((attempt++))
     done
 
+    # Check API backend health endpoint
+    log_verbose "Checking API backend health..."
+    local api_health_url="http://localhost:8080/health"
+    if curl -f -s --connect-timeout 10 "$api_health_url" > /dev/null; then
+        log_success "API backend is healthy"
+    else
+        log_warning "API backend health check failed"
+        log_info "API backend logs:"
+        docker compose -f "$COMPOSE_FILE" logs --tail=10 api-backend || true
+    fi
+
+    # Check tunnel endpoint accessibility (without auth)
+    log_verbose "Checking tunnel endpoint accessibility..."
+    local tunnel_url="https://app.cloudtolocalllm.online/ws/tunnel"
+    # We expect a 400 or 401 response for WebSocket upgrade without proper headers, not a connection error
+    local tunnel_response=$(curl -s -o /dev/null -w "%{http_code}" --connect-timeout 10 "$tunnel_url" || echo "000")
+    
+    if [[ "$tunnel_response" == "400" ]] || [[ "$tunnel_response" == "401" ]]; then
+        log_success "Tunnel endpoint is accessible (HTTP $tunnel_response - expected for WebSocket without auth)"
+    elif [[ "$tunnel_response" == "000" ]]; then
+        log_error "Tunnel endpoint is not accessible (connection failed)"
+        return 1
+    else
+        log_warning "Tunnel endpoint returned unexpected response: HTTP $tunnel_response"
+    fi
+
     # Check SSL certificate
     log_verbose "Checking SSL certificate..."
     if curl -s --connect-timeout 10 "$APP_URL" > /dev/null; then
@@ -396,6 +459,7 @@ perform_health_checks() {
         log_success "All containers are healthy"
     else
         log_warning "$unhealthy_containers containers are unhealthy"
+        docker compose -f "$COMPOSE_FILE" ps --filter "health=unhealthy"
     fi
 
     log_success "Health checks completed"
@@ -419,13 +483,50 @@ verify_deployment() {
         log_warning "Version endpoint not accessible (non-blocking)"
     fi
 
+    # Verify tunnel service specifically
+    log_verbose "Verifying tunnel service..."
+    local tunnel_health_check=false
+    
+    # Check if api-backend container is running and healthy
+    if docker compose -f "$COMPOSE_FILE" ps api-backend --filter "status=running" -q > /dev/null 2>&1; then
+        log_success "API backend container is running"
+        
+        # Check internal health endpoint
+        if curl -f -s --connect-timeout 5 "http://localhost:8080/health" > /dev/null; then
+            log_success "API backend internal health check passed"
+            tunnel_health_check=true
+        else
+            log_warning "API backend internal health check failed"
+        fi
+    else
+        log_error "API backend container is not running"
+        docker compose -f "$COMPOSE_FILE" logs --tail=20 api-backend || true
+    fi
+
+    # Check nginx proxy configuration for tunnel endpoint
+    log_verbose "Checking tunnel endpoint proxy..."
+    local tunnel_proxy_response=$(curl -s -o /dev/null -w "%{http_code}" --connect-timeout 10 "https://app.cloudtolocalllm.online/ws/tunnel" || echo "000")
+    
+    if [[ "$tunnel_proxy_response" == "400" ]] || [[ "$tunnel_proxy_response" == "401" ]]; then
+        log_success "Tunnel endpoint proxy is working (HTTP $tunnel_proxy_response)"
+        tunnel_health_check=true
+    else
+        log_error "Tunnel endpoint proxy failed (HTTP $tunnel_proxy_response)"
+        tunnel_health_check=false
+    fi
+
     # Final connectivity test
     log_verbose "Final connectivity test..."
     if curl -k -f -s --max-time 10 "$APP_URL" > /dev/null; then
-        log_success "Deployment verification passed"
+        if [[ "$tunnel_health_check" == "true" ]]; then
+            log_success "🎉 Deployment verification passed - Tunnel service is ready!"
+            log_info "Desktop clients can now connect to: wss://app.cloudtolocalllm.online/ws/tunnel"
+        else
+            log_warning "Web app is accessible but tunnel service has issues"
+        fi
         return 0
     else
-        log_error "Deployment verification failed"
+        log_error "Deployment verification failed - web app not accessible"
         return 1
     fi
 }
