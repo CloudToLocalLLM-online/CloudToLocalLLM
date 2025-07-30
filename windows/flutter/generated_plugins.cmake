@@ -6,6 +6,7 @@ list(APPEND FLUTTER_PLUGIN_LIST
   connectivity_plus
   flutter_secure_storage_x_windows
   screen_retriever_windows
+  sentry_flutter
   tray_manager
   url_launcher_windows
   window_manager
