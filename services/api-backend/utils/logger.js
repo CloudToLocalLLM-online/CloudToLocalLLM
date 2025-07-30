@@ -5,6 +5,7 @@
 
 import winston from 'winston';
 import { v4 as uuidv4 } from 'uuid';
+import crypto from 'crypto';
 
 /**
  * Log levels for different types of events
@@ -110,7 +111,6 @@ export class TunnelLogger {
       return null;
     }
     // Simple hash for logging - first 8 chars + hash of full ID
-    const crypto = require('crypto');
     const hash = crypto.createHash('sha256').update(userId).digest('hex');
     return `${userId.substring(0, 8)}...${hash.substring(0, 8)}`;
   }
