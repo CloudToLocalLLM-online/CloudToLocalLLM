@@ -74,42 +74,22 @@ class AuthServiceWeb extends ChangeNotifier {
       }
 
       // Check for stored tokens
-      print('🔐 [DEBUG] Loading stored tokens...');
       await _loadStoredTokens();
-      print(
-        '🔐 [DEBUG] Access token loaded: ${_accessToken != null ? "YES" : "NO"}',
-      );
 
       if (_accessToken != null) {
         // Validate token expiry
-        print('🔐 [DEBUG] Checking token expiry...');
         if (_tokenExpiry != null && DateTime.now().isBefore(_tokenExpiry!)) {
           // Token is valid, load user profile
-          print('🔐 [DEBUG] Token valid, loading user profile...');
-          try {
-            await _loadUserProfile();
-            _isAuthenticated.value = true;
-            print(
-              '🔐 [DEBUG] User profile loaded successfully, setting authenticated state',
-            );
-            AuthLogger.info('🔐 Valid stored tokens found');
-            notifyListeners();
-            return;
-          } catch (e) {
-            print('🔐 [DEBUG] User profile loading failed: $e');
-            AuthLogger.error('🔐 User profile loading failed', {
-              'error': e.toString(),
-            });
-            await _clearStoredTokens();
-          }
+          await _loadUserProfile();
+          _isAuthenticated.value = true;
+          AuthLogger.info('🔐 Valid stored tokens found');
+          notifyListeners();
+          return;
         } else {
           // Token expired, clear stored data
-          print('🔐 [DEBUG] Token expired, clearing stored data');
           AuthLogger.info('🔐 Stored tokens expired, clearing');
           await _clearStoredTokens();
         }
-      } else {
-        print('🔐 [DEBUG] No stored access token found');
       }
 
       // No valid authentication found
@@ -460,6 +440,9 @@ class AuthServiceWeb extends ChangeNotifier {
 
   /// Exchange authorization code for access and ID tokens
   Future<bool> _exchangeCodeForTokens(String code) async {
+    print(
+      '🔐 [DEBUG] _exchangeCodeForTokens called with code: ${code.substring(0, 10)}...',
+    );
     try {
       AuthLogger.info('🔐 Exchanging authorization code for tokens', {
         'codeLength': code.length,
