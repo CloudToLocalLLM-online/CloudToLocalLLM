@@ -335,15 +335,19 @@ class ConnectionManagerService extends ChangeNotifier {
 
     if (_authService.isAuthenticated.value &&
         _authService.currentUser != null) {
-      // User logged in - start HTTP polling
+      // User logged in - start HTTP polling with a small delay to ensure token is available
       debugPrint(
         '🔗 [ConnectionManager] User authenticated - starting HTTP polling',
       );
-      startHttpPolling().catchError((e) {
-        debugPrint(
-          '🔗 [ConnectionManager] Failed to start HTTP polling after auth: $e',
-        );
-        return false;
+
+      // Add a small delay to ensure the access token is fully available
+      Future.delayed(Duration(milliseconds: 100), () {
+        startHttpPolling().catchError((e) {
+          debugPrint(
+            '🔗 [ConnectionManager] Failed to start HTTP polling after auth: $e',
+          );
+          return false;
+        });
       });
     } else {
       // User logged out - stop HTTP polling
