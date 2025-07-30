@@ -97,7 +97,7 @@ class DesktopClientDetectionService extends ChangeNotifier {
     if (!kIsWeb) return;
 
     try {
-      final accessToken = _authService.getAccessToken();
+      final accessToken = await _authService.getValidatedAccessToken();
       if (accessToken == null) {
         _updateState(
           hasConnectedClients: false,

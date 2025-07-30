@@ -56,12 +56,12 @@ class OllamaService extends ChangeNotifier {
   bool get isWeb => _isWeb;
 
   /// Get HTTP headers with authentication for API requests
-  Map<String, String> _getHeaders() {
+  Future<Map<String, String>> _getHeaders() async {
     final headers = <String, String>{'Content-Type': 'application/json'};
 
     // Add authentication header for web platform
     if (_isWeb && _authService != null) {
-      final accessToken = _authService.getAccessToken();
+      final accessToken = await _authService.getValidatedAccessToken();
       if (accessToken != null) {
         headers['Authorization'] = 'Bearer $accessToken';
         if (kDebugMode) {
@@ -91,7 +91,7 @@ class OllamaService extends ChangeNotifier {
       }
 
       final response = await http
-          .get(Uri.parse(url), headers: _getHeaders())
+          .get(Uri.parse(url), headers: await _getHeaders())
           .timeout(_timeout);
 
       if (response.statusCode == 200) {
@@ -142,7 +142,7 @@ class OllamaService extends ChangeNotifier {
       debugPrint('[DEBUG] Getting models from: $url');
 
       final response = await http
-          .get(Uri.parse(url), headers: _getHeaders())
+          .get(Uri.parse(url), headers: await _getHeaders())
           .timeout(_timeout);
 
       if (response.statusCode == 200) {
@@ -196,7 +196,7 @@ class OllamaService extends ChangeNotifier {
       final response = await http
           .post(
             Uri.parse(url),
-            headers: _getHeaders(),
+            headers: await _getHeaders(),
             body: json.encode({
               'model': model,
               'messages': messages,
@@ -243,7 +243,7 @@ class OllamaService extends ChangeNotifier {
       final response = await http
           .post(
             Uri.parse(url),
-            headers: _getHeaders(),
+            headers: await _getHeaders(),
             body: json.encode({'name': modelName}),
           )
           .timeout(
@@ -287,7 +287,7 @@ class OllamaService extends ChangeNotifier {
       final response = await http
           .delete(
             Uri.parse(url),
-            headers: _getHeaders(),
+            headers: await _getHeaders(),
             body: json.encode({'name': modelName}),
           )
           .timeout(_timeout);
