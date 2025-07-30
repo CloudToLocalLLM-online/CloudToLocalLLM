@@ -56,11 +56,19 @@ class DesktopClientDetectionService extends ChangeNotifier {
       '🖥️ [DesktopClientDetection] Initializing desktop client detection...',
     );
 
-    // Perform initial check
-    await checkConnectedClients();
-
-    // Start periodic monitoring
-    startMonitoring();
+    // Only check if user is authenticated
+    if (_authService.isAuthenticated.value) {
+      // Perform initial check
+      await checkConnectedClients();
+      // Start periodic monitoring
+      startMonitoring();
+    } else {
+      debugPrint(
+        '🖥️ [DesktopClientDetection] User not authenticated, skipping initial check',
+      );
+      // Listen for auth state changes to start monitoring when authenticated
+      _authService.addListener(_onAuthStateChanged);
+    }
 
     debugPrint(
       '🖥️ [DesktopClientDetection] Desktop client detection initialized',
@@ -90,6 +98,19 @@ class DesktopClientDetectionService extends ChangeNotifier {
     _isMonitoring = false;
 
     notifyListeners();
+  }
+
+  /// Handle authentication state changes
+  void _onAuthStateChanged() {
+    if (_authService.isAuthenticated.value && !_isMonitoring) {
+      debugPrint(
+        '🖥️ [DesktopClientDetection] User authenticated, starting monitoring',
+      );
+      checkConnectedClients();
+      startMonitoring();
+      // Remove listener once monitoring starts
+      _authService.removeListener(_onAuthStateChanged);
+    }
   }
 
   /// Check for connected desktop clients
@@ -180,6 +201,12 @@ class DesktopClientDetectionService extends ChangeNotifier {
   void dispose() {
     stopMonitoring();
     _httpClient.close();
+    // Remove auth listener if still attached
+    try {
+      _authService.removeListener(_onAuthStateChanged);
+    } catch (e) {
+      // Ignore if listener wasn't attached
+    }
     super.dispose();
   }
 }
