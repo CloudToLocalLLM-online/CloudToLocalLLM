@@ -17,14 +17,18 @@ class _CallbackScreenState extends State<CallbackScreen> {
   @override
   void initState() {
     super.initState();
+    debugPrint('🔐 [DEBUG] CallbackScreen initState called');
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      debugPrint('🔐 [DEBUG] CallbackScreen postFrameCallback triggered');
       _processCallback();
     });
   }
 
   Future<void> _processCallback() async {
     try {
+      debugPrint('🔐 [DEBUG] CallbackScreen _processCallback started');
       final authService = context.read<AuthService>();
+      debugPrint('🔐 [DEBUG] AuthService obtained from context');
 
       // For desktop platforms, the callback route should not be used
       // Desktop authentication is handled internally by the auth service
