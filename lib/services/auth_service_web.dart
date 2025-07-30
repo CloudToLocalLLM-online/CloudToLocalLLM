@@ -454,6 +454,7 @@ class AuthServiceWeb extends ChangeNotifier {
           'client_id': AppConfig.auth0ClientId,
           'code': code,
           'redirect_uri': AppConfig.auth0WebRedirectUri,
+          'audience': AppConfig.auth0Audience,
         }),
       );
 
