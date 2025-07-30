@@ -263,8 +263,8 @@ export class AuthService {
         });
         // Update existing session
         await this.db.db.run(
-          'UPDATE user_sessions SET last_activity = CURRENT_TIMESTAMP WHERE id = ?',
-          [existingSession.id],
+          'UPDATE user_sessions SET last_activity = CURRENT_TIMESTAMP, expires_at = ? WHERE id = ?',
+          [expiresAt, existingSession.id],
         );
 
         this.logger.info('Session updated successfully');
@@ -302,6 +302,10 @@ export class AuthService {
         [result.lastID || this.generateSessionId()],
       );
 
+      if (!session) {
+        throw new Error('Failed to retrieve created session');
+      }
+
       // Log session creation
       await this.logAuditEvent('session_created', 'authentication', {
         userId,
@@ -319,6 +323,41 @@ export class AuthService {
       return session;
 
     } catch (error) {
+      // Handle UNIQUE constraint violation by trying to find and update existing session
+      if (error.code === 'SQLITE_CONSTRAINT' && error.message.includes('UNIQUE constraint failed')) {
+        this.logger.info('UNIQUE constraint violation - attempting to find and update existing session', {
+          userId,
+          tokenHashLength: tokenHash.length,
+        });
+
+        try {
+          // Try to find the existing session again
+          const existingSession = await this.db.db.get(
+            'SELECT * FROM user_sessions WHERE user_id = ? AND jwt_token_hash = ?',
+            [userId, tokenHash],
+          );
+
+          if (existingSession) {
+            // Update the existing session
+            await this.db.db.run(
+              'UPDATE user_sessions SET last_activity = CURRENT_TIMESTAMP, expires_at = ? WHERE id = ?',
+              [expiresAt, existingSession.id],
+            );
+
+            this.logger.info('Successfully updated existing session after constraint violation', {
+              sessionId: existingSession.id,
+            });
+
+            return existingSession;
+          }
+        } catch (retryError) {
+          this.logger.error('Failed to handle UNIQUE constraint violation', {
+            originalError: error.message,
+            retryError: retryError.message,
+          });
+        }
+      }
+
       this.logger.error('Failed to create/update session', {
         userId,
         error: error.message,
