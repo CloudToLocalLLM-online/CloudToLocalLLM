@@ -410,11 +410,11 @@ export class TunnelServer extends EventEmitter {
   }
 
   /**
-   * Validate JWT token and extract user ID using AuthService
+   * Validate JWT token and extract user ID using AuthService (WebSocket-specific)
    */
   async validateToken(token) {
     try {
-      const verified = await this.authService.validateToken(token);
+      const verified = await this.authService.validateTokenForWebSocket(token);
       return verified.sub; // User ID
     } catch (error) {
       this.logger.warn('Token validation failed', { error: error.message });

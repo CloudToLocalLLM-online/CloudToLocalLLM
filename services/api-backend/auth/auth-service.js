@@ -125,6 +125,52 @@ export class AuthService {
   }
 
   /**
+   * Validate JWT token for WebSocket connections (no session creation)
+   * @param {string} token - JWT token to validate
+   * @returns {Promise<Object>} Decoded token payload
+   */
+  async validateTokenForWebSocket(token) {
+    try {
+      this.logger.info('Starting WebSocket token validation');
+
+      // Decode token to get header
+      const decoded = jwt.decode(token, { complete: true });
+      if (!decoded || !decoded.header.kid) {
+        throw new Error('Invalid token format - missing kid in header');
+      }
+
+      this.logger.info(`WebSocket token decoded successfully, kid: ${decoded.header.kid}`);
+
+      // Get signing key
+      const key = await this.getSigningKey(decoded.header.kid);
+
+      this.logger.info('Got signing key for WebSocket, verifying token');
+
+      // Verify token with full validation (no session creation)
+      const verified = jwt.verify(token, key, {
+        audience: this.config.AUTH0_AUDIENCE,
+        issuer: `https://${this.config.AUTH0_DOMAIN}/`,
+        algorithms: ['RS256'],
+      });
+
+      this.logger.info('WebSocket token verification successful', {
+        userId: verified.sub,
+        exp: verified.exp,
+        iat: verified.iat,
+      });
+
+      return verified;
+
+    } catch (error) {
+      this.logger.warn('WebSocket token validation failed', {
+        error: error.message,
+      });
+
+      throw error;
+    }
+  }
+
+  /**
    * Get signing key from JWKS (manual implementation to avoid jwks-client issues)
    */
   async getSigningKey(kid) {
