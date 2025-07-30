@@ -97,8 +97,13 @@ class AppRouter {
               final isAppSubdomain = _isAppSubdomain();
 
               if (isAppSubdomain) {
-                // App subdomain - show chat interface (auth handled by redirect)
-                return const HomeScreen();
+                // App subdomain - check auth and show appropriate screen
+                final authService = context.read<AuthService>();
+                if (authService.isAuthenticated.value) {
+                  return const HomeScreen();
+                } else {
+                  return const LoginScreen();
+                }
               } else {
                 // Root domain - show marketing homepage
                 return const HomepageScreen();
@@ -345,11 +350,10 @@ class AppRouter {
           }
         }
 
-        // For app subdomain or desktop, require authentication
-        // Only redirect if auth is not loading to avoid premature redirects
-        if (!isAuthenticated && !isAuthLoading && (isAppSubdomain || !kIsWeb)) {
+        // For desktop, require authentication (web auth handled in route builder)
+        if (!kIsWeb && !isAuthenticated && !isAuthLoading) {
           debugPrint(
-            '🔄 [Router] Redirecting to login - user not authenticated (isAppSubdomain: $isAppSubdomain, kIsWeb: $kIsWeb)',
+            '🔄 [Router] Redirecting desktop to login - user not authenticated',
           );
           return '/login';
         }
