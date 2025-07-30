@@ -5,7 +5,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../config/app_config.dart';
 import '../config/theme.dart';
-import '../services/simple_tunnel_client.dart';
+import '../services/http_polling_tunnel_client.dart';
 import '../services/desktop_client_detection_service.dart';
 import '../services/auth_service.dart';
 import 'tunnel_connection_wizard.dart';
@@ -30,7 +30,7 @@ class TunnelSetupBanner extends StatelessWidget {
 
     return Consumer3<
       AuthService,
-      SimpleTunnelClient,
+      HttpPollingTunnelClient,
       DesktopClientDetectionService
     >(
       builder: (context, authService, tunnelClient, clientDetection, child) {

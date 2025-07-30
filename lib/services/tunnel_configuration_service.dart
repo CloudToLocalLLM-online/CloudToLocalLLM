@@ -6,7 +6,7 @@ import '../config/app_config.dart';
 import '../models/tunnel_config.dart' as setup_config;
 import '../models/tunnel_validation_result.dart';
 import '../services/auth_service.dart';
-import '../services/simple_tunnel_client.dart' show SimpleTunnelClient;
+import '../services/http_polling_tunnel_client.dart';
 
 /// Service for tunnel configuration and connection setup during first-time wizard
 ///
@@ -14,7 +14,7 @@ import '../services/simple_tunnel_client.dart' show SimpleTunnelClient;
 /// the web app and desktop client during the setup process.
 class TunnelConfigurationService extends ChangeNotifier {
   final AuthService _authService;
-  final SimpleTunnelClient? _tunnelClient;
+  final HttpPollingTunnelClient? _tunnelClient;
   final String _baseUrl;
 
   // Configuration state
@@ -30,7 +30,7 @@ class TunnelConfigurationService extends ChangeNotifier {
 
   TunnelConfigurationService({
     required AuthService authService,
-    SimpleTunnelClient? tunnelClient,
+    HttpPollingTunnelClient? tunnelClient,
     String? baseUrl,
   }) : _authService = authService,
        _tunnelClient = tunnelClient,

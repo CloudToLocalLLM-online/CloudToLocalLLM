@@ -1,11 +1,9 @@
 import express from 'express';
 import http from 'http';
-import { WebSocketServer, WebSocket } from 'ws';
 import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import jwt from 'jsonwebtoken';
-import { v4 as uuidv4 } from 'uuid';
 import winston from 'winston';
 import dotenv from 'dotenv';
 import { StreamingProxyManager } from './streaming-proxy-manager.js';
@@ -24,7 +22,7 @@ import bridgePollingRoutes, {
   queueRequestForBridge,
   getResponseForRequest,
   isBridgeAvailable,
-  getBridgeByUserId
+  getBridgeByUserId,
 } from './routes/bridge-polling-routes.js';
 
 dotenv.config();
@@ -68,7 +66,7 @@ app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ['\'self\''],
-      connectSrc: ['\'self\'', 'wss:', 'https:'],
+      connectSrc: ['\'self\'', 'https:'],
       scriptSrc: ['\'self\'', '\'unsafe-inline\''],
       styleSrc: ['\'self\'', '\'unsafe-inline\''],
       imgSrc: ['\'self\'', 'data:', 'https:'],
@@ -135,221 +133,25 @@ async function authenticateToken(req, res, next) {
   }
 }
 
-// Store for active bridge connections
-const bridgeConnections = new Map();
+// Bridge connections removed - using HTTP polling only
 
 // Initialize streaming proxy manager
 const proxyManager = new StreamingProxyManager();
 
-// WebSocket server for bridge connections
-const wss = new WebSocketServer({
-  server,
-  path: '/ws/bridge',
-  verifyClient: async(info) => {
-    try {
-      const url = new URL(info.req.url, `http://${info.req.headers.host}`);
-      const token = url.searchParams.get('token');
-
-      if (!token) {
-        logger.warn('WebSocket connection rejected: No token provided');
-        return false;
-      }
-
-      // Verify token (similar to HTTP middleware)
-      const decoded = jwt.decode(token, { complete: true });
-      if (!decoded || !decoded.header.kid) {
-        logger.warn('WebSocket connection rejected: Invalid token format');
-        return false;
-      }
-
-      // Verify the token using AuthService (fallback if not initialized)
-      if (!authService) {
-        logger.warn('WebSocket connection rejected: Authentication service not ready');
-        return false;
-      }
-      const verified = await authService.validateToken(token);
-
-      // Store user info for the connection
-      info.req.user = verified;
-      return true;
-    } catch (error) {
-      logger.error('WebSocket token verification failed:', error);
-      return false;
-    }
-  },
-});
-
-wss.on('connection', (ws, req) => {
-  const bridgeId = uuidv4();
-  const userId = req.user?.sub;
-
-  if (!userId) {
-    logger.error('WebSocket connection established but no user ID found');
-    ws.close(1008, 'Authentication failed');
-    return;
-  }
-
-  logger.info(`Bridge connected: ${bridgeId} for user: ${userId}`);
-
-  // Store connection
-  bridgeConnections.set(bridgeId, {
-    ws,
-    userId,
-    bridgeId,
-    connectedAt: new Date(),
-    lastPing: new Date(),
-  });
-
-  // Send welcome message
-  ws.send(JSON.stringify({
-    type: 'auth',
-    id: uuidv4(),
-    data: { success: true, bridgeId },
-    timestamp: new Date().toISOString(),
-  }));
-
-  // Handle messages from bridge
-  ws.on('message', (data) => {
-    try {
-      const message = JSON.parse(data);
-      handleBridgeMessage(bridgeId, message);
-    } catch (error) {
-      logger.error(`Failed to parse message from bridge ${bridgeId}:`, error);
-    }
-  });
-
-  // Handle connection close
-  ws.on('close', () => {
-    logger.info(`Bridge disconnected: ${bridgeId}`);
-    bridgeConnections.delete(bridgeId);
-
-    // Clean up any pending requests for this bridge
-    cleanupPendingRequestsForBridge(bridgeId);
-  });
-
-  // Handle errors
-  ws.on('error', (error) => {
-    logger.error(`Bridge ${bridgeId} error:`, error);
-    bridgeConnections.delete(bridgeId);
-
-    // Clean up any pending requests for this bridge
-    cleanupPendingRequestsForBridge(bridgeId);
-  });
-
-  // Send ping every 30 seconds
-  const pingInterval = setInterval(() => {
-    if (ws.readyState === WebSocket.OPEN) {
-      ws.send(JSON.stringify({
-        type: 'ping',
-        id: uuidv4(),
-        timestamp: new Date().toISOString(),
-      }));
-    } else {
-      clearInterval(pingInterval);
-    }
-  }, 30000);
-});
+// WebSocket server removed - using HTTP polling only
 
 // Encrypted tunnel WebSocket server removed - using simplified tunnel system
 
-// Store for pending requests (requestId -> response handler)
-const pendingRequests = new Map();
+// Pending requests removed - using HTTP polling only
 
 // Encrypted tunnel code removed - using simplified tunnel system
 
-// Clean up pending requests for a disconnected bridge
-function cleanupPendingRequestsForBridge(bridgeId) {
-  const requestsToCleanup = [];
+// Bridge cleanup functions removed - using HTTP polling only
 
-  for (const [requestId, handler] of pendingRequests.entries()) {
-    if (handler.bridgeId === bridgeId) {
-      requestsToCleanup.push(requestId);
-    }
-  }
+// Bridge message handling removed - using HTTP polling only
 
-  requestsToCleanup.forEach(requestId => {
-    const handler = pendingRequests.get(requestId);
-    if (handler) {
-      clearTimeout(handler.timeout);
-      pendingRequests.delete(requestId);
-
-      // Send error response to client
-      handler.res.status(503).json({
-        error: 'Bridge disconnected',
-        message: 'The bridge connection was lost while processing your request.',
-      });
-
-      logger.warn(`Cleaned up pending request ${requestId} due to bridge ${bridgeId} disconnect`);
-    }
-  });
-}
-
-// Handle messages from bridge
-function handleBridgeMessage(bridgeId, message) {
-  const bridge = bridgeConnections.get(bridgeId);
-  if (!bridge) {
-    logger.warn(`Received message from unknown bridge: ${bridgeId}`);
-    return;
-  }
-
-  bridge.lastPing = new Date();
-
-  switch (message.type) {
-  case 'pong':
-    // Update last ping time
-    logger.debug(`Received pong from bridge ${bridgeId}`);
-    break;
-
-  case 'response': {
-    // Handle Ollama response from bridge
-    const requestId = message.id;
-    const responseHandler = pendingRequests.get(requestId);
-
-    if (responseHandler) {
-      logger.debug(`Received Ollama response from bridge ${bridgeId} for request ${requestId}`);
-
-      // Clear timeout and remove from pending requests
-      clearTimeout(responseHandler.timeout);
-      pendingRequests.delete(requestId);
-
-      // Send response to original HTTP client
-      const { res } = responseHandler;
-      const responseData = message.data;
-
-      // Set response headers
-      if (responseData.headers) {
-        Object.entries(responseData.headers).forEach(([key, value]) => {
-          res.setHeader(key, value);
-        });
-      }
-
-      // Send response with status code and body
-      res.status(responseData.statusCode || 200);
-
-      if (responseData.body) {
-        // Try to parse as JSON first, fallback to plain text
-        try {
-          const jsonBody = JSON.parse(responseData.body);
-          res.json(jsonBody);
-        } catch {
-          res.send(responseData.body);
-        }
-      } else {
-        res.end();
-      }
-    } else {
-      logger.warn(`Received response for unknown request: ${requestId}`);
-    }
-    break;
-  }
-
-  default:
-    logger.warn(`Unknown message type from bridge ${bridgeId}: ${message.type}`);
-  }
-}
-
-// Create simplified tunnel routes and WebSocket server
-const { router: tunnelRouter, tunnelProxy } = createTunnelRoutes(server, {
+// Create HTTP-only tunnel routes (WebSocket removed)
+const { router: tunnelRouter, tunnelProxy } = createTunnelRoutes({
   AUTH0_DOMAIN,
   AUTH0_AUDIENCE,
 }, logger);
@@ -643,37 +445,11 @@ app.get('/health', (req, res) => {
   res.json({
     status: 'healthy',
     timestamp: new Date().toISOString(),
-    bridges: bridgeConnections.size,
+    tunnelSystem: 'http-polling',
   });
 });
 
-// Bridge status
-app.get('/ollama/bridge/status', authenticateToken, (req, res) => {
-  const userBridges = Array.from(bridgeConnections.values())
-    .filter(bridge => bridge.userId === req.user.sub);
-
-  res.json({
-    connected: userBridges.length > 0,
-    bridges: userBridges.map(bridge => ({
-      bridgeId: bridge.bridgeId,
-      connectedAt: bridge.connectedAt,
-      lastPing: bridge.lastPing,
-    })),
-  });
-});
-
-// Bridge registration
-app.post('/ollama/bridge/register', authenticateToken, (req, res) => {
-  const { bridge_id, version, platform } = req.body;
-
-  logger.info(`Bridge registration: ${bridge_id} v${version} on ${platform} for user ${req.user.sub}`);
-
-  res.json({
-    success: true,
-    message: 'Bridge registered successfully',
-    bridgeId: bridge_id,
-  });
-});
+// WebSocket bridge endpoints removed - using HTTP polling only
 
 // Streaming Proxy Management Endpoints
 
@@ -813,68 +589,7 @@ app.get('/api/proxy/status', authenticateToken, async(req, res) => {
   }
 });
 
-// Ollama proxy endpoints
-app.all('/ollama/*', authenticateToken, async(req, res) => {
-  const userBridges = Array.from(bridgeConnections.values())
-    .filter(bridge => bridge.userId === req.user.sub);
-
-  if (userBridges.length === 0) {
-    return res.status(503).json({
-      error: 'No bridge connected',
-      message: 'Please ensure the CloudToLocalLLM desktop bridge is running and connected.',
-    });
-  }
-
-  // Use the first available bridge
-  const bridge = userBridges[0];
-  const requestId = uuidv4();
-
-  // Set up timeout for the request (30 seconds)
-  const timeout = setTimeout(() => {
-    const responseHandler = pendingRequests.get(requestId);
-    if (responseHandler) {
-      pendingRequests.delete(requestId);
-      logger.warn(`Request timeout for ${requestId}`);
-      res.status(504).json({
-        error: 'Gateway timeout',
-        message: 'The bridge did not respond within the timeout period.',
-      });
-    }
-  }, 30000);
-
-  // Store response handler for correlation
-  pendingRequests.set(requestId, {
-    res,
-    timeout,
-    bridgeId: bridge.bridgeId,
-    startTime: new Date(),
-  });
-
-  // Forward request to bridge
-  const bridgeMessage = {
-    type: 'request',
-    id: requestId,
-    data: {
-      method: req.method,
-      path: req.path.replace('/ollama', ''),
-      headers: req.headers,
-      body: req.body ? JSON.stringify(req.body) : undefined,
-    },
-    timestamp: new Date().toISOString(),
-  };
-
-  try {
-    bridge.ws.send(JSON.stringify(bridgeMessage));
-    logger.debug(`Forwarded request ${requestId} to bridge ${bridge.bridgeId}`);
-  } catch (error) {
-    // Clean up on send failure
-    clearTimeout(timeout);
-    pendingRequests.delete(requestId);
-
-    logger.error(`Failed to forward request to bridge ${bridge.bridgeId}:`, error);
-    res.status(500).json({ error: 'Failed to communicate with bridge' });
-  }
-});
+// Ollama proxy endpoints removed - using HTTP polling tunnel system instead
 
 // Error handling middleware
 app.use((error, req, res, _next) => {

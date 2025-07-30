@@ -6,7 +6,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../config/app_config.dart';
 import '../config/theme.dart';
-import '../services/simple_tunnel_client.dart';
+import '../services/http_polling_tunnel_client.dart';
 import '../services/desktop_client_detection_service.dart';
 import 'tunnel_connection_wizard.dart';
 
@@ -148,10 +148,9 @@ class _TunnelManagementPanelState extends State<TunnelManagementPanel>
   }
 
   Widget _buildConnectionStatus() {
-    return Consumer<SimpleTunnelClient>(
+    return Consumer<HttpPollingTunnelClient>(
       builder: (context, tunnelClient, child) {
         final isConnected = tunnelClient.isConnected;
-        final isConnecting = tunnelClient.isConnecting;
         final error = tunnelClient.lastError;
 
         Color statusColor;
@@ -162,10 +161,6 @@ class _TunnelManagementPanelState extends State<TunnelManagementPanel>
           statusColor = Colors.green;
           statusIcon = Icons.check_circle;
           statusText = 'Connected';
-        } else if (isConnecting) {
-          statusColor = Colors.orange;
-          statusIcon = Icons.sync;
-          statusText = 'Connecting...';
         } else {
           statusColor = Colors.red;
           statusIcon = Icons.error;
@@ -247,10 +242,9 @@ class _TunnelManagementPanelState extends State<TunnelManagementPanel>
   }
 
   Widget _buildQuickActions() {
-    return Consumer<SimpleTunnelClient>(
+    return Consumer<HttpPollingTunnelClient>(
       builder: (context, tunnelClient, child) {
         final isConnected = tunnelClient.isConnected;
-        final isConnecting = tunnelClient.isConnecting;
 
         return Card(
           child: Padding(
@@ -270,34 +264,15 @@ class _TunnelManagementPanelState extends State<TunnelManagementPanel>
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton.icon(
-                    onPressed: isConnecting
-                        ? null
-                        : () async {
-                            if (isConnected) {
-                              await tunnelClient.disconnect();
-                            } else {
-                              await tunnelClient.connect();
-                            }
-                          },
-                    icon: isConnecting
-                        ? SizedBox(
-                            width: 16,
-                            height: 16,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation<Color>(
-                                Colors.white,
-                              ),
-                            ),
-                          )
-                        : Icon(isConnected ? Icons.stop : Icons.play_arrow),
-                    label: Text(
-                      isConnecting
-                          ? 'Connecting...'
-                          : isConnected
-                          ? 'Disconnect'
-                          : 'Connect',
-                    ),
+                    onPressed: () async {
+                      if (isConnected) {
+                        await tunnelClient.disconnect();
+                      } else {
+                        await tunnelClient.connect();
+                      }
+                    },
+                    icon: Icon(isConnected ? Icons.stop : Icons.play_arrow),
+                    label: Text(isConnected ? 'Disconnect' : 'Connect'),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: isConnected
                           ? Colors.red

@@ -7,7 +7,7 @@ import '../components/app_header.dart';
 import '../components/modern_card.dart';
 import '../components/tunnel_connection_wizard.dart';
 import '../config/theme.dart';
-import '../services/simple_tunnel_client.dart';
+import '../services/http_polling_tunnel_client.dart';
 import '../services/desktop_client_detection_service.dart';
 
 /// Comprehensive Tunnel Status Screen
@@ -81,10 +81,9 @@ class _TunnelStatusScreenState extends State<TunnelStatusScreen> {
   }
 
   Widget _buildOverallStatusCard() {
-    return Consumer<SimpleTunnelClient>(
+    return Consumer<HttpPollingTunnelClient>(
       builder: (context, tunnelClient, child) {
         final isConnected = tunnelClient.isConnected;
-        final isConnecting = tunnelClient.isConnecting;
         final error = tunnelClient.lastError;
 
         Color statusColor;
@@ -96,12 +95,8 @@ class _TunnelStatusScreenState extends State<TunnelStatusScreen> {
           statusColor = Colors.green;
           statusIcon = Icons.check_circle;
           statusText = 'Connected';
-          statusDescription = 'Tunnel is active and functioning normally';
-        } else if (isConnecting) {
-          statusColor = Colors.orange;
-          statusIcon = Icons.sync;
-          statusText = 'Connecting';
-          statusDescription = 'Establishing tunnel connection...';
+          statusDescription =
+              'HTTP polling tunnel is active and functioning normally';
         } else if (error != null) {
           statusColor = Colors.red;
           statusIcon = Icons.error;
@@ -179,10 +174,10 @@ class _TunnelStatusScreenState extends State<TunnelStatusScreen> {
   }
 
   Widget _buildConnectionDetailsCard() {
-    return Consumer<SimpleTunnelClient>(
+    return Consumer<HttpPollingTunnelClient>(
       builder: (context, tunnelClient, child) {
-        final config = tunnelClient.config;
-        final connectionStatus = tunnelClient.connectionStatus;
+        // HTTP polling client doesn't have config/connectionStatus like WebSocket client
+        final isConnected = tunnelClient.isConnected;
 
         return ModernCard(
           child: Padding(
@@ -198,35 +193,29 @@ class _TunnelStatusScreenState extends State<TunnelStatusScreen> {
                 ),
                 SizedBox(height: AppTheme.spacingM),
 
-                _buildDetailRow('Cloud Proxy URL', config.cloudProxyUrl),
-                _buildDetailRow('Local Backend URL', config.localBackendUrl),
+                _buildDetailRow('Connection Type', 'HTTP Polling'),
                 _buildDetailRow(
-                  'Connection Timeout',
-                  '${config.connectionTimeout}s',
+                  'Status',
+                  isConnected ? 'Connected' : 'Disconnected',
                 ),
-                _buildDetailRow(
-                  'Health Check Interval',
-                  '${config.healthCheckInterval}s',
-                ),
-                _buildDetailRow(
-                  'Cloud Proxy Enabled',
-                  config.enableCloudProxy ? 'Yes' : 'No',
-                ),
+                _buildDetailRow('Protocol', 'HTTPS'),
+                _buildDetailRow('Polling Method', 'Long Polling'),
+                _buildDetailRow('Authentication', 'JWT Token'),
 
-                if (connectionStatus.isNotEmpty) ...[
-                  Divider(height: AppTheme.spacingM),
-                  Text(
-                    'Runtime Status',
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+                Divider(height: AppTheme.spacingM),
+                Text(
+                  'HTTP Polling Details',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
                   ),
-                  SizedBox(height: AppTheme.spacingS),
-                  ...connectionStatus.entries.map(
-                    (entry) =>
-                        _buildDetailRow(entry.key, entry.value.toString()),
-                  ),
-                ],
+                ),
+                SizedBox(height: AppTheme.spacingS),
+                _buildDetailRow(
+                  'Bridge Registration',
+                  isConnected ? 'Active' : 'Inactive',
+                ),
+                _buildDetailRow('Request Queue', 'Available'),
+                _buildDetailRow('Response Handling', 'Asynchronous'),
               ],
             ),
           ),
@@ -423,10 +412,9 @@ class _TunnelStatusScreenState extends State<TunnelStatusScreen> {
   }
 
   Widget _buildQuickActionsCard() {
-    return Consumer<SimpleTunnelClient>(
+    return Consumer<HttpPollingTunnelClient>(
       builder: (context, tunnelClient, child) {
         final isConnected = tunnelClient.isConnected;
-        final isConnecting = tunnelClient.isConnecting;
 
         return ModernCard(
           child: Padding(
@@ -446,34 +434,15 @@ class _TunnelStatusScreenState extends State<TunnelStatusScreen> {
                   children: [
                     Expanded(
                       child: ElevatedButton.icon(
-                        onPressed: isConnecting
-                            ? null
-                            : () async {
-                                if (isConnected) {
-                                  await tunnelClient.disconnect();
-                                } else {
-                                  await tunnelClient.connect();
-                                }
-                              },
-                        icon: isConnecting
-                            ? SizedBox(
-                                width: 16,
-                                height: 16,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  valueColor: AlwaysStoppedAnimation<Color>(
-                                    Colors.white,
-                                  ),
-                                ),
-                              )
-                            : Icon(isConnected ? Icons.stop : Icons.play_arrow),
-                        label: Text(
-                          isConnecting
-                              ? 'Connecting...'
-                              : isConnected
-                              ? 'Disconnect'
-                              : 'Connect',
-                        ),
+                        onPressed: () async {
+                          if (isConnected) {
+                            await tunnelClient.disconnect();
+                          } else {
+                            await tunnelClient.connect();
+                          }
+                        },
+                        icon: Icon(isConnected ? Icons.stop : Icons.play_arrow),
+                        label: Text(isConnected ? 'Disconnect' : 'Connect'),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: isConnected
                               ? Colors.red
@@ -604,9 +573,9 @@ class _TunnelStatusScreenState extends State<TunnelStatusScreen> {
 
     try {
       // Refresh tunnel client status
-      final tunnelClient = context.read<SimpleTunnelClient>();
-      if (!tunnelClient.isConnected && !tunnelClient.isConnecting) {
-        // Only attempt reconnection if not already connected/connecting
+      final tunnelClient = context.read<HttpPollingTunnelClient>();
+      if (!tunnelClient.isConnected) {
+        // Only attempt reconnection if not already connected
         await tunnelClient.connect();
       }
 

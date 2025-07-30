@@ -1,8 +1,3 @@
-/**
- * HTTP Polling Tunnel Client for CloudToLocalLLM
- * Provides HTTP-based communication as fallback when WebSocket connections fail
- */
-
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
@@ -10,14 +5,12 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 import '../config/app_config.dart';
-import '../models/tunnel_message.dart';
+
 import '../utils/tunnel_logger.dart';
 import 'auth_service.dart';
-import 'ollama_service.dart';
 
 class HttpPollingTunnelClient extends ChangeNotifier {
   final AuthService _authService;
-  final OllamaService _ollamaService;
   final TunnelLogger _logger;
   final http.Client _httpClient;
 
@@ -42,11 +35,9 @@ class HttpPollingTunnelClient extends ChangeNotifier {
 
   HttpPollingTunnelClient({
     required AuthService authService,
-    required OllamaService ollamaService,
     required TunnelLogger logger,
     http.Client? httpClient,
   }) : _authService = authService,
-       _ollamaService = ollamaService,
        _logger = logger,
        _httpClient = httpClient ?? http.Client();
 

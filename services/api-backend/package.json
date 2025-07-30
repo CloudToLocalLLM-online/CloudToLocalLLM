@@ -34,8 +34,7 @@
     "sqlite": "^5.1.1",
     "sqlite3": "^5.1.6",
     "uuid": "^9.0.1",
-    "winston": "^3.11.0",
-    "ws": "^8.14.2"
+    "winston": "^3.11.0"
   },
   "devDependencies": {
     "eslint": "^8.55.0",

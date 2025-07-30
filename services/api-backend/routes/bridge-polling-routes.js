@@ -151,11 +151,11 @@ router.get('/:bridgeId/poll', authenticateJWT, (req, res) => {
   bridge.lastSeen = new Date();
 
   const requests = pendingRequests.get(bridgeId) || [];
-  
+
   if (requests.length > 0) {
     // Return pending requests immediately
     const requestsToSend = requests.splice(0, 10); // Send up to 10 requests at once
-    
+
     logger.debug('Sending pending requests to bridge', {
       bridgeId,
       requestCount: requestsToSend.length,
@@ -172,10 +172,10 @@ router.get('/:bridgeId/poll', authenticateJWT, (req, res) => {
   const startTime = Date.now();
   const pollInterval = setInterval(() => {
     const currentRequests = pendingRequests.get(bridgeId) || [];
-    
+
     if (currentRequests.length > 0 || Date.now() - startTime >= timeout) {
       clearInterval(pollInterval);
-      
+
       if (currentRequests.length > 0) {
         const requestsToSend = currentRequests.splice(0, 10);
         res.json({
@@ -242,7 +242,7 @@ router.post('/:bridgeId/response', authenticateJWT, (req, res) => {
   if (completedResponses.size > MAX_COMPLETED_RESPONSES) {
     const entries = Array.from(completedResponses.entries());
     entries.sort((a, b) => b[1].timestamp - a[1].timestamp);
-    
+
     // Keep only the most recent responses
     completedResponses.clear();
     entries.slice(0, MAX_COMPLETED_RESPONSES).forEach(([id, data]) => {
@@ -324,10 +324,10 @@ export function queueRequestForBridge(bridgeId, request) {
 export function getResponseForRequest(requestId, timeoutMs = REQUEST_TIMEOUT) {
   return new Promise((resolve, reject) => {
     const startTime = Date.now();
-    
+
     const checkResponse = () => {
       const response = completedResponses.get(requestId);
-      
+
       if (response) {
         completedResponses.delete(requestId); // Clean up
         resolve(response);
@@ -351,7 +351,9 @@ export function getResponseForRequest(requestId, timeoutMs = REQUEST_TIMEOUT) {
  */
 export function isBridgeAvailable(bridgeId) {
   const bridge = bridgeRegistrations.get(bridgeId);
-  if (!bridge) return false;
+  if (!bridge) {
+    return false;
+  }
 
   const lastHeartbeat = bridgeHeartbeats.get(bridgeId) || 0;
   return Date.now() - lastHeartbeat < HEARTBEAT_TIMEOUT;
@@ -372,7 +374,7 @@ export function getBridgeByUserId(userId) {
 // Cleanup old data periodically
 setInterval(() => {
   const now = Date.now();
-  
+
   // Clean up expired requests
   for (const [bridgeId, requests] of pendingRequests.entries()) {
     const validRequests = requests.filter(req => req.timeout > now);
@@ -385,7 +387,7 @@ setInterval(() => {
       bridgeHeartbeats.delete(bridgeId);
       bridgeRegistrations.delete(bridgeId);
       pendingRequests.delete(bridgeId);
-      
+
       logger.info('Cleaned up inactive bridge', { bridgeId });
     }
   }

@@ -2,7 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../services/simple_tunnel_client.dart';
+import '../services/http_polling_tunnel_client.dart';
 import '../services/desktop_client_detection_service.dart';
 import 'tunnel_management_panel.dart';
 
@@ -37,7 +37,7 @@ class _TunnelStatusIndicatorState extends State<TunnelStatusIndicator> {
       return const SizedBox.shrink();
     }
 
-    return Consumer<SimpleTunnelClient>(
+    return Consumer<HttpPollingTunnelClient>(
       builder: (context, tunnelClient, child) {
         return Consumer<DesktopClientDetectionService>(
           builder: (context, clientDetection, child) {
@@ -132,11 +132,10 @@ class _TunnelStatusIndicatorState extends State<TunnelStatusIndicator> {
   }
 
   TunnelStatusInfo _getTunnelStatus(
-    SimpleTunnelClient tunnelClient,
+    HttpPollingTunnelClient tunnelClient,
     DesktopClientDetectionService clientDetection,
   ) {
     final isConnected = tunnelClient.isConnected;
-    final isConnecting = tunnelClient.isConnecting;
     final hasError = tunnelClient.lastError != null;
     final hasDesktopClients = clientDetection.hasConnectedClients;
     final clientCount = clientDetection.connectedClientCount;
@@ -149,14 +148,6 @@ class _TunnelStatusIndicatorState extends State<TunnelStatusIndicator> {
         tooltip:
             'Tunnel connected with $clientCount desktop client${clientCount == 1 ? '' : 's'}',
         isConnecting: false,
-      );
-    } else if (isConnecting) {
-      return TunnelStatusInfo(
-        icon: Icons.sync,
-        color: Colors.orange,
-        text: 'Connecting',
-        tooltip: 'Establishing tunnel connection...',
-        isConnecting: true,
       );
     } else if (hasError) {
       return TunnelStatusInfo(

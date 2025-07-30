@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'local_ollama_connection_service.dart';
-import 'simple_tunnel_client.dart';
 import 'http_polling_tunnel_client.dart';
 import 'streaming_service.dart';
 import 'ollama_service.dart';
@@ -10,10 +9,9 @@ import 'auth_service.dart';
 
 /// Connection manager service that coordinates between local and cloud connections
 ///
-/// Implements the hybrid fallback hierarchy:
+/// Implements the HTTP-only fallback hierarchy (WebSocket removed):
 /// 1. Primary: Local Ollama (direct connection, no tunnel needed)
-/// 2. Secondary: Cloud proxy via WebSocket tunnel connection
-/// 3. Fallback: Cloud proxy via HTTP polling tunnel
+/// 2. Secondary: Cloud proxy via HTTP polling tunnel
 ///
 /// Note: Zrok tunnel functionality is now handled as a standalone service
 /// separate from Ollama connections.
@@ -21,7 +19,6 @@ import 'auth_service.dart';
 /// Ensures provider isolation - each connection can fail independently.
 class ConnectionManagerService extends ChangeNotifier {
   final LocalOllamaConnectionService _localOllama;
-  final SimpleTunnelClient _simpleTunnelClient;
   final HttpPollingTunnelClient _httpPollingClient;
   final AuthService _authService;
 
@@ -34,16 +31,13 @@ class ConnectionManagerService extends ChangeNotifier {
 
   ConnectionManagerService({
     required LocalOllamaConnectionService localOllama,
-    required SimpleTunnelClient tunnelManager,
     required HttpPollingTunnelClient httpPollingClient,
     required AuthService authService,
   }) : _localOllama = localOllama,
-       _simpleTunnelClient = tunnelManager,
        _httpPollingClient = httpPollingClient,
        _authService = authService {
     // Listen to connection changes
     _localOllama.addListener(_onConnectionChanged);
-    // Skip WebSocket tunnel client listeners (WebSocket removed)
     _httpPollingClient.addListener(_onConnectionChanged);
 
     // Listen to auth changes to start/stop HTTP polling
@@ -67,7 +61,7 @@ class ConnectionManagerService extends ChangeNotifier {
 
   // Getters
   bool get hasLocalConnection => _localOllama.isConnected;
-  bool get hasCloudConnection => _simpleTunnelClient.isConnected;
+  bool get hasCloudConnection => _httpPollingClient.isConnected;
   bool get hasAnyConnection => hasLocalConnection || hasCloudConnection;
   String? get selectedModel => _selectedModel;
   List<String> get availableModels => _getAvailableModels();
@@ -255,12 +249,13 @@ class ConnectionManagerService extends ChangeNotifier {
       debugPrint('🔗 [ConnectionManager] Local Ollama reconnect failed: $e');
     }
 
-    // Reconnect simple tunnel client
+    // Reconnect HTTP polling client
     try {
-      await _simpleTunnelClient.reconnect();
+      await _httpPollingClient.disconnect();
+      await _httpPollingClient.connect();
     } catch (e) {
       debugPrint(
-        '🔗 [ConnectionManager] Simple tunnel client reconnect failed: $e',
+        '🔗 [ConnectionManager] HTTP polling client reconnect failed: $e',
       );
     }
 
@@ -280,8 +275,8 @@ class ConnectionManagerService extends ChangeNotifier {
       },
       'cloud': {
         'connected': hasCloudConnection,
-        'error': _simpleTunnelClient.error,
-        'status': _simpleTunnelClient.connectionStatus,
+        'error': _httpPollingClient.lastError,
+        'status': 'http-polling',
       },
       'active': getBestConnectionType().name,
       'selectedModel': _selectedModel,
@@ -299,10 +294,11 @@ class ConnectionManagerService extends ChangeNotifier {
 
     // Add cloud models (if available)
     if (hasCloudConnection) {
-      final cloudStatus = _simpleTunnelClient.connectionStatus['cloud'];
-      if (cloudStatus?.models != null) {
-        models.addAll(cloudStatus!.models);
-      }
+      // HTTP polling client doesn't provide model list directly
+      // Models are fetched through the cloud service when needed
+      debugPrint(
+        '🔗 [ConnectionManager] Cloud connection available for model queries',
+      );
     }
 
     // Remove duplicates and sort

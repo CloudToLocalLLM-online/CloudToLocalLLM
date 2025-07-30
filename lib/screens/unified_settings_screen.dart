@@ -17,7 +17,7 @@ import '../config/theme.dart';
 import '../services/auth_service.dart';
 
 import '../services/ollama_service.dart';
-import '../services/simple_tunnel_client.dart';
+import '../services/http_polling_tunnel_client.dart';
 import '../services/user_data_service.dart';
 import '../services/version_service.dart';
 
@@ -546,11 +546,8 @@ class _UnifiedSettingsScreenState extends State<UnifiedSettingsScreen> {
 
           // Main tunnel status and controls
           _optimizedCard(
-            child: Selector<SimpleTunnelClient, Map<String, dynamic>>(
-              selector: (context, tunnelClient) =>
-                  tunnelClient.connectionStatus,
-              builder: (context, connectionStatus, child) {
-                final tunnelClient = context.read<SimpleTunnelClient>();
+            child: Consumer<HttpPollingTunnelClient>(
+              builder: (context, tunnelClient, child) {
                 return _buildTunnelMainContent(tunnelClient, needsSetup);
               },
             ),
@@ -1033,11 +1030,7 @@ class _UnifiedSettingsScreenState extends State<UnifiedSettingsScreen> {
 
   // Compact version of tunnel info card - reduced size and content
 
-
-
-
   // Tunnel Setup Wizard Card - prioritized for new users
-
 
   Widget _buildFeatureItem(String text) {
     return Padding(
@@ -1053,8 +1046,6 @@ class _UnifiedSettingsScreenState extends State<UnifiedSettingsScreen> {
       ),
     );
   }
-
-
 
   Widget _buildAboutSettings() {
     return Column(
@@ -1494,14 +1485,6 @@ class _UnifiedSettingsScreenState extends State<UnifiedSettingsScreen> {
 
   // Desktop tunnel management methods
 
-
-
-
-
-
-
-
-
   // Helper methods for settings display
 
   /// Build data management settings section
@@ -1717,8 +1700,6 @@ class _UnifiedSettingsScreenState extends State<UnifiedSettingsScreen> {
     }
   }
 
-
-
   /// Optimized card component that prevents unnecessary rebuilds
   Widget _optimizedCard({required Widget child}) {
     return Container(
@@ -1749,18 +1730,6 @@ class _UnifiedSettingsScreenState extends State<UnifiedSettingsScreen> {
       ),
     );
   }
-
-
-
-
-
-
-
-
-
-
-
-
 
   /// Clean, simplified tunnel content methods
   Widget _buildSetupWizardContent() {
@@ -1805,11 +1774,10 @@ class _UnifiedSettingsScreenState extends State<UnifiedSettingsScreen> {
   }
 
   Widget _buildTunnelMainContent(
-    SimpleTunnelClient tunnelClient,
+    HttpPollingTunnelClient tunnelClient,
     bool needsSetup,
   ) {
     final isConnected = tunnelClient.isConnected;
-    final isConnecting = tunnelClient.isConnecting;
     final error = tunnelClient.lastError;
 
     return Column(
@@ -1819,16 +1787,8 @@ class _UnifiedSettingsScreenState extends State<UnifiedSettingsScreen> {
         Row(
           children: [
             Icon(
-              isConnected
-                  ? Icons.check_circle
-                  : isConnecting
-                  ? Icons.sync
-                  : Icons.cloud_off,
-              color: isConnected
-                  ? Colors.green
-                  : isConnecting
-                  ? Colors.orange
-                  : Colors.grey,
+              isConnected ? Icons.check_circle : Icons.cloud_off,
+              color: isConnected ? Colors.green : Colors.grey,
               size: 24,
             ),
             SizedBox(width: AppTheme.spacingM),
@@ -1847,8 +1807,6 @@ class _UnifiedSettingsScreenState extends State<UnifiedSettingsScreen> {
                   Text(
                     isConnected
                         ? 'Connected and active'
-                        : isConnecting
-                        ? 'Connecting...'
                         : error != null
                         ? 'Connection error'
                         : 'Disconnected',
@@ -1856,8 +1814,6 @@ class _UnifiedSettingsScreenState extends State<UnifiedSettingsScreen> {
                       fontSize: 14,
                       color: isConnected
                           ? Colors.green[700]
-                          : isConnecting
-                          ? Colors.orange[700]
                           : error != null
                           ? Colors.red[700]
                           : AppTheme.textColorLight,
@@ -1903,13 +1859,11 @@ class _UnifiedSettingsScreenState extends State<UnifiedSettingsScreen> {
               SizedBox(width: AppTheme.spacingS),
               Expanded(
                 child: ElevatedButton.icon(
-                  onPressed: isConnecting
-                      ? null
-                      : () {
-                          tunnelClient.connect();
-                        },
-                  icon: Icon(isConnecting ? Icons.sync : Icons.link),
-                  label: Text(isConnecting ? 'Testing...' : 'Test'),
+                  onPressed: () {
+                    tunnelClient.connect();
+                  },
+                  icon: const Icon(Icons.link),
+                  label: const Text('Test'),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppTheme.secondaryColor,
                     foregroundColor: Colors.white,
@@ -1919,26 +1873,7 @@ class _UnifiedSettingsScreenState extends State<UnifiedSettingsScreen> {
             ],
           ),
 
-          // Show stop reconnection button if reconnecting frequently
-          if (tunnelClient.reconnectAttempts > 3) ...[
-            SizedBox(height: AppTheme.spacingM),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: () {
-                  tunnelClient.stopReconnection();
-                },
-                icon: const Icon(Icons.stop),
-                label: Text(
-                  'Stop Reconnection (${tunnelClient.reconnectAttempts} attempts)',
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.orange,
-                  foregroundColor: Colors.white,
-                ),
-              ),
-            ),
-          ],
+          // HTTP polling doesn't need reconnection management
         ],
       ],
     );

@@ -1,17 +1,16 @@
 /**
- * @fileoverview Express routes and middleware for simplified tunnel system
- * Handles HTTP proxy endpoints and WebSocket connection setup
+ * @fileoverview Express routes and middleware for HTTP-only tunnel system
+ * Handles HTTP proxy endpoints (WebSocket functionality removed)
  */
 
 import express from 'express';
-import { WebSocketServer } from 'ws';
 import jwt from 'jsonwebtoken';
 import winston from 'winston';
-import { TunnelProxy } from './tunnel-proxy.js';
+import { HttpTunnelProxy } from './http-tunnel-proxy.js';
 import { TunnelLogger, ERROR_CODES, ErrorResponseBuilder } from '../utils/logger.js';
 import { createTunnelRateLimitMiddleware } from '../middleware/rate-limiter.js';
 // JWT validation is handled by the custom authenticateToken function below
-import { createConnectionSecurityMiddleware, createWebSocketSecurityValidator } from '../middleware/connection-security.js';
+import { createConnectionSecurityMiddleware } from '../middleware/connection-security.js';
 import { createSecurityAuditMiddleware } from '../middleware/security-audit-logger.js';
 import { createDirectProxyRoutes } from '../routes/direct-proxy-routes.js';
 import { AuthService } from '../auth/auth-service.js';
@@ -20,15 +19,14 @@ import { addTierInfo, requireFeature } from '../middleware/tier-check.js';
 const router = express.Router();
 
 /**
- * Create tunnel routes and WebSocket server
- * @param {http.Server} server - HTTP server instance
+ * Create HTTP-only tunnel routes
  * @param {Object} config - Configuration object
  * @param {string} config.AUTH0_DOMAIN - Auth0 domain
  * @param {string} config.AUTH0_AUDIENCE - Auth0 audience
  * @param {winston.Logger} [logger] - Logger instance
  * @returns {Object} Router and tunnel proxy instance
  */
-export function createTunnelRoutes(server, config, logger = winston.createLogger()) {
+export function createTunnelRoutes(config, logger = winston.createLogger()) {
   const { AUTH0_DOMAIN, AUTH0_AUDIENCE } = config;
 
   // Use enhanced logger if winston logger provided, otherwise create new TunnelLogger
@@ -40,8 +38,8 @@ export function createTunnelRoutes(server, config, logger = winston.createLogger
     AUTH0_AUDIENCE,
   });
 
-  // Create tunnel proxy instance with enhanced logger
-  const tunnelProxy = new TunnelProxy(tunnelLogger);
+  // Create HTTP tunnel proxy instance with enhanced logger
+  const tunnelProxy = new HttpTunnelProxy(tunnelLogger);
 
   // Create rate limiting middleware with tunnel-specific configuration
   const rateLimitMiddleware = createTunnelRateLimitMiddleware({
@@ -60,7 +58,7 @@ export function createTunnelRoutes(server, config, logger = winston.createLogger
     enforceHttps: process.env.NODE_ENV === 'production',
     minTlsVersion: 'TLSv1.2',
     allowSelfSignedCerts: process.env.NODE_ENV !== 'production',
-    websocketOriginCheck: true,
+    websocketOriginCheck: false, // WebSocket removed
     allowedOrigins: [
       'https://app.cloudtolocalllm.online',
       'https://cloudtolocalllm.online',
@@ -190,107 +188,7 @@ export function createTunnelRoutes(server, config, logger = winston.createLogger
     next();
   }
 
-  // Create WebSocket security validator
-  const websocketSecurityValidator = createWebSocketSecurityValidator({
-    enforceHttps: process.env.NODE_ENV === 'production',
-    minTlsVersion: 'TLSv1.2',
-    allowSelfSignedCerts: process.env.NODE_ENV !== 'production',
-    websocketOriginCheck: true,
-    allowedOrigins: [
-      'https://app.cloudtolocalllm.online',
-      'https://cloudtolocalllm.online',
-      'https://docs.cloudtolocalllm.online',
-      ...(process.env.NODE_ENV !== 'production' ? ['http://localhost:3000', 'http://localhost:8080'] : []),
-    ],
-  });
-
-  // WebSocket server for tunnel connections
-  const wss = new WebSocketServer({
-    server,
-    path: '/ws/tunnel',
-    verifyClient: async(info) => {
-      const correlationId = tunnelLogger.generateCorrelationId();
-
-      try {
-        // First check connection security
-        if (!websocketSecurityValidator(info)) {
-          tunnelLogger.logSecurity('websocket_security_validation_failed', null, {
-            correlationId,
-            ip: info.req.socket.remoteAddress,
-            origin: info.req.headers.origin,
-            userAgent: info.req.headers['user-agent'],
-          });
-          return false;
-        }
-
-        const url = new URL(info.req.url, `http://${info.req.headers.host}`);
-        const token = url.searchParams.get('token');
-
-        if (!token) {
-          tunnelLogger.logSecurity('websocket_auth_token_missing', null, {
-            correlationId,
-            ip: info.req.socket.remoteAddress,
-            userAgent: info.req.headers['user-agent'],
-          });
-          return false;
-        }
-
-        const userId = await verifyToken(token);
-        info.req.userId = userId;
-        info.req.correlationId = correlationId;
-
-        tunnelLogger.debug('WebSocket authentication successful', {
-          correlationId,
-          userId,
-        });
-
-        return true;
-      } catch (error) {
-        tunnelLogger.logSecurity('websocket_auth_failed', null, {
-          correlationId,
-          error: error.message,
-          errorName: error.name,
-          ip: info.req.socket.remoteAddress,
-          userAgent: info.req.headers['user-agent'],
-        });
-        return false;
-      }
-    },
-  });
-
-  // Handle WebSocket connections
-  wss.on('connection', (ws, req) => {
-    const userId = req.userId;
-    const correlationId = req.correlationId;
-
-    if (!userId) {
-      tunnelLogger.logTunnelError(
-        ERROR_CODES.AUTH_TOKEN_INVALID,
-        'WebSocket connection without user ID',
-        { correlationId },
-      );
-      ws.close(1008, 'Authentication failed');
-      return;
-    }
-
-    try {
-      const connectionId = tunnelProxy.handleConnection(ws, userId);
-      tunnelLogger.logConnection('websocket_established', connectionId, userId, {
-        correlationId,
-      });
-    } catch (error) {
-      tunnelLogger.logTunnelError(
-        ERROR_CODES.WEBSOCKET_CONNECTION_FAILED,
-        'Failed to handle tunnel WebSocket connection',
-        {
-          correlationId,
-          userId,
-          error: error.message,
-        },
-      );
-      ws.close(1011, 'Internal server error');
-    }
-  });
+  // WebSocket functionality removed - using HTTP polling only
 
   // Apply security middleware to all routes
   router.use(connectionSecurityMiddleware);
@@ -574,6 +472,5 @@ export function createTunnelRoutes(server, config, logger = winston.createLogger
   return {
     router,
     tunnelProxy,
-    wss,
   };
 }

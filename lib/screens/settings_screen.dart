@@ -7,7 +7,7 @@ import '../config/theme.dart';
 import '../config/app_config.dart';
 import '../services/auth_service.dart';
 import '../services/version_service.dart';
-import '../services/simple_tunnel_client.dart';
+import '../services/http_polling_tunnel_client.dart';
 import '../services/ollama_service.dart';
 import '../services/local_ollama_connection_service.dart';
 import '../services/setup_wizard_service.dart';
@@ -530,10 +530,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
           SizedBox(height: AppTheme.spacingM),
 
           // Connection status overview - only rebuilds when connection status changes
-          Selector<SimpleTunnelClient, Map<String, dynamic>>(
-            selector: (context, tunnelClient) => tunnelClient.connectionStatus,
-            builder: (context, connectionStatus, child) {
-              final tunnelClient = context.read<SimpleTunnelClient>();
+          Consumer<HttpPollingTunnelClient>(
+            builder: (context, tunnelClient, child) {
               return _buildConnectionStatusCard(context, tunnelClient);
             },
           ),
@@ -543,7 +541,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           // Cloud proxy configuration - static content, no need to rebuild
           Builder(
             builder: (context) {
-              final tunnelClient = context.read<SimpleTunnelClient>();
+              final tunnelClient = context.read<HttpPollingTunnelClient>();
               return _buildCloudProxyConfigCard(context, tunnelClient);
             },
           ),
@@ -553,7 +551,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           // Connection test button - static content, no need to rebuild
           Builder(
             builder: (context) {
-              final tunnelClient = context.read<SimpleTunnelClient>();
+              final tunnelClient = context.read<HttpPollingTunnelClient>();
               return _buildConnectionTestButton(context, tunnelClient);
             },
           ),
@@ -801,7 +799,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   // Tunnel Connection Helper Methods
   Widget _buildConnectionStatusCard(
     BuildContext context,
-    SimpleTunnelClient tunnelClient,
+    HttpPollingTunnelClient tunnelClient,
   ) {
     final isConnected = tunnelClient.isConnected;
 
@@ -852,9 +850,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Widget _buildCloudProxyConfigCard(
     BuildContext context,
-    SimpleTunnelClient tunnelClient,
+    HttpPollingTunnelClient tunnelClient,
   ) {
-    final config = tunnelClient.config;
+    // HTTP polling doesn't have complex config like WebSocket tunnels
+    final isConnected = tunnelClient.isConnected;
 
     return Container(
       padding: EdgeInsets.all(AppTheme.spacingM),
@@ -887,29 +886,30 @@ class _SettingsScreenState extends State<SettingsScreen> {
             'Enable Cloud Proxy',
             'Connect to CloudToLocalLLM cloud services',
             Switch(
-              value: config.enableCloudProxy,
+              value: isConnected,
               onChanged: (value) {
                 _updateCloudProxyConfig(tunnelClient, enabled: value);
               },
             ),
           ),
 
-          if (config.enableCloudProxy) ...[
+          if (isConnected) ...[
             SizedBox(height: AppTheme.spacingM),
             _buildSettingItem(
               context,
-              'Cloud Proxy URL',
-              'Cloud proxy service endpoint',
-              TextFormField(
-                initialValue: config.cloudProxyUrl,
-                decoration: InputDecoration(
-                  hintText: 'https://app.cloudtolocalllm.online',
-                  border: OutlineInputBorder(),
-                  isDense: true,
+              'Connection Status',
+              'HTTP polling tunnel status',
+              Container(
+                padding: EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.green[50],
+                  border: Border.all(color: Colors.green[200]!),
+                  borderRadius: BorderRadius.circular(4),
                 ),
-                onChanged: (value) {
-                  _updateCloudProxyConfig(tunnelClient, url: value);
-                },
+                child: Text(
+                  'Connected via HTTP Polling',
+                  style: TextStyle(color: Colors.green[700]),
+                ),
               ),
             ),
           ],
@@ -920,7 +920,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Widget _buildConnectionTestButton(
     BuildContext context,
-    SimpleTunnelClient tunnelClient,
+    HttpPollingTunnelClient tunnelClient,
   ) {
     return Consumer2<OllamaService, LocalOllamaConnectionService>(
       builder: (context, ollamaService, localOllama, child) {
@@ -958,7 +958,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     BuildContext context,
     OllamaService ollamaService,
     LocalOllamaConnectionService localOllama,
-    SimpleTunnelClient tunnelClient,
+    HttpPollingTunnelClient tunnelClient,
   ) async {
     debugPrint('⚙️ [Settings] Starting comprehensive connection test');
 
@@ -1557,24 +1557,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   /// Update cloud proxy configuration
   Future<void> _updateCloudProxyConfig(
-    SimpleTunnelClient tunnelClient, {
+    HttpPollingTunnelClient tunnelClient, {
     bool? enabled,
-    String? url,
   }) async {
     try {
-      final currentConfig = tunnelClient.config;
-      // Config object created but not used directly as SimpleTunnelClient handles updates
-      // Keep the variable for future implementation
-      TunnelConfig(
-        enableCloudProxy: enabled ?? currentConfig.enableCloudProxy,
-        cloudProxyUrl: url ?? currentConfig.cloudProxyUrl,
-        localBackendUrl: currentConfig.localBackendUrl,
-        connectionTimeout: currentConfig.connectionTimeout,
-        healthCheckInterval: currentConfig.healthCheckInterval,
-      );
-
-      // Configuration updates are handled automatically by SimpleTunnelClient
-      // No explicit configuration update needed
+      // HTTP polling doesn't need complex configuration
+      // Just handle connection state
+      if (enabled == true && !tunnelClient.isConnected) {
+        await tunnelClient.connect();
+      } else if (enabled == false && tunnelClient.isConnected) {
+        await tunnelClient.disconnect();
+      }
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
