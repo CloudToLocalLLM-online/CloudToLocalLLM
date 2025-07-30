@@ -44,6 +44,10 @@ class TunnelErrorCodes {
   static const String pingTimeout = 'PING_TIMEOUT';
   static const String pongTimeout = 'PONG_TIMEOUT';
   static const String healthCheckFailed = 'HEALTH_CHECK_FAILED';
+
+  // HTTP polling errors
+  static const String pollingFailed = 'POLLING_FAILED';
+  static const String requestProcessingFailed = 'REQUEST_PROCESSING_FAILED';
 }
 
 /// Enhanced tunnel exception with error codes and context

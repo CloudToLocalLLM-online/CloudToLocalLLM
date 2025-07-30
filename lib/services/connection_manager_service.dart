@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'local_ollama_connection_service.dart';
 import 'simple_tunnel_client.dart';
+import 'http_polling_tunnel_client.dart';
 import 'streaming_service.dart';
 import 'ollama_service.dart';
 import 'cloud_streaming_service.dart';
@@ -9,9 +10,10 @@ import 'auth_service.dart';
 
 /// Connection manager service that coordinates between local and cloud connections
 ///
-/// Implements the fallback hierarchy:
+/// Implements the hybrid fallback hierarchy:
 /// 1. Primary: Local Ollama (direct connection, no tunnel needed)
-/// 2. Secondary: Cloud proxy via tunnel connection
+/// 2. Secondary: Cloud proxy via WebSocket tunnel connection
+/// 3. Fallback: Cloud proxy via HTTP polling tunnel
 ///
 /// Note: Zrok tunnel functionality is now handled as a standalone service
 /// separate from Ollama connections.
@@ -20,6 +22,7 @@ import 'auth_service.dart';
 class ConnectionManagerService extends ChangeNotifier {
   final LocalOllamaConnectionService _localOllama;
   final SimpleTunnelClient _simpleTunnelClient;
+  final HttpPollingTunnelClient _httpPollingClient;
   final AuthService _authService;
 
   // Connection preferences
@@ -32,13 +35,19 @@ class ConnectionManagerService extends ChangeNotifier {
   ConnectionManagerService({
     required LocalOllamaConnectionService localOllama,
     required SimpleTunnelClient tunnelManager,
+    required HttpPollingTunnelClient httpPollingClient,
     required AuthService authService,
   }) : _localOllama = localOllama,
        _simpleTunnelClient = tunnelManager,
+       _httpPollingClient = httpPollingClient,
        _authService = authService {
     // Listen to connection changes
     _localOllama.addListener(_onConnectionChanged);
     _simpleTunnelClient.addListener(_onConnectionChanged);
+    _httpPollingClient.addListener(_onConnectionChanged);
+
+    // Listen to auth changes to start/stop HTTP polling
+    _authService.addListener(_onAuthChanged);
 
     if (kIsWeb) {
       debugPrint(
@@ -64,14 +73,13 @@ class ConnectionManagerService extends ChangeNotifier {
   List<String> get availableModels => _getAvailableModels();
 
   /// Get the best available connection type
-  /// Fallback hierarchy:
+  /// HTTP-only fallback hierarchy (WebSocket removed due to protocol issues):
   /// 1. Local Ollama (if preferred and available) - DESKTOP ONLY
-  /// 2. Cloud proxy (WebSocket bridge) - WEB AND DESKTOP
-  /// 3. Local Ollama (fallback if not preferred initially) - DESKTOP ONLY
+  /// 2. Cloud proxy (HTTP polling) - WEB AND DESKTOP
+  /// 3. Local Ollama (final fallback if not preferred initially) - DESKTOP ONLY
   ///
   /// Platform-aware: Web platform NEVER uses local connections to prevent CORS errors.
-  /// Note: Zrok is now handled as a standalone service and not part of
-  /// the Ollama connection fallback hierarchy.
+  /// Note: WebSocket tunnel removed due to persistent HTTP 400 protocol conversion issues.
   ConnectionType getBestConnectionType() {
     if (kIsWeb) {
       // Web platform: Only use cloud proxy to prevent CORS errors
@@ -194,14 +202,25 @@ class ConnectionManagerService extends ChangeNotifier {
       // Don't fail overall initialization if local Ollama fails
     }
 
-    // Initialize simple tunnel client (cloud proxy only)
-    try {
-      await _simpleTunnelClient.initialize();
-    } catch (e) {
+    // Skip WebSocket tunnel initialization (removed due to protocol issues)
+    debugPrint(
+      '🔗 [ConnectionManager] Skipping WebSocket tunnel (using HTTP polling only)',
+    );
+
+    // Initialize HTTP polling client as primary cloud connection method
+    if (_authService.currentUser != null) {
+      try {
+        debugPrint('🔗 [ConnectionManager] Starting HTTP polling client...');
+        await _httpPollingClient.connect();
+        debugPrint('🔗 [ConnectionManager] ✅ HTTP polling client connected');
+      } catch (e) {
+        debugPrint('🔗 [ConnectionManager] ❌ HTTP polling client failed: $e');
+        // Don't fail overall initialization if polling fails
+      }
+    } else {
       debugPrint(
-        '🔗 [ConnectionManager] Simple tunnel client initialization failed: $e',
+        '🔗 [ConnectionManager] HTTP polling client ready (will connect after auth)',
       );
-      // Don't fail overall initialization if tunnel fails
     }
 
     // Auto-select first available model
@@ -313,11 +332,97 @@ class ConnectionManagerService extends ChangeNotifier {
     debugPrint('🔗 [ConnectionManager] Connection status: $status');
   }
 
+  /// Handle authentication state changes
+  void _onAuthChanged() {
+    debugPrint('🔗 [ConnectionManager] Auth state changed');
+
+    if (_authService.currentUser != null) {
+      // User logged in - start HTTP polling
+      debugPrint(
+        '🔗 [ConnectionManager] User authenticated - starting HTTP polling',
+      );
+      startHttpPolling().catchError((e) {
+        debugPrint(
+          '🔗 [ConnectionManager] Failed to start HTTP polling after auth: $e',
+        );
+        return false;
+      });
+    } else {
+      // User logged out - stop HTTP polling
+      debugPrint(
+        '🔗 [ConnectionManager] User logged out - stopping HTTP polling',
+      );
+      stopHttpPolling().catchError((e) {
+        debugPrint(
+          '🔗 [ConnectionManager] Failed to stop HTTP polling after logout: $e',
+        );
+      });
+    }
+
+    notifyListeners();
+  }
+
+  /// Start HTTP polling connection (primary cloud method)
+  Future<bool> startHttpPolling() async {
+    if (_authService.currentUser == null) {
+      debugPrint(
+        '🌉 [ConnectionManager] Cannot start HTTP polling - not authenticated',
+      );
+      return false;
+    }
+
+    if (_httpPollingClient.isConnected) {
+      debugPrint('🌉 [ConnectionManager] HTTP polling already connected');
+      return true;
+    }
+
+    try {
+      debugPrint('🌉 [ConnectionManager] Starting HTTP polling connection...');
+      await _httpPollingClient.connect();
+
+      if (_httpPollingClient.isConnected) {
+        debugPrint(
+          '🌉 [ConnectionManager] ✅ HTTP polling connected successfully',
+        );
+        notifyListeners();
+        return true;
+      }
+    } catch (e) {
+      debugPrint('🌉 [ConnectionManager] ❌ HTTP polling connection failed: $e');
+    }
+
+    return false;
+  }
+
+  /// Stop HTTP polling connection
+  Future<void> stopHttpPolling() async {
+    if (_httpPollingClient.isConnected) {
+      debugPrint('🌉 [ConnectionManager] Stopping HTTP polling connection...');
+      await _httpPollingClient.disconnect();
+      notifyListeners();
+    }
+  }
+
+  /// Check if HTTP polling is available and connected
+  bool get isHttpPollingConnected => _httpPollingClient.isConnected;
+
+  /// Get HTTP polling client statistics
+  Map<String, dynamic> get httpPollingStats => {
+    'connected': _httpPollingClient.isConnected,
+    'bridgeId': _httpPollingClient.bridgeId,
+    'requestsProcessed': _httpPollingClient.requestsProcessed,
+    'errorsCount': _httpPollingClient.errorsCount,
+    'lastSeen': _httpPollingClient.lastSeen?.toIso8601String(),
+    'connectedAt': _httpPollingClient.connectedAt?.toIso8601String(),
+  };
+
   @override
   void dispose() {
     debugPrint('🔗 [ConnectionManager] Disposing service');
     _localOllama.removeListener(_onConnectionChanged);
     _simpleTunnelClient.removeListener(_onConnectionChanged);
+    _httpPollingClient.removeListener(_onConnectionChanged);
+    _authService.removeListener(_onAuthChanged);
     _cloudStreamingService?.dispose();
     super.dispose();
   }

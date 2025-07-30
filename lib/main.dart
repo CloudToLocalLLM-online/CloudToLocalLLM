@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_web_plugins/url_strategy.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
 import 'screens/loading_screen.dart';
 import 'config/theme.dart';
 import 'config/router.dart';
@@ -13,8 +14,10 @@ import 'services/ollama_service.dart';
 import 'services/streaming_proxy_service.dart';
 import 'services/unified_connection_service.dart';
 import 'services/simple_tunnel_client.dart';
+import 'services/http_polling_tunnel_client.dart';
 import 'services/local_ollama_connection_service.dart';
 import 'services/connection_manager_service.dart';
+import 'utils/tunnel_logger.dart';
 import 'services/streaming_chat_service.dart';
 import 'services/native_tray_service.dart';
 import 'services/window_manager_service.dart';
@@ -43,7 +46,50 @@ void main() async {
     usePathUrlStrategy();
   }
 
-  runApp(const CloudToLocalLLMApp());
+  await SentryFlutter.init((options) {
+    options.dsn =
+        'https://2f8b2a4b37c8052b6f6c96e2e0320ae7@o4509755262369792.ingest.us.sentry.io/4509755268530176';
+
+    // Performance monitoring
+    options.tracesSampleRate = 1.0; // 100% of transactions for tracing
+
+    // Session Replay configuration
+    options.replay.sessionSampleRate = 1.0; // 100% of sessions for replay
+    options.replay.onErrorSampleRate = 1.0; // 100% of error sessions
+
+    // Additional debugging options
+    options.debug = kDebugMode; // Enable debug logging in debug mode
+    options.attachStacktrace = true; // Attach stack traces to all messages
+    options.sendDefaultPii =
+        false; // Don't send personally identifiable information
+
+    // Environment and release tracking
+    options.environment = kDebugMode ? 'development' : 'production';
+    options.release = 'cloudtolocalllm@3.6.2';
+
+    // Enhanced debugging features
+    options.maxBreadcrumbs = 100;
+    options.enableAutoSessionTracking = true;
+    options.enableAutoPerformanceTracing = true;
+    options.enableUserInteractionTracing = true;
+
+    // Capture more context for WebSocket debugging
+    options.beforeSend = (event, hint) {
+      // Add custom context for tunnel-related errors
+      final message = event.message?.formatted ?? '';
+      if (message.contains('WebSocket') ||
+          message.contains('tunnel') ||
+          message.contains('HTTP 400')) {
+        // Add custom tags for tunnel-related issues
+        event.tags = {
+          ...?event.tags,
+          'issue_type': 'tunnel_connection',
+          'platform': kIsWeb ? 'web' : 'desktop',
+        };
+      }
+      return event;
+    };
+  }, appRunner: () => runApp(SentryWidget(child: const CloudToLocalLLMApp())));
 }
 
 /// Main application widget with comprehensive loading screen
@@ -296,15 +342,32 @@ class _CloudToLocalLLMAppState extends State<CloudToLocalLLMApp> {
             return simpleTunnelClient;
           },
         ),
+        // HTTP Polling Tunnel Client (fallback for WebSocket)
+        ChangeNotifierProvider(
+          create: (context) {
+            final authService = context.read<AuthService>();
+            final localOllama = context.read<OllamaService>();
+            final logger = TunnelLogger(
+              'HttpPollingTunnel',
+            ); // Create new instance
+            return HttpPollingTunnelClient(
+              authService: authService,
+              ollamaService: localOllama,
+              logger: logger,
+            );
+          },
+        ),
         // Connection manager service (coordinates local and cloud)
         ChangeNotifierProvider(
           create: (context) {
             final localOllama = context.read<LocalOllamaConnectionService>();
             final simpleTunnelClient = context.read<SimpleTunnelClient>();
+            final httpPollingClient = context.read<HttpPollingTunnelClient>();
             final authService = context.read<AuthService>();
             final connectionManager = ConnectionManagerService(
               localOllama: localOllama,
               tunnelManager: simpleTunnelClient,
+              httpPollingClient: httpPollingClient,
               authService: authService,
             );
             // Initialize the connection manager service

@@ -20,6 +20,12 @@ import { createMonitoringRoutes } from './routes/monitoring.js';
 import { createDirectProxyRoutes } from './routes/direct-proxy-routes.js';
 import { authenticateJWT } from './middleware/auth.js';
 import { addTierInfo, getUserTier, getTierFeatures } from './middleware/tier-check.js';
+import bridgePollingRoutes, {
+  queueRequestForBridge,
+  getResponseForRequest,
+  isBridgeAvailable,
+  getBridgeByUserId
+} from './routes/bridge-polling-routes.js';
 
 dotenv.config();
 
@@ -370,6 +376,9 @@ app.use('/api/monitoring', monitoringRouter);
 // Administrative routes
 app.use('/api/admin', adminRoutes);
 
+// Bridge polling routes (HTTP fallback for WebSocket tunnel)
+app.use('/api/bridge', bridgePollingRoutes);
+
 // LLM Tunnel Cloud Proxy Endpoints
 // These endpoints provide the missing /api/ollama/* routes that the web platform expects
 app.all('/api/ollama/*', authenticateJWT, addTierInfo, async(req, res) => {
@@ -441,8 +450,48 @@ app.all('/api/ollama/*', authenticateJWT, addTierInfo, async(req, res) => {
       hasBody: !!httpRequest.body,
     });
 
-    // Forward request through tunnel proxy using LLM-optimized method
-    const response = await tunnelProxy.forwardLLMRequest(userId, httpRequest);
+    // Forward request through HTTP polling (WebSocket removed due to protocol issues)
+    let response;
+
+    // Use HTTP polling as primary method
+    const bridge = getBridgeByUserId(userId);
+    if (bridge && isBridgeAvailable(bridge.bridgeId)) {
+      logger.info('🌉 [LLMTunnel] Using HTTP polling bridge', {
+        userId,
+        requestId,
+        bridgeId: bridge.bridgeId,
+      });
+
+      // Queue request for HTTP polling
+      const pollingRequestId = queueRequestForBridge(bridge.bridgeId, {
+        type: 'request',
+        data: {
+          method: req.method,
+          path: ollamaPath,
+          headers: forwardHeaders,
+          body: httpRequest.body,
+        },
+      });
+
+      // Wait for response
+      const pollingResponse = await getResponseForRequest(pollingRequestId, 60000);
+
+      response = {
+        status: pollingResponse.status,
+        headers: pollingResponse.headers,
+        body: pollingResponse.body,
+      };
+
+      logger.info('✅ [LLMTunnel] HTTP polling successful', {
+        userId,
+        requestId,
+        bridgeId: bridge.bridgeId,
+        status: response.status,
+      });
+    } else {
+      // No HTTP polling bridge available
+      throw new Error(`No HTTP polling bridge available for user ${userId}`);
+    }
 
     const duration = Date.now() - startTime;
 

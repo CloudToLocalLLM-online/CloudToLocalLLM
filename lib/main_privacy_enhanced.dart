@@ -12,8 +12,10 @@ import 'services/ollama_service.dart';
 import 'services/streaming_proxy_service.dart';
 import 'services/unified_connection_service.dart';
 import 'services/simple_tunnel_client.dart';
+import 'services/http_polling_tunnel_client.dart';
 import 'services/local_ollama_connection_service.dart';
 import 'services/connection_manager_service.dart';
+import 'utils/tunnel_logger.dart';
 import 'services/streaming_chat_service.dart';
 import 'services/native_tray_service.dart';
 import 'services/window_manager_service.dart';
@@ -319,15 +321,31 @@ class _CloudToLocalLLMPrivacyAppState extends State<CloudToLocalLLMPrivacyApp> {
           },
         ),
 
+        // HTTP Polling Tunnel Client (fallback for WebSocket)
+        ChangeNotifierProvider(
+          create: (context) {
+            final authService = context.read<AuthService>();
+            final localOllama = context.read<OllamaService>();
+            final logger = TunnelLogger('HttpPollingTunnel');
+            return HttpPollingTunnelClient(
+              authService: authService,
+              ollamaService: localOllama,
+              logger: logger,
+            );
+          },
+        ),
+
         // Connection manager service
         ChangeNotifierProvider(
           create: (context) {
             final localOllama = context.read<LocalOllamaConnectionService>();
             final simpleTunnelClient = context.read<SimpleTunnelClient>();
+            final httpPollingClient = context.read<HttpPollingTunnelClient>();
             final authService = context.read<AuthService>();
             final connectionManager = ConnectionManagerService(
               localOllama: localOllama,
               tunnelManager: simpleTunnelClient,
+              httpPollingClient: httpPollingClient,
               authService: authService,
             );
             connectionManager.initialize();

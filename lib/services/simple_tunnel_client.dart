@@ -13,6 +13,7 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:web_socket_channel/web_socket_channel.dart';
 import 'package:web_socket_channel/io.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
 
 import '../models/tunnel_message.dart';
 import '../services/tunnel_message_protocol.dart';
@@ -95,7 +96,9 @@ class SimpleTunnelClient extends ChangeNotifier {
   int _reconnectAttempts = 0;
   static const List<int> _reconnectDelays = [2, 5, 10, 20, 30, 60]; // seconds
   static const int _maxReconnectAttempts = 10; // Maximum reconnection attempts
-  static const Duration _connectionStabilityThreshold = Duration(seconds: 30); // Connection must last this long to be considered stable
+  static const Duration _connectionStabilityThreshold = Duration(
+    seconds: 30,
+  ); // Connection must last this long to be considered stable
   DateTime? _lastConnectionTime;
 
   // Health monitoring
@@ -129,8 +132,11 @@ class SimpleTunnelClient extends ChangeNotifier {
   // Configuration
   static const String _localOllamaUrl = 'http://localhost:11434';
   static const Duration _pingInterval = Duration(seconds: 30);
-  static const Duration _pongTimeout = Duration(seconds: 35); // Increased from 10 to 35 seconds
-  static const int _maxConsecutivePingFailures = 3; // Allow 3 consecutive failures before disconnecting
+  static const Duration _pongTimeout = Duration(
+    seconds: 35,
+  ); // Increased from 10 to 35 seconds
+  static const int _maxConsecutivePingFailures =
+      3; // Allow 3 consecutive failures before disconnecting
 
   SimpleTunnelClient({required AuthService authService})
     : _authService = authService {
@@ -297,14 +303,19 @@ class SimpleTunnelClient extends ChangeNotifier {
       // Build URI with token parameter - force wss:// with explicit port to avoid library conversion
       final baseUri = Uri.parse(wsUrl);
       // Force wss:// scheme with explicit port 443 to prevent library from converting to https:// with :0
-      final uriString = 'wss://${baseUri.host}:443${baseUri.path}?token=${Uri.encodeComponent(accessToken)}';
+      final uriString =
+          'wss://${baseUri.host}:443${baseUri.path}?token=${Uri.encodeComponent(accessToken)}';
 
       final uri = Uri.parse(uriString);
 
       debugPrint('🚇 [SimpleTunnel] Original URL: $wsUrl');
       debugPrint('🚇 [SimpleTunnel] Constructed URL: $uriString');
-      debugPrint('🚇 [SimpleTunnel] Note: If getting 502 errors, nginx proxy needs WebSocket headers:');
-      debugPrint('🚇 [SimpleTunnel]   proxy_set_header Upgrade \$http_upgrade;');
+      debugPrint(
+        '🚇 [SimpleTunnel] Note: If getting 502 errors, nginx proxy needs WebSocket headers:',
+      );
+      debugPrint(
+        '🚇 [SimpleTunnel]   proxy_set_header Upgrade \$http_upgrade;',
+      );
       debugPrint('🚇 [SimpleTunnel]   proxy_set_header Connection "upgrade";');
 
       // Extract user ID from current user for session tracking
@@ -325,17 +336,27 @@ class SimpleTunnelClient extends ChangeNotifier {
       // Connect to WebSocket - use only the working method to avoid error spam
       try {
         // Use IOWebSocketChannel directly since it's the only method that works consistently
-        debugPrint('🚇 [SimpleTunnel] Connecting with IOWebSocketChannel (proven working method): $uriString');
+        debugPrint(
+          '🚇 [SimpleTunnel] Connecting with IOWebSocketChannel (proven working method): $uriString',
+        );
         _webSocket = IOWebSocketChannel.connect(Uri.parse(uriString));
-        debugPrint('🚇 [SimpleTunnel] ✅ Connected successfully with IOWebSocketChannel');
+        debugPrint(
+          '🚇 [SimpleTunnel] ✅ Connected successfully with IOWebSocketChannel',
+        );
       } catch (e) {
-        debugPrint('🚇 [SimpleTunnel] ❌ IOWebSocketChannel connection failed: $e');
+        debugPrint(
+          '🚇 [SimpleTunnel] ❌ IOWebSocketChannel connection failed: $e',
+        );
 
         // Only try one fallback to avoid error spam
         try {
-          debugPrint('🚇 [SimpleTunnel] Attempting fallback with standard WebSocketChannel');
+          debugPrint(
+            '🚇 [SimpleTunnel] Attempting fallback with standard WebSocketChannel',
+          );
           _webSocket = WebSocketChannel.connect(Uri.parse(uriString));
-          debugPrint('🚇 [SimpleTunnel] ✅ Connected successfully with WebSocketChannel fallback');
+          debugPrint(
+            '🚇 [SimpleTunnel] ✅ Connected successfully with WebSocketChannel fallback',
+          );
         } catch (e2) {
           debugPrint('🚇 [SimpleTunnel] ❌ All connection methods failed: $e2');
           rethrow;
@@ -355,13 +376,16 @@ class SimpleTunnelClient extends ChangeNotifier {
       _isConnected = true;
       _isConnecting = false;
       _reconnectAttempts = 0;
-      _consecutivePingFailures = 0; // Reset ping failure counter on successful connection
+      _consecutivePingFailures =
+          0; // Reset ping failure counter on successful connection
       _lastConnectionTime = DateTime.now();
 
       // Start health monitoring after a delay to let connection stabilize
       Timer(const Duration(seconds: 10), () {
         if (_isConnected) {
-          debugPrint('🚇 [SimpleTunnel] Starting health monitoring after stabilization period');
+          debugPrint(
+            '🚇 [SimpleTunnel] Starting health monitoring after stabilization period',
+          );
           _startHealthMonitoring();
         }
       });
@@ -660,18 +684,19 @@ class SimpleTunnelClient extends ChangeNotifier {
           'resetFailureCount': true,
         },
       );
-      debugPrint('🚇 [SimpleTunnel] Pong received: ${pong.id} (${responseTime}ms)');
+      debugPrint(
+        '🚇 [SimpleTunnel] Pong received: ${pong.id} (${responseTime}ms)',
+      );
     } else {
       _logger.debug(
         'Unexpected pong received',
         correlationId: _correlationId,
         userId: _userId,
-        context: {
-          'receivedPongId': pong.id,
-          'expectedPingId': _lastPingId,
-        },
+        context: {'receivedPongId': pong.id, 'expectedPingId': _lastPingId},
       );
-      debugPrint('🚇 [SimpleTunnel] Received unexpected pong: ${pong.id}, expected: $_lastPingId');
+      debugPrint(
+        '🚇 [SimpleTunnel] Received unexpected pong: ${pong.id}, expected: $_lastPingId',
+      );
     }
   }
 
@@ -998,7 +1023,9 @@ class SimpleTunnelClient extends ChangeNotifier {
           'timestamp': _lastPingTime!.toIso8601String(),
         },
       );
-      debugPrint('🚇 [SimpleTunnel] Ping sent: ${ping.id} (failures: $_consecutivePingFailures)');
+      debugPrint(
+        '🚇 [SimpleTunnel] Ping sent: ${ping.id} (failures: $_consecutivePingFailures)',
+      );
     } catch (e) {
       _logger.logTunnelError(
         TunnelErrorCodes.pingTimeout,
@@ -1015,7 +1042,9 @@ class SimpleTunnelClient extends ChangeNotifier {
 
   /// Handle ping timeout with failure tolerance
   void _handlePingTimeout() {
-    _handlePingFailure('Ping timeout - no pong received within ${_pongTimeout.inSeconds}s');
+    _handlePingFailure(
+      'Ping timeout - no pong received within ${_pongTimeout.inSeconds}s',
+    );
   }
 
   /// Handle ping failure with consecutive failure tracking
@@ -1031,7 +1060,8 @@ class SimpleTunnelClient extends ChangeNotifier {
         'reason': reason,
         'consecutiveFailures': _consecutivePingFailures,
         'maxAllowedFailures': _maxConsecutivePingFailures,
-        'willDisconnect': _consecutivePingFailures >= _maxConsecutivePingFailures,
+        'willDisconnect':
+            _consecutivePingFailures >= _maxConsecutivePingFailures,
       },
     );
 
@@ -1039,7 +1069,9 @@ class SimpleTunnelClient extends ChangeNotifier {
       debugPrint(
         '🚇 [SimpleTunnel] Max ping failures reached ($_consecutivePingFailures/$_maxConsecutivePingFailures) - disconnecting',
       );
-      _handleConnectionLoss('$reason ($_consecutivePingFailures consecutive failures)');
+      _handleConnectionLoss(
+        '$reason ($_consecutivePingFailures consecutive failures)',
+      );
     } else {
       debugPrint(
         '🚇 [SimpleTunnel] Ping failure ($_consecutivePingFailures/$_maxConsecutivePingFailures): $reason - continuing',
@@ -1051,14 +1083,18 @@ class SimpleTunnelClient extends ChangeNotifier {
 
   /// Handle WebSocket error
   // ignore: unused_element
-  void _handleWebSocketError(Object error, [StackTrace? _]) {
+  void _handleWebSocketError(Object error, [StackTrace? stackTrace]) {
     final errorString = error.toString();
     _lastError = 'WebSocket error: $error';
 
     // Check for specific WebSocket upgrade failures
-    bool isUpgradeFailure = errorString.contains('was not upgraded to websocket') ||
-                           errorString.contains('Connection failed') ||
-                           errorString.contains('Handshake error');
+    bool isUpgradeFailure =
+        errorString.contains('was not upgraded to websocket') ||
+        errorString.contains('Connection failed') ||
+        errorString.contains('Handshake error');
+
+    // Check for HTTP 400 errors specifically
+    bool isHttp400Error = errorString.contains('HTTP status code: 400');
 
     _logger.logTunnelError(
       TunnelErrorCodes.websocketError,
@@ -1070,14 +1106,37 @@ class SimpleTunnelClient extends ChangeNotifier {
         'isConnected': _isConnected,
         'isConnecting': _isConnecting,
         'isUpgradeFailure': isUpgradeFailure,
+        'isHttp400Error': isHttp400Error,
         'reconnectAttempts': _reconnectAttempts,
       },
       error: error,
     );
 
     // For upgrade failures, add a small delay before reconnection
+    // Report to Sentry for detailed analysis
+    Sentry.configureScope((scope) {
+      scope.setTag('error_type', 'websocket_connection');
+      scope.setTag('is_upgrade_failure', isUpgradeFailure.toString());
+      scope.setTag('is_http_400', isHttp400Error.toString());
+      // Add tunnel state as individual tags for better filtering
+      scope.setTag('is_connected', _isConnected.toString());
+      scope.setTag('reconnect_attempts', _reconnectAttempts.toString());
+      if (_userId != null) scope.setTag('user_id', _userId!);
+      if (_correlationId != null) {
+        scope.setTag('correlation_id', _correlationId!);
+      }
+      if (isHttp400Error) {
+        scope.level = SentryLevel.error;
+        scope.setTag('priority', 'high');
+      }
+    });
+
+    Sentry.captureException(error, stackTrace: stackTrace);
+
     if (isUpgradeFailure) {
-      debugPrint('🚇 [SimpleTunnel] WebSocket upgrade failure detected - will retry with delay');
+      debugPrint(
+        '🚇 [SimpleTunnel] WebSocket upgrade failure detected - will retry with delay',
+      );
     }
 
     _handleConnectionLoss('WebSocket error: $error');

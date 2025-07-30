@@ -236,3 +236,5 @@ dist/**/cloudtolocalllm-enhanced-tray
 # Build backup files created during deployment
 *.build-backup
 dist/**/cloudtolocalllm-settings
+
+sentry.properties
