@@ -9,8 +9,7 @@ import dotenv from 'dotenv';
 import { StreamingProxyManager } from './streaming-proxy-manager.js';
 
 import adminRoutes from './routes/admin.js';
-// Enhanced tunnel system imports
-import { TunnelServer } from './tunnel/tunnel-server.js';
+// HTTP polling tunnel system (simplified)
 import { AuthService } from './auth/auth-service.js';
 import { DatabaseMigrator } from './database/migrate.js';
 import { createTunnelRoutes } from './tunnel/tunnel-routes.js';
@@ -51,7 +50,7 @@ const PORT = process.env.PORT || 8080;
 const AUTH0_DOMAIN = process.env.AUTH0_DOMAIN || 'dev-v2f2p008x3dr74ww.us.auth0.com';
 const AUTH0_AUDIENCE = process.env.AUTH0_AUDIENCE || 'https://app.cloudtolocalllm.online';
 
-// AuthService will be initialized in initializeEnhancedTunnelSystem()
+// AuthService will be initialized in initializeHttpPollingSystem()
 
 // Express app setup
 const app = express();
@@ -747,14 +746,13 @@ setInterval(() => {
   });
 }, 60 * 60 * 1000); // Run every hour
 
-// Initialize enhanced tunnel system
-let tunnelServer = null;
+// Initialize HTTP polling tunnel system (simplified)
 let authService = null;
 let dbMigrator = null;
 
-async function initializeEnhancedTunnelSystem() {
+async function initializeHttpPollingSystem() {
   try {
-    logger.info('Initializing enhanced tunnel system...');
+    logger.info('Initializing HTTP polling tunnel system...');
 
     // Initialize database
     dbMigrator = new DatabaseMigrator();
@@ -777,17 +775,8 @@ async function initializeEnhancedTunnelSystem() {
     });
     await authService.initialize();
 
-    // Initialize tunnel server
-    tunnelServer = new TunnelServer(server, {
-      AUTH0_DOMAIN,
-      AUTH0_AUDIENCE,
-      maxConnections: 1000,
-      heartbeatInterval: 30000,
-      compressionEnabled: true,
-    });
-
-    // Start tunnel server
-    tunnelServer.start();
+    // HTTP polling tunnel system (no server initialization needed)
+    logger.info('HTTP polling tunnel system ready');
 
     // Setup graceful shutdown
     process.on('SIGTERM', gracefulShutdown);
@@ -808,10 +797,7 @@ async function gracefulShutdown() {
   logger.info('Received shutdown signal, starting graceful shutdown...');
 
   try {
-    // Stop tunnel server
-    if (tunnelServer) {
-      tunnelServer.stop();
-    }
+    // HTTP polling system (no server to stop)
 
     // Close authentication service
     if (authService) {
@@ -844,8 +830,8 @@ async function gracefulShutdown() {
 // Start server with enhanced tunnel system
 async function startServer() {
   try {
-    // Initialize enhanced tunnel system first
-    await initializeEnhancedTunnelSystem();
+    // Initialize HTTP polling tunnel system first
+    await initializeHttpPollingSystem();
 
     // Start HTTP server
     server.listen(PORT, () => {
