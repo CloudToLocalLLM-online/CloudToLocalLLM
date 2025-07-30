@@ -312,6 +312,21 @@ class AuthServiceWeb extends ChangeNotifier {
       await _clearStoredTokens();
 
       AuthLogger.logAuthStateChange(false, 'User logged out');
+
+      // Redirect to Auth0 logout to clear Auth0 session
+      final logoutUrl = Uri.https(AppConfig.auth0Domain, '/v2/logout', {
+        'client_id': AppConfig.auth0ClientId,
+        'returnTo': AppConfig.appUrl,
+      });
+
+      AuthLogger.info('🔐 Redirecting to Auth0 logout', {
+        'logoutUrl': logoutUrl.toString(),
+      });
+
+      // Redirect to Auth0 logout
+      if (kIsWeb) {
+        web.window.location.href = logoutUrl.toString();
+      }
     } catch (e) {
       AuthLogger.error('🔐 Logout error', {'error': e.toString()});
       rethrow;
