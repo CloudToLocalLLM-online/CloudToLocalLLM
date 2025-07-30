@@ -51,6 +51,7 @@ bool _isAppSubdomain() {
   final isApp =
       hostname.startsWith('app.') || hostname == 'app.cloudtolocalllm.online';
 
+  debugPrint('🔄 [Router] Hostname: $hostname, isApp: $isApp');
   return isApp;
 }
 
@@ -304,6 +305,9 @@ class AppRouter {
         debugPrint(
           '🔄 [Router] Auth state: $isAuthenticated, Auth loading: $isAuthLoading, App subdomain: $isAppSubdomain',
         );
+        debugPrint(
+          '🔄 [Router] Route flags: isLoggingIn: $isLoggingIn, isCallback: $isCallback, isLoading: $isLoading, isHomepage: $isHomepage',
+        );
 
         // Allow access to marketing pages on web root domain without authentication
         if (kIsWeb && !isAppSubdomain && (isHomepage || isDownload || isDocs)) {
@@ -345,7 +349,7 @@ class AppRouter {
         // Only redirect if auth is not loading to avoid premature redirects
         if (!isAuthenticated && !isAuthLoading && (isAppSubdomain || !kIsWeb)) {
           debugPrint(
-            '🔄 [Router] Redirecting to login - user not authenticated',
+            '🔄 [Router] Redirecting to login - user not authenticated (isAppSubdomain: $isAppSubdomain, kIsWeb: $kIsWeb)',
           );
           return '/login';
         }
