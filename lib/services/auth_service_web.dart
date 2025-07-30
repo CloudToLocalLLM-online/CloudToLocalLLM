@@ -36,6 +36,7 @@ class AuthServiceWeb extends ChangeNotifier {
 
   /// Initialize authentication service
   Future<void> _initialize() async {
+    print('🔐 [DEBUG] AuthServiceWeb._initialize() called');
     AuthLogger.info('Web authentication service initializing');
     try {
       _isLoading.value = true;
@@ -579,32 +580,24 @@ class AuthServiceWeb extends ChangeNotifier {
     try {
       if (!kIsWeb) return;
 
-      print('🔐 [DEBUG] Storing tokens in localStorage...');
       if (_accessToken != null) {
         web.window.localStorage.setItem(
           'cloudtolocalllm_access_token',
           _accessToken!,
         );
-        print('🔐 [DEBUG] Access token stored');
       }
       if (_idToken != null) {
         web.window.localStorage.setItem('cloudtolocalllm_id_token', _idToken!);
-        print('🔐 [DEBUG] ID token stored');
       }
       if (_tokenExpiry != null) {
         web.window.localStorage.setItem(
           'cloudtolocalllm_token_expiry',
           _tokenExpiry!.toIso8601String(),
         );
-        print(
-          '🔐 [DEBUG] Token expiry stored: ${_tokenExpiry!.toIso8601String()}',
-        );
       }
 
-      print('🔐 [DEBUG] All tokens stored successfully');
       AuthLogger.info('🔐 Tokens stored in localStorage');
     } catch (e) {
-      print('🔐 [DEBUG] Error storing tokens: $e');
       AuthLogger.error('🔐 Error storing tokens', {'error': e.toString()});
     }
   }
@@ -614,37 +607,22 @@ class AuthServiceWeb extends ChangeNotifier {
     try {
       if (!kIsWeb) return;
 
-      print('🔐 [DEBUG] Loading tokens from localStorage...');
       _accessToken = web.window.localStorage.getItem(
         'cloudtolocalllm_access_token',
       );
-      print(
-        '🔐 [DEBUG] Access token loaded from storage: ${_accessToken != null ? "YES" : "NO"}',
-      );
-
       _idToken = web.window.localStorage.getItem('cloudtolocalllm_id_token');
-      print(
-        '🔐 [DEBUG] ID token loaded from storage: ${_idToken != null ? "YES" : "NO"}',
-      );
 
       final expiryString = web.window.localStorage.getItem(
         'cloudtolocalllm_token_expiry',
       );
       if (expiryString != null) {
         _tokenExpiry = DateTime.tryParse(expiryString);
-        print(
-          '🔐 [DEBUG] Token expiry loaded: ${_tokenExpiry?.toIso8601String() ?? "PARSE_FAILED"}',
-        );
-      } else {
-        print('🔐 [DEBUG] No token expiry found in storage');
       }
 
-      print('🔐 [DEBUG] Token loading completed');
       if (_accessToken != null) {
         AuthLogger.info('🔐 Tokens loaded from localStorage');
       }
     } catch (e) {
-      print('🔐 [DEBUG] Error loading tokens: $e');
       AuthLogger.error('🔐 Error loading stored tokens', {
         'error': e.toString(),
       });
