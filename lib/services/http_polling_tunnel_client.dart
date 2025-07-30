@@ -151,7 +151,7 @@ class HttpPollingTunnelClient extends ChangeNotifier {
 
     final response = await _httpClient
         .post(
-          Uri.parse(AppConfig.bridgeRegisterUrl),
+          Uri.parse('${AppConfig.apiBaseUrl}/bridge/register'),
           headers: {
             'Authorization': 'Bearer $accessToken',
             'Content-Type': 'application/json',
