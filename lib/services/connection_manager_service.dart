@@ -202,7 +202,8 @@ class ConnectionManagerService extends ChangeNotifier {
     );
 
     // Initialize HTTP polling client as primary cloud connection method
-    if (_authService.currentUser != null) {
+    if (_authService.isAuthenticated.value &&
+        _authService.currentUser != null) {
       try {
         debugPrint('🔗 [ConnectionManager] Starting HTTP polling client...');
         await _httpPollingClient.connect();
@@ -332,7 +333,8 @@ class ConnectionManagerService extends ChangeNotifier {
   void _onAuthChanged() {
     debugPrint('🔗 [ConnectionManager] Auth state changed');
 
-    if (_authService.currentUser != null) {
+    if (_authService.isAuthenticated.value &&
+        _authService.currentUser != null) {
       // User logged in - start HTTP polling
       debugPrint(
         '🔗 [ConnectionManager] User authenticated - starting HTTP polling',
