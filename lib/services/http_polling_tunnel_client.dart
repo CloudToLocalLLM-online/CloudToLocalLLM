@@ -136,10 +136,18 @@ class HttpPollingTunnelClient extends ChangeNotifier {
 
   /// Register bridge with server
   Future<void> _registerBridge() async {
+    print('🌉 [DEBUG] Attempting to get access token...');
     final accessToken = _authService.getAccessToken();
+    print(
+      '🌉 [DEBUG] Access token retrieved: ${accessToken != null ? "YES (${accessToken.substring(0, 20)}...)" : "NO"}',
+    );
+
     if (accessToken == null) {
+      print('🌉 [DEBUG] No access token available - throwing exception');
       throw Exception('No authentication token available');
     }
+
+    print('🌉 [DEBUG] Making bridge registration request...');
 
     final response = await _httpClient
         .post(
