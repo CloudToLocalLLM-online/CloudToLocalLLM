@@ -3,7 +3,7 @@ description: Manage and run powerful Large Language Models locally, orchestrated
 publish_to: none
 homepage: https://cloudtolocalllm.online
 repository: https://github.com/imrightguy/CloudToLocalLLM
-version: 3.14.78+202507292342
+version: 4.0.0+202507301800
 
 environment:
   sdk: '>=3.8.0 <4.0.0'
@@ -74,9 +74,6 @@ dependencies:
 
   # UUID generation
   uuid: ^4.5.1
-
-  # Error tracking and monitoring
-  sentry_flutter: ^8.11.0
 
   # LangChain Integration
   langchain: ^0.7.8

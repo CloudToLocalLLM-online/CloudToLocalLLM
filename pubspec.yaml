@@ -3,7 +3,7 @@ description: Manage and run powerful Large Language Models locally, orchestrated
 publish_to: none
 homepage: https://cloudtolocalllm.online
 repository: https://github.com/imrightguy/CloudToLocalLLM
-version: 3.14.77+202507292143
+version: 4.0.0+202507300103
 
 environment:
   sdk: '>=3.8.0 <4.0.0'
@@ -24,10 +24,9 @@ dependencies:
   http: ^1.4.0
   intl: ^0.20.2
 
-  # Streaming support (WebSocket removed - using HTTP polling only)
-
-  # Error tracking and monitoring
-  sentry_flutter: ^8.14.2
+  # Streaming and WebSocket support
+  web_socket_channel: ^3.0.3
+  stream_channel: ^2.1.2
 
   # Enhanced HTTP handling for streaming
   dio: ^5.8.0
