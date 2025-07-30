@@ -43,7 +43,7 @@ class ConnectionManagerService extends ChangeNotifier {
        _authService = authService {
     // Listen to connection changes
     _localOllama.addListener(_onConnectionChanged);
-    _simpleTunnelClient.addListener(_onConnectionChanged);
+    // Skip WebSocket tunnel client listeners (WebSocket removed)
     _httpPollingClient.addListener(_onConnectionChanged);
 
     // Listen to auth changes to start/stop HTTP polling
@@ -420,7 +420,7 @@ class ConnectionManagerService extends ChangeNotifier {
   void dispose() {
     debugPrint('🔗 [ConnectionManager] Disposing service');
     _localOllama.removeListener(_onConnectionChanged);
-    _simpleTunnelClient.removeListener(_onConnectionChanged);
+    // Skip WebSocket tunnel client cleanup (WebSocket removed)
     _httpPollingClient.removeListener(_onConnectionChanged);
     _authService.removeListener(_onAuthChanged);
     _cloudStreamingService?.dispose();

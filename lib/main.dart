@@ -337,9 +337,10 @@ class _CloudToLocalLLMAppState extends State<CloudToLocalLLMApp> {
               authService: authService,
             );
             // Initialize the simple tunnel client asynchronously
-            if (!kIsWeb) {
-              simpleTunnelClient.initialize();
-            }
+            // DISABLED: WebSocket tunnel removed, using HTTP polling instead
+            // if (!kIsWeb) {
+            //   simpleTunnelClient.initialize();
+            // }
             return simpleTunnelClient;
           },
         ),

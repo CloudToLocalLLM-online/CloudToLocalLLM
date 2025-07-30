@@ -314,9 +314,10 @@ class _CloudToLocalLLMPrivacyAppState extends State<CloudToLocalLLMPrivacyApp> {
               authService: authService,
             );
             // Only initialize if platform supports it
-            if (widget.platformManager.isDesktop) {
-              simpleTunnelClient.initialize();
-            }
+            // DISABLED: WebSocket tunnel removed, using HTTP polling instead
+            // if (widget.platformManager.isDesktop) {
+            //   simpleTunnelClient.initialize();
+            // }
             return simpleTunnelClient;
           },
         ),
