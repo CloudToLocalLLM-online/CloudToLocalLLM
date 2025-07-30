@@ -82,7 +82,7 @@ class OllamaService extends ChangeNotifier {
       _clearError();
 
       final url = _isWeb
-          ? '$_baseUrl/api/ollama/bridge/status'
+          ? '${AppConfig.appUrl}/api/ollama/bridge/status'
           : '$_baseUrl/api/version';
       if (kDebugMode) {
         debugPrint(
@@ -136,9 +136,7 @@ class OllamaService extends ChangeNotifier {
       _setLoading(true);
       _clearError();
 
-      final url = _isWeb
-          ? '$_baseUrl/api/ollama/api/tags'
-          : '$_baseUrl/api/tags';
+      final url = _isWeb ? '$_baseUrl/api/tags' : '$_baseUrl/api/tags';
       debugPrint('[DEBUG] Getting models from: $url');
 
       final response = await http
@@ -188,9 +186,7 @@ class OllamaService extends ChangeNotifier {
         {'role': 'user', 'content': message},
       ];
 
-      final url = _isWeb
-          ? '$_baseUrl/api/ollama/api/chat'
-          : '$_baseUrl/api/chat';
+      final url = _isWeb ? '$_baseUrl/api/chat' : '$_baseUrl/api/chat';
       debugPrint('[DEBUG] Sending chat message to: $url');
 
       final response = await http
@@ -235,9 +231,7 @@ class OllamaService extends ChangeNotifier {
       _setLoading(true);
       _clearError();
 
-      final url = _isWeb
-          ? '$_baseUrl/api/ollama/api/pull'
-          : '$_baseUrl/api/pull';
+      final url = _isWeb ? '$_baseUrl/api/pull' : '$_baseUrl/api/pull';
       debugPrint('[DEBUG] Pulling model from: $url');
 
       final response = await http
@@ -279,9 +273,7 @@ class OllamaService extends ChangeNotifier {
       _setLoading(true);
       _clearError();
 
-      final url = _isWeb
-          ? '$_baseUrl/api/ollama/api/delete'
-          : '$_baseUrl/api/delete';
+      final url = _isWeb ? '$_baseUrl/api/delete' : '$_baseUrl/api/delete';
       debugPrint('🦙 [OllamaService] Deleting model from: $url');
 
       final response = await http
