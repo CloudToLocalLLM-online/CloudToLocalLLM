@@ -165,6 +165,7 @@ class AuthServiceWeb extends ChangeNotifier {
         'response_type': 'code',
         'scope': AppConfig.auth0Scopes.join(' '),
         'state': state,
+        'prompt': 'consent', // Force consent screen to show new scopes
       });
 
       AuthLogger.info('🔐 Auth0 URL constructed', {
