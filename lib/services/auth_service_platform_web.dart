@@ -113,28 +113,41 @@ class AuthServicePlatform extends ChangeNotifier {
       }
 
       if (response.statusCode == 200) {
+        print('🔐 [DEBUG] Parsing successful response body...');
         final data = json.decode(response.body);
+        print('🔐 [DEBUG] Response parsed successfully');
         final accessToken = data['access_token'] as String?;
         final idToken = data['id_token'] as String?;
+        print(
+          '🔐 [DEBUG] Extracted tokens - access: ${accessToken != null ? "YES" : "NO"}, id: ${idToken != null ? "YES" : "NO"}',
+        );
 
         if (accessToken != null) {
+          print('🔐 [DEBUG] Access token found, storing in SQLite...');
           // Store tokens in SQLite database
           final expiry = DateTime.now().add(Duration(hours: 1));
 
+          print('🔐 [DEBUG] Calling AuthStorageService.storeTokens...');
           await AuthStorageService.storeTokens(
             accessToken: accessToken,
             idToken: idToken,
             expiresAt: expiry,
-            audience: 'https://app.cloudtolocalllm.online',
+            audience: AppConfig.auth0Audience,
           );
 
           print('🔐 [DEBUG] Tokens stored successfully in SQLite database');
 
           // Set authentication state
+          print('🔐 [DEBUG] Setting authentication state to true...');
           _platformService.isAuthenticated.value = true;
           _platformService.notifyListeners();
+          print(
+            '🔐 [DEBUG] Authentication state updated and listeners notified',
+          );
 
           return true;
+        } else {
+          print('🔐 [DEBUG] No access token in response');
         }
       }
 
