@@ -109,6 +109,10 @@ class AuthService extends ChangeNotifier {
   /// Returns null if not authenticated or token is not available
   /// Automatically validates token freshness and triggers refresh if needed
   Future<String?> getValidatedAccessToken({bool forceRefresh = false}) async {
+    debugPrint(
+      '🔐 [DEBUG] getValidatedAccessToken called - isAuthenticated: ${isAuthenticated.value}',
+    );
+
     if (!isAuthenticated.value) {
       debugPrint('🔐 Not authenticated, cannot get access token');
       return null;
@@ -121,11 +125,20 @@ class AuthService extends ChangeNotifier {
         _lastTokenValidation == null ||
         now.difference(_lastTokenValidation!) > _tokenValidationInterval;
 
+    debugPrint(
+      '🔐 [DEBUG] shouldValidate: $shouldValidate, _isValidatingToken: $_isValidatingToken',
+    );
+
     if (shouldValidate && !_isValidatingToken) {
+      debugPrint('🔐 [DEBUG] Validating and refreshing token...');
       await _validateAndRefreshToken();
     }
 
-    return _platformService.getAccessToken();
+    final token = _platformService.getAccessToken();
+    debugPrint(
+      '🔐 [DEBUG] Retrieved token: ${token != null ? "YES (${token.substring(0, 20)}...)" : "NULL"}',
+    );
+    return token;
   }
 
   /// Enhanced login with persistent authentication tracking
