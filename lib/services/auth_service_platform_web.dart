@@ -42,54 +42,13 @@ class AuthServicePlatform extends ChangeNotifier {
   }
 
   /// Load stored tokens and restore authentication state
+  /// This is handled by the web service itself during initialization
   Future<void> _loadStoredTokens() async {
-    try {
-      print('🔐 [DEBUG] Loading stored tokens...');
-
-      // Use SharedPreferences instead of SQLite for web compatibility
-      bool hasValidTokens = false;
-      try {
-        print('🔐 [DEBUG] Checking SharedPreferences for tokens...');
-        final prefs = await SharedPreferences.getInstance();
-        final tokenDataString = prefs.getString('auth_tokens');
-
-        print(
-          '🔐 [DEBUG] Raw token data from SharedPreferences: ${tokenDataString?.substring(0, tokenDataString.length > 100 ? 100 : tokenDataString.length)}...',
-        );
-
-        if (tokenDataString != null) {
-          final tokenData = json.decode(tokenDataString);
-          final expiresAt = DateTime.fromMillisecondsSinceEpoch(
-            tokenData['expires_at'],
-          );
-          final now = DateTime.now();
-          hasValidTokens = now.isBefore(expiresAt);
-          print('🔐 [DEBUG] Token expires at: ${expiresAt.toIso8601String()}');
-          print('🔐 [DEBUG] Current time: ${now.toIso8601String()}');
-          print(
-            '🔐 [DEBUG] SharedPreferences check result: ${hasValidTokens ? "YES" : "NO"}',
-          );
-        } else {
-          print('🔐 [DEBUG] No tokens found in SharedPreferences');
-          // Debug: Check what keys exist
-          final keys = prefs.getKeys();
-          print('🔐 [DEBUG] Available SharedPreferences keys: $keys');
-        }
-      } catch (e) {
-        print('🔐 [DEBUG] SharedPreferences check failed: $e');
-      }
-
-      if (hasValidTokens) {
-        print('🔐 [DEBUG] Valid tokens found, restoring authentication state');
-        _platformService.isAuthenticated.value = true;
-        _platformService.notifyListeners();
-        print('🔐 [DEBUG] Authentication state restored successfully');
-      } else {
-        print('🔐 [DEBUG] No valid tokens found - user needs to log in');
-      }
-    } catch (e) {
-      print('🔐 [DEBUG] Error in _loadStoredTokens: $e');
-    }
+    // The AuthServiceWeb handles its own token loading and user profile restoration
+    // during initialization. No additional logic needed here.
+    print(
+      '🔐 [DEBUG] Platform service delegating token loading to web service',
+    );
   }
 
   /// Login using web implementation
