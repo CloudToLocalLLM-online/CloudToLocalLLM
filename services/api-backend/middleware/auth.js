@@ -6,6 +6,7 @@
  */
 
 import jwt from 'jsonwebtoken';
+import fetch from 'node-fetch';
 import logger from '../logger.js';
 import { AuthService } from '../auth/auth-service.js';
 
@@ -35,16 +36,45 @@ export async function authenticateJWT(req, res, next) {
   }
 
   try {
-    // Get the signing key
+    // First, try to decode as JWT to check if it's a proper JWT token
     const decoded = jwt.decode(token, { complete: true });
-    if (!decoded || !decoded.header.kid) {
-      return res.status(401).json({
-        error: 'Invalid token format',
-        code: 'INVALID_TOKEN_FORMAT',
-      });
+
+    // If it's not a valid JWT (opaque token), use Auth0 userinfo endpoint
+    if (!decoded || !decoded.header || !decoded.header.kid) {
+      logger.debug('🔐 [Auth] Token appears to be opaque, using Auth0 userinfo endpoint');
+
+      try {
+        // Validate opaque token using Auth0 userinfo endpoint
+        const response = await fetch(`https://${AUTH0_DOMAIN}/userinfo`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error(`Auth0 userinfo failed: ${response.status}`);
+        }
+
+        const userInfo = await response.json();
+
+        // Attach user info to request
+        req.user = userInfo;
+        req.userId = userInfo.sub;
+
+        logger.debug(`🔐 [Auth] User authenticated via userinfo: ${userInfo.sub}`);
+        next();
+        return;
+      } catch (userinfoError) {
+        logger.error('🔐 [Auth] Userinfo validation failed:', userinfoError);
+        return res.status(401).json({
+          error: 'Token validation failed',
+          code: 'TOKEN_VALIDATION_FAILED',
+        });
+      }
     }
 
-    // Verify the token using AuthService
+    // If it's a proper JWT token, use the AuthService validation
+    logger.debug('🔐 [Auth] Token appears to be JWT, using AuthService validation');
     const result = await authService.validateToken(token);
 
     if (!result.valid) {
@@ -58,7 +88,7 @@ export async function authenticateJWT(req, res, next) {
     req.user = result.payload;
     req.userId = result.payload.sub;
 
-    logger.debug(`🔐 [Auth] User authenticated: ${result.payload.sub}`);
+    logger.debug(`🔐 [Auth] User authenticated via JWT: ${result.payload.sub}`);
     next();
 
   } catch (error) {
@@ -149,16 +179,35 @@ export async function optionalAuth(req, res, next) {
   }
 
   try {
-    // Try to verify token
+    // Try to decode as JWT first
     const decoded = jwt.decode(token, { complete: true });
-    if (decoded && decoded.header.kid) {
-      // Verify the token using AuthService
+
+    if (!decoded || !decoded.header || !decoded.header.kid) {
+      // Try Auth0 userinfo endpoint for opaque tokens
+      try {
+        const response = await fetch(`https://${AUTH0_DOMAIN}/userinfo`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        });
+
+        if (response.ok) {
+          const userInfo = await response.json();
+          req.user = userInfo;
+          req.userId = userInfo.sub;
+          logger.debug(`🔐 [Auth] Optional auth successful via userinfo: ${userInfo.sub}`);
+        }
+      } catch (userinfoError) {
+        logger.debug('🔐 [Auth] Optional userinfo auth failed, continuing without authentication:', userinfoError.message);
+      }
+    } else {
+      // Try JWT validation
       const result = await authService.validateToken(token);
 
       if (result.valid) {
         req.user = result.payload;
         req.userId = result.payload.sub;
-        logger.debug(`🔐 [Auth] Optional auth successful: ${result.payload.sub}`);
+        logger.debug(`🔐 [Auth] Optional auth successful via JWT: ${result.payload.sub}`);
       }
     }
   } catch (error) {
