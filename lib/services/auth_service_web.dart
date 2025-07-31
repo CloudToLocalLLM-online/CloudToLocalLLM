@@ -44,7 +44,9 @@ class AuthServiceWeb extends ChangeNotifier {
       AuthLogger.debug('Loading state set to true during initialization');
 
       // Check for existing authentication
+      print('🔐 [DEBUG] About to call _checkAuthenticationStatus');
       await _checkAuthenticationStatus();
+      print('🔐 [DEBUG] _checkAuthenticationStatus completed');
       AuthLogger.info('Authentication service initialized successfully');
     } catch (e) {
       AuthLogger.error('Error initializing Auth0', {'error': e.toString()});
@@ -91,6 +93,9 @@ class AuthServiceWeb extends ChangeNotifier {
           AuthLogger.info('🔐 Valid stored tokens found');
           print('🔐 [DEBUG] User profile loaded, authentication complete');
           notifyListeners();
+          print(
+            '🔐 [DEBUG] About to return from _checkAuthenticationStatus (valid token path)',
+          );
           return;
         } else {
           // Token expired, try to refresh if we have a refresh token
@@ -119,6 +124,9 @@ class AuthServiceWeb extends ChangeNotifier {
       print('🔐 [DEBUG] No valid authentication found, setting to false');
       _isAuthenticated.value = false;
       AuthLogger.info('🔐 No valid authentication found');
+      print(
+        '🔐 [DEBUG] About to exit _checkAuthenticationStatus (no auth path)',
+      );
     } catch (e) {
       AuthLogger.error('🔐 Error checking authentication status', {
         'error': e.toString(),
