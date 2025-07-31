@@ -98,7 +98,7 @@ class AppRouter {
 
               if (isAppSubdomain) {
                 // App subdomain - check auth and show appropriate screen
-                final authService = context.read<AuthService>();
+                final authService = context.watch<AuthService>();
 
                 print(
                   '🔄 [Router] Route builder called - isLoading: ${authService.isLoading.value}, isAuthenticated: ${authService.isAuthenticated.value}',
@@ -308,7 +308,7 @@ class AppRouter {
 
       // Redirect logic for authentication and domain-based routing
       redirect: (context, state) {
-        final authService = context.read<AuthService>();
+        final authService = context.watch<AuthService>();
         final isAuthenticated = authService.isAuthenticated.value;
         final isAuthLoading = authService.isLoading.value;
         final isLoggingIn = state.matchedLocation == '/login';
