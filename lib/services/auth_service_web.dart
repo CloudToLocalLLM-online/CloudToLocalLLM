@@ -351,9 +351,7 @@ class AuthServiceWeb extends ChangeNotifier {
 
       // Get current URL parameters - use provided URL or current window location
       final urlToUse = callbackUrl ?? web.window.location.href;
-      print('🔐 [DEBUG] URL to use: $urlToUse');
       final uri = Uri.parse(urlToUse);
-      print('🔐 [DEBUG] Parsed URI - path: ${uri.path}, query: ${uri.query}');
       AuthLogger.info('🔐 Current URL', {
         'url': uri.toString(),
         'path': uri.path,
@@ -374,14 +372,9 @@ class AuthServiceWeb extends ChangeNotifier {
       }
 
       // Check for authorization code
-      print('🔐 [DEBUG] Checking for authorization code...');
       if (uri.queryParameters.containsKey('code')) {
-        print('🔐 [DEBUG] Authorization code found in URL parameters');
         final code = uri.queryParameters['code'];
         final state = uri.queryParameters['state'];
-        print(
-          '🔐 [DEBUG] Extracted code: ${code != null ? "YES (${code.substring(0, 10)}...)" : "NO"}',
-        );
 
         AuthLogger.info('🔐 Authorization code received', {
           'code': code != null ? '${code.substring(0, 10)}...' : 'null',
@@ -389,8 +382,11 @@ class AuthServiceWeb extends ChangeNotifier {
         });
 
         if (code != null) {
+          print('🔐 [DEBUG] Code is not null, proceeding to token exchange...');
           // Exchange authorization code for tokens
+          print('🔐 [DEBUG] About to call _exchangeCodeForTokens...');
           final success = await _exchangeCodeForTokens(code);
+          print('🔐 [DEBUG] _exchangeCodeForTokens returned: $success');
 
           if (success) {
             try {
