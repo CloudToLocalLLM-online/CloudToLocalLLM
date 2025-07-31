@@ -308,7 +308,7 @@ class AppRouter {
 
       // Redirect logic for authentication and domain-based routing
       redirect: (context, state) {
-        final authService = context.watch<AuthService>();
+        final authService = context.read<AuthService>();
         final isAuthenticated = authService.isAuthenticated.value;
         final isAuthLoading = authService.isLoading.value;
         final isLoggingIn = state.matchedLocation == '/login';
