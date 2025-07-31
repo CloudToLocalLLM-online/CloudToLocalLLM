@@ -1,17 +1,37 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
-import 'package:sqflite/sqflite.dart';
+import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:path/path.dart';
 
-/// SQLite-based authentication storage service
-/// Provides reliable, persistent storage for authentication tokens and user data
+/// SQLite-based authentication storage service with web support
+/// Uses SQLite with FFI for all platforms including web
 class AuthStorageService {
   static Database? _database;
   static const String _dbName = 'cloudtolocalllm_auth.db';
   static const String _tableName = 'auth_tokens';
+  static bool _initialized = false;
+
+  /// Initialize SQLite for web platform
+  static Future<void> _initializeSQLite() async {
+    if (_initialized) return;
+
+    try {
+      // Initialize SQLite for web using FFI
+      if (kIsWeb) {
+        debugPrint('🗄️ [AuthStorage] Initializing SQLite for web platform');
+        databaseFactory = databaseFactoryFfi;
+      }
+      _initialized = true;
+      debugPrint('🗄️ [AuthStorage] SQLite initialization complete');
+    } catch (e) {
+      debugPrint('🗄️ [AuthStorage] Error initializing SQLite: $e');
+      rethrow;
+    }
+  }
 
   /// Get the database instance
   static Future<Database> get database async {
+    await _initializeSQLite();
     if (_database != null) return _database!;
     _database = await _initDatabase();
     return _database!;
