@@ -59,6 +59,7 @@ class AuthServiceWeb extends ChangeNotifier {
   Future<void> _checkAuthenticationStatus() async {
     try {
       AuthLogger.info('🔐 Checking authentication status');
+      print('🔐 [DEBUG] _checkAuthenticationStatus started');
 
       // Check if we're on the callback URL (web only)
       // Don't auto-handle callback during initialization - let CallbackScreen handle it
@@ -75,15 +76,20 @@ class AuthServiceWeb extends ChangeNotifier {
       }
 
       // Check for stored tokens
+      print('🔐 [DEBUG] About to load stored tokens');
       await _loadStoredTokens();
+      print('🔐 [DEBUG] Stored tokens loaded, checking validity');
 
       if (_accessToken != null) {
+        print('🔐 [DEBUG] Access token found, checking expiry');
         // Validate token expiry
         if (_tokenExpiry != null && DateTime.now().isBefore(_tokenExpiry!)) {
+          print('🔐 [DEBUG] Token is valid, loading user profile');
           // Token is valid, load user profile
           await _loadUserProfile();
           _isAuthenticated.value = true;
           AuthLogger.info('🔐 Valid stored tokens found');
+          print('🔐 [DEBUG] User profile loaded, authentication complete');
           notifyListeners();
           return;
         } else {
@@ -110,6 +116,7 @@ class AuthServiceWeb extends ChangeNotifier {
       }
 
       // No valid authentication found
+      print('🔐 [DEBUG] No valid authentication found, setting to false');
       _isAuthenticated.value = false;
       AuthLogger.info('🔐 No valid authentication found');
     } catch (e) {
