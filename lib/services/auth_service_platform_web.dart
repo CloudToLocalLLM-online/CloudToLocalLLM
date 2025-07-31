@@ -1,11 +1,7 @@
 // Web-specific platform detection and authentication service factory
-import 'dart:convert';
 import 'package:flutter/foundation.dart';
-import 'package:http/http.dart' as http;
-import '../config/app_config.dart';
 import '../models/user_model.dart';
 import 'auth_service_web.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 /// Web platform authentication service factory
 class AuthServicePlatform extends ChangeNotifier {
@@ -64,102 +60,11 @@ class AuthServicePlatform extends ChangeNotifier {
   /// Handle authentication callback using web implementation
   Future<bool> handleCallback({String? callbackUrl}) async {
     print(
-      '🔐 [DEBUG] AuthServicePlatform.handleCallback - DIRECT IMPLEMENTATION',
+      '🔐 [DEBUG] AuthServicePlatform.handleCallback - delegating to web service',
     );
 
-    try {
-      // Direct implementation to bypass delegation issues
-      if (callbackUrl == null) return false;
-
-      final uri = Uri.parse(callbackUrl);
-      final code = uri.queryParameters['code'];
-
-      if (code == null) return false;
-
-      print('🔐 [DEBUG] Found authorization code, exchanging for tokens...');
-
-      // Direct token exchange using AppConfig constants
-      print('🔐 [DEBUG] Making HTTP POST request to Auth0 token endpoint...');
-      print('🔐 [DEBUG] Using domain: ${AppConfig.auth0Domain}');
-      print('🔐 [DEBUG] Using client_id: ${AppConfig.auth0ClientId}');
-      print('🔐 [DEBUG] Using redirect_uri: ${AppConfig.auth0WebRedirectUri}');
-      print('🔐 [DEBUG] Using audience: ${AppConfig.auth0Audience}');
-
-      final response = await http.post(
-        Uri.https(AppConfig.auth0Domain, '/oauth/token'),
-        headers: {'Content-Type': 'application/json'},
-        body: json.encode({
-          'grant_type': 'authorization_code',
-          'client_id': AppConfig.auth0ClientId,
-          'code': code,
-          'redirect_uri': AppConfig.auth0WebRedirectUri,
-          'audience': AppConfig.auth0Audience,
-        }),
-      );
-      print('🔐 [DEBUG] HTTP response received: ${response.statusCode}');
-      if (response.statusCode != 200) {
-        print('🔐 [DEBUG] Error response body: ${response.body}');
-      }
-
-      if (response.statusCode == 200) {
-        print('🔐 [DEBUG] Parsing successful response body...');
-        final data = json.decode(response.body);
-        print('🔐 [DEBUG] Response parsed successfully');
-        final accessToken = data['access_token'] as String?;
-        final idToken = data['id_token'] as String?;
-        print(
-          '🔐 [DEBUG] Extracted tokens - access: ${accessToken != null ? "YES" : "NO"}, id: ${idToken != null ? "YES" : "NO"}',
-        );
-
-        if (accessToken != null) {
-          print(
-            '🔐 [DEBUG] Access token found, storing in SharedPreferences...',
-          );
-          // Store tokens in SQLite database
-          final expiry = DateTime.now().add(Duration(hours: 1));
-
-          print('🔐 [DEBUG] Storing tokens in SharedPreferences...');
-          try {
-            final prefs = await SharedPreferences.getInstance();
-            final tokenData = {
-              'access_token': accessToken,
-              'id_token': idToken,
-              'expires_at': expiry.millisecondsSinceEpoch,
-              'audience': AppConfig.auth0Audience,
-              'created_at': DateTime.now().millisecondsSinceEpoch,
-            };
-
-            await prefs.setString('auth_tokens', json.encode(tokenData));
-            print(
-              '🔐 [DEBUG] SharedPreferences storage completed successfully',
-            );
-          } catch (e) {
-            print('🔐 [DEBUG] SharedPreferences storage failed: $e');
-            // Continue anyway - authentication will work for current session
-          }
-
-          print('🔐 [DEBUG] Tokens stored successfully in SQLite database');
-
-          // Set authentication state
-          print('🔐 [DEBUG] Setting authentication state to true...');
-          _platformService.isAuthenticated.value = true;
-          _platformService.notifyListeners();
-          print(
-            '🔐 [DEBUG] Authentication state updated and listeners notified',
-          );
-
-          return true;
-        } else {
-          print('🔐 [DEBUG] No access token in response');
-        }
-      }
-
-      print('🔐 [DEBUG] Token exchange failed: ${response.statusCode}');
-      return false;
-    } catch (e) {
-      print('🔐 [DEBUG] Error in handleCallback: $e');
-      return false;
-    }
+    // Delegate to the web service which has proper user profile loading
+    return await _platformService.handleCallback(callbackUrl: callbackUrl);
   }
 
   /// Mobile-specific methods - not supported on web
