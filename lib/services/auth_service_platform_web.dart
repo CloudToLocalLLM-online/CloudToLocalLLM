@@ -89,6 +89,7 @@ class AuthServicePlatform extends ChangeNotifier {
       print('🔐 [DEBUG] Found authorization code, exchanging for tokens...');
 
       // Direct token exchange
+      print('🔐 [DEBUG] Making HTTP POST request to Auth0 token endpoint...');
       final response = await http.post(
         Uri.https('dev-v2f2p008x3dr74ww.us.auth0.com', '/oauth/token'),
         headers: {'Content-Type': 'application/json'},
@@ -100,6 +101,7 @@ class AuthServicePlatform extends ChangeNotifier {
           'audience': 'https://app.cloudtolocalllm.online',
         }),
       );
+      print('🔐 [DEBUG] HTTP response received: ${response.statusCode}');
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
