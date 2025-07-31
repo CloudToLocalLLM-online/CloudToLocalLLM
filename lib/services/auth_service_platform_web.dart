@@ -5,7 +5,7 @@ import 'package:http/http.dart' as http;
 import '../config/app_config.dart';
 import '../models/user_model.dart';
 import 'auth_service_web.dart';
-import 'simple_storage_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 /// Web platform authentication service factory
 class AuthServicePlatform extends ChangeNotifier {
@@ -46,19 +46,27 @@ class AuthServicePlatform extends ChangeNotifier {
     try {
       print('🔐 [DEBUG] Loading stored tokens...');
 
-      // Try SQLite first with timeout
+      // Use SharedPreferences instead of SQLite for web compatibility
       bool hasValidTokens = false;
       try {
-        hasValidTokens = await SimpleStorageService.hasValidToken().timeout(
-          Duration(seconds: 2),
-        );
-        print(
-          '🔐 [DEBUG] SQLite check result: ${hasValidTokens ? "YES" : "NO"}',
-        );
-      } catch (e) {
-        print('🔐 [DEBUG] SQLite check failed: $e');
+        print('🔐 [DEBUG] Checking SharedPreferences for tokens...');
+        final prefs = await SharedPreferences.getInstance();
+        final tokenDataString = prefs.getString('auth_tokens');
 
-        // No fallback - fix SQLite instead
+        if (tokenDataString != null) {
+          final tokenData = json.decode(tokenDataString);
+          final expiresAt = DateTime.fromMillisecondsSinceEpoch(
+            tokenData['expires_at'],
+          );
+          hasValidTokens = DateTime.now().isBefore(expiresAt);
+          print(
+            '🔐 [DEBUG] SharedPreferences check result: ${hasValidTokens ? "YES" : "NO"}',
+          );
+        } else {
+          print('🔐 [DEBUG] No tokens found in SharedPreferences');
+        }
+      } catch (e) {
+        print('🔐 [DEBUG] SharedPreferences check failed: $e');
       }
 
       if (hasValidTokens) {
@@ -139,18 +147,23 @@ class AuthServicePlatform extends ChangeNotifier {
           // Store tokens in SQLite database
           final expiry = DateTime.now().add(Duration(hours: 1));
 
-          print('🔐 [DEBUG] Calling SimpleStorageService.store...');
+          print('🔐 [DEBUG] Storing tokens in SharedPreferences...');
           try {
-            await SimpleStorageService.store('auth_tokens', {
+            final prefs = await SharedPreferences.getInstance();
+            final tokenData = {
               'access_token': accessToken,
               'id_token': idToken,
               'expires_at': expiry.millisecondsSinceEpoch,
               'audience': AppConfig.auth0Audience,
               'created_at': DateTime.now().millisecondsSinceEpoch,
-            }).timeout(Duration(seconds: 5));
-            print('🔐 [DEBUG] Simple storage completed successfully');
+            };
+
+            await prefs.setString('auth_tokens', json.encode(tokenData));
+            print(
+              '🔐 [DEBUG] SharedPreferences storage completed successfully',
+            );
           } catch (e) {
-            print('🔐 [DEBUG] Simple storage failed: $e');
+            print('🔐 [DEBUG] SharedPreferences storage failed: $e');
             // Continue anyway - authentication will work for current session
           }
 
