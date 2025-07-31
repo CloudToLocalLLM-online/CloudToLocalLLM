@@ -51,22 +51,23 @@ class AuthStorageService {
     return _database!;
   }
 
-  /// Initialize the SQLite database
+  /// Initialize the SQLite database with timeout
   static Future<Database> _initDatabase() async {
     try {
+      print('🗄️ [DEBUG] Getting database path...');
       final dbPath = await getDatabasesPath();
       final path = join(dbPath, _dbName);
 
-      debugPrint('🗄️ [AuthStorage] Initializing SQLite database at: $path');
+      print('🗄️ [DEBUG] Opening database at: $path');
 
       return await openDatabase(
         path,
         version: 1,
         onCreate: _createTables,
         onUpgrade: _onUpgrade,
-      );
+      ).timeout(Duration(seconds: 10));
     } catch (e) {
-      debugPrint('🗄️ [AuthStorage] Error initializing database: $e');
+      print('🗄️ [DEBUG] Error initializing database: $e');
       rethrow;
     }
   }

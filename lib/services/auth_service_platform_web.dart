@@ -5,7 +5,7 @@ import 'package:http/http.dart' as http;
 import '../config/app_config.dart';
 import '../models/user_model.dart';
 import 'auth_service_web.dart';
-import 'auth_storage_service.dart';
+import 'simple_storage_service.dart';
 
 /// Web platform authentication service factory
 class AuthServicePlatform extends ChangeNotifier {
@@ -49,7 +49,7 @@ class AuthServicePlatform extends ChangeNotifier {
       // Try SQLite first with timeout
       bool hasValidTokens = false;
       try {
-        hasValidTokens = await AuthStorageService.hasValidTokens().timeout(
+        hasValidTokens = await SimpleStorageService.hasValidToken().timeout(
           Duration(seconds: 2),
         );
         print(
@@ -139,17 +139,18 @@ class AuthServicePlatform extends ChangeNotifier {
           // Store tokens in SQLite database
           final expiry = DateTime.now().add(Duration(hours: 1));
 
-          print('🔐 [DEBUG] Calling AuthStorageService.storeTokens...');
+          print('🔐 [DEBUG] Calling SimpleStorageService.store...');
           try {
-            await AuthStorageService.storeTokens(
-              accessToken: accessToken,
-              idToken: idToken,
-              expiresAt: expiry,
-              audience: AppConfig.auth0Audience,
-            ).timeout(Duration(seconds: 5));
-            print('🔐 [DEBUG] SQLite storage completed successfully');
+            await SimpleStorageService.store('auth_tokens', {
+              'access_token': accessToken,
+              'id_token': idToken,
+              'expires_at': expiry.millisecondsSinceEpoch,
+              'audience': AppConfig.auth0Audience,
+              'created_at': DateTime.now().millisecondsSinceEpoch,
+            }).timeout(Duration(seconds: 5));
+            print('🔐 [DEBUG] Simple storage completed successfully');
           } catch (e) {
-            print('🔐 [DEBUG] SQLite storage failed: $e');
+            print('🔐 [DEBUG] Simple storage failed: $e');
             // Continue anyway - authentication will work for current session
           }
 
