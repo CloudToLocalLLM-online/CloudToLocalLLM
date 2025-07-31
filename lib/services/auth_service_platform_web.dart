@@ -2,6 +2,7 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
+import '../config/app_config.dart';
 import '../models/user_model.dart';
 import 'auth_service_web.dart';
 import 'auth_storage_service.dart';
@@ -88,20 +89,28 @@ class AuthServicePlatform extends ChangeNotifier {
 
       print('🔐 [DEBUG] Found authorization code, exchanging for tokens...');
 
-      // Direct token exchange
+      // Direct token exchange using AppConfig constants
       print('🔐 [DEBUG] Making HTTP POST request to Auth0 token endpoint...');
+      print('🔐 [DEBUG] Using domain: ${AppConfig.auth0Domain}');
+      print('🔐 [DEBUG] Using client_id: ${AppConfig.auth0ClientId}');
+      print('🔐 [DEBUG] Using redirect_uri: ${AppConfig.auth0WebRedirectUri}');
+      print('🔐 [DEBUG] Using audience: ${AppConfig.auth0Audience}');
+
       final response = await http.post(
-        Uri.https('dev-v2f2p008x3dr74ww.us.auth0.com', '/oauth/token'),
+        Uri.https(AppConfig.auth0Domain, '/oauth/token'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({
           'grant_type': 'authorization_code',
-          'client_id': 'FuXPnevXpp311CdYHGsbNZe9t3D8Ts7A',
+          'client_id': AppConfig.auth0ClientId,
           'code': code,
-          'redirect_uri': 'https://app.cloudtolocalllm.online/callback',
-          'audience': 'https://app.cloudtolocalllm.online',
+          'redirect_uri': AppConfig.auth0WebRedirectUri,
+          'audience': AppConfig.auth0Audience,
         }),
       );
       print('🔐 [DEBUG] HTTP response received: ${response.statusCode}');
+      if (response.statusCode != 200) {
+        print('🔐 [DEBUG] Error response body: ${response.body}');
+      }
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
