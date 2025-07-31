@@ -43,6 +43,9 @@ class AuthServicePlatform extends ChangeNotifier {
 
   /// Handle authentication callback using web implementation
   Future<bool> handleCallback({String? callbackUrl}) async {
+    print(
+      '🔐 [DEBUG] AuthServicePlatform.handleCallback called - delegating to web service',
+    );
     return await _platformService.handleCallback(callbackUrl: callbackUrl);
   }
 

@@ -68,6 +68,9 @@ class AuthService extends ChangeNotifier {
 
   /// Handle Auth0 callback using platform-specific implementation
   Future<bool> handleCallback({String? callbackUrl}) async {
+    print(
+      '🔐 [DEBUG] AuthService.handleCallback called - delegating to platform service',
+    );
     return await _platformService.handleCallback(callbackUrl: callbackUrl);
   }
 
