@@ -17,17 +17,19 @@ class AuthStorageService {
     if (_initialized) return;
 
     try {
+      print('🗄️ [DEBUG] Starting SQLite initialization...');
       // Initialize SQLite for web using the correct factory
       if (kIsWeb) {
-        debugPrint('🗄️ [AuthStorage] Initializing SQLite for web platform');
+        print('🗄️ [DEBUG] Detected web platform, using databaseFactoryFfiWeb');
         databaseFactory = databaseFactoryFfiWeb;
       } else {
-        debugPrint('🗄️ [AuthStorage] Initializing SQLite for native platform');
+        print('🗄️ [DEBUG] Detected native platform, using databaseFactoryFfi');
         databaseFactory = databaseFactoryFfi;
       }
       _initialized = true;
-      debugPrint('🗄️ [AuthStorage] SQLite initialization complete');
+      print('🗄️ [DEBUG] SQLite initialization complete successfully');
     } catch (e) {
+      print('🗄️ [DEBUG] CRITICAL ERROR initializing SQLite: $e');
       debugPrint('🗄️ [AuthStorage] Error initializing SQLite: $e');
       rethrow;
     }
@@ -201,8 +203,16 @@ class AuthStorageService {
 
   /// Check if valid tokens exist
   static Future<bool> hasValidTokens() async {
-    final tokens = await loadTokens();
-    return tokens != null;
+    try {
+      print('🗄️ [DEBUG] Checking if valid tokens exist...');
+      final tokens = await loadTokens();
+      final hasTokens = tokens != null;
+      print('🗄️ [DEBUG] Valid tokens exist: $hasTokens');
+      return hasTokens;
+    } catch (e) {
+      print('🗄️ [DEBUG] Error checking valid tokens: $e');
+      return false;
+    }
   }
 
   /// Get access token if valid
