@@ -2,9 +2,9 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
-import 'package:web/web.dart' as web;
 import '../models/user_model.dart';
 import 'auth_service_web.dart';
+import 'auth_storage_service.dart';
 
 /// Web platform authentication service factory
 class AuthServicePlatform extends ChangeNotifier {
@@ -22,7 +22,7 @@ class AuthServicePlatform extends ChangeNotifier {
 
   AuthServicePlatform() {
     _initialize();
-    _loadStoredTokens();
+    _loadStoredTokens(); // Fire and forget - async initialization
   }
 
   void _initialize() {
@@ -40,41 +40,24 @@ class AuthServicePlatform extends ChangeNotifier {
     print('🔐 [DEBUG] AuthServicePlatform initialization complete');
   }
 
-  /// Load stored tokens from localStorage
-  void _loadStoredTokens() {
+  /// Load stored tokens from SQLite database
+  Future<void> _loadStoredTokens() async {
     try {
-      print('🔐 [DEBUG] Loading stored tokens from localStorage...');
+      print('🔐 [DEBUG] Loading stored tokens from SQLite database...');
 
-      final accessToken = web.window.localStorage.getItem(
-        'cloudtolocalllm_access_token',
-      );
-      final expiryString = web.window.localStorage.getItem(
-        'cloudtolocalllm_token_expiry',
-      );
+      final hasValidTokens = await AuthStorageService.hasValidTokens();
+      print('🔐 [DEBUG] Valid tokens found: ${hasValidTokens ? "YES" : "NO"}');
 
-      print(
-        '🔐 [DEBUG] Access token found: ${accessToken != null ? "YES" : "NO"}',
-      );
-
-      if (accessToken != null && expiryString != null) {
-        final expiry = DateTime.tryParse(expiryString);
-
-        if (expiry != null && DateTime.now().isBefore(expiry)) {
-          print('🔐 [DEBUG] Token is valid, setting authentication state');
-          _platformService.isAuthenticated.value = true;
-          _platformService.notifyListeners();
-          print('🔐 [DEBUG] Authentication state restored from stored tokens');
-        } else {
-          print('🔐 [DEBUG] Token expired, clearing stored data');
-          web.window.localStorage.removeItem('cloudtolocalllm_access_token');
-          web.window.localStorage.removeItem('cloudtolocalllm_id_token');
-          web.window.localStorage.removeItem('cloudtolocalllm_token_expiry');
-        }
+      if (hasValidTokens) {
+        print('🔐 [DEBUG] Tokens are valid, setting authentication state');
+        _platformService.isAuthenticated.value = true;
+        _platformService.notifyListeners();
+        print('🔐 [DEBUG] Authentication state restored from SQLite storage');
       } else {
-        print('🔐 [DEBUG] No valid stored tokens found');
+        print('🔐 [DEBUG] No valid stored tokens found in SQLite');
       }
     } catch (e) {
-      print('🔐 [DEBUG] Error loading stored tokens: $e');
+      print('🔐 [DEBUG] Error loading stored tokens from SQLite: $e');
     }
   }
 
@@ -124,26 +107,17 @@ class AuthServicePlatform extends ChangeNotifier {
         final idToken = data['id_token'] as String?;
 
         if (accessToken != null) {
-          // Store tokens directly in localStorage
-          web.window.localStorage.setItem(
-            'cloudtolocalllm_access_token',
-            accessToken,
-          );
-          if (idToken != null) {
-            web.window.localStorage.setItem(
-              'cloudtolocalllm_id_token',
-              idToken,
-            );
-          }
-
-          // Set expiry (1 hour from now)
+          // Store tokens in SQLite database
           final expiry = DateTime.now().add(Duration(hours: 1));
-          web.window.localStorage.setItem(
-            'cloudtolocalllm_token_expiry',
-            expiry.toIso8601String(),
+
+          await AuthStorageService.storeTokens(
+            accessToken: accessToken,
+            idToken: idToken,
+            expiresAt: expiry,
+            audience: 'https://app.cloudtolocalllm.online',
           );
 
-          print('🔐 [DEBUG] Tokens stored successfully in localStorage');
+          print('🔐 [DEBUG] Tokens stored successfully in SQLite database');
 
           // Set authentication state
           _platformService.isAuthenticated.value = true;

@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 import '../config/app_config.dart';
 import '../models/user_model.dart';
 import 'auth_logger.dart';
+import 'auth_storage_service.dart';
 
 // Modern web imports using package:web
 import 'package:web/web.dart' as web;
@@ -454,7 +455,6 @@ class AuthServiceWeb extends ChangeNotifier {
           'client_id': AppConfig.auth0ClientId,
           'code': code,
           'redirect_uri': AppConfig.auth0WebRedirectUri,
-          'audience': AppConfig.auth0Audience,
         }),
       );
 
@@ -575,75 +575,64 @@ class AuthServiceWeb extends ChangeNotifier {
     }
   }
 
-  /// Store tokens in localStorage
+  /// Store tokens in SQLite database
   Future<void> _storeTokens() async {
     try {
-      if (!kIsWeb) return;
-
-      if (_accessToken != null) {
-        web.window.localStorage.setItem(
-          'cloudtolocalllm_access_token',
-          _accessToken!,
+      if (_accessToken != null && _tokenExpiry != null) {
+        await AuthStorageService.storeTokens(
+          accessToken: _accessToken!,
+          idToken: _idToken,
+          expiresAt: _tokenExpiry!,
+          audience: AppConfig.auth0Audience,
         );
-      }
-      if (_idToken != null) {
-        web.window.localStorage.setItem('cloudtolocalllm_id_token', _idToken!);
-      }
-      if (_tokenExpiry != null) {
-        web.window.localStorage.setItem(
-          'cloudtolocalllm_token_expiry',
-          _tokenExpiry!.toIso8601String(),
-        );
-      }
-
-      AuthLogger.info('🔐 Tokens stored in localStorage');
-    } catch (e) {
-      AuthLogger.error('🔐 Error storing tokens', {'error': e.toString()});
-    }
-  }
-
-  /// Load tokens from localStorage
-  Future<void> _loadStoredTokens() async {
-    try {
-      if (!kIsWeb) return;
-
-      _accessToken = web.window.localStorage.getItem(
-        'cloudtolocalllm_access_token',
-      );
-      _idToken = web.window.localStorage.getItem('cloudtolocalllm_id_token');
-
-      final expiryString = web.window.localStorage.getItem(
-        'cloudtolocalllm_token_expiry',
-      );
-      if (expiryString != null) {
-        _tokenExpiry = DateTime.tryParse(expiryString);
-      }
-
-      if (_accessToken != null) {
-        AuthLogger.info('🔐 Tokens loaded from localStorage');
+        print('🔐 [DEBUG] Tokens stored in SQLite database');
+        AuthLogger.info('🔐 Tokens stored in SQLite database');
       }
     } catch (e) {
-      AuthLogger.error('🔐 Error loading stored tokens', {
+      AuthLogger.error('🔐 Error storing tokens in SQLite', {
         'error': e.toString(),
       });
     }
   }
 
-  /// Clear stored tokens from localStorage
+  /// Load tokens from SQLite database
+  Future<void> _loadStoredTokens() async {
+    try {
+      print('🔐 [DEBUG] Loading tokens from SQLite database...');
+
+      final tokenData = await AuthStorageService.loadTokens();
+
+      if (tokenData != null) {
+        _accessToken = tokenData['access_token'];
+        _idToken = tokenData['id_token'];
+        _tokenExpiry = tokenData['expires_at'];
+
+        print(
+          '🔐 [DEBUG] Access token loaded from SQLite: ${_accessToken != null ? "YES" : "NO"}',
+        );
+        print(
+          '🔐 [DEBUG] Token expiry loaded: ${_tokenExpiry?.toIso8601String() ?? "NONE"}',
+        );
+
+        AuthLogger.info('🔐 Tokens loaded from SQLite database');
+      } else {
+        print('🔐 [DEBUG] No valid tokens found in SQLite database');
+      }
+    } catch (e) {
+      print('🔐 [DEBUG] Error loading stored tokens from SQLite: $e');
+      AuthLogger.error('🔐 Error loading stored tokens from SQLite', {
+        'error': e.toString(),
+      });
+    }
+  }
+
+  /// Clear stored tokens from SQLite database
   Future<void> _clearStoredTokens() async {
     try {
-      if (!kIsWeb) return;
-
-      web.window.localStorage.removeItem('cloudtolocalllm_access_token');
-      web.window.localStorage.removeItem('cloudtolocalllm_id_token');
-      web.window.localStorage.removeItem('cloudtolocalllm_token_expiry');
-      web.window.localStorage.removeItem(
-        'cloudtolocalllm_authenticated',
-      ); // Legacy cleanup
-
-      AuthLogger.info('🔐 Stored tokens cleared');
+      await AuthStorageService.clearTokens();
+      AuthLogger.info('🔐 Stored tokens cleared from SQLite database');
     } catch (e) {
-      AuthLogger.error('🔐 Error clearing stored tokens', {
+      AuthLogger.error('🔐 Error clearing stored tokens from SQLite', {
         'error': e.toString(),
       });
     }
