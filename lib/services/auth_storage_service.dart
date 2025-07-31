@@ -12,25 +12,33 @@ class AuthStorageService {
   static const String _tableName = 'auth_tokens';
   static bool _initialized = false;
 
-  /// Initialize SQLite for web platform
+  /// Initialize SQLite for web platform with timeout
   static Future<void> _initializeSQLite() async {
     if (_initialized) return;
 
     try {
       print('🗄️ [DEBUG] Starting SQLite initialization...');
-      // Initialize SQLite for web using the correct factory
-      if (kIsWeb) {
-        print('🗄️ [DEBUG] Detected web platform, using databaseFactoryFfiWeb');
-        databaseFactory = databaseFactoryFfiWeb;
-      } else {
-        print('🗄️ [DEBUG] Detected native platform, using databaseFactoryFfi');
-        databaseFactory = databaseFactoryFfi;
-      }
+
+      // Add timeout to prevent hanging
+      await Future(() async {
+        if (kIsWeb) {
+          print(
+            '🗄️ [DEBUG] Detected web platform, using databaseFactoryFfiWeb',
+          );
+          databaseFactory = databaseFactoryFfiWeb;
+        } else {
+          print(
+            '🗄️ [DEBUG] Detected native platform, using databaseFactoryFfi',
+          );
+          databaseFactory = databaseFactoryFfi;
+        }
+      }).timeout(Duration(seconds: 3));
+
       _initialized = true;
       print('🗄️ [DEBUG] SQLite initialization complete successfully');
     } catch (e) {
-      print('🗄️ [DEBUG] CRITICAL ERROR initializing SQLite: $e');
-      debugPrint('🗄️ [AuthStorage] Error initializing SQLite: $e');
+      print('🗄️ [DEBUG] SQLite initialization failed: $e');
+      _initialized = false;
       rethrow;
     }
   }
@@ -102,7 +110,7 @@ class AuthStorageService {
     // Add migration logic here if needed in the future
   }
 
-  /// Store authentication tokens
+  /// Store authentication tokens with timeout
   static Future<void> storeTokens({
     required String accessToken,
     String? idToken,
@@ -112,30 +120,37 @@ class AuthStorageService {
     String? audience,
   }) async {
     try {
-      final db = await database;
-      final now = DateTime.now().millisecondsSinceEpoch;
+      print('🗄️ [DEBUG] Starting storeTokens operation...');
 
-      debugPrint('🗄️ [AuthStorage] Storing authentication tokens');
+      // Add timeout to entire operation
+      await (() async {
+        final db = await database;
+        final now = DateTime.now().millisecondsSinceEpoch;
 
-      // Clear existing tokens first
-      await db.delete(_tableName);
+        print('🗄️ [DEBUG] Database obtained, clearing existing tokens...');
 
-      // Insert new tokens
-      await db.insert(_tableName, {
-        'access_token': accessToken,
-        'id_token': idToken,
-        'refresh_token': refreshToken,
-        'token_type': 'Bearer',
-        'expires_at': expiresAt.millisecondsSinceEpoch,
-        'scope': scope,
-        'audience': audience,
-        'created_at': now,
-        'updated_at': now,
-      });
+        // Clear existing tokens first
+        await db.delete(_tableName);
 
-      debugPrint('🗄️ [AuthStorage] Tokens stored successfully');
+        print('🗄️ [DEBUG] Inserting new tokens...');
+
+        // Insert new tokens
+        await db.insert(_tableName, {
+          'access_token': accessToken,
+          'id_token': idToken,
+          'refresh_token': refreshToken,
+          'token_type': 'Bearer',
+          'expires_at': expiresAt.millisecondsSinceEpoch,
+          'scope': scope,
+          'audience': audience,
+          'created_at': now,
+          'updated_at': now,
+        });
+      })().timeout(Duration(seconds: 5));
+
+      print('🗄️ [DEBUG] Tokens stored successfully in SQLite');
     } catch (e) {
-      debugPrint('🗄️ [AuthStorage] Error storing tokens: $e');
+      print('🗄️ [DEBUG] Error storing tokens in SQLite: $e');
       rethrow;
     }
   }

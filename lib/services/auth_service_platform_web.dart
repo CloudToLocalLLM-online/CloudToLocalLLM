@@ -2,7 +2,6 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
-import 'package:web/web.dart' as web;
 import '../config/app_config.dart';
 import '../models/user_model.dart';
 import 'auth_service_web.dart';
@@ -59,24 +58,7 @@ class AuthServicePlatform extends ChangeNotifier {
       } catch (e) {
         print('🔐 [DEBUG] SQLite check failed: $e');
 
-        // Fallback to localStorage check
-        try {
-          final tokenDataString = web.window.localStorage.getItem(
-            'cloudtolocalllm_token_data',
-          );
-          if (tokenDataString != null) {
-            final tokenData = json.decode(tokenDataString);
-            final expiresAt = DateTime.fromMillisecondsSinceEpoch(
-              tokenData['expires_at'],
-            );
-            hasValidTokens = DateTime.now().isBefore(expiresAt);
-            print(
-              '🔐 [DEBUG] localStorage check result: ${hasValidTokens ? "YES" : "NO"}',
-            );
-          }
-        } catch (localStorageError) {
-          print('🔐 [DEBUG] localStorage check failed: $localStorageError');
-        }
+        // No fallback - fix SQLite instead
       }
 
       if (hasValidTokens) {
@@ -168,28 +150,7 @@ class AuthServicePlatform extends ChangeNotifier {
             print('🔐 [DEBUG] SQLite storage completed successfully');
           } catch (e) {
             print('🔐 [DEBUG] SQLite storage failed: $e');
-            print('🔐 [DEBUG] Falling back to localStorage...');
-
-            // Fallback to localStorage for reliable persistence
-            try {
-              final tokenData = {
-                'access_token': accessToken,
-                'id_token': idToken,
-                'expires_at': expiry.millisecondsSinceEpoch,
-                'audience': AppConfig.auth0Audience,
-                'created_at': DateTime.now().millisecondsSinceEpoch,
-              };
-
-              web.window.localStorage.setItem(
-                'cloudtolocalllm_token_data',
-                json.encode(tokenData),
-              );
-              print('🔐 [DEBUG] localStorage fallback successful');
-            } catch (localStorageError) {
-              print(
-                '🔐 [DEBUG] localStorage fallback also failed: $localStorageError',
-              );
-            }
+            // Continue anyway - authentication will work for current session
           }
 
           print('🔐 [DEBUG] Tokens stored successfully in SQLite database');
