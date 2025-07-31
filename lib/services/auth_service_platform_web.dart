@@ -2,6 +2,7 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
+import 'package:web/web.dart' as web;
 import '../config/app_config.dart';
 import '../models/user_model.dart';
 import 'auth_service_web.dart';
@@ -41,24 +42,53 @@ class AuthServicePlatform extends ChangeNotifier {
     print('🔐 [DEBUG] AuthServicePlatform initialization complete');
   }
 
-  /// Load stored tokens from SQLite database
+  /// Load stored tokens and restore authentication state
   Future<void> _loadStoredTokens() async {
     try {
-      print('🔐 [DEBUG] Loading stored tokens from SQLite database...');
+      print('🔐 [DEBUG] Loading stored tokens...');
 
-      final hasValidTokens = await AuthStorageService.hasValidTokens();
-      print('🔐 [DEBUG] Valid tokens found: ${hasValidTokens ? "YES" : "NO"}');
+      // Try SQLite first with timeout
+      bool hasValidTokens = false;
+      try {
+        hasValidTokens = await AuthStorageService.hasValidTokens().timeout(
+          Duration(seconds: 2),
+        );
+        print(
+          '🔐 [DEBUG] SQLite check result: ${hasValidTokens ? "YES" : "NO"}',
+        );
+      } catch (e) {
+        print('🔐 [DEBUG] SQLite check failed: $e');
+
+        // Fallback to localStorage check
+        try {
+          final tokenDataString = web.window.localStorage.getItem(
+            'cloudtolocalllm_token_data',
+          );
+          if (tokenDataString != null) {
+            final tokenData = json.decode(tokenDataString);
+            final expiresAt = DateTime.fromMillisecondsSinceEpoch(
+              tokenData['expires_at'],
+            );
+            hasValidTokens = DateTime.now().isBefore(expiresAt);
+            print(
+              '🔐 [DEBUG] localStorage check result: ${hasValidTokens ? "YES" : "NO"}',
+            );
+          }
+        } catch (localStorageError) {
+          print('🔐 [DEBUG] localStorage check failed: $localStorageError');
+        }
+      }
 
       if (hasValidTokens) {
-        print('🔐 [DEBUG] Tokens are valid, setting authentication state');
+        print('🔐 [DEBUG] Valid tokens found, restoring authentication state');
         _platformService.isAuthenticated.value = true;
         _platformService.notifyListeners();
-        print('🔐 [DEBUG] Authentication state restored from SQLite storage');
+        print('🔐 [DEBUG] Authentication state restored successfully');
       } else {
-        print('🔐 [DEBUG] No valid stored tokens found in SQLite');
+        print('🔐 [DEBUG] No valid tokens found - user needs to log in');
       }
     } catch (e) {
-      print('🔐 [DEBUG] Error loading stored tokens from SQLite: $e');
+      print('🔐 [DEBUG] Error in _loadStoredTokens: $e');
     }
   }
 
@@ -134,11 +164,32 @@ class AuthServicePlatform extends ChangeNotifier {
               idToken: idToken,
               expiresAt: expiry,
               audience: AppConfig.auth0Audience,
-            ).timeout(Duration(seconds: 10));
+            ).timeout(Duration(seconds: 5));
             print('🔐 [DEBUG] SQLite storage completed successfully');
           } catch (e) {
             print('🔐 [DEBUG] SQLite storage failed: $e');
-            // Continue anyway - we can still set authentication state
+            print('🔐 [DEBUG] Falling back to localStorage...');
+
+            // Fallback to localStorage for reliable persistence
+            try {
+              final tokenData = {
+                'access_token': accessToken,
+                'id_token': idToken,
+                'expires_at': expiry.millisecondsSinceEpoch,
+                'audience': AppConfig.auth0Audience,
+                'created_at': DateTime.now().millisecondsSinceEpoch,
+              };
+
+              web.window.localStorage.setItem(
+                'cloudtolocalllm_token_data',
+                json.encode(tokenData),
+              );
+              print('🔐 [DEBUG] localStorage fallback successful');
+            } catch (localStorageError) {
+              print(
+                '🔐 [DEBUG] localStorage fallback also failed: $localStorageError',
+              );
+            }
           }
 
           print('🔐 [DEBUG] Tokens stored successfully in SQLite database');
