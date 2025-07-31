@@ -36,7 +36,6 @@ class AuthServiceWeb extends ChangeNotifier {
 
   /// Initialize authentication service
   Future<void> _initialize() async {
-    print('🔐 [DEBUG] AuthServiceWeb._initialize() called');
     AuthLogger.info('Web authentication service initializing');
     try {
       _isLoading.value = true;
@@ -340,7 +339,11 @@ class AuthServiceWeb extends ChangeNotifier {
 
   /// Handle Auth0 callback
   Future<bool> handleCallback({String? callbackUrl}) async {
+    print(
+      '🔐 [DEBUG] AuthServiceWeb.handleCallback called with URL: ${callbackUrl ?? "null"}',
+    );
     try {
+      print('🔐 [DEBUG] AuthServiceWeb.handleCallback starting processing...');
       AuthLogger.info('🔐 Web callback handling started');
 
       if (!kIsWeb) {
