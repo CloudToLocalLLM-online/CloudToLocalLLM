@@ -5,6 +5,7 @@
 
 import express from 'express';
 import { v4 as uuidv4 } from 'uuid';
+import rateLimit from 'express-rate-limit';
 import { authenticateJWT } from '../middleware/auth.js';
 import { addTierInfo } from '../middleware/tier-check.js';
 import { TunnelLogger } from '../utils/logger.js';
@@ -24,6 +25,31 @@ const REQUEST_TIMEOUT = 60000; // 60 seconds
 const HEARTBEAT_TIMEOUT = 90000; // 90 seconds
 const MAX_PENDING_REQUESTS = 100;
 const MAX_COMPLETED_RESPONSES = 500;
+
+// Rate limiting for bridge endpoints
+const bridgePollingLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 20, // Allow 20 polling requests per minute per IP
+  message: {
+    error: 'Too many polling requests',
+    code: 'RATE_LIMIT_EXCEEDED',
+    retryAfter: 60
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+const bridgeHeartbeatLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 5, // Allow 5 heartbeat requests per minute per IP
+  message: {
+    error: 'Too many heartbeat requests',
+    code: 'RATE_LIMIT_EXCEEDED',
+    retryAfter: 60
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
 
 /**
  * Register a desktop client for HTTP polling
@@ -77,9 +103,9 @@ router.post('/register', authenticateJWT, addTierInfo, (req, res) => {
       heartbeat: `/api/bridge/${bridgeId}/heartbeat`,
     },
     config: {
-      pollingInterval: 5000, // 5 seconds
+      pollingInterval: 10000, // 10 seconds (increased from 5 to reduce rate limiting)
       requestTimeout: REQUEST_TIMEOUT,
-      heartbeatInterval: 30000, // 30 seconds
+      heartbeatInterval: 60000, // 60 seconds (increased from 30 to reduce rate limiting)
     },
   });
 });
@@ -134,7 +160,7 @@ router.get('/:bridgeId/status', authenticateJWT, (req, res) => {
  * Poll for pending requests (Desktop client calls this)
  * GET /api/bridge/{bridgeId}/poll
  */
-router.get('/:bridgeId/poll', authenticateJWT, (req, res) => {
+router.get('/:bridgeId/poll', bridgePollingLimiter, authenticateJWT, (req, res) => {
   const { bridgeId } = req.params;
   const userId = req.user.sub;
   const timeout = parseInt(req.query.timeout) || POLLING_TIMEOUT;
@@ -266,7 +292,7 @@ router.post('/:bridgeId/response', authenticateJWT, (req, res) => {
  * Send heartbeat (Desktop client calls this)
  * POST /api/bridge/{bridgeId}/heartbeat
  */
-router.post('/:bridgeId/heartbeat', authenticateJWT, (req, res) => {
+router.post('/:bridgeId/heartbeat', bridgeHeartbeatLimiter, authenticateJWT, (req, res) => {
   const { bridgeId } = req.params;
   const userId = req.user.sub;
 

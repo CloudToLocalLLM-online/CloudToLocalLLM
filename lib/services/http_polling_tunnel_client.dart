@@ -247,6 +247,13 @@ class HttpPollingTunnelClient extends ChangeNotifier {
       _lastError = 'Polling error: $e';
       debugPrint('🌉 [HttpPolling] Polling error: $e');
 
+      // Handle rate limiting by backing off
+      if (e.toString().contains('429') ||
+          e.toString().contains('Too Many Requests')) {
+        debugPrint('🌉 [HttpPolling] Rate limited, backing off for 30 seconds');
+        _pollingInterval = 30000; // Back off to 30 seconds
+      }
+
       // Don't log every timeout as an error
       if (!e.toString().contains('timeout')) {
         _logger.logTunnelError(
@@ -406,9 +413,19 @@ class HttpPollingTunnelClient extends ChangeNotifier {
 
       if (response.statusCode == 200) {
         _lastSeen = DateTime.now();
+      } else if (response.statusCode == 429) {
+        debugPrint('🌉 [HttpPolling] Heartbeat rate limited, backing off');
+        _heartbeatInterval = 120000; // Back off to 2 minutes
       }
     } catch (e) {
       debugPrint('🌉 [HttpPolling] Heartbeat failed: $e');
+
+      // Handle rate limiting by backing off
+      if (e.toString().contains('429') ||
+          e.toString().contains('Too Many Requests')) {
+        debugPrint('🌉 [HttpPolling] Heartbeat rate limited, backing off');
+        _heartbeatInterval = 120000; // Back off to 2 minutes
+      }
     }
   }
 
