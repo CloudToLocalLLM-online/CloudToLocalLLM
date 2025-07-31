@@ -53,17 +53,27 @@ class AuthServicePlatform extends ChangeNotifier {
         final prefs = await SharedPreferences.getInstance();
         final tokenDataString = prefs.getString('auth_tokens');
 
+        print(
+          '🔐 [DEBUG] Raw token data from SharedPreferences: ${tokenDataString?.substring(0, tokenDataString.length > 100 ? 100 : tokenDataString.length)}...',
+        );
+
         if (tokenDataString != null) {
           final tokenData = json.decode(tokenDataString);
           final expiresAt = DateTime.fromMillisecondsSinceEpoch(
             tokenData['expires_at'],
           );
-          hasValidTokens = DateTime.now().isBefore(expiresAt);
+          final now = DateTime.now();
+          hasValidTokens = now.isBefore(expiresAt);
+          print('🔐 [DEBUG] Token expires at: ${expiresAt.toIso8601String()}');
+          print('🔐 [DEBUG] Current time: ${now.toIso8601String()}');
           print(
             '🔐 [DEBUG] SharedPreferences check result: ${hasValidTokens ? "YES" : "NO"}',
           );
         } else {
           print('🔐 [DEBUG] No tokens found in SharedPreferences');
+          // Debug: Check what keys exist
+          final keys = prefs.getKeys();
+          print('🔐 [DEBUG] Available SharedPreferences keys: $keys');
         }
       } catch (e) {
         print('🔐 [DEBUG] SharedPreferences check failed: $e');
@@ -143,7 +153,9 @@ class AuthServicePlatform extends ChangeNotifier {
         );
 
         if (accessToken != null) {
-          print('🔐 [DEBUG] Access token found, storing in SQLite...');
+          print(
+            '🔐 [DEBUG] Access token found, storing in SharedPreferences...',
+          );
           // Store tokens in SQLite database
           final expiry = DateTime.now().add(Duration(hours: 1));
 
