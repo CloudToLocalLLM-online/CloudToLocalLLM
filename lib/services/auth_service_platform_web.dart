@@ -1,5 +1,8 @@
 // Web-specific platform detection and authentication service factory
+import 'dart:convert';
 import 'package:flutter/foundation.dart';
+import 'package:http/http.dart' as http;
+import 'package:web/web.dart' as web;
 import '../models/user_model.dart';
 import 'auth_service_web.dart';
 
@@ -19,16 +22,60 @@ class AuthServicePlatform extends ChangeNotifier {
 
   AuthServicePlatform() {
     _initialize();
+    _loadStoredTokens();
   }
 
   void _initialize() {
+    print('🔐 [DEBUG] AuthServicePlatform._initialize() called');
     _platformService = AuthServiceWeb();
+    print(
+      '🔐 [DEBUG] AuthServiceWeb instance created: ${_platformService.runtimeType}',
+    );
     debugPrint('🌐 Initialized Web Authentication Service');
 
     // Listen to platform service changes
     _platformService.addListener(() {
       notifyListeners();
     });
+    print('🔐 [DEBUG] AuthServicePlatform initialization complete');
+  }
+
+  /// Load stored tokens from localStorage
+  void _loadStoredTokens() {
+    try {
+      print('🔐 [DEBUG] Loading stored tokens from localStorage...');
+
+      final accessToken = web.window.localStorage.getItem(
+        'cloudtolocalllm_access_token',
+      );
+      final expiryString = web.window.localStorage.getItem(
+        'cloudtolocalllm_token_expiry',
+      );
+
+      print(
+        '🔐 [DEBUG] Access token found: ${accessToken != null ? "YES" : "NO"}',
+      );
+
+      if (accessToken != null && expiryString != null) {
+        final expiry = DateTime.tryParse(expiryString);
+
+        if (expiry != null && DateTime.now().isBefore(expiry)) {
+          print('🔐 [DEBUG] Token is valid, setting authentication state');
+          _platformService.isAuthenticated.value = true;
+          _platformService.notifyListeners();
+          print('🔐 [DEBUG] Authentication state restored from stored tokens');
+        } else {
+          print('🔐 [DEBUG] Token expired, clearing stored data');
+          web.window.localStorage.removeItem('cloudtolocalllm_access_token');
+          web.window.localStorage.removeItem('cloudtolocalllm_id_token');
+          web.window.localStorage.removeItem('cloudtolocalllm_token_expiry');
+        }
+      } else {
+        print('🔐 [DEBUG] No valid stored tokens found');
+      }
+    } catch (e) {
+      print('🔐 [DEBUG] Error loading stored tokens: $e');
+    }
   }
 
   /// Login using web implementation
@@ -44,9 +91,74 @@ class AuthServicePlatform extends ChangeNotifier {
   /// Handle authentication callback using web implementation
   Future<bool> handleCallback({String? callbackUrl}) async {
     print(
-      '🔐 [DEBUG] AuthServicePlatform.handleCallback called - delegating to web service',
+      '🔐 [DEBUG] AuthServicePlatform.handleCallback - DIRECT IMPLEMENTATION',
     );
-    return await _platformService.handleCallback(callbackUrl: callbackUrl);
+
+    try {
+      // Direct implementation to bypass delegation issues
+      if (callbackUrl == null) return false;
+
+      final uri = Uri.parse(callbackUrl);
+      final code = uri.queryParameters['code'];
+
+      if (code == null) return false;
+
+      print('🔐 [DEBUG] Found authorization code, exchanging for tokens...');
+
+      // Direct token exchange
+      final response = await http.post(
+        Uri.https('dev-v2f2p008x3dr74ww.us.auth0.com', '/oauth/token'),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({
+          'grant_type': 'authorization_code',
+          'client_id': 'FuXPnevXpp311CdYHGsbNZe9t3D8Ts7A',
+          'code': code,
+          'redirect_uri': 'https://app.cloudtolocalllm.online/callback',
+          'audience': 'https://app.cloudtolocalllm.online',
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        final accessToken = data['access_token'] as String?;
+        final idToken = data['id_token'] as String?;
+
+        if (accessToken != null) {
+          // Store tokens directly in localStorage
+          web.window.localStorage.setItem(
+            'cloudtolocalllm_access_token',
+            accessToken,
+          );
+          if (idToken != null) {
+            web.window.localStorage.setItem(
+              'cloudtolocalllm_id_token',
+              idToken,
+            );
+          }
+
+          // Set expiry (1 hour from now)
+          final expiry = DateTime.now().add(Duration(hours: 1));
+          web.window.localStorage.setItem(
+            'cloudtolocalllm_token_expiry',
+            expiry.toIso8601String(),
+          );
+
+          print('🔐 [DEBUG] Tokens stored successfully in localStorage');
+
+          // Set authentication state
+          _platformService.isAuthenticated.value = true;
+          _platformService.notifyListeners();
+
+          return true;
+        }
+      }
+
+      print('🔐 [DEBUG] Token exchange failed: ${response.statusCode}');
+      return false;
+    } catch (e) {
+      print('🔐 [DEBUG] Error in handleCallback: $e');
+      return false;
+    }
   }
 
   /// Mobile-specific methods - not supported on web
