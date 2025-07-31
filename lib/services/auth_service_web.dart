@@ -22,6 +22,10 @@ class AuthServiceWeb extends ChangeNotifier {
   bool _isLoginInProgress = false;
   DateTime? _lastLoginAttempt;
 
+  // Profile loading rate limiting
+  bool _isProfileLoading = false;
+  DateTime? _lastProfileLoad;
+
   // Getters
   ValueNotifier<bool> get isAuthenticated => _isAuthenticated;
   ValueNotifier<bool> get isLoading => _isLoading;
@@ -625,6 +629,25 @@ class AuthServiceWeb extends ChangeNotifier {
         throw Exception('No access token available for profile loading');
       }
 
+      // Rate limiting: prevent multiple simultaneous calls
+      if (_isProfileLoading) {
+        AuthLogger.info('🔐 Profile loading already in progress, skipping');
+        return;
+      }
+
+      // Rate limiting: prevent calls within 5 seconds
+      if (_lastProfileLoad != null) {
+        final timeSinceLastLoad = DateTime.now().difference(_lastProfileLoad!);
+        if (timeSinceLastLoad.inSeconds < 5) {
+          AuthLogger.info(
+            '🔐 Profile loaded recently, skipping to avoid rate limits',
+          );
+          return;
+        }
+      }
+
+      _isProfileLoading = true;
+      _lastProfileLoad = DateTime.now();
       AuthLogger.info('🔐 Loading user profile');
 
       final response = await http.get(
@@ -668,6 +691,13 @@ class AuthServiceWeb extends ChangeNotifier {
           'email': _currentUser!.email,
           'name': _currentUser!.name,
         });
+      } else if (response.statusCode == 429) {
+        AuthLogger.warning('🔐 Rate limit hit for user profile loading', {
+          'statusCode': response.statusCode,
+          'retryAfter': response.headers['retry-after'],
+        });
+        // Don't throw for rate limits, just log and continue
+        return;
       } else {
         AuthLogger.error('🔐 Failed to load user profile', {
           'statusCode': response.statusCode,
@@ -683,6 +713,8 @@ class AuthServiceWeb extends ChangeNotifier {
       });
       // Re-throw to ensure calling code knows profile loading failed
       rethrow;
+    } finally {
+      _isProfileLoading = false;
     }
   }
 
