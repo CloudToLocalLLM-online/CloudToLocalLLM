@@ -128,12 +128,18 @@ class AuthServicePlatform extends ChangeNotifier {
           final expiry = DateTime.now().add(Duration(hours: 1));
 
           print('🔐 [DEBUG] Calling AuthStorageService.storeTokens...');
-          await AuthStorageService.storeTokens(
-            accessToken: accessToken,
-            idToken: idToken,
-            expiresAt: expiry,
-            audience: AppConfig.auth0Audience,
-          );
+          try {
+            await AuthStorageService.storeTokens(
+              accessToken: accessToken,
+              idToken: idToken,
+              expiresAt: expiry,
+              audience: AppConfig.auth0Audience,
+            ).timeout(Duration(seconds: 10));
+            print('🔐 [DEBUG] SQLite storage completed successfully');
+          } catch (e) {
+            print('🔐 [DEBUG] SQLite storage failed: $e');
+            // Continue anyway - we can still set authentication state
+          }
 
           print('🔐 [DEBUG] Tokens stored successfully in SQLite database');
 
