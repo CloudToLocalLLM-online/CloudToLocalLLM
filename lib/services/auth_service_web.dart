@@ -382,11 +382,8 @@ class AuthServiceWeb extends ChangeNotifier {
         });
 
         if (code != null) {
-          print('🔐 [DEBUG] Code is not null, proceeding to token exchange...');
           // Exchange authorization code for tokens
-          print('🔐 [DEBUG] About to call _exchangeCodeForTokens...');
           final success = await _exchangeCodeForTokens(code);
-          print('🔐 [DEBUG] _exchangeCodeForTokens returned: $success');
 
           if (success) {
             try {
@@ -457,6 +454,7 @@ class AuthServiceWeb extends ChangeNotifier {
           'client_id': AppConfig.auth0ClientId,
           'code': code,
           'redirect_uri': AppConfig.auth0WebRedirectUri,
+          'audience': AppConfig.auth0Audience,
         }),
       );
 
