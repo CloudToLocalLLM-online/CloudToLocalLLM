@@ -83,7 +83,7 @@ class AppRouter {
     return GoRouter(
       navigatorKey: navigatorKey,
       initialLocation: initialLocation,
-      debugLogDiagnostics: false,
+      debugLogDiagnostics: true,
       routes: [
         // Home route - platform-specific routing
         GoRoute(
@@ -100,16 +100,23 @@ class AppRouter {
                 // App subdomain - check auth and show appropriate screen
                 final authService = context.read<AuthService>();
 
+                print(
+                  '🔄 [Router] Route builder called - isLoading: ${authService.isLoading.value}, isAuthenticated: ${authService.isAuthenticated.value}',
+                );
+
                 // If authentication is still loading, show loading screen
                 if (authService.isLoading.value) {
+                  print('🔄 [Router] Showing loading screen');
                   return const LoadingScreen(
                     message: 'Checking authentication...',
                   );
                 }
 
                 if (authService.isAuthenticated.value) {
+                  print('🔄 [Router] Showing home screen');
                   return const HomeScreen();
                 } else {
+                  print('🔄 [Router] Showing login screen');
                   return const LoginScreen();
                 }
               } else {
