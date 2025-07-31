@@ -47,13 +47,19 @@ class AuthServiceWeb extends ChangeNotifier {
       print('🔐 [DEBUG] About to call _checkAuthenticationStatus');
       await _checkAuthenticationStatus();
       print('🔐 [DEBUG] _checkAuthenticationStatus completed');
+      print('🔐 [DEBUG] About to log success message');
       AuthLogger.info('Authentication service initialized successfully');
+      print('🔐 [DEBUG] Success message logged');
     } catch (e) {
       AuthLogger.error('Error initializing Auth0', {'error': e.toString()});
     } finally {
+      print('🔐 [DEBUG] Entering finally block');
       _isLoading.value = false;
+      print('🔐 [DEBUG] Loading state set to false');
       notifyListeners();
+      print('🔐 [DEBUG] notifyListeners called');
       AuthLogger.debug('Loading state set to false after initialization');
+      print('🔐 [DEBUG] Finally block completed');
     }
   }
 
