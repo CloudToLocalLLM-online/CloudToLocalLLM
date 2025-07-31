@@ -15,6 +15,7 @@ class AuthServiceWeb extends ChangeNotifier {
   UserModel? _currentUser;
   String? _accessToken;
   String? _idToken;
+  String? _refreshToken;
   DateTime? _tokenExpiry;
 
   // Login state tracking to prevent multiple simultaneous attempts
@@ -86,8 +87,24 @@ class AuthServiceWeb extends ChangeNotifier {
           notifyListeners();
           return;
         } else {
-          // Token expired, clear stored data
-          AuthLogger.info('🔐 Stored tokens expired, clearing');
+          // Token expired, try to refresh if we have a refresh token
+          if (_refreshToken != null) {
+            AuthLogger.info('🔐 Access token expired, attempting refresh');
+            final refreshSuccess = await _refreshAccessToken();
+            if (refreshSuccess) {
+              await _loadUserProfile();
+              _isAuthenticated.value = true;
+              AuthLogger.info('🔐 Token refreshed successfully');
+              notifyListeners();
+              return;
+            } else {
+              AuthLogger.info('🔐 Token refresh failed, clearing stored data');
+            }
+          } else {
+            AuthLogger.info(
+              '🔐 Stored tokens expired and no refresh token, clearing',
+            );
+          }
           await _clearStoredTokens();
         }
       }
@@ -307,6 +324,7 @@ class AuthServiceWeb extends ChangeNotifier {
       _currentUser = null;
       _accessToken = null;
       _idToken = null;
+      _refreshToken = null;
       _tokenExpiry = null;
       _isAuthenticated.value = false;
 
@@ -439,6 +457,76 @@ class AuthServiceWeb extends ChangeNotifier {
     }
   }
 
+  /// Refresh access token using refresh token
+  Future<bool> _refreshAccessToken() async {
+    try {
+      if (_refreshToken == null) {
+        AuthLogger.error('🔐 No refresh token available');
+        return false;
+      }
+
+      AuthLogger.info('🔐 Refreshing access token');
+
+      final response = await http.post(
+        Uri.https(AppConfig.auth0Domain, '/oauth/token'),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({
+          'grant_type': 'refresh_token',
+          'client_id': AppConfig.auth0ClientId,
+          'refresh_token': _refreshToken!,
+        }),
+      );
+
+      AuthLogger.debug('🔐 Token refresh response received', {
+        'statusCode': response.statusCode,
+        'hasBody': response.body.isNotEmpty,
+      });
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+
+        _accessToken = data['access_token'] as String?;
+        _idToken = data['id_token'] as String?;
+
+        // Some refresh token responses include a new refresh token
+        if (data['refresh_token'] != null) {
+          _refreshToken = data['refresh_token'] as String?;
+        }
+
+        if (_accessToken == null) {
+          AuthLogger.error('🔐 No access token in refresh response', {
+            'response': data,
+          });
+          return false;
+        }
+
+        // Calculate token expiry
+        final expiresIn = data['expires_in'] as int? ?? 3600;
+        _tokenExpiry = DateTime.now().add(Duration(seconds: expiresIn));
+
+        // Store updated tokens
+        await _storeTokens();
+
+        AuthLogger.info('🔐 Access token refreshed successfully', {
+          'hasAccessToken': _accessToken != null,
+          'hasIdToken': _idToken != null,
+          'expiresIn': expiresIn,
+        });
+        return true;
+      } else {
+        AuthLogger.error('🔐 Token refresh failed', {
+          'statusCode': response.statusCode,
+          'body': response.body,
+          'headers': response.headers,
+        });
+        return false;
+      }
+    } catch (e) {
+      AuthLogger.error('🔐 Error refreshing token', {'error': e.toString()});
+      return false;
+    }
+  }
+
   /// Exchange authorization code for access and ID tokens
   Future<bool> _exchangeCodeForTokens(String code) async {
     try {
@@ -455,6 +543,7 @@ class AuthServiceWeb extends ChangeNotifier {
           'client_id': AppConfig.auth0ClientId,
           'code': code,
           'redirect_uri': AppConfig.auth0WebRedirectUri,
+          'scope': 'openid profile email offline_access',
         }),
       );
 
@@ -468,6 +557,7 @@ class AuthServiceWeb extends ChangeNotifier {
 
         _accessToken = data['access_token'] as String?;
         _idToken = data['id_token'] as String?;
+        _refreshToken = data['refresh_token'] as String?;
 
         if (_accessToken == null) {
           AuthLogger.error('🔐 No access token in response', {
@@ -589,6 +679,12 @@ class AuthServiceWeb extends ChangeNotifier {
       if (_idToken != null) {
         web.window.localStorage.setItem('cloudtolocalllm_id_token', _idToken!);
       }
+      if (_refreshToken != null) {
+        web.window.localStorage.setItem(
+          'cloudtolocalllm_refresh_token',
+          _refreshToken!,
+        );
+      }
       if (_tokenExpiry != null) {
         web.window.localStorage.setItem(
           'cloudtolocalllm_token_expiry',
@@ -611,6 +707,9 @@ class AuthServiceWeb extends ChangeNotifier {
         'cloudtolocalllm_access_token',
       );
       _idToken = web.window.localStorage.getItem('cloudtolocalllm_id_token');
+      _refreshToken = web.window.localStorage.getItem(
+        'cloudtolocalllm_refresh_token',
+      );
 
       final expiryString = web.window.localStorage.getItem(
         'cloudtolocalllm_token_expiry',
@@ -636,6 +735,7 @@ class AuthServiceWeb extends ChangeNotifier {
 
       web.window.localStorage.removeItem('cloudtolocalllm_access_token');
       web.window.localStorage.removeItem('cloudtolocalllm_id_token');
+      web.window.localStorage.removeItem('cloudtolocalllm_refresh_token');
       web.window.localStorage.removeItem('cloudtolocalllm_token_expiry');
       web.window.localStorage.removeItem(
         'cloudtolocalllm_authenticated',

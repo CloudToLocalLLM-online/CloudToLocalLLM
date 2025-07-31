@@ -36,6 +36,7 @@ class AppConfig {
     'openid',
     'profile',
     'email',
+    'offline_access',
     'read:bridge',
     'write:bridge',
     'read:ollama',
