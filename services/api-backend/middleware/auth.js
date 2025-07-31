@@ -45,13 +45,20 @@ export async function authenticateJWT(req, res, next) {
     }
 
     // Verify the token using AuthService
-    const verified = await authService.validateToken(token);
+    const result = await authService.validateToken(token);
+
+    if (!result.valid) {
+      return res.status(401).json({
+        error: result.error || 'Token validation failed',
+        code: 'TOKEN_VALIDATION_FAILED',
+      });
+    }
 
     // Attach user info to request
-    req.user = verified;
-    req.userId = verified.sub;
+    req.user = result.payload;
+    req.userId = result.payload.sub;
 
-    logger.debug(`🔐 [Auth] User authenticated: ${verified.sub}`);
+    logger.debug(`🔐 [Auth] User authenticated: ${result.payload.sub}`);
     next();
 
   } catch (error) {
@@ -146,11 +153,13 @@ export async function optionalAuth(req, res, next) {
     const decoded = jwt.decode(token, { complete: true });
     if (decoded && decoded.header.kid) {
       // Verify the token using AuthService
-      const verified = await authService.validateToken(token);
+      const result = await authService.validateToken(token);
 
-      req.user = verified;
-      req.userId = verified.sub;
-      logger.debug(`🔐 [Auth] Optional auth successful: ${verified.sub}`);
+      if (result.valid) {
+        req.user = result.payload;
+        req.userId = result.payload.sub;
+        logger.debug(`🔐 [Auth] Optional auth successful: ${result.payload.sub}`);
+      }
     }
   } catch (error) {
     // Token verification failed, but that's okay for optional auth
