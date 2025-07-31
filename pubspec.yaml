@@ -54,7 +54,8 @@ dependencies:
   path_provider: ^2.1.5
 
   # Local Storage
-  shared_preferences: ^2.3.4
+  sqflite_common_ffi: ^2.3.6  # For desktop SQLite (conversations)
+  shared_preferences: ^2.3.4  # For web-compatible auth storage
 
   # State Management
   provider: ^6.1.5
