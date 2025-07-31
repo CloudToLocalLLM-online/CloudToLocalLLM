@@ -99,6 +99,14 @@ class AppRouter {
               if (isAppSubdomain) {
                 // App subdomain - check auth and show appropriate screen
                 final authService = context.read<AuthService>();
+
+                // If authentication is still loading, show loading screen
+                if (authService.isLoading.value) {
+                  return const LoadingScreen(
+                    message: 'Checking authentication...',
+                  );
+                }
+
                 if (authService.isAuthenticated.value) {
                   return const HomeScreen();
                 } else {
