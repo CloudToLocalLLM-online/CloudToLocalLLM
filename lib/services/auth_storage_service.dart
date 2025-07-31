@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
+import 'package:sqflite_common_ffi_web/sqflite_ffi_web.dart';
 import 'package:path/path.dart';
 
 /// SQLite-based authentication storage service with web support
@@ -16,9 +17,12 @@ class AuthStorageService {
     if (_initialized) return;
 
     try {
-      // Initialize SQLite for web using FFI
+      // Initialize SQLite for web using the correct factory
       if (kIsWeb) {
         debugPrint('🗄️ [AuthStorage] Initializing SQLite for web platform');
+        databaseFactory = databaseFactoryFfiWeb;
+      } else {
+        debugPrint('🗄️ [AuthStorage] Initializing SQLite for native platform');
         databaseFactory = databaseFactoryFfi;
       }
       _initialized = true;
