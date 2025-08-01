@@ -47,6 +47,26 @@ class OllamaService extends ChangeNotifier {
     }
   }
 
+  /// Initialize the service and test connection
+  Future<void> initialize() async {
+    if (kDebugMode) {
+      debugPrint('[DEBUG] OllamaService initializing...');
+    }
+
+    // For web platform, wait a moment for authentication to be ready
+    if (_isWeb && _authService != null) {
+      // Wait for auth service to be ready
+      await Future.delayed(const Duration(milliseconds: 500));
+    }
+
+    // Test connection automatically
+    await testConnection();
+
+    if (kDebugMode) {
+      debugPrint('[DEBUG] OllamaService initialization complete');
+    }
+  }
+
   // Getters
   bool get isConnected => _isConnected;
   String? get version => _version;

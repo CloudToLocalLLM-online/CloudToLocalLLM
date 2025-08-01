@@ -266,8 +266,14 @@ class _CloudToLocalLLMAppState extends State<CloudToLocalLLMApp> {
         ),
         // Ollama service
         ChangeNotifierProvider(
-          create: (context) =>
-              OllamaService(authService: context.read<AuthService>()),
+          create: (context) {
+            final ollamaService = OllamaService(
+              authService: context.read<AuthService>(),
+            );
+            // Initialize asynchronously
+            ollamaService.initialize();
+            return ollamaService;
+          },
         ),
         // Local Ollama connection service (independent of tunnel)
         ChangeNotifierProvider(
