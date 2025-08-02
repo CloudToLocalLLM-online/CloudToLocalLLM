@@ -930,12 +930,9 @@ function Update-ReadmeVersion {
         # Security: Read with proper encoding detection
         $content = Get-Content $ReadmeFile -Raw -Encoding UTF8
 
-        # Security: Escape version for regex and use specific pattern
-        $safeVersion = ConvertTo-RegexSafe -InputString $NewVersion
-
         # Security: More specific pattern matching to prevent injection
         $pattern = '\[\!\[Version\]\(https://img\.shields\.io/badge/version-[0-9]+\.[0-9]+\.[0-9]+-blue\.svg\)\]'
-        $replacement = "[![Version](https://img.shields.io/badge/version-$safeVersion-blue.svg)]"
+        $replacement = "[![Version](https://img.shields.io/badge/version-$NewVersion-blue.svg)]"
 
         $newContent = $content -replace $pattern, $replacement
 
