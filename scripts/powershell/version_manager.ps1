@@ -416,7 +416,7 @@ function Lock-File {
 
     Write-LogInfo "Attempting to acquire lock for: $FilePath"
 
-    while ((Get-Date) - $startTime).TotalSeconds -lt $TimeoutSeconds) {
+    while (((Get-Date) - $startTime).TotalSeconds -lt $TimeoutSeconds) {
         try {
             # Attempt to create lock file exclusively
             $lockStream = [System.IO.File]::Open($lockFile, 'CreateNew', 'Write', 'None')
@@ -457,8 +457,8 @@ function Lock-File {
             if ($elapsed % 10 -eq 0 -and $elapsed -gt 0) {
                 Write-LogInfo "Still waiting for lock... ($elapsed/${TimeoutSeconds}s)"
             }
-        } # End of catch block
-    } # End of while loop
+        }
+    }
 
     $lockPid = if (Test-Path $lockFile) { Get-Content $lockFile -ErrorAction SilentlyContinue } else { "unknown" }
     throw "Failed to acquire lock for $FilePath after ${TimeoutSeconds}s (held by PID $lockPid)"
