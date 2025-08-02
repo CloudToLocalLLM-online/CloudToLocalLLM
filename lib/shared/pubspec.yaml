@@ -1,7 +1,7 @@
 ﻿name: cloudtolocalllm_shared
 description: Shared libraries and utilities for CloudToLocalLLM applications
 publish_to: none
-version: 4.0.31+202507311823
+version: 4.0.32+202508011653
 
 environment:
   sdk: '>=3.8.0 <4.0.0'

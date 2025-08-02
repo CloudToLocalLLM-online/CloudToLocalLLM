@@ -1,9 +1,14 @@
-# Changelog
+﻿# Changelog
 
 All notable changes to CloudToLocalLLM will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [4.0.32] - 2025-08-01
+
+### Fixed
+- Bug fixes and improvements
 
 ## [Unreleased] - 2025-01-13
 
@@ -19,9 +24,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Maintained automated execution without interactive prompts (user preference)
 
 - **ARCHIVED: Duplicate deployment scripts** - Moved to scripts/archive/ with migration documentation
-  - complete_automated_deployment.sh → Functionality merged into complete_deployment.sh
-  - deploy_to_vps.sh → Functionality available in consolidated scripts
-  - build_and_package.sh → Functionality available in scripts/packaging/build_deb.sh
+  - complete_automated_deployment.sh â†’ Functionality merged into complete_deployment.sh
+  - deploy_to_vps.sh â†’ Functionality available in consolidated scripts
+  - build_and_package.sh â†’ Functionality available in scripts/packaging/build_deb.sh
 
 ### Removed - AUR Support (Temporary)
 - **AUR scripts temporarily removed** - Part of v3.10.3 Unified Flutter-Native Architecture transition
@@ -156,11 +161,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Platform-specific optimization for Linux x64
 
 ### Version Compatibility Matrix
-- Main Application v3.2.0 ↔ Tunnel Manager v1.0.0 ✅
-- Main Application v3.2.0 ↔ Tray Daemon v2.0.0 ✅
-- Main Application v3.2.0 ↔ Shared Library v3.2.0 ✅
-- Tunnel Manager v1.0.0 ↔ Tray Daemon v2.0.0 ✅
-- Backward compatibility: Main App v3.2.0 ↔ Tray Daemon v1.x ⚠️ (limited)
+- Main Application v3.2.0 â†” Tunnel Manager v1.0.0 âœ…
+- Main Application v3.2.0 â†” Tray Daemon v2.0.0 âœ…
+- Main Application v3.2.0 â†” Shared Library v3.2.0 âœ…
+- Tunnel Manager v1.0.0 â†” Tray Daemon v2.0.0 âœ…
+- Backward compatibility: Main App v3.2.0 â†” Tray Daemon v1.x âš ï¸ (limited)
 
 ### Migration Guide
 For users upgrading from v3.1.x:
