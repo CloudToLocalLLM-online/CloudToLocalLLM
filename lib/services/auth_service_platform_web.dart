@@ -23,10 +23,10 @@ class AuthServicePlatform extends ChangeNotifier {
   }
 
   void _initialize() {
-    print('🔐 [DEBUG] AuthServicePlatform._initialize() called');
+    debugPrint('🔐 [AuthServicePlatform] _initialize() called');
     _platformService = AuthServiceWeb();
-    print(
-      '🔐 [DEBUG] AuthServiceWeb instance created: ${_platformService.runtimeType}',
+    debugPrint(
+      '🔐 [AuthServicePlatform] AuthServiceWeb instance created: ${_platformService.runtimeType}',
     );
     debugPrint('🌐 Initialized Web Authentication Service');
 
@@ -34,7 +34,7 @@ class AuthServicePlatform extends ChangeNotifier {
     _platformService.addListener(() {
       notifyListeners();
     });
-    print('🔐 [DEBUG] AuthServicePlatform initialization complete');
+    debugPrint('🔐 [AuthServicePlatform] initialization complete');
   }
 
   /// Load stored tokens and restore authentication state
@@ -42,8 +42,8 @@ class AuthServicePlatform extends ChangeNotifier {
   Future<void> _loadStoredTokens() async {
     // The AuthServiceWeb handles its own token loading and user profile restoration
     // during initialization. No additional logic needed here.
-    print(
-      '🔐 [DEBUG] Platform service delegating token loading to web service',
+    debugPrint(
+      '🔐 [AuthServicePlatform] Platform service delegating token loading to web service',
     );
   }
 
@@ -59,8 +59,8 @@ class AuthServicePlatform extends ChangeNotifier {
 
   /// Handle authentication callback using web implementation
   Future<bool> handleCallback({String? callbackUrl}) async {
-    print(
-      '🔐 [DEBUG] AuthServicePlatform.handleCallback - delegating to web service',
+    debugPrint(
+      '🔐 [AuthServicePlatform] handleCallback - delegating to web service',
     );
 
     // Delegate to the web service which has proper user profile loading

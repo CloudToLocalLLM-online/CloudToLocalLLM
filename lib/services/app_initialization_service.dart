@@ -70,13 +70,16 @@ class AppInitializationService extends ChangeNotifier {
     try {
       debugPrint('🚀 [AppInit] Initializing services with context...');
 
-      // Initialize connection manager
+      // Capture services before any async operations to avoid BuildContext async gap
       final connectionManager = context.read<ConnectionManagerService>();
+      final DesktopClientDetectionService? clientDetection = 
+          kIsWeb ? context.read<DesktopClientDetectionService>() : null;
+
+      // Initialize connection manager
       await connectionManager.initialize();
 
       // Initialize desktop client detection (web only)
-      if (kIsWeb) {
-        final clientDetection = context.read<DesktopClientDetectionService>();
+      if (kIsWeb && clientDetection != null) {
         await clientDetection.initialize();
       }
 

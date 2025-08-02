@@ -48,22 +48,19 @@ class AuthServiceWeb extends ChangeNotifier {
       AuthLogger.debug('Loading state set to true during initialization');
 
       // Check for existing authentication
-      print('🔐 [DEBUG] About to call _checkAuthenticationStatus');
+      debugPrint('🔐 [AuthServiceWeb] About to call _checkAuthenticationStatus');
       await _checkAuthenticationStatus();
-      print('🔐 [DEBUG] _checkAuthenticationStatus completed');
-      print('🔐 [DEBUG] About to log success message');
+      debugPrint('🔐 [AuthServiceWeb] _checkAuthenticationStatus completed');
       AuthLogger.info('Authentication service initialized successfully');
-      print('🔐 [DEBUG] Success message logged');
     } catch (e) {
       AuthLogger.error('Error initializing Auth0', {'error': e.toString()});
     } finally {
-      print('🔐 [DEBUG] Entering finally block');
+      debugPrint('🔐 [AuthServiceWeb] Entering finally block');
       _isLoading.value = false;
-      print('🔐 [DEBUG] Loading state set to false');
+      debugPrint('🔐 [AuthServiceWeb] Loading state set to false');
       notifyListeners();
-      print('🔐 [DEBUG] notifyListeners called');
       AuthLogger.debug('Loading state set to false after initialization');
-      print('🔐 [DEBUG] Finally block completed');
+      debugPrint('🔐 [AuthServiceWeb] Finally block completed');
     }
   }
 
@@ -71,7 +68,7 @@ class AuthServiceWeb extends ChangeNotifier {
   Future<void> _checkAuthenticationStatus() async {
     try {
       AuthLogger.info('🔐 Checking authentication status');
-      print('🔐 [DEBUG] _checkAuthenticationStatus started');
+      debugPrint('🔐 [AuthServiceWeb] _checkAuthenticationStatus started');
 
       // Check if we're on the callback URL (web only)
       // Don't auto-handle callback during initialization - let CallbackScreen handle it
@@ -88,23 +85,23 @@ class AuthServiceWeb extends ChangeNotifier {
       }
 
       // Check for stored tokens
-      print('🔐 [DEBUG] About to load stored tokens');
+      debugPrint('🔐 [AuthServiceWeb] About to load stored tokens');
       await _loadStoredTokens();
-      print('🔐 [DEBUG] Stored tokens loaded, checking validity');
+      debugPrint('🔐 [AuthServiceWeb] Stored tokens loaded, checking validity');
 
       if (_accessToken != null) {
-        print('🔐 [DEBUG] Access token found, checking expiry');
+        debugPrint('🔐 [AuthServiceWeb] Access token found, checking expiry');
         // Validate token expiry
         if (_tokenExpiry != null && DateTime.now().isBefore(_tokenExpiry!)) {
-          print('🔐 [DEBUG] Token is valid, loading user profile');
+          debugPrint('🔐 [AuthServiceWeb] Token is valid, loading user profile');
           // Token is valid, load user profile
           await _loadUserProfile();
           _isAuthenticated.value = true;
           AuthLogger.info('🔐 Valid stored tokens found');
-          print('🔐 [DEBUG] User profile loaded, authentication complete');
+          debugPrint('🔐 [AuthServiceWeb] User profile loaded, authentication complete');
           notifyListeners();
-          print(
-            '🔐 [DEBUG] About to return from _checkAuthenticationStatus (valid token path)',
+          debugPrint(
+            '🔐 [AuthServiceWeb] About to return from _checkAuthenticationStatus (valid token path)',
           );
           return;
         } else {
@@ -131,11 +128,11 @@ class AuthServiceWeb extends ChangeNotifier {
       }
 
       // No valid authentication found
-      print('🔐 [DEBUG] No valid authentication found, setting to false');
+      debugPrint('🔐 [AuthServiceWeb] No valid authentication found, setting to false');
       _isAuthenticated.value = false;
       AuthLogger.info('🔐 No valid authentication found');
-      print(
-        '🔐 [DEBUG] About to exit _checkAuthenticationStatus (no auth path)',
+      debugPrint(
+        '🔐 [AuthServiceWeb] About to exit _checkAuthenticationStatus (no auth path)',
       );
     } catch (e) {
       AuthLogger.error('🔐 Error checking authentication status', {
@@ -148,7 +145,7 @@ class AuthServiceWeb extends ChangeNotifier {
 
   /// Login using Auth0 redirect flow with enhanced protection against loops
   Future<void> login() async {
-    print('🔐 [DEBUG] AuthServiceWeb.login() method called');
+    debugPrint('🔐 [AuthServiceWeb] login() method called');
     // Add stack trace to identify what's calling login repeatedly
     final stackTrace = StackTrace.current;
     AuthLogger.info('🔐 Web login method called', {

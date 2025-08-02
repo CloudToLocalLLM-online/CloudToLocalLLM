@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
-import 'package:sqflite_common_ffi_web/sqflite_ffi_web.dart';
 import 'package:path/path.dart';
 
 /// SQLite-based authentication storage service with web support
@@ -12,32 +11,33 @@ class AuthStorageService {
   static const String _tableName = 'auth_tokens';
   static bool _initialized = false;
 
-  /// Initialize SQLite for web platform with timeout
+  /// Initialize SQLite for native platforms with timeout
   static Future<void> _initializeSQLite() async {
     if (_initialized) return;
 
     try {
-      print('🗄️ [DEBUG] Starting SQLite initialization...');
+      debugPrint('🗄️ [AuthStorage] Starting SQLite initialization...');
 
       // Add timeout to prevent hanging
       await Future(() async {
-        if (kIsWeb) {
-          print(
-            '🗄️ [DEBUG] Detected web platform, using databaseFactoryFfiWeb',
-          );
-          databaseFactory = databaseFactoryFfiWeb;
-        } else {
-          print(
-            '🗄️ [DEBUG] Detected native platform, using databaseFactoryFfi',
+        if (!kIsWeb) {
+          debugPrint(
+            '🗄️ [AuthStorage] Detected native platform, using databaseFactoryFfi',
           );
           databaseFactory = databaseFactoryFfi;
+        } else {
+          // For web, we'll use shared_preferences instead
+          debugPrint(
+            '🗄️ [AuthStorage] Web platform detected, SQLite not supported',
+          );
+          throw UnsupportedError('SQLite not supported on web platform');
         }
-      }).timeout(Duration(seconds: 3));
+      }).timeout(const Duration(seconds: 3));
 
       _initialized = true;
-      print('🗄️ [DEBUG] SQLite initialization complete successfully');
+      debugPrint('🗄️ [AuthStorage] SQLite initialization complete successfully');
     } catch (e) {
-      print('🗄️ [DEBUG] SQLite initialization failed: $e');
+      debugPrint('🗄️ [AuthStorage] SQLite initialization failed: $e');
       _initialized = false;
       rethrow;
     }
@@ -54,20 +54,20 @@ class AuthStorageService {
   /// Initialize the SQLite database with timeout
   static Future<Database> _initDatabase() async {
     try {
-      print('🗄️ [DEBUG] Getting database path...');
+      debugPrint('🗄️ [AuthStorage] Getting database path...');
       final dbPath = await getDatabasesPath();
       final path = join(dbPath, _dbName);
 
-      print('🗄️ [DEBUG] Opening database at: $path');
+      debugPrint('🗄️ [AuthStorage] Opening database at: $path');
 
       return await openDatabase(
         path,
         version: 1,
         onCreate: _createTables,
         onUpgrade: _onUpgrade,
-      ).timeout(Duration(seconds: 10));
+      ).timeout(const Duration(seconds: 10));
     } catch (e) {
-      print('🗄️ [DEBUG] Error initializing database: $e');
+      debugPrint('🗄️ [AuthStorage] Error initializing database: $e');
       rethrow;
     }
   }
@@ -121,19 +121,19 @@ class AuthStorageService {
     String? audience,
   }) async {
     try {
-      print('🗄️ [DEBUG] Starting storeTokens operation...');
+      debugPrint('🗄️ [AuthStorage] Starting storeTokens operation...');
 
       // Add timeout to entire operation
       await (() async {
         final db = await database;
         final now = DateTime.now().millisecondsSinceEpoch;
 
-        print('🗄️ [DEBUG] Database obtained, clearing existing tokens...');
+        debugPrint('🗄️ [AuthStorage] Database obtained, clearing existing tokens...');
 
         // Clear existing tokens first
         await db.delete(_tableName);
 
-        print('🗄️ [DEBUG] Inserting new tokens...');
+        debugPrint('🗄️ [AuthStorage] Inserting new tokens...');
 
         // Insert new tokens
         await db.insert(_tableName, {
@@ -147,11 +147,11 @@ class AuthStorageService {
           'created_at': now,
           'updated_at': now,
         });
-      })().timeout(Duration(seconds: 5));
+      })().timeout(const Duration(seconds: 5));
 
-      print('🗄️ [DEBUG] Tokens stored successfully in SQLite');
+      debugPrint('🗄️ [AuthStorage] Tokens stored successfully in SQLite');
     } catch (e) {
-      print('🗄️ [DEBUG] Error storing tokens in SQLite: $e');
+      debugPrint('🗄️ [AuthStorage] Error storing tokens in SQLite: $e');
       rethrow;
     }
   }
@@ -220,13 +220,13 @@ class AuthStorageService {
   /// Check if valid tokens exist
   static Future<bool> hasValidTokens() async {
     try {
-      print('🗄️ [DEBUG] Checking if valid tokens exist...');
+      debugPrint('🗄️ [AuthStorage] Checking if valid tokens exist...');
       final tokens = await loadTokens();
       final hasTokens = tokens != null;
-      print('🗄️ [DEBUG] Valid tokens exist: $hasTokens');
+      debugPrint('🗄️ [AuthStorage] Valid tokens exist: $hasTokens');
       return hasTokens;
     } catch (e) {
-      print('🗄️ [DEBUG] Error checking valid tokens: $e');
+      debugPrint('🗄️ [AuthStorage] Error checking valid tokens: $e');
       return false;
     }
   }

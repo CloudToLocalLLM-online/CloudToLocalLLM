@@ -17,22 +17,18 @@ class _CallbackScreenState extends State<CallbackScreen> {
   @override
   void initState() {
     super.initState();
-    print('🔐 [DEBUG] CallbackScreen initState called');
-    debugPrint('🔐 [DEBUG] CallbackScreen initState called');
+    debugPrint('🔐 [CallbackScreen] initState called');
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      print('🔐 [DEBUG] CallbackScreen postFrameCallback triggered');
-      debugPrint('🔐 [DEBUG] CallbackScreen postFrameCallback triggered');
+      debugPrint('🔐 [CallbackScreen] postFrameCallback triggered');
       _processCallback();
     });
   }
 
   Future<void> _processCallback() async {
     try {
-      print('🔐 [DEBUG] CallbackScreen _processCallback started');
-      debugPrint('🔐 [DEBUG] CallbackScreen _processCallback started');
+      debugPrint('🔐 [CallbackScreen] _processCallback started');
       final authService = context.read<AuthService>();
-      print('🔐 [DEBUG] AuthService obtained from context');
-      debugPrint('🔐 [DEBUG] AuthService obtained from context');
+      debugPrint('🔐 [CallbackScreen] AuthService obtained from context');
 
       // For desktop platforms, the callback route should not be used
       // Desktop authentication is handled internally by the auth service
@@ -89,13 +85,13 @@ class _CallbackScreenState extends State<CallbackScreen> {
 
       // Web platform - process the callback normally
       // Pass the current location to ensure auth service gets the callback parameters
-      print(
-        '🔐 [DEBUG] CallbackScreen calling authService.handleCallback with URL: $currentLocation',
+      debugPrint(
+        '🔐 [CallbackScreen] calling authService.handleCallback with URL: $currentLocation',
       );
       final success = await authService.handleCallback(
         callbackUrl: currentLocation,
       );
-      print('🔐 [DEBUG] CallbackScreen handleCallback returned: $success');
+      debugPrint('🔐 [CallbackScreen] handleCallback returned: $success');
 
       if (mounted) {
         if (success) {

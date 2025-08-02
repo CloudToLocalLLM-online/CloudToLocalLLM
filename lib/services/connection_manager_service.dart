@@ -341,9 +341,9 @@ class ConnectionManagerService extends ChangeNotifier {
       );
 
       // Add a small delay to ensure the access token is fully available
-      print('🔗 [DEBUG] Scheduling HTTP polling start with 100ms delay...');
-      Future.delayed(Duration(milliseconds: 100), () {
-        print('🔗 [DEBUG] Delay complete, starting HTTP polling...');
+      debugPrint('🔗 [ConnectionManager] Scheduling HTTP polling start with 100ms delay...');
+      Future.delayed(const Duration(milliseconds: 100), () {
+        debugPrint('🔗 [ConnectionManager] Delay complete, starting HTTP polling...');
         startHttpPolling().catchError((e) {
           debugPrint(
             '🔗 [ConnectionManager] Failed to start HTTP polling after auth: $e',

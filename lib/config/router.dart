@@ -100,23 +100,23 @@ class AppRouter {
                 // App subdomain - check auth and show appropriate screen
                 final authService = context.watch<AuthService>();
 
-                print(
+                debugPrint(
                   '🔄 [Router] Route builder called - isLoading: ${authService.isLoading.value}, isAuthenticated: ${authService.isAuthenticated.value}',
                 );
 
                 // If authentication is still loading, show loading screen
                 if (authService.isLoading.value) {
-                  print('🔄 [Router] Showing loading screen');
+                  debugPrint('🔄 [Router] Showing loading screen');
                   return const LoadingScreen(
                     message: 'Checking authentication...',
                   );
                 }
 
                 if (authService.isAuthenticated.value) {
-                  print('🔄 [Router] Showing home screen');
+                  debugPrint('🔄 [Router] Showing home screen');
                   return const HomeScreen();
                 } else {
-                  print('🔄 [Router] Showing login screen');
+                  debugPrint('🔄 [Router] Showing login screen');
                   return const LoginScreen();
                 }
               } else {
