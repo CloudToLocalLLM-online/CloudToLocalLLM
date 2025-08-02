@@ -1,6 +1,6 @@
-# CloudToLocalLLM: Your Personal AI Powerhouse
+﻿# CloudToLocalLLM: Your Personal AI Powerhouse
 
-[![Version](https://img.shields.io/badge/version-4.0.32-blue.svg)](https://github.com/imrightguy/CloudToLocalLLM/releases)
+[![Version](https://img.shields.io/badge/version-4.0.35-blue.svg)](https://github.com/imrightguy/CloudToLocalLLM/releases)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Flutter](https://img.shields.io/badge/Flutter-3.8+-blue.svg)](https://flutter.dev)
 [![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20Windows%20%7C%20Web-lightgrey.svg)](https://github.com/imrightguy/CloudToLocalLLM)
@@ -261,3 +261,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ---
 
 **Made with ❤️ by the CloudToLocalLLM Team**
+
