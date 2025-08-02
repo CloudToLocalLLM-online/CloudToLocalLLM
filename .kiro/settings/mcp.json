@@ -25,23 +25,24 @@
         "run"
       ],
       "env": {
-        "FASTMCP_LOG_LEVEL": "ERROR",
-        "AUTH0_DOMAIN": "dev-v2f2p008x3dr74ww.us.auth0.com",
-        "AUTH0_CLIENT_ID": "FuXPnevXpp311CdYHGsbNZe9t3D8Ts7A",
-        "AUTH0_CLIENT_SECRET": ""
+        "FASTMCP_LOG_LEVEL": "ERROR"
       },
       "disabled": false,
       "autoApprove": [
         "mcp_auth0_auth0_list_resource_servers",
         "auth0_list_resource_servers",
         "auth0_list_applications",
-        "auth0_get_resource_server"
+        "auth0_get_resource_server",
+        "auth0_list_clients",
+        "auth0_get_client",
+        "auth0_create_client",
+        "auth0_update_client"
       ]
     },
     "git": {
-      "command": "uvx",
+      "command": "npx",
       "args": [
-        "mcp-server-git"
+        "@cyanheads/git-mcp-server"
       ],
       "env": {
         "FASTMCP_LOG_LEVEL": "ERROR"
@@ -51,14 +52,16 @@
         "mcp_git_git_status",
         "mcp_git_git_log",
         "mcp_git_git_diff_unstaged",
-        "git_status"
+        "git_status",
+        "git_set_working_dir",
+        "git_add",
+        "git_commit"
       ]
     },
     "sqlite": {
-      "command": "uvx",
+      "command": "npx",
       "args": [
-        "mcp-server-sqlite",
-        "--db-path",
+        "mcp-server-sqlite-npx",
         "./data/app.db"
       ],
       "env": {

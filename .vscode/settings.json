@@ -13,5 +13,6 @@
                 "NODE_ENV": "production"
             }
         }
-    }
+    },
+    "kiroAgent.configureMCP": "Enabled"
 }
