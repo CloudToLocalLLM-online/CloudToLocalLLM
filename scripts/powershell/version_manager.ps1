@@ -334,8 +334,8 @@ function Preserve-FileCharacteristics {
             $Content = $Content -replace "`r`n", "`n"
         }
 
-        # Determine encoding
-        $encoding = if ($hasUtf8Bom) { "UTF8BOM" } else { "UTF8NoBOM" }
+        # Determine encoding (use UTF8 for compatibility across PowerShell versions)
+        $encoding = "UTF8"
 
         # Write content with preserved characteristics
         if ($endsWithNewline) {
