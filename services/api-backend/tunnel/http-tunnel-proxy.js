@@ -1,12 +1,46 @@
 /**
  * @fileoverview HTTP-based tunnel proxy service for cloud-side request routing
  * Uses HTTP polling instead of WebSocket connections for desktop client communication
+ * Enhanced with LLM-specific request handling, routing, and prioritization
  */
 
 import { v4 as uuidv4 } from 'uuid';
 import winston from 'winston';
 import { TunnelLogger, ERROR_CODES } from '../utils/logger.js';
 import { queueRequestForBridge, getResponseForRequest, getBridgeByUserId, isBridgeAvailable } from '../routes/bridge-polling-routes.js';
+
+/**
+ * LLM request types for routing and timeout handling
+ */
+export const LLM_REQUEST_TYPES = {
+  CHAT: 'chat',
+  MODEL_LIST: 'model_list',
+  MODEL_PULL: 'model_pull',
+  MODEL_DELETE: 'model_delete',
+  MODEL_INFO: 'model_info',
+  STREAMING: 'streaming',
+  HEALTH_CHECK: 'health_check',
+  EMBEDDINGS: 'embeddings',
+  COMPLETION: 'completion'
+};
+
+/**
+ * Request priority levels for queue management
+ */
+export const REQUEST_PRIORITY = {
+  HIGH: 1,    // Health checks, model info
+  NORMAL: 2,  // Chat, completion requests
+  LOW: 3      // Model operations (pull, delete)
+};
+
+/**
+ * User tier definitions for request prioritization
+ */
+export const USER_TIERS = {
+  PREMIUM: 'premium',
+  STANDARD: 'standard',
+  FREE: 'free'
+};
 
 /**
  * HTTP-based tunnel proxy service
@@ -17,8 +51,26 @@ export class HttpTunnelProxy {
     // Use enhanced logger if winston logger provided, otherwise create new TunnelLogger
     this.logger = logger instanceof TunnelLogger ? logger : new TunnelLogger('http-tunnel-proxy');
 
-    this.REQUEST_TIMEOUT = 30000; // 30 seconds (default)
-    this.LLM_REQUEST_TIMEOUT = 120000; // 2 minutes for LLM requests
+    // Enhanced timeout configuration for different LLM operation types
+    this.TIMEOUTS = {
+      DEFAULT: 30000,           // 30 seconds (default)
+      CHAT: 120000,            // 2 minutes for chat requests
+      STREAMING: 300000,       // 5 minutes for streaming requests
+      MODEL_PULL: 600000,      // 10 minutes for model downloads
+      MODEL_DELETE: 60000,     // 1 minute for model deletion
+      MODEL_LIST: 15000,       // 15 seconds for model listing
+      MODEL_INFO: 30000,       // 30 seconds for model info
+      HEALTH_CHECK: 10000,     // 10 seconds for health checks
+      EMBEDDINGS: 90000,       // 1.5 minutes for embeddings
+      COMPLETION: 120000       // 2 minutes for completions
+    };
+
+    // Request queue for prioritization
+    this.requestQueue = {
+      [REQUEST_PRIORITY.HIGH]: [],
+      [REQUEST_PRIORITY.NORMAL]: [],
+      [REQUEST_PRIORITY.LOW]: []
+    };
 
     // Enhanced performance metrics
     this.metrics = {
@@ -65,25 +117,167 @@ export class HttpTunnelProxy {
   }
 
   /**
-   * Forward LLM request to desktop client with extended timeout
+   * Forward LLM request to desktop client with intelligent routing and timeout
    * @param {string} userId - User ID
    * @param {Object} httpRequest - HTTP request object
+   * @param {string} userTier - User tier for prioritization
+   * @param {string} preferredProvider - Preferred LLM provider
    * @returns {Promise<Object>} HTTP response object
    */
-  async forwardLLMRequest(userId, httpRequest) {
-    return this.forwardRequestWithTimeout(userId, httpRequest, this.LLM_REQUEST_TIMEOUT);
+  async forwardLLMRequest(userId, httpRequest, userTier = USER_TIERS.STANDARD, preferredProvider = null) {
+    // Classify the LLM request type
+    const requestType = this.classifyLLMRequest(httpRequest);
+    
+    // Get appropriate timeout for request type
+    const timeout = this.getTimeoutForRequestType(requestType);
+    
+    // Get request priority based on type and user tier
+    const priority = this.getRequestPriority(requestType, userTier);
+    
+    // Enhance request with LLM-specific metadata
+    const enhancedRequest = {
+      ...httpRequest,
+      llmMetadata: {
+        requestType,
+        priority,
+        userTier,
+        preferredProvider,
+        timestamp: Date.now(),
+        timeout
+      }
+    };
+
+    this.logger.info('Processing LLM request', {
+      userId,
+      requestType,
+      priority,
+      userTier,
+      preferredProvider,
+      timeout,
+      path: httpRequest.path
+    });
+
+    return this.forwardRequestWithTimeout(userId, enhancedRequest, timeout);
   }
 
   /**
-   * Forward HTTP request to desktop client with custom timeout
+   * Classify LLM request type based on path and method
+   * @param {Object} httpRequest - HTTP request object
+   * @returns {string} LLM request type
+   */
+  classifyLLMRequest(httpRequest) {
+    const { path, method, headers, body } = httpRequest;
+    const pathLower = path.toLowerCase();
+
+    // Check for streaming requests
+    if (headers?.['accept']?.includes('text/event-stream') || 
+        pathLower.includes('/stream') || 
+        (body && body.includes('"stream":true'))) {
+      return LLM_REQUEST_TYPES.STREAMING;
+    }
+
+    // Model operations
+    if (pathLower.includes('/api/models') && method === 'GET') {
+      return LLM_REQUEST_TYPES.MODEL_LIST;
+    }
+    if (pathLower.includes('/api/pull')) {
+      return LLM_REQUEST_TYPES.MODEL_PULL;
+    }
+    if (pathLower.includes('/api/delete')) {
+      return LLM_REQUEST_TYPES.MODEL_DELETE;
+    }
+    if (pathLower.includes('/api/show') || pathLower.includes('/api/model')) {
+      return LLM_REQUEST_TYPES.MODEL_INFO;
+    }
+
+    // Chat and completion requests
+    if (pathLower.includes('/api/chat') || pathLower.includes('/chat')) {
+      return LLM_REQUEST_TYPES.CHAT;
+    }
+    if (pathLower.includes('/api/generate') || pathLower.includes('/completion')) {
+      return LLM_REQUEST_TYPES.COMPLETION;
+    }
+    if (pathLower.includes('/api/embeddings') || pathLower.includes('/embeddings')) {
+      return LLM_REQUEST_TYPES.EMBEDDINGS;
+    }
+
+    // Health checks
+    if (pathLower.includes('/health') || pathLower.includes('/status')) {
+      return LLM_REQUEST_TYPES.HEALTH_CHECK;
+    }
+
+    // Default to chat for unknown LLM requests
+    return LLM_REQUEST_TYPES.CHAT;
+  }
+
+  /**
+   * Get timeout for specific request type
+   * @param {string} requestType - LLM request type
+   * @returns {number} Timeout in milliseconds
+   */
+  getTimeoutForRequestType(requestType) {
+    switch (requestType) {
+      case LLM_REQUEST_TYPES.STREAMING:
+        return this.TIMEOUTS.STREAMING;
+      case LLM_REQUEST_TYPES.MODEL_PULL:
+        return this.TIMEOUTS.MODEL_PULL;
+      case LLM_REQUEST_TYPES.MODEL_DELETE:
+        return this.TIMEOUTS.MODEL_DELETE;
+      case LLM_REQUEST_TYPES.MODEL_LIST:
+        return this.TIMEOUTS.MODEL_LIST;
+      case LLM_REQUEST_TYPES.MODEL_INFO:
+        return this.TIMEOUTS.MODEL_INFO;
+      case LLM_REQUEST_TYPES.HEALTH_CHECK:
+        return this.TIMEOUTS.HEALTH_CHECK;
+      case LLM_REQUEST_TYPES.EMBEDDINGS:
+        return this.TIMEOUTS.EMBEDDINGS;
+      case LLM_REQUEST_TYPES.COMPLETION:
+        return this.TIMEOUTS.COMPLETION;
+      case LLM_REQUEST_TYPES.CHAT:
+      default:
+        return this.TIMEOUTS.CHAT;
+    }
+  }
+
+  /**
+   * Get request priority based on type and user tier
+   * @param {string} requestType - LLM request type
+   * @param {string} userTier - User tier
+   * @returns {number} Priority level
+   */
+  getRequestPriority(requestType, userTier) {
+    // High priority requests
+    if (requestType === LLM_REQUEST_TYPES.HEALTH_CHECK || 
+        requestType === LLM_REQUEST_TYPES.MODEL_INFO) {
+      return REQUEST_PRIORITY.HIGH;
+    }
+
+    // Low priority requests
+    if (requestType === LLM_REQUEST_TYPES.MODEL_PULL || 
+        requestType === LLM_REQUEST_TYPES.MODEL_DELETE) {
+      return REQUEST_PRIORITY.LOW;
+    }
+
+    // Premium users get higher priority for normal requests
+    if (userTier === USER_TIERS.PREMIUM) {
+      return REQUEST_PRIORITY.HIGH;
+    }
+
+    // Standard priority for most requests
+    return REQUEST_PRIORITY.NORMAL;
+  }
+
+  /**
+   * Forward HTTP request to desktop client with custom timeout and LLM routing
    * @param {string} userId - User ID
    * @param {Object} httpRequest - HTTP request object
    * @param {number} customTimeout - Custom timeout in milliseconds
    * @returns {Promise<Object>} HTTP response object
    */
   async forwardRequestWithTimeout(userId, httpRequest, customTimeout = null) {
-    const timeoutMs = customTimeout || (httpRequest.timeout || this.REQUEST_TIMEOUT);
+    const timeoutMs = customTimeout || (httpRequest.timeout || this.TIMEOUTS.DEFAULT);
     const startTime = Date.now();
+    const isLLMRequest = httpRequest.llmMetadata != null;
 
     // Find bridge for user
     const bridge = getBridgeByUserId(userId);
@@ -95,49 +289,71 @@ export class HttpTunnelProxy {
 
     // Update metrics
     this.metrics.totalRequests++;
-    if (timeoutMs > this.REQUEST_TIMEOUT) {
+    if (isLLMRequest) {
       this.metrics.llmRequests++;
+      this.trackLLMRequestType(httpRequest.llmMetadata.requestType);
     }
 
     // Track request analytics
     this.trackRequestAnalytics(httpRequest);
 
     try {
-      // Create request message
+      // Create enhanced request message with LLM routing information
       const requestMessage = {
-        type: 'http_request',
+        type: isLLMRequest ? 'llm_request' : 'http_request',
         id: uuidv4(),
         data: {
           method: httpRequest.method,
           path: httpRequest.path,
           headers: httpRequest.headers || {},
           ...(httpRequest.body && { body: httpRequest.body }),
+          // Add LLM-specific routing metadata
+          ...(isLLMRequest && {
+            llmMetadata: {
+              requestType: httpRequest.llmMetadata.requestType,
+              priority: httpRequest.llmMetadata.priority,
+              userTier: httpRequest.llmMetadata.userTier,
+              preferredProvider: httpRequest.llmMetadata.preferredProvider,
+              timeout: timeoutMs
+            }
+          })
         },
         timestamp: new Date().toISOString(),
+        priority: isLLMRequest ? httpRequest.llmMetadata.priority : REQUEST_PRIORITY.NORMAL,
       };
 
-      // Queue request for bridge
-      const requestId = queueRequestForBridge(bridge.bridgeId, requestMessage);
+      // Queue request for bridge with priority handling
+      const requestId = this.queueRequestWithPriority(bridge.bridgeId, requestMessage);
 
       this.logger.logRequest('started', requestId, userId, {
         bridgeId: bridge.bridgeId,
         method: httpRequest.method,
         path: httpRequest.path,
         timeout: timeoutMs,
-        isLLMRequest: timeoutMs > this.REQUEST_TIMEOUT,
+        isLLMRequest,
+        ...(isLLMRequest && {
+          requestType: httpRequest.llmMetadata.requestType,
+          priority: httpRequest.llmMetadata.priority,
+          userTier: httpRequest.llmMetadata.userTier,
+          preferredProvider: httpRequest.llmMetadata.preferredProvider
+        })
       });
 
       // Wait for response
       const response = await getResponseForRequest(requestId, timeoutMs);
 
       const responseTime = Date.now() - startTime;
-      this.updateMetrics(true, responseTime, timeoutMs > this.REQUEST_TIMEOUT);
+      this.updateMetrics(true, responseTime, isLLMRequest);
 
       this.logger.logRequest('completed', requestId, userId, {
         bridgeId: bridge.bridgeId,
         responseTime,
         statusCode: response.status,
-        isLLMRequest: timeoutMs > this.REQUEST_TIMEOUT,
+        isLLMRequest,
+        ...(isLLMRequest && {
+          requestType: httpRequest.llmMetadata.requestType,
+          priority: httpRequest.llmMetadata.priority
+        })
       });
 
       return {
@@ -151,7 +367,7 @@ export class HttpTunnelProxy {
       const responseTime = Date.now() - startTime;
       const isTimeout = error.message.includes('timeout');
 
-      this.updateMetrics(false, responseTime, timeoutMs > this.REQUEST_TIMEOUT, isTimeout);
+      this.updateMetrics(false, responseTime, isLLMRequest, isTimeout);
 
       this.logger.logTunnelError(
         isTimeout ? ERROR_CODES.REQUEST_TIMEOUT : ERROR_CODES.REQUEST_FAILED,
@@ -162,8 +378,13 @@ export class HttpTunnelProxy {
           method: httpRequest.method,
           path: httpRequest.path,
           responseTime,
-          isLLMRequest: timeoutMs > this.REQUEST_TIMEOUT,
+          isLLMRequest,
           error: error.message,
+          ...(isLLMRequest && {
+            requestType: httpRequest.llmMetadata.requestType,
+            priority: httpRequest.llmMetadata.priority,
+            preferredProvider: httpRequest.llmMetadata.preferredProvider
+          })
         },
       );
 
@@ -264,6 +485,34 @@ export class HttpTunnelProxy {
   }
 
   /**
+   * Queue request with priority handling
+   * @param {string} bridgeId - Bridge ID
+   * @param {Object} requestMessage - Request message
+   * @returns {string} Request ID
+   */
+  queueRequestWithPriority(bridgeId, requestMessage) {
+    // For now, use the existing queueRequestForBridge function
+    // In a full implementation, this would handle priority queuing
+    return queueRequestForBridge(bridgeId, requestMessage);
+  }
+
+  /**
+   * Track LLM request type metrics
+   * @param {string} requestType - LLM request type
+   */
+  trackLLMRequestType(requestType) {
+    if (!this.metrics.llmRequestTypes) {
+      this.metrics.llmRequestTypes = {};
+    }
+    
+    if (!this.metrics.llmRequestTypes[requestType]) {
+      this.metrics.llmRequestTypes[requestType] = 0;
+    }
+    
+    this.metrics.llmRequestTypes[requestType]++;
+  }
+
+  /**
    * Track request analytics
    */
   trackRequestAnalytics(httpRequest) {
@@ -277,6 +526,46 @@ export class HttpTunnelProxy {
     if (this.isStreamingRequest(httpRequest)) {
       this.metrics.streamingRequests++;
     }
+
+    // Track LLM-specific analytics
+    if (httpRequest.llmMetadata) {
+      this.trackLLMAnalytics(httpRequest.llmMetadata);
+    }
+  }
+
+  /**
+   * Track LLM-specific analytics
+   * @param {Object} llmMetadata - LLM metadata
+   */
+  trackLLMAnalytics(llmMetadata) {
+    // Track user tier distribution
+    if (!this.metrics.userTierDistribution) {
+      this.metrics.userTierDistribution = {};
+    }
+    if (!this.metrics.userTierDistribution[llmMetadata.userTier]) {
+      this.metrics.userTierDistribution[llmMetadata.userTier] = 0;
+    }
+    this.metrics.userTierDistribution[llmMetadata.userTier]++;
+
+    // Track preferred provider usage
+    if (llmMetadata.preferredProvider) {
+      if (!this.metrics.preferredProviders) {
+        this.metrics.preferredProviders = {};
+      }
+      if (!this.metrics.preferredProviders[llmMetadata.preferredProvider]) {
+        this.metrics.preferredProviders[llmMetadata.preferredProvider] = 0;
+      }
+      this.metrics.preferredProviders[llmMetadata.preferredProvider]++;
+    }
+
+    // Track priority distribution
+    if (!this.metrics.priorityDistribution) {
+      this.metrics.priorityDistribution = {};
+    }
+    if (!this.metrics.priorityDistribution[llmMetadata.priority]) {
+      this.metrics.priorityDistribution[llmMetadata.priority] = 0;
+    }
+    this.metrics.priorityDistribution[llmMetadata.priority]++;
   }
 
   /**

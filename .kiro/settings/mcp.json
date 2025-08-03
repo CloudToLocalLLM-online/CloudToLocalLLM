@@ -55,7 +55,8 @@
         "git_status",
         "git_set_working_dir",
         "git_add",
-        "git_commit"
+        "git_commit",
+        "git_push"
       ]
     },
     "sqlite": {
