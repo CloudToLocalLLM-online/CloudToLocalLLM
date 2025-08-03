@@ -534,3 +534,33 @@ class LLMCommunicationError implements Exception {
     }
   }
 }
+
+/// LLM Communication Exception
+///
+/// Exception wrapper for LLM communication errors that can be thrown
+/// and caught in standard exception handling patterns.
+class LLMCommunicationException implements Exception {
+  final LLMCommunicationErrorType type;
+  final String message;
+  final LLMCommunicationError? error;
+
+  const LLMCommunicationException(
+    this.type,
+    this.message, [
+    this.error,
+  ]);
+
+  /// Create from LLMCommunicationError
+  factory LLMCommunicationException.fromError(LLMCommunicationError error) {
+    return LLMCommunicationException(
+      error.type,
+      error.message,
+      error,
+    );
+  }
+
+  @override
+  String toString() {
+    return 'LLMCommunicationException: $message (type: $type)';
+  }
+}

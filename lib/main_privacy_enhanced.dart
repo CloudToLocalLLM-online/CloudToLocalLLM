@@ -14,6 +14,7 @@ import 'services/unified_connection_service.dart';
 import 'services/http_polling_tunnel_client.dart';
 import 'services/local_ollama_connection_service.dart';
 import 'services/connection_manager_service.dart';
+import 'services/llm_provider_manager.dart';
 import 'utils/tunnel_logger.dart';
 import 'services/streaming_chat_service.dart';
 import 'services/native_tray_service.dart';
@@ -312,9 +313,11 @@ class _CloudToLocalLLMPrivacyAppState extends State<CloudToLocalLLMPrivacyApp> {
           create: (context) {
             final authService = context.read<AuthService>();
             final logger = TunnelLogger('HttpPollingTunnel');
+            final providerManager = context.read<LLMProviderManager>();
             return HttpPollingTunnelClient(
               authService: authService,
               logger: logger,
+              providerManager: providerManager,
             );
           },
         ),

@@ -390,6 +390,8 @@ class OllamaProvider extends BaseLLMProvider {
         return 'http://localhost:11434';
       case ConnectionType.cloud:
         return 'https://app.cloudtolocalllm.online/api/ollama';
+      case ConnectionType.provider:
+        return 'http://localhost:11434'; // Default fallback
       case ConnectionType.none:
         throw StateError('No connection available');
     }

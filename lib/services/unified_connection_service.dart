@@ -109,6 +109,14 @@ class UnifiedConnectionService extends ChangeNotifier {
         _clearError();
         break;
 
+      case ConnectionType.provider:
+        _isConnected = true;
+        _connectionType = 'provider';
+        _version = 'Provider Manager';
+        _models = _connectionManager!.availableModels;
+        _clearError();
+        break;
+
       case ConnectionType.none:
         _isConnected = false;
         _connectionType = 'none';

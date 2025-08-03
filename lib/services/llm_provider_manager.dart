@@ -1,428 +1,629 @@
-import 'dart:async';
-import 'dart:convert';
-import 'package:flutter/foundation.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-
-import 'llm_providers/base_llm_provider.dart';
-import 'llm_providers/ollama_provider.dart';
-import 'llm_providers/lm_studio_provider.dart';
-import 'connection_manager_service.dart';
-import '../utils/tunnel_logger.dart';
-
-/// LLM Provider Manager Service
+/// LLM Provider Manager
 ///
-/// Manages multiple LLM providers and handles switching between them.
-/// Provides a unified interface for the application to interact with
-/// different LLM providers like Ollama, LM Studio, OpenAI-compatible APIs, etc.
+/// Manages LLM provider registration, health monitoring, and failover capabilities.
+/// Integrates with LangChain provider loading and automatic provider discovery.
+///
+/// Key Features:
+/// - Automatic provider registration from discovery service
+/// - Real-time health monitoring with periodic checks
+/// - Provider performance metrics collection
+/// - Intelligent failover and provider prioritization
+/// - Provider enable/disable management
+///
+/// Usage:
+/// ```dart
+/// final manager = LLMProviderManager(
+///   discoveryService: discoveryService,
+///   langchainService: langchainService,
+/// );
+/// await manager.initialize();
+/// final provider = await manager.getProviderWithFailover();
+/// ```
+library;
+
+import 'dart:async';
+import 'package:flutter/foundation.dart';
+
+import 'provider_discovery_service.dart';
+import 'langchain_integration_service.dart';
+import '../models/llm_communication_error.dart';
+
+/// Provider health status
+enum ProviderHealthStatus {
+  healthy,
+  degraded,
+  unhealthy,
+  unknown,
+}
+
+/// Provider performance metrics
+///
+/// Tracks performance statistics for LLM providers including response times,
+/// success rates, and request counts. Used for health monitoring and
+/// provider prioritization decisions.
+class ProviderMetrics {
+  final String providerId;
+  final double averageResponseTime;
+  final double successRate;
+  final int totalRequests;
+  final int successfulRequests;
+  final int failedRequests;
+  final DateTime lastRequestTime;
+  final DateTime lastSuccessTime;
+  final DateTime lastFailureTime;
+  final Map<String, dynamic> additionalMetrics;
+
+  const ProviderMetrics({
+    required this.providerId,
+    required this.averageResponseTime,
+    required this.successRate,
+    required this.totalRequests,
+    required this.successfulRequests,
+    required this.failedRequests,
+    required this.lastRequestTime,
+    required this.lastSuccessTime,
+    required this.lastFailureTime,
+    required this.additionalMetrics,
+  });
+
+  /// Create empty metrics for a provider
+  factory ProviderMetrics.empty(String providerId) {
+    final now = DateTime.now();
+    return ProviderMetrics(
+      providerId: providerId,
+      averageResponseTime: 0.0,
+      successRate: 0.0,
+      totalRequests: 0,
+      successfulRequests: 0,
+      failedRequests: 0,
+      lastRequestTime: now,
+      lastSuccessTime: now,
+      lastFailureTime: now,
+      additionalMetrics: {},
+    );
+  }
+
+  /// Create updated metrics with new request data
+  ProviderMetrics withNewRequest({
+    required bool success,
+    required double responseTime,
+    Map<String, dynamic>? additionalData,
+  }) {
+    final now = DateTime.now();
+    final newTotalRequests = totalRequests + 1;
+    final newSuccessfulRequests = success ? successfulRequests + 1 : successfulRequests;
+    final newFailedRequests = success ? failedRequests : failedRequests + 1;
+    
+    // Calculate new average response time
+    final newAverageResponseTime = totalRequests == 0
+        ? responseTime
+        : ((averageResponseTime * totalRequests) + responseTime) / newTotalRequests;
+    
+    // Calculate new success rate
+    final newSuccessRate = newTotalRequests == 0 ? 0.0 : newSuccessfulRequests / newTotalRequests;
+
+    return ProviderMetrics(
+      providerId: providerId,
+      averageResponseTime: newAverageResponseTime,
+      successRate: newSuccessRate,
+      totalRequests: newTotalRequests,
+      successfulRequests: newSuccessfulRequests,
+      failedRequests: newFailedRequests,
+      lastRequestTime: now,
+      lastSuccessTime: success ? now : lastSuccessTime,
+      lastFailureTime: success ? lastFailureTime : now,
+      additionalMetrics: {
+        ...additionalMetrics,
+        if (additionalData != null) ...additionalData,
+      },
+    );
+  }
+
+  /// Get health status based on metrics
+  ProviderHealthStatus get healthStatus {
+    if (totalRequests == 0) return ProviderHealthStatus.unknown;
+    
+    if (successRate >= 0.95 && averageResponseTime < 5000) {
+      return ProviderHealthStatus.healthy;
+    } else if (successRate >= 0.8 && averageResponseTime < 10000) {
+      return ProviderHealthStatus.degraded;
+    } else {
+      return ProviderHealthStatus.unhealthy;
+    }
+  }
+}
+
+/// Registered provider information
+class RegisteredProvider {
+  final ProviderInfo info;
+  final LangChainProviderWrapper? langchainWrapper;
+  final ProviderMetrics metrics;
+  final ProviderHealthStatus healthStatus;
+  final DateTime registeredAt;
+  final DateTime lastHealthCheck;
+  final bool isEnabled;
+  final int priority;
+
+  const RegisteredProvider({
+    required this.info,
+    this.langchainWrapper,
+    required this.metrics,
+    required this.healthStatus,
+    required this.registeredAt,
+    required this.lastHealthCheck,
+    required this.isEnabled,
+    required this.priority,
+  });
+
+  /// Create a copy with updated fields
+  RegisteredProvider copyWith({
+    ProviderInfo? info,
+    LangChainProviderWrapper? langchainWrapper,
+    ProviderMetrics? metrics,
+    ProviderHealthStatus? healthStatus,
+    DateTime? registeredAt,
+    DateTime? lastHealthCheck,
+    bool? isEnabled,
+    int? priority,
+  }) {
+    return RegisteredProvider(
+      info: info ?? this.info,
+      langchainWrapper: langchainWrapper ?? this.langchainWrapper,
+      metrics: metrics ?? this.metrics,
+      healthStatus: healthStatus ?? this.healthStatus,
+      registeredAt: registeredAt ?? this.registeredAt,
+      lastHealthCheck: lastHealthCheck ?? this.lastHealthCheck,
+      isEnabled: isEnabled ?? this.isEnabled,
+      priority: priority ?? this.priority,
+    );
+  }
+
+  /// Check if provider is available for use
+  bool get isAvailable => 
+      isEnabled && 
+      info.status == ProviderStatus.available &&
+      healthStatus != ProviderHealthStatus.unhealthy;
+}
+
+/// LLM Provider Manager
 class LLMProviderManager extends ChangeNotifier {
-  final ConnectionManagerService _connectionManager;
-  final TunnelLogger _logger = TunnelLogger('LLMProviderManager');
+  final ProviderDiscoveryService _discoveryService;
+  final LangChainIntegrationService _langchainService;
 
-  // Providers
-  final Map<String, BaseLLMProvider> _providers = {};
-  BaseLLMProvider? _activeProvider;
-  String? _activeProviderId;
-
-  // State
+  final Map<String, RegisteredProvider> _registeredProviders = {};
+  final Map<String, Timer> _healthCheckTimers = {};
+  
+  Timer? _periodicHealthCheckTimer;
   bool _isInitialized = false;
-  bool _isLoading = false;
-  String? _lastError;
+  String? _preferredProviderId;
+  String? _error;
 
-  // Preferences
-  static const String _prefActiveProvider = 'active_llm_provider';
-  static const String _prefProviderConfigs = 'llm_provider_configs';
+  static const Duration _healthCheckInterval = Duration(seconds: 30);
 
-  LLMProviderManager({required ConnectionManagerService connectionManager})
-    : _connectionManager = connectionManager;
+  LLMProviderManager({
+    required ProviderDiscoveryService discoveryService,
+    required LangChainIntegrationService langchainService,
+  }) : _discoveryService = discoveryService,
+       _langchainService = langchainService {
+    
+    // Listen to discovery service changes
+    _discoveryService.addListener(_onDiscoveryChanged);
+    
+    // Listen to LangChain service changes
+    _langchainService.addListener(_onLangChainChanged);
+  }
 
-  // Getters
+  /// Check if manager is initialized
   bool get isInitialized => _isInitialized;
-  bool get isLoading => _isLoading;
-  String? get lastError => _lastError;
-  BaseLLMProvider? get activeProvider => _activeProvider;
-  String? get activeProviderId => _activeProviderId;
-  List<BaseLLMProvider> get availableProviders => _providers.values.toList();
-  List<String> get availableProviderIds => _providers.keys.toList();
+
+  /// Get current error
+  String? get error => _error;
+
+  /// Get preferred provider ID
+  String? get preferredProviderId => _preferredProviderId;
+
+  /// Get all registered providers
+  List<RegisteredProvider> get registeredProviders =>
+      List.unmodifiable(_registeredProviders.values);
+
+  /// Get available providers (enabled and healthy)
+  List<RegisteredProvider> get availableProviders =>
+      _registeredProviders.values
+          .where((provider) => provider.isAvailable)
+          .toList()
+        ..sort((a, b) => b.priority.compareTo(a.priority));
+
+  /// Get healthy providers
+  List<RegisteredProvider> get healthyProviders =>
+      _registeredProviders.values
+          .where((provider) => 
+              provider.isEnabled && 
+              provider.healthStatus == ProviderHealthStatus.healthy)
+          .toList()
+        ..sort((a, b) => b.priority.compareTo(a.priority));
 
   /// Initialize the provider manager
   Future<void> initialize() async {
-    if (_isInitialized) return;
-
     try {
-      _setLoading(true);
-      _clearError();
+      debugPrint('Initializing LLM Provider Manager...');
+      _error = null;
 
-      _logger.info('Initializing LLM Provider Manager');
-
-      // Register built-in providers
-      await _registerBuiltInProviders();
-
-      // Load saved preferences
-      await _loadPreferences();
-
-      // Initialize providers
-      await _initializeProviders();
-
-      // Set active provider
-      await _setActiveProviderFromPreferences();
-
-      _isInitialized = true;
-      _logger.info('LLM Provider Manager initialized successfully');
-    } catch (e) {
-      _lastError = 'Failed to initialize LLM Provider Manager: $e';
-      _logger.logTunnelError(
-        'PROVIDER_MANAGER_INIT_FAILED',
-        _lastError!,
-        error: e,
-      );
-      rethrow;
-    } finally {
-      _setLoading(false);
-    }
-  }
-
-  /// Register built-in providers
-  Future<void> _registerBuiltInProviders() async {
-    // Register Ollama provider
-    final ollamaProvider = OllamaProvider(
-      connectionManager: _connectionManager,
-    );
-    _providers[ollamaProvider.providerId] = ollamaProvider;
-
-    // Register LM Studio provider
-    final lmStudioProvider = LMStudioProvider();
-    _providers[lmStudioProvider.providerId] = lmStudioProvider;
-
-    _logger.info('Registered ${_providers.length} built-in providers');
-  }
-
-  /// Initialize all providers
-  Future<void> _initializeProviders() async {
-    final futures = <Future<void>>[];
-
-    for (final provider in _providers.values) {
-      futures.add(_initializeProvider(provider));
-    }
-
-    // Initialize all providers concurrently
-    await Future.wait(futures);
-  }
-
-  /// Initialize a single provider
-  Future<void> _initializeProvider(BaseLLMProvider provider) async {
-    try {
-      await provider.initialize();
-      _logger.info('Initialized provider: ${provider.providerId}');
-    } catch (e) {
-      _logger.logTunnelError(
-        'PROVIDER_INIT_FAILED',
-        'Failed to initialize provider: ${provider.providerId}',
-        error: e,
-      );
-      // Don't rethrow - allow other providers to initialize
-    }
-  }
-
-  /// Switch to a different provider
-  Future<void> switchProvider(String providerId) async {
-    if (_activeProviderId == providerId) return;
-
-    final provider = _providers[providerId];
-    if (provider == null) {
-      throw ArgumentError('Provider not found: $providerId');
-    }
-
-    try {
-      _setLoading(true);
-      _clearError();
-
-      _logger.info('Switching to provider: $providerId');
-
-      // Ensure the provider is connected
-      if (!provider.isAvailable) {
-        await provider.connect();
+      // Ensure discovery service is running
+      if (!_discoveryService.isScanning) {
+        await _discoveryService.scanForProviders();
       }
 
-      _activeProvider = provider;
-      _activeProviderId = providerId;
+      // Ensure LangChain service is initialized
+      if (!_langchainService.isInitialized) {
+        await _langchainService.initializeProviders();
+      }
 
-      // Save preference
-      await _saveActiveProviderPreference(providerId);
+      // Register discovered providers
+      await _registerDiscoveredProviders();
 
-      _logger.info('Successfully switched to provider: $providerId');
-      notifyListeners();
-    } catch (e) {
-      _lastError = 'Failed to switch to provider $providerId: $e';
-      _logger.logTunnelError('PROVIDER_SWITCH_FAILED', _lastError!, error: e);
-      rethrow;
-    } finally {
-      _setLoading(false);
+      // Start health monitoring
+      _startHealthMonitoring();
+
+      _isInitialized = true;
+      debugPrint('LLM Provider Manager initialized with ${_registeredProviders.length} providers');
+
+    } catch (error) {
+      _error = 'Failed to initialize provider manager: $error';
+      debugPrint(_error);
     }
+
+    notifyListeners();
+  }
+
+  /// Register a provider manually
+  Future<void> registerProvider(ProviderInfo providerInfo, {int priority = 0}) async {
+    try {
+      debugPrint('Registering provider: ${providerInfo.name}');
+
+      // Get LangChain wrapper if available
+      final langchainWrapper = _langchainService.getProvider(providerInfo.id);
+
+      final registeredProvider = RegisteredProvider(
+        info: providerInfo,
+        langchainWrapper: langchainWrapper,
+        metrics: ProviderMetrics.empty(providerInfo.id),
+        healthStatus: ProviderHealthStatus.unknown,
+        registeredAt: DateTime.now(),
+        lastHealthCheck: DateTime.now(),
+        isEnabled: true,
+        priority: priority,
+      );
+
+      _registeredProviders[providerInfo.id] = registeredProvider;
+
+      // Start health monitoring for this provider
+      _startProviderHealthCheck(providerInfo.id);
+
+      // Set as preferred if none is set
+      _preferredProviderId ??= providerInfo.id;
+
+      debugPrint('Provider registered successfully: ${providerInfo.name}');
+      notifyListeners();
+
+    } catch (error) {
+      debugPrint('Failed to register provider ${providerInfo.name}: $error');
+      throw LLMCommunicationError.fromException(
+        error is Exception ? error : Exception(error.toString()),
+        type: LLMCommunicationErrorType.providerConfigurationError,
+        providerId: providerInfo.id,
+      );
+    }
+  }
+
+  /// Get preferred provider
+  RegisteredProvider? getPreferredProvider() {
+    if (_preferredProviderId == null) return null;
+    return _registeredProviders[_preferredProviderId];
+  }
+
+  /// Set preferred provider
+  void setPreferredProvider(String providerId) {
+    if (_registeredProviders.containsKey(providerId)) {
+      _preferredProviderId = providerId;
+      debugPrint('Preferred provider set to: $providerId');
+      notifyListeners();
+    } else {
+      debugPrint('Cannot set preferred provider - not registered: $providerId');
+    }
+  }
+
+  /// Get available providers sorted by health and priority
+  List<RegisteredProvider> getAvailableProviders() {
+    return availableProviders;
   }
 
   /// Get provider by ID
-  BaseLLMProvider? getProvider(String providerId) {
-    return _providers[providerId];
+  RegisteredProvider? getProvider(String providerId) {
+    return _registeredProviders[providerId];
   }
 
-  /// Register a custom provider
-  Future<void> registerProvider(BaseLLMProvider provider) async {
-    _providers[provider.providerId] = provider;
-
-    if (_isInitialized) {
-      await _initializeProvider(provider);
-    }
-
-    notifyListeners();
-    _logger.info('Registered custom provider: ${provider.providerId}');
-  }
-
-  /// Update provider configuration and save to preferences
-  Future<void> updateProviderConfiguration(
-    String providerId,
-    Map<String, dynamic> config,
-  ) async {
-    final provider = _providers[providerId];
+  /// Test provider connection
+  Future<bool> testProviderConnection(String providerId) async {
+    final provider = _registeredProviders[providerId];
     if (provider == null) {
-      throw ArgumentError('Provider not found: $providerId');
+      debugPrint('Provider not found for connection test: $providerId');
+      return false;
     }
 
-    // Validate the configuration
-    if (!provider.validateConfiguration(config)) {
-      throw ArgumentError('Invalid configuration for provider: $providerId');
+    final stopwatch = Stopwatch()..start();
+    bool success = false;
+
+    try {
+      debugPrint('Testing connection for provider: ${provider.info.name}');
+
+      // Use LangChain service to test if available
+      if (provider.langchainWrapper != null) {
+        success = await _langchainService.testProvider(providerId);
+      } else {
+        // Fallback to discovery service validation
+        success = await _discoveryService.validateProviderEndpoint(provider.info);
+      }
+
+      stopwatch.stop();
+      final responseTime = stopwatch.elapsedMilliseconds.toDouble();
+
+      // Update metrics
+      await _updateProviderMetrics(providerId, success, responseTime);
+
+      debugPrint('Connection test for ${provider.info.name}: ${success ? 'SUCCESS' : 'FAILED'}');
+      return success;
+
+    } catch (error) {
+      stopwatch.stop();
+      final responseTime = stopwatch.elapsedMilliseconds.toDouble();
+      
+      await _updateProviderMetrics(providerId, false, responseTime);
+      debugPrint('Connection test error for ${provider.info.name}: $error');
+      return false;
     }
-
-    // Update the provider configuration
-    await provider.updateConfiguration(config);
-
-    // Save all configurations to preferences
-    await saveProviderConfigurations();
-
-    _logger.info('Updated and saved configuration for provider: $providerId');
   }
 
-  /// Unregister a provider
-  void unregisterProvider(String providerId) {
-    final provider = _providers.remove(providerId);
+  /// Get provider with automatic failover
+  Future<RegisteredProvider?> getProviderWithFailover() async {
+    // Try preferred provider first
+    if (_preferredProviderId != null) {
+      final preferred = _registeredProviders[_preferredProviderId];
+      if (preferred != null && preferred.isAvailable) {
+        final isHealthy = await testProviderConnection(_preferredProviderId!);
+        if (isHealthy) {
+          return preferred;
+        }
+      }
+    }
+
+    // Try other available providers in order of priority and health
+    final availableProviders = getAvailableProviders();
+    for (final provider in availableProviders) {
+      if (provider.info.id == _preferredProviderId) continue; // Already tried
+
+      final isHealthy = await testProviderConnection(provider.info.id);
+      if (isHealthy) {
+        debugPrint('Failover to provider: ${provider.info.name}');
+        return provider;
+      }
+    }
+
+    debugPrint('No healthy providers available for failover');
+    return null;
+  }
+
+  /// Enable/disable a provider
+  void setProviderEnabled(String providerId, bool enabled) {
+    final provider = _registeredProviders[providerId];
     if (provider != null) {
-      provider.dispose();
-
-      // If this was the active provider, switch to another one
-      if (_activeProviderId == providerId) {
-        _activeProvider = null;
-        _activeProviderId = null;
-        _autoSelectProvider();
-      }
-
+      _registeredProviders[providerId] = provider.copyWith(isEnabled: enabled);
+      debugPrint('Provider ${provider.info.name} ${enabled ? 'enabled' : 'disabled'}');
       notifyListeners();
-      _logger.info('Unregistered provider: $providerId');
     }
   }
 
-  /// Auto-select the best available provider
-  Future<void> _autoSelectProvider() async {
-    if (_activeProvider?.isAvailable == true) return;
+  /// Set provider priority
+  void setProviderPriority(String providerId, int priority) {
+    final provider = _registeredProviders[providerId];
+    if (provider != null) {
+      _registeredProviders[providerId] = provider.copyWith(priority: priority);
+      debugPrint('Provider ${provider.info.name} priority set to: $priority');
+      notifyListeners();
+    }
+  }
 
-    // Try to find an available provider
-    for (final provider in _providers.values) {
-      if (provider.isAvailable) {
-        await switchProvider(provider.providerId);
-        return;
+  /// Get provider health monitoring stream
+  Stream<Map<String, ProviderHealthStatus>> monitorProviderHealth() async* {
+    while (_isInitialized) {
+      final healthMap = <String, ProviderHealthStatus>{};
+      
+      for (final provider in _registeredProviders.values) {
+        healthMap[provider.info.id] = provider.healthStatus;
+      }
+      
+      yield healthMap;
+      await Future.delayed(_healthCheckInterval);
+    }
+  }
+
+  /// Register all discovered providers
+  Future<void> _registerDiscoveredProviders() async {
+    final discoveredProviders = _discoveryService.getAvailableProviders();
+    
+    for (final providerInfo in discoveredProviders) {
+      if (!_registeredProviders.containsKey(providerInfo.id)) {
+        await registerProvider(providerInfo, priority: _getDefaultPriority(providerInfo.type));
       }
     }
+  }
 
-    // If no provider is available, try to connect to the first one
-    if (_providers.isNotEmpty) {
-      final firstProvider = _providers.values.first;
-      try {
-        await switchProvider(firstProvider.providerId);
-      } catch (e) {
-        _logger.logTunnelError(
-          'AUTO_SELECT_FAILED',
-          'Failed to auto-select provider',
-          error: e,
+  /// Get default priority for provider type
+  int _getDefaultPriority(ProviderType type) {
+    switch (type) {
+      case ProviderType.ollama:
+        return 100; // Highest priority
+      case ProviderType.lmStudio:
+        return 80;
+      case ProviderType.openAICompatible:
+        return 60;
+      case ProviderType.custom:
+        return 40;
+    }
+  }
+
+  /// Start health monitoring for all providers
+  void _startHealthMonitoring() {
+    _periodicHealthCheckTimer?.cancel();
+    _periodicHealthCheckTimer = Timer.periodic(_healthCheckInterval, (_) {
+      _performHealthChecks();
+    });
+
+    // Start individual provider health checks
+    for (final providerId in _registeredProviders.keys) {
+      _startProviderHealthCheck(providerId);
+    }
+
+    debugPrint('Started health monitoring for ${_registeredProviders.length} providers');
+  }
+
+  /// Start health check for specific provider
+  void _startProviderHealthCheck(String providerId) {
+    _healthCheckTimers[providerId]?.cancel();
+    _healthCheckTimers[providerId] = Timer.periodic(_healthCheckInterval, (_) {
+      _performProviderHealthCheck(providerId);
+    });
+  }
+
+  /// Perform health checks for all providers
+  Future<void> _performHealthChecks() async {
+    for (final providerId in _registeredProviders.keys) {
+      await _performProviderHealthCheck(providerId);
+    }
+  }
+
+  /// Perform health check for specific provider
+  Future<void> _performProviderHealthCheck(String providerId) async {
+    final provider = _registeredProviders[providerId];
+    if (provider == null || !provider.isEnabled) return;
+
+    try {
+      final isHealthy = await testProviderConnection(providerId);
+      final newHealthStatus = isHealthy 
+          ? ProviderHealthStatus.healthy 
+          : ProviderHealthStatus.unhealthy;
+
+      // Update provider with new health status
+      _registeredProviders[providerId] = provider.copyWith(
+        healthStatus: newHealthStatus,
+        lastHealthCheck: DateTime.now(),
+      );
+
+      // Notify listeners if health status changed
+      if (provider.healthStatus != newHealthStatus) {
+        debugPrint('Provider ${provider.info.name} health changed to: $newHealthStatus');
+        notifyListeners();
+      }
+
+    } catch (error) {
+      debugPrint('Health check failed for ${provider.info.name}: $error');
+      
+      _registeredProviders[providerId] = provider.copyWith(
+        healthStatus: ProviderHealthStatus.unhealthy,
+        lastHealthCheck: DateTime.now(),
+      );
+    }
+  }
+
+  /// Update provider metrics
+  Future<void> _updateProviderMetrics(
+    String providerId, 
+    bool success, 
+    double responseTime,
+  ) async {
+    final provider = _registeredProviders[providerId];
+    if (provider == null) return;
+
+    final newMetrics = provider.metrics.withNewRequest(
+      success: success,
+      responseTime: responseTime,
+    );
+
+    _registeredProviders[providerId] = provider.copyWith(metrics: newMetrics);
+  }
+
+  /// Handle discovery service changes
+  void _onDiscoveryChanged() {
+    if (_isInitialized) {
+      debugPrint('Provider discovery changed, updating registrations...');
+      _registerDiscoveredProviders();
+    }
+  }
+
+  /// Handle LangChain service changes
+  void _onLangChainChanged() {
+    if (_isInitialized) {
+      debugPrint('LangChain service changed, updating provider wrappers...');
+      _updateLangChainWrappers();
+    }
+  }
+
+  /// Update LangChain wrappers for registered providers
+  void _updateLangChainWrappers() {
+    for (final entry in _registeredProviders.entries) {
+      final providerId = entry.key;
+      final provider = entry.value;
+      
+      final langchainWrapper = _langchainService.getProvider(providerId);
+      if (langchainWrapper != provider.langchainWrapper) {
+        _registeredProviders[providerId] = provider.copyWith(
+          langchainWrapper: langchainWrapper,
         );
       }
     }
-  }
-
-  /// Load preferences from storage
-  Future<void> _loadPreferences() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-
-      // Load active provider preference
-      _activeProviderId = prefs.getString(_prefActiveProvider);
-
-      // Load provider configurations
-      final configsJson = prefs.getString(_prefProviderConfigs);
-      if (configsJson != null) {
-        await _loadAndApplyProviderConfigurations(configsJson);
-      }
-    } catch (e) {
-      _logger.logTunnelError(
-        'LOAD_PREFERENCES_FAILED',
-        'Failed to load preferences',
-        error: e,
-      );
-    }
-  }
-
-  /// Set active provider from preferences
-  Future<void> _setActiveProviderFromPreferences() async {
-    if (_activeProviderId != null &&
-        _providers.containsKey(_activeProviderId)) {
-      try {
-        await switchProvider(_activeProviderId!);
-      } catch (e) {
-        _logger.logTunnelError(
-          'SET_ACTIVE_PROVIDER_FAILED',
-          'Failed to set active provider from preferences',
-          error: e,
-        );
-        await _autoSelectProvider();
-      }
-    } else {
-      await _autoSelectProvider();
-    }
-  }
-
-  /// Save active provider preference
-  Future<void> _saveActiveProviderPreference(String providerId) async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString(_prefActiveProvider, providerId);
-    } catch (e) {
-      _logger.logTunnelError(
-        'SAVE_PREFERENCE_FAILED',
-        'Failed to save active provider preference',
-        error: e,
-      );
-    }
-  }
-
-  /// Refresh all providers
-  Future<void> refreshAllProviders() async {
-    final futures = <Future<void>>[];
-
-    for (final provider in _providers.values) {
-      if (provider.isAvailable) {
-        futures.add(provider.refreshModels());
-      }
-    }
-
-    await Future.wait(futures);
     notifyListeners();
   }
 
-  /// Test all provider connections
-  Future<Map<String, bool>> testAllConnections() async {
-    final results = <String, bool>{};
+  /// Get provider statistics
+  Map<String, dynamic> getProviderStats() {
+    final stats = <String, dynamic>{
+      'total_providers': _registeredProviders.length,
+      'available_providers': availableProviders.length,
+      'healthy_providers': healthyProviders.length,
+      'preferred_provider': _preferredProviderId,
+      'initialized': _isInitialized,
+      'error': _error,
+    };
 
-    for (final entry in _providers.entries) {
-      try {
-        results[entry.key] = await entry.value.testConnection();
-      } catch (e) {
-        results[entry.key] = false;
-      }
+    // Add per-provider stats
+    final providerStats = <String, dynamic>{};
+    for (final provider in _registeredProviders.values) {
+      providerStats[provider.info.id] = {
+        'name': provider.info.name,
+        'type': provider.info.type.toString(),
+        'health_status': provider.healthStatus.toString(),
+        'is_enabled': provider.isEnabled,
+        'priority': provider.priority,
+        'success_rate': provider.metrics.successRate,
+        'average_response_time': provider.metrics.averageResponseTime,
+        'total_requests': provider.metrics.totalRequests,
+      };
     }
+    stats['provider_details'] = providerStats;
 
-    return results;
-  }
-
-  // Helper methods
-  void _setLoading(bool loading) {
-    _isLoading = loading;
-    notifyListeners();
-  }
-
-  void _clearError() {
-    _lastError = null;
-    notifyListeners();
-  }
-
-  /// Load and apply provider configurations from JSON
-  Future<void> _loadAndApplyProviderConfigurations(String configsJson) async {
-    try {
-      final configsData = json.decode(configsJson) as Map<String, dynamic>;
-
-      for (final entry in configsData.entries) {
-        final providerId = entry.key;
-        final configData = entry.value as Map<String, dynamic>;
-
-        // Find the provider
-        final provider = _providers[providerId];
-        if (provider == null) {
-          _logger.logTunnelError(
-            'PROVIDER_CONFIG_LOAD_FAILED',
-            'Provider not found for configuration: $providerId',
-          );
-          continue;
-        }
-
-        // Validate the configuration
-        if (!provider.validateConfiguration(configData)) {
-          _logger.logTunnelError(
-            'PROVIDER_CONFIG_INVALID',
-            'Invalid configuration for provider: $providerId',
-          );
-          continue;
-        }
-
-        // Apply the configuration
-        try {
-          await provider.updateConfiguration(configData);
-          _logger.info('Applied configuration for provider: $providerId');
-        } catch (e) {
-          _logger.logTunnelError(
-            'PROVIDER_CONFIG_APPLY_FAILED',
-            'Failed to apply configuration for provider: $providerId',
-            error: e,
-          );
-        }
-      }
-    } catch (e) {
-      _logger.logTunnelError(
-        'PROVIDER_CONFIGS_PARSE_FAILED',
-        'Failed to parse provider configurations JSON',
-        error: e,
-      );
-    }
-  }
-
-  /// Save provider configurations to preferences
-  Future<void> saveProviderConfigurations() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final configsData = <String, dynamic>{};
-
-      // Collect configurations from all providers
-      for (final entry in _providers.entries) {
-        final providerId = entry.key;
-        final provider = entry.value;
-        configsData[providerId] = provider.configuration;
-      }
-
-      // Save to preferences
-      final configsJson = json.encode(configsData);
-      await prefs.setString(_prefProviderConfigs, configsJson);
-
-      _logger.info('Saved provider configurations');
-    } catch (e) {
-      _logger.logTunnelError(
-        'SAVE_PROVIDER_CONFIGS_FAILED',
-        'Failed to save provider configurations',
-        error: e,
-      );
-    }
+    return stats;
   }
 
   @override
   void dispose() {
-    for (final provider in _providers.values) {
-      provider.dispose();
+    _discoveryService.removeListener(_onDiscoveryChanged);
+    _langchainService.removeListener(_onLangChainChanged);
+    
+    _periodicHealthCheckTimer?.cancel();
+    for (final timer in _healthCheckTimers.values) {
+      timer.cancel();
     }
-    _providers.clear();
+    _healthCheckTimers.clear();
+    
     super.dispose();
   }
 }

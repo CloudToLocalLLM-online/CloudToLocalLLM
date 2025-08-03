@@ -3,6 +3,8 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../config/app_config.dart';
 import 'auth_service.dart';
+import 'provider_discovery_service.dart';
+import '../models/llm_communication_error.dart';
 
 /// Service for communicating with Ollama API
 /// - Web: Uses cloud relay through API backend with authentication
@@ -340,6 +342,134 @@ class OllamaService extends ChangeNotifier {
   void _clearError() {
     _error = null;
     notifyListeners();
+  }
+
+  /// Create provider from discovered provider info
+  static OllamaService fromProviderInfo(ProviderInfo providerInfo, {AuthService? authService}) {
+    if (providerInfo.type != ProviderType.ollama) {
+      throw ArgumentError('Provider info must be of type ollama');
+    }
+
+    return OllamaService(
+      baseUrl: providerInfo.baseUrl,
+      authService: authService,
+    );
+  }
+
+  /// Get provider capabilities
+  Map<String, bool> get capabilities => {
+    'chat': true,
+    'completion': true,
+    'streaming': true,
+    'embeddings': true,
+    'model_management': true,
+  };
+
+  /// Get provider status
+  Map<String, dynamic> get status => {
+    'connected': _isConnected,
+    'loading': _isLoading,
+    'error': _error,
+    'models_count': _models.length,
+    'version': _version,
+    'base_url': _baseUrl,
+    'is_web': _isWeb,
+  };
+
+  /// Send streaming chat message to Ollama
+  Stream<String> chatStream({
+    required String model,
+    required String message,
+    List<Map<String, String>>? history,
+  }) async* {
+    try {
+      debugPrint('Starting streaming chat with Ollama...');
+
+      final messages = [
+        if (history != null) ...history,
+        {'role': 'user', 'content': message},
+      ];
+
+      final url = _isWeb ? '$_baseUrl/api/chat' : '$_baseUrl/api/chat';
+      
+      final request = http.Request('POST', Uri.parse(url));
+      request.headers.addAll(await _getHeaders());
+      request.body = json.encode({
+        'model': model,
+        'messages': messages,
+        'stream': true,
+      });
+
+      final streamedResponse = await http.Client().send(request);
+
+      if (streamedResponse.statusCode == 200) {
+        await for (final chunk in streamedResponse.stream.transform(utf8.decoder)) {
+          try {
+            final data = json.decode(chunk);
+            final content = data['message']?['content'] as String?;
+            
+            if (content != null && content.isNotEmpty) {
+              yield content;
+            }
+            
+            // Check if done
+            if (data['done'] == true) {
+              debugPrint('Streaming chat completed');
+              return;
+            }
+          } catch (parseError) {
+            // Skip malformed JSON chunks
+            continue;
+          }
+        }
+      } else {
+        throw LLMCommunicationError.fromException(
+          Exception('Streaming failed: HTTP ${streamedResponse.statusCode}'),
+          type: LLMCommunicationErrorType.providerUnavailable,
+          httpStatusCode: streamedResponse.statusCode,
+        );
+      }
+    } catch (error) {
+      debugPrint('Streaming chat error: $error');
+      throw LLMCommunicationError.fromException(
+        error is Exception ? error : Exception(error.toString()),
+        type: LLMCommunicationErrorType.providerUnavailable,
+      );
+    }
+  }
+
+  /// Simple text completion (convenience method)
+  Future<String?> complete({
+    required String prompt,
+    String? model,
+    double? temperature,
+    int? maxTokens,
+  }) async {
+    // Use first available model if none specified
+    final modelToUse = model ?? (_models.isNotEmpty ? _models.first.name : null);
+    
+    if (modelToUse == null) {
+      _setError('No model available for completion');
+      return null;
+    }
+
+    return chat(model: modelToUse, message: prompt);
+  }
+
+  /// Streaming text completion (convenience method)
+  Stream<String> completeStream({
+    required String prompt,
+    String? model,
+    double? temperature,
+    int? maxTokens,
+  }) async* {
+    final modelToUse = model ?? (_models.isNotEmpty ? _models.first.name : null);
+    
+    if (modelToUse == null) {
+      throw LLMCommunicationError.modelNotFound();
+    }
+
+    yield* chatStream(model: modelToUse, message: prompt);
   }
 }
 

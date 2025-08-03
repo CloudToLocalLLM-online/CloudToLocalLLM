@@ -32,6 +32,9 @@ import 'services/langchain_prompt_service.dart';
 import 'services/langchain_rag_service.dart';
 import 'services/llm_provider_manager.dart';
 import 'services/llm_audit_service.dart';
+import 'services/provider_discovery_service.dart';
+import 'services/langchain_integration_service.dart';
+import 'services/llm_error_handler.dart';
 
 import 'widgets/window_listener_widget.dart';
 
@@ -342,6 +345,42 @@ class _CloudToLocalLLMAppState extends State<CloudToLocalLLMApp> {
           },
         ),
 
+        // Provider Discovery Service
+        ChangeNotifierProvider(
+          create: (context) => ProviderDiscoveryService(),
+        ),
+
+        // LangChain Integration Service
+        ChangeNotifierProvider(
+          create: (context) {
+            final discoveryService = context.read<ProviderDiscoveryService>();
+            return LangChainIntegrationService(discoveryService: discoveryService);
+          },
+        ),
+
+        // LLM Error Handler
+        ChangeNotifierProvider(
+          create: (context) {
+            final discoveryService = context.read<ProviderDiscoveryService>();
+            return LLMErrorHandler(providerDiscovery: discoveryService);
+          },
+        ),
+
+        // LLM Provider Manager
+        ChangeNotifierProvider(
+          create: (context) {
+            final discoveryService = context.read<ProviderDiscoveryService>();
+            final langchainService = context.read<LangChainIntegrationService>();
+            final providerManager = LLMProviderManager(
+              discoveryService: discoveryService,
+              langchainService: langchainService,
+            );
+            // Initialize asynchronously
+            providerManager.initialize();
+            return providerManager;
+          },
+        ),
+
         // SimpleTunnelClient removed - using HTTP polling only
         // HTTP Polling Tunnel Client (fallback for WebSocket)
         ChangeNotifierProvider(
@@ -350,9 +389,11 @@ class _CloudToLocalLLMAppState extends State<CloudToLocalLLMApp> {
             final logger = TunnelLogger(
               'HttpPollingTunnel',
             ); // Create new instance
+            final providerManager = context.read<LLMProviderManager>();
             return HttpPollingTunnelClient(
               authService: authService,
               logger: logger,
+              providerManager: providerManager,
             );
           },
         ),
@@ -398,19 +439,6 @@ class _CloudToLocalLLMAppState extends State<CloudToLocalLLMApp> {
             // Initialize asynchronously
             ragService.initialize();
             return ragService;
-          },
-        ),
-
-        // LLM Provider Manager
-        ChangeNotifierProvider(
-          create: (context) {
-            final connectionManager = context.read<ConnectionManagerService>();
-            final providerManager = LLMProviderManager(
-              connectionManager: connectionManager,
-            );
-            // Initialize asynchronously
-            providerManager.initialize();
-            return providerManager;
           },
         ),
 

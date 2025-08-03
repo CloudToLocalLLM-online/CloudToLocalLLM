@@ -230,25 +230,25 @@ export class HttpTunnelProxy {
    */
   getTimeoutForRequestType(requestType) {
     switch (requestType) {
-      case LLM_REQUEST_TYPES.STREAMING:
-        return this.TIMEOUTS.STREAMING;
-      case LLM_REQUEST_TYPES.MODEL_PULL:
-        return this.TIMEOUTS.MODEL_PULL;
-      case LLM_REQUEST_TYPES.MODEL_DELETE:
-        return this.TIMEOUTS.MODEL_DELETE;
-      case LLM_REQUEST_TYPES.MODEL_LIST:
-        return this.TIMEOUTS.MODEL_LIST;
-      case LLM_REQUEST_TYPES.MODEL_INFO:
-        return this.TIMEOUTS.MODEL_INFO;
-      case LLM_REQUEST_TYPES.HEALTH_CHECK:
-        return this.TIMEOUTS.HEALTH_CHECK;
-      case LLM_REQUEST_TYPES.EMBEDDINGS:
-        return this.TIMEOUTS.EMBEDDINGS;
-      case LLM_REQUEST_TYPES.COMPLETION:
-        return this.TIMEOUTS.COMPLETION;
-      case LLM_REQUEST_TYPES.CHAT:
-      default:
-        return this.TIMEOUTS.CHAT;
+    case LLM_REQUEST_TYPES.STREAMING:
+      return this.TIMEOUTS.STREAMING;
+    case LLM_REQUEST_TYPES.MODEL_PULL:
+      return this.TIMEOUTS.MODEL_PULL;
+    case LLM_REQUEST_TYPES.MODEL_DELETE:
+      return this.TIMEOUTS.MODEL_DELETE;
+    case LLM_REQUEST_TYPES.MODEL_LIST:
+      return this.TIMEOUTS.MODEL_LIST;
+    case LLM_REQUEST_TYPES.MODEL_INFO:
+      return this.TIMEOUTS.MODEL_INFO;
+    case LLM_REQUEST_TYPES.HEALTH_CHECK:
+      return this.TIMEOUTS.HEALTH_CHECK;
+    case LLM_REQUEST_TYPES.EMBEDDINGS:
+      return this.TIMEOUTS.EMBEDDINGS;
+    case LLM_REQUEST_TYPES.COMPLETION:
+      return this.TIMEOUTS.COMPLETION;
+    case LLM_REQUEST_TYPES.CHAT:
+    default:
+      return this.TIMEOUTS.CHAT;
     }
   }
 

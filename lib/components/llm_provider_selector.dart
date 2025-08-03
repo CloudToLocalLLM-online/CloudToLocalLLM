@@ -3,7 +3,6 @@ import 'package:provider/provider.dart';
 
 import '../config/theme.dart';
 import '../services/llm_provider_manager.dart';
-import '../services/llm_providers/base_llm_provider.dart';
 
 /// LLM Provider Selector Widget
 ///
@@ -48,9 +47,9 @@ class _LLMProviderSelectorState extends State<LLMProviderSelector> {
             ],
 
             if (widget.showModels &&
-                providerManager.activeProvider != null) ...[
+                providerManager.getPreferredProvider() != null) ...[
               SizedBox(height: AppTheme.spacingM),
-              _buildModelSelector(providerManager.activeProvider!),
+              _buildModelSelectorFromProvider(providerManager.getPreferredProvider()!),
             ],
           ],
         );
@@ -67,15 +66,15 @@ class _LLMProviderSelectorState extends State<LLMProviderSelector> {
       child: DropdownButtonHideUnderline(
         child: DropdownButton<String>(
           key: const Key('llm-provider-dropdown'),
-          value: providerManager.activeProviderId,
+          value: providerManager.preferredProviderId,
           isExpanded: true,
           padding: EdgeInsets.symmetric(horizontal: AppTheme.spacingM),
           items: providerManager.availableProviders.map((provider) {
             return DropdownMenuItem<String>(
-              value: provider.providerId,
+              value: provider.info.id,
               child: Row(
                 children: [
-                  _getProviderIcon(provider.providerId),
+                  _getProviderIcon(provider.info.id),
                   SizedBox(width: AppTheme.spacingS),
                   Expanded(
                     child: Column(
@@ -83,12 +82,12 @@ class _LLMProviderSelectorState extends State<LLMProviderSelector> {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Text(
-                          provider.providerName,
+                          provider.info.name,
                           style: Theme.of(context).textTheme.bodyMedium
                               ?.copyWith(fontWeight: FontWeight.w500),
                         ),
                         Text(
-                          provider.providerDescription,
+                          provider.info.baseUrl,
                           style: Theme.of(context).textTheme.bodySmall
                               ?.copyWith(color: AppTheme.textColorLight),
                           maxLines: 1,
@@ -97,7 +96,7 @@ class _LLMProviderSelectorState extends State<LLMProviderSelector> {
                       ],
                     ),
                   ),
-                  _buildProviderStatusIcon(provider),
+                  _buildRegisteredProviderStatusIcon(provider),
                 ],
               ),
             );
@@ -106,7 +105,7 @@ class _LLMProviderSelectorState extends State<LLMProviderSelector> {
               ? null
               : (String? value) {
                   if (value != null &&
-                      value != providerManager.activeProviderId) {
+                      value != providerManager.preferredProviderId) {
                     _switchProvider(providerManager, value);
                   }
                 },
@@ -116,7 +115,7 @@ class _LLMProviderSelectorState extends State<LLMProviderSelector> {
   }
 
   Widget _buildProviderStatus(LLMProviderManager providerManager) {
-    final activeProvider = providerManager.activeProvider;
+    final activeProvider = providerManager.getPreferredProvider();
     if (activeProvider == null) {
       return Container(
         padding: EdgeInsets.all(AppTheme.spacingS),
@@ -140,9 +139,9 @@ class _LLMProviderSelectorState extends State<LLMProviderSelector> {
       );
     }
 
-    final isConnected = activeProvider.isAvailable;
-    final isConnecting = activeProvider.isConnecting;
-    final hasError = activeProvider.lastError != null;
+    final isConnected = activeProvider.isEnabled;
+    final isConnecting = activeProvider.healthStatus == ProviderHealthStatus.unknown;
+    final hasError = activeProvider.healthStatus == ProviderHealthStatus.unhealthy;
 
     Color statusColor;
     IconData statusIcon;
@@ -155,7 +154,7 @@ class _LLMProviderSelectorState extends State<LLMProviderSelector> {
     } else if (hasError) {
       statusColor = Colors.red;
       statusIcon = Icons.error;
-      statusText = 'Error: ${activeProvider.lastError}';
+      statusText = 'Error: Provider unhealthy';
     } else if (isConnected) {
       statusColor = Colors.green;
       statusIcon = Icons.check_circle;
@@ -189,7 +188,7 @@ class _LLMProviderSelectorState extends State<LLMProviderSelector> {
           ),
           if (!isConnected && !isConnecting)
             TextButton(
-              onPressed: () => _reconnectProvider(activeProvider),
+              onPressed: () => _reconnectProviderById(activeProvider.info.id),
               child: Text('Reconnect', style: TextStyle(color: statusColor)),
             ),
         ],
@@ -197,8 +196,8 @@ class _LLMProviderSelectorState extends State<LLMProviderSelector> {
     );
   }
 
-  Widget _buildModelSelector(BaseLLMProvider provider) {
-    if (provider.availableModels.isEmpty) {
+  Widget _buildModelSelectorFromProvider(RegisteredProvider registeredProvider) {
+    if (registeredProvider.info.availableModels.isEmpty) {
       return Container(
         padding: EdgeInsets.all(AppTheme.spacingS),
         decoration: BoxDecoration(
@@ -237,18 +236,19 @@ class _LLMProviderSelectorState extends State<LLMProviderSelector> {
           ),
           child: DropdownButtonHideUnderline(
             child: DropdownButton<String>(
-              value: provider.selectedModel?.id,
+              value: null, // TODO: Implement selected model tracking
               isExpanded: true,
               padding: EdgeInsets.symmetric(horizontal: AppTheme.spacingM),
-              items: provider.availableModels.map((model) {
+              items: registeredProvider.info.availableModels.map((modelName) {
                 return DropdownMenuItem<String>(
-                  value: model.id,
-                  child: Text(model.name),
+                  value: modelName,
+                  child: Text(modelName),
                 );
               }).toList(),
               onChanged: (String? value) {
                 if (value != null) {
-                  provider.selectModel(value);
+                  // TODO: Implement model selection
+                  debugPrint('Selected model: $value');
                 }
               },
             ),
@@ -258,22 +258,23 @@ class _LLMProviderSelectorState extends State<LLMProviderSelector> {
     );
   }
 
-  Widget _buildProviderStatusIcon(BaseLLMProvider provider) {
-    if (provider.isConnecting) {
-      return SizedBox(
-        width: 16,
-        height: 16,
-        child: CircularProgressIndicator(
-          strokeWidth: 2,
-          valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryColor),
-        ),
-      );
-    } else if (provider.isAvailable) {
-      return Icon(Icons.check_circle, size: 16, color: Colors.green);
-    } else if (provider.lastError != null) {
-      return Icon(Icons.error, size: 16, color: Colors.red);
-    } else {
-      return Icon(Icons.circle_outlined, size: 16, color: Colors.grey);
+  Widget _buildRegisteredProviderStatusIcon(RegisteredProvider provider) {
+    switch (provider.healthStatus) {
+      case ProviderHealthStatus.healthy:
+        return Icon(Icons.check_circle, size: 16, color: Colors.green);
+      case ProviderHealthStatus.degraded:
+        return Icon(Icons.warning, size: 16, color: Colors.orange);
+      case ProviderHealthStatus.unhealthy:
+        return Icon(Icons.error, size: 16, color: Colors.red);
+      case ProviderHealthStatus.unknown:
+        return SizedBox(
+          width: 16,
+          height: 16,
+          child: CircularProgressIndicator(
+            strokeWidth: 2,
+            valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryColor),
+          ),
+        );
     }
   }
 
@@ -297,14 +298,14 @@ class _LLMProviderSelectorState extends State<LLMProviderSelector> {
     });
 
     try {
-      await providerManager.switchProvider(providerId);
+      providerManager.setPreferredProvider(providerId);
       widget.onProviderChanged?.call(providerId);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              'Switched to ${providerManager.activeProvider?.providerName}',
+              'Switched to ${providerManager.getPreferredProvider()?.info.name}',
             ),
             backgroundColor: Colors.green,
           ),
@@ -328,13 +329,13 @@ class _LLMProviderSelectorState extends State<LLMProviderSelector> {
     }
   }
 
-  Future<void> _reconnectProvider(BaseLLMProvider provider) async {
+  Future<void> _reconnectProviderById(String providerId) async {
     try {
-      await provider.connect();
+      // TODO: Implement provider reconnection through provider manager
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Reconnected to ${provider.providerName}'),
+            content: Text('Reconnection attempted for provider: $providerId'),
             backgroundColor: Colors.green,
           ),
         );

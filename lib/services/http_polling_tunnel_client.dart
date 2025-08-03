@@ -1,3 +1,43 @@
+/// HTTP Polling Tunnel Client for CloudToLocalLLM
+///
+/// This service implements the HTTP polling bridge pattern for tunnel communication
+/// between the cloud API and desktop client. It provides enhanced LLM-specific
+/// request handling, provider routing, and intelligent timeout management.
+///
+/// ## Key Features
+/// - **LLM-Aware Request Routing**: Automatically routes requests to appropriate local LLM providers
+/// - **Adaptive Timeout Management**: Different timeouts for chat, streaming, and model operations
+/// - **Provider Integration**: Seamless integration with LLM Provider Manager
+/// - **Health Monitoring**: Continuous connection health monitoring and reporting
+/// - **Error Recovery**: Exponential backoff and automatic reconnection
+/// - **Performance Metrics**: Comprehensive request and error tracking
+///
+/// ## Connection Lifecycle
+/// 1. **Registration**: Register bridge with cloud API and obtain bridge ID
+/// 2. **Polling**: Continuously poll for pending requests from cloud
+/// 3. **Processing**: Route requests to appropriate LLM providers
+/// 4. **Response**: Send responses back through tunnel
+/// 5. **Heartbeat**: Maintain connection health with periodic heartbeats
+///
+/// ## LLM Request Types and Timeouts
+/// - **Chat Requests**: 2 minutes (interactive conversations)
+/// - **Model Operations**: 5 minutes (model loading/unloading)
+/// - **Streaming**: 10 minutes (long-running streams)
+/// - **Standard HTTP**: 1 minute (general API calls)
+///
+/// ## Usage Example
+/// ```dart
+/// final client = HttpPollingTunnelClient(
+///   authService: authService,
+///   logger: logger,
+///   providerManager: providerManager,
+/// );
+///
+/// await client.connect();
+/// // Client will automatically handle incoming requests
+/// ```
+library;
+
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
@@ -5,53 +45,126 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 import '../config/app_config.dart';
-
+import '../models/llm_communication_error.dart';
 import '../utils/tunnel_logger.dart';
 import 'auth_service.dart';
+import 'llm_provider_manager.dart';
+import 'tunnel_llm_request_handler.dart';
 
+/// HTTP Polling Tunnel Client
+///
+/// Implements the HTTP polling bridge pattern for tunnel communication with
+/// enhanced LLM provider integration and intelligent request routing.
 class HttpPollingTunnelClient extends ChangeNotifier {
+  // Core services
   final AuthService _authService;
   final TunnelLogger _logger;
   final http.Client _httpClient;
+  final LLMProviderManager _providerManager;
 
-  // Connection state
+  // Connection state management
   bool _isConnected = false;
   bool _isPolling = false;
   String? _bridgeId;
   String? _lastError;
   DateTime? _lastSeen;
 
-  // Polling configuration
+  // Polling and heartbeat timers
   Timer? _pollingTimer;
   Timer? _heartbeatTimer;
-  int _pollingInterval = 5000; // 5 seconds
-  int _heartbeatInterval = 30000; // 30 seconds
-  int _requestTimeout = 60000; // 60 seconds
 
-  // Statistics
+  // Adaptive polling configuration
+  int _pollingInterval = 5000; // 5 seconds (adaptive based on activity)
+  int _heartbeatInterval = 30000; // 30 seconds (adaptive based on health)
+  int _requestTimeout = 60000; // 60 seconds (standard HTTP requests)
+
+  // LLM-specific timeout configuration for different operation types
+  int _llmChatTimeout = 120000; // 2 minutes for interactive chat requests
+  int _llmModelTimeout = 300000; // 5 minutes for model loading/unloading operations
+  int _llmStreamingTimeout = 600000; // 10 minutes for long-running streaming operations
+
+  // Performance and health metrics
   int _requestsProcessed = 0;
   int _errorsCount = 0;
+  int _llmRequestsProcessed = 0;
   DateTime? _connectedAt;
 
+  /// Creates a new HTTP Polling Tunnel Client
+  ///
+  /// ## Parameters
+  /// - [authService]: Authentication service for token management
+  /// - [logger]: Tunnel logger for comprehensive logging and debugging
+  /// - [providerManager]: LLM provider manager for request routing
+  /// - [httpClient]: Optional HTTP client (defaults to standard client)
+  ///
+  /// ## Initialization
+  /// The client is initialized in a disconnected state. Call [connect] to
+  /// establish the tunnel connection and begin polling for requests.
   HttpPollingTunnelClient({
     required AuthService authService,
     required TunnelLogger logger,
+    required LLMProviderManager providerManager,
     http.Client? httpClient,
   }) : _authService = authService,
        _logger = logger,
-       _httpClient = httpClient ?? http.Client();
+       _providerManager = providerManager,
+       _httpClient = httpClient ?? http.Client() {
+    debugPrint('🌉 [HttpPolling] Service initialized with LLM provider integration');
+  }
 
-  // Getters
+  // Public getters for connection state and metrics
+
+  /// Whether the tunnel connection is currently active
   bool get isConnected => _isConnected;
+
+  /// Whether the client is actively polling for requests
   bool get isPolling => _isPolling;
+
+  /// Unique bridge identifier assigned by the cloud API
   String? get bridgeId => _bridgeId;
+
+  /// Last error message encountered during operation
   String? get lastError => _lastError;
+
+  /// Timestamp of last successful communication with cloud API
   DateTime? get lastSeen => _lastSeen;
+
+  /// Total number of requests processed since connection
   int get requestsProcessed => _requestsProcessed;
+
+  /// Total number of errors encountered since connection
   int get errorsCount => _errorsCount;
+
+  /// Total number of LLM-specific requests processed
+  int get llmRequestsProcessed => _llmRequestsProcessed;
+
+  /// Timestamp when the connection was established
   DateTime? get connectedAt => _connectedAt;
 
-  /// Start HTTP polling connection
+  /// Establish HTTP polling tunnel connection
+  ///
+  /// This method performs the complete connection sequence:
+  /// 1. **Bridge Registration**: Register with cloud API and obtain bridge ID
+  /// 2. **Polling Initialization**: Start polling for incoming requests
+  /// 3. **Heartbeat Setup**: Begin periodic heartbeat to maintain connection
+  /// 4. **Provider Integration**: Initialize LLM provider discovery and monitoring
+  ///
+  /// ## Connection Process
+  /// - Validates authentication state before attempting connection
+  /// - Registers bridge with cloud API using platform-specific capabilities
+  /// - Starts adaptive polling with exponential backoff on errors
+  /// - Initializes provider status reporting for LLM integration
+  ///
+  /// ## Error Handling
+  /// Connection failures are logged and stored in [lastError]. The method
+  /// will throw exceptions for critical failures but will attempt to recover
+  /// from transient network issues.
+  ///
+  /// ## Usage
+  /// ```dart
+  /// await client.connect();
+  /// // Client will now automatically handle incoming requests
+  /// ```
   Future<void> connect() async {
     if (_isConnected || _isPolling) {
       debugPrint('🌉 [HttpPolling] Already connected or connecting');
@@ -67,10 +180,14 @@ class HttpPollingTunnelClient extends ChangeNotifier {
       // Start polling and heartbeat
       _startPolling();
       _startHeartbeat();
+      _startProviderStatusReporting();
 
       _isConnected = true;
       _connectedAt = DateTime.now();
       _lastError = null;
+
+      // Initialize provider discovery and health monitoring
+      await _initializeProviderIntegration();
 
       debugPrint(
         '🌉 [HttpPolling] ✅ Connected successfully with bridge ID: $_bridgeId',
@@ -160,7 +277,13 @@ class HttpPollingTunnelClient extends ChangeNotifier {
             'clientId': 'flutter-desktop-${_getPlatformName()}',
             'platform': _getPlatformName(),
             'version': '4.0.0',
-            'capabilities': ['ollama', 'streaming', 'http-polling'],
+            'capabilities': [
+              'llm-providers',
+              'provider-routing',
+              'streaming',
+              'http-polling',
+              'langchain-integration'
+            ],
           }),
         )
         .timeout(Duration(seconds: 10));
@@ -184,6 +307,9 @@ class HttpPollingTunnelClient extends ChangeNotifier {
       _pollingInterval = config['pollingInterval'] ?? _pollingInterval;
       _heartbeatInterval = config['heartbeatInterval'] ?? _heartbeatInterval;
       _requestTimeout = config['requestTimeout'] ?? _requestTimeout;
+      _llmChatTimeout = config['llmChatTimeout'] ?? _llmChatTimeout;
+      _llmModelTimeout = config['llmModelTimeout'] ?? _llmModelTimeout;
+      _llmStreamingTimeout = config['llmStreamingTimeout'] ?? _llmStreamingTimeout;
     }
 
     debugPrint('🌉 [HttpPolling] Bridge registered: $_bridgeId');
@@ -289,18 +415,30 @@ class HttpPollingTunnelClient extends ChangeNotifier {
       );
       final body = requestData['data']['body'];
 
-      // Forward to local Ollama
-      final ollamaResponse = await _forwardToOllama(
-        method,
-        path,
-        headers,
-        body,
+      // Extract LLM-specific metadata
+      final llmMetadata = requestData['data']['llm'] as Map<String, dynamic>?;
+      final requestType = _determineLLMRequestType(path, method);
+      final preferredProvider = llmMetadata?['preferredProvider'] as String?;
+      final isStreaming = llmMetadata?['streaming'] as bool? ?? false;
+
+      // Route to appropriate LLM provider
+      final response = await _routeToLLMProvider(
+        method: method,
+        path: path,
+        headers: headers,
+        body: body,
+        requestType: requestType,
+        preferredProvider: preferredProvider,
+        isStreaming: isStreaming,
       );
 
       // Send response back to server
-      await _sendResponse(requestId, ollamaResponse);
+      await _sendResponse(requestId, response);
 
       _requestsProcessed++;
+      if (requestType != LLMRequestType.unknown) {
+        _llmRequestsProcessed++;
+      }
 
       debugPrint('🌉 [HttpPolling] ✅ Request processed: $requestId');
     } catch (e) {
@@ -309,16 +447,9 @@ class HttpPollingTunnelClient extends ChangeNotifier {
         '🌉 [HttpPolling] ❌ Request processing failed: $requestId - $e',
       );
 
-      // Send error response
-      await _sendResponse(requestId, {
-        'status': 500,
-        'headers': {'content-type': 'application/json'},
-        'body': json.encode({
-          'error': 'Request processing failed',
-          'message': e.toString(),
-        }),
-        'error': e.toString(),
-      });
+      // Handle error with LLM-specific error handling
+      final errorResponse = await _handleRequestError(requestId, e);
+      await _sendResponse(requestId, errorResponse);
 
       _logger.logTunnelError(
         TunnelErrorCodes.requestProcessingFailed,
@@ -329,30 +460,227 @@ class HttpPollingTunnelClient extends ChangeNotifier {
     }
   }
 
-  /// Forward request to local Ollama
-  Future<Map<String, dynamic>> _forwardToOllama(
-    String method,
-    String path,
-    Map<String, String> headers,
-    String? body,
-  ) async {
-    final ollamaUrl = 'http://localhost:11434$path';
+  /// Determine LLM request type from path and method
+  LLMRequestType _determineLLMRequestType(String path, String method) {
+    if (path.startsWith('/api/chat') || path.startsWith('/v1/chat')) {
+      return LLMRequestType.textGeneration;
+    } else if (path.startsWith('/api/tags') || path.startsWith('/v1/models')) {
+      return LLMRequestType.modelList;
+    } else if (path.contains('/pull') && method == 'POST') {
+      return LLMRequestType.modelPull;
+    } else if (path.contains('/delete') && method == 'DELETE') {
+      return LLMRequestType.modelDelete;
+    } else if (path.contains('/show') || path.contains('/model')) {
+      return LLMRequestType.modelInfo;
+    } else if (path.contains('/health') || path.contains('/status')) {
+      return LLMRequestType.healthCheck;
+    }
+    return LLMRequestType.unknown;
+  }
 
-    final request = http.Request(method, Uri.parse(ollamaUrl));
-    request.headers.addAll(headers);
+  /// Route request to appropriate LLM provider
+  Future<Map<String, dynamic>> _routeToLLMProvider({
+    required String method,
+    required String path,
+    required Map<String, String> headers,
+    required String? body,
+    required LLMRequestType requestType,
+    String? preferredProvider,
+    bool isStreaming = false,
+  }) async {
+    try {
+      // Get appropriate timeout for request type
+      final timeout = _getTimeoutForRequestType(requestType, isStreaming);
 
-    if (body != null && body.isNotEmpty) {
-      request.body = body;
+      // Get available providers
+      final availableProviders = _providerManager.getAvailableProviders();
+      if (availableProviders.isEmpty) {
+        throw LLMCommunicationException(
+          LLMCommunicationErrorType.providerNotFound,
+          'No LLM providers available',
+        );
+      }
+
+      // Select provider
+      final provider = preferredProvider != null
+          ? availableProviders.firstWhere(
+              (p) => p.info.id == preferredProvider,
+              orElse: () => availableProviders.first,
+            )
+          : availableProviders.first;
+
+      debugPrint('🌉 [HttpPolling] Routing to provider: ${provider.info.name}');
+
+      // Forward request to selected provider
+      final providerUrl = '${provider.info.baseUrl}$path';
+      final request = http.Request(method, Uri.parse(providerUrl));
+      request.headers.addAll(headers);
+
+      if (body != null && body.isNotEmpty) {
+        request.body = body;
+      }
+
+      final streamedResponse = await _httpClient
+          .send(request)
+          .timeout(Duration(milliseconds: timeout));
+
+      final responseBody = await streamedResponse.stream.bytesToString();
+
+      return {
+        'status': streamedResponse.statusCode,
+        'headers': streamedResponse.headers,
+        'body': responseBody,
+        'provider': provider.info.id,
+      };
+    } catch (e) {
+      // Try fallback providers if primary fails
+      return await _tryFallbackProviders(
+        method: method,
+        path: path,
+        headers: headers,
+        body: body,
+        requestType: requestType,
+        excludeProvider: preferredProvider,
+        isStreaming: isStreaming,
+      );
+    }
+  }
+
+  /// Try fallback providers when primary provider fails
+  Future<Map<String, dynamic>> _tryFallbackProviders({
+    required String method,
+    required String path,
+    required Map<String, String> headers,
+    required String? body,
+    required LLMRequestType requestType,
+    String? excludeProvider,
+    bool isStreaming = false,
+  }) async {
+    final availableProviders = _providerManager.getAvailableProviders();
+    final fallbackProviders = availableProviders
+        .where((p) => p.info.id != excludeProvider)
+        .toList();
+
+    if (fallbackProviders.isEmpty) {
+      throw LLMCommunicationException(
+        LLMCommunicationErrorType.providerUnavailable,
+        'No fallback providers available',
+      );
     }
 
-    final streamedResponse = await _httpClient.send(request);
-    final responseBody = await streamedResponse.stream.bytesToString();
+    for (final provider in fallbackProviders) {
+      try {
+        debugPrint('🌉 [HttpPolling] Trying fallback provider: ${provider.info.name}');
+
+        final timeout = _getTimeoutForRequestType(requestType, isStreaming);
+        final providerUrl = '${provider.info.baseUrl}$path';
+        final request = http.Request(method, Uri.parse(providerUrl));
+        request.headers.addAll(headers);
+
+        if (body != null && body.isNotEmpty) {
+          request.body = body;
+        }
+
+        final streamedResponse = await _httpClient
+            .send(request)
+            .timeout(Duration(milliseconds: timeout));
+
+        final responseBody = await streamedResponse.stream.bytesToString();
+
+        debugPrint('🌉 [HttpPolling] ✅ Fallback provider succeeded: ${provider.info.name}');
+
+        return {
+          'status': streamedResponse.statusCode,
+          'headers': streamedResponse.headers,
+          'body': responseBody,
+          'provider': provider.info.id,
+          'fallback': true,
+        };
+      } catch (e) {
+        debugPrint('🌉 [HttpPolling] Fallback provider failed: ${provider.info.name} - $e');
+        continue;
+      }
+    }
+
+    throw LLMCommunicationException(
+      LLMCommunicationErrorType.providerUnavailable,
+      'All providers failed',
+    );
+  }
+
+  /// Get appropriate timeout for request type
+  int _getTimeoutForRequestType(LLMRequestType requestType, bool isStreaming) {
+    if (isStreaming || requestType == LLMRequestType.streamingGeneration) {
+      return _llmStreamingTimeout;
+    }
+
+    switch (requestType) {
+      case LLMRequestType.textGeneration:
+      case LLMRequestType.streamingGeneration:
+        return _llmChatTimeout;
+      case LLMRequestType.modelPull:
+      case LLMRequestType.modelDelete:
+        return _llmModelTimeout;
+      case LLMRequestType.modelList:
+      case LLMRequestType.modelInfo:
+      case LLMRequestType.healthCheck:
+      case LLMRequestType.providerStatus:
+        return _requestTimeout;
+      case LLMRequestType.unknown:
+        return _requestTimeout;
+    }
+  }
+
+  /// Handle request processing errors with LLM-specific error handling
+  Future<Map<String, dynamic>> _handleRequestError(
+    String requestId,
+    dynamic error,
+  ) async {
+    // Create LLM communication error from the exception
+    final llmError = error is LLMCommunicationException
+        ? error.error ?? LLMCommunicationError.fromException(Exception(error.message))
+        : LLMCommunicationError.fromException(
+            error is Exception ? error : Exception(error.toString()),
+          );
 
     return {
-      'status': streamedResponse.statusCode,
-      'headers': streamedResponse.headers,
-      'body': responseBody,
+      'status': _getStatusCodeForError(llmError.type),
+      'headers': {'content-type': 'application/json'},
+      'body': json.encode({
+        'error': llmError.userFriendlyMessage,
+        'code': llmError.type.toString(),
+        'troubleshooting': llmError.troubleshootingSteps,
+        'requestId': requestId,
+        'details': llmError.details,
+      }),
+      'error': error.toString(),
     };
+  }
+
+  /// Get appropriate HTTP status code for LLM error
+  int _getStatusCodeForError(LLMCommunicationErrorType errorType) {
+    switch (errorType) {
+      case LLMCommunicationErrorType.providerNotFound:
+      case LLMCommunicationErrorType.providerUnavailable:
+        return 503; // Service Unavailable
+      case LLMCommunicationErrorType.connectionTimeout:
+      case LLMCommunicationErrorType.requestTimeout:
+      case LLMCommunicationErrorType.responseTimeout:
+        return 504; // Gateway Timeout
+      case LLMCommunicationErrorType.requestMalformed:
+      case LLMCommunicationErrorType.requestTooLarge:
+        return 400; // Bad Request
+      case LLMCommunicationErrorType.authenticationFailed:
+      case LLMCommunicationErrorType.authorizationDenied:
+      case LLMCommunicationErrorType.tokenExpired:
+        return 401; // Unauthorized
+      case LLMCommunicationErrorType.requestRateLimited:
+        return 429; // Too Many Requests
+      case LLMCommunicationErrorType.modelNotFound:
+        return 404; // Not Found
+      default:
+        return 500; // Internal Server Error
+    }
   }
 
   /// Send response back to server
@@ -441,6 +769,77 @@ class HttpPollingTunnelClient extends ChangeNotifier {
       debugPrint('🌉 [HttpPolling] Platform detection failed: $e');
       return 'unknown';
     }
+  }
+
+  /// Report provider status to server
+  Future<void> reportProviderStatus() async {
+    if (_bridgeId == null) return;
+
+    try {
+      final providers = _providerManager.getAvailableProviders();
+      final providerInfoList = providers.map((provider) => {
+        'id': provider.info.id,
+        'name': provider.info.name,
+        'type': provider.info.type.toString(),
+        'baseUrl': provider.info.baseUrl,
+        'status': provider.info.status.toString(),
+        'lastSeen': provider.info.lastSeen.toIso8601String(),
+        'availableModels': provider.info.availableModels,
+        'capabilities': provider.info.capabilities,
+        'healthStatus': provider.healthStatus.toString(),
+        'isEnabled': provider.isEnabled,
+      }).toList();
+
+      final accessToken = _authService.getAccessToken();
+      if (accessToken == null) return;
+
+      await _httpClient
+          .post(
+            Uri.parse('${AppConfig.apiBaseUrl}/bridge/$_bridgeId/provider-status'),
+            headers: {
+              'Authorization': 'Bearer $accessToken',
+              'Content-Type': 'application/json',
+            },
+            body: json.encode({
+              'providers': providerInfoList,
+              'timestamp': DateTime.now().toIso8601String(),
+            }),
+          )
+          .timeout(Duration(seconds: 10));
+
+      debugPrint('🌉 [HttpPolling] Provider status reported: ${providers.length} providers');
+    } catch (e) {
+      debugPrint('🌉 [HttpPolling] Failed to report provider status: $e');
+    }
+  }
+
+  /// Initialize provider integration on connection
+  Future<void> _initializeProviderIntegration() async {
+    try {
+      debugPrint('🌉 [HttpPolling] Initializing provider integration...');
+
+      // Ensure provider manager is initialized
+      if (!_providerManager.isInitialized) {
+        await _providerManager.initialize();
+      }
+
+      // Provider discovery is handled automatically by the provider manager
+      // No need to manually trigger discovery
+
+      // Report initial provider status
+      await reportProviderStatus();
+
+      debugPrint('🌉 [HttpPolling] ✅ Provider integration initialized');
+    } catch (e) {
+      debugPrint('🌉 [HttpPolling] ❌ Provider integration failed: $e');
+    }
+  }
+
+  /// Start periodic provider status reporting
+  void _startProviderStatusReporting() {
+    Timer.periodic(Duration(minutes: 2), (_) {
+      reportProviderStatus();
+    });
   }
 
   @override
