@@ -10,7 +10,6 @@ param(
 [string]$VersionIncrement = 'patch',
 
 [switch]$SkipVerification,
-[switch]$SkipVersionUpdate,
 [switch]$Force,
 [switch]$DryRun
 )
