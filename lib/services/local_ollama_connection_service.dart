@@ -35,6 +35,10 @@ class LocalOllamaConnectionService extends ChangeNotifier {
   // Health check timer
   Timer? _healthCheckTimer;
 
+  // Active request tracking
+  int _activeRequestCount = 0;
+  final Set<String> _activeRequestIds = <String>{};
+
   LocalOllamaConnectionService({String? baseUrl, Duration? timeout})
     : _baseUrl = baseUrl ?? AppConfig.defaultOllamaUrl,
       _timeout = timeout ?? AppConfig.ollamaTimeout {
@@ -64,6 +68,7 @@ class LocalOllamaConnectionService extends ChangeNotifier {
   bool get isConnected => _isConnected;
   bool get isConnecting => _isConnecting;
   String? get version => _version;
+  int get activeRequestCount => _activeRequestCount;
   List<String> get models => List.unmodifiable(_models);
   String? get error => _error;
   DateTime? get lastCheck => _lastCheck;
@@ -221,6 +226,7 @@ class LocalOllamaConnectionService extends ChangeNotifier {
       throw StateError('Not connected to local Ollama');
     }
 
+    final requestId = _startRequest();
     try {
       final messages = [
         if (history != null) ...history,
@@ -251,6 +257,8 @@ class LocalOllamaConnectionService extends ChangeNotifier {
     } catch (e) {
       debugPrint('🦙 [LocalOllama] Chat error: $e');
       rethrow;
+    } finally {
+      _endRequest(requestId);
     }
   }
 
@@ -307,6 +315,20 @@ class LocalOllamaConnectionService extends ChangeNotifier {
     debugPrint('🦙 [LocalOllama] Forcing reconnection...');
     _isConnected = false;
     await testConnection();
+  }
+
+  /// Start tracking an active request
+  String _startRequest() {
+    final requestId = DateTime.now().millisecondsSinceEpoch.toString();
+    _activeRequestIds.add(requestId);
+    _activeRequestCount = _activeRequestIds.length;
+    return requestId;
+  }
+
+  /// Stop tracking an active request
+  void _endRequest(String requestId) {
+    _activeRequestIds.remove(requestId);
+    _activeRequestCount = _activeRequestIds.length;
   }
 
   @override

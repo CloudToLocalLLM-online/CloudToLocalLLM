@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../config/theme.dart';
 import '../services/llm_provider_manager.dart';
@@ -10,12 +11,14 @@ import '../services/llm_provider_manager.dart';
 /// like Ollama, LM Studio, OpenAI-compatible APIs, etc.
 class LLMProviderSelector extends StatefulWidget {
   final Function(String providerId)? onProviderChanged;
+  final Function(String providerId, String modelName)? onModelSelected;
   final bool showStatus;
   final bool showModels;
 
   const LLMProviderSelector({
     super.key,
     this.onProviderChanged,
+    this.onModelSelected,
     this.showStatus = true,
     this.showModels = false,
   });
@@ -26,6 +29,61 @@ class LLMProviderSelector extends StatefulWidget {
 
 class _LLMProviderSelectorState extends State<LLMProviderSelector> {
   bool _isLoading = false;
+  final Map<String, String> _selectedModels = {}; // providerId -> modelName
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSelectedModels();
+  }
+
+  /// Load selected models from shared preferences
+  Future<void> _loadSelectedModels() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final keys = prefs.getKeys().where((key) => key.startsWith('selected_model_'));
+
+      for (final key in keys) {
+        final providerId = key.replaceFirst('selected_model_', '');
+        final modelName = prefs.getString(key);
+        if (modelName != null) {
+          _selectedModels[providerId] = modelName;
+        }
+      }
+
+      if (mounted) {
+        setState(() {});
+      }
+    } catch (e) {
+      debugPrint('Error loading selected models: $e');
+    }
+  }
+
+  /// Save selected model for a provider
+  Future<void> _saveSelectedModel(String providerId, String modelName) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('selected_model_$providerId', modelName);
+      _selectedModels[providerId] = modelName;
+    } catch (e) {
+      debugPrint('Error saving selected model: $e');
+    }
+  }
+
+  /// Handle model selection
+  Future<void> _onModelSelected(String providerId, String modelName) async {
+    setState(() {
+      _selectedModels[providerId] = modelName;
+    });
+
+    // Save to persistent storage
+    await _saveSelectedModel(providerId, modelName);
+
+    // Notify parent widget if callback is provided
+    widget.onModelSelected?.call(providerId, modelName);
+
+    debugPrint('Selected model "$modelName" for provider: $providerId');
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -236,9 +294,9 @@ class _LLMProviderSelectorState extends State<LLMProviderSelector> {
           ),
           child: DropdownButtonHideUnderline(
             child: DropdownButton<String>(
-              value: null, // TODO: Implement selected model tracking
+              value: _selectedModels[registeredProvider.info.id],
               isExpanded: true,
-              padding: EdgeInsets.symmetric(horizontal: AppTheme.spacingM),
+              padding: const EdgeInsets.symmetric(horizontal: AppTheme.spacingM),
               items: registeredProvider.info.availableModels.map((modelName) {
                 return DropdownMenuItem<String>(
                   value: modelName,
@@ -247,8 +305,7 @@ class _LLMProviderSelectorState extends State<LLMProviderSelector> {
               }).toList(),
               onChanged: (String? value) {
                 if (value != null) {
-                  // TODO: Implement model selection
-                  debugPrint('Selected model: $value');
+                  _onModelSelected(registeredProvider.info.id, value);
                 }
               },
             ),
@@ -330,24 +387,59 @@ class _LLMProviderSelectorState extends State<LLMProviderSelector> {
   }
 
   Future<void> _reconnectProviderById(String providerId) async {
+    if (!mounted) return;
+
+    // Show loading state
+    setState(() {
+      _isLoading = true;
+    });
+
     try {
-      // TODO: Implement provider reconnection through provider manager
+      final providerManager = Provider.of<LLMProviderManager>(context, listen: false);
+
+      // Show initial feedback
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Reconnecting provider...'),
+          backgroundColor: Colors.orange,
+          duration: Duration(seconds: 2),
+        ),
+      );
+
+      // Attempt reconnection
+      final success = await providerManager.reconnectProvider(providerId);
+
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Reconnection attempted for provider: $providerId'),
-            backgroundColor: Colors.green,
-          ),
-        );
+        if (success) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Provider reconnected successfully'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Failed to reconnect provider'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to reconnect: $e'),
+            content: Text('Reconnection error: $e'),
             backgroundColor: Colors.red,
           ),
         );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
       }
     }
   }

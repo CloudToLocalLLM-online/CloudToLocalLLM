@@ -541,8 +541,24 @@ class _EnhancedProviderStatusWidgetState extends State<EnhancedProviderStatusWid
   }
 
   void _editConfiguration(String providerId) {
-    // TODO: Navigate to provider configuration screen
-    debugPrint('Edit configuration for provider: $providerId');
+    try {
+      // Navigate to unified settings screen with provider configuration focus
+      Navigator.of(context).pushNamed(
+        '/settings',
+        arguments: {
+          'section': 'providers',
+          'providerId': providerId,
+        },
+      );
+    } catch (e) {
+      // Fallback: show snackbar with error
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to open provider configuration: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 }
 

@@ -26,6 +26,7 @@ import 'package:flutter/foundation.dart';
 
 import 'provider_discovery_service.dart';
 import 'langchain_integration_service.dart';
+import 'llm_providers/base_llm_provider.dart';
 import '../models/llm_communication_error.dart';
 
 /// Provider health status
@@ -137,6 +138,7 @@ class ProviderMetrics {
 class RegisteredProvider {
   final ProviderInfo info;
   final LangChainProviderWrapper? langchainWrapper;
+  final BaseLLMProvider? providerInstance;
   final ProviderMetrics metrics;
   final ProviderHealthStatus healthStatus;
   final DateTime registeredAt;
@@ -147,6 +149,7 @@ class RegisteredProvider {
   const RegisteredProvider({
     required this.info,
     this.langchainWrapper,
+    this.providerInstance,
     required this.metrics,
     required this.healthStatus,
     required this.registeredAt,
@@ -159,6 +162,7 @@ class RegisteredProvider {
   RegisteredProvider copyWith({
     ProviderInfo? info,
     LangChainProviderWrapper? langchainWrapper,
+    BaseLLMProvider? providerInstance,
     ProviderMetrics? metrics,
     ProviderHealthStatus? healthStatus,
     DateTime? registeredAt,
@@ -169,6 +173,7 @@ class RegisteredProvider {
     return RegisteredProvider(
       info: info ?? this.info,
       langchainWrapper: langchainWrapper ?? this.langchainWrapper,
+      providerInstance: providerInstance ?? this.providerInstance,
       metrics: metrics ?? this.metrics,
       healthStatus: healthStatus ?? this.healthStatus,
       registeredAt: registeredAt ?? this.registeredAt,
@@ -376,9 +381,65 @@ class LLMProviderManager extends ChangeNotifier {
     } catch (error) {
       stopwatch.stop();
       final responseTime = stopwatch.elapsedMilliseconds.toDouble();
-      
+
       await _updateProviderMetrics(providerId, false, responseTime);
       debugPrint('Connection test error for ${provider.info.name}: $error');
+      return false;
+    }
+  }
+
+  /// Reconnect a specific provider
+  Future<bool> reconnectProvider(String providerId) async {
+    final provider = _registeredProviders[providerId];
+    if (provider == null) {
+      debugPrint('Provider not found for reconnection: $providerId');
+      return false;
+    }
+
+    try {
+      debugPrint('Reconnecting provider: ${provider.info.name}');
+
+      // First disconnect if provider instance is available
+      if (provider.providerInstance != null) {
+        await provider.providerInstance!.disconnect();
+      }
+
+      // Wait a moment before reconnecting
+      await Future.delayed(const Duration(milliseconds: 500));
+
+      // Attempt to reconnect
+      if (provider.providerInstance != null) {
+        await provider.providerInstance!.connect();
+      }
+
+      // Test the connection
+      final isConnected = await testProviderConnection(providerId);
+
+      if (isConnected) {
+        // Update provider status
+        _registeredProviders[providerId] = provider.copyWith(
+          healthStatus: ProviderHealthStatus.healthy,
+          lastHealthCheck: DateTime.now(),
+        );
+
+        debugPrint('Provider ${provider.info.name} reconnected successfully');
+        notifyListeners();
+        return true;
+      } else {
+        debugPrint('Provider ${provider.info.name} reconnection failed');
+        return false;
+      }
+
+    } catch (error) {
+      debugPrint('Error reconnecting provider ${provider.info.name}: $error');
+
+      // Update provider status to unhealthy
+      _registeredProviders[providerId] = provider.copyWith(
+        healthStatus: ProviderHealthStatus.unhealthy,
+        lastHealthCheck: DateTime.now(),
+      );
+
+      notifyListeners();
       return false;
     }
   }

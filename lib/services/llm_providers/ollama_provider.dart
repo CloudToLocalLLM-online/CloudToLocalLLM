@@ -28,6 +28,10 @@ class OllamaProvider extends BaseLLMProvider {
   // HTTP client
   final http.Client _httpClient = http.Client();
 
+  // Active request tracking
+  int _activeRequestCount = 0;
+  final Set<String> _activeRequestIds = <String>{};
+
   OllamaProvider({
     required ConnectionManagerService connectionManager,
     LLMProviderConfig? config,
@@ -72,6 +76,9 @@ class OllamaProvider extends BaseLLMProvider {
 
   @override
   Map<String, dynamic> get configuration => _config.toJson();
+
+  @override
+  int get activeRequestCount => _activeRequestCount;
 
   @override
   Future<void> initialize() async {
@@ -237,6 +244,7 @@ class OllamaProvider extends BaseLLMProvider {
       throw Exception('No model selected');
     }
 
+    final requestId = _startRequest();
     try {
       _setLoading(true);
 
@@ -276,6 +284,7 @@ class OllamaProvider extends BaseLLMProvider {
       rethrow;
     } finally {
       _setLoading(false);
+      _endRequest(requestId);
     }
   }
 
@@ -295,6 +304,7 @@ class OllamaProvider extends BaseLLMProvider {
       throw Exception('No model selected');
     }
 
+    final requestId = _startRequest();
     try {
       final messages = [
         if (history != null) ...history,
@@ -340,6 +350,8 @@ class OllamaProvider extends BaseLLMProvider {
       _lastError = 'Failed to send streaming message: $e';
       _logger.logTunnelError('OLLAMA_STREAMING_FAILED', _lastError!, error: e);
       rethrow;
+    } finally {
+      _endRequest(requestId);
     }
   }
 
@@ -420,6 +432,20 @@ class OllamaProvider extends BaseLLMProvider {
   void _clearError() {
     _lastError = null;
     notifyListeners();
+  }
+
+  /// Start tracking an active request
+  String _startRequest() {
+    final requestId = DateTime.now().millisecondsSinceEpoch.toString();
+    _activeRequestIds.add(requestId);
+    _activeRequestCount = _activeRequestIds.length;
+    return requestId;
+  }
+
+  /// Stop tracking an active request
+  void _endRequest(String requestId) {
+    _activeRequestIds.remove(requestId);
+    _activeRequestCount = _activeRequestIds.length;
   }
 
   @override

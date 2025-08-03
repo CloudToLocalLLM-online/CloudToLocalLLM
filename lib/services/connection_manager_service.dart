@@ -984,7 +984,7 @@ class ConnectionManagerService extends ChangeNotifier {
     final poolId = 'local_ollama';
     final isConnected = hasLocalConnection;
     final connectionCount = isConnected ? 1 : 0;
-    final activeRequests = 0; // TODO: Get from local Ollama service if available
+    final activeRequests = _localOllama.activeRequestCount;
     
     final currentMetrics = _connectionPoolMetrics[poolId] ?? 
         ConnectionPoolMetrics.empty(poolId);
@@ -1061,7 +1061,7 @@ class ConnectionManagerService extends ChangeNotifier {
         connectionCount: connectionCount,
         activeConnections: connectionCount,
         idleConnections: 0,
-        activeRequests: 0, // TODO: Get from provider if available
+        activeRequests: provider.providerInstance?.activeRequestCount ?? 0,
         lastActivity: isAvailable ? now : currentMetrics.lastActivity,
         responseTime: responseTime,
         additionalMetrics: {

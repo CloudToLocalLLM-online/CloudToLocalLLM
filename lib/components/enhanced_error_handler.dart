@@ -9,9 +9,13 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
 
 import '../models/llm_communication_error.dart';
 import '../config/theme.dart';
+import '../services/connection_manager_service.dart';
+import '../services/llm_provider_manager.dart';
+import '../services/provider_discovery_service.dart';
 
 /// Enhanced error display widget with troubleshooting guidance
 class EnhancedErrorWidget extends StatefulWidget {
@@ -636,28 +640,90 @@ ${widget.error.stackTrace != null ? 'Stack Trace:\n${widget.error.stackTrace}\n'
   }
 
   void _runDiagnostics() {
-    // TODO: Implement diagnostic checks
-    debugPrint('Running system diagnostics...');
+    _showDiagnosticsDialog();
+  }
+
+  /// Show comprehensive diagnostics dialog
+  void _showDiagnosticsDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => _DiagnosticsDialog(),
+    );
   }
 
   void _testConnection() {
-    // TODO: Implement connection test
-    debugPrint('Testing connection...');
+    _showConnectionTestDialog();
   }
 
-  void _scanProviders() {
-    // TODO: Implement provider scanning
-    debugPrint('Scanning for providers...');
+  /// Show connection test dialog
+  void _showConnectionTestDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => _ConnectionTestDialog(),
+    );
+  }
+
+  void _scanProviders() async {
+    try {
+      final discoveryService = Provider.of<ProviderDiscoveryService>(context, listen: false);
+
+      // Show loading snackbar
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Scanning for providers...'),
+          backgroundColor: Colors.blue,
+        ),
+      );
+
+      // Trigger provider scan
+      await discoveryService.scanForProviders();
+
+      // Show results
+      final providers = discoveryService.discoveredProviders;
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Found ${providers.length} providers'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Provider scan failed: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   void _configureProvider() {
-    // TODO: Navigate to provider configuration
-    debugPrint('Opening provider configuration...');
+    try {
+      // Navigate to unified settings screen (provider configuration section)
+      Navigator.of(context).pushNamed('/settings');
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to open provider configuration: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   void _checkStatus() {
-    // TODO: Check system status
-    debugPrint('Checking system status...');
+    _showSystemStatusDialog();
+  }
+
+  /// Show system status dialog
+  void _showSystemStatusDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => _SystemStatusDialog(),
+    );
   }
 }
 
@@ -668,4 +734,293 @@ class QuickAction {
   final VoidCallback onPressed;
 
   const QuickAction(this.label, this.icon, this.onPressed);
+}
+
+/// Diagnostics dialog widget
+class _DiagnosticsDialog extends StatefulWidget {
+  @override
+  State<_DiagnosticsDialog> createState() => _DiagnosticsDialogState();
+}
+
+class _DiagnosticsDialogState extends State<_DiagnosticsDialog> {
+  bool _isRunning = false;
+  final List<String> _results = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _runDiagnostics();
+  }
+
+  Future<void> _runDiagnostics() async {
+    setState(() {
+      _isRunning = true;
+      _results.clear();
+    });
+
+    try {
+      // Check connection manager
+      final connectionManager = Provider.of<ConnectionManagerService>(context, listen: false);
+      _results.add('✓ Connection Manager: ${connectionManager.hasAnyConnection ? 'Connected' : 'Disconnected'}');
+
+      // Check provider manager
+      final providerManager = Provider.of<LLMProviderManager>(context, listen: false);
+      _results.add('✓ Provider Manager: ${providerManager.isInitialized ? 'Initialized' : 'Not initialized'}');
+      _results.add('✓ Available Providers: ${providerManager.availableProviders.length}');
+
+      // Check discovery service
+      final discoveryService = Provider.of<ProviderDiscoveryService>(context, listen: false);
+      _results.add('✓ Discovery Service: ${discoveryService.discoveredProviders.length} providers found');
+
+      _results.add('✓ Diagnostics completed successfully');
+    } catch (e) {
+      _results.add('✗ Diagnostic error: $e');
+    }
+
+    setState(() {
+      _isRunning = false;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text('System Diagnostics'),
+      content: SizedBox(
+        width: double.maxFinite,
+        height: 300,
+        child: Column(
+          children: [
+            if (_isRunning) ...[
+              CircularProgressIndicator(),
+              const SizedBox(height: 16),
+              Text('Running diagnostics...'),
+            ] else ...[
+              Expanded(
+                child: ListView.builder(
+                  itemCount: _results.length,
+                  itemBuilder: (context, index) {
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 4),
+                      child: Text(_results[index]),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Close'),
+        ),
+        if (!_isRunning)
+          TextButton(
+            onPressed: _runDiagnostics,
+            child: const Text('Run Again'),
+          ),
+      ],
+    );
+  }
+}
+
+/// Connection test dialog widget
+class _ConnectionTestDialog extends StatefulWidget {
+  @override
+  State<_ConnectionTestDialog> createState() => _ConnectionTestDialogState();
+}
+
+class _ConnectionTestDialogState extends State<_ConnectionTestDialog> {
+  bool _isRunning = false;
+  final List<String> _results = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _runConnectionTests();
+  }
+
+  Future<void> _runConnectionTests() async {
+    setState(() {
+      _isRunning = true;
+      _results.clear();
+    });
+
+    try {
+      // Test connection manager
+      final connectionManager = Provider.of<ConnectionManagerService>(context, listen: false);
+      _results.add('Testing connection manager...');
+
+      if (connectionManager.hasLocalConnection) {
+        _results.add('✓ Local Ollama: Connected');
+      } else {
+        _results.add('✗ Local Ollama: Disconnected');
+      }
+
+      if (connectionManager.hasCloudConnection) {
+        _results.add('✓ Cloud Tunnel: Connected');
+      } else {
+        _results.add('✗ Cloud Tunnel: Disconnected');
+      }
+
+      // Test providers
+      final providerManager = Provider.of<LLMProviderManager>(context, listen: false);
+      _results.add('Testing providers...');
+
+      for (final provider in providerManager.availableProviders) {
+        final isHealthy = await providerManager.testProviderConnection(provider.info.id);
+        _results.add('${isHealthy ? '✓' : '✗'} ${provider.info.name}: ${isHealthy ? 'Connected' : 'Failed'}');
+      }
+
+      _results.add('Connection tests completed');
+    } catch (e) {
+      _results.add('✗ Connection test error: $e');
+    }
+
+    setState(() {
+      _isRunning = false;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text('Connection Test'),
+      content: SizedBox(
+        width: double.maxFinite,
+        height: 300,
+        child: Column(
+          children: [
+            if (_isRunning) ...[
+              CircularProgressIndicator(),
+              const SizedBox(height: 16),
+              const Text('Testing connections...'),
+            ] else ...[
+              Expanded(
+                child: ListView.builder(
+                  itemCount: _results.length,
+                  itemBuilder: (context, index) {
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 4),
+                      child: Text(_results[index]),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Close'),
+        ),
+        if (!_isRunning)
+          TextButton(
+            onPressed: _runConnectionTests,
+            child: const Text('Test Again'),
+          ),
+      ],
+    );
+  }
+}
+
+/// System status dialog widget
+class _SystemStatusDialog extends StatefulWidget {
+  @override
+  State<_SystemStatusDialog> createState() => _SystemStatusDialogState();
+}
+
+class _SystemStatusDialogState extends State<_SystemStatusDialog> {
+  Map<String, dynamic> _statusData = {};
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSystemStatus();
+  }
+
+  Future<void> _loadSystemStatus() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final connectionManager = Provider.of<ConnectionManagerService>(context, listen: false);
+      final providerManager = Provider.of<LLMProviderManager>(context, listen: false);
+
+      _statusData = {
+        'Connection Status': {
+          'Local Connection': connectionManager.hasLocalConnection ? 'Connected' : 'Disconnected',
+          'Cloud Connection': connectionManager.hasCloudConnection ? 'Connected' : 'Disconnected',
+          'Provider Connection': connectionManager.hasProviderConnection ? 'Connected' : 'Disconnected',
+        },
+        'Provider Status': {
+          'Total Providers': providerManager.registeredProviders.length.toString(),
+          'Available Providers': providerManager.availableProviders.length.toString(),
+          'Healthy Providers': providerManager.healthyProviders.length.toString(),
+        },
+        'System Info': {
+          'Provider Manager': providerManager.isInitialized ? 'Initialized' : 'Not Initialized',
+          'Connection Type': connectionManager.getBestConnectionType().toString(),
+        },
+      };
+    } catch (e) {
+      _statusData = {'Error': {'Status': 'Failed to load system status: $e'}};
+    }
+
+    setState(() {
+      _isLoading = false;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text('System Status'),
+      content: SizedBox(
+        width: double.maxFinite,
+        height: 400,
+        child: _isLoading
+            ? Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    CircularProgressIndicator(),
+                    const SizedBox(height: 16),
+                    const Text('Loading system status...'),
+                  ],
+                ),
+              )
+            : ListView(
+                children: _statusData.entries.map((category) {
+                  return ExpansionTile(
+                    title: Text(category.key),
+                    children: (category.value as Map<String, dynamic>)
+                        .entries
+                        .map((item) => ListTile(
+                              title: Text(item.key),
+                              trailing: Text(item.value.toString()),
+                            ))
+                        .toList(),
+                  );
+                }).toList(),
+              ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Close'),
+        ),
+        TextButton(
+          onPressed: _loadSystemStatus,
+          child: const Text('Refresh'),
+        ),
+      ],
+    );
+  }
 }

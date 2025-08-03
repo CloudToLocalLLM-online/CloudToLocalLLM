@@ -39,6 +39,9 @@ abstract class BaseLLMProvider extends ChangeNotifier {
   /// Provider-specific configuration
   Map<String, dynamic> get configuration;
 
+  /// Number of currently active requests
+  int get activeRequestCount;
+
   /// Initialize the provider
   Future<void> initialize();
 
