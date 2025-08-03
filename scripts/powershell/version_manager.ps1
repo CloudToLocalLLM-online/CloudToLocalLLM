@@ -381,14 +381,24 @@ function Test-Utf8Encoding {
                   ($bytes[1] -eq 0xBB) -and
                   ($bytes[2] -eq 0xBF)
 
+        # Helper function to compare byte arrays
+        function Compare-ByteArrays {
+            param($array1, $array2)
+            if ($array1.Length -ne $array2.Length) { return $false }
+            for ($i = 0; $i -lt $array1.Length; $i++) {
+                if ($array1[$i] -ne $array2[$i]) { return $false }
+            }
+            return $true
+        }
+
         if ($hasBom) {
             # Compare without BOM
             $originalWithoutBom = $bytes[3..($bytes.Length - 1)]
-            if (-not [System.Linq.Enumerable]::SequenceEqual($originalWithoutBom, $reencoded)) {
+            if (-not (Compare-ByteArrays $originalWithoutBom $reencoded)) {
                 throw "File contains invalid UTF-8 sequences"
             }
         } else {
-            if (-not [System.Linq.Enumerable]::SequenceEqual($bytes, $reencoded)) {
+            if (-not (Compare-ByteArrays $bytes $reencoded)) {
                 throw "File contains invalid UTF-8 sequences"
             }
         }
