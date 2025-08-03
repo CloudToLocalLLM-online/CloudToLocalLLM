@@ -934,8 +934,13 @@ function Update-ReadmeVersion {
         Test-Utf8Encoding -FilePath $ReadmeFile
 
         # Security: Create enhanced timestamped backup with verification
-        $backupFile = New-TimestampedBackup -FilePath $ReadmeFile
-        Write-LogInfo "Created verified backup: $backupFile"
+        try {
+            $backupFile = New-TimestampedBackup -FilePath $ReadmeFile
+            Write-LogInfo "Created verified backup: $backupFile"
+        } catch {
+            Write-LogWarning "Backup creation failed, proceeding without backup: $($_.Exception.Message)"
+            $backupFile = $null
+        }
 
         # Security: Read with proper encoding detection
         $content = Get-Content $ReadmeFile -Raw -Encoding UTF8
@@ -969,7 +974,7 @@ function Update-ReadmeVersion {
         Write-LogError "Failed to update README.md: $($_.Exception.Message)"
 
         # Security: Restore from backup if it exists
-        if (Test-Path $backupFile) {
+        if ($backupFile -and (Test-Path $backupFile)) {
             Copy-Item $backupFile $ReadmeFile -Force
             Write-LogInfo "Restored README.md from backup"
         }
