@@ -1,11 +1,8 @@
-/**
- * LLM Communication Error Model
- * 
- * Comprehensive error classification system for LLM communication failures.
- * Provides structured error information with context and recovery suggestions.
- */
-
-import 'package:flutter/foundation.dart';
+/// LLM Communication Error Model
+///
+/// Comprehensive error classification system for LLM communication failures.
+/// Provides structured error information with context and recovery suggestions.
+library;
 
 /// LLM communication error types
 enum LLMCommunicationErrorType {
@@ -14,67 +11,67 @@ enum LLMCommunicationErrorType {
   providerUnavailable,
   providerTimeout,
   providerConfigurationError,
-  
+
   // Connection errors
   connectionTimeout,
   connectionRefused,
   connectionLost,
   networkError,
-  
+
   // Request errors
   requestTimeout,
   requestTooLarge,
   requestMalformed,
   requestRateLimited,
-  
+
   // Authentication errors
   authenticationFailed,
   authorizationDenied,
   tokenExpired,
-  
+
   // Model errors
   modelNotFound,
   modelNotLoaded,
   modelError,
   modelUnsupported,
-  
+
   // Response errors
   responseTimeout,
   responseCorrupted,
   responseTooLarge,
   responseParsingError,
-  
+
   // Tunnel errors
   tunnelDisconnected,
   tunnelError,
   bridgeUnavailable,
-  
+
   // System errors
   systemError,
   memoryError,
   diskSpaceError,
-  
+
   // Unknown errors
-  unknown
+  unknown,
 }
 
 /// Error severity levels
 enum ErrorSeverity {
-  low,      // Minor issues, system can continue
-  medium,   // Significant issues, some functionality affected
-  high,     // Major issues, core functionality affected
-  critical  // System-breaking issues, immediate attention required
+  low, // Minor issues, system can continue
+  medium, // Significant issues, some functionality affected
+  high, // Major issues, core functionality affected
+  critical, // System-breaking issues, immediate attention required
 }
 
 /// Error recovery strategies
 enum RecoveryStrategy {
-  retry,              // Simple retry
-  retryWithBackoff,   // Retry with exponential backoff
-  switchProvider,     // Try different provider
-  fallbackMode,       // Use fallback functionality
-  userIntervention,   // Requires user action
-  systemRestart,      // Requires system restart
-  noRecovery         // No automatic recovery possible
+  retry, // Simple retry
+  retryWithBackoff, // Retry with exponential backoff
+  switchProvider, // Try different provider
+  fallbackMode, // Use fallback functionality
+  userIntervention, // Requires user action
+  systemRestart, // Requires system restart
+  noRecovery, // No automatic recovery possible
 }
 
 /// LLM Communication Error class
@@ -95,7 +92,7 @@ class LLMCommunicationError implements Exception {
   final int retryCount;
   final List<String> troubleshootingSteps;
 
-  const LLMCommunicationError({
+  LLMCommunicationError({
     required this.type,
     required this.message,
     this.details,
@@ -131,7 +128,8 @@ class LLMCommunicationError implements Exception {
   }) {
     final inferredType = type ?? _inferErrorTypeFromException(exception);
     final inferredSeverity = severity ?? _inferSeverityFromType(inferredType);
-    final inferredRecovery = recoveryStrategy ?? _inferRecoveryFromType(inferredType);
+    final inferredRecovery =
+        recoveryStrategy ?? _inferRecoveryFromType(inferredType);
     final inferredMessage = message ?? _getDefaultMessageForType(inferredType);
     final troubleshooting = _getTroubleshootingStepsForType(inferredType);
 
@@ -404,16 +402,20 @@ class LLMCommunicationError implements Exception {
   }
 
   /// Infer error type from exception
-  static LLMCommunicationErrorType _inferErrorTypeFromException(Exception exception) {
+  static LLMCommunicationErrorType _inferErrorTypeFromException(
+    Exception exception,
+  ) {
     final exceptionString = exception.toString().toLowerCase();
-    
+
     if (exceptionString.contains('timeout')) {
       return LLMCommunicationErrorType.connectionTimeout;
     }
-    if (exceptionString.contains('connection refused') || exceptionString.contains('connection failed')) {
+    if (exceptionString.contains('connection refused') ||
+        exceptionString.contains('connection failed')) {
       return LLMCommunicationErrorType.connectionRefused;
     }
-    if (exceptionString.contains('network') || exceptionString.contains('socket')) {
+    if (exceptionString.contains('network') ||
+        exceptionString.contains('socket')) {
       return LLMCommunicationErrorType.networkError;
     }
     if (exceptionString.contains('auth')) {
@@ -422,10 +424,11 @@ class LLMCommunicationError implements Exception {
     if (exceptionString.contains('model')) {
       return LLMCommunicationErrorType.modelError;
     }
-    if (exceptionString.contains('tunnel') || exceptionString.contains('bridge')) {
+    if (exceptionString.contains('tunnel') ||
+        exceptionString.contains('bridge')) {
       return LLMCommunicationErrorType.tunnelError;
     }
-    
+
     return LLMCommunicationErrorType.unknown;
   }
 
@@ -436,46 +439,48 @@ class LLMCommunicationError implements Exception {
       case LLMCommunicationErrorType.memoryError:
       case LLMCommunicationErrorType.diskSpaceError:
         return ErrorSeverity.critical;
-      
+
       case LLMCommunicationErrorType.providerNotFound:
       case LLMCommunicationErrorType.tunnelDisconnected:
       case LLMCommunicationErrorType.authenticationFailed:
       case LLMCommunicationErrorType.bridgeUnavailable:
         return ErrorSeverity.high;
-      
+
       case LLMCommunicationErrorType.connectionTimeout:
       case LLMCommunicationErrorType.requestTimeout:
       case LLMCommunicationErrorType.modelNotFound:
       case LLMCommunicationErrorType.responseTimeout:
         return ErrorSeverity.medium;
-      
+
       default:
         return ErrorSeverity.low;
     }
   }
 
   /// Infer recovery strategy from error type
-  static RecoveryStrategy _inferRecoveryFromType(LLMCommunicationErrorType type) {
+  static RecoveryStrategy _inferRecoveryFromType(
+    LLMCommunicationErrorType type,
+  ) {
     switch (type) {
       case LLMCommunicationErrorType.connectionTimeout:
       case LLMCommunicationErrorType.requestTimeout:
       case LLMCommunicationErrorType.responseTimeout:
       case LLMCommunicationErrorType.networkError:
         return RecoveryStrategy.retryWithBackoff;
-      
+
       case LLMCommunicationErrorType.providerNotFound:
       case LLMCommunicationErrorType.providerUnavailable:
         return RecoveryStrategy.switchProvider;
-      
+
       case LLMCommunicationErrorType.authenticationFailed:
       case LLMCommunicationErrorType.modelNotFound:
       case LLMCommunicationErrorType.tunnelDisconnected:
         return RecoveryStrategy.userIntervention;
-      
+
       case LLMCommunicationErrorType.systemError:
       case LLMCommunicationErrorType.memoryError:
         return RecoveryStrategy.systemRestart;
-      
+
       default:
         return RecoveryStrategy.retry;
     }
@@ -502,7 +507,9 @@ class LLMCommunicationError implements Exception {
   }
 
   /// Get troubleshooting steps for error type
-  static List<String> _getTroubleshootingStepsForType(LLMCommunicationErrorType type) {
+  static List<String> _getTroubleshootingStepsForType(
+    LLMCommunicationErrorType type,
+  ) {
     switch (type) {
       case LLMCommunicationErrorType.providerNotFound:
         return [

@@ -44,9 +44,22 @@ export const USER_TIERS = {
 
 /**
  * HTTP-based tunnel proxy service
+ * 
  * Manages HTTP polling connections from desktop clients and routes HTTP requests
+ * with enhanced LLM-specific functionality including:
+ * - Intelligent request classification and routing
+ * - Provider-aware timeout handling
+ * - Request prioritization based on user tier and operation type
+ * - Comprehensive metrics and error tracking
+ * 
+ * @class HttpTunnelProxy
  */
 export class HttpTunnelProxy {
+  /**
+   * Create a new HttpTunnelProxy instance
+   * 
+   * @param {winston.Logger} [logger] - Winston logger instance for logging
+   */
   constructor(logger = winston.createLogger()) {
     // Use enhanced logger if winston logger provided, otherwise create new TunnelLogger
     this.logger = logger instanceof TunnelLogger ? logger : new TunnelLogger('http-tunnel-proxy');

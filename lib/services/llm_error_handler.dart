@@ -1,10 +1,9 @@
-/**
- * LLM Error Handler Service
- * 
- * Provides provider-specific error handling, retry strategies, and recovery mechanisms
- * for LLM communication failures. Implements exponential backoff and intelligent
- * error classification.
- */
+/// LLM Error Handler Service
+///
+/// Provides provider-specific error handling, retry strategies, and recovery mechanisms
+/// for LLM communication failures. Implements exponential backoff and intelligent
+/// error classification.
+library;
 
 import 'dart:async';
 import 'dart:math';
@@ -110,23 +109,26 @@ class LLMErrorHandler extends ChangeNotifier {
     bool allowProviderSwitch = true,
   }) async {
     debugPrint('Handling LLM error: ${error.type} for provider: $providerId');
-    
+
     // Record error for analytics
     _recordError(error, providerId);
-    
+
     // Get provider-specific configuration
     final config = _getProviderConfig(providerType);
-    
+
     // Check if error is retryable
-    if (config.isRetryable(error.type) && error.retryCount < config.getRetryConfig(error.type).maxRetries) {
+    if (config.isRetryable(error.type) &&
+        error.retryCount < config.getRetryConfig(error.type).maxRetries) {
       return await _retryWithBackoff(error, operation, config);
     }
-    
+
     // Check if we should switch providers
-    if (allowProviderSwitch && config.shouldSwitchProvider(error.type) && _providerDiscovery != null) {
+    if (allowProviderSwitch &&
+        config.shouldSwitchProvider(error.type) &&
+        _providerDiscovery != null) {
       return await _attemptProviderSwitch(error, operation, providerId);
     }
-    
+
     // No recovery possible, return null or rethrow
     debugPrint('No recovery strategy available for error: ${error.type}');
     return null;
@@ -150,15 +152,17 @@ class LLMErrorHandler extends ChangeNotifier {
       }
     } catch (exception) {
       // Convert exception to LLMCommunicationError
-      final error = exception is LLMCommunicationError 
-          ? exception 
+      final error = exception is LLMCommunicationError
+          ? exception
           : LLMCommunicationError.fromException(
-              exception is Exception ? exception : Exception(exception.toString()),
+              exception is Exception
+                  ? exception
+                  : Exception(exception.toString()),
               providerId: providerId,
               requestId: requestId,
               timeout: timeout,
             );
-      
+
       // Attempt error handling and recovery
       final result = await handleError<T>(
         error,
@@ -167,11 +171,11 @@ class LLMErrorHandler extends ChangeNotifier {
         providerType: providerType,
         allowProviderSwitch: allowProviderSwitch,
       );
-      
+
       if (result != null) {
         return result;
       }
-      
+
       // If no recovery was possible, rethrow the original error
       throw error;
     }
@@ -185,36 +189,43 @@ class LLMErrorHandler extends ChangeNotifier {
   ) async {
     final retryConfig = config.getRetryConfig(error.type);
     final newRetryCount = error.retryCount + 1;
-    
+
     // Calculate delay with exponential backoff and jitter
     final baseDelay = Duration(
-      milliseconds: (retryConfig.initialDelay.inMilliseconds * 
-                    pow(retryConfig.backoffMultiplier, newRetryCount - 1)).round(),
+      milliseconds:
+          (retryConfig.initialDelay.inMilliseconds *
+                  pow(retryConfig.backoffMultiplier, newRetryCount - 1))
+              .round(),
     );
-    
+
     final delayWithJitter = Duration(
       milliseconds: min(
-        baseDelay.inMilliseconds + _random.nextInt(retryConfig.jitter.inMilliseconds),
+        baseDelay.inMilliseconds +
+            _random.nextInt(retryConfig.jitter.inMilliseconds),
         retryConfig.maxDelay.inMilliseconds,
       ),
     );
-    
-    debugPrint('Retrying operation (attempt $newRetryCount/${retryConfig.maxRetries}) after ${delayWithJitter.inMilliseconds}ms');
-    
+
+    debugPrint(
+      'Retrying operation (attempt $newRetryCount/${retryConfig.maxRetries}) after ${delayWithJitter.inMilliseconds}ms',
+    );
+
     // Wait before retry
     await Future.delayed(delayWithJitter);
-    
+
     try {
       return await operation();
     } catch (exception) {
       // Convert and update retry count
-      final retryError = exception is LLMCommunicationError 
+      final retryError = exception is LLMCommunicationError
           ? exception.withRetryCount(newRetryCount)
           : LLMCommunicationError.fromException(
-              exception is Exception ? exception : Exception(exception.toString()),
+              exception is Exception
+                  ? exception
+                  : Exception(exception.toString()),
               retryCount: newRetryCount,
             );
-      
+
       // Recursively handle the retry error
       return await handleError<T>(retryError, operation);
     }
@@ -230,22 +241,25 @@ class LLMErrorHandler extends ChangeNotifier {
       debugPrint('Provider discovery not available for provider switch');
       return null;
     }
-    
+
     // Get available providers excluding the current one
-    final availableProviders = _providerDiscovery!.getAvailableProviders()
+    final availableProviders = _providerDiscovery
+        .getAvailableProviders()
         .where((provider) => provider.id != currentProviderId)
         .toList();
-    
+
     if (availableProviders.isEmpty) {
       debugPrint('No alternative providers available for switch');
       return null;
     }
-    
+
     // Try each available provider
     for (final provider in availableProviders) {
       try {
-        debugPrint('Attempting provider switch to: ${provider.name} (${provider.id})');
-        
+        debugPrint(
+          'Attempting provider switch to: ${provider.name} (${provider.id})',
+        );
+
         // This would need to be implemented with actual provider switching logic
         // For now, we'll just attempt the operation again
         return await operation();
@@ -254,7 +268,7 @@ class LLMErrorHandler extends ChangeNotifier {
         continue;
       }
     }
-    
+
     debugPrint('All provider switch attempts failed');
     return null;
   }
@@ -262,21 +276,21 @@ class LLMErrorHandler extends ChangeNotifier {
   /// Record error for analytics and monitoring
   void _recordError(LLMCommunicationError error, String? providerId) {
     final key = providerId ?? 'unknown';
-    
+
     // Update error counts
     _errorCounts[key] = (_errorCounts[key] ?? 0) + 1;
     _lastErrorTimes[key] = DateTime.now();
-    
+
     // Add to error history (keep last 100 errors per provider)
     if (!_errorHistory.containsKey(key)) {
       _errorHistory[key] = [];
     }
-    
+
     _errorHistory[key]!.add(error);
     if (_errorHistory[key]!.length > 100) {
       _errorHistory[key]!.removeAt(0);
     }
-    
+
     // Notify listeners of error state change
     notifyListeners();
   }
@@ -293,7 +307,7 @@ class LLMErrorHandler extends ChangeNotifier {
   Map<String, dynamic> getErrorStats(String? providerId) {
     final key = providerId ?? 'unknown';
     final errors = _errorHistory[key] ?? [];
-    
+
     if (errors.isEmpty) {
       return {
         'totalErrors': 0,
@@ -302,37 +316,46 @@ class LLMErrorHandler extends ChangeNotifier {
         'commonErrors': <String>[],
       };
     }
-    
+
     // Calculate error type distribution
     final errorTypeCounts = <LLMCommunicationErrorType, int>{};
     for (final error in errors) {
       errorTypeCounts[error.type] = (errorTypeCounts[error.type] ?? 0) + 1;
     }
-    
+
     // Get most common errors
-    final commonErrors = errorTypeCounts.entries
-        .toList()
-        ..sort((a, b) => b.value.compareTo(a.value));
-    
+    final commonErrors = errorTypeCounts.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+
     return {
       'totalErrors': _errorCounts[key] ?? 0,
       'lastError': _lastErrorTimes[key]?.toIso8601String(),
       'recentErrors': errors.length,
-      'errorTypes': errorTypeCounts.map((k, v) => MapEntry(k.toString().split('.').last, v)),
-      'commonErrors': commonErrors.take(5).map((e) => e.key.toString().split('.').last).toList(),
+      'errorTypes': errorTypeCounts.map(
+        (k, v) => MapEntry(k.toString().split('.').last, v),
+      ),
+      'commonErrors': commonErrors
+          .take(5)
+          .map((e) => e.key.toString().split('.').last)
+          .toList(),
     };
   }
 
   /// Get overall error statistics
   Map<String, dynamic> getOverallStats() {
-    final totalErrors = _errorCounts.values.fold(0, (sum, count) => sum + count);
+    final totalErrors = _errorCounts.values.fold(
+      0,
+      (sum, count) => sum + count,
+    );
     final providersWithErrors = _errorCounts.keys.length;
-    
+
     return {
       'totalErrors': totalErrors,
       'providersWithErrors': providersWithErrors,
       'errorCounts': Map<String, int>.from(_errorCounts),
-      'lastErrorTimes': _lastErrorTimes.map((k, v) => MapEntry(k, v.toIso8601String())),
+      'lastErrorTimes': _lastErrorTimes.map(
+        (k, v) => MapEntry(k, v.toIso8601String()),
+      ),
     };
   }
 
@@ -364,7 +387,7 @@ class LLMErrorHandler extends ChangeNotifier {
       LLMCommunicationErrorType.connectionLost,
       LLMCommunicationErrorType.responseCorrupted,
     };
-    
+
     // Define errors that should trigger provider switch
     const switchProviderErrors = {
       LLMCommunicationErrorType.providerNotFound,
@@ -373,7 +396,7 @@ class LLMErrorHandler extends ChangeNotifier {
       LLMCommunicationErrorType.modelNotFound,
       LLMCommunicationErrorType.modelNotLoaded,
     };
-    
+
     // Retry configurations for different error types
     final retryConfigs = <LLMCommunicationErrorType, RetryConfig>{
       LLMCommunicationErrorType.connectionTimeout: RetryConfig.aggressive,
@@ -382,7 +405,7 @@ class LLMErrorHandler extends ChangeNotifier {
       LLMCommunicationErrorType.responseTimeout: RetryConfig.conservative,
       LLMCommunicationErrorType.connectionLost: RetryConfig.aggressive,
     };
-    
+
     // Create provider-specific configurations
     return {
       ProviderType.ollama: ProviderErrorConfig(
