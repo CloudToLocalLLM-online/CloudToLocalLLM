@@ -40,6 +40,7 @@
 
 
 
+
   - Review and optimize code structure in implemented files
   - Add comprehensive documentation and code comments
   - Ensure consistent error handling patterns across all new services
@@ -70,6 +71,13 @@
   - Create `lib/services/openai_compatible_provider.dart` for generic OpenAI-compatible APIs
   - _Requirements: 2.1, 2.2, 5.1, 5.2_
 
+- [ ] 2.4 Code cleanup and optimization for task 2
+  - Review and optimize code structure in LangChain integration files
+  - Add comprehensive documentation and code comments for provider abstraction
+  - Ensure consistent provider interface patterns across all implementations
+  - Run static analysis and fix any linting issues
+  - _Requirements: Code quality and maintainability_
+
 - [ ] 3. Enhance connection management and tunnel communication
   - Improve connection pooling and health monitoring for LLM providers
   - Add automatic reconnection with exponential backoff for failed connections
@@ -93,6 +101,13 @@
   - Implement connection pool monitoring and automatic cleanup
   - Add performance metrics collection for different provider types
   - _Requirements: 3.2, 3.5, 4.4_
+
+- [ ] 3.4 Code cleanup and optimization for task 3
+  - Review and optimize connection management code structure
+  - Add comprehensive documentation for tunnel communication patterns
+  - Ensure consistent error handling across connection services
+  - Run static analysis and fix any linting issues
+  - _Requirements: Code quality and maintainability_
 
 - [ ] 4. Update desktop client HTTP polling integration
   - Enhance desktop client to work with new provider manager
@@ -118,6 +133,13 @@
   - Implement provider status reporting through tunnel connection
   - _Requirements: 2.1, 3.1, 4.4_
 
+- [ ] 4.4 Code cleanup and optimization for task 4
+  - Review and optimize desktop client integration code
+  - Add comprehensive documentation for HTTP polling enhancements
+  - Ensure consistent message protocol patterns
+  - Run static analysis and fix any linting issues
+  - _Requirements: Code quality and maintainability_
+
 - [ ] 5. Add comprehensive testing and validation
   - Create unit tests for provider discovery and LangChain integration
   - Add integration tests for end-to-end tunnel-LLM communication
@@ -142,6 +164,13 @@
   - Implement timeout and error handling test scenarios
   - _Requirements: 1.1, 1.2, 1.3, 1.5_
 
+- [ ] 5.4 Code cleanup and optimization for task 5
+  - Review and optimize test code structure and organization
+  - Add comprehensive documentation for testing patterns and utilities
+  - Ensure consistent test naming and assertion patterns
+  - Run static analysis on test files and fix any linting issues
+  - _Requirements: Code quality and maintainability_
+
 - [ ] 6. Update configuration and documentation
   - Add provider configuration options to app settings
   - Update connection status UI to show provider information
@@ -165,3 +194,10 @@
   - Add contextual troubleshooting guidance based on specific error types
   - Create diagnostic tools for testing provider connectivity and configuration
   - _Requirements: 4.1, 4.2, 4.5_
+
+- [ ] 6.4 Code cleanup and optimization for task 6
+  - Review and optimize configuration management code structure
+  - Add comprehensive documentation for UI components and user feedback systems
+  - Ensure consistent error message formatting and user experience patterns
+  - Run static analysis and fix any linting issues in configuration and UI files
+  - _Requirements: Code quality and maintainability_
