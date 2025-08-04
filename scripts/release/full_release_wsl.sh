@@ -49,8 +49,10 @@ get_version() {
 build_windows_packages() {
     local version="$1"
     print_status "Building Windows packages..."
-    # Call PowerShell script from WSL
-    powershell.exe -ExecutionPolicy Bypass -File "$PROJECT_ROOT/scripts/powershell/Build-GitHubReleaseAssets.ps1" -InstallInnoSetup
+    # Convert project root to a Windows path for PowerShell
+    local windows_project_root=$(wslpath -w "$PROJECT_ROOT")
+    # Call PowerShell script from WSL using the Windows path
+    powershell.exe -ExecutionPolicy Bypass -File "$windows_project_root\scripts\powershell\Build-GitHubReleaseAssets.ps1" -InstallInnoSetup
     if [[ $? -ne 0 ]]; then
         print_error "Failed to build Windows packages."
         exit 1

@@ -246,7 +246,8 @@ acquire_file_lock() {
 
     while [[ $wait_time -lt $timeout ]]; do
         # Try to create lock file atomically
-        if (set -C; echo $$ > "$lock_file") 2>/dev/null; then
+        if (set -C; echo $$ > "$lock_file") 2>/dev/null;
+        then
             # Lock acquired successfully
             log_info "Lock acquired: $lock_file"
             echo "$lock_file"
@@ -258,7 +259,8 @@ acquire_file_lock() {
             lock_pid=$(cat "$lock_file" 2>/dev/null)
             if [[ -n "$lock_pid" ]] && [[ "$lock_pid" =~ ^[0-9]+$ ]]; then
                 # Check if the process is still running
-                if ! kill -0 "$lock_pid" 2>/dev/null; then
+                if ! kill -0 "$lock_pid" 2>/dev/null;
+                then
                     log_warning "Removing stale lock file (PID $lock_pid no longer exists): $lock_file"
                     rm -f "$lock_file"
                     continue
@@ -364,7 +366,8 @@ preserve_file_characteristics() {
     fi
 
     # Verify UTF-8 encoding
-    if command -v file >/dev/null 2>&1; then
+    if command -v file >/dev/null 2>&1;
+    then
         if ! file "$temp_file" | grep -q "UTF-8"; then
             log_warning "Temp file may not be UTF-8 encoded: $temp_file"
         fi
@@ -383,7 +386,8 @@ validate_utf8_encoding() {
     fi
 
     # Check if file command is available
-    if command -v file >/dev/null 2>&1; then
+    if command -v file >/dev/null 2>&1;
+    then
         if ! file "$file" | grep -q "UTF-8\|ASCII"; then
             log_error "File is not UTF-8 or ASCII encoded: $file"
             return 1
@@ -391,8 +395,10 @@ validate_utf8_encoding() {
     fi
 
     # Additional check using iconv if available
-    if command -v iconv >/dev/null 2>&1; then
-        if ! iconv -f UTF-8 -t UTF-8 "$file" >/dev/null 2>&1; then
+    if command -v iconv >/dev/null 2>&1;
+    then
+        if ! iconv -f UTF-8 -t UTF-8 "$file" >/dev/null 2>&1;
+        then
             log_error "File contains invalid UTF-8 sequences: $file"
             return 1
         fi
@@ -520,7 +526,7 @@ validate_version_string() {
 escape_for_sed() {
     local input="$1"
     # Escape all special regex characters for sed
-    printf '%s\n' "$input" | sed 's/[[\.*^$()+?{|]/\\&/g'
+    printf '%s\n' "$input" | sed 's/[[\\.^$()+?{|]/\\&/g'
 }
 
 # Security: Validate file operations are safe before proceeding
@@ -800,7 +806,8 @@ update_assets_version_json() {
 
     # Read current git commit (preserve existing value if available)
     local git_commit="unknown"
-    if command -v git >/dev/null 2>&1 && git rev-parse --git-dir >/dev/null 2>&1; then
+    if command -v git >/dev/null 2>&1 && git rev-parse --git-dir >/dev/null 2>&1;
+    then
         git_commit=$(git rev-parse --short HEAD 2>/dev/null || echo "unknown")
     fi
 
@@ -862,7 +869,7 @@ update_readme_version() {
     local escaped_version=$(escape_for_sed "$validated_version")
 
     # Security: Use more specific pattern matching to prevent injection
-    local pattern='\[\!\[Version\]\(https://img\.shields\.io/badge/version-[0-9]\+\.[0-9]\+\.[0-9]\+-blue\.svg\)\]'
+    local pattern='\[!\[Version\]\(https://img\.shields\.io/badge/version-[0-9]\+\.[0-9]\+\.[0-9]\+-blue\.svg\)\]'
     local replacement="[![Version](https://img.shields.io/badge/version-$escaped_version-blue.svg)]"
 
     # Validate original file encoding
@@ -997,7 +1004,8 @@ update_changelog_version() {
         if [[ $line_num -gt 8 ]] && [[ "$line" =~ ^[[:space:]]*$ ]] && [[ $found_first_version == false ]] && [[ $insert_line -eq 0 ]]; then
             # Check if next line exists and is not a version entry
             local next_line=""
-            if IFS= read -r next_line <&3; then
+            if IFS= read -r next_line <&3;
+            then
                 if [[ ! "$next_line" =~ ^##[[:space:]]*\[ ]]; then
                     # Insert here
                     echo -e "$new_entry" >> "$temp_file"
