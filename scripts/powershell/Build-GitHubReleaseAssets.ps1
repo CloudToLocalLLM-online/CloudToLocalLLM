@@ -176,8 +176,11 @@ function New-PortableZipPackage {
     Compress-Archive -Path "$WindowsBuildDir\*" -DestinationPath $zipPath -Force
     
     # Generate checksum
-    $hash = Get-FileHash -Path $zipPath -Algorithm SHA256
-    $checksum = $hash.Hash.ToLower()
+    $sha256 = New-Object -TypeName System.Security.Cryptography.SHA256Managed
+    $fileStream = [System.IO.File]::OpenRead($zipPath)
+    $hashBytes = $sha256.ComputeHash($fileStream)
+    $fileStream.Close()
+    $checksum = [System.BitConverter]::ToString($hashBytes).Replace('-', '').ToLower()
     "$checksum  $packageName" | Set-Content -Path "$zipPath.sha256" -Encoding UTF8
     
     Write-LogSuccess "Portable ZIP package created: $packageName"
@@ -229,8 +232,11 @@ function New-WindowsInstaller {
         
         if (Test-Path $installerPath) {
             # Generate checksum
-            $hash = Get-FileHash -Path $installerPath -Algorithm SHA256
-            $checksum = $hash.Hash.ToLower()
+            $sha256 = New-Object -TypeName System.Security.Cryptography.SHA256Managed
+            $fileStream = [System.IO.File]::OpenRead($installerPath)
+            $hashBytes = $sha256.ComputeHash($fileStream)
+            $fileStream.Close()
+            $checksum = [System.BitConverter]::ToString($hashBytes).Replace('-', '').ToLower()
             "$checksum  $installerName" | Set-Content -Path "$installerPath.sha256" -Encoding UTF8
             
             Write-LogSuccess "Windows installer created: $installerName"
