@@ -497,35 +497,27 @@ Works seamlessly with https://app.cloudtolocalllm.online
 
 
                     # Create GitHub release with assets
-                    if ($assetsToUpload.Count -gt 0) {
-                        $ghCommand = "gh release create `"$releaseTag`" --repo imrightguy/CloudToLocalLLM --title `"CloudToLocalLLM $releaseTag`" --notes-file `"$releaseNotesFile`""
-                        foreach ($asset in $assetsToUpload) {
-                            $ghCommand += " `"$asset`""
-                        }
-
-                        Write-Host "Executing: $ghCommand"
-                        Invoke-Expression $ghCommand
-
-                        if ($LASTEXITCODE -eq 0) {
-                            Write-Host "? GitHub release $releaseTag created successfully" -ForegroundColor Green
-                            Write-Host "? Desktop application packages uploaded" -ForegroundColor Green
-                        } else {
-                            Write-Host "?? GitHub release creation failed (non-blocking)" -ForegroundColor Yellow
-                            Write-Host "   Deployment will continue, but manual release creation may be needed" -ForegroundColor Yellow
-                        }
+                    Write-Host "Calling create_github_release.sh script..."
+                    $createReleaseScript = Join-Path $ProjectRoot "scripts\release\create_github_release.sh"
+                    
+                    # Execute the bash script using bash.exe (available on Windows with Git Bash or WSL)
+                    # Ensure the script is executable
+                    & bash.exe -c "chmod +x '$createReleaseScript'"
+                    
+                    # Run the script
+                    & bash.exe -c "'$createReleaseScript'"
+                    
+                    if ($LASTEXITCODE -eq 0) {
+                        Write-Host "? GitHub release $releaseTag created successfully by create_github_release.sh" -ForegroundColor Green
                     } else {
-                        Write-Host "?? No desktop application packages found to upload" -ForegroundColor Yellow
-                    }
-
-                    # Clean up temporary file
-                    if (Test-Path $releaseNotesFile) {
-                        Remove-Item $releaseNotesFile -Force
+                        Write-Host "?? GitHub release creation failed via create_github_release.sh (non-blocking)" -ForegroundColor Yellow
+                        Write-Host "   Deployment will continue, but manual release creation may be needed" -ForegroundColor Yellow
                     }
                 } else {
                     Write-Host "? GitHub release $releaseTag already exists" -ForegroundColor Green
                 }
             } else {
-                Write-Host "?? GitHub release creation skipped (GitHub CLI not available)" -ForegroundColor Yellow
+                Write-Host "?? GitHub release creation skipped (GitHub CLI not available or authenticated)" -ForegroundColor Yellow
                 Write-Host "   To enable automatic releases, install GitHub CLI and run: gh auth login" -ForegroundColor Yellow
             }
         } catch {
