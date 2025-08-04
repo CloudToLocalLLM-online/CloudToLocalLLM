@@ -137,15 +137,14 @@ if (-not $DryRun) {
     Write-Host "Starting full release build and GitHub release creation via WSL..."
     $fullReleaseScriptPath = Join-Path $ProjectRoot "scripts\release\full_release_wsl.sh"
     try {
-        # Ensure the full_release_wsl.sh script is executable in WSL and execute it
-                                # Ensure the full_release_wsl.sh script is executable in WSL and execute it
-        $wslPath = (wsl -d ArchLinux wslpath -u "$fullReleaseScriptPath").Trim()
-        wsl -d ArchLinux bash -c "chmod +x '$wslPath'; '$wslPath'"
-        
-        if ($LASTEXITCODE -ne 0) {
-            throw "Full release build and GitHub release creation failed in WSL."
+        # Get the WSL-compatible path for the full_release_wsl.sh script
+        $wslScriptPath = (wsl -d ArchLinux bash -c "wslpath -u '$fullReleaseScriptPath'").Trim()
+        if (-not $wslScriptPath) {
+            throw "Failed to convert Windows path to WSL path: $fullReleaseScriptPath"
         }
-        Write-Host "? Full release build and GitHub release created successfully via WSL."
+
+        # Ensure the full_release_wsl.sh script is executable in WSL and execute it
+        wsl -d ArchLinux bash -c "chmod +x '$wslScriptPath' && '$wslScriptPath'"
         
         if ($LASTEXITCODE -ne 0) {
             throw "Full release build and GitHub release creation failed in WSL."
