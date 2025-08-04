@@ -70,16 +70,7 @@ build_windows_packages() {
 }
 
 # Build Linux packages in WSL
-build_linux_packages_wsl() {
-    local version="$1"
-    print_status "Building Linux packages in ArchLinux WSL for version $version..."
-    wsl -d ArchLinux bash -c "cd /mnt/c/Users/chris/Dev/CloudToLocalLLM && ./scripts/packaging/build_all_packages.sh --skip-increment"
-    if [[ $? -ne 0 ]]; then
-        print_error "Failed to build Linux packages in WSL."
-        exit 1
-    fi
-    print_success "Linux packages built successfully in WSL."
-}
+# Check if release already exists
 
 # Check if release already exists
 check_existing_release() {
@@ -332,12 +323,6 @@ main() {
 
     # Check for existing release
     check_existing_release "$version" "$FORCE_RECREATE"
-
-    # Build Windows packages
-    build_windows_packages "$version"
-
-    # Build Linux packages in WSL
-    build_linux_packages_wsl "$version"
 
     # Verify packages from Phase 3 builds
     verify_packages "$version"
