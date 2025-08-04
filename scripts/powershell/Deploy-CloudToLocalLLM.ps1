@@ -138,11 +138,10 @@ if (-not $DryRun) {
     $fullReleaseScriptPath = Join-Path $ProjectRoot "scripts\release\full_release_wsl.sh"
     try {
         # Ensure the full_release_wsl.sh script is executable in WSL
-        $wslPath = $fullReleaseScriptPath.Replace("C:\\Users\\chris\\Dev\\CloudToLocalLLM", "/mnt/c/Users/chris/Dev/CloudToLocalLLM").Replace("\\", "/")
-        wsl -d ArchLinux bash -c "chmod +x '$wslPath'"
+        wsl -d ArchLinux bash -c "chmod +x \"$(wslpath -u '$fullReleaseScriptPath')\""
         
         # Execute the full_release_wsl.sh script in WSL
-        wsl -d ArchLinux bash -c "'$wslPath'"
+        wsl -d ArchLinux bash -c "\"$(wslpath -u '$fullReleaseScriptPath')\""
         
         if ($LASTEXITCODE -ne 0) {
             throw "Full release build and GitHub release creation failed in WSL."
