@@ -160,6 +160,8 @@ Desktop.ini
 tmp/
 temp/
 temp_release_notes.md
+*.backup
+CHANGELOG.md.backup
 
 # ============================================================================
 # SECURITY AND SECRETS
