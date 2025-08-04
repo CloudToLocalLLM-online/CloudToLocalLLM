@@ -138,7 +138,7 @@ if (-not $DryRun) {
     $fullReleaseScriptPath = Join-Path $ProjectRoot "scripts\release\full_release_wsl.sh"
     try {
         # Ensure the full_release_wsl.sh script is executable in WSL and execute it
-        wsl -d ArchLinux bash -c "chmod +x \"$(wslpath -u '$fullReleaseScriptPath')\"" && \"$(wslpath -u '$fullReleaseScriptPath')\""
+                        wsl -d ArchLinux bash -c "chmod +x $(wslpath -u '$fullReleaseScriptPath'); $(wslpath -u '$fullReleaseScriptPath')"
         
         if ($LASTEXITCODE -ne 0) {
             throw "Full release build and GitHub release creation failed in WSL."
@@ -234,7 +234,7 @@ if ($SkipVerification) {
 $deploymentFlags += " --skip-verification"
 }
 
-$deploymentCommand = "cd $VPSProjectPath && $vpsDeploymentScript $deploymentFlags"
+$deploymentCommand = "cd $VPSProjectPath \&\& $vpsDeploymentScript $deploymentFlags"
 
 # VPS Deployment Preparation: Fix script permissions
 $permissionFixCommand = "chmod +x $VPSProjectPath/scripts/deploy/*.sh"
