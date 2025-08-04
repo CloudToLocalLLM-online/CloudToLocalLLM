@@ -216,60 +216,39 @@ try {
 # Package desktop applications for distribution
 Write-Host "Packaging desktop applications for distribution..."
 if (-not $DryRun) {
-    # Create distribution directory
-    $distPath = Join-Path $ProjectRoot "dist"
-    if (-not (Test-Path $distPath)) {
-        New-Item -ItemType Directory -Path $distPath -Force | Out-Null
-    }
-
-    # Package Windows application
-    if (Test-Path (Join-Path $ProjectRoot "build\windows\x64\runner\Release\cloudtolocalllm.exe")) {
-        Write-Host "Packaging Windows application..."
-        $windowsDistPath = Join-Path $distPath "windows"
-        if (-not (Test-Path $windowsDistPath)) {
-            New-Item -ItemType Directory -Path $windowsDistPath -Force | Out-Null
-        }
-
-        # Copy Windows executable and dependencies
-        Copy-Item -Path (Join-Path $ProjectRoot "build\windows\x64\runner\Release\*") -Destination $windowsDistPath -Recurse -Force
-        Write-Host "? Windows application packaged"
-    }
-
-    # Create distribution packages
-    Write-Host "Creating distribution packages..."
     $currentVersion = & $versionManagerPath get-semantic
 
-    # Create Windows ZIP package from build output (portable version)
-    $windowsBuildPath = Join-Path $ProjectRoot "build\windows\x64\runner\Release"
-    if (Test-Path $windowsBuildPath) {
-        $windowsZipPath = Join-Path $distPath "cloudtolocalllm-$currentVersion-portable.zip"
-        Compress-Archive -Path (Join-Path $windowsBuildPath "*") -DestinationPath $windowsZipPath -Force
-        Write-Host "? Windows ZIP package created: cloudtolocalllm-$currentVersion-portable.zip"
-
-        # Verify ZIP size for optimization tracking
-        $zipSize = [math]::Round((Get-Item $windowsZipPath).Length/1MB,2)
-        Write-Host "  ZIP size: $zipSize MB (optimized with --tree-shake-icons and --split-debug-info)"
+    # Build Windows assets
+    Write-Host "Building Windows release assets..."
+    $buildWindowsAssetsScript = Join-Path $PSScriptRoot "Build-GitHubReleaseAssets.ps1"
+    try {
+        & $buildWindowsAssetsScript -InstallInnoSetup
+        if ($LASTEXITCODE -ne 0) {
+            throw "Windows release assets build failed."
+        }
+        Write-Host "? Windows release assets built successfully."
+    } catch {
+        Write-Host "ERROR: Windows release assets build failed: $($_.Exception.Message)" -ForegroundColor Red
+        exit 1
     }
 
-    # Create Windows installer
-    Write-Host "Creating Windows installer..."
+    # Build Linux assets via WSL
+    Write-Host "Building Linux release assets via WSL..."
+    $buildLinuxAssetsScript = Join-Path $ProjectRoot "scripts/packaging/build_all_packages.sh"
     try {
-        $installerScriptPath = Join-Path $PSScriptRoot "Create-WindowsInstaller.ps1"
-        if (Test-Path $installerScriptPath) {
-            & $installerScriptPath -Version $currentVersion
-            if ($LASTEXITCODE -eq 0) {
-                Write-Host "? Windows installer created successfully"
-            } else {
-                Write-Host "?? Windows installer creation failed (non-blocking)" -ForegroundColor Yellow
-            }
-        } else {
-            Write-Host "?? Windows installer script not found, skipping installer creation" -ForegroundColor Yellow
+        # Ensure the script is executable in WSL
+        wsl -d ArchLinux bash -c "chmod +x '/mnt/c/Users/chris/Dev/CloudToLocalLLM/scripts/packaging/build_all_packages.sh'"
+        wsl -d ArchLinux bash -c "cd /mnt/c/Users/chris/Dev/CloudToLocalLLM && '$buildLinuxAssetsScript' --skip-increment"
+        if ($LASTEXITCODE -ne 0) {
+            throw "Linux release assets build failed in WSL."
         }
+        Write-Host "? Linux release assets built successfully in WSL."
     } catch {
-        Write-Host "?? Windows installer creation failed: $($_.Exception.Message)" -ForegroundColor Yellow
+        Write-Host "ERROR: Linux release assets build failed: $($_.Exception.Message)" -ForegroundColor Red
+        exit 1
     }
 } else {
-    Write-Host "[DRY RUN] Would package desktop applications and create installer"
+    Write-Host "[DRY RUN] Would build and package desktop applications."
 }
 
 # Commit and push distribution assets
@@ -364,137 +343,6 @@ if ($hasPackagesForCurrentVersion) {
 
                 if (-not $releaseExists) {
                     Write-Host "Creating GitHub release $releaseTag..."
-
-                    # Find desktop application packages to attach BEFORE creating release notes
-                    $assetsToUpload = @()
-                    $availableAssets = @()
-
-                    # Find Windows ZIP packages matching current version
-                    $zipPattern = "cloudtolocalllm-$currentVersion-portable.zip"
-                    $zipFiles = Get-ChildItem -Path $distPath -Filter $zipPattern -Recurse -ErrorAction SilentlyContinue
-                    foreach ($zipFile in $zipFiles) {
-                        $assetsToUpload += $zipFile.FullName
-                        $availableAssets += "- Windows Desktop Application (cloudtolocalllm-$currentVersion-portable.zip) - Portable ZIP package"
-                        Write-Host "Found ZIP asset: $($zipFile.Name)"
-                    }
-
-                    # Find Windows installer files matching current version
-                    $installerPattern = "CloudToLocalLLM-Windows-$currentVersion-Setup.exe"
-                    $installerFiles = Get-ChildItem -Path $distPath -Filter $installerPattern -Recurse -ErrorAction SilentlyContinue
-                    foreach ($installer in $installerFiles) {
-                        $assetsToUpload += $installer.FullName
-                        $availableAssets += "- Windows Installer (CloudToLocalLLM-Windows-$currentVersion-Setup.exe) - Easy installation"
-                        Write-Host "Found installer asset: $($installer.Name)"
-                    }
-
-                    # Find checksum files for installers
-                    $checksumPattern = "CloudToLocalLLM-Windows-$currentVersion-Setup.exe.sha256"
-                    $checksumFiles = Get-ChildItem -Path $distPath -Filter $checksumPattern -Recurse -ErrorAction SilentlyContinue
-                    foreach ($checksum in $checksumFiles) {
-                        $assetsToUpload += $checksum.FullName
-                        Write-Host "Found checksum asset: $($checksum.Name)"
-                    }
-
-                    # Create dynamic release notes based on actually available assets
-                    $assetsSection = if ($availableAssets.Count -gt 0) {
-                        ($availableAssets -join "`r`n")
-                    } else {
-                        "- No desktop application packages available for this release"
-                    }
-
-                    # Determine installation instructions based on available assets
-                    $hasInstaller = $installerFiles.Count -gt 0
-                    $hasZip = $zipFiles.Count -gt 0
-
-                    $installationInstructions = ""
-                    if ($hasInstaller -and $hasZip) {
-                        $installationInstructions = @"
-**Option 1: Windows Installer (Recommended)**
-1. Download the Setup.exe file
-2. Run the installer and follow the setup wizard
-3. Launch CloudToLocalLLM from Start Menu or Desktop
-
-**Option 2: Portable ZIP**
-1. Download the ZIP package for your platform
-2. Extract and run the application
-3. Authenticate with your CloudToLocalLLM account
-"@
-                    } elseif ($hasZip) {
-                        $installationInstructions = @"
-**Portable ZIP Installation**
-1. Download the ZIP package
-2. Extract and run the application
-3. Authenticate with your CloudToLocalLLM account
-
-*Note: Windows installer not available for this release*
-"@
-                    } elseif ($hasInstaller) {
-                        $installationInstructions = @"
-**Windows Installer**
-1. Download the Setup.exe file
-2. Run the installer and follow the setup wizard
-3. Launch CloudToLocalLLM from Start Menu or Desktop
-"@
-                    } else {
-                        $installationInstructions = @"
-**No desktop applications available for this release**
-Please use the web application at https://app.cloudtolocalllm.online
-"@
-                    }
-
-                    $releaseNotes = @"
-# CloudToLocalLLM $releaseTag
-
-## ?? Desktop Application Release
-
-This release provides cross-platform desktop applications for CloudToLocalLLM.
-
-### ?? What's Included
-$assetsSection
-
-### ?? Installation
-
-$installationInstructions
-
-### ?? Integration
-Works seamlessly with https://app.cloudtolocalllm.online
-
-### ?? System Requirements
-- Windows 10+ (64-bit) / Linux (64-bit)
-- 4GB RAM minimum, 8GB recommended
-- Internet connection for authentication
-
----
-**Version**: $currentVersion
-**Build Date**: $(Get-Date -Format 'yyyy-MM-dd')
-"@
-
-                    # Save release notes to temporary file
-                    $releaseNotesFile = Join-Path $ProjectRoot "temp_release_notes.md"
-                    Set-Content -Path $releaseNotesFile -Value $releaseNotes -Encoding UTF8
-
-                    # Clean up old installer files to prevent version conflicts
-                    $archiveDir = Join-Path $distPath "archive"
-                    if (-not (Test-Path $archiveDir)) {
-                        New-Item -ItemType Directory -Path $archiveDir -Force | Out-Null
-                    }
-
-                    # Move old installer files to archive (keep only current version)
-                    $oldInstallers = Get-ChildItem -Path $distPath -Filter "*Setup*.exe" -ErrorAction SilentlyContinue | Where-Object {
-                        $_.Name -notlike "*$currentVersion*"
-                    }
-                    foreach ($oldInstaller in $oldInstallers) {
-                        $archivePath = Join-Path $archiveDir $oldInstaller.Name
-                        Move-Item -Path $oldInstaller.FullName -Destination $archivePath -Force -ErrorAction SilentlyContinue
-                        # Also move corresponding .sha256 files
-                        $sha256File = "$($oldInstaller.FullName).sha256"
-                        if (Test-Path $sha256File) {
-                            Move-Item -Path $sha256File -Destination "$archivePath.sha256" -Force -ErrorAction SilentlyContinue
-                        }
-                        Write-Host "Archived old installer: $($oldInstaller.Name)" -ForegroundColor Yellow
-                    }
-
-
 
                     # Create GitHub release with assets
                     Write-Host "Calling create_github_release.sh script..."
