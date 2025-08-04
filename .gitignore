@@ -159,6 +159,7 @@ Desktop.ini
 *.swp
 tmp/
 temp/
+temp_release_notes.md
 
 # ============================================================================
 # SECURITY AND SECRETS
