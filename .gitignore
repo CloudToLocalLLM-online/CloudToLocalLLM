@@ -1,244 +1,343 @@
-# ============================================================================
-# CloudToLocalLLM .gitignore - Comprehensive Binary Exclusion
-# ============================================================================
-# This file prevents repository bloat by excluding large binaries and build artifacts
-# Use GitHub Releases for binary distribution instead of Git repository
+# Gitignore for CloudToLocalLLM project
 
-# ============================================================================
-# BINARY FILES AND ARCHIVES (>25MB) - EXCLUDED FROM GIT
-# ============================================================================
-
-# Large binary executables only (compressed archives now tracked for git-based distribution)
-*.AppImage
-*.deb
-*.rpm
-*.dmg
-*.pkg
-*.msi
-*.exe
-
-# Split archive parts
-*.part*
-*.partaa
-*.partab
-*.partac
-
-# ============================================================================
-# DISTRIBUTION AND BUILD DIRECTORIES - EXCLUDED
-# ============================================================================
-
-# Distribution and build directories
-# dist/ - Allow distribution directory for desktop app packages
-build/
-
-# Tray daemon build artifacts
-tray_daemon/build/
-tray_daemon/dist/
-tray_daemon/venv/
-
-# ============================================================================
-# PACKAGING ARTIFACTS - EXCLUDED
-# ============================================================================
-
-# AppImage packaging
-packaging/appimage/CloudToLocalLLM.AppDir/
-packaging/appimage/tools/*.AppImage
-packaging/appimagetool-*
-
-# DEB packaging
-packaging/deb/usr/bin/cloudtolocalllm-tray
-packaging/deb/usr/lib/cloudtolocalllm/
-
-# ============================================================================
-# DEVELOPMENT ENVIRONMENT
-# ============================================================================
-
-# Flutter/Dart/Pub related
-**/doc/api/
-**/ios/Flutter/.last_build_id
-.dart_tool/
+# Flutter
 .flutter-plugins
 .flutter-plugins-dependencies
+.dart_tool/
 .packages
-.pub-cache/
-.pub/
-
-# MSI and packaging artifacts
-MSI/
-
-# Python
-__pycache__/
-*.py[cod]
-*$py.class
-*.so
-.Python
-develop-eggs/
-downloads/
-eggs/
-.eggs/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-*.egg-info/
-.installed.cfg
-*.egg
+.metadata
+build/
+.idea/
+.vscode/
+.sentry-native/
+.env.mcp
+.env.production.template
+pubspec.lock
+devtools_options.yaml
+analysis_options.yaml
+temp_release_notes.md
+# Generated files
+lib/generated_plugin_registrant.dart
+lib/generated_plugin_registrant.cc
+lib/generated_plugin_registrant.h
+lib/generated_plugins.cmake
 
 # Node.js
 node_modules/
-**/node_modules/
+package-lock.json
+
+# Docker
+docker-compose.multi.yml
+docker-compose.yml
+
+# Logs and temporary files
+*.log
+*.tmp
+*.bak
+*.swp
+*.swo
+*.DS_Store
+Thumbs.db
+ehthumbs.db
+ehthumbs_vista.db
+*.stackdump
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+.pnpm-debug.log*
+.env*.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env.staging.local
+.env.qa.local
+.env.uat.local
+.env.preprod.local
+.env.prod.local
+.env.dev.local
+.env.ci.local
+.env.cd.local
+.env.build.local
+.env.deploy.local
+.env.release.local
+.env.test.local
+.env.development
+.env.test
+.env.production
+.env.staging
+.env.qa
+.env.uat
+.env.preprod
+.env.prod
+.env.dev
+.env.ci
+.env.cd
+.env.build
+.env.deploy
+.env.release
+.env.test
 
-# Flutter archives and large files
-flutter.tar.xz
-*.tar.xz
-
-# Large distribution ZIP files
-*.zip
-
-# Large directories that shouldn't be in Git
-streaming-proxy/node_modules/
-api-backend/node_modules/
-test-results/
-coverage/
-
-# ============================================================================
-# IDE AND EDITOR FILES
-# ============================================================================
-
-# IntelliJ related
+# IDE and editor files
+.idea/
+.vscode/
 *.iml
 *.ipr
 *.iws
-.idea/
 
-# Visual Studio Code
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Dependency directories
+node_modules/
+.dart_tool/
+.pub/
+
+# Build artifacts
+build/
+dist/
+dist/windows/
+# Executables
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Archive files
+*.zip
+*.tar.gz
+*.rar
+
+# Backup files
+*.bak
+*.backup
+*.old
+
+# Sentry files
+.sentryclirc
+.sentry-cli
+.sentry-native
+
+# Playwright
+test-results/
+
+# VS Code
 .vscode/
 
-# Cursor IDE
-.cursor/
-flutter-tools/
+# Kiro
+.kiro/
 
-# Other editors
-*.swp
-*.swo
-.atom/
-.buildlog/
-.history
-.svn/
-migrate_working_dir/
+# Archive
+archive/
 
-# ============================================================================
-# OPERATING SYSTEM FILES
-# ============================================================================
-
-# macOS
-.DS_Store
-.AppleDouble
-.LSOverride
-
-# Windows
-Thumbs.db
-ehthumbs.db
-Desktop.ini
-
-# Linux
-*~
-
-# ============================================================================
-# TEMPORARY AND LOG FILES
-# ============================================================================
-
-# Miscellaneous
-*.class
-*.log
-*.pyc
-*.swp
-tmp/
-temp/
-temp_release_notes.md
-*.backup
-CHANGELOG.md.backup
-
-# ============================================================================
-# SECURITY AND SECRETS
-# ============================================================================
-
-# Environment variables
-.env
-.env.local
-.env.*.local
-.env.mcp.local
-
-# Secrets and keys
-cloudadmin_key
-secrets/
-*.key
-*.pem
-*.p12
-*.pfx
-
-# ============================================================================
-# FLUTTER SPECIFIC
-# ============================================================================
-
-# Symbolication related
-app.*.symbols
-
-# Obfuscation related
-app.*.map.json
-
-# Android Studio build artifacts
-/android/app/debug
-/android/app/profile
-/android/app/release
-
-# Exceptions to above rules
-!**/ios/**/default.mode1v3
-!**/ios/**/default.mode2v3
-!**/ios/**/default.pbxuser
-!**/ios/**/default.perspectivev3
-!/packages/flutter_tools/test/data/dart_dependencies_test/**/.packages
-
-# ============================================================================
-# THIRD-PARTY TOOLS AND INSTALLERS
-# ============================================================================
-
-# Large third-party installers and tools
-tools/third_party_installers/
-*.jar
-bfg.jar
-
-# ============================================================================
-# CLOUDTOLOCALLLM SPECIFIC EXCLUSIONS
-# ============================================================================
-
-# Large binary executables
-cloudtolocalllm-enhanced-tray*
-cloudtolocalllm-settings*
-cloudtolocalllm-v*.tar.gz
-# cloudtolocalllm-*.tar.gz - removed to allow dist/ directory tracking
-
-# Version-specific binaries
-cloudtolocalllm-*-stable.tar.gz
-cloudtolocalllm-*-robust.tar.gz
-
-# ============================================================================
-# AUR PACKAGE BUILD ARTIFACTS - REMOVED (AUR DECOMMISSIONED)
-# ============================================================================
-# AUR support has been removed as it is decommissioned
+# Backups
 backups/
 
-# CloudToLocalLLM Binary File Management
-# Git-based distribution tracking - all distribution files now tracked
-# Large executables excluded but compressed archives allowed
-dist/**/cloudtolocalllm-enhanced-tray
+# Certbot
+certbot/
 
-# Build backup files created during deployment
-*.build-backup
-dist/**/cloudtolocalllm-settings
+# Data
+data/
 
-sentry.properties
+# Generated files
+lib/generated_plugin_registrant.dart
+lib/generated_plugin_registrant.cc
+lib/generated_plugin_registrant.h
+lib/generated_plugins.cmake
+
+# Flutter specific build outputs
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+
+# macOS specific
+.DS_Store
+
+# Windows specific
+Thumbs.db
+ehthumbs.db
+*.stackdump
+
+# npm/yarn debug logs
+npm-debug.log*
+yarn-debug.log*
+.pnpm-debug.log*
+
+# Environment variables
+.env*.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env.staging.local
+.env.qa.local
+.env.uat.local
+.env.preprod.local
+.env.prod.local
+.env.dev.local
+.env.ci.local
+.env.cd.local
+.env.build.local
+.env.deploy.local
+.env.release.local
+.env.test
+
+# IDE and editor files
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Dependency directories
+node_modules/
+.dart_tool/
+.pub/
+
+# Build artifacts
+build/
+dist/
+
+# Executables
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Archive files
+*.zip
+*.tar.gz
+*.rar
+
+# Backup files
+*.bak
+*.backup
+*.old
+
+# Sentry files
+.sentryclirc
+.sentry-cli
+.sentry-native
+
+# Playwright
+test-results/
+
+# VS Code
+.vscode/
+
+# Kiro
+.kiro/
+
+# Archive
+archive/
+
+# Backups
+backups/
+
+# Certbot
+certbot/
+
+# Data
+data/
+
+# Generated files
+lib/generated_plugin_registrant.dart
+lib/generated_plugin_registrant.cc
+lib/generated_plugin_registrant.h
+lib/generated_plugins.cmake
+
+# Flutter specific build outputs
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+
+# macOS specific
+.DS_Store
+
+# Windows specific
+Thumbs.db
+ehthumbs.db
+*.stackdump
+
+# npm/yarn debug logs
+npm-debug.log*
+yarn-debug.log*
+.pnpm-debug.log*
+
+# Environment variables
+.env*.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env.staging.local
+.env.qa.local
+.env.uat.local
+.env.preprod.local
+.env.prod.local
+.env.dev.local
+.env.ci.local
+.env.cd.local
+.env.build.local
+.env.deploy.local
+.env.release.local
+.env.test
+
+# IDE and editor files
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Dependency directories
+node_modules/
+.dart_tool/
+.pub/
+
+# Build artifacts
+build/
+dist/
+
+# Executables
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Archive files
+*.zip
+*.tar.gz
+*.rar
+
+# Backup files
+*.bak
+*.backup
+*.old
+
+# Sentry files
+.sentryclirc
+.sentry-cli
+.sentry-native
+
+# Playwright
+test-results/
+
+# Kiro
+.kiro/
+
+# Archive
+archive/
+
+# Backups
+backups/
+
+# Certbot
+certbot/
+
+# Data
+data/
