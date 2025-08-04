@@ -63,13 +63,9 @@ build_windows_packages() {
 check_and_install_git() {
     print_status "Checking for Git installation..."
     if ! pacman -Q git &>/dev/null; then
-        print_warning "Git not found. Installing Git..."
-        sudo pacman -S --noconfirm git
-        if [[ $? -ne 0 ]]; then
-            print_error "Failed to install Git. Please install it manually: sudo pacman -S git"
-            exit 1
-        fi
-        print_success "Git installed successfully."
+        print_error "Git not found in your Arch Linux WSL environment."
+        print_error "Please install Git manually by running: sudo pacman -S git"
+        exit 1
     else
         print_success "Git is already installed."
     fi
