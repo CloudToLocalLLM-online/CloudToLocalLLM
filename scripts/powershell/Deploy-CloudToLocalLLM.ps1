@@ -129,220 +129,32 @@ if (Test-Path $filePath) {
 }
 }
 
-# Step 3.5: Local Flutter Desktop Build
+# Step 3.5: Full Release Build and GitHub Release Creation (Orchestrated via WSL)
 Write-Host ""
-Write-Host "=== STEP 3.5: LOCAL FLUTTER DESKTOP BUILD ===" -ForegroundColor Yellow
-
-# Import build utilities
-$buildUtilsPath = Join-Path $PSScriptRoot "BuildEnvironmentUtilities.ps1"
-if (Test-Path $buildUtilsPath) {
-. $buildUtilsPath
-} else {
-Write-Host "ERROR: BuildEnvironmentUtilities.ps1 not found" -ForegroundColor Red
-exit 1
-}
-
-# Check if Flutter is available on Windows
-Write-Host "Checking Flutter installation..."
-if (-not (Test-WindowsFlutterInstallation)) {
-Write-Host "ERROR: Flutter not available on Windows" -ForegroundColor Red
-Write-Host "Please install Flutter or use WSL for builds" -ForegroundColor Red
-exit 1
-}
-
-# Build-time version injection
-Write-Host "Injecting build-time timestamp..."
-$buildInjectorPath = Join-Path $PSScriptRoot "build_time_version_injector.ps1"
+Write-Host "=== STEP 3.5: FULL RELEASE BUILD AND GITHUB RELEASE CREATION ===" -ForegroundColor Yellow
 
 if (-not $DryRun) {
-& $buildInjectorPath inject
-if ($LASTEXITCODE -ne 0) {
-    Write-Host "ERROR: Build-time version injection failed" -ForegroundColor Red
-    exit 1
-}
-} else {
-Write-Host "[DRY RUN] Would inject build-time timestamp"
-}
-
-# Build Flutter desktop applications
-Write-Host "Building Flutter desktop applications..."
-if (-not $DryRun) {
-try {
-    Invoke-WindowsFlutterCommand -FlutterArgs "pub get" -WorkingDirectory $ProjectRoot
-    Write-Host "? Flutter dependencies updated"
-
-    # Build Windows desktop application
-    Write-Host "Building Windows desktop application..."
-    $windowsBuildArgs = "build windows --release"
-    Invoke-WindowsFlutterCommand -FlutterArgs $windowsBuildArgs -WorkingDirectory $ProjectRoot
-    Write-Host "? Flutter Windows desktop build completed with optimizations"
-
-    # Verify Windows build output
-    $buildWindowsPath = Join-Path $ProjectRoot "build\windows\x64\runner\Release"
-    if (Test-Path $buildWindowsPath) {
-        $exePath = Join-Path $buildWindowsPath "cloudtolocalllm.exe"
-        if (Test-Path $exePath) {
-            Write-Host "? Windows executable found: cloudtolocalllm.exe"
-        } else {
-            Write-Host "ERROR: Windows executable not found" -ForegroundColor Red
-            exit 1
+    Write-Host "Starting full release build and GitHub release creation via WSL..."
+    $fullReleaseScriptPath = Join-Path $ProjectRoot "scripts\release\full_release_wsl.sh"
+    try {
+        # Ensure the full_release_wsl.sh script is executable in WSL
+        wsl -d ArchLinux bash -c "chmod +x '/mnt/c/Users/chris/Dev/CloudToLocalLLM/scripts/release/full_release_wsl.sh'"
+        
+        # Execute the full_release_wsl.sh script in WSL
+        wsl -d ArchLinux bash -c "cd /mnt/c/Users/chris/Dev/CloudToLocalLLM && '$fullReleaseScriptPath'"
+        
+        if ($LASTEXITCODE -ne 0) {
+            throw "Full release build and GitHub release creation failed in WSL."
         }
-        } else {
-            Write-Host "ERROR: Windows build directory not found" -ForegroundColor Red
-            exit 1
-        }
-
-        # Build Linux desktop application via WSL (if available)
-        Write-Host "Building Linux desktop application via WSL..."
-        try {
-            if (Test-WSLFlutterInstallation) {
-                Invoke-WSLFlutterCommand -FlutterArgs "build linux --release" -WorkingDirectory $ProjectRoot
-                Write-Host "? Flutter Linux desktop build completed"
-            } else {
-                Write-Host "?? WSL Flutter not available, skipping Linux build" -ForegroundColor Yellow
-            }
-        } catch {
-            Write-Host "?? Linux build failed, will build on VPS: $($_.Exception.Message)" -ForegroundColor Yellow
-        }
-
+        Write-Host "? Full release build and GitHub release created successfully via WSL."
     } catch {
-        Write-Host "ERROR: Flutter desktop build failed: $($_.Exception.Message)" -ForegroundColor Red
+        Write-Host "ERROR: Full release build and GitHub release creation failed: $($_.Exception.Message)" -ForegroundColor Red
         exit 1
     }
 } else {
-    Write-Host "[DRY RUN] Would build Flutter desktop applications"
+    Write-Host "[DRY RUN] Would perform full release build and GitHub release creation via WSL."
 }
 
-# Package desktop applications for distribution
-Write-Host "Packaging desktop applications for distribution..."
-if (-not $DryRun) {
-    $currentVersion = & $versionManagerPath get-semantic
-
-    # Build Windows assets
-    Write-Host "Building Windows release assets..."
-    $buildWindowsAssetsScript = Join-Path $PSScriptRoot "Build-GitHubReleaseAssets.ps1"
-    try {
-        & $buildWindowsAssetsScript -InstallInnoSetup
-        if ($LASTEXITCODE -ne 0) {
-            throw "Windows release assets build failed."
-        }
-        Write-Host "? Windows release assets built successfully."
-    } catch {
-        Write-Host "ERROR: Windows release assets build failed: $($_.Exception.Message)" -ForegroundColor Red
-        exit 1
-    }
-
-    # Build Linux assets via WSL
-    Write-Host "Building Linux release assets via WSL..."
-    $buildLinuxAssetsScript = Join-Path $ProjectRoot "scripts/packaging/build_all_packages.sh"
-    try {
-        # Ensure the script is executable in WSL
-        wsl -d ArchLinux bash -c "chmod +x '/mnt/c/Users/chris/Dev/CloudToLocalLLM/scripts/packaging/build_all_packages.sh'"
-        wsl -d ArchLinux bash -c "cd /mnt/c/Users/chris/Dev/CloudToLocalLLM && '$buildLinuxAssetsScript' --skip-increment"
-        if ($LASTEXITCODE -ne 0) {
-            throw "Linux release assets build failed in WSL."
-        }
-        Write-Host "? Linux release assets built successfully in WSL."
-    } catch {
-        Write-Host "ERROR: Linux release assets build failed: $($_.Exception.Message)" -ForegroundColor Red
-        exit 1
-    }
-} else {
-    Write-Host "[DRY RUN] Would build and package desktop applications."
-}
-
-# Commit and push distribution assets
-Write-Host "Committing distribution assets..."
-if (-not $DryRun) {
-    git add dist/
-    if ($LASTEXITCODE -ne 0) {
-        Write-Host "ERROR: Failed to stage distribution assets" -ForegroundColor Red
-        exit 1
-    }
-
-    # Check if there are changes to commit
-    git diff --cached --quiet
-    if ($LASTEXITCODE -ne 0) {
-        # There are staged changes, commit them
-        $buildCommitMessage = "Build Flutter desktop applications for deployment v$(& $versionManagerPath get-semantic)"
-        git commit -m $buildCommitMessage
-        if ($LASTEXITCODE -ne 0) {
-            Write-Host "ERROR: Failed to commit distribution assets" -ForegroundColor Red
-            exit 1
-        }
-
-        git push origin master
-        if ($LASTEXITCODE -ne 0) {
-            Write-Host "ERROR: Failed to push distribution assets" -ForegroundColor Red
-            exit 1
-        }
-
-        Write-Host "? Distribution assets committed and pushed"
-    } else {
-        Write-Host "? No new distribution assets to commit"
-    }
-} else {
-    Write-Host "[DRY RUN] Would commit and push distribution assets"
-}
-
-Write-Host "? Local Flutter desktop build completed successfully"
-
-# Step 3.6: Build and Create GitHub Release
-Write-Host ""
-Write-Host "=== STEP 3.6: BUILD AND CREATE GITHUB RELEASE ===" -ForegroundColor Yellow
-
-if (-not $DryRun) {
-    $currentVersion = & $versionManagerPath get-semantic
-
-    # Build Windows assets
-    Write-Host "Building Windows release assets..."
-    $buildWindowsAssetsScript = Join-Path $PSScriptRoot "Build-GitHubReleaseAssets.ps1"
-    try {
-        & $buildWindowsAssetsScript -InstallInnoSetup
-        if ($LASTEXITCODE -ne 0) {
-            throw "Windows release assets build failed."
-        }
-        Write-Host "? Windows release assets built successfully."
-    } catch {
-        Write-Host "ERROR: Windows release assets build failed: $($_.Exception.Message)" -ForegroundColor Red
-        exit 1
-    }
-
-    # Build Linux assets via WSL
-    Write-Host "Building Linux release assets via WSL..."
-    $buildLinuxAssetsScript = Join-Path $ProjectRoot "scripts/packaging/build_all_packages.sh"
-    try {
-        # Ensure the script is executable in WSL
-        wsl -d ArchLinux bash -c "chmod +x '/mnt/c/Users/chris/Dev/CloudToLocalLLM/scripts/packaging/build_all_packages.sh'"
-        wsl -d ArchLinux bash -c "cd /mnt/c/Users/chris/Dev/CloudToLocalLLM && '$buildLinuxAssetsScript' --skip-increment"
-        if ($LASTEXITCODE -ne 0) {
-            throw "Linux release assets build failed in WSL."
-        }
-        Write-Host "? Linux release assets built successfully in WSL."
-    } catch {
-        Write-Host "ERROR: Linux release assets build failed: $($_.Exception.Message)" -ForegroundColor Red
-        exit 1
-    }
-
-    # Create GitHub release
-    Write-Host "Creating GitHub release..."
-    $createReleaseScript = Join-Path $ProjectRoot "scripts\release\create_github_release.sh"
-    try {
-        # Ensure the script is executable
-        & bash.exe -c "chmod +x '$createReleaseScript'"
-        # Run the script
-        & bash.exe -c "'$createReleaseScript'"
-        if ($LASTEXITCODE -ne 0) {
-            throw "GitHub release creation failed."
-        }
-        Write-Host "? GitHub release created successfully."
-    } catch {
-        Write-Host "ERROR: GitHub release creation failed: $($_.Exception.Message)" -ForegroundColor Red
-        exit 1
-    }
-} else {
-    Write-Host "[DRY RUN] Would build all assets and create GitHub release."
-}
 
 # Step 4: Commit and Push Build-Time Injected Files
 if (-not $DryRun) {
