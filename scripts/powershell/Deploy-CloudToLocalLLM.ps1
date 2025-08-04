@@ -86,7 +86,7 @@ if (-not $DryRun) {
 
         # Commit and push version changes
         Write-Host "Committing version changes..."
-        git add pubspec.yaml assets/version.json lib/shared/lib/version.dart lib/shared/pubspec.yaml lib/config/app_config.dart package.json docs/CHANGELOG.md
+                git add pubspec.yaml assets/version.json lib/shared/lib/version.dart lib/shared/pubspec.yaml lib/config/app_config.dart package.json docs/CHANGELOG.md
         if ($LASTEXITCODE -ne 0) {
             Write-Host "ERROR: Failed to stage version changes" -ForegroundColor Red
             exit 1
