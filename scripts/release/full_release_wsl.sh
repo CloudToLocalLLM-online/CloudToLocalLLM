@@ -60,10 +60,26 @@ build_windows_packages() {
     print_success "Windows packages built successfully."
 }
 
+check_and_install_git() {
+    print_status "Checking for Git installation..."
+    if ! pacman -Q git &>/dev/null; then
+        print_warning "Git not found. Installing Git..."
+        sudo pacman -S --noconfirm git
+        if [[ $? -ne 0 ]]; then
+            print_error "Failed to install Git. Please install it manually: sudo pacman -S git"
+            exit 1
+        fi
+        print_success "Git installed successfully."
+    else
+        print_success "Git is already installed."
+    fi
+}
+
 # Build Linux packages using build_all_packages.sh
 build_linux_packages() {
     local version="$1"
     print_status "Building Linux packages..."
+    check_and_install_git # Ensure Git is installed before proceeding
     "$PROJECT_ROOT/scripts/packaging/build_all_packages.sh" --skip-increment
     if [[ $? -ne 0 ]]; then
         print_error "Failed to build Linux packages."
