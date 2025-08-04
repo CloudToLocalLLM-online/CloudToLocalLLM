@@ -71,11 +71,27 @@ check_and_install_git() {
     fi
 }
 
+check_and_install_which() {
+    print_status "Checking for 'which' command..."
+    if ! command -v which &>/dev/null; then
+        print_warning "'which' command not found. Installing coreutils..."
+        sudo pacman -S --noconfirm coreutils
+        if [[ $? -ne 0 ]]; then
+            print_error "Failed to install coreutils. Please install it manually: sudo pacman -S coreutils"
+            exit 1
+        fi
+        print_success "'which' command installed successfully."
+    else
+        print_success "'which' command is already installed."
+    fi
+}
+
 # Build Linux packages using build_all_packages.sh
 build_linux_packages() {
     local version="$1"
     print_status "Building Linux packages..."
     check_and_install_git # Ensure Git is installed before proceeding
+    check_and_install_which # Ensure 'which' is installed before proceeding
     "$PROJECT_ROOT/scripts/packaging/build_all_packages.sh" --skip-increment
     if [[ $? -ne 0 ]]; then
         print_error "Failed to build Linux packages."
