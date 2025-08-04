@@ -16,49 +16,55 @@ This directory contains the deployment scripts for the CloudToLocalLLM applicati
 - Local Windows builds and testing use PowerShell scripts
 - Windows-specific dependency management (Chocolatey, Windows features) stays in PowerShell
 
-## Main Deployment Script
+## Main Deployment Orchestration Script
 
-### `update_and_deploy.sh`
-The primary deployment script for the VPS. This script handles the complete deployment workflow:
+### `Deploy-CloudToLocalLLM.ps1`
+This PowerShell script is the primary entry point for deploying the CloudToLocalLLM application. It orchestrates the entire deployment workflow from a Windows environment, including version management, local desktop application builds, GitHub Release creation, and remote VPS deployment via SSH.
 
-1. **Git Pull**: Pulls the latest changes from the repository
-2. **Flutter Build**: Builds the Flutter web application on the VPS
-3. **Container Management**: Stops existing containers and starts new ones
-4. **Health Checks**: Verifies container health and web app accessibility
-5. **SSL Verification**: Ensures SSL certificates are properly configured
+It leverages the following bash scripts on the remote VPS:
+- `complete_deployment.sh`: Orchestrates the core VPS deployment, including updates, container management, and verification.
+- `sync_versions.sh`: Synchronizes version information across various project files.
+- `update_and_deploy.sh`: Handles the core VPS deployment tasks (Git pull, Flutter build, Docker management).
+- `verify_deployment.sh`: Performs comprehensive post-deployment health checks and validations.
 
 #### Usage
 
 **Windows Users (Recommended):**
 ```powershell
-# Use PowerShell orchestration script
-.\scripts\powershell\Deploy-CloudToLocalLLM.ps1 -Force
+# Full deployment with version increment (e.g., patch)
+.\scripts\powershell\Deploy-CloudToLocalLLM.ps1 -VersionIncrement patch
 
-# For interactive deployment
-.\scripts\powershell\Deploy-CloudToLocalLLM.ps1
+# Full deployment without user interaction (e.g., for CI/CD)
+.\scripts\powershell\Deploy-CloudToLocalLLM.ps1 -Force -VersionIncrement patch
+
+# Dry run (shows what would be done without executing changes)
+.\scripts\powershell\Deploy-CloudToLocalLLM.ps1 -DryRun
+
+# Deploy to Staging environment
+.\scripts\powershell\Deploy-CloudToLocalLLM.ps1 -Environment Staging
 ```
 
-**Direct VPS Execution:**
-```bash
-# SSH to VPS and run directly
-ssh cloudllm@cloudtolocalllm.online
-cd /opt/cloudtolocalllm
-bash scripts/deploy/update_and_deploy.sh
-```
+**VPS-side Bash Scripts (Executed via SSH by `Deploy-CloudToLocalLLM.ps1`):**
+These scripts are not intended for direct manual execution unless you are performing specific debugging or maintenance tasks directly on the VPS.
+- `complete_deployment.sh`
+- `sync_versions.sh`
+- `update_and_deploy.sh`
+- `verify_deployment.sh`
 
-#### Prerequisites
-- Flutter SDK installed on the VPS
-- Docker and Docker Compose installed
-- SSL certificates configured (Let's Encrypt)
-- Proper file permissions for the cloudllm user
+#### Prerequisites (for the local machine running `Deploy-CloudToLocalLLM.ps1`)
+- PowerShell 7+
+- Git
+- SSH client (usually built-in on Windows)
+- GitHub CLI (for automatic GitHub Release creation)
+- Flutter SDK (for local desktop builds)
+- Node.js and npm (for Playwright E2E tests if enabled)
 
-#### What it does
-1. Pulls latest code from git
-2. Runs `flutter clean && flutter pub get && flutter build web`
-3. Stops running Docker containers
-4. Starts containers with the new build
-5. Performs health checks
-6. Verifies web app accessibility
+#### Prerequisites (for the VPS)
+- Flutter SDK installed at `/opt/flutter/bin/flutter`
+- Docker and Docker Compose (v2) installed
+- SSH server configured and accessible by the `cloudllm` user
+- Proper file permissions for the `cloudllm` user in `/opt/cloudtolocalllm`
+- SSL certificates configured (e.g., Let's Encrypt)
 
 ## Other Scripts
 
@@ -71,10 +77,15 @@ Various PowerShell scripts for Windows-based deployment scenarios (legacy).
 ## Deployment Workflow
 
 ### Complete Deployment Process
-1. **Local Development**: Make changes and commit locally
-2. **Push to Git**: `git push origin master`
-3. **VPS Deployment**: SSH to VPS and run `scripts/deploy/update_and_deploy.sh`
-4. **Verification**: Check that the app is accessible at https://app.cloudtolocalllm.online
+1. **Local Development**: Make changes and commit locally.
+2. **Push to Git**: `git push origin master` (ensure all changes are pushed).
+3. **Initiate Deployment**: Run the main PowerShell script from your local Windows machine:
+   ```powershell
+   .\scripts\powershell\Deploy-CloudToLocalLLM.ps1 -VersionIncrement patch
+   ```
+   (Adjust `-VersionIncrement` as needed, or add `-Force` for CI/CD environments).
+4. **Automated VPS Deployment**: The PowerShell script will handle SSH connection, version synchronization, Flutter desktop builds, GitHub Release creation, and remote execution of the necessary bash scripts on the VPS.
+5. **Verification**: The deployment process includes automated verification steps. You can also manually check the application at `https://app.cloudtolocalllm.online`.
 
 ### Security Notes
 - All deployment operations run as the `cloudllm` user (non-root)
@@ -87,17 +98,12 @@ Various PowerShell scripts for Windows-based deployment scenarios (legacy).
 - Check SSL certificates: `ls -la certbot/conf/live/cloudtolocalllm.online/`
 
 ## Cleaned Up Scripts
-The following redundant scripts have been removed to maintain a clean deployment workflow:
-- `scripts/deploy.sh`
-- `scripts/clean_and_redeploy_web.sh`
-- `scripts/deploy_diagnostic_fix.sh`
-- `scripts/deploy_vps.sh`
-- `scripts/deploy_with_ssl.sh`
-- `scripts/update_deployment.sh`
-- `scripts/deploy/deploy.sh`
-- `scripts/deploy/deploy_from_github.sh`
-- `scripts/deploy/deploy_portal.sh`
-- `scripts/deploy/deploy_with_monitoring.sh`
-- `scripts/deploy/deploy_commands.sh`
+The following redundant scripts have been removed to maintain a clean and focused deployment workflow:
+- `scripts/deploy/deployment_utils.sh`
+- `scripts/deploy/deploy_tunnel_system.sh`
+- `scripts/deploy/deploy-with-tests.sh`
+- `scripts/deploy/Deploy-WithTests.ps1`
+- `scripts/deploy/git_monitor.sh`
+- `scripts/deploy/install_vps_automation.sh`
 
-This ensures a single, clear deployment workflow using `update_and_deploy.sh`.
+This ensures a single, clear deployment workflow orchestrated by `Deploy-CloudToLocalLLM.ps1`.
