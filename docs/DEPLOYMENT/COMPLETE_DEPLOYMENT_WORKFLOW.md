@@ -69,28 +69,11 @@ git push origin master
 
 ---
 
-## 🔄 **Phase 3: Build & Package Creation** (15-25 minutes)
+## 🔄 **Phase 3: Build & Package Creation** (Handled by Main Script)
 
-### **Step 3.1: Clean Build Environment**
-```bash
-# Clean previous builds
-flutter clean
+This phase, which includes cleaning the environment, building the Flutter web application, and packaging the desktop client, is handled automatically by the main deployment script (`scripts\powershell\Deploy-CloudToLocalLLM.ps1`).
 
-# Get dependencies
-flutter pub get
-
-# Verify no dependency issues
-flutter doctor
-```
-
-### **Step 3.2: Build Flutter Applications**
-```bash
-# For web deployment (VPS)
-flutter build web --release --no-tree-shake-icons
-
-# For desktop deployment (Linux)
-./scripts/build_unified_package.sh
-```
+When you run the main script, it will perform these steps for you. There is no need to run these commands manually.
 
 ---
 
