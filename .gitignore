@@ -6,21 +6,10 @@
 .dart_tool/
 .packages
 .metadata
-build/
-.idea/
-.vscode/
-.sentry-native/
-.env.mcp
-.env.production.template
 pubspec.lock
 devtools_options.yaml
 analysis_options.yaml
 temp_release_notes.md
-# Generated files
-lib/generated_plugin_registrant.dart
-lib/generated_plugin_registrant.cc
-lib/generated_plugin_registrant.h
-lib/generated_plugins.cmake
 
 # Node.js
 node_modules/
@@ -33,49 +22,16 @@ docker-compose.yml
 # Logs and temporary files
 *.log
 *.tmp
-*.bak
 *.swp
 *.swo
-*.DS_Store
-Thumbs.db
-ehthumbs.db
-ehthumbs_vista.db
-*.stackdump
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
-.env*.local
-.env.development.local
-.env.test.local
-.env.production.local
-.env.staging.local
-.env.qa.local
-.env.uat.local
-.env.preprod.local
-.env.prod.local
-.env.dev.local
-.env.ci.local
-.env.cd.local
-.env.build.local
-.env.deploy.local
-.env.release.local
-.env.test.local
-.env.development
-.env.test
-.env.production
-.env.staging
-.env.qa
-.env.uat
-.env.preprod
-.env.prod
-.env.dev
-.env.ci
-.env.cd
-.env.build
-.env.deploy
-.env.release
-.env.test
+
+# Environment variables
+.env*
+.env.*.local
 
 # IDE and editor files
 .idea/
@@ -86,116 +42,10 @@ yarn-error.log*
 
 # OS generated files
 .DS_Store
-Thumbs.db
-
-# Dependency directories
-node_modules/
-.dart_tool/
-.pub/
-
-# Build artifacts
-build/
-dist/
-dist/windows/
-# Executables
-*.exe
-*.dll
-*.so
-*.dylib
-
-# Archive files
-*.zip
-*.tar.gz
-*.rar
-
-# Backup files
-*.bak
-*.backup
-*.old
-
-# Sentry files
-.sentryclirc
-.sentry-cli
-.sentry-native
-
-# Playwright
-test-results/
-
-# VS Code
-.vscode/
-
-# Kiro
-.kiro/
-
-# Archive
-archive/
-
-# Backups
-backups/
-
-# Certbot
-certbot/
-
-# Data
-data/
-
-# Generated files
-lib/generated_plugin_registrant.dart
-lib/generated_plugin_registrant.cc
-lib/generated_plugin_registrant.h
-lib/generated_plugins.cmake
-
-# Flutter specific build outputs
-.flutter-plugins
-.flutter-plugins-dependencies
-.packages
-
-# macOS specific
-.DS_Store
-
-# Windows specific
 Thumbs.db
 ehthumbs.db
 *.stackdump
 
-# npm/yarn debug logs
-npm-debug.log*
-yarn-debug.log*
-.pnpm-debug.log*
-
-# Environment variables
-.env*.local
-.env.development.local
-.env.test.local
-.env.production.local
-.env.staging.local
-.env.qa.local
-.env.uat.local
-.env.preprod.local
-.env.prod.local
-.env.dev.local
-.env.ci.local
-.env.cd.local
-.env.build.local
-.env.deploy.local
-.env.release.local
-.env.test
-
-# IDE and editor files
-.idea/
-*.iml
-*.ipr
-*.iws
-
-# OS generated files
-.DS_Store
-Thumbs.db
-
-# Dependency directories
-node_modules/
-.dart_tool/
-.pub/
-
 # Build artifacts
 build/
 dist/
@@ -219,110 +69,8 @@ dist/
 # Sentry files
 .sentryclirc
 .sentry-cli
-.sentry-native
-
-# Playwright
-test-results/
-
-# VS Code
-.vscode/
-
-# Kiro
-.kiro/
-
-# Archive
-archive/
-
-# Backups
-backups/
-
-# Certbot
-certbot/
-
-# Data
-data/
-
-# Generated files
-lib/generated_plugin_registrant.dart
-lib/generated_plugin_registrant.cc
-lib/generated_plugin_registrant.h
-lib/generated_plugins.cmake
-
-# Flutter specific build outputs
-.flutter-plugins
-.flutter-plugins-dependencies
-.packages
-
-# macOS specific
-.DS_Store
-
-# Windows specific
-Thumbs.db
-ehthumbs.db
-*.stackdump
-
-# npm/yarn debug logs
-npm-debug.log*
-yarn-debug.log*
-.pnpm-debug.log*
-
-# Environment variables
-.env*.local
-.env.development.local
-.env.test.local
-.env.production.local
-.env.staging.local
-.env.qa.local
-.env.uat.local
-.env.preprod.local
-.env.prod.local
-.env.dev.local
-.env.ci.local
-.env.cd.local
-.env.build.local
-.env.deploy.local
-.env.release.local
-.env.test
-
-# IDE and editor files
-.idea/
-*.iml
-*.ipr
-*.iws
-
-# OS generated files
-.DS_Store
-Thumbs.db
-
-# Dependency directories
-node_modules/
-.dart_tool/
-.pub/
-
-# Build artifacts
-build/
-dist/
-
-# Executables
-*.exe
-*.dll
-*.so
-*.dylib
-
-# Archive files
-*.zip
-*.tar.gz
-*.rar
-
-# Backup files
-*.bak
-*.backup
-*.old
-
-# Sentry files
-.sentryclirc
-.sentry-cli
-.sentry-native
+.sentry-native/
+sentry.properties
 
 # Playwright
 test-results/
@@ -341,3 +89,6 @@ certbot/
 
 # Data
 data/
+
+# Gradle wrapper jar
+android/gradle/wrapper/gradle-wrapper.jar
