@@ -287,97 +287,61 @@ if (-not $DryRun) {
 
 Write-Host "? Local Flutter desktop build completed successfully"
 
-# Step 3.6: GitHub Release Creation
+# Step 3.6: Build and Create GitHub Release
 Write-Host ""
-Write-Host "=== STEP 3.6: GITHUB RELEASE CREATION ===" -ForegroundColor Yellow
+Write-Host "=== STEP 3.6: BUILD AND CREATE GITHUB RELEASE ===" -ForegroundColor Yellow
 
-# Always check for GitHub release creation, regardless of build status
-# This allows creating releases for existing packages or when build was skipped
-$distPath = Join-Path $ProjectRoot "dist"
-$currentVersion = & $versionManagerPath get-semantic
-$releaseTag = "v$currentVersion"
+if (-not $DryRun) {
+    $currentVersion = & $versionManagerPath get-semantic
 
-# Check if desktop application packages exist for current version
-$hasPackagesForCurrentVersion = $false
-if (Test-Path $distPath) {
-$versionPattern = "*$currentVersion*"
-$packageFiles = Get-ChildItem -Path $distPath -Filter $versionPattern -Recurse -ErrorAction SilentlyContinue
-if ($packageFiles.Count -gt 0) {
-    $hasPackagesForCurrentVersion = $true
-    Write-Host "Found $($packageFiles.Count) package(s) for version $currentVersion"
-    foreach ($package in $packageFiles) {
-        Write-Host "  - $($package.Name)"
-    }
-}
-}
-
-if ($hasPackagesForCurrentVersion) {
-    Write-Host "Desktop application packages found for version $currentVersion, checking GitHub release..."
-
-    if (-not $DryRun) {
-        try {
-
-            # Check if GitHub CLI is available and authenticated
-            $ghAvailable = $false
-            try {
-                $ghStatus = & gh auth status 2>&1
-                if ($LASTEXITCODE -eq 0) {
-                    $ghAvailable = $true
-                    Write-Host "? GitHub CLI authenticated"
-                }
-            } catch {
-                Write-Host "?? GitHub CLI not available or not authenticated" -ForegroundColor Yellow
-            }
-
-            if ($ghAvailable) {
-                # Check if release already exists
-                $releaseExists = $false
-                try {
-                    & gh release view $releaseTag --repo imrightguy/CloudToLocalLLM 2>&1 | Out-Null
-                    if ($LASTEXITCODE -eq 0) {
-                        $releaseExists = $true
-                    }
-                } catch {
-                    # Release doesn't exist, which is expected
-                }
-
-                if (-not $releaseExists) {
-                    Write-Host "Creating GitHub release $releaseTag..."
-
-                    # Create GitHub release with assets
-                    Write-Host "Calling create_github_release.sh script..."
-                    $createReleaseScript = Join-Path $ProjectRoot "scripts\release\create_github_release.sh"
-                    
-                    # Execute the bash script using bash.exe (available on Windows with Git Bash or WSL)
-                    # Ensure the script is executable
-                    & bash.exe -c "chmod +x '$createReleaseScript'"
-                    
-                    # Run the script
-                    & bash.exe -c "'$createReleaseScript'"
-                    
-                    if ($LASTEXITCODE -eq 0) {
-                        Write-Host "? GitHub release $releaseTag created successfully by create_github_release.sh" -ForegroundColor Green
-                    } else {
-                        Write-Host "?? GitHub release creation failed via create_github_release.sh (non-blocking)" -ForegroundColor Yellow
-                        Write-Host "   Deployment will continue, but manual release creation may be needed" -ForegroundColor Yellow
-                    }
-                } else {
-                    Write-Host "? GitHub release $releaseTag already exists" -ForegroundColor Green
-                }
-            } else {
-                Write-Host "?? GitHub release creation skipped (GitHub CLI not available or authenticated)" -ForegroundColor Yellow
-                Write-Host "   To enable automatic releases, install GitHub CLI and run: gh auth login" -ForegroundColor Yellow
-            }
-        } catch {
-            Write-Host "?? GitHub release creation failed: $($_.Exception.Message)" -ForegroundColor Yellow
-            Write-Host "   Deployment will continue, but manual release creation may be needed" -ForegroundColor Yellow
+    # Build Windows assets
+    Write-Host "Building Windows release assets..."
+    $buildWindowsAssetsScript = Join-Path $PSScriptRoot "Build-GitHubReleaseAssets.ps1"
+    try {
+        & $buildWindowsAssetsScript -InstallInnoSetup
+        if ($LASTEXITCODE -ne 0) {
+            throw "Windows release assets build failed."
         }
-    } else {
-        Write-Host "[DRY RUN] Would create GitHub release for desktop packages version $currentVersion"
+        Write-Host "? Windows release assets built successfully."
+    } catch {
+        Write-Host "ERROR: Windows release assets build failed: $($_.Exception.Message)" -ForegroundColor Red
+        exit 1
+    }
+
+    # Build Linux assets via WSL
+    Write-Host "Building Linux release assets via WSL..."
+    $buildLinuxAssetsScript = Join-Path $ProjectRoot "scripts/packaging/build_all_packages.sh"
+    try {
+        # Ensure the script is executable in WSL
+        wsl -d ArchLinux bash -c "chmod +x '/mnt/c/Users/chris/Dev/CloudToLocalLLM/scripts/packaging/build_all_packages.sh'"
+        wsl -d ArchLinux bash -c "cd /mnt/c/Users/chris/Dev/CloudToLocalLLM && '$buildLinuxAssetsScript' --skip-increment"
+        if ($LASTEXITCODE -ne 0) {
+            throw "Linux release assets build failed in WSL."
+        }
+        Write-Host "? Linux release assets built successfully in WSL."
+    } catch {
+        Write-Host "ERROR: Linux release assets build failed: $($_.Exception.Message)" -ForegroundColor Red
+        exit 1
+    }
+
+    # Create GitHub release
+    Write-Host "Creating GitHub release..."
+    $createReleaseScript = Join-Path $ProjectRoot "scripts\release\create_github_release.sh"
+    try {
+        # Ensure the script is executable
+        & bash.exe -c "chmod +x '$createReleaseScript'"
+        # Run the script
+        & bash.exe -c "'$createReleaseScript'"
+        if ($LASTEXITCODE -ne 0) {
+            throw "GitHub release creation failed."
+        }
+        Write-Host "? GitHub release created successfully."
+    } catch {
+        Write-Host "ERROR: GitHub release creation failed: $($_.Exception.Message)" -ForegroundColor Red
+        exit 1
     }
 } else {
-    Write-Host "? No desktop application packages found for version $currentVersion, skipping GitHub release creation"
-    Write-Host "   To create releases, ensure desktop packages are built first"
+    Write-Host "[DRY RUN] Would build all assets and create GitHub release."
 }
 
 # Step 4: Commit and Push Build-Time Injected Files
