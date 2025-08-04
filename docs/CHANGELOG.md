@@ -5,10 +5,10 @@ All notable changes to CloudToLocalLLM will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [4.0.45] - 2025-08-03
-
+## [4.0.45] - 2025-08-03
+
 ### Fixed
-- Bug fixes and improvements
+- Bug fixes and improvements
 
 ## [4.0.44] - 2025-08-03
 
@@ -61,12 +61,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - build_and_package.sh â†’ Functionality available in scripts/packaging/build_deb.sh
 
 ### Removed - AUR Support (Temporary)
-- **AUR scripts temporarily removed** - Part of v3.10.3 Unified Flutter-Native Architecture transition
-  - Removed references to missing AUR scripts from all documentation
-  - Updated status markers from "TEMPORARILY INACTIVE" to "TEMPORARILY REMOVED - AUR REINTEGRATION PLANNED"
-  - Created comprehensive AUR_STATUS.md documentation with reintegration timeline
-  - Updated deployment workflow guides to reflect current script availability
-  - Cleaned up scripts/docker/README.md AUR sections
+- **AUR support is temporarily removed** as of v3.10.3. See [AUR Status](DEPLOYMENT/AUR_STATUS.md) for details.
 
 ### Fixed - Documentation and Cross-References
 - **Updated script references** across all documentation files

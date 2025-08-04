@@ -15,7 +15,7 @@ This guide covers installation of CloudToLocalLLM v3.10.3+ with the Unified Flut
 
 ### **Method 1: AUR Package - ⚠️ TEMPORARILY UNAVAILABLE**
 
-**Status**: AUR support is temporarily decommissioned with reintegration planned for future releases.
+**Status**: AUR support is temporarily decommissioned with reintegration planned for future releases. See [AUR Status](../DEPLOYMENT/AUR_STATUS.md) for details.
 
 #### **Installation** (When Available)
 ```bash

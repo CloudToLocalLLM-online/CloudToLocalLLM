@@ -2,7 +2,7 @@
 
 **⚠️ NOTICE: AUR Docker Building Temporarily Removed**
 
-The Docker-based AUR building system has been temporarily removed as part of the v3.10.3 Unified Flutter-Native Architecture transition.
+The Docker-based AUR building system has been temporarily removed as part of the v3.10.3 Unified Flutter-Native Architecture transition. See [AUR Status Documentation](../../docs/DEPLOYMENT/AUR_STATUS.md) for complete details.
 
 ## 📋 Current Status
 
