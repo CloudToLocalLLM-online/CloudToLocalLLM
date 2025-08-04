@@ -4,7 +4,7 @@
 class AppConfig {
   // App Information
   static const String appName = 'CloudToLocalLLM';
-  static const String appVersion = '4.0.59'; // Updated by build scripts
+  static const String appVersion = '4.0.60'; // Updated by build scripts
   static const String appDescription =
       'Manage and run powerful Large Language Models locally, orchestrated via a cloud interface.';
 
