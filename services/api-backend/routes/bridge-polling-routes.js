@@ -29,7 +29,7 @@ const MAX_COMPLETED_RESPONSES = 500;
 // Rate limiting for bridge endpoints
 const bridgePollingLimiter = rateLimit({
   windowMs: 60 * 1000, // 1 minute
-  max: 20, // Allow 20 polling requests per minute per IP
+  max: 30, // Allow 30 polling requests per minute per IP (increased from 20)
   message: {
     error: 'Too many polling requests',
     code: 'RATE_LIMIT_EXCEEDED',
@@ -41,7 +41,7 @@ const bridgePollingLimiter = rateLimit({
 
 const bridgeHeartbeatLimiter = rateLimit({
   windowMs: 60 * 1000, // 1 minute
-  max: 5, // Allow 5 heartbeat requests per minute per IP
+  max: 10, // Allow 10 heartbeat requests per minute per IP (increased from 5)
   message: {
     error: 'Too many heartbeat requests',
     code: 'RATE_LIMIT_EXCEEDED',
@@ -51,11 +51,35 @@ const bridgeHeartbeatLimiter = rateLimit({
   legacyHeaders: false,
 });
 
+const bridgeProviderStatusLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 10, // Allow 10 provider status updates per minute per IP
+  message: {
+    error: 'Too many provider status updates',
+    code: 'RATE_LIMIT_EXCEEDED',
+    retryAfter: 60
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+const bridgeRegistrationLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5, // Allow 5 registrations per 15 minutes per IP
+  message: {
+    error: 'Too many registration attempts',
+    code: 'RATE_LIMIT_EXCEEDED',
+    retryAfter: 900 // 15 minutes
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 /**
  * Register a desktop client for HTTP polling
  * POST /api/bridge/register
  */
-router.post('/register', authenticateJWT, addTierInfo, (req, res) => {
+router.post('/register', bridgeRegistrationLimiter, authenticateJWT, addTierInfo, (req, res) => {
   const { clientId, platform, version, capabilities } = req.body;
   const userId = req.user.sub;
   const bridgeId = uuidv4();
@@ -101,6 +125,7 @@ router.post('/register', authenticateJWT, addTierInfo, (req, res) => {
       response: `/api/bridge/${bridgeId}/response`,
       status: `/api/bridge/${bridgeId}/status`,
       heartbeat: `/api/bridge/${bridgeId}/heartbeat`,
+      providerStatus: `/api/bridge/${bridgeId}/provider-status`,
     },
     config: {
       pollingInterval: 10000, // 10 seconds (increased from 5 to reduce rate limiting)
@@ -148,6 +173,8 @@ router.get('/:bridgeId/status', authenticateJWT, (req, res) => {
       version: bridge.version,
       capabilities: bridge.capabilities,
     },
+    providers: bridge.providers || [],
+    lastProviderUpdate: bridge.lastProviderUpdate || null,
     stats: {
       pendingRequests: pendingRequests.get(bridgeId)?.length || 0,
       completedResponses: Array.from(completedResponses.values())
@@ -223,6 +250,44 @@ router.get('/:bridgeId/poll', bridgePollingLimiter, authenticateJWT, (req, res) 
   // Cleanup on client disconnect
   req.on('close', () => {
     clearInterval(pollInterval);
+  });
+});
+
+/**
+ * Update provider status from desktop client
+ * POST /api/bridge/{bridgeId}/provider-status
+ */
+router.post('/:bridgeId/provider-status', bridgeProviderStatusLimiter, authenticateJWT, (req, res) => {
+  const { bridgeId } = req.params;
+  const userId = req.user.sub;
+  const { providers, timestamp } = req.body;
+
+  const bridge = bridgeRegistrations.get(bridgeId);
+  if (!bridge || bridge.userId !== userId) {
+    return res.status(404).json({
+      error: 'Bridge not found or access denied',
+    });
+  }
+
+  // Update bridge with provider information
+  bridge.providers = providers || [];
+  bridge.lastProviderUpdate = timestamp || new Date().toISOString();
+  bridge.lastSeen = new Date();
+
+  // Update heartbeat to indicate bridge is active
+  bridgeHeartbeats.set(bridgeId, Date.now());
+
+  logger.debug('Provider status updated', {
+    bridgeId,
+    userId,
+    providerCount: providers?.length || 0,
+    timestamp,
+  });
+
+  res.json({
+    success: true,
+    message: 'Provider status updated',
+    timestamp: new Date().toISOString(),
   });
 });
 

@@ -87,16 +87,37 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization'],
 }));
 
-// Rate limiting
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // limit each IP to 100 requests per windowMs
-  message: 'Too many requests from this IP, please try again later.',
-  standardHeaders: true,
-  legacyHeaders: false,
-});
+// Rate limiting with different limits for bridge operations
+const createConditionalRateLimiter = () => {
+  // Standard rate limiter for general API endpoints
+  const standardLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 100, // limit each IP to 100 requests per windowMs
+    message: 'Too many requests from this IP, please try again later.',
+    standardHeaders: true,
+    legacyHeaders: false,
+  });
 
-app.use(limiter);
+  // More lenient rate limiter for bridge operations
+  const bridgeLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 500, // Allow more requests for bridge operations (5x standard limit)
+    message: 'Too many bridge requests from this IP, please try again later.',
+    standardHeaders: true,
+    legacyHeaders: false,
+  });
+
+  return (req, res, next) => {
+    // Apply more lenient limits to bridge routes
+    if (req.path.startsWith('/api/bridge/')) {
+      return bridgeLimiter(req, res, next);
+    }
+    // Apply standard limits to all other routes
+    return standardLimiter(req, res, next);
+  };
+};
+
+app.use(createConditionalRateLimiter());
 
 // Body parsing middleware
 app.use(express.json({ limit: '10mb' }));
