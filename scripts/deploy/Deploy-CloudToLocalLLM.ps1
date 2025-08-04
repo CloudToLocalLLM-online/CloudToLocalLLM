@@ -137,8 +137,9 @@ if (-not $DryRun) {
     Write-Host "Starting full release build and GitHub release creation via WSL..."
     $fullReleaseScriptPath = Join-Path $ProjectRoot "scripts\release\full_release_wsl.sh"
     try {
-        # Convert Windows path to WSL path
-        $wslScriptPath = (wsl -d ArchLinux wslpath -u "$fullReleaseScriptPath").Trim()
+        # Convert Windows path to WSL path, ensuring it's in a format WSL can handle
+        $unixPath = $fullReleaseScriptPath.Replace('\', '/')
+        $wslScriptPath = (wsl -d ArchLinux wslpath -u $unixPath).Trim()
         if (-not $wslScriptPath) {
             throw "Failed to convert Windows path to WSL path: $fullReleaseScriptPath"
         }
