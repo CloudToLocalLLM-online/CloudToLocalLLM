@@ -131,9 +131,20 @@ class ProviderDiscoveryService extends ChangeNotifier {
 
   Timer? _periodicScanTimer;
   bool _isScanning = false;
+  final bool _isWebPlatform = kIsWeb;
 
   ProviderDiscoveryService({http.Client? httpClient})
-    : _httpClient = httpClient ?? http.Client();
+    : _httpClient = httpClient ?? http.Client() {
+
+    // Log platform detection for debugging
+    if (_isWebPlatform) {
+      debugPrint('🔍 [ProviderDiscovery] Web platform detected - discovery service will be limited');
+      debugPrint('🔍 [ProviderDiscovery] Direct localhost scanning disabled to prevent CORS errors');
+      debugPrint('🔍 [ProviderDiscovery] Web platform should use tunnel/bridge system for provider access');
+    } else {
+      debugPrint('🔍 [ProviderDiscovery] Desktop platform detected - full discovery service enabled');
+    }
+  }
 
   /// Get list of discovered providers
   List<ProviderInfo> get discoveredProviders =>
@@ -158,7 +169,17 @@ class ProviderDiscoveryService extends ChangeNotifier {
   }
 
   /// Scan for all available LLM providers
+  ///
+  /// Note: On web platforms, this method returns an empty list to prevent CORS errors
+  /// from direct localhost connections. Web platforms should use the tunnel/bridge system.
   Future<List<ProviderInfo>> scanForProviders() async {
+    // Skip scanning on web platforms to prevent CORS errors
+    if (_isWebPlatform) {
+      debugPrint('🔍 [ProviderDiscovery] Skipping provider scan on web platform');
+      debugPrint('🔍 [ProviderDiscovery] Web platform should use tunnel/bridge for provider access');
+      return [];
+    }
+
     if (_isScanning) {
       debugPrint('Provider scan already in progress, skipping...');
       return _discoveredProviders;
@@ -214,6 +235,12 @@ class ProviderDiscoveryService extends ChangeNotifier {
 
   /// Detect Ollama provider (default port 11434)
   Future<ProviderInfo?> detectOllama({int port = 11434}) async {
+    // Skip detection on web platforms to prevent CORS errors
+    if (_isWebPlatform) {
+      debugPrint('🔍 [ProviderDiscovery] Skipping Ollama detection on web platform (port $port)');
+      return null;
+    }
+
     final baseUrl = 'http://localhost:$port';
 
     try {
@@ -268,6 +295,12 @@ class ProviderDiscoveryService extends ChangeNotifier {
 
   /// Detect LM Studio provider (default port 1234)
   Future<ProviderInfo?> detectLMStudio({int port = 1234}) async {
+    // Skip detection on web platforms to prevent CORS errors
+    if (_isWebPlatform) {
+      debugPrint('🔍 [ProviderDiscovery] Skipping LM Studio detection on web platform (port $port)');
+      return null;
+    }
+
     final baseUrl = 'http://localhost:$port';
 
     try {
@@ -333,6 +366,12 @@ class ProviderDiscoveryService extends ChangeNotifier {
 
   /// Detect OpenAI-compatible APIs on common ports
   Future<List<ProviderInfo>> detectOpenAICompatible() async {
+    // Skip detection on web platforms to prevent CORS errors
+    if (_isWebPlatform) {
+      debugPrint('🔍 [ProviderDiscovery] Skipping OpenAI-compatible API detection on web platform');
+      return [];
+    }
+
     final commonPorts = [8080, 5000, 3000, 8000, 7860, 5001];
     final providers = <ProviderInfo>[];
 
