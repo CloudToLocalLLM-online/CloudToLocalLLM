@@ -5,10 +5,18 @@ All notable changes to CloudToLocalLLM will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [4.0.78] - 2025-08-05
+## [4.0.79] - 2025-08-05
 
 ### Fixed
 - Bug fixes and improvements
+
+## [4.0.78] - 2025-08-05
+
+
+
+### Fixed
+- Bug fixes and improvements
+
 
 ## [4.0.77] - 2025-08-05
 
