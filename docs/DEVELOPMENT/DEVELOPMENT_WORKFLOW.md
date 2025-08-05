@@ -203,21 +203,21 @@ Output will be in the `dist/` directory.
 
 #### **Distribution Methods**
 **Available Package Formats**:
-- **DEB Package**: `scripts/packaging/build_deb.sh`
-- **AppImage**: `scripts/packaging/build_appimage.sh`
+- **AppImage**: `scripts/packaging/build_appimage.sh` (Recommended)
 - **Source Build**: `scripts/build_unified_package.sh`
 
 **Recommended for Linux**:
 ```bash
-# Build DEB package for Debian/Ubuntu systems
-./scripts/packaging/build_deb.sh
+# Build AppImage for universal Linux compatibility
+./scripts/packaging/build_appimage.sh
 ```
 
-**DEB Package Benefits**:
-- Native package management integration
-- Automatic dependency handling
-- System service integration
-- Desktop environment integration
+**AppImage Benefits**:
+- Universal Linux compatibility
+- No installation required
+- Portable application bundle
+- Runs on most Linux distributions
+- Self-contained with all dependencies
 
 ### 🪟 **Windows Development**
 

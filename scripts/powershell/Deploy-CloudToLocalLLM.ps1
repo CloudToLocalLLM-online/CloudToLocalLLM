@@ -159,14 +159,14 @@ if (-not $DryRun) {
         }
         Write-Host "? Windows release assets built successfully"
 
-        # Step 3.5.2: Build Linux packages (via WSL)
+        # Step 3.5.2: Build Linux AppImage packages (via WSL)
         Write-Host ""
-        Write-Host "--- Building Linux Release Assets ---" -ForegroundColor Cyan
+        Write-Host "--- Building Linux AppImage Assets ---" -ForegroundColor Cyan
         $linuxBuildScript = Join-Path $ProjectRoot "scripts\packaging\build_all_packages.sh"
         $wslLinuxBuildPath = $linuxBuildScript -replace '\\', '/'
         $wslLinuxBuildPath = $wslLinuxBuildPath -replace '^([A-Za-z]):', '/mnt/$1'
         $wslLinuxBuildPath = $wslLinuxBuildPath.ToLower()
-        & wsl -d ArchLinux bash -c "cd '$wslProjectRoot' && chmod +x '$wslLinuxBuildPath' && '$wslLinuxBuildPath' --skip-increment"
+        & wsl -d ArchLinux bash -c "cd '$wslProjectRoot' && chmod +x '$wslLinuxBuildPath' && '$wslLinuxBuildPath' --skip-increment appimage"
         if ($LASTEXITCODE -ne 0) {
             throw "Linux release assets build failed"
         }
@@ -202,7 +202,7 @@ Choose the appropriate package for your system:
 - **CloudToLocalLLM-Windows-$currentVersion-Setup.exe** - Windows installer
 
 ### Linux
-- **cloudtolocalllm_$($currentVersion)_amd64.deb** - Debian/Ubuntu package
+- **cloudtolocalllm-$($currentVersion)-x86_64.AppImage** - Universal Linux package (recommended)
 - **cloudtolocalllm-$($currentVersion)-1-x86_64.pkg.tar.xz** - Arch Linux package
 
 ## Checksums
@@ -241,7 +241,7 @@ SHA256 checksums are provided for all packages to verify integrity.
         # Linux assets
         if (Test-Path $linuxDir) {
             $linuxAssets = Get-ChildItem -Path $linuxDir -File | Where-Object {
-                $_.Name -match "cloudtolocalllm.*\.(deb|pkg\.tar\.xz|sha256)$"
+                $_.Name -match "cloudtolocalllm.*\.(AppImage|pkg\.tar\.xz|sha256)$"
             }
             $assets += $linuxAssets.FullName
         }

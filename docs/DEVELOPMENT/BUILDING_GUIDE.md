@@ -77,30 +77,7 @@ sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev
 3. Creates a distributable archive (`.tar.gz`)
 4. Output placed in `dist/` directory
 
-#### **2. DEB Package (Debian/Ubuntu)**
-
-```bash
-# Build DEB package
-./scripts/packaging/build_deb.sh
-```
-
-**Benefits**:
-- Native package management integration
-- Automatic dependency handling
-- System service integration
-- Desktop environment integration
-- Easy installation and removal
-
-**Installation**:
-```bash
-# Install the generated DEB package
-sudo dpkg -i dist/cloudtolocalllm_*.deb
-
-# Fix any dependency issues
-sudo apt-get install -f
-```
-
-#### **3. AppImage (Universal Linux)**
+#### **2. AppImage (Universal Linux - Recommended)**
 
 ```bash
 # Build AppImage
@@ -120,7 +97,9 @@ chmod +x CloudToLocalLLM-*.AppImage
 ./CloudToLocalLLM-*.AppImage
 ```
 
-#### **4. Manual Flutter Build**
+**Note**: Debian (.deb) packages have been discontinued in favor of AppImage for better cross-distribution compatibility.
+
+#### **3. Manual Flutter Build**
 
 ```bash
 # Enable Linux desktop support

@@ -169,22 +169,12 @@ build_appimage() {
     fi
 }
 
-# Build Debian package
+# Build Debian package (DEPRECATED - Use AppImage instead)
 build_debian() {
-    log_info "Building Debian package..."
-
-    if [[ "$OSTYPE" != "linux-gnu"* ]]; then
-        log_warning "Skipping Debian build (Linux required)"
-        return 0
-    fi
-
-    cd "$SCRIPT_DIR"
-    if ./build_deb.sh; then
-        log_success "Debian build completed"
-    else
-        log_error "Debian build failed"
-        return 1
-    fi
+    log_warning "Debian package generation has been discontinued"
+    log_info "Please use AppImage for universal Linux distribution compatibility"
+    log_info "Run: ./scripts/packaging/build_appimage.sh"
+    return 0
 }
 
 
@@ -328,18 +318,19 @@ main() {
 
     case "$packages_to_build" in
         "all")
-            build_debian || ((build_errors++))
             build_appimage || ((build_errors++))
             ;;
         "debian")
-            build_debian || ((build_errors++))
+            log_warning "Debian package generation has been discontinued"
+            log_info "Building AppImage instead for universal Linux compatibility"
+            build_appimage || ((build_errors++))
             ;;
         "appimage")
             build_appimage || ((build_errors++))
             ;;
         *)
             log_error "Invalid package selection: $packages_to_build"
-            log_error "Supported options: all, debian, appimage"
+            log_error "Supported options: all, appimage (debian redirects to appimage)"
             exit 1
             ;;
     esac

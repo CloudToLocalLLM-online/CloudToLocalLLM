@@ -43,9 +43,10 @@ AUR (Arch User Repository) support for CloudToLocalLLM has been temporarily remo
 
 ### Active Package Formats
 - **Windows**: MSI installers, portable ZIP packages
-- **Debian/Ubuntu**: DEB packages via `scripts/packaging/build_deb.sh`
-- **AppImage**: Universal Linux packages via `scripts/packaging/build_appimage.sh`
+- **AppImage**: Universal Linux packages via `scripts/packaging/build_appimage.sh` (Primary Linux format)
 - **Source**: Direct compilation from GitHub repository
+
+**Note**: Debian (.deb) packages have been discontinued in favor of AppImage for better cross-distribution compatibility.
 
 ### PowerShell Equivalents (Maintained)
 - `scripts/powershell/create_unified_aur_package.ps1` - Windows-based AUR package creation
@@ -73,15 +74,17 @@ AUR (Arch User Repository) support for CloudToLocalLLM has been temporarily remo
 
 ## 🛠️ Workarounds for Arch Linux Users
 
-### Option 1: Manual Installation
+### Option 1: AppImage (Recommended)
 ```bash
-# Download latest release
-wget https://github.com/imrightguy/CloudToLocalLLM/releases/latest/download/cloudtolocalllm-3.10.3-x86_64.tar.gz
+# Download latest AppImage
+wget https://github.com/imrightguy/CloudToLocalLLM/releases/latest/download/cloudtolocalllm-4.0.78-x86_64.AppImage
 
-# Extract and install
-tar -xzf cloudtolocalllm-3.10.3-x86_64.tar.gz
-sudo cp -r cloudtolocalllm-3.10.3 /usr/share/cloudtolocalllm
-sudo ln -sf /usr/share/cloudtolocalllm/bin/* /usr/bin/
+# Make executable and run
+chmod +x cloudtolocalllm-4.0.78-x86_64.AppImage
+./cloudtolocalllm-4.0.78-x86_64.AppImage
+
+# Optional: Install to system (creates desktop entry)
+./cloudtolocalllm-4.0.78-x86_64.AppImage --appimage-extract-and-run --install
 ```
 
 ### Option 2: Source Compilation
