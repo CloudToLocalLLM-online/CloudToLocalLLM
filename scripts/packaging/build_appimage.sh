@@ -56,8 +56,8 @@ check_prerequisites() {
     fi
     
     # Check if AppImage structure exists
-    if [[ ! -d "$PROJECT_ROOT/packaging/appimage/CloudToLocalLLM.AppDir" ]]; then
-        log_error "AppImage structure not found at $PROJECT_ROOT/packaging/appimage/CloudToLocalLLM.AppDir"
+    if [[ ! -d "$PROJECT_ROOT/build-tools/packaging/appimage/CloudToLocalLLM.AppDir" ]]; then
+        log_error "AppImage structure not found at $PROJECT_ROOT/build-tools/packaging/appimage/CloudToLocalLLM.AppDir"
         exit 1
     fi
     
@@ -116,7 +116,7 @@ copy_appimage_files() {
     log_info "Copying AppImage structure..."
     
     # Copy AppImage directory structure
-    cp -r "$PROJECT_ROOT/packaging/appimage/CloudToLocalLLM.AppDir" "$BUILD_DIR/"
+    cp -r "$PROJECT_ROOT/build-tools/packaging/appimage/CloudToLocalLLM.AppDir" "$BUILD_DIR/"
     log_success "Copied AppImage structure"
     
     log_info "Copying Flutter Linux build artifacts..."

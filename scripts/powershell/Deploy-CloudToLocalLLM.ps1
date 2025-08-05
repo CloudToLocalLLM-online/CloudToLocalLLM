@@ -159,10 +159,18 @@ if (-not $DryRun) {
         }
         Write-Host "? Windows release assets built successfully"
 
-        # Step 3.5.2: Build Linux AppImage packages (via WSL) - TEMPORARILY SKIPPED
+        # Step 3.5.2: Build Linux AppImage packages (via WSL)
         Write-Host ""
-        Write-Host "--- Skipping Linux AppImage Assets (AppImage structure needs setup) ---" -ForegroundColor Yellow
-        Write-Host "? Linux AppImage build skipped - continuing with deployment"
+        Write-Host "--- Building Linux AppImage Assets ---" -ForegroundColor Cyan
+        $linuxBuildScript = Join-Path $ProjectRoot "scripts\packaging\build_all_packages.sh"
+        $wslLinuxBuildPath = $linuxBuildScript -replace '\\', '/'
+        $wslLinuxBuildPath = $wslLinuxBuildPath -replace '^([A-Za-z]):', '/mnt/$1'
+        $wslLinuxBuildPath = $wslLinuxBuildPath.ToLower()
+        & wsl -d ArchLinux bash -c "cd '$wslProjectRoot' && chmod +x '$wslLinuxBuildPath' && '$wslLinuxBuildPath' --skip-increment --packages appimage"
+        if ($LASTEXITCODE -ne 0) {
+            throw "Linux release assets build failed"
+        }
+        Write-Host "? Linux release assets built successfully"
 
         # Step 3.5.3: Update AUR PKGBUILD (via WSL)
         Write-Host ""
@@ -235,6 +243,7 @@ SHA256 checksums are provided for all packages to verify integrity.
         # Collect release assets for current version only
         $distDir = Join-Path $ProjectRoot "dist"
         $windowsDir = Join-Path $distDir "windows"
+        $linuxDir = Join-Path $distDir "linux"
 
         $assets = @()
 
@@ -254,6 +263,22 @@ SHA256 checksums are provided for all packages to verify integrity.
             $assets += $checksumAssets.FullName
         }
 
+        # Linux assets - only for current version
+        if (Test-Path $linuxDir) {
+            $linuxAssets = Get-ChildItem -Path $linuxDir -File | Where-Object {
+                $_.Name -match "cloudtolocalllm-$currentVersion.*\.AppImage$" -or
+                $_.Name -match "CloudToLocalLLM-$currentVersion.*\.AppImage$"
+            }
+            $assets += $linuxAssets.FullName
+
+            # Also include SHA256 checksums for the current version Linux assets
+            $linuxChecksumAssets = Get-ChildItem -Path $linuxDir -File | Where-Object {
+                $_.Name -match "cloudtolocalllm-$currentVersion.*\.AppImage\.sha256$" -or
+                $_.Name -match "CloudToLocalLLM-$currentVersion.*\.AppImage\.sha256$"
+            }
+            $assets += $linuxChecksumAssets.FullName
+        }
+
         Write-Host "Found $($assets.Count) assets to upload for version $currentVersion"
         foreach ($asset in $assets) {
             Write-Host "  - $(Split-Path $asset -Leaf)"
@@ -261,18 +286,25 @@ SHA256 checksums are provided for all packages to verify integrity.
 
         if ($assets.Count -eq 0) {
             Write-Host "WARNING: No assets found for version $currentVersion. Expected files:" -ForegroundColor Yellow
-            Write-Host "  - cloudtolocalllm-$currentVersion-portable.zip" -ForegroundColor Yellow
-            Write-Host "  - CloudToLocalLLM-Windows-$currentVersion-Setup.exe" -ForegroundColor Yellow
+            Write-Host "  Windows:" -ForegroundColor Yellow
+            Write-Host "    - cloudtolocalllm-$currentVersion-portable.zip" -ForegroundColor Yellow
+            Write-Host "    - CloudToLocalLLM-Windows-$currentVersion-Setup.exe" -ForegroundColor Yellow
+            Write-Host "  Linux:" -ForegroundColor Yellow
+            Write-Host "    - cloudtolocalllm-$currentVersion.AppImage" -ForegroundColor Yellow
         }
 
-        # Verify we have the minimum required assets
+        # Verify we have the expected assets
         $expectedPortableZip = $assets | Where-Object { $_ -match "cloudtolocalllm-$currentVersion.*portable\.zip$" }
         $expectedInstaller = $assets | Where-Object { $_ -match "CloudToLocalLLM-Windows-$currentVersion.*Setup\.exe$" }
+        $expectedAppImage = $assets | Where-Object { $_ -match "cloudtolocalllm-$currentVersion.*\.AppImage$" }
 
-        if (-not $expectedPortableZip -or -not $expectedInstaller) {
-            Write-Host "WARNING: Missing expected Windows assets for version $currentVersion" -ForegroundColor Yellow
-            Write-Host "Portable ZIP found: $($expectedPortableZip -ne $null)" -ForegroundColor Yellow
-            Write-Host "Installer EXE found: $($expectedInstaller -ne $null)" -ForegroundColor Yellow
+        Write-Host "Asset verification for version $currentVersion:" -ForegroundColor Cyan
+        Write-Host "  Windows Portable ZIP: $($expectedPortableZip -ne $null)" -ForegroundColor $(if ($expectedPortableZip) { "Green" } else { "Yellow" })
+        Write-Host "  Windows Installer EXE: $($expectedInstaller -ne $null)" -ForegroundColor $(if ($expectedInstaller) { "Green" } else { "Yellow" })
+        Write-Host "  Linux AppImage: $($expectedAppImage -ne $null)" -ForegroundColor $(if ($expectedAppImage) { "Green" } else { "Yellow" })
+
+        if (-not $expectedPortableZip -and -not $expectedInstaller -and -not $expectedAppImage) {
+            Write-Host "WARNING: No platform assets found for version $currentVersion" -ForegroundColor Yellow
             Write-Host "Continuing with available assets..." -ForegroundColor Yellow
         }
 
