@@ -232,32 +232,48 @@ SHA256 checksums are provided for all packages to verify integrity.
             Write-Host "Tag push may have failed, continuing with release creation..."
         }
 
-        # Collect release assets
+        # Collect release assets for current version only
         $distDir = Join-Path $ProjectRoot "dist"
         $windowsDir = Join-Path $distDir "windows"
-        $linuxDir = Join-Path $distDir "linux"
 
         $assets = @()
 
-        # Windows assets
+        # Windows assets - only for current version
         if (Test-Path $windowsDir) {
             $windowsAssets = Get-ChildItem -Path $windowsDir -File | Where-Object {
-                $_.Name -match "cloudtolocalllm.*\.(zip|exe|sha256)$"
+                $_.Name -match "cloudtolocalllm-$currentVersion.*\.(zip|exe)$" -or
+                $_.Name -match "CloudToLocalLLM-Windows-$currentVersion.*\.exe$"
             }
             $assets += $windowsAssets.FullName
+
+            # Also include SHA256 checksums for the current version assets
+            $checksumAssets = Get-ChildItem -Path $windowsDir -File | Where-Object {
+                $_.Name -match "cloudtolocalllm-$currentVersion.*\.sha256$" -or
+                $_.Name -match "CloudToLocalLLM-Windows-$currentVersion.*\.sha256$"
+            }
+            $assets += $checksumAssets.FullName
         }
 
-        # Linux assets - TEMPORARILY SKIPPED
-        # if (Test-Path $linuxDir) {
-        #     $linuxAssets = Get-ChildItem -Path $linuxDir -File | Where-Object {
-        #         $_.Name -match "cloudtolocalllm.*\.(AppImage|pkg\.tar\.xz|sha256)$"
-        #     }
-        #     $assets += $linuxAssets.FullName
-        # }
-
-        Write-Host "Found $($assets.Count) assets to upload"
+        Write-Host "Found $($assets.Count) assets to upload for version $currentVersion"
         foreach ($asset in $assets) {
             Write-Host "  - $(Split-Path $asset -Leaf)"
+        }
+
+        if ($assets.Count -eq 0) {
+            Write-Host "WARNING: No assets found for version $currentVersion. Expected files:" -ForegroundColor Yellow
+            Write-Host "  - cloudtolocalllm-$currentVersion-portable.zip" -ForegroundColor Yellow
+            Write-Host "  - CloudToLocalLLM-Windows-$currentVersion-Setup.exe" -ForegroundColor Yellow
+        }
+
+        # Verify we have the minimum required assets
+        $expectedPortableZip = $assets | Where-Object { $_ -match "cloudtolocalllm-$currentVersion.*portable\.zip$" }
+        $expectedInstaller = $assets | Where-Object { $_ -match "CloudToLocalLLM-Windows-$currentVersion.*Setup\.exe$" }
+
+        if (-not $expectedPortableZip -or -not $expectedInstaller) {
+            Write-Host "WARNING: Missing expected Windows assets for version $currentVersion" -ForegroundColor Yellow
+            Write-Host "Portable ZIP found: $($expectedPortableZip -ne $null)" -ForegroundColor Yellow
+            Write-Host "Installer EXE found: $($expectedInstaller -ne $null)" -ForegroundColor Yellow
+            Write-Host "Continuing with available assets..." -ForegroundColor Yellow
         }
 
         # Create GitHub release
@@ -272,8 +288,10 @@ SHA256 checksums are provided for all packages to verify integrity.
             "--notes-file", $releaseNotesFile
         )
 
-        # Add assets to the command
-        $ghArgs += $assets
+        # Add assets to the command only if we have any
+        if ($assets.Count -gt 0) {
+            $ghArgs += $assets
+        }
 
         & gh @ghArgs
         if ($LASTEXITCODE -ne 0) {
