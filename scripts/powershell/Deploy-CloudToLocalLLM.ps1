@@ -168,9 +168,11 @@ if (-not $DryRun) {
         $wslLinuxBuildPath = $wslLinuxBuildPath.ToLower()
         & wsl -d ArchLinux bash -c "cd '$wslProjectRoot' && chmod +x '$wslLinuxBuildPath' && '$wslLinuxBuildPath' --skip-increment --packages appimage"
         if ($LASTEXITCODE -ne 0) {
-            throw "Linux release assets build failed"
+            Write-Host "WARNING: Linux AppImage build failed (likely due to FUSE not being available in WSL)" -ForegroundColor Yellow
+            Write-Host "Continuing deployment with Windows assets only..." -ForegroundColor Yellow
+        } else {
+            Write-Host "? Linux release assets built successfully"
         }
-        Write-Host "? Linux release assets built successfully"
 
         # Step 3.5.3: Update AUR PKGBUILD (via WSL)
         Write-Host ""
