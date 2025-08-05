@@ -15,8 +15,9 @@ NC='\033[0m' # No Color
 # Configuration
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
-APP_URL="https://app.cloudtolocalllm.online"
-API_URL="https://app.cloudtolocalllm.online"
+APP_URL="http://localhost"
+API_URL="http://localhost"
+EXTERNAL_URL="https://app.cloudtolocalllm.online"
 TIMEOUT=30
 STRICT_MODE=false
 
@@ -155,12 +156,12 @@ test_container_health() {
     fi
 }
 
-# Test 4: SSL certificate
+# Test 4: SSL certificate (test external URL)
 test_ssl_certificate() {
     print_status "Testing SSL certificate..."
-    
+
     local domain="cloudtolocalllm.online"
-    
+
     if openssl s_client -connect "$domain:443" -servername "$domain" </dev/null 2>/dev/null | \
        openssl x509 -noout -dates 2>/dev/null | grep -q "notAfter"; then
         record_test "SSL Certificate" "pass"
