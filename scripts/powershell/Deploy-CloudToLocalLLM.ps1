@@ -159,18 +159,10 @@ if (-not $DryRun) {
         }
         Write-Host "? Windows release assets built successfully"
 
-        # Step 3.5.2: Build Linux AppImage packages (via WSL)
+        # Step 3.5.2: Build Linux AppImage packages (via WSL) - TEMPORARILY SKIPPED
         Write-Host ""
-        Write-Host "--- Building Linux AppImage Assets ---" -ForegroundColor Cyan
-        $linuxBuildScript = Join-Path $ProjectRoot "scripts\packaging\build_all_packages.sh"
-        $wslLinuxBuildPath = $linuxBuildScript -replace '\\', '/'
-        $wslLinuxBuildPath = $wslLinuxBuildPath -replace '^([A-Za-z]):', '/mnt/$1'
-        $wslLinuxBuildPath = $wslLinuxBuildPath.ToLower()
-        & wsl -d ArchLinux bash -c "cd '$wslProjectRoot' && chmod +x '$wslLinuxBuildPath' && '$wslLinuxBuildPath' --skip-increment --packages appimage"
-        if ($LASTEXITCODE -ne 0) {
-            throw "Linux release assets build failed"
-        }
-        Write-Host "? Linux release assets built successfully"
+        Write-Host "--- Skipping Linux AppImage Assets (AppImage structure needs setup) ---" -ForegroundColor Yellow
+        Write-Host "? Linux AppImage build skipped - continuing with deployment"
 
         # Step 3.5.3: Update AUR PKGBUILD (via WSL)
         Write-Host ""
@@ -255,13 +247,13 @@ SHA256 checksums are provided for all packages to verify integrity.
             $assets += $windowsAssets.FullName
         }
 
-        # Linux assets
-        if (Test-Path $linuxDir) {
-            $linuxAssets = Get-ChildItem -Path $linuxDir -File | Where-Object {
-                $_.Name -match "cloudtolocalllm.*\.(AppImage|pkg\.tar\.xz|sha256)$"
-            }
-            $assets += $linuxAssets.FullName
-        }
+        # Linux assets - TEMPORARILY SKIPPED
+        # if (Test-Path $linuxDir) {
+        #     $linuxAssets = Get-ChildItem -Path $linuxDir -File | Where-Object {
+        #         $_.Name -match "cloudtolocalllm.*\.(AppImage|pkg\.tar\.xz|sha256)$"
+        #     }
+        #     $assets += $linuxAssets.FullName
+        # }
 
         Write-Host "Found $($assets.Count) assets to upload"
         foreach ($asset in $assets) {
