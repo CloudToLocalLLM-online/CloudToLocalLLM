@@ -70,7 +70,6 @@ if ($LASTEXITCODE -ne 0) {
 $versionManagerPath = Join-Path $PSScriptRoot "version_manager.ps1"
 
 # Step 2: Version management
-if (-not $SkipVersionUpdate) {
 Write-Host ""
 Write-Host "=== STEP 2: VERSION MANAGEMENT ===" -ForegroundColor Yellow
 
@@ -112,7 +111,6 @@ if (-not $DryRun) {
 } else {
     Write-Host "[DRY RUN] Would increment version ($VersionIncrement)"
 }
-}
 
 # Step 3: Source preparation
 Write-Host ""
@@ -145,7 +143,7 @@ if (-not $DryRun) {
 
         # Construct the bash command to make the script executable and then run it
         # Escape the WSL path for bash -c
-        $bashCommand = "chmod +x \"$wslScriptPath\"; \"$wslScriptPath\""
+        $bashCommand = "chmod +x `"$wslScriptPath`"; `"$wslScriptPath`""
 
         # Execute the bash command in WSL
         wsl -d ArchLinux bash -c "$bashCommand"
