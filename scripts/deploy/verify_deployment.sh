@@ -94,10 +94,18 @@ record_test() {
 # Test 1: Basic connectivity
 test_basic_connectivity() {
     print_status "Testing basic connectivity to $APP_URL..."
-    
-    if curl -s -f -m "$TIMEOUT" "$APP_URL" > /dev/null 2>&1; then
+
+    local curl_output
+    local curl_exit_code
+
+    # Use timeout command to ensure curl doesn't hang
+    curl_output=$(timeout "$TIMEOUT" curl -s -f -m "$TIMEOUT" "$APP_URL" 2>&1)
+    curl_exit_code=$?
+
+    if [[ $curl_exit_code -eq 0 ]]; then
         record_test "Basic Connectivity" "pass"
     else
+        print_status "Curl failed with exit code: $curl_exit_code"
         record_test "Basic Connectivity" "fail"
     fi
 }
@@ -105,11 +113,15 @@ test_basic_connectivity() {
 # Test 2: Version endpoint
 test_version_endpoint() {
     print_status "Testing version endpoint..."
-    
+
     local version_url="$APP_URL/version.json"
     local response
-    
-    if response=$(curl -s -f -m "$TIMEOUT" "$version_url" 2>/dev/null); then
+    local curl_exit_code
+
+    response=$(timeout "$TIMEOUT" curl -s -f -m "$TIMEOUT" "$version_url" 2>/dev/null)
+    curl_exit_code=$?
+
+    if [[ $curl_exit_code -eq 0 ]] && [[ -n "$response" ]]; then
         if echo "$response" | jq -e '.version' > /dev/null 2>&1; then
             local version=$(echo "$response" | jq -r '.version')
             print_status "Deployed version: $version"
@@ -171,14 +183,20 @@ test_ssl_certificate() {
 # Test 5: API backend health
 test_api_backend() {
     print_status "Testing API backend health..."
-    
+
     local api_health_url="$API_URL:8080/health"
-    
-    if curl -s -f -m "$TIMEOUT" "$api_health_url" > /dev/null 2>&1; then
+    local curl_exit_code
+
+    timeout "$TIMEOUT" curl -s -f -m "$TIMEOUT" "$api_health_url" > /dev/null 2>&1
+    curl_exit_code=$?
+
+    if [[ $curl_exit_code -eq 0 ]]; then
         record_test "API Backend Health" "pass"
     else
         # Try alternative health check
-        if curl -s -f -m "$TIMEOUT" "$API_URL/api/health" > /dev/null 2>&1; then
+        timeout "$TIMEOUT" curl -s -f -m "$TIMEOUT" "$API_URL/api/health" > /dev/null 2>&1
+        curl_exit_code=$?
+        if [[ $curl_exit_code -eq 0 ]]; then
             record_test "API Backend Health" "pass"
         else
             record_test "API Backend Health" "warning"
@@ -189,16 +207,19 @@ test_api_backend() {
 # Test 6: Static assets
 test_static_assets() {
     print_status "Testing static assets..."
-    
+
     local assets=("main.dart.js" "flutter.js" "manifest.json")
     local failed_assets=0
-    
+
     for asset in "${assets[@]}"; do
-        if ! curl -s -f -m "$TIMEOUT" "$APP_URL/$asset" > /dev/null 2>&1; then
+        local curl_exit_code
+        timeout "$TIMEOUT" curl -s -f -m "$TIMEOUT" "$APP_URL/$asset" > /dev/null 2>&1
+        curl_exit_code=$?
+        if [[ $curl_exit_code -ne 0 ]]; then
             ((failed_assets++))
         fi
     done
-    
+
     if [[ $failed_assets -eq 0 ]]; then
         record_test "Static Assets" "pass"
     elif [[ $failed_assets -lt ${#assets[@]} ]]; then
