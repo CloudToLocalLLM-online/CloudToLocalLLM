@@ -166,7 +166,7 @@ if (-not $DryRun) {
         $wslLinuxBuildPath = $linuxBuildScript -replace '\\', '/'
         $wslLinuxBuildPath = $wslLinuxBuildPath -replace '^([A-Za-z]):', '/mnt/$1'
         $wslLinuxBuildPath = $wslLinuxBuildPath.ToLower()
-        & wsl -d ArchLinux bash -c "cd '$wslProjectRoot' && chmod +x '$wslLinuxBuildPath' && '$wslLinuxBuildPath' --skip-increment appimage"
+        & wsl -d ArchLinux bash -c "cd '$wslProjectRoot' && chmod +x '$wslLinuxBuildPath' && '$wslLinuxBuildPath' --skip-increment --packages appimage"
         if ($LASTEXITCODE -ne 0) {
             throw "Linux release assets build failed"
         }
