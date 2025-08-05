@@ -379,8 +379,8 @@ if ($validationFailed) {
 Write-Host ""
 Write-Host "=== STEP 5: VPS DEPLOYMENT ===" -ForegroundColor Yellow
 
-# Use the archived deployment script since complete_deployment.sh doesn't exist
-$vpsDeploymentScript = "$VPSProjectPath/scripts/archive/complete_automated_deployment.sh"
+# Use the simple deployment script
+$vpsDeploymentScript = "$VPSProjectPath/scripts/deploy/simple_deploy.sh"
 $deploymentFlags = "--force"
 
 if ($Verbose) {
