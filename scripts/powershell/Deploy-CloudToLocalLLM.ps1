@@ -135,7 +135,8 @@ if (-not $DryRun) {
     try {
         # Get current version for release
         $versionManagerPath = Join-Path $ProjectRoot "scripts\version_manager.sh"
-        $currentVersion = & wsl bash -c "cd '$($ProjectRoot -replace '\\', '/' -replace '^([A-Za-z]):', '/mnt/$1'.ToLower())' && ./scripts/version_manager.sh get-semantic"
+        $wslProjectRoot = $ProjectRoot -replace '\\', '/' -replace '^([A-Za-z]):', { '/mnt/' + $_.Groups[1].Value.ToLower() }
+        $currentVersion = & wsl bash -c "cd '$wslProjectRoot' && ./scripts/version_manager.sh get-semantic"
         if ($LASTEXITCODE -ne 0) {
             throw "Failed to get current version"
         }
@@ -156,8 +157,8 @@ if (-not $DryRun) {
         Write-Host ""
         Write-Host "--- Building Linux Release Assets ---" -ForegroundColor Cyan
         $linuxBuildScript = Join-Path $ProjectRoot "scripts\packaging\build_all_packages.sh"
-        $wslLinuxBuildPath = $linuxBuildScript -replace '\\', '/' -replace '^([A-Za-z]):', '/mnt/$1'.ToLower()
-        & wsl -d ArchLinux bash -c "cd '$($ProjectRoot -replace '\\', '/' -replace '^([A-Za-z]):', '/mnt/$1'.ToLower())' && chmod +x '$wslLinuxBuildPath' && '$wslLinuxBuildPath' --skip-increment"
+        $wslLinuxBuildPath = $linuxBuildScript -replace '\\', '/' -replace '^([A-Za-z]):', { '/mnt/' + $_.Groups[1].Value.ToLower() }
+        & wsl -d ArchLinux bash -c "cd '$wslProjectRoot' && chmod +x '$wslLinuxBuildPath' && '$wslLinuxBuildPath' --skip-increment"
         if ($LASTEXITCODE -ne 0) {
             throw "Linux release assets build failed"
         }
