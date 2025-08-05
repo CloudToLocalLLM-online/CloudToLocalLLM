@@ -281,6 +281,9 @@ SHA256 checksums are provided for all packages to verify integrity.
             $assets += $linuxChecksumAssets.FullName
         }
 
+        # Filter out any null or empty paths
+        $assets = $assets | Where-Object { $_ -and $_.Trim() -ne "" }
+
         Write-Host "Found $($assets.Count) assets to upload for version $currentVersion"
         foreach ($asset in $assets) {
             Write-Host "  - $(Split-Path $asset -Leaf)"
@@ -296,9 +299,9 @@ SHA256 checksums are provided for all packages to verify integrity.
         }
 
         # Verify we have the expected assets
-        $expectedPortableZip = $assets | Where-Object { $_ -match "cloudtolocalllm-$currentVersion.*portable\.zip$" }
-        $expectedInstaller = $assets | Where-Object { $_ -match "CloudToLocalLLM-Windows-$currentVersion.*Setup\.exe$" }
-        $expectedAppImage = $assets | Where-Object { $_ -match "cloudtolocalllm-$currentVersion.*\.AppImage$" }
+        $expectedPortableZip = $assets | Where-Object { $_ -and $_ -match "cloudtolocalllm-$currentVersion.*portable\.zip$" }
+        $expectedInstaller = $assets | Where-Object { $_ -and $_ -match "CloudToLocalLLM-Windows-$currentVersion.*Setup\.exe$" }
+        $expectedAppImage = $assets | Where-Object { $_ -and $_ -match "cloudtolocalllm-$currentVersion.*\.AppImage$" }
 
         Write-Host "Asset verification for version ${currentVersion}:" -ForegroundColor Cyan
         Write-Host "  Windows Portable ZIP: $($expectedPortableZip -ne $null)" -ForegroundColor $(if ($expectedPortableZip) { "Green" } else { "Yellow" })
