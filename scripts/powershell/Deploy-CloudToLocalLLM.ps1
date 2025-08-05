@@ -59,10 +59,13 @@ exit 1
 
 if (-not $DryRun) {
 Write-Host "Testing SSH connection..."
-ssh -o ConnectTimeout=10 -o BatchMode=yes -o StrictHostKeyChecking=no "$VPSUser@$VPSHost" "echo 'SSH test successful'"
+$sshTestResult = & ssh -o ConnectTimeout=5 -o BatchMode=yes -o StrictHostKeyChecking=no -o UserKnownHostsFile=NUL "$VPSUser@$VPSHost" "echo 'SSH test successful'" 2>&1
 if ($LASTEXITCODE -ne 0) {
-    Write-Host "ERROR: SSH connection failed" -ForegroundColor Red
+    Write-Host "ERROR: SSH connection failed with exit code $LASTEXITCODE" -ForegroundColor Red
+    Write-Host "SSH output: $sshTestResult" -ForegroundColor Red
     exit 1
+} else {
+    Write-Host "SSH connection successful" -ForegroundColor Green
 }
 }
 
