@@ -15,8 +15,8 @@ NC='\033[0m' # No Color
 # Configuration
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
-APP_URL="http://localhost"
-API_URL="http://localhost"
+APP_URL="https://localhost"
+API_URL="https://localhost"
 EXTERNAL_URL="https://app.cloudtolocalllm.online"
 TIMEOUT=30
 STRICT_MODE=false
@@ -96,8 +96,8 @@ record_test() {
 test_basic_connectivity() {
     print_status "Testing basic connectivity to $APP_URL..."
 
-    # Use curl with built-in timeouts only
-    if curl -s -f --connect-timeout 10 --max-time "$TIMEOUT" "$APP_URL" > /dev/null 2>&1; then
+    # Use curl with built-in timeouts and allow insecure connections for localhost
+    if curl -s -f -k --connect-timeout 10 --max-time "$TIMEOUT" "$APP_URL" > /dev/null 2>&1; then
         record_test "Basic Connectivity" "pass"
     else
         record_test "Basic Connectivity" "fail"
@@ -111,7 +111,7 @@ test_version_endpoint() {
     local version_url="$APP_URL/version.json"
     local response
 
-    if response=$(curl -s -f --connect-timeout 10 --max-time "$TIMEOUT" "$version_url" 2>/dev/null); then
+    if response=$(curl -s -f -k --connect-timeout 10 --max-time "$TIMEOUT" "$version_url" 2>/dev/null); then
         if echo "$response" | jq -e '.version' > /dev/null 2>&1; then
             local version=$(echo "$response" | jq -r '.version')
             print_status "Deployed version: $version"
@@ -176,11 +176,11 @@ test_api_backend() {
 
     local api_health_url="$API_URL:8080/health"
 
-    if curl -s -f --connect-timeout 10 --max-time "$TIMEOUT" "$api_health_url" > /dev/null 2>&1; then
+    if curl -s -f -k --connect-timeout 10 --max-time "$TIMEOUT" "$api_health_url" > /dev/null 2>&1; then
         record_test "API Backend Health" "pass"
     else
         # Try alternative health check
-        if curl -s -f --connect-timeout 10 --max-time "$TIMEOUT" "$API_URL/api/health" > /dev/null 2>&1; then
+        if curl -s -f -k --connect-timeout 10 --max-time "$TIMEOUT" "$API_URL/api/health" > /dev/null 2>&1; then
             record_test "API Backend Health" "pass"
         else
             record_test "API Backend Health" "warning"
@@ -196,7 +196,7 @@ test_static_assets() {
     local failed_assets=0
 
     for asset in "${assets[@]}"; do
-        if ! curl -s -f --connect-timeout 10 --max-time "$TIMEOUT" "$APP_URL/$asset" > /dev/null 2>&1; then
+        if ! curl -s -f -k --connect-timeout 10 --max-time "$TIMEOUT" "$APP_URL/$asset" > /dev/null 2>&1; then
             ((failed_assets++))
         fi
     done
