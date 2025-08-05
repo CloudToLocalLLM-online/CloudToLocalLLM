@@ -70,7 +70,6 @@ if ($LASTEXITCODE -ne 0) {
 $versionManagerPath = Join-Path $PSScriptRoot "version_manager.ps1"
 
 # Step 2: Version management
-if (-not $SkipVersionUpdate) {
 Write-Host ""
 Write-Host "=== STEP 2: VERSION MANAGEMENT ===" -ForegroundColor Yellow
 
@@ -111,7 +110,6 @@ if (-not $DryRun) {
     }
 } else {
     Write-Host "[DRY RUN] Would increment version ($VersionIncrement)"
-}
 }
 
 # Step 3: Source preparation
