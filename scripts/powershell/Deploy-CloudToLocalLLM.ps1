@@ -131,39 +131,36 @@ if (Test-Path $filePath) {
 Write-Host ""
 Write-Host "=== STEP 3.5: FULL RELEASE BUILD AND GITHUB RELEASE CREATION ===" -ForegroundColor Yellow
 
-# TEMPORARILY DISABLED - Windows build already completed manually
-Write-Host "SKIPPING: Full release build step (Windows build already completed)" -ForegroundColor Yellow
+if (-not $DryRun) {
+    Write-Host "Starting full release build and GitHub release creation via WSL..."
+    $fullReleaseScriptPath = Join-Path $ProjectRoot "scripts\release\full_release_wsl.sh"
+    try {
+        # Convert Windows path to WSL path manually since wslpath seems to have issues
+        # Convert C:\Users\chris\Dev\CloudToLocalLLM\scripts\release\full_release_wsl.sh
+        # to /mnt/c/Users/chris/Dev/CloudToLocalLLM/scripts/release/full_release_wsl.sh
+        $wslScriptPath = $fullReleaseScriptPath -replace '^([A-Za-z]):', '/mnt/$1' -replace '\\', '/'
+        $wslScriptPath = $wslScriptPath.ToLower()
 
-# if (-not $DryRun) {
-#     Write-Host "Starting full release build and GitHub release creation via WSL..."
-#     $fullReleaseScriptPath = Join-Path $ProjectRoot "scripts\release\full_release_wsl.sh"
-#     try {
-#         # Convert Windows path to WSL path manually since wslpath seems to have issues
-#         # Convert C:\Users\chris\Dev\CloudToLocalLLM\scripts\release\full_release_wsl.sh
-#         # to /mnt/c/Users/chris/Dev/CloudToLocalLLM/scripts/release/full_release_wsl.sh
-#         $wslScriptPath = $fullReleaseScriptPath -replace '^([A-Za-z]):', '/mnt/$1' -replace '\\', '/'
-#         $wslScriptPath = $wslScriptPath.ToLower()
+        Write-Host "Converted path: $fullReleaseScriptPath -> $wslScriptPath"
 
-#         Write-Host "Converted path: $fullReleaseScriptPath -> $wslScriptPath"
+        # Construct the bash command to make the script executable and then run it
+        # Escape the WSL path for bash -c
+        $bashCommand = "chmod +x `"$wslScriptPath`"; `"$wslScriptPath`""
 
-#         # Construct the bash command to make the script executable and then run it
-#         # Escape the WSL path for bash -c
-#         $bashCommand = "chmod +x `"$wslScriptPath`"; `"$wslScriptPath`""
+        # Execute the bash command in WSL
+        wsl -d ArchLinux bash -c "$bashCommand"
 
-#         # Execute the bash command in WSL
-#         wsl -d ArchLinux bash -c "$bashCommand"
-
-#         if ($LASTEXITCODE -ne 0) {
-#             throw "Full release build and GitHub release creation failed in WSL."
-#         }
-#         Write-Host "? Full release build and GitHub release created successfully via WSL."
-#     } catch {
-#         Write-Host "ERROR: Full release build and GitHub release creation failed: $($_.Exception.Message)" -ForegroundColor Red
-#         exit 1
-#     }
-# } else {
-#     Write-Host "[DRY RUN] Would perform full release build and GitHub release creation via WSL."
-# }
+        if ($LASTEXITCODE -ne 0) {
+            throw "Full release build and GitHub release creation failed in WSL."
+        }
+        Write-Host "? Full release build and GitHub release created successfully via WSL."
+    } catch {
+        Write-Host "ERROR: Full release build and GitHub release creation failed: $($_.Exception.Message)" -ForegroundColor Red
+        exit 1
+    }
+} else {
+    Write-Host "[DRY RUN] Would perform full release build and GitHub release creation via WSL."
+}
 
 
 # Step 4: Commit and Push Build-Time Injected Files
