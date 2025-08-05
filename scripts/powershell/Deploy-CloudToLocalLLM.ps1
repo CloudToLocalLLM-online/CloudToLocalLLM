@@ -172,7 +172,21 @@ if (-not $DryRun) {
         }
         Write-Host "? Linux release assets built successfully"
 
-        # Step 3.5.3: Create GitHub Release (Native PowerShell using gh CLI)
+        # Step 3.5.3: Update AUR PKGBUILD (via WSL)
+        Write-Host ""
+        Write-Host "--- Updating AUR PKGBUILD ---" -ForegroundColor Cyan
+        $aurUpdateScript = Join-Path $ProjectRoot "scripts\packaging\update_aur_pkgbuild.sh"
+        $wslAurUpdatePath = $aurUpdateScript -replace '\\', '/'
+        $wslAurUpdatePath = $wslAurUpdatePath -replace '^([A-Za-z]):', '/mnt/$1'
+        $wslAurUpdatePath = $wslAurUpdatePath.ToLower()
+        & wsl -d ArchLinux bash -c "cd '$wslProjectRoot' && chmod +x '$wslAurUpdatePath' && '$wslAurUpdatePath'"
+        if ($LASTEXITCODE -ne 0) {
+            Write-Host "WARNING: AUR PKGBUILD update failed, continuing with deployment" -ForegroundColor Yellow
+        } else {
+            Write-Host "? AUR PKGBUILD updated successfully"
+        }
+
+        # Step 3.5.4: Create GitHub Release (Native PowerShell using gh CLI)
         Write-Host ""
         Write-Host "--- Creating GitHub Release ---" -ForegroundColor Cyan
 
@@ -203,7 +217,10 @@ Choose the appropriate package for your system:
 
 ### Linux
 - **cloudtolocalllm-$($currentVersion)-x86_64.AppImage** - Universal Linux package (recommended)
-- **cloudtolocalllm-$($currentVersion)-1-x86_64.pkg.tar.xz** - Arch Linux package
+
+### Package Managers
+- **AUR**: `yay -S cloudtolocalllm` (Arch Linux and derivatives)
+- **Manual**: Download AppImage for any Linux distribution
 
 ## Checksums
 SHA256 checksums are provided for all packages to verify integrity.
