@@ -1,6 +1,6 @@
 ﻿{
   "name": "cloudtolocalllm-e2e-tests",
-  "version": "4.0.80",
+  "version": "4.0.81",
   "description": "End-to-end testing for CloudToLocalLLM",
   "private": true,
   "scripts": {
