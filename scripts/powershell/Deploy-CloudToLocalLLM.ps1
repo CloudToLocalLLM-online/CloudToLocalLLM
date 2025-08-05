@@ -127,39 +127,154 @@ if (Test-Path $filePath) {
 }
 }
 
-# Step 3.5: Full Release Build and GitHub Release Creation (Orchestrated via WSL)
+# Step 3.5: Windows Release Build and GitHub Release Creation (Native PowerShell)
 Write-Host ""
-Write-Host "=== STEP 3.5: FULL RELEASE BUILD AND GITHUB RELEASE CREATION ===" -ForegroundColor Yellow
+Write-Host "=== STEP 3.5: WINDOWS RELEASE BUILD AND GITHUB RELEASE CREATION ===" -ForegroundColor Yellow
 
 if (-not $DryRun) {
-    Write-Host "Starting full release build and GitHub release creation via WSL..."
-    $fullReleaseScriptPath = Join-Path $ProjectRoot "scripts\release\full_release_wsl.sh"
     try {
-        # Convert Windows path to WSL path manually since wslpath seems to have issues
-        # Convert C:\Users\chris\Dev\CloudToLocalLLM\scripts\release\full_release_wsl.sh
-        # to /mnt/c/Users/chris/Dev/CloudToLocalLLM/scripts/release/full_release_wsl.sh
-        $wslScriptPath = $fullReleaseScriptPath -replace '^([A-Za-z]):', '/mnt/$1' -replace '\\', '/'
-        $wslScriptPath = $wslScriptPath.ToLower()
-
-        Write-Host "Converted path: $fullReleaseScriptPath -> $wslScriptPath"
-
-        # Construct the bash command to make the script executable and then run it
-        # Escape the WSL path for bash -c
-        $bashCommand = "chmod +x `"$wslScriptPath`"; `"$wslScriptPath`""
-
-        # Execute the bash command in WSL
-        wsl -d ArchLinux bash -c "$bashCommand"
-
+        # Get current version for release
+        $versionManagerPath = Join-Path $ProjectRoot "scripts\version_manager.sh"
+        $currentVersion = & wsl bash -c "cd '$($ProjectRoot -replace '\\', '/' -replace '^([A-Za-z]):', '/mnt/$1'.ToLower())' && ./scripts/version_manager.sh get-semantic"
         if ($LASTEXITCODE -ne 0) {
-            throw "Full release build and GitHub release creation failed in WSL."
+            throw "Failed to get current version"
         }
-        Write-Host "? Full release build and GitHub release created successfully via WSL."
+        $currentVersion = $currentVersion.Trim()
+        Write-Host "Building release for version: $currentVersion"
+
+        # Step 3.5.1: Build Windows packages
+        Write-Host ""
+        Write-Host "--- Building Windows Release Assets ---" -ForegroundColor Cyan
+        $buildAssetsScript = Join-Path $ProjectRoot "scripts\powershell\Build-GitHubReleaseAssets.ps1"
+        & $buildAssetsScript -InstallInnoSetup
+        if ($LASTEXITCODE -ne 0) {
+            throw "Windows release assets build failed"
+        }
+        Write-Host "? Windows release assets built successfully"
+
+        # Step 3.5.2: Build Linux packages (via WSL)
+        Write-Host ""
+        Write-Host "--- Building Linux Release Assets ---" -ForegroundColor Cyan
+        $linuxBuildScript = Join-Path $ProjectRoot "scripts\packaging\build_all_packages.sh"
+        $wslLinuxBuildPath = $linuxBuildScript -replace '\\', '/' -replace '^([A-Za-z]):', '/mnt/$1'.ToLower()
+        & wsl -d ArchLinux bash -c "cd '$($ProjectRoot -replace '\\', '/' -replace '^([A-Za-z]):', '/mnt/$1'.ToLower())' && chmod +x '$wslLinuxBuildPath' && '$wslLinuxBuildPath' --skip-increment"
+        if ($LASTEXITCODE -ne 0) {
+            throw "Linux release assets build failed"
+        }
+        Write-Host "? Linux release assets built successfully"
+
+        # Step 3.5.3: Create GitHub Release (Native PowerShell using gh CLI)
+        Write-Host ""
+        Write-Host "--- Creating GitHub Release ---" -ForegroundColor Cyan
+
+        # Check if gh CLI is available
+        $ghPath = Get-Command gh -ErrorAction SilentlyContinue
+        if (-not $ghPath) {
+            throw "GitHub CLI (gh) is not installed or not in PATH. Please install it from https://cli.github.com/"
+        }
+
+        $tagName = "v$currentVersion"
+        $releaseName = "CloudToLocalLLM v$currentVersion"
+
+        # Generate release notes
+        $releaseNotes = @"
+# CloudToLocalLLM v$currentVersion
+
+## What's Changed
+- Version $currentVersion release
+- Updated dependencies and bug fixes
+- Performance improvements
+
+## Download
+Choose the appropriate package for your system:
+
+### Windows
+- **cloudtolocalllm-$currentVersion-portable.zip** - Portable version (no installation required)
+- **CloudToLocalLLM-Windows-$currentVersion-Setup.exe** - Windows installer
+
+### Linux
+- **cloudtolocalllm_$($currentVersion)_amd64.deb** - Debian/Ubuntu package
+- **cloudtolocalllm-$($currentVersion)-1-x86_64.pkg.tar.xz** - Arch Linux package
+
+## Checksums
+SHA256 checksums are provided for all packages to verify integrity.
+
+**Full Changelog**: https://github.com/imrightguy/CloudToLocalLLM/compare/v$($currentVersion.Split('.')[0]).$($currentVersion.Split('.')[1]).$([int]$currentVersion.Split('.')[2] - 1)...v$currentVersion
+"@
+
+        # Create and push tag
+        Write-Host "Creating and pushing tag $tagName..."
+        git tag -a $tagName -m "CloudToLocalLLM v$currentVersion"
+        if ($LASTEXITCODE -ne 0) {
+            Write-Host "Tag may already exist, continuing..."
+        }
+
+        git push origin $tagName
+        if ($LASTEXITCODE -ne 0) {
+            Write-Host "Tag push may have failed, continuing with release creation..."
+        }
+
+        # Collect release assets
+        $distDir = Join-Path $ProjectRoot "dist"
+        $windowsDir = Join-Path $distDir "windows"
+        $linuxDir = Join-Path $distDir "linux"
+
+        $assets = @()
+
+        # Windows assets
+        if (Test-Path $windowsDir) {
+            $windowsAssets = Get-ChildItem -Path $windowsDir -File | Where-Object {
+                $_.Name -match "cloudtolocalllm.*\.(zip|exe|sha256)$"
+            }
+            $assets += $windowsAssets.FullName
+        }
+
+        # Linux assets
+        if (Test-Path $linuxDir) {
+            $linuxAssets = Get-ChildItem -Path $linuxDir -File | Where-Object {
+                $_.Name -match "cloudtolocalllm.*\.(deb|pkg\.tar\.xz|sha256)$"
+            }
+            $assets += $linuxAssets.FullName
+        }
+
+        Write-Host "Found $($assets.Count) assets to upload"
+        foreach ($asset in $assets) {
+            Write-Host "  - $(Split-Path $asset -Leaf)"
+        }
+
+        # Create GitHub release
+        Write-Host "Creating GitHub release $tagName..."
+        $releaseNotesFile = Join-Path $env:TEMP "release_notes_$currentVersion.md"
+        $releaseNotes | Set-Content -Path $releaseNotesFile -Encoding UTF8
+
+        $ghArgs = @(
+            "release", "create", $tagName,
+            "--repo", "imrightguy/CloudToLocalLLM",
+            "--title", $releaseName,
+            "--notes-file", $releaseNotesFile
+        )
+
+        # Add assets to the command
+        $ghArgs += $assets
+
+        & gh @ghArgs
+        if ($LASTEXITCODE -ne 0) {
+            throw "GitHub release creation failed"
+        }
+
+        # Clean up
+        Remove-Item $releaseNotesFile -ErrorAction SilentlyContinue
+
+        Write-Host "? GitHub release created successfully!"
+        Write-Host "? Release URL: https://github.com/imrightguy/CloudToLocalLLM/releases/tag/$tagName"
+        Write-Host "? Uploaded $($assets.Count) assets to the release"
+
     } catch {
-        Write-Host "ERROR: Full release build and GitHub release creation failed: $($_.Exception.Message)" -ForegroundColor Red
+        Write-Host "ERROR: Release build and GitHub release creation failed: $($_.Exception.Message)" -ForegroundColor Red
         exit 1
     }
 } else {
-    Write-Host "[DRY RUN] Would perform full release build and GitHub release creation via WSL."
+    Write-Host "[DRY RUN] Would perform Windows release build and GitHub release creation using native PowerShell"
 }
 
 
