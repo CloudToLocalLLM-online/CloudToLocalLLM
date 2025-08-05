@@ -298,7 +298,7 @@ SHA256 checksums are provided for all packages to verify integrity.
         $expectedInstaller = $assets | Where-Object { $_ -match "CloudToLocalLLM-Windows-$currentVersion.*Setup\.exe$" }
         $expectedAppImage = $assets | Where-Object { $_ -match "cloudtolocalllm-$currentVersion.*\.AppImage$" }
 
-        Write-Host "Asset verification for version $currentVersion:" -ForegroundColor Cyan
+        Write-Host "Asset verification for version ${currentVersion}:" -ForegroundColor Cyan
         Write-Host "  Windows Portable ZIP: $($expectedPortableZip -ne $null)" -ForegroundColor $(if ($expectedPortableZip) { "Green" } else { "Yellow" })
         Write-Host "  Windows Installer EXE: $($expectedInstaller -ne $null)" -ForegroundColor $(if ($expectedInstaller) { "Green" } else { "Yellow" })
         Write-Host "  Linux AppImage: $($expectedAppImage -ne $null)" -ForegroundColor $(if ($expectedAppImage) { "Green" } else { "Yellow" })
