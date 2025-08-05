@@ -247,7 +247,7 @@ if ($SkipVerification) {
 $deploymentFlags += " --skip-verification"
 }
 
-$deploymentCommand = "cd $VPSProjectPath \&\& $vpsDeploymentScript $deploymentFlags"
+$deploymentCommand = "cd $VPSProjectPath && $vpsDeploymentScript $deploymentFlags"
 
 # VPS Deployment Preparation: Fix script permissions
 $permissionFixCommand = "chmod +x $VPSProjectPath/scripts/deploy/*.sh"
