@@ -104,6 +104,7 @@ steps:
       - '--min-instances=0'
       - '--max-instances=20'
       - '--concurrency=100'
+      - '--set-env-vars=NODE_ENV=production,LOG_LEVEL=info,DB_TYPE=sqlite'
       - '--quiet'
     waitFor: ['push-api']
 

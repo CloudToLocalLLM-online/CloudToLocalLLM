@@ -33,8 +33,11 @@ COPY --from=builder /app/node_modules ./node_modules
 # Copy application code
 COPY services/api-backend/ ./
 
+# Copy Cloud Run specific configurations
+COPY config/cloudrun/migrate-database.js ./migrate-database.js
+
 # Create necessary directories and set permissions
-RUN mkdir -p /app/data /app/logs && \
+RUN mkdir -p /app/data /app/logs /app/backups && \
     chown -R nodejs:nodejs /app
 
 # Security: Run as non-root user
@@ -54,5 +57,9 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=15s --retries=3 \
 # Use dumb-init for proper signal handling in Cloud Run
 ENTRYPOINT ["dumb-init", "--"]
 
-# Start the application with optimizations for Cloud Run
-CMD ["node", "--max-old-space-size=512", "server.js"]
+# Create startup script that runs migration then starts the server
+RUN echo '#!/bin/sh\necho "Running database migration..."\nnode migrate-database.js\necho "Starting server..."\nexec node --max-old-space-size=512 server.js' > /app/start.sh && \
+    chmod +x /app/start.sh
+
+# Start the application with migration
+CMD ["/app/start.sh"]
