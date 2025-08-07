@@ -22,7 +22,7 @@ on:
           - staging
 
 env:
-  FLUTTER_VERSION: '3.24.0'
+  FLUTTER_VERSION: '3.24.2'
   NODE_VERSION: '18'
   DEPLOYMENT_URL: 'https://app.cloudtolocalllm.online'
 
@@ -172,8 +172,9 @@ jobs:
       shell: pwsh
       run: |
         echo "::group::PowerShell Deployment Script Tests"
-        cd test/powershell
-        .\CI-TestRunner.ps1 -OutputFormat JUnit -ExportResults -CodeCoverage -FailFast
+        $ErrorActionPreference = 'Stop'
+        Import-Module Pester
+        Invoke-Pester ./test/powershell -CI -Output JUnitXml -OutputPath test-results/powershell/pester-results.xml
         echo "::endgroup::"
 
     - name: Upload PowerShell test results
