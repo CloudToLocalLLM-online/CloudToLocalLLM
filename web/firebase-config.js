@@ -8,11 +8,11 @@ import { getAuth } from 'firebase/auth';
 // Your web app's Firebase configuration
 const firebaseConfig = {
   apiKey: "AIzaSyBvOkBwN6Ca6FNaOeMaMfeM1ZuPiKlBqMY",
-  authDomain: "cloudtolocalllm-auth.firebaseapp.com",
-  projectId: "cloudtolocalllm-auth",
-  storageBucket: "cloudtolocalllm-auth.appspot.com",
-  messagingSenderId: "123456789",
-  appId: "1:123456789:web:abcdef123456789"
+  authDomain: "cloudtolocalllm-468303.firebaseapp.com",
+  projectId: "cloudtolocalllm-468303",
+  storageBucket: "cloudtolocalllm-468303.appspot.com",
+  messagingSenderId: "923995245673",
+  appId: "1:923995245673:web:cloudtolocalllm"
 };
 
 // Initialize Firebase

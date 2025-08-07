@@ -2,9 +2,10 @@
 // This file provides service discovery and configuration for Flutter web app
 // when deployed on Google Cloud Run
 
-import 'dart:html' as html;
+import 'package:web/web.dart' as web;
 import 'dart:convert';
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 
 class CloudRunConfig {
   static const String _configKey = 'cloudrun_config';
@@ -32,39 +33,47 @@ class CloudRunConfig {
   
   /// Initialize Cloud Run configuration
   Future<void> initialize() async {
-    print('CloudToLocalLLM: Initializing Cloud Run configuration...');
-    
+    if (kDebugMode) {
+      debugPrint('CloudToLocalLLM: Initializing Cloud Run configuration...');
+    }
+
     // Detect if running on Cloud Run
     isCloudRun = _detectCloudRun();
-    
+
     if (isCloudRun) {
-      print('CloudToLocalLLM: Running on Cloud Run');
+      if (kDebugMode) {
+        debugPrint('CloudToLocalLLM: Running on Cloud Run');
+      }
       await _loadCloudRunConfig();
     } else {
-      print('CloudToLocalLLM: Running in development mode');
+      if (kDebugMode) {
+        debugPrint('CloudToLocalLLM: Running in development mode');
+      }
       _loadDevelopmentConfig();
     }
-    
+
     // Start health monitoring
     _startHealthMonitoring();
-    
-    print('CloudToLocalLLM: Configuration initialized successfully');
-    print('  Web Service: $webServiceUrl');
-    print('  API Service: $apiServiceUrl');
-    print('  Streaming Service: $streamingServiceUrl');
+
+    if (kDebugMode) {
+      debugPrint('CloudToLocalLLM: Configuration initialized successfully');
+      debugPrint('  Web Service: $webServiceUrl');
+      debugPrint('  API Service: $apiServiceUrl');
+      debugPrint('  Streaming Service: $streamingServiceUrl');
+    }
   }
   
   /// Detect if running on Cloud Run
   bool _detectCloudRun() {
-    final hostname = html.window.location.hostname;
-    return hostname.contains('.run.app') || 
+    final hostname = web.window.location.hostname;
+    return hostname.contains('.run.app') ||
            hostname.contains('cloudtolocalllm');
   }
   
   /// Load Cloud Run specific configuration
   Future<void> _loadCloudRunConfig() async {
-    final hostname = html.window.location.hostname;
-    final protocol = html.window.location.protocol;
+    final hostname = web.window.location.hostname;
+    final protocol = web.window.location.protocol;
     
     // Determine service URLs based on Cloud Run naming convention
     if (hostname.startsWith('cloudtolocalllm-web')) {
@@ -82,13 +91,15 @@ class CloudRunConfig {
     
     // Try to load configuration from JavaScript
     try {
-      final configScript = html.document.querySelector('script[data-config="cloudrun"]');
+      final configScript = web.document.querySelector('script[data-config="cloudrun"]');
       if (configScript != null) {
-        config = jsonDecode(configScript.text!);
+        config = jsonDecode(configScript.textContent!);
         _applyConfigOverrides();
       }
     } catch (e) {
-      print('CloudToLocalLLM: Could not load JavaScript config: $e');
+      if (kDebugMode) {
+        debugPrint('CloudToLocalLLM: Could not load JavaScript config: $e');
+      }
     }
     
     // Discover actual service URLs
@@ -97,9 +108,9 @@ class CloudRunConfig {
   
   /// Load development configuration
   void _loadDevelopmentConfig() {
-    final protocol = html.window.location.protocol;
-    final hostname = html.window.location.hostname;
-    final port = html.window.location.port;
+    final protocol = web.window.location.protocol;
+    final hostname = web.window.location.hostname;
+    final port = web.window.location.port;
     
     webServiceUrl = '$protocol//$hostname:$port';
     apiServiceUrl = '$protocol//$hostname:8080'; // Default API port
@@ -137,7 +148,9 @@ class CloudRunConfig {
   
   /// Discover available services
   Future<void> _discoverServices() async {
-    print('CloudToLocalLLM: Discovering services...');
+    if (kDebugMode) {
+      debugPrint('CloudToLocalLLM: Discovering services...');
+    }
     
     final services = {
       'api': apiServiceUrl,
@@ -150,25 +163,35 @@ class CloudRunConfig {
       
       try {
         final healthUrl = '$serviceUrl/health';
-        print('CloudToLocalLLM: Checking $serviceName at $healthUrl');
+        if (kDebugMode) {
+          debugPrint('CloudToLocalLLM: Checking $serviceName at $healthUrl');
+        }
         
         final response = await _makeRequest(healthUrl, timeout: 5);
         
         if (response != null && response.containsKey('status')) {
           serviceHealth[serviceName] = response['status'] == 'healthy';
-          print('CloudToLocalLLM: Service $serviceName is ${serviceHealth[serviceName]! ? 'healthy' : 'unhealthy'}');
+          if (kDebugMode) {
+            debugPrint('CloudToLocalLLM: Service $serviceName is ${serviceHealth[serviceName]! ? 'healthy' : 'unhealthy'}');
+          }
         } else {
           serviceHealth[serviceName] = false;
-          print('CloudToLocalLLM: Service $serviceName health check failed');
+          if (kDebugMode) {
+            debugPrint('CloudToLocalLLM: Service $serviceName health check failed');
+          }
         }
       } catch (e) {
         serviceHealth[serviceName] = false;
-        print('CloudToLocalLLM: Service $serviceName discovery failed: $e');
+        if (kDebugMode) {
+          debugPrint('CloudToLocalLLM: Service $serviceName discovery failed: $e');
+        }
       }
     }
     
     final healthyServices = serviceHealth.values.where((h) => h).length;
-    print('CloudToLocalLLM: Discovered $healthyServices/${serviceHealth.length} healthy services');
+    if (kDebugMode) {
+      debugPrint('CloudToLocalLLM: Discovered $healthyServices/${serviceHealth.length} healthy services');
+    }
   }
   
   /// Start health monitoring
@@ -177,20 +200,24 @@ class CloudRunConfig {
       _discoverServices();
     });
     
-    print('CloudToLocalLLM: Health monitoring started (30s interval)');
+    if (kDebugMode) {
+      debugPrint('CloudToLocalLLM: Health monitoring started (30s interval)');
+    }
   }
   
   /// Stop health monitoring
   void stopHealthMonitoring() {
     _healthCheckTimer?.cancel();
     _healthCheckTimer = null;
-    print('CloudToLocalLLM: Health monitoring stopped');
+    if (kDebugMode) {
+      debugPrint('CloudToLocalLLM: Health monitoring stopped');
+    }
   }
   
   /// Make HTTP request with timeout
   Future<Map<String, dynamic>?> _makeRequest(String url, {int timeout = 10}) async {
     try {
-      final request = html.HttpRequest();
+      final request = web.XMLHttpRequest();
       request.open('GET', url);
       request.setRequestHeader('Accept', 'application/json');
       
@@ -199,7 +226,7 @@ class CloudRunConfig {
       request.onLoad.listen((e) {
         if (request.status == 200) {
           try {
-            final data = jsonDecode(request.responseText!);
+            final data = jsonDecode(request.responseText);
             completer.complete(data);
           } catch (e) {
             completer.complete(null);
@@ -276,13 +303,13 @@ class CloudRunConfig {
       'timestamp': DateTime.now().toIso8601String(),
     };
     
-    html.window.localStorage[_configKey] = jsonEncode(configData);
+    web.window.localStorage.setItem(_configKey, jsonEncode(configData));
   }
   
   /// Load configuration from local storage
   bool loadConfig() {
     try {
-      final configJson = html.window.localStorage[_configKey];
+      final configJson = web.window.localStorage.getItem(_configKey);
       if (configJson != null) {
         final configData = jsonDecode(configJson);
         
@@ -295,7 +322,9 @@ class CloudRunConfig {
         return true;
       }
     } catch (e) {
-      print('CloudToLocalLLM: Failed to load saved config: $e');
+      if (kDebugMode) {
+        debugPrint('CloudToLocalLLM: Failed to load saved config: $e');
+      }
     }
     
     return false;
@@ -303,6 +332,6 @@ class CloudRunConfig {
   
   /// Clear saved configuration
   void clearConfig() {
-    html.window.localStorage.remove(_configKey);
+    web.window.localStorage.removeItem(_configKey);
   }
 }

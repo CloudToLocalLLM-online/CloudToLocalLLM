@@ -5,7 +5,7 @@ import '../models/installation_step.dart';
 import '../config/app_config.dart';
 
 // Conditional imports for web platform detection
-import 'auth_logger_web.dart' if (dart.library.io) 'auth_logger_stub.dart';
+import 'package:web/web.dart' as web;
 
 /// Service for detecting user's platform and providing appropriate download options
 class PlatformDetectionService extends ChangeNotifier {
@@ -55,8 +55,7 @@ class PlatformDetectionService extends ChangeNotifier {
 
     try {
       // Web platform - detect from browser user agent
-      final window = Window();
-      final userAgent = window.navigator.userAgent;
+      final userAgent = web.window.navigator.userAgent;
 
       debugPrint(
         '🔍 [PlatformDetection] Web platform detected, user agent: $userAgent',
@@ -452,8 +451,7 @@ class PlatformDetectionService extends ChangeNotifier {
     }
 
     try {
-      final window = Window();
-      return window.navigator.userAgent;
+      return web.window.navigator.userAgent;
     } catch (e) {
       debugPrint('🔍 [PlatformDetection] Error getting user agent: $e');
       return null;

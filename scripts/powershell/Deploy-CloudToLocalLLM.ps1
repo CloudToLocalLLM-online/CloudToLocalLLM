@@ -1,11 +1,9 @@
-# CloudToLocalLLM Deployment Script - Raw Output Version
-# Shows all command output without any hiding or filtering
+# CloudToLocalLLM Local Desktop Build Script
+# Builds desktop applications and creates GitHub releases for local distribution
+# Cloud deployment is handled separately by GitHub Actions
 
 [CmdletBinding()]
 param(
-[ValidateSet('Local', 'Staging', 'Production')]
-[string]$Environment = 'Production',
-
 [ValidateSet('build', 'patch', 'minor', 'major')]
 [string]$VersionIncrement = 'patch',
 
@@ -15,15 +13,10 @@ param(
 )
 
 # Configuration
-$VPSHost = "cloudtolocalllm.online"
-$VPSUser = "cloudllm"
-$VPSProjectPath = "/opt/cloudtolocalllm"
 $ProjectRoot = Split-Path $PSScriptRoot -Parent | Split-Path -Parent
 
-Write-Host "=== CloudToLocalLLM Deployment ===" -ForegroundColor Cyan
-Write-Host "Environment: $Environment"
+Write-Host "=== CloudToLocalLLM Local Desktop Build ===" -ForegroundColor Cyan
 Write-Host "Version Increment: $VersionIncrement"
-Write-Host "VPS: $VPSUser@$VPSHost"
 Write-Host "Project Root: $ProjectRoot"
 Write-Host "Dry Run: $DryRun"
 Write-Host ""
@@ -42,9 +35,9 @@ git status --porcelain
 if ($LASTEXITCODE -eq 0) {
 $uncommittedChanges = git status --porcelain
 if ($uncommittedChanges) {
-    Write-Host "ERROR: You have uncommitted changes. Commit and push all changes before deployment:" -ForegroundColor Red
+    Write-Host "ERROR: You have uncommitted changes. Commit and push all changes before building:" -ForegroundColor Red
     Write-Host $uncommittedChanges -ForegroundColor Red
-    Write-Host "Run: git add . && git commit -m 'message' && git push origin master" -ForegroundColor Yellow
+    Write-Host "Run: git add . && git commit -m 'message' && git push origin main" -ForegroundColor Yellow
     exit 1
 }
 }
@@ -57,17 +50,7 @@ Write-Host "ERROR: Git status failed" -ForegroundColor Red
 exit 1
 }
 
-if (-not $DryRun) {
-Write-Host "Testing SSH connection..."
-$sshTestResult = & ssh -o ConnectTimeout=5 -o BatchMode=yes -o StrictHostKeyChecking=no -o UserKnownHostsFile=NUL "$VPSUser@$VPSHost" "echo 'SSH test successful'" 2>&1
-if ($LASTEXITCODE -ne 0) {
-    Write-Host "ERROR: SSH connection failed with exit code $LASTEXITCODE" -ForegroundColor Red
-    Write-Host "SSH output: $sshTestResult" -ForegroundColor Red
-    exit 1
-} else {
-    Write-Host "SSH connection successful" -ForegroundColor Green
-}
-}
+# SSH connection test removed - cloud deployment handled by GitHub Actions
 
 # Define version manager path (used throughout script)
 $versionManagerPath = Join-Path $PSScriptRoot "version_manager.ps1"
@@ -101,7 +84,7 @@ if (-not $DryRun) {
             exit 1
         }
 
-        git push origin master
+        git push origin main
         if ($LASTEXITCODE -ne 0) {
             Write-Host "ERROR: Failed to push version changes" -ForegroundColor Red
             exit 1
@@ -351,40 +334,34 @@ SHA256 checksums are provided for all packages to verify integrity.
 }
 
 
-# Step 4: Commit and Push Build-Time Injected Files
+# Step 4: Commit Build Artifacts to Releases Branch
 if (-not $DryRun) {
 Write-Host ""
-Write-Host "=== STEP 4: COMMIT BUILD-TIME INJECTION ===" -ForegroundColor Yellow
+Write-Host "=== STEP 4: COMMIT BUILD ARTIFACTS TO RELEASES BRANCH ===" -ForegroundColor Yellow
 
-# Validate that no BUILD_TIME_PLACEHOLDER remains in version files
-Write-Host "Validating build-time injection..."
-$validationFailed = $false
-
-$filesToCheck = @("pubspec.yaml", "lib/shared/pubspec.yaml", "lib/shared/lib/version.dart", "assets/version.json")
-foreach ($file in $filesToCheck) {
-    $filePath = Join-Path $ProjectRoot $file
-    if (Test-Path $filePath) {
-        $content = Get-Content $filePath -Raw
-        if ($content -match "BUILD_TIME_PLACEHOLDER") {
-            Write-Host "ERROR: BUILD_TIME_PLACEHOLDER found in: $file" -ForegroundColor Red
-            $validationFailed = $true
-        } else {
-            Write-Host "? No placeholders in: $file"
-        }
-    }
-}
-
-if ($validationFailed) {
-    Write-Host "WARNING: Build validation found placeholders in version files - continuing anyway" -ForegroundColor Yellow
-    Write-Host "? Build validation completed - proceeding with deployment" -ForegroundColor Green
-} else {
-    Write-Host "? Build validation passed - all placeholders replaced with actual build numbers" -ForegroundColor Green
-
-    # Commit build-time injected version files
-    Write-Host "Committing build-time injected version files..."
-    git add pubspec.yaml assets/version.json lib/shared/lib/version.dart lib/shared/pubspec.yaml lib/config/app_config.dart
+    # Get current version for branch naming
+    $currentVersion = & $versionManagerPath get-semantic
     if ($LASTEXITCODE -ne 0) {
-        Write-Host "ERROR: Failed to stage build-time injected files" -ForegroundColor Red
+        Write-Host "ERROR: Failed to get current version" -ForegroundColor Red
+        exit 1
+    }
+    $currentVersion = $currentVersion.Trim()
+    $releasesBranch = "releases/v$currentVersion"
+
+    Write-Host "Creating releases branch: $releasesBranch"
+
+    # Create and checkout releases branch
+    git checkout -b $releasesBranch
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "ERROR: Failed to create releases branch" -ForegroundColor Red
+        exit 1
+    }
+
+    # Add build artifacts (dist folder and version files)
+    Write-Host "Adding build artifacts to releases branch..."
+    git add dist/ pubspec.yaml assets/version.json lib/shared/lib/version.dart lib/shared/pubspec.yaml lib/config/app_config.dart
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "ERROR: Failed to stage build artifacts" -ForegroundColor Red
         exit 1
     }
 
@@ -392,116 +369,54 @@ if ($validationFailed) {
     git diff --cached --quiet
     if ($LASTEXITCODE -ne 0) {
         # There are staged changes, commit them
-        $buildTimestampCommitMessage = "Inject build-time timestamps for deployment v$(& $versionManagerPath get-semantic)"
-        git commit -m $buildTimestampCommitMessage
+        $buildArtifactsCommitMessage = "Add build artifacts for release v$currentVersion"
+        git commit -m $buildArtifactsCommitMessage
         if ($LASTEXITCODE -ne 0) {
-            Write-Host "ERROR: Failed to commit build-time injected files" -ForegroundColor Red
+            Write-Host "ERROR: Failed to commit build artifacts" -ForegroundColor Red
             exit 1
         }
 
-        # Push the build-time injected changes
-        git push origin master
+        # Push the releases branch
+        git push origin $releasesBranch
         if ($LASTEXITCODE -ne 0) {
-            Write-Host "ERROR: Failed to push build-time injected files" -ForegroundColor Red
+            Write-Host "ERROR: Failed to push releases branch" -ForegroundColor Red
             exit 1
         }
-        Write-Host "? Build-time injected files committed and pushed to GitHub"
+        Write-Host "? Build artifacts committed and pushed to releases branch: $releasesBranch"
     } else {
-        Write-Host "? No build-time injection changes to commit"
+        Write-Host "? No build artifacts to commit"
+    }
+
+    # Switch back to main branch
+    git checkout main
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "WARNING: Failed to switch back to main branch" -ForegroundColor Yellow
     }
 }
-}
 
-# Step 5: VPS Deployment
-Write-Host ""
-Write-Host "=== STEP 5: VPS DEPLOYMENT ===" -ForegroundColor Yellow
-
-# Use the simple deployment script
-$vpsDeploymentScript = "$VPSProjectPath/scripts/deploy/simple_deploy.sh"
-$deploymentFlags = "--force"
-
-if ($Verbose) {
-$deploymentFlags += " --verbose"
-}
-
-if ($DryRun) {
-$deploymentFlags += " --dry-run"
-}
-
-if ($SkipVerification) {
-$deploymentFlags += " --skip-verification"
-}
-
-$deploymentCommand = "cd $VPSProjectPath && $vpsDeploymentScript $deploymentFlags"
-
-# VPS Deployment Preparation: Fix script permissions
-$permissionFixCommand = "chmod +x $VPSProjectPath/scripts/deploy/*.sh"
-
-if ($DryRun) {
-Write-Host "[DRY RUN] Would fix VPS script permissions: ssh $VPSUser@$VPSHost `"$permissionFixCommand`""
-Write-Host "[DRY RUN] Would execute: ssh $VPSUser@$VPSHost `"$deploymentCommand`""
-} else {
-Write-Host "Preparing VPS deployment environment..."
-Write-Host "Fixing executable permissions for deployment scripts..."
-Write-Host "Command: ssh $VPSUser@$VPSHost `"$permissionFixCommand`""
-
-ssh -o BatchMode=yes -o ConnectTimeout=30 -o ServerAliveInterval=10 -o ServerAliveCountMax=3 -o StrictHostKeyChecking=no $VPSUser@$VPSHost "$permissionFixCommand"
-
-if ($LASTEXITCODE -ne 0) {
-    Write-Host ""
-    Write-Host "ERROR: Failed to fix VPS script permissions with exit code $LASTEXITCODE" -ForegroundColor Red
-    Write-Host "This may cause deployment script execution failures" -ForegroundColor Yellow
-    Write-Host "Continuing with deployment attempt..." -ForegroundColor Yellow
-    Write-Host ""
-} else {
-    Write-Host "? VPS script permissions fixed successfully" -ForegroundColor Green
-    Write-Host ""
-}
-
-Write-Host "Executing enhanced VPS deployment with rollback capabilities..."
-Write-Host "Using deployment script: $vpsDeploymentScript"
-Write-Host "Deployment flags: $deploymentFlags"
-Write-Host ""
-
-Write-Host "Command: ssh $VPSUser@$VPSHost `"$deploymentCommand`""
-Write-Host ""
-
-ssh -o BatchMode=yes -o ConnectTimeout=30 -o ServerAliveInterval=10 -o ServerAliveCountMax=3 -o StrictHostKeyChecking=no $VPSUser@$VPSHost "$deploymentCommand"
-
-if ($LASTEXITCODE -ne 0) {
-    Write-Host ""
-    Write-Host "ERROR: VPS deployment failed with exit code $LASTEXITCODE" -ForegroundColor Red
-    Write-Host "The VPS deployment script includes automatic rollback on failure" -ForegroundColor Yellow
-    Write-Host "Check VPS logs for detailed error information" -ForegroundColor Yellow
-    exit 1
-} else {
-    Write-Host ""
-    Write-Host "? VPS deployment completed successfully" -ForegroundColor Green
-    Write-Host "Application URL: https://app.cloudtolocalllm.online" -ForegroundColor Green
-}
-}
+# VPS deployment removed - now handled by GitHub Actions cloud deployment workflow
 
 
 
-# Step 6: Verification
+# Step 5: Verification
 if (-not $SkipVerification) {
 Write-Host ""
-Write-Host "=== STEP 6: VERIFICATION ===" -ForegroundColor Yellow
+Write-Host "=== STEP 5: VERIFICATION ===" -ForegroundColor Yellow
 
-Write-Host "? VPS deployment completed successfully" -ForegroundColor Green
-Write-Host "? Application should be available at https://app.cloudtolocalllm.online" -ForegroundColor Green
+Write-Host "? Desktop build artifacts created successfully" -ForegroundColor Green
+Write-Host "? GitHub release created with desktop binaries" -ForegroundColor Green
+Write-Host "? Build artifacts pushed to releases branch" -ForegroundColor Green
 }
 
 # Final report
 Write-Host ""
-Write-Host "=== DEPLOYMENT COMPLETE ===" -ForegroundColor Green
-Write-Host "Environment: $Environment"
+Write-Host "=== LOCAL DESKTOP BUILD COMPLETE ===" -ForegroundColor Green
 Write-Host "Timestamp: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss UTC')"
 Write-Host ""
-Write-Host "Access URLs:"
-Write-Host "  - HTTP Homepage: http://cloudtolocalllm.online"
-Write-Host "  - HTTP Web App: http://app.cloudtolocalllm.online"
-Write-Host "  - HTTPS Homepage: https://cloudtolocalllm.online"
-Write-Host "  - HTTPS Web App: https://app.cloudtolocalllm.online"
+Write-Host "Next Steps:"
+Write-Host "  1. Desktop applications are available in GitHub releases"
+Write-Host "  2. Cloud deployment will be triggered automatically by GitHub Actions"
+Write-Host "  3. Monitor GitHub Actions for cloud deployment status"
 Write-Host ""
-Write-Host "? Deployment successful!" -ForegroundColor Green
+Write-Host "? Local desktop build successful!" -ForegroundColor Green
+Write-Host "? Cloud deployment handled by CI/CD pipeline" -ForegroundColor Cyan

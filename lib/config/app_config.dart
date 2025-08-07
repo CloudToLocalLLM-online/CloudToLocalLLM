@@ -1,4 +1,4 @@
-﻿import 'package:flutter/foundation.dart';
+import 'package:flutter/foundation.dart';
 
 /// Application configuration constants
 class AppConfig {
@@ -23,7 +23,18 @@ class AppConfig {
   static const String gcipTenantId = 'cloudtolocalllm-main'; // Main tenant
 
   // Google Sign-In Configuration
-  static const String googleClientId = '923995245673-abcdefghijklmnopqrstuvwxyz.apps.googleusercontent.com';
+  // Platform-specific OAuth Client IDs for GCIP integration
+  static const String googleClientIdWeb = '923995245673-hn9fcp61bgu7dkrjft0u6vlt3ohjnrth.apps.googleusercontent.com';
+  static const String googleClientIdDesktop = '923995245673-p04roufr9v9sc5sd92sk86rvfusul803.apps.googleusercontent.com';
+
+  // Dynamic client ID selection based on platform
+  static String get googleClientId {
+    if (kIsWeb) {
+      return googleClientIdWeb;
+    } else {
+      return googleClientIdDesktop;
+    }
+  }
 
   // GCIP Auth Scopes
   static const List<String> gcipScopes = [

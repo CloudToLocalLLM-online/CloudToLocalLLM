@@ -4,9 +4,7 @@ import 'conversation_storage_service.dart';
 import 'auth_logger.dart';
 
 // Conditional import for web package
-import 'auth_logger_stub.dart'
-    as web
-    if (dart.library.html) 'auth_logger_web.dart';
+import 'package:web/web.dart' as web;
 
 /// Simple user data management service for CloudToLocalLLM
 ///

@@ -2,7 +2,7 @@
 
 [![Cloud Run Deployment](https://img.shields.io/badge/Cloud%20Run-Ready-blue)](docs/DEPLOYMENT/CLOUDRUN_DEPLOYMENT.md): Your Personal AI Powerhouse
 
-[![Version](https://img.shields.io/badge/version-4.0.35-blue.svg)](https://github.com/imrightguy/CloudToLocalLLM/releases)
+[![Version](https://img.shields.io/badge/version-4.0.86-blue.svg)](https://github.com/imrightguy/CloudToLocalLLM/releases)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Flutter](https://img.shields.io/badge/Flutter-3.8+-blue.svg)](https://flutter.dev)
 [![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20Windows%20%7C%20Web-lightgrey.svg)](https://github.com/imrightguy/CloudToLocalLLM)
@@ -146,22 +146,59 @@ flutter build web --release
 
 ## Deployment
 
-### Automated Deployment
+CloudToLocalLLM uses a comprehensive CI/CD pipeline that separates local desktop builds from cloud infrastructure deployment.
+
+### 🖥️ Desktop Application Builds
+
+For building and releasing desktop applications:
 
 ```powershell
-# Windows deployment
+# Build desktop apps and create GitHub release
 .\scripts\powershell\Deploy-CloudToLocalLLM.ps1
 
-# Linux deployment
-./scripts/deploy/complete_deployment.sh
+# Increment minor version
+.\scripts\powershell\Deploy-CloudToLocalLLM.ps1 -VersionIncrement minor
+
+# Dry run to test without making changes
+.\scripts\powershell\Deploy-CloudToLocalLLM.ps1 -DryRun
 ```
 
-### Manual Deployment
+**What it does:**
+- Builds Windows, macOS, and Linux desktop applications
+- Creates GitHub releases with cross-platform binaries
+- Generates SHA256 checksums for security verification
+- Pushes build artifacts to `releases/v*` branch
 
-1. **Build the application**
-2. **Deploy to VPS** using the provided scripts
-3. **Configure SSL certificates**
-4. **Set up monitoring and logging**
+### ☁️ Cloud Infrastructure Deployment
+
+Cloud deployment is **automatically handled** by GitHub Actions when you push to the `main` branch:
+
+```bash
+# Make changes and push to main
+git add .
+git commit -m "Feature: Add new functionality"
+git push origin main
+```
+
+**What happens automatically:**
+- Builds Docker containers for web, API, and streaming services
+- Deploys to Google Cloud Run at `app.cloudtolocalllm.online`
+- Configures environment variables and secrets
+- Performs health checks and verification
+
+### 📋 CI/CD Pipeline Overview
+
+| Trigger | Action | Result |
+|---------|--------|--------|
+| Push to `main` | Cloud deployment | Services deployed to Google Cloud Run |
+| PowerShell script | Desktop build | GitHub release with desktop binaries |
+| Push to `releases/v*` | Cross-platform build | Multi-platform desktop packages |
+
+### 📚 Documentation
+
+- **[CI/CD Pipeline Guide](docs/DEPLOYMENT/CI_CD_PIPELINE_GUIDE.md)** - Complete pipeline documentation
+- **[GitHub Secrets Setup](docs/DEPLOYMENT/GITHUB_SECRETS_SETUP.md)** - Required secrets configuration
+- **[Complete Deployment Workflow](docs/DEPLOYMENT/COMPLETE_DEPLOYMENT_WORKFLOW.md)** - Step-by-step deployment guide
 
 ## Configuration
 

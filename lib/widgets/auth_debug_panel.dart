@@ -13,7 +13,7 @@ class AuthDebugPanel extends StatefulWidget {
 
 class _AuthDebugPanelState extends State<AuthDebugPanel> {
   bool _isExpanded = false;
-  List<Map<String, dynamic>> _logs = [];
+  List<String> _logs = [];
 
   @override
   void initState() {
@@ -121,7 +121,7 @@ class _AuthDebugPanelState extends State<AuthDebugPanel> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        'Errors: ${_logs.where((l) => l['level'] == 'ERROR').length}',
+                        'Errors: ${_logs.where((l) => l.contains('[ERROR]')).length}',
                         style: const TextStyle(color: Colors.red, fontSize: 11),
                       ),
                     ],
@@ -196,51 +196,25 @@ class _AuthDebugPanelState extends State<AuthDebugPanel> {
                             _logs[_logs.length -
                                 1 -
                                 index]; // Show newest first
-                        final level = log['level'] as String;
-                        final message = log['message'] as String;
-                        final timestamp = log['timestamp'] as String;
 
                         Color levelColor = Colors.white70;
-                        if (level == 'ERROR') levelColor = Colors.red;
-                        if (level == 'WARN') levelColor = Colors.orange;
-                        if (level == 'INFO') levelColor = Colors.blue;
-                        if (level == 'DEBUG') levelColor = Colors.grey;
+                        if (log.contains('[ERROR]')) levelColor = Colors.red;
+                        if (log.contains('[WARNING]')) levelColor = Colors.orange;
+                        if (log.contains('[INFO]')) levelColor = Colors.blue;
+                        if (log.contains('[DEBUG]')) levelColor = Colors.grey;
 
                         return Padding(
                           padding: const EdgeInsets.only(bottom: 4),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Row(
-                                children: [
-                                  Text(
-                                    '[$level]',
-                                    style: TextStyle(
-                                      color: levelColor,
-                                      fontSize: 9,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    timestamp.substring(
-                                      11,
-                                      19,
-                                    ), // Show only time
-                                    style: const TextStyle(
-                                      color: Colors.white54,
-                                      fontSize: 9,
-                                    ),
-                                  ),
-                                ],
-                              ),
                               Text(
-                                message,
-                                style: const TextStyle(
-                                  color: Colors.white,
+                                log,
+                                style: TextStyle(
+                                  color: levelColor,
                                   fontSize: 10,
                                 ),
-                                maxLines: 2,
+                                maxLines: 3,
                                 overflow: TextOverflow.ellipsis,
                               ),
                             ],

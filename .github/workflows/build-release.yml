@@ -1,0 +1,291 @@
+name: Build Desktop Apps & Create Release
+
+on:
+  push:
+    branches:
+      - 'releases/**'
+    paths:
+      - 'dist/**'
+      - 'pubspec.yaml'
+      - 'assets/version.json'
+  workflow_dispatch:
+    inputs:
+      version_tag:
+        description: 'Version tag for release (e.g., v1.0.0)'
+        required: true
+        type: string
+      create_release:
+        description: 'Create GitHub release'
+        required: false
+        default: true
+        type: boolean
+
+env:
+  FLUTTER_VERSION: '3.24.3'
+
+jobs:
+  # Extract version information
+  version-info:
+    name: Extract Version Information
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      tag_name: ${{ steps.version.outputs.tag_name }}
+      release_name: ${{ steps.version.outputs.release_name }}
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Extract version from pubspec.yaml
+      id: version
+      run: |
+        if [ -n "${{ github.event.inputs.version_tag }}" ]; then
+          # Manual dispatch with version tag
+          VERSION="${{ github.event.inputs.version_tag }}"
+          VERSION=${VERSION#v}  # Remove 'v' prefix if present
+        else
+          # Extract from pubspec.yaml
+          VERSION=$(grep '^version:' pubspec.yaml | sed 's/version: //' | sed 's/+.*//')
+        fi
+        
+        TAG_NAME="v$VERSION"
+        RELEASE_NAME="CloudToLocalLLM v$VERSION"
+        
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+        echo "tag_name=$TAG_NAME" >> $GITHUB_OUTPUT
+        echo "release_name=$RELEASE_NAME" >> $GITHUB_OUTPUT
+        
+        echo "Version: $VERSION"
+        echo "Tag: $TAG_NAME"
+        echo "Release Name: $RELEASE_NAME"
+
+  # Build desktop applications for multiple platforms
+  build-desktop:
+    name: Build Desktop Apps
+    runs-on: ${{ matrix.os }}
+    needs: version-info
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            platform: windows
+            artifact_name: windows-desktop
+            build_command: flutter build windows --release
+            package_path: build/windows/x64/runner/Release
+            executable_name: cloudtolocalllm.exe
+          - os: macos-latest
+            platform: macos
+            artifact_name: macos-desktop
+            build_command: flutter build macos --release
+            package_path: build/macos/Build/Products/Release
+            executable_name: CloudToLocalLLM.app
+          - os: ubuntu-latest
+            platform: linux
+            artifact_name: linux-desktop
+            build_command: flutter build linux --release
+            package_path: build/linux/x64/release/bundle
+            executable_name: cloudtolocalllm
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        flutter-version: ${{ env.FLUTTER_VERSION }}
+        channel: 'stable'
+        
+    - name: Install platform dependencies (Linux)
+      if: matrix.platform == 'linux'
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev liblzma-dev libstdc++-12-dev
+        
+    - name: Install platform dependencies (macOS)
+      if: matrix.platform == 'macos'
+      run: |
+        # Install any macOS-specific dependencies if needed
+        echo "Setting up macOS build environment"
+        
+    - name: Install platform dependencies (Windows)
+      if: matrix.platform == 'windows'
+      run: |
+        # Install any Windows-specific dependencies if needed
+        echo "Setting up Windows build environment"
+        
+    - name: Get Flutter dependencies
+      run: flutter pub get
+      
+    - name: Enable desktop platform
+      run: |
+        flutter config --enable-${{ matrix.platform }}-desktop
+        
+    - name: Build desktop application
+      run: ${{ matrix.build_command }}
+      
+    - name: Create portable package (Windows)
+      if: matrix.platform == 'windows'
+      run: |
+        $VERSION = "${{ needs.version-info.outputs.version }}"
+        $PACKAGE_NAME = "cloudtolocalllm-$VERSION-portable"
+        $PACKAGE_PATH = "dist/windows"
+        
+        # Create dist directory
+        New-Item -ItemType Directory -Force -Path $PACKAGE_PATH
+        
+        # Copy build output
+        Copy-Item -Recurse "${{ matrix.package_path }}" "$PACKAGE_PATH/$PACKAGE_NAME"
+        
+        # Create ZIP archive
+        Compress-Archive -Path "$PACKAGE_PATH/$PACKAGE_NAME" -DestinationPath "$PACKAGE_PATH/$PACKAGE_NAME.zip"
+        
+        # Generate SHA256 checksum
+        $hash = Get-FileHash "$PACKAGE_PATH/$PACKAGE_NAME.zip" -Algorithm SHA256
+        $hash.Hash + "  $PACKAGE_NAME.zip" | Out-File "$PACKAGE_PATH/$PACKAGE_NAME.zip.sha256" -Encoding ASCII
+        
+        echo "PACKAGE_FILE=$PACKAGE_PATH/$PACKAGE_NAME.zip" >> $env:GITHUB_ENV
+        echo "CHECKSUM_FILE=$PACKAGE_PATH/$PACKAGE_NAME.zip.sha256" >> $env:GITHUB_ENV
+      shell: powershell
+      
+    - name: Create portable package (macOS)
+      if: matrix.platform == 'macos'
+      run: |
+        VERSION="${{ needs.version-info.outputs.version }}"
+        PACKAGE_NAME="cloudtolocalllm-$VERSION-macos"
+        PACKAGE_PATH="dist/macos"
+        
+        # Create dist directory
+        mkdir -p "$PACKAGE_PATH"
+        
+        # Create DMG (simplified - copy app bundle for now)
+        cp -R "${{ matrix.package_path }}/${{ matrix.executable_name }}" "$PACKAGE_PATH/"
+        
+        # Create ZIP archive
+        cd "$PACKAGE_PATH"
+        zip -r "$PACKAGE_NAME.zip" "${{ matrix.executable_name }}"
+        
+        # Generate SHA256 checksum
+        shasum -a 256 "$PACKAGE_NAME.zip" > "$PACKAGE_NAME.zip.sha256"
+        
+        echo "PACKAGE_FILE=$PACKAGE_PATH/$PACKAGE_NAME.zip" >> $GITHUB_ENV
+        echo "CHECKSUM_FILE=$PACKAGE_PATH/$PACKAGE_NAME.zip.sha256" >> $GITHUB_ENV
+        
+    - name: Create portable package (Linux)
+      if: matrix.platform == 'linux'
+      run: |
+        VERSION="${{ needs.version-info.outputs.version }}"
+        PACKAGE_NAME="cloudtolocalllm-$VERSION-linux"
+        PACKAGE_PATH="dist/linux"
+        
+        # Create dist directory
+        mkdir -p "$PACKAGE_PATH"
+        
+        # Copy build output
+        cp -R "${{ matrix.package_path }}" "$PACKAGE_PATH/$PACKAGE_NAME"
+        
+        # Create tar.gz archive
+        cd "$PACKAGE_PATH"
+        tar -czf "$PACKAGE_NAME.tar.gz" "$PACKAGE_NAME"
+        
+        # Generate SHA256 checksum
+        sha256sum "$PACKAGE_NAME.tar.gz" > "$PACKAGE_NAME.tar.gz.sha256"
+        
+        echo "PACKAGE_FILE=$PACKAGE_PATH/$PACKAGE_NAME.tar.gz" >> $GITHUB_ENV
+        echo "CHECKSUM_FILE=$PACKAGE_PATH/$PACKAGE_NAME.tar.gz.sha256" >> $GITHUB_ENV
+        
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ matrix.artifact_name }}
+        path: |
+          ${{ env.PACKAGE_FILE }}
+          ${{ env.CHECKSUM_FILE }}
+        retention-days: 30
+
+  # Create GitHub release with all platform builds
+  create-release:
+    name: Create GitHub Release
+    runs-on: ubuntu-latest
+    needs: [version-info, build-desktop]
+    if: github.event.inputs.create_release != 'false'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Download all build artifacts
+      uses: actions/download-artifact@v4
+      with:
+        path: artifacts/
+        
+    - name: Prepare release assets
+      run: |
+        mkdir -p release-assets
+        
+        # Copy all artifacts to release assets directory
+        find artifacts/ -type f \( -name "*.zip" -o -name "*.tar.gz" -o -name "*.sha256" \) -exec cp {} release-assets/ \;
+        
+        # List all assets
+        echo "Release assets:"
+        ls -la release-assets/
+        
+    - name: Generate release notes
+      run: |
+        VERSION="${{ needs.version-info.outputs.version }}"
+        cat > release-notes.md << EOF
+        # CloudToLocalLLM v$VERSION
+        
+        ## What's Changed
+        - Version $VERSION release
+        - Updated dependencies and bug fixes
+        - Performance improvements
+        
+        ## Download
+        Choose the appropriate package for your system:
+        
+        ### Windows
+        - **cloudtolocalllm-$VERSION-portable.zip** - Portable version (no installation required)
+        
+        ### macOS
+        - **cloudtolocalllm-$VERSION-macos.zip** - macOS application bundle
+        
+        ### Linux
+        - **cloudtolocalllm-$VERSION-linux.tar.gz** - Linux application bundle
+        
+        ## Checksums
+        SHA256 checksums are provided for all packages to verify integrity.
+        
+        **Full Changelog**: https://github.com/imrightguy/CloudToLocalLLM/compare/v${{ needs.version-info.outputs.version }}...v$VERSION
+        EOF
+        
+    - name: Create GitHub Release
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: ${{ needs.version-info.outputs.tag_name }}
+        name: ${{ needs.version-info.outputs.release_name }}
+        body_path: release-notes.md
+        files: release-assets/*
+        draft: false
+        prerelease: false
+        generate_release_notes: true
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        
+    - name: Create release summary
+      run: |
+        echo "## 🎉 Desktop Release Created" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "**Release Details:**" >> $GITHUB_STEP_SUMMARY
+        echo "- **Version:** ${{ needs.version-info.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Tag:** ${{ needs.version-info.outputs.tag_name }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "**Available Platforms:**" >> $GITHUB_STEP_SUMMARY
+        echo "- ✅ Windows (Portable ZIP)" >> $GITHUB_STEP_SUMMARY
+        echo "- ✅ macOS (Application Bundle)" >> $GITHUB_STEP_SUMMARY
+        echo "- ✅ Linux (Tar.gz Archive)" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "**Download:** [GitHub Releases](https://github.com/imrightguy/CloudToLocalLLM/releases/tag/${{ needs.version-info.outputs.tag_name }})" >> $GITHUB_STEP_SUMMARY
