@@ -5,7 +5,7 @@ import '../models/installation_step.dart';
 import '../config/app_config.dart';
 
 // Conditional imports for web platform detection
-import 'package:web/web.dart' as web;
+import 'web_platform_stub.dart' if (dart.library.html) 'package:web/web.dart' as web;
 
 /// Service for detecting user's platform and providing appropriate download options
 class PlatformDetectionService extends ChangeNotifier {

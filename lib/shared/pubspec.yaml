@@ -12,7 +12,6 @@ dependencies:
 
   # HTTP and Web
   http: ^1.2.2
-  web: ^1.1.1
 
   # File System
   path: ^1.9.1

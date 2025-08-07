@@ -19,8 +19,15 @@ class Navigator {
   String get userAgent => 'Unknown';
 }
 
+class Storage {
+  void removeItem(String key) {}
+  void setItem(String key, String value) {}
+  String? getItem(String key) => null;
+}
+
 class Window {
   Navigator get navigator => Navigator();
+  Storage get localStorage => Storage();
 }
 
 final document = Document();
