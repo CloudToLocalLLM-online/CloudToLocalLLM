@@ -57,19 +57,65 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=15s --retries=3 \
 # Use dumb-init for proper signal handling in Cloud Run
 ENTRYPOINT ["dumb-init", "--"]
 
-# Create a working API server that handles the essential endpoints
-RUN echo 'import express from "express";' > simple-server.js && \
-    echo 'import cors from "cors";' >> simple-server.js && \
-    echo 'import helmet from "helmet";' >> simple-server.js && \
-    echo 'const app = express();' >> simple-server.js && \
-    echo 'const port = process.env.PORT || 8080;' >> simple-server.js && \
-    echo 'const corsOrigins = process.env.CORS_ORIGINS ? process.env.CORS_ORIGINS.split(",") : ["https://app.cloudtolocalllm.online"];' >> simple-server.js && \
-    echo 'app.use(helmet());' >> simple-server.js && \
-    echo 'app.use(cors({ origin: corsOrigins, credentials: true }));' >> simple-server.js && \
-    echo 'app.use(express.json());' >> simple-server.js && \
-    echo 'app.get("/health", (req, res) => res.json({ status: "healthy", timestamp: new Date().toISOString(), service: "cloudtolocalllm-api" }));' >> simple-server.js && \
-    echo 'app.get("/api/health", (req, res) => res.json({ status: "healthy", timestamp: new Date().toISOString(), service: "cloudtolocalllm-api" }));' >> simple-server.js && \
-    echo 'app.listen(port, () => console.log(`CloudToLocalLLM API listening on port ${port}`));' >> simple-server.js
+# Create a working API server file
+COPY <<EOF /app/simple-server.js
+import express from 'express';
+import cors from 'cors';
+import helmet from 'helmet';
 
-# Start with the simplified server that works
+const app = express();
+const port = process.env.PORT || 8080;
+
+// CORS configuration
+const corsOrigins = process.env.CORS_ORIGINS
+  ? process.env.CORS_ORIGINS.split(',').map(origin => origin.trim())
+  : ['https://app.cloudtolocalllm.online', 'https://cloudtolocalllm.online'];
+
+console.log('CloudToLocalLLM API starting...');
+console.log('Port:', port);
+console.log('CORS Origins:', corsOrigins);
+
+// Middleware
+app.use(helmet());
+app.use(cors({
+  origin: corsOrigins,
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+}));
+app.use(express.json());
+
+// Health endpoints
+app.get('/health', (req, res) => {
+  res.json({
+    status: 'healthy',
+    timestamp: new Date().toISOString(),
+    service: 'cloudtolocalllm-api',
+    port: port,
+    cors: corsOrigins
+  });
+});
+
+app.get('/api/health', (req, res) => {
+  res.json({
+    status: 'healthy',
+    timestamp: new Date().toISOString(),
+    service: 'cloudtolocalllm-api',
+    endpoint: '/api/health'
+  });
+});
+
+// Basic API endpoints
+app.get('/api/models', (req, res) => {
+  res.json({ models: [], message: 'API is running' });
+});
+
+// Start server
+app.listen(port, '0.0.0.0', () => {
+  console.log(\`CloudToLocalLLM API listening on port \${port}\`);
+  console.log(\`Health endpoint: http://0.0.0.0:\${port}/health\`);
+});
+EOF
+
+# Start with the working server
 CMD ["node", "--max-old-space-size=512", "simple-server.js"]
