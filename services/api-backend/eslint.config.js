@@ -50,4 +50,20 @@ export default [
       'no-console': 'off',
     },
   },
+  // Jest setup file configuration
+  {
+    files: ['jest.setup.js', '**/jest.setup.js'],
+    languageOptions: {
+      globals: {
+        ...globals.node,
+        ...globals.es2022,
+        ...globals.jest,
+        require: 'readonly',
+      },
+    },
+    rules: {
+      // Allow using Jest globals and conditional require in setup
+      'no-undef': 'off',
+    },
+  },
 ];

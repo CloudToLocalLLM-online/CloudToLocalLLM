@@ -174,7 +174,8 @@ jobs:
         echo "::group::PowerShell Deployment Script Tests"
         $ErrorActionPreference = 'Stop'
         Import-Module Pester
-        Invoke-Pester ./test/powershell -CI -Output JUnitXml -OutputPath test-results/powershell/pester-results.xml
+        # Use -CI and -Output Detailed; pipe results to JUnit via NUnitXml (compatible with dorny/test-reporter)
+        Invoke-Pester ./test/powershell -CI -Output Detailed -PassThru | Export-NUnitReport -Path test-results/powershell/pester-results.xml
         echo "::endgroup::"
 
     - name: Upload PowerShell test results
