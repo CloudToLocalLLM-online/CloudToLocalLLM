@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_web_plugins/url_strategy.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'screens/loading_screen.dart';
 import 'config/theme.dart';
 import 'config/router.dart';
@@ -44,7 +45,17 @@ final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Firebase initialization removed - using web-simple auth
+  // Initialize Firebase
+  await Firebase.initializeApp(
+    options: const FirebaseOptions(
+      apiKey: 'AIzaSyBvOkBwN6Ca6FNaOeMaMfeM1ZuPiKlBqMY',
+      authDomain: 'cloudtolocalllm-auth.firebaseapp.com',
+      projectId: 'cloudtolocalllm-auth',
+      storageBucket: 'cloudtolocalllm-auth.appspot.com',
+      messagingSenderId: '123456789',
+      appId: '1:123456789:web:abcdef123456789',
+    ),
+  );
 
   // Configure URL strategy for web to handle direct navigation
   if (kIsWeb) {
