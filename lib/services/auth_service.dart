@@ -1,282 +1,301 @@
+import 'dart:async';
 import 'package:flutter/foundation.dart';
-import 'package:flutter_secure_storage_x/flutter_secure_storage_x.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import '../models/user_model.dart';
-import 'auth_service_platform.dart';
+import '../config/app_config.dart';
 
-/// Production-ready authentication service with comprehensive platform support
-/// Automatically detects platform and uses appropriate authentication method:
-/// - Web: Direct Auth0 redirect flow
-/// - Mobile (iOS/Android): Auth0 Flutter SDK with native authentication
-/// - Desktop (Windows/Linux/macOS): OpenID Connect with PKCE
-///
-/// Enhanced with persistent authentication and automatic token validation
+/// Firebase Authentication service for CloudToLocalLLM
+/// Provides Google Sign-In and email/password authentication
+/// Replaces Auth0 with Firebase for better Google Cloud integration and cost savings
 class AuthService extends ChangeNotifier {
-  late final AuthServicePlatform _platformService;
-  final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
-
-  // Enhanced authentication state tracking
-  DateTime? _lastTokenValidation;
-  bool _isValidatingToken = false;
-
-  // Token validation interval (5 minutes)
-  static const Duration _tokenValidationInterval = Duration(minutes: 5);
-
-  // Getters that delegate to platform service
-  ValueNotifier<bool> get isAuthenticated => _platformService.isAuthenticated;
-  ValueNotifier<bool> get isLoading => _platformService.isLoading;
-  UserModel? get currentUser => _platformService.currentUser;
-
-  // Platform detection (delegated to platform service)
-  bool get isWeb => AuthServicePlatform.isWeb;
-  bool get isMobile => AuthServicePlatform.isMobile;
-  bool get isDesktop => AuthServicePlatform.isDesktop;
-
-  // Enhanced authentication state getters
-  bool get isValidatingToken => _isValidatingToken;
-  DateTime? get lastTokenValidation => _lastTokenValidation;
-
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  late final GoogleSignIn _googleSignIn;
+  
+  // Authentication state
+  final ValueNotifier<bool> _isAuthenticated = ValueNotifier<bool>(false);
+  final ValueNotifier<bool> _isLoading = ValueNotifier<bool>(false);
+  UserModel? _currentUser;
+  String? _currentToken;
+  Timer? _tokenRefreshTimer;
+  
+  // Stream subscriptions
+  StreamSubscription<User?>? _authStateSubscription;
+  
+  // Configuration
+  static const Duration tokenRefreshInterval = Duration(minutes: 50);
+  
+  // Getters
+  ValueNotifier<bool> get isAuthenticated => _isAuthenticated;
+  ValueNotifier<bool> get isLoading => _isLoading;
+  UserModel? get currentUser => _currentUser;
+  String? get accessToken => _currentToken;
+  
+  // Platform detection
+  bool get isWeb => kIsWeb;
+  bool get isMobile => !kIsWeb;
+  bool get isDesktop => !kIsWeb;
+  
+  // Constructor
   AuthService() {
     _initialize();
   }
-
+  
+  /// Initialize the Firebase Auth service
   void _initialize() {
-    _platformService = AuthServicePlatform();
-
-    // Listen to platform service changes
-    _platformService.addListener(() {
-      notifyListeners();
-    });
-
-    final platformInfo = _platformService.getPlatformInfo();
-    debugPrint(
-      '🔐 AuthService initialized for platform: ${platformInfo['platform']}',
-    );
-
-    // Start automatic token validation
-    _startTokenValidationTimer();
+    debugPrint('🔥 Initializing Firebase Auth service...');
+    
+    try {
+      // Initialize Google Sign-In
+      _googleSignIn = GoogleSignIn(
+        clientId: AppConfig.googleClientId,
+        scopes: AppConfig.firebaseScopes,
+      );
+      
+      // Listen to auth state changes
+      _authStateSubscription = _auth.authStateChanges().listen(_handleAuthStateChange);
+      
+      // Check if user is already signed in
+      final currentUser = _auth.currentUser;
+      if (currentUser != null) {
+        _handleAuthStateChange(currentUser);
+      }
+      
+      debugPrint('🔥 Firebase Auth service initialized successfully');
+    } catch (e) {
+      debugPrint('🔥 Failed to initialize Firebase Auth service: $e');
+    }
   }
-
+  
+  /// Handle authentication state changes
+  void _handleAuthStateChange(User? user) {
+    debugPrint('🔥 Auth state changed - User: ${user?.email ?? 'null'}');
+    
+    if (user != null) {
+      _currentUser = UserModel(
+        id: user.uid,
+        email: user.email ?? '',
+        name: user.displayName ?? '',
+        picture: user.photoURL,
+        emailVerified: user.emailVerified,
+      );
+      _isAuthenticated.value = true;
+      _refreshToken();
+      _startTokenRefreshTimer();
+    } else {
+      _currentUser = null;
+      _currentToken = null;
+      _isAuthenticated.value = false;
+      _stopTokenRefreshTimer();
+    }
+    
+    notifyListeners();
+  }
+  
+  /// Start automatic token refresh timer
+  void _startTokenRefreshTimer() {
+    _stopTokenRefreshTimer();
+    _tokenRefreshTimer = Timer.periodic(tokenRefreshInterval, (_) {
+      _refreshToken();
+    });
+  }
+  
+  /// Stop automatic token refresh timer
+  void _stopTokenRefreshTimer() {
+    _tokenRefreshTimer?.cancel();
+    _tokenRefreshTimer = null;
+  }
+  
+  /// Refresh the current user's ID token
+  Future<void> _refreshToken() async {
+    final user = _auth.currentUser;
+    if (user != null) {
+      try {
+        final token = await user.getIdToken(true);
+        _currentToken = token;
+        debugPrint('🔥 Token refreshed successfully');
+      } catch (e) {
+        debugPrint('🔥 Failed to refresh token: $e');
+        _currentToken = null;
+      }
+    }
+  }
+  
   /// Login using platform-specific implementation
   Future<void> login() async {
-    return await _platformService.login();
+    if (kIsWeb) {
+      await _signInWithGoogle();
+    } else {
+      await _signInWithGoogle(); // Use Google Sign-In for all platforms
+    }
   }
-
+  
+  /// Sign in with Google
+  Future<void> _signInWithGoogle() async {
+    try {
+      _isLoading.value = true;
+      notifyListeners();
+      
+      debugPrint('🔥 Starting Google sign-in...');
+      
+      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+      if (googleUser == null) {
+        debugPrint('🔥 Google sign-in cancelled by user');
+        return;
+      }
+      
+      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+      
+      final credential = GoogleAuthProvider.credential(
+        accessToken: googleAuth.accessToken,
+        idToken: googleAuth.idToken,
+      );
+      
+      final userCredential = await _auth.signInWithCredential(credential);
+      debugPrint('🔥 Google sign-in successful - ${userCredential.user?.email}');
+      
+    } catch (e) {
+      debugPrint('🔥 Google sign-in error: $e');
+      rethrow;
+    } finally {
+      _isLoading.value = false;
+      notifyListeners();
+    }
+  }
+  
+  /// Sign in with email and password
+  Future<void> signInWithEmailPassword(String email, String password) async {
+    try {
+      _isLoading.value = true;
+      notifyListeners();
+      
+      debugPrint('🔥 Starting email/password sign-in...');
+      
+      final userCredential = await _auth.signInWithEmailAndPassword(
+        email: email.trim(),
+        password: password,
+      );
+      
+      debugPrint('🔥 Email sign-in successful - ${userCredential.user?.email}');
+    } catch (e) {
+      debugPrint('🔥 Email sign-in error: $e');
+      rethrow;
+    } finally {
+      _isLoading.value = false;
+      notifyListeners();
+    }
+  }
+  
+  /// Create account with email and password
+  Future<void> createAccountWithEmailPassword(
+    String email, 
+    String password, 
+    String displayName
+  ) async {
+    try {
+      _isLoading.value = true;
+      notifyListeners();
+      
+      debugPrint('🔥 Creating account with email...');
+      
+      final userCredential = await _auth.createUserWithEmailAndPassword(
+        email: email.trim(),
+        password: password,
+      );
+      
+      // Update display name
+      if (userCredential.user != null && displayName.isNotEmpty) {
+        await userCredential.user!.updateDisplayName(displayName);
+        await userCredential.user!.reload();
+      }
+      
+      debugPrint('🔥 Account created successfully - ${userCredential.user?.email}');
+    } catch (e) {
+      debugPrint('🔥 Account creation error: $e');
+      rethrow;
+    } finally {
+      _isLoading.value = false;
+      notifyListeners();
+    }
+  }
+  
   /// Logout using platform-specific implementation
   Future<void> logout() async {
-    return await _platformService.logout();
+    try {
+      _isLoading.value = true;
+      notifyListeners();
+      
+      debugPrint('🔥 Signing out...');
+      
+      await Future.wait([
+        _auth.signOut(),
+        _googleSignIn.signOut(),
+      ]);
+      
+      _currentUser = null;
+      _currentToken = null;
+      _stopTokenRefreshTimer();
+      
+      debugPrint('🔥 Sign out successful');
+    } catch (e) {
+      debugPrint('🔥 Sign out error: $e');
+      rethrow;
+    } finally {
+      _isLoading.value = false;
+      notifyListeners();
+    }
   }
-
-  /// Handle Auth0 callback using platform-specific implementation
+  
+  /// Handle Auth0 callback (legacy compatibility - not used with Firebase)
   Future<bool> handleCallback({String? callbackUrl}) async {
-    debugPrint(
-      '🔐 [AuthService] handleCallback called - delegating to platform service',
-    );
-    return await _platformService.handleCallback(callbackUrl: callbackUrl);
+    debugPrint('🔥 handleCallback called (Firebase - not needed)');
+    return false;
   }
-
-  /// Mobile-specific: Login with biometric authentication
-  /// Only available on mobile platforms (iOS/Android)
+  
+  /// Mobile-specific: Login with biometric authentication (not supported)
   Future<void> loginWithBiometrics() async {
-    return await _platformService.loginWithBiometrics();
+    throw UnsupportedError('Biometric authentication not implemented for Firebase');
   }
-
-  /// Check if biometric authentication is available
-  /// Returns true only on mobile platforms with biometric capabilities
+  
+  /// Check if biometric authentication is available (not supported)
   Future<bool> isBiometricAvailable() async {
-    return await _platformService.isBiometricAvailable();
+    return false;
   }
-
-  /// Mobile-specific: Refresh authentication token if needed
-  /// Automatically handled on other platforms
-  Future<void> refreshTokenIfNeeded() async {
-    return await _platformService.refreshTokenIfNeeded();
-  }
-
-  /// Get comprehensive platform and authentication information
-  /// Useful for debugging and feature detection
-  Map<String, dynamic> getPlatformInfo() {
-    return _platformService.getPlatformInfo();
-  }
-
-  /// Get the current access token for API authentication
-  /// Returns null if not authenticated or token is not available
-  /// For backward compatibility, this is synchronous
-  String? getAccessToken() {
-    return _platformService.getAccessToken();
-  }
-
-  /// Get the current access token with automatic validation
-  /// Returns null if not authenticated or token is not available
-  /// Automatically validates token freshness and triggers refresh if needed
-  Future<String?> getValidatedAccessToken({bool forceRefresh = false}) async {
-    debugPrint(
-      '🔐 [DEBUG] getValidatedAccessToken called - isAuthenticated: ${isAuthenticated.value}',
-    );
-
-    if (!isAuthenticated.value) {
-      debugPrint('🔐 Not authenticated, cannot get access token');
+  
+  /// Get current user's ID token
+  Future<String?> getIdToken({bool forceRefresh = false}) async {
+    final user = _auth.currentUser;
+    if (user == null) return null;
+    
+    try {
+      if (forceRefresh || _currentToken == null) {
+        await _refreshToken();
+      }
+      return _currentToken;
+    } catch (e) {
+      debugPrint('🔥 Failed to get ID token: $e');
       return null;
     }
-
-    // Check if we need to validate the token
-    final now = DateTime.now();
-    final shouldValidate =
-        forceRefresh ||
-        _lastTokenValidation == null ||
-        now.difference(_lastTokenValidation!) > _tokenValidationInterval;
-
-    debugPrint(
-      '🔐 [DEBUG] shouldValidate: $shouldValidate, _isValidatingToken: $_isValidatingToken',
-    );
-
-    if (shouldValidate && !_isValidatingToken) {
-      debugPrint('🔐 [DEBUG] Validating and refreshing token...');
-      await _validateAndRefreshToken();
-    }
-
-    final token = _platformService.getAccessToken();
-    debugPrint(
-      '🔐 [DEBUG] Retrieved token: ${token != null ? "YES (${token.substring(0, 20)}...)" : "NULL"}',
-    );
-    return token;
   }
-
-  /// Enhanced login with persistent authentication tracking
-  Future<void> loginWithPersistence() async {
-    try {
-      await login();
-      if (isAuthenticated.value) {
-        await _storeAuthenticationState();
-        _lastTokenValidation = DateTime.now();
-        debugPrint('🔐 Login successful with persistence enabled');
-      }
-    } catch (e) {
-      debugPrint('🔐 Login with persistence failed: $e');
-      rethrow;
-    }
+  
+  /// Get platform information
+  Map<String, dynamic> getPlatformInfo() {
+    return {
+      'platform': kIsWeb ? 'web' : 'mobile',
+      'isWeb': kIsWeb,
+      'isMobile': !kIsWeb,
+      'isDesktop': !kIsWeb,
+      'authProvider': 'firebase',
+    };
   }
-
-  /// Enhanced logout with complete cleanup
-  Future<void> logoutWithCleanup() async {
-    try {
-      await logout();
-      await _clearAuthenticationState();
-      _lastTokenValidation = null;
-      debugPrint('🔐 Logout completed with full cleanup');
-    } catch (e) {
-      debugPrint('🔐 Logout cleanup failed: $e');
-      rethrow;
-    }
-  }
-
-  /// Check if authentication is still valid and refresh if needed
-  Future<bool> validateAuthentication() async {
-    if (!isAuthenticated.value) {
-      return false;
-    }
-
-    try {
-      _isValidatingToken = true;
-      notifyListeners();
-
-      // Platform-specific token validation
-      await refreshTokenIfNeeded();
-
-      _lastTokenValidation = DateTime.now();
-      await _storeAuthenticationState();
-
-      debugPrint('🔐 Authentication validation successful');
-      return isAuthenticated.value;
-    } catch (e) {
-      debugPrint('🔐 Authentication validation failed: $e');
-      await _clearAuthenticationState();
-      return false;
-    } finally {
-      _isValidatingToken = false;
-      notifyListeners();
-    }
-  }
-
-  /// Start automatic token validation timer
-  void _startTokenValidationTimer() {
-    // Validate authentication state on startup
-    Future.delayed(const Duration(seconds: 2), () async {
-      await _loadAuthenticationState();
-      if (isAuthenticated.value) {
-        await validateAuthentication();
-      }
-    });
-  }
-
-  /// Validate and refresh token if needed
-  Future<void> _validateAndRefreshToken() async {
-    try {
-      _isValidatingToken = true;
-      notifyListeners();
-
-      await refreshTokenIfNeeded();
-      _lastTokenValidation = DateTime.now();
-      await _storeAuthenticationState();
-    } catch (e) {
-      debugPrint('🔐 Token validation/refresh failed: $e');
-      await _clearAuthenticationState();
-    } finally {
-      _isValidatingToken = false;
-      notifyListeners();
-    }
-  }
-
-  /// Store authentication state for persistence
-  Future<void> _storeAuthenticationState() async {
-    try {
-      if (_lastTokenValidation != null) {
-        await _secureStorage.write(
-          key: 'cloudtolocalllm_last_validation',
-          value: _lastTokenValidation!.toIso8601String(),
-        );
-      }
-      await _secureStorage.write(
-        key: 'cloudtolocalllm_auth_persistent',
-        value: 'true',
-      );
-    } catch (e) {
-      debugPrint('🔐 Failed to store authentication state: $e');
-    }
-  }
-
-  /// Load authentication state from storage
-  Future<void> _loadAuthenticationState() async {
-    try {
-      final lastValidationStr = await _secureStorage.read(
-        key: 'cloudtolocalllm_last_validation',
-      );
-      if (lastValidationStr != null) {
-        _lastTokenValidation = DateTime.tryParse(lastValidationStr);
-      }
-    } catch (e) {
-      debugPrint('🔐 Failed to load authentication state: $e');
-    }
-  }
-
-  /// Clear authentication state from storage
-  Future<void> _clearAuthenticationState() async {
-    try {
-      await _secureStorage.delete(key: 'cloudtolocalllm_last_validation');
-      await _secureStorage.delete(key: 'cloudtolocalllm_auth_persistent');
-    } catch (e) {
-      debugPrint('🔐 Failed to clear authentication state: $e');
-    }
-  }
-
-  /// Platform capability checks
-  bool get supportsBiometrics => _platformService.supportsBiometrics;
-  bool get supportsDeepLinking => _platformService.supportsDeepLinking;
-  bool get supportsSecureStorage => _platformService.supportsSecureStorage;
-  String get recommendedAuthMethod => _platformService.recommendedAuthMethod;
-
+  
+  /// Dispose resources
   @override
   void dispose() {
-    _platformService.dispose();
+    _authStateSubscription?.cancel();
+    _stopTokenRefreshTimer();
+    _isAuthenticated.dispose();
+    _isLoading.dispose();
     super.dispose();
   }
 }

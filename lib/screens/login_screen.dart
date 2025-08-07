@@ -261,7 +261,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
                           // Login button
                           GradientButton(
-                            text: 'Sign In with Auth0',
+                            text: 'Sign In with Google',
                             icon: Icons.login,
                             width: double.infinity,
                             isLoading: _isLoading,

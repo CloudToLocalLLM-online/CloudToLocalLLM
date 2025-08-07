@@ -16,32 +16,28 @@ class AppConfig {
   static const String githubReleasesUrl =
       'https://github.com/imrightguy/CloudToLocalLLM/releases/latest';
 
-  // Auth0 Configuration
-  static const String auth0Domain = 'dev-v2f2p008x3dr74ww.us.auth0.com';
-  static const String auth0Audience = 'https://app.cloudtolocalllm.online';
-  static const String auth0Issuer =
-      'https://dev-v2f2p008x3dr74ww.us.auth0.com/';
+  // Firebase Configuration
+  static const String firebaseProjectId = 'cloudtolocalllm-auth';
+  static const String firebaseApiKey = 'AIzaSyBvOkBwN6Ca6FNaOeMaMfeM1ZuPiKlBqMY'; // Web API key
+  static const String firebaseAuthDomain = 'cloudtolocalllm-auth.firebaseapp.com';
+  static const String firebaseAppId = '1:123456789:web:abcdef123456789';
 
-  // Universal Client Configuration (works for both web and desktop)
-  static const String auth0ClientId = 'FuXPnevXpp311CdYHGsbNZe9t3D8Ts7A';
+  // Google Sign-In Configuration
+  static const String googleClientId = '123456789-abcdefghijklmnopqrstuvwxyz.apps.googleusercontent.com';
 
-  // Platform-specific redirect URIs
-  static const String auth0WebRedirectUri =
-      'https://app.cloudtolocalllm.online/callback';
-  static const String auth0DesktopRedirectUri =
-      'http://localhost:8080/callback';
-
-  // OAuth2 Scopes
-  static const List<String> auth0Scopes = [
-    'openid',
-    'profile',
+  // Firebase Auth Scopes (for Google Sign-In)
+  static const List<String> firebaseScopes = [
     'email',
-    'offline_access',
-    'read:bridge',
-    'write:bridge',
-    'read:ollama',
-    'write:ollama',
+    'profile',
   ];
+
+  // Legacy Auth0 Configuration (for migration reference)
+  // static const String auth0Domain = 'dev-v2f2p008x3dr74ww.us.auth0.com';
+  // static const String auth0Audience = 'https://app.cloudtolocalllm.online';
+  // static const String auth0Issuer = 'https://dev-v2f2p008x3dr74ww.us.auth0.com/';
+  // static const String auth0ClientId = 'FuXPnevXpp311CdYHGsbNZe9t3D8Ts7A';
+  // static const String auth0WebRedirectUri = 'https://app.cloudtolocalllm.online/callback';
+  // static const String auth0DesktopRedirectUri = 'http://localhost:8080/callback';
 
   // Development mode settings
   static const bool enableDevMode = true; // Set to false for production
