@@ -16,17 +16,26 @@ jest.mock('firebase-admin', () => {
   };
 });
 
-// Disable real network calls by default (you can switch to msw if needed)
-const nock = require('nock');
+// Disable real network calls by default (best-effort; only if nock is available)
+let nock;
+try {
+  // Avoid adding a hard devDependency; CI will skip if not present
+  nock = require('nock');
+} catch (e) {
+  // nock not installed; skip network stubbing
+}
 
-beforeAll(() => {
-  nock.disableNetConnect();
-  // Allow localhost if needed for tests
-  nock.enableNetConnect(host => host.includes('127.0.0.1') || host.includes('localhost'));
-});
+if (nock) {
+  beforeAll(() => {
+    nock.disableNetConnect();
+    // Allow localhost if needed for tests
+    nock.enableNetConnect(host => host.includes('127.0.0.1') || host.includes('localhost'));
+  });
 
-afterAll(() => {
-  nock.cleanAll();
-  nock.restore();
-});
+  afterAll(() => {
+    nock.cleanAll();
+    nock.restore();
+  });
+}
+
 
