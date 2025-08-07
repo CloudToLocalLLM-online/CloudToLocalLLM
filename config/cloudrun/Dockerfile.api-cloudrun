@@ -57,9 +57,16 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=15s --retries=3 \
 # Use dumb-init for proper signal handling in Cloud Run
 ENTRYPOINT ["dumb-init", "--"]
 
-# Create a simple startup script with logging
-RUN echo '#!/bin/sh\necho "CloudToLocalLLM API starting..."\necho "Node version: $(node --version)"\necho "NPM version: $(npm --version)"\necho "Current directory: $(pwd)"\necho "Files in directory: $(ls -la)"\necho "Environment variables:"\necho "  NODE_ENV=$NODE_ENV"\necho "  PORT=$PORT"\necho "  DB_TYPE=$DB_TYPE"\necho "Starting server..."\nexec node --max-old-space-size=512 server.js' > /app/start.sh && \
-    chmod +x /app/start.sh
+# Create a simple test script to debug startup issues
+RUN echo 'console.log("CloudToLocalLLM API starting...");' > test-server.js && \
+    echo 'console.log("Node version:", process.version);' >> test-server.js && \
+    echo 'console.log("Environment:", process.env.NODE_ENV);' >> test-server.js && \
+    echo 'console.log("Port:", process.env.PORT);' >> test-server.js && \
+    echo 'import express from "express";' >> test-server.js && \
+    echo 'const app = express();' >> test-server.js && \
+    echo 'const port = process.env.PORT || 8080;' >> test-server.js && \
+    echo 'app.get("/health", (req, res) => res.json({status: "healthy"}));' >> test-server.js && \
+    echo 'app.listen(port, () => console.log(`Server listening on port ${port}`));' >> test-server.js
 
-# Start the application with logging
-CMD ["/app/start.sh"]
+# Start with the test server first
+CMD ["node", "test-server.js"]
