@@ -2,10 +2,12 @@
 // This file provides service discovery and configuration for Flutter web app
 // when deployed on Google Cloud Run
 
-import 'package:web/web.dart' as web;
 import 'dart:convert';
 import 'dart:async';
 import 'package:flutter/foundation.dart';
+
+// Conditional imports for web-only functionality
+import 'dart:html' as html if (dart.library.html) 'dart:html';
 
 class CloudRunConfig {
   static const String _configKey = 'cloudrun_config';
@@ -65,20 +67,20 @@ class CloudRunConfig {
   
   /// Detect if running on Cloud Run
   bool _detectCloudRun() {
-    final hostname = web.window.location.hostname;
-    return hostname.contains('.run.app') ||
-           hostname.contains('cloudtolocalllm');
+    final hostname = html.window.location.hostname;
+    return hostname?.contains('.run.app') == true ||
+           hostname?.contains('cloudtolocalllm') == true;
   }
   
   /// Load Cloud Run specific configuration
   Future<void> _loadCloudRunConfig() async {
-    final hostname = web.window.location.hostname;
-    final protocol = web.window.location.protocol;
+    final hostname = html.window.location.hostname;
+    final protocol = html.window.location.protocol;
     
     // Determine service URLs based on Cloud Run naming convention
-    if (hostname.startsWith('cloudtolocalllm-web')) {
+    if (hostname?.startsWith('cloudtolocalllm-web') == true) {
       // We're on the web service, derive other service URLs
-      final baseDomain = hostname.replaceFirst('cloudtolocalllm-web', '');
+      final baseDomain = hostname!.replaceFirst('cloudtolocalllm-web', '');
       webServiceUrl = '$protocol//$hostname';
       apiServiceUrl = '$protocol//cloudtolocalllm-api$baseDomain';
       streamingServiceUrl = '$protocol//cloudtolocalllm-streaming$baseDomain';
@@ -91,9 +93,9 @@ class CloudRunConfig {
     
     // Try to load configuration from JavaScript
     try {
-      final configScript = web.document.querySelector('script[data-config="cloudrun"]');
+      final configScript = html.document.querySelector('script[data-config="cloudrun"]');
       if (configScript != null) {
-        config = jsonDecode(configScript.textContent!);
+        config = jsonDecode(configScript.text!);
         _applyConfigOverrides();
       }
     } catch (e) {
@@ -108,9 +110,9 @@ class CloudRunConfig {
   
   /// Load development configuration
   void _loadDevelopmentConfig() {
-    final protocol = web.window.location.protocol;
-    final hostname = web.window.location.hostname;
-    final port = web.window.location.port;
+    final protocol = html.window.location.protocol;
+    final hostname = html.window.location.hostname;
+    final port = html.window.location.port;
     
     webServiceUrl = '$protocol//$hostname:$port';
     apiServiceUrl = '$protocol//$hostname:8080'; // Default API port
@@ -217,7 +219,7 @@ class CloudRunConfig {
   /// Make HTTP request with timeout
   Future<Map<String, dynamic>?> _makeRequest(String url, {int timeout = 10}) async {
     try {
-      final request = web.XMLHttpRequest();
+      final request = html.HttpRequest();
       request.open('GET', url);
       request.setRequestHeader('Accept', 'application/json');
       
@@ -226,7 +228,7 @@ class CloudRunConfig {
       request.onLoad.listen((e) {
         if (request.status == 200) {
           try {
-            final data = jsonDecode(request.responseText);
+            final data = jsonDecode(request.responseText!);
             completer.complete(data);
           } catch (e) {
             completer.complete(null);
@@ -303,13 +305,13 @@ class CloudRunConfig {
       'timestamp': DateTime.now().toIso8601String(),
     };
     
-    web.window.localStorage.setItem(_configKey, jsonEncode(configData));
+    html.window.localStorage[_configKey] = jsonEncode(configData);
   }
   
   /// Load configuration from local storage
   bool loadConfig() {
     try {
-      final configJson = web.window.localStorage.getItem(_configKey);
+      final configJson = html.window.localStorage[_configKey];
       if (configJson != null) {
         final configData = jsonDecode(configJson);
         
@@ -332,6 +334,6 @@ class CloudRunConfig {
   
   /// Clear saved configuration
   void clearConfig() {
-    web.window.localStorage.removeItem(_configKey);
+    html.window.localStorage.remove(_configKey);
   }
 }
