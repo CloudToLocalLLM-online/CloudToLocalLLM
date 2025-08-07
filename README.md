@@ -1,4 +1,6 @@
-﻿# CloudToLocalLLM: Your Personal AI Powerhouse
+﻿# CloudToLocalLLM
+
+[![Cloud Run Deployment](https://img.shields.io/badge/Cloud%20Run-Ready-blue)](docs/DEPLOYMENT/CLOUDRUN_DEPLOYMENT.md): Your Personal AI Powerhouse
 
 [![Version](https://img.shields.io/badge/version-4.0.35-blue.svg)](https://github.com/imrightguy/CloudToLocalLLM/releases)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
