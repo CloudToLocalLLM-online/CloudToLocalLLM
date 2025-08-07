@@ -1,0 +1,58 @@
+# CloudToLocalLLM API Backend - Google Cloud Run Optimized
+# Node.js/Express API optimized for Cloud Run deployment
+# Features: Fast cold starts, minimal image size, proper health checks
+
+# Stage 1: Dependencies builder
+FROM node:18-alpine AS builder
+
+WORKDIR /app
+
+# Copy package files
+COPY services/api-backend/package*.json ./
+
+# Install dependencies with optimizations for Cloud Run
+RUN npm ci --omit=dev --ignore-scripts && \
+    npm cache clean --force
+
+# Stage 2: Production container
+FROM node:18-alpine
+
+# Install curl for health checks and dumb-init for proper signal handling
+RUN apk add --no-cache curl dumb-init
+
+# Create app user for security
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S -D -H -u 1001 -h /app -s /bin/sh -G nodejs -g nodejs nodejs
+
+# Set working directory
+WORKDIR /app
+
+# Copy node_modules from builder stage
+COPY --from=builder /app/node_modules ./node_modules
+
+# Copy application code
+COPY services/api-backend/ ./
+
+# Create necessary directories and set permissions
+RUN mkdir -p /app/data /app/logs && \
+    chown -R nodejs:nodejs /app
+
+# Security: Run as non-root user
+USER nodejs
+
+# Cloud Run environment variables
+ENV NODE_ENV=production
+ENV PORT=8080
+
+# Expose port (Cloud Run will set PORT environment variable)
+EXPOSE $PORT
+
+# Health check optimized for Cloud Run
+HEALTHCHECK --interval=30s --timeout=10s --start-period=15s --retries=3 \
+    CMD curl --fail http://localhost:$PORT/health || exit 1
+
+# Use dumb-init for proper signal handling in Cloud Run
+ENTRYPOINT ["dumb-init", "--"]
+
+# Start the application with optimizations for Cloud Run
+CMD ["node", "--max-old-space-size=512", "server.js"]
