@@ -31,10 +31,7 @@ RUN flutter pub get
 COPY --chown=flutteruser:fluttergroup . .
 
 # Build the Flutter web application with optimizations for Cloud Run
-RUN flutter build web --release \
-    --web-renderer html \
-    --dart-define=FLUTTER_WEB_USE_SKIA=false \
-    --dart-define=FLUTTER_WEB_AUTO_DETECT=false
+RUN flutter build web --release
 
 # Stage 2: Serve with Nginx optimized for Cloud Run
 FROM nginx:alpine
