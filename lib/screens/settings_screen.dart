@@ -191,6 +191,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Widget _buildMobileLayout(BuildContext context) {
     return Column(
       children: [
+        _buildProfileSettings(context),
+        SizedBox(height: AppTheme.spacingL),
         _buildAppearanceSettings(context),
         SizedBox(height: AppTheme.spacingL),
         if (kIsWeb) _buildSetupWizardSettings(context),
@@ -1588,5 +1590,139 @@ class _SettingsScreenState extends State<SettingsScreen> {
         );
       }
     }
+  }
+
+  Widget _buildProfileSettings(BuildContext context) {
+    return ModernCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildSectionHeader(
+            context,
+            'Profile',
+            Icons.person,
+            AppTheme.primaryColor,
+          ),
+          SizedBox(height: AppTheme.spacingM),
+
+          // Display Name setting
+          Consumer<AuthService>(
+            builder: (context, authService, child) {
+              final user = authService.currentUser;
+              return _buildSettingItem(
+                context,
+                'Display Name',
+                'Your name as it appears in the app',
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        user?.name ?? 'Not set',
+                        style: const TextStyle(
+                          color: AppTheme.textColor,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: () => _showEditNameDialog(context, authService),
+                      child: const Text('Edit'),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+
+          SizedBox(height: AppTheme.spacingM),
+
+          // Email (read-only)
+          Consumer<AuthService>(
+            builder: (context, authService, child) {
+              final user = authService.currentUser;
+              return _buildSettingItem(
+                context,
+                'Email',
+                'Your account email address',
+                Text(
+                  user?.email ?? 'Not available',
+                  style: const TextStyle(
+                    color: AppTheme.textColorLight,
+                    fontSize: 14,
+                  ),
+                ),
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showEditNameDialog(BuildContext context, AuthService authService) {
+    final TextEditingController nameController = TextEditingController();
+    nameController.text = authService.currentUser?.name ?? '';
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: AppTheme.backgroundCard,
+        title: const Text(
+          'Edit Display Name',
+          style: TextStyle(color: AppTheme.textColor),
+        ),
+        content: TextField(
+          controller: nameController,
+          style: const TextStyle(color: AppTheme.textColor),
+          decoration: const InputDecoration(
+            labelText: 'Display Name',
+            labelStyle: TextStyle(color: AppTheme.textColorLight),
+            hintText: 'Enter your full name',
+            hintStyle: TextStyle(color: AppTheme.textColorLight),
+            enabledBorder: UnderlineInputBorder(
+              borderSide: BorderSide(color: AppTheme.textColorLight),
+            ),
+            focusedBorder: UnderlineInputBorder(
+              borderSide: BorderSide(color: AppTheme.primaryColor),
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () async {
+              final newName = nameController.text.trim();
+              if (newName.isNotEmpty) {
+                try {
+                  await authService.updateDisplayName(newName);
+                  if (context.mounted) {
+                    Navigator.of(context).pop();
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Display name updated successfully'),
+                        backgroundColor: Colors.green,
+                      ),
+                    );
+                  }
+                } catch (e) {
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Failed to update name: $e'),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                  }
+                }
+              }
+            },
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
   }
 }

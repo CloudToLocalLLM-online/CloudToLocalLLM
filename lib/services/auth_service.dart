@@ -308,6 +308,34 @@ class AuthService extends ChangeNotifier {
   Future<void> refreshTokenIfNeeded() async {
     await _refreshToken();
   }
+
+  /// Update user display name
+  Future<void> updateDisplayName(String displayName) async {
+    try {
+      final user = _auth.currentUser;
+      if (user != null) {
+        await user.updateDisplayName(displayName);
+        await user.reload();
+
+        // Update the current user model
+        _currentUser = UserModel(
+          id: user.uid,
+          email: user.email ?? '',
+          name: displayName,
+          picture: user.photoURL,
+          emailVerified: user.emailVerified ? DateTime.now() : null,
+          createdAt: user.metadata.creationTime ?? DateTime.now(),
+          updatedAt: DateTime.now(),
+        );
+
+        notifyListeners();
+        debugPrint('🔥 Display name updated to: $displayName');
+      }
+    } catch (e) {
+      debugPrint('🔥 Failed to update display name: $e');
+      rethrow;
+    }
+  }
   
   /// Get platform information
   Map<String, dynamic> getPlatformInfo() {
