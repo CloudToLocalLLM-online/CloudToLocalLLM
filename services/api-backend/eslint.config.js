@@ -1,37 +1,26 @@
 import js from '@eslint/js';
+import globals from 'globals';
 
 export default [
-  js.configs.recommended,
+  // Apply to all JavaScript files
   {
+    files: ['**/*.js'],
     languageOptions: {
       ecmaVersion: 2022,
       sourceType: 'module',
       globals: {
-        console: 'readonly',
-        process: 'readonly',
-        Buffer: 'readonly',
-        __dirname: 'readonly',
-        __filename: 'readonly',
-        global: 'readonly',
-        module: 'readonly',
-        require: 'readonly',
-        exports: 'readonly',
-        setTimeout: 'readonly',
-        clearTimeout: 'readonly',
-        setInterval: 'readonly',
-        clearInterval: 'readonly',
-        URL: 'readonly',
-        WebSocket: 'readonly',
+        ...globals.node,
+        ...globals.es2022,
       },
     },
     rules: {
+      ...js.configs.recommended.rules,
       'no-console': 'off',
       'no-debugger': 'warn',
       'semi': ['error', 'always'],
       'quotes': ['error', 'single'],
       'comma-dangle': ['error', 'always-multiline'],
       'no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
-      'no-undef': 'error',
       'eqeqeq': 'error',
       'curly': 'error',
       'brace-style': ['error', '1tbs'],
@@ -48,19 +37,17 @@ export default [
   },
   // Test files configuration
   {
-    files: ['tests/**/*.js', '**/*.test.js'],
+    files: ['tests/**/*.js', '**/*.test.js', '**/*.spec.js'],
     languageOptions: {
       globals: {
-        describe: 'readonly',
-        it: 'readonly',
-        test: 'readonly',
-        expect: 'readonly',
-        beforeEach: 'readonly',
-        afterEach: 'readonly',
-        beforeAll: 'readonly',
-        afterAll: 'readonly',
-        jest: 'readonly',
+        ...globals.node,
+        ...globals.es2022,
+        ...globals.jest,
       },
+    },
+    rules: {
+      // Allow console in tests for debugging
+      'no-console': 'off',
     },
   },
 ];

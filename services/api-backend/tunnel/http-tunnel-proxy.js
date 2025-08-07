@@ -21,7 +21,7 @@ export const LLM_REQUEST_TYPES = {
   STREAMING: 'streaming',
   HEALTH_CHECK: 'health_check',
   EMBEDDINGS: 'embeddings',
-  COMPLETION: 'completion'
+  COMPLETION: 'completion',
 };
 
 /**
@@ -30,7 +30,7 @@ export const LLM_REQUEST_TYPES = {
 export const REQUEST_PRIORITY = {
   HIGH: 1,    // Health checks, model info
   NORMAL: 2,  // Chat, completion requests
-  LOW: 3      // Model operations (pull, delete)
+  LOW: 3,      // Model operations (pull, delete)
 };
 
 /**
@@ -39,25 +39,25 @@ export const REQUEST_PRIORITY = {
 export const USER_TIERS = {
   PREMIUM: 'premium',
   STANDARD: 'standard',
-  FREE: 'free'
+  FREE: 'free',
 };
 
 /**
  * HTTP-based tunnel proxy service
- * 
+ *
  * Manages HTTP polling connections from desktop clients and routes HTTP requests
  * with enhanced LLM-specific functionality including:
  * - Intelligent request classification and routing
  * - Provider-aware timeout handling
  * - Request prioritization based on user tier and operation type
  * - Comprehensive metrics and error tracking
- * 
+ *
  * @class HttpTunnelProxy
  */
 export class HttpTunnelProxy {
   /**
    * Create a new HttpTunnelProxy instance
-   * 
+   *
    * @param {winston.Logger} [logger] - Winston logger instance for logging
    */
   constructor(logger = winston.createLogger()) {
@@ -75,14 +75,14 @@ export class HttpTunnelProxy {
       MODEL_INFO: 30000,       // 30 seconds for model info
       HEALTH_CHECK: 10000,     // 10 seconds for health checks
       EMBEDDINGS: 90000,       // 1.5 minutes for embeddings
-      COMPLETION: 120000       // 2 minutes for completions
+      COMPLETION: 120000,       // 2 minutes for completions
     };
 
     // Request queue for prioritization
     this.requestQueue = {
       [REQUEST_PRIORITY.HIGH]: [],
       [REQUEST_PRIORITY.NORMAL]: [],
-      [REQUEST_PRIORITY.LOW]: []
+      [REQUEST_PRIORITY.LOW]: [],
     };
 
     // Enhanced performance metrics
@@ -140,13 +140,13 @@ export class HttpTunnelProxy {
   async forwardLLMRequest(userId, httpRequest, userTier = USER_TIERS.STANDARD, preferredProvider = null) {
     // Classify the LLM request type
     const requestType = this.classifyLLMRequest(httpRequest);
-    
+
     // Get appropriate timeout for request type
     const timeout = this.getTimeoutForRequestType(requestType);
-    
+
     // Get request priority based on type and user tier
     const priority = this.getRequestPriority(requestType, userTier);
-    
+
     // Enhance request with LLM-specific metadata
     const enhancedRequest = {
       ...httpRequest,
@@ -156,8 +156,8 @@ export class HttpTunnelProxy {
         userTier,
         preferredProvider,
         timestamp: Date.now(),
-        timeout
-      }
+        timeout,
+      },
     };
 
     this.logger.info('Processing LLM request', {
@@ -167,7 +167,7 @@ export class HttpTunnelProxy {
       userTier,
       preferredProvider,
       timeout,
-      path: httpRequest.path
+      path: httpRequest.path,
     });
 
     return this.forwardRequestWithTimeout(userId, enhancedRequest, timeout);
@@ -183,8 +183,8 @@ export class HttpTunnelProxy {
     const pathLower = path.toLowerCase();
 
     // Check for streaming requests
-    if (headers?.['accept']?.includes('text/event-stream') || 
-        pathLower.includes('/stream') || 
+    if (headers?.['accept']?.includes('text/event-stream') ||
+        pathLower.includes('/stream') ||
         (body && body.includes('"stream":true'))) {
       return LLM_REQUEST_TYPES.STREAMING;
     }
@@ -260,13 +260,13 @@ export class HttpTunnelProxy {
    */
   getRequestPriority(requestType, userTier) {
     // High priority requests
-    if (requestType === LLM_REQUEST_TYPES.HEALTH_CHECK || 
+    if (requestType === LLM_REQUEST_TYPES.HEALTH_CHECK ||
         requestType === LLM_REQUEST_TYPES.MODEL_INFO) {
       return REQUEST_PRIORITY.HIGH;
     }
 
     // Low priority requests
-    if (requestType === LLM_REQUEST_TYPES.MODEL_PULL || 
+    if (requestType === LLM_REQUEST_TYPES.MODEL_PULL ||
         requestType === LLM_REQUEST_TYPES.MODEL_DELETE) {
       return REQUEST_PRIORITY.LOW;
     }
@@ -290,7 +290,7 @@ export class HttpTunnelProxy {
   async forwardRequestWithTimeout(userId, httpRequest, customTimeout = null) {
     const timeoutMs = customTimeout || (httpRequest.timeout || this.TIMEOUTS.DEFAULT);
     const startTime = Date.now();
-    const isLLMRequest = httpRequest.llmMetadata != null;
+    const isLLMRequest = httpRequest.llmMetadata !== null;
 
     // Find bridge for user
     const bridge = getBridgeByUserId(userId);
@@ -327,9 +327,9 @@ export class HttpTunnelProxy {
               priority: httpRequest.llmMetadata.priority,
               userTier: httpRequest.llmMetadata.userTier,
               preferredProvider: httpRequest.llmMetadata.preferredProvider,
-              timeout: timeoutMs
-            }
-          })
+              timeout: timeoutMs,
+            },
+          }),
         },
         timestamp: new Date().toISOString(),
         priority: isLLMRequest ? httpRequest.llmMetadata.priority : REQUEST_PRIORITY.NORMAL,
@@ -348,8 +348,8 @@ export class HttpTunnelProxy {
           requestType: httpRequest.llmMetadata.requestType,
           priority: httpRequest.llmMetadata.priority,
           userTier: httpRequest.llmMetadata.userTier,
-          preferredProvider: httpRequest.llmMetadata.preferredProvider
-        })
+          preferredProvider: httpRequest.llmMetadata.preferredProvider,
+        }),
       });
 
       // Wait for response
@@ -365,8 +365,8 @@ export class HttpTunnelProxy {
         isLLMRequest,
         ...(isLLMRequest && {
           requestType: httpRequest.llmMetadata.requestType,
-          priority: httpRequest.llmMetadata.priority
-        })
+          priority: httpRequest.llmMetadata.priority,
+        }),
       });
 
       return {
@@ -396,8 +396,8 @@ export class HttpTunnelProxy {
           ...(isLLMRequest && {
             requestType: httpRequest.llmMetadata.requestType,
             priority: httpRequest.llmMetadata.priority,
-            preferredProvider: httpRequest.llmMetadata.preferredProvider
-          })
+            preferredProvider: httpRequest.llmMetadata.preferredProvider,
+          }),
         },
       );
 
@@ -517,11 +517,11 @@ export class HttpTunnelProxy {
     if (!this.metrics.llmRequestTypes) {
       this.metrics.llmRequestTypes = {};
     }
-    
+
     if (!this.metrics.llmRequestTypes[requestType]) {
       this.metrics.llmRequestTypes[requestType] = 0;
     }
-    
+
     this.metrics.llmRequestTypes[requestType]++;
   }
 

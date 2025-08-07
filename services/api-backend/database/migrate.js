@@ -265,7 +265,7 @@ export class DatabaseMigrator {
 
         this.logger.info('Migration rolled back successfully', { version });
 
-      } catch (fileError) {
+      } catch {
         this.logger.warn('No rollback file found, manual rollback required', {
           version,
           rollbackFile,

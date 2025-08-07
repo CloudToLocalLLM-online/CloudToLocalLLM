@@ -33,7 +33,7 @@ const bridgePollingLimiter = rateLimit({
   message: {
     error: 'Too many polling requests',
     code: 'RATE_LIMIT_EXCEEDED',
-    retryAfter: 60
+    retryAfter: 60,
   },
   standardHeaders: true,
   legacyHeaders: false,
@@ -45,7 +45,7 @@ const bridgeHeartbeatLimiter = rateLimit({
   message: {
     error: 'Too many heartbeat requests',
     code: 'RATE_LIMIT_EXCEEDED',
-    retryAfter: 60
+    retryAfter: 60,
   },
   standardHeaders: true,
   legacyHeaders: false,
@@ -57,7 +57,7 @@ const bridgeProviderStatusLimiter = rateLimit({
   message: {
     error: 'Too many provider status updates',
     code: 'RATE_LIMIT_EXCEEDED',
-    retryAfter: 60
+    retryAfter: 60,
   },
   standardHeaders: true,
   legacyHeaders: false,
@@ -69,7 +69,7 @@ const bridgeRegistrationLimiter = rateLimit({
   message: {
     error: 'Too many registration attempts',
     code: 'RATE_LIMIT_EXCEEDED',
-    retryAfter: 900 // 15 minutes
+    retryAfter: 900, // 15 minutes
   },
   standardHeaders: true,
   legacyHeaders: false,

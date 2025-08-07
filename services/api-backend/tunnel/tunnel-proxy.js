@@ -886,7 +886,7 @@ export class TunnelProxy {
           ? JSON.parse(httpRequest.body)
           : httpRequest.body;
         return body.stream === true;
-      } catch (e) {
+      } catch {
         return false;
       }
     }
