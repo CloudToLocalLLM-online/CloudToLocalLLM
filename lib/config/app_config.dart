@@ -16,20 +16,28 @@ class AppConfig {
   static const String githubReleasesUrl =
       'https://github.com/imrightguy/CloudToLocalLLM/releases/latest';
 
-  // Firebase Configuration
-  static const String firebaseProjectId = 'cloudtolocalllm-auth';
-  static const String firebaseApiKey = 'AIzaSyBvOkBwN6Ca6FNaOeMaMfeM1ZuPiKlBqMY'; // Web API key
-  static const String firebaseAuthDomain = 'cloudtolocalllm-auth.firebaseapp.com';
-  static const String firebaseAppId = '1:123456789:web:abcdef123456789';
+  // Google Cloud Identity Platform Configuration
+  static const String gcipProjectId = 'cloudtolocalllm-468303';
+  static const String gcipApiKey = 'AIzaSyBvOkBwN6Ca6FNaOeMaMfeM1ZuPiKlBqMY';
+  static const String gcipAuthDomain = 'cloudtolocalllm-468303.firebaseapp.com';
+  static const String gcipTenantId = 'cloudtolocalllm-main'; // Main tenant
 
-  // Google Sign-In Configuration (will be updated with real client ID)
-  static const String googleClientId = 'cloudtolocalllm-auth.firebaseapp.com';
+  // Google Sign-In Configuration
+  static const String googleClientId = '923995245673-abcdefghijklmnopqrstuvwxyz.apps.googleusercontent.com';
 
-  // Firebase Auth Scopes (for Google Sign-In)
-  static const List<String> firebaseScopes = [
+  // GCIP Auth Scopes
+  static const List<String> gcipScopes = [
     'email',
     'profile',
+    'openid',
   ];
+
+  // Multi-tenant Configuration
+  static const Map<String, String> tenantConfigs = {
+    'default': 'cloudtolocalllm-main',
+    'enterprise': 'cloudtolocalllm-enterprise',
+    'demo': 'cloudtolocalllm-demo',
+  };
 
   // Legacy Auth0 Configuration (for migration reference)
   // static const String auth0Domain = 'dev-v2f2p008x3dr74ww.us.auth0.com';
