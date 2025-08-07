@@ -22,8 +22,8 @@ class AppConfig {
   static const String firebaseAuthDomain = 'cloudtolocalllm-auth.firebaseapp.com';
   static const String firebaseAppId = '1:123456789:web:abcdef123456789';
 
-  // Google Sign-In Configuration
-  static const String googleClientId = '123456789-abcdefghijklmnopqrstuvwxyz.apps.googleusercontent.com';
+  // Google Sign-In Configuration (will be updated with real client ID)
+  static const String googleClientId = 'cloudtolocalllm-auth.firebaseapp.com';
 
   // Firebase Auth Scopes (for Google Sign-In)
   static const List<String> firebaseScopes = [
