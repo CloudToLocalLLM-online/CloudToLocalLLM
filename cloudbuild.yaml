@@ -1,5 +1,6 @@
 # Cloud Build configuration for CloudToLocalLLM
 # This file defines the build steps for deploying to Cloud Run
+# Updated: Fixed Dockerfile paths and configuration
 
 steps:
   # Build the web service container
