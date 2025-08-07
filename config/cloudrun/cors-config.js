@@ -3,12 +3,18 @@
 // Handles cross-origin requests between Cloud Run services
 
 const corsConfig = {
-  // Cloud Run service domains
+  // Production subdomain configuration
+  productionDomains: [
+    'cloudtolocalllm.online',
+    'app.cloudtolocalllm.online',
+    'api.cloudtolocalllm.online',
+    'streaming.cloudtolocalllm.online'
+  ],
+
+  // Cloud Run service domains (fallback)
   cloudRunDomains: [
     '.run.app',
-    '.a.run.app',
-    'cloudtolocalllm.online',
-    'app.cloudtolocalllm.online'
+    '.a.run.app'
   ],
   
   // Development domains
@@ -77,6 +83,13 @@ const corsConfig = {
         return false;
       }
       
+      // Check production domains first
+      for (const domain of this.productionDomains) {
+        if (hostname === domain) {
+          return true;
+        }
+      }
+
       // Check Cloud Run domains
       for (const domain of this.cloudRunDomains) {
         if (hostname.includes(domain) || hostname.endsWith(domain)) {

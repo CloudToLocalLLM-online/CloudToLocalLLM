@@ -53,8 +53,9 @@ RUN mkdir -p /var/cache/nginx/client_temp \
 # Copy the built web app from the build stage
 COPY --from=build /app/build/web /usr/share/nginx/html
 
-# Copy Cloud Run configuration
+# Copy Cloud Run configuration files
 COPY web/cloudrun-config.js /usr/share/nginx/html/
+COPY web/subdomain-config.js /usr/share/nginx/html/ 2>/dev/null || true
 
 # Copy Cloud Run optimized nginx configuration
 COPY config/cloudrun/nginx-cloudrun.conf /etc/nginx/nginx.conf

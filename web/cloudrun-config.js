@@ -7,25 +7,26 @@ window.cloudRunConfig = {
   isCloudRun: window.location.hostname.includes('.run.app') || 
               window.location.hostname.includes('cloudtolocalllm'),
   
-  // Service URLs (will be populated by the deployment process)
+  // Production subdomain URLs
   services: {
     api: {
-      // Default to current domain with /api path, will be updated during deployment
-      baseUrl: window.location.protocol + '//' + window.location.hostname.replace('cloudtolocalllm-web', 'cloudtolocalllm-api'),
+      baseUrl: 'https://api.cloudtolocalllm.online',
       endpoints: {
         health: '/health',
         auth: '/api/auth',
         models: '/api/models',
         chat: '/api/chat',
-        streaming: '/api/streaming'
+        streaming: '/api/streaming',
+        tunnel: '/api/tunnel',
+        bridge: '/api/bridge'
       }
     },
     streaming: {
-      // Default to streaming service URL
-      baseUrl: window.location.protocol + '//' + window.location.hostname.replace('cloudtolocalllm-web', 'cloudtolocalllm-streaming'),
+      baseUrl: 'https://streaming.cloudtolocalllm.online',
       endpoints: {
         health: '/health',
-        proxy: '/proxy'
+        proxy: '/proxy',
+        websocket: '/ws'
       }
     }
   },
