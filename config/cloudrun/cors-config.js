@@ -11,6 +11,12 @@ const corsConfig = {
     'streaming.cloudtolocalllm.online'
   ],
 
+  // Firebase authentication domains
+  firebaseDomains: [
+    'cloudtolocalllm-auth.firebaseapp.com',
+    'cloudtolocalllm-auth.web.app'
+  ],
+
   // Cloud Run service domains (fallback)
   cloudRunDomains: [
     '.run.app',
@@ -85,6 +91,13 @@ const corsConfig = {
       
       // Check production domains first
       for (const domain of this.productionDomains) {
+        if (hostname === domain) {
+          return true;
+        }
+      }
+
+      // Check Firebase domains
+      for (const domain of this.firebaseDomains) {
         if (hostname === domain) {
           return true;
         }
