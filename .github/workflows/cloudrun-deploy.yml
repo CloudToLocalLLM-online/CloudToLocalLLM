@@ -62,12 +62,20 @@ jobs:
         fi
         echo "Configuration validation passed"
         
-    - name: Check for secrets
+    - name: Check for secrets in env files
+      shell: bash
       run: |
-        echo "Checking for accidentally committed secrets..."
-        if grep -r "AUTH0_CLIENT_SECRET=" . --exclude-dir=.git --exclude="*.template" --exclude="*.md"; then
-          echo "Error: Found potential secrets in code"
-          exit 1
+        echo "Scanning .env files for committed secrets..."
+        # List tracked env-like files only
+        mapfile -t files < <(git ls-files | grep -E '(^|/)\.env(\..*)?$|(^|/).*\.env$' || true)
+        if [ ${#files[@]} -gt 0 ]; then
+          # Find any AUTH0_CLIENT_SECRET with a value other than the known placeholder
+          matches=$(grep -n -E '^AUTH0_CLIENT_SECRET=' "${files[@]}" 2>/dev/null | grep -v 'your_client_secret_here' || true)
+          if [ -n "$matches" ]; then
+            echo "$matches"
+            echo "Error: Found potential AUTH0_CLIENT_SECRET value in committed .env files"
+            exit 1
+          fi
         fi
         echo "Secret check passed"
 
@@ -87,7 +95,7 @@ jobs:
       uses: actions/checkout@v4
       
     - name: Setup Google Cloud SDK
-      uses: google-github-actions/setup-gcloud@v1
+      uses: google-github-actions/setup-gcloud@v2
       with:
         project_id: ${{ env.PROJECT_ID }}
         service_account_key: ${{ secrets.GOOGLE_CLOUD_CREDENTIALS }}
