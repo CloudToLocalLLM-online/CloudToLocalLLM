@@ -7,9 +7,8 @@ import { readFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { createHash } from 'crypto';
-import sqlite3 from 'sqlite3';
-import { open } from 'sqlite';
 import { TunnelLogger } from '../utils/logger.js';
+import { DBAdapter } from './db-adapter.js';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 /**
@@ -17,47 +16,20 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
  */
 export class DatabaseMigrator {
   constructor(config) {
-    // SQLite configuration
-    this.config = {
-      filename: process.env.DB_PATH || join(__dirname, '../data/cloudtolocalllm.db'),
-      driver: sqlite3.Database,
-      ...config,
-    };
-
     this.logger = new TunnelLogger('database-migrator');
-    this.db = null;
+    this.adapter = new DBAdapter(process.env);
+    this.driver = null; // 'sqlite' | 'postgres'
+    this.db = null;     // sqlite Database or pg Pool
   }
 
   /**
    * Initialize database connection
    */
   async initialize() {
-    try {
-      // Ensure data directory exists
-      const dataDir = dirname(this.config.filename);
-      const { mkdirSync, existsSync } = await import('fs');
-      if (!existsSync(dataDir)) {
-        mkdirSync(dataDir, { recursive: true });
-      }
-
-      // Open SQLite database
-      this.db = await open(this.config);
-
-      // Test connection
-      await this.db.get('SELECT 1');
-
-      this.logger.info('SQLite database connection established', {
-        filename: this.config.filename,
-      });
-
-      return true;
-    } catch (error) {
-      this.logger.error('Failed to connect to SQLite database', {
-        error: error.message,
-        filename: this.config.filename,
-      });
-      throw error;
-    }
+    const { driver, client } = await this.adapter.connect();
+    this.driver = driver;
+    this.db = client;
+    return true;
   }
 
   /**
@@ -87,6 +59,12 @@ export class DatabaseMigrator {
    * Get applied migrations
    */
   async getAppliedMigrations() {
+    if (this.driver === 'postgres') {
+      const { rows } = await this.db.query(
+        'SELECT version, name, applied_at FROM schema_migrations WHERE success = TRUE ORDER BY applied_at'
+      );
+      return rows;
+    }
     const result = await this.db.all(
       'SELECT version, name, applied_at FROM schema_migrations WHERE success = 1 ORDER BY applied_at',
     );
@@ -97,6 +75,13 @@ export class DatabaseMigrator {
    * Check if migration is applied
    */
   async isMigrationApplied(version) {
+    if (this.driver === 'postgres') {
+      const { rows } = await this.db.query(
+        'SELECT 1 FROM schema_migrations WHERE version = $1 AND success = TRUE',
+        [version]
+      );
+      return rows.length > 0;
+    }
     const result = await this.db.get(
       'SELECT 1 FROM schema_migrations WHERE version = ? AND success = 1',
       [version],
@@ -118,7 +103,11 @@ export class DatabaseMigrator {
     const startTime = Date.now();
 
     try {
-      await this.db.exec('BEGIN TRANSACTION');
+      if (this.driver === 'postgres') {
+        await this.db.query('BEGIN');
+      } else {
+        await this.db.exec('BEGIN TRANSACTION');
+      }
 
       // Read and execute schema file
       const schemaPath = join(__dirname, 'schema.sql');
@@ -128,17 +117,32 @@ export class DatabaseMigrator {
       const checksum = this.calculateChecksum(schemaSQL);
 
       // Execute schema
-      await this.db.exec(schemaSQL);
+      if (this.driver === 'postgres') {
+        await this.db.query(schemaSQL);
+      } else {
+        await this.db.exec(schemaSQL);
+      }
 
       // Record migration
       const executionTime = Date.now() - startTime;
-      await this.db.run(
-        `INSERT INTO schema_migrations (version, name, checksum, execution_time_ms)
-         VALUES (?, ?, ?, ?)`,
-        [version, 'Initial tunnel system schema', checksum, executionTime],
-      );
+      if (this.driver === 'postgres') {
+        await this.db.query(
+          'INSERT INTO schema_migrations (version, name, checksum, execution_time_ms) VALUES ($1, $2, $3, $4)',
+          [version, 'Initial tunnel system schema', checksum, executionTime]
+        );
+      } else {
+        await this.db.run(
+          `INSERT INTO schema_migrations (version, name, checksum, execution_time_ms)
+           VALUES (?, ?, ?, ?)`,
+          [version, 'Initial tunnel system schema', checksum, executionTime],
+        );
+      }
 
-      await this.db.exec('COMMIT');
+      if (this.driver === 'postgres') {
+        await this.db.query('COMMIT');
+      } else {
+        await this.db.exec('COMMIT');
+      }
 
       this.logger.info('Initial schema applied successfully', {
         version,
@@ -147,15 +151,26 @@ export class DatabaseMigrator {
       });
 
     } catch (error) {
-      await this.db.exec('ROLLBACK');
+      if (this.driver === 'postgres') {
+        await this.db.query('ROLLBACK');
+      } else {
+        await this.db.exec('ROLLBACK');
+      }
 
       // Record failed migration
       try {
-        await this.db.run(
-          `INSERT INTO schema_migrations (version, name, checksum, success)
-           VALUES (?, ?, ?, 0)`,
-          [version, 'Initial tunnel system schema', 'failed'],
-        );
+        if (this.driver === 'postgres') {
+          await this.db.query(
+            'INSERT INTO schema_migrations (version, name, checksum, success) VALUES ($1, $2, $3, FALSE)',
+            [version, 'Initial tunnel system schema', 'failed']
+          );
+        } else {
+          await this.db.run(
+            `INSERT INTO schema_migrations (version, name, checksum, success)
+             VALUES (?, ?, ?, 0)`,
+            [version, 'Initial tunnel system schema', 'failed'],
+          );
+        }
       } catch (recordError) {
         this.logger.error('Failed to record migration failure', { error: recordError.message });
       }
@@ -339,6 +354,15 @@ export class DatabaseMigrator {
    * Get database statistics (SQLite version)
    */
   async getDatabaseStats() {
+    if (this.driver === 'postgres') {
+      const stats = {};
+      try { stats.totalSessions = (await this.db.query('SELECT COUNT(*)::int as count FROM user_sessions')).rows[0].count; } catch { stats.totalSessions = 'error'; }
+      try { stats.activeSessions = (await this.db.query("SELECT COUNT(*)::int as count FROM user_sessions WHERE is_active = TRUE AND expires_at > NOW()" )).rows[0].count; } catch { stats.activeSessions = 'error'; }
+      try { stats.totalConnections = (await this.db.query('SELECT COUNT(*)::int as count FROM tunnel_connections')).rows[0].count; } catch { stats.totalConnections = 'error'; }
+      try { stats.auditLogCount = (await this.db.query('SELECT COUNT(*)::int as count FROM audit_logs')).rows[0].count; } catch { stats.auditLogCount = 'error'; }
+      return stats;
+    }
+
     const queries = {
       totalSessions: 'SELECT COUNT(*) as count FROM user_sessions',
       activeSessions: 'SELECT COUNT(*) as count FROM user_sessions WHERE is_active = 1 AND expires_at > datetime(\'now\')',
