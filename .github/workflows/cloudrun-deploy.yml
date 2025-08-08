@@ -163,7 +163,19 @@ jobs:
           
     - name: Deploy API Service
       if: github.event.inputs.service == 'all' || github.event.inputs.service == '' || github.event.inputs.service == 'api'
+      env:
+        CLOUDSQL_INSTANCE_CONNECTION: ${{ secrets.CLOUDSQL_INSTANCE_CONNECTION }}
+        VPC_CONNECTOR: ${{ secrets.VPC_CONNECTOR }}
       run: |
+        if [ -n "${CLOUDSQL_INSTANCE_CONNECTION}" ] && [ -n "${VPC_CONNECTOR}" ]; then
+          DB_FLAGS="--add-cloudsql-instances=${CLOUDSQL_INSTANCE_CONNECTION} --vpc-connector=${VPC_CONNECTOR}"
+          DB_ENV="DB_TYPE=postgres,DB_HOST=/cloudsql/${CLOUDSQL_INSTANCE_CONNECTION},DB_PORT=5432,DB_NAME=cloudtolocalllm,DB_USER=cloudtolocalllm,DB_SSL=true"
+          DB_SECRETS="--set-secrets=DB_PASSWORD=db-password:latest"
+        else
+          DB_FLAGS=""
+          DB_ENV="DB_TYPE=sqlite"
+          DB_SECRETS=""
+        fi
         gcloud run deploy cloudtolocalllm-api \
           --image=${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/api:${{ github.sha }} \
           --platform=managed \
@@ -177,7 +189,8 @@ jobs:
           --concurrency=100 \
           --timeout=900 \
           --service-account=cloudtolocalllm-runner@${{ env.PROJECT_ID }}.iam.gserviceaccount.com \
-          --set-env-vars="NODE_ENV=production,LOG_LEVEL=info,DB_TYPE=sqlite,FIREBASE_PROJECT_ID=${{ secrets.FIREBASE_PROJECT_ID || 'cloudtolocalllm-auth' }}" \
+          --set-env-vars="NODE_ENV=production,LOG_LEVEL=info,${DB_ENV},FIREBASE_PROJECT_ID=${{ secrets.FIREBASE_PROJECT_ID || 'cloudtolocalllm-auth' }}" \
+          ${DB_FLAGS} ${DB_SECRETS} \
           --quiet
           
     - name: Deploy Streaming Service

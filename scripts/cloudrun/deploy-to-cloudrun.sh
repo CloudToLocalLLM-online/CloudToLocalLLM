@@ -206,9 +206,9 @@ deploy_service() {
     local service_name="$1"
     local image_tag="$2"
     local port="$3"
-    
+
     log_info "Deploying $service_name to Cloud Run..."
-    
+
     local deploy_cmd=(
         gcloud run deploy "$service_name"
         --image "$image_tag"
@@ -219,6 +219,28 @@ deploy_service() {
         --memory 1Gi
         --cpu 1
         --min-instances 0
+    )
+
+    # Private-only Cloud SQL connectivity (API service)
+    if [ "$service_name" = "$API_SERVICE_NAME" ] && [ "${DB_TYPE:-sqlite}" = "postgres" ]; then
+        if [ -n "${CLOUDSQL_INSTANCE_CONNECTION:-}" ]; then
+            deploy_cmd+=(
+                --add-cloudsql-instances="$CLOUDSQL_INSTANCE_CONNECTION"
+            )
+        fi
+        if [ -n "${VPC_CONNECTOR:-}" ]; then
+            deploy_cmd+=(
+                --vpc-connector="$VPC_CONNECTOR"
+            )
+        fi
+        # Enforce DB env vars for Postgres
+        deploy_cmd+=(
+            --set-env-vars="DB_TYPE=postgres,DB_HOST=/cloudsql/${CLOUDSQL_INSTANCE_CONNECTION},DB_PORT=5432,DB_NAME=${DB_NAME:-cloudtolocalllm},DB_USER=${DB_USER:-cloudtolocalllm},DB_SSL=true"
+            --set-secrets="DB_PASSWORD=db-password:latest"
+        )
+    fi
+
+    deploy_cmd+=(
         --max-instances 10
         --concurrency 80
         --timeout 300

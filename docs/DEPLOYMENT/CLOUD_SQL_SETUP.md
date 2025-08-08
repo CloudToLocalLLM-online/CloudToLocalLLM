@@ -7,19 +7,22 @@ This guide walks through configuring Google Cloud SQL (Postgres) with Cloud Run.
 gcloud services enable sqladmin.googleapis.com vpcaccess.googleapis.com
 ```
 
-## Create Cloud SQL Instance
+## Create Cloud SQL Instance (Private IP only)
 ```
 INSTANCE_ID=cloudtolocalllm-pg
 REGION=us-east4
 DB_VERSION=POSTGRES_16
 
+# Create private IP-enabled instance (no public IP)
 gcloud sql instances create $INSTANCE_ID \
   --database-version=$DB_VERSION \
   --tier=db-custom-1-3840 \
   --region=$REGION \
   --storage-auto-increase \
   --availability-type=ZONAL \
-  --backup
+  --backup \
+  --no-assign-ip \
+  --network=default
 ```
 
 ## Create Database and User
@@ -32,7 +35,7 @@ echo -n "$DB_PASSWORD" | gcloud secrets create db-password --data-file=- --repli
 gcloud sql users create cloudtolocalllm --instance=$INSTANCE_ID --password=$DB_PASSWORD
 ```
 
-## Create Serverless VPC Access Connector
+## Create Serverless VPC Access Connector (same region as Cloud Run)
 ```
 CONNECTOR=cloudtolocalllm-connector
 SUBNET=default  # replace with a dedicated subnet in production
@@ -43,7 +46,7 @@ gcloud compute networks vpc-access connectors create $CONNECTOR \
   --range=10.8.0.0/28
 ```
 
-## Configure Cloud Run (API)
+## Configure Cloud Run (API) with Private Cloud SQL Access
 ```
 PROJECT_ID=$(gcloud config get-value project)
 INSTANCE_CONN=$(gcloud sql instances describe $INSTANCE_ID --format='value(connectionName)')
@@ -67,6 +70,8 @@ gcloud run deploy cloudtolocalllm-api \
   --set-env-vars="NODE_ENV=production,LOG_LEVEL=info,DB_TYPE=postgres,DB_HOST=/cloudsql/$INSTANCE_CONN,DB_PORT=5432,DB_NAME=cloudtolocalllm,DB_USER=cloudtolocalllm,DB_SSL=true" \
   --set-secrets="DB_PASSWORD=db-password:latest" \
   --quiet
+
+# Note: Instance created with --no-assign-ip | Access is private-only via VPC connector
 ```
 
 ## Notes

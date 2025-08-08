@@ -1,7 +1,7 @@
 # Database Options for CloudToLocalLLM
 
 This document explains how to use a SQL database in two scenarios:
-- Cloud Run with Google Cloud SQL (managed Postgres)
+- Cloud Run with Google Cloud SQL (managed Postgres, private IP only)
 - Self-hosted/local with Docker Compose Postgres
 
 ## 1) Cloud Run with Cloud SQL (Postgres)
@@ -77,10 +77,11 @@ This document explains how to use a SQL database in two scenarios:
 
 ### Cloud Run Deployment Flags (API Service)
 - Add to `gcloud run deploy cloudtolocalllm-api`:
-  - `--add-cloudsql-instances=$INSTANCE_CONNECTION` (if using Cloud SQL)
-  - `--vpc-connector=$VPC_CONNECTOR` (if using private networking)
+  - `--add-cloudsql-instances=$INSTANCE_CONNECTION`
+  - `--vpc-connector=$VPC_CONNECTOR` (same region as Cloud Run)
   - `--set-env-vars="DB_TYPE=postgres,DB_HOST=/cloudsql/$INSTANCE_CONNECTION,DB_PORT=5432,DB_NAME=cloudtolocalllm,DB_USER=cloudtolocalllm,DB_SSL=true"`
   - `--set-secrets="DB_PASSWORD=db-password:latest"`
+- Ensure Cloud SQL instance is created with `--no-assign-ip` and a VPC connector is configured.
 
 ### Local Development
 - Use docker-compose.db.yml and set env as above.
