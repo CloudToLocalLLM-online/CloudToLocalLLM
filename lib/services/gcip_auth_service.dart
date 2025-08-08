@@ -96,49 +96,33 @@ class GCIPAuthService extends ChangeNotifier {
   Future<void> _authenticateWithGCIP(GoogleSignInAccount googleUser) async {
     try {
       final googleAuth = await googleUser.authentication;
-      
-      // Exchange Google token for GCIP token
-      final gcipToken = await _exchangeGoogleTokenForGCIP(
-        googleAuth.idToken!,
-        googleAuth.accessToken!,
-      );
-      
-      if (gcipToken != null) {
-        await _handleGCIPToken(gcipToken);
-      }
+      final gcipToken = await _exchangeGoogleTokenForGCIP(googleAuth.idToken!, googleAuth.accessToken!);
+      await _handleGCIPToken(gcipToken);
     } catch (e) {
       debugPrint('🏢 GCIP authentication failed: $e');
       rethrow;
     }
   }
-  
-  /// Exchange Google token for GCIP token with tenant support
-  Future<String?> _exchangeGoogleTokenForGCIP(String idToken, String accessToken) async {
-    try {
-      final url = '$gcipBaseUrl/accounts:signInWithIdp?key=${AppConfig.gcipApiKey}';
-      
-      final response = await http.post(
-        Uri.parse(url),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'postBody': 'id_token=$idToken&access_token=$accessToken&providerId=google.com',
-          'requestUri': 'https://app.cloudtolocalllm.online',
-          'returnIdpCredential': true,
-          'returnSecureToken': true,
-          'tenantId': _currentTenant ?? AppConfig.tenantConfigs['default'],
-        }),
-      );
-      
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        return data['idToken'];
-      } else {
-        debugPrint('🏢 GCIP token exchange failed: ${response.body}');
-        return null;
-      }
-    } catch (e) {
-      debugPrint('🏢 GCIP token exchange error: $e');
-      return null;
+
+  Future<String> _exchangeGoogleTokenForGCIP(String idToken, String accessToken) async {
+    final url = '$gcipBaseUrl/accounts:signInWithIdp?key=${AppConfig.gcipApiKey}';
+    final response = await http.post(
+      Uri.parse(url),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'postBody': 'id_token=$idToken&access_token=$accessToken&providerId=google.com',
+        'requestUri': 'https://app.cloudtolocalllm.online',
+        'returnIdpCredential': true,
+        'returnSecureToken': true,
+        'tenantId': _currentTenant ?? AppConfig.tenantConfigs['default'],
+      }),
+    );
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      return data['idToken'];
+    } else {
+      throw Exception('GCIP token exchange failed: ${response.body}');
     }
   }
   

@@ -1,4 +1,4 @@
-﻿name: cloudtolocalllm
+name: cloudtolocalllm
 description: Manage and run powerful Large Language Models locally, orchestrated via a cloud interface.
 publish_to: none
 homepage: https://cloudtolocalllm.online
@@ -21,7 +21,6 @@ dependencies:
   jwt_decoder: ^2.0.1
 
   # Error tracking
-  sentry_flutter: ^8.9.0
   url_launcher: ^6.3.1
 
   # HTTP and Web

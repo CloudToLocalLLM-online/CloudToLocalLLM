@@ -112,21 +112,7 @@ spec:
           value: "info"
         - name: PORT
           value: "8080"
-        - name: AUTH0_DOMAIN
-          valueFrom:
-            secretKeyRef:
-              name: cloudtolocalllm-secrets
-              key: auth0-domain
-        - name: AUTH0_CLIENT_ID
-          valueFrom:
-            secretKeyRef:
-              name: cloudtolocalllm-secrets
-              key: auth0-client-id
-        - name: AUTH0_CLIENT_SECRET
-          valueFrom:
-            secretKeyRef:
-              name: cloudtolocalllm-secrets
-              key: auth0-client-secret
+        
         - name: JWT_SECRET
           valueFrom:
             secretKeyRef:

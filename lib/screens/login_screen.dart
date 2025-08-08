@@ -111,12 +111,12 @@ class _LoginScreenState extends State<LoginScreen> {
           );
         }
       }
-    } catch (e) {
-      debugPrint('🔐 [Login] Login failed with error: $e');
+    } catch (e, s) {
+      debugPrint('🔐 [Login] Login failed with error: $e\n$s');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Login failed: ${e.toString()}'),
+            content: Text('An unexpected error occurred during login. Please try again.'),
             backgroundColor: AppTheme.dangerColor,
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(
@@ -270,56 +270,11 @@ class _LoginScreenState extends State<LoginScreen> {
 
                           SizedBox(height: AppTheme.spacingL),
 
-                          // Additional info
-                          Text(
-                            'Secure authentication powered by Auth0',
-                            style: Theme.of(context).textTheme.bodySmall
-                                ?.copyWith(
-                                  color: AppTheme.textColorLight,
-                                  fontSize: 12,
-                                ),
-                            textAlign: TextAlign.center,
-                          ),
+                          
 
                           SizedBox(height: AppTheme.spacingM),
 
-                          // Links
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              TextButton(
-                                onPressed: () =>
-                                    _launchUrl(AppConfig.homepageUrl),
-                                child: Text(
-                                  'Learn More',
-                                  style: TextStyle(
-                                    color: AppTheme.primaryColor,
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              ),
-                              Text(
-                                ' • ',
-                                style: TextStyle(
-                                  color: AppTheme.textColorLight,
-                                  fontSize: 14,
-                                ),
-                              ),
-                              TextButton(
-                                onPressed: () =>
-                                    _launchUrl(AppConfig.githubUrl),
-                                child: Text(
-                                  'GitHub',
-                                  style: TextStyle(
-                                    color: AppTheme.primaryColor,
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
+                          
                         ],
                       ),
                     ),

@@ -67,11 +67,6 @@ dist/
 *.backup
 *.old
 
-# Sentry files
-.sentryclirc
-.sentry-cli
-.sentry-native/
-sentry.properties
 
 # Playwright
 test-results/
