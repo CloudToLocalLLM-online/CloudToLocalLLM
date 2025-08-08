@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_web_plugins/url_strategy.dart';
-import 'package:sentry_flutter/sentry_flutter.dart';
+import 'dart:async';
 import 'screens/loading_screen.dart';
 import 'config/theme.dart';
 import 'config/router.dart';
@@ -52,51 +52,23 @@ void main() async {
     usePathUrlStrategy();
   }
 
-  await SentryFlutter.init((options) {
-    options.dsn =
-        'https://2f8b2a4b37c8052b6f6c96e2e0320ae7@o4509755262369792.ingest.us.sentry.io/4509755268530176';
+  // Set up local error handling
+  FlutterError.onError = (FlutterErrorDetails details) {
+    // Still show default Flutter error UI/console output
+    FlutterError.presentError(details);
+    debugPrint('FlutterError: \'${details.exception}\'');
+    if (details.stack != null) {
+      debugPrint('Stack trace: ${details.stack}');
+    }
+  };
 
-    // Performance monitoring
-    options.tracesSampleRate = 1.0; // 100% of transactions for tracing
-
-    // Session Replay configuration (if available)
-    // Note: Session replay may not be available in all Sentry versions
-
-    // Additional debugging options
-    options.debug = kDebugMode; // Enable debug logging in debug mode
-    options.attachStacktrace = true; // Attach stack traces to all messages
-    options.sendDefaultPii =
-        false; // Don't send personally identifiable information
-
-    // Environment and release tracking
-    options.environment = kDebugMode ? 'development' : 'production';
-    options.release = 'cloudtolocalllm@3.6.2';
-
-    // Enhanced debugging features
-    options.maxBreadcrumbs = 100;
-    options.enableAutoSessionTracking = true;
-    options.enableAutoPerformanceTracing = true;
-    options.enableUserInteractionTracing = true;
-
-    // Capture more context for WebSocket debugging
-    options.beforeSend = (event, hint) {
-      // Add custom context for tunnel-related errors
-      final message = event.message?.formatted ?? '';
-      if (message.contains('WebSocket') ||
-          message.contains('tunnel') ||
-          message.contains('HTTP 400')) {
-        // Add custom tags for tunnel-related issues using copyWith
-        event = event.copyWith(
-          tags: {
-            ...?event.tags,
-            'issue_type': 'tunnel_connection',
-            'platform': kIsWeb ? 'web' : 'desktop',
-          },
-        );
-      }
-      return event;
-    };
-  }, appRunner: () => runApp(SentryWidget(child: const CloudToLocalLLMApp())));
+  // Run the app inside a guarded zone to catch uncaught async errors
+  runZonedGuarded(() {
+    runApp(const CloudToLocalLLMApp());
+  }, (error, stack) {
+    debugPrint('Uncaught error: $error');
+    debugPrint('Stack trace: $stack');
+  });
 }
 
 /// Main application widget with comprehensive loading screen
