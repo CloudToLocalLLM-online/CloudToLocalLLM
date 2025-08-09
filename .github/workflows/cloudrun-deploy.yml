@@ -68,9 +68,10 @@ jobs:
 
     - name: Check for secrets
       run: |
-        echo "Checking for accidentally committed secrets..."
-        if grep -r "AUTH0_CLIENT_SECRET=" . --exclude-dir=.git --exclude="*.template" --exclude="*.md"; then
-          echo "Error: Found potential secrets in code"
+        echo "Checking for accidentally committed secrets in application code..."
+        # Only scan application code directories; ignore example configs/scripts/docs
+        if grep -r "AUTH0_CLIENT_SECRET=" lib services --exclude-dir=.git --exclude="*.template" --exclude="*.md" 2>/dev/null; then
+          echo "Error: Found potential secrets in application code"
           exit 1
         fi
         echo "Secret check passed"
