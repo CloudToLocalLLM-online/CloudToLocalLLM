@@ -2,121 +2,53 @@ name: Build Desktop Apps & Create Release
 
 on:
   push:
-    branches:
-      - 'releases/**'
-    paths:
-      - 'dist/**'
-      - 'pubspec.yaml'
-      - 'assets/version.json'
-    # Prevent infinite loop when workflow pushes version updates
-    tags-ignore:
+    tags:
       - 'v*'
-  workflow_dispatch:
-    inputs:
-      version_tag:
-        description: 'Version tag for release (e.g., v1.0.0)'
-        required: true
-        type: string
-      create_release:
-        description: 'Create GitHub release'
-        required: false
-        default: true
-        type: boolean
 
 env:
   FLUTTER_VERSION: '3.24.0'
 
 jobs:
-  version-increment:
-    name: Auto-increment Version
-    runs-on: ubuntu-latest
-    outputs:
-      new_version: ${{ steps.version_update.outputs.new_version }}
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          # We need to fetch all history for the versioning script
-          fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Set up Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          flutter-version: ${{ env.FLUTTER_VERSION }}
-          channel: 'stable'
-
-      - name: Get Flutter dependencies
-        run: flutter pub get
-
-      - name: Auto-increment version and push
-        id: version_update
-        run: |
-          # Configure Git
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-
-          # Get current version
-          CURRENT_VERSION=$(grep '^version:' pubspec.yaml | sed 's/version: //')
-          BASE_VERSION=$(echo $CURRENT_VERSION | sed 's/+.*//')
-          BUILD_NUMBER=$(date +%Y%m%d%H%M%S)
-
-          # Increment patch version
-          IFS='.' read -r -a VERSION_PARTS <<< "$BASE_VERSION"
-          MAJOR=${VERSION_PARTS[0]}
-          MINOR=${VERSION_PARTS[1]}
-          PATCH=$((VERSION_PARTS[2] + 1))
-          NEW_BASE_VERSION="$MAJOR.$MINOR.$PATCH"
-          NEW_VERSION="$NEW_BASE_VERSION+$BUILD_NUMBER"
-
-          echo "Current Version: $CURRENT_VERSION"
-          echo "New Version: $NEW_VERSION"
-
-          # Update pubspec.yaml
-          sed -i "s/^version: .*/version: $NEW_VERSION/" pubspec.yaml
-
-          # Update assets/version.json (if it exists)
-          if [ -f "assets/version.json" ]; then
-            jq '.version = "'"$NEW_BASE_VERSION"'" | .build_number = "'"$BUILD_NUMBER"'"' assets/version.json > assets/version.json.tmp && mv assets/version.json.tmp assets/version.json
-          fi
-
-          # Commit and push changes
-          git add pubspec.yaml
-          if [ -f "assets/version.json" ]; then
-            git add assets/version.json
-          fi
-          git commit -m "ci: Auto-increment version to $NEW_VERSION"
-          git push
-
-          echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
-
-  # Extract version information (modified to depend on version-increment)
+  # Extract version information
   version-info:
-    name: Extract Version Information
+    name: Extract Version Information from Tag
     runs-on: ubuntu-latest
-    needs: version-increment # Depend on the version increment job
     outputs:
       version: ${{ steps.version.outputs.version }}
+      build_number: ${{ steps.version.outputs.build_number }}
+      full_version: ${{ steps.version.outputs.full_version }}
       tag_name: ${{ steps.version.outputs.tag_name }}
-      release_name: ${{ steps.outputs.release_name }}
-    
+      release_name: ${{ steps.version.outputs.release_name }}
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
       
-    - name: Extract version from pubspec.yaml
+    - name: Extract version from Git tag and generate build number
       id: version
       run: |
-        # Get the version that was just pushed by the version-increment job
-        VERSION=$(grep '^version:' pubspec.yaml | sed 's/version: //')
+        # Derive semantic version (x.x.x) from git tag (vX.Y.Z)
+        TAG_REF="${GITHUB_REF_NAME:-${{ github.ref_name }}}"
+        VERSION="${TAG_REF#v}"
+
+        # Generate build number as YYYYMMDDHHMM (UTC)
+        BUILD_NUMBER=$(date -u +%Y%m%d%H%M)
+
+        # Full version: x.x.x+YYYYMMDDHHMM
+        FULL_VERSION="$VERSION+$BUILD_NUMBER"
+
         TAG_NAME="v$VERSION"
-        RELEASE_NAME="CloudToLocalLLM v$VERSION"
-        
+        RELEASE_NAME="CloudToLocalLLM v$FULL_VERSION"
+
         echo "version=$VERSION" >> $GITHUB_OUTPUT
+        echo "build_number=$BUILD_NUMBER" >> $GITHUB_OUTPUT
+        echo "full_version=$FULL_VERSION" >> $GITHUB_OUTPUT
         echo "tag_name=$TAG_NAME" >> $GITHUB_OUTPUT
         echo "release_name=$RELEASE_NAME" >> $GITHUB_OUTPUT
-        
+
         echo "Version: $VERSION"
+        echo "Build Number: $BUILD_NUMBER"
+        echo "Full Version: $FULL_VERSION"
         echo "Tag: $TAG_NAME"
         echo "Release Name: $RELEASE_NAME"
 
@@ -190,23 +122,23 @@ jobs:
     - name: Create portable package (Windows)
       if: matrix.platform == 'windows'
       run: |
-        $VERSION = "${{ needs.version-info.outputs.version }}"
-        $PACKAGE_NAME = "cloudtolocalllm-$VERSION-portable"
+        $FULL_VERSION = "${{ needs.version-info.outputs.full_version }}"
+        $PACKAGE_NAME = "cloudtolocalllm-$FULL_VERSION-portable"
         $PACKAGE_PATH = "dist/windows"
-        
+
         # Create dist directory
         New-Item -ItemType Directory -Force -Path $PACKAGE_PATH
-        
+
         # Copy build output
         Copy-Item -Recurse "${{ matrix.package_path }}" "$PACKAGE_PATH/$PACKAGE_NAME"
-        
+
         # Create ZIP archive
         Compress-Archive -Path "$PACKAGE_PATH/$PACKAGE_NAME" -DestinationPath "$PACKAGE_PATH/$PACKAGE_NAME.zip"
-        
+
         # Generate SHA256 checksum
         $hash = Get-FileHash "$PACKAGE_PATH/$PACKAGE_NAME.zip" -Algorithm SHA256
         $hash.Hash + "  $PACKAGE_NAME.zip" | Out-File "$PACKAGE_PATH/$PACKAGE_NAME.zip.sha256" -Encoding ASCII
-        
+
         echo "PACKAGE_FILE=$PACKAGE_PATH/$PACKAGE_NAME.zip" >> $env:GITHUB_ENV
         echo "CHECKSUM_FILE=$PACKAGE_PATH/$PACKAGE_NAME.zip.sha256" >> $env:GITHUB_ENV
       shell: powershell
@@ -214,23 +146,23 @@ jobs:
     - name: Create portable package (macOS)
       if: matrix.platform == 'macos'
       run: |
-        VERSION="${{ needs.version-info.outputs.version }}"
-        PACKAGE_NAME="cloudtolocalllm-$VERSION-macos"
+        FULL_VERSION="${{ needs.version-info.outputs.full_version }}"
+        PACKAGE_NAME="cloudtolocalllm-$FULL_VERSION-macos"
         PACKAGE_PATH="dist/macos"
-        
+
         # Create dist directory
         mkdir -p "$PACKAGE_PATH"
-        
+
         # Create DMG (simplified - copy app bundle for now)
         cp -R "${{ matrix.package_path }}/${{ matrix.executable_name }}" "$PACKAGE_PATH/"
-        
+
         # Create ZIP archive
         cd "$PACKAGE_PATH"
         zip -r "$PACKAGE_NAME.zip" "${{ matrix.executable_name }}"
-        
+
         # Generate SHA256 checksum
         shasum -a 256 "$PACKAGE_NAME.zip" > "$PACKAGE_NAME.zip.sha256"
-        
+
         echo "PACKAGE_FILE=$PACKAGE_PATH/$PACKAGE_NAME.zip" >> $GITHUB_ENV
         echo "CHECKSUM_FILE=$PACKAGE_PATH/$PACKAGE_NAME.zip.sha256" >> $GITHUB_ENV
         
@@ -271,8 +203,7 @@ jobs:
     name: Create GitHub Release
     runs-on: ubuntu-latest
     needs: [version-info, build-desktop]
-    if: github.event.inputs.create_release != 'false'
-    
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v4

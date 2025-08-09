@@ -1,0 +1,63 @@
+name: CI (Fast)
+
+on:
+  pull_request:
+    branches: ["**"]
+  push:
+    branches: [ main, master ]
+
+env:
+  FLUTTER_VERSION: '3.24.2'
+  NODE_VERSION: '18'
+
+jobs:
+  flutter-ci:
+    name: Flutter Analyze & Tests
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        flutter-version: ${{ env.FLUTTER_VERSION }}
+        cache: true
+
+    - name: Get dependencies
+      run: flutter pub get -v
+
+    - name: Analyze
+      run: flutter analyze --fatal-infos --fatal-warnings
+
+    - name: Test
+      run: flutter test --reporter=expanded
+
+  nodejs-ci:
+    name: Node.js Unit Tests
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+        cache-dependency-path: |
+          package-lock.json
+          services/api-backend/package-lock.json
+
+    - name: Install root dependencies
+      run: npm ci
+
+    - name: Install API backend dependencies
+      run: |
+        cd services/api-backend
+        npm ci
+
+    - name: Run unit tests (API backend)
+      run: |
+        cd services/api-backend
+        npm run test:unit -- --ci --verbose
