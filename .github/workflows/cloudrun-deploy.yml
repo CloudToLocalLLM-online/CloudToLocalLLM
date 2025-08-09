@@ -29,10 +29,14 @@ on:
           - production
           - staging
 
+permissions:
+  contents: read
+  id-token: write
+
 env:
-  PROJECT_ID: ${{ secrets.GCP_PROJECT_ID || 'cloudtolocalllm-468303' }}
-  REGION: ${{ secrets.GCP_REGION || 'us-east4' }}
-  REGISTRY: ${{ secrets.GCP_REGION || 'us-east4' }}-docker.pkg.dev
+  PROJECT_ID: ${{ vars.GCP_PROJECT_ID || 'cloudtolocalllm-468303' }}
+  REGION: ${{ vars.GCP_REGION || 'us-east4' }}
+  REGISTRY: ${{ vars.GCP_REGION || 'us-east4' }}-docker.pkg.dev
   REPOSITORY: cloud-run-source-deploy
 
 jobs:
@@ -40,11 +44,11 @@ jobs:
   security-check:
     name: Security and Validation
     runs-on: ubuntu-latest
-    
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
-      
+
     - name: Validate Cloud Run configuration
       run: |
         echo "Validating Cloud Run configuration files..."
@@ -61,7 +65,7 @@ jobs:
           exit 1
         fi
         echo "Configuration validation passed"
-        
+
     - name: Check for secrets
       run: |
         echo "Checking for accidentally committed secrets..."
@@ -77,43 +81,47 @@ jobs:
     runs-on: ubuntu-latest
     needs: security-check
     if: github.event.inputs.service == 'all' || github.event.inputs.service == '' || contains(github.event.inputs.service, 'web') || contains(github.event.inputs.service, 'api') || contains(github.event.inputs.service, 'streaming')
-    
+
     strategy:
       matrix:
         service: [web, api, streaming]
-        
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
-      
+
+    - name: Authenticate to Google Cloud (WIF)
+      uses: google-github-actions/auth@v2
+      with:
+        workload_identity_provider: ${{ vars.WIF_PROVIDER }}
+        service_account: ${{ vars.WIF_SERVICE_ACCOUNT }}
+
     - name: Setup Google Cloud SDK
-      uses: google-github-actions/setup-gcloud@v1
+      uses: google-github-actions/setup-gcloud@v2
       with:
         project_id: ${{ env.PROJECT_ID }}
-        service_account_key: ${{ secrets.GOOGLE_CLOUD_CREDENTIALS }}
-        export_default_credentials: true
-        
+
     - name: Configure Docker authentication
       run: |
         gcloud auth configure-docker ${{ env.REGISTRY }}
-        
+
     - name: Build and push container image
       run: |
         SERVICE="${{ matrix.service }}"
         IMAGE_TAG="${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${SERVICE}:${{ github.sha }}"
         LATEST_TAG="${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${SERVICE}:latest"
-        
+
         echo "Building ${SERVICE} service..."
         docker build \
           -f config/cloudrun/Dockerfile.${SERVICE}-cloudrun \
           -t ${IMAGE_TAG} \
           -t ${LATEST_TAG} \
           .
-          
+
         echo "Pushing ${SERVICE} image..."
         docker push ${IMAGE_TAG}
         docker push ${LATEST_TAG}
-        
+
         echo "IMAGE_${SERVICE^^}=${IMAGE_TAG}" >> $GITHUB_ENV
 
   # Deploy to Cloud Run
@@ -122,18 +130,22 @@ jobs:
     runs-on: ubuntu-latest
     needs: build
     environment: ${{ github.event.inputs.environment || 'production' }}
-    
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
-      
+
+    - name: Authenticate to Google Cloud (WIF)
+      uses: google-github-actions/auth@v2
+      with:
+        workload_identity_provider: ${{ vars.WIF_PROVIDER }}
+        service_account: ${{ vars.WIF_SERVICE_ACCOUNT }}
+
     - name: Setup Google Cloud SDK
-      uses: google-github-actions/setup-gcloud@v1
+      uses: google-github-actions/setup-gcloud@v2
       with:
         project_id: ${{ env.PROJECT_ID }}
-        service_account_key: ${{ secrets.GOOGLE_CLOUD_CREDENTIALS }}
-        export_default_credentials: true
-        
+
     - name: Deploy Web Service
       if: github.event.inputs.service == 'all' || github.event.inputs.service == '' || github.event.inputs.service == 'web'
       run: |
@@ -150,9 +162,9 @@ jobs:
           --concurrency=80 \
           --timeout=300 \
           --service-account=cloudtolocalllm-runner@${{ env.PROJECT_ID }}.iam.gserviceaccount.com \
-          --set-env-vars="NODE_ENV=production,LOG_LEVEL=info,FIREBASE_PROJECT_ID=${{ secrets.FIREBASE_PROJECT_ID || 'cloudtolocalllm-auth' }}" \
+          --set-env-vars="NODE_ENV=production,LOG_LEVEL=info,FIREBASE_PROJECT_ID=${{ vars.FIREBASE_PROJECT_ID || 'cloudtolocalllm-auth' }}" \
           --quiet
-          
+
     - name: Deploy API Service
       if: github.event.inputs.service == 'all' || github.event.inputs.service == '' || github.event.inputs.service == 'api'
       run: |
@@ -169,9 +181,9 @@ jobs:
           --concurrency=100 \
           --timeout=900 \
           --service-account=cloudtolocalllm-runner@${{ env.PROJECT_ID }}.iam.gserviceaccount.com \
-          --set-env-vars="NODE_ENV=production,LOG_LEVEL=info,DB_TYPE=sqlite,FIREBASE_PROJECT_ID=${{ secrets.FIREBASE_PROJECT_ID || 'cloudtolocalllm-auth' }}" \
+          --set-env-vars="NODE_ENV=production,LOG_LEVEL=info,DB_TYPE=sqlite,FIREBASE_PROJECT_ID=${{ vars.FIREBASE_PROJECT_ID || 'cloudtolocalllm-auth' }}" \
           --quiet
-          
+
     - name: Deploy Streaming Service
       if: github.event.inputs.service == 'all' || github.event.inputs.service == '' || github.event.inputs.service == 'streaming'
       run: |
@@ -188,7 +200,7 @@ jobs:
           --concurrency=50 \
           --timeout=3600 \
           --service-account=cloudtolocalllm-runner@${{ env.PROJECT_ID }}.iam.gserviceaccount.com \
-          --set-env-vars="NODE_ENV=production,LOG_LEVEL=info,FIREBASE_PROJECT_ID=${{ secrets.FIREBASE_PROJECT_ID || 'cloudtolocalllm-auth' }}" \
+          --set-env-vars="NODE_ENV=production,LOG_LEVEL=info,FIREBASE_PROJECT_ID=${{ vars.FIREBASE_PROJECT_ID || 'cloudtolocalllm-auth' }}" \
           --quiet
 
   # Post-deployment verification
@@ -196,54 +208,58 @@ jobs:
     name: Verify Deployment
     runs-on: ubuntu-latest
     needs: deploy
-    
+
     steps:
+    - name: Authenticate to Google Cloud (WIF)
+      uses: google-github-actions/auth@v2
+      with:
+        workload_identity_provider: ${{ vars.WIF_PROVIDER }}
+        service_account: ${{ vars.WIF_SERVICE_ACCOUNT }}
+
     - name: Setup Google Cloud SDK
-      uses: google-github-actions/setup-gcloud@v1
+      uses: google-github-actions/setup-gcloud@v2
       with:
         project_id: ${{ env.PROJECT_ID }}
-        service_account_key: ${{ secrets.GOOGLE_CLOUD_CREDENTIALS }}
-        export_default_credentials: true
-        
+
     - name: Get service URLs
       run: |
         echo "Getting Cloud Run service URLs..."
         WEB_URL=$(gcloud run services describe cloudtolocalllm-web --platform=managed --region=${{ env.REGION }} --format='value(status.url)')
         API_URL=$(gcloud run services describe cloudtolocalllm-api --platform=managed --region=${{ env.REGION }} --format='value(status.url)')
         STREAMING_URL=$(gcloud run services describe cloudtolocalllm-streaming --platform=managed --region=${{ env.REGION }} --format='value(status.url)')
-        
+
         echo "Web Service URL: $WEB_URL"
         echo "API Service URL: $API_URL"
         echo "Streaming Service URL: $STREAMING_URL"
-        
+
         echo "WEB_URL=$WEB_URL" >> $GITHUB_ENV
         echo "API_URL=$API_URL" >> $GITHUB_ENV
         echo "STREAMING_URL=$STREAMING_URL" >> $GITHUB_ENV
-        
+
     - name: Health check
       run: |
         echo "Performing health checks..."
-        
+
         # Check web service
         if [ -n "$WEB_URL" ]; then
           echo "Checking web service health..."
           curl -f "$WEB_URL/health" || echo "Web service health check failed"
         fi
-        
+
         # Check API service
         if [ -n "$API_URL" ]; then
           echo "Checking API service health..."
           curl -f "$API_URL/health" || echo "API service health check failed"
         fi
-        
+
         # Check streaming service
         if [ -n "$STREAMING_URL" ]; then
           echo "Checking streaming service health..."
           curl -f "$STREAMING_URL/health" || echo "Streaming service health check failed"
         fi
-        
+
         echo "Health checks completed"
-        
+
     - name: Create deployment summary
       run: |
         echo "## 🚀 Cloud Run Deployment Summary" >> $GITHUB_STEP_SUMMARY
