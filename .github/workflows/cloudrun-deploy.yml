@@ -112,9 +112,20 @@ jobs:
         IMAGE_TAG="${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${SERVICE}:${{ github.sha }}"
         LATEST_TAG="${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${SERVICE}:latest"
 
-        echo "Building ${SERVICE} service..."
+        # Resolve correct Dockerfile path per service
+        DOCKERFILE="config/cloudrun/Dockerfile.${SERVICE}-cloudrun"
+        if [ "$SERVICE" = "streaming" ]; then
+          DOCKERFILE="config/cloudrun/Dockerfile.streaming-proxy-cloudrun"
+        fi
+        if [ ! -f "$DOCKERFILE" ]; then
+          echo "Error: Dockerfile not found for service '$SERVICE' at $DOCKERFILE" >&2
+          ls -la config/cloudrun || true
+          exit 1
+        fi
+
+        echo "Building ${SERVICE} service using $DOCKERFILE..."
         docker build \
-          -f config/cloudrun/Dockerfile.${SERVICE}-cloudrun \
+          -f "$DOCKERFILE" \
           -t ${IMAGE_TAG} \
           -t ${LATEST_TAG} \
           .
