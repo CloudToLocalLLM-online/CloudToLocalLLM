@@ -1,0 +1,85 @@
+# Cloud Build configuration for CloudToLocalLLM API Backend
+# Builds and deploys the Node.js backend with PostgreSQL support
+
+steps:
+  # Build the container image
+  - name: 'gcr.io/cloud-builders/docker'
+    args: 
+      - 'build'
+      - '-t'
+      - 'gcr.io/$PROJECT_ID/cloudtolocalllm-api:$COMMIT_SHA'
+      - '-t'
+      - 'gcr.io/$PROJECT_ID/cloudtolocalllm-api:latest'
+      - '.'
+    dir: 'services/api-backend'
+
+  # Push the container image to Container Registry
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'push'
+      - 'gcr.io/$PROJECT_ID/cloudtolocalllm-api:$COMMIT_SHA'
+
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'push'
+      - 'gcr.io/$PROJECT_ID/cloudtolocalllm-api:latest'
+
+  # Deploy to Cloud Run
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: 'gcloud'
+    args:
+      - 'run'
+      - 'deploy'
+      - 'cloudtolocalllm-api'
+      - '--image'
+      - 'gcr.io/$PROJECT_ID/cloudtolocalllm-api:$COMMIT_SHA'
+      - '--region'
+      - 'us-central1'
+      - '--platform'
+      - 'managed'
+      - '--allow-unauthenticated'
+      - '--memory'
+      - '1Gi'
+      - '--cpu'
+      - '1'
+      - '--timeout'
+      - '300'
+      - '--concurrency'
+      - '100'
+      - '--max-instances'
+      - '10'
+      - '--set-env-vars'
+      - 'NODE_ENV=production,PORT=8080,DB_TYPE=postgresql,FIREBASE_PROJECT_ID=$PROJECT_ID'
+      - '--add-cloudsql-instances'
+      - '$PROJECT_ID:us-central1:cloudtolocalllm-db'
+
+  # Test the deployment
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        # Get the service URL
+        SERVICE_URL=$(gcloud run services describe cloudtolocalllm-api --region=us-central1 --format="value(status.url)")
+        echo "Service deployed at: $SERVICE_URL"
+        
+        # Wait for deployment to be ready
+        sleep 30
+        
+        # Test the health endpoint
+        echo "Testing health endpoint..."
+        curl -f "$SERVICE_URL/api/db/health" || exit 1
+        echo "Health check passed!"
+
+# Store images in Container Registry
+images:
+  - 'gcr.io/$PROJECT_ID/cloudtolocalllm-api:$COMMIT_SHA'
+  - 'gcr.io/$PROJECT_ID/cloudtolocalllm-api:latest'
+
+# Build options
+options:
+  logging: CLOUD_LOGGING_ONLY
+  machineType: 'E2_HIGHCPU_8'
+
+# Timeout for the entire build
+timeout: '1200s'

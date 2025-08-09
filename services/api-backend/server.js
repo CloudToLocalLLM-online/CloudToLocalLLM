@@ -12,6 +12,7 @@ import adminRoutes from './routes/admin.js';
 // HTTP polling tunnel system (simplified)
 import { AuthService } from './auth/auth-service.js';
 import { DatabaseMigrator } from './database/migrate.js';
+import { DatabaseMigratorPG } from './database/migrate-pg.js';
 import { createTunnelRoutes } from './tunnel/tunnel-routes.js';
 import { createMonitoringRoutes } from './routes/monitoring.js';
 import { createDirectProxyRoutes } from './routes/direct-proxy-routes.js';
@@ -194,6 +195,39 @@ app.use('/api/direct-proxy', directProxyRouter);
 app.use('/api/monitoring', monitoringRouter);
 
 // Encrypted tunnel routes removed - using simplified tunnel system
+
+// Database health endpoint
+app.get('/api/db/health', async (req, res) => {
+  try {
+    if (!dbMigrator) {
+      return res.status(503).json({
+        status: 'error',
+        message: 'Database migrator not initialized',
+        timestamp: new Date().toISOString(),
+      });
+    }
+
+    // Perform a simple health check
+    const validation = await dbMigrator.validateSchema();
+    const dbType = process.env.DB_TYPE || 'sqlite';
+
+    res.json({
+      status: validation.allValid ? 'healthy' : 'degraded',
+      database_type: dbType,
+      schema_validation: validation.results,
+      all_tables_valid: validation.allValid,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    logger.error('Database health check failed:', error);
+    res.status(503).json({
+      status: 'error',
+      message: 'Database health check failed',
+      error: error.message,
+      timestamp: new Date().toISOString(),
+    });
+  }
+});
 
 // Administrative routes
 app.use('/api/admin', adminRoutes);
@@ -808,8 +842,16 @@ async function initializeHttpPollingSystem() {
   try {
     logger.info('Initializing HTTP polling tunnel system...');
 
-    // Initialize database
-    dbMigrator = new DatabaseMigrator();
+    // Initialize database - choose migrator based on DB_TYPE
+    const dbType = process.env.DB_TYPE || 'sqlite';
+    if (dbType === 'postgresql') {
+      logger.info('Using PostgreSQL database migrator');
+      dbMigrator = new DatabaseMigratorPG();
+    } else {
+      logger.info('Using SQLite database migrator');
+      dbMigrator = new DatabaseMigrator();
+    }
+
     await dbMigrator.initialize();
     await dbMigrator.createMigrationsTable();
 

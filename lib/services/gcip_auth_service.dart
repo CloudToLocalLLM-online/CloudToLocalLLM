@@ -4,6 +4,9 @@ import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:http/http.dart' as http;
 import 'package:jwt_decoder/jwt_decoder.dart';
+import 'package:flutter_secure_storage_x/flutter_secure_storage_x.dart';
+// Conditional web import for localStorage
+import 'web_platform_stub.dart' if (dart.library.html) 'package:web/web.dart' as web;
 import '../models/user_model.dart';
 import '../config/app_config.dart';
 
@@ -17,20 +20,30 @@ import '../config/app_config.dart';
 /// - Identity-Aware Proxy integration
 class GCIPAuthService extends ChangeNotifier {
   late final GoogleSignIn _googleSignIn;
-  
+
   // Authentication state
   final ValueNotifier<bool> _isAuthenticated = ValueNotifier<bool>(false);
   final ValueNotifier<bool> _isLoading = ValueNotifier<bool>(false);
   UserModel? _currentUser;
-  String? _currentToken;
+  String? _currentToken; // ID token
+  String? _refreshTokenValue; // Refresh token
   String? _currentTenant;
   Map<String, dynamic>? _customClaims;
   Timer? _tokenRefreshTimer;
-  
+
+  // Persistence keys
+  static const _kIdTokenKey = 'gcip_id_token';
+  static const _kRefreshTokenKey = 'gcip_refresh_token';
+  static const _kExpiryKey = 'gcip_expiry_time';
+  static const _kUserInfoKey = 'gcip_user_info';
+
+  // Secure storage for non-web platforms
+  final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
+
   // Configuration
   static const Duration tokenRefreshInterval = Duration(minutes: 50);
   static const String gcipBaseUrl = 'https://identitytoolkit.googleapis.com/v1';
-  
+
   // Getters
   ValueNotifier<bool> get isAuthenticated => _isAuthenticated;
   ValueNotifier<bool> get isLoading => _isLoading;
@@ -38,48 +51,63 @@ class GCIPAuthService extends ChangeNotifier {
   String? get accessToken => _currentToken;
   String? get currentTenant => _currentTenant;
   Map<String, dynamic>? get customClaims => _customClaims;
-  
+
   // Platform detection
   bool get isWeb => kIsWeb;
   bool get isMobile => !kIsWeb;
   bool get isDesktop => !kIsWeb;
-  
+
   // Constructor
   GCIPAuthService() {
     _initialize();
   }
-  
+
   /// Initialize the GCIP Auth service
   void _initialize() {
     debugPrint('🏢 Initializing Google Cloud Identity Platform Auth service...');
-    
+
     try {
       // Initialize Google Sign-In
       _googleSignIn = GoogleSignIn(
         clientId: AppConfig.googleClientId,
         scopes: AppConfig.gcipScopes,
       );
-      
+
       // Check for existing authentication
       _loadStoredAuth();
-      
+
       debugPrint('🏢 GCIP Auth service initialized successfully');
     } catch (e) {
       debugPrint('🏢 Failed to initialize GCIP Auth service: $e');
     }
   }
-  
-  /// Load stored authentication from secure storage
-  void _loadStoredAuth() {
-    // TODO: Implement secure storage for tokens
-    // For now, check if user is already signed in with Google
-    _googleSignIn.isSignedIn().then((isSignedIn) {
-      if (isSignedIn) {
-        _handleGoogleSignInSilent();
+
+  /// Load stored authentication from persistence (tokens first, then silent Google)
+  Future<void> _loadStoredAuth() async {
+    _isLoading.value = true;
+    notifyListeners();
+
+    try {
+      // Try restoring persisted tokens first
+      final restored = await _restoreAuthState();
+      if (restored) {
+        debugPrint('🏢 Restored authentication state from storage');
+        return;
       }
-    });
+
+      // Fallback to Google silent sign-in
+      final isSignedIn = await _googleSignIn.isSignedIn();
+      if (isSignedIn) {
+        await _handleGoogleSignInSilent();
+      }
+    } catch (e) {
+      debugPrint('🏢 Failed to load stored auth: $e');
+    } finally {
+      _isLoading.value = false;
+      notifyListeners();
+    }
   }
-  
+
   /// Handle silent Google Sign-In
   Future<void> _handleGoogleSignInSilent() async {
     try {
@@ -91,7 +119,7 @@ class GCIPAuthService extends ChangeNotifier {
       debugPrint('🏢 Silent sign-in failed: $e');
     }
   }
-  
+
   /// Authenticate with Google Cloud Identity Platform
   Future<void> _authenticateWithGCIP(GoogleSignInAccount googleUser) async {
     try {
@@ -111,7 +139,7 @@ class GCIPAuthService extends ChangeNotifier {
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({
         'postBody': 'id_token=$idToken&access_token=$accessToken&providerId=google.com',
-        'requestUri': 'https://app.cloudtolocalllm.online',
+        'requestUri': kIsWeb ? Uri.base.origin : 'http://localhost',
         'returnIdpCredential': true,
         'returnSecureToken': true,
         'tenantId': _currentTenant ?? AppConfig.tenantConfigs['default'],
@@ -120,24 +148,34 @@ class GCIPAuthService extends ChangeNotifier {
 
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
-      return data['idToken'];
+      // Capture both ID token and refresh token
+      final idTok = data['idToken'] as String?;
+      final refreshTok = data['refreshToken'] as String?;
+      if (idTok == null || refreshTok == null) {
+        throw Exception('GCIP response missing tokens');
+      }
+      _refreshTokenValue = refreshTok;
+      return idTok;
     } else {
       throw Exception('GCIP token exchange failed: ${response.body}');
     }
   }
-  
+
   /// Handle GCIP token and extract user information
-  Future<void> _handleGCIPToken(String token) async {
+  Future<void> _handleGCIPToken(String token, {String? refreshToken}) async {
     try {
       _currentToken = token;
-      
+      if (refreshToken != null) {
+        _refreshTokenValue = refreshToken;
+      }
+
       // Decode JWT to extract user information and custom claims
       final decodedToken = JwtDecoder.decode(token);
       _customClaims = decodedToken;
-      
+
       // Extract tenant information
       _currentTenant = decodedToken['firebase']?['tenant'] ?? AppConfig.tenantConfigs['default'];
-      
+
       // Create user model with enhanced information
       _currentUser = UserModel(
         id: decodedToken['sub'] ?? '',
@@ -148,92 +186,233 @@ class GCIPAuthService extends ChangeNotifier {
         createdAt: DateTime.fromMillisecondsSinceEpoch((decodedToken['iat'] ?? 0) * 1000),
         updatedAt: DateTime.now(),
       );
-      
+
+      // Persist
+      await _persistAuthState();
+
       _isAuthenticated.value = true;
       _startTokenRefreshTimer();
-      
+
       debugPrint('🏢 GCIP authentication successful - ${_currentUser?.email}');
       debugPrint('🏢 Tenant: $_currentTenant');
       debugPrint('🏢 Custom Claims: ${_getCustomClaimsString()}');
-      
+
       notifyListeners();
     } catch (e) {
       debugPrint('🏢 Failed to handle GCIP token: $e');
       rethrow;
     }
   }
-  
+
+  /// Persist auth state (tokens and user) to storage
+  Future<void> _persistAuthState() async {
+    try {
+      // Compute expiry from JWT
+      int? exp;
+      if (_currentToken != null && !JwtDecoder.isExpired(_currentToken!)) {
+        exp = JwtDecoder.getExpirationDate(_currentToken!)
+            .millisecondsSinceEpoch;
+      }
+
+      // Serialize user info
+      final userJson = _currentUser == null
+          ? null
+          : jsonEncode({
+              'id': _currentUser!.id,
+              'email': _currentUser!.email,
+              'name': _currentUser!.name,
+              'picture': _currentUser!.picture,
+            });
+
+      if (kIsWeb) {
+        // Web: localStorage
+        if (_currentToken != null) {
+          web.window.localStorage.setItem(_kIdTokenKey, _currentToken!);
+        }
+        if (_refreshTokenValue != null) {
+          web.window.localStorage.setItem(
+              _kRefreshTokenKey, _refreshTokenValue!);
+        }
+        if (exp != null) {
+          web.window.localStorage.setItem(_kExpiryKey, exp.toString());
+        }
+        if (userJson != null) {
+          web.window.localStorage.setItem(_kUserInfoKey, userJson);
+        }
+      } else {
+        // Desktop: secure storage
+        if (_currentToken != null) {
+          await _secureStorage.write(key: _kIdTokenKey, value: _currentToken!);
+        }
+        if (_refreshTokenValue != null) {
+          await _secureStorage.write(
+              key: _kRefreshTokenKey, value: _refreshTokenValue!);
+        }
+        if (exp != null) {
+          await _secureStorage.write(key: _kExpiryKey, value: exp.toString());
+        }
+        if (userJson != null) {
+          await _secureStorage.write(key: _kUserInfoKey, value: userJson);
+        }
+      }
+    } catch (e) {
+      debugPrint('🏢 Failed to persist auth state: $e');
+    }
+  }
+
+  /// Load persisted auth state
+  Future<bool> _restoreAuthState() async {
+    try {
+      String? idTok;
+      String? refTok;
+      String? expStr;
+      String? userJson;
+
+      if (kIsWeb) {
+        idTok = web.window.localStorage.getItem(_kIdTokenKey);
+        refTok = web.window.localStorage.getItem(_kRefreshTokenKey);
+        expStr = web.window.localStorage.getItem(_kExpiryKey);
+        userJson = web.window.localStorage.getItem(_kUserInfoKey);
+      } else {
+        idTok = await _secureStorage.read(key: _kIdTokenKey);
+        refTok = await _secureStorage.read(key: _kRefreshTokenKey);
+        expStr = await _secureStorage.read(key: _kExpiryKey);
+        userJson = await _secureStorage.read(key: _kUserInfoKey);
+      }
+
+      if (idTok == null || refTok == null) {
+        return false;
+      }
+
+      _currentToken = idTok;
+      _refreshTokenValue = refTok;
+
+      // Recreate user info if possible
+      if (userJson != null) {
+        try {
+          final decodedToken = JwtDecoder.decode(idTok);
+          _customClaims = decodedToken;
+          _currentTenant = decodedToken['firebase']?['tenant'] ??
+              AppConfig.tenantConfigs['default'];
+          _currentUser = UserModel(
+            id: decodedToken['sub'] ?? '',
+            email: decodedToken['email'] ?? '',
+            name: decodedToken['name'] ?? '',
+            picture: decodedToken['picture'],
+            emailVerified: decodedToken['email_verified'] == true
+                ? DateTime.now()
+                : null,
+            createdAt: DateTime.fromMillisecondsSinceEpoch(
+                (decodedToken['iat'] ?? 0) * 1000),
+            updatedAt: DateTime.now(),
+          );
+        } catch (_) {}
+      }
+
+      // Validate expiry
+      if (expStr != null) {
+        final expMs = int.tryParse(expStr);
+        if (expMs != null) {
+          final expired = DateTime.now().millisecondsSinceEpoch >= expMs - 15000;
+          if (expired) {
+            // Try refresh
+            final refreshed = await _refreshIdToken();
+            return refreshed;
+          }
+        }
+      }
+
+      _isAuthenticated.value = true;
+      _startTokenRefreshTimer();
+      notifyListeners();
+      return true;
+    } catch (e) {
+      debugPrint('🏢 Failed to restore auth state: $e');
+      return false;
+    }
+  }
+
+  /// Refresh ID token using stored refresh token
+  Future<bool> _refreshIdToken() async {
+    if (_refreshTokenValue == null) return false;
+    try {
+      final url =
+          'https://securetoken.googleapis.com/v1/token?key=${AppConfig.gcipApiKey}';
+      final response = await http.post(
+        Uri.parse(url),
+        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+        body:
+            'grant_type=refresh_token&refresh_token=${Uri.encodeQueryComponent(_refreshTokenValue!)}',
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body) as Map<String, dynamic>;
+        final newIdToken = data['id_token'] as String?;
+        final newRefreshToken = data['refresh_token'] as String?;
+        if (newIdToken == null || newRefreshToken == null) {
+          throw Exception('Refresh response missing tokens');
+        }
+        await _handleGCIPToken(newIdToken, refreshToken: newRefreshToken);
+        return true;
+      } else {
+        debugPrint('🏢 Token refresh failed: ${response.body}');
+        return false;
+      }
+    } catch (e) {
+      debugPrint('🏢 Token refresh exception: $e');
+      return false;
+    }
+  }
+
+    }
+  }
+
   /// Get formatted custom claims string for logging
   String _getCustomClaimsString() {
     if (_customClaims == null) return 'None';
-    
+
     final role = _customClaims!['role'] ?? 'user';
     final permissions = _customClaims!['permissions'] ?? [];
     final tenant = _customClaims!['tenant'] ?? 'default';
-    
+
     return 'Role: $role, Tenant: $tenant, Permissions: $permissions';
   }
-  
+
   /// Start automatic token refresh timer
   void _startTokenRefreshTimer() {
     _stopTokenRefreshTimer();
-    _tokenRefreshTimer = Timer.periodic(tokenRefreshInterval, (_) {
-      _refreshToken();
+    _tokenRefreshTimer = Timer.periodic(tokenRefreshInterval, (_) async {
+      await _refreshIdToken();
     });
   }
-  
+
   /// Stop automatic token refresh timer
   void _stopTokenRefreshTimer() {
     _tokenRefreshTimer?.cancel();
     _tokenRefreshTimer = null;
   }
-  
-  /// Refresh the current user's token
-  Future<void> _refreshToken() async {
-    if (_currentUser != null && _currentToken != null) {
-      try {
-        // Refresh token with GCIP
-        final url = '$gcipBaseUrl/securetoken:refresh?key=${AppConfig.gcipApiKey}';
-        
-        final response = await http.post(
-          Uri.parse(url),
-          headers: {'Content-Type': 'application/json'},
-          body: jsonEncode({
-            'grant_type': 'refresh_token',
-            'refresh_token': _currentToken, // In real implementation, use refresh token
-          }),
-        );
-        
-        if (response.statusCode == 200) {
-          final data = jsonDecode(response.body);
-          await _handleGCIPToken(data['id_token']);
-          debugPrint('🏢 Token refreshed successfully');
-        }
-      } catch (e) {
-        debugPrint('🏢 Failed to refresh token: $e');
-      }
-    }
-  }
-  
+
+
+
   /// Login with tenant selection
   Future<void> login({String? tenantId}) async {
     try {
       _isLoading.value = true;
       notifyListeners();
-      
+
       // Set tenant before authentication
       _currentTenant = tenantId ?? AppConfig.tenantConfigs['default'];
-      
+
       debugPrint('🏢 Starting GCIP sign-in for tenant: $_currentTenant');
-      
+
       final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
       if (googleUser == null) {
         debugPrint('🏢 Google sign-in cancelled by user');
         return;
       }
-      
+
       await _authenticateWithGCIP(googleUser);
-      
+
     } catch (e) {
       debugPrint('🏢 GCIP sign-in error: $e');
       rethrow;
@@ -242,19 +421,19 @@ class GCIPAuthService extends ChangeNotifier {
       notifyListeners();
     }
   }
-  
+
   /// Sign in with email and password (GCIP native)
   Future<void> signInWithEmailPassword(String email, String password, {String? tenantId}) async {
     try {
       _isLoading.value = true;
       notifyListeners();
-      
+
       _currentTenant = tenantId ?? AppConfig.tenantConfigs['default'];
-      
+
       debugPrint('🏢 Starting email/password sign-in for tenant: $_currentTenant');
-      
+
       final url = '$gcipBaseUrl/accounts:signInWithPassword?key=${AppConfig.gcipApiKey}';
-      
+
       final response = await http.post(
         Uri.parse(url),
         headers: {'Content-Type': 'application/json'},
@@ -265,7 +444,7 @@ class GCIPAuthService extends ChangeNotifier {
           'tenantId': _currentTenant,
         }),
       );
-      
+
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         await _handleGCIPToken(data['idToken']);
@@ -281,11 +460,11 @@ class GCIPAuthService extends ChangeNotifier {
       notifyListeners();
     }
   }
-  
+
   /// Create account with email and password
   Future<void> createAccountWithEmailPassword(
-    String email, 
-    String password, 
+    String email,
+    String password,
     String displayName, {
     String? tenantId,
     Map<String, dynamic>? customClaims,
@@ -293,13 +472,13 @@ class GCIPAuthService extends ChangeNotifier {
     try {
       _isLoading.value = true;
       notifyListeners();
-      
+
       _currentTenant = tenantId ?? AppConfig.tenantConfigs['default'];
-      
+
       debugPrint('🏢 Creating account for tenant: $_currentTenant');
-      
+
       final url = '$gcipBaseUrl/accounts:signUp?key=${AppConfig.gcipApiKey}';
-      
+
       final response = await http.post(
         Uri.parse(url),
         headers: {'Content-Type': 'application/json'},
@@ -311,16 +490,16 @@ class GCIPAuthService extends ChangeNotifier {
           'tenantId': _currentTenant,
         }),
       );
-      
+
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         await _handleGCIPToken(data['idToken']);
-        
+
         // Set custom claims if provided
         if (customClaims != null) {
           await _setCustomClaims(customClaims);
         }
-        
+
         debugPrint('🏢 Account created successfully - $email');
       } else {
         throw Exception('Account creation failed: ${response.body}');
@@ -333,7 +512,7 @@ class GCIPAuthService extends ChangeNotifier {
       notifyListeners();
     }
   }
-  
+
   /// Set custom claims for the current user
   Future<void> _setCustomClaims(Map<String, dynamic> claims) async {
     // This would typically be done on the backend with admin privileges
@@ -341,24 +520,24 @@ class GCIPAuthService extends ChangeNotifier {
     _customClaims = {...(_customClaims ?? {}), ...claims};
     debugPrint('🏢 Custom claims set: $claims');
   }
-  
+
   /// Logout
   Future<void> logout() async {
     try {
       _isLoading.value = true;
       notifyListeners();
-      
+
       debugPrint('🏢 Signing out...');
-      
+
       await _googleSignIn.signOut();
-      
+
       _currentUser = null;
       _currentToken = null;
       _currentTenant = null;
       _customClaims = null;
       _isAuthenticated.value = false;
       _stopTokenRefreshTimer();
-      
+
       debugPrint('🏢 Sign out successful');
     } catch (e) {
       debugPrint('🏢 Sign out error: $e');
@@ -368,28 +547,28 @@ class GCIPAuthService extends ChangeNotifier {
       notifyListeners();
     }
   }
-  
+
   /// Check if user has specific role
   bool hasRole(String role) {
     return _customClaims?['role'] == role;
   }
-  
+
   /// Check if user has specific permission
   bool hasPermission(String permission) {
     final permissions = _customClaims?['permissions'] as List<dynamic>?;
     return permissions?.contains(permission) ?? false;
   }
-  
+
   /// Check if user is admin
   bool get isAdmin => hasRole('admin') || hasRole('org-admin');
-  
+
   /// Get current user's ID token
   Future<String?> getIdToken({bool forceRefresh = false}) async {
     if (_currentUser == null) return null;
-    
+
     try {
       if (forceRefresh || _currentToken == null) {
-        await _refreshToken();
+        await _refreshIdToken();
       }
       return _currentToken;
     } catch (e) {
@@ -397,33 +576,33 @@ class GCIPAuthService extends ChangeNotifier {
       return null;
     }
   }
-  
+
   /// Legacy compatibility methods
   String? getAccessToken() => _currentToken;
-  
+
   Future<String?> getValidatedAccessToken() async {
     return await getIdToken(forceRefresh: true);
   }
-  
+
   bool get isTokenValid => _currentUser != null && _currentToken != null;
-  
+
   DateTime? get tokenExpiryTime {
     if (_currentToken != null && !JwtDecoder.isExpired(_currentToken!)) {
       return JwtDecoder.getExpirationDate(_currentToken!);
     }
     return null;
   }
-  
+
   Future<void> refreshTokenIfNeeded() async {
-    await _refreshToken();
+    await _refreshIdToken();
   }
-  
+
   /// Update user display name
   Future<void> updateDisplayName(String displayName) async {
     try {
       if (_currentUser != null && _currentToken != null) {
         final url = '$gcipBaseUrl/accounts:update?key=${AppConfig.gcipApiKey}';
-        
+
         final response = await http.post(
           Uri.parse(url),
           headers: {'Content-Type': 'application/json'},
@@ -433,7 +612,7 @@ class GCIPAuthService extends ChangeNotifier {
             'returnSecureToken': true,
           }),
         );
-        
+
         if (response.statusCode == 200) {
           final data = jsonDecode(response.body);
           await _handleGCIPToken(data['idToken']);
@@ -445,23 +624,23 @@ class GCIPAuthService extends ChangeNotifier {
       rethrow;
     }
   }
-  
+
   /// Handle Auth0 callback (legacy compatibility)
   Future<bool> handleCallback({String? callbackUrl}) async {
     debugPrint('🏢 handleCallback called (GCIP - not needed)');
     return false;
   }
-  
+
   /// Mobile-specific: Login with biometric authentication (not supported)
   Future<void> loginWithBiometrics() async {
     throw UnsupportedError('Biometric authentication not implemented for GCIP');
   }
-  
+
   /// Check if biometric authentication is available (not supported)
   Future<bool> isBiometricAvailable() async {
     return false;
   }
-  
+
   /// Get platform information
   Map<String, dynamic> getPlatformInfo() {
     return {
@@ -474,7 +653,7 @@ class GCIPAuthService extends ChangeNotifier {
       'multiTenant': true,
     };
   }
-  
+
   /// Dispose resources
   @override
   void dispose() {

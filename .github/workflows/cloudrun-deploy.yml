@@ -136,11 +136,12 @@ jobs:
 
         echo "IMAGE_${SERVICE^^}=${IMAGE_TAG}" >> $GITHUB_ENV
 
-  # Deploy to Cloud Run
-  deploy:
-    name: Deploy to Cloud Run
+  # Setup Cloud SQL PostgreSQL
+  setup-database:
+    name: Setup Cloud SQL PostgreSQL
     runs-on: ubuntu-latest
     needs: build
+    if: github.event.inputs.service == 'all' || github.event.inputs.service == '' || github.event.inputs.service == 'api'
     environment: ${{ github.event.inputs.environment || 'production' }}
 
     steps:
@@ -157,6 +158,85 @@ jobs:
       uses: google-github-actions/setup-gcloud@v2
       with:
         project_id: ${{ env.PROJECT_ID }}
+
+    - name: Setup Cloud SQL PostgreSQL instance
+      run: |
+        INSTANCE_NAME="cloudtolocalllm-db"
+        DATABASE_NAME="cloudtolocalllm"
+        DB_USER="appuser"
+
+        echo "Checking for existing Cloud SQL instance..."
+        if gcloud sql instances describe $INSTANCE_NAME >/dev/null 2>&1; then
+          echo "✅ Cloud SQL instance '$INSTANCE_NAME' already exists"
+        else
+          echo "📦 Creating Cloud SQL PostgreSQL instance..."
+
+          # Generate secure password and store in Secret Manager
+          DB_PASSWORD=$(openssl rand -base64 32)
+          echo -n "$DB_PASSWORD" | gcloud secrets create db-password --data-file=- || \
+          echo -n "$DB_PASSWORD" | gcloud secrets versions add db-password --data-file=-
+
+          # Create Cloud SQL instance
+          gcloud sql instances create $INSTANCE_NAME \
+            --database-version=POSTGRES_15 \
+            --tier=db-f1-micro \
+            --region=${{ env.REGION }} \
+            --storage-type=SSD \
+            --storage-size=10GB \
+            --storage-auto-increase \
+            --backup-start-time=03:00 \
+            --maintenance-window-day=SUN \
+            --maintenance-window-hour=04 \
+            --deletion-protection
+
+          echo "⏳ Waiting for instance to be ready..."
+          gcloud sql instances describe $INSTANCE_NAME --format="value(state)" | grep -q RUNNABLE
+
+          # Create database
+          echo "🗄️ Creating database: $DATABASE_NAME"
+          gcloud sql databases create $DATABASE_NAME --instance=$INSTANCE_NAME
+
+          # Create user
+          echo "👤 Creating database user: $DB_USER"
+          gcloud sql users create $DB_USER \
+            --instance=$INSTANCE_NAME \
+            --password="$DB_PASSWORD"
+
+          echo "✅ Cloud SQL setup complete"
+        fi
+
+        # Get connection name for deployment
+        CONNECTION_NAME=$(gcloud sql instances describe $INSTANCE_NAME --format="value(connectionName)")
+        echo "CONNECTION_NAME=$CONNECTION_NAME" >> $GITHUB_ENV
+
+  # Deploy to Cloud Run
+  deploy:
+    name: Deploy to Cloud Run
+    runs-on: ubuntu-latest
+    needs: [build, setup-database]
+    environment: ${{ github.event.inputs.environment || 'production' }}
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Authenticate to Google Cloud (WIF)
+      uses: google-github-actions/auth@v2
+      with:
+        workload_identity_provider: ${{ vars.WIF_PROVIDER }}
+        service_account: ${{ vars.WIF_SERVICE_ACCOUNT }}
+
+    - name: Setup Google Cloud SDK
+      uses: google-github-actions/setup-gcloud@v2
+      with:
+        project_id: ${{ env.PROJECT_ID }}
+
+    - name: Get Cloud SQL connection info
+      if: github.event.inputs.service == 'all' || github.event.inputs.service == '' || github.event.inputs.service == 'api'
+      run: |
+        INSTANCE_NAME="cloudtolocalllm-db"
+        CONNECTION_NAME=$(gcloud sql instances describe $INSTANCE_NAME --format="value(connectionName)" 2>/dev/null || echo "")
+        echo "CONNECTION_NAME=$CONNECTION_NAME" >> $GITHUB_ENV
 
     - name: Deploy Web Service
       if: github.event.inputs.service == 'all' || github.event.inputs.service == '' || github.event.inputs.service == 'web'
@@ -180,6 +260,10 @@ jobs:
     - name: Deploy API Service
       if: github.event.inputs.service == 'all' || github.event.inputs.service == '' || github.event.inputs.service == 'api'
       run: |
+        # Get database password from Secret Manager
+        DB_PASSWORD=$(gcloud secrets versions access latest --secret="db-password" 2>/dev/null || echo "")
+
+        # Deploy with PostgreSQL configuration
         gcloud run deploy cloudtolocalllm-api \
           --image=${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/api:${{ github.sha }} \
           --platform=managed \
@@ -193,7 +277,8 @@ jobs:
           --concurrency=100 \
           --timeout=900 \
           --service-account=cloudtolocalllm-runner@${{ env.PROJECT_ID }}.iam.gserviceaccount.com \
-          --set-env-vars="NODE_ENV=production,LOG_LEVEL=info,DB_TYPE=sqlite,FIREBASE_PROJECT_ID=${{ vars.FIREBASE_PROJECT_ID || 'cloudtolocalllm-468303' }}" \
+          --set-env-vars="NODE_ENV=production,LOG_LEVEL=info,DB_TYPE=postgresql,DB_NAME=cloudtolocalllm,DB_USER=appuser,DB_PASSWORD=$DB_PASSWORD,DB_HOST=/cloudsql/$CONNECTION_NAME,CLOUD_SQL_CONNECTION_NAME=$CONNECTION_NAME,FIREBASE_PROJECT_ID=${{ vars.FIREBASE_PROJECT_ID || 'cloudtolocalllm-468303' }}" \
+          --add-cloudsql-instances="$CONNECTION_NAME" \
           --quiet
 
     - name: Deploy Streaming Service
@@ -258,10 +343,20 @@ jobs:
           curl -f "$WEB_URL/health" || echo "Web service health check failed"
         fi
 
-        # Check API service
+        # Check API service and database
         if [ -n "$API_URL" ]; then
           echo "Checking API service health..."
           curl -f "$API_URL/health" || echo "API service health check failed"
+
+          echo "Checking database health..."
+          DB_HEALTH=$(curl -s "$API_URL/api/db/health" | jq -r '.status' 2>/dev/null || echo "error")
+          if [ "$DB_HEALTH" = "healthy" ]; then
+            echo "✅ Database health check passed"
+            curl -s "$API_URL/api/db/health" | jq '.'
+          else
+            echo "❌ Database health check failed"
+            curl -s "$API_URL/api/db/health" || echo "Could not reach database health endpoint"
+          fi
         fi
 
         # Check streaming service

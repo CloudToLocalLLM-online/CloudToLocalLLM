@@ -17,8 +17,8 @@ RUN npm ci --omit=dev --ignore-scripts && \
 # Stage 2: Production container
 FROM node:18-alpine
 
-# Install curl for health checks and dumb-init for proper signal handling
-RUN apk add --no-cache curl dumb-init
+# Install curl for health checks, dumb-init for proper signal handling, and PostgreSQL client
+RUN apk add --no-cache curl dumb-init postgresql-client ca-certificates
 
 # Create app user for security
 RUN addgroup -g 1001 -S nodejs && \
@@ -50,15 +50,12 @@ ENV PORT=8080
 # Expose port (Cloud Run will set PORT environment variable)
 EXPOSE $PORT
 
-# Health check optimized for Cloud Run
+# Health check optimized for Cloud Run with database health
 HEALTHCHECK --interval=30s --timeout=10s --start-period=15s --retries=3 \
-    CMD curl --fail http://localhost:$PORT/health || exit 1
+    CMD curl --fail http://localhost:$PORT/api/db/health || exit 1
 
 # Use dumb-init for proper signal handling in Cloud Run
 ENTRYPOINT ["dumb-init", "--"]
 
-# Copy the Firebase-enabled production server
-COPY config/cloudrun/firebase-server.js /app/firebase-server.js
-
-# Start with the Firebase-enabled production server
-CMD ["node", "--max-old-space-size=512", "firebase-server.js"]
+# Start with the main server (already includes Firebase and PostgreSQL support)
+CMD ["node", "--max-old-space-size=512", "server.js"]
