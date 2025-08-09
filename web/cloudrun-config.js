@@ -7,7 +7,7 @@ window.cloudRunConfig = {
   isCloudRun: window.location.hostname.includes('.run.app') || 
               window.location.hostname.includes('cloudtolocalllm'),
   
-  // Production subdomain URLs
+  // Production subdomain URLs (defaults)
   services: {
     api: {
       baseUrl: 'https://api.cloudtolocalllm.online',
@@ -30,7 +30,7 @@ window.cloudRunConfig = {
       }
     }
   },
-  
+
   // API configuration for Cloud Run
   api: {
     timeout: 30000, // 30 seconds
@@ -79,25 +79,42 @@ window.cloudRunConfig = {
   // Initialize service discovery
   init: async function() {
     console.log('CloudToLocalLLM: Initializing Cloud Run configuration...');
-    
+
+    // If running on *.run.app, derive API/Streaming service base URLs from known naming convention
+    if (this.isCloudRun) {
+      try {
+        const host = window.location.hostname; // e.g., cloudtolocalllm-web-<hash>-<region>.a.run.app
+        const apiHost = host.replace('web-', 'api-').replace('web.', 'api.');
+        const streamingHost = host.replace('web-', 'streaming-').replace('web.', 'streaming.');
+        // Only apply if endsWith .run.app
+        if (host.endsWith('.run.app') || host.endsWith('.a.run.app')) {
+          this.services.api.baseUrl = `https://${apiHost}`;
+          this.services.streaming.baseUrl = `https://${streamingHost}`;
+          console.log('CloudToLocalLLM: Derived service base URLs from run.app host:', this.services);
+        }
+      } catch (e) {
+        console.warn('CloudToLocalLLM: Failed to derive run.app service URLs:', e.message);
+      }
+    }
+
     if (!this.isCloudRun) {
       console.log('CloudToLocalLLM: Not running on Cloud Run, using default configuration');
       return;
     }
-    
+
     try {
       // Discover available services
       await this.discoverServices();
-      
+
       // Start health monitoring
       this.startHealthMonitoring();
-      
+
       console.log('CloudToLocalLLM: Cloud Run configuration initialized successfully');
     } catch (error) {
       console.error('CloudToLocalLLM: Failed to initialize Cloud Run configuration:', error);
     }
   },
-  
+
   // Discover available services
   discoverServices: async function() {
     console.log('CloudToLocalLLM: Discovering services...');

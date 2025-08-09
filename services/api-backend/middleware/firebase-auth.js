@@ -12,10 +12,12 @@ const initializeFirebase = () => {
     try {
       // In Cloud Run, use Application Default Credentials
       if (process.env.GOOGLE_APPLICATION_CREDENTIALS || process.env.K_SERVICE) {
-        admin.initializeApp({
-          credential: admin.credential.applicationDefault(),
-          projectId: process.env.FIREBASE_PROJECT_ID || 'cloudtolocalllm-auth',
-        });
+        // In Cloud Run, prefer Application Default Credentials and infer project ID if provided
+        const options = { credential: admin.credential.applicationDefault() };
+        if (process.env.FIREBASE_PROJECT_ID) {
+          options.projectId = process.env.FIREBASE_PROJECT_ID;
+        }
+        admin.initializeApp(options);
       } else {
         // For local development, use service account key
         const serviceAccount = process.env.FIREBASE_SERVICE_ACCOUNT_KEY
@@ -23,10 +25,11 @@ const initializeFirebase = () => {
           : null;
 
         if (serviceAccount) {
-          admin.initializeApp({
-            credential: admin.credential.cert(serviceAccount),
-            projectId: process.env.FIREBASE_PROJECT_ID || 'cloudtolocalllm-auth',
-          });
+          const options = { credential: admin.credential.cert(serviceAccount) };
+          if (process.env.FIREBASE_PROJECT_ID) {
+            options.projectId = process.env.FIREBASE_PROJECT_ID;
+          }
+          admin.initializeApp(options);
         } else {
           console.warn('Firebase credentials not found. Authentication will not work.');
           return false;

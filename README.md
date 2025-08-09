@@ -2,7 +2,7 @@
 
 [![Cloud Run Deployment](https://img.shields.io/badge/Cloud%20Run-Ready-blue)](docs/DEPLOYMENT/CLOUDRUN_DEPLOYMENT.md): Your Personal AI Powerhouse
 
-[![Version](https://img.shields.io/badge/version-4.0.86-blue.svg)](https://github.com/imrightguy/CloudToLocalLLM/releases)
+[![Version](https://img.shields.io/badge/version-4.0.87-blue.svg)](https://github.com/imrightguy/CloudToLocalLLM/releases)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Flutter](https://img.shields.io/badge/Flutter-3.8+-blue.svg)](https://flutter.dev)
 [![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20Windows%20%7C%20Web-lightgrey.svg)](https://github.com/imrightguy/CloudToLocalLLM)
@@ -52,7 +52,7 @@ CloudToLocalLLM is a revolutionary Flutter-based application that bridges the ga
    # For desktop (Windows/Linux)
    flutter run -d windows
    flutter run -d linux
-   
+
    # For web
    flutter run -d chrome
    ```
@@ -143,6 +143,10 @@ flutter build linux --release
 # Build for Web
 flutter build web --release
 ```
+### Security
+
+Cloud Run deployment uses keyless authentication via GitHub OIDC and Google Cloud Workload Identity Federation (WIF). This avoids long‑lived service account keys and is our recommended best practice. See the [Cloud Run OIDC/WIF Guide](config/cloudrun/OIDC_WIF_SETUP.md).
+
 
 ## Deployment
 
@@ -183,7 +187,7 @@ git push origin main
 **What happens automatically:**
 - Builds Docker containers for web, API, and streaming services
 - Deploys to Google Cloud Run at `app.cloudtolocalllm.online`
-- Configures environment variables and secrets
+- Configures environment variables; uses OIDC/WIF repository Variables for Cloud Run authentication (no service account keys)
 - Performs health checks and verification
 
 ### 📋 CI/CD Pipeline Overview
@@ -194,10 +198,12 @@ git push origin main
 | PowerShell script | Desktop build | GitHub release with desktop binaries |
 | Push to `releases/v*` | Cross-platform build | Multi-platform desktop packages |
 
+- **[Cloud Run OIDC/WIF Guide](config/cloudrun/OIDC_WIF_SETUP.md)** - For keyless GitHub Actions deployment setup, see our OIDC/WIF guide
+
 ### 📚 Documentation
 
 - **[CI/CD Pipeline Guide](docs/DEPLOYMENT/CI_CD_PIPELINE_GUIDE.md)** - Complete pipeline documentation
-- **[GitHub Secrets Setup](docs/DEPLOYMENT/GITHUB_SECRETS_SETUP.md)** - Required secrets configuration
+- **[GitHub Secrets Setup](docs/DEPLOYMENT/GITHUB_SECRETS_SETUP.md)** - Application secrets configuration. Note: Cloud Run authentication now uses OIDC/WIF with repository Variables (no service account keys); see the OIDC/WIF guide below.
 - **[Complete Deployment Workflow](docs/DEPLOYMENT/COMPLETE_DEPLOYMENT_WORKFLOW.md)** - Step-by-step deployment guide
 
 ## Configuration
