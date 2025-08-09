@@ -29,8 +29,8 @@ const initializeFirebase = () => {
   return firebaseInitialized;
 };
 
-// CORS configuration for subdomains
-const corsOrigins = process.env.CORS_ORIGINS 
+// CORS configuration: allow project domains and Cloud Run *.run.app origins
+const staticCorsOrigins = process.env.CORS_ORIGINS
   ? process.env.CORS_ORIGINS.split(',').map(origin => origin.trim())
   : [
       'https://app.cloudtolocalllm.online',
@@ -39,10 +39,28 @@ const corsOrigins = process.env.CORS_ORIGINS
       'https://streaming.cloudtolocalllm.online'
     ];
 
+// Origin check helper for run.app and project domains
+const isAllowedOrigin = (origin) => {
+  if (!origin) return true; // non-browser or same-origin
+  try {
+    const url = new URL(origin);
+    const host = url.hostname;
+    if (staticCorsOrigins.includes(origin)) return true;
+    // Allow any Cloud Run service default domain
+    if (host.endsWith('.run.app') || host.endsWith('.a.run.app')) return true;
+    // Allow any subdomain of our primary domain
+    if (host === 'cloudtolocalllm.online' || host.endsWith('.cloudtolocalllm.online')) return true;
+  } catch (_) {
+    // If origin isn't a valid URL, be conservative and deny
+    return false;
+  }
+  return false;
+};
+
 console.log('CloudToLocalLLM API with Firebase Auth starting...');
 console.log('Port:', port);
 console.log('Firebase Project:', process.env.FIREBASE_PROJECT_ID);
-console.log('CORS Origins:', corsOrigins);
+console.log('CORS Origins (static):', staticCorsOrigins);
 
 // Initialize Firebase
 const firebaseReady = initializeFirebase();
@@ -53,7 +71,8 @@ app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      connectSrc: ["'self'", ...corsOrigins],
+      // Allow connections to our domains and Cloud Run default domains
+      connectSrc: ["'self'", ...staticCorsOrigins, 'https://*.run.app', 'https://*.a.run.app'],
       scriptSrc: ["'self'", "'unsafe-inline'"],
       styleSrc: ["'self'", "'unsafe-inline'"],
       imgSrc: ["'self'", "data:", "https:"],
@@ -61,8 +80,13 @@ app.use(helmet({
   },
 }));
 
-app.use(cors({ 
-  origin: corsOrigins, 
+app.use(cors({
+  origin: (origin, callback) => {
+    if (isAllowedOrigin(origin)) {
+      return callback(null, true);
+    }
+    return callback(new Error('Not allowed by CORS'));
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'X-API-Key'],
