@@ -174,7 +174,7 @@ jobs:
           --concurrency=80 \
           --timeout=300 \
           --service-account=cloudtolocalllm-runner@${{ env.PROJECT_ID }}.iam.gserviceaccount.com \
-          --set-env-vars="NODE_ENV=production,LOG_LEVEL=info,FIREBASE_PROJECT_ID=${{ vars.FIREBASE_PROJECT_ID || 'cloudtolocalllm-auth' }}" \
+          --set-env-vars="NODE_ENV=production,LOG_LEVEL=info,FIREBASE_PROJECT_ID=${{ vars.FIREBASE_PROJECT_ID || 'cloudtolocalllm-468303' }}" \
           --quiet
 
     - name: Deploy API Service
@@ -193,7 +193,7 @@ jobs:
           --concurrency=100 \
           --timeout=900 \
           --service-account=cloudtolocalllm-runner@${{ env.PROJECT_ID }}.iam.gserviceaccount.com \
-          --set-env-vars="NODE_ENV=production,LOG_LEVEL=info,DB_TYPE=sqlite,FIREBASE_PROJECT_ID=${{ vars.FIREBASE_PROJECT_ID || 'cloudtolocalllm-auth' }}" \
+          --set-env-vars="NODE_ENV=production,LOG_LEVEL=info,DB_TYPE=sqlite,FIREBASE_PROJECT_ID=${{ vars.FIREBASE_PROJECT_ID || 'cloudtolocalllm-468303' }}" \
           --quiet
 
     - name: Deploy Streaming Service
@@ -212,7 +212,7 @@ jobs:
           --concurrency=50 \
           --timeout=3600 \
           --service-account=cloudtolocalllm-runner@${{ env.PROJECT_ID }}.iam.gserviceaccount.com \
-          --set-env-vars="NODE_ENV=production,LOG_LEVEL=info,FIREBASE_PROJECT_ID=${{ vars.FIREBASE_PROJECT_ID || 'cloudtolocalllm-auth' }}" \
+          --set-env-vars="NODE_ENV=production,LOG_LEVEL=info,FIREBASE_PROJECT_ID=${{ vars.FIREBASE_PROJECT_ID || 'cloudtolocalllm-468303' }}" \
           --quiet
 
   # Post-deployment verification
