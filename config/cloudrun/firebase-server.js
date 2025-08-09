@@ -148,7 +148,7 @@ app.get('/health', (req, res) => {
       initialized: firebaseInitialized,
       projectId: process.env.FIREBASE_PROJECT_ID
     },
-    cors: corsOrigins,
+    cors: staticCorsOrigins,
     environment: process.env.NODE_ENV || 'development'
   };
   
