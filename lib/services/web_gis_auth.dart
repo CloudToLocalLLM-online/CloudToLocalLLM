@@ -14,9 +14,11 @@ class GisConfig {
   external set callback(Function f);
   external String? get ux_mode;
   external set ux_mode(String? v);
+  external String? get login_uri;
+  external set login_uri(String? v);
   external bool? get auto_select;
   external set auto_select(bool? v);
-  external factory GisConfig({String client_id, Function callback, String? ux_mode, bool? auto_select});
+  external factory GisConfig({String client_id, Function callback, String? ux_mode, String? login_uri, bool? auto_select});
 }
 
 @JS('initialize')

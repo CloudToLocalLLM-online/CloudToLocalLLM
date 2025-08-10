@@ -51,6 +51,9 @@ window.cloudRunConfig = {
     }
   },
   
+  // GCIP/GIS configuration can be injected here by environment
+  gcipApiKey: null, // set this at deploy time if you need to override
+
   // Feature flags for Cloud Run environment
   features: {
     localOllama: false, // Disable local Ollama connections

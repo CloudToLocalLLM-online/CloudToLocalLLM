@@ -9,10 +9,12 @@ class AnchorElement {
 
 class Document {
   Element? get body => null;
+  Element? querySelector(String selector) => null;
 }
 
 class Element {
   List<Element> get children => [];
+  String? getAttribute(String name) => null;
 }
 
 class Navigator {

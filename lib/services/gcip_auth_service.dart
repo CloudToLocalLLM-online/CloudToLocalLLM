@@ -46,6 +46,36 @@ class GCIPAuthService extends ChangeNotifier {
   static const Duration tokenRefreshInterval = Duration(minutes: 50);
   static const String gcipBaseUrl = 'https://identitytoolkit.googleapis.com/v1';
 
+  // Resolve GCIP API key at runtime (web can override via window.cloudRunConfig or meta tag)
+  String _getGcipApiKey() {
+    if (kIsWeb) {
+      try {
+        final cfg = jsGetNested(window: web.window, path: ['cloudRunConfig', 'gcipApiKey']);
+        if (cfg is String && cfg.isNotEmpty) return cfg;
+      } catch (_) {}
+      try {
+        final meta = web.document.querySelector('meta[name="gcip-api-key"]');
+        final content = meta?.getAttribute('content');
+        if (content != null && content.isNotEmpty) return content;
+      } catch (_) {}
+    }
+    return AppConfig.gcipApiKey;
+  }
+
+  // Helper: safe nested property getter for web window
+  dynamic jsGetNested({required web.Window window, required List<String> path}) {
+    dynamic cur = window as dynamic;
+    for (final key in path) {
+      try {
+        cur = (cur as dynamic?)?[key];
+      } catch (_) {
+        return null;
+      }
+      if (cur == null) return null;
+    }
+    return cur;
+  }
+
   // Getters
   ValueNotifier<bool> get isAuthenticated => _isAuthenticated;
   ValueNotifier<bool> get isLoading => _isLoading;
@@ -144,7 +174,7 @@ class GCIPAuthService extends ChangeNotifier {
   }
 
   Future<String> _exchangeGoogleTokenForGCIP({String? idToken, String? accessToken}) async {
-    final url = '$gcipBaseUrl/accounts:signInWithIdp?key=${AppConfig.gcipApiKey}';
+    final url = '$gcipBaseUrl/accounts:signInWithIdp?key=${_getGcipApiKey()}';
 
     // Build postBody with only non-null params
     final parts = <String>[];
@@ -359,7 +389,7 @@ class GCIPAuthService extends ChangeNotifier {
     if (_refreshTokenValue == null) return false;
     try {
       final url =
-          'https://securetoken.googleapis.com/v1/token?key=${AppConfig.gcipApiKey}';
+          'https://securetoken.googleapis.com/v1/token?key=${_getGcipApiKey()}';
       final response = await http.post(
         Uri.parse(url),
         headers: {'Content-Type': 'application/x-www-form-urlencoded'},
