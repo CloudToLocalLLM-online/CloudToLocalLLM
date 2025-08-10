@@ -186,6 +186,9 @@ class GCIPAuthService extends ChangeNotifier {
     }
     parts.add('providerId=google.com');
 
+    if (kIsWeb) {
+      debugPrint('🏢 GCIP: signInWithIdp using key: ${_getGcipApiKey()}');
+    }
     final response = await http.post(
       Uri.parse(url),
       headers: {'Content-Type': 'application/json'},

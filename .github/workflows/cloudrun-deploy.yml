@@ -254,7 +254,7 @@ jobs:
           --concurrency=80 \
           --timeout=300 \
           --service-account=cloudtolocalllm-runner@${{ env.PROJECT_ID }}.iam.gserviceaccount.com \
-          --set-env-vars="NODE_ENV=production,LOG_LEVEL=info,FIREBASE_PROJECT_ID=${{ vars.FIREBASE_PROJECT_ID || 'cloudtolocalllm-468303' }}" \
+          --set-env-vars="NODE_ENV=production,LOG_LEVEL=info,FIREBASE_PROJECT_ID=${{ vars.FIREBASE_PROJECT_ID || 'cloudtolocalllm-468303' }},GCIP_API_KEY=${{ secrets.GCIP_API_KEY }}" \
           --quiet
 
     - name: Deploy API Service

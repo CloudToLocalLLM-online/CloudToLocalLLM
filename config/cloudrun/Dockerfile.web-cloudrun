@@ -81,6 +81,9 @@ EXPOSE $PORT
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD curl --fail http://localhost:$PORT/health || exit 1
 
-# Start nginx with envsubst to handle PORT variable
-CMD envsubst '$$PORT' < /etc/nginx/nginx.conf > /tmp/nginx.conf && \
-    nginx -c /tmp/nginx.conf -g 'daemon off;'
+# Copy entrypoint to inject runtime variables
+COPY config/cloudrun/docker-entrypoint-web.sh /usr/local/bin/docker-entrypoint-web.sh
+RUN chmod +x /usr/local/bin/docker-entrypoint-web.sh
+
+# Start via entrypoint to inject GCIP_API_KEY and render nginx config
+ENTRYPOINT ["/usr/local/bin/docker-entrypoint-web.sh"]
