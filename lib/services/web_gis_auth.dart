@@ -27,32 +27,21 @@ external void _initialize(GisConfig config);
 @JS('prompt')
 external void _prompt([Function? cb]);
 
-Future<void> _waitForGisReady({Duration timeout = const Duration(seconds: 15)}) async {
-  final start = DateTime.now();
-  while (true) {
-    try {
-      // Access a property to check readiness
-      try {
-        final g = js_util.getProperty<Object?>(js_util.globalThis, 'google');
-        if (g != null) {
-          final accounts = js_util.getProperty<Object?>(g, 'accounts');
-          if (accounts != null) {
-            final id = js_util.getProperty<Object?>(accounts, 'id');
-            if (id != null) {
-              final initialize = js_util.getProperty<Object?>(id, 'initialize');
-              if (initialize != null) {
-                return;
-              }
-            }
-          }
-        }
-      } catch (_) {}
-    } catch (_) {}
-    if (DateTime.now().difference(start) > timeout) {
-      throw TimeoutException('GIS not ready');
-    }
-    await Future.delayed(const Duration(milliseconds: 200));
+final _gisReadyCompleter = Completer<void>();
+
+@JS('onGoogleLibraryLoad')
+external void _onGoogleLibraryLoad();
+
+void _completeGisReady() {
+  if (!_gisReadyCompleter.isCompleted) {
+    _gisReadyCompleter.complete();
   }
+}
+
+Future<void> _waitForGisReady({Duration timeout = const Duration(seconds: 15)}) async {
+  // Register the Dart function to be called from JavaScript
+  js_util.setProperty(js_util.globalThis, 'onGoogleLibraryLoad', js_util.allowInterop(_completeGisReady));
+  return _gisReadyCompleter.future.timeout(timeout);
 }
 
 /// Perform a Google Identity Services sign-in and return the ID token (JWT)
