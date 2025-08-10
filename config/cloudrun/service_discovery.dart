@@ -5,9 +5,10 @@
 import 'dart:convert';
 import 'dart:async';
 import 'package:flutter/foundation.dart';
+import 'package:http/http.dart' as http;
 
-// Conditional imports for web-only functionality
-import 'dart:html' as html if (dart.library.html) 'dart:html';
+// Conditional imports for web-only functionality via package:web
+import 'web_platform_stub_for_config.dart' if (dart.library.html) 'package:web/web.dart' as html;
 
 class CloudRunConfig {
   static const String _configKey = 'cloudrun_config';
@@ -68,19 +69,18 @@ class CloudRunConfig {
   /// Detect if running on Cloud Run
   bool _detectCloudRun() {
     final hostname = html.window.location.hostname;
-    return hostname?.contains('.run.app') == true ||
-           hostname?.contains('cloudtolocalllm') == true;
+    return hostname.contains('.run.app') || hostname.contains('cloudtolocalllm');
   }
   
   /// Load Cloud Run specific configuration
   Future<void> _loadCloudRunConfig() async {
     final hostname = html.window.location.hostname;
     final protocol = html.window.location.protocol;
-    
+
     // Determine service URLs based on Cloud Run naming convention
-    if (hostname?.startsWith('cloudtolocalllm-web') == true) {
+    if (hostname.startsWith('cloudtolocalllm-web')) {
       // We're on the web service, derive other service URLs
-      final baseDomain = hostname!.replaceFirst('cloudtolocalllm-web', '');
+      final baseDomain = hostname.replaceFirst('cloudtolocalllm-web', '');
       webServiceUrl = '$protocol//$hostname';
       apiServiceUrl = '$protocol//cloudtolocalllm-api$baseDomain';
       streamingServiceUrl = '$protocol//cloudtolocalllm-streaming$baseDomain';
@@ -90,12 +90,13 @@ class CloudRunConfig {
       apiServiceUrl = '$protocol//$hostname';
       streamingServiceUrl = '$protocol//$hostname';
     }
-    
+
     // Try to load configuration from JavaScript
     try {
       final configScript = html.document.querySelector('script[data-config="cloudrun"]');
-      if (configScript != null) {
-        config = jsonDecode(configScript.text!);
+      final text = configScript?.textContent;
+      if (text != null && text.isNotEmpty) {
+        config = jsonDecode(text);
         _applyConfigOverrides();
       }
     } catch (e) {
@@ -103,7 +104,7 @@ class CloudRunConfig {
         debugPrint('CloudToLocalLLM: Could not load JavaScript config: $e');
       }
     }
-    
+
     // Discover actual service URLs
     await _discoverServices();
   }
@@ -216,46 +217,21 @@ class CloudRunConfig {
     }
   }
   
-  /// Make HTTP request with timeout
+  /// Make HTTP request with timeout (uses package:http for cross-platform compatibility)
   Future<Map<String, dynamic>?> _makeRequest(String url, {int timeout = 10}) async {
     try {
-      final request = html.HttpRequest();
-      request.open('GET', url);
-      request.setRequestHeader('Accept', 'application/json');
-      
-      final completer = Completer<Map<String, dynamic>?>();
-      
-      request.onLoad.listen((e) {
-        if (request.status == 200) {
-          try {
-            final data = jsonDecode(request.responseText!);
-            completer.complete(data);
-          } catch (e) {
-            completer.complete(null);
-          }
-        } else {
-          completer.complete(null);
+      final resp = await http
+          .get(Uri.parse(url), headers: const {'Accept': 'application/json'})
+          .timeout(Duration(seconds: timeout));
+      if (resp.statusCode == 200) {
+        final body = resp.body;
+        if (body.isNotEmpty) {
+          final data = jsonDecode(body);
+          if (data is Map<String, dynamic>) return data;
         }
-      });
-      
-      request.onError.listen((e) {
-        completer.complete(null);
-      });
-      
-      request.send();
-      
-      // Add timeout
-      Timer(Duration(seconds: timeout), () {
-        if (!completer.isCompleted) {
-          request.abort();
-          completer.complete(null);
-        }
-      });
-      
-      return await completer.future;
-    } catch (e) {
-      return null;
-    }
+      }
+    } catch (_) {}
+    return null;
   }
   
   /// Get API endpoint URL
@@ -305,13 +281,14 @@ class CloudRunConfig {
       'timestamp': DateTime.now().toIso8601String(),
     };
     
-    html.window.localStorage[_configKey] = jsonEncode(configData);
+    // package:web exposes localStorage via html.window.localStorage with WebIDL methods
+    html.window.localStorage.setItem(_configKey, jsonEncode(configData));
   }
   
   /// Load configuration from local storage
   bool loadConfig() {
     try {
-      final configJson = html.window.localStorage[_configKey];
+      final configJson = html.window.localStorage.getItem(_configKey);
       if (configJson != null) {
         final configData = jsonDecode(configJson);
         
@@ -334,6 +311,6 @@ class CloudRunConfig {
   
   /// Clear saved configuration
   void clearConfig() {
-    html.window.localStorage.remove(_configKey);
+    html.window.localStorage.removeItem(_configKey);
   }
 }

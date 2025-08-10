@@ -1,5 +1,5 @@
+// ignore_for_file: avoid_web_libraries_in_flutter, deprecated_member_use, non_constant_identifier_names, unused_element_parameter, unnecessary_library_name
 @JS('google.accounts.id')
-library web_gis_auth;
 
 import 'dart:async';
 import 'dart:js_util' as js_util;
@@ -8,17 +8,17 @@ import 'package:js/js.dart';
 @JS()
 @anonymous
 class GisConfig {
-  external String get client_id;
-  external set client_id(String v);
+  external String get clientId;
+  external set clientId(String v);
   external Function get callback;
   external set callback(Function f);
-  external String? get ux_mode;
-  external set ux_mode(String? v);
-  external String? get login_uri;
-  external set login_uri(String? v);
-  external bool? get auto_select;
-  external set auto_select(bool? v);
-  external factory GisConfig({String client_id, Function callback, String? ux_mode, String? login_uri, bool? auto_select});
+  external String? get uxMode;
+  external set uxMode(String? v);
+  external String? get loginUri;
+  external set loginUri(String? v);
+  external bool? get autoSelect;
+  external set autoSelect(bool? v);
+  external factory GisConfig({String clientId, Function callback, String? uxMode, String? loginUri, bool? autoSelect});
 }
 
 @JS('initialize')
@@ -62,10 +62,10 @@ Future<String> gisSignIn(String clientId) async {
   }
 
   _initialize(GisConfig(
-    client_id: clientId,
+    clientId: clientId,
     callback: allowInterop(onCredential),
-    ux_mode: 'popup',
-    auto_select: false,
+    uxMode: 'popup',
+    autoSelect: false,
   ));
 
   _prompt();

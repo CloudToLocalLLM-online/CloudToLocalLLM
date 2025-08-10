@@ -36,8 +36,8 @@ RUN flutter build web --release
 # Stage 2: Serve with Nginx optimized for Cloud Run
 FROM nginx:alpine
 
-# Install curl for health checks
-RUN apk add --no-cache curl
+# Install curl for health checks and gettext for envsubst
+RUN apk add --no-cache curl gettext
 
 # Create nginx user directories
 RUN mkdir -p /var/cache/nginx/client_temp \
