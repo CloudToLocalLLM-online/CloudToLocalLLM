@@ -48,19 +48,8 @@ else
   exit 1
 fi
 
-# Inject PORT into nginx config (KISS)
-NGINX_CONF="/etc/nginx/nginx.conf"
-if [ -f "$NGINX_CONF" ]; then
-  PORT_VAL="${PORT:-8080}"
-  if ! sed -i "s|\${PORT}|${PORT_VAL}|g" "$NGINX_CONF"; then
-    error "Failed to inject PORT into nginx config"
-    exit 1
-  fi
-  log "Injected PORT=${PORT_VAL} into nginx config"
-else
-  error "Nginx config not found at $NGINX_CONF"
-  exit 1
-fi
+# Using static nginx config which already listens on port 8080 for Cloud Run
+log "Using nginx config at /etc/nginx/nginx.conf (expected to listen on 8080)"
 
 # Start nginx in foreground; exec to hand off PID 1
 exec nginx -g 'daemon off;'
