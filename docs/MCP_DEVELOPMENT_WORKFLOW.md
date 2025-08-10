@@ -45,10 +45,10 @@ Follow this workflow for any development task using MCP tools.
 ### 5. Committing Changes
 - **Objective**: Save the work to version control.
 - **Actions**:
-    - Use the `git` MCP server for granular control over the Git workflow.
-        - `git_status` to review changes.
-        - `git_add` to stage changes.
-        - `git_commit` to commit with a descriptive message.
+    - Use the `execute_command` tool to run `git` commands directly.
+        - `git status` to review changes.
+        - `git add <file>` to stage changes.
+        - `git commit -m "message"` to commit with a descriptive message.
     - Alternatively, use the existing PowerShell scripts (`push-dev.ps1`) for a streamlined commit process.
 
 ## Best Practices for Common Tools
@@ -91,7 +91,7 @@ Follow this workflow for any development task using MCP tools.
     - `browser_action --action close`.
 
 5.  **Committing**:
-    - `use_mcp_tool --server_name git --tool_name git_add --arguments '{"repo_path": ".", "files": ["lib/screens/home_screen.dart"]}'`
-    - `use_mcp_tool --server_name git --tool_name git_commit --arguments '{"repo_path": ".", "message": "feat: Add greeting button to home screen"}'`
+    - `execute_command --command "git add lib/screens/home_screen.dart"`
+    - `execute_command --command "git commit -m 'feat: Add greeting button to home screen'"`
 
 By following this workflow, development with MCP tools will be structured, predictable, and less prone to errors.
