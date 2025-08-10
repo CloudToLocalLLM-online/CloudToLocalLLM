@@ -32,8 +32,21 @@ Future<void> _waitForGisReady({Duration timeout = const Duration(seconds: 15)}) 
   while (true) {
     try {
       // Access a property to check readiness
-      final g = js_util.getProperty<Object?>(js_util.globalThis, 'google');
-      if (g != null) return;
+      try {
+        final g = js_util.getProperty<Object?>(js_util.globalThis, 'google');
+        if (g != null) {
+          final accounts = js_util.getProperty<Object?>(g, 'accounts');
+          if (accounts != null) {
+            final id = js_util.getProperty<Object?>(accounts, 'id');
+            if (id != null) {
+              final initialize = js_util.getProperty<Object?>(id, 'initialize');
+              if (initialize != null) {
+                return;
+              }
+            }
+          }
+        }
+      } catch (_) {}
     } catch (_) {}
     if (DateTime.now().difference(start) > timeout) {
       throw TimeoutException('GIS not ready');
