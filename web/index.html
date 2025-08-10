@@ -45,6 +45,9 @@
   <title>CloudToLocalLLM</title>
   <link rel="manifest" href="manifest.json">
 
+  <!-- Runtime GCIP config injected by Cloud Run entrypoint -->
+  <script src="cloudrun-config.js"></script>
+
   <!-- Google Identity Services (GIS) for Web Sign-In -->
   <meta name="google-signin-client_id" content="923995245673-hn9fcp61bgu7dkrjft0u6vlt3ohjnrth.apps.googleusercontent.com">
   <meta name="gcip-api-key" content="${GCIP_API_KEY}">

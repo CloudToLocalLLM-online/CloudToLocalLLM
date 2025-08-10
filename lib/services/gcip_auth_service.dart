@@ -67,7 +67,7 @@ class GCIPAuthService extends ChangeNotifier {
     dynamic cur = window as dynamic;
     for (final key in path) {
       try {
-        cur = (cur as dynamic?)?[key];
+        cur = (cur as dynamic)[key];
       } catch (_) {
         return null;
       }
@@ -493,7 +493,7 @@ class GCIPAuthService extends ChangeNotifier {
 
       debugPrint('🏢 Starting email/password sign-in for tenant: $_currentTenant');
 
-      final url = '$gcipBaseUrl/accounts:signInWithPassword?key=${AppConfig.gcipApiKey}';
+      final url = '$gcipBaseUrl/accounts:signInWithPassword?key=${_getGcipApiKey()}';
 
       final response = await http.post(
         Uri.parse(url),
@@ -538,7 +538,7 @@ class GCIPAuthService extends ChangeNotifier {
 
       debugPrint('🏢 Creating account for tenant: $_currentTenant');
 
-      final url = '$gcipBaseUrl/accounts:signUp?key=${AppConfig.gcipApiKey}';
+      final url = '$gcipBaseUrl/accounts:signUp?key=${_getGcipApiKey()}';
 
       final response = await http.post(
         Uri.parse(url),
@@ -662,7 +662,7 @@ class GCIPAuthService extends ChangeNotifier {
   Future<void> updateDisplayName(String displayName) async {
     try {
       if (_currentUser != null && _currentToken != null) {
-        final url = '$gcipBaseUrl/accounts:update?key=${AppConfig.gcipApiKey}';
+        final url = '$gcipBaseUrl/accounts:update?key=${_getGcipApiKey()}';
 
         final response = await http.post(
           Uri.parse(url),

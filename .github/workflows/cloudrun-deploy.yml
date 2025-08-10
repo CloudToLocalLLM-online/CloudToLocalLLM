@@ -241,6 +241,12 @@ jobs:
     - name: Deploy Web Service
       if: github.event.inputs.service == 'all' || github.event.inputs.service == '' || github.event.inputs.service == 'web'
       run: |
+        # Resolve GCIP API key: prefer GitHub secret; fallback to GCP Secret Manager
+        GCIP_API_KEY_VAL="${{ secrets.GCIP_API_KEY }}"
+        if [ -z "$GCIP_API_KEY_VAL" ]; then
+          GCIP_API_KEY_VAL="$(gcloud secrets versions access latest --secret=\"gcip-api-key\" 2>/dev/null || echo \"\")"
+        fi
+
         gcloud run deploy cloudtolocalllm-web \
           --image=${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/web:${{ github.sha }} \
           --platform=managed \
@@ -254,7 +260,7 @@ jobs:
           --concurrency=80 \
           --timeout=300 \
           --service-account=cloudtolocalllm-runner@${{ env.PROJECT_ID }}.iam.gserviceaccount.com \
-          --set-env-vars="NODE_ENV=production,LOG_LEVEL=info,FIREBASE_PROJECT_ID=${{ vars.FIREBASE_PROJECT_ID || 'cloudtolocalllm-468303' }},GCIP_API_KEY=${{ secrets.GCIP_API_KEY }}" \
+          --set-env-vars="NODE_ENV=production,LOG_LEVEL=info,FIREBASE_PROJECT_ID=${{ vars.FIREBASE_PROJECT_ID || 'cloudtolocalllm-468303' }},GCIP_API_KEY=$GCIP_API_KEY_VAL" \
           --quiet
 
     - name: Deploy API Service
