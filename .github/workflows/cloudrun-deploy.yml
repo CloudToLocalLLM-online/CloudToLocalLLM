@@ -21,17 +21,14 @@ on:
         options:
           - production
           - staging
-  push:
-    branches: [main, master]
-    paths:
-      - 'config/cloudrun/**'
-      - 'services/**'
-      - 'Dockerfile*'
-      - '.github/workflows/cloudrun-deploy.yml'
 
 permissions:
   contents: read
   id-token: write
+
+concurrency:
+  group: cloudrun-deploy-${{ github.ref }}
+  cancel-in-progress: true
 
 env:
   PROJECT_ID: ${{ vars.GCP_PROJECT_ID || 'cloudtolocalllm-468303' }}
