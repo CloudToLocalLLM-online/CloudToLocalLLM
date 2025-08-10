@@ -213,7 +213,7 @@ jobs:
   deploy:
     name: Deploy to Cloud Run
     runs-on: ubuntu-latest
-    needs: [build, setup-database]
+    needs: build
     environment: ${{ github.event.inputs.environment || 'production' }}
 
     steps:
