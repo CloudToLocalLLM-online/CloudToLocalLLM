@@ -124,7 +124,14 @@ class GCIPAuthService extends ChangeNotifier {
   Future<void> _authenticateWithGCIP(GoogleSignInAccount googleUser) async {
     try {
       final googleAuth = await googleUser.authentication;
-      final gcipToken = await _exchangeGoogleTokenForGCIP(googleAuth.idToken!, googleAuth.accessToken!);
+      final idToken = googleAuth.idToken;
+      final accessToken = googleAuth.accessToken;
+
+      if (idToken == null && accessToken == null) {
+        throw Exception('No Google tokens available (idToken and accessToken are null)');
+      }
+
+      final gcipToken = await _exchangeGoogleTokenForGCIP(idToken: idToken, accessToken: accessToken);
       await _handleGCIPToken(gcipToken);
     } catch (e) {
       debugPrint('🏢 GCIP authentication failed: $e');
@@ -132,13 +139,24 @@ class GCIPAuthService extends ChangeNotifier {
     }
   }
 
-  Future<String> _exchangeGoogleTokenForGCIP(String idToken, String accessToken) async {
+  Future<String> _exchangeGoogleTokenForGCIP({String? idToken, String? accessToken}) async {
     final url = '$gcipBaseUrl/accounts:signInWithIdp?key=${AppConfig.gcipApiKey}';
+
+    // Build postBody with only non-null params
+    final parts = <String>[];
+    if (idToken != null && idToken.isNotEmpty) {
+      parts.add('id_token=${Uri.encodeQueryComponent(idToken)}');
+    }
+    if (accessToken != null && accessToken.isNotEmpty) {
+      parts.add('access_token=${Uri.encodeQueryComponent(accessToken)}');
+    }
+    parts.add('providerId=google.com');
+
     final response = await http.post(
       Uri.parse(url),
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({
-        'postBody': 'id_token=$idToken&access_token=$accessToken&providerId=google.com',
+        'postBody': parts.join('&'),
         'requestUri': kIsWeb ? Uri.base.origin : 'http://localhost',
         'returnIdpCredential': true,
         'returnSecureToken': true,
@@ -361,9 +379,6 @@ class GCIPAuthService extends ChangeNotifier {
     } catch (e) {
       debugPrint('🏢 Token refresh exception: $e');
       return false;
-    }
-  }
-
     }
   }
 
