@@ -222,7 +222,7 @@ class _CloudToLocalLLMAppState extends State<CloudToLocalLLMApp> {
   @override
   Widget build(BuildContext context) {
     return FutureBuilder(
-      future: _initializeGis(),
+      future: _initializeApp(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.done) {
           return MultiProvider(
@@ -481,21 +481,11 @@ class _CloudToLocalLLMAppState extends State<CloudToLocalLLMApp> {
             : const LoadingScreen(message: 'Initializing CloudToLocalLLM...'),
       ),
     );
+        } else {
+          return const LoadingScreen(message: 'Initializing CloudToLocalLLM...');
+        }
 
-        // Theme configuration
-        theme: AppTheme.lightTheme,
-        darkTheme: AppTheme.darkTheme,
-        themeMode: AppConfig.enableDarkMode ? ThemeMode.dark : ThemeMode.light,
-
-        // Show loading screen until initialization is complete
-        home: _isInitialized
-            ? _buildMainApp()
-            : const LoadingScreen(message: 'Initializing CloudToLocalLLM...'),
-      ),
-    );
-  }
-
-  Widget _buildMainApp() {
+        Widget _buildMainApp() {
     return Consumer<AuthService>(
       builder: (context, authService, child) {
         // Initialize tray service after providers are available
