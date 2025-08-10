@@ -7,6 +7,8 @@ import 'package:jwt_decoder/jwt_decoder.dart';
 import 'package:flutter_secure_storage_x/flutter_secure_storage_x.dart';
 // Conditional web import for localStorage
 import 'web_platform_stub.dart' if (dart.library.html) 'package:web/web.dart' as web;
+// GIS web auth (only available on web)
+import 'web_gis_auth.dart' if (dart.library.html) 'web_gis_auth.dart';
 import '../models/user_model.dart';
 import '../config/app_config.dart';
 
@@ -419,6 +421,20 @@ class GCIPAuthService extends ChangeNotifier {
       _currentTenant = tenantId ?? AppConfig.tenantConfigs['default'];
 
       debugPrint('🏢 Starting GCIP sign-in for tenant: $_currentTenant');
+
+      if (kIsWeb) {
+        // Prefer GIS on web for reliable id_token
+        try {
+          final idJwt = await gisSignIn(AppConfig.googleClientId);
+          final gcipToken = await _exchangeGoogleTokenForGCIP(idToken: idJwt);
+          await _handleGCIPToken(gcipToken);
+          debugPrint('🏢 GIS web sign-in successful');
+          return;
+        } catch (e) {
+          debugPrint('🏢 GIS web sign-in failed: $e');
+          // fallback to plugin if GIS fails
+        }
+      }
 
       final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
       if (googleUser == null) {
