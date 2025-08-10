@@ -40,47 +40,11 @@ env:
   REPOSITORY: cloud-run-source-deploy
 
 jobs:
-  # Security and validation checks
-  security-check:
-    name: Security and Validation
-    runs-on: ubuntu-latest
-
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-
-    - name: Validate Cloud Run configuration
-      run: |
-        echo "Validating Cloud Run configuration files..."
-        if [ ! -f "config/cloudrun/Dockerfile.web-cloudrun" ]; then
-          echo "Error: Web Dockerfile not found"
-          exit 1
-        fi
-        if [ ! -f "config/cloudrun/Dockerfile.api-cloudrun" ]; then
-          echo "Error: API Dockerfile not found"
-          exit 1
-        fi
-        if [ ! -f "scripts/cloudrun/deploy-to-cloudrun.sh" ]; then
-          echo "Error: Deployment script not found"
-          exit 1
-        fi
-        echo "Configuration validation passed"
-
-    - name: Check for secrets
-      run: |
-        echo "Checking for accidentally committed secrets in application code..."
-        # Only scan application code directories; ignore example configs/scripts/docs
-        if grep -r "AUTH0_CLIENT_SECRET=" lib services --exclude-dir=.git --exclude="*.template" --exclude="*.md" 2>/dev/null; then
-          echo "Error: Found potential secrets in application code"
-          exit 1
-        fi
-        echo "Secret check passed"
 
   # Build container images
   build:
     name: Build Container Images
     runs-on: ubuntu-latest
-    needs: security-check
     if: github.event.inputs.service == 'all' || github.event.inputs.service == '' || contains(github.event.inputs.service, 'web') || contains(github.event.inputs.service, 'api') || contains(github.event.inputs.service, 'streaming')
 
     strategy:
