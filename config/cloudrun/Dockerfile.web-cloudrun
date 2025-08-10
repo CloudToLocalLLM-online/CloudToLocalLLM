@@ -68,9 +68,6 @@ RUN chown -R nginx:nginx /usr/share/nginx/html && \
 # Create health check endpoint
 RUN echo '<!DOCTYPE html><html><body><h1>OK</h1></body></html>' > /usr/share/nginx/html/health
 
-# Switch to non-root user
-USER nginx
-
 # Cloud Run requires listening on PORT environment variable
 # Default to 8080 if not set
 ENV PORT=8080
@@ -82,9 +79,12 @@ EXPOSE $PORT
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD curl --fail http://localhost:$PORT/health || exit 1
 
-# Copy entrypoint to inject runtime variables
+# Copy entrypoint to inject runtime variables (as root), then set executable
 COPY config/cloudrun/docker-entrypoint-web.sh /usr/local/bin/docker-entrypoint-web.sh
 RUN chmod +x /usr/local/bin/docker-entrypoint-web.sh
+
+# Switch to non-root user
+USER nginx
 
 # Start via entrypoint to inject GCIP_API_KEY and render nginx config
 ENTRYPOINT ["/usr/local/bin/docker-entrypoint-web.sh"]
