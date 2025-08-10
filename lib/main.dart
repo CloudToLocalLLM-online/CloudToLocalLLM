@@ -46,6 +46,7 @@ void main() async {
 
   // Google Cloud Identity Platform initialization
   // GCIP is initialized automatically when the auth service is created
+  // Consolidated CI/CD pipeline deployment test
 
   // Configure URL strategy for web to handle direct navigation
   if (kIsWeb) {
@@ -484,50 +485,11 @@ class _CloudToLocalLLMAppState extends State<CloudToLocalLLMApp> {
         } else {
           return const LoadingScreen(message: 'Initializing CloudToLocalLLM...');
         }
-
-        Widget _buildMainApp() {
-    return Consumer<AuthService>(
-      builder: (context, authService, child) {
-        // Initialize tray service after providers are available
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          _initializeTrayService(context);
-        });
-
-        return WindowListenerWidget(
-          child: MaterialApp.router(
-            // App configuration
-            title: AppConfig.appName,
-            debugShowCheckedModeBanner: false,
-
-            // Theme configuration
-            theme: AppTheme.lightTheme,
-            darkTheme: AppTheme.darkTheme,
-            themeMode: AppConfig.enableDarkMode
-                ? ThemeMode.dark
-                : ThemeMode.light,
-
-            // Router configuration
-            routerConfig: _router,
-
-            // Builder for additional configuration
-            builder: (context, child) {
-              return MediaQuery(
-                // Ensure text scaling doesn't break the UI
-                data: MediaQuery.of(context).copyWith(
-                  textScaler: TextScaler.linear(
-                    MediaQuery.of(
-                      context,
-                    ).textScaler.scale(1.0).clamp(0.8, 1.2),
-                  ),
-                ),
-                child: child!,
-              );
-            },
-          ),
-        );
-      },
+      }
     );
   }
+
+        
 
   bool _trayInitialized = false;
 
@@ -592,5 +554,49 @@ class _CloudToLocalLLMAppState extends State<CloudToLocalLLMApp> {
       debugPrint("💥 [SystemTray] Failed to initialize system tray: $e");
       debugPrint("💥 [SystemTray] Stack trace: $stackTrace");
     }
+  }
+
+  Widget _buildMainApp() {
+    return Consumer<AuthService>(
+      builder: (context, authService, child) {
+        // Initialize tray service after providers are available
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _initializeTrayService(context);
+        });
+
+        return WindowListenerWidget(
+          child: MaterialApp.router(
+            // App configuration
+            title: AppConfig.appName,
+            debugShowCheckedModeBanner: false,
+
+            // Theme configuration
+            theme: AppTheme.lightTheme,
+            darkTheme: AppTheme.darkTheme,
+            themeMode: AppConfig.enableDarkMode
+                ? ThemeMode.dark
+                : ThemeMode.light,
+
+            // Router configuration
+            routerConfig: _router,
+
+            // Builder for additional configuration
+            builder: (context, child) {
+              return MediaQuery(
+                // Ensure text scaling doesn't break the UI
+                data: MediaQuery.of(context).copyWith(
+                  textScaler: TextScaler.linear(
+                    MediaQuery.of(
+                      context,
+                    ).textScaler.scale(1.0).clamp(0.8, 1.2),
+                  ),
+                ),
+                child: child!,
+              );
+            },
+          ),
+        );
+      },
+    );
   }
 }
