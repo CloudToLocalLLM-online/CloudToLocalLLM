@@ -22,48 +22,32 @@ error() {
   log "ERROR: $*"
 }
 
-# Render cloudrun-config.js from template with GCIP_API_KEY (preferred over mutating index.html)
-TEMPLATE="/usr/share/nginx/html/cloudrun-config.template.js"
-OUTPUT="/usr/share/nginx/html/cloudrun-config.js"
-
-if [ ! -f "$TEMPLATE" ]; then
-  warn "Template not found at $TEMPLATE; skipping GCIP config rendering"
+# Inject GCIP_API_KEY into index.html meta tag (KISS)
+INDEX_HTML="/usr/share/nginx/html/index.html"
+if [ -f "$INDEX_HTML" ]; then
+  KEY_ESC="$(printf '%s' "${GCIP_API_KEY:-}" | sed 's/[&/]/\\&/g')"
+  if ! sed -i "s|\${GCIP_API_KEY}|${KEY_ESC}|g" "$INDEX_HTML"; then
+    error "Failed to inject GCIP_API_KEY into index.html"
+    exit 1
+  fi
+  log "Injected GCIP_API_KEY into index.html"
 else
-  if [ "${GCIP_API_KEY:-}" = "" ]; then
-    warn "GCIP_API_KEY is not set; rendering template with empty value"
-  fi
-  if command -v envsubst >/dev/null 2>&1; then
-    # Only substitute GCIP_API_KEY to avoid unintended replacements
-    if ! GCIP_API_KEY="${GCIP_API_KEY:-}" envsubst '$GCIP_API_KEY' < "$TEMPLATE" > "$OUTPUT"; then
-      error "envsubst failed to render $OUTPUT"
-      exit 1
-    fi
-    log "Rendered $OUTPUT from template"
-  else
-    warn "envsubst not found; copying template without substitution"
-    cp "$TEMPLATE" "$OUTPUT"
-  fi
+  warn "index.html not found at $INDEX_HTML; skipping GCIP injection"
 fi
 
-# Render nginx config using PORT env var
-NGINX_CONF_SRC="/etc/nginx/nginx.conf"
-NGINX_CONF_OUT="/tmp/nginx.conf"
-
-if [ ! -f "$NGINX_CONF_SRC" ]; then
-  error "Nginx config template not found at $NGINX_CONF_SRC"
+# Inject PORT into nginx config (KISS)
+NGINX_CONF="/etc/nginx/nginx.conf"
+if [ -f "$NGINX_CONF" ]; then
+  PORT_VAL="${PORT:-8080}"
+  if ! sed -i "s|\${PORT}|${PORT_VAL}|g" "$NGINX_CONF"; then
+    error "Failed to inject PORT into nginx config"
+    exit 1
+  fi
+  log "Injected PORT=${PORT_VAL} into nginx config"
+else
+  error "Nginx config not found at $NGINX_CONF"
   exit 1
 fi
 
-# envsubst may not be present in minimal images; the Dockerfile should install gettext
-if command -v envsubst >/dev/null 2>&1; then
-  if ! envsubst '$PORT' < "$NGINX_CONF_SRC" > "$NGINX_CONF_OUT"; then
-    error "envsubst failed to render nginx config"
-    exit 1
-  fi
-else
-  warn "envsubst not found; copying nginx config without substitution"
-  cp "$NGINX_CONF_SRC" "$NGINX_CONF_OUT"
-fi
-
 # Start nginx in foreground; exec to hand off PID 1
-exec nginx -c "$NGINX_CONF_OUT" -g 'daemon off;'
+exec nginx -g 'daemon off;'
