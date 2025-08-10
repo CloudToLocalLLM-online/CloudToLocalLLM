@@ -38,16 +38,10 @@ void _completeGisReady() {
   }
 }
 
-Future<void> _waitForGisReady({Duration timeout = const Duration(seconds: 15)}) async {
-  // Register the Dart function to be called from JavaScript
-  js_util.setProperty(js_util.globalThis, 'onGoogleLibraryLoad', js_util.allowInterop(_completeGisReady));
-  return _gisReadyCompleter.future.timeout(timeout);
-}
+
 
 /// Perform a Google Identity Services sign-in and return the ID token (JWT)
 Future<String> gisSignIn(String clientId) async {
-  await _waitForGisReady();
-
   final completer = Completer<String>();
 
   void onCredential(dynamic response) {
@@ -63,14 +57,15 @@ Future<String> gisSignIn(String clientId) async {
     }
   }
 
-  _initialize(GisConfig(
-    clientId: clientId,
-    callback: allowInterop(onCredential),
-    uxMode: 'popup',
-    autoSelect: false,
-  ));
-
-  _prompt();
+  // Directly call prompt, which handles initialization internally
+  js_util.callMethod(js_util.getProperty(js_util.globalThis, 'google.accounts.id'), 'prompt', [
+    js_util.jsify({
+      'client_id': clientId,
+      'callback': js_util.allowInterop(onCredential),
+      'ux_mode': 'popup',
+      'auto_select': false,
+    })
+  ]);
 
   return completer.future.timeout(
     const Duration(seconds: 90),
