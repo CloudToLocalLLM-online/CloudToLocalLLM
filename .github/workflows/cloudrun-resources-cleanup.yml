@@ -1,0 +1,161 @@
+name: Cloud Run Resources Cleanup
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Target environment (for context only)'
+        required: false
+        default: 'production'
+        type: choice
+        options: [production, staging]
+      keep_revisions:
+        description: 'Revisions to keep per service (newest N plus any serving)'
+        required: false
+        default: '3'
+      dry_run:
+        description: 'If true, only print the plan; do not delete'
+        required: false
+        default: 'true'
+        type: choice
+        options: ['true', 'false']
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  PROJECT_ID: ${{ vars.GCP_PROJECT_ID || 'cloudtolocalllm-468303' }}
+  REGION: ${{ vars.GCP_REGION || 'us-east4' }}
+  REGISTRY: ${{ vars.GCP_REGION || 'us-east4' }}-docker.pkg.dev
+  REPOSITORY: cloud-run-source-deploy
+
+jobs:
+  cleanup:
+    name: Cleanup Cloud Run Revisions, Images, and Report Secrets/SQL
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud (WIF)
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ vars.WIF_PROVIDER }}
+          service_account: ${{ vars.WIF_SERVICE_ACCOUNT }}
+
+      - name: Setup Google Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ env.PROJECT_ID }}
+
+      - name: Install jq
+        run: sudo apt-get update && sudo apt-get install -y jq
+
+      - name: Show context
+        run: |
+          echo "Project: $PROJECT_ID"
+          echo "Region: $REGION"
+          echo "Keep revisions: ${{ github.event.inputs.keep_revisions }}"
+          echo "DRY_RUN: ${{ github.event.inputs.dry_run }}"
+
+      - name: Cleanup Cloud Run revisions (web, api, streaming)
+        shell: bash
+        run: |
+          set -euo pipefail
+          KEEP=${{ github.event.inputs.keep_revisions }}
+          DRY=${{ github.event.inputs.dry_run }}
+          for SVC in cloudtolocalllm-web cloudtolocalllm-api cloudtolocalllm-streaming; do
+            echo "\n=== Service: $SVC ==="
+            # List revisions newest-first as JSON
+            REVS_JSON=$(gcloud run revisions list \
+              --service "$SVC" --region "$REGION" \
+              --format=json --sort-by=~createTime || echo '[]')
+            echo "$REVS_JSON" | jq 'map({name:.name, createTime:.createTime, serving:(.traffic // [] | any(.percent > 0))})'
+            # Compute keep set: newest N plus any serving
+            NEWEST=$(echo "$REVS_JSON" | jq -r ".[:$KEEP]|.[].name")
+            SERVING=$(echo "$REVS_JSON" | jq -r '.[] | select((.traffic // []) | any(.percent > 0)) | .name')
+            # Build delete list: everything not in keep set
+            mapfile -t ALL < <(echo "$REVS_JSON" | jq -r '.[].name')
+            KEEPSET=$(printf '%s\n%s\n' "$NEWEST" "$SERVING" | sort -u)
+            mapfile -t DELETE_LIST < <(printf '%s\n' "${ALL[@]}" | grep -v -F -x -f <(printf '%s\n' $KEEPSET) || true)
+            echo "Keeping (newest $KEEP and any serving):"; printf '  %s\n' $KEEPSET || true
+            echo "Deleting:"; printf '  %s\n' "${DELETE_LIST[@]}" || true
+            if [[ "$DRY" == "false" ]]; then
+              for REV in "${DELETE_LIST[@]}"; do
+                if [[ -n "$REV" ]]; then
+                  echo "Deleting revision $REV ..."
+                  gcloud run revisions delete "$REV" --region "$REGION" --quiet || true
+                fi
+              done
+            else
+              echo "DRY_RUN=true: skipping deletion for $SVC"
+            fi
+          done
+
+      - name: Cleanup Artifact Registry untagged images (older than 7 days)
+        shell: bash
+        run: |
+          set -euo pipefail
+          DRY=${{ github.event.inputs.dry_run }}
+          REPO_PATH="$REGISTRY/$PROJECT_ID/$REPOSITORY"
+          echo "Listing images in $REPO_PATH ..."
+          IMAGES_JSON=$(gcloud artifacts docker images list "$REPO_PATH" --include-tags --format=json || echo '[]')
+          # Identify untagged images older than 7 days
+          NOW=$(date -u +%s)
+          THRESH=$((NOW - 7*24*3600))
+          TO_DELETE=()
+          echo "$IMAGES_JSON" | jq -r '.[] | @base64' | while read -r row; do
+            _jq() { echo "$row" | base64 -d | jq -r "$1"; }
+            IMG=$(_jq '.package')
+            VER=$(_jq '.version')
+            TAGS=$(_jq '.tags | join(",")')
+            CT=$(_jq '.createTime')
+            if [[ "$CT" != "null" ]]; then
+              CTS=$(date -u -d "$CT" +%s 2>/dev/null || date -u -j -f "%Y-%m-%dT%H:%M:%S%z" "$CT" +%s)
+            else
+              CTS=$NOW
+            fi
+            if [[ -z "$TAGS" || "$TAGS" == "" ]]; then
+              if [[ $CTS -lt $THRESH ]]; then
+                FULL="$IMG@$VER"
+                echo "Candidate untagged old image: $FULL (created $CT)"
+                echo "$FULL" >> /tmp/delete-images.txt
+              fi
+            fi
+          done
+          if [[ -f /tmp/delete-images.txt ]]; then
+            echo "Images to delete:"; cat /tmp/delete-images.txt
+            if [[ "$DRY" == "false" ]]; then
+              while read -r FULL; do
+                [[ -z "$FULL" ]] && continue
+                echo "Deleting image $FULL ..."
+                gcloud artifacts docker images delete "$FULL" --delete-tags --quiet || true
+              done < /tmp/delete-images.txt
+            else
+              echo "DRY_RUN=true: skipping image deletions"
+            fi
+          else
+            echo "No untagged old images found."
+          fi
+
+      - name: Report Cloud SQL instances and primary in-use
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "API service env (to infer Cloud SQL instance):"
+          DESC=$(gcloud run services describe cloudtolocalllm-api --platform=managed --region="$REGION" --format="yaml" || true)
+          echo "$DESC" | sed -n '/env:/,/image:/p' || true
+          echo "All Cloud SQL instances:"
+          gcloud sql instances list --format='table(name,region,state,firstIpAddress)'
+          echo "\nNOTE: This step does not delete instances automatically. Confirm before any removal."
+
+      - name: Report secrets in Secret Manager
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "Secrets list:"
+          gcloud secrets list --format='table(name,labels,createTime)' || true
+          echo "\nUse caution before deleting secrets; ensure not referenced by services/workflows."
+
