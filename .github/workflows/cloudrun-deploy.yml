@@ -1,4 +1,4 @@
-name: Deploy to Google Cloud Run
+name: Cloud Run Deployment
 
 on:
   workflow_dispatch:
