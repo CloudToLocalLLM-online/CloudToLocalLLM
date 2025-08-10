@@ -221,10 +221,14 @@ class _CloudToLocalLLMAppState extends State<CloudToLocalLLMApp> {
 
   @override
   Widget build(BuildContext context) {
-    return MultiProvider(
-      providers: [
-        // Authentication service
-        ChangeNotifierProvider(create: (_) => AuthService()),
+    return FutureBuilder(
+      future: _initializeGis(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.done) {
+          return MultiProvider(
+            providers: [
+              // Authentication service
+              ChangeNotifierProvider(create: (_) => AuthService()),
         // User tier service
         ChangeNotifierProvider(
           create: (context) {
@@ -465,6 +469,18 @@ class _CloudToLocalLLMAppState extends State<CloudToLocalLLMApp> {
         // App configuration
         title: AppConfig.appName,
         debugShowCheckedModeBanner: false,
+
+        // Theme configuration
+        theme: AppTheme.lightTheme,
+        darkTheme: AppTheme.darkTheme,
+        themeMode: AppConfig.enableDarkMode ? ThemeMode.dark : ThemeMode.light,
+
+        // Show loading screen until initialization is complete
+        home: _isInitialized
+            ? _buildMainApp()
+            : const LoadingScreen(message: 'Initializing CloudToLocalLLM...'),
+      ),
+    );
 
         // Theme configuration
         theme: AppTheme.lightTheme,
