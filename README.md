@@ -205,6 +205,7 @@ git push origin main
 - **[CI/CD Pipeline Guide](docs/DEPLOYMENT/CI_CD_PIPELINE_GUIDE.md)** - Complete pipeline documentation
 - **[GitHub Secrets Setup](docs/DEPLOYMENT/GITHUB_SECRETS_SETUP.md)** - Application secrets configuration. Note: Cloud Run authentication now uses OIDC/WIF with repository Variables (no service account keys); see the OIDC/WIF guide below.
 - **[Complete Deployment Workflow](docs/DEPLOYMENT/COMPLETE_DEPLOYMENT_WORKFLOW.md)** - Step-by-step deployment guide
+- **[MCP Development Workflow](docs/MCP_DEVELOPMENT_WORKFLOW.md)** - Guidelines for model-driven development
 
 ## Configuration
 
@@ -306,4 +307,3 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ---
 
 **Made with ❤️ by the CloudToLocalLLM Team**
-
