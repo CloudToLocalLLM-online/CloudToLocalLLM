@@ -25,14 +25,27 @@ error() {
 # Inject GCIP_API_KEY into index.html meta tag (KISS)
 INDEX_HTML="/usr/share/nginx/html/index.html"
 if [ -f "$INDEX_HTML" ]; then
-  KEY_ESC="$(printf '%s' "${GCIP_API_KEY:-}" | sed 's/[&/]/\\&/g')"
-  if ! sed -i "s|\${GCIP_API_KEY}|${KEY_ESC}|g" "$INDEX_HTML"; then
-    error "Failed to inject GCIP_API_KEY into index.html"
+  if [ -z "${GCIP_API_KEY:-}" ]; then
+    error "GCIP_API_KEY env var is empty or not set; cannot inject into index.html"
     exit 1
   fi
-  log "Injected GCIP_API_KEY into index.html"
+  # Escape replacement
+  KEY_ESC="$(printf '%s' "${GCIP_API_KEY}" | sed 's/[&/]/\\&/g')"
+  # Perform replacement of the literal placeholder ${GCIP_API_KEY}
+  if ! sed -i "s|\${GCIP_API_KEY}|${KEY_ESC}|g" "$INDEX_HTML"; then
+    error "Failed to run sed for GCIP_API_KEY injection into index.html"
+    exit 1
+  fi
+  # Verify placeholder is gone
+  if grep -q "\\${GCIP_API_KEY}" "$INDEX_HTML"; then
+    error "GCIP_API_KEY placeholder still present in index.html after injection"
+    exit 1
+  fi
+  PREFIX=$(printf '%.4s' "${GCIP_API_KEY}")
+  log "Injected GCIP_API_KEY into index.html (prefix ${PREFIX}****)"
 else
-  warn "index.html not found at $INDEX_HTML; skipping GCIP injection"
+  error "index.html not found at $INDEX_HTML; cannot inject GCIP_API_KEY"
+  exit 1
 fi
 
 # Inject PORT into nginx config (KISS)
