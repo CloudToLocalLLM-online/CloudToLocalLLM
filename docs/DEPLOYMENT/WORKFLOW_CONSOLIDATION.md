@@ -1,38 +1,52 @@
-# GitHub Actions Workflow Consolidation
+# Streamlined Deployment Workflow
 
 ## Overview
 
-This document explains the consolidation of GitHub Actions workflows to eliminate redundant runs and fix deployment issues.
+This document explains the final streamlined approach to GitHub Actions workflows, focusing on deployment-only automation with validation happening before code reaches the main branch.
 
-## Changes Made
+## Final Workflow Structure
 
-### 1. Workflow Consolidation
+### 1. Single-Purpose Workflows
 
-**Before:**
-- `cloudrun-deploy.yml` - Cloud Run deployment (triggered on push to main)
-- `ci.yml` - CI validation (triggered only on PRs)
-- `build-release.yml` - Desktop releases (triggered on tags)
+**Current Setup:**
+- `cloudrun-deploy.yml` - **Deploy to Google Cloud Run** - Pure deployment workflow
+- `build-release.yml` - **Desktop releases** - Separate purpose (unchanged)
+- `Push on main` - **CodeQL security scanning** - Automatic GitHub security (cannot be disabled on public repos)
 
-**After:**
-- `cloudrun-deploy.yml` - **Renamed to CI/CD Pipeline** - Combined validation and deployment
-- `build-release.yml` - **Unchanged** - Desktop releases (separate purpose)
+### 2. Philosophy Change
 
-### 2. Key Improvements
+**OLD Approach (Problematic):**
+- Validation during deployment
+- Every push triggers deployment
+- Multiple workflows running simultaneously
+- Slow deployment due to validation overhead
 
-#### Validation Before Deployment
-- **CI validation now runs on both PRs and pushes** to main/master
-- **Deployment only occurs after successful validation**
-- **No more failed deployments due to code issues**
+**NEW Approach (Streamlined):**
+- Validation happens locally/pre-commit
+- Deployment only when explicitly needed
+- Single focused deployment workflow
+- Fast, reliable deployments
 
-#### GCIP API Key Validation
-- **Added explicit GCIP API key validation** before deployment
-- **Clear error messages** if the key is missing or invalid
-- **Supports both GitHub Secrets and GCP Secret Manager**
+### 3. Deployment Workflow Details
 
-#### Conditional Execution
-- **Validation runs on all events** (PRs and pushes)
-- **Build/Deploy only runs on pushes** to main/master
-- **Eliminates redundant workflow runs**
+#### Triggers (Intentional Only)
+- **Manual dispatch** - Explicit deployment via GitHub Actions UI
+- **Deployment file changes** - Only when these paths change:
+  - `config/cloudrun/**` - Cloud Run configuration
+  - `services/**` - Service code changes
+  - `Dockerfile*` - Container definitions
+  - `.github/workflows/cloudrun-deploy.yml` - Workflow changes
+
+#### Jobs (Deployment-Focused)
+1. **Build** - Container images for all services
+2. **Setup Database** - Cloud SQL PostgreSQL (if needed)
+3. **Deploy** - Cloud Run services with GCIP API key injection
+4. **Verify** - Post-deployment health checks
+
+#### No Validation in Deployment
+- **Removed Flutter analyze, tests, Node.js lint** from deployment workflow
+- **Assumption: Code reaching main is already validated**
+- **Fast deployment without validation overhead**
 
 ## GCIP API Key Configuration
 
