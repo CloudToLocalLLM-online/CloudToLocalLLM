@@ -21,6 +21,11 @@ on:
         options:
           - production
           - staging
+      cleanup_keep_revisions:
+        description: 'Revisions to keep per service before deploy (newest N + any serving)'
+        required: false
+        default: '3'
+
 
 permissions:
   contents: read
@@ -32,6 +37,7 @@ concurrency:
 
 env:
   PROJECT_ID: ${{ vars.GCP_PROJECT_ID || 'cloudtolocalllm-468303' }}
+
   REGION: ${{ vars.GCP_REGION || 'us-east4' }}
   REGISTRY: ${{ vars.GCP_REGION || 'us-east4' }}-docker.pkg.dev
   REPOSITORY: cloud-run-source-deploy
@@ -42,6 +48,7 @@ jobs:
   build:
     name: Build Container Images
     runs-on: ubuntu-latest
+    needs: pre-clean
 
     strategy:
       matrix:
