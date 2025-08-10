@@ -1,15 +1,8 @@
-name: CI/CD Pipeline
+name: Complete CI/CD Pipeline
 
 on:
   push:
     branches: [main, master]
-    paths:
-      - 'lib/**'
-      - 'services/**'
-      - 'config/cloudrun/**'
-      - 'scripts/cloudrun/**'
-      - 'pubspec.yaml'
-      - 'pubspec.lock'
   pull_request:
     branches: [main, master]
   workflow_dispatch:
