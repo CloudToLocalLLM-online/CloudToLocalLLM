@@ -3,8 +3,6 @@ name: CI (Fast)
 on:
   pull_request:
     branches: ["**"]
-  push:
-    branches: [ main, master ]
 
 env:
   FLUTTER_VERSION: '3.24.2'
