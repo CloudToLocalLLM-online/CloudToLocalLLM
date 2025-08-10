@@ -19,6 +19,19 @@ on:
         default: 'true'
         type: choice
         options: ['true', 'false']
+      skip_cloudsql:
+        description: 'Skip Cloud SQL listing/report (useful if SA lacks permissions)'
+        required: false
+        default: 'true'
+        type: choice
+        options: ['true', 'false']
+      skip_secrets:
+        description: 'Skip Secret Manager listing/report (useful if SA lacks permissions)'
+        required: false
+        default: 'true'
+        type: choice
+        options: ['true', 'false']
+
 
 permissions:
   contents: read
@@ -141,6 +154,7 @@ jobs:
           fi
 
       - name: Report Cloud SQL instances and primary in-use
+        if: ${{ github.event.inputs.skip_cloudsql != 'true' }}
         shell: bash
         run: |
           set -euo pipefail
@@ -148,14 +162,15 @@ jobs:
           DESC=$(gcloud run services describe cloudtolocalllm-api --platform=managed --region="$REGION" --format="yaml" || true)
           echo "$DESC" | sed -n '/env:/,/image:/p' || true
           echo "All Cloud SQL instances:"
-          gcloud sql instances list --format='table(name,region,state,firstIpAddress)'
+          gcloud sql instances list --format='table(name,region,state,firstIpAddress)' || echo 'Insufficient permissions to list Cloud SQL instances'
           echo "\nNOTE: This step does not delete instances automatically. Confirm before any removal."
 
       - name: Report secrets in Secret Manager
+        if: ${{ github.event.inputs.skip_secrets != 'true' }}
         shell: bash
         run: |
           set -euo pipefail
           echo "Secrets list:"
-          gcloud secrets list --format='table(name,labels,createTime)' || true
+          gcloud secrets list --format='table(name,labels,createTime)' || echo 'Insufficient permissions to list secrets'
           echo "\nUse caution before deleting secrets; ensure not referenced by services/workflows."
 
