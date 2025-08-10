@@ -19,6 +19,7 @@ dependencies:
   # Authentication - Google Cloud Identity Platform (HTTP-based)
   google_sign_in: ^6.1.5
   jwt_decoder: ^2.0.1
+  js: ^0.6.7
 
   # Error tracking
   url_launcher: ^6.3.1

@@ -25,14 +25,31 @@ external void _initialize(GisConfig config);
 @JS('prompt')
 external void _prompt([Function? cb]);
 
+Future<void> _waitForGisReady({Duration timeout = const Duration(seconds: 15)}) async {
+  final start = DateTime.now();
+  while (true) {
+    try {
+      // Access a property to check readiness
+      final g = js_util.getProperty<Object?>(js_util.globalThis, 'google');
+      if (g != null) return;
+    } catch (_) {}
+    if (DateTime.now().difference(start) > timeout) {
+      throw TimeoutException('GIS not ready');
+    }
+    await Future.delayed(const Duration(milliseconds: 200));
+  }
+}
+
 /// Perform a Google Identity Services sign-in and return the ID token (JWT)
-Future<String> gisSignIn(String clientId) {
+Future<String> gisSignIn(String clientId) async {
+  await _waitForGisReady();
+
   final completer = Completer<String>();
 
   void onCredential(dynamic response) {
     try {
-      final cred = js_util.getProperty<String>(response, 'credential');
-      if (cred is String && cred.isNotEmpty) {
+      final cred = js_util.getProperty<String?>(response, 'credential');
+      if (cred != null && cred.isNotEmpty) {
         if (!completer.isCompleted) completer.complete(cred);
       } else {
         if (!completer.isCompleted) completer.completeError(StateError('Empty credential from GIS'));
@@ -42,7 +59,6 @@ Future<String> gisSignIn(String clientId) {
     }
   }
 
-  // Initialize GIS with popup UX for better reliability in SPA
   _initialize(GisConfig(
     client_id: clientId,
     callback: allowInterop(onCredential),
@@ -50,7 +66,6 @@ Future<String> gisSignIn(String clientId) {
     auto_select: false,
   ));
 
-  // Show prompt (popup will be used due to ux_mode)
   _prompt();
 
   return completer.future.timeout(

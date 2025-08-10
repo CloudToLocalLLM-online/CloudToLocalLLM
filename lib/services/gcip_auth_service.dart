@@ -97,10 +97,12 @@ class GCIPAuthService extends ChangeNotifier {
         return;
       }
 
-      // Fallback to Google silent sign-in
-      final isSignedIn = await _googleSignIn.isSignedIn();
-      if (isSignedIn) {
-        await _handleGoogleSignInSilent();
+      // Fallback to Google silent sign-in (non-web only)
+      if (!kIsWeb) {
+        final isSignedIn = await _googleSignIn.isSignedIn();
+        if (isSignedIn) {
+          await _handleGoogleSignInSilent();
+        }
       }
     } catch (e) {
       debugPrint('🏢 Failed to load stored auth: $e');
@@ -423,17 +425,12 @@ class GCIPAuthService extends ChangeNotifier {
       debugPrint('🏢 Starting GCIP sign-in for tenant: $_currentTenant');
 
       if (kIsWeb) {
-        // Prefer GIS on web for reliable id_token
-        try {
-          final idJwt = await gisSignIn(AppConfig.googleClientId);
-          final gcipToken = await _exchangeGoogleTokenForGCIP(idToken: idJwt);
-          await _handleGCIPToken(gcipToken);
-          debugPrint('🏢 GIS web sign-in successful');
-          return;
-        } catch (e) {
-          debugPrint('🏢 GIS web sign-in failed: $e');
-          // fallback to plugin if GIS fails
-        }
+        // Force GIS on web to avoid deprecated google_sign_in path
+        final idJwt = await gisSignIn(AppConfig.googleClientId);
+        final gcipToken = await _exchangeGoogleTokenForGCIP(idToken: idJwt);
+        await _handleGCIPToken(gcipToken);
+        debugPrint('🏢 GIS web sign-in successful');
+        return;
       }
 
       final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
