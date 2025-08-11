@@ -1,4 +1,4 @@
-﻿{
+{
   "name": "cloudtolocalllm-e2e-tests",
   "version": "4.1.1",
   "description": "End-to-end testing for CloudToLocalLLM",
@@ -17,12 +17,33 @@
     "install-deps": "playwright install-deps"
   },
   "devDependencies": {
-    "@playwright/test": "^1.40.0"
+    "@playwright/test": "^1.40.0",
+    "@types/node": "^24.2.1"
   },
   "engines": {
     "node": ">=16.0.0"
   },
   "dependencies": {
-    "@playwright/mcp": "^0.0.32"
-  }
+    "@modelcontextprotocol/sdk": "^1.17.2",
+    "@playwright/mcp": "^0.0.32",
+    "typescript": "^5.9.2"
+  },
+  "main": "playwright.config.js",
+  "directories": {
+    "doc": "docs",
+    "lib": "lib",
+    "test": "test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/imrightguy/CloudToLocalLLM.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/imrightguy/CloudToLocalLLM/issues"
+  },
+  "homepage": "https://github.com/imrightguy/CloudToLocalLLM#readme"
 }
