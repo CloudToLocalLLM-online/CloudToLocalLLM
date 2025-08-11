@@ -43,6 +43,77 @@ env:
   REPOSITORY: cloud-run-source-deploy
 
 jobs:
+  pre-clean:
+    name: Pre-clean GCP state (Cloud Run revisions, AR images)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Authenticate to Google Cloud (WIF)
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ vars.WIF_PROVIDER }}
+          service_account: ${{ vars.WIF_SERVICE_ACCOUNT }}
+      - name: Setup Google Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ env.PROJECT_ID }}
+      - name: Install jq
+        run: sudo apt-get update && sudo apt-get install -y jq
+      - name: Clean old Cloud Run revisions (keep N + serving)
+        shell: bash
+        run: |
+          set -euo pipefail
+          KEEP=${{ github.event.inputs.cleanup_keep_revisions || '3' }}
+          for SVC in cloudtolocalllm-web cloudtolocalllm-api cloudtolocalllm-streaming; do
+            echo "\n=== Service: $SVC ==="
+            REVS_JSON=$(gcloud run revisions list --service "$SVC" --region "$REGION" --format=json --sort-by=~createTime || echo '[]')
+            NEWEST=$(echo "$REVS_JSON" | jq -r ".[:$KEEP]|.[].name") || true
+            SERVING=$(echo "$REVS_JSON" | jq -r '.[] | select((.traffic // []) | any(.percent > 0)) | .name') || true
+            mapfile -t ALL < <(echo "$REVS_JSON" | jq -r '.[].name')
+            KEEPSET=$(printf '%s\n%s\n' "$NEWEST" "$SERVING" | sort -u)
+            mapfile -t DELETE_LIST < <(printf '%s\n' "${ALL[@]}" | grep -v -F -x -f <(printf '%s\n' $KEEPSET) || true)
+            echo "Will keep:"; printf '  %s\n' $KEEPSET || true
+            echo "Will delete:"; printf '  %s\n' "${DELETE_LIST[@]}" || true
+            for REV in "${DELETE_LIST[@]}"; do
+              [[ -z "$REV" ]] && continue
+              echo "Deleting revision $REV ..."
+              gcloud run revisions delete "$REV" --region "$REGION" --quiet || true
+            done
+          done
+      - name: Clean untagged Artifact Registry images (older than 7 days)
+        shell: bash
+        run: |
+          set -euo pipefail
+          REPO_PATH="$REGISTRY/$PROJECT_ID/$REPOSITORY"
+          echo "Listing images in $REPO_PATH ..."
+          IMAGES_JSON=$(gcloud artifacts docker images list "$REPO_PATH" --include-tags --format=json || echo '[]')
+          NOW=$(date -u +%s)
+          THRESH=$((NOW - 7*24*3600))
+          if [[ -z "$IMAGES_JSON" || "$IMAGES_JSON" == "[]" ]]; then
+            echo "No images found."
+            exit 0
+          fi
+          echo "$IMAGES_JSON" | jq -r '.[] | @base64' | while read -r row; do
+            _jq() { echo "$row" | base64 -d | jq -r "$1"; }
+            IMG=$(_jq '.package')
+            VER=$(_jq '.version')
+            TAGS=$(_jq '.tags | join(",")')
+            CT=$(_jq '.createTime')
+            if [[ "$CT" != "null" ]]; then
+              CTS=$(date -u -d "$CT" +%s 2>/dev/null || date -u -j -f "%Y-%m-%dT%H:%M:%S%z" "$CT" +%s)
+            else
+              CTS=$NOW
+            fi
+            if [[ -z "$TAGS" || "$TAGS" == "" ]]; then
+              if [[ $CTS -lt $THRESH ]]; then
+                FULL="$IMG@$VER"
+                echo "Deleting untagged old image: $FULL (created $CT)"
+                gcloud artifacts docker images delete "$FULL" --delete-tags --quiet || true
+              fi
+            fi
+          done
+
 
   # Build container images for deployment
   build:
@@ -108,7 +179,6 @@ jobs:
     name: Setup Cloud SQL PostgreSQL
     runs-on: ubuntu-latest
     needs: build
-    if: github.event.inputs.service == 'all' || github.event.inputs.service == '' || github.event.inputs.service == 'api'
     environment: ${{ github.event.inputs.environment || 'production' }}
 
     steps:
@@ -119,78 +189,6 @@ jobs:
       uses: google-github-actions/auth@v2
       with:
         workload_identity_provider: ${{ vars.WIF_PROVIDER }}
-  pre-clean:
-    name: Pre-clean GCP state (Cloud Run revisions, AR images)
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-      - name: Authenticate to Google Cloud (WIF)
-        uses: google-github-actions/auth@v2
-        with:
-          workload_identity_provider: ${{ vars.WIF_PROVIDER }}
-          service_account: ${{ vars.WIF_SERVICE_ACCOUNT }}
-      - name: Setup Google Cloud SDK
-        uses: google-github-actions/setup-gcloud@v2
-        with:
-          project_id: ${{ env.PROJECT_ID }}
-      - name: Install jq
-        run: sudo apt-get update && sudo apt-get install -y jq
-      - name: Clean old Cloud Run revisions (keep N + serving)
-        shell: bash
-        run: |
-          set -euo pipefail
-          KEEP=${{ github.event.inputs.cleanup_keep_revisions || '3' }}
-          for SVC in cloudtolocalllm-web cloudtolocalllm-api cloudtolocalllm-streaming; do
-            echo "\n=== Service: $SVC ==="
-            REVS_JSON=$(gcloud run revisions list --service "$SVC" --region "$REGION" --format=json --sort-by=~createTime || echo '[]')
-            NEWEST=$(echo "$REVS_JSON" | jq -r ".[:$KEEP]|.[].name") || true
-            SERVING=$(echo "$REVS_JSON" | jq -r '.[] | select((.traffic // []) | any(.percent > 0)) | .name') || true
-            mapfile -t ALL < <(echo "$REVS_JSON" | jq -r '.[].name')
-            KEEPSET=$(printf '%s\n%s\n' "$NEWEST" "$SERVING" | sort -u)
-            mapfile -t DELETE_LIST < <(printf '%s\n' "${ALL[@]}" | grep -v -F -x -f <(printf '%s\n' $KEEPSET) || true)
-            echo "Will keep:"; printf '  %s\n' $KEEPSET || true
-            echo "Will delete:"; printf '  %s\n' "${DELETE_LIST[@]}" || true
-            for REV in "${DELETE_LIST[@]}"; do
-              [[ -z "$REV" ]] && continue
-              echo "Deleting revision $REV ..."
-              gcloud run revisions delete "$REV" --region "$REGION" --quiet || true
-            done
-          done
-      - name: Clean untagged Artifact Registry images (older than 7 days)
-        shell: bash
-        run: |
-          set -euo pipefail
-          REPO_PATH="$REGISTRY/$PROJECT_ID/$REPOSITORY"
-          echo "Listing images in $REPO_PATH ..."
-          IMAGES_JSON=$(gcloud artifacts docker images list "$REPO_PATH" --include-tags --format=json || echo '[]')
-          NOW=$(date -u +%s)
-          THRESH=$((NOW - 7*24*3600))
-          if [[ -z "$IMAGES_JSON" || "$IMAGES_JSON" == "[]" ]]; then
-            echo "No images found."
-            exit 0
-          fi
-          echo "$IMAGES_JSON" | jq -r '.[] | @base64' | while read -r row; do
-            _jq() { echo "$row" | base64 -d | jq -r "$1"; }
-            IMG=$(_jq '.package')
-            VER=$(_jq '.version')
-            TAGS=$(_jq '.tags | join(",")')
-            CT=$(_jq '.createTime')
-            if [[ "$CT" != "null" ]]; then
-              CTS=$(date -u -d "$CT" +%s 2>/dev/null || date -u -j -f "%Y-%m-%dT%H:%M:%S%z" "$CT" +%s)
-            else
-              CTS=$NOW
-            fi
-            if [[ -z "$TAGS" || "$TAGS" == "" ]]; then
-              if [[ $CTS -lt $THRESH ]];
-              then
-                FULL="$IMG@$VER"
-                echo "Deleting untagged old image: $FULL (created $CT)"
-                gcloud artifacts docker images delete "$FULL" --delete-tags --quiet || true
-              fi
-            fi
-          done
-
         service_account: ${{ vars.WIF_SERVICE_ACCOUNT }}
 
     - name: Setup Google Cloud SDK
@@ -199,6 +197,7 @@ jobs:
         project_id: ${{ env.PROJECT_ID }}
 
     - name: Setup Cloud SQL PostgreSQL instance
+      if: github.event.inputs.service == 'all' || github.event.inputs.service == '' || github.event.inputs.service == 'api'
       run: |
         INSTANCE_NAME="cloudtolocalllm-db"
         DATABASE_NAME="cloudtolocalllm"
@@ -252,7 +251,7 @@ jobs:
   deploy:
     name: Deploy to Cloud Run
     runs-on: ubuntu-latest
-    needs: build
+    needs: [build, setup-database]
     environment: ${{ github.event.inputs.environment || 'production' }}
 
     steps:
