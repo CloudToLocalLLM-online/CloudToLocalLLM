@@ -199,20 +199,26 @@ jobs:
     - name: Setup Cloud SQL PostgreSQL instance
       if: github.event.inputs.service == 'all' || github.event.inputs.service == '' || github.event.inputs.service == 'api'
       run: |
+        set -euo pipefail
         INSTANCE_NAME="cloudtolocalllm-db"
         DATABASE_NAME="cloudtolocalllm"
         DB_USER="appuser"
+
+        # Try to read an existing password from Secret Manager (if permissions allow)
+        DB_PASSWORD=$(gcloud secrets versions access latest --secret="db-password" 2>/dev/null || echo "")
+        if [ -z "$DB_PASSWORD" ]; then
+          # Generate secure password (no Secret Manager writes to avoid permission issues)
+          DB_PASSWORD=$(openssl rand -base64 32 | tr -d '\n' | head -c 32)
+          echo "Using generated DB password for this deployment (not stored in Secret Manager)"
+        else
+          echo "Using existing DB password from Secret Manager"
+        fi
 
         echo "Checking for existing Cloud SQL instance..."
         if gcloud sql instances describe $INSTANCE_NAME >/dev/null 2>&1; then
           echo "✅ Cloud SQL instance '$INSTANCE_NAME' already exists"
         else
           echo "📦 Creating Cloud SQL PostgreSQL instance..."
-
-          # Generate secure password and store in Secret Manager
-          DB_PASSWORD=$(openssl rand -base64 32)
-          echo -n "$DB_PASSWORD" | gcloud secrets create db-password --data-file=- || \
-          echo -n "$DB_PASSWORD" | gcloud secrets versions add db-password --data-file=-
 
           # Create Cloud SQL instance
           gcloud sql instances create $INSTANCE_NAME \
@@ -228,24 +234,35 @@ jobs:
             --deletion-protection
 
           echo "⏳ Waiting for instance to be ready..."
-          gcloud sql instances describe $INSTANCE_NAME --format="value(state)" | grep -q RUNNABLE
-
-          # Create database
-          echo "🗄️ Creating database: $DATABASE_NAME"
-          gcloud sql databases create $DATABASE_NAME --instance=$INSTANCE_NAME
-
-          # Create user
-          echo "👤 Creating database user: $DB_USER"
-          gcloud sql users create $DB_USER \
-            --instance=$INSTANCE_NAME \
-            --password="$DB_PASSWORD"
-
-          echo "✅ Cloud SQL setup complete"
+          # Poll until RUNNABLE
+          for i in $(seq 1 60); do
+            state=$(gcloud sql instances describe $INSTANCE_NAME --format="value(state)" || echo "")
+            if [ "$state" = "RUNNABLE" ]; then break; fi
+            sleep 5
+          done
         fi
 
-        # Get connection name for deployment
+        # Ensure database exists
+        if ! gcloud sql databases list --instance=$INSTANCE_NAME --format="value(name)" | grep -qx "$DATABASE_NAME"; then
+          echo "🗄️ Creating database: $DATABASE_NAME"
+          gcloud sql databases create $DATABASE_NAME --instance=$INSTANCE_NAME
+        fi
+
+        # Ensure user exists and set password
+        if gcloud sql users list --instance=$INSTANCE_NAME --format="value(name)" | grep -qx "$DB_USER"; then
+          echo "🔑 Updating password for existing user: $DB_USER"
+          gcloud sql users set-password $DB_USER --instance=$INSTANCE_NAME --password="$DB_PASSWORD"
+        else
+          echo "👤 Creating database user: $DB_USER"
+          gcloud sql users create $DB_USER --instance=$INSTANCE_NAME --password="$DB_PASSWORD"
+        fi
+
+        echo "✅ Cloud SQL setup complete"
+
+        # Export connection and password for later deploy step
         CONNECTION_NAME=$(gcloud sql instances describe $INSTANCE_NAME --format="value(connectionName)")
         echo "CONNECTION_NAME=$CONNECTION_NAME" >> $GITHUB_ENV
+        echo "DB_PASSWORD=$DB_PASSWORD" >> $GITHUB_ENV
 
   # Deploy to Cloud Run
   deploy:
@@ -275,6 +292,8 @@ jobs:
         INSTANCE_NAME="cloudtolocalllm-db"
         CONNECTION_NAME=$(gcloud sql instances describe $INSTANCE_NAME --format="value(connectionName)" 2>/dev/null || echo "")
         echo "CONNECTION_NAME=$CONNECTION_NAME" >> $GITHUB_ENV
+        # Forward DB_PASSWORD from setup-database if available
+        if [ -n "$DB_PASSWORD" ]; then echo "DB_PASSWORD=$DB_PASSWORD" >> $GITHUB_ENV; fi
 
     - name: Validate GCIP API Key
       run: |
@@ -321,8 +340,10 @@ jobs:
     - name: Deploy API Service
       if: github.event.inputs.service == 'all' || github.event.inputs.service == '' || github.event.inputs.service == 'api'
       run: |
-        # Get database password from Secret Manager
-        DB_PASSWORD=$(gcloud secrets versions access latest --secret="db-password" 2>/dev/null || echo "")
+        # Get database password: prefer env from setup-database, else fallback to Secret Manager (best-effort)
+        if [ -z "${DB_PASSWORD:-}" ]; then
+          DB_PASSWORD=$(gcloud secrets versions access latest --secret="db-password" 2>/dev/null || echo "")
+        fi
 
         # Deploy with PostgreSQL configuration
         gcloud run deploy cloudtolocalllm-api \
