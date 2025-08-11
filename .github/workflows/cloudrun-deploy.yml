@@ -204,6 +204,17 @@ jobs:
         DATABASE_NAME="cloudtolocalllm"
         DB_USER="appuser"
 
+        # If repo variable provides connection name, use it and skip Cloud SQL provisioning
+        CONNECTION_NAME_VAR="${{ vars.CLOUD_SQL_CONNECTION_NAME || '' }}"
+        if [ -n "$CONNECTION_NAME_VAR" ]; then
+          echo "Using provided CLOUD_SQL_CONNECTION_NAME from repository variables"
+          echo "CONNECTION_NAME=$CONNECTION_NAME_VAR" >> $GITHUB_ENV
+          # Forward any DB_PASSWORD already available
+          if [ -n "${DB_PASSWORD:-}" ]; then echo "DB_PASSWORD=$DB_PASSWORD" >> $GITHUB_ENV; fi
+          exit 0
+        fi
+
+
         # Try to read an existing password from Secret Manager (if permissions allow)
         DB_PASSWORD=$(gcloud secrets versions access latest --secret="db-password" 2>/dev/null || echo "")
         if [ -z "$DB_PASSWORD" ]; then
