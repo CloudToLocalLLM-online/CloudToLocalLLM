@@ -343,10 +343,16 @@ jobs:
           --min-instances=0 \
           --max-instances=10 \
           --concurrency=80 \
-          --timeout=300 \
+          --timeout=600 \
           --service-account=cloudtolocalllm-runner@${{ env.PROJECT_ID }}.iam.gserviceaccount.com \
           --set-env-vars="NODE_ENV=production,LOG_LEVEL=info,FIREBASE_PROJECT_ID=${{ vars.FIREBASE_PROJECT_ID || 'cloudtolocalllm-468303' }},GCIP_API_KEY=$GCIP_API_KEY_VAL" \
           --quiet
+
+        # If setting IAM policy failed earlier, apply it explicitly
+        gcloud beta run services add-iam-policy-binding cloudtolocalllm-web \
+          --region=${{ env.REGION }} \
+          --member=allUsers \
+          --role=roles/run.invoker || true
 
     - name: Deploy API Service
       if: github.event.inputs.service == 'all' || github.event.inputs.service == '' || github.event.inputs.service == 'api'
