@@ -423,6 +423,12 @@ jobs:
           --set-env-vars="NODE_ENV=production,LOG_LEVEL=info,FIREBASE_PROJECT_ID=${{ vars.FIREBASE_PROJECT_ID || 'cloudtolocalllm-468303' }}" \
           --quiet
 
+        # If setting IAM policy failed earlier, apply it explicitly
+        gcloud beta run services add-iam-policy-binding cloudtolocalllm-streaming \
+          --region=${{ env.REGION }} \
+          --member=allUsers \
+          --role=roles/run.invoker || true
+
   # Post-deployment verification
   verify:
     name: Verify Deployment
