@@ -1,6 +1,14 @@
 name: Cloud Run Deployment
 
 on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'lib/**'
+      - 'services/**'
+      - 'config/cloudrun/**'
+      - 'scripts/cloudrun/**'
   workflow_dispatch:
     inputs:
       service:
