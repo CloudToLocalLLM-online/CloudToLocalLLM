@@ -839,6 +839,7 @@ let authService = null;
 let dbMigrator = null;
 
 async function initializeHttpPollingSystem() {
+  logger.info('Starting initialization of HTTP polling tunnel system...');
   try {
     logger.info('Initializing HTTP polling tunnel system...');
 
@@ -925,6 +926,7 @@ async function gracefulShutdown() {
 
 // Start server with enhanced tunnel system
 async function startServer() {
+  logger.info('Starting server...');
   try {
     // Initialize HTTP polling tunnel system first
     await initializeHttpPollingSystem();
@@ -932,6 +934,7 @@ async function startServer() {
     // Start HTTP server
     server.listen(PORT, () => {
       logger.info(`CloudToLocalLLM API Backend listening on port ${PORT}`);
+      logger.info(`Listening on port: ${PORT}`);
       logger.info(`Environment: ${process.env.NODE_ENV || 'development'}`);
       logger.info(`Auth0 Domain: ${AUTH0_DOMAIN}`);
       logger.info(`Auth0 Audience: ${AUTH0_AUDIENCE}`);
