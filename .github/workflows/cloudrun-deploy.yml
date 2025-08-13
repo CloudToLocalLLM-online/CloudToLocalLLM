@@ -11,6 +11,7 @@ on:
       - 'scripts/cloudrun/**'
       - '.github/workflows/**'
       - 'cloudbuild.yaml'
+      - 'Dockerfile/**'
   workflow_dispatch:
     inputs:
       service:
@@ -70,7 +71,6 @@ jobs:
       run: |
         gcloud run deploy cloudtolocalllm-web \
           --source . \
-          --build-config=cloudbuild.yaml \
           --platform=managed \
           --region=${{ env.REGION }} \
           --allow-unauthenticated \
@@ -90,7 +90,6 @@ jobs:
       run: |
         gcloud run deploy cloudtolocalllm-api \
           --source . \
-          --build-config=cloudbuild.yaml \
           --platform=managed \
           --region=${{ env.REGION }} \
           --allow-unauthenticated \
@@ -111,7 +110,6 @@ jobs:
       run: |
         gcloud run deploy cloudtolocalllm-streaming \
           --source . \
-          --build-config=cloudbuild.yaml \
           --platform=managed \
           --region=${{ env.REGION }} \
           --allow-unauthenticated \
