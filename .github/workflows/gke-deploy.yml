@@ -1,0 +1,81 @@
+name: Deploy to GKE
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'services/api-backend/**'
+      - 'services/streaming-proxy/**'
+  workflow_dispatch:
+
+concurrency:
+  group: gke-deploy-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  deploy-api:
+    name: Deploy API Backend to GKE
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Google Auth
+        id: auth
+        uses: 'google-github-actions/auth@v2'
+        with:
+          workload_identity_provider: '${{ vars.WIF_PROVIDER }}'
+          service_account: '${{ vars.WIF_SERVICE_ACCOUNT }}'
+
+      - name: 'Set up Cloud SDK'
+        uses: 'google-github-actions/setup-gcloud@v2'
+
+      - name: Get GKE credentials
+        uses: google-github-actions/get-gke-credentials@v1
+        with:
+          cluster_name: '${{ vars.GKE_CLUSTER_NAME }}'
+          location: '${{ vars.GCP_REGION }}'
+
+      - name: 'Build and Push Container'
+        run: |
+          gcloud builds submit --tag "gcr.io/${{ vars.GCP_PROJECT_ID }}/api-backend:latest" services/api-backend
+
+      - name: 'Deploy to GKE'
+        run: |
+          kubectl apply -f services/api-backend/k8s/deployment.yaml
+          kubectl apply -f services/api-backend/k8s/service.yaml
+          kubectl apply -f services/api-backend/k8s/ingress.yaml
+
+  deploy-streaming:
+    name: Deploy Streaming Proxy to GKE
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Google Auth
+        id: auth
+        uses: 'google-github-actions/auth@v2'
+        with:
+          workload_identity_provider: '${{ vars.WIF_PROVIDER }}'
+          service_account: '${{ vars.WIF_SERVICE_ACCOUNT }}'
+
+      - name: 'Set up Cloud SDK'
+        uses: 'google-github-actions/setup-gcloud@v2'
+
+      - name: Get GKE credentials
+        uses: google-github-actions/get-gke-credentials@v1
+        with:
+          cluster_name: '${{ vars.GKE_CLUSTER_NAME }}'
+          location: '${{ vars.GCP_REGION }}'
+
+      - name: 'Build and Push Container'
+        run: |
+          gcloud builds submit --tag "gcr.io/${{ vars.GCP_PROJECT_ID }}/streaming-proxy:latest" services/streaming-proxy
+
+      - name: 'Deploy to GKE'
+        run: |
+          kubectl apply -f services/streaming-proxy/k8s/deployment.yaml
+          kubectl apply -f services/streaming-proxy/k8s/service.yaml
+          kubectl apply -f services/streaming-proxy/k8s/ingress.yaml

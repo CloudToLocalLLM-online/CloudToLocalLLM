@@ -1,0 +1,24 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api-backend
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: api-backend
+  template:
+    metadata:
+      labels:
+        app: api-backend
+    spec:
+      containers:
+      - name: api-backend
+        # IMPORTANT: For local development with Minikube, you will need to build the Docker image
+        # and load it into the Minikube cluster. You can do this by running:
+        # eval $(minikube -p minikube docker-env)
+        # docker build -t api-backend:latest services/api-backend
+        image: gcr.io/cloudtolocalllm-468303/api-backend:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8080

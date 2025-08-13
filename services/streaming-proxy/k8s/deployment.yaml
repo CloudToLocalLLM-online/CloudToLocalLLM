@@ -1,0 +1,20 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: streaming-proxy
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: streaming-proxy
+  template:
+    metadata:
+      labels:
+        app: streaming-proxy
+    spec:
+      containers:
+      - name: streaming-proxy
+        image: gcr.io/cloudtolocalllm-468303/streaming-proxy:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8081

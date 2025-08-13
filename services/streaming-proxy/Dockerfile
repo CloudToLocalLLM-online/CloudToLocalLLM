@@ -17,7 +17,7 @@ RUN npm ci --only=production && \
 
 # Copy proxy application
 COPY proxy-server.js ./
-COPY config/ ./config/
+
 
 # Security: Set proper ownership and permissions
 RUN chown -R proxyuser:proxyuser /app && \
