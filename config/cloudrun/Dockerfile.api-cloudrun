@@ -34,7 +34,7 @@ COPY --from=builder /app/node_modules ./node_modules
 COPY services/api-backend/ ./
 
 # Copy Cloud Run specific configurations
-COPY config/cloudrun/migrate-database.js ./migrate-database.js
+COPY services/api-backend/database/migrate-pg.js ./migrate-database.js
 
 # Create necessary directories and set permissions
 RUN mkdir -p /app/data /app/logs /app/backups && \
