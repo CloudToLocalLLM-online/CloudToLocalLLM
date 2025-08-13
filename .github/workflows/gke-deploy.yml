@@ -5,6 +5,7 @@ name: Deploy to GKE
 # Yet another test comment
 # Final test comment
 # One more test comment
+# Last test comment
 
 on:
   push:
