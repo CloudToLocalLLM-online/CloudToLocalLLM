@@ -9,6 +9,7 @@ on:
       - 'services/**'
       - 'config/cloudrun/**'
       - 'scripts/cloudrun/**'
+      - '.github/workflows/**'
   workflow_dispatch:
     inputs:
       service:
