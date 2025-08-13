@@ -17,15 +17,12 @@
     "install-deps": "playwright install-deps"
   },
   "devDependencies": {
-    "@playwright/test": "^1.40.0",
     "@types/node": "^24.2.1"
   },
   "engines": {
     "node": ">=16.0.0"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.17.2",
-    "@playwright/mcp": "^0.0.32",
     "typescript": "^5.9.2"
   },
   "main": "playwright.config.js",

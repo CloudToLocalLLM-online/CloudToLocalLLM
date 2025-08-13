@@ -29,82 +29,23 @@ To effectively contribute to the project, I will adhere to the following plan:
 
 By following this plan, I will ensure that my contributions are of high quality and align with the project's goals.
 
-## MCP Servers and Tools
+## Available Tools
 
-I have access to the following MCP servers and tools:
+Here are some of the tools I can use to help with development:
 
-**everything**
-*   `add`
-*   `annotatedMessage`
-*   `echo`
-*   `getResourceLinks`
-*   `getResourceReference`
-*   `getTinyImage`
-*   `longRunningOperation`
-*   `printEnv`
-*   `sampleLLM`
-*   `startElicitation`
-*   `structuredContent`
+*   **`list_directory(path)`**: Lists the files and directories in a specified path.
+    *   *Example:* `list_directory(path='/home/rightguy/dev/CloudToLocalLLM/lib/services')`
+*   **`read_file(absolute_path)`**: Reads the content of a file.
+    *   *Example:* `read_file(absolute_path='/home/rightguy/dev/CloudToLocalLLM/pubspec.yaml')`
+*   **`write_file(file_path, content)`**: Writes new content to a file, overwriting existing content.
+    *   *Example:* `write_file(file_path='/home/rightguy/dev/CloudToLocalLLM/docs/new_feature.md', content='# New Feature Documentation')`
+*   **`replace(file_path, old_string, new_string)`**: Replaces specific text within a file.
+    *   *Example:* `replace(file_path='/home/rightguy/dev/CloudToLocalLLM/lib/main.dart', old_string='old_function_name()', new_string='new_function_name()')`
+*   **`run_shell_command(command)`**: Executes a shell command in the terminal.
+    *   *Example:* `run_shell_command(command='flutter pub get')`
+*   **`search_file_content(pattern, include)`**: Searches for a specific pattern within files.
+    *   *Example:* `search_file_content(pattern='Future<void>', include='**/*.dart')`
+*   **`glob(pattern)`**: Finds files matching a glob pattern.
+    *   *Example:* `glob(pattern='**/*.g.dart')`
 
-**sequential_thinking**
-*   `sequentialthinking`
-
-**memory**
-*   `add_observations`
-*   `create_entities`
-*   `create_relations`
-*   `delete_entities`
-*   `delete_observations`
-*   `delete_relations`
-*   `open_nodes`
-*   `read_graph`
-*   `search_nodes`
-
-**fetch**
-*   `imageFetch`
-
-**filesystem**
-*   `create_directory`
-*   `directory_tree`
-*   `edit_file`
-*   `get_file_info`
-*   `list_allowed_directories`
-*   `filesystem__list_directory`
-*   `list_directory_with_sizes`
-*   `move_file`
-*   `filesystem__read_file`
-*   `read_media_file`
-*   `read_multiple_files`
-*   `read_text_file`
-*   `search_files`
-*   `filesystem__write_file`
-
-**playwright**
-*   `browser_click`
-*   `browser_close`
-*   `browser_console_messages`
-*   `browser_drag`
-*   `browser_evaluate`
-*   `browser_file_upload`
-*   `browser_handle_dialog`
-*   `browser_hover`
-*   `browser_install`
-*   `browser_navigate`
-*   `browser_navigate_back`
-*   `browser_navigate_forward`
-*   `browser_network_requests`
-*   `browser_press_key`
-*   `browser_resize`
-*   `browser_select_option`
-*   `browser_snapshot`
-*   `browser_tab_close`
-*   `browser_tab_list`
-*   `browser_tab_new`
-*   `browser_tab_select`
-*   `browser_take_screenshot`
-*   `browser_type`
-*   `browser_wait_for`
-
-**context7**
-*   `get-library-docs`
-*   `resolve-library-id`
+I will use these tools to carry out the development plan and assist with your requests.

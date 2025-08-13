@@ -1,0 +1,25 @@
+name: Deploy to Cloud Run
+
+on:  push:    branches:      - main    paths:      - 'services/api-backend/**'      - 'services/streaming-proxy/**'  workflow_dispatch:
+
+concurrency:  group: cloudrun-deploy-${{ github.ref }}  cancel-in-progress: true
+
+jobs:  deploy-api:    name: Deploy API Backend    runs-on: ubuntu-latest    steps:      - name: Checkout code        uses: actions/checkout@v4
+
+      - name: Google Auth        id: auth        uses: 'google-github-actions/auth@v2'        with:          workload_identity_provider: '${{ vars.WIF_PROVIDER }}'          service_account: '${{ vars.WIF_SERVICE_ACCOUNT }}'
+
+      - name: 'Set up Cloud SDK'        uses: 'google-github-actions/setup-gcloud@v2'
+
+      - name: 'Build and Push Container'        run: |-          gcloud builds submit --tag "gcr.io/${{ vars.GCP_PROJECT_ID }}/api-backend:${{ github.sha }}" services/api-backend
+
+      - name: 'Deploy to Cloud Run'        run: |-          gcloud run deploy api-backend \            --image "gcr.io/${{ vars.GCP_PROJECT_ID }}/api-backend:${{ github.sha }}" \            --region "${{ vars.GCP_REGION }}" \            --platform managed \            --allow-unauthenticated
+
+  deploy-streaming:    name: Deploy Streaming Proxy    runs-on: ubuntu-latest    steps:      - name: Checkout code        uses: actions/checkout@v4
+
+      - name: Google Auth        id: auth        uses: 'google-github-actions/auth@v2'        with:          workload_identity_provider: '${{ vars.WIF_PROVIDER }}'          service_account: '${{ vars.WIF_SERVICE_ACCOUNT }}'
+
+      - name: 'Set up Cloud SDK'        uses: 'google-github-actions/setup-gcloud@v2'
+
+      - name: 'Build and Push Container'        run: |-          gcloud builds submit --tag "gcr.io/${{ vars.GCP_PROJECT_ID }}/streaming-proxy:${{ github.sha }}" services/streaming-proxy
+
+      - name: 'Deploy to Cloud Run'        run: |-          gcloud run deploy streaming-proxy \            --image "gcr.io/${{ vars.GCP_PROJECT_ID }}/streaming-proxy:${{ github.sha }}" \            --region "${{ vars.GCP_REGION }}" \            --platform managed \            --allow-unauthenticated

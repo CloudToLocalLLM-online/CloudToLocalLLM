@@ -94,6 +94,16 @@ jobs:
       with:
         flutter-version: ${{ env.FLUTTER_VERSION }}
         channel: 'stable'
+
+    - name: Cache Flutter dependencies
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.pub-cache
+          .dart_tool
+        key: ${{ runner.os }}-flutter-${{ hashFiles('**/pubspec.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-flutter-
         
     - name: Install platform dependencies (Linux)
       if: matrix.platform == 'linux'
