@@ -57,5 +57,5 @@ HEALTHCHECK --interval=30s --timeout=30s --start-period=60s --retries=3 \
 # Use dumb-init for proper signal handling in Cloud Run
 ENTRYPOINT ["dumb-init", "--"]
 
-# Start with the main server (already includes Firebase and PostgreSQL support)
-CMD ["node", "--max-old-space-size=512", "server.js"]
+# Run migrations and start the main server
+CMD ["sh", "-c", "node migrate-database.js && node --max-old-space-size=512 server.js"]
