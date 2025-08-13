@@ -177,7 +177,8 @@ jobs:
         DOCKERFILE="config/cloudrun/Dockerfile.${SERVICE}-cloudrun"
         if [ "$SERVICE" = "streaming" ]; then
           DOCKERFILE="config/cloudrun/Dockerfile.streaming-proxy-cloudrun"
-        elif [ "$SERVICE" = "api" ]; then
+        fi
+        if [ "$SERVICE" = "api" ]; then
           DOCKERFILE="config/cloudrun/Dockerfile.api-cloudrun"
         fi
         if [ ! -f "$DOCKERFILE" ]; then
