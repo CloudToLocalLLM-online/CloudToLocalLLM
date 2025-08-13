@@ -34,8 +34,8 @@ jobs:
       - name: Get GKE credentials
         uses: google-github-actions/get-gke-credentials@v1
         with:
-          cluster_name: '${{ vars.GKE_CLUSTER_NAME }}'
-          location: '${{ vars.GCP_REGION }}'
+          cluster_name: 'cloudtolocalllm-us-central1'
+          location: 'us-central1'
 
       - name: 'Build and Push Container'
         run: |
@@ -67,8 +67,8 @@ jobs:
       - name: Get GKE credentials
         uses: google-github-actions/get-gke-credentials@v1
         with:
-          cluster_name: '${{ vars.GKE_CLUSTER_NAME }}'
-          location: '${{ vars.GCP_REGION }}'
+          cluster_name: 'cloudtolocalllm-us-central1'
+          location: 'us-central1'
 
       - name: 'Build and Push Container'
         run: |
