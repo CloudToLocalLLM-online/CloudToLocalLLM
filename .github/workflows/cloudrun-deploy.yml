@@ -70,6 +70,7 @@ jobs:
       run: |
         gcloud run deploy cloudtolocalllm-web \
           --source . \
+          --config=cloudbuild.yaml \
           --platform=managed \
           --region=${{ env.REGION }} \
           --allow-unauthenticated \
@@ -89,6 +90,7 @@ jobs:
       run: |
         gcloud run deploy cloudtolocalllm-api \
           --source . \
+          --config=cloudbuild.yaml \
           --platform=managed \
           --region=${{ env.REGION }} \
           --allow-unauthenticated \
@@ -109,6 +111,7 @@ jobs:
       run: |
         gcloud run deploy cloudtolocalllm-streaming \
           --source . \
+          --config=cloudbuild.yaml \
           --platform=managed \
           --region=${{ env.REGION }} \
           --allow-unauthenticated \
