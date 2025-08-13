@@ -46,6 +46,7 @@ jobs:
 
       - name: 'Deploy to GKE'
         run: |
+          sleep 30
           kubectl apply -f services/api-backend/k8s/deployment.yaml
           kubectl apply -f services/api-backend/k8s/service.yaml
           kubectl apply -f services/api-backend/k8s/ingress.yaml
@@ -82,6 +83,7 @@ jobs:
 
       - name: 'Deploy to GKE'
         run: |
+          sleep 30
           kubectl apply -f services/streaming-proxy/k8s/deployment.yaml
           kubectl apply -f services/streaming-proxy/k8s/service.yaml
           kubectl apply -f services/streaming-proxy/k8s/ingress.yaml
