@@ -25,7 +25,7 @@ export class DatabaseMigratorPG {
       ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : undefined,
       max: parseInt(process.env.DB_POOL_MAX || '10', 10),
       idleTimeoutMillis: parseInt(process.env.DB_POOL_IDLE || '30000', 10),
-      connectionTimeoutMillis: parseInt(process.env.DB_POOL_CONNECT_TIMEOUT || '10000', 10),
+      connectionTimeoutMillis: parseInt(process.env.DB_POOL_CONNECT_TIMEOUT || '30000', 10),
       ...config,
     };
 
@@ -173,4 +173,3 @@ export class DatabaseMigratorPG {
     this.logger.info('PostgreSQL pool closed');
   }
 }
-
