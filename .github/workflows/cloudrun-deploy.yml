@@ -145,6 +145,7 @@ jobs:
         cache: 'npm'
 
     - name: Setup Flutter
+      if: matrix.service == 'web'
       uses: subosito/flutter-action@v2
       with:
         flutter-version: '3.24.0'
