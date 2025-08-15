@@ -1,167 +1,81 @@
-// CloudToLocalLLM v3.10.0 Playwright Configuration
-// Optimized for authentication loop analysis and debugging
+// @ts-check
+import { defineConfig, devices } from '@playwright/test';
 
-const { defineConfig, devices } = require('@playwright/test');
+/**
+ * Read environment variables from file.
+ * https://github.com/motdotla/dotenv
+ */
+// import dotenv from 'dotenv';
+// import path from 'path';
+// dotenv.config({ path: path.resolve(__dirname, '.env') });
 
-module.exports = defineConfig({
-  // Test directory
-  testDir: './test/e2e',
-  
-  // Global test timeout
-  timeout: 60000, // 60 seconds for complex auth flows
-  
-  // Expect timeout for assertions
-  expect: {
-    timeout: 10000, // 10 seconds for element assertions
-  },
-  
-  // Fail the build on CI if you accidentally left test.only in the source code
+/**
+ * @see https://playwright.dev/docs/test-configuration
+ */
+export default defineConfig({
+  testDir: './e2e',
+  /* Run tests in files in parallel */
+  fullyParallel: true,
+  /* Fail the build on CI if you accidentally left test.only in the source code. */
   forbidOnly: !!process.env.CI,
-  
-  // Retry on CI only
+  /* Retry on CI only */
   retries: process.env.CI ? 2 : 0,
-  
-  // Opt out of parallel tests for authentication analysis
-  workers: 1,
-  
-  // Reporter configuration
-  reporter: [
-    ['html', { outputFolder: 'test-results/html-report' }],
-    ['json', { outputFile: 'test-results/test-results.json' }],
-    ['junit', { outputFile: 'test-results/junit.xml' }],
-    ['list'],
-  ],
-  
-  // Global test setup
-  globalSetup: require.resolve('./test/e2e/global-setup.js'),
-  
-  // Shared settings for all projects
+  /* Opt out of parallel tests on CI. */
+  workers: process.env.CI ? 1 : undefined,
+  /* Reporter to use. See https://playwright.dev/docs/test-reporters */
+  reporter: 'html',
+  /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
   use: {
-    // Base URL for tests
-    baseURL: process.env.DEPLOYMENT_URL || 'https://app.cloudtolocalllm.online',
-    
-    // Collect trace when retrying the failed test
-    trace: 'retain-on-failure',
-    
-    // Record video for failed tests
-    video: 'retain-on-failure',
-    
-    // Take screenshot on failure
-    screenshot: 'only-on-failure',
-    
-    // Browser context options
-    viewport: { width: 1280, height: 720 },
-    ignoreHTTPSErrors: true,
-    
-    // Extended timeouts for auth flows
-    actionTimeout: 15000,
-    navigationTimeout: 30000,
-    
-    // Additional context options for debugging
-    recordHar: {
-      mode: 'minimal',
-      path: 'test-results/network.har',
-    },
-    
-    // Permissions for potential popup handling
-    permissions: ['notifications'],
-    
-    // User agent
-    userAgent: 'CloudToLocalLLM-E2E-Test/3.10.0 (Playwright)',
+    /* Base URL to use in actions like `await page.goto('/')`. */
+    // baseURL: 'http://localhost:3000',
+
+    /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
+    trace: 'on-first-retry',
   },
 
-  // Test projects for different browsers
+  /* Configure projects for major browsers */
   projects: [
     {
-      name: 'chromium-auth-analysis',
-      use: { 
-        ...devices['Desktop Chrome'],
-        // Additional Chrome flags for debugging
-        launchOptions: {
-          args: [
-            '--disable-web-security',
-            '--disable-features=VizDisplayCompositor',
-            '--enable-logging',
-            '--v=1',
-          ],
-        },
-      },
-    },
-    
-    {
-      name: 'firefox-auth-analysis',
-      use: { 
-        ...devices['Desktop Firefox'],
-        // Firefox-specific settings
-        launchOptions: {
-          firefoxUserPrefs: {
-            'dom.webnotifications.enabled': false,
-            'dom.push.enabled': false,
-          },
-        },
-      },
-    },
-    
-    {
-      name: 'webkit-auth-analysis',
-      use: { 
-        ...devices['Desktop Safari'],
-      },
+      name: 'chromium',
+      use: { ...devices['Desktop Chrome'] },
     },
 
-    // Mobile testing (optional)
     {
-      name: 'mobile-chrome-auth',
-      use: { 
-        ...devices['Pixel 5'],
-      },
+      name: 'firefox',
+      use: { ...devices['Desktop Firefox'] },
     },
-    
+
     {
-      name: 'mobile-safari-auth',
-      use: { 
-        ...devices['iPhone 12'],
-      },
+      name: 'webkit',
+      use: { ...devices['Desktop Safari'] },
     },
+
+    /* Test against mobile viewports. */
+    // {
+    //   name: 'Mobile Chrome',
+    //   use: { ...devices['Pixel 5'] },
+    // },
+    // {
+    //   name: 'Mobile Safari',
+    //   use: { ...devices['iPhone 12'] },
+    // },
+
+    /* Test against branded browsers. */
+    // {
+    //   name: 'Microsoft Edge',
+    //   use: { ...devices['Desktop Edge'], channel: 'msedge' },
+    // },
+    // {
+    //   name: 'Google Chrome',
+    //   use: { ...devices['Desktop Chrome'], channel: 'chrome' },
+    // },
   ],
 
-  // Output directory for test artifacts
-  outputDir: 'test-results/artifacts',
-  
-  // Web server configuration (for local testing)
-  webServer: process.env.LOCAL_TEST ? {
-    command: 'python -m http.server 8080 --directory build/web',
-    port: 8080,
-    reuseExistingServer: !process.env.CI,
-    timeout: 120000,
-  } : undefined,
+  /* Run your local dev server before starting the tests */
+  // webServer: {
+  //   command: 'npm run start',
+  //   url: 'http://localhost:3000',
+  //   reuseExistingServer: !process.env.CI,
+  // },
 });
 
-// Environment-specific configurations
-if (process.env.CI) {
-  // CI-specific settings
-  module.exports.use.headless = true;
-  module.exports.workers = 1;
-  module.exports.retries = 3;
-
-  // CI-specific reporter configuration
-  module.exports.reporter = [
-    ['html', { outputFolder: 'test-results/html-report', open: 'never' }],
-    ['json', { outputFile: 'test-results/test-results.json' }],
-    ['junit', { outputFile: 'test-results/junit.xml' }],
-    ['github'],
-    ['list']
-  ];
-
-  // Reduce timeout for CI
-  module.exports.timeout = 45000;
-  module.exports.expect.timeout = 8000;
-
-  // Fail fast in CI
-  module.exports.maxFailures = 5;
-
-} else {
-  // Local development settings
-  module.exports.use.headless = false;
-  module.exports.use.slowMo = 500; // Slow down for debugging
-}

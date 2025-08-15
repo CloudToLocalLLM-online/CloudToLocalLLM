@@ -17,6 +17,20 @@ description: "MCP/Tools Usage Rules for CloudToLocalLLM"
 - Gather exact old_str ranges before editing. Keep edits under 150 lines per call.
 - Respect existing code style; make the smallest safe change.
 
+### Example: Renaming a function
+1. **Identify the function to rename:** `old_function_name`
+2. **Find the file containing the function:** `lib/utils.dart`
+3. **Use `str-replace-editor` to perform the rename:**
+   ```
+   <tool_code>
+   print(default_api.replace(
+       file_path='/home/rightguy/dev/CloudToLocalLLM/lib/utils.dart',
+       old_string='void old_function_name() {',
+       new_string='void new_function_name() {'
+   ))
+   </tool_code>
+   ```
+
 ## Dependency Management
 - Never hand-edit package manifests or lockfiles. Use proper package managers (npm/yarn/pnpm, flutter pub, etc.).
 

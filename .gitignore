@@ -88,3 +88,8 @@ data/
 
 # Gradle wrapper jar
 android/gradle/wrapper/gradle-wrapper.jar
+
+# Playwright
+/playwright-report/
+/blob-report/
+/playwright/.cache/

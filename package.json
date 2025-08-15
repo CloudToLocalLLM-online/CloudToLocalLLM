@@ -14,9 +14,12 @@
     "test:tunnel-auth": "playwright test tunnel-auth-integration.spec.js",
     "test:tunnel-all": "playwright test tunnel-comprehensive-diagnosis.spec.js tunnel-performance-analysis.spec.js tunnel-auth-integration.spec.js",
     "install-browsers": "playwright install",
-    "install-deps": "playwright install-deps"
+    "install-deps": "playwright install-deps",
+    "setup:mcp": "node scripts/setup-mcp-config.js",
+    "setup:linear-key": "node scripts/setup-linear-key.js"
   },
   "devDependencies": {
+    "@playwright/test": "^1.54.2",
     "@types/node": "^24.2.1"
   },
   "engines": {

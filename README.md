@@ -309,3 +309,25 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 **Made with ❤️ by the CloudToLocalLLM Team**
 
 Triggering a new build to test the Cloud Build trigger.
+
+
+
+## MCP: Linear Server Setup
+
+This project includes a helper script to configure the Linear MCP server for Junie-compatible MCP clients. It writes/merges your MCP config at `~/.junie/mcp/mcp.json` and adds the `mcpServers.linear` entry using the official `@linear/mcp-server`.
+
+- Configure or update your MCP config:
+  - npm run setup:mcp
+  - or: node scripts/setup-mcp-config.js
+
+- Provide your Linear API key securely (do not hardcode secrets in source):
+  1) Copy .env.example to .env and set your key, or run:
+     - npm run setup:linear-key -- --set "lin_api_your_token_here"
+     - or: LINEAR_API_KEY=lin_api_your_token_here npm run setup:linear-key
+  2) Load your .env when launching your MCP-enabled client, e.g.:
+     - export $(grep -v "^#" .env | xargs) && <your-mcp-client-command>
+     - or: set -a; source .env; set +a; <your-mcp-client-command>
+
+References:
+- MCP Servers Registry: https://github.com/modelcontextprotocol/servers
+- Linear MCP Docs: https://linear.app/docs/mcp

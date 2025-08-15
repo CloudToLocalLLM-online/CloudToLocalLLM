@@ -15,6 +15,7 @@ The project utilizes a diverse set of technologies to achieve its goals. These i
 *   **Database:** Not immediately clear, but likely a relational database.
 *   **Deployment:** Docker, potentially with orchestration using Docker Compose.
 *   **CI/CD:** GitHub Actions
+*   **Project Management:** Linear
 
 ## Development Plan
 
@@ -47,5 +48,7 @@ Here are some of the tools I can use to help with development:
     *   *Example:* `search_file_content(pattern='Future<void>', include='**/*.dart')`
 *   **`glob(pattern)`**: Finds files matching a glob pattern.
     *   *Example:* `glob(pattern='**/*.g.dart')`
+*   **`lr [COMMAND]`**: Interacts with the Linear project management tool.
+    *   *Example:* `run_shell_command(command='lr issue')`
 
 I will use these tools to carry out the development plan and assist with your requests.
