@@ -48,7 +48,7 @@ Here are some of the tools I can use to help with development:
     *   *Example:* `search_file_content(pattern='Future<void>', include='**/*.dart')`
 *   **`glob(pattern)`**: Finds files matching a glob pattern.
     *   *Example:* `glob(pattern='**/*.g.dart')`
-*   **`lr [COMMAND]`**: Interacts with the Linear project management tool.
-    *   *Example:* `run_shell_command(command='lr issue')`
+*   **`gh [COMMAND]`**: Interacts with the GitHub CLI.
+    *   *Example:* `run_shell_command(command='gh issue list')`
 
 I will use these tools to carry out the development plan and assist with your requests.
