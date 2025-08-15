@@ -93,3 +93,6 @@ android/gradle/wrapper/gradle-wrapper.jar
 /playwright-report/
 /blob-report/
 /playwright/.cache/
+
+# Android
+android/local.properties
