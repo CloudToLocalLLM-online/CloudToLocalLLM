@@ -138,11 +138,13 @@ The PowerShell script generates the following artifacts:
 
 ## Cloud Infrastructure Deployment
 
-### GitHub Actions Workflow: `cloudrun-deploy.yml`
+The cloud infrastructure is deployed to Google Kubernetes Engine (GKE). For a detailed guide on the GKE deployment process, refer to the [GKE Deployment Guide](./GKE_DEPLOYMENT.md).
 
-**Location**: `.github/workflows/cloudrun-deploy.yml`
+### GitHub Actions Workflow: `gke-deploy.yml`
 
-**Purpose**: Automated deployment to Google Cloud Run
+**Location**: `.github/workflows/gke-deploy.yml`
+
+**Purpose**: Automated deployment to Google Kubernetes Engine
 
 #### Trigger Conditions
 
@@ -175,9 +177,20 @@ The PowerShell script generates the following artifacts:
    - Configure environment variables and secrets
 
 4. **Post-Deployment Verification**
-   - Health checks for all services
+   - Health checks for all services using the `health-check.sh` script. This is handled by the `validate-deployment` job in the workflow.
    - Retrieve service URLs
    - Generate deployment summary
+
+### Rollback Procedure
+
+A separate workflow, `rollback-deploy.yml`, is available for manually rolling back a service to a previous version. To use it:
+
+1.  Navigate to the **Actions** tab in the GitHub repository.
+2.  Select the **Rollback Cloud Run Deployment** workflow.
+3.  Click **Run workflow**.
+4.  Choose the service you want to roll back.
+5.  Enter the full image tag of the version you want to deploy.
+6.  Click **Run workflow**.
 
 ### Cloud Services
 
@@ -246,7 +259,7 @@ The PowerShell script generates the following artifacts:
 | `GCP_REGION` | Deployment region | `us-east4` |
 | `FIREBASE_PROJECT_ID` | Firebase project for auth | `cloudtolocalllm-auth` |
 
-See [GitHub Secrets Setup Guide](./GITHUB_SECRETS_SETUP.md) for detailed configuration instructions.
+See the [Secrets Management Guide](./SECRETS_MANAGEMENT.md) for a comprehensive guide on managing all secrets.
 
 ## Developer Workflow
 

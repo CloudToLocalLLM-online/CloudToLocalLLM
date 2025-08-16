@@ -108,6 +108,8 @@ This script will:
 
 ### 2. Configure Environment Variables
 
+For a comprehensive guide on managing secrets, refer to the [Secrets Management Guide](./SECRETS_MANAGEMENT.md).
+
 Copy and customize the environment configuration:
 
 ```bash

@@ -3,7 +3,7 @@ kind: Deployment
 metadata:
   name: api-backend
 spec:
-  replicas: 3
+  replicas: 2
   selector:
     matchLabels:
       app: api-backend
@@ -14,11 +14,25 @@ spec:
     spec:
       containers:
       - name: api-backend
-        # IMPORTANT: For local development with Minikube, you will need to build the Docker image
-        # and load it into the Minikube cluster. You can do this by running:
-        # eval $(minikube -p minikube docker-env)
-        # docker build -t api-backend:latest services/api-backend
         image: gcr.io/cloudtolocalllm-468303/api-backend:latest
-        imagePullPolicy: Always
         ports:
         - containerPort: 8080
+        env:
+        - name: NODE_ENV
+          value: "production"
+        - name: LOG_LEVEL
+          value: "info"
+        - name: DB_TYPE
+          value: "sqlite"
+        - name: DB_PATH
+          value: "/app/data/app.db"
+        - name: JWT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: api-secrets
+              key: jwt-secret
+        - name: AUTH0_AUDIENCE
+          valueFrom:
+            secretKeyRef:
+              name: api-secrets
+              key: auth0-audience

@@ -1,6 +1,6 @@
 # GitHub Repository Secrets Configuration
 
-This document outlines the required GitHub repository secrets for the CloudToLocalLLM CI/CD pipeline.
+This document outlines the required GitHub repository secrets for the CloudToLocalLLM CI/CD pipeline. For a comprehensive guide on managing all secrets, refer to the [Secrets Management Guide](./SECRETS_MANAGEMENT.md).
 
 ## Required Secrets
 

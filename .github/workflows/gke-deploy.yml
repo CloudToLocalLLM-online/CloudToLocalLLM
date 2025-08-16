@@ -1,12 +1,5 @@
 name: Deploy to GKE
 
-# This is a test comment to trigger a new workflow run
-# Another test comment
-# Yet another test comment
-# Final test comment
-# One more test comment
-# Last test comment
-
 on:
   push:
     branches:
@@ -14,6 +7,7 @@ on:
     paths:
       - 'services/api-backend/**'
       - 'services/streaming-proxy/**'
+      - 'web/**'
       - '.github/workflows/gke-deploy.yml'
   workflow_dispatch:
 
@@ -22,6 +16,43 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  deploy-web:
+    name: Deploy Web to GKE
+    runs-on: ubuntu-latest
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Google Auth
+        id: auth
+        uses: 'google-github-actions/auth@v2'
+        with:
+          workload_identity_provider: '${{ vars.WIF_PROVIDER }}'
+          service_account: '${{ vars.WIF_SERVICE_ACCOUNT }}'
+
+      - name: 'Set up Cloud SDK'
+        uses: 'google-github-actions/setup-gcloud@v2'
+
+      - name: Get GKE credentials
+        uses: google-github-actions/get-gke-credentials@v1
+        with:
+          cluster_name: 'cloudtolocalllm-us-central1'
+          location: 'us-central1'
+
+      - name: 'Build and Push Container'
+        run: |
+          gcloud builds submit --async --tag "gcr.io/${{ vars.GCP_PROJECT_ID }}/web:latest" web
+
+      - name: 'Deploy to GKE'
+        run: |
+          sleep 30
+          kubectl apply -f web/k8s/deployment.yaml
+          kubectl apply -f web/k8s/service.yaml
+          kubectl apply -f web/k8s/ingress.yaml
+
   deploy-api:
     name: Deploy API Backend to GKE
     runs-on: ubuntu-latest

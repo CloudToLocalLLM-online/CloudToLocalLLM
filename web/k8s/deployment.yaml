@@ -1,19 +1,19 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: streaming-proxy
+  name: web
 spec:
   replicas: 2
   selector:
     matchLabels:
-      app: streaming-proxy
+      app: web
   template:
     metadata:
       labels:
-        app: streaming-proxy
+        app: web
     spec:
       containers:
-      - name: streaming-proxy
-        image: gcr.io/cloudtolocalllm-468303/streaming-proxy:latest
+      - name: web
+        image: gcr.io/cloudtolocalllm-468303/web:latest
         ports:
         - containerPort: 8080
