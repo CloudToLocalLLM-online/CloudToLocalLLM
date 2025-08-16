@@ -26,6 +26,14 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Create Dockerfile
+        run: |
+          echo "FROM node:18-alpine" > web/Dockerfile
+          echo "WORKDIR /app" >> web/Dockerfile
+          echo "COPY web/ /app" >> web/Dockerfile
+          echo "RUN npm install && npm run build" >> web/Dockerfile
+          echo "CMD [\"npm\", \"start\"]" >> web/Dockerfile
+
       - name: Google Auth
         id: auth
         uses: 'google-github-actions/auth@v2'
