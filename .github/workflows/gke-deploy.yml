@@ -4,6 +4,11 @@ on:
   push:
     branches:
       - main
+    paths:
+      - 'services/api-backend/**'
+      - 'services/streaming-proxy/**'
+      - 'web/**'
+      - '.github/workflows/gke-deploy.yml'
   workflow_dispatch:
 
 concurrency:
