@@ -7,6 +7,8 @@ import jwt from 'jsonwebtoken';
 import winston from 'winston';
 import dotenv from 'dotenv';
 import { StreamingProxyManager } from './streaming-proxy-manager.js';
+import * as Sentry from '@sentry/node';
+import { ProfilingIntegration } from '@sentry/profiling-node';
 
 import adminRoutes from './routes/admin.js';
 // HTTP polling tunnel system (simplified)
@@ -56,6 +58,27 @@ const AUTH0_AUDIENCE = process.env.AUTH0_AUDIENCE || 'https://app.cloudtolocalll
 // Express app setup
 const app = express();
 const server = http.createServer(app);
+
+Sentry.init({
+  dsn: process.env.SENTRY_DSN,
+  integrations: [
+    // enable HTTP calls tracing
+    new Sentry.Integrations.Http({ tracing: true }),
+    // enable Express.js middleware tracing
+    new Sentry.Integrations.Express({ app }),
+    new ProfilingIntegration(),
+  ],
+  // Performance Monitoring
+  tracesSampleRate: 1.0, //  Capture 100% of the transactions
+  // Set sampling rate for profiling - this is relative to tracesSampleRate
+  profilesSampleRate: 1.0,
+});
+
+// The request handler must be the first middleware on the app
+app.use(Sentry.Handlers.requestHandler());
+
+// TracingHandler creates a trace for every incoming request
+app.use(Sentry.Handlers.tracingHandler());
 
 // Trust proxy headers (required for rate limiting behind nginx)
 // Use specific proxy configuration to avoid ERR_ERL_PERMISSIVE_TRUST_PROXY
@@ -197,7 +220,7 @@ app.use('/api/monitoring', monitoringRouter);
 // Encrypted tunnel routes removed - using simplified tunnel system
 
 // Database health endpoint
-app.get('/api/db/health', async (req, res) => {
+app.get('/api/db/health', async(req, res) => {
   try {
     if (!dbMigrator) {
       return res.status(503).json({
@@ -677,6 +700,9 @@ app.get('/api/proxy/status', authenticateToken, async(req, res) => {
 });
 
 // Ollama proxy endpoints removed - using HTTP polling tunnel system instead
+
+// The error handler must be registered before any other error middleware and after all controllers
+app.use(Sentry.Handlers.errorHandler());
 
 // Error handling middleware
 app.use((error, req, res, _next) => {

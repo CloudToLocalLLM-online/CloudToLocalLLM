@@ -1,36 +1,26 @@
 import js from '@eslint/js';
+import globals from 'globals';
 
 export default [
-  js.configs.recommended,
+  // Apply to all JavaScript files
   {
+    files: ['**/*.js'],
     languageOptions: {
-      ecmaVersion: 2021,
+      ecmaVersion: 2022,
       sourceType: 'module',
       globals: {
-        console: 'readonly',
-        process: 'readonly',
-        Buffer: 'readonly',
-        __dirname: 'readonly',
-        __filename: 'readonly',
-        global: 'readonly',
-        module: 'readonly',
-        require: 'readonly',
-        exports: 'readonly',
-        setTimeout: 'readonly',
-        clearTimeout: 'readonly',
-        setInterval: 'readonly',
-        clearInterval: 'readonly',
-        URL: 'readonly',
-        WebSocket: 'readonly'
-      }
+        ...globals.node,
+        ...globals.es2022,
+      },
     },
     rules: {
+      ...js.configs.recommended.rules,
       'no-console': 'off',
       'no-debugger': 'warn',
       'semi': ['error', 'always'],
       'quotes': ['error', 'single'],
-      'comma-dangle': ['error', 'never'],
-      'no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
+      'comma-dangle': ['error', 'always-multiline'],
+      'no-unused-vars': ['error', { 'argsIgnorePattern': '^_' }],
       'no-undef': 'error',
       'eqeqeq': 'error',
       'curly': 'error',
@@ -38,12 +28,12 @@ export default [
       'indent': ['error', 2],
       'object-curly-spacing': ['error', 'always'],
       'array-bracket-spacing': ['error', 'never'],
-      'comma-spacing': ['error', { before: false, after: true }],
-      'key-spacing': ['error', { beforeColon: false, afterColon: true }],
+      'comma-spacing': ['error', { 'before': false, 'after': true }],
+      'key-spacing': ['error', { 'beforeColon': false, 'afterColon': true }],
       'space-before-blocks': 'error',
       'space-before-function-paren': ['error', 'never'],
       'no-trailing-spaces': 'error',
-      'eol-last': 'error'
-    }
-  }
+      'eol-last': 'error',
+    },
+  },
 ];

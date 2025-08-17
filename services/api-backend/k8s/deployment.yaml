@@ -26,6 +26,11 @@ spec:
           value: "sqlite"
         - name: DB_PATH
           value: "/app/data/app.db"
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: api-secrets
+              key: db-password
         - name: JWT_SECRET
           valueFrom:
             secretKeyRef:
@@ -36,3 +41,23 @@ spec:
             secretKeyRef:
               name: api-secrets
               key: auth0-audience
+        - name: CLOUD_SQL_CONNECTION_NAME
+          valueFrom:
+            secretKeyRef:
+              name: api-secrets
+              key: cloud-sql-connection-name
+      - name: cloud-sql-proxy
+        image: gcr.io/cloud-sql-proxy/cloud-sql-proxy:latest
+        command: ["/cloud_sql_proxy",
+                  "-instances=$(CLOUD_SQL_CONNECTION_NAME)=tcp:5432",
+                  "-credential_file=/secrets/cloudsql/credentials.json"]
+        securityContext:
+          runAsNonRoot: true
+        volumeMounts:
+        - name: cloudsql-instance-credentials
+          mountPath: /secrets/cloudsql
+          readOnly: true
+      volumes:
+      - name: cloudsql-instance-credentials
+        secret:
+          secretName: cloudsql-instance-credentials

@@ -5,8 +5,8 @@
   "main": "server.js",
   "type": "module",
   "scripts": {
-    "start": "node server.js",
-    "dev": "nodemon server.js",
+    "start": "node --require ./tracing.js server.js",
+    "dev": "nodemon --exec node --require ./tracing.js server.js",
     "test": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js ../test/api-backend/",
     "test:unit": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js ../test/api-backend/unit/",
     "test:integration": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js ../test/api-backend/integration/",
@@ -27,9 +27,16 @@
     "test:auth-flow": "node scripts/test-auth-flow.js",
     "deploy:after-auth": "bash scripts/deploy-after-auth.sh",
     "lint": "eslint .",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "prepare": "husky install"
   },
   "dependencies": {
+    "@opentelemetry/api": "^1.9.0",
+    "@opentelemetry/auto-instrumentations-node": "^0.62.1",
+    "@opentelemetry/exporter-trace-otlp-http": "^0.203.0",
+    "@opentelemetry/sdk-node": "^0.203.0",
+    "@sentry/node": "^10.5.0",
+    "@sentry/profiling-node": "^10.5.0",
     "cors": "^2.8.5",
     "dockerode": "^4.0.2",
     "dotenv": "^16.3.1",
@@ -50,6 +57,7 @@
     "@eslint/js": "^9.15.0",
     "eslint": "^9.15.0",
     "globals": "^15.12.0",
+    "husky": "^9.1.7",
     "jest": "^29.7.0",
     "jest-junit": "^16.0.0",
     "nodemon": "^3.0.2",

@@ -14,5 +14,6 @@
             }
         }
     },
-    "kiroAgent.configureMCP": "Enabled"
+    "kiroAgent.configureMCP": "Enabled",
+    "CodeGPT.apiKey": "Google AI Studio"
 }

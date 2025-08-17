@@ -17,3 +17,9 @@ spec:
         image: gcr.io/cloudtolocalllm-468303/web:latest
         ports:
         - containerPort: 8080
+        env:
+        - name: GCIP_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: web-secrets
+              key: gcip-api-key

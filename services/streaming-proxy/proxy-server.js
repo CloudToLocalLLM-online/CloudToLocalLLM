@@ -1,6 +1,20 @@
 import http from 'http';
 import https from 'https';
 import winston from 'winston';
+import * as Sentry from '@sentry/node';
+import { ProfilingIntegration } from '@sentry/profiling-node';
+
+Sentry.init({
+  dsn: process.env.SENTRY_DSN,
+  integrations: [
+    new Sentry.Integrations.Http({ tracing: true }),
+    new ProfilingIntegration(),
+  ],
+  // Performance Monitoring
+  tracesSampleRate: 1.0, //  Capture 100% of the transactions
+  // Set sampling rate for profiling - this is relative to tracesSampleRate
+  profilesSampleRate: 1.0,
+});
 
 // Configuration from environment variables
 const PORT = process.env.HEALTH_PORT || 8081;
@@ -15,21 +29,21 @@ const logger = winston.createLogger({
   format: winston.format.combine(
     winston.format.timestamp(),
     winston.format.errors({ stack: true }),
-    winston.format.json()
+    winston.format.json(),
   ),
   defaultMeta: {
     service: 'tunnel-aware-container',
     userId: USER_ID,
-    proxyId: PROXY_ID
+    proxyId: PROXY_ID,
   },
   transports: [
     new winston.transports.Console({
       format: winston.format.combine(
         winston.format.timestamp(),
-        winston.format.simple()
-      )
-    })
-  ]
+        winston.format.simple(),
+      ),
+    }),
+  ],
 });
 
 /**
@@ -60,9 +74,9 @@ class TunnelHttpClient {
         headers: {
           'Content-Type': 'application/json',
           'User-Agent': 'CloudToLocalLLM-Container/1.0',
-          ...options.headers
+          ...options.headers,
         },
-        timeout: 30000
+        timeout: 30000,
       };
 
       this.requestCount++;
@@ -122,7 +136,7 @@ class TunnelHttpClient {
       const response = await this.request('/api/tags');
       logger.info('Tunnel connectivity test successful', {
         statusCode: response.statusCode,
-        modelsCount: response.data?.models?.length || 0
+        modelsCount: response.data?.models?.length || 0,
       });
       return true;
     } catch (error) {
@@ -140,7 +154,7 @@ class TunnelHttpClient {
       requestCount: this.requestCount,
       successCount: this.successCount,
       errorCount: this.errorCount,
-      successRate: this.requestCount > 0 ? (this.successCount / this.requestCount) : 0
+      successRate: this.requestCount > 0 ? (this.successCount / this.requestCount) : 0,
     };
   }
 }
@@ -168,7 +182,7 @@ const server = http.createServer(async(req, res) => {
       ollamaBaseUrl: OLLAMA_BASE_URL,
       tunnelConfigured: !!OLLAMA_BASE_URL,
       uptime: process.uptime(),
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     }));
     break;
 
@@ -177,7 +191,7 @@ const server = http.createServer(async(req, res) => {
       res.writeHead(503, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({
         error: 'Tunnel not configured',
-        message: 'OLLAMA_BASE_URL environment variable not set'
+        message: 'OLLAMA_BASE_URL environment variable not set',
       }));
       return;
     }
@@ -188,14 +202,14 @@ const server = http.createServer(async(req, res) => {
       res.end(JSON.stringify({
         tunnelConnected: isConnected,
         stats: httpClient.getStats(),
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       }));
     } catch (error) {
       res.writeHead(500, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({
         error: 'Tunnel test failed',
         message: error.message,
-        stats: httpClient.getStats()
+        stats: httpClient.getStats(),
       }));
     }
     break;
@@ -207,16 +221,16 @@ const server = http.createServer(async(req, res) => {
         userId: USER_ID,
         proxyId: PROXY_ID,
         uptime: process.uptime(),
-        memoryUsage: process.memoryUsage()
+        memoryUsage: process.memoryUsage(),
       },
       tunnel: httpClient ? {
         configured: true,
         baseUrl: OLLAMA_BASE_URL,
-        stats: httpClient.getStats()
+        stats: httpClient.getStats(),
       } : {
-        configured: false
+        configured: false,
       },
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     }));
     break;
 
@@ -247,7 +261,7 @@ server.listen(PORT, async() => {
     proxyId: PROXY_ID,
     port: PORT,
     ollamaBaseUrl: OLLAMA_BASE_URL,
-    nodeVersion: process.version
+    nodeVersion: process.version,
   });
 
   // Test tunnel connectivity on startup if configured

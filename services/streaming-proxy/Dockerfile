@@ -1,42 +1,20 @@
-# Ultra-lightweight Alpine Linux base for streaming proxy containers
-# Optimized for minimal footprint and security
-FROM node:20-alpine
+# Use a Node.js base image for the streaming proxy
+FROM node:18-alpine
 
-# Security: Create non-root user for container execution
-RUN addgroup -g 1001 -S proxyuser && \
-    adduser -S -D -H -u 1001 -s /sbin/nologin -G proxyuser proxyuser
-
-# Set working directory
+# Set the working directory
 WORKDIR /app
 
-# Install only essential dependencies for WebSocket proxy
-COPY package.json package-lock.json ./
-RUN npm ci --only=production && \
-    npm cache clean --force && \
-    rm -rf /tmp/* /var/cache/apk/*
+# Copy package.json and package-lock.json to leverage Docker cache
+COPY services/streaming-proxy/package*.json ./
 
-# Copy proxy application
-COPY proxy-server.js ./
+# Install Node.js dependencies
+RUN npm ci
 
+# Copy the rest of the application code
+COPY services/streaming-proxy/ .
 
-# Security: Set proper ownership and permissions
-RUN chown -R proxyuser:proxyuser /app && \
-    chmod -R 755 /app
+# Expose the port the streaming proxy listens on
+EXPOSE 3001
 
-# Health check for container monitoring
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD node -e "require('http').get('http://localhost:8080/health', (res) => process.exit(res.statusCode === 200 ? 0 : 1))"
-
-# Security: Switch to non-root user
-USER proxyuser
-
-# Expose WebSocket proxy port
-EXPOSE 8080
-
-# Environment variables for configuration
-ENV NODE_ENV=production
-ENV PROXY_PORT=8080
-ENV LOG_LEVEL=info
-
-# Start the streaming proxy server
-CMD ["node", "proxy-server.js"]
+# Start the streaming proxy
+CMD ["npm", "start"]
