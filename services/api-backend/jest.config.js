@@ -6,10 +6,7 @@ export default {
   testEnvironment: 'node',
 
   // Test file patterns
-  testMatch: [
-    '<rootDir>/../test/api-backend/**/*.test.js',
-    '<rootDir>/../test/api-backend/**/?(*.)+(spec|test).js',
-  ],
+  testMatch: ["<rootDir>/../test/api-backend/**/*.js"],
 
   // Files to ignore
   testPathIgnorePatterns: [
