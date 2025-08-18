@@ -76,7 +76,7 @@ jobs:
 
       - name: 'Build and Push Container'
         run: |
-          gcloud builds submit --async --tag "gcr.io/${{ vars.GCP_PROJECT_ID }}/api-backend:latest" services/api-backend -f services/api-backend/Dockerfile
+          gcloud builds submit --async --tag "gcr.io/${{ vars.GCP_PROJECT_ID }}/api-backend:latest" -f services/api-backend/Dockerfile --build-arg BUILDKIT_INLINE_CACHE=1 services/api-backend
 
       - name: 'Deploy to GKE'
         run: |
@@ -112,7 +112,7 @@ jobs:
 
       - name: 'Build and Push Container'
         run: |
-          gcloud builds submit --async --tag "gcr.io/${{ vars.GCP_PROJECT_ID }}/streaming-proxy:latest" services/streaming-proxy -f services/streaming-proxy/Dockerfile
+          gcloud builds submit --async --tag "gcr.io/${{ vars.GCP_PROJECT_ID }}/streaming-proxy:latest" -f services/streaming-proxy/Dockerfile --build-arg BUILDKIT_INLINE_CACHE=1 services/streaming-proxy
 
       - name: 'Deploy to GKE'
         run: |
