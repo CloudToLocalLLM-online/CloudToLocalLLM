@@ -302,36 +302,19 @@ jobs:
           cluster_name: 'cloudtolocalllm-us-central1'
           location: 'us-central1'
 
-      - name: Get previous successful commit SHA
-        id: get_previous_sha
-        run: |
-          PREVIOUS_SHA=$(git log --format="%H" -n 2 ${{ github.sha }} | tail -n 1)
-          echo "previous_sha=$PREVIOUS_SHA" >> $GITHUB_OUTPUT
-
       - name: Rollback Web Service
-        run: |
-          gcloud run services update cloudtolocalllm-web \
-            --image="gcr.io/${{ vars.GCP_PROJECT_ID }}/web:${{ steps.get_previous_sha.outputs.previous_sha }}" \
-            --region="us-central1" || true # Allow failure to continue to other rollbacks
+        run: kubectl rollout undo deployment/web
 
       - name: Rollback API Service
-        run: |
-          gcloud run services update cloudtolocalllm-api \
-            --image="gcr.io/${{ vars.GCP_PROJECT_ID }}/api-backend:${{ steps.get_previous_sha.outputs.previous_sha }}" \
-            --region="us-central1" || true
+        run: kubectl rollout undo deployment/api-backend
 
       - name: Rollback Streaming Service
-        run: |
-          gcloud run services update cloudtolocalllm-streaming \
-            --image="gcr.io/${{ vars.GCP_PROJECT_ID }}/streaming-proxy:${{ steps.get_previous_sha.outputs.previous_sha }}" \
-            --region="us-central1" || true
+        run: kubectl rollout undo deployment/streaming-proxy
 
       - name: Notify Rollback
         run: |
           echo "## 🚨 Automated Rollback Initiated" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "Deployment validation failed. Services have been rolled back to the previous successful version." >> $GITHUB_STEP_SUMMARY
+          echo "Deployment validation failed. An automated rollback to the previous stable version has been performed." >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Details:**" >> $GITHUB_STEP_SUMMARY
-          echo "- **Failed Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Rolled back to:** ${{ steps.get_previous_sha.outputs.previous_sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Failed Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY

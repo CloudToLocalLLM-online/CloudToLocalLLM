@@ -1,49 +1,18 @@
 {
-  "name": "cloudtolocalllm-e2e-tests",
-  "version": "4.1.1",
-  "description": "End-to-end testing for CloudToLocalLLM",
-  "private": true,
+  "name": "mcp-script-runner",
+  "version": "1.0.0",
+  "description": "A runner for MCP server scripts",
+  "main": "run_linear_server.js",
+  "type": "module",
   "scripts": {
-    "test": "playwright test",
-    "test:headed": "playwright test --headed",
-    "test:debug": "playwright test --debug",
-    "test:auth": "playwright test auth-loop-analysis.spec.js",
-    "test:tunnel": "playwright test tunnel-verification.spec.js",
-    "test:tunnel-diagnosis": "playwright test tunnel-comprehensive-diagnosis.spec.js",
-    "test:tunnel-performance": "playwright test tunnel-performance-analysis.spec.js",
-    "test:tunnel-auth": "playwright test tunnel-auth-integration.spec.js",
-    "test:tunnel-all": "playwright test tunnel-comprehensive-diagnosis.spec.js tunnel-performance-analysis.spec.js tunnel-auth-integration.spec.js",
-    "install-browsers": "playwright install",
-    "install-deps": "playwright install-deps",
-    "setup:mcp": "node scripts/setup-mcp-config.js",
-    "setup:linear-key": "node scripts/setup-linear-key.js"
-  },
-  "devDependencies": {
-    "@playwright/test": "^1.54.2",
-    "@types/node": "^24.2.1"
-  },
-  "engines": {
-    "node": ">=16.0.0"
-  },
-  "dependencies": {
-    "typescript": "^5.9.2"
-  },
-  "main": "playwright.config.js",
-  "directories": {
-    "doc": "docs",
-    "lib": "lib",
-    "test": "test"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/imrightguy/CloudToLocalLLM.git"
+    "start": "node run_linear_server.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "type": "commonjs",
-  "bugs": {
-    "url": "https://github.com/imrightguy/CloudToLocalLLM/issues"
-  },
-  "homepage": "https://github.com/imrightguy/CloudToLocalLLM#readme"
+  "dependencies": {
+    "@linear/sdk": "^2.7.0",
+    "@modelcontextprotocol/sdk": "^0.0.19",
+    "zod": "^3.23.8"
+  }
 }

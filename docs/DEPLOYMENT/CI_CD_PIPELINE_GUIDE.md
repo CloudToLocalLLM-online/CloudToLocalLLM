@@ -4,6 +4,24 @@ This document describes the comprehensive CI/CD pipeline for CloudToLocalLLM, wh
 
 ## Overview
 
+## Domain, IP, and SSL Configuration
+
+The GKE deployment uses domain-based routing, managed through a single static IP and secured with Google-managed SSL certificates.
+
+- **Static IP:** The entire deployment is accessible via a single global static IP address named `cloudtolocalllm-static-ip`.
+- **Google-Managed SSL:** SSL is handled automatically by a `ManagedCertificate` resource defined in `gke/managed-certificate.yaml`. This certificate covers all necessary domains and is provisioned and renewed by Google Cloud.
+- **DNS Configuration:** To point your domains to the application, you must create the following `A` records at your domain registrar:
+
+| Type | Host / Name | Value (points to) |
+| :--- | :--- | :--- |
+| A | @ | The static IP address |
+| A | app | The static IP address |
+| A | docs | The static IP address |
+| A | api | The static IP address |
+| A | streaming | The static IP address |
+
+*(Note: The specific IP address can be found by running `gcloud compute addresses describe cloudtolocalllm-static-ip --global`)*
+
 The CI/CD pipeline is managed through a single, unified GitHub Actions workflow: `.github/workflows/gke-deploy.yml`. This workflow is responsible for:
 
 1.  **Testing**: Running a comprehensive suite of tests to ensure code quality and stability.
@@ -46,13 +64,15 @@ Once all the tests have passed, the workflow proceeds to build the Docker contai
 
 After the container images have been successfully built and pushed, the workflow deploys them to the GKE cluster. The deployment is managed through Kubernetes manifest files located in the `k8s` directory of each service.
 
+**Important Note:** The CI/CD pipeline is configured to apply specific, known manifest files. If you add a new manifest file to the project (such as the `gke/managed-certificate.yaml`), it will not be applied automatically. You must either apply it manually via `kubectl apply -f <file-path>` or update the `gke-deploy.yml` workflow to include it in the deployment steps.
+
 ### 4. Validating
 
 After the deployment is complete, a post-deployment validation job is run to ensure that the new version of the application is healthy and functioning correctly. This job runs the `run_tunnel_validation.sh` script, which performs a series of health checks against the deployed services.
 
 ### 5. Rolling Back
 
-If the post-deployment validation fails, the workflow will automatically trigger a rollback to the previous stable version of the application. This is done by redeploying the container images from the previous successful commit.
+If the post-deployment validation fails, the workflow will automatically trigger a rollback to the previous stable deployment revision within Kubernetes. This is handled by the `kubectl rollout undo` command, which is a safe and standard way to revert to a last known good state.
 
 ## Required Secrets
 
@@ -74,6 +94,6 @@ The CI/CD pipeline requires the following secrets to be configured in the GitHub
 2.  **Make your changes** and commit them to your branch.
 3.  **Push your branch** to the GitHub repository.
 4.  **Create a pull request** to merge your changes into the `main` branch.
-5.  **Wait for the CI/CD pipeline to complete**. If all tests pass, your changes will be automatically deployed to the staging environment.
-6.  **Verify your changes** in the staging environment.
-7.  **Merge your pull request** into the `main` branch to deploy your changes to production.
+5.  **Wait for the CI/CD pipeline to complete**. If all tests pass, your changes will be automatically deployed to the GKE production environment.
+6.  **Verify your changes** in the production environment.
+7.  **Merge your pull request** into the `main` branch.

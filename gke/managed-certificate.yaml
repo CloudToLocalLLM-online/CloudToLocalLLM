@@ -1,0 +1,11 @@
+apiVersion: networking.gke.io/v1
+kind: ManagedCertificate
+metadata:
+  name: cloudtolocalllm-certificate
+spec:
+  domains:
+    - cloudtolocalllm.online
+    - app.cloudtolocalllm.online
+    - docs.cloudtolocalllm.online
+    - api.cloudtolocalllm.online
+    - streaming.cloudtolocalllm.online

@@ -4,10 +4,32 @@ metadata:
   name: web-ingress
   annotations:
     kubernetes.io/ingress.class: "gce"
-    kubernetes.io/ingress.global-static-ip-name: "web-static-ip"
+    kubernetes.io/ingress.global-static-ip-name: "cloudtolocalllm-static-ip"
+    networking.gke.io/managed-certificates: "cloudtolocalllm-certificate"
 spec:
   rules:
-  - http:
+  - host: cloudtolocalllm.online
+    http:
+      paths:
+      - path: /*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: web
+            port:
+              number: 80
+  - host: app.cloudtolocalllm.online
+    http:
+      paths:
+      - path: /*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: web
+            port:
+              number: 80
+  - host: docs.cloudtolocalllm.online
+    http:
       paths:
       - path: /*
         pathType: ImplementationSpecific

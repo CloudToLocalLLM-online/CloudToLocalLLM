@@ -4,12 +4,15 @@ metadata:
   name: streaming-proxy-ingress
   annotations:
     kubernetes.io/ingress.class: "gce"
+    kubernetes.io/ingress.global-static-ip-name: "cloudtolocalllm-static-ip"
+    networking.gke.io/managed-certificates: "cloudtolocalllm-certificate"
 spec:
   rules:
-  - http:
+  - host: streaming.cloudtolocalllm.online
+    http:
       paths:
-      - path: /socket.io/*
-        pathType: Prefix
+      - path: /*
+        pathType: ImplementationSpecific
         backend:
           service:
             name: streaming-proxy
