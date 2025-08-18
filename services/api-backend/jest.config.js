@@ -1,7 +1,7 @@
 // Jest configuration for CloudToLocalLLM API Backend
 // Optimized for CI/CD pipeline execution
 
-export default {
+module.exports = {
   // Test environment
   testEnvironment: 'node',
 
