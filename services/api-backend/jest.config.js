@@ -57,7 +57,7 @@ export default {
 
   // Transform configuration (for ES modules)
   transform: {},
-  extensionsToTreatAsEsm: ['.js'],
+  
 
   // Test timeout (increased for CI)
   testTimeout: 30000,
