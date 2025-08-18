@@ -4,11 +4,6 @@ on:
   push:
     branches:
       - main
-    paths:
-      - 'services/api-backend/**'
-      - 'services/streaming-proxy/**'
-      - 'web/**'
-      - '.github/workflows/gke-deploy.yml'
   workflow_dispatch:
 
 concurrency:
@@ -16,6 +11,48 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  security-npm-audit:
+    name: NPM Audit
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service: [services/api-backend, services/streaming-proxy]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Install dependencies
+        run: npm ci
+        working-directory: ${{ matrix.service }}
+
+      - name: Run npm audit
+        run: npm audit
+        working-directory: ${{ matrix.service }}
+
+  security-semgrep:
+    name: Semgrep Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run Semgrep
+        uses: returntocorp/semgrep-action@v1
+        with:
+          publishToken: ${{ secrets.SEMGREP_APP_TOKEN }}
+
+      - name: Upload SARIF file
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: semgrep-results
+          path: semgrep.sarif
+
   test-flutter:
     name: Run Flutter Tests
     runs-on: ubuntu-latest
@@ -120,7 +157,7 @@ jobs:
   deploy-web:
     name: Deploy Web to GKE
     runs-on: ubuntu-latest
-    needs: [test-flutter, test-node-api, test-powershell, test-e2e] # Add dependencies on test jobs
+    needs: [security-npm-audit, security-semgrep, test-flutter, test-node-api, test-powershell, test-e2e]
     permissions:
       contents: 'read'
       id-token: 'write'
@@ -158,7 +195,7 @@ jobs:
   deploy-api:
     name: Deploy API Backend to GKE
     runs-on: ubuntu-latest
-    needs: [test-flutter, test-node-api, test-powershell, test-e2e] # Add dependencies on test jobs
+    needs: [security-npm-audit, security-semgrep, test-flutter, test-node-api, test-powershell, test-e2e]
     permissions:
       contents: 'read'
       id-token: 'write'
@@ -195,7 +232,7 @@ jobs:
   deploy-streaming:
     name: Deploy Streaming Proxy to GKE
     runs-on: ubuntu-latest
-    needs: [test-flutter, test-node-api, test-powershell, test-e2e] # Add dependencies on test jobs
+    needs: [security-npm-audit, security-semgrep, test-flutter, test-node-api, test-powershell, test-e2e]
     permissions:
       contents: 'read'
       id-token: 'write'
