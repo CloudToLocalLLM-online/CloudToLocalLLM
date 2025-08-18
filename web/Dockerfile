@@ -1,15 +1,17 @@
-# Use a Node.js base image for building the Flutter web app
-FROM node:18-alpine AS build
+# Use a Flutter base image for building the Flutter web app
+FROM cirrusci/flutter:stable AS build
 
 # Set the working directory
 WORKDIR /app
 
-# Copy the web application source code
+# Copy the Flutter application source code
 COPY . /app
 
-# Install Node.js dependencies and build the Flutter web app
-RUN npm install
-RUN npm run build
+# Get Flutter dependencies
+RUN flutter pub get
+
+# Build the Flutter web app
+RUN flutter build web --release
 
 # Use a lightweight Nginx image for serving the built application
 FROM nginx:alpine

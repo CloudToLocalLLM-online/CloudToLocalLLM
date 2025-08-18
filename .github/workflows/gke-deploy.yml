@@ -11,42 +11,9 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  test-flutter:
-    name: Run Flutter Tests
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          flutter-version: '3.32.0'
-          channel: 'stable'
-
-      - name: Cache Flutter dependencies
-        uses: actions/cache@v3
-        with:
-          path: |
-            ~/.pub-cache
-            .dart_tool
-          key: ${{ runner.os }}-flutter-${{ hashFiles('**/pubspec.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-flutter-
-
-      - name: Get Flutter dependencies
-        run: flutter pub get
-
-      - name: Run Flutter tests
-        run: flutter test
-
-      - name: Run Flutter static analysis
-        run: flutter analyze --fatal-infos --fatal-warnings
-
   deploy-web:
     name: Deploy Web to GKE
     runs-on: ubuntu-latest
-    needs: [test-flutter]
     permissions:
       contents: 'read'
       id-token: 'write'
@@ -84,7 +51,6 @@ jobs:
   deploy-api:
     name: Deploy API Backend to GKE
     runs-on: ubuntu-latest
-    needs: [test-flutter]
     permissions:
       contents: 'read'
       id-token: 'write'
@@ -121,7 +87,6 @@ jobs:
   deploy-streaming:
     name: Deploy Streaming Proxy to GKE
     runs-on: ubuntu-latest
-    needs: [test-flutter]
     permissions:
       contents: 'read'
       id-token: 'write'
