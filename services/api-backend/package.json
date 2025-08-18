@@ -76,25 +76,5 @@
   ],
   "author": "CloudToLocalLLM Team",
   "license": "MIT",
-  "jest": {
-    "testEnvironment": "node",
-    "transform": {},
-    "moduleFileExtensions": [
-      "js",
-      "json"
-    ],
-    "setupFilesAfterEnv": [
-      "<rootDir>/services/api-backend/jest.setup.js"
-    ],
-    "reporters": [
-      "default",
-      [
-        "jest-junit",
-        {
-          "outputDirectory": "<rootDir>/services/api-backend/test-results",
-          "outputName": "junit.xml"
-        }
-      ]
-    ]
-  }
+  
 }
