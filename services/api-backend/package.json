@@ -7,7 +7,7 @@
   "scripts": {
     "start": "node --require ./tracing.js server.js",
     "dev": "nodemon --exec node --require ./tracing.js server.js",
-    "test": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js",
+    "test": "jest",
     "test:unit": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js ../test/api-backend/unit/",
     "test:integration": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js ../test/api-backend/integration/",
     "test:security": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js ../test/api-backend/security/",
