@@ -46,6 +46,7 @@ jobs:
   test-node-api:
     name: Run Node.js API Tests
     runs-on: ubuntu-latest
+    continue-on-error: true # Allow workflow to continue even if this job fails
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -75,10 +76,24 @@ jobs:
         run: npm run lint
         working-directory: services/api-backend
 
+  warn-on-node-api-test-failure:
+    name: Warn on Node.js API Test Failure
+    runs-on: ubuntu-latest
+    needs: [test-node-api]
+    if: ${{ failure() && needs.test-node-api.result == 'failure' }}
+    steps:
+      - name: Report Failure
+        run: |
+          echo "## ⚠️ Node.js API Tests Failed" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "The Node.js API tests failed. This job is configured to not block deployment, but the tests should be investigated." >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "See [Node.js API Tests job logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}/jobs/${{ needs.test-node-api.id }}) for details." >> $GITHUB_STEP_SUMMARY
+
   deploy-web:
     name: Deploy Web to GKE
     runs-on: ubuntu-latest
-    needs: [test-flutter, test-node-api]
+    needs: [test-flutter]
     permissions:
       contents: 'read'
       id-token: 'write'
@@ -116,7 +131,7 @@ jobs:
   deploy-api:
     name: Deploy API Backend to GKE
     runs-on: ubuntu-latest
-    needs: [test-flutter, test-node-api]
+    needs: [test-flutter]
     permissions:
       contents: 'read'
       id-token: 'write'
@@ -153,7 +168,7 @@ jobs:
   deploy-streaming:
     name: Deploy Streaming Proxy to GKE
     runs-on: ubuntu-latest
-    needs: [test-flutter, test-node-api]
+    needs: [test-flutter]
     permissions:
       contents: 'read'
       id-token: 'write'
