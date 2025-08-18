@@ -53,7 +53,50 @@ export default {
   moduleFileExtensions: ['js', 'json'],
 
   // Transform configuration (for ES modules)
-  transform: {},
+  transform: { '^.+\.js
+  
+
+  // Test timeout (increased for CI)
+  testTimeout: 30000,
+
+  // Reporters for CI
+  reporters: [
+    'default',
+    ['jest-junit', {
+      outputDirectory: 'test-results',
+      outputName: 'junit.xml',
+      classNameTemplate: '{classname}',
+      titleTemplate: '{title}',
+      ancestorSeparator: ' › ',
+      usePathForSuiteName: true,
+    }],
+  ],
+
+  // Verbose output for CI
+  verbose: process.env.CI === 'true',
+
+  // Bail on first test failure in CI
+  bail: process.env.CI === 'true' ? 1 : 0,
+
+  // Force exit after tests complete
+  forceExit: true,
+
+  // Clear mocks between tests
+  clearMocks: true,
+
+  // Restore mocks after each test
+  restoreMocks: true,
+
+  // Global setup/teardown
+  globalSetup: '<rootDir>/test/global-setup.js',
+  globalTeardown: '<rootDir>/test/global-teardown.js',
+
+  // Environment variables for testing
+  testEnvironmentOptions: {
+    NODE_ENV: 'test',
+  },
+};
+: 'babel-jest' },
   
 
   // Test timeout (increased for CI)
