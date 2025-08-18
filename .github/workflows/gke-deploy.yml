@@ -47,7 +47,7 @@ jobs:
           publishToken: ${{ secrets.SEMGREP_APP_TOKEN }}
 
       - name: Upload SARIF file
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: always()
         with:
           name: semgrep-results
@@ -295,7 +295,7 @@ jobs:
           ./scripts/deploy/run_tunnel_validation.sh
 
       - name: Upload validation results
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: always()
         with:
           name: validation-results
