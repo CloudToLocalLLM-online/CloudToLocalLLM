@@ -460,7 +460,7 @@ class _LLMProviderSettingsScreenState extends State<LLMProviderSettingsScreen> {
 
                   // Model selection dropdown
                   DropdownButtonFormField<String>(
-                    value: _selectedModel,
+                    initialValue: _selectedModel,
                     decoration: const InputDecoration(
                       labelText: 'Select Model for Testing',
                       border: OutlineInputBorder(),

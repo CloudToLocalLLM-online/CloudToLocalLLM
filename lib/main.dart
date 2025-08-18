@@ -65,7 +65,7 @@ void main() async {
   };
 
   // Run the app inside a guarded zone to catch uncaught async errors
-  runZonedGuarded(() {
+  runZonedGuarded(() async {
     await SentryFlutter.init(
     (options) {
       options.dsn = const String.fromEnvironment('SENTRY_DSN', defaultValue: '');

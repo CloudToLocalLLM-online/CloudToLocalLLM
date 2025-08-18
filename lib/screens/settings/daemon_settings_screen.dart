@@ -468,7 +468,7 @@ class _DaemonSettingsScreenState extends State<DaemonSettingsScreen> {
           ),
           SizedBox(height: AppTheme.spacingS),
           DropdownButtonFormField<String>(
-            value: value,
+            initialValue: value,
             decoration: InputDecoration(
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(AppTheme.borderRadiusS),

@@ -1,0 +1,115 @@
+name: Deploy to Cloud Run
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    outputs:
+      web_url: ${{ steps.verify_web.outputs.web_url }}
+      api_url: ${{ steps.verify_api.outputs.api_url }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.x'
+          cache: true
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Google Auth
+        uses: 'google-github-actions/auth@v2'
+        with:
+          workload_identity_provider: ${{ vars.WIF_PROVIDER }}
+          service_account: ${{ vars.WIF_SERVICE_ACCOUNT }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Configure Docker
+        run: gcloud auth configure-docker --quiet
+
+      
+
+      - name: Build and Push API Image
+        run: |
+          docker build -f services/api-backend/Dockerfile.prod -t gcr.io/${{ vars.GCP_PROJECT_ID }}/api:latest -t gcr.io/${{ vars.GCP_PROJECT_ID }}/api:${{ github.sha }} .
+          docker push gcr.io/${{ vars.GCP_PROJECT_ID }}/api:latest
+          docker push gcr.io/${{ vars.GCP_PROJECT_ID }}/api:${{ github.sha }}
+
+      - name: Deploy API to Cloud Run
+        run: |
+          gcloud run deploy api \
+            --image gcr.io/${{ vars.GCP_PROJECT_ID }}/api:${{ github.sha }} \
+            --platform managed \
+            --region ${{ vars.GCP_REGION }} \
+            --allow-unauthenticated \
+            --update-secrets=DB_PASSWORD=db-password:latest \
+            --set-env-vars="CLOUD_SQL_CONNECTION_NAME=${{ vars.CLOUD_SQL_CONNECTION_NAME }}"
+      
+      - name: Verify API Deployment
+        id: verify_api
+        run: |
+          API_URL=$(gcloud run services describe api --platform managed --region ${{ vars.GCP_REGION }} --format 'value(status.url)')
+          echo "api_url=$API_URL" >> $GITHUB_OUTPUT
+          curl -f -s $API_URL/health
+
+      
+
+      - name: Build and Push Streaming Image
+        run: |
+          docker build -f services/streaming-proxy/Dockerfile.prod -t gcr.io/${{ vars.GCP_PROJECT_ID }}/streaming:latest -t gcr.io/${{ vars.GCP_PROJECT_ID }}/streaming:${{ github.sha }} .
+          docker push gcr.io/${{ vars.GCP_PROJECT_ID }}/streaming:latest
+          docker push gcr.io/${{ vars.GCP_PROJECT_ID }}/streaming:${{ github.sha }}
+
+      - name: Deploy Streaming to Cloud Run
+        run: |
+          gcloud run deploy streaming \
+            --image gcr.io/${{ vars.GCP_PROJECT_ID }}/streaming:${{ github.sha }} \
+            --platform managed \
+            --region ${{ vars.GCP_REGION }} \
+            --allow-unauthenticated
+
+      - name: Verify Streaming Deployment
+        run: |
+          STREAMING_URL=$(gcloud run services describe streaming --platform managed --region ${{ vars.GCP_REGION }} --format 'value(status.url)')
+          curl -f -s $STREAMING_URL/health
+
+      - name: Build and Push Web Image
+        run: |
+          docker build -t gcr.io/${{ vars.GCP_PROJECT_ID }}/web:latest -t gcr.io/${{ vars.GCP_PROJECT_ID }}/web:${{ github.sha }} .
+          docker push gcr.io/${{ vars.GCP_PROJECT_ID }}/web:latest
+          docker push gcr.io/${{ vars.GCP_PROJECT_ID }}/web:${{ github.sha }}
+
+      - name: Deploy Web to Cloud Run
+        run: |
+          gcloud run deploy web \
+            --image gcr.io/${{ vars.GCP_PROJECT_ID }}/web:${{ github.sha }} \
+            --platform managed \
+            --region ${{ vars.GCP_REGION }} \
+            --allow-unauthenticated \
+            --set-env-vars="GCIP_API_KEY=${{ secrets.GCIP_API_KEY }}"
+
+      - name: Verify Web Deployment
+        id: verify_web
+        run: |
+          WEB_URL=$(gcloud run services describe web --platform managed --region ${{ vars.GCP_REGION }} --format 'value(status.url)')
+          echo "web_url=$WEB_URL" >> $GITHUB_OUTPUT
+          curl -f -s $WEB_URL
+
+  

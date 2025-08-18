@@ -1,6 +1,6 @@
 ﻿# CloudToLocalLLM
 
-[![Cloud Run Deployment](https://img.shields.io/badge/Cloud%20Run-Ready-blue)](docs/DEPLOYMENT/CLOUDRUN_DEPLOYMENT.md): Your Personal AI Powerhouse
+Your Personal AI Powerhouse
 
 [![Version](https://img.shields.io/badge/version-4.0.87-blue.svg)](https://github.com/imrightguy/CloudToLocalLLM/releases)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
@@ -205,6 +205,7 @@ git push origin main
 - **[CI/CD Pipeline Guide](docs/DEPLOYMENT/CI_CD_PIPELINE_GUIDE.md)** - Complete pipeline documentation
 - **[GitHub Secrets Setup](docs/DEPLOYMENT/GITHUB_SECRETS_SETUP.md)** - Application secrets configuration. Note: Cloud Run authentication now uses OIDC/WIF with repository Variables (no service account keys); see the OIDC/WIF guide below.
 - **[Complete Deployment Workflow](docs/DEPLOYMENT/COMPLETE_DEPLOYMENT_WORKFLOW.md)** - Step-by-step deployment guide
+- **[CI/CD Implementation Plan](CICD_Implementation_Plan.md)** - Detailed plan for completing the CI/CD setup
 - **[MCP Development Workflow](docs/MCP_DEVELOPMENT_WORKFLOW.md)** - Guidelines for model-driven development
 
 ## Configuration

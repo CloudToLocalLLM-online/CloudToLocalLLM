@@ -301,7 +301,7 @@ class _AdminDataFlushScreenState extends State<AdminDataFlushScreen>
 
             // Scope selection
             DropdownButtonFormField<String>(
-              value: _selectedScope,
+              initialValue: _selectedScope,
               decoration: const InputDecoration(
                 labelText: 'Flush Scope',
                 border: OutlineInputBorder(),

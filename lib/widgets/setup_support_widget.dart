@@ -169,10 +169,10 @@ class _SetupSupportWidgetState extends State<SetupSupportWidget> {
       decoration: BoxDecoration(
         color: Theme.of(
           context,
-        ).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+        ).colorScheme.surfaceContainerHighest.withValues(alpha: 77),
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
-          color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.2),
+          color: Theme.of(context).colorScheme.outline.withValues(alpha: 51),
         ),
       ),
       child: Column(
@@ -200,7 +200,7 @@ class _SetupSupportWidgetState extends State<SetupSupportWidget> {
                   color: _getColorForDifficulty(
                     guide.difficulty,
                     context,
-                  ).withValues(alpha: 0.1),
+                  ).withValues(alpha: 26),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
@@ -279,7 +279,7 @@ class _SetupSupportWidgetState extends State<SetupSupportWidget> {
             border: Border.all(
               color: Theme.of(
                 context,
-              ).colorScheme.outline.withValues(alpha: 0.2),
+              ).colorScheme.outline.withValues(alpha: 51),
             ),
             borderRadius: BorderRadius.circular(8),
           ),
@@ -297,14 +297,14 @@ class _SetupSupportWidgetState extends State<SetupSupportWidget> {
                     Text(
                       option.title,
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                            fontWeight: FontWeight.bold,
+                          ),
                     ),
                     Text(
                       option.description,
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          ),
                     ),
                   ],
                 ),
@@ -352,8 +352,8 @@ class _SetupSupportWidgetState extends State<SetupSupportWidget> {
           Text(
             'Help us improve the setup experience by sharing your feedback.',
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-            ),
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
           ),
         ],
       ],
@@ -540,10 +540,10 @@ class _SetupFeedbackFormState extends State<SetupFeedbackForm> {
         decoration: BoxDecoration(
           color: Theme.of(
             context,
-          ).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+          ).colorScheme.surfaceContainerHighest.withValues(alpha: 77),
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
-            color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.2),
+            color: Theme.of(context).colorScheme.outline.withValues(alpha: 51),
           ),
         ),
         child: Column(
@@ -562,7 +562,9 @@ class _SetupFeedbackFormState extends State<SetupFeedbackForm> {
                   child: RadioListTile<bool>(
                     title: const Text('Helpful'),
                     value: true,
+                    // ignore: deprecated_member_use
                     groupValue: _wasHelpful,
+                    // ignore: deprecated_member_use
                     onChanged: (value) {
                       setState(() {
                         _wasHelpful = value ?? true;
@@ -576,7 +578,9 @@ class _SetupFeedbackFormState extends State<SetupFeedbackForm> {
                   child: RadioListTile<bool>(
                     title: const Text('Not Helpful'),
                     value: false,
+                    // ignore: deprecated_member_use
                     groupValue: _wasHelpful,
+                    // ignore: deprecated_member_use
                     onChanged: (value) {
                       setState(() {
                         _wasHelpful = value ?? true;

@@ -12,8 +12,8 @@
  * - Linear MCP docs: https://linear.app/docs/mcp
  */
 
-const fs = require('fs');
-const path = require('path');
+import fs from 'fs';
+import path from 'path';
 
 function ensureDirSync(dir) {
   if (!fs.existsSync(dir)) {
@@ -46,7 +46,7 @@ function writeJson(filePath, data) {
   fs.writeFileSync(filePath, json + '\n', 'utf8');
 }
 
-(function main() {
+export function main() {
   const home = process.env.HOME || process.env.USERPROFILE;
   if (!home) {
     console.error('[setup-mcp-config] Could not determine HOME directory. Aborting.');
@@ -108,4 +108,8 @@ function writeJson(filePath, data) {
   if (needsApiKey) {
     console.log('\n⚠️  LINEAR_API_KEY is not currently set in your environment.');
   }
-})();
+}
+
+if (import.meta.url.startsWith('file:') && process.argv[1] === new URL(import.meta.url).pathname) {
+  main();
+}
