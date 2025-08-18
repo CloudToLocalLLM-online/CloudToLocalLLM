@@ -7,8 +7,8 @@ export default {
 
   // Test file patterns
   testMatch: [
-    '**/test/**/*.test.js',
-    '**/?(*.)+(spec|test).js',
+    '<rootDir>/../test/api-backend/**/*.test.js',
+    '<rootDir>/../test/api-backend/**/?(*.)+(spec|test).js',
   ],
 
   // Files to ignore
