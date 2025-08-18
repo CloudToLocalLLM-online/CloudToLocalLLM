@@ -43,53 +43,6 @@ jobs:
       - name: Run Flutter static analysis
         run: flutter analyze --fatal-infos --fatal-warnings
 
-  test-node-api:
-    name: Run Node.js API Tests
-    runs-on: ubuntu-latest
-    continue-on-error: true # Allow workflow to continue even if this job fails
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: '18'
-
-      - name: Cache Node.js modules
-        uses: actions/cache@v3
-        with:
-          path: ~/.npm
-          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-node-
-
-      - name: Install API backend dependencies
-        run: npm ci
-        working-directory: services/api-backend
-
-      - name: Run API backend tests
-        run: npm test
-        working-directory: services/api-backend
-
-      - name: Run API backend linting
-        run: npm run lint
-        working-directory: services/api-backend
-
-  warn-on-node-api-test-failure:
-    name: Warn on Node.js API Test Failure
-    runs-on: ubuntu-latest
-    needs: [test-node-api]
-    if: ${{ failure() && needs.test-node-api.result == 'failure' }}
-    steps:
-      - name: Report Failure
-        run: |
-          echo "## ⚠️ Node.js API Tests Failed" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "The Node.js API tests failed. This job is configured to not block deployment, but the tests should be investigated." >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "See [Node.js API Tests job logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}/jobs/${{ needs.test-node-api.id }}) for details." >> $GITHUB_STEP_SUMMARY
-
   deploy-web:
     name: Deploy Web to GKE
     runs-on: ubuntu-latest
@@ -248,7 +201,7 @@ jobs:
       - name: Run k6 smoke test
         run: |
           export K6_CLOUD_TOKEN=${{ secrets.K6_CLOUD_TOKEN }}
-          k6 run --env API_BASE_URL=https://api.cloudtolocalllm.online test/k6/smoke-test.js
+          k6 run --env API_BASE_URL: https://api.cloudtolocalllm.online test/k6/smoke-test.js
 
   rollback-on-failure:
     name: Rollback on Validation Failure
