@@ -59,14 +59,9 @@ For any request that requires multiple steps, changes to several files, or a seq
         *   When a web-related bug is reported, I will use `getConsoleErrors` and `getNetworkErrors` to diagnose the issue.
         *   When asked to improve a web page, I will use the audit tools (`runAccessibilityAudit`, `runPerformanceAudit`, `runSEOAudit`) to provide a comprehensive analysis and implement improvements.
 
-### C. Project Management Integration (Linear)
+### C. Project Management Integration
 
-*   **Server**: `github.com/cline/linear-mcp`
-    *   **Use Case**: When a task involves project management activities like creating bug reports, feature requests, or updating project status.
-    *   **Rules**:
-        *   I will offer to integrate with the user's Linear workflow if the context suggests it (e.g., "file a bug report for this," "create a ticket for this feature").
-        *   Before creating new items, I will use discovery tools like `linear_get_teams` and `linear_search_projects` to ensure I have the correct context (e.g., team IDs, project IDs).
-        *   I can automate the creation of multiple issues from a list or a plan using `linear_create_issues` or `linear_create_project_with_issues`.
+*   **Use Case**: When a task involves project management activities like creating bug reports, feature requests, or updating project status.
 
 ### D. Utilities
 

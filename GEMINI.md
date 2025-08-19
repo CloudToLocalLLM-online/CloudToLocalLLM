@@ -15,7 +15,7 @@ The project utilizes a diverse set of technologies to achieve its goals. These i
 *   **Database:** Not immediately clear, but likely a relational database.
 *   **Deployment:** Docker, potentially with orchestration using Docker Compose.
 *   **CI/CD:** GitHub Actions
-*   **Project Management:** Linear
+*   **Project Management:** 
 
 ## Development Environment and MCP Tools
 
@@ -25,7 +25,7 @@ I am operating within a Visual Studio Code environment and have access to three 
 *   **Advanced Web Research**: Performing targeted Google searches and analyzing web page content.
 *   **Library Documentation**: Fetching and understanding documentation for specific software libraries and frameworks.
 *   **Web Development & Debugging**: Diagnosing web application issues by analyzing console and network errors, and running performance and accessibility audits.
-*   **Project Management Automation**: Integrating directly with Linear to create and manage issues, projects, and other project-related tasks.
+*   **Project Management Automation**: Integrating directly with project management tools to create and manage issues, projects, and other project-related tasks.
 *   **CLI Tool Integration**: Leveraging powerful command-line tools like `gh` (GitHub CLI) and `gcloud` (Google Cloud CLI) for seamless interaction with external services.
 
 ## Development Plan
