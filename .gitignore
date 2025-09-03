@@ -98,3 +98,46 @@ android/gradle/wrapper/gradle-wrapper.jar
 android/local.properties
 
 sentry.properties
+
+
+# Additional local/dev ignores
+# Editor/IDE caches
+*.code-workspace
+.vscode/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.example.json
+
+# direnv/asdf and shell env helpers
+.direnv/
+.envrc
+.tool-versions
+
+# Node/JS build caches and coverage
+**/.cache/
+**/.parcel-cache/
+**/.turbo/
+**/coverage/
+
+# Platform-specific local config
+android/local.properties
+android/.gradle/
+android/app/build/
+ios/Pods/
+ios/.symlinks/
+
+# Web and service build outputs
+**/build/
+**/dist/
+
+# Local env files and secrets
+*.env.local
+*.env.development.local
+*.env.test.local
+*.env.production.local
+.envrc
+
+# K8s generated or placeholder files we do not commit
+config/kubernetes/base/*-secrets.placeholder.yaml
+config/kubernetes/base/postgres-statefulset.yaml
+config/kubernetes/base/postgres-service.yaml
