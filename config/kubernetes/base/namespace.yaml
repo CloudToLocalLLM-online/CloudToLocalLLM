@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: cloudtolocalllm
+  labels:
+    app.kubernetes.io/name: cloudtolocalllm
+
