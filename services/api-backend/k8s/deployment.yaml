@@ -2,8 +2,14 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: api-backend
+  namespace: cloudtolocalllm
 spec:
   replicas: 2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
   selector:
     matchLabels:
       app: api-backend
@@ -23,9 +29,15 @@ spec:
         - name: LOG_LEVEL
           value: "info"
         - name: DB_TYPE
-          value: "sqlite"
-        - name: DB_PATH
-          value: "/app/data/app.db"
+          value: "postgresql"
+        - name: DB_HOST
+          value: "postgresql.cloudtolocalllm.svc.cluster.local"
+        - name: DB_PORT
+          value: "5432"
+        - name: DB_NAME
+          value: "cloudtolocalllm"
+        - name: DB_USER
+          value: "appuser"
         - name: DB_PASSWORD
           valueFrom:
             secretKeyRef:
@@ -41,23 +53,22 @@ spec:
             secretKeyRef:
               name: api-secrets
               key: auth0-audience
-        - name: CLOUD_SQL_CONNECTION_NAME
-          valueFrom:
-            secretKeyRef:
-              name: api-secrets
-              key: cloud-sql-connection-name
-      - name: cloud-sql-proxy
-        image: gcr.io/cloud-sql-proxy/cloud-sql-proxy:latest
-        command: ["/cloud_sql_proxy",
-                  "-instances=$(CLOUD_SQL_CONNECTION_NAME)=tcp:5432",
-                  "-credential_file=/secrets/cloudsql/credentials.json"]
-        securityContext:
-          runAsNonRoot: true
-        volumeMounts:
-        - name: cloudsql-instance-credentials
-          mountPath: /secrets/cloudsql
-          readOnly: true
-      volumes:
-      - name: cloudsql-instance-credentials
-        secret:
-          secretName: cloudsql-instance-credentials
+        readinessProbe:
+          httpGet:
+            path: /api/health
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /api/health
+            port: 8080
+          initialDelaySeconds: 20
+          periodSeconds: 20
+        resources:
+          requests:
+            cpu: "500m"
+            memory: "1Gi"
+          limits:
+            cpu: "1"
+            memory: "2Gi"
