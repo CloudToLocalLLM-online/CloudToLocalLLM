@@ -95,6 +95,14 @@ jobs:
           DIGEST=$(gcloud container images list-tags gcr.io/${{ vars.GCP_PROJECT_ID }}/api-backend --filter="tags:${{ github.sha }}" --format='get(digest)')
           echo "digest=$DIGEST" >> $GITHUB_OUTPUT
 
+      - name: 'Ensure API secrets exist'
+        run: |
+          kubectl create namespace cloudtolocalllm --dry-run=client -o yaml | kubectl apply -f -
+          kubectl -n cloudtolocalllm create secret generic api-secrets \
+            --from-literal=db-password="${{ secrets.DB_PASSWORD }}" \
+            --from-literal=jwt-secret="${{ secrets.JWT_SECRET }}" \
+            --dry-run=client -o yaml | kubectl apply -f -
+
       - name: 'Deploy to GKE'
         run: |
           kubectl apply -f services/api-backend/k8s/deployment.yaml
