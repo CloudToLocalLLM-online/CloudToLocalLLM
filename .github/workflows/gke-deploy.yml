@@ -38,11 +38,10 @@ jobs:
           cluster_name: 'cloudtolocalllm-us-central1'
           location: 'us-central1'
 
-      - name: 'Build and Push Container'
+      - name: 'Build and Push Container (Cloud Build)'
         run: |
-          gcloud auth configure-docker gcr.io -q
-          docker build -t "gcr.io/${{ vars.GCP_PROJECT_ID }}/web:${{ github.sha }}" web
-          docker push "gcr.io/${{ vars.GCP_PROJECT_ID }}/web:${{ github.sha }}"
+          set -euo pipefail
+          gcloud builds submit --tag "gcr.io/${{ vars.GCP_PROJECT_ID }}/web:${{ github.sha }}" web
 
       - name: 'Resolve image digest'
         id: digest_web
@@ -83,11 +82,10 @@ jobs:
           cluster_name: 'cloudtolocalllm-us-central1'
           location: 'us-central1'
 
-      - name: 'Build and Push Container'
+      - name: 'Build and Push Container (Cloud Build)'
         run: |
-          gcloud auth configure-docker gcr.io -q
-          docker build -t "gcr.io/${{ vars.GCP_PROJECT_ID }}/api-backend:${{ github.sha }}" services/api-backend
-          docker push "gcr.io/${{ vars.GCP_PROJECT_ID }}/api-backend:${{ github.sha }}"
+          set -euo pipefail
+          gcloud builds submit --tag "gcr.io/${{ vars.GCP_PROJECT_ID }}/api-backend:${{ github.sha }}" services/api-backend
 
       - name: 'Resolve image digest'
         id: digest_api
@@ -95,12 +93,31 @@ jobs:
           DIGEST=$(gcloud container images list-tags gcr.io/${{ vars.GCP_PROJECT_ID }}/api-backend --filter="tags:${{ github.sha }}" --format='get(digest)')
           echo "digest=$DIGEST" >> $GITHUB_OUTPUT
 
+      - name: 'Resolve DB password'
+        id: dbpw
+        shell: bash
+        run: |
+          if [ -n "${{ secrets.DB_PASSWORD }}" ]; then
+            echo "value=${{ secrets.DB_PASSWORD }}" >> $GITHUB_OUTPUT
+          else
+            echo "DB_PASSWORD not set in GitHub Secrets; trying to read from Helm release secret..."
+            PW=$(kubectl -n cloudtolocalllm get secret postgresql -o jsonpath='{.data.postgresql-password}' 2>/dev/null | base64 -d || true)
+            if [ -z "$PW" ]; then
+              echo "Postgres secret not found; generating a strong random password"
+              PW=$(openssl rand -base64 32)
+            fi
+            echo "value=$PW" >> $GITHUB_OUTPUT
+          fi
+
       - name: 'Ensure API secrets exist'
+        shell: bash
         run: |
           kubectl create namespace cloudtolocalllm --dry-run=client -o yaml | kubectl apply -f -
+          JWT=${{ secrets.JWT_SECRET }}
+          if [ -z "$JWT" ]; then JWT=$(openssl rand -base64 48); fi
           kubectl -n cloudtolocalllm create secret generic api-secrets \
-            --from-literal=db-password="${{ secrets.DB_PASSWORD }}" \
-            --from-literal=jwt-secret="${{ secrets.JWT_SECRET }}" \
+            --from-literal=db-password="${{ steps.dbpw.outputs.value }}" \
+            --from-literal=jwt-secret="$JWT" \
             --dry-run=client -o yaml | kubectl apply -f -
 
       - name: 'Deploy to GKE'
@@ -136,11 +153,10 @@ jobs:
           cluster_name: 'cloudtolocalllm-us-central1'
           location: 'us-central1'
 
-      - name: 'Build and Push Container'
+      - name: 'Build and Push Container (Cloud Build)'
         run: |
-          gcloud auth configure-docker gcr.io -q
-          docker build -t "gcr.io/${{ vars.GCP_PROJECT_ID }}/streaming-proxy:${{ github.sha }}" services/streaming-proxy
-          docker push "gcr.io/${{ vars.GCP_PROJECT_ID }}/streaming-proxy:${{ github.sha }}"
+          set -euo pipefail
+          gcloud builds submit --tag "gcr.io/${{ vars.GCP_PROJECT_ID }}/streaming-proxy:${{ github.sha }}" services/streaming-proxy
 
       - name: 'Resolve image digest'
         id: digest_stream
