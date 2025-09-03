@@ -2,8 +2,14 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: streaming-proxy
+  namespace: cloudtolocalllm
 spec:
   replicas: 2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
   selector:
     matchLabels:
       app: streaming-proxy
@@ -17,3 +23,29 @@ spec:
         image: gcr.io/cloudtolocalllm-468303/streaming-proxy:latest
         ports:
         - containerPort: 8080
+        env:
+        - name: NODE_ENV
+          value: "production"
+        - name: LOG_LEVEL
+          value: "info"
+        - name: HEALTH_PORT
+          value: "8080"
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 20
+          periodSeconds: 20
+        resources:
+          requests:
+            cpu: "250m"
+            memory: "512Mi"
+          limits:
+            cpu: "500m"
+            memory: "1Gi"
