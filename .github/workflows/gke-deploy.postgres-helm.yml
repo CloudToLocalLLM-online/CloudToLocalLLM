@@ -1,0 +1,57 @@
+name: Deploy Postgres via Helm
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  helm-postgres:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Google Auth
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ vars.WIF_PROVIDER }}
+          service_account: ${{ vars.WIF_SERVICE_ACCOUNT }}
+
+      - name: Setup gcloud
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Get GKE credentials
+        uses: google-github-actions/get-gke-credentials@v1
+        with:
+          cluster_name: cloudtolocalllm-us-central1
+          location: us-central1
+
+      - name: Setup Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: v3.14.3
+
+      - name: Add Bitnami repo
+        run: helm repo add bitnami https://charts.bitnami.com/bitnami
+
+      - name: Install/Upgrade PostgreSQL
+        shell: bash
+        run: |
+          DBPW="${{ secrets.DB_PASSWORD }}"
+          if [ -z "$DBPW" ]; then
+            echo "DB_PASSWORD not provided via GH Secret; generating a strong random password";
+            DBPW=$(openssl rand -base64 32)
+          fi
+          helm upgrade --install postgres bitnami/postgresql \
+            --namespace cloudtolocalllm --create-namespace \
+            -f infra/postgres/values-prod.yaml \
+            --set auth.password="$DBPW"
+
+      - name: Apply DB NetworkPolicies
+        run: |
+          kubectl apply -f config/kubernetes/base/networkpolicy-deny-postgres-ingress.yaml
+          kubectl apply -f config/kubernetes/base/networkpolicy-deny-postgres-egress.yaml
+          kubectl apply -f config/kubernetes/base/networkpolicy-allow-api-to-db-bitnami.yaml
+

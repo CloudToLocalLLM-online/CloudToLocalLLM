@@ -40,13 +40,22 @@ jobs:
 
       - name: 'Build and Push Container'
         run: |
-                                        gcloud builds submit --tag "gcr.io/${{ vars.GCP_PROJECT_ID }}/web:latest" web
+          gcloud auth configure-docker gcr.io -q
+          docker build -t "gcr.io/${{ vars.GCP_PROJECT_ID }}/web:${{ github.sha }}" web
+          docker push "gcr.io/${{ vars.GCP_PROJECT_ID }}/web:${{ github.sha }}"
+
+      - name: 'Resolve image digest'
+        id: digest_web
+        run: |
+          DIGEST=$(gcloud container images list-tags gcr.io/${{ vars.GCP_PROJECT_ID }}/web --filter="tags:${{ github.sha }}" --format='get(digest)')
+          echo "digest=$DIGEST" >> $GITHUB_OUTPUT
 
       - name: 'Deploy to GKE'
         run: |
           kubectl apply -f web/k8s/deployment.yaml
           kubectl apply -f web/k8s/service.yaml
           kubectl apply -f web/k8s/ingress.yaml
+          kubectl -n cloudtolocalllm set image deployment/web web=gcr.io/${{ vars.GCP_PROJECT_ID }}/web@${{ steps.digest_web.outputs.digest }}
 
   deploy-api:
     name: Deploy API Backend to GKE
@@ -76,13 +85,30 @@ jobs:
 
       - name: 'Build and Push Container'
         run: |
-                    gcloud builds submit --tag "gcr.io/${{ vars.GCP_PROJECT_ID }}/api-backend:latest" services/api-backend
+          gcloud auth configure-docker gcr.io -q
+          docker build -t "gcr.io/${{ vars.GCP_PROJECT_ID }}/api-backend:${{ github.sha }}" services/api-backend
+          docker push "gcr.io/${{ vars.GCP_PROJECT_ID }}/api-backend:${{ github.sha }}"
+
+      - name: 'Resolve image digest'
+        id: digest_api
+        run: |
+          DIGEST=$(gcloud container images list-tags gcr.io/${{ vars.GCP_PROJECT_ID }}/api-backend --filter="tags:${{ github.sha }}" --format='get(digest)')
+          echo "digest=$DIGEST" >> $GITHUB_OUTPUT
+
+      - name: 'Ensure API secrets exist'
+        run: |
+          kubectl create namespace cloudtolocalllm --dry-run=client -o yaml | kubectl apply -f -
+          kubectl -n cloudtolocalllm create secret generic api-secrets \
+            --from-literal=db-password="${{ secrets.DB_PASSWORD }}" \
+            --from-literal=jwt-secret="${{ secrets.JWT_SECRET }}" \
+            --dry-run=client -o yaml | kubectl apply -f -
 
       - name: 'Deploy to GKE'
         run: |
           kubectl apply -f services/api-backend/k8s/deployment.yaml
           kubectl apply -f services/api-backend/k8s/service.yaml
           kubectl apply -f services/api-backend/k8s/ingress.yaml
+          kubectl -n cloudtolocalllm set image deployment/api-backend api-backend=gcr.io/${{ vars.GCP_PROJECT_ID }}/api-backend@${{ steps.digest_api.outputs.digest }}
 
   deploy-streaming:
     name: Deploy Streaming Proxy to GKE
@@ -112,13 +138,22 @@ jobs:
 
       - name: 'Build and Push Container'
         run: |
-                    gcloud builds submit --tag "gcr.io/${{ vars.GCP_PROJECT_ID }}/streaming-proxy:latest" services/streaming-proxy
+          gcloud auth configure-docker gcr.io -q
+          docker build -t "gcr.io/${{ vars.GCP_PROJECT_ID }}/streaming-proxy:${{ github.sha }}" services/streaming-proxy
+          docker push "gcr.io/${{ vars.GCP_PROJECT_ID }}/streaming-proxy:${{ github.sha }}"
+
+      - name: 'Resolve image digest'
+        id: digest_stream
+        run: |
+          DIGEST=$(gcloud container images list-tags gcr.io/${{ vars.GCP_PROJECT_ID }}/streaming-proxy --filter="tags:${{ github.sha }}" --format='get(digest)')
+          echo "digest=$DIGEST" >> $GITHUB_OUTPUT
 
       - name: 'Deploy to GKE'
         run: |
           kubectl apply -f services/streaming-proxy/k8s/deployment.yaml
           kubectl apply -f services/streaming-proxy/k8s/service.yaml
           kubectl apply -f services/streaming-proxy/k8s/ingress.yaml
+          kubectl -n cloudtolocalllm set image deployment/streaming-proxy streaming-proxy=gcr.io/${{ vars.GCP_PROJECT_ID }}/streaming-proxy@${{ steps.digest_stream.outputs.digest }}
 
   validate-deployment:
     name: Validate Deployment
