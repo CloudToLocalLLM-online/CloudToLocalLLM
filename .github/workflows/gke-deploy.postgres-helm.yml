@@ -37,11 +37,17 @@ jobs:
         run: helm repo add bitnami https://charts.bitnami.com/bitnami
 
       - name: Install/Upgrade PostgreSQL
+        shell: bash
         run: |
+          DBPW="${{ secrets.DB_PASSWORD }}"
+          if [ -z "$DBPW" ]; then
+            echo "DB_PASSWORD not provided via GH Secret; generating a strong random password";
+            DBPW=$(openssl rand -base64 32)
+          fi
           helm upgrade --install postgres bitnami/postgresql \
             --namespace cloudtolocalllm --create-namespace \
             -f infra/postgres/values-prod.yaml \
-            --set auth.password=${{ secrets.DB_PASSWORD }}
+            --set auth.password="$DBPW"
 
       - name: Apply DB NetworkPolicies
         run: |
