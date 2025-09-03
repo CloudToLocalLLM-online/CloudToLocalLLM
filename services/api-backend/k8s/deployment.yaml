@@ -31,7 +31,7 @@ spec:
         - name: DB_TYPE
           value: "postgresql"
         - name: DB_HOST
-          value: "postgresql.cloudtolocalllm.svc.cluster.local"
+          value: "postgres.cloudtolocalllm.svc.cluster.local"
         - name: DB_PORT
           value: "5432"
         - name: DB_NAME
@@ -48,11 +48,7 @@ spec:
             secretKeyRef:
               name: api-secrets
               key: jwt-secret
-        - name: AUTH0_AUDIENCE
-          valueFrom:
-            secretKeyRef:
-              name: api-secrets
-              key: auth0-audience
+
         readinessProbe:
           httpGet:
             path: /api/health
