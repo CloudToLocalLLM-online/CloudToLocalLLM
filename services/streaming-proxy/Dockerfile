@@ -11,4 +11,5 @@ COPY . .
 
 EXPOSE 3001
 USER node
-CMD ["npm", "start"]
+# Use --import for ES modules tracing instead of --require
+CMD ["node", "--import", "./tracing.js", "proxy-server.js"]

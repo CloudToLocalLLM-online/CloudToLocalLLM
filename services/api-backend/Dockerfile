@@ -15,4 +15,5 @@ EXPOSE 3000
 # Run as non-root where possible
 USER node
 
-CMD ["npm", "start"]
+# Use --import for ES modules tracing instead of --require
+CMD ["node", "--import", "./tracing.js", "server.js"]
