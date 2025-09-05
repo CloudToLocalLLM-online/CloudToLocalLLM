@@ -69,7 +69,13 @@ jobs:
       - name: 'Resolve image digest'
         id: digest_web
         run: |
-          DIGEST=$(gcloud container images list-tags gcr.io/${{ vars.GCP_PROJECT_ID }}/web --filter="tags:${{ github.sha }}" --format='get(digest)')
+          # Use gcloud builds describe to get the image digest from the build result
+          BUILD_ID="${{ steps.cb_web.outputs.build_id }}"
+          DIGEST=$(gcloud builds describe "$BUILD_ID" --format='value(results.images[0].digest)')
+          if [ -z "$DIGEST" ]; then
+            echo "Failed to get digest from build result, falling back to list-tags"
+            DIGEST=$(gcloud container images list-tags gcr.io/${{ vars.GCP_PROJECT_ID }}/web --filter="tags:${{ github.sha }}" --format='get(digest)' --limit=1)
+          fi
           echo "digest=$DIGEST" >> $GITHUB_OUTPUT
 
       - name: 'Deploy to GKE'
@@ -137,7 +143,13 @@ jobs:
       - name: 'Resolve image digest'
         id: digest_api
         run: |
-          DIGEST=$(gcloud container images list-tags gcr.io/${{ vars.GCP_PROJECT_ID }}/api-backend --filter="tags:${{ github.sha }}" --format='get(digest)')
+          # Use gcloud builds describe to get the image digest from the build result
+          BUILD_ID="${{ steps.cb_api.outputs.build_id }}"
+          DIGEST=$(gcloud builds describe "$BUILD_ID" --format='value(results.images[0].digest)')
+          if [ -z "$DIGEST" ]; then
+            echo "Failed to get digest from build result, falling back to list-tags"
+            DIGEST=$(gcloud container images list-tags gcr.io/${{ vars.GCP_PROJECT_ID }}/api-backend --filter="tags:${{ github.sha }}" --format='get(digest)' --limit=1)
+          fi
           echo "digest=$DIGEST" >> $GITHUB_OUTPUT
 
       - name: 'Resolve DB password'
@@ -231,7 +243,13 @@ jobs:
       - name: 'Resolve image digest'
         id: digest_stream
         run: |
-          DIGEST=$(gcloud container images list-tags gcr.io/${{ vars.GCP_PROJECT_ID }}/streaming-proxy --filter="tags:${{ github.sha }}" --format='get(digest)')
+          # Use gcloud builds describe to get the image digest from the build result
+          BUILD_ID="${{ steps.cb_stream.outputs.build_id }}"
+          DIGEST=$(gcloud builds describe "$BUILD_ID" --format='value(results.images[0].digest)')
+          if [ -z "$DIGEST" ]; then
+            echo "Failed to get digest from build result, falling back to list-tags"
+            DIGEST=$(gcloud container images list-tags gcr.io/${{ vars.GCP_PROJECT_ID }}/streaming-proxy --filter="tags:${{ github.sha }}" --format='get(digest)' --limit=1)
+          fi
           echo "digest=$DIGEST" >> $GITHUB_OUTPUT
 
       - name: 'Deploy to GKE'

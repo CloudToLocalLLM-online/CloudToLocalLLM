@@ -22,7 +22,7 @@ spec:
       - name: api-backend
         image: gcr.io/cloudtolocalllm-468303/api-backend:latest
         ports:
-        - containerPort: 8080
+        - containerPort: 3000
         env:
         - name: NODE_ENV
           value: "production"
@@ -52,13 +52,13 @@ spec:
         readinessProbe:
           httpGet:
             path: /api/health
-            port: 8080
+            port: 3000
           initialDelaySeconds: 5
           periodSeconds: 10
         livenessProbe:
           httpGet:
             path: /api/health
-            port: 8080
+            port: 3000
           initialDelaySeconds: 20
           periodSeconds: 20
         resources:
