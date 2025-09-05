@@ -9,7 +9,11 @@ RUN npm ci --only=production && npm cache clean --force
 # Copy application source
 COPY . .
 
+# Fix ownership for node user
+RUN chown -R node:node /app
+
 EXPOSE 3001
 USER node
-# Use --import for ES modules tracing instead of --require
-CMD ["node", "--import", "./tracing.js", "proxy-server.js"]
+
+# Start with npm script to ensure proper environment
+CMD ["npm", "start"]
