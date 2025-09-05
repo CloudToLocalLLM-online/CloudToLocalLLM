@@ -1,20 +1,14 @@
-# Use a Node.js base image for the streaming proxy
+# Node.js streaming proxy
 FROM node:18-alpine
-
-# Set the working directory
 WORKDIR /app
 
-# Copy package.json and package-lock.json to leverage Docker cache
-COPY services/streaming-proxy/package*.json ./
+# Install deps using files in the build context (services/streaming-proxy as context)
+COPY package*.json ./
+RUN npm ci --only=production && npm cache clean --force
 
-# Install Node.js dependencies
-RUN npm ci
+# Copy application source
+COPY . .
 
-# Copy the rest of the application code
-COPY services/streaming-proxy/ .
-
-# Expose the port the streaming proxy listens on
 EXPOSE 3001
-
-# Start the streaming proxy
+USER node
 CMD ["npm", "start"]
