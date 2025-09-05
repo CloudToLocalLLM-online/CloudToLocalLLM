@@ -109,14 +109,29 @@ jobs:
         id: cb_api
         run: |
           set -euo pipefail
-          gcloud builds submit --format=json --quiet --tag "gcr.io/${{ vars.GCP_PROJECT_ID }}/api-backend:${{ github.sha }}" services/api-backend > build_api.json
-          BUILD_ID=$(cat build_api.json | jq -r '.[0].metadata.build.id // .id')
+          OUT=$(gcloud builds submit --async --tag "gcr.io/${{ vars.GCP_PROJECT_ID }}/api-backend:${{ github.sha }}" services/api-backend 2>&1 | tee /tmp/cb_api.out)
+          BUILD_ID=$(echo "$OUT" | grep -oE 'builds/[a-f0-9-]+' | head -n1 | cut -d/ -f2 || true)
+          if [ -z "$BUILD_ID" ]; then
+            echo "Failed to parse Cloud Build ID"; exit 1
+          fi
           echo "build_id=$BUILD_ID" >> $GITHUB_OUTPUT
 
       - name: 'Wait for Cloud Build (API)'
         if: steps.cb_api.outputs.build_id != ''
         run: |
-          gcloud builds log --stream --project "${{ vars.GCP_PROJECT_ID }}" "$BUILD_ID" || gcloud builds describe "$BUILD_ID" --format='value(status)'
+          set -euo pipefail
+          BUILD_ID="${{ steps.cb_api.outputs.build_id }}"
+          echo "Waiting for Cloud Build $BUILD_ID..."
+          for i in $(seq 1 240); do
+            STATUS=$(gcloud builds describe "$BUILD_ID" --format='value(status)' || echo "UNKNOWN")
+            echo "Status: $STATUS"
+            case "$STATUS" in
+              SUCCESS) exit 0;;
+              FAILURE|CANCELLED|INTERNAL_ERROR|TIMEOUT) echo "Build failed: $STATUS"; exit 1;;
+              *) sleep 5;;
+            esac
+          done
+          echo "Timeout waiting for Cloud Build"; exit 1
 
 
       - name: 'Resolve image digest'

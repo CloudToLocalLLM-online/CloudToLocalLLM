@@ -1,20 +1,18 @@
-# Use a Node.js base image for the API backend
+# Node.js API backend
 FROM node:18-alpine
-
-# Set the working directory
 WORKDIR /app
 
-# Copy package.json and package-lock.json to leverage Docker cache
-COPY services/api-backend/package*.json ./
+# Install deps using files in the build context (services/api-backend as context)
+COPY package*.json ./
+RUN npm ci --only=production && npm cache clean --force
 
-# Install Node.js dependencies
-RUN npm ci
+# Copy application source
+COPY . .
 
-# Copy the rest of the application code
-COPY services/api-backend/ .
-
-# Expose the port the API backend listens on
+# Health port
 EXPOSE 3000
 
-# Start the API backend
+# Run as non-root where possible
+USER node
+
 CMD ["npm", "start"]
