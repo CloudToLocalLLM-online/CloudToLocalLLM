@@ -40,7 +40,7 @@ dependencies:
   rxdart: ^0.28.0
 
   # Connection monitoring
-  connectivity_plus: ^6.1.4
+  connectivity_plus: ^7.0.0
 
   # Web URL strategy
   flutter_web_plugins:
