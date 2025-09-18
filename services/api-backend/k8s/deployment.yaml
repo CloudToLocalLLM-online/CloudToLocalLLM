@@ -18,30 +18,6 @@ spec:
       labels:
         app: api-backend
     spec:
-      initContainers:
-      - name: migrate-db
-        image: gcr.io/cloudtolocalllm-468303/api-backend:latest
-        env:
-        - name: DB_TYPE
-          value: "postgresql"
-        - name: DB_HOST
-          value: "postgres.cloudtolocalllm.svc.cluster.local"
-        - name: DB_PORT
-          value: "5432"
-        - name: DB_NAME
-          value: "cloudtolocalllm"
-        - name: DB_USER
-          value: "appuser"
-        - name: DB_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: api-secrets
-              key: db-password
-        command: ["sh", "-c"]
-        args:
-        - |
-          echo "Running DB migrations...";
-          node database/migrate-pg.js;
 
       containers:
       - name: api-backend
