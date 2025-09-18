@@ -18,6 +18,38 @@ spec:
       labels:
         app: web
     spec:
+      initContainers:
+      - name: render-config
+        image: busybox:1.36
+        env:
+        - name: GCIP_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: web-secrets
+              key: gcip-api-key
+        - name: API_BASE_URL
+          valueFrom:
+            configMapKeyRef:
+              name: web-config
+              key: API_BASE_URL
+        - name: STREAMING_BASE_URL
+          valueFrom:
+            configMapKeyRef:
+              name: web-config
+              key: STREAMING_BASE_URL
+        command: ["sh", "-c"]
+        args:
+        - |
+          cat > /config/config.js <<'EOF'
+          window.APP_CONFIG = {
+            API_BASE_URL: "${API_BASE_URL}",
+            STREAMING_BASE_URL: "${STREAMING_BASE_URL}",
+            GCIP_API_KEY: "${GCIP_API_KEY}"
+          };
+          EOF
+        volumeMounts:
+        - name: web-config
+          mountPath: /config
       containers:
       - name: web
         image: gcr.io/cloudtolocalllm-468303/web:latest
@@ -29,6 +61,16 @@ spec:
             secretKeyRef:
               name: web-secrets
               key: gcip-api-key
+        - name: API_BASE_URL
+          valueFrom:
+            configMapKeyRef:
+              name: web-config
+              key: API_BASE_URL
+        - name: STREAMING_BASE_URL
+          valueFrom:
+            configMapKeyRef:
+              name: web-config
+              key: STREAMING_BASE_URL
         readinessProbe:
           httpGet: { path: /health, port: 8080 }
           initialDelaySeconds: 5
@@ -40,3 +82,10 @@ spec:
         resources:
           requests: { cpu: "100m", memory: "128Mi" }
           limits:   { cpu: "250m", memory: "256Mi" }
+        volumeMounts:
+        - name: web-config
+          mountPath: /usr/share/nginx/html/config
+          readOnly: true
+      volumes:
+      - name: web-config
+        emptyDir: {}

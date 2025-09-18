@@ -3,6 +3,9 @@ kind: Service
 metadata:
   name: streaming-proxy
   namespace: cloudtolocalllm
+  annotations:
+    cloud.google.com/backend-config: '{"default": "streaming-proxy-backendconfig"}'
+    cloud.google.com/neg: '{"ingress": true}'
 spec:
   type: NodePort
   selector:

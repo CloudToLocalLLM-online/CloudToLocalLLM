@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: web-config
+  namespace: cloudtolocalllm
+data:
+  API_BASE_URL: "https://api.cloudtolocalllm.online"
+  STREAMING_BASE_URL: "https://streaming.cloudtolocalllm.online"
+
