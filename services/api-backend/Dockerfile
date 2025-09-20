@@ -4,7 +4,7 @@ WORKDIR /app
 
 # Install deps using files in the build context (services/api-backend as context)
 COPY package*.json ./
-RUN npm ci --only=production && npm cache clean --force
+RUN npm ci --omit=dev --ignore-scripts && npm cache clean --force
 
 # Copy application source
 COPY . .
