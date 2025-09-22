@@ -5,10 +5,10 @@
   "main": "proxy-server.js",
   "type": "module",
   "scripts": {
-    "start": "node --import ./tracing.js proxy-server.js",
+    "start": "node proxy-server.js",
     "health": "node health-check.js",
     "test-tunnel": "node test-tunnel.js",
-    "dev": "node --inspect --import ./tracing.js proxy-server.js",
+    "dev": "node --inspect proxy-server.js",
     "test": "echo \"No tests specified\" && exit 0",
     "lint": "eslint .",
     "format": "eslint . --fix",
