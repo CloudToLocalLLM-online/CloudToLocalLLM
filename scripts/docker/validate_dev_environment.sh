@@ -184,7 +184,7 @@ check_docker_images() {
     log_step 5 "Checking Docker images..."
     
     # Check if base images are available
-    local base_images=("nginx:alpine" "node:18-alpine")
+    local base_images=("nginx:alpine" "node:24-alpine")
     
     for image in "${base_images[@]}"; do
         if docker image inspect "$image" >/dev/null 2>&1; then
