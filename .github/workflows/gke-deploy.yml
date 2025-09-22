@@ -295,7 +295,9 @@ jobs:
 
       - name: Run deployment validation
         env:
-          API_BASE_URL: https://api.cloudtolocalllm.online # Replace with actual deployed URL or dynamic retrieval
+          APP_BASE_URL: https://app.cloudtolocalllm.online
+          API_BASE_URL: https://api.cloudtolocalllm.online
+          STREAMING_BASE_URL: https://streaming.cloudtolocalllm.online
           TEST_JWT_TOKEN: ${{ secrets.TEST_JWT_TOKEN }}
           TEST_USER_ID: ${{ secrets.TEST_USER_ID }}
         run: |

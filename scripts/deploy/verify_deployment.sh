@@ -15,8 +15,9 @@ NC='\033[0m' # No Color
 # Configuration
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
-APP_URL="https://localhost"
-API_URL="https://localhost"
+APP_URL="${APP_BASE_URL:-https://app.cloudtolocalllm.online}"
+API_URL="${API_BASE_URL:-https://api.cloudtolocalllm.online}"
+STREAMING_URL="${STREAMING_BASE_URL:-https://streaming.cloudtolocalllm.online}"
 EXTERNAL_URL="https://app.cloudtolocalllm.online"
 TIMEOUT=30
 STRICT_MODE=false
