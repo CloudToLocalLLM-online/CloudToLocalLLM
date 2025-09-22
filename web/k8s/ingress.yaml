@@ -39,3 +39,23 @@ spec:
             name: web
             port:
               number: 80
+  - host: api.cloudtolocalllm.online
+    http:
+      paths:
+      - path: /*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: api-backend
+            port:
+              number: 8080
+  - host: streaming.cloudtolocalllm.online
+    http:
+      paths:
+      - path: /*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: streaming-proxy
+            port:
+              number: 8080

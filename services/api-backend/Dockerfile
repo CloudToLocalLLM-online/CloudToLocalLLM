@@ -7,7 +7,7 @@ COPY package*.json ./
 # Build tools for native modules (sqlite3)
 RUN apk add --no-cache python3 make g++
 
-RUN npm ci --omit=dev --ignore-scripts && npm cache clean --force
+RUN npm ci --omit=dev && npm cache clean --force
 
 # Copy application source
 COPY . .
