@@ -647,12 +647,12 @@ gcloud container images list-tags gcr.io/project/web \
 
 ```dockerfile
 # Use multi-stage builds
-FROM node:18-alpine AS builder
+FROM node:24-alpine AS builder
 WORKDIR /app
 COPY package*.json ./
 RUN npm ci --only=production
 
-FROM node:18-alpine
+FROM node:24-alpine
 COPY --from=builder /app/node_modules ./node_modules
 COPY . .
 CMD ["node", "server.js"]

@@ -20,7 +20,7 @@ This guide will help you get started contributing to CloudToLocalLLM v3.4.0+. Th
 - **Dart SDK**: Included with Flutter
 - **Git**: Version control
 - **IDE**: VS Code (recommended) or Android Studio
-- **Node.js**: 18+ (for API backend development)
+- **Node.js**: 24 LTS recommended (>=18 supported) (for API backend development)
 - **Docker**: For container development and testing
 
 ### **Platform-Specific Requirements**
