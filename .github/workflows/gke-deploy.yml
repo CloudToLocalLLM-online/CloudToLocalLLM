@@ -80,9 +80,20 @@ jobs:
 
       - name: 'Deploy to GKE'
         run: |
-          kubectl apply -f web/k8s/deployment.yaml
-          kubectl apply -f web/k8s/service.yaml
-          kubectl apply -f web/k8s/ingress.yaml
+          # Ensure namespace and managed certificate
+          kubectl apply -f config/kubernetes/base/namespace.yaml
+          kubectl -n cloudtolocalllm apply -f gke/managed-certificate.yaml
+
+          # Ensure Web ConfigMap and Secret exist
+          kubectl -n cloudtolocalllm apply -f web/k8s/configmap.yaml
+          kubectl -n cloudtolocalllm create secret generic web-secrets \
+            --from-literal=gcip-api-key='${{ secrets.GCIP_API_KEY }}' \
+            --dry-run=client -o yaml | kubectl apply -f -
+
+          # Apply web resources and update image to built digest
+          kubectl -n cloudtolocalllm apply -f web/k8s/deployment.yaml
+          kubectl -n cloudtolocalllm apply -f web/k8s/service.yaml
+          kubectl -n cloudtolocalllm apply -f web/k8s/ingress.yaml
           kubectl -n cloudtolocalllm set image deployment/web web=gcr.io/${{ vars.GCP_PROJECT_ID }}/web@${{ steps.digest_web.outputs.digest }}
 
   deploy-api:
@@ -254,9 +265,13 @@ jobs:
 
       - name: 'Deploy to GKE'
         run: |
-          kubectl apply -f services/streaming-proxy/k8s/deployment.yaml
-          kubectl apply -f services/streaming-proxy/k8s/service.yaml
-          kubectl apply -f services/streaming-proxy/k8s/ingress.yaml
+          # Ensure namespace exists
+          kubectl apply -f config/kubernetes/base/namespace.yaml
+
+          # Apply streaming resources and update image
+          kubectl -n cloudtolocalllm apply -f services/streaming-proxy/k8s/deployment.yaml
+          kubectl -n cloudtolocalllm apply -f services/streaming-proxy/k8s/service.yaml
+          kubectl -n cloudtolocalllm apply -f services/streaming-proxy/k8s/ingress.yaml
           kubectl -n cloudtolocalllm set image deployment/streaming-proxy streaming-proxy=gcr.io/${{ vars.GCP_PROJECT_ID }}/streaming-proxy@${{ steps.digest_stream.outputs.digest }}
 
   validate-deployment:
