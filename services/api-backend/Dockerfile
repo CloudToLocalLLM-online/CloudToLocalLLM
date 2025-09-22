@@ -1,5 +1,5 @@
 # Node.js API backend
-FROM node:18-alpine
+FROM node:24-alpine
 WORKDIR /app
 
 # Install deps using files in the build context (services/api-backend as context)

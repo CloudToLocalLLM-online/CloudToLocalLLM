@@ -3,7 +3,7 @@
 # Features: Fast cold starts, minimal image size, proper health checks
 
 # Stage 1: Dependencies builder
-FROM node:18-alpine AS builder
+FROM node:24-alpine AS builder
 
 WORKDIR /app
 
@@ -15,7 +15,7 @@ RUN npm ci --omit=dev --ignore-scripts && \
     npm cache clean --force
 
 # Stage 2: Production container
-FROM node:18-alpine
+FROM node:24-alpine
 
 # Install curl for health checks, dumb-init for proper signal handling, and PostgreSQL client
 RUN apk add --no-cache curl dumb-init postgresql-client ca-certificates

@@ -1,5 +1,5 @@
 # API Backend Container (Node.js/Express)
-FROM node:18-alpine AS builder
+FROM node:24-alpine AS builder
 
 # Set working directory
 WORKDIR /app
@@ -10,7 +10,7 @@ COPY services/api-backend/package*.json ./
 RUN if [ -f package-lock.json ]; then npm ci --omit=dev; else npm install --omit=dev; fi
 
 # Production container
-FROM node:18-alpine
+FROM node:24-alpine
 
 # Install curl for health checks
 RUN apk add --no-cache curl

@@ -1,7 +1,7 @@
 # Simplified container for tunnel-aware applications
 # Uses standard HTTP libraries to communicate through tunnel proxy
 
-FROM node:20-alpine AS production
+FROM node:24-alpine AS production
 
 # Install curl for health checks and HTTP requests
 RUN apk add --no-cache curl

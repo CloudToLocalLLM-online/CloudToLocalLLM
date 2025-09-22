@@ -2,7 +2,7 @@
 # Lightweight proxy service optimized for Cloud Run deployment
 # Features: WebSocket support, fast cold starts, minimal image size
 
-FROM node:18-alpine
+FROM node:24-alpine
 
 # Install curl for health checks and dumb-init for proper signal handling
 RUN apk add --no-cache curl dumb-init
