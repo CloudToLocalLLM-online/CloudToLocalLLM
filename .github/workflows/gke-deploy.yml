@@ -299,8 +299,8 @@ jobs:
           TEST_JWT_TOKEN: ${{ secrets.TEST_JWT_TOKEN }}
           TEST_USER_ID: ${{ secrets.TEST_USER_ID }}
         run: |
-          chmod +x ./scripts/deploy/run_tunnel_validation.sh
-          ./scripts/deploy/run_tunnel_validation.sh
+          chmod +x ./scripts/deploy/verify_deployment.sh
+          ./scripts/deploy/verify_deployment.sh
 
       - name: Upload validation results
         uses: actions/upload-artifact@v4
