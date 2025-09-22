@@ -4,7 +4,10 @@ WORKDIR /app
 
 # Install deps using files in the build context (services/api-backend as context)
 COPY package*.json ./
-RUN npm ci --omit=dev --ignore-scripts && npm cache clean --force
+# Build tools for native modules (sqlite3)
+RUN apk add --no-cache python3 make g++
+
+RUN npm ci --omit=dev && npm cache clean --force
 
 # Copy application source
 COPY . .

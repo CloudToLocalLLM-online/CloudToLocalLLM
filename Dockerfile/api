@@ -10,8 +10,12 @@ WORKDIR /app
 # Copy package files
 COPY services/api-backend/package*.json ./
 
+# Build tools for native modules (sqlite3)
+RUN apk add --no-cache python3 make g++
+
 # Install dependencies with optimizations for Cloud Run
-RUN npm ci --omit=dev --ignore-scripts && \
+RUN npm ci --omit=dev && \
+
     npm cache clean --force
 
 # Stage 2: Production container

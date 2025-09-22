@@ -6,6 +6,9 @@ WORKDIR /app
 
 # Copy package files
 COPY services/api-backend/package*.json ./
+# Build tools for native modules (sqlite3)
+RUN apk add --no-cache python3 make g++
+
 # Use npm install if package-lock.json doesn't exist, otherwise use npm ci
 RUN if [ -f package-lock.json ]; then npm ci --omit=dev; else npm install --omit=dev; fi
 

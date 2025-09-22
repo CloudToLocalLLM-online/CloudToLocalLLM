@@ -1,6 +1,9 @@
 # ---- Base Node ----
 FROM node:24-alpine AS base
 WORKDIR /app
+# Build tools for native modules (sqlite3)
+RUN apk add --no-cache python3 make g++
+
 COPY services/api-backend/package*.json ./
 RUN npm ci
 
