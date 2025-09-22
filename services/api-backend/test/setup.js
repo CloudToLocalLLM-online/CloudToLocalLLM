@@ -21,14 +21,16 @@ jest.mock('winston', () => ({
     warn: jest.fn(),
     debug: jest.fn(),
     log: jest.fn(),
+    add: jest.fn(),
   })),
   format: {
-    combine: jest.fn(),
+    combine: jest.fn((...args) => args),
     timestamp: jest.fn(),
     errors: jest.fn(),
     json: jest.fn(),
     colorize: jest.fn(),
     simple: jest.fn(),
+    printf: jest.fn((formatter) => formatter),
   },
   transports: {
     Console: jest.fn(),
@@ -40,12 +42,38 @@ jest.mock('winston', () => ({
 jest.mock('dockerode', () => {
   return jest.fn().mockImplementation(() => ({
     listContainers: jest.fn().mockResolvedValue([]),
+    listNetworks: jest.fn().mockResolvedValue([]),
     createContainer: jest.fn().mockResolvedValue({
       start: jest.fn().mockResolvedValue(),
       stop: jest.fn().mockResolvedValue(),
       remove: jest.fn().mockResolvedValue(),
     }),
   }));
+});
+
+// Mock ws WebSocket to avoid dependency on internal options
+jest.mock('ws', () => {
+  class MockWebSocket {
+    constructor(..._args) {
+      this.readyState = 1; // OPEN
+      this.OPEN = 1;
+      this.CLOSED = 3;
+      this.listeners = {};
+    }
+    on(event, handler) {
+      this.listeners[event] = this.listeners[event] || [];
+      this.listeners[event].push(handler);
+    }
+    addEventListener(event, handler) { this.on(event, handler); }
+    removeEventListener(event, handler) {
+      if (!this.listeners[event]) return;
+      this.listeners[event] = this.listeners[event].filter(h => h !== handler);
+    }
+    send(_data) {}
+    close() { this.readyState = this.CLOSED; }
+  }
+  MockWebSocket.Server = class {};
+  return MockWebSocket;
 });
 
 // Mock WebSocket for tunnel tests

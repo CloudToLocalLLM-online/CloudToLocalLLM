@@ -12,7 +12,7 @@ async function testAuth0MCP() {
   
   try {
     // Start the Auth0 MCP server
-    const mcpServer = spawn('npx', ['@auth0/auth0-mcp-server', 'run', '--tools', 'auth0_*_resource_servers'], {
+    const mcpServer = spawn('npx', ['-y', '@auth0/auth0-mcp-server', 'run', '--tools', 'auth0_*_resource_servers'], {
       stdio: ['pipe', 'pipe', 'pipe']
     });
 

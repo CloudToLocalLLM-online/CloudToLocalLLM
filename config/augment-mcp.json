@@ -1,0 +1,16 @@
+{
+  "mcpServers": {
+    "Playwright": {
+      "command": "/home/rightguy/.nvm/versions/node/v24.8.0/bin/npx",
+      "args": ["-y", "@playwright/mcp@latest"]
+    },
+    "Sequential thinking": {
+      "command": "/home/rightguy/.nvm/versions/node/v24.8.0/bin/npx",
+      "args": ["-y", "@modelcontextprotocol/server-sequential-thinking@latest"]
+    },
+    "Context 7": {
+      "command": "/home/rightguy/.nvm/versions/node/v24.8.0/bin/npx",
+      "args": ["-y", "@upstash/context7-mcp@latest"]
+    }
+  }
+}
