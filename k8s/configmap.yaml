@@ -1,0 +1,23 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cloudtolocalllm-config
+  namespace: cloudtolocalllm
+data:
+  # Domain configuration
+  DOMAIN: "yourdomain.com"
+  
+  # Node environment
+  NODE_ENV: "production"
+  LOG_LEVEL: "info"
+  
+  # Database configuration
+  DB_TYPE: "postgresql"
+  DB_HOST: "postgres.cloudtolocalllm.svc.cluster.local"
+  DB_PORT: "5432"
+  DB_NAME: "cloudtolocalllm"
+  DB_USER: "appuser"
+  
+  # API configuration
+  PORT: "3000"
+

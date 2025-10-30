@@ -1,0 +1,144 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: api-backend
+  namespace: cloudtolocalllm
+  labels:
+    app: api-backend
+spec:
+  type: ClusterIP
+  ports:
+    - port: 3000
+      targetPort: 3000
+      name: http
+  selector:
+    app: api-backend
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api-backend
+  namespace: cloudtolocalllm
+  labels:
+    app: api-backend
+spec:
+  replicas: 2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  selector:
+    matchLabels:
+      app: api-backend
+  template:
+    metadata:
+      labels:
+        app: api-backend
+    spec:
+      containers:
+        - name: api-backend
+          image: YOUR_REGISTRY/cloudtolocalllm-api:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 3000
+              name: http
+          env:
+            # Configuration from ConfigMap
+            - name: NODE_ENV
+              valueFrom:
+                configMapKeyRef:
+                  name: cloudtolocalllm-config
+                  key: NODE_ENV
+            - name: LOG_LEVEL
+              valueFrom:
+                configMapKeyRef:
+                  name: cloudtolocalllm-config
+                  key: LOG_LEVEL
+            - name: PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: cloudtolocalllm-config
+                  key: PORT
+            - name: DOMAIN
+              valueFrom:
+                configMapKeyRef:
+                  name: cloudtolocalllm-config
+                  key: DOMAIN
+            - name: DB_TYPE
+              valueFrom:
+                configMapKeyRef:
+                  name: cloudtolocalllm-config
+                  key: DB_TYPE
+            - name: DB_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: cloudtolocalllm-config
+                  key: DB_HOST
+            - name: DB_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: cloudtolocalllm-config
+                  key: DB_PORT
+            - name: DB_NAME
+              valueFrom:
+                configMapKeyRef:
+                  name: cloudtolocalllm-config
+                  key: DB_NAME
+            - name: DB_USER
+              valueFrom:
+                configMapKeyRef:
+                  name: cloudtolocalllm-config
+                  key: DB_USER
+            
+            # Secrets
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: cloudtolocalllm-secrets
+                  key: postgres-password
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: cloudtolocalllm-secrets
+                  key: jwt-secret
+            - name: AUTH0_DOMAIN
+              valueFrom:
+                secretKeyRef:
+                  name: cloudtolocalllm-secrets
+                  key: auth0-domain
+            - name: AUTH0_AUDIENCE
+              valueFrom:
+                secretKeyRef:
+                  name: cloudtolocalllm-secrets
+                  key: auth0-audience
+            - name: SENTRY_DSN
+              valueFrom:
+                secretKeyRef:
+                  name: cloudtolocalllm-secrets
+                  key: sentry-dsn
+          
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "250m"
+            limits:
+              memory: "2Gi"
+              cpu: "1000m"
+          
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 3000
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+          
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 3000
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            timeoutSeconds: 3
+

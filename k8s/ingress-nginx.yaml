@@ -1,0 +1,102 @@
+# Ingress for DigitalOcean Kubernetes with nginx-ingress
+# Install nginx-ingress first: kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.8.1/deploy/static/provider/do/deploy.yaml
+
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: cloudtolocalllm-ingress
+  namespace: cloudtolocalllm
+  annotations:
+    # Use nginx ingress controller
+    kubernetes.io/ingress.class: nginx
+    
+    # SSL/TLS configuration
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    
+    # WebSocket support
+    nginx.ingress.kubernetes.io/websocket-services: "api-backend"
+    
+    # Proxy settings for WebSocket
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-connect-timeout: "60"
+    
+    # Enable CORS
+    nginx.ingress.kubernetes.io/enable-cors: "true"
+    nginx.ingress.kubernetes.io/cors-allow-origin: "https://yourdomain.com,https://app.yourdomain.com"
+    
+    # Rate limiting
+    nginx.ingress.kubernetes.io/limit-rps: "100"
+    
+    # Security headers
+    nginx.ingress.kubernetes.io/configuration-snippet: |
+      more_set_headers "X-Frame-Options: SAMEORIGIN";
+      more_set_headers "X-Content-Type-Options: nosniff";
+      more_set_headers "X-XSS-Protection: 1; mode=block";
+      more_set_headers "Strict-Transport-Security: max-age=31536000; includeSubDomains";
+spec:
+  tls:
+    - hosts:
+        - yourdomain.com
+        - app.yourdomain.com
+        - api.yourdomain.com
+      secretName: cloudtolocalllm-tls
+  
+  rules:
+    # Main domain - Web app
+    - host: yourdomain.com
+      http:
+        paths:
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: api-backend
+                port:
+                  number: 3000
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: web
+                port:
+                  number: 8080
+    
+    # App subdomain - Web app
+    - host: app.yourdomain.com
+      http:
+        paths:
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: api-backend
+                port:
+                  number: 3000
+          - path: /ws
+            pathType: Prefix
+            backend:
+              service:
+                name: api-backend
+                port:
+                  number: 3000
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: web
+                port:
+                  number: 8080
+    
+    # API subdomain - API backend
+    - host: api.yourdomain.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: api-backend
+                port:
+                  number: 3000
+
