@@ -141,3 +141,5 @@ ios/.symlinks/
 config/kubernetes/base/*-secrets.placeholder.yaml
 config/kubernetes/base/postgres-statefulset.yaml
 config/kubernetes/base/postgres-service.yaml
+k8s/secrets.yaml
+.deployment-config.json
