@@ -143,3 +143,9 @@ config/kubernetes/base/postgres-statefulset.yaml
 config/kubernetes/base/postgres-service.yaml
 k8s/secrets.yaml
 .deployment-config.json
+
+# Cursor MCP configuration (contains tokens)
+.cursor/mcp-config.json
+
+# Generated secrets (DO NOT COMMIT)
+.secrets.json
