@@ -38,7 +38,7 @@ spec:
     spec:
       containers:
         - name: web
-          image: YOUR_REGISTRY/cloudtolocalllm-web:latest
+          image: registry.digitalocean.com/cloudtolocalllm/web:latest
           imagePullPolicy: Always
           ports:
             - containerPort: 8080

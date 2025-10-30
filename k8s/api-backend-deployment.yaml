@@ -38,7 +38,7 @@ spec:
     spec:
       containers:
         - name: api-backend
-          image: YOUR_REGISTRY/cloudtolocalllm-api:latest
+          image: registry.digitalocean.com/cloudtolocalllm/api:latest
           imagePullPolicy: Always
           ports:
             - containerPort: 3000
