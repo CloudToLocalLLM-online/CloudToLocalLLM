@@ -36,6 +36,8 @@ spec:
       labels:
         app: api-backend
     spec:
+      imagePullSecrets:
+        - name: registry-cloudtolocalllm
       containers:
         - name: api-backend
           image: registry.digitalocean.com/cloudtolocalllm/api:latest

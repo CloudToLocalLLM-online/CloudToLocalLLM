@@ -36,6 +36,8 @@ spec:
       labels:
         app: web
     spec:
+      imagePullSecrets:
+        - name: registry-cloudtolocalllm
       containers:
         - name: web
           image: registry.digitalocean.com/cloudtolocalllm/web:latest
