@@ -10,7 +10,9 @@ import { StreamingProxyManager } from './streaming-proxy-manager.js';
 import * as Sentry from '@sentry/node';
 
 import adminRoutes from './routes/admin.js';
-// HTTP polling tunnel system (simplified)
+// WebSocket tunnel system
+import { setupWebSocketTunnel } from './websocket-server.js';
+// HTTP polling tunnel system (fallback/legacy)
 import { AuthService } from './auth/auth-service.js';
 import { DatabaseMigrator } from './database/migrate.js';
 import { DatabaseMigratorPG } from './database/migrate-pg.js';
@@ -51,12 +53,29 @@ const logger = winston.createLogger({
 const PORT = process.env.PORT || 8080;
 const AUTH0_DOMAIN = process.env.AUTH0_DOMAIN || 'dev-v2f2p008x3dr74ww.us.auth0.com';
 const AUTH0_AUDIENCE = process.env.AUTH0_AUDIENCE || 'https://app.cloudtolocalllm.online';
+const DOMAIN = process.env.DOMAIN || 'cloudtolocalllm.online';
 
 // AuthService will be initialized in initializeHttpPollingSystem()
 
 // Express app setup
 const app = express();
 const server = http.createServer(app);
+
+// Initialize WebSocket tunnel server
+let tunnelProxyWebSocket;
+try {
+  tunnelProxyWebSocket = setupWebSocketTunnel(server, {
+    AUTH0_DOMAIN,
+    AUTH0_AUDIENCE,
+    DOMAIN,
+  }, logger);
+  logger.info('WebSocket tunnel initialized successfully');
+} catch (error) {
+  logger.error('Failed to initialize WebSocket tunnel', {
+    error: error.message,
+    stack: error.stack,
+  });
+}
 
 Sentry.init({
   dsn: process.env.SENTRY_DSN,

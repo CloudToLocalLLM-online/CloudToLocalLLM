@@ -1,74 +1,58 @@
-# Stage 1: Build the Flutter web app
-FROM ghcr.io/cirruslabs/flutter:latest AS build
+# ============================================================================
+# Multi-stage Dockerfile for CloudToLocalLLM Web Application
+# Stage 1: Build Flutter web application
+# Stage 2: Serve with nginx
+# ============================================================================
 
+# ---- Stage 1: Build Flutter Web App ----
+FROM debian:bookworm-slim AS builder
+
+# Install dependencies for Flutter
+RUN apt-get update && apt-get install -y \
+    curl \
+    git \
+    unzip \
+    xz-utils \
+    zip \
+    libglu1-mesa \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Flutter
+ENV FLUTTER_HOME=/opt/flutter
+ENV PATH=$FLUTTER_HOME/bin:$PATH
+
+RUN git clone https://github.com/flutter/flutter.git -b stable --depth 1 $FLUTTER_HOME && \
+    flutter doctor && \
+    flutter config --enable-web
+
+# Set working directory
 WORKDIR /app
 
-# Create a non-root user and group
-RUN groupadd -r fluttergroup && useradd -r -g fluttergroup -m -s /sbin/nologin flutteruser
-
-# Cache-busting echo
-RUN echo "Build version: $(date +%s)"
-
-# Change ownership of /app and /sdks/flutter to flutteruser before running flutter commands
-# This is done as root, as USER flutteruser is set later
-RUN chown -R flutteruser:fluttergroup /app && \
-    chown -R flutteruser:fluttergroup /sdks/flutter
-
-# Copy pubspec files first to leverage Docker cache for dependencies
-# Ensure these are copied with correct ownership from the start
-COPY --chown=flutteruser:fluttergroup pubspec.yaml ./
-COPY --chown=flutteruser:fluttergroup pubspec.lock ./
-
-# Switch to non-root user for flutter commands
-USER flutteruser
-
-# Add Flutter SDK directory as a safe directory for git
-RUN git config --global --add safe.directory /sdks/flutter
-
-# Get dependencies
+# Copy Flutter project files
+COPY pubspec.yaml pubspec.lock ./
 RUN flutter pub get
 
-# Copy the rest of the application source code (as flutteruser)
-# Ensure correct ownership using --chown with COPY
-COPY --chown=flutteruser:fluttergroup . .
+# Copy the rest of the application
+COPY . .
 
-# Build the Flutter web application
-# The output will be in /app/build/web
-RUN flutter build web --release
+# Build Flutter web app for production
+RUN flutter build web --release --web-renderer canvaskit
 
-# Stage 2: Serve the app with Nginx
+# ---- Stage 2: Serve with Nginx ----
 FROM nginx:alpine
 
-# Install curl for healthcheck (keep only curl, remove openssl)
-USER root
-RUN apk add --no-cache curl openssl
+# Copy custom nginx configuration
+COPY config/docker/nginx-web.conf /etc/nginx/conf.d/default.conf
 
-# Copy the built web app from the build stage
-COPY --from=build /app/build/web /usr/share/nginx/html
+# Copy built Flutter web app from builder stage
+COPY --from=builder /app/build/web /usr/share/nginx/html
 
-# Set permissions for nginx user (as root)
-RUN chown -R nginx:nginx /usr/share/nginx/html && chmod -R 755 /usr/share/nginx/html
+# Expose port 8080 (non-root nginx)
+EXPOSE 8080
 
-# Create and set permissions for Nginx cache and temp directories
-RUN mkdir -p /var/cache/nginx/client_temp /var/cache/nginx/proxy_temp /var/cache/nginx/fastcgi_temp /var/cache/nginx/uwsgi_temp /var/cache/nginx/scgi_temp && \
-    chown -R nginx:nginx /var/cache/nginx && \
-    chmod -R 700 /var/cache/nginx
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+    CMD wget --no-verbose --tries=1 --spider http://localhost:8080/ || exit 1
 
-# Create and set permissions for Nginx PID directory
-RUN mkdir -p /var/run/nginx && \
-    chown -R nginx:nginx /var/run/nginx
-
-# Create directory for Let's Encrypt certificates
-RUN mkdir -p /etc/letsencrypt/live/cloudtolocalllm.online && \
-    chown -R nginx:nginx /etc/letsencrypt
-
-# Add entrypoint script for self-signed cert fallback
-COPY --chown=root:root config/docker/entrypoint-with-ssl-fallback.sh /entrypoint-with-ssl-fallback.sh
-RUN chmod +x /entrypoint-with-ssl-fallback.sh
-
-EXPOSE 80
-# USER nginx is already specified in nginx:alpine base image and Nginx will run as nginx user by default.
-# Explicitly setting it here for clarity.
+# Start nginx
 CMD ["nginx", "-g", "daemon off;"]
-
-ENTRYPOINT ["/entrypoint-with-ssl-fallback.sh"]
