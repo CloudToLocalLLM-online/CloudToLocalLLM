@@ -1,0 +1,43 @@
+name: Build and Push Images (DOCR)
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+env:
+  REGISTRY: registry.digitalocean.com/cloudtolocalllm
+
+jobs:
+  build-push:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install doctl
+        uses: digitalocean/action-doctl@v2
+        with:
+          token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+
+      - name: Login to DOCR
+        run: doctl registry login --expiry-seconds 1800
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build & Push Web
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: config/docker/Dockerfile.web
+          push: true
+          tags: ${{ env.REGISTRY }}/web:latest
+
+      - name: Build & Push API
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: services/api-backend/Dockerfile.prod
+          push: true
+          tags: ${{ env.REGISTRY }}/api:latest
