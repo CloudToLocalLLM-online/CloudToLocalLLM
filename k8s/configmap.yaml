@@ -5,7 +5,7 @@ metadata:
   namespace: cloudtolocalllm
 data:
   # Domain configuration
-  DOMAIN: "yourdomain.com"
+  DOMAIN: "cloudtolocalllm.online"
   
   # Node environment
   NODE_ENV: "production"

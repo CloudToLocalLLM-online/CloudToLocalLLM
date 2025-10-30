@@ -104,6 +104,7 @@ jobs:
           kubectl create secret generic cloudtolocalllm-secrets \
             --from-literal=postgres-password='${{ secrets.POSTGRES_PASSWORD }}' \
             --from-literal=jwt-secret='${{ secrets.JWT_SECRET }}' \
+            --from-literal=supertokens-api-key='${{ secrets.SUPERTOKENS_API_KEY }}' \
             --from-literal=auth0-domain='${{ secrets.AUTH0_DOMAIN }}' \
             --from-literal=auth0-audience='${{ secrets.AUTH0_AUDIENCE }}' \
             --from-literal=sentry-dsn='${{ secrets.SENTRY_DSN }}' \
@@ -112,15 +113,15 @@ jobs:
 
       - name: Update ConfigMap with domain
         run: |
-          sed -i 's/DOMAIN: "yourdomain.com"/DOMAIN: "${{ secrets.DOMAIN }}"/' k8s/configmap.yaml
+          sed -i 's/DOMAIN: "cloudtolocalllm.online"/DOMAIN: "${{ secrets.DOMAIN }}"/' k8s/configmap.yaml
           kubectl apply -f k8s/configmap.yaml
 
       - name: Update image references
         run: |
           sed -i 's|YOUR_REGISTRY|${{ env.REGISTRY }}|g' k8s/api-backend-deployment.yaml
           sed -i 's|YOUR_REGISTRY|${{ env.REGISTRY }}|g' k8s/web-deployment.yaml
-          sed -i 's|yourdomain.com|${{ secrets.DOMAIN }}|g' k8s/ingress-nginx.yaml
-          sed -i 's|admin@yourdomain.com|admin@${{ secrets.DOMAIN }}|g' k8s/cert-manager.yaml
+          sed -i 's|cloudtolocalllm.online|${{ secrets.DOMAIN }}|g' k8s/ingress-nginx.yaml
+          sed -i 's|admin@cloudtolocalllm.online|admin@${{ secrets.DOMAIN }}|g' k8s/cert-manager.yaml
 
       - name: Deploy PostgreSQL
         run: kubectl apply -f k8s/postgres-statefulset.yaml

@@ -23,7 +23,7 @@ metadata:
     
     # Enable CORS
     nginx.ingress.kubernetes.io/enable-cors: "true"
-    nginx.ingress.kubernetes.io/cors-allow-origin: "https://yourdomain.com,https://app.yourdomain.com"
+    nginx.ingress.kubernetes.io/cors-allow-origin: "https://cloudtolocalllm.online,https://app.cloudtolocalllm.online"
     
     # Rate limiting
     nginx.ingress.kubernetes.io/limit-rps: "100"
@@ -37,14 +37,15 @@ metadata:
 spec:
   tls:
     - hosts:
-        - yourdomain.com
-        - app.yourdomain.com
-        - api.yourdomain.com
+        - cloudtolocalllm.online
+        - app.cloudtolocalllm.online
+        - api.cloudtolocalllm.online
+        - auth.cloudtolocalllm.online
       secretName: cloudtolocalllm-tls
   
   rules:
     # Main domain - Web app
-    - host: yourdomain.com
+    - host: cloudtolocalllm.online
       http:
         paths:
           - path: /api
@@ -63,7 +64,7 @@ spec:
                   number: 8080
     
     # App subdomain - Web app
-    - host: app.yourdomain.com
+    - host: app.cloudtolocalllm.online
       http:
         paths:
           - path: /api
@@ -89,7 +90,7 @@ spec:
                   number: 8080
     
     # API subdomain - API backend
-    - host: api.yourdomain.com
+    - host: api.cloudtolocalllm.online
       http:
         paths:
           - path: /
@@ -97,6 +98,18 @@ spec:
             backend:
               service:
                 name: api-backend
+                port:
+                  number: 3000
+    
+    # Auth subdomain - SuperTokens (future)
+    - host: auth.cloudtolocalllm.online
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: api-backend  # Will be supertokens service later
                 port:
                   number: 3000
 
