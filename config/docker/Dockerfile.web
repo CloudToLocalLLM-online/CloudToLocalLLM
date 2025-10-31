@@ -5,7 +5,37 @@
 # ============================================================================
 
 # ---- Stage 1: Build Flutter Web App ----
-FROM ghcr.io/cirruslabs/flutter:stable AS builder
+FROM debian:bookworm-slim AS builder
+
+# Install dependencies
+RUN apt-get update && \
+    apt-get install -y \
+    curl \
+    git \
+    unzip \
+    xz-utils \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create non-root user (standard Docker practice - UID 1000)
+RUN groupadd -r flutter -g 1000 && \
+    useradd -r -u 1000 -g flutter -m -s /bin/bash flutter
+
+# Install Flutter as root
+ENV FLUTTER_HOME=/opt/flutter
+ENV PATH="${FLUTTER_HOME}/bin:${PATH}"
+
+RUN git clone https://github.com/flutter/flutter.git -b stable --depth 1 ${FLUTTER_HOME} && \
+    flutter doctor && \
+    flutter config --enable-web && \
+    chown -R flutter:flutter ${FLUTTER_HOME}
+
+# Set up pub cache for flutter user
+RUN mkdir -p /home/flutter/.pub-cache && \
+    chown -R flutter:flutter /home/flutter/.pub-cache
+
+# Switch to flutter user
+USER flutter
 
 WORKDIR /app
 
@@ -13,19 +43,7 @@ WORKDIR /app
 COPY pubspec.yaml pubspec.lock ./
 COPY . .
 
-# Create non-root user following Docker best practices
-RUN groupadd -r appuser -g 1001 && \
-    useradd -r -u 1001 -g appuser -m appuser
-
-# Set ownership and create build directories
-RUN chown -R appuser:appuser /app && \
-    mkdir -p /app/build /app/.dart_tool && \
-    chown -R appuser:appuser /app/build /app/.dart_tool
-
-# Switch to non-root user
-USER appuser
-
-# Build Flutter web app (runs as non-root user)
+# Build Flutter web app (runs as flutter user - non-root)
 RUN flutter pub get && \
     flutter build web --release
 
