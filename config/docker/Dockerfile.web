@@ -19,46 +19,36 @@ RUN apk add --no-cache \
     make \
     g++
 
-# Create non-root user (same pattern as API container - UID 1001)
-RUN addgroup -g 1001 -S flutter && \
-    adduser -S flutter -u 1001 -G flutter && \
-    echo "Created user: flutter (UID 1001)" && \
-    id flutter && \
-    getent passwd 1001
-
 # Install Flutter as root (before switching users)
 ENV FLUTTER_HOME=/opt/flutter
 ENV PATH="${FLUTTER_HOME}/bin:${PATH}"
 
 RUN git clone https://github.com/flutter/flutter.git -b stable --depth 1 ${FLUTTER_HOME} && \
     flutter doctor && \
-    flutter config --enable-web && \
-    chown -R flutter:flutter ${FLUTTER_HOME}
-
-# Set up pub cache for flutter user
-RUN mkdir -p /home/flutter/.pub-cache && \
-    chown -R flutter:flutter /home/flutter/.pub-cache
+    flutter config --enable-web
 
 WORKDIR /app
 
-# Copy files with ownership (same pattern as API container - chown during copy)
-COPY --chown=flutter:flutter pubspec.yaml pubspec.lock ./
-COPY --chown=flutter:flutter . .
+# Copy files
+COPY pubspec.yaml pubspec.lock ./
+COPY . .
 
-# Verify user exists and switch to non-root user
-RUN echo "Before USER switch:" && \
-    id && \
-    whoami
+# Use numeric UID (Alpine default non-root approach)
+# Check for existing non-root user or use UID 1000
+RUN EXISTING_UID=$(getent passwd | awk -F: '$3 >= 1000 && $3 < 65534 {print $3; exit}') && \
+    if [ -n "$EXISTING_UID" ]; then \
+        BUILD_UID=$EXISTING_UID; \
+    else \
+        BUILD_UID=1000; \
+    fi && \
+    chown -R $BUILD_UID:$BUILD_UID /app ${FLUTTER_HOME} && \
+    echo "Using UID: $BUILD_UID"
 
-USER flutter
+# Switch to non-root user (numeric UID)
+USER 1000
 
-# Verify we're running as non-root and build Flutter web app
-RUN echo "After USER switch:" && \
-    id && \
-    whoami && \
-    echo "Current UID: $(id -u)" && \
-    echo "Current user: $(whoami)" && \
-    flutter pub get && \
+# Build Flutter web app (runs as non-root)
+RUN flutter pub get && \
     flutter build web --release
 
 # ---- Stage 2: Serve with Nginx (non-root) ----
