@@ -18,7 +18,8 @@ RUN git config --global --add safe.directory /sdks/flutter
 
 # Create app directory and fix ownership (must be done as root)
 WORKDIR /app
-RUN chown -R 1000:1000 /app
+RUN mkdir -p /app && \
+    chown -R 1000:1000 /app
 
 # Switch to non-root user
 USER 1000

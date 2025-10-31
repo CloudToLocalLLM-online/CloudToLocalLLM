@@ -21,12 +21,23 @@ RUN addgroup -g 1001 -S nodejs && \
 
 WORKDIR /api
 
-# Copy files and change ownership
+# Create isolated data directories for this container (logs, database, etc.)
+RUN mkdir -p /api/data /api/logs && \
+    chown -R 1001:1001 /api
+
+# Copy files and change ownership (only API backend files, nothing else)
 COPY --from=base --chown=nodejs:nodejs /api/node_modules ./node_modules
 COPY --chown=nodejs:nodejs services/api-backend/ ./
 
+# Ensure data directories have correct ownership
+RUN chown -R nodejs:nodejs /api/data /api/logs
+
 # Switch to non-root user
 USER nodejs
+
+# Set environment variables to use container-specific paths
+ENV LOG_DIR=/api/logs
+ENV DB_PATH=/api/data/cloudtolocalllm.db
 
 EXPOSE 3000
 CMD [ "npm", "start" ]
