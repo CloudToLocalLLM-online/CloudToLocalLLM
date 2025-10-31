@@ -13,17 +13,18 @@ WORKDIR /app
 COPY pubspec.yaml pubspec.lock ./
 COPY . .
 
-# Use default user from container - set ownership of /app
+# Find default user (UID 1000 or 1001) or create one, then set ownership
 RUN DEFAULT_USER=$(getent passwd 1000 | cut -d: -f1 2>/dev/null || getent passwd 1001 | cut -d: -f1 2>/dev/null || echo "") && \
     if [ -z "$DEFAULT_USER" ]; then \
         groupadd -g 1000 appuser && \
         useradd -u 1000 -g appuser -m appuser && \
         DEFAULT_USER="appuser"; \
     fi && \
-    chown -R $DEFAULT_USER:$DEFAULT_USER /app
+    chown -R $DEFAULT_USER:$DEFAULT_USER /app && \
+    echo "$DEFAULT_USER" > /tmp/build_user
 
-# Switch to default user (uses container's default or created appuser)
-USER $(getent passwd 1000 | cut -d: -f1 2>/dev/null || getent passwd 1001 | cut -d: -f1 2>/dev/null || echo "appuser")
+# Switch to default user
+USER 1000
 
 # ---- Stage 2: Serve with Nginx (non-root) ----
 FROM nginxinc/nginx-unprivileged:alpine
