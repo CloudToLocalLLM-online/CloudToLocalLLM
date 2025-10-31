@@ -30,23 +30,19 @@ ENV PATH="${FLUTTER_HOME}/bin:${PATH}"
 RUN mkdir -p ${FLUTTER_HOME} && \
     git clone https://github.com/flutter/flutter.git -b stable ${FLUTTER_HOME}
 
-# Run flutter doctor as root to download Dart SDK and dependencies
-RUN flutter doctor && \
-    chown -R nginx:nginx ${FLUTTER_HOME} && \
-    chmod -R u+w ${FLUTTER_HOME} && \
-    find ${FLUTTER_HOME}/bin -type f -executable -exec chmod +x {} \; 2>/dev/null || true
+# Switch to nginx user before running Flutter commands
+USER nginx
 
 # Create pub cache directory for nginx user
-RUN mkdir -p /home/.pub-cache && \
-    chown -R nginx:nginx /home/.pub-cache
+RUN mkdir -p ${HOME}/.pub-cache
 
-# Switch to nginx user
-USER nginx
+# Run Flutter commands as nginx user (best practice)
+RUN flutter doctor
 
 # Set pub cache environment variable
 ENV PUB_CACHE=/home/.pub-cache
 
-# Configure Flutter (runs as nginx user - doctor already ran as root)
+# Configure Flutter (runs as nginx user)
 RUN echo "Current user: $(whoami)" && \
     echo "Current UID: $(id -u)" && \
     echo "Current GID: $(id -g)" && \
