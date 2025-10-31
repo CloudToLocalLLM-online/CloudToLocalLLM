@@ -101,7 +101,8 @@ Required environment variables:
 - `DB_USER=appuser`
 - `DB_PASSWORD=<your-password>`
 - `DB_HOST=/cloudsql/cloudtolocalllm-468303:us-central1:cloudtolocalllm-db`
-- `FIREBASE_PROJECT_ID=cloudtolocalllm-468303`
+- `AUTH0_DOMAIN=dev-v2f2p008x3dr74ww.us.auth0.com`
+- `AUTH0_AUDIENCE=https://api.cloudtolocalllm.online`
 
 ### Step 3: Build and Deploy
 
@@ -206,10 +207,10 @@ gcloud logging read "resource.type=cloudsql_database"
 
 3. **Authentication Errors**
    ```
-   Error: Firebase Admin SDK not initialized
+   Error: Authentication service not available
    ```
-   - Verify `FIREBASE_PROJECT_ID` environment variable
-   - Check service account permissions
+   - Verify `AUTH0_DOMAIN` and `AUTH0_AUDIENCE` environment variables
+   - Check Auth0 JWT validation configuration
 
 ### Service Account Permissions
 
