@@ -88,13 +88,27 @@ class Auth0WebService {
     try {
       debugPrint('🔐 Starting Auth0 login redirect...');
       final bridge = js_util.getProperty(js_util.globalThis, 'auth0Bridge');
-      if (bridge == null) throw Exception('Auth0 bridge not available');
+      if (bridge == null) {
+        final error = Exception('Auth0 bridge not available');
+        debugPrint('❌ Auth0 login error: $error');
+        throw error;
+      }
       
-      await js_util.promiseToFuture(js_util.callMethod(bridge, 'loginWithGoogle', []));
-      // Note: This will redirect the page, so code after this won't execute
-    } catch (e) {
+      // Wrap in try-catch to handle any JavaScript errors gracefully
+      try {
+        await js_util.promiseToFuture(js_util.callMethod(bridge, 'loginWithGoogle', []));
+        // Note: This will redirect the page, so code after this won't execute
+      } on Object catch (e, stackTrace) {
+        debugPrint('❌ Auth0 login JavaScript error: $e');
+        debugPrint('Stack trace: $stackTrace');
+        // Re-throw with more context
+        throw Exception('Auth0 login failed: $e');
+      }
+    } catch (e, stackTrace) {
       debugPrint('❌ Auth0 login error: $e');
-      rethrow;
+      debugPrint('Stack trace: $stackTrace');
+      // Don't rethrow to prevent page reload - let the UI handle it
+      throw e;
     }
   }
 
