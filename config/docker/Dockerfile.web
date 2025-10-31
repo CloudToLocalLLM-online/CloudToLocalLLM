@@ -7,15 +7,24 @@
 # ---- Stage 1: Build Flutter Web App ----
 FROM ghcr.io/cirruslabs/flutter:stable AS builder
 
+# Create non-root user for build
+RUN groupadd -r flutter && useradd -r -g flutter flutter
+
 # Set working directory
 WORKDIR /app
 
+# Change ownership of /app to flutter user
+RUN chown -R flutter:flutter /app
+
+# Switch to non-root user
+USER flutter
+
 # Copy Flutter project files
-COPY pubspec.yaml pubspec.lock ./
+COPY --chown=flutter:flutter pubspec.yaml pubspec.lock ./
 RUN flutter pub get
 
 # Copy the rest of the application
-COPY . .
+COPY --chown=flutter:flutter . .
 
 # Build Flutter web app for production
 RUN flutter build web --release
