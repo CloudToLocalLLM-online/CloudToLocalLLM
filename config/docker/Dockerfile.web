@@ -1,29 +1,11 @@
 # ============================================================================
 # Multi-stage Dockerfile for CloudToLocalLLM Web Application
-# Stage 1: Build Flutter web application
-# Stage 2: Serve with nginx
+# Stage 1: Build Flutter web application (using pre-built Flutter image)
+# Stage 2: Serve with nginx (non-root)
 # ============================================================================
 
 # ---- Stage 1: Build Flutter Web App ----
-FROM debian:bookworm-slim AS builder
-
-# Install dependencies for Flutter
-RUN apt-get update && apt-get install -y \
-    curl \
-    git \
-    unzip \
-    xz-utils \
-    zip \
-    libglu1-mesa \
-    && rm -rf /var/lib/apt/lists/*
-
-# Install Flutter
-ENV FLUTTER_HOME=/opt/flutter
-ENV PATH=$FLUTTER_HOME/bin:$PATH
-
-RUN git clone https://github.com/flutter/flutter.git -b stable --depth 1 $FLUTTER_HOME && \
-    flutter doctor && \
-    flutter config --enable-web
+FROM ghcr.io/cirruslabs/flutter:stable AS builder
 
 # Set working directory
 WORKDIR /app
