@@ -21,6 +21,8 @@ data:
   # API configuration
   PORT: "3000"
   
-  # SuperTokens configuration
-  SUPERTOKENS_CONNECTION_URI: "http://supertokens:3567"
+  # Auth0 Configuration
+  AUTH0_DOMAIN: "dev-v2f2p008x3dr74ww.us.auth0.com"
+  AUTH0_AUDIENCE: "https://api.cloudtolocalllm.online"
+  AUTH0_CLIENT_ID: "FuXPnevXpp311CdYHGsbNZe9t3D8Ts7A"
 
