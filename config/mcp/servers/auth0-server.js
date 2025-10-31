@@ -156,6 +156,25 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
           properties: {},
         },
       },
+      {
+        name: 'auth0_list_apis',
+        description: 'List all Auth0 APIs (Resource Servers)',
+        inputSchema: {
+          type: 'object',
+          properties: {},
+        },
+      },
+      {
+        name: 'auth0_get_api',
+        description: 'Get Auth0 API details by identifier',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            identifier: { type: 'string', description: 'API identifier' },
+          },
+          required: ['identifier'],
+        },
+      },
     ],
   };
 });
@@ -296,6 +315,26 @@ Callback URL: https://YOUR_TENANT.auth0.com/login/callback
             {
               type: 'text',
               text: JSON.stringify(executeAuth0Command('tenants list --json'), null, 2),
+            },
+          ],
+        };
+
+      case 'auth0_list_apis':
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(executeAuth0Command('apis list --json'), null, 2),
+            },
+          ],
+        };
+
+      case 'auth0_get_api':
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(executeAuth0Command(`apis show ${args.identifier} --json`), null, 2),
             },
           ],
         };
