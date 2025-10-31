@@ -7,7 +7,7 @@
 # ---- Stage 1: Build Flutter Web App ----
 FROM alpine:latest AS builder
 
-# Install dependencies (same pattern as API container)
+# Install dependencies
 RUN apk add --no-cache \
     bash \
     curl \
@@ -19,21 +19,27 @@ RUN apk add --no-cache \
     make \
     g++
 
-# Install Flutter (build stage runs as root - standard for build containers)
+# Install Flutter as root (system-wide install)
 ENV FLUTTER_HOME=/opt/flutter
 ENV PATH="${FLUTTER_HOME}/bin:${PATH}"
 
 RUN git clone https://github.com/flutter/flutter.git -b stable --depth 1 ${FLUTTER_HOME} && \
-    flutter doctor && \
+    chown -R 101:101 ${FLUTTER_HOME}
+
+# Switch to nginx user (UID 101 - same as nginx container)
+USER 101
+
+# Configure and build Flutter (runs as UID 101)
+RUN flutter doctor && \
     flutter config --enable-web
 
 WORKDIR /app
 
-# Copy files
-COPY pubspec.yaml pubspec.lock ./
-COPY . .
+# Copy files with ownership
+COPY --chown=101:101 pubspec.yaml pubspec.lock ./
+COPY --chown=101:101 . .
 
-# Build Flutter web app (build stage - runs as root)
+# Build Flutter web app (runs as UID 101)
 RUN flutter pub get && \
     flutter build web --release
 
