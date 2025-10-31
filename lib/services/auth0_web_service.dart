@@ -1,5 +1,7 @@
+// ignore_for_file: avoid_web_libraries_in_flutter
+// dart:js_util is required for Auth0 bridge integration and doesn't have a direct dart:js_interop equivalent
 import 'dart:async';
-import 'dart:js_util' as js_util;
+import 'dart:js_util' as js_util; // ignore: deprecated_member_use
 import 'package:flutter/foundation.dart';
 
 /// Auth0 Web Service for Flutter Web

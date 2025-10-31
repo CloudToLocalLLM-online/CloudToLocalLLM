@@ -3,6 +3,7 @@
 // for better Google Cloud integration and cost savings
 
 import admin from 'firebase-admin';
+import logger from '../logger.js';
 
 // Initialize Firebase Admin SDK
 let firebaseInitialized = false;
@@ -31,16 +32,16 @@ const initializeFirebase = () => {
           }
           admin.initializeApp(options);
         } else {
-          console.warn('Firebase credentials not found. Authentication will not work.');
+          logger.auth.warn('Firebase credentials not found. Authentication will not work.');
           return false;
         }
       }
 
       firebaseInitialized = true;
-      console.log('Firebase Admin SDK initialized successfully');
+      logger.auth.info('Firebase Admin SDK initialized successfully');
       return true;
     } catch (error) {
-      console.error('Failed to initialize Firebase Admin SDK:', error);
+      logger.auth.error('Failed to initialize Firebase Admin SDK', { error: error.message, stack: error.stack });
       return false;
     }
   }
@@ -101,11 +102,11 @@ export const verifyFirebaseToken = async(req, res, next) => {
       authTime: decodedToken.auth_time,
     };
 
-    console.log(`User authenticated: ${req.user.email} (${req.user.uid})`);
+    logger.auth.info('User authenticated', { email: req.user.email, uid: req.user.uid });
     next();
 
   } catch (error) {
-    console.error('Firebase token verification failed:', error);
+    logger.auth.error('Firebase token verification failed', { error: error.message, code: error.code, stack: error.stack });
 
     // Handle specific Firebase Auth errors
     let errorResponse = {
@@ -178,7 +179,7 @@ export const requirePermission = (permission) => {
         });
       }
     } catch (error) {
-      console.error('Permission check failed:', error);
+      logger.auth.error('Permission check failed', { error: error.message, stack: error.stack });
       res.status(500).json({
         error: 'Permission check failed',
         code: 'PERMISSION_CHECK_FAILED',
@@ -211,7 +212,7 @@ export const getUserInfo = async(uid) => {
       customClaims: userRecord.customClaims || {},
     };
   } catch (error) {
-    console.error('Failed to get user info:', error);
+    logger.auth.error('Failed to get user info', { error: error.message, stack: error.stack });
     throw error;
   }
 };
@@ -226,9 +227,9 @@ export const setUserClaims = async(uid, claims) => {
     }
 
     await admin.auth().setCustomUserClaims(uid, claims);
-    console.log(`Custom claims set for user ${uid}:`, claims);
+    logger.auth.info('Custom claims set for user', { uid, claims });
   } catch (error) {
-    console.error('Failed to set custom claims:', error);
+    logger.auth.error('Failed to set custom claims', { error: error.message, stack: error.stack, uid });
     throw error;
   }
 };

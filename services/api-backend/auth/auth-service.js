@@ -414,8 +414,11 @@ export class AuthService {
         errorConstructor: error.constructor.name,
         fullError: JSON.stringify(error, Object.getOwnPropertyNames(error)),
       });
-      console.error('DETAILED SESSION ERROR:', error);
-      console.error('ERROR PROPERTIES:', Object.getOwnPropertyNames(error));
+      this.logger.error('DETAILED SESSION ERROR', { 
+        error: error.message, 
+        stack: error.stack,
+        properties: Object.getOwnPropertyNames(error)
+      });
       throw error;
     }
   }
