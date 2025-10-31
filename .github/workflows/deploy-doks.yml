@@ -82,7 +82,6 @@ jobs:
     needs: build-and-push
     environment: 
       name: ${{ github.event.inputs.environment || 'production' }}
-      url: https://app.${{ secrets.DOMAIN }}
     
     steps:
       - name: Checkout code
