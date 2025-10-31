@@ -13,19 +13,17 @@ WORKDIR /app
 COPY pubspec.yaml pubspec.lock ./
 COPY . .
 
-# Get existing user with UID 1000 (container already has one)
-RUN EXISTING_USER=$(getent passwd 1000 | cut -d: -f1) && \
-    EXISTING_GROUP=$(getent group 1000 | cut -d: -f1) && \
-    echo "Using existing user: $EXISTING_USER (UID 1000)" && \
-    chown -R $EXISTING_USER:$EXISTING_GROUP /app && \
+# Create non-root user following Docker best practices
+RUN groupadd -r appuser -g 1001 && \
+    useradd -r -u 1001 -g appuser -m appuser
+
+# Set ownership and create build directories
+RUN chown -R appuser:appuser /app && \
     mkdir -p /app/build /app/.dart_tool && \
-    chown -R $EXISTING_USER:$EXISTING_GROUP /app/build /app/.dart_tool
+    chown -R appuser:appuser /app/build /app/.dart_tool
 
-# Switch to existing non-root user (UID 1000)
-USER 1000
-
-# Ensure build directories exist and are writable
-RUN mkdir -p /app/build /app/.dart_tool
+# Switch to non-root user
+USER appuser
 
 # Build Flutter web app (runs as non-root user)
 RUN flutter pub get && \
