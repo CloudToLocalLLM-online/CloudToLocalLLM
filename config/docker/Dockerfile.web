@@ -10,6 +10,17 @@ FROM ghcr.io/cirruslabs/flutter:stable AS builder
 # Create non-root user for build
 RUN groupadd -r flutter && useradd -r -g flutter flutter
 
+# Set proper permissions for Flutter SDK and pub cache
+RUN chown -R flutter:flutter /opt/flutter && \
+    mkdir -p /home/flutter && \
+    chown -R flutter:flutter /home/flutter && \
+    mkdir -p /.pub-cache && \
+    chown -R flutter:flutter /.pub-cache
+
+# Set Flutter pub cache location for non-root user
+ENV PUB_CACHE=/home/flutter/.pub-cache
+ENV PATH=$PATH:/home/flutter/.pub-cache/bin
+
 # Set working directory
 WORKDIR /app
 
