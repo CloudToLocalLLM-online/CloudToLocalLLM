@@ -7,59 +7,20 @@
 # ---- Stage 1: Build Flutter Web App ----
 FROM ghcr.io/cirruslabs/flutter:stable AS builder
 
-# Create non-root user if it doesn't exist
-# Exit code 4/9 from groupadd/useradd means user/group exists - that's fine
-RUN (groupadd -r flutter -g 1000 2>/dev/null || true) && \
-    (useradd -r -u 1000 -g flutter -m flutter 2>/dev/null || true)
-
-# Get the actual user ID (whether created or existing)
-RUN FLUTTER_UID=$(id -u flutter 2>/dev/null || echo "1000") && \
-    FLUTTER_GID=$(id -g flutter 2>/dev/null || echo "1000") && \
-    echo "Using Flutter user: UID=$FLUTTER_UID GID=$FLUTTER_GID"
-
-# Set proper permissions for Flutter SDK and directories
-# Only use root for setting up permissions, then switch to non-root
-RUN FLUTTER_USER=$(id -un flutter 2>/dev/null || echo "flutter") && \
-    FLUTTER_GROUP=$(id -gn flutter 2>/dev/null || echo "flutter") && \
-    chown -R $FLUTTER_USER:$FLUTTER_GROUP /opt/flutter && \
-    mkdir -p /home/flutter/.pub-cache && \
-    chown -R $FLUTTER_USER:$FLUTTER_GROUP /home/flutter && \
-    mkdir -p /app && \
-    chown -R $FLUTTER_USER:$FLUTTER_GROUP /app || \
-    (chown -R 1000:1000 /opt/flutter /home/flutter /app)
-
-# Set Flutter pub cache location
-ENV PUB_CACHE=/home/flutter/.pub-cache
-ENV PATH=$PATH:/home/flutter/.pub-cache/bin
-
+# The Flutter image runs as root by default for builds
 # Set working directory
 WORKDIR /app
 
-# Copy files as root (necessary for COPY command)
-# Then immediately change ownership
+# Copy Flutter project files
 COPY pubspec.yaml pubspec.lock ./
-RUN FLUTTER_USER=$(id -un flutter 2>/dev/null || echo "flutter") && \
-    chown $FLUTTER_USER:$FLUTTER_USER pubspec.yaml pubspec.lock || \
-    chown 1000:1000 pubspec.yaml pubspec.lock
 
-# Switch to non-root user for all build operations
-USER flutter
-
-# Run pub get as non-root
+# Get dependencies (as root - standard for build containers)
 RUN flutter pub get
 
-# Copy remaining files (need to switch back to root for COPY)
-# Then change ownership back
-USER root
+# Copy the rest of the application
 COPY . .
-RUN FLUTTER_USER=$(id -un flutter 2>/dev/null || echo "flutter") && \
-    chown -R $FLUTTER_USER:$FLUTTER_USER /app || \
-    chown -R 1000:1000 /app
 
-# Back to non-root for build
-USER flutter
-
-# Build Flutter web app for production (as non-root)
+# Build Flutter web app for production
 RUN flutter build web --release
 
 # ---- Stage 2: Serve with Nginx (non-root) ----
