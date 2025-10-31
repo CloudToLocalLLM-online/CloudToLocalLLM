@@ -7,8 +7,7 @@
 # ---- Stage 1: Build Flutter Web App ----
 FROM ghcr.io/cirruslabs/flutter:stable AS builder
 
-# Switch to default flutter user from Cirrus container
-USER flutter
+# Use default user from Cirrus container
 WORKDIR /workspace
 
 # Clone the application repository
