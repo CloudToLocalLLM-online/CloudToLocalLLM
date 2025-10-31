@@ -39,6 +39,8 @@ window.auth0Bridge = {
         authorizationParams: {
           connection: 'google-oauth2',
           redirect_uri: window.location.origin
+          // NOTE: Audience commented out - add when Auth0 API is created
+          // audience: 'https://api.cloudtolocalllm.online'
         }
       });
       // Note: This will redirect, so code after this won't execute
@@ -56,11 +58,27 @@ window.auth0Bridge = {
     }
 
     try {
-      // Check if we're returning from Auth0
-      if (window.location.search.includes('code=') || 
-          window.location.search.includes('state=') ||
-          window.location.search.includes('error=')) {
+      // Check URL parameters
+      const urlParams = new URLSearchParams(window.location.search);
+      
+      // Handle error callback
+      if (urlParams.has('error')) {
+        const error = urlParams.get('error');
+        const errorDescription = urlParams.get('error_description') || 'Authentication failed';
+        console.error('❌ Auth0 error in callback:', error, errorDescription);
         
+        // Clean up URL
+        window.history.replaceState({}, document.title, window.location.pathname);
+        
+        return {
+          success: false,
+          error: errorDescription,
+          errorCode: error
+        };
+      }
+      
+      // Handle success callback
+      if (urlParams.has('code') || urlParams.has('state')) {
         const result = await window.auth0Client.handleRedirectCallback();
         
         // Clean up URL
@@ -77,7 +95,7 @@ window.auth0Bridge = {
       console.error('Auth0 redirect callback error:', error);
       return {
         success: false,
-        error: error.message
+        error: error.message || error.toString()
       };
     }
   },

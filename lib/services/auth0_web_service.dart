@@ -158,16 +158,31 @@ class Auth0WebService {
       final result = await js_util.promiseToFuture(js_util.callMethod(bridge, 'handleRedirectCallback', []));
       final resultMap = result != null ? Map<String, dynamic>.from(js_util.dartify(result) as Map) : null;
       
-      if (resultMap != null && resultMap['success'] == true) {
-        debugPrint('✅ Auth0 callback handled successfully');
-        await checkAuthStatus();
-        return true;
+      if (resultMap != null) {
+        if (resultMap['success'] == true) {
+          debugPrint('✅ Auth0 callback handled successfully');
+          await checkAuthStatus();
+          return true;
+        } else {
+          // Handle error from Auth0
+          final error = resultMap['error']?.toString() ?? 'Unknown error';
+          final errorCode = resultMap['errorCode']?.toString();
+          debugPrint('❌ Auth0 callback error: $error (code: $errorCode)');
+          
+          // Show user-friendly error message
+          if (error.contains('Service not found')) {
+            debugPrint('⚠️ Auth0 API not configured - authentication will work but tokens won\'t be scoped');
+          }
+          
+          return false;
+        }
       } else {
         debugPrint('⚠️ No Auth0 callback to handle');
         return false;
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
       debugPrint('❌ Error handling redirect callback: $e');
+      debugPrint('Stack trace: $stackTrace');
       return false;
     }
   }
