@@ -13,18 +13,15 @@ WORKDIR /app
 COPY pubspec.yaml pubspec.lock ./
 COPY . .
 
-# Find default user (UID 1000 or 1001) or create one, then set ownership
-RUN DEFAULT_USER=$(getent passwd 1000 | cut -d: -f1 2>/dev/null || getent passwd 1001 | cut -d: -f1 2>/dev/null || echo "") && \
-    if [ -z "$DEFAULT_USER" ]; then \
-        groupadd -g 1000 appuser && \
-        useradd -u 1000 -g appuser -m appuser && \
-        DEFAULT_USER="appuser"; \
-    fi && \
-    chown -R $DEFAULT_USER:$DEFAULT_USER /app && \
-    echo "$DEFAULT_USER" > /tmp/build_user
+# Flutter containers run as root by default - create a simple non-root user
+RUN groupadd -g 1000 flutter && \
+    useradd -u 1000 -g flutter -m flutter
 
-# Switch to default user
-USER 1000
+# Set ownership
+RUN chown -R flutter:flutter /app
+
+# Switch to flutter user
+USER flutter
 
 # ---- Stage 2: Serve with Nginx (non-root) ----
 FROM nginxinc/nginx-unprivileged:alpine
