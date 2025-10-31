@@ -22,7 +22,9 @@ RUN EXISTING_USER=$(getent passwd 1000 | cut -d: -f1) && \
 # Switch to existing non-root user (UID 1000)
 USER 1000
 
-# Flutter will use default locations (~/.pub-cache, etc.)
+# Build Flutter web app (runs as non-root user)
+RUN flutter pub get && \
+    flutter build web --release
 
 # ---- Stage 2: Serve with Nginx (non-root) ----
 FROM nginxinc/nginx-unprivileged:alpine
