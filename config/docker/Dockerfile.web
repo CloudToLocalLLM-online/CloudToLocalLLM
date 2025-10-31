@@ -15,6 +15,9 @@ COPY --chown=1000:1000 pubspec.yaml pubspec.lock ./
 # Switch to non-root user before Flutter commands
 USER 1000
 
+# Fix Git safe directory ownership issue (Flutter SDK needs this)
+RUN git config --global --add safe.directory /sdks/flutter
+
 # Get dependencies
 RUN flutter pub get
 
