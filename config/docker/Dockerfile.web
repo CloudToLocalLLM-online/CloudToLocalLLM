@@ -13,15 +13,17 @@ WORKDIR /app
 COPY pubspec.yaml pubspec.lock ./
 COPY . .
 
-# Flutter containers run as root by default - create a simple non-root user
-RUN groupadd -g 1000 flutter && \
-    useradd -u 1000 -g flutter -m flutter
+# Create non-root user following Docker best practices (UID 1000 is standard)
+RUN groupadd -r -g 1000 appuser && \
+    useradd -r -u 1000 -g appuser -m appuser
 
-# Set ownership
-RUN chown -R flutter:flutter /app
+# Set ownership of app directory
+RUN chown -R appuser:appuser /app
 
-# Switch to flutter user
-USER flutter
+# Switch to non-root user
+USER appuser
+
+# Flutter will use default locations (~/.pub-cache, etc.)
 
 # ---- Stage 2: Serve with Nginx (non-root) ----
 FROM nginxinc/nginx-unprivileged:alpine
