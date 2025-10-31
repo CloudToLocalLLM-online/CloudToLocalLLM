@@ -8,27 +8,39 @@
 FROM ghcr.io/cirruslabs/flutter:stable AS builder
 
 # Create non-root user for build
-# Check if user exists first to avoid errors
 RUN id -u builder >/dev/null 2>&1 || \
     (groupadd -g 1000 builder 2>/dev/null || true) && \
     (useradd -u 1000 -g builder -m builder 2>/dev/null || true)
 
-# Set proper permissions - only root needed for this
+# Set proper permissions for Flutter SDK, pub cache, and project directory
+# Flutter SDK needs read access, pub cache needs write access
 RUN mkdir -p /app /home/builder/.pub-cache && \
-    chown -R builder:builder /app /home/builder
+    chown -R builder:builder /app /home/builder && \
+    # Ensure Flutter SDK is readable by builder user
+    (chmod -R a+r /opt/flutter 2>/dev/null || true) && \
+    # Ensure builder can write to Flutter cache directories
+    (find /opt/flutter -type d -exec chmod a+w {} \; 2>/dev/null || true)
 
 # Set pub cache location for non-root user
 ENV PUB_CACHE=/home/builder/.pub-cache
+ENV PUB_HOSTED_URL=https://pub.dartlang.org
+
+# Ensure PATH includes Flutter
+ENV PATH="/opt/flutter/bin:${PATH}"
 
 # Set working directory
 WORKDIR /app
 
 # Copy files as root, then change ownership
 COPY pubspec.yaml pubspec.lock ./
-RUN chown builder:builder pubspec.yaml pubspec.lock
+RUN chown builder:builder pubspec.yaml pubspec.lock && \
+    chmod 644 pubspec.yaml pubspec.lock
 
 # Switch to non-root user
 USER builder
+
+# Verify Flutter is accessible
+RUN flutter --version
 
 # Get dependencies as non-root
 RUN flutter pub get
@@ -38,7 +50,10 @@ USER root
 
 # Copy remaining files and set ownership
 COPY . .
-RUN chown -R builder:builder /app
+RUN chown -R builder:builder /app && \
+    # Ensure all files are readable
+    find /app -type f -exec chmod 644 {} \; && \
+    find /app -type d -exec chmod 755 {} \;
 
 # Switch back to non-root for build
 USER builder
