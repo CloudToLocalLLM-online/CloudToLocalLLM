@@ -9,17 +9,19 @@ FROM ghcr.io/cirruslabs/flutter:stable AS builder
 
 WORKDIR /app
 
-# Copy pubspec files first with proper ownership (use container's default user)
-# Cirrus containers typically have a user with UID 1000
+# Copy files with proper ownership for non-root user (UID 1000 is standard)
 COPY --chown=1000:1000 pubspec.yaml pubspec.lock ./
 
-# Get dependencies (run as default user - no USER switch needed if container handles it)
+# Switch to non-root user before Flutter commands
+USER 1000
+
+# Get dependencies
 RUN flutter pub get
 
 # Copy the rest of the application source code with proper ownership
 COPY --chown=1000:1000 . .
 
-# Build Flutter web app (container default user)
+# Build Flutter web app
 RUN flutter build web --release
 
 # ---- Stage 2: Serve with Nginx (non-root) ----
