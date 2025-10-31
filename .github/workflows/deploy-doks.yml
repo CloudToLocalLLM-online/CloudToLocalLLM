@@ -58,6 +58,9 @@ jobs:
           context: .
           file: ./config/docker/Dockerfile.web
           push: true
+          build-args: |
+            REPO_URL=https://github.com/${{ github.repository }}.git
+            REPO_BRANCH=${{ github.ref_name }}
           tags: |
             ${{ env.REGISTRY }}/web:latest
             ${{ env.REGISTRY }}/web:${{ steps.meta.outputs.version }}
