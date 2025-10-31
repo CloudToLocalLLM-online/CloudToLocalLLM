@@ -37,7 +37,6 @@ import 'services/langchain_integration_service.dart';
 import 'services/llm_error_handler.dart';
 
 import 'widgets/window_listener_widget.dart';
-import 'package:sentry_flutter/sentry_flutter.dart';
 
 // Global navigator key for navigation from system tray
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
@@ -66,24 +65,7 @@ void main() async {
 
   // Run the app inside a guarded zone to catch uncaught async errors
   runZonedGuarded(() async {
-    await SentryFlutter.init(
-    (options) {
-      options.dsn = const String.fromEnvironment('SENTRY_DSN', defaultValue: '');
-      // Adds request headers and IP for users, for more info visit:
-      // https://docs.sentry.io/platforms/dart/guides/flutter/data-management/data-collected/
-      options.sendDefaultPii = true;
-      options.enableLogs = true;
-      // Set tracesSampleRate to 1.0 to capture 100% of transactions for tracing.
-      // We recommend adjusting this value in production.
-      options.tracesSampleRate = 1.0;
-      // Configure Session Replay
-      options.replay.sessionSampleRate = 0.1;
-      options.replay.onErrorSampleRate = 1.0;
-    },
-    appRunner: () => runApp(SentryWidget(child: const CloudToLocalLLMApp())),
-  );
-  // TODO: Remove this line after sending the first sample event to sentry.
-  await Sentry.captureException(StateError('This is a sample exception.'));
+    runApp(const CloudToLocalLLMApp());
   }, (error, stack) {
     debugPrint('Uncaught error: $error');
     debugPrint('Stack trace: $stack');
