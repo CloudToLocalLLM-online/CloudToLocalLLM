@@ -111,7 +111,7 @@ class Auth0WebService {
         final user = await js_util.promiseToFuture(js_util.callMethod(bridge, 'getUser', []));
         final token = await js_util.promiseToFuture(js_util.callMethod(bridge, 'getAccessToken', []));
 
-        _currentUser = user != null ? Map<String, dynamic>.from(js_util.dartify(user)) : null;
+        _currentUser = user != null ? Map<String, dynamic>.from(js_util.dartify(user) as Map) : null;
         _accessToken = token?.toString();
 
         debugPrint('✅ User authenticated: ${_currentUser?['email'] ?? _currentUser?['sub']}');
@@ -140,7 +140,7 @@ class Auth0WebService {
       if (bridge == null) return false;
       
       final result = await js_util.promiseToFuture(js_util.callMethod(bridge, 'handleRedirectCallback', []));
-      final resultMap = result != null ? Map<String, dynamic>.from(js_util.dartify(result)) : null;
+      final resultMap = result != null ? Map<String, dynamic>.from(js_util.dartify(result) as Map) : null;
       
       if (resultMap != null && resultMap['success'] == true) {
         debugPrint('✅ Auth0 callback handled successfully');

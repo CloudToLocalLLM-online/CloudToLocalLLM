@@ -44,8 +44,8 @@ final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Google Cloud Identity Platform initialization
-  // GCIP is initialized automatically when the auth service is created
+  // Auth0 initialization
+  // Auth0 is initialized automatically when the auth service is created
   // Consolidated CI/CD pipeline deployment test
 
   // Configure URL strategy for web to handle direct navigation

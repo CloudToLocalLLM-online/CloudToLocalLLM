@@ -1,76 +1,148 @@
-// Re-export GCIP Auth Service as AuthService
-export 'gcip_auth_service.dart' show GCIPAuthService;
-
-// Create alias for backwards compatibility
 import 'package:flutter/foundation.dart';
-import 'gcip_auth_service.dart';
 import 'auth0_web_service.dart';
+import '../models/user_model.dart';
 
-class AuthService extends GCIPAuthService {
-  AuthService() : super() {
-    // Initialize Auth0 for web platform
+/// Auth0-based Authentication Service
+/// Provides authentication for web using Auth0
+class AuthService extends ChangeNotifier {
+  Auth0WebService? _auth0Service;
+  final ValueNotifier<bool> _isAuthenticated = ValueNotifier<bool>(false);
+  final ValueNotifier<bool> _isLoading = ValueNotifier<bool>(false);
+  UserModel? _currentUser;
+
+  AuthService() {
     if (kIsWeb) {
       _initAuth0();
     }
   }
 
-  Auth0WebService? _auth0Service;
-
-  void _initAuth0() async {
+  /// Initialize Auth0 for web platform
+  Future<void> _initAuth0() async {
     try {
       _auth0Service = Auth0WebService();
       await _auth0Service!.initialize();
       
-      // Listen to Auth0 auth state and sync with GCIP service
+      // Listen to Auth0 auth state changes
       _auth0Service!.authStateChanges.listen((isAuth) {
-        if (isAuth) {
-          // Notify GCIP service that user is authenticated
-          isAuthenticated.value = true;
-          user.value = _auth0Service!.currentUser;
-          notifyListeners();
+        _isAuthenticated.value = isAuth;
+        if (isAuth && _auth0Service!.currentUser != null) {
+          _currentUser = UserModel.fromAuth0Profile(_auth0Service!.currentUser!);
         } else {
-          isAuthenticated.value = false;
-          user.value = null;
-          notifyListeners();
+          _currentUser = null;
         }
+        notifyListeners();
       });
 
       // Check initial auth status
       await _auth0Service!.checkAuthStatus();
+      if (_auth0Service!.isAuthenticated && _auth0Service!.currentUser != null) {
+        _isAuthenticated.value = true;
+        _currentUser = UserModel.fromAuth0Profile(_auth0Service!.currentUser!);
+        notifyListeners();
+      }
     } catch (e) {
       debugPrint('❌ Failed to initialize Auth0: $e');
     }
   }
 
-  @override
+  // Getters
+  ValueNotifier<bool> get isAuthenticated => _isAuthenticated;
+  ValueNotifier<bool> get isLoading => _isLoading;
+  UserModel? get currentUser => _currentUser;
+  
+  // Platform detection
+  bool get isWeb => kIsWeb;
+  bool get isMobile => !kIsWeb;
+  bool get isDesktop => !kIsWeb;
+
+  /// Login with Auth0
   Future<void> login({String? tenantId}) async {
-    if (kIsWeb && _auth0Service != null) {
-      // Use Auth0 for web
+    if (!kIsWeb) {
+      throw UnsupportedError('Auth0 authentication is only available on web. Mobile/desktop authentication not implemented.');
+    }
+
+    if (_auth0Service == null) {
+      await _initAuth0();
+    }
+
+    _isLoading.value = true;
+    notifyListeners();
+
+    try {
       await _auth0Service!.login();
-    } else {
-      // Use GCIP for mobile/desktop
-      await super.login(tenantId: tenantId);
+      // Note: login() will redirect, so code after this won't execute immediately
+    } catch (e) {
+      _isLoading.value = false;
+      notifyListeners();
+      rethrow;
     }
   }
 
-  @override
+  /// Logout from Auth0
   Future<void> logout() async {
-    if (kIsWeb && _auth0Service != null) {
-      // Use Auth0 for web
+    if (!kIsWeb || _auth0Service == null) {
+      _isAuthenticated.value = false;
+      _currentUser = null;
+      notifyListeners();
+      return;
+    }
+
+    _isLoading.value = true;
+    notifyListeners();
+
+    try {
       await _auth0Service!.logout();
-    } else {
-      // Use GCIP for mobile/desktop
-      await super.logout();
+      // Note: logout() will redirect, so code after this won't execute immediately
+    } catch (e) {
+      _isLoading.value = false;
+      notifyListeners();
+      rethrow;
     }
   }
 
-  /// Get access token (Auth0 for web, GCIP for mobile/desktop)
-  @override
-  Future<String?> getIdToken() async {
-    if (kIsWeb && _auth0Service != null) {
-      return _auth0Service!.accessToken;
-    } else {
-      return super.getIdToken();
+  /// Get access token (Auth0 JWT)
+  Future<String?> getIdToken({bool forceRefresh = false}) async {
+    if (!kIsWeb || _auth0Service == null) {
+      return null;
     }
+    return _auth0Service!.accessToken;
+  }
+
+  /// Legacy compatibility method
+  String? getAccessToken() {
+    return _auth0Service?.accessToken;
+  }
+
+  /// Get validated access token (alias for getIdToken)
+  Future<String?> getValidatedAccessToken() async {
+    return await getIdToken(forceRefresh: true);
+  }
+
+  /// Handle callback after authentication redirect
+  Future<bool> handleCallback({String? callbackUrl}) async {
+    if (!kIsWeb || _auth0Service == null) {
+      return false;
+    }
+    return await _auth0Service!.handleRedirectCallback();
+  }
+
+  /// Update user display name (not supported with Auth0 - managed in Auth0 dashboard)
+  Future<void> updateDisplayName(String displayName) async {
+    // Auth0 user profiles are managed via Auth0 dashboard or Management API
+    // For now, we'll just log a warning
+    debugPrint('⚠️ updateDisplayName called but Auth0 profiles are managed externally. Use Auth0 Management API to update user profiles.');
+    // Update local user model if available
+    if (_currentUser != null) {
+      _currentUser = _currentUser!.copyWith(name: displayName);
+      notifyListeners();
+    }
+  }
+
+  @override
+  void dispose() {
+    _isAuthenticated.dispose();
+    _isLoading.dispose();
+    _auth0Service?.dispose();
+    super.dispose();
   }
 }

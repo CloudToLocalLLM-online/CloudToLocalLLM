@@ -16,39 +16,10 @@ class AppConfig {
   static const String githubReleasesUrl =
       'https://github.com/imrightguy/CloudToLocalLLM/releases/latest';
 
-  // Google Cloud Identity Platform Configuration
-  static const String gcipProjectId = 'cloudtolocalllm-468303';
-  static const String gcipApiKey = 'AIzaSyBvOkBwN6Ca6FNaOeMaMfeM1ZuPiKlBqMY';
-  static const String gcipAuthDomain = 'cloudtolocalllm-468303.firebaseapp.com';
-  static const String gcipTenantId = 'cloudtolocalllm-main'; // Main tenant
-
-  // Google Sign-In Configuration
-  // Platform-specific OAuth Client IDs for GCIP integration
-  static const String googleClientIdWeb = '923995245673-hn9fcp61bgu7dkrjft0u6vlt3ohjnrth.apps.googleusercontent.com';
-  static const String googleClientIdDesktop = '923995245673-p04roufr9v9sc5sd92sk86rvfusul803.apps.googleusercontent.com';
-
-  // Dynamic client ID selection based on platform
-  static String get googleClientId {
-    if (kIsWeb) {
-      return googleClientIdWeb;
-    } else {
-      return googleClientIdDesktop;
-    }
-  }
-
-  // GCIP Auth Scopes
-  static const List<String> gcipScopes = [
-    'email',
-    'profile',
-    'openid',
-  ];
-
-  // Multi-tenant Configuration
-  static const Map<String, String> tenantConfigs = {
-    'default': 'cloudtolocalllm-main',
-    'enterprise': 'cloudtolocalllm-enterprise',
-    'demo': 'cloudtolocalllm-demo',
-  };
+  // Auth0 Configuration (replaces GCIP)
+  static const String auth0Domain = 'dev-v2f2p008x3dr74ww.us.auth0.com';
+  static const String auth0Audience = 'https://api.cloudtolocalllm.online';
+  static const String auth0ClientId = 'FuXPnevXpp311CdYHGsbNZe9t3D8Ts7A';
 
   // Legacy Auth0 Configuration (for migration reference)
   // static const String auth0Domain = 'dev-v2f2p008x3dr74ww.us.auth0.com';

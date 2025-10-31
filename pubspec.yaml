@@ -14,12 +14,10 @@ dependencies:
 
   # UI and Navigation
   cupertino_icons: ^1.0.8
-  go_router: ^16.0.0
+  go_router: ^16.3.0
 
-  # Authentication - Google Cloud Identity Platform (HTTP-based)
-  google_sign_in: ^6.1.5
+  # Authentication - Auth0
   jwt_decoder: ^2.0.1
-  js: ^0.6.7
 
   # Error tracking
   url_launcher: ^6.3.1
@@ -30,7 +28,6 @@ dependencies:
 
   # Streaming and WebSocket support
   web_socket_channel: ^3.0.3
-  stream_channel: ^2.1.2
 
   # Enhanced HTTP handling for streaming
   dio: ^5.8.0
@@ -38,8 +35,8 @@ dependencies:
   # Real-time event handling
   rxdart: ^0.28.0
 
-  # Connection monitoring
-  connectivity_plus: ^6.1.4
+  # Connection monitoring (updated to latest)
+  connectivity_plus: ^7.0.0
 
   # Web URL strategy
   flutter_web_plugins:
@@ -48,7 +45,7 @@ dependencies:
 
 
   # App Information
-  package_info_plus: ^8.3.0
+  package_info_plus: ^9.0.0
 
   # File System
   path: ^1.9.1
@@ -66,21 +63,15 @@ dependencies:
   flutter_secure_storage_x: ^11.0.0
 
   # System Integration - Native Flutter system tray integration
-  tray_manager: ^0.5.0
-  shelf: ^1.4.2
-  crypto: ^3.0.6
-
-  # Cryptography for end-to-end encryption
-  cryptography: ^2.7.0
-  pointycastle: ^4.0.0
+  tray_manager: ^0.5.1
 
   # UUID generation
   uuid: ^4.5.1
 
   # LangChain Integration
-  langchain: ^0.7.8
-  langchain_ollama: ^0.3.3
-  langchain_community: ^0.3.4
+  langchain: ^0.8.0+1
+  langchain_ollama: ^0.4.0+1
+  langchain_community: ^0.4.0+1
 
 dev_dependencies:
   flutter_lints: ^6.0.0
