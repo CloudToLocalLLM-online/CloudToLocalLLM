@@ -63,7 +63,9 @@
             audience: 'https://app.cloudtolocalllm.online'
           },
           // Enable social connections (Google, GitHub, etc.)
-          cacheLocation: 'localstorage'
+          cacheLocation: 'localstorage',
+          // Use a unique cache key to force refresh on audience change
+          cacheKey: 'auth0-cache-v2'
         });
         console.log('✅ Auth0 initialized');
         
