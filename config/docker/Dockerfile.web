@@ -5,41 +5,19 @@
 # ============================================================================
 
 # ---- Stage 1: Build Flutter Web App ----
+# Note: Build stage runs as root (standard for build containers)
+# Security is enforced in the final runtime stage
 FROM ghcr.io/cirruslabs/flutter:stable AS builder
-
-# Create non-root user for build
-RUN groupadd -r flutter -g 1000 && useradd -r -g flutter -u 1000 flutter
-
-# Set proper permissions for Flutter SDK and directories
-RUN chown -R flutter:flutter /opt/flutter && \
-    mkdir -p /home/flutter/.pub-cache && \
-    chown -R flutter:flutter /home/flutter && \
-    mkdir -p /app && \
-    chown -R flutter:flutter /app
-
-# Set Flutter pub cache location for non-root user
-ENV PUB_CACHE=/home/flutter/.pub-cache
-ENV PATH=$PATH:/home/flutter/.pub-cache/bin
 
 # Set working directory
 WORKDIR /app
 
-# Copy files as root first (for proper permissions)
+# Copy Flutter project files
 COPY pubspec.yaml pubspec.lock ./
-
-# Switch to non-root user for pub get
-USER flutter
 RUN flutter pub get
 
-# Switch back to root to copy remaining files
-USER root
+# Copy the rest of the application
 COPY . .
-
-# Change ownership of all copied files
-RUN chown -R flutter:flutter /app
-
-# Switch to non-root user for build
-USER flutter
 
 # Build Flutter web app for production
 RUN flutter build web --release
