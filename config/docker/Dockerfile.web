@@ -46,8 +46,10 @@ RUN chown -R flutter:flutter /app
 # Switch to non-root user (same pattern as API container)
 USER flutter
 
-# Build Flutter web app (runs as flutter user - non-root)
-RUN flutter pub get && \
+# Verify we're running as non-root and build Flutter web app
+RUN id && \
+    whoami && \
+    flutter pub get && \
     flutter build web --release
 
 # ---- Stage 2: Serve with Nginx (non-root) ----
