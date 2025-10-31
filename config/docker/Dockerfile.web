@@ -21,7 +21,10 @@ RUN apk add --no-cache \
 
 # Create non-root user (same pattern as API container - UID 1001)
 RUN addgroup -g 1001 -S flutter && \
-    adduser -S flutter -u 1001 -G flutter
+    adduser -S flutter -u 1001 -G flutter && \
+    echo "Created user: flutter (UID 1001)" && \
+    id flutter && \
+    getent passwd 1001
 
 # Install Flutter as root (before switching users)
 ENV FLUTTER_HOME=/opt/flutter
@@ -42,12 +45,19 @@ WORKDIR /app
 COPY --chown=flutter:flutter pubspec.yaml pubspec.lock ./
 COPY --chown=flutter:flutter . .
 
-# Switch to non-root user (same pattern as API container)
+# Verify user exists and switch to non-root user
+RUN echo "Before USER switch:" && \
+    id && \
+    whoami
+
 USER flutter
 
 # Verify we're running as non-root and build Flutter web app
-RUN id && \
+RUN echo "After USER switch:" && \
+    id && \
     whoami && \
+    echo "Current UID: $(id -u)" && \
+    echo "Current user: $(whoami)" && \
     flutter pub get && \
     flutter build web --release
 
