@@ -7,13 +7,29 @@
 # ---- Stage 1: Build Flutter Web App ----
 FROM ghcr.io/cirruslabs/flutter:stable AS builder
 
+# Use container's default user or create non-root user
+# Most Flutter containers run as root, so we'll use whatever the container provides
+# But ensure we can run as non-root - check if there's a default non-root user
+RUN id -u appuser >/dev/null 2>&1 || \
+    (groupadd -g 1000 appuser 2>/dev/null || true) && \
+    (useradd -u 1000 -g appuser -m appuser 2>/dev/null || true) || true
+
 WORKDIR /app
 
+# Copy files
 COPY pubspec.yaml pubspec.lock ./
-RUN flutter pub get
-
 COPY . .
-RUN flutter build web --release
+
+# Set ownership (necessary root operation)
+RUN chown -R appuser:appuser /app 2>/dev/null || \
+    chown -R 1000:1000 /app 2>/dev/null || true
+
+# Switch to non-root user
+USER appuser
+
+# Run Flutter commands as non-root
+RUN flutter pub get && \
+    flutter build web --release
 
 # ---- Stage 2: Serve with Nginx (non-root) ----
 FROM nginxinc/nginx-unprivileged:alpine
