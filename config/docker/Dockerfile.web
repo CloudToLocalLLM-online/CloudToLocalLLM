@@ -16,8 +16,11 @@ RUN chown -R 1000:1000 /sdks/flutter && \
 # Fix Git safe directory (Flutter SDK uses Git internally) - done as root for global config
 RUN git config --global --add safe.directory /sdks/flutter
 
-# Create app directory and switch to non-root user
+# Create app directory and fix ownership (must be done as root)
 WORKDIR /app
+RUN chown -R 1000:1000 /app
+
+# Switch to non-root user
 USER 1000
 
 # Clone repository as non-root user
