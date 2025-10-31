@@ -136,15 +136,25 @@ jobs:
       - name: Deploy API Backend
         run: |
           kubectl apply -f k8s/api-backend-deployment.yaml
+          # Wait a moment for deployment to be created
+          sleep 2
           kubectl set image deployment/api-backend \
             api-backend=${{ env.REGISTRY }}/api:${{ needs.build-and-push.outputs.image_tag }} \
+            --namespace=${{ env.NAMESPACE }} || \
+          kubectl set image deployment/api-backend \
+            api-backend=${{ env.REGISTRY }}/api:latest \
             --namespace=${{ env.NAMESPACE }}
 
       - name: Deploy Web Application
         run: |
           kubectl apply -f k8s/web-deployment.yaml
+          # Wait a moment for deployment to be created
+          sleep 2
           kubectl set image deployment/web \
             web=${{ env.REGISTRY }}/web:${{ needs.build-and-push.outputs.image_tag }} \
+            --namespace=${{ env.NAMESPACE }} || \
+          kubectl set image deployment/web \
+            web=${{ env.REGISTRY }}/web:latest \
             --namespace=${{ env.NAMESPACE }}
 
       - name: Deploy Ingress
@@ -152,10 +162,50 @@ jobs:
           kubectl apply -f k8s/cert-manager.yaml
           kubectl apply -f k8s/ingress-nginx.yaml
 
+      - name: Check pod status before rollout
+        run: |
+          echo "=== Checking pod status ==="
+          kubectl get pods -n ${{ env.NAMESPACE }} -l app=api-backend
+          kubectl get pods -n ${{ env.NAMESPACE }} -l app=web
+          
+          echo "=== Describing failing pods ==="
+          for pod in $(kubectl get pods -n ${{ env.NAMESPACE }} -l app=api-backend -o jsonpath='{.items[*].metadata.name}'); do
+            status=$(kubectl get pod $pod -n ${{ env.NAMESPACE }} -o jsonpath='{.status.phase}')
+            if [ "$status" != "Running" ]; then
+              echo "--- Pod $pod status: $status ---"
+              kubectl describe pod $pod -n ${{ env.NAMESPACE }} || true
+              echo "--- Logs for $pod ---"
+              kubectl logs $pod -n ${{ env.NAMESPACE }} --tail=50 || true
+            fi
+          done
+          
+          for pod in $(kubectl get pods -n ${{ env.NAMESPACE }} -l app=web -o jsonpath='{.items[*].metadata.name}'); do
+            status=$(kubectl get pod $pod -n ${{ env.NAMESPACE }} -o jsonpath='{.status.phase}')
+            if [ "$status" != "Running" ]; then
+              echo "--- Pod $pod status: $status ---"
+              kubectl describe pod $pod -n ${{ env.NAMESPACE }} || true
+              echo "--- Logs for $pod ---"
+              kubectl logs $pod -n ${{ env.NAMESPACE }} --tail=50 || true
+            fi
+          done
+
       - name: Wait for deployments
         run: |
-          kubectl rollout status deployment/api-backend --namespace=${{ env.NAMESPACE }} --timeout=300s
-          kubectl rollout status deployment/web --namespace=${{ env.NAMESPACE }} --timeout=300s
+          kubectl rollout status deployment/api-backend --namespace=${{ env.NAMESPACE }} --timeout=300s || true
+          kubectl rollout status deployment/web --namespace=${{ env.NAMESPACE }} --timeout=300s || true
+          
+          # If rollout failed, show detailed status
+          if ! kubectl rollout status deployment/api-backend --namespace=${{ env.NAMESPACE }} --timeout=0 2>/dev/null; then
+            echo "API backend rollout failed, checking pods..."
+            kubectl get pods -n ${{ env.NAMESPACE }} -l app=api-backend
+            kubectl describe deployment api-backend -n ${{ env.NAMESPACE }} || true
+          fi
+          
+          if ! kubectl rollout status deployment/web --namespace=${{ env.NAMESPACE }} --timeout=0 2>/dev/null; then
+            echo "Web deployment rollout failed, checking pods..."
+            kubectl get pods -n ${{ env.NAMESPACE }} -l app=web
+            kubectl describe deployment web -n ${{ env.NAMESPACE }} || true
+          fi
 
       - name: Get deployment status
         run: |
