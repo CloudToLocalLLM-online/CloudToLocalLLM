@@ -42,8 +42,11 @@ USER nginx
 # Set pub cache environment variable
 ENV PUB_CACHE=/home/.pub-cache
 
-# Configure and build Flutter (runs as UID 101)
-RUN flutter doctor && \
+# Configure and build Flutter (runs as nginx user)
+RUN echo "Current user: $(whoami)" && \
+    echo "Current UID: $(id -u)" && \
+    echo "Current GID: $(id -g)" && \
+    flutter doctor && \
     flutter config --enable-web
 
 WORKDIR /app
@@ -52,8 +55,9 @@ WORKDIR /app
 COPY --chown=101:101 pubspec.yaml pubspec.lock ./
 COPY --chown=101:101 . .
 
-# Build Flutter web app (runs as UID 101)
-RUN flutter pub get && \
+# Build Flutter web app (runs as nginx user)
+RUN echo "Building as user: $(whoami) (UID: $(id -u))" && \
+    flutter pub get && \
     flutter build web --release
 
 # ---- Stage 2: Serve with Nginx (non-root) ----
