@@ -68,7 +68,27 @@
         
         // Check if redirected back from Auth0 (success or error)
         const urlParams = new URLSearchParams(window.location.search);
-        if (urlParams.has('code') || urlParams.has('state')) {
+        
+        // CRITICAL: Check for errors FIRST before trying to handle callback
+        if (urlParams.has('error')) {
+          // Handle Auth0 error callback - don't call handleRedirectCallback on errors
+          const error = urlParams.get('error');
+          const errorDescription = urlParams.get('error_description') || 'Authentication failed';
+          console.error('❌ Auth0 authentication error:', error, errorDescription);
+          
+          // Clean up URL immediately
+          window.history.replaceState({}, document.title, window.location.pathname);
+          
+          // Notify Flutter app of error
+          if (window.flutterAuthCallback) {
+            window.flutterAuthCallback({ 
+              success: false, 
+              error: errorDescription,
+              errorCode: error
+            });
+          }
+        } else if (urlParams.has('code') || urlParams.has('state')) {
+          // Only handle callback if there's no error
           console.log('🔄 Handling Auth0 redirect callback...');
           try {
             await window.auth0Client.handleRedirectCallback();
@@ -84,22 +104,6 @@
             if (window.flutterAuthCallback) {
               window.flutterAuthCallback({ success: false, error: error.message });
             }
-          }
-        } else if (urlParams.has('error')) {
-          // Handle Auth0 error callback
-          const error = urlParams.get('error');
-          const errorDescription = urlParams.get('error_description') || 'Authentication failed';
-          console.error('❌ Auth0 authentication error:', error, errorDescription);
-          
-          // Clean up URL
-          window.history.replaceState({}, document.title, window.location.pathname);
-          
-          // Notify Flutter app of error
-          if (window.flutterAuthCallback) {
-            window.flutterAuthCallback({ 
-              success: false, 
-              error: errorDescription 
-            });
           }
         }
       }
