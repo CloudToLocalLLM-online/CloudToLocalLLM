@@ -8,11 +8,7 @@ import winston from 'winston';
 import dotenv from 'dotenv';
 import { StreamingProxyManager } from './streaming-proxy-manager.js';
 import * as Sentry from '@sentry/node';
-import supertokens from 'supertokens-node';
-import Session from 'supertokens-node/recipe/session/index.js';
-import ThirdPartyEmailPassword from 'supertokens-node/recipe/thirdpartyemailpassword/index.js';
-import { Google, Github, Apple } from 'supertokens-node/recipe/thirdpartyemailpassword/index.js';
-import { middleware, errorHandler } from 'supertokens-node/framework/express/index.js';
+import { auth } from 'express-oauth2-jwt-bearer';
 
 import adminRoutes from './routes/admin.js';
 // WebSocket tunnel system
@@ -35,46 +31,11 @@ import bridgePollingRoutes, {
 
 dotenv.config();
 
-// Initialize SuperTokens
-supertokens.init({
-  framework: "express",
-  supertokens: {
-    connectionURI: process.env.SUPERTOKENS_CONNECTION_URI || "http://supertokens:3567",
-    apiKey: process.env.SUPERTOKENS_API_KEY,
-  },
-  appInfo: {
-    appName: "CloudToLocalLLM",
-    apiDomain: process.env.DOMAIN ? `https://api.${process.env.DOMAIN}` : "https://api.cloudtolocalllm.online",
-    websiteDomain: process.env.DOMAIN ? `https://app.${process.env.DOMAIN}` : "https://app.cloudtolocalllm.online",
-    apiBasePath: "/auth",
-    websiteBasePath: "/auth"
-  },
-  recipeList: [
-    ThirdPartyEmailPassword.init({
-      providers: [
-        // Google OAuth
-        Google({
-          clientId: process.env.GOOGLE_CLIENT_ID || "",
-          clientSecret: process.env.GOOGLE_CLIENT_SECRET || "",
-        }),
-        // GitHub OAuth
-        Github({
-          clientId: process.env.GITHUB_CLIENT_ID || "",
-          clientSecret: process.env.GITHUB_CLIENT_SECRET || "",
-        }),
-        // Apple OAuth (optional)
-        ...(process.env.APPLE_CLIENT_ID ? [Apple({
-          clientId: process.env.APPLE_CLIENT_ID,
-          clientSecret: {
-            keyId: process.env.APPLE_KEY_ID || "",
-            privateKey: process.env.APPLE_PRIVATE_KEY || "",
-            teamId: process.env.APPLE_TEAM_ID || "",
-          },
-        })] : []),
-      ],
-    }),
-    Session.init()
-  ]
+// Auth0 JWT validation middleware
+const checkJwt = auth({
+  audience: process.env.AUTH0_AUDIENCE || 'https://api.cloudtolocalllm.online',
+  issuerBaseURL: process.env.AUTH0_DOMAIN ? `https://${process.env.AUTH0_DOMAIN}` : 'https://cloudtolocalllm.us.auth0.com',
+  tokenSigningAlg: 'RS256'
 });
 
 // Initialize logger
@@ -158,11 +119,8 @@ app.use(cors({
   ],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'st-auth-mode', 'rid'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
 }));
-
-// SuperTokens middleware (must be before routes)
-app.use(middleware());
 
 // Rate limiting with different limits for bridge operations
 const createConditionalRateLimiter = () => {
@@ -755,9 +713,6 @@ app.get('/api/proxy/status', authenticateToken, async(req, res) => {
 // Ollama proxy endpoints removed - using HTTP polling tunnel system instead
 
 // The error handler must be registered before any other error middleware and after all controllers
-
-// SuperTokens error handler (must be after all routes)
-app.use(errorHandler());
 
 // Error handling middleware
 app.use((error, req, res, _next) => {

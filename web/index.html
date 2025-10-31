@@ -48,34 +48,29 @@
   <!-- Runtime app config -->
   <script src="config/config.js"></script>
 
-  <!-- SuperTokens Web SDK -->
-  <script src="https://cdn.jsdelivr.net/npm/supertokens-web-js@0.10.0/bundle/supertokens.min.js"></script>
+  <!-- Auth0 SPA SDK -->
+  <script src="https://cdn.auth0.com/js/auth0-spa-js/2.1/auth0-spa-js.production.js"></script>
   <script>
-    // Initialize SuperTokens when config is loaded
-    window.addEventListener('DOMContentLoaded', function() {
+    // Initialize Auth0 when config is loaded
+    window.addEventListener('DOMContentLoaded', async function() {
       if (window.cloudToLocalLLMConfig) {
-        supertokens.init({
-          appInfo: {
-            appName: "CloudToLocalLLM",
-            apiDomain: window.cloudToLocalLLMConfig.apiEndpoint,
-            websiteDomain: window.cloudToLocalLLMConfig.appDomain,
-            apiBasePath: "/auth",
-            websiteBasePath: "/auth"
+        window.auth0Client = await auth0.createAuth0Client({
+          domain: 'cloudtolocalllm.us.auth0.com',
+          clientId: 'YOUR_AUTH0_CLIENT_ID', // Will be configured
+          authorizationParams: {
+            redirect_uri: window.location.origin,
+            audience: 'https://api.cloudtolocalllm.online'
           },
-          recipeList: [
-            supertokensThirdPartyEmailPassword.init({
-              signInAndUpFeature: {
-                providers: [
-                  supertokensThirdPartyEmailPassword.Google.init(),
-                  supertokensThirdPartyEmailPassword.Github.init(),
-                  // Add more providers as needed
-                ]
-              }
-            }),
-            supertokensSession.init()
-          ]
+          // Enable social connections (Google, GitHub, etc.)
+          cacheLocation: 'localstorage'
         });
-        console.log('SuperTokens initialized');
+        console.log('Auth0 initialized');
+        
+        // Check if redirected back from Auth0
+        if (window.location.search.includes('code=')) {
+          await window.auth0Client.handleRedirectCallback();
+          window.history.replaceState({}, document.title, window.location.pathname);
+        }
       }
     });
   </script>
