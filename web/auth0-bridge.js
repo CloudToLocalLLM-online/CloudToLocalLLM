@@ -28,18 +28,23 @@ window.auth0Bridge = {
   // Login with Google
   loginWithGoogle: async function() {
     if (!window.auth0Client) {
-      throw new Error('Auth0 client not initialized');
+      const error = new Error('Auth0 client not initialized');
+      console.error('❌ Auth0 login error:', error);
+      throw error;
     }
     
     try {
+      console.log('🔐 Starting Auth0 Google login redirect...');
       await window.auth0Client.loginWithRedirect({
         authorizationParams: {
           connection: 'google-oauth2',
           redirect_uri: window.location.origin
         }
       });
+      // Note: This will redirect, so code after this won't execute
     } catch (error) {
-      console.error('Auth0 Google login error:', error);
+      console.error('❌ Auth0 Google login error:', error);
+      // Don't throw - let the error propagate but log it
       throw error;
     }
   },

@@ -92,6 +92,47 @@
   <!-- Auth0 Bridge for Flutter -->
   <script src="auth0-bridge.js"></script>
 
+  <!-- Global error handler to prevent page reload on errors -->
+  <script>
+    // Global error handler to catch unhandled errors and prevent page reload
+    window.addEventListener('error', function(event) {
+      console.error('❌ Global error caught:', {
+        message: event.message,
+        filename: event.filename,
+        lineno: event.lineno,
+        colno: event.colno,
+        error: event.error
+      });
+      // Prevent default error handling that might reload the page
+      event.preventDefault();
+      return true;
+    });
+
+    // Handle unhandled promise rejections
+    window.addEventListener('unhandledrejection', function(event) {
+      console.error('❌ Unhandled promise rejection:', {
+        reason: event.reason,
+        promise: event.promise
+      });
+      // Prevent default error handling
+      event.preventDefault();
+    });
+
+    // Prevent Auth0 errors from causing reloads
+    window.addEventListener('DOMContentLoaded', function() {
+      // Override console.error to capture errors but not reload
+      const originalConsoleError = console.error;
+      console.error = function(...args) {
+        originalConsoleError.apply(console, args);
+        // Check if it's an Auth0 error and handle gracefully
+        const errorMessage = args.join(' ');
+        if (errorMessage.includes('Auth0') && errorMessage.includes('error')) {
+          console.warn('⚠️ Auth0 error detected - will not reload page');
+        }
+      };
+    });
+  </script>
+
   <!-- Force service worker update -->
   <script>
     // Force service worker update on version change
