@@ -48,21 +48,29 @@
   <!-- Runtime app config -->
   <script src="config/config.js"></script>
 
-  <!-- TODO: Replace Google Identity with SuperTokens -->
-  <!-- Google Identity Services (GIS) for Web Sign-In - TO BE REMOVED -->
-  <meta name="google-signin-client_id" content="923995245673-hn9fcp61bgu7dkrjft0u6vlt3ohjnrth.apps.googleusercontent.com">
-  <meta name="gcip-api-key" content="${GCIP_API_KEY}">
-
-  <!-- Google Identity Services Library Load Handler -->
+  <!-- SuperTokens Web SDK -->
+  <script src="https://cdn.jsdelivr.net/npm/supertokens-web-js@0.10.0/bundle/supertokens.min.js"></script>
   <script>
-    function onGoogleLibraryLoad() {
-      console.log('Google Identity Services library loaded successfully');
-      // Library is ready for use
-      window.gisReady = true;
-    }
+    // Initialize SuperTokens when config is loaded
+    window.addEventListener('DOMContentLoaded', function() {
+      if (window.cloudToLocalLLMConfig) {
+        supertokens.init({
+          appInfo: {
+            appName: "CloudToLocalLLM",
+            apiDomain: window.cloudToLocalLLMConfig.apiEndpoint,
+            websiteDomain: window.cloudToLocalLLMConfig.appDomain,
+            apiBasePath: "/auth",
+            websiteBasePath: "/auth"
+          },
+          recipeList: [
+            supertokensEmailPassword.init(),
+            supertokensSession.init()
+          ]
+        });
+        console.log('SuperTokens initialized');
+      }
+    });
   </script>
-
-  <script src="https://accounts.google.com/gsi/client" onload="onGoogleLibraryLoad()" async defer></script>
 
   <!-- Force service worker update -->
   <script>
