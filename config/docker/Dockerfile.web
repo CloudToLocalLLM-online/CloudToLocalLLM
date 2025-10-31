@@ -39,14 +39,13 @@ RUN flutter config --enable-web
 
 WORKDIR /app
 
-# Copy pubspec files first for better caching
-COPY --chown=nginx:nginx pubspec.yaml pubspec.lock ./
+# Clone the application repository
+ARG REPO_URL=https://github.com/imrightguy/CloudToLocalLLM.git
+ARG REPO_BRANCH=main
+RUN git clone -b ${REPO_BRANCH} ${REPO_URL} .
 
 # Get dependencies
 RUN flutter pub get
-
-# Copy rest of application files
-COPY --chown=nginx:nginx . .
 
 # Build Flutter web app
 RUN flutter build web --release
