@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Test Auth0 Login</title>
+  <script src="https://cdn.auth0.com/js/auth0-spa-js/2.1/auth0-spa-js.production.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 600px;
+      margin: 50px auto;
+      padding: 20px;
+    }
+    button {
+      background: #635BFF;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      font-size: 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      margin: 10px 5px;
+    }
+    button:hover {
+      background: #5048E5;
+    }
+    .logout-btn {
+      background: #DC3545;
+    }
+    .logout-btn:hover {
+      background: #C82333;
+    }
+    #status {
+      padding: 15px;
+      margin: 20px 0;
+      border-radius: 6px;
+      background: #f8f9fa;
+    }
+    .success {
+      background: #d4edda !important;
+      color: #155724;
+    }
+    pre {
+      background: #f8f9fa;
+      padding: 15px;
+      border-radius: 6px;
+      overflow-x: auto;
+    }
+  </style>
+</head>
+<body>
+  <h1>🔐 Auth0 Login Test</h1>
+  
+  <div id="status">Loading...</div>
+  
+  <div id="auth-controls">
+    <button onclick="login()">Login</button>
+    <button onclick="loginWithGoogle()">Login with Google</button>
+    <button onclick="logout()" class="logout-btn">Logout</button>
+  </div>
+  
+  <h2>User Info</h2>
+  <pre id="user-info">Not logged in</pre>
+  
+  <h2>Access Token (for API calls)</h2>
+  <pre id="token-info">Not logged in</pre>
+
+  <script>
+    let auth0Client;
+
+    async function init() {
+      try {
+        auth0Client = await auth0.createAuth0Client({
+          domain: 'dev-v2f2p008x3dr74ww.us.auth0.com',
+          clientId: 'FuXPnevXpp311CdYHGsbNZe9t3D8Ts7A',
+          authorizationParams: {
+            redirect_uri: window.location.origin + window.location.pathname,
+            audience: 'https://api.cloudtolocalllm.online'
+          },
+          cacheLocation: 'localstorage'
+        });
+
+        // Handle redirect callback
+        if (window.location.search.includes('code=') || window.location.search.includes('state=')) {
+          document.getElementById('status').innerHTML = 'Processing login...';
+          await auth0Client.handleRedirectCallback();
+          window.history.replaceState({}, document.title, window.location.pathname);
+        }
+
+        await updateUI();
+      } catch (error) {
+        console.error('Auth0 Error:', error);
+        document.getElementById('status').innerHTML = `❌ Error: ${error.message}`;
+      }
+    }
+
+    async function updateUI() {
+      const isAuthenticated = await auth0Client.isAuthenticated();
+      
+      if (isAuthenticated) {
+        const user = await auth0Client.getUser();
+        const token = await auth0Client.getTokenSilently();
+        
+        document.getElementById('status').innerHTML = '✅ Logged in successfully!';
+        document.getElementById('status').className = 'success';
+        
+        document.getElementById('user-info').textContent = JSON.stringify(user, null, 2);
+        document.getElementById('token-info').textContent = token;
+      } else {
+        document.getElementById('status').innerHTML = '🔓 Not logged in';
+        document.getElementById('user-info').textContent = 'Not logged in';
+        document.getElementById('token-info').textContent = 'Not logged in';
+      }
+    }
+
+    async function login() {
+      await auth0Client.loginWithRedirect();
+    }
+
+    async function loginWithGoogle() {
+      await auth0Client.loginWithRedirect({
+        authorizationParams: {
+          connection: 'google-oauth2'
+        }
+      });
+    }
+
+    async function logout() {
+      await auth0Client.logout({
+        logoutParams: {
+          returnTo: window.location.origin + window.location.pathname
+        }
+      });
+    }
+
+    // Initialize on page load
+    window.onload = init;
+  </script>
+</body>
+</html>
+

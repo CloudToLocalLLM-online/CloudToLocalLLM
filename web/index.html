@@ -64,16 +64,33 @@
           // Enable social connections (Google, GitHub, etc.)
           cacheLocation: 'localstorage'
         });
-        console.log('Auth0 initialized');
+        console.log('✅ Auth0 initialized');
         
         // Check if redirected back from Auth0
-        if (window.location.search.includes('code=')) {
-          await window.auth0Client.handleRedirectCallback();
-          window.history.replaceState({}, document.title, window.location.pathname);
+        if (window.location.search.includes('code=') || window.location.search.includes('state=')) {
+          console.log('🔄 Handling Auth0 redirect callback...');
+          try {
+            await window.auth0Client.handleRedirectCallback();
+            window.history.replaceState({}, document.title, window.location.pathname);
+            console.log('✅ Auth0 callback handled successfully');
+            
+            // Notify Flutter app that auth completed
+            if (window.flutterAuthCallback) {
+              window.flutterAuthCallback({ success: true });
+            }
+          } catch (error) {
+            console.error('❌ Auth0 callback error:', error);
+            if (window.flutterAuthCallback) {
+              window.flutterAuthCallback({ success: false, error: error.message });
+            }
+          }
         }
       }
     });
   </script>
+  
+  <!-- Auth0 Bridge for Flutter -->
+  <script src="auth0-bridge.js"></script>
 
   <!-- Force service worker update -->
   <script>
