@@ -28,7 +28,8 @@ ENV FLUTTER_HOME=/opt/flutter
 ENV PATH="${FLUTTER_HOME}/bin:${PATH}"
 
 RUN mkdir -p ${FLUTTER_HOME} && \
-    git clone https://github.com/flutter/flutter.git -b stable ${FLUTTER_HOME}
+    git clone https://github.com/flutter/flutter.git -b stable ${FLUTTER_HOME} && \
+    chown -R nginx:nginx ${FLUTTER_HOME}
 
 # Switch to nginx user before running Flutter commands
 USER nginx
