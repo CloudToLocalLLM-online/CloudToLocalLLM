@@ -7,19 +7,26 @@
 # ---- Stage 1: Build Flutter Web App ----
 FROM ghcr.io/cirruslabs/flutter:stable AS builder
 
-# Create non-root user
-ARG USER_ID=1000
-ARG GROUP_ID=1000
-RUN groupadd -g ${GROUP_ID} flutter && \
-    useradd -u ${USER_ID} -g flutter -m flutter
+# Create non-root user if it doesn't exist
+# Exit code 4/9 from groupadd/useradd means user/group exists - that's fine
+RUN (groupadd -r flutter -g 1000 2>/dev/null || true) && \
+    (useradd -r -u 1000 -g flutter -m flutter 2>/dev/null || true)
+
+# Get the actual user ID (whether created or existing)
+RUN FLUTTER_UID=$(id -u flutter 2>/dev/null || echo "1000") && \
+    FLUTTER_GID=$(id -g flutter 2>/dev/null || echo "1000") && \
+    echo "Using Flutter user: UID=$FLUTTER_UID GID=$FLUTTER_GID"
 
 # Set proper permissions for Flutter SDK and directories
 # Only use root for setting up permissions, then switch to non-root
-RUN chown -R flutter:flutter /opt/flutter && \
+RUN FLUTTER_USER=$(id -un flutter 2>/dev/null || echo "flutter") && \
+    FLUTTER_GROUP=$(id -gn flutter 2>/dev/null || echo "flutter") && \
+    chown -R $FLUTTER_USER:$FLUTTER_GROUP /opt/flutter && \
     mkdir -p /home/flutter/.pub-cache && \
-    chown -R flutter:flutter /home/flutter && \
+    chown -R $FLUTTER_USER:$FLUTTER_GROUP /home/flutter && \
     mkdir -p /app && \
-    chown -R flutter:flutter /app
+    chown -R $FLUTTER_USER:$FLUTTER_GROUP /app || \
+    (chown -R 1000:1000 /opt/flutter /home/flutter /app)
 
 # Set Flutter pub cache location
 ENV PUB_CACHE=/home/flutter/.pub-cache
@@ -31,7 +38,9 @@ WORKDIR /app
 # Copy files as root (necessary for COPY command)
 # Then immediately change ownership
 COPY pubspec.yaml pubspec.lock ./
-RUN chown flutter:flutter pubspec.yaml pubspec.lock
+RUN FLUTTER_USER=$(id -un flutter 2>/dev/null || echo "flutter") && \
+    chown $FLUTTER_USER:$FLUTTER_USER pubspec.yaml pubspec.lock || \
+    chown 1000:1000 pubspec.yaml pubspec.lock
 
 # Switch to non-root user for all build operations
 USER flutter
@@ -43,7 +52,9 @@ RUN flutter pub get
 # Then change ownership back
 USER root
 COPY . .
-RUN chown -R flutter:flutter /app
+RUN FLUTTER_USER=$(id -un flutter 2>/dev/null || echo "flutter") && \
+    chown -R $FLUTTER_USER:$FLUTTER_USER /app || \
+    chown -R 1000:1000 /app
 
 # Back to non-root for build
 USER flutter
