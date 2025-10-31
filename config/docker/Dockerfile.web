@@ -7,10 +7,6 @@
 # ---- Stage 1: Build Flutter Web App ----
 FROM ghcr.io/cirruslabs/flutter:stable AS builder
 
-# Build arguments for git clone
-ARG REPO_URL
-ARG REPO_BRANCH=main
-
 # Fix Flutter SDK ownership and permissions (must be done as root)
 # Cirrus containers have Flutter SDK at /sdks/flutter, owned by root
 # We need to give the non-root user (UID 1000) access to write to cache
@@ -20,27 +16,18 @@ RUN chown -R 1000:1000 /sdks/flutter && \
 # Fix Git safe directory (Flutter SDK uses Git internally)
 RUN git config --global --add safe.directory /sdks/flutter
 
-# Create app directory and clone repository (as root)
+# Clone repository (as root)
 WORKDIR /app
-RUN if [ -n "$REPO_URL" ]; then \
-      git clone -b ${REPO_BRANCH} ${REPO_URL} . || \
-      (echo "Warning: git clone failed, falling back to COPY method" && rm -rf /app/*); \
-    fi
+RUN git clone -b main https://github.com/imrightguy/CloudToLocalLLM.git .
 
 # Set ownership of app directory for non-root user
 RUN chown -R 1000:1000 /app
-
-# If git clone didn't work, copy from build context
-COPY --chown=1000:1000 pubspec.yaml pubspec.lock ./
 
 # Switch to non-root user before Flutter commands
 USER 1000
 
 # Get dependencies (Flutter will create .dart_tool and other cache dirs)
 RUN flutter pub get
-
-# Copy the rest of the application source code if not cloned
-COPY --chown=1000:1000 . .
 
 # Build Flutter web app
 RUN flutter build web --release
