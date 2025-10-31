@@ -21,7 +21,7 @@ RUN apk add --no-cache \
 
 # Create nginx user and group (UID 101 - same as nginx container)
 RUN addgroup -g 101 nginx && \
-    adduser -u 101 -G nginx -D -H nginx
+    adduser -u 101 -G nginx -D -m nginx
 
 # Install Flutter as root (system-wide install)
 ENV FLUTTER_HOME=/opt/flutter
@@ -34,14 +34,9 @@ RUN mkdir -p ${FLUTTER_HOME} && \
 # Switch to nginx user before running Flutter commands
 USER nginx
 
-# Create pub cache directory for nginx user
-RUN mkdir -p ${HOME}/.pub-cache
-
 # Run Flutter commands as nginx user (best practice)
+# Flutter will use default pub cache location (${HOME}/.pub-cache)
 RUN flutter doctor
-
-# Set pub cache environment variable
-ENV PUB_CACHE=/home/.pub-cache
 
 # Configure Flutter (runs as nginx user)
 RUN echo "Current user: $(whoami)" && \
