@@ -153,7 +153,6 @@ window.auth0Bridge = {
         await window.auth0Bridge.loginWithRedirect();
       }
       return null;
-      return null;
     }
   },
 
