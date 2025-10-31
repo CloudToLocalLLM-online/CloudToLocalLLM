@@ -7,20 +7,43 @@
 # ---- Stage 1: Build Flutter Web App ----
 FROM ghcr.io/cirruslabs/flutter:stable AS builder
 
-# The Flutter image runs as root by default for builds
+# Create non-root user for build
+# Check if user exists first to avoid errors
+RUN id -u builder >/dev/null 2>&1 || \
+    (groupadd -g 1000 builder 2>/dev/null || true) && \
+    (useradd -u 1000 -g builder -m builder 2>/dev/null || true)
+
+# Set proper permissions - only root needed for this
+RUN mkdir -p /app /home/builder/.pub-cache && \
+    chown -R builder:builder /app /home/builder
+
+# Set pub cache location for non-root user
+ENV PUB_CACHE=/home/builder/.pub-cache
+
 # Set working directory
 WORKDIR /app
 
-# Copy Flutter project files
+# Copy files as root, then change ownership
 COPY pubspec.yaml pubspec.lock ./
+RUN chown builder:builder pubspec.yaml pubspec.lock
 
-# Get dependencies (as root - standard for build containers)
+# Switch to non-root user
+USER builder
+
+# Get dependencies as non-root
 RUN flutter pub get
 
-# Copy the rest of the application
-COPY . .
+# Switch back to root for COPY
+USER root
 
-# Build Flutter web app for production
+# Copy remaining files and set ownership
+COPY . .
+RUN chown -R builder:builder /app
+
+# Switch back to non-root for build
+USER builder
+
+# Build Flutter web app for production (as non-root)
 RUN flutter build web --release
 
 # ---- Stage 2: Serve with Nginx (non-root) ----
