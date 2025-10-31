@@ -51,6 +51,24 @@
   <!-- Auth0 SPA SDK -->
   <script src="https://cdn.auth0.com/js/auth0-spa-js/2.1/auth0-spa-js.production.js"></script>
   <script>
+    // Clear old Auth0 cache if it exists with wrong audience (must run before Auth0 SDK loads)
+    (function() {
+      try {
+        const keys = Object.keys(localStorage);
+        keys.forEach(key => {
+          if (key.includes('auth0') || key.includes('@@auth0spajs')) {
+            const value = localStorage.getItem(key);
+            if (value && (value.includes('api.cloudtolocalllm.online') || value.includes('"aud":"https://api.cloudtolocalllm.online'))) {
+              console.log('🗑️ Clearing old Auth0 cache with api.cloudtolocalllm.online:', key);
+              localStorage.removeItem(key);
+            }
+          }
+        });
+      } catch (e) {
+        console.warn('Could not clear Auth0 cache:', e);
+      }
+    })();
+
     // Initialize Auth0 when config is loaded
     window.addEventListener('DOMContentLoaded', async function() {
       if (window.cloudToLocalLLMConfig) {
