@@ -7,8 +7,6 @@
 # ---- Stage 1: Build Flutter Web App ----
 FROM ghcr.io/cirruslabs/flutter:stable AS builder
 
-WORKDIR /app
-
 # Fix Flutter SDK ownership and permissions (must be done as root)
 # Cirrus containers have Flutter SDK at /sdks/flutter, owned by root
 # We need to give the non-root user (UID 1000) access to write to cache
@@ -18,13 +16,17 @@ RUN chown -R 1000:1000 /sdks/flutter && \
 # Fix Git safe directory (Flutter SDK uses Git internally)
 RUN git config --global --add safe.directory /sdks/flutter
 
+# Create and set ownership of app directory before switching users
+WORKDIR /app
+RUN chown -R 1000:1000 /app
+
 # Copy files with proper ownership for non-root user
 COPY --chown=1000:1000 pubspec.yaml pubspec.lock ./
 
 # Switch to non-root user before Flutter commands
 USER 1000
 
-# Get dependencies
+# Get dependencies (Flutter will create .dart_tool and other cache dirs)
 RUN flutter pub get
 
 # Copy the rest of the application source code with proper ownership
