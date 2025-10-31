@@ -36,12 +36,22 @@ spec:
       labels:
         app: web
     spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 101
+        fsGroup: 101
       imagePullSecrets:
         - name: registry-cloudtolocalllm
       containers:
         - name: web
           image: registry.digitalocean.com/cloudtolocalllm/web:latest
           imagePullPolicy: Always
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            readOnlyRootFilesystem: false
           ports:
             - containerPort: 8080
               name: http

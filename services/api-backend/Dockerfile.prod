@@ -1,16 +1,32 @@
 # ---- Base Node ----
 FROM node:24-alpine AS base
 WORKDIR /app
+
 # Build tools for native modules (sqlite3)
 RUN apk add --no-cache python3 make g++
 
+# Copy package files
 COPY services/api-backend/package*.json ./
-RUN npm ci
+
+# Install dependencies (run as root for system packages, then change ownership)
+RUN npm ci && \
+    chown -R 1001:1001 /app
 
 # ---- Production ----
 FROM node:24-alpine AS production
+
+# Create non-root user
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S nodejs -u 1001
+
 WORKDIR /app
-COPY --from=base /app/node_modules ./node_modules
-COPY services/api-backend/ ./
+
+# Copy files and change ownership
+COPY --from=base --chown=nodejs:nodejs /app/node_modules ./node_modules
+COPY --chown=nodejs:nodejs services/api-backend/ ./
+
+# Switch to non-root user
+USER nodejs
+
 EXPOSE 3000
 CMD [ "npm", "start" ]

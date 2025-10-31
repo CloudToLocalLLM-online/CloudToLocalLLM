@@ -36,6 +36,10 @@ spec:
       labels:
         app: api-backend
     spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1001
+        fsGroup: 1001
       imagePullSecrets:
         - name: registry-cloudtolocalllm
       containers:
@@ -119,12 +123,15 @@ spec:
                 configMapKeyRef:
                   name: cloudtolocalllm-config
                   key: AUTH0_CLIENT_ID
-            - name: SENTRY_DSN
-              valueFrom:
-                secretKeyRef:
-                  name: cloudtolocalllm-secrets
-                  key: sentry-dsn
-                  optional: true
+          
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1001
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            readOnlyRootFilesystem: false
           
           resources:
             requests:
