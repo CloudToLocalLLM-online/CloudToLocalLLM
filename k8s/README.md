@@ -94,8 +94,8 @@ nano secrets.yaml  # Edit with your actual values
 Required values:
 - `postgres-password`: Strong database password
 - `jwt-secret`: Generate with `openssl rand -base64 32`
-- `auth0-domain`: Your Auth0 tenant domain
-- `auth0-audience`: Your Auth0 API audience
+- `supertokens-core-url`: SuperTokens Core URL (e.g., https://supertokens.yourdomain.com)
+- `supertokens-app-name`: Application name used by SuperTokens (e.g., CloudToLocalLLM)
 
 ### 2. Update ConfigMap
 

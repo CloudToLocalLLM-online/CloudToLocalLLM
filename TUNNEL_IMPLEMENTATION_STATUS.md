@@ -148,7 +148,7 @@ class WebSocketTunnelClient {
    ```
 3. **Test desktop app connection**:
    - Launch Windows desktop app
-   - Sign in with Auth0
+   - Sign in to your account (SuperTokens)
    - App should connect via HTTP polling
    - Check API logs: `docker compose -f docker-compose.production.yml logs -f api-backend`
 

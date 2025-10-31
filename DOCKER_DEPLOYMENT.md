@@ -165,7 +165,7 @@ Nginx (Port 80/443)
 - **Features**:
   - REST API endpoints
   - WebSocket tunnel server at `/ws/tunnel`
-  - Auth0 JWT validation
+  - SuperTokens-based session/JWT validation
   - PostgreSQL database connection
   - Tier-based user management
 - **Health Check**: HTTP GET /health
@@ -202,13 +202,13 @@ Nginx (Port 80/443)
 ### Connection Steps
 1. Start your local Ollama instance
 2. Launch the CloudToLocalLLM desktop app
-3. Sign in with your Auth0 credentials
+3. Sign in to your account (SuperTokens)
 4. Desktop app will connect to: `wss://api.yourdomain.com/ws/tunnel`
 5. WebSocket tunnel established
 
 ### Troubleshooting Desktop Connection
 - Check desktop app logs in system tray
-- Verify Auth0 authentication is successful
+- Verify SuperTokens authentication is successful
 - Ensure firewall allows outbound WebSocket connections
 - Check API backend logs: `docker compose -f docker-compose.production.yml logs api-backend`
 
