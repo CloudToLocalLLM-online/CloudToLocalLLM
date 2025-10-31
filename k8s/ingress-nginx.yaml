@@ -101,15 +101,5 @@ spec:
                 port:
                   number: 3000
     
-    # Auth subdomain - SuperTokens
-    - host: auth.cloudtolocalllm.online
-      http:
-        paths:
-          - path: /
-            pathType: Prefix
-            backend:
-              service:
-                name: supertokens
-                port:
-                  number: 3567
+    # Auth subdomain - Using Auth0 (external service, no routing needed)
 
