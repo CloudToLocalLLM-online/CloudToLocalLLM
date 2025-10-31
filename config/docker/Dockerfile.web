@@ -13,18 +13,21 @@ WORKDIR /app
 COPY pubspec.yaml pubspec.lock ./
 COPY . .
 
-# Use the container's default flutter user (common in cirruslabs/flutter images)
-# Set ownership to flutter user
-RUN if id flutter >/dev/null 2>&1; then \
-        chown -R flutter:flutter /app; \
-    fi
+# Detect container's default user and set ownership
+# Most Flutter containers run as root, so we'll check and use appropriate user
+RUN echo "Current user: $(whoami), UID: $(id -u)" && \
+    echo "Available users:" && \
+    cat /etc/passwd | cut -d: -f1 | head -5
 
-# Switch to flutter user (default non-root user in Flutter containers)
-USER flutter
+# Create non-root user with UID 1000 (standard non-root UID)
+RUN groupadd -g 1000 builder 2>/dev/null || true && \
+    useradd -u 1000 -g builder -m builder 2>/dev/null || true
 
-# Run Flutter commands as non-root
-RUN flutter pub get && \
-    flutter build web --release
+# Set ownership to builder user
+RUN chown -R builder:builder /app
+
+# Switch to builder user (non-root)
+USER builder
 
 # ---- Stage 2: Serve with Nginx (non-root) ----
 FROM nginxinc/nginx-unprivileged:alpine
