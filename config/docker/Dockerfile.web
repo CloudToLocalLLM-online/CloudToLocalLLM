@@ -13,15 +13,20 @@ WORKDIR /app
 COPY pubspec.yaml pubspec.lock ./
 COPY . .
 
-# Create non-root user with UID 1000 (standard non-root UID)
-RUN groupadd -g 1000 builder && \
-    useradd -u 1000 -g builder -m builder
+# Find existing user with UID 1000 or create one, then set ownership
+RUN EXISTING_USER=$(getent passwd 1000 | cut -d: -f1 2>/dev/null || echo "") && \
+    if [ -n "$EXISTING_USER" ]; then \
+        echo "Using existing user: $EXISTING_USER (UID 1000)" && \
+        chown -R $EXISTING_USER:$EXISTING_USER /app; \
+    else \
+        echo "Creating builder user (UID 1000)" && \
+        groupadd -g 1000 builder && \
+        useradd -u 1000 -g builder -m builder && \
+        chown -R builder:builder /app; \
+    fi
 
-# Set ownership to builder user (now that it exists)
-RUN chown -R builder:builder /app
-
-# Switch to builder user (non-root)
-USER builder
+# Switch to UID 1000 (uses existing user if present, or newly created builder)
+USER 1000
 
 # ---- Stage 2: Serve with Nginx (non-root) ----
 FROM nginxinc/nginx-unprivileged:alpine
