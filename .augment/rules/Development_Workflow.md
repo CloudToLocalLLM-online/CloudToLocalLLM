@@ -36,6 +36,25 @@ description: "CloudToLocalLLM Development Workflow and Practices"
 - For code changes, ensure CI runs tests and basic builds.
 - When touching authentication, test end-to-end on staging/production Cloud Run: GIS popup → GCIP exchange → secure API calls.
 
+## Docker Best Practices for Flutter Web Apps
+- **Use standard COPY pattern**: Copy source from build context, not git clone. This enables Docker layer caching and follows standard practices.
+- **Optimize layer caching**: Copy pubspec files first, run `flutter pub get`, then copy rest of source. Dependencies are cached unless pubspec changes.
+- **Multi-stage builds**: Build stage with Flutter image, runtime stage with lightweight nginx.
+- **No user creation**: Use container's default non-root user. Never create users unless container doesn't provide one.
+- **Standard pattern**:
+  ```dockerfile
+  FROM ghcr.io/cirruslabs/flutter:stable AS builder
+  WORKDIR /app
+  COPY pubspec.yaml pubspec.lock ./
+  RUN flutter pub get
+  COPY . .
+  RUN flutter build web --release
+  
+  FROM nginxinc/nginx-unprivileged:alpine
+  COPY --from=builder --chown=nginx:nginx /app/build/web /usr/share/nginx/html
+  ```
+- **Never run Flutter as root**: Use container defaults or explicit USER directive with existing user UID/GID.
+
 ## CI/CD
 - Primary workflow: .github/workflows/cloudrun-deploy.yml
 - Triggers: push to main/master on relevant paths, and manual workflow_dispatch.

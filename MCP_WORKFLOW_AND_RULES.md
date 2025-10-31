@@ -89,3 +89,25 @@ In addition to MCP servers, I will leverage powerful command-line interface (CLI
     *   **Deployments**: I will use `gcloud app deploy` or `gcloud run deploy` to deploy applications to App Engine or Cloud Run.
     *   **Resource Management**: I can manage virtual machines, storage buckets, and databases using commands like `gcloud compute instances`, `gcloud storage`, and `gcloud sql`.
     *   **Authentication & Configuration**: I will ensure I am authenticated (`gcloud auth login`) and have the correct project configured (`gcloud config set project`) before performing any operations.
+
+### C. Docker Best Practices for Flutter Web Apps
+
+*   **Standard Pattern**: Always use the standard multi-stage Docker build pattern for Flutter web applications.
+*   **Rules**:
+    *   **Use COPY, not git clone**: Copy source files from build context using `COPY`, not `git clone`. This is faster, enables Docker layer caching, and follows standard Docker practices.
+    *   **Layer caching optimization**: Copy `pubspec.yaml` and `pubspec.lock` first, run `flutter pub get`, then copy the rest of the source. This caches dependencies unless pubspec changes.
+    *   **No user creation**: Never create users manually. Use the default non-root user that exists in the base container (e.g., Cirrus Flutter containers already have a default non-root user).
+    *   **Multi-stage builds**: Use separate build and runtime stages. Build with Flutter image, serve with lightweight nginx image.
+    *   **Example Pattern**:
+      ```dockerfile
+      FROM ghcr.io/cirruslabs/flutter:stable AS builder
+      WORKDIR /app
+      COPY pubspec.yaml pubspec.lock ./
+      RUN flutter pub get
+      COPY . .
+      RUN flutter build web --release
+      
+      FROM nginxinc/nginx-unprivileged:alpine
+      COPY --from=builder --chown=nginx:nginx /app/build/web /usr/share/nginx/html
+      ```
+    *   **Never run as root**: Always use the container's default non-root user. Never explicitly create users unless absolutely necessary and the container doesn't provide one.
