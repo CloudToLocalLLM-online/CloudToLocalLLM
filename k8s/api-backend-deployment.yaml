@@ -104,16 +104,21 @@ spec:
                 secretKeyRef:
                   name: cloudtolocalllm-secrets
                   key: jwt-secret
-            - name: SUPERTOKENS_CONNECTION_URI
+            - name: AUTH0_DOMAIN
               valueFrom:
                 configMapKeyRef:
                   name: cloudtolocalllm-config
-                  key: SUPERTOKENS_CONNECTION_URI
-            - name: SUPERTOKENS_API_KEY
+                  key: AUTH0_DOMAIN
+            - name: AUTH0_AUDIENCE
               valueFrom:
-                secretKeyRef:
-                  name: cloudtolocalllm-secrets
-                  key: supertokens-api-key
+                configMapKeyRef:
+                  name: cloudtolocalllm-config
+                  key: AUTH0_AUDIENCE
+            - name: AUTH0_CLIENT_ID
+              valueFrom:
+                configMapKeyRef:
+                  name: cloudtolocalllm-config
+                  key: AUTH0_CLIENT_ID
             - name: SENTRY_DSN
               valueFrom:
                 secretKeyRef:
