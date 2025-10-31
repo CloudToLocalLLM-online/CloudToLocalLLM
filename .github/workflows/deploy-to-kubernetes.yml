@@ -1,4 +1,4 @@
-name: Deploy to DOKS
+name: Deploy to DigitalOcean Kubernetes
 
 on:
   push:
