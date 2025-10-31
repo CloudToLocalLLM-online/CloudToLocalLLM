@@ -1,6 +1,7 @@
-﻿{
+{
   "version": "4.1.1",
   "build_number": "202508071645",
   "build_date": "2025-08-07T20:45:24Z",
-  "git_commit": "af642615e"
+  "git_commit": "af642615e",
+  "buildTimestamp": "2025-10-31 14:03:10"
 }
