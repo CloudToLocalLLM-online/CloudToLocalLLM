@@ -33,19 +33,15 @@ WORKDIR /app
 COPY pubspec.yaml pubspec.lock ./
 COPY . .
 
-# Use numeric UID (Alpine default non-root approach)
-# Check for existing non-root user or use UID 1000
-RUN EXISTING_UID=$(getent passwd | awk -F: '$3 >= 1000 && $3 < 65534 {print $3; exit}') && \
-    if [ -n "$EXISTING_UID" ]; then \
-        BUILD_UID=$EXISTING_UID; \
-    else \
-        BUILD_UID=1000; \
-    fi && \
-    chown -R $BUILD_UID:$BUILD_UID /app ${FLUTTER_HOME} && \
-    echo "Using UID: $BUILD_UID"
+# Create non-root user with UID 1000 (Alpine standard)
+RUN addgroup -g 1000 appuser && \
+    adduser -u 1000 -G appuser -D appuser
 
-# Switch to non-root user (numeric UID)
-USER 1000
+# Set ownership
+RUN chown -R appuser:appuser /app ${FLUTTER_HOME}
+
+# Switch to non-root user
+USER appuser
 
 # Build Flutter web app (runs as non-root)
 RUN flutter pub get && \
