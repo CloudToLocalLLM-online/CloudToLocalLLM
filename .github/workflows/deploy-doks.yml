@@ -168,24 +168,33 @@ jobs:
           kubectl get pods -n ${{ env.NAMESPACE }} -l app=api-backend
           kubectl get pods -n ${{ env.NAMESPACE }} -l app=web
           
-          echo "=== Describing failing pods ==="
-          for pod in $(kubectl get pods -n ${{ env.NAMESPACE }} -l app=api-backend -o jsonpath='{.items[*].metadata.name}'); do
-            status=$(kubectl get pod $pod -n ${{ env.NAMESPACE }} -o jsonpath='{.status.phase}')
-            if [ "$status" != "Running" ]; then
-              echo "--- Pod $pod status: $status ---"
-              kubectl describe pod $pod -n ${{ env.NAMESPACE }} || true
-              echo "--- Logs for $pod ---"
-              kubectl logs $pod -n ${{ env.NAMESPACE }} --tail=50 || true
+          echo "=== Describing failing API backend pods ==="
+          for pod in $(kubectl get pods -n ${{ env.NAMESPACE }} -l app=api-backend -o jsonpath='{.items[*].metadata.name}' 2>/dev/null); do
+            if [ -n "$pod" ]; then
+              status=$(kubectl get pod $pod -n ${{ env.NAMESPACE }} -o jsonpath='{.status.phase}' 2>/dev/null || echo "Unknown")
+              readystatus=$(kubectl get pod $pod -n ${{ env.NAMESPACE }} -o jsonpath='{.status.containerStatuses[0].ready}' 2>/dev/null || echo "false")
+              if [ "$status" != "Running" ] || [ "$readystatus" != "true" ]; then
+                echo "--- Pod $pod status: $status (ready: $readystatus) ---"
+                kubectl describe pod $pod -n ${{ env.NAMESPACE }} || true
+                echo "--- Logs for $pod (last 100 lines) ---"
+                kubectl logs $pod -n ${{ env.NAMESPACE }} --tail=100 || true
+                echo "--- Previous container logs for $pod (if crashed) ---"
+                kubectl logs $pod -n ${{ env.NAMESPACE }} --previous --tail=100 || true
+              fi
             fi
           done
           
-          for pod in $(kubectl get pods -n ${{ env.NAMESPACE }} -l app=web -o jsonpath='{.items[*].metadata.name}'); do
-            status=$(kubectl get pod $pod -n ${{ env.NAMESPACE }} -o jsonpath='{.status.phase}')
-            if [ "$status" != "Running" ]; then
-              echo "--- Pod $pod status: $status ---"
-              kubectl describe pod $pod -n ${{ env.NAMESPACE }} || true
-              echo "--- Logs for $pod ---"
-              kubectl logs $pod -n ${{ env.NAMESPACE }} --tail=50 || true
+          echo "=== Describing failing Web pods ==="
+          for pod in $(kubectl get pods -n ${{ env.NAMESPACE }} -l app=web -o jsonpath='{.items[*].metadata.name}' 2>/dev/null); do
+            if [ -n "$pod" ]; then
+              status=$(kubectl get pod $pod -n ${{ env.NAMESPACE }} -o jsonpath='{.status.phase}' 2>/dev/null || echo "Unknown")
+              readystatus=$(kubectl get pod $pod -n ${{ env.NAMESPACE }} -o jsonpath='{.status.containerStatuses[0].ready}' 2>/dev/null || echo "false")
+              if [ "$status" != "Running" ] && [ "$status" != "Terminating" ]; then
+                echo "--- Pod $pod status: $status (ready: $readystatus) ---"
+                kubectl describe pod $pod -n ${{ env.NAMESPACE }} || true
+                echo "--- Logs for $pod (last 100 lines) ---"
+                kubectl logs $pod -n ${{ env.NAMESPACE }} --tail=100 || true
+              fi
             fi
           done
 

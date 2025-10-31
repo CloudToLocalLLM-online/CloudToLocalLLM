@@ -7,7 +7,6 @@ import jwt from 'jsonwebtoken';
 import winston from 'winston';
 import dotenv from 'dotenv';
 import { StreamingProxyManager } from './streaming-proxy-manager.js';
-import * as Sentry from '@sentry/node';
 import { auth } from 'express-oauth2-jwt-bearer';
 
 import adminRoutes from './routes/admin.js';
@@ -84,12 +83,6 @@ try {
     stack: error.stack,
   });
 }
-
-Sentry.init({
-  dsn: process.env.SENTRY_DSN,
-  tracesSampleRate: 1.0,
-});
-
 
 // Trust proxy headers (required for rate limiting behind nginx)
 // Use specific proxy configuration to avoid ERR_ERL_PERMISSIVE_TRUST_PROXY
