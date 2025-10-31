@@ -20,8 +20,9 @@ RUN apk add --no-cache \
     g++
 
 # Create nginx user and group (UID 101 - same as nginx container)
-RUN addgroup -g 101 nginx && \
-    adduser -u 101 -G nginx -D -m nginx
+# Check if group/user already exists, create only if needed
+RUN (getent group 101 >/dev/null || addgroup -g 101 nginx) && \
+    (getent passwd 101 >/dev/null || adduser -u 101 -G nginx -D -m nginx)
 
 # Install Flutter as root (system-wide install)
 ENV FLUTTER_HOME=/opt/flutter
