@@ -28,19 +28,28 @@ WORKDIR /home/nginx
 ENV FLUTTER_HOME=/home/nginx/flutter
 ENV PATH="${FLUTTER_HOME}/bin:${PATH}"
 
-RUN git clone https://github.com/flutter/flutter.git -b stable ${FLUTTER_HOME} && \
-    flutter doctor && \
-    flutter config --enable-web
+# Clone Flutter
+RUN git clone https://github.com/flutter/flutter.git -b stable ${FLUTTER_HOME}
+
+# Initialize Flutter
+RUN flutter doctor
+
+# Configure Flutter for web
+RUN flutter config --enable-web
 
 WORKDIR /app
 
-# Copy files and build
+# Copy pubspec files first for better caching
 COPY --chown=nginx:nginx pubspec.yaml pubspec.lock ./
+
+# Get dependencies
+RUN flutter pub get
+
+# Copy rest of application files
 COPY --chown=nginx:nginx . .
 
 # Build Flutter web app
-RUN flutter pub get && \
-    flutter build web --release
+RUN flutter build web --release
 
 # ---- Stage 2: Serve with Nginx (non-root) ----
 FROM nginxinc/nginx-unprivileged:alpine
