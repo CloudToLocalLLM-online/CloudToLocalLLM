@@ -101,7 +101,7 @@ spec:
                 port:
                   number: 3000
     
-    # Auth subdomain - SuperTokens (future)
+    # Auth subdomain - SuperTokens
     - host: auth.cloudtolocalllm.online
       http:
         paths:
@@ -109,7 +109,7 @@ spec:
             pathType: Prefix
             backend:
               service:
-                name: api-backend  # Will be supertokens service later
+                name: supertokens
                 port:
-                  number: 3000
+                  number: 3567
 
