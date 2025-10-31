@@ -16,7 +16,8 @@ window.auth0Bridge = {
     try {
       await window.auth0Client.loginWithRedirect({
         authorizationParams: {
-          redirect_uri: window.location.origin
+          redirect_uri: window.location.origin,
+          audience: 'https://app.cloudtolocalllm.online'
         }
       });
     } catch (error) {
@@ -151,6 +152,7 @@ window.auth0Bridge = {
       if (error.error === 'login_required') {
         await window.auth0Bridge.loginWithRedirect();
       }
+      return null;
       return null;
     }
   },
