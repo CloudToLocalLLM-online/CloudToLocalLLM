@@ -49,7 +49,6 @@ gcloud run deploy $SERVICE_NAME \
     --set-env-vars "DB_PASSWORD=$DB_PASSWORD" \
     --set-env-vars "DB_HOST=$DB_HOST" \
     --set-env-vars "CLOUD_SQL_CONNECTION_NAME=$CLOUD_SQL_CONNECTION_NAME" \
-    --set-env-vars "FIREBASE_PROJECT_ID=$PROJECT_ID" \
     --add-cloudsql-instances $CLOUD_SQL_CONNECTION_NAME
 
 # Get the service URL

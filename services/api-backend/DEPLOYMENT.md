@@ -116,7 +116,7 @@ gcloud run deploy cloudtolocalllm-api \
     --region us-central1 \
     --allow-unauthenticated \
     --memory 1Gi \
-    --set-env-vars "NODE_ENV=production,DB_TYPE=postgresql,FIREBASE_PROJECT_ID=cloudtolocalllm-468303" \
+    --set-env-vars "NODE_ENV=production,DB_TYPE=postgresql,AUTH0_DOMAIN=dev-v2f2p008x3dr74ww.us.auth0.com,AUTH0_AUDIENCE=https://api.cloudtolocalllm.online" \
     --add-cloudsql-instances cloudtolocalllm-468303:us-central1:cloudtolocalllm-db
 ```
 
@@ -136,7 +136,7 @@ npm run db:test
 SERVICE_URL="https://your-service-url" npm run test:auth-flow
 
 # With authentication token
-TEST_TOKEN="your-firebase-id-token" SERVICE_URL="https://your-service-url" npm run test:auth-flow
+TEST_TOKEN="your-auth0-jwt-token" SERVICE_URL="https://your-service-url" npm run test:auth-flow
 ```
 
 ### Health Checks
@@ -215,7 +215,7 @@ gcloud logging read "resource.type=cloudsql_database"
 
 Ensure your Cloud Run service account has:
 - `roles/cloudsql.client` - For Cloud SQL access
-- Firebase Admin SDK permissions (automatic with ADC)
+- Auth0 JWT validation (configured via environment variables)
 
 ### Performance Tuning
 

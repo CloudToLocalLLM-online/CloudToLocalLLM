@@ -12,7 +12,7 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 const SERVICE_URL = process.env.SERVICE_URL || 'https://cloudtolocalllm-api-123456789-uc.a.run.app';
-const TEST_TOKEN = process.env.TEST_TOKEN; // Valid Firebase ID token for testing
+const TEST_TOKEN = process.env.TEST_TOKEN; // Valid Auth0 JWT token for testing
 
 async function testAuthFlow() {
   console.log('🧪 CloudToLocalLLM Authentication Flow Testing');
@@ -100,7 +100,7 @@ async function testAuthFlow() {
   } else {
     console.log('\n⚠️  Test 3: Skipped (no TEST_TOKEN provided)');
     console.log('   To test authenticated requests, set TEST_TOKEN environment variable');
-    console.log('   with a valid Firebase ID token');
+    console.log('   with a valid Auth0 JWT token');
   }
 
   // Test 4: CORS Headers

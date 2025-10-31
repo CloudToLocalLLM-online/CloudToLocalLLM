@@ -3,6 +3,8 @@
 ## Summary
 Applied comprehensive audit and fixed all best practice violations across the codebase.
 
+**Update**: Removed all Firebase dependencies and code (not used - Auth0 is the authentication provider).
+
 ## Issues Found and Fixed
 
 ### 1. Flutter - Deprecated Package Usage ✅
