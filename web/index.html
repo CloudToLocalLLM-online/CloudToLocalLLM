@@ -63,7 +63,15 @@
             websiteBasePath: "/auth"
           },
           recipeList: [
-            supertokensEmailPassword.init(),
+            supertokensThirdPartyEmailPassword.init({
+              signInAndUpFeature: {
+                providers: [
+                  supertokensThirdPartyEmailPassword.Google.init(),
+                  supertokensThirdPartyEmailPassword.Github.init(),
+                  // Add more providers as needed
+                ]
+              }
+            }),
             supertokensSession.init()
           ]
         });

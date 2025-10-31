@@ -10,7 +10,8 @@ import { StreamingProxyManager } from './streaming-proxy-manager.js';
 import * as Sentry from '@sentry/node';
 import supertokens from 'supertokens-node';
 import Session from 'supertokens-node/recipe/session/index.js';
-import EmailPassword from 'supertokens-node/recipe/emailpassword/index.js';
+import ThirdPartyEmailPassword from 'supertokens-node/recipe/thirdpartyemailpassword/index.js';
+import { Google, Github, Apple } from 'supertokens-node/recipe/thirdpartyemailpassword/index.js';
 import { middleware, errorHandler } from 'supertokens-node/framework/express/index.js';
 
 import adminRoutes from './routes/admin.js';
@@ -49,7 +50,29 @@ supertokens.init({
     websiteBasePath: "/auth"
   },
   recipeList: [
-    EmailPassword.init(),
+    ThirdPartyEmailPassword.init({
+      providers: [
+        // Google OAuth
+        Google({
+          clientId: process.env.GOOGLE_CLIENT_ID || "",
+          clientSecret: process.env.GOOGLE_CLIENT_SECRET || "",
+        }),
+        // GitHub OAuth
+        Github({
+          clientId: process.env.GITHUB_CLIENT_ID || "",
+          clientSecret: process.env.GITHUB_CLIENT_SECRET || "",
+        }),
+        // Apple OAuth (optional)
+        ...(process.env.APPLE_CLIENT_ID ? [Apple({
+          clientId: process.env.APPLE_CLIENT_ID,
+          clientSecret: {
+            keyId: process.env.APPLE_KEY_ID || "",
+            privateKey: process.env.APPLE_PRIVATE_KEY || "",
+            teamId: process.env.APPLE_TEAM_ID || "",
+          },
+        })] : []),
+      ],
+    }),
     Session.init()
   ]
 });
