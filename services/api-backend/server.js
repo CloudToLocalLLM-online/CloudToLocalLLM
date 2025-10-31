@@ -8,6 +8,10 @@ import winston from 'winston';
 import dotenv from 'dotenv';
 import { StreamingProxyManager } from './streaming-proxy-manager.js';
 import * as Sentry from '@sentry/node';
+import supertokens from 'supertokens-node';
+import Session from 'supertokens-node/recipe/session/index.js';
+import EmailPassword from 'supertokens-node/recipe/emailpassword/index.js';
+import { middleware, errorHandler } from 'supertokens-node/framework/express/index.js';
 
 import adminRoutes from './routes/admin.js';
 // WebSocket tunnel system
@@ -29,6 +33,26 @@ import bridgePollingRoutes, {
 } from './routes/bridge-polling-routes.js';
 
 dotenv.config();
+
+// Initialize SuperTokens
+supertokens.init({
+  framework: "express",
+  supertokens: {
+    connectionURI: process.env.SUPERTOKENS_CONNECTION_URI || "http://supertokens:3567",
+    apiKey: process.env.SUPERTOKENS_API_KEY,
+  },
+  appInfo: {
+    appName: "CloudToLocalLLM",
+    apiDomain: process.env.DOMAIN ? `https://api.${process.env.DOMAIN}` : "https://api.cloudtolocalllm.online",
+    websiteDomain: process.env.DOMAIN ? `https://app.${process.env.DOMAIN}` : "https://app.cloudtolocalllm.online",
+    apiBasePath: "/auth",
+    websiteBasePath: "/auth"
+  },
+  recipeList: [
+    EmailPassword.init(),
+    Session.init()
+  ]
+});
 
 // Initialize logger
 const logger = winston.createLogger({
@@ -111,8 +135,11 @@ app.use(cors({
   ],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'st-auth-mode', 'rid'],
 }));
+
+// SuperTokens middleware (must be before routes)
+app.use(middleware());
 
 // Rate limiting with different limits for bridge operations
 const createConditionalRateLimiter = () => {
@@ -705,6 +732,9 @@ app.get('/api/proxy/status', authenticateToken, async(req, res) => {
 // Ollama proxy endpoints removed - using HTTP polling tunnel system instead
 
 // The error handler must be registered before any other error middleware and after all controllers
+
+// SuperTokens error handler (must be after all routes)
+app.use(errorHandler());
 
 // Error handling middleware
 app.use((error, req, res, _next) => {
