@@ -58,11 +58,8 @@
           domain: 'dev-v2f2p008x3dr74ww.us.auth0.com',
           clientId: 'FuXPnevXpp311CdYHGsbNZe9t3D8Ts7A',
           authorizationParams: {
-            redirect_uri: window.location.origin
-            // NOTE: Audience is commented out until Auth0 API is created
-            // Create API in Auth0 dashboard with identifier: https://api.cloudtolocalllm.online
-            // Then uncomment the line below:
-            // audience: 'https://api.cloudtolocalllm.online'
+            redirect_uri: window.location.origin,
+            audience: 'https://api.cloudtolocalllm.online'
           },
           // Enable social connections (Google, GitHub, etc.)
           cacheLocation: 'localstorage'

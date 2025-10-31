@@ -38,9 +38,8 @@ window.auth0Bridge = {
       await window.auth0Client.loginWithRedirect({
         authorizationParams: {
           connection: 'google-oauth2',
-          redirect_uri: window.location.origin
-          // NOTE: Audience commented out - add when Auth0 API is created
-          // audience: 'https://api.cloudtolocalllm.online'
+          redirect_uri: window.location.origin,
+          audience: 'https://api.cloudtolocalllm.online'
         }
       });
       // Note: This will redirect, so code after this won't execute
