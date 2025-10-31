@@ -98,6 +98,11 @@ jobs:
       - name: Create namespace if not exists
         run: kubectl create namespace ${{ env.NAMESPACE }} --dry-run=client -o yaml | kubectl apply -f -
 
+      - name: Create registry secret for DOCR
+        run: |
+          doctl registry kubernetes-manifest | kubectl apply -f -
+          kubectl patch serviceaccount default -n ${{ env.NAMESPACE }} -p '{"imagePullSecrets": [{"name": "registry-cloudtolocalllm"}]}' || true
+
       - name: Create secrets
         run: |
           kubectl create secret generic cloudtolocalllm-secrets \
