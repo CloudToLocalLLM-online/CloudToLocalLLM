@@ -39,14 +39,12 @@ RUN flutter doctor && \
 
 WORKDIR /app
 
-# Copy files
+# Copy files as root (COPY always runs as root), then set ownership
 COPY pubspec.yaml pubspec.lock ./
 COPY . .
-
-# Set ownership of app directory (still root here, user already created above)
 RUN chown -R appuser:appuser /app
 
-# Build Flutter web app (runs as non-root)
+# Build Flutter web app (runs as non-root user - already switched above)
 RUN flutter pub get && \
     flutter build web --release
 
