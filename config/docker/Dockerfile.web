@@ -19,31 +19,24 @@ RUN apk add --no-cache \
     make \
     g++
 
-# Check what default user exists (UID 101 for nginx) or create it
-RUN DEFAULT_USER=$(getent passwd 101 | cut -d: -f1 2>/dev/null || echo "") && \
-    if [ -z "$DEFAULT_USER" ]; then \
-        addgroup -g 101 nginx 2>/dev/null || true && \
-        adduser -u 101 -G nginx -D -H nginx 2>/dev/null || true; \
-    fi && \
-    DEFAULT_USER=$(getent passwd 101 | cut -d: -f1) && \
-    echo "Using user: $DEFAULT_USER (UID 101)"
+# Create nginx user and group (UID 101 - same as nginx container)
+RUN addgroup -g 101 nginx && \
+    adduser -u 101 -G nginx -D -H nginx
 
 # Install Flutter as root (system-wide install)
 ENV FLUTTER_HOME=/opt/flutter
 ENV PATH="${FLUTTER_HOME}/bin:${PATH}"
 
 RUN git clone https://github.com/flutter/flutter.git -b stable --depth 1 ${FLUTTER_HOME} && \
-    DEFAULT_USER=$(getent passwd 101 | cut -d: -f1) && \
-    chown -R $DEFAULT_USER:$DEFAULT_USER ${FLUTTER_HOME} && \
+    chown -R nginx:nginx ${FLUTTER_HOME} && \
     chmod -R u+w ${FLUTTER_HOME}
 
-# Create pub cache directory for default user
-RUN DEFAULT_USER=$(getent passwd 101 | cut -d: -f1) && \
-    mkdir -p /home/.pub-cache && \
-    chown -R $DEFAULT_USER:$DEFAULT_USER /home/.pub-cache
+# Create pub cache directory for nginx user
+RUN mkdir -p /home/.pub-cache && \
+    chown -R nginx:nginx /home/.pub-cache
 
-# Switch to default user (UID 101 - same as nginx container)
-USER 101
+# Switch to nginx user
+USER nginx
 
 # Set pub cache environment variable
 ENV PUB_CACHE=/home/.pub-cache
