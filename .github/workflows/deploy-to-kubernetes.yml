@@ -104,10 +104,8 @@ jobs:
           kubectl create secret generic cloudtolocalllm-secrets \
             --from-literal=postgres-password='${{ secrets.POSTGRES_PASSWORD }}' \
             --from-literal=jwt-secret='${{ secrets.JWT_SECRET }}' \
-            --from-literal=supertokens-api-key='${{ secrets.SUPERTOKENS_API_KEY }}' \
             --from-literal=auth0-domain='${{ secrets.AUTH0_DOMAIN }}' \
             --from-literal=auth0-audience='${{ secrets.AUTH0_AUDIENCE }}' \
-            --from-literal=sentry-dsn='${{ secrets.SENTRY_DSN }}' \
             --namespace=${{ env.NAMESPACE }} \
             --dry-run=client -o yaml | kubectl apply -f -
 
