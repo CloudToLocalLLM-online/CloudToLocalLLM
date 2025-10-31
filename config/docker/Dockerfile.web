@@ -19,9 +19,9 @@ RUN apk add --no-cache \
     make \
     g++
 
-# Create non-root user first
+# Create non-root user first (with home directory)
 RUN addgroup -g 1000 appuser && \
-    adduser -u 1000 -G appuser -D appuser
+    adduser -u 1000 -G appuser -m appuser
 
 # Switch to non-root user
 USER appuser
