@@ -5,39 +5,12 @@
 # ============================================================================
 
 # ---- Stage 1: Build Flutter Web App ----
-FROM alpine:latest AS builder
+FROM ghcr.io/cirruslabs/flutter:stable AS builder
 
-# Install dependencies
-RUN apk add --no-cache \
-    bash \
-    curl \
-    git \
-    unzip \
-    xz \
-    ca-certificates \
-    python3 \
-    make \
-    g++
+# Use default flutter user (UID 1000) from Cirrus container
+# Working directory is already set to /workspace
 
-# Create nginx user with home directory
-RUN adduser -D -u 101 -h /home/nginx -s /bin/sh nginx
-
-# Install Flutter in nginx user's home directory
-USER nginx
-WORKDIR /home/nginx
-ENV FLUTTER_HOME=/home/nginx/flutter
-ENV PATH="${FLUTTER_HOME}/bin:${PATH}"
-
-# Clone Flutter
-RUN git clone https://github.com/flutter/flutter.git -b stable ${FLUTTER_HOME}
-
-# Initialize Flutter
-RUN flutter doctor
-
-# Configure Flutter for web
-RUN flutter config --enable-web
-
-WORKDIR /app
+WORKDIR /workspace
 
 # Clone the application repository
 ARG REPO_URL=https://github.com/imrightguy/CloudToLocalLLM.git
