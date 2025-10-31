@@ -7,19 +7,16 @@
 # ---- Stage 1: Build Flutter Web App ----
 FROM ghcr.io/cirruslabs/flutter:stable AS builder
 
-# Use the default non-root user from Cirrus container
-# Cirrus containers typically use 'cirrus' user (UID 1000)
-USER 1000:1000
+WORKDIR /app
 
-WORKDIR /workspace
+# Copy pubspec files first to leverage Docker cache for dependencies
+COPY pubspec.yaml pubspec.lock ./
 
-# Clone the application repository
-ARG REPO_URL=https://github.com/imrightguy/CloudToLocalLLM.git
-ARG REPO_BRANCH=main
-RUN git clone -b ${REPO_BRANCH} ${REPO_URL} .
-
-# Get dependencies
+# Get dependencies (this layer will be cached if pubspec doesn't change)
 RUN flutter pub get
+
+# Copy the rest of the application source code
+COPY . .
 
 # Build Flutter web app
 RUN flutter build web --release
@@ -31,4 +28,4 @@ FROM nginxinc/nginx-unprivileged:alpine
 COPY config/docker/nginx-web.conf /etc/nginx/conf.d/default.conf
 
 # Copy built Flutter web app from builder stage
-COPY --from=builder --chown=nginx:nginx /workspace/build/web /usr/share/nginx/html
+COPY --from=builder --chown=nginx:nginx /app/build/web /usr/share/nginx/html
