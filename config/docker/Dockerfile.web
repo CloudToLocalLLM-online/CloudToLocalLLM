@@ -38,10 +38,9 @@ RUN mkdir -p /home/flutter/.pub-cache && \
 
 WORKDIR /app
 
-# Copy files and change ownership (same pattern as API container)
-COPY pubspec.yaml pubspec.lock ./
-COPY . .
-RUN chown -R flutter:flutter /app
+# Copy files with ownership (same pattern as API container - chown during copy)
+COPY --chown=flutter:flutter pubspec.yaml pubspec.lock ./
+COPY --chown=flutter:flutter . .
 
 # Switch to non-root user (same pattern as API container)
 USER flutter
