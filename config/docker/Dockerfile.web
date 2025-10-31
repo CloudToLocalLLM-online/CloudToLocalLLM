@@ -24,7 +24,8 @@ ENV FLUTTER_HOME=/opt/flutter
 ENV PATH="${FLUTTER_HOME}/bin:${PATH}"
 
 RUN git clone https://github.com/flutter/flutter.git -b stable --depth 1 ${FLUTTER_HOME} && \
-    chown -R 101:101 ${FLUTTER_HOME}
+    chown -R 101:101 ${FLUTTER_HOME} && \
+    chmod -R u+w ${FLUTTER_HOME}
 
 # Switch to nginx user (UID 101 - same as nginx container)
 USER 101
