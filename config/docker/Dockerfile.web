@@ -7,17 +7,9 @@
 # ---- Stage 1: Build Flutter Web App ----
 FROM ghcr.io/cirruslabs/flutter:stable AS builder
 
-# Check what user we're running as and find/create non-root user
-RUN whoami && id
-
-# Create a non-root user with a known UID/GID
-RUN addgroup -g 1000 builder && \
-    adduser -D -u 1000 -G builder builder && \
-    mkdir -p /workspace && \
-    chown -R builder:builder /workspace
-
-# Switch to non-root user BEFORE any git/flutter commands
-USER builder:builder
+# Use the default non-root user from Cirrus container
+# Cirrus containers typically use 'cirrus' user (UID 1000)
+USER 1000:1000
 
 WORKDIR /workspace
 
