@@ -19,8 +19,13 @@ RUN apk add --no-cache \
     make \
     g++
 
-# Install Flutter
-ENV FLUTTER_HOME=/opt/flutter
+# Create non-root user
+RUN adduser -D -s /bin/sh builder
+
+# Install Flutter in user's home directory
+USER builder
+WORKDIR /home/builder
+ENV FLUTTER_HOME=/home/builder/flutter
 ENV PATH="${FLUTTER_HOME}/bin:${PATH}"
 
 RUN git clone https://github.com/flutter/flutter.git -b stable ${FLUTTER_HOME} && \
@@ -30,8 +35,8 @@ RUN git clone https://github.com/flutter/flutter.git -b stable ${FLUTTER_HOME} &
 WORKDIR /app
 
 # Copy files and build
-COPY pubspec.yaml pubspec.lock ./
-COPY . .
+COPY --chown=builder:builder pubspec.yaml pubspec.lock ./
+COPY --chown=builder:builder . .
 
 # Build Flutter web app
 RUN flutter pub get && \
