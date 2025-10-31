@@ -7,19 +7,25 @@
 # ---- Stage 1: Build Flutter Web App ----
 FROM ghcr.io/cirruslabs/flutter:stable AS builder
 
+# CRITICAL: Switch to non-root user BEFORE any Flutter commands
+# Cirrus Flutter containers have a default user (usually UID 1000)
+# Verify we're not root and switch if needed
+RUN id && whoami
+USER 1000:1000
+
 WORKDIR /app
 
 # Copy pubspec files first to leverage Docker cache for dependencies
 COPY pubspec.yaml pubspec.lock ./
 
-# Get dependencies (this layer will be cached if pubspec doesn't change)
-RUN flutter pub get
+# Verify non-root before Flutter commands
+RUN whoami && id && flutter pub get
 
 # Copy the rest of the application source code
 COPY . .
 
-# Build Flutter web app
-RUN flutter build web --release
+# Build Flutter web app (MUST run as non-root)
+RUN whoami && id && flutter build web --release
 
 # ---- Stage 2: Serve with Nginx (non-root) ----
 FROM nginxinc/nginx-unprivileged:alpine

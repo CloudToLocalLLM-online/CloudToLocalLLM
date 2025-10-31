@@ -94,13 +94,16 @@ In addition to MCP servers, I will leverage powerful command-line interface (CLI
 
 *   **Standard Pattern**: Always use the standard multi-stage Docker build pattern for Flutter web applications.
 *   **Rules**:
+    *   **CRITICAL - Never run Flutter as root**: ALWAYS switch to non-root user BEFORE any Flutter commands (`flutter pub get`, `flutter build`, etc.). Add `USER 1000:1000` (or container default) BEFORE `RUN flutter` commands. Verify with `RUN whoami && id` if needed.
     *   **Use COPY, not git clone**: Copy source files from build context using `COPY`, not `git clone`. This is faster, enables Docker layer caching, and follows standard Docker practices.
     *   **Layer caching optimization**: Copy `pubspec.yaml` and `pubspec.lock` first, run `flutter pub get`, then copy the rest of the source. This caches dependencies unless pubspec changes.
-    *   **No user creation**: Never create users manually. Use the default non-root user that exists in the base container (e.g., Cirrus Flutter containers already have a default non-root user).
+    *   **No user creation**: Never create users manually. Use the default non-root user that exists in the base container (e.g., Cirrus Flutter containers already have a default non-root user with UID 1000).
     *   **Multi-stage builds**: Use separate build and runtime stages. Build with Flutter image, serve with lightweight nginx image.
     *   **Example Pattern**:
       ```dockerfile
       FROM ghcr.io/cirruslabs/flutter:stable AS builder
+      # CRITICAL: Switch to non-root BEFORE any Flutter commands
+      USER 1000:1000
       WORKDIR /app
       COPY pubspec.yaml pubspec.lock ./
       RUN flutter pub get
@@ -111,6 +114,7 @@ In addition to MCP servers, I will leverage powerful command-line interface (CLI
       COPY --from=builder --chown=nginx:nginx /app/build/web /usr/share/nginx/html
       ```
     *   **Never run as root**: Always use the container's default non-root user. Never explicitly create users unless absolutely necessary and the container doesn't provide one.
+    *   **Verify non-root**: When debugging, add `RUN whoami && id` before Flutter commands to verify you're not root.
 
 ### D. Flutter Best Practices
 
