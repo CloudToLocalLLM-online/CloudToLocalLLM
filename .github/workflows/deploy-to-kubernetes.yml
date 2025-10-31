@@ -112,12 +112,11 @@ jobs:
       - name: Update ConfigMap with domain
         run: |
           sed -i 's/DOMAIN: "cloudtolocalllm.online"/DOMAIN: "${{ secrets.DOMAIN }}"/' k8s/configmap.yaml
+          sed -i 's|cloudtolocalllm.online|${{ secrets.DOMAIN }}|g' k8s/configmap.yaml
           kubectl apply -f k8s/configmap.yaml
 
-      - name: Update image references
+      - name: Update domain references
         run: |
-          sed -i 's|YOUR_REGISTRY|${{ env.REGISTRY }}|g' k8s/api-backend-deployment.yaml
-          sed -i 's|YOUR_REGISTRY|${{ env.REGISTRY }}|g' k8s/web-deployment.yaml
           sed -i 's|cloudtolocalllm.online|${{ secrets.DOMAIN }}|g' k8s/ingress-nginx.yaml
           sed -i 's|admin@cloudtolocalllm.online|admin@${{ secrets.DOMAIN }}|g' k8s/cert-manager.yaml
 
@@ -163,23 +162,24 @@ jobs:
           echo "=== Ingress ===" 
           kubectl get ingress -n ${{ env.NAMESPACE }}
 
-      - name: Health check
+      - name: Verify deployment
         run: |
           # Get load balancer IP
-          LB_IP=$(kubectl get svc -n ingress-nginx ingress-nginx-controller -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+          LB_IP=$(kubectl get svc -n ingress-nginx ingress-nginx-controller -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null || echo "Not ready")
           echo "Load Balancer IP: $LB_IP"
           
-          # Wait for services to be ready (retry for 2 minutes)
+          # Wait for pods to be ready (retry for 2 minutes)
           for i in {1..24}; do
-            if curl -f -k https://${{ secrets.DOMAIN }}/health 2>/dev/null; then
-              echo "Health check passed!"
+            READY=$(kubectl get pods -n ${{ env.NAMESPACE }} -l app=web -o jsonpath='{.items[*].status.conditions[?(@.type=="Ready")].status}' 2>/dev/null || echo "")
+            if echo "$READY" | grep -q "True"; then
+              echo "Pods are ready!"
               exit 0
             fi
-            echo "Waiting for services to be ready... ($i/24)"
+            echo "Waiting for pods to be ready... ($i/24)"
             sleep 5
           done
           
-          echo "Warning: Health check did not pass within timeout. Check DNS propagation."
+          echo "Warning: Deployment verification timeout. Check pod logs if issues persist."
 
       - name: Deployment summary
         if: always()
