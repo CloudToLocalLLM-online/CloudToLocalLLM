@@ -13,20 +13,53 @@ WORKDIR /app
 COPY pubspec.yaml pubspec.lock ./
 COPY . .
 
-# Find existing user with UID 1000 or create one, then set ownership
+# Find existing user with UID 1000 or create one
 RUN EXISTING_USER=$(getent passwd 1000 | cut -d: -f1 2>/dev/null || echo "") && \
     if [ -n "$EXISTING_USER" ]; then \
-        echo "Using existing user: $EXISTING_USER (UID 1000)" && \
-        chown -R $EXISTING_USER:$EXISTING_USER /app; \
+        echo "Using existing user: $EXISTING_USER (UID 1000)"; \
+        USER_HOME=$(getent passwd 1000 | cut -d: -f6); \
     else \
         echo "Creating builder user (UID 1000)" && \
         groupadd -g 1000 builder && \
         useradd -u 1000 -g builder -m builder && \
-        chown -R builder:builder /app; \
-    fi
+        EXISTING_USER="builder" && \
+        USER_HOME="/home/builder"; \
+    fi && \
+    echo "Build user: $EXISTING_USER, home: $USER_HOME"
+
+# Set ownership of /app and create necessary directories
+RUN EXISTING_USER=$(getent passwd 1000 | cut -d: -f1 2>/dev/null || echo "builder") && \
+    chown -R $EXISTING_USER:$EXISTING_USER /app && \
+    mkdir -p /app/build /app/.dart_tool && \
+    chown -R $EXISTING_USER:$EXISTING_USER /app/build /app/.dart_tool
+
+# Create pub cache directory in user's home (or /tmp if home doesn't exist)
+RUN EXISTING_USER=$(getent passwd 1000 | cut -d: -f1 2>/dev/null || echo "builder") && \
+    USER_HOME=$(getent passwd 1000 | cut -d: -f6 2>/dev/null || echo "/home/builder") && \
+    if [ -d "$USER_HOME" ]; then \
+        mkdir -p $USER_HOME/.pub-cache && \
+        chown -R $EXISTING_USER:$EXISTING_USER $USER_HOME/.pub-cache && \
+        export PUB_CACHE_PATH=$USER_HOME/.pub-cache; \
+    else \
+        mkdir -p /tmp/pub-cache && \
+        chown -R $EXISTING_USER:$EXISTING_USER /tmp/pub-cache && \
+        export PUB_CACHE_PATH=/tmp/pub-cache; \
+    fi && \
+    echo "PUB_CACHE_PATH=$PUB_CACHE_PATH" > /tmp/pub_cache_path.env
+
+# Set PUB_CACHE environment variable (use /tmp/pub-cache as reliable fallback)
+ENV PUB_CACHE=/tmp/pub-cache
+
+# Create and set permissions for pub cache
+RUN mkdir -p /tmp/pub-cache && \
+    EXISTING_USER=$(getent passwd 1000 | cut -d: -f1 2>/dev/null || echo "builder") && \
+    chown -R $EXISTING_USER:$EXISTING_USER /tmp/pub-cache
 
 # Switch to UID 1000 (uses existing user if present, or newly created builder)
 USER 1000
+
+# Ensure pub cache is writable after user switch
+RUN mkdir -p $PUB_CACHE && chmod 755 $PUB_CACHE
 
 # ---- Stage 2: Serve with Nginx (non-root) ----
 FROM nginxinc/nginx-unprivileged:alpine
