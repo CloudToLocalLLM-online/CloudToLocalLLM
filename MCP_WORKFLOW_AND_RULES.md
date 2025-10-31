@@ -111,3 +111,84 @@ In addition to MCP servers, I will leverage powerful command-line interface (CLI
       COPY --from=builder --chown=nginx:nginx /app/build/web /usr/share/nginx/html
       ```
     *   **Never run as root**: Always use the container's default non-root user. Never explicitly create users unless absolutely necessary and the container doesn't provide one.
+
+### D. Flutter Best Practices
+
+*   **Dependency Management**:
+    *   Always use `flutter pub get` to update dependencies, never manually edit `pubspec.lock`.
+    *   Use `flutter pub outdated` to identify packages that need updating.
+    *   Remove unused dependencies to keep the project lean.
+    *   Update discontinued packages (e.g., `js` package → use `dart:js_interop`).
+
+*   **Code Quality**:
+    *   Run `flutter analyze` before committing to catch linting errors.
+    *   Use `flutter format` to ensure consistent code formatting.
+    *   Prefer `debugPrint()` over `print()` for logging (respects Flutter's logging system).
+    *   Use platform-specific imports when necessary (`dart.library.html`, `dart.library.io`).
+
+*   **Build Practices**:
+    *   Use `flutter build web --release` for production builds.
+    *   Leverage `flutter pub get` caching by copying pubspec files first in Dockerfiles.
+    *   Always specify `--release` flag for production builds.
+
+*   **Authentication**:
+    *   Use Auth0 for web applications (no GCIP/Google Sign-In).
+    *   Use `dart:js_interop` for JavaScript interop (replaces deprecated `js` package).
+    *   Implement platform-specific auth services (Auth0WebService for web, others for mobile/desktop).
+
+*   **Web-Specific**:
+    *   Use `package:web/web.dart` for web platform detection and DOM manipulation.
+    *   Bridge JavaScript SDKs (like Auth0) through custom bridge files (`auth0-bridge.js`).
+    *   Handle redirect callbacks properly for OAuth flows.
+
+### E. Node.js Best Practices
+
+*   **Dependency Management**:
+    *   Use `npm ci` for production builds (faster, more reliable than `npm install`).
+    *   Use `npm install` for development (updates package.json and package-lock.json).
+    *   Never manually edit `package-lock.json`, let npm manage it.
+    *   Keep dependencies up to date with `npm outdated` and `npm update`.
+
+*   **Security**:
+    *   Run as non-root user in Docker containers (UID 1001 for Node.js apps).
+    *   Use `npm audit` to check for vulnerabilities.
+    *   Never hardcode secrets or API keys, use environment variables.
+    *   Validate and sanitize all user inputs.
+
+*   **Code Quality**:
+    *   Use structured logging (e.g., `winston`, `pino`) instead of `console.log`.
+    *   Implement proper error handling with try-catch blocks.
+    *   Use async/await instead of callbacks when possible.
+    *   Follow ESLint rules and fix linting errors before committing.
+
+*   **Docker Practices**:
+    *   Use multi-stage builds: build dependencies as root, then copy and run as non-root.
+    *   Copy `package*.json` first, run `npm ci`, then copy source code for better layer caching.
+    *   Use `node:24-alpine` or similar lightweight base images.
+    *   Example pattern:
+      ```dockerfile
+      FROM node:24-alpine AS base
+      WORKDIR /app
+      COPY package*.json ./
+      RUN npm ci && chown -R 1001:1001 /app
+      
+      FROM node:24-alpine AS production
+      RUN addgroup -g 1001 -S nodejs && adduser -S nodejs -u 1001
+      WORKDIR /app
+      COPY --from=base --chown=nodejs:nodejs /app/node_modules ./node_modules
+      COPY --chown=nodejs:nodejs . .
+      USER nodejs
+      CMD ["npm", "start"]
+      ```
+
+*   **API Development**:
+    *   Use Express.js middleware for authentication (e.g., `express-oauth2-jwt-bearer` for Auth0).
+    *   Implement proper CORS configuration for web clients.
+    *   Use environment variables for configuration (domain, audience, client IDs).
+    *   Validate JWT tokens before processing requests.
+
+*   **Performance**:
+    *   Use connection pooling for databases.
+    *   Implement request rate limiting.
+    *   Use compression middleware (e.g., `compression` package).
+    *   Cache static assets when appropriate.
