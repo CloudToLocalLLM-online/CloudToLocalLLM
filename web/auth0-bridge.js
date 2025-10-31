@@ -39,7 +39,7 @@ window.auth0Bridge = {
         authorizationParams: {
           connection: 'google-oauth2',
           redirect_uri: window.location.origin,
-          audience: 'https://api.cloudtolocalllm.online'
+          audience: 'https://app.cloudtolocalllm.online'
         }
       });
       // Note: This will redirect, so code after this won't execute

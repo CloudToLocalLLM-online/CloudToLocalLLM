@@ -59,8 +59,8 @@
           clientId: 'FuXPnevXpp311CdYHGsbNZe9t3D8Ts7A',
           authorizationParams: {
             redirect_uri: window.location.origin,
-            // Try api.cloudtolocalllm.online first, fallback to app.cloudtolocalllm.online if needed
-            audience: 'https://api.cloudtolocalllm.online'
+            // API identifier matches Auth0 API (Resource Server) identifier
+            audience: 'https://app.cloudtolocalllm.online'
           },
           // Enable social connections (Google, GitHub, etc.)
           cacheLocation: 'localstorage'

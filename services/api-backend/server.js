@@ -32,7 +32,7 @@ dotenv.config();
 
 // Auth0 JWT validation middleware
 const checkJwt = auth({
-  audience: process.env.AUTH0_AUDIENCE || 'https://api.cloudtolocalllm.online',
+  audience: process.env.AUTH0_AUDIENCE || 'https://app.cloudtolocalllm.online',
   issuerBaseURL: process.env.AUTH0_DOMAIN ? `https://${process.env.AUTH0_DOMAIN}` : 'https://cloudtolocalllm.us.auth0.com',
   tokenSigningAlg: 'RS256'
 });
