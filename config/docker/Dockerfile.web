@@ -19,12 +19,22 @@ RUN apk add --no-cache \
     make \
     g++
 
-# Install Flutter as root (before switching users)
+# Create non-root user first
+RUN addgroup -g 1000 appuser && \
+    adduser -u 1000 -G appuser -D appuser
+
+# Install Flutter as root (system installation)
 ENV FLUTTER_HOME=/opt/flutter
 ENV PATH="${FLUTTER_HOME}/bin:${PATH}"
 
 RUN git clone https://github.com/flutter/flutter.git -b stable --depth 1 ${FLUTTER_HOME} && \
-    flutter doctor && \
+    chown -R appuser:appuser ${FLUTTER_HOME}
+
+# Switch to non-root user before running Flutter commands
+USER appuser
+
+# Configure Flutter as non-root user
+RUN flutter doctor && \
     flutter config --enable-web
 
 WORKDIR /app
@@ -33,15 +43,8 @@ WORKDIR /app
 COPY pubspec.yaml pubspec.lock ./
 COPY . .
 
-# Create non-root user with UID 1000 (Alpine standard)
-RUN addgroup -g 1000 appuser && \
-    adduser -u 1000 -G appuser -D appuser
-
-# Set ownership
-RUN chown -R appuser:appuser /app ${FLUTTER_HOME}
-
-# Switch to non-root user
-USER appuser
+# Set ownership of app directory (still root here, user already created above)
+RUN chown -R appuser:appuser /app
 
 # Build Flutter web app (runs as non-root)
 RUN flutter pub get && \
