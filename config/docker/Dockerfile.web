@@ -13,15 +13,14 @@ WORKDIR /app
 COPY pubspec.yaml pubspec.lock ./
 COPY . .
 
-# Create non-root user following Docker best practices (UID 1000 is standard)
-RUN groupadd -r -g 1000 appuser && \
-    useradd -r -u 1000 -g appuser -m appuser
+# Get existing user with UID 1000 (container already has one)
+RUN EXISTING_USER=$(getent passwd 1000 | cut -d: -f1) && \
+    EXISTING_GROUP=$(getent group 1000 | cut -d: -f1) && \
+    echo "Using existing user: $EXISTING_USER (UID 1000)" && \
+    chown -R $EXISTING_USER:$EXISTING_GROUP /app
 
-# Set ownership of app directory
-RUN chown -R appuser:appuser /app
-
-# Switch to non-root user
-USER appuser
+# Switch to existing non-root user (UID 1000)
+USER 1000
 
 # Flutter will use default locations (~/.pub-cache, etc.)
 
