@@ -10,7 +10,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:cloudtolocalllm/services/simple_tunnel_client.dart';
 import 'package:cloudtolocalllm/services/tunnel_configuration_service.dart';
 import 'package:cloudtolocalllm/services/auth_service.dart';
-import 'package:cloudtolocalllm/models/tunnel_config.dart';
 import 'package:flutter/foundation.dart';
 
 void main() {

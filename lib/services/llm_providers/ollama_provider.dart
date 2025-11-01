@@ -404,8 +404,6 @@ class OllamaProvider extends BaseLLMProvider {
         return 'https://app.cloudtolocalllm.online/api/ollama';
       case ConnectionType.none:
         throw StateError('No connection available');
-      default:
-        return 'https://app.cloudtolocalllm.online/api/ollama'; // Default fallback
     }
   }
 
