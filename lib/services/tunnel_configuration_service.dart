@@ -6,12 +6,16 @@ import '../config/app_config.dart';
 import '../models/tunnel_config.dart';
 import '../models/tunnel_validation_result.dart';
 import '../services/auth_service.dart';
-import 'simple_tunnel_client.dart';
+// TODO: Replace with Chisel tunnel client (see CHISEL_INTEGRATION_PLAN.md)
+// import 'simple_tunnel_client.dart'; // REMOVED
+// import 'chisel_tunnel_client.dart'; // TODO: Add Chisel client
 
 /// Service for tunnel configuration and connection management.
 class TunnelConfigurationService extends ChangeNotifier {
   final AuthService _authService;
-  SimpleTunnelClient? _tunnelClient;
+  // TODO: Replace with ChiselTunnelClient
+  // SimpleTunnelClient? _tunnelClient; // REMOVED
+  dynamic _tunnelClient; // Placeholder - will be ChiselTunnelClient
   final String _baseUrl;
 
   TunnelConfig? _currentConfig;
@@ -34,7 +38,8 @@ class TunnelConfigurationService extends ChangeNotifier {
   bool get isMonitoring => _isMonitoring;
   String? get lastError => _lastError;
   Map<String, dynamic>? get connectionStatus => _connectionStatus;
-  SimpleTunnelClient? get tunnelClient => _tunnelClient;
+  // TODO: Return ChiselTunnelClient type
+  dynamic get tunnelClient => _tunnelClient;
 
   static String _getDefaultBaseUrl() {
     return kDebugMode ? 'http://localhost:8080' : 'https://app.cloudtolocalllm.online/api';
@@ -72,10 +77,13 @@ class TunnelConfigurationService extends ChangeNotifier {
   }
 
   void _initializeTunnelClient(TunnelConfig config) {
+    // TODO: Replace with Chisel client initialization (see CHISEL_INTEGRATION_PLAN.md)
     _tunnelClient?.dispose();
-    _tunnelClient = SimpleTunnelClient(config);
-    _tunnelClient!.addListener(_onTunnelStatusChanged);
-    _tunnelClient!.connect();
+    // _tunnelClient = SimpleTunnelClient(config); // REMOVED
+    // _tunnelClient = ChiselTunnelClient(config); // TODO: Implement
+    _tunnelClient = null; // Placeholder until Chisel integration
+    // _tunnelClient!.addListener(_onTunnelStatusChanged);
+    // _tunnelClient!.connect();
   }
 
   void _onTunnelStatusChanged() {

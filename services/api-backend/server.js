@@ -10,13 +10,14 @@ import { StreamingProxyManager } from './streaming-proxy-manager.js';
 import { auth } from 'express-oauth2-jwt-bearer';
 
 import adminRoutes from './routes/admin.js';
-// WebSocket tunnel system
-import { setupWebSocketTunnel } from './websocket-server.js';
-// HTTP polling tunnel system (fallback/legacy)
+// TODO: Replace with Chisel tunnel integration
+// Old WebSocket tunnel system removed - see CHISEL_INTEGRATION_PLAN.md
+// import { setupWebSocketTunnel } from './websocket-server.js'; // REMOVED
 import { AuthService } from './auth/auth-service.js';
 import { DatabaseMigrator } from './database/migrate.js';
 import { DatabaseMigratorPG } from './database/migrate-pg.js';
-import { createTunnelRoutes } from './tunnel/tunnel-routes.js';
+// TODO: Replace with Chisel tunnel routes (see CHISEL_INTEGRATION_PLAN.md)
+// import { createTunnelRoutes } from './tunnel/tunnel-routes.js'; // REMOVED - old tunnel
 import { createMonitoringRoutes } from './routes/monitoring.js';
 import { authenticateJWT } from './middleware/auth.js';
 import { addTierInfo, getUserTier } from './middleware/tier-check.js';
@@ -61,21 +62,10 @@ const DOMAIN = process.env.DOMAIN || 'cloudtolocalllm.online';
 const app = express();
 const server = http.createServer(app);
 
-// Initialize WebSocket tunnel server
-let tunnelProxyWebSocket;
-try {
-  tunnelProxyWebSocket = setupWebSocketTunnel(server, {
-    AUTH0_DOMAIN,
-    AUTH0_AUDIENCE,
-    DOMAIN,
-  }, logger);
-  logger.info('WebSocket tunnel initialized successfully');
-} catch (error) {
-  logger.error('Failed to initialize WebSocket tunnel', {
-    error: error.message,
-    stack: error.stack,
-  });
-}
+// TODO: Initialize Chisel tunnel server (see CHISEL_INTEGRATION_PLAN.md)
+// Old WebSocket tunnel removed - Chisel integration pending
+let tunnelProxyWebSocket = null; // Placeholder - will be replaced with ChiselProxy
+logger.warn('Tunnel system removed - Chisel integration pending');
 
 // Trust proxy headers (required for rate limiting behind nginx)
 // Use specific proxy configuration to avoid ERR_ERL_PERMISSIVE_TRUST_PROXY
@@ -183,10 +173,10 @@ const proxyManager = new StreamingProxyManager();
 const tunnelRouter = createTunnelRoutes({
   AUTH0_DOMAIN,
   AUTH0_AUDIENCE,
-}, tunnelProxyWebSocket, logger);
+}, null, logger); // TODO: Replace null with ChiselProxy instance
 
 // Create monitoring routes
-const monitoringRouter = createMonitoringRoutes(tunnelProxyWebSocket, logger);
+const monitoringRouter = createMonitoringRoutes(null, logger); // TODO: Replace null with ChiselProxy instance
 
 // API Routes
 
@@ -260,12 +250,20 @@ app.all('/api/ollama/*', authenticateJWT, addTierInfo, async(req, res) => {
       body: req.method !== 'GET' && req.method !== 'HEAD' ? JSON.stringify(req.body) : undefined,
     };
 
-    logger.debug(' [LLMTunnel] Forwarding request through WebSocket tunnel', { userId, requestId, path: ollamaPath });
+    logger.debug(' [LLMTunnel] Forwarding request through tunnel', { userId, requestId, path: ollamaPath });
 
+    // TODO: Replace with Chisel proxy forwarding (see CHISEL_INTEGRATION_PLAN.md)
+    if (!tunnelProxyWebSocket) {
+      return res.status(503).json({ 
+        error: 'Tunnel system not available', 
+        code: 'TUNNEL_NOT_AVAILABLE',
+        message: 'Chisel integration pending - tunnel system removed' 
+      });
+    }
     const response = await tunnelProxyWebSocket.forwardRequest(userId, httpRequest);
 
     const duration = Date.now() - startTime;
-    logger.info(' [LLMTunnel] Request completed successfully via WebSocket', { userId, requestId, duration, status: response.status });
+    logger.info(' [LLMTunnel] Request completed successfully via tunnel', { userId, requestId, duration, status: response.status });
 
     if (response.headers) {
       Object.entries(response.headers).forEach(([key, value]) => {
@@ -288,7 +286,7 @@ app.all('/api/ollama/*', authenticateJWT, addTierInfo, async(req, res) => {
 
   } catch (error) {
     const duration = Date.now() - startTime;
-    logger.error(' [LLMTunnel] Request failed via WebSocket', { userId, requestId, duration, error: error.message, code: error.code });
+    logger.error(' [LLMTunnel] Request failed via tunnel', { userId, requestId, duration, error: error.message, code: error.code });
 
     if (error.code === 'REQUEST_TIMEOUT') {
       return res.status(504).json({ error: 'LLM request timeout', code: 'LLM_REQUEST_TIMEOUT' });
@@ -685,9 +683,10 @@ async function gracefulShutdown() {
   logger.info('Received shutdown signal, starting graceful shutdown...');
 
   try {
-    if (tunnelProxyWebSocket) {
-      tunnelProxyWebSocket.cleanup();
-    }
+    // TODO: Cleanup Chisel server (see CHISEL_INTEGRATION_PLAN.md)
+    // if (tunnelProxyWebSocket) {
+    //   tunnelProxyWebSocket.cleanup();
+    // }
     if (authService) {
       await authService.close();
     }
