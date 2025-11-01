@@ -41,6 +41,16 @@ jobs:
       uses: actions/checkout@v4
       with:
         fetch-depth: 0  # Fetch full history for version detection
+        
+    - name: Setup GitHub CLI
+      run: |
+        if ! command -v gh &> /dev/null; then
+          echo "Installing GitHub CLI..."
+          curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg
+          echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null
+          sudo apt update && sudo apt install gh -y
+        fi
+        echo "GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}" >> $GITHUB_ENV
       
     - name: Extract version and generate build number
       id: version
@@ -78,23 +88,30 @@ jobs:
             IS_RELEASE="false"
           else
             # Always create release for any version on main branch
-            # Check git log to see if version changed in this commit
-            PREV_VERSION=$(git log -1 --format="%B" | grep -i "version" | head -1 || echo "")
-            
             # Extract version from previous commit's pubspec.yaml if available
+            PREV_PUBSPEC_VERSION=""
             if git show HEAD~1:pubspec.yaml 2>/dev/null | grep -q "^version:"; then
-              PREV_PUBSPEC_VERSION=$(git show HEAD~1:pubspec.yaml | grep "^version:" | sed 's/version: //' | sed 's/+.*//' || echo "")
-            else
-              PREV_PUBSPEC_VERSION=""
+              PREV_PUBSPEC_VERSION=$(git show HEAD~1:pubspec.yaml 2>/dev/null | grep "^version:" | sed 's/version: //' | sed 's/+.*//' | tr -d ' ' || echo "")
             fi
             
-            # If version changed or no previous version found, create release
-            if [ -z "$PREV_PUBSPEC_VERSION" ] || [ "$VERSION" != "$PREV_PUBSPEC_VERSION" ]; then
-              echo "Version changed from '$PREV_PUBSPEC_VERSION' to '$VERSION' - creating release"
+            echo "Current version: $VERSION"
+            echo "Previous version: $PREV_PUBSPEC_VERSION"
+            
+            # Always create release for main branch builds
+            # Only skip if version is unchanged AND release already exists
+            if [ -n "$PREV_PUBSPEC_VERSION" ] && [ "$VERSION" == "$PREV_PUBSPEC_VERSION" ]; then
+              echo "Version unchanged: $VERSION"
+              # For unchanged versions, only create release if no release exists yet
+              # We'll create the release anyway to ensure it exists
+              echo "Creating release to ensure it exists"
               IS_RELEASE="true"
             else
-              echo "Version unchanged: $VERSION - skipping release"
-              IS_RELEASE="false"
+              if [ -z "$PREV_PUBSPEC_VERSION" ]; then
+                echo "No previous version found - creating release for $VERSION"
+              else
+                echo "Version changed from '$PREV_PUBSPEC_VERSION' to '$VERSION' - creating release"
+              fi
+              IS_RELEASE="true"
             fi
           fi
         fi
