@@ -32,7 +32,24 @@ class Auth0WebService implements Auth0Service {
   /// Get access token
   String? get accessToken => _accessToken;
 
+  @override
+  Future<String?> getIdToken({bool forceRefresh = false}) async {
+    // For web, the token is typically managed by the Auth0 JS SDK,
+    // which handles refreshing in the background. We can just return the current token.
+    if (forceRefresh) {
+      // We can try to check the auth status again to potentially get a new token
+      await checkAuthStatus();
+    }
+    return _accessToken;
+  }
+
+  @override
+  String? getAccessToken() {
+    return _accessToken;
+  }
+
   /// Initialize Auth0 service
+  @override
   Future<void> initialize() async {
     if (_isInitialized) return;
 
@@ -81,6 +98,7 @@ class Auth0WebService implements Auth0Service {
   }
 
   /// Login with Auth0 Universal Login
+  @override
   Future<void> login() async {
     if (!_isInitialized) {
       await initialize();
@@ -150,6 +168,7 @@ class Auth0WebService implements Auth0Service {
   }
 
   /// Handle redirect callback after Auth0 login
+  @override
   Future<bool> handleRedirectCallback() async {
     try {
       debugPrint('Handling Auth0 redirect callback...');
@@ -189,6 +208,7 @@ class Auth0WebService implements Auth0Service {
   }
 
   /// Logout
+  @override
   Future<void> logout() async {
     try {
       debugPrint(' Logging out from Auth0...');
@@ -210,6 +230,7 @@ class Auth0WebService implements Auth0Service {
   }
 
   /// Dispose resources
+  @override
   void dispose() {
     _authStateController.close();
   }

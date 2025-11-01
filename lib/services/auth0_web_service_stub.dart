@@ -1,53 +1,38 @@
 // Stub for Auth0WebService on non-web platforms
-import 'dart:async';
 import 'package:flutter/foundation.dart';
+import 'auth0_service.dart';
 
-/// Stub implementation of Auth0WebService for desktop/mobile platforms
-class Auth0WebService {
-  static final Auth0WebService _instance = Auth0WebService._internal();
-  factory Auth0WebService() => _instance;
-  Auth0WebService._internal();
+class Auth0WebServiceStub implements Auth0Service {
+  @override
+  Stream<bool> get authStateChanges => Stream.value(false);
 
-  bool _isInitialized = false;
-  final bool _isAuthenticated = false;
-  Map<String, dynamic>? _currentUser;
-  String? _accessToken;
-  final StreamController<bool> _authStateController = StreamController<bool>.broadcast();
+  @override
+  Map<String, dynamic>? get currentUser => null;
 
-  bool get isInitialized => _isInitialized;
-  bool get isAuthenticated => _isAuthenticated;
-  Map<String, dynamic>? get currentUser => _currentUser;
-  String? get accessToken => _accessToken;
-  Stream<bool> get authStateChanges => _authStateController.stream;
+  @override
+  void dispose() {}
 
+  @override
+  String? getAccessToken() => null;
+
+  @override
+  Future<String?> getIdToken({bool forceRefresh = false}) async => null;
+
+  @override
+  Future<bool> handleRedirectCallback() async => false;
+
+  @override
   Future<void> initialize() async {
-    debugPrint(' Auth0WebService: Not available on desktop platform');
-    _isInitialized = true;
+    debugPrint('Auth0WebService: Not available on this platform');
   }
 
-  Future<void> checkAuthStatus() async {
-    // No-op on desktop
-  }
+  @override
+  bool get isAuthenticated => false;
 
-  Future<void> login() async {
-    throw UnsupportedError('Auth0 login is only available on web platform');
-  }
+  @override
+  Future<void> login() async {}
 
-  Future<void> loginWithGoogle() async {
-    throw UnsupportedError('Auth0 login is only available on web platform');
-  }
-
-  Future<void> logout() async {
-    // No-op on desktop
-  }
-
-  Future<bool> handleRedirectCallback() async {
-    // No-op on desktop
-    return false;
-  }
-
-  void dispose() {
-    _authStateController.close();
-  }
+  @override
+  Future<void> logout() async {}
 }
 

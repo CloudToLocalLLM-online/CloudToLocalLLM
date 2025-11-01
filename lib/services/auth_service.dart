@@ -1,6 +1,5 @@
 import 'package:flutter/foundation.dart';
-import 'auth0_web_service_stub.dart' if (dart.library.html) 'auth0_web_service.dart';
-import 'auth0_desktop_service.dart' if (dart.library.html) 'auth0_desktop_service_stub.dart';
+import 'auth_service_factory_stub.dart' if (dart.library.html) 'auth_service_factory_web.dart' if (dart.library.io) 'auth_service_factory_desktop.dart';
 import '../models/user_model.dart';
 import 'auth0_service.dart';
 
@@ -19,7 +18,7 @@ class AuthService extends ChangeNotifier {
   /// Initialize Auth0 for web platform
   Future<void> _initAuth0() async {
     try {
-      _auth0Service = Auth0WebService();
+      _auth0Service = createAuth0Service();
       await _auth0Service!.initialize();
       
       // Listen to Auth0 auth state changes
@@ -98,7 +97,7 @@ class AuthService extends ChangeNotifier {
 
   /// Get access token (Auth0 JWT)
   Future<String?> getIdToken({bool forceRefresh = false}) async {
-    return _auth0Service?.getAccessToken();
+    return _auth0Service?.getIdToken(forceRefresh: forceRefresh);
   }
 
   /// Legacy compatibility method
