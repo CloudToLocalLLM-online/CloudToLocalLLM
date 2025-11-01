@@ -37,8 +37,8 @@ RUN flutter clean
 # Get dependencies (Flutter will create .dart_tool and other cache dirs)
 RUN flutter pub get
 
-# Build Flutter web app with WebAssembly
-RUN flutter build web --wasm
+# Build Flutter web app
+RUN flutter build web
 
 # ---- Stage 2: Serve with Nginx (non-root) ----
 FROM nginxinc/nginx-unprivileged:alpine
