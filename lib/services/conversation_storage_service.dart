@@ -116,7 +116,7 @@ class ConversationStorageService {
       // For desktop/mobile, use app documents directory
       // Note: getApplicationDocumentsDirectory() is not available on web
       final documentsDirectory = await getApplicationDocumentsDirectory();
-      final appDirectory = Directory(
+      final appDirectory = io.Directory(
         join(documentsDirectory.path, 'CloudToLocalLLM'),
       );
 
