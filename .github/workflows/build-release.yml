@@ -198,25 +198,23 @@ jobs:
         Write-Host "Checking Windows build prerequisites..."
         flutter doctor -v
         
-        # Verify Visual Studio Build Tools are available (required for Windows builds)
-        Write-Host "`nVerifying Visual Studio Build Tools..."
-        $vsWhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+        Write-Host ""
+        Write-Host "Verifying Visual Studio Build Tools..."
+        $vsWhere = "$env:ProgramFiles(x86)\Microsoft Visual Studio\Installer\vswhere.exe"
         if (Test-Path $vsWhere) {
           $vsInstalls = & $vsWhere -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
           if ($vsInstalls) {
-            Write-Host "✓ Visual Studio Build Tools found at: $vsInstalls" -ForegroundColor Green
+            Write-Host "Visual Studio Build Tools found at: $vsInstalls"
           } else {
             Write-Error "Visual Studio Build Tools with C++ workload not found!"
-            Write-Host "The runner must have Visual Studio Build Tools installed with C++ workload." -ForegroundColor Yellow
-            $url = "https://visualstudio.microsoft.com/downloads/#build-tools-for-visual-studio-2022"
-            Write-Host "Install from: $url" -ForegroundColor Yellow
+            Write-Host "The runner must have Visual Studio Build Tools installed with C++ workload."
+            Write-Host "Install from: https://visualstudio.microsoft.com/downloads/"
             exit 1
           }
         } else {
           Write-Error "Visual Studio Build Tools not found!"
-          Write-Host "The runner must have Visual Studio Build Tools installed." -ForegroundColor Yellow
-          $url = "https://visualstudio.microsoft.com/downloads/#build-tools-for-visual-studio-2022"
-          Write-Host "Install from: $url" -ForegroundColor Yellow
+          Write-Host "The runner must have Visual Studio Build Tools installed."
+          Write-Host "Install from: https://visualstudio.microsoft.com/downloads/"
           exit 1
         }
       shell: powershell
