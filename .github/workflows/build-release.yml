@@ -129,6 +129,9 @@ jobs:
         $flutterPath = Get-Command flutter -ErrorAction SilentlyContinue
         if ($flutterPath) {
           Write-Host "Flutter found in PATH: $($flutterPath.Source)"
+          $flutterBinDir = Split-Path -Parent $flutterPath.Source
+          echo "FLUTTER_PATH=$flutterBinDir" >> $env:GITHUB_ENV
+          echo "$flutterBinDir" >> $env:GITHUB_PATH
           flutter --version
         } else {
           # Try common Flutter installation paths
@@ -141,21 +144,60 @@ jobs:
           )
           
           $foundFlutter = $false
+          $flutterHome = $null
           foreach ($path in $flutterPaths) {
             $flutterBin = Join-Path $path "bin\flutter.bat"
             if (Test-Path $flutterBin) {
               Write-Host "Found Flutter at: $path"
-              $env:PATH = "$path\bin;$env:PATH"
-              [Environment]::SetEnvironmentVariable("PATH", "$path\bin;$env:PATH", "Process")
-              flutter --version
+              $flutterHome = $path
               $foundFlutter = $true
               break
             }
           }
           
+          # If Flutter not found, install it
           if (-not $foundFlutter) {
-            throw "Flutter not found. Please install Flutter on the Windows runner."
+            Write-Host "Flutter not found. Installing Flutter..."
+            $flutterHome = "$env:USERPROFILE\flutter"
+            $tempDir = Join-Path $env:TEMP "flutter_extract"
+            
+            # Download Flutter SDK
+            $flutterUrl = "https://storage.googleapis.com/flutter_infra_release/releases/stable/windows/flutter_windows_3.24.0-stable.zip"
+            $zipFile = Join-Path $env:TEMP "flutter.zip"
+            
+            Write-Host "Downloading Flutter SDK from $flutterUrl"
+            Invoke-WebRequest -Uri $flutterUrl -OutFile $zipFile -UseBasicParsing
+            
+            # Extract Flutter SDK to temp directory first
+            Write-Host "Extracting Flutter SDK to temporary location"
+            if (Test-Path $tempDir) {
+              Remove-Item $tempDir -Recurse -Force
+            }
+            Expand-Archive -Path $zipFile -DestinationPath $tempDir -Force
+            Remove-Item $zipFile -Force
+            
+            # Move extracted flutter folder to final location
+            if (Test-Path $flutterHome) {
+              Remove-Item $flutterHome -Recurse -Force
+            }
+            $extractedFlutter = Join-Path $tempDir "flutter"
+            Move-Item -Path $extractedFlutter -Destination $flutterHome -Force
+            Remove-Item $tempDir -Force
+            
+            # Update PATH for this session and subsequent steps
+            $env:PATH = "$flutterHome\bin;$env:PATH"
+            echo "FLUTTER_PATH=$flutterHome\bin" >> $env:GITHUB_ENV
+            echo "$flutterHome\bin" >> $env:GITHUB_PATH
+            
+            Write-Host "Flutter installed successfully"
+          } else {
+            # Update PATH for this session and subsequent steps
+            $env:PATH = "$flutterHome\bin;$env:PATH"
+            echo "FLUTTER_PATH=$flutterHome\bin" >> $env:GITHUB_ENV
+            echo "$flutterHome\bin" >> $env:GITHUB_PATH
           }
+          
+          flutter --version
         }
         
         # Verify Flutter version
@@ -190,6 +232,9 @@ jobs:
         # Check if Flutter is already in PATH
         if command -v flutter &> /dev/null; then
           echo "Flutter found in PATH"
+          FLUTTER_BIN_DIR=$(dirname $(which flutter))
+          echo "FLUTTER_PATH=$FLUTTER_BIN_DIR" >> $GITHUB_ENV
+          echo "$FLUTTER_BIN_DIR" >> $GITHUB_PATH
           flutter --version
         else
           # Try common Flutter installation paths
@@ -200,20 +245,42 @@ jobs:
           )
           
           FOUND_FLUTTER=false
+          FLUTTER_HOME=""
           for path in "${FLUTTER_PATHS[@]}"; do
             if [ -f "$path/bin/flutter" ]; then
               echo "Found Flutter at: $path"
-              export PATH="$path/bin:$PATH"
-              flutter --version
+              FLUTTER_HOME="$path"
               FOUND_FLUTTER=true
               break
             fi
           done
           
+          # If Flutter not found, install it
           if [ "$FOUND_FLUTTER" = false ]; then
-            echo "ERROR: Flutter not found. Please install Flutter on the Linux runner."
-            exit 1
+            echo "Flutter not found. Installing Flutter..."
+            FLUTTER_HOME="$HOME/flutter"
+            
+            # Download Flutter SDK
+            FLUTTER_URL="https://storage.googleapis.com/flutter_infra_release/releases/stable/linux/flutter_linux_3.24.0-stable.tar.xz"
+            TAR_FILE="/tmp/flutter.tar.xz"
+            
+            echo "Downloading Flutter SDK from $FLUTTER_URL"
+            curl -L -o "$TAR_FILE" "$FLUTTER_URL"
+            
+            # Extract Flutter SDK
+            echo "Extracting Flutter SDK to $FLUTTER_HOME"
+            mkdir -p "$FLUTTER_HOME"
+            tar -xf "$TAR_FILE" -C "$FLUTTER_HOME" --strip-components=1
+            rm -f "$TAR_FILE"
+            
+            echo "Flutter installed successfully"
           fi
+          
+          # Update PATH for this session and subsequent steps
+          export PATH="$FLUTTER_HOME/bin:$PATH"
+          echo "FLUTTER_PATH=$FLUTTER_HOME/bin" >> $GITHUB_ENV
+          echo "$FLUTTER_HOME/bin" >> $GITHUB_PATH
+          flutter --version
         fi
         
         # Verify Flutter version
