@@ -231,7 +231,7 @@ class _CloudToLocalLLMAppState extends State<CloudToLocalLLMApp> {
             providers: [
               // Authentication service
               ChangeNotifierProvider(create: (_) {
-                final Auth0Service auth0Service = kIsWeb ? Auth0WebService() : Auth0DesktopService();
+                final auth0Service = createAuth0Service();
                 return AuthService(auth0Service);
               }),
         // User tier service
