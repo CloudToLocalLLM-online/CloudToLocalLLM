@@ -876,8 +876,15 @@ class ConnectionManagerService extends ChangeNotifier {
       return false;
     }
 
+    // Check if already connected or connecting to prevent duplicate registration
     if (_httpPollingClient.isConnected) {
       debugPrint('🌉 [ConnectionManager] HTTP polling already connected');
+      return true;
+    }
+    
+    // Additional guard: if we already have a bridge ID, we're definitely connected
+    if (_httpPollingClient.bridgeId != null) {
+      debugPrint('🌉 [ConnectionManager] HTTP polling already has bridge ID, skipping duplicate start');
       return true;
     }
 
