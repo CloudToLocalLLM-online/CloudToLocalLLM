@@ -92,8 +92,8 @@ class ConnectionManagerService extends ChangeNotifier {
     if (!kIsWeb) {
       await _localOllama.initialize();
     }
-    if (_authService.isAuthenticated.value && _authService.currentUser != null) {
-      await _tunnelConfigService.generateTunnelConfig(_authService.currentUser!.id);
+    if (_authService.isAuthenticated.value) {
+      await _tunnelService.connect();
     }
     _autoSelectModel();
     notifyListeners();
@@ -113,8 +113,8 @@ class ConnectionManagerService extends ChangeNotifier {
     if (!kIsWeb) {
       await _localOllama.reconnect();
     }
-    if (_tunnelConfigService.tunnelClient != null) {
-      await _tunnelConfigService.tunnelClient!.connect();
+    if (!_tunnelService.isConnected) {
+      await _tunnelService.connect();
     }
     notifyListeners();
   }
@@ -150,8 +150,8 @@ class ConnectionManagerService extends ChangeNotifier {
   }
 
   void _onAuthChanged() {
-    if (_authService.isAuthenticated.value && _authService.currentUser != null) {
-      _tunnelConfigService.generateTunnelConfig(_authService.currentUser!.id);
+    if (_authService.isAuthenticated.value && !_tunnelService.isConnected) {
+      _tunnelService.connect();
     }
     notifyListeners();
   }
@@ -159,7 +159,7 @@ class ConnectionManagerService extends ChangeNotifier {
   @override
   void dispose() {
     _localOllama.removeListener(_onConnectionChanged);
-    _tunnelConfigService.removeListener(_onConnectionChanged);
+    _tunnelService.removeListener(_onConnectionChanged);
     _authService.removeListener(_onAuthChanged);
     _cloudStreamingService?.dispose();
     super.dispose();
