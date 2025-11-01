@@ -19,7 +19,7 @@ export function createConversationRoutes(dbMigrator, logger = winston.createLogg
    * GET /api/conversations
    * Get all conversations for the authenticated user
    */
-  router.get('/', requireFeature('conversations'), async (req, res) => {
+  router.get('/', async (req, res) => {
     try {
       const userId = req.auth?.payload?.sub || req.user?.sub;
       
@@ -98,7 +98,7 @@ export function createConversationRoutes(dbMigrator, logger = winston.createLogg
    * GET /api/conversations/:id
    * Get a specific conversation with all its messages
    */
-  router.get('/:id', requireFeature('conversations'), async (req, res) => {
+  router.get('/:id', async (req, res) => {
     try {
       const userId = req.auth?.payload?.sub || req.user?.sub;
       const conversationId = req.params.id;
@@ -176,7 +176,7 @@ export function createConversationRoutes(dbMigrator, logger = winston.createLogg
    * POST /api/conversations
    * Create a new conversation
    */
-  router.post('/', requireFeature('conversations'), async (req, res) => {
+  router.post('/', async (req, res) => {
     try {
       const userId = req.auth?.payload?.sub || req.user?.sub;
       const { title, model, messages } = req.body;
@@ -291,7 +291,7 @@ export function createConversationRoutes(dbMigrator, logger = winston.createLogg
    * PUT /api/conversations/:id
    * Update a conversation (title, metadata, or add/update messages)
    */
-  router.put('/:id', requireFeature('conversations'), async (req, res) => {
+  router.put('/:id', async (req, res) => {
     try {
       const userId = req.auth?.payload?.sub || req.user?.sub;
       const conversationId = req.params.id;
@@ -416,7 +416,7 @@ export function createConversationRoutes(dbMigrator, logger = winston.createLogg
    * DELETE /api/conversations/:id
    * Delete a conversation and all its messages
    */
-  router.delete('/:id', requireFeature('conversations'), async (req, res) => {
+  router.delete('/:id', async (req, res) => {
     try {
       const userId = req.auth?.payload?.sub || req.user?.sub;
       const conversationId = req.params.id;
