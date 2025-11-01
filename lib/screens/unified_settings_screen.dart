@@ -1941,7 +1941,7 @@ class _UnifiedSettingsScreenState extends State<UnifiedSettingsScreen> {
                   ),
                 ),
                 child: Text(
-                  AppConfig.tunnelWebSocketUrl,
+                  AppConfig.tunnelChiselUrl,
                   style: TextStyle(
                     fontSize: 12,
                     color: AppTheme.textColorLight,

@@ -252,7 +252,7 @@ class NativeTrayService with TrayListener {
     final hasLocal = _localOllama!.isConnected;
     final hasCloud = _connectionManager!.hasCloudConnection;
     final localEndpoint = 'http://localhost:11434';
-    final cloudEndpoint = 'WebSocket Tunnel';
+    final cloudEndpoint = 'Tunnel';
 
     switch (status) {
       case TrayConnectionStatus.allConnected:

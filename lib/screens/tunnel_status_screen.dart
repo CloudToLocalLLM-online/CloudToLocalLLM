@@ -88,7 +88,7 @@ class _TunnelStatusScreenState extends State<TunnelStatusScreen> {
       statusColor = Colors.green;
       statusIcon = Icons.check_circle;
       statusText = 'Connected';
-      statusDescription = 'WebSocket tunnel is active and functioning normally.';
+      statusDescription = 'Tunnel is active and functioning normally.';
     } else if (error != null) {
       statusColor = Colors.red;
       statusIcon = Icons.error;
@@ -134,9 +134,9 @@ class _TunnelStatusScreenState extends State<TunnelStatusScreen> {
           children: [
             Text('Connection Details', style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
             SizedBox(height: AppTheme.spacingM),
-            _buildDetailRow('Connection Type', 'WebSocket Tunnel'),
+            _buildDetailRow('Connection Type', 'Tunnel'),
             _buildDetailRow('Status', isConnected ? 'Connected' : 'Disconnected'),
-            _buildDetailRow('Protocol', 'WSS (Secure WebSocket)'),
+            _buildDetailRow('Protocol', 'HTTP (Secure tunnel)'),
             _buildDetailRow('Authentication', 'JWT Token'),
           ],
         ),

@@ -56,7 +56,7 @@ class TunnelSettingsScreen extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'WebSocket Tunnel',
+                    'Tunnel Connection',
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
                   ),
                   Text(
@@ -88,7 +88,7 @@ class TunnelSettingsScreen extends StatelessWidget {
               style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
-            _buildInfoRow('Type', 'WebSocket (WSS)'),
+            _buildInfoRow('Type', 'HTTP (Secure tunnel)'),
             _buildInfoRow('Authentication', 'JWT Token'),
             _buildInfoRow('Configuration', 'Automatic'),
           ],

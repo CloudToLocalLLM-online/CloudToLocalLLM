@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 import '../services/auth_service.dart';
 import '../services/tunnel_configuration_service.dart';
 
-/// Simplified tunnel setup for WebSocket
+/// Tunnel setup wizard
 enum TunnelWizardMode { firstTime, reconfigure, troubleshoot }
 
 class TunnelConnectionWizard extends StatefulWidget {
@@ -61,13 +61,13 @@ class _TunnelConnectionWizardState extends State<TunnelConnectionWizard> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                widget.title ?? 'HTTP Polling Setup',
+                widget.title ?? 'Tunnel Setup',
                 style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                   fontWeight: FontWeight.bold,
                 ),
               ),
               Text(
-                'Simple HTTP-based tunnel connection',
+                'Secure tunnel connection to cloud service',
                 style: Theme.of(
                   context,
                 ).textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
@@ -125,7 +125,7 @@ class _TunnelConnectionWizardState extends State<TunnelConnectionWizard> {
 
               // Connection Status
               _buildStatusCard(
-                'WebSocket Connection',
+                'Tunnel Connection',
                 isConnected ? 'Connected' : 'Disconnected',
                 isConnected ? Icons.check_circle : Icons.error,
                 isConnected ? Colors.green : Colors.red,
@@ -159,7 +159,7 @@ class _TunnelConnectionWizardState extends State<TunnelConnectionWizard> {
                         Icon(Icons.info, color: Colors.blue[600]),
                         const SizedBox(width: 8),
                         Text(
-                          'WebSocket Tunnel Setup',
+                          'Tunnel Setup',
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
                             color: Colors.blue[800],
@@ -169,7 +169,7 @@ class _TunnelConnectionWizardState extends State<TunnelConnectionWizard> {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'The WebSocket tunnel provides a fast, real-time connection to the cloud service. '
+                      'The tunnel provides a fast, secure connection to the cloud service. '
                       'No complex configuration is needed - just authenticate and connect.',
                       style: TextStyle(color: Colors.blue[700]),
                     ),

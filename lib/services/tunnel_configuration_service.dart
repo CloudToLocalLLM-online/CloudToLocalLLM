@@ -54,7 +54,7 @@ class TunnelConfigurationService extends ChangeNotifier {
 
       final config = TunnelConfig(
         userId: userId,
-        cloudProxyUrl: kDebugMode ? AppConfig.tunnelWebSocketUrlDev : AppConfig.tunnelWebSocketUrl,
+        cloudProxyUrl: kDebugMode ? AppConfig.tunnelChiselUrlDev : AppConfig.tunnelChiselUrl,
         localBackendUrl: 'http://localhost:11434',
         authToken: token,
         enableCloudProxy: true,
@@ -101,7 +101,7 @@ class TunnelConfigurationService extends ChangeNotifier {
       if (_tunnelClient!.isConnected) {
         return TunnelValidationResult.success('Tunnel connection is active.');
       } else {
-        return TunnelValidationResult.failure('Failed to establish WebSocket connection.');
+        return TunnelValidationResult.failure('Failed to establish tunnel connection.');
       }
     } catch (e) {
       return TunnelValidationResult.failure('Connection test failed: $e');
