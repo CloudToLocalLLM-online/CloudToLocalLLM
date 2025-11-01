@@ -106,9 +106,9 @@ class Auth0WebService implements Auth0Service {
     final map = <String, dynamic>{};
     final keys = jsObject.keys.toDart;
     for (final key in keys) {
-      final value = jsObject[key.toString()];
+      final value = jsObject[(key as JSString).toDart];
       if (value != null) {
-        map[key.toString()] = _convertToDart(value);
+        map[(key as JSString).toDart] = _convertToDart(value);
       }
     }
     return map;

@@ -10,6 +10,7 @@ external Auth0Bridge? get auth0Bridge;
 @anonymous
 extension type Auth0Bridge(JSObject obj) {
   external JSPromise initialize();
+  external JSPromise loginWithRedirect();
   external JSPromise loginWithGoogle();
   external JSPromise isAuthenticated();
   external JSPromise getUser();
