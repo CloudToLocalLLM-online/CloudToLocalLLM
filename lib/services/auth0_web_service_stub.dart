@@ -9,7 +9,7 @@ class Auth0WebService {
   Auth0WebService._internal();
 
   bool _isInitialized = false;
-  bool _isAuthenticated = false;
+  final bool _isAuthenticated = false;
   Map<String, dynamic>? _currentUser;
   String? _accessToken;
   final StreamController<bool> _authStateController = StreamController<bool>.broadcast();

@@ -8,7 +8,7 @@ class Auth0DesktopService {
   factory Auth0DesktopService() => _instance;
   Auth0DesktopService._internal();
 
-  bool _isAuthenticated = false;
+  final bool _isAuthenticated = false;
   Map<String, dynamic>? _currentUser;
   String? _accessToken;
   final StreamController<bool> _authStateController = StreamController<bool>.broadcast();

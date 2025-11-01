@@ -171,6 +171,7 @@ class SimpleTunnelClient with ChangeNotifier {
     }
   }
 
+  @override
   void dispose() {
     _reconnectTimer?.cancel();
     _channel?.sink.close();

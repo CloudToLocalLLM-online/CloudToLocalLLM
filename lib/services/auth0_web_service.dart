@@ -108,7 +108,7 @@ class Auth0WebService {
       debugPrint('Auth0 login error: $e');
       debugPrint('Stack trace: $stackTrace');
       // Don't rethrow to prevent page reload - let the UI handle it
-      throw e;
+      rethrow;
     }
   }
 
