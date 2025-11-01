@@ -957,7 +957,6 @@ class _SystemStatusDialogState extends State<_SystemStatusDialog> {
         'Connection Status': {
           'Local Connection': connectionManager.hasLocalConnection ? 'Connected' : 'Disconnected',
           'Cloud Connection': connectionManager.hasCloudConnection ? 'Connected' : 'Disconnected',
-          'Provider Connection': connectionManager.hasProviderConnection ? 'Connected' : 'Disconnected',
         },
         'Provider Status': {
           'Total Providers': providerManager.registeredProviders.length.toString(),

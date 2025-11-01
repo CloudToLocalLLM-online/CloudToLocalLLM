@@ -1,12 +1,12 @@
 // Stub for WebDownloadPromptService on non-web platforms
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'auth_service.dart';
 import 'desktop_client_detection_service.dart';
 
 /// Stub implementation for desktop/mobile platforms
 class WebDownloadPromptService extends ChangeNotifier {
   final AuthService _authService;
-  final DesktopClientDetectionService? _clientDetectionService;
 
   bool _shouldShowPrompt = false;
   final bool _isFirstTimeUser = false;
@@ -21,9 +21,8 @@ class WebDownloadPromptService extends ChangeNotifier {
 
   WebDownloadPromptService({
     required AuthService authService,
-    DesktopClientDetectionService? clientDetectionService,
-  }) : _authService = authService,
-       _clientDetectionService = clientDetectionService;
+    required DesktopClientDetectionService clientDetectionService,
+  }) : _authService = authService;
 
   /// Initialize the service
   Future<void> initialize() async {

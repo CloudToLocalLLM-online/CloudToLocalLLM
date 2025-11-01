@@ -17,7 +17,6 @@ import 'services/unified_connection_service.dart';
 import 'services/tunnel_configuration_service.dart';
 import 'services/local_ollama_connection_service.dart';
 import 'services/connection_manager_service.dart';
-import 'utils/tunnel_logger.dart';
 import 'services/streaming_chat_service.dart';
 import 'services/native_tray_service.dart';
 import 'services/window_manager_service.dart';

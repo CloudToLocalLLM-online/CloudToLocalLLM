@@ -1905,7 +1905,7 @@ class _SetupWizardState extends State<SetupWizard> {
       );
 
       // Generate tunnel configuration
-      final config = await tunnelService.generateTunnelConfig(userId);
+      await tunnelService.generateTunnelConfig(userId);
 
       setState(() {
         _isTunnelConfiguring = false;

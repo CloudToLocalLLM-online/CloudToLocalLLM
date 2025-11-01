@@ -1,59 +1,25 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:cloudtolocalllm/models/tunnel_config.dart' as setup_config;
+import 'package:cloudtolocalllm/models/tunnel_config.dart';
 import 'package:cloudtolocalllm/models/tunnel_validation_result.dart';
 
 void main() {
   group('TunnelConfigurationService', () {
     // Note: Full service tests would require mocking AuthService and SimpleTunnelClient
     // For now, we'll focus on testing the models and basic functionality
-
-    // Service tests would go here with proper mocking
   });
 
-  group('SetupTunnelConfig', () {
-    test('should create valid default configuration', () {
-      final config = setup_config.SetupTunnelConfig.defaultConfig(
+  group('TunnelConfig', () {
+    test('should create a valid configuration', () {
+      const config = TunnelConfig(
         userId: 'test-user',
         authToken: 'test-token',
+        cloudProxyUrl: 'wss://example.com',
+        localBackendUrl: 'http://localhost:11434',
       );
 
-      expect(config.isValid, true);
       expect(config.userId, 'test-user');
       expect(config.authToken, 'test-token');
-      expect(config.enableCloudProxy, true);
-    });
-
-    test('should create development configuration', () {
-      final config = setup_config.SetupTunnelConfig.development(
-        userId: 'test-user',
-        authToken: 'test-token',
-      );
-
-      expect(config.isValid, true);
-      expect(config.cloudProxyUrl, contains('localhost'));
-      expect(config.connectionTimeout, 10);
-    });
-
-    test('should convert WebSocket URL correctly', () {
-      final config = setup_config.SetupTunnelConfig(
-        userId: 'test-user',
-        cloudProxyUrl: 'https://api.example.com/ws',
-        localBackendUrl: 'http://localhost:11434',
-        authToken: 'test-token',
-      );
-
-      expect(config.webSocketUrl, 'wss://api.example.com/ws');
-    });
-
-    test('should include authentication in connection headers', () {
-      final config = setup_config.SetupTunnelConfig.defaultConfig(
-        userId: 'test-user',
-        authToken: 'test-token',
-      );
-
-      final headers = config.connectionHeaders;
-      expect(headers['Authorization'], 'Bearer test-token');
-      expect(headers['User-Agent'], contains('CloudToLocalLLM'));
+      expect(config.cloudProxyUrl, 'wss://example.com');
     });
   });
 

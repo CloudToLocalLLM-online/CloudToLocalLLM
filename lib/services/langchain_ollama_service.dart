@@ -166,9 +166,6 @@ class LangChainOllamaService extends ChangeNotifier {
       case ConnectionType.cloud:
         // Route through tunnel system
         return 'https://app.cloudtolocalllm.online/api/ollama';
-      case ConnectionType.provider:
-        // Use provider manager to get URL
-        return 'http://localhost:11434'; // Default fallback
       case ConnectionType.none:
         throw StateError('No connection available');
     }

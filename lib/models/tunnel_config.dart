@@ -1,5 +1,3 @@
-import '../config/app_config.dart';
-
 /// Configuration model for the WebSocket tunnel connection.
 class TunnelConfig {
   final String userId;

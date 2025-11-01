@@ -266,7 +266,7 @@ class _TunnelManagementPanelState extends State<TunnelManagementPanel>
                   child: ElevatedButton.icon(
                     onPressed: () async {
                       if (isConnected) {
-                        await tunnelService.tunnelClient?.dispose();
+                        tunnelService.tunnelClient?.dispose();
                       } else {
                         await tunnelService.tunnelClient?.connect();
                       }

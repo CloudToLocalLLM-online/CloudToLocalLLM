@@ -11,11 +11,10 @@ import 'services/enhanced_user_tier_service.dart';
 import 'services/ollama_service.dart';
 import 'services/streaming_proxy_service.dart';
 import 'services/unified_connection_service.dart';
-import 'services/http_polling_tunnel_client.dart';
+import 'services/tunnel_configuration_service.dart';
 import 'services/local_ollama_connection_service.dart';
 import 'services/connection_manager_service.dart';
 import 'services/llm_provider_manager.dart';
-import 'utils/tunnel_logger.dart';
 import 'services/streaming_chat_service.dart';
 import 'services/native_tray_service.dart';
 import 'services/window_manager_service.dart';
@@ -306,31 +305,21 @@ class _CloudToLocalLLMPrivacyAppState extends State<CloudToLocalLLMPrivacyApp> {
           },
         ),
 
-        // SimpleTunnelClient removed - using HTTP polling only
-
-        // HTTP Polling Tunnel Client (fallback for WebSocket)
         ChangeNotifierProvider(
-          create: (context) {
-            final authService = context.read<AuthService>();
-            final logger = TunnelLogger('HttpPollingTunnel');
-            final providerManager = context.read<LLMProviderManager>();
-            return HttpPollingTunnelClient(
-              authService: authService,
-              logger: logger,
-              providerManager: providerManager,
-            );
-          },
+          create: (context) => TunnelConfigurationService(
+            authService: context.read<AuthService>(),
+          ),
         ),
 
         // Connection manager service
         ChangeNotifierProvider(
           create: (context) {
             final localOllama = context.read<LocalOllamaConnectionService>();
-            final httpPollingClient = context.read<HttpPollingTunnelClient>();
+            final tunnelConfigService = context.read<TunnelConfigurationService>();
             final authService = context.read<AuthService>();
             final connectionManager = ConnectionManagerService(
               localOllama: localOllama,
-              httpPollingClient: httpPollingClient,
+              tunnelConfigService: tunnelConfigService,
               authService: authService,
             );
             connectionManager.initialize();
@@ -439,7 +428,6 @@ class _CloudToLocalLLMPrivacyAppState extends State<CloudToLocalLLMPrivacyApp> {
 
       final connectionManager = context.read<ConnectionManagerService>();
       final localOllama = context.read<LocalOllamaConnectionService>();
-      final httpPollingClient = context.read<HttpPollingTunnelClient>();
       final windowManager = context.read<WindowManagerService>();
 
       // Initialize native tray service
@@ -447,7 +435,6 @@ class _CloudToLocalLLMPrivacyAppState extends State<CloudToLocalLLMPrivacyApp> {
       final success = await nativeTray.initialize(
         connectionManager: connectionManager,
         localOllama: localOllama,
-        tunnelManager: httpPollingClient,
         onShowWindow: () {
           debugPrint("🪟 [SystemTray] Native tray requested to show window");
           windowManager.showWindow();
