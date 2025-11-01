@@ -96,20 +96,27 @@ jobs:
           echo "Release Name: $RELEASE_NAME"
         fi
 
-  # Build desktop applications for Windows only
+  # Build desktop applications for Windows and Linux
   build-desktop:
-    name: Build Windows Desktop App
-    runs-on: [self-hosted, windows]
+    name: Build Desktop Apps
+    runs-on: ${{ matrix.runner }}
     needs: version-info
     strategy:
       fail-fast: false
       matrix:
         include:
-          - platform: windows
+          - runner: [self-hosted, windows]
+            platform: windows
             artifact_name: windows-desktop
             build_command: flutter build windows --release
             package_path: build/windows/x64/runner/Release
             executable_name: cloudtolocalllm.exe
+          - runner: [self-hosted, linux]
+            platform: linux
+            artifact_name: linux-desktop
+            build_command: flutter build linux --release
+            package_path: build/linux/x64/release/bundle
+            executable_name: cloudtolocalllm
     
     steps:
     - name: Checkout code
@@ -176,6 +183,62 @@ jobs:
         Write-Host "Checking Windows build prerequisites..."
         flutter doctor -v
       shell: powershell
+        
+    - name: Setup Flutter on Linux
+      if: matrix.platform == 'linux'
+      run: |
+        # Check if Flutter is already in PATH
+        if command -v flutter &> /dev/null; then
+          echo "Flutter found in PATH"
+          flutter --version
+        else
+          # Try common Flutter installation paths
+          FLUTTER_PATHS=(
+            "$HOME/flutter"
+            "/opt/flutter"
+            "$HOME/.local/flutter"
+          )
+          
+          FOUND_FLUTTER=false
+          for path in "${FLUTTER_PATHS[@]}"; do
+            if [ -f "$path/bin/flutter" ]; then
+              echo "Found Flutter at: $path"
+              export PATH="$path/bin:$PATH"
+              flutter --version
+              FOUND_FLUTTER=true
+              break
+            fi
+          done
+          
+          if [ "$FOUND_FLUTTER" = false ]; then
+            echo "ERROR: Flutter not found. Please install Flutter on the Linux runner."
+            exit 1
+          fi
+        fi
+        
+        # Verify Flutter version
+        FLUTTER_VERSION=$(flutter --version | grep -oP 'Flutter \K[\d.]+' | head -1)
+        echo "Installed Flutter version: $FLUTTER_VERSION"
+        
+        # Verify Linux desktop support is enabled
+        flutter config --enable-linux-desktop
+        
+    - name: Cache Flutter dependencies (Linux)
+      if: matrix.platform == 'linux'
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.pub-cache
+          .dart_tool
+        key: linux-flutter-${{ hashFiles('**/pubspec.lock') }}
+        restore-keys: |
+          linux-flutter-
+          
+    - name: Verify Linux build environment
+      if: matrix.platform == 'linux'
+      run: |
+        echo "Checking Linux build prerequisites..."
+        flutter doctor -v
         
     - name: Get Flutter dependencies
       run: flutter pub get
@@ -337,6 +400,7 @@ jobs:
         echo "**Available Artifacts:**" >> $GITHUB_STEP_SUMMARY
         echo "- ✅ Windows Installer (.exe)" >> $GITHUB_STEP_SUMMARY
         echo "- ✅ Windows Portable (ZIP)" >> $GITHUB_STEP_SUMMARY
+        echo "- ✅ Linux (Tar.gz Archive)" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
         echo "Artifacts are available in the Actions workflow run for 30 days." >> $GITHUB_STEP_SUMMARY
 
@@ -385,6 +449,9 @@ jobs:
         - **CloudToLocalLLM-Windows-$VERSION-Setup.exe** - Windows installer (recommended)
         - **cloudtolocalllm-$VERSION-portable.zip** - Portable version (no installation required)
         
+        ### Linux
+        - **cloudtolocalllm-$VERSION-linux.tar.gz** - Linux application bundle
+        
         ## Checksums
         SHA256 checksums are provided for all packages to verify integrity.
         
@@ -416,5 +483,6 @@ jobs:
         echo "**Available Platforms:**" >> $GITHUB_STEP_SUMMARY
         echo "- ✅ Windows Installer (.exe)" >> $GITHUB_STEP_SUMMARY
         echo "- ✅ Windows Portable (ZIP)" >> $GITHUB_STEP_SUMMARY
+        echo "- ✅ Linux (Tar.gz Archive)" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
         echo "**Download:** [GitHub Releases](https://github.com/imrightguy/CloudToLocalLLM/releases/tag/${{ needs.version-info.outputs.tag_name }})" >> $GITHUB_STEP_SUMMARY
