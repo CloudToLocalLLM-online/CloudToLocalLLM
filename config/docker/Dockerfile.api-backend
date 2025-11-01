@@ -12,20 +12,26 @@ RUN apk add --no-cache python3 make g++
 # Use npm install if package-lock.json doesn't exist, otherwise use npm ci
 RUN if [ -f package-lock.json ]; then npm ci --omit=dev; else npm install --omit=dev; fi
 
-# Extract Chisel binary from official image
-FROM jpillora/chisel:latest AS chisel-extract
-RUN find / -name "chisel" -type f -executable 2>/dev/null | head -1 | xargs -I {} sh -c 'cp {} /chisel-binary && chmod +x /chisel-binary'
-
 # Production container
 FROM node:24-alpine
 
-# Install curl for health checks
+# Install curl for health checks and Chisel binary
 RUN apk add --no-cache curl
 
-# Copy Chisel binary from extraction stage
-COPY --from=chisel-extract /chisel-binary /usr/local/bin/chisel
-RUN chmod +x /usr/local/bin/chisel && \
-    chisel --version || (echo "ERROR: Chisel binary verification failed" && exit 1)
+# Install Chisel binary directly from GitHub releases
+ARG CHISEL_VERSION=1.9.1
+RUN ARCH=$(uname -m) && \
+    if [ "$ARCH" = "x86_64" ]; then \
+      ARCH="amd64"; \
+    elif [ "$ARCH" = "aarch64" ]; then \
+      ARCH="arm64"; \
+    fi && \
+    curl -L -o /tmp/chisel.gz "https://github.com/jpillora/chisel/releases/download/v${CHISEL_VERSION}/chisel_${CHISEL_VERSION}_linux_${ARCH}.gz" && \
+    gunzip /tmp/chisel.gz && \
+    mv /tmp/chisel /usr/local/bin/chisel && \
+    chmod +x /usr/local/bin/chisel && \
+    chisel --version && \
+    rm -rf /tmp/*
 
 # Create app user for security
 RUN addgroup -g 1001 -S nodejs && \
