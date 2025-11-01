@@ -267,6 +267,10 @@ class ConversationStorageService {
   /// Save a list of conversations
   Future<void> saveConversations(List<Conversation> conversations) async {
     if (_database == null) {
+      if (kIsWeb) {
+        debugPrint('[ConversationStorage] Database not available on web, skipping save');
+        return; // Gracefully skip on web if database failed to initialize
+      }
       throw StateError('Database not initialized');
     }
 
