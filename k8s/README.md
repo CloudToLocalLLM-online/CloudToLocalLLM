@@ -1,8 +1,12 @@
-# CloudToLocalLLM - Kubernetes Deployment on DigitalOcean
+# CloudToLocalLLM - Kubernetes Deployment
 
 ## Overview
 
-Deploy CloudToLocalLLM to your DigitalOcean Kubernetes cluster with automatic SSL certificates, load balancing, and auto-scaling.
+Deploy CloudToLocalLLM to any Kubernetes cluster (managed or self-hosted) with automatic SSL certificates, load balancing, and auto-scaling.
+
+**Supported Platforms:**
+- **Managed Kubernetes**: DigitalOcean Kubernetes (DOKS), Google GKE, AWS EKS, Azure AKS
+- **Self-Hosted Kubernetes**: On-premises clusters, bare metal, or private cloud (ideal for businesses with security/compliance requirements)
 
 ## Architecture
 
@@ -28,25 +32,51 @@ DigitalOcean Load Balancer (nginx-ingress)
 
 ## Prerequisites
 
-### 1. DigitalOcean Kubernetes Cluster
+### 1. Kubernetes Cluster
 
-Create a cluster via DigitalOcean dashboard or CLI:
+**Option A: Managed Kubernetes (DigitalOcean Example)**
 
 ```bash
-# Using doctl CLI
+# Using doctl CLI for DigitalOcean Kubernetes
 doctl kubernetes cluster create cloudtolocalllm \
   --region nyc1 \
   --version latest \
   --node-pool "name=worker-pool;size=s-2vcpu-4gb;count=3" \
   --auto-upgrade=true \
   --surge-upgrade=true
+
+# Configure kubectl
+doctl kubernetes cluster kubeconfig save cloudtolocalllm
 ```
+
+**Option B: Self-Hosted Kubernetes**
+
+For businesses with on-premises or private cloud requirements:
+
+- Minimum: 3 nodes (control plane + workers)
+- Recommended: Separate control plane and worker nodes
+- Network: Cluster network access and ingress controller
+- Storage: Persistent volume support for PostgreSQL
+
+**Other Managed Options:**
+- Google GKE: `gcloud container clusters create ...`
+- AWS EKS: `eksctl create cluster ...`
+- Azure AKS: `az aks create ...`
 
 ### 2. Install kubectl
 
 ```bash
-# Download and configure kubectl
-doctl kubernetes cluster kubeconfig save cloudtolocalllm
+# Download kubectl (if not already installed)
+# Linux
+curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+
+# macOS
+brew install kubectl
+
+# Configure kubectl for your cluster (method depends on your platform)
+# For DigitalOcean: doctl kubernetes cluster kubeconfig save <cluster-name>
+# For GKE: gcloud container clusters get-credentials <cluster-name>
+# For self-hosted: Copy kubeconfig file from your cluster admin
 ```
 
 ### 3. Build and Push Docker Images
@@ -94,8 +124,8 @@ nano secrets.yaml  # Edit with your actual values
 Required values:
 - `postgres-password`: Strong database password
 - `jwt-secret`: Generate with `openssl rand -base64 32`
-- `supertokens-core-url`: SuperTokens Core URL (e.g., https://supertokens.yourdomain.com)
-- `supertokens-app-name`: Application name used by SuperTokens (e.g., CloudToLocalLLM)
+- `auth0-domain`: Your Auth0 tenant domain
+- `auth0-audience`: Your Auth0 API audience
 
 ### 2. Update ConfigMap
 

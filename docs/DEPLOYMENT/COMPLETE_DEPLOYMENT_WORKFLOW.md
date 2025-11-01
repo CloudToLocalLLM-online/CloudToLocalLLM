@@ -31,73 +31,105 @@ git status
 flutter --version
 # Expected: Flutter 3.x.x or higher
 
-# 4. Check version manager script
-./scripts/version_manager.sh help
-# Expected: Help output with commands listed
+# 4. Verify Docker installation
+docker --version
+# Expected: Docker version 20.10 or higher
 
-# 5. Verify current version
-./scripts/version_manager.sh info
-# Expected: Current version information display
+# 5. Verify kubectl installation
+kubectl version --client
+# Expected: kubectl client version
+
+# 6. Verify kubectl is configured for your cluster
+kubectl cluster-info
+# Expected: Cluster information displayed
 ```
 
 ### **Required Tools Checklist**
-- [ ] Flutter SDK installed and in PATH
+- [ ] Docker installed and running
+- [ ] kubectl installed and configured for your Kubernetes cluster
+- [ ] Container registry access (Docker Hub, DigitalOcean, self-hosted, etc.)
 - [ ] Git configured with proper credentials
-- [ ] SSH access to VPS (test: `ssh cloudllm@cloudtolocalllm.online "echo 'Connection OK'"`)
+
+**Note:** For DigitalOcean Kubernetes, you'll also need `doctl` CLI. For other platforms, use their respective CLI tools.
 
 ---
 
-## 📋 **Phase 2: Version Management** (5 minutes)
+## 📋 **Phase 2: Build Docker Images** (15-20 minutes)
 
-### **Manual Version Increment Process**
-**Performed AFTER deployment verification**
-```powershell
-# Use the PowerShell version manager script - ALWAYS
-./scripts/powershell/version_manager.ps1 increment <type>
+### **Build and Push Images to Container Registry**
 
-# Types:
-# - major: Creates GitHub release (x.0.0) - significant changes
-# - minor: Feature additions (x.y.0) - no GitHub release
-# - patch: Bug fixes (x.y.z) - no GitHub release
+CloudToLocalLLM uses Dockerfiles for container builds. Build and push images to your registry:
 
-# Commit version changes
-git add . && git commit -m "Increment version after deployment"
+```bash
+# Authenticate with your container registry
+# Docker Hub: docker login
+# DigitalOcean: doctl registry login
+# Other registries: Follow your registry's authentication process
 
-# Push using native git command
-git push origin master
+# Build and push web application image (update registry as needed)
+docker build -f config/docker/Dockerfile.web \
+  -t your-registry/cloudtolocalllm-web:latest .
+docker push your-registry/cloudtolocalllm-web:latest
+
+# Build and push API backend image
+docker build -f services/api-backend/Dockerfile.prod \
+  -t your-registry/cloudtolocalllm-api:latest .
+docker push your-registry/cloudtolocalllm-api:latest
 ```
 
----
-
-## 🔄 **Phase 3: Build & Package Creation** (Handled by Main Script)
-
-This phase, which includes cleaning the environment, building the Flutter web application, and packaging the desktop client, is handled automatically by the main deployment script (`scripts\powershell\Deploy-CloudToLocalLLM.ps1`).
-
-When you run the main script, it will perform these steps for you. There is no need to run these commands manually.
+**Note:** Update image tags in `k8s/api-backend-deployment.yaml` and `k8s/web-deployment.yaml` if using different tags.
 
 ---
 
-## 🚀 **Phase 4: VPS Deployment** (10-15 minutes)
+## 🚀 **Phase 3: Deploy to Kubernetes** (15-20 minutes)
 
-### **Step 4.1: Deploy to VPS**
+**Works with any Kubernetes cluster:** managed (DigitalOcean, GKE, EKS, AKS) or self-hosted.
+
+### **Step 3.1: Configure Kubernetes Secrets**
+
+Create secrets for your Kubernetes cluster:
+
 ```bash
-# SSH to VPS as cloudllm user
-ssh cloudllm@cloudtolocalllm.online
+# Create namespace
+kubectl apply -f k8s/namespace.yaml
 
-# Navigate to project directory
-cd /opt/cloudtolocalllm
+# Create secrets (update secrets.yaml with your values first)
+kubectl apply -f k8s/secrets.yaml
 
-# Pull latest changes
-git pull origin master
-
-# Run deployment script
-./scripts/deploy/update_and_deploy.sh
+# Create ConfigMap (update configmap.yaml with your domain)
+kubectl apply -f k8s/configmap.yaml
 ```
 
-### **Step 4.2: Verify VPS Deployment**
+### **Step 3.2: Deploy Database**
+
 ```bash
-# Check container status
-docker compose ps
+# Deploy PostgreSQL StatefulSet
+kubectl apply -f k8s/postgres-statefulset.yaml
+
+# Wait for database to be ready
+kubectl wait --for=condition=ready pod -l app=postgres -n cloudtolocalllm --timeout=300s
+```
+
+### **Step 3.3: Deploy Applications**
+
+```bash
+# Deploy API backend
+kubectl apply -f k8s/api-backend-deployment.yaml
+
+# Deploy web application
+kubectl apply -f k8s/web-deployment.yaml
+
+# Deploy ingress
+kubectl apply -f k8s/ingress-nginx.yaml
+```
+
+### **Step 3.4: Verify Deployment**
+```bash
+# Check pod status
+kubectl get pods -n cloudtolocalllm
+
+# Check services
+kubectl get svc -n cloudtolocalllm
 
 # Test main application
 curl -I https://app.cloudtolocalllm.online
@@ -109,30 +141,42 @@ curl -s https://app.cloudtolocalllm.online/version.json
 
 ---
 
-## ✅ **Phase 5: Comprehensive Verification** (10 minutes)
+## ✅ **Phase 4: Comprehensive Verification** (10 minutes)
 
-### **Automated Verification Script**
+### **Kubernetes Health Checks**
 ```bash
-# Run comprehensive verification
-./scripts/deploy/verify_deployment.sh
+# Check all pods are running
+kubectl get pods -n cloudtolocalllm
+
+# View pod logs
+kubectl logs -f deployment/api-backend -n cloudtolocalllm
+kubectl logs -f deployment/web -n cloudtolocalllm
+
+# Check ingress status
+kubectl get ingress -n cloudtolocalllm
 ```
 
 ### **Manual Verification**
-- **Desktop Application:** Launches without errors, connects to local Ollama.
-- **Web Application:** Loads correctly, authentication works, no console errors.
+- **Web Application:** Loads correctly at https://app.cloudtolocalllm.online, authentication works, no console errors
+- **API Backend:** Health check endpoint returns 200 OK
+- **Database:** PostgreSQL pods are running and accepting connections
 
 ---
 
 ## 🚫 **Deployment Completion Criteria**
 
 - **Version Consistency:** All components show the identical version number.
-- **All Components Deployed:** Git repo updated, packages created, VPS deployed.
+- **All Components Deployed:** Git repo updated, Docker images built, Kubernetes cluster deployed.
 - **Comprehensive Testing Completed:** All automated and manual tests passed.
 
 ---
 
 ## 🔧 **Troubleshooting**
 
-- **Version Mismatch:** Run `./scripts/deploy/sync_versions.sh` on the VPS.
-- **VPS Deployment Issues:** Check container logs with `docker compose logs webapp --tail 50`.
-- **SSH/Access Issues:** Test SSH connection with `ssh -v cloudllm@cloudtolocalllm.online`.
+- **Pod Not Starting:** Check pod logs with `kubectl logs <pod-name> -n cloudtolocalllm`
+- **Image Pull Errors:** Verify image registry credentials and image tags
+- **Database Connection Issues:** Check PostgreSQL pod logs and verify secrets
+- **Ingress Issues:** Check ingress controller and DNS configuration
+- **Authentication Errors:** Verify Auth0 environment variables in ConfigMap and Secrets
+
+For more detailed troubleshooting, see [Kubernetes README](../../k8s/README.md).

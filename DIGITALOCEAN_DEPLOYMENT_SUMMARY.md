@@ -348,11 +348,9 @@ dig cloudtolocalllm.online +short
 
 ### Medium Term (Next 2 Weeks)
 
-1. 🔄 Implement SuperTokens authentication
-2. 🔄 Remove Auth0 dependency
-3. 🔄 Complete tunnel implementation
-4. 🔄 Test end-to-end flow
-5. 🔄 Set up CI/CD automation
+1. 🔄 Complete tunnel implementation
+2. 🔄 Test end-to-end flow
+3. 🔄 Set up CI/CD automation
 
 ---
 

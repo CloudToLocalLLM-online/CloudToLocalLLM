@@ -165,7 +165,7 @@ Nginx (Port 80/443)
 - **Features**:
   - REST API endpoints
   - WebSocket tunnel server at `/ws/tunnel`
-  - SuperTokens-based session/JWT validation
+  - Auth0 JWT validation
   - PostgreSQL database connection
   - Tier-based user management
 - **Health Check**: HTTP GET /health
@@ -202,13 +202,13 @@ Nginx (Port 80/443)
 ### Connection Steps
 1. Start your local Ollama instance
 2. Launch the CloudToLocalLLM desktop app
-3. Sign in to your account (SuperTokens)
+3. Sign in with your Auth0 credentials
 4. Desktop app will connect to: `wss://api.yourdomain.com/ws/tunnel`
 5. WebSocket tunnel established
 
 ### Troubleshooting Desktop Connection
 - Check desktop app logs in system tray
-- Verify SuperTokens authentication is successful
+- Verify Auth0 authentication is successful
 - Ensure firewall allows outbound WebSocket connections
 - Check API backend logs: `docker compose -f docker-compose.production.yml logs api-backend`
 
@@ -377,22 +377,19 @@ For high-load scenarios, customize PostgreSQL configuration:
 # Mount it in docker-compose.production.yml
 ```
 
-## Migration from Google Cloud Run
+## Alternative: Kubernetes Deployment
 
-This Docker Compose setup replaces Google Cloud Run deployment and provides:
-- ✅ Provider-agnostic deployment
-- ✅ Full control over infrastructure
-- ✅ No vendor lock-in
-- ✅ Lower costs for predictable workloads
-- ✅ Easy migration to Kubernetes later
+For production deployments, **Kubernetes is recommended** over Docker Compose:
+- ✅ Better scalability and high availability
+- ✅ Auto-scaling capabilities
+- ✅ More robust networking and service discovery
+- ✅ Platform-agnostic (works with any Kubernetes cluster)
+- ✅ Supports both managed and self-hosted clusters
 
-## Next Steps: Kubernetes Migration
-
-Once this Docker Compose setup is working:
-1. Test thoroughly in production
-2. Create Helm charts based on this configuration
-3. Migrate to Kubernetes for additional scalability
-4. See `KUBERNETES_DEPLOYMENT.md` (coming soon)
+**See:**
+- [Kubernetes Quick Start](../KUBERNETES_QUICKSTART.md) - DigitalOcean example
+- [Kubernetes README](../k8s/README.md) - Complete Kubernetes guide
+- [Self-Hosted Kubernetes Guide](../KUBERNETES_SELF_HOSTED_GUIDE.md) - For businesses
 
 ## Support
 

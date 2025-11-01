@@ -26,10 +26,10 @@ Both version manager scripts (`scripts/powershell/version_manager.ps1` and `scri
 - Used by: Linux-based development workflows
 - Context: Local development and version management on Linux systems
 
-**VPS Deployment:**
-- Uses deployment-specific scripts that may call version management functions
-- Version managers themselves are primarily development tools
-- Deployment scripts handle version management through automated processes
+**Deployment:**
+- Version managers are development tools used during the build process
+- Kubernetes deployments use Dockerfiles which include version information
+- Version is baked into Docker images during build
 
 ### Files Automatically Updated
 

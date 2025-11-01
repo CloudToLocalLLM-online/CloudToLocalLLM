@@ -129,13 +129,7 @@ Generate all required secrets before deployment:
   openssl rand -base64 32
   ```
 
-### SuperTokens API Key
-- [ ] SuperTokens API key generated
-  ```bash
-  openssl rand -base64 32
-  ```
-
-### Auth0 Credentials (Temporary - will be replaced with SuperTokens)
+### Auth0 Credentials
 - [ ] Auth0 account created (free tier)
 - [ ] Auth0 Application created
 - [ ] Auth0 Domain noted: `your-tenant.us.auth0.com`
@@ -155,7 +149,6 @@ Configure these secrets in repository settings:
 - [ ] `DOMAIN` - `cloudtolocalllm.online`
 - [ ] `POSTGRES_PASSWORD` - From step 4
 - [ ] `JWT_SECRET` - From step 4
-- [ ] `SUPERTOKENS_API_KEY` - From step 4
 - [ ] `AUTH0_DOMAIN` - From Auth0 setup
 - [ ] `AUTH0_AUDIENCE` - From Auth0 setup
 - [ ] `SENTRY_DSN` - (Optional) For error tracking
@@ -167,7 +160,6 @@ gh secret set DIGITALOCEAN_ACCESS_TOKEN
 gh secret set DOMAIN --body "cloudtolocalllm.online"
 gh secret set POSTGRES_PASSWORD
 gh secret set JWT_SECRET
-gh secret set SUPERTOKENS_API_KEY
 gh secret set AUTH0_DOMAIN
 gh secret set AUTH0_AUDIENCE
 ```

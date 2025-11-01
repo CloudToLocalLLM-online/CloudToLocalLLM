@@ -15,33 +15,45 @@ This document provides a comprehensive overview of deployment options and strate
 
 ## Deployment Options
 
-### 🚀 Multi-Container Deployment (Recommended)
+### 🚀 Kubernetes Deployment (Recommended)
 
-Deploy the full CloudToLocalLLM stack to your own Virtual Private Server (VPS) using Docker Compose with **strict quality standards**.
+Deploy the full CloudToLocalLLM stack to **Kubernetes** using Dockerfiles and Kubernetes manifests. Works with:
+- **Managed Kubernetes**: DigitalOcean Kubernetes (DOKS), Google GKE, AWS EKS, Azure AKS
+- **Self-Hosted Kubernetes**: On-premises or your own infrastructure
 
 ```bash
-# Automated deployment with zero-tolerance quality verification
-# Use --force flag for fully automatic execution without prompts
-cd /path/to/CloudToLocalLLM
-./scripts/deploy/complete_deployment.sh --force
+# Build and push Docker images to your container registry
+docker build -f config/docker/Dockerfile.web \
+  -t your-registry.com/cloudtolocalllm/web:latest .
+docker push your-registry.com/cloudtolocalllm/web:latest
+
+docker build -f services/api-backend/Dockerfile.prod \
+  -t your-registry.com/cloudtolocalllm/api:latest .
+docker push your-registry.com/cloudtolocalllm/api:latest
+
+# Deploy to Kubernetes (any cluster)
+kubectl apply -f k8s/
 ```
 
 **Benefits:**
 - Scalable and secure environment for multiple users
-- Automated SSL certificate management
-- Isolated services prevent cascading failures
-- Enhanced network policies and container isolation
+- Automated SSL certificate management via cert-manager
+- Auto-scaling and high availability
+- Platform-agnostic (works with any Kubernetes cluster)
+- Self-hosting option for businesses with security/compliance requirements
 
 **Requirements:**
-- VPS with Docker and Docker Compose
+- Kubernetes cluster (managed or self-hosted)
+- Container registry (Docker Hub, DigitalOcean Container Registry, self-hosted, etc.)
 - Domain name with DNS configuration
-- Minimum 2GB RAM, 20GB storage
+- kubectl configured for your cluster
 
 ### 🏠 Self-Hosting Options
 
-For detailed self-hosting instructions, see:
-- [Self-Hosting Guide](../OPERATIONS/SELF_HOSTING.md)
-- [Infrastructure Guide](../OPERATIONS/INFRASTRUCTURE_GUIDE.md)
+For self-hosted Kubernetes deployments (on-premises or private cloud):
+- [Self-Hosted Kubernetes Guide](../../KUBERNETES_SELF_HOSTED_GUIDE.md) - Complete guide for businesses
+- [Self-Hosting Guide](../OPERATIONS/SELF_HOSTING.md) - General self-hosting information
+- [Infrastructure Guide](../OPERATIONS/INFRASTRUCTURE_GUIDE.md) - Server requirements
 
 ### ⚠️ Legacy Single Container (Deprecated)
 
@@ -70,50 +82,52 @@ For detailed information, see [System Architecture](../ARCHITECTURE/SYSTEM_ARCHI
 
 ---
 
-## Deployment Scripts
+## Dockerfile-Based Deployment
 
-### 🎯 **Primary Deployment Scripts**
+CloudToLocalLLM uses **Dockerfiles** for building container images, which are then deployed to **Kubernetes** (managed or self-hosted).
 
-#### `scripts/deploy/complete_deployment.sh` (RECOMMENDED)
-Fully automated deployment with strict quality verification and zero-tolerance policy.
+### 🐳 **Dockerfiles**
 
-```bash
-# Basic deployment
-./scripts/deploy/complete_deployment.sh --force
-
-# With verbose output
-./scripts/deploy/complete_deployment.sh --force --verbose
-
-# Dry run (preview only)
-./scripts/deploy/complete_deployment.sh --dry-run
-```
-
-#### `scripts/deploy/update_and_deploy.sh`
-Deploys the multi-container architecture to a VPS.
-
-#### `scripts/deploy/verify_deployment.sh`
-Strict verification script that enforces zero warnings/errors policy.
-
-### 🔧 **Supporting Scripts**
-
-#### `scripts/version_manager.sh`
-Manages project version numbers across different files.
+#### `config/docker/Dockerfile.web`
+Builds the Flutter web application as a static site served by Nginx.
 
 ```bash
-# Increment version
-./scripts/version_manager.sh increment minor
-
-# Set specific version
-./scripts/version_manager.sh set 3.13.0
-
-# Get current version
-./scripts/version_manager.sh get
+docker build -f config/docker/Dockerfile.web -t cloudtolocalllm-web:latest .
 ```
 
-#### `scripts/deploy/complete_automated_deployment.sh`
-Orchestrates a full deployment workflow including versioning, building, and distributing.
+#### `services/api-backend/Dockerfile.prod`
+Builds the Node.js API backend service.
 
-For a complete list of scripts, see [scripts/README.md](../../scripts/README.md).
+```bash
+docker build -f services/api-backend/Dockerfile.prod -t cloudtolocalllm-api:latest .
+```
+
+### ☸️ **Kubernetes Deployment**
+
+Deploy to any Kubernetes cluster (managed or self-hosted) using the manifests in the `k8s/` directory:
+
+```bash
+# Apply all Kubernetes resources
+kubectl apply -f k8s/
+
+# Or apply individually
+kubectl apply -f k8s/namespace.yaml
+kubectl apply -f k8s/configmap.yaml
+kubectl apply -f k8s/secrets.yaml
+kubectl apply -f k8s/postgres-statefulset.yaml
+kubectl apply -f k8s/api-backend-deployment.yaml
+kubectl apply -f k8s/web-deployment.yaml
+kubectl apply -f k8s/ingress-nginx.yaml
+```
+
+**Platform Options:**
+- **Managed Kubernetes**: DigitalOcean (DOKS), Google GKE, AWS EKS, Azure AKS
+- **Self-Hosted Kubernetes**: On-premises clusters, bare metal, or private cloud
+
+For detailed deployment instructions, see:
+- [Kubernetes Quick Start](../../KUBERNETES_QUICKSTART.md) - DigitalOcean example
+- [Kubernetes README](../../k8s/README.md) - Complete Kubernetes deployment guide (platform-agnostic)
+- [Self-Hosted Kubernetes Guide](../../KUBERNETES_SELF_HOSTED_GUIDE.md) - For businesses deploying on-premises
 
 ---
 
@@ -165,6 +179,10 @@ For detailed information, see [Versioning Strategy](VERSIONING_STRATEGY.md).
 - [Self-Hosting Guide](../OPERATIONS/SELF_HOSTING.md)
 - [Infrastructure Guide](../OPERATIONS/INFRASTRUCTURE_GUIDE.md)
 - [Tunnel Troubleshooting](../OPERATIONS/TUNNEL_TROUBLESHOOTING.md)
+
+### ☸️ **Kubernetes Deployment**
+- [Kubernetes Quick Start](../../KUBERNETES_QUICKSTART.md) - DigitalOcean Kubernetes example
+- [Kubernetes README](../../k8s/README.md) - Complete Kubernetes deployment guide (works with any cluster)
 
 ### 🏗️ **Architecture**
 - [System Architecture](../ARCHITECTURE/SYSTEM_ARCHITECTURE.md)

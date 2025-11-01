@@ -112,10 +112,10 @@ See our [Contribution Guidelines](../CONTRIBUTING.md) for detailed information o
 
 ### **🔧 System Administrators**
 1. **[Deployment Overview](DEPLOYMENT/DEPLOYMENT_OVERVIEW.md)** - Understand deployment options
-2. **[Scripts Overview](DEPLOYMENT/SCRIPTS_OVERVIEW.md)** - Learn about automation scripts
-3. **[Strict Deployment Policy](DEPLOYMENT/STRICT_DEPLOYMENT_POLICY.md)** - Quality standards
-4. **[Infrastructure Guide](OPERATIONS/INFRASTRUCTURE_GUIDE.md)** - Server management
-5. Check [Troubleshooting](USER_DOCUMENTATION/USER_TROUBLESHOOTING_GUIDE.md) if issues arise
+2. **[Kubernetes Quick Start](../KUBERNETES_QUICKSTART.md)** - Kubernetes deployment example
+3. **[Self-Hosted Kubernetes](../KUBERNETES_SELF_HOSTED_GUIDE.md)** - For businesses deploying on-premises
+4. **[Kubernetes README](../k8s/README.md)** - Complete Kubernetes deployment guide
+5. **[Infrastructure Guide](OPERATIONS/INFRASTRUCTURE_GUIDE.md)** - Server management
 
 ### For Developers
 1. Review [System Architecture](ARCHITECTURE/SYSTEM_ARCHITECTURE.md)

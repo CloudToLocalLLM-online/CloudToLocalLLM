@@ -2,141 +2,69 @@
 
 ## 📚 Documentation Overview
 
-This directory contains the complete deployment documentation for CloudToLocalLLM. The documentation is organized into focused, non-redundant files that serve specific purposes.
+This directory contains deployment documentation for CloudToLocalLLM. The project uses **Dockerfile-based builds** and deploys to **Kubernetes** (managed or self-hosted).
 
 ## 🎯 Primary Documentation (Start Here)
 
-### **[VPS_DEPLOYMENT.md](./VPS_DEPLOYMENT.md)** ⭐ **PRIMARY**
-**Complete VPS deployment methodology** - Augment agent-powered automation with Windows-to-VPS orchestration.
-- **Purpose**: Primary deployment guide for the VPS-based system
+### **[DEPLOYMENT_OVERVIEW.md](./DEPLOYMENT_OVERVIEW.md)** ⭐ **PRIMARY**
+**Complete deployment overview** - All deployment options and strategies.
+- **Purpose**: Understand all deployment methods
 - **Audience**: All developers and deployment operators
-- **Content**: Complete workflows, scripts, quality gates, and automation
-- **When to use**: For all deployment activities (replaces GitHub Actions)
+- **Content**: Kubernetes deployment, Dockerfiles, platform options
+- **When to use**: For understanding deployment architecture
 
-### **[VPS_QUALITY_GATES_SPECIFICATION.md](./VPS_QUALITY_GATES_SPECIFICATION.md)** ⭐ **NEW**
-**Zero-tolerance quality gates specification** - Comprehensive quality assurance and rollback mechanisms.
-- **Purpose**: Understand quality gates, rollback procedures, and monitoring
-- **Audience**: DevOps engineers and deployment operators
-- **Content**: Quality gate architecture, rollback mechanisms, monitoring
-- **When to use**: When implementing or troubleshooting quality gates
-
-### **[ENVIRONMENT_SEPARATION_GUIDE.md](./ENVIRONMENT_SEPARATION_GUIDE.md)**
-**Architecture separation guide** - Clear separation between Windows and Linux deployment environments.
-- **Purpose**: Understand the deployment architecture and environment boundaries
-- **Audience**: All developers and deployment operators
-- **Content**: Architecture principles, workflow examples, best practices
-- **When to use**: Before starting any deployment work
-
-### **[COMPLETE_DEPLOYMENT_WORKFLOW.md](./COMPLETE_DEPLOYMENT_WORKFLOW.md)**
-**The authoritative deployment guide** - Complete step-by-step technical implementation for all deployment phases.
-- **Purpose**: Primary deployment execution reference
+### **[COMPLETE_DEPLOYMENT_WORKFLOW.md](./COMPLETE_DEPLOYMENT_WORKFLOW.md)** ⭐ **ESSENTIAL**
+**Step-by-step deployment guide** - Complete deployment process.
+- **Purpose**: Execute deployments
 - **Audience**: Developers, DevOps engineers, deployment operators
-- **Content**: Detailed technical procedures, commands, and verification steps
+- **Content**: Detailed procedures, commands, verification steps
 - **When to use**: For executing actual deployments
 
 ### **[VERSIONING_STRATEGY.md](./VERSIONING_STRATEGY.md)**
-**Semantic versioning strategy and decision guidance** - Comprehensive versioning approach for different release types.
-- **Purpose**: Version increment decision making and strategy
-- **Audience**: Release managers, developers, technical leads
-- **Content**: PATCH/MINOR/MAJOR guidelines, deployment urgency, decision matrix
-- **When to use**: Before starting any deployment to determine version increment
+**Version management strategy** - How to manage versions.
+- **Purpose**: Version increment decisions
+- **Audience**: Release managers, developers
+- **Content**: Version format, increment guidelines
+- **When to use**: Before starting deployments
 
 ## 🔧 Specialized Documentation
 
-### **[SCRIPT_FIRST_RESOLUTION_GUIDE.md](./SCRIPT_FIRST_RESOLUTION_GUIDE.md)**
-**Automation principles and best practices** - Core philosophy for deployment automation.
-- **Purpose**: Deployment automation principles and troubleshooting
-- **Audience**: All deployment team members
-- **Content**: Script-first resolution principles, common mistakes, best practices
-- **When to use**: When encountering deployment issues or setting up automation
+### **[STRICT_DEPLOYMENT_POLICY.md](./STRICT_DEPLOYMENT_POLICY.md)**
+**Quality standards** - Deployment quality requirements.
+- **Purpose**: Understand quality gates
+- **Audience**: DevOps engineers
+- **Content**: Quality standards, rollback procedures
 
-### **AUR Integration (REMOVED)**
-**AUR support has been decommissioned** - AUR package management is no longer supported.
-- **Status**: Removed from deployment workflows
-- **Reason**: AUR is decommissioned and no longer maintained
-- **Alternative**: Use DEB packages or AppImage for Linux distribution
+### **[AUR_STATUS.md](./AUR_STATUS.md)**
+**AUR package status** - Temporarily removed, reintegration planned.
+- **Status**: AUR support temporarily removed
+- **Alternative**: Use AppImage for Linux
 
-### **[DEPLOYMENT_WORKFLOW_DIAGRAM.md](./DEPLOYMENT_WORKFLOW_DIAGRAM.md)**
-**Visual workflow diagrams and decision trees** - Mermaid diagrams for deployment visualization.
-- **Purpose**: Visual representation of deployment processes
-- **Audience**: Visual learners, process documentation, training
-- **Content**: Flowcharts, decision trees, timeline diagrams, troubleshooting flows
-- **When to use**: For understanding workflow overview or training new team members
+## 📋 Quick Reference
 
-### **[SIX_PHASE_BUILD_TIME_INJECTION_INTEGRATION.md](./SIX_PHASE_BUILD_TIME_INJECTION_INTEGRATION.md)**
-**Build-time timestamp injection feature** - Specific feature integration documentation.
-- **Purpose**: Build-time timestamp injection system documentation
-- **Audience**: Developers working with build systems
-- **Content**: Integration details, fallback mechanisms, validation procedures
-- **When to use**: When working with or troubleshooting build-time timestamp features
+### **For New Deployments**
+1. Read [`DEPLOYMENT_OVERVIEW.md`](./DEPLOYMENT_OVERVIEW.md) → Understand deployment options
+2. Read [`COMPLETE_DEPLOYMENT_WORKFLOW.md`](./COMPLETE_DEPLOYMENT_WORKFLOW.md) → Execute deployment
+3. Reference [`KUBERNETES_QUICKSTART.md`](../../KUBERNETES_QUICKSTART.md) → DigitalOcean example
+4. See [`k8s/README.md`](../../k8s/README.md) → Complete Kubernetes guide
 
-## 📋 Documentation Hierarchy
+### **For Kubernetes Deployment**
+- **Managed Kubernetes**: See [`KUBERNETES_QUICKSTART.md`](../../KUBERNETES_QUICKSTART.md) for DigitalOcean example
+- **Self-Hosted Kubernetes**: See [`KUBERNETES_SELF_HOSTED_GUIDE.md`](../../KUBERNETES_SELF_HOSTED_GUIDE.md) for on-premises deployment
+- **Any Kubernetes**: See [`k8s/README.md`](../../k8s/README.md) for platform-agnostic guide
 
-### **Information Flow** ⚡ **UPDATED**
-```
-1. Start with VPS_DEPLOYMENT.md → Primary deployment methodology
-2. Reference VPS_QUALITY_GATES_SPECIFICATION.md → Quality gates and rollback
-3. Use VERSIONING_STRATEGY.md → Determine version increment
-4. Reference specialized docs as needed → Troubleshoot or understand specifics
-5. Follow SCRIPT_RESOLUTION.md → Resolve issues through automation
-```
+## ✅ Current Deployment Method
 
-### **Single Source of Truth Principle** ⚡ **UPDATED**
-- **Primary Deployment**: `VPS_DEPLOYMENT.md` ⭐ **PRIMARY**
-- **Quality Gates**: `VPS_QUALITY_GATES_SPECIFICATION.md` ⭐ **NEW**
-- **Versioning Decisions**: `VERSIONING_STRATEGY.md`
-- **Automation Principles**: `SCRIPT_RESOLUTION.md`
-- **Environment Separation**: `ENVIRONMENT_SEPARATION_GUIDE.md`
-- **Visual Workflows**: `DEPLOYMENT_WORKFLOW_DIAGRAM.md`
-- **Build Features**: `BUILD_INJECTION.md`
-- **Legacy Reference**: `COMPLETE_DEPLOYMENT_WORKFLOW.md` (GitHub Actions era)
+**CloudToLocalLLM uses:**
+- **Dockerfiles** for building container images
+- **Kubernetes** for orchestration (any cluster: managed or self-hosted)
+- **kubectl apply** for deployment
 
-## 🚫 Removed Documentation
+**No longer used:**
+- Deployment scripts in `scripts/deploy/` folder (for cloud deployment)
+- VPS deployment scripts
+- Docker Compose for production (use Kubernetes instead)
 
-The following files were removed during consolidation to eliminate redundancy:
+---
 
-- **`STRATEGIC_DEPLOYMENT_ORCHESTRATION.md`** → Merged into `COMPLETE_DEPLOYMENT_WORKFLOW.md`
-- **`GITHUB_RELEASE_WORKFLOW.md`** → Outdated, replaced by current workflow
-- **`PHASE_6_OPERATIONAL_READINESS_REPORT.md`** → Version-specific report, no longer relevant
-
-## 🔍 Quick Reference
-
-### **For New Deployments** ⚡ **UPDATED**
-1. Read [`VPS_DEPLOYMENT.md`](./VPS_DEPLOYMENT.md) → Complete deployment methodology ⭐ **PRIMARY**
-2. Reference [`VPS_QUALITY_GATES_SPECIFICATION.md`](./VPS_QUALITY_GATES_SPECIFICATION.md) → Quality gates ⭐ **NEW**
-3. Read [`VERSIONING_STRATEGY.md`](./VERSIONING_STRATEGY.md) → Choose version increment
-4. Reference [`DEPLOYMENT_WORKFLOW_DIAGRAM.md`](./DEPLOYMENT_WORKFLOW_DIAGRAM.md) → Visual guidance
-
-### **For Troubleshooting**
-1. Check [`SCRIPT_FIRST_RESOLUTION_GUIDE.md`](./SCRIPT_FIRST_RESOLUTION_GUIDE.md) → Automation principles
-2. Review [`AUR_STATUS.md`](./AUR_STATUS.md) → AUR status and alternatives
-3. Use [`COMPLETE_DEPLOYMENT_WORKFLOW.md`](./COMPLETE_DEPLOYMENT_WORKFLOW.md) → Troubleshooting section
-
-### **For Understanding Features**
-1. [`SIX_PHASE_BUILD_TIME_INJECTION_INTEGRATION.md`](./SIX_PHASE_BUILD_TIME_INJECTION_INTEGRATION.md) → Build timestamp features
-2. [`DEPLOYMENT_WORKFLOW_DIAGRAM.md`](./DEPLOYMENT_WORKFLOW_DIAGRAM.md) → Visual process flows
-
-## ✅ Documentation Quality Standards
-
-### **Maintained Standards**
-- **Single Source of Truth**: Each topic has one authoritative location
-- **Clear Navigation**: Cross-references between related sections
-- **No Conflicting Guidance**: Eliminated contradictory instructions
-- **Logical Hierarchy**: Overview → Detailed Process → Reference → Troubleshooting
-
-### **Cross-Reference System**
-All documents include clear cross-references to related documentation using the format:
-```markdown
-**📖 For detailed [topic], see:** [`FILENAME.md`](./FILENAME.md)
-```
-
-## 🎯 Success Criteria
-
-**Documentation is successful when:**
-- ✅ Users can find information quickly without confusion
-- ✅ No duplicate or conflicting guidance exists
-- ✅ Each document serves a distinct, clear purpose
-- ✅ Cross-references guide users to related information
-- ✅ Troubleshooting follows logical escalation paths
-
-**Remember**: Always use existing automation scripts rather than manual operations. When in doubt, follow the script-first resolution principle documented in [`SCRIPT_FIRST_RESOLUTION_GUIDE.md`](./SCRIPT_FIRST_RESOLUTION_GUIDE.md).
+*For questions about deployment, see [COMPLETE_DEPLOYMENT_WORKFLOW.md](./COMPLETE_DEPLOYMENT_WORKFLOW.md) or [open an issue](https://github.com/imrightguy/CloudToLocalLLM/issues).*

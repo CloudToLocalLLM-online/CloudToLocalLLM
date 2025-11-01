@@ -19,7 +19,7 @@ CloudToLocalLLM is a revolutionary Flutter-based application that bridges the ga
 - **Hybrid AI Architecture**: Seamlessly switch between cloud-based and local AI models
 - **Privacy-First Design**: Keep sensitive data local while leveraging cloud AI when needed
 - **Cross-Platform Support**: Available on Windows, Linux, and Web platforms
-- **Secure Authentication**: OAuth2-based authentication with encrypted token storage
+- **Secure Authentication**: Auth0 OAuth2 authentication with encrypted token storage
 - **Real-Time Communication**: WebSocket-based tunneling for instant AI responses
 - **Model Flexibility**: Support for OpenAI, Anthropic, and local Ollama models
 - **User-Friendly Interface**: Intuitive Flutter-based UI with responsive design
@@ -62,7 +62,7 @@ CloudToLocalLLM is a revolutionary Flutter-based application that bridges the ga
 CloudToLocalLLM employs a sophisticated architecture that combines the best of both worlds:
 
 ### Cloud Integration
-- **OAuth2 Authentication**: Secure authentication with major cloud providers
+- **Auth0 Authentication**: Secure OAuth2 authentication via Auth0
 - **API Gateway**: Centralized API management and routing
 - **WebSocket Tunneling**: Real-time communication between client and cloud services
 - **Load Balancing**: Intelligent distribution of requests across multiple AI providers
@@ -145,7 +145,7 @@ flutter build web --release
 ```
 ### Security
 
-Cloud Run deployment uses keyless authentication via GitHub OIDC and Google Cloud Workload Identity Federation (WIF). This avoids long‑lived service account keys and is our recommended best practice. See the [Cloud Run OIDC/WIF Guide](config/cloudrun/OIDC_WIF_SETUP.md).
+CloudToLocalLLM uses Auth0 for user authentication and deploys to Kubernetes (managed or self-hosted) for infrastructure security and scalability. Kubernetes secrets are managed securely through kubectl and your container registry.
 
 
 ## Deployment
@@ -175,37 +175,48 @@ For building and releasing desktop applications:
 
 ### ☁️ Cloud Infrastructure Deployment
 
-Cloud deployment is **automatically handled** by GitHub Actions when you push to the `main` branch:
+CloudToLocalLLM is deployed to **Kubernetes** using Dockerfiles and Kubernetes manifests. Works with:
+- **Managed Kubernetes**: DigitalOcean (DOKS), Google GKE, AWS EKS, Azure AKS
+- **Self-Hosted Kubernetes**: On-premises or your own infrastructure (ideal for businesses)
+
+**Deployment Process:**
+1. Build Docker images using Dockerfiles
+2. Push images to container registry (any registry: Docker Hub, DigitalOcean, self-hosted, etc.)
+3. Deploy to Kubernetes cluster using `kubectl apply -f k8s/`
 
 ```bash
-# Make changes and push to main
-git add .
-git commit -m "Feature: Add new functionality"
-git push origin main
+# Build and push images (example with Docker Hub)
+docker build -f config/docker/Dockerfile.web -t your-registry/cloudtolocalllm-web:latest .
+docker build -f services/api-backend/Dockerfile.prod -t your-registry/cloudtolocalllm-api:latest .
+docker push your-registry/cloudtolocalllm-web:latest
+docker push your-registry/cloudtolocalllm-api:latest
+
+# Deploy to Kubernetes (works with any cluster)
+kubectl apply -f k8s/
 ```
 
-**What happens automatically:**
-- Builds Docker containers for web, API, and streaming services
-- Deploys to Google Cloud Run at `app.cloudtolocalllm.online`
-- Configures environment variables; uses OIDC/WIF repository Variables for Cloud Run authentication (no service account keys)
-- Performs health checks and verification
+**What's Deployed:**
+- Web application (Flutter web app)
+- API backend (Node.js Express)
+- PostgreSQL database (StatefulSet)
+- Ingress controller with SSL certificates (cert-manager)
 
-### 📋 CI/CD Pipeline Overview
+### 📋 Deployment Overview
 
-| Trigger | Action | Result |
+| Component | Technology | Location |
 |---------|--------|--------|
-| Push to `main` | Cloud deployment | Services deployed to Google Cloud Run |
-| PowerShell script | Desktop build | GitHub release with desktop binaries |
-| Push to `releases/v*` | Cross-platform build | Multi-platform desktop packages |
+| Cloud deployment | Kubernetes (managed or self-hosted) | `k8s/` directory |
+| Container builds | Dockerfiles | `config/docker/`, `services/api-backend/` |
+| Desktop builds | PowerShell scripts | `scripts/powershell/Deploy-CloudToLocalLLM.ps1` |
 
 - **[Cloud Run OIDC/WIF Guide](config/cloudrun/OIDC_WIF_SETUP.md)** - For keyless GitHub Actions deployment setup, see our OIDC/WIF guide
 
 ### 📚 Documentation
 
-- **[CI/CD Pipeline Guide](docs/DEPLOYMENT/CI_CD_PIPELINE_GUIDE.md)** - Complete pipeline documentation
-- **[GitHub Secrets Setup](docs/DEPLOYMENT/GITHUB_SECRETS_SETUP.md)** - Application secrets configuration. Note: Cloud Run authentication now uses OIDC/WIF with repository Variables (no service account keys); see the OIDC/WIF guide below.
+- **[Kubernetes Quick Start](KUBERNETES_QUICKSTART.md)** - Kubernetes deployment example (DigitalOcean)
+- **[Kubernetes README](k8s/README.md)** - Complete Kubernetes deployment guide (works with any cluster)
 - **[Complete Deployment Workflow](docs/DEPLOYMENT/COMPLETE_DEPLOYMENT_WORKFLOW.md)** - Step-by-step deployment guide
-- **[CI/CD Implementation Plan](CICD_Implementation_Plan.md)** - Detailed plan for completing the CI/CD setup
+- **[Deployment Overview](docs/DEPLOYMENT/DEPLOYMENT_OVERVIEW.md)** - All deployment options (managed or self-hosted)
 - **[MCP Development Workflow](docs/MCP_DEVELOPMENT_WORKFLOW.md)** - Guidelines for model-driven development
 
 ## Configuration
