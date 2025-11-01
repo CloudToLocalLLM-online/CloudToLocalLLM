@@ -52,7 +52,7 @@ dependencies:
   path_provider: ^2.1.5
 
   # Local Storage
-  sqflite_common_ffi: ^2.3.6  # For desktop SQLite (conversations)
+  sqflite: ^2.3.0  # SQLite for desktop, IndexedDB for web
   shared_preferences: ^2.3.4  # For web-compatible auth storage
 
   # State Management

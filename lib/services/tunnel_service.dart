@@ -60,6 +60,16 @@ class TunnelService extends ChangeNotifier {
   Future<void> connect() async {
     if (_state.isConnecting || _state.isConnected) return;
 
+    // Chisel tunnel client only works on desktop, not web
+    if (kIsWeb) {
+      debugPrint('[TunnelService] Skipping Chisel connection on web platform - tunnel runs on desktop only');
+      _updateState(_state.copyWith(
+        isConnecting: false,
+        error: 'Tunnel connection requires desktop client. Web platform uses cloud proxy directly.',
+      ));
+      return;
+    }
+
     _updateState(_state.copyWith(
       isConnecting: true,
       error: null,
