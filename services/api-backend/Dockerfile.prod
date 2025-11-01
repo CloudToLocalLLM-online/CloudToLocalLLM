@@ -12,16 +12,11 @@ COPY services/api-backend/package*.json ./
 RUN npm ci && \
     chown -R 1001:1001 /api
 
-# ---- Chisel Binary ----
-# Copy Chisel binary from official Docker image
-FROM jpillora/chisel:latest AS chisel
-# Chisel binary is at /app/chisel in the official image
-
 # ---- Production ----
 FROM node:24-alpine AS production
 
-# Copy Chisel binary from official image
-COPY --from=chisel /app/chisel /usr/local/bin/chisel
+# Copy Chisel binary from official Docker image
+COPY --from=jpillora/chisel:latest /app/chisel /usr/local/bin/chisel
 RUN chmod +x /usr/local/bin/chisel
 
 # Create non-root user
