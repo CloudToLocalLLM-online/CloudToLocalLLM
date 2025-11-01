@@ -212,3 +212,16 @@ In addition to MCP servers, I will leverage powerful command-line interface (CLI
     *   Implement request rate limiting.
     *   Use compression middleware (e.g., `compression` package).
     *   Cache static assets when appropriate.
+
+### G. User Preferences & Communication Style
+
+*   **Terminal Output Formatting**:
+    *   Do NOT add decorative formatting to terminal commands (no colored text, emojis, or special formatting)
+    *   Keep terminal output clean and minimal
+    *   Avoid unnecessary visual enhancements that don't add functional value
+    
+*   **Communication Style**:
+    *   Be direct and concise
+    *   Avoid flowery language or excessive enthusiasm
+    *   Focus on facts and actionable information
+    *   Skip unnecessary commentary or "beautiful" descriptions
