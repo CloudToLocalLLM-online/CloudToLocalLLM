@@ -139,6 +139,7 @@ jobs:
     name: Build Windows Desktop App
     runs-on: [self-hosted, windows]
     needs: version-info
+    if: always() && needs.version-info.result == 'success'
     
     steps:
     - name: Checkout code
