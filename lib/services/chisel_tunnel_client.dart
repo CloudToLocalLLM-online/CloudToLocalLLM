@@ -2,6 +2,7 @@ import 'dart:io';
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import '../models/tunnel_config.dart';
 
@@ -223,81 +224,90 @@ class ChiselTunnelClient with ChangeNotifier {
     
     if (Platform.isWindows) {
       // Try bundled binary first
-      final bundledPaths = [
+      final bundledAssetPaths = [
         'assets/chisel/chisel-windows${arch == 'arm64' ? 'arm64' : ''}.exe',
         'assets/chisel/chisel-windows.exe',
       ];
       
-      for (final path in bundledPaths) {
+      for (final assetPath in bundledAssetPaths) {
         try {
-          final file = File(path);
-          if (await file.exists()) {
-            // Copy to temp directory for execution
-            final tempDir = await Directory.systemTemp.createTemp('chisel');
-            final tempPath = '${tempDir.path}/chisel.exe';
-            await file.copy(tempPath);
-            debugPrint('[Chisel] Using bundled binary: $path');
-            return tempPath;
-          }
+          // Load asset from bundle
+          final ByteData data = await rootBundle.load(assetPath);
+          final bytes = data.buffer.asUint8List();
+          
+          // Copy to temp directory for execution
+          final tempDir = await Directory.systemTemp.createTemp('chisel');
+          final tempPath = '${tempDir.path}/chisel.exe';
+          await File(tempPath).writeAsBytes(bytes);
+          debugPrint('[Chisel] Extracted bundled binary to: $tempPath (from $assetPath)');
+          return tempPath;
         } catch (e) {
-          debugPrint('[Chisel] Error checking $path: $e');
+          debugPrint('[Chisel] Asset not found: $assetPath - $e');
+          // Continue to next path
         }
       }
       
       // Fallback to PATH
+      debugPrint('[Chisel] Bundled binary not found, falling back to PATH');
       return 'chisel.exe';
     } else if (Platform.isMacOS) {
-      final bundledPaths = [
+      final bundledAssetPaths = [
         'assets/chisel/chisel-darwin${arch == 'arm64' ? 'arm64' : ''}',
         'assets/chisel/chisel-darwin',
       ];
       
-      for (final path in bundledPaths) {
+      for (final assetPath in bundledAssetPaths) {
         try {
-          final file = File(path);
-          if (await file.exists()) {
-            // Copy to temp directory for execution
-            final tempDir = await Directory.systemTemp.createTemp('chisel');
-            final tempPath = '${tempDir.path}/chisel';
-            await file.copy(tempPath);
-            // Make executable
-            await Process.run('chmod', ['+x', tempPath]);
-            debugPrint('[Chisel] Using bundled binary: $path');
-            return tempPath;
-          }
+          // Load asset from bundle
+          final ByteData data = await rootBundle.load(assetPath);
+          final bytes = data.buffer.asUint8List();
+          
+          // Copy to temp directory for execution
+          final tempDir = await Directory.systemTemp.createTemp('chisel');
+          final tempPath = '${tempDir.path}/chisel';
+          await File(tempPath).writeAsBytes(bytes);
+          // Make executable
+          await Process.run('chmod', ['+x', tempPath]);
+          debugPrint('[Chisel] Extracted bundled binary to: $tempPath (from $assetPath)');
+          return tempPath;
         } catch (e) {
-          debugPrint('[Chisel] Error checking $path: $e');
+          debugPrint('[Chisel] Asset not found: $assetPath - $e');
+          // Continue to next path
         }
       }
       
       // Fallback to PATH
+      debugPrint('[Chisel] Bundled binary not found, falling back to PATH');
       return 'chisel';
     } else {
       // Linux
-      final bundledPaths = [
+      final bundledAssetPaths = [
         'assets/chisel/chisel-linux${arch == 'arm64' ? 'arm64' : ''}',
         'assets/chisel/chisel-linux',
       ];
       
-      for (final path in bundledPaths) {
+      for (final assetPath in bundledAssetPaths) {
         try {
-          final file = File(path);
-          if (await file.exists()) {
-            // Copy to temp directory for execution
-            final tempDir = await Directory.systemTemp.createTemp('chisel');
-            final tempPath = '${tempDir.path}/chisel';
-            await file.copy(tempPath);
-            // Make executable
-            await Process.run('chmod', ['+x', tempPath]);
-            debugPrint('[Chisel] Using bundled binary: $path');
-            return tempPath;
-          }
+          // Load asset from bundle
+          final ByteData data = await rootBundle.load(assetPath);
+          final bytes = data.buffer.asUint8List();
+          
+          // Copy to temp directory for execution
+          final tempDir = await Directory.systemTemp.createTemp('chisel');
+          final tempPath = '${tempDir.path}/chisel';
+          await File(tempPath).writeAsBytes(bytes);
+          // Make executable
+          await Process.run('chmod', ['+x', tempPath]);
+          debugPrint('[Chisel] Extracted bundled binary to: $tempPath (from $assetPath)');
+          return tempPath;
         } catch (e) {
-          debugPrint('[Chisel] Error checking $path: $e');
+          debugPrint('[Chisel] Asset not found: $assetPath - $e');
+          // Continue to next path
         }
       }
       
       // Fallback to PATH
+      debugPrint('[Chisel] Bundled binary not found, falling back to PATH');
       return 'chisel';
     }
   }
