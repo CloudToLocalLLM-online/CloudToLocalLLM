@@ -1197,15 +1197,15 @@ class _UnifiedSettingsScreenState extends State<UnifiedSettingsScreen> {
                 child: ElevatedButton.icon(
                   onPressed: isAuthenticated && !_isTestingConnection
                       ? () {
-                          debugPrint('🔍 [Settings] Test Connection button clicked!');
-                          debugPrint('🔍 [Settings] isAuthenticated: $isAuthenticated');
-                          debugPrint('🔍 [Settings] _isTestingConnection: $_isTestingConnection');
+                          debugPrint('[Settings] Test Connection button clicked!');
+                          debugPrint('[Settings] isAuthenticated: $isAuthenticated');
+                          debugPrint('[Settings] _isTestingConnection: $_isTestingConnection');
                           _testTunnelConnection();
                         }
                       : () {
-                          debugPrint('⚠️ [Settings] Test Connection button disabled!');
-                          debugPrint('⚠️ [Settings] isAuthenticated: $isAuthenticated');
-                          debugPrint('⚠️ [Settings] _isTestingConnection: $_isTestingConnection');
+                          debugPrint('[Settings] Test Connection button disabled!');
+                          debugPrint('[Settings] isAuthenticated: $isAuthenticated');
+                          debugPrint('[Settings] _isTestingConnection: $_isTestingConnection');
                         },
                   icon: _isTestingConnection
                       ? SizedBox(
@@ -1350,24 +1350,24 @@ class _UnifiedSettingsScreenState extends State<UnifiedSettingsScreen> {
 
   // Helper methods for web platform connection monitoring
   Future<void> _testTunnelConnection() async {
-    debugPrint('🚀 [Settings] _testTunnelConnection() called');
+    debugPrint('[Settings] _testTunnelConnection() called');
     
     if (_isTestingConnection) {
-      debugPrint('⚠️ [Settings] Already testing connection, returning early');
+      debugPrint('[Settings] Already testing connection, returning early');
       return;
     }
 
-    debugPrint('✅ [Settings] Starting connection test...');
+    debugPrint('[Settings] Starting connection test...');
     setState(() {
       _isTestingConnection = true;
       _connectionError = null;
     });
 
     try {
-      debugPrint('🔐 [Settings] Getting auth service...');
+      debugPrint('[Settings] Getting auth service...');
       final authService = Provider.of<AuthService>(context, listen: false);
       final accessToken = authService.getAccessToken();
-      debugPrint('🔐 [Settings] Access token: ${accessToken != null ? "present" : "null"}');
+      debugPrint('[Settings] Access token: ${accessToken != null ? "present" : "null"}');
 
       if (accessToken == null) {
         throw Exception('No authentication token available');
@@ -1375,7 +1375,7 @@ class _UnifiedSettingsScreenState extends State<UnifiedSettingsScreen> {
 
       final stopwatch = Stopwatch()..start();
       final testUrl = '${AppConfig.appUrl}/api/health';
-      debugPrint('🌐 [Settings] Testing connection to: $testUrl');
+      debugPrint('[Settings] Testing connection to: $testUrl');
 
       // Test connection to cloud tunnel API
       final response = await http
@@ -1389,30 +1389,30 @@ class _UnifiedSettingsScreenState extends State<UnifiedSettingsScreen> {
           .timeout(const Duration(seconds: 30));
 
       stopwatch.stop();
-      debugPrint('📡 [Settings] Response received: ${response.statusCode}');
-      debugPrint('📡 [Settings] Response body: ${response.body}');
-      debugPrint('⏱️ [Settings] Latency: ${stopwatch.elapsedMilliseconds}ms');
+      debugPrint('[Settings] Response received: ${response.statusCode}');
+      debugPrint('[Settings] Response body: ${response.body}');
+      debugPrint('[Settings] Latency: ${stopwatch.elapsedMilliseconds}ms');
 
       if (response.statusCode == 200) {
-        debugPrint('✅ [Settings] Connection test successful!');
+        debugPrint('[Settings] Connection test successful!');
         setState(() {
           _connectionLatency = stopwatch.elapsedMilliseconds.toDouble();
           _lastConnectionTest = DateTime.now();
           _connectionError = null;
         });
       } else {
-        debugPrint('❌ [Settings] Connection test failed with status: ${response.statusCode}');
+        debugPrint('[Settings] Connection test failed with status: ${response.statusCode}');
         throw Exception('HTTP ${response.statusCode}: ${response.body}');
       }
     } catch (e) {
-      debugPrint('❌ [Settings] Connection test error: $e');
-      debugPrint('❌ [Settings] Error stack: ${StackTrace.current}');
+      debugPrint('[Settings] Connection test error: $e');
+      debugPrint('[Settings] Error stack: ${StackTrace.current}');
       setState(() {
         _connectionError = 'Connection test failed: ${e.toString()}';
         _connectionLatency = null;
       });
     } finally {
-      debugPrint('🏁 [Settings] Connection test completed');
+      debugPrint('[Settings] Connection test completed');
       setState(() {
         _isTestingConnection = false;
       });
