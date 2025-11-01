@@ -2,8 +2,19 @@ name: Build Desktop Apps & Create Release
 
 on:
   push:
+    branches: [main]
     tags:
       - 'v*'
+  workflow_dispatch:
+    inputs:
+      build_type:
+        description: 'Build type'
+        required: true
+        default: 'main'
+        type: choice
+        options:
+          - main
+          - release
 
 concurrency:
   group: build-release-${{ github.ref }}
@@ -15,7 +26,7 @@ env:
 jobs:
   # Extract version information
   version-info:
-    name: Extract Version Information from Tag
+    name: Extract Version Information
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.version.outputs.version }}
@@ -23,62 +34,90 @@ jobs:
       full_version: ${{ steps.version.outputs.full_version }}
       tag_name: ${{ steps.version.outputs.tag_name }}
       release_name: ${{ steps.version.outputs.release_name }}
+      is_release: ${{ steps.version.outputs.is_release }}
 
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # Fetch full history for version detection
       
-    - name: Extract version from Git tag and generate build number
+    - name: Extract version and generate build number
       id: version
       run: |
-        # Derive semantic version (x.x.x) from git tag (vX.Y.Z)
-        TAG_REF="${GITHUB_REF_NAME:-${{ github.ref_name }}}"
-        VERSION="${TAG_REF#v}"
+        # Check if this is a tag push or main branch
+        if [[ "${{ github.ref }}" == refs/tags/v* ]]; then
+          # Release build from tag
+          TAG_REF="${GITHUB_REF_NAME:-${{ github.ref_name }}}"
+          VERSION="${TAG_REF#v}"
+          IS_RELEASE="true"
+        else
+          # Main branch build - extract version from pubspec.yaml or use commit-based version
+          if [ -f pubspec.yaml ]; then
+            VERSION=$(grep "^version:" pubspec.yaml | sed 's/version: //' | sed 's/+.*//')
+          fi
+          
+          # Fallback to commit-based version if not found
+          if [ -z "$VERSION" ]; then
+            SHORT_SHA=$(git rev-parse --short HEAD)
+            VERSION="0.0.0+dev-$SHORT_SHA"
+          fi
+          IS_RELEASE="false"
+        fi
 
         # Generate build number as YYYYMMDDHHMM (UTC)
         BUILD_NUMBER=$(date -u +%Y%m%d%H%M)
 
-        # Full version: x.x.x+YYYYMMDDHHMM
-        FULL_VERSION="$VERSION+$BUILD_NUMBER"
-
-        TAG_NAME="v$VERSION"
-        RELEASE_NAME="CloudToLocalLLM v$FULL_VERSION"
+        # Full version: x.x.x+YYYYMMDDHHMM (or with commit SHA for dev builds)
+        if [ "$IS_RELEASE" == "true" ]; then
+          FULL_VERSION="$VERSION+$BUILD_NUMBER"
+          TAG_NAME="v$VERSION"
+          RELEASE_NAME="CloudToLocalLLM v$VERSION"
+        else
+          SHORT_SHA=$(git rev-parse --short HEAD)
+          FULL_VERSION="$VERSION+$BUILD_NUMBER-$SHORT_SHA"
+          TAG_NAME=""
+          RELEASE_NAME="CloudToLocalLLM Dev Build $BUILD_NUMBER"
+        fi
 
         echo "version=$VERSION" >> $GITHUB_OUTPUT
         echo "build_number=$BUILD_NUMBER" >> $GITHUB_OUTPUT
         echo "full_version=$FULL_VERSION" >> $GITHUB_OUTPUT
         echo "tag_name=$TAG_NAME" >> $GITHUB_OUTPUT
         echo "release_name=$RELEASE_NAME" >> $GITHUB_OUTPUT
+        echo "is_release=$IS_RELEASE" >> $GITHUB_OUTPUT
 
         echo "Version: $VERSION"
         echo "Build Number: $BUILD_NUMBER"
         echo "Full Version: $FULL_VERSION"
-        echo "Tag: $TAG_NAME"
-        echo "Release Name: $RELEASE_NAME"
+        echo "Is Release: $IS_RELEASE"
+        if [ "$IS_RELEASE" == "true" ]; then
+          echo "Tag: $TAG_NAME"
+          echo "Release Name: $RELEASE_NAME"
+        fi
 
   # Build desktop applications for multiple platforms
   build-desktop:
     name: Build Desktop Apps
-    runs-on: ${{ matrix.os }}
+    runs-on: ${{ matrix.runner }}
     needs: version-info
     strategy:
       fail-fast: false
       matrix:
         include:
-          - os: windows-latest
+          - runner: [self-hosted, windows]
             platform: windows
             artifact_name: windows-desktop
             build_command: flutter build windows --release
             package_path: build/windows/x64/runner/Release
             executable_name: cloudtolocalllm.exe
-            runs-on: self-hosted, windows
-          - os: macos-latest
+          - runner: macos-latest
             platform: macos
             artifact_name: macos-desktop
             build_command: flutter build macos --release
             package_path: build/macos/Build/Products/Release
             executable_name: CloudToLocalLLM.app
-          - os: ubuntu-latest
+          - runner: ubuntu-latest
             platform: linux
             artifact_name: linux-desktop
             build_command: flutter build linux --release
@@ -212,9 +251,39 @@ jobs:
           ${{ env.CHECKSUM_FILE }}
         retention-days: 30
 
-  # Create GitHub release with all platform builds
+  # Upload artifacts for main branch builds (no release)
+  upload-artifacts:
+    name: Upload Build Artifacts
+    if: needs.version-info.outputs.is_release != 'true'
+    runs-on: ubuntu-latest
+    needs: [version-info, build-desktop]
+
+    steps:
+    - name: Download all build artifacts
+      uses: actions/download-artifact@v4
+      with:
+        path: artifacts/
+        
+    - name: Upload artifacts summary
+      run: |
+        echo "## 📦 Build Artifacts Available" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "**Build Details:**" >> $GITHUB_STEP_SUMMARY
+        echo "- **Version:** ${{ needs.version-info.outputs.full_version }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Branch:** ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "**Available Artifacts:**" >> $GITHUB_STEP_SUMMARY
+        echo "- ✅ Windows (Portable ZIP)" >> $GITHUB_STEP_SUMMARY
+        echo "- ✅ macOS (Application Bundle)" >> $GITHUB_STEP_SUMMARY
+        echo "- ✅ Linux (Tar.gz Archive)" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "Artifacts are available in the Actions workflow run for 30 days." >> $GITHUB_STEP_SUMMARY
+
+  # Create GitHub release with all platform builds (only for tag pushes)
   create-release:
     name: Create GitHub Release
+    if: needs.version-info.outputs.is_release == 'true'
     runs-on: ubuntu-latest
     needs: [version-info, build-desktop]
 
@@ -294,4 +363,4 @@ jobs:
         echo "- ✅ macOS (Application Bundle)" >> $GITHUB_STEP_SUMMARY
         echo "- ✅ Linux (Tar.gz Archive)" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
-        echo "**Download:** [GitHub Releases](https://github.com/imrightguy/CloudToLocalLLM/releases/tag/${{ needs.version-info.outputs.tag_name }})
+        echo "**Download:** [GitHub Releases](https://github.com/imrightguy/CloudToLocalLLM/releases/tag/${{ needs.version-info.outputs.tag_name }})" >> $GITHUB_STEP_SUMMARY
