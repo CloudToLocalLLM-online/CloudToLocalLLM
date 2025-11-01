@@ -1,6 +1,4 @@
 import 'package:flutter/foundation.dart';
-import 'auth0_web_service_stub.dart' if (dart.library.html) 'auth0_web_service.dart';
-import 'auth0_desktop_service_stub.dart' if (dart.library.io) 'auth0_desktop_service.dart';
 import '../models/user_model.dart';
 import 'auth0_service.dart';
 
@@ -89,19 +87,17 @@ class AuthService extends ChangeNotifier {
     }
   }
 
-  /// Get access token (Auth0 JWT)
-  Future<String?> getIdToken({bool forceRefresh = false}) async {
-    return _auth0Service.getIdToken(forceRefresh: forceRefresh);
-  }
-
   /// Legacy compatibility method
-  String? getAccessToken() {
+  Future<String?> getAccessToken() async {
+    if (!_auth0Service.isAuthenticated) {
+      return null;
+    }
     return _auth0Service.getAccessToken();
   }
 
   /// Get validated access token (alias for getIdToken)
   Future<String?> getValidatedAccessToken() async {
-    return await getIdToken(forceRefresh: true);
+    return await getAccessToken();
   }
 
   /// Handle callback after authentication redirect

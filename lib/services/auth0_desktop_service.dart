@@ -44,14 +44,6 @@ class Auth0DesktopService implements Auth0Service {
   String? get accessToken => _accessToken;
 
   @override
-  Future<String?> getIdToken({bool forceRefresh = false}) async {
-    if (forceRefresh && _refreshToken != null) {
-      await _refreshAccessToken();
-    }
-    return _accessToken;
-  }
-
-  @override
   String? getAccessToken() {
     return _accessToken;
   }

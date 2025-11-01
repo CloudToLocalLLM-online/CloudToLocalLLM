@@ -1,8 +1,6 @@
 // ignore_for_file: non_constant_identifier_names
 
 @JS()
-library auth0_bridge;
-
 import 'dart:js_interop';
 
 @JS('auth0Bridge')

@@ -298,9 +298,7 @@ class CloudStreamingService extends StreamingService {
     // Add authentication if available
     if (_authService.isAuthenticated.value) {
       final accessToken = _authService.getAccessToken();
-      if (accessToken != null) {
-        headers['Authorization'] = 'Bearer $accessToken';
-      }
+      headers['Authorization'] = 'Bearer $accessToken';
     }
 
     return headers;

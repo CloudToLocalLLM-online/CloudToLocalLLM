@@ -37,17 +37,7 @@ class Auth0WebService implements Auth0Service {
   String? get accessToken => _accessToken;
 
   @override
-  Future<String?> getIdToken({bool forceRefresh = false}) async {
-    if (forceRefresh) {
-      await checkAuthStatus();
-    }
-    return _accessToken;
-  }
-
-  @override
-  String? getAccessToken() {
-    return _accessToken;
-  }
+  String? getAccessToken() => _accessToken;
 
   /// Initialize Auth0 service
   @override
@@ -95,7 +85,7 @@ class Auth0WebService implements Auth0Service {
 
     try {
       debugPrint('Starting Auth0 login redirect...');
-      await auth0Bridge!.loginWithGoogle().toDart;
+      await auth0Bridge?.loginWithGoogle().toDart;
     } catch (e, stackTrace) {
       debugPrint('Auth0 login error: $e');
       debugPrint('Stack trace: $stackTrace');
@@ -106,40 +96,44 @@ class Auth0WebService implements Auth0Service {
   /// Check authentication status
   Future<void> checkAuthStatus() async {
     try {
-      final isAuth = await auth0Bridge!.isAuthenticated().toDart;
+      final JSPromise? isAuthPromise = auth0Bridge?.isAuthenticated();
+      if (isAuthPromise == null) {
+        _isAuthenticated = false;
+        return;
+      }
+      final dynamic isAuth = await isAuthPromise.toDart;
       final wasAuthenticated = _isAuthenticated;
-      _isAuthenticated = isAuth.isA<JSBoolean>() && isAuth.toDart;
+
+      if (isAuth is bool) {
+        _isAuthenticated = isAuth;
+      } else {
+        _isAuthenticated = false;
+      }
 
       if (_isAuthenticated) {
-        final user = await auth0Bridge!.getUser().toDart;
-        final token = await auth0Bridge!.getAccessToken().toDart;
+        final userPromise = auth0Bridge!.getUser();
+        final tokenPromise = auth0Bridge!.getAccessToken();
+
+        final user = await userPromise.toDart;
+        final token = await tokenPromise.toDart;
 
         if (user != null && user.isA<JSObject>()) {
           _currentUser = _jsObjectToMap(user as JSObject);
-        } else {
-          _currentUser = null;
         }
-        
         if (token != null && token.isA<JSString>()) {
-          _accessToken = token.toDart;
-        } else {
-          _accessToken = null;
+          _accessToken = (token as JSString).toDart;
         }
-
-        debugPrint('User authenticated: ${_currentUser?['email'] ?? _currentUser?['sub']}');
-      } else {
-        _currentUser = null;
-        _accessToken = null;
       }
 
       if (wasAuthenticated != _isAuthenticated) {
         _authStateController.add(_isAuthenticated);
       }
     } catch (e) {
-      debugPrint('Error checking auth status: $e');
+      debugPrint('Auth0 checkAuthStatus error: $e');
       _isAuthenticated = false;
-      _currentUser = null;
-      _accessToken = null;
+      if (_authStateController.hasListener) {
+        _authStateController.add(false);
+      }
     }
   }
 
@@ -199,14 +193,16 @@ class Auth0WebService implements Auth0Service {
     _authStateController.close();
   }
 
+  /// Convert JSObject to a Dart Map.
+  /// NOTE: This is a shallow conversion.
   Map<String, dynamic> _jsObjectToMap(JSObject jsObject) {
     final map = <String, dynamic>{};
-    final keys = jsObject.globalContext['Object']
-        .getProperty('keys'.toJS)
-        .callAsFunction(jsObject.jsify())!
-        .dartify() as List;
+    final keys = (jsObject.dartify() as Map).keys;
     for (final key in keys) {
-      map[key.toString()] = jsObject.getProperty(key.toString().toJS)?.dartify();
+      final value = jsObject.getProperty(key.toString().toJS);
+      if (value != null) {
+        map[key] = value.dartify();
+      }
     }
     return map;
   }

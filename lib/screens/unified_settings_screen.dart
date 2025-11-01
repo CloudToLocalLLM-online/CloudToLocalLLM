@@ -1350,8 +1350,8 @@ class _UnifiedSettingsScreenState extends State<UnifiedSettingsScreen> {
     try {
       debugPrint('[Settings] Getting auth service...');
       final authService = Provider.of<AuthService>(context, listen: false);
-      final accessToken = authService.getAccessToken();
-      debugPrint('[Settings] Access token: ${accessToken != null ? "present" : "null"}');
+      final accessToken = await authService.getAccessToken();
+      debugPrint('[Settings] Access token present');
 
       if (accessToken == null) {
         throw Exception('No authentication token available');

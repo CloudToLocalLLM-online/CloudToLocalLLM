@@ -43,9 +43,7 @@ class StreamingProxyService extends ChangeNotifier {
 
     if (_authService != null) {
       final accessToken = _authService.getAccessToken();
-      if (accessToken != null) {
-        headers['Authorization'] = 'Bearer $accessToken';
-      }
+      headers['Authorization'] = 'Bearer $accessToken';
     }
 
     return headers;
