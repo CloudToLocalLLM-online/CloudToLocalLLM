@@ -30,12 +30,12 @@ class Auth0WebService implements Auth0Service {
 
   @override
   Future<void> login() async {
-    await auth0Bridge?.loginWithRedirect();
+    await auth0Bridge?.loginWithRedirect().toDart;
   }
 
   @override
   Future<void> logout() async {
-    await auth0Bridge?.logout();
+    await auth0Bridge?.logout().toDart;
     _isAuthenticated = false;
     _currentUser = null;
     _accessToken = null;
@@ -104,11 +104,11 @@ class Auth0WebService implements Auth0Service {
 
   Map<String, dynamic> _jsObjectToMap(JSObject jsObject) {
     final map = <String, dynamic>{};
-    final keys = jsObject.keys;
+    final keys = jsObject.keys.toDart;
     for (final key in keys) {
-      final value = jsObject[key];
+      final value = jsObject[key.toString()];
       if (value != null) {
-        map[key] = _convertToDart(value);
+        map[key.toString()] = _convertToDart(value);
       }
     }
     return map;
@@ -118,7 +118,7 @@ class Auth0WebService implements Auth0Service {
     if (value == null) return null;
     if (value.isA<JSBoolean>()) return (value as JSBoolean).toDart;
     if (value.isA<JSString>()) return (value as JSString).toDart;
-    if (value.isA<JSNumber>()) return (value as JSNumber).toDart;
+    if (value.isA<JSNumber>()) return (value as JSNumber).toDartDouble;
     if (value.isA<JSObject>()) return _jsObjectToMap(value as JSObject);
     return value.toString();
   }
