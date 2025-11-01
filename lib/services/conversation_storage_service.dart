@@ -575,7 +575,6 @@ class ConversationStorageService {
                 'content': m.content,
                 'model': m.model,
                 'timestamp': m.timestamp.toIso8601String(),
-                'metadata': m.metadata,
               }).toList(),
         });
 
