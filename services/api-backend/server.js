@@ -275,14 +275,26 @@ app.get('/api/ollama/bridge/status', authenticateJWT, (req, res) => {
 
   // Check if user has any connected bridges
   const userBridge = getBridgeByUserId(userId);
-  const isConnected = userBridge && isBridgeAvailable(userBridge.bridgeId);
 
-  res.json({
-    connected: isConnected,
-    bridgeId: userBridge?.bridgeId || null,
-    lastSeen: userBridge?.lastSeen || null,
-    timestamp: new Date().toISOString(),
-  });
+  // Return format expected by DesktopClientDetectionService
+  if (userBridge && isBridgeAvailable(userBridge.bridgeId)) {
+    res.json({
+      bridges: [
+        {
+          bridgeId: userBridge.bridgeId,
+          connectedAt: userBridge.lastSeen || new Date().toISOString(),
+          lastPing: userBridge.lastSeen || new Date().toISOString(),
+        },
+      ],
+      timestamp: new Date().toISOString(),
+    });
+  } else {
+    // Return empty bridges array when no connection
+    res.json({
+      bridges: [],
+      timestamp: new Date().toISOString(),
+    });
+  }
 });
 
 // LLM Tunnel Cloud Proxy Endpoints
