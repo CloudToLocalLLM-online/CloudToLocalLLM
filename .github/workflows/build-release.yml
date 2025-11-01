@@ -214,22 +214,61 @@ jobs:
         
         Write-Host ""
         Write-Host "Verifying Visual Studio Build Tools..."
-        $vsWhere = "$env:ProgramFiles(x86)\Microsoft Visual Studio\Installer\vswhere.exe"
-        if (Test-Path $vsWhere) {
+        
+        # Try multiple paths for vswhere.exe
+        $vsWherePaths = @(
+          "$env:ProgramFiles(x86)\Microsoft Visual Studio\Installer\vswhere.exe",
+          "$env:ProgramFiles\Microsoft Visual Studio\Installer\vswhere.exe"
+        )
+        
+        $vsWhere = $null
+        foreach ($path in $vsWherePaths) {
+          if (Test-Path $path) {
+            $vsWhere = $path
+            break
+          }
+        }
+        
+        if ($vsWhere) {
+          Write-Host "Found vswhere.exe at: $vsWhere"
           $vsInstalls = & $vsWhere -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
           if ($vsInstalls) {
             Write-Host "Visual Studio Build Tools found at: $vsInstalls"
           } else {
-            Write-Error "Visual Studio Build Tools with C++ workload not found!"
-            Write-Host "The runner must have Visual Studio Build Tools installed with C++ workload."
+            # Try checking if Visual Studio is installed without specific component requirement
+            $vsAny = & $vsWhere -latest -products * -property installationPath
+            if ($vsAny) {
+              Write-Host "Visual Studio found at: $vsAny"
+              Write-Host "Checking for C++ workload..."
+              $components = & $vsWhere -latest -products * -requiresAny -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
+              if (-not $components) {
+                Write-Error "Visual Studio Build Tools with C++ workload not found!"
+                Write-Host "The runner must have Visual Studio Build Tools installed with C++ workload."
+                Write-Host "Install from: https://visualstudio.microsoft.com/downloads/"
+                exit 1
+              } else {
+                Write-Host "C++ tools found"
+              }
+            } else {
+              Write-Error "Visual Studio Build Tools with C++ workload not found!"
+              Write-Host "The runner must have Visual Studio Build Tools installed with C++ workload."
+              Write-Host "Install from: https://visualstudio.microsoft.com/downloads/"
+              exit 1
+            }
+          }
+        } else {
+          # Fallback: Check if flutter doctor found Visual Studio
+          Write-Host "vswhere.exe not found in standard locations"
+          Write-Host "Checking if Flutter detected Visual Studio..."
+          $flutterDoctor = flutter doctor -v 2>&1 | Out-String
+          if ($flutterDoctor -match "Visual Studio.*develop Windows apps") {
+            Write-Host "Visual Studio detected by Flutter - build should work"
+          } else {
+            Write-Error "Visual Studio Build Tools not found!"
+            Write-Host "The runner must have Visual Studio Build Tools installed."
             Write-Host "Install from: https://visualstudio.microsoft.com/downloads/"
             exit 1
           }
-        } else {
-          Write-Error "Visual Studio Build Tools not found!"
-          Write-Host "The runner must have Visual Studio Build Tools installed."
-          Write-Host "Install from: https://visualstudio.microsoft.com/downloads/"
-          exit 1
         }
       shell: powershell
         
