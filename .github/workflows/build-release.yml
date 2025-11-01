@@ -136,65 +136,6 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
       
-    - name: Setup Flutter on Windows
-      if: matrix.platform == 'windows'
-      run: |
-        # Check if Flutter is already in PATH
-        $flutterPath = Get-Command flutter -ErrorAction SilentlyContinue
-        if ($flutterPath) {
-          Write-Host "Flutter found in PATH: $($flutterPath.Source)"
-          $flutterBinDir = Split-Path -Parent $flutterPath.Source
-          echo "FLUTTER_PATH=$flutterBinDir" >> $env:GITHUB_ENV
-          echo "$flutterBinDir" >> $env:GITHUB_PATH
-          flutter --version
-        } else {
-          # Try common Flutter installation paths
-          $flutterPaths = @(
-            "$env:USERPROFILE\flutter",
-            "$env:PROGRAMFILES\flutter",
-            "C:\flutter",
-            "C:\tools\flutter",
-            "$env:LOCALAPPDATA\flutter"
-          )
-          
-          $foundFlutter = $false
-          $flutterHome = $null
-          foreach ($path in $flutterPaths) {
-            $flutterBin = Join-Path $path "bin\flutter.bat"
-            if (Test-Path $flutterBin) {
-              Write-Host "Found Flutter at: $path"
-              $flutterHome = $path
-              $foundFlutter = $true
-              break
-            }
-          }
-          
-          # If Flutter not found, fail with clear error
-          if (-not $foundFlutter) {
-            Write-Error "Flutter not found. The runner must have Flutter installed."
-            Write-Host "Flutter should be installed in one of these locations:" -ForegroundColor Yellow
-            $flutterPaths | ForEach-Object { Write-Host "  $_" -ForegroundColor Gray }
-            Write-Host "Or available in PATH." -ForegroundColor Yellow
-            Write-Host "Install from: https://docs.flutter.dev/get-started/install/windows" -ForegroundColor Yellow
-            exit 1
-          }
-          
-          # Update PATH for this session and subsequent steps
-          $env:PATH = "$flutterHome\bin;$env:PATH"
-          echo "FLUTTER_PATH=$flutterHome\bin" >> $env:GITHUB_ENV
-          echo "$flutterHome\bin" >> $env:GITHUB_PATH
-          
-          flutter --version
-        }
-        
-        # Verify Flutter version
-        $flutterVersion = (flutter --version | Select-String -Pattern "Flutter (\d+\.\d+\.\d+)" | ForEach-Object { $_.Matches.Groups[1].Value })
-        Write-Host "Installed Flutter version: $flutterVersion"
-        
-        # Verify Windows desktop support is enabled
-        flutter config --enable-windows-desktop
-      shell: powershell
-      
     - name: Cache Flutter dependencies
       if: matrix.platform == 'windows'
       uses: actions/cache@v3
@@ -210,6 +151,8 @@ jobs:
       if: matrix.platform == 'windows'
       run: |
         Write-Host "Checking Windows build prerequisites..."
+        flutter --version
+        flutter config --enable-windows-desktop
         $flutterDoctorOutput = flutter doctor -v 2>&1 | Out-String
         Write-Host $flutterDoctorOutput
         
@@ -315,61 +258,6 @@ jobs:
         }
       shell: powershell
         
-    - name: Setup Flutter on Linux
-      if: matrix.platform == 'linux'
-      run: |
-        # Check if Flutter is already in PATH
-        if command -v flutter &> /dev/null; then
-          echo "Flutter found in PATH"
-          FLUTTER_BIN_DIR=$(dirname $(which flutter))
-          echo "FLUTTER_PATH=$FLUTTER_BIN_DIR" >> $GITHUB_ENV
-          echo "$FLUTTER_BIN_DIR" >> $GITHUB_PATH
-          flutter --version
-        else
-          # Try common Flutter installation paths
-          FLUTTER_PATHS=(
-            "$HOME/flutter"
-            "/opt/flutter"
-            "$HOME/.local/flutter"
-          )
-          
-          FOUND_FLUTTER=false
-          FLUTTER_HOME=""
-          for path in "${FLUTTER_PATHS[@]}"; do
-            if [ -f "$path/bin/flutter" ]; then
-              echo "Found Flutter at: $path"
-              FLUTTER_HOME="$path"
-              FOUND_FLUTTER=true
-              break
-            fi
-          done
-          
-          # If Flutter not found, fail with clear error
-          if [ "$FOUND_FLUTTER" = false ]; then
-            echo "ERROR: Flutter not found. The runner must have Flutter installed." >&2
-            echo "Flutter should be installed in one of these locations:" >&2
-            for path in "${FLUTTER_PATHS[@]}"; do
-              echo "  $path" >&2
-            done
-            echo "Or available in PATH." >&2
-            echo "Install from: https://docs.flutter.dev/get-started/install/linux" >&2
-            exit 1
-          fi
-          
-          # Update PATH for this session and subsequent steps
-          export PATH="$FLUTTER_HOME/bin:$PATH"
-          echo "FLUTTER_PATH=$FLUTTER_HOME/bin" >> $GITHUB_ENV
-          echo "$FLUTTER_HOME/bin" >> $GITHUB_PATH
-          flutter --version
-        fi
-        
-        # Verify Flutter version
-        FLUTTER_VERSION=$(flutter --version | grep -oP 'Flutter \K[\d.]+' | head -1)
-        echo "Installed Flutter version: $FLUTTER_VERSION"
-        
-        # Verify Linux desktop support is enabled
-        flutter config --enable-linux-desktop
-        
     - name: Cache Flutter dependencies (Linux)
       if: matrix.platform == 'linux'
       uses: actions/cache@v3
@@ -385,6 +273,8 @@ jobs:
       if: matrix.platform == 'linux'
       run: |
         echo "Checking Linux build prerequisites..."
+        flutter --version
+        flutter config --enable-linux-desktop
         flutter doctor -v
         
     - name: Get Flutter dependencies (Windows)
