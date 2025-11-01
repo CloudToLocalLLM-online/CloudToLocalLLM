@@ -96,33 +96,20 @@ jobs:
           echo "Release Name: $RELEASE_NAME"
         fi
 
-  # Build desktop applications for multiple platforms
+  # Build desktop applications for Windows only
   build-desktop:
-    name: Build Desktop Apps
-    runs-on: ${{ matrix.runner }}
+    name: Build Windows Desktop App
+    runs-on: [self-hosted, windows]
     needs: version-info
     strategy:
       fail-fast: false
       matrix:
         include:
-          - runner: [self-hosted, windows]
-            platform: windows
+          - platform: windows
             artifact_name: windows-desktop
             build_command: flutter build windows --release
             package_path: build/windows/x64/runner/Release
             executable_name: cloudtolocalllm.exe
-          - runner: macos-latest
-            platform: macos
-            artifact_name: macos-desktop
-            build_command: flutter build macos --release
-            package_path: build/macos/Build/Products/Release
-            executable_name: CloudToLocalLLM.app
-          - runner: ubuntu-latest
-            platform: linux
-            artifact_name: linux-desktop
-            build_command: flutter build linux --release
-            package_path: build/linux/x64/release/bundle
-            executable_name: cloudtolocalllm
     
     steps:
     - name: Checkout code
@@ -144,23 +131,10 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-flutter-
         
-    - name: Install platform dependencies (Linux)
-      if: matrix.platform == 'linux'
+    - name: Verify Windows build environment
       run: |
-        sudo apt-get update
-        sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev liblzma-dev libstdc++-12-dev
-        
-    - name: Install platform dependencies (macOS)
-      if: matrix.platform == 'macos'
-      run: |
-        # Install any macOS-specific dependencies if needed
-        echo "Setting up macOS build environment"
-        
-    - name: Install platform dependencies (Windows)
-      if: matrix.platform == 'windows'
-      run: |
-        # Install any Windows-specific dependencies if needed
-        echo "Setting up Windows build environment"
+        echo "Checking Windows build prerequisites..."
+        flutter doctor -v
         
     - name: Get Flutter dependencies
       run: flutter pub get
@@ -275,8 +249,6 @@ jobs:
         echo "" >> $GITHUB_STEP_SUMMARY
         echo "**Available Artifacts:**" >> $GITHUB_STEP_SUMMARY
         echo "- ✅ Windows (Portable ZIP)" >> $GITHUB_STEP_SUMMARY
-        echo "- ✅ macOS (Application Bundle)" >> $GITHUB_STEP_SUMMARY
-        echo "- ✅ Linux (Tar.gz Archive)" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
         echo "Artifacts are available in the Actions workflow run for 30 days." >> $GITHUB_STEP_SUMMARY
 
@@ -360,7 +332,5 @@ jobs:
         echo "" >> $GITHUB_STEP_SUMMARY
         echo "**Available Platforms:**" >> $GITHUB_STEP_SUMMARY
         echo "- ✅ Windows (Portable ZIP)" >> $GITHUB_STEP_SUMMARY
-        echo "- ✅ macOS (Application Bundle)" >> $GITHUB_STEP_SUMMARY
-        echo "- ✅ Linux (Tar.gz Archive)" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
         echo "**Download:** [GitHub Releases](https://github.com/imrightguy/CloudToLocalLLM/releases/tag/${{ needs.version-info.outputs.tag_name }})" >> $GITHUB_STEP_SUMMARY
