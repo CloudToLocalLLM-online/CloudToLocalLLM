@@ -7,6 +7,9 @@ import 'config/theme.dart';
 import 'config/router.dart';
 import 'config/app_config.dart';
 import 'services/auth_service.dart';
+import 'services/auth0_service.dart';
+import 'services/auth0_web_service.dart' if (dart.library.io) 'services/auth0_web_service_stub.dart';
+import 'services/auth0_desktop_service.dart' if (dart.library.html) 'services/auth0_desktop_service_stub.dart';
 import 'services/enhanced_user_tier_service.dart';
 import 'services/ollama_service.dart';
 import 'services/streaming_proxy_service.dart';
@@ -185,7 +188,10 @@ class _CloudToLocalLLMPrivacyAppState extends State<CloudToLocalLLMPrivacyApp> {
         ChangeNotifierProvider.value(value: widget.platformManager),
 
         // Authentication service
-        ChangeNotifierProvider(create: (_) => AuthService()),
+        ChangeNotifierProvider(create: (_) {
+          final Auth0Service auth0Service = kIsWeb ? Auth0WebService() : Auth0DesktopService();
+          return AuthService(auth0Service);
+        }),
 
         // Enhanced user tier service with container management
         ChangeNotifierProvider(

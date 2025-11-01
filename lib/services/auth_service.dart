@@ -4,37 +4,28 @@ import 'auth0_desktop_service_stub.dart' if (dart.library.io) 'auth0_desktop_ser
 import '../models/user_model.dart';
 import 'auth0_service.dart';
 
-Auth0Service createAuth0Service() {
-  if (kIsWeb) {
-    return Auth0WebService();
-  } else {
-    return Auth0DesktopService();
-  }
-}
-
 /// Auth0-based Authentication Service
 /// Provides authentication for web and desktop using Auth0
 class AuthService extends ChangeNotifier {
-  Auth0Service? _auth0Service;
+  final Auth0Service _auth0Service;
   final ValueNotifier<bool> _isAuthenticated = ValueNotifier<bool>(false);
   final ValueNotifier<bool> _isLoading = ValueNotifier<bool>(false);
   UserModel? _currentUser;
 
-  AuthService() {
+  AuthService(this._auth0Service) {
     _initAuth0();
   }
 
-  /// Initialize Auth0 for web platform
+  /// Initialize Auth0
   Future<void> _initAuth0() async {
     try {
-      _auth0Service = createAuth0Service();
-      await _auth0Service!.initialize();
+      await _auth0Service.initialize();
       
       // Listen to Auth0 auth state changes
-      _auth0Service!.authStateChanges.listen((isAuth) {
+      _auth0Service.authStateChanges.listen((isAuth) {
         _isAuthenticated.value = isAuth;
-        if (isAuth && _auth0Service!.currentUser != null) {
-          _currentUser = UserModel.fromAuth0Profile(_auth0Service!.currentUser!);
+        if (isAuth && _auth0Service.currentUser != null) {
+          _currentUser = UserModel.fromAuth0Profile(_auth0Service.currentUser!);
         } else {
           _currentUser = null;
         }
@@ -49,9 +40,9 @@ class AuthService extends ChangeNotifier {
   }
 
   Future<void> _checkAuthStatus() async {
-    if (_auth0Service!.isAuthenticated && _auth0Service!.currentUser != null) {
+    if (_auth0Service.isAuthenticated && _auth0Service.currentUser != null) {
       _isAuthenticated.value = true;
-      _currentUser = UserModel.fromAuth0Profile(_auth0Service!.currentUser!);
+      _currentUser = UserModel.fromAuth0Profile(_auth0Service.currentUser!);
       notifyListeners();
     }
   }
@@ -72,10 +63,7 @@ class AuthService extends ChangeNotifier {
     notifyListeners();
 
     try {
-      if (_auth0Service == null) {
-        await _initAuth0();
-      }
-      await _auth0Service!.login();
+      await _auth0Service.login();
       // Note: login() will redirect, so code after this won't execute immediately
     } catch (e) {
       _isLoading.value = false;
@@ -90,10 +78,7 @@ class AuthService extends ChangeNotifier {
     notifyListeners();
 
     try {
-      if (_auth0Service != null) {
-        await _auth0Service!.logout();
-        // Note: logout() will redirect, so code after this won't execute immediately
-      }
+      await _auth0Service.logout();
       _isAuthenticated.value = false;
       _currentUser = null;
       notifyListeners();
@@ -106,12 +91,12 @@ class AuthService extends ChangeNotifier {
 
   /// Get access token (Auth0 JWT)
   Future<String?> getIdToken({bool forceRefresh = false}) async {
-    return _auth0Service?.getIdToken(forceRefresh: forceRefresh);
+    return _auth0Service.getIdToken(forceRefresh: forceRefresh);
   }
 
   /// Legacy compatibility method
   String? getAccessToken() {
-    return _auth0Service?.getAccessToken();
+    return _auth0Service.getAccessToken();
   }
 
   /// Get validated access token (alias for getIdToken)
@@ -121,10 +106,13 @@ class AuthService extends ChangeNotifier {
 
   /// Handle callback after authentication redirect
   Future<bool> handleCallback({String? callbackUrl}) async {
-    if (_auth0Service != null) {
-      return await _auth0Service!.handleRedirectCallback();
+    if (kIsWeb) {
+      return await _auth0Service.handleRedirectCallback();
+    } else {
+       // On desktop, the callback is handled differently via deep linking or a local server.
+       // This logic assumes the desktop service will handle the full flow internally.
+       return true;
     }
-    return false;
   }
 
   /// Update user display name (not supported with Auth0 - managed in Auth0 dashboard)
@@ -143,7 +131,7 @@ class AuthService extends ChangeNotifier {
   void dispose() {
     _isAuthenticated.dispose();
     _isLoading.dispose();
-    _auth0Service?.dispose();
+    _auth0Service.dispose();
     super.dispose();
   }
 }
