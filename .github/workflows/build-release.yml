@@ -146,15 +146,105 @@ jobs:
     - name: Build desktop application
       run: ${{ matrix.build_command }}
       
+    - name: Install Inno Setup
+      if: matrix.platform == 'windows'
+      run: |
+        $innoSetupPaths = @(
+          "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe",
+          "${env:ProgramFiles}\Inno Setup 6\ISCC.exe",
+          "${env:ProgramFiles(x86)}\Inno Setup 5\ISCC.exe",
+          "${env:ProgramFiles}\Inno Setup 5\ISCC.exe"
+        )
+        
+        $innoPath = $null
+        foreach ($path in $innoSetupPaths) {
+          if (Test-Path $path) {
+            $innoPath = $path
+            break
+          }
+        }
+        
+        if (-not $innoPath) {
+          Write-Host "Inno Setup not found. Installing..."
+          $downloadUrl = "https://jrsoftware.org/download.php/is.exe"
+          $tempFile = Join-Path $env:TEMP "innosetup.exe"
+          
+          Invoke-WebRequest -Uri $downloadUrl -OutFile $tempFile -UseBasicParsing
+          Start-Process -FilePath $tempFile -ArgumentList "/SILENT" -Wait
+          Remove-Item $tempFile -Force -ErrorAction SilentlyContinue
+          
+          # Check again after installation
+          foreach ($path in $innoSetupPaths) {
+            if (Test-Path $path) {
+              $innoPath = $path
+              break
+            }
+          }
+        }
+        
+        if ($innoPath) {
+          Write-Host "Inno Setup found at: $innoPath"
+          echo "INNO_SETUP_PATH=$innoPath" >> $env:GITHUB_ENV
+        } else {
+          throw "Failed to install or locate Inno Setup"
+        }
+      shell: powershell
+      
+    - name: Create Windows installer
+      if: matrix.platform == 'windows'
+      run: |
+        $FULL_VERSION = "${{ needs.version-info.outputs.full_version }}"
+        $VERSION = "${{ needs.version-info.outputs.version }}"
+        $PACKAGE_PATH = "dist/windows"
+        
+        # Create dist directory
+        New-Item -ItemType Directory -Force -Path $PACKAGE_PATH
+        
+        # Path to InnoSetup script
+        $issFile = "build-tools\installers\windows\CloudToLocalLLM_Simple.iss"
+        
+        if (-not (Test-Path $issFile)) {
+          throw "InnoSetup script not found at: $issFile"
+        }
+        
+        # Compile installer
+        Write-Host "Compiling Windows installer with Inno Setup..."
+        $innoArgs = @(
+          "`"$issFile`"",
+          "/DMyAppVersion=$VERSION",
+          "/O`"$PACKAGE_PATH`""
+        )
+        
+        $process = Start-Process -FilePath $env:INNO_SETUP_PATH -ArgumentList $innoArgs -Wait -PassThru -NoNewWindow
+        
+        if ($process.ExitCode -ne 0) {
+          throw "Inno Setup compilation failed with exit code: $($process.ExitCode)"
+        }
+        
+        # Find the created installer (output filename may vary)
+        $installerPattern = "CloudToLocalLLM*Setup*.exe"
+        $installer = Get-ChildItem -Path $PACKAGE_PATH -Filter $installerPattern -ErrorAction SilentlyContinue | Select-Object -First 1
+        
+        if ($installer) {
+          Write-Host "Installer created: $($installer.FullName)"
+          echo "INSTALLER_FILE=$($installer.FullName)" >> $env:GITHUB_ENV
+          
+          # Generate SHA256 checksum for installer
+          $hash = Get-FileHash $installer.FullName -Algorithm SHA256
+          $checksumFile = "$($installer.FullName).sha256"
+          $hash.Hash + "  $($installer.Name)" | Out-File $checksumFile -Encoding ASCII
+          echo "INSTALLER_CHECKSUM=$checksumFile" >> $env:GITHUB_ENV
+        } else {
+          throw "Installer file not found in $PACKAGE_PATH"
+        }
+      shell: powershell
+      
     - name: Create portable package (Windows)
       if: matrix.platform == 'windows'
       run: |
         $FULL_VERSION = "${{ needs.version-info.outputs.full_version }}"
         $PACKAGE_NAME = "cloudtolocalllm-$FULL_VERSION-portable"
         $PACKAGE_PATH = "dist/windows"
-
-        # Create dist directory
-        New-Item -ItemType Directory -Force -Path $PACKAGE_PATH
 
         # Copy build output
         Copy-Item -Recurse "${{ matrix.package_path }}" "$PACKAGE_PATH/$PACKAGE_NAME"
@@ -223,6 +313,8 @@ jobs:
         path: |
           ${{ env.PACKAGE_FILE }}
           ${{ env.CHECKSUM_FILE }}
+          ${{ env.INSTALLER_FILE }}
+          ${{ env.INSTALLER_CHECKSUM }}
         retention-days: 30
 
   # Upload artifacts for main branch builds (no release)
@@ -248,7 +340,8 @@ jobs:
         echo "- **Branch:** ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
         echo "**Available Artifacts:**" >> $GITHUB_STEP_SUMMARY
-        echo "- ✅ Windows (Portable ZIP)" >> $GITHUB_STEP_SUMMARY
+        echo "- ✅ Windows Installer (.exe)" >> $GITHUB_STEP_SUMMARY
+        echo "- ✅ Windows Portable (ZIP)" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
         echo "Artifacts are available in the Actions workflow run for 30 days." >> $GITHUB_STEP_SUMMARY
 
@@ -294,13 +387,8 @@ jobs:
         Choose the appropriate package for your system:
         
         ### Windows
+        - **CloudToLocalLLM-Windows-$VERSION-Setup.exe** - Windows installer (recommended)
         - **cloudtolocalllm-$VERSION-portable.zip** - Portable version (no installation required)
-        
-        ### macOS
-        - **cloudtolocalllm-$VERSION-macos.zip** - macOS application bundle
-        
-        ### Linux
-        - **cloudtolocalllm-$VERSION-linux.tar.gz** - Linux application bundle
         
         ## Checksums
         SHA256 checksums are provided for all packages to verify integrity.
@@ -331,6 +419,7 @@ jobs:
         echo "- **Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
         echo "**Available Platforms:**" >> $GITHUB_STEP_SUMMARY
-        echo "- ✅ Windows (Portable ZIP)" >> $GITHUB_STEP_SUMMARY
+        echo "- ✅ Windows Installer (.exe)" >> $GITHUB_STEP_SUMMARY
+        echo "- ✅ Windows Portable (ZIP)" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
         echo "**Download:** [GitHub Releases](https://github.com/imrightguy/CloudToLocalLLM/releases/tag/${{ needs.version-info.outputs.tag_name }})" >> $GITHUB_STEP_SUMMARY
