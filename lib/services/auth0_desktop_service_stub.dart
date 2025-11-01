@@ -1,45 +1,44 @@
 // Stub for Auth0DesktopService on web platform
 import 'dart:async';
 import 'package:flutter/foundation.dart';
+import 'auth0_service.dart';
 
 /// Stub implementation of Auth0DesktopService for web platform
-class Auth0DesktopService {
-  static final Auth0DesktopService _instance = Auth0DesktopService._internal();
-  factory Auth0DesktopService() => _instance;
-  Auth0DesktopService._internal();
+class Auth0DesktopServiceStub implements Auth0Service {
+  @override
+  Stream<bool> get authStateChanges => Stream.value(false);
 
-  final bool _isAuthenticated = false;
-  Map<String, dynamic>? _currentUser;
-  String? _accessToken;
-  final StreamController<bool> _authStateController = StreamController<bool>.broadcast();
+  @override
+  Map<String, dynamic>? get currentUser => null;
 
-  bool get isAuthenticated => _isAuthenticated;
-  Map<String, dynamic>? get currentUser => _currentUser;
-  String? get accessToken => _accessToken;
-  Stream<bool> get authStateChanges => _authStateController.stream;
+  @override
+  void dispose() {}
 
+  @override
+  String? getAccessToken() => null;
+
+  @override
+  Future<String?> getIdToken({bool forceRefresh = false}) async => null;
+
+  @override
+  Future<bool> handleRedirectCallback() async {
+    throw UnsupportedError('Desktop callback is not available on web platform');
+  }
+
+  @override
   Future<void> initialize() async {
-    debugPrint(' Auth0DesktopService: Not available on web platform');
+    debugPrint('Auth0DesktopService: Not available on web platform');
   }
 
-  Future<void> checkAuthStatus() async {
-    // No-op on web
-  }
+  @override
+  bool get isAuthenticated => false;
 
+  @override
   Future<void> login() async {
     throw UnsupportedError('Auth0 desktop login is only available on desktop platform');
   }
 
-  Future<void> logout() async {
-    // No-op on web
-  }
-
-  Future<void> handleAuthorizationCode(String code, String state) async {
-    throw UnsupportedError('Auth0 desktop callback is only available on desktop platform');
-  }
-
-  void dispose() {
-    _authStateController.close();
-  }
+  @override
+  Future<void> logout() async {}
 }
 

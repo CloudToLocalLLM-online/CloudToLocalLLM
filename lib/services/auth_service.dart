@@ -1,7 +1,16 @@
 import 'package:flutter/foundation.dart';
-import 'auth_service_factory_stub.dart' if (dart.library.html) 'auth_service_factory_web.dart' if (dart.library.io) 'auth_service_factory_desktop.dart';
+import 'auth0_web_service_stub.dart' if (dart.library.html) 'auth0_web_service.dart';
+import 'auth0_desktop_service_stub.dart' if (dart.library.html) 'auth0_desktop_service.dart';
 import '../models/user_model.dart';
 import 'auth0_service.dart';
+
+Auth0Service createAuth0Service() {
+  if (kIsWeb) {
+    return Auth0WebService();
+  } else {
+    return Auth0DesktopService();
+  }
+}
 
 /// Auth0-based Authentication Service
 /// Provides authentication for web and desktop using Auth0
