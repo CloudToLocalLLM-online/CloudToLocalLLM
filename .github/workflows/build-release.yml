@@ -249,9 +249,17 @@ jobs:
         if ($escapedVersion -match '[^0-9.]') {
           $escapedVersion = "`"$escapedVersion`""
         }
+        # Get absolute paths
+        $projectRoot = (Get-Location).Path
+        $buildSource = Join-Path $projectRoot "${{ matrix.package_path }}"
+        Write-Host "Project root: $projectRoot"
+        Write-Host "Build source: $buildSource"
+        
         $innoArgs = @(
           "`"$issFile`"",
           "/DMyAppVersion=$escapedVersion",
+          "/DSourceDir=$projectRoot",
+          "/DBuildDir=$buildSource",
           "/O`"$PACKAGE_PATH`""
         )
         

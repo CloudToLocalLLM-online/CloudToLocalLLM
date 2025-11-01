@@ -2,6 +2,12 @@
 #ifndef MyAppVersion
 #define MyAppVersion "1.0.0"
 #endif
+#ifndef SourceDir
+#define SourceDir "."
+#endif
+#ifndef BuildDir
+#define BuildDir "build\windows\x64\runner\Release"
+#endif
 #define MyAppPublisher "CloudToLocalLLM"
 #define MyAppURL "https://cloudtolocalllm.online"
 #define MyAppExeName "cloudtolocalllm.exe"
@@ -31,9 +37,9 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
 
 [Files]
-Source: "build\windows\x64\runner\Release\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion
-Source: "build\windows\x64\runner\Release\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
-Source: "scripts\utils\Setup-Ollama.ps1"; DestDir: "{app}"; Flags: ignoreversion
+Source: "{#BuildDir}\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion
+Source: "{#BuildDir}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "{#SourceDir}\scripts\utils\Setup-Ollama.ps1"; DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]
 Name: "{autoprograms}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"
