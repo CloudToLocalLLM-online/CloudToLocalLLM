@@ -2,7 +2,6 @@ name: Build Desktop Apps & Create Release
 
 on:
   push:
-    branches: [main]
     tags:
       - 'v*'
   workflow_dispatch:
@@ -10,10 +9,9 @@ on:
       build_type:
         description: 'Build type'
         required: true
-        default: 'main'
+        default: 'release'
         type: choice
         options:
-          - main
           - release
 
 permissions:
