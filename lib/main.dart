@@ -18,8 +18,8 @@ import 'services/tunnel_service.dart';
 import 'services/local_ollama_connection_service.dart';
 import 'services/connection_manager_service.dart';
 import 'services/streaming_chat_service.dart';
-import 'services/native_tray_service.dart';
-import 'services/window_manager_service.dart';
+import 'services/native_tray_service.dart' if (dart.library.html) 'services/native_tray_service_stub.dart';
+import 'services/window_manager_service.dart' if (dart.library.html) 'services/window_manager_service_stub.dart';
 import 'services/desktop_client_detection_service.dart';
 import 'services/setup_wizard_service.dart';
 import 'services/web_download_prompt_service.dart' if (dart.library.io) 'services/web_download_prompt_service_stub.dart';
@@ -35,7 +35,7 @@ import 'services/provider_discovery_service.dart';
 import 'services/langchain_integration_service.dart';
 import 'services/llm_error_handler.dart';
 
-import 'widgets/window_listener_widget.dart';
+import 'widgets/window_listener_widget.dart' if (dart.library.html) 'widgets/window_listener_widget_stub.dart';
 
 // Global navigator key for navigation from system tray
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();

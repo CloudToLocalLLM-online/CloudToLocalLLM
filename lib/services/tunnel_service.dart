@@ -3,7 +3,7 @@ import 'package:flutter/foundation.dart';
 import '../models/tunnel_config.dart';
 import '../models/tunnel_state.dart';
 import '../services/auth_service.dart';
-import 'chisel_tunnel_client.dart';
+import 'chisel_tunnel_client.dart' if (dart.library.html) 'chisel_tunnel_client_stub.dart';
 
 /// Modern tunnel service with proper state management and error handling
 /// 

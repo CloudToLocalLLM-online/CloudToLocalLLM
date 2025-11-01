@@ -1,4 +1,7 @@
 // Desktop-only imports - only loaded on desktop platforms
+// These imports are re-exported below, so they're actually used
+// ignore_for_file: unused_import
+
 import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:sqflite/sqflite.dart';
