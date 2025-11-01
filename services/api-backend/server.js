@@ -18,15 +18,8 @@ import { DatabaseMigrator } from './database/migrate.js';
 import { DatabaseMigratorPG } from './database/migrate-pg.js';
 import { createTunnelRoutes } from './tunnel/tunnel-routes.js';
 import { createMonitoringRoutes } from './routes/monitoring.js';
-import { createDirectProxyRoutes } from './routes/direct-proxy-routes.js';
 import { authenticateJWT } from './middleware/auth.js';
-import { addTierInfo, getUserTier, getTierFeatures } from './middleware/tier-check.js';
-import bridgePollingRoutes, {
-  queueRequestForBridge,
-  getResponseForRequest,
-  isBridgeAvailable,
-  getBridgeByUserId,
-} from './routes/bridge-polling-routes.js';
+import { addTierInfo, getUserTier } from './middleware/tier-check.js';
 
 dotenv.config();
 
@@ -186,42 +179,22 @@ async function authenticateToken(req, res, next) {
 // Initialize streaming proxy manager
 const proxyManager = new StreamingProxyManager();
 
-// WebSocket server removed - using HTTP polling only
-
-// Encrypted tunnel WebSocket server removed - using simplified tunnel system
-
-// Pending requests removed - using HTTP polling only
-
-// Encrypted tunnel code removed - using simplified tunnel system
-
-// Bridge cleanup functions removed - using HTTP polling only
-
-// Bridge message handling removed - using HTTP polling only
-
-// Create HTTP-only tunnel routes (WebSocket removed)
-const { router: tunnelRouter, tunnelProxy } = createTunnelRoutes({
+// Create WebSocket-based tunnel routes
+const tunnelRouter = createTunnelRoutes({
   AUTH0_DOMAIN,
   AUTH0_AUDIENCE,
-}, logger);
-
-// Create direct proxy routes for free tier users
-const directProxyRouter = createDirectProxyRoutes(tunnelProxy);
+}, tunnelProxyWebSocket, logger);
 
 // Create monitoring routes
-const monitoringRouter = createMonitoringRoutes(tunnelProxy, logger);
+const monitoringRouter = createMonitoringRoutes(tunnelProxyWebSocket, logger);
 
 // API Routes
 
 // Simplified tunnel routes
 app.use('/api/tunnel', tunnelRouter);
 
-// Direct proxy routes for free tier users
-app.use('/api/direct-proxy', directProxyRouter);
-
 // Performance monitoring routes
 app.use('/api/monitoring', monitoringRouter);
-
-// Encrypted tunnel routes removed - using simplified tunnel system
 
 // Database health endpoint
 app.get('/api/db/health', async(req, res) => {
@@ -259,51 +232,12 @@ app.get('/api/db/health', async(req, res) => {
 // Administrative routes
 app.use('/api/admin', adminRoutes);
 
-// Bridge polling routes (HTTP fallback for WebSocket tunnel)
-app.use('/api/bridge', bridgePollingRoutes);
-
-// Bridge status endpoint for web app compatibility
-app.get('/api/ollama/bridge/status', authenticateJWT, (req, res) => {
-  const userId = req.user?.sub;
-
-  if (!userId) {
-    return res.status(401).json({
-      error: 'Authentication required',
-      code: 'AUTH_REQUIRED',
-    });
-  }
-
-  // Check if user has any connected bridges
-  const userBridge = getBridgeByUserId(userId);
-
-  // Return format expected by DesktopClientDetectionService
-  if (userBridge && isBridgeAvailable(userBridge.bridgeId)) {
-    res.json({
-      bridges: [
-        {
-          bridgeId: userBridge.bridgeId,
-          connectedAt: userBridge.lastSeen || new Date().toISOString(),
-          lastPing: userBridge.lastSeen || new Date().toISOString(),
-        },
-      ],
-      timestamp: new Date().toISOString(),
-    });
-  } else {
-    // Return empty bridges array when no connection
-    res.json({
-      bridges: [],
-      timestamp: new Date().toISOString(),
-    });
-  }
-});
-
 // LLM Tunnel Cloud Proxy Endpoints
-// These endpoints provide the missing /api/ollama/* routes that the web platform expects
 app.all('/api/ollama/*', authenticateJWT, addTierInfo, async(req, res) => {
   const startTime = Date.now();
   const requestId = `llm-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-  const userId = req.user?.sub;
-  const userTier = getUserTier(req.user);
+  const userId = req.auth?.payload.sub;
+  const userTier = getUserTier(req.auth?.payload);
 
   if (!userId) {
     return res.status(401).json({
@@ -313,134 +247,26 @@ app.all('/api/ollama/*', authenticateJWT, addTierInfo, async(req, res) => {
     });
   }
 
-  // Rate limiting based on user tier
-  const rateLimits = getRateLimitsForTier(userTier);
-  if (!checkRateLimit(userId, 'ollama', rateLimits)) {
-    return res.status(429).json({
-      error: 'Rate limit exceeded',
-      code: 'RATE_LIMIT_EXCEEDED',
-      message: 'You have exceeded the rate limit for your tier. Please try again later.',
-      tier: userTier,
-      limits: rateLimits,
-      requestId,
-    });
-  }
-
   try {
-    logger.info('🦙 [LLMTunnel] Processing LLM request', {
-      userId,
-      userTier,
-      method: req.method,
-      path: req.path,
-      requestId,
-    });
-
-    // Extract the Ollama API path (remove /api/ollama prefix)
     const ollamaPath = req.path.replace('/api/ollama', '') || '/';
-
-    // Prepare headers for forwarding (remove hop-by-hop headers)
     const forwardHeaders = { ...req.headers };
-    const headersToRemove = [
-      'host', 'connection', 'upgrade', 'proxy-authenticate',
-      'proxy-authorization', 'te', 'trailers', 'transfer-encoding',
-    ];
-    headersToRemove.forEach(header => {
-      delete forwardHeaders[header];
-    });
+    ['host', 'authorization', 'connection', 'upgrade', 'proxy-authenticate', 'proxy-authorization', 'te', 'trailers', 'transfer-encoding'].forEach(h => delete forwardHeaders[h]);
 
-    // Create HTTP request object for tunnel proxy
     const httpRequest = {
       id: requestId,
       method: req.method,
       path: ollamaPath,
       headers: forwardHeaders,
       body: req.method !== 'GET' && req.method !== 'HEAD' ? JSON.stringify(req.body) : undefined,
-      query: req.query,
-      timeout: 60000, // 60 seconds for LLM requests (longer than standard)
     };
 
-    logger.debug('🔄 [LLMTunnel] Forwarding request through tunnel', {
-      userId,
-      userTier,
-      method: req.method,
-      path: ollamaPath,
-      requestId,
-      hasBody: !!httpRequest.body,
-    });
+    logger.debug('🔄 [LLMTunnel] Forwarding request through WebSocket tunnel', { userId, requestId, path: ollamaPath });
 
-    // Forward request through HTTP polling (WebSocket removed due to protocol issues)
-    let response;
-
-    // Use HTTP polling as primary method
-    const bridge = getBridgeByUserId(userId);
-    if (bridge && isBridgeAvailable(bridge.bridgeId)) {
-      logger.info('🌉 [LLMTunnel] Using HTTP polling bridge', {
-        userId,
-        requestId,
-        bridgeId: bridge.bridgeId,
-      });
-
-      // Queue request for HTTP polling
-      const pollingRequestId = queueRequestForBridge(bridge.bridgeId, {
-        type: 'request',
-        data: {
-          method: req.method,
-          path: ollamaPath,
-          headers: forwardHeaders,
-          body: httpRequest.body,
-        },
-      });
-
-      // Wait for response
-      const pollingResponse = await getResponseForRequest(pollingRequestId, 60000);
-
-      response = {
-        status: pollingResponse.status,
-        headers: pollingResponse.headers,
-        body: pollingResponse.body,
-      };
-
-      logger.info('✅ [LLMTunnel] HTTP polling successful', {
-        userId,
-        requestId,
-        bridgeId: bridge.bridgeId,
-        status: response.status,
-      });
-    } else {
-      // No HTTP polling bridge available
-      throw new Error(`No HTTP polling bridge available for user ${userId}`);
-    }
+    const response = await tunnelProxyWebSocket.forwardRequest(userId, httpRequest);
 
     const duration = Date.now() - startTime;
+    logger.info('✅ [LLMTunnel] Request completed successfully via WebSocket', { userId, requestId, duration, status: response.status });
 
-    // Record successful request for rate limiting
-    recordRequest(userId, 'ollama');
-
-    // Log audit event
-    logLLMAuditEvent({
-      userId,
-      providerId: 'ollama',
-      requestType: req.method,
-      requestPath: ollamaPath,
-      requestSize: httpRequest.body ? httpRequest.body.length : 0,
-      responseSize: response.body ? response.body.length : 0,
-      responseTime: duration,
-      success: true,
-      userTier,
-      requestId,
-    });
-
-    logger.info('✅ [LLMTunnel] Request completed successfully', {
-      userId,
-      userTier,
-      method: req.method,
-      path: ollamaPath,
-      requestId,
-      statusCode: response.statusCode,
-      duration,
-    });
-
-    // Set response headers
     if (response.headers) {
       Object.entries(response.headers).forEach(([key, value]) => {
         if (key.toLowerCase() !== 'transfer-encoding') {
@@ -449,89 +275,28 @@ app.all('/api/ollama/*', authenticateJWT, addTierInfo, async(req, res) => {
       });
     }
 
-    // Send response
-    res.status(response.statusCode || 200);
+    res.status(response.status || 200);
     if (response.body) {
-      res.send(response.body);
+      try {
+        res.json(JSON.parse(response.body));
+      } catch (e) {
+        res.send(response.body);
+      }
     } else {
       res.end();
     }
 
   } catch (error) {
     const duration = Date.now() - startTime;
+    logger.error('❌ [LLMTunnel] Request failed via WebSocket', { userId, requestId, duration, error: error.message, code: error.code });
 
-    // Log audit event for failed request
-    logLLMAuditEvent({
-      userId,
-      providerId: 'ollama',
-      requestType: req.method,
-      requestPath: req.path.replace('/api/ollama', ''),
-      requestSize: req?.body ? req.body.length : 0,
-      responseTime: duration,
-      success: false,
-      errorMessage: error.message,
-      userTier,
-      requestId,
-    });
-
-    logger.error('❌ [LLMTunnel] Request failed', {
-      userId,
-      userTier,
-      method: req.method,
-      path: req.path,
-      error: error.message,
-      code: error.code,
-      duration,
-      requestId,
-    });
-
-    // Handle specific tunnel errors with appropriate HTTP status codes
-    if (error.message === 'LLM request timeout' || error.code === 'REQUEST_TIMEOUT') {
-      return res.status(504).json({
-        error: 'LLM request timeout',
-        code: 'LLM_REQUEST_TIMEOUT',
-        message: 'The request to your local LLM service timed out. This may happen with complex queries.',
-        timeout: 60000,
-        requestId,
-      });
+    if (error.code === 'REQUEST_TIMEOUT') {
+      return res.status(504).json({ error: 'LLM request timeout', code: 'LLM_REQUEST_TIMEOUT' });
     }
-
-    if (error.code === 'DESKTOP_CLIENT_DISCONNECTED' || error.message.includes('not connected')) {
-      return res.status(503).json({
-        error: 'Desktop client not connected',
-        code: 'DESKTOP_CLIENT_DISCONNECTED',
-        message: 'Please ensure your CloudToLocalLLM desktop client is running and connected.',
-        requestId,
-        troubleshooting: [
-          'Download and install the CloudToLocalLLM desktop client',
-          'Ensure the desktop client is running and authenticated',
-          'Check that your local LLM service (Ollama) is running',
-          'Verify your firewall allows the desktop client to connect',
-        ],
-      });
+    if (error.code === 'DESKTOP_CLIENT_DISCONNECTED') {
+      return res.status(503).json({ error: 'Desktop client not connected', code: 'DESKTOP_CLIENT_DISCONNECTED' });
     }
-
-    if (error.code === 'ECONNREFUSED' || error.code === 'ENOTFOUND') {
-      return res.status(502).json({
-        error: 'Local LLM service unavailable',
-        code: 'LOCAL_LLM_UNAVAILABLE',
-        message: 'Unable to connect to your local LLM service.',
-        requestId,
-        troubleshooting: [
-          'Ensure Ollama or your LLM service is running',
-          'Check that the service is accessible on the expected port',
-          'Verify the desktop client configuration',
-        ],
-      });
-    }
-
-    // Generic error response
-    res.status(500).json({
-      error: 'LLM tunnel error',
-      code: 'LLM_TUNNEL_ERROR',
-      message: 'An error occurred while processing your LLM request.',
-      requestId,
-    });
+    res.status(500).json({ error: 'LLM tunnel error', code: 'LLM_TUNNEL_ERROR' });
   }
 });
 
@@ -561,7 +326,7 @@ app.get('/health', (req, res) => {
   res.json({
     status: 'healthy',
     timestamp: new Date().toISOString(),
-    tunnelSystem: 'http-polling',
+    tunnelSystem: 'websocket',
   });
 });
 
@@ -570,7 +335,7 @@ app.get('/api/health', (req, res) => {
   res.json({
     status: 'healthy',
     timestamp: new Date().toISOString(),
-    tunnelSystem: 'http-polling',
+    tunnelSystem: 'websocket',
     service: 'cloudtolocalllm-api',
   });
 });
@@ -875,55 +640,40 @@ setInterval(() => {
   });
 }, 60 * 60 * 1000); // Run every hour
 
-// Initialize HTTP polling tunnel system (simplified)
+// Initialize Tunnel System
 let authService = null;
 let dbMigrator = null;
 
-async function initializeHttpPollingSystem() {
-  logger.info('Starting initialization of HTTP polling tunnel system...');
+async function initializeTunnelSystem() {
+  logger.info('Starting initialization of tunnel system...');
   try {
-    logger.info('Initializing HTTP polling tunnel system...');
-
-    // Initialize database - choose migrator based on DB_TYPE
     const dbType = process.env.DB_TYPE || 'sqlite';
-    if (dbType === 'postgresql') {
-      logger.info('Using PostgreSQL database migrator');
-      dbMigrator = new DatabaseMigratorPG();
-    } else {
-      logger.info('Using SQLite database migrator');
-      dbMigrator = new DatabaseMigrator();
-    }
+    dbMigrator = dbType === 'postgresql' ? new DatabaseMigratorPG() : new DatabaseMigrator();
 
     await dbMigrator.initialize();
     await dbMigrator.createMigrationsTable();
-
-    // Apply initial schema if needed
     await dbMigrator.applyInitialSchema();
 
-    // Validate schema
     const validation = await dbMigrator.validateSchema();
     if (!validation.allValid) {
       throw new Error('Database schema validation failed');
     }
 
-    // Initialize authentication service
     authService = new AuthService({
       AUTH0_DOMAIN,
       AUTH0_AUDIENCE,
     });
     await authService.initialize();
 
-    // HTTP polling tunnel system (no server initialization needed)
-    logger.info('HTTP polling tunnel system ready');
+    logger.info('WebSocket tunnel system ready');
 
-    // Setup graceful shutdown
     process.on('SIGTERM', gracefulShutdown);
     process.on('SIGINT', gracefulShutdown);
 
-    logger.info('Enhanced tunnel system initialized successfully');
+    logger.info('Tunnel system initialized successfully');
 
   } catch (error) {
-    logger.error('Failed to initialize enhanced tunnel system', {
+    logger.error('Failed to initialize tunnel system', {
       error: error.message,
       stack: error.stack,
     });
@@ -935,25 +685,21 @@ async function gracefulShutdown() {
   logger.info('Received shutdown signal, starting graceful shutdown...');
 
   try {
-    // HTTP polling system (no server to stop)
-
-    // Close authentication service
+    if (tunnelProxyWebSocket) {
+      tunnelProxyWebSocket.cleanup();
+    }
     if (authService) {
       await authService.close();
     }
-
-    // Close database connection
     if (dbMigrator) {
       await dbMigrator.close();
     }
 
-    // Close HTTP server
     server.close(() => {
       logger.info('Server closed successfully');
       process.exit(0);
     });
 
-    // Force exit after 10 seconds
     setTimeout(() => {
       logger.error('Forced shutdown after timeout');
       process.exit(1);
@@ -969,18 +715,12 @@ async function gracefulShutdown() {
 async function startServer() {
   logger.info('Starting server...');
   try {
-    // Initialize HTTP polling tunnel system first
-    await initializeHttpPollingSystem();
+    await initializeTunnelSystem();
 
-    // Start HTTP server
     server.listen(PORT, () => {
       logger.info(`CloudToLocalLLM API Backend listening on port ${PORT}`);
-      logger.info(`Listening on port: ${PORT}`);
       logger.info(`Environment: ${process.env.NODE_ENV || 'development'}`);
-      logger.info(`Auth0 Domain: ${AUTH0_DOMAIN}`);
-      logger.info(`Auth0 Audience: ${AUTH0_AUDIENCE}`);
-      logger.info('Enhanced tunnel system is ready');
-      logger.info('LLM Security and Monitoring enabled');
+      logger.info('WebSocket tunnel system is ready');
     });
 
   } catch (error) {
