@@ -1,15 +1,17 @@
-import 'dart:io';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
-import 'package:path/path.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:sqflite/sqflite.dart';
 import 'package:http/http.dart' as http;
 
 import '../models/conversation.dart';
 import '../models/message.dart';
 import '../config/app_config.dart';
 import 'auth_service.dart';
+
+// Conditional imports for desktop-only dependencies
+import 'package:path/path.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:sqflite/sqflite.dart';
+import 'dart:io' as io;
 
 /// Conversation storage service with platform-specific storage
 ///
@@ -59,22 +61,25 @@ class ConversationStorageService {
         );
       }
 
-      await _initializeDatabase();
-      _isInitialized = true;
-      debugPrint('[ConversationStorage] Service initialized successfully');
+      if (kIsWeb) {
+        // Web platform: Use PostgreSQL via API - skip local database
+        _isInitialized = true;
+        debugPrint('[ConversationStorage] Web platform initialized (using cloud storage)');
+      } else {
+        // Desktop platform: Use local SQLite
+        await _initializeDatabase();
+        _isInitialized = true;
+        debugPrint('[ConversationStorage] Desktop platform initialized (using local storage)');
+      }
     } catch (e, stackTrace) {
       debugPrint('[ConversationStorage] Failed to initialize: $e');
       debugPrint('[ConversationStorage] Stack trace: $stackTrace');
-      
-      // On web, database initialization failures are non-fatal
-      // The app can still function without conversation storage
-      if (kIsWeb) {
-        debugPrint('[ConversationStorage] Web platform: Continuing without database (non-fatal)');
-        _isInitialized = false; // Mark as not initialized but don't crash
-      } else {
-        // On desktop/mobile, database is critical - rethrow
+      // On desktop/mobile, database is critical - rethrow
+      if (!kIsWeb) {
         rethrow;
       }
+      // Web can continue without local database (uses API)
+      _isInitialized = true;
     }
   }
 
@@ -771,13 +776,13 @@ class ConversationStorageService {
       try {
         final dbPath = await _getDatabasePath();
         if (!kIsWeb) {
-          final file = File(dbPath);
+          final file = io.File(dbPath);
           if (await file.exists()) {
             final bytes = await file.length();
             databaseSize = _formatBytes(bytes);
           }
         } else {
-          databaseSize = 'IndexedDB';
+          databaseSize = 'Cloud Storage (PostgreSQL)';
         }
       } catch (e) {
         debugPrint('� [ConversationStorage] Failed to get database size: $e');
