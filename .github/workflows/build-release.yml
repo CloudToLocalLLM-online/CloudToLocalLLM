@@ -224,6 +224,70 @@ jobs:
       run: |
         Write-Host "Checking Windows build prerequisites..."
         flutter doctor -v
+        
+        # Check if Visual Studio Build Tools are available
+        Write-Host "`nChecking for Visual Studio Build Tools..."
+        $vsWhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+        if (Test-Path $vsWhere) {
+          $vsInstalls = & $vsWhere -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
+          if ($vsInstalls) {
+            Write-Host "✓ Visual Studio Build Tools found at: $vsInstalls" -ForegroundColor Green
+          } else {
+            Write-Warning "Visual Studio Build Tools with C++ workload not found!"
+            Write-Host "Attempting to install Visual Studio Build Tools..." -ForegroundColor Yellow
+            $vsInstallerUrl = "https://aka.ms/vs/17/release/vs_buildtools.exe"
+            $vsInstallerPath = "$env:TEMP\vs_buildtools.exe"
+            
+            try {
+              Invoke-WebRequest -Uri $vsInstallerUrl -OutFile $vsInstallerPath -UseBasicParsing
+              Write-Host "Installing Visual Studio Build Tools (this may take several minutes)..." -ForegroundColor Yellow
+              $installArgs = @(
+                "--quiet",
+                "--wait",
+                "--nocache",
+                "--norestart",
+                "--add", "Microsoft.VisualStudio.Workload.VCTools",
+                "--includeRecommended"
+              )
+              Start-Process -FilePath $vsInstallerPath -ArgumentList $installArgs -Wait -NoNewWindow
+              Remove-Item $vsInstallerPath -Force -ErrorAction SilentlyContinue
+              Write-Host "✓ Visual Studio Build Tools installed" -ForegroundColor Green
+            } catch {
+              Write-Error "Failed to install Visual Studio Build Tools: $($_.Exception.Message)"
+              Write-Host "Please install manually: https://visualstudio.microsoft.com/downloads/#build-tools-for-visual-studio-2022" -ForegroundColor Yellow
+              exit 1
+            }
+          }
+        } else {
+          Write-Warning "vswhere.exe not found. Visual Studio may not be installed."
+          Write-Host "Installing Visual Studio Build Tools..." -ForegroundColor Yellow
+          $vsInstallerUrl = "https://aka.ms/vs/17/release/vs_buildtools.exe"
+          $vsInstallerPath = "$env:TEMP\vs_buildtools.exe"
+          
+          try {
+            Invoke-WebRequest -Uri $vsInstallerUrl -OutFile $vsInstallerPath -UseBasicParsing
+            Write-Host "Installing Visual Studio Build Tools (this may take several minutes)..." -ForegroundColor Yellow
+            $installArgs = @(
+              "--quiet",
+              "--wait",
+              "--nocache",
+              "--norestart",
+              "--add", "Microsoft.VisualStudio.Workload.VCTools",
+              "--includeRecommended"
+            )
+            Start-Process -FilePath $vsInstallerPath -ArgumentList $installArgs -Wait -NoNewWindow
+            Remove-Item $vsInstallerPath -Force -ErrorAction SilentlyContinue
+            Write-Host "✓ Visual Studio Build Tools installed" -ForegroundColor Green
+          } catch {
+            Write-Error "Failed to install Visual Studio Build Tools: $($_.Exception.Message)"
+            Write-Host "Please install manually: https://visualstudio.microsoft.com/downloads/#build-tools-for-visual-studio-2022" -ForegroundColor Yellow
+            exit 1
+          }
+        }
+        
+        # Verify again after potential installation
+        Write-Host "`nFinal verification..." -ForegroundColor Cyan
+        flutter doctor -v
       shell: powershell
         
     - name: Setup Flutter on Linux
