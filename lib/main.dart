@@ -2,7 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
-import 'package:flutter_web_plugins/url_strategy.dart' if (dart.library.html) 'package:flutter_web_plugins/url_strategy.dart' if (dart.library.io) 'web_plugins_stub.dart';
+import 'web_plugins_stub.dart' if (dart.library.html) 'package:flutter_web_plugins/url_strategy.dart';
 import 'dart:async';
 import 'screens/loading_screen.dart';
 import 'config/theme.dart';
