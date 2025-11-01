@@ -30,6 +30,7 @@ class WindowManagerService {
   Future<void> minimizeWindow() async {}
   Future<void> maximizeWindow() async {}
   Future<void> closeWindow() async {}
+  Future<void> forceClose() async {}
   
   bool get isWindowVisible => _isWindowVisible;
   bool get isMinimizedToTray => _isMinimizedToTray;
