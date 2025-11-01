@@ -364,6 +364,30 @@ jobs:
         echo "CHECKSUM_FILE=$PACKAGE_PATH/$PACKAGE_NAME.zip.sha256" >> $env:GITHUB_ENV
       shell: powershell
       
+    - name: Create Linux package
+      if: matrix.platform == 'linux'
+      run: |
+        VERSION="${{ needs.version-info.outputs.version }}"
+        FULL_VERSION="${{ needs.version-info.outputs.full_version }}"
+        PACKAGE_NAME="cloudtolocalllm-${VERSION}-linux"
+        PACKAGE_PATH="dist/linux"
+        
+        # Create dist directory
+        mkdir -p "$PACKAGE_PATH"
+        
+        # Copy build output
+        cp -R "${{ matrix.package_path }}" "$PACKAGE_PATH/$PACKAGE_NAME"
+        
+        # Create tar.gz archive
+        cd "$PACKAGE_PATH"
+        tar -czf "$PACKAGE_NAME.tar.gz" "$PACKAGE_NAME"
+        
+        # Generate SHA256 checksum
+        sha256sum "$PACKAGE_NAME.tar.gz" > "$PACKAGE_NAME.tar.gz.sha256"
+        
+        echo "PACKAGE_FILE=$PACKAGE_PATH/$PACKAGE_NAME.tar.gz" >> $GITHUB_ENV
+        echo "CHECKSUM_FILE=$PACKAGE_PATH/$PACKAGE_NAME.tar.gz.sha256" >> $GITHUB_ENV
+        
     - name: Upload build artifacts
       uses: actions/upload-artifact@v4
       with:
