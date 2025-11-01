@@ -54,16 +54,35 @@
     // Clear old Auth0 cache if it exists with wrong audience (must run before Auth0 SDK loads)
     (function() {
       try {
+        // Clear ALL Auth0-related localStorage entries to force fresh start
         const keys = Object.keys(localStorage);
         keys.forEach(key => {
-          if (key.includes('auth0') || key.includes('@@auth0spajs')) {
+          if (key.includes('auth0') || key.includes('@@auth0spajs') || key.includes('@@auth0')) {
             const value = localStorage.getItem(key);
-            if (value && (value.includes('api.cloudtolocalllm.online') || value.includes('"aud":"https://api.cloudtolocalllm.online'))) {
+            if (value && value.includes('api.cloudtolocalllm.online')) {
               console.log('🗑️ Clearing old Auth0 cache with api.cloudtolocalllm.online:', key);
               localStorage.removeItem(key);
             }
           }
         });
+        
+        // Also clear sessionStorage
+        const sessionKeys = Object.keys(sessionStorage);
+        sessionKeys.forEach(key => {
+          if (key.includes('auth0') || key.includes('@@auth0')) {
+            const value = sessionStorage.getItem(key);
+            if (value && value.includes('api.cloudtolocalllm.online')) {
+              console.log('🗑️ Clearing old Auth0 sessionStorage:', key);
+              sessionStorage.removeItem(key);
+            }
+          }
+        });
+        
+        // Clear URL if it has the old error
+        if (window.location.search.includes('api.cloudtolocalllm.online')) {
+          console.log('🗑️ Clearing URL with old api.cloudtolocalllm.online error');
+          window.history.replaceState({}, document.title, window.location.pathname);
+        }
       } catch (e) {
         console.warn('Could not clear Auth0 cache:', e);
       }
