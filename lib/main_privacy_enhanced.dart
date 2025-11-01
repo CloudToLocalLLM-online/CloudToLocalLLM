@@ -332,7 +332,8 @@ class _CloudToLocalLLMPrivacyAppState extends State<CloudToLocalLLMPrivacyApp> {
         ChangeNotifierProvider(
           create: (context) {
             final connectionManager = context.read<ConnectionManagerService>();
-            return StreamingChatService(connectionManager);
+            final authService = context.read<AuthService>();
+            return StreamingChatService(connectionManager, authService);
           },
         ),
 

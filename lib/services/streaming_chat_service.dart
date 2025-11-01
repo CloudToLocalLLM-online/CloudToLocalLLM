@@ -9,6 +9,7 @@ import 'streaming_service.dart';
 
 import 'connection_manager_service.dart';
 import 'conversation_storage_service.dart';
+import 'auth_service.dart';
 
 /// Enhanced chat service with real-time streaming support
 ///
@@ -16,8 +17,12 @@ import 'conversation_storage_service.dart';
 /// and integration with the tunnel manager for connection routing.
 class StreamingChatService extends ChangeNotifier {
   final ConnectionManagerService _connectionManager;
-  final ConversationStorageService _storageService =
-      ConversationStorageService();
+  final ConversationStorageService _storageService;
+
+  StreamingChatService(
+    this._connectionManager,
+    AuthService authService,
+  ) : _storageService = ConversationStorageService(authService: authService);
 
   List<Conversation> _conversations = [];
   Conversation? _currentConversation;

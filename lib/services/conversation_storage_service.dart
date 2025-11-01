@@ -406,6 +406,16 @@ class ConversationStorageService {
 
   /// Clear all conversations
   Future<void> clearAllConversations() async {
+    if (kIsWeb) {
+      // Web: Delete all conversations via API
+      final conversations = await _loadConversationsViaAPI();
+      for (final conv in conversations) {
+        await _deleteConversationViaAPI(conv.id);
+      }
+      return;
+    }
+
+    // Desktop: Use local SQLite
     if (_database == null) {
       throw StateError('Database not initialized');
     }
@@ -419,6 +429,188 @@ class ConversationStorageService {
       debugPrint('� [ConversationStorage] Cleared all conversations');
     } catch (e) {
       debugPrint('� [ConversationStorage] Error clearing conversations: $e');
+      rethrow;
+    }
+  }
+
+  // ========== API Helper Methods for Web Platform ==========
+
+  /// Get authentication headers for API requests
+  Future<Map<String, String>> _getAuthHeaders() async {
+    if (_authService == null) {
+      throw StateError('AuthService not available');
+    }
+
+    final token = await _authService!.getValidatedAccessToken();
+    if (token == null) {
+      throw StateError('No access token available');
+    }
+
+    return {
+      'Authorization': 'Bearer $token',
+      'Content-Type': 'application/json',
+    };
+  }
+
+  /// Load conversations from API (web platform)
+  Future<List<Conversation>> _loadConversationsViaAPI() async {
+    try {
+      final headers = await _getAuthHeaders();
+      final url = Uri.parse('${AppConfig.apiBaseUrl}/conversations');
+
+      final response = await http.get(url, headers: headers).timeout(
+        AppConfig.apiTimeout,
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body) as Map<String, dynamic>;
+        final conversationsData = data['conversations'] as List<dynamic>? ?? [];
+
+        final conversations = <Conversation>[];
+        for (final convData in conversationsData) {
+          // Load full conversation with messages
+          final convId = convData['id'] as String;
+          final fullConv = await _loadConversationViaAPI(convId);
+          if (fullConv != null) {
+            conversations.add(fullConv);
+          }
+        }
+
+        debugPrint(
+          '[ConversationStorage] Loaded ${conversations.length} conversations from API',
+        );
+        return conversations;
+      } else {
+        debugPrint(
+          '[ConversationStorage] Failed to load conversations: ${response.statusCode}',
+        );
+        return [];
+      }
+    } catch (e) {
+      debugPrint('[ConversationStorage] Error loading conversations from API: $e');
+      return [];
+    }
+  }
+
+  /// Load a single conversation with messages from API
+  Future<Conversation?> _loadConversationViaAPI(String conversationId) async {
+    try {
+      final headers = await _getAuthHeaders();
+      final url = Uri.parse('${AppConfig.apiBaseUrl}/conversations/$conversationId');
+
+      final response = await http.get(url, headers: headers).timeout(
+        AppConfig.apiTimeout,
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body) as Map<String, dynamic>;
+        final convData = data['conversation'] as Map<String, dynamic>;
+
+        return Conversation.fromJson({
+          'id': convData['id'],
+          'title': convData['title'],
+          'model': convData['model'],
+          'createdAt': convData['created_at'],
+          'updatedAt': convData['updated_at'],
+          'metadata': convData['metadata'] ?? {},
+          'messages': (convData['messages'] as List<dynamic>?)
+                  ?.map((m) => {
+                        'id': m['id'],
+                        'role': m['role'],
+                        'content': m['content'],
+                        'model': m['model'],
+                        'timestamp': m['timestamp'],
+                        'metadata': m['metadata'] ?? {},
+                      })
+                  .toList() ??
+              [],
+        });
+      }
+      return null;
+    } catch (e) {
+      debugPrint('[ConversationStorage] Error loading conversation from API: $e');
+      return null;
+    }
+  }
+
+  /// Save conversations via API (web platform)
+  Future<void> _saveConversationsViaAPI(List<Conversation> conversations) async {
+    for (final conversation in conversations) {
+      await _saveConversationViaAPI(conversation);
+    }
+  }
+
+  /// Save a single conversation via API (web platform)
+  Future<void> _saveConversationViaAPI(Conversation conversation) async {
+    try {
+      final headers = await _getAuthHeaders();
+      final url = Uri.parse('${AppConfig.apiBaseUrl}/conversations/${conversation.id}');
+
+      final body = jsonEncode({
+        'title': conversation.title,
+        'messages': conversation.messages.map((m) => {
+              'role': m.role.name,
+              'content': m.content,
+              'model': m.model,
+              'timestamp': m.timestamp.toIso8601String(),
+              'metadata': m.metadata,
+            }).toList(),
+      });
+
+      final response = await http.put(url, headers: headers, body: body).timeout(
+        AppConfig.apiTimeout,
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        debugPrint(
+          '[ConversationStorage] Saved conversation via API: ${conversation.title}',
+        );
+      } else {
+        // Try POST if PUT fails (conversation doesn't exist yet)
+        final postUrl = Uri.parse('${AppConfig.apiBaseUrl}/conversations');
+        final postBody = jsonEncode({
+          'title': conversation.title,
+          'model': conversation.model ?? 'default',
+          'messages': conversation.messages.map((m) => {
+                'role': m.role.name,
+                'content': m.content,
+                'model': m.model,
+                'timestamp': m.timestamp.toIso8601String(),
+                'metadata': m.metadata,
+              }).toList(),
+        });
+
+        final postResponse = await http.post(postUrl, headers: headers, body: postBody).timeout(
+          AppConfig.apiTimeout,
+        );
+
+        if (postResponse.statusCode != 201) {
+          throw Exception('Failed to save conversation: ${postResponse.statusCode}');
+        }
+      }
+    } catch (e) {
+      debugPrint('[ConversationStorage] Error saving conversation via API: $e');
+      rethrow;
+    }
+  }
+
+  /// Delete conversation via API (web platform)
+  Future<void> _deleteConversationViaAPI(String conversationId) async {
+    try {
+      final headers = await _getAuthHeaders();
+      final url = Uri.parse('${AppConfig.apiBaseUrl}/conversations/$conversationId');
+
+      final response = await http.delete(url, headers: headers).timeout(
+        AppConfig.apiTimeout,
+      );
+
+      if (response.statusCode == 200) {
+        debugPrint('[ConversationStorage] Deleted conversation via API: $conversationId');
+      } else {
+        throw Exception('Failed to delete conversation: ${response.statusCode}');
+      }
+    } catch (e) {
+      debugPrint('[ConversationStorage] Error deleting conversation via API: $e');
       rethrow;
     }
   }

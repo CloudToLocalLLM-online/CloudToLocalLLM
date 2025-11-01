@@ -428,7 +428,8 @@ class _CloudToLocalLLMAppState extends State<CloudToLocalLLMApp> {
         ChangeNotifierProvider(
           create: (context) {
             final connectionManager = context.read<ConnectionManagerService>();
-            return StreamingChatService(connectionManager);
+            final authService = context.read<AuthService>();
+            return StreamingChatService(connectionManager, authService);
           },
         ),
         // Unified connection service (depends on connection manager)
