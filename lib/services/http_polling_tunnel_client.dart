@@ -333,11 +333,12 @@ class HttpPollingTunnelClient extends ChangeNotifier {
         throw Exception('No authentication token available');
       }
 
+      final pollUrl = '${AppConfig.apiBaseUrl}/bridge/$_bridgeId/poll?timeout=30000';
+      debugPrint('🌉 [HttpPolling] Polling URL: $pollUrl');
+      
       final response = await _httpClient
           .get(
-            Uri.parse(
-              '${AppConfig.apiBaseUrl}/bridge/$_bridgeId/poll?timeout=30000',
-            ),
+            Uri.parse(pollUrl),
             headers: {
               'Authorization': 'Bearer $accessToken',
               'Content-Type': 'application/json',
@@ -346,6 +347,8 @@ class HttpPollingTunnelClient extends ChangeNotifier {
           .timeout(
             Duration(seconds: 35),
           ); // Slightly longer than server timeout
+      
+      debugPrint('🌉 [HttpPolling] Poll response: ${response.statusCode}');
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
