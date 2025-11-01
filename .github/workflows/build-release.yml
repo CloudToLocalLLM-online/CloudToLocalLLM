@@ -445,8 +445,10 @@ jobs:
         # Copy and customize spec file
         SPEC_FILE="build-tools/packaging/rpm/cloudtolocalllm.spec"
         if [ -f "$SPEC_FILE" ]; then
-          # Replace version in spec file
-          sed "s/%{version}/${VERSION}/g" "$SPEC_FILE" > ~/rpmbuild/SPECS/cloudtolocalllm.spec
+          # Replace version in spec file (handle both %{version} placeholder and actual version line)
+          sed -e "s/^Version:.*/Version:        ${VERSION}/" \
+              -e "s/%{version}/${VERSION}/g" \
+              "$SPEC_FILE" > ~/rpmbuild/SPECS/cloudtolocalllm.spec
           
           # Determine dist tag based on distribution
           if [[ "$DISTRO" == "fedora" ]]; then
@@ -546,6 +548,7 @@ jobs:
         echo "- ✅ Windows Installer (.exe)" >> $GITHUB_STEP_SUMMARY
         echo "- ✅ Windows Portable (ZIP)" >> $GITHUB_STEP_SUMMARY
         echo "- ✅ Linux (Tar.gz Archive)" >> $GITHUB_STEP_SUMMARY
+        echo "- ✅ Linux RPM (Fedora/openSUSE)" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
         echo "Artifacts are available in the Actions workflow run for 30 days." >> $GITHUB_STEP_SUMMARY
 
@@ -630,5 +633,6 @@ jobs:
         echo "- ✅ Windows Installer (.exe)" >> $GITHUB_STEP_SUMMARY
         echo "- ✅ Windows Portable (ZIP)" >> $GITHUB_STEP_SUMMARY
         echo "- ✅ Linux (Tar.gz Archive)" >> $GITHUB_STEP_SUMMARY
+        echo "- ✅ Linux RPM (Fedora/openSUSE)" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
         echo "**Download:** [GitHub Releases](https://github.com/imrightguy/CloudToLocalLLM/releases/tag/${{ needs.version-info.outputs.tag_name }})" >> $GITHUB_STEP_SUMMARY
