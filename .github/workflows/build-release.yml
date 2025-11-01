@@ -387,18 +387,20 @@ jobs:
         VERSION="${{ needs.version-info.outputs.version }}"
         TAG_NAME="v$VERSION"
         
-        # Check if tag already exists
+        # Configure git
+        git config user.name "GitHub Actions"
+        git config user.email "actions@github.com"
+        
+        # Check if tag already exists locally or remotely
         if git rev-parse "$TAG_NAME" >/dev/null 2>&1; then
-          echo "Tag $TAG_NAME already exists, skipping tag creation"
+          echo "Tag $TAG_NAME already exists locally, skipping tag creation"
+        elif git ls-remote --tags origin "$TAG_NAME" | grep -q "$TAG_NAME"; then
+          echo "Tag $TAG_NAME already exists on remote, skipping tag creation"
         else
           echo "Creating tag $TAG_NAME"
-          git config user.name "GitHub Actions"
-          git config user.email "actions@github.com"
           git tag -a "$TAG_NAME" -m "Release $TAG_NAME"
-          git push origin "$TAG_NAME"
+          git push origin "$TAG_NAME" || echo "Tag push failed (may already exist)"
         fi
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       
     - name: Create GitHub Release
       uses: softprops/action-gh-release@v1
