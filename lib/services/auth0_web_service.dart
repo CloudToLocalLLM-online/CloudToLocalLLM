@@ -3,10 +3,11 @@
 import 'dart:async';
 import 'dart:js_util' as js_util; // ignore: deprecated_member_use
 import 'package:flutter/foundation.dart';
+import 'auth0_service.dart';
 
 /// Auth0 Web Service for Flutter Web
 /// Provides authentication using Auth0's JavaScript SDK
-class Auth0WebService {
+class Auth0WebService implements Auth0Service {
   static final Auth0WebService _instance = Auth0WebService._internal();
   factory Auth0WebService() => _instance;
   Auth0WebService._internal();

@@ -20,7 +20,7 @@ dependencies:
   jwt_decoder: ^2.0.1
 
   # Error tracking
-  url_launcher: ^6.3.1
+  url_launcher: ^6.3.2
 
   # HTTP and Web
   http: ^1.2.1
@@ -30,7 +30,7 @@ dependencies:
   web_socket_channel: ^3.0.3
 
   # Enhanced HTTP handling for streaming
-  dio: ^5.8.0
+  dio: ^5.9.0
 
   # Real-time event handling
   rxdart: ^0.28.0
@@ -53,14 +53,14 @@ dependencies:
 
   # Local Storage
   sqflite: ^2.3.3+1  # SQLite for desktop, IndexedDB for web
-  shared_preferences: ^2.3.4  # For web-compatible auth storage
+  shared_preferences: ^2.5.3  # For web-compatible auth storage
 
   # State Management
   provider: ^6.1.5+1
 
   # System Integration - Flutter plugins for window management and secure storage
-  window_manager: ^0.5.0
-  flutter_secure_storage_x: ^11.0.0
+  window_manager: ^0.5.1
+  flutter_secure_storage_x: ^11.3.0
 
   # System Integration - Native Flutter system tray integration
   tray_manager: ^0.5.2
@@ -69,7 +69,7 @@ dependencies:
   uuid: ^4.5.1
   
   # Crypto for PKCE
-  crypto: ^3.0.5
+  crypto: ^3.0.6
 
   # LangChain Integration
   langchain: ^0.8.0+1

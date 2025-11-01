@@ -8,10 +8,11 @@ import 'package:flutter_secure_storage_x/flutter_secure_storage_x.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:http/http.dart' as http;
 import '../config/app_config.dart';
+import 'auth0_service.dart';
 
 /// Auth0 Desktop Service for Flutter Desktop/Mobile platforms
 /// Implements PKCE flow for secure authentication
-class Auth0DesktopService {
+class Auth0DesktopService implements Auth0Service {
   static final Auth0DesktopService _instance = Auth0DesktopService._internal();
   factory Auth0DesktopService() => _instance;
   Auth0DesktopService._internal();
@@ -39,7 +40,27 @@ class Auth0DesktopService {
   Map<String, dynamic>? get currentUser => _currentUser;
   String? get accessToken => _accessToken;
 
+  @override
+  Future<String?> getIdToken({bool forceRefresh = false}) async {
+    if (forceRefresh && _refreshToken != null) {
+      await _refreshAccessToken();
+    }
+    return _accessToken;
+  }
+
+  @override
+  String? getAccessToken() {
+    return _accessToken;
+  }
+
+  @override
+  Future<bool> handleRedirectCallback() async {
+    // This is handled by the login flow on desktop, so we just return true.
+    return true;
+  }
+
   /// Initialize the service and check for existing authentication
+  @override
   Future<void> initialize() async {
     try {
       debugPrint('[Auth0Desktop] Initializing desktop auth service');
@@ -92,6 +113,7 @@ class Auth0DesktopService {
   }
 
   /// Login with Auth0 using PKCE flow
+  @override
   Future<void> login() async {
     try {
       debugPrint('[Auth0Desktop] Starting Auth0 login with PKCE');
@@ -300,6 +322,7 @@ class Auth0DesktopService {
   }
 
   /// Logout and clear all stored data
+  @override
   Future<void> logout() async {
     try {
       debugPrint('[Auth0Desktop] Logging out');
@@ -325,6 +348,7 @@ class Auth0DesktopService {
   }
 
   /// Dispose resources
+  @override
   void dispose() {
     _authStateController.close();
   }
