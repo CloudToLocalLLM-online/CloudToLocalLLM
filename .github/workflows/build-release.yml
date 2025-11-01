@@ -423,9 +423,14 @@ jobs:
         
         # Compile installer
         Write-Host "Compiling Windows installer with Inno Setup..."
+        # Escape the version for Inno Setup preprocessor (quote if contains special chars)
+        $escapedVersion = $VERSION
+        if ($escapedVersion -match '[^0-9.]') {
+          $escapedVersion = "`"$escapedVersion`""
+        }
         $innoArgs = @(
           "`"$issFile`"",
-          "/DMyAppVersion=$VERSION",
+          "/DMyAppVersion=$escapedVersion",
           "/O`"$PACKAGE_PATH`""
         )
         

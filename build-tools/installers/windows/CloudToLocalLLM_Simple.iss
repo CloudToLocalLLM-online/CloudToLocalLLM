@@ -54,11 +54,11 @@ begin
   if not IsAdminLoggedOn and (Pos('/CURRENTUSER', UpperCase(GetCmdTail)) = 0) then
   begin
     case SuppressibleMsgBox(
-      'This application can be installed for all users or just for the current user.' + #13#10 + 
-      #13#10 +
-      'Installing for all users requires administrator privileges.' + #13#10 +
-      'Installing for the current user only does not require administrator privileges.' + #13#10 +
-      #13#10 +
+      'This application can be installed for all users or just for the current user.' + Chr(13) + Chr(10) + 
+      Chr(13) + Chr(10) +
+      'Installing for all users requires administrator privileges.' + Chr(13) + Chr(10) +
+      'Installing for the current user only does not require administrator privileges.' + Chr(13) + Chr(10) +
+      Chr(13) + Chr(10) +
       'Would you like to install for all users (Yes) or just for yourself (No)?',
       mbConfirmation, MB_YESNOCANCEL, IDNO) of
       IDYES:
