@@ -30,8 +30,8 @@ RUN flutter pub get
 # Copy the rest of the application source code
 COPY --chown=flutteruser:fluttergroup . .
 
-# Build the Flutter web application for Cloud Run
-RUN flutter build web
+# Build the Flutter web application with WebAssembly for Cloud Run
+RUN flutter build web --wasm
 
 # Stage 2: Serve with Nginx optimized for Cloud Run
 FROM nginx:alpine
