@@ -303,34 +303,6 @@ jobs:
           ${{ env.INSTALLER_CHECKSUM }}
         retention-days: 30
 
-  # Upload artifacts for main branch builds (no release)
-  upload-artifacts:
-    name: Upload Build Artifacts
-    if: needs.version-info.outputs.is_release != 'true'
-    runs-on: ubuntu-latest
-    needs: [version-info, build-desktop]
-
-    steps:
-    - name: Download all build artifacts
-      uses: actions/download-artifact@v4
-      with:
-        path: artifacts/
-        
-    - name: Upload artifacts summary
-      run: |
-        echo "## 📦 Build Artifacts Available" >> $GITHUB_STEP_SUMMARY
-        echo "" >> $GITHUB_STEP_SUMMARY
-        echo "**Build Details:**" >> $GITHUB_STEP_SUMMARY
-        echo "- **Version:** ${{ needs.version-info.outputs.full_version }}" >> $GITHUB_STEP_SUMMARY
-        echo "- **Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
-        echo "- **Branch:** ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
-        echo "" >> $GITHUB_STEP_SUMMARY
-        echo "**Available Artifacts:**" >> $GITHUB_STEP_SUMMARY
-        echo "- ✅ Windows Installer (.exe)" >> $GITHUB_STEP_SUMMARY
-        echo "- ✅ Windows Portable (ZIP)" >> $GITHUB_STEP_SUMMARY
-        echo "" >> $GITHUB_STEP_SUMMARY
-        echo "Artifacts are available in the Actions workflow run for 30 days." >> $GITHUB_STEP_SUMMARY
-
   # Create GitHub release with all platform builds (only for tag pushes)
   create-release:
     name: Create GitHub Release
