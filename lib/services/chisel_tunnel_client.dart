@@ -303,11 +303,38 @@ class ChiselTunnelClient with ChangeNotifier {
   }
 
   /// Get system architecture
+  /// Detects CPU architecture (amd64 or arm64) for selecting the correct Chisel binary
   String _getArchitecture() {
-    // For now, default to amd64
-    // In production, you'd detect actual architecture
-    // This is a simplified version
-    return 'amd64'; // TODO: Detect actual architecture
+    try {
+      if (Platform.isWindows) {
+        // Check Windows environment variables for architecture
+        final arch = Platform.environment['PROCESSOR_ARCHITECTURE'] ?? 
+                     Platform.environment['PROCESSOR_ARCHITEW6432'] ?? '';
+        if (arch.contains('ARM64') || arch.contains('arm64')) {
+          return 'arm64';
+        }
+        return 'amd64'; // Default for Windows x64
+      } else if (Platform.isMacOS || Platform.isLinux) {
+        // Use uname -m to detect architecture on Unix-like systems
+        try {
+          final result = Process.runSync('uname', ['-m']);
+          final arch = result.stdout.toString().trim().toLowerCase();
+          if (arch.contains('arm64') || arch.contains('aarch64')) {
+            return 'arm64';
+          } else if (arch.contains('x86_64') || arch.contains('amd64')) {
+            return 'amd64';
+          }
+        } catch (e) {
+          debugPrint('[Chisel] Failed to detect architecture via uname: $e');
+        }
+        // Fallback to amd64 if detection fails
+        return 'amd64';
+      }
+    } catch (e) {
+      debugPrint('[Chisel] Architecture detection error: $e');
+    }
+    // Default fallback to amd64 (most common architecture)
+    return 'amd64';
   }
 
   /// Handle disconnection
