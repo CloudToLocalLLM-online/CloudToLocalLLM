@@ -240,9 +240,15 @@ jobs:
         echo "Checking Linux build prerequisites..."
         flutter doctor -v
         
-    - name: Get Flutter dependencies
+    - name: Get Flutter dependencies (Windows)
+      if: matrix.platform == 'windows'
       run: flutter pub get
-      shell: ${{ matrix.platform == 'windows' && 'powershell' || 'bash' }}
+      shell: powershell
+      
+    - name: Get Flutter dependencies (Linux)
+      if: matrix.platform == 'linux'
+      run: flutter pub get
+      shell: bash
       
     - name: Enable desktop platform (Windows)
       if: matrix.platform == 'windows'
@@ -254,9 +260,15 @@ jobs:
       run: flutter config --enable-linux-desktop
       shell: bash
         
-    - name: Build desktop application
-      run: ${{ matrix.build_command }}
-      shell: ${{ matrix.platform == 'windows' && 'powershell' || 'bash' }}
+    - name: Build desktop application (Windows)
+      if: matrix.platform == 'windows'
+      run: flutter build windows --release
+      shell: powershell
+      
+    - name: Build desktop application (Linux)
+      if: matrix.platform == 'linux'
+      run: flutter build linux --release
+      shell: bash
       
     - name: Install Inno Setup
       if: matrix.platform == 'windows'
