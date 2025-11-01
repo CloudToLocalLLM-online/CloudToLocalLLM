@@ -45,11 +45,25 @@ jobs:
     - name: Extract version and generate build number
       id: version
       run: |
-        # Check if this is a tag push or main branch
+        # Check if this is a tag push, workflow_dispatch with release, or main branch
+        BUILD_TYPE="${{ github.event.inputs.build_type }}"
+        
         if [[ "${{ github.ref }}" == refs/tags/v* ]]; then
           # Release build from tag
           TAG_REF="${GITHUB_REF_NAME:-${{ github.ref_name }}}"
           VERSION="${TAG_REF#v}"
+          IS_RELEASE="true"
+        elif [[ "$BUILD_TYPE" == "release" ]]; then
+          # Manual release build via workflow_dispatch
+          if [ -f pubspec.yaml ]; then
+            VERSION=$(grep "^version:" pubspec.yaml | sed 's/version: //' | sed 's/+.*//')
+          fi
+          
+          # Fallback if version not found
+          if [ -z "$VERSION" ]; then
+            SHORT_SHA=$(git rev-parse --short HEAD)
+            VERSION="0.0.0-dev-$SHORT_SHA"
+          fi
           IS_RELEASE="true"
         else
           # Main branch build - extract version from pubspec.yaml or use commit-based version
@@ -646,7 +660,7 @@ jobs:
         mkdir -p release-assets
         
         # Copy all artifacts to release assets directory
-        find artifacts/ -type f \( -name "*.zip" -o -name "*.tar.gz" -o -name "*.sha256" \) -exec cp {} release-assets/ \;
+        find artifacts/ -type f \( -name "*.exe" -o -name "*.zip" -o -name "*.tar.gz" -o -name "*.rpm" -o -name "*.sha256" \) -exec cp {} release-assets/ \;
         
         # List all assets
         echo "Release assets:"
