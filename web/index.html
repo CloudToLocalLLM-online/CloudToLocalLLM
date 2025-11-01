@@ -91,20 +91,22 @@
     // Initialize Auth0 when config is loaded
     window.addEventListener('DOMContentLoaded', async function() {
       if (window.cloudToLocalLLMConfig) {
+        const audience = 'https://app.cloudtolocalllm.online';
+        console.log('🔧 Initializing Auth0 with audience:', audience);
         window.auth0Client = await auth0.createAuth0Client({
           domain: 'dev-v2f2p008x3dr74ww.us.auth0.com',
           clientId: 'FuXPnevXpp311CdYHGsbNZe9t3D8Ts7A',
           authorizationParams: {
             redirect_uri: window.location.origin,
             // API identifier matches Auth0 API (Resource Server) identifier
-            audience: 'https://app.cloudtolocalllm.online'
+            audience: audience
           },
           // Enable social connections (Google, GitHub, etc.)
           cacheLocation: 'localstorage',
           // Use a unique cache key to force refresh on audience change
           cacheKey: 'auth0-cache-v2'
         });
-        console.log('✅ Auth0 initialized');
+        console.log('✅ Auth0 initialized with audience:', audience);
         
         // Check if redirected back from Auth0 (success or error)
         const urlParams = new URLSearchParams(window.location.search);

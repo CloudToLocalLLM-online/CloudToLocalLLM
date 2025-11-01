@@ -35,12 +35,13 @@ window.auth0Bridge = {
     }
     
     try {
-      console.log('🔐 Starting Auth0 Google login redirect...');
+      const audience = 'https://app.cloudtolocalllm.online';
+      console.log('🔐 Starting Auth0 Google login redirect with audience:', audience);
       await window.auth0Client.loginWithRedirect({
         authorizationParams: {
           connection: 'google-oauth2',
           redirect_uri: window.location.origin,
-          audience: 'https://app.cloudtolocalllm.online'
+          audience: audience
         }
       });
       // Note: This will redirect, so code after this won't execute
