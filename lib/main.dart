@@ -15,6 +15,7 @@ import 'services/ollama_service.dart';
 import 'services/streaming_proxy_service.dart';
 import 'services/unified_connection_service.dart';
 import 'services/tunnel_configuration_service.dart';
+import 'services/tunnel_service.dart';
 import 'services/local_ollama_connection_service.dart';
 import 'services/connection_manager_service.dart';
 import 'services/streaming_chat_service.dart';
