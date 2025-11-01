@@ -1,7 +1,5 @@
 /**
- * @fileoverview Express routes for tunnel system health and status checks.
- * TODO: Replace with Chisel tunnel routes (see CHISEL_INTEGRATION_PLAN.md)
- * This file is a placeholder - old tunnel implementation removed.
+ * @fileoverview Express routes for Chisel tunnel system health and status checks.
  */
 
 import express from 'express';
@@ -51,42 +49,40 @@ export function createTunnelRoutes(config, tunnelProxy, logger = winston.createL
   router.use(authenticateToken);
   router.use(addTierInfo);
 
-  // TODO: Replace with Chisel health checks (see CHISEL_INTEGRATION_PLAN.md)
   // Health check for a specific user's tunnel connection
   router.get('/health/:userId', requireFeature('tunneling'), (req, res) => {
     const { userId } = req.params;
     if (userId !== req.userId) {
       return res.status(403).json({ error: 'Forbidden', message: 'You can only check your own tunnel status.' });
     }
-    // TODO: Replace with Chisel connection status
+    
     if (!tunnelProxy) {
       return res.json({ 
         userId, 
         connected: false, 
-        message: 'Chisel integration pending',
+        message: 'Chisel tunnel server not initialized',
         timestamp: new Date().toISOString() 
       });
     }
-    // const status = tunnelProxy.getUserConnectionStatus(userId);
-    // res.json({ userId, ...status, timestamp: new Date().toISOString() });
-    res.json({ userId, connected: false, message: 'Chisel integration pending', timestamp: new Date().toISOString() });
+    
+    const status = tunnelProxy.getUserConnectionStatus(userId);
+    res.json({ userId, ...status, timestamp: new Date().toISOString() });
   });
 
   // General system-wide tunnel health
   router.get('/health', (req, res) => {
     try {
-      // TODO: Replace with Chisel health status
       if (!tunnelProxy) {
         return res.status(503).json({ 
-          status: 'pending',
-          message: 'Chisel integration pending',
+          status: 'degraded',
+          message: 'Chisel tunnel server not initialized',
           timestamp: new Date().toISOString() 
         });
       }
-      // const healthStatus = tunnelProxy.getHealthStatus();
-      // const statusCode = healthStatus.status === 'healthy' ? 200 : 503;
-      // res.status(statusCode).json(healthStatus);
-      res.status(503).json({ status: 'pending', message: 'Chisel integration pending', timestamp: new Date().toISOString() });
+      
+      const healthStatus = tunnelProxy.getHealthStatus();
+      const statusCode = healthStatus.status === 'healthy' ? 200 : 503;
+      res.status(statusCode).json(healthStatus);
     } catch (error) {
       tunnelLogger.logTunnelError(ERROR_CODES.INTERNAL_SERVER_ERROR, 'Failed to get tunnel health status', { error: error.message });
       res.status(500).json(ErrorResponseBuilder.internalServerError('Failed to retrieve health status.', ERROR_CODES.INTERNAL_SERVER_ERROR));
@@ -95,20 +91,16 @@ export function createTunnelRoutes(config, tunnelProxy, logger = winston.createL
 
   // Get performance and connection metrics
   router.get('/metrics', requireFeature('tunneling'), (req, res) => {
-    // TODO: Replace with Chisel metrics
     if (!tunnelProxy) {
       return res.json({
-        system: { message: 'Chisel integration pending' },
+        system: { message: 'Chisel tunnel server not initialized' },
         timestamp: new Date().toISOString(),
       });
     }
-    // const stats = tunnelProxy.getStats();
-    // res.json({
-    //   system: stats,
-    //   timestamp: new Date().toISOString(),
-    // });
+    
+    const stats = tunnelProxy.getStats();
     res.json({
-      system: { message: 'Chisel integration pending' },
+      system: stats,
       timestamp: new Date().toISOString(),
     });
   });

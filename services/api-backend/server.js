@@ -10,9 +10,8 @@ import { StreamingProxyManager } from './streaming-proxy-manager.js';
 import { auth } from 'express-oauth2-jwt-bearer';
 
 import adminRoutes from './routes/admin.js';
-// TODO: Replace with Chisel tunnel integration
-// Old WebSocket tunnel system removed - see CHISEL_INTEGRATION_PLAN.md
-// import { setupWebSocketTunnel } from './websocket-server.js'; // REMOVED
+// Chisel tunnel integration
+import { ChiselProxy } from './tunnel/chisel-proxy.js';
 import { AuthService } from './auth/auth-service.js';
 import { DatabaseMigrator } from './database/migrate.js';
 import { DatabaseMigratorPG } from './database/migrate-pg.js';
@@ -62,10 +61,28 @@ const DOMAIN = process.env.DOMAIN || 'cloudtolocalllm.online';
 const app = express();
 const server = http.createServer(app);
 
-// TODO: Initialize Chisel tunnel server (see CHISEL_INTEGRATION_PLAN.md)
-// Old WebSocket tunnel removed - Chisel integration pending
-let tunnelProxyWebSocket = null; // Placeholder - will be replaced with ChiselProxy
-logger.warn('Tunnel system removed - Chisel integration pending');
+// Initialize Chisel tunnel server
+let chiselProxy = null;
+try {
+  const authService = new AuthService({
+    AUTH0_DOMAIN,
+    AUTH0_AUDIENCE,
+  });
+  await authService.initialize();
+
+  chiselProxy = new ChiselProxy(logger, {
+    chiselPort: parseInt(process.env.CHISEL_PORT) || 8080,
+    chiselBinary: process.env.CHISEL_BINARY,
+  }, authService);
+
+  await chiselProxy.start();
+  logger.info('Chisel tunnel server initialized successfully');
+} catch (error) {
+  logger.error('Failed to initialize Chisel tunnel server', {
+    error: error.message,
+    stack: error.stack,
+  });
+}
 
 // Trust proxy headers (required for rate limiting behind nginx)
 // Use specific proxy configuration to avoid ERR_ERL_PERMISSIVE_TRUST_PROXY
@@ -173,10 +190,10 @@ const proxyManager = new StreamingProxyManager();
 const tunnelRouter = createTunnelRoutes({
   AUTH0_DOMAIN,
   AUTH0_AUDIENCE,
-}, null, logger); // TODO: Replace null with ChiselProxy instance
+}, chiselProxy, logger);
 
 // Create monitoring routes
-const monitoringRouter = createMonitoringRoutes(null, logger); // TODO: Replace null with ChiselProxy instance
+const monitoringRouter = createMonitoringRoutes(chiselProxy, logger);
 
 // API Routes
 
@@ -252,15 +269,15 @@ app.all('/api/ollama/*', authenticateJWT, addTierInfo, async(req, res) => {
 
     logger.debug(' [LLMTunnel] Forwarding request through tunnel', { userId, requestId, path: ollamaPath });
 
-    // TODO: Replace with Chisel proxy forwarding (see CHISEL_INTEGRATION_PLAN.md)
-    if (!tunnelProxyWebSocket) {
+    if (!chiselProxy) {
       return res.status(503).json({ 
         error: 'Tunnel system not available', 
         code: 'TUNNEL_NOT_AVAILABLE',
-        message: 'Chisel integration pending - tunnel system removed' 
+        message: 'Chisel tunnel server not initialized' 
       });
     }
-    const response = await tunnelProxyWebSocket.forwardRequest(userId, httpRequest);
+
+    const response = await chiselProxy.forwardRequest(userId, httpRequest);
 
     const duration = Date.now() - startTime;
     logger.info(' [LLMTunnel] Request completed successfully via tunnel', { userId, requestId, duration, status: response.status });
@@ -683,10 +700,9 @@ async function gracefulShutdown() {
   logger.info('Received shutdown signal, starting graceful shutdown...');
 
   try {
-    // TODO: Cleanup Chisel server (see CHISEL_INTEGRATION_PLAN.md)
-    // if (tunnelProxyWebSocket) {
-    //   tunnelProxyWebSocket.cleanup();
-    // }
+    if (chiselProxy) {
+      await chiselProxy.stop();
+    }
     if (authService) {
       await authService.close();
     }
