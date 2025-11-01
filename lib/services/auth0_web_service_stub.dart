@@ -2,7 +2,7 @@
 import 'package:flutter/foundation.dart';
 import 'auth0_service.dart';
 
-class Auth0WebServiceStub implements Auth0Service {
+class Auth0WebService implements Auth0Service {
   @override
   Stream<bool> get authStateChanges => Stream.value(false);
 

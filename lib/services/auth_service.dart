@@ -1,6 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'auth0_web_service_stub.dart' if (dart.library.html) 'auth0_web_service.dart';
-import 'auth0_desktop_service_stub.dart' if (dart.library.html) 'auth0_desktop_service.dart';
+import 'auth0_desktop_service_stub.dart' if (dart.library.io) 'auth0_desktop_service.dart';
 import '../models/user_model.dart';
 import 'auth0_service.dart';
 

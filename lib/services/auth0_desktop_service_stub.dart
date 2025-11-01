@@ -4,7 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'auth0_service.dart';
 
 /// Stub implementation of Auth0DesktopService for web platform
-class Auth0DesktopServiceStub implements Auth0Service {
+class Auth0DesktopService implements Auth0Service {
   @override
   Stream<bool> get authStateChanges => Stream.value(false);
 
