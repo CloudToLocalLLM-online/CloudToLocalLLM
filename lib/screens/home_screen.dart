@@ -10,15 +10,13 @@ import '../services/app_initialization_service.dart';
 import '../services/auth_service.dart';
 import '../services/streaming_chat_service.dart';
 import '../services/connection_manager_service.dart';
-import '../services/setup_wizard_service.dart';
 import '../services/web_download_prompt_service.dart';
 import '../components/conversation_list.dart';
 import '../components/message_bubble.dart';
 import '../components/message_input.dart';
 import '../components/app_logo.dart';
-import '../components/setup_wizard.dart';
 import '../components/web_download_prompt.dart';
-import '../components/tunnel_setup_banner.dart';
+import '../components/tunnel_status_button.dart';
 
 /// Modern ChatGPT-like chat interface
 class HomeScreen extends StatefulWidget {
@@ -143,27 +141,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   },
                 );
               },
-            )
-          else
-            // Setup wizard overlay (desktop platform only)
-            Consumer<SetupWizardService>(
-              builder: (context, setupWizard, child) {
-                if (!setupWizard.shouldShowWizard) {
-                  return const SizedBox.shrink();
-                }
-
-                return SetupWizard(
-                  isFirstTimeUser: setupWizard.isFirstTimeUser,
-                  onDismiss: () {
-                    setupWizard.markWizardSeen();
-                    setupWizard.hideWizard();
-                  },
-                  onComplete: () {
-                    setupWizard.markSetupCompleted();
-                  },
-                );
-              },
             ),
+            if (kIsWeb) const TunnelStatusButton(),
         ],
       ),
       floatingActionButton: isMobile && _isSidebarCollapsed
@@ -392,9 +371,6 @@ class _HomeScreenState extends State<HomeScreen> {
           color: AppTheme.backgroundMain,
           child: Column(
             children: [
-              // Tunnel setup banner (web only)
-              if (kIsWeb) const TunnelSetupBanner(showDismiss: true),
-
               // Chat messages
               Expanded(
                 child: Container(
@@ -425,9 +401,6 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildEmptyState(BuildContext context) {
     return Column(
       children: [
-        // Tunnel setup banner (web only)
-        if (kIsWeb) const TunnelSetupBanner(),
-
         // Main empty state content
         Expanded(
           child: Center(

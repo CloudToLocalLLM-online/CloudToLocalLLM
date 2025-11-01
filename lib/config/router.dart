@@ -14,9 +14,6 @@ import '../screens/ollama_test_screen.dart';
 import '../screens/settings/llm_provider_settings_screen.dart';
 import '../screens/settings/daemon_settings_screen.dart';
 import '../screens/settings/connection_status_screen.dart';
-import '../screens/tunnel_settings_screen.dart';
-import '../screens/tunnel_status_screen.dart';
-import '../screens/tunnel_dashboard_screen.dart';
 import '../screens/unified_settings_screen.dart';
 
 // Admin screens
@@ -246,7 +243,7 @@ class AppRouter {
         GoRoute(
           path: '/settings/tunnel',
           name: 'tunnel-settings',
-          builder: (context, state) => const TunnelSettingsScreen(),
+          builder: (context, state) => const UnifiedSettingsScreen(initialSection: 'tunnel'),
         ),
 
         // LLM Provider Settings route
@@ -273,25 +270,6 @@ class AppRouter {
           builder: (context, state) {
             debugPrint("[Router] Building ConnectionStatusScreen");
             return const ConnectionStatusScreen();
-          },
-        ),
-
-        // Tunnel Dashboard route (modern tunnel interface)
-        GoRoute(
-          path: '/tunnel',
-          name: 'tunnel-dashboard',
-          builder: (context, state) {
-            debugPrint("[Router] Building TunnelDashboardScreen");
-            return const TunnelDashboardScreen();
-          },
-        ),
-        // Tunnel Status route (legacy)
-        GoRoute(
-          path: '/tunnel-status',
-          name: 'tunnel-status',
-          builder: (context, state) {
-            debugPrint("[Router] Building TunnelStatusScreen");
-            return const TunnelStatusScreen();
           },
         ),
 

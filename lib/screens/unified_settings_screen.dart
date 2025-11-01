@@ -5,7 +5,6 @@ import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import '../components/app_header.dart';
 import '../components/modern_card.dart';
 import '../components/model_download_manager.dart';
 
@@ -165,26 +164,11 @@ class _UnifiedSettingsScreenState extends State<UnifiedSettingsScreen> {
               decoration: const BoxDecoration(
                 gradient: AppTheme.headerGradient,
               ),
-              child: AppHeader(
-                title: 'Settings',
-                showBackButton: true,
-                onBackPressed: () => context.go('/'),
-                actions: [
-                  // Sidebar toggle for mobile
-                  if (isMobile)
-                    IconButton(
-                      onPressed: () {
-                        setState(() {
-                          _isSidebarCollapsed = !_isSidebarCollapsed;
-                        });
-                      },
-                      icon: Icon(
-                        _isSidebarCollapsed ? Icons.menu : Icons.menu_open,
-                        color: Colors.white,
-                      ),
-                      tooltip: _isSidebarCollapsed ? 'Show Menu' : 'Hide Menu',
-                    ),
-                ],
+              child: AppBar(
+                title: const Text('Settings'),
+                elevation: 0,
+                backgroundColor: AppTheme.backgroundMain,
+                foregroundColor: AppTheme.textColor,
               ),
             ),
 

@@ -23,7 +23,7 @@ dependencies:
   url_launcher: ^6.3.1
 
   # HTTP and Web
-  http: ^1.1.0
+  http: ^1.2.1
   intl: ^0.20.2
 
   # Streaming and WebSocket support
@@ -52,7 +52,7 @@ dependencies:
   path_provider: ^2.1.5
 
   # Local Storage
-  sqflite: ^2.3.0  # SQLite for desktop, IndexedDB for web
+  sqflite: ^2.3.3+1  # SQLite for desktop, IndexedDB for web
   shared_preferences: ^2.3.4  # For web-compatible auth storage
 
   # State Management

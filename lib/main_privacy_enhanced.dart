@@ -18,7 +18,6 @@ import 'services/streaming_chat_service.dart';
 import 'services/native_tray_service.dart';
 import 'services/window_manager_service.dart';
 import 'services/desktop_client_detection_service.dart';
-import 'services/setup_wizard_service.dart';
 import 'services/web_download_prompt_service.dart';
 import 'services/user_container_service.dart';
 import 'services/admin_service.dart';
@@ -262,19 +261,6 @@ class _CloudToLocalLLMPrivacyAppState extends State<CloudToLocalLLMPrivacyApp> {
               clientDetection.initialize();
             }
             return clientDetection;
-          },
-        ),
-
-        // Setup wizard service
-        ChangeNotifierProvider(
-          create: (context) {
-            final authService = context.read<AuthService>();
-            final clientDetection = context
-                .read<DesktopClientDetectionService>();
-            return SetupWizardService(
-              authService: authService,
-              clientDetectionService: clientDetection,
-            );
           },
         ),
 

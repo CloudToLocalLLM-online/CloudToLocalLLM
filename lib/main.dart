@@ -21,7 +21,6 @@ import 'services/streaming_chat_service.dart';
 import 'services/native_tray_service.dart' if (dart.library.html) 'services/native_tray_service_stub.dart';
 import 'services/window_manager_service.dart' if (dart.library.html) 'services/window_manager_service_stub.dart';
 import 'services/desktop_client_detection_service.dart';
-import 'services/setup_wizard_service.dart';
 import 'services/web_download_prompt_service.dart' if (dart.library.io) 'services/web_download_prompt_service_stub.dart';
 import 'services/user_container_service.dart';
 import 'services/admin_service.dart';
@@ -291,20 +290,6 @@ class _CloudToLocalLLMAppState extends State<CloudToLocalLLMApp> {
           create: (context) {
             final authService = context.read<AuthService>();
             return AppInitializationService(authService: authService);
-          },
-        ),
-
-        // Setup wizard service (desktop platform only)
-        ChangeNotifierProvider(
-          create: (context) {
-            final authService = context.read<AuthService>();
-            final clientDetection = context
-                .read<DesktopClientDetectionService>();
-            final setupWizard = SetupWizardService(
-              authService: authService,
-              clientDetectionService: clientDetection,
-            );
-            return setupWizard;
           },
         ),
 
