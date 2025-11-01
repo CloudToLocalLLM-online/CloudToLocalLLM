@@ -104,12 +104,15 @@ jobs:
           kubectl patch serviceaccount default -n ${{ env.NAMESPACE }} -p '{"imagePullSecrets": [{"name": "registry-cloudtolocalllm"}]}' || true
 
       - name: Create secrets
+        env:
+          AUTH0_DOMAIN: ${{ secrets.AUTH0_DOMAIN || 'dev-v2f2p008x3dr74ww.us.auth0.com' }}
+          AUTH0_AUDIENCE: ${{ secrets.AUTH0_AUDIENCE || 'https://app.cloudtolocalllm.online' }}
         run: |
           kubectl create secret generic cloudtolocalllm-secrets \
             --from-literal=postgres-password='${{ secrets.POSTGRES_PASSWORD }}' \
             --from-literal=jwt-secret='${{ secrets.JWT_SECRET }}' \
-            --from-literal=auth0-domain='${{ secrets.AUTH0_DOMAIN }}' \
-            --from-literal=auth0-audience='${{ secrets.AUTH0_AUDIENCE }}' \
+            --from-literal=auth0-domain='${AUTH0_DOMAIN}' \
+            --from-literal=auth0-audience='${AUTH0_AUDIENCE}' \
             --namespace=${{ env.NAMESPACE }} \
             --dry-run=client -o yaml | kubectl apply -f -
 
