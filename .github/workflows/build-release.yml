@@ -115,26 +115,67 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
       
-    - name: Setup Flutter
-      uses: subosito/flutter-action@v2
-      with:
-        flutter-version: ${{ env.FLUTTER_VERSION }}
-        channel: 'stable'
-
+    - name: Setup Flutter on Windows
+      if: matrix.platform == 'windows'
+      run: |
+        # Check if Flutter is already in PATH
+        $flutterPath = Get-Command flutter -ErrorAction SilentlyContinue
+        if ($flutterPath) {
+          Write-Host "Flutter found in PATH: $($flutterPath.Source)"
+          flutter --version
+        } else {
+          # Try common Flutter installation paths
+          $flutterPaths = @(
+            "$env:USERPROFILE\flutter",
+            "$env:PROGRAMFILES\flutter",
+            "C:\flutter",
+            "C:\tools\flutter",
+            "$env:LOCALAPPDATA\flutter"
+          )
+          
+          $foundFlutter = $false
+          foreach ($path in $flutterPaths) {
+            $flutterBin = Join-Path $path "bin\flutter.bat"
+            if (Test-Path $flutterBin) {
+              Write-Host "Found Flutter at: $path"
+              $env:PATH = "$path\bin;$env:PATH"
+              [Environment]::SetEnvironmentVariable("PATH", "$path\bin;$env:PATH", "Process")
+              flutter --version
+              $foundFlutter = $true
+              break
+            }
+          }
+          
+          if (-not $foundFlutter) {
+            throw "Flutter not found. Please install Flutter on the Windows runner."
+          }
+        }
+        
+        # Verify Flutter version
+        $flutterVersion = (flutter --version | Select-String -Pattern "Flutter (\d+\.\d+\.\d+)" | ForEach-Object { $_.Matches.Groups[1].Value })
+        Write-Host "Installed Flutter version: $flutterVersion"
+        
+        # Verify Windows desktop support is enabled
+        flutter config --enable-windows-desktop
+      shell: powershell
+      
     - name: Cache Flutter dependencies
+      if: matrix.platform == 'windows'
       uses: actions/cache@v3
       with:
         path: |
-          ~/.pub-cache
+          ${{ runner.temp }}\.pub-cache
           .dart_tool
-        key: ${{ runner.os }}-flutter-${{ hashFiles('**/pubspec.lock') }}
+        key: windows-flutter-${{ hashFiles('**/pubspec.lock') }}
         restore-keys: |
-          ${{ runner.os }}-flutter-
+          windows-flutter-
         
     - name: Verify Windows build environment
+      if: matrix.platform == 'windows'
       run: |
-        echo "Checking Windows build prerequisites..."
+        Write-Host "Checking Windows build prerequisites..."
         flutter doctor -v
+      shell: powershell
         
     - name: Get Flutter dependencies
       run: flutter pub get
