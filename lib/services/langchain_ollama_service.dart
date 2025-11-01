@@ -288,7 +288,7 @@ class LangChainOllamaService extends ChangeNotifier {
 
       await _initializeChatModel(modelName);
 
-      debugPrint('[LangChainOllama] Model switched: ${_currentModel} -> $modelName');
+      debugPrint('[LangChainOllama] Model switched: $_currentModel -> $modelName');
     } catch (e) {
       _error = 'Failed to switch model: $e';
       debugPrint('[LangChainOllama] Model switch failed: $e');

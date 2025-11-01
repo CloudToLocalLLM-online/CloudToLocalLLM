@@ -3,7 +3,6 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../utils/tunnel_logger.dart';
 import 'auth_service.dart';
 
 /// LLM Audit Service
@@ -12,7 +11,6 @@ import 'auth_service.dart';
 /// request tracking, usage monitoring, security events, and performance metrics.
 class LLMAuditService extends ChangeNotifier {
   final AuthService _authService;
-  
 
   // State
   bool _isInitialized = false;
@@ -45,11 +43,7 @@ class LLMAuditService extends ChangeNotifier {
       _isInitialized = true;
       debugPrint('[llm_audit_service] LLM Audit Service initialized successfully');
     } catch (e) {
-      _logger.logTunnelError(
-        'AUDIT_INIT_FAILED',
-        'Failed to initialize audit service',
-        error: e,
-      );
+      debugPrint('[LLMAudit] Initialization failed: $e');
       rethrow;
     }
   }
@@ -87,16 +81,7 @@ class LLMAuditService extends ChangeNotifier {
     await _addAuditEvent(event);
     await _updateUsageStats(event);
 
-    _logger.info(
-      'Logged LLM interaction',
-      context: {
-        'providerId': providerId,
-        'modelId': modelId,
-        'requestType': requestType,
-        'success': success,
-        'responseTime': responseTime,
-      },
-    );
+    debugPrint('[LLMAudit] Logged LLM interaction: provider=$providerId, model=$modelId, type=$requestType, success=$success');
   }
 
   /// Log a security event
@@ -123,16 +108,7 @@ class LLMAuditService extends ChangeNotifier {
 
     await _addAuditEvent(event);
 
-    _logger.logTunnelError(
-      'SECURITY_EVENT',
-      description,
-      context: {
-        'eventType': eventType,
-        'providerId': providerId,
-        'modelId': modelId,
-        'userId': userId,
-      },
-    );
+    debugPrint('[LLMAudit] SECURITY_EVENT: $eventType - $description');
   }
 
   /// Log a provider event
@@ -161,14 +137,7 @@ class LLMAuditService extends ChangeNotifier {
 
     await _addAuditEvent(event);
 
-    _logger.info(
-      'Logged provider event',
-      context: {
-        'providerId': providerId,
-        'eventType': eventType,
-        'success': success,
-      },
-    );
+    debugPrint('[LLMAudit] Logged provider event: provider=$providerId, type=$eventType');
   }
 
   /// Get usage statistics for a specific period
@@ -351,11 +320,7 @@ class LLMAuditService extends ChangeNotifier {
         });
       }
     } catch (e) {
-      _logger.logTunnelError(
-        'LOAD_AUDIT_DATA_FAILED',
-        'Failed to load audit data',
-        error: e,
-      );
+      debugPrint('[LLMAudit] Failed to load audit data: $e');
     }
   }
 
@@ -375,11 +340,7 @@ class LLMAuditService extends ChangeNotifier {
       );
       await prefs.setString(_prefUsageStats, usageStatsJson);
     } catch (e) {
-      _logger.logTunnelError(
-        'SAVE_AUDIT_DATA_FAILED',
-        'Failed to save audit data',
-        error: e,
-      );
+      debugPrint('[LLMAudit] Failed to save audit data: $e');
     }
   }
 
@@ -552,16 +513,7 @@ class LLMRateLimitService {
 
     // Check token limit
     if (tokenCount != null && tokenCount > maxTokensPerRequest) {
-      _logger.logTunnelError(
-        'RATE_LIMIT_EXCEEDED',
-        'Token limit exceeded',
-        context: {
-          'userId': userId,
-          'providerId': providerId,
-          'tokenCount': tokenCount,
-          'maxTokens': maxTokensPerRequest,
-        },
-      );
+      debugPrint('[LLMAudit] RATE_LIMIT_EXCEEDED: Token limit exceeded (userId=$userId, provider=$providerId, tokens=$tokenCount, max=$maxTokensPerRequest)');
       return false;
     }
 
@@ -576,16 +528,7 @@ class LLMRateLimitService {
         .where((timestamp) => now.difference(timestamp).inDays == 0)
         .length;
     if (dailyRequests >= requestsPerDay) {
-      _logger.logTunnelError(
-        'RATE_LIMIT_EXCEEDED',
-        'Daily request limit exceeded',
-        context: {
-          'userId': userId,
-          'providerId': providerId,
-          'dailyRequests': dailyRequests,
-          'limit': requestsPerDay,
-        },
-      );
+      debugPrint('[LLMAudit] RATE_LIMIT_EXCEEDED: Daily request limit exceeded (userId=$userId, provider=$providerId, requests=$dailyRequests, limit=$requestsPerDay)');
       return false;
     }
 
@@ -594,16 +537,7 @@ class LLMRateLimitService {
         .where((timestamp) => now.difference(timestamp).inHours == 0)
         .length;
     if (hourlyRequests >= requestsPerHour) {
-      _logger.logTunnelError(
-        'RATE_LIMIT_EXCEEDED',
-        'Hourly request limit exceeded',
-        context: {
-          'userId': userId,
-          'providerId': providerId,
-          'hourlyRequests': hourlyRequests,
-          'limit': requestsPerHour,
-        },
-      );
+      debugPrint('[LLMAudit] RATE_LIMIT_EXCEEDED: Hourly request limit exceeded (userId=$userId, provider=$providerId, requests=$hourlyRequests, limit=$requestsPerHour)');
       return false;
     }
 
@@ -612,16 +546,7 @@ class LLMRateLimitService {
         .where((timestamp) => now.difference(timestamp).inMinutes == 0)
         .length;
     if (minuteRequests >= requestsPerMinute) {
-      _logger.logTunnelError(
-        'RATE_LIMIT_EXCEEDED',
-        'Per-minute request limit exceeded',
-        context: {
-          'userId': userId,
-          'providerId': providerId,
-          'minuteRequests': minuteRequests,
-          'limit': requestsPerMinute,
-        },
-      );
+      debugPrint('[LLMAudit] RATE_LIMIT_EXCEEDED: Per-minute request limit exceeded (userId=$userId, provider=$providerId, requests=$minuteRequests, limit=$requestsPerMinute)');
       return false;
     }
 

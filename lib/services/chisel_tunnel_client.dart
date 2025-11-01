@@ -111,7 +111,7 @@ class ChiselTunnelClient with ChangeNotifier {
             notifyListeners();
             debugPrint('[Chisel] Connection established');
           } else {
-            throw e;
+            rethrow;
           }
         }
       } else {
