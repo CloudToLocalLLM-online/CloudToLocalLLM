@@ -66,7 +66,7 @@ jobs:
           fi
           IS_RELEASE="true"
         else
-          # Main branch build - extract version from pubspec.yaml or use commit-based version
+          # Main branch build - extract version from pubspec.yaml
           if [ -f pubspec.yaml ]; then
             VERSION=$(grep "^version:" pubspec.yaml | sed 's/version: //' | sed 's/+.*//')
           fi
@@ -75,8 +75,36 @@ jobs:
           if [ -z "$VERSION" ]; then
             SHORT_SHA=$(git rev-parse --short HEAD)
             VERSION="0.0.0+dev-$SHORT_SHA"
+            IS_RELEASE="false"
+          else
+            # Check if this is a minor version (x.Y.0) or major version (Y.0.0) - auto-create release
+            if echo "$VERSION" | grep -qE '^[0-9]+\.[0-9]+\.0$|^[0-9]+\.[0-9]+\.[0-9]+$'; then
+              # Extract major.minor.patch
+              MAJOR=$(echo "$VERSION" | cut -d. -f1)
+              MINOR=$(echo "$VERSION" | cut -d. -f2)
+              PATCH=$(echo "$VERSION" | cut -d. -f3)
+              
+              # Auto-create release for minor (x.Y.0) or major (Y.0.0) versions
+              # Also check if patch version ends in 0 (for versions like 4.1.0, 4.2.0, etc.)
+              if [[ "$PATCH" == "0" ]] || [[ "$MINOR" == "0" ]]; then
+                echo "Auto-detected minor/major version: $VERSION - creating release"
+                IS_RELEASE="true"
+              else
+                # For patch versions (4.1.1, 4.1.2, etc.), create release if explicitly requested
+                # or check git tags to see if this version already has a release
+                if git tag -l "v$VERSION" | grep -q "v$VERSION"; then
+                  echo "Version $VERSION already has a release tag"
+                  IS_RELEASE="false"
+                else
+                  # Create release for any new version on main branch
+                  echo "New version detected: $VERSION - creating release"
+                  IS_RELEASE="true"
+                fi
+              fi
+            else
+              IS_RELEASE="false"
+            fi
           fi
-          IS_RELEASE="false"
         fi
 
         # Generate build number as YYYYMMDDHHMM (UTC)
