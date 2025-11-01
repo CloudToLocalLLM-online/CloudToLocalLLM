@@ -220,23 +220,15 @@ jobs:
         $vsDetected = $false
         
         # Check for Visual Studio in Flutter doctor output
-        # Look for "Visual Studio" and "develop Windows apps" - if Flutter says it's OK, trust it
+        # If Flutter doctor mentions Visual Studio and "develop Windows apps", trust it
         if ($flutterDoctorOutput -match "Visual Studio.*develop Windows apps") {
-          # Check if it's marked as OK (checkmark or similar indicator)
-          $isOK = $flutterDoctorOutput -match "Visual Studio.*develop Windows apps.*\[" -or
-                  $flutterDoctorOutput -match "Visual Studio.*develop Windows apps.*OK" -or
-                  ($flutterDoctorOutput | Select-String -Pattern "Visual Studio.*develop Windows apps" -Context 0,1 | 
-                   ForEach-Object { $_.Line -match "\[.*\]" })
+          $vsDetected = $true
+          Write-Host "Visual Studio detected by Flutter doctor" -ForegroundColor Green
           
-          if ($isOK) {
-            $vsDetected = $true
-            Write-Host "Visual Studio detected by Flutter doctor" -ForegroundColor Green
-            
-            # Extract VS path from flutter doctor output if available
-            if ($flutterDoctorOutput -match "Visual Studio at ([^\r\n]+)") {
-              $vsPath = $matches[1].Trim()
-              Write-Host "  Location: $vsPath" -ForegroundColor Gray
-            }
+          # Extract VS path from flutter doctor output if available
+          if ($flutterDoctorOutput -match "Visual Studio at ([^\r\n]+)") {
+            $vsPath = $matches[1].Trim()
+            Write-Host "  Location: $vsPath" -ForegroundColor Gray
           }
         }
         
