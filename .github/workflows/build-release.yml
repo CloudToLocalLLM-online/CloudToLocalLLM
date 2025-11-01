@@ -165,6 +165,7 @@ jobs:
         key: windows-flutter-${{ hashFiles('**/pubspec.lock') }}
         restore-keys: |
           windows-flutter-
+      continue-on-error: true
         
     - name: Verify Windows build environment
       run: |
