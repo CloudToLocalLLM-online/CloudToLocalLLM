@@ -242,7 +242,15 @@ class _CloudToLocalLLMAppState extends State<CloudToLocalLLMApp> {
             return tierService;
           },
         ),
-        // Tunnel Configuration Service
+        // Tunnel Service (modern implementation)
+        ChangeNotifierProxyProvider<AuthService, TunnelService>(
+          create: (context) => TunnelService(
+            authService: context.read<AuthService>(),
+          ),
+          update: (context, authService, previous) =>
+              previous ?? TunnelService(authService: authService),
+        ),
+        // Legacy Tunnel Configuration Service (for backward compatibility)
         ChangeNotifierProvider(
           create: (context) => TunnelConfigurationService(
             authService: context.read<AuthService>(),

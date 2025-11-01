@@ -16,6 +16,7 @@ import '../screens/settings/daemon_settings_screen.dart';
 import '../screens/settings/connection_status_screen.dart';
 import '../screens/tunnel_settings_screen.dart';
 import '../screens/tunnel_status_screen.dart';
+import '../screens/tunnel_dashboard_screen.dart';
 import '../screens/unified_settings_screen.dart';
 
 // Admin screens
@@ -275,7 +276,16 @@ class AppRouter {
           },
         ),
 
-        // Tunnel Status route
+        // Tunnel Dashboard route (modern tunnel interface)
+        GoRoute(
+          path: '/tunnel',
+          name: 'tunnel-dashboard',
+          builder: (context, state) {
+            debugPrint("[Router] Building TunnelDashboardScreen");
+            return const TunnelDashboardScreen();
+          },
+        ),
+        // Tunnel Status route (legacy)
         GoRoute(
           path: '/tunnel-status',
           name: 'tunnel-status',
