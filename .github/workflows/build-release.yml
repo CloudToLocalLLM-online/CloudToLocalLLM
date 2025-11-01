@@ -141,6 +141,14 @@ jobs:
     needs: version-info
     
     steps:
+    - name: Debug - Job started
+      run: |
+        Write-Host "=== Build Desktop Job Started ===" -ForegroundColor Green
+        Write-Host "Version: ${{ needs.version-info.outputs.version }}" -ForegroundColor Cyan
+        Write-Host "Is Release: ${{ needs.version-info.outputs.is_release }}" -ForegroundColor Cyan
+        Write-Host "Runner OS: ${{ runner.os }}" -ForegroundColor Cyan
+      shell: powershell
+      
     - name: Checkout code
       uses: actions/checkout@v4
       
