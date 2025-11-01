@@ -364,6 +364,41 @@ jobs:
         echo "CHECKSUM_FILE=$PACKAGE_PATH/$PACKAGE_NAME.zip.sha256" >> $env:GITHUB_ENV
       shell: powershell
       
+    - name: Install RPM build tools
+      if: matrix.platform == 'linux'
+      run: |
+        # Detect distribution
+        if [ -f /etc/os-release ]; then
+          . /etc/os-release
+          DISTRO=$ID
+        else
+          DISTRO="unknown"
+        fi
+        
+        # Install RPM build tools based on distribution
+        if [[ "$DISTRO" == "fedora" ]] || [[ "$DISTRO" == "rhel" ]] || [[ "$DISTRO" == "centos" ]]; then
+          sudo dnf install -y rpm-build rpmdevtools rpmlint
+        elif [[ "$DISTRO" == "opensuse-leap" ]] || [[ "$DISTRO" == "opensuse-tumbleweed" ]] || [[ "$DISTRO" == "sles" ]]; then
+          sudo zypper install -y rpm-build rpmdevtools rpmlint
+        else
+          # Try to install with generic package manager
+          if command -v dnf &> /dev/null; then
+            sudo dnf install -y rpm-build rpmdevtools || true
+          elif command -v yum &> /dev/null; then
+            sudo yum install -y rpm-build rpmdevtools || true
+          elif command -v zypper &> /dev/null; then
+            sudo zypper install -y rpm-build rpmdevtools || true
+          else
+            echo "WARNING: Could not determine package manager for RPM build tools"
+          fi
+        fi
+        
+    - name: Setup RPM build environment
+      if: matrix.platform == 'linux'
+      run: |
+        # Setup RPM build directories
+        mkdir -p ~/rpmbuild/{BUILD,BUILDROOT,RPMS,SOURCES,SPECS,SRPMS}
+        
     - name: Create Linux package
       if: matrix.platform == 'linux'
       run: |
@@ -388,6 +423,90 @@ jobs:
         echo "PACKAGE_FILE=$PACKAGE_PATH/$PACKAGE_NAME.tar.gz" >> $GITHUB_ENV
         echo "CHECKSUM_FILE=$PACKAGE_PATH/$PACKAGE_NAME.tar.gz.sha256" >> $GITHUB_ENV
         
+    - name: Build RPM packages
+      if: matrix.platform == 'linux'
+      run: |
+        VERSION="${{ needs.version-info.outputs.version }}"
+        PACKAGE_PATH="dist/linux"
+        
+        # Detect distribution for RPM naming
+        if [ -f /etc/os-release ]; then
+          . /etc/os-release
+          DISTRO=$ID
+          DISTRO_VERSION=$VERSION_ID || $VERSION
+        else
+          DISTRO="linux"
+          DISTRO_VERSION=""
+        fi
+        
+        # Copy source tarball to RPM SOURCES
+        cp "$PACKAGE_PATH/cloudtolocalllm-${VERSION}-linux.tar.gz" ~/rpmbuild/SOURCES/
+        
+        # Copy and customize spec file
+        SPEC_FILE="build-tools/packaging/rpm/cloudtolocalllm.spec"
+        if [ -f "$SPEC_FILE" ]; then
+          # Replace version in spec file
+          sed "s/%{version}/${VERSION}/g" "$SPEC_FILE" > ~/rpmbuild/SPECS/cloudtolocalllm.spec
+          
+          # Determine dist tag based on distribution
+          if [[ "$DISTRO" == "fedora" ]]; then
+            DIST_TAG=".fc${DISTRO_VERSION:-39}"
+          elif [[ "$DISTRO" == "opensuse-leap" ]] || [[ "$DISTRO" == "opensuse-tumbleweed" ]]; then
+            DIST_TAG=".suse${DISTRO_VERSION:-15}"
+          else
+            DIST_TAG=""
+          fi
+          
+          # Build RPM for Fedora-style (uses .fc tag)
+          echo "Building RPM package..."
+          rpmbuild -ba --define "_topdir $(pwd)/rpmbuild" \
+            --define "dist ${DIST_TAG}" \
+            ~/rpmbuild/SPECS/cloudtolocalllm.spec
+          
+          # Copy built RPMs to dist directory
+          mkdir -p "$PACKAGE_PATH/rpm"
+          
+          # Find and copy RPM files
+          find ~/rpmbuild/RPMS -name "*.rpm" -exec cp {} "$PACKAGE_PATH/rpm/" \;
+          
+          # Rename RPMs to include distribution name
+          for rpm_file in "$PACKAGE_PATH/rpm"/*.rpm; do
+            if [ -f "$rpm_file" ]; then
+              filename=$(basename "$rpm_file")
+              if [[ "$DISTRO" == "fedora" ]]; then
+                new_name=$(echo "$filename" | sed "s/${DIST_TAG}/.fc${DISTRO_VERSION:-39}/")
+              elif [[ "$DISTRO" == "opensuse-leap" ]] || [[ "$DISTRO" == "opensuse-tumbleweed" ]]; then
+                new_name=$(echo "$filename" | sed "s/${DIST_TAG}/.suse${DISTRO_VERSION:-15}/")
+              else
+                new_name="$filename"
+              fi
+              if [ "$filename" != "$new_name" ]; then
+                mv "$rpm_file" "$PACKAGE_PATH/rpm/$new_name"
+              fi
+            fi
+          done
+          
+          # Generate checksums for RPMs
+          cd "$PACKAGE_PATH/rpm"
+          for rpm_file in *.rpm; do
+            if [ -f "$rpm_file" ]; then
+              sha256sum "$rpm_file" > "${rpm_file}.sha256"
+            fi
+          done
+          
+          # Set environment variables for RPM files
+          RPM_FILES=$(ls "$PACKAGE_PATH/rpm"/*.rpm 2>/dev/null | tr '\n' ' ' || echo "")
+          RPM_CHECKSUMS=$(ls "$PACKAGE_PATH/rpm"/*.sha256 2>/dev/null | tr '\n' ' ' || echo "")
+          
+          echo "RPM_FILES=${RPM_FILES}" >> $GITHUB_ENV
+          echo "RPM_CHECKSUMS=${RPM_CHECKSUMS}" >> $GITHUB_ENV
+          
+          echo "RPM packages built successfully"
+          ls -lh "$PACKAGE_PATH/rpm/"
+        else
+          echo "WARNING: RPM spec file not found at $SPEC_FILE, skipping RPM build"
+        fi
+        
     - name: Upload build artifacts
       uses: actions/upload-artifact@v4
       with:
@@ -397,6 +516,8 @@ jobs:
           ${{ env.CHECKSUM_FILE }}
           ${{ env.INSTALLER_FILE }}
           ${{ env.INSTALLER_CHECKSUM }}
+          ${{ env.RPM_FILES }}
+          ${{ env.RPM_CHECKSUMS }}
         retention-days: 30
 
   # Upload artifacts for main branch builds (no release)
@@ -475,6 +596,7 @@ jobs:
         
         ### Linux
         - **cloudtolocalllm-$VERSION-linux.tar.gz** - Linux application bundle
+        - **cloudtolocalllm-$VERSION-*.rpm** - RPM packages for Fedora and openSUSE
         
         ## Checksums
         SHA256 checksums are provided for all packages to verify integrity.
