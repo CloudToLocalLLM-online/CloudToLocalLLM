@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../services/auth_service.dart';
-import '../services/tunnel_configuration_service.dart';
+import '../services/tunnel_service.dart';
 
 /// Tunnel setup wizard
 enum TunnelWizardMode { firstTime, reconfigure, troubleshoot }
@@ -81,10 +81,10 @@ class _TunnelConnectionWizardState extends State<TunnelConnectionWizard> {
   }
 
   Widget _buildContent() {
-    return Consumer2<AuthService, TunnelConfigurationService>(
+    return Consumer2<AuthService, TunnelService>(
       builder: (context, authService, tunnelService, child) {
         final isAuthenticated = authService.isAuthenticated.value;
-        final isConnected = tunnelService.tunnelClient?.isConnected ?? false;
+        final isConnected = tunnelService.isConnected;
 
         return SingleChildScrollView(
           child: Column(
@@ -217,10 +217,10 @@ class _TunnelConnectionWizardState extends State<TunnelConnectionWizard> {
   }
 
   Widget _buildButtons() {
-    return Consumer2<AuthService, TunnelConfigurationService>(
+    return Consumer2<AuthService, TunnelService>(
       builder: (context, authService, tunnelService, child) {
         final isAuthenticated = authService.isAuthenticated.value;
-        final isConnected = tunnelService.tunnelClient?.isConnected ?? false;
+        final isConnected = tunnelService.isConnected;
 
         return Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -308,14 +308,14 @@ class _TunnelConnectionWizardState extends State<TunnelConnectionWizard> {
     }
   }
 
-  Future<void> _connect(TunnelConfigurationService tunnelService) async {
+  Future<void> _connect(TunnelService tunnelService) async {
     setState(() {
       _isProcessing = true;
       _error = null;
     });
 
     try {
-      await tunnelService.tunnelClient?.connect();
+      await tunnelService.connect();
     } catch (e) {
       setState(() {
         _error = 'Connection failed: ${e.toString()}';

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
-import '../services/tunnel_configuration_service.dart';
+import '../services/tunnel_service.dart';
 
 class TunnelSettingsScreen extends StatelessWidget {
   const TunnelSettingsScreen({super.key});
@@ -18,15 +18,14 @@ class TunnelSettingsScreen extends StatelessWidget {
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
-        child: Consumer<TunnelConfigurationService>(
+        child: Consumer<TunnelService>(
           builder: (context, tunnelService, child) {
-            final tunnelClient = tunnelService.tunnelClient;
-            final isConnected = tunnelClient?.isConnected ?? false;
+            final isConnected = tunnelService.isConnected;
 
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildConnectionStatusCard(context, isConnected, tunnelService.lastError),
+                _buildConnectionStatusCard(context, isConnected, tunnelService.error),
                 const SizedBox(height: 24),
                 _buildTunnelInfo(context),
                 const SizedBox(height: 24),
@@ -109,7 +108,7 @@ class TunnelSettingsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildActionButtons(BuildContext context, TunnelConfigurationService tunnelService) {
+  Widget _buildActionButtons(BuildContext context, TunnelService tunnelService) {
     return Row(
       children: [
         Expanded(
@@ -131,25 +130,26 @@ class TunnelSettingsScreen extends StatelessWidget {
     );
   }
 
-  Future<void> _testConnection(BuildContext context, TunnelConfigurationService tunnelService) async {
+  Future<void> _testConnection(BuildContext context, TunnelService tunnelService) async {
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Testing connection...'), duration: Duration(seconds: 2)),
     );
-    final result = await tunnelService.testTunnelConnection();
+    final success = await tunnelService.testConnection();
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(result.message),
-          backgroundColor: result.isSuccess ? Colors.green : Colors.red,
+          content: Text(success ? 'Connection test successful' : 'Connection test failed'),
+          backgroundColor: success ? Colors.green : Colors.red,
         ),
       );
     }
   }
 
-  Future<void> _reconnect(BuildContext context, TunnelConfigurationService tunnelService) async {
+  Future<void> _reconnect(BuildContext context, TunnelService tunnelService) async {
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Reconnecting...'), duration: Duration(seconds: 2)),
     );
-    await tunnelService.tunnelClient?.connect();
+    await tunnelService.disconnect();
+    await tunnelService.connect();
   }
 }

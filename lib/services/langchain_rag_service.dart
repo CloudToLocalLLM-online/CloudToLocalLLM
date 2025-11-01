@@ -66,7 +66,7 @@ class LangChainRAGService extends ChangeNotifier {
 
       _isInitialized = true;
       debugPrint('[langchain_rag_service] RAG service initialized successfully');
-    } catch (e, stackTrace) {
+    } catch (e) {
       _error = 'Failed to initialize RAG service: $e';
       debugPrint('[LangChainRAG] ERROR: RAG_INIT_FAILED - $_error - $e');
       rethrow;
@@ -205,7 +205,7 @@ Guidelines:
       debugPrint('[LangChainRAG] Documents added successfully: ${documents.length} documents, total: $_documentCount');
 
       notifyListeners();
-    } catch (e, stackTrace) {
+    } catch (e) {
       _error = 'Failed to add documents: $e';
       debugPrint('[LangChainRAG] ERROR: DOCUMENTS_ADD_FAILED - $_error - $e');
       rethrow;
@@ -247,7 +247,7 @@ Guidelines:
       await addDocuments(chunks, metadatas: metadatas);
 
       debugPrint('[LangChainRAG] Document loaded from file: $fileName (${chunks.length} chunks)');
-    } catch (e, stackTrace) {
+    } catch (e) {
       _error = 'Failed to load document from file: $e';
       debugPrint('[LangChainRAG] ERROR: FILE_LOAD_FAILED - $_error - $e');
       rethrow;
@@ -279,7 +279,7 @@ Guidelines:
       debugPrint('[LangChainRAG] Question answered successfully: length=${answerString.length}');
 
       return answerString;
-    } catch (e, stackTrace) {
+    } catch (e) {
       _error = 'Failed to answer question: $e';
       debugPrint('[LangChainRAG] ERROR: QUESTION_FAILED - $_error - $e');
       rethrow;

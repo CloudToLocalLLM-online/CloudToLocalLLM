@@ -2,7 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../services/tunnel_configuration_service.dart';
+import '../services/tunnel_service.dart';
 import '../services/desktop_client_detection_service.dart';
 import 'tunnel_management_panel.dart';
 
@@ -37,7 +37,7 @@ class _TunnelStatusIndicatorState extends State<TunnelStatusIndicator> {
       return const SizedBox.shrink();
     }
 
-    return Consumer2<TunnelConfigurationService, DesktopClientDetectionService>(
+    return Consumer2<TunnelService, DesktopClientDetectionService>(
       builder: (context, tunnelService, clientDetection, child) {
         final tunnelStatus = _getTunnelStatus(
           tunnelService,
@@ -128,11 +128,11 @@ class _TunnelStatusIndicatorState extends State<TunnelStatusIndicator> {
   }
 
   TunnelStatusInfo _getTunnelStatus(
-    TunnelConfigurationService tunnelService,
+    TunnelService tunnelService,
     DesktopClientDetectionService clientDetection,
   ) {
-    final isConnected = tunnelService.tunnelClient?.isConnected ?? false;
-    final hasError = tunnelService.lastError != null;
+    final isConnected = tunnelService.isConnected;
+    final hasError = tunnelService.error != null;
     final hasDesktopClients = clientDetection.hasConnectedClients;
     final clientCount = clientDetection.connectedClientCount;
 
@@ -150,7 +150,7 @@ class _TunnelStatusIndicatorState extends State<TunnelStatusIndicator> {
         icon: Icons.error,
         color: Colors.red,
         text: 'Error',
-        tooltip: 'Tunnel connection error: ${tunnelService.lastError}',
+        tooltip: 'Tunnel connection error: ${tunnelService.error}',
         isConnecting: false,
       );
     } else if (!hasDesktopClients) {

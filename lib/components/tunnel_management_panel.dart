@@ -6,7 +6,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../config/app_config.dart';
 import '../config/theme.dart';
-import '../services/tunnel_configuration_service.dart';
+import '../services/tunnel_service.dart';
 import '../services/desktop_client_detection_service.dart';
 import 'tunnel_connection_wizard.dart';
 
@@ -148,10 +148,10 @@ class _TunnelManagementPanelState extends State<TunnelManagementPanel>
   }
 
   Widget _buildConnectionStatus() {
-    return Consumer<TunnelConfigurationService>(
+    return Consumer<TunnelService>(
       builder: (context, tunnelService, child) {
-        final isConnected = tunnelService.tunnelClient?.isConnected ?? false;
-        final error = tunnelService.lastError;
+        final isConnected = tunnelService.isConnected;
+        final error = tunnelService.error;
 
         Color statusColor;
         IconData statusIcon;
@@ -242,9 +242,9 @@ class _TunnelManagementPanelState extends State<TunnelManagementPanel>
   }
 
   Widget _buildQuickActions() {
-    return Consumer<TunnelConfigurationService>(
+    return Consumer<TunnelService>(
       builder: (context, tunnelService, child) {
-        final isConnected = tunnelService.tunnelClient?.isConnected ?? false;
+        final isConnected = tunnelService.isConnected;
 
         return Card(
           child: Padding(
@@ -266,9 +266,9 @@ class _TunnelManagementPanelState extends State<TunnelManagementPanel>
                   child: ElevatedButton.icon(
                     onPressed: () async {
                       if (isConnected) {
-                        tunnelService.tunnelClient?.dispose();
+                        await tunnelService.disconnect();
                       } else {
-                        await tunnelService.tunnelClient?.connect();
+                        await tunnelService.connect();
                       }
                     },
                     icon: Icon(isConnected ? Icons.stop : Icons.play_arrow),

@@ -70,7 +70,7 @@ class LangChainOllamaService extends ChangeNotifier {
 
       _isInitialized = true;
       debugPrint('[langchain_ollama_service] LangChain Ollama service initialized successfully');
-    } catch (e, stackTrace) {
+    } catch (e) {
       _error = 'Failed to initialize LangChain service: $e';
       debugPrint('[LangChainOllama] Initialization failed: $e');
       rethrow;
@@ -232,7 +232,7 @@ class LangChainOllamaService extends ChangeNotifier {
       debugPrint('[LangChainOllama] Message processed: convId=$convId, length=${responseString.length}');
 
       return responseString;
-    } catch (e, stackTrace) {
+    } catch (e) {
       _error = 'Failed to send message: $e';
       debugPrint('[LangChainOllama] Message send failed: $e');
       rethrow;

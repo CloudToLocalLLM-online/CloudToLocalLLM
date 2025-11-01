@@ -6,7 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../components/app_header.dart';
 import '../components/modern_card.dart';
 import '../config/theme.dart';
-import '../services/tunnel_configuration_service.dart';
+import '../services/tunnel_service.dart';
 import '../services/desktop_client_detection_service.dart';
 
 /// Comprehensive Tunnel Status Screen
@@ -52,7 +52,7 @@ class _TunnelStatusScreenState extends State<TunnelStatusScreen> {
           Expanded(
             child: SingleChildScrollView(
               padding: EdgeInsets.all(AppTheme.spacingM),
-              child: Consumer<TunnelConfigurationService>(
+              child: Consumer<TunnelService>(
                 builder: (context, tunnelService, child) {
                   return Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -75,9 +75,9 @@ class _TunnelStatusScreenState extends State<TunnelStatusScreen> {
     );
   }
 
-  Widget _buildOverallStatusCard(TunnelConfigurationService tunnelService) {
-    final isConnected = tunnelService.tunnelClient?.isConnected ?? false;
-    final error = tunnelService.lastError;
+  Widget _buildOverallStatusCard(TunnelService tunnelService) {
+    final isConnected = tunnelService.isConnected;
+    final error = tunnelService.error;
 
     Color statusColor;
     IconData statusIcon;
@@ -124,8 +124,8 @@ class _TunnelStatusScreenState extends State<TunnelStatusScreen> {
     );
   }
 
-  Widget _buildConnectionDetailsCard(TunnelConfigurationService tunnelService) {
-    final isConnected = tunnelService.tunnelClient?.isConnected ?? false;
+  Widget _buildConnectionDetailsCard(TunnelService tunnelService) {
+    final isConnected = tunnelService.isConnected;
     return ModernCard(
       child: Padding(
         padding: EdgeInsets.all(AppTheme.spacingM),
@@ -181,8 +181,9 @@ class _TunnelStatusScreenState extends State<TunnelStatusScreen> {
   Future<void> _refreshStatus() async {
     setState(() => _isRefreshing = true);
     try {
-      final tunnelService = context.read<TunnelConfigurationService>();
-      await tunnelService.tunnelClient?.connect(); // Reconnect attempt
+      final tunnelService = context.read<TunnelService>();
+      await tunnelService.disconnect();
+      await tunnelService.connect(); // Reconnect attempt
       if (kIsWeb && mounted) {
         await context.read<DesktopClientDetectionService>().checkConnectedClients();
       }

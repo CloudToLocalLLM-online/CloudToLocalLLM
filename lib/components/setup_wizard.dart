@@ -8,7 +8,7 @@ import '../services/desktop_client_detection_service.dart';
 import '../services/user_container_service.dart';
 import '../services/platform_detection_service.dart';
 import '../services/download_management_service.dart';
-import '../services/tunnel_configuration_service.dart';
+import '../services/tunnel_service.dart';
 import '../services/connection_validation_service.dart';
 import '../services/auth_service.dart';
 import '../models/container_creation_result.dart';
@@ -1899,13 +1899,11 @@ class _SetupWizardState extends State<SetupWizard> {
     });
 
     try {
-      // Create tunnel configuration service
-      final tunnelService = TunnelConfigurationService(
-        authService: authService,
-      );
+      // Get tunnel service from provider
+      final tunnelService = Provider.of<TunnelService>(context, listen: false);
 
-      // Generate tunnel configuration
-      await tunnelService.generateTunnelConfig(userId);
+      // Connect tunnel
+      await tunnelService.connect();
 
       setState(() {
         _isTunnelConfiguring = false;
@@ -1913,17 +1911,17 @@ class _SetupWizardState extends State<SetupWizard> {
       });
 
       // Test tunnel connection
-      final validationResult = await tunnelService.testTunnelConnection();
+      final success = await tunnelService.testConnection();
 
       setState(() {
         _isTunnelValidating = false;
-        _tunnelConfigured = validationResult.isSuccess;
-        if (!validationResult.isSuccess) {
-          _tunnelError = validationResult.message;
+        _tunnelConfigured = success;
+        if (!success) {
+          _tunnelError = 'Connection test failed';
         }
       });
 
-      if (validationResult.isSuccess) {
+      if (success) {
         // Show success message
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(

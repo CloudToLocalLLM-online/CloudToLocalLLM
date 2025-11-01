@@ -17,7 +17,7 @@ import '../config/theme.dart';
 import '../services/auth_service.dart';
 
 import '../services/ollama_service.dart';
-import '../services/tunnel_configuration_service.dart';
+import '../services/tunnel_service.dart';
 import '../services/user_data_service.dart';
 import '../services/version_service.dart';
 
@@ -546,7 +546,7 @@ class _UnifiedSettingsScreenState extends State<UnifiedSettingsScreen> {
 
           // Main tunnel status and controls
           _optimizedCard(
-            child: Consumer<TunnelConfigurationService>(
+            child: Consumer<TunnelService>(
               builder: (context, tunnelService, child) {
                 return _buildTunnelMainContent(tunnelService, needsSetup);
               },
@@ -1801,11 +1801,11 @@ class _UnifiedSettingsScreenState extends State<UnifiedSettingsScreen> {
   }
 
   Widget _buildTunnelMainContent(
-    TunnelConfigurationService tunnelService,
+    TunnelService tunnelService,
     bool needsSetup,
   ) {
-    final isConnected = tunnelService.tunnelClient?.isConnected ?? false;
-    final error = tunnelService.lastError;
+    final isConnected = tunnelService.isConnected;
+    final error = tunnelService.error;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1887,7 +1887,7 @@ class _UnifiedSettingsScreenState extends State<UnifiedSettingsScreen> {
               Expanded(
                 child: ElevatedButton.icon(
                   onPressed: () {
-                    tunnelService.tunnelClient?.connect();
+                    tunnelService.testConnection();
                   },
                   icon: const Icon(Icons.link),
                   label: const Text('Test'),
