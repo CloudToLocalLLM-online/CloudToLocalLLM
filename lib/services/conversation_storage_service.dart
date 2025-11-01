@@ -60,7 +60,16 @@ class ConversationStorageService {
     } catch (e, stackTrace) {
       debugPrint('[ConversationStorage] Failed to initialize: $e');
       debugPrint('[ConversationStorage] Stack trace: $stackTrace');
-      rethrow;
+      
+      // On web, database initialization failures are non-fatal
+      // The app can still function without conversation storage
+      if (kIsWeb) {
+        debugPrint('[ConversationStorage] Web platform: Continuing without database (non-fatal)');
+        _isInitialized = false; // Mark as not initialized but don't crash
+      } else {
+        // On desktop/mobile, database is critical - rethrow
+        rethrow;
+      }
     }
   }
 
@@ -286,6 +295,10 @@ class ConversationStorageService {
   /// Load all conversations
   Future<List<Conversation>> loadConversations() async {
     if (_database == null) {
+      if (kIsWeb) {
+        debugPrint('[ConversationStorage] Database not available on web, returning empty list');
+        return []; // Return empty list on web if database failed to initialize
+      }
       throw StateError('Database not initialized');
     }
 
