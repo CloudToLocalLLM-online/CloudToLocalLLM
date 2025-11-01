@@ -329,8 +329,18 @@ jobs:
       run: |
         mkdir -p release-assets
         
-        # Copy all artifacts to release assets directory (Windows only)
-        find artifacts/ -type f \( -name "*.exe" -o -name "*.zip" -o -name "*.sha256" \) -exec cp {} release-assets/ \;
+        # Copy only the latest artifacts to release assets directory (Windows only)
+        # Find the most recent files by modification time
+        LATEST_EXE=$(find artifacts/ -name "*.exe" -type f -printf '%T@ %p\n' | sort -n | tail -1 | cut -d' ' -f2-)
+        LATEST_ZIP=$(find artifacts/ -name "*.zip" -type f ! -name "*.exe.zip" -printf '%T@ %p\n' | sort -n | tail -1 | cut -d' ' -f2-)
+        LATEST_EXE_HASH=$(find artifacts/ -name "*.exe.sha256" -type f -printf '%T@ %p\n' | sort -n | tail -1 | cut -d' ' -f2-)
+        LATEST_ZIP_HASH=$(find artifacts/ -name "*.zip.sha256" -type f ! -name "*.exe.zip.sha256" -printf '%T@ %p\n' | sort -n | tail -1 | cut -d' ' -f2-)
+        
+        # Copy only the latest files
+        if [ -n "$LATEST_EXE" ]; then cp "$LATEST_EXE" release-assets/; fi
+        if [ -n "$LATEST_ZIP" ]; then cp "$LATEST_ZIP" release-assets/; fi
+        if [ -n "$LATEST_EXE_HASH" ]; then cp "$LATEST_EXE_HASH" release-assets/; fi
+        if [ -n "$LATEST_ZIP_HASH" ]; then cp "$LATEST_ZIP_HASH" release-assets/; fi
         
         # List all assets
         echo "Release assets:"
