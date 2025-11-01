@@ -53,8 +53,8 @@ class TunnelStatusDialog extends StatelessWidget {
             if (state.isConnected)
               ElevatedButton(
                 onPressed: () => tunnelService.disconnect(),
-                child: const Text('Disconnect'),
                 style: ElevatedButton.styleFrom(backgroundColor: AppTheme.dangerColor),
+                child: const Text('Disconnect'),
               ),
             TextButton(
               onPressed: () => _downloadDesktopClient(),
