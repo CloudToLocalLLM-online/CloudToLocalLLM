@@ -1,5 +1,5 @@
 Name:           cloudtolocalllm
-Version:        %{version}
+Version:        1.0.0
 Release:        1%{?dist}
 Summary:        Manage and run powerful Large Language Models locally, orchestrated via a cloud interface
 
@@ -55,6 +55,6 @@ fi
 %{_datadir}/pixmaps/%{name}.png
 
 %changelog
-* %(date +"%a %b %d %Y") CloudToLocalLLM Team <support@cloudtolocalllm.online> - %{version}-1
-- Initial RPM package for %{name} %{version}
+* %(date +"%a %b %d %Y") CloudToLocalLLM Team <support@cloudtolocalllm.online> - 1.0.0-1
+- Initial RPM package for CloudToLocalLLM
 
