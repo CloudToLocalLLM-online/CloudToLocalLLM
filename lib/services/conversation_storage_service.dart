@@ -1,20 +1,21 @@
 import 'dart:io';
+import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:sqflite/sqflite.dart';
+import 'package:http/http.dart' as http;
 
 import '../models/conversation.dart';
 import '../models/message.dart';
+import '../config/app_config.dart';
+import 'auth_service.dart';
 
-/// Privacy-first conversation storage service with platform-specific database initialization
+/// Conversation storage service with platform-specific storage
 ///
-/// PRIVACY POLICY:
-/// - All conversations are stored ONLY on the user's device
-/// - Web platform: Uses IndexedDB for persistent browser storage
-/// - Desktop platform: Uses SQLite files in user documents directory
-/// - NO conversation data is transmitted to cloud servers
-/// - Data remains device-bound unless explicitly exported by user
+/// STORAGE STRATEGY:
+/// - Web platform: Uses PostgreSQL database via API (cloud storage)
+/// - Desktop platform: Uses SQLite files in user documents directory (local storage)
 class ConversationStorageService {
   static const String _databaseName = 'cloudtolocalllm_conversations.db';
   static const int _databaseVersion = 2; // Incremented for privacy enhancements
@@ -24,9 +25,13 @@ class ConversationStorageService {
   static const String _messagesTable = 'messages';
   static const String _settingsTable = 'user_settings';
 
+  final AuthService? _authService;
   Database? _database;
   bool _isInitialized = false;
   bool _encryptionEnabled = false;
+
+  ConversationStorageService({AuthService? authService})
+      : _authService = authService;
 
   /// Initialize the storage service with platform-specific database factory
   Future<void> initialize() async {
@@ -362,6 +367,13 @@ class ConversationStorageService {
 
   /// Delete a conversation
   Future<void> deleteConversation(String conversationId) async {
+    if (kIsWeb) {
+      // Web: Delete via API
+      await _deleteConversationViaAPI(conversationId);
+      return;
+    }
+
+    // Desktop: Use local SQLite
     if (_database == null) {
       throw StateError('Database not initialized');
     }

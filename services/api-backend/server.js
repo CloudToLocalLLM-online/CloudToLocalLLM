@@ -18,6 +18,7 @@ import { DatabaseMigratorPG } from './database/migrate-pg.js';
 import { AuthDatabaseMigratorPG } from './database/migrate-auth-pg.js';
 import { createTunnelRoutes } from './tunnel/tunnel-routes.js';
 import { createMonitoringRoutes } from './routes/monitoring.js';
+import { createConversationRoutes } from './routes/conversations.js';
 import { authenticateJWT } from './middleware/auth.js';
 import { addTierInfo, getUserTier } from './middleware/tier-check.js';
 
@@ -202,6 +203,9 @@ app.use('/api/tunnel', tunnelRouter);
 
 // Performance monitoring routes
 app.use('/api/monitoring', monitoringRouter);
+
+// Conversation management routes (initialized after database is ready)
+// Will be set up in initializeTunnelSystem() after dbMigrator is initialized
 
 // Database health endpoint
 app.get('/api/db/health', async(req, res) => {
@@ -691,6 +695,11 @@ async function initializeTunnelSystem() {
       authDbMigrator, // Pass auth database connection to auth service
     });
     await authService.initialize();
+
+    // Initialize conversation routes after database is ready
+    const conversationRouter = createConversationRoutes(dbMigrator, logger);
+    app.use('/api/conversations', conversationRouter);
+    logger.info('Conversation API routes initialized');
 
     logger.info('WebSocket tunnel system ready');
 
