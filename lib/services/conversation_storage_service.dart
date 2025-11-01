@@ -1,7 +1,7 @@
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:path/path.dart';
-import 'package:path_provider/path_provider.dart' if (dart.library.html) 'package:path_provider/path_provider_web.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:sqflite/sqflite.dart';
 
 import '../models/conversation.dart';
@@ -89,11 +89,13 @@ class ConversationStorageService {
   Future<String> _getDatabasePath() async {
     if (kIsWeb) {
       // For web, use a simple path (IndexedDB will be used internally)
+      // sqflite automatically uses IndexedDB on web, no file path needed
       return _databaseName;
     }
 
     try {
       // For desktop/mobile, use app documents directory
+      // Note: getApplicationDocumentsDirectory() is not available on web
       final documentsDirectory = await getApplicationDocumentsDirectory();
       final appDirectory = Directory(
         join(documentsDirectory.path, 'CloudToLocalLLM'),

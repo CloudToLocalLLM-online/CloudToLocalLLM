@@ -31,6 +31,9 @@ ENV BUILD_SHA=${BUILD_SHA}
 # Clone repository as non-root user (use shallow clone for faster build)
 RUN git clone -b main --depth 1 https://github.com/imrightguy/CloudToLocalLLM.git .
 
+# Clean previous build artifacts to ensure fresh build
+RUN flutter clean
+
 # Get dependencies (Flutter will create .dart_tool and other cache dirs)
 RUN flutter pub get
 
