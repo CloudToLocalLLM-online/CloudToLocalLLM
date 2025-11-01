@@ -236,6 +236,7 @@ jobs:
         if (-not $vsDetected) {
           Write-Host "Checking for vswhere.exe..."
           $vsWherePaths = @(
+            "$env:USERPROFILE\tools\vswhere.exe",
             "$env:ProgramFiles(x86)\Microsoft Visual Studio\Installer\vswhere.exe",
             "$env:ProgramFiles\Microsoft Visual Studio\Installer\vswhere.exe",
             "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe",
