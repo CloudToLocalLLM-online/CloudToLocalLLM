@@ -216,42 +216,35 @@ jobs:
         Write-Host ""
         Write-Host "Verifying Visual Studio Build Tools..."
         
-        # Primary check: Use Flutter doctor output (most reliable)
         $vsDetected = $false
         
-        # Check for Visual Studio in Flutter doctor output
-        # If Flutter doctor mentions Visual Studio and "develop Windows apps", trust it
         if ($flutterDoctorOutput -match "Visual Studio.*develop Windows apps") {
           $vsDetected = $true
           Write-Host "Visual Studio detected by Flutter doctor" -ForegroundColor Green
-          
-          # Extract VS path from flutter doctor output if available
           if ($flutterDoctorOutput -match "Visual Studio at ([^\r\n]+)") {
             $vsPath = $matches[1].Trim()
-            Write-Host "  Location: $vsPath" -ForegroundColor Gray
+            Write-Host "Location: $vsPath" -ForegroundColor Gray
           }
         }
         
-        # Secondary check: Try to find vswhere.exe in multiple locations
         if (-not $vsDetected) {
           Write-Host "Checking for vswhere.exe..."
           $vsWherePaths = @(
             "$env:USERPROFILE\tools\vswhere.exe",
             "$env:ProgramFiles(x86)\Microsoft Visual Studio\Installer\vswhere.exe",
             "$env:ProgramFiles\Microsoft Visual Studio\Installer\vswhere.exe",
-            "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe",
             "C:\Program Files (x86)\Microsoft Visual Studio\Installer\vswhere.exe",
             "C:\Program Files\Microsoft Visual Studio\Installer\vswhere.exe"
           )
           
-          # Also check PATH
           try {
             $vsWhereInPath = Get-Command vswhere -ErrorAction SilentlyContinue
             if ($vsWhereInPath) {
               $vsWherePaths = @($vsWhereInPath.Source) + $vsWherePaths
             }
-          } catch {
-            # Ignore errors when checking PATH
+          }
+          catch {
+            Write-Host "vswhere not in PATH" -ForegroundColor Gray
           }
           
           $vsWhere = $null
@@ -267,24 +260,23 @@ jobs:
             try {
               $vsInstalls = & $vsWhere -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath 2>&1
               if ($vsInstalls -and $vsInstalls -notmatch "Error") {
-                Write-Host "✓ Visual Studio Build Tools found at: $vsInstalls" -ForegroundColor Green
+                Write-Host "Visual Studio Build Tools found at: $vsInstalls" -ForegroundColor Green
                 $vsDetected = $true
-              } else {
-                # Try without specific component requirement
+              }
+              else {
                 $vsAny = & $vsWhere -latest -products * -property installationPath 2>&1
                 if ($vsAny -and $vsAny -notmatch "Error") {
                   Write-Host "Visual Studio found at: $vsAny" -ForegroundColor Yellow
-                  Write-Host "Note: C++ workload verification skipped - trusting Flutter doctor" -ForegroundColor Yellow
                   $vsDetected = $true
                 }
               }
-            } catch {
-              Write-Host "Warning: vswhere.exe execution failed: $_" -ForegroundColor Yellow
+            }
+            catch {
+              Write-Host "Warning: vswhere.exe execution failed" -ForegroundColor Yellow
             }
           }
         }
         
-        # Tertiary check: Direct Visual Studio installation paths
         if (-not $vsDetected) {
           Write-Host "Checking common Visual Studio installation paths..."
           $vsInstallPaths = @(
@@ -300,22 +292,23 @@ jobs:
           
           foreach ($path in $vsInstallPaths) {
             if (Test-Path $path) {
-              Write-Host "✓ Visual Studio installation found at: $path" -ForegroundColor Green
+              Write-Host "Visual Studio installation found at: $path" -ForegroundColor Green
               $vsDetected = $true
               break
             }
           }
         }
         
-        # Final decision
         if ($vsDetected) {
           Write-Host ""
-          Write-Host "✓ Visual Studio Build Tools verified" -ForegroundColor Green
-        } else {
+          Write-Host "Visual Studio Build Tools verified" -ForegroundColor Green
+        }
+        else {
           Write-Host ""
           Write-Error "Visual Studio Build Tools not found!"
+          $installUrl = "https://visualstudio.microsoft.com/downloads/"
           Write-Host "The runner must have Visual Studio Build Tools installed with C++ workload." -ForegroundColor Yellow
-          Write-Host "Install from: https://visualstudio.microsoft.com/downloads/" -ForegroundColor Yellow
+          Write-Host "Install from: $installUrl" -ForegroundColor Yellow
           Write-Host ""
           Write-Host "Note: Flutter doctor output above should show Visual Studio status." -ForegroundColor Yellow
           exit 1
