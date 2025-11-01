@@ -16,6 +16,10 @@ on:
           - main
           - release
 
+permissions:
+  contents: write
+  id-token: write
+
 concurrency:
   group: build-release-${{ github.ref }}
   cancel-in-progress: true
@@ -347,7 +351,6 @@ jobs:
         path: artifacts/
         pattern: windows-desktop
         merge-multiple: true
-        if-no-files-found: warn
         
     - name: Prepare release assets
       run: |
