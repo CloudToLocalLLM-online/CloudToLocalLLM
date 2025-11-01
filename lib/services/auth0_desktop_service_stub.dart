@@ -2,16 +2,16 @@
 import 'dart:async';
 import 'auth0_service.dart';
 
-/// Stub implementation of Auth0DesktopService for web platform
-class Auth0DesktopServiceStub implements Auth0Service {
+// Stub implementation for web
+class Auth0DesktopService implements Auth0Service {
   @override
-  Stream<bool> get authStateChanges => Stream.value(false);
+  Future<void> initialize() async {}
 
   @override
-  Map<String, dynamic>? get currentUser => null;
+  Future<void> login() async {}
 
   @override
-  void dispose() {}
+  Future<void> logout() async {}
 
   @override
   String? getAccessToken() => null;
@@ -20,15 +20,15 @@ class Auth0DesktopServiceStub implements Auth0Service {
   Future<bool> handleRedirectCallback() async => false;
 
   @override
-  Future<void> initialize() async {}
+  Stream<bool> get authStateChanges => Stream.value(false);
+
+  @override
+  Map<String, dynamic>? get currentUser => null;
 
   @override
   bool get isAuthenticated => false;
 
   @override
-  Future<void> login() async {}
-
-  @override
-  Future<void> logout() async {}
+  void dispose() {}
 }
 
