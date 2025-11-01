@@ -75,6 +75,7 @@ class ConversationStorageService {
         version: _databaseVersion,
         onCreate: _createDatabase,
         onUpgrade: _upgradeDatabase,
+        singleInstance: true,
       );
 
       debugPrint('� [ConversationStorage] Database opened successfully');
