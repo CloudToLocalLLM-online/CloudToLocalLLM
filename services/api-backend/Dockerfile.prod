@@ -12,12 +12,18 @@ COPY services/api-backend/package*.json ./
 RUN npm ci && \
     chown -R 1001:1001 /api
 
+# ---- Chisel Binary Extraction ----
+# Extract Chisel binary from official image - find and copy it
+FROM jpillora/chisel:latest AS chisel-extract
+RUN find / -name "chisel" -type f -executable 2>/dev/null | head -1 | xargs -I {} sh -c 'cp {} /chisel-binary && chmod +x /chisel-binary && ls -la /chisel-binary'
+
 # ---- Production ----
 FROM node:24-alpine AS production
 
-# Copy Chisel binary from official Docker image
-COPY --from=jpillora/chisel:latest /app/chisel /usr/local/bin/chisel
-RUN chmod +x /usr/local/bin/chisel
+# Copy Chisel binary from extraction stage
+COPY --from=chisel-extract /chisel-binary /usr/local/bin/chisel
+RUN chmod +x /usr/local/bin/chisel && \
+    chisel --version || (echo "ERROR: Chisel binary verification failed" && exit 1)
 
 # Create non-root user
 RUN addgroup -g 1001 -S nodejs && \
