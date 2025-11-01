@@ -7,11 +7,8 @@ import '../models/message.dart';
 import '../config/app_config.dart';
 import 'auth_service.dart';
 
-// Conditional imports for desktop-only dependencies
-import 'package:path/path.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:sqflite/sqflite.dart';
-import 'dart:io' as io;
+// Conditional imports for desktop-only dependencies - NOT loaded on web
+import 'conversation_storage_service_desktop.dart' if (dart.library.html) 'conversation_storage_service_web.dart';
 
 /// Conversation storage service with platform-specific storage
 ///
@@ -114,9 +111,8 @@ class ConversationStorageService {
 
     try {
       // For desktop/mobile, use app documents directory
-      // Note: getApplicationDocumentsDirectory() is not available on web
       final documentsDirectory = await getApplicationDocumentsDirectory();
-      final appDirectory = io.Directory(
+      final appDirectory = Directory(
         join(documentsDirectory.path, 'CloudToLocalLLM'),
       );
 
@@ -704,7 +700,7 @@ class ConversationStorageService {
   }
 
   /// Check if the service is properly initialized
-  bool get isInitialized => _isInitialized && _database != null;
+  bool get isInitialized => kIsWeb ? _isInitialized : (_isInitialized && _database != null);
 
   /// Get current storage location setting
   Future<String> getStorageLocation() async {
@@ -776,7 +772,7 @@ class ConversationStorageService {
       try {
         final dbPath = await _getDatabasePath();
         if (!kIsWeb) {
-          final file = io.File(dbPath);
+          final file = File(dbPath);
           if (await file.exists()) {
             final bytes = await file.length();
             databaseSize = _formatBytes(bytes);
