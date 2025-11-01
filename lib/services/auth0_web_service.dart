@@ -13,6 +13,7 @@ class Auth0WebService implements Auth0Service {
   Auth0WebService._internal();
 
   final _authStateController = StreamController<bool>.broadcast();
+  @override
   Stream<bool> get authStateChanges => _authStateController.stream;
 
   bool _isInitialized = false;
@@ -24,9 +25,11 @@ class Auth0WebService implements Auth0Service {
   bool get isInitialized => _isInitialized;
 
   /// Check if user is authenticated
+  @override
   bool get isAuthenticated => _isAuthenticated;
 
   /// Get current user info
+  @override
   Map<String, dynamic>? get currentUser => _currentUser;
 
   /// Get access token
