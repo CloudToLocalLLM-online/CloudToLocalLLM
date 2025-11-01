@@ -271,11 +271,14 @@ class ConversationStorageService {
 
   /// Save a list of conversations
   Future<void> saveConversations(List<Conversation> conversations) async {
+    if (kIsWeb) {
+      // Web: Save each conversation via API
+      await _saveConversationsViaAPI(conversations);
+      return;
+    }
+
+    // Desktop: Use local SQLite
     if (_database == null) {
-      if (kIsWeb) {
-        debugPrint('[ConversationStorage] Database not available on web, skipping save');
-        return; // Gracefully skip on web if database failed to initialize
-      }
       throw StateError('Database not initialized');
     }
 
