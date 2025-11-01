@@ -374,9 +374,10 @@ jobs:
       run: flutter build linux --release
       shell: bash
       
-    - name: Install Inno Setup
+    - name: Verify Inno Setup
       if: matrix.platform == 'windows'
       run: |
+        Write-Host "Checking for Inno Setup..."
         $innoSetupPaths = @(
           "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe",
           "${env:ProgramFiles}\Inno Setup 6\ISCC.exe",
@@ -392,29 +393,14 @@ jobs:
           }
         }
         
-        if (-not $innoPath) {
-          Write-Host "Inno Setup not found. Installing..."
-          $downloadUrl = "https://jrsoftware.org/download.php/is.exe"
-          $tempFile = Join-Path $env:TEMP "innosetup.exe"
-          
-          Invoke-WebRequest -Uri $downloadUrl -OutFile $tempFile -UseBasicParsing
-          Start-Process -FilePath $tempFile -ArgumentList "/SILENT" -Wait
-          Remove-Item $tempFile -Force -ErrorAction SilentlyContinue
-          
-          # Check again after installation
-          foreach ($path in $innoSetupPaths) {
-            if (Test-Path $path) {
-              $innoPath = $path
-              break
-            }
-          }
-        }
-        
         if ($innoPath) {
           Write-Host "Inno Setup found at: $innoPath"
           echo "INNO_SETUP_PATH=$innoPath" >> $env:GITHUB_ENV
         } else {
-          throw "Failed to install or locate Inno Setup"
+          Write-Error "Inno Setup not found. The runner must have Inno Setup installed."
+          Write-Host "Install via Chocolatey: choco install innosetup -y"
+          Write-Host "Or download from: https://jrsoftware.org/isdl.php"
+          exit 1
         }
       shell: powershell
       
