@@ -208,13 +208,15 @@ jobs:
           } else {
             Write-Error "Visual Studio Build Tools with C++ workload not found!"
             Write-Host "The runner must have Visual Studio Build Tools installed with C++ workload." -ForegroundColor Yellow
-            Write-Host "Install from: https://visualstudio.microsoft.com/downloads/#build-tools-for-visual-studio-2022" -ForegroundColor Yellow
+            $url = "https://visualstudio.microsoft.com/downloads/#build-tools-for-visual-studio-2022"
+            Write-Host "Install from: $url" -ForegroundColor Yellow
             exit 1
           }
         } else {
           Write-Error "Visual Studio Build Tools not found!"
           Write-Host "The runner must have Visual Studio Build Tools installed." -ForegroundColor Yellow
-          Write-Host "Install from: https://visualstudio.microsoft.com/downloads/#build-tools-for-visual-studio-2022" -ForegroundColor Yellow
+          $url = "https://visualstudio.microsoft.com/downloads/#build-tools-for-visual-studio-2022"
+          Write-Host "Install from: $url" -ForegroundColor Yellow
           exit 1
         }
       shell: powershell
