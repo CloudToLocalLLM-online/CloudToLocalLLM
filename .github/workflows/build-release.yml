@@ -365,6 +365,24 @@ jobs:
         **Full Changelog**: https://github.com/imrightguy/CloudToLocalLLM/compare/v${{ needs.version-info.outputs.version }}...v$VERSION
         EOF
         
+    - name: Create git tag
+      run: |
+        VERSION="${{ needs.version-info.outputs.version }}"
+        TAG_NAME="v$VERSION"
+        
+        # Check if tag already exists
+        if git rev-parse "$TAG_NAME" >/dev/null 2>&1; then
+          echo "Tag $TAG_NAME already exists, skipping tag creation"
+        else
+          echo "Creating tag $TAG_NAME"
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git tag -a "$TAG_NAME" -m "Release $TAG_NAME"
+          git push origin "$TAG_NAME"
+        fi
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      
     - name: Create GitHub Release
       uses: softprops/action-gh-release@v1
       with:
