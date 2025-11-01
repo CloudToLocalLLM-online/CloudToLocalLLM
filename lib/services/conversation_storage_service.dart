@@ -44,10 +44,8 @@ class ConversationStorageService {
         debugPrint(
           '� [ConversationStorage] Privacy: Data stored in browser IndexedDB only',
         );
-      } else if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
-        // For desktop platforms, use FFI implementation
-        sqfliteFfiInit();
-        databaseFactory = databaseFactoryFfi;
+      } else {
+        // For desktop/mobile platforms, sqflite automatically uses SQLite
         debugPrint(
           '� [ConversationStorage] Using SQLite FFI for desktop platform',
         );
