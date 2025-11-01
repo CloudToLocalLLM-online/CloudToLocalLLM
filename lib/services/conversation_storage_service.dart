@@ -52,15 +52,6 @@ class ConversationStorageService {
         debugPrint(
           '� [ConversationStorage] Privacy: Data stored in local SQLite file only',
         );
-      } else {
-        // For mobile platforms, use default factory
-        debugPrint(
-          '� [ConversationStorage] Using default SQLite for mobile platform',
-        );
-        debugPrint(
-          '� [ConversationStorage] Privacy: Data stored in device SQLite only',
-        );
-      }
 
       await _initializeDatabase();
       _isInitialized = true;
