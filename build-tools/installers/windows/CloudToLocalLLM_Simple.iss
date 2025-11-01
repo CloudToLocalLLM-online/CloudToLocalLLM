@@ -68,8 +68,7 @@ begin
       IDYES:
         begin
           // Try to elevate with UAC prompt
-          if ShellExecute('', 'open', ExpandConstant('{srcexe}'), '/ALLUSERS', '',
-             SW_SHOWNORMAL, ewNoWait, ErrorCode) then
+          if ShellExec('runas', ExpandConstant('{srcexe}'), '/ALLUSERS', '', SW_SHOWNORMAL, ewNoWait, ErrorCode) then
           begin
             // Successfully launched elevated instance, terminate this instance
             Result := False;
