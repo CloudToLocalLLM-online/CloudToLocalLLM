@@ -1913,7 +1913,7 @@ class _SetupWizardState extends State<SetupWizard> {
       });
 
       // Test tunnel connection
-      final validationResult = await tunnelService.testTunnelConnection(config);
+      final validationResult = await tunnelService.testTunnelConnection();
 
       setState(() {
         _isTunnelValidating = false;

@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../services/auth_service.dart';
-import '../services/http_polling_tunnel_client.dart';
+import '../services/tunnel_configuration_service.dart';
 
-/// Simplified tunnel setup for HTTP polling (WebSocket removed)
+/// Simplified tunnel setup for WebSocket
 enum TunnelWizardMode { firstTime, reconfigure, troubleshoot }
 
 class TunnelConnectionWizard extends StatefulWidget {
@@ -81,10 +81,10 @@ class _TunnelConnectionWizardState extends State<TunnelConnectionWizard> {
   }
 
   Widget _buildContent() {
-    return Consumer2<AuthService, HttpPollingTunnelClient>(
-      builder: (context, authService, httpPollingClient, child) {
+    return Consumer2<AuthService, TunnelConfigurationService>(
+      builder: (context, authService, tunnelService, child) {
         final isAuthenticated = authService.isAuthenticated.value;
-        final isConnected = httpPollingClient.isConnected;
+        final isConnected = tunnelService.tunnelClient?.isConnected ?? false;
 
         return SingleChildScrollView(
           child: Column(
@@ -125,7 +125,7 @@ class _TunnelConnectionWizardState extends State<TunnelConnectionWizard> {
 
               // Connection Status
               _buildStatusCard(
-                'HTTP Polling Connection',
+                'WebSocket Connection',
                 isConnected ? 'Connected' : 'Disconnected',
                 isConnected ? Icons.check_circle : Icons.error,
                 isConnected ? Colors.green : Colors.red,
@@ -159,7 +159,7 @@ class _TunnelConnectionWizardState extends State<TunnelConnectionWizard> {
                         Icon(Icons.info, color: Colors.blue[600]),
                         const SizedBox(width: 8),
                         Text(
-                          'HTTP Polling Setup',
+                          'WebSocket Tunnel Setup',
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
                             color: Colors.blue[800],
@@ -169,7 +169,7 @@ class _TunnelConnectionWizardState extends State<TunnelConnectionWizard> {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'HTTP polling provides a simple, reliable connection to the cloud service. '
+                      'The WebSocket tunnel provides a fast, real-time connection to the cloud service. '
                       'No complex configuration is needed - just authenticate and connect.',
                       style: TextStyle(color: Colors.blue[700]),
                     ),
@@ -217,10 +217,10 @@ class _TunnelConnectionWizardState extends State<TunnelConnectionWizard> {
   }
 
   Widget _buildButtons() {
-    return Consumer2<AuthService, HttpPollingTunnelClient>(
-      builder: (context, authService, httpPollingClient, child) {
+    return Consumer2<AuthService, TunnelConfigurationService>(
+      builder: (context, authService, tunnelService, child) {
         final isAuthenticated = authService.isAuthenticated.value;
-        final isConnected = httpPollingClient.isConnected;
+        final isConnected = tunnelService.tunnelClient?.isConnected ?? false;
 
         return Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -246,7 +246,7 @@ class _TunnelConnectionWizardState extends State<TunnelConnectionWizard> {
                   ElevatedButton.icon(
                     onPressed: _isProcessing
                         ? null
-                        : () => _connect(httpPollingClient),
+                        : () => _connect(tunnelService),
                     icon: _isProcessing
                         ? const SizedBox(
                             width: 16,
@@ -308,14 +308,14 @@ class _TunnelConnectionWizardState extends State<TunnelConnectionWizard> {
     }
   }
 
-  Future<void> _connect(HttpPollingTunnelClient client) async {
+  Future<void> _connect(TunnelConfigurationService tunnelService) async {
     setState(() {
       _isProcessing = true;
       _error = null;
     });
 
     try {
-      await client.connect();
+      await tunnelService.tunnelClient?.connect();
     } catch (e) {
       setState(() {
         _error = 'Connection failed: ${e.toString()}';

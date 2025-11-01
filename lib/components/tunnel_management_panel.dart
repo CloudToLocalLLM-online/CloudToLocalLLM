@@ -6,7 +6,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../config/app_config.dart';
 import '../config/theme.dart';
-import '../services/http_polling_tunnel_client.dart';
+import '../services/tunnel_configuration_service.dart';
 import '../services/desktop_client_detection_service.dart';
 import 'tunnel_connection_wizard.dart';
 
@@ -148,10 +148,10 @@ class _TunnelManagementPanelState extends State<TunnelManagementPanel>
   }
 
   Widget _buildConnectionStatus() {
-    return Consumer<HttpPollingTunnelClient>(
-      builder: (context, tunnelClient, child) {
-        final isConnected = tunnelClient.isConnected;
-        final error = tunnelClient.lastError;
+    return Consumer<TunnelConfigurationService>(
+      builder: (context, tunnelService, child) {
+        final isConnected = tunnelService.tunnelClient?.isConnected ?? false;
+        final error = tunnelService.lastError;
 
         Color statusColor;
         IconData statusIcon;
@@ -242,9 +242,9 @@ class _TunnelManagementPanelState extends State<TunnelManagementPanel>
   }
 
   Widget _buildQuickActions() {
-    return Consumer<HttpPollingTunnelClient>(
-      builder: (context, tunnelClient, child) {
-        final isConnected = tunnelClient.isConnected;
+    return Consumer<TunnelConfigurationService>(
+      builder: (context, tunnelService, child) {
+        final isConnected = tunnelService.tunnelClient?.isConnected ?? false;
 
         return Card(
           child: Padding(
@@ -266,9 +266,9 @@ class _TunnelManagementPanelState extends State<TunnelManagementPanel>
                   child: ElevatedButton.icon(
                     onPressed: () async {
                       if (isConnected) {
-                        await tunnelClient.disconnect();
+                        await tunnelService.tunnelClient?.dispose();
                       } else {
-                        await tunnelClient.connect();
+                        await tunnelService.tunnelClient?.connect();
                       }
                     },
                     icon: Icon(isConnected ? Icons.stop : Icons.play_arrow),

@@ -2,7 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../services/http_polling_tunnel_client.dart';
+import '../services/tunnel_configuration_service.dart';
 import '../services/desktop_client_detection_service.dart';
 import 'tunnel_management_panel.dart';
 
@@ -37,106 +37,102 @@ class _TunnelStatusIndicatorState extends State<TunnelStatusIndicator> {
       return const SizedBox.shrink();
     }
 
-    return Consumer<HttpPollingTunnelClient>(
-      builder: (context, tunnelClient, child) {
-        return Consumer<DesktopClientDetectionService>(
-          builder: (context, clientDetection, child) {
-            final tunnelStatus = _getTunnelStatus(
-              tunnelClient,
-              clientDetection,
-            );
+    return Consumer2<TunnelConfigurationService, DesktopClientDetectionService>(
+      builder: (context, tunnelService, clientDetection, child) {
+        final tunnelStatus = _getTunnelStatus(
+          tunnelService,
+          clientDetection,
+        );
 
-            return Tooltip(
-              message: tunnelStatus.tooltip,
-              child: InkWell(
-                onTap: _togglePanel,
+        return Tooltip(
+          message: tunnelStatus.tooltip,
+          child: InkWell(
+            onTap: _togglePanel,
+            borderRadius: BorderRadius.circular(20),
+            child: Container(
+              key: const Key('tunnel-status-indicator'),
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(20),
-                child: Container(
-                  key: const Key('tunnel-status-indicator'),
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(20),
-                    // Add subtle background for better visibility
-                    color:
-                        tunnelStatus.isConnecting ||
-                            !tunnelStatus.text.contains('Connected')
-                        ? tunnelStatus.color.withValues(alpha: 0.1)
-                        : null,
-                    border:
-                        tunnelStatus.text.contains('No Client') ||
-                            tunnelStatus.text.contains('Disconnected')
-                        ? Border.all(
-                            color: tunnelStatus.color.withValues(alpha: 0.5),
-                            width: 1,
-                          )
-                        : null,
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      // Status icon with animation
-                      AnimatedContainer(
-                        duration: const Duration(milliseconds: 300),
-                        child: Stack(
-                          children: [
-                            Icon(
-                              tunnelStatus.icon,
-                              color: tunnelStatus.color,
-                              size: 24,
-                            ),
-                            // Connecting animation
-                            if (tunnelStatus.isConnecting)
-                              Positioned.fill(
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  valueColor: AlwaysStoppedAnimation<Color>(
-                                    tunnelStatus.color,
-                                  ),
-                                ),
-                              ),
-                          ],
-                        ),
-                      ),
-
-                      const SizedBox(width: 8),
-
-                      // Status text
-                      Text(
-                        tunnelStatus.text,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-
-                      const SizedBox(width: 4),
-
-                      // Dropdown arrow
-                      Icon(
-                        _isPanelOpen
-                            ? Icons.keyboard_arrow_up
-                            : Icons.keyboard_arrow_down,
-                        color: Colors.white.withValues(alpha: 0.7),
-                        size: 16,
-                      ),
-                    ],
-                  ),
-                ),
+                // Add subtle background for better visibility
+                color:
+                    tunnelStatus.isConnecting ||
+                        !tunnelStatus.text.contains('Connected')
+                    ? tunnelStatus.color.withValues(alpha: 0.1)
+                    : null,
+                border:
+                    tunnelStatus.text.contains('No Client') ||
+                        tunnelStatus.text.contains('Disconnected')
+                    ? Border.all(
+                        color: tunnelStatus.color.withValues(alpha: 0.5),
+                        width: 1,
+                      )
+                    : null,
               ),
-            );
-          },
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Status icon with animation
+                  AnimatedContainer(
+                    duration: const Duration(milliseconds: 300),
+                    child: Stack(
+                      children: [
+                        Icon(
+                          tunnelStatus.icon,
+                          color: tunnelStatus.color,
+                          size: 24,
+                        ),
+                        // Connecting animation
+                        if (tunnelStatus.isConnecting)
+                          Positioned.fill(
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                tunnelStatus.color,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(width: 8),
+
+                  // Status text
+                  Text(
+                    tunnelStatus.text,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+
+                  const SizedBox(width: 4),
+
+                  // Dropdown arrow
+                  Icon(
+                    _isPanelOpen
+                        ? Icons.keyboard_arrow_up
+                        : Icons.keyboard_arrow_down,
+                    color: Colors.white.withValues(alpha: 0.7),
+                    size: 16,
+                  ),
+                ],
+              ),
+            ),
+          ),
         );
       },
     );
   }
 
   TunnelStatusInfo _getTunnelStatus(
-    HttpPollingTunnelClient tunnelClient,
+    TunnelConfigurationService tunnelService,
     DesktopClientDetectionService clientDetection,
   ) {
-    final isConnected = tunnelClient.isConnected;
-    final hasError = tunnelClient.lastError != null;
+    final isConnected = tunnelService.tunnelClient?.isConnected ?? false;
+    final hasError = tunnelService.lastError != null;
     final hasDesktopClients = clientDetection.hasConnectedClients;
     final clientCount = clientDetection.connectedClientCount;
 
@@ -154,7 +150,7 @@ class _TunnelStatusIndicatorState extends State<TunnelStatusIndicator> {
         icon: Icons.error,
         color: Colors.red,
         text: 'Error',
-        tooltip: 'Tunnel connection error: ${tunnelClient.lastError}',
+        tooltip: 'Tunnel connection error: ${tunnelService.lastError}',
         isConnecting: false,
       );
     } else if (!hasDesktopClients) {

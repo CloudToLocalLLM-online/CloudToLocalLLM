@@ -4,7 +4,6 @@ import 'package:flutter/foundation.dart';
 import 'package:tray_manager/tray_manager.dart';
 import 'connection_manager_service.dart';
 import 'local_ollama_connection_service.dart';
-import 'http_polling_tunnel_client.dart';
 
 /// Tray connection status enumeration
 enum TrayConnectionStatus {
@@ -27,7 +26,6 @@ class NativeTrayService with TrayListener {
   bool _isSupported = false;
   ConnectionManagerService? _connectionManager;
   LocalOllamaConnectionService? _localOllama;
-  HttpPollingTunnelClient? _httpPollingClient;
   StreamSubscription? _statusSubscription;
 
   // Callbacks for tray events
@@ -46,7 +44,6 @@ class NativeTrayService with TrayListener {
   Future<bool> initialize({
     required ConnectionManagerService connectionManager,
     required LocalOllamaConnectionService localOllama,
-    required HttpPollingTunnelClient tunnelManager,
     void Function()? onShowWindow,
     void Function()? onHideWindow,
     void Function()? onSettings,
@@ -84,7 +81,6 @@ class NativeTrayService with TrayListener {
       // Store references
       _connectionManager = connectionManager;
       _localOllama = localOllama;
-      _httpPollingClient = tunnelManager;
       _onShowWindow = onShowWindow;
       _onHideWindow = onHideWindow;
       _onSettings = onSettings;
@@ -127,7 +123,6 @@ class NativeTrayService with TrayListener {
       // Listen to connection manager status changes
       _connectionManager!.addListener(_onTunnelStatusChanged);
       _localOllama!.addListener(_onTunnelStatusChanged);
-      _httpPollingClient!.addListener(_onTunnelStatusChanged);
 
       // Listen to streaming status events
       _setupStreamingStatusListener();
@@ -177,17 +172,13 @@ class NativeTrayService with TrayListener {
 
   /// Get overall connection status from all services
   TrayConnectionStatus _getOverallConnectionStatus() {
-    if (_connectionManager == null ||
-        _localOllama == null ||
-        _httpPollingClient == null) {
+    if (_connectionManager == null || _localOllama == null) {
       return TrayConnectionStatus.disconnected;
     }
 
     final hasLocal = _localOllama!.isConnected;
-    final hasCloud = _httpPollingClient!.isConnected;
-    final isConnecting =
-        _localOllama!.isConnecting ||
-        false; // HTTP polling doesn't have isConnecting
+    final hasCloud = _connectionManager!.hasCloudConnection;
+    final isConnecting = _localOllama!.isConnecting;
 
     if (hasLocal && hasCloud) {
       return TrayConnectionStatus.allConnected;
@@ -241,16 +232,14 @@ class NativeTrayService with TrayListener {
 
   /// Get tooltip text for connection status
   String _getTooltipText(TrayConnectionStatus status) {
-    if (_connectionManager == null ||
-        _localOllama == null ||
-        _httpPollingClient == null) {
+    if (_connectionManager == null || _localOllama == null) {
       return 'CloudToLocalLLM - Initializing';
     }
 
     final hasLocal = _localOllama!.isConnected;
-    final hasCloud = _httpPollingClient!.isConnected;
+    final hasCloud = _connectionManager!.hasCloudConnection;
     final localEndpoint = 'http://localhost:11434';
-    final cloudEndpoint = 'HTTP Polling Bridge';
+    final cloudEndpoint = 'WebSocket Tunnel';
 
     switch (status) {
       case TrayConnectionStatus.allConnected:
@@ -284,7 +273,7 @@ class NativeTrayService with TrayListener {
         localStatus = 'Connecting...';
       }
 
-      if (_httpPollingClient?.isConnected == true) {
+      if (_connectionManager?.hasCloudConnection == true) {
         cloudStatus = 'Connected';
       } else {
         cloudStatus = 'Disconnected';
@@ -326,7 +315,6 @@ class NativeTrayService with TrayListener {
       trayManager.removeListener(this);
       _connectionManager?.removeListener(_onTunnelStatusChanged);
       _localOllama?.removeListener(_onTunnelStatusChanged);
-      _httpPollingClient?.removeListener(_onTunnelStatusChanged);
       _statusSubscription?.cancel();
 
       // Destroy tray
@@ -430,7 +418,7 @@ class NativeTrayService with TrayListener {
 
   /// Force update of tray status
   Future<void> updateStatus() async {
-    if (_isInitialized && _httpPollingClient != null) {
+    if (_isInitialized) {
       _onTunnelStatusChanged();
     }
   }

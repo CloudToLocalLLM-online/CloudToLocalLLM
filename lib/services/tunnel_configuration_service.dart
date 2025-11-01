@@ -3,7 +3,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../config/app_config.dart';
-import '../models/tunnel_config.dart' as setup_config;
+import '../models/tunnel_config.dart';
 import '../models/tunnel_validation_result.dart';
 import '../services/auth_service.dart';
 import 'simple_tunnel_client.dart';
@@ -14,7 +14,7 @@ class TunnelConfigurationService extends ChangeNotifier {
   SimpleTunnelClient? _tunnelClient;
   final String _baseUrl;
 
-  setup_config.TunnelConfig? _currentConfig;
+  TunnelConfig? _currentConfig;
   bool _isConfiguring = false;
   bool _isTestingConnection = false;
   String? _lastError;
@@ -28,7 +28,7 @@ class TunnelConfigurationService extends ChangeNotifier {
   })  : _authService = authService,
         _baseUrl = baseUrl ?? _getDefaultBaseUrl();
 
-  setup_config.TunnelConfig? get currentConfig => _currentConfig;
+  TunnelConfig? get currentConfig => _currentConfig;
   bool get isConfiguring => _isConfiguring;
   bool get isTestingConnection => _isTestingConnection;
   bool get isMonitoring => _isMonitoring;
@@ -40,7 +40,7 @@ class TunnelConfigurationService extends ChangeNotifier {
     return kDebugMode ? 'http://localhost:8080' : 'https://app.cloudtolocalllm.online/api';
   }
 
-  Future<setup_config.TunnelConfig> generateTunnelConfig(String userId) async {
+  Future<TunnelConfig> generateTunnelConfig(String userId) async {
     if (!_authService.isAuthenticated.value) {
       throw Exception('User not authenticated');
     }
@@ -52,7 +52,7 @@ class TunnelConfigurationService extends ChangeNotifier {
       final token = await _authService.getValidatedAccessToken();
       if (token == null) throw Exception('Failed to get valid access token');
 
-      final config = setup_config.TunnelConfig(
+      final config = TunnelConfig(
         userId: userId,
         cloudProxyUrl: kDebugMode ? AppConfig.tunnelWebSocketUrlDev : AppConfig.tunnelWebSocketUrl,
         localBackendUrl: 'http://localhost:11434',
@@ -71,7 +71,7 @@ class TunnelConfigurationService extends ChangeNotifier {
     }
   }
 
-  void _initializeTunnelClient(setup_config.TunnelConfig config) {
+  void _initializeTunnelClient(TunnelConfig config) {
     _tunnelClient?.dispose();
     _tunnelClient = SimpleTunnelClient(config);
     _tunnelClient!.addListener(_onTunnelStatusChanged);
