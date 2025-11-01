@@ -27,6 +27,8 @@ class NativeTrayService with TrayListener {
   ConnectionManagerService? _connectionManager;
   LocalOllamaConnectionService? _localOllama;
   StreamSubscription? _statusSubscription;
+  Timer? _updateDebounceTimer;
+  TrayConnectionStatus? _lastStatus;
 
   // Callbacks for tray events
   void Function()? _onShowWindow;
@@ -164,10 +166,21 @@ class NativeTrayService with TrayListener {
   void _onTunnelStatusChanged() {
     if (!_isInitialized || _connectionManager == null) return;
 
-    final status = _getOverallConnectionStatus();
-    _updateTrayIcon(status);
-    _updateTooltip(status);
-    _updateContextMenu(); // Update menu with current status
+    // Debounce updates to prevent constant refreshing
+    _updateDebounceTimer?.cancel();
+    _updateDebounceTimer = Timer(const Duration(milliseconds: 500), () {
+      final status = _getOverallConnectionStatus();
+      
+      // Only update if status actually changed
+      if (_lastStatus == status) {
+        return;
+      }
+
+      _lastStatus = status;
+      _updateTrayIcon(status);
+      _updateTooltip(status);
+      _updateContextMenu(); // Update menu with current status
+    });
   }
 
   /// Get overall connection status from all services
@@ -316,6 +329,7 @@ class NativeTrayService with TrayListener {
       _connectionManager?.removeListener(_onTunnelStatusChanged);
       _localOllama?.removeListener(_onTunnelStatusChanged);
       _statusSubscription?.cancel();
+      _updateDebounceTimer?.cancel();
 
       // Destroy tray
       await trayManager.destroy();
