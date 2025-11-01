@@ -58,6 +58,7 @@ jobs:
           context: .
           file: ./config/docker/Dockerfile.web
           push: true
+          no-cache: true
           tags: |
             ${{ env.REGISTRY }}/web:latest
             ${{ env.REGISTRY }}/web:${{ steps.meta.outputs.version }}
