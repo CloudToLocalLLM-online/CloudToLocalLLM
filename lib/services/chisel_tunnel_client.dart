@@ -216,60 +216,98 @@ class ChiselTunnelClient with ChangeNotifier {
   }
 
   /// Get Chisel binary path
+  /// Checks bundled assets first, then system PATH
   Future<String> _getChiselPath() async {
-    // TODO: Bundle Chisel binaries with the app
-    // For now, assume Chisel is in PATH or use platform-specific defaults
+    // Determine architecture
+    final arch = _getArchitecture();
     
     if (Platform.isWindows) {
-      // Try common locations
-      final paths = [
-        'chisel.exe',
+      // Try bundled binary first
+      final bundledPaths = [
+        'assets/chisel/chisel-windows${arch == 'arm64' ? 'arm64' : ''}.exe',
         'assets/chisel/chisel-windows.exe',
-        r'C:\Program Files\chisel\chisel.exe',
       ];
       
-      for (final path in paths) {
-        final file = File(path);
-        if (await file.exists()) {
-          return path;
+      for (final path in bundledPaths) {
+        try {
+          final file = File(path);
+          if (await file.exists()) {
+            // Copy to temp directory for execution
+            final tempDir = await Directory.systemTemp.createTemp('chisel');
+            final tempPath = '${tempDir.path}/chisel.exe';
+            await file.copy(tempPath);
+            debugPrint('[Chisel] Using bundled binary: $path');
+            return tempPath;
+          }
+        } catch (e) {
+          debugPrint('[Chisel] Error checking $path: $e');
         }
       }
       
       // Fallback to PATH
       return 'chisel.exe';
     } else if (Platform.isMacOS) {
-      final paths = [
-        'chisel',
+      final bundledPaths = [
+        'assets/chisel/chisel-darwin${arch == 'arm64' ? 'arm64' : ''}',
         'assets/chisel/chisel-darwin',
-        '/usr/local/bin/chisel',
       ];
       
-      for (final path in paths) {
-        final file = File(path);
-        if (await file.exists()) {
-          return path;
+      for (final path in bundledPaths) {
+        try {
+          final file = File(path);
+          if (await file.exists()) {
+            // Copy to temp directory for execution
+            final tempDir = await Directory.systemTemp.createTemp('chisel');
+            final tempPath = '${tempDir.path}/chisel';
+            await file.copy(tempPath);
+            // Make executable
+            await Process.run('chmod', ['+x', tempPath]);
+            debugPrint('[Chisel] Using bundled binary: $path');
+            return tempPath;
+          }
+        } catch (e) {
+          debugPrint('[Chisel] Error checking $path: $e');
         }
       }
       
+      // Fallback to PATH
       return 'chisel';
     } else {
       // Linux
-      final paths = [
-        'chisel',
+      final bundledPaths = [
+        'assets/chisel/chisel-linux${arch == 'arm64' ? 'arm64' : ''}',
         'assets/chisel/chisel-linux',
-        '/usr/local/bin/chisel',
-        '/usr/bin/chisel',
       ];
       
-      for (final path in paths) {
-        final file = File(path);
-        if (await file.exists()) {
-          return path;
+      for (final path in bundledPaths) {
+        try {
+          final file = File(path);
+          if (await file.exists()) {
+            // Copy to temp directory for execution
+            final tempDir = await Directory.systemTemp.createTemp('chisel');
+            final tempPath = '${tempDir.path}/chisel';
+            await file.copy(tempPath);
+            // Make executable
+            await Process.run('chmod', ['+x', tempPath]);
+            debugPrint('[Chisel] Using bundled binary: $path');
+            return tempPath;
+          }
+        } catch (e) {
+          debugPrint('[Chisel] Error checking $path: $e');
         }
       }
       
+      // Fallback to PATH
       return 'chisel';
     }
+  }
+
+  /// Get system architecture
+  String _getArchitecture() {
+    // For now, default to amd64
+    // In production, you'd detect actual architecture
+    // This is a simplified version
+    return 'amd64'; // TODO: Detect actual architecture
   }
 
   /// Handle disconnection

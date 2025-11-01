@@ -53,6 +53,10 @@ services:
       
       # Sentry (optional)
       SENTRY_DSN: ${SENTRY_DSN:-}
+      
+      # Chisel Tunnel Configuration
+      CHISEL_PORT: ${CHISEL_PORT:-8080}
+      CHISEL_BINARY: ${CHISEL_BINARY:-/usr/local/bin/chisel}
     depends_on:
       postgres:
         condition: service_healthy

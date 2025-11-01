@@ -18,6 +18,10 @@ FROM node:24-alpine
 # Install curl for health checks
 RUN apk add --no-cache curl
 
+# Copy Chisel binary from official Docker image
+COPY --from=jpillora/chisel:latest /app/chisel /usr/local/bin/chisel
+RUN chmod +x /usr/local/bin/chisel
+
 # Create app user for security
 RUN addgroup -g 1001 -S nodejs && \
     adduser -S -D -H -u 1001 -h /app -s /bin/sh -G nodejs -g nodejs nodejs

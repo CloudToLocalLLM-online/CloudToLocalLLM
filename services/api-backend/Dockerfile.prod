@@ -12,8 +12,17 @@ COPY services/api-backend/package*.json ./
 RUN npm ci && \
     chown -R 1001:1001 /api
 
+# ---- Chisel Binary ----
+# Copy Chisel binary from official Docker image
+FROM jpillora/chisel:latest AS chisel
+# Chisel binary is at /app/chisel in the official image
+
 # ---- Production ----
 FROM node:24-alpine AS production
+
+# Copy Chisel binary from official image
+COPY --from=chisel /app/chisel /usr/local/bin/chisel
+RUN chmod +x /usr/local/bin/chisel
 
 # Create non-root user
 RUN addgroup -g 1001 -S nodejs && \
@@ -38,6 +47,9 @@ USER nodejs
 # Set environment variables to use container-specific paths
 ENV LOG_DIR=/api/logs
 ENV DB_PATH=/api/data/cloudtolocalllm.db
+ENV CHISEL_BINARY=/usr/local/bin/chisel
+ENV CHISEL_PORT=8080
 
 EXPOSE 3000
+EXPOSE 8080
 CMD [ "npm", "start" ]
