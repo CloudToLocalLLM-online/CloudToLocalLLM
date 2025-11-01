@@ -15,8 +15,7 @@ import { ChiselProxy } from './tunnel/chisel-proxy.js';
 import { AuthService } from './auth/auth-service.js';
 import { DatabaseMigrator } from './database/migrate.js';
 import { DatabaseMigratorPG } from './database/migrate-pg.js';
-// TODO: Replace with Chisel tunnel routes (see CHISEL_INTEGRATION_PLAN.md)
-// import { createTunnelRoutes } from './tunnel/tunnel-routes.js'; // REMOVED - old tunnel
+import { createTunnelRoutes } from './tunnel/tunnel-routes.js';
 import { createMonitoringRoutes } from './routes/monitoring.js';
 import { authenticateJWT } from './middleware/auth.js';
 import { addTierInfo, getUserTier } from './middleware/tier-check.js';

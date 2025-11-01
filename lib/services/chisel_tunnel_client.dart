@@ -2,6 +2,7 @@ import 'dart:io';
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
+import 'package:http/http.dart' as http;
 import '../models/tunnel_config.dart';
 
 /// Chisel tunnel client for establishing reverse proxy connections
@@ -17,6 +18,7 @@ class ChiselTunnelClient with ChangeNotifier {
   int _reconnectAttempts = 0;
   StreamSubscription? _stdoutSubscription;
   StreamSubscription? _stderrSubscription;
+  String? _tunnelId; // Chisel tunnel identifier
 
   ChiselTunnelClient(this._config);
 
@@ -88,14 +90,30 @@ class ChiselTunnelClient with ChangeNotifier {
       });
 
       // Wait a moment for connection to establish
-      await Future.delayed(const Duration(seconds: 2));
+      await Future.delayed(const Duration(seconds: 3));
 
       // Check if process is still running
-      if (_chiselProcess != null && await _chiselProcess!.exitCode.then((_) => false, onError: (_) => true)) {
-        _isConnected = true;
-        _reconnectAttempts = 0;
-        notifyListeners();
-        debugPrint('[Chisel] Connection established');
+      if (_chiselProcess != null) {
+        // Try to check if process is still alive (exitCode throws if process is running)
+        try {
+          await _chiselProcess!.exitCode.timeout(const Duration(seconds: 1));
+          // If we get here, process already exited
+          throw Exception('Chisel process exited immediately');
+        } catch (e) {
+          // Timeout or error means process is still running (good)
+          if (e is TimeoutException || e.toString().contains('TimeoutException')) {
+            _isConnected = true;
+            _reconnectAttempts = 0;
+            
+            // Register with server
+            await _registerWithServer();
+            
+            notifyListeners();
+            debugPrint('[Chisel] Connection established');
+          } else {
+            throw e;
+          }
+        }
       } else {
         throw Exception('Chisel process failed to start');
       }
@@ -122,14 +140,17 @@ class ChiselTunnelClient with ChangeNotifier {
       }
     }
 
+    // Extract tunnel ID if present
+    final tunnelIdMatch = RegExp(r'tunnel[:\s]+([a-zA-Z0-9_-]+)', caseSensitive: false).firstMatch(line);
+    if (tunnelIdMatch != null && _tunnelId == null) {
+      _tunnelId = tunnelIdMatch.group(1);
+      debugPrint('[Chisel] Tunnel ID: $_tunnelId');
+    }
+
     // Check for connection success messages
     if (line.toLowerCase().contains('connected') || 
         line.toLowerCase().contains('tunnel')) {
-      if (!_isConnected) {
-        _isConnected = true;
-        _reconnectAttempts = 0;
-        notifyListeners();
-      }
+      // Connection will be set in _doConnect after registration
     }
   }
 
@@ -152,6 +173,45 @@ class ChiselTunnelClient with ChangeNotifier {
       return uri.port != 0 ? uri.port : 11434; // Default Ollama port
     } catch (e) {
       return 11434;
+    }
+  }
+
+  /// Register tunnel with server
+  Future<void> _registerWithServer() async {
+    try {
+      final serverUrl = _config.cloudProxyUrl
+          .replaceFirst('wss://', 'https://')
+          .replaceFirst('ws://', 'http://');
+      final baseUrl = serverUrl.substring(0, serverUrl.lastIndexOf(':'));
+      
+      final registerUrl = Uri.parse('$baseUrl/api/tunnel/register');
+      
+      // Generate tunnel ID if not set
+      _tunnelId ??= 'tunnel_${DateTime.now().millisecondsSinceEpoch}';
+
+      final response = await http.post(
+        registerUrl,
+        headers: {
+          'Authorization': 'Bearer ${_config.authToken}',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          'tunnelId': _tunnelId,
+          'localPort': _extractLocalPort(_config.localBackendUrl),
+          'serverPort': _tunnelPort,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body) as Map<String, dynamic>;
+        _tunnelPort = data['serverPort'] as int? ?? _tunnelPort;
+        debugPrint('[Chisel] Registered with server: port $_tunnelPort');
+      } else {
+        debugPrint('[Chisel] Registration failed: ${response.statusCode} - ${response.body}');
+      }
+    } catch (e) {
+      debugPrint('[Chisel] Error registering with server: $e');
+      // Don't throw - connection may still work
     }
   }
 
@@ -218,10 +278,14 @@ class ChiselTunnelClient with ChangeNotifier {
     
     _isConnected = false;
     _tunnelPort = null;
+    _tunnelId = null;
     _stdoutSubscription?.cancel();
     _stderrSubscription?.cancel();
     _chiselProcess?.kill();
     _chiselProcess = null;
+    
+    // Unregister asynchronously (don't wait)
+    _unregisterFromServer();
     
     notifyListeners();
     debugPrint('[Chisel] Disconnected, attempting reconnect...');
@@ -252,16 +316,41 @@ class ChiselTunnelClient with ChangeNotifier {
     return Duration(seconds: 1 << _reconnectAttempts);
   }
 
+  /// Unregister from server
+  Future<void> _unregisterFromServer() async {
+    if (_tunnelId == null) return;
+
+    try {
+      final serverUrl = _config.cloudProxyUrl
+          .replaceFirst('wss://', 'https://')
+          .replaceFirst('ws://', 'http://');
+      final baseUrl = serverUrl.substring(0, serverUrl.lastIndexOf(':'));
+
+      await http.post(
+        Uri.parse('$baseUrl/api/tunnel/unregister'),
+        headers: {
+          'Authorization': 'Bearer ${_config.authToken}',
+          'Content-Type': 'application/json',
+        },
+      );
+      debugPrint('[Chisel] Unregistered from server');
+    } catch (e) {
+      debugPrint('[Chisel] Error unregistering from server: $e');
+    }
+  }
+
   /// Disconnect from Chisel server
   Future<void> disconnect() async {
     _reconnectTimer?.cancel();
     _reconnectTimer = null;
+    await _unregisterFromServer();
     _stdoutSubscription?.cancel();
     _stderrSubscription?.cancel();
     _chiselProcess?.kill();
     _chiselProcess = null;
     _isConnected = false;
     _tunnelPort = null;
+    _tunnelId = null;
     notifyListeners();
   }
 

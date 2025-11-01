@@ -49,6 +49,69 @@ export function createTunnelRoutes(config, tunnelProxy, logger = winston.createL
   router.use(authenticateToken);
   router.use(addTierInfo);
 
+  // Register Chisel client connection
+  // Called by desktop client after establishing Chisel tunnel
+  router.post('/register', requireFeature('tunneling'), async (req, res) => {
+    try {
+      const userId = req.userId;
+      const { tunnelId, localPort, serverPort } = req.body;
+
+      if (!tunnelId || !localPort) {
+        return res.status(400).json({
+          error: 'Bad Request',
+          message: 'tunnelId and localPort are required',
+        });
+      }
+
+      if (!tunnelProxy) {
+        return res.status(503).json({
+          error: 'Service Unavailable',
+          message: 'Chisel tunnel server not initialized',
+        });
+      }
+
+      // Register the client connection
+      const assignedPort = tunnelProxy.registerClient(userId, tunnelId, localPort, serverPort);
+
+      res.json({
+        success: true,
+        userId,
+        tunnelId,
+        localPort,
+        serverPort: assignedPort,
+        message: 'Chisel client registered successfully',
+      });
+    } catch (error) {
+      tunnelLogger.logTunnelError(ERROR_CODES.INTERNAL_SERVER_ERROR, 'Failed to register client', { error: error.message });
+      res.status(500).json(ErrorResponseBuilder.internalServerError('Failed to register client.', ERROR_CODES.INTERNAL_SERVER_ERROR));
+    }
+  });
+
+  // Unregister Chisel client connection
+  router.post('/unregister', requireFeature('tunneling'), (req, res) => {
+    try {
+      const userId = req.userId;
+
+      if (!tunnelProxy) {
+        return res.status(503).json({
+          error: 'Service Unavailable',
+          message: 'Chisel tunnel server not initialized',
+        });
+      }
+
+      tunnelProxy.unregisterClient(userId);
+
+      res.json({
+        success: true,
+        userId,
+        message: 'Chisel client unregistered successfully',
+      });
+    } catch (error) {
+      tunnelLogger.logTunnelError(ERROR_CODES.INTERNAL_SERVER_ERROR, 'Failed to unregister client', { error: error.message });
+      res.status(500).json(ErrorResponseBuilder.internalServerError('Failed to unregister client.', ERROR_CODES.INTERNAL_SERVER_ERROR));
+    }
+  });
+
   // Health check for a specific user's tunnel connection
   router.get('/health/:userId', requireFeature('tunneling'), (req, res) => {
     const { userId } = req.params;
