@@ -21,7 +21,7 @@ class Auth0WebService {
   Stream<bool> get authStateChanges => _authStateController.stream;
 
   Future<void> initialize() async {
-    debugPrint('⚠️ Auth0WebService: Not available on desktop platform');
+    debugPrint(' Auth0WebService: Not available on desktop platform');
     _isInitialized = true;
   }
 

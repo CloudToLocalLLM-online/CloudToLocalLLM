@@ -23,10 +23,10 @@ class WindowManagerService {
         await windowManager.ensureInitialized();
         await windowManager.setPreventClose(true);
         _isInitialized = true;
-        debugPrint("🪟 [WindowManager] Window manager service initialized");
+        debugPrint("[WindowManager] Window manager service initialized");
       }
     } catch (e) {
-      debugPrint("🪟 [WindowManager] Failed to initialize window manager: $e");
+      debugPrint("[WindowManager] Failed to initialize window manager: $e");
     }
   }
 
@@ -39,9 +39,9 @@ class WindowManagerService {
       }
       _isWindowVisible = true;
       _isMinimizedToTray = false;
-      debugPrint("🪟 [WindowManager] Window shown");
+      debugPrint("[WindowManager] Window shown");
     } catch (e) {
-      debugPrint("🪟 [WindowManager] Failed to show window: $e");
+      debugPrint("[WindowManager] Failed to show window: $e");
     }
   }
 
@@ -53,9 +53,9 @@ class WindowManagerService {
       }
       _isWindowVisible = false;
       _isMinimizedToTray = true;
-      debugPrint("🪟 [WindowManager] Window hidden to tray");
+      debugPrint("[WindowManager] Window hidden to tray");
     } catch (e) {
-      debugPrint("🪟 [WindowManager] Failed to hide window: $e");
+      debugPrint("[WindowManager] Failed to hide window: $e");
     }
   }
 
@@ -67,9 +67,9 @@ class WindowManagerService {
       }
       _isWindowVisible = false;
       _isMinimizedToTray = false;
-      debugPrint("🪟 [WindowManager] Window minimized");
+      debugPrint("[WindowManager] Window minimized");
     } catch (e) {
-      debugPrint("🪟 [WindowManager] Failed to minimize window: $e");
+      debugPrint("[WindowManager] Failed to minimize window: $e");
     }
   }
 
@@ -81,9 +81,9 @@ class WindowManagerService {
       }
       _isWindowVisible = true;
       _isMinimizedToTray = false;
-      debugPrint("🪟 [WindowManager] Window maximized");
+      debugPrint("[WindowManager] Window maximized");
     } catch (e) {
-      debugPrint("🪟 [WindowManager] Failed to maximize window: $e");
+      debugPrint("[WindowManager] Failed to maximize window: $e");
     }
   }
 
@@ -100,7 +100,7 @@ class WindowManagerService {
   Future<void> forceClose() async {
     try {
       if (!kIsWeb && _isInitialized) {
-        debugPrint("🪟 [WindowManager] Initiating force close sequence");
+        debugPrint("[WindowManager] Initiating force close sequence");
 
         // Disable close prevention
         await windowManager.setPreventClose(false);
@@ -118,15 +118,15 @@ class WindowManagerService {
           exit(0);
         }
       }
-      debugPrint("🪟 [WindowManager] Application force closed");
+      debugPrint("[WindowManager] Application force closed");
     } catch (e) {
-      debugPrint("🪟 [WindowManager] Failed to force close: $e");
+      debugPrint("[WindowManager] Failed to force close: $e");
       // Emergency exit if all else fails
       if (!kIsWeb) {
         try {
           exit(1);
         } catch (exitError) {
-          debugPrint("🪟 [WindowManager] Emergency exit failed: $exitError");
+          debugPrint("[WindowManager] Emergency exit failed: $exitError");
         }
       }
     }
@@ -154,17 +154,17 @@ class WindowManagerService {
     try {
       await hideToTray();
       debugPrint(
-        "🪟 [WindowManager] Window close intercepted, minimized to tray",
+        "[WindowManager] Window close intercepted, minimized to tray",
       );
       return false; // Prevent actual window close
     } catch (e) {
-      debugPrint("🪟 [WindowManager] Failed to handle window close: $e");
+      debugPrint("[WindowManager] Failed to handle window close: $e");
       return true; // Allow close if error occurs
     }
   }
 
   /// Dispose of the window manager service
   void dispose() {
-    debugPrint("🪟 [WindowManager] Window manager service disposed");
+    debugPrint("[WindowManager] Window manager service disposed");
   }
 }

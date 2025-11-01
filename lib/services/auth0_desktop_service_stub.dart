@@ -19,7 +19,7 @@ class Auth0DesktopService {
   Stream<bool> get authStateChanges => _authStateController.stream;
 
   Future<void> initialize() async {
-    debugPrint('⚠️ Auth0DesktopService: Not available on web platform');
+    debugPrint(' Auth0DesktopService: Not available on web platform');
   }
 
   Future<void> checkAuthStatus() async {

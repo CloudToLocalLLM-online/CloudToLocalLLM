@@ -32,9 +32,9 @@ class LocalOllamaStreamingService extends StreamingService {
       _config = config ?? StreamingConfig.local(),
       _httpClient = http.Client() {
     if (kDebugMode) {
-      debugPrint('🦙 [LocalOllamaStreaming] Service initialized');
-      debugPrint('🦙 [LocalOllamaStreaming] Base URL: $_baseUrl');
-      debugPrint('🦙 [LocalOllamaStreaming] Config: $_config');
+      debugPrint('[LocalOllamaStreaming] Service initialized');
+      debugPrint('[LocalOllamaStreaming] Base URL: $_baseUrl');
+      debugPrint('[LocalOllamaStreaming] Config: $_config');
     }
   }
 
@@ -47,7 +47,7 @@ class LocalOllamaStreamingService extends StreamingService {
   @override
   Future<void> establishConnection() async {
     if (_connection.isActive) {
-      debugPrint('🦙 [LocalOllamaStreaming] Connection already active');
+      debugPrint('[LocalOllamaStreaming] Connection already active');
       return;
     }
 
@@ -89,7 +89,7 @@ class LocalOllamaStreamingService extends StreamingService {
         notifyListeners();
 
         debugPrint(
-          '🦙 [LocalOllamaStreaming] Connected to Ollama v$version '
+          '[LocalOllamaStreaming] Connected to Ollama v$version '
           '(${stopwatch.elapsedMilliseconds}ms)',
         );
       } else {
@@ -110,7 +110,7 @@ class LocalOllamaStreamingService extends StreamingService {
       notifyListeners();
 
       debugPrint(
-        '🦙 [LocalOllamaStreaming] Connection failed: ${_lastConnectionError!.userFriendlyMessage}',
+        '[LocalOllamaStreaming] Connection failed: ${_lastConnectionError!.userFriendlyMessage}',
       );
 
       // Implement smart retry logic with exponential backoff
@@ -126,7 +126,7 @@ class LocalOllamaStreamingService extends StreamingService {
 
   @override
   Future<void> closeConnection() async {
-    debugPrint('🦙 [LocalOllamaStreaming] Closing connection');
+    debugPrint('[LocalOllamaStreaming] Closing connection');
 
     _heartbeatTimer?.cancel();
     _heartbeatTimer = null;
@@ -169,7 +169,7 @@ class LocalOllamaStreamingService extends StreamingService {
         'stream': true,
       };
 
-      debugPrint('🦙 [LocalOllamaStreaming] Starting stream for model: $model');
+      debugPrint('[LocalOllamaStreaming] Starting stream for model: $model');
 
       final request = http.Request('POST', Uri.parse('$_baseUrl/api/chat'));
       request.headers.addAll({
@@ -226,7 +226,7 @@ class LocalOllamaStreamingService extends StreamingService {
             _messageSubject.add(streamingMessage);
           }
         } catch (e) {
-          debugPrint('🦙 [LocalOllamaStreaming] Error parsing chunk: $e');
+          debugPrint('[LocalOllamaStreaming] Error parsing chunk: $e');
           // Continue processing other chunks
         }
       }
@@ -255,7 +255,7 @@ class LocalOllamaStreamingService extends StreamingService {
       _publishStatusEvent();
       notifyListeners();
 
-      debugPrint('🦙 [LocalOllamaStreaming] Stream error: $e');
+      debugPrint('[LocalOllamaStreaming] Stream error: $e');
     }
   }
 
@@ -291,7 +291,7 @@ class LocalOllamaStreamingService extends StreamingService {
                 .toList() ??
             [];
 
-        debugPrint('🦙 [LocalOllamaStreaming] Found ${models.length} models');
+        debugPrint('[LocalOllamaStreaming] Found ${models.length} models');
         return models;
       } else {
         throw StreamingException(
@@ -300,7 +300,7 @@ class LocalOllamaStreamingService extends StreamingService {
         );
       }
     } catch (e) {
-      debugPrint('🦙 [LocalOllamaStreaming] Error getting models: $e');
+      debugPrint('[LocalOllamaStreaming] Error getting models: $e');
       return [];
     }
   }
@@ -321,7 +321,7 @@ class LocalOllamaStreamingService extends StreamingService {
 
         _connection = _connection.copyWith(lastActivity: DateTime.now());
       } catch (e) {
-        debugPrint('🦙 [LocalOllamaStreaming] Heartbeat failed: $e');
+        debugPrint('[LocalOllamaStreaming] Heartbeat failed: $e');
         _connection = StreamingConnection.error(
           'Heartbeat failed: $e',
           endpoint: _baseUrl,
@@ -345,7 +345,7 @@ class LocalOllamaStreamingService extends StreamingService {
   void _openCircuitBreaker() {
     _isCircuitBreakerOpen = true;
     debugPrint(
-      '🦙 [LocalOllamaStreaming] Circuit breaker opened - stopping retries',
+      '[LocalOllamaStreaming] Circuit breaker opened - stopping retries',
     );
 
     // Schedule circuit breaker reset after a longer delay
@@ -353,7 +353,7 @@ class LocalOllamaStreamingService extends StreamingService {
       _isCircuitBreakerOpen = false;
       _retryState = ConnectionRetryState.initial();
       debugPrint(
-        '🦙 [LocalOllamaStreaming] Circuit breaker reset - retries enabled',
+        '[LocalOllamaStreaming] Circuit breaker reset - retries enabled',
       );
     });
   }
@@ -367,7 +367,7 @@ class LocalOllamaStreamingService extends StreamingService {
     );
 
     debugPrint(
-      '🦙 [LocalOllamaStreaming] Scheduling reconnect attempt ${_retryState.attemptCount} '
+      '[LocalOllamaStreaming] Scheduling reconnect attempt ${_retryState.attemptCount} '
       'in ${_retryState.currentDelay.inSeconds}s',
     );
 
@@ -378,7 +378,7 @@ class LocalOllamaStreamingService extends StreamingService {
       try {
         await establishConnection();
       } catch (e) {
-        debugPrint('🦙 [LocalOllamaStreaming] Reconnect failed: $e');
+        debugPrint('[LocalOllamaStreaming] Reconnect failed: $e');
       }
     });
   }
@@ -390,7 +390,7 @@ class LocalOllamaStreamingService extends StreamingService {
     _isCircuitBreakerOpen = false;
     _reconnectTimer?.cancel();
     debugPrint(
-      '🦙 [LocalOllamaStreaming] Connection state reset for manual retry',
+      '[LocalOllamaStreaming] Connection state reset for manual retry',
     );
   }
 
@@ -407,7 +407,7 @@ class LocalOllamaStreamingService extends StreamingService {
 
   @override
   void dispose() {
-    debugPrint('🦙 [LocalOllamaStreaming] Disposing service');
+    debugPrint('[LocalOllamaStreaming] Disposing service');
 
     _heartbeatTimer?.cancel();
     _reconnectTimer?.cancel();

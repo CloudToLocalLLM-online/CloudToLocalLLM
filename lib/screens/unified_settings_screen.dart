@@ -66,14 +66,14 @@ class _UnifiedSettingsScreenState extends State<UnifiedSettingsScreen> {
 
   Future<void> _initializeSettings() async {
     try {
-      debugPrint('⚙️ [Settings] Initializing settings screen...');
+      debugPrint('[Settings] Initializing settings screen...');
       await _loadSettings();
       setState(() {
         _isInitialized = true;
       });
-      debugPrint('⚙️ [Settings] Settings screen initialized successfully');
+      debugPrint('[Settings] Settings screen initialized successfully');
     } catch (e) {
-      debugPrint('⚙️ [Settings] Failed to initialize settings: $e');
+      debugPrint('[Settings] Failed to initialize settings: $e');
       setState(() {
         _initializationError = e.toString();
         _isInitialized = true; // Still mark as initialized to show error UI
@@ -199,7 +199,7 @@ class _UnifiedSettingsScreenState extends State<UnifiedSettingsScreen> {
                       selectedSectionId: _selectedSectionId,
                       onSectionSelected: (sectionId) {
                         debugPrint(
-                          '⚙️ [Settings] Section selected: $sectionId',
+                          '[Settings] Section selected: $sectionId',
                         );
                         setState(() {
                           _selectedSectionId = sectionId;
@@ -301,11 +301,11 @@ class _UnifiedSettingsScreenState extends State<UnifiedSettingsScreen> {
   Widget _buildSectionContentWithErrorHandling() {
     try {
       debugPrint(
-        '⚙️ [Settings] Building content for section: $_selectedSectionId',
+        '[Settings] Building content for section: $_selectedSectionId',
       );
       return _buildSectionContent();
     } catch (e) {
-      debugPrint('⚙️ [Settings] Error building section content: $e');
+      debugPrint('[Settings] Error building section content: $e');
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -389,7 +389,7 @@ class _UnifiedSettingsScreenState extends State<UnifiedSettingsScreen> {
                     DropdownMenuItem(value: 'system', child: Text('System')),
                   ],
                   onChanged: (value) {
-                    debugPrint('⚙️ [Settings] Theme changed to: $value');
+                    debugPrint('[Settings] Theme changed to: $value');
                     setState(() {
                       _selectedTheme = value ?? 'dark';
                     });
@@ -404,7 +404,7 @@ class _UnifiedSettingsScreenState extends State<UnifiedSettingsScreen> {
                   value: _enableNotifications,
                   onChanged: (value) {
                     debugPrint(
-                      '⚙️ [Settings] Notifications toggled to: $value',
+                      '[Settings] Notifications toggled to: $value',
                     );
                     setState(() {
                       _enableNotifications = value;
@@ -469,7 +469,7 @@ class _UnifiedSettingsScreenState extends State<UnifiedSettingsScreen> {
                 SizedBox(height: AppTheme.spacingM),
                 ElevatedButton.icon(
                   onPressed: () {
-                    debugPrint('⚙️ [Settings] Go to General button pressed');
+                    debugPrint('[Settings] Go to General button pressed');
                     setState(() {
                       _selectedSectionId = 'general';
                     });
@@ -561,7 +561,7 @@ class _UnifiedSettingsScreenState extends State<UnifiedSettingsScreen> {
         ],
       );
     } catch (e) {
-      debugPrint('⚙️ [Settings] Error building tunnel settings: $e');
+      debugPrint('[Settings] Error building tunnel settings: $e');
       return _buildServiceErrorCard('Failed to load tunnel settings: $e');
     }
   }

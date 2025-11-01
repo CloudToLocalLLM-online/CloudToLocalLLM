@@ -51,7 +51,7 @@ bool _isAppSubdomain() {
   final isApp =
       hostname.startsWith('app.') || hostname == 'app.cloudtolocalllm.online';
 
-  debugPrint('🔄 [Router] Hostname: $hostname, isApp: $isApp');
+  debugPrint('[Router] Hostname: $hostname, isApp: $isApp');
   return isApp;
 }
 
@@ -66,17 +66,17 @@ class AppRouter {
         final uri = Uri.parse(currentUrl);
         initialLocation = uri.path;
         debugPrint(
-          '🔄 [Router] Initial location from browser: $initialLocation',
+          '[Router] Initial location from browser: $initialLocation',
         );
       } catch (e) {
-        debugPrint('🔄 [Router] Error getting initial location: $e');
+        debugPrint('[Router] Error getting initial location: $e');
         initialLocation = '/';
       }
     } else {
       // For desktop, always start at home unless there's a specific reason not to
       initialLocation = '/';
       debugPrint(
-        '🔄 [Router] Desktop platform - setting initial location to: $initialLocation',
+        '[Router] Desktop platform - setting initial location to: $initialLocation',
       );
     }
 
@@ -101,22 +101,22 @@ class AppRouter {
                 final authService = context.watch<AuthService>();
 
                 debugPrint(
-                  '🔄 [Router] Route builder called - isLoading: ${authService.isLoading.value}, isAuthenticated: ${authService.isAuthenticated.value}',
+                  '[Router] Route builder called - isLoading: ${authService.isLoading.value}, isAuthenticated: ${authService.isAuthenticated.value}',
                 );
 
                 // If authentication is still loading, show loading screen
                 if (authService.isLoading.value) {
-                  debugPrint('🔄 [Router] Showing loading screen');
+                  debugPrint('[Router] Showing loading screen');
                   return const LoadingScreen(
                     message: 'Checking authentication...',
                   );
                 }
 
                 if (authService.isAuthenticated.value) {
-                  debugPrint('🔄 [Router] Showing home screen');
+                  debugPrint('[Router] Showing home screen');
                   return const HomeScreen();
                 } else {
-                  debugPrint('🔄 [Router] Showing login screen');
+                  debugPrint('[Router] Showing login screen');
                   return const LoginScreen();
                 }
               } else {
@@ -182,7 +182,7 @@ class AppRouter {
             // For desktop platforms, redirect immediately to prevent callback loop
             if (!kIsWeb) {
               debugPrint(
-                '🔄 [Router] Desktop platform accessing callback route - redirecting to login',
+                '[Router] Desktop platform accessing callback route - redirecting to login',
               );
               // Use a post-frame callback to redirect after the current build
               WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -260,7 +260,7 @@ class AppRouter {
           path: '/settings/daemon',
           name: 'daemon-settings',
           builder: (context, state) {
-            debugPrint("🔧 [Router] Building DaemonSettingsScreen");
+            debugPrint("[Router] Building DaemonSettingsScreen");
             return const DaemonSettingsScreen();
           },
         ),
@@ -270,7 +270,7 @@ class AppRouter {
           path: '/settings/connection-status',
           name: 'connection-status',
           builder: (context, state) {
-            debugPrint("📊 [Router] Building ConnectionStatusScreen");
+            debugPrint("[Router] Building ConnectionStatusScreen");
             return const ConnectionStatusScreen();
           },
         ),
@@ -280,7 +280,7 @@ class AppRouter {
           path: '/tunnel-status',
           name: 'tunnel-status',
           builder: (context, state) {
-            debugPrint("🔧 [Router] Building TunnelStatusScreen");
+            debugPrint("[Router] Building TunnelStatusScreen");
             return const TunnelStatusScreen();
           },
         ),
@@ -290,7 +290,7 @@ class AppRouter {
           path: '/admin',
           name: 'admin-panel',
           builder: (context, state) {
-            debugPrint("🔧 [AdminPanel] Building AdminPanelScreen");
+            debugPrint("[AdminPanel] Building AdminPanelScreen");
             return const AdminPanelScreen();
           },
         ),
@@ -300,7 +300,7 @@ class AppRouter {
           path: '/admin/data-flush',
           name: 'admin-data-flush',
           builder: (context, state) {
-            debugPrint("🗑️ [Router] Building AdminDataFlushScreen");
+            debugPrint("[Router] Building AdminDataFlushScreen");
             return const AdminDataFlushScreen();
           },
         ),
@@ -321,41 +321,41 @@ class AppRouter {
         // Use robust hostname detection
         final isAppSubdomain = _isAppSubdomain();
 
-        debugPrint('🔄 [Router] Redirect check: ${state.matchedLocation}');
+        debugPrint('[Router] Redirect check: ${state.matchedLocation}');
         debugPrint(
-          '🔄 [Router] Auth state: $isAuthenticated, Auth loading: $isAuthLoading, App subdomain: $isAppSubdomain',
+          '[Router] Auth state: $isAuthenticated, Auth loading: $isAuthLoading, App subdomain: $isAppSubdomain',
         );
         debugPrint(
-          '🔄 [Router] Route flags: isLoggingIn: $isLoggingIn, isCallback: $isCallback, isLoading: $isLoading, isHomepage: $isHomepage',
+          '[Router] Route flags: isLoggingIn: $isLoggingIn, isCallback: $isCallback, isLoading: $isLoading, isHomepage: $isHomepage',
         );
 
         // Allow access to marketing pages on web root domain without authentication
         if (kIsWeb && !isAppSubdomain && (isHomepage || isDownload || isDocs)) {
-          debugPrint('🔄 [Router] Allowing access to marketing page');
+          debugPrint('[Router] Allowing access to marketing page');
           return null;
         }
 
         // If authentication is still loading, defer redirect decisions
         if (isAuthLoading && !isCallback) {
-          debugPrint('🔄 [Router] Auth still loading - deferring redirect');
+          debugPrint('[Router] Auth still loading - deferring redirect');
           return null; // Stay on current route until auth loading completes
         }
 
         // Allow access to login, callback, and loading pages
         if (isLoggingIn || isCallback || isLoading) {
-          debugPrint('🔄 [Router] Allowing access to auth/loading page');
+          debugPrint('[Router] Allowing access to auth/loading page');
           return null;
         }
 
         // For callback route, handle platform-specific logic
         if (isCallback) {
           if (kIsWeb) {
-            debugPrint('🔄 [Router] Allowing access to callback page (web)');
+            debugPrint('[Router] Allowing access to callback page (web)');
             return null;
           } else {
             // Desktop platforms should not use callback route
             debugPrint(
-              '🔄 [Router] Desktop callback route accessed - redirecting based on auth state',
+              '[Router] Desktop callback route accessed - redirecting based on auth state',
             );
             if (isAuthenticated) {
               return '/';
@@ -368,13 +368,13 @@ class AppRouter {
         // For desktop, require authentication (web auth handled in route builder)
         if (!kIsWeb && !isAuthenticated && !isAuthLoading) {
           debugPrint(
-            '🔄 [Router] Redirecting desktop to login - user not authenticated',
+            '[Router] Redirecting desktop to login - user not authenticated',
           );
           return '/login';
         }
 
         // Allow access to protected routes
-        debugPrint('🔄 [Router] Allowing access to protected route');
+        debugPrint('[Router] Allowing access to protected route');
         return null;
       },
 

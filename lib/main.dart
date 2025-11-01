@@ -118,7 +118,7 @@ class _CloudToLocalLLMAppState extends State<CloudToLocalLLMApp> {
 
   Future<void> _initializeSystemTray() async {
     try {
-      debugPrint("🚀 [SystemTray] Initializing native tray service...");
+      debugPrint("[SystemTray] Initializing native tray service...");
 
       // Initialize window manager service first
       final windowManager = WindowManagerService();
@@ -144,7 +144,7 @@ class _CloudToLocalLLMAppState extends State<CloudToLocalLLMApp> {
 
       if (context != null && context.mounted) {
         debugPrint(
-          "✅ [Navigation] Context available, executing navigation to: $route",
+          "[Navigation] Context available, executing navigation to: $route",
         );
 
         // Use post-frame callback to ensure navigation happens after current frame
@@ -153,11 +153,11 @@ class _CloudToLocalLLMAppState extends State<CloudToLocalLLMApp> {
             if (context!.mounted) {
               context.go(route);
               debugPrint(
-                "✅ [Navigation] Navigation command sent for route: $route",
+                "[Navigation] Navigation command sent for route: $route",
               );
             } else {
               debugPrint(
-                "❌ [Navigation] Context no longer mounted for route: $route",
+                "[Navigation] Context no longer mounted for route: $route",
               );
             }
           } catch (e) {
@@ -168,7 +168,7 @@ class _CloudToLocalLLMAppState extends State<CloudToLocalLLMApp> {
         });
       } else {
         debugPrint(
-          "❌ [Navigation] Cannot navigate to $route: no valid context available",
+          "[Navigation] Cannot navigate to $route: no valid context available",
         );
 
         // Schedule retry after a short delay
@@ -184,18 +184,18 @@ class _CloudToLocalLLMAppState extends State<CloudToLocalLLMApp> {
 
   void _retryNavigation(String route, int attempt) {
     if (attempt > 3) {
-      debugPrint("❌ [Navigation] Max retry attempts reached for route: $route");
+      debugPrint("[Navigation] Max retry attempts reached for route: $route");
       return;
     }
 
-    debugPrint("🔄 [Navigation] Retry attempt $attempt for route: $route");
+    debugPrint("[Navigation] Retry attempt $attempt for route: $route");
 
     final context =
         navigatorKey.currentContext ?? navigatorKey.currentState?.context;
     if (context != null && context.mounted) {
       try {
         context.go(route);
-        debugPrint("✅ [Navigation] Retry successful for route: $route");
+        debugPrint("[Navigation] Retry successful for route: $route");
       } catch (e) {
         debugPrint("💥 [Navigation] Retry failed for $route: $e");
         Future.delayed(const Duration(milliseconds: 1000), () {
@@ -214,7 +214,7 @@ class _CloudToLocalLLMAppState extends State<CloudToLocalLLMApp> {
       // Try to get context from the current widget tree
       return navigatorKey.currentState?.context;
     } catch (e) {
-      debugPrint("🔍 [Navigation] Could not get alternative context: $e");
+      debugPrint("[Navigation] Could not get alternative context: $e");
       return null;
     }
   }
@@ -490,13 +490,13 @@ class _CloudToLocalLLMAppState extends State<CloudToLocalLLMApp> {
     // Only initialize on desktop platforms
     if (kIsWeb) {
       debugPrint(
-        "🌐 [SystemTray] Skipping tray initialization on web platform",
+        "[SystemTray] Skipping tray initialization on web platform",
       );
       return;
     }
 
     try {
-      debugPrint("🚀 [SystemTray] Initializing native tray service...");
+      debugPrint("[SystemTray] Initializing native tray service...");
 
       // Get services from providers
       final connectionManager = context.read<ConnectionManagerService>();
@@ -511,7 +511,7 @@ class _CloudToLocalLLMAppState extends State<CloudToLocalLLMApp> {
         connectionManager: connectionManager,
         localOllama: localOllama,
         onShowWindow: () {
-          debugPrint("🪟 [SystemTray] Native tray requested to show window");
+          debugPrint("[SystemTray] Native tray requested to show window");
           windowManager.showWindow();
         },
         onHideWindow: () {
@@ -519,12 +519,12 @@ class _CloudToLocalLLMAppState extends State<CloudToLocalLLMApp> {
           windowManager.hideToTray();
         },
         onSettings: () {
-          debugPrint("⚙️ [SystemTray] Native tray requested to open settings");
+          debugPrint("[SystemTray] Native tray requested to open settings");
           _navigateToRoute('/settings');
         },
         onQuit: () {
           debugPrint(
-            "🚪 [SystemTray] Native tray requested to quit application",
+            "[SystemTray] Native tray requested to quit application",
           );
           windowManager.forceClose();
         },
@@ -532,10 +532,10 @@ class _CloudToLocalLLMAppState extends State<CloudToLocalLLMApp> {
 
       if (success) {
         debugPrint(
-          "✅ [SystemTray] Native tray service initialized successfully",
+          "[SystemTray] Native tray service initialized successfully",
         );
       } else {
-        debugPrint("❌ [SystemTray] Failed to initialize native tray service");
+        debugPrint("[SystemTray] Failed to initialize native tray service");
       }
     } catch (e, stackTrace) {
       debugPrint("💥 [SystemTray] Failed to initialize system tray: $e");

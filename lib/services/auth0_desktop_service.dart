@@ -42,14 +42,14 @@ class Auth0DesktopService {
   /// Initialize the service and check for existing authentication
   Future<void> initialize() async {
     try {
-      debugPrint('🔐 [Auth0Desktop] Initializing desktop auth service');
+      debugPrint('[Auth0Desktop] Initializing desktop auth service');
       
       // Check if we have stored tokens
       await checkAuthStatus();
       
-      debugPrint('✅ [Auth0Desktop] Initialized successfully');
+      debugPrint('[Auth0Desktop] Initialized successfully');
     } catch (e) {
-      debugPrint('❌ [Auth0Desktop] Initialization error: $e');
+      debugPrint('[Auth0Desktop] Initialization error: $e');
     }
   }
 
@@ -68,10 +68,10 @@ class Auth0DesktopService {
         // Validate token is not expired
         if (await _isTokenValid(_accessToken!)) {
           _isAuthenticated = true;
-          debugPrint('✅ [Auth0Desktop] User is authenticated');
+          debugPrint('[Auth0Desktop] User is authenticated');
         } else {
           // Token expired, try to refresh
-          debugPrint('⚠️ [Auth0Desktop] Token expired, attempting refresh');
+          debugPrint('[Auth0Desktop] Token expired, attempting refresh');
           if (_refreshToken != null) {
             await _refreshAccessToken();
           } else {
@@ -80,12 +80,12 @@ class Auth0DesktopService {
         }
       } else {
         _isAuthenticated = false;
-        debugPrint('ℹ️ [Auth0Desktop] User is not authenticated');
+        debugPrint('[Auth0Desktop] User is not authenticated');
       }
       
       _authStateController.add(_isAuthenticated);
     } catch (e) {
-      debugPrint('❌ [Auth0Desktop] Error checking auth status: $e');
+      debugPrint('[Auth0Desktop] Error checking auth status: $e');
       _isAuthenticated = false;
       _authStateController.add(false);
     }
@@ -94,7 +94,7 @@ class Auth0DesktopService {
   /// Login with Auth0 using PKCE flow
   Future<void> login() async {
     try {
-      debugPrint('🔐 [Auth0Desktop] Starting Auth0 login with PKCE');
+      debugPrint('[Auth0Desktop] Starting Auth0 login with PKCE');
       
       // Generate PKCE values
       _codeVerifier = _generateCodeVerifier();
@@ -116,7 +116,7 @@ class Auth0DesktopService {
       // Give server a moment to start
       await Future.delayed(const Duration(milliseconds: 500));
       
-      debugPrint('🌐 [Auth0Desktop] Opening browser for authentication');
+      debugPrint('[Auth0Desktop] Opening browser for authentication');
       
       // Launch browser for authentication
       if (!await launchUrl(Uri.parse(authUrl), mode: LaunchMode.externalApplication)) {
@@ -133,7 +133,7 @@ class Auth0DesktopService {
       }
       
     } catch (e) {
-      debugPrint('❌ [Auth0Desktop] Login error: $e');
+      debugPrint('[Auth0Desktop] Login error: $e');
       rethrow;
     }
   }
@@ -148,11 +148,11 @@ class Auth0DesktopService {
       // Try to bind to IPv4 loopback, if that fails try any IPv4 interface
       try {
         server = await HttpServer.bind(InternetAddress.loopbackIPv4, 8080);
-        debugPrint('✅ [Auth0Desktop] Callback server listening on 127.0.0.1:8080');
+        debugPrint('[Auth0Desktop] Callback server listening on 127.0.0.1:8080');
       } catch (e) {
-        debugPrint('⚠️ [Auth0Desktop] Loopback bind failed, trying any IPv4: $e');
+        debugPrint('[Auth0Desktop] Loopback bind failed, trying any IPv4: $e');
         server = await HttpServer.bind(InternetAddress.anyIPv4, 8080);
-        debugPrint('✅ [Auth0Desktop] Callback server listening on 0.0.0.0:8080');
+        debugPrint('[Auth0Desktop] Callback server listening on 0.0.0.0:8080');
       }
       
       // Handle incoming requests
@@ -240,7 +240,7 @@ class Auth0DesktopService {
       
       // Close server
       await server.close(force: true);
-      debugPrint('✅ [Auth0Desktop] Callback received, server closed');
+      debugPrint('[Auth0Desktop] Callback received, server closed');
       
       return result;
       
@@ -255,7 +255,7 @@ class Auth0DesktopService {
   /// Exchange authorization code for tokens
   Future<void> handleAuthorizationCode(String code, String state) async {
     try {
-      debugPrint('🔄 [Auth0Desktop] Handling authorization code');
+      debugPrint('[Auth0Desktop] Handling authorization code');
       
       // Retrieve stored code verifier
       final storedVerifier = await _storage.read(key: _codeVerifierKey);
@@ -290,10 +290,10 @@ class Auth0DesktopService {
       _isAuthenticated = true;
       _authStateController.add(true);
       
-      debugPrint('✅ [Auth0Desktop] Authentication successful');
+      debugPrint('[Auth0Desktop] Authentication successful');
       
     } catch (e) {
-      debugPrint('❌ [Auth0Desktop] Error handling authorization code: $e');
+      debugPrint('[Auth0Desktop] Error handling authorization code: $e');
       await logout();
       rethrow;
     }
@@ -302,7 +302,7 @@ class Auth0DesktopService {
   /// Logout and clear all stored data
   Future<void> logout() async {
     try {
-      debugPrint('🔐 [Auth0Desktop] Logging out');
+      debugPrint('[Auth0Desktop] Logging out');
       
       // Clear all stored data
       await _storage.delete(key: _accessTokenKey);
@@ -317,10 +317,10 @@ class Auth0DesktopService {
       
       _authStateController.add(false);
       
-      debugPrint('✅ [Auth0Desktop] Logged out successfully');
+      debugPrint('[Auth0Desktop] Logged out successfully');
       
     } catch (e) {
-      debugPrint('❌ [Auth0Desktop] Logout error: $e');
+      debugPrint('[Auth0Desktop] Logout error: $e');
     }
   }
 
@@ -364,7 +364,7 @@ class Auth0DesktopService {
         .map((e) => '${Uri.encodeQueryComponent(e.key)}=${Uri.encodeQueryComponent(e.value)}')
         .join('&');
     
-    debugPrint('🔄 [Auth0Desktop] Exchanging code for tokens');
+    debugPrint('[Auth0Desktop] Exchanging code for tokens');
     
     final uri = Uri.https(AppConfig.auth0Domain, '/oauth/token');
     final response = await http.post(
@@ -376,12 +376,12 @@ class Auth0DesktopService {
     debugPrint('📥 [Auth0Desktop] Token response status: ${response.statusCode}');
     
     if (response.statusCode != 200) {
-      debugPrint('❌ [Auth0Desktop] Token exchange failed: ${response.body}');
+      debugPrint('[Auth0Desktop] Token exchange failed: ${response.body}');
       throw Exception('Token exchange failed: ${response.body}');
     }
     
     final tokenData = jsonDecode(response.body) as Map<String, dynamic>;
-    debugPrint('✅ [Auth0Desktop] Token exchange successful');
+    debugPrint('[Auth0Desktop] Token exchange successful');
     return tokenData;
   }
 
@@ -395,7 +395,7 @@ class Auth0DesktopService {
     
     if (response.statusCode == 200) {
       _currentUser = jsonDecode(response.body) as Map<String, dynamic>;
-      debugPrint('✅ [Auth0Desktop] User info fetched: ${_currentUser?['email']}');
+      debugPrint('[Auth0Desktop] User info fetched: ${_currentUser?['email']}');
     } else {
       throw Exception('Failed to fetch user info: ${response.body}');
     }
@@ -404,7 +404,7 @@ class Auth0DesktopService {
   /// Refresh the access token using refresh token
   Future<void> _refreshAccessToken() async {
     try {
-      debugPrint('🔄 [Auth0Desktop] Refreshing access token');
+      debugPrint('[Auth0Desktop] Refreshing access token');
       
       // Build form-urlencoded body manually
       final bodyParams = {
@@ -432,12 +432,12 @@ class Auth0DesktopService {
         await _storage.write(key: _accessTokenKey, value: _accessToken!);
         await _storage.write(key: _refreshTokenKey, value: _refreshToken!);
         
-        debugPrint('✅ [Auth0Desktop] Access token refreshed');
+        debugPrint('[Auth0Desktop] Access token refreshed');
       } else {
         throw Exception('Token refresh failed: ${response.body}');
       }
     } catch (e) {
-      debugPrint('❌ [Auth0Desktop] Error refreshing token: $e');
+      debugPrint('[Auth0Desktop] Error refreshing token: $e');
       await logout();
       rethrow;
     }
@@ -464,7 +464,7 @@ class Auth0DesktopService {
       return now.isBefore(expirationTime.subtract(const Duration(minutes: 5)));
       
     } catch (e) {
-      debugPrint('❌ [Auth0Desktop] Error validating token: $e');
+      debugPrint('[Auth0Desktop] Error validating token: $e');
       return false;
     }
   }

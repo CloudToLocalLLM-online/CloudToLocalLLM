@@ -26,7 +26,7 @@ class WebDownloadPromptService extends ChangeNotifier {
 
   /// Initialize the service
   Future<void> initialize() async {
-    debugPrint('🌐 [WebDownloadPrompt] Service disabled on desktop platform');
+    debugPrint('[WebDownloadPrompt] Service disabled on desktop platform');
     _isInitialized = true;
     _shouldShowPrompt = false;
     notifyListeners();
@@ -36,7 +36,7 @@ class WebDownloadPromptService extends ChangeNotifier {
   Future<void> markPromptSeen() async {
     _hasUserSeenPrompt = true;
     _shouldShowPrompt = false;
-    debugPrint('🌐 [WebDownloadPrompt] Prompt marked as seen (desktop stub)');
+    debugPrint('[WebDownloadPrompt] Prompt marked as seen (desktop stub)');
     notifyListeners();
   }
 
@@ -46,14 +46,14 @@ class WebDownloadPromptService extends ChangeNotifier {
     if (!_hasUserSeenPrompt) {
       await markPromptSeen();
     }
-    debugPrint('🌐 [WebDownloadPrompt] Prompt hidden (desktop stub)');
+    debugPrint('[WebDownloadPrompt] Prompt hidden (desktop stub)');
     notifyListeners();
   }
 
   /// Show the prompt from settings
   void showPromptFromSettings() {
     // No-op on desktop
-    debugPrint('🌐 [WebDownloadPrompt] Show prompt disabled on desktop');
+    debugPrint('[WebDownloadPrompt] Show prompt disabled on desktop');
   }
 
   /// Get prompt progress information

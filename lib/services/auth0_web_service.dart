@@ -43,9 +43,9 @@ class Auth0WebService {
       await checkAuthStatus();
 
       _isInitialized = true;
-      debugPrint('✅ Auth0 Web Service initialized');
+      debugPrint('Auth0 Web Service initialized');
     } catch (e) {
-      debugPrint('❌ Auth0 Web Service initialization error: $e');
+      debugPrint('Auth0 Web Service initialization error: $e');
       rethrow;
     }
   }
@@ -86,11 +86,11 @@ class Auth0WebService {
     }
 
     try {
-      debugPrint('🔐 Starting Auth0 login redirect...');
+      debugPrint('Starting Auth0 login redirect...');
       final bridge = js_util.getProperty(js_util.globalThis, 'auth0Bridge');
       if (bridge == null) {
         final error = Exception('Auth0 bridge not available');
-        debugPrint('❌ Auth0 login error: $error');
+        debugPrint('Auth0 login error: $error');
         throw error;
       }
       
@@ -105,7 +105,7 @@ class Auth0WebService {
         throw Exception('Auth0 login failed: $e');
       }
     } catch (e, stackTrace) {
-      debugPrint('❌ Auth0 login error: $e');
+      debugPrint('Auth0 login error: $e');
       debugPrint('Stack trace: $stackTrace');
       // Don't rethrow to prevent page reload - let the UI handle it
       throw e;
@@ -130,7 +130,7 @@ class Auth0WebService {
         _currentUser = user != null ? Map<String, dynamic>.from(js_util.dartify(user) as Map) : null;
         _accessToken = token?.toString();
 
-        debugPrint('✅ User authenticated: ${_currentUser?['email'] ?? _currentUser?['sub']}');
+        debugPrint('User authenticated: ${_currentUser?['email'] ?? _currentUser?['sub']}');
       } else {
         _currentUser = null;
         _accessToken = null;
@@ -141,7 +141,7 @@ class Auth0WebService {
         _authStateController.add(_isAuthenticated);
       }
     } catch (e) {
-      debugPrint('❌ Error checking auth status: $e');
+      debugPrint('Error checking auth status: $e');
       _isAuthenticated = false;
       _currentUser = null;
       _accessToken = null;
@@ -151,7 +151,7 @@ class Auth0WebService {
   /// Handle redirect callback after Auth0 login
   Future<bool> handleRedirectCallback() async {
     try {
-      debugPrint('🔄 Handling Auth0 redirect callback...');
+      debugPrint('Handling Auth0 redirect callback...');
       final bridge = js_util.getProperty(js_util.globalThis, 'auth0Bridge');
       if (bridge == null) return false;
       
@@ -160,7 +160,7 @@ class Auth0WebService {
       
       if (resultMap != null) {
         if (resultMap['success'] == true) {
-          debugPrint('✅ Auth0 callback handled successfully');
+          debugPrint('Auth0 callback handled successfully');
           await checkAuthStatus();
           return true;
         } else {
@@ -171,13 +171,13 @@ class Auth0WebService {
           
           // Show user-friendly error message
           if (error.contains('Service not found')) {
-            debugPrint('⚠️ Auth0 API not configured - authentication will work but tokens won\'t be scoped');
+            debugPrint(' Auth0 API not configured - authentication will work but tokens won\'t be scoped');
           }
           
           return false;
         }
       } else {
-        debugPrint('⚠️ No Auth0 callback to handle');
+        debugPrint(' No Auth0 callback to handle');
         return false;
       }
     } catch (e, stackTrace) {

@@ -94,7 +94,7 @@ class _CloudToLocalLLMPrivacyAppState extends State<CloudToLocalLLMPrivacyApp> {
 
   Future<void> _initializeDesktopServices() async {
     try {
-      debugPrint("🚀 [SystemTray] Initializing desktop services...");
+      debugPrint("[SystemTray] Initializing desktop services...");
 
       // Only initialize if platform supports it
       await widget.platformManager.initializeServiceSafely(
@@ -105,23 +105,23 @@ class _CloudToLocalLLMPrivacyAppState extends State<CloudToLocalLLMPrivacyApp> {
         },
       );
 
-      debugPrint("✅ [SystemTray] Desktop services initialized");
+      debugPrint("[SystemTray] Desktop services initialized");
     } catch (e, stackTrace) {
-      debugPrint("💥 [SystemTray] Failed to initialize desktop services: $e");
-      debugPrint("💥 [SystemTray] Stack trace: $stackTrace");
+      debugPrint("[SystemTray] Failed to initialize desktop services: $e");
+      debugPrint("[SystemTray] Stack trace: $stackTrace");
     }
   }
 
   void _navigateToRoute(String route) {
     try {
-      debugPrint("🧭 [Navigation] Attempting to navigate to route: $route");
+      debugPrint("[Navigation] Attempting to navigate to route: $route");
 
       BuildContext? context = navigatorKey.currentContext;
       context ??= navigatorKey.currentState?.context;
 
       if (context != null && context.mounted) {
         debugPrint(
-          "✅ [Navigation] Context available, executing navigation to: $route",
+          "[Navigation] Context available, executing navigation to: $route",
         );
 
         WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -129,7 +129,7 @@ class _CloudToLocalLLMPrivacyAppState extends State<CloudToLocalLLMPrivacyApp> {
             if (context!.mounted) {
               context.go(route);
               debugPrint(
-                "✅ [Navigation] Navigation command sent for route: $route",
+                "[Navigation] Navigation command sent for route: $route",
               );
             }
           } catch (e) {
@@ -140,7 +140,7 @@ class _CloudToLocalLLMPrivacyAppState extends State<CloudToLocalLLMPrivacyApp> {
         });
       } else {
         debugPrint(
-          "❌ [Navigation] Cannot navigate to $route: no valid context available",
+          "[Navigation] Cannot navigate to $route: no valid context available",
         );
         Future.delayed(const Duration(milliseconds: 500), () {
           _retryNavigation(route, 1);
@@ -154,18 +154,18 @@ class _CloudToLocalLLMPrivacyAppState extends State<CloudToLocalLLMPrivacyApp> {
 
   void _retryNavigation(String route, int attempt) {
     if (attempt > 3) {
-      debugPrint("❌ [Navigation] Max retry attempts reached for route: $route");
+      debugPrint("[Navigation] Max retry attempts reached for route: $route");
       return;
     }
 
-    debugPrint("🔄 [Navigation] Retry attempt $attempt for route: $route");
+    debugPrint("[Navigation] Retry attempt $attempt for route: $route");
 
     final context =
         navigatorKey.currentContext ?? navigatorKey.currentState?.context;
     if (context != null && context.mounted) {
       try {
         context.go(route);
-        debugPrint("✅ [Navigation] Retry successful for route: $route");
+        debugPrint("[Navigation] Retry successful for route: $route");
       } catch (e) {
         debugPrint("💥 [Navigation] Retry failed for $route: $e");
         Future.delayed(const Duration(milliseconds: 1000), () {
@@ -244,7 +244,7 @@ class _CloudToLocalLLMPrivacyAppState extends State<CloudToLocalLLMPrivacyApp> {
               localOllama.initialize();
             } else {
               debugPrint(
-                '🔗 [LocalOllama] Skipping initialization - not available on this platform',
+                '[LocalOllama] Skipping initialization - not available on this platform',
               );
             }
             return localOllama;
@@ -424,7 +424,7 @@ class _CloudToLocalLLMPrivacyAppState extends State<CloudToLocalLLMPrivacyApp> {
     _trayInitialized = true;
 
     try {
-      debugPrint("🔧 [SystemTray] Initializing tray service...");
+      debugPrint("[SystemTray] Initializing tray service...");
 
       final connectionManager = context.read<ConnectionManagerService>();
       final localOllama = context.read<LocalOllamaConnectionService>();
@@ -436,7 +436,7 @@ class _CloudToLocalLLMPrivacyAppState extends State<CloudToLocalLLMPrivacyApp> {
         connectionManager: connectionManager,
         localOllama: localOllama,
         onShowWindow: () {
-          debugPrint("🪟 [SystemTray] Native tray requested to show window");
+          debugPrint("[SystemTray] Native tray requested to show window");
           windowManager.showWindow();
         },
         onHideWindow: () {
@@ -444,12 +444,12 @@ class _CloudToLocalLLMPrivacyAppState extends State<CloudToLocalLLMPrivacyApp> {
           windowManager.hideToTray();
         },
         onSettings: () {
-          debugPrint("⚙️ [SystemTray] Native tray requested to open settings");
+          debugPrint("[SystemTray] Native tray requested to open settings");
           _navigateToRoute('/settings');
         },
         onQuit: () {
           debugPrint(
-            "🚪 [SystemTray] Native tray requested to quit application",
+            "[SystemTray] Native tray requested to quit application",
           );
           windowManager.forceClose();
         },
@@ -457,14 +457,14 @@ class _CloudToLocalLLMPrivacyAppState extends State<CloudToLocalLLMPrivacyApp> {
 
       if (success) {
         debugPrint(
-          "✅ [SystemTray] Native tray service initialized successfully",
+          "[SystemTray] Native tray service initialized successfully",
         );
       } else {
         debugPrint("❌ [SystemTray] Failed to initialize native tray service");
       }
     } catch (e, stackTrace) {
-      debugPrint("💥 [SystemTray] Failed to initialize desktop services: $e");
-      debugPrint("💥 [SystemTray] Stack trace: $stackTrace");
+      debugPrint("[SystemTray] Failed to initialize desktop services: $e");
+      debugPrint("[SystemTray] Stack trace: $stackTrace");
     }
   }
 }

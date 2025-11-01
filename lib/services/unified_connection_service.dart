@@ -44,7 +44,7 @@ class UnifiedConnectionService extends ChangeNotifier {
   Future<bool> initialize() async {
     if (_connectionManager == null) {
       debugPrint(
-        "🔗 [UnifiedConnection] Connection manager not available, cannot initialize connection service",
+        "[UnifiedConnection] Connection manager not available, cannot initialize connection service",
       );
       return false;
     }
@@ -191,7 +191,7 @@ class UnifiedConnectionService extends ChangeNotifier {
 
   void _setError(String error) {
     _error = error;
-    debugPrint('🔗 [UnifiedConnection] Error: $error');
+    debugPrint('[UnifiedConnection] Error: $error');
     notifyListeners();
   }
 

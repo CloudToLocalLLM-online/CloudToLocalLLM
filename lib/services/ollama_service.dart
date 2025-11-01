@@ -296,7 +296,7 @@ class OllamaService extends ChangeNotifier {
       _clearError();
 
       final url = _isWeb ? '$_baseUrl/api/delete' : '$_baseUrl/api/delete';
-      debugPrint('🦙 [OllamaService] Deleting model from: $url');
+      debugPrint('[OllamaService] Deleting model from: $url');
 
       final response = await http
           .delete(
@@ -308,11 +308,11 @@ class OllamaService extends ChangeNotifier {
 
       final success = response.statusCode == 200;
       debugPrint(
-        '🦙 [OllamaService] Model deletion ${success ? 'successful' : 'failed'} via ${_isWeb ? 'bridge' : 'direct connection'}',
+        '[OllamaService] Model deletion ${success ? 'successful' : 'failed'} via ${_isWeb ? 'bridge' : 'direct connection'}',
       );
 
       if (!success) {
-        debugPrint('🦙 [OllamaService] Delete response: ${response.body}');
+        debugPrint('[OllamaService] Delete response: ${response.body}');
         _setError('Failed to delete model: HTTP ${response.statusCode}');
       } else {
         // Refresh models list after successful deletion
@@ -322,7 +322,7 @@ class OllamaService extends ChangeNotifier {
       return success;
     } catch (e) {
       _setError('Failed to delete model: $e');
-      debugPrint('🦙 [OllamaService] Error deleting model: $e');
+      debugPrint('[OllamaService] Error deleting model: $e');
       return false;
     } finally {
       _setLoading(false);

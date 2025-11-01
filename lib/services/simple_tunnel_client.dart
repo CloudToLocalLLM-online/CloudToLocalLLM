@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:web_socket_channel/io.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
@@ -43,8 +42,11 @@ class SimpleTunnelClient with ChangeNotifier {
     debugPrint('[SimpleTunnelClient] Connecting to $uri...');
 
     try {
-      final socket = await WebSocket.connect(uri.toString());
-      _channel = IOWebSocketChannel(socket);
+      _channel = IOWebSocketChannel.connect(uri);
+
+      // Wait for the channel to be ready
+      await _channel!.ready;
+
       _isConnected = true;
       _reconnectAttempts = 0;
       notifyListeners();
