@@ -52,14 +52,6 @@ class ConversationStorageService {
         debugPrint(
           '� [ConversationStorage] Privacy: Data stored in local SQLite file only',
         );
-`n      }`n`n      await _initializeDatabase();
-      _isInitialized = true;
-      debugPrint('� [ConversationStorage] Service initialized successfully');
-    } catch (e, stackTrace) {
-      debugPrint('� [ConversationStorage] Failed to initialize: $e');
-      debugPrint('� [ConversationStorage] Stack trace: $stackTrace');
-      rethrow;
-    }
   }
 
   /// Initialize the database with enhanced privacy features
