@@ -52,8 +52,7 @@ class ConversationStorageService {
         debugPrint(
           '� [ConversationStorage] Privacy: Data stored in local SQLite file only',
         );
-
-      await _initializeDatabase();
+`n      }`n`n      await _initializeDatabase();
       _isInitialized = true;
       debugPrint('� [ConversationStorage] Service initialized successfully');
     } catch (e, stackTrace) {
