@@ -1,9 +1,10 @@
 // ignore_for_file: avoid_web_libraries_in_flutter
-// dart:js_util is required for Auth0 bridge integration and doesn't have a direct dart:js_interop equivalent
 import 'dart:async';
-import 'dart:js_util' as js_util; // ignore: deprecated_member_use
 import 'package:flutter/foundation.dart';
 import 'auth0_service.dart';
+import 'auth0_bridge_interop.dart';
+import 'dart:js_interop';
+import 'dart:js_interop_unsafe';
 
 /// Auth0 Web Service for Flutter Web
 /// Provides authentication using Auth0's JavaScript SDK
@@ -37,10 +38,7 @@ class Auth0WebService implements Auth0Service {
 
   @override
   Future<String?> getIdToken({bool forceRefresh = false}) async {
-    // For web, the token is typically managed by the Auth0 JS SDK,
-    // which handles refreshing in the background. We can just return the current token.
     if (forceRefresh) {
-      // We can try to check the auth status again to potentially get a new token
       await checkAuthStatus();
     }
     return _accessToken;
@@ -57,12 +55,8 @@ class Auth0WebService implements Auth0Service {
     if (_isInitialized) return;
 
     try {
-      // Wait for Auth0 bridge to be available
       await _waitForAuth0Bridge();
-
-      // Check if already authenticated (e.g., after redirect)
       await checkAuthStatus();
-
       _isInitialized = true;
       debugPrint('Auth0 Web Service initialized');
     } catch (e) {
@@ -89,15 +83,7 @@ class Auth0WebService implements Auth0Service {
 
   /// Check if Auth0 bridge is available
   bool _isAuth0BridgeAvailable() {
-    try {
-      final bridge = js_util.getProperty(js_util.globalThis, 'auth0Bridge');
-      if (bridge == null) return false;
-      
-      final result = js_util.callMethod(bridge, 'isInitialized', []);
-      return result == true;
-    } catch (e) {
-      return false;
-    }
+    return auth0Bridge?.isInitialized() ?? false;
   }
 
   /// Login with Auth0 Universal Login
@@ -109,27 +95,10 @@ class Auth0WebService implements Auth0Service {
 
     try {
       debugPrint('Starting Auth0 login redirect...');
-      final bridge = js_util.getProperty(js_util.globalThis, 'auth0Bridge');
-      if (bridge == null) {
-        final error = Exception('Auth0 bridge not available');
-        debugPrint('Auth0 login error: $error');
-        throw error;
-      }
-      
-      // Wrap in try-catch to handle any JavaScript errors gracefully
-      try {
-        await js_util.promiseToFuture(js_util.callMethod(bridge, 'loginWithGoogle', []));
-        // Note: This will redirect the page, so code after this won't execute
-      } on Object catch (e, stackTrace) {
-        debugPrint(' Auth0 login JavaScript error: $e');
-        debugPrint('Stack trace: $stackTrace');
-        // Re-throw with more context
-        throw Exception('Auth0 login failed: $e');
-      }
+      await auth0Bridge!.loginWithGoogle().toDart;
     } catch (e, stackTrace) {
       debugPrint('Auth0 login error: $e');
       debugPrint('Stack trace: $stackTrace');
-      // Don't rethrow to prevent page reload - let the UI handle it
       rethrow;
     }
   }
@@ -137,20 +106,25 @@ class Auth0WebService implements Auth0Service {
   /// Check authentication status
   Future<void> checkAuthStatus() async {
     try {
-      final bridge = js_util.getProperty(js_util.globalThis, 'auth0Bridge');
-      if (bridge == null) return;
-      
-      final isAuth = await js_util.promiseToFuture(js_util.callMethod(bridge, 'isAuthenticated', []));
+      final isAuth = await auth0Bridge!.isAuthenticated().toDart;
       final wasAuthenticated = _isAuthenticated;
-      _isAuthenticated = isAuth == true;
+      _isAuthenticated = isAuth.isA<JSBoolean>() && isAuth.toDart;
 
       if (_isAuthenticated) {
-        // Get user info and token
-        final user = await js_util.promiseToFuture(js_util.callMethod(bridge, 'getUser', []));
-        final token = await js_util.promiseToFuture(js_util.callMethod(bridge, 'getAccessToken', []));
+        final user = await auth0Bridge!.getUser().toDart;
+        final token = await auth0Bridge!.getAccessToken().toDart;
 
-        _currentUser = user != null ? Map<String, dynamic>.from(js_util.dartify(user) as Map) : null;
-        _accessToken = token?.toString();
+        if (user != null && user.isA<JSObject>()) {
+          _currentUser = _jsObjectToMap(user as JSObject);
+        } else {
+          _currentUser = null;
+        }
+        
+        if (token != null && token.isA<JSString>()) {
+          _accessToken = token.toDart;
+        } else {
+          _accessToken = null;
+        }
 
         debugPrint('User authenticated: ${_currentUser?['email'] ?? _currentUser?['sub']}');
       } else {
@@ -158,7 +132,6 @@ class Auth0WebService implements Auth0Service {
         _accessToken = null;
       }
 
-      // Notify listeners if auth state changed
       if (wasAuthenticated != _isAuthenticated) {
         _authStateController.add(_isAuthenticated);
       }
@@ -175,28 +148,21 @@ class Auth0WebService implements Auth0Service {
   Future<bool> handleRedirectCallback() async {
     try {
       debugPrint('Handling Auth0 redirect callback...');
-      final bridge = js_util.getProperty(js_util.globalThis, 'auth0Bridge');
-      if (bridge == null) return false;
+      final result = await auth0Bridge!.handleRedirectCallback().toDart;
       
-      final result = await js_util.promiseToFuture(js_util.callMethod(bridge, 'handleRedirectCallback', []));
-      final resultMap = result != null ? Map<String, dynamic>.from(js_util.dartify(result) as Map) : null;
-      
-      if (resultMap != null) {
+      if (result != null && result.isA<JSObject>()) {
+        final resultMap = _jsObjectToMap(result as JSObject);
         if (resultMap['success'] == true) {
           debugPrint('Auth0 callback handled successfully');
           await checkAuthStatus();
           return true;
         } else {
-          // Handle error from Auth0
           final error = resultMap['error']?.toString() ?? 'Unknown error';
           final errorCode = resultMap['errorCode']?.toString();
           debugPrint(' Auth0 callback error: $error (code: $errorCode)');
-          
-          // Show user-friendly error message
           if (error.contains('Service not found')) {
             debugPrint(' Auth0 API not configured - authentication will work but tokens won\'t be scoped');
           }
-          
           return false;
         }
       } else {
@@ -215,17 +181,12 @@ class Auth0WebService implements Auth0Service {
   Future<void> logout() async {
     try {
       debugPrint(' Logging out from Auth0...');
-      final bridge = js_util.getProperty(js_util.globalThis, 'auth0Bridge');
-      if (bridge == null) throw Exception('Auth0 bridge not available');
-      
-      await js_util.promiseToFuture(js_util.callMethod(bridge, 'logout', []));
+      await auth0Bridge!.logout().toDart;
       
       _isAuthenticated = false;
       _currentUser = null;
       _accessToken = null;
       _authStateController.add(false);
-      
-      // Note: This will redirect the page, so code after this won't execute
     } catch (e) {
       debugPrint(' Auth0 logout error: $e');
       rethrow;
@@ -236,6 +197,18 @@ class Auth0WebService implements Auth0Service {
   @override
   void dispose() {
     _authStateController.close();
+  }
+
+  Map<String, dynamic> _jsObjectToMap(JSObject jsObject) {
+    final map = <String, dynamic>{};
+    final keys = jsObject.globalContext['Object']
+        .getProperty('keys'.toJS)
+        .callAsFunction(jsObject.jsify())!
+        .dartify() as List;
+    for (final key in keys) {
+      map[key.toString()] = jsObject.getProperty(key.toString().toJS)?.dartify();
+    }
+    return map;
   }
 }
 
