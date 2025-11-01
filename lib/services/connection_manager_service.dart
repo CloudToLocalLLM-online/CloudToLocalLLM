@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'local_ollama_connection_service.dart';
-import 'tunnel_configuration_service.dart';
+import 'tunnel_service.dart';
 import 'streaming_service.dart';
 import 'ollama_service.dart';
 import 'cloud_streaming_service.dart';
@@ -12,7 +12,7 @@ enum ConnectionType { none, local, cloud }
 
 class ConnectionManagerService extends ChangeNotifier {
   final LocalOllamaConnectionService _localOllama;
-  final TunnelConfigurationService _tunnelConfigService;
+  final TunnelService _tunnelService;
   final AuthService _authService;
 
   bool _preferLocalOllama = true;
@@ -21,18 +21,18 @@ class ConnectionManagerService extends ChangeNotifier {
 
   ConnectionManagerService({
     required LocalOllamaConnectionService localOllama,
-    required TunnelConfigurationService tunnelConfigService,
+    required TunnelService tunnelService,
     required AuthService authService,
   })  : _localOllama = localOllama,
-        _tunnelConfigService = tunnelConfigService,
+        _tunnelService = tunnelService,
         _authService = authService {
     _localOllama.addListener(_onConnectionChanged);
-    _tunnelConfigService.addListener(_onConnectionChanged);
+    _tunnelService.addListener(_onConnectionChanged);
     _authService.addListener(_onAuthChanged);
   }
 
   bool get hasLocalConnection => _localOllama.isConnected;
-  bool get hasCloudConnection => _tunnelConfigService.tunnelClient?.isConnected ?? false;
+  bool get hasCloudConnection => _tunnelService.isConnected;
   bool get hasAnyConnection => hasLocalConnection || hasCloudConnection;
   String? get selectedModel => _selectedModel;
   List<String> get availableModels => _getAvailableModels();

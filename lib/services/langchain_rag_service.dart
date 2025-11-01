@@ -11,13 +11,11 @@ import 'package:flutter/foundation.dart';
 import 'package:langchain/langchain.dart';
 import 'package:langchain_ollama/langchain_ollama.dart';
 
-import '../utils/tunnel_logger.dart';
 import 'langchain_ollama_service.dart';
 
 /// Document Q&A service using RAG (Retrieval-Augmented Generation)
 class LangChainRAGService extends ChangeNotifier {
   final LangChainOllamaService _ollamaService;
-  final TunnelLogger _logger = TunnelLogger('LangChainRAG');
 
   // RAG components
   MemoryVectorStore? _vectorStore;
@@ -50,7 +48,7 @@ class LangChainRAGService extends ChangeNotifier {
       _setLoading(true);
       _clearError();
 
-      _logger.info('Initializing RAG service');
+      debugPrint('[langchain_rag_service] Initializing RAG service');
 
       // Ensure Ollama service is initialized
       if (!_ollamaService.isInitialized) {
@@ -67,15 +65,10 @@ class LangChainRAGService extends ChangeNotifier {
       await _createRAGChain();
 
       _isInitialized = true;
-      _logger.info('RAG service initialized successfully');
+      debugPrint('[langchain_rag_service] RAG service initialized successfully');
     } catch (e, stackTrace) {
       _error = 'Failed to initialize RAG service: $e';
-      _logger.logTunnelError(
-        'RAG_INIT_FAILED',
-        _error!,
-        error: e,
-        stackTrace: stackTrace,
-      );
+      debugPrint('[LangChainRAG] ERROR: RAG_INIT_FAILED - $_error - $e');
       rethrow;
     } finally {
       _setLoading(false);
@@ -91,13 +84,9 @@ class LangChainRAGService extends ChangeNotifier {
         baseUrl: _getOllamaBaseUrl(),
       );
 
-      _logger.info('Embeddings model initialized');
+      debugPrint('[langchain_rag_service] Embeddings model initialized');
     } catch (e) {
-      _logger.logTunnelError(
-        'EMBEDDINGS_INIT_FAILED',
-        'Failed to initialize embeddings model',
-        error: e,
-      );
+      debugPrint('[LangChainRAG] ERROR: EMBEDDINGS_INIT_FAILED - Failed to initialize embeddings model - $e');
       rethrow;
     }
   }
@@ -118,13 +107,9 @@ class LangChainRAGService extends ChangeNotifier {
         ),
       );
 
-      _logger.info('Vector store created successfully');
+      debugPrint('[langchain_rag_service] Vector store created successfully');
     } catch (e) {
-      _logger.logTunnelError(
-        'VECTOR_STORE_FAILED',
-        'Failed to create vector store',
-        error: e,
-      );
+      debugPrint('[LangChainRAG] ERROR: VECTOR_STORE_FAILED - Failed to create vector store - $e');
       rethrow;
     }
   }
@@ -173,13 +158,9 @@ Guidelines:
               .pipe(_ollamaService.chatModel!)
               .pipe(const StringOutputParser<ChatResult>());
 
-      _logger.info('RAG chain created successfully');
+      debugPrint('[langchain_rag_service] RAG chain created successfully');
     } catch (e) {
-      _logger.logTunnelError(
-        'RAG_CHAIN_FAILED',
-        'Failed to create RAG chain',
-        error: e,
-      );
+      debugPrint('[LangChainRAG] ERROR: RAG_CHAIN_FAILED - Failed to create RAG chain - $e');
       rethrow;
     }
   }
@@ -221,20 +202,12 @@ Guidelines:
       _documents.addAll(documents);
       _documentCount = _documents.length;
 
-      _logger.info(
-        'Documents added successfully',
-        context: {'count': documents.length, 'totalDocuments': _documentCount},
-      );
+      debugPrint('[LangChainRAG] Documents added successfully: ${documents.length} documents, total: $_documentCount');
 
       notifyListeners();
     } catch (e, stackTrace) {
       _error = 'Failed to add documents: $e';
-      _logger.logTunnelError(
-        'DOCUMENTS_ADD_FAILED',
-        _error!,
-        error: e,
-        stackTrace: stackTrace,
-      );
+      debugPrint('[LangChainRAG] ERROR: DOCUMENTS_ADD_FAILED - $_error - $e');
       rethrow;
     } finally {
       _setLoading(false);
@@ -273,18 +246,10 @@ Guidelines:
 
       await addDocuments(chunks, metadatas: metadatas);
 
-      _logger.info(
-        'Document loaded from file',
-        context: {'fileName': fileName, 'chunks': chunks.length},
-      );
+      debugPrint('[LangChainRAG] Document loaded from file: $fileName (${chunks.length} chunks)');
     } catch (e, stackTrace) {
       _error = 'Failed to load document from file: $e';
-      _logger.logTunnelError(
-        'FILE_LOAD_FAILED',
-        _error!,
-        error: e,
-        stackTrace: stackTrace,
-      );
+      debugPrint('[LangChainRAG] ERROR: FILE_LOAD_FAILED - $_error - $e');
       rethrow;
     } finally {
       _setLoading(false);
@@ -305,32 +270,18 @@ Guidelines:
       _setLoading(true);
       _clearError();
 
-      _logger.info(
-        'Processing question',
-        context: {
-          'questionLength': question.length,
-          'documentCount': _documentCount,
-        },
-      );
+      debugPrint('[LangChainRAG] Processing question: length=${question.length}, docs=$_documentCount');
 
       // Invoke RAG chain
       final answer = await _ragChain!.invoke(question);
 
       final answerString = answer.toString();
-      _logger.info(
-        'Question answered successfully',
-        context: {'answerLength': answerString.length},
-      );
+      debugPrint('[LangChainRAG] Question answered successfully: length=${answerString.length}');
 
       return answerString;
     } catch (e, stackTrace) {
       _error = 'Failed to answer question: $e';
-      _logger.logTunnelError(
-        'QUESTION_FAILED',
-        _error!,
-        error: e,
-        stackTrace: stackTrace,
-      );
+      debugPrint('[LangChainRAG] ERROR: QUESTION_FAILED - $_error - $e');
       rethrow;
     } finally {
       _setLoading(false);
@@ -347,11 +298,7 @@ Guidelines:
       final results = await _retriever!.invoke(query);
       return results.take(limit).toList();
     } catch (e) {
-      _logger.logTunnelError(
-        'SEARCH_FAILED',
-        'Failed to search documents',
-        error: e,
-      );
+      debugPrint('[LangChainRAG] ERROR: SEARCH_FAILED - Failed to search documents - $e');
       rethrow;
     }
   }
@@ -366,14 +313,10 @@ Guidelines:
       await _createVectorStore();
       await _createRAGChain();
 
-      _logger.info('All documents cleared');
+      debugPrint('[langchain_rag_service] All documents cleared');
       notifyListeners();
     } catch (e) {
-      _logger.logTunnelError(
-        'CLEAR_DOCUMENTS_FAILED',
-        'Failed to clear documents',
-        error: e,
-      );
+      debugPrint('[LangChainRAG] ERROR: CLEAR_DOCUMENTS_FAILED - Failed to clear documents - $e');
       rethrow;
     }
   }
@@ -401,3 +344,4 @@ Guidelines:
     super.dispose();
   }
 }
+

@@ -12,13 +12,12 @@ import 'package:langchain/langchain.dart';
 import 'package:langchain_ollama/langchain_ollama.dart';
 
 import '../models/message.dart';
-import '../utils/tunnel_logger.dart';
 import 'connection_manager_service.dart';
 
 /// Enhanced Ollama service using LangChain framework
 class LangChainOllamaService extends ChangeNotifier {
   final ConnectionManagerService _connectionManager;
-  final TunnelLogger _logger = TunnelLogger('LangChainOllama');
+  
 
   // LangChain components
   ChatOllama? _chatModel;
@@ -56,7 +55,7 @@ class LangChainOllamaService extends ChangeNotifier {
       _setLoading(true);
       _clearError();
 
-      _logger.info('Initializing LangChain Ollama service');
+      debugPrint('[langchain_ollama_service] Initializing LangChain Ollama service');
 
       // Wait for connection manager to be ready
       if (!_connectionManager.hasAnyConnection) {
@@ -70,15 +69,10 @@ class LangChainOllamaService extends ChangeNotifier {
       await _loadAvailableModels();
 
       _isInitialized = true;
-      _logger.info('LangChain Ollama service initialized successfully');
+      debugPrint('[langchain_ollama_service] LangChain Ollama service initialized successfully');
     } catch (e, stackTrace) {
       _error = 'Failed to initialize LangChain service: $e';
-      _logger.logTunnelError(
-        'LANGCHAIN_INIT_FAILED',
-        _error!,
-        error: e,
-        stackTrace: stackTrace,
-      );
+      debugPrint('[LangChainOllama] Initialization failed: $e');
       rethrow;
     } finally {
       _setLoading(false);
@@ -108,13 +102,9 @@ class LangChainOllamaService extends ChangeNotifier {
       // Create conversation chain with prompt template
       await _createConversationChain();
 
-      _logger.info('Chat model initialized', context: {'model': modelName});
+      debugPrint('[LangChainOllama] Chat model initialized: $modelName');
     } catch (e) {
-      _logger.logTunnelError(
-        'CHAT_MODEL_INIT_FAILED',
-        'Failed to initialize chat model: $modelName',
-        error: e,
-      );
+      debugPrint('[LangChainOllama] Chat model init failed: $modelName - $e');
       rethrow;
     }
   }
@@ -146,13 +136,9 @@ class LangChainOllamaService extends ChangeNotifier {
               .pipe(_chatModel!)
               .pipe(const StringOutputParser<ChatResult>());
 
-      _logger.info('Conversation chain created successfully');
+      debugPrint('[langchain_ollama_service] Conversation chain created successfully');
     } catch (e) {
-      _logger.logTunnelError(
-        'CONVERSATION_CHAIN_FAILED',
-        'Failed to create conversation chain',
-        error: e,
-      );
+      debugPrint('[LangChainOllama] Conversation chain failed: $e');
       rethrow;
     }
   }
@@ -203,16 +189,9 @@ class LangChainOllamaService extends ChangeNotifier {
         ];
       }
 
-      _logger.info(
-        'Available models loaded',
-        context: {'count': _availableModels.length, 'models': _availableModels},
-      );
+      debugPrint('[LangChainOllama] Available models loaded: ${_availableModels.length}');
     } catch (e) {
-      _logger.logTunnelError(
-        'MODELS_LOAD_FAILED',
-        'Failed to load available models',
-        error: e,
-      );
+      debugPrint('[LangChainOllama] Models load failed: $e');
       // Don't rethrow - this is not critical for basic functionality
     }
   }
@@ -235,10 +214,7 @@ class LangChainOllamaService extends ChangeNotifier {
       // Get or create conversation memory for this conversation
       final memory = _getConversationMemory(convId);
 
-      _logger.info(
-        'Sending message',
-        context: {'conversationId': convId, 'messageLength': message.length},
-      );
+      debugPrint('[LangChainOllama] Sending message: convId=$convId, length=${message.length}');
 
       // Invoke the conversation chain
       final response = await _conversationChain!.invoke({'input': message});
@@ -253,23 +229,12 @@ class LangChainOllamaService extends ChangeNotifier {
       // Update local conversation history
       _updateConversationHistory(convId, message, responseString);
 
-      _logger.info(
-        'Message processed successfully',
-        context: {
-          'conversationId': convId,
-          'responseLength': responseString.length,
-        },
-      );
+      debugPrint('[LangChainOllama] Message processed: convId=$convId, length=${responseString.length}');
 
       return responseString;
     } catch (e, stackTrace) {
       _error = 'Failed to send message: $e';
-      _logger.logTunnelError(
-        'MESSAGE_SEND_FAILED',
-        _error!,
-        error: e,
-        stackTrace: stackTrace,
-      );
+      debugPrint('[LangChainOllama] Message send failed: $e');
       rethrow;
     } finally {
       _setLoading(false);
@@ -323,13 +288,10 @@ class LangChainOllamaService extends ChangeNotifier {
 
       await _initializeChatModel(modelName);
 
-      _logger.info(
-        'Model switched successfully',
-        context: {'previousModel': _currentModel, 'newModel': modelName},
-      );
+      debugPrint('[LangChainOllama] Model switched: ${_currentModel} -> $modelName');
     } catch (e) {
       _error = 'Failed to switch model: $e';
-      _logger.logTunnelError('MODEL_SWITCH_FAILED', _error!, error: e);
+      debugPrint('[LangChainOllama] Model switch failed: $e');
       rethrow;
     } finally {
       _setLoading(false);
@@ -368,3 +330,4 @@ class LangChainOllamaService extends ChangeNotifier {
     super.dispose();
   }
 }
+

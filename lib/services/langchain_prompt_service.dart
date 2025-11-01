@@ -8,7 +8,6 @@ import 'package:flutter/foundation.dart';
 import 'package:langchain/langchain.dart';
 
 import '../models/prompt_template_model.dart';
-import '../utils/tunnel_logger.dart';
 
 /// Prompt template categories
 enum PromptCategory {
@@ -23,7 +22,7 @@ enum PromptCategory {
 
 /// Advanced prompt management service
 class LangChainPromptService extends ChangeNotifier {
-  final TunnelLogger _logger = TunnelLogger('LangChainPrompt');
+  
 
   // Built-in prompt templates
   final Map<String, ChatPromptTemplate> _builtInTemplates = {};
@@ -226,10 +225,7 @@ Guidelines:
       isBuiltIn: true,
     );
 
-    _logger.info(
-      'Built-in prompt templates initialized',
-      context: {'count': _builtInTemplates.length},
-    );
+    debugPrint('[LangChainPrompt] Built-in prompt templates initialized: ${_builtInTemplates.length}');
   }
 
   /// Get prompt template by ID
@@ -259,13 +255,7 @@ Guidelines:
     _activeTemplateId = templateId;
     _templateVariables = variables ?? {};
 
-    _logger.info(
-      'Active template set',
-      context: {
-        'templateId': templateId,
-        'variableCount': _templateVariables.length,
-      },
-    );
+    debugPrint('[LangChainPrompt] Active template set: $templateId (${_templateVariables.length} variables)');
 
     notifyListeners();
   }
@@ -307,10 +297,7 @@ Guidelines:
       isBuiltIn: false,
     );
 
-    _logger.info(
-      'Custom template created',
-      context: {'templateId': id, 'name': name, 'category': category.name},
-    );
+    debugPrint('[LangChainPrompt] Custom template created: $id ($name, ${category.name})');
 
     notifyListeners();
   }
@@ -329,10 +316,7 @@ Guidelines:
       _templateVariables.clear();
     }
 
-    _logger.info(
-      'Custom template deleted',
-      context: {'templateId': templateId},
-    );
+    debugPrint('[LangChainPrompt] Custom template deleted: $templateId');
 
     notifyListeners();
   }
@@ -358,12 +342,7 @@ Guidelines:
       final prompt = template.formatPrompt(vars);
       return prompt.toChatMessages();
     } catch (e) {
-      _logger.logTunnelError(
-        'PROMPT_FORMAT_FAILED',
-        'Failed to format prompt template',
-        context: {'templateId': id, 'variables': vars.keys.toList()},
-        error: e,
-      );
+      debugPrint('[LangChainPrompt] Prompt format failed: $e (template: $id)');
       rethrow;
     }
   }
@@ -403,3 +382,4 @@ Guidelines:
     notifyListeners();
   }
 }
+

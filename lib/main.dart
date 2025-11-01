@@ -14,7 +14,6 @@ import 'services/enhanced_user_tier_service.dart';
 import 'services/ollama_service.dart';
 import 'services/streaming_proxy_service.dart';
 import 'services/unified_connection_service.dart';
-import 'services/tunnel_configuration_service.dart';
 import 'services/tunnel_service.dart';
 import 'services/local_ollama_connection_service.dart';
 import 'services/connection_manager_service.dart';
@@ -242,19 +241,13 @@ class _CloudToLocalLLMAppState extends State<CloudToLocalLLMApp> {
             return tierService;
           },
         ),
-        // Tunnel Service (modern implementation)
+        // Tunnel Service
         ChangeNotifierProxyProvider<AuthService, TunnelService>(
           create: (context) => TunnelService(
             authService: context.read<AuthService>(),
           ),
           update: (context, authService, previous) =>
               previous ?? TunnelService(authService: authService),
-        ),
-        // Legacy Tunnel Configuration Service (for backward compatibility)
-        ChangeNotifierProvider(
-          create: (context) => TunnelConfigurationService(
-            authService: context.read<AuthService>(),
-          ),
         ),
         // Streaming proxy service
         ChangeNotifierProvider(
@@ -379,11 +372,11 @@ class _CloudToLocalLLMAppState extends State<CloudToLocalLLMApp> {
         ChangeNotifierProvider(
           create: (context) {
             final localOllama = context.read<LocalOllamaConnectionService>();
-            final tunnelConfigService = context.read<TunnelConfigurationService>();
+            final tunnelService = context.read<TunnelService>();
             final authService = context.read<AuthService>();
             final connectionManager = ConnectionManagerService(
               localOllama: localOllama,
-              tunnelConfigService: tunnelConfigService,
+              tunnelService: tunnelService,
               authService: authService,
             );
             // Don't initialize immediately - let it initialize after auth

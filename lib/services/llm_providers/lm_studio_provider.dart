@@ -4,14 +4,13 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
 import 'base_llm_provider.dart';
-import '../../utils/tunnel_logger.dart';
 
 /// LM Studio LLM provider implementation
 ///
 /// Provides integration with LM Studio instances through OpenAI-compatible API
 /// endpoints, supporting model management, streaming, and chat completions.
 class LMStudioProvider extends BaseLLMProvider {
-  final TunnelLogger _logger = TunnelLogger('LMStudioProvider');
+  
 
   // State
   bool _isAvailable = false;
@@ -80,7 +79,7 @@ class LMStudioProvider extends BaseLLMProvider {
       _setLoading(true);
       _clearError();
 
-      _logger.info('Initializing LM Studio provider');
+      debugPrint('[lm_studio_provider] Initializing LM Studio provider');
 
       // Test connection
       await testConnection();
@@ -88,10 +87,10 @@ class LMStudioProvider extends BaseLLMProvider {
       // Load available models
       await refreshModels();
 
-      _logger.info('LM Studio provider initialized successfully');
+      debugPrint('[lm_studio_provider] LM Studio provider initialized successfully');
     } catch (e) {
       _lastError = 'Failed to initialize LM Studio provider: $e';
-      _logger.logTunnelError('LMSTUDIO_INIT_FAILED', _lastError!, error: e);
+      debugPrint('[lm_studio_provider] LMSTUDIO_INIT_FAILED: e');
       rethrow;
     } finally {
       _setLoading(false);
@@ -104,18 +103,18 @@ class LMStudioProvider extends BaseLLMProvider {
       _setConnecting(true);
       _clearError();
 
-      _logger.info('Connecting to LM Studio');
+      debugPrint('[lm_studio_provider] Connecting to LM Studio');
 
       final success = await testConnection();
       if (success) {
         _isAvailable = true;
-        _logger.info('Connected to LM Studio successfully');
+        debugPrint('[lm_studio_provider] Connected to LM Studio successfully');
       } else {
         throw Exception('Connection test failed');
       }
     } catch (e) {
       _lastError = 'Failed to connect to LM Studio: $e';
-      _logger.logTunnelError('LMSTUDIO_CONNECT_FAILED', _lastError!, error: e);
+      debugPrint('[lm_studio_provider] LMSTUDIO_CONNECT_FAILED: e');
       _isAvailable = false;
       rethrow;
     } finally {
@@ -130,7 +129,7 @@ class LMStudioProvider extends BaseLLMProvider {
     _availableModels.clear();
     _clearError();
     notifyListeners();
-    _logger.info('Disconnected from LM Studio');
+    debugPrint('[lm_studio_provider] Disconnected from LM Studio');
   }
 
   @override
@@ -185,17 +184,13 @@ class LMStudioProvider extends BaseLLMProvider {
           );
         }).toList();
 
-        _logger.info('Loaded ${_availableModels.length} models from LM Studio');
+        debugPrint('[lm_studio_provider] Loaded ${_availableModels.length} models from LM Studio');
       } else {
         throw Exception('HTTP ${response.statusCode}: ${response.body}');
       }
     } catch (e) {
       _lastError = 'Failed to refresh models: $e';
-      _logger.logTunnelError(
-        'LMSTUDIO_REFRESH_MODELS_FAILED',
-        _lastError!,
-        error: e,
-      );
+      debugPrint('[LMStudio] Refresh models failed: $_lastError - $e');
       rethrow;
     } finally {
       _setLoading(false);
@@ -212,7 +207,7 @@ class LMStudioProvider extends BaseLLMProvider {
     _selectedModel = model;
     notifyListeners();
 
-    _logger.info('Selected model: $modelId');
+    debugPrint('[lm_studio_provider] Selected model: $modelId');
   }
 
   @override
@@ -268,11 +263,7 @@ class LMStudioProvider extends BaseLLMProvider {
       }
     } catch (e) {
       _lastError = 'Failed to send message: $e';
-      _logger.logTunnelError(
-        'LMSTUDIO_SEND_MESSAGE_FAILED',
-        _lastError!,
-        error: e,
-      );
+      debugPrint('[LMStudio] Send message failed: $_lastError - $e');
       rethrow;
     } finally {
       _setLoading(false);
@@ -351,11 +342,7 @@ class LMStudioProvider extends BaseLLMProvider {
       }
     } catch (e) {
       _lastError = 'Failed to send streaming message: $e';
-      _logger.logTunnelError(
-        'LMSTUDIO_STREAMING_FAILED',
-        _lastError!,
-        error: e,
-      );
+      debugPrint('[LMStudio] Streaming failed: $_lastError - $e');
       rethrow;
     } finally {
       _endRequest(requestId);
@@ -675,3 +662,4 @@ class _LMStudioSettingsWidgetState extends State<LMStudioSettingsWidget> {
     }
   }
 }
+

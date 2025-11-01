@@ -12,7 +12,7 @@ import 'auth_service.dart';
 /// request tracking, usage monitoring, security events, and performance metrics.
 class LLMAuditService extends ChangeNotifier {
   final AuthService _authService;
-  final TunnelLogger _logger = TunnelLogger('LLMAuditService');
+  
 
   // State
   bool _isInitialized = false;
@@ -37,13 +37,13 @@ class LLMAuditService extends ChangeNotifier {
     if (_isInitialized) return;
 
     try {
-      _logger.info('Initializing LLM Audit Service');
+      debugPrint('[llm_audit_service] Initializing LLM Audit Service');
 
       // Load persisted audit data
       await _loadAuditData();
 
       _isInitialized = true;
-      _logger.info('LLM Audit Service initialized successfully');
+      debugPrint('[llm_audit_service] LLM Audit Service initialized successfully');
     } catch (e) {
       _logger.logTunnelError(
         'AUDIT_INIT_FAILED',
@@ -215,7 +215,7 @@ class LLMAuditService extends ChangeNotifier {
     await _saveAuditData();
     notifyListeners();
 
-    _logger.info('Cleared audit log');
+    debugPrint('[llm_audit_service] Cleared audit log');
   }
 
   /// Export audit log
@@ -525,7 +525,7 @@ enum LLMAuditEventType { interaction, security, provider, system }
 /// Provides rate limiting and usage controls for LLM interactions
 /// to prevent abuse and manage resource consumption.
 class LLMRateLimitService {
-  final TunnelLogger _logger = TunnelLogger('LLMRateLimit');
+  
 
   // Rate limiting state
   final Map<String, List<DateTime>> _requestHistory = {};
@@ -670,3 +670,4 @@ class LLMRateLimitService {
     _dailyUsage.removeWhere((key, _) => key.startsWith('$userId:'));
   }
 }
+

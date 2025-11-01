@@ -5,7 +5,6 @@ import 'package:http/http.dart' as http;
 
 import 'base_llm_provider.dart';
 import '../connection_manager_service.dart';
-import '../../utils/tunnel_logger.dart';
 
 /// Ollama LLM provider implementation
 ///
@@ -14,7 +13,7 @@ import '../../utils/tunnel_logger.dart';
 /// and all standard Ollama API features.
 class OllamaProvider extends BaseLLMProvider {
   final ConnectionManagerService _connectionManager;
-  final TunnelLogger _logger = TunnelLogger('OllamaProvider');
+  // Removed TunnelLogger - use debugPrint for logging
 
   // State
   bool _isAvailable = false;
@@ -86,7 +85,7 @@ class OllamaProvider extends BaseLLMProvider {
       _setLoading(true);
       _clearError();
 
-      _logger.info('Initializing Ollama provider');
+      debugPrint('[OllamaProvider] Initializing Ollama provider');
 
       // Wait for connection manager to be ready
       if (!_connectionManager.hasAnyConnection) {
@@ -99,10 +98,10 @@ class OllamaProvider extends BaseLLMProvider {
       // Load available models
       await refreshModels();
 
-      _logger.info('Ollama provider initialized successfully');
+      debugPrint('[OllamaProvider] Ollama provider initialized successfully');
     } catch (e) {
       _lastError = 'Failed to initialize Ollama provider: $e';
-      _logger.logTunnelError('OLLAMA_INIT_FAILED', _lastError!, error: e);
+      debugPrint('[OllamaProvider] Initialization failed: $e');
       rethrow;
     } finally {
       _setLoading(false);
@@ -115,20 +114,20 @@ class OllamaProvider extends BaseLLMProvider {
       _setConnecting(true);
       _clearError();
 
-      _logger.info('Connecting to Ollama');
+      debugPrint('[OllamaProvider] Connecting to Ollama');
 
       // Use connection manager to establish connection
       await _connectionManager.initialize();
 
       if (_connectionManager.hasAnyConnection) {
         _isAvailable = true;
-        _logger.info('Connected to Ollama successfully');
+        debugPrint('[OllamaProvider] Connected to Ollama successfully');
       } else {
         throw Exception('No connection available');
       }
     } catch (e) {
       _lastError = 'Failed to connect to Ollama: $e';
-      _logger.logTunnelError('OLLAMA_CONNECT_FAILED', _lastError!, error: e);
+      debugPrint('[OllamaProvider] Connection failed: $e');
       _isAvailable = false;
       rethrow;
     } finally {
@@ -143,7 +142,7 @@ class OllamaProvider extends BaseLLMProvider {
     _availableModels.clear();
     _clearError();
     notifyListeners();
-    _logger.info('Disconnected from Ollama');
+    debugPrint('[OllamaProvider] Disconnected from Ollama');
   }
 
   @override
@@ -198,17 +197,13 @@ class OllamaProvider extends BaseLLMProvider {
           );
         }).toList();
 
-        _logger.info('Loaded ${_availableModels.length} models from Ollama');
+        debugPrint('[OllamaProvider] Loaded ${_availableModels.length} models from Ollama');
       } else {
         throw Exception('HTTP ${response.statusCode}: ${response.body}');
       }
     } catch (e) {
       _lastError = 'Failed to refresh models: $e';
-      _logger.logTunnelError(
-        'OLLAMA_REFRESH_MODELS_FAILED',
-        _lastError!,
-        error: e,
-      );
+      debugPrint('[OllamaProvider] Refresh models failed: $e');
       rethrow;
     } finally {
       _setLoading(false);
@@ -225,7 +220,7 @@ class OllamaProvider extends BaseLLMProvider {
     _selectedModel = model;
     notifyListeners();
 
-    _logger.info('Selected model: $modelId');
+    debugPrint('[OllamaProvider] Selected model: $modelId');
   }
 
   @override
@@ -276,11 +271,7 @@ class OllamaProvider extends BaseLLMProvider {
       }
     } catch (e) {
       _lastError = 'Failed to send message: $e';
-      _logger.logTunnelError(
-        'OLLAMA_SEND_MESSAGE_FAILED',
-        _lastError!,
-        error: e,
-      );
+      debugPrint('[OllamaProvider] Send message failed: $e');
       rethrow;
     } finally {
       _setLoading(false);
@@ -348,7 +339,7 @@ class OllamaProvider extends BaseLLMProvider {
       }
     } catch (e) {
       _lastError = 'Failed to send streaming message: $e';
-      _logger.logTunnelError('OLLAMA_STREAMING_FAILED', _lastError!, error: e);
+      debugPrint('[OllamaProvider] Streaming failed: $e');
       rethrow;
     } finally {
       _endRequest(requestId);
