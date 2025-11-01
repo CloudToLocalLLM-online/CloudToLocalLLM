@@ -77,14 +77,24 @@ jobs:
             VERSION="0.0.0+dev-$SHORT_SHA"
             IS_RELEASE="false"
           else
-            # Always create release for any version on main branch if tag doesn't exist
-            if git tag -l "v$VERSION" | grep -q "v$VERSION"; then
-              echo "Version $VERSION already has a release tag - skipping release"
-              IS_RELEASE="false"
+            # Always create release for any version on main branch
+            # Check git log to see if version changed in this commit
+            PREV_VERSION=$(git log -1 --format="%B" | grep -i "version" | head -1 || echo "")
+            
+            # Extract version from previous commit's pubspec.yaml if available
+            if git show HEAD~1:pubspec.yaml 2>/dev/null | grep -q "^version:"; then
+              PREV_PUBSPEC_VERSION=$(git show HEAD~1:pubspec.yaml | grep "^version:" | sed 's/version: //' | sed 's/+.*//' || echo "")
             else
-              # Create release for any new version on main branch
-              echo "New version detected: $VERSION - creating release"
+              PREV_PUBSPEC_VERSION=""
+            fi
+            
+            # If version changed or no previous version found, create release
+            if [ -z "$PREV_PUBSPEC_VERSION" ] || [ "$VERSION" != "$PREV_PUBSPEC_VERSION" ]; then
+              echo "Version changed from '$PREV_PUBSPEC_VERSION' to '$VERSION' - creating release"
               IS_RELEASE="true"
+            else
+              echo "Version unchanged: $VERSION - skipping release"
+              IS_RELEASE="false"
             fi
           fi
         fi
