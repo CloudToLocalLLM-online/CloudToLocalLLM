@@ -1,7 +1,7 @@
 # Watch GitHub Actions and auto-deploy when ready
 # This script monitors GitHub Actions workflow and restarts Kubernetes pods when new image is ready
 
-Write-Host "🔍 Monitoring GitHub Actions workflow..." -ForegroundColor Cyan
+Write-Host " Monitoring GitHub Actions workflow..." -ForegroundColor Cyan
 Write-Host ""
 
 $repoOwner = "imrightguy"
@@ -35,7 +35,7 @@ for ($i = 1; $i -le $maxChecks; $i++) {
             if ($status -eq 'completed') {
                 if ($conclusion -eq 'success') {
                     Write-Host ""
-                    Write-Host "✅ Build completed successfully!" -ForegroundColor Green
+                    Write-Host " Build completed successfully!" -ForegroundColor Green
                     Write-Host ""
                     Write-Host "Restarting deployment to pull new image..." -ForegroundColor Cyan
                     
@@ -56,13 +56,13 @@ for ($i = 1; $i -le $maxChecks; $i++) {
                     Write-Host "Hard refresh (Ctrl+Shift+R) to clear cache!" -ForegroundColor Yellow
                     Write-Host ""
                     Write-Host "Expected console:" -ForegroundColor White
-                    Write-Host "  ✅ Auth0 initialized" -ForegroundColor Green
-                    Write-Host "  ✅ No Sentry errors!" -ForegroundColor Green
+                    Write-Host "   Auth0 initialized" -ForegroundColor Green
+                    Write-Host "   No Sentry errors!" -ForegroundColor Green
                     
                     exit 0
                 } else {
                     Write-Host ""
-                    Write-Host "❌ Build failed with conclusion: $conclusion" -ForegroundColor Red
+                    Write-Host " Build failed with conclusion: $conclusion" -ForegroundColor Red
                     Write-Host "Check logs: $($run.html_url)" -ForegroundColor White
                     exit 1
                 }
@@ -80,6 +80,6 @@ for ($i = 1; $i -le $maxChecks; $i++) {
 }
 
 Write-Host ""
-Write-Host "⚠️  Build is taking longer than expected (10+ minutes)" -ForegroundColor Yellow
+Write-Host "  Build is taking longer than expected (10+ minutes)" -ForegroundColor Yellow
 Write-Host "Check manually: https://github.com/$repoOwner/$repoName/actions" -ForegroundColor White
 

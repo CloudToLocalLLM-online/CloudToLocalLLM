@@ -83,18 +83,18 @@ function Test-SSHConnectivity {
         $sshTest = ssh -o ConnectTimeout=10 -o BatchMode=yes "$VPSUser@$VPSHost" "echo 'SSH test successful'"
         
         if ($LASTEXITCODE -eq 0) {
-            Write-LogSuccess "✅ SSH connectivity test passed"
+            Write-LogSuccess " SSH connectivity test passed"
             if ($Verbose) {
                 Write-LogInfo "SSH response: $sshTest"
             }
             return $true
         } else {
-            Write-LogError "❌ SSH connectivity test failed"
+            Write-LogError " SSH connectivity test failed"
             Write-LogError "Exit code: $LASTEXITCODE"
             return $false
         }
     } catch {
-        Write-LogError "❌ SSH connectivity test failed with exception: $($_.Exception.Message)"
+        Write-LogError " SSH connectivity test failed with exception: $($_.Exception.Message)"
         return $false
     }
 }
@@ -114,9 +114,9 @@ function Test-VPSEnvironment {
             $currentDir = $lines[1].Trim()
             
             if ($currentUser -eq $VPSUser) {
-                Write-LogSuccess "✅ VPS user check passed: $currentUser"
+                Write-LogSuccess " VPS user check passed: $currentUser"
             } else {
-                Write-LogWarning "⚠️ Unexpected VPS user: $currentUser (expected: $VPSUser)"
+                Write-LogWarning " Unexpected VPS user: $currentUser (expected: $VPSUser)"
             }
             
             Write-LogInfo "Current directory: $currentDir"
@@ -125,18 +125,18 @@ function Test-VPSEnvironment {
             $dirCheck = ssh "$VPSUser@$VPSHost" "test -d $VPSProjectPath && echo 'exists' || echo 'missing'"
             
             if ($dirCheck.Trim() -eq "exists") {
-                Write-LogSuccess "✅ Project directory exists: $VPSProjectPath"
+                Write-LogSuccess " Project directory exists: $VPSProjectPath"
                 return $true
             } else {
-                Write-LogError "❌ Project directory missing: $VPSProjectPath"
+                Write-LogError " Project directory missing: $VPSProjectPath"
                 return $false
             }
         } else {
-            Write-LogError "❌ VPS environment check failed"
+            Write-LogError " VPS environment check failed"
             return $false
         }
     } catch {
-        Write-LogError "❌ VPS environment test failed with exception: $($_.Exception.Message)"
+        Write-LogError " VPS environment test failed with exception: $($_.Exception.Message)"
         return $false
     }
 }
@@ -165,22 +165,22 @@ function Test-DeploymentScripts {
             $scriptCheck = ssh "$VPSUser@$VPSHost" "test -f $scriptPath && test -x $scriptPath && echo 'ok' || echo 'missing'"
             
             if ($scriptCheck.Trim() -eq "ok") {
-                Write-LogSuccess "  ✅ $script (found and executable)"
+                Write-LogSuccess "   $script (found and executable)"
             } else {
-                Write-LogError "  ❌ $script (missing or not executable)"
+                Write-LogError "   $script (missing or not executable)"
                 $allScriptsFound = $false
             }
         } catch {
-            Write-LogError "  ❌ $script (check failed: $($_.Exception.Message))"
+            Write-LogError "   $script (check failed: $($_.Exception.Message))"
             $allScriptsFound = $false
         }
     }
     
     if ($allScriptsFound) {
-        Write-LogSuccess "✅ All deployment scripts are available and executable"
+        Write-LogSuccess " All deployment scripts are available and executable"
         return $true
     } else {
-        Write-LogError "❌ Some deployment scripts are missing or not executable"
+        Write-LogError " Some deployment scripts are missing or not executable"
         return $false
     }
 }
@@ -199,7 +199,7 @@ function Test-DeploymentExecution {
         $deploymentOutput = ssh "$VPSUser@$VPSHost" "$deploymentCommand"
         
         if ($LASTEXITCODE -eq 0) {
-            Write-LogSuccess "✅ Deployment script dry run completed successfully"
+            Write-LogSuccess " Deployment script dry run completed successfully"
             
             if ($Verbose) {
                 Write-LogInfo "Deployment output:"
@@ -208,7 +208,7 @@ function Test-DeploymentExecution {
             
             return $true
         } else {
-            Write-LogError "❌ Deployment script dry run failed"
+            Write-LogError " Deployment script dry run failed"
             Write-LogError "Exit code: $LASTEXITCODE"
             
             if ($Verbose) {
@@ -219,7 +219,7 @@ function Test-DeploymentExecution {
             return $false
         }
     } catch {
-        Write-LogError "❌ Deployment execution test failed with exception: $($_.Exception.Message)"
+        Write-LogError " Deployment execution test failed with exception: $($_.Exception.Message)"
         return $false
     }
 }
@@ -238,9 +238,9 @@ function Test-VersionSynchronization {
         $versionOutput = ssh "$VPSUser@$VPSHost" "$versionCommand"
         
         if ($LASTEXITCODE -eq 0) {
-            Write-LogSuccess "✅ Version synchronization test passed"
+            Write-LogSuccess " Version synchronization test passed"
         } else {
-            Write-LogWarning "⚠️ Version synchronization test failed (may need sync)"
+            Write-LogWarning " Version synchronization test failed (may need sync)"
         }
         
         if ($Verbose) {
@@ -250,7 +250,7 @@ function Test-VersionSynchronization {
         
         return $true
     } catch {
-        Write-LogError "❌ Version synchronization test failed with exception: $($_.Exception.Message)"
+        Write-LogError " Version synchronization test failed with exception: $($_.Exception.Message)"
         return $false
     }
 }
@@ -272,9 +272,9 @@ function Show-TestSummary {
     
     foreach ($test in $TestResults.GetEnumerator()) {
         if ($test.Value) {
-            Write-Host "✅ $($test.Key)" -ForegroundColor Green
+            Write-Host " $($test.Key)" -ForegroundColor Green
         } else {
-            Write-Host "❌ $($test.Key)" -ForegroundColor Red
+            Write-Host " $($test.Key)" -ForegroundColor Red
         }
     }
     
@@ -282,13 +282,13 @@ function Show-TestSummary {
     Write-Host "Results: $passedTests/$totalTests tests passed" -ForegroundColor $(if ($passedTests -eq $totalTests) { "Green" } else { "Yellow" })
     
     if ($passedTests -eq $totalTests) {
-        Write-LogSuccess "🎉 All integration tests passed! Windows-to-VPS integration is working correctly."
+        Write-LogSuccess "� All integration tests passed! Windows-to-VPS integration is working correctly."
         Write-Host ""
         Write-Host "Next steps:" -ForegroundColor Green
         Write-Host "  1. Deploy using: .\scripts\powershell\Deploy-CloudToLocalLLM.ps1 -Force" -ForegroundColor Yellow
         Write-Host "  2. Install VPS automation: ssh $VPSUser@$VPSHost 'cd $VPSProjectPath && ./scripts/deploy/install_vps_automation.sh --install-service --enable-service'" -ForegroundColor Yellow
     } else {
-        Write-LogError "❌ Some integration tests failed. Please fix the issues before proceeding."
+        Write-LogError " Some integration tests failed. Please fix the issues before proceeding."
         Write-Host ""
         Write-Host "Troubleshooting:" -ForegroundColor Yellow
         Write-Host "  1. Check SSH key configuration" -ForegroundColor Yellow

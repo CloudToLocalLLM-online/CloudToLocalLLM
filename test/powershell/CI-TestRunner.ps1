@@ -47,16 +47,16 @@ $ErrorActionPreference = 'Stop'
 # Import required modules
 try {
     Import-Module Pester -MinimumVersion 5.0 -Force
-    Write-Host "✅ Pester module imported successfully" -ForegroundColor Green
+    Write-Host " Pester module imported successfully" -ForegroundColor Green
 } catch {
-    Write-Error "❌ Failed to import Pester module: $_"
+    Write-Error " Failed to import Pester module: $_"
     exit 1
 }
 
 # Create test results directory
 if ($ExportResults) {
     $null = New-Item -Path $TestResultsPath -ItemType Directory -Force
-    Write-Host "📁 Created test results directory: $TestResultsPath" -ForegroundColor Blue
+    Write-Host "� Created test results directory: $TestResultsPath" -ForegroundColor Blue
 }
 
 # Configure Pester
@@ -107,8 +107,8 @@ if ($CodeCoverage) {
 }
 
 # Run tests
-Write-Host "🧪 Starting PowerShell tests..." -ForegroundColor Yellow
-Write-Host "📊 Configuration:" -ForegroundColor Blue
+Write-Host " Starting PowerShell tests..." -ForegroundColor Yellow
+Write-Host " Configuration:" -ForegroundColor Blue
 Write-Host "   - Output Format: $OutputFormat" -ForegroundColor Gray
 Write-Host "   - Export Results: $ExportResults" -ForegroundColor Gray
 Write-Host "   - Code Coverage: $CodeCoverage" -ForegroundColor Gray
@@ -118,7 +118,7 @@ try {
     $TestResults = Invoke-Pester -Configuration $PesterConfig
     
     # Display results summary
-    Write-Host "`n📋 Test Results Summary:" -ForegroundColor Blue
+    Write-Host "`n� Test Results Summary:" -ForegroundColor Blue
     Write-Host "   - Total Tests: $($TestResults.TotalCount)" -ForegroundColor Gray
     Write-Host "   - Passed: $($TestResults.PassedCount)" -ForegroundColor Green
     Write-Host "   - Failed: $($TestResults.FailedCount)" -ForegroundColor Red
@@ -140,29 +140,29 @@ try {
 
 ## Summary
 - **Total Tests**: $($TestResults.TotalCount)
-- **Passed**: $($TestResults.PassedCount) ✅
-- **Failed**: $($TestResults.FailedCount) ❌
-- **Skipped**: $($TestResults.SkippedCount) ⏭️
+- **Passed**: $($TestResults.PassedCount) 
+- **Failed**: $($TestResults.FailedCount) 
+- **Skipped**: $($TestResults.SkippedCount) ⏭
 - **Duration**: $($TestResults.Duration)
 $(if ($CodeCoverage -and $TestResults.CodeCoverage) { "- **Code Coverage**: $([math]::Round($TestResults.CodeCoverage.CoveragePercent, 2))%" })
 
 ## Status
-$(if ($TestResults.FailedCount -eq 0) { "✅ All tests passed!" } else { "❌ $($TestResults.FailedCount) test(s) failed" })
+$(if ($TestResults.FailedCount -eq 0) { " All tests passed!" } else { " $($TestResults.FailedCount) test(s) failed" })
 "@ | Out-File -FilePath $SummaryPath -Encoding UTF8
         
-        Write-Host "📄 GitHub summary exported to: $SummaryPath" -ForegroundColor Blue
+        Write-Host "� GitHub summary exported to: $SummaryPath" -ForegroundColor Blue
     }
     
     # Exit with appropriate code
     if ($TestResults.FailedCount -gt 0) {
-        Write-Host "❌ Tests failed!" -ForegroundColor Red
+        Write-Host " Tests failed!" -ForegroundColor Red
         exit 1
     } else {
-        Write-Host "✅ All tests passed!" -ForegroundColor Green
+        Write-Host " All tests passed!" -ForegroundColor Green
         exit 0
     }
     
 } catch {
-    Write-Error "❌ Test execution failed: $_"
+    Write-Error " Test execution failed: $_"
     exit 1
 }

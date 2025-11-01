@@ -397,7 +397,7 @@ function Test-Setup {
         if ((Test-Path $vsPath) -or (Test-Path $vsCommunityPath)) {
             Write-LogSuccess "✓ Visual Studio 2022 is installed"
         } else {
-            Write-LogWarning "⚠ Visual Studio 2022 may not be installed"
+            Write-LogWarning " Visual Studio 2022 may not be installed"
         }
     }
     
@@ -407,7 +407,7 @@ function Test-Setup {
         if (Test-Path "$runnerDir\.runner") {
             Write-LogSuccess "✓ GitHub Actions Runner is configured"
         } else {
-            Write-LogWarning "⚠ GitHub Actions Runner is not configured"
+            Write-LogWarning " GitHub Actions Runner is not configured"
         }
     }
     

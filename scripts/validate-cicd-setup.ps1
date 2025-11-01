@@ -349,12 +349,12 @@ function Show-ValidationSummary {
     Write-Info "`nValidation Summary:"
     Write-Host "==================" -ForegroundColor Blue
     
-    Write-Host "✅ Passed: $($ValidationResults.Passed.Count)" -ForegroundColor Green
-    Write-Host "❌ Failed: $($ValidationResults.Failed.Count)" -ForegroundColor Red
-    Write-Host "⚠️  Warnings: $($ValidationResults.Warnings.Count)" -ForegroundColor Yellow
+    Write-Host " Passed: $($ValidationResults.Passed.Count)" -ForegroundColor Green
+    Write-Host " Failed: $($ValidationResults.Failed.Count)" -ForegroundColor Red
+    Write-Host "  Warnings: $($ValidationResults.Warnings.Count)" -ForegroundColor Yellow
     
     if ($FixIssues) {
-        Write-Host "🔧 Fixed: $($ValidationResults.Fixed.Count)" -ForegroundColor Cyan
+        Write-Host " Fixed: $($ValidationResults.Fixed.Count)" -ForegroundColor Cyan
     }
     
     if ($ValidationResults.Failed.Count -gt 0) {
@@ -380,11 +380,11 @@ function Show-ValidationSummary {
     
     # Overall status
     if ($ValidationResults.Failed.Count -eq 0) {
-        Write-Host "`n🎉 CI/CD pipeline validation PASSED!" -ForegroundColor Green
+        Write-Host "`n� CI/CD pipeline validation PASSED!" -ForegroundColor Green
         Write-Host "The pipeline is ready for use." -ForegroundColor Green
         return $true
     } else {
-        Write-Host "`n💥 CI/CD pipeline validation FAILED!" -ForegroundColor Red
+        Write-Host "`n CI/CD pipeline validation FAILED!" -ForegroundColor Red
         Write-Host "Please fix the issues above before using the pipeline." -ForegroundColor Red
         return $false
     }

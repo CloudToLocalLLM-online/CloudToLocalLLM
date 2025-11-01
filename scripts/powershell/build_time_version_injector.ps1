@@ -252,7 +252,7 @@ function Update-AppConfigVersion {
 
 # Inject build timestamp into all version files
 function Invoke-BuildTimestampInjection {
-    Write-LogInfo "🕒 Injecting build timestamp at build execution time..."
+    Write-LogInfo "� Injecting build timestamp at build execution time..."
 
     # Generate timestamps
     $buildTimestamp = Get-BuildTimestamp
@@ -273,12 +273,12 @@ function Invoke-BuildTimestampInjection {
     # Validate that all placeholders have been replaced
     Test-PlaceholderRemoval
 
-    Write-LogSuccess "✅ Build timestamp injection completed: $semanticVersion+$buildTimestamp"
+    Write-LogSuccess " Build timestamp injection completed: $semanticVersion+$buildTimestamp"
 }
 
 # Restore all backups (for cleanup after build)
 function Restore-AllBackups {
-    Write-LogInfo "🔄 Restoring version files from backups..."
+    Write-LogInfo " Restoring version files from backups..."
 
     Restore-Backup -FilePath $PubspecFile
     Restore-Backup -FilePath $AssetsVersionFile
@@ -286,12 +286,12 @@ function Restore-AllBackups {
     Restore-Backup -FilePath $SharedPubspecFile
     Restore-Backup -FilePath $AppConfigFile
 
-    Write-LogSuccess "✅ All version files restored from backups"
+    Write-LogSuccess " All version files restored from backups"
 }
 
 # Clean up backup files
 function Remove-BackupFiles {
-    Write-LogInfo "🧹 Cleaning up backup files..."
+    Write-LogInfo "� Cleaning up backup files..."
 
     $backupFiles = @(
         "$PubspecFile.build-backup",
@@ -307,7 +307,7 @@ function Remove-BackupFiles {
         }
     }
 
-    Write-LogSuccess "✅ Backup files cleaned up"
+    Write-LogSuccess " Backup files cleaned up"
 }
 
 # Validate that no BUILD_TIME_PLACEHOLDER remains in version files

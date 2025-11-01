@@ -7,15 +7,15 @@ param(
     [string]$ContainerHealthUrl = "http://localhost:8081"
 )
 
-Write-Host "🧪 CloudToLocalLLM Container Tunnel Integration Tests" -ForegroundColor Cyan
+Write-Host " CloudToLocalLLM Container Tunnel Integration Tests" -ForegroundColor Cyan
 Write-Host "====================================================" -ForegroundColor Cyan
 
 # Check if Node.js is available
 try {
     $nodeVersion = node --version
-    Write-Host "✅ Node.js found: $nodeVersion" -ForegroundColor Green
+    Write-Host " Node.js found: $nodeVersion" -ForegroundColor Green
 } catch {
-    Write-Host "❌ Node.js is required to run integration tests" -ForegroundColor Red
+    Write-Host " Node.js is required to run integration tests" -ForegroundColor Red
     exit 1
 }
 
@@ -42,13 +42,13 @@ try {
     
     if ($LASTEXITCODE -eq 0) {
         Write-Host ""
-        Write-Host "✅ Container tunnel integration tests completed successfully!" -ForegroundColor Green
+        Write-Host " Container tunnel integration tests completed successfully!" -ForegroundColor Green
     } else {
         Write-Host ""
-        Write-Host "❌ Some tests failed. Check the output above for details." -ForegroundColor Red
+        Write-Host " Some tests failed. Check the output above for details." -ForegroundColor Red
         exit $LASTEXITCODE
     }
 } catch {
-    Write-Host "❌ Failed to run integration tests: $_" -ForegroundColor Red
+    Write-Host " Failed to run integration tests: $_" -ForegroundColor Red
     exit 1
 }

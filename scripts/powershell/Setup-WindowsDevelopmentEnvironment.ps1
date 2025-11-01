@@ -348,14 +348,14 @@ function Test-DevelopmentEnvironment {
         try {
             $result = & $test.Command
             if ($result) {
-                Write-Host "✅ $($test.Name)" -ForegroundColor Green
+                Write-Host " $($test.Name)" -ForegroundColor Green
                 $passed++
             } else {
-                Write-Host "❌ $($test.Name)" -ForegroundColor Red
+                Write-Host " $($test.Name)" -ForegroundColor Red
             }
         }
         catch {
-            Write-Host "❌ $($test.Name)" -ForegroundColor Red
+            Write-Host " $($test.Name)" -ForegroundColor Red
         }
     }
     
@@ -422,7 +422,7 @@ function Test-PowerShellScripts {
 
 # Main execution
 function Main {
-    Write-Host "🚀 CloudToLocalLLM Windows Development Environment Setup" -ForegroundColor Green
+    Write-Host " CloudToLocalLLM Windows Development Environment Setup" -ForegroundColor Green
     Write-Host "=======================================================" -ForegroundColor Green
     Write-Host ""
 
@@ -518,7 +518,7 @@ function Main {
     }
 
     # Final summary
-    Write-Host "🎉 Setup Complete!" -ForegroundColor Green
+    Write-Host "� Setup Complete!" -ForegroundColor Green
     Write-Host "==================" -ForegroundColor Green
 
     if ($success) {

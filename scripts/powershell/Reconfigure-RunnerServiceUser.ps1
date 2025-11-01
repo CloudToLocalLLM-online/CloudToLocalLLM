@@ -135,7 +135,7 @@ if ($services) {
         if ($wmiService.StartName -eq $Username) {
             Write-Host "  ✓ Service is configured to run as your user account" -ForegroundColor Green
         } else {
-            Write-Warning "  ⚠ Service is still running as: $($wmiService.StartName)"
+            Write-Warning "   Service is still running as: $($wmiService.StartName)"
             Write-Host "  You may need to configure it manually through Services (services.msc)" -ForegroundColor Yellow
         }
     }

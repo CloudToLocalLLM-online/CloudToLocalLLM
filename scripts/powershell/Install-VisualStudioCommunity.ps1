@@ -24,7 +24,7 @@ if (Test-Path $vsInstallPath) {
         Write-Host "Run 'flutter doctor' to verify." -ForegroundColor Cyan
         exit 0
     } else {
-        Write-Host "⚠ C++ workload not found. Need to add it." -ForegroundColor Yellow
+        Write-Host " C++ workload not found. Need to add it." -ForegroundColor Yellow
         Write-Host "Please open Visual Studio Installer and add 'Desktop development with C++'" -ForegroundColor Yellow
         exit 0
     }

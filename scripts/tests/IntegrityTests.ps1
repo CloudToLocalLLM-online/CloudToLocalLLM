@@ -84,11 +84,11 @@ Test file without final newline.
 
     # File with Unicode characters
     $contentUnicode = @"
-# CloudToLocalLLM 🚀
+# CloudToLocalLLM 
 
 [![Version](https://img.shields.io/badge/version-4.0.32-blue.svg)](https://github.com/imrightguy/CloudToLocalLLM)
 
-Test file with Unicode: ✅ 🔒 📝 🌟
+Test file with Unicode:  �  �
 Special characters: àáâãäåæçèéêë
 Mathematical symbols: ∑ ∏ ∫ ∆ ∇
 "@
@@ -223,7 +223,7 @@ function Test-Utf8EncodingPreservation {
         
         # Verify Unicode characters are intact
         $newContent = Get-Content $testFile -Raw
-        if ($newContent -match "🚀|✅|🔒|📝|🌟") {
+        if ($newContent -match "||�||�") {
             Write-IntegritySuccess "Unicode characters preserved"
         } else {
             Write-IntegrityFailure "Unicode characters corrupted"

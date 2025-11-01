@@ -195,7 +195,7 @@ Write-Host "Step 5: Checking secrets..." -ForegroundColor Yellow
 Write-Host ""
 
 if (!(Test-Path "k8s/secrets.yaml")) {
-    Write-Host "⚠ secrets.yaml not found" -ForegroundColor Yellow
+    Write-Host " secrets.yaml not found" -ForegroundColor Yellow
     Write-Host ""
     Write-Host "Creating secrets from template..."
     Copy-Item "k8s/secrets.yaml.template" "k8s/secrets.yaml"
@@ -338,7 +338,7 @@ if (!$SkipDNS -and $lbIP) {
             ./setup-dns.sh
             Set-Location ..
         } else {
-            Write-Host "⚠ DNS setup script is for Linux/macOS" -ForegroundColor Yellow
+            Write-Host " DNS setup script is for Linux/macOS" -ForegroundColor Yellow
             Write-Host ""
             Write-Host "Please run manually in WSL or Git Bash:" -ForegroundColor Cyan
             Write-Host "  cd k8s && ./setup-dns.sh"

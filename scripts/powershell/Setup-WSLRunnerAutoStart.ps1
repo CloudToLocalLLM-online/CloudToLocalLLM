@@ -25,7 +25,7 @@ wsl -d $WslDistribution bash "/mnt/d/dev/CloudToLocalLLM/scripts/setup-wsl-runne
 if ($LASTEXITCODE -eq 0) {
     Write-Host "✓ WSL auto-start configured" -ForegroundColor Green
 } else {
-    Write-Host "⚠ WSL auto-start configuration had issues" -ForegroundColor Yellow
+    Write-Host " WSL auto-start configuration had issues" -ForegroundColor Yellow
 }
 
 Write-Host ""
@@ -67,7 +67,7 @@ wsl -d `$wslDistro bash -c "cd ~/actions-runner && ./start-runner.sh"
         Write-Host "  Task name: $taskName" -ForegroundColor Cyan
     }
     catch {
-        Write-Host "⚠ Failed to create scheduled task: $($_.Exception.Message)" -ForegroundColor Yellow
+        Write-Host " Failed to create scheduled task: $($_.Exception.Message)" -ForegroundColor Yellow
     }
 } else {
     Write-Host "Method 2: Windows Task Scheduler (Skipped - requires Admin)" -ForegroundColor Yellow
