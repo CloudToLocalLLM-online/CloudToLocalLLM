@@ -5,7 +5,7 @@ const fs = require('fs');
 const path = require('path');
 
 async function globalSetup(config) {
-  console.log('🚀 CloudToLocalLLM v3.10.0 Authentication Loop Analysis Setup');
+  console.log(' CloudToLocalLLM v3.10.0 Authentication Loop Analysis Setup');
   console.log('================================================================');
   
   // Create test results directory
@@ -27,28 +27,28 @@ async function globalSetup(config) {
   const requiredEnvVars = ['DEPLOYMENT_URL'];
   const optionalEnvVars = ['AUTH0_TEST_EMAIL', 'AUTH0_TEST_PASSWORD'];
   
-  console.log('\n📋 Environment Configuration:');
+  console.log('\n� Environment Configuration:');
   console.log('==============================');
   
   requiredEnvVars.forEach(envVar => {
     if (process.env[envVar]) {
-      console.log(`✅ ${envVar}: ${process.env[envVar]}`);
+      console.log(` ${envVar}: ${process.env[envVar]}`);
     } else {
-      console.log(`❌ ${envVar}: NOT SET (required)`);
+      console.log(` ${envVar}: NOT SET (required)`);
       throw new Error(`Required environment variable ${envVar} is not set`);
     }
   });
   
   optionalEnvVars.forEach(envVar => {
     if (process.env[envVar]) {
-      console.log(`✅ ${envVar}: ****** (set)`);
+      console.log(` ${envVar}: ****** (set)`);
     } else {
-      console.log(`⚠️  ${envVar}: NOT SET (optional - will skip Auth0 form interaction)`);
+      console.log(`  ${envVar}: NOT SET (optional - will skip Auth0 form interaction)`);
     }
   });
   
   // Validate deployment URL accessibility
-  console.log('\n🌐 Deployment Validation:');
+  console.log('\n Deployment Validation:');
   console.log('=========================');
   
   try {
@@ -58,32 +58,32 @@ async function globalSetup(config) {
     // Simple fetch to check if deployment is accessible
     const response = await fetch(deploymentUrl);
     if (response.ok) {
-      console.log(`✅ Deployment accessible (HTTP ${response.status})`);
+      console.log(` Deployment accessible (HTTP ${response.status})`);
       
       // Check version endpoint
       try {
         const versionResponse = await fetch(`${deploymentUrl}/version.json`);
         if (versionResponse.ok) {
           const versionData = await versionResponse.json();
-          console.log(`✅ Version endpoint accessible: v${versionData.version}`);
+          console.log(` Version endpoint accessible: v${versionData.version}`);
           
           if (versionData.version === '3.10.0') {
-            console.log(`✅ Correct version deployed (3.10.0)`);
+            console.log(` Correct version deployed (3.10.0)`);
           } else {
-            console.log(`⚠️  Unexpected version: ${versionData.version} (expected 3.10.0)`);
+            console.log(`  Unexpected version: ${versionData.version} (expected 3.10.0)`);
           }
         } else {
-          console.log(`⚠️  Version endpoint not accessible (HTTP ${versionResponse.status})`);
+          console.log(`  Version endpoint not accessible (HTTP ${versionResponse.status})`);
         }
       } catch (error) {
-        console.log(`⚠️  Version check failed: ${error.message}`);
+        console.log(`  Version check failed: ${error.message}`);
       }
     } else {
-      console.log(`❌ Deployment not accessible (HTTP ${response.status})`);
+      console.log(` Deployment not accessible (HTTP ${response.status})`);
       throw new Error(`Deployment at ${deploymentUrl} is not accessible`);
     }
   } catch (error) {
-    console.log(`❌ Deployment validation failed: ${error.message}`);
+    console.log(` Deployment validation failed: ${error.message}`);
     throw new Error(`Cannot access deployment: ${error.message}`);
   }
   
@@ -109,13 +109,13 @@ async function globalSetup(config) {
     JSON.stringify(testConfig, null, 2)
   );
   
-  console.log('\n🔧 Test Configuration:');
+  console.log('\n Test Configuration:');
   console.log('======================');
   console.log(`Test Environment: ${testConfig.testEnvironment}`);
   console.log(`Auth0 Credentials: ${testConfig.hasAuth0Credentials ? 'Available' : 'Not Available'}`);
   console.log(`Browsers: ${testConfig.browsers.join(', ')}`);
   
-  console.log('\n🎯 Test Objectives:');
+  console.log('\n Test Objectives:');
   console.log('===================');
   console.log('1. Verify no infinite redirect loops between /login and /callback');
   console.log('2. Confirm 100ms delay implementation is working');
@@ -124,14 +124,14 @@ async function globalSetup(config) {
   console.log('5. Analyze network requests and console logs');
   console.log('6. Generate comprehensive test report');
   
-  console.log('\n🚨 Known Issues to Test:');
+  console.log('\n� Known Issues to Test:');
   console.log('========================');
   console.log('- Race condition between auth state setting and router checks');
   console.log('- Infinite loops: login → Auth0 → callback → login');
   console.log('- Authentication state not propagating before navigation');
   console.log('- Token exchange or profile loading failures');
   
-  console.log('\n✅ Setup Complete - Ready to run authentication loop analysis');
+  console.log('\n Setup Complete - Ready to run authentication loop analysis');
   console.log('==============================================================\n');
 }
 

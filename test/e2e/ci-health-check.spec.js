@@ -25,7 +25,7 @@ test.describe('CI Health Check', () => {
     const mainContent = page.locator('main, #root, .app');
     await expect(mainContent).toBeVisible();
     
-    console.log('✅ Application loaded successfully');
+    console.log(' Application loaded successfully');
   });
 
   test('No critical JavaScript errors', async ({ page }) => {
@@ -58,7 +58,7 @@ test.describe('CI Health Check', () => {
     // Assert no critical errors
     expect(criticalErrors).toHaveLength(0);
     
-    console.log('✅ No critical JavaScript errors detected');
+    console.log(' No critical JavaScript errors detected');
   });
 
   test('Basic navigation works', async ({ page }) => {
@@ -82,7 +82,7 @@ test.describe('CI Health Check', () => {
       }
     }
     
-    console.log('✅ Basic navigation functional');
+    console.log(' Basic navigation functional');
   });
 
   test('API endpoints respond', async ({ page, request }) => {
@@ -97,12 +97,12 @@ test.describe('CI Health Check', () => {
       try {
         const response = await request.get(endpoint);
         if (response.ok()) {
-          console.log(`✅ API endpoint ${endpoint} is accessible`);
+          console.log(` API endpoint ${endpoint} is accessible`);
           break; // At least one endpoint works
         }
       } catch (error) {
         // Continue to next endpoint
-        console.log(`⚠️ API endpoint ${endpoint} not accessible: ${error.message}`);
+        console.log(` API endpoint ${endpoint} not accessible: ${error.message}`);
       }
     }
   });
@@ -117,14 +117,14 @@ test.describe('CI Health Check', () => {
     if (authElements.length > 0) {
       // Verify auth elements are visible
       await expect(authElements[0]).toBeVisible();
-      console.log('✅ Authentication flow is accessible');
+      console.log(' Authentication flow is accessible');
     } else {
       // Check if user might already be authenticated
       const userElements = await page.locator('[data-testid="user-menu"], .user-profile, button:has-text("Logout")').all();
       if (userElements.length > 0) {
-        console.log('✅ User appears to be authenticated');
+        console.log(' User appears to be authenticated');
       } else {
-        console.log('⚠️ No authentication elements found');
+        console.log(' No authentication elements found');
       }
     }
   });
@@ -141,7 +141,7 @@ test.describe('CI Health Check', () => {
     // Assert reasonable load time (adjust threshold as needed)
     expect(loadTime).toBeLessThan(10000); // 10 seconds max
     
-    console.log(`✅ Page loaded in ${loadTime}ms`);
+    console.log(` Page loaded in ${loadTime}ms`);
   });
 
   test('Responsive design check', async ({ page }) => {
@@ -162,7 +162,7 @@ test.describe('CI Health Check', () => {
       const mainContent = page.locator('main, #root, .app');
       await expect(mainContent).toBeVisible();
       
-      console.log(`✅ Responsive design works at ${viewport.width}x${viewport.height}`);
+      console.log(` Responsive design works at ${viewport.width}x${viewport.height}`);
     }
   });
 });
@@ -173,7 +173,7 @@ test.describe('CI Environment Validation', () => {
     expect(process.env.CI).toBe('true');
     expect(process.env.DEPLOYMENT_URL).toBeDefined();
     
-    console.log('✅ CI environment variables are properly set');
+    console.log(' CI environment variables are properly set');
   });
 
   test('Test artifacts directory exists', async () => {
@@ -190,6 +190,6 @@ test.describe('CI Environment Validation', () => {
     
     expect(fs.existsSync(testResultsDir)).toBe(true);
     
-    console.log('✅ Test artifacts directory is ready');
+    console.log(' Test artifacts directory is ready');
   });
 });

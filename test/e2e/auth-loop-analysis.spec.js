@@ -76,7 +76,7 @@ test.describe('CloudToLocalLLM v3.10.0 Authentication Loop Analysis', () => {
       testReport.consoleLogs.push(logEntry);
       
       // Log our specific debug messages
-      if (msg.text().includes('🔐') || msg.text().includes('🔄')) {
+      if (msg.text().includes('') || msg.text().includes('')) {
         console.log(`[DEBUG] ${logEntry.timestamp}: ${msg.text()}`);
       }
     });
@@ -290,7 +290,7 @@ test.describe('CloudToLocalLLM v3.10.0 Authentication Loop Analysis', () => {
 
     // Step 6: Analyze console logs for our debug messages
     const authLogs = testReport.consoleLogs.filter(log => 
-      log.text.includes('🔐') || log.text.includes('🔄')
+      log.text.includes('') || log.text.includes('')
     );
     
     testReport.events.push({ 

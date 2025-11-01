@@ -30,13 +30,13 @@ window.auth0Bridge = {
   loginWithGoogle: async function() {
     if (!window.auth0Client) {
       const error = new Error('Auth0 client not initialized');
-      console.error('❌ Auth0 login error:', error);
+      console.error(' Auth0 login error:', error);
       throw error;
     }
     
     try {
       const audience = 'https://app.cloudtolocalllm.online';
-      console.log('🔐 Starting Auth0 Google login redirect with audience:', audience);
+      console.log(' Starting Auth0 Google login redirect with audience:', audience);
       await window.auth0Client.loginWithRedirect({
         authorizationParams: {
           connection: 'google-oauth2',
@@ -46,7 +46,7 @@ window.auth0Bridge = {
       });
       // Note: This will redirect, so code after this won't execute
     } catch (error) {
-      console.error('❌ Auth0 Google login error:', error);
+      console.error(' Auth0 Google login error:', error);
       // Don't throw - let the error propagate but log it
       throw error;
     }
@@ -66,7 +66,7 @@ window.auth0Bridge = {
       if (urlParams.has('error')) {
         const error = urlParams.get('error');
         const errorDescription = urlParams.get('error_description') || 'Authentication failed';
-        console.error('❌ Auth0 error in callback:', error, errorDescription);
+        console.error(' Auth0 error in callback:', error, errorDescription);
         
         // Clean up URL
         window.history.replaceState({}, document.title, window.location.pathname);
@@ -176,5 +176,5 @@ window.auth0Bridge = {
   }
 };
 
-console.log('✅ Auth0 Bridge initialized');
+console.log(' Auth0 Bridge initialized');
 

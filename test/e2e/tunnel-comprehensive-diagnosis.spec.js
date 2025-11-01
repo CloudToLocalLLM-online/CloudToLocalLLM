@@ -34,7 +34,7 @@ test.describe('Comprehensive Tunnel Diagnosis', () => {
   };
 
   test.beforeEach(async ({ page }) => {
-    console.log('🔧 Setting up comprehensive tunnel diagnosis...');
+    console.log(' Setting up comprehensive tunnel diagnosis...');
     
     // Reset test report for each test
     testReport = {
@@ -75,7 +75,7 @@ test.describe('Comprehensive Tunnel Diagnosis', () => {
           request.url().includes('websocket') ||
           request.url().includes('ollama') ||
           request.url().includes('proxy')) {
-        console.log(`🌐 TUNNEL REQUEST: ${request.method()} ${request.url()}`);
+        console.log(` TUNNEL REQUEST: ${request.method()} ${request.url()}`);
         testReport.tunnelEvents.push({
           type: 'REQUEST',
           timestamp: new Date().toISOString(),
@@ -110,7 +110,7 @@ test.describe('Comprehensive Tunnel Diagnosis', () => {
           response.url().includes('websocket') ||
           response.url().includes('ollama') ||
           response.url().includes('proxy')) {
-        console.log(`🌐 TUNNEL RESPONSE: ${response.status()} ${response.url()}`);
+        console.log(` TUNNEL RESPONSE: ${response.status()} ${response.url()}`);
         testReport.tunnelEvents.push({
           type: 'RESPONSE',
           timestamp: new Date().toISOString(),
@@ -156,10 +156,10 @@ test.describe('Comprehensive Tunnel Diagnosis', () => {
       // Categorize messages
       if (msg.type() === 'error') {
         testReport.errors.push(messageData);
-        console.log(`❌ CONSOLE ERROR: ${msg.text()}`);
+        console.log(` CONSOLE ERROR: ${msg.text()}`);
       } else if (msg.type() === 'warning') {
         testReport.warnings.push(messageData);
-        console.log(`⚠️ CONSOLE WARNING: ${msg.text()}`);
+        console.log(` CONSOLE WARNING: ${msg.text()}`);
       }
       
       // Track tunnel-specific messages
@@ -167,9 +167,9 @@ test.describe('Comprehensive Tunnel Diagnosis', () => {
           msg.text().includes('SimpleTunnelClient') ||
           msg.text().includes('ConnectionManager') ||
           msg.text().includes('WebSocket') ||
-          msg.text().includes('🔗') ||
-          msg.text().includes('🌐')) {
-        console.log(`🔧 TUNNEL LOG: [${msg.type()}] ${msg.text()}`);
+          msg.text().includes('') ||
+          msg.text().includes('')) {
+        console.log(` TUNNEL LOG: [${msg.type()}] ${msg.text()}`);
         testReport.tunnelEvents.push({
           type: 'CONSOLE_LOG',
           timestamp: new Date().toISOString(),
@@ -182,7 +182,7 @@ test.describe('Comprehensive Tunnel Diagnosis', () => {
       // Track authentication messages
       if (msg.text().includes('auth') || 
           msg.text().includes('Auth0') ||
-          msg.text().includes('🔐') ||
+          msg.text().includes('') ||
           msg.text().includes('login') ||
           msg.text().includes('token')) {
         testReport.authenticationFlow.push({
@@ -204,7 +204,7 @@ test.describe('Comprehensive Tunnel Diagnosis', () => {
       };
       
       testReport.errors.push(errorData);
-      console.log(`💥 PAGE ERROR: ${error.message}`);
+      console.log(` PAGE ERROR: ${error.message}`);
     });
 
     // Request failure monitoring
@@ -218,7 +218,7 @@ test.describe('Comprehensive Tunnel Diagnosis', () => {
       };
       
       testReport.errors.push(failureData);
-      console.log(`🚫 REQUEST FAILED: ${request.method()} ${request.url()} - ${request.failure()?.errorText}`);
+      console.log(`� REQUEST FAILED: ${request.method()} ${request.url()} - ${request.failure()?.errorText}`);
     });
   });
 
@@ -245,7 +245,7 @@ test.describe('Comprehensive Tunnel Diagnosis', () => {
     
     // Write detailed report
     fs.writeFileSync(reportPath, JSON.stringify(testReport, null, 2));
-    console.log(`📊 Detailed test report saved to: ${reportPath}`);
+    console.log(` Detailed test report saved to: ${reportPath}`);
     
     // Print summary
     console.log('\n=== TUNNEL DIAGNOSIS SUMMARY ===');
@@ -273,14 +273,14 @@ test.describe('Comprehensive Tunnel Diagnosis', () => {
   });
 
   test('comprehensive tunnel functionality diagnosis', async ({ page }) => {
-    console.log('🚀 Starting comprehensive tunnel diagnosis...');
+    console.log(' Starting comprehensive tunnel diagnosis...');
     
     const startTime = Date.now();
     testReport.timings.testStart = startTime;
     
     try {
       // Step 1: Navigate to application
-      console.log('📍 Step 1: Navigating to application...');
+      console.log('� Step 1: Navigating to application...');
       const navigationStart = Date.now();
       
       await page.goto(CONFIG.DEPLOYMENT_URL, { 
@@ -289,10 +289,10 @@ test.describe('Comprehensive Tunnel Diagnosis', () => {
       });
       
       testReport.timings.navigationTime = Date.now() - navigationStart;
-      console.log(`✅ Navigation completed in ${testReport.timings.navigationTime}ms`);
+      console.log(` Navigation completed in ${testReport.timings.navigationTime}ms`);
       
       // Step 2: Wait for initial page load and service initialization
-      console.log('📍 Step 2: Waiting for service initialization...');
+      console.log('� Step 2: Waiting for service initialization...');
       const initStart = Date.now();
       
       await page.waitForTimeout(5000); // Allow services to initialize
@@ -300,7 +300,7 @@ test.describe('Comprehensive Tunnel Diagnosis', () => {
       testReport.timings.initializationTime = Date.now() - initStart;
       
       // Step 3: Check for authentication state
-      console.log('📍 Step 3: Checking authentication state...');
+      console.log('� Step 3: Checking authentication state...');
       const authStart = Date.now();
       
       // Look for login/auth elements
@@ -324,7 +324,7 @@ test.describe('Comprehensive Tunnel Diagnosis', () => {
       testReport.timings.authCheckTime = Date.now() - authStart;
       
       // Step 4: Attempt authentication if needed
-      console.log('📍 Step 4: Handling authentication...');
+      console.log('� Step 4: Handling authentication...');
       const authFlowStart = Date.now();
 
       try {
@@ -332,7 +332,7 @@ test.describe('Comprehensive Tunnel Diagnosis', () => {
         const loginButton = page.locator('button:has-text("Login"), button:has-text("Sign In"), a:has-text("Login"), a:has-text("Sign In")').first();
 
         if (await loginButton.isVisible({ timeout: 5000 })) {
-          console.log('🔐 Login button found, attempting authentication...');
+          console.log(' Login button found, attempting authentication...');
           await loginButton.click();
 
           // Wait for Auth0 or authentication flow
@@ -344,7 +344,7 @@ test.describe('Comprehensive Tunnel Diagnosis', () => {
             url: page.url()
           });
         } else {
-          console.log('🔐 No login button found, checking if already authenticated...');
+          console.log(' No login button found, checking if already authenticated...');
         }
 
         testReport.timings.authFlowTime = Date.now() - authFlowStart;
@@ -355,7 +355,7 @@ test.describe('Comprehensive Tunnel Diagnosis', () => {
       }
 
       // Step 5: Look for tunnel connection elements
-      console.log('📍 Step 5: Searching for tunnel connection elements...');
+      console.log('� Step 5: Searching for tunnel connection elements...');
       const tunnelSearchStart = Date.now();
 
       // Common selectors for tunnel-related elements
@@ -401,12 +401,12 @@ test.describe('Comprehensive Tunnel Diagnosis', () => {
         elements: tunnelElements
       });
 
-      console.log(`🔍 Found ${tunnelElements.length} tunnel-related elements`);
+      console.log(` Found ${tunnelElements.length} tunnel-related elements`);
 
       testReport.timings.tunnelSearchTime = Date.now() - tunnelSearchStart;
 
       // Step 6: Monitor WebSocket connections
-      console.log('📍 Step 6: Monitoring WebSocket connections...');
+      console.log('� Step 6: Monitoring WebSocket connections...');
       const wsMonitorStart = Date.now();
 
       // Check for WebSocket connections in network requests
@@ -424,12 +424,12 @@ test.describe('Comprehensive Tunnel Diagnosis', () => {
         requests: wsRequests
       });
 
-      console.log(`🌐 Detected ${wsRequests.length} WebSocket-related requests`);
+      console.log(` Detected ${wsRequests.length} WebSocket-related requests`);
 
       testReport.timings.wsMonitorTime = Date.now() - wsMonitorStart;
 
       // Step 7: Test tunnel establishment workflow
-      console.log('📍 Step 7: Testing tunnel establishment workflow...');
+      console.log('� Step 7: Testing tunnel establishment workflow...');
       const tunnelTestStart = Date.now();
 
       try {
@@ -437,7 +437,7 @@ test.describe('Comprehensive Tunnel Diagnosis', () => {
         const setupButton = page.locator('button:has-text("Setup"), button:has-text("Configure"), button:has-text("Connect")').first();
 
         if (await setupButton.isVisible({ timeout: 10000 })) {
-          console.log('🔧 Setup/Connect button found, testing tunnel workflow...');
+          console.log(' Setup/Connect button found, testing tunnel workflow...');
 
           await setupButton.click();
           await page.waitForTimeout(2000);
@@ -459,7 +459,7 @@ test.describe('Comprehensive Tunnel Diagnosis', () => {
 
             if (successIndicators > 0) {
               tunnelConnected = true;
-              console.log(`✅ Tunnel connection indicators found after ${attempts} seconds`);
+              console.log(` Tunnel connection indicators found after ${attempts} seconds`);
             }
 
             // Check for error indicators
@@ -482,7 +482,7 @@ test.describe('Comprehensive Tunnel Diagnosis', () => {
           });
 
         } else {
-          console.log('🔧 No setup/connect button found');
+          console.log(' No setup/connect button found');
           testReport.issues.push('No tunnel setup interface found');
           testReport.recommendations.push('Check if tunnel setup UI is properly rendered');
         }
@@ -495,7 +495,7 @@ test.describe('Comprehensive Tunnel Diagnosis', () => {
       }
 
       // Step 8: Analyze console logs for tunnel-specific issues
-      console.log('📍 Step 8: Analyzing console logs for tunnel issues...');
+      console.log('� Step 8: Analyzing console logs for tunnel issues...');
 
       const tunnelLogs = testReport.consoleMessages.filter(msg =>
         msg.text.toLowerCase().includes('tunnel') ||
@@ -523,7 +523,7 @@ test.describe('Comprehensive Tunnel Diagnosis', () => {
       }
 
       // Step 9: Check for SSL/TLS certificate issues
-      console.log('📍 Step 9: Checking SSL/TLS certificates...');
+      console.log('� Step 9: Checking SSL/TLS certificates...');
 
       if (testReport.sslCertificates.length > 0) {
         testReport.sslCertificates.forEach(cert => {
@@ -536,7 +536,7 @@ test.describe('Comprehensive Tunnel Diagnosis', () => {
             testReport.recommendations.push('Renew SSL certificates before expiry');
           }
 
-          console.log(`🔒 SSL Certificate for ${cert.url}: Valid until ${cert.validTo} (${daysUntilExpiry} days)`);
+          console.log(`� SSL Certificate for ${cert.url}: Valid until ${cert.validTo} (${daysUntilExpiry} days)`);
         });
       } else {
         testReport.issues.push('No SSL certificate information captured');
@@ -552,7 +552,7 @@ test.describe('Comprehensive Tunnel Diagnosis', () => {
         testReport.result = 'ISSUES_DETECTED';
       }
 
-      console.log(`✅ Tunnel diagnosis completed with result: ${testReport.result}`);
+      console.log(` Tunnel diagnosis completed with result: ${testReport.result}`);
 
     } catch (error) {
       testReport.result = 'NAVIGATION_FAILED';
@@ -567,7 +567,7 @@ test.describe('Comprehensive Tunnel Diagnosis', () => {
     expect(testReport.result).not.toBe('NAVIGATION_FAILED');
 
     if (testReport.result === 'ISSUES_DETECTED') {
-      console.log('⚠️ Significant issues detected in tunnel functionality');
+      console.log(' Significant issues detected in tunnel functionality');
       // Don't fail the test, but log issues for investigation
     }
   });

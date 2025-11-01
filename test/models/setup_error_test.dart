@@ -261,14 +261,14 @@ void main() {
 
     group('Error Properties', () {
       test('should provide correct error icon for each type', () {
-        expect(SetupError.platformDetectionFailed().getErrorIcon(), '🖥️');
-        expect(SetupError.containerCreationFailed().getErrorIcon(), '📦');
-        expect(SetupError.downloadFailed().getErrorIcon(), '⬇️');
-        expect(SetupError.tunnelConfigurationFailed().getErrorIcon(), '🔗');
-        expect(SetupError.connectionValidationFailed().getErrorIcon(), '🔍');
+        expect(SetupError.platformDetectionFailed().getErrorIcon(), '');
+        expect(SetupError.containerCreationFailed().getErrorIcon(), '�');
+        expect(SetupError.downloadFailed().getErrorIcon(), '⬇');
+        expect(SetupError.tunnelConfigurationFailed().getErrorIcon(), '');
+        expect(SetupError.connectionValidationFailed().getErrorIcon(), '');
 
         final authError = SetupError.fromException(Exception('auth error'));
-        expect(authError.getErrorIcon(), '❌'); // Default for unknown
+        expect(authError.getErrorIcon(), ''); // Default for unknown
       });
 
       test('should provide correct error color for each type', () {
@@ -308,7 +308,7 @@ void main() {
         final guide = error.getDetailedTroubleshootingGuide();
 
         expect(guide, contains('## Troubleshooting Guide'));
-        expect(guide, contains('🖥️ Unable to detect your operating system'));
+        expect(guide, contains(' Unable to detect your operating system'));
         expect(guide, contains('**What to try:**'));
         expect(guide, contains('1. Try refreshing the page'));
         expect(guide, contains('**Retry:**'));

@@ -33,7 +33,7 @@ test.describe('Tunnel Infrastructure Verification', () => {
           timestamp: new Date().toISOString(),
           blocked: false,
         });
-        console.error(`🚨 LOCALHOST REQUEST DETECTED: ${request.method()} ${url}`);
+        console.error(`� LOCALHOST REQUEST DETECTED: ${request.method()} ${url}`);
       }
     });
 
@@ -50,7 +50,7 @@ test.describe('Tunnel Infrastructure Verification', () => {
           blocked: true,
           error: failure?.errorText || 'Request failed',
         });
-        console.log(`✅ LOCALHOST REQUEST BLOCKED (expected): ${request.method()} ${url} - ${failure?.errorText}`);
+        console.log(` LOCALHOST REQUEST BLOCKED (expected): ${request.method()} ${url} - ${failure?.errorText}`);
       }
     });
 
@@ -69,13 +69,13 @@ test.describe('Tunnel Infrastructure Verification', () => {
           text.includes('LocalOllama') ||
           text.includes('ConnectionManager') ||
           text.includes('CORS')) {
-        console.log(`📝 Console: [${msg.type()}] ${text}`);
+        console.log(` Console: [${msg.type()}] ${text}`);
       }
     });
   });
 
   test('should never make direct calls to localhost:11434', async ({ page }) => {
-    console.log('🧪 Testing: No direct localhost calls');
+    console.log(' Testing: No direct localhost calls');
     
     // Navigate to the web application
     await page.goto('/');
@@ -114,11 +114,11 @@ test.describe('Tunnel Infrastructure Verification', () => {
     await page.waitForTimeout(5000);
 
     // Verify no localhost requests were made
-    console.log(`📊 Total network requests: ${networkRequests.length}`);
-    console.log(`🚨 Localhost requests detected: ${localhostRequests.length}`);
+    console.log(` Total network requests: ${networkRequests.length}`);
+    console.log(`� Localhost requests detected: ${localhostRequests.length}`);
     
     if (localhostRequests.length > 0) {
-      console.error('❌ LOCALHOST REQUESTS FOUND:');
+      console.error(' LOCALHOST REQUESTS FOUND:');
       localhostRequests.forEach((req, index) => {
         console.error(`  ${index + 1}. ${req.method} ${req.url} (${req.blocked ? 'BLOCKED' : 'ALLOWED'})`);
       });
@@ -129,7 +129,7 @@ test.describe('Tunnel Infrastructure Verification', () => {
   });
 
   test('should use cloud proxy tunnel for Ollama API calls', async ({ page }) => {
-    console.log('🧪 Testing: Cloud proxy tunnel usage');
+    console.log(' Testing: Cloud proxy tunnel usage');
     
     await page.goto('/');
     await page.waitForTimeout(5000);
@@ -140,7 +140,7 @@ test.describe('Tunnel Infrastructure Verification', () => {
       req.url.includes('cloudtolocalllm.online/api/ollama')
     );
 
-    console.log(`🌐 Cloud proxy requests found: ${cloudProxyRequests.length}`);
+    console.log(` Cloud proxy requests found: ${cloudProxyRequests.length}`);
     cloudProxyRequests.forEach((req, index) => {
       console.log(`  ${index + 1}. ${req.method} ${req.url}`);
     });
@@ -152,7 +152,7 @@ test.describe('Tunnel Infrastructure Verification', () => {
       msg.text.includes('tunnel')
     );
 
-    console.log(`📝 Platform detection messages: ${platformMessages.length}`);
+    console.log(` Platform detection messages: ${platformMessages.length}`);
     platformMessages.forEach((msg, index) => {
       console.log(`  ${index + 1}. [${msg.type}] ${msg.text}`);
     });
@@ -162,7 +162,7 @@ test.describe('Tunnel Infrastructure Verification', () => {
   });
 
   test('should show proper CORS prevention logging', async ({ page }) => {
-    console.log('🧪 Testing: CORS prevention logging');
+    console.log(' Testing: CORS prevention logging');
     
     await page.goto('/');
     await page.waitForTimeout(5000);
@@ -175,7 +175,7 @@ test.describe('Tunnel Infrastructure Verification', () => {
       msg.text.includes('localhost operations disabled')
     );
 
-    console.log(`🛡️ CORS prevention messages: ${corsMessages.length}`);
+    console.log(`� CORS prevention messages: ${corsMessages.length}`);
     corsMessages.forEach((msg, index) => {
       console.log(`  ${index + 1}. [${msg.type}] ${msg.text}`);
     });
@@ -185,7 +185,7 @@ test.describe('Tunnel Infrastructure Verification', () => {
   });
 
   test('should handle connection manager routing correctly', async ({ page }) => {
-    console.log('🧪 Testing: Connection manager routing');
+    console.log(' Testing: Connection manager routing');
     
     await page.goto('/');
     await page.waitForTimeout(5000);
@@ -197,7 +197,7 @@ test.describe('Tunnel Infrastructure Verification', () => {
       msg.text.includes('local connection disabled')
     );
 
-    console.log(`🔗 Connection manager messages: ${connectionMessages.length}`);
+    console.log(` Connection manager messages: ${connectionMessages.length}`);
     connectionMessages.forEach((msg, index) => {
       console.log(`  ${index + 1}. [${msg.type}] ${msg.text}`);
     });
@@ -208,14 +208,14 @@ test.describe('Tunnel Infrastructure Verification', () => {
 
   test.afterEach(async ({ page }) => {
     // Generate detailed report
-    console.log('\n📋 TUNNEL VERIFICATION REPORT');
+    console.log('\n� TUNNEL VERIFICATION REPORT');
     console.log('================================');
-    console.log(`🌐 Total network requests: ${networkRequests.length}`);
-    console.log(`🚨 Localhost requests: ${localhostRequests.length}`);
-    console.log(`📝 Console messages: ${consoleMessages.length}`);
+    console.log(` Total network requests: ${networkRequests.length}`);
+    console.log(`� Localhost requests: ${localhostRequests.length}`);
+    console.log(` Console messages: ${consoleMessages.length}`);
     
     if (localhostRequests.length > 0) {
-      console.log('\n❌ LOCALHOST REQUESTS (SHOULD BE ZERO):');
+      console.log('\n LOCALHOST REQUESTS (SHOULD BE ZERO):');
       localhostRequests.forEach((req, index) => {
         console.log(`  ${index + 1}. ${req.method} ${req.url}`);
         console.log(`     Status: ${req.blocked ? 'BLOCKED' : 'ALLOWED'}`);
@@ -223,7 +223,7 @@ test.describe('Tunnel Infrastructure Verification', () => {
         if (req.error) console.log(`     Error: ${req.error}`);
       });
     } else {
-      console.log('\n✅ NO LOCALHOST REQUESTS DETECTED (GOOD!)');
+      console.log('\n NO LOCALHOST REQUESTS DETECTED (GOOD!)');
     }
 
     // Log cloud proxy usage
@@ -232,7 +232,7 @@ test.describe('Tunnel Infrastructure Verification', () => {
     );
     
     if (cloudRequests.length > 0) {
-      console.log('\n🌐 CLOUD PROXY REQUESTS:');
+      console.log('\n CLOUD PROXY REQUESTS:');
       cloudRequests.forEach((req, index) => {
         console.log(`  ${index + 1}. ${req.method} ${req.url}`);
       });

@@ -123,7 +123,7 @@ test.describe('Tunnel Performance Analysis', () => {
     
     // Write performance report
     fs.writeFileSync(reportPath, JSON.stringify(performanceReport, null, 2));
-    console.log(`📊 Performance report saved to: ${reportPath}`);
+    console.log(` Performance report saved to: ${reportPath}`);
     
     // Print performance summary
     console.log('\n=== TUNNEL PERFORMANCE SUMMARY ===');
@@ -148,13 +148,13 @@ test.describe('Tunnel Performance Analysis', () => {
   });
 
   test('tunnel connection performance analysis', async ({ page }) => {
-    console.log('🚀 Starting tunnel connection performance analysis...');
+    console.log(' Starting tunnel connection performance analysis...');
     
     const testStart = Date.now();
     
     try {
       // Test 1: Initial page load performance
-      console.log('📍 Test 1: Measuring initial page load performance...');
+      console.log('� Test 1: Measuring initial page load performance...');
       const loadStart = Date.now();
       
       await page.goto(CONFIG.DEPLOYMENT_URL, { 
@@ -169,7 +169,7 @@ test.describe('Tunnel Performance Analysis', () => {
         timestamp: new Date().toISOString()
       });
       
-      console.log(`✅ Initial page load: ${loadTime}ms`);
+      console.log(` Initial page load: ${loadTime}ms`);
       
       if (loadTime > CONFIG.ACCEPTABLE_RESPONSE_TIME) {
         performanceReport.performanceIssues.push(`Slow initial page load: ${loadTime}ms`);
@@ -177,10 +177,10 @@ test.describe('Tunnel Performance Analysis', () => {
       }
       
       // Test 2: Multiple connection attempts
-      console.log('📍 Test 2: Testing multiple connection attempts...');
+      console.log('� Test 2: Testing multiple connection attempts...');
       
       for (let i = 0; i < CONFIG.CONNECTION_ATTEMPTS; i++) {
-        console.log(`🔄 Connection attempt ${i + 1}/${CONFIG.CONNECTION_ATTEMPTS}`);
+        console.log(` Connection attempt ${i + 1}/${CONFIG.CONNECTION_ATTEMPTS}`);
         
         const attemptStart = Date.now();
         
@@ -200,7 +200,7 @@ test.describe('Tunnel Performance Analysis', () => {
             success: true
           });
           
-          console.log(`✅ Attempt ${i + 1}: ${attemptTime}ms`);
+          console.log(` Attempt ${i + 1}: ${attemptTime}ms`);
           
         } catch (error) {
           const attemptTime = Date.now() - attemptStart;
@@ -214,7 +214,7 @@ test.describe('Tunnel Performance Analysis', () => {
           });
           
           performanceReport.performanceIssues.push(`Connection attempt ${i + 1} failed: ${error.message}`);
-          console.log(`❌ Attempt ${i + 1} failed: ${error.message}`);
+          console.log(` Attempt ${i + 1} failed: ${error.message}`);
         }
         
         // Brief pause between attempts
@@ -222,7 +222,7 @@ test.describe('Tunnel Performance Analysis', () => {
       }
       
       // Test 3: WebSocket connection performance
-      console.log('📍 Test 3: Testing WebSocket connection performance...');
+      console.log('� Test 3: Testing WebSocket connection performance...');
       
       const wsTestStart = Date.now();
       let wsConnected = false;
@@ -253,7 +253,7 @@ test.describe('Tunnel Performance Analysis', () => {
             success: true
           });
           
-          console.log(`✅ WebSocket connection established in ${wsConnectionTime}ms (${wsAttempts} attempts)`);
+          console.log(` WebSocket connection established in ${wsConnectionTime}ms (${wsAttempts} attempts)`);
           break;
         }
       }
@@ -270,11 +270,11 @@ test.describe('Tunnel Performance Analysis', () => {
         
         performanceReport.performanceIssues.push('WebSocket connection not established within timeout');
         performanceReport.recommendations.push('Check WebSocket configuration and connectivity');
-        console.log(`❌ WebSocket connection failed after ${wsAttempts} attempts`);
+        console.log(` WebSocket connection failed after ${wsAttempts} attempts`);
       }
       
       // Test 4: Load testing simulation
-      console.log('📍 Test 4: Running load testing simulation...');
+      console.log('� Test 4: Running load testing simulation...');
       
       const loadTestStart = Date.now();
       const loadTestRequests = [];
@@ -311,7 +311,7 @@ test.describe('Tunnel Performance Analysis', () => {
           timestamp: new Date().toISOString()
         });
         
-        console.log(`✅ Load test completed: ${results.length} requests in ${loadTestTime}ms`);
+        console.log(` Load test completed: ${results.length} requests in ${loadTestTime}ms`);
         
         if (loadTestTime > CONFIG.LOAD_TEST_DURATION) {
           performanceReport.performanceIssues.push(`Load test took longer than expected: ${loadTestTime}ms`);
@@ -335,7 +335,7 @@ test.describe('Tunnel Performance Analysis', () => {
         performanceReport.result = 'POOR_PERFORMANCE';
       }
       
-      console.log(`✅ Performance analysis completed with result: ${performanceReport.result}`);
+      console.log(` Performance analysis completed with result: ${performanceReport.result}`);
       
     } catch (error) {
       performanceReport.result = 'PERFORMANCE_TEST_FAILED';
@@ -350,7 +350,7 @@ test.describe('Tunnel Performance Analysis', () => {
     expect(performanceReport.result).not.toBe('PERFORMANCE_TEST_FAILED');
     
     if (performanceReport.result === 'POOR_PERFORMANCE') {
-      console.log('⚠️ Poor performance detected - investigation recommended');
+      console.log(' Poor performance detected - investigation recommended');
     }
   });
 });

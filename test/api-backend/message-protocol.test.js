@@ -799,16 +799,16 @@ describe('MessageProtocol', () => {
       const unicodeRequest = MessageProtocol.createRequestMessage({
         method: 'POST',
         path: '/api/测试',
-        headers: { 'x-unicode': '🚀 rocket' },
-        body: '{"emoji": "🎉", "chinese": "测试"}',
+        headers: { 'x-unicode': ' rocket' },
+        body: '{"emoji": "�", "chinese": "测试"}',
       });
 
       const serialized = MessageProtocol.serialize(unicodeRequest);
       const deserialized = MessageProtocol.deserialize(serialized);
 
       expect(deserialized.path).toBe('/api/测试');
-      expect(deserialized.headers['x-unicode']).toBe('🚀 rocket');
-      expect(deserialized.body).toBe('{"emoji": "🎉", "chinese": "测试"}');
+      expect(deserialized.headers['x-unicode']).toBe(' rocket');
+      expect(deserialized.body).toBe('{"emoji": "�", "chinese": "测试"}');
     });
 
     test('should handle concurrent message creation', () => {

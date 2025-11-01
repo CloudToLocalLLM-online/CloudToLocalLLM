@@ -41,13 +41,13 @@ test.describe('Tunnel UI Improvements', () => {
 
   test.afterEach(async ({ page }) => {
     // Log network requests for debugging
-    console.log(`📊 Network requests captured: ${networkRequests.length}`);
-    console.log(`💬 Console messages captured: ${consoleMessages.length}`);
+    console.log(` Network requests captured: ${networkRequests.length}`);
+    console.log(` Console messages captured: ${consoleMessages.length}`);
     
     // Log any errors
     const errors = consoleMessages.filter(msg => msg.type === 'error');
     if (errors.length > 0) {
-      console.log('🚨 Console errors detected:', errors);
+      console.log('� Console errors detected:', errors);
     }
   });
 
@@ -165,7 +165,7 @@ test.describe('Tunnel UI Improvements', () => {
       const cancelButton = page.locator('button:has-text("Cancel"), button[aria-label="Close"]').first();
       await cancelButton.click();
     } else {
-      console.log('ℹ️ Desktop client prompt not visible - desktop client may be connected');
+      console.log(' Desktop client prompt not visible - desktop client may be connected');
     }
   });
 

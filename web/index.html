@@ -60,7 +60,7 @@
           if (key.includes('auth0') || key.includes('@@auth0spajs') || key.includes('@@auth0')) {
             const value = localStorage.getItem(key);
             if (value && value.includes('api.cloudtolocalllm.online')) {
-              console.log('🗑️ Clearing old Auth0 cache with api.cloudtolocalllm.online:', key);
+              console.log(' Clearing old Auth0 cache with api.cloudtolocalllm.online:', key);
               localStorage.removeItem(key);
             }
           }
@@ -72,7 +72,7 @@
           if (key.includes('auth0') || key.includes('@@auth0')) {
             const value = sessionStorage.getItem(key);
             if (value && value.includes('api.cloudtolocalllm.online')) {
-              console.log('🗑️ Clearing old Auth0 sessionStorage:', key);
+              console.log(' Clearing old Auth0 sessionStorage:', key);
               sessionStorage.removeItem(key);
             }
           }
@@ -80,7 +80,7 @@
         
         // Clear URL if it has the old error
         if (window.location.search.includes('api.cloudtolocalllm.online')) {
-          console.log('🗑️ Clearing URL with old api.cloudtolocalllm.online error');
+          console.log(' Clearing URL with old api.cloudtolocalllm.online error');
           window.history.replaceState({}, document.title, window.location.pathname);
         }
       } catch (e) {
@@ -92,7 +92,7 @@
     window.addEventListener('DOMContentLoaded', async function() {
       if (window.cloudToLocalLLMConfig) {
         const audience = 'https://app.cloudtolocalllm.online';
-        console.log('🔧 Initializing Auth0 with audience:', audience);
+        console.log(' Initializing Auth0 with audience:', audience);
         window.auth0Client = await auth0.createAuth0Client({
           domain: 'dev-v2f2p008x3dr74ww.us.auth0.com',
           clientId: 'FuXPnevXpp311CdYHGsbNZe9t3D8Ts7A',
@@ -106,7 +106,7 @@
           // Use a unique cache key to force refresh on audience change
           cacheKey: 'auth0-cache-v2'
         });
-        console.log('✅ Auth0 initialized with audience:', audience);
+        console.log(' Auth0 initialized with audience:', audience);
         
         // Check if redirected back from Auth0 (success or error)
         const urlParams = new URLSearchParams(window.location.search);
@@ -116,7 +116,7 @@
           // Handle Auth0 error callback - don't call handleRedirectCallback on errors
           const error = urlParams.get('error');
           const errorDescription = urlParams.get('error_description') || 'Authentication failed';
-          console.error('❌ Auth0 authentication error:', error, errorDescription);
+          console.error(' Auth0 authentication error:', error, errorDescription);
           
           // Clean up URL immediately
           window.history.replaceState({}, document.title, window.location.pathname);
@@ -131,18 +131,18 @@
           }
         } else if (urlParams.has('code') || urlParams.has('state')) {
           // Only handle callback if there's no error
-          console.log('🔄 Handling Auth0 redirect callback...');
+          console.log(' Handling Auth0 redirect callback...');
           try {
             await window.auth0Client.handleRedirectCallback();
             window.history.replaceState({}, document.title, window.location.pathname);
-            console.log('✅ Auth0 callback handled successfully');
+            console.log(' Auth0 callback handled successfully');
             
             // Notify Flutter app that auth completed
             if (window.flutterAuthCallback) {
               window.flutterAuthCallback({ success: true });
             }
           } catch (error) {
-            console.error('❌ Auth0 callback error:', error);
+            console.error(' Auth0 callback error:', error);
             if (window.flutterAuthCallback) {
               window.flutterAuthCallback({ success: false, error: error.message });
             }
@@ -159,7 +159,7 @@
   <script>
     // Global error handler to catch unhandled errors and prevent page reload
     window.addEventListener('error', function(event) {
-      console.error('❌ Global error caught:', {
+      console.error(' Global error caught:', {
         message: event.message,
         filename: event.filename,
         lineno: event.lineno,
@@ -173,7 +173,7 @@
 
     // Handle unhandled promise rejections
     window.addEventListener('unhandledrejection', function(event) {
-      console.error('❌ Unhandled promise rejection:', {
+      console.error(' Unhandled promise rejection:', {
         reason: event.reason,
         promise: event.promise
       });
@@ -190,7 +190,7 @@
         // Check if it's an Auth0 error and handle gracefully
         const errorMessage = args.join(' ');
         if (errorMessage.includes('Auth0') && errorMessage.includes('error')) {
-          console.warn('⚠️ Auth0 error detected - will not reload page');
+          console.warn(' Auth0 error detected - will not reload page');
         }
       };
     });

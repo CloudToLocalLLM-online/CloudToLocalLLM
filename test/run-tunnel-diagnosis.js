@@ -55,7 +55,7 @@ class TunnelDiagnosisRunner {
   }
 
   async run() {
-    console.log('🚀 CloudToLocalLLM Comprehensive Tunnel Diagnosis');
+    console.log(' CloudToLocalLLM Comprehensive Tunnel Diagnosis');
     console.log('================================================');
     console.log(`Deployment URL: ${CONFIG.DEPLOYMENT_URL}`);
     console.log(`Timestamp: ${this.results.timestamp}`);
@@ -87,7 +87,7 @@ class TunnelDiagnosisRunner {
   }
 
   async runTestSuite(suite) {
-    console.log(`📋 Running: ${suite.name}`);
+    console.log(`� Running: ${suite.name}`);
     console.log(`   ${suite.description}`);
     console.log('');
 
@@ -126,7 +126,7 @@ class TunnelDiagnosisRunner {
       suiteResult.status = 'PASSED';
       this.results.summary.passedTests++;
 
-      console.log(`   ✅ ${suite.name} completed successfully`);
+      console.log(`    ${suite.name} completed successfully`);
 
     } catch (error) {
       suiteResult.error = error.message;
@@ -134,7 +134,7 @@ class TunnelDiagnosisRunner {
       suiteResult.status = 'FAILED';
       this.results.summary.failedTests++;
 
-      console.log(`   ❌ ${suite.name} failed: ${error.message}`);
+      console.log(`    ${suite.name} failed: ${error.message}`);
     }
 
     suiteResult.duration = Date.now() - suiteStart;
@@ -176,7 +176,7 @@ class TunnelDiagnosisRunner {
   }
 
   async generateConsolidatedReport() {
-    console.log('📊 Generating consolidated report...');
+    console.log(' Generating consolidated report...');
 
     // Collect all issues and recommendations from individual reports
     for (const suite of this.results.testSuites) {
@@ -221,11 +221,11 @@ class TunnelDiagnosisRunner {
     const reportPath = path.join(CONFIG.OUTPUT_DIR, CONFIG.REPORT_FILE);
     fs.writeFileSync(reportPath, JSON.stringify(this.results, null, 2));
 
-    console.log(`   ✅ Consolidated report saved to: ${reportPath}`);
+    console.log(`    Consolidated report saved to: ${reportPath}`);
   }
 
   async generateHTMLReport() {
-    console.log('📄 Generating HTML report...');
+    console.log('� Generating HTML report...');
 
     const html = `
 <!DOCTYPE html>
@@ -258,7 +258,7 @@ class TunnelDiagnosisRunner {
 <body>
     <div class="container">
         <div class="header">
-            <h1>🔧 CloudToLocalLLM Tunnel Diagnosis Report</h1>
+            <h1> CloudToLocalLLM Tunnel Diagnosis Report</h1>
             <p><strong>Deployment URL:</strong> ${this.results.deploymentUrl}</p>
             <p><strong>Test Date:</strong> ${new Date(this.results.timestamp).toLocaleString()}</p>
             <h2 class="status-${this.results.overallResult.toLowerCase().replace('_', '-')}">
@@ -303,7 +303,7 @@ class TunnelDiagnosisRunner {
 
         ${this.results.consolidatedIssues.length > 0 ? `
             <div class="issues-section">
-                <h2>🚨 Issues Detected (${this.results.consolidatedIssues.length})</h2>
+                <h2>� Issues Detected (${this.results.consolidatedIssues.length})</h2>
                 ${this.results.consolidatedIssues.map(item => `
                     <div class="issue-item">
                         <strong>[${item.source}]</strong> ${item.issue}
@@ -314,7 +314,7 @@ class TunnelDiagnosisRunner {
 
         ${this.results.consolidatedRecommendations.length > 0 ? `
             <div class="recommendations-section">
-                <h2>💡 Recommendations (${this.results.consolidatedRecommendations.length})</h2>
+                <h2>� Recommendations (${this.results.consolidatedRecommendations.length})</h2>
                 ${this.results.consolidatedRecommendations.map(item => `
                     <div class="recommendation-item">
                         <strong>[${item.source}]</strong> ${item.recommendation}
@@ -329,12 +329,12 @@ class TunnelDiagnosisRunner {
     const htmlPath = path.join(CONFIG.OUTPUT_DIR, CONFIG.HTML_REPORT_FILE);
     fs.writeFileSync(htmlPath, html);
 
-    console.log(`   ✅ HTML report saved to: ${htmlPath}`);
+    console.log(`    HTML report saved to: ${htmlPath}`);
   }
 
   printSummary() {
     console.log('');
-    console.log('🎯 TUNNEL DIAGNOSIS SUMMARY');
+    console.log(' TUNNEL DIAGNOSIS SUMMARY');
     console.log('===========================');
     console.log(`Overall Result: ${this.results.overallResult}`);
     console.log(`Total Tests: ${this.results.summary.totalTests}`);
@@ -346,7 +346,7 @@ class TunnelDiagnosisRunner {
     console.log('');
 
     if (this.results.consolidatedIssues.length > 0) {
-      console.log('🚨 TOP ISSUES:');
+      console.log('� TOP ISSUES:');
       this.results.consolidatedIssues.slice(0, 5).forEach((item, index) => {
         console.log(`   ${index + 1}. [${item.source}] ${item.issue}`);
       });
@@ -357,15 +357,15 @@ class TunnelDiagnosisRunner {
     }
 
     if (this.results.consolidatedRecommendations.length > 0) {
-      console.log('💡 TOP RECOMMENDATIONS:');
+      console.log('� TOP RECOMMENDATIONS:');
       this.results.consolidatedRecommendations.slice(0, 3).forEach((item, index) => {
         console.log(`   ${index + 1}. [${item.source}] ${item.recommendation}`);
       });
       console.log('');
     }
 
-    console.log(`📊 Detailed reports available in: ${CONFIG.OUTPUT_DIR}/`);
-    console.log(`📄 HTML report: ${CONFIG.OUTPUT_DIR}/${CONFIG.HTML_REPORT_FILE}`);
+    console.log(` Detailed reports available in: ${CONFIG.OUTPUT_DIR}/`);
+    console.log(`� HTML report: ${CONFIG.OUTPUT_DIR}/${CONFIG.HTML_REPORT_FILE}`);
   }
 }
 
@@ -373,7 +373,7 @@ class TunnelDiagnosisRunner {
 if (require.main === module) {
   const runner = new TunnelDiagnosisRunner();
   runner.run().catch(error => {
-    console.error('❌ Tunnel diagnosis failed:', error);
+    console.error(' Tunnel diagnosis failed:', error);
     process.exit(1);
   });
 }

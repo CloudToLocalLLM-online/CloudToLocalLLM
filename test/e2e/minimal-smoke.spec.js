@@ -20,7 +20,7 @@ test.describe('Minimal E2E Smoke Test', () => {
     const mainContent = page.locator('main, #root, .app');
     await expect(mainContent).toBeVisible();
     
-    console.log('✅ Minimal Smoke Test: Application loaded successfully.');
+    console.log(' Minimal Smoke Test: Application loaded successfully.');
   });
 
   // Test 2: No critical console errors on load
@@ -47,6 +47,6 @@ test.describe('Minimal E2E Smoke Test', () => {
     // Assert that there are no critical errors
     expect(criticalErrors.length).toBe(0);
 
-    console.log('✅ Minimal Smoke Test: No critical console errors detected on load.');
+    console.log(' Minimal Smoke Test: No critical console errors detected on load.');
   });
 });

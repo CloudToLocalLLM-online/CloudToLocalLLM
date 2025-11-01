@@ -28,7 +28,7 @@ test.describe('Tunnel Authentication Integration', () => {
   };
 
   test.beforeEach(async ({ page }) => {
-    console.log('🔐 Setting up tunnel authentication integration test...');
+    console.log(' Setting up tunnel authentication integration test...');
     
     // Reset integration report
     integrationReport = {
@@ -60,7 +60,7 @@ test.describe('Tunnel Authentication Integration', () => {
           headers: request.headers()
         });
         
-        console.log(`🔐 AUTH REQUEST: ${request.method()} ${request.url()}`);
+        console.log(` AUTH REQUEST: ${request.method()} ${request.url()}`);
       }
       
       if (request.url().includes('tunnel') || 
@@ -75,7 +75,7 @@ test.describe('Tunnel Authentication Integration', () => {
           headers: request.headers()
         });
         
-        console.log(`🌐 TUNNEL REQUEST: ${request.method()} ${request.url()}`);
+        console.log(` TUNNEL REQUEST: ${request.method()} ${request.url()}`);
       }
     });
 
@@ -94,7 +94,7 @@ test.describe('Tunnel Authentication Integration', () => {
           headers: response.headers()
         });
         
-        console.log(`🔐 AUTH RESPONSE: ${response.status()} ${response.url()}`);
+        console.log(` AUTH RESPONSE: ${response.status()} ${response.url()}`);
       }
       
       if (response.url().includes('tunnel') || 
@@ -109,7 +109,7 @@ test.describe('Tunnel Authentication Integration', () => {
           headers: response.headers()
         });
         
-        console.log(`🌐 TUNNEL RESPONSE: ${response.status()} ${response.url()}`);
+        console.log(` TUNNEL RESPONSE: ${response.status()} ${response.url()}`);
       }
     });
 
@@ -118,7 +118,7 @@ test.describe('Tunnel Authentication Integration', () => {
       if (msg.text().includes('auth') || 
           msg.text().includes('login') || 
           msg.text().includes('token') ||
-          msg.text().includes('🔐')) {
+          msg.text().includes('')) {
         
         integrationReport.authenticationFlow.push({
           timestamp: new Date().toISOString(),
@@ -131,8 +131,8 @@ test.describe('Tunnel Authentication Integration', () => {
       if (msg.text().includes('tunnel') || 
           msg.text().includes('SimpleTunnelClient') ||
           msg.text().includes('ConnectionManager') ||
-          msg.text().includes('🔗') ||
-          msg.text().includes('🌐')) {
+          msg.text().includes('') ||
+          msg.text().includes('')) {
         
         integrationReport.tunnelEstablishment.push({
           timestamp: new Date().toISOString(),
@@ -166,7 +166,7 @@ test.describe('Tunnel Authentication Integration', () => {
     
     // Write integration report
     fs.writeFileSync(reportPath, JSON.stringify(integrationReport, null, 2));
-    console.log(`📊 Integration report saved to: ${reportPath}`);
+    console.log(` Integration report saved to: ${reportPath}`);
     
     // Print integration summary
     console.log('\n=== TUNNEL AUTHENTICATION INTEGRATION SUMMARY ===');
@@ -186,13 +186,13 @@ test.describe('Tunnel Authentication Integration', () => {
   });
 
   test('complete authentication and tunnel integration flow', async ({ page }) => {
-    console.log('🚀 Starting complete authentication and tunnel integration test...');
+    console.log(' Starting complete authentication and tunnel integration test...');
     
     const testStart = Date.now();
     
     try {
       // Step 1: Navigate to application
-      console.log('📍 Step 1: Navigating to application...');
+      console.log('� Step 1: Navigating to application...');
       integrationReport.integrationSteps.push({
         step: 1,
         name: 'NAVIGATION',
@@ -208,10 +208,10 @@ test.describe('Tunnel Authentication Integration', () => {
       integrationReport.integrationSteps[0].status = 'COMPLETED';
       integrationReport.integrationSteps[0].duration = Date.now() - testStart;
       
-      console.log('✅ Navigation completed');
+      console.log(' Navigation completed');
       
       // Step 2: Check initial authentication state
-      console.log('📍 Step 2: Checking initial authentication state...');
+      console.log('� Step 2: Checking initial authentication state...');
       const authCheckStart = Date.now();
       
       integrationReport.integrationSteps.push({
@@ -240,11 +240,11 @@ test.describe('Tunnel Authentication Integration', () => {
       integrationReport.integrationSteps[1].duration = Date.now() - authCheckStart;
       integrationReport.integrationSteps[1].result = isLoggedIn ? 'AUTHENTICATED' : 'NEEDS_AUTH';
       
-      console.log(`✅ Authentication state: ${isLoggedIn ? 'AUTHENTICATED' : 'NEEDS_AUTH'}`);
+      console.log(` Authentication state: ${isLoggedIn ? 'AUTHENTICATED' : 'NEEDS_AUTH'}`);
       
       // Step 3: Handle authentication if needed
       if (needsLogin && !isLoggedIn) {
-        console.log('📍 Step 3: Performing authentication...');
+        console.log('� Step 3: Performing authentication...');
         const authStart = Date.now();
         
         integrationReport.integrationSteps.push({
@@ -277,7 +277,7 @@ test.describe('Tunnel Authentication Integration', () => {
               const logoutButton = await page.locator('button:has-text("Logout"), a:has-text("Logout")').count();
               if (logoutButton > 0) {
                 authCompleted = true;
-                console.log(`✅ Authentication completed after ${authAttempts} seconds`);
+                console.log(` Authentication completed after ${authAttempts} seconds`);
               }
             }
           }
@@ -297,7 +297,7 @@ test.describe('Tunnel Authentication Integration', () => {
           integrationReport.issues.push(`Authentication failed: ${authError.message}`);
         }
       } else {
-        console.log('📍 Step 3: Authentication not required (already authenticated)');
+        console.log('� Step 3: Authentication not required (already authenticated)');
         integrationReport.integrationSteps.push({
           step: 3,
           name: 'AUTHENTICATION',
@@ -308,7 +308,7 @@ test.describe('Tunnel Authentication Integration', () => {
       }
       
       // Step 4: Test tunnel establishment
-      console.log('📍 Step 4: Testing tunnel establishment...');
+      console.log('� Step 4: Testing tunnel establishment...');
       const tunnelStart = Date.now();
       
       integrationReport.integrationSteps.push({
@@ -324,7 +324,7 @@ test.describe('Tunnel Authentication Integration', () => {
       ).all();
       
       if (tunnelElements.length > 0) {
-        console.log(`🔧 Found ${tunnelElements.length} tunnel-related elements`);
+        console.log(` Found ${tunnelElements.length} tunnel-related elements`);
         
         // Try to initiate tunnel connection
         try {
@@ -347,7 +347,7 @@ test.describe('Tunnel Authentication Integration', () => {
             
             if (successIndicators > 0) {
               tunnelConnected = true;
-              console.log(`✅ Tunnel connected after ${tunnelAttempts} seconds`);
+              console.log(` Tunnel connected after ${tunnelAttempts} seconds`);
             }
             
             // Check for error indicators
@@ -383,7 +383,7 @@ test.describe('Tunnel Authentication Integration', () => {
       }
       
       // Step 5: Security validation
-      console.log('📍 Step 5: Performing security validation...');
+      console.log('� Step 5: Performing security validation...');
       
       // Check for secure connections
       const secureRequests = integrationReport.networkActivity.filter(req => 
@@ -420,7 +420,7 @@ test.describe('Tunnel Authentication Integration', () => {
         integrationReport.result = 'INTEGRATION_FAILED';
       }
       
-      console.log(`✅ Integration test completed with result: ${integrationReport.result}`);
+      console.log(` Integration test completed with result: ${integrationReport.result}`);
       
     } catch (error) {
       integrationReport.result = 'INTEGRATION_ERROR';
@@ -435,7 +435,7 @@ test.describe('Tunnel Authentication Integration', () => {
     expect(integrationReport.result).not.toBe('INTEGRATION_ERROR');
     
     if (integrationReport.result === 'INTEGRATION_FAILED') {
-      console.log('⚠️ Integration test failed - critical issues detected');
+      console.log(' Integration test failed - critical issues detected');
     }
   });
 });
