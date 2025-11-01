@@ -76,8 +76,15 @@ export function setupWebSocketTunnel(server, config, logger) {
       }
 
       // Validate token using AuthService
-      const decoded = await authService.validateToken(token);
-      const userId = decoded.sub;
+      const validationResult = await authService.validateToken(token);
+      if (!validationResult.valid) {
+        logger.warn('WebSocket connection rejected - token validation failed', {
+          ip: req.socket.remoteAddress,
+        });
+        ws.close(4001, 'Invalid token');
+        return;
+      }
+      const userId = validationResult.payload.sub;
 
       if (!userId) {
         logger.warn('WebSocket connection rejected - invalid token payload', {
