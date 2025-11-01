@@ -98,21 +98,8 @@ jobs:
             echo "Previous version: $PREV_PUBSPEC_VERSION"
             
             # Always create release for main branch builds
-            # Only skip if version is unchanged AND release already exists
-            if [ -n "$PREV_PUBSPEC_VERSION" ] && [ "$VERSION" == "$PREV_PUBSPEC_VERSION" ]; then
-              echo "Version unchanged: $VERSION"
-              # For unchanged versions, only create release if no release exists yet
-              # We'll create the release anyway to ensure it exists
-              echo "Creating release to ensure it exists"
-              IS_RELEASE="true"
-            else
-              if [ -z "$PREV_PUBSPEC_VERSION" ]; then
-                echo "No previous version found - creating release for $VERSION"
-              else
-                echo "Version changed from '$PREV_PUBSPEC_VERSION' to '$VERSION' - creating release"
-              fi
-              IS_RELEASE="true"
-            fi
+            echo "Creating release for version $VERSION on main branch"
+            IS_RELEASE="true"
           fi
         fi
 
