@@ -287,16 +287,6 @@ jobs:
       run: flutter pub get
       shell: bash
       
-    - name: Enable desktop platform (Windows)
-      if: matrix.platform == 'windows'
-      run: flutter config --enable-windows-desktop
-      shell: powershell
-      
-    - name: Enable desktop platform (Linux)
-      if: matrix.platform == 'linux'
-      run: flutter config --enable-linux-desktop
-      shell: bash
-        
     - name: Build desktop application (Windows)
       if: matrix.platform == 'windows'
       run: flutter build windows --release
