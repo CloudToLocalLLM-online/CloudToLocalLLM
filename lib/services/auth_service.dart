@@ -1,11 +1,13 @@
 import 'package:flutter/foundation.dart';
 import 'auth0_web_service_stub.dart' if (dart.library.html) 'auth0_web_service.dart';
+import 'auth0_desktop_service.dart' if (dart.library.html) 'auth0_desktop_service_stub.dart';
 import '../models/user_model.dart';
 
 /// Auth0-based Authentication Service
-/// Provides authentication for web using Auth0
+/// Provides authentication for web and desktop using Auth0
 class AuthService extends ChangeNotifier {
   Auth0WebService? _auth0Service;
+  Auth0DesktopService? _auth0DesktopService;
   final ValueNotifier<bool> _isAuthenticated = ValueNotifier<bool>(false);
   final ValueNotifier<bool> _isLoading = ValueNotifier<bool>(false);
   UserModel? _currentUser;
@@ -13,6 +15,8 @@ class AuthService extends ChangeNotifier {
   AuthService() {
     if (kIsWeb) {
       _initAuth0();
+    } else {
+      _initAuth0Desktop();
     }
   }
 
@@ -45,6 +49,35 @@ class AuthService extends ChangeNotifier {
     }
   }
 
+  /// Initialize Auth0 for desktop platform
+  Future<void> _initAuth0Desktop() async {
+    try {
+      _auth0DesktopService = Auth0DesktopService();
+      await _auth0DesktopService!.initialize();
+      
+      // Listen to Auth0 auth state changes
+      _auth0DesktopService!.authStateChanges.listen((isAuth) {
+        _isAuthenticated.value = isAuth;
+        if (isAuth && _auth0DesktopService!.currentUser != null) {
+          _currentUser = UserModel.fromAuth0Profile(_auth0DesktopService!.currentUser!);
+        } else {
+          _currentUser = null;
+        }
+        notifyListeners();
+      });
+
+      // Check initial auth status
+      await _auth0DesktopService!.checkAuthStatus();
+      if (_auth0DesktopService!.isAuthenticated && _auth0DesktopService!.currentUser != null) {
+        _isAuthenticated.value = true;
+        _currentUser = UserModel.fromAuth0Profile(_auth0DesktopService!.currentUser!);
+        notifyListeners();
+      }
+    } catch (e) {
+      debugPrint('❌ Failed to initialize Auth0 Desktop: $e');
+    }
+  }
+
   // Getters
   ValueNotifier<bool> get isAuthenticated => _isAuthenticated;
   ValueNotifier<bool> get isLoading => _isLoading;
@@ -57,20 +90,22 @@ class AuthService extends ChangeNotifier {
 
   /// Login with Auth0
   Future<void> login({String? tenantId}) async {
-    if (!kIsWeb) {
-      throw UnsupportedError('Auth0 authentication is only available on web. Mobile/desktop authentication not implemented.');
-    }
-
-    if (_auth0Service == null) {
-      await _initAuth0();
-    }
-
     _isLoading.value = true;
     notifyListeners();
 
     try {
-      await _auth0Service!.login();
-      // Note: login() will redirect, so code after this won't execute immediately
+      if (kIsWeb) {
+        if (_auth0Service == null) {
+          await _initAuth0();
+        }
+        await _auth0Service!.login();
+        // Note: login() will redirect, so code after this won't execute immediately
+      } else {
+        if (_auth0DesktopService == null) {
+          await _initAuth0Desktop();
+        }
+        await _auth0DesktopService!.login();
+      }
     } catch (e) {
       _isLoading.value = false;
       notifyListeners();
@@ -80,19 +115,23 @@ class AuthService extends ChangeNotifier {
 
   /// Logout from Auth0
   Future<void> logout() async {
-    if (!kIsWeb || _auth0Service == null) {
-      _isAuthenticated.value = false;
-      _currentUser = null;
-      notifyListeners();
-      return;
-    }
-
     _isLoading.value = true;
     notifyListeners();
 
     try {
-      await _auth0Service!.logout();
-      // Note: logout() will redirect, so code after this won't execute immediately
+      if (kIsWeb && _auth0Service != null) {
+        await _auth0Service!.logout();
+        // Note: logout() will redirect, so code after this won't execute immediately
+      } else if (!kIsWeb && _auth0DesktopService != null) {
+        await _auth0DesktopService!.logout();
+        _isAuthenticated.value = false;
+        _currentUser = null;
+        notifyListeners();
+      } else {
+        _isAuthenticated.value = false;
+        _currentUser = null;
+        notifyListeners();
+      }
     } catch (e) {
       _isLoading.value = false;
       notifyListeners();
@@ -102,15 +141,20 @@ class AuthService extends ChangeNotifier {
 
   /// Get access token (Auth0 JWT)
   Future<String?> getIdToken({bool forceRefresh = false}) async {
-    if (!kIsWeb || _auth0Service == null) {
-      return null;
+    if (kIsWeb) {
+      return _auth0Service?.accessToken;
+    } else {
+      return _auth0DesktopService?.accessToken;
     }
-    return _auth0Service!.accessToken;
   }
 
   /// Legacy compatibility method
   String? getAccessToken() {
-    return _auth0Service?.accessToken;
+    if (kIsWeb) {
+      return _auth0Service?.accessToken;
+    } else {
+      return _auth0DesktopService?.accessToken;
+    }
   }
 
   /// Get validated access token (alias for getIdToken)
@@ -120,10 +164,22 @@ class AuthService extends ChangeNotifier {
 
   /// Handle callback after authentication redirect
   Future<bool> handleCallback({String? callbackUrl}) async {
-    if (!kIsWeb || _auth0Service == null) {
+    if (kIsWeb && _auth0Service != null) {
+      return await _auth0Service!.handleRedirectCallback();
+    } else if (!kIsWeb && _auth0DesktopService != null) {
+      // Parse callback URL and extract code and state
+      if (callbackUrl != null) {
+        final uri = Uri.parse(callbackUrl);
+        final code = uri.queryParameters['code'];
+        final state = uri.queryParameters['state'];
+        if (code != null && state != null) {
+          await _auth0DesktopService!.handleAuthorizationCode(code, state);
+          return true;
+        }
+      }
       return false;
     }
-    return await _auth0Service!.handleRedirectCallback();
+    return false;
   }
 
   /// Update user display name (not supported with Auth0 - managed in Auth0 dashboard)
@@ -143,6 +199,7 @@ class AuthService extends ChangeNotifier {
     _isAuthenticated.dispose();
     _isLoading.dispose();
     _auth0Service?.dispose();
+    _auth0DesktopService?.dispose();
     super.dispose();
   }
 }

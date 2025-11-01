@@ -205,7 +205,7 @@ class DesktopClientPrompt extends StatelessWidget {
                     Expanded(
                       child: OutlinedButton.icon(
                         onPressed: () {
-                          context.go('/settings/tunnels');
+                          context.go('/settings/tunnel');
                         },
                         icon: const Icon(Icons.help_outline),
                         label: const Text('Help'),

@@ -243,7 +243,7 @@ class AppRouter {
 
         // Tunnel Settings route (legacy/advanced tunnel configuration)
         GoRoute(
-          path: '/settings/tunnels',
+          path: '/settings/tunnel',
           name: 'tunnel-settings',
           builder: (context, state) => const TunnelSettingsScreen(),
         ),

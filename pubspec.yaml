@@ -67,6 +67,9 @@ dependencies:
 
   # UUID generation
   uuid: ^4.5.1
+  
+  # Crypto for PKCE
+  crypto: ^3.0.5
 
   # LangChain Integration
   langchain: ^0.8.0+1

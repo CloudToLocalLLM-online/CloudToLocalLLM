@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../../config/theme.dart';
 import '../../components/modern_card.dart';
@@ -67,6 +68,10 @@ class _ConnectionStatusScreenState extends State<ConnectionStatusScreen> {
         backgroundColor: AppTheme.backgroundMain,
         foregroundColor: AppTheme.textColor,
         elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => context.go('/settings'),
+        ),
         actions: [
           IconButton(
             onPressed: _isRefreshing ? null : _refreshStatus,

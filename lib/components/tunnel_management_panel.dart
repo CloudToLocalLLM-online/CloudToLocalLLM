@@ -326,7 +326,7 @@ class _TunnelManagementPanelState extends State<TunnelManagementPanel>
                   child: OutlinedButton.icon(
                     onPressed: () {
                       _closePanel();
-                      context.go('/settings/tunnels');
+                      context.go('/settings/tunnel');
                     },
                     icon: const Icon(Icons.tune),
                     label: const Text('Advanced Settings'),

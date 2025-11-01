@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../services/http_polling_tunnel_client.dart';
 
@@ -20,6 +21,10 @@ class _TunnelSettingsScreenState extends State<TunnelSettingsScreen> {
       appBar: AppBar(
         title: const Text('Tunnel Settings'),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => context.go('/'),
+        ),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),

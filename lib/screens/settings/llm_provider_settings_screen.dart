@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../config/theme.dart';
@@ -93,6 +94,10 @@ class _LLMProviderSettingsScreenState extends State<LLMProviderSettingsScreen> {
       appBar: AppBar(
         title: const Text('LLM Provider Settings'),
         backgroundColor: Theme.of(context).colorScheme.surface,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => context.go('/settings'),
+        ),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
