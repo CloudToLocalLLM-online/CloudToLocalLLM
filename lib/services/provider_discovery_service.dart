@@ -138,11 +138,11 @@ class ProviderDiscoveryService extends ChangeNotifier {
 
     // Log platform detection for debugging
     if (_isWebPlatform) {
-      debugPrint('🔍 [ProviderDiscovery] Web platform detected - discovery service will be limited');
-      debugPrint('🔍 [ProviderDiscovery] Direct localhost scanning disabled to prevent CORS errors');
-      debugPrint('🔍 [ProviderDiscovery] Web platform should use tunnel/bridge system for provider access');
+      debugPrint(' [ProviderDiscovery] Web platform detected - discovery service will be limited');
+      debugPrint(' [ProviderDiscovery] Direct localhost scanning disabled to prevent CORS errors');
+      debugPrint(' [ProviderDiscovery] Web platform should use tunnel/bridge system for provider access');
     } else {
-      debugPrint('🔍 [ProviderDiscovery] Desktop platform detected - full discovery service enabled');
+      debugPrint(' [ProviderDiscovery] Desktop platform detected - full discovery service enabled');
     }
   }
 
@@ -175,8 +175,8 @@ class ProviderDiscoveryService extends ChangeNotifier {
   Future<List<ProviderInfo>> scanForProviders() async {
     // Skip scanning on web platforms to prevent CORS errors
     if (_isWebPlatform) {
-      debugPrint('🔍 [ProviderDiscovery] Skipping provider scan on web platform');
-      debugPrint('🔍 [ProviderDiscovery] Web platform should use tunnel/bridge for provider access');
+      debugPrint(' [ProviderDiscovery] Skipping provider scan on web platform');
+      debugPrint(' [ProviderDiscovery] Web platform should use tunnel/bridge for provider access');
       return [];
     }
 
@@ -237,7 +237,7 @@ class ProviderDiscoveryService extends ChangeNotifier {
   Future<ProviderInfo?> detectOllama({int port = 11434}) async {
     // Skip detection on web platforms to prevent CORS errors
     if (_isWebPlatform) {
-      debugPrint('🔍 [ProviderDiscovery] Skipping Ollama detection on web platform (port $port)');
+      debugPrint(' [ProviderDiscovery] Skipping Ollama detection on web platform (port $port)');
       return null;
     }
 
@@ -297,7 +297,7 @@ class ProviderDiscoveryService extends ChangeNotifier {
   Future<ProviderInfo?> detectLMStudio({int port = 1234}) async {
     // Skip detection on web platforms to prevent CORS errors
     if (_isWebPlatform) {
-      debugPrint('🔍 [ProviderDiscovery] Skipping LM Studio detection on web platform (port $port)');
+      debugPrint(' [ProviderDiscovery] Skipping LM Studio detection on web platform (port $port)');
       return null;
     }
 
@@ -368,7 +368,7 @@ class ProviderDiscoveryService extends ChangeNotifier {
   Future<List<ProviderInfo>> detectOpenAICompatible() async {
     // Skip detection on web platforms to prevent CORS errors
     if (_isWebPlatform) {
-      debugPrint('🔍 [ProviderDiscovery] Skipping OpenAI-compatible API detection on web platform');
+      debugPrint(' [ProviderDiscovery] Skipping OpenAI-compatible API detection on web platform');
       return [];
     }
 

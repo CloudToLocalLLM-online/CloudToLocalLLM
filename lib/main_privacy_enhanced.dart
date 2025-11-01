@@ -81,7 +81,7 @@ class _CloudToLocalLLMPrivacyAppState extends State<CloudToLocalLLMPrivacyApp> {
         _initializeDesktopServices();
       }
     } catch (e) {
-      debugPrint("💥 [App] Error during app initialization: $e");
+      debugPrint(" [App] Error during app initialization: $e");
       // Still show the UI even if initialization fails
       if (mounted) {
         setState(() {
@@ -134,7 +134,7 @@ class _CloudToLocalLLMPrivacyAppState extends State<CloudToLocalLLMPrivacyApp> {
             }
           } catch (e) {
             debugPrint(
-              "💥 [Navigation] Post-frame navigation error for $route: $e",
+              " [Navigation] Post-frame navigation error for $route: $e",
             );
           }
         });
@@ -147,8 +147,8 @@ class _CloudToLocalLLMPrivacyAppState extends State<CloudToLocalLLMPrivacyApp> {
         });
       }
     } catch (e, stackTrace) {
-      debugPrint("💥 [Navigation] Error navigating to $route: $e");
-      debugPrint("💥 [Navigation] Stack trace: $stackTrace");
+      debugPrint(" [Navigation] Error navigating to $route: $e");
+      debugPrint(" [Navigation] Stack trace: $stackTrace");
     }
   }
 
@@ -167,7 +167,7 @@ class _CloudToLocalLLMPrivacyAppState extends State<CloudToLocalLLMPrivacyApp> {
         context.go(route);
         debugPrint("[Navigation] Retry successful for route: $route");
       } catch (e) {
-        debugPrint("💥 [Navigation] Retry failed for $route: $e");
+        debugPrint(" [Navigation] Retry failed for $route: $e");
         Future.delayed(const Duration(milliseconds: 1000), () {
           _retryNavigation(route, attempt + 1);
         });
@@ -201,7 +201,7 @@ class _CloudToLocalLLMPrivacyAppState extends State<CloudToLocalLLMPrivacyApp> {
             final storage = ConversationStorageService();
             // Initialize asynchronously
             storage.initialize().catchError((e) {
-              debugPrint('💾 [ConversationStorage] Initialization error: $e');
+              debugPrint('� [ConversationStorage] Initialization error: $e');
             });
             return storage;
           },
@@ -217,7 +217,7 @@ class _CloudToLocalLLMPrivacyAppState extends State<CloudToLocalLLMPrivacyApp> {
             );
             // Initialize asynchronously
             privacyManager.initialize().catchError((e) {
-              debugPrint('🔒 [PrivacyStorage] Initialization error: $e');
+              debugPrint('� [PrivacyStorage] Initialization error: $e');
             });
             return privacyManager;
           },
@@ -440,7 +440,7 @@ class _CloudToLocalLLMPrivacyAppState extends State<CloudToLocalLLMPrivacyApp> {
           windowManager.showWindow();
         },
         onHideWindow: () {
-          debugPrint("🫥 [SystemTray] Native tray requested to hide window");
+          debugPrint("� [SystemTray] Native tray requested to hide window");
           windowManager.hideToTray();
         },
         onSettings: () {
@@ -460,7 +460,7 @@ class _CloudToLocalLLMPrivacyAppState extends State<CloudToLocalLLMPrivacyApp> {
           "[SystemTray] Native tray service initialized successfully",
         );
       } else {
-        debugPrint("❌ [SystemTray] Failed to initialize native tray service");
+        debugPrint(" [SystemTray] Failed to initialize native tray service");
       }
     } catch (e, stackTrace) {
       debugPrint("[SystemTray] Failed to initialize desktop services: $e");

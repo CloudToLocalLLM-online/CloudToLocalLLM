@@ -17,7 +17,7 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
-    "nodemon": "^3.0.1",
-    "jest": "^29.6.2"
+    "jest": "^29.6.2",
+    "nodemon": "^3.0.1"
   }
 }

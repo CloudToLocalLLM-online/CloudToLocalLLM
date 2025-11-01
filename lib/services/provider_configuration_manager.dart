@@ -53,10 +53,10 @@ class ProviderConfigurationManager extends ChangeNotifier {
       await _migrateConfigurationsIfNeeded();
       _isInitialized = true;
       notifyListeners();
-      debugPrint('🔧 [ConfigManager] Initialized with ${_configurations.length} configurations');
+      debugPrint(' [ConfigManager] Initialized with ${_configurations.length} configurations');
     } catch (e) {
       _error = 'Failed to initialize configuration manager: $e';
-      debugPrint('🔧 [ConfigManager] Initialization failed: $e');
+      debugPrint(' [ConfigManager] Initialization failed: $e');
       notifyListeners();
     }
   }
@@ -72,17 +72,17 @@ class ProviderConfigurationManager extends ChangeNotifier {
 
       // Log warnings if any
       for (final warning in validationResult.warnings) {
-        debugPrint('🔧 [ConfigManager] Warning: $warning');
+        debugPrint(' [ConfigManager] Warning: $warning');
       }
 
       _configurations[config.providerId] = config;
       await _saveConfigurations();
       
-      debugPrint('🔧 [ConfigManager] Configuration saved for provider: ${config.providerId}');
+      debugPrint(' [ConfigManager] Configuration saved for provider: ${config.providerId}');
       notifyListeners();
     } catch (e) {
       _error = 'Failed to save configuration: $e';
-      debugPrint('🔧 [ConfigManager] Failed to save configuration: $e');
+      debugPrint(' [ConfigManager] Failed to save configuration: $e');
       notifyListeners();
       rethrow;
     }
@@ -101,11 +101,11 @@ class ProviderConfigurationManager extends ChangeNotifier {
       
       await _saveConfigurations();
       
-      debugPrint('🔧 [ConfigManager] Configuration removed for provider: $providerId');
+      debugPrint(' [ConfigManager] Configuration removed for provider: $providerId');
       notifyListeners();
     } catch (e) {
       _error = 'Failed to remove configuration: $e';
-      debugPrint('🔧 [ConfigManager] Failed to remove configuration: $e');
+      debugPrint(' [ConfigManager] Failed to remove configuration: $e');
       notifyListeners();
       rethrow;
     }
@@ -121,11 +121,11 @@ class ProviderConfigurationManager extends ChangeNotifier {
       _preferredProviderId = providerId;
       await _savePreferences();
       
-      debugPrint('🔧 [ConfigManager] Preferred provider set to: $providerId');
+      debugPrint(' [ConfigManager] Preferred provider set to: $providerId');
       notifyListeners();
     } catch (e) {
       _error = 'Failed to set preferred provider: $e';
-      debugPrint('🔧 [ConfigManager] Failed to set preferred provider: $e');
+      debugPrint(' [ConfigManager] Failed to set preferred provider: $e');
       notifyListeners();
       rethrow;
     }
@@ -161,7 +161,7 @@ class ProviderConfigurationManager extends ChangeNotifier {
       notifyListeners();
     } catch (e) {
       _error = 'Failed to update preference: $e';
-      debugPrint('🔧 [ConfigManager] Failed to update preference: $e');
+      debugPrint(' [ConfigManager] Failed to update preference: $e');
       notifyListeners();
       rethrow;
     }
@@ -215,11 +215,11 @@ class ProviderConfigurationManager extends ChangeNotifier {
       await _saveConfigurations();
       await _savePreferences();
 
-      debugPrint('🔧 [ConfigManager] Imported ${_configurations.length} configurations');
+      debugPrint(' [ConfigManager] Imported ${_configurations.length} configurations');
       notifyListeners();
     } catch (e) {
       _error = 'Failed to import configurations: $e';
-      debugPrint('🔧 [ConfigManager] Failed to import configurations: $e');
+      debugPrint(' [ConfigManager] Failed to import configurations: $e');
       notifyListeners();
       rethrow;
     }
@@ -235,11 +235,11 @@ class ProviderConfigurationManager extends ChangeNotifier {
       await _saveConfigurations();
       await _savePreferences();
       
-      debugPrint('🔧 [ConfigManager] All configurations cleared');
+      debugPrint(' [ConfigManager] All configurations cleared');
       notifyListeners();
     } catch (e) {
       _error = 'Failed to clear configurations: $e';
-      debugPrint('🔧 [ConfigManager] Failed to clear configurations: $e');
+      debugPrint(' [ConfigManager] Failed to clear configurations: $e');
       notifyListeners();
       rethrow;
     }
@@ -262,9 +262,9 @@ class ProviderConfigurationManager extends ChangeNotifier {
         }
       }
       
-      debugPrint('🔧 [ConfigManager] Loaded ${_configurations.length} configurations');
+      debugPrint(' [ConfigManager] Loaded ${_configurations.length} configurations');
     } catch (e) {
-      debugPrint('🔧 [ConfigManager] Error loading configurations: $e');
+      debugPrint(' [ConfigManager] Error loading configurations: $e');
     }
   }
 
@@ -278,7 +278,7 @@ class ProviderConfigurationManager extends ChangeNotifier {
       await prefs.setString(_configKey, configJson);
       await prefs.setInt(_versionKey, _currentConfigVersion);
     } catch (e) {
-      debugPrint('🔧 [ConfigManager] Error saving configurations: $e');
+      debugPrint(' [ConfigManager] Error saving configurations: $e');
       rethrow;
     }
   }
@@ -296,9 +296,9 @@ class ProviderConfigurationManager extends ChangeNotifier {
       
       _preferredProviderId = prefs.getString('preferred_provider_id');
       
-      debugPrint('🔧 [ConfigManager] Loaded preferences');
+      debugPrint(' [ConfigManager] Loaded preferences');
     } catch (e) {
-      debugPrint('🔧 [ConfigManager] Error loading preferences: $e');
+      debugPrint(' [ConfigManager] Error loading preferences: $e');
     }
   }
 
@@ -316,7 +316,7 @@ class ProviderConfigurationManager extends ChangeNotifier {
         await prefs.remove('preferred_provider_id');
       }
     } catch (e) {
-      debugPrint('🔧 [ConfigManager] Error saving preferences: $e');
+      debugPrint(' [ConfigManager] Error saving preferences: $e');
       rethrow;
     }
   }
@@ -328,16 +328,16 @@ class ProviderConfigurationManager extends ChangeNotifier {
       final currentVersion = prefs.getInt(_versionKey) ?? 0;
       
       if (currentVersion < _currentConfigVersion) {
-        debugPrint('🔧 [ConfigManager] Migrating configurations from version $currentVersion to $_currentConfigVersion');
+        debugPrint(' [ConfigManager] Migrating configurations from version $currentVersion to $_currentConfigVersion');
         
         // Perform migration logic here if needed
         // For now, just update the version
         
         await prefs.setInt(_versionKey, _currentConfigVersion);
-        debugPrint('🔧 [ConfigManager] Configuration migration completed');
+        debugPrint(' [ConfigManager] Configuration migration completed');
       }
     } catch (e) {
-      debugPrint('🔧 [ConfigManager] Error during configuration migration: $e');
+      debugPrint(' [ConfigManager] Error during configuration migration: $e');
     }
   }
 

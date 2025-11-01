@@ -496,7 +496,7 @@ class TunnelLLMRequestHandler extends ChangeNotifier {
     final stopwatch = Stopwatch()..start();
     final llmRequest = TunnelLLMRequest.fromTunnelRequest(request);
     
-    debugPrint('🔄 [TunnelLLM] Processing ${llmRequest.type} request: ${llmRequest.id}');
+    debugPrint(' [TunnelLLM] Processing ${llmRequest.type} request: ${llmRequest.id}');
     
     try {
       // Validate request
@@ -526,7 +526,7 @@ class TunnelLLMRequestHandler extends ChangeNotifier {
       _requestsProcessed++;
       _requestsSucceeded++;
       
-      debugPrint('✅ [TunnelLLM] Request completed: ${llmRequest.id} (${stopwatch.elapsedMilliseconds}ms)');
+      debugPrint(' [TunnelLLM] Request completed: ${llmRequest.id} (${stopwatch.elapsedMilliseconds}ms)');
       
       return response.copyWith(processingTime: stopwatch.elapsed);
       
@@ -542,7 +542,7 @@ class TunnelLLMRequestHandler extends ChangeNotifier {
               requestId: llmRequest.id,
             );
 
-      debugPrint('❌ [TunnelLLM] Request failed: ${llmRequest.id} - ${llmError.message}');
+      debugPrint(' [TunnelLLM] Request failed: ${llmRequest.id} - ${llmError.message}');
 
       // Use error handler to attempt recovery with retry logic
       final recoveredResponse = await _errorHandler.handleError<TunnelLLMResponse>(
@@ -579,7 +579,7 @@ class TunnelLLMRequestHandler extends ChangeNotifier {
   Stream<TunnelLLMResponse> handleStreamingRequest(TunnelRequestMessage request) async* {
     final llmRequest = TunnelLLMRequest.fromTunnelRequest(request);
     
-    debugPrint('🌊 [TunnelLLM] Starting streaming request: ${llmRequest.id}');
+    debugPrint('� [TunnelLLM] Starting streaming request: ${llmRequest.id}');
     
     try {
       // Validate streaming request
@@ -619,7 +619,7 @@ class TunnelLLMRequestHandler extends ChangeNotifier {
         );
       }
       
-      debugPrint('✅ [TunnelLLM] Streaming completed: ${llmRequest.id}');
+      debugPrint(' [TunnelLLM] Streaming completed: ${llmRequest.id}');
       
     } catch (error) {
       final llmError = error is LLMCommunicationError
@@ -629,7 +629,7 @@ class TunnelLLMRequestHandler extends ChangeNotifier {
               requestId: llmRequest.id,
             );
       
-      debugPrint('❌ [TunnelLLM] Streaming failed: ${llmRequest.id} - ${llmError.message}');
+      debugPrint(' [TunnelLLM] Streaming failed: ${llmRequest.id} - ${llmError.message}');
       
       yield TunnelLLMResponse.error(
         requestId: llmRequest.id,
@@ -1098,7 +1098,7 @@ class TunnelLLMRequestHandler extends ChangeNotifier {
     // Only attempt recovery for retryable errors
     if (!error.isRetryable) return null;
     
-    debugPrint('🔄 [TunnelLLM] Attempting error recovery for ${request.id}: ${error.type}');
+    debugPrint(' [TunnelLLM] Attempting error recovery for ${request.id}: ${error.type}');
     
     try {
       switch (error.recoveryStrategy) {
@@ -1140,7 +1140,7 @@ class TunnelLLMRequestHandler extends ChangeNotifier {
           break;
       }
     } catch (recoveryError) {
-      debugPrint('❌ [TunnelLLM] Error recovery failed for ${request.id}: $recoveryError');
+      debugPrint(' [TunnelLLM] Error recovery failed for ${request.id}: $recoveryError');
     }
     
     return null;
@@ -1233,7 +1233,7 @@ class TunnelLLMRequestHandler extends ChangeNotifier {
       
       return null;
     } catch (e) {
-      debugPrint('⚠️ [TunnelLLM] Failed to extract prompt from request: $e');
+      debugPrint(' [TunnelLLM] Failed to extract prompt from request: $e');
       return null;
     }
   }
@@ -1262,7 +1262,7 @@ class TunnelLLMRequestHandler extends ChangeNotifier {
   /// Dispose of the handler and cleanup resources
   @override
   void dispose() {
-    debugPrint('🔄 [TunnelLLM] Disposing request handler');
+    debugPrint(' [TunnelLLM] Disposing request handler');
     
     // Cancel all active request timers
     for (final timer in _requestTimers.values) {
@@ -1283,7 +1283,7 @@ class TunnelLLMRequestHandler extends ChangeNotifier {
     
     _streamingRequestsActive = 0;
     
-    debugPrint('🔄 [TunnelLLM] Request handler disposed');
+    debugPrint(' [TunnelLLM] Request handler disposed');
     super.dispose();
   }
 }

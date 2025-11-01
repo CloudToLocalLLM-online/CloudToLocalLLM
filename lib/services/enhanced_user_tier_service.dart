@@ -70,12 +70,12 @@ class EnhancedUserTierService extends ChangeNotifier {
   /// Initialize tier service and check user tier
   Future<void> initialize() async {
     if (_isInitialized) {
-      debugPrint('🎯 [UserTier] Already initialized, skipping');
+      debugPrint(' [UserTier] Already initialized, skipping');
       return;
     }
 
     try {
-      debugPrint('🎯 [UserTier] Initializing enhanced user tier service...');
+      debugPrint(' [UserTier] Initializing enhanced user tier service...');
 
       if (_authService.isAuthenticated.value) {
         await checkUserTier();
@@ -84,13 +84,13 @@ class EnhancedUserTierService extends ChangeNotifier {
       }
 
       _isInitialized = true;
-      debugPrint('🎯 [UserTier] Enhanced user tier service initialized');
-      debugPrint('🎯 [UserTier] Current tier: $_currentTier');
-      debugPrint('🎯 [UserTier] Container status: $_containerStatus');
+      debugPrint(' [UserTier] Enhanced user tier service initialized');
+      debugPrint(' [UserTier] Current tier: $_currentTier');
+      debugPrint(' [UserTier] Container status: $_containerStatus');
 
       notifyListeners();
     } catch (e) {
-      debugPrint('🎯 [UserTier] Failed to initialize: $e');
+      debugPrint(' [UserTier] Failed to initialize: $e');
       _error = e.toString();
       _setFreeTierDefaults(); // Safe fallback
       _isInitialized = true;
@@ -150,7 +150,7 @@ class EnhancedUserTierService extends ChangeNotifier {
     }
 
     try {
-      debugPrint('🎯 [UserTier] Checking user tier...');
+      debugPrint(' [UserTier] Checking user tier...');
 
       final response = await _httpClient
           .get(
@@ -168,9 +168,9 @@ class EnhancedUserTierService extends ChangeNotifier {
         _lastTierCheck = DateTime.now();
         _error = null;
 
-        debugPrint('🎯 [UserTier] Tier check successful: $_currentTier');
+        debugPrint(' [UserTier] Tier check successful: $_currentTier');
       } else if (response.statusCode == 401) {
-        debugPrint('🎯 [UserTier] Authentication failed, setting free tier');
+        debugPrint(' [UserTier] Authentication failed, setting free tier');
         _setFreeTierDefaults();
       } else {
         throw Exception('HTTP ${response.statusCode}: ${response.body}');
@@ -178,12 +178,12 @@ class EnhancedUserTierService extends ChangeNotifier {
 
       notifyListeners();
     } catch (e) {
-      debugPrint('🎯 [UserTier] Error checking tier: $e');
+      debugPrint(' [UserTier] Error checking tier: $e');
       _error = e.toString();
 
       // Fallback to free tier on error
       if (_currentTier != 'free') {
-        debugPrint('🎯 [UserTier] Falling back to free tier due to error');
+        debugPrint(' [UserTier] Falling back to free tier due to error');
         _setFreeTierDefaults();
         notifyListeners();
       }
@@ -230,12 +230,12 @@ class EnhancedUserTierService extends ChangeNotifier {
   /// Request container allocation
   Future<bool> requestContainer() async {
     if (!_authService.isAuthenticated.value) {
-      debugPrint('🎯 [UserTier] Container request requires authentication');
+      debugPrint(' [UserTier] Container request requires authentication');
       return false;
     }
 
     try {
-      debugPrint('🎯 [UserTier] Requesting container allocation...');
+      debugPrint(' [UserTier] Requesting container allocation...');
 
       final response = await _httpClient
           .post(
@@ -259,9 +259,9 @@ class EnhancedUserTierService extends ChangeNotifier {
         _hasAlwaysOnContainer = data['always_on'] ?? false;
         _containerCreatedAt = DateTime.now();
 
-        debugPrint('🎯 [UserTier] Container allocated: $_containerId');
+        debugPrint(' [UserTier] Container allocated: $_containerId');
         debugPrint(
-          '🎯 [UserTier] Container type: ${_isPremiumTier ? "persistent" : "ephemeral"}',
+          ' [UserTier] Container type: ${_isPremiumTier ? "persistent" : "ephemeral"}',
         );
 
         notifyListeners();
@@ -270,7 +270,7 @@ class EnhancedUserTierService extends ChangeNotifier {
         throw Exception('HTTP ${response.statusCode}: ${response.body}');
       }
     } catch (e) {
-      debugPrint('🎯 [UserTier] Container allocation failed: $e');
+      debugPrint(' [UserTier] Container allocation failed: $e');
       _error = e.toString();
       notifyListeners();
       return false;
@@ -280,12 +280,12 @@ class EnhancedUserTierService extends ChangeNotifier {
   /// Release container
   Future<bool> releaseContainer() async {
     if (_containerId == null) {
-      debugPrint('🎯 [UserTier] No container to release');
+      debugPrint(' [UserTier] No container to release');
       return true;
     }
 
     try {
-      debugPrint('🎯 [UserTier] Releasing container: $_containerId');
+      debugPrint(' [UserTier] Releasing container: $_containerId');
 
       final response = await _httpClient
           .post(
@@ -304,14 +304,14 @@ class EnhancedUserTierService extends ChangeNotifier {
         _containerCreatedAt = null;
         _hasAlwaysOnContainer = false;
 
-        debugPrint('🎯 [UserTier] Container released successfully');
+        debugPrint(' [UserTier] Container released successfully');
         notifyListeners();
         return true;
       } else {
         throw Exception('HTTP ${response.statusCode}: ${response.body}');
       }
     } catch (e) {
-      debugPrint('🎯 [UserTier] Container release failed: $e');
+      debugPrint(' [UserTier] Container release failed: $e');
       _error = e.toString();
       return false;
     }

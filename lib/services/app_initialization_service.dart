@@ -31,10 +31,10 @@ class AppInitializationService extends ChangeNotifier {
   /// Handle authentication state changes
   void _onAuthStateChanged() {
     if (_authService.isAuthenticated.value && !_isInitialized && !_isInitializing) {
-      debugPrint('🚀 [AppInit] User authenticated, initializing services...');
+      debugPrint(' [AppInit] User authenticated, initializing services...');
       _initializeServices();
     } else if (!_authService.isAuthenticated.value && _isInitialized) {
-      debugPrint('🚀 [AppInit] User logged out, resetting initialization state');
+      debugPrint(' [AppInit] User logged out, resetting initialization state');
       _isInitialized = false;
       notifyListeners();
     }
@@ -48,15 +48,15 @@ class AppInitializationService extends ChangeNotifier {
     notifyListeners();
 
     try {
-      debugPrint('🚀 [AppInit] Starting service initialization...');
+      debugPrint(' [AppInit] Starting service initialization...');
 
       // Note: We can't access context here, so services need to be initialized
       // when this service is consumed by widgets that have access to context
       
       _isInitialized = true;
-      debugPrint('🚀 [AppInit] ✅ Service initialization completed');
+      debugPrint(' [AppInit]  Service initialization completed');
     } catch (e) {
-      debugPrint('🚀 [AppInit] ❌ Service initialization failed: $e');
+      debugPrint(' [AppInit]  Service initialization failed: $e');
     } finally {
       _isInitializing = false;
       notifyListeners();
@@ -68,7 +68,7 @@ class AppInitializationService extends ChangeNotifier {
     if (!_authService.isAuthenticated.value || _isInitialized) return;
 
     try {
-      debugPrint('🚀 [AppInit] Initializing services with context...');
+      debugPrint(' [AppInit] Initializing services with context...');
 
       // Capture services before any async operations to avoid BuildContext async gap
       final connectionManager = context.read<ConnectionManagerService>();
@@ -83,9 +83,9 @@ class AppInitializationService extends ChangeNotifier {
         await clientDetection.initialize();
       }
 
-      debugPrint('🚀 [AppInit] ✅ Context-based initialization completed');
+      debugPrint(' [AppInit]  Context-based initialization completed');
     } catch (e) {
-      debugPrint('🚀 [AppInit] ❌ Context-based initialization failed: $e');
+      debugPrint(' [AppInit]  Context-based initialization failed: $e');
     }
   }
 

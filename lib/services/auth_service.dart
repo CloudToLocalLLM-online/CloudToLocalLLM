@@ -45,7 +45,7 @@ class AuthService extends ChangeNotifier {
         notifyListeners();
       }
     } catch (e) {
-      debugPrint('❌ Failed to initialize Auth0: $e');
+      debugPrint(' Failed to initialize Auth0: $e');
     }
   }
 
@@ -74,7 +74,7 @@ class AuthService extends ChangeNotifier {
         notifyListeners();
       }
     } catch (e) {
-      debugPrint('❌ Failed to initialize Auth0 Desktop: $e');
+      debugPrint(' Failed to initialize Auth0 Desktop: $e');
     }
   }
 
@@ -186,7 +186,7 @@ class AuthService extends ChangeNotifier {
   Future<void> updateDisplayName(String displayName) async {
     // Auth0 user profiles are managed via Auth0 dashboard or Management API
     // For now, we'll just log a warning
-    debugPrint('⚠️ updateDisplayName called but Auth0 profiles are managed externally. Use Auth0 Management API to update user profiles.');
+    debugPrint('updateDisplayName called but Auth0 profiles are managed externally. Use Auth0 Management API to update user profiles.');
     // Update local user model if available
     if (_currentUser != null) {
       _currentUser = _currentUser!.copyWith(name: displayName);

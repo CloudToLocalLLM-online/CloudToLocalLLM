@@ -47,7 +47,7 @@ class PrivacyStorageManager extends ChangeNotifier {
   /// Initialize privacy storage manager
   Future<void> initialize() async {
     try {
-      debugPrint('🔒 [PrivacyStorage] Initializing privacy storage manager...');
+      debugPrint('� [PrivacyStorage] Initializing privacy storage manager...');
 
       // Initialize conversation storage first
       await _conversationStorage.initialize();
@@ -58,13 +58,13 @@ class PrivacyStorageManager extends ChangeNotifier {
       // Update storage statistics
       await _updateStorageStatistics();
 
-      debugPrint('🔒 [PrivacyStorage] Privacy storage manager initialized');
-      debugPrint('🔒 [PrivacyStorage] Storage location: $_storageLocation');
+      debugPrint('� [PrivacyStorage] Privacy storage manager initialized');
+      debugPrint('� [PrivacyStorage] Storage location: $_storageLocation');
       debugPrint(
-        '🔒 [PrivacyStorage] Cloud sync: ${_cloudSyncEnabled ? 'enabled' : 'disabled'}',
+        '� [PrivacyStorage] Cloud sync: ${_cloudSyncEnabled ? 'enabled' : 'disabled'}',
       );
     } catch (e) {
-      debugPrint('🔒 [PrivacyStorage] Failed to initialize: $e');
+      debugPrint('� [PrivacyStorage] Failed to initialize: $e');
       rethrow;
     }
   }
@@ -83,9 +83,9 @@ class PrivacyStorageManager extends ChangeNotifier {
         _lastSyncTime = DateTime.fromMillisecondsSinceEpoch(lastSyncTimestamp);
       }
 
-      debugPrint('🔒 [PrivacyStorage] Privacy settings loaded');
+      debugPrint('� [PrivacyStorage] Privacy settings loaded');
     } catch (e) {
-      debugPrint('🔒 [PrivacyStorage] Failed to load privacy settings: $e');
+      debugPrint('� [PrivacyStorage] Failed to load privacy settings: $e');
       // Use safe defaults
       _cloudSyncEnabled = false;
       _encryptionEnabled = false;
@@ -109,9 +109,9 @@ class PrivacyStorageManager extends ChangeNotifier {
         );
       }
 
-      debugPrint('🔒 [PrivacyStorage] Privacy settings saved');
+      debugPrint('� [PrivacyStorage] Privacy settings saved');
     } catch (e) {
-      debugPrint('🔒 [PrivacyStorage] Failed to save privacy settings: $e');
+      debugPrint('� [PrivacyStorage] Failed to save privacy settings: $e');
     }
   }
 
@@ -129,7 +129,7 @@ class PrivacyStorageManager extends ChangeNotifier {
 
       notifyListeners();
     } catch (e) {
-      debugPrint('🔒 [PrivacyStorage] Failed to update storage statistics: $e');
+      debugPrint('� [PrivacyStorage] Failed to update storage statistics: $e');
     }
   }
 
@@ -148,13 +148,13 @@ class PrivacyStorageManager extends ChangeNotifier {
     try {
       // Check if user has premium tier
       if (!_userTierService.isPremiumTier) {
-        debugPrint('🔒 [PrivacyStorage] Cloud sync requires premium tier');
+        debugPrint('� [PrivacyStorage] Cloud sync requires premium tier');
         return false;
       }
 
       // Verify user authentication
       if (!_authService.isAuthenticated.value) {
-        debugPrint('🔒 [PrivacyStorage] Cloud sync requires authentication');
+        debugPrint('� [PrivacyStorage] Cloud sync requires authentication');
         return false;
       }
 
@@ -164,11 +164,11 @@ class PrivacyStorageManager extends ChangeNotifier {
       await _savePrivacySettings();
       await _conversationStorage.setStorageLocation(_storageLocation);
 
-      debugPrint('🔒 [PrivacyStorage] Cloud sync enabled');
+      debugPrint('� [PrivacyStorage] Cloud sync enabled');
       notifyListeners();
       return true;
     } catch (e) {
-      debugPrint('🔒 [PrivacyStorage] Failed to enable cloud sync: $e');
+      debugPrint('� [PrivacyStorage] Failed to enable cloud sync: $e');
       return false;
     }
   }
@@ -183,10 +183,10 @@ class PrivacyStorageManager extends ChangeNotifier {
       await _savePrivacySettings();
       await _conversationStorage.setStorageLocation(_storageLocation);
 
-      debugPrint('🔒 [PrivacyStorage] Cloud sync disabled');
+      debugPrint('� [PrivacyStorage] Cloud sync disabled');
       notifyListeners();
     } catch (e) {
-      debugPrint('🔒 [PrivacyStorage] Failed to disable cloud sync: $e');
+      debugPrint('� [PrivacyStorage] Failed to disable cloud sync: $e');
     }
   }
 
@@ -195,7 +195,7 @@ class PrivacyStorageManager extends ChangeNotifier {
     try {
       // Check if user has premium tier (encryption is premium feature)
       if (!_userTierService.isPremiumTier) {
-        debugPrint('🔒 [PrivacyStorage] Encryption requires premium tier');
+        debugPrint('� [PrivacyStorage] Encryption requires premium tier');
         return false;
       }
 
@@ -204,11 +204,11 @@ class PrivacyStorageManager extends ChangeNotifier {
       // Enable encryption in ConversationStorageService
       await _conversationStorage.setEncryptionEnabled(true);
 
-      debugPrint('🔒 [PrivacyStorage] Encryption enabled');
+      debugPrint('� [PrivacyStorage] Encryption enabled');
       notifyListeners();
       return true;
     } catch (e) {
-      debugPrint('🔒 [PrivacyStorage] Failed to enable encryption: $e');
+      debugPrint('� [PrivacyStorage] Failed to enable encryption: $e');
       return false;
     }
   }
@@ -221,10 +221,10 @@ class PrivacyStorageManager extends ChangeNotifier {
       // Disable encryption in ConversationStorageService
       await _conversationStorage.setEncryptionEnabled(false);
 
-      debugPrint('🔒 [PrivacyStorage] Encryption disabled');
+      debugPrint('� [PrivacyStorage] Encryption disabled');
       notifyListeners();
     } catch (e) {
-      debugPrint('🔒 [PrivacyStorage] Failed to disable encryption: $e');
+      debugPrint('� [PrivacyStorage] Failed to disable encryption: $e');
     }
   }
 
@@ -232,11 +232,11 @@ class PrivacyStorageManager extends ChangeNotifier {
   String get storageLocationDisplay {
     switch (_storageLocation) {
       case 'local_only':
-        return '🔒 Local Storage Only';
+        return '� Local Storage Only';
       case 'local_with_cloud_sync':
-        return '☁️ Local + Cloud Sync';
+        return '☁ Local + Cloud Sync';
       default:
-        return '🔒 Local Storage';
+        return '� Local Storage';
     }
   }
 
@@ -258,7 +258,7 @@ class PrivacyStorageManager extends ChangeNotifier {
   /// Export conversations for manual backup
   Future<Map<String, dynamic>> exportConversations() async {
     try {
-      debugPrint('🔒 [PrivacyStorage] Exporting conversations for backup...');
+      debugPrint('� [PrivacyStorage] Exporting conversations for backup...');
 
       final exportData = await _conversationStorage.exportConversations();
 
@@ -270,10 +270,10 @@ class PrivacyStorageManager extends ChangeNotifier {
         'user_tier': _userTierService.currentTier,
       };
 
-      debugPrint('🔒 [PrivacyStorage] Conversations exported successfully');
+      debugPrint('� [PrivacyStorage] Conversations exported successfully');
       return exportData;
     } catch (e) {
-      debugPrint('🔒 [PrivacyStorage] Failed to export conversations: $e');
+      debugPrint('� [PrivacyStorage] Failed to export conversations: $e');
       rethrow;
     }
   }
@@ -317,7 +317,7 @@ class PrivacyStorageManager extends ChangeNotifier {
   /// Clear all local data (with confirmation)
   Future<void> clearAllLocalData() async {
     try {
-      debugPrint('🔒 [PrivacyStorage] Clearing all local data...');
+      debugPrint('� [PrivacyStorage] Clearing all local data...');
 
       await _conversationStorage.clearAllConversations();
 
@@ -330,10 +330,10 @@ class PrivacyStorageManager extends ChangeNotifier {
       await _savePrivacySettings();
       await _updateStorageStatistics();
 
-      debugPrint('🔒 [PrivacyStorage] All local data cleared');
+      debugPrint('� [PrivacyStorage] All local data cleared');
       notifyListeners();
     } catch (e) {
-      debugPrint('🔒 [PrivacyStorage] Failed to clear local data: $e');
+      debugPrint('� [PrivacyStorage] Failed to clear local data: $e');
       rethrow;
     }
   }

@@ -367,29 +367,29 @@ class SetupError {
   String getErrorIcon() {
     switch (type) {
       case SetupErrorType.platformDetection:
-        return '🖥️';
+        return '';
       case SetupErrorType.containerCreation:
-        return '📦';
+        return '�';
       case SetupErrorType.downloadFailure:
-        return '⬇️';
+        return '⬇';
       case SetupErrorType.installationFailure:
-        return '⚙️';
+        return '';
       case SetupErrorType.tunnelConfiguration:
-        return '🔗';
+        return '';
       case SetupErrorType.connectionValidation:
-        return '🔍';
+        return '';
       case SetupErrorType.authentication:
-        return '🔒';
+        return '�';
       case SetupErrorType.networkError:
-        return '🌐';
+        return '';
       case SetupErrorType.serviceTimeout:
-        return '⏱️';
+        return '';
       case SetupErrorType.permissionError:
-        return '🚫';
+        return '�';
       case SetupErrorType.configurationError:
-        return '⚙️';
+        return '';
       default:
-        return '❌';
+        return '';
     }
   }
 

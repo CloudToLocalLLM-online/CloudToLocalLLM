@@ -56,7 +56,7 @@ class SetupWizardService extends ChangeNotifier {
 
   /// Initialize the service and check setup state
   Future<void> _initialize() async {
-    debugPrint('🧙 [SetupWizard] Initializing setup wizard service...');
+    debugPrint('� [SetupWizard] Initializing setup wizard service...');
 
     try {
       // Initialize error handling services
@@ -75,11 +75,11 @@ class SetupWizardService extends ChangeNotifier {
       await _checkShouldShowWizard();
 
       _isInitialized = true;
-      debugPrint('🧙 [SetupWizard] Setup wizard service initialized');
+      debugPrint('� [SetupWizard] Setup wizard service initialized');
       notifyListeners();
     } catch (e) {
       debugPrint(
-        '🧙 [SetupWizard] Error initializing setup wizard service: $e',
+        '� [SetupWizard] Error initializing setup wizard service: $e',
       );
 
       // Log initialization error
@@ -105,10 +105,10 @@ class SetupWizardService extends ChangeNotifier {
       _hasUserSeenWizard = userSeenWizard == 'true';
 
       debugPrint(
-        '🧙 [SetupWizard] Loaded setup state: completed=$_isSetupCompleted, seen=$_hasUserSeenWizard',
+        '� [SetupWizard] Loaded setup state: completed=$_isSetupCompleted, seen=$_hasUserSeenWizard',
       );
     } catch (e) {
-      debugPrint('🧙 [SetupWizard] Error loading setup state: $e');
+      debugPrint('� [SetupWizard] Error loading setup state: $e');
       _isSetupCompleted = false;
       _hasUserSeenWizard = false;
     }
@@ -126,17 +126,17 @@ class SetupWizardService extends ChangeNotifier {
         value: _hasUserSeenWizard.toString(),
       );
       debugPrint(
-        '🧙 [SetupWizard] Saved setup state: completed=$_isSetupCompleted, seen=$_hasUserSeenWizard',
+        '� [SetupWizard] Saved setup state: completed=$_isSetupCompleted, seen=$_hasUserSeenWizard',
       );
     } catch (e) {
-      debugPrint('🧙 [SetupWizard] Error saving setup state: $e');
+      debugPrint('� [SetupWizard] Error saving setup state: $e');
     }
   }
 
   /// Handle authentication state changes
   void _onAuthStateChanged() {
     debugPrint(
-      '🧙 [SetupWizard] Auth state changed: ${_authService.isAuthenticated.value}',
+      '� [SetupWizard] Auth state changed: ${_authService.isAuthenticated.value}',
     );
 
     if (_authService.isAuthenticated.value) {
@@ -154,7 +154,7 @@ class SetupWizardService extends ChangeNotifier {
   /// Handle client detection changes
   void _onClientDetectionChanged() {
     debugPrint(
-      '🧙 [SetupWizard] Client detection changed: ${_clientDetectionService?.hasConnectedClients}',
+      '� [SetupWizard] Client detection changed: ${_clientDetectionService?.hasConnectedClients}',
     );
     _checkShouldShowWizard();
   }
@@ -173,7 +173,7 @@ class SetupWizardService extends ChangeNotifier {
     }
 
     debugPrint(
-      '🧙 [SetupWizard] First time user: $_isFirstTimeUser (hasSeenWizard: $_hasUserSeenWizard)',
+      '� [SetupWizard] First time user: $_isFirstTimeUser (hasSeenWizard: $_hasUserSeenWizard)',
     );
   }
 
@@ -183,7 +183,7 @@ class SetupWizardService extends ChangeNotifier {
     if (kIsWeb) {
       _shouldShowWizard = false;
       debugPrint(
-        '🧙 [SetupWizard] Setup wizard disabled for web platform - users should download desktop app instead',
+        '� [SetupWizard] Setup wizard disabled for web platform - users should download desktop app instead',
       );
       notifyListeners();
       return;
@@ -201,7 +201,7 @@ class SetupWizardService extends ChangeNotifier {
     if (_shouldShowWizard != shouldShow) {
       _shouldShowWizard = shouldShow;
       debugPrint(
-        '🧙 [SetupWizard] Should show wizard: $_shouldShowWizard (firstTime: $_isFirstTimeUser, hasSeenWizard: $_hasUserSeenWizard, completed: $_isSetupCompleted)',
+        '� [SetupWizard] Should show wizard: $_shouldShowWizard (firstTime: $_isFirstTimeUser, hasSeenWizard: $_hasUserSeenWizard, completed: $_isSetupCompleted)',
       );
       notifyListeners();
     }
@@ -212,7 +212,7 @@ class SetupWizardService extends ChangeNotifier {
     if (!_hasUserSeenWizard) {
       _hasUserSeenWizard = true;
       await _saveSetupState();
-      debugPrint('🧙 [SetupWizard] Marked wizard as seen');
+      debugPrint('� [SetupWizard] Marked wizard as seen');
       notifyListeners();
     }
   }
@@ -223,7 +223,7 @@ class SetupWizardService extends ChangeNotifier {
     _hasUserSeenWizard = true;
     _shouldShowWizard = false;
     await _saveSetupState();
-    debugPrint('🧙 [SetupWizard] Marked setup as completed');
+    debugPrint('� [SetupWizard] Marked setup as completed');
     notifyListeners();
   }
 
@@ -234,21 +234,21 @@ class SetupWizardService extends ChangeNotifier {
     _shouldShowWizard = false;
     _isFirstTimeUser = false;
     await _saveSetupState();
-    debugPrint('🧙 [SetupWizard] Reset setup state');
+    debugPrint('� [SetupWizard] Reset setup state');
     notifyListeners();
   }
 
   /// Force show the wizard (for manual access from settings)
   void showWizard() {
     _shouldShowWizard = true;
-    debugPrint('🧙 [SetupWizard] Manually showing wizard');
+    debugPrint('� [SetupWizard] Manually showing wizard');
     notifyListeners();
   }
 
   /// Hide the wizard
   void hideWizard() {
     _shouldShowWizard = false;
-    debugPrint('🧙 [SetupWizard] Hiding wizard');
+    debugPrint('� [SetupWizard] Hiding wizard');
     notifyListeners();
   }
 
@@ -260,7 +260,7 @@ class SetupWizardService extends ChangeNotifier {
   /// Show the wizard from settings (always show, regardless of completion status)
   void showWizardFromSettings() {
     _shouldShowWizard = true;
-    debugPrint('🧙 [SetupWizard] Showing wizard from settings');
+    debugPrint('� [SetupWizard] Showing wizard from settings');
     notifyListeners();
   }
 
@@ -315,7 +315,7 @@ class SetupWizardService extends ChangeNotifier {
     );
 
     debugPrint(
-      '🧙 [SetupWizard] Handled error: ${setupError.code}, shouldRetry: ${recoveryResult.shouldRetry}',
+      '� [SetupWizard] Handled error: ${setupError.code}, shouldRetry: ${recoveryResult.shouldRetry}',
     );
 
     return recoveryResult;
@@ -352,7 +352,7 @@ class SetupWizardService extends ChangeNotifier {
       );
 
       debugPrint(
-        '🧙 [SetupWizard] Operation $operationName completed successfully',
+        '� [SetupWizard] Operation $operationName completed successfully',
       );
       return result;
     } catch (e) {
@@ -363,7 +363,7 @@ class SetupWizardService extends ChangeNotifier {
         context: {...context, 'error': e.toString()},
       );
 
-      debugPrint('🧙 [SetupWizard] Operation $operationName failed: $e');
+      debugPrint('� [SetupWizard] Operation $operationName failed: $e');
       rethrow;
     }
   }
@@ -418,7 +418,7 @@ class SetupWizardService extends ChangeNotifier {
       await markSetupCompleted();
     }
 
-    debugPrint('🧙 [SetupWizard] Setup session completed (success: $success)');
+    debugPrint('� [SetupWizard] Setup session completed (success: $success)');
   }
 
   /// Get setup analytics summary
@@ -432,7 +432,7 @@ class SetupWizardService extends ChangeNotifier {
   /// Reset error recovery state
   void resetErrorRecovery() {
     _errorRecoveryService.resetAllRetryStates();
-    debugPrint('🧙 [SetupWizard] Reset error recovery state');
+    debugPrint('� [SetupWizard] Reset error recovery state');
   }
 
   @override

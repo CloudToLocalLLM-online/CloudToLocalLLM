@@ -49,9 +49,9 @@ class _LoginScreenState extends State<LoginScreen> {
     if (mounted) {
       final authService = context.read<AuthService>();
       if (authService.isAuthenticated.value) {
-        debugPrint('🔐 [Login] Auth state changed - user now authenticated');
+        debugPrint(' [Login] Auth state changed - user now authenticated');
         debugPrint(
-          '🔐 [Login] Redirecting to home after successful authentication',
+          ' [Login] Redirecting to home after successful authentication',
         );
         context.go('/');
       }
@@ -61,7 +61,7 @@ class _LoginScreenState extends State<LoginScreen> {
   Future<void> _handleLogin() async {
     // Prevent multiple rapid login attempts
     if (_isLoading) {
-      debugPrint('🔐 [Login] Login already in progress, ignoring button click');
+      debugPrint(' [Login] Login already in progress, ignoring button click');
       return;
     }
 
@@ -69,49 +69,49 @@ class _LoginScreenState extends State<LoginScreen> {
     if (_lastLoginAttempt != null &&
         DateTime.now().difference(_lastLoginAttempt!).inSeconds < 2) {
       debugPrint(
-        '🔐 [Login] Login button clicked too soon after previous attempt, ignoring',
+        ' [Login] Login button clicked too soon after previous attempt, ignoring',
       );
       return;
     }
 
     setState(() => _isLoading = true);
     _lastLoginAttempt = DateTime.now();
-    debugPrint('🔐 [Login] Starting login process');
+    debugPrint(' [Login] Starting login process');
 
     try {
       final authService = context.read<AuthService>();
       debugPrint(
-        '🔐 [Login] Platform info: ${authService.isWeb
+        ' [Login] Platform info: ${authService.isWeb
             ? "Web"
             : authService.isMobile
             ? "Mobile"
             : "Desktop"}',
       );
-      debugPrint('🔐 [Login] Calling authService.login()');
+      debugPrint(' [Login] Calling authService.login()');
       await authService.login();
 
       debugPrint(
-        '🔐 [Login] Login call completed, checking authentication state',
+        ' [Login] Login call completed, checking authentication state',
       );
       debugPrint(
-        '🔐 [Login] Authentication state: ${authService.isAuthenticated.value}',
+        ' [Login] Authentication state: ${authService.isAuthenticated.value}',
       );
 
       if (mounted && authService.isAuthenticated.value) {
-        debugPrint('🔐 [Login] User authenticated, redirecting to home');
+        debugPrint(' [Login] User authenticated, redirecting to home');
         context.go('/');
       } else {
-        debugPrint('🔐 [Login] User not authenticated after login call');
+        debugPrint(' [Login] User not authenticated after login call');
         // For desktop, the login might complete asynchronously
         // Don't redirect immediately, let the auth state change handle it
         if (!authService.isWeb) {
           debugPrint(
-            '🔐 [Login] Desktop platform - waiting for auth state change',
+            ' [Login] Desktop platform - waiting for auth state change',
           );
         }
       }
     } catch (e, s) {
-      debugPrint('🔐 [Login] Login failed with error: $e\n$s');
+      debugPrint(' [Login] Login failed with error: $e\n$s');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -126,7 +126,7 @@ class _LoginScreenState extends State<LoginScreen> {
       }
     } finally {
       if (mounted) {
-        debugPrint('🔐 [Login] Setting loading state to false');
+        debugPrint(' [Login] Setting loading state to false');
         setState(() => _isLoading = false);
       }
     }

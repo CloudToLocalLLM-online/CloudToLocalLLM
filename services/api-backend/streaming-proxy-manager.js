@@ -123,7 +123,7 @@ export class StreamingProxyManager {
       if (user && shouldUseDirectTunnel(user)) {
         const userTier = getUserTier(user);
 
-        logger.info('🆓 [StreamingProxy] Free tier user detected, providing direct tunnel access', {
+        logger.info('� [StreamingProxy] Free tier user detected, providing direct tunnel access', {
           userTier,
           userId,
           proxyId,
@@ -144,7 +144,7 @@ export class StreamingProxyManager {
         };
 
         // Log successful direct tunnel provision
-        logger.info('✅ [StreamingProxy] Direct tunnel configured successfully', {
+        logger.info(' [StreamingProxy] Direct tunnel configured successfully', {
           userId,
           userTier,
           proxyId: directTunnelConfig.proxyId,
@@ -155,7 +155,7 @@ export class StreamingProxyManager {
       }
 
       // Premium/Enterprise tier container provisioning
-      logger.info('🐳 [StreamingProxy] Premium tier user detected, provisioning container', {
+      logger.info('� [StreamingProxy] Premium tier user detected, provisioning container', {
         userId,
         userTier: getUserTier(user),
         proxyId,

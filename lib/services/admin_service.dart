@@ -78,7 +78,7 @@ class AdminService extends ChangeNotifier {
           handler.next(options);
         },
         onError: (error, handler) {
-          debugPrint('🔧 [AdminService] API Error: ${error.message}');
+          debugPrint(' [AdminService] API Error: ${error.message}');
           if (error.response?.statusCode == 403) {
             _isAdminAuthenticated = false;
             _setError(
@@ -132,20 +132,20 @@ class AdminService extends ChangeNotifier {
   /// Check if current user has admin privileges
   Future<bool> checkAdminPrivileges() async {
     try {
-      debugPrint('🔧 [AdminService] Checking admin privileges');
+      debugPrint(' [AdminService] Checking admin privileges');
 
       final response = await _dio.get('/auth/check');
 
       if (response.statusCode == 200 && response.data['success'] == true) {
         _isAdminAuthenticated = true;
-        debugPrint('🔧 [AdminService] Admin privileges confirmed');
+        debugPrint(' [AdminService] Admin privileges confirmed');
         notifyListeners();
         return true;
       }
 
       return false;
     } catch (e) {
-      debugPrint('🔧 [AdminService] Admin privilege check failed: $e');
+      debugPrint(' [AdminService] Admin privilege check failed: $e');
       _isAdminAuthenticated = false;
       notifyListeners();
       return false;
@@ -163,7 +163,7 @@ class AdminService extends ChangeNotifier {
     }
 
     try {
-      debugPrint('🔧 [AdminService] Fetching system statistics');
+      debugPrint(' [AdminService] Fetching system statistics');
       _setLoading(true);
 
       final response = await _dio.get('/system/stats');
@@ -172,7 +172,7 @@ class AdminService extends ChangeNotifier {
         _systemStats = response.data['data'];
         _lastSystemStatsUpdate = DateTime.now();
 
-        debugPrint('🔧 [AdminService] System statistics updated');
+        debugPrint(' [AdminService] System statistics updated');
         notifyListeners();
         return true;
       } else {
@@ -180,7 +180,7 @@ class AdminService extends ChangeNotifier {
       }
     } catch (e) {
       _setError('Failed to get system statistics: ${e.toString()}');
-      debugPrint('🔧 [AdminService] Error getting system stats: $e');
+      debugPrint(' [AdminService] Error getting system stats: $e');
       return false;
     } finally {
       _setLoading(false);
@@ -190,7 +190,7 @@ class AdminService extends ChangeNotifier {
   /// Get real-time system data
   Future<bool> getRealtimeData() async {
     try {
-      debugPrint('🔧 [AdminService] Fetching real-time system data');
+      debugPrint(' [AdminService] Fetching real-time system data');
 
       final response = await _dio.get('/system/realtime');
 
@@ -198,14 +198,14 @@ class AdminService extends ChangeNotifier {
         _realtimeData = response.data['data'];
         _lastRealtimeUpdate = DateTime.now();
 
-        debugPrint('🔧 [AdminService] Real-time data updated');
+        debugPrint(' [AdminService] Real-time data updated');
         notifyListeners();
         return true;
       } else {
         throw Exception('Failed to get real-time data');
       }
     } catch (e) {
-      debugPrint('🔧 [AdminService] Error getting real-time data: $e');
+      debugPrint(' [AdminService] Error getting real-time data: $e');
       return false;
     }
   }
@@ -220,7 +220,7 @@ class AdminService extends ChangeNotifier {
     }
 
     try {
-      debugPrint('🔧 [AdminService] Fetching user list');
+      debugPrint(' [AdminService] Fetching user list');
       _setLoading(true);
 
       final response = await _dio.get('/users');
@@ -232,7 +232,7 @@ class AdminService extends ChangeNotifier {
         _lastUsersUpdate = DateTime.now();
 
         debugPrint(
-          '🔧 [AdminService] User list updated: ${_users.length} users',
+          ' [AdminService] User list updated: ${_users.length} users',
         );
         notifyListeners();
         return true;
@@ -241,7 +241,7 @@ class AdminService extends ChangeNotifier {
       }
     } catch (e) {
       _setError('Failed to get user list: ${e.toString()}');
-      debugPrint('🔧 [AdminService] Error getting users: $e');
+      debugPrint(' [AdminService] Error getting users: $e');
       return false;
     } finally {
       _setLoading(false);
@@ -258,7 +258,7 @@ class AdminService extends ChangeNotifier {
     }
 
     try {
-      debugPrint('🔧 [AdminService] Fetching container list');
+      debugPrint(' [AdminService] Fetching container list');
       _setLoading(true);
 
       final response = await _dio.get('/containers');
@@ -270,7 +270,7 @@ class AdminService extends ChangeNotifier {
         _lastContainersUpdate = DateTime.now();
 
         debugPrint(
-          '🔧 [AdminService] Container list updated: ${_containers.length} containers',
+          ' [AdminService] Container list updated: ${_containers.length} containers',
         );
         notifyListeners();
         return true;
@@ -279,7 +279,7 @@ class AdminService extends ChangeNotifier {
       }
     } catch (e) {
       _setError('Failed to get container list: ${e.toString()}');
-      debugPrint('🔧 [AdminService] Error getting containers: $e');
+      debugPrint(' [AdminService] Error getting containers: $e');
       return false;
     } finally {
       _setLoading(false);
@@ -289,7 +289,7 @@ class AdminService extends ChangeNotifier {
   /// Get network list
   Future<bool> getNetworks() async {
     try {
-      debugPrint('🔧 [AdminService] Fetching network list');
+      debugPrint(' [AdminService] Fetching network list');
 
       final response = await _dio.get('/networks');
 
@@ -299,7 +299,7 @@ class AdminService extends ChangeNotifier {
         );
 
         debugPrint(
-          '🔧 [AdminService] Network list updated: ${_networks.length} networks',
+          ' [AdminService] Network list updated: ${_networks.length} networks',
         );
         notifyListeners();
         return true;
@@ -308,7 +308,7 @@ class AdminService extends ChangeNotifier {
       }
     } catch (e) {
       _setError('Failed to get network list: ${e.toString()}');
-      debugPrint('🔧 [AdminService] Error getting networks: $e');
+      debugPrint(' [AdminService] Error getting networks: $e');
       return false;
     }
   }
@@ -316,19 +316,19 @@ class AdminService extends ChangeNotifier {
   /// Get user sessions for a specific user
   Future<Map<String, dynamic>?> getUserSessions(String userId) async {
     try {
-      debugPrint('🔧 [AdminService] Fetching sessions for user: $userId');
+      debugPrint(' [AdminService] Fetching sessions for user: $userId');
 
       final response = await _dio.get('/users/$userId/sessions');
 
       if (response.statusCode == 200 && response.data['success'] == true) {
-        debugPrint('🔧 [AdminService] User sessions retrieved');
+        debugPrint(' [AdminService] User sessions retrieved');
         return response.data['data'];
       } else {
         throw Exception('Failed to get user sessions');
       }
     } catch (e) {
       _setError('Failed to get user sessions: ${e.toString()}');
-      debugPrint('🔧 [AdminService] Error getting user sessions: $e');
+      debugPrint(' [AdminService] Error getting user sessions: $e');
       return null;
     }
   }
@@ -337,7 +337,7 @@ class AdminService extends ChangeNotifier {
   Future<bool> terminateUserSession(String userId, String containerId) async {
     try {
       debugPrint(
-        '🔧 [AdminService] Terminating session: $containerId for user: $userId',
+        ' [AdminService] Terminating session: $containerId for user: $userId',
       );
       _setLoading(true);
 
@@ -346,7 +346,7 @@ class AdminService extends ChangeNotifier {
       );
 
       if (response.statusCode == 200 && response.data['success'] == true) {
-        debugPrint('🔧 [AdminService] Session terminated successfully');
+        debugPrint(' [AdminService] Session terminated successfully');
 
         // Refresh containers list
         await getContainers(forceRefresh: true);
@@ -356,7 +356,7 @@ class AdminService extends ChangeNotifier {
       }
     } catch (e) {
       _setError('Failed to terminate session: ${e.toString()}');
-      debugPrint('🔧 [AdminService] Error terminating session: $e');
+      debugPrint(' [AdminService] Error terminating session: $e');
       return false;
     } finally {
       _setLoading(false);
@@ -366,7 +366,7 @@ class AdminService extends ChangeNotifier {
   /// Get system configuration
   Future<bool> getConfiguration() async {
     try {
-      debugPrint('🔧 [AdminService] Fetching system configuration');
+      debugPrint(' [AdminService] Fetching system configuration');
       _setLoading(true);
 
       final response = await _dio.get('/config');
@@ -374,7 +374,7 @@ class AdminService extends ChangeNotifier {
       if (response.statusCode == 200 && response.data['success'] == true) {
         _configuration = response.data['data'];
 
-        debugPrint('🔧 [AdminService] Configuration retrieved');
+        debugPrint(' [AdminService] Configuration retrieved');
         notifyListeners();
         return true;
       } else {
@@ -382,7 +382,7 @@ class AdminService extends ChangeNotifier {
       }
     } catch (e) {
       _setError('Failed to get configuration: ${e.toString()}');
-      debugPrint('🔧 [AdminService] Error getting configuration: $e');
+      debugPrint(' [AdminService] Error getting configuration: $e');
       return false;
     } finally {
       _setLoading(false);
@@ -392,19 +392,19 @@ class AdminService extends ChangeNotifier {
   /// Get environment variables
   Future<Map<String, dynamic>?> getEnvironmentVariables() async {
     try {
-      debugPrint('🔧 [AdminService] Fetching environment variables');
+      debugPrint(' [AdminService] Fetching environment variables');
 
       final response = await _dio.get('/config/environment');
 
       if (response.statusCode == 200 && response.data['success'] == true) {
-        debugPrint('🔧 [AdminService] Environment variables retrieved');
+        debugPrint(' [AdminService] Environment variables retrieved');
         return response.data['data'];
       } else {
         throw Exception('Failed to get environment variables');
       }
     } catch (e) {
       _setError('Failed to get environment variables: ${e.toString()}');
-      debugPrint('🔧 [AdminService] Error getting environment variables: $e');
+      debugPrint(' [AdminService] Error getting environment variables: $e');
       return null;
     }
   }
@@ -412,19 +412,19 @@ class AdminService extends ChangeNotifier {
   /// Get feature flags
   Future<Map<String, dynamic>?> getFeatureFlags() async {
     try {
-      debugPrint('🔧 [AdminService] Fetching feature flags');
+      debugPrint(' [AdminService] Fetching feature flags');
 
       final response = await _dio.get('/config/features');
 
       if (response.statusCode == 200 && response.data['success'] == true) {
-        debugPrint('🔧 [AdminService] Feature flags retrieved');
+        debugPrint(' [AdminService] Feature flags retrieved');
         return response.data['data'];
       } else {
         throw Exception('Failed to get feature flags');
       }
     } catch (e) {
       _setError('Failed to get feature flags: ${e.toString()}');
-      debugPrint('🔧 [AdminService] Error getting feature flags: $e');
+      debugPrint(' [AdminService] Error getting feature flags: $e');
       return null;
     }
   }
@@ -432,19 +432,19 @@ class AdminService extends ChangeNotifier {
   /// Get service status
   Future<Map<String, dynamic>?> getServiceStatus() async {
     try {
-      debugPrint('🔧 [AdminService] Fetching service status');
+      debugPrint(' [AdminService] Fetching service status');
 
       final response = await _dio.get('/config/services');
 
       if (response.statusCode == 200 && response.data['success'] == true) {
-        debugPrint('🔧 [AdminService] Service status retrieved');
+        debugPrint(' [AdminService] Service status retrieved');
         return response.data['data'];
       } else {
         throw Exception('Failed to get service status');
       }
     } catch (e) {
       _setError('Failed to get service status: ${e.toString()}');
-      debugPrint('🔧 [AdminService] Error getting service status: $e');
+      debugPrint(' [AdminService] Error getting service status: $e');
       return null;
     }
   }
@@ -455,21 +455,21 @@ class AdminService extends ChangeNotifier {
     int lines = 100,
   }) async {
     try {
-      debugPrint('🔧 [AdminService] Fetching logs for container: $containerId');
+      debugPrint(' [AdminService] Fetching logs for container: $containerId');
 
       final response = await _dio.get(
         '/containers/$containerId/logs?lines=$lines',
       );
 
       if (response.statusCode == 200 && response.data['success'] == true) {
-        debugPrint('🔧 [AdminService] Container logs retrieved');
+        debugPrint(' [AdminService] Container logs retrieved');
         return response.data['data'];
       } else {
         throw Exception('Failed to get container logs');
       }
     } catch (e) {
       _setError('Failed to get container logs: ${e.toString()}');
-      debugPrint('🔧 [AdminService] Error getting container logs: $e');
+      debugPrint(' [AdminService] Error getting container logs: $e');
       return null;
     }
   }
@@ -478,20 +478,20 @@ class AdminService extends ChangeNotifier {
   Future<Map<String, dynamic>?> getContainerStats(String containerId) async {
     try {
       debugPrint(
-        '🔧 [AdminService] Fetching stats for container: $containerId',
+        ' [AdminService] Fetching stats for container: $containerId',
       );
 
       final response = await _dio.get('/containers/$containerId/stats');
 
       if (response.statusCode == 200 && response.data['success'] == true) {
-        debugPrint('🔧 [AdminService] Container stats retrieved');
+        debugPrint(' [AdminService] Container stats retrieved');
         return response.data['data'];
       } else {
         throw Exception('Failed to get container stats');
       }
     } catch (e) {
       _setError('Failed to get container stats: ${e.toString()}');
-      debugPrint('🔧 [AdminService] Error getting container stats: $e');
+      debugPrint(' [AdminService] Error getting container stats: $e');
       return null;
     }
   }
@@ -499,19 +499,19 @@ class AdminService extends ChangeNotifier {
   /// Get network topology
   Future<Map<String, dynamic>?> getNetworkTopology() async {
     try {
-      debugPrint('🔧 [AdminService] Fetching network topology');
+      debugPrint(' [AdminService] Fetching network topology');
 
       final response = await _dio.get('/network/topology');
 
       if (response.statusCode == 200 && response.data['success'] == true) {
-        debugPrint('🔧 [AdminService] Network topology retrieved');
+        debugPrint(' [AdminService] Network topology retrieved');
         return response.data['data'];
       } else {
         throw Exception('Failed to get network topology');
       }
     } catch (e) {
       _setError('Failed to get network topology: ${e.toString()}');
-      debugPrint('🔧 [AdminService] Error getting network topology: $e');
+      debugPrint(' [AdminService] Error getting network topology: $e');
       return null;
     }
   }
@@ -519,14 +519,14 @@ class AdminService extends ChangeNotifier {
   /// Get performance metrics
   Future<bool> getPerformanceMetrics() async {
     try {
-      debugPrint('🔧 [AdminService] Fetching performance metrics');
+      debugPrint(' [AdminService] Fetching performance metrics');
 
       final response = await _dio.get('/system/performance');
 
       if (response.statusCode == 200 && response.data['success'] == true) {
         _performanceMetrics = response.data['data'];
 
-        debugPrint('🔧 [AdminService] Performance metrics retrieved');
+        debugPrint(' [AdminService] Performance metrics retrieved');
         notifyListeners();
         return true;
       } else {
@@ -534,23 +534,23 @@ class AdminService extends ChangeNotifier {
       }
     } catch (e) {
       _setError('Failed to get performance metrics: ${e.toString()}');
-      debugPrint('🔧 [AdminService] Error getting performance metrics: $e');
+      debugPrint(' [AdminService] Error getting performance metrics: $e');
       return false;
     }
   }
 
   /// Initialize admin service and check privileges
   Future<bool> initialize() async {
-    debugPrint('🔧 [AdminService] Initializing admin service');
+    debugPrint(' [AdminService] Initializing admin service');
 
     if (!_authService.isAuthenticated.value) {
-      debugPrint('🔧 [AdminService] User not authenticated');
+      debugPrint(' [AdminService] User not authenticated');
       return false;
     }
 
     final hasAdminAccess = await checkAdminPrivileges();
     if (!hasAdminAccess) {
-      debugPrint('🔧 [AdminService] User does not have admin privileges');
+      debugPrint(' [AdminService] User does not have admin privileges');
       return false;
     }
 
@@ -563,13 +563,13 @@ class AdminService extends ChangeNotifier {
       getConfiguration(),
     ]);
 
-    debugPrint('🔧 [AdminService] Admin service initialized successfully');
+    debugPrint(' [AdminService] Admin service initialized successfully');
     return true;
   }
 
   /// Refresh all data
   Future<void> refreshAllData() async {
-    debugPrint('🔧 [AdminService] Refreshing all admin data');
+    debugPrint(' [AdminService] Refreshing all admin data');
 
     await Future.wait([
       getSystemStats(forceRefresh: true),
@@ -580,7 +580,7 @@ class AdminService extends ChangeNotifier {
       getPerformanceMetrics(),
     ]);
 
-    debugPrint('🔧 [AdminService] All admin data refreshed');
+    debugPrint(' [AdminService] All admin data refreshed');
   }
 
   @override

@@ -37,9 +37,9 @@ class CloudStreamingService extends StreamingService {
        _authService = authService,
        _httpClient = http.Client() {
     if (kDebugMode) {
-      debugPrint('☁️ [CloudStreaming] Service initialized');
-      debugPrint('☁️ [CloudStreaming] Base URL: $_baseUrl');
-      debugPrint('☁️ [CloudStreaming] Config: $_config');
+      debugPrint('☁ [CloudStreaming] Service initialized');
+      debugPrint('☁ [CloudStreaming] Base URL: $_baseUrl');
+      debugPrint('☁ [CloudStreaming] Config: $_config');
     }
   }
 
@@ -52,7 +52,7 @@ class CloudStreamingService extends StreamingService {
   @override
   Future<void> establishConnection() async {
     if (_connection.isActive) {
-      debugPrint('☁️ [CloudStreaming] Connection already active');
+      debugPrint('☁ [CloudStreaming] Connection already active');
       return;
     }
 
@@ -89,7 +89,7 @@ class CloudStreamingService extends StreamingService {
         notifyListeners();
 
         debugPrint(
-          '☁️ [CloudStreaming] Connected to cloud proxy v$version '
+          '☁ [CloudStreaming] Connected to cloud proxy v$version '
           '(${stopwatch.elapsedMilliseconds}ms)',
         );
       } else {
@@ -105,14 +105,14 @@ class CloudStreamingService extends StreamingService {
       );
       notifyListeners();
 
-      debugPrint('☁️ [CloudStreaming] Connection error: $e');
+      debugPrint('☁ [CloudStreaming] Connection error: $e');
       rethrow;
     }
   }
 
   @override
   Future<void> closeConnection() async {
-    debugPrint('☁️ [CloudStreaming] Closing connection');
+    debugPrint('☁ [CloudStreaming] Closing connection');
 
     _heartbeatTimer?.cancel();
     _heartbeatTimer = null;
@@ -159,7 +159,7 @@ class CloudStreamingService extends StreamingService {
         'stream': true,
       };
 
-      debugPrint('☁️ [CloudStreaming] Starting stream for model: $model');
+      debugPrint('☁ [CloudStreaming] Starting stream for model: $model');
 
       final request = http.Request('POST', Uri.parse('$_baseUrl/api/chat'));
       request.headers.addAll(_getHeaders());
@@ -214,7 +214,7 @@ class CloudStreamingService extends StreamingService {
               break;
             }
           } catch (e) {
-            debugPrint('☁️ [CloudStreaming] Error parsing chunk: $e');
+            debugPrint('☁ [CloudStreaming] Error parsing chunk: $e');
           }
         }
       }
@@ -241,7 +241,7 @@ class CloudStreamingService extends StreamingService {
       );
       notifyListeners();
 
-      debugPrint('☁️ [CloudStreaming] Stream error: $e');
+      debugPrint('☁ [CloudStreaming] Stream error: $e');
     }
   }
 
@@ -274,7 +274,7 @@ class CloudStreamingService extends StreamingService {
                 .toList() ??
             [];
 
-        debugPrint('☁️ [CloudStreaming] Found ${models.length} models');
+        debugPrint('☁ [CloudStreaming] Found ${models.length} models');
         return models;
       } else {
         throw StreamingException(
@@ -283,7 +283,7 @@ class CloudStreamingService extends StreamingService {
         );
       }
     } catch (e) {
-      debugPrint('☁️ [CloudStreaming] Error getting models: $e');
+      debugPrint('☁ [CloudStreaming] Error getting models: $e');
       return [];
     }
   }
@@ -323,23 +323,23 @@ class CloudStreamingService extends StreamingService {
             _handleWebSocketMessage(message);
           } catch (e) {
             debugPrint(
-              '☁️ [CloudStreaming] Error parsing WebSocket message: $e',
+              '☁ [CloudStreaming] Error parsing WebSocket message: $e',
             );
           }
         },
         onError: (error) {
-          debugPrint('☁️ [CloudStreaming] WebSocket error: $error');
+          debugPrint('☁ [CloudStreaming] WebSocket error: $error');
           _webSocket = null;
         },
         onDone: () {
-          debugPrint('☁️ [CloudStreaming] WebSocket connection closed');
+          debugPrint('☁ [CloudStreaming] WebSocket connection closed');
           _webSocket = null;
         },
       );
 
-      debugPrint('☁️ [CloudStreaming] WebSocket connection established');
+      debugPrint('☁ [CloudStreaming] WebSocket connection established');
     } catch (e) {
-      debugPrint('☁️ [CloudStreaming] Failed to establish WebSocket: $e');
+      debugPrint('☁ [CloudStreaming] Failed to establish WebSocket: $e');
       // WebSocket is optional, continue without it
     }
   }
@@ -355,10 +355,10 @@ class CloudStreamingService extends StreamingService {
         break;
       case 'status':
         // Handle status updates
-        debugPrint('☁️ [CloudStreaming] Status update: ${message['status']}');
+        debugPrint('☁ [CloudStreaming] Status update: ${message['status']}');
         break;
       default:
-        debugPrint('☁️ [CloudStreaming] Unknown message type: $type');
+        debugPrint('☁ [CloudStreaming] Unknown message type: $type');
     }
   }
 
@@ -379,7 +379,7 @@ class CloudStreamingService extends StreamingService {
 
   @override
   void dispose() {
-    debugPrint('☁️ [CloudStreaming] Disposing service');
+    debugPrint('☁ [CloudStreaming] Disposing service');
     closeConnection();
     _messageSubject.close();
     _httpClient.close();

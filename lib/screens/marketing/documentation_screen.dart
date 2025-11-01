@@ -520,25 +520,25 @@ CloudToLocalLLM provides a comprehensive set of features for local LLM managemen
 
 ## Core Features
 
-### 🖥️ Local LLM Processing
+###  Local LLM Processing
 - Run models directly on your hardware
 - Support for Ollama and LM Studio
 - No internet required for inference
 - Complete privacy and data control
 
-### ☁️ Cloud Management
+### ☁ Cloud Management
 - Web-based interface for easy access
 - Conversation synchronization across devices
 - Remote model management
 - Real-time streaming capabilities
 
-### 🔒 Privacy & Security
+### � Privacy & Security
 - All processing happens locally
 - Optional cloud features with encryption
 - No data sent to third parties
 - Open source and auditable
 
-### 🚀 Performance
+###  Performance
 - Optimized for local hardware
 - Efficient memory usage
 - Fast response times

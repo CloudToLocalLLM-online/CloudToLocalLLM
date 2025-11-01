@@ -1137,7 +1137,7 @@ class _SetupWizardState extends State<SetupWizard> {
         throw Exception('Could not launch download URL');
       }
 
-      debugPrint('📥 [SetupWizard] Download initiated: ${option.downloadUrl}');
+      debugPrint('� [SetupWizard] Download initiated: ${option.downloadUrl}');
 
       // Show success message
       if (mounted) {
@@ -1149,7 +1149,7 @@ class _SetupWizardState extends State<SetupWizard> {
         );
       }
     } catch (e) {
-      debugPrint('📥 [SetupWizard] Download error: $e');
+      debugPrint('� [SetupWizard] Download error: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

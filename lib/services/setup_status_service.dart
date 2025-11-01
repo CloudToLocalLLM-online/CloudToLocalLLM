@@ -83,7 +83,7 @@ class SetupStatusService extends ChangeNotifier {
   /// Initialize the setup status service
   Future<void> initialize() async {
     try {
-      debugPrint('🔧 [SetupStatus] Initializing setup status service');
+      debugPrint(' [SetupStatus] Initializing setup status service');
 
       // Load existing status and progress
       await _loadSetupStatus();
@@ -96,11 +96,11 @@ class SetupStatusService extends ChangeNotifier {
       _clientDetectionService?.addListener(_onClientDetectionChanged);
 
       _isInitialized = true;
-      debugPrint('🔧 [SetupStatus] Setup status service initialized');
+      debugPrint(' [SetupStatus] Setup status service initialized');
       notifyListeners();
     } catch (e) {
       _lastError = 'Failed to initialize setup status service: ${e.toString()}';
-      debugPrint('🔧 [SetupStatus] Error initializing: $e');
+      debugPrint(' [SetupStatus] Error initializing: $e');
       _isInitialized = true;
       notifyListeners();
     }
@@ -110,7 +110,7 @@ class SetupStatusService extends ChangeNotifier {
   Future<bool> isFirstTimeUser(String userId) async {
     try {
       debugPrint(
-        '🔧 [SetupStatus] Checking first-time user status for: $userId',
+        ' [SetupStatus] Checking first-time user status for: $userId',
       );
 
       // Load status for this user if not already loaded
@@ -119,11 +119,11 @@ class SetupStatusService extends ChangeNotifier {
       }
 
       final isFirstTime = _currentStatus?.isFirstTimeUser ?? true;
-      debugPrint('🔧 [SetupStatus] User $userId is first-time: $isFirstTime');
+      debugPrint(' [SetupStatus] User $userId is first-time: $isFirstTime');
 
       return isFirstTime;
     } catch (e) {
-      debugPrint('🔧 [SetupStatus] Error checking first-time user: $e');
+      debugPrint(' [SetupStatus] Error checking first-time user: $e');
       return true; // Default to first-time if error
     }
   }
@@ -131,7 +131,7 @@ class SetupStatusService extends ChangeNotifier {
   /// Mark setup as complete for a user
   Future<void> markSetupComplete(String userId) async {
     try {
-      debugPrint('🔧 [SetupStatus] Marking setup complete for user: $userId');
+      debugPrint(' [SetupStatus] Marking setup complete for user: $userId');
 
       final now = DateTime.now();
       _currentStatus = UserSetupStatus(
@@ -151,11 +151,11 @@ class SetupStatusService extends ChangeNotifier {
       _setupProgress.clear();
       await _saveSetupProgress();
 
-      debugPrint('🔧 [SetupStatus] Setup marked complete for user: $userId');
+      debugPrint(' [SetupStatus] Setup marked complete for user: $userId');
       notifyListeners();
     } catch (e) {
       _lastError = 'Failed to mark setup complete: ${e.toString()}';
-      debugPrint('🔧 [SetupStatus] Error marking setup complete: $e');
+      debugPrint(' [SetupStatus] Error marking setup complete: $e');
       notifyListeners();
     }
   }
@@ -165,11 +165,11 @@ class SetupStatusService extends ChangeNotifier {
     try {
       final hasConnection = await _checkDesktopConnection();
       debugPrint(
-        '🔧 [SetupStatus] Desktop connection status for $userId: $hasConnection',
+        ' [SetupStatus] Desktop connection status for $userId: $hasConnection',
       );
       return hasConnection;
     } catch (e) {
-      debugPrint('🔧 [SetupStatus] Error checking desktop connection: $e');
+      debugPrint(' [SetupStatus] Error checking desktop connection: $e');
       return false;
     }
   }
@@ -177,7 +177,7 @@ class SetupStatusService extends ChangeNotifier {
   /// Reset setup status for a user (for re-onboarding or testing)
   Future<void> resetSetupStatus(String userId) async {
     try {
-      debugPrint('🔧 [SetupStatus] Resetting setup status for user: $userId');
+      debugPrint(' [SetupStatus] Resetting setup status for user: $userId');
 
       _currentStatus = UserSetupStatus(
         userId: userId,
@@ -195,11 +195,11 @@ class SetupStatusService extends ChangeNotifier {
       _setupProgress.clear();
       await _saveSetupProgress();
 
-      debugPrint('🔧 [SetupStatus] Setup status reset for user: $userId');
+      debugPrint(' [SetupStatus] Setup status reset for user: $userId');
       notifyListeners();
     } catch (e) {
       _lastError = 'Failed to reset setup status: ${e.toString()}';
-      debugPrint('🔧 [SetupStatus] Error resetting setup status: $e');
+      debugPrint(' [SetupStatus] Error resetting setup status: $e');
       notifyListeners();
     }
   }
@@ -214,7 +214,7 @@ class SetupStatusService extends ChangeNotifier {
 
       return _setupProgress.isNotEmpty ? Map.from(_setupProgress) : null;
     } catch (e) {
-      debugPrint('🔧 [SetupStatus] Error getting setup progress: $e');
+      debugPrint(' [SetupStatus] Error getting setup progress: $e');
       return null;
     }
   }
@@ -225,7 +225,7 @@ class SetupStatusService extends ChangeNotifier {
     Map<String, dynamic> progress,
   ) async {
     try {
-      debugPrint('🔧 [SetupStatus] Saving setup progress for user: $userId');
+      debugPrint(' [SetupStatus] Saving setup progress for user: $userId');
 
       _setupProgress = Map.from(progress);
       _setupProgress['userId'] = userId;
@@ -234,11 +234,11 @@ class SetupStatusService extends ChangeNotifier {
 
       await _saveSetupProgress();
 
-      debugPrint('🔧 [SetupStatus] Setup progress saved for user: $userId');
+      debugPrint(' [SetupStatus] Setup progress saved for user: $userId');
       notifyListeners();
     } catch (e) {
       _lastError = 'Failed to save setup progress: ${e.toString()}';
-      debugPrint('🔧 [SetupStatus] Error saving setup progress: $e');
+      debugPrint(' [SetupStatus] Error saving setup progress: $e');
       notifyListeners();
     }
   }
@@ -258,7 +258,7 @@ class SetupStatusService extends ChangeNotifier {
         notifyListeners();
       }
     } catch (e) {
-      debugPrint('🔧 [SetupStatus] Error updating user preferences: $e');
+      debugPrint(' [SetupStatus] Error updating user preferences: $e');
     }
   }
 
@@ -284,11 +284,11 @@ class SetupStatusService extends ChangeNotifier {
         final statusData = jsonDecode(statusJson) as Map<String, dynamic>;
         _currentStatus = UserSetupStatus.fromJson(statusData);
         debugPrint(
-          '🔧 [SetupStatus] Loaded setup status for user: ${_currentStatus?.userId}',
+          ' [SetupStatus] Loaded setup status for user: ${_currentStatus?.userId}',
         );
       }
     } catch (e) {
-      debugPrint('🔧 [SetupStatus] Error loading setup status: $e');
+      debugPrint(' [SetupStatus] Error loading setup status: $e');
     }
   }
 
@@ -312,7 +312,7 @@ class SetupStatusService extends ChangeNotifier {
         );
       }
     } catch (e) {
-      debugPrint('🔧 [SetupStatus] Error loading setup status for user: $e');
+      debugPrint(' [SetupStatus] Error loading setup status for user: $e');
     }
   }
 
@@ -330,7 +330,7 @@ class SetupStatusService extends ChangeNotifier {
         );
       }
     } catch (e) {
-      debugPrint('🔧 [SetupStatus] Error saving setup status: $e');
+      debugPrint(' [SetupStatus] Error saving setup status: $e');
     }
   }
 
@@ -346,7 +346,7 @@ class SetupStatusService extends ChangeNotifier {
         }
       }
     } catch (e) {
-      debugPrint('🔧 [SetupStatus] Error loading setup progress: $e');
+      debugPrint(' [SetupStatus] Error loading setup progress: $e');
     }
   }
 
@@ -356,7 +356,7 @@ class SetupStatusService extends ChangeNotifier {
       final progressJson = jsonEncode(_setupProgress);
       await _storage.write(_setupProgressKey, progressJson);
     } catch (e) {
-      debugPrint('🔧 [SetupStatus] Error saving setup progress: $e');
+      debugPrint(' [SetupStatus] Error saving setup progress: $e');
     }
   }
 

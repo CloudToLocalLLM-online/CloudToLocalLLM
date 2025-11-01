@@ -40,7 +40,7 @@ class SetupTroubleshootingService extends ChangeNotifier {
 
     _activeSessions.add(session);
     debugPrint(
-      '🔍 [Troubleshooting] Started session ${session.id} for error: ${error.code}',
+      ' [Troubleshooting] Started session ${session.id} for error: ${error.code}',
     );
 
     notifyListeners();
@@ -110,7 +110,7 @@ class SetupTroubleshootingService extends ChangeNotifier {
     }
 
     debugPrint(
-      '🔍 [Troubleshooting] Received feedback for session ${feedback.sessionId}: ${feedback.wasHelpful}',
+      ' [Troubleshooting] Received feedback for session ${feedback.sessionId}: ${feedback.wasHelpful}',
     );
     notifyListeners();
   }
@@ -125,7 +125,7 @@ class SetupTroubleshootingService extends ChangeNotifier {
       );
 
       debugPrint(
-        '🔍 [Troubleshooting] Ended session $sessionId (resolved: $resolved)',
+        ' [Troubleshooting] Ended session $sessionId (resolved: $resolved)',
       );
       notifyListeners();
     }

@@ -57,7 +57,7 @@ class _AdminDataFlushScreenState extends State<AdminDataFlushScreen>
       backgroundColor: AppTheme.backgroundMain,
       appBar: AppBar(
         title: const Text(
-          '🗑️ Administrative Data Flush',
+          ' Administrative Data Flush',
           style: TextStyle(
             color: AppTheme.textColor,
             fontWeight: FontWeight.bold,

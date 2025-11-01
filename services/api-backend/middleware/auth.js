@@ -41,7 +41,7 @@ export async function authenticateJWT(req, res, next) {
 
     // If it's not a valid JWT (opaque token), use Auth0 userinfo endpoint
     if (!decoded || !decoded.header || !decoded.header.kid) {
-      logger.debug('🔐 [Auth] Token appears to be opaque, using Auth0 userinfo endpoint');
+      logger.debug(' [Auth] Token appears to be opaque, using Auth0 userinfo endpoint');
 
       try {
         // Validate opaque token using Auth0 userinfo endpoint
@@ -61,11 +61,11 @@ export async function authenticateJWT(req, res, next) {
         req.user = userInfo;
         req.userId = userInfo.sub;
 
-        logger.debug(`🔐 [Auth] User authenticated via userinfo: ${userInfo.sub}`);
+        logger.debug(` [Auth] User authenticated via userinfo: ${userInfo.sub}`);
         next();
         return;
       } catch (userinfoError) {
-        logger.error('🔐 [Auth] Userinfo validation failed:', userinfoError);
+        logger.error(' [Auth] Userinfo validation failed:', userinfoError);
         return res.status(401).json({
           error: 'Token validation failed',
           code: 'TOKEN_VALIDATION_FAILED',
@@ -74,7 +74,7 @@ export async function authenticateJWT(req, res, next) {
     }
 
     // If it's a proper JWT token, use the AuthService validation
-    logger.debug('🔐 [Auth] Token appears to be JWT, using AuthService validation');
+    logger.debug(' [Auth] Token appears to be JWT, using AuthService validation');
     const result = await authService.validateToken(token);
 
     if (!result.valid) {
@@ -88,11 +88,11 @@ export async function authenticateJWT(req, res, next) {
     req.user = result.payload;
     req.userId = result.payload.sub;
 
-    logger.debug(`🔐 [Auth] User authenticated via JWT: ${result.payload.sub}`);
+    logger.debug(` [Auth] User authenticated via JWT: ${result.payload.sub}`);
     next();
 
   } catch (error) {
-    logger.error('🔐 [Auth] Token verification failed:', error);
+    logger.error(' [Auth] Token verification failed:', error);
 
     let errorCode = 'TOKEN_VERIFICATION_FAILED';
     let errorMessage = 'Invalid or expired token';
@@ -153,7 +153,7 @@ export function requireScope(requiredScope) {
     const userScopes = req.user.scope ? req.user.scope.split(' ') : [];
 
     if (!userScopes.includes(requiredScope)) {
-      logger.warn(`🔐 [Auth] User ${req.user.sub} missing required scope: ${requiredScope}`);
+      logger.warn(` [Auth] User ${req.user.sub} missing required scope: ${requiredScope}`);
       return res.status(403).json({
         error: 'Insufficient permissions',
         code: 'INSUFFICIENT_PERMISSIONS',
@@ -195,10 +195,10 @@ export async function optionalAuth(req, res, next) {
           const userInfo = await response.json();
           req.user = userInfo;
           req.userId = userInfo.sub;
-          logger.debug(`🔐 [Auth] Optional auth successful via userinfo: ${userInfo.sub}`);
+          logger.debug(` [Auth] Optional auth successful via userinfo: ${userInfo.sub}`);
         }
       } catch (userinfoError) {
-        logger.debug('🔐 [Auth] Optional userinfo auth failed, continuing without authentication:', userinfoError.message);
+        logger.debug(' [Auth] Optional userinfo auth failed, continuing without authentication:', userinfoError.message);
       }
     } else {
       // Try JWT validation
@@ -207,12 +207,12 @@ export async function optionalAuth(req, res, next) {
       if (result.valid) {
         req.user = result.payload;
         req.userId = result.payload.sub;
-        logger.debug(`🔐 [Auth] Optional auth successful via JWT: ${result.payload.sub}`);
+        logger.debug(` [Auth] Optional auth successful via JWT: ${result.payload.sub}`);
       }
     }
   } catch (error) {
     // Token verification failed, but that's okay for optional auth
-    logger.debug('🔐 [Auth] Optional auth failed, continuing without authentication:', error.message);
+    logger.debug(' [Auth] Optional auth failed, continuing without authentication:', error.message);
   }
 
   next();
@@ -245,7 +245,7 @@ export function authenticateContainer(req, res, next) {
   req.containerId = containerId;
   req.containerToken = containerToken;
 
-  logger.debug(`🔐 [Auth] Container authenticated: ${containerId}`);
+  logger.debug(` [Auth] Container authenticated: ${containerId}`);
   next();
 }
 
@@ -312,7 +312,7 @@ export function requireAdmin(req, res, next) {
       req.user.role === 'admin';
 
     if (!hasAdminRole) {
-      logger.warn('🔥 [AdminAuth] Admin access denied', {
+      logger.warn('� [AdminAuth] Admin access denied', {
         userId: req.user.sub,
         userMetadata,
         appMetadata,
@@ -330,7 +330,7 @@ export function requireAdmin(req, res, next) {
       });
     }
 
-    logger.info('🔥 [AdminAuth] Admin access granted', {
+    logger.info('� [AdminAuth] Admin access granted', {
       userId: req.user.sub,
       role: userMetadata.role || appMetadata.role || 'admin',
       userAgent: req.get('User-Agent'),
@@ -338,7 +338,7 @@ export function requireAdmin(req, res, next) {
 
     next();
   } catch (error) {
-    logger.error('🔥 [AdminAuth] Admin role check failed', {
+    logger.error('� [AdminAuth] Admin role check failed', {
       error: error.message,
       userId: req.user?.sub,
     });

@@ -17,38 +17,38 @@ class _CallbackScreenState extends State<CallbackScreen> {
   @override
   void initState() {
     super.initState();
-    debugPrint('🔐 [CallbackScreen] initState called');
+    debugPrint(' [CallbackScreen] initState called');
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      debugPrint('🔐 [CallbackScreen] postFrameCallback triggered');
+      debugPrint(' [CallbackScreen] postFrameCallback triggered');
       _processCallback();
     });
   }
 
   Future<void> _processCallback() async {
     try {
-      debugPrint('🔐 [CallbackScreen] _processCallback started');
+      debugPrint(' [CallbackScreen] _processCallback started');
       final authService = context.read<AuthService>();
-      debugPrint('🔐 [CallbackScreen] AuthService obtained from context');
+      debugPrint(' [CallbackScreen] AuthService obtained from context');
 
       // For desktop platforms, the callback route should not be used
       // Desktop authentication is handled internally by the auth service
       if (!kIsWeb) {
         debugPrint(
-          '🔐 [Callback] Desktop platform detected - callback route not needed',
+          ' [Callback] Desktop platform detected - callback route not needed',
         );
         debugPrint(
-          '🔐 [Callback] Checking current authentication state and redirecting',
+          ' [Callback] Checking current authentication state and redirecting',
         );
 
         if (mounted) {
           if (authService.isAuthenticated.value) {
             debugPrint(
-              '🔐 [Callback] User already authenticated, redirecting to home',
+              ' [Callback] User already authenticated, redirecting to home',
             );
             context.go('/');
           } else {
             debugPrint(
-              '🔐 [Callback] User not authenticated, redirecting to login',
+              ' [Callback] User not authenticated, redirecting to login',
             );
             context.go('/login');
           }
@@ -59,7 +59,7 @@ class _CallbackScreenState extends State<CallbackScreen> {
       // Check if user is already authenticated - if so, just redirect to home
       if (authService.isAuthenticated.value) {
         debugPrint(
-          '🔐 [Callback] User already authenticated, redirecting to home',
+          ' [Callback] User already authenticated, redirecting to home',
         );
         if (mounted) {
           context.go('/');
@@ -70,12 +70,12 @@ class _CallbackScreenState extends State<CallbackScreen> {
       // Check if we have callback parameters in the current URL
       // Use GoRouterState to get the current location with query parameters
       final currentLocation = GoRouterState.of(context).uri.toString();
-      debugPrint('🔐 [Callback] Current location: $currentLocation');
+      debugPrint(' [Callback] Current location: $currentLocation');
 
       if (!currentLocation.contains('code=') &&
           !currentLocation.contains('error=')) {
         debugPrint(
-          '🔐 [Callback] No callback parameters found, redirecting to login',
+          ' [Callback] No callback parameters found, redirecting to login',
         );
         if (mounted) {
           context.go('/login');
@@ -86,12 +86,12 @@ class _CallbackScreenState extends State<CallbackScreen> {
       // Web platform - process the callback normally
       // Pass the current location to ensure auth service gets the callback parameters
       debugPrint(
-        '🔐 [CallbackScreen] calling authService.handleCallback with URL: $currentLocation',
+        ' [CallbackScreen] calling authService.handleCallback with URL: $currentLocation',
       );
       final success = await authService.handleCallback(
         callbackUrl: currentLocation,
       );
-      debugPrint('🔐 [CallbackScreen] handleCallback returned: $success');
+      debugPrint(' [CallbackScreen] handleCallback returned: $success');
 
       if (mounted) {
         if (success) {
@@ -103,27 +103,27 @@ class _CallbackScreenState extends State<CallbackScreen> {
           if (mounted) {
             if (authService.isAuthenticated.value) {
               debugPrint(
-                '🔐 [Callback] Authentication successful, redirecting to home',
+                ' [Callback] Authentication successful, redirecting to home',
               );
               // Use pushReplacement to clear the callback URL from history
               context.pushReplacement('/');
             } else {
               debugPrint(
-                '🔐 [Callback] Authentication state not set after success, redirecting to login',
+                ' [Callback] Authentication state not set after success, redirecting to login',
               );
               context.go('/login');
             }
           }
         } else {
           debugPrint(
-            '🔐 [Callback] Authentication failed, redirecting to login',
+            ' [Callback] Authentication failed, redirecting to login',
           );
           // Redirect to login page on failure
           context.go('/login');
         }
       }
     } catch (e) {
-      debugPrint('🔐 [Callback] Processing error: $e');
+      debugPrint(' [Callback] Processing error: $e');
       if (mounted) {
         // Show error and redirect to login
         ScaffoldMessenger.of(context).showSnackBar(

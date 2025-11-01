@@ -119,7 +119,7 @@ class StatusEventBus {
     if (!_statusController.isClosed) {
       _statusController.add(event);
       if (kDebugMode) {
-        debugPrint('📡 [StatusEventBus] Published: $event');
+        debugPrint(' [StatusEventBus] Published: $event');
       }
     }
   }

@@ -99,7 +99,7 @@ class Auth0WebService {
         await js_util.promiseToFuture(js_util.callMethod(bridge, 'loginWithGoogle', []));
         // Note: This will redirect the page, so code after this won't execute
       } on Object catch (e, stackTrace) {
-        debugPrint('❌ Auth0 login JavaScript error: $e');
+        debugPrint(' Auth0 login JavaScript error: $e');
         debugPrint('Stack trace: $stackTrace');
         // Re-throw with more context
         throw Exception('Auth0 login failed: $e');
@@ -167,7 +167,7 @@ class Auth0WebService {
           // Handle error from Auth0
           final error = resultMap['error']?.toString() ?? 'Unknown error';
           final errorCode = resultMap['errorCode']?.toString();
-          debugPrint('❌ Auth0 callback error: $error (code: $errorCode)');
+          debugPrint(' Auth0 callback error: $error (code: $errorCode)');
           
           // Show user-friendly error message
           if (error.contains('Service not found')) {
@@ -181,7 +181,7 @@ class Auth0WebService {
         return false;
       }
     } catch (e, stackTrace) {
-      debugPrint('❌ Error handling redirect callback: $e');
+      debugPrint(' Error handling redirect callback: $e');
       debugPrint('Stack trace: $stackTrace');
       return false;
     }
@@ -190,7 +190,7 @@ class Auth0WebService {
   /// Logout
   Future<void> logout() async {
     try {
-      debugPrint('🔐 Logging out from Auth0...');
+      debugPrint(' Logging out from Auth0...');
       final bridge = js_util.getProperty(js_util.globalThis, 'auth0Bridge');
       if (bridge == null) throw Exception('Auth0 bridge not available');
       
@@ -203,7 +203,7 @@ class Auth0WebService {
       
       // Note: This will redirect the page, so code after this won't execute
     } catch (e) {
-      debugPrint('❌ Auth0 logout error: $e');
+      debugPrint(' Auth0 logout error: $e');
       rethrow;
     }
   }

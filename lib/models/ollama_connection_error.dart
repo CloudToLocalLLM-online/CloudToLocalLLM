@@ -184,17 +184,17 @@ General troubleshooting:
     switch (type) {
       case OllamaConnectionErrorType.serviceNotRunning:
       case OllamaConnectionErrorType.serviceNotInstalled:
-        return '🚫';
+        return '�';
       case OllamaConnectionErrorType.networkError:
-        return '🌐';
+        return '';
       case OllamaConnectionErrorType.timeout:
-        return '⏱️';
+        return '';
       case OllamaConnectionErrorType.authenticationError:
-        return '🔒';
+        return '�';
       case OllamaConnectionErrorType.serviceError:
-        return '⚠️';
+        return '';
       default:
-        return '❌';
+        return '';
     }
   }
 

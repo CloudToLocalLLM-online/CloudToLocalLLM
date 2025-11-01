@@ -30,7 +30,7 @@ class WebDownloadPromptService extends ChangeNotifier {
   Future<void> initialize() async {
     // Download prompt service is disabled - tunnel wizard provides download functionality
     debugPrint(
-      '🌐 [WebDownloadPrompt] Service disabled - using tunnel wizard for downloads',
+      '[WebDownloadPrompt] Service disabled - using tunnel wizard for downloads',
     );
     _isInitialized = true;
     _shouldShowPrompt = false;
@@ -49,11 +49,11 @@ class WebDownloadPromptService extends ChangeNotifier {
           _hasUserSeenPrompt,
         );
         debugPrint(
-          '🌐 [WebDownloadPrompt] Saved state for user $userId: hasSeenPrompt=$_hasUserSeenPrompt',
+          '[WebDownloadPrompt] Saved state for user $userId: hasSeenPrompt=$_hasUserSeenPrompt',
         );
       }
     } catch (e) {
-      debugPrint('🌐 [WebDownloadPrompt] Error saving prompt state: $e');
+      debugPrint('[WebDownloadPrompt] Error saving prompt state: $e');
     }
   }
 
@@ -73,7 +73,7 @@ class WebDownloadPromptService extends ChangeNotifier {
     // Users can access downloads through the tunnel wizard instead
     _shouldShowPrompt = false;
     debugPrint(
-      '🌐 [WebDownloadPrompt] Download prompt disabled - use tunnel wizard for downloads',
+      '[WebDownloadPrompt] Download prompt disabled - use tunnel wizard for downloads',
     );
     notifyListeners();
   }
@@ -83,7 +83,7 @@ class WebDownloadPromptService extends ChangeNotifier {
     _hasUserSeenPrompt = true;
     await _savePromptState();
     await _checkShouldShowPrompt();
-    debugPrint('🌐 [WebDownloadPrompt] Prompt marked as seen');
+    debugPrint('[WebDownloadPrompt] Prompt marked as seen');
   }
 
   /// Hide the prompt permanently
@@ -93,14 +93,14 @@ class WebDownloadPromptService extends ChangeNotifier {
     if (!_hasUserSeenPrompt) {
       await markPromptSeen();
     }
-    debugPrint('🌐 [WebDownloadPrompt] Prompt hidden permanently');
+    debugPrint('[WebDownloadPrompt] Prompt hidden permanently');
     notifyListeners();
   }
 
   /// Show the prompt from settings (always show, regardless of completion status)
   void showPromptFromSettings() {
     _shouldShowPrompt = true;
-    debugPrint('🌐 [WebDownloadPrompt] Showing prompt from settings');
+    debugPrint('[WebDownloadPrompt] Showing prompt from settings');
     notifyListeners();
   }
 

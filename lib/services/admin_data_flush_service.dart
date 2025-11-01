@@ -74,7 +74,7 @@ class AdminDataFlushService extends ChangeNotifier {
           handler.next(options);
         },
         onError: (error, handler) {
-          debugPrint('🗑️ [DataFlush] API Error: ${error.message}');
+          debugPrint(' [DataFlush] API Error: ${error.message}');
           handler.next(error);
         },
       ),
@@ -93,19 +93,19 @@ class AdminDataFlushService extends ChangeNotifier {
     _clearError();
 
     try {
-      debugPrint('🗑️ [DataFlush] Fetching system statistics');
+      debugPrint(' [DataFlush] Fetching system statistics');
 
       final response = await _dio.get('/api/admin/system/stats');
 
       if (response.statusCode == 200 && response.data['success'] == true) {
-        debugPrint('🗑️ [DataFlush] System statistics retrieved successfully');
+        debugPrint(' [DataFlush] System statistics retrieved successfully');
         return response.data['data'];
       } else {
         throw Exception('Failed to retrieve system statistics');
       }
     } catch (e) {
       _setError('Failed to get system statistics: ${e.toString()}');
-      debugPrint('🗑️ [DataFlush] Error getting system statistics: $e');
+      debugPrint(' [DataFlush] Error getting system statistics: $e');
       return null;
     } finally {
       _setLoading(false);
@@ -121,9 +121,9 @@ class AdminDataFlushService extends ChangeNotifier {
     _clearError();
 
     try {
-      debugPrint('🗑️ [DataFlush] Preparing data flush operation');
-      debugPrint('🗑️ [DataFlush] Target: ${targetUserId ?? 'ALL_USERS'}');
-      debugPrint('🗑️ [DataFlush] Scope: $scope');
+      debugPrint(' [DataFlush] Preparing data flush operation');
+      debugPrint(' [DataFlush] Target: ${targetUserId ?? 'ALL_USERS'}');
+      debugPrint(' [DataFlush] Scope: $scope');
 
       final response = await _dio.post(
         '/api/admin/flush/prepare',
@@ -134,8 +134,8 @@ class AdminDataFlushService extends ChangeNotifier {
         _confirmationToken = response.data['confirmationToken'];
         _tokenExpiresAt = DateTime.parse(response.data['expiresAt']);
 
-        debugPrint('🗑️ [DataFlush] Flush operation prepared successfully');
-        debugPrint('🗑️ [DataFlush] Token expires at: $_tokenExpiresAt');
+        debugPrint(' [DataFlush] Flush operation prepared successfully');
+        debugPrint(' [DataFlush] Token expires at: $_tokenExpiresAt');
 
         notifyListeners();
         return true;
@@ -144,7 +144,7 @@ class AdminDataFlushService extends ChangeNotifier {
       }
     } catch (e) {
       _setError('Failed to prepare data flush: ${e.toString()}');
-      debugPrint('🗑️ [DataFlush] Error preparing data flush: $e');
+      debugPrint(' [DataFlush] Error preparing data flush: $e');
       return false;
     } finally {
       _setLoading(false);
@@ -167,9 +167,9 @@ class AdminDataFlushService extends ChangeNotifier {
     _clearError();
 
     try {
-      debugPrint('🗑️ [DataFlush] CRITICAL: Executing data flush operation');
-      debugPrint('🗑️ [DataFlush] Target: ${targetUserId ?? 'ALL_USERS'}');
-      debugPrint('🗑️ [DataFlush] Options: $options');
+      debugPrint(' [DataFlush] CRITICAL: Executing data flush operation');
+      debugPrint(' [DataFlush] Target: ${targetUserId ?? 'ALL_USERS'}');
+      debugPrint(' [DataFlush] Options: $options');
 
       final response = await _dio.post(
         '/api/admin/flush/execute',
@@ -202,10 +202,10 @@ class AdminDataFlushService extends ChangeNotifier {
         }
 
         debugPrint(
-          '🗑️ [DataFlush] CRITICAL: Data flush executed successfully',
+          ' [DataFlush] CRITICAL: Data flush executed successfully',
         );
         debugPrint(
-          '🗑️ [DataFlush] Operation ID: ${response.data['operationId']}',
+          ' [DataFlush] Operation ID: ${response.data['operationId']}',
         );
 
         notifyListeners();
@@ -215,7 +215,7 @@ class AdminDataFlushService extends ChangeNotifier {
       }
     } catch (e) {
       _setError('Failed to execute data flush: ${e.toString()}');
-      debugPrint('🗑️ [DataFlush] CRITICAL: Error executing data flush: $e');
+      debugPrint(' [DataFlush] CRITICAL: Error executing data flush: $e');
       return false;
     } finally {
       _setLoading(false);
@@ -228,7 +228,7 @@ class AdminDataFlushService extends ChangeNotifier {
     _clearError();
 
     try {
-      debugPrint('🗑️ [DataFlush] Loading flush operation history');
+      debugPrint(' [DataFlush] Loading flush operation history');
 
       final response = await _dio.get(
         '/api/admin/flush/history',
@@ -241,7 +241,7 @@ class AdminDataFlushService extends ChangeNotifier {
         );
 
         debugPrint(
-          '🗑️ [DataFlush] Loaded ${_operationHistory.length} operations',
+          ' [DataFlush] Loaded ${_operationHistory.length} operations',
         );
 
         notifyListeners();
@@ -251,7 +251,7 @@ class AdminDataFlushService extends ChangeNotifier {
       }
     } catch (e) {
       _setError('Failed to load flush history: ${e.toString()}');
-      debugPrint('🗑️ [DataFlush] Error loading flush history: $e');
+      debugPrint(' [DataFlush] Error loading flush history: $e');
       return false;
     } finally {
       _setLoading(false);
@@ -264,15 +264,15 @@ class AdminDataFlushService extends ChangeNotifier {
     _clearError();
 
     try {
-      debugPrint('🗑️ [DataFlush] Executing emergency container cleanup');
+      debugPrint(' [DataFlush] Executing emergency container cleanup');
 
       final response = await _dio.post('/api/admin/containers/cleanup');
 
       if (response.statusCode == 200 && response.data['success'] == true) {
         _lastOperationResult = response.data;
 
-        debugPrint('🗑️ [DataFlush] Emergency cleanup completed');
-        debugPrint('🗑️ [DataFlush] Results: ${response.data['results']}');
+        debugPrint(' [DataFlush] Emergency cleanup completed');
+        debugPrint(' [DataFlush] Results: ${response.data['results']}');
 
         notifyListeners();
         return true;
@@ -281,7 +281,7 @@ class AdminDataFlushService extends ChangeNotifier {
       }
     } catch (e) {
       _setError('Failed to execute emergency cleanup: ${e.toString()}');
-      debugPrint('🗑️ [DataFlush] Error in emergency cleanup: $e');
+      debugPrint(' [DataFlush] Error in emergency cleanup: $e');
       return false;
     } finally {
       _setLoading(false);
@@ -294,7 +294,7 @@ class AdminDataFlushService extends ChangeNotifier {
       final response = await _dio.get('/api/admin/health');
       return response.statusCode == 200;
     } catch (e) {
-      debugPrint('🗑️ [DataFlush] Admin privilege check failed: $e');
+      debugPrint(' [DataFlush] Admin privilege check failed: $e');
       return false;
     }
   }
@@ -311,15 +311,15 @@ class AdminDataFlushService extends ChangeNotifier {
     };
 
     try {
-      debugPrint('🗑️ [DataFlush] Starting comprehensive local data clearing');
+      debugPrint(' [DataFlush] Starting comprehensive local data clearing');
 
       // 1. Clear secure storage (auth tokens, settings, etc.)
       try {
         await _secureStorage.deleteAll();
         results['secureStorage'] = true;
-        debugPrint('🗑️ [DataFlush] Secure storage cleared');
+        debugPrint(' [DataFlush] Secure storage cleared');
       } catch (e) {
-        debugPrint('🗑️ [DataFlush] Error clearing secure storage: $e');
+        debugPrint(' [DataFlush] Error clearing secure storage: $e');
       }
 
       // 2. Clear conversation database
@@ -327,9 +327,9 @@ class AdminDataFlushService extends ChangeNotifier {
         try {
           await _conversationStorage.clearAllConversations();
           results['conversations'] = true;
-          debugPrint('🗑️ [DataFlush] Conversation database cleared');
+          debugPrint(' [DataFlush] Conversation database cleared');
         } catch (e) {
-          debugPrint('🗑️ [DataFlush] Error clearing conversations: $e');
+          debugPrint(' [DataFlush] Error clearing conversations: $e');
         }
       }
 
@@ -338,9 +338,9 @@ class AdminDataFlushService extends ChangeNotifier {
         try {
           _clearWebLocalStorage();
           results['webLocalStorage'] = true;
-          debugPrint('🗑️ [DataFlush] Web localStorage cleared');
+          debugPrint(' [DataFlush] Web localStorage cleared');
         } catch (e) {
-          debugPrint('🗑️ [DataFlush] Error clearing web localStorage: $e');
+          debugPrint(' [DataFlush] Error clearing web localStorage: $e');
         }
       }
 
@@ -348,9 +348,9 @@ class AdminDataFlushService extends ChangeNotifier {
       try {
         AuthLogger.clearLogs();
         results['authLogs'] = true;
-        debugPrint('🗑️ [DataFlush] Authentication logs cleared');
+        debugPrint(' [DataFlush] Authentication logs cleared');
       } catch (e) {
-        debugPrint('🗑️ [DataFlush] Error clearing auth logs: $e');
+        debugPrint(' [DataFlush] Error clearing auth logs: $e');
       }
 
       // 5. Clear service cache and state
@@ -360,21 +360,21 @@ class AdminDataFlushService extends ChangeNotifier {
         _confirmationToken = null;
         _tokenExpiresAt = null;
         results['serviceCache'] = true;
-        debugPrint('🗑️ [DataFlush] Service cache cleared');
+        debugPrint(' [DataFlush] Service cache cleared');
       } catch (e) {
-        debugPrint('🗑️ [DataFlush] Error clearing service cache: $e');
+        debugPrint(' [DataFlush] Error clearing service cache: $e');
       }
 
       final successCount = results.values.where((v) => v == true).length;
       debugPrint(
-        '🗑️ [DataFlush] Local data clearing completed: $successCount/${results.length} operations successful',
+        ' [DataFlush] Local data clearing completed: $successCount/${results.length} operations successful',
       );
 
       notifyListeners();
       return results;
     } catch (e) {
       debugPrint(
-        '🗑️ [DataFlush] Critical error during local data clearing: $e',
+        ' [DataFlush] Critical error during local data clearing: $e',
       );
       _setError('Failed to clear local data: ${e.toString()}');
       return results;
@@ -402,10 +402,10 @@ class AdminDataFlushService extends ChangeNotifier {
       }
 
       debugPrint(
-        '🗑️ [DataFlush] Removed ${keysToRemove.length} localStorage keys',
+        ' [DataFlush] Removed ${keysToRemove.length} localStorage keys',
       );
     } catch (e) {
-      debugPrint('🗑️ [DataFlush] Error clearing web localStorage: $e');
+      debugPrint(' [DataFlush] Error clearing web localStorage: $e');
       rethrow;
     }
   }

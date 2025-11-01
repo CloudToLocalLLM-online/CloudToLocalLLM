@@ -61,7 +61,7 @@ export function createDirectProxyRoutes(tunnelProxy) {
         version: process.env.npm_package_version || '1.0.0',
       };
 
-      logger.debug('🔍 [DirectProxy] Health check requested', {
+      logger.debug(' [DirectProxy] Health check requested', {
         userId: req.user.sub,
         userTier,
         isConnected,
@@ -69,7 +69,7 @@ export function createDirectProxyRoutes(tunnelProxy) {
 
       res.json(healthStatus);
     } catch (error) {
-      logger.error('❌ [DirectProxy] Health check failed', {
+      logger.error(' [DirectProxy] Health check failed', {
         userId: req.user?.sub,
         error: error.message,
       });
@@ -98,7 +98,7 @@ export function createDirectProxyRoutes(tunnelProxy) {
 
       // Verify this is a free tier user (security check)
       if (!shouldUseDirectTunnel(req.user)) {
-        logger.warn('🚫 [DirectProxy] Non-free tier user attempted direct proxy access', {
+        logger.warn('� [DirectProxy] Non-free tier user attempted direct proxy access', {
           userId,
           userTier,
           endpoint: req.path,
@@ -119,7 +119,7 @@ export function createDirectProxyRoutes(tunnelProxy) {
 
       // Check if tunnel is connected
       if (!tunnelProxy.isUserConnected(userId)) {
-        logger.warn('🔌 [DirectProxy] Desktop client not connected', {
+        logger.warn('� [DirectProxy] Desktop client not connected', {
           userId,
           userTier,
           endpoint: req.path,
@@ -137,7 +137,7 @@ export function createDirectProxyRoutes(tunnelProxy) {
       // Validate request size
       const contentLength = parseInt(req.get('content-length') || '0');
       if (contentLength > MAX_REQUEST_SIZE) {
-        logger.warn('📏 [DirectProxy] Request too large', {
+        logger.warn('� [DirectProxy] Request too large', {
           userId,
           contentLength,
           maxSize: MAX_REQUEST_SIZE,
@@ -157,7 +157,7 @@ export function createDirectProxyRoutes(tunnelProxy) {
 
       // Validate path for security (prevent path traversal)
       if (ollamaPath.includes('..') || ollamaPath.includes('//')) {
-        logger.warn('🚨 [DirectProxy] Path traversal attempt detected', {
+        logger.warn('� [DirectProxy] Path traversal attempt detected', {
           userId,
           originalPath: req.path,
           ollamaPath,
@@ -194,7 +194,7 @@ export function createDirectProxyRoutes(tunnelProxy) {
         timeout: REQUEST_TIMEOUT,
       };
 
-      logger.debug('🔄 [DirectProxy] Forwarding request through tunnel', {
+      logger.debug(' [DirectProxy] Forwarding request through tunnel', {
         userId,
         userTier,
         method: req.method,
@@ -230,7 +230,7 @@ export function createDirectProxyRoutes(tunnelProxy) {
             try {
               res.set(key, value);
             } catch (headerError) {
-              logger.warn('⚠️ [DirectProxy] Invalid response header', {
+              logger.warn(' [DirectProxy] Invalid response header', {
                 userId,
                 header: key,
                 value,
@@ -245,7 +245,7 @@ export function createDirectProxyRoutes(tunnelProxy) {
       // Validate and set status code
       const statusCode = parseInt(response.statusCode) || 200;
       if (statusCode < 100 || statusCode > 599) {
-        logger.warn('⚠️ [DirectProxy] Invalid status code, using 200', {
+        logger.warn(' [DirectProxy] Invalid status code, using 200', {
           userId,
           originalStatusCode: response.statusCode,
           requestId,
@@ -269,7 +269,7 @@ export function createDirectProxyRoutes(tunnelProxy) {
       }
 
       const duration = Date.now() - startTime;
-      logger.debug('✅ [DirectProxy] Request completed successfully', {
+      logger.debug(' [DirectProxy] Request completed successfully', {
         userId,
         userTier,
         method: req.method,
@@ -284,7 +284,7 @@ export function createDirectProxyRoutes(tunnelProxy) {
       const userId = req.user?.sub;
       const userTier = getUserTier(req.user);
 
-      logger.error('❌ [DirectProxy] Request failed', {
+      logger.error(' [DirectProxy] Request failed', {
         userId,
         userTier,
         method: req.method,
@@ -379,7 +379,7 @@ export function createDirectProxyRoutes(tunnelProxy) {
         query: req.query,
       };
 
-      logger.debug('🔄 [DirectProxy] Forwarding API request through tunnel', {
+      logger.debug(' [DirectProxy] Forwarding API request through tunnel', {
         userId,
         userTier,
         method: req.method,
@@ -412,7 +412,7 @@ export function createDirectProxyRoutes(tunnelProxy) {
       }
 
     } catch (error) {
-      logger.error('❌ [DirectProxy] API request failed', {
+      logger.error(' [DirectProxy] API request failed', {
         userId,
         userTier,
         method: req.method,

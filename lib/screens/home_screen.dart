@@ -626,9 +626,9 @@ class _HomeScreenState extends State<HomeScreen> {
       // The StreamingChatService will handle adding the new message and managing state
       _sendMessage(chatService, lastUserMessage);
 
-      debugPrint('🔄 [HomeScreen] Retrying message: $lastUserMessage');
+      debugPrint(' [HomeScreen] Retrying message: $lastUserMessage');
     } else {
-      debugPrint('⚠️ [HomeScreen] No user message found to retry');
+      debugPrint(' [HomeScreen] No user message found to retry');
     }
   }
 }

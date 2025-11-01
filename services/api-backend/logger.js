@@ -139,31 +139,31 @@ logger.logRequest = (req, res, next) => {
 
 // Add structured logging methods for specific components
 logger.zrok = {
-  info: (message, meta = {}) => logger.info(`🌐 [Zrok] ${message}`, meta),
-  warn: (message, meta = {}) => logger.warn(`🌐 [Zrok] ${message}`, meta),
-  error: (message, meta = {}) => logger.error(`🌐 [Zrok] ${message}`, meta),
-  debug: (message, meta = {}) => logger.debug(`🌐 [Zrok] ${message}`, meta),
+  info: (message, meta = {}) => logger.info(` [Zrok] ${message}`, meta),
+  warn: (message, meta = {}) => logger.warn(` [Zrok] ${message}`, meta),
+  error: (message, meta = {}) => logger.error(` [Zrok] ${message}`, meta),
+  debug: (message, meta = {}) => logger.debug(` [Zrok] ${message}`, meta),
 };
 
 logger.auth = {
-  info: (message, meta = {}) => logger.info(`🔐 [Auth] ${message}`, meta),
-  warn: (message, meta = {}) => logger.warn(`🔐 [Auth] ${message}`, meta),
-  error: (message, meta = {}) => logger.error(`🔐 [Auth] ${message}`, meta),
-  debug: (message, meta = {}) => logger.debug(`🔐 [Auth] ${message}`, meta),
+  info: (message, meta = {}) => logger.info(` [Auth] ${message}`, meta),
+  warn: (message, meta = {}) => logger.warn(` [Auth] ${message}`, meta),
+  error: (message, meta = {}) => logger.error(` [Auth] ${message}`, meta),
+  debug: (message, meta = {}) => logger.debug(` [Auth] ${message}`, meta),
 };
 
 logger.proxy = {
-  info: (message, meta = {}) => logger.info(`🔄 [Proxy] ${message}`, meta),
-  warn: (message, meta = {}) => logger.warn(`🔄 [Proxy] ${message}`, meta),
-  error: (message, meta = {}) => logger.error(`🔄 [Proxy] ${message}`, meta),
-  debug: (message, meta = {}) => logger.debug(`🔄 [Proxy] ${message}`, meta),
+  info: (message, meta = {}) => logger.info(` [Proxy] ${message}`, meta),
+  warn: (message, meta = {}) => logger.warn(` [Proxy] ${message}`, meta),
+  error: (message, meta = {}) => logger.error(` [Proxy] ${message}`, meta),
+  debug: (message, meta = {}) => logger.debug(` [Proxy] ${message}`, meta),
 };
 
 logger.container = {
-  info: (message, meta = {}) => logger.info(`🐳 [Container] ${message}`, meta),
-  warn: (message, meta = {}) => logger.warn(`🐳 [Container] ${message}`, meta),
-  error: (message, meta = {}) => logger.error(`🐳 [Container] ${message}`, meta),
-  debug: (message, meta = {}) => logger.debug(`🐳 [Container] ${message}`, meta),
+  info: (message, meta = {}) => logger.info(`� [Container] ${message}`, meta),
+  warn: (message, meta = {}) => logger.warn(`� [Container] ${message}`, meta),
+  error: (message, meta = {}) => logger.error(`� [Container] ${message}`, meta),
+  debug: (message, meta = {}) => logger.debug(`� [Container] ${message}`, meta),
 };
 
 // Log startup information

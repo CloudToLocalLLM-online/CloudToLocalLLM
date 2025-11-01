@@ -13,13 +13,13 @@ DATABASE_NAME="cloudtolocalllm"
 DB_USER="appuser"
 TIER="db-f1-micro"  # Start small, can upgrade later
 
-echo "🚀 Setting up Cloud SQL PostgreSQL instance for CloudToLocalLLM..."
+echo " Setting up Cloud SQL PostgreSQL instance for CloudToLocalLLM..."
 
 # Set the project
 gcloud config set project $PROJECT_ID
 
 # Create the Cloud SQL PostgreSQL instance
-echo "📦 Creating Cloud SQL PostgreSQL instance: $INSTANCE_NAME"
+echo "� Creating Cloud SQL PostgreSQL instance: $INSTANCE_NAME"
 gcloud sql instances create $INSTANCE_NAME \
     --database-version=POSTGRES_15 \
     --tier=$TIER \
@@ -36,11 +36,11 @@ echo "⏳ Waiting for instance to be ready..."
 gcloud sql instances describe $INSTANCE_NAME --format="value(state)" | grep -q RUNNABLE
 
 # Create the database
-echo "🗄️ Creating database: $DATABASE_NAME"
+echo " Creating database: $DATABASE_NAME"
 gcloud sql databases create $DATABASE_NAME --instance=$INSTANCE_NAME
 
 # Create the application user
-echo "👤 Creating database user: $DB_USER"
+echo "� Creating database user: $DB_USER"
 DB_PASSWORD=$(openssl rand -base64 32)
 gcloud sql users create $DB_USER \
     --instance=$INSTANCE_NAME \
@@ -49,16 +49,16 @@ gcloud sql users create $DB_USER \
 # Get the connection name
 CONNECTION_NAME=$(gcloud sql instances describe $INSTANCE_NAME --format="value(connectionName)")
 
-echo "✅ Cloud SQL PostgreSQL instance setup complete!"
+echo " Cloud SQL PostgreSQL instance setup complete!"
 echo ""
-echo "📋 Configuration Details:"
+echo "� Configuration Details:"
 echo "  Instance Name: $INSTANCE_NAME"
 echo "  Connection Name: $CONNECTION_NAME"
 echo "  Database: $DATABASE_NAME"
 echo "  User: $DB_USER"
 echo "  Password: $DB_PASSWORD"
 echo ""
-echo "🔧 Environment Variables for Cloud Run:"
+echo " Environment Variables for Cloud Run:"
 echo "  DB_TYPE=postgresql"
 echo "  DB_NAME=$DATABASE_NAME"
 echo "  DB_USER=$DB_USER"
@@ -66,8 +66,8 @@ echo "  DB_PASSWORD=$DB_PASSWORD"
 echo "  DB_HOST=/cloudsql/$CONNECTION_NAME"
 echo "  CLOUD_SQL_CONNECTION_NAME=$CONNECTION_NAME"
 echo ""
-echo "⚠️  IMPORTANT: Save the password securely!"
-echo "💡 Next steps:"
+echo "  IMPORTANT: Save the password securely!"
+echo "� Next steps:"
 echo "  1. Update your Cloud Run service with these environment variables"
 echo "  2. Ensure your Cloud Run service account has 'Cloud SQL Client' role"
 echo "  3. Deploy your updated backend with PostgreSQL support"
@@ -88,4 +88,4 @@ PROJECT_ID=$PROJECT_ID
 REGION=$REGION
 EOF
 
-echo "📄 Configuration saved to: cloud-sql-config.env"
+echo "� Configuration saved to: cloud-sql-config.env"

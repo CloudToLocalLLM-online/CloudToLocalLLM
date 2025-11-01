@@ -68,7 +68,7 @@ class ConnectionValidationService extends ChangeNotifier {
 
     try {
       debugPrint(
-        '🔍 [ConnectionValidation] Starting comprehensive validation for user: $userId',
+        ' [ConnectionValidation] Starting comprehensive validation for user: $userId',
       );
 
       // Test 1: Desktop Client Communication
@@ -119,16 +119,16 @@ class ConnectionValidationService extends ChangeNotifier {
       _lastValidationTime = DateTime.now();
 
       debugPrint(
-        '🔍 [ConnectionValidation] Validation completed in ${duration.inMilliseconds}ms',
+        ' [ConnectionValidation] Validation completed in ${duration.inMilliseconds}ms',
       );
       debugPrint(
-        '🔍 [ConnectionValidation] Results: $successfulTests/${tests.length} tests passed',
+        ' [ConnectionValidation] Results: $successfulTests/${tests.length} tests passed',
       );
 
       return _lastValidationResult!;
     } catch (e) {
       _lastError = 'Validation failed: ${e.toString()}';
-      debugPrint('🔍 [ConnectionValidation] Error during validation: $e');
+      debugPrint(' [ConnectionValidation] Error during validation: $e');
 
       _lastValidationResult = ValidationResult.failure(
         'Unexpected error during validation: ${e.toString()}',
@@ -148,7 +148,7 @@ class ConnectionValidationService extends ChangeNotifier {
 
     try {
       debugPrint(
-        '🔍 [ConnectionValidation] Testing desktop client communication...',
+        ' [ConnectionValidation] Testing desktop client communication...',
       );
 
       final token = await _authService.getValidatedAccessToken();
@@ -212,7 +212,7 @@ class ConnectionValidationService extends ChangeNotifier {
     final startTime = DateTime.now();
 
     try {
-      debugPrint('🔍 [ConnectionValidation] Testing LLM connectivity...');
+      debugPrint(' [ConnectionValidation] Testing LLM connectivity...');
 
       final token = await _authService.getValidatedAccessToken();
       if (token == null) {
@@ -272,7 +272,7 @@ class ConnectionValidationService extends ChangeNotifier {
 
     try {
       debugPrint(
-        '🔍 [ConnectionValidation] Testing streaming functionality...',
+        ' [ConnectionValidation] Testing streaming functionality...',
       );
 
       // For now, we'll do a basic test of the streaming endpoint
@@ -340,7 +340,7 @@ class ConnectionValidationService extends ChangeNotifier {
 
     try {
       debugPrint(
-        '🔍 [ConnectionValidation] Testing authentication validation...',
+        ' [ConnectionValidation] Testing authentication validation...',
       );
 
       final token = await _authService.getValidatedAccessToken();
@@ -404,7 +404,7 @@ class ConnectionValidationService extends ChangeNotifier {
     final startTime = DateTime.now();
 
     try {
-      debugPrint('🔍 [ConnectionValidation] Testing network connectivity...');
+      debugPrint(' [ConnectionValidation] Testing network connectivity...');
 
       // Test basic network connectivity to the API
       final response = await http
@@ -465,7 +465,7 @@ class ConnectionValidationService extends ChangeNotifier {
     _lastError = null;
     _lastValidationTime = null;
     _completedTests.clear();
-    debugPrint('🔍 [ConnectionValidation] Cleared validation results');
+    debugPrint(' [ConnectionValidation] Cleared validation results');
     notifyListeners();
   }
 }

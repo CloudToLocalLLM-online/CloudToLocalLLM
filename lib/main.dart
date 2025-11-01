@@ -106,7 +106,7 @@ class _CloudToLocalLLMAppState extends State<CloudToLocalLLMApp> {
         _initializeSystemTray();
       }
     } catch (e) {
-      debugPrint("💥 [App] Error during app initialization: $e");
+      debugPrint(" [App] Error during app initialization: $e");
       // Still show the UI even if initialization fails
       if (mounted) {
         setState(() {
@@ -127,14 +127,14 @@ class _CloudToLocalLLMAppState extends State<CloudToLocalLLMApp> {
       // Note: Tray service will be initialized after providers are set up
       // This ensures all required services are available
     } catch (e, stackTrace) {
-      debugPrint("💥 [SystemTray] Failed to initialize system tray: $e");
-      debugPrint("💥 [SystemTray] Stack trace: $stackTrace");
+      debugPrint(" [SystemTray] Failed to initialize system tray: $e");
+      debugPrint(" [SystemTray] Stack trace: $stackTrace");
     }
   }
 
   void _navigateToRoute(String route) {
     try {
-      debugPrint("🧭 [Navigation] Attempting to navigate to route: $route");
+      debugPrint(" [Navigation] Attempting to navigate to route: $route");
 
       // Try multiple approaches to get a valid context
       BuildContext? context = navigatorKey.currentContext;
@@ -162,7 +162,7 @@ class _CloudToLocalLLMAppState extends State<CloudToLocalLLMApp> {
             }
           } catch (e) {
             debugPrint(
-              "💥 [Navigation] Post-frame navigation error for $route: $e",
+              " [Navigation] Post-frame navigation error for $route: $e",
             );
           }
         });
@@ -177,8 +177,8 @@ class _CloudToLocalLLMAppState extends State<CloudToLocalLLMApp> {
         });
       }
     } catch (e, stackTrace) {
-      debugPrint("💥 [Navigation] Error navigating to $route: $e");
-      debugPrint("💥 [Navigation] Stack trace: $stackTrace");
+      debugPrint(" [Navigation] Error navigating to $route: $e");
+      debugPrint(" [Navigation] Stack trace: $stackTrace");
     }
   }
 
@@ -197,7 +197,7 @@ class _CloudToLocalLLMAppState extends State<CloudToLocalLLMApp> {
         context.go(route);
         debugPrint("[Navigation] Retry successful for route: $route");
       } catch (e) {
-        debugPrint("💥 [Navigation] Retry failed for $route: $e");
+        debugPrint(" [Navigation] Retry failed for $route: $e");
         Future.delayed(const Duration(milliseconds: 1000), () {
           _retryNavigation(route, attempt + 1);
         });
@@ -515,7 +515,7 @@ class _CloudToLocalLLMAppState extends State<CloudToLocalLLMApp> {
           windowManager.showWindow();
         },
         onHideWindow: () {
-          debugPrint("🫥 [SystemTray] Native tray requested to hide window");
+          debugPrint("� [SystemTray] Native tray requested to hide window");
           windowManager.hideToTray();
         },
         onSettings: () {
@@ -538,8 +538,8 @@ class _CloudToLocalLLMAppState extends State<CloudToLocalLLMApp> {
         debugPrint("[SystemTray] Failed to initialize native tray service");
       }
     } catch (e, stackTrace) {
-      debugPrint("💥 [SystemTray] Failed to initialize system tray: $e");
-      debugPrint("💥 [SystemTray] Stack trace: $stackTrace");
+      debugPrint(" [SystemTray] Failed to initialize system tray: $e");
+      debugPrint(" [SystemTray] Stack trace: $stackTrace");
     }
   }
 

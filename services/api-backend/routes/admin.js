@@ -52,7 +52,7 @@ const flushRateLimit = rateLimit({
  */
 router.get('/system/stats', authenticateJWT, requireAdmin, adminRateLimit, async(req, res) => {
   try {
-    logger.info('🔥 [AdminAPI] System statistics requested', {
+    logger.info('� [AdminAPI] System statistics requested', {
       adminUserId: req.user.sub,
       userAgent: req.get('User-Agent'),
     });
@@ -66,7 +66,7 @@ router.get('/system/stats', authenticateJWT, requireAdmin, adminRateLimit, async
     });
 
   } catch (error) {
-    logger.error('🔥 [AdminAPI] Failed to get system statistics', {
+    logger.error('� [AdminAPI] Failed to get system statistics', {
       adminUserId: req.user.sub,
       error: error.message,
     });
@@ -88,7 +88,7 @@ router.post('/flush/prepare', authenticateJWT, requireAdmin, adminRateLimit, asy
     const { targetUserId, scope } = req.body;
     const adminUserId = req.user.sub;
 
-    logger.info('🔥 [AdminAPI] Data flush preparation requested', {
+    logger.info('� [AdminAPI] Data flush preparation requested', {
       adminUserId,
       targetUserId: targetUserId || 'ALL_USERS',
       scope: scope || 'FULL_FLUSH',
@@ -114,7 +114,7 @@ router.post('/flush/prepare', authenticateJWT, requireAdmin, adminRateLimit, asy
     );
 
     // Log the preparation (but not the token)
-    logger.info('🔥 [AdminAPI] Flush confirmation token generated', {
+    logger.info('� [AdminAPI] Flush confirmation token generated', {
       adminUserId,
       targetUserId: targetUserId || 'ALL_USERS',
       scope: flushScope,
@@ -132,7 +132,7 @@ router.post('/flush/prepare', authenticateJWT, requireAdmin, adminRateLimit, asy
     });
 
   } catch (error) {
-    logger.error('🔥 [AdminAPI] Failed to prepare flush operation', {
+    logger.error('� [AdminAPI] Failed to prepare flush operation', {
       adminUserId: req.user.sub,
       error: error.message,
     });
@@ -161,7 +161,7 @@ router.post('/flush/execute', authenticateJWT, requireAdmin, flushRateLimit, asy
       });
     }
 
-    logger.warn('🔥 [AdminAPI] CRITICAL: Data flush execution requested', {
+    logger.warn('� [AdminAPI] CRITICAL: Data flush execution requested', {
       adminUserId,
       targetUserId: targetUserId || 'ALL_USERS',
       options,
@@ -178,7 +178,7 @@ router.post('/flush/execute', authenticateJWT, requireAdmin, flushRateLimit, asy
     );
 
     // Log successful completion
-    logger.warn('🔥 [AdminAPI] CRITICAL: Data flush executed successfully', {
+    logger.warn('� [AdminAPI] CRITICAL: Data flush executed successfully', {
       adminUserId,
       operationId: result.operationId,
       targetUserId: targetUserId || 'ALL_USERS',
@@ -196,7 +196,7 @@ router.post('/flush/execute', authenticateJWT, requireAdmin, flushRateLimit, asy
     });
 
   } catch (error) {
-    logger.error('🔥 [AdminAPI] CRITICAL: Data flush execution failed', {
+    logger.error('� [AdminAPI] CRITICAL: Data flush execution failed', {
       adminUserId: req.user.sub,
       targetUserId: req.body.targetUserId || 'ALL_USERS',
       error: error.message,
@@ -228,7 +228,7 @@ router.get('/flush/status/:operationId', authenticateJWT, requireAdmin, adminRat
       });
     }
 
-    logger.info('🔥 [AdminAPI] Flush operation status requested', {
+    logger.info('� [AdminAPI] Flush operation status requested', {
       adminUserId,
       operationId,
       status: status.status,
@@ -240,7 +240,7 @@ router.get('/flush/status/:operationId', authenticateJWT, requireAdmin, adminRat
     });
 
   } catch (error) {
-    logger.error('🔥 [AdminAPI] Failed to get flush operation status', {
+    logger.error('� [AdminAPI] Failed to get flush operation status', {
       adminUserId: req.user.sub,
       operationId: req.params.operationId,
       error: error.message,
@@ -263,7 +263,7 @@ router.get('/flush/history', authenticateJWT, requireAdmin, adminRateLimit, asyn
     const { limit = 50 } = req.query;
     const adminUserId = req.user.sub;
 
-    logger.info('🔥 [AdminAPI] Flush history requested', {
+    logger.info('� [AdminAPI] Flush history requested', {
       adminUserId,
       limit: parseInt(limit),
     });
@@ -278,7 +278,7 @@ router.get('/flush/history', authenticateJWT, requireAdmin, adminRateLimit, asyn
     });
 
   } catch (error) {
-    logger.error('🔥 [AdminAPI] Failed to get flush history', {
+    logger.error('� [AdminAPI] Failed to get flush history', {
       adminUserId: req.user.sub,
       error: error.message,
     });
@@ -299,7 +299,7 @@ router.post('/containers/cleanup', authenticateJWT, requireAdmin, adminRateLimit
   try {
     const adminUserId = req.user.sub;
 
-    logger.warn('🔥 [AdminAPI] Emergency container cleanup requested', {
+    logger.warn('� [AdminAPI] Emergency container cleanup requested', {
       adminUserId,
       userAgent: req.get('User-Agent'),
     });
@@ -307,7 +307,7 @@ router.post('/containers/cleanup', authenticateJWT, requireAdmin, adminRateLimit
     // Execute container cleanup only
     const result = await adminDataFlushService.clearUserContainersAndNetworks();
 
-    logger.info('🔥 [AdminAPI] Emergency container cleanup completed', {
+    logger.info('� [AdminAPI] Emergency container cleanup completed', {
       adminUserId,
       results: result,
     });
@@ -320,7 +320,7 @@ router.post('/containers/cleanup', authenticateJWT, requireAdmin, adminRateLimit
     });
 
   } catch (error) {
-    logger.error('🔥 [AdminAPI] Emergency container cleanup failed', {
+    logger.error('� [AdminAPI] Emergency container cleanup failed', {
       adminUserId: req.user.sub,
       error: error.message,
     });
@@ -338,7 +338,7 @@ router.post('/containers/cleanup', authenticateJWT, requireAdmin, adminRateLimit
  * Admin health check endpoint
  */
 router.get('/health', authenticateJWT, requireAdmin, (req, res) => {
-  logger.info('🔥 [AdminAPI] Admin health check', {
+  logger.info('� [AdminAPI] Admin health check', {
     adminUserId: req.user.sub,
   });
 

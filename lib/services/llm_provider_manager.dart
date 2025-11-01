@@ -255,11 +255,11 @@ class LLMProviderManager extends ChangeNotifier {
 
       // Ensure discovery service is running (skip on web platforms)
       if (!kIsWeb && !_discoveryService.isScanning) {
-        debugPrint('🔗 [LLMProviderManager] Starting provider discovery (desktop platform)');
+        debugPrint(' [LLMProviderManager] Starting provider discovery (desktop platform)');
         await _discoveryService.scanForProviders();
       } else if (kIsWeb) {
-        debugPrint('🔗 [LLMProviderManager] Skipping provider discovery on web platform');
-        debugPrint('🔗 [LLMProviderManager] Web platform uses tunnel/bridge system for provider access');
+        debugPrint(' [LLMProviderManager] Skipping provider discovery on web platform');
+        debugPrint(' [LLMProviderManager] Web platform uses tunnel/bridge system for provider access');
       }
 
       // Ensure LangChain service is initialized

@@ -31,7 +31,7 @@ class ConversationStorageService {
   /// Initialize the storage service with platform-specific database factory
   Future<void> initialize() async {
     if (_isInitialized) {
-      debugPrint('💾 [ConversationStorage] Already initialized, skipping');
+      debugPrint('� [ConversationStorage] Already initialized, skipping');
       return;
     }
 
@@ -40,36 +40,36 @@ class ConversationStorageService {
       if (kIsWeb) {
         // For web platform, use the default factory (IndexedDB)
         // No additional initialization needed - sqflite automatically uses IndexedDB
-        debugPrint('💾 [ConversationStorage] Using IndexedDB for web platform');
+        debugPrint('� [ConversationStorage] Using IndexedDB for web platform');
         debugPrint(
-          '💾 [ConversationStorage] Privacy: Data stored in browser IndexedDB only',
+          '� [ConversationStorage] Privacy: Data stored in browser IndexedDB only',
         );
       } else if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
         // For desktop platforms, use FFI implementation
         sqfliteFfiInit();
         databaseFactory = databaseFactoryFfi;
         debugPrint(
-          '💾 [ConversationStorage] Using SQLite FFI for desktop platform',
+          '� [ConversationStorage] Using SQLite FFI for desktop platform',
         );
         debugPrint(
-          '💾 [ConversationStorage] Privacy: Data stored in local SQLite file only',
+          '� [ConversationStorage] Privacy: Data stored in local SQLite file only',
         );
       } else {
         // For mobile platforms, use default factory
         debugPrint(
-          '💾 [ConversationStorage] Using default SQLite for mobile platform',
+          '� [ConversationStorage] Using default SQLite for mobile platform',
         );
         debugPrint(
-          '💾 [ConversationStorage] Privacy: Data stored in device SQLite only',
+          '� [ConversationStorage] Privacy: Data stored in device SQLite only',
         );
       }
 
       await _initializeDatabase();
       _isInitialized = true;
-      debugPrint('💾 [ConversationStorage] Service initialized successfully');
+      debugPrint('� [ConversationStorage] Service initialized successfully');
     } catch (e, stackTrace) {
-      debugPrint('💾 [ConversationStorage] Failed to initialize: $e');
-      debugPrint('💾 [ConversationStorage] Stack trace: $stackTrace');
+      debugPrint('� [ConversationStorage] Failed to initialize: $e');
+      debugPrint('� [ConversationStorage] Stack trace: $stackTrace');
       rethrow;
     }
   }
@@ -78,7 +78,7 @@ class ConversationStorageService {
   Future<void> _initializeDatabase() async {
     try {
       final databasePath = await _getDatabasePath();
-      debugPrint('💾 [ConversationStorage] Database path: $databasePath');
+      debugPrint('� [ConversationStorage] Database path: $databasePath');
 
       _database = await openDatabase(
         databasePath,
@@ -87,9 +87,9 @@ class ConversationStorageService {
         onUpgrade: _upgradeDatabase,
       );
 
-      debugPrint('💾 [ConversationStorage] Database opened successfully');
+      debugPrint('� [ConversationStorage] Database opened successfully');
     } catch (e) {
-      debugPrint('💾 [ConversationStorage] Database initialization failed: $e');
+      debugPrint('� [ConversationStorage] Database initialization failed: $e');
       rethrow;
     }
   }
@@ -112,14 +112,14 @@ class ConversationStorageService {
       if (!await appDirectory.exists()) {
         await appDirectory.create(recursive: true);
         debugPrint(
-          '💾 [ConversationStorage] Created app directory: ${appDirectory.path}',
+          '� [ConversationStorage] Created app directory: ${appDirectory.path}',
         );
       }
 
       return join(appDirectory.path, _databaseName);
     } catch (e) {
       debugPrint(
-        '💾 [ConversationStorage] Failed to get documents directory: $e',
+        '� [ConversationStorage] Failed to get documents directory: $e',
       );
       // Fallback to current directory
       return _databaseName;
@@ -184,11 +184,11 @@ class ConversationStorageService {
       await _insertDefaultPrivacySettings(db);
 
       debugPrint(
-        '💾 [ConversationStorage] Database tables created with privacy features',
+        '� [ConversationStorage] Database tables created with privacy features',
       );
     } catch (e) {
       debugPrint(
-        '💾 [ConversationStorage] Failed to create database tables: $e',
+        '� [ConversationStorage] Failed to create database tables: $e',
       );
       rethrow;
     }
@@ -216,7 +216,7 @@ class ConversationStorageService {
       'updated_at': now,
     });
 
-    debugPrint('💾 [ConversationStorage] Default privacy settings inserted');
+    debugPrint('� [ConversationStorage] Default privacy settings inserted');
   }
 
   /// Upgrade database schema
@@ -226,7 +226,7 @@ class ConversationStorageService {
     int newVersion,
   ) async {
     debugPrint(
-      '💾 [ConversationStorage] Upgrading database from v$oldVersion to v$newVersion',
+      '� [ConversationStorage] Upgrading database from v$oldVersion to v$newVersion',
     );
 
     if (oldVersion < 2) {
@@ -253,10 +253,10 @@ class ConversationStorageService {
 
         await _insertDefaultPrivacySettings(db);
         debugPrint(
-          '💾 [ConversationStorage] Privacy enhancements added to database',
+          '� [ConversationStorage] Privacy enhancements added to database',
         );
       } catch (e) {
-        debugPrint('💾 [ConversationStorage] Database upgrade failed: $e');
+        debugPrint('� [ConversationStorage] Database upgrade failed: $e');
         // Continue with existing schema if upgrade fails
       }
     }
@@ -282,10 +282,10 @@ class ConversationStorageService {
       });
 
       debugPrint(
-        '💾 [ConversationStorage] Saved ${conversations.length} conversations',
+        '� [ConversationStorage] Saved ${conversations.length} conversations',
       );
     } catch (e) {
-      debugPrint('💾 [ConversationStorage] Error saving conversations: $e');
+      debugPrint('� [ConversationStorage] Error saving conversations: $e');
       rethrow;
     }
   }
@@ -311,11 +311,11 @@ class ConversationStorageService {
       }
 
       debugPrint(
-        '💾 [ConversationStorage] Loaded ${conversations.length} conversations',
+        '� [ConversationStorage] Loaded ${conversations.length} conversations',
       );
       return conversations;
     } catch (e) {
-      debugPrint('💾 [ConversationStorage] Error loading conversations: $e');
+      debugPrint('� [ConversationStorage] Error loading conversations: $e');
       return [];
     }
   }
@@ -342,10 +342,10 @@ class ConversationStorageService {
       });
 
       debugPrint(
-        '💾 [ConversationStorage] Saved conversation: ${conversation.title}',
+        '� [ConversationStorage] Saved conversation: ${conversation.title}',
       );
     } catch (e) {
-      debugPrint('💾 [ConversationStorage] Error saving conversation: $e');
+      debugPrint('� [ConversationStorage] Error saving conversation: $e');
       rethrow;
     }
   }
@@ -374,10 +374,10 @@ class ConversationStorageService {
       });
 
       debugPrint(
-        '💾 [ConversationStorage] Deleted conversation: $conversationId',
+        '� [ConversationStorage] Deleted conversation: $conversationId',
       );
     } catch (e) {
-      debugPrint('💾 [ConversationStorage] Error deleting conversation: $e');
+      debugPrint('� [ConversationStorage] Error deleting conversation: $e');
       rethrow;
     }
   }
@@ -394,9 +394,9 @@ class ConversationStorageService {
         await txn.delete(_conversationsTable);
       });
 
-      debugPrint('💾 [ConversationStorage] Cleared all conversations');
+      debugPrint('� [ConversationStorage] Cleared all conversations');
     } catch (e) {
-      debugPrint('💾 [ConversationStorage] Error clearing conversations: $e');
+      debugPrint('� [ConversationStorage] Error clearing conversations: $e');
       rethrow;
     }
   }
@@ -504,7 +504,7 @@ class ConversationStorageService {
       }
       return 'local_only'; // Default
     } catch (e) {
-      debugPrint('💾 [ConversationStorage] Failed to get storage location: $e');
+      debugPrint('� [ConversationStorage] Failed to get storage location: $e');
       return 'local_only'; // Safe default
     }
   }
@@ -522,11 +522,11 @@ class ConversationStorageService {
         'updated_at': DateTime.now().millisecondsSinceEpoch,
       }, conflictAlgorithm: ConflictAlgorithm.replace);
       debugPrint(
-        '💾 [ConversationStorage] Storage location updated to: $location',
+        '� [ConversationStorage] Storage location updated to: $location',
       );
     } catch (e) {
       debugPrint(
-        '💾 [ConversationStorage] Failed to update storage location: $e',
+        '� [ConversationStorage] Failed to update storage location: $e',
       );
       rethrow;
     }
@@ -565,7 +565,7 @@ class ConversationStorageService {
           databaseSize = 'IndexedDB';
         }
       } catch (e) {
-        debugPrint('💾 [ConversationStorage] Failed to get database size: $e');
+        debugPrint('� [ConversationStorage] Failed to get database size: $e');
       }
 
       return {
@@ -575,7 +575,7 @@ class ConversationStorageService {
         'last_updated': DateTime.now().toIso8601String(),
       };
     } catch (e) {
-      debugPrint('💾 [ConversationStorage] Failed to get database stats: $e');
+      debugPrint('� [ConversationStorage] Failed to get database stats: $e');
       rethrow;
     }
   }
@@ -602,7 +602,7 @@ class ConversationStorageService {
         },
       };
     } catch (e) {
-      debugPrint('💾 [ConversationStorage] Failed to export conversations: $e');
+      debugPrint('� [ConversationStorage] Failed to export conversations: $e');
       rethrow;
     }
   }
@@ -634,10 +634,10 @@ class ConversationStorageService {
       }, conflictAlgorithm: ConflictAlgorithm.replace);
 
       debugPrint(
-        '💾 [ConversationStorage] Encryption ${enabled ? 'enabled' : 'disabled'}',
+        '� [ConversationStorage] Encryption ${enabled ? 'enabled' : 'disabled'}',
       );
     } catch (e) {
-      debugPrint('💾 [ConversationStorage] Failed to set encryption: $e');
+      debugPrint('� [ConversationStorage] Failed to set encryption: $e');
       rethrow;
     }
   }
@@ -665,7 +665,7 @@ class ConversationStorageService {
       return false;
     } catch (e) {
       debugPrint(
-        '💾 [ConversationStorage] Failed to get encryption status: $e',
+        '� [ConversationStorage] Failed to get encryption status: $e',
       );
       return false;
     }
@@ -676,6 +676,6 @@ class ConversationStorageService {
     await _database?.close();
     _database = null;
     _isInitialized = false;
-    debugPrint('💾 [ConversationStorage] Service disposed');
+    debugPrint('� [ConversationStorage] Service disposed');
   }
 }

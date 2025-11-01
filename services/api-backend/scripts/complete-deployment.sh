@@ -13,33 +13,33 @@ SERVICE_NAME="cloudtolocalllm-api"
 DATABASE_NAME="cloudtolocalllm"
 DB_USER="appuser"
 
-echo "🚀 CloudToLocalLLM Complete Deployment Script"
+echo " CloudToLocalLLM Complete Deployment Script"
 echo "=============================================="
 echo ""
 
 # Check authentication
-echo "🔐 Checking authentication..."
+echo " Checking authentication..."
 if ! gcloud auth list --filter=status:ACTIVE --format="value(account)" | grep -q "@"; then
-    echo "❌ No active authentication found. Please run:"
+    echo " No active authentication found. Please run:"
     echo "   gcloud auth login"
     exit 1
 fi
 
 ACTIVE_ACCOUNT=$(gcloud auth list --filter=status:ACTIVE --format="value(account)")
-echo "✅ Authenticated as: $ACTIVE_ACCOUNT"
+echo " Authenticated as: $ACTIVE_ACCOUNT"
 
 # Set project
-echo "📋 Setting project: $PROJECT_ID"
+echo "� Setting project: $PROJECT_ID"
 gcloud config set project $PROJECT_ID
 
 # Check if Cloud SQL instance exists
-echo "🔍 Checking for existing Cloud SQL instance..."
+echo " Checking for existing Cloud SQL instance..."
 if gcloud sql instances describe $INSTANCE_NAME >/dev/null 2>&1; then
-    echo "✅ Cloud SQL instance '$INSTANCE_NAME' already exists"
+    echo " Cloud SQL instance '$INSTANCE_NAME' already exists"
     CONNECTION_NAME=$(gcloud sql instances describe $INSTANCE_NAME --format="value(connectionName)")
     echo "   Connection Name: $CONNECTION_NAME"
 else
-    echo "📦 Creating Cloud SQL PostgreSQL instance: $INSTANCE_NAME"
+    echo "� Creating Cloud SQL PostgreSQL instance: $INSTANCE_NAME"
     
     # Generate secure password
     DB_PASSWORD=$(openssl rand -base64 32)
@@ -61,11 +61,11 @@ else
     gcloud sql instances describe $INSTANCE_NAME --format="value(state)" | grep -q RUNNABLE
     
     # Create database
-    echo "🗄️ Creating database: $DATABASE_NAME"
+    echo " Creating database: $DATABASE_NAME"
     gcloud sql databases create $DATABASE_NAME --instance=$INSTANCE_NAME
     
     # Create user
-    echo "👤 Creating database user: $DB_USER"
+    echo "� Creating database user: $DB_USER"
     gcloud sql users create $DB_USER \
         --instance=$INSTANCE_NAME \
         --password=$DB_PASSWORD
@@ -88,26 +88,26 @@ PROJECT_ID=$PROJECT_ID
 REGION=$REGION
 EOF
     
-    echo "📄 Configuration saved to: cloud-sql-config.env"
-    echo "⚠️  Database password: $DB_PASSWORD"
+    echo "� Configuration saved to: cloud-sql-config.env"
+    echo "  Database password: $DB_PASSWORD"
     echo "   Please save this password securely!"
 fi
 
 # Load configuration
 if [ -f "cloud-sql-config.env" ]; then
     source cloud-sql-config.env
-    echo "📋 Loaded Cloud SQL configuration"
+    echo "� Loaded Cloud SQL configuration"
 else
-    echo "❌ cloud-sql-config.env not found. Please check Cloud SQL setup."
+    echo " cloud-sql-config.env not found. Please check Cloud SQL setup."
     exit 1
 fi
 
 # Build and deploy
-echo "🔨 Building container image..."
+echo "� Building container image..."
 IMAGE_NAME="gcr.io/$PROJECT_ID/$SERVICE_NAME"
 gcloud builds submit --tag $IMAGE_NAME .
 
-echo "🚢 Deploying to Cloud Run..."
+echo "� Deploying to Cloud Run..."
 gcloud run deploy $SERVICE_NAME \
     --image $IMAGE_NAME \
     --platform managed \
@@ -131,37 +131,37 @@ gcloud run deploy $SERVICE_NAME \
 # Get service URL
 SERVICE_URL=$(gcloud run services describe $SERVICE_NAME --platform managed --region $REGION --format "value(status.url)")
 
-echo "✅ Deployment complete!"
+echo " Deployment complete!"
 echo ""
-echo "🌐 Service URL: $SERVICE_URL"
-echo "🔍 Health Check: $SERVICE_URL/api/db/health"
+echo " Service URL: $SERVICE_URL"
+echo " Health Check: $SERVICE_URL/api/db/health"
 echo ""
 
 # Test deployment
-echo "🧪 Testing deployment..."
+echo " Testing deployment..."
 sleep 15  # Wait for deployment to be ready
 
 echo "Testing database health..."
 if curl -f "$SERVICE_URL/api/db/health" >/dev/null 2>&1; then
-    echo "✅ Database health check passed!"
+    echo " Database health check passed!"
     
     # Run comprehensive tests
     echo "Running comprehensive authentication tests..."
     SERVICE_URL="$SERVICE_URL" npm run test:auth-flow
     
 else
-    echo "❌ Health check failed. Checking logs..."
+    echo " Health check failed. Checking logs..."
     gcloud logs tail --service=$SERVICE_NAME --limit=20
 fi
 
 echo ""
-echo "🎉 Deployment Summary"
+echo "� Deployment Summary"
 echo "===================="
 echo "Service URL: $SERVICE_URL"
 echo "Database: PostgreSQL ($CONNECTION_NAME)"
 echo "Health Endpoint: $SERVICE_URL/api/db/health"
 echo ""
-echo "📊 Monitor logs:"
+echo " Monitor logs:"
 echo "  gcloud logs tail --service=$SERVICE_NAME"
 echo ""
-echo "🔧 Update frontend to use: $SERVICE_URL"
+echo " Update frontend to use: $SERVICE_URL"

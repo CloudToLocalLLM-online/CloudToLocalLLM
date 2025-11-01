@@ -46,7 +46,7 @@ const logger = winston.createLogger({
       format: winston.format.combine(
         winston.format.timestamp(),
         winston.format.printf(({ timestamp, level, message, ...meta }) => {
-          return `${timestamp} [${level.toUpperCase()}] 🔧 [AdminPanel] ${message} ${Object.keys(meta).length ? JSON.stringify(meta) : ''}`;
+          return `${timestamp} [${level.toUpperCase()}]  [AdminPanel] ${message} ${Object.keys(meta).length ? JSON.stringify(meta) : ''}`;
         }),
       ),
     }),
@@ -109,7 +109,7 @@ const adminRateLimit = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   handler: (req, res) => {
-    logger.warn('🔧 [AdminPanel] Rate limit exceeded', {
+    logger.warn(' [AdminPanel] Rate limit exceeded', {
       ip: req.ip,
       userAgent: req.get('User-Agent'),
       path: req.path,
@@ -129,7 +129,7 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Request logging middleware
 app.use((req, res, next) => {
-  logger.info('🔧 [AdminPanel] Admin request', {
+  logger.info(' [AdminPanel] Admin request', {
     method: req.method,
     path: req.path,
     ip: req.ip,
@@ -150,7 +150,7 @@ app.get('/health', (req, res) => {
 
 // Admin authentication check endpoint
 app.get('/api/admin/auth/check', authenticateJWT, requireAdmin, (req, res) => {
-  logger.info('🔧 [AdminPanel] Admin authentication check', {
+  logger.info(' [AdminPanel] Admin authentication check', {
     adminUserId: req.user.sub,
   });
 
@@ -169,7 +169,7 @@ app.get('/api/admin/auth/check', authenticateJWT, requireAdmin, (req, res) => {
 // System monitoring endpoints
 app.get('/api/admin/system/stats', authenticateJWT, requireAdmin, async(req, res) => {
   try {
-    logger.info('🔧 [AdminPanel] System statistics requested', {
+    logger.info(' [AdminPanel] System statistics requested', {
       adminUserId: req.user.sub,
     });
 
@@ -227,7 +227,7 @@ app.get('/api/admin/system/stats', authenticateJWT, requireAdmin, async(req, res
     });
 
   } catch (error) {
-    logger.error('🔧 [AdminPanel] Failed to get system statistics', {
+    logger.error(' [AdminPanel] Failed to get system statistics', {
       adminUserId: req.user.sub,
       error: error.message,
     });
@@ -243,7 +243,7 @@ app.get('/api/admin/system/stats', authenticateJWT, requireAdmin, async(req, res
 // Real-time system monitoring endpoint
 app.get('/api/admin/system/realtime', authenticateJWT, requireAdmin, async(req, res) => {
   try {
-    logger.debug('🔧 [AdminPanel] Real-time system data requested', {
+    logger.debug(' [AdminPanel] Real-time system data requested', {
       adminUserId: req.user.sub,
     });
 
@@ -281,7 +281,7 @@ app.get('/api/admin/system/realtime', authenticateJWT, requireAdmin, async(req, 
     });
 
   } catch (error) {
-    logger.error('🔧 [AdminPanel] Failed to get real-time system data', {
+    logger.error(' [AdminPanel] Failed to get real-time system data', {
       adminUserId: req.user.sub,
       error: error.message,
     });
@@ -296,7 +296,7 @@ app.get('/api/admin/system/realtime', authenticateJWT, requireAdmin, async(req, 
 // Container management endpoints
 app.get('/api/admin/containers', authenticateJWT, requireAdmin, async(req, res) => {
   try {
-    logger.info('🔧 [AdminPanel] Container list requested', {
+    logger.info(' [AdminPanel] Container list requested', {
       adminUserId: req.user.sub,
     });
 
@@ -331,7 +331,7 @@ app.get('/api/admin/containers', authenticateJWT, requireAdmin, async(req, res) 
             },
           };
         } catch (statsError) {
-          logger.warn('🔧 [AdminPanel] Failed to get container stats', {
+          logger.warn(' [AdminPanel] Failed to get container stats', {
             containerId: containerInfo.Id,
             error: statsError.message,
           });
@@ -357,7 +357,7 @@ app.get('/api/admin/containers', authenticateJWT, requireAdmin, async(req, res) 
     });
 
   } catch (error) {
-    logger.error('🔧 [AdminPanel] Failed to get container list', {
+    logger.error(' [AdminPanel] Failed to get container list', {
       adminUserId: req.user.sub,
       error: error.message,
     });
@@ -388,7 +388,7 @@ function calculateCpuPercent(stats) {
 // Network monitoring endpoint
 app.get('/api/admin/networks', authenticateJWT, requireAdmin, async(req, res) => {
   try {
-    logger.info('🔧 [AdminPanel] Network list requested', {
+    logger.info(' [AdminPanel] Network list requested', {
       adminUserId: req.user.sub,
     });
 
@@ -415,7 +415,7 @@ app.get('/api/admin/networks', authenticateJWT, requireAdmin, async(req, res) =>
     });
 
   } catch (error) {
-    logger.error('🔧 [AdminPanel] Failed to get network list', {
+    logger.error(' [AdminPanel] Failed to get network list', {
       adminUserId: req.user.sub,
       error: error.message,
     });
@@ -430,7 +430,7 @@ app.get('/api/admin/networks', authenticateJWT, requireAdmin, async(req, res) =>
 // Active sessions monitoring endpoint
 app.get('/api/admin/sessions', authenticateJWT, requireAdmin, async(req, res) => {
   try {
-    logger.info('🔧 [AdminPanel] Active sessions requested', {
+    logger.info(' [AdminPanel] Active sessions requested', {
       adminUserId: req.user.sub,
     });
 
@@ -463,7 +463,7 @@ app.get('/api/admin/sessions', authenticateJWT, requireAdmin, async(req, res) =>
     });
 
   } catch (error) {
-    logger.error('🔧 [AdminPanel] Failed to get active sessions', {
+    logger.error(' [AdminPanel] Failed to get active sessions', {
       adminUserId: req.user.sub,
       error: error.message,
     });
@@ -478,7 +478,7 @@ app.get('/api/admin/sessions', authenticateJWT, requireAdmin, async(req, res) =>
 // System performance metrics endpoint
 app.get('/api/admin/system/performance', authenticateJWT, requireAdmin, async(req, res) => {
   try {
-    logger.debug('🔧 [AdminPanel] Performance metrics requested', {
+    logger.debug(' [AdminPanel] Performance metrics requested', {
       adminUserId: req.user.sub,
     });
 
@@ -532,7 +532,7 @@ app.get('/api/admin/system/performance', authenticateJWT, requireAdmin, async(re
     });
 
   } catch (error) {
-    logger.error('🔧 [AdminPanel] Failed to get performance metrics', {
+    logger.error(' [AdminPanel] Failed to get performance metrics', {
       adminUserId: req.user.sub,
       error: error.message,
     });
@@ -547,7 +547,7 @@ app.get('/api/admin/system/performance', authenticateJWT, requireAdmin, async(re
 // User management endpoints
 app.get('/api/admin/users', authenticateJWT, requireAdmin, async(req, res) => {
   try {
-    logger.info('🔧 [AdminPanel] User list requested', {
+    logger.info(' [AdminPanel] User list requested', {
       adminUserId: req.user.sub,
     });
 
@@ -612,7 +612,7 @@ app.get('/api/admin/users', authenticateJWT, requireAdmin, async(req, res) => {
     });
 
   } catch (error) {
-    logger.error('🔧 [AdminPanel] Failed to get user list', {
+    logger.error(' [AdminPanel] Failed to get user list', {
       adminUserId: req.user.sub,
       error: error.message,
     });
@@ -629,7 +629,7 @@ app.get('/api/admin/users/:userId/sessions', authenticateJWT, requireAdmin, asyn
   try {
     const { userId } = req.params;
 
-    logger.info('🔧 [AdminPanel] User sessions requested', {
+    logger.info(' [AdminPanel] User sessions requested', {
       adminUserId: req.user.sub,
       targetUserId: userId,
     });
@@ -663,7 +663,7 @@ app.get('/api/admin/users/:userId/sessions', authenticateJWT, requireAdmin, asyn
             finishedAt: inspect.State.FinishedAt,
           };
         } catch (inspectError) {
-          logger.warn('🔧 [AdminPanel] Failed to inspect container', {
+          logger.warn(' [AdminPanel] Failed to inspect container', {
             containerId: containerInfo.Id,
             error: inspectError.message,
           });
@@ -691,7 +691,7 @@ app.get('/api/admin/users/:userId/sessions', authenticateJWT, requireAdmin, asyn
     });
 
   } catch (error) {
-    logger.error('🔧 [AdminPanel] Failed to get user sessions', {
+    logger.error(' [AdminPanel] Failed to get user sessions', {
       adminUserId: req.user.sub,
       targetUserId: req.params.userId,
       error: error.message,
@@ -709,7 +709,7 @@ app.post('/api/admin/users/:userId/sessions/:containerId/terminate', authenticat
   try {
     const { userId, containerId } = req.params;
 
-    logger.warn('🔧 [AdminPanel] User session termination requested', {
+    logger.warn(' [AdminPanel] User session termination requested', {
       adminUserId: req.user.sub,
       targetUserId: userId,
       containerId,
@@ -734,7 +734,7 @@ app.post('/api/admin/users/:userId/sessions/:containerId/terminate', authenticat
 
     await container.remove({ force: true });
 
-    logger.info('🔧 [AdminPanel] User session terminated successfully', {
+    logger.info(' [AdminPanel] User session terminated successfully', {
       adminUserId: req.user.sub,
       targetUserId: userId,
       containerId,
@@ -748,7 +748,7 @@ app.post('/api/admin/users/:userId/sessions/:containerId/terminate', authenticat
     });
 
   } catch (error) {
-    logger.error('🔧 [AdminPanel] Failed to terminate user session', {
+    logger.error(' [AdminPanel] Failed to terminate user session', {
       adminUserId: req.user.sub,
       targetUserId: req.params.userId,
       containerId: req.params.containerId,
@@ -766,7 +766,7 @@ app.post('/api/admin/users/:userId/sessions/:containerId/terminate', authenticat
 // Configuration management endpoints
 app.get('/api/admin/config', authenticateJWT, requireAdmin, async(req, res) => {
   try {
-    logger.info('🔧 [AdminPanel] System configuration requested', {
+    logger.info(' [AdminPanel] System configuration requested', {
       adminUserId: req.user.sub,
     });
 
@@ -804,7 +804,7 @@ app.get('/api/admin/config', authenticateJWT, requireAdmin, async(req, res) => {
     });
 
   } catch (error) {
-    logger.error('🔧 [AdminPanel] Failed to get system configuration', {
+    logger.error(' [AdminPanel] Failed to get system configuration', {
       adminUserId: req.user.sub,
       error: error.message,
     });
@@ -819,7 +819,7 @@ app.get('/api/admin/config', authenticateJWT, requireAdmin, async(req, res) => {
 // Environment variables endpoint (read-only, filtered)
 app.get('/api/admin/config/environment', authenticateJWT, requireAdmin, async(req, res) => {
   try {
-    logger.info('🔧 [AdminPanel] Environment variables requested', {
+    logger.info(' [AdminPanel] Environment variables requested', {
       adminUserId: req.user.sub,
     });
 
@@ -856,7 +856,7 @@ app.get('/api/admin/config/environment', authenticateJWT, requireAdmin, async(re
     });
 
   } catch (error) {
-    logger.error('🔧 [AdminPanel] Failed to get environment variables', {
+    logger.error(' [AdminPanel] Failed to get environment variables', {
       adminUserId: req.user.sub,
       error: error.message,
     });
@@ -871,7 +871,7 @@ app.get('/api/admin/config/environment', authenticateJWT, requireAdmin, async(re
 // Feature flags management endpoint
 app.get('/api/admin/config/features', authenticateJWT, requireAdmin, async(req, res) => {
   try {
-    logger.info('🔧 [AdminPanel] Feature flags requested', {
+    logger.info(' [AdminPanel] Feature flags requested', {
       adminUserId: req.user.sub,
     });
 
@@ -904,7 +904,7 @@ app.get('/api/admin/config/features', authenticateJWT, requireAdmin, async(req, 
     });
 
   } catch (error) {
-    logger.error('🔧 [AdminPanel] Failed to get feature flags', {
+    logger.error(' [AdminPanel] Failed to get feature flags', {
       adminUserId: req.user.sub,
       error: error.message,
     });
@@ -919,7 +919,7 @@ app.get('/api/admin/config/features', authenticateJWT, requireAdmin, async(req, 
 // Service status endpoint
 app.get('/api/admin/config/services', authenticateJWT, requireAdmin, async(req, res) => {
   try {
-    logger.info('🔧 [AdminPanel] Service status requested', {
+    logger.info(' [AdminPanel] Service status requested', {
       adminUserId: req.user.sub,
     });
 
@@ -962,7 +962,7 @@ app.get('/api/admin/config/services', authenticateJWT, requireAdmin, async(req, 
     });
 
   } catch (error) {
-    logger.error('🔧 [AdminPanel] Failed to get service status', {
+    logger.error(' [AdminPanel] Failed to get service status', {
       adminUserId: req.user.sub,
       error: error.message,
     });
@@ -982,7 +982,7 @@ app.get('/api/admin/containers/:containerId/logs', authenticateJWT, requireAdmin
     const { containerId } = req.params;
     const { lines = 100, follow = false } = req.query;
 
-    logger.info('🔧 [AdminPanel] Container logs requested', {
+    logger.info(' [AdminPanel] Container logs requested', {
       adminUserId: req.user.sub,
       containerId,
       lines,
@@ -1022,7 +1022,7 @@ app.get('/api/admin/containers/:containerId/logs', authenticateJWT, requireAdmin
       });
 
       logStream.on('error', (error) => {
-        logger.error('🔧 [AdminPanel] Log streaming error', {
+        logger.error(' [AdminPanel] Log streaming error', {
           containerId,
           error: error.message,
         });
@@ -1042,7 +1042,7 @@ app.get('/api/admin/containers/:containerId/logs', authenticateJWT, requireAdmin
     }
 
   } catch (error) {
-    logger.error('🔧 [AdminPanel] Failed to get container logs', {
+    logger.error(' [AdminPanel] Failed to get container logs', {
       adminUserId: req.user.sub,
       containerId: req.params.containerId,
       error: error.message,
@@ -1061,7 +1061,7 @@ app.get('/api/admin/containers/:containerId/stats', authenticateJWT, requireAdmi
   try {
     const { containerId } = req.params;
 
-    logger.debug('🔧 [AdminPanel] Container stats requested', {
+    logger.debug(' [AdminPanel] Container stats requested', {
       adminUserId: req.user.sub,
       containerId,
     });
@@ -1113,7 +1113,7 @@ app.get('/api/admin/containers/:containerId/stats', authenticateJWT, requireAdmi
     });
 
   } catch (error) {
-    logger.error('🔧 [AdminPanel] Failed to get container stats', {
+    logger.error(' [AdminPanel] Failed to get container stats', {
       adminUserId: req.user.sub,
       containerId: req.params.containerId,
       error: error.message,
@@ -1130,7 +1130,7 @@ app.get('/api/admin/containers/:containerId/stats', authenticateJWT, requireAdmi
 // Network topology endpoint
 app.get('/api/admin/network/topology', authenticateJWT, requireAdmin, async(req, res) => {
   try {
-    logger.info('🔧 [AdminPanel] Network topology requested', {
+    logger.info(' [AdminPanel] Network topology requested', {
       adminUserId: req.user.sub,
     });
 
@@ -1197,7 +1197,7 @@ app.get('/api/admin/network/topology', authenticateJWT, requireAdmin, async(req,
     });
 
   } catch (error) {
-    logger.error('🔧 [AdminPanel] Failed to get network topology', {
+    logger.error(' [AdminPanel] Failed to get network topology', {
       adminUserId: req.user.sub,
       error: error.message,
     });
@@ -1215,7 +1215,7 @@ app.use('/api/admin', adminRoutes);
 
 // Error handling middleware
 app.use((error, req, res, _next) => {
-  logger.error('🔧 [AdminPanel] Unhandled error', {
+  logger.error(' [AdminPanel] Unhandled error', {
     error: error.message,
     stack: error.stack,
     path: req.path,
@@ -1231,7 +1231,7 @@ app.use((error, req, res, _next) => {
 
 // 404 handler
 app.use((req, res) => {
-  logger.warn('🔧 [AdminPanel] Admin endpoint not found', {
+  logger.warn(' [AdminPanel] Admin endpoint not found', {
     path: req.path,
     method: req.method,
     ip: req.ip,
@@ -1245,7 +1245,7 @@ app.use((req, res) => {
 
 // Start admin server
 server.listen(ADMIN_PORT, () => {
-  logger.info('🔧 [AdminPanel] CloudToLocalLLM Admin Server started', {
+  logger.info(' [AdminPanel] CloudToLocalLLM Admin Server started', {
     port: ADMIN_PORT,
     environment: process.env.NODE_ENV || 'development',
     auth0Domain: AUTH0_DOMAIN,
@@ -1255,9 +1255,9 @@ server.listen(ADMIN_PORT, () => {
 
 // Graceful shutdown
 process.on('SIGTERM', () => {
-  logger.info('🔧 [AdminPanel] Admin server shutting down gracefully');
+  logger.info(' [AdminPanel] Admin server shutting down gracefully');
   server.close(() => {
-    logger.info('🔧 [AdminPanel] Admin server closed');
+    logger.info(' [AdminPanel] Admin server closed');
     process.exit(0);
   });
 });

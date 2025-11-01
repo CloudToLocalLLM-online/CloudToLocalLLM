@@ -52,7 +52,7 @@ class UserDataService extends ChangeNotifier {
     };
 
     try {
-      debugPrint('🗑️ [DataFlush] Starting user data clearing');
+      debugPrint(' [DataFlush] Starting user data clearing');
 
       // 1. Clear conversation history
       await _clearConversations(results);
@@ -68,13 +68,13 @@ class UserDataService extends ChangeNotifier {
 
       final successCount = results.values.where((success) => success).length;
       debugPrint(
-        '🗑️ [DataFlush] User data clearing completed: $successCount/${results.length} operations successful',
+        ' [DataFlush] User data clearing completed: $successCount/${results.length} operations successful',
       );
 
       return results;
     } catch (e) {
       _lastError = 'Failed to clear user data: ${e.toString()}';
-      debugPrint('🗑️ [DataFlush] Error during user data clearing: $e');
+      debugPrint(' [DataFlush] Error during user data clearing: $e');
       return results;
     } finally {
       _isClearing = false;
@@ -88,13 +88,13 @@ class UserDataService extends ChangeNotifier {
       if (_conversationStorage != null) {
         await _conversationStorage.clearAllConversations();
         results['conversations'] = true;
-        debugPrint('🗑️ [DataFlush] Conversations cleared');
+        debugPrint(' [DataFlush] Conversations cleared');
       } else {
-        debugPrint('🗑️ [DataFlush] No conversation storage available');
+        debugPrint(' [DataFlush] No conversation storage available');
         results['conversations'] = true; // Not an error if not available
       }
     } catch (e) {
-      debugPrint('🗑️ [DataFlush] Error clearing conversations: $e');
+      debugPrint(' [DataFlush] Error clearing conversations: $e');
     }
   }
 
@@ -104,9 +104,9 @@ class UserDataService extends ChangeNotifier {
       await _secureStorage.deleteAll();
       results['authTokens'] = true;
       results['settings'] = true; // Settings are also in secure storage
-      debugPrint('🗑️ [DataFlush] Auth tokens and settings cleared');
+      debugPrint(' [DataFlush] Auth tokens and settings cleared');
     } catch (e) {
-      debugPrint('🗑️ [DataFlush] Error clearing auth tokens: $e');
+      debugPrint(' [DataFlush] Error clearing auth tokens: $e');
     }
   }
 
@@ -135,10 +135,10 @@ class UserDataService extends ChangeNotifier {
 
       results['webStorage'] = true;
       debugPrint(
-        '🗑️ [DataFlush] Web localStorage cleared (${keysToRemove.length} keys)',
+        ' [DataFlush] Web localStorage cleared (${keysToRemove.length} keys)',
       );
     } catch (e) {
-      debugPrint('🗑️ [DataFlush] Error clearing web storage: $e');
+      debugPrint(' [DataFlush] Error clearing web storage: $e');
     }
   }
 
@@ -147,9 +147,9 @@ class UserDataService extends ChangeNotifier {
     try {
       AuthLogger.clearLogs();
       results['authLogs'] = true;
-      debugPrint('🗑️ [DataFlush] Authentication logs cleared');
+      debugPrint(' [DataFlush] Authentication logs cleared');
     } catch (e) {
-      debugPrint('🗑️ [DataFlush] Error clearing auth logs: $e');
+      debugPrint(' [DataFlush] Error clearing auth logs: $e');
     }
   }
 

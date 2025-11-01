@@ -8,7 +8,7 @@ class AuthLogger {
     final logEntry = '[INFO]  ';
     _logs.add(logEntry);
     if (kDebugMode) {
-      debugPrint('🔐 ');
+      debugPrint(' ');
     }
   }
   
@@ -16,7 +16,7 @@ class AuthLogger {
     final logEntry = '[ERROR]  ';
     _logs.add(logEntry);
     if (kDebugMode) {
-      debugPrint('🔐 ❌ ');
+      debugPrint('  ');
     }
   }
   
@@ -24,7 +24,7 @@ class AuthLogger {
     final logEntry = '[DEBUG]  ';
     _logs.add(logEntry);
     if (kDebugMode) {
-      debugPrint('🔐 🐛 ');
+      debugPrint(' � ');
     }
   }
   
@@ -32,7 +32,7 @@ class AuthLogger {
     final logEntry = '[WARNING]  ';
     _logs.add(logEntry);
     if (kDebugMode) {
-      debugPrint('�� ⚠️ ');
+      debugPrint('��  ');
     }
   }
   

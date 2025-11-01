@@ -69,13 +69,13 @@ export const TIER_FEATURES = {
 export function getUserTier(user) {
   // Input validation
   if (!user || typeof user !== 'object') {
-    logger.debug('🎯 [TierCheck] No user object provided, defaulting to free tier');
+    logger.debug(' [TierCheck] No user object provided, defaulting to free tier');
     return USER_TIERS.FREE;
   }
 
   // Validate user has required fields
   if (!user.sub || typeof user.sub !== 'string') {
-    logger.warn('🎯 [TierCheck] Invalid user object - missing or invalid sub field', {
+    logger.warn(' [TierCheck] Invalid user object - missing or invalid sub field', {
       userObject: typeof user,
       hasSub: !!user.sub,
     });
@@ -93,7 +93,7 @@ export function getUserTier(user) {
 
     // Validate metadata objects
     if (typeof userMetadata !== 'object' || typeof appMetadata !== 'object') {
-      logger.warn('🎯 [TierCheck] Invalid metadata format in user token', {
+      logger.warn(' [TierCheck] Invalid metadata format in user token', {
         userId: user.sub,
         userMetadataType: typeof userMetadata,
         appMetadataType: typeof appMetadata,
@@ -121,7 +121,7 @@ export function getUserTier(user) {
 
     // Validate and normalize tier value
     if (!tierValue) {
-      logger.debug('🎯 [TierCheck] No tier information found, defaulting to free', {
+      logger.debug(' [TierCheck] No tier information found, defaulting to free', {
         userId: user.sub,
       });
       return USER_TIERS.FREE;
@@ -131,20 +131,20 @@ export function getUserTier(user) {
 
     // Validate against known tiers
     if (Object.values(USER_TIERS).includes(normalizedTier)) {
-      logger.debug('🎯 [TierCheck] Valid tier detected', {
+      logger.debug(' [TierCheck] Valid tier detected', {
         userId: user.sub,
         tier: normalizedTier,
       });
       return normalizedTier;
     } else {
-      logger.warn('🎯 [TierCheck] Unknown tier value, defaulting to free', {
+      logger.warn(' [TierCheck] Unknown tier value, defaulting to free', {
         userId: user.sub,
         invalidTier: tierValue,
       });
       return USER_TIERS.FREE;
     }
   } catch (error) {
-    logger.error('🎯 [TierCheck] Error extracting user tier, defaulting to free', {
+    logger.error(' [TierCheck] Error extracting user tier, defaulting to free', {
       userId: user.sub,
       error: error.message,
       stack: error.stack,
@@ -162,7 +162,7 @@ export function getUserTier(user) {
 export function getTierFeatures(tier) {
   // Input validation
   if (!tier || typeof tier !== 'string') {
-    logger.warn('🎯 [TierCheck] Invalid tier provided to getTierFeatures', {
+    logger.warn(' [TierCheck] Invalid tier provided to getTierFeatures', {
       tier: tier,
       type: typeof tier,
     });
@@ -173,7 +173,7 @@ export function getTierFeatures(tier) {
 
   // Validate tier exists
   if (!TIER_FEATURES[normalizedTier]) {
-    logger.warn('🎯 [TierCheck] Unknown tier requested, returning free tier features', {
+    logger.warn(' [TierCheck] Unknown tier requested, returning free tier features', {
       requestedTier: tier,
       normalizedTier: normalizedTier,
     });
@@ -192,7 +192,7 @@ export function getTierFeatures(tier) {
 export function hasFeature(user, feature) {
   // Input validation
   if (!feature || typeof feature !== 'string') {
-    logger.warn('🎯 [TierCheck] Invalid feature name provided to hasFeature', {
+    logger.warn(' [TierCheck] Invalid feature name provided to hasFeature', {
       feature: feature,
       type: typeof feature,
       userId: user?.sub,
@@ -206,7 +206,7 @@ export function hasFeature(user, feature) {
 
     // Check if feature exists in the features object
     if (!(feature in features)) {
-      logger.warn('🎯 [TierCheck] Unknown feature requested', {
+      logger.warn(' [TierCheck] Unknown feature requested', {
         feature: feature,
         tier: tier,
         userId: user?.sub,
@@ -217,7 +217,7 @@ export function hasFeature(user, feature) {
 
     return features[feature] === true;
   } catch (error) {
-    logger.error('🎯 [TierCheck] Error checking feature access', {
+    logger.error(' [TierCheck] Error checking feature access', {
       feature: feature,
       userId: user?.sub,
       error: error.message,
@@ -247,7 +247,7 @@ export function requireTier(requiredTier) {
     try {
       // Authentication check
       if (!req.user) {
-        logger.warn('🎯 [TierCheck] Unauthenticated access attempt', {
+        logger.warn(' [TierCheck] Unauthenticated access attempt', {
           endpoint: req.path,
           method: req.method,
           ip: req.ip,
@@ -269,7 +269,7 @@ export function requireTier(requiredTier) {
 
       // Security check - ensure valid tier levels
       if (userTierLevel === -1 || requiredTierLevel === -1) {
-        logger.error('🎯 [TierCheck] Invalid tier configuration detected', {
+        logger.error(' [TierCheck] Invalid tier configuration detected', {
           userId: req.user.sub,
           userTier,
           requiredTier: normalizedRequiredTier,
@@ -284,7 +284,7 @@ export function requireTier(requiredTier) {
       }
 
       if (userTierLevel < requiredTierLevel) {
-        logger.warn('🎯 [TierCheck] Access denied - insufficient tier', {
+        logger.warn(' [TierCheck] Access denied - insufficient tier', {
           userId: req.user.sub,
           userTier,
           requiredTier: normalizedRequiredTier,
@@ -307,7 +307,7 @@ export function requireTier(requiredTier) {
       req.userTier = userTier;
       req.tierFeatures = getTierFeatures(userTier);
 
-      logger.debug('🎯 [TierCheck] Tier check passed', {
+      logger.debug(' [TierCheck] Tier check passed', {
         userId: req.user.sub,
         userTier,
         requiredTier: normalizedRequiredTier,
@@ -316,7 +316,7 @@ export function requireTier(requiredTier) {
 
       next();
     } catch (error) {
-      logger.error('🎯 [TierCheck] Error in requireTier middleware', {
+      logger.error(' [TierCheck] Error in requireTier middleware', {
         userId: req.user?.sub,
         requiredTier: normalizedRequiredTier,
         endpoint: req.path,
@@ -350,7 +350,7 @@ export function requireFeature(feature) {
     if (!hasFeature(req.user, feature)) {
       const userTier = getUserTier(req.user);
 
-      logger.warn('🎯 [TierCheck] Feature access denied', {
+      logger.warn(' [TierCheck] Feature access denied', {
         userId: req.user.sub,
         userTier,
         feature,
@@ -370,7 +370,7 @@ export function requireFeature(feature) {
     req.userTier = getUserTier(req.user);
     req.tierFeatures = getTierFeatures(req.userTier);
 
-    logger.debug('🎯 [TierCheck] Feature access granted', {
+    logger.debug(' [TierCheck] Feature access granted', {
       userId: req.user.sub,
       userTier: req.userTier,
       feature,
@@ -392,7 +392,7 @@ export function addTierInfo(req, res, next) {
     req.userTier = getUserTier(req.user);
     req.tierFeatures = getTierFeatures(req.userTier);
 
-    logger.debug('🎯 [TierCheck] Added tier info to request', {
+    logger.debug(' [TierCheck] Added tier info to request', {
       userId: req.user.sub,
       userTier: req.userTier,
     });

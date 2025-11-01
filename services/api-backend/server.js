@@ -260,12 +260,12 @@ app.all('/api/ollama/*', authenticateJWT, addTierInfo, async(req, res) => {
       body: req.method !== 'GET' && req.method !== 'HEAD' ? JSON.stringify(req.body) : undefined,
     };
 
-    logger.debug('🔄 [LLMTunnel] Forwarding request through WebSocket tunnel', { userId, requestId, path: ollamaPath });
+    logger.debug(' [LLMTunnel] Forwarding request through WebSocket tunnel', { userId, requestId, path: ollamaPath });
 
     const response = await tunnelProxyWebSocket.forwardRequest(userId, httpRequest);
 
     const duration = Date.now() - startTime;
-    logger.info('✅ [LLMTunnel] Request completed successfully via WebSocket', { userId, requestId, duration, status: response.status });
+    logger.info(' [LLMTunnel] Request completed successfully via WebSocket', { userId, requestId, duration, status: response.status });
 
     if (response.headers) {
       Object.entries(response.headers).forEach(([key, value]) => {
@@ -288,7 +288,7 @@ app.all('/api/ollama/*', authenticateJWT, addTierInfo, async(req, res) => {
 
   } catch (error) {
     const duration = Date.now() - startTime;
-    logger.error('❌ [LLMTunnel] Request failed via WebSocket', { userId, requestId, duration, error: error.message, code: error.code });
+    logger.error(' [LLMTunnel] Request failed via WebSocket', { userId, requestId, duration, error: error.message, code: error.code });
 
     if (error.code === 'REQUEST_TIMEOUT') {
       return res.status(504).json({ error: 'LLM request timeout', code: 'LLM_REQUEST_TIMEOUT' });

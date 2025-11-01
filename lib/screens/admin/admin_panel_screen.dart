@@ -74,7 +74,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
       backgroundColor: AppTheme.backgroundMain,
       appBar: AppBar(
         title: const Text(
-          '🔧 CloudToLocalLLM Admin Panel',
+          ' CloudToLocalLLM Admin Panel',
           style: TextStyle(
             color: AppTheme.textColor,
             fontWeight: FontWeight.bold,

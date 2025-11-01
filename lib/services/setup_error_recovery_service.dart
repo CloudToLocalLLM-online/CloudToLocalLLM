@@ -40,7 +40,7 @@ class SetupErrorRecoveryService extends ChangeNotifier {
     Duration? maxDelay,
   }) async {
     debugPrint(
-      '🔧 [ErrorRecovery] Handling error: ${error.code} in step: ${error.setupStep}',
+      ' [ErrorRecovery] Handling error: ${error.code} in step: ${error.setupStep}',
     );
 
     // Add to error history
@@ -73,7 +73,7 @@ class SetupErrorRecoveryService extends ChangeNotifier {
       _retryStates[opId] = newRetryState;
 
       debugPrint(
-        '🔧 [ErrorRecovery] Will retry operation $opId (attempt ${newRetryState.attemptCount})',
+        ' [ErrorRecovery] Will retry operation $opId (attempt ${newRetryState.attemptCount})',
       );
 
       return SetupErrorRecoveryResult.retry(
@@ -83,7 +83,7 @@ class SetupErrorRecoveryService extends ChangeNotifier {
       );
     } else {
       debugPrint(
-        '🔧 [ErrorRecovery] Will not retry operation $opId (max attempts reached or not retryable)',
+        ' [ErrorRecovery] Will not retry operation $opId (max attempts reached or not retryable)',
       );
 
       return SetupErrorRecoveryResult.failed(
@@ -109,7 +109,7 @@ class SetupErrorRecoveryService extends ChangeNotifier {
 
       // Success - reset retry state
       _retryStates[operationId] = SetupRetryState.initial();
-      debugPrint('🔧 [ErrorRecovery] Operation $operationId succeeded');
+      debugPrint(' [ErrorRecovery] Operation $operationId succeeded');
 
       return result;
     } catch (exception) {
@@ -134,7 +134,7 @@ class SetupErrorRecoveryService extends ChangeNotifier {
         if (recoveryResult.retryState.timeUntilNextRetry != null &&
             recoveryResult.retryState.timeUntilNextRetry! > Duration.zero) {
           debugPrint(
-            '🔧 [ErrorRecovery] Waiting ${recoveryResult.retryState.timeUntilNextRetry} before retry',
+            ' [ErrorRecovery] Waiting ${recoveryResult.retryState.timeUntilNextRetry} before retry',
           );
           await Future.delayed(recoveryResult.retryState.timeUntilNextRetry!);
         }
@@ -160,14 +160,14 @@ class SetupErrorRecoveryService extends ChangeNotifier {
   void resetRetryState(String operationId) {
     _retryStates.remove(operationId);
     debugPrint(
-      '🔧 [ErrorRecovery] Reset retry state for operation: $operationId',
+      ' [ErrorRecovery] Reset retry state for operation: $operationId',
     );
   }
 
   /// Reset all retry states
   void resetAllRetryStates() {
     _retryStates.clear();
-    debugPrint('🔧 [ErrorRecovery] Reset all retry states');
+    debugPrint(' [ErrorRecovery] Reset all retry states');
   }
 
   /// Get error statistics
@@ -205,7 +205,7 @@ class SetupErrorRecoveryService extends ChangeNotifier {
   /// Clear error history
   void clearErrorHistory() {
     _errorHistory.clear();
-    debugPrint('🔧 [ErrorRecovery] Cleared error history');
+    debugPrint(' [ErrorRecovery] Cleared error history');
     notifyListeners();
   }
 

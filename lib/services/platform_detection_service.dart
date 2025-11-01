@@ -47,7 +47,7 @@ class PlatformDetectionService extends ChangeNotifier {
       _detectedPlatform = PlatformType.unknown;
       _isInitialized = true;
       debugPrint(
-        '🔍 [PlatformDetection] Non-web platform detected, defaulting to unknown',
+        ' [PlatformDetection] Non-web platform detected, defaulting to unknown',
       );
       notifyListeners();
       return _detectedPlatform!;
@@ -58,20 +58,20 @@ class PlatformDetectionService extends ChangeNotifier {
       final userAgent = web.window.navigator.userAgent;
 
       debugPrint(
-        '🔍 [PlatformDetection] Web platform detected, user agent: $userAgent',
+        ' [PlatformDetection] Web platform detected, user agent: $userAgent',
       );
 
       _detectedPlatform = PlatformType.fromUserAgent(userAgent);
 
       debugPrint(
-        '🔍 [PlatformDetection] Detected platform: $_detectedPlatform',
+        ' [PlatformDetection] Detected platform: $_detectedPlatform',
       );
 
       _isInitialized = true;
       notifyListeners();
       return _detectedPlatform!;
     } catch (e) {
-      debugPrint('🔍 [PlatformDetection] Error detecting platform: $e');
+      debugPrint(' [PlatformDetection] Error detecting platform: $e');
       _detectedPlatform = PlatformType.unknown;
       _isInitialized = true;
       notifyListeners();
@@ -82,7 +82,7 @@ class PlatformDetectionService extends ChangeNotifier {
   /// Manually set the selected platform (override detection)
   void selectPlatform(PlatformType platform) {
     _selectedPlatform = platform;
-    debugPrint('🔍 [PlatformDetection] Manually selected platform: $platform');
+    debugPrint(' [PlatformDetection] Manually selected platform: $platform');
     notifyListeners();
   }
 
@@ -90,7 +90,7 @@ class PlatformDetectionService extends ChangeNotifier {
   void clearPlatformSelection() {
     _selectedPlatform = null;
     debugPrint(
-      '🔍 [PlatformDetection] Cleared manual platform selection, reverting to detected: $_detectedPlatform',
+      ' [PlatformDetection] Cleared manual platform selection, reverting to detected: $_detectedPlatform',
     );
     notifyListeners();
   }
@@ -453,7 +453,7 @@ class PlatformDetectionService extends ChangeNotifier {
     try {
       return web.window.navigator.userAgent;
     } catch (e) {
-      debugPrint('🔍 [PlatformDetection] Error getting user agent: $e');
+      debugPrint(' [PlatformDetection] Error getting user agent: $e');
       return null;
     }
   }

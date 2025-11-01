@@ -110,7 +110,7 @@ class Auth0DesktopService {
       final authUrl = _buildAuthorizationUrl(codeChallenge, state);
       
       // Start listening for callback FIRST
-      debugPrint('🔊 [Auth0Desktop] Starting callback server on localhost:8080');
+      debugPrint('� [Auth0Desktop] Starting callback server on localhost:8080');
       final callbackFuture = _waitForCallback();
       
       // Give server a moment to start
@@ -158,7 +158,7 @@ class Auth0DesktopService {
       // Handle incoming requests
       server.listen((request) async {
         if (request.method == 'GET') {
-          debugPrint('📥 [Auth0Desktop] Received callback: ${request.uri}');
+          debugPrint('� [Auth0Desktop] Received callback: ${request.uri}');
           
           // Parse query parameters
           final params = request.uri.queryParameters;
@@ -373,7 +373,7 @@ class Auth0DesktopService {
       body: bodyString,
     );
     
-    debugPrint('📥 [Auth0Desktop] Token response status: ${response.statusCode}');
+    debugPrint('� [Auth0Desktop] Token response status: ${response.statusCode}');
     
     if (response.statusCode != 200) {
       debugPrint('[Auth0Desktop] Token exchange failed: ${response.body}');

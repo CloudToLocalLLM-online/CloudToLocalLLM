@@ -37,19 +37,19 @@ class DownloadManagementService extends ChangeNotifier {
       if (asset != null) {
         final downloadUrl = asset['browser_download_url'] as String;
         debugPrint(
-          '📥 [DownloadManagement] Generated download URL for $platform/$packageType: $downloadUrl',
+          '� [DownloadManagement] Generated download URL for $platform/$packageType: $downloadUrl',
         );
         return downloadUrl;
       } else {
         // Fallback to constructed URL if asset not found in release
         final fallbackUrl = _constructFallbackUrl(platform, packageType);
         debugPrint(
-          '📥 [DownloadManagement] Using fallback URL for $platform/$packageType: $fallbackUrl',
+          '� [DownloadManagement] Using fallback URL for $platform/$packageType: $fallbackUrl',
         );
         return fallbackUrl;
       }
     } catch (e) {
-      debugPrint('📥 [DownloadManagement] Error generating download URL: $e');
+      debugPrint('� [DownloadManagement] Error generating download URL: $e');
       // Return fallback URL on error
       return _constructFallbackUrl(platform, packageType);
     }
@@ -80,14 +80,14 @@ class DownloadManagementService extends ChangeNotifier {
             json.decode(response.body) as Map<String, dynamic>;
         _cacheTimestamp = DateTime.now();
         debugPrint(
-          '📥 [DownloadManagement] Fetched latest release: ${_latestReleaseCache!['tag_name']}',
+          '� [DownloadManagement] Fetched latest release: ${_latestReleaseCache!['tag_name']}',
         );
         return _latestReleaseCache!;
       } else {
         throw Exception('GitHub API returned status ${response.statusCode}');
       }
     } catch (e) {
-      debugPrint('📥 [DownloadManagement] Error fetching latest release: $e');
+      debugPrint('� [DownloadManagement] Error fetching latest release: $e');
       // Return cached data if available, otherwise throw
       if (_latestReleaseCache != null) {
         return _latestReleaseCache!;
@@ -178,7 +178,7 @@ class DownloadManagementService extends ChangeNotifier {
       // This would be implemented for desktop platforms
       if (kIsWeb) {
         debugPrint(
-          '📥 [DownloadManagement] File validation not available on web platform',
+          '� [DownloadManagement] File validation not available on web platform',
         );
         return true; // Assume valid for web
       }
@@ -187,13 +187,13 @@ class DownloadManagementService extends ChangeNotifier {
       try {
         final file = File(filePath);
         if (!await file.exists()) {
-          debugPrint('📥 [DownloadManagement] File does not exist: $filePath');
+          debugPrint('� [DownloadManagement] File does not exist: $filePath');
           return false;
         }
 
         final fileSize = await file.length();
         if (fileSize == 0) {
-          debugPrint('📥 [DownloadManagement] File is empty: $filePath');
+          debugPrint('� [DownloadManagement] File is empty: $filePath');
           return false;
         }
 
@@ -212,21 +212,21 @@ class DownloadManagementService extends ChangeNotifier {
 
         if (!validExtensions.contains(extension)) {
           debugPrint(
-            '📥 [DownloadManagement] Invalid file extension: $extension',
+            '� [DownloadManagement] Invalid file extension: $extension',
           );
           return false;
         }
 
         debugPrint(
-          '📥 [DownloadManagement] File validation passed for: $filePath',
+          '� [DownloadManagement] File validation passed for: $filePath',
         );
         return true;
       } catch (e) {
-        debugPrint('📥 [DownloadManagement] File validation error: $e');
+        debugPrint('� [DownloadManagement] File validation error: $e');
         return false;
       }
     } catch (e) {
-      debugPrint('📥 [DownloadManagement] Error validating download: $e');
+      debugPrint('� [DownloadManagement] Error validating download: $e');
       return false;
     }
   }
@@ -261,11 +261,11 @@ class DownloadManagementService extends ChangeNotifier {
       }
 
       debugPrint(
-        '📥 [DownloadManagement] Generated ${alternatives.length} alternative URLs for $platform',
+        '� [DownloadManagement] Generated ${alternatives.length} alternative URLs for $platform',
       );
     } catch (e) {
       debugPrint(
-        '📥 [DownloadManagement] Error generating alternative URLs: $e',
+        '� [DownloadManagement] Error generating alternative URLs: $e',
       );
     }
 
@@ -290,7 +290,7 @@ class DownloadManagementService extends ChangeNotifier {
     _downloadTracking[trackingKey] = trackingInfo;
 
     debugPrint(
-      '📥 [DownloadManagement] Tracked download: $platform/$packageType for user $userId',
+      '� [DownloadManagement] Tracked download: $platform/$packageType for user $userId',
     );
 
     // Send analytics to backend if analytics are enabled
@@ -330,7 +330,7 @@ class DownloadManagementService extends ChangeNotifier {
       // For now, just log the analytics data
       // In production, this would send to an analytics service
       debugPrint(
-        '📥 [DownloadManagement] Analytics data: ${jsonEncode(analyticsData)}',
+        '� [DownloadManagement] Analytics data: ${jsonEncode(analyticsData)}',
       );
 
       // Future implementation would include:
@@ -340,7 +340,7 @@ class DownloadManagementService extends ChangeNotifier {
       //   body: jsonEncode(analyticsData),
       // );
     } catch (e) {
-      debugPrint('📥 [DownloadManagement] Error sending analytics: $e');
+      debugPrint('� [DownloadManagement] Error sending analytics: $e');
     }
   }
 
@@ -374,7 +374,7 @@ class DownloadManagementService extends ChangeNotifier {
   /// Clear download tracking data
   void clearTrackingData() {
     _downloadTracking.clear();
-    debugPrint('📥 [DownloadManagement] Cleared download tracking data');
+    debugPrint('� [DownloadManagement] Cleared download tracking data');
     notifyListeners();
   }
 

@@ -25,7 +25,7 @@ class UserContainerService extends ChangeNotifier {
     : _authService = authService,
       _baseUrl = baseUrl ?? _getDefaultBaseUrl() {
     debugPrint(
-      '🐳 [UserContainer] Service initialized with baseUrl: $_baseUrl',
+      '� [UserContainer] Service initialized with baseUrl: $_baseUrl',
     );
   }
 
@@ -69,7 +69,7 @@ class UserContainerService extends ChangeNotifier {
 
     try {
       debugPrint(
-        '🐳 [UserContainer] Creating container (testMode: $testMode)...',
+        '� [UserContainer] Creating container (testMode: $testMode)...',
       );
 
       final token = await _authService.getValidatedAccessToken();
@@ -87,9 +87,9 @@ class UserContainerService extends ChangeNotifier {
       );
 
       debugPrint(
-        '🐳 [UserContainer] API response status: ${response.statusCode}',
+        '� [UserContainer] API response status: ${response.statusCode}',
       );
-      debugPrint('🐳 [UserContainer] API response body: ${response.body}');
+      debugPrint('� [UserContainer] API response body: ${response.body}');
 
       if (response.statusCode == 200) {
         final responseData = jsonDecode(response.body) as Map<String, dynamic>;
@@ -112,7 +112,7 @@ class UserContainerService extends ChangeNotifier {
 
           _lastCreationResult = result;
           debugPrint(
-            '🐳 [UserContainer] Container created successfully: $_currentProxyId',
+            '� [UserContainer] Container created successfully: $_currentProxyId',
           );
 
           return result;
@@ -126,7 +126,7 @@ class UserContainerService extends ChangeNotifier {
         throw Exception(errorData['message'] ?? 'HTTP ${response.statusCode}');
       }
     } catch (e) {
-      debugPrint('🐳 [UserContainer] Container creation failed: $e');
+      debugPrint('� [UserContainer] Container creation failed: $e');
 
       final result = ContainerCreationResult.failure(
         errorMessage: e.toString(),
@@ -155,7 +155,7 @@ class UserContainerService extends ChangeNotifier {
     notifyListeners();
 
     try {
-      debugPrint('🐳 [UserContainer] Checking container status...');
+      debugPrint('� [UserContainer] Checking container status...');
 
       final token = await _authService.getValidatedAccessToken();
       if (token == null) {
@@ -168,13 +168,13 @@ class UserContainerService extends ChangeNotifier {
       );
 
       debugPrint(
-        '🐳 [UserContainer] Status check response: ${response.statusCode}',
+        '� [UserContainer] Status check response: ${response.statusCode}',
       );
 
       if (response.statusCode == 200) {
         final statusData = jsonDecode(response.body) as Map<String, dynamic>;
         debugPrint(
-          '🐳 [UserContainer] Container status: ${statusData['status']}',
+          '� [UserContainer] Container status: ${statusData['status']}',
         );
 
         // Update local state if we have container info
@@ -188,7 +188,7 @@ class UserContainerService extends ChangeNotifier {
         throw Exception(errorData['message'] ?? 'HTTP ${response.statusCode}');
       }
     } catch (e) {
-      debugPrint('🐳 [UserContainer] Status check failed: $e');
+      debugPrint('� [UserContainer] Status check failed: $e');
       return {'status': 'error', 'error': e.toString()};
     } finally {
       _isCheckingStatus = false;
@@ -202,7 +202,7 @@ class UserContainerService extends ChangeNotifier {
   /// to ensure it's ready to handle streaming requests.
   Future<bool> validateContainerHealth() async {
     try {
-      debugPrint('🐳 [UserContainer] Validating container health...');
+      debugPrint('� [UserContainer] Validating container health...');
 
       final status = await checkContainerStatus();
 
@@ -212,17 +212,17 @@ class UserContainerService extends ChangeNotifier {
             health == null || health == 'healthy' || health == 'unknown';
 
         debugPrint(
-          '🐳 [UserContainer] Container health validation: $isHealthy (health: $health)',
+          '� [UserContainer] Container health validation: $isHealthy (health: $health)',
         );
         return isHealthy;
       }
 
       debugPrint(
-        '🐳 [UserContainer] Container not running: ${status['status']}',
+        '� [UserContainer] Container not running: ${status['status']}',
       );
       return false;
     } catch (e) {
-      debugPrint('🐳 [UserContainer] Health validation failed: $e');
+      debugPrint('� [UserContainer] Health validation failed: $e');
       return false;
     }
   }
@@ -234,13 +234,13 @@ class UserContainerService extends ChangeNotifier {
   Future<bool> stopUserContainer() async {
     if (!_authService.isAuthenticated.value) {
       debugPrint(
-        '🐳 [UserContainer] Cannot stop container: user not authenticated',
+        '� [UserContainer] Cannot stop container: user not authenticated',
       );
       return false;
     }
 
     try {
-      debugPrint('🐳 [UserContainer] Stopping container...');
+      debugPrint('� [UserContainer] Stopping container...');
 
       final token = await _authService.getValidatedAccessToken();
       if (token == null) {
@@ -252,22 +252,22 @@ class UserContainerService extends ChangeNotifier {
         headers: {'Authorization': 'Bearer $token'},
       );
 
-      debugPrint('🐳 [UserContainer] Stop response: ${response.statusCode}');
+      debugPrint('� [UserContainer] Stop response: ${response.statusCode}');
 
       if (response.statusCode == 200) {
         _currentContainerId = null;
         _currentProxyId = null;
         notifyListeners();
 
-        debugPrint('🐳 [UserContainer] Container stopped successfully');
+        debugPrint('� [UserContainer] Container stopped successfully');
         return true;
       } else {
         final errorData = jsonDecode(response.body) as Map<String, dynamic>;
-        debugPrint('🐳 [UserContainer] Stop failed: ${errorData['message']}');
+        debugPrint('� [UserContainer] Stop failed: ${errorData['message']}');
         return false;
       }
     } catch (e) {
-      debugPrint('🐳 [UserContainer] Stop container failed: $e');
+      debugPrint('� [UserContainer] Stop container failed: $e');
       return false;
     }
   }
@@ -300,7 +300,7 @@ class UserContainerService extends ChangeNotifier {
     _isCheckingStatus = false;
     _lastStatusCheck = null;
 
-    debugPrint('🐳 [UserContainer] Container state reset');
+    debugPrint('� [UserContainer] Container state reset');
     notifyListeners();
   }
 
@@ -313,7 +313,7 @@ class UserContainerService extends ChangeNotifier {
 
   @override
   void dispose() {
-    debugPrint('🐳 [UserContainer] Service disposed');
+    debugPrint('� [UserContainer] Service disposed');
     super.dispose();
   }
 }

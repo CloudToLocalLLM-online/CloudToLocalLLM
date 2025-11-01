@@ -937,7 +937,7 @@ class _ModelDownloadManagerState extends State<ModelDownloadManager> {
     try {
       final ollamaService = Provider.of<OllamaService>(context, listen: false);
 
-      debugPrint('🦙 [ModelManager] Attempting to delete model: $modelName');
+      debugPrint(' [ModelManager] Attempting to delete model: $modelName');
 
       // Show loading state
       ScaffoldMessenger.of(context).showSnackBar(
@@ -970,7 +970,7 @@ class _ModelDownloadManagerState extends State<ModelDownloadManager> {
       ScaffoldMessenger.of(context).clearSnackBars();
 
       if (success) {
-        debugPrint('🦙 [ModelManager] Successfully deleted model: $modelName');
+        debugPrint(' [ModelManager] Successfully deleted model: $modelName');
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Row(
@@ -985,7 +985,7 @@ class _ModelDownloadManagerState extends State<ModelDownloadManager> {
           ),
         );
       } else {
-        debugPrint('🦙 [ModelManager] Failed to delete model: $modelName');
+        debugPrint(' [ModelManager] Failed to delete model: $modelName');
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Row(
@@ -1005,7 +1005,7 @@ class _ModelDownloadManagerState extends State<ModelDownloadManager> {
         );
       }
     } catch (e) {
-      debugPrint('🦙 [ModelManager] Error during model deletion: $e');
+      debugPrint(' [ModelManager] Error during model deletion: $e');
       if (!mounted) return;
       ScaffoldMessenger.of(context).clearSnackBars();
       ScaffoldMessenger.of(context).showSnackBar(
@@ -1030,10 +1030,10 @@ class _ModelDownloadManagerState extends State<ModelDownloadManager> {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('ollama_host_address', hostAddress);
       debugPrint(
-        '💾 [ModelDownloadManager] Saved Ollama host address: $hostAddress',
+        '� [ModelDownloadManager] Saved Ollama host address: $hostAddress',
       );
     } catch (e) {
-      debugPrint('❌ [ModelDownloadManager] Failed to save host address: $e');
+      debugPrint(' [ModelDownloadManager] Failed to save host address: $e');
     }
   }
 
@@ -1045,12 +1045,12 @@ class _ModelDownloadManagerState extends State<ModelDownloadManager> {
       final portNumber = int.tryParse(port);
       if (portNumber != null && portNumber > 0 && portNumber <= 65535) {
         await prefs.setInt('ollama_port', portNumber);
-        debugPrint('💾 [ModelDownloadManager] Saved Ollama port: $portNumber');
+        debugPrint('� [ModelDownloadManager] Saved Ollama port: $portNumber');
       } else {
-        debugPrint('⚠️ [ModelDownloadManager] Invalid port number: $port');
+        debugPrint(' [ModelDownloadManager] Invalid port number: $port');
       }
     } catch (e) {
-      debugPrint('❌ [ModelDownloadManager] Failed to save port: $e');
+      debugPrint(' [ModelDownloadManager] Failed to save port: $e');
     }
   }
 }

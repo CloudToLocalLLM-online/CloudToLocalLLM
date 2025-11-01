@@ -144,7 +144,7 @@ class DownloadScreen extends StatelessWidget {
   Widget _buildDownloadButtons(BuildContext context) {
     return _buildCard(
       context,
-      title: '📥 Quick Downloads',
+      title: '� Quick Downloads',
       description:
           'Download the latest version of CloudToLocalLLM for your platform',
       child: Column(
@@ -297,7 +297,7 @@ class DownloadScreen extends StatelessWidget {
   Widget _buildSnapPackage(BuildContext context) {
     return _buildCard(
       context,
-      title: '📦 Snap Package (Universal)',
+      title: '� Snap Package (Universal)',
       description:
           'Universal Linux package with automatic updates and sandboxed security. Works on most Linux distributions.',
       child: _buildInstallationSection(
@@ -314,7 +314,7 @@ sudo snap connect cloudtolocalllm:system-observe''',
   Widget _buildDebianPackage(BuildContext context) {
     return _buildCard(
       context,
-      title: '🐧 Debian Package (.deb)',
+      title: '� Debian Package (.deb)',
       description:
           'Native package for Ubuntu, Debian, and derivatives with proper dependency management.',
       child: _buildInstallationSection(
@@ -334,7 +334,7 @@ sudo apt-get install -f''',
   Widget _buildAppImage(BuildContext context) {
     return _buildCard(
       context,
-      title: '📱 AppImage (Portable)',
+      title: '� AppImage (Portable)',
       description:
           'Portable application that runs on any Linux distribution without installation. No root access required.',
       child: _buildInstallationSection(
@@ -354,7 +354,7 @@ chmod +x cloudtolocalllm-${AppConfig.appVersion}-x86_64.AppImage
   Widget _buildAURPackage(BuildContext context) {
     return _buildCard(
       context,
-      title: '🏛️ Arch User Repository (AUR)',
+      title: '� Arch User Repository (AUR)',
       description:
           'Pre-built binary package for Arch Linux and derivatives. No Flutter dependency required!',
       child: _buildInstallationSection(
@@ -395,7 +395,7 @@ cd cloudtolocalllm-${AppConfig.appVersion}-x86_64
   Widget _buildGettingStarted(BuildContext context) {
     return _buildCard(
       context,
-      title: '🚀 Getting Started',
+      title: ' Getting Started',
       description: 'Quick setup guide after installation.',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

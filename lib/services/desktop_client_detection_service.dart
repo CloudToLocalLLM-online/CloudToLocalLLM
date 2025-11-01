@@ -48,12 +48,12 @@ class DesktopClientDetectionService extends ChangeNotifier {
   /// Initialize the service and start monitoring (web platform only)
   Future<void> initialize() async {
     if (!kIsWeb) {
-      debugPrint('🖥️ [DesktopClientDetection] Skipping on non-web platform');
+      debugPrint(' [DesktopClientDetection] Skipping on non-web platform');
       return;
     }
 
     debugPrint(
-      '🖥️ [DesktopClientDetection] Initializing desktop client detection...',
+      ' [DesktopClientDetection] Initializing desktop client detection...',
     );
 
     // Only check if user is authenticated
@@ -64,14 +64,14 @@ class DesktopClientDetectionService extends ChangeNotifier {
       startMonitoring();
     } else {
       debugPrint(
-        '🖥️ [DesktopClientDetection] User not authenticated, skipping initial check',
+        ' [DesktopClientDetection] User not authenticated, skipping initial check',
       );
       // Listen for auth state changes to start monitoring when authenticated
       _authService.addListener(_onAuthStateChanged);
     }
 
     debugPrint(
-      '🖥️ [DesktopClientDetection] Desktop client detection initialized',
+      ' [DesktopClientDetection] Desktop client detection initialized',
     );
   }
 
@@ -79,7 +79,7 @@ class DesktopClientDetectionService extends ChangeNotifier {
   void startMonitoring({Duration interval = const Duration(seconds: 30)}) {
     if (!kIsWeb || _isMonitoring) return;
 
-    debugPrint('🖥️ [DesktopClientDetection] Starting client monitoring...');
+    debugPrint(' [DesktopClientDetection] Starting client monitoring...');
 
     _isMonitoring = true;
     _monitoringTimer = Timer.periodic(interval, (_) => checkConnectedClients());
@@ -91,7 +91,7 @@ class DesktopClientDetectionService extends ChangeNotifier {
   void stopMonitoring() {
     if (!_isMonitoring) return;
 
-    debugPrint('🖥️ [DesktopClientDetection] Stopping client monitoring...');
+    debugPrint(' [DesktopClientDetection] Stopping client monitoring...');
 
     _monitoringTimer?.cancel();
     _monitoringTimer = null;
@@ -104,7 +104,7 @@ class DesktopClientDetectionService extends ChangeNotifier {
   void _onAuthStateChanged() {
     if (_authService.isAuthenticated.value && !_isMonitoring) {
       debugPrint(
-        '🖥️ [DesktopClientDetection] User authenticated, starting monitoring',
+        ' [DesktopClientDetection] User authenticated, starting monitoring',
       );
       checkConnectedClients();
       startMonitoring();
@@ -158,13 +158,13 @@ class DesktopClientDetectionService extends ChangeNotifier {
         );
 
         debugPrint(
-          '🖥️ [DesktopClientDetection] Found ${clientInfos.length} connected clients',
+          ' [DesktopClientDetection] Found ${clientInfos.length} connected clients',
         );
       } else {
         throw Exception('HTTP ${response.statusCode}: ${response.body}');
       }
     } catch (e) {
-      debugPrint('🖥️ [DesktopClientDetection] Error checking clients: $e');
+      debugPrint(' [DesktopClientDetection] Error checking clients: $e');
       _updateState(
         hasConnectedClients: false,
         connectedClientCount: 0,

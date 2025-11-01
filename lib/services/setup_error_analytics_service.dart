@@ -45,7 +45,7 @@ class SetupErrorAnalyticsService extends ChangeNotifier {
     await _loadStoredData();
     _startNewSession();
 
-    debugPrint('📊 [Analytics] Setup error analytics service initialized');
+    debugPrint(' [Analytics] Setup error analytics service initialized');
   }
 
   /// Start a new setup session
@@ -53,7 +53,7 @@ class SetupErrorAnalyticsService extends ChangeNotifier {
     _currentSessionId = _generateSessionId();
     _sessionStartTime = DateTime.now();
 
-    debugPrint('📊 [Analytics] Started new setup session: $_currentSessionId');
+    debugPrint(' [Analytics] Started new setup session: $_currentSessionId');
   }
 
   /// Log a setup error
@@ -85,7 +85,7 @@ class SetupErrorAnalyticsService extends ChangeNotifier {
     await _persistErrorLog();
 
     debugPrint(
-      '📊 [Analytics] Logged error: ${error.code} in session: $_currentSessionId',
+      ' [Analytics] Logged error: ${error.code} in session: $_currentSessionId',
     );
     notifyListeners();
   }
@@ -115,7 +115,7 @@ class SetupErrorAnalyticsService extends ChangeNotifier {
     }
 
     debugPrint(
-      '📊 [Analytics] Logged step completion: $stepName (success: $success)',
+      ' [Analytics] Logged step completion: $stepName (success: $success)',
     );
   }
 
@@ -138,7 +138,7 @@ class SetupErrorAnalyticsService extends ChangeNotifier {
     }
 
     debugPrint(
-      '📊 [Analytics] Logged troubleshooting feedback: ${feedback.wasHelpful}',
+      ' [Analytics] Logged troubleshooting feedback: ${feedback.wasHelpful}',
     );
   }
 
@@ -172,7 +172,7 @@ class SetupErrorAnalyticsService extends ChangeNotifier {
     await _persistSessionAnalytics();
 
     debugPrint(
-      '📊 [Analytics] Completed session: $_currentSessionId (success: $success, duration: ${sessionDuration.inSeconds}s)',
+      ' [Analytics] Completed session: $_currentSessionId (success: $success, duration: ${sessionDuration.inSeconds}s)',
     );
 
     // Start new session for potential retry
@@ -273,14 +273,14 @@ class SetupErrorAnalyticsService extends ChangeNotifier {
     await _secureStorage.delete(key: _analyticsKey);
     await _secureStorage.delete(key: _sessionKey);
 
-    debugPrint('📊 [Analytics] Cleared all analytics data');
+    debugPrint(' [Analytics] Cleared all analytics data');
     notifyListeners();
   }
 
   /// Update analytics configuration
   void updateConfig(SetupAnalyticsConfig config) {
     _config = config;
-    debugPrint('📊 [Analytics] Updated configuration');
+    debugPrint(' [Analytics] Updated configuration');
     notifyListeners();
   }
 
@@ -311,10 +311,10 @@ class SetupErrorAnalyticsService extends ChangeNotifier {
       }
 
       debugPrint(
-        '📊 [Analytics] Loaded ${_errorLog.length} error entries and ${_sessionAnalytics.length} sessions',
+        ' [Analytics] Loaded ${_errorLog.length} error entries and ${_sessionAnalytics.length} sessions',
       );
     } catch (e) {
-      debugPrint('📊 [Analytics] Error loading stored data: $e');
+      debugPrint(' [Analytics] Error loading stored data: $e');
     }
   }
 
@@ -336,7 +336,7 @@ class SetupErrorAnalyticsService extends ChangeNotifier {
       );
       await _secureStorage.write(key: _errorLogKey, value: errorLogJson);
     } catch (e) {
-      debugPrint('📊 [Analytics] Error persisting error log: $e');
+      debugPrint(' [Analytics] Error persisting error log: $e');
     }
   }
 
@@ -358,7 +358,7 @@ class SetupErrorAnalyticsService extends ChangeNotifier {
       );
       await _secureStorage.write(key: _analyticsKey, value: analyticsJson);
     } catch (e) {
-      debugPrint('📊 [Analytics] Error persisting session analytics: $e');
+      debugPrint(' [Analytics] Error persisting session analytics: $e');
     }
   }
 
