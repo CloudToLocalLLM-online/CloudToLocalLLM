@@ -242,13 +242,20 @@ jobs:
         
     - name: Get Flutter dependencies
       run: flutter pub get
+      shell: ${{ matrix.platform == 'windows' && 'powershell' || 'bash' }}
       
     - name: Enable desktop platform
       run: |
-        flutter config --enable-${{ matrix.platform }}-desktop
+        if [[ "${{ matrix.platform }}" == "windows" ]]; then
+          flutter config --enable-windows-desktop
+        else
+          flutter config --enable-linux-desktop
+        fi
+      shell: ${{ matrix.platform == 'windows' && 'powershell' || 'bash' }}
         
     - name: Build desktop application
       run: ${{ matrix.build_command }}
+      shell: ${{ matrix.platform == 'windows' && 'powershell' || 'bash' }}
       
     - name: Install Inno Setup
       if: matrix.platform == 'windows'
@@ -448,6 +455,7 @@ jobs:
           # Replace version in spec file (handle both %{version} placeholder and actual version line)
           sed -e "s/^Version:.*/Version:        ${VERSION}/" \
               -e "s/%{version}/${VERSION}/g" \
+              -e "s/cloudtolocalllm-1.0.0-linux.tar.gz/cloudtolocalllm-${VERSION}-linux.tar.gz/g" \
               "$SPEC_FILE" > ~/rpmbuild/SPECS/cloudtolocalllm.spec
           
           # Determine dist tag based on distribution
