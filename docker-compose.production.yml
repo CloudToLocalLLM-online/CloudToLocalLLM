@@ -1,7 +1,7 @@
 version: '3.8'
 
 services:
-  # PostgreSQL Database
+  # PostgreSQL Database for Application Data
   postgres:
     image: postgres:16-alpine
     container_name: cloudtolocalllm-postgres
@@ -15,8 +15,30 @@ services:
       - ./services/api-backend/database/schema.pg.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
     networks:
       - cloudtolocalllm
+    # No ports exposed - only accessible within Docker network
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-appuser} -d ${POSTGRES_DB:-cloudtolocalllm}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # PostgreSQL Database for Authentication (Separate Instance)
+  postgres-auth:
+    image: postgres:16-alpine
+    container_name: cloudtolocalllm-postgres-auth
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_AUTH_DB:-cloudtolocalllm_auth}
+      POSTGRES_USER: ${POSTGRES_AUTH_USER:-authuser}
+      POSTGRES_PASSWORD: ${POSTGRES_AUTH_PASSWORD:-changeme_auth}
+    volumes:
+      - postgres_auth_data:/var/lib/postgresql/data
+      - ./services/api-backend/database/schema-auth.pg.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+    networks:
+      - cloudtolocalllm
+    # No ports exposed - only accessible within Docker network for security
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_AUTH_USER:-authuser} -d ${POSTGRES_AUTH_DB:-cloudtolocalllm_auth}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -34,13 +56,21 @@ services:
       PORT: 3000
       LOG_LEVEL: ${LOG_LEVEL:-info}
       
-      # Database Configuration
+      # Database Configuration (Application Data)
       DB_TYPE: postgresql
       DB_HOST: postgres
       DB_PORT: 5432
       DB_NAME: ${POSTGRES_DB:-cloudtolocalllm}
       DB_USER: ${POSTGRES_USER:-appuser}
       DB_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
+      
+      # Authentication Database Configuration (Separate Instance)
+      AUTH_DB_TYPE: postgresql
+      AUTH_DB_HOST: postgres-auth
+      AUTH_DB_PORT: 5432
+      AUTH_DB_NAME: ${POSTGRES_AUTH_DB:-cloudtolocalllm_auth}
+      AUTH_DB_USER: ${POSTGRES_AUTH_USER:-authuser}
+      AUTH_DB_PASSWORD: ${POSTGRES_AUTH_PASSWORD:-changeme_auth}
       
       # Auth0 Configuration
       AUTH0_DOMAIN: ${AUTH0_DOMAIN}
@@ -59,6 +89,8 @@ services:
       CHISEL_BINARY: ${CHISEL_BINARY:-/usr/local/bin/chisel}
     depends_on:
       postgres:
+        condition: service_healthy
+      postgres-auth:
         condition: service_healthy
     networks:
       - cloudtolocalllm
@@ -134,6 +166,8 @@ networks:
 volumes:
   postgres_data:
     name: cloudtolocalllm_postgres_data
+  postgres_auth_data:
+    name: cloudtolocalllm_postgres_auth_data
   nginx_logs:
     name: cloudtolocalllm_nginx_logs
 

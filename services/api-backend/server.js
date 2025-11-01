@@ -15,6 +15,7 @@ import { ChiselProxy } from './tunnel/chisel-proxy.js';
 import { AuthService } from './auth/auth-service.js';
 import { DatabaseMigrator } from './database/migrate.js';
 import { DatabaseMigratorPG } from './database/migrate-pg.js';
+import { AuthDatabaseMigratorPG } from './database/migrate-auth-pg.js';
 import { createTunnelRoutes } from './tunnel/tunnel-routes.js';
 import { createMonitoringRoutes } from './routes/monitoring.js';
 import { authenticateJWT } from './middleware/auth.js';
@@ -657,10 +658,12 @@ setInterval(() => {
 // Initialize Tunnel System
 let authService = null;
 let dbMigrator = null;
+let authDbMigrator = null;
 
 async function initializeTunnelSystem() {
   logger.info('Starting initialization of tunnel system...');
   try {
+    // Initialize application database
     const dbType = process.env.DB_TYPE || 'sqlite';
     dbMigrator = dbType === 'postgresql' ? new DatabaseMigratorPG() : new DatabaseMigrator();
 
@@ -673,9 +676,19 @@ async function initializeTunnelSystem() {
       throw new Error('Database schema validation failed');
     }
 
+    // Initialize authentication database (separate instance)
+    if (process.env.AUTH_DB_HOST) {
+      logger.info('Initializing separate authentication database...');
+      authDbMigrator = new AuthDatabaseMigratorPG({}, logger);
+      await authDbMigrator.initialize();
+      await authDbMigrator.migrate();
+      logger.info('Authentication database initialized successfully');
+    }
+
     authService = new AuthService({
       AUTH0_DOMAIN,
       AUTH0_AUDIENCE,
+      authDbMigrator, // Pass auth database connection to auth service
     });
     await authService.initialize();
 

@@ -4,20 +4,8 @@
 -- Enable required extensions
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
--- User sessions table for authentication and session management
-CREATE TABLE IF NOT EXISTS user_sessions (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id TEXT NOT NULL,
-  session_token TEXT UNIQUE NOT NULL,
-  refresh_token TEXT,
-  expires_at TIMESTAMPTZ NOT NULL,
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW(),
-  user_agent TEXT,
-  ip_address INET,
-  is_active BOOLEAN DEFAULT TRUE,
-  metadata JSONB DEFAULT '{}'::jsonb
-);
+-- NOTE: user_sessions table has been moved to separate authentication database
+-- Authentication data is stored in postgres-auth instance for security isolation
 
 -- Tunnel connections table for managing active tunnels
 CREATE TABLE IF NOT EXISTS tunnel_connections (
@@ -73,11 +61,6 @@ CREATE TABLE IF NOT EXISTS user_preferences (
 );
 
 -- Create indexes for performance
-CREATE INDEX IF NOT EXISTS idx_user_sessions_user_id ON user_sessions(user_id);
-CREATE INDEX IF NOT EXISTS idx_user_sessions_session_token ON user_sessions(session_token);
-CREATE INDEX IF NOT EXISTS idx_user_sessions_expires_at ON user_sessions(expires_at);
-CREATE INDEX IF NOT EXISTS idx_user_sessions_active ON user_sessions(is_active) WHERE is_active = TRUE;
-
 CREATE INDEX IF NOT EXISTS idx_tunnel_connections_user_id ON tunnel_connections(user_id);
 CREATE INDEX IF NOT EXISTS idx_tunnel_connections_tunnel_id ON tunnel_connections(tunnel_id);
 CREATE INDEX IF NOT EXISTS idx_tunnel_connections_status ON tunnel_connections(status);
@@ -104,9 +87,6 @@ END;
 $$ language 'plpgsql';
 
 -- Apply updated_at triggers
-CREATE TRIGGER update_user_sessions_updated_at BEFORE UPDATE ON user_sessions
-    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
 CREATE TRIGGER update_tunnel_connections_updated_at BEFORE UPDATE ON tunnel_connections
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 

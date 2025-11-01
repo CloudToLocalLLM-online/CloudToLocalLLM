@@ -11,6 +11,7 @@ import { DatabaseMigrator } from '../database/migrate.js';
 
 /**
  * Authentication service with Auth0 integration
+ * Uses separate authentication database for security isolation
  */
 export class AuthService {
   constructor(config) {
@@ -24,7 +25,10 @@ export class AuthService {
     };
 
     this.logger = new TunnelLogger('auth-service');
-    this.db = new DatabaseMigrator();
+    
+    // Use separate auth database if provided, otherwise fallback to main database
+    this.authDbMigrator = config.authDbMigrator || null;
+    this.db = this.authDbMigrator || new DatabaseMigrator();
 
     // Manual JWKS implementation to avoid jwks-client cache issues
     this.jwksUri = `https://${this.config.AUTH0_DOMAIN}/.well-known/jwks.json`;
@@ -43,7 +47,10 @@ export class AuthService {
     }
 
     try {
-      await this.db.initialize();
+      // If using separate auth database, it's already initialized in server.js
+      if (!this.authDbMigrator) {
+        await this.db.initialize();
+      }
       this.initialized = true;
 
       this.logger.info('Authentication service initialized', {
