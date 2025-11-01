@@ -63,6 +63,9 @@ jobs:
             ${{ env.REGISTRY }}/web:${{ steps.meta.outputs.version }}
           cache-from: type=registry,ref=${{ env.REGISTRY }}/web:latest
           cache-to: type=inline
+          # Force rebuild by invalidating cache when web files change
+          build-args: |
+            BUILD_DATE=$(date -u +'%Y-%m-%dT%H:%M:%SZ')
 
       - name: Build and push API image
         uses: docker/build-push-action@v5

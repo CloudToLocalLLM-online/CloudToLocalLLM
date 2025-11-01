@@ -24,8 +24,8 @@ RUN mkdir -p /app && \
 # Switch to non-root user
 USER 1000
 
-# Clone repository as non-root user
-RUN git clone -b main https://github.com/imrightguy/CloudToLocalLLM.git .
+# Clone repository as non-root user (disable cache to ensure fresh clone)
+RUN git clone -b main --depth 1 https://github.com/imrightguy/CloudToLocalLLM.git .
 
 # Get dependencies (Flutter will create .dart_tool and other cache dirs)
 RUN flutter pub get
