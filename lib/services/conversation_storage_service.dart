@@ -441,7 +441,7 @@ class ConversationStorageService {
       throw StateError('AuthService not available');
     }
 
-    final token = await _authService!.getValidatedAccessToken();
+    final token = await _authService.getValidatedAccessToken();
     if (token == null) {
       throw StateError('No access token available');
     }
@@ -553,7 +553,6 @@ class ConversationStorageService {
               'content': m.content,
               'model': m.model,
               'timestamp': m.timestamp.toIso8601String(),
-              'metadata': m.metadata,
             }).toList(),
       });
 

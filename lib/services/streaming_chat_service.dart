@@ -22,7 +22,9 @@ class StreamingChatService extends ChangeNotifier {
   StreamingChatService(
     this._connectionManager,
     AuthService authService,
-  ) : _storageService = ConversationStorageService(authService: authService);
+  ) : _storageService = ConversationStorageService(authService: authService) {
+    _initializeService();
+  }
 
   List<Conversation> _conversations = [];
   Conversation? _currentConversation;
@@ -35,10 +37,6 @@ class StreamingChatService extends ChangeNotifier {
       BehaviorSubject<String>.seeded('');
   StreamSubscription<StreamingMessage>? _currentStreamSubscription;
   String _currentStreamingMessageId = '';
-
-  StreamingChatService(this._connectionManager) {
-    _initializeService();
-  }
 
   // Getters
   List<Conversation> get conversations => List.unmodifiable(_conversations);
