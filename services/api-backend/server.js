@@ -718,6 +718,9 @@ async function gracefulShutdown() {
     if (authService) {
       await authService.close();
     }
+    if (authDbMigrator) {
+      await authDbMigrator.close();
+    }
     if (dbMigrator) {
       await dbMigrator.close();
     }
