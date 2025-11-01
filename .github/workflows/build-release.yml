@@ -459,9 +459,10 @@ jobs:
             DIST_TAG=""
           fi
           
-          # Build RPM for Fedora-style (uses .fc tag)
-          echo "Building RPM package..."
-          rpmbuild -ba --define "_topdir $(pwd)/rpmbuild" \
+          # Build RPM
+          echo "Building RPM package for ${DISTRO}..."
+          rpmbuild -ba \
+            --define "_topdir $HOME/rpmbuild" \
             --define "dist ${DIST_TAG}" \
             ~/rpmbuild/SPECS/cloudtolocalllm.spec
           
