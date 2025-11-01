@@ -90,3 +90,5 @@ flutter:
     - assets/images/
     - assets/version.json
     - assets/chisel/
+    - assets/chisel/.gitkeep
+    - assets/chisel/README.md
