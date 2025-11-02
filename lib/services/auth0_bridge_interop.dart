@@ -6,14 +6,14 @@ import 'dart:js_interop';
 external JSObject? get auth0BridgeJS;
 
 extension type Auth0Bridge(JSObject _) implements JSObject {
-  external JSPromise<JSBoolean> initialize();
-  external JSPromise<JSBoolean> loginWithRedirect();
-  external JSPromise<JSBoolean> loginWithGoogle();
-  external JSPromise<JSBoolean> isAuthenticated();
-  external JSPromise<JSString?> getUser();
-  external JSPromise<JSString?> getAccessToken();
-  external JSPromise<JSBoolean> handleRedirectCallback();
-  external JSPromise<JSBoolean> logout();
+  external JSPromise<JSAny?> initialize();
+  external JSPromise<JSAny?> loginWithRedirect();
+  external JSPromise<JSAny?> loginWithGoogle();
+  external JSPromise<JSAny?> isAuthenticated();
+  external JSPromise<JSAny?> getUser();
+  external JSPromise<JSAny?> getAccessToken();
+  external JSPromise<JSAny?> handleRedirectCallback();
+  external JSPromise<JSAny?> logout();
 }
 
 Auth0Bridge? get auth0Bridge {
