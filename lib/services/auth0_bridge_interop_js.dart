@@ -1,4 +1,6 @@
 // ignore_for_file: non_constant_identifier_names
+// ignore_for_file: deprecated_member_use
+// ignore_for_file: avoid_web_libraries_in_flutter
 
 import 'package:js/js.dart';
 import 'dart:async';
@@ -49,3 +51,4 @@ Auth0Bridge? get auth0Bridge {
   final obj = auth0BridgeJS;
   return obj != null ? Auth0Bridge(obj) : null;
 }
+
