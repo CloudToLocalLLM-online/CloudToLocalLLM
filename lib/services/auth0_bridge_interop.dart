@@ -2,9 +2,7 @@
 
 import 'dart:js_interop';
 
-@JS('auth0Bridge')
-external JSObject? get auth0BridgeJS;
-
+@JSExport()
 extension type Auth0Bridge(JSObject obj) {
   external JSPromise initialize();
   external JSPromise loginWithRedirect();
@@ -16,6 +14,9 @@ extension type Auth0Bridge(JSObject obj) {
   external JSPromise logout();
   external JSBoolean isInitialized();
 }
+
+@JS('window.auth0Bridge')
+external JSObject? get auth0BridgeJS;
 
 Auth0Bridge? get auth0Bridge {
   final obj = auth0BridgeJS;
