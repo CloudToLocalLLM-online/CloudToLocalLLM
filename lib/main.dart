@@ -10,7 +10,6 @@ import 'config/router.dart';
 import 'config/app_config.dart';
 import 'services/app_initialization_service.dart';
 import 'services/auth_service.dart';
-import 'services/auth0_service.dart';
 import 'services/auth_service_factory.dart';
 import 'services/enhanced_user_tier_service.dart';
 import 'services/ollama_service.dart';
