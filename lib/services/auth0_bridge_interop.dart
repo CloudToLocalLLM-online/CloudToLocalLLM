@@ -2,7 +2,6 @@
 
 import 'dart:js_interop';
 
-@JSExport()
 extension type Auth0Bridge(JSObject obj) {
   external JSPromise initialize();
   external JSPromise loginWithRedirect();
