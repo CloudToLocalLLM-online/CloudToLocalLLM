@@ -54,7 +54,7 @@ class Auth0WebService implements Auth0Service {
     if (auth0Bridge == null) {
       throw Exception('Auth0 bridge not available');
     }
-    await auth0Bridge!.loginWithRedirect().toDart;
+    await auth0Bridge!.loginWithRedirect();
   }
 
   @override
@@ -62,7 +62,7 @@ class Auth0WebService implements Auth0Service {
     if (auth0Bridge == null) {
       throw Exception('Auth0 bridge not available');
     }
-    await auth0Bridge!.logout().toDart;
+    await auth0Bridge!.logout();
     _isAuthenticated = false;
     _currentUser = null;
     _accessToken = null;
@@ -75,7 +75,7 @@ class Auth0WebService implements Auth0Service {
       if (auth0Bridge == null) {
         return false;
       }
-      await auth0Bridge!.handleRedirectCallback().toDart;
+      await auth0Bridge!.handleRedirectCallback();
       await checkAuthStatus();
       return _isAuthenticated;
     } catch (e) {
@@ -91,22 +91,22 @@ class Auth0WebService implements Auth0Service {
         return;
       }
       
-      final isAuth = await auth0Bridge!.isAuthenticated().toDart;
+      final isAuth = await auth0Bridge!.isAuthenticated();
       final wasAuthenticated = _isAuthenticated;
 
-      // Handle JSAny? result from .toDart
+      // Handle dynamic result from await
       if (isAuth is bool) {
-        _isAuthenticated = isAuth as bool;
+        _isAuthenticated = isAuth;
       } else if (isAuth is String) {
-        _isAuthenticated = (isAuth as String) == 'true';
+        _isAuthenticated = isAuth == 'true';
       } else {
         _isAuthenticated = false;
       }
 
       if (_isAuthenticated) {
         // getUser returns a JSON string from our modified bridge
-        final userJson = await auth0Bridge!.getUser().toDart;
-        final token = await auth0Bridge!.getAccessToken().toDart;
+        final userJson = await auth0Bridge!.getUser();
+        final token = await auth0Bridge!.getAccessToken();
 
         if (userJson != null) {
           _currentUser = jsonDecode(userJson.toString()) as Map<String, dynamic>;

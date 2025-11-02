@@ -39,8 +39,7 @@ import 'services/llm_error_handler.dart';
 
 import 'widgets/window_listener_widget.dart' if (dart.library.html) 'widgets/window_listener_widget_stub.dart';
 
-// Desktop-only imports
-import 'package:sqflite_common_ffi/sqflite_ffi.dart' if (dart.library.html) 'dart:async';
+import 'main_sqflite_init.dart' if (dart.library.html) 'main_sqflite_init_stub.dart';
 
 // Global navigator key for navigation from system tray
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
@@ -49,10 +48,7 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   // Initialize SQLite FFI for desktop platforms
-  if (!kIsWeb) {
-    sqfliteFfiInit();
-    databaseFactory = databaseFactoryFfi;
-  }
+  initSqflite();
 
   // Auth0 initialization
   // Auth0 is initialized automatically when the auth service is created

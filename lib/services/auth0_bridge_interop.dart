@@ -1,20 +1,48 @@
 // ignore_for_file: non_constant_identifier_names
 
-import 'dart:js_interop';
+import 'package:js/js.dart';
+import 'dart:async';
+import 'dart:js_util' as js_util;
 
 @JS('window.auth0Bridge')
-// ignore: undefined_class
-external JSObject? get auth0BridgeJS;
+external dynamic get auth0BridgeJS;
 
-extension type Auth0Bridge(JSObject _) implements JSObject {
-  external JSPromise<JSAny?> initialize();
-  external JSPromise<JSAny?> loginWithRedirect();
-  external JSPromise<JSAny?> loginWithGoogle();
-  external JSPromise<JSAny?> isAuthenticated();
-  external JSPromise<JSAny?> getUser();
-  external JSPromise<JSAny?> getAccessToken();
-  external JSPromise<JSAny?> handleRedirectCallback();
-  external JSPromise<JSAny?> logout();
+class Auth0Bridge {
+  final dynamic _obj;
+  
+  Auth0Bridge(this._obj);
+  
+  Future<dynamic> initialize() async {
+    return js_util.promiseToFuture(js_util.callMethod(_obj, 'initialize', []));
+  }
+  
+  Future<dynamic> loginWithRedirect() async {
+    return js_util.promiseToFuture(js_util.callMethod(_obj, 'loginWithRedirect', []));
+  }
+  
+  Future<dynamic> loginWithGoogle() async {
+    return js_util.promiseToFuture(js_util.callMethod(_obj, 'loginWithGoogle', []));
+  }
+  
+  Future<dynamic> isAuthenticated() async {
+    return js_util.promiseToFuture(js_util.callMethod(_obj, 'isAuthenticated', []));
+  }
+  
+  Future<dynamic> getUser() async {
+    return js_util.promiseToFuture(js_util.callMethod(_obj, 'getUser', []));
+  }
+  
+  Future<dynamic> getAccessToken() async {
+    return js_util.promiseToFuture(js_util.callMethod(_obj, 'getAccessToken', []));
+  }
+  
+  Future<dynamic> handleRedirectCallback() async {
+    return js_util.promiseToFuture(js_util.callMethod(_obj, 'handleRedirectCallback', []));
+  }
+  
+  Future<dynamic> logout() async {
+    return js_util.promiseToFuture(js_util.callMethod(_obj, 'logout', []));
+  }
 }
 
 Auth0Bridge? get auth0Bridge {
