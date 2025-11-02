@@ -26,6 +26,7 @@ class Auth0DesktopService implements Auth0Service {
   static const String _codeVerifierKey = 'auth0_code_verifier';
   
   final _authStateController = StreamController<bool>.broadcast();
+  @override
   Stream<bool> get authStateChanges => _authStateController.stream;
 
   bool _isAuthenticated = false;
@@ -36,7 +37,9 @@ class Auth0DesktopService implements Auth0Service {
   // PKCE code verifier for the current auth session
   String? _codeVerifier;
 
+  @override
   bool get isAuthenticated => _isAuthenticated;
+  @override
   Map<String, dynamic>? get currentUser => _currentUser;
   
   @override
