@@ -24,6 +24,16 @@ if (!(Test-Path $AssetsDir)) {
     New-Item -ItemType Directory -Path $AssetsDir -Force | Out-Null
 }
 
+# Add Windows Defender exclusion BEFORE downloading to prevent quarantine
+Write-Host ""
+Write-Host "Adding Windows Defender exclusion for $AssetsDir..." -ForegroundColor Green
+try {
+    Add-MpPreference -ExclusionPath "$PSScriptRoot\$AssetsDir" -ErrorAction Stop
+    Write-Host "  Successfully added Windows Defender exclusion" -ForegroundColor Green
+} catch {
+    Write-Host "  Failed to add exclusion: $_" -ForegroundColor Yellow
+}
+
 # Platforms to download
 $platforms = @(
     @{OS="windows"; Arch="amd64"; Ext=".exe"},
@@ -82,14 +92,5 @@ foreach ($platform in $platforms) {
 Write-Host ""
 Write-Host "Chisel binaries downloaded to $AssetsDir" -ForegroundColor Green
 Write-Host "Dont forget to run flutter pub get" -ForegroundColor Yellow
-
-# Add Windows Defender exclusion
-Write-Host ""
-Write-Host "Adding Windows Defender exclusion..." -ForegroundColor Green
-try {
-    Add-MpPreference -ExclusionPath "$PSScriptRoot\$AssetsDir" -ErrorAction Stop
-    Write-Host "  Successfully added Windows Defender exclusion" -ForegroundColor Green
-} catch {
-    Write-Host "  Failed to add exclusion: $_" -ForegroundColor Yellow
-}
+Write-Host "Windows Defender exclusion was added earlier" -ForegroundColor Green
 
