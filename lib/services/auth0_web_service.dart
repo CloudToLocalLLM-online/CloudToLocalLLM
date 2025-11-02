@@ -74,7 +74,7 @@ class Auth0WebService implements Auth0Service {
       final isAuth = await auth0Bridge!.isAuthenticated().toDart;
       final wasAuthenticated = _isAuthenticated;
 
-      _isAuthenticated = isAuth == true;
+      _isAuthenticated = (isAuth == true);
 
       if (_isAuthenticated) {
         // getUser returns a JSON string from our modified bridge
@@ -82,8 +82,7 @@ class Auth0WebService implements Auth0Service {
         final token = await auth0Bridge!.getAccessToken().toDart;
 
         if (userJson != null) {
-          final userStr = userJson.toString();
-          _currentUser = jsonDecode(userStr) as Map<String, dynamic>;
+          _currentUser = jsonDecode(userJson.toString()) as Map<String, dynamic>;
         }
         if (token != null) {
           _accessToken = token.toString();
