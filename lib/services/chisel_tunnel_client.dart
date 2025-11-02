@@ -246,6 +246,11 @@ class ChiselTunnelClient with ChangeNotifier {
           if (!await existingFile.exists()) {
             await existingFile.writeAsBytes(bytes);
             debugPrint('[Chisel] Extracted bundled binary to: $chiselPath (from $assetPath)');
+            
+            // Verify file exists and is accessible
+            if (!await existingFile.exists()) {
+              throw Exception('Failed to create Chisel binary file - may have been quarantined by Windows Defender');
+            }
           }
           
           return chiselPath;
@@ -280,6 +285,11 @@ class ChiselTunnelClient with ChangeNotifier {
             // Make executable
             await Process.run('chmod', ['+x', chiselPath]);
             debugPrint('[Chisel] Extracted bundled binary to: $chiselPath (from $assetPath)');
+            
+            // Verify file exists and is accessible
+            if (!await existingFile.exists()) {
+              throw Exception('Failed to create Chisel binary file - may have been quarantined by antivirus');
+            }
           }
           
           return chiselPath;
@@ -315,6 +325,11 @@ class ChiselTunnelClient with ChangeNotifier {
             // Make executable
             await Process.run('chmod', ['+x', chiselPath]);
             debugPrint('[Chisel] Extracted bundled binary to: $chiselPath (from $assetPath)');
+            
+            // Verify file exists and is accessible
+            if (!await existingFile.exists()) {
+              throw Exception('Failed to create Chisel binary file - may have been quarantined by antivirus');
+            }
           }
           
           return chiselPath;

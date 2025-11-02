@@ -123,9 +123,18 @@ class TunnelService extends ChangeNotifier {
       debugPrint('[TunnelService] Connection failed: $e');
       debugPrint('[TunnelService] Stack trace: $stackTrace');
       
+      // Check for Windows Defender / antivirus quarantine errors
+      String errorMessage = e.toString();
+      if (errorMessage.contains('ProcessException') || 
+          errorMessage.contains('virus') || 
+          errorMessage.contains('quarantine') ||
+          errorMessage.contains('Windows Defender')) {
+        errorMessage = 'Windows Defender blocked Chisel. Add exclusion for Documents\\CloudToLocalLLM\\chisel';
+      }
+      
       _updateState(_state.copyWith(
         isConnecting: false,
-        error: e.toString(),
+        error: errorMessage,
       ));
 
       _client?.dispose();
