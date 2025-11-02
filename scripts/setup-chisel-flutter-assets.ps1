@@ -6,6 +6,15 @@ param(
     [string]$AssetsDir = "assets\chisel"
 )
 
+# Check if running as admin, if not, restart with elevated privileges
+$isAdmin = ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+if (-not $isAdmin) {
+    Write-Host "Script requires administrator privileges for Windows Defender exclusion." -ForegroundColor Yellow
+    Write-Host "Restarting with elevated privileges..." -ForegroundColor Yellow
+    Start-Process powershell -ArgumentList "-ExecutionPolicy Bypass -File `"$PSCommandPath`" -ChiselVersion $ChiselVersion -AssetsDir $AssetsDir" -Verb RunAs -Wait
+    exit $LASTEXITCODE
+}
+
 $ErrorActionPreference = "Stop"
 
 Write-Host "Downloading Chisel v$ChiselVersion binaries for Flutter app..." -ForegroundColor Green
@@ -74,22 +83,13 @@ Write-Host ""
 Write-Host "Chisel binaries downloaded to $AssetsDir" -ForegroundColor Green
 Write-Host "Dont forget to run flutter pub get" -ForegroundColor Yellow
 
-# Add Windows Defender exclusion (if running as admin)
-$isAdmin = ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
-if ($isAdmin) {
-    Write-Host ""
-    Write-Host "Adding Windows Defender exclusion..." -ForegroundColor Green
-    try {
-        Add-MpPreference -ExclusionPath "$PSScriptRoot\$AssetsDir" -ErrorAction Stop
-        Write-Host "  Successfully added Windows Defender exclusion" -ForegroundColor Green
-    } catch {
-        Write-Host "  Failed to add exclusion: $_" -ForegroundColor Yellow
-    }
-} else {
-    Write-Host ""
-    Write-Host "Windows Defender Note:" -ForegroundColor Yellow
-    Write-Host "  Windows Defender may flag Chisel as potentially unwanted software." -ForegroundColor Yellow
-    Write-Host "  This is a false positive. The binary is legitimate and open-source." -ForegroundColor Yellow
-    Write-Host "  To add an exclusion, run this script as Administrator" -ForegroundColor Yellow
+# Add Windows Defender exclusion
+Write-Host ""
+Write-Host "Adding Windows Defender exclusion..." -ForegroundColor Green
+try {
+    Add-MpPreference -ExclusionPath "$PSScriptRoot\$AssetsDir" -ErrorAction Stop
+    Write-Host "  Successfully added Windows Defender exclusion" -ForegroundColor Green
+} catch {
+    Write-Host "  Failed to add exclusion: $_" -ForegroundColor Yellow
 }
 
