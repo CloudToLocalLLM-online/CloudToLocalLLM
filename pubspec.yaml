@@ -25,6 +25,9 @@ dependencies:
   # HTTP and Web
   http: ^1.2.1
   intl: ^0.20.2
+  
+  # JavaScript interop (for Auth0)
+  js: ^0.7.1
 
   # Streaming and WebSocket support
   web_socket_channel: ^3.0.3
