@@ -113,14 +113,14 @@ class Auth0WebService implements Auth0Service {
       return <String, dynamic>{};
     }
   }
-  
-  // JS interop helper for JSON.stringify
-  @JS('JSON.stringify')
-  external JSString jsStringify(JSAny? value);
 
   @override
   void dispose() {
     _authStateController.close();
   }
 }
+
+// JS interop helper for JSON.stringify
+@JS('JSON.stringify')
+external JSString jsStringify(JSAny? value);
 
