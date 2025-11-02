@@ -49,6 +49,8 @@ class TunnelService extends ChangeNotifier {
     if (_state.isConnected || _state.isConnecting) return;
     
     try {
+      // Give auth service time to populate currentUser
+      await Future.delayed(const Duration(milliseconds: 500));
       await connect();
     } catch (e) {
       // Silently fail auto-connect - user can manually connect

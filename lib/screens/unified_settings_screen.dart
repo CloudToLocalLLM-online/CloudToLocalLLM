@@ -329,14 +329,10 @@ class _UnifiedSettingsScreenState extends State<UnifiedSettingsScreen> {
     switch (_selectedSectionId) {
       case 'general':
         return _buildGeneralSettings();
-      case 'appearance':
-        return _buildAppearanceSettings();
       // Ensure 'tunnel-connection' maps to the LLM provider settings
       case 'tunnel-connection':
       case 'llm-provider':
         return _buildLLMProviderSettings();
-      case 'system-tray':
-        return _buildSystemTraySettings();
       // Add a case for 'model-download-manager'
       case 'model-download-manager':
         return _buildModelDownloadManagerSettings();
@@ -429,43 +425,6 @@ class _UnifiedSettingsScreenState extends State<UnifiedSettingsScreen> {
                 ),
               ],
             ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildAppearanceSettings() {
-    return Column(
-      children: [
-        ModernCard(
-          child: Padding(
-            padding: EdgeInsets.all(AppTheme.spacingM),
-            child: Column(
-              children: [
-                Icon(Icons.palette, size: 64, color: AppTheme.textColorLight),
-                SizedBox(height: AppTheme.spacingM),
-                Text(
-                  'Theme settings have been moved to the General section for easier access.',
-                  style: TextStyle(color: AppTheme.textColorLight),
-                  textAlign: TextAlign.center,
-                ),
-                SizedBox(height: AppTheme.spacingM),
-                ElevatedButton.icon(
-                  onPressed: () {
-                    debugPrint('[Settings] Go to General button pressed');
-                    setState(() {
-                      _selectedSectionId = 'general';
-                    });
-                  },
-                  icon: const Icon(Icons.settings),
-                  label: const Text('Go to General Settings'),
-                  style: ElevatedButton.styleFrom(
-                    padding: EdgeInsets.all(AppTheme.spacingM),
-                  ),
-                ),
-              ],
-            ),
           ),
         ),
       ],
@@ -910,46 +869,6 @@ class _UnifiedSettingsScreenState extends State<UnifiedSettingsScreen> {
           ),
         ],
       ),
-    );
-  }
-
-  Widget _buildSystemTraySettings() {
-    return Column(
-      children: [
-        ModernCard(
-          child: Padding(
-            padding: EdgeInsets.all(AppTheme.spacingM),
-            child: Column(
-              children: [
-                Icon(
-                  Icons.desktop_windows,
-                  size: 64,
-                  color: AppTheme.textColorLight,
-                ),
-                SizedBox(height: AppTheme.spacingM),
-                Text(
-                  'Basic system tray settings have been moved to the General section. Advanced tray configuration options will be available here in future updates.',
-                  style: TextStyle(color: AppTheme.textColorLight),
-                  textAlign: TextAlign.center,
-                ),
-                SizedBox(height: AppTheme.spacingM),
-                ElevatedButton.icon(
-                  onPressed: () {
-                    setState(() {
-                      _selectedSectionId = 'general';
-                    });
-                  },
-                  icon: const Icon(Icons.settings),
-                  label: const Text('Go to General Settings'),
-                  style: ElevatedButton.styleFrom(
-                    padding: EdgeInsets.all(AppTheme.spacingM),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ],
     );
   }
 

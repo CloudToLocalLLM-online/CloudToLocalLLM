@@ -44,12 +44,6 @@ class SettingsSidebar extends StatelessWidget {
           icon: Icons.settings,
           subtitle: 'Basic app settings',
         ),
-        const SettingsSection(
-          id: 'appearance',
-          title: 'Appearance',
-          icon: Icons.palette,
-          subtitle: 'Display settings',
-        ),
         // Tunnel Connection - cloud proxy only
         const SettingsSection(
           id: 'tunnel-connection',
@@ -93,12 +87,6 @@ class SettingsSidebar extends StatelessWidget {
           icon: Icons.settings,
           subtitle: 'Core app settings',
         ),
-        const SettingsSection(
-          id: 'appearance',
-          title: 'Appearance',
-          icon: Icons.palette,
-          subtitle: 'Display settings',
-        ),
         // Tunnel Connection - cloud proxy only
         const SettingsSection(
           id: 'tunnel-connection',
@@ -112,12 +100,6 @@ class SettingsSidebar extends StatelessWidget {
           title: 'Model Manager',
           icon: Icons.download_for_offline,
           subtitle: 'Ollama connection & models',
-        ),
-        const SettingsSection(
-          id: 'system-tray',
-          title: 'System Tray',
-          icon: Icons.desktop_windows,
-          subtitle: 'Advanced tray settings',
         ),
         const SettingsSection(
           id: 'data-management',
