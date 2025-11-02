@@ -84,8 +84,10 @@ class Auth0WebService implements Auth0Service {
         final user = await userPromise.toDart;
         final token = await tokenPromise.toDart;
 
-        if (user != null && user.isA<JSObject>()) {
-          _currentUser = _jsObjectToMap(user as JSObject);
+        if (user != null && user.isA<JSString>()) {
+          // getUser now returns a JSON string
+          final userJson = (user as JSString).toDart;
+          _currentUser = jsonDecode(userJson) as Map<String, dynamic>;
         }
         if (token != null && token.isA<JSString>()) {
           _accessToken = (token as JSString).toDart;
@@ -103,24 +105,9 @@ class Auth0WebService implements Auth0Service {
     }
   }
 
-  Map<String, dynamic> _jsObjectToMap(JSObject jsObject) {
-    try {
-      // Use JSON.stringify/parse to safely convert JS objects
-      final jsonString = jsStringify(jsObject);
-      return jsonDecode(jsonString.toDart) as Map<String, dynamic>;
-    } catch (e) {
-      debugPrint('Error converting JS object to map: $e');
-      return <String, dynamic>{};
-    }
-  }
-
   @override
   void dispose() {
     _authStateController.close();
   }
 }
-
-// JS interop helper for JSON.stringify
-@JS('JSON.stringify')
-external JSString jsStringify(JSAny? value);
 

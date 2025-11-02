@@ -127,7 +127,8 @@ window.auth0Bridge = {
         return null;
       }
       
-      return await window.auth0Client.getUser();
+      const user = await window.auth0Client.getUser();
+      return user ? JSON.stringify(user) : null;
     } catch (error) {
       console.error('Auth0 getUser error:', error);
       return null;
