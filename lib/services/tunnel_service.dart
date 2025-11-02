@@ -62,11 +62,7 @@ class TunnelService extends ChangeNotifier {
 
     // Chisel tunnel client only works on desktop, not web
     if (kIsWeb) {
-      debugPrint('[TunnelService] Skipping Chisel connection on web platform - tunnel runs on desktop only');
-      _updateState(_state.copyWith(
-        isConnecting: false,
-        error: 'Tunnel connection requires desktop client. Web platform uses cloud proxy directly.',
-      ));
+      // Silently skip on web - tunnel runs on desktop only, web uses cloud proxy
       return;
     }
 
