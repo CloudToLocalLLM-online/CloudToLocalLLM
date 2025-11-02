@@ -91,7 +91,7 @@ class Auth0WebService implements Auth0Service {
       final isAuth = await auth0Bridge!.isAuthenticated().toDart;
       final wasAuthenticated = _isAuthenticated;
 
-      _isAuthenticated = (isAuth == true);
+      _isAuthenticated = isAuth == true || isAuth == 'true';
 
       if (_isAuthenticated) {
         // getUser returns a JSON string from our modified bridge
