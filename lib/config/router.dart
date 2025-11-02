@@ -243,7 +243,7 @@ class AppRouter {
         GoRoute(
           path: '/settings/tunnel',
           name: 'tunnel-settings',
-          builder: (context, state) => const UnifiedSettingsScreen(initialSection: 'tunnel'),
+          builder: (context, state) => const UnifiedSettingsScreen(initialSection: 'tunnel-connection'),
         ),
 
         // LLM Provider Settings route

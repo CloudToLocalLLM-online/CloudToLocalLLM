@@ -57,12 +57,11 @@ class ChiselTunnelClient with ChangeNotifier {
       // Chisel reverse tunnel: R:serverPort:localhost:localPort
       // This creates a reverse tunnel where the server listens on serverPort
       // and forwards to localhost:11434 on the client
+      // Note: Auth is handled via JWT in the /register endpoint, not via --auth flag
       final args = [
         'client',
         '$serverHost:$serverPort',
         'R:0:localhost:${_extractLocalPort(_config.localBackendUrl)}',
-        '--auth', _config.authToken,
-        '--keepalive', '30s',
       ];
 
       debugPrint('[Chisel] Starting process: $chiselPath');

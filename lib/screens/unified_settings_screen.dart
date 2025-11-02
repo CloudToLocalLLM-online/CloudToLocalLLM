@@ -1858,33 +1858,23 @@ class _UnifiedSettingsScreenState extends State<UnifiedSettingsScreen> {
             children: [
               Expanded(
                 child: ElevatedButton.icon(
-                  onPressed: () => context.go('/settings/tunnel'),
-                  icon: const Icon(Icons.settings),
-                  label: const Text('Configure'),
+                  onPressed: isConnected
+                      ? () {
+                          tunnelService.disconnect();
+                        }
+                      : () {
+                          tunnelService.connect();
+                        },
+                  icon: Icon(isConnected ? Icons.link_off : Icons.link),
+                  label: Text(isConnected ? 'Disconnect' : 'Connect'),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppTheme.primaryColor,
-                    foregroundColor: Colors.white,
-                  ),
-                ),
-              ),
-              SizedBox(width: AppTheme.spacingS),
-              Expanded(
-                child: ElevatedButton.icon(
-                  onPressed: () {
-                    tunnelService.testConnection();
-                  },
-                  icon: const Icon(Icons.link),
-                  label: const Text('Test'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppTheme.secondaryColor,
+                    backgroundColor: isConnected ? Colors.red : AppTheme.primaryColor,
                     foregroundColor: Colors.white,
                   ),
                 ),
               ),
             ],
           ),
-
-          // HTTP polling doesn't need reconnection management
         ],
       ],
     );
@@ -1930,19 +1920,6 @@ class _UnifiedSettingsScreenState extends State<UnifiedSettingsScreen> {
                     fontSize: 12,
                     color: AppTheme.textColorLight,
                     fontFamily: 'monospace',
-                  ),
-                ),
-              ),
-              SizedBox(height: AppTheme.spacingL),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  onPressed: () => context.go('/settings/tunnel'),
-                  icon: const Icon(Icons.tune),
-                  label: const Text('Advanced Configuration'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppTheme.secondaryColor,
-                    foregroundColor: Colors.white,
                   ),
                 ),
               ),
