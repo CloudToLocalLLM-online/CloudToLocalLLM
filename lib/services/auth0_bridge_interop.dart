@@ -1,13 +1,10 @@
 // ignore_for_file: non_constant_identifier_names
 
-@JS()
 import 'dart:js_interop';
 
 @JS('auth0Bridge')
-external Auth0Bridge? get auth0Bridge;
+external JSObject? get auth0BridgeJS;
 
-@JS()
-@anonymous
 extension type Auth0Bridge(JSObject obj) {
   external JSPromise initialize();
   external JSPromise loginWithRedirect();
@@ -17,5 +14,10 @@ extension type Auth0Bridge(JSObject obj) {
   external JSPromise getAccessToken();
   external JSPromise handleRedirectCallback();
   external JSPromise logout();
-  external bool isInitialized();
+  external JSBoolean isInitialized();
+}
+
+Auth0Bridge? get auth0Bridge {
+  final obj = auth0BridgeJS;
+  return obj != null ? Auth0Bridge(obj) : null;
 }
