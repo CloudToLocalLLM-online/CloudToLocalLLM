@@ -7,7 +7,9 @@ import 'config/theme.dart';
 import 'config/router.dart';
 import 'config/app_config.dart';
 import 'services/auth_service.dart';
-import 'services/auth_service_factory.dart';
+import 'services/auth0_service.dart';
+import 'services/auth0_web_service.dart';
+import 'services/auth0_desktop_service.dart';
 import 'services/enhanced_user_tier_service.dart';
 import 'services/ollama_service.dart';
 import 'services/streaming_proxy_service.dart';
@@ -187,7 +189,7 @@ class _CloudToLocalLLMPrivacyAppState extends State<CloudToLocalLLMPrivacyApp> {
 
         // Authentication service
         ChangeNotifierProvider(create: (_) {
-          final auth0Service = createAuth0Service();
+          final Auth0Service auth0Service = kIsWeb ? Auth0WebService() : Auth0DesktopService();
           return AuthService(auth0Service);
         }),
 
