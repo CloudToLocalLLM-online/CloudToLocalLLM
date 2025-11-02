@@ -3,6 +3,7 @@
 import 'dart:js_interop';
 
 @JS('window.auth0Bridge')
+// ignore: undefined_class
 external JSObject? get auth0BridgeJS;
 
 extension type Auth0Bridge(JSObject _) implements JSObject {

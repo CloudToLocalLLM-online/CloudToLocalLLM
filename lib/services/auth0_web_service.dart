@@ -1,9 +1,9 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:js_interop';
 import 'package:flutter/foundation.dart';
-import 'auth0_bridge_interop.dart';
 import 'auth0_service.dart';
+
+import 'auth0_bridge_interop.dart' if (dart.library.io) 'auth0_bridge_interop_stub.dart';
 
 // ignore: invalid_runtime_check_with_js_interop_types
 // JSAny? results from .toDart are dynamic but need explicit type handling

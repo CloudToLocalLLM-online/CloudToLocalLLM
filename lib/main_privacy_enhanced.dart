@@ -8,7 +8,7 @@ import 'config/router.dart';
 import 'config/app_config.dart';
 import 'services/auth_service.dart';
 import 'services/auth0_service.dart';
-import 'services/auth0_web_service.dart';
+import 'services/auth0_web_service.dart' if (dart.library.io) 'services/auth0_web_service_stub.dart';
 import 'services/auth0_desktop_service.dart';
 import 'services/enhanced_user_tier_service.dart';
 import 'services/ollama_service.dart';

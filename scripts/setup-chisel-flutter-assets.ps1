@@ -31,7 +31,7 @@ foreach ($platform in $platforms) {
     $ext = $platform.Ext
     
     if ($os -eq "windows") {
-        $file = "chisel_${ChiselVersion}_${os}_${arch}.zip"
+        $file = "chisel_${ChiselVersion}_${os}_${arch}.gz"
         $binary = "chisel.exe"
     } else {
         $file = "chisel_${ChiselVersion}_${os}_${arch}.gz"
@@ -48,39 +48,29 @@ foreach ($platform in $platforms) {
         $downloadPath = Join-Path $AssetsDir $file
         Invoke-WebRequest -Uri $url -OutFile $downloadPath -UseBasicParsing
         
-        # Extract
-        if ($os -eq "windows") {
-            Expand-Archive -Path $downloadPath -DestinationPath $AssetsDir -Force
-            $extractedBinary = Join-Path $AssetsDir $binary
-            if (Test-Path $extractedBinary) {
-                Move-Item -Path $extractedBinary -Destination $target -Force
-            }
-            Remove-Item $downloadPath -Force
+        # Extract - all platforms use .gz format
+        if (Get-Command 7z -ErrorAction SilentlyContinue) {
+            7z e $downloadPath -o"$AssetsDir" -y | Out-Null
         } else {
-            # Use 7zip or gunzip if available, otherwise PowerShell decompression
-            if (Get-Command 7z -ErrorAction SilentlyContinue) {
-                7z e $downloadPath -o"$AssetsDir" -y | Out-Null
-            } else {
-                # PowerShell can't natively handle .gz, need external tool
-                Write-Warning "Cannot extract .gz files on Windows without 7zip. Please extract manually or use WSL."
-                Write-Host "  File downloaded to: $downloadPath" -ForegroundColor Yellow
-                continue
-            }
-            
-            $extractedBinary = Join-Path $AssetsDir $binary
-            if (Test-Path $extractedBinary) {
-                Move-Item -Path $extractedBinary -Destination $target -Force
-            }
-            Remove-Item $downloadPath -Force
+            # PowerShell can't natively handle .gz, need external tool
+            Write-Warning "Cannot extract .gz files without 7zip. Please install 7-zip or extract manually."
+            Write-Host "  File downloaded to: $downloadPath" -ForegroundColor Yellow
+            continue
         }
         
-        Write-Host "  ✓ $os/$arch -> $target" -ForegroundColor Green
+        $extractedBinary = Join-Path $AssetsDir $binary
+        if (Test-Path $extractedBinary) {
+            Move-Item -Path $extractedBinary -Destination $target -Force
+        }
+        Remove-Item $downloadPath -Force
+        
+        Write-Host "  [OK] $os/$arch -> $target" -ForegroundColor Green
     } catch {
-        Write-Host "  ✗ Failed to download $os/$arch : $_" -ForegroundColor Red
+        Write-Host "  [FAIL] Failed to download $os/$arch : $_" -ForegroundColor Red
     }
 }
 
 Write-Host ""
-Write-Host "Chisel binaries downloaded to $AssetsDir/" -ForegroundColor Green
-Write-Host "Don't forget to run 'flutter pub get' to update asset references!" -ForegroundColor Yellow
+Write-Host "Chisel binaries downloaded to $AssetsDir" -ForegroundColor Green
+Write-Host "Dont forget to run flutter pub get" -ForegroundColor Yellow
 
