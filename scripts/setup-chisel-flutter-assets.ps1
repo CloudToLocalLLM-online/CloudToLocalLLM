@@ -26,10 +26,16 @@ if (!(Test-Path $AssetsDir)) {
 
 # Add Windows Defender exclusion BEFORE downloading to prevent quarantine
 Write-Host ""
-Write-Host "Adding Windows Defender exclusion for $AssetsDir..." -ForegroundColor Green
+Write-Host "Adding Windows Defender exclusions..." -ForegroundColor Green
 try {
+    # Exclude the assets directory where binaries are stored
     Add-MpPreference -ExclusionPath "$PSScriptRoot\$AssetsDir" -ErrorAction Stop
-    Write-Host "  Successfully added Windows Defender exclusion" -ForegroundColor Green
+    Write-Host "  Added exclusion for: $PSScriptRoot\$AssetsDir" -ForegroundColor Green
+    
+    # Also exclude the app directory where binaries are extracted at runtime
+    $appChiselDir = "$env:USERPROFILE\Documents\CloudToLocalLLM\chisel"
+    Add-MpPreference -ExclusionPath $appChiselDir -ErrorAction Stop
+    Write-Host "  Added exclusion for: $appChiselDir" -ForegroundColor Green
 } catch {
     Write-Host "  Failed to add exclusion: $_" -ForegroundColor Yellow
 }
