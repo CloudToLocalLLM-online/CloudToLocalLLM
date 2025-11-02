@@ -51,8 +51,9 @@ ehthumbs.db
 build/
 dist/
 
-# Executables
+# Executables (but allow Chisel binaries)
 *.exe
+!assets/chisel/*.exe
 *.dll
 *.so
 *.dylib

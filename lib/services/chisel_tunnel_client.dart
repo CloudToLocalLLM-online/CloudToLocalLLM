@@ -4,6 +4,8 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
+import 'package:path_provider/path_provider.dart';
+import 'package:path/path.dart' as path;
 import '../models/tunnel_config.dart';
 
 /// Chisel tunnel client for establishing reverse proxy connections
@@ -217,7 +219,7 @@ class ChiselTunnelClient with ChangeNotifier {
   }
 
   /// Get Chisel binary path
-  /// Checks bundled assets first, then system PATH
+  /// Checks bundled assets first, extracts to app directory, then system PATH
   Future<String> _getChiselPath() async {
     // Determine architecture
     final arch = _getArchitecture();
@@ -235,12 +237,18 @@ class ChiselTunnelClient with ChangeNotifier {
           final ByteData data = await rootBundle.load(assetPath);
           final bytes = data.buffer.asUint8List();
           
-          // Copy to temp directory for execution
-          final tempDir = await Directory.systemTemp.createTemp('chisel');
-          final tempPath = '${tempDir.path}/chisel.exe';
-          await File(tempPath).writeAsBytes(bytes);
-          debugPrint('[Chisel] Extracted bundled binary to: $tempPath (from $assetPath)');
-          return tempPath;
+          // Copy to app directory for persistent storage
+          final appDir = await _getChiselDirectory();
+          final chiselPath = path.join(appDir.path, 'chisel.exe');
+          
+          // Only extract if file doesn't exist or is different
+          final existingFile = File(chiselPath);
+          if (!await existingFile.exists()) {
+            await existingFile.writeAsBytes(bytes);
+            debugPrint('[Chisel] Extracted bundled binary to: $chiselPath (from $assetPath)');
+          }
+          
+          return chiselPath;
         } catch (e) {
           debugPrint('[Chisel] Asset not found: $assetPath - $e');
           // Continue to next path
@@ -262,14 +270,19 @@ class ChiselTunnelClient with ChangeNotifier {
           final ByteData data = await rootBundle.load(assetPath);
           final bytes = data.buffer.asUint8List();
           
-          // Copy to temp directory for execution
-          final tempDir = await Directory.systemTemp.createTemp('chisel');
-          final tempPath = '${tempDir.path}/chisel';
-          await File(tempPath).writeAsBytes(bytes);
-          // Make executable
-          await Process.run('chmod', ['+x', tempPath]);
-          debugPrint('[Chisel] Extracted bundled binary to: $tempPath (from $assetPath)');
-          return tempPath;
+          // Copy to app directory for persistent storage
+          final appDir = await _getChiselDirectory();
+          final chiselPath = path.join(appDir.path, 'chisel');
+          final existingFile = File(chiselPath);
+          
+          if (!await existingFile.exists()) {
+            await existingFile.writeAsBytes(bytes);
+            // Make executable
+            await Process.run('chmod', ['+x', chiselPath]);
+            debugPrint('[Chisel] Extracted bundled binary to: $chiselPath (from $assetPath)');
+          }
+          
+          return chiselPath;
         } catch (e) {
           debugPrint('[Chisel] Asset not found: $assetPath - $e');
           // Continue to next path
@@ -292,14 +305,19 @@ class ChiselTunnelClient with ChangeNotifier {
           final ByteData data = await rootBundle.load(assetPath);
           final bytes = data.buffer.asUint8List();
           
-          // Copy to temp directory for execution
-          final tempDir = await Directory.systemTemp.createTemp('chisel');
-          final tempPath = '${tempDir.path}/chisel';
-          await File(tempPath).writeAsBytes(bytes);
-          // Make executable
-          await Process.run('chmod', ['+x', tempPath]);
-          debugPrint('[Chisel] Extracted bundled binary to: $tempPath (from $assetPath)');
-          return tempPath;
+          // Copy to app directory for persistent storage
+          final appDir = await _getChiselDirectory();
+          final chiselPath = path.join(appDir.path, 'chisel');
+          final existingFile = File(chiselPath);
+          
+          if (!await existingFile.exists()) {
+            await existingFile.writeAsBytes(bytes);
+            // Make executable
+            await Process.run('chmod', ['+x', chiselPath]);
+            debugPrint('[Chisel] Extracted bundled binary to: $chiselPath (from $assetPath)');
+          }
+          
+          return chiselPath;
         } catch (e) {
           debugPrint('[Chisel] Asset not found: $assetPath - $e');
           // Continue to next path
@@ -309,6 +327,25 @@ class ChiselTunnelClient with ChangeNotifier {
       // Fallback to PATH
       debugPrint('[Chisel] Bundled binary not found, falling back to PATH');
       return 'chisel';
+    }
+  }
+  
+  /// Get or create the Chisel directory in app data
+  Future<Directory> _getChiselDirectory() async {
+    try {
+      final documentsDir = await getApplicationDocumentsDirectory();
+      final chiselDir = Directory(path.join(documentsDir.path, 'CloudToLocalLLM', 'chisel'));
+      
+      if (!await chiselDir.exists()) {
+        await chiselDir.create(recursive: true);
+        debugPrint('[Chisel] Created directory: ${chiselDir.path}');
+      }
+      
+      return chiselDir;
+    } catch (e) {
+      debugPrint('[Chisel] Failed to get chisel directory: $e');
+      // Fallback to temp directory
+      return await Directory.systemTemp.createTemp('chisel');
     }
   }
 
