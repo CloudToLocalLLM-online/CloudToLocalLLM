@@ -26,7 +26,24 @@ class Auth0WebService implements Auth0Service {
 
   @override
   Future<void> initialize() async {
+    // Wait for Auth0 bridge to be available
+    await _waitForAuth0Bridge();
     await checkAuthStatus();
+  }
+
+  Future<void> _waitForAuth0Bridge() async {
+    const maxAttempts = 50; // 5 seconds
+    var attempts = 0;
+
+    while (attempts < maxAttempts) {
+      if (auth0Bridge != null) {
+        return;
+      }
+      await Future.delayed(const Duration(milliseconds: 100));
+      attempts++;
+    }
+
+    throw Exception('Auth0 bridge not available after 5 seconds');
   }
 
   @override
