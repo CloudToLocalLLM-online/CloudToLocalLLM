@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:js_interop';
 import 'package:flutter/foundation.dart';
 import 'auth0_bridge_interop.dart';
@@ -103,35 +104,23 @@ class Auth0WebService implements Auth0Service {
   }
 
   Map<String, dynamic> _jsObjectToMap(JSObject jsObject) {
-    final map = <String, dynamic>{};
-    final keys = jsObject.keys.toDart;
-    for (final key in keys) {
-      final keyString = (key as JSString).toDart;
-      final value = jsObject[keyString];
-      if (value != null) {
-        map[keyString] = _convertToDart(value);
-      }
+    try {
+      // Use JSON.stringify/parse to safely convert JS objects
+      final jsonString = jsStringify(jsObject);
+      return jsonDecode(jsonString.toDart) as Map<String, dynamic>;
+    } catch (e) {
+      debugPrint('Error converting JS object to map: $e');
+      return <String, dynamic>{};
     }
-    return map;
   }
-
-  dynamic _convertToDart(JSAny? value) {
-    if (value == null) return null;
-    if (value.isA<JSBoolean>()) return (value as JSBoolean).toDart;
-    if (value.isA<JSString>()) return (value as JSString).toDart;
-    if (value.isA<JSNumber>()) return (value as JSNumber).toDartDouble;
-    if (value.isA<JSObject>()) return _jsObjectToMap(value as JSObject);
-    return value.toString();
-  }
+  
+  // JS interop helper for JSON.stringify
+  @JS('JSON.stringify')
+  external JSString jsStringify(JSAny? value);
 
   @override
   void dispose() {
     _authStateController.close();
   }
-}
-
-extension on JSObject {
-  external JSArray get keys;
-  external JSAny? operator [](String key);
 }
 
