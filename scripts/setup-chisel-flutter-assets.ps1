@@ -73,10 +73,23 @@ foreach ($platform in $platforms) {
 Write-Host ""
 Write-Host "Chisel binaries downloaded to $AssetsDir" -ForegroundColor Green
 Write-Host "Dont forget to run flutter pub get" -ForegroundColor Yellow
-Write-Host ""
-Write-Host "Windows Defender Note:" -ForegroundColor Yellow
-Write-Host "  Windows Defender may flag Chisel as potentially unwanted software." -ForegroundColor Yellow
-Write-Host "  This is a false positive. The binary is legitimate and open-source." -ForegroundColor Yellow
-Write-Host "  To add an exclusion, run as Administrator:" -ForegroundColor Yellow
-Write-Host "    Add-MpPreference -ExclusionPath '$PSScriptRoot\$AssetsDir'" -ForegroundColor Cyan
+
+# Add Windows Defender exclusion (if running as admin)
+$isAdmin = ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+if ($isAdmin) {
+    Write-Host ""
+    Write-Host "Adding Windows Defender exclusion..." -ForegroundColor Green
+    try {
+        Add-MpPreference -ExclusionPath "$PSScriptRoot\$AssetsDir" -ErrorAction Stop
+        Write-Host "  Successfully added Windows Defender exclusion" -ForegroundColor Green
+    } catch {
+        Write-Host "  Failed to add exclusion: $_" -ForegroundColor Yellow
+    }
+} else {
+    Write-Host ""
+    Write-Host "Windows Defender Note:" -ForegroundColor Yellow
+    Write-Host "  Windows Defender may flag Chisel as potentially unwanted software." -ForegroundColor Yellow
+    Write-Host "  This is a false positive. The binary is legitimate and open-source." -ForegroundColor Yellow
+    Write-Host "  To add an exclusion, run this script as Administrator" -ForegroundColor Yellow
+}
 

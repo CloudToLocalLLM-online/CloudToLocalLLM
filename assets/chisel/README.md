@@ -24,10 +24,25 @@ These scripts download the binaries from the official Chisel releases.
 
 ## Windows Defender Warning
 
-Windows Defender may flag the Chisel binary as potentially unwanted software. This is a false positive because Chisel is a legitimate network tunneling tool. To resolve this:
+Windows Defender may flag the Chisel binary as potentially unwanted software. This is a false positive because Chisel is a legitimate network tunneling tool. 
 
-1. Add an exception for `assets/chisel/` directory in Windows Defender
-2. Or allow the binary when prompted by Windows Defender
+**Note:** The Chisel binary is now extracted to a persistent location at `Documents\CloudToLocalLLM\chisel\` instead of a temp folder, so you only need to allow it once when first extracted.
+
+### Automatic Exclusion (Development)
+
+If running the download script as Administrator, it will automatically add a Windows Defender exclusion for the `assets/chisel/` directory:
+
+```powershell
+# Run with admin privileges
+powershell -ExecutionPolicy Bypass -File scripts/setup-chisel-flutter-assets.ps1
+```
+
+### Manual Exclusion (Users)
+
+For end users who download the binaries, they can add an exclusion for the app directory:
+```powershell
+Add-MpPreference -ExclusionPath "$env:USERPROFILE\Documents\CloudToLocalLLM\chisel"
+```
 
 ## Building from Source (Alternative)
 
