@@ -191,6 +191,9 @@ class ChiselTunnelClient with ChangeNotifier {
       // Generate tunnel ID if not set
       _tunnelId ??= 'tunnel_${DateTime.now().millisecondsSinceEpoch}';
 
+      debugPrint('[Chisel] Registering with URL: $registerUrl');
+      debugPrint('[Chisel] Auth token preview: ${_config.authToken.substring(0, 20)}...');
+
       final response = await http.post(
         registerUrl,
         headers: {
