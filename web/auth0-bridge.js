@@ -16,7 +16,7 @@ window.auth0Bridge = {
     try {
       await window.auth0Client.loginWithRedirect({
         authorizationParams: {
-          redirect_uri: window.location.origin,
+          redirect_uri: window.location.origin + '/callback',
           audience: 'https://app.cloudtolocalllm.online'
         }
       });
@@ -40,7 +40,7 @@ window.auth0Bridge = {
       await window.auth0Client.loginWithRedirect({
         authorizationParams: {
           connection: 'google-oauth2',
-          redirect_uri: window.location.origin,
+          redirect_uri: window.location.origin + '/callback',
           audience: audience
         }
       });

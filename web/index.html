@@ -97,7 +97,7 @@
           domain: 'dev-v2f2p008x3dr74ww.us.auth0.com',
           clientId: 'FuXPnevXpp311CdYHGsbNZe9t3D8Ts7A',
           authorizationParams: {
-            redirect_uri: window.location.origin,
+            redirect_uri: window.location.origin + '/callback',
             // API identifier matches Auth0 API (Resource Server) identifier
             audience: audience
           },
@@ -108,46 +108,8 @@
         });
         console.log(' Auth0 initialized with audience:', audience);
         
-        // Check if redirected back from Auth0 (success or error)
-        const urlParams = new URLSearchParams(window.location.search);
-        
-        // CRITICAL: Check for errors FIRST before trying to handle callback
-        if (urlParams.has('error')) {
-          // Handle Auth0 error callback - don't call handleRedirectCallback on errors
-          const error = urlParams.get('error');
-          const errorDescription = urlParams.get('error_description') || 'Authentication failed';
-          console.error(' Auth0 authentication error:', error, errorDescription);
-          
-          // Clean up URL immediately
-          window.history.replaceState({}, document.title, window.location.pathname);
-          
-          // Notify Flutter app of error
-          if (window.flutterAuthCallback) {
-            window.flutterAuthCallback({ 
-              success: false, 
-              error: errorDescription,
-              errorCode: error
-            });
-          }
-        } else if (urlParams.has('code') || urlParams.has('state')) {
-          // Only handle callback if there's no error
-          console.log(' Handling Auth0 redirect callback...');
-          try {
-            await window.auth0Client.handleRedirectCallback();
-            window.history.replaceState({}, document.title, window.location.pathname);
-            console.log(' Auth0 callback handled successfully');
-            
-            // Notify Flutter app that auth completed
-            if (window.flutterAuthCallback) {
-              window.flutterAuthCallback({ success: true });
-            }
-          } catch (error) {
-            console.error(' Auth0 callback error:', error);
-            if (window.flutterAuthCallback) {
-              window.flutterAuthCallback({ success: false, error: error.message });
-            }
-          }
-        }
+        // NOTE: Callback handling is now done in Flutter's CallbackScreen to ensure proper routing
+        // The auth0-bridge.js provides the handleRedirectCallback method for Flutter to use
       }
     });
   </script>
