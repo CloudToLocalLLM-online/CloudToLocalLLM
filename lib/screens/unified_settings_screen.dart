@@ -1006,14 +1006,15 @@ class _UnifiedSettingsScreenState extends State<UnifiedSettingsScreen> {
                   if (kIsWeb)
                     OutlinedButton.icon(
                       onPressed: () {
-                        html.window.open('about:blank', 'logs');
+                        // Open console in a new window
+                        html.window.open('javascript:console.clear();', 'logs');
                         // Show instructions in a dialog
                         showDialog(
                           context: context,
                           builder: (context) => AlertDialog(
                             title: const Text('View Console Logs'),
                             content: const Text(
-                              'A new window was opened. Open Developer Tools in that window (F12) to see the console logs.',
+                              'To view application logs, open Developer Tools (F12) in your main browser window and check the Console tab.',
                             ),
                             actions: [
                               TextButton(
