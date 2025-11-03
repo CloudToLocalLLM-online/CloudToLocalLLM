@@ -8,5 +8,5 @@ class WebWindow {
   }
 }
 
-const web = WebWindow();
+final web = const WebWindow();
 
