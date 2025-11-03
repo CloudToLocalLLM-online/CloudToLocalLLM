@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:web/web.dart' as web;
+import 'web_window_stub.dart' if (dart.library.html) 'web_window_web.dart';
 
 import '../components/modern_card.dart';
 import '../components/model_download_manager.dart';
@@ -1006,7 +1006,7 @@ class _UnifiedSettingsScreenState extends State<UnifiedSettingsScreen> {
                     OutlinedButton.icon(
                       onPressed: () {
                         // Open console in a new window
-                        web.window.open('javascript:console.clear();', 'logs');
+                        web.open('javascript:console.clear();', 'logs');
                         // Show instructions in a dialog
                         showDialog(
                           context: context,
