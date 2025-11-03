@@ -15,18 +15,22 @@ import { addTierInfo, requireFeature } from '../middleware/tier-check.js';
  * @param {string} config.AUTH0_AUDIENCE - Auth0 audience.
  * @param {Object} tunnelProxy - The tunnel proxy instance (ChiselProxy when implemented).
  * @param {winston.Logger} [logger] - Logger instance.
+ * @param {AuthService} [authService] - Pre-initialized authentication service.
  * @returns {express.Router} The configured Express router.
  */
-export function createTunnelRoutes(config, tunnelProxy, logger = winston.createLogger()) {
+export function createTunnelRoutes(config, tunnelProxy, logger = winston.createLogger(), authService = null) {
   const { AUTH0_DOMAIN, AUTH0_AUDIENCE } = config;
   const router = express.Router();
 
   const tunnelLogger = logger instanceof TunnelLogger ? logger : new TunnelLogger('tunnel-routes');
 
-  const authService = new AuthService({
-    AUTH0_DOMAIN,
-    AUTH0_AUDIENCE,
-  });
+  // Use provided auth service or create a new one (fallback)
+  if (!authService) {
+    authService = new AuthService({
+      AUTH0_DOMAIN,
+      AUTH0_AUDIENCE,
+    });
+  }
 
   async function authenticateToken(req, res, next) {
     const authHeader = req.headers['authorization'];

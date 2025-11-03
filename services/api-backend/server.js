@@ -64,17 +64,18 @@ const server = http.createServer(app);
 
 // Initialize Chisel tunnel server
 let chiselProxy = null;
+let chiselAuthService = null;
 try {
-  const authService = new AuthService({
+  chiselAuthService = new AuthService({
     AUTH0_DOMAIN,
     AUTH0_AUDIENCE,
   });
-  await authService.initialize();
+  await chiselAuthService.initialize();
 
   chiselProxy = new ChiselProxy(logger, {
     chiselPort: parseInt(process.env.CHISEL_PORT) || 8080,
     chiselBinary: process.env.CHISEL_BINARY,
-  }, authService);
+  }, chiselAuthService);
 
   await chiselProxy.start();
   logger.info('Chisel tunnel server initialized successfully');
@@ -191,7 +192,7 @@ const proxyManager = new StreamingProxyManager();
 const tunnelRouter = createTunnelRoutes({
   AUTH0_DOMAIN,
   AUTH0_AUDIENCE,
-}, chiselProxy, logger);
+}, chiselProxy, logger, chiselAuthService);
 
 // Create monitoring routes
 const monitoringRouter = createMonitoringRoutes(chiselProxy, logger);
