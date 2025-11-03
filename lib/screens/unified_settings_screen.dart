@@ -163,6 +163,10 @@ class _UnifiedSettingsScreenState extends State<UnifiedSettingsScreen> {
                 elevation: 0,
                 backgroundColor: AppTheme.backgroundMain,
                 foregroundColor: AppTheme.textColor,
+                leading: IconButton(
+                  icon: const Icon(Icons.arrow_back),
+                  onPressed: () => context.go('/'),
+                ),
               ),
             ),
 
