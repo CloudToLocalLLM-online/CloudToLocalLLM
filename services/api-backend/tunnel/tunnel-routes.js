@@ -43,6 +43,7 @@ export function createTunnelRoutes(config, tunnelProxy, logger = winston.createL
     try {
       const payload = await authService.validateToken(token);
       req.userId = payload.sub;
+      req.user = payload; // Also set req.user for addTierInfo middleware
       next();
     } catch (error) {
       tunnelLogger.logSecurity('auth_token_invalid', null, { error: error.message });
