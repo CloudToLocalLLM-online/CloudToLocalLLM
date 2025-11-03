@@ -1,7 +1,8 @@
+import 'dart:html' as html show window;
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -45,12 +46,6 @@ class _UnifiedSettingsScreenState extends State<UnifiedSettingsScreen> {
   bool _enableSystemTray = true;
   bool _startMinimized = false;
 
-  // Connection monitoring state (for web platform)
-  bool _isTestingConnection = false;
-  bool _showAdvancedSettings = false;
-  String? _connectionError;
-  DateTime? _lastConnectionTest;
-  double? _connectionLatency;
 
   // Error handling state
   String? _initializationError;
@@ -443,12 +438,7 @@ class _UnifiedSettingsScreenState extends State<UnifiedSettingsScreen> {
   }
 
   Widget _buildWebLLMProviderSettings() {
-    // This section now represents "Tunnel Connection" settings for the web.
-    // It should include:
-    // 1. Educational info about tunnel proxy service
-    // 2. Cloud Tunnel Status (_buildWebConnectionStatusCard)
-    // 3. Tunnel Configuration (_buildWebTunnelConfigCard)
-    // 4. Advanced Tunnel Settings (_buildWebAdvancedSettingsCard)
+    // Simplified web tunnel connection settings
     return Column(
       children: [
         // Educational info about the tunnel proxy service
@@ -457,14 +447,6 @@ class _UnifiedSettingsScreenState extends State<UnifiedSettingsScreen> {
 
         // Connection Status Card
         _buildWebConnectionStatusCard(),
-        SizedBox(height: AppTheme.spacingM),
-
-        // Tunnel Configuration Card
-        _buildWebTunnelConfigCard(),
-        SizedBox(height: AppTheme.spacingM),
-
-        // Advanced Settings Card (expandable)
-        _buildWebAdvancedSettingsCard(),
       ],
     );
   }
@@ -1002,10 +984,56 @@ class _UnifiedSettingsScreenState extends State<UnifiedSettingsScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildStatusSectionHeader(
-                'Cloud Tunnel Status',
-                Icons.cloud_sync,
-                isAuthenticated ? Colors.green : Colors.red,
+              Row(
+                children: [
+                  Icon(
+                    Icons.cloud_sync,
+                    color: isAuthenticated ? Colors.green : Colors.red,
+                    size: 24,
+                  ),
+                  SizedBox(width: AppTheme.spacingS),
+                  Expanded(
+                    child: Text(
+                      'Cloud Tunnel Status',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: AppTheme.textColor,
+                      ),
+                    ),
+                  ),
+                  // View Logs button (web only)
+                  if (kIsWeb)
+                    OutlinedButton.icon(
+                      onPressed: () {
+                        html.window.open('about:blank', 'logs');
+                        // Show instructions in a dialog
+                        showDialog(
+                          context: context,
+                          builder: (context) => AlertDialog(
+                            title: const Text('View Console Logs'),
+                            content: const Text(
+                              'A new window was opened. Open Developer Tools in that window (F12) to see the console logs.',
+                            ),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.of(context).pop(),
+                                child: const Text('OK'),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                      icon: const Icon(Icons.bug_report, size: 16),
+                      label: const Text('View Logs'),
+                      style: OutlinedButton.styleFrom(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: AppTheme.spacingM,
+                          vertical: AppTheme.spacingS,
+                        ),
+                      ),
+                    ),
+                ],
               ),
               SizedBox(height: AppTheme.spacingM),
 
@@ -1017,60 +1045,12 @@ class _UnifiedSettingsScreenState extends State<UnifiedSettingsScreen> {
               ),
 
               // Tunnel Endpoint
-              if (isAuthenticated) ...[
+              if (isAuthenticated)
                 _buildStatusRow(
                   'Tunnel Endpoint',
                   'https://app.cloudtolocalllm.online/api/tunnel/${authService.currentUser?.id ?? 'user'}',
                   AppTheme.textColorLight,
                 ),
-
-                // Last Connection Test
-                if (_lastConnectionTest != null)
-                  _buildStatusRow(
-                    'Last Test',
-                    _formatDateTime(_lastConnectionTest!),
-                    AppTheme.textColorLight,
-                  ),
-
-                // Connection Latency
-                if (_connectionLatency != null)
-                  _buildStatusRow(
-                    'Latency',
-                    '${_connectionLatency!.toStringAsFixed(0)}ms',
-                    _connectionLatency! < 100
-                        ? Colors.green
-                        : _connectionLatency! < 300
-                        ? Colors.orange
-                        : Colors.red,
-                  ),
-              ],
-
-              // Error Display
-              if (_connectionError != null) ...[
-                SizedBox(height: AppTheme.spacingS),
-                Container(
-                  padding: EdgeInsets.all(AppTheme.spacingS),
-                  decoration: BoxDecoration(
-                    color: Colors.red.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(AppTheme.borderRadiusS),
-                    border: Border.all(
-                      color: Colors.red.withValues(alpha: 0.3),
-                    ),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(Icons.error_outline, color: Colors.red, size: 16),
-                      SizedBox(width: AppTheme.spacingS),
-                      Expanded(
-                        child: Text(
-                          _connectionError!,
-                          style: TextStyle(color: Colors.red, fontSize: 12),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
             ],
           ),
         );
@@ -1078,281 +1058,6 @@ class _UnifiedSettingsScreenState extends State<UnifiedSettingsScreen> {
     );
   }
 
-  Widget _buildWebTunnelConfigCard() {
-    return Consumer<AuthService>(
-      builder: (context, authService, child) {
-        final isAuthenticated = authService.isAuthenticated.value;
-
-        return ModernCard(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildStatusSectionHeader(
-                'Tunnel Configuration',
-                Icons.settings_ethernet,
-                Colors.blue,
-              ),
-              SizedBox(height: AppTheme.spacingM),
-
-              // Test Connection Button
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  onPressed: isAuthenticated && !_isTestingConnection
-                      ? () {
-                          debugPrint('[Settings] Test Connection button clicked!');
-                          debugPrint('[Settings] isAuthenticated: $isAuthenticated');
-                          debugPrint('[Settings] _isTestingConnection: $_isTestingConnection');
-                          _testTunnelConnection();
-                        }
-                      : () {
-                          debugPrint('[Settings] Test Connection button disabled!');
-                          debugPrint('[Settings] isAuthenticated: $isAuthenticated');
-                          debugPrint('[Settings] _isTestingConnection: $_isTestingConnection');
-                        },
-                  icon: _isTestingConnection
-                      ? SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(
-                              Colors.white,
-                            ),
-                          ),
-                        )
-                      : const Icon(Icons.play_arrow),
-                  label: Text(
-                    _isTestingConnection ? 'Testing...' : 'Test Connection',
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppTheme.primaryColor,
-                    foregroundColor: Colors.white,
-                    padding: EdgeInsets.all(AppTheme.spacingM),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildWebAdvancedSettingsCard() {
-    return ModernCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          InkWell(
-            onTap: () {
-              setState(() {
-                _showAdvancedSettings = !_showAdvancedSettings;
-              });
-            },
-            child: Row(
-              children: [
-                Icon(Icons.tune, color: AppTheme.primaryColor, size: 24),
-                SizedBox(width: AppTheme.spacingS),
-                Text(
-                  'Advanced Settings',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: AppTheme.textColor,
-                  ),
-                ),
-                const Spacer(),
-                Icon(
-                  _showAdvancedSettings ? Icons.expand_less : Icons.expand_more,
-                  color: AppTheme.textColorLight,
-                ),
-              ],
-            ),
-          ),
-
-          if (_showAdvancedSettings) ...[
-            SizedBox(height: AppTheme.spacingM),
-            const Divider(),
-            SizedBox(height: AppTheme.spacingM),
-
-            // Custom Endpoint Configuration
-            _buildSettingItem(
-              'Custom Tunnel Endpoint',
-              'Override default tunnel endpoint (advanced users only)',
-              TextFormField(
-                decoration: const InputDecoration(
-                  hintText: 'https://app.cloudtolocalllm.online',
-                  border: OutlineInputBorder(),
-                  isDense: true,
-                ),
-                style: const TextStyle(fontSize: 14),
-              ),
-            ),
-
-            const Divider(),
-
-            // Connection Timeout
-            _buildSettingItem(
-              'Connection Timeout',
-              'Timeout for tunnel connection attempts (seconds)',
-              DropdownButton<int>(
-                value: 30,
-                isExpanded: true,
-                items: const [
-                  DropdownMenuItem(value: 10, child: Text('10 seconds')),
-                  DropdownMenuItem(value: 30, child: Text('30 seconds')),
-                  DropdownMenuItem(value: 60, child: Text('60 seconds')),
-                  DropdownMenuItem(value: 120, child: Text('2 minutes')),
-                ],
-                onChanged: (value) {
-                  // Handle timeout change
-                },
-              ),
-            ),
-
-            const Divider(),
-
-            // Retry Attempts
-            _buildSettingItem(
-              'Retry Attempts',
-              'Number of retry attempts for failed connections',
-              DropdownButton<int>(
-                value: 3,
-                isExpanded: true,
-                items: const [
-                  DropdownMenuItem(value: 1, child: Text('1 attempt')),
-                  DropdownMenuItem(value: 3, child: Text('3 attempts')),
-                  DropdownMenuItem(value: 5, child: Text('5 attempts')),
-                  DropdownMenuItem(value: 10, child: Text('10 attempts')),
-                ],
-                onChanged: (value) {
-                  // Handle retry change
-                },
-              ),
-            ),
-
-            const Divider(),
-
-            // Debug Logging
-            _buildSettingItem(
-              'Debug Logging',
-              'Enable detailed logging for tunnel connections',
-              Switch(
-                value: false,
-                onChanged: (value) {
-                  // Handle debug logging toggle
-                },
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-
-  // Helper methods for web platform connection monitoring
-  Future<void> _testTunnelConnection() async {
-    debugPrint('[Settings] _testTunnelConnection() called');
-    
-    if (_isTestingConnection) {
-      debugPrint('[Settings] Already testing connection, returning early');
-      return;
-    }
-
-    debugPrint('[Settings] Starting connection test...');
-    setState(() {
-      _isTestingConnection = true;
-      _connectionError = null;
-    });
-
-    try {
-      debugPrint('[Settings] Getting auth service...');
-      final authService = Provider.of<AuthService>(context, listen: false);
-      final accessToken = await authService.getAccessToken();
-      debugPrint('[Settings] Access token present');
-
-      if (accessToken == null) {
-        throw Exception('No authentication token available');
-      }
-
-      final stopwatch = Stopwatch()..start();
-      final testUrl = '${AppConfig.appUrl}/api/health';
-      debugPrint('[Settings] Testing connection to: $testUrl');
-
-      // Test connection to cloud tunnel API
-      final response = await http
-          .get(
-            Uri.parse(testUrl),
-            headers: {
-              'Authorization': 'Bearer $accessToken',
-              'Content-Type': 'application/json',
-            },
-          )
-          .timeout(const Duration(seconds: 30));
-
-      stopwatch.stop();
-      debugPrint('[Settings] Response received: ${response.statusCode}');
-      debugPrint('[Settings] Response body: ${response.body}');
-      debugPrint('[Settings] Latency: ${stopwatch.elapsedMilliseconds}ms');
-
-      if (response.statusCode == 200) {
-        debugPrint('[Settings] Connection test successful!');
-        setState(() {
-          _connectionLatency = stopwatch.elapsedMilliseconds.toDouble();
-          _lastConnectionTest = DateTime.now();
-          _connectionError = null;
-        });
-      } else {
-        debugPrint('[Settings] Connection test failed with status: ${response.statusCode}');
-        throw Exception('HTTP ${response.statusCode}: ${response.body}');
-      }
-    } catch (e) {
-      debugPrint('[Settings] Connection test error: $e');
-      debugPrint('[Settings] Error stack: ${StackTrace.current}');
-      setState(() {
-        _connectionError = 'Connection test failed: ${e.toString()}';
-        _connectionLatency = null;
-      });
-    } finally {
-      debugPrint('[Settings] Connection test completed');
-      setState(() {
-        _isTestingConnection = false;
-      });
-    }
-  }
-
-  String _formatDateTime(DateTime dateTime) {
-    final now = DateTime.now();
-    final difference = now.difference(dateTime);
-
-    if (difference.inMinutes < 1) {
-      return 'Just now';
-    } else if (difference.inHours < 1) {
-      return '${difference.inMinutes}m ago';
-    } else if (difference.inDays < 1) {
-      return '${difference.inHours}h ago';
-    } else {
-      return '${difference.inDays}d ago';
-    }
-  }
-
-  Widget _buildStatusSectionHeader(String title, IconData icon, Color color) {
-    return Row(
-      children: [
-        Icon(icon, color: color, size: 24),
-        SizedBox(width: AppTheme.spacingS),
-        Text(
-          title,
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: AppTheme.textColor,
-          ),
-        ),
-      ],
-    );
-  }
 
   Widget _buildStatusRow(String label, String value, Color valueColor) {
     return Padding(
