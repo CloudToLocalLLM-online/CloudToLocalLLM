@@ -2,7 +2,7 @@
 
 Your Personal AI Powerhouse
 
-[![Version](https://img.shields.io/badge/version-4.0.87-blue.svg)](https://github.com/imrightguy/CloudToLocalLLM/releases)
+[![Version](https://img.shields.io/badge/version-4.3.0-blue.svg)](https://github.com/imrightguy/CloudToLocalLLM/releases)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Flutter](https://img.shields.io/badge/Flutter-3.8+-blue.svg)](https://flutter.dev)
 [![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20Windows%20%7C%20Web-lightgrey.svg)](https://github.com/imrightguy/CloudToLocalLLM)
