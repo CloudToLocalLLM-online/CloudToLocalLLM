@@ -7,6 +7,7 @@ import 'web_window_stub.dart' if (dart.library.html) 'web_window_web.dart';
 
 import '../components/modern_card.dart';
 import '../components/model_download_manager.dart';
+import '../components/tunnel_details_card.dart';
 
 import '../components/settings_sidebar.dart';
 
@@ -19,6 +20,7 @@ import '../services/ollama_service.dart';
 import '../services/tunnel_service.dart';
 import '../services/user_data_service.dart';
 import '../services/version_service.dart';
+import '../services/settings_preference_service.dart';
 
 /// Unified Settings Screen for CloudToLocalLLM v3.3.1+
 ///
@@ -38,6 +40,9 @@ class _UnifiedSettingsScreenState extends State<UnifiedSettingsScreen> {
   late String _selectedSectionId;
   bool _isSidebarCollapsed = false;
   bool _hasInitializedMobileLayout = false;
+  bool _isProMode = false;
+  final SettingsPreferenceService _settingsPreferenceService =
+      SettingsPreferenceService();
 
   // Settings state
   String _selectedTheme = 'dark';
@@ -61,6 +66,7 @@ class _UnifiedSettingsScreenState extends State<UnifiedSettingsScreen> {
     try {
       debugPrint('[Settings] Initializing settings screen...');
       await _loadSettings();
+      _isProMode = await _settingsPreferenceService.isProMode();
       setState(() {
         _isInitialized = true;
       });
@@ -167,6 +173,10 @@ class _UnifiedSettingsScreenState extends State<UnifiedSettingsScreen> {
                   icon: const Icon(Icons.arrow_back),
                   onPressed: () => context.go('/'),
                 ),
+                actions: [
+                  _buildProModeToggle(),
+                  const SizedBox(width: 8),
+                ],
               ),
             ),
 
@@ -203,6 +213,26 @@ class _UnifiedSettingsScreenState extends State<UnifiedSettingsScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildProModeToggle() {
+    return Tooltip(
+      message: _isProMode ? 'Switch to Simple Mode' : 'Switch to Pro Mode',
+      child: Row(
+        children: [
+          Text(_isProMode ? 'Pro' : 'Simple'),
+          Switch(
+            value: _isProMode,
+            onChanged: (value) {
+              setState(() {
+                _isProMode = value;
+              });
+              _settingsPreferenceService.setProMode(value);
+            },
+          ),
+        ],
       ),
     );
   }
@@ -391,7 +421,7 @@ class _UnifiedSettingsScreenState extends State<UnifiedSettingsScreen> {
                 ),
               ),
               // Start minimized setting - Desktop only
-              if (!kIsWeb) ...[
+              if (!kIsWeb && _isProMode) ...[
                 const Divider(),
                 _buildSettingItem(
                   'Start Minimized',
@@ -407,7 +437,7 @@ class _UnifiedSettingsScreenState extends State<UnifiedSettingsScreen> {
                 ),
               ],
               // System tray setting (consolidated from System Tray) - Desktop only
-              if (!kIsWeb) ...[
+              if (!kIsWeb && _isProMode) ...[
                 const Divider(),
                 _buildSettingItem(
                   'Enable System Tray',
@@ -501,7 +531,7 @@ class _UnifiedSettingsScreenState extends State<UnifiedSettingsScreen> {
         return SingleChildScrollView(
           child: Padding(
             padding: EdgeInsets.all(AppTheme.spacingM),
-            child: const ModelDownloadManager(),
+            child: ModelDownloadManager(isProMode: _isProMode),
           ),
         );
       },
@@ -1208,20 +1238,22 @@ class _UnifiedSettingsScreenState extends State<UnifiedSettingsScreen> {
                             ),
                           ),
                         ),
-                        SizedBox(width: AppTheme.spacingM),
-                        Expanded(
-                          child: OutlinedButton.icon(
-                            onPressed: () {
-                              context.go('/admin/data-flush');
-                            },
-                            icon: const Icon(Icons.admin_panel_settings),
-                            label: const Text('Admin Panel'),
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor: AppTheme.primaryColor,
-                              side: BorderSide(color: AppTheme.primaryColor),
+                        if (_isProMode) ...[
+                          SizedBox(width: AppTheme.spacingM),
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              onPressed: () {
+                                context.go('/admin/data-flush');
+                              },
+                              icon: const Icon(Icons.admin_panel_settings),
+                              label: const Text('Admin Panel'),
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: AppTheme.primaryColor,
+                                side: BorderSide(color: AppTheme.primaryColor),
+                              ),
                             ),
                           ),
-                        ),
+                        ],
                       ],
                     ),
                   ],
@@ -1419,6 +1451,10 @@ class _UnifiedSettingsScreenState extends State<UnifiedSettingsScreen> {
     final isConnected = tunnelService.isConnected;
     final error = tunnelService.error;
 
+    if (_isProMode) {
+      return TunnelDetailsCard(tunnelState: tunnelService.state);
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1509,52 +1545,56 @@ class _UnifiedSettingsScreenState extends State<UnifiedSettingsScreen> {
   }
 
   Widget _buildTunnelAdvancedContent() {
-    return ExpansionTile(
-      title: Text(
-        'Advanced Settings',
-        style: TextStyle(
-          fontSize: 16,
-          fontWeight: FontWeight.w500,
-          color: AppTheme.textColor,
-        ),
-      ),
-      children: [
-        Padding(
-          padding: EdgeInsets.all(AppTheme.spacingM),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Tunnel Endpoint',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  color: AppTheme.textColor,
-                ),
-              ),
-              SizedBox(height: AppTheme.spacingS),
-              Container(
-                padding: EdgeInsets.all(AppTheme.spacingS),
-                decoration: BoxDecoration(
-                  color: AppTheme.backgroundMain,
-                  borderRadius: BorderRadius.circular(AppTheme.borderRadiusS),
-                  border: Border.all(
-                    color: AppTheme.secondaryColor.withValues(alpha: 0.3),
-                  ),
-                ),
-                child: Text(
-                  AppConfig.tunnelChiselUrl,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: AppTheme.textColorLight,
-                    fontFamily: 'monospace',
-                  ),
-                ),
-              ),
-            ],
+    if (!_isProMode) {
+      return ExpansionTile(
+        title: Text(
+          'Advanced Settings',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+            color: AppTheme.textColor,
           ),
         ),
-      ],
-    );
+        initiallyExpanded: _isProMode, // Expand if in Pro mode
+        children: [
+          Padding(
+            padding: EdgeInsets.all(AppTheme.spacingM),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Tunnel Endpoint',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    color: AppTheme.textColor,
+                  ),
+                ),
+                SizedBox(height: AppTheme.spacingS),
+                Container(
+                  padding: EdgeInsets.all(AppTheme.spacingS),
+                  decoration: BoxDecoration(
+                    color: AppTheme.backgroundMain,
+                    borderRadius: BorderRadius.circular(AppTheme.borderRadiusS),
+                    border: Border.all(
+                      color: AppTheme.secondaryColor.withValues(alpha: 0.3),
+                    ),
+                  ),
+                  child: Text(
+                    AppConfig.tunnelChiselUrl,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: AppTheme.textColorLight,
+                      fontFamily: 'monospace',
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      );
+    }
+    return const SizedBox.shrink();
   }
 }

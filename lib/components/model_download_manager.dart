@@ -103,7 +103,8 @@ class PopularModel {
 
 /// Comprehensive model download and management widget
 class ModelDownloadManager extends StatefulWidget {
-  const ModelDownloadManager({super.key});
+  final bool isProMode;
+  const ModelDownloadManager({super.key, this.isProMode = false});
 
   @override
   State<ModelDownloadManager> createState() => _ModelDownloadManagerState();
@@ -126,12 +127,16 @@ class _ModelDownloadManagerState extends State<ModelDownloadManager> {
             const SizedBox(height: 16),
 
             // Search and filter
-            _buildSearchAndFilter(),
-            const SizedBox(height: 16),
+            if (widget.isProMode) ...[
+              _buildSearchAndFilter(),
+              const SizedBox(height: 16),
+            ],
 
             // Connection configuration and status
-            _buildConnectionConfiguration(ollamaService),
-            const SizedBox(height: 16),
+            if (widget.isProMode) ...[
+              _buildConnectionConfiguration(ollamaService),
+              const SizedBox(height: 16),
+            ],
 
             // Installed models section
             _buildInstalledModelsSection(ollamaService),
