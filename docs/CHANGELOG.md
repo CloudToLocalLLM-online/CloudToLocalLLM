@@ -5,23 +5,10 @@ All notable changes to CloudToLocalLLM will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [4.3.0] - 2025-11-07
-
+## [4.3.0] - 2025-11-06
+
 ### Added
-- **Settings Page Rework**:
-  - Introduced "Simple" and "Pro" settings modes to tailor the user experience.
-  - Added a toggle in the settings header to switch between modes, with the user's preference persisted across sessions.
-- **Enhanced Tunnel Page**:
-  - In "Pro" mode, the tunnel page now displays detailed connection information.
-    - **Connection Statistics**: Includes latency, data transferred (bytes sent and received), and success rate.
-    - **Connection Quality**: A visual indicator (e.g., color-coded badge) shows the health of the tunnel connection (Excellent, Good, Fair, Poor).
-    - **Technical Details**: Displays advanced information such as Tunnel ID, port, and endpoint URLs.
-
-### Changed
-- **Conditional UI in Settings**:
-  - **General Settings**: "Start Minimized" and "Enable System Tray" options are now only visible in "Pro" mode.
-  - **Data Management**: The "Admin Panel" button is hidden in "Simple" mode to reduce clutter for regular users.
-  - **Model Manager**: Advanced features like connection configuration, model search, and filtering are now exclusive to "Pro" mode, simplifying the interface in "Simple" mode.
+- New features and enhancements
 
 ## [4.1.4] - 2025-11-01
 
@@ -434,9 +421,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Maintained automated execution without interactive prompts (user preference)
 
 - **ARCHIVED: Duplicate deployment scripts** - Moved to scripts/archive/ with migration documentation
-  - complete_automated_deployment.sh → Functionality merged into complete_deployment.sh
-  - deploy_to_vps.sh → Functionality available in consolidated scripts
-  - build_and_package.sh → Functionality available in scripts/packaging/build_deb.sh
+  - complete_automated_deployment.sh â†’ Functionality merged into complete_deployment.sh
+  - deploy_to_vps.sh â†’ Functionality available in consolidated scripts
+  - build_and_package.sh â†’ Functionality available in scripts/packaging/build_deb.sh
 
 ### Removed - AUR Support (Temporary)
 - **AUR support is temporarily removed** as of v3.10.3. See [AUR Status](DEPLOYMENT/AUR_STATUS.md) for details.
@@ -566,11 +553,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Platform-specific optimization for Linux x64
 
 ### Version Compatibility Matrix
-- Main Application v3.2.0 ↔ Tunnel Manager v1.0.0 ✅
-- Main Application v3.2.0 ↔ Tray Daemon v2.0.0 ✅
-- Main Application v3.2.0 ↔ Shared Library v3.2.0 ✅
-- Tunnel Manager v1.0.0 ↔ Tray Daemon v2.0.0 ✅
-- Backward compatibility: Main App v3.2.0 ↔ Tray Daemon v1.x ⚠️ (limited)
+- Main Application v3.2.0 â†” Tunnel Manager v1.0.0 âœ…
+- Main Application v3.2.0 â†” Tray Daemon v2.0.0 âœ…
+- Main Application v3.2.0 â†” Shared Library v3.2.0 âœ…
+- Tunnel Manager v1.0.0 â†” Tray Daemon v2.0.0 âœ…
+- Backward compatibility: Main App v3.2.0 â†” Tray Daemon v1.x âš ï¸ (limited)
 
 ### Migration Guide
 For users upgrading from v3.1.x:
