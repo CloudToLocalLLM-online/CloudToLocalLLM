@@ -1,26 +1,28 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../components/app_logo.dart';
-import '../../components/conversation_list.dart';
-import '../../components/message_bubble.dart';
-import '../../components/message_input.dart';
-import '../../components/tunnel_status_button.dart';
-import '../../components/web_download_prompt.dart';
 import '../../config/app_config.dart';
 import '../../config/theme.dart';
-import '../../config/theme_extensions.dart';
-import '../../models/conversation.dart';
+import '../../models/chat_model.dart';
+import '../../services/streaming_chat_service.dart';
+import '../../components/chat_controls.dart';
+import '../../components/chat_sidebar.dart';
+import '../../components/message_bubble.dart';
+import '../../components/message_input.dart';
+import '../../components/app_logo.dart';
+import '../../components/tunnel_status_button.dart';
+import '../../components/web_download_prompt.dart';
+import '../../components/conversation_list.dart';
 import '../../models/message.dart';
 import '../../services/auth_service.dart';
 import '../../services/connection_manager_service.dart';
-import '../../services/streaming_chat_service.dart';
 import '../../services/web_download_prompt_service.dart';
 import '../../utils/color_extensions.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 
-class HomeLayout extends StatelessWidget {
+/// Main layout for the chat interface, handling responsiveness and sidebar toggle.
+class HomeLayout extends StatefulWidget {
   const HomeLayout({
     super.key,
     required this.isCompact,
@@ -38,8 +40,13 @@ class HomeLayout extends StatelessWidget {
   onSendMessage;
 
   @override
+  State<HomeLayout> createState() => _HomeLayoutState();
+}
+
+class _HomeLayoutState extends State<HomeLayout> {
+  @override
   Widget build(BuildContext context) {
-    final showSidebar = !isSidebarCollapsed;
+    final showSidebar = !widget.isSidebarCollapsed;
 
     return Scaffold(
       backgroundColor: AppTheme.backgroundMain,
@@ -52,9 +59,9 @@ class HomeLayout extends StatelessWidget {
                   gradient: AppTheme.headerGradient,
                 ),
                 child: _HeaderBar(
-                  isCompact: isCompact,
-                  isSidebarCollapsed: isSidebarCollapsed,
-                  onSidebarToggle: onSidebarToggle,
+                  isCompact: widget.isCompact,
+                  isSidebarCollapsed: widget.isSidebarCollapsed,
+                  onSidebarToggle: widget.onSidebarToggle,
                 ),
               ),
               Expanded(
@@ -63,16 +70,16 @@ class HomeLayout extends StatelessWidget {
                     AnimatedContainer(
                       duration: const Duration(milliseconds: 250),
                       curve: Curves.easeInOut,
-                      width: showSidebar ? (isCompact ? 260 : 300) : 0,
+                      width: showSidebar ? (widget.isCompact ? 260 : 300) : 0,
                       child: showSidebar
                           ? const _SidebarPane()
                           : const SizedBox.shrink(),
                     ),
                     Expanded(
                       child: _ChatPane(
-                        isCompact: isCompact,
-                        scrollController: scrollController,
-                        onSendMessage: onSendMessage,
+                        isCompact: widget.isCompact,
+                        scrollController: widget.scrollController,
+                        onSendMessage: widget.onSendMessage,
                       ),
                     ),
                   ],
@@ -84,7 +91,7 @@ class HomeLayout extends StatelessWidget {
           if (kIsWeb) const TunnelStatusButton(),
         ],
       ),
-      floatingActionButton: isCompact && isSidebarCollapsed
+      floatingActionButton: widget.isCompact && widget.isSidebarCollapsed
           ? const _NewConversationButton()
           : null,
     );
@@ -403,20 +410,12 @@ class _MessageList extends StatelessWidget {
         }
         final message = conversation.messages[index];
         return MessageBubble(
+          key: ValueKey(message.id),
           message: message,
           showAvatar: true,
-          showTimestamp:
-              index == 0 ||
-              (index > 0 &&
-                  conversation.messages[index - 1].role != message.role),
-          onRetry: message.hasError
-              ? () {
-                  final chatService = context.read<StreamingChatService>();
-                  _retryMessage(chatService, message);
-                }
-              : null,
         );
       },
+      childCount: conversation.messages.length,
     );
   }
 

@@ -1,11 +1,7 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import '../../components/gradient_button.dart';
-import '../../components/modern_card.dart';
-import '../../config/app_config.dart';
-import '../../config/theme.dart';
-import '../../utils/color_extensions.dart';
+import 'package:markdown_widget/markdown_widget.dart';
+import 'package:flutter/services.dart' show rootBundle;
 
 /// Documentation screen - displays markdown docs from assets
 class DocumentationScreen extends StatefulWidget {
