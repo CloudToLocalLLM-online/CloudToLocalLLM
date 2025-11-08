@@ -147,7 +147,13 @@ window.auth0Bridge = {
         return null;
       }
       
-      return await window.auth0Client.getTokenSilently();
+      const audience = 'https://app.cloudtolocalllm.online';
+      return await window.auth0Client.getTokenSilently({
+        authorizationParams: {
+          audience: audience,
+          scope: 'openid profile email offline_access'
+        }
+      });
     } catch (error) {
       console.error('Auth0 getAccessToken error:', error);
       // If getting token silently fails, try to re-authenticate
