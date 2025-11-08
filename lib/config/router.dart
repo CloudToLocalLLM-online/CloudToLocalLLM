@@ -1,7 +1,6 @@
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:provider/provider.dart';
 import '../services/auth_service.dart';
 import '../screens/home_screen.dart';
 import '../screens/login_screen.dart';
@@ -55,7 +54,10 @@ bool _isAppSubdomain() {
 
 /// Application router configuration using GoRouter
 class AppRouter {
-  static GoRouter createRouter({GlobalKey<NavigatorState>? navigatorKey}) {
+  static GoRouter createRouter({
+    GlobalKey<NavigatorState>? navigatorKey,
+    required AuthService authService,
+  }) {
     // Get the initial location from the browser URL
     String? initialLocation;
     if (kIsWeb) {
@@ -63,9 +65,7 @@ class AppRouter {
         final currentUrl = Uri.base.toString();
         final uri = Uri.parse(currentUrl);
         initialLocation = uri.path;
-        debugPrint(
-          '[Router] Initial location from browser: $initialLocation',
-        );
+        debugPrint('[Router] Initial location from browser: $initialLocation');
       } catch (e) {
         debugPrint('[Router] Error getting initial location: $e');
         initialLocation = '/';
@@ -82,6 +82,7 @@ class AppRouter {
       navigatorKey: navigatorKey,
       initialLocation: initialLocation,
       debugLogDiagnostics: true,
+      refreshListenable: authService,
       routes: [
         // Home route - platform-specific routing
         GoRoute(
@@ -95,22 +96,21 @@ class AppRouter {
               final isAppSubdomain = _isAppSubdomain();
 
               if (isAppSubdomain) {
-                // App subdomain - check auth and show appropriate screen
-                final authService = context.watch<AuthService>();
-
+                final isAuthLoading = authService.isLoading.value;
+                final isAuthenticated = authService.isAuthenticated.value;
                 debugPrint(
-                  '[Router] Route builder called - isLoading: ${authService.isLoading.value}, isAuthenticated: ${authService.isAuthenticated.value}',
+                  '[Router] Route builder called - isLoading: $isAuthLoading, isAuthenticated: $isAuthenticated',
                 );
 
                 // If authentication is still loading, show loading screen
-                if (authService.isLoading.value) {
+                if (isAuthLoading) {
                   debugPrint('[Router] Showing loading screen');
                   return const LoadingScreen(
                     message: 'Checking authentication...',
                   );
                 }
 
-                if (authService.isAuthenticated.value) {
+                if (isAuthenticated) {
                   debugPrint('[Router] Showing home screen');
                   return const HomeScreen();
                 } else {
@@ -243,7 +243,8 @@ class AppRouter {
         GoRoute(
           path: '/settings/tunnel',
           name: 'tunnel-settings',
-          builder: (context, state) => const UnifiedSettingsScreen(initialSection: 'tunnel-connection'),
+          builder: (context, state) =>
+              const UnifiedSettingsScreen(initialSection: 'tunnel-connection'),
         ),
 
         // LLM Provider Settings route
@@ -296,7 +297,6 @@ class AppRouter {
 
       // Redirect logic for authentication and domain-based routing
       redirect: (context, state) {
-        final authService = context.read<AuthService>();
         final isAuthenticated = authService.isAuthenticated.value;
         final isAuthLoading = authService.isLoading.value;
         final isLoggingIn = state.matchedLocation == '/login';

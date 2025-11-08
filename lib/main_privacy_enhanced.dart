@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -8,7 +9,8 @@ import 'config/router.dart';
 import 'config/app_config.dart';
 import 'services/auth_service.dart';
 import 'services/auth0_service.dart';
-import 'services/auth0_web_service.dart' if (dart.library.io) 'services/auth0_web_service_stub.dart';
+import 'services/auth0_web_service.dart'
+    if (dart.library.io) 'services/auth0_web_service_stub.dart';
 import 'services/auth0_desktop_service.dart';
 import 'services/enhanced_user_tier_service.dart';
 import 'services/ollama_service.dart';
@@ -188,10 +190,16 @@ class _CloudToLocalLLMPrivacyAppState extends State<CloudToLocalLLMPrivacyApp> {
         ChangeNotifierProvider.value(value: widget.platformManager),
 
         // Authentication service
-        ChangeNotifierProvider(create: (_) {
-          final Auth0Service auth0Service = kIsWeb ? Auth0WebService() : Auth0DesktopService();
-          return AuthService(auth0Service);
-        }),
+        ChangeNotifierProvider(
+          create: (_) {
+            final Auth0Service auth0Service = kIsWeb
+                ? Auth0WebService()
+                : Auth0DesktopService();
+            final authService = AuthService(auth0Service);
+            unawaited(authService.init());
+            return authService;
+          },
+        ),
 
         // Enhanced user tier service with container management
         ChangeNotifierProvider(
@@ -205,7 +213,7 @@ class _CloudToLocalLLMPrivacyAppState extends State<CloudToLocalLLMPrivacyApp> {
             final storage = ConversationStorageService();
             // Initialize asynchronously
             storage.initialize().catchError((e) {
-              debugPrint('� [ConversationStorage] Initialization error: $e');
+              debugPrint(' [ConversationStorage] Initialization error: $e');
             });
             return storage;
           },
@@ -221,7 +229,7 @@ class _CloudToLocalLLMPrivacyAppState extends State<CloudToLocalLLMPrivacyApp> {
             );
             // Initialize asynchronously
             privacyManager.initialize().catchError((e) {
-              debugPrint('� [PrivacyStorage] Initialization error: $e');
+              debugPrint(' [PrivacyStorage] Initialization error: $e');
             });
             return privacyManager;
           },
@@ -297,9 +305,8 @@ class _CloudToLocalLLMPrivacyAppState extends State<CloudToLocalLLMPrivacyApp> {
         ),
 
         ChangeNotifierProxyProvider<AuthService, TunnelService>(
-          create: (context) => TunnelService(
-            authService: context.read<AuthService>(),
-          ),
+          create: (context) =>
+              TunnelService(authService: context.read<AuthService>()),
           update: (context, authService, previous) =>
               previous ?? TunnelService(authService: authService),
         ),
@@ -307,13 +314,11 @@ class _CloudToLocalLLMPrivacyAppState extends State<CloudToLocalLLMPrivacyApp> {
         // Connection manager service
         ChangeNotifierProvider(
           create: (context) {
-            final localOllama = context.read<LocalOllamaConnectionService>();
-            final tunnelService = context.read<TunnelService>();
-            final authService = context.read<AuthService>();
             final connectionManager = ConnectionManagerService(
-              localOllama: localOllama,
-              tunnelService: tunnelService,
-              authService: authService,
+              localOllama: context.read<LocalOllamaConnectionService>(),
+              tunnelService: context.read<TunnelService>(),
+              authService: context.read<AuthService>(),
+              ollamaService: context.read<OllamaService>(),
             );
             connectionManager.initialize();
             return connectionManager;
@@ -389,7 +394,10 @@ class _CloudToLocalLLMPrivacyAppState extends State<CloudToLocalLLMPrivacyApp> {
                 : ThemeMode.light,
 
             // Router configuration
-            routerConfig: AppRouter.createRouter(navigatorKey: navigatorKey),
+            routerConfig: AppRouter.createRouter(
+              navigatorKey: navigatorKey,
+              authService: authService,
+            ),
 
             // Builder for additional configuration
             builder: (context, child) {
@@ -434,7 +442,7 @@ class _CloudToLocalLLMPrivacyAppState extends State<CloudToLocalLLMPrivacyApp> {
           windowManager.showWindow();
         },
         onHideWindow: () {
-          debugPrint("� [SystemTray] Native tray requested to hide window");
+          debugPrint(" [SystemTray] Native tray requested to hide window");
           windowManager.hideToTray();
         },
         onSettings: () {
@@ -442,17 +450,13 @@ class _CloudToLocalLLMPrivacyAppState extends State<CloudToLocalLLMPrivacyApp> {
           _navigateToRoute('/settings');
         },
         onQuit: () {
-          debugPrint(
-            "[SystemTray] Native tray requested to quit application",
-          );
+          debugPrint("[SystemTray] Native tray requested to quit application");
           windowManager.forceClose();
         },
       );
 
       if (success) {
-        debugPrint(
-          "[SystemTray] Native tray service initialized successfully",
-        );
+        debugPrint("[SystemTray] Native tray service initialized successfully");
       } else {
         debugPrint(" [SystemTray] Failed to initialize native tray service");
       }

@@ -9,9 +9,16 @@ class AuthService extends ChangeNotifier {
   final ValueNotifier<bool> _isAuthenticated = ValueNotifier<bool>(false);
   final ValueNotifier<bool> _isLoading = ValueNotifier<bool>(false);
   UserModel? _currentUser;
+  bool _initialized = false;
 
-  AuthService(this._auth0Service) {
-    _initAuth0();
+  AuthService(this._auth0Service);
+
+  Future<void> init() async {
+    if (_initialized) {
+      return;
+    }
+    _initialized = true;
+    await _initAuth0();
   }
 
   /// Initialize Auth0

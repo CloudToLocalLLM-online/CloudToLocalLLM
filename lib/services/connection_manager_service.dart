@@ -7,6 +7,7 @@ import 'ollama_service.dart';
 import 'cloud_streaming_service.dart';
 import 'auth_service.dart';
 import '../models/llm_communication_error.dart';
+import '../utils/logger.dart';
 
 enum ConnectionType { none, local, cloud }
 
@@ -14,6 +15,7 @@ class ConnectionManagerService extends ChangeNotifier {
   final LocalOllamaConnectionService _localOllama;
   final TunnelService _tunnelService;
   final AuthService _authService;
+  final OllamaService _ollamaService;
 
   bool _preferLocalOllama = true;
   String? _selectedModel;
@@ -23,9 +25,11 @@ class ConnectionManagerService extends ChangeNotifier {
     required LocalOllamaConnectionService localOllama,
     required TunnelService tunnelService,
     required AuthService authService,
-  })  : _localOllama = localOllama,
-        _tunnelService = tunnelService,
-        _authService = authService {
+    required OllamaService ollamaService,
+  }) : _localOllama = localOllama,
+       _tunnelService = tunnelService,
+       _authService = authService,
+       _ollamaService = ollamaService {
     _localOllama.addListener(_onConnectionChanged);
     _tunnelService.addListener(_onConnectionChanged);
     _authService.addListener(_onAuthChanged);
@@ -59,10 +63,14 @@ class ConnectionManagerService extends ChangeNotifier {
       case ConnectionType.local:
         return _localOllama.streamingService;
       case ConnectionType.cloud:
-        _cloudStreamingService ??= CloudStreamingService(authService: _authService);
+        _cloudStreamingService ??= CloudStreamingService(
+          authService: _authService,
+        );
         if (!_cloudStreamingService!.connection.isActive) {
           _cloudStreamingService!.establishConnection().catchError((e) {
-            debugPrint('[ConnectionManager] Cloud streaming connection failed: $e');
+            appLogger.warning(
+              '[ConnectionManager] Cloud streaming connection failed: $e',
+            );
           });
         }
         return _cloudStreamingService;
@@ -79,10 +87,17 @@ class ConnectionManagerService extends ChangeNotifier {
     final connectionType = getBestConnectionType();
     switch (connectionType) {
       case ConnectionType.local:
-        return await _localOllama.chat(model: model, message: message, history: history);
+        return await _localOllama.chat(
+          model: model,
+          message: message,
+          history: history,
+        );
       case ConnectionType.cloud:
-        final ollamaService = OllamaService();
-        return await ollamaService.chat(model: model, message: message, history: history);
+        return await _ollamaService.chat(
+          model: model,
+          message: message,
+          history: history,
+        );
       default:
         throw LLMCommunicationError.providerNotFound();
     }
@@ -165,5 +180,3 @@ class ConnectionManagerService extends ChangeNotifier {
     super.dispose();
   }
 }
-
-

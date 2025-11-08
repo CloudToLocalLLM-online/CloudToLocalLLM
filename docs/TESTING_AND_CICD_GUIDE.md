@@ -79,9 +79,14 @@ flutter test --coverage
 # Run static analysis
 flutter analyze --fatal-infos --fatal-warnings
 
+# Run targeted smoke test without bundling binary assets (avoids AV false positives on chisel binaries)
+flutter test --no-test-assets test/theme_extensions_test.dart
+
 # Test build process
 flutter build web --release
 ```
+
+> **Environment note:** the full test suite includes network-bound integration tests that return HTTP 400 under the default `TestWidgetsFlutterBinding`. Use `--no-test-assets` and focused test targets when running on CI runners without external network access.
 
 #### Node.js API Tests
 

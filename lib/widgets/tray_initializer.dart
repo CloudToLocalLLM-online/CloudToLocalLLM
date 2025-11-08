@@ -1,0 +1,88 @@
+import 'dart:async';
+
+import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
+
+import '../services/connection_manager_service.dart';
+import '../services/local_ollama_connection_service.dart';
+import '../services/native_tray_service.dart'
+    if (dart.library.html) '../services/native_tray_service_stub.dart';
+import '../services/window_manager_service.dart'
+    if (dart.library.html) '../services/window_manager_service_stub.dart';
+import '../utils/logger.dart';
+
+/// Ensures the native tray is configured once all required providers exist.
+class TrayInitializer extends StatefulWidget {
+  const TrayInitializer({
+    required this.child,
+    required this.navigatorKey,
+    super.key,
+  });
+
+  final Widget child;
+  final GlobalKey<NavigatorState> navigatorKey;
+
+  @override
+  State<TrayInitializer> createState() => _TrayInitializerState();
+}
+
+class _TrayInitializerState extends State<TrayInitializer> {
+  bool _trayInitialized = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_trayInitialized || kIsWeb) {
+      return;
+    }
+    _trayInitialized = true;
+
+    unawaited(_initializeTray(context));
+  }
+
+  Future<void> _initializeTray(BuildContext context) async {
+    try {
+      final connectionManager = context.read<ConnectionManagerService>();
+      final localOllama = context.read<LocalOllamaConnectionService>();
+      final windowManager = WindowManagerService();
+      final nativeTray = NativeTrayService();
+
+      await windowManager.initialize();
+
+      final initialized = await nativeTray.initialize(
+        connectionManager: connectionManager,
+        localOllama: localOllama,
+        onShowWindow: () => windowManager.showWindow(),
+        onHideWindow: () => windowManager.hideToTray(),
+        onSettings: () {
+          final context = widget.navigatorKey.currentContext;
+          if (context != null) {
+            GoRouter.of(context).go('/settings');
+          } else {
+            appLogger.warning(
+              '[TrayInitializer] Unable to navigate to settings: no context from navigatorKey',
+            );
+          }
+        },
+        onQuit: () => windowManager.forceClose(),
+      );
+
+      if (!initialized) {
+        appLogger.warning(
+          '[TrayInitializer] Native tray initialization reported failure',
+        );
+      }
+    } catch (e, stackTrace) {
+      appLogger.error(
+        '[TrayInitializer] Failed to initialize tray',
+        error: e,
+        stackTrace: stackTrace,
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.child;
+}

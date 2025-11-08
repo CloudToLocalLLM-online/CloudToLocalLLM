@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'theme_extensions.dart';
 
 /// Modern Material Design 3 theme configuration matching homepage design
 class AppTheme {
@@ -60,6 +61,13 @@ class AppTheme {
   static const double borderRadiusM = 16.0;
   static const double borderRadiusL = 24.0;
 
+  static AppSpacingTheme spacingOf(BuildContext context) =>
+      Theme.of(context).extension<AppSpacingTheme>() ??
+      AppSpacingTheme.standard;
+
+  static AppColorsTheme colorsOf(BuildContext context) =>
+      Theme.of(context).extension<AppColorsTheme>() ?? AppColorsTheme.dark;
+
   /// Dark theme for the application
   static ThemeData get darkTheme {
     final colorScheme = ColorScheme.fromSeed(
@@ -76,6 +84,7 @@ class AppTheme {
     return ThemeData(
       useMaterial3: true,
       colorScheme: colorScheme,
+      extensions: const [AppSpacingTheme.standard, AppColorsTheme.dark],
       scaffoldBackgroundColor: backgroundMain,
       fontFamily: 'Roboto',
 
@@ -352,6 +361,7 @@ class AppTheme {
     return ThemeData(
       useMaterial3: true,
       colorScheme: colorScheme,
+      extensions: const [AppSpacingTheme.standard, AppColorsTheme.light],
       fontFamily: 'Roboto',
 
       // AppBar theme

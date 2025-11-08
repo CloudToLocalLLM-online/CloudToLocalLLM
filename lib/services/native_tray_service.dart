@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:tray_manager/tray_manager.dart';
 import 'connection_manager_service.dart';
 import 'local_ollama_connection_service.dart';
+import '../utils/logger.dart';
 
 /// Tray connection status enumeration
 enum TrayConnectionStatus {
@@ -54,12 +55,12 @@ class NativeTrayService with TrayListener {
     if (_isInitialized) return true;
 
     try {
-      debugPrint('[NativeTray] Initializing native tray service...');
+      appLogger.debug('[NativeTray] Initializing native tray service...');
 
       // Check platform support - web platforms don't support native tray
       if (kIsWeb) {
         _isSupported = false;
-        debugPrint(
+        appLogger.warning(
           '[NativeTray] System tray not supported on web platform',
         );
         return false;
@@ -69,13 +70,13 @@ class NativeTrayService with TrayListener {
         _isSupported =
             Platform.isLinux || Platform.isWindows || Platform.isMacOS;
         if (!_isSupported) {
-          debugPrint(
+          appLogger.warning(
             '[NativeTray] System tray not supported on this platform',
           );
           return false;
         }
       } catch (e) {
-        debugPrint('[NativeTray] Platform detection failed: $e');
+        appLogger.error('[NativeTray] Platform detection failed', error: e);
         _isSupported = false;
         return false;
       }
@@ -91,21 +92,22 @@ class NativeTrayService with TrayListener {
       // Initialize tray manager with basic setup first
       try {
         final iconPath = _getIconPath(TrayConnectionStatus.disconnected);
-        debugPrint('[NativeTray] Setting tray icon: $iconPath');
+        appLogger.debug('[NativeTray] Setting tray icon: $iconPath');
         await trayManager.setIcon(iconPath);
-        debugPrint('[NativeTray] Tray icon set successfully');
+        appLogger.debug('[NativeTray] Tray icon set successfully');
       } catch (e) {
-        debugPrint('[NativeTray] Failed to set tray icon: $e');
+        appLogger.warning('[NativeTray] Failed to set tray icon: $e');
         // Try with a fallback icon using platform-specific format
         try {
           final fallbackExtension = Platform.isWindows ? '.ico' : '.png';
           await trayManager.setIcon(
             'assets/images/tray_icon$fallbackExtension',
           );
-          debugPrint('[NativeTray] Fallback tray icon set successfully');
+          appLogger.debug('[NativeTray] Fallback tray icon set successfully');
         } catch (fallbackError) {
-          debugPrint(
-            '[NativeTray] Fallback tray icon also failed: $fallbackError',
+          appLogger.error(
+            '[NativeTray] Fallback tray icon also failed',
+            error: fallbackError,
           );
         }
       }
@@ -113,9 +115,9 @@ class NativeTrayService with TrayListener {
       // Set up context menu first (this is more reliable)
       try {
         await _updateContextMenu();
-        debugPrint('[NativeTray] Context menu set successfully');
+        appLogger.debug('[NativeTray] Context menu set successfully');
       } catch (e) {
-        debugPrint('[NativeTray] Failed to set context menu: $e');
+        appLogger.warning('[NativeTray] Failed to set context menu: $e');
         // Context menu setup failure is not critical for basic functionality
       }
 
@@ -133,22 +135,21 @@ class NativeTrayService with TrayListener {
       try {
         await trayManager.setToolTip('CloudToLocalLLM - Initializing');
       } catch (e) {
-        debugPrint('[NativeTray] Warning: Could not set tooltip: $e');
+        appLogger.warning('[NativeTray] Warning: Could not set tooltip: $e');
         // Continue without tooltip - this is not critical
       }
 
       _isInitialized = true;
-      debugPrint(
-        '[NativeTray] Native tray service initialized successfully',
-      );
+      appLogger.info('[NativeTray] Native tray service initialized successfully');
 
       // Update initial status
       _onTunnelStatusChanged();
 
       return true;
     } catch (e) {
-      debugPrint(
-        '[NativeTray] Failed to initialize native tray service: $e',
+      appLogger.error(
+        '[NativeTray] Failed to initialize native tray service',
+        error: e,
       );
       // Don't fail the entire application if tray initialization fails
       return false;
@@ -210,7 +211,7 @@ class NativeTrayService with TrayListener {
       final iconPath = _getIconPath(status);
       await trayManager.setIcon(iconPath);
     } catch (e) {
-      debugPrint('[NativeTray] Failed to update tray icon: $e');
+      appLogger.warning('[NativeTray] Failed to update tray icon: $e');
     }
   }
 
@@ -220,7 +221,7 @@ class NativeTrayService with TrayListener {
       final tooltip = _getTooltipText(status);
       await trayManager.setToolTip(tooltip);
     } catch (e) {
-      debugPrint('[NativeTray] Warning: Could not update tooltip: $e');
+      appLogger.warning('[NativeTray] Could not update tooltip: $e');
       // Tooltip updates are not critical for functionality
     }
   }
@@ -274,7 +275,7 @@ class NativeTrayService with TrayListener {
   /// Update context menu with current connection status
   Future<void> _updateContextMenu() async {
     try {
-      debugPrint('[NativeTray] Updating context menu...');
+      appLogger.debug('[NativeTray] Updating context menu...');
 
       // Get current connection status for dynamic menu items
       String localStatus = 'Disconnected';
@@ -308,11 +309,11 @@ class NativeTrayService with TrayListener {
       );
 
       await trayManager.setContextMenu(menu);
-      debugPrint(
+      appLogger.debug(
         '[NativeTray] Context menu updated successfully with ${menu.items?.length ?? 0} items',
       );
     } catch (e) {
-      debugPrint('[NativeTray] Failed to update context menu: $e');
+      appLogger.error('[NativeTray] Failed to update context menu', error: e);
       rethrow; // Re-throw to allow caller to handle the error
     }
   }
@@ -322,7 +323,7 @@ class NativeTrayService with TrayListener {
     if (!_isInitialized) return;
 
     try {
-      debugPrint('[NativeTray] Disposing native tray service...');
+      appLogger.debug('[NativeTray] Disposing native tray service...');
 
       // Remove listeners
       trayManager.removeListener(this);
@@ -335,9 +336,9 @@ class NativeTrayService with TrayListener {
       await trayManager.destroy();
 
       _isInitialized = false;
-      debugPrint('[NativeTray] Native tray service disposed');
+      appLogger.debug('[NativeTray] Native tray service disposed');
     } catch (e) {
-      debugPrint('[NativeTray] Error disposing native tray service: $e');
+      appLogger.error('[NativeTray] Error disposing native tray service', error: e);
     }
   }
 
@@ -345,19 +346,19 @@ class NativeTrayService with TrayListener {
 
   @override
   void onTrayIconMouseDown() {
-    debugPrint('[NativeTray] Tray icon clicked');
+    appLogger.debug('[NativeTray] Tray icon clicked');
     _onShowWindow?.call();
   }
 
   @override
   void onTrayIconRightMouseDown() {
-    debugPrint('[NativeTray] Tray icon right-clicked');
+    appLogger.debug('[NativeTray] Tray icon right-clicked');
     _showContextMenu();
   }
 
   @override
   void onTrayIconRightMouseUp() {
-    debugPrint('[NativeTray] Tray icon right-click released');
+    appLogger.debug('[NativeTray] Tray icon right-click released');
     // Fallback: if context menu wasn't shown on mouse down, try on mouse up
     // This helps with platform-specific timing issues
     _showContextMenu();
@@ -370,18 +371,18 @@ class NativeTrayService with TrayListener {
   /// with tray_manager 0.5.0.
   Future<void> _showContextMenu() async {
     try {
-      debugPrint('[NativeTray] Manually triggering context menu');
+      appLogger.debug('[NativeTray] Manually triggering context menu');
       await trayManager.popUpContextMenu();
-      debugPrint('[NativeTray] Context menu displayed successfully');
+      appLogger.debug('[NativeTray] Context menu displayed successfully');
     } catch (e) {
-      debugPrint('[NativeTray] Failed to show context menu: $e');
+      appLogger.warning('[NativeTray] Failed to show context menu: $e');
       // Context menu failure is not critical - the user can still left-click to show the app
     }
   }
 
   @override
   void onTrayMenuItemClick(MenuItem menuItem) {
-    debugPrint('[NativeTray] Menu item clicked: ${menuItem.key}');
+    appLogger.debug('[NativeTray] Menu item clicked: ${menuItem.key}');
 
     switch (menuItem.key) {
       case 'show':
@@ -409,7 +410,7 @@ class NativeTrayService with TrayListener {
 
   /// Reconnect all services
   void _reconnectAll() {
-    debugPrint('[NativeTray] Reconnecting all services');
+    appLogger.info('[NativeTray] Reconnecting all services');
     try {
       // Trigger reconnection through connection manager
       _connectionManager?.reconnectAll();
@@ -417,13 +418,13 @@ class NativeTrayService with TrayListener {
       // Update menu to show connecting status
       _updateContextMenu();
     } catch (e) {
-      debugPrint('[NativeTray] Failed to reconnect services: $e');
+      appLogger.error('[NativeTray] Failed to reconnect services', error: e);
     }
   }
 
   /// Show settings interface
   void _showSettings() {
-    debugPrint('[NativeTray] Showing settings');
+    appLogger.debug('[NativeTray] Showing settings');
     // Bring window to foreground and navigate to settings
     _onShowWindow?.call();
     // The navigation will be handled by the main app

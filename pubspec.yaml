@@ -78,6 +78,8 @@ dependencies:
   langchain: ^0.8.0+1
   langchain_ollama: ^0.4.0+1
   langchain_community: ^0.4.0+1
+  get_it: ^7.6.7
+  logger: ^1.4.0
 
 dev_dependencies:
   flutter_lints: ^6.0.0

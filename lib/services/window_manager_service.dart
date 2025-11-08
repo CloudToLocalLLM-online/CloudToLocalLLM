@@ -1,6 +1,7 @@
 import 'dart:io' show exit;
 import 'package:flutter/foundation.dart';
 import 'package:window_manager/window_manager.dart';
+import '../utils/logger.dart';
 
 /// Service for managing window state and visibility using window_manager_plus
 class WindowManagerService {
@@ -23,10 +24,13 @@ class WindowManagerService {
         await windowManager.ensureInitialized();
         await windowManager.setPreventClose(true);
         _isInitialized = true;
-        debugPrint("[WindowManager] Window manager service initialized");
+        appLogger.info('[WindowManager] Window manager service initialized');
       }
     } catch (e) {
-      debugPrint("[WindowManager] Failed to initialize window manager: $e");
+      appLogger.error(
+        '[WindowManager] Failed to initialize window manager',
+        error: e,
+      );
     }
   }
 
@@ -39,9 +43,9 @@ class WindowManagerService {
       }
       _isWindowVisible = true;
       _isMinimizedToTray = false;
-      debugPrint("[WindowManager] Window shown");
+      appLogger.debug('[WindowManager] Window shown');
     } catch (e) {
-      debugPrint("[WindowManager] Failed to show window: $e");
+      appLogger.error('[WindowManager] Failed to show window', error: e);
     }
   }
 
@@ -53,9 +57,9 @@ class WindowManagerService {
       }
       _isWindowVisible = false;
       _isMinimizedToTray = true;
-      debugPrint("[WindowManager] Window hidden to tray");
+      appLogger.debug('[WindowManager] Window hidden to tray');
     } catch (e) {
-      debugPrint("[WindowManager] Failed to hide window: $e");
+      appLogger.error('[WindowManager] Failed to hide window', error: e);
     }
   }
 
@@ -67,9 +71,9 @@ class WindowManagerService {
       }
       _isWindowVisible = false;
       _isMinimizedToTray = false;
-      debugPrint("[WindowManager] Window minimized");
+      appLogger.debug('[WindowManager] Window minimized');
     } catch (e) {
-      debugPrint("[WindowManager] Failed to minimize window: $e");
+      appLogger.error('[WindowManager] Failed to minimize window', error: e);
     }
   }
 
@@ -81,9 +85,9 @@ class WindowManagerService {
       }
       _isWindowVisible = true;
       _isMinimizedToTray = false;
-      debugPrint("[WindowManager] Window maximized");
+      appLogger.debug('[WindowManager] Window maximized');
     } catch (e) {
-      debugPrint("[WindowManager] Failed to maximize window: $e");
+      appLogger.error('[WindowManager] Failed to maximize window', error: e);
     }
   }
 
@@ -100,7 +104,7 @@ class WindowManagerService {
   Future<void> forceClose() async {
     try {
       if (!kIsWeb && _isInitialized) {
-        debugPrint("[WindowManager] Initiating force close sequence");
+        appLogger.warning('[WindowManager] Initiating force close sequence');
 
         // Disable close prevention
         await windowManager.setPreventClose(false);
@@ -118,15 +122,18 @@ class WindowManagerService {
           exit(0);
         }
       }
-      debugPrint("[WindowManager] Application force closed");
+      appLogger.info('[WindowManager] Application force closed');
     } catch (e) {
-      debugPrint("[WindowManager] Failed to force close: $e");
+      appLogger.error('[WindowManager] Failed to force close', error: e);
       // Emergency exit if all else fails
       if (!kIsWeb) {
         try {
           exit(1);
         } catch (exitError) {
-          debugPrint("[WindowManager] Emergency exit failed: $exitError");
+          appLogger.error(
+            '[WindowManager] Emergency exit failed',
+            error: exitError,
+          );
         }
       }
     }
@@ -153,18 +160,18 @@ class WindowManagerService {
   Future<bool> handleWindowClose() async {
     try {
       await hideToTray();
-      debugPrint(
-        "[WindowManager] Window close intercepted, minimized to tray",
+      appLogger.debug(
+        '[WindowManager] Window close intercepted, minimized to tray',
       );
       return false; // Prevent actual window close
     } catch (e) {
-      debugPrint("[WindowManager] Failed to handle window close: $e");
+      appLogger.error('[WindowManager] Failed to handle window close', error: e);
       return true; // Allow close if error occurs
     }
   }
 
   /// Dispose of the window manager service
   void dispose() {
-    debugPrint("[WindowManager] Window manager service disposed");
+    appLogger.debug('[WindowManager] Window manager service disposed');
   }
 }

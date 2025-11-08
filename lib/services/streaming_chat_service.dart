@@ -10,6 +10,7 @@ import 'streaming_service.dart';
 import 'connection_manager_service.dart';
 import 'conversation_storage_service.dart';
 import 'auth_service.dart';
+import '../utils/logger.dart';
 
 /// Enhanced chat service with real-time streaming support
 ///
@@ -63,9 +64,9 @@ class StreamingChatService extends ChangeNotifier {
     try {
       await _storageService.initialize();
       await _loadConversations();
-      debugPrint(' [StreamingChat] Storage service initialized');
+      appLogger.debug('[StreamingChat] Storage service initialized');
     } catch (e) {
-      debugPrint(' [StreamingChat] Failed to initialize storage: $e');
+      appLogger.error('[StreamingChat] Failed to initialize storage', error: e);
       // Fall back to in-memory conversations
       await _loadConversations();
     }
@@ -79,7 +80,7 @@ class StreamingChatService extends ChangeNotifier {
       // Auto-select first model if none selected
       if (_selectedModel == null) {
         _selectedModel = availableModels.first;
-        debugPrint(' [StreamingChat] Auto-selected model: $_selectedModel');
+        appLogger.debug('[StreamingChat] Auto-selected model: $_selectedModel');
         notifyListeners();
       }
     }
@@ -93,15 +94,15 @@ class StreamingChatService extends ChangeNotifier {
       if (loadedConversations.isNotEmpty) {
         _conversations = loadedConversations;
         _currentConversation = _conversations.first;
-        debugPrint(
-          ' [StreamingChat] Loaded ${_conversations.length} conversations from storage',
+        appLogger.info(
+          '[StreamingChat] Loaded ${_conversations.length} conversations from storage',
         );
       } else {
         // Create a sample conversation if none exist
         _createWelcomeConversation();
       }
     } catch (e) {
-      debugPrint(' [StreamingChat] Error loading conversations: $e');
+      appLogger.error('[StreamingChat] Error loading conversations', error: e);
       // Fall back to creating a welcome conversation
       _createWelcomeConversation();
     }
@@ -120,8 +121,8 @@ class StreamingChatService extends ChangeNotifier {
     // Update selected model if it was null
     if (_selectedModel == null && availableModels.isNotEmpty) {
       _selectedModel = availableModels.first;
-      debugPrint(
-        ' [StreamingChat] Auto-selected model for welcome conversation: $_selectedModel',
+      appLogger.debug(
+        '[StreamingChat] Auto-selected model for welcome conversation: $_selectedModel',
       );
     }
 
@@ -146,7 +147,7 @@ class StreamingChatService extends ChangeNotifier {
   void _saveConversations() {
     // Save asynchronously without blocking the UI
     _saveConversationsAsync().catchError((e) {
-      debugPrint(' [StreamingChat] Error saving conversations: $e');
+      appLogger.error('[StreamingChat] Error saving conversations', error: e);
     });
   }
 
@@ -154,11 +155,11 @@ class StreamingChatService extends ChangeNotifier {
   Future<void> _saveConversationsAsync() async {
     try {
       await _storageService.saveConversations(_conversations);
-      debugPrint(
-        '� [StreamingChat] Saved ${_conversations.length} conversations to storage',
+      appLogger.debug(
+        '[StreamingChat] Saved ${_conversations.length} conversations to storage',
       );
     } catch (e) {
-      debugPrint(' [StreamingChat] Failed to save conversations: $e');
+      appLogger.error('[StreamingChat] Failed to save conversations', error: e);
       rethrow;
     }
   }
@@ -260,8 +261,8 @@ class StreamingChatService extends ChangeNotifier {
       // Get streaming service
       final streamingService = _getStreamingService();
       if (streamingService == null) {
-        debugPrint(
-          ' [StreamingChat] No streaming service available, falling back to non-streaming chat',
+        appLogger.warning(
+          '[StreamingChat] No streaming service available, falling back to non-streaming chat',
         );
         await _fallbackToNonStreamingChat(content.trim());
         return;
@@ -286,7 +287,7 @@ class StreamingChatService extends ChangeNotifier {
         onDone: () => _handleStreamingComplete(),
       );
     } catch (e) {
-      debugPrint(' [StreamingChat] Error in sendMessage: $e');
+      appLogger.error('[StreamingChat] Error in sendMessage', error: e);
 
       // Remove streaming message if it was added
       if (_currentConversation != null &&
@@ -294,8 +295,8 @@ class StreamingChatService extends ChangeNotifier {
         final lastMessage = _currentConversation!.messages.last;
         if (lastMessage.isStreaming) {
           _removeLastMessage();
-          debugPrint(
-            ' [StreamingChat] Removed streaming message due to error',
+          appLogger.debug(
+            '[StreamingChat] Removed streaming message due to error',
           );
         }
       }
@@ -338,7 +339,7 @@ class StreamingChatService extends ChangeNotifier {
 
   /// Handle streaming error
   void _handleStreamingError(dynamic error) {
-    debugPrint(' [StreamingChat] Streaming error: $error');
+    appLogger.error('[StreamingChat] Streaming error: $error');
 
     _setStreaming(false);
     _removeLastMessage();
@@ -355,7 +356,7 @@ class StreamingChatService extends ChangeNotifier {
 
   /// Handle streaming completion
   void _handleStreamingComplete() {
-    debugPrint(' [StreamingChat] Streaming completed');
+    appLogger.debug('[StreamingChat] Streaming completed');
 
     _setStreaming(false);
 
@@ -417,7 +418,7 @@ class StreamingChatService extends ChangeNotifier {
   /// Fallback to non-streaming chat when streaming is not available
   Future<void> _fallbackToNonStreamingChat(String content) async {
     try {
-      debugPrint(' [StreamingChat] Using fallback non-streaming chat');
+      appLogger.debug('[StreamingChat] Using fallback non-streaming chat');
 
       // Add loading message for assistant
       final loadingMessage = Message.loading(model: _selectedModel!);
@@ -442,7 +443,7 @@ class StreamingChatService extends ChangeNotifier {
           model: _selectedModel!,
         );
         _addMessageToCurrentConversation(assistantMessage);
-        debugPrint(' [StreamingChat] Fallback chat completed successfully');
+        appLogger.debug('[StreamingChat] Fallback chat completed successfully');
       } else {
         final errorMessage = Message.assistant(
           content:
@@ -454,7 +455,7 @@ class StreamingChatService extends ChangeNotifier {
         _addMessageToCurrentConversation(errorMessage);
       }
     } catch (e) {
-      debugPrint(' [StreamingChat] Fallback chat error: $e');
+      appLogger.error('[StreamingChat] Fallback chat error', error: e);
 
       // Remove loading message if it exists
       if (_currentConversation != null &&
@@ -487,7 +488,7 @@ class StreamingChatService extends ChangeNotifier {
   void _addMessageToCurrentConversation(Message message) {
     try {
       if (_currentConversation == null) {
-        debugPrint('Warning: Attempted to add message to null conversation');
+        appLogger.warning('Attempted to add message to null conversation');
         return;
       }
 
@@ -500,12 +501,12 @@ class StreamingChatService extends ChangeNotifier {
         _saveConversations();
         notifyListeners();
       } else {
-        debugPrint(
-          'Warning: Current conversation not found in conversations list',
+        appLogger.warning(
+          'Current conversation not found in conversations list',
         );
       }
     } catch (e) {
-      debugPrint('Error adding message to conversation: $e');
+      appLogger.error('Error adding message to conversation', error: e);
     }
   }
 
@@ -532,7 +533,7 @@ class StreamingChatService extends ChangeNotifier {
         notifyListeners();
       }
     } catch (e) {
-      debugPrint('Error removing last message: $e');
+      appLogger.error('Error removing last message', error: e);
     }
   }
 
@@ -576,8 +577,9 @@ class StreamingChatService extends ChangeNotifier {
 
     // Clear from storage asynchronously
     _storageService.clearAllConversations().catchError((e) {
-      debugPrint(
-        ' [StreamingChat] Error clearing conversations from storage: $e',
+      appLogger.error(
+        '[StreamingChat] Error clearing conversations from storage',
+        error: e,
       );
     });
 
@@ -586,7 +588,7 @@ class StreamingChatService extends ChangeNotifier {
 
   @override
   void dispose() {
-    debugPrint(' [StreamingChat] Disposing service');
+    appLogger.debug('[StreamingChat] Disposing service');
 
     _cancelCurrentStream();
     _streamingContentSubject.close();
