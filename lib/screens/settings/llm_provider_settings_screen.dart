@@ -3,15 +3,16 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
-import '../components/enhanced_provider_status_widget.dart';
-import '../config/theme.dart';
-import '../config/app_config.dart';
-import '../services/ollama_service.dart';
-import '../services/streaming_proxy_service.dart';
-import '../services/auth_service.dart';
-import '../components/modern_card.dart';
-import '../models/llm_model.dart';
-import '../services/llm_provider_manager.dart';
+
+import '../../components/enhanced_provider_status_widget.dart';
+import '../../config/theme.dart';
+import '../../config/app_config.dart';
+import '../../services/ollama_service.dart';
+import '../../services/streaming_proxy_service.dart';
+import '../../services/auth_service.dart';
+import '../../components/modern_card.dart';
+import '../../models/llm_model.dart';
+import '../../services/llm_provider_manager.dart';
 
 /// LLM Provider Settings Screen - Dedicated settings for Ollama testing and configuration
 class LLMProviderSettingsScreen extends StatefulWidget {

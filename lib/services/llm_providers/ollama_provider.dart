@@ -7,7 +7,7 @@ import '../../config/app_config.dart';
 import '../../models/llm_model.dart';
 import '../../utils/logger.dart';
 import '../auth_service.dart';
-import '../settings_service.dart';
+import '../connection_manager_service.dart';
 import 'llm_provider.dart';
 import '../../utils/color_extensions.dart';
 
@@ -17,6 +17,12 @@ import '../../utils/color_extensions.dart';
 /// or direct local connections, supporting model management, streaming,
 /// and all standard Ollama API features.
 class OllamaProvider extends LLMProvider {
+  OllamaProvider({
+    required super.config,
+    required super.authService,
+    required ConnectionManagerService connectionManager,
+  }) : _connectionManager = connectionManager;
+
   final ConnectionManagerService _connectionManager;
   // Removed TunnelLogger - use debugPrint for logging
 
@@ -35,17 +41,6 @@ class OllamaProvider extends LLMProvider {
   // Active request tracking
   int _activeRequestCount = 0;
   final Set<String> _activeRequestIds = <String>{};
-
-  OllamaProvider({
-    required ConnectionManagerService connectionManager,
-    LLMProviderConfig? config,
-  }) : _connectionManager = connectionManager,
-       _config =
-           config ??
-           LLMProviderConfig(
-             providerId: 'ollama',
-             baseUrl: 'http://localhost:11434',
-           );
 
   @override
   String get providerId => 'ollama';

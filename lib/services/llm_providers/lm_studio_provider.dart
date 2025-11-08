@@ -3,7 +3,6 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
-import 'base_llm_provider.dart';
 import '../../config/app_config.dart';
 import '../../models/llm_model.dart';
 import '../auth_service.dart';
@@ -15,7 +14,7 @@ import '../../utils/color_extensions.dart';
 ///
 /// Provides integration with LM Studio instances through OpenAI-compatible API
 /// endpoints, supporting model management, streaming, and chat completions.
-class LMStudioProvider extends BaseLLMProvider {
+class LMStudioProvider extends LLMProvider {
   
 
   // State
@@ -34,13 +33,10 @@ class LMStudioProvider extends BaseLLMProvider {
   int _activeRequestCount = 0;
   final Set<String> _activeRequestIds = <String>{};
 
-  LMStudioProvider({LLMProviderConfig? config})
-    : _config =
-          config ??
-          LLMProviderConfig(
-            providerId: 'lmstudio',
-            baseUrl: 'http://localhost:1234',
-          );
+  LMStudioProvider({
+    required super.config,
+    required super.authService,
+  }) : _config = super.config;
 
   @override
   String get providerId => 'lmstudio';
