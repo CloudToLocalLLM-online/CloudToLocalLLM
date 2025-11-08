@@ -592,7 +592,7 @@ class ConversationStorageService {
       }
     } catch (e) {
       debugPrint('[ConversationStorage] Error saving conversation via API: $e');
-      rethrow;
+      // Do not rethrow, to prevent app crash on startup when not logged in
     }
   }
 
@@ -613,7 +613,7 @@ class ConversationStorageService {
       }
     } catch (e) {
       debugPrint('[ConversationStorage] Error deleting conversation via API: $e');
-      rethrow;
+      // Do not rethrow
     }
   }
 
