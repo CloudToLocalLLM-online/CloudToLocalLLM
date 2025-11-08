@@ -55,6 +55,17 @@ class LangChainRAGService extends ChangeNotifier {
         await _ollamaService.initialize();
       }
 
+      if (!_ollamaService.hasActiveModel) {
+        _error =
+            'No connection available. Connect a desktop bridge to enable RAG features.';
+        debugPrint(
+          '[LangChainRAG] Initialization skipped: $_error',
+        );
+        _isInitialized = false;
+        notifyListeners();
+        return;
+      }
+
       // Initialize embeddings model
       await _initializeEmbeddings();
 
@@ -66,6 +77,16 @@ class LangChainRAGService extends ChangeNotifier {
 
       _isInitialized = true;
       debugPrint('[langchain_rag_service] RAG service initialized successfully');
+    } on StateError catch (e) {
+      _error = 'RAG service unavailable: $e';
+      debugPrint('[LangChainRAG] Initialization skipped: $e');
+      _isInitialized = false;
+      notifyListeners();
+    } on SocketException catch (e) {
+      _error = 'RAG service unavailable: $e';
+      debugPrint('[LangChainRAG] Initialization skipped due to network error: $e');
+      _isInitialized = false;
+      notifyListeners();
     } catch (e) {
       _error = 'Failed to initialize RAG service: $e';
       debugPrint('[LangChainRAG] ERROR: RAG_INIT_FAILED - $_error - $e');
