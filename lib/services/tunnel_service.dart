@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
+import '../config/app_config.dart';
 import '../models/tunnel_config.dart';
 import '../models/tunnel_state.dart';
 import '../services/auth_service.dart';
@@ -90,9 +91,9 @@ class TunnelService extends ChangeNotifier {
 
       final config = TunnelConfig(
         userId: userId,
-        cloudProxyUrl: kDebugMode 
-            ? 'https://app.cloudtolocalllm.online:8080'
-            : 'https://app.cloudtolocalllm.online:8080',
+        cloudProxyUrl: kDebugMode
+            ? AppConfig.tunnelChiselUrl
+            : AppConfig.tunnelChiselUrl,
         localBackendUrl: 'http://localhost:11434',
         authToken: token,
         enableCloudProxy: true,

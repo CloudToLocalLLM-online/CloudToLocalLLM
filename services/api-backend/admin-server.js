@@ -56,7 +56,7 @@ const logger = winston.createLogger({
 // Configuration
 const ADMIN_PORT = process.env.ADMIN_PORT || 3001;
 const AUTH0_DOMAIN = process.env.AUTH0_DOMAIN || 'dev-v2f2p008x3dr74ww.us.auth0.com';
-const AUTH0_AUDIENCE = process.env.AUTH0_AUDIENCE || 'https://app.cloudtolocalllm.online';
+const AUTH0_AUDIENCE = process.env.AUTH0_AUDIENCE || 'https://api.cloudtolocalllm.online';
 
 // Docker client for container management
 const docker = new Docker();

@@ -1082,7 +1082,7 @@ class _UnifiedSettingsScreenState extends State<UnifiedSettingsScreen> {
               if (isAuthenticated)
                 _buildStatusRow(
                   'Tunnel Endpoint',
-                  'https://app.cloudtolocalllm.online/api/tunnel/${authService.currentUser?.id ?? 'user'}',
+                  '${AppConfig.apiBaseUrl}/tunnel/${authService.currentUser?.id ?? 'user'}',
                   AppTheme.textColorLight,
                 ),
             ],

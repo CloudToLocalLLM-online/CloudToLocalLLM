@@ -26,7 +26,7 @@ dotenv.config();
 
 // Auth0 JWT validation middleware
 const checkJwt = auth({
-  audience: process.env.AUTH0_AUDIENCE || 'https://app.cloudtolocalllm.online',
+  audience: process.env.AUTH0_AUDIENCE || 'https://api.cloudtolocalllm.online',
   issuerBaseURL: process.env.AUTH0_DOMAIN ? `https://${process.env.AUTH0_DOMAIN}` : 'https://cloudtolocalllm.us.auth0.com',
   tokenSigningAlg: 'RS256'
 });
@@ -53,7 +53,7 @@ const logger = winston.createLogger({
 // Configuration
 const PORT = process.env.PORT || 8080;
 const AUTH0_DOMAIN = process.env.AUTH0_DOMAIN || 'dev-v2f2p008x3dr74ww.us.auth0.com';
-const AUTH0_AUDIENCE = process.env.AUTH0_AUDIENCE || 'https://app.cloudtolocalllm.online';
+const AUTH0_AUDIENCE = process.env.AUTH0_AUDIENCE || 'https://api.cloudtolocalllm.online';
 const DOMAIN = process.env.DOMAIN || 'cloudtolocalllm.online';
 
 // AuthService will be initialized in initializeHttpPollingSystem()

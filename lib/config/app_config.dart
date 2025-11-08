@@ -4,7 +4,7 @@ import 'package:flutter/foundation.dart';
 class AppConfig {
   // App Information
   static const String appName = 'CloudToLocalLLM';
-  static const String appVersion = '4.3.0'; // Updated by build scripts
+  static const String appVersion = '4.4.0'; // Updated by build scripts
   static const String appDescription =
       'Manage and run powerful Large Language Models locally, orchestrated via a cloud interface.';
 
@@ -18,7 +18,7 @@ class AppConfig {
 
   // Auth0 Configuration (replaces GCIP)
   static const String auth0Domain = 'dev-v2f2p008x3dr74ww.us.auth0.com';
-  static const String auth0Audience = 'https://app.cloudtolocalllm.online';
+  static const String auth0Audience = 'https://api.cloudtolocalllm.online';
   static const String auth0ClientId = 'FuXPnevXpp311CdYHGsbNZe9t3D8Ts7A';
 
   // Legacy Auth0 Configuration (for migration reference)
@@ -34,14 +34,14 @@ class AppConfig {
   static const String devModeUser = 'dev@cloudtolocalllm.online';
 
   // API Configuration
-  static const String apiBaseUrl = 'https://app.cloudtolocalllm.online/api';
+  static const String apiBaseUrl = 'https://api.cloudtolocalllm.online/api';
   static const Duration apiTimeout = Duration(seconds: 30);
 
   // Tunnel Configuration (Chisel)
   static const String tunnelChiselUrl =
-      'https://app.cloudtolocalllm.online:8080';
+      'https://api.cloudtolocalllm.online:8080';
   static const String tunnelChiselUrlDev =
-      'https://app.cloudtolocalllm.online:8080';
+      'https://api.cloudtolocalllm.online:8080';
 
   // UI Configuration
   static const double maxContentWidth = 1200.0;
@@ -69,8 +69,7 @@ class AppConfig {
   static const Duration ollamaTimeout = Duration(seconds: 60);
 
   // Cloud Relay Configuration (for web/mobile)
-  static const String cloudOllamaUrl =
-      'https://app.cloudtolocalllm.online/api/ollama';
+  static const String cloudOllamaUrl = '$apiBaseUrl/ollama';
 
   // Admin Interface Configuration
   static const bool enableAdminInterface = true;
@@ -78,7 +77,7 @@ class AppConfig {
 
   // Platform-specific admin server URLs
   static const String adminServerUrlWeb =
-      'https://app.cloudtolocalllm.online:3001';
+      'https://api.cloudtolocalllm.online:3001';
   static const String adminServerUrlDesktop = 'http://localhost:3001';
 
   // Get admin server URL based on platform
@@ -119,7 +118,7 @@ class AppConfig {
 
   // Bridge Configuration
   static const String bridgeStatusUrl =
-      'https://app.cloudtolocalllm.online/api/ollama/bridge/status';
+      '$apiBaseUrl/ollama/bridge/status';
   static const String bridgeRegisterUrl =
-      'https://app.cloudtolocalllm.online/api/ollama/bridge/register';
+      '$apiBaseUrl/ollama/bridge/register';
 }

@@ -12,7 +12,7 @@ import { AuthService } from '../auth/auth-service.js';
 
 // Configuration
 const AUTH0_DOMAIN = process.env.AUTH0_DOMAIN || 'dev-v2f2p008x3dr74ww.us.auth0.com';
-const AUTH0_AUDIENCE = process.env.AUTH0_AUDIENCE || 'https://app.cloudtolocalllm.online';
+const AUTH0_AUDIENCE = process.env.AUTH0_AUDIENCE || 'https://api.cloudtolocalllm.online';
 
 // Use AuthService for JWT validation (eliminates jwks-client issues)
 const authService = new AuthService({

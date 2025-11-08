@@ -249,7 +249,7 @@ class _ConnectionStatusScreenState extends State<ConnectionStatusScreen> {
               ),
               _buildStatusRow(
                 'Endpoint',
-                'app.cloudtolocalllm.online',
+                'api.cloudtolocalllm.online',
                 AppTheme.textColorLight,
               ),
               _buildStatusRow(

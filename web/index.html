@@ -91,7 +91,7 @@
     // Initialize Auth0 when config is loaded
     window.addEventListener('DOMContentLoaded', async function() {
       if (window.cloudToLocalLLMConfig) {
-        const audience = 'https://app.cloudtolocalllm.online';
+        const audience = 'https://api.cloudtolocalllm.online';
         console.log(' Initializing Auth0 with audience:', audience);
         window.auth0Client = await auth0.createAuth0Client({
           domain: 'dev-v2f2p008x3dr74ww.us.auth0.com',

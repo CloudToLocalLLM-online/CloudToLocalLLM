@@ -132,9 +132,7 @@ class DesktopClientDetectionService extends ChangeNotifier {
       // Fixed: Corrected API endpoint path
       final response = await _httpClient
           .get(
-            Uri.parse(
-              '${AppConfig.appUrl}/api/ollama/bridge/status',
-            ), // Fixed: added /api/
+            Uri.parse(AppConfig.bridgeStatusUrl),
             headers: {
               'Authorization': 'Bearer $accessToken',
               'Content-Type': 'application/json',

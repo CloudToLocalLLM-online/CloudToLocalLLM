@@ -11,6 +11,7 @@ import 'package:flutter/foundation.dart';
 import 'package:langchain/langchain.dart';
 import 'package:langchain_ollama/langchain_ollama.dart';
 
+import '../config/app_config.dart';
 import '../models/message.dart';
 import 'connection_manager_service.dart';
 
@@ -151,7 +152,7 @@ class LangChainOllamaService extends ChangeNotifier {
         return 'http://localhost:11434';
       case ConnectionType.cloud:
         // Route through tunnel system
-        return 'https://app.cloudtolocalllm.online/api/ollama';
+        return AppConfig.cloudOllamaUrl;
       case ConnectionType.none:
         throw StateError('No connection available');
     }

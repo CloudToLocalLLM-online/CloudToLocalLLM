@@ -104,7 +104,7 @@ class OllamaService extends ChangeNotifier {
       _clearError();
 
       final url = _isWeb
-          ? '${AppConfig.appUrl}/api/ollama/bridge/status'
+          ? AppConfig.bridgeStatusUrl
           : '$_baseUrl/api/version';
       if (kDebugMode) {
         debugPrint(

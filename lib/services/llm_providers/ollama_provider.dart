@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
+import '../../config/app_config.dart';
 import 'base_llm_provider.dart';
 import '../connection_manager_service.dart';
 
@@ -392,7 +393,7 @@ class OllamaProvider extends BaseLLMProvider {
       case ConnectionType.local:
         return 'http://localhost:11434';
       case ConnectionType.cloud:
-        return 'https://app.cloudtolocalllm.online/api/ollama';
+        return AppConfig.cloudOllamaUrl;
       case ConnectionType.none:
         throw StateError('No connection available');
     }

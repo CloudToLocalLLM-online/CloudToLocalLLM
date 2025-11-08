@@ -1,6 +1,8 @@
 // Auth0 Bridge for Flutter Web
 // Provides a simple interface for Flutter to call Auth0 functions
 
+const API_AUDIENCE = 'https://api.cloudtolocalllm.online';
+
 window.auth0Bridge = {
   // Check if Auth0 client is initialized
   isInitialized: function() {
@@ -17,7 +19,7 @@ window.auth0Bridge = {
       await window.auth0Client.loginWithRedirect({
         authorizationParams: {
           redirect_uri: window.location.origin,
-          audience: 'https://app.cloudtolocalllm.online'
+          audience: API_AUDIENCE
         }
       });
     } catch (error) {
@@ -35,7 +37,7 @@ window.auth0Bridge = {
     }
     
     try {
-      const audience = 'https://app.cloudtolocalllm.online';
+      const audience = API_AUDIENCE;
       console.log(' Starting Auth0 Google login redirect with audience:', audience);
       await window.auth0Client.loginWithRedirect({
         authorizationParams: {
@@ -147,10 +149,10 @@ window.auth0Bridge = {
         return null;
       }
       
-      const audience = 'https://app.cloudtolocalllm.online';
+      const audience = API_AUDIENCE;
       return await window.auth0Client.getTokenSilently({
         authorizationParams: {
-          audience: audience,
+          audience: API_AUDIENCE,
           scope: 'openid profile email offline_access'
         }
       });

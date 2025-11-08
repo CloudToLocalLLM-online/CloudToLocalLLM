@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
+import '../config/app_config.dart';
 import '../models/container_creation_result.dart';
 import 'auth_service.dart';
 
@@ -44,7 +45,7 @@ class UserContainerService extends ChangeNotifier {
     if (kDebugMode) {
       return 'http://localhost:8080';
     } else {
-      return 'https://app.cloudtolocalllm.online/api';
+      return AppConfig.apiBaseUrl;
     }
   }
 
@@ -78,7 +79,7 @@ class UserContainerService extends ChangeNotifier {
       }
 
       final response = await http.post(
-        Uri.parse('$_baseUrl/api/streaming-proxy/provision'),
+        Uri.parse('$_baseUrl/streaming-proxy/provision'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
@@ -163,7 +164,7 @@ class UserContainerService extends ChangeNotifier {
       }
 
       final response = await http.get(
-        Uri.parse('$_baseUrl/api/proxy/status'),
+        Uri.parse('$_baseUrl/proxy/status'),
         headers: {'Authorization': 'Bearer $token'},
       );
 
@@ -248,7 +249,7 @@ class UserContainerService extends ChangeNotifier {
       }
 
       final response = await http.post(
-        Uri.parse('$_baseUrl/api/proxy/stop'),
+        Uri.parse('$_baseUrl/proxy/stop'),
         headers: {'Authorization': 'Bearer $token'},
       );
 
