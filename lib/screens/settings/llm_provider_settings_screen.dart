@@ -9,6 +9,9 @@ import '../../services/ollama_service.dart';
 import '../../services/streaming_proxy_service.dart';
 import '../../services/auth_service.dart';
 import '../../components/modern_card.dart';
+import '../../models/llm_model.dart';
+import '../../services/llm_provider_manager.dart';
+import '../../utils/color_extensions.dart';
 
 /// LLM Provider Settings Screen - Dedicated settings for Ollama testing and configuration
 class LLMProviderSettingsScreen extends StatefulWidget {

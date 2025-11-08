@@ -2,6 +2,11 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../components/gradient_button.dart';
+import '../components/modern_card.dart';
+import '../config/app_config.dart';
+import '../config/theme.dart';
+import '../utils/color_extensions.dart';
 
 /// Marketing homepage screen - web-only
 /// Replicates the static site design with Material Design 3

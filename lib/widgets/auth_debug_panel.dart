@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import '../services/auth_logger.dart';
+import '../utils/color_extensions.dart';
 
 /// Debug panel for authentication logging
 /// Only visible in debug mode and on web platform

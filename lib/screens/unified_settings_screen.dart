@@ -13,6 +13,7 @@ import '../components/settings_sidebar.dart';
 
 import '../config/app_config.dart';
 import '../config/theme.dart';
+import '../config/theme_extensions.dart';
 
 import '../services/auth_service.dart';
 
@@ -21,6 +22,7 @@ import '../services/tunnel_service.dart';
 import '../services/user_data_service.dart';
 import '../services/version_service.dart';
 import '../services/settings_preference_service.dart';
+import '../utils/color_extensions.dart';
 
 /// Unified Settings Screen for CloudToLocalLLM v3.3.1+
 ///

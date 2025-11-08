@@ -4,15 +4,19 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
 import '../../config/app_config.dart';
-import 'base_llm_provider.dart';
-import '../connection_manager_service.dart';
+import '../../models/llm_model.dart';
+import '../../utils/logger.dart';
+import '../auth_service.dart';
+import '../settings_service.dart';
+import 'llm_provider.dart';
+import '../../utils/color_extensions.dart';
 
 /// Ollama LLM provider implementation
 ///
 /// Provides integration with Ollama instances through the tunnel system
 /// or direct local connections, supporting model management, streaming,
 /// and all standard Ollama API features.
-class OllamaProvider extends BaseLLMProvider {
+class OllamaProvider extends LLMProvider {
   final ConnectionManagerService _connectionManager;
   // Removed TunnelLogger - use debugPrint for logging
 

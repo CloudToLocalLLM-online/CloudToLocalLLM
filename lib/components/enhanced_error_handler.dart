@@ -16,6 +16,7 @@ import '../config/theme.dart';
 import '../services/connection_manager_service.dart';
 import '../services/llm_provider_manager.dart';
 import '../services/provider_discovery_service.dart';
+import '../utils/color_extensions.dart';
 
 /// Enhanced error display widget with troubleshooting guidance
 class EnhancedErrorWidget extends StatefulWidget {

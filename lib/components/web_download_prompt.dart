@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import '../config/theme.dart';
 import '../services/desktop_client_detection_service.dart';
+import '../utils/color_extensions.dart';
 
 /// Web-specific download prompt that appears for first-time web users
 /// instead of the full setup wizard. Directs users to download the desktop app.

@@ -4,6 +4,12 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
 import 'base_llm_provider.dart';
+import '../../config/app_config.dart';
+import '../../models/llm_model.dart';
+import '../auth_service.dart';
+import '../settings_service.dart';
+import 'llm_provider.dart';
+import '../../utils/color_extensions.dart';
 
 /// LM Studio LLM provider implementation
 ///

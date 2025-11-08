@@ -2,6 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../config/theme.dart';
 import '../models/message.dart';
+import '../services/streaming_chat_service.dart';
+import 'message_actions.dart';
+import 'message_content.dart';
+import '../utils/color_extensions.dart';
 
 /// A chat message bubble component similar to ChatGPT
 class MessageBubble extends StatefulWidget {

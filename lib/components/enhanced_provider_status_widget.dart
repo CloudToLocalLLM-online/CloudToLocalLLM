@@ -14,6 +14,7 @@ import '../services/llm_provider_manager.dart';
 import '../services/provider_configuration_manager.dart';
 import '../services/provider_discovery_service.dart';
 import '../config/theme.dart';
+import '../utils/color_extensions.dart';
 
 /// Enhanced provider status widget with detailed health information
 class EnhancedProviderStatusWidget extends StatefulWidget {

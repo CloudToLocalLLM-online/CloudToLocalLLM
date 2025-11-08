@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../config/theme.dart';
+import '../utils/color_extensions.dart';
 
 /// Loading screen with modern design
 class LoadingScreen extends StatelessWidget {

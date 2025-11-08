@@ -11,12 +11,14 @@ import '../../components/tunnel_status_button.dart';
 import '../../components/web_download_prompt.dart';
 import '../../config/app_config.dart';
 import '../../config/theme.dart';
+import '../../config/theme_extensions.dart';
 import '../../models/conversation.dart';
 import '../../models/message.dart';
 import '../../services/auth_service.dart';
 import '../../services/connection_manager_service.dart';
 import '../../services/streaming_chat_service.dart';
 import '../../services/web_download_prompt_service.dart';
+import '../utils/color_extensions.dart';
 
 class HomeLayout extends StatelessWidget {
   const HomeLayout({

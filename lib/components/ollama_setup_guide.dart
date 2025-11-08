@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../config/theme.dart';
 import '../models/ollama_connection_error.dart';
+import '../utils/color_extensions.dart';
 
 /// Setup guide dialog for Ollama installation and configuration
 class OllamaSetupGuide extends StatelessWidget {

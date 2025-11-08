@@ -5,6 +5,10 @@ import 'package:flutter/services.dart';
 import '../services/privacy_storage_manager.dart';
 import '../services/enhanced_user_tier_service.dart';
 import '../services/platform_service_manager.dart';
+import '../config/theme.dart';
+import '../services/auth_service.dart';
+import '../services/privacy_service.dart';
+import '../utils/color_extensions.dart';
 
 /// Privacy dashboard widget showing transparent data storage information
 ///

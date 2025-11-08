@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../config/theme.dart';
+import '../utils/color_extensions.dart';
 
 /// Modern card component with hover effects matching homepage design
 class ModernCard extends StatefulWidget {
