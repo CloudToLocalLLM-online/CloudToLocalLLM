@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:flutter/foundation.dart';
 import '../config/router.dart';
 import '../config/theme.dart';
@@ -22,8 +23,7 @@ class SettingsSection {
   });
 }
 
-/// A sidebar component showing the list of settings sections
-/// Follows the same design pattern as ConversationList for consistency
+/// Sidebar for managing chat sessions and accessing settings.
 class SettingsSidebar extends StatelessWidget {
   final List<SettingsSection> sections;
   final String? selectedSectionId;

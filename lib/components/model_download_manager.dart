@@ -6,6 +6,7 @@ import '../config/app_config.dart';
 import '../config/theme.dart';
 import '../models/llm_model.dart';
 import '../services/settings_service.dart';
+import '../services/ollama_service.dart';
 import 'gradient_button.dart';
 import 'modern_card.dart';
 import '../utils/color_extensions.dart';

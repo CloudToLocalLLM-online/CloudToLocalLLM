@@ -18,7 +18,7 @@ import '../../services/auth_service.dart';
 import '../../services/connection_manager_service.dart';
 import '../../services/streaming_chat_service.dart';
 import '../../services/web_download_prompt_service.dart';
-import '../utils/color_extensions.dart';
+import '../../utils/color_extensions.dart';
 
 class HomeLayout extends StatelessWidget {
   const HomeLayout({

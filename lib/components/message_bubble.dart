@@ -7,8 +7,8 @@ import 'message_actions.dart';
 import 'message_content.dart';
 import '../utils/color_extensions.dart';
 
-/// A chat message bubble component similar to ChatGPT
-class MessageBubble extends StatefulWidget {
+/// A bubble-styled widget for displaying a single chat message.
+class MessageBubble extends StatelessWidget {
   final Message message;
   final bool showAvatar;
   final bool showTimestamp;
@@ -23,38 +23,17 @@ class MessageBubble extends StatefulWidget {
   });
 
   @override
-  State<MessageBubble> createState() => _MessageBubbleState();
-}
-
-class _MessageBubbleState extends State<MessageBubble>
-    with SingleTickerProviderStateMixin {
-  bool _isHovered = false;
-  late AnimationController _animationController;
-  late Animation<double> _fadeAnimation;
-
-  @override
-  void initState() {
-    super.initState();
-    _animationController = AnimationController(
-      duration: const Duration(milliseconds: 300),
-      vsync: this,
-    );
-    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
-    );
-    _animationController.forward();
-  }
-
-  @override
-  void dispose() {
-    _animationController.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
     return FadeTransition(
-      opacity: _fadeAnimation,
+      opacity: Tween<double>(begin: 0.0, end: 1.0).animate(
+        CurvedAnimation(
+          parent: AnimationController(
+            duration: const Duration(milliseconds: 300),
+            vsync: this,
+          ),
+          curve: Curves.easeInOut,
+        ),
+      ),
       child: MouseRegion(
         onEnter: (_) => setState(() => _isHovered = true),
         onExit: (_) => setState(() => _isHovered = false),
