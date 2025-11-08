@@ -63,8 +63,24 @@ class LangChainOllamaService extends ChangeNotifier {
         await _connectionManager.initialize();
       }
 
+      if (!_connectionManager.hasAnyConnection) {
+        _error = 'No connection available. Connect a desktop bridge to use cloud models.';
+        debugPrint('[LangChainOllama] Initialization skipped: No connection available after connection manager init');
+        _isInitialized = false;
+        notifyListeners();
+        return;
+      }
+
       // Initialize with default model
-      await _initializeChatModel('llama3.2');
+      try {
+        await _initializeChatModel('llama3.2');
+      } on StateError catch (e) {
+        _error = 'No connection available. Connect a desktop bridge to use cloud models.';
+        debugPrint('[LangChainOllama] Initialization skipped: $e');
+        _isInitialized = false;
+        notifyListeners();
+        return;
+      }
 
       // Load available models
       await _loadAvailableModels();
@@ -74,7 +90,6 @@ class LangChainOllamaService extends ChangeNotifier {
     } catch (e) {
       _error = 'Failed to initialize LangChain service: $e';
       debugPrint('[LangChainOllama] Initialization failed: $e');
-      rethrow;
     } finally {
       _setLoading(false);
     }

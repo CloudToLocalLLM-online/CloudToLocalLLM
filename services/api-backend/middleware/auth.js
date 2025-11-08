@@ -7,24 +7,75 @@
 
 import jwt from 'jsonwebtoken';
 import fetch from 'node-fetch';
+import { auth } from 'express-oauth2-jwt-bearer';
 import logger from '../logger.js';
 import { AuthService } from '../auth/auth-service.js';
 
-// Configuration
-const AUTH0_DOMAIN = process.env.AUTH0_DOMAIN || 'dev-v2f2p008x3dr74ww.us.auth0.com';
-const AUTH0_AUDIENCE = process.env.AUTH0_AUDIENCE || 'https://api.cloudtolocalllm.online';
+// Auth0 configuration (ensure consistent defaults across services)
+const DEFAULT_AUTH0_DOMAIN = 'dev-v2f2p008x3dr74ww.us.auth0.com';
+const DEFAULT_AUTH0_AUDIENCE = 'https://api.cloudtolocalllm.online';
+const AUTH0_DOMAIN = process.env.AUTH0_DOMAIN || DEFAULT_AUTH0_DOMAIN;
+const AUTH0_AUDIENCE = process.env.AUTH0_AUDIENCE || DEFAULT_AUTH0_AUDIENCE;
 
-// Use AuthService for JWT validation (eliminates jwks-client issues)
+// Primary JWT validator from Auth0 SDK (handles JWKS caching internally)
+const checkJwt = auth({
+  audience: AUTH0_AUDIENCE,
+  issuerBaseURL: `https://${AUTH0_DOMAIN}`,
+  tokenSigningAlg: 'RS256',
+});
+
+// Use AuthService for extended validation/session management
 const authService = new AuthService({
   AUTH0_DOMAIN,
   AUTH0_AUDIENCE,
 });
+
+let authServiceInitialized = false;
+
+async function ensureAuthServiceInitialized() {
+  if (authServiceInitialized) {
+    return;
+  }
+  try {
+    await authService.initialize();
+    authServiceInitialized = true;
+  } catch (error) {
+    logger.error(' [Auth] Failed to initialize AuthService', { error: error.message });
+    throw error;
+  }
+}
 
 /**
  * JWT Authentication Middleware
  * Validates Auth0 JWT tokens and attaches user info to request
  */
 export async function authenticateJWT(req, res, next) {
+  // First, validate JWT signature & claims with Auth0 SDK
+  try {
+    await new Promise((resolve, reject) => {
+      checkJwt(req, res, (err) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve();
+        }
+      });
+    });
+  } catch (error) {
+    logger.warn(' [Auth] Auth0 SDK token verification failed', {
+      message: error.message,
+      code: error.code,
+      name: error.name,
+    });
+
+    const status = error.status || 401;
+    return res.status(status).json({
+      error: 'Invalid or expired token',
+      code: error.code || 'TOKEN_VERIFICATION_FAILED',
+      details: error.message,
+    });
+  }
+
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];
 
@@ -36,6 +87,25 @@ export async function authenticateJWT(req, res, next) {
   }
 
   try {
+    try {
+      await ensureAuthServiceInitialized();
+    } catch (initError) {
+      logger.error(' [Auth] AuthService initialization failed, falling back to Auth0 payload', {
+        error: initError.message,
+      });
+
+      if (req.auth?.payload) {
+        req.user = req.auth.payload;
+        req.userId = req.auth.payload.sub;
+        return next();
+      }
+
+      return res.status(503).json({
+        error: 'Authentication service unavailable',
+        code: 'AUTH_SERVICE_UNAVAILABLE',
+      });
+    }
+
     // First, try to decode as JWT to check if it's a proper JWT token
     const decoded = jwt.decode(token, { complete: true });
 
@@ -75,9 +145,19 @@ export async function authenticateJWT(req, res, next) {
 
     // If it's a proper JWT token, use the AuthService validation
     logger.debug(' [Auth] Token appears to be JWT, using AuthService validation');
-    const result = await authService.validateToken(token);
+    const result = await authService.validateToken(token, req);
 
     if (!result.valid) {
+      logger.warn(' [Auth] AuthService validation failed, falling back to Auth0 payload', {
+        error: result.error,
+      });
+
+      if (req.auth?.payload) {
+        req.user = req.auth.payload;
+        req.userId = req.auth.payload.sub;
+        return next();
+      }
+
       return res.status(401).json({
         error: result.error || 'Token validation failed',
         code: 'TOKEN_VALIDATION_FAILED',
@@ -87,6 +167,7 @@ export async function authenticateJWT(req, res, next) {
     // Attach user info to request
     req.user = result.payload;
     req.userId = result.payload.sub;
+    req.auth = req.auth || { payload: result.payload };
 
     logger.debug(` [Auth] User authenticated via JWT: ${result.payload.sub}`);
     next();
