@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import '../services/auth_logger.dart';
-import '../utils/color_extensions.dart';
 
 /// Debug panel for authentication logging
 /// Only visible in debug mode and on web platform
@@ -69,7 +68,7 @@ class _AuthDebugPanelState extends State<AuthDebugPanel> {
                 child: Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: Colors.blue.withValues(alpha: 0.2),
+                    color: Colors.blue.withOpacity(0.2),
                     borderRadius: BorderRadius.only(
                       topLeft: Radius.circular(12),
                       topRight: Radius.circular(12),

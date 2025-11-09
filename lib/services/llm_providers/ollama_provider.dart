@@ -5,11 +5,8 @@ import 'package:http/http.dart' as http;
 
 import '../../config/app_config.dart';
 import '../../models/llm_model.dart';
-import '../../utils/logger.dart';
-import '../auth_service.dart';
 import '../connection_manager_service.dart';
 import 'llm_provider.dart';
-import '../../utils/color_extensions.dart';
 
 /// Ollama LLM provider implementation
 ///
@@ -33,7 +30,9 @@ class OllamaProvider extends LLMProvider {
   String? _lastError;
   List<LLMModel> _availableModels = [];
   LLMModel? _selectedModel;
-  LLMProviderConfig _config;
+
+  LLMProviderConfig get _config => providerConfig;
+  set _config(LLMProviderConfig value) => providerConfig = value;
 
   // HTTP client
   final http.Client _httpClient = http.Client();

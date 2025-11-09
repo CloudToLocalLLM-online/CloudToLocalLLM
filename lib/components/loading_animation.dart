@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../config/theme.dart';
-import '../utils/color_extensions.dart';
 
 /// Accessible loading animation component with reduced motion support
 class LoadingAnimation extends StatefulWidget {

@@ -6,7 +6,6 @@ import '../config/app_config.dart';
 import '../services/auth_service.dart';
 import '../components/gradient_button.dart';
 import '../components/modern_card.dart';
-import '../utils/color_extensions.dart';
 
 // Conditional import for debug panel - only import on web platform
 import '../widgets/auth_debug_panel.dart'

@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import '../config/theme.dart';
-import '../models/message.dart';
-import '../services/streaming_chat_service.dart';
+import '../models/chat_model.dart';
 import 'message_actions.dart';
 import 'message_content.dart';
-import '../utils/color_extensions.dart';
+import 'package:flutter/services.dart';
 
 /// A bubble-styled widget for displaying a single chat message.
 class MessageBubble extends StatefulWidget {
@@ -53,7 +51,6 @@ class _MessageBubbleState extends State<MessageBubble>
   Widget build(BuildContext context) {
     final isUser = widget.message.isUser;
     final theme = Theme.of(context);
-    final chatService = context.watch<StreamingChatService>();
 
     return FadeTransition(
       opacity: _fadeAnimation,
@@ -194,8 +191,7 @@ class _MessageBubbleState extends State<MessageBubble>
   }
 
   void _copyToClipboard(BuildContext context) {
-    final chatService = context.read<StreamingChatService>();
-    chatService.copyToClipboard(widget.message.content);
+    Clipboard.setData(ClipboardData(text: widget.message.content));
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text('Copied to clipboard'),

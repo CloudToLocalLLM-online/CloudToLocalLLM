@@ -1,12 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 
 import '../config/theme.dart';
-import '../models/chat_model.dart';
-import '../services/streaming_chat_service.dart';
-import 'message_actions.dart';
-import 'message_content.dart';
-import '../utils/color_extensions.dart';
 
 /// Renders the main chat message input area.
 class MessageInput extends StatefulWidget {

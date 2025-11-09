@@ -1,25 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 
 import '../../config/app_config.dart';
 import '../../config/theme.dart';
 import '../../models/chat_model.dart';
 import '../../services/streaming_chat_service.dart';
-import '../../components/chat_controls.dart';
-import '../../components/chat_sidebar.dart';
 import '../../components/message_bubble.dart';
 import '../../components/message_input.dart';
 import '../../components/app_logo.dart';
 import '../../components/tunnel_status_button.dart';
 import '../../components/web_download_prompt.dart';
 import '../../components/conversation_list.dart';
-import '../../models/message.dart';
 import '../../services/auth_service.dart';
 import '../../services/connection_manager_service.dart';
 import '../../services/web_download_prompt_service.dart';
-import '../../utils/color_extensions.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
 
 /// Main layout for the chat interface, handling responsiveness and sidebar toggle.
 class HomeLayout extends StatefulWidget {
@@ -413,9 +409,14 @@ class _MessageList extends StatelessWidget {
           key: ValueKey(message.id),
           message: message,
           showAvatar: true,
+          onRetry: message.hasError
+              ? () {
+                  final chatService = context.read<StreamingChatService>();
+                  _retryMessage(chatService, message);
+                }
+              : null,
         );
       },
-      childCount: conversation.messages.length,
     );
   }
 

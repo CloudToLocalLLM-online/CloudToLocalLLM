@@ -1,13 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
-import 'package:provider/provider.dart';
 
 import '../config/theme.dart';
-import '../models/chat_model.dart';
-import '../services/streaming_chat_service.dart';
-import '../services/tunnel_service.dart';
-import '../utils/color_extensions.dart';
 
 /// Settings section definition
 class SettingsSection {

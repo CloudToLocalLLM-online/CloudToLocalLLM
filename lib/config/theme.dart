@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../utils/color_extensions.dart';
 import 'theme_extensions.dart';
 
 /// Modern Material Design 3 theme configuration matching homepage design

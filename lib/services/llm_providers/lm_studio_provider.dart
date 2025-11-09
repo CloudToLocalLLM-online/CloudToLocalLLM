@@ -3,12 +3,8 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
-import '../../config/app_config.dart';
 import '../../models/llm_model.dart';
-import '../auth_service.dart';
-import '../settings_service.dart';
 import 'llm_provider.dart';
-import '../../utils/color_extensions.dart';
 
 /// LM Studio LLM provider implementation
 ///
@@ -24,7 +20,9 @@ class LMStudioProvider extends LLMProvider {
   String? _lastError;
   List<LLMModel> _availableModels = [];
   LLMModel? _selectedModel;
-  LLMProviderConfig _config;
+
+  LLMProviderConfig get _config => providerConfig;
+  set _config(LLMProviderConfig value) => providerConfig = value;
 
   // HTTP client
   final http.Client _httpClient = http.Client();
@@ -36,7 +34,7 @@ class LMStudioProvider extends LLMProvider {
   LMStudioProvider({
     required super.config,
     required super.authService,
-  }) : _config = super.config;
+  });
 
   @override
   String get providerId => 'lmstudio';
