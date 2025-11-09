@@ -77,23 +77,23 @@ class OllamaService extends ChangeNotifier {
   String? get error => _error;
   bool get isWeb => _isWeb;
 
-  /// Get HTTP headers with authentication for API requests
-  Future<Map<String, String>> _getHeaders() async {
+  /// Build HTTP headers, enforcing authentication on web.
+  Future<Map<String, String>?> _buildRequestHeaders() async {
     final headers = <String, String>{'Content-Type': 'application/json'};
 
-    // Add authentication header for web platform
-    if (_isWeb && _authService != null) {
-      final accessToken = await _authService.getValidatedAccessToken();
-      if (accessToken != null) {
-        headers['Authorization'] = 'Bearer $accessToken';
-        if (kDebugMode) {
-          debugPrint('[DEBUG] Added Authorization header for web request');
-        }
-      } else if (kDebugMode) {
-        debugPrint('[DEBUG] No access token available for web request');
-      }
+    if (!_isWeb || _authService == null) {
+      return headers;
     }
 
+    final accessToken = await _authService.getValidatedAccessToken();
+    if (accessToken == null || accessToken.isEmpty) {
+      if (kDebugMode) {
+        debugPrint('[DEBUG] No access token available for Ollama web request');
+      }
+      return null;
+    }
+
+    headers['Authorization'] = 'Bearer $accessToken';
     return headers;
   }
 
@@ -112,8 +112,16 @@ class OllamaService extends ChangeNotifier {
         );
       }
 
+      final headers = await _buildRequestHeaders();
+      if (_isWeb && headers == null) {
+        debugPrint('[DEBUG] Skipping Ollama bridge status check until user authenticates');
+        _isConnected = false;
+        _clearError();
+        return false;
+      }
+
       final response = await http
-          .get(Uri.parse(url), headers: await _getHeaders())
+          .get(Uri.parse(url), headers: headers ?? {'Content-Type': 'application/json'})
           .timeout(_timeout);
 
       if (response.statusCode == 200) {
@@ -161,8 +169,14 @@ class OllamaService extends ChangeNotifier {
       final url = _isWeb ? '$_baseUrl/api/tags' : '$_baseUrl/api/tags';
       debugPrint('[DEBUG] Getting models from: $url');
 
+      final headers = await _buildRequestHeaders();
+      if (_isWeb && headers == null) {
+        debugPrint('[DEBUG] Skipping model discovery until user authenticates');
+        return [];
+      }
+
       final response = await http
-          .get(Uri.parse(url), headers: await _getHeaders())
+          .get(Uri.parse(url), headers: headers ?? {'Content-Type': 'application/json'})
           .timeout(_timeout);
 
       if (response.statusCode == 200) {
@@ -211,10 +225,16 @@ class OllamaService extends ChangeNotifier {
       final url = _isWeb ? '$_baseUrl/api/chat' : '$_baseUrl/api/chat';
       debugPrint('[DEBUG] Sending chat message to: $url');
 
+      final headers = await _buildRequestHeaders();
+      if (_isWeb && headers == null) {
+        debugPrint('[DEBUG] Skipping chat request until user authenticates');
+        return null;
+      }
+
       final response = await http
           .post(
             Uri.parse(url),
-            headers: await _getHeaders(),
+            headers: headers ?? {'Content-Type': 'application/json'},
             body: json.encode({
               'model': model,
               'messages': messages,
@@ -256,10 +276,16 @@ class OllamaService extends ChangeNotifier {
       final url = _isWeb ? '$_baseUrl/api/pull' : '$_baseUrl/api/pull';
       debugPrint('[DEBUG] Pulling model from: $url');
 
+      final headers = await _buildRequestHeaders();
+      if (_isWeb && headers == null) {
+        debugPrint('[DEBUG] Skipping model pull until user authenticates');
+        return false;
+      }
+
       final response = await http
           .post(
             Uri.parse(url),
-            headers: await _getHeaders(),
+            headers: headers ?? {'Content-Type': 'application/json'},
             body: json.encode({'name': modelName}),
           )
           .timeout(
@@ -298,13 +324,19 @@ class OllamaService extends ChangeNotifier {
       final url = _isWeb ? '$_baseUrl/api/delete' : '$_baseUrl/api/delete';
       debugPrint('[OllamaService] Deleting model from: $url');
 
+      final headers = await _buildRequestHeaders();
+      if (_isWeb && headers == null) {
+        debugPrint('[OllamaService] Skipping model delete until user authenticates');
+        return false;
+      }
+
       final response = await http
-          .delete(
+          .post(
             Uri.parse(url),
-            headers: await _getHeaders(),
+            headers: headers ?? {'Content-Type': 'application/json'},
             body: json.encode({'name': modelName}),
           )
-          .timeout(_timeout);
+          .timeout(const Duration(seconds: 30));
 
       final success = response.statusCode == 200;
       debugPrint(
@@ -392,8 +424,14 @@ class OllamaService extends ChangeNotifier {
 
       final url = _isWeb ? '$_baseUrl/api/chat' : '$_baseUrl/api/chat';
       
+      final headers = await _buildRequestHeaders();
+      if (_isWeb && headers == null) {
+        debugPrint('[DEBUG] Skipping streaming chat until user authenticates');
+        return;
+      }
+
       final request = http.Request('POST', Uri.parse(url));
-      request.headers.addAll(await _getHeaders());
+      request.headers.addAll(headers ?? {'Content-Type': 'application/json'});
       request.body = json.encode({
         'model': model,
         'messages': messages,
