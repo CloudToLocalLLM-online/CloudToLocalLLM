@@ -70,10 +70,9 @@ class AuthService extends ChangeNotifier {
     try {
       await _auth0Service.login();
       // Note: login() will redirect, so code after this won't execute immediately
-    } catch (e) {
+    } finally {
       _isLoading.value = false;
       notifyListeners();
-      rethrow;
     }
   }
 
@@ -86,11 +85,9 @@ class AuthService extends ChangeNotifier {
       await _auth0Service.logout();
       _isAuthenticated.value = false;
       _currentUser = null;
-      notifyListeners();
-    } catch (e) {
+    } finally {
       _isLoading.value = false;
       notifyListeners();
-      rethrow;
     }
   }
 
