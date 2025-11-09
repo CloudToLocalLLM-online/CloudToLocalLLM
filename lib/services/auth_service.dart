@@ -118,6 +118,13 @@ class AuthService extends ChangeNotifier {
     }
   }
 
+  Future<bool> handleRedirectCallback() async {
+    if (kIsWeb) {
+      return await _auth0Service.handleRedirectCallback();
+    }
+    return false; // Not applicable for non-web platforms
+  }
+
   /// Update user display name (not supported with Auth0 - managed in Auth0 dashboard)
   Future<void> updateDisplayName(String displayName) async {
     // Auth0 user profiles are managed via Auth0 dashboard or Management API
