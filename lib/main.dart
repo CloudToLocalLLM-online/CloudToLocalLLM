@@ -55,14 +55,23 @@ void main() async {
       final uri = Uri.base;
       if (uri.queryParameters.containsKey('code') &&
           uri.queryParameters.containsKey('state')) {
-        // Manually initialize the auth service to handle the callback.
-        await di.serviceLocator.allReady();
-        final authService = di.serviceLocator.get<AuthService>();
-        final success = await authService.handleRedirectCallback();
+        try {
+          // Ensure the dependency graph is ready before attempting to resolve services.
+          await di.setupServiceLocator();
+          await di.serviceLocator.allReady();
 
-        // Clean the URL in the browser's history without a full reload.
-        if (success) {
-          history.replaceState(null, '', uri.path);
+          final authService = di.serviceLocator.get<AuthService>();
+          final success = await authService.handleRedirectCallback();
+
+          // Clean the URL in the browser's history without a full reload.
+          if (success) {
+            history.replaceState(null, '', uri.path);
+          }
+        } catch (error, stackTrace) {
+          debugPrint(
+            '[Bootstrap] Failed to process Auth0 redirect callback: $error',
+          );
+          debugPrint('[Bootstrap] Stack trace: $stackTrace');
         }
       }
     }
