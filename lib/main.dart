@@ -40,7 +40,8 @@ import 'web_plugins_stub.dart'
 import 'widgets/tray_initializer.dart';
 import 'widgets/window_listener_widget.dart'
     if (dart.library.html) 'widgets/window_listener_widget_stub.dart';
-import 'dart:html' if (dart.library.io) 'dart:io';
+import 'web_js_interop.dart'
+    if (dart.library.io) 'web_js_interop_stub.dart';
 
 // Global navigator key for navigation from system tray
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
@@ -61,7 +62,7 @@ void main() async {
 
       // Clean the URL in the browser's history without a full reload.
       if (success) {
-        window.history.replaceState(null, '', uri.path);
+        history.replaceState(null, '', uri.path);
       }
     }
   }
