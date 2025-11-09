@@ -40,12 +40,31 @@ import 'web_plugins_stub.dart'
 import 'widgets/tray_initializer.dart';
 import 'widgets/window_listener_widget.dart'
     if (dart.library.html) 'widgets/window_listener_widget_stub.dart';
+import 'dart:html' if (dart.library.io) 'dart:io';
 
 // Global navigator key for navigation from system tray
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Handle Auth0 redirect callback on web before the app runs
+  if (kIsWeb) {
+    final uri = Uri.base;
+    if (uri.queryParameters.containsKey('code') &&
+        uri.queryParameters.containsKey('state')) {
+      // Manually initialize the auth service to handle the callback.
+      // This must happen before runApp so the router doesn't misfire.
+      await di.serviceLocator.allReady();
+      final authService = di.serviceLocator.get<AuthService>();
+      final success = await authService.handleRedirectCallback();
+
+      // Clean the URL in the browser's history without a full reload.
+      if (success) {
+        window.history.replaceState(null, '', uri.path);
+      }
+    }
+  }
 
   final bootstrapper = AppBootstrapper();
   final bootstrapFuture = bootstrapper.load();
@@ -189,7 +208,6 @@ class _AppRouterHost extends StatefulWidget {
 
 class _AppRouterHostState extends State<_AppRouterHost> {
   GoRouter? _router;
-  bool _authHandled = false;
 
   @override
   void didChangeDependencies() {
@@ -199,20 +217,6 @@ class _AppRouterHostState extends State<_AppRouterHost> {
     }
 
     final authService = context.read<AuthService>();
-
-    if (kIsWeb && !_authHandled) {
-      _authHandled = true;
-      final uri = Uri.base;
-      if (uri.queryParameters.containsKey('code') &&
-          uri.queryParameters.containsKey('state')) {
-        authService.handleRedirectCallback().then((_) {
-          // Use the router to navigate, which is now available.
-          // This avoids a full page reload.
-          GoRouter.of(context).go('/');
-        });
-      }
-    }
-    
     _router = AppRouter.createRouter(
       navigatorKey: navigatorKey,
       authService: authService,
