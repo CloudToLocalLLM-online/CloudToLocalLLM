@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'auth0_service.dart';
+import 'dart:js_interop';
 
 import 'auth0_bridge_interop_js.dart' if (dart.library.io) 'auth0_bridge_interop_stub_new.dart';
 
@@ -54,7 +55,8 @@ class Auth0WebService implements Auth0Service {
     if (auth0Bridge == null) {
       throw Exception('Auth0 bridge not available');
     }
-    await auth0Bridge!.loginWithRedirect();
+    final promise = auth0Bridge!.loginWithRedirect();
+    await promise.toDart;
   }
 
   @override
@@ -62,7 +64,8 @@ class Auth0WebService implements Auth0Service {
     if (auth0Bridge == null) {
       throw Exception('Auth0 bridge not available');
     }
-    await auth0Bridge!.logout();
+    final promise = auth0Bridge!.logout();
+    await promise.toDart;
     _isAuthenticated = false;
     _currentUser = null;
     _accessToken = null;
@@ -75,7 +78,8 @@ class Auth0WebService implements Auth0Service {
       if (auth0Bridge == null) {
         return false;
       }
-      await auth0Bridge!.handleRedirectCallback();
+      final promise = auth0Bridge!.handleRedirectCallback();
+      await promise.toDart;
       await checkAuthStatus();
       return _isAuthenticated;
     } catch (e) {
@@ -90,23 +94,29 @@ class Auth0WebService implements Auth0Service {
         _isAuthenticated = false;
         return;
       }
-      
-      final isAuth = await auth0Bridge!.isAuthenticated();
+
+      final isAuthPromise = auth0Bridge!.isAuthenticated();
+      final isAuth = await isAuthPromise.toDart;
       final wasAuthenticated = _isAuthenticated;
 
       // Handle dynamic result from await
-      if (isAuth is bool) {
-        _isAuthenticated = isAuth;
-      } else if (isAuth is String) {
-        _isAuthenticated = isAuth == 'true';
+      final authValue = isAuth.dartify();
+      if (authValue is bool) {
+        _isAuthenticated = authValue;
+      } else if (authValue == 'true') {
+        _isAuthenticated = true;
+      } else if (authValue == 'false') {
+        _isAuthenticated = false;
       } else {
         _isAuthenticated = false;
       }
 
       if (_isAuthenticated) {
         // getUser returns a JSON string from our modified bridge
-        final userJson = await auth0Bridge!.getUser();
-        final token = await auth0Bridge!.getAccessToken();
+        final userJsonPromise = auth0Bridge!.getUser();
+        final userJson = await userJsonPromise.toDart;
+        final tokenPromise = auth0Bridge!.getAccessToken();
+        final token = await tokenPromise.toDart;
 
         if (userJson != null) {
           _currentUser = jsonDecode(userJson.toString()) as Map<String, dynamic>;
