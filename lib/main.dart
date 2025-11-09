@@ -40,12 +40,30 @@ import 'web_plugins_stub.dart'
 import 'widgets/tray_initializer.dart';
 import 'widgets/window_listener_widget.dart'
     if (dart.library.html) 'widgets/window_listener_widget_stub.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 // Global navigator key for navigation from system tray
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Handle Auth0 redirect callback on web
+  if (kIsWeb) {
+    final uri = Uri.base;
+    if (uri.queryParameters.containsKey('code') &&
+        uri.queryParameters.containsKey('state')) {
+      // Lazily initialize only what's needed for the callback
+      await di.serviceLocator.allReady();
+      final authService = di.serviceLocator.get<AuthService>();
+      await authService.handleRedirectCallback();
+      
+      // Redirect to a clean URL to remove the code and state from the address bar
+      final cleanUri = Uri.base.replace(query: '');
+      await launchUrl(cleanUri);
+      return; // Exit main early to allow the redirect to happen
+    }
+  }
 
   final bootstrapper = AppBootstrapper();
   final bootstrapFuture = bootstrapper.load();
