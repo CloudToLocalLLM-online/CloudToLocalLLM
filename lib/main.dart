@@ -49,26 +49,30 @@ final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Handle Auth0 redirect callback on web before the app runs
-  if (kIsWeb) {
-    final uri = Uri.base;
-    if (uri.queryParameters.containsKey('code') &&
-        uri.queryParameters.containsKey('state')) {
-      // Manually initialize the auth service to handle the callback.
-      // This must happen before runApp so the router doesn't misfire.
-      await di.serviceLocator.allReady();
-      final authService = di.serviceLocator.get<AuthService>();
-      final success = await authService.handleRedirectCallback();
+  Future<AppBootstrapData> loadApp() async {
+    // Handle Auth0 redirect callback on web before the app runs
+    if (kIsWeb) {
+      final uri = Uri.base;
+      if (uri.queryParameters.containsKey('code') &&
+          uri.queryParameters.containsKey('state')) {
+        // Manually initialize the auth service to handle the callback.
+        await di.serviceLocator.allReady();
+        final authService = di.serviceLocator.get<AuthService>();
+        final success = await authService.handleRedirectCallback();
 
-      // Clean the URL in the browser's history without a full reload.
-      if (success) {
-        history.replaceState(null, '', uri.path);
+        // Clean the URL in the browser's history without a full reload.
+        if (success) {
+          history.replaceState(null, '', uri.path);
+        }
       }
     }
+
+    // Now, run the main bootstrap process
+    final bootstrapper = AppBootstrapper();
+    return await bootstrapper.load();
   }
 
-  final bootstrapper = AppBootstrapper();
-  final bootstrapFuture = bootstrapper.load();
+  final appLoadFuture = loadApp();
 
   if (kIsWeb) {
     usePathUrlStrategy();
@@ -86,7 +90,7 @@ void main() async {
     () {
       runApp(
         FutureProvider<AppBootstrapData?>(
-          create: (_) => bootstrapFuture,
+          create: (_) => appLoadFuture,
           initialData: null,
           child: const CloudToLocalLLMApp(),
         ),
