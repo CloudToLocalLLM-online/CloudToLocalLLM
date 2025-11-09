@@ -25,7 +25,6 @@ dependencies:
   # HTTP and Web
   http: ^1.2.1
   intl: ^0.20.2
-  js: ^0.7.1
   web: ^1.1.0
 
   # Streaming and WebSocket support
