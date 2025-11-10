@@ -15,6 +15,8 @@ class Auth0WebService implements Auth0Service {
   String? _accessToken;
   final StreamController<bool> _authStateController =
       StreamController<bool>.broadcast();
+  bool _bridgeReady = false;
+  bool _clientReady = false;
 
   @override
   Stream<bool> get authStateChanges => _authStateController.stream;
@@ -32,6 +34,7 @@ class Auth0WebService implements Auth0Service {
   Future<void> initialize() async {
     // Wait for Auth0 bridge to be available
     await _waitForAuth0Bridge();
+    await _waitForAuth0Client();
     await checkAuthStatus();
   }
 
@@ -41,6 +44,7 @@ class Auth0WebService implements Auth0Service {
 
     while (attempts < maxAttempts) {
       if (auth0Bridge != null) {
+        _bridgeReady = true;
         return;
       }
       await Future.delayed(const Duration(milliseconds: 100));
@@ -50,8 +54,47 @@ class Auth0WebService implements Auth0Service {
     throw Exception('Auth0 bridge not available after 5 seconds');
   }
 
+  Future<void> _waitForAuth0Client() async {
+    if (_clientReady) {
+      return;
+    }
+
+    const maxAttempts = 50; // 5 seconds
+    var attempts = 0;
+
+    while (attempts < maxAttempts) {
+      if (auth0Bridge != null) {
+        try {
+          final promise = auth0Bridge!.isInitialized();
+          final result = await promise.toDart;
+          final value = result.dartify();
+          if (value == true || value == 'true') {
+            _clientReady = true;
+            return;
+          }
+        } catch (_) {
+          // Ignore and retry
+        }
+      }
+      await Future.delayed(const Duration(milliseconds: 100));
+      attempts++;
+    }
+
+    throw Exception('Auth0 client not initialized after 5 seconds');
+  }
+
+  Future<void> _ensureClientReady() async {
+    if (!_bridgeReady) {
+      await _waitForAuth0Bridge();
+    }
+    if (!_clientReady) {
+      await _waitForAuth0Client();
+    }
+  }
+
   @override
   Future<void> login() async {
+    await _ensureClientReady();
     if (auth0Bridge == null) {
       throw Exception('Auth0 bridge not available');
     }
@@ -61,6 +104,7 @@ class Auth0WebService implements Auth0Service {
 
   @override
   Future<void> logout() async {
+    await _ensureClientReady();
     if (auth0Bridge == null) {
       throw Exception('Auth0 bridge not available');
     }
@@ -75,11 +119,15 @@ class Auth0WebService implements Auth0Service {
   @override
   Future<bool> handleRedirectCallback() async {
     try {
+      await _ensureClientReady();
       if (auth0Bridge == null) {
         return false;
       }
       final promise = auth0Bridge!.handleRedirectCallback();
-      await promise.toDart;
+      final result = await promise.toDart;
+      debugPrint(
+        'Auth0 handleRedirectCallback bridge result: ${result.dartify()}',
+      );
       await checkAuthStatus();
       return _isAuthenticated;
     } catch (e) {
@@ -90,6 +138,7 @@ class Auth0WebService implements Auth0Service {
 
   Future<void> checkAuthStatus() async {
     try {
+      await _ensureClientReady();
       if (auth0Bridge == null) {
         _isAuthenticated = false;
         return;
