@@ -40,8 +40,6 @@ import 'web_plugins_stub.dart'
 import 'widgets/tray_initializer.dart';
 import 'widgets/window_listener_widget.dart'
     if (dart.library.html) 'widgets/window_listener_widget_stub.dart';
-import 'web_js_interop.dart'
-    if (dart.library.io) 'web_js_interop_stub.dart';
 
 // Global navigator key for navigation from system tray
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
@@ -50,33 +48,11 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   Future<AppBootstrapData> loadApp() async {
-    // Handle Auth0 redirect callback on web before the app runs
-    if (kIsWeb) {
-      final uri = Uri.base;
-      if (uri.queryParameters.containsKey('code') &&
-          uri.queryParameters.containsKey('state')) {
-        try {
-          // Ensure the dependency graph is ready before attempting to resolve services.
-          await di.setupServiceLocator();
-          await di.serviceLocator.allReady();
+    // Note: Auth0 callback handling is now done by the router and CallbackScreen
+    // The router will detect callback parameters and route to /callback,
+    // where CallbackScreen will process the authentication
 
-          final authService = di.serviceLocator.get<AuthService>();
-          final success = await authService.handleRedirectCallback();
-
-          // Clean the URL in the browser's history without a full reload.
-          if (success) {
-            history.replaceState(null, '', uri.path);
-          }
-        } catch (error, stackTrace) {
-          debugPrint(
-            '[Bootstrap] Failed to process Auth0 redirect callback: $error',
-          );
-          debugPrint('[Bootstrap] Stack trace: $stackTrace');
-        }
-      }
-    }
-
-    // Now, run the main bootstrap process
+    // Run the main bootstrap process
     final bootstrapper = AppBootstrapper();
     return await bootstrapper.load();
   }

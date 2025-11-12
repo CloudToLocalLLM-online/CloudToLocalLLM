@@ -202,6 +202,10 @@ class AppRouter {
                 ),
               );
             }
+            // Pass the state with query parameters to CallbackScreen
+            debugPrint(
+              '[Router] Building CallbackScreen with query params: ${state.uri.queryParameters}',
+            );
             return const CallbackScreen();
           },
         ),
@@ -306,6 +310,11 @@ class AppRouter {
         final isDownload = state.matchedLocation == '/download' && kIsWeb;
         final isDocs = state.matchedLocation == '/docs' && kIsWeb;
 
+        // Check for Auth0 callback parameters in URL (code and state)
+        final hasCallbackParams = kIsWeb &&
+            (state.uri.queryParameters.containsKey('code') ||
+                state.uri.queryParameters.containsKey('state'));
+
         // Use robust hostname detection
         final isAppSubdomain = _isAppSubdomain();
 
@@ -314,8 +323,21 @@ class AppRouter {
           '[Router] Auth state: $isAuthenticated, Auth loading: $isAuthLoading, App subdomain: $isAppSubdomain',
         );
         debugPrint(
-          '[Router] Route flags: isLoggingIn: $isLoggingIn, isCallback: $isCallback, isLoading: $isLoading, isHomepage: $isHomepage',
+          '[Router] Route flags: isLoggingIn: $isLoggingIn, isCallback: $isCallback, isLoading: $isLoading, isHomepage: $isHomepage, hasCallbackParams: $hasCallbackParams',
         );
+
+        // CRITICAL: If we have callback parameters but we're not on /callback route, redirect there
+        if (hasCallbackParams && !isCallback && kIsWeb) {
+          debugPrint(
+            '[Router] Detected Auth0 callback parameters, redirecting to /callback',
+          );
+          // Preserve query parameters when redirecting to callback
+          final callbackUri = Uri(
+            path: '/callback',
+            queryParameters: state.uri.queryParameters,
+          );
+          return callbackUri.toString();
+        }
 
         // Allow access to marketing pages on web root domain without authentication
         if (kIsWeb && !isAppSubdomain && (isHomepage || isDownload || isDocs)) {
