@@ -74,7 +74,7 @@ Future<void> setupCoreServices() async {
   );
   serviceLocator.registerSingleton<LLMErrorHandler>(llmErrorHandler);
 
-  // LangChain Prompt Service - lightweight, doesn't require auth
+  // LangChain Prompt Service - create but don't initialize templates until auth
   final langchainPromptService = LangChainPromptService();
   serviceLocator.registerSingleton<LangChainPromptService>(
     langchainPromptService,
@@ -164,6 +164,9 @@ Future<void> setupAuthenticatedServices() async {
 
   // Initialize LocalOllama service now that we have auth
   await localOllamaService.initialize();
+
+  // Initialize LangChain Prompt Service now that we have auth
+  await langchainPromptService.initialize();
 
   // Tunnel service - requires authentication token
   final tunnelService = TunnelService(authService: authService);
