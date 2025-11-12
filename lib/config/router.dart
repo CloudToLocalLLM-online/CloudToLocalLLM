@@ -96,14 +96,25 @@ class AppRouter {
     if (kIsWeb) {
       try {
         final baseUri = Uri.base;
-        // Include query parameters in initial location to preserve callback params
-        if (baseUri.queryParameters.isNotEmpty) {
+        debugPrint('[Router] Raw Uri.base: ${baseUri.toString()}');
+        debugPrint('[Router] Uri.base path: ${baseUri.path}');
+        debugPrint('[Router] Uri.base query: ${baseUri.query}');
+        debugPrint('[Router] Uri.base queryParameters: ${baseUri.queryParameters}');
+
+        // Always include query parameters if they exist, even if empty initially
+        if (baseUri.query.isNotEmpty) {
           initialLocation = '${baseUri.path}?${baseUri.query}';
+        } else if (baseUri.queryParameters.isNotEmpty) {
+          // Fallback: reconstruct query string from parameters
+          final queryString = baseUri.queryParameters.entries
+              .map((e) => '${Uri.encodeQueryComponent(e.key)}=${Uri.encodeQueryComponent(e.value)}')
+              .join('&');
+          initialLocation = '${baseUri.path}?$queryString';
         } else {
           initialLocation = baseUri.path;
         }
         debugPrint('[Router] Initial location from browser: $initialLocation');
-        debugPrint('[Router] Query params: ${baseUri.queryParameters}');
+        debugPrint('[Router] Final query params check: ${baseUri.queryParameters}');
       } catch (e) {
         debugPrint('[Router] Error getting initial location: $e');
         initialLocation = '/';
@@ -375,12 +386,24 @@ class AppRouter {
         // Use both state.uri and Uri.base to catch all cases
         final stateUri = state.uri;
         final baseUri = kIsWeb ? Uri.base : stateUri;
+
+        // Debug logging for callback detection
+        debugPrint('[Router] Checking callback params...');
+        debugPrint('[Router] stateUri: ${stateUri.toString()}');
+        debugPrint('[Router] stateUri.queryParameters: ${stateUri.queryParameters}');
+        debugPrint('[Router] baseUri: ${baseUri.toString()}');
+        debugPrint('[Router] baseUri.queryParameters: ${baseUri.queryParameters}');
+
+        // Use state.uri first, then fall back to baseUri
         final queryParams = stateUri.queryParameters.isNotEmpty
             ? stateUri.queryParameters
-            : baseUri.queryParameters;
-        
+            : (baseUri.queryParameters.isNotEmpty ? baseUri.queryParameters : {});
+
         final hasCallbackParams = kIsWeb &&
             (queryParams.containsKey('code') || queryParams.containsKey('state'));
+
+        debugPrint('[Router] hasCallbackParams: $hasCallbackParams');
+        debugPrint('[Router] queryParams keys: ${queryParams.keys.toList()}');
 
         // Use robust hostname detection
         final isAppSubdomain = _isAppSubdomain();
