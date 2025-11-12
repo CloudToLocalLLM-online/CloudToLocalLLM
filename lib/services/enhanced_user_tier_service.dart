@@ -154,7 +154,7 @@ class EnhancedUserTierService extends ChangeNotifier {
 
       final response = await _httpClient
           .get(
-            Uri.parse('${AppConfig.apiBaseUrl}/user/tier'),
+            Uri.parse('${AppConfig.apiBaseUrl}/api/user/tier'),
             headers: {
               'Authorization': 'Bearer ${_authService.getAccessToken()}',
               'Content-Type': 'application/json',
@@ -239,7 +239,7 @@ class EnhancedUserTierService extends ChangeNotifier {
 
       final response = await _httpClient
           .post(
-            Uri.parse('${AppConfig.apiBaseUrl}/container/allocate'),
+            Uri.parse('${AppConfig.apiBaseUrl}/api/container/allocate'),
             headers: {
               'Authorization': 'Bearer ${_authService.getAccessToken()}',
               'Content-Type': 'application/json',
@@ -289,7 +289,7 @@ class EnhancedUserTierService extends ChangeNotifier {
 
       final response = await _httpClient
           .post(
-            Uri.parse('${AppConfig.apiBaseUrl}/container/release'),
+            Uri.parse('${AppConfig.apiBaseUrl}/api/container/release'),
             headers: {
               'Authorization': 'Bearer ${_authService.getAccessToken()}',
               'Content-Type': 'application/json',

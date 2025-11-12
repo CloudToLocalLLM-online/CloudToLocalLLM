@@ -34,7 +34,7 @@ class AppConfig {
   static const String devModeUser = 'dev@cloudtolocalllm.online';
 
   // API Configuration
-  static const String apiBaseUrl = 'https://api.cloudtolocalllm.online/api';
+  static const String apiBaseUrl = 'https://api.cloudtolocalllm.online';
   static const Duration apiTimeout = Duration(seconds: 30);
 
   // Tunnel Configuration (Chisel)
@@ -69,7 +69,7 @@ class AppConfig {
   static const Duration ollamaTimeout = Duration(seconds: 60);
 
   // Cloud Relay Configuration (for web/mobile)
-  static const String cloudOllamaUrl = '$apiBaseUrl/ollama';
+  static const String cloudOllamaUrl = '$apiBaseUrl/api/ollama';
 
   // Admin Interface Configuration
   static const bool enableAdminInterface = true;
@@ -118,7 +118,7 @@ class AppConfig {
 
   // Bridge Configuration
   static const String bridgeStatusUrl =
-      '$apiBaseUrl/ollama/bridge/status';
+      '$apiBaseUrl/api/ollama/bridge/status';
   static const String bridgeRegisterUrl =
-      '$apiBaseUrl/ollama/bridge/register';
+      '$apiBaseUrl/api/ollama/bridge/register';
 }

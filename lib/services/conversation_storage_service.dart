@@ -460,7 +460,7 @@ class ConversationStorageService {
   Future<List<Conversation>> _loadConversationsViaAPI() async {
     try {
       final headers = await _getAuthHeaders();
-      final url = Uri.parse('${AppConfig.apiBaseUrl}/conversations');
+      final url = Uri.parse('${AppConfig.apiBaseUrl}/api/conversations');
 
       final response = await http.get(url, headers: headers).timeout(
         AppConfig.apiTimeout,
@@ -500,7 +500,7 @@ class ConversationStorageService {
   Future<Conversation?> _loadConversationViaAPI(String conversationId) async {
     try {
       final headers = await _getAuthHeaders();
-      final url = Uri.parse('${AppConfig.apiBaseUrl}/conversations/$conversationId');
+      final url = Uri.parse('${AppConfig.apiBaseUrl}/api/conversations/$conversationId');
 
       final response = await http.get(url, headers: headers).timeout(
         AppConfig.apiTimeout,
@@ -548,7 +548,7 @@ class ConversationStorageService {
   Future<void> _saveConversationViaAPI(Conversation conversation) async {
     try {
       final headers = await _getAuthHeaders();
-      final url = Uri.parse('${AppConfig.apiBaseUrl}/conversations/${conversation.id}');
+      final url = Uri.parse('${AppConfig.apiBaseUrl}/api/conversations/${conversation.id}');
 
       final body = jsonEncode({
         'title': conversation.title,
@@ -570,7 +570,7 @@ class ConversationStorageService {
         );
       } else {
         // Try POST if PUT fails (conversation doesn't exist yet)
-        final postUrl = Uri.parse('${AppConfig.apiBaseUrl}/conversations');
+        final postUrl = Uri.parse('${AppConfig.apiBaseUrl}/api/conversations');
         final postBody = jsonEncode({
           'title': conversation.title,
           'model': conversation.model ?? 'default',
@@ -600,7 +600,7 @@ class ConversationStorageService {
   Future<void> _deleteConversationViaAPI(String conversationId) async {
     try {
       final headers = await _getAuthHeaders();
-      final url = Uri.parse('${AppConfig.apiBaseUrl}/conversations/$conversationId');
+      final url = Uri.parse('${AppConfig.apiBaseUrl}/api/conversations/$conversationId');
 
       final response = await http.delete(url, headers: headers).timeout(
         AppConfig.apiTimeout,

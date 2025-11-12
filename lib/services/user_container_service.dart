@@ -79,7 +79,7 @@ class UserContainerService extends ChangeNotifier {
       }
 
       final response = await http.post(
-        Uri.parse('$_baseUrl/streaming-proxy/provision'),
+        Uri.parse('$_baseUrl/api/streaming-proxy/provision'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
@@ -164,7 +164,7 @@ class UserContainerService extends ChangeNotifier {
       }
 
       final response = await http.get(
-        Uri.parse('$_baseUrl/proxy/status'),
+        Uri.parse('$_baseUrl/api/proxy/status'),
         headers: {'Authorization': 'Bearer $token'},
       );
 

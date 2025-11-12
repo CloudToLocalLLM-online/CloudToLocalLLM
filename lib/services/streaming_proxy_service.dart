@@ -21,8 +21,8 @@ class StreamingProxyService extends ChangeNotifier {
     String? baseUrl,
     Duration? timeout,
     AuthService? authService,
-  }) : _baseUrl = baseUrl ?? AppConfig.cloudOllamaUrl,
-       _timeout = timeout ?? AppConfig.ollamaTimeout,
+  }) : _baseUrl = baseUrl ?? AppConfig.apiBaseUrl,
+       _timeout = timeout ?? AppConfig.apiTimeout,
        _authService = authService {
     if (kDebugMode) {
       debugPrint('[StreamingProxy] Service initialized');
