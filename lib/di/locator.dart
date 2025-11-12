@@ -167,8 +167,7 @@ Future<void> setupAuthenticatedServices() async {
   // Initialize LocalOllama service now that we have auth
   await localOllamaService.initialize();
 
-  // Initialize LangChain Prompt Service now that we have auth
-  await langchainPromptService.initialize();
+  // LangChain Prompt Service is already initialized in constructor
 
   // Provider Discovery Service doesn't need initialization - it's already set up
 
