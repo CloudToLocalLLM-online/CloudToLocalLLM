@@ -56,14 +56,13 @@ Future<void> setupCoreServices() async {
   await authService.init();
   serviceLocator.registerSingleton<AuthService>(authService);
 
-  // Local Ollama service - doesn't require authentication (local only)
+  // Local Ollama service - create but don't initialize until auth
   final localOllamaService = LocalOllamaConnectionService();
-  await localOllamaService.initialize();
   serviceLocator.registerSingleton<LocalOllamaConnectionService>(
     localOllamaService,
   );
 
-  // Provider discovery - can be initialized but won't do heavy work until auth
+  // Provider discovery - create but don't initialize until auth
   final providerDiscoveryService = ProviderDiscoveryService();
   serviceLocator.registerSingleton<ProviderDiscoveryService>(
     providerDiscoveryService,
@@ -162,6 +161,9 @@ Future<void> setupAuthenticatedServices() async {
 
   // Initialize web download prompt service
   await webDownloadPromptService.initialize();
+
+  // Initialize LocalOllama service now that we have auth
+  await localOllamaService.initialize();
 
   // Tunnel service - requires authentication token
   final tunnelService = TunnelService(authService: authService);
