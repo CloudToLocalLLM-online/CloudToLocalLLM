@@ -155,8 +155,6 @@ Future<void> setupAuthenticatedServices() async {
       serviceLocator.get<EnhancedUserTierService>();
   final webDownloadPromptService =
       serviceLocator.get<WebDownloadPromptService>();
-  final langchainPromptService =
-      serviceLocator.get<LangChainPromptService>();
 
   // Initialize enhanced user tier service now that we have auth
   unawaited(enhancedUserTierService.initialize());
