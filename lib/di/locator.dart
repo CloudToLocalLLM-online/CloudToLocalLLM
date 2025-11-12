@@ -168,6 +168,9 @@ Future<void> setupAuthenticatedServices() async {
   // Initialize LangChain Prompt Service now that we have auth
   await langchainPromptService.initialize();
 
+  // Initialize Provider Discovery Service now that we have auth
+  await providerDiscoveryService.initialize();
+
   // Tunnel service - requires authentication token
   final tunnelService = TunnelService(authService: authService);
   serviceLocator.registerSingleton<TunnelService>(tunnelService);
