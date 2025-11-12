@@ -71,10 +71,27 @@ class AppInitializationService extends ChangeNotifier {
     try {
       appLogger.debug('[AppInit] Initializing services with context...');
 
-      // Capture services before any async operations to avoid BuildContext async gap
-      final connectionManager = context.read<ConnectionManagerService>();
-      final DesktopClientDetectionService? clientDetection = 
-          kIsWeb ? context.read<DesktopClientDetectionService>() : null;
+      // Check if authenticated services are available before trying to access them
+      if (!context.mounted) return;
+
+      ConnectionManagerService? connectionManager;
+      DesktopClientDetectionService? clientDetection;
+
+      try {
+        connectionManager = context.read<ConnectionManagerService>();
+      } catch (e) {
+        appLogger.debug('[AppInit] ConnectionManagerService not yet available');
+        return; // Services not loaded yet, wait for authentication
+      }
+
+      if (kIsWeb) {
+        try {
+          clientDetection = context.read<DesktopClientDetectionService>();
+        } catch (e) {
+          appLogger.debug('[AppInit] DesktopClientDetectionService not yet available');
+          return; // Services not loaded yet, wait for authentication
+        }
+      }
 
       // Initialize connection manager
       await connectionManager.initialize();
