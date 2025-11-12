@@ -426,7 +426,7 @@ class AppRouter {
           // Preserve query parameters when redirecting to callback
           final callbackUri = Uri(
             path: '/callback',
-            queryParameters: queryParams,
+            queryParameters: queryParams.cast<String, dynamic>(),
           );
           debugPrint('[Router] Redirecting to: ${callbackUri.toString()}');
           return callbackUri.toString();
