@@ -59,6 +59,8 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _handleLogin() async {
+    debugPrint(' [Login] Login button clicked!');
+
     // Prevent multiple rapid login attempts
     if (_isLoading) {
       debugPrint(' [Login] Login already in progress, ignoring button click');

@@ -131,12 +131,16 @@ class Auth0WebService implements Auth0Service {
 
   @override
   Future<void> login() async {
+    debugPrint('[Auth0Web] Starting login process...');
     await _ensureClientReady();
     if (auth0Bridge == null) {
       throw Exception('Auth0 bridge not available');
     }
+    debugPrint('[Auth0Web] Auth0 bridge ready, calling loginWithRedirect');
     final promise = auth0Bridge!.loginWithRedirect();
+    debugPrint('[Auth0Web] Login promise created, awaiting...');
     await promise.toDart;
+    debugPrint('[Auth0Web] Login redirect completed');
   }
 
   @override
