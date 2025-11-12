@@ -2,11 +2,15 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../services/auth_service.dart';
+import '../services/connection_manager_service.dart';
+import '../services/streaming_chat_service.dart';
+import '../services/tunnel_service.dart';
 import '../screens/home_screen.dart';
 import '../screens/login_screen.dart';
 import '../screens/loading_screen.dart';
 import '../screens/callback_screen.dart';
 import '../screens/ollama_test_screen.dart';
+import '../di/locator.dart' as di;
 
 // No web-specific imports needed - using platform-safe approach
 
@@ -50,6 +54,35 @@ bool _isAppSubdomain() {
 
   debugPrint('[Router] Hostname: $hostname, isApp: $isApp');
   return isApp;
+}
+
+/// Check if authenticated services are loaded
+/// Returns true if all critical authenticated services are registered
+bool _checkAuthenticatedServicesLoaded() {
+  try {
+    // Check for critical authenticated services
+    // These services are registered only after authentication
+    final hasConnectionManager =
+        di.serviceLocator.isRegistered<ConnectionManagerService>();
+    final hasStreamingChat =
+        di.serviceLocator.isRegistered<StreamingChatService>();
+    final hasTunnelService = di.serviceLocator.isRegistered<TunnelService>();
+
+    // All critical services must be registered
+    final allServicesLoaded =
+        hasConnectionManager && hasStreamingChat && hasTunnelService;
+
+    if (!allServicesLoaded) {
+      debugPrint(
+        '[Router] Authenticated services check: ConnectionManager=$hasConnectionManager, StreamingChat=$hasStreamingChat, TunnelService=$hasTunnelService',
+      );
+    }
+
+    return allServicesLoaded;
+  } catch (e) {
+    debugPrint('[Router] Error checking authenticated services: $e');
+    return false;
+  }
 }
 
 /// Application router configuration using GoRouter
@@ -116,6 +149,17 @@ class AppRouter {
                 }
 
                 if (isAuthenticated) {
+                  // Verify authenticated services are loaded before showing HomeScreen
+                  // This ensures modules are only loaded after authentication
+                  final hasAuthenticatedServices = _checkAuthenticatedServicesLoaded();
+                  if (!hasAuthenticatedServices) {
+                    debugPrint(
+                      '[Router] Authenticated services not yet loaded, showing loading screen',
+                    );
+                    return const LoadingScreen(
+                      message: 'Loading application modules...',
+                    );
+                  }
                   debugPrint('[Router] Showing home screen');
                   return const HomeScreen();
                 } else {
@@ -137,7 +181,19 @@ class AppRouter {
         GoRoute(
           path: '/chat',
           name: 'chat',
-          builder: (context, state) => const HomeScreen(),
+          builder: (context, state) {
+            // Verify authenticated services are loaded before showing HomeScreen
+            final isAuthenticated = authService.isAuthenticated.value;
+            if (isAuthenticated) {
+              final hasAuthenticatedServices = _checkAuthenticatedServicesLoaded();
+              if (!hasAuthenticatedServices) {
+                return const LoadingScreen(
+                  message: 'Loading application modules...',
+                );
+              }
+            }
+            return const HomeScreen();
+          },
         ),
 
         // Download route - web-only marketing page

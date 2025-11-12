@@ -98,6 +98,28 @@ class CloudToLocalLLMApp extends StatefulWidget {
 
 class _CloudToLocalLLMAppState extends State<CloudToLocalLLMApp> {
   @override
+  void initState() {
+    super.initState();
+    // Listen to auth state changes to rebuild providers when authenticated services load
+    final authService = di.serviceLocator.get<AuthService>();
+    authService.addListener(_onAuthStateChanged);
+  }
+
+  @override
+  void dispose() {
+    final authService = di.serviceLocator.get<AuthService>();
+    authService.removeListener(_onAuthStateChanged);
+    super.dispose();
+  }
+
+  void _onAuthStateChanged() {
+    // Rebuild when auth state changes so authenticated services can be provided
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     final bootstrap = context.watch<AppBootstrapData?>();
     if (bootstrap == null) {
@@ -107,6 +129,8 @@ class _CloudToLocalLLMAppState extends State<CloudToLocalLLMApp> {
       );
     }
 
+    // Build providers list - authenticated services will be added when registered
+    // This rebuilds when auth state changes
     return MultiProvider(
       providers: _buildProviders(),
       child: TrayInitializer(
@@ -117,75 +141,100 @@ class _CloudToLocalLLMAppState extends State<CloudToLocalLLMApp> {
   }
 
   List<SingleChildWidget> _buildProviders() {
-    return [
-      ChangeNotifierProvider.value(value: di.serviceLocator.get<AuthService>()),
+    final providers = <SingleChildWidget>[];
+
+    // Core services - always available
+    providers.add(
       ChangeNotifierProvider.value(
-        value: di.serviceLocator.get<EnhancedUserTierService>(),
+        value: di.serviceLocator.get<AuthService>(),
       ),
-      ChangeNotifierProvider.value(
-        value: di.serviceLocator.get<TunnelService>(),
-      ),
-      ChangeNotifierProvider.value(
-        value: di.serviceLocator.get<StreamingProxyService>(),
-      ),
-      ChangeNotifierProvider.value(
-        value: di.serviceLocator.get<OllamaService>(),
-      ),
+    );
+
+    // Core services that don't require authentication
+    providers.add(
       ChangeNotifierProvider.value(
         value: di.serviceLocator.get<LocalOllamaConnectionService>(),
       ),
+    );
+
+    providers.add(
       ChangeNotifierProvider.value(
         value: di.serviceLocator.get<DesktopClientDetectionService>(),
       ),
+    );
+
+    providers.add(
       ChangeNotifierProvider.value(
         value: di.serviceLocator.get<AppInitializationService>(),
       ),
+    );
+
+    providers.add(
       ChangeNotifierProvider.value(
         value: di.serviceLocator.get<WebDownloadPromptService>(),
       ),
-      ChangeNotifierProvider.value(
-        value: di.serviceLocator.get<UserContainerService>(),
-      ),
+    );
+
+    providers.add(
       ChangeNotifierProvider.value(
         value: di.serviceLocator.get<ProviderDiscoveryService>(),
       ),
-      ChangeNotifierProvider.value(
-        value: di.serviceLocator.get<LangChainIntegrationService>(),
-      ),
+    );
+
+    providers.add(
       ChangeNotifierProvider.value(
         value: di.serviceLocator.get<LLMErrorHandler>(),
       ),
-      ChangeNotifierProvider.value(
-        value: di.serviceLocator.get<LLMProviderManager>(),
-      ),
-      ChangeNotifierProvider.value(
-        value: di.serviceLocator.get<ConnectionManagerService>(),
-      ),
+    );
+
+    providers.add(
       ChangeNotifierProvider.value(
         value: di.serviceLocator.get<LangChainPromptService>(),
       ),
+    );
+
+    providers.add(
       ChangeNotifierProvider.value(
-        value: di.serviceLocator.get<LangChainOllamaService>(),
+        value: di.serviceLocator.get<EnhancedUserTierService>(),
       ),
-      ChangeNotifierProvider.value(
-        value: di.serviceLocator.get<LangChainRAGService>(),
-      ),
-      ChangeNotifierProvider.value(
-        value: di.serviceLocator.get<LLMAuditService>(),
-      ),
-      ChangeNotifierProvider.value(
-        value: di.serviceLocator.get<StreamingChatService>(),
-      ),
-      ChangeNotifierProvider.value(
-        value: di.serviceLocator.get<UnifiedConnectionService>(),
-      ),
-      ChangeNotifierProvider.value(
-        value: di.serviceLocator.get<AdminService>(),
-      ),
-      ChangeNotifierProvider.value(
-        value: di.serviceLocator.get<AdminDataFlushService>(),
-      ),
-    ];
+    );
+
+    // Authenticated services - only provide if registered
+    // These will be registered after authentication
+    _addProviderIfRegistered<TunnelService>(providers);
+    _addProviderIfRegistered<StreamingProxyService>(providers);
+    _addProviderIfRegistered<OllamaService>(providers);
+    _addProviderIfRegistered<UserContainerService>(providers);
+    _addProviderIfRegistered<LangChainIntegrationService>(providers);
+    _addProviderIfRegistered<LLMProviderManager>(providers);
+    _addProviderIfRegistered<ConnectionManagerService>(providers);
+    _addProviderIfRegistered<LangChainOllamaService>(providers);
+    _addProviderIfRegistered<LangChainRAGService>(providers);
+    _addProviderIfRegistered<LLMAuditService>(providers);
+    _addProviderIfRegistered<StreamingChatService>(providers);
+    _addProviderIfRegistered<UnifiedConnectionService>(providers);
+    _addProviderIfRegistered<AdminService>(providers);
+    _addProviderIfRegistered<AdminDataFlushService>(providers);
+
+    return providers;
+  }
+
+  /// Helper method to safely add a provider only if the service is registered
+  void _addProviderIfRegistered<T extends ChangeNotifier>(
+    List<SingleChildWidget> providers,
+  ) {
+    try {
+      if (di.serviceLocator.isRegistered<T>()) {
+        providers.add(
+          ChangeNotifierProvider.value(
+            value: di.serviceLocator.get<T>(),
+          ),
+        );
+      }
+    } catch (e) {
+      // Service not registered yet - skip it
+      debugPrint('[Providers] Service $T not registered yet, skipping');
+    }
   }
 }
 

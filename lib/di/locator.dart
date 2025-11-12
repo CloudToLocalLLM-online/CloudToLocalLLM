@@ -35,15 +35,20 @@ import '../services/web_download_prompt_service.dart'
 final GetIt serviceLocator = GetIt.instance;
 
 bool _coreServicesRegistered = false;
+bool _authenticatedServicesRegistered = false;
 
-/// Registers application-wide singletons and factories. This is invoked during
-/// bootstrap and ensures heavy dependency construction happens once.
-Future<void> setupServiceLocator() async {
+/// Registers core services that are needed before authentication.
+/// These services don't require authentication tokens and can be safely
+/// initialized during app bootstrap.
+Future<void> setupCoreServices() async {
   if (_coreServicesRegistered) {
     return;
   }
   _coreServicesRegistered = true;
 
+  debugPrint('[ServiceLocator] Registering core services...');
+
+  // Auth0 and Auth services - needed for authentication flow
   final auth0Service = kIsWeb ? Auth0WebService() : Auth0DesktopService();
   serviceLocator.registerSingleton<Auth0Service>(auth0Service);
 
@@ -51,34 +56,32 @@ Future<void> setupServiceLocator() async {
   await authService.init();
   serviceLocator.registerSingleton<AuthService>(authService);
 
-  // Initialize user tier service asynchronously (non-blocking for UI)
-  final enhancedUserTierService = EnhancedUserTierService(
-    authService: authService,
-  );
-  serviceLocator.registerSingleton<EnhancedUserTierService>(
-    enhancedUserTierService,
-  );
-  // Initialize in background
-  unawaited(enhancedUserTierService.initialize());
-
-  final tunnelService = TunnelService(authService: authService);
-  serviceLocator.registerSingleton<TunnelService>(tunnelService);
-
-  final streamingProxyService = StreamingProxyService(authService: authService);
-  serviceLocator.registerSingleton<StreamingProxyService>(
-    streamingProxyService,
-  );
-
-  final ollamaService = OllamaService(authService: authService);
-  await ollamaService.initialize();
-  serviceLocator.registerSingleton<OllamaService>(ollamaService);
-
+  // Local Ollama service - doesn't require authentication (local only)
   final localOllamaService = LocalOllamaConnectionService();
   await localOllamaService.initialize();
   serviceLocator.registerSingleton<LocalOllamaConnectionService>(
     localOllamaService,
   );
 
+  // Provider discovery - can be initialized but won't do heavy work until auth
+  final providerDiscoveryService = ProviderDiscoveryService();
+  serviceLocator.registerSingleton<ProviderDiscoveryService>(
+    providerDiscoveryService,
+  );
+
+  // LLM Error Handler - lightweight, doesn't require auth
+  final llmErrorHandler = LLMErrorHandler(
+    providerDiscovery: providerDiscoveryService,
+  );
+  serviceLocator.registerSingleton<LLMErrorHandler>(llmErrorHandler);
+
+  // LangChain Prompt Service - lightweight, doesn't require auth
+  final langchainPromptService = LangChainPromptService();
+  serviceLocator.registerSingleton<LangChainPromptService>(
+    langchainPromptService,
+  );
+
+  // Desktop client detection - can check client type without auth
   final desktopClientDetectionService = DesktopClientDetectionService(
     authService: authService,
   );
@@ -86,6 +89,7 @@ Future<void> setupServiceLocator() async {
     desktopClientDetectionService,
   );
 
+  // App initialization service - manages initialization order
   final appInitializationService = AppInitializationService(
     authService: authService,
   );
@@ -93,23 +97,92 @@ Future<void> setupServiceLocator() async {
     appInitializationService,
   );
 
+  // Web download prompt service - can be created but won't do heavy work until auth
   final webDownloadPromptService = WebDownloadPromptService(
     authService: authService,
     clientDetectionService: desktopClientDetectionService,
   );
-  await webDownloadPromptService.initialize();
+  // Don't initialize yet - wait for auth
   serviceLocator.registerSingleton<WebDownloadPromptService>(
     webDownloadPromptService,
   );
 
+  // Enhanced user tier service - can be created but won't initialize until auth
+  final enhancedUserTierService = EnhancedUserTierService(
+    authService: authService,
+  );
+  serviceLocator.registerSingleton<EnhancedUserTierService>(
+    enhancedUserTierService,
+  );
+  // Don't initialize yet - wait for auth token
+
+  debugPrint('[ServiceLocator] Core services registered successfully');
+}
+
+/// Registers authenticated services that require authentication tokens.
+/// These services should only be registered after the user has authenticated.
+/// This prevents unnecessary initialization and improves security.
+Future<void> setupAuthenticatedServices() async {
+  if (_authenticatedServicesRegistered) {
+    debugPrint('[ServiceLocator] Authenticated services already registered');
+    return;
+  }
+
+  // Verify authentication before proceeding
+  final authService = serviceLocator.get<AuthService>();
+  if (!authService.isAuthenticated.value) {
+    debugPrint(
+      '[ServiceLocator] Cannot register authenticated services - user not authenticated',
+    );
+    return;
+  }
+
+  // Verify token is available
+  final token = await authService.getAccessToken();
+  if (token == null || token.isEmpty) {
+    debugPrint(
+      '[ServiceLocator] Cannot register authenticated services - no access token',
+    );
+    return;
+  }
+
+  debugPrint('[ServiceLocator] Registering authenticated services...');
+  _authenticatedServicesRegistered = true;
+
+  final localOllamaService = serviceLocator.get<LocalOllamaConnectionService>();
+  final providerDiscoveryService =
+      serviceLocator.get<ProviderDiscoveryService>();
+  final enhancedUserTierService =
+      serviceLocator.get<EnhancedUserTierService>();
+  final webDownloadPromptService =
+      serviceLocator.get<WebDownloadPromptService>();
+
+  // Initialize enhanced user tier service now that we have auth
+  unawaited(enhancedUserTierService.initialize());
+
+  // Initialize web download prompt service
+  await webDownloadPromptService.initialize();
+
+  // Tunnel service - requires authentication token
+  final tunnelService = TunnelService(authService: authService);
+  serviceLocator.registerSingleton<TunnelService>(tunnelService);
+
+  // Streaming proxy service - requires authentication token
+  final streamingProxyService = StreamingProxyService(authService: authService);
+  serviceLocator.registerSingleton<StreamingProxyService>(
+    streamingProxyService,
+  );
+
+  // Ollama service - requires authentication token
+  final ollamaService = OllamaService(authService: authService);
+  await ollamaService.initialize();
+  serviceLocator.registerSingleton<OllamaService>(ollamaService);
+
+  // User container service - requires authentication token
   final userContainerService = UserContainerService(authService: authService);
   serviceLocator.registerSingleton<UserContainerService>(userContainerService);
 
-  final providerDiscoveryService = ProviderDiscoveryService();
-  serviceLocator.registerSingleton<ProviderDiscoveryService>(
-    providerDiscoveryService,
-  );
-
+  // LangChain integration service - requires authentication for provider access
   final langchainIntegrationService = LangChainIntegrationService(
     discoveryService: providerDiscoveryService,
   );
@@ -118,11 +191,7 @@ Future<void> setupServiceLocator() async {
     langchainIntegrationService,
   );
 
-  final llmErrorHandler = LLMErrorHandler(
-    providerDiscovery: providerDiscoveryService,
-  );
-  serviceLocator.registerSingleton<LLMErrorHandler>(llmErrorHandler);
-
+  // LLM Provider Manager - requires authentication
   final llmProviderManager = LLMProviderManager(
     discoveryService: providerDiscoveryService,
     langchainService: langchainIntegrationService,
@@ -130,6 +199,7 @@ Future<void> setupServiceLocator() async {
   await llmProviderManager.initialize();
   serviceLocator.registerSingleton<LLMProviderManager>(llmProviderManager);
 
+  // Connection Manager - requires authentication for tunnel/cloud connections
   final connectionManager = ConnectionManagerService(
     localOllama: localOllamaService,
     tunnelService: tunnelService,
@@ -139,11 +209,7 @@ Future<void> setupServiceLocator() async {
   await connectionManager.initialize();
   serviceLocator.registerSingleton<ConnectionManagerService>(connectionManager);
 
-  final langchainPromptService = LangChainPromptService();
-  serviceLocator.registerSingleton<LangChainPromptService>(
-    langchainPromptService,
-  );
-
+  // LangChain Ollama service - requires connection manager (which requires auth)
   final langchainOllamaService = LangChainOllamaService(
     connectionManager: connectionManager,
   );
@@ -152,22 +218,26 @@ Future<void> setupServiceLocator() async {
     langchainOllamaService,
   );
 
+  // LangChain RAG service - requires LangChain Ollama service
   final langchainRagService = LangChainRAGService(
     ollamaService: langchainOllamaService,
   );
   await langchainRagService.initialize();
   serviceLocator.registerSingleton<LangChainRAGService>(langchainRagService);
 
+  // LLM Audit service - requires authentication
   final llmAuditService = LLMAuditService(authService: authService);
   await llmAuditService.initialize();
   serviceLocator.registerSingleton<LLMAuditService>(llmAuditService);
 
+  // Streaming chat service - requires connection manager
   final streamingChatService = StreamingChatService(
     connectionManager,
     authService,
   );
   serviceLocator.registerSingleton<StreamingChatService>(streamingChatService);
 
+  // Unified connection service - requires connection manager
   final unifiedConnectionService = UnifiedConnectionService();
   unifiedConnectionService.setConnectionManager(connectionManager);
   await unifiedConnectionService.initialize();
@@ -175,6 +245,7 @@ Future<void> setupServiceLocator() async {
     unifiedConnectionService,
   );
 
+  // Admin services - require authentication and admin privileges
   final adminService = AdminService(authService: authService);
   serviceLocator.registerSingleton<AdminService>(adminService);
 
@@ -182,4 +253,12 @@ Future<void> setupServiceLocator() async {
   serviceLocator.registerSingleton<AdminDataFlushService>(
     adminDataFlushService,
   );
+
+  debugPrint('[ServiceLocator] Authenticated services registered successfully');
+}
+
+/// Legacy function for backward compatibility.
+/// Now delegates to setupCoreServices() to maintain existing code.
+Future<void> setupServiceLocator() async {
+  await setupCoreServices();
 }

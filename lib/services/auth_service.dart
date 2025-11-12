@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import '../models/user_model.dart';
 import 'auth0_service.dart';
+import '../di/locator.dart' as di;
 
 /// Auth0-based Authentication Service
 /// Provides authentication for web and desktop using Auth0
@@ -31,6 +32,8 @@ class AuthService extends ChangeNotifier {
         _isAuthenticated.value = isAuth;
         if (isAuth && _auth0Service.currentUser != null) {
           _currentUser = UserModel.fromAuth0Profile(_auth0Service.currentUser!);
+          // Load authenticated services now that we have a token (async, non-blocking)
+          _loadAuthenticatedServices();
         } else {
           _currentUser = null;
         }
@@ -39,8 +42,24 @@ class AuthService extends ChangeNotifier {
 
       // Check initial auth status
       await _checkAuthStatus();
+      
+      // If already authenticated, load authenticated services
+      if (_isAuthenticated.value) {
+        await _loadAuthenticatedServices();
+      }
     } catch (e) {
       debugPrint(' Failed to initialize Auth0: $e');
+    }
+  }
+
+  /// Load authenticated services after authentication is confirmed
+  Future<void> _loadAuthenticatedServices() async {
+    try {
+      debugPrint('[AuthService] Loading authenticated services...');
+      await di.setupAuthenticatedServices();
+      debugPrint('[AuthService] Authenticated services loaded successfully');
+    } catch (e) {
+      debugPrint('[AuthService] Error loading authenticated services: $e');
     }
   }
 
@@ -49,6 +68,8 @@ class AuthService extends ChangeNotifier {
       _isAuthenticated.value = true;
       _currentUser = UserModel.fromAuth0Profile(_auth0Service.currentUser!);
       notifyListeners();
+      // Load authenticated services if already authenticated
+      await _loadAuthenticatedServices();
     }
   }
 
