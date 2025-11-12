@@ -34,8 +34,22 @@ class Auth0WebService implements Auth0Service {
   Future<void> initialize() async {
     // Wait for Auth0 bridge to be available
     await _waitForAuth0Bridge();
-    await _waitForAuth0Client();
-    await checkAuthStatus();
+    
+    // Try to wait for client, but don't fail if it's not ready yet
+    // The client will be checked again when actually needed (login, etc.)
+    try {
+      await _waitForAuth0Client();
+    } catch (e) {
+      debugPrint(
+        '⚠️ Auth0 client not ready during initialization, will retry when needed: $e',
+      );
+      // Don't throw - we'll check again when login is called
+    }
+    
+    // Check auth status if client is ready
+    if (_clientReady) {
+      await checkAuthStatus();
+    }
   }
 
   Future<void> _waitForAuth0Bridge() async {
@@ -59,35 +73,53 @@ class Auth0WebService implements Auth0Service {
       return;
     }
 
-    const maxAttempts = 50; // 5 seconds
-    var attempts = 0;
-
-    while (attempts < maxAttempts) {
-      if (auth0Bridge != null) {
-        try {
-          final promise = auth0Bridge!.isInitialized();
-          final result = await promise.toDart;
-          final value = result.dartify();
-          if (value == true || value == 'true') {
-            _clientReady = true;
-            return;
-          }
-        } catch (_) {
-          // Ignore and retry
-        }
-      }
-      await Future.delayed(const Duration(milliseconds: 100));
-      attempts++;
+    if (auth0Bridge == null) {
+      throw Exception('Auth0 bridge not available');
     }
 
-    throw Exception('Auth0 client not initialized after 5 seconds');
+    try {
+      final promise = auth0Bridge!.isInitialized();
+      final result = await promise.toDart;
+      final value = result.dartify();
+      
+      // Handle boolean or string 'true'/'false'
+      if (value == true || value == 'true' || value == 1) {
+        _clientReady = true;
+        debugPrint('✅ Auth0 client is ready');
+        return;
+      } else {
+        throw Exception('Auth0 client not initialized');
+      }
+    } catch (e) {
+      debugPrint('⚠️ Auth0 client initialization check failed: $e');
+      throw Exception('Auth0 client not initialized: $e');
+    }
   }
 
   Future<void> _ensureClientReady() async {
+    // Always ensure bridge is ready
     if (!_bridgeReady) {
       await _waitForAuth0Bridge();
     }
-    if (!_clientReady) {
+    
+    // Always check client readiness (don't rely on cached _clientReady)
+    // The client might have been initialized after our first check
+    try {
+      final promise = auth0Bridge!.isInitialized();
+      final result = await promise.toDart;
+      final value = result.dartify();
+      
+      if (value == true || value == 'true' || value == 1) {
+        _clientReady = true;
+        return;
+      } else {
+        // Client not ready, throw to trigger retry logic
+        throw Exception('Auth0 client not ready');
+      }
+    } catch (e) {
+      debugPrint('⚠️ Auth0 client readiness check failed: $e');
+      // Reset flag and try the full wait
+      _clientReady = false;
       await _waitForAuth0Client();
     }
   }

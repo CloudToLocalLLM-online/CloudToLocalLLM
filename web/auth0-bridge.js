@@ -5,8 +5,29 @@ const API_AUDIENCE = 'https://api.cloudtolocalllm.online';
 
 window.auth0Bridge = {
   // Check if Auth0 client is initialized
-  isInitialized: function() {
-    return window.auth0Client != null;
+  isInitialized: async function() {
+    // Return a promise that resolves when the client is ready
+    return new Promise((resolve) => {
+      // Check immediately
+      if (window.auth0Client != null) {
+        resolve(true);
+        return;
+      }
+      
+      // If not ready, wait a bit and check again
+      let attempts = 0;
+      const maxAttempts = 50; // 5 seconds max
+      const checkInterval = setInterval(() => {
+        attempts++;
+        if (window.auth0Client != null) {
+          clearInterval(checkInterval);
+          resolve(true);
+        } else if (attempts >= maxAttempts) {
+          clearInterval(checkInterval);
+          resolve(false);
+        }
+      }, 100);
+    });
   },
 
   // Login with redirect (will show Auth0 Universal Login)
