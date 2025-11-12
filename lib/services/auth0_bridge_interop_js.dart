@@ -10,7 +10,7 @@ external Auth0Bridge? get auth0Bridge;
 @JS()
 @anonymous
 extension type Auth0Bridge._(JSObject _) implements JSObject {
-  external JSPromise<JSAny?> isInitialized();
+  external bool isInitialized();
   external JSPromise<JSAny?> loginWithRedirect();
   external JSPromise<JSAny?> logout();
   external JSPromise<JSAny?> handleRedirectCallback();

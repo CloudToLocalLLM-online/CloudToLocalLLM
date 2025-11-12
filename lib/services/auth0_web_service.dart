@@ -77,23 +77,26 @@ class Auth0WebService implements Auth0Service {
       throw Exception('Auth0 bridge not available');
     }
 
-    try {
-      final promise = auth0Bridge!.isInitialized();
-      final result = await promise.toDart;
-      final value = result.dartify();
-      
-      // Handle boolean or string 'true'/'false'
-      if (value == true || value == 'true' || value == 1) {
-        _clientReady = true;
-        debugPrint('✅ Auth0 client is ready');
-        return;
-      } else {
-        throw Exception('Auth0 client not initialized');
+    const maxAttempts = 50; // 5 seconds
+    var attempts = 0;
+
+    while (attempts < maxAttempts) {
+      try {
+        final isReady = auth0Bridge!.isInitialized();
+        if (isReady) {
+          _clientReady = true;
+          debugPrint('✅ Auth0 client is ready');
+          return;
+        }
+      } catch (e) {
+        debugPrint('⚠️ Auth0 client check error: $e');
       }
-    } catch (e) {
-      debugPrint('⚠️ Auth0 client initialization check failed: $e');
-      throw Exception('Auth0 client not initialized: $e');
+      
+      await Future.delayed(const Duration(milliseconds: 100));
+      attempts++;
     }
+
+    throw Exception('Auth0 client not initialized after 5 seconds');
   }
 
   Future<void> _ensureClientReady() async {
@@ -104,17 +107,19 @@ class Auth0WebService implements Auth0Service {
     
     // Always check client readiness (don't rely on cached _clientReady)
     // The client might have been initialized after our first check
+    if (auth0Bridge == null) {
+      throw Exception('Auth0 bridge not available');
+    }
+    
     try {
-      final promise = auth0Bridge!.isInitialized();
-      final result = await promise.toDart;
-      final value = result.dartify();
-      
-      if (value == true || value == 'true' || value == 1) {
+      final isReady = auth0Bridge!.isInitialized();
+      if (isReady) {
         _clientReady = true;
         return;
       } else {
-        // Client not ready, throw to trigger retry logic
-        throw Exception('Auth0 client not ready');
+        // Client not ready, try the full wait
+        _clientReady = false;
+        await _waitForAuth0Client();
       }
     } catch (e) {
       debugPrint('⚠️ Auth0 client readiness check failed: $e');
