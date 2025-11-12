@@ -91,41 +91,9 @@ class AppRouter {
     GlobalKey<NavigatorState>? navigatorKey,
     required AuthService authService,
   }) {
-    // Get the initial location from the browser URL
-    String? initialLocation;
-    if (kIsWeb) {
-      try {
-        final baseUri = Uri.base;
-        debugPrint('[Router] Raw Uri.base: ${baseUri.toString()}');
-        debugPrint('[Router] Uri.base path: ${baseUri.path}');
-        debugPrint('[Router] Uri.base query: ${baseUri.query}');
-        debugPrint('[Router] Uri.base queryParameters: ${baseUri.queryParameters}');
-
-        // Always include query parameters if they exist, even if empty initially
-        if (baseUri.query.isNotEmpty) {
-          initialLocation = '${baseUri.path}?${baseUri.query}';
-        } else if (baseUri.queryParameters.isNotEmpty) {
-          // Fallback: reconstruct query string from parameters
-          final queryString = baseUri.queryParameters.entries
-              .map((e) => '${Uri.encodeQueryComponent(e.key)}=${Uri.encodeQueryComponent(e.value)}')
-              .join('&');
-          initialLocation = '${baseUri.path}?$queryString';
-        } else {
-          initialLocation = baseUri.path;
-        }
-        debugPrint('[Router] Initial location from browser: $initialLocation');
-        debugPrint('[Router] Final query params check: ${baseUri.queryParameters}');
-      } catch (e) {
-        debugPrint('[Router] Error getting initial location: $e');
-        initialLocation = '/';
-      }
-    } else {
-      // For desktop, always start at home unless there's a specific reason not to
-      initialLocation = '/';
-      debugPrint(
-        '[Router] Desktop platform - setting initial location to: $initialLocation',
-      );
-    }
+      // For web, start at '/' and let the route builder handle callback detection
+    // This avoids issues with GoRouter not preserving query parameters in initialLocation
+    final initialLocation = '/';
 
     return GoRouter(
       navigatorKey: navigatorKey,
@@ -138,6 +106,22 @@ class AppRouter {
           path: '/',
           name: 'home',
           builder: (context, state) {
+            // Check for Auth0 callback parameters in the current state
+            final hasCallbackParams = kIsWeb &&
+                (state.uri.queryParameters.containsKey('code') ||
+                 state.uri.queryParameters.containsKey('state'));
+
+            // If we have callback parameters, redirect to callback route
+            if (hasCallbackParams) {
+              debugPrint('[Router] Home route detected callback params, redirecting to callback');
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (context.mounted) {
+                  context.go('/callback');
+                }
+              });
+              return const LoadingScreen(message: 'Processing authentication...');
+            }
+
             // Web: Domain detection handled by redirect logic
             // Desktop: Chat interface
             if (kIsWeb) {
