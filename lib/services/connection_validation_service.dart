@@ -226,7 +226,7 @@ class ConnectionValidationService extends ChangeNotifier {
       // Test basic LLM endpoint connectivity
       final response = await http
           .get(
-            Uri.parse('$_baseUrl/api/ollama/tags'),
+            Uri.parse('$_baseUrl/ollama/api/tags'),
             headers: {
               'Authorization': 'Bearer $token',
               'Content-Type': 'application/json',

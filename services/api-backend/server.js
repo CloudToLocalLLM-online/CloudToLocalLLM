@@ -244,8 +244,8 @@ app.get('/api/db/health', async(req, res) => {
 // Administrative routes
 app.use('/api/admin', adminRoutes);
 
-// LLM Tunnel Cloud Proxy Endpoints
-app.all('/api/ollama/*', authenticateJWT, addTierInfo, async(req, res) => {
+// LLM Tunnel Cloud Proxy Endpoints (support both /api/ollama and /ollama)
+const handleOllamaProxyRequest = async(req, res) => {
   const startTime = Date.now();
   const requestId = `llm-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
   const userId = req.auth?.payload.sub;
@@ -260,7 +260,13 @@ app.all('/api/ollama/*', authenticateJWT, addTierInfo, async(req, res) => {
   }
 
   try {
-    const ollamaPath = req.path.replace('/api/ollama', '') || '/';
+    const basePath = req.path.startsWith('/ollama') ? '/ollama' : '/api/ollama';
+    let ollamaPath = req.path.substring(basePath.length);
+    if (!ollamaPath || ollamaPath.length === 0) {
+      ollamaPath = '/';
+    } else if (!ollamaPath.startsWith('/')) {
+      ollamaPath = `/${ollamaPath}`;
+    }
     const forwardHeaders = { ...req.headers };
     ['host', 'authorization', 'connection', 'upgrade', 'proxy-authenticate', 'proxy-authorization', 'te', 'trailers', 'transfer-encoding'].forEach(h => delete forwardHeaders[h]);
 
@@ -318,7 +324,10 @@ app.all('/api/ollama/*', authenticateJWT, addTierInfo, async(req, res) => {
     }
     res.status(500).json({ error: 'LLM tunnel error', code: 'LLM_TUNNEL_ERROR' });
   }
-});
+};
+
+const OLLAMA_ROUTE_PATHS = ['/api/ollama', '/api/ollama/*', '/ollama', '/ollama/*'];
+app.all(OLLAMA_ROUTE_PATHS, authenticateJWT, addTierInfo, handleOllamaProxyRequest);
 
 // User tier endpoint
 app.get('/api/user/tier', authenticateJWT, addTierInfo, (req, res) => {

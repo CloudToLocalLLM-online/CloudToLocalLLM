@@ -45,7 +45,7 @@ async function testAuthFlow() {
   console.log('\n� Test 2: Unauthenticated Request');
   console.log('----------------------------------');
   try {
-    const response = await fetch(`${SERVICE_URL}/api/ollama/bridge/status`);
+    const response = await fetch(`${SERVICE_URL}/ollama/bridge/status`);
     const result = await response.json();
     
     if (response.status === 401) {
@@ -71,7 +71,7 @@ async function testAuthFlow() {
       console.log(`   Token User: ${decoded?.email || decoded?.sub || 'Unknown'}`);
       console.log(`   Token Expires: ${new Date(decoded?.exp * 1000).toISOString()}`);
       
-      const response = await fetch(`${SERVICE_URL}/api/ollama/bridge/status`, {
+      const response = await fetch(`${SERVICE_URL}/ollama/bridge/status`, {
         headers: {
           'Authorization': `Bearer ${TEST_TOKEN}`,
           'Content-Type': 'application/json'
