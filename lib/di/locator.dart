@@ -51,13 +51,15 @@ Future<void> setupServiceLocator() async {
   await authService.init();
   serviceLocator.registerSingleton<AuthService>(authService);
 
+  // Initialize user tier service asynchronously (non-blocking for UI)
   final enhancedUserTierService = EnhancedUserTierService(
     authService: authService,
   );
-  await enhancedUserTierService.initialize();
   serviceLocator.registerSingleton<EnhancedUserTierService>(
     enhancedUserTierService,
   );
+  // Initialize in background
+  unawaited(enhancedUserTierService.initialize());
 
   final tunnelService = TunnelService(authService: authService);
   serviceLocator.registerSingleton<TunnelService>(tunnelService);

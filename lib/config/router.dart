@@ -62,10 +62,15 @@ class AppRouter {
     String? initialLocation;
     if (kIsWeb) {
       try {
-        final currentUrl = Uri.base.toString();
-        final uri = Uri.parse(currentUrl);
-        initialLocation = uri.path;
+        final baseUri = Uri.base;
+        // Include query parameters in initial location to preserve callback params
+        if (baseUri.queryParameters.isNotEmpty) {
+          initialLocation = '${baseUri.path}?${baseUri.query}';
+        } else {
+          initialLocation = baseUri.path;
+        }
         debugPrint('[Router] Initial location from browser: $initialLocation');
+        debugPrint('[Router] Query params: ${baseUri.queryParameters}');
       } catch (e) {
         debugPrint('[Router] Error getting initial location: $e');
         initialLocation = '/';
@@ -311,14 +316,22 @@ class AppRouter {
         final isDocs = state.matchedLocation == '/docs' && kIsWeb;
 
         // Check for Auth0 callback parameters in URL (code and state)
+        // Use both state.uri and Uri.base to catch all cases
+        final stateUri = state.uri;
+        final baseUri = kIsWeb ? Uri.base : stateUri;
+        final queryParams = stateUri.queryParameters.isNotEmpty
+            ? stateUri.queryParameters
+            : baseUri.queryParameters;
+        
         final hasCallbackParams = kIsWeb &&
-            (state.uri.queryParameters.containsKey('code') ||
-                state.uri.queryParameters.containsKey('state'));
+            (queryParams.containsKey('code') || queryParams.containsKey('state'));
 
         // Use robust hostname detection
         final isAppSubdomain = _isAppSubdomain();
 
         debugPrint('[Router] Redirect check: ${state.matchedLocation}');
+        debugPrint('[Router] Full URI: ${stateUri.toString()}');
+        debugPrint('[Router] Query params: $queryParams');
         debugPrint(
           '[Router] Auth state: $isAuthenticated, Auth loading: $isAuthLoading, App subdomain: $isAppSubdomain',
         );
@@ -334,8 +347,9 @@ class AppRouter {
           // Preserve query parameters when redirecting to callback
           final callbackUri = Uri(
             path: '/callback',
-            queryParameters: state.uri.queryParameters,
+            queryParameters: queryParams,
           );
+          debugPrint('[Router] Redirecting to: ${callbackUri.toString()}');
           return callbackUri.toString();
         }
 
