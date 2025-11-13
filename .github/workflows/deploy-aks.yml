@@ -141,11 +141,6 @@ jobs:
     if: github.ref == 'refs/heads/main'
 
     steps:
-    - name: Azure Login
-      uses: azure/login@v2
-      with:
-        creds: ${{ secrets.AZURE_CREDENTIALS }}
-
     - name: Get Load Balancer IP
       id: lb-ip
       run: |
