@@ -91,6 +91,8 @@ class AppRouter {
     GlobalKey<NavigatorState>? navigatorKey,
     required AuthService authService,
   }) {
+    // Store authService for use in route builders
+    final authServiceRef = authService;
       // For web, get the full URL including query parameters to preserve callback data
       // This ensures Auth0 callback parameters are available to the router
     String initialLocation;
@@ -126,8 +128,7 @@ class AppRouter {
             bool hasCallbackParams = false;
             if (kIsWeb) {
               try {
-                final authService = context.read<AuthService>();
-                hasCallbackParams = authService.auth0Service.isCallbackUrl();
+                hasCallbackParams = authServiceRef.auth0Service.isCallbackUrl();
                 debugPrint('[Router] Has callback params: $hasCallbackParams');
               } catch (e) {
                 debugPrint('[Router] Error checking callback URL: $e');
