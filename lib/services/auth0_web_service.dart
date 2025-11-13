@@ -34,7 +34,7 @@ class Auth0WebService implements Auth0Service {
   Future<void> initialize() async {
     // Wait for Auth0 bridge to be available
     await _waitForAuth0Bridge();
-    
+
     // Try to wait for client, but don't fail if it's not ready yet
     // The client will be checked again when actually needed (login, etc.)
     try {
@@ -45,10 +45,13 @@ class Auth0WebService implements Auth0Service {
       );
       // Don't throw - we'll check again when login is called
     }
-    
-    // Check auth status if client is ready
-    if (_clientReady) {
+
+    // Always try to check auth status, even if client isn't ready yet
+    // This will ensure we check again when the client becomes available
+    try {
       await checkAuthStatus();
+    } catch (e) {
+      debugPrint('⚠️ Initial auth status check failed: $e');
     }
   }
 
@@ -102,22 +105,27 @@ class Auth0WebService implements Auth0Service {
   Future<void> _ensureClientReady() async {
     // Always ensure bridge is ready
     if (!_bridgeReady) {
+      debugPrint('🔄 Waiting for Auth0 bridge...');
       await _waitForAuth0Bridge();
     }
-    
+
     // Always check client readiness (don't rely on cached _clientReady)
     // The client might have been initialized after our first check
     if (auth0Bridge == null) {
       throw Exception('Auth0 bridge not available');
     }
-    
+
     try {
+      debugPrint('🔄 Checking if Auth0 client is ready...');
       final isReady = auth0Bridge!.isInitialized();
+      debugPrint('🔍 Auth0 client initialized check result: $isReady');
       if (isReady) {
         _clientReady = true;
+        debugPrint('✅ Auth0 client is ready');
         return;
       } else {
         // Client not ready, try the full wait
+        debugPrint('⏳ Auth0 client not ready, waiting...');
         _clientReady = false;
         await _waitForAuth0Client();
       }
@@ -179,9 +187,19 @@ class Auth0WebService implements Auth0Service {
 
   Future<void> checkAuthStatus() async {
     try {
-      await _ensureClientReady();
+      // Try to ensure client is ready, but don't fail if it's not
+      try {
+        await _ensureClientReady();
+      } catch (e) {
+        debugPrint('⚠️ Auth0 client not ready for auth check: $e');
+        _isAuthenticated = false;
+        _authStateController.add(false);
+        return;
+      }
+
       if (auth0Bridge == null) {
         _isAuthenticated = false;
+        _authStateController.add(false);
         return;
       }
 
@@ -214,15 +232,22 @@ class Auth0WebService implements Auth0Service {
         if (token != null) {
           _accessToken = token.toString();
         }
+      } else {
+        // Clear user data if not authenticated
+        _currentUser = null;
+        _accessToken = null;
       }
 
       if (wasAuthenticated != _isAuthenticated) {
+        debugPrint('🔐 Auth state changed: $wasAuthenticated -> $_isAuthenticated');
         _authStateController.add(_isAuthenticated);
       }
     } catch (e, stackTrace) {
       debugPrint('Auth0 checkAuthStatus error: $e');
       debugPrint(stackTrace.toString());
       _isAuthenticated = false;
+      _currentUser = null;
+      _accessToken = null;
       _authStateController.add(false);
     }
   }
