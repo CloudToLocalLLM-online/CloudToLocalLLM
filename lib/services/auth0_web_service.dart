@@ -131,10 +131,46 @@ class Auth0WebService implements Auth0Service {
       }
     } catch (e) {
       debugPrint('⚠️ Auth0 client readiness check failed: $e');
-      // Reset flag and try the full wait
-      _clientReady = false;
-      await _waitForAuth0Client();
+      // For callback handling, try a shorter wait since Auth0 might still be initializing
+      try {
+        debugPrint('⏳ Retrying Auth0 client wait with shorter timeout...');
+        await _waitForAuth0ClientShort();
+      } catch (e2) {
+        debugPrint('⚠️ Short wait also failed: $e2');
+        throw Exception('Auth0 client not available after retries: $e');
+      }
     }
+  }
+
+  Future<void> _waitForAuth0ClientShort() async {
+    if (_clientReady) {
+      return;
+    }
+
+    if (auth0Bridge == null) {
+      throw Exception('Auth0 bridge not available');
+    }
+
+    const maxAttempts = 30; // 3 seconds instead of 5
+    var attempts = 0;
+
+    while (attempts < maxAttempts) {
+      try {
+        final isReady = auth0Bridge!.isInitialized();
+        if (isReady) {
+          _clientReady = true;
+          debugPrint('✅ Auth0 client ready (short wait)');
+          return;
+        }
+      } catch (e) {
+        debugPrint('⚠️ Auth0 client short check error: $e');
+      }
+
+      await Future.delayed(const Duration(milliseconds: 100));
+      attempts++;
+    }
+
+    throw Exception('Auth0 client not initialized after 3 seconds');
   }
 
   @override
@@ -167,20 +203,37 @@ class Auth0WebService implements Auth0Service {
 
   @override
   Future<bool> handleRedirectCallback() async {
+    debugPrint('🔄 Starting Auth0 redirect callback handling...');
     try {
       await _ensureClientReady();
       if (auth0Bridge == null) {
+        debugPrint('❌ Auth0 bridge not available for callback');
         return false;
       }
+
+      debugPrint('🔄 Calling Auth0 bridge handleRedirectCallback...');
       final promise = auth0Bridge!.handleRedirectCallback();
       final result = await promise.toDart;
+      final resultData = result.dartify();
       debugPrint(
-        'Auth0 handleRedirectCallback bridge result: ${result.dartify()}',
+        '📋 Auth0 handleRedirectCallback bridge result: $resultData',
       );
-      await checkAuthStatus();
-      return _isAuthenticated;
+
+      // Check if the result indicates success
+      final success = resultData is Map && resultData['success'] == true;
+      debugPrint('✅ Callback success: $success');
+
+      if (success) {
+        debugPrint('🔄 Callback successful, checking auth status...');
+        await checkAuthStatus();
+        debugPrint('🔐 Auth status after callback: $_isAuthenticated');
+        return _isAuthenticated;
+      } else {
+        debugPrint('❌ Callback failed with result: $resultData');
+        return false;
+      }
     } catch (e) {
-      debugPrint('Error handling redirect callback: $e');
+      debugPrint('❌ Error handling redirect callback: $e');
       return false;
     }
   }

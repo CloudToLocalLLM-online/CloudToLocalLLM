@@ -86,12 +86,18 @@ class _CallbackScreenState extends State<CallbackScreen> {
       // Web platform - process the callback normally
       // Pass the current location to ensure auth service gets the callback parameters
       debugPrint(
-        ' [CallbackScreen] calling authService.handleCallback with URL: $currentLocation',
+        ' [CallbackScreen] Current URL: $currentLocation',
+      );
+      debugPrint(
+        ' [CallbackScreen] Auth state before callback: ${authService.isAuthenticated.value}',
       );
       final success = await authService.handleCallback(
         callbackUrl: currentLocation,
       );
       debugPrint(' [CallbackScreen] handleCallback returned: $success');
+      debugPrint(
+        ' [CallbackScreen] Auth state after callback: ${authService.isAuthenticated.value}',
+      );
 
       if (mounted) {
         if (success) {

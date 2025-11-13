@@ -92,30 +92,43 @@
       }
     })();
 
-    // Initialize Auth0 when config is loaded
-    window.addEventListener('DOMContentLoaded', async function() {
-      if (window.cloudToLocalLLMConfig) {
-        const audience = 'https://api.cloudtolocalllm.online';
-        console.log(' Initializing Auth0 with audience:', audience);
-        window.auth0Client = await auth0.createAuth0Client({
-          domain: 'dev-v2f2p008x3dr74ww.us.auth0.com',
-          clientId: 'FuXPnevXpp311CdYHGsbNZe9t3D8Ts7A',
-          authorizationParams: {
-            redirect_uri: window.location.origin,
-            // API identifier matches Auth0 API (Resource Server) identifier
-            audience: audience
-          },
-          // Enable social connections (Google, GitHub, etc.)
-          cacheLocation: 'localstorage',
-          // Use a unique cache key to force refresh on audience change
-          cacheKey: 'auth0-cache-v2'
-        });
-        console.log(' Auth0 initialized with audience:', audience);
-        
-        // NOTE: Callback handling is now done in Flutter's CallbackScreen to ensure proper routing
-        // The auth0-bridge.js provides the handleRedirectCallback method for Flutter to use
+    // Initialize Auth0 synchronously if callback parameters are present, otherwise async
+    async function initializeAuth0() {
+      if (!window.cloudToLocalLLMConfig) return;
+
+      const audience = 'https://api.cloudtolocalllm.online';
+      console.log(' Initializing Auth0 with audience:', audience);
+
+      // Check if this is a callback URL (has code/state parameters)
+      const urlParams = new URLSearchParams(window.location.search);
+      const isCallback = urlParams.has('code') || urlParams.has('state') || urlParams.has('error');
+
+      if (isCallback) {
+        console.log(' Detected callback URL, initializing Auth0 synchronously');
       }
-    });
+
+      window.auth0Client = await auth0.createAuth0Client({
+        domain: 'dev-v2f2p008x3dr74ww.us.auth0.com',
+        clientId: 'FuXPnevXpp311CdYHGsbNZe9t3D8Ts7A',
+        authorizationParams: {
+          redirect_uri: window.location.origin,
+          // API identifier matches Auth0 API (Resource Server) identifier
+          audience: audience
+        },
+        // Enable social connections (Google, GitHub, etc.)
+        cacheLocation: 'localstorage',
+        // Use a unique cache key to force refresh on audience change
+        cacheKey: 'auth0-cache-v2'
+      });
+      console.log(' Auth0 initialized with audience:', audience);
+    }
+
+    // Initialize immediately if config is already loaded, otherwise wait for DOMContentLoaded
+    if (window.cloudToLocalLLMConfig) {
+      initializeAuth0();
+    } else {
+      window.addEventListener('DOMContentLoaded', initializeAuth0);
+    }
   </script>
   
   <!-- Auth0 Bridge for Flutter -->

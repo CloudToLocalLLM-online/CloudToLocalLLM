@@ -139,11 +139,19 @@ class AuthService extends ChangeNotifier {
 
   /// Handle callback after authentication redirect
   Future<bool> handleCallback({String? callbackUrl}) async {
+    debugPrint('🔄 AuthService.handleCallback called with URL: $callbackUrl');
     if (kIsWeb) {
+      debugPrint('🔄 Calling Auth0Service.handleRedirectCallback...');
       final success = await _auth0Service.handleRedirectCallback();
+      debugPrint('📋 Auth0Service.handleRedirectCallback returned: $success');
+
       if (success) {
+        debugPrint('🔄 Callback successful, checking auth status and loading services...');
         // After successful callback handling, check auth status and load services
         await _checkAuthStatus();
+        debugPrint('🔐 Final auth state after callback: ${isAuthenticated.value}');
+      } else {
+        debugPrint('❌ Callback failed');
       }
       return success;
     } else {
