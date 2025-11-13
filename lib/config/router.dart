@@ -91,9 +91,25 @@ class AppRouter {
     GlobalKey<NavigatorState>? navigatorKey,
     required AuthService authService,
   }) {
-      // For web, start at '/' and let the route builder handle callback detection
-    // This avoids issues with GoRouter not preserving query parameters in initialLocation
-    final initialLocation = '/';
+      // For web, get the full URL including query parameters to preserve callback data
+      // This ensures Auth0 callback parameters are available to the router
+    String initialLocation;
+    if (kIsWeb) {
+      try {
+        // Use Uri.base to get the full current URL with query parameters
+        final currentUri = Uri.base;
+        initialLocation = currentUri.path;
+        if (currentUri.hasQuery) {
+          initialLocation += '?${currentUri.query}';
+        }
+        debugPrint('[Router] Initial location with query params: $initialLocation');
+      } catch (e) {
+        debugPrint('[Router] Error getting current URI: $e');
+        initialLocation = '/';
+      }
+    } else {
+      initialLocation = '/';
+    }
 
     return GoRouter(
       navigatorKey: navigatorKey,
