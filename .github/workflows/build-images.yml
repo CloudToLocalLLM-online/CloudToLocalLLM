@@ -2,25 +2,25 @@ name: Build Docker Images
 
 on:
   push:
-    branches: [ develop ]
+    branches: [ main, develop ]
     paths:
-      - 'services/api-backend/**'
-      - 'config/docker/**'
-      - 'lib/**'
-      - 'web/**'
-      - 'pubspec.yaml'
-      - 'package.json'
+      - 'services/api-backend/Dockerfile*'
+      - 'config/docker/Dockerfile*'
       - 'Dockerfile*'
+      - 'services/api-backend/package.json'
+      - 'services/api-backend/package-lock.json'
+      - 'pubspec.yaml'
+      - 'web/**'
   pull_request:
     branches: [ main, develop ]
     paths:
-      - 'services/api-backend/**'
-      - 'config/docker/**'
-      - 'lib/**'
-      - 'web/**'
-      - 'pubspec.yaml'
-      - 'package.json'
+      - 'services/api-backend/Dockerfile*'
+      - 'config/docker/Dockerfile*'
       - 'Dockerfile*'
+      - 'services/api-backend/package.json'
+      - 'services/api-backend/package-lock.json'
+      - 'pubspec.yaml'
+      - 'web/**'
 
 env:
   REGISTRY: cloudtolocalllm
