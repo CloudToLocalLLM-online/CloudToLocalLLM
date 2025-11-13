@@ -9,24 +9,25 @@ metadata:
   annotations:
     # Use nginx ingress controller (deprecated annotation, using spec.ingressClassName instead)
     
-    # SSL/TLS configuration
-    cert-manager.io/cluster-issuer: letsencrypt-prod
-    
+    # SSL/TLS configuration - DISABLED temporarily due to Let's Encrypt rate limits
+    # cert-manager.io/cluster-issuer: letsencrypt-prod
+    # TODO: Re-enable SSL after rate limit expires (2025-11-20)
+
     # WebSocket support
     nginx.ingress.kubernetes.io/websocket-services: "api-backend"
-    
+
     # Proxy settings for WebSocket
     nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
     nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
     nginx.ingress.kubernetes.io/proxy-connect-timeout: "60"
-    
+
     # Enable CORS
     nginx.ingress.kubernetes.io/enable-cors: "true"
-    nginx.ingress.kubernetes.io/cors-allow-origin: "https://cloudtolocalllm.online,https://app.cloudtolocalllm.online"
-    
+    nginx.ingress.kubernetes.io/cors-allow-origin: "http://cloudtolocalllm.online,http://app.cloudtolocalllm.online"
+
     # Rate limiting
     nginx.ingress.kubernetes.io/limit-rps: "100"
-    
+
     # Security headers (disabled in newer nginx-ingress versions)
     # nginx.ingress.kubernetes.io/configuration-snippet: |
     #   more_set_headers "X-Frame-Options: SAMEORIGIN";
@@ -35,13 +36,14 @@ metadata:
     #         more_set_headers "Strict-Transport-Security: max-age=31536000; includeSubDomains";
 spec:
   ingressClassName: nginx
-  tls:
-    - hosts:
-        - cloudtolocalllm.online
-        - app.cloudtolocalllm.online
-        - api.cloudtolocalllm.online
-        - auth.cloudtolocalllm.online
-      secretName: cloudtolocalllm-tls
+  # TLS temporarily disabled due to Let's Encrypt rate limits
+  # tls:
+  #   - hosts:
+  #       - cloudtolocalllm.online
+  #       - app.cloudtolocalllm.online
+  #       - api.cloudtolocalllm.online
+  #       - auth.cloudtolocalllm.online
+  #     secretName: cloudtolocalllm-tls
   
   rules:
     # Main domain - Web app
