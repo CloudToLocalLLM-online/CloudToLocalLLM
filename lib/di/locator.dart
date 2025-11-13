@@ -11,6 +11,7 @@ import '../services/auth0_service.dart';
 import '../services/auth0_web_service.dart'
     if (dart.library.io) '../services/auth0_web_service_stub.dart';
 import '../services/auth_service.dart';
+import '../services/session_storage_service.dart';
 import '../services/connection_manager_service.dart';
 import '../services/desktop_client_detection_service.dart';
 import '../services/enhanced_user_tier_service.dart';
@@ -48,11 +49,15 @@ Future<void> setupCoreServices() async {
 
   debugPrint('[ServiceLocator] Registering core services...');
 
+  // Session storage service for PostgreSQL session management
+  final sessionStorageService = SessionStorageService();
+  serviceLocator.registerSingleton<SessionStorageService>(sessionStorageService);
+
   // Auth0 and Auth services - needed for authentication flow
   final auth0Service = kIsWeb ? Auth0WebService() : Auth0DesktopService();
   serviceLocator.registerSingleton<Auth0Service>(auth0Service);
 
-  final authService = AuthService(auth0Service);
+  final authService = AuthService(auth0Service, sessionStorageService);
   await authService.init();
   serviceLocator.registerSingleton<AuthService>(authService);
 

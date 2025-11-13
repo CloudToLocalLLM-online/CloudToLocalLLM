@@ -10,6 +10,7 @@ import { StreamingProxyManager } from './streaming-proxy-manager.js';
 import { auth } from 'express-oauth2-jwt-bearer';
 
 import adminRoutes from './routes/admin.js';
+import sessionRoutes from './routes/sessions.js';
 // Chisel tunnel integration
 import { ChiselProxy } from './tunnel/chisel-proxy.js';
 import { AuthService } from './auth/auth-service.js';
@@ -240,6 +241,9 @@ app.get('/api/db/health', async(req, res) => {
     });
   }
 });
+
+// Session management routes
+app.use('/api/auth/sessions', sessionRoutes);
 
 // Administrative routes
 app.use('/api/admin', adminRoutes);

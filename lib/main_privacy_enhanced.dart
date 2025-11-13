@@ -8,6 +8,7 @@ import 'config/theme.dart';
 import 'config/router.dart';
 import 'config/app_config.dart';
 import 'services/auth_service.dart';
+import 'services/session_storage_service.dart';
 import 'services/auth0_service.dart';
 import 'services/auth0_web_service.dart'
     if (dart.library.io) 'services/auth0_web_service_stub.dart';
@@ -189,13 +190,14 @@ class _CloudToLocalLLMPrivacyAppState extends State<CloudToLocalLLMPrivacyApp> {
         // Platform service manager (already initialized)
         ChangeNotifierProvider.value(value: widget.platformManager),
 
-        // Authentication service
+        // Authentication service with PostgreSQL session storage
         ChangeNotifierProvider(
           create: (_) {
             final Auth0Service auth0Service = kIsWeb
                 ? Auth0WebService()
                 : Auth0DesktopService();
-            final authService = AuthService(auth0Service);
+            final sessionStorageService = SessionStorageService();
+            final authService = AuthService(auth0Service, sessionStorageService);
             unawaited(authService.init());
             return authService;
           },

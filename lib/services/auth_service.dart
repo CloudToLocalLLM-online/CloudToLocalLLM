@@ -1,18 +1,22 @@
 import 'package:flutter/foundation.dart';
 import '../models/user_model.dart';
 import 'auth0_service.dart';
+import 'session_storage_service.dart';
 import '../di/locator.dart' as di;
 
-/// Auth0-based Authentication Service
+/// Auth0-based Authentication Service with PostgreSQL Session Storage
 /// Provides authentication for web and desktop using Auth0
+/// Sessions and user data are stored in PostgreSQL for better control
 class AuthService extends ChangeNotifier {
   final Auth0Service _auth0Service;
+  final SessionStorageService _sessionStorage;
   final ValueNotifier<bool> _isAuthenticated = ValueNotifier<bool>(false);
   final ValueNotifier<bool> _isLoading = ValueNotifier<bool>(false);
   UserModel? _currentUser;
   bool _initialized = false;
+  String? _sessionToken;
 
-  AuthService(this._auth0Service);
+  AuthService(this._auth0Service, this._sessionStorage);
 
   Future<void> init() async {
     if (_initialized) {
@@ -22,33 +26,39 @@ class AuthService extends ChangeNotifier {
     await _initAuth0();
   }
 
-  /// Initialize Auth0
+  /// Initialize Auth0 with PostgreSQL session storage
   Future<void> _initAuth0() async {
     try {
       await _auth0Service.initialize();
-      
+
+      // First, check if we have a valid session in PostgreSQL
+      await _checkStoredSession();
+
       // Listen to Auth0 auth state changes
-      _auth0Service.authStateChanges.listen((isAuth) {
-        _isAuthenticated.value = isAuth;
+      _auth0Service.authStateChanges.listen((isAuth) async {
+        debugPrint('🔐 Auth0 auth state changed: $isAuth');
         if (isAuth && _auth0Service.currentUser != null) {
-          _currentUser = UserModel.fromAuth0Profile(_auth0Service.currentUser!);
+          // Auth0 authenticated - store session in PostgreSQL
+          await _storeAuth0Session();
+          _isAuthenticated.value = true;
           // Load authenticated services now that we have a token (async, non-blocking)
           _loadAuthenticatedServices();
         } else {
+          // Auth0 logged out - clear PostgreSQL session
+          await _clearStoredSession();
+          _isAuthenticated.value = false;
           _currentUser = null;
+          _sessionToken = null;
         }
         notifyListeners();
       });
 
-      // Check initial auth status
-      await _checkAuthStatus();
-      
-      // If already authenticated, load authenticated services
+      // If we restored a session from PostgreSQL, we're already authenticated
       if (_isAuthenticated.value) {
         await _loadAuthenticatedServices();
       }
     } catch (e) {
-      debugPrint(' Failed to initialize Auth0: $e');
+      debugPrint('❌ Failed to initialize Auth0: $e');
     }
   }
 
@@ -60,6 +70,61 @@ class AuthService extends ChangeNotifier {
       debugPrint('[AuthService] Authenticated services loaded successfully');
     } catch (e) {
       debugPrint('[AuthService] Error loading authenticated services: $e');
+    }
+  }
+
+  /// Check for existing session in PostgreSQL
+  Future<void> _checkStoredSession() async {
+    try {
+      debugPrint('🔍 Checking for stored session in PostgreSQL...');
+      final session = await _sessionStorage.getCurrentSession();
+      if (session != null && session.isValid) {
+        debugPrint('✅ Found valid session: ${session.userId}');
+        _sessionToken = session.token;
+        _currentUser = session.user;
+        _isAuthenticated.value = true;
+        notifyListeners();
+      } else {
+        debugPrint('ℹ️ No valid stored session found');
+      }
+    } catch (e) {
+      debugPrint('❌ Error checking stored session: $e');
+    }
+  }
+
+  /// Store Auth0 session in PostgreSQL
+  Future<void> _storeAuth0Session() async {
+    try {
+      if (_auth0Service.currentUser == null) return;
+
+      debugPrint('💾 Storing Auth0 session in PostgreSQL...');
+      final user = UserModel.fromAuth0Profile(_auth0Service.currentUser!);
+      final accessToken = _auth0Service.getAccessToken();
+
+      final session = await _sessionStorage.createSession(
+        user: user,
+        auth0AccessToken: accessToken,
+        auth0IdToken: null, // Could add if needed
+      );
+
+      _sessionToken = session.token;
+      _currentUser = user;
+      debugPrint('✅ Session stored: ${session.token}');
+    } catch (e) {
+      debugPrint('❌ Error storing Auth0 session: $e');
+    }
+  }
+
+  /// Clear stored session from PostgreSQL
+  Future<void> _clearStoredSession() async {
+    try {
+      if (_sessionToken != null) {
+        debugPrint('🗑️ Clearing stored session: $_sessionToken');
+        await _sessionStorage.invalidateSession(_sessionToken!);
+        _sessionToken = null;
+      }
+    } catch (e) {
+      debugPrint('❌ Error clearing stored session: $e');
     }
   }
 

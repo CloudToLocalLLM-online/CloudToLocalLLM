@@ -4,8 +4,37 @@
 -- Enable required extensions
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
--- NOTE: user_sessions table has been moved to separate authentication database
--- Authentication data is stored in postgres-auth instance for security isolation
+-- Users table to cache Auth0 user profiles and manage local user data
+CREATE TABLE IF NOT EXISTS users (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  auth0_id TEXT UNIQUE NOT NULL,  -- Auth0 user ID (sub claim)
+  email TEXT UNIQUE NOT NULL,
+  name TEXT,
+  nickname TEXT,
+  picture TEXT,
+  email_verified BOOLEAN DEFAULT false,
+  locale TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  last_login TIMESTAMPTZ,
+  login_count INTEGER DEFAULT 0,
+  metadata JSONB DEFAULT '{}'::jsonb
+);
+
+-- Sessions table for managing Auth0-based authentication sessions
+CREATE TABLE IF NOT EXISTS user_sessions (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  auth0_access_token TEXT,  -- Store Auth0 access token
+  auth0_id_token TEXT,      -- Store Auth0 ID token
+  session_token TEXT UNIQUE NOT NULL,  -- Our internal session token
+  expires_at TIMESTAMPTZ NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  last_activity TIMESTAMPTZ DEFAULT NOW(),
+  ip_address INET,
+  user_agent TEXT,
+  is_active BOOLEAN DEFAULT true
+);
 
 -- Tunnel connections table for managing active tunnels
 CREATE TABLE IF NOT EXISTS tunnel_connections (
@@ -101,6 +130,15 @@ CREATE INDEX IF NOT EXISTS idx_api_usage_user_id ON api_usage(user_id);
 CREATE INDEX IF NOT EXISTS idx_api_usage_endpoint ON api_usage(endpoint);
 CREATE INDEX IF NOT EXISTS idx_api_usage_created_at ON api_usage(created_at);
 
+CREATE INDEX IF NOT EXISTS idx_users_auth0_id ON users(auth0_id);
+CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+CREATE INDEX IF NOT EXISTS idx_users_created_at ON users(created_at);
+
+CREATE INDEX IF NOT EXISTS idx_user_sessions_user_id ON user_sessions(user_id);
+CREATE INDEX IF NOT EXISTS idx_user_sessions_token ON user_sessions(session_token);
+CREATE INDEX IF NOT EXISTS idx_user_sessions_expires_at ON user_sessions(expires_at);
+CREATE INDEX IF NOT EXISTS idx_user_sessions_active ON user_sessions(is_active) WHERE is_active = true;
+
 CREATE INDEX IF NOT EXISTS idx_user_preferences_user_id ON user_preferences(user_id);
 
 CREATE INDEX IF NOT EXISTS idx_conversations_user_id ON conversations(user_id);
@@ -118,6 +156,9 @@ END;
 $$ language 'plpgsql';
 
 -- Apply updated_at triggers
+CREATE TRIGGER update_users_updated_at BEFORE UPDATE ON users
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
 CREATE TRIGGER update_tunnel_connections_updated_at BEFORE UPDATE ON tunnel_connections
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
