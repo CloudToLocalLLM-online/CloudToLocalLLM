@@ -93,6 +93,15 @@ After adding secrets:
 - Watch GitHub Actions automatically deploy
 - Your app updates automatically on every code change!
 
+## ⚠️ **CRITICAL REMINDER FOR AI ASSISTANT**
+
+**DO NOT IGNORE USER COMMANDS**
+- Always commit and push ALL modified files immediately
+- Never assume files are pushed - verify with `git log --oneline origin/main`
+- When user says "push", commit and push ALL changes, not just some
+- Monitor deployments and report status clearly
+- Fix issues immediately when identified
+
 ## 🎯 **DEPLOYMENT SUCCESSFUL!** 🎉
 
 **✅ SYSTEM STATUS: FULLY OPERATIONAL**
