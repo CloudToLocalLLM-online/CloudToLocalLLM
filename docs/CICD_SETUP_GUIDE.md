@@ -102,16 +102,6 @@ After adding secrets:
 - Monitor deployments and report status clearly
 - Fix issues immediately when identified
 
-**DOCUMENTATION ORGANIZATION RULE**
-- Never put documentation (.md files) in repository root except:
-  - `README.md` (main project readme)
-  - `CONTRIBUTING.md` (contribution guidelines)
-  - `LICENSE` (license file)
-  - `CHANGELOG.md` (version history)
-- All other documentation must go in `docs/` folder
-- Organize docs by category (deployment/, development/, operations/, etc.)
-- This rule prevents repository root clutter
-
 ## 🎯 **DEPLOYMENT SUCCESSFUL!** 🎉
 
 **✅ SYSTEM STATUS: FULLY OPERATIONAL**
