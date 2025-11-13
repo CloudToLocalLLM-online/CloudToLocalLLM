@@ -3,11 +3,6 @@ name: Deploy to Azure AKS
 on:
   push:
     branches: [ main ]
-    paths:
-      - 'k8s/**'
-      - 'services/**'
-      - 'config/**'
-      - 'lib/**'
   workflow_dispatch:
     inputs:
       environment:
@@ -185,10 +180,9 @@ jobs:
         DOMAINS=("cloudtolocalllm.online" "app.cloudtolocalllm.online" "api.cloudtolocalllm.online" "auth.cloudtolocalllm.online")
 
         for domain in "${DOMAINS[@]}"; do
-          if [[ $domain == "cloudtolocalllm.online" ]]; then
-            subdomain="@"
-          else
-            subdomain=$(echo $domain | sed 's/\.cloudtolocalllm\.online//')
+          subdomain=""
+          if [[ $domain != "cloudtolocalllm.online" ]]; then
+            subdomain=$(echo $domain | sed 's/.cloudtolocalllm.online//')
           fi
 
           curl -s -X POST "https://api.cloudflare.com/client/v4/zones/$CF_ZONE_ID/dns_records" \
