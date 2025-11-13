@@ -47,6 +47,17 @@ jobs:
           --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
           --name ${{ env.AZURE_CLUSTER_NAME }}
 
+    - name: Build and push web image
+      run: |
+        # Login to Azure Container Registry
+        az acr login --name ${{ env.AZURE_CONTAINER_REGISTRY }}
+
+        # Build and push web image with commit hash tag
+        COMMIT_SHA=$(echo ${{ github.sha }} | cut -c1-8)
+        docker build -f Dockerfile -t ${{ env.WEB_IMAGE }}:$COMMIT_SHA -t ${{ env.WEB_IMAGE }}:latest .
+        docker push ${{ env.WEB_IMAGE }}:$COMMIT_SHA
+        docker push ${{ env.WEB_IMAGE }}:latest
+
     - name: Update API deployment
       run: |
         kubectl set image deployment/api-backend \
@@ -55,8 +66,9 @@ jobs:
 
     - name: Update Web deployment
       run: |
+        COMMIT_SHA=$(echo ${{ github.sha }} | cut -c1-8)
         kubectl set image deployment/web \
-          web=${{ env.WEB_IMAGE }}:latest \
+          web=${{ env.WEB_IMAGE }}:$COMMIT_SHA \
           -n cloudtolocalllm
 
     - name: Wait for rollout to complete
