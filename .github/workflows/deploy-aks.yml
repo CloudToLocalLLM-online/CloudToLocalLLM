@@ -24,7 +24,7 @@ env:
   WEB_IMAGE: cloudtolocalllm/cloudtolocalllm-web
   AZURE_RESOURCE_GROUP: cloudtolocalllm-rg
   AZURE_CLUSTER_NAME: cloudtolocalllm-aks
-  AZURE_CONTAINER_REGISTRY: cloudtolocalllmacr
+  AZURE_CONTAINER_REGISTRY: cloudtolocalllm
 
 jobs:
   deploy:
