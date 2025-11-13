@@ -3,6 +3,11 @@ name: Deploy to Azure AKS
 on:
   push:
     branches: [ main ]
+    paths:
+      - 'k8s/**'
+      - 'services/**'
+      - 'config/**'
+      - 'lib/**'
   workflow_dispatch:
     inputs:
       environment:

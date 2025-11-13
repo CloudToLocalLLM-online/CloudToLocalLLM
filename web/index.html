@@ -54,32 +54,36 @@
     // Clear old Auth0 cache if it exists with wrong audience (must run before Auth0 SDK loads)
     (function() {
       try {
-        // Clear ALL Auth0-related localStorage entries to force fresh start
+        // Only clear cache entries that have the WRONG audience format
+        // The current audience is 'https://api.cloudtolocalllm.online' which is correct
+        // Old audience might have been just 'api.cloudtolocalllm.online' without https
         const keys = Object.keys(localStorage);
         keys.forEach(key => {
           if (key.includes('auth0') || key.includes('@@auth0spajs') || key.includes('@@auth0')) {
             const value = localStorage.getItem(key);
-            if (value && value.includes('api.cloudtolocalllm.online')) {
-              console.log(' Clearing old Auth0 cache with api.cloudtolocalllm.online:', key);
+            // Only clear if it contains the old format WITHOUT https://
+            if (value && value.includes('api.cloudtolocalllm.online') && !value.includes('https://api.cloudtolocalllm.online')) {
+              console.log(' Clearing old Auth0 cache with incorrect audience format:', key);
               localStorage.removeItem(key);
             }
           }
         });
-        
+
         // Also clear sessionStorage
         const sessionKeys = Object.keys(sessionStorage);
         sessionKeys.forEach(key => {
           if (key.includes('auth0') || key.includes('@@auth0')) {
             const value = sessionStorage.getItem(key);
-            if (value && value.includes('api.cloudtolocalllm.online')) {
-              console.log(' Clearing old Auth0 sessionStorage:', key);
+            // Only clear if it contains the old format WITHOUT https://
+            if (value && value.includes('api.cloudtolocalllm.online') && !value.includes('https://api.cloudtolocalllm.online')) {
+              console.log(' Clearing old Auth0 sessionStorage with incorrect audience:', key);
               sessionStorage.removeItem(key);
             }
           }
         });
-        
+
         // Clear URL if it has the old error
-        if (window.location.search.includes('api.cloudtolocalllm.online')) {
+        if (window.location.search.includes('api.cloudtolocalllm.online') && !window.location.search.includes('https://api.cloudtolocalllm.online')) {
           console.log(' Clearing URL with old api.cloudtolocalllm.online error');
           window.history.replaceState({}, document.title, window.location.pathname);
         }

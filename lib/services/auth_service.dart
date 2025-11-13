@@ -64,12 +64,24 @@ class AuthService extends ChangeNotifier {
   }
 
   Future<void> _checkAuthStatus() async {
+    // For Auth0WebService, we need to call checkAuthStatus() to get the actual auth state
+    // since isAuthenticated is just a cached value
+    try {
+      // This will update the internal state in Auth0Service
+      await (_auth0Service as dynamic).checkAuthStatus();
+    } catch (e) {
+      debugPrint('Error checking auth status: $e');
+    }
+
+    // Now check the updated authentication state
     if (_auth0Service.isAuthenticated && _auth0Service.currentUser != null) {
+      // Load authenticated services BEFORE setting authenticated state
+      // This ensures services are ready when auth state becomes true
+      await _loadAuthenticatedServices();
+
       _isAuthenticated.value = true;
       _currentUser = UserModel.fromAuth0Profile(_auth0Service.currentUser!);
       notifyListeners();
-      // Load authenticated services if already authenticated
-      await _loadAuthenticatedServices();
     }
   }
 
@@ -128,7 +140,12 @@ class AuthService extends ChangeNotifier {
   /// Handle callback after authentication redirect
   Future<bool> handleCallback({String? callbackUrl}) async {
     if (kIsWeb) {
-      return await _auth0Service.handleRedirectCallback();
+      final success = await _auth0Service.handleRedirectCallback();
+      if (success) {
+        // After successful callback handling, check auth status and load services
+        await _checkAuthStatus();
+      }
+      return success;
     } else {
        // On desktop, the callback is handled differently via deep linking or a local server.
        // This logic assumes the desktop service will handle the full flow internally.
