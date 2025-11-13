@@ -124,16 +124,24 @@ class AppRouter {
           path: '/',
           name: 'home',
           builder: (context, state) {
+            debugPrint('[Router] ===== HOME ROUTE BUILDER START =====');
+            debugPrint('[Router] Building home route at: ${DateTime.now()}');
+
             // Check for Auth0 callback URL using the Auth0 service
             bool hasCallbackParams = false;
             if (kIsWeb) {
               try {
+                debugPrint('[Router] Checking callback URL...');
+                debugPrint('[Router] Current URL: ${Uri.base.toString()}');
                 hasCallbackParams = authServiceRef.auth0Service.isCallbackUrl();
-                debugPrint('[Router] Has callback params: $hasCallbackParams');
+                debugPrint('[Router] isCallbackUrl() returned: $hasCallbackParams');
               } catch (e) {
                 debugPrint('[Router] Error checking callback URL: $e');
+                debugPrint('[Router] Error stack: ${e.toString()}');
               }
             }
+
+            debugPrint('[Router] Final hasCallbackParams: $hasCallbackParams');
 
             // If we have callback parameters, redirect to callback route
             if (hasCallbackParams) {
