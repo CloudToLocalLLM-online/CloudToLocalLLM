@@ -49,8 +49,8 @@ jobs:
 
     - name: Build and push web image
       run: |
-        # Login to Azure Container Registry
-        az acr login --name ${{ env.AZURE_CONTAINER_REGISTRY }}
+        # Login to Docker Hub
+        echo ${{ secrets.DOCKERHUB_TOKEN }} | docker login -u ${{ secrets.DOCKERHUB_USERNAME }} --password-stdin
 
         # Build and push web image with commit hash tag
         COMMIT_SHA=$(echo ${{ github.sha }} | cut -c1-8)
