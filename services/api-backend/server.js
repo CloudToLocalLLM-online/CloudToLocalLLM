@@ -699,12 +699,19 @@ async function initializeTunnelSystem() {
       logger.info('Authentication database initialized successfully');
     }
 
-    authService = new AuthService({
-      AUTH0_DOMAIN,
-      AUTH0_AUDIENCE,
-      authDbMigrator, // Pass auth database connection to auth service
-    });
-    await authService.initialize();
+    // Initialize auth service (optional - don't fail if it doesn't work)
+    try {
+      authService = new AuthService({
+        AUTH0_DOMAIN,
+        AUTH0_AUDIENCE,
+        authDbMigrator, // Pass auth database connection to auth service
+      });
+      await authService.initialize();
+      logger.info('Authentication service initialized successfully');
+    } catch (error) {
+      logger.warn('Authentication service initialization failed, continuing without auth features', { error: error.message });
+      authService = null; // Set to null so routes can handle missing auth service
+    }
 
     // Initialize conversation routes after database is ready
     const conversationRouter = createConversationRoutes(dbMigrator, logger);
