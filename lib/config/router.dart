@@ -124,8 +124,8 @@ class AppRouter {
           path: '/',
           name: 'home',
           builder: (context, state) {
-            debugPrint('[Router] ===== HOME ROUTE BUILDER START =====');
-            debugPrint('[Router] Building home route at: ${DateTime.now()}');
+            debugPrint('[Router] ===== NEW HOME ROUTE BUILDER START =====');
+            debugPrint('[Router] 🔥🔥🔥 THIS IS THE NEW CODE - TIME: ${DateTime.now()} 🔥🔥🔥');
 
             // Check for Auth0 callback URL using the Auth0 service
             bool hasCallbackParams = false;
