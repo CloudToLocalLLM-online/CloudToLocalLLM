@@ -54,6 +54,12 @@ window.auth0Bridge = {
     }
   },
 
+  // Check if this is a callback URL (has auth params)
+  isCallbackUrl: function() {
+    const urlParams = new URLSearchParams(window.location.search);
+    return urlParams.has('code') || urlParams.has('state') || urlParams.has('error');
+  },
+
   // Handle redirect callback (call this after page load)
   handleRedirectCallback: async function() {
     if (!window.auth0Client) {
@@ -63,39 +69,43 @@ window.auth0Bridge = {
     try {
       // Check URL parameters
       const urlParams = new URLSearchParams(window.location.search);
-      
+
       // Handle error callback
       if (urlParams.has('error')) {
         const error = urlParams.get('error');
         const errorDescription = urlParams.get('error_description') || 'Authentication failed';
         console.error(' Auth0 error in callback:', error, errorDescription);
-        
+
         // Clean up URL
         window.history.replaceState({}, document.title, window.location.pathname);
-        
+
         return {
           success: false,
           error: errorDescription,
           errorCode: error
         };
       }
-      
+
       // Handle success callback
       if (urlParams.has('code') || urlParams.has('state')) {
+        console.log(' Processing Auth0 callback...');
         const result = await window.auth0Client.handleRedirectCallback();
-        
+        console.log(' Auth0 callback processed successfully');
+
         // Clean up URL
         window.history.replaceState({}, document.title, window.location.pathname);
-        
+
         return {
           success: true,
           appState: result.appState
         };
       }
-      
+
       return { success: false, error: 'No auth callback detected' };
     } catch (error) {
       console.error('Auth0 redirect callback error:', error);
+      // Clean up URL even on error
+      window.history.replaceState({}, document.title, window.location.pathname);
       return {
         success: false,
         error: error.message || error.toString()

@@ -122,10 +122,17 @@ class AppRouter {
           path: '/',
           name: 'home',
           builder: (context, state) {
-            // Check for Auth0 callback parameters in the current state
-            final hasCallbackParams = kIsWeb &&
-                (state.uri.queryParameters.containsKey('code') ||
-                 state.uri.queryParameters.containsKey('state'));
+            // Check for Auth0 callback URL using the Auth0 service
+            bool hasCallbackParams = false;
+            if (kIsWeb) {
+              try {
+                final authService = context.read<AuthService>();
+                hasCallbackParams = authService.auth0Service.isCallbackUrl();
+                debugPrint('[Router] Has callback params: $hasCallbackParams');
+              } catch (e) {
+                debugPrint('[Router] Error checking callback URL: $e');
+              }
+            }
 
             // If we have callback parameters, redirect to callback route
             if (hasCallbackParams) {

@@ -202,6 +202,17 @@ class Auth0WebService implements Auth0Service {
   }
 
   @override
+  bool isCallbackUrl() {
+    try {
+      if (auth0Bridge == null) return false;
+      return auth0Bridge!.isCallbackUrl();
+    } catch (e) {
+      debugPrint('Error checking callback URL: $e');
+      return false;
+    }
+  }
+
+  @override
   Future<bool> handleRedirectCallback() async {
     debugPrint('🔄 Starting Auth0 redirect callback handling...');
     try {

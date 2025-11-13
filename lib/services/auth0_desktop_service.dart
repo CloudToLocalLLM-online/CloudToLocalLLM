@@ -337,6 +337,12 @@ class Auth0DesktopService implements Auth0Service {
   }
 
   @override
+  bool isCallbackUrl() {
+    // Desktop doesn't use URL callbacks
+    return false;
+  }
+
+  @override
   void dispose() {
     _authStateController.close();
   }

@@ -67,15 +67,13 @@ class _CallbackScreenState extends State<CallbackScreen> {
         return;
       }
 
-      // Check if we have callback parameters in the current URL
-      // Use GoRouterState to get the current location with query parameters
-      final currentLocation = GoRouterState.of(context).uri.toString();
-      debugPrint(' [Callback] Current location: $currentLocation');
+      // Check if this is a callback URL using the Auth0 service
+      final isCallbackUrl = authService.auth0Service.isCallbackUrl();
+      debugPrint(' [Callback] Is callback URL: $isCallbackUrl');
 
-      if (!currentLocation.contains('code=') &&
-          !currentLocation.contains('error=')) {
+      if (!isCallbackUrl) {
         debugPrint(
-          ' [Callback] No callback parameters found, redirecting to login',
+          ' [Callback] Not a callback URL, redirecting to login',
         );
         if (mounted) {
           context.go('/login');
@@ -84,16 +82,10 @@ class _CallbackScreenState extends State<CallbackScreen> {
       }
 
       // Web platform - process the callback normally
-      // Pass the current location to ensure auth service gets the callback parameters
-      debugPrint(
-        ' [CallbackScreen] Current URL: $currentLocation',
-      );
       debugPrint(
         ' [CallbackScreen] Auth state before callback: ${authService.isAuthenticated.value}',
       );
-      final success = await authService.handleCallback(
-        callbackUrl: currentLocation,
-      );
+      final success = await authService.handleCallback();
       debugPrint(' [CallbackScreen] handleCallback returned: $success');
       debugPrint(
         ' [CallbackScreen] Auth state after callback: ${authService.isAuthenticated.value}',

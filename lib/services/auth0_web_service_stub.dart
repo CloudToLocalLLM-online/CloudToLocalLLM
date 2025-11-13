@@ -23,6 +23,10 @@ class Auth0WebService implements Auth0Service {
       throw UnsupportedError('Auth0WebService is only available on the web.');
 
   @override
+  bool isCallbackUrl() =>
+      throw UnsupportedError('Auth0WebService is only available on the web.');
+
+  @override
   Stream<bool> get authStateChanges =>
       throw UnsupportedError('Auth0WebService is only available on the web.');
 

@@ -95,6 +95,9 @@ class AuthService extends ChangeNotifier {
   bool get isMobile => !kIsWeb;
   bool get isDesktop => !kIsWeb;
 
+  // Auth0 service access
+  Auth0Service get auth0Service => _auth0Service;
+
   /// Login with Auth0
   Future<void> login({String? tenantId}) async {
     _isLoading.value = true;
