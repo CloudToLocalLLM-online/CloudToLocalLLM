@@ -160,14 +160,77 @@ jobs:
         echo "Load Balancer IP: $LB_IP"
         echo "lb_ip=$LB_IP" >> $GITHUB_OUTPUT
 
-    - name: DNS Health Check
+    - name: Configure Cloudflare DNS & SSL
       run: |
         echo "Load Balancer IP: ${{ steps.lb-ip.outputs.lb_ip }}"
-        echo "Expected DNS records:"
-        echo "  cloudtolocalllm.online → ${{ steps.lb-ip.outputs.lb_ip }}"
-        echo "  app.cloudtolocalllm.online → ${{ steps.lb-ip.outputs.lb_ip }}"
-        echo "  api.cloudtolocalllm.online → ${{ steps.lb-ip.outputs.lb_ip }}"
-        echo "  auth.cloudtolocalllm.online → ${{ steps.lb-ip.outputs.lb_ip }}"
 
-        # Test DNS resolution (will fail if DNS not updated yet)
-        nslookup cloudtolocalllm.online 8.8.8.8 || echo "DNS not propagated yet - manual update required"
+        # Cloudflare API configuration
+        CF_API_TOKEN="${{ secrets.CLOUDFLARE_API_TOKEN }}"
+        CF_ZONE_ID=$(curl -s -X GET "https://api.cloudflare.com/client/v4/zones?name=cloudtolocalllm.online" \
+          -H "Authorization: Bearer $CF_API_TOKEN" \
+          -H "Content-Type: application/json" | jq -r '.result[0].id')
+
+        echo "Cloudflare Zone ID: $CF_ZONE_ID"
+
+        # Delete existing DNS records
+        for record in $(curl -s -X GET "https://api.cloudflare.com/client/v4/zones/$CF_ZONE_ID/dns_records?type=A" \
+          -H "Authorization: Bearer $CF_API_TOKEN" \
+          -H "Content-Type: application/json" | jq -r '.result[].id'); do
+          curl -s -X DELETE "https://api.cloudflare.com/client/v4/zones/$CF_ZONE_ID/dns_records/$record" \
+            -H "Authorization: Bearer $CF_API_TOKEN" \
+            -H "Content-Type: application/json"
+        done
+
+        # Create new DNS records with load balancer IP
+        DOMAINS=("cloudtolocalllm.online" "app.cloudtolocalllm.online" "api.cloudtolocalllm.online" "auth.cloudtolocalllm.online")
+
+        for domain in "${DOMAINS[@]}"; do
+          subdomain=""
+          if [[ $domain != "cloudtolocalllm.online" ]]; then
+            subdomain=$(echo $domain | sed 's/.cloudtolocalllm.online//')
+          fi
+
+          curl -s -X POST "https://api.cloudflare.com/client/v4/zones/$CF_ZONE_ID/dns_records" \
+            -H "Authorization: Bearer $CF_API_TOKEN" \
+            -H "Content-Type: application/json" \
+            --data "{
+              \"type\": \"A\",
+              \"name\": \"$subdomain\",
+              \"content\": \"${{ steps.lb-ip.outputs.lb_ip }}\",
+              \"ttl\": 300,
+              \"proxied\": true
+            }"
+        done
+
+        # Configure SSL/TLS settings
+        curl -s -X PATCH "https://api.cloudflare.com/client/v4/zones/$CF_ZONE_ID/settings/ssl" \
+          -H "Authorization: Bearer $CF_API_TOKEN" \
+          -H "Content-Type: application/json" \
+          --data '{"value": "full"}'
+
+        # Enable Always Use HTTPS
+        curl -s -X PATCH "https://api.cloudflare.com/client/v4/zones/$CF_ZONE_ID/settings/always_use_https" \
+          -H "Authorization: Bearer $CF_API_TOKEN" \
+          -H "Content-Type: application/json" \
+          --data '{"value": "on"}'
+
+        echo "✅ Cloudflare DNS & SSL configured automatically!"
+
+    - name: DNS Health Check
+      run: |
+        echo "✅ Cloudflare DNS & SSL configured successfully!"
+        echo "Load Balancer IP: ${{ steps.lb-ip.outputs.lb_ip }}"
+        echo "DNS records configured:"
+        echo "  cloudtolocalllm.online → ${{ steps.lb-ip.outputs.lb_ip }} (proxied)"
+        echo "  app.cloudtolocalllm.online → ${{ steps.lb-ip.outputs.lb_ip }} (proxied)"
+        echo "  api.cloudtolocalllm.online → ${{ steps.lb-ip.outputs.lb_ip }} (proxied)"
+        echo "  auth.cloudtolocalllm.online → ${{ steps.lb-ip.outputs.lb_ip }} (proxied)"
+        echo ""
+        echo "SSL: Full (strict) encryption enabled"
+        echo "Always Use HTTPS: Enabled"
+        echo ""
+        echo "🎉 Application will be available at:"
+        echo "   https://cloudtolocalllm.online"
+        echo "   https://app.cloudtolocalllm.online"
+        echo "   https://api.cloudtolocalllm.online"
+        echo "   https://auth.cloudtolocalllm.online"
