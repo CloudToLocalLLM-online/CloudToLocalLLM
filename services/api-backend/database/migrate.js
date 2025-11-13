@@ -7,8 +7,8 @@ import { readFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { createHash } from 'crypto';
-import sqlite3 from 'sqlite3';
-import { open } from 'sqlite';
+// import sqlite3 from 'sqlite3'; // Lazy loaded to avoid native binary issues
+// import { open } from 'sqlite';  // Lazy loaded to avoid native binary issues
 import { TunnelLogger } from '../utils/logger.js';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -20,12 +20,13 @@ export class DatabaseMigrator {
     // SQLite configuration
     this.config = {
       filename: process.env.DB_PATH || join(__dirname, '../data/cloudtolocalllm.db'),
-      driver: sqlite3.Database,
       ...config,
     };
 
     this.logger = new TunnelLogger('database-migrator');
     this.db = null;
+    this.sqlite3 = null;
+    this.open = null;
   }
 
   /**
@@ -33,6 +34,14 @@ export class DatabaseMigrator {
    */
   async initialize() {
     try {
+      // Lazy load sqlite3 dependencies to avoid native binary issues
+      if (!this.sqlite3) {
+        const sqlite3Module = await import('sqlite3');
+        const sqliteModule = await import('sqlite');
+        this.sqlite3 = sqlite3Module.default;
+        this.open = sqliteModule.open;
+      }
+
       // Ensure data directory exists
       const dataDir = dirname(this.config.filename);
       const { mkdirSync, existsSync } = await import('fs');
@@ -40,8 +49,14 @@ export class DatabaseMigrator {
         mkdirSync(dataDir, { recursive: true });
       }
 
+      // Set driver in config
+      const configWithDriver = {
+        ...this.config,
+        driver: this.sqlite3.Database
+      };
+
       // Open SQLite database
-      this.db = await open(this.config);
+      this.db = await this.open(configWithDriver);
 
       // Test connection
       await this.db.get('SELECT 1');

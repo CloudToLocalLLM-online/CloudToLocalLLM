@@ -60,10 +60,10 @@ spec:
           resources:
             requests:
               memory: "256Mi"
-              cpu: "250m"
+              cpu: "100m"
             limits:
               memory: "1Gi"
-              cpu: "1000m"
+              cpu: "500m"
           livenessProbe:
             exec:
               command:
@@ -84,15 +84,9 @@ spec:
         - name: init-scripts
           configMap:
             name: postgres-init-scripts
-  volumeClaimTemplates:
-    - metadata:
-        name: postgres-data
-      spec:
-        accessModes: ["ReadWriteOnce"]
-        storageClassName: do-block-storage
-        resources:
-          requests:
-            storage: 10Gi
+        - name: postgres-data
+          emptyDir: {}
+  # Removed volumeClaimTemplates for ephemeral storage
 ---
 apiVersion: v1
 kind: ConfigMap

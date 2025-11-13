@@ -40,11 +40,9 @@ spec:
         runAsNonRoot: true
         runAsUser: 1001
         fsGroup: 1001
-      imagePullSecrets:
-        - name: registry-cloudtolocalllm
       containers:
         - name: api-backend
-          image: registry.digitalocean.com/cloudtolocalllm/api:latest
+          image: cloudtolocalllm/cloudtolocalllm-api:latest
           imagePullPolicy: Always
           ports:
             - containerPort: 3000
@@ -136,10 +134,10 @@ spec:
           resources:
             requests:
               memory: "512Mi"
-              cpu: "250m"
+              cpu: "100m"
             limits:
               memory: "2Gi"
-              cpu: "1000m"
+              cpu: "500m"
           
           livenessProbe:
             httpGet:

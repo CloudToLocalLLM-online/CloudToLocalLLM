@@ -1,5 +1,5 @@
-# Ingress for DigitalOcean Kubernetes with nginx-ingress
-# Install nginx-ingress first: kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.8.1/deploy/static/provider/do/deploy.yaml
+# Ingress for Azure Kubernetes Service (AKS) with nginx-ingress
+# Install nginx-ingress first: kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.12.1/deploy/static/provider/cloud/deploy.yaml
 
 apiVersion: networking.k8s.io/v1
 kind: Ingress
@@ -7,8 +7,7 @@ metadata:
   name: cloudtolocalllm-ingress
   namespace: cloudtolocalllm
   annotations:
-    # Use nginx ingress controller
-    kubernetes.io/ingress.class: nginx
+    # Use nginx ingress controller (deprecated annotation, using spec.ingressClassName instead)
     
     # SSL/TLS configuration
     cert-manager.io/cluster-issuer: letsencrypt-prod
@@ -28,13 +27,14 @@ metadata:
     # Rate limiting
     nginx.ingress.kubernetes.io/limit-rps: "100"
     
-    # Security headers
-    nginx.ingress.kubernetes.io/configuration-snippet: |
-      more_set_headers "X-Frame-Options: SAMEORIGIN";
-      more_set_headers "X-Content-Type-Options: nosniff";
-      more_set_headers "X-XSS-Protection: 1; mode=block";
-      more_set_headers "Strict-Transport-Security: max-age=31536000; includeSubDomains";
+    # Security headers (disabled in newer nginx-ingress versions)
+    # nginx.ingress.kubernetes.io/configuration-snippet: |
+    #   more_set_headers "X-Frame-Options: SAMEORIGIN";
+    #   more_set_headers "X-Content-Type-Options: nosniff";
+    #   more_set_headers "X-XSS-Protection: 1; mode=block";
+    #         more_set_headers "Strict-Transport-Security: max-age=31536000; includeSubDomains";
 spec:
+  ingressClassName: nginx
   tls:
     - hosts:
         - cloudtolocalllm.online

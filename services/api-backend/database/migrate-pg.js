@@ -146,7 +146,7 @@ export class DatabaseMigratorPG {
 
   async validateSchema() {
     const checks = [
-      { name: 'user_sessions_table', query: "SELECT 1 FROM information_schema.tables WHERE table_name='user_sessions'" },
+      // user_sessions table moved to separate authentication database
       { name: 'tunnel_connections_table', query: "SELECT 1 FROM information_schema.tables WHERE table_name='tunnel_connections'" },
       { name: 'audit_logs_table', query: "SELECT 1 FROM information_schema.tables WHERE table_name='audit_logs'" },
       { name: 'schema_migrations_table', query: "SELECT 1 FROM information_schema.tables WHERE table_name='schema_migrations'" },

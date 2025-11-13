@@ -1,6 +1,7 @@
 #!/bin/bash
 # ============================================================================
-# CloudToLocalLLM - Kubernetes Deployment Script for DigitalOcean
+# CloudToLocalLLM - Kubernetes Deployment Script for Azure AKS
+# NOTE: This script is for manual deployment. CI/CD handles automated deployment.
 # ============================================================================
 
 set -e
@@ -62,7 +63,7 @@ print_header "Installing Required Components"
 
 # Install nginx-ingress controller
 print_info "Installing nginx-ingress controller..."
-kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.8.1/deploy/static/provider/do/deploy.yaml
+kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.12.1/deploy/static/provider/cloud/deploy.yaml
 print_success "nginx-ingress controller installed"
 
 # Wait for nginx-ingress to be ready
