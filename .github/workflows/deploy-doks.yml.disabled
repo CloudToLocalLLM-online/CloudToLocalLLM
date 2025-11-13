@@ -1,0 +1,265 @@
+name: Deploy DOKS
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy to'
+        required: true
+        default: 'production'
+        type: choice
+        options:
+          - production
+          - staging
+
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  REGISTRY: registry.digitalocean.com/cloudtolocalllm
+  CLUSTER_NAME: cloudtolocalllm
+  NAMESPACE: cloudtolocalllm
+
+jobs:
+  build-and-push:
+    name: Build and Push Docker Images
+    runs-on: ubuntu-latest
+    outputs:
+      image_tag: ${{ steps.meta.outputs.version }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install doctl
+        uses: digitalocean/action-doctl@v2
+        with:
+          token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+
+      - name: Log in to DigitalOcean Container Registry
+        run: doctl registry login --expiry-seconds 1200
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Extract metadata
+        id: meta
+        run: |
+          VERSION=$(date +%Y%m%d-%H%M%S)-${GITHUB_SHA::7}
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Version: $VERSION"
+
+      - name: Build and push Web image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./config/docker/Dockerfile.web
+          push: true
+          no-cache: true
+          tags: |
+            ${{ env.REGISTRY }}/web:latest
+            ${{ env.REGISTRY }}/web:${{ steps.meta.outputs.version }}
+          cache-from: type=registry,ref=${{ env.REGISTRY }}/web:latest
+          cache-to: type=inline
+          # Force rebuild by using commit SHA as cache buster
+          build-args: |
+            BUILD_SHA=${{ github.sha }}
+
+      - name: Build and push API image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./services/api-backend/Dockerfile.prod
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/api:latest
+            ${{ env.REGISTRY }}/api:${{ steps.meta.outputs.version }}
+          cache-from: type=registry,ref=${{ env.REGISTRY }}/api:latest
+          cache-to: type=inline
+
+  deploy:
+    name: Deploy to Kubernetes
+    runs-on: ubuntu-latest
+    needs: build-and-push
+    environment: 
+      name: ${{ github.event.inputs.environment || 'production' }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install doctl
+        uses: digitalocean/action-doctl@v2
+        with:
+          token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+
+      - name: Save kubeconfig
+        run: doctl kubernetes cluster kubeconfig save ${{ env.CLUSTER_NAME }}
+
+      - name: Create namespace if not exists
+        run: kubectl create namespace ${{ env.NAMESPACE }} --dry-run=client -o yaml | kubectl apply -f -
+
+      - name: Create registry secret for DOCR
+        run: |
+          doctl registry kubernetes-manifest | kubectl apply -f -
+          kubectl patch serviceaccount default -n ${{ env.NAMESPACE }} -p '{"imagePullSecrets": [{"name": "registry-cloudtolocalllm"}]}' || true
+
+      - name: Create secrets
+        env:
+          AUTH0_DOMAIN: ${{ secrets.AUTH0_DOMAIN || 'dev-v2f2p008x3dr74ww.us.auth0.com' }}
+          AUTH0_AUDIENCE: ${{ secrets.AUTH0_AUDIENCE || 'https://app.cloudtolocalllm.online' }}
+        run: |
+          kubectl create secret generic cloudtolocalllm-secrets \
+            --from-literal=postgres-password='${{ secrets.POSTGRES_PASSWORD }}' \
+            --from-literal=jwt-secret='${{ secrets.JWT_SECRET }}' \
+            --from-literal=auth0-domain='${AUTH0_DOMAIN}' \
+            --from-literal=auth0-audience='${AUTH0_AUDIENCE}' \
+            --namespace=${{ env.NAMESPACE }} \
+            --dry-run=client -o yaml | kubectl apply -f -
+
+      - name: Update ConfigMap with domain
+        run: |
+          sed -i 's/DOMAIN: "cloudtolocalllm.online"/DOMAIN: "${{ secrets.DOMAIN }}"/' k8s/configmap.yaml
+          sed -i 's|cloudtolocalllm.online|${{ secrets.DOMAIN }}|g' k8s/configmap.yaml
+          kubectl apply -f k8s/configmap.yaml
+
+      - name: Update domain references
+        run: |
+          sed -i 's|cloudtolocalllm.online|${{ secrets.DOMAIN }}|g' k8s/ingress-nginx.yaml
+          sed -i 's|admin@cloudtolocalllm.online|admin@${{ secrets.DOMAIN }}|g' k8s/cert-manager.yaml
+
+      - name: Deploy PostgreSQL
+        run: kubectl apply -f k8s/postgres-statefulset.yaml
+
+      - name: Wait for PostgreSQL
+        run: |
+          kubectl wait --for=condition=ready pod -l app=postgres \
+            --namespace=${{ env.NAMESPACE }} \
+            --timeout=300s
+
+      - name: Deploy API Backend
+        run: |
+          kubectl apply -f k8s/api-backend-deployment.yaml
+          # Wait a moment for deployment to be created
+          sleep 2
+          kubectl set image deployment/api-backend \
+            api-backend=${{ env.REGISTRY }}/api:${{ needs.build-and-push.outputs.image_tag }} \
+            --namespace=${{ env.NAMESPACE }} || \
+          kubectl set image deployment/api-backend \
+            api-backend=${{ env.REGISTRY }}/api:latest \
+            --namespace=${{ env.NAMESPACE }}
+
+      - name: Deploy Web Application
+        run: |
+          kubectl apply -f k8s/web-deployment.yaml
+          # Wait a moment for deployment to be created
+          sleep 2
+          kubectl set image deployment/web \
+            web=${{ env.REGISTRY }}/web:${{ needs.build-and-push.outputs.image_tag }} \
+            --namespace=${{ env.NAMESPACE }} || \
+          kubectl set image deployment/web \
+            web=${{ env.REGISTRY }}/web:latest \
+            --namespace=${{ env.NAMESPACE }}
+
+      - name: Deploy Ingress
+        run: |
+          kubectl apply -f k8s/cert-manager.yaml
+          kubectl apply -f k8s/ingress-nginx.yaml
+
+      - name: Check pod status before rollout
+        run: |
+          echo "=== Checking pod status ==="
+          kubectl get pods -n ${{ env.NAMESPACE }} -l app=api-backend
+          kubectl get pods -n ${{ env.NAMESPACE }} -l app=web
+          
+          echo "=== Describing failing API backend pods ==="
+          for pod in $(kubectl get pods -n ${{ env.NAMESPACE }} -l app=api-backend -o jsonpath='{.items[*].metadata.name}' 2>/dev/null); do
+            if [ -n "$pod" ]; then
+              status=$(kubectl get pod $pod -n ${{ env.NAMESPACE }} -o jsonpath='{.status.phase}' 2>/dev/null || echo "Unknown")
+              readystatus=$(kubectl get pod $pod -n ${{ env.NAMESPACE }} -o jsonpath='{.status.containerStatuses[0].ready}' 2>/dev/null || echo "false")
+              if [ "$status" != "Running" ] || [ "$readystatus" != "true" ]; then
+                echo "--- Pod $pod status: $status (ready: $readystatus) ---"
+                kubectl describe pod $pod -n ${{ env.NAMESPACE }} || true
+                echo "--- Logs for $pod (last 100 lines) ---"
+                kubectl logs $pod -n ${{ env.NAMESPACE }} --tail=100 || true
+                echo "--- Previous container logs for $pod (if crashed) ---"
+                kubectl logs $pod -n ${{ env.NAMESPACE }} --previous --tail=100 || true
+              fi
+            fi
+          done
+          
+          echo "=== Describing failing Web pods ==="
+          for pod in $(kubectl get pods -n ${{ env.NAMESPACE }} -l app=web -o jsonpath='{.items[*].metadata.name}' 2>/dev/null); do
+            if [ -n "$pod" ]; then
+              status=$(kubectl get pod $pod -n ${{ env.NAMESPACE }} -o jsonpath='{.status.phase}' 2>/dev/null || echo "Unknown")
+              readystatus=$(kubectl get pod $pod -n ${{ env.NAMESPACE }} -o jsonpath='{.status.containerStatuses[0].ready}' 2>/dev/null || echo "false")
+              if [ "$status" != "Running" ] && [ "$status" != "Terminating" ]; then
+                echo "--- Pod $pod status: $status (ready: $readystatus) ---"
+                kubectl describe pod $pod -n ${{ env.NAMESPACE }} || true
+                echo "--- Logs for $pod (last 100 lines) ---"
+                kubectl logs $pod -n ${{ env.NAMESPACE }} --tail=100 || true
+              fi
+            fi
+          done
+
+      - name: Wait for deployments
+        run: |
+          kubectl rollout status deployment/api-backend --namespace=${{ env.NAMESPACE }} --timeout=300s || true
+          kubectl rollout status deployment/web --namespace=${{ env.NAMESPACE }} --timeout=300s || true
+          
+          # If rollout failed, show detailed status
+          if ! kubectl rollout status deployment/api-backend --namespace=${{ env.NAMESPACE }} --timeout=0 2>/dev/null; then
+            echo "API backend rollout failed, checking pods..."
+            kubectl get pods -n ${{ env.NAMESPACE }} -l app=api-backend
+            kubectl describe deployment api-backend -n ${{ env.NAMESPACE }} || true
+          fi
+          
+          if ! kubectl rollout status deployment/web --namespace=${{ env.NAMESPACE }} --timeout=0 2>/dev/null; then
+            echo "Web deployment rollout failed, checking pods..."
+            kubectl get pods -n ${{ env.NAMESPACE }} -l app=web
+            kubectl describe deployment web -n ${{ env.NAMESPACE }} || true
+          fi
+
+      - name: Get deployment status
+        run: |
+          echo "=== Pods ===" 
+          kubectl get pods -n ${{ env.NAMESPACE }}
+          echo "=== Services ===" 
+          kubectl get svc -n ${{ env.NAMESPACE }}
+          echo "=== Ingress ===" 
+          kubectl get ingress -n ${{ env.NAMESPACE }}
+
+      - name: Verify deployment
+        run: |
+          # Get load balancer IP
+          LB_IP=$(kubectl get svc -n ingress-nginx ingress-nginx-controller -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null || echo "Not ready")
+          echo "Load Balancer IP: $LB_IP"
+          
+          # Wait for pods to be ready (retry for 2 minutes)
+          for i in {1..24}; do
+            READY=$(kubectl get pods -n ${{ env.NAMESPACE }} -l app=web -o jsonpath='{.items[*].status.conditions[?(@.type=="Ready")].status}' 2>/dev/null || echo "")
+            if echo "$READY" | grep -q "True"; then
+              echo "Pods are ready!"
+              exit 0
+            fi
+            echo "Waiting for pods to be ready... ($i/24)"
+            sleep 5
+          done
+          
+          echo "Warning: Deployment verification timeout. Check pod logs if issues persist."
+
+      - name: Deployment summary
+        if: always()
+        run: |
+          echo "### Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "- **Image Tag**: ${{ needs.build-and-push.outputs.image_tag }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Cluster**: ${{ env.CLUSTER_NAME }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Namespace**: ${{ env.NAMESPACE }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Domain**: https://${{ secrets.DOMAIN }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Pods:**" >> $GITHUB_STEP_SUMMARY
+          kubectl get pods -n ${{ env.NAMESPACE }} >> $GITHUB_STEP_SUMMARY || true
+
