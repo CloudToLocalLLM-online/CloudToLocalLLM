@@ -9,9 +9,17 @@ metadata:
   annotations:
     # Use nginx ingress controller (deprecated annotation, using spec.ingressClassName instead)
     
-    # SSL/TLS configuration - DISABLED temporarily due to Let's Encrypt rate limits
+    # SSL/TLS configuration - Cloudflare free SSL option
+    # Option 1: Cloudflare (FREE - requires DNS delegation to Cloudflare)
     # cert-manager.io/cluster-issuer: letsencrypt-prod
-    # TODO: Re-enable SSL after rate limit expires (2025-11-20)
+
+    # Option 2: ZeroSSL (FREE alternative ACME provider)
+    # cert-manager.io/cluster-issuer: zerossl-prod
+
+    # Option 3: Self-signed for development
+    # cert-manager.io/cluster-issuer: selfsigned-issuer
+
+    # Current: HTTP only until SSL provider chosen
 
     # WebSocket support
     nginx.ingress.kubernetes.io/websocket-services: "api-backend"
