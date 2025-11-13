@@ -181,8 +181,10 @@
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.getRegistrations().then(function(registrations) {
         for(let registration of registrations) {
-          registration.update();
-          console.log('Forcing service worker update');
+          console.log('Unregistering old service worker:', registration.scope);
+          registration.unregister().then(function(success) {
+            console.log('Service worker unregistered:', success);
+          });
         }
       });
     }
