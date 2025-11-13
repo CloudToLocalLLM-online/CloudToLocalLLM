@@ -3,11 +3,6 @@ name: Deploy to Azure AKS
 on:
   push:
     branches: [ main ]
-    paths:
-      - 'k8s/**'
-      - 'services/**'
-      - 'config/**'
-      - 'lib/**'
   workflow_dispatch:
     inputs:
       environment:
@@ -141,11 +136,6 @@ jobs:
     if: github.ref == 'refs/heads/main'
 
     steps:
-    - name: Azure Login
-      uses: azure/login@v2
-      with:
-        creds: ${{ secrets.AZURE_CREDENTIALS }}
-
     - name: Get Load Balancer IP
       id: lb-ip
       run: |
