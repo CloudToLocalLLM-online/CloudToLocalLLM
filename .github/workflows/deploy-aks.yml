@@ -185,9 +185,9 @@ jobs:
         DOMAINS=("cloudtolocalllm.online" "app.cloudtolocalllm.online" "api.cloudtolocalllm.online" "auth.cloudtolocalllm.online")
 
         for domain in "${DOMAINS[@]}"; do
-          subdomain=""
+          subdomain="@"
           if [[ $domain != "cloudtolocalllm.online" ]]; then
-            subdomain=$(echo $domain | sed 's/.cloudtolocalllm.online//')
+            subdomain=$(echo $domain | sed 's/\.cloudtolocalllm\.online//')
           fi
 
           curl -s -X POST "https://api.cloudflare.com/client/v4/zones/$CF_ZONE_ID/dns_records" \
