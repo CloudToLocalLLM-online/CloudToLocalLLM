@@ -421,22 +421,36 @@ class AppRouter {
         // For web, get query parameters from current browser location
         Map<String, String> queryParams;
         if (kIsWeb) {
+          debugPrint('[Router] kIsWeb is true, attempting to get browser URL');
           try {
             // Use web package to get current URL
             final location = web.window.location;
-            final currentUrlString = '${location.href}';
+            debugPrint('[Router] Got location object: $location');
+            final currentUrlString = location.href;
+            debugPrint('[Router] Raw href: $currentUrlString');
             final currentUrl = Uri.parse(currentUrlString);
             queryParams = currentUrl.queryParameters;
-            debugPrint('[Router] Current browser URL: $currentUrlString');
+            debugPrint('[Router] Successfully parsed URL: $currentUrlString');
             debugPrint('[Router] Parsed query params: $queryParams');
           } catch (e) {
-            debugPrint('[Router] Error parsing current URL with web package: $e');
-            // Fallback to stateUri/baseUri
-            queryParams = stateUri.queryParameters.isNotEmpty
-                ? stateUri.queryParameters
-                : (baseUri.queryParameters.isNotEmpty ? baseUri.queryParameters : {});
+            debugPrint('[Router] Exception in web package URL parsing: $e');
+            debugPrint('[Router] Exception type: ${e.runtimeType}');
+            debugPrint('[Router] Stack trace: ${e.toString()}');
+            // Try Uri.base as fallback
+            try {
+              final baseUrl = Uri.base;
+              debugPrint('[Router] Trying Uri.base: $baseUrl');
+              debugPrint('[Router] Uri.base query params: ${baseUrl.queryParameters}');
+              queryParams = baseUrl.queryParameters;
+            } catch (e2) {
+              debugPrint('[Router] Uri.base also failed: $e2');
+              queryParams = stateUri.queryParameters.isNotEmpty
+                  ? stateUri.queryParameters
+                  : (baseUri.queryParameters.isNotEmpty ? baseUri.queryParameters : {});
+            }
           }
         } else {
+          debugPrint('[Router] Not web platform, using stateUri/baseUri');
           queryParams = stateUri.queryParameters.isNotEmpty
               ? stateUri.queryParameters
               : (baseUri.queryParameters.isNotEmpty ? baseUri.queryParameters : {});
