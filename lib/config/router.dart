@@ -67,21 +67,19 @@ bool _checkAuthenticatedServicesLoaded() {
   try {
     // Check for critical authenticated services
     // These services are registered only after authentication
-    final hasConnectionManager =
-        di.serviceLocator.isRegistered<ConnectionManagerService>();
-    final hasStreamingChat =
-        di.serviceLocator.isRegistered<StreamingChatService>();
+    final hasConnectionManager = di.serviceLocator
+        .isRegistered<ConnectionManagerService>();
+    final hasStreamingChat = di.serviceLocator
+        .isRegistered<StreamingChatService>();
     final hasTunnelService = di.serviceLocator.isRegistered<TunnelService>();
 
     // All critical services must be registered
     final allServicesLoaded =
         hasConnectionManager && hasStreamingChat && hasTunnelService;
 
-    if (!allServicesLoaded) {
-      debugPrint(
-        '[Router] Authenticated services check: ConnectionManager=$hasConnectionManager, StreamingChat=$hasStreamingChat, TunnelService=$hasTunnelService',
-      );
-    }
+    debugPrint(
+      '[Router] Authenticated services loading status: ConnectionManager=$hasConnectionManager, StreamingChat=$hasStreamingChat, TunnelService=$hasTunnelService, allLoaded=$allServicesLoaded',
+    );
 
     return allServicesLoaded;
   } catch (e) {
@@ -98,8 +96,8 @@ class AppRouter {
   }) {
     // Store authService for use in route builders
     final authServiceRef = authService;
-      // For web, get the full URL including query parameters to preserve callback data
-      // This ensures Auth0 callback parameters are available to the router
+    // For web, get the full URL including query parameters to preserve callback data
+    // This ensures Auth0 callback parameters are available to the router
     String initialLocation;
     if (kIsWeb) {
       try {
@@ -109,7 +107,9 @@ class AppRouter {
         if (currentUri.hasQuery) {
           initialLocation += '?${currentUri.query}';
         }
-        debugPrint('[Router] Initial location with query params: $initialLocation');
+        debugPrint(
+          '[Router] Initial location with query params: $initialLocation',
+        );
       } catch (e) {
         debugPrint('[Router] Error getting current URI: $e');
         initialLocation = '/';
@@ -138,27 +138,39 @@ class AppRouter {
               try {
                 // Check if Auth0 client is ready and user is authenticated
                 debugPrint('[Router] Checking Auth0 authentication status...');
-                isAlreadyAuthenticated = authServiceRef.auth0Service.isAuthenticated;
-                debugPrint('[Router] Auth0 isAuthenticated: $isAlreadyAuthenticated');
+                isAlreadyAuthenticated =
+                    authServiceRef.auth0Service.isAuthenticated;
+                debugPrint(
+                  '[Router] Auth0 isAuthenticated: $isAlreadyAuthenticated',
+                );
               } catch (e) {
                 debugPrint('[Router] Error checking auth status: $e');
                 debugPrint('[Router] Error stack: ${e.toString()}');
               }
             }
 
-            debugPrint('[Router] isAlreadyAuthenticated: $isAlreadyAuthenticated');
+            debugPrint(
+              '[Router] isAlreadyAuthenticated: $isAlreadyAuthenticated',
+            );
 
             // Decision tree for routing:
             // 1. If already authenticated -> show main app
             // 2. Otherwise -> show login screen
 
             if (isAlreadyAuthenticated) {
-              debugPrint('[Router] User already authenticated, showing main app');
+              debugPrint(
+                '[Router] User already authenticated, showing main app',
+              );
               // Verify authenticated services are loaded before showing HomeScreen
-              final hasAuthenticatedServices = _checkAuthenticatedServicesLoaded();
+              final hasAuthenticatedServices =
+                  _checkAuthenticatedServicesLoaded();
               if (!hasAuthenticatedServices) {
-                debugPrint('[Router] Authenticated services not yet loaded, showing loading screen');
-                return const LoadingScreen(message: 'Loading application modules...');
+                debugPrint(
+                  '[Router] Authenticated services not yet loaded, showing loading screen',
+                );
+                return const LoadingScreen(
+                  message: 'Loading application modules...',
+                );
               }
               debugPrint('[Router] Showing home screen for authenticated user');
               return const HomeScreen();
@@ -188,7 +200,8 @@ class AppRouter {
                 if (isAuthenticated) {
                   // Verify authenticated services are loaded before showing HomeScreen
                   // This ensures modules are only loaded after authentication
-                  final hasAuthenticatedServices = _checkAuthenticatedServicesLoaded();
+                  final hasAuthenticatedServices =
+                      _checkAuthenticatedServicesLoaded();
                   if (!hasAuthenticatedServices) {
                     debugPrint(
                       '[Router] Authenticated services not yet loaded, showing loading screen',
@@ -222,7 +235,8 @@ class AppRouter {
             // Verify authenticated services are loaded before showing HomeScreen
             final isAuthenticated = authService.isAuthenticated.value;
             if (isAuthenticated) {
-              final hasAuthenticatedServices = _checkAuthenticatedServicesLoaded();
+              final hasAuthenticatedServices =
+                  _checkAuthenticatedServicesLoaded();
               if (!hasAuthenticatedServices) {
                 return const LoadingScreen(
                   message: 'Loading application modules...',
@@ -311,9 +325,7 @@ class AppRouter {
             debugPrint(
               '[Router] Building CallbackScreen with query params: $callbackParams',
             );
-            return CallbackScreen(
-              queryParams: callbackParams,
-            );
+            return CallbackScreen(queryParams: callbackParams);
           },
         ),
 
@@ -414,6 +426,11 @@ class AppRouter {
         debugPrint('[Router] URI: ${state.uri}');
         final isAuthenticated = authService.isAuthenticated.value;
         final isAuthLoading = authService.isLoading.value;
+        final areServicesLoaded =
+            authService.areAuthenticatedServicesLoaded.value;
+        debugPrint(
+          '[Router] Auth state: isAuthenticated=$isAuthenticated, isLoading=$isAuthLoading, servicesLoaded=$areServicesLoaded',
+        );
         final isLoggingIn = state.matchedLocation == '/login';
         final isCallback = state.matchedLocation == '/callback';
         final isLoading = state.matchedLocation == '/loading';
@@ -427,11 +444,15 @@ class AppRouter {
         final baseUri = kIsWeb ? Uri.base : stateUri;
 
         // Debug logging for callback detection
-        debugPrint('[Router] Checking callback params...');
+        debugPrint('[Router] ===== CALLBACK PARAMETER DETECTION START =====');
         debugPrint('[Router] stateUri: ${stateUri.toString()}');
-        debugPrint('[Router] stateUri.queryParameters: ${stateUri.queryParameters}');
+        debugPrint(
+          '[Router] stateUri.queryParameters: ${stateUri.queryParameters}',
+        );
         debugPrint('[Router] baseUri: ${baseUri.toString()}');
-        debugPrint('[Router] baseUri.queryParameters: ${baseUri.queryParameters}');
+        debugPrint(
+          '[Router] baseUri.queryParameters: ${baseUri.queryParameters}',
+        );
 
         // For web, get query parameters from current browser location
         Map<String, String> queryParams;
@@ -440,14 +461,26 @@ class AppRouter {
         if (kIsWeb) {
           final currentUri = Uri.base;
           queryParams = currentUri.queryParameters;
-          debugPrint('[Router] Using Uri.base for web query params: $currentUri');
+          debugPrint(
+            '[Router] Using Uri.base for web query params: $currentUri',
+          );
           debugPrint('[Router] Uri.base query params: $queryParams');
+
+          // Check if callback parameters have already been forwarded
+          try {
+            final sessionStorage = web.window.sessionStorage;
+            final forwardedFlag = sessionStorage.getItem(_callbackForwardedKey);
+            callbackAlreadyForwarded = forwardedFlag == 'true';
+            debugPrint(
+              '[Router] Callback forwarded flag from sessionStorage: $forwardedFlag',
+            );
+          } catch (e) {
+            debugPrint('[Router] Error reading callback forwarded flag: $e');
+          }
 
           if (queryParams.isEmpty) {
             try {
               final sessionStorage = web.window.sessionStorage;
-              callbackAlreadyForwarded =
-                  sessionStorage.getItem(_callbackForwardedKey) == 'true';
               final storedParams = sessionStorage.getItem(_callbackStorageKey);
               if (storedParams != null && storedParams.isNotEmpty) {
                 final sanitized = storedParams.startsWith('?')
@@ -460,127 +493,268 @@ class AppRouter {
                   debugPrint(
                     '[Router] Loaded callback params from sessionStorage: $storedQueryParams',
                   );
-                  if (callbackAlreadyForwarded) {
-                    debugPrint(
-                      '[Router] Callback params previously forwarded - waiting for JS bridge to consume them',
-                    );
-                  }
                 }
               } else {
-                debugPrint('[Router] No callback params found in sessionStorage');
+                debugPrint(
+                  '[Router] No callback params found in sessionStorage',
+                );
               }
             } catch (e) {
-              debugPrint('[Router] Error reading sessionStorage callback params: $e');
-            }
-          } else {
-            try {
-              final sessionStorage = web.window.sessionStorage;
-              callbackAlreadyForwarded =
-                  sessionStorage.getItem(_callbackForwardedKey) == 'true';
-            } catch (e) {
-              debugPrint('[Router] Error reading callback forwarded flag: $e');
+              debugPrint(
+                '[Router] Error reading sessionStorage callback params: $e',
+              );
             }
           }
         } else {
           queryParams = stateUri.queryParameters.isNotEmpty
               ? stateUri.queryParameters
-              : (baseUri.queryParameters.isNotEmpty ? baseUri.queryParameters : {});
+              : (baseUri.queryParameters.isNotEmpty
+                    ? baseUri.queryParameters
+                    : {});
         }
 
+        // Determine if we have callback parameters that haven't been forwarded yet
         final rawHasCallbackParams =
-            queryParams.containsKey('code') || queryParams.containsKey('state');
-        final hasCallbackParams = kIsWeb && rawHasCallbackParams && !callbackAlreadyForwarded;
+            queryParams.containsKey('code') && queryParams.containsKey('state');
+        final hasCallbackParams =
+            kIsWeb && rawHasCallbackParams && !callbackAlreadyForwarded;
 
-        debugPrint('[Router] hasCallbackParams: $hasCallbackParams');
+        debugPrint(
+          '[Router] rawHasCallbackParams: $rawHasCallbackParams (code: ${queryParams.containsKey('code')}, state: ${queryParams.containsKey('state')})',
+        );
+        debugPrint(
+          '[Router] callbackAlreadyForwarded: $callbackAlreadyForwarded',
+        );
+        debugPrint(
+          '[Router] hasCallbackParams (unforwarded): $hasCallbackParams',
+        );
         debugPrint('[Router] queryParams keys: ${queryParams.keys.toList()}');
-        debugPrint('[Router] callbackAlreadyForwarded: $callbackAlreadyForwarded');
         debugPrint(
           '[Router] callbackParamsFromSessionStorage: $callbackParamsFromSessionStorage',
         );
+        debugPrint('[Router] ===== CALLBACK PARAMETER DETECTION END =====');
 
         // Use robust hostname detection
         final isAppSubdomain = _isAppSubdomain();
 
-        debugPrint('[Router] Redirect check: ${state.matchedLocation}');
+        debugPrint('[Router] ===== REDIRECT DECISION LOGIC START =====');
+        debugPrint('[Router] Current route: ${state.matchedLocation}');
         debugPrint('[Router] Full URI: ${stateUri.toString()}');
         debugPrint('[Router] Query params: $queryParams');
         debugPrint(
-          '[Router] Auth state: $isAuthenticated, Auth loading: $isAuthLoading, App subdomain: $isAppSubdomain',
+          '[Router] Auth state: isAuthenticated=$isAuthenticated, isAuthLoading=$isAuthLoading',
         );
         debugPrint(
-          '[Router] Route flags: isLoggingIn: $isLoggingIn, isCallback: $isCallback, isLoading: $isLoading, isHomepage: $isHomepage, hasCallbackParams: $hasCallbackParams',
+          '[Router] Platform state: kIsWeb=$kIsWeb, isAppSubdomain=$isAppSubdomain',
+        );
+        debugPrint(
+          '[Router] Route flags: isLoggingIn=$isLoggingIn, isCallback=$isCallback, isLoading=$isLoading, isHomepage=$isHomepage',
+        );
+        debugPrint(
+          '[Router] Callback state: hasCallbackParams=$hasCallbackParams, rawHasCallbackParams=$rawHasCallbackParams, callbackAlreadyForwarded=$callbackAlreadyForwarded',
         );
 
-        // CRITICAL: If we have callback parameters but we're not on /callback route, redirect there
+        // CRITICAL: If we have unforwarded callback parameters but we're not on /callback route, redirect there
+        // This ensures callback parameters are processed exactly once
         if (hasCallbackParams && !isCallback && kIsWeb) {
           debugPrint(
-            '[Router] Detected Auth0 callback parameters, redirecting to /callback',
+            '[Router] DECISION: Detected unforwarded Auth0 callback parameters, redirecting to /callback',
           );
+          debugPrint('[Router] Callback params to forward: $queryParams');
+          debugPrint('[Router] Current route: ${state.matchedLocation}');
+          debugPrint(
+            '[Router] Reason: Callback parameters present but not on callback route',
+          );
+
+          // Mark callback parameters as forwarded to prevent re-processing
           try {
             web.window.sessionStorage.setItem(_callbackForwardedKey, 'true');
-            if (callbackParamsFromSessionStorage) {
-              debugPrint('[Router] Marked sessionStorage callback params as forwarded');
-            } else {
-              debugPrint('[Router] Marked URL callback params as forwarded');
-            }
+            debugPrint(
+              '[Router] Successfully marked callback params as forwarded in sessionStorage',
+            );
           } catch (e) {
-            debugPrint('[Router] Error marking callback params forwarded: $e');
+            debugPrint(
+              '[Router] ERROR: Failed to mark callback params as forwarded: $e',
+            );
           }
+
           // Preserve query parameters when redirecting to callback
           final callbackUri = Uri(
             path: '/callback',
             queryParameters: queryParams.cast<String, dynamic>(),
           );
-          debugPrint('[Router] Redirecting to: ${callbackUri.toString()}');
+          debugPrint(
+            '[Router] Redirecting from ${state.matchedLocation} to: ${callbackUri.toString()}',
+          );
+          debugPrint(
+            '[Router] ===== REDIRECT DECISION: FORWARD TO /callback =====',
+          );
           return callbackUri.toString();
+        }
+
+        // If we're on the callback route with callback parameters, allow processing
+        // NEVER redirect from /callback to /login when callback parameters are present
+        if (isCallback && rawHasCallbackParams && kIsWeb) {
+          debugPrint(
+            '[Router] DECISION: On /callback route with callback parameters present',
+          );
+          debugPrint('[Router] Query params: $queryParams');
+          debugPrint('[Router] Auth state: isAuthenticated=$isAuthenticated');
+          debugPrint(
+            '[Router] Allowing callback processing (no redirect to login)',
+          );
+          debugPrint(
+            '[Router] Reason: Callback route with valid callback parameters',
+          );
+          debugPrint(
+            '[Router] ===== REDIRECT DECISION: ALLOW CALLBACK PROCESSING =====',
+          );
+          return null;
         }
 
         // Allow access to marketing pages on web root domain without authentication
         if (kIsWeb && !isAppSubdomain && (isHomepage || isDownload || isDocs)) {
-          debugPrint('[Router] Allowing access to marketing page');
+          debugPrint(
+            '[Router] DECISION: Allowing access to marketing page (root domain)',
+          );
+          debugPrint('[Router] Route: ${state.matchedLocation}');
+          debugPrint(
+            '[Router] Reason: Marketing page on root domain, no auth required',
+          );
+          debugPrint(
+            '[Router] ===== REDIRECT DECISION: ALLOW MARKETING PAGE =====',
+          );
           return null;
         }
 
         // If authentication is still loading, defer redirect decisions
         if (isAuthLoading && !isCallback) {
-          debugPrint('[Router] Auth still loading - deferring redirect');
+          debugPrint(
+            '[Router] DECISION: Auth still loading - deferring redirect',
+          );
+          debugPrint('[Router] Current route: ${state.matchedLocation}');
+          debugPrint(
+            '[Router] Reason: Waiting for authentication state to be determined',
+          );
+          debugPrint(
+            '[Router] ===== REDIRECT DECISION: DEFER (AUTH LOADING) =====',
+          );
           return null; // Stay on current route until auth loading completes
         }
 
         // Allow access to login and loading pages
         if (isLoggingIn || isLoading) {
-          debugPrint('[Router] Allowing access to auth/loading page');
+          debugPrint('[Router] DECISION: Allowing access to auth/loading page');
+          debugPrint('[Router] Route: ${state.matchedLocation}');
+          debugPrint('[Router] Auth state: isAuthenticated=$isAuthenticated');
+          debugPrint('[Router] Reason: Login or loading page access allowed');
+          debugPrint(
+            '[Router] ===== REDIRECT DECISION: ALLOW AUTH/LOADING PAGE =====',
+          );
           return null;
         }
 
         // For callback route, handle platform-specific logic
         if (isCallback) {
           if (kIsWeb) {
-            debugPrint('[Router] Allowing access to callback page (web)');
+            debugPrint(
+              '[Router] DECISION: Allowing access to callback page (web)',
+            );
+            debugPrint('[Router] Query params: $queryParams');
+            debugPrint('[Router] Reason: Web platform callback processing');
+            debugPrint(
+              '[Router] ===== REDIRECT DECISION: ALLOW CALLBACK PAGE =====',
+            );
             return null;
           } else {
             // Desktop platforms should not use callback route
             debugPrint(
-              '[Router] Desktop callback route accessed - redirecting based on auth state',
+              '[Router] DECISION: Desktop callback route accessed - redirecting based on auth state',
             );
+            debugPrint('[Router] Auth state: isAuthenticated=$isAuthenticated');
             if (isAuthenticated) {
+              debugPrint(
+                '[Router] Reason: Desktop authenticated, redirecting to home',
+              );
+              debugPrint(
+                '[Router] ===== REDIRECT DECISION: DESKTOP CALLBACK -> HOME =====',
+              );
               return '/';
             } else {
+              debugPrint(
+                '[Router] Reason: Desktop not authenticated, redirecting to login',
+              );
+              debugPrint(
+                '[Router] ===== REDIRECT DECISION: DESKTOP CALLBACK -> LOGIN =====',
+              );
               return '/login';
             }
           }
         }
 
+        // If authenticated but services not yet loaded, show loading screen
+        // This prevents redirect to login during service initialization
+        if (isAuthenticated && !areServicesLoaded && !isLoading) {
+          debugPrint(
+            '[Router] DECISION: Authenticated but services not loaded - showing loading screen',
+          );
+          debugPrint('[Router] Current route: ${state.matchedLocation}');
+          debugPrint(
+            '[Router] Auth state: isAuthenticated=$isAuthenticated, servicesLoaded=$areServicesLoaded',
+          );
+          debugPrint(
+            '[Router] Reason: Waiting for authenticated services to load',
+          );
+          debugPrint(
+            '[Router] ===== REDIRECT DECISION: SHOW LOADING (SERVICES LOADING) =====',
+          );
+          return '/loading?message=${Uri.encodeComponent('Loading application modules...')}';
+        }
+
+        // NEVER redirect to login when authentication state is true
+        // This prevents the login loop after successful authentication
+        if (isAuthenticated && isLoggingIn) {
+          debugPrint(
+            '[Router] DECISION: Authenticated user on login page - redirecting to home',
+          );
+          debugPrint('[Router] Current route: ${state.matchedLocation}');
+          debugPrint(
+            '[Router] Auth state: isAuthenticated=$isAuthenticated, servicesLoaded=$areServicesLoaded',
+          );
+          debugPrint(
+            '[Router] Reason: Authenticated users should not be on login page',
+          );
+          debugPrint(
+            '[Router] ===== REDIRECT DECISION: AUTHENTICATED -> HOME =====',
+          );
+          return '/';
+        }
+
         // For desktop, require authentication (web auth handled in route builder)
         if (!kIsWeb && !isAuthenticated && !isAuthLoading) {
           debugPrint(
-            '[Router] Redirecting desktop to login - user not authenticated',
+            '[Router] DECISION: Redirecting desktop to login - user not authenticated',
+          );
+          debugPrint('[Router] Current route: ${state.matchedLocation}');
+          debugPrint(
+            '[Router] Reason: Desktop platform requires authentication',
+          );
+          debugPrint(
+            '[Router] ===== REDIRECT DECISION: DESKTOP -> LOGIN =====',
           );
           return '/login';
         }
 
         // Allow access to protected routes
-        debugPrint('[Router] Allowing access to protected route');
+        debugPrint('[Router] DECISION: Allowing access to protected route');
+        debugPrint('[Router] Route: ${state.matchedLocation}');
+        debugPrint(
+          '[Router] Auth state: isAuthenticated=$isAuthenticated, servicesLoaded=$areServicesLoaded',
+        );
+        debugPrint('[Router] Reason: Protected route access granted');
+        debugPrint(
+          '[Router] ===== REDIRECT DECISION: ALLOW PROTECTED ROUTE =====',
+        );
         return null;
       },
 
