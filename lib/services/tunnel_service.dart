@@ -4,7 +4,7 @@ import '../config/app_config.dart';
 import '../models/tunnel_config.dart';
 import '../models/tunnel_state.dart';
 import '../services/auth_service.dart';
-import 'ssh/ssh_tunnel_client.dart' if (dart.library.html) 'chisel_tunnel_client_stub.dart';
+import 'ssh/ssh_tunnel_client.dart' if (dart.library.html) 'ssh_tunnel_client_stub.dart';
 
 /// Modern tunnel service with proper state management and error handling
 /// 
