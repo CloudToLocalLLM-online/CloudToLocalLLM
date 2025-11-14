@@ -37,8 +37,8 @@ RUN flutter clean
 # Get dependencies (Flutter will create .dart_tool and other cache dirs)
 RUN flutter pub get
 
-# Build Flutter web app with JavaScript
-RUN flutter build web
+# Build Flutter web app with HTML renderer (avoids canvaskit Intl.v8BreakIterator deprecation)
+RUN flutter build web --web-renderer html
 
 # ---- Stage 2: Serve with Nginx (non-root) ----
 FROM nginxinc/nginx-unprivileged:alpine
