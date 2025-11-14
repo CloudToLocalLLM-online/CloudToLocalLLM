@@ -128,7 +128,6 @@ class AppRouter {
           name: 'home',
           builder: (context, state) {
             debugPrint('[Router] ===== NEW HOME ROUTE BUILDER START =====');
-            debugPrint('[Router] 🔥🔥🔥 THIS IS THE NEW CODE - TIME: ${DateTime.now()} 🔥🔥🔥');
 
             // First check if user is already authenticated with Auth0
             bool isAlreadyAuthenticated = false;
