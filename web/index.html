@@ -184,6 +184,11 @@
           console.log('Unregistering old service worker:', registration.scope);
           registration.unregister().then(function(success) {
             console.log('Service worker unregistered:', success);
+            // Force reload after unregistering
+            if (success) {
+              console.log('Reloading page to use new service worker...');
+              window.location.reload(true);
+            }
           });
         }
       });
