@@ -73,6 +73,9 @@ dependencies:
   # Crypto for PKCE
   crypto: ^3.0.7
 
+  # SSH tunneling
+  dartssh2: ^2.9.0
+
   # LangChain Integration
   langchain: ^0.8.0+1
   langchain_ollama: ^0.4.0+1
@@ -93,6 +96,3 @@ flutter:
   assets:
     - assets/images/
     - assets/version.json
-    - assets/chisel/
-    - assets/chisel/.gitkeep
-    - assets/chisel/README.md

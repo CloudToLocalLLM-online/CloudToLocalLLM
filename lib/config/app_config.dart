@@ -30,11 +30,11 @@ class AppConfig {
   static const String apiBaseUrl = 'https://api.cloudtolocalllm.online';
   static const Duration apiTimeout = Duration(seconds: 30);
 
-  // Tunnel Configuration (Chisel)
-  static const String tunnelChiselUrl =
-      'https://api.cloudtolocalllm.online:8080';
-  static const String tunnelChiselUrlDev =
-      'https://api.cloudtolocalllm.online:8080';
+  // Tunnel Configuration (SSH over WebSocket)
+  static const String tunnelSshUrl =
+      'wss://api.cloudtolocalllm.online:8080/ssh';
+  static const String tunnelSshUrlDev =
+      'wss://api.cloudtolocalllm.online:8080/ssh';
 
   // UI Configuration
   static const double maxContentWidth = 1200.0;

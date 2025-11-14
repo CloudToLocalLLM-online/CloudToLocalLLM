@@ -4,7 +4,7 @@ import '../config/app_config.dart';
 import '../models/tunnel_config.dart';
 import '../models/tunnel_state.dart';
 import '../services/auth_service.dart';
-import 'chisel_tunnel_client.dart' if (dart.library.html) 'chisel_tunnel_client_stub.dart';
+import 'ssh/ssh_tunnel_client.dart' if (dart.library.html) 'chisel_tunnel_client_stub.dart';
 
 /// Modern tunnel service with proper state management and error handling
 /// 
@@ -15,7 +15,7 @@ import 'chisel_tunnel_client.dart' if (dart.library.html) 'chisel_tunnel_client_
 /// - Monitor connection health
 class TunnelService extends ChangeNotifier {
   final AuthService _authService;
-  ChiselTunnelClient? _client;
+  SSHTunnelClient? _client;
   TunnelState _state = const TunnelState();
   Timer? _healthCheckTimer;
   Timer? _statsTimer;
@@ -63,7 +63,7 @@ class TunnelService extends ChangeNotifier {
   Future<void> connect() async {
     if (_state.isConnecting || _state.isConnected) return;
 
-    // Chisel tunnel client only works on desktop, not web
+    // SSH tunnel client only works on desktop, not web
     if (kIsWeb) {
       // Silently skip on web - tunnel runs on desktop only, web uses cloud proxy
       return;
@@ -92,15 +92,15 @@ class TunnelService extends ChangeNotifier {
       final config = TunnelConfig(
         userId: userId,
         cloudProxyUrl: kDebugMode
-            ? AppConfig.tunnelChiselUrl
-            : AppConfig.tunnelChiselUrl,
+            ? AppConfig.tunnelSshUrl
+            : AppConfig.tunnelSshUrl,
         localBackendUrl: 'http://localhost:11434',
         authToken: token,
         enableCloudProxy: true,
       );
 
       _client?.dispose();
-      _client = ChiselTunnelClient(config);
+      _client = SSHTunnelClient(config);
       _client!.addListener(_onClientStateChanged);
 
       await _client!.connect();

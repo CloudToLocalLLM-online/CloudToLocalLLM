@@ -1,5 +1,5 @@
 /**
- * @fileoverview Express routes for Chisel tunnel system health and status checks.
+ * @fileoverview Express routes for SSH tunnel system health and status checks.
  */
 
 import express from 'express';
@@ -13,7 +13,7 @@ import { addTierInfo, requireFeature } from '../middleware/tier-check.js';
  * @param {Object} config - Configuration object.
  * @param {string} config.AUTH0_DOMAIN - Auth0 domain.
  * @param {string} config.AUTH0_AUDIENCE - Auth0 audience.
- * @param {Object} tunnelProxy - The tunnel proxy instance (ChiselProxy when implemented).
+ * @param {Object} tunnelProxy - The tunnel proxy instance (SSHProxy when implemented).
  * @param {winston.Logger} [logger] - Logger instance.
  * @param {AuthService} [authService] - Pre-initialized authentication service.
  * @returns {express.Router} The configured Express router.
@@ -54,8 +54,8 @@ export function createTunnelRoutes(config, tunnelProxy, logger = winston.createL
   router.use(authenticateToken);
   router.use(addTierInfo);
 
-  // Register Chisel client connection
-  // Called by desktop client after establishing Chisel tunnel
+  // Register SSH client connection
+  // Called by desktop client after establishing SSH tunnel
   router.post('/register', requireFeature('tunneling'), async (req, res) => {
     try {
       const userId = req.userId;
@@ -71,7 +71,7 @@ export function createTunnelRoutes(config, tunnelProxy, logger = winston.createL
       if (!tunnelProxy) {
         return res.status(503).json({
           error: 'Service Unavailable',
-          message: 'Chisel tunnel server not initialized',
+          message: 'SSH tunnel server not initialized',
         });
       }
 
@@ -84,7 +84,7 @@ export function createTunnelRoutes(config, tunnelProxy, logger = winston.createL
         tunnelId,
         localPort,
         serverPort: assignedPort,
-        message: 'Chisel client registered successfully',
+        message: 'SSH client registered successfully',
       });
     } catch (error) {
       tunnelLogger.logTunnelError(ERROR_CODES.INTERNAL_SERVER_ERROR, 'Failed to register client', { error: error.message });
@@ -92,7 +92,7 @@ export function createTunnelRoutes(config, tunnelProxy, logger = winston.createL
     }
   });
 
-  // Unregister Chisel client connection
+  // Unregister SSH client connection
   router.post('/unregister', requireFeature('tunneling'), (req, res) => {
     try {
       const userId = req.userId;
@@ -100,7 +100,7 @@ export function createTunnelRoutes(config, tunnelProxy, logger = winston.createL
       if (!tunnelProxy) {
         return res.status(503).json({
           error: 'Service Unavailable',
-          message: 'Chisel tunnel server not initialized',
+          message: 'SSH tunnel server not initialized',
         });
       }
 
@@ -109,7 +109,7 @@ export function createTunnelRoutes(config, tunnelProxy, logger = winston.createL
       res.json({
         success: true,
         userId,
-        message: 'Chisel client unregistered successfully',
+        message: 'SSH client unregistered successfully',
       });
     } catch (error) {
       tunnelLogger.logTunnelError(ERROR_CODES.INTERNAL_SERVER_ERROR, 'Failed to unregister client', { error: error.message });
@@ -128,7 +128,7 @@ export function createTunnelRoutes(config, tunnelProxy, logger = winston.createL
       return res.json({ 
         userId, 
         connected: false, 
-        message: 'Chisel tunnel server not initialized',
+        message: 'SSH tunnel server not initialized',
         timestamp: new Date().toISOString() 
       });
     }
@@ -143,7 +143,7 @@ export function createTunnelRoutes(config, tunnelProxy, logger = winston.createL
       if (!tunnelProxy) {
         return res.status(503).json({ 
           status: 'degraded',
-          message: 'Chisel tunnel server not initialized',
+          message: 'SSH tunnel server not initialized',
           timestamp: new Date().toISOString() 
         });
       }
@@ -161,7 +161,7 @@ export function createTunnelRoutes(config, tunnelProxy, logger = winston.createL
   router.get('/metrics', requireFeature('tunneling'), (req, res) => {
     if (!tunnelProxy) {
       return res.json({
-        system: { message: 'Chisel tunnel server not initialized' },
+        system: { message: 'SSH tunnel server not initialized' },
         timestamp: new Date().toISOString(),
       });
     }

@@ -11,8 +11,9 @@ import { auth } from 'express-oauth2-jwt-bearer';
 
 import adminRoutes from './routes/admin.js';
 import sessionRoutes from './routes/sessions.js';
-// Chisel tunnel integration
-import { ChiselProxy } from './tunnel/chisel-proxy.js';
+// SSH tunnel integration
+import { SSHProxy } from './tunnel/ssh-proxy.js';
+import { SSHAuthHandler } from './tunnel/ssh-auth-handler.js';
 import { AuthService } from './auth/auth-service.js';
 import { DatabaseMigrator } from './database/migrate.js';
 import { DatabaseMigratorPG } from './database/migrate-pg.js';
@@ -63,25 +64,27 @@ const DOMAIN = process.env.DOMAIN || 'cloudtolocalllm.online';
 const app = express();
 const server = http.createServer(app);
 
-// Initialize Chisel tunnel server
-let chiselProxy = null;
-let chiselAuthService = null;
+// Initialize SSH tunnel server
+let sshProxy = null;
+let sshAuthHandler = null;
+let sshAuthService = null;
 try {
-  chiselAuthService = new AuthService({
+  sshAuthService = new AuthService({
     AUTH0_DOMAIN,
     AUTH0_AUDIENCE,
   });
-  await chiselAuthService.initialize();
+  await sshAuthService.initialize();
 
-  chiselProxy = new ChiselProxy(logger, {
-    chiselPort: parseInt(process.env.CHISEL_PORT) || 8080,
-    chiselBinary: process.env.CHISEL_BINARY,
-  }, chiselAuthService);
+  sshAuthHandler = new SSHAuthHandler(sshAuthService, logger);
 
-  await chiselProxy.start();
-  logger.info('Chisel tunnel server initialized successfully');
+  sshProxy = new SSHProxy(logger, {
+    sshPort: parseInt(process.env.SSH_PORT) || 8080,
+  }, sshAuthService);
+
+  await sshProxy.start();
+  logger.info('SSH tunnel server initialized successfully');
 } catch (error) {
-  logger.error('Failed to initialize Chisel tunnel server', {
+  logger.error('Failed to initialize SSH tunnel server', {
     error: error.message,
     stack: error.stack,
   });
@@ -193,10 +196,10 @@ const proxyManager = new StreamingProxyManager();
 const tunnelRouter = createTunnelRoutes({
   AUTH0_DOMAIN,
   AUTH0_AUDIENCE,
-}, chiselProxy, logger, chiselAuthService);
+}, sshProxy, logger, sshAuthService);
 
 // Create monitoring routes
-const monitoringRouter = createMonitoringRoutes(chiselProxy, logger);
+const monitoringRouter = createMonitoringRoutes(sshProxy, logger);
 
 // API Routes
 
@@ -284,15 +287,15 @@ const handleOllamaProxyRequest = async(req, res) => {
 
     logger.debug(' [LLMTunnel] Forwarding request through tunnel', { userId, requestId, path: ollamaPath });
 
-    if (!chiselProxy) {
-      return res.status(503).json({ 
-        error: 'Tunnel system not available', 
+    if (!sshProxy) {
+      return res.status(503).json({
+        error: 'Tunnel system not available',
         code: 'TUNNEL_NOT_AVAILABLE',
-        message: 'Chisel tunnel server not initialized' 
+        message: 'SSH tunnel server not initialized'
       });
     }
 
-    const response = await chiselProxy.forwardRequest(userId, httpRequest);
+    const response = await sshProxy.forwardRequest(userId, httpRequest);
 
     const duration = Date.now() - startTime;
     logger.info(' [LLMTunnel] Request completed successfully via tunnel', { userId, requestId, duration, status: response.status });
@@ -742,8 +745,8 @@ async function gracefulShutdown() {
   logger.info('Received shutdown signal, starting graceful shutdown...');
 
   try {
-    if (chiselProxy) {
-      await chiselProxy.stop();
+    if (sshProxy) {
+      await sshProxy.stop();
     }
     if (authService) {
       await authService.close();
