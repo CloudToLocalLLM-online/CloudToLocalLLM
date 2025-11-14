@@ -132,7 +132,7 @@ context7-mcp --test-connection
 const auth0Config = {
   domain: 'dev-v2f2p008x3dr74ww.us.auth0.com',
   clientId: 'FuXPnevXpp311CdYHGsbNZe9t3D8Ts7A',
-  audience: 'https://app.cloudtolocalllm.online',
+  audience: 'https://api.cloudtolocalllm.online',
   redirectUri: {
     web: 'https://app.cloudtolocalllm.online/callback',
     desktop: 'http://localhost:8080/callback'
@@ -316,7 +316,7 @@ cloudtolocalllm-settings --reset-performance
 
 ### **Documentation Links**
 - [System Architecture](../ARCHITECTURE/SYSTEM_ARCHITECTURE.md) - Technical architecture details
-- [Installation Guide](../INSTALLATION/INSTALLATION_GUIDE.md) - Platform-specific installation
+- [Installation Guide](../INSTALLATION/README.md) - Platform-specific installation
 - [Self-Hosting Guide](../OPERATIONS/SELF_HOSTING.md) - VPS deployment instructions
 
 ### **Community Resources**

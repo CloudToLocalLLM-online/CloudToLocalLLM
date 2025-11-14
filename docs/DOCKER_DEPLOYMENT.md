@@ -1,5 +1,9 @@
 # CloudToLocalLLM Docker Compose Deployment Guide
 
+**⚠️ DEVELOPMENT/TESTING ONLY**: This Docker Compose deployment is suitable for development, testing, and small-scale deployments. For production use, **Kubernetes deployment is strongly recommended**.
+
+See [Deployment Overview](DEPLOYMENT/DEPLOYMENT_OVERVIEW.md) for all deployment options.
+
 ## Overview
 
 This guide will help you deploy CloudToLocalLLM using Docker Compose with a complete stack including:

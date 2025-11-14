@@ -133,7 +133,7 @@ See our [Contribution Guidelines](../CONTRIBUTING.md) for detailed information o
 ## 🆘 Getting Help
 
 ### Common Issues
-- **Installation Problems**: Check [Installation Guide](USER_DOCUMENTATION/INSTALLATION_GUIDE.md)
+- **Installation Problems**: Check [Installation Guide](INSTALLATION/README.md)
 - **Connection Issues**: See [Troubleshooting Guide](USER_DOCUMENTATION/USER_TROUBLESHOOTING_GUIDE.md)
 - **Tunnel Problems**: Review connection fallback hierarchy and zrok configuration
 - **Performance Issues**: Monitor connection status and tunnel health

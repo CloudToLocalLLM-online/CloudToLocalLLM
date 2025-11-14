@@ -71,10 +71,36 @@ export class AuthService {
 
   /**
    * Validate JWT token
+   * @param {string} token - JWT token to validate
+   * @param {object} req - Request object
+   * @param {object} preValidatedPayload - Optional pre-validated payload from Auth0 SDK
    */
-  async validateToken(token, req = {}) {
+  async validateToken(token, req = {}, preValidatedPayload = null) {
     try {
-      this.logger.info('Starting token validation');
+      let payload;
+
+      if (preValidatedPayload) {
+        // Use pre-validated payload from Auth0 SDK - skip JWT verification
+        this.logger.info('Using pre-validated token payload');
+        payload = preValidatedPayload;
+
+        // Create or update session
+        const session = await this.createOrUpdateSession(payload, token, req);
+
+        this.logger.info('Session created/updated for pre-validated token', {
+          userId: payload.sub,
+          sessionId: session.id,
+        });
+
+        return {
+          valid: true,
+          payload: payload,
+          session: session,
+        };
+      }
+
+      // Fallback: full validation for cases where pre-validated payload not available
+      this.logger.info('Starting full token validation');
 
       // Decode token to get header
       const decoded = jwt.decode(token, { complete: true });
@@ -90,24 +116,24 @@ export class AuthService {
       this.logger.info('Got signing key, verifying token');
 
       // Verify token with full validation
-      const verified = jwt.verify(token, key, {
-        audience: this.config.AUTH0_AUDIENCE, // Re-enabled: Auth0 API is now configured
+      payload = jwt.verify(token, key, {
+        audience: this.config.AUTH0_AUDIENCE,
         issuer: `https://${this.config.AUTH0_DOMAIN}/`,
         algorithms: ['RS256'],
       });
 
       // Create or update session
-      const session = await this.createOrUpdateSession(verified, token, req);
+      const session = await this.createOrUpdateSession(payload, token, req);
 
       this.logger.info('Token verification successful');
       this.logger.info('Token validated successfully', {
-        userId: verified.sub,
+        userId: payload.sub,
         sessionId: session.id,
       });
 
       return {
         valid: true,
-        payload: verified,
+        payload: payload,
         session: session,
       };
 

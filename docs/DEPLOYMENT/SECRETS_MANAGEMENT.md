@@ -20,7 +20,6 @@ Secrets are sensitive pieces of information, such as API keys, passwords, and ce
 | --- | --- | --- |
 | `GCP_PROJECT_ID` | Google Cloud Project ID | CI/CD |
 | `GCP_SA_KEY` | Service account JSON key for Google Cloud authentication | CI/CD |
-| `FIREBASE_PROJECT_ID` | Firebase project ID for GCIP authentication | CI/CD |
 | `JWT_SECRET` | JWT secret for token signing | CI/CD |
 | `AUTH0_AUDIENCE` | Auth0 API Audience | CI/CD |
 
@@ -34,10 +33,6 @@ Secrets are sensitive pieces of information, such as API keys, passwords, and ce
     2.  Navigate to **IAM & Admin > Service Accounts**.
     3.  Create or select a service account.
     4.  Create a new JSON key and download it. The content of this file is the value for this secret.
-
-### Firebase
-
-*   **`FIREBASE_PROJECT_ID`**: Your Firebase Project ID.
 
 ### Authentication
 
@@ -55,8 +50,8 @@ Secrets are sensitive pieces of information, such as API keys, passwords, and ce
 
 ### Local Development
 
-1.  Copy the `config/cloudrun/.env.cloudrun.template` file to `config/cloudrun/.env.cloudrun`.
-2.  Update the `.env.cloudrun` file with the values for your local environment.
+1.  Copy the `env.template` file to `.env`.
+2.  Update the `.env` file with the values for your local environment.
 
 ## Security Best Practices
 

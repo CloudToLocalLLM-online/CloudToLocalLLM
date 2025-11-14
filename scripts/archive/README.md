@@ -38,6 +38,43 @@
 - **Migration Status**: ✅ All features already available in scripts/packaging/build_deb.sh
 - **Replacement**: Use `scripts/packaging/build_deb.sh`
 
+### VPS Deployment Scripts (Deprecated - Migrated to Kubernetes)
+
+#### `Deploy-CloudToLocalLLM.ps1`
+- **Original Location**: `scripts/deploy/Deploy-CloudToLocalLLM.ps1`
+- **Archive Reason**: VPS deployment deprecated in favor of Kubernetes deployment
+- **Key Features**: Complete VPS deployment orchestration, version management, GitHub releases
+- **Migration Status**: ✅ Replaced by Kubernetes deployment workflow
+- **Replacement**: Use Kubernetes deployment (`kubectl apply -f k8s/`)
+
+#### `BuildEnvironmentUtilities.ps1`
+- **Original Location**: `scripts/deploy/BuildEnvironmentUtilities.ps1`
+- **Archive Reason**: VPS-specific build utilities no longer needed
+- **Key Features**: PowerShell build environment utilities for VPS deployment
+- **Migration Status**: ✅ Functionality replaced by Kubernetes CI/CD pipeline
+- **Replacement**: Use GitHub Actions workflows for automated builds
+
+#### `sync_versions.sh`
+- **Original Location**: `scripts/deploy/sync_versions.sh`
+- **Archive Reason**: Version synchronization for VPS deployment
+- **Key Features**: Cross-component version synchronization
+- **Migration Status**: ✅ Replaced by automated versioning in CI/CD
+- **Replacement**: Version management handled by GitHub Actions
+
+#### `verify_deployment.sh`
+- **Original Location**: `scripts/deploy/verify_deployment.sh`
+- **Archive Reason**: VPS deployment verification
+- **Key Features**: Post-deployment health checks and validation
+- **Migration Status**: ✅ Replaced by Kubernetes health checks and monitoring
+- **Replacement**: Use `kubectl get pods` and Kubernetes monitoring
+
+#### `version_manager.ps1`
+- **Original Location**: `scripts/deploy/version_manager.ps1`
+- **Archive Reason**: PowerShell version management for VPS deployments
+- **Key Features**: Version incrementing and management
+- **Migration Status**: ✅ Replaced by automated versioning in CI/CD
+- **Replacement**: Version management handled by GitHub Actions
+
 ## 🔄 Migration Guide
 
 ### For Users of `complete_automated_deployment.sh`

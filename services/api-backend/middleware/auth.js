@@ -143,9 +143,9 @@ export async function authenticateJWT(req, res, next) {
       }
     }
 
-    // If it's a proper JWT token, use the AuthService validation
-    logger.debug(' [Auth] Token appears to be JWT, using AuthService validation');
-    const result = await authService.validateToken(token, req);
+    // If it's a proper JWT token, use the AuthService with pre-validated payload from Auth0 SDK
+    logger.debug(' [Auth] Token appears to be JWT, using AuthService with pre-validated payload');
+    const result = await authService.validateToken(token, req, req.auth?.payload);
 
     if (!result.valid) {
       logger.warn(' [Auth] AuthService validation failed, falling back to Auth0 payload', {

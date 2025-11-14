@@ -49,7 +49,7 @@ steps:
       - '--max-instances'
       - '10'
       - '--set-env-vars'
-      - 'NODE_ENV=production,PORT=8080,DB_TYPE=postgresql,FIREBASE_PROJECT_ID=$PROJECT_ID'
+      - 'NODE_ENV=production,PORT=8080,DB_TYPE=postgresql'
       - '--add-cloudsql-instances'
       - '$PROJECT_ID:us-central1:cloudtolocalllm-db'
 

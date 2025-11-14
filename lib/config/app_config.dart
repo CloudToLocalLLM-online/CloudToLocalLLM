@@ -21,13 +21,6 @@ class AppConfig {
   static const String auth0Audience = 'https://api.cloudtolocalllm.online';
   static const String auth0ClientId = 'FuXPnevXpp311CdYHGsbNZe9t3D8Ts7A';
 
-  // Legacy Auth0 Configuration (for migration reference)
-  // static const String auth0Domain = 'dev-v2f2p008x3dr74ww.us.auth0.com';
-  // static const String auth0Audience = 'https://app.cloudtolocalllm.online';
-  // static const String auth0Issuer = 'https://dev-v2f2p008x3dr74ww.us.auth0.com/';
-  // static const String auth0ClientId = 'FuXPnevXpp311CdYHGsbNZe9t3D8Ts7A';
-  // static const String auth0WebRedirectUri = 'https://app.cloudtolocalllm.online/callback';
-  // static const String auth0DesktopRedirectUri = 'http://localhost:8080/callback';
 
   // Development mode settings
   static const bool enableDevMode = true; // Set to false for production

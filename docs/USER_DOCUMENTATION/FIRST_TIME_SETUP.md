@@ -18,7 +18,7 @@ This guide will walk you through setting up CloudToLocalLLM v3.10.3+ for the fir
 Before starting, ensure you have:
 
 ### **Required**
-- [ ] **CloudToLocalLLM installed** - See [Installation Guide](INSTALLATION_GUIDE.md)
+- [ ] **CloudToLocalLLM installed** - See [Installation Guide](../INSTALLATION/README.md)
 - [ ] **Ollama installed and running** - Local LLM backend
 - [ ] **Internet connection** - For model downloads and optional web features
 

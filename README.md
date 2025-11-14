@@ -213,7 +213,7 @@ kubectl apply -f k8s/
 
 ### 📚 Documentation
 
-- **[Kubernetes Quick Start](KUBERNETES_QUICKSTART.md)** - Kubernetes deployment example (DigitalOcean)
+- **[Kubernetes Quick Start](docs/KUBERNETES_QUICKSTART.md)** - Kubernetes deployment example (DigitalOcean)
 - **[Kubernetes README](k8s/README.md)** - Complete Kubernetes deployment guide (works with any cluster)
 - **[Complete Deployment Workflow](docs/DEPLOYMENT/COMPLETE_DEPLOYMENT_WORKFLOW.md)** - Step-by-step deployment guide
 - **[Deployment Overview](docs/DEPLOYMENT/DEPLOYMENT_OVERVIEW.md)** - All deployment options (managed or self-hosted)
