@@ -456,8 +456,8 @@ export class SSHProxy {
     const connection = this.userConnections.get(userId);
     if (connection) {
       try {
-        if (connection.stream) {
-          connection.stream.end();
+        if (connection.sshStream) {
+          connection.sshStream.end();
         }
       } catch (e) {
         // Ignore cleanup errors
