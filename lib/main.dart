@@ -97,18 +97,14 @@ class CloudToLocalLLMApp extends StatefulWidget {
 }
 
 class _CloudToLocalLLMAppState extends State<CloudToLocalLLMApp> {
-  @override
-  void initState() {
-    super.initState();
-    // Listen to auth state changes to rebuild providers when authenticated services load
-    final authService = di.serviceLocator.get<AuthService>();
-    authService.addListener(_onAuthStateChanged);
-  }
+  bool _authListenerAttached = false;
+  AuthService? _attachedAuthService;
 
   @override
   void dispose() {
-    final authService = di.serviceLocator.get<AuthService>();
-    authService.removeListener(_onAuthStateChanged);
+    if (_authListenerAttached && _attachedAuthService != null) {
+      _attachedAuthService!.removeListener(_onAuthStateChanged);
+    }
     super.dispose();
   }
 
@@ -129,6 +125,8 @@ class _CloudToLocalLLMAppState extends State<CloudToLocalLLMApp> {
       );
     }
 
+    _ensureAuthListener();
+
     // Build providers list - authenticated services will be added when registered
     // This rebuilds when auth state changes
     return MultiProvider(
@@ -138,6 +136,20 @@ class _CloudToLocalLLMAppState extends State<CloudToLocalLLMApp> {
         child: const _AppRouterHost(),
       ),
     );
+  }
+
+  void _ensureAuthListener() {
+    if (_authListenerAttached) {
+      return;
+    }
+    if (!di.serviceLocator.isRegistered<AuthService>()) {
+      debugPrint('[App] AuthService not registered yet - deferring listener attachment');
+      return;
+    }
+    final authService = di.serviceLocator.get<AuthService>();
+    authService.addListener(_onAuthStateChanged);
+    _attachedAuthService = authService;
+    _authListenerAttached = true;
   }
 
   List<SingleChildWidget> _buildProviders() {

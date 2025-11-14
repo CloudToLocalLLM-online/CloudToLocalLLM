@@ -220,7 +220,7 @@ class SessionStorageService {
 
       if (response.statusCode == 200) {
         final result = response.data;
-        debugPrint('🧹 Cleaned up ${result['deleted']} expired sessions');
+        debugPrint('[SessionStorage] Cleaned up ${result['deleted']} expired sessions');
       } else {
         throw Exception('Failed to cleanup sessions: ${response.statusCode}');
       }
