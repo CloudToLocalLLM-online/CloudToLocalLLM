@@ -15,7 +15,7 @@ class SSHTunnelClient with ChangeNotifier {
   final Dio _dio = Dio();
 
   SSHClient? _sshClient;
-  // SSHForwarder? _forwarder; // TODO: Implement proper reverse forwarding
+  dynamic _forwarder; // SSH forwarder for reverse tunneling
   bool _isConnected = false;
   int? _tunnelPort;
   Timer? _reconnectTimer;

@@ -99,7 +99,7 @@ class WebSocketSSHSocket implements SSHSocket {
   String toString() => 'WebSocketSSHSocket(${_channel.hashCode})';
 }
 
-/// Adapter to convert WebSocketSink to StreamSink<List<int>>
+/// Adapter to convert WebSocketSink to StreamSink&lt;List&lt;int&gt;&gt;
 class _WebSocketSinkAdapter implements StreamSink<List<int>> {
   final WebSocketSink _sink;
   bool _isClosed = false;
