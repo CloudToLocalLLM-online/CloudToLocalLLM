@@ -420,6 +420,7 @@ class AppRouter {
 
         // For web, get query parameters from current browser location
         Map<String, String> queryParams;
+        debugPrint('[Router] About to check kIsWeb: $kIsWeb');
         if (kIsWeb) {
           debugPrint('[Router] kIsWeb is true, attempting to get browser URL');
           try {

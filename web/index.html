@@ -177,17 +177,17 @@
   <!-- DISABLE SERVICE WORKER COMPLETELY -->
   <script>
     // Completely disable service workers to avoid caching issues during development
-    console.log('🚫 SERVICE WORKERS DISABLED FOR DEVELOPMENT 🚫');
+    console.log('SERVICE WORKERS DISABLED FOR DEVELOPMENT');
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.getRegistrations().then(function(registrations) {
         registrations.forEach(function(registration) {
-          console.log('🚫 Unregistering service worker:', registration.scope);
+          console.log('Unregistering service worker:', registration.scope);
           registration.unregister();
         });
       });
       // Prevent new service workers from registering
       navigator.serviceWorker.register = function() {
-        console.log('🚫 Service worker registration blocked');
+        console.log('Service worker registration blocked');
         return Promise.reject(new Error('Service workers disabled'));
       };
     }
@@ -195,14 +195,14 @@
 
   <!-- FORCE CACHE BUSTING BY REPLACING MAIN.DART.JS URL -->
   <script>
-    console.log('🔄 FORCE CACHE BUSTING FOR MAIN.DART.JS 🔄');
+    console.log('FORCE CACHE BUSTING FOR MAIN.DART.JS');
     // Override the main.dart.js URL before Flutter loads
     const originalFetch = window.fetch;
     window.fetch = function(url, options) {
       if (typeof url === 'string' && url.includes('main.dart.js') && !url.includes('cache_bust')) {
         const separator = url.includes('?') ? '&' : '?';
         url = url + separator + 'cache_bust=' + Date.now();
-        console.log('🔄 Modified fetch URL:', url);
+        console.log('Modified fetch URL:', url);
       }
       return originalFetch.call(this, url, options);
     };
@@ -213,7 +213,7 @@
       if (typeof url === 'string' && url.includes('main.dart.js') && !url.includes('cache_bust')) {
         const separator = url.includes('?') ? '&' : '?';
         url = url + separator + 'cache_bust=' + Date.now();
-        console.log('🔄 Modified XMLHttpRequest URL:', url);
+        console.log('Modified XMLHttpRequest URL:', url);
       }
       return originalOpen.call(this, method, url, ...args);
     };
