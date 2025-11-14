@@ -188,7 +188,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
                           // Welcome text
                           Text(
-                            'Welcome to',
+                            'Welcome to (TEST BUILD - NEW ROUTER)',
                             style: Theme.of(context).textTheme.headlineMedium
                                 ?.copyWith(
                                   color: AppTheme.textColorLight,
