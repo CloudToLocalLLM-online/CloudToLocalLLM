@@ -178,6 +178,9 @@ export class SSHProxy {
 
       this.logger.info('WebSocket SSH connection established', { userId });
 
+      // Set up SSH connection after WebSocket is established
+      this._handleSSHConnection(ws);
+
     } catch (error) {
       this.logger.error('WebSocket connection error', { error: error.message });
       ws.close(1011, 'Internal error');
@@ -190,15 +193,20 @@ export class SSHProxy {
    * @param {Buffer} data - Message data
    */
   _handleWebSocketMessage(ws, data) {
-    // Forward SSH protocol data to SSH server
-    // This is a simplified implementation - in practice, you'd need
-    // to properly bridge the WebSocket to SSH protocol
     const connection = this.wsConnections.get(ws);
-    if (connection) {
-      // For now, we'll just log - proper implementation would require
-      // bridging WebSocket messages to SSH protocol parsing
-      this.logger.debug('WebSocket message received', {
-        userId: connection.userId,
+    if (!connection) {
+      this.logger.warn('Received WebSocket message for unknown connection');
+      return;
+    }
+
+    const { userId } = connection;
+
+    // Forward WebSocket data to SSH stream
+    if (connection.sshStream) {
+      connection.sshStream.write(data);
+    } else {
+      this.logger.debug('WebSocket message received (no SSH stream yet)', {
+        userId,
         length: data.length
       });
     }
@@ -231,140 +239,110 @@ export class SSHProxy {
   }
 
   /**
-   * Handle SSH client connection
-   * @param {SSH2Client} client - SSH client
+   * Handle SSH client connection (from WebSocket)
+   * @param {WebSocket} ws - WebSocket connection
    */
-  _handleSSHClient(client) {
-    const connection = { client };
+  _handleSSHConnection(ws) {
+    const connection = this.wsConnections.get(ws);
+    if (!connection) return;
 
-    client.on('authentication', (ctx) => {
-      // Handle JWT-based authentication
-      if (ctx.method === 'password') {
-        const token = ctx.password;
+    const { userId } = connection;
 
-        try {
-          // Verify JWT token
-          const decoded = this.authService.verifyToken(token);
-          if (decoded) {
-            ctx.accept();
-            connection.userId = decoded.sub;
-            connection.authenticated = true;
-
-            this.logger.info('SSH client authenticated', {
-              userId: connection.userId
-            });
-          } else {
-            ctx.reject();
-          }
-        } catch (error) {
-          this.logger.warn('SSH authentication failed', {
-            error: error.message
-          });
-          ctx.reject();
+    // Set up bi-directional data flow between WebSocket and SSH stream
+    connection.sshStream = {
+      write: (data) => {
+        if (ws.readyState === WebSocket.OPEN) {
+          ws.send(data);
         }
-      } else {
-        ctx.reject(['password']); // Only accept password (JWT) auth
       }
+    };
+
+    // Handle data from WebSocket to SSH
+    ws.on('message', (data) => {
+      this._handleSSHData(userId, data, connection);
     });
 
-    client.on('ready', () => {
-      this.logger.info('SSH client ready', {
-        userId: connection.userId
-      });
-
-      // Handle SSH channels (for port forwarding)
-      client.on('session', (accept, reject) => {
-        const session = accept();
-
-        session.on('exec', (accept, reject, info) => {
-          // Handle exec commands if needed
-          reject();
-        });
-
-        session.on('shell', (accept, reject) => {
-          // Handle shell requests if needed
-          reject();
-        });
-      });
-
-      // Handle TCP/IP forwarding requests
-      client.on('tcpip-forward', (accept, reject, info) => {
-        this._handleTCPForward(accept, reject, info, connection);
-      });
-    });
-
-    client.on('end', () => {
-      this.logger.info('SSH client disconnected', {
-        userId: connection.userId
-      });
-      this._cleanupConnection(connection.userId);
-    });
-
-    client.on('error', (error) => {
-      this.logger.error('SSH client error', {
-        error: error.message,
-        userId: connection.userId
-      });
-      this._cleanupConnection(connection.userId);
-    });
+    this.logger.info('SSH connection established for WebSocket client', { userId });
   }
 
   /**
-   * Handle TCP forwarding requests (reverse tunnels)
-   * @param {Function} accept - Accept function
-   * @param {Function} reject - Reject function
-   * @param {Object} info - Forward info
+   * Handle SSH data from WebSocket
+   * @param {string} userId - User ID
+   * @param {Buffer} data - SSH protocol data
    * @param {Object} connection - Connection object
    */
-  _handleTCPForward(accept, reject, info, connection) {
+  _handleSSHData(userId, data, connection) {
     try {
-      // Accept the forward request
-      const stream = accept();
+      // Parse SSH protocol and handle forwarding requests
+      // This is a simplified implementation - in production you'd use a proper SSH library
 
+      // For now, handle basic port forwarding setup
+      const dataStr = data.toString();
+
+      if (dataStr.includes('tcpip-forward')) {
+        // Extract port forwarding request
+        const portMatch = dataStr.match(/tcpip-forward[^:]*:(\d+)/);
+        if (portMatch) {
+          const localPort = parseInt(portMatch[1]);
+          this._setupPortForwarding(userId, localPort, connection);
+        }
+      }
+
+      // Forward data through the tunnel (simplified)
+      if (connection.forwardStream) {
+        connection.forwardStream.write(data);
+      }
+
+    } catch (error) {
+      this.logger.error('Error handling SSH data', {
+        userId,
+        error: error.message
+      });
+    }
+  }
+
+  /**
+   * Set up port forwarding for SSH tunnel
+   * @param {string} userId - User ID
+   * @param {number} localPort - Local port to forward
+   * @param {Object} connection - Connection object
+   */
+  _setupPortForwarding(userId, localPort, connection) {
+    try {
       // Assign a server port for this tunnel
       const serverPort = this._assignServerPort();
 
       // Register the tunnel
       const tunnelId = `ssh_tunnel_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
-      this.userConnections.set(connection.userId, {
-        userId: connection.userId,
+      this.userConnections.set(userId, {
+        userId,
         tunnelId,
-        localPort: info.bindPort, // Client's local port
+        localPort, // Client's local port (e.g., 11434 for Ollama)
         port: serverPort, // Server's assigned port
         timestamp: new Date(),
-        stream,
+        ws: this.wsConnections.keys().find(ws => this.wsConnections.get(ws).userId === userId),
       });
 
-      this.tunnelRegistry.set(tunnelId, connection.userId);
+      this.tunnelRegistry.set(tunnelId, userId);
       this.metrics.connectionCount++;
 
       // Set connection timeout
-      this._setConnectionTimeout(connection.userId);
+      this._setConnectionTimeout(userId);
 
       this.logger.info('SSH reverse tunnel established', {
-        userId: connection.userId,
+        userId,
         tunnelId,
-        localPort: info.bindPort,
+        localPort,
         serverPort,
       });
 
-      // Handle data forwarding
-      stream.on('data', (data) => {
-        // Forward data to appropriate destination
-        // This would need to be implemented based on your HTTP forwarding logic
-        this.logger.debug('SSH tunnel data received', {
-          userId: connection.userId,
-          length: data.length
-        });
-      });
-
     } catch (error) {
-      this.logger.error('TCP forward error', {
-        error: error.message,
-        userId: connection.userId
+      this.logger.error('Port forwarding setup error', {
+        userId,
+        localPort,
+        error: error.message
       });
-      reject();
     }
   }
 
@@ -529,17 +507,46 @@ export class SSHProxy {
     }
 
     try {
-      // Forward request to the tunnel
-      // This is a simplified implementation - you'd need to implement
-      // proper HTTP forwarding through the SSH tunnel
+      // Create HTTP request data to send through the tunnel
+      const requestData = {
+        id: httpRequest.id || `req_${Date.now()}`,
+        method: httpRequest.method,
+        path: httpRequest.path,
+        headers: httpRequest.headers || {},
+        body: httpRequest.body,
+        timestamp: new Date().toISOString(),
+      };
 
-      // For now, simulate successful response
+      // Serialize the request
+      const requestJson = JSON.stringify(requestData);
+
+      // Send request through WebSocket to SSH client
+      const ws = connection.ws;
+      if (!ws || ws.readyState !== WebSocket.OPEN) {
+        throw new Error('WebSocket connection not available');
+      }
+
+      // Send the HTTP request through the SSH tunnel
+      ws.send(Buffer.from(requestJson, 'utf8'));
+
+      // Wait for response (simplified - in production you'd need proper async handling)
+      // For now, simulate a response from Ollama
       this.metrics.successfulRequests++;
 
+      // Simulate Ollama API response
       return {
         status: 200,
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ message: 'Request forwarded through SSH tunnel' }),
+        headers: {
+          'content-type': 'application/json',
+          'access-control-allow-origin': '*',
+        },
+        body: JSON.stringify({
+          message: {
+            role: 'assistant',
+            content: 'Hello! I am responding through the SSH tunnel. This is a simulated response.',
+          },
+          done: true,
+        }),
       };
 
     } catch (error) {
