@@ -66,7 +66,7 @@ class AuthService extends ChangeNotifier {
         await _loadAuthenticatedServices();
       }
     } catch (e) {
-      debugPrint('❌ Failed to initialize Auth0: $e');
+      debugPrint(' Failed to initialize Auth0: $e');
     } finally {
       _isRestoringSession = false;
       _isLoading.value = false;
@@ -101,7 +101,7 @@ class AuthService extends ChangeNotifier {
         debugPrint('[AuthService] No valid stored session found');
       }
     } catch (e) {
-      debugPrint('❌ Error checking stored session: $e');
+      debugPrint(' Error checking stored session: $e');
     } finally {
       _completeSessionBootstrap();
     }
@@ -111,16 +111,16 @@ class AuthService extends ChangeNotifier {
   Future<void> _storeAuth0Session({bool force = false}) async {
     try {
       if (_auth0Service.currentUser == null) {
-        debugPrint('⚠️ No Auth0 user available, skipping session storage');
+        debugPrint(' No Auth0 user available, skipping session storage');
         return;
       }
 
       if (!force && _sessionToken != null) {
-        debugPrint('ℹ️ Session already stored, skipping new session creation');
+        debugPrint(' Session already stored, skipping new session creation');
         return;
       }
 
-      debugPrint('💾 Storing Auth0 session in PostgreSQL...');
+      debugPrint(' Storing Auth0 session in PostgreSQL...');
       final user = UserModel.fromAuth0Profile(_auth0Service.currentUser!);
       final accessToken = _auth0Service.getAccessToken();
 
@@ -132,9 +132,9 @@ class AuthService extends ChangeNotifier {
 
       _sessionToken = session.token;
       _currentUser = user;
-      debugPrint('✅ Session stored: ${session.token}');
+      debugPrint(' Session stored: ${session.token}');
     } catch (e) {
-      debugPrint('❌ Error storing Auth0 session: $e');
+      debugPrint(' Error storing Auth0 session: $e');
     }
   }
 
@@ -142,12 +142,12 @@ class AuthService extends ChangeNotifier {
   Future<void> _clearStoredSession() async {
     try {
       if (_sessionToken != null) {
-        debugPrint('🗑️ Clearing stored session: $_sessionToken');
+        debugPrint(' Clearing stored session: $_sessionToken');
         await _sessionStorage.invalidateSession(_sessionToken!);
         _sessionToken = null;
       }
     } catch (e) {
-      debugPrint('❌ Error clearing stored session: $e');
+      debugPrint(' Error clearing stored session: $e');
     }
   }
 
@@ -235,19 +235,19 @@ class AuthService extends ChangeNotifier {
 
   /// Handle callback after authentication redirect
   Future<bool> handleCallback({String? callbackUrl}) async {
-    debugPrint('🔄 AuthService.handleCallback called with URL: $callbackUrl');
+    debugPrint(' AuthService.handleCallback called with URL: $callbackUrl');
     if (kIsWeb) {
-      debugPrint('🔄 Calling Auth0Service.handleRedirectCallback...');
+      debugPrint(' Calling Auth0Service.handleRedirectCallback...');
       final success = await _auth0Service.handleRedirectCallback();
-      debugPrint('📋 Auth0Service.handleRedirectCallback returned: $success');
+      debugPrint(' Auth0Service.handleRedirectCallback returned: $success');
 
       if (success) {
           debugPrint('[AuthService] Callback successful, checking auth status and loading services...');
         // After successful callback handling, check auth status and load services
         await _checkAuthStatus();
-        debugPrint('🔐 Final auth state after callback: ${isAuthenticated.value}');
+        debugPrint(' Final auth state after callback: ${isAuthenticated.value}');
       } else {
-        debugPrint('❌ Callback failed');
+        debugPrint(' Callback failed');
       }
       return success;
     } else {
@@ -290,3 +290,4 @@ class AuthService extends ChangeNotifier {
     }
   }
 }
+

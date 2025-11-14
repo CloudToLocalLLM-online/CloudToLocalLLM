@@ -41,7 +41,7 @@ class Auth0WebService implements Auth0Service {
       await _waitForAuth0Client();
     } catch (e) {
       debugPrint(
-        '⚠️ Auth0 client not ready during initialization, will retry when needed: $e',
+        ' Auth0 client not ready during initialization, will retry when needed: $e',
       );
       // Don't throw - we'll check again when login is called
     }
@@ -51,7 +51,7 @@ class Auth0WebService implements Auth0Service {
     try {
       await checkAuthStatus();
     } catch (e) {
-      debugPrint('⚠️ Initial auth status check failed: $e');
+      debugPrint(' Initial auth status check failed: $e');
     }
   }
 
@@ -88,11 +88,11 @@ class Auth0WebService implements Auth0Service {
         final isReady = auth0Bridge!.isInitialized();
         if (isReady) {
           _clientReady = true;
-          debugPrint('✅ Auth0 client is ready');
+          debugPrint(' Auth0 client is ready');
           return;
         }
       } catch (e) {
-        debugPrint('⚠️ Auth0 client check error: $e');
+        debugPrint(' Auth0 client check error: $e');
       }
       
       await Future.delayed(const Duration(milliseconds: 100));
@@ -105,7 +105,7 @@ class Auth0WebService implements Auth0Service {
   Future<void> _ensureClientReady() async {
     // Always ensure bridge is ready
     if (!_bridgeReady) {
-      debugPrint('🔄 Waiting for Auth0 bridge...');
+      debugPrint(' Waiting for Auth0 bridge...');
       await _waitForAuth0Bridge();
     }
 
@@ -116,12 +116,12 @@ class Auth0WebService implements Auth0Service {
     }
 
     try {
-      debugPrint('🔄 Checking if Auth0 client is ready...');
+      debugPrint(' Checking if Auth0 client is ready...');
       final isReady = auth0Bridge!.isInitialized();
-      debugPrint('🔍 Auth0 client initialized check result: $isReady');
+      debugPrint(' Auth0 client initialized check result: $isReady');
       if (isReady) {
         _clientReady = true;
-        debugPrint('✅ Auth0 client is ready');
+        debugPrint(' Auth0 client is ready');
         return;
       } else {
         // Client not ready, try the full wait
@@ -130,13 +130,13 @@ class Auth0WebService implements Auth0Service {
         await _waitForAuth0Client();
       }
     } catch (e) {
-      debugPrint('⚠️ Auth0 client readiness check failed: $e');
+      debugPrint(' Auth0 client readiness check failed: $e');
       // For callback handling, try a shorter wait since Auth0 might still be initializing
       try {
         debugPrint('⏳ Retrying Auth0 client wait with shorter timeout...');
         await _waitForAuth0ClientShort();
       } catch (e2) {
-        debugPrint('⚠️ Short wait also failed: $e2');
+        debugPrint(' Short wait also failed: $e2');
         throw Exception('Auth0 client not available after retries: $e');
       }
     }
@@ -159,11 +159,11 @@ class Auth0WebService implements Auth0Service {
         final isReady = auth0Bridge!.isInitialized();
         if (isReady) {
           _clientReady = true;
-          debugPrint('✅ Auth0 client ready (short wait)');
+          debugPrint(' Auth0 client ready (short wait)');
           return;
         }
       } catch (e) {
-        debugPrint('⚠️ Auth0 client short check error: $e');
+        debugPrint(' Auth0 client short check error: $e');
       }
 
       await Future.delayed(const Duration(milliseconds: 100));
@@ -214,37 +214,37 @@ class Auth0WebService implements Auth0Service {
 
   @override
   Future<bool> handleRedirectCallback() async {
-    debugPrint('🔄 Starting Auth0 redirect callback handling...');
+    debugPrint(' Starting Auth0 redirect callback handling...');
     try {
       await _ensureClientReady();
       if (auth0Bridge == null) {
-        debugPrint('❌ Auth0 bridge not available for callback');
+        debugPrint(' Auth0 bridge not available for callback');
         return false;
       }
 
-      debugPrint('🔄 Calling Auth0 bridge handleRedirectCallback...');
+      debugPrint(' Calling Auth0 bridge handleRedirectCallback...');
       final promise = auth0Bridge!.handleRedirectCallback();
       final result = await promise.toDart;
       final resultData = result.dartify();
       debugPrint(
-        '📋 Auth0 handleRedirectCallback bridge result: $resultData',
+        ' Auth0 handleRedirectCallback bridge result: $resultData',
       );
 
       // Check if the result indicates success
       final success = resultData is Map && resultData['success'] == true;
-      debugPrint('✅ Callback success: $success');
+      debugPrint(' Callback success: $success');
 
       if (success) {
-        debugPrint('🔄 Callback successful, checking auth status...');
+        debugPrint(' Callback successful, checking auth status...');
         await checkAuthStatus();
-        debugPrint('🔐 Auth status after callback: $_isAuthenticated');
+        debugPrint(' Auth status after callback: $_isAuthenticated');
         return _isAuthenticated;
       } else {
-        debugPrint('❌ Callback failed with result: $resultData');
+        debugPrint(' Callback failed with result: $resultData');
         return false;
       }
     } catch (e) {
-      debugPrint('❌ Error handling redirect callback: $e');
+      debugPrint(' Error handling redirect callback: $e');
       return false;
     }
   }
@@ -255,7 +255,7 @@ class Auth0WebService implements Auth0Service {
       try {
         await _ensureClientReady();
       } catch (e) {
-        debugPrint('⚠️ Auth0 client not ready for auth check: $e');
+        debugPrint(' Auth0 client not ready for auth check: $e');
         _isAuthenticated = false;
         _authStateController.add(false);
         return;
@@ -303,7 +303,7 @@ class Auth0WebService implements Auth0Service {
       }
 
       if (wasAuthenticated != _isAuthenticated) {
-        debugPrint('🔐 Auth state changed: $wasAuthenticated -> $_isAuthenticated');
+        debugPrint(' Auth state changed: $wasAuthenticated -> $_isAuthenticated');
         _authStateController.add(_isAuthenticated);
       }
     } catch (e, stackTrace) {
@@ -321,4 +321,5 @@ class Auth0WebService implements Auth0Service {
     _authStateController.close();
   }
 }
+
 

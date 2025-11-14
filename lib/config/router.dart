@@ -300,11 +300,18 @@ class AppRouter {
               );
             }
             // Pass the state with query parameters to CallbackScreen
+            Map<String, String> callbackParams = state.uri.queryParameters;
+            if (callbackParams.isEmpty && kIsWeb) {
+              final baseParams = Uri.base.queryParameters;
+              if (baseParams.isNotEmpty) {
+                callbackParams = baseParams;
+              }
+            }
             debugPrint(
-              '[Router] Building CallbackScreen with query params: ${state.uri.queryParameters}',
+              '[Router] Building CallbackScreen with query params: $callbackParams',
             );
             return CallbackScreen(
-              queryParams: state.uri.queryParameters,
+              queryParams: callbackParams,
             );
           },
         ),

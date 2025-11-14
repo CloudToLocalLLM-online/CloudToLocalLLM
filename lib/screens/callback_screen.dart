@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
+import 'package:web/web.dart' as web;
 import '../services/auth_service.dart';
 import '../screens/loading_screen.dart';
 
@@ -98,7 +99,23 @@ class _CallbackScreenState extends State<CallbackScreen> {
       debugPrint(
         ' [CallbackScreen] Auth state before callback: ${authService.isAuthenticated.value}',
       );
+
+      String? originalUrl;
+      if (kIsWeb && routeParams.isNotEmpty) {
+        final queryString = Uri(queryParameters: routeParams).query;
+        final newHref =
+            '${web.window.location.origin}${web.window.location.pathname}?$queryString';
+        originalUrl = web.window.location.href;
+        web.window.history.replaceState(null, web.document.title, newHref);
+      }
+
       final success = await authService.handleCallback();
+
+      if (originalUrl != null) {
+        web.window.history
+            .replaceState(null, web.document.title, originalUrl);
+      }
+
       debugPrint(' [CallbackScreen] handleCallback returned: $success');
       debugPrint(
         ' [CallbackScreen] Auth state after callback: ${authService.isAuthenticated.value}',

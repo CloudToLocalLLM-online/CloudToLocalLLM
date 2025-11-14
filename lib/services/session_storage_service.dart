@@ -75,7 +75,7 @@ class SessionStorageService {
         throw Exception('Failed to create session: ${response.statusCode}');
       }
     } catch (e) {
-      debugPrint('❌ Failed to create session: $e');
+      debugPrint(' Failed to create session: $e');
       // Return a local session for now if API is unavailable
       final session = SessionModel(
         id: _generateId(),
@@ -103,21 +103,21 @@ class SessionStorageService {
       final storedToken = prefs.getString('session_token');
 
       if (storedToken == null || storedToken.isEmpty) {
-        debugPrint('ℹ️ No stored session token found');
+        debugPrint(' No stored session token found');
         return null;
       }
 
-      debugPrint('🔍 Found stored session token, validating...');
+      debugPrint(' Found stored session token, validating...');
       final session = await validateSession(storedToken);
 
       if (session == null) {
-        debugPrint('❌ Stored session token is invalid, clearing...');
+        debugPrint(' Stored session token is invalid, clearing...');
         await prefs.remove('session_token');
       }
 
       return session;
     } catch (e) {
-      debugPrint('❌ Error getting current session: $e');
+      debugPrint(' Error getting current session: $e');
       return null;
     }
   }
@@ -127,9 +127,9 @@ class SessionStorageService {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('session_token', token);
-      debugPrint('💾 Stored session token locally');
+      debugPrint(' Stored session token locally');
     } catch (e) {
-      debugPrint('❌ Failed to store session token: $e');
+      debugPrint(' Failed to store session token: $e');
     }
   }
 
@@ -138,9 +138,9 @@ class SessionStorageService {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove('session_token');
-      debugPrint('🗑️ Cleared stored session token');
+      debugPrint(' Cleared stored session token');
     } catch (e) {
-      debugPrint('❌ Failed to clear session token: $e');
+      debugPrint(' Failed to clear session token: $e');
     }
   }
 
@@ -183,7 +183,7 @@ class SessionStorageService {
         throw Exception('Failed to validate session: ${response.statusCode}');
       }
     } catch (e) {
-      debugPrint('❌ Failed to validate session: $e');
+      debugPrint(' Failed to validate session: $e');
       return null;
     }
   }
@@ -203,9 +203,9 @@ class SessionStorageService {
         throw Exception('Failed to invalidate session: ${response.statusCode}');
       }
 
-      debugPrint('✅ Session invalidated: $token');
+      debugPrint(' Session invalidated: $token');
     } catch (e) {
-      debugPrint('❌ Failed to invalidate session remotely: $e');
+      debugPrint(' Failed to invalidate session remotely: $e');
       // Local storage is already cleared, so session is effectively invalidated
     }
   }
@@ -225,7 +225,7 @@ class SessionStorageService {
         throw Exception('Failed to cleanup sessions: ${response.statusCode}');
       }
     } catch (e) {
-      debugPrint('❌ Failed to cleanup sessions: $e');
+      debugPrint(' Failed to cleanup sessions: $e');
     }
   }
 
@@ -243,3 +243,4 @@ class SessionStorageService {
     return hash.toString().substring(0, 32);
   }
 }
+
