@@ -30,6 +30,14 @@ class _LoginScreenState extends State<LoginScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final authService = context.read<AuthService>();
       authService.isAuthenticated.addListener(_onAuthStateChanged);
+
+      // Check if this is a callback URL and redirect to callback route
+      if (authService.auth0Service.isCallbackUrl()) {
+        debugPrint('[LoginScreen] Detected callback URL, redirecting to callback route');
+        if (mounted) {
+          context.go('/callback');
+        }
+      }
     });
   }
 
