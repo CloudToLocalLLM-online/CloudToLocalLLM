@@ -23,7 +23,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  FLUTTER_VERSION: '3.24.0'
+  FLUTTER_VERSION: '3.27.1'
 
 jobs:
   # Extract version information
@@ -136,16 +136,25 @@ jobs:
           echo "Release Name: $RELEASE_NAME"
         fi
 
-  # Build desktop application for Windows
+  # Build desktop application using matrix strategy
   build-desktop:
-    name: Build Windows Desktop App
-    runs-on: [self-hosted, windows]
+    name: Build ${{ matrix.platform }} Desktop App
+    runs-on: ${{ matrix.os }}
     needs: version-info
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: windows
+            os: windows-latest
+            build-command: flutter build windows --release
+            artifact-name: windows-desktop
     
     steps:
     - name: Debug - Job started
       run: |
         Write-Host "=== Build Desktop Job Started ===" -ForegroundColor Green
+        Write-Host "Platform: ${{ matrix.platform }}" -ForegroundColor Cyan
         Write-Host "Version: ${{ needs.version-info.outputs.version }}" -ForegroundColor Cyan
         Write-Host "Is Release: ${{ needs.version-info.outputs.is_release }}" -ForegroundColor Cyan
         Write-Host "Runner OS: ${{ runner.os }}" -ForegroundColor Cyan
@@ -154,36 +163,92 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
       
-    - name: Cache Flutter dependencies
-      uses: actions/cache@v3
+    - name: Setup Flutter SDK
+      uses: subosito/flutter-action@v2
+      with:
+        flutter-version: ${{ env.FLUTTER_VERSION }}
+        channel: 'stable'
+        cache: true
+        cache-key: 'flutter-:os:-:channel:-:version:-:arch:-:hash:'
+        cache-path: '${{ runner.tool_cache }}/flutter/:channel:-:version:-:arch:'
+      
+    - name: Cache Flutter pub dependencies
+      uses: actions/cache@v4
       with:
         path: |
           ${{ runner.temp }}\.pub-cache
+          ${{ runner.temp }}\pub-cache
+          ~\.pub-cache
           .dart_tool
-        key: windows-flutter-${{ hashFiles('**/pubspec.lock') }}
+        key: ${{ matrix.platform }}-flutter-pub-${{ hashFiles('**/pubspec.lock') }}
         restore-keys: |
-          windows-flutter-
+          ${{ matrix.platform }}-flutter-pub-${{ hashFiles('**/pubspec.lock') }}
+          ${{ matrix.platform }}-flutter-pub-
+          flutter-pub-
+      continue-on-error: true
+      
+    - name: Cache Chocolatey packages
+      uses: actions/cache@v4
+      with:
+        path: |
+          ${{ runner.temp }}\chocolatey
+          C:\ProgramData\chocolatey\lib
+          C:\ProgramData\chocolatey\bin
+        key: ${{ runner.os }}-chocolatey-innosetup-${{ hashFiles('.github/workflows/build-release.yml') }}
+        restore-keys: |
+          ${{ runner.os }}-chocolatey-innosetup-
+          ${{ runner.os }}-chocolatey-
       continue-on-error: true
         
-    - name: Verify Windows build environment
+    - name: Verify all build dependencies
       run: |
-        Write-Host "Checking Windows build prerequisites..."
-        flutter --version
-        flutter config --enable-windows-desktop
-        flutter doctor -v
-      shell: powershell
-      
-    - name: Get Flutter dependencies
-      run: flutter pub get
-      shell: powershell
-      
-    - name: Build Windows desktop application
-      run: flutter build windows --release
-      shell: powershell
-      
-    - name: Verify Inno Setup
-      run: |
-        Write-Host "Checking for Inno Setup..."
+        Write-Host "=== Verifying Build Dependencies ===" -ForegroundColor Green
+        Write-Host ""
+        
+        $errors = @()
+        $warnings = @()
+        
+        # Check Flutter
+        Write-Host "Checking Flutter..." -ForegroundColor Cyan
+        try {
+          $flutterVersion = flutter --version 2>&1 | Out-String
+          if ($LASTEXITCODE -eq 0) {
+            Write-Host "✓ Flutter is installed" -ForegroundColor Green
+            Write-Host "  Version: $($flutterVersion.Split("`n")[0].Trim())" -ForegroundColor Gray
+            
+            # Run Flutter doctor for detailed diagnostics
+            Write-Host ""
+            Write-Host "Running Flutter doctor for detailed diagnostics..." -ForegroundColor Cyan
+            flutter doctor -v
+            
+            if ($LASTEXITCODE -ne 0) {
+              $warnings += "Flutter doctor reported issues (non-critical)"
+            }
+          } else {
+            $errors += "Flutter command failed with exit code: $LASTEXITCODE"
+          }
+        } catch {
+          $errors += "Flutter is not installed or not in PATH: $_"
+        }
+        Write-Host ""
+        
+        # Check Git
+        Write-Host "Checking Git..." -ForegroundColor Cyan
+        try {
+          $gitVersion = git --version 2>&1
+          if ($LASTEXITCODE -eq 0) {
+            Write-Host "✓ Git is installed" -ForegroundColor Green
+            Write-Host "  Version: $gitVersion" -ForegroundColor Gray
+          } else {
+            $errors += "Git command failed with exit code: $LASTEXITCODE"
+          }
+        } catch {
+          $errors += "Git is not installed or not in PATH: $_"
+        }
+        Write-Host ""
+        
+        # Check Inno Setup (will be installed in next step if missing)
+        Write-Host "Checking Inno Setup..." -ForegroundColor Cyan
         $innoSetupPaths = @(
           "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe",
           "${env:ProgramFiles}\Inno Setup 6\ISCC.exe",
@@ -200,12 +265,283 @@ jobs:
         }
         
         if ($innoPath) {
-          Write-Host "Inno Setup found at: $innoPath"
-          echo "INNO_SETUP_PATH=$innoPath" >> $env:GITHUB_ENV
+          Write-Host "✓ Inno Setup is installed" -ForegroundColor Green
+          Write-Host "  Path: $innoPath" -ForegroundColor Gray
+          
+          # Try to get version
+          try {
+            $innoVersion = & $innoPath /? 2>&1 | Select-Object -First 1
+            if ($innoVersion) {
+              Write-Host "  Version: $innoVersion" -ForegroundColor Gray
+            }
+          } catch {
+            Write-Host "  (Version information unavailable)" -ForegroundColor Gray
+          }
         } else {
-          Write-Error "Inno Setup not found. The runner must have Inno Setup installed."
-          Write-Host "Install via Chocolatey: choco install innosetup -y"
-          Write-Host "Or download from: https://jrsoftware.org/isdl.php"
+          Write-Host "⚠ Inno Setup not found (will be installed automatically)" -ForegroundColor Yellow
+          $warnings += "Inno Setup will be installed in the next step"
+        }
+        Write-Host ""
+        
+        # Check Chocolatey (for Inno Setup installation)
+        Write-Host "Checking Chocolatey..." -ForegroundColor Cyan
+        try {
+          $chocoVersion = choco --version 2>&1
+          if ($LASTEXITCODE -eq 0) {
+            Write-Host "✓ Chocolatey is installed" -ForegroundColor Green
+            Write-Host "  Version: $chocoVersion" -ForegroundColor Gray
+          } else {
+            Write-Host "⚠ Chocolatey not available (will try Winget)" -ForegroundColor Yellow
+            $warnings += "Chocolatey not available, will use Winget as fallback"
+          }
+        } catch {
+          Write-Host "⚠ Chocolatey not available (will try Winget)" -ForegroundColor Yellow
+          $warnings += "Chocolatey not available, will use Winget as fallback"
+        }
+        Write-Host ""
+        
+        # Check Winget (fallback for Inno Setup installation)
+        Write-Host "Checking Winget..." -ForegroundColor Cyan
+        try {
+          $wingetVersion = winget --version 2>&1
+          if ($LASTEXITCODE -eq 0) {
+            Write-Host "✓ Winget is installed" -ForegroundColor Green
+            Write-Host "  Version: $wingetVersion" -ForegroundColor Gray
+          } else {
+            Write-Host "⚠ Winget not available" -ForegroundColor Yellow
+            $warnings += "Winget not available"
+          }
+        } catch {
+          Write-Host "⚠ Winget not available" -ForegroundColor Yellow
+          $warnings += "Winget not available"
+        }
+        Write-Host ""
+        
+        # Summary
+        Write-Host "=== Dependency Verification Summary ===" -ForegroundColor Green
+        Write-Host ""
+        
+        if ($errors.Count -eq 0) {
+          Write-Host "✓ All critical dependencies are available" -ForegroundColor Green
+          
+          if ($warnings.Count -gt 0) {
+            Write-Host ""
+            Write-Host "Warnings:" -ForegroundColor Yellow
+            foreach ($warning in $warnings) {
+              Write-Host "  ⚠ $warning" -ForegroundColor Yellow
+            }
+          }
+          
+          Write-Host ""
+          Write-Host "Dependency versions:" -ForegroundColor Cyan
+          Write-Host "  - Flutter: $($flutterVersion.Split("`n")[0].Trim())" -ForegroundColor Gray
+          Write-Host "  - Git: $gitVersion" -ForegroundColor Gray
+          if ($innoPath) {
+            Write-Host "  - Inno Setup: Installed at $innoPath" -ForegroundColor Gray
+          } else {
+            Write-Host "  - Inno Setup: Will be installed" -ForegroundColor Gray
+          }
+          
+          Write-Host ""
+          Write-Host "Build can proceed" -ForegroundColor Green
+        } else {
+          Write-Host "✗ Critical dependencies are missing" -ForegroundColor Red
+          Write-Host ""
+          Write-Host "Errors:" -ForegroundColor Red
+          foreach ($error in $errors) {
+            Write-Host "  ✗ $error" -ForegroundColor Red
+          }
+          
+          Write-Host ""
+          Write-Host "Please ensure the following dependencies are installed:" -ForegroundColor Yellow
+          Write-Host "  - Flutter SDK ${{ env.FLUTTER_VERSION }} or compatible" -ForegroundColor Yellow
+          Write-Host "  - Git (any recent version)" -ForegroundColor Yellow
+          Write-Host "  - Inno Setup 5 or 6 (will be auto-installed if package manager available)" -ForegroundColor Yellow
+          
+          Write-Host ""
+          Write-Error "Build cannot proceed due to missing dependencies"
+          exit 1
+        }
+      shell: powershell
+        
+    - name: Configure Windows desktop support
+      run: |
+        Write-Host "Enabling Windows desktop support..."
+        flutter config --enable-windows-desktop
+      shell: powershell
+      
+    - name: Get Flutter dependencies
+      run: flutter pub get
+      shell: powershell
+      
+    - name: Build Windows desktop application
+      run: flutter build windows --release
+      shell: powershell
+      
+    - name: Install Inno Setup
+      run: |
+        Write-Host "=== Installing Inno Setup ===" -ForegroundColor Green
+        Write-Host ""
+        
+        # Check if Inno Setup is already installed
+        $innoSetupPaths = @(
+          "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe",
+          "${env:ProgramFiles}\Inno Setup 6\ISCC.exe",
+          "${env:ProgramFiles(x86)}\Inno Setup 5\ISCC.exe",
+          "${env:ProgramFiles}\Inno Setup 5\ISCC.exe"
+        )
+        
+        $innoPath = $null
+        foreach ($path in $innoSetupPaths) {
+          if (Test-Path $path) {
+            $innoPath = $path
+            Write-Host "Inno Setup already installed at: $innoPath" -ForegroundColor Cyan
+            break
+          }
+        }
+        
+        # Install if not found
+        if (-not $innoPath) {
+          Write-Host "Inno Setup not found. Installing..." -ForegroundColor Yellow
+          Write-Host ""
+          
+          # Try Chocolatey first
+          Write-Host "Attempting installation via Chocolatey..." -ForegroundColor Cyan
+          try {
+            $chocoInstalled = Get-Command choco -ErrorAction SilentlyContinue
+            if ($chocoInstalled) {
+              Write-Host "Chocolatey found. Installing Inno Setup..."
+              choco install innosetup -y --no-progress
+              
+              if ($LASTEXITCODE -eq 0) {
+                Write-Host "Inno Setup installed successfully via Chocolatey" -ForegroundColor Green
+                
+                # Verify installation
+                foreach ($path in $innoSetupPaths) {
+                  if (Test-Path $path) {
+                    $innoPath = $path
+                    break
+                  }
+                }
+              } else {
+                Write-Host "Chocolatey installation failed with exit code: $LASTEXITCODE" -ForegroundColor Yellow
+              }
+            } else {
+              Write-Host "Chocolatey not found on system" -ForegroundColor Yellow
+            }
+          } catch {
+            Write-Host "Chocolatey installation failed: $_" -ForegroundColor Yellow
+          }
+          
+          # Fallback to Winget if Chocolatey failed
+          if (-not $innoPath) {
+            Write-Host ""
+            Write-Host "Attempting installation via Winget..." -ForegroundColor Cyan
+            try {
+              $wingetInstalled = Get-Command winget -ErrorAction SilentlyContinue
+              if ($wingetInstalled) {
+                Write-Host "Winget found. Installing Inno Setup..."
+                winget install --id JRSoftware.InnoSetup --silent --accept-source-agreements --accept-package-agreements
+                
+                if ($LASTEXITCODE -eq 0) {
+                  Write-Host "Inno Setup installed successfully via Winget" -ForegroundColor Green
+                  
+                  # Verify installation
+                  foreach ($path in $innoSetupPaths) {
+                    if (Test-Path $path) {
+                      $innoPath = $path
+                      break
+                    }
+                  }
+                } else {
+                  Write-Host "Winget installation failed with exit code: $LASTEXITCODE" -ForegroundColor Yellow
+                }
+              } else {
+                Write-Host "Winget not found on system" -ForegroundColor Yellow
+              }
+            } catch {
+              Write-Host "Winget installation failed: $_" -ForegroundColor Yellow
+            }
+          }
+          
+          # Final check
+          if (-not $innoPath) {
+            Write-Error "Failed to install Inno Setup via Chocolatey or Winget"
+            Write-Host ""
+            Write-Host "Manual installation options:" -ForegroundColor Yellow
+            Write-Host "1. Chocolatey: choco install innosetup -y"
+            Write-Host "2. Winget: winget install JRSoftware.InnoSetup"
+            Write-Host "3. Direct download: https://jrsoftware.org/isdl.php"
+            exit 1
+          }
+        }
+        
+        Write-Host ""
+        Write-Host "Inno Setup installation verified successfully" -ForegroundColor Green
+      shell: powershell
+      
+    - name: Detect Inno Setup path and set environment variable
+      run: |
+        Write-Host "=== Detecting Inno Setup Installation Path ===" -ForegroundColor Green
+        Write-Host ""
+        
+        $innoSetupPaths = @(
+          "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe",
+          "${env:ProgramFiles}\Inno Setup 6\ISCC.exe",
+          "${env:ProgramFiles(x86)}\Inno Setup 5\ISCC.exe",
+          "${env:ProgramFiles}\Inno Setup 5\ISCC.exe"
+        )
+        
+        $innoPath = $null
+        foreach ($path in $innoSetupPaths) {
+          if (Test-Path $path) {
+            $innoPath = $path
+            Write-Host "Inno Setup found at: $innoPath" -ForegroundColor Cyan
+            break
+          }
+        }
+        
+        if (-not $innoPath) {
+          Write-Error "Inno Setup executable not found after installation"
+          Write-Host "Searched paths:" -ForegroundColor Yellow
+          foreach ($path in $innoSetupPaths) {
+            Write-Host "  - $path"
+          }
+          exit 1
+        }
+        
+        # Set environment variable for subsequent steps
+        echo "INNO_SETUP_PATH=$innoPath" >> $env:GITHUB_ENV
+        Write-Host ""
+        Write-Host "Environment variable INNO_SETUP_PATH set to: $innoPath" -ForegroundColor Green
+      shell: powershell
+      
+    - name: Verify Inno Setup is accessible
+      run: |
+        Write-Host "=== Verifying Inno Setup Accessibility ===" -ForegroundColor Green
+        Write-Host ""
+        
+        if (-not $env:INNO_SETUP_PATH) {
+          Write-Error "INNO_SETUP_PATH environment variable is not set"
+          exit 1
+        }
+        
+        if (-not (Test-Path $env:INNO_SETUP_PATH)) {
+          Write-Error "Inno Setup executable not found at: $env:INNO_SETUP_PATH"
+          exit 1
+        }
+        
+        Write-Host "Inno Setup path: $env:INNO_SETUP_PATH" -ForegroundColor Cyan
+        
+        # Try to get version information
+        try {
+          Write-Host ""
+          Write-Host "Inno Setup version information:" -ForegroundColor Cyan
+          & $env:INNO_SETUP_PATH /? 2>&1 | Select-Object -First 5
+          Write-Host ""
+          Write-Host "Inno Setup is accessible and ready to use" -ForegroundColor Green
+        } catch {
+          Write-Error "Failed to execute Inno Setup: $_"
           exit 1
         }
       shell: powershell
@@ -294,7 +630,7 @@ jobs:
     - name: Upload build artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: windows-desktop
+        name: ${{ matrix.artifact-name }}
         path: |
           ${{ env.PACKAGE_FILE }}
           ${{ env.CHECKSUM_FILE }}
@@ -320,7 +656,7 @@ jobs:
       uses: actions/download-artifact@v4
       with:
         path: artifacts/
-        pattern: windows-desktop
+        pattern: '*-desktop'
         merge-multiple: true
         
     - name: Prepare release assets
