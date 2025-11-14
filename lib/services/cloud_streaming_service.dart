@@ -70,7 +70,11 @@ class CloudStreamingService extends StreamingService {
       final stopwatch = Stopwatch()..start();
 
       // Test basic connectivity first
-      final response = await _dio.get('/api/version', options: Options(headers: _getHeaders()));
+      final headers = await _getHeaders();
+      final response = await _dio.get(
+        '/api/version',
+        options: Options(headers: headers),
+      );
 
       stopwatch.stop();
 
@@ -166,12 +170,14 @@ class CloudStreamingService extends StreamingService {
 
       debugPrint('☁ [CloudStreaming] Starting stream for model: $model');
 
+      final baseHeaders = await _getHeaders();
+
       final response = await _dio.post(
         '/api/chat',
         data: requestBody,
         options: Options(
           headers: {
-            ..._getHeaders(),
+            ...baseHeaders,
             'Accept': 'application/x-ndjson',
           },
           responseType: ResponseType.stream,
@@ -270,7 +276,11 @@ class CloudStreamingService extends StreamingService {
     }
 
     try {
-      final response = await _dio.get('/api/tags', options: Options(headers: _getHeaders()));
+      final headers = await _getHeaders();
+      final response = await _dio.get(
+        '/api/tags',
+        options: Options(headers: headers),
+      );
 
       if (response.statusCode == 200) {
         final data = response.data;
@@ -295,7 +305,7 @@ class CloudStreamingService extends StreamingService {
   }
 
   /// Get headers for HTTP requests
-  Map<String, String> _getHeaders() {
+  Future<Map<String, String>> _getHeaders() async {
     final headers = <String, String>{
       'Content-Type': 'application/json',
       'Accept': 'application/json',
@@ -303,8 +313,10 @@ class CloudStreamingService extends StreamingService {
 
     // Add authentication if available
     if (_authService.isAuthenticated.value) {
-      final accessToken = _authService.getAccessToken();
-      headers['Authorization'] = 'Bearer $accessToken';
+      final accessToken = await _authService.getAccessToken();
+      if (accessToken != null && accessToken.isNotEmpty) {
+        headers['Authorization'] = 'Bearer $accessToken';
+      }
     }
 
     return headers;

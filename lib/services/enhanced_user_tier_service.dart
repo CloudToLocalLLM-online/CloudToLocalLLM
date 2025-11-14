@@ -157,10 +157,18 @@ class EnhancedUserTierService extends ChangeNotifier {
     try {
       debugPrint(' [UserTier] Checking user tier...');
 
+      final accessToken = await _authService.getAccessToken();
+      if (accessToken == null || accessToken.isEmpty) {
+        debugPrint(' [UserTier] No access token available, falling back to free tier');
+        _setFreeTierDefaults();
+        notifyListeners();
+        return;
+      }
+
       final response = await _dio.get(
         '/api/user/tier',
         options: Options(headers: {
-          'Authorization': 'Bearer ${_authService.getAccessToken()}',
+          'Authorization': 'Bearer $accessToken',
           'Content-Type': 'application/json',
         }),
       );
@@ -240,6 +248,12 @@ class EnhancedUserTierService extends ChangeNotifier {
     try {
       debugPrint(' [UserTier] Requesting container allocation...');
 
+      final accessToken = await _authService.getAccessToken();
+      if (accessToken == null || accessToken.isEmpty) {
+        debugPrint(' [UserTier] No access token available, cannot request container');
+        return false;
+      }
+
       final response = await _dio.post(
         '/api/container/allocate',
         data: {
@@ -247,7 +261,7 @@ class EnhancedUserTierService extends ChangeNotifier {
           'container_type': _isPremiumTier ? 'persistent' : 'ephemeral',
         },
         options: Options(headers: {
-          'Authorization': 'Bearer ${_authService.getAccessToken()}',
+          'Authorization': 'Bearer $accessToken',
           'Content-Type': 'application/json',
         }),
       );
@@ -288,11 +302,17 @@ class EnhancedUserTierService extends ChangeNotifier {
     try {
       debugPrint(' [UserTier] Releasing container: $_containerId');
 
+      final accessToken = await _authService.getAccessToken();
+      if (accessToken == null || accessToken.isEmpty) {
+        debugPrint(' [UserTier] No access token available, cannot release container');
+        return false;
+      }
+
       final response = await _dio.post(
         '/api/container/release',
         data: {'container_id': _containerId},
         options: Options(headers: {
-          'Authorization': 'Bearer ${_authService.getAccessToken()}',
+          'Authorization': 'Bearer $accessToken',
           'Content-Type': 'application/json',
         }),
       );

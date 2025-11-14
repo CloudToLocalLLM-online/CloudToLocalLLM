@@ -45,12 +45,14 @@ class StreamingProxyService extends ChangeNotifier {
   bool get isLoading => _isLoading;
 
   /// Get HTTP headers with authentication
-  Map<String, String> _getHeaders() {
+  Future<Map<String, String>> _getHeaders() async {
     final headers = <String, String>{'Content-Type': 'application/json'};
 
     if (_authService != null) {
-      final accessToken = _authService.getAccessToken();
-      headers['Authorization'] = 'Bearer $accessToken';
+      final accessToken = await _authService.getAccessToken();
+      if (accessToken != null && accessToken.isNotEmpty) {
+        headers['Authorization'] = 'Bearer $accessToken';
+      }
     }
 
     return headers;
@@ -66,7 +68,11 @@ class StreamingProxyService extends ChangeNotifier {
         debugPrint('[StreamingProxy] Starting proxy...');
       }
 
-      final response = await _dio.post('/api/proxy/start', options: Options(headers: _getHeaders()));
+      final headers = await _getHeaders();
+      final response = await _dio.post(
+        '/api/proxy/start',
+        options: Options(headers: headers),
+      );
 
       if (response.statusCode == 200) {
         final data = response.data;
@@ -111,7 +117,11 @@ class StreamingProxyService extends ChangeNotifier {
         debugPrint('[StreamingProxy] Stopping proxy...');
       }
 
-      final response = await _dio.post('/api/proxy/stop', options: Options(headers: _getHeaders()));
+      final headers = await _getHeaders();
+      final response = await _dio.post(
+        '/api/proxy/stop',
+        options: Options(headers: headers),
+      );
 
       if (response.statusCode == 200) {
         final data = response.data;
@@ -152,7 +162,11 @@ class StreamingProxyService extends ChangeNotifier {
       _setLoading(true);
       _clearError();
 
-      final response = await _dio.get('/api/proxy/status', options: Options(headers: _getHeaders()));
+      final headers = await _getHeaders();
+      final response = await _dio.get(
+        '/api/proxy/status',
+        options: Options(headers: headers),
+      );
 
       if (response.statusCode == 200) {
         final data = response.data;

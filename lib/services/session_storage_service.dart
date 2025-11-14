@@ -44,7 +44,8 @@ class SessionStorageService {
         'name': user.name,
         'nickname': user.nickname,
         'picture': user.picture,
-        'email_verified': user.emailVerified,
+        'email_verified': user.emailVerified != null,
+        'email_verified_at': user.emailVerified?.toIso8601String(),
       },
     };
 
