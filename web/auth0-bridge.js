@@ -3,6 +3,7 @@
 
 const API_AUDIENCE = 'https://api.cloudtolocalllm.online';
 const CALLBACK_STORAGE_KEY = 'auth0_callback_params';
+const CALLBACK_FORWARDED_KEY = 'auth0_callback_forwarded';
 
 function storeCallbackParams() {
   try {
@@ -16,6 +17,7 @@ function storeCallbackParams() {
     ) {
       window.sessionStorage.setItem(CALLBACK_STORAGE_KEY, search);
       console.log(' Stored callback params in sessionStorage:', search);
+      window.sessionStorage.removeItem(CALLBACK_FORWARDED_KEY);
     }
   } catch (err) {
     console.warn('Unable to store callback params in sessionStorage:', err);
@@ -26,9 +28,24 @@ function clearStoredCallbackParams() {
   try {
     if (!window || !window.sessionStorage) return;
     window.sessionStorage.removeItem(CALLBACK_STORAGE_KEY);
+    window.sessionStorage.removeItem(CALLBACK_FORWARDED_KEY);
     console.log(' Cleared callback params from sessionStorage');
   } catch (err) {
     console.warn('Unable to clear callback params in sessionStorage:', err);
+  }
+}
+
+function getStoredCallbackSearch() {
+  try {
+    if (!window || !window.sessionStorage) return null;
+    const stored = window.sessionStorage.getItem(CALLBACK_STORAGE_KEY);
+    if (!stored || stored.length === 0) {
+      return null;
+    }
+    return stored.startsWith('?') ? stored : `?${stored}`;
+  } catch (err) {
+    console.warn('Unable to read callback params from sessionStorage:', err);
+    return null;
   }
 }
 
@@ -98,17 +115,34 @@ window.auth0Bridge = {
     }
 
     try {
-      // Check URL parameters
-      const urlParams = new URLSearchParams(window.location.search);
+      let searchToUse = window.location.search || '';
+      const inlineParamsPresent =
+        searchToUse.includes('code=') ||
+        searchToUse.includes('state=') ||
+        searchToUse.includes('error=');
+
+      let usingStoredParams = false;
+      if (!inlineParamsPresent) {
+        const storedSearch = getStoredCallbackSearch();
+        if (storedSearch) {
+          searchToUse = storedSearch;
+          usingStoredParams = true;
+          console.log(' Using stored callback params for Auth0 redirect callback:', storedSearch);
+        }
+      }
+
+      if (!searchToUse) {
+        console.log(' No auth callback detected in URL or sessionStorage');
+        return { success: false, error: 'No auth callback detected' };
+      }
+
+      const urlParams = new URLSearchParams(searchToUse);
 
       // Handle error callback
       if (urlParams.has('error')) {
         const error = urlParams.get('error');
         const errorDescription = urlParams.get('error_description') || 'Authentication failed';
         console.error(' Auth0 error in callback:', error, errorDescription);
-
-        // Clean up URL
-        window.history.replaceState({}, document.title, window.location.pathname);
 
         return {
           success: false,
@@ -120,10 +154,16 @@ window.auth0Bridge = {
       // Handle success callback
       if (urlParams.has('code') || urlParams.has('state')) {
         console.log(' Processing Auth0 callback...');
-        const result = await window.auth0Client.handleRedirectCallback();
+        const baseUrl = window.location.origin + window.location.pathname;
+        const hash = window.location.hash || '';
+        const callbackUrl = usingStoredParams
+          ? `${baseUrl}${searchToUse}${hash}`
+          : window.location.href;
+
+        const result = await window.auth0Client.handleRedirectCallback(callbackUrl);
         console.log(' Auth0 callback processed successfully');
 
-        // Clean up URL
+        // Clean up URL and stored params only after success
         window.history.replaceState({}, document.title, window.location.pathname);
         clearStoredCallbackParams();
 
@@ -133,12 +173,10 @@ window.auth0Bridge = {
         };
       }
 
+      console.log(' No auth callback detected in URL parameters');
       return { success: false, error: 'No auth callback detected' };
     } catch (error) {
       console.error('Auth0 redirect callback error:', error);
-      // Clean up URL even on error
-      window.history.replaceState({}, document.title, window.location.pathname);
-      clearStoredCallbackParams();
       return {
         success: false,
         error: error.message || error.toString()

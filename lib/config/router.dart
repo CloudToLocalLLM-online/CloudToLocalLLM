@@ -31,6 +31,7 @@ import '../screens/marketing/download_screen.dart';
 import '../screens/marketing/documentation_screen.dart';
 
 const _callbackStorageKey = 'auth0_callback_params';
+const _callbackForwardedKey = 'auth0_callback_forwarded';
 
 /// Utility function to get the current hostname in web environment
 String _getCurrentHostname() {
@@ -434,6 +435,8 @@ class AppRouter {
 
         // For web, get query parameters from current browser location
         Map<String, String> queryParams;
+        bool callbackParamsFromSessionStorage = false;
+        bool callbackAlreadyForwarded = false;
         if (kIsWeb) {
           final currentUri = Uri.base;
           queryParams = currentUri.queryParameters;
@@ -443,6 +446,8 @@ class AppRouter {
           if (queryParams.isEmpty) {
             try {
               final sessionStorage = web.window.sessionStorage;
+              callbackAlreadyForwarded =
+                  sessionStorage.getItem(_callbackForwardedKey) == 'true';
               final storedParams = sessionStorage.getItem(_callbackStorageKey);
               if (storedParams != null && storedParams.isNotEmpty) {
                 final sanitized = storedParams.startsWith('?')
@@ -451,17 +456,29 @@ class AppRouter {
                 final storedQueryParams = Uri.splitQueryString(sanitized);
                 if (storedQueryParams.isNotEmpty) {
                   queryParams = storedQueryParams;
+                  callbackParamsFromSessionStorage = true;
                   debugPrint(
                     '[Router] Loaded callback params from sessionStorage: $storedQueryParams',
                   );
+                  if (callbackAlreadyForwarded) {
+                    debugPrint(
+                      '[Router] Callback params previously forwarded - waiting for JS bridge to consume them',
+                    );
+                  }
                 }
-                debugPrint('[Router] Removing stored callback params from sessionStorage');
-                sessionStorage.removeItem(_callbackStorageKey);
               } else {
                 debugPrint('[Router] No callback params found in sessionStorage');
               }
             } catch (e) {
               debugPrint('[Router] Error reading sessionStorage callback params: $e');
+            }
+          } else {
+            try {
+              final sessionStorage = web.window.sessionStorage;
+              callbackAlreadyForwarded =
+                  sessionStorage.getItem(_callbackForwardedKey) == 'true';
+            } catch (e) {
+              debugPrint('[Router] Error reading callback forwarded flag: $e');
             }
           }
         } else {
@@ -470,13 +487,16 @@ class AppRouter {
               : (baseUri.queryParameters.isNotEmpty ? baseUri.queryParameters : {});
         }
 
-        final hasCallbackParams = kIsWeb &&
-            (queryParams.containsKey('code') || queryParams.containsKey('state'));
+        final rawHasCallbackParams =
+            queryParams.containsKey('code') || queryParams.containsKey('state');
+        final hasCallbackParams = kIsWeb && rawHasCallbackParams && !callbackAlreadyForwarded;
 
-          debugPrint('[Router] hasCallbackParams: $hasCallbackParams');
-          debugPrint('[Router] queryParams keys: ${queryParams.keys.toList()}');
-          debugPrint('[Router] hasCallbackParams: $hasCallbackParams');
-          debugPrint('[Router] queryParams keys: ${queryParams.keys.toList()}');
+        debugPrint('[Router] hasCallbackParams: $hasCallbackParams');
+        debugPrint('[Router] queryParams keys: ${queryParams.keys.toList()}');
+        debugPrint('[Router] callbackAlreadyForwarded: $callbackAlreadyForwarded');
+        debugPrint(
+          '[Router] callbackParamsFromSessionStorage: $callbackParamsFromSessionStorage',
+        );
 
         // Use robust hostname detection
         final isAppSubdomain = _isAppSubdomain();
@@ -496,6 +516,16 @@ class AppRouter {
           debugPrint(
             '[Router] Detected Auth0 callback parameters, redirecting to /callback',
           );
+          try {
+            web.window.sessionStorage.setItem(_callbackForwardedKey, 'true');
+            if (callbackParamsFromSessionStorage) {
+              debugPrint('[Router] Marked sessionStorage callback params as forwarded');
+            } else {
+              debugPrint('[Router] Marked URL callback params as forwarded');
+            }
+          } catch (e) {
+            debugPrint('[Router] Error marking callback params forwarded: $e');
+          }
           // Preserve query parameters when redirecting to callback
           final callbackUri = Uri(
             path: '/callback',
