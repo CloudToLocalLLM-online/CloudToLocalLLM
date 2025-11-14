@@ -2,8 +2,6 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
-// Web-specific import for URL parsing (modern web APIs)
-import 'package:web/web.dart' as web;
 import '../services/auth_service.dart';
 import '../services/connection_manager_service.dart';
 import '../services/streaming_chat_service.dart';
@@ -424,38 +422,13 @@ class AppRouter {
 
         // For web, get query parameters from current browser location
         Map<String, String> queryParams;
-        debugPrint('[Router] About to check kIsWeb: $kIsWeb');
         if (kIsWeb) {
-          debugPrint('[Router] kIsWeb is true, attempting to get browser URL');
-          try {
-            // Use web package to get current URL
-            final location = web.window.location;
-            debugPrint('[Router] Got location object: $location');
-            final currentUrlString = location.href;
-            debugPrint('[Router] Raw href: $currentUrlString');
-            final currentUrl = Uri.parse(currentUrlString);
-            queryParams = currentUrl.queryParameters;
-            debugPrint('[Router] Successfully parsed URL: $currentUrlString');
-            debugPrint('[Router] Parsed query params: $queryParams');
-          } catch (e) {
-            debugPrint('[Router] Exception in web package URL parsing: $e');
-            debugPrint('[Router] Exception type: ${e.runtimeType}');
-            debugPrint('[Router] Stack trace: ${e.toString()}');
-            // Try Uri.base as fallback
-            try {
-              final baseUrl = Uri.base;
-              debugPrint('[Router] Trying Uri.base: $baseUrl');
-              debugPrint('[Router] Uri.base query params: ${baseUrl.queryParameters}');
-              queryParams = baseUrl.queryParameters;
-            } catch (e2) {
-              debugPrint('[Router] Uri.base also failed: $e2');
-              queryParams = stateUri.queryParameters.isNotEmpty
-                  ? stateUri.queryParameters
-                  : (baseUri.queryParameters.isNotEmpty ? baseUri.queryParameters : {});
-            }
-          }
+          // Use Uri.base which should contain current URL parameters in Flutter web
+          final currentUri = Uri.base;
+          queryParams = currentUri.queryParameters;
+          debugPrint('[Router] Using Uri.base for web query params: $currentUri');
+          debugPrint('[Router] Uri.base query params: $queryParams');
         } else {
-          debugPrint('[Router] Not web platform, using stateUri/baseUri');
           queryParams = stateUri.queryParameters.isNotEmpty
               ? stateUri.queryParameters
               : (baseUri.queryParameters.isNotEmpty ? baseUri.queryParameters : {});
