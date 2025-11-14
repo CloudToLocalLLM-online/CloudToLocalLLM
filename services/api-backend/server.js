@@ -11,6 +11,7 @@ import { auth } from 'express-oauth2-jwt-bearer';
 
 import adminRoutes from './routes/admin.js';
 import sessionRoutes from './routes/sessions.js';
+import clientLogRoutes from './routes/client-logs.js';
 // SSH tunnel integration
 import { SSHProxy } from './tunnel/ssh-proxy.js';
 import { SSHAuthHandler } from './tunnel/ssh-auth-handler.js';
@@ -247,6 +248,9 @@ app.get('/api/db/health', async(req, res) => {
 
 // Session management routes
 app.use('/api/auth/sessions', sessionRoutes);
+
+// Client log ingestion
+app.use('/api/client-logs', clientLogRoutes);
 
 // Administrative routes
 app.use('/api/admin', adminRoutes);
