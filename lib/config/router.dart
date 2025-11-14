@@ -129,9 +129,8 @@ class AppRouter {
           builder: (context, state) {
             debugPrint('[Router] ===== NEW HOME ROUTE BUILDER START =====');
 
-            // First check if user is already authenticated with Auth0
+            // Check if user is already authenticated with Auth0
             bool isAlreadyAuthenticated = false;
-            bool hasCallbackParams = false;
 
             if (kIsWeb) {
               try {
@@ -139,26 +138,17 @@ class AppRouter {
                 debugPrint('[Router] Checking Auth0 authentication status...');
                 isAlreadyAuthenticated = authServiceRef.auth0Service.isAuthenticated;
                 debugPrint('[Router] Auth0 isAuthenticated: $isAlreadyAuthenticated');
-
-                if (!isAlreadyAuthenticated) {
-                  // Not authenticated, check for callback parameters
-                  debugPrint('[Router] Not authenticated, checking for callback URL...');
-                  debugPrint('[Router] Current URL: ${Uri.base.toString()}');
-                  hasCallbackParams = authServiceRef.auth0Service.isCallbackUrl();
-                  debugPrint('[Router] isCallbackUrl() returned: $hasCallbackParams');
-                }
               } catch (e) {
                 debugPrint('[Router] Error checking auth status: $e');
                 debugPrint('[Router] Error stack: ${e.toString()}');
               }
             }
 
-            debugPrint('[Router] isAlreadyAuthenticated: $isAlreadyAuthenticated, hasCallbackParams: $hasCallbackParams');
+            debugPrint('[Router] isAlreadyAuthenticated: $isAlreadyAuthenticated');
 
             // Decision tree for routing:
             // 1. If already authenticated -> show main app
-            // 2. If callback parameters -> process callback
-            // 3. Otherwise -> show login screen
+            // 2. Otherwise -> show login screen
 
             if (isAlreadyAuthenticated) {
               debugPrint('[Router] User already authenticated, showing main app');
@@ -170,17 +160,6 @@ class AppRouter {
               }
               debugPrint('[Router] Showing home screen for authenticated user');
               return const HomeScreen();
-            }
-
-            // If we have callback parameters, redirect to callback route
-            if (hasCallbackParams) {
-              debugPrint('[Router] Home route detected callback params, redirecting to callback');
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                if (context.mounted) {
-                  context.go('/callback');
-                }
-              });
-              return const LoadingScreen(message: 'Processing authentication...');
             }
 
             // Web: Domain detection handled by redirect logic
