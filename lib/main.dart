@@ -35,6 +35,7 @@ import 'services/unified_connection_service.dart';
 import 'services/user_container_service.dart';
 import 'services/web_download_prompt_service.dart'
     if (dart.library.io) 'services/web_download_prompt_service_stub.dart';
+import 'services/log_buffer_service.dart';
 import 'web_plugins_stub.dart'
     if (dart.library.html) 'package:flutter_web_plugins/url_strategy.dart';
 import 'widgets/tray_initializer.dart';
@@ -46,6 +47,7 @@ final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  _initializeClientLogBuffer();
 
   Future<AppBootstrapData> loadApp() async {
     // Note: Auth0 callback handling is now done by the router and CallbackScreen
@@ -86,6 +88,20 @@ void main() async {
       debugPrint('Stack trace: $stack');
     },
   );
+}
+
+void _initializeClientLogBuffer() {
+  if (!kIsWeb) {
+    return;
+  }
+
+  final originalDebugPrint = debugPrint;
+  debugPrint = (String? message, {int? wrapWidth}) {
+    if (message != null) {
+      LogBufferService.instance.add(message);
+    }
+    originalDebugPrint(message, wrapWidth: wrapWidth);
+  };
 }
 
 /// Main application widget with comprehensive loading screen
