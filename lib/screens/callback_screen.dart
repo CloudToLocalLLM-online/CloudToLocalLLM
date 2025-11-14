@@ -7,7 +7,12 @@ import '../screens/loading_screen.dart';
 
 /// Auth0 callback screen that processes authentication results
 class CallbackScreen extends StatefulWidget {
-  const CallbackScreen({super.key});
+  const CallbackScreen({
+    super.key,
+    this.queryParams = const {},
+  });
+
+  final Map<String, String> queryParams;
 
   @override
   State<CallbackScreen> createState() => _CallbackScreenState();
@@ -67,9 +72,17 @@ class _CallbackScreenState extends State<CallbackScreen> {
         return;
       }
 
-      // Check if this is a callback URL using the Auth0 service
-      final isCallbackUrl = authService.auth0Service.isCallbackUrl();
-      debugPrint(' [Callback] Is callback URL: $isCallbackUrl');
+      final routeParams = widget.queryParams;
+      final hasRouteCallbackParams = routeParams.containsKey('code') ||
+          routeParams.containsKey('state') ||
+          routeParams.containsKey('error');
+
+      // Check if this is a callback URL using either the route params or Auth0 service
+      final isCallbackUrl =
+          hasRouteCallbackParams || authService.auth0Service.isCallbackUrl();
+      debugPrint(
+        ' [Callback] Is callback URL: $isCallbackUrl (route params present: $hasRouteCallbackParams)',
+      );
 
       if (!isCallbackUrl) {
         debugPrint(

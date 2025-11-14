@@ -303,7 +303,9 @@ class AppRouter {
             debugPrint(
               '[Router] Building CallbackScreen with query params: ${state.uri.queryParameters}',
             );
-            return const CallbackScreen();
+            return CallbackScreen(
+              queryParams: state.uri.queryParameters,
+            );
           },
         ),
 
