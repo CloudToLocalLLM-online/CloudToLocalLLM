@@ -72,6 +72,37 @@ jobs:
           web=${{ env.WEB_IMAGE }}:$COMMIT_SHA \
           -n cloudtolocalllm
 
+    - name: Purge Cloudflare cache
+      run: |
+        if [ -z "${{ secrets.CLOUDFLARE_API_TOKEN }}" ]; then
+          echo "Cloudflare API token not set, skipping cache purge."
+          exit 0
+        fi
+
+        CF_API_TOKEN="${{ secrets.CLOUDFLARE_API_TOKEN }}"
+        CF_ZONE_ID=$(curl -s -X GET "https://api.cloudflare.com/client/v4/zones?name=cloudtolocalllm.online" \
+          -H "Authorization: Bearer $CF_API_TOKEN" \
+          -H "Content-Type: application/json" | jq -r '.result[0].id')
+
+        if [ "$CF_ZONE_ID" = "null" ] || [ -z "$CF_ZONE_ID" ]; then
+          echo "Unable to determine Cloudflare Zone ID, skipping purge."
+          exit 0
+        fi
+
+        FILES='["https://cloudtolocalllm.online/main.dart.js",
+                 "https://cloudtolocalllm.online/flutter.js",
+                 "https://cloudtolocalllm.online/auth0-bridge.js",
+                 "https://cloudtolocalllm.online/index.html",
+                 "https://app.cloudtolocalllm.online/main.dart.js",
+                 "https://app.cloudtolocalllm.online/flutter.js",
+                 "https://app.cloudtolocalllm.online/auth0-bridge.js",
+                 "https://app.cloudtolocalllm.online/index.html"]'
+
+        curl -s -X POST "https://api.cloudflare.com/client/v4/zones/$CF_ZONE_ID/purge_cache" \
+          -H "Authorization: Bearer $CF_API_TOKEN" \
+          -H "Content-Type: application/json" \
+          --data "{\"files\": $FILES}" | jq
+
     - name: Wait for rollout to complete
       run: |
         kubectl rollout status deployment/api-backend -n cloudtolocalllm --timeout=300s
