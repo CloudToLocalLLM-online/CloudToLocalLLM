@@ -15,23 +15,8 @@ RUN if [ -f package-lock.json ]; then npm ci --omit=dev; else npm install --omit
 # Production container
 FROM node:24-alpine
 
-# Install curl for health checks and Chisel binary
+# Install curl for health checks
 RUN apk add --no-cache curl
-
-# Install Chisel binary directly from GitHub releases
-ARG CHISEL_VERSION=1.9.1
-RUN ARCH=$(uname -m) && \
-    if [ "$ARCH" = "x86_64" ]; then \
-      ARCH="amd64"; \
-    elif [ "$ARCH" = "aarch64" ]; then \
-      ARCH="arm64"; \
-    fi && \
-    curl -L -o /tmp/chisel.gz "https://github.com/jpillora/chisel/releases/download/v${CHISEL_VERSION}/chisel_${CHISEL_VERSION}_linux_${ARCH}.gz" && \
-    gunzip /tmp/chisel.gz && \
-    mv /tmp/chisel /usr/local/bin/chisel && \
-    chmod +x /usr/local/bin/chisel && \
-    chisel --version && \
-    rm -rf /tmp/*
 
 # Create app user for security
 RUN addgroup -g 1001 -S nodejs && \

@@ -1,6 +1,9 @@
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+
+// Web-specific import for URL parsing (modern web APIs)
+import 'package:web/web.dart' as web;
 import '../services/auth_service.dart';
 import '../services/connection_manager_service.dart';
 import '../services/streaming_chat_service.dart';
@@ -437,10 +440,26 @@ class AppRouter {
         debugPrint('[Router] baseUri: ${baseUri.toString()}');
         debugPrint('[Router] baseUri.queryParameters: ${baseUri.queryParameters}');
 
-        // Use state.uri first, then fall back to baseUri
-        final queryParams = stateUri.queryParameters.isNotEmpty
-            ? stateUri.queryParameters
-            : (baseUri.queryParameters.isNotEmpty ? baseUri.queryParameters : {});
+        // For web, get query parameters from current browser location
+        Map<String, String> queryParams;
+        if (kIsWeb) {
+          try {
+            // Use web.window.location.href to get current URL with query params
+            final currentUrl = Uri.parse(web.window.location.href);
+            queryParams = currentUrl.queryParameters;
+            debugPrint('[Router] Current browser URL: ${web.window.location.href}');
+            debugPrint('[Router] Parsed query params: $queryParams');
+          } catch (e) {
+            debugPrint('[Router] Error parsing current URL: $e');
+            queryParams = stateUri.queryParameters.isNotEmpty
+                ? stateUri.queryParameters
+                : (baseUri.queryParameters.isNotEmpty ? baseUri.queryParameters : {});
+          }
+        } else {
+          queryParams = stateUri.queryParameters.isNotEmpty
+              ? stateUri.queryParameters
+              : (baseUri.queryParameters.isNotEmpty ? baseUri.queryParameters : {});
+        }
 
         final hasCallbackParams = kIsWeb &&
             (queryParams.containsKey('code') || queryParams.containsKey('state'));

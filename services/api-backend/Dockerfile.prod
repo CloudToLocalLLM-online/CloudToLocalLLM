@@ -15,22 +15,8 @@ RUN npm ci && \
 # ---- Production ----
 FROM node:24-alpine AS production
 
-# Install Chisel binary directly from GitHub releases
-ARG CHISEL_VERSION=1.9.1
-RUN apk add --no-cache curl && \
-    ARCH=$(uname -m) && \
-    if [ "$ARCH" = "x86_64" ]; then \
-      ARCH="amd64"; \
-    elif [ "$ARCH" = "aarch64" ]; then \
-      ARCH="arm64"; \
-    fi && \
-    curl -L -o /tmp/chisel.gz "https://github.com/jpillora/chisel/releases/download/v${CHISEL_VERSION}/chisel_${CHISEL_VERSION}_linux_${ARCH}.gz" && \
-    gunzip /tmp/chisel.gz && \
-    mv /tmp/chisel /usr/local/bin/chisel && \
-    chmod +x /usr/local/bin/chisel && \
-    chisel --version && \
-    apk del curl && \
-    rm -rf /tmp/*
+# Install curl for health checks
+RUN apk add --no-cache curl
 
 # Create non-root user
 RUN addgroup -g 1001 -S nodejs && \
@@ -55,8 +41,7 @@ USER nodejs
 # Set environment variables to use container-specific paths
 ENV LOG_DIR=/api/logs
 ENV DB_PATH=/api/data/cloudtolocalllm.db
-ENV CHISEL_BINARY=/usr/local/bin/chisel
-ENV CHISEL_PORT=8080
+ENV SSH_PORT=2222
 
 EXPOSE 3000
 EXPOSE 8080

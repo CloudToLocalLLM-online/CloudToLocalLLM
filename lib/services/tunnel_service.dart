@@ -128,11 +128,11 @@ class TunnelService extends ChangeNotifier {
       
       // Check for Windows Defender / antivirus quarantine errors
       String errorMessage = e.toString();
-      if (errorMessage.contains('ProcessException') || 
-          errorMessage.contains('virus') || 
+      if (errorMessage.contains('ProcessException') ||
+          errorMessage.contains('virus') ||
           errorMessage.contains('quarantine') ||
           errorMessage.contains('Windows Defender')) {
-        errorMessage = 'Windows Defender blocked Chisel. Add exclusion for Documents\\CloudToLocalLLM\\chisel';
+        errorMessage = 'Connection blocked by security software. Please check antivirus settings.';
       }
       
       _updateState(_state.copyWith(
