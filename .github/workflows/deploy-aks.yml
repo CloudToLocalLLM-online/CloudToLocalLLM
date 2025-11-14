@@ -8,6 +8,7 @@ on:
       - 'services/**'
       - 'config/**'
       - 'lib/**'
+      - 'web/**'
   workflow_dispatch:
     inputs:
       environment:
