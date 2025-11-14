@@ -4,6 +4,9 @@ import 'package:go_router/go_router.dart';
 
 // Web-specific import for URL parsing (modern web APIs)
 import 'package:web/web.dart' as web;
+// Fallback for URL parsing
+import 'dart:html' as html show window
+    if (dart.library.html) 'dart:html';
 import '../services/auth_service.dart';
 import '../services/connection_manager_service.dart';
 import '../services/streaming_chat_service.dart';
@@ -422,16 +425,25 @@ class AppRouter {
         Map<String, String> queryParams;
         if (kIsWeb) {
           try {
-            // Use web.window.location.href to get current URL with query params
+            // Try web package first
             final currentUrl = Uri.parse(web.window.location.href);
             queryParams = currentUrl.queryParameters;
-            debugPrint('[Router] Current browser URL: ${web.window.location.href}');
-            debugPrint('[Router] Parsed query params: $queryParams');
+            debugPrint('[Router] WEB: Current browser URL: ${web.window.location.href}');
+            debugPrint('[Router] WEB: Parsed query params: $queryParams');
           } catch (e) {
-            debugPrint('[Router] Error parsing current URL: $e');
-            queryParams = stateUri.queryParameters.isNotEmpty
-                ? stateUri.queryParameters
-                : (baseUri.queryParameters.isNotEmpty ? baseUri.queryParameters : {});
+            debugPrint('[Router] WEB: Error with web package, trying html fallback: $e');
+            try {
+              // Fallback to html package
+              final currentUrl = Uri.parse(html.window.location.href);
+              queryParams = currentUrl.queryParameters;
+              debugPrint('[Router] HTML: Current browser URL: ${html.window.location.href}');
+              debugPrint('[Router] HTML: Parsed query params: $queryParams');
+            } catch (e2) {
+              debugPrint('[Router] HTML: Error with html fallback: $e2');
+              queryParams = stateUri.queryParameters.isNotEmpty
+                  ? stateUri.queryParameters
+                  : (baseUri.queryParameters.isNotEmpty ? baseUri.queryParameters : {});
+            }
           }
         } else {
           queryParams = stateUri.queryParameters.isNotEmpty
