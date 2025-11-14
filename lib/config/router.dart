@@ -464,8 +464,10 @@ class AppRouter {
         final hasCallbackParams = kIsWeb &&
             (queryParams.containsKey('code') || queryParams.containsKey('state'));
 
-        debugPrint('[Router] hasCallbackParams: $hasCallbackParams');
-        debugPrint('[Router] queryParams keys: ${queryParams.keys.toList()}');
+          debugPrint('[Router] hasCallbackParams: $hasCallbackParams');
+          debugPrint('[Router] queryParams keys: ${queryParams.keys.toList()}');
+          debugPrint('[Router] hasCallbackParams: $hasCallbackParams');
+          debugPrint('[Router] queryParams keys: ${queryParams.keys.toList()}');
 
         // Use robust hostname detection
         final isAppSubdomain = _isAppSubdomain();

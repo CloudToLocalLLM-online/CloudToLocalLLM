@@ -44,7 +44,7 @@ class AuthService extends ChangeNotifier {
 
       // Listen to Auth0 auth state changes
       _auth0Service.authStateChanges.listen((isAuth) async {
-        debugPrint('🔐 Auth0 auth state changed: $isAuth');
+        debugPrint('[AuthService] Auth0 auth state changed: $isAuth');
         if (isAuth && _auth0Service.currentUser != null) {
           // Auth0 authenticated - store session in PostgreSQL
           await _storeAuth0Session(force: true);
@@ -89,16 +89,16 @@ class AuthService extends ChangeNotifier {
   /// Check for existing session in PostgreSQL
   Future<void> _checkStoredSession() async {
     try {
-      debugPrint('🔍 Checking for stored session in PostgreSQL...');
+      debugPrint('[AuthService] Checking for stored session in PostgreSQL...');
       final session = await _sessionStorage.getCurrentSession();
       if (session != null && session.isValid) {
-        debugPrint('✅ Found valid session: ${session.userId}');
+        debugPrint('[AuthService] Found valid session: ${session.userId}');
         _sessionToken = session.token;
         _currentUser = session.user;
         _isAuthenticated.value = true;
         notifyListeners();
       } else {
-        debugPrint('ℹ️ No valid stored session found');
+        debugPrint('[AuthService] No valid stored session found');
       }
     } catch (e) {
       debugPrint('❌ Error checking stored session: $e');
@@ -242,7 +242,7 @@ class AuthService extends ChangeNotifier {
       debugPrint('📋 Auth0Service.handleRedirectCallback returned: $success');
 
       if (success) {
-        debugPrint('🔄 Callback successful, checking auth status and loading services...');
+          debugPrint('[AuthService] Callback successful, checking auth status and loading services...');
         // After successful callback handling, check auth status and load services
         await _checkAuthStatus();
         debugPrint('🔐 Final auth state after callback: ${isAuthenticated.value}');
