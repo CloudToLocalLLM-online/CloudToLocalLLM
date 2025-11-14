@@ -127,21 +127,48 @@ class AppRouter {
             debugPrint('[Router] ===== NEW HOME ROUTE BUILDER START =====');
             debugPrint('[Router] 🔥🔥🔥 THIS IS THE NEW CODE - TIME: ${DateTime.now()} 🔥🔥🔥');
 
-            // Check for Auth0 callback URL using the Auth0 service
+            // First check if user is already authenticated with Auth0
+            bool isAlreadyAuthenticated = false;
             bool hasCallbackParams = false;
+
             if (kIsWeb) {
               try {
-                debugPrint('[Router] Checking callback URL...');
-                debugPrint('[Router] Current URL: ${Uri.base.toString()}');
-                hasCallbackParams = authServiceRef.auth0Service.isCallbackUrl();
-                debugPrint('[Router] isCallbackUrl() returned: $hasCallbackParams');
+                // Check if Auth0 client is ready and user is authenticated
+                debugPrint('[Router] Checking Auth0 authentication status...');
+                isAlreadyAuthenticated = authServiceRef.auth0Service.isAuthenticated;
+                debugPrint('[Router] Auth0 isAuthenticated: $isAlreadyAuthenticated');
+
+                if (!isAlreadyAuthenticated) {
+                  // Not authenticated, check for callback parameters
+                  debugPrint('[Router] Not authenticated, checking for callback URL...');
+                  debugPrint('[Router] Current URL: ${Uri.base.toString()}');
+                  hasCallbackParams = authServiceRef.auth0Service.isCallbackUrl();
+                  debugPrint('[Router] isCallbackUrl() returned: $hasCallbackParams');
+                }
               } catch (e) {
-                debugPrint('[Router] Error checking callback URL: $e');
+                debugPrint('[Router] Error checking auth status: $e');
                 debugPrint('[Router] Error stack: ${e.toString()}');
               }
             }
 
-            debugPrint('[Router] Final hasCallbackParams: $hasCallbackParams');
+            debugPrint('[Router] isAlreadyAuthenticated: $isAlreadyAuthenticated, hasCallbackParams: $hasCallbackParams');
+
+            // Decision tree for routing:
+            // 1. If already authenticated -> show main app
+            // 2. If callback parameters -> process callback
+            // 3. Otherwise -> show login screen
+
+            if (isAlreadyAuthenticated) {
+              debugPrint('[Router] User already authenticated, showing main app');
+              // Verify authenticated services are loaded before showing HomeScreen
+              final hasAuthenticatedServices = _checkAuthenticatedServicesLoaded();
+              if (!hasAuthenticatedServices) {
+                debugPrint('[Router] Authenticated services not yet loaded, showing loading screen');
+                return const LoadingScreen(message: 'Loading application modules...');
+              }
+              debugPrint('[Router] Showing home screen for authenticated user');
+              return const HomeScreen();
+            }
 
             // If we have callback parameters, redirect to callback route
             if (hasCallbackParams) {
