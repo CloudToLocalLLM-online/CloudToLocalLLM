@@ -505,8 +505,8 @@ class AppRouter {
           return null; // Stay on current route until auth loading completes
         }
 
-        // Allow access to login, callback, and loading pages
-        if (isLoggingIn || isCallback || isLoading) {
+        // Allow access to login and loading pages
+        if (isLoggingIn || isLoading) {
           debugPrint('[Router] Allowing access to auth/loading page');
           return null;
         }
