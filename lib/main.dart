@@ -247,19 +247,28 @@ class _AppRouterHost extends StatefulWidget {
 
 class _AppRouterHostState extends State<_AppRouterHost> {
   GoRouter? _router;
+  bool _waitingForBootstrap = false;
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    if (_router != null) {
+    if (_router != null || _waitingForBootstrap) {
       return;
     }
 
     final authService = context.read<AuthService>();
-    _router = AppRouter.createRouter(
-      navigatorKey: navigatorKey,
-      authService: authService,
-    );
+    if (authService.isSessionBootstrapComplete) {
+      _initializeRouter(authService);
+    } else {
+      _waitingForBootstrap = true;
+      authService.sessionBootstrapFuture.whenComplete(() {
+        if (!mounted) {
+          return;
+        }
+        _waitingForBootstrap = false;
+        _initializeRouter(authService);
+      });
+    }
   }
 
   @override
@@ -293,5 +302,14 @@ class _AppRouterHostState extends State<_AppRouterHost> {
         },
       ),
     );
+  }
+
+  void _initializeRouter(AuthService authService) {
+    setState(() {
+      _router = AppRouter.createRouter(
+        navigatorKey: navigatorKey,
+        authService: authService,
+      );
+    });
   }
 }

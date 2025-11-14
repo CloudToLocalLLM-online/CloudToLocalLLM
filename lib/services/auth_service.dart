@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import '../models/user_model.dart';
 import 'auth0_service.dart';
@@ -12,9 +14,11 @@ class AuthService extends ChangeNotifier {
   final SessionStorageService _sessionStorage;
   final ValueNotifier<bool> _isAuthenticated = ValueNotifier<bool>(false);
   final ValueNotifier<bool> _isLoading = ValueNotifier<bool>(false);
+  final Completer<void> _sessionBootstrapCompleter = Completer<void>();
   UserModel? _currentUser;
   bool _initialized = false;
   String? _sessionToken;
+  bool _isRestoringSession = false;
 
   AuthService(this._auth0Service, this._sessionStorage);
 
@@ -29,6 +33,10 @@ class AuthService extends ChangeNotifier {
   /// Initialize Auth0 with PostgreSQL session storage
   Future<void> _initAuth0() async {
     try {
+      _isRestoringSession = true;
+      _isLoading.value = true;
+      notifyListeners();
+
       await _auth0Service.initialize();
 
       // First, check if we have a valid session in PostgreSQL
@@ -39,7 +47,7 @@ class AuthService extends ChangeNotifier {
         debugPrint('🔐 Auth0 auth state changed: $isAuth');
         if (isAuth && _auth0Service.currentUser != null) {
           // Auth0 authenticated - store session in PostgreSQL
-          await _storeAuth0Session();
+          await _storeAuth0Session(force: true);
           _isAuthenticated.value = true;
           // Load authenticated services now that we have a token (async, non-blocking)
           _loadAuthenticatedServices();
@@ -59,6 +67,11 @@ class AuthService extends ChangeNotifier {
       }
     } catch (e) {
       debugPrint('❌ Failed to initialize Auth0: $e');
+    } finally {
+      _isRestoringSession = false;
+      _isLoading.value = false;
+      _completeSessionBootstrap();
+      notifyListeners();
     }
   }
 
@@ -89,13 +102,23 @@ class AuthService extends ChangeNotifier {
       }
     } catch (e) {
       debugPrint('❌ Error checking stored session: $e');
+    } finally {
+      _completeSessionBootstrap();
     }
   }
 
   /// Store Auth0 session in PostgreSQL
-  Future<void> _storeAuth0Session() async {
+  Future<void> _storeAuth0Session({bool force = false}) async {
     try {
-      if (_auth0Service.currentUser == null) return;
+      if (_auth0Service.currentUser == null) {
+        debugPrint('⚠️ No Auth0 user available, skipping session storage');
+        return;
+      }
+
+      if (!force && _sessionToken != null) {
+        debugPrint('ℹ️ Session already stored, skipping new session creation');
+        return;
+      }
 
       debugPrint('💾 Storing Auth0 session in PostgreSQL...');
       final user = UserModel.fromAuth0Profile(_auth0Service.currentUser!);
@@ -143,6 +166,7 @@ class AuthService extends ChangeNotifier {
       // Load authenticated services BEFORE setting authenticated state
       // This ensures services are ready when auth state becomes true
       await _loadAuthenticatedServices();
+      await _storeAuth0Session();
 
       _isAuthenticated.value = true;
       _currentUser = UserModel.fromAuth0Profile(_auth0Service.currentUser!);
@@ -153,6 +177,10 @@ class AuthService extends ChangeNotifier {
   // Getters
   ValueNotifier<bool> get isAuthenticated => _isAuthenticated;
   ValueNotifier<bool> get isLoading => _isLoading;
+  bool get isSessionBootstrapComplete => _sessionBootstrapCompleter.isCompleted;
+  Future<void> get sessionBootstrapFuture =>
+      _sessionBootstrapCompleter.future;
+  bool get isRestoringSession => _isRestoringSession;
   UserModel? get currentUser => _currentUser;
   
   // Platform detection
@@ -254,5 +282,11 @@ class AuthService extends ChangeNotifier {
     _isLoading.dispose();
     _auth0Service.dispose();
     super.dispose();
+  }
+
+  void _completeSessionBootstrap() {
+    if (!_sessionBootstrapCompleter.isCompleted) {
+      _sessionBootstrapCompleter.complete();
+    }
   }
 }
