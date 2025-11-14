@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:web/web.dart' as web;
 
 import '../services/auth_service.dart';
 import '../services/connection_manager_service.dart';
@@ -28,6 +29,8 @@ import '../screens/admin/admin_data_flush_screen.dart';
 import '../screens/marketing/homepage_screen.dart';
 import '../screens/marketing/download_screen.dart';
 import '../screens/marketing/documentation_screen.dart';
+
+const _callbackStorageKey = 'auth0_callback_params';
 
 /// Utility function to get the current hostname in web environment
 String _getCurrentHostname() {
@@ -423,11 +426,32 @@ class AppRouter {
         // For web, get query parameters from current browser location
         Map<String, String> queryParams;
         if (kIsWeb) {
-          // Use Uri.base which should contain current URL parameters in Flutter web
           final currentUri = Uri.base;
           queryParams = currentUri.queryParameters;
           debugPrint('[Router] Using Uri.base for web query params: $currentUri');
           debugPrint('[Router] Uri.base query params: $queryParams');
+
+          if (queryParams.isEmpty) {
+            try {
+              final sessionStorage = web.window.sessionStorage;
+              final storedParams = sessionStorage.getItem(_callbackStorageKey);
+              if (storedParams != null && storedParams.isNotEmpty) {
+                final sanitized = storedParams.startsWith('?')
+                    ? storedParams.substring(1)
+                    : storedParams;
+                final storedQueryParams = Uri.splitQueryString(sanitized);
+                if (storedQueryParams.isNotEmpty) {
+                  queryParams = storedQueryParams;
+                  debugPrint(
+                    '[Router] Loaded callback params from sessionStorage: $storedQueryParams',
+                  );
+                }
+                sessionStorage.removeItem(_callbackStorageKey);
+              }
+            } catch (e) {
+              debugPrint('[Router] Error reading sessionStorage callback params: $e');
+            }
+          }
         } else {
           queryParams = stateUri.queryParameters.isNotEmpty
               ? stateUri.queryParameters

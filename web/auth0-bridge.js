@@ -2,6 +2,35 @@
 // Provides a simple interface for Flutter to call Auth0 functions
 
 const API_AUDIENCE = 'https://api.cloudtolocalllm.online';
+const CALLBACK_STORAGE_KEY = 'auth0_callback_params';
+
+function storeCallbackParams() {
+  try {
+    if (!window || !window.sessionStorage) return;
+    const search = window.location.search || '';
+    if (!search) return;
+    if (
+      search.includes('code=') ||
+      search.includes('state=') ||
+      search.includes('error=')
+    ) {
+      window.sessionStorage.setItem(CALLBACK_STORAGE_KEY, search);
+    }
+  } catch (err) {
+    console.warn('Unable to store callback params in sessionStorage:', err);
+  }
+}
+
+function clearStoredCallbackParams() {
+  try {
+    if (!window || !window.sessionStorage) return;
+    window.sessionStorage.removeItem(CALLBACK_STORAGE_KEY);
+  } catch (err) {
+    console.warn('Unable to clear callback params in sessionStorage:', err);
+  }
+}
+
+storeCallbackParams();
 
 window.auth0Bridge = {
   // Check if Auth0 client is initialized (synchronous check)
@@ -94,6 +123,7 @@ window.auth0Bridge = {
 
         // Clean up URL
         window.history.replaceState({}, document.title, window.location.pathname);
+        clearStoredCallbackParams();
 
         return {
           success: true,
@@ -106,6 +136,7 @@ window.auth0Bridge = {
       console.error('Auth0 redirect callback error:', error);
       // Clean up URL even on error
       window.history.replaceState({}, document.title, window.location.pathname);
+      clearStoredCallbackParams();
       return {
         success: false,
         error: error.message || error.toString()
