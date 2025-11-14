@@ -446,7 +446,10 @@ class AppRouter {
                     '[Router] Loaded callback params from sessionStorage: $storedQueryParams',
                   );
                 }
+                debugPrint('[Router] Removing stored callback params from sessionStorage');
                 sessionStorage.removeItem(_callbackStorageKey);
+              } else {
+                debugPrint('[Router] No callback params found in sessionStorage');
               }
             } catch (e) {
               debugPrint('[Router] Error reading sessionStorage callback params: $e');

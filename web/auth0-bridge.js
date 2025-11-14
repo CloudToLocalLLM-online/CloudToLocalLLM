@@ -15,6 +15,7 @@ function storeCallbackParams() {
       search.includes('error=')
     ) {
       window.sessionStorage.setItem(CALLBACK_STORAGE_KEY, search);
+      console.log(' Stored callback params in sessionStorage:', search);
     }
   } catch (err) {
     console.warn('Unable to store callback params in sessionStorage:', err);
@@ -25,6 +26,7 @@ function clearStoredCallbackParams() {
   try {
     if (!window || !window.sessionStorage) return;
     window.sessionStorage.removeItem(CALLBACK_STORAGE_KEY);
+    console.log(' Cleared callback params from sessionStorage');
   } catch (err) {
     console.warn('Unable to clear callback params in sessionStorage:', err);
   }
