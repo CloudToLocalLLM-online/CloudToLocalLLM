@@ -28,8 +28,8 @@ USER 1000
 ARG BUILD_SHA
 ENV BUILD_SHA=${BUILD_SHA}
 
-# Clone repository as non-root user (use shallow clone for faster build)
-RUN git clone -b main --depth 1 https://github.com/imrightguy/CloudToLocalLLM.git .
+# Copy source code from build context
+COPY --chown=1000:1000 . .
 
 # Clean previous build artifacts to ensure fresh build
 RUN flutter clean

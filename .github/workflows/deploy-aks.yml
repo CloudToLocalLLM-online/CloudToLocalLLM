@@ -55,7 +55,7 @@ jobs:
 
         # Build and push web image with commit hash tag
         COMMIT_SHA=$(echo ${{ github.sha }} | cut -c1-8)
-        docker build -f ./config/docker/Dockerfile.web -t ${{ env.WEB_IMAGE }}:$COMMIT_SHA -t ${{ env.WEB_IMAGE }}:latest .
+        docker build --build-arg BUILD_SHA=$COMMIT_SHA -f ./config/docker/Dockerfile.web -t ${{ env.WEB_IMAGE }}:$COMMIT_SHA -t ${{ env.WEB_IMAGE }}:latest .
         docker push ${{ env.WEB_IMAGE }}:$COMMIT_SHA
         docker push ${{ env.WEB_IMAGE }}:latest
 
