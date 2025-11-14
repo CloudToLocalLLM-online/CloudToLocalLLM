@@ -4,26 +4,26 @@ publish_to: none
 version: 4.3.0+202511062338
 
 environment:
-  sdk: '>=3.8.0 <4.0.0'
+  sdk: '>=3.9.0 <4.0.0'
 
 dependencies:
   flutter:
     sdk: flutter
 
   # HTTP and Web
-  http: ^1.2.2
+  http: ^1.6.0
 
   # File System
   path: ^1.9.1
 
   # State Management
-  provider: ^6.1.2
+  provider: ^6.1.5+1
 
   # JSON handling
   json_annotation: ^4.9.0
 
   # App Information
-  package_info_plus: ^8.1.1
+  package_info_plus: ^9.0.0
 
 dev_dependencies:
   flutter_lints: ^6.0.0
