@@ -180,17 +180,30 @@
     // Force service worker update on version change
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.getRegistrations().then(function(registrations) {
-        for(let registration of registrations) {
-          console.log('Unregistering old service worker:', registration.scope);
-          registration.unregister().then(function(success) {
-            console.log('Service worker unregistered:', success);
-            // Force reload after unregistering
-            if (success) {
-              console.log('Reloading page to use new service worker...');
-              window.location.reload(true);
-            }
-          });
+        if (registrations.length === 0) {
+          console.log('No service workers to unregister');
+          return;
         }
+
+        console.log('Unregistering', registrations.length, 'service workers...');
+
+        // Create an array of unregistration promises
+        const unregisterPromises = registrations.map(function(registration) {
+          console.log('Unregistering service worker:', registration.scope);
+          return registration.unregister();
+        });
+
+        // Wait for all unregistrations to complete, then reload once
+        Promise.all(unregisterPromises).then(function(results) {
+          const successCount = results.filter(success => success).length;
+          console.log('Service workers unregistered:', successCount, 'of', results.length);
+          if (successCount > 0) {
+            console.log('Reloading page to use new service worker...');
+            window.location.reload(true);
+          }
+        }).catch(function(error) {
+          console.error('Error unregistering service workers:', error);
+        });
       });
     }
   </script>
