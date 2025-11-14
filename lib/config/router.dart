@@ -397,6 +397,10 @@ class AppRouter {
 
       // Redirect logic for authentication and domain-based routing
       redirect: (context, state) {
+        debugPrint('[Router] ===== REDIRECT FUNCTION CALLED =====');
+        debugPrint('[Router] Matched location: ${state.matchedLocation}');
+        debugPrint('[Router] Full path: ${state.fullPath}');
+        debugPrint('[Router] URI: ${state.uri}');
         final isAuthenticated = authService.isAuthenticated.value;
         final isAuthLoading = authService.isLoading.value;
         final isLoggingIn = state.matchedLocation == '/login';
