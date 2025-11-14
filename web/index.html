@@ -175,36 +175,22 @@
     });
   </script>
 
-  <!-- Force service worker update -->
+  <!-- DISABLE SERVICE WORKER COMPLETELY -->
   <script>
-    // Force service worker update on version change
+    // Completely disable service workers to avoid caching issues during development
+    console.log('🚫 SERVICE WORKERS DISABLED FOR DEVELOPMENT 🚫');
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.getRegistrations().then(function(registrations) {
-        if (registrations.length === 0) {
-          console.log('No service workers to unregister');
-          return;
-        }
-
-        console.log('Unregistering', registrations.length, 'service workers...');
-
-        // Create an array of unregistration promises
-        const unregisterPromises = registrations.map(function(registration) {
-          console.log('Unregistering service worker:', registration.scope);
-          return registration.unregister();
-        });
-
-        // Wait for all unregistrations to complete, then reload once
-        Promise.all(unregisterPromises).then(function(results) {
-          const successCount = results.filter(success => success).length;
-          console.log('Service workers unregistered:', successCount, 'of', results.length);
-          if (successCount > 0) {
-            console.log('Reloading page to use new service worker...');
-            window.location.reload(true);
-          }
-        }).catch(function(error) {
-          console.error('Error unregistering service workers:', error);
+        registrations.forEach(function(registration) {
+          console.log('🚫 Unregistering service worker:', registration.scope);
+          registration.unregister();
         });
       });
+      // Prevent new service workers from registering
+      navigator.serviceWorker.register = function() {
+        console.log('🚫 Service worker registration blocked');
+        return Promise.reject(new Error('Service workers disabled'));
+      };
     }
   </script>
 </head>
