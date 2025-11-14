@@ -1,7 +1,6 @@
 import 'dart:async';
-import 'dart:convert';
 import 'package:flutter/foundation.dart';
-import 'package:http/http.dart' as http;
+import 'package:dio/dio.dart';
 import '../models/validation_result.dart';
 import '../models/validation_test.dart';
 import '../services/auth_service.dart';
@@ -13,6 +12,21 @@ import '../services/auth_service.dart';
 class ConnectionValidationService extends ChangeNotifier {
   final AuthService _authService;
   final String _baseUrl;
+  final Dio _dio = Dio();
+
+  ConnectionValidationService({
+    required AuthService authService,
+    String? baseUrl,
+  }) : _authService = authService,
+       _baseUrl = baseUrl ?? _getDefaultBaseUrl() {
+    _setupDio();
+  }
+
+  void _setupDio() {
+    _dio.options.baseUrl = _baseUrl;
+    _dio.options.connectTimeout = const Duration(seconds: 10);
+    _dio.options.receiveTimeout = const Duration(seconds: 15);
+  }
 
   // Validation state
   bool _isValidating = false;
@@ -23,12 +37,6 @@ class ConnectionValidationService extends ChangeNotifier {
   // Test tracking
   final List<ValidationTest> _runningTests = [];
   final Map<String, ValidationTest> _completedTests = {};
-
-  ConnectionValidationService({
-    required AuthService authService,
-    String? baseUrl,
-  }) : _authService = authService,
-       _baseUrl = baseUrl ?? _getDefaultBaseUrl();
 
   // Getters
   bool get isValidating => _isValidating;
@@ -160,20 +168,18 @@ class ConnectionValidationService extends ChangeNotifier {
         );
       }
 
-      final response = await http
-          .get(
-            Uri.parse('$_baseUrl/api/tunnel/status'),
-            headers: {
-              'Authorization': 'Bearer $token',
-              'Content-Type': 'application/json',
-            },
-          )
-          .timeout(const Duration(seconds: 10));
+      final response = await _dio.get(
+        '/api/tunnel/status',
+        options: Options(headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        }),
+      );
 
       final duration = DateTime.now().difference(startTime).inMilliseconds;
 
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body) as Map<String, dynamic>;
+        final data = response.data as Map<String, dynamic>;
         final isConnected = data['connected'] == true;
 
         if (isConnected) {
@@ -224,20 +230,18 @@ class ConnectionValidationService extends ChangeNotifier {
       }
 
       // Test basic LLM endpoint connectivity
-      final response = await http
-          .get(
-            Uri.parse('$_baseUrl/ollama/api/tags'),
-            headers: {
-              'Authorization': 'Bearer $token',
-              'Content-Type': 'application/json',
-            },
-          )
-          .timeout(const Duration(seconds: 15));
+      final response = await _dio.get(
+        '/ollama/api/tags',
+        options: Options(headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        }),
+      );
 
       final duration = DateTime.now().difference(startTime).inMilliseconds;
 
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body) as Map<String, dynamic>;
+        final data = response.data as Map<String, dynamic>;
         final models = data['models'] as List?;
 
         return ValidationTest.success(
@@ -287,22 +291,20 @@ class ConnectionValidationService extends ChangeNotifier {
       }
 
       // Test streaming endpoint availability
-      final response = await http
-          .post(
-            Uri.parse('$_baseUrl/api/chat/stream'),
-            headers: {
-              'Authorization': 'Bearer $token',
-              'Content-Type': 'application/json',
-            },
-            body: jsonEncode({
-              'model': 'test',
-              'messages': [
-                {'role': 'user', 'content': 'test'},
-              ],
-              'stream': true,
-            }),
-          )
-          .timeout(const Duration(seconds: 10));
+      final response = await _dio.post(
+        '/api/chat/stream',
+        data: {
+          'model': 'test',
+          'messages': [
+            {'role': 'user', 'content': 'test'},
+          ],
+          'stream': true,
+        },
+        options: Options(headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        }),
+      );
 
       final duration = DateTime.now().difference(startTime).inMilliseconds;
 
@@ -353,20 +355,18 @@ class ConnectionValidationService extends ChangeNotifier {
       }
 
       // Test token validation endpoint
-      final response = await http
-          .get(
-            Uri.parse('$_baseUrl/api/auth/validate'),
-            headers: {
-              'Authorization': 'Bearer $token',
-              'Content-Type': 'application/json',
-            },
-          )
-          .timeout(const Duration(seconds: 10));
+      final response = await _dio.get(
+        '/api/auth/validate',
+        options: Options(headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        }),
+      );
 
       final duration = DateTime.now().difference(startTime).inMilliseconds;
 
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body) as Map<String, dynamic>;
+        final data = response.data as Map<String, dynamic>;
         final isValid = data['valid'] == true;
 
         if (isValid) {
@@ -407,9 +407,7 @@ class ConnectionValidationService extends ChangeNotifier {
       debugPrint(' [ConnectionValidation] Testing network connectivity...');
 
       // Test basic network connectivity to the API
-      final response = await http
-          .get(Uri.parse('$_baseUrl/health'))
-          .timeout(const Duration(seconds: 10));
+      final response = await _dio.get('/health');
 
       final duration = DateTime.now().difference(startTime).inMilliseconds;
 

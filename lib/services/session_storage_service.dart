@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'package:crypto/crypto.dart';
 import 'package:flutter/foundation.dart';
-import 'package:http/http.dart' as http;
+import 'package:dio/dio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/user_model.dart';
 import '../models/session_model.dart';
@@ -11,6 +11,17 @@ import '../config/app_config.dart';
 /// This provides persistent session storage while keeping Auth0 for authentication
 class SessionStorageService {
   final String _baseUrl = AppConfig.apiBaseUrl;
+  final Dio _dio = Dio();
+
+  SessionStorageService() {
+    _setupDio();
+  }
+
+  void _setupDio() {
+    _dio.options.baseUrl = _baseUrl;
+    _dio.options.connectTimeout = AppConfig.apiTimeout;
+    _dio.options.receiveTimeout = AppConfig.apiTimeout;
+  }
 
   /// Create a new session for an authenticated user
   Future<SessionModel> createSession({
@@ -38,14 +49,14 @@ class SessionStorageService {
     };
 
     try {
-      final response = await http.post(
-        Uri.parse('$_baseUrl/auth/sessions'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode(sessionData),
+      final response = await _dio.post(
+        '/auth/sessions',
+        data: sessionData,
+        options: Options(headers: {'Content-Type': 'application/json'}),
       );
 
       if (response.statusCode == 201) {
-        final responseData = jsonDecode(response.body);
+        final responseData = response.data;
         final session = SessionModel(
           id: responseData['id'],
           userId: user.id,
@@ -136,13 +147,13 @@ class SessionStorageService {
   /// Validate a session token
   Future<SessionModel?> validateSession(String token) async {
     try {
-      final response = await http.get(
-        Uri.parse('$_baseUrl/auth/sessions/validate/$token'),
-        headers: {'Content-Type': 'application/json'},
+      final response = await _dio.get(
+        '/auth/sessions/validate/$token',
+        options: Options(headers: {'Content-Type': 'application/json'}),
       );
 
       if (response.statusCode == 200) {
-        final responseData = jsonDecode(response.body);
+        final responseData = response.data;
         // Parse user data and create SessionModel
         final user = UserModel(
           id: responseData['user']['id'],
@@ -183,9 +194,9 @@ class SessionStorageService {
     await _clearStoredSessionToken();
 
     try {
-      final response = await http.delete(
-        Uri.parse('$_baseUrl/auth/sessions/$token'),
-        headers: {'Content-Type': 'application/json'},
+      final response = await _dio.delete(
+        '/auth/sessions/$token',
+        options: Options(headers: {'Content-Type': 'application/json'}),
       );
 
       if (response.statusCode != 200 && response.statusCode != 204) {
@@ -202,13 +213,13 @@ class SessionStorageService {
   /// Clean up expired sessions
   Future<void> cleanupExpiredSessions() async {
     try {
-      final response = await http.post(
-        Uri.parse('$_baseUrl/auth/sessions/cleanup'),
-        headers: {'Content-Type': 'application/json'},
+      final response = await _dio.post(
+        '/auth/sessions/cleanup',
+        options: Options(headers: {'Content-Type': 'application/json'}),
       );
 
       if (response.statusCode == 200) {
-        final result = jsonDecode(response.body);
+        final result = response.data;
         debugPrint('🧹 Cleaned up ${result['deleted']} expired sessions');
       } else {
         throw Exception('Failed to cleanup sessions: ${response.statusCode}');

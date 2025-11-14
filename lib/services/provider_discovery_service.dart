@@ -5,8 +5,7 @@
 library;
 
 import 'dart:async';
-import 'dart:convert';
-import 'package:http/http.dart' as http;
+import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 
 /// Supported LLM provider types
@@ -122,10 +121,9 @@ class ProviderInfo {
 
 /// Provider Discovery Service
 class ProviderDiscoveryService extends ChangeNotifier {
-  static const Duration _defaultTimeout = Duration(seconds: 10);
   static const Duration _scanInterval = Duration(seconds: 30);
 
-  final http.Client _httpClient;
+  final Dio _dio;
   final List<ProviderInfo> _discoveredProviders = [];
   final Map<String, DateTime> _lastScanTimes = {};
 
@@ -133,8 +131,8 @@ class ProviderDiscoveryService extends ChangeNotifier {
   bool _isScanning = false;
   final bool _isWebPlatform = kIsWeb;
 
-  ProviderDiscoveryService({http.Client? httpClient})
-    : _httpClient = httpClient ?? http.Client() {
+  ProviderDiscoveryService({Dio? dio})
+    : _dio = dio ?? Dio() {
 
     // Log platform detection for debugging
     if (_isWebPlatform) {
@@ -247,15 +245,13 @@ class ProviderDiscoveryService extends ChangeNotifier {
       debugPrint('Detecting Ollama on port $port...');
 
       // Check if Ollama is running by hitting the version endpoint
-      final response = await _httpClient
-          .get(
-            Uri.parse('$baseUrl/api/version'),
-            headers: {'Accept': 'application/json'},
-          )
-          .timeout(_defaultTimeout);
+      final response = await _dio.get(
+        '$baseUrl/api/version',
+        options: Options(headers: {'Accept': 'application/json'}),
+      );
 
       if (response.statusCode == 200) {
-        final versionData = jsonDecode(response.body);
+        final versionData = response.data;
 
         // Get available models
         final models = await _getOllamaModels(baseUrl);
@@ -307,15 +303,13 @@ class ProviderDiscoveryService extends ChangeNotifier {
       debugPrint('Detecting LM Studio on port $port...');
 
       // LM Studio uses OpenAI-compatible API, check models endpoint
-      final response = await _httpClient
-          .get(
-            Uri.parse('$baseUrl/v1/models'),
-            headers: {'Accept': 'application/json'},
-          )
-          .timeout(_defaultTimeout);
+      final response = await _dio.get(
+        '$baseUrl/v1/models',
+        options: Options(headers: {'Accept': 'application/json'}),
+      );
 
       if (response.statusCode == 200) {
-        final modelsData = jsonDecode(response.body);
+        final modelsData = response.data;
         final models = <String>[];
 
         if (modelsData['data'] is List) {
@@ -382,15 +376,10 @@ class ProviderDiscoveryService extends ChangeNotifier {
 
       try {
         // Check for OpenAI-compatible API
-        final response = await _httpClient
-            .get(
-              Uri.parse('$baseUrl/v1/models'),
-              headers: {'Accept': 'application/json'},
-            )
-            .timeout(_defaultTimeout);
+        final response = await _dio.get('$baseUrl/v1/models', options: Options(headers: {'Accept': 'application/json'}));
 
         if (response.statusCode == 200) {
-          final modelsData = jsonDecode(response.body);
+          final modelsData = response.data;
           final models = <String>[];
 
           if (modelsData['data'] is List) {
@@ -464,15 +453,10 @@ class ProviderDiscoveryService extends ChangeNotifier {
   /// Get available models from Ollama
   Future<List<String>> _getOllamaModels(String baseUrl) async {
     try {
-      final response = await _httpClient
-          .get(
-            Uri.parse('$baseUrl/api/tags'),
-            headers: {'Accept': 'application/json'},
-          )
-          .timeout(_defaultTimeout);
+      final response = await _dio.get('$baseUrl/api/tags', options: Options(headers: {'Accept': 'application/json'}));
 
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
+        final data = response.data;
         final models = <String>[];
 
         if (data['models'] is List) {
@@ -496,22 +480,17 @@ class ProviderDiscoveryService extends ChangeNotifier {
   Future<bool> _isLMStudioEndpoint(String baseUrl) async {
     try {
       // LM Studio often has specific headers or responses that identify it
-      final response = await _httpClient
-          .get(
-            Uri.parse('$baseUrl/v1/models'),
-            headers: {'Accept': 'application/json'},
-          )
-          .timeout(_defaultTimeout);
+      final response = await _dio.get('$baseUrl/v1/models', options: Options(headers: {'Accept': 'application/json'}));
 
       // Check for LM Studio-specific indicators in headers or response
-      final serverHeader = response.headers['server']?.toLowerCase();
+      final serverHeader = response.headers.value('server')?.toLowerCase();
       if (serverHeader != null && serverHeader.contains('lm studio')) {
         return true;
       }
 
       // Check response body for LM Studio indicators
       if (response.statusCode == 200) {
-        final body = response.body.toLowerCase();
+        final body = response.data.toLowerCase();
         if (body.contains('lm studio') || body.contains('lmstudio')) {
           return true;
         }
@@ -526,12 +505,7 @@ class ProviderDiscoveryService extends ChangeNotifier {
   /// Validate Ollama endpoint
   Future<bool> _validateOllamaEndpoint(ProviderInfo provider) async {
     try {
-      final response = await _httpClient
-          .get(
-            Uri.parse('${provider.baseUrl}/api/version'),
-            headers: {'Accept': 'application/json'},
-          )
-          .timeout(_defaultTimeout);
+      final response = await _dio.get('${provider.baseUrl}/api/version', options: Options(headers: {'Accept': 'application/json'}));
 
       return response.statusCode == 200;
     } catch (error) {
@@ -542,12 +516,7 @@ class ProviderDiscoveryService extends ChangeNotifier {
   /// Validate OpenAI-compatible endpoint
   Future<bool> _validateOpenAICompatibleEndpoint(ProviderInfo provider) async {
     try {
-      final response = await _httpClient
-          .get(
-            Uri.parse('${provider.baseUrl}/v1/models'),
-            headers: {'Accept': 'application/json'},
-          )
-          .timeout(_defaultTimeout);
+      final response = await _dio.get('${provider.baseUrl}/v1/models', options: Options(headers: {'Accept': 'application/json'}));
 
       return response.statusCode == 200;
     } catch (error) {
@@ -559,14 +528,10 @@ class ProviderDiscoveryService extends ChangeNotifier {
   Future<bool> _validateCustomEndpoint(ProviderInfo provider) async {
     try {
       // For custom endpoints, try a basic health check
-      final response = await _httpClient
-          .get(
-            Uri.parse(provider.baseUrl),
-            headers: {'Accept': 'application/json'},
-          )
-          .timeout(_defaultTimeout);
+      final response = await _dio.get(provider.baseUrl, options: Options(headers: {'Accept': 'application/json'}));
 
-      return response.statusCode >= 200 && response.statusCode < 400;
+      final statusCode = response.statusCode;
+      return statusCode != null && statusCode >= 200 && statusCode < 400;
     } catch (error) {
       return false;
     }
@@ -599,7 +564,7 @@ class ProviderDiscoveryService extends ChangeNotifier {
   @override
   void dispose() {
     stopPeriodicScanning();
-    _httpClient.close();
+    _dio.close();
     super.dispose();
   }
 }

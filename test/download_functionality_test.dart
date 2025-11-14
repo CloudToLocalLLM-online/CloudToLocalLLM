@@ -1,6 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
+import 'package:dio/dio.dart';
 
 /// Test suite for download functionality
 void main() {
@@ -11,22 +10,24 @@ void main() {
     
     test('GitHub API - Latest Release Accessible', () async {
       final url = '$baseApiUrl/$repoOwner/$repoName/releases/latest';
-      final response = await http.get(Uri.parse(url));
-      
+      final dio = Dio();
+      final response = await dio.get(url);
+
       expect(response.statusCode, 200, reason: 'GitHub API should be accessible');
-      
-      final data = json.decode(response.body);
+
+      final data = response.data;
       expect(data['tag_name'], isNotNull, reason: 'Release should have a tag name');
       expect(data['assets'], isNotEmpty, reason: 'Release should have assets');
     });
     
     test('GitHub API - Release Assets Have Valid URLs', () async {
       final url = '$baseApiUrl/$repoOwner/$repoName/releases/latest';
-      final response = await http.get(Uri.parse(url));
-      
+      final dio = Dio();
+      final response = await dio.get(url);
+
       expect(response.statusCode, 200);
-      
-      final data = json.decode(response.body);
+
+      final data = response.data;
       final List<dynamic> assets = data['assets'];
       
       for (final asset in assets) {
@@ -35,7 +36,7 @@ void main() {
         expect(downloadUrl, contains('/releases/download/'));
         
         // Test that the download URL is accessible (returns 200 or 302 for redirect)
-        final downloadResponse = await http.head(Uri.parse(downloadUrl));
+        final downloadResponse = await Dio().head(downloadUrl);
         expect(
           [200, 302].contains(downloadResponse.statusCode),
           true,
@@ -46,11 +47,12 @@ void main() {
     
     test('Expected Asset Files Present', () async {
       final url = '$baseApiUrl/$repoOwner/$repoName/releases/latest';
-      final response = await http.get(Uri.parse(url));
-      
+      final dio = Dio();
+      final response = await dio.get(url);
+
       expect(response.statusCode, 200);
-      
-      final data = json.decode(response.body);
+
+      final data = response.data;
       final List<dynamic> assets = data['assets'];
       final assetNames = assets.map((asset) => asset['name'] as String).toList();
       
@@ -64,11 +66,12 @@ void main() {
     
     test('Asset Sizes Are Reasonable', () async {
       final url = '$baseApiUrl/$repoOwner/$repoName/releases/latest';
-      final response = await http.get(Uri.parse(url));
-      
+      final dio = Dio();
+      final response = await dio.get(url);
+
       expect(response.statusCode, 200);
-      
-      final data = json.decode(response.body);
+
+      final data = response.data;
       final List<dynamic> assets = data['assets'];
       
       for (final asset in assets) {
@@ -85,11 +88,12 @@ void main() {
     
     test('Release Information Complete', () async {
       final url = '$baseApiUrl/$repoOwner/$repoName/releases/latest';
-      final response = await http.get(Uri.parse(url));
-      
+      final dio = Dio();
+      final response = await dio.get(url);
+
       expect(response.statusCode, 200);
-      
-      final data = json.decode(response.body);
+
+      final data = response.data;
       
       // Check required fields
       expect(data['tag_name'], isNotNull);

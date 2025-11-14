@@ -1,6 +1,5 @@
-import 'dart:convert';
 import 'package:flutter/foundation.dart';
-import 'package:http/http.dart' as http;
+import 'package:dio/dio.dart';
 
 import '../models/conversation.dart';
 import '../models/message.dart';
@@ -28,9 +27,18 @@ class ConversationStorageService {
   Database? _database;
   bool _isInitialized = false;
   bool _encryptionEnabled = false;
+  final Dio _dio = Dio();
 
   ConversationStorageService({AuthService? authService})
-      : _authService = authService;
+      : _authService = authService {
+    _setupDio();
+  }
+
+  void _setupDio() {
+    _dio.options.baseUrl = AppConfig.apiBaseUrl;
+    _dio.options.connectTimeout = AppConfig.apiTimeout;
+    _dio.options.receiveTimeout = AppConfig.apiTimeout;
+  }
 
   /// Initialize the storage service with platform-specific database factory
   Future<void> initialize() async {
@@ -460,14 +468,11 @@ class ConversationStorageService {
   Future<List<Conversation>> _loadConversationsViaAPI() async {
     try {
       final headers = await _getAuthHeaders();
-      final url = Uri.parse('${AppConfig.apiBaseUrl}/api/conversations');
 
-      final response = await http.get(url, headers: headers).timeout(
-        AppConfig.apiTimeout,
-      );
+      final response = await _dio.get('/api/conversations', options: Options(headers: headers));
 
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body) as Map<String, dynamic>;
+        final data = response.data as Map<String, dynamic>;
         final conversationsData = data['conversations'] as List<dynamic>? ?? [];
 
         final conversations = <Conversation>[];
@@ -500,14 +505,11 @@ class ConversationStorageService {
   Future<Conversation?> _loadConversationViaAPI(String conversationId) async {
     try {
       final headers = await _getAuthHeaders();
-      final url = Uri.parse('${AppConfig.apiBaseUrl}/api/conversations/$conversationId');
 
-      final response = await http.get(url, headers: headers).timeout(
-        AppConfig.apiTimeout,
-      );
+      final response = await _dio.get('/api/conversations/$conversationId', options: Options(headers: headers));
 
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body) as Map<String, dynamic>;
+        final data = response.data as Map<String, dynamic>;
         final convData = data['conversation'] as Map<String, dynamic>;
 
         return Conversation.fromJson({
@@ -548,9 +550,8 @@ class ConversationStorageService {
   Future<void> _saveConversationViaAPI(Conversation conversation) async {
     try {
       final headers = await _getAuthHeaders();
-      final url = Uri.parse('${AppConfig.apiBaseUrl}/api/conversations/${conversation.id}');
 
-      final body = jsonEncode({
+      final body = {
         'title': conversation.title,
         'messages': conversation.messages.map((m) => {
               'role': m.role.name,
@@ -558,11 +559,9 @@ class ConversationStorageService {
               'model': m.model,
               'timestamp': m.timestamp.toIso8601String(),
             }).toList(),
-      });
+      };
 
-      final response = await http.put(url, headers: headers, body: body).timeout(
-        AppConfig.apiTimeout,
-      );
+      final response = await _dio.put('/api/conversations/${conversation.id}', data: body, options: Options(headers: headers));
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         debugPrint(
@@ -570,8 +569,7 @@ class ConversationStorageService {
         );
       } else {
         // Try POST if PUT fails (conversation doesn't exist yet)
-        final postUrl = Uri.parse('${AppConfig.apiBaseUrl}/api/conversations');
-        final postBody = jsonEncode({
+        final postBody = {
           'title': conversation.title,
           'model': conversation.model ?? 'default',
           'messages': conversation.messages.map((m) => {
@@ -580,11 +578,9 @@ class ConversationStorageService {
                 'model': m.model,
                 'timestamp': m.timestamp.toIso8601String(),
               }).toList(),
-        });
+        };
 
-        final postResponse = await http.post(postUrl, headers: headers, body: postBody).timeout(
-          AppConfig.apiTimeout,
-        );
+        final postResponse = await _dio.post('/api/conversations', data: postBody, options: Options(headers: headers));
 
         if (postResponse.statusCode != 201) {
           throw Exception('Failed to save conversation: ${postResponse.statusCode}');
@@ -600,11 +596,8 @@ class ConversationStorageService {
   Future<void> _deleteConversationViaAPI(String conversationId) async {
     try {
       final headers = await _getAuthHeaders();
-      final url = Uri.parse('${AppConfig.apiBaseUrl}/api/conversations/$conversationId');
 
-      final response = await http.delete(url, headers: headers).timeout(
-        AppConfig.apiTimeout,
-      );
+      final response = await _dio.delete('/api/conversations/$conversationId', options: Options(headers: headers));
 
       if (response.statusCode == 200) {
         debugPrint('[ConversationStorage] Deleted conversation via API: $conversationId');

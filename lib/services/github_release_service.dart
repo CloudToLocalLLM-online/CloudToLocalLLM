@@ -1,5 +1,4 @@
-import 'dart:convert';
-import 'package:http/http.dart' as http;
+import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -13,10 +12,11 @@ class GitHubReleaseService {
   Future<GitHubRelease?> getLatestRelease() async {
     try {
       final url = '$_baseApiUrl/$_repoOwner/$_repoName/releases/latest';
-      final response = await http.get(Uri.parse(url));
+      final dio = Dio();
+      final response = await dio.get(url);
 
       if (response.statusCode == 200) {
-        final data = json.decode(response.body);
+        final data = response.data;
         return GitHubRelease.fromJson(data);
       } else {
         debugPrint('Failed to fetch latest release: ${response.statusCode}');
@@ -32,10 +32,11 @@ class GitHubReleaseService {
   Future<List<GitHubRelease>> getAllReleases() async {
     try {
       final url = '$_baseApiUrl/$_repoOwner/$_repoName/releases';
-      final response = await http.get(Uri.parse(url));
+      final dio = Dio();
+      final response = await dio.get(url);
 
       if (response.statusCode == 200) {
-        final List<dynamic> data = json.decode(response.body);
+        final List<dynamic> data = response.data;
         return data.map((json) => GitHubRelease.fromJson(json)).toList();
       } else {
         debugPrint('Failed to fetch releases: ${response.statusCode}');

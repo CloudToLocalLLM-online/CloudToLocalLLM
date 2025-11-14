@@ -1,7 +1,8 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
+import 'package:dio/dio.dart';
+import 'dart:convert' as convert;
 
 import '../../models/llm_model.dart';
 import 'llm_provider.dart';
@@ -25,7 +26,7 @@ class LMStudioProvider extends LLMProvider {
   set _config(LLMProviderConfig value) => providerConfig = value;
 
   // HTTP client
-  final http.Client _httpClient = http.Client();
+  final Dio _dio = Dio();
 
   // Active request tracking
   int _activeRequestCount = 0;
@@ -135,12 +136,8 @@ class LMStudioProvider extends LLMProvider {
   @override
   Future<bool> testConnection() async {
     try {
-      final response = await _httpClient
-          .get(
-            Uri.parse('${_config.baseUrl}/v1/models'),
-            headers: _getHeaders(),
-          )
-          .timeout(const Duration(seconds: 10));
+      _dio.options.baseUrl = _config.baseUrl;
+      final response = await _dio.get('/v1/models', options: Options(headers: _getHeaders()));
 
       if (response.statusCode == 200) {
         _isAvailable = true;
@@ -148,7 +145,7 @@ class LMStudioProvider extends LLMProvider {
         notifyListeners();
         return true;
       } else {
-        throw Exception('HTTP ${response.statusCode}: ${response.body}');
+        throw Exception('HTTP ${response.statusCode}: ${response.data}');
       }
     } catch (e) {
       _lastError = 'Connection test failed: $e';
@@ -163,15 +160,11 @@ class LMStudioProvider extends LLMProvider {
     try {
       _setLoading(true);
 
-      final response = await _httpClient
-          .get(
-            Uri.parse('${_config.baseUrl}/v1/models'),
-            headers: _getHeaders(),
-          )
-          .timeout(const Duration(seconds: 30));
+      _dio.options.baseUrl = _config.baseUrl;
+      final response = await _dio.get('/v1/models', options: Options(headers: _getHeaders()));
 
       if (response.statusCode == 200) {
-        final data = json.decode(response.body) as Map<String, dynamic>;
+        final data = response.data as Map<String, dynamic>;
         final models = data['data'] as List<dynamic>? ?? [];
 
         _availableModels = models.map((model) {
@@ -186,7 +179,7 @@ class LMStudioProvider extends LLMProvider {
 
         debugPrint('[lm_studio_provider] Loaded ${_availableModels.length} models from LM Studio');
       } else {
-        throw Exception('HTTP ${response.statusCode}: ${response.body}');
+        throw Exception('HTTP ${response.statusCode}: ${response.data}');
       }
     } catch (e) {
       _lastError = 'Failed to refresh models: $e';
@@ -235,22 +228,21 @@ class LMStudioProvider extends LLMProvider {
         {'role': 'user', 'content': message},
       ];
 
-      final response = await _httpClient
-          .post(
-            Uri.parse('${_config.baseUrl}/v1/chat/completions'),
-            headers: _getHeaders(),
-            body: json.encode({
-              'model': model,
-              'messages': messages,
-              'stream': false,
-              'temperature': 0.7,
-              ...?options,
-            }),
-          )
-          .timeout(const Duration(seconds: 120));
+      _dio.options.baseUrl = _config.baseUrl;
+      final response = await _dio.post(
+        '/v1/chat/completions',
+        data: {
+          'model': model,
+          'messages': messages,
+          'stream': false,
+          'temperature': 0.7,
+          ...?options,
+        },
+        options: Options(headers: _getHeaders()),
+      );
 
       if (response.statusCode == 200) {
-        final data = json.decode(response.body) as Map<String, dynamic>;
+        final data = response.data as Map<String, dynamic>;
         final choices = data['choices'] as List<dynamic>? ?? [];
         if (choices.isNotEmpty) {
           final choice = choices.first as Map<String, dynamic>;
@@ -259,7 +251,7 @@ class LMStudioProvider extends LLMProvider {
         }
         return '';
       } else {
-        throw Exception('HTTP ${response.statusCode}: ${response.body}');
+        throw Exception('HTTP ${response.statusCode}: ${response.data}');
       }
     } catch (e) {
       _lastError = 'Failed to send message: $e';
@@ -294,24 +286,25 @@ class LMStudioProvider extends LLMProvider {
         {'role': 'user', 'content': message},
       ];
 
-      final request = http.Request(
-        'POST',
-        Uri.parse('${_config.baseUrl}/v1/chat/completions'),
+      _dio.options.baseUrl = _config.baseUrl;
+      final response = await _dio.post(
+        '/v1/chat/completions',
+        data: {
+          'model': model,
+          'messages': messages,
+          'stream': true,
+          'temperature': 0.7,
+          ...?options,
+        },
+        options: Options(
+          headers: _getHeaders(),
+          responseType: ResponseType.stream,
+        ),
       );
-      request.headers.addAll(_getHeaders());
-      request.body = json.encode({
-        'model': model,
-        'messages': messages,
-        'stream': true,
-        'temperature': 0.7,
-        ...?options,
-      });
 
-      final streamedResponse = await _httpClient.send(request);
-
-      if (streamedResponse.statusCode == 200) {
-        await for (final chunk in streamedResponse.stream.transform(
-          utf8.decoder,
+      if (response.statusCode == 200) {
+        await for (final chunk in response.data.stream.transform(
+          convert.utf8.decoder,
         )) {
           final lines = chunk.split('\n');
           for (final line in lines) {
@@ -338,7 +331,7 @@ class LMStudioProvider extends LLMProvider {
           }
         }
       } else {
-        throw Exception('HTTP ${streamedResponse.statusCode}');
+        throw Exception('HTTP ${response.statusCode}');
       }
     } catch (e) {
       _lastError = 'Failed to send streaming message: $e';
@@ -431,7 +424,7 @@ class LMStudioProvider extends LLMProvider {
 
   @override
   void dispose() {
-    _httpClient.close();
+    _dio.close();
     super.dispose();
   }
 }

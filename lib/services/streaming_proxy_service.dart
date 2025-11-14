@@ -1,6 +1,5 @@
-import 'dart:convert';
 import 'package:flutter/foundation.dart';
-import 'package:http/http.dart' as http;
+import 'package:dio/dio.dart';
 import '../config/app_config.dart';
 import 'auth_service.dart';
 
@@ -10,6 +9,7 @@ class StreamingProxyService extends ChangeNotifier {
   final String _baseUrl;
   final Duration _timeout;
   final AuthService? _authService;
+  final Dio _dio = Dio();
 
   bool _isProxyRunning = false;
   String? _proxyId;
@@ -24,10 +24,17 @@ class StreamingProxyService extends ChangeNotifier {
   }) : _baseUrl = baseUrl ?? AppConfig.apiBaseUrl,
        _timeout = timeout ?? AppConfig.apiTimeout,
        _authService = authService {
+    _setupDio();
     if (kDebugMode) {
       debugPrint('[StreamingProxy] Service initialized');
       debugPrint('[StreamingProxy] Base URL: $_baseUrl');
     }
+  }
+
+  void _setupDio() {
+    _dio.options.baseUrl = _baseUrl;
+    _dio.options.connectTimeout = _timeout;
+    _dio.options.receiveTimeout = _timeout;
   }
 
   // Getters
@@ -59,12 +66,10 @@ class StreamingProxyService extends ChangeNotifier {
         debugPrint('[StreamingProxy] Starting proxy...');
       }
 
-      final response = await http
-          .post(Uri.parse('$_baseUrl/api/proxy/start'), headers: _getHeaders())
-          .timeout(_timeout);
+      final response = await _dio.post('/api/proxy/start', options: Options(headers: _getHeaders()));
 
       if (response.statusCode == 200) {
-        final data = json.decode(response.body);
+        final data = response.data;
         if (data['success'] == true) {
           _proxyId = data['proxy']['proxyId'];
           _proxyCreatedAt = DateTime.parse(data['proxy']['createdAt']);
@@ -81,7 +86,7 @@ class StreamingProxyService extends ChangeNotifier {
           return false;
         }
       } else {
-        final errorData = json.decode(response.body);
+        final errorData = response.data;
         _setError('Failed to start proxy: ${errorData['message']}');
         return false;
       }
@@ -106,12 +111,10 @@ class StreamingProxyService extends ChangeNotifier {
         debugPrint('[StreamingProxy] Stopping proxy...');
       }
 
-      final response = await http
-          .post(Uri.parse('$_baseUrl/api/proxy/stop'), headers: _getHeaders())
-          .timeout(_timeout);
+      final response = await _dio.post('/api/proxy/stop', options: Options(headers: _getHeaders()));
 
       if (response.statusCode == 200) {
-        final data = json.decode(response.body);
+        final data = response.data;
         if (data['success'] == true) {
           _proxyId = null;
           _proxyCreatedAt = null;
@@ -128,7 +131,7 @@ class StreamingProxyService extends ChangeNotifier {
           return false;
         }
       } else {
-        final errorData = json.decode(response.body);
+        final errorData = response.data;
         _setError('Failed to stop proxy: ${errorData['message']}');
         return false;
       }
@@ -149,12 +152,10 @@ class StreamingProxyService extends ChangeNotifier {
       _setLoading(true);
       _clearError();
 
-      final response = await http
-          .get(Uri.parse('$_baseUrl/api/proxy/status'), headers: _getHeaders())
-          .timeout(_timeout);
+      final response = await _dio.get('/api/proxy/status', options: Options(headers: _getHeaders()));
 
       if (response.statusCode == 200) {
-        final data = json.decode(response.body);
+        final data = response.data;
 
         _isProxyRunning = data['status'] == 'running';
 
@@ -175,7 +176,7 @@ class StreamingProxyService extends ChangeNotifier {
         notifyListeners();
         return _isProxyRunning;
       } else {
-        final errorData = json.decode(response.body);
+        final errorData = response.data;
         _setError('Failed to check proxy status: ${errorData['message']}');
         return false;
       }

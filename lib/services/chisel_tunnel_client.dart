@@ -3,7 +3,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
-import 'package:http/http.dart' as http;
+import 'package:dio/dio.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as path;
 import '../models/tunnel_config.dart';
@@ -14,6 +14,7 @@ import '../models/tunnel_config.dart';
 /// binary to establish a reverse tunnel from the server to localhost:11434.
 class ChiselTunnelClient with ChangeNotifier {
   final TunnelConfig _config;
+  final Dio _dio = Dio();
   Process? _chiselProcess;
   bool _isConnected = false;
   int? _tunnelPort;
@@ -194,25 +195,25 @@ class ChiselTunnelClient with ChangeNotifier {
       debugPrint('[Chisel] Registering with URL: $registerUrl');
       debugPrint('[Chisel] Auth token preview: ${_config.authToken.substring(0, 20)}...');
 
-      final response = await http.post(
-        registerUrl,
-        headers: {
-          'Authorization': 'Bearer ${_config.authToken}',
-          'Content-Type': 'application/json',
-        },
-        body: jsonEncode({
+      final response = await _dio.post(
+        registerUrl.toString(),
+        data: {
           'tunnelId': _tunnelId,
           'localPort': _extractLocalPort(_config.localBackendUrl),
           'serverPort': _tunnelPort,
+        },
+        options: Options(headers: {
+          'Authorization': 'Bearer ${_config.authToken}',
+          'Content-Type': 'application/json',
         }),
       );
 
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body) as Map<String, dynamic>;
+        final data = response.data as Map<String, dynamic>;
         _tunnelPort = data['serverPort'] as int? ?? _tunnelPort;
         debugPrint('[Chisel] Registered with server: port $_tunnelPort');
       } else {
-        debugPrint('[Chisel] Registration failed: ${response.statusCode} - ${response.body}');
+        debugPrint('[Chisel] Registration failed: ${response.statusCode} - ${response.data}');
       }
     } catch (e) {
       debugPrint('[Chisel] Error registering with server: $e');
@@ -455,12 +456,12 @@ class ChiselTunnelClient with ChangeNotifier {
           .replaceFirst('ws://', 'http://');
       final baseUrl = serverUrl.substring(0, serverUrl.lastIndexOf(':'));
 
-      await http.post(
-        Uri.parse('$baseUrl/api/tunnel/unregister'),
-        headers: {
+      await _dio.post(
+        '$baseUrl/api/tunnel/unregister',
+        options: Options(headers: {
           'Authorization': 'Bearer ${_config.authToken}',
           'Content-Type': 'application/json',
-        },
+        }),
       );
       debugPrint('[Chisel] Unregistered from server');
     } catch (e) {

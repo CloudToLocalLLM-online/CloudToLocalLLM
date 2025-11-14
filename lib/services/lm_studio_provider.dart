@@ -22,7 +22,8 @@ library;
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
-import 'package:http/http.dart' as http;
+import 'package:dio/dio.dart';
+import 'dart:convert' as convert;
 
 import 'provider_discovery_service.dart';
 import '../models/llm_communication_error.dart';
@@ -100,7 +101,7 @@ class LMStudioMessage {
 class LMStudioProvider extends ChangeNotifier {
   final String baseUrl;
   final Duration timeout;
-  final http.Client _httpClient;
+  late Dio _dio;
 
   bool _isConnected = false;
   List<LMStudioModel> _models = [];
@@ -109,15 +110,21 @@ class LMStudioProvider extends ChangeNotifier {
   String? _currentModel;
 
   static const Duration _defaultTimeout = Duration(seconds: 30);
-  static const Duration _streamingTimeout = Duration(minutes: 5);
 
   LMStudioProvider({
     required this.baseUrl,
     Duration? timeout,
-    http.Client? httpClient,
-  }) : timeout = timeout ?? _defaultTimeout,
-       _httpClient = httpClient ?? http.Client() {
+    Dio? dio,
+  }) : timeout = timeout ?? _defaultTimeout {
+    _dio = dio ?? Dio();
+    _setupDio();
     debugPrint('LMStudioProvider initialized with baseUrl: $baseUrl');
+  }
+
+  void _setupDio() {
+    _dio.options.baseUrl = baseUrl;
+    _dio.options.connectTimeout = timeout;
+    _dio.options.receiveTimeout = timeout;
   }
 
   /// Getters
@@ -160,13 +167,8 @@ class LMStudioProvider extends ChangeNotifier {
   Future<bool> testConnection() async {
     try {
       debugPrint('Testing LM Studio connection...');
-      
-      final response = await _httpClient
-          .get(
-            Uri.parse('$baseUrl/v1/models'),
-            headers: _getHeaders(),
-          )
-          .timeout(timeout);
+
+      final response = await _dio.get('/v1/models', options: Options(headers: _getHeaders()));
 
       if (response.statusCode == 200) {
         _isConnected = true;
@@ -193,15 +195,10 @@ class LMStudioProvider extends ChangeNotifier {
 
       debugPrint('Getting LM Studio models...');
 
-      final response = await _httpClient
-          .get(
-            Uri.parse('$baseUrl/v1/models'),
-            headers: _getHeaders(),
-          )
-          .timeout(timeout);
+      final response = await _dio.get('/v1/models', options: Options(headers: _getHeaders()));
 
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
+        final data = response.data;
         final modelsList = data['data'] as List<dynamic>? ?? [];
 
         _models = modelsList
@@ -212,7 +209,7 @@ class LMStudioProvider extends ChangeNotifier {
         return _models;
       } else {
         _setError('Failed to get models: HTTP ${response.statusCode}');
-        debugPrint('Get models failed: ${response.statusCode} - ${response.body}');
+        debugPrint('Get models failed: ${response.statusCode} - ${response.data}');
         return [];
       }
     } catch (error) {
@@ -246,16 +243,14 @@ class LMStudioProvider extends ChangeNotifier {
         if (maxTokens != null) 'max_tokens': maxTokens,
       };
 
-      final response = await _httpClient
-          .post(
-            Uri.parse('$baseUrl/v1/chat/completions'),
-            headers: _getHeaders(),
-            body: jsonEncode(requestBody),
-          )
-          .timeout(stream ? _streamingTimeout : timeout);
+      final response = await _dio.post(
+        '/v1/chat/completions',
+        data: requestBody,
+        options: Options(headers: _getHeaders()),
+      );
 
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
+        final data = response.data;
         final choices = data['choices'] as List<dynamic>? ?? [];
         
         if (choices.isNotEmpty) {
@@ -270,7 +265,7 @@ class LMStudioProvider extends ChangeNotifier {
         }
       } else {
         _setError('Chat completion failed: HTTP ${response.statusCode}');
-        debugPrint('Chat completion failed: ${response.statusCode} - ${response.body}');
+        debugPrint('Chat completion failed: ${response.statusCode} - ${response.data}');
         return null;
       }
     } catch (error) {
@@ -300,18 +295,17 @@ class LMStudioProvider extends ChangeNotifier {
         if (maxTokens != null) 'max_tokens': maxTokens,
       };
 
-      final request = http.Request(
-        'POST',
-        Uri.parse('$baseUrl/v1/chat/completions'),
+      final response = await _dio.post(
+        '/v1/chat/completions',
+        data: requestBody,
+        options: Options(
+          headers: _getHeaders(),
+          responseType: ResponseType.stream,
+        ),
       );
-      
-      request.headers.addAll(_getHeaders());
-      request.body = jsonEncode(requestBody);
 
-      final streamedResponse = await _httpClient.send(request);
-
-      if (streamedResponse.statusCode == 200) {
-        await for (final chunk in streamedResponse.stream.transform(utf8.decoder)) {
+      if (response.statusCode == 200) {
+        await for (final chunk in response.data.stream.transform(convert.utf8.decoder)) {
           // Parse Server-Sent Events format
           final lines = chunk.split('\n');
           
@@ -345,9 +339,9 @@ class LMStudioProvider extends ChangeNotifier {
         }
       } else {
         throw LLMCommunicationError.fromException(
-          Exception('Streaming failed: HTTP ${streamedResponse.statusCode}'),
+          Exception('Streaming failed: HTTP ${response.statusCode}'),
           type: LLMCommunicationErrorType.providerUnavailable,
-          httpStatusCode: streamedResponse.statusCode,
+          httpStatusCode: response.statusCode,
         );
       }
     } catch (error) {
@@ -480,7 +474,7 @@ class LMStudioProvider extends ChangeNotifier {
 
   @override
   void dispose() {
-    _httpClient.close();
+    _dio.close();
     super.dispose();
   }
 }

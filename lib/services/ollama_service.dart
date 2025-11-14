@@ -1,6 +1,7 @@
 import 'dart:convert';
+import 'dart:async';
 import 'package:flutter/foundation.dart';
-import 'package:http/http.dart' as http;
+import 'package:dio/dio.dart';
 import '../config/app_config.dart';
 import 'auth_service.dart';
 import 'provider_discovery_service.dart';
@@ -14,6 +15,7 @@ class OllamaService extends ChangeNotifier {
   final Duration _timeout;
   final AuthService? _authService;
   final bool _isWeb;
+  final Dio _dio = Dio();
 
   bool _isConnected = false;
   String? _version;
@@ -28,6 +30,7 @@ class OllamaService extends ChangeNotifier {
           (kIsWeb ? AppConfig.cloudOllamaUrl : AppConfig.defaultOllamaUrl),
       _timeout = timeout ?? AppConfig.ollamaTimeout,
       _authService = authService {
+    _setupDio();
     // Debug logging for service initialization
     if (kDebugMode) {
       debugPrint('[DEBUG] OllamaService initialized:');
@@ -47,6 +50,12 @@ class OllamaService extends ChangeNotifier {
       );
       AppConfig.logConfiguration();
     }
+  }
+
+  void _setupDio() {
+    _dio.options.baseUrl = _baseUrl;
+    _dio.options.connectTimeout = _timeout;
+    _dio.options.receiveTimeout = _timeout;
   }
 
   /// Initialize the service and test connection
@@ -120,12 +129,10 @@ class OllamaService extends ChangeNotifier {
         return false;
       }
 
-      final response = await http
-          .get(Uri.parse(url), headers: headers ?? {'Content-Type': 'application/json'})
-          .timeout(_timeout);
+      final response = await _dio.get(url, options: Options(headers: headers));
 
       if (response.statusCode == 200) {
-        final data = json.decode(response.body);
+        final data = response.data;
         if (_isWeb) {
           // For web, check bridge status response
           _isConnected = data['status'] == 'healthy' || data['bridges'] != null;
@@ -175,12 +182,10 @@ class OllamaService extends ChangeNotifier {
         return [];
       }
 
-      final response = await http
-          .get(Uri.parse(url), headers: headers ?? {'Content-Type': 'application/json'})
-          .timeout(_timeout);
+      final response = await _dio.get(url, options: Options(headers: headers));
 
       if (response.statusCode == 200) {
-        final data = json.decode(response.body);
+        final data = response.data;
         final modelsList = data['models'] as List<dynamic>? ?? [];
 
         _models = modelsList
@@ -195,7 +200,7 @@ class OllamaService extends ChangeNotifier {
         debugPrint(
           '[DEBUG] Models request failed with status: ${response.statusCode}',
         );
-        debugPrint('[DEBUG] Response body: ${response.body}');
+        debugPrint('[DEBUG] Response body: ${response.data}');
         return [];
       }
     } catch (e) {
@@ -231,20 +236,18 @@ class OllamaService extends ChangeNotifier {
         return null;
       }
 
-      final response = await http
-          .post(
-            Uri.parse(url),
-            headers: headers ?? {'Content-Type': 'application/json'},
-            body: json.encode({
-              'model': model,
-              'messages': messages,
-              'stream': false,
-            }),
-          )
-          .timeout(_timeout);
+      final response = await _dio.post(
+        url,
+        data: {
+          'model': model,
+          'messages': messages,
+          'stream': false,
+        },
+        options: Options(headers: headers),
+      );
 
       if (response.statusCode == 200) {
-        final data = json.decode(response.body);
+        final data = response.data;
         final responseMessage = data['message']?['content'] as String?;
         debugPrint(
           'Chat response received via ${_isWeb ? 'bridge' : 'direct connection'}',
@@ -255,7 +258,7 @@ class OllamaService extends ChangeNotifier {
         debugPrint(
           '[DEBUG] Chat request failed with status: ${response.statusCode}',
         );
-        debugPrint('[DEBUG] Response body: ${response.body}');
+        debugPrint('[DEBUG] Response body: ${response.data}');
         return null;
       }
     } catch (e) {
@@ -282,22 +285,21 @@ class OllamaService extends ChangeNotifier {
         return false;
       }
 
-      final response = await http
-          .post(
-            Uri.parse(url),
-            headers: headers ?? {'Content-Type': 'application/json'},
-            body: json.encode({'name': modelName}),
-          )
-          .timeout(
-            const Duration(minutes: 10),
-          ); // Longer timeout for model downloads
+      final response = await _dio.post(
+        url,
+        data: {'name': modelName},
+        options: Options(
+          headers: headers,
+          receiveTimeout: const Duration(minutes: 10),
+        ),
+      );
 
       final success = response.statusCode == 200;
       debugPrint(
         '[DEBUG] Model pull ${success ? 'successful' : 'failed'} via ${_isWeb ? 'bridge' : 'direct connection'}',
       );
       if (!success) {
-        debugPrint('[DEBUG] Pull response: ${response.body}');
+        debugPrint('[DEBUG] Pull response: ${response.data}');
       }
 
       // Refresh models list if successful
@@ -330,13 +332,11 @@ class OllamaService extends ChangeNotifier {
         return false;
       }
 
-      final response = await http
-          .post(
-            Uri.parse(url),
-            headers: headers ?? {'Content-Type': 'application/json'},
-            body: json.encode({'name': modelName}),
-          )
-          .timeout(const Duration(seconds: 30));
+      final response = await _dio.post(
+        url,
+        data: {'name': modelName},
+        options: Options(headers: headers),
+      );
 
       final success = response.statusCode == 200;
       debugPrint(
@@ -344,7 +344,7 @@ class OllamaService extends ChangeNotifier {
       );
 
       if (!success) {
-        debugPrint('[OllamaService] Delete response: ${response.body}');
+        debugPrint('[OllamaService] Delete response: ${response.data}');
         _setError('Failed to delete model: HTTP ${response.statusCode}');
       } else {
         // Refresh models list after successful deletion
@@ -430,18 +430,21 @@ class OllamaService extends ChangeNotifier {
         return;
       }
 
-      final request = http.Request('POST', Uri.parse(url));
-      request.headers.addAll(headers ?? {'Content-Type': 'application/json'});
-      request.body = json.encode({
-        'model': model,
-        'messages': messages,
-        'stream': true,
-      });
+      final response = await _dio.post(
+        url,
+        data: {
+          'model': model,
+          'messages': messages,
+          'stream': true,
+        },
+        options: Options(
+          headers: headers,
+          responseType: ResponseType.stream,
+        ),
+      );
 
-      final streamedResponse = await http.Client().send(request);
-
-      if (streamedResponse.statusCode == 200) {
-        await for (final chunk in streamedResponse.stream.transform(utf8.decoder)) {
+      if (response.statusCode == 200) {
+        await for (final chunk in response.data.stream.transform(utf8.decoder)) {
           try {
             final data = json.decode(chunk);
             final content = data['message']?['content'] as String?;
@@ -462,9 +465,9 @@ class OllamaService extends ChangeNotifier {
         }
       } else {
         throw LLMCommunicationError.fromException(
-          Exception('Streaming failed: HTTP ${streamedResponse.statusCode}'),
+          Exception('Streaming failed: HTTP ${response.statusCode}'),
           type: LLMCommunicationErrorType.providerUnavailable,
-          httpStatusCode: streamedResponse.statusCode,
+          httpStatusCode: response.statusCode,
         );
       }
     } catch (error) {

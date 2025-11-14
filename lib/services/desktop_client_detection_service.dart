@@ -1,7 +1,6 @@
 import 'dart:async';
-import 'dart:convert';
 import 'package:flutter/foundation.dart';
-import 'package:http/http.dart' as http;
+import 'package:dio/dio.dart';
 import '../config/app_config.dart';
 import 'auth_service.dart';
 
@@ -29,11 +28,16 @@ class DesktopClientDetectionService extends ChangeNotifier {
   bool _isMonitoring = false;
 
   // HTTP client
-  late http.Client _httpClient;
+  final Dio _dio = Dio();
 
   DesktopClientDetectionService({required AuthService authService})
     : _authService = authService {
-    _httpClient = http.Client();
+    _setupDio();
+  }
+
+  void _setupDio() {
+    _dio.options.connectTimeout = const Duration(seconds: 10);
+    _dio.options.receiveTimeout = const Duration(seconds: 10);
   }
 
   // Getters
@@ -130,18 +134,16 @@ class DesktopClientDetectionService extends ChangeNotifier {
       }
 
       // Fixed: Corrected API endpoint path
-      final response = await _httpClient
-          .get(
-            Uri.parse(AppConfig.bridgeStatusUrl),
-            headers: {
-              'Authorization': 'Bearer $accessToken',
-              'Content-Type': 'application/json',
-            },
-          )
-          .timeout(const Duration(seconds: 10));
+      final response = await _dio.get(
+        AppConfig.bridgeStatusUrl,
+        options: Options(headers: {
+          'Authorization': 'Bearer $accessToken',
+          'Content-Type': 'application/json',
+        }),
+      );
 
       if (response.statusCode == 200) {
-        final data = json.decode(response.body);
+        final data = response.data;
         final bridges = data['bridges'] as List<dynamic>? ?? [];
 
         final clientInfos = bridges
@@ -159,7 +161,7 @@ class DesktopClientDetectionService extends ChangeNotifier {
           ' [DesktopClientDetection] Found ${clientInfos.length} connected clients',
         );
       } else {
-        throw Exception('HTTP ${response.statusCode}: ${response.body}');
+        throw Exception('HTTP ${response.statusCode}: ${response.data}');
       }
     } catch (e) {
       debugPrint(' [DesktopClientDetection] Error checking clients: $e');
@@ -198,7 +200,7 @@ class DesktopClientDetectionService extends ChangeNotifier {
   @override
   void dispose() {
     stopMonitoring();
-    _httpClient.close();
+    _dio.close();
     // Remove auth listener if still attached
     try {
       _authService.removeListener(_onAuthStateChanged);

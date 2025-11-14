@@ -24,7 +24,8 @@ library;
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
-import 'package:http/http.dart' as http;
+import 'package:dio/dio.dart';
+import 'dart:convert' as convert;
 
 import 'provider_discovery_service.dart';
 import '../models/llm_communication_error.dart';
@@ -146,7 +147,7 @@ class OpenAICompatibleConfig {
 /// OpenAI Compatible Provider Service
 class OpenAICompatibleProvider extends ChangeNotifier {
   final OpenAICompatibleConfig config;
-  final http.Client _httpClient;
+  late Dio _dio;
 
   bool _isConnected = false;
   List<OpenAICompatibleModel> _models = [];
@@ -157,9 +158,17 @@ class OpenAICompatibleProvider extends ChangeNotifier {
 
   OpenAICompatibleProvider({
     required this.config,
-    http.Client? httpClient,
-  }) : _httpClient = httpClient ?? http.Client() {
+    Dio? dio,
+  }) {
+    _dio = dio ?? Dio();
+    _setupDio();
     debugPrint('OpenAICompatibleProvider initialized with baseUrl: ${config.baseUrl}');
+  }
+
+  void _setupDio() {
+    _dio.options.baseUrl = config.baseUrl;
+    _dio.options.connectTimeout = const Duration(seconds: 10);
+    _dio.options.receiveTimeout = const Duration(seconds: 30);
   }
 
   /// Getters
@@ -206,13 +215,11 @@ class OpenAICompatibleProvider extends ChangeNotifier {
   Future<bool> testConnection() async {
     try {
       debugPrint('Testing OpenAI-compatible API connection...');
-      
-      final response = await _httpClient
-          .get(
-            Uri.parse('${config.baseUrl}/${config.apiVersion}/models'),
-            headers: _getHeaders(),
-          )
-          .timeout(config.timeout);
+
+      final response = await _dio.get(
+        '/${config.apiVersion}/models',
+        options: Options(headers: _getHeaders()),
+      );
 
       if (response.statusCode == 200) {
         _isConnected = true;
@@ -243,15 +250,13 @@ class OpenAICompatibleProvider extends ChangeNotifier {
 
       debugPrint('Getting OpenAI-compatible API models...');
 
-      final response = await _httpClient
-          .get(
-            Uri.parse('${config.baseUrl}/${config.apiVersion}/models'),
-            headers: _getHeaders(),
-          )
-          .timeout(config.timeout);
+      final response = await _dio.get(
+        '/${config.apiVersion}/models',
+        options: Options(headers: _getHeaders()),
+      );
 
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
+        final data = response.data;
         final modelsList = data['data'] as List<dynamic>? ?? [];
 
         _models = modelsList
@@ -262,7 +267,7 @@ class OpenAICompatibleProvider extends ChangeNotifier {
         return _models;
       } else {
         _setError('Failed to get models: HTTP ${response.statusCode}');
-        debugPrint('Get models failed: ${response.statusCode} - ${response.body}');
+        debugPrint('Get models failed: ${response.statusCode} - ${response.data}');
         return [];
       }
     } catch (error) {
@@ -304,16 +309,14 @@ class OpenAICompatibleProvider extends ChangeNotifier {
         if (additionalParams != null) ...additionalParams,
       };
 
-      final response = await _httpClient
-          .post(
-            Uri.parse('${config.baseUrl}/${config.apiVersion}/chat/completions'),
-            headers: _getHeaders(),
-            body: jsonEncode(requestBody),
-          )
-          .timeout(stream ? config.streamingTimeout : config.timeout);
+      final response = await _dio.post(
+        '/${config.apiVersion}/chat/completions',
+        data: requestBody,
+        options: Options(headers: _getHeaders()),
+      );
 
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
+        final data = response.data;
         final choices = data['choices'] as List<dynamic>? ?? [];
         
         if (choices.isNotEmpty) {
@@ -328,7 +331,7 @@ class OpenAICompatibleProvider extends ChangeNotifier {
         }
       } else {
         _setError('Chat completion failed: HTTP ${response.statusCode}');
-        debugPrint('Chat completion failed: ${response.statusCode} - ${response.body}');
+        debugPrint('Chat completion failed: ${response.statusCode} - ${response.data}');
         return null;
       }
     } catch (error) {
@@ -364,18 +367,17 @@ class OpenAICompatibleProvider extends ChangeNotifier {
         if (additionalParams != null) ...additionalParams,
       };
 
-      final request = http.Request(
-        'POST',
-        Uri.parse('${config.baseUrl}/${config.apiVersion}/chat/completions'),
+      final response = await _dio.post(
+        '/${config.apiVersion}/chat/completions',
+        data: requestBody,
+        options: Options(
+          headers: _getHeaders(),
+          responseType: ResponseType.stream,
+        ),
       );
-      
-      request.headers.addAll(_getHeaders());
-      request.body = jsonEncode(requestBody);
 
-      final streamedResponse = await _httpClient.send(request);
-
-      if (streamedResponse.statusCode == 200) {
-        await for (final chunk in streamedResponse.stream.transform(utf8.decoder)) {
+      if (response.statusCode == 200) {
+        await for (final chunk in response.data.stream.transform(convert.utf8.decoder)) {
           // Parse Server-Sent Events format
           final lines = chunk.split('\n');
           
@@ -409,9 +411,9 @@ class OpenAICompatibleProvider extends ChangeNotifier {
         }
       } else {
         throw LLMCommunicationError.fromException(
-          Exception('Streaming failed: HTTP ${streamedResponse.statusCode}'),
+          Exception('Streaming failed: HTTP ${response.statusCode}'),
           type: LLMCommunicationErrorType.providerUnavailable,
-          httpStatusCode: streamedResponse.statusCode,
+          httpStatusCode: response.statusCode,
         );
       }
     } catch (error) {
@@ -501,15 +503,13 @@ class OpenAICompatibleProvider extends ChangeNotifier {
 
       for (final endpoint in endpoints) {
         try {
-          final response = await _httpClient
-              .get(
-                Uri.parse(endpoint),
-                headers: _getHeaders(),
-              )
-              .timeout(const Duration(seconds: 5));
+          final response = await _dio.get(
+            endpoint,
+            options: Options(headers: _getHeaders()),
+          );
 
           if (response.statusCode == 200) {
-            _serverInfo = jsonDecode(response.body);
+            _serverInfo = response.data;
             debugPrint('Retrieved server info from: $endpoint');
             break;
           }
@@ -596,7 +596,7 @@ class OpenAICompatibleProvider extends ChangeNotifier {
 
   @override
   void dispose() {
-    _httpClient.close();
+    _dio.close();
     super.dispose();
   }
 }

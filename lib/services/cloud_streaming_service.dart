@@ -1,8 +1,9 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:convert' as convert;
 import 'package:flutter/foundation.dart';
-import 'package:http/http.dart' as http;
+import 'package:dio/dio.dart';
 import 'package:rxdart/rxdart.dart';
 
 import '../config/app_config.dart';
@@ -18,7 +19,7 @@ class CloudStreamingService extends StreamingService {
   final String _baseUrl;
   final StreamingConfig _config;
   final AuthService _authService;
-  final http.Client _httpClient;
+  final Dio _dio = Dio();
 
   StreamingConnection _connection = StreamingConnection.disconnected();
   final BehaviorSubject<StreamingMessage> _messageSubject =
@@ -34,13 +35,19 @@ class CloudStreamingService extends StreamingService {
     required AuthService authService,
   }) : _baseUrl = baseUrl ?? AppConfig.cloudOllamaUrl,
        _config = config ?? StreamingConfig.cloud(),
-       _authService = authService,
-       _httpClient = http.Client() {
+       _authService = authService {
+    _setupDio();
     if (kDebugMode) {
       debugPrint('☁ [CloudStreaming] Service initialized');
       debugPrint('☁ [CloudStreaming] Base URL: $_baseUrl');
       debugPrint('☁ [CloudStreaming] Config: $_config');
     }
+  }
+
+  void _setupDio() {
+    _dio.options.baseUrl = _baseUrl;
+    _dio.options.connectTimeout = _config.connectionTimeout;
+    _dio.options.receiveTimeout = _config.streamTimeout;
   }
 
   @override
@@ -63,14 +70,12 @@ class CloudStreamingService extends StreamingService {
       final stopwatch = Stopwatch()..start();
 
       // Test basic connectivity first
-      final response = await _httpClient
-          .get(Uri.parse('$_baseUrl/api/version'), headers: _getHeaders())
-          .timeout(_config.connectionTimeout);
+      final response = await _dio.get('/api/version', options: Options(headers: _getHeaders()));
 
       stopwatch.stop();
 
       if (response.statusCode == 200) {
-        final data = json.decode(response.body);
+        final data = response.data;
         final version = data['version'] as String?;
 
         _connection = StreamingConnection.connected(_baseUrl).copyWith(
@@ -161,25 +166,28 @@ class CloudStreamingService extends StreamingService {
 
       debugPrint('☁ [CloudStreaming] Starting stream for model: $model');
 
-      final request = http.Request('POST', Uri.parse('$_baseUrl/api/chat'));
-      request.headers.addAll(_getHeaders());
-      request.headers['Accept'] = 'application/x-ndjson';
-      request.body = json.encode(requestBody);
+      final response = await _dio.post(
+        '/api/chat',
+        data: requestBody,
+        options: Options(
+          headers: {
+            ..._getHeaders(),
+            'Accept': 'application/x-ndjson',
+          },
+          responseType: ResponseType.stream,
+        ),
+      );
 
-      final streamedResponse = await _httpClient
-          .send(request)
-          .timeout(_config.streamTimeout);
-
-      if (streamedResponse.statusCode != 200) {
+      if (response.statusCode != 200) {
         throw StreamingException(
-          'Stream request failed: HTTP ${streamedResponse.statusCode}',
+          'Stream request failed: HTTP ${response.statusCode}',
           code: 'STREAM_ERROR',
         );
       }
 
       // Process streaming response
-      await for (final chunk in streamedResponse.stream.transform(
-        utf8.decoder,
+      await for (final chunk in response.data.stream.transform(
+        convert.utf8.decoder,
       )) {
         final lines = chunk.split('\n');
         for (final line in lines) {
@@ -262,12 +270,10 @@ class CloudStreamingService extends StreamingService {
     }
 
     try {
-      final response = await _httpClient
-          .get(Uri.parse('$_baseUrl/api/tags'), headers: _getHeaders())
-          .timeout(_config.connectionTimeout);
+      final response = await _dio.get('/api/tags', options: Options(headers: _getHeaders()));
 
       if (response.statusCode == 200) {
-        final data = json.decode(response.body);
+        final data = response.data;
         final models =
             (data['models'] as List?)
                 ?.map((model) => model['name'] as String)
@@ -380,7 +386,7 @@ class CloudStreamingService extends StreamingService {
     debugPrint('☁ [CloudStreaming] Disposing service');
     closeConnection();
     _messageSubject.close();
-    _httpClient.close();
+    _dio.close();
     super.dispose();
   }
 }

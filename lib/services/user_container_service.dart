@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
-import 'package:http/http.dart' as http;
+import 'package:dio/dio.dart';
 import '../config/app_config.dart';
 import '../models/container_creation_result.dart';
 import 'auth_service.dart';
@@ -13,6 +13,7 @@ import 'auth_service.dart';
 class UserContainerService extends ChangeNotifier {
   final AuthService _authService;
   final String _baseUrl;
+  final Dio _dio = Dio();
 
   // Container state tracking
   String? _currentContainerId;
@@ -25,9 +26,16 @@ class UserContainerService extends ChangeNotifier {
   UserContainerService({required AuthService authService, String? baseUrl})
     : _authService = authService,
       _baseUrl = baseUrl ?? _getDefaultBaseUrl() {
+    _setupDio();
     debugPrint(
       '� [UserContainer] Service initialized with baseUrl: $_baseUrl',
     );
+  }
+
+  void _setupDio() {
+    _dio.options.baseUrl = _baseUrl;
+    _dio.options.connectTimeout = AppConfig.apiTimeout;
+    _dio.options.receiveTimeout = AppConfig.apiTimeout;
   }
 
   // Getters
@@ -78,22 +86,22 @@ class UserContainerService extends ChangeNotifier {
         throw Exception('Failed to get valid access token');
       }
 
-      final response = await http.post(
-        Uri.parse('$_baseUrl/api/streaming-proxy/provision'),
-        headers: {
+      final response = await _dio.post(
+        '/api/streaming-proxy/provision',
+        data: {'testMode': testMode},
+        options: Options(headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
-        },
-        body: jsonEncode({'testMode': testMode}),
+        }),
       );
 
       debugPrint(
         '� [UserContainer] API response status: ${response.statusCode}',
       );
-      debugPrint('� [UserContainer] API response body: ${response.body}');
+      debugPrint('� [UserContainer] API response data: ${response.data}');
 
       if (response.statusCode == 200) {
-        final responseData = jsonDecode(response.body) as Map<String, dynamic>;
+        final responseData = response.data as Map<String, dynamic>;
 
         if (responseData['success'] == true) {
           final proxyData = responseData['proxy'] as Map<String, dynamic>;
@@ -123,7 +131,7 @@ class UserContainerService extends ChangeNotifier {
           );
         }
       } else {
-        final errorData = jsonDecode(response.body) as Map<String, dynamic>;
+        final errorData = jsonDecode(response.data) as Map<String, dynamic>;
         throw Exception(errorData['message'] ?? 'HTTP ${response.statusCode}');
       }
     } catch (e) {
@@ -163,9 +171,9 @@ class UserContainerService extends ChangeNotifier {
         throw Exception('Failed to get valid access token');
       }
 
-      final response = await http.get(
-        Uri.parse('$_baseUrl/api/proxy/status'),
-        headers: {'Authorization': 'Bearer $token'},
+      final response = await _dio.get(
+        '/api/proxy/status',
+        options: Options(headers: {'Authorization': 'Bearer $token'}),
       );
 
       debugPrint(
@@ -173,7 +181,7 @@ class UserContainerService extends ChangeNotifier {
       );
 
       if (response.statusCode == 200) {
-        final statusData = jsonDecode(response.body) as Map<String, dynamic>;
+        final statusData = response.data as Map<String, dynamic>;
         debugPrint(
           '� [UserContainer] Container status: ${statusData['status']}',
         );
@@ -185,7 +193,7 @@ class UserContainerService extends ChangeNotifier {
 
         return statusData;
       } else {
-        final errorData = jsonDecode(response.body) as Map<String, dynamic>;
+        final errorData = jsonDecode(response.data) as Map<String, dynamic>;
         throw Exception(errorData['message'] ?? 'HTTP ${response.statusCode}');
       }
     } catch (e) {
@@ -248,9 +256,9 @@ class UserContainerService extends ChangeNotifier {
         throw Exception('Failed to get valid access token');
       }
 
-      final response = await http.post(
-        Uri.parse('$_baseUrl/proxy/stop'),
-        headers: {'Authorization': 'Bearer $token'},
+      final response = await _dio.post(
+        '/proxy/stop',
+        options: Options(headers: {'Authorization': 'Bearer $token'}),
       );
 
       debugPrint('� [UserContainer] Stop response: ${response.statusCode}');
@@ -263,7 +271,7 @@ class UserContainerService extends ChangeNotifier {
         debugPrint('� [UserContainer] Container stopped successfully');
         return true;
       } else {
-        final errorData = jsonDecode(response.body) as Map<String, dynamic>;
+        final errorData = jsonDecode(response.data) as Map<String, dynamic>;
         debugPrint('� [UserContainer] Stop failed: ${errorData['message']}');
         return false;
       }

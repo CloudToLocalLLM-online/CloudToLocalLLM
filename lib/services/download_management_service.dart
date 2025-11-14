@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
-import 'package:http/http.dart' as http;
+import 'package:dio/dio.dart';
 import '../config/app_config.dart';
 
 /// Service for managing download links, tracking, and validation
@@ -65,19 +65,20 @@ class DownloadManagementService extends ChangeNotifier {
     }
 
     try {
-      final response = await http
-          .get(
-            Uri.parse('$_githubReleasesUrl/latest'),
-            headers: {
-              'Accept': 'application/vnd.github.v3+json',
-              'User-Agent': 'CloudToLocalLLM/${AppConfig.appVersion}',
-            },
-          )
-          .timeout(const Duration(seconds: 10));
+      final dio = Dio();
+      dio.options.connectTimeout = const Duration(seconds: 10);
+      dio.options.receiveTimeout = const Duration(seconds: 10);
+
+      final response = await dio.get(
+        '$_githubReleasesUrl/latest',
+        options: Options(headers: {
+          'Accept': 'application/vnd.github.v3+json',
+          'User-Agent': 'CloudToLocalLLM/${AppConfig.appVersion}',
+        }),
+      );
 
       if (response.statusCode == 200) {
-        _latestReleaseCache =
-            json.decode(response.body) as Map<String, dynamic>;
+        _latestReleaseCache = response.data as Map<String, dynamic>;
         _cacheTimestamp = DateTime.now();
         debugPrint(
           '� [DownloadManagement] Fetched latest release: ${_latestReleaseCache!['tag_name']}',

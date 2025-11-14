@@ -217,14 +217,14 @@ class TestConfig {
 
 /// Test utilities for common test setup
 class TestUtils {
-  /// Create a test HTTP client that returns mock responses
-  static MockHttpClient createMockHttpClient() {
-    return MockHttpClient();
+  /// Create a test Dio client that returns mock responses
+  static MockDioClient createMockDioClient() {
+    return MockDioClient();
   }
 }
 
-/// Mock HTTP client for testing
-class MockHttpClient {
+/// Mock Dio client for testing
+class MockDioClient {
   /// Mock response for Ollama API calls
   Map<String, dynamic> get ollamaResponse => {'version': '0.9.2', 'models': []};
 

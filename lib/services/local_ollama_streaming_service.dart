@@ -1,7 +1,8 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
-import 'package:http/http.dart' as http;
+import 'package:dio/dio.dart';
+import 'dart:convert' as convert;
 import 'package:rxdart/rxdart.dart';
 import '../config/app_config.dart';
 import '../models/ollama_connection_error.dart';
@@ -15,7 +16,7 @@ import 'streaming_service.dart';
 class LocalOllamaStreamingService extends StreamingService {
   final String _baseUrl;
   final StreamingConfig _config;
-  final http.Client _httpClient;
+  final Dio _dio = Dio();
 
   StreamingConnection _connection = StreamingConnection.disconnected();
   final BehaviorSubject<StreamingMessage> _messageSubject =
@@ -29,13 +30,19 @@ class LocalOllamaStreamingService extends StreamingService {
 
   LocalOllamaStreamingService({String? baseUrl, StreamingConfig? config})
     : _baseUrl = baseUrl ?? AppConfig.defaultOllamaUrl,
-      _config = config ?? StreamingConfig.local(),
-      _httpClient = http.Client() {
+      _config = config ?? StreamingConfig.local() {
+    _setupDio();
     if (kDebugMode) {
       debugPrint('[LocalOllamaStreaming] Service initialized');
       debugPrint('[LocalOllamaStreaming] Base URL: $_baseUrl');
       debugPrint('[LocalOllamaStreaming] Config: $_config');
     }
+  }
+
+  void _setupDio() {
+    _dio.options.baseUrl = _baseUrl;
+    _dio.options.connectTimeout = _config.connectionTimeout;
+    _dio.options.receiveTimeout = _config.streamTimeout;
   }
 
   @override
@@ -59,17 +66,12 @@ class LocalOllamaStreamingService extends StreamingService {
       final stopwatch = Stopwatch()..start();
 
       // Test basic connectivity
-      final response = await _httpClient
-          .get(
-            Uri.parse('$_baseUrl/api/version'),
-            headers: {'Accept': 'application/json'},
-          )
-          .timeout(_config.connectionTimeout);
+      final response = await _dio.get('/api/version', options: Options(headers: {'Accept': 'application/json'}));
 
       stopwatch.stop();
 
       if (response.statusCode == 200) {
-        final data = json.decode(response.body);
+        final data = response.data;
         final version = data['version'] as String?;
 
         _connection = StreamingConnection.connected(_baseUrl).copyWith(
@@ -171,27 +173,28 @@ class LocalOllamaStreamingService extends StreamingService {
 
       debugPrint('[LocalOllamaStreaming] Starting stream for model: $model');
 
-      final request = http.Request('POST', Uri.parse('$_baseUrl/api/chat'));
-      request.headers.addAll({
-        'Content-Type': 'application/json',
-        'Accept': 'application/x-ndjson',
-      });
-      request.body = json.encode(requestBody);
+      final response = await _dio.post(
+        '/api/chat',
+        data: requestBody,
+        options: Options(
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/x-ndjson',
+          },
+          responseType: ResponseType.stream,
+        ),
+      );
 
-      final streamedResponse = await _httpClient
-          .send(request)
-          .timeout(_config.streamTimeout);
-
-      if (streamedResponse.statusCode != 200) {
+      if (response.statusCode != 200) {
         throw StreamingException(
-          'Stream request failed: HTTP ${streamedResponse.statusCode}',
+          'Stream request failed: HTTP ${response.statusCode}',
           code: 'STREAM_ERROR',
         );
       }
 
       await for (final chunk
-          in streamedResponse.stream
-              .transform(utf8.decoder)
+          in response.data.stream
+              .transform(convert.utf8.decoder)
               .transform(const LineSplitter())) {
         if (chunk.trim().isEmpty) continue;
 
@@ -276,15 +279,10 @@ class LocalOllamaStreamingService extends StreamingService {
     }
 
     try {
-      final response = await _httpClient
-          .get(
-            Uri.parse('$_baseUrl/api/tags'),
-            headers: {'Accept': 'application/json'},
-          )
-          .timeout(_config.connectionTimeout);
+      final response = await _dio.get('/api/tags', options: Options(headers: {'Accept': 'application/json'}));
 
       if (response.statusCode == 200) {
-        final data = json.decode(response.body);
+        final data = response.data;
         final models =
             (data['models'] as List?)
                 ?.map((model) => model['name'] as String)
@@ -309,9 +307,7 @@ class LocalOllamaStreamingService extends StreamingService {
     _heartbeatTimer?.cancel();
     _heartbeatTimer = Timer.periodic(_config.heartbeatInterval, (_) async {
       try {
-        final response = await _httpClient
-            .get(Uri.parse('$_baseUrl/api/version'))
-            .timeout(const Duration(seconds: 5));
+        final response = await _dio.get('/api/version');
 
         if (response.statusCode != 200) {
           throw StreamingException(
@@ -412,7 +408,7 @@ class LocalOllamaStreamingService extends StreamingService {
     _heartbeatTimer?.cancel();
     _reconnectTimer?.cancel();
     _messageSubject.close();
-    _httpClient.close();
+    _dio.close();
 
     super.dispose();
   }

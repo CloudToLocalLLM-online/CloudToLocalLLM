@@ -1,6 +1,5 @@
-import 'dart:convert';
 import 'package:flutter/foundation.dart';
-import 'package:http/http.dart' as http;
+import 'package:dio/dio.dart';
 import '../config/app_config.dart';
 import 'auth_service.dart';
 
@@ -15,7 +14,7 @@ import 'auth_service.dart';
 /// - Premium tier: Optional encrypted cloud sync with user control
 class EnhancedUserTierService extends ChangeNotifier {
   final AuthService _authService;
-  late http.Client _httpClient;
+  final Dio _dio = Dio();
 
   // User tier information
   String _currentTier = 'free';
@@ -41,8 +40,14 @@ class EnhancedUserTierService extends ChangeNotifier {
 
   EnhancedUserTierService({required AuthService authService})
     : _authService = authService {
-    _httpClient = http.Client();
+    _setupDio();
     _initializeTierFeatures();
+  }
+
+  void _setupDio() {
+    _dio.options.baseUrl = AppConfig.apiBaseUrl;
+    _dio.options.connectTimeout = AppConfig.apiTimeout;
+    _dio.options.receiveTimeout = AppConfig.apiTimeout;
   }
 
   // Getters
@@ -152,18 +157,16 @@ class EnhancedUserTierService extends ChangeNotifier {
     try {
       debugPrint(' [UserTier] Checking user tier...');
 
-      final response = await _httpClient
-          .get(
-            Uri.parse('${AppConfig.apiBaseUrl}/api/user/tier'),
-            headers: {
-              'Authorization': 'Bearer ${_authService.getAccessToken()}',
-              'Content-Type': 'application/json',
-            },
-          )
-          .timeout(const Duration(seconds: 10));
+      final response = await _dio.get(
+        '/api/user/tier',
+        options: Options(headers: {
+          'Authorization': 'Bearer ${_authService.getAccessToken()}',
+          'Content-Type': 'application/json',
+        }),
+      );
 
       if (response.statusCode == 200) {
-        final data = json.decode(response.body);
+        final data = response.data;
         await _updateTierFromResponse(data);
         _lastTierCheck = DateTime.now();
         _error = null;
@@ -173,7 +176,7 @@ class EnhancedUserTierService extends ChangeNotifier {
         debugPrint(' [UserTier] Authentication failed, setting free tier');
         _setFreeTierDefaults();
       } else {
-        throw Exception('HTTP ${response.statusCode}: ${response.body}');
+        throw Exception('HTTP ${response.statusCode}: ${response.data}');
       }
 
       notifyListeners();
@@ -237,22 +240,20 @@ class EnhancedUserTierService extends ChangeNotifier {
     try {
       debugPrint(' [UserTier] Requesting container allocation...');
 
-      final response = await _httpClient
-          .post(
-            Uri.parse('${AppConfig.apiBaseUrl}/api/container/allocate'),
-            headers: {
-              'Authorization': 'Bearer ${_authService.getAccessToken()}',
-              'Content-Type': 'application/json',
-            },
-            body: json.encode({
-              'tier': _currentTier,
-              'container_type': _isPremiumTier ? 'persistent' : 'ephemeral',
-            }),
-          )
-          .timeout(const Duration(seconds: 30));
+      final response = await _dio.post(
+        '/api/container/allocate',
+        data: {
+          'tier': _currentTier,
+          'container_type': _isPremiumTier ? 'persistent' : 'ephemeral',
+        },
+        options: Options(headers: {
+          'Authorization': 'Bearer ${_authService.getAccessToken()}',
+          'Content-Type': 'application/json',
+        }),
+      );
 
       if (response.statusCode == 200) {
-        final data = json.decode(response.body);
+        final data = response.data;
 
         _containerStatus = data['status'];
         _containerId = data['container_id'];
@@ -267,7 +268,7 @@ class EnhancedUserTierService extends ChangeNotifier {
         notifyListeners();
         return true;
       } else {
-        throw Exception('HTTP ${response.statusCode}: ${response.body}');
+        throw Exception('HTTP ${response.statusCode}: ${response.data}');
       }
     } catch (e) {
       debugPrint(' [UserTier] Container allocation failed: $e');
@@ -287,16 +288,14 @@ class EnhancedUserTierService extends ChangeNotifier {
     try {
       debugPrint(' [UserTier] Releasing container: $_containerId');
 
-      final response = await _httpClient
-          .post(
-            Uri.parse('${AppConfig.apiBaseUrl}/api/container/release'),
-            headers: {
-              'Authorization': 'Bearer ${_authService.getAccessToken()}',
-              'Content-Type': 'application/json',
-            },
-            body: json.encode({'container_id': _containerId}),
-          )
-          .timeout(const Duration(seconds: 15));
+      final response = await _dio.post(
+        '/api/container/release',
+        data: {'container_id': _containerId},
+        options: Options(headers: {
+          'Authorization': 'Bearer ${_authService.getAccessToken()}',
+          'Content-Type': 'application/json',
+        }),
+      );
 
       if (response.statusCode == 200) {
         _containerStatus = 'none';
@@ -308,7 +307,7 @@ class EnhancedUserTierService extends ChangeNotifier {
         notifyListeners();
         return true;
       } else {
-        throw Exception('HTTP ${response.statusCode}: ${response.body}');
+        throw Exception('HTTP ${response.statusCode}: ${response.data}');
       }
     } catch (e) {
       debugPrint(' [UserTier] Container release failed: $e');
@@ -409,7 +408,7 @@ class EnhancedUserTierService extends ChangeNotifier {
 
   @override
   void dispose() {
-    _httpClient.close();
+    _dio.close();
     super.dispose();
   }
 }

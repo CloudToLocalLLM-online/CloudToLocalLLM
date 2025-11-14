@@ -6,7 +6,7 @@ import 'package:crypto/crypto.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage_x/flutter_secure_storage_x.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:http/http.dart' as http;
+import 'package:dio/dio.dart';
 import '../config/app_config.dart';
 import 'auth0_service.dart';
 
@@ -18,6 +18,7 @@ class Auth0DesktopService implements Auth0Service {
   Auth0DesktopService._internal();
 
   static const FlutterSecureStorage _storage = FlutterSecureStorage();
+  static final Dio _dio = Dio();
   
   // Storage keys
   static const String _accessTokenKey = 'auth0_access_token';
@@ -383,39 +384,41 @@ class Auth0DesktopService implements Auth0Service {
         .join('&');
     
     debugPrint('🔄 [Auth0Desktop] Exchanging code for tokens');
-    
-    final uri = Uri.https(AppConfig.auth0Domain, '/oauth/token');
-    final response = await http.post(
+
+    final uri = 'https://${AppConfig.auth0Domain}/oauth/token';
+    final response = await _dio.post(
       uri,
-      headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-      body: bodyString,
+      data: bodyString,
+      options: Options(
+        contentType: Headers.formUrlEncodedContentType,
+      ),
     );
-    
+
     debugPrint('📥 [Auth0Desktop] Token response status: ${response.statusCode}');
-    
+
     if (response.statusCode != 200) {
-      debugPrint('❌ [Auth0Desktop] Token exchange failed: ${response.body}');
-      throw Exception('Token exchange failed: ${response.body}');
+      debugPrint('❌ [Auth0Desktop] Token exchange failed: ${response.data}');
+      throw Exception('Token exchange failed: ${response.data}');
     }
-    
-    final tokenData = jsonDecode(response.body) as Map<String, dynamic>;
+
+    final tokenData = response.data as Map<String, dynamic>;
     debugPrint('✅ [Auth0Desktop] Token exchange successful');
     return tokenData;
   }
 
   /// Fetch user information from Auth0
   Future<void> _fetchUserInfo() async {
-    final uri = Uri.https(AppConfig.auth0Domain, '/userinfo');
-    final response = await http.get(
+    final uri = 'https://${AppConfig.auth0Domain}/userinfo';
+    final response = await _dio.get(
       uri,
-      headers: {'Authorization': 'Bearer $_accessToken'},
+      options: Options(headers: {'Authorization': 'Bearer $_accessToken'}),
     );
-    
+
     if (response.statusCode == 200) {
-      _currentUser = jsonDecode(response.body) as Map<String, dynamic>;
+      _currentUser = response.data as Map<String, dynamic>;
       debugPrint('✅ [Auth0Desktop] User info fetched: ${_currentUser?['email']}');
     } else {
-      throw Exception('Failed to fetch user info: ${response.body}');
+      throw Exception('Failed to fetch user info: ${response.data}');
     }
   }
 
@@ -435,15 +438,17 @@ class Auth0DesktopService implements Auth0Service {
           .map((e) => '${Uri.encodeQueryComponent(e.key)}=${Uri.encodeQueryComponent(e.value)}')
           .join('&');
       
-      final uri = Uri.https(AppConfig.auth0Domain, '/oauth/token');
-      final response = await http.post(
+      final uri = 'https://${AppConfig.auth0Domain}/oauth/token';
+      final response = await _dio.post(
         uri,
-        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-        body: bodyString,
+        data: bodyString,
+        options: Options(
+          contentType: Headers.formUrlEncodedContentType,
+        ),
       );
-      
+
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body) as Map<String, dynamic>;
+        final data = response.data as Map<String, dynamic>;
         _accessToken = data['access_token'] as String;
         _refreshToken = data['refresh_token'] as String? ?? _refreshToken;
         
@@ -452,7 +457,7 @@ class Auth0DesktopService implements Auth0Service {
         
         debugPrint('✅ [Auth0Desktop] Access token refreshed');
       } else {
-        throw Exception('Token refresh failed: ${response.body}');
+        throw Exception('Token refresh failed: ${response.data}');
       }
     } catch (e) {
       debugPrint('❌ [Auth0Desktop] Error refreshing token: $e');

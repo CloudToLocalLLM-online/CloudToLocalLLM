@@ -5,7 +5,7 @@
 import 'dart:convert';
 import 'dart:async';
 import 'package:flutter/foundation.dart';
-import 'package:http/http.dart' as http;
+import 'package:dio/dio.dart';
 
 // Conditional imports for web-only functionality via package:web
 import 'web_platform_stub_for_config.dart' if (dart.library.html) 'package:web/web.dart' as html;
@@ -217,18 +217,16 @@ class CloudRunConfig {
     }
   }
   
-  /// Make HTTP request with timeout (uses package:http for cross-platform compatibility)
+  /// Make HTTP request with timeout (uses package:dio for cross-platform compatibility)
   Future<Map<String, dynamic>?> _makeRequest(String url, {int timeout = 10}) async {
     try {
-      final resp = await http
-          .get(Uri.parse(url), headers: const {'Accept': 'application/json'})
-          .timeout(Duration(seconds: timeout));
+      final dio = Dio();
+      dio.options.connectTimeout = Duration(seconds: timeout);
+      dio.options.receiveTimeout = Duration(seconds: timeout);
+      final resp = await dio.get(url, options: Options(headers: const {'Accept': 'application/json'}));
       if (resp.statusCode == 200) {
-        final body = resp.body;
-        if (body.isNotEmpty) {
-          final data = jsonDecode(body);
-          if (data is Map<String, dynamic>) return data;
-        }
+        final data = resp.data;
+        if (data is Map<String, dynamic>) return data;
       }
     } catch (_) {}
     return null;

@@ -1,7 +1,6 @@
 import 'dart:async';
-import 'dart:convert';
 import 'package:flutter/foundation.dart';
-import 'package:http/http.dart' as http;
+import 'package:dio/dio.dart';
 import '../config/app_config.dart';
 // import '../models/ollama_model.dart'; // Not needed for basic functionality
 import 'local_ollama_streaming_service.dart';
@@ -27,7 +26,7 @@ class LocalOllamaConnectionService extends ChangeNotifier {
   DateTime? _lastCheck;
 
   // HTTP client for direct connections
-  late http.Client _httpClient;
+  late Dio _dio;
 
   // Streaming service for local Ollama
   LocalOllamaStreamingService? _streamingService;
@@ -42,7 +41,8 @@ class LocalOllamaConnectionService extends ChangeNotifier {
   LocalOllamaConnectionService({String? baseUrl, Duration? timeout})
     : _baseUrl = baseUrl ?? AppConfig.defaultOllamaUrl,
       _timeout = timeout ?? AppConfig.ollamaTimeout {
-    _httpClient = http.Client();
+    _dio = Dio();
+    _setupDio();
 
     // Explicit web platform detection with detailed logging
     debugPrint('[LocalOllama] Platform detection: kIsWeb = $kIsWeb');
@@ -62,6 +62,12 @@ class LocalOllamaConnectionService extends ChangeNotifier {
         '[LocalOllama] Desktop platform detected - service initialized for $_baseUrl',
       );
     }
+  }
+
+  void _setupDio() {
+    _dio.options.baseUrl = _baseUrl;
+    _dio.options.connectTimeout = _timeout;
+    _dio.options.receiveTimeout = _timeout;
   }
 
   // Getters
@@ -128,15 +134,10 @@ class LocalOllamaConnectionService extends ChangeNotifier {
     try {
       debugPrint('[LocalOllama] Testing connection to $_baseUrl');
 
-      final response = await _httpClient
-          .get(
-            Uri.parse('$_baseUrl/api/version'),
-            headers: {'Accept': 'application/json'},
-          )
-          .timeout(_timeout);
+      final response = await _dio.get('/api/version', options: Options(headers: {'Accept': 'application/json'}));
 
       if (response.statusCode == 200) {
-        final data = json.decode(response.body);
+        final data = response.data;
         _version = data['version'] as String?;
         _isConnected = true;
         _lastCheck = DateTime.now();
@@ -160,7 +161,7 @@ class LocalOllamaConnectionService extends ChangeNotifier {
 
         return true;
       } else {
-        throw Exception('HTTP ${response.statusCode}: ${response.body}');
+        throw Exception('HTTP ${response.statusCode}: ${response.data}');
       }
     } catch (e) {
       _isConnected = false;
@@ -186,15 +187,10 @@ class LocalOllamaConnectionService extends ChangeNotifier {
     }
 
     try {
-      final response = await _httpClient
-          .get(
-            Uri.parse('$_baseUrl/api/tags'),
-            headers: {'Accept': 'application/json'},
-          )
-          .timeout(_timeout);
+      final response = await _dio.get('/api/tags', options: Options(headers: {'Accept': 'application/json'}));
 
       if (response.statusCode == 200) {
-        final data = json.decode(response.body);
+        final data = response.data;
         final modelsList = data['models'] as List<dynamic>? ?? [];
 
         _models = modelsList.map((model) => model['name'] as String).toList();
@@ -233,23 +229,21 @@ class LocalOllamaConnectionService extends ChangeNotifier {
         {'role': 'user', 'content': message},
       ];
 
-      final response = await _httpClient
-          .post(
-            Uri.parse('$_baseUrl/api/chat'),
-            headers: {
-              'Content-Type': 'application/json',
-              'Accept': 'application/json',
-            },
-            body: json.encode({
-              'model': model,
-              'messages': messages,
-              'stream': false,
-            }),
-          )
-          .timeout(_timeout);
+      final response = await _dio.post(
+        '/api/chat',
+        data: {
+          'model': model,
+          'messages': messages,
+          'stream': false,
+        },
+        options: Options(headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        }),
+      );
 
       if (response.statusCode == 200) {
-        final data = json.decode(response.body);
+        final data = response.data;
         return data['message']?['content'] as String?;
       } else {
         throw Exception('Chat failed: HTTP ${response.statusCode}');
@@ -336,7 +330,7 @@ class LocalOllamaConnectionService extends ChangeNotifier {
     debugPrint('[LocalOllama] Disposing service');
     _healthCheckTimer?.cancel();
     _streamingService?.closeConnection();
-    _httpClient.close();
+    _dio.close();
     super.dispose();
   }
 }
