@@ -78,8 +78,7 @@ class SSHTunnelClient with ChangeNotifier {
       debugPrint('[SSH] Authenticating with SSH server...');
 
       // Authenticate with server
-      // TODO: Implement proper SSH authentication with dartssh2
-      // await _sshClient!.authenticate();
+      await _sshClient!.authenticated;
 
       debugPrint('[SSH] SSH authentication successful');
 
@@ -87,8 +86,7 @@ class SSHTunnelClient with ChangeNotifier {
       _tunnelId ??= 'ssh_tunnel_${DateTime.now().millisecondsSinceEpoch}';
 
       // Establish reverse port forwarding
-      // TODO: Implement reverse port forwarding
-      // await _establishReverseTunnel();
+      await _establishReverseTunnel();
 
       // Register with server
       await _registerWithServer();
@@ -146,6 +144,26 @@ class SSHTunnelClient with ChangeNotifier {
     }
   }
 
+  /// Establish reverse port forwarding
+  Future<void> _establishReverseTunnel() async {
+    try {
+      debugPrint('[SSH] Establishing reverse port forwarding...');
+
+      // Get local port from config (typically 11434 for Ollama)
+      final localPort = _extractLocalPort(_config.localBackendUrl);
+
+      // Request reverse port forwarding from server
+      // The server will assign a port and forward connections to our local port
+      _forwarder = await _sshClient!.forwardRemote(port: localPort);
+
+      debugPrint('[SSH] Reverse tunnel established for local port $localPort');
+
+    } catch (e) {
+      debugPrint('[SSH] Failed to establish reverse tunnel: $e');
+      throw Exception('Failed to establish reverse tunnel: $e');
+    }
+  }
+
   /// Extract local port from URL
   int _extractLocalPort(String url) {
     try {
@@ -164,13 +182,12 @@ class SSHTunnelClient with ChangeNotifier {
     _tunnelPort = null;
     _tunnelId = null;
 
-    // TODO: Close forwarder when implemented
-    // try {
-    //   _forwarder?.close();
-    //   _forwarder = null;
-    // } catch (e) {
-    //   debugPrint('[SSH] Error closing forwarder: $e');
-    // }
+    try {
+      _forwarder?.close();
+      _forwarder = null;
+    } catch (e) {
+      debugPrint('[SSH] Error closing forwarder: $e');
+    }
 
     try {
       _sshClient?.close();
@@ -241,13 +258,12 @@ class SSHTunnelClient with ChangeNotifier {
 
     await _unregisterFromServer();
 
-    // TODO: Close forwarder when implemented
-    // try {
-    //   _forwarder?.close();
-    //   _forwarder = null;
-    // } catch (e) {
-    //   debugPrint('[SSH] Error closing forwarder: $e');
-    // }
+    try {
+      _forwarder?.close();
+      _forwarder = null;
+    } catch (e) {
+      debugPrint('[SSH] Error closing forwarder: $e');
+    }
 
     try {
       _sshClient?.close();

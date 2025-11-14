@@ -78,7 +78,7 @@ try {
   sshAuthHandler = new SSHAuthHandler(sshAuthService, logger);
 
   sshProxy = new SSHProxy(logger, {
-    sshPort: parseInt(process.env.SSH_PORT) || 8080,
+    sshPort: parseInt(process.env.SSH_PORT) || 2222,
   }, sshAuthService);
 
   await sshProxy.start();
