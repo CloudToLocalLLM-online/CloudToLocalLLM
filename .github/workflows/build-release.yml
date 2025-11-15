@@ -347,33 +347,35 @@ jobs:
         cache-key: 'flutter-:os:-:channel:-:version:-:arch:-:hash:'
         cache-path: '${{ runner.tool_cache }}/flutter/:channel:-:version:-:arch:'
       
-    - name: Cache Flutter pub dependencies
-      uses: actions/cache@v4
-      with:
-        path: |
-          ${{ runner.temp }}\.pub-cache
-          ${{ runner.temp }}\pub-cache
-          ~/.pub-cache
-          .dart_tool
-        key: ${{ matrix.platform }}-flutter-pub-${{ hashFiles('**/pubspec.lock') }}
-        restore-keys: |
-          ${{ matrix.platform }}-flutter-pub-
-          flutter-pub-
-      continue-on-error: true
+    # Caching disabled temporarily due to hanging issues with large .dart_tool directory
+    # - name: Cache Flutter pub dependencies
+    #   uses: actions/cache@v4
+    #   with:
+    #     path: |
+    #       ${{ runner.temp }}\.pub-cache
+    #       ${{ runner.temp }}\pub-cache
+    #       ~/.pub-cache
+    #       .dart_tool
+    #     key: ${{ matrix.platform }}-flutter-pub-${{ hashFiles('**/pubspec.lock') }}
+    #     restore-keys: |
+    #       ${{ matrix.platform }}-flutter-pub-
+    #       flutter-pub-
+    #   continue-on-error: true
       
-    - name: Cache Chocolatey packages
-      if: matrix.platform == 'windows'
-      uses: actions/cache@v4
-      with:
-        path: |
-          ${{ runner.temp }}\chocolatey
-          C:\ProgramData\chocolatey\lib
-          C:\ProgramData\chocolatey\bin
-        key: ${{ runner.os }}-chocolatey-innosetup-${{ hashFiles('.github/workflows/build-release.yml') }}
-        restore-keys: |
-          ${{ runner.os }}-chocolatey-innosetup-
-          ${{ runner.os }}-chocolatey-
-      continue-on-error: true
+    # Chocolatey cache disabled temporarily due to hanging issues
+    # - name: Cache Chocolatey packages
+    #   if: matrix.platform == 'windows'
+    #   uses: actions/cache@v4
+    #   with:
+    #     path: |
+    #       ${{ runner.temp }}\chocolatey
+    #       C:\ProgramData\chocolatey\lib
+    #       C:\ProgramData\chocolatey\bin
+    #     key: ${{ runner.os }}-chocolatey-innosetup-${{ hashFiles('.github/workflows/build-release.yml') }}
+    #     restore-keys: |
+    #       ${{ runner.os }}-chocolatey-innosetup-
+    #       ${{ runner.os }}-chocolatey-
+    #   continue-on-error: true
         
     - name:  Verify all build dependencies (Windows)
       if: matrix.platform == 'windows'
