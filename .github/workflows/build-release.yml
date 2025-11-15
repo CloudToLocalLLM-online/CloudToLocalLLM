@@ -975,12 +975,7 @@ jobs:
         }
         
         Write-Host "Inno Setup path: $env:INNO_SETUP_PATH" -ForegroundColor Cyan
-        
-        # Try to get version information
-        Write-Host ""
-        Write-Host "Inno Setup version information:" -ForegroundColor Cyan
-        & $env:INNO_SETUP_PATH /? 2>&1 | Select-Object -First 5 | Out-Null
-        $LASTEXITCODE = 0  # Reset exit code as /? returns non-zero
+        Write-Host " Inno Setup is accessible and ready to use" -ForegroundColor Green
         Write-Host ""
         Write-Host "::notice::Inno Setup is accessible and ready to use" -ForegroundColor Green
         Write-Host "::endgroup::"
