@@ -57,7 +57,7 @@ jobs:
       is_release: ${{ steps.version.outputs.is_release }}
 
     steps:
-    - name: 📋 Job Started - Version Information Extraction
+    - name:  Job Started - Version Information Extraction
       run: |
         echo "::group::Job Information"
         echo "Job: Extract Version Information"
@@ -67,7 +67,7 @@ jobs:
         echo "SHA: ${{ github.sha }}"
         echo "::endgroup::"
         
-    - name: ⏱️ Start Time Tracking
+    - name:  Start Time Tracking
       id: start-time
       run: |
         START_TIME=$(date +%s)
@@ -85,7 +85,7 @@ jobs:
       with:
         fetch-depth: 0  # Fetch full history for version detection
         
-    - name: ✅ Checkout Complete
+    - name:  Checkout Complete
       run: |
         echo "::notice::Repository checked out successfully"
         echo "Current directory: $(pwd)"
@@ -209,7 +209,7 @@ jobs:
         fi
         echo "::endgroup::"
         
-    - name: ⏱️ Version Info Job Duration
+    - name:  Version Info Job Duration
       if: always()
       run: |
         END_TIME=$(date +%s)
@@ -217,11 +217,11 @@ jobs:
         echo "::notice::Version info job completed in ${DURATION}s"
         echo "Duration: ${DURATION}s" >> $GITHUB_STEP_SUMMARY
         
-    - name: ❌ Job Failed - Error Summary
+    - name:  Job Failed - Error Summary
       if: failure()
       run: |
         echo "::error::Version info job failed"
-        echo "## ❌ Version Info Job Failed" >> $GITHUB_STEP_SUMMARY
+        echo "##  Version Info Job Failed" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
         echo "**Common Issues:**" >> $GITHUB_STEP_SUMMARY
         echo "- pubspec.yaml not found or invalid format" >> $GITHUB_STEP_SUMMARY
@@ -259,7 +259,7 @@ jobs:
           #   artifact-name: android-apk
     
     steps:
-    - name: 📋 Job Started - Build ${{ matrix.platform }} Desktop (Windows)
+    - name:  Job Started - Build ${{ matrix.platform }} Desktop (Windows)
       if: matrix.platform == 'windows'
       run: |
         Write-Host "::group::Build Job Information" -ForegroundColor Green
@@ -277,7 +277,7 @@ jobs:
         Write-Host "::endgroup::"
       shell: powershell
       
-    - name: 📋 Job Started - Build ${{ matrix.platform }} Desktop (Linux)
+    - name:  Job Started - Build ${{ matrix.platform }} Desktop (Linux)
       if: matrix.platform == 'linux'
       run: |
         echo "::group::Build Job Information"
@@ -294,7 +294,7 @@ jobs:
         echo "Started at: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
         echo "::endgroup::"
       
-    - name: ⏱️ Start Build Time Tracking (Windows)
+    - name:  Start Build Time Tracking (Windows)
       if: matrix.platform == 'windows'
       id: build-start-time-windows
       run: |
@@ -303,7 +303,7 @@ jobs:
         Write-Host "Build timer started"
       shell: powershell
       
-    - name: ⏱️ Start Build Time Tracking (Linux)
+    - name:  Start Build Time Tracking (Linux)
       if: matrix.platform == 'linux'
       id: build-start-time-linux
       run: |
@@ -311,7 +311,7 @@ jobs:
         echo "start_time=$START_TIME" >> $GITHUB_OUTPUT
         echo "Build timer started"
       
-    - name: 📥 Checkout Repository
+    - name:  Checkout Repository
       run: |
         Write-Host "::group::Checking out repository" -ForegroundColor Green
         Write-Host "Repository: ${{ github.repository }}"
@@ -322,7 +322,7 @@ jobs:
       
     - uses: actions/checkout@v4
       
-    - name: ✅ Checkout Complete
+    - name:  Checkout Complete
       run: |
         Write-Host "::notice::Repository checked out successfully" -ForegroundColor Green
         Write-Host "Working directory: $(Get-Location)"
@@ -330,7 +330,7 @@ jobs:
         Get-ChildItem -Name | Select-Object -First 10
       shell: powershell
       
-    - name: 🔧 Setup Flutter SDK
+    - name:  Setup Flutter SDK
       run: |
         Write-Host "::group::Setting up Flutter SDK" -ForegroundColor Green
         Write-Host "Flutter version: ${{ env.FLUTTER_VERSION }}"
@@ -347,7 +347,7 @@ jobs:
         cache-key: 'flutter-:os:-:channel:-:version:-:arch:-:hash:'
         cache-path: '${{ runner.tool_cache }}/flutter/:channel:-:version:-:arch:'
       
-    - name: ✅ Flutter SDK Setup Complete
+    - name:  Flutter SDK Setup Complete
       run: |
         Write-Host "::notice::Flutter SDK installed successfully" -ForegroundColor Green
         Write-Host "::group::Flutter Version Information"
@@ -355,7 +355,7 @@ jobs:
         Write-Host "::endgroup::"
       shell: powershell
       
-    - name: 💾 Cache Flutter pub dependencies
+    - name:  Cache Flutter pub dependencies
       run: |
         Write-Host "::group::Setting up pub cache" -ForegroundColor Green
         Write-Host "Cache key: ${{ matrix.platform }}-flutter-pub-${{ hashFiles('**/pubspec.lock') }}"
@@ -377,7 +377,7 @@ jobs:
           flutter-pub-
       continue-on-error: true
       
-    - name: 📊 Pub Cache Status
+    - name:  Pub Cache Status
       if: always()
       run: |
         if (Test-Path "${{ runner.temp }}\.pub-cache") {
@@ -387,7 +387,7 @@ jobs:
         }
       shell: powershell
       
-    - name: 💾 Cache Chocolatey packages
+    - name:  Cache Chocolatey packages
       run: |
         Write-Host "::group::Setting up Chocolatey cache" -ForegroundColor Green
         Write-Host "Cache key: ${{ runner.os }}-chocolatey-innosetup-${{ hashFiles('.github/workflows/build-release.yml') }}"
@@ -407,7 +407,7 @@ jobs:
           ${{ runner.os }}-chocolatey-
       continue-on-error: true
       
-    - name: 📊 Chocolatey Cache Status
+    - name:  Chocolatey Cache Status
       if: always()
       run: |
         if (Test-Path "C:\ProgramData\chocolatey\lib") {
@@ -417,7 +417,7 @@ jobs:
         }
       shell: powershell
         
-    - name: ✅ Verify all build dependencies (Windows)
+    - name:  Verify all build dependencies (Windows)
       if: matrix.platform == 'windows'
       run: |
         Write-Host "::group::Verifying Build Dependencies" -ForegroundColor Green
@@ -465,7 +465,7 @@ jobs:
         Write-Host "::endgroup::"
       shell: powershell
       
-    - name: ✅ Verify all build dependencies (Linux)
+    - name:  Verify all build dependencies (Linux)
       if: matrix.platform == 'linux'
       run: |
         echo "::group::Verifying Build Dependencies"
@@ -557,7 +557,7 @@ jobs:
         echo "::notice::All dependencies verified successfully"
         echo "::endgroup::"
         
-    - name: ⚙️ Configure Windows desktop support
+    - name: ⚙ Configure Windows desktop support
       if: matrix.platform == 'windows'
       run: |
         Write-Host "::group::Configuring Flutter for Windows" -ForegroundColor Green
@@ -571,7 +571,7 @@ jobs:
         Write-Host "::endgroup::"
       shell: powershell
       
-    - name: ⚙️ Configure Linux desktop support
+    - name: ⚙ Configure Linux desktop support
       if: matrix.platform == 'linux'
       run: |
         echo "::group::Configuring Flutter for Linux"
@@ -584,7 +584,7 @@ jobs:
         echo "::notice::Flutter configured for Linux desktop"
         echo "::endgroup::"
       
-    - name: 🔧 Install Linux build dependencies
+    - name:  Install Linux build dependencies
       if: matrix.platform == 'linux'
       run: |
         echo "::group::Installing Linux build dependencies"
@@ -605,7 +605,7 @@ jobs:
         echo "::notice::Linux build dependencies installed successfully"
         echo "::endgroup::"
       
-    - name: 🔧 Install Flatpak build tools
+    - name:  Install Flatpak build tools
       if: matrix.platform == 'linux'
       run: |
         echo "::group::Installing Flatpak build tools"
@@ -627,7 +627,7 @@ jobs:
         echo "::notice::Flatpak build tools installed successfully"
         echo "::endgroup::"
       
-    - name: 🔧 Install .deb packaging tools
+    - name:  Install .deb packaging tools
       if: matrix.platform == 'linux'
       run: |
         echo "::group::Installing .deb packaging tools"
@@ -651,7 +651,7 @@ jobs:
         echo "::endgroup::"
       
     # Android-specific setup steps (uncomment when enabling Android builds)
-    # - name: ☕ Setup Java for Android
+    # - name:  Setup Java for Android
     #   if: matrix.platform == 'android'
     #   uses: actions/setup-java@v4
     #   with:
@@ -659,7 +659,7 @@ jobs:
     #     java-version: '17'
     #     cache: 'gradle'
     #
-    # - name: 🤖 Setup Android SDK
+    # - name:  Setup Android SDK
     #   if: matrix.platform == 'android'
     #   uses: android-actions/setup-android@v3
     #   with:
@@ -667,7 +667,7 @@ jobs:
     #     build-tools: 33.0.2
     #     ndk-version: 25.2.9519653
     #
-    # - name: 📦 Cache Gradle dependencies
+    # - name:  Cache Gradle dependencies
     #   if: matrix.platform == 'android'
     #   uses: actions/cache@v4
     #   with:
@@ -679,7 +679,7 @@ jobs:
     #     restore-keys: |
     #       ${{ runner.os }}-gradle-
     #
-    # - name: 🔑 Setup Android signing configuration
+    # - name: � Setup Android signing configuration
     #   if: matrix.platform == 'android'
     #   run: |
     #     echo "::group::Setting up Android signing"
@@ -706,7 +706,7 @@ jobs:
     #     echo "::notice::Android signing configuration created"
     #     echo "::endgroup::"
     #
-    # - name: ✅ Verify Android SDK and dependencies
+    # - name:  Verify Android SDK and dependencies
     #   if: matrix.platform == 'android'
     #   run: |
     #     echo "::group::Verifying Android SDK"
@@ -733,7 +733,7 @@ jobs:
     #     echo "::notice::Android SDK verified successfully"
     #     echo "::endgroup::"
       
-    - name: ⏱️ Start Dependency Download Timer
+    - name:  Start Dependency Download Timer
       id: dep-start-time
       run: |
         $START_TIME = [int][double]::Parse((Get-Date -UFormat %s))
@@ -741,7 +741,7 @@ jobs:
         Write-Host "Dependency download timer started"
       shell: powershell
       
-    - name: 🧹 Clean pub cache (force fresh dependencies)
+    - name:  Clean pub cache (force fresh dependencies)
       run: |
         Write-Host "::group::Cleaning pub cache" -ForegroundColor Green
         Write-Host "Cleaning Flutter pub cache to ensure fresh dependencies..."
@@ -750,7 +750,7 @@ jobs:
         Write-Host "::endgroup::"
       shell: powershell
       
-    - name: 📦 Get Flutter dependencies
+    - name:  Get Flutter dependencies
       run: |
         Write-Host "::group::Downloading Flutter dependencies" -ForegroundColor Green
         Write-Host "Running flutter pub get..."
@@ -765,7 +765,7 @@ jobs:
         Write-Host "::endgroup::"
       shell: powershell
       
-    - name: ⏱️ Dependency Download Duration
+    - name:  Dependency Download Duration
       run: |
         $END_TIME = [int][double]::Parse((Get-Date -UFormat %s))
         $DURATION = $END_TIME - ${{ steps.dep-start-time.outputs.start_time }}
@@ -773,7 +773,7 @@ jobs:
         echo "Dependency download time: ${DURATION}s" >> $env:GITHUB_STEP_SUMMARY
       shell: powershell
       
-    - name: ⏱️ Start Build Timer
+    - name:  Start Build Timer
       id: flutter-build-start
       run: |
         $START_TIME = [int][double]::Parse((Get-Date -UFormat %s))
@@ -781,7 +781,7 @@ jobs:
         Write-Host "Flutter build timer started"
       shell: powershell
       
-    - name: 🔨 Build Windows desktop application
+    - name:  Build Windows desktop application
       if: matrix.platform == 'windows'
       run: |
         Write-Host "::group::Building Windows application" -ForegroundColor Green
@@ -800,7 +800,7 @@ jobs:
         Write-Host "::endgroup::"
       shell: powershell
       
-    - name: 🔨 Build Linux desktop application
+    - name:  Build Linux desktop application
       if: matrix.platform == 'linux'
       run: |
         echo "::group::Building Linux application"
@@ -818,7 +818,7 @@ jobs:
         echo "::notice::Linux application built successfully"
         echo "::endgroup::"
       
-    - name: ⏱️ Flutter Build Duration
+    - name:  Flutter Build Duration
       run: |
         $END_TIME = [int][double]::Parse((Get-Date -UFormat %s))
         $DURATION = $END_TIME - ${{ steps.flutter-build-start.outputs.start_time }}
@@ -826,7 +826,7 @@ jobs:
         echo "Flutter build time: ${DURATION}s" >> $env:GITHUB_STEP_SUMMARY
       shell: powershell
       
-    - name: ✅ Verify Build Output (Windows)
+    - name:  Verify Build Output (Windows)
       if: matrix.platform == 'windows'
       run: |
         Write-Host "::group::Verifying build output" -ForegroundColor Green
@@ -846,7 +846,7 @@ jobs:
         Write-Host "::endgroup::"
       shell: powershell
       
-    - name: ✅ Verify Build Output (Linux)
+    - name:  Verify Build Output (Linux)
       if: matrix.platform == 'linux'
       run: |
         echo "::group::Verifying build output"
@@ -866,7 +866,7 @@ jobs:
         echo "::notice::Build output verified successfully"
         echo "::endgroup::"
       
-    - name: ✅ Verify Flatpak manifest
+    - name:  Verify Flatpak manifest
       if: matrix.platform == 'linux'
       run: |
         echo "::group::Verifying Flatpak manifest"
@@ -889,7 +889,7 @@ jobs:
         echo "::notice::Flatpak manifest verified successfully"
         echo "::endgroup::"
       
-    - name: 🔧 Install Inno Setup
+    - name:  Install Inno Setup
       if: matrix.platform == 'windows'
       run: |
         Write-Host "::group::Installing Inno Setup" -ForegroundColor Green
@@ -994,7 +994,7 @@ jobs:
         Write-Host "::endgroup::"
       shell: powershell
       
-    - name: 🔍 Detect Inno Setup path and set environment variable
+    - name:  Detect Inno Setup path and set environment variable
       if: matrix.platform == 'windows'
       run: |
         Write-Host "::group::Detecting Inno Setup path" -ForegroundColor Green
@@ -1033,7 +1033,7 @@ jobs:
         Write-Host "::endgroup::"
       shell: powershell
       
-    - name: ✅ Verify Inno Setup is accessible
+    - name:  Verify Inno Setup is accessible
       if: matrix.platform == 'windows'
       run: |
         Write-Host "::group::Verifying Inno Setup accessibility" -ForegroundColor Green
@@ -1066,7 +1066,7 @@ jobs:
         Write-Host "::endgroup::"
       shell: powershell
       
-    - name: ⏱️ Start Installer Creation Timer
+    - name:  Start Installer Creation Timer
       id: installer-start-time
       run: |
         $START_TIME = [int][double]::Parse((Get-Date -UFormat %s))
@@ -1074,7 +1074,7 @@ jobs:
         Write-Host "Installer creation timer started"
       shell: powershell
       
-    - name: 📦 Create Windows installer
+    - name:  Create Windows installer
       if: matrix.platform == 'windows'
       run: |
         Write-Host "::group::Creating Windows installer" -ForegroundColor Green
@@ -1167,7 +1167,7 @@ jobs:
         Write-Host "::endgroup::"
       shell: powershell
       
-    - name: ⏱️ Installer Creation Duration
+    - name:  Installer Creation Duration
       if: matrix.platform == 'windows'
       run: |
         $END_TIME = [int][double]::Parse((Get-Date -UFormat %s))
@@ -1176,7 +1176,7 @@ jobs:
         echo "Installer creation time: ${DURATION}s" >> $env:GITHUB_STEP_SUMMARY
       shell: powershell
       
-    - name: ⏱️ Start Flatpak Build Timer
+    - name:  Start Flatpak Build Timer
       if: matrix.platform == 'linux'
       id: flatpak-start-time
       run: |
@@ -1184,7 +1184,7 @@ jobs:
         echo "start_time=$START_TIME" >> $GITHUB_OUTPUT
         echo "Flatpak build timer started"
       
-    - name: 📦 Build Flatpak package
+    - name:  Build Flatpak package
       if: matrix.platform == 'linux'
       run: |
         echo "::group::Building Flatpak package"
@@ -1247,7 +1247,7 @@ jobs:
         echo "::notice::Flatpak package created successfully"
         echo "::endgroup::"
       
-    - name: ⏱️ Flatpak Build Duration
+    - name:  Flatpak Build Duration
       if: matrix.platform == 'linux'
       run: |
         END_TIME=$(date +%s)
@@ -1255,7 +1255,7 @@ jobs:
         echo "::notice::Flatpak package created in ${DURATION}s"
         echo "Flatpak build time: ${DURATION}s" >> $GITHUB_STEP_SUMMARY
       
-    - name: ⏱️ Start .deb Package Build Timer
+    - name:  Start .deb Package Build Timer
       if: matrix.platform == 'linux'
       id: deb-start-time
       run: |
@@ -1263,7 +1263,7 @@ jobs:
         echo "start_time=$START_TIME" >> $GITHUB_OUTPUT
         echo ".deb package build timer started"
       
-    - name: 📦 Create .deb package structure
+    - name:  Create .deb package structure
       if: matrix.platform == 'linux'
       run: |
         echo "::group::Creating .deb package structure"
@@ -1425,7 +1425,7 @@ jobs:
         echo "::notice::.deb package structure created successfully"
         echo "::endgroup::"
       
-    - name: 📦 Build .deb package
+    - name:  Build .deb package
       if: matrix.platform == 'linux'
       run: |
         echo "::group::Building .deb package"
@@ -1463,7 +1463,7 @@ jobs:
         echo "::notice::.deb package built successfully"
         echo "::endgroup::"
       
-    - name: ✅ Validate .deb package with lintian
+    - name:  Validate .deb package with lintian
       if: matrix.platform == 'linux'
       run: |
         echo "::group::Validating .deb package"
@@ -1493,7 +1493,7 @@ jobs:
         
         echo "::endgroup::"
       
-    - name: 📝 Generate SHA256 checksum for .deb package
+    - name:  Generate SHA256 checksum for .deb package
       if: matrix.platform == 'linux'
       run: |
         echo "::group::Generating .deb checksum"
@@ -1523,7 +1523,7 @@ jobs:
         echo "::notice::.deb package checksum generated successfully"
         echo "::endgroup::"
       
-    - name: ⏱️ .deb Package Build Duration
+    - name:  .deb Package Build Duration
       if: matrix.platform == 'linux'
       run: |
         END_TIME=$(date +%s)
@@ -1532,7 +1532,7 @@ jobs:
         echo ".deb build time: ${DURATION}s" >> $GITHUB_STEP_SUMMARY
       
     # Android-specific build steps (uncomment when enabling Android builds)
-    # - name: 🔨 Build Android APK
+    # - name:  Build Android APK
     #   if: matrix.platform == 'android'
     #   run: |
     #     echo "::group::Building Android APK"
@@ -1554,7 +1554,7 @@ jobs:
     #     echo "::notice::Android APK built successfully"
     #     echo "::endgroup::"
     #
-    # - name: ✅ Verify Android APK
+    # - name:  Verify Android APK
     #   if: matrix.platform == 'android'
     #   run: |
     #     echo "::group::Verifying Android APK"
@@ -1582,7 +1582,7 @@ jobs:
     #     echo "::notice::APK verified successfully"
     #     echo "::endgroup::"
     #
-    # - name: 📦 Package Android APK
+    # - name:  Package Android APK
     #   if: matrix.platform == 'android'
     #   run: |
     #     echo "::group::Packaging Android APK"
@@ -1622,7 +1622,7 @@ jobs:
     #     echo "::notice::Android APK packaged successfully"
     #     echo "::endgroup::"
       
-    - name: ⏱️ Start Portable Package Timer
+    - name:  Start Portable Package Timer
       if: matrix.platform == 'windows'
       id: portable-start-time
       run: |
@@ -1631,7 +1631,7 @@ jobs:
         Write-Host "Portable package timer started"
       shell: powershell
       
-    - name: 📦 Create portable package
+    - name:  Create portable package
       if: matrix.platform == 'windows'
       run: |
         Write-Host "::group::Creating portable package" -ForegroundColor Green
@@ -1676,7 +1676,7 @@ jobs:
         Write-Host "::endgroup::"
       shell: powershell
       
-    - name: ⏱️ Portable Package Duration
+    - name:  Portable Package Duration
       if: matrix.platform == 'windows'
       run: |
         $END_TIME = [int][double]::Parse((Get-Date -UFormat %s))
@@ -1685,7 +1685,7 @@ jobs:
         echo "Portable package time: ${DURATION}s" >> $env:GITHUB_STEP_SUMMARY
       shell: powershell
       
-    - name: 📤 Upload build artifacts (Windows)
+    - name:  Upload build artifacts (Windows)
       if: matrix.platform == 'windows'
       run: |
         Write-Host "::group::Uploading build artifacts" -ForegroundColor Green
@@ -1711,7 +1711,7 @@ jobs:
           ${{ env.INSTALLER_CHECKSUM }}
         retention-days: 30
         
-    - name: 📤 Upload build artifacts (Linux)
+    - name:  Upload build artifacts (Linux)
       if: matrix.platform == 'linux'
       run: |
         echo "::group::Uploading build artifacts"
@@ -1746,18 +1746,18 @@ jobs:
     #       ${{ env.APK_CHECKSUM }}
     #     retention-days: 30
         
-    - name: ✅ Artifacts Uploaded (Windows)
+    - name:  Artifacts Uploaded (Windows)
       if: matrix.platform == 'windows'
       run: |
         Write-Host "::notice::Build artifacts uploaded successfully" -ForegroundColor Green
       shell: powershell
       
-    - name: ✅ Artifacts Uploaded (Linux)
+    - name:  Artifacts Uploaded (Linux)
       if: matrix.platform == 'linux'
       run: |
         echo "::notice::Build artifacts uploaded successfully"
       
-    - name: ⏱️ Total Build Job Duration (Windows)
+    - name:  Total Build Job Duration (Windows)
       if: always() && matrix.platform == 'windows'
       run: |
         $END_TIME = [int][double]::Parse((Get-Date -UFormat %s))
@@ -1767,13 +1767,13 @@ jobs:
         
         Write-Host "::notice::Build job completed in ${MINUTES}m ${SECONDS}s" -ForegroundColor Green
         
-        echo "## 🔨 Build Summary" >> $env:GITHUB_STEP_SUMMARY
+        echo "##  Build Summary" >> $env:GITHUB_STEP_SUMMARY
         echo "" >> $env:GITHUB_STEP_SUMMARY
         echo "**Platform:** ${{ matrix.platform }}" >> $env:GITHUB_STEP_SUMMARY
         echo "**Total Duration:** ${MINUTES}m ${SECONDS}s" >> $env:GITHUB_STEP_SUMMARY
       shell: powershell
       
-    - name: ⏱️ Total Build Job Duration (Linux)
+    - name:  Total Build Job Duration (Linux)
       if: always() && matrix.platform == 'linux'
       run: |
         END_TIME=$(date +%s)
@@ -1783,17 +1783,17 @@ jobs:
         
         echo "::notice::Build job completed in ${MINUTES}m ${SECONDS}s"
         
-        echo "## 🔨 Build Summary" >> $GITHUB_STEP_SUMMARY
+        echo "##  Build Summary" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
         echo "**Platform:** ${{ matrix.platform }}" >> $GITHUB_STEP_SUMMARY
         echo "**Total Duration:** ${MINUTES}m ${SECONDS}s" >> $GITHUB_STEP_SUMMARY
       
-    - name: ❌ Job Failed - Error Summary (Windows)
+    - name:  Job Failed - Error Summary (Windows)
       if: failure() && matrix.platform == 'windows'
       run: |
         Write-Host "::error::Build job failed" -ForegroundColor Red
         
-        echo "## ❌ Build Job Failed" >> $env:GITHUB_STEP_SUMMARY
+        echo "##  Build Job Failed" >> $env:GITHUB_STEP_SUMMARY
         echo "" >> $env:GITHUB_STEP_SUMMARY
         echo "**Platform:** ${{ matrix.platform }}" >> $env:GITHUB_STEP_SUMMARY
         echo "" >> $env:GITHUB_STEP_SUMMARY
@@ -1817,12 +1817,12 @@ jobs:
         echo "- Test build locally to isolate the issue" >> $env:GITHUB_STEP_SUMMARY
       shell: powershell
       
-    - name: ❌ Job Failed - Error Summary (Linux)
+    - name:  Job Failed - Error Summary (Linux)
       if: failure() && matrix.platform == 'linux'
       run: |
         echo "::error::Build job failed"
         
-        echo "## ❌ Build Job Failed" >> $GITHUB_STEP_SUMMARY
+        echo "##  Build Job Failed" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
         echo "**Platform:** ${{ matrix.platform }}" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
@@ -1853,7 +1853,7 @@ jobs:
     needs: [version-info, build-desktop]
 
     steps:
-    - name: 📋 Job Started - Create GitHub Release
+    - name:  Job Started - Create GitHub Release
       run: |
         echo "::group::Release Job Information"
         echo "=== Create GitHub Release Job Started ==="
@@ -1866,14 +1866,14 @@ jobs:
         echo "Started at: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
         echo "::endgroup::"
         
-    - name: ⏱️ Start Release Time Tracking
+    - name:  Start Release Time Tracking
       id: release-start-time
       run: |
         START_TIME=$(date +%s)
         echo "start_time=$START_TIME" >> $GITHUB_OUTPUT
         echo "Release timer started"
         
-    - name: 📥 Checkout Repository
+    - name:  Checkout Repository
       run: |
         echo "::group::Checking out repository"
         echo "Repository: ${{ github.repository }}"
@@ -1885,12 +1885,12 @@ jobs:
         fetch-depth: 0
         token: ${{ secrets.GITHUB_TOKEN }}
       
-    - name: ✅ Checkout Complete
+    - name:  Checkout Complete
       run: |
         echo "::notice::Repository checked out successfully"
         echo "Current directory: $(pwd)"
         
-    - name: 📥 Download all build artifacts
+    - name:  Download all build artifacts
       run: |
         echo "::group::Downloading build artifacts"
         echo "=== Downloading Build Artifacts ==="
@@ -1905,7 +1905,7 @@ jobs:
         pattern: '*-desktop'
         merge-multiple: false
         
-    - name: ✅ Artifacts Downloaded
+    - name:  Artifacts Downloaded
       run: |
         echo "::notice::Build artifacts downloaded successfully"
         echo "::group::Downloaded Artifacts"
@@ -1913,7 +1913,7 @@ jobs:
         find artifacts/ -type f -exec ls -lh {} \;
         echo "::endgroup::"
         
-    - name: 📦 Prepare release assets
+    - name:  Prepare release assets
       run: |
         echo "::group::Preparing Release Assets"
         echo "=== Preparing Release Assets ==="
@@ -2018,7 +2018,7 @@ jobs:
         echo "::notice::Release assets prepared successfully"
         echo "::endgroup::"
         
-    - name: 📝 Generate release notes
+    - name:  Generate release notes
       run: |
         echo "::group::Generating Release Notes"
         VERSION="${{ needs.version-info.outputs.version }}"
@@ -2145,7 +2145,7 @@ jobs:
         echo "::endgroup::"
         echo "::endgroup::"
         
-    - name: 🏷️ Create git tag
+    - name:  Create git tag
       run: |
         echo "::group::Creating Git Tag"
         VERSION="${{ needs.version-info.outputs.version }}"
@@ -2177,7 +2177,7 @@ jobs:
         fi
         echo "::endgroup::"
       
-    - name: 🚀 Create GitHub Release
+    - name:  Create GitHub Release
       run: |
         echo "::group::Creating GitHub Release"
         echo "=== Creating GitHub Release ==="
@@ -2199,14 +2199,14 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         
-    - name: ✅ Release Created
+    - name:  Release Created
       run: |
         echo "::notice::GitHub release created successfully"
         echo "Release URL: https://github.com/${{ github.repository }}/releases/tag/${{ needs.version-info.outputs.tag_name }}"
         
-    - name: 📊 Create release summary
+    - name:  Create release summary
       run: |
-        echo "## 🎉 Desktop Release Created" >> $GITHUB_STEP_SUMMARY
+        echo "##  Desktop Release Created" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
         echo "**Release Details:**" >> $GITHUB_STEP_SUMMARY
         echo "- **Version:** ${{ needs.version-info.outputs.version }}" >> $GITHUB_STEP_SUMMARY
@@ -2217,21 +2217,21 @@ jobs:
         
         # Dynamically list available platforms based on artifacts
         if [ -f release-assets/*Setup.exe ]; then
-          echo "- ✅ Windows Installer (.exe)" >> $GITHUB_STEP_SUMMARY
+          echo "-  Windows Installer (.exe)" >> $GITHUB_STEP_SUMMARY
         fi
         
         if [ -f release-assets/*-portable.zip ]; then
-          echo "- ✅ Windows Portable (ZIP)" >> $GITHUB_STEP_SUMMARY
+          echo "-  Windows Portable (ZIP)" >> $GITHUB_STEP_SUMMARY
         fi
         
         # Linux platform check
         if ls release-assets/*.flatpak 1> /dev/null 2>&1; then
-          echo "- ✅ Linux Flatpak" >> $GITHUB_STEP_SUMMARY
+          echo "-  Linux Flatpak" >> $GITHUB_STEP_SUMMARY
         fi
         
         # Android platform check (uncomment when enabling Android builds)
         # if ls release-assets/*.apk 1> /dev/null 2>&1; then
-        #   echo "- ✅ Android APK" >> $GITHUB_STEP_SUMMARY
+        #   echo "-  Android APK" >> $GITHUB_STEP_SUMMARY
         # fi
         
         echo "" >> $GITHUB_STEP_SUMMARY
@@ -2247,7 +2247,7 @@ jobs:
         echo "" >> $GITHUB_STEP_SUMMARY
         echo "**Download:** [GitHub Releases](https://github.com/imrightguy/CloudToLocalLLM/releases/tag/${{ needs.version-info.outputs.tag_name }})" >> $GITHUB_STEP_SUMMARY
         
-    - name: ⏱️ Total Release Job Duration
+    - name:  Total Release Job Duration
       if: always()
       run: |
         END_TIME=$(date +%s)
@@ -2259,11 +2259,11 @@ jobs:
         echo "" >> $GITHUB_STEP_SUMMARY
         echo "**Release Duration:** ${MINUTES}m ${SECONDS}s" >> $GITHUB_STEP_SUMMARY
         
-    - name: ❌ Job Failed - Error Summary
+    - name:  Job Failed - Error Summary
       if: failure()
       run: |
         echo "::error::Release creation job failed"
-        echo "## ❌ Release Creation Failed" >> $GITHUB_STEP_SUMMARY
+        echo "##  Release Creation Failed" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
         echo "**Common Issues:**" >> $GITHUB_STEP_SUMMARY
         echo "- Build artifacts not found or incomplete" >> $GITHUB_STEP_SUMMARY
