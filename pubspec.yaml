@@ -83,9 +83,7 @@ dev_dependencies:
   integration_test:
     sdk: flutter
 
-dependency_overrides:
-  # Override web package to use version compatible with desktop builds
-  web: 0.5.1
+# No dependency overrides needed - replaced package:web with dart:js_interop
 
 flutter:
   uses-material-design: true
