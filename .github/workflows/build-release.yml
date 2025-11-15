@@ -1023,16 +1023,12 @@ jobs:
         Write-Host "Inno Setup path: $env:INNO_SETUP_PATH" -ForegroundColor Cyan
         
         # Try to get version information
-        try {
-          Write-Host ""
-          Write-Host "Inno Setup version information:" -ForegroundColor Cyan
-          & $env:INNO_SETUP_PATH /? 2>&1 | Select-Object -First 5
-          Write-Host ""
-          Write-Host "::notice::Inno Setup is accessible and ready to use" -ForegroundColor Green
-        } catch {
-          Write-Host "::error::Failed to execute Inno Setup: $_"
-          exit 1
-        }
+        Write-Host ""
+        Write-Host "Inno Setup version information:" -ForegroundColor Cyan
+        & $env:INNO_SETUP_PATH /? 2>&1 | Select-Object -First 5 | Out-Null
+        $LASTEXITCODE = 0  # Reset exit code as /? returns non-zero
+        Write-Host ""
+        Write-Host "::notice::Inno Setup is accessible and ready to use" -ForegroundColor Green
         Write-Host "::endgroup::"
       shell: powershell
       
