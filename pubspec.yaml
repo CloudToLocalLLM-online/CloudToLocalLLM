@@ -89,6 +89,12 @@ dev_dependencies:
   integration_test:
     sdk: flutter
 
+dependency_overrides:
+  # Force older web package that doesn't use dart:js_interop
+  # This is needed because web-platform plugins pull in web package
+  # but Flutter 3.27.1 tries to compile it for desktop builds
+  web: 0.3.0
+
 flutter:
   uses-material-design: true
 
