@@ -90,6 +90,9 @@ dev_dependencies:
   integration_test:
     sdk: flutter
 
+dependency_overrides:
+  web: 0.5.1  # Use older version that doesn't require dart:js_interop
+
 flutter:
   uses-material-design: true
 
