@@ -6,7 +6,7 @@ repository: https://github.com/imrightguy/CloudToLocalLLM
 version: 4.4.0+202511081545
 
 environment:
-  sdk: '>=3.4.0 <4.0.0'
+  sdk: '>=3.5.0 <4.0.0'
 
 dependencies:
   flutter:
@@ -77,9 +77,14 @@ dependencies:
   logger: ^2.6.2
 
 dev_dependencies:
-  flutter_lints: ^4.0.0
+  flutter_lints: ^6.0.0
   flutter_test:
     sdk: flutter
+
+dependency_overrides:
+  # Force web package to not be compiled for non-web platforms
+  # This is needed for Flutter 3.38+ which tries to compile web for all platforms
+  web: 1.1.1
   integration_test:
     sdk: flutter
 
