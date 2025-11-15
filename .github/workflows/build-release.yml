@@ -247,15 +247,16 @@ jobs:
             build-command: flutter build windows --release
             artifact-name: windows-desktop
           
-          - platform: linux
-            os: ubuntu-latest
-            build-command: flutter build linux --release
-            artifact-name: linux-desktop
+          # Linux and Android builds temporarily disabled - focus on Windows first
+          # - platform: linux
+          #   os: ubuntu-latest
+          #   build-command: flutter build linux --release
+          #   artifact-name: linux-desktop
           
-          - platform: android
-            os: ubuntu-latest
-            build-command: flutter build apk --release --split-per-abi
-            artifact-name: android-apk
+          # - platform: android
+          #   os: ubuntu-latest
+          #   build-command: flutter build apk --release --split-per-abi
+          #   artifact-name: android-apk
     
     steps:
     - name:  Job Started - Build ${{ matrix.platform }} App (Windows)
