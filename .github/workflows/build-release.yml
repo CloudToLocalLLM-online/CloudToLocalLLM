@@ -362,9 +362,9 @@ jobs:
         Write-Host "Checking Flutter..." -ForegroundColor Cyan
         try {
           flutter --version
-          Write-Host "✓ Flutter is available" -ForegroundColor Green
+          Write-Host " Flutter is available" -ForegroundColor Green
         } catch {
-          Write-Host "✗ Flutter not found" -ForegroundColor Red
+          Write-Host " Flutter not found" -ForegroundColor Red
           $errors += "Flutter not found"
         }
         Write-Host ""
@@ -373,9 +373,9 @@ jobs:
         Write-Host "Checking Git..." -ForegroundColor Cyan
         try {
           git --version
-          Write-Host "✓ Git is available" -ForegroundColor Green
+          Write-Host " Git is available" -ForegroundColor Green
         } catch {
-          Write-Host "✗ Git not found" -ForegroundColor Red
+          Write-Host " Git not found" -ForegroundColor Red
           $errors += "Git not found"
         }
         Write-Host ""
@@ -409,9 +409,9 @@ jobs:
         # Check Flutter
         echo "Checking Flutter..."
         if flutter --version; then
-          echo "✓ Flutter is available"
+          echo " Flutter is available"
         else
-          echo "✗ Flutter not found"
+          echo " Flutter not found"
           errors=$((errors + 1))
         fi
         echo ""
@@ -419,9 +419,9 @@ jobs:
         # Check Git
         echo "Checking Git..."
         if git --version; then
-          echo "✓ Git is available"
+          echo " Git is available"
         else
-          echo "✗ Git not found"
+          echo " Git not found"
           errors=$((errors + 1))
         fi
         echo ""
@@ -429,9 +429,9 @@ jobs:
         # Check Flatpak
         echo "Checking Flatpak..."
         if flatpak --version; then
-          echo "✓ Flatpak is available"
+          echo " Flatpak is available"
         else
-          echo "✗ Flatpak not found"
+          echo " Flatpak not found"
           errors=$((errors + 1))
         fi
         echo ""
@@ -439,9 +439,9 @@ jobs:
         # Check flatpak-builder
         echo "Checking flatpak-builder..."
         if flatpak-builder --version; then
-          echo "✓ flatpak-builder is available"
+          echo " flatpak-builder is available"
         else
-          echo "✗ flatpak-builder not found"
+          echo " flatpak-builder not found"
           errors=$((errors + 1))
         fi
         echo ""
@@ -449,9 +449,9 @@ jobs:
         # Check dpkg-deb
         echo "Checking dpkg-deb..."
         if dpkg-deb --version; then
-          echo "✓ dpkg-deb is available"
+          echo " dpkg-deb is available"
         else
-          echo "✗ dpkg-deb not found"
+          echo " dpkg-deb not found"
           errors=$((errors + 1))
         fi
         echo ""
@@ -459,9 +459,9 @@ jobs:
         # Check fakeroot
         echo "Checking fakeroot..."
         if fakeroot --version; then
-          echo "✓ fakeroot is available"
+          echo " fakeroot is available"
         else
-          echo "✗ fakeroot not found"
+          echo " fakeroot not found"
           errors=$((errors + 1))
         fi
         echo ""
@@ -469,9 +469,9 @@ jobs:
         # Check lintian
         echo "Checking lintian..."
         if lintian --version; then
-          echo "✓ lintian is available"
+          echo " lintian is available"
         else
-          echo "✗ lintian not found"
+          echo " lintian not found"
           errors=$((errors + 1))
         fi
         echo ""
@@ -489,7 +489,7 @@ jobs:
         echo "::notice::All dependencies verified successfully"
         echo "::endgroup::"
         
-    - name: ⚙ Configure Windows desktop support
+    - name:  Configure Windows desktop support
       if: matrix.platform == 'windows'
       run: |
         Write-Host "::group::Configuring Flutter for Windows" -ForegroundColor Green
@@ -503,7 +503,7 @@ jobs:
         Write-Host "::endgroup::"
       shell: powershell
       
-    - name: ⚙ Configure Linux desktop support
+    - name:  Configure Linux desktop support
       if: matrix.platform == 'linux'
       run: |
         echo "::group::Configuring Flutter for Linux"
@@ -611,7 +611,7 @@ jobs:
     #     restore-keys: |
     #       ${{ runner.os }}-gradle-
     #
-    # - name: � Setup Android signing configuration
+    # - name:  Setup Android signing configuration
     #   if: matrix.platform == 'android'
     #   run: |
     #     echo "::group::Setting up Android signing"
@@ -764,7 +764,7 @@ jobs:
           exit 1
         fi
         
-        echo "✓ Flatpak manifest found: $MANIFEST_FILE"
+        echo " Flatpak manifest found: $MANIFEST_FILE"
         echo ""
         echo "Manifest contents:"
         cat "$MANIFEST_FILE"
@@ -986,7 +986,7 @@ jobs:
           Write-Host "::error::InnoSetup script not found at: $issFile"
           exit 1
         }
-        Write-Host "✓ Inno Setup script found: $issFile" -ForegroundColor Green
+        Write-Host " Inno Setup script found: $issFile" -ForegroundColor Green
         Write-Host ""
         
         # Compile installer
@@ -1017,7 +1017,7 @@ jobs:
           Write-Host "::error::Inno Setup compilation failed with exit code: $($process.ExitCode)"
           exit 1
         }
-        Write-Host "✓ Inno Setup compilation completed successfully" -ForegroundColor Green
+        Write-Host " Inno Setup compilation completed successfully" -ForegroundColor Green
         Write-Host ""
         
         # Find the created installer (output filename may vary)
@@ -1026,7 +1026,7 @@ jobs:
         $installer = Get-ChildItem -Path $PACKAGE_PATH -Filter $installerPattern -ErrorAction SilentlyContinue | Select-Object -First 1
         
         if ($installer) {
-          Write-Host "✓ Installer created: $($installer.FullName)" -ForegroundColor Green
+          Write-Host " Installer created: $($installer.FullName)" -ForegroundColor Green
           Write-Host "  Size: $([math]::Round($installer.Length / 1MB, 2)) MB"
           echo "INSTALLER_FILE=$($installer.FullName)" >> $env:GITHUB_ENV
           
@@ -1036,7 +1036,7 @@ jobs:
           $hash = Get-FileHash $installer.FullName -Algorithm SHA256
           $checksumFile = "$($installer.FullName).sha256"
           $hash.Hash + "  $($installer.Name)" | Out-File $checksumFile -Encoding ASCII
-          Write-Host "✓ Checksum generated: $checksumFile" -ForegroundColor Green
+          Write-Host " Checksum generated: $checksumFile" -ForegroundColor Green
           Write-Host "  SHA256: $($hash.Hash)"
           echo "INSTALLER_CHECKSUM=$checksumFile" >> $env:GITHUB_ENV
         } else {
@@ -1096,7 +1096,7 @@ jobs:
           echo "::error::Flatpak build failed"
           exit 1
         fi
-        echo "✓ Flatpak build completed successfully"
+        echo " Flatpak build completed successfully"
         echo ""
         
         # Create bundle
@@ -1107,7 +1107,7 @@ jobs:
           echo "::error::Flatpak bundle creation failed"
           exit 1
         fi
-        echo "✓ Flatpak bundle created: $PACKAGE_PATH/$FLATPAK_NAME"
+        echo " Flatpak bundle created: $PACKAGE_PATH/$FLATPAK_NAME"
         
         # Get file size
         FLATPAK_SIZE=$(du -h "$PACKAGE_PATH/$FLATPAK_NAME" | cut -f1)
@@ -1119,7 +1119,7 @@ jobs:
         cd "$PACKAGE_PATH"
         sha256sum "$FLATPAK_NAME" > "${FLATPAK_NAME}.sha256"
         CHECKSUM=$(cat "${FLATPAK_NAME}.sha256" | cut -d' ' -f1)
-        echo "✓ Checksum generated: ${FLATPAK_NAME}.sha256"
+        echo " Checksum generated: ${FLATPAK_NAME}.sha256"
         echo "  SHA256: $CHECKSUM"
         cd -
         
@@ -1177,13 +1177,13 @@ jobs:
         mkdir -p "$PKG_DIR/usr/share/icons/hicolor/128x128/apps"
         mkdir -p "$PKG_DIR/usr/share/metainfo"
         mkdir -p "$PKG_DIR/usr/share/doc/$PACKAGE_NAME"
-        echo "✓ Directory structure created"
+        echo " Directory structure created"
         echo ""
         
         # Copy application files
         echo "Copying application files..."
         cp -r build/linux/x64/release/bundle/* "$PKG_DIR/usr/lib/$PACKAGE_NAME/"
-        echo "✓ Application files copied"
+        echo " Application files copied"
         echo ""
         
         # Create launcher script
@@ -1193,14 +1193,14 @@ jobs:
         exec /usr/lib/cloudtolocalllm/cloudtolocalllm "$@"
         EOFLAUNCHER
         chmod +x "$PKG_DIR/usr/bin/$PACKAGE_NAME"
-        echo "✓ Launcher script created"
+        echo " Launcher script created"
         echo ""
         
         # Copy desktop integration files
         echo "Copying desktop integration files..."
         cp linux/com.cloudtolocalllm.CloudToLocalLLM.desktop "$PKG_DIR/usr/share/applications/"
         cp linux/com.cloudtolocalllm.CloudToLocalLLM.metainfo.xml "$PKG_DIR/usr/share/metainfo/"
-        echo "✓ Desktop integration files copied"
+        echo " Desktop integration files copied"
         echo ""
         
         # Copy icons
@@ -1210,7 +1210,7 @@ jobs:
         cp linux/icons/cloudtolocalllm-48.png "$PKG_DIR/usr/share/icons/hicolor/48x48/apps/com.cloudtolocalllm.CloudToLocalLLM.png"
         cp linux/icons/cloudtolocalllm-64.png "$PKG_DIR/usr/share/icons/hicolor/64x64/apps/com.cloudtolocalllm.CloudToLocalLLM.png"
         cp linux/icons/cloudtolocalllm-128.png "$PKG_DIR/usr/share/icons/hicolor/128x128/apps/com.cloudtolocalllm.CloudToLocalLLM.png"
-        echo "✓ Icons copied"
+        echo " Icons copied"
         echo ""
         
         # Create copyright file
@@ -1242,7 +1242,7 @@ jobs:
          OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
          SOFTWARE.
         EOFCOPYRIGHT
-        echo "✓ Copyright file created"
+        echo " Copyright file created"
         echo ""
         
         # Create DEBIAN control file
@@ -1269,7 +1269,7 @@ jobs:
           - Secure tunneling for real-time communication
           - Cross-platform support
         EOFCONTROL
-        echo "✓ DEBIAN control file created"
+        echo " DEBIAN control file created"
         echo ""
         
         # Create postinst script
@@ -1291,7 +1291,7 @@ jobs:
         exit 0
         EOFPOSTINST
         chmod +x "$PKG_DIR/DEBIAN/postinst"
-        echo "✓ postinst script created"
+        echo " postinst script created"
         echo ""
         
         # Create prerm script
@@ -1303,7 +1303,7 @@ jobs:
         exit 0
         EOFPRERM
         chmod +x "$PKG_DIR/DEBIAN/prerm"
-        echo "✓ prerm script created"
+        echo " prerm script created"
         echo ""
         
         echo "::notice::.deb package structure created successfully"
@@ -1331,7 +1331,7 @@ jobs:
           exit 1
         fi
         
-        echo "✓ .deb package built successfully"
+        echo " .deb package built successfully"
         echo ""
         
         # Get file size
@@ -1368,7 +1368,7 @@ jobs:
         
         echo ""
         if [ "${LINTIAN_EXIT:-0}" -le 1 ]; then
-          echo "✓ .deb package validation completed"
+          echo " .deb package validation completed"
           echo "::notice::.deb package validated successfully"
         else
           echo "::warning::Lintian found issues (exit code: ${LINTIAN_EXIT})"
@@ -1394,7 +1394,7 @@ jobs:
         sha256sum "$DEB_FILE" > "${DEB_FILE}.sha256"
         
         CHECKSUM=$(cat "${DEB_FILE}.sha256" | cut -d' ' -f1)
-        echo "✓ Checksum generated: ${DEB_FILE}.sha256"
+        echo " Checksum generated: ${DEB_FILE}.sha256"
         echo "  SHA256: $CHECKSUM"
         
         cd -
@@ -1487,14 +1487,14 @@ jobs:
     #     
     #     # Copy and rename APK
     #     cp "build/app/outputs/flutter-apk/app-release.apk" "$PACKAGE_PATH/$APK_NAME"
-    #     echo "✓ APK copied: $PACKAGE_PATH/$APK_NAME"
+    #     echo " APK copied: $PACKAGE_PATH/$APK_NAME"
     #     
     #     # Generate SHA256 checksum
     #     echo ""
     #     echo "Generating SHA256 checksum..."
     #     cd "$PACKAGE_PATH"
     #     sha256sum "$APK_NAME" > "${APK_NAME}.sha256"
-    #     echo "✓ Checksum generated: ${APK_NAME}.sha256"
+    #     echo " Checksum generated: ${APK_NAME}.sha256"
     #     echo "  SHA256: $(cat ${APK_NAME}.sha256 | cut -d' ' -f1)"
     #     cd -
     #     
@@ -1533,7 +1533,7 @@ jobs:
         # Copy build output
         Write-Host "Copying build output..."
         Copy-Item -Recurse "build\windows\x64\runner\Release" "$PACKAGE_PATH/$PACKAGE_NAME"
-        Write-Host "✓ Build output copied" -ForegroundColor Green
+        Write-Host " Build output copied" -ForegroundColor Green
         Write-Host ""
 
         # Create ZIP archive
@@ -1541,7 +1541,7 @@ jobs:
         Compress-Archive -Path "$PACKAGE_PATH/$PACKAGE_NAME" -DestinationPath "$PACKAGE_PATH/$PACKAGE_NAME.zip" -Force
         
         $zipFile = Get-Item "$PACKAGE_PATH/$PACKAGE_NAME.zip"
-        Write-Host "✓ ZIP archive created: $($zipFile.FullName)" -ForegroundColor Green
+        Write-Host " ZIP archive created: $($zipFile.FullName)" -ForegroundColor Green
         Write-Host "  Size: $([math]::Round($zipFile.Length / 1MB, 2)) MB"
         Write-Host ""
 
@@ -1549,7 +1549,7 @@ jobs:
         Write-Host "Generating SHA256 checksum..."
         $hash = Get-FileHash "$PACKAGE_PATH/$PACKAGE_NAME.zip" -Algorithm SHA256
         $hash.Hash + "  $PACKAGE_NAME.zip" | Out-File "$PACKAGE_PATH/$PACKAGE_NAME.zip.sha256" -Encoding ASCII
-        Write-Host "✓ Checksum generated" -ForegroundColor Green
+        Write-Host " Checksum generated" -ForegroundColor Green
         Write-Host "  SHA256: $($hash.Hash)"
         Write-Host ""
 
@@ -1816,31 +1816,31 @@ jobs:
           WINDOWS_INSTALLER=$(find artifacts/windows-desktop -name "*.exe" -type f | head -1)
           if [ -n "$WINDOWS_INSTALLER" ]; then
             cp "$WINDOWS_INSTALLER" release-assets/
-            echo "✓ Copied Windows installer: $(basename "$WINDOWS_INSTALLER")"
+            echo " Copied Windows installer: $(basename "$WINDOWS_INSTALLER")"
           fi
           
           # Copy Windows installer checksum
           WINDOWS_INSTALLER_HASH=$(find artifacts/windows-desktop -name "*.exe.sha256" -type f | head -1)
           if [ -n "$WINDOWS_INSTALLER_HASH" ]; then
             cp "$WINDOWS_INSTALLER_HASH" release-assets/
-            echo "✓ Copied Windows installer checksum: $(basename "$WINDOWS_INSTALLER_HASH")"
+            echo " Copied Windows installer checksum: $(basename "$WINDOWS_INSTALLER_HASH")"
           fi
           
           # Copy Windows portable package
           WINDOWS_PORTABLE=$(find artifacts/windows-desktop -name "*-portable.zip" -type f | head -1)
           if [ -n "$WINDOWS_PORTABLE" ]; then
             cp "$WINDOWS_PORTABLE" release-assets/
-            echo "✓ Copied Windows portable: $(basename "$WINDOWS_PORTABLE")"
+            echo " Copied Windows portable: $(basename "$WINDOWS_PORTABLE")"
           fi
           
           # Copy Windows portable checksum
           WINDOWS_PORTABLE_HASH=$(find artifacts/windows-desktop -name "*-portable.zip.sha256" -type f | head -1)
           if [ -n "$WINDOWS_PORTABLE_HASH" ]; then
             cp "$WINDOWS_PORTABLE_HASH" release-assets/
-            echo "✓ Copied Windows portable checksum: $(basename "$WINDOWS_PORTABLE_HASH")"
+            echo " Copied Windows portable checksum: $(basename "$WINDOWS_PORTABLE_HASH")"
           fi
         else
-          echo "⚠ Windows artifacts not found"
+          echo " Windows artifacts not found"
         fi
         
         # Process Linux artifacts
@@ -1852,17 +1852,17 @@ jobs:
           LINUX_FLATPAK=$(find artifacts/linux-desktop -name "*.flatpak" -type f | head -1)
           if [ -n "$LINUX_FLATPAK" ]; then
             cp "$LINUX_FLATPAK" release-assets/
-            echo "✓ Copied Linux Flatpak: $(basename "$LINUX_FLATPAK")"
+            echo " Copied Linux Flatpak: $(basename "$LINUX_FLATPAK")"
           fi
           
           # Copy Flatpak checksum
           LINUX_FLATPAK_HASH=$(find artifacts/linux-desktop -name "*.flatpak.sha256" -type f | head -1)
           if [ -n "$LINUX_FLATPAK_HASH" ]; then
             cp "$LINUX_FLATPAK_HASH" release-assets/
-            echo "✓ Copied Linux Flatpak checksum: $(basename "$LINUX_FLATPAK_HASH")"
+            echo " Copied Linux Flatpak checksum: $(basename "$LINUX_FLATPAK_HASH")"
           fi
         else
-          echo "⚠ Linux artifacts not found"
+          echo " Linux artifacts not found"
         fi
         
         # Process Android artifacts (uncomment when enabling Android builds)
@@ -1874,17 +1874,17 @@ jobs:
         #   ANDROID_APK=$(find artifacts/android-apk -name "*.apk" -type f | head -1)
         #   if [ -n "$ANDROID_APK" ]; then
         #     cp "$ANDROID_APK" release-assets/
-        #     echo "✓ Copied Android APK: $(basename "$ANDROID_APK")"
+        #     echo " Copied Android APK: $(basename "$ANDROID_APK")"
         #   fi
         #   
         #   # Copy Android APK checksum
         #   ANDROID_APK_HASH=$(find artifacts/android-apk -name "*.apk.sha256" -type f | head -1)
         #   if [ -n "$ANDROID_APK_HASH" ]; then
         #     cp "$ANDROID_APK_HASH" release-assets/
-        #     echo "✓ Copied Android APK checksum: $(basename "$ANDROID_APK_HASH")"
+        #     echo " Copied Android APK checksum: $(basename "$ANDROID_APK_HASH")"
         #   fi
         # else
-        #   echo "⚠ Android artifacts not found"
+        #   echo " Android artifacts not found"
         # fi
         
         echo ""
