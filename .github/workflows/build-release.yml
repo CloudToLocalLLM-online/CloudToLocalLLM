@@ -41,7 +41,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  FLUTTER_VERSION: '3.32.8'
+  FLUTTER_VERSION: '3.24.5'
 
 jobs:
   # Extract version information
@@ -252,11 +252,10 @@ jobs:
             build-command: flutter build linux --release
             artifact-name: linux-desktop
           
-          # Uncomment to enable Android builds
-          # - platform: android
-          #   os: ubuntu-latest
-          #   build-command: flutter build apk --release
-          #   artifact-name: android-apk
+          - platform: android
+            os: ubuntu-latest
+            build-command: flutter build apk --release --split-per-abi
+            artifact-name: android-apk
     
     steps:
     - name:  Job Started - Build ${{ matrix.platform }} Desktop (Windows)
@@ -294,6 +293,24 @@ jobs:
         echo "Started at: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
         echo "::endgroup::"
       
+    - name:  Job Started - Build ${{ matrix.platform }} (Android)
+      if: matrix.platform == 'android'
+      run: |
+        echo "::group::Build Job Information"
+        echo "=== Build Android Job Started ==="
+        echo ""
+        echo "Platform: ${{ matrix.platform }}"
+        echo "Runner OS: ${{ runner.os }}"
+        echo "Runner Architecture: ${{ runner.arch }}"
+        echo "Version: ${{ needs.version-info.outputs.version }}"
+        echo "Full Version: ${{ needs.version-info.outputs.full_version }}"
+        echo "Is Release: ${{ needs.version-info.outputs.is_release }}"
+        echo "Build Command: ${{ matrix.build-command }}"
+        echo "Target Architectures: ARM64, ARMv7, x86_64"
+        echo ""
+        echo "Started at: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+        echo "::endgroup::"
+      
     - name:  Start Build Time Tracking (Windows)
       if: matrix.platform == 'windows'
       id: build-start-time-windows
@@ -306,6 +323,14 @@ jobs:
     - name:  Start Build Time Tracking (Linux)
       if: matrix.platform == 'linux'
       id: build-start-time-linux
+      run: |
+        START_TIME=$(date +%s)
+        echo "start_time=$START_TIME" >> $GITHUB_OUTPUT
+        echo "Build timer started"
+      
+    - name:  Start Build Time Tracking (Android)
+      if: matrix.platform == 'android'
+      id: build-start-time-android
       run: |
         START_TIME=$(date +%s)
         echo "start_time=$START_TIME" >> $GITHUB_OUTPUT
@@ -582,88 +607,134 @@ jobs:
         echo "::notice::.deb packaging tools installed successfully"
         echo "::endgroup::"
       
-    # Android-specific setup steps (uncomment when enabling Android builds)
-    # - name:  Setup Java for Android
-    #   if: matrix.platform == 'android'
-    #   uses: actions/setup-java@v4
-    #   with:
-    #     distribution: 'zulu'
-    #     java-version: '17'
-    #     cache: 'gradle'
-    #
-    # - name:  Setup Android SDK
-    #   if: matrix.platform == 'android'
-    #   uses: android-actions/setup-android@v3
-    #   with:
-    #     api-level: 33
-    #     build-tools: 33.0.2
-    #     ndk-version: 25.2.9519653
-    #
-    # - name:  Cache Gradle dependencies
-    #   if: matrix.platform == 'android'
-    #   uses: actions/cache@v4
-    #   with:
-    #     path: |
-    #       ~/.gradle/caches
-    #       ~/.gradle/wrapper
-    #       android/.gradle
-    #     key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
-    #     restore-keys: |
-    #       ${{ runner.os }}-gradle-
-    #
-    # - name:  Setup Android signing configuration
-    #   if: matrix.platform == 'android'
-    #   run: |
-    #     echo "::group::Setting up Android signing"
-    #     
-    #     # Create key.properties file for signing
-    #     # This file should contain:
-    #     # - storePassword: Password for the keystore
-    #     # - keyPassword: Password for the key
-    #     # - keyAlias: Alias of the key
-    #     # - storeFile: Path to the keystore file
-    #     
-    #     mkdir -p android
-    #     cat > android/key.properties << EOF
-    #     storePassword=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-    #     keyPassword=${{ secrets.ANDROID_KEY_PASSWORD }}
-    #     keyAlias=${{ secrets.ANDROID_KEY_ALIAS }}
-    #     storeFile=../release-keystore.jks
-    #     EOF
-    #     
-    #     # Decode and save keystore from secrets
-    #     # The keystore should be base64 encoded and stored in GitHub Secrets
-    #     echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d > android/release-keystore.jks
-    #     
-    #     echo "::notice::Android signing configuration created"
-    #     echo "::endgroup::"
-    #
-    # - name:  Verify Android SDK and dependencies
-    #   if: matrix.platform == 'android'
-    #   run: |
-    #     echo "::group::Verifying Android SDK"
-    #     
-    #     # Check Java
-    #     echo "Java version:"
-    #     java -version
-    #     
-    #     # Check Android SDK
-    #     echo ""
-    #     echo "Android SDK location:"
-    #     echo $ANDROID_HOME
-    #     
-    #     # List installed SDK components
-    #     echo ""
-    #     echo "Installed SDK components:"
-    #     $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --list_installed
-    #     
-    #     # Accept licenses
-    #     echo ""
-    #     echo "Accepting Android SDK licenses..."
-    #     yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
-    #     
-    #     echo "::notice::Android SDK verified successfully"
-    #     echo "::endgroup::"
+    - name:  Setup Java for Android
+      if: matrix.platform == 'android'
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'zulu'
+        java-version: '17'
+        cache: 'gradle'
+    
+    - name:  Setup Android SDK
+      if: matrix.platform == 'android'
+      uses: android-actions/setup-android@v3
+      with:
+        api-level: 33
+        build-tools: 33.0.2
+        ndk-version: 25.2.9519653
+    
+    - name:  Cache Gradle dependencies
+      if: matrix.platform == 'android'
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.gradle/caches
+          ~/.gradle/wrapper
+          android/.gradle
+        key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+        restore-keys: |
+          ${{ runner.os }}-gradle-
+      continue-on-error: true
+    
+    - name:  Setup Android signing configuration
+      if: matrix.platform == 'android'
+      run: |
+        echo "::group::Setting up Android signing"
+        echo "=== Setting up Android Signing Configuration ==="
+        echo ""
+        
+        # Create key.properties file for signing
+        mkdir -p android
+        cat > android/key.properties << EOF
+        storePassword=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+        keyPassword=${{ secrets.ANDROID_KEY_PASSWORD }}
+        keyAlias=${{ secrets.ANDROID_KEY_ALIAS }}
+        storeFile=../release-keystore.jks
+        EOF
+        
+        echo " key.properties file created"
+        echo ""
+        
+        # Decode and save keystore from secrets
+        echo "Decoding keystore from GitHub Secrets..."
+        echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d > android/release-keystore.jks
+        
+        if [ -f android/release-keystore.jks ]; then
+          KEYSTORE_SIZE=$(du -h android/release-keystore.jks | cut -f1)
+          echo " Keystore file created: android/release-keystore.jks"
+          echo "  Size: $KEYSTORE_SIZE"
+        else
+          echo "::error::Failed to create keystore file"
+          exit 1
+        fi
+        
+        echo ""
+        echo "::notice::Android signing configuration created successfully"
+        echo "::endgroup::"
+    
+    - name:  Verify Android SDK and dependencies
+      if: matrix.platform == 'android'
+      run: |
+        echo "::group::Verifying Android SDK"
+        echo "=== Verifying Android SDK and Dependencies ==="
+        echo ""
+        
+        errors=0
+        
+        # Check Java
+        echo "Checking Java..."
+        if java -version 2>&1; then
+          echo " Java is available"
+        else
+          echo " Java not found"
+          errors=$((errors + 1))
+        fi
+        echo ""
+        
+        # Check Android SDK
+        echo "Checking Android SDK..."
+        if [ -n "$ANDROID_HOME" ] && [ -d "$ANDROID_HOME" ]; then
+          echo " Android SDK location: $ANDROID_HOME"
+        else
+          echo " Android SDK not found"
+          errors=$((errors + 1))
+        fi
+        echo ""
+        
+        # List installed SDK components
+        if [ -n "$ANDROID_HOME" ] && [ -d "$ANDROID_HOME/cmdline-tools" ]; then
+          echo "Installed SDK components:"
+          $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --list_installed || true
+          echo ""
+        fi
+        
+        # Accept licenses
+        echo "Accepting Android SDK licenses..."
+        yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses 2>&1 || true
+        echo ""
+        
+        # Check Flutter
+        echo "Checking Flutter..."
+        if flutter --version; then
+          echo " Flutter is available"
+        else
+          echo " Flutter not found"
+          errors=$((errors + 1))
+        fi
+        echo ""
+        
+        # Run Flutter doctor
+        echo "Running Flutter doctor..."
+        flutter doctor -v
+        echo ""
+        
+        if [ $errors -gt 0 ]; then
+          echo "::error::Dependency verification failed with $errors errors"
+          exit 1
+        fi
+        
+        echo "::notice::Android SDK and dependencies verified successfully"
+        echo "::endgroup::"
       
     - name: Clean pub cache (force fresh dependencies)
       run: flutter pub cache clean --force
@@ -1415,96 +1486,191 @@ jobs:
         echo "::notice::.deb package created in ${DURATION}s"
         echo ".deb build time: ${DURATION}s" >> $GITHUB_STEP_SUMMARY
       
-    # Android-specific build steps (uncomment when enabling Android builds)
-    # - name:  Build Android APK
-    #   if: matrix.platform == 'android'
-    #   run: |
-    #     echo "::group::Building Android APK"
-    #     echo "=== Building Android APK ==="
-    #     echo ""
-    #     echo "Build command: flutter build apk --release"
-    #     echo "Target architectures: arm64-v8a, armeabi-v7a, x86_64"
-    #     echo ""
-    #     
-    #     # Build release APK with all architectures
-    #     flutter build apk --release --target-platform android-arm,android-arm64,android-x64
-    #     
-    #     if [ $? -ne 0 ]; then
-    #       echo "::error::Android APK build failed"
-    #       exit 1
-    #     fi
-    #     
-    #     echo ""
-    #     echo "::notice::Android APK built successfully"
-    #     echo "::endgroup::"
-    #
-    # - name:  Verify Android APK
-    #   if: matrix.platform == 'android'
-    #   run: |
-    #     echo "::group::Verifying Android APK"
-    #     
-    #     APK_PATH="build/app/outputs/flutter-apk/app-release.apk"
-    #     
-    #     if [ ! -f "$APK_PATH" ]; then
-    #       echo "::error::APK not found at: $APK_PATH"
-    #       exit 1
-    #     fi
-    #     
-    #     echo "APK found: $APK_PATH"
-    #     echo "APK size: $(du -h $APK_PATH | cut -f1)"
-    #     
-    #     # Verify APK is signed
-    #     echo ""
-    #     echo "Verifying APK signature..."
-    #     $ANDROID_HOME/build-tools/33.0.2/apksigner verify --verbose "$APK_PATH"
-    #     
-    #     if [ $? -ne 0 ]; then
-    #       echo "::error::APK signature verification failed"
-    #       exit 1
-    #     fi
-    #     
-    #     echo "::notice::APK verified successfully"
-    #     echo "::endgroup::"
-    #
-    # - name:  Package Android APK
-    #   if: matrix.platform == 'android'
-    #   run: |
-    #     echo "::group::Packaging Android APK"
-    #     echo "=== Packaging Android APK ==="
-    #     echo ""
-    #     
-    #     VERSION="${{ needs.version-info.outputs.version }}"
-    #     PACKAGE_PATH="dist/android"
-    #     APK_NAME="cloudtolocalllm-${VERSION}.apk"
-    #     
-    #     echo "Version: $VERSION"
-    #     echo "Package name: $APK_NAME"
-    #     echo "Output path: $PACKAGE_PATH"
-    #     echo ""
-    #     
-    #     # Create dist directory
-    #     mkdir -p "$PACKAGE_PATH"
-    #     
-    #     # Copy and rename APK
-    #     cp "build/app/outputs/flutter-apk/app-release.apk" "$PACKAGE_PATH/$APK_NAME"
-    #     echo " APK copied: $PACKAGE_PATH/$APK_NAME"
-    #     
-    #     # Generate SHA256 checksum
-    #     echo ""
-    #     echo "Generating SHA256 checksum..."
-    #     cd "$PACKAGE_PATH"
-    #     sha256sum "$APK_NAME" > "${APK_NAME}.sha256"
-    #     echo " Checksum generated: ${APK_NAME}.sha256"
-    #     echo "  SHA256: $(cat ${APK_NAME}.sha256 | cut -d' ' -f1)"
-    #     cd -
-    #     
-    #     # Set environment variables for artifact upload
-    #     echo "APK_FILE=$PACKAGE_PATH/$APK_NAME" >> $GITHUB_ENV
-    #     echo "APK_CHECKSUM=$PACKAGE_PATH/${APK_NAME}.sha256" >> $GITHUB_ENV
-    #     
-    #     echo ""
-    #     echo "::notice::Android APK packaged successfully"
-    #     echo "::endgroup::"
+    - name:  Build Android APKs with split-per-abi
+      if: matrix.platform == 'android'
+      run: |
+        echo "::group::Building Android APKs"
+        echo "=== Building Android APKs with Split-Per-ABI ==="
+        echo ""
+        echo "Build command: flutter build apk --release --split-per-abi"
+        echo "Target architectures: ARM64 (arm64-v8a), ARMv7 (armeabi-v7a), x86_64"
+        echo ""
+        
+        # Build release APKs with split-per-abi for smaller downloads
+        flutter build apk --release --split-per-abi
+        
+        if [ $? -ne 0 ]; then
+          echo "::error::Android APK build failed"
+          exit 1
+        fi
+        
+        echo ""
+        echo "::notice::Android APKs built successfully"
+        echo "::endgroup::"
+    
+    - name:  Verify Android APKs
+      if: matrix.platform == 'android'
+      run: |
+        echo "::group::Verifying Android APKs"
+        echo "=== Verifying Android APKs ==="
+        echo ""
+        
+        APK_DIR="build/app/outputs/flutter-apk"
+        
+        # Expected APK files
+        APK_ARM64="$APK_DIR/app-arm64-v8a-release.apk"
+        APK_ARMV7="$APK_DIR/app-armeabi-v7a-release.apk"
+        APK_X86_64="$APK_DIR/app-x86_64-release.apk"
+        
+        errors=0
+        
+        # Check ARM64 APK
+        echo "Checking ARM64 APK..."
+        if [ -f "$APK_ARM64" ]; then
+          APK_SIZE=$(du -h "$APK_ARM64" | cut -f1)
+          echo " ARM64 APK found: $APK_ARM64"
+          echo "  Size: $APK_SIZE"
+        else
+          echo " ARM64 APK not found: $APK_ARM64"
+          errors=$((errors + 1))
+        fi
+        echo ""
+        
+        # Check ARMv7 APK
+        echo "Checking ARMv7 APK..."
+        if [ -f "$APK_ARMV7" ]; then
+          APK_SIZE=$(du -h "$APK_ARMV7" | cut -f1)
+          echo " ARMv7 APK found: $APK_ARMV7"
+          echo "  Size: $APK_SIZE"
+        else
+          echo " ARMv7 APK not found: $APK_ARMV7"
+          errors=$((errors + 1))
+        fi
+        echo ""
+        
+        # Check x86_64 APK
+        echo "Checking x86_64 APK..."
+        if [ -f "$APK_X86_64" ]; then
+          APK_SIZE=$(du -h "$APK_X86_64" | cut -f1)
+          echo " x86_64 APK found: $APK_X86_64"
+          echo "  Size: $APK_SIZE"
+        else
+          echo " x86_64 APK not found: $APK_X86_64"
+          errors=$((errors + 1))
+        fi
+        echo ""
+        
+        if [ $errors -gt 0 ]; then
+          echo "::error::$errors APK(s) not found"
+          echo "Available files in $APK_DIR:"
+          ls -lh "$APK_DIR"
+          exit 1
+        fi
+        
+        # Verify APK signatures
+        echo "Verifying APK signatures..."
+        echo ""
+        
+        for apk in "$APK_ARM64" "$APK_ARMV7" "$APK_X86_64"; do
+          if [ -f "$apk" ]; then
+            echo "Verifying $(basename $apk)..."
+            if $ANDROID_HOME/build-tools/33.0.2/apksigner verify --verbose "$apk"; then
+              echo " Signature valid"
+            else
+              echo " Signature verification failed"
+              errors=$((errors + 1))
+            fi
+            echo ""
+          fi
+        done
+        
+        if [ $errors -gt 0 ]; then
+          echo "::error::APK signature verification failed"
+          exit 1
+        fi
+        
+        echo "::notice::All Android APKs verified successfully"
+        echo "::endgroup::"
+    
+    - name:  Package Android APKs
+      if: matrix.platform == 'android'
+      run: |
+        echo "::group::Packaging Android APKs"
+        echo "=== Packaging Android APKs ==="
+        echo ""
+        
+        VERSION="${{ needs.version-info.outputs.version }}"
+        PACKAGE_PATH="dist/android"
+        APK_DIR="build/app/outputs/flutter-apk"
+        
+        echo "Version: $VERSION"
+        echo "Output path: $PACKAGE_PATH"
+        echo ""
+        
+        # Create dist directory
+        mkdir -p "$PACKAGE_PATH"
+        
+        # Copy and rename APKs
+        echo "Copying APKs..."
+        
+        # ARM64 APK
+        if [ -f "$APK_DIR/app-arm64-v8a-release.apk" ]; then
+          APK_NAME="cloudtolocalllm-${VERSION}-arm64-v8a.apk"
+          cp "$APK_DIR/app-arm64-v8a-release.apk" "$PACKAGE_PATH/$APK_NAME"
+          echo " ARM64 APK: $APK_NAME"
+        fi
+        
+        # ARMv7 APK
+        if [ -f "$APK_DIR/app-armeabi-v7a-release.apk" ]; then
+          APK_NAME="cloudtolocalllm-${VERSION}-armeabi-v7a.apk"
+          cp "$APK_DIR/app-armeabi-v7a-release.apk" "$PACKAGE_PATH/$APK_NAME"
+          echo " ARMv7 APK: $APK_NAME"
+        fi
+        
+        # x86_64 APK
+        if [ -f "$APK_DIR/app-x86_64-release.apk" ]; then
+          APK_NAME="cloudtolocalllm-${VERSION}-x86_64.apk"
+          cp "$APK_DIR/app-x86_64-release.apk" "$PACKAGE_PATH/$APK_NAME"
+          echo " x86_64 APK: $APK_NAME"
+        fi
+        
+        echo ""
+        echo "Packaged APKs:"
+        ls -lh "$PACKAGE_PATH"/*.apk
+        
+        echo ""
+        echo "::notice::Android APKs packaged successfully"
+        echo "::endgroup::"
+    
+    - name:  Generate SHA256 checksums for Android APKs
+      if: matrix.platform == 'android'
+      run: |
+        echo "::group::Generating SHA256 checksums"
+        echo "=== Generating SHA256 Checksums for Android APKs ==="
+        echo ""
+        
+        PACKAGE_PATH="dist/android"
+        
+        cd "$PACKAGE_PATH"
+        
+        # Generate checksums for all APKs
+        for apk in *.apk; do
+          if [ -f "$apk" ]; then
+            echo "Generating checksum for $apk..."
+            sha256sum "$apk" > "${apk}.sha256"
+            CHECKSUM=$(cat "${apk}.sha256" | cut -d' ' -f1)
+            echo " Checksum: $CHECKSUM"
+            echo ""
+          fi
+        done
+        
+        cd -
+        
+        # Set environment variables for artifact upload
+        echo "APK_DIR=$PACKAGE_PATH" >> $GITHUB_ENV
+        
+        echo "::notice::SHA256 checksums generated successfully"
+        echo "::endgroup::"
       
     - name:  Start Portable Package Timer
       if: matrix.platform == 'windows'
@@ -1620,15 +1786,25 @@ jobs:
           ${{ env.DEB_CHECKSUM }}
         retention-days: 30
         
-    # Upload Android artifacts (uncomment when enabling Android builds)
-    # - uses: actions/upload-artifact@v4
-    #   if: matrix.platform == 'android'
-    #   with:
-    #     name: ${{ matrix.artifact-name }}
-    #     path: |
-    #       ${{ env.APK_FILE }}
-    #       ${{ env.APK_CHECKSUM }}
-    #     retention-days: 30
+    - name:  Upload build artifacts (Android)
+      if: matrix.platform == 'android'
+      run: |
+        echo "::group::Uploading build artifacts"
+        echo "=== Uploading Build Artifacts ==="
+        echo ""
+        echo "Artifact name: ${{ matrix.artifact-name }}"
+        echo "Files to upload:"
+        ls -lh $APK_DIR/*.apk $APK_DIR/*.sha256
+        echo "::endgroup::"
+    
+    - uses: actions/upload-artifact@v4
+      if: matrix.platform == 'android'
+      with:
+        name: ${{ matrix.artifact-name }}
+        path: |
+          ${{ env.APK_DIR }}/*.apk
+          ${{ env.APK_DIR }}/*.sha256
+        retention-days: 30
         
     - name:  Artifacts Uploaded (Windows)
       if: matrix.platform == 'windows'
@@ -1638,6 +1814,11 @@ jobs:
       
     - name:  Artifacts Uploaded (Linux)
       if: matrix.platform == 'linux'
+      run: |
+        echo "::notice::Build artifacts uploaded successfully"
+      
+    - name:  Artifacts Uploaded (Android)
+      if: matrix.platform == 'android'
       run: |
         echo "::notice::Build artifacts uploaded successfully"
       
@@ -1662,6 +1843,21 @@ jobs:
       run: |
         END_TIME=$(date +%s)
         DURATION=$((END_TIME - ${{ steps.build-start-time-linux.outputs.start_time }}))
+        MINUTES=$((DURATION / 60))
+        SECONDS=$((DURATION % 60))
+        
+        echo "::notice::Build job completed in ${MINUTES}m ${SECONDS}s"
+        
+        echo "##  Build Summary" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "**Platform:** ${{ matrix.platform }}" >> $GITHUB_STEP_SUMMARY
+        echo "**Total Duration:** ${MINUTES}m ${SECONDS}s" >> $GITHUB_STEP_SUMMARY
+      
+    - name:  Total Build Job Duration (Android)
+      if: always() && matrix.platform == 'android'
+      run: |
+        END_TIME=$(date +%s)
+        DURATION=$((END_TIME - ${{ steps.build-start-time-android.outputs.start_time }}))
         MINUTES=$((DURATION / 60))
         SECONDS=$((DURATION % 60))
         
@@ -1728,6 +1924,35 @@ jobs:
         echo "- Re-run the workflow (transient network issues)" >> $GITHUB_STEP_SUMMARY
         echo "- Clear caches if dependency issues persist" >> $GITHUB_STEP_SUMMARY
         echo "- Test build locally to isolate the issue" >> $GITHUB_STEP_SUMMARY
+      
+    - name:  Job Failed - Error Summary (Android)
+      if: failure() && matrix.platform == 'android'
+      run: |
+        echo "::error::Build job failed"
+        
+        echo "##  Build Job Failed" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "**Platform:** ${{ matrix.platform }}" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "**Common Issues:**" >> $GITHUB_STEP_SUMMARY
+        echo "- Flutter SDK installation failed" >> $GITHUB_STEP_SUMMARY
+        echo "- Java or Android SDK installation failed" >> $GITHUB_STEP_SUMMARY
+        echo "- Android signing configuration missing or invalid" >> $GITHUB_STEP_SUMMARY
+        echo "- Gradle build failed" >> $GITHUB_STEP_SUMMARY
+        echo "- APK signing failed" >> $GITHUB_STEP_SUMMARY
+        echo "- Artifact creation or upload failed" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "**Troubleshooting:**" >> $GITHUB_STEP_SUMMARY
+        echo "1. Verify Android keystore secrets are configured" >> $GITHUB_STEP_SUMMARY
+        echo "2. Check Flutter doctor output for Android setup" >> $GITHUB_STEP_SUMMARY
+        echo "3. Verify Android SDK licenses are accepted" >> $GITHUB_STEP_SUMMARY
+        echo "4. Review Gradle build logs for errors" >> $GITHUB_STEP_SUMMARY
+        echo "5. Check GitHub Actions status for service issues" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "**Quick Fixes:**" >> $GITHUB_STEP_SUMMARY
+        echo "- Re-run the workflow (transient network issues)" >> $GITHUB_STEP_SUMMARY
+        echo "- Verify keystore secrets in repository settings" >> $GITHUB_STEP_SUMMARY
+        echo "- Clear Gradle caches if build issues persist" >> $GITHUB_STEP_SUMMARY
 
   # Create GitHub release with all platform builds (only for tag pushes)
   create-release:
@@ -1865,27 +2090,31 @@ jobs:
           echo " Linux artifacts not found"
         fi
         
-        # Process Android artifacts (uncomment when enabling Android builds)
-        # echo ""
-        # if [ -d "artifacts/android-apk" ]; then
-        #   echo "Processing Android artifacts..."
-        #   
-        #   # Copy Android APK
-        #   ANDROID_APK=$(find artifacts/android-apk -name "*.apk" -type f | head -1)
-        #   if [ -n "$ANDROID_APK" ]; then
-        #     cp "$ANDROID_APK" release-assets/
-        #     echo " Copied Android APK: $(basename "$ANDROID_APK")"
-        #   fi
-        #   
-        #   # Copy Android APK checksum
-        #   ANDROID_APK_HASH=$(find artifacts/android-apk -name "*.apk.sha256" -type f | head -1)
-        #   if [ -n "$ANDROID_APK_HASH" ]; then
-        #     cp "$ANDROID_APK_HASH" release-assets/
-        #     echo " Copied Android APK checksum: $(basename "$ANDROID_APK_HASH")"
-        #   fi
-        # else
-        #   echo " Android artifacts not found"
-        # fi
+        # Process Android artifacts
+        echo ""
+        if [ -d "artifacts/android-apk" ]; then
+          echo "Processing Android artifacts..."
+          
+          # Copy all Android APKs
+          ANDROID_APKS=$(find artifacts/android-apk -name "*.apk" -type f)
+          if [ -n "$ANDROID_APKS" ]; then
+            for apk in $ANDROID_APKS; do
+              cp "$apk" release-assets/
+              echo " Copied Android APK: $(basename "$apk")"
+            done
+          fi
+          
+          # Copy all Android APK checksums
+          ANDROID_CHECKSUMS=$(find artifacts/android-apk -name "*.apk.sha256" -type f)
+          if [ -n "$ANDROID_CHECKSUMS" ]; then
+            for checksum in $ANDROID_CHECKSUMS; do
+              cp "$checksum" release-assets/
+              echo " Copied Android checksum: $(basename "$checksum")"
+            done
+          fi
+        else
+          echo " Android artifacts not found"
+        fi
         
         echo ""
         echo "=== Release Assets Summary ==="
@@ -1924,10 +2153,9 @@ jobs:
           HAS_LINUX=true
         fi
         
-        # Android platform detection (uncomment when enabling Android builds)
-        # if ls release-assets/*.apk 1> /dev/null 2>&1; then
-        #   HAS_ANDROID=true
-        # fi
+        if ls release-assets/*.apk 1> /dev/null 2>&1; then
+          HAS_ANDROID=true
+        fi
         
         # Start building release notes
         cat > release-notes.md << 'EOF'
@@ -1984,26 +2212,31 @@ jobs:
           sed -i "s/\$VERSION/$VERSION/g" release-notes.md
         fi
         
-        # Add Android section (uncomment when enabling Android builds)
-        # if [ "$HAS_ANDROID" = true ]; then
-        #   cat >> release-notes.md << 'EOF'
-        # ### Android
-        # - **cloudtolocalllm-$VERSION.apk** - Android package (supports ARM and x86 architectures)
-        # 
-        # **Installation:**
-        # 1. Download the APK to your Android device
-        # 2. Enable "Install from Unknown Sources" in Settings > Security
-        # 3. Open the APK file to install
-        # 4. Launch CloudToLocalLLM from your app drawer
-        # 
-        # **Requirements:**
-        # - Android 5.0 (Lollipop) or higher (API level 21+)
-        # - Minimum 2GB RAM recommended
-        # - 100MB free storage space
-        # 
-        # EOF
-        #   sed -i "s/\$VERSION/$VERSION/g" release-notes.md
-        # fi
+        # Add Android section
+        if [ "$HAS_ANDROID" = true ]; then
+          cat >> release-notes.md << 'EOF'
+        ### Android
+        Choose the APK for your device architecture:
+        - **cloudtolocalllm-$VERSION-arm64-v8a.apk** - 64-bit ARM (most modern devices)
+        - **cloudtolocalllm-$VERSION-armeabi-v7a.apk** - 32-bit ARM (older devices)
+        - **cloudtolocalllm-$VERSION-x86_64.apk** - 64-bit x86 (emulators, some tablets)
+        
+        **Installation:**
+        1. Download the APK for your device architecture (arm64-v8a for most modern devices)
+        2. Enable "Install from Unknown Sources" in Settings → Security
+        3. Open the APK file to install
+        4. Launch CloudToLocalLLM from your app drawer
+        
+        **Requirements:**
+        - Android 5.0 (Lollipop) or higher (API level 21+)
+        - Minimum 2GB RAM recommended
+        - 100MB free storage space
+        
+        **Note**: Split APKs reduce download size by 30-40% compared to universal APKs.
+        
+        EOF
+          sed -i "s/\$VERSION/$VERSION/g" release-notes.md
+        fi
         
         # Add checksums section
         cat >> release-notes.md << 'EOF'
@@ -2113,10 +2346,10 @@ jobs:
           echo "-  Linux Flatpak" >> $GITHUB_STEP_SUMMARY
         fi
         
-        # Android platform check (uncomment when enabling Android builds)
-        # if ls release-assets/*.apk 1> /dev/null 2>&1; then
-        #   echo "-  Android APK" >> $GITHUB_STEP_SUMMARY
-        # fi
+        # Android platform check
+        if ls release-assets/*.apk 1> /dev/null 2>&1; then
+          echo "-  Android APKs (ARM64, ARMv7, x86_64)" >> $GITHUB_STEP_SUMMARY
+        fi
         
         echo "" >> $GITHUB_STEP_SUMMARY
         echo "**Release Assets:**" >> $GITHUB_STEP_SUMMARY
