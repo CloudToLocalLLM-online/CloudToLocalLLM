@@ -259,7 +259,8 @@ jobs:
           #   artifact-name: android-apk
     
     steps:
-    - name: 📋 Job Started - Build ${{ matrix.platform }} Desktop
+    - name: 📋 Job Started - Build ${{ matrix.platform }} Desktop (Windows)
+      if: matrix.platform == 'windows'
       run: |
         Write-Host "::group::Build Job Information" -ForegroundColor Green
         Write-Host "=== Build Desktop Job Started ===" -ForegroundColor Green
@@ -276,13 +277,39 @@ jobs:
         Write-Host "::endgroup::"
       shell: powershell
       
-    - name: ⏱️ Start Build Time Tracking
-      id: build-start-time
+    - name: 📋 Job Started - Build ${{ matrix.platform }} Desktop (Linux)
+      if: matrix.platform == 'linux'
+      run: |
+        echo "::group::Build Job Information"
+        echo "=== Build Desktop Job Started ==="
+        echo ""
+        echo "Platform: ${{ matrix.platform }}"
+        echo "Runner OS: ${{ runner.os }}"
+        echo "Runner Architecture: ${{ runner.arch }}"
+        echo "Version: ${{ needs.version-info.outputs.version }}"
+        echo "Full Version: ${{ needs.version-info.outputs.full_version }}"
+        echo "Is Release: ${{ needs.version-info.outputs.is_release }}"
+        echo "Build Command: ${{ matrix.build-command }}"
+        echo ""
+        echo "Started at: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+        echo "::endgroup::"
+      
+    - name: ⏱️ Start Build Time Tracking (Windows)
+      if: matrix.platform == 'windows'
+      id: build-start-time-windows
       run: |
         $START_TIME = [int][double]::Parse((Get-Date -UFormat %s))
         echo "start_time=$START_TIME" >> $env:GITHUB_OUTPUT
         Write-Host "Build timer started"
       shell: powershell
+      
+    - name: ⏱️ Start Build Time Tracking (Linux)
+      if: matrix.platform == 'linux'
+      id: build-start-time-linux
+      run: |
+        START_TIME=$(date +%s)
+        echo "start_time=$START_TIME" >> $GITHUB_OUTPUT
+        echo "Build timer started"
       
     - name: 📥 Checkout Repository
       run: |
@@ -1719,16 +1746,22 @@ jobs:
     #       ${{ env.APK_CHECKSUM }}
     #     retention-days: 30
         
-    - name: ✅ Artifacts Uploaded
+    - name: ✅ Artifacts Uploaded (Windows)
+      if: matrix.platform == 'windows'
       run: |
         Write-Host "::notice::Build artifacts uploaded successfully" -ForegroundColor Green
       shell: powershell
       
-    - name: ⏱️ Total Build Job Duration
-      if: always()
+    - name: ✅ Artifacts Uploaded (Linux)
+      if: matrix.platform == 'linux'
+      run: |
+        echo "::notice::Build artifacts uploaded successfully"
+      
+    - name: ⏱️ Total Build Job Duration (Windows)
+      if: always() && matrix.platform == 'windows'
       run: |
         $END_TIME = [int][double]::Parse((Get-Date -UFormat %s))
-        $DURATION = $END_TIME - ${{ steps.build-start-time.outputs.start_time }}
+        $DURATION = $END_TIME - ${{ steps.build-start-time-windows.outputs.start_time }}
         $MINUTES = [math]::Floor($DURATION / 60)
         $SECONDS = $DURATION % 60
         
@@ -1740,8 +1773,23 @@ jobs:
         echo "**Total Duration:** ${MINUTES}m ${SECONDS}s" >> $env:GITHUB_STEP_SUMMARY
       shell: powershell
       
-    - name: ❌ Job Failed - Error Summary
-      if: failure()
+    - name: ⏱️ Total Build Job Duration (Linux)
+      if: always() && matrix.platform == 'linux'
+      run: |
+        END_TIME=$(date +%s)
+        DURATION=$((END_TIME - ${{ steps.build-start-time-linux.outputs.start_time }}))
+        MINUTES=$((DURATION / 60))
+        SECONDS=$((DURATION % 60))
+        
+        echo "::notice::Build job completed in ${MINUTES}m ${SECONDS}s"
+        
+        echo "## 🔨 Build Summary" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "**Platform:** ${{ matrix.platform }}" >> $GITHUB_STEP_SUMMARY
+        echo "**Total Duration:** ${MINUTES}m ${SECONDS}s" >> $GITHUB_STEP_SUMMARY
+      
+    - name: ❌ Job Failed - Error Summary (Windows)
+      if: failure() && matrix.platform == 'windows'
       run: |
         Write-Host "::error::Build job failed" -ForegroundColor Red
         
@@ -1768,6 +1816,34 @@ jobs:
         echo "- Clear caches if dependency issues persist" >> $env:GITHUB_STEP_SUMMARY
         echo "- Test build locally to isolate the issue" >> $env:GITHUB_STEP_SUMMARY
       shell: powershell
+      
+    - name: ❌ Job Failed - Error Summary (Linux)
+      if: failure() && matrix.platform == 'linux'
+      run: |
+        echo "::error::Build job failed"
+        
+        echo "## ❌ Build Job Failed" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "**Platform:** ${{ matrix.platform }}" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "**Common Issues:**" >> $GITHUB_STEP_SUMMARY
+        echo "- Flutter SDK installation failed" >> $GITHUB_STEP_SUMMARY
+        echo "- Dependency download failed (network issues)" >> $GITHUB_STEP_SUMMARY
+        echo "- Flutter build compilation errors" >> $GITHUB_STEP_SUMMARY
+        echo "- Flatpak or .deb packaging failed" >> $GITHUB_STEP_SUMMARY
+        echo "- Artifact creation or upload failed" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "**Troubleshooting:**" >> $GITHUB_STEP_SUMMARY
+        echo "1. Check Flutter doctor output for missing dependencies" >> $GITHUB_STEP_SUMMARY
+        echo "2. Verify pubspec.yaml dependencies are valid" >> $GITHUB_STEP_SUMMARY
+        echo "3. Review build logs for compilation errors" >> $GITHUB_STEP_SUMMARY
+        echo "4. Verify Flatpak manifest and .deb structure" >> $GITHUB_STEP_SUMMARY
+        echo "5. Check GitHub Actions status for service issues" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "**Quick Fixes:**" >> $GITHUB_STEP_SUMMARY
+        echo "- Re-run the workflow (transient network issues)" >> $GITHUB_STEP_SUMMARY
+        echo "- Clear caches if dependency issues persist" >> $GITHUB_STEP_SUMMARY
+        echo "- Test build locally to isolate the issue" >> $GITHUB_STEP_SUMMARY
 
   # Create GitHub release with all platform builds (only for tag pushes)
   create-release:
