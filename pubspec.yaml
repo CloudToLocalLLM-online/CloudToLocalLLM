@@ -70,9 +70,9 @@ dependencies:
   dartssh2: ^2.9.0
 
   # LangChain Integration
-  langchain: ^0.8.0+1
-  langchain_ollama: ^0.4.0+1
-  langchain_community: ^0.4.0+1
+  langchain: ^0.7.0
+  langchain_ollama: ^0.3.0
+  langchain_community: ^0.3.0
   get_it: ^9.0.5
   logger: ^2.6.2
 
