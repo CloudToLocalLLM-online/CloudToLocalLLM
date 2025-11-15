@@ -739,6 +739,24 @@ jobs:
     - name: Get Flutter dependencies
       run: flutter pub get
       
+    - name:  Patch web package for non-web platforms
+      if: matrix.platform != 'web'
+      run: |
+        if [ "${{ matrix.platform }}" == "windows" ]; then
+          pwsh scripts/patch-web-package.ps1
+        else
+          # For Linux/Android, create bash version
+          WEB_PKG="$PUB_CACHE/hosted/pub.dev/web-1.1.1"
+          if [ -d "$WEB_PKG" ]; then
+            echo "Patching web package..."
+            cp "$WEB_PKG/lib/web.dart" "$WEB_PKG/lib/web.dart.backup" 2>/dev/null || true
+            echo "// Stub for non-web platforms" > "$WEB_PKG/lib/web.dart"
+            echo "library web;" >> "$WEB_PKG/lib/web.dart"
+            echo "Web package patched"
+          fi
+        fi
+      shell: bash
+      
     - name:  Build Windows desktop application
       if: matrix.platform == 'windows'
       run: |
