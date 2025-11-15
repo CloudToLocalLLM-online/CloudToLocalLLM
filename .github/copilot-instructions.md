@@ -102,6 +102,24 @@ Platform-specific tests require mocking in `test/test_config.dart` (MethodChanne
 - Version in `pubspec.yaml` (e.g., `4.4.0+202511081545`); updated by release scripts
 - `assets/version.json`: Contains version metadata
 
+## Working With Other AI Agents
+
+- **Awareness**: Other AI agents (for example, Kiro and Cursor) may be actively working in this repository. Before making edits, inspect their steering and rule files (check `.cursor/rules/`, any `kiro`-related config files, and `.github/*` instructions) and respect those directives.
+
+- **Claiming work**: Use the repository `manage_todo_list` workflow to claim tasks and mark status. Always mark a task `in-progress` before making significant edits and mark `completed` immediately after pushing commits.
+
+- **Edit coordination**: Avoid simultaneous edits to the same file. If you need to work on a file another agent may touch, create a feature branch and open a PR rather than pushing directly to `main`.
+
+- **Commit messages**: Include the agent name and concise intent in commit messages, e.g., `ai(Kiro): fix auth flow` or `ai(Cursor): update provider DI`.
+
+- **Workspace settings**: Do not add or push workspace-local files (e.g., `.vscode/settings.json`) unless the team explicitly agrees; keep such changes local or in a clearly labeled PR.
+
+- **Conflict handling**: If edits conflict with another agent's changes, create a small PR, tag human reviewers, and add a `memory` observation describing the conflict and proposed resolution.
+
+- **Steering compliance**: Prefer minimal, well-scoped changes; run `flutter analyze` and relevant tests locally where possible; annotate generated code and decisions in `memory` for transparency.
+
+### Build Configuration
+
 ## Key Files by Concern
 
 | Concern | Files |
