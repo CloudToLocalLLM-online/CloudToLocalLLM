@@ -6,7 +6,7 @@ repository: https://github.com/imrightguy/CloudToLocalLLM
 version: 4.4.0+202511081545
 
 environment:
-  sdk: '>=3.5.0 <4.0.0'
+  sdk: '>=3.6.0 <4.0.0'
 
 dependencies:
   flutter:
