@@ -133,6 +133,8 @@ npm run test:tunnel
 
 ### Building
 
+#### Local Development Builds
+
 ```bash
 # Build for Windows
 flutter build windows --release
@@ -143,6 +145,44 @@ flutter build linux --release
 # Build for Web
 flutter build web --release
 ```
+
+#### Automated Builds (GitHub Actions)
+
+CloudToLocalLLM uses **GitHub-hosted runners** for automated desktop builds, providing:
+- ✅ **Zero infrastructure costs** (free for public repositories)
+- ✅ **Automated dependency installation** (Flutter, Inno Setup, etc.)
+- ✅ **Consistent, reproducible builds** across all platforms
+- ✅ **Parallel builds** for faster release cycles
+
+**Triggering Builds:**
+
+1. **Automatic (Tag Push):**
+   ```bash
+   # Create and push a version tag
+   git tag v4.5.0
+   git push origin v4.5.0
+   ```
+
+2. **Manual (Workflow Dispatch):**
+   - Go to GitHub Actions → "Build Desktop Apps & Create Release"
+   - Click "Run workflow"
+   - Select branch and build type
+   - Click "Run workflow"
+
+**Build Process:**
+- Runs on `windows-latest` GitHub-hosted runner
+- Installs Flutter SDK 3.32.8 automatically
+- Installs Inno Setup via Chocolatey/Winget
+- Creates Windows installer (.exe) and portable package (.zip)
+- Generates SHA256 checksums for all artifacts
+- Creates GitHub release with all packages
+
+**Build Artifacts:**
+- `CloudToLocalLLM-Windows-{version}-Setup.exe` - Windows installer
+- `cloudtolocalllm-{version}-portable.zip` - Portable package
+- Corresponding `.sha256` checksum files
+
+For troubleshooting build issues, see [Build Troubleshooting Guide](docs/BUILD_TROUBLESHOOTING.md).
 ### Security
 
 CloudToLocalLLM uses Auth0 for user authentication and deploys to Kubernetes (managed or self-hosted) for infrastructure security and scalability. Kubernetes secrets are managed securely through kubectl and your container registry.
@@ -150,28 +190,42 @@ CloudToLocalLLM uses Auth0 for user authentication and deploys to Kubernetes (ma
 
 ## Deployment
 
-CloudToLocalLLM uses a comprehensive CI/CD pipeline that separates local desktop builds from cloud infrastructure deployment.
+CloudToLocalLLM uses a comprehensive CI/CD pipeline that separates desktop builds from cloud infrastructure deployment.
 
 ### 🖥️ Desktop Application Builds
 
-For building and releasing desktop applications:
+Desktop builds run automatically on **GitHub-hosted runners** (free for public repos):
 
-```powershell
-# Build desktop apps and create GitHub release
-.\scripts\powershell\Deploy-CloudToLocalLLM.ps1
-
-# Increment minor version
-.\scripts\powershell\Deploy-CloudToLocalLLM.ps1 -VersionIncrement minor
-
-# Dry run to test without making changes
-.\scripts\powershell\Deploy-CloudToLocalLLM.ps1 -DryRun
+**Automated Builds (Recommended):**
+```bash
+# Create and push a version tag to trigger automated build
+git tag v4.5.0
+git push origin v4.5.0
 ```
 
+**Manual Trigger:**
+- Go to GitHub Actions → "Build Desktop Apps & Create Release"
+- Click "Run workflow" → Select options → Run
+
+**Build Infrastructure:**
+- **Runner:** `windows-latest` (GitHub-hosted, free)
+- **Cost:** $0/month (free for public repositories)
+- **Dependencies:** Automatically installed (Flutter, Inno Setup)
+- **Build Time:** ~15-20 minutes
+- **Artifacts:** Windows installer (.exe) and portable package (.zip)
+
 **What it does:**
-- Builds Windows, macOS, and Linux desktop applications
-- Creates GitHub releases with cross-platform binaries
+- Builds Windows desktop application on GitHub infrastructure
+- Installs all dependencies automatically (no manual setup)
+- Creates installer and portable packages
 - Generates SHA256 checksums for security verification
-- Pushes build artifacts to `releases/v*` branch
+- Creates GitHub release with all artifacts
+
+**Legacy Local Build Script:**
+```powershell
+# For local testing only (not recommended for releases)
+.\scripts\powershell\Deploy-CloudToLocalLLM.ps1
+```
 
 ### ☁️ Cloud Infrastructure Deployment
 
@@ -205,18 +259,24 @@ kubectl apply -f k8s/
 
 | Component | Technology | Location |
 |---------|--------|--------|
+| Desktop builds | GitHub Actions (hosted runners) | `.github/workflows/build-release.yml` |
 | Cloud deployment | Kubernetes (managed or self-hosted) | `k8s/` directory |
 | Container builds | Dockerfiles | `config/docker/`, `services/api-backend/` |
-| Desktop builds | PowerShell scripts | `scripts/powershell/Deploy-CloudToLocalLLM.ps1` |
-
-- **[Cloud Run OIDC/WIF Guide](config/cloudrun/OIDC_WIF_SETUP.md)** - For keyless GitHub Actions deployment setup, see our OIDC/WIF guide
 
 ### 📚 Documentation
 
+**Build & Release:**
+- **[Build Troubleshooting Guide](docs/BUILD_TROUBLESHOOTING.md)** - Fix common build issues
+- **[CI/CD Setup Guide](docs/CICD_SETUP_GUIDE.md)** - Complete CI/CD configuration
+
+**Cloud Deployment:**
 - **[Kubernetes Quick Start](docs/KUBERNETES_QUICKSTART.md)** - Kubernetes deployment example (DigitalOcean)
 - **[Kubernetes README](k8s/README.md)** - Complete Kubernetes deployment guide (works with any cluster)
 - **[Complete Deployment Workflow](docs/DEPLOYMENT/COMPLETE_DEPLOYMENT_WORKFLOW.md)** - Step-by-step deployment guide
 - **[Deployment Overview](docs/DEPLOYMENT/DEPLOYMENT_OVERVIEW.md)** - All deployment options (managed or self-hosted)
+- **[Cloud Run OIDC/WIF Guide](config/cloudrun/OIDC_WIF_SETUP.md)** - Keyless GitHub Actions deployment setup
+
+**Development:**
 - **[MCP Development Workflow](docs/MCP_DEVELOPMENT_WORKFLOW.md)** - Guidelines for model-driven development
 
 ## Configuration

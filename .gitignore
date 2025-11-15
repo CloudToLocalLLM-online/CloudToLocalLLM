@@ -150,3 +150,10 @@ k8s/secrets.yaml
 
 # Generated secrets (DO NOT COMMIT)
 .secrets.json
+
+# Android signing (DO NOT COMMIT)
+android/release-keystore.jks
+android/*.jks
+android/key.properties
+android/keystore-backup-info.txt
+*.keystore

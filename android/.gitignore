@@ -1,0 +1,26 @@
+# Android signing configuration
+key.properties
+*.jks
+*.keystore
+
+# Local configuration
+local.properties
+
+# Gradle files
+.gradle/
+build/
+captures/
+.externalNativeBuild/
+.cxx/
+
+# Android Studio
+*.iml
+.idea/
+.DS_Store
+
+# NDK
+obj/
+
+# Release keystore (NEVER commit this!)
+release-keystore.jks
+debug-keystore.jks
