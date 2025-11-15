@@ -233,9 +233,9 @@ jobs:
         echo "2. Check git tags are properly formatted (v*)" >> $GITHUB_STEP_SUMMARY
         echo "3. Review workflow logs for specific error messages" >> $GITHUB_STEP_SUMMARY
 
-  # Build desktop application using matrix strategy
+  # Build application using matrix strategy
   build-desktop:
-    name: Build ${{ matrix.platform }} Desktop App
+    name: Build ${{ matrix.platform }} App
     runs-on: ${{ matrix.os }}
     needs: version-info
     strategy:
@@ -258,11 +258,11 @@ jobs:
             artifact-name: android-apk
     
     steps:
-    - name:  Job Started - Build ${{ matrix.platform }} Desktop (Windows)
+    - name:  Job Started - Build ${{ matrix.platform }} App (Windows)
       if: matrix.platform == 'windows'
       run: |
         Write-Host "::group::Build Job Information" -ForegroundColor Green
-        Write-Host "=== Build Desktop Job Started ===" -ForegroundColor Green
+        Write-Host "=== Build ${{ matrix.platform }} Job Started ===" -ForegroundColor Green
         Write-Host ""
         Write-Host "Platform: ${{ matrix.platform }}" -ForegroundColor Cyan
         Write-Host "Runner OS: ${{ runner.os }}" -ForegroundColor Cyan
@@ -276,11 +276,11 @@ jobs:
         Write-Host "::endgroup::"
       shell: powershell
       
-    - name:  Job Started - Build ${{ matrix.platform }} Desktop (Linux)
+    - name:  Job Started - Build ${{ matrix.platform }} App (Linux)
       if: matrix.platform == 'linux'
       run: |
         echo "::group::Build Job Information"
-        echo "=== Build Desktop Job Started ==="
+        echo "=== Build ${{ matrix.platform }} Job Started ==="
         echo ""
         echo "Platform: ${{ matrix.platform }}"
         echo "Runner OS: ${{ runner.os }}"
@@ -293,11 +293,11 @@ jobs:
         echo "Started at: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
         echo "::endgroup::"
       
-    - name:  Job Started - Build ${{ matrix.platform }} (Android)
+    - name:  Job Started - Build ${{ matrix.platform }} App (Android)
       if: matrix.platform == 'android'
       run: |
         echo "::group::Build Job Information"
-        echo "=== Build Android Job Started ==="
+        echo "=== Build ${{ matrix.platform }} Job Started ==="
         echo ""
         echo "Platform: ${{ matrix.platform }}"
         echo "Runner OS: ${{ runner.os }}"
@@ -709,7 +709,7 @@ jobs:
         fi
       shell: bash
       
-    - name:  Build Windows desktop application
+    - name:  Build Windows application
       if: matrix.platform == 'windows'
       run: |
         Write-Host "::group::Building Windows application" -ForegroundColor Green
@@ -729,7 +729,7 @@ jobs:
         Write-Host "::endgroup::"
       shell: powershell
       
-    - name:  Build Linux desktop application
+    - name:  Build Linux application
       if: matrix.platform == 'linux'
       run: |
         echo "::group::Building Linux application"
