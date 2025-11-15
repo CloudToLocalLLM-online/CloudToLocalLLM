@@ -749,7 +749,7 @@ jobs:
         Write-Host "Running: flutter build windows --release"
         Write-Host ""
         
-        flutter build windows --release --dart-define=FLUTTER_WEB=false
+        flutter build windows --release --target-platform windows-x64
         
         if ($LASTEXITCODE -ne 0) {
           Write-Host "::error::Flutter build failed with exit code $LASTEXITCODE"
@@ -768,7 +768,7 @@ jobs:
         echo "Running: flutter build linux --release"
         echo ""
         
-        flutter build linux --release --dart-define=FLUTTER_WEB=false
+        flutter build linux --release --target-platform linux-x64
         
         if [ $? -ne 0 ]; then
           echo "::error::Flutter build failed"
@@ -1497,7 +1497,7 @@ jobs:
         echo ""
         
         # Build release APKs with split-per-abi for smaller downloads
-        flutter build apk --release --split-per-abi --dart-define=FLUTTER_WEB=false
+        flutter build apk --release --split-per-abi
         
         if [ $? -ne 0 ]; then
           echo "::error::Android APK build failed"
