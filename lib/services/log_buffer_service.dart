@@ -2,7 +2,8 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
-import 'package:web/web.dart' as web;
+import '../utils/web_interop_stub.dart'
+    if (dart.library.html) '../utils/web_interop.dart';
 
 import '../config/app_config.dart';
 
@@ -35,8 +36,8 @@ class LogBufferService {
     }
 
     try {
-      final storage = web.window.localStorage;
-      final existing = storage.getItem(storageKey);
+      final storage = window.localStorage;
+      final existing = storage[storageKey];
       final List<dynamic> logList = existing != null && existing.isNotEmpty
           ? (jsonDecode(existing) as List<dynamic>)
           : <dynamic>[];
@@ -51,9 +52,9 @@ class LogBufferService {
 
       if (logList.length > maxEntries) {
         final start = logList.length - maxEntries;
-        storage.setItem(storageKey, jsonEncode(logList.sublist(start)));
+        storage[storageKey] = jsonEncode(logList.sublist(start));
       } else {
-        storage.setItem(storageKey, jsonEncode(logList));
+        storage[storageKey] = jsonEncode(logList);
       }
 
       _enqueueForUpload(logEntry, level: level, rawMessage: message);
@@ -67,7 +68,7 @@ class LogBufferService {
       return;
     }
     try {
-      web.window.localStorage.removeItem(storageKey);
+      window.localStorage.remove(storageKey);
     } catch (_) {}
   }
 
@@ -76,21 +77,24 @@ class LogBufferService {
       return null;
     }
     try {
-      return web.window.localStorage.getItem(storageKey);
+      return window.localStorage[storageKey];
     } catch (_) {
       return null;
     }
   }
 
-  void _enqueueForUpload(Map<String, dynamic> entry,
-      {required String level, required String rawMessage}) {
+  void _enqueueForUpload(
+    Map<String, dynamic> entry, {
+    required String level,
+    required String rawMessage,
+  }) {
     if (!kIsWeb || AppConfig.apiBaseUrl.isEmpty) {
       return;
     }
 
     try {
-      final url = web.window.location.href;
-      final userAgent = web.window.navigator.userAgent;
+      final url = window.location.href;
+      final userAgent = window.navigator.userAgent;
       final payload = <String, dynamic>{
         'timestamp': entry['timestamp'],
         'level': level,
@@ -127,16 +131,14 @@ class LogBufferService {
     List<Map<String, dynamic>> batch = <Map<String, dynamic>>[];
     try {
       // Send at most 100 entries per batch to keep payloads small.
-      final batchSize = _pendingEntries.length > 100 ? 100 : _pendingEntries.length;
+      final batchSize =
+          _pendingEntries.length > 100 ? 100 : _pendingEntries.length;
       batch = List<Map<String, dynamic>>.from(_pendingEntries.take(batchSize));
       _pendingEntries.removeRange(0, batchSize);
 
       await _dio.post(
         '/client-logs',
-        data: {
-          'entries': batch,
-          'source': 'flutter-web',
-        },
+        data: {'entries': batch, 'source': 'flutter-web'},
         options: Options(headers: {'Content-Type': 'application/json'}),
       );
     } catch (_) {

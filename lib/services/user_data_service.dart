@@ -3,8 +3,9 @@ import 'package:flutter_secure_storage_x/flutter_secure_storage_x.dart';
 import 'conversation_storage_service.dart';
 import 'auth_logger.dart';
 
-// Conditional import for web package
-import 'web_platform_stub.dart' if (dart.library.html) 'package:web/web.dart' as web;
+// Conditional import for web interop
+import '../utils/web_interop_stub.dart'
+    if (dart.library.html) '../utils/web_interop.dart';
 
 /// Simple user data management service for CloudToLocalLLM
 ///
@@ -29,8 +30,8 @@ class UserDataService extends ChangeNotifier {
   UserDataService({
     FlutterSecureStorage? secureStorage,
     ConversationStorageService? conversationStorage,
-  }) : _secureStorage = secureStorage ?? const FlutterSecureStorage(),
-       _conversationStorage = conversationStorage;
+  })  : _secureStorage = secureStorage ?? const FlutterSecureStorage(),
+        _conversationStorage = conversationStorage;
 
   // Getters
   bool get isClearing => _isClearing;
@@ -130,7 +131,7 @@ class UserDataService extends ChangeNotifier {
       ];
 
       for (final key in keysToRemove) {
-        web.window.localStorage.removeItem(key);
+        window.localStorage.removeItem(key);
       }
 
       results['webStorage'] = true;

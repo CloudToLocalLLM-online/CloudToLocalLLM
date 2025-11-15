@@ -1,7 +1,8 @@
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:web/web.dart' as web;
+import '../utils/web_interop_stub.dart'
+    if (dart.library.html) '../utils/web_interop.dart';
 
 import '../services/auth_service.dart';
 import '../services/connection_manager_service.dart';
@@ -67,10 +68,10 @@ bool _checkAuthenticatedServicesLoaded() {
   try {
     // Check for critical authenticated services
     // These services are registered only after authentication
-    final hasConnectionManager = di.serviceLocator
-        .isRegistered<ConnectionManagerService>();
-    final hasStreamingChat = di.serviceLocator
-        .isRegistered<StreamingChatService>();
+    final hasConnectionManager =
+        di.serviceLocator.isRegistered<ConnectionManagerService>();
+    final hasStreamingChat =
+        di.serviceLocator.isRegistered<StreamingChatService>();
     final hasTunnelService = di.serviceLocator.isRegistered<TunnelService>();
 
     // All critical services must be registered
@@ -468,7 +469,7 @@ class AppRouter {
 
           // Check if callback parameters have already been forwarded
           try {
-            final sessionStorage = web.window.sessionStorage;
+            final sessionStorage = window.sessionStorage;
             final forwardedFlag = sessionStorage.getItem(_callbackForwardedKey);
             callbackAlreadyForwarded = forwardedFlag == 'true';
             debugPrint(
@@ -480,7 +481,7 @@ class AppRouter {
 
           if (queryParams.isEmpty) {
             try {
-              final sessionStorage = web.window.sessionStorage;
+              final sessionStorage = window.sessionStorage;
               final storedParams = sessionStorage.getItem(_callbackStorageKey);
               if (storedParams != null && storedParams.isNotEmpty) {
                 final sanitized = storedParams.startsWith('?')
@@ -509,8 +510,8 @@ class AppRouter {
           queryParams = stateUri.queryParameters.isNotEmpty
               ? stateUri.queryParameters
               : (baseUri.queryParameters.isNotEmpty
-                    ? baseUri.queryParameters
-                    : {});
+                  ? baseUri.queryParameters
+                  : {});
         }
 
         // Determine if we have callback parameters that haven't been forwarded yet
@@ -568,7 +569,7 @@ class AppRouter {
 
           // Mark callback parameters as forwarded to prevent re-processing
           try {
-            web.window.sessionStorage.setItem(_callbackForwardedKey, 'true');
+            window.sessionStorage.setItem(_callbackForwardedKey, 'true');
             debugPrint(
               '[Router] Successfully marked callback params as forwarded in sessionStorage',
             );

@@ -1,11 +1,11 @@
 // Web implementation for web platforms
-import 'package:web/web.dart' as web_platform;
+import '../utils/web_interop_stub.dart'
+    if (dart.library.html) '../utils/web_interop.dart';
 
 final web = WebWindow();
 
 class WebWindow {
   void open(String url, String target) {
-    web_platform.window.open(url, target);
+    window.open(url, target);
   }
 }
-

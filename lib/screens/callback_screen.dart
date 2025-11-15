@@ -2,7 +2,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
-import 'package:web/web.dart' as web;
+import '../utils/web_interop_stub.dart'
+    if (dart.library.html) '../utils/web_interop.dart';
 import '../services/auth_service.dart';
 import '../screens/loading_screen.dart';
 
@@ -90,7 +91,7 @@ class _CallbackScreenState extends State<CallbackScreen> {
   void _clearCallbackForwardedFlag() {
     if (kIsWeb) {
       try {
-        web.window.sessionStorage.removeItem(_callbackForwardedKey);
+        window.sessionStorage.removeItem(_callbackForwardedKey);
         debugPrint(
           '[CallbackScreen] Cleared callback forwarded flag from sessionStorage',
         );
@@ -106,7 +107,7 @@ class _CallbackScreenState extends State<CallbackScreen> {
   void _clearCallbackParametersFromUrl() {
     if (kIsWeb) {
       try {
-        final currentUrl = web.window.location.href;
+        final currentUrl = window.location.href;
         final uri = Uri.parse(currentUrl);
 
         // Remove callback parameters (code, state, error, error_description)
@@ -122,11 +123,7 @@ class _CallbackScreenState extends State<CallbackScreen> {
         );
 
         debugPrint('[CallbackScreen] Clearing callback parameters from URL');
-        web.window.history.replaceState(
-          null,
-          web.document.title,
-          cleanUri.toString(),
-        );
+        window.history.replaceState(null, document.title, cleanUri.toString());
       } catch (e) {
         debugPrint('[CallbackScreen] Error clearing callback parameters: $e');
       }
@@ -247,8 +244,7 @@ class _CallbackScreenState extends State<CallbackScreen> {
       }
 
       final routeParams = widget.queryParams;
-      final hasRouteCallbackParams =
-          routeParams.containsKey('code') ||
+      final hasRouteCallbackParams = routeParams.containsKey('code') ||
           routeParams.containsKey('state') ||
           routeParams.containsKey('error');
 
@@ -284,12 +280,12 @@ class _CallbackScreenState extends State<CallbackScreen> {
       if (kIsWeb && routeParams.isNotEmpty) {
         final queryString = Uri(queryParameters: routeParams).query;
         final newHref =
-            '${web.window.location.origin}${web.window.location.pathname}?$queryString';
-        originalUrl = web.window.location.href;
+            '${window.location.origin}${window.location.pathname}?$queryString';
+        originalUrl = window.location.href;
         debugPrint(
           '[CallbackScreen] Temporarily updating URL for callback processing',
         );
-        web.window.history.replaceState(null, web.document.title, newHref);
+        window.history.replaceState(null, document.title, newHref);
       }
 
       debugPrint('[CallbackScreen] Calling authService.handleCallback()...');
@@ -297,7 +293,7 @@ class _CallbackScreenState extends State<CallbackScreen> {
 
       if (originalUrl != null) {
         debugPrint('[CallbackScreen] Restoring original URL');
-        web.window.history.replaceState(null, web.document.title, originalUrl);
+        window.history.replaceState(null, document.title, originalUrl);
       }
 
       debugPrint('[CallbackScreen] handleCallback returned: $success');

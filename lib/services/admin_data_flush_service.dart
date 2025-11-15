@@ -6,8 +6,9 @@ import 'auth_service.dart';
 import 'conversation_storage_service.dart';
 import 'auth_logger.dart';
 
-// Conditional import for web package - only import on web platform
-import 'web_platform_stub.dart' if (dart.library.html) 'package:web/web.dart' as web;
+// Conditional import for web interop
+import '../utils/web_interop_stub.dart'
+    if (dart.library.html) '../utils/web_interop.dart';
 
 /// Administrative data flush service for CloudToLocalLLM
 ///
@@ -40,10 +41,10 @@ class AdminDataFlushService extends ChangeNotifier {
     Dio? dio,
     FlutterSecureStorage? secureStorage,
     ConversationStorageService? conversationStorage,
-  }) : _authService = authService,
-       _dio = dio ?? Dio(),
-       _secureStorage = secureStorage ?? const FlutterSecureStorage(),
-       _conversationStorage = conversationStorage {
+  })  : _authService = authService,
+        _dio = dio ?? Dio(),
+        _secureStorage = secureStorage ?? const FlutterSecureStorage(),
+        _conversationStorage = conversationStorage {
     _setupDio();
   }
 
@@ -201,9 +202,7 @@ class AdminDataFlushService extends ChangeNotifier {
           _operationHistory = _operationHistory.take(20).toList();
         }
 
-        debugPrint(
-          ' [DataFlush] CRITICAL: Data flush executed successfully',
-        );
+        debugPrint(' [DataFlush] CRITICAL: Data flush executed successfully');
         debugPrint(
           ' [DataFlush] Operation ID: ${response.data['operationId']}',
         );
@@ -373,9 +372,7 @@ class AdminDataFlushService extends ChangeNotifier {
       notifyListeners();
       return results;
     } catch (e) {
-      debugPrint(
-        ' [DataFlush] Critical error during local data clearing: $e',
-      );
+      debugPrint(' [DataFlush] Critical error during local data clearing: $e');
       _setError('Failed to clear local data: ${e.toString()}');
       return results;
     }
@@ -398,7 +395,7 @@ class AdminDataFlushService extends ChangeNotifier {
       ];
 
       for (final key in keysToRemove) {
-        web.window.localStorage.removeItem(key);
+        window.localStorage.removeItem(key);
       }
 
       debugPrint(
