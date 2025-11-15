@@ -311,33 +311,7 @@ jobs:
         echo "start_time=$START_TIME" >> $GITHUB_OUTPUT
         echo "Build timer started"
       
-    - name:  Checkout Repository
-      run: |
-        Write-Host "::group::Checking out repository" -ForegroundColor Green
-        Write-Host "Repository: ${{ github.repository }}"
-        Write-Host "Ref: ${{ github.ref }}"
-        Write-Host "SHA: ${{ github.sha }}"
-        Write-Host "::endgroup::"
-      shell: powershell
-      
     - uses: actions/checkout@v4
-      
-    - name:  Checkout Complete
-      run: |
-        Write-Host "::notice::Repository checked out successfully" -ForegroundColor Green
-        Write-Host "Working directory: $(Get-Location)"
-        Write-Host "Directory contents:"
-        Get-ChildItem -Name | Select-Object -First 10
-      shell: powershell
-      
-    - name:  Setup Flutter SDK
-      run: |
-        Write-Host "::group::Setting up Flutter SDK" -ForegroundColor Green
-        Write-Host "Flutter version: ${{ env.FLUTTER_VERSION }}"
-        Write-Host "Channel: stable"
-        Write-Host "Cache enabled: true"
-        Write-Host "::endgroup::"
-      shell: powershell
       
     - uses: subosito/flutter-action@v2
       with:
@@ -347,54 +321,22 @@ jobs:
         cache-key: 'flutter-:os:-:channel:-:version:-:arch:-:hash:'
         cache-path: '${{ runner.tool_cache }}/flutter/:channel:-:version:-:arch:'
       
-    - name:  Flutter SDK Setup Complete
-      run: |
-        Write-Host "::notice::Flutter SDK installed successfully" -ForegroundColor Green
-        Write-Host "::group::Flutter Version Information"
-        flutter --version
-        Write-Host "::endgroup::"
-      shell: powershell
-      
-    - name:  Cache Flutter pub dependencies
-      run: |
-        Write-Host "::group::Setting up pub cache" -ForegroundColor Green
-        Write-Host "Cache key: ${{ matrix.platform }}-flutter-pub-${{ hashFiles('**/pubspec.lock') }}"
-        Write-Host "::endgroup::"
-      shell: powershell
-      
     - name: Cache Flutter pub dependencies
       uses: actions/cache@v4
       with:
         path: |
           ${{ runner.temp }}\.pub-cache
           ${{ runner.temp }}\pub-cache
-          ~\.pub-cache
+          ~/.pub-cache
           .dart_tool
         key: ${{ matrix.platform }}-flutter-pub-${{ hashFiles('**/pubspec.lock') }}
         restore-keys: |
-          ${{ matrix.platform }}-flutter-pub-${{ hashFiles('**/pubspec.lock') }}
           ${{ matrix.platform }}-flutter-pub-
           flutter-pub-
       continue-on-error: true
       
-    - name:  Pub Cache Status
-      if: always()
-      run: |
-        if (Test-Path "${{ runner.temp }}\.pub-cache") {
-          Write-Host "::notice::Pub cache restored successfully" -ForegroundColor Green
-        } else {
-          Write-Host "::warning::Pub cache not found, will download dependencies" -ForegroundColor Yellow
-        }
-      shell: powershell
-      
-    - name:  Cache Chocolatey packages
-      run: |
-        Write-Host "::group::Setting up Chocolatey cache" -ForegroundColor Green
-        Write-Host "Cache key: ${{ runner.os }}-chocolatey-innosetup-${{ hashFiles('.github/workflows/build-release.yml') }}"
-        Write-Host "::endgroup::"
-      shell: powershell
-      
     - name: Cache Chocolatey packages
+      if: matrix.platform == 'windows'
       uses: actions/cache@v4
       with:
         path: |
@@ -406,16 +348,6 @@ jobs:
           ${{ runner.os }}-chocolatey-innosetup-
           ${{ runner.os }}-chocolatey-
       continue-on-error: true
-      
-    - name:  Chocolatey Cache Status
-      if: always()
-      run: |
-        if (Test-Path "C:\ProgramData\chocolatey\lib") {
-          Write-Host "::notice::Chocolatey cache found" -ForegroundColor Green
-        } else {
-          Write-Host "::warning::Chocolatey cache not found" -ForegroundColor Yellow
-        }
-      shell: powershell
         
     - name:  Verify all build dependencies (Windows)
       if: matrix.platform == 'windows'
@@ -733,53 +665,11 @@ jobs:
     #     echo "::notice::Android SDK verified successfully"
     #     echo "::endgroup::"
       
-    - name:  Start Dependency Download Timer
-      id: dep-start-time
-      run: |
-        $START_TIME = [int][double]::Parse((Get-Date -UFormat %s))
-        echo "start_time=$START_TIME" >> $env:GITHUB_OUTPUT
-        Write-Host "Dependency download timer started"
-      shell: powershell
+    - name: Clean pub cache (force fresh dependencies)
+      run: flutter pub cache clean --force
       
-    - name:  Clean pub cache (force fresh dependencies)
-      run: |
-        Write-Host "::group::Cleaning pub cache" -ForegroundColor Green
-        Write-Host "Cleaning Flutter pub cache to ensure fresh dependencies..."
-        flutter pub cache clean --force
-        Write-Host "::notice::Pub cache cleaned successfully" -ForegroundColor Green
-        Write-Host "::endgroup::"
-      shell: powershell
-      
-    - name:  Get Flutter dependencies
-      run: |
-        Write-Host "::group::Downloading Flutter dependencies" -ForegroundColor Green
-        Write-Host "Running flutter pub get..."
-        flutter pub get
-        
-        if ($LASTEXITCODE -ne 0) {
-          Write-Host "::error::Failed to download Flutter dependencies"
-          exit 1
-        }
-        
-        Write-Host "::notice::Dependencies downloaded successfully" -ForegroundColor Green
-        Write-Host "::endgroup::"
-      shell: powershell
-      
-    - name:  Dependency Download Duration
-      run: |
-        $END_TIME = [int][double]::Parse((Get-Date -UFormat %s))
-        $DURATION = $END_TIME - ${{ steps.dep-start-time.outputs.start_time }}
-        Write-Host "::notice::Dependencies downloaded in ${DURATION}s" -ForegroundColor Green
-        echo "Dependency download time: ${DURATION}s" >> $env:GITHUB_STEP_SUMMARY
-      shell: powershell
-      
-    - name:  Start Build Timer
-      id: flutter-build-start
-      run: |
-        $START_TIME = [int][double]::Parse((Get-Date -UFormat %s))
-        echo "start_time=$START_TIME" >> $env:GITHUB_OUTPUT
-        Write-Host "Flutter build timer started"
-      shell: powershell
+    - name: Get Flutter dependencies
+      run: flutter pub get
       
     - name:  Build Windows desktop application
       if: matrix.platform == 'windows'
@@ -818,13 +708,7 @@ jobs:
         echo "::notice::Linux application built successfully"
         echo "::endgroup::"
       
-    - name:  Flutter Build Duration
-      run: |
-        $END_TIME = [int][double]::Parse((Get-Date -UFormat %s))
-        $DURATION = $END_TIME - ${{ steps.flutter-build-start.outputs.start_time }}
-        Write-Host "::notice::Flutter build completed in ${DURATION}s" -ForegroundColor Green
-        echo "Flutter build time: ${DURATION}s" >> $env:GITHUB_STEP_SUMMARY
-      shell: powershell
+
       
     - name:  Verify Build Output (Windows)
       if: matrix.platform == 'windows'
