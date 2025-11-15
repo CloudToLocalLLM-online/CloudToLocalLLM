@@ -749,7 +749,7 @@ jobs:
         Write-Host "Running: flutter build windows --release"
         Write-Host ""
         
-        flutter build windows --release --target-platform windows-x64
+        flutter build windows --release
         
         if ($LASTEXITCODE -ne 0) {
           Write-Host "::error::Flutter build failed with exit code $LASTEXITCODE"
@@ -768,7 +768,7 @@ jobs:
         echo "Running: flutter build linux --release"
         echo ""
         
-        flutter build linux --release --target-platform linux-x64
+        flutter build linux --release
         
         if [ $? -ne 0 ]; then
           echo "::error::Flutter build failed"
