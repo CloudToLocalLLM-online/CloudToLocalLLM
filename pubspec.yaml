@@ -24,7 +24,6 @@ dependencies:
 
   # HTTP and Web
   intl: ^0.20.2
-  web: 1.0.0
 
   # Streaming and WebSocket support
   web_socket_channel: ^3.0.3
@@ -89,9 +88,6 @@ dev_dependencies:
     sdk: flutter
   integration_test:
     sdk: flutter
-
-dependency_overrides:
-  web: 0.5.1  # Use older version that doesn't require dart:js_interop
 
 flutter:
   uses-material-design: true
