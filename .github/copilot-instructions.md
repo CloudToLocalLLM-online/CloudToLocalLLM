@@ -1,125 +1,163 @@
 # CloudToLocalLLM Copilot Instructions
 
-This document provides essential guidelines for AI coding agents to effectively contribute to the `CloudToLocalLLM` project.
+Guidelines for AI agents contributing to the CloudToLocalLLM project.
 
-## 1. Project Overview
+## Project Overview
 
-`CloudToLocalLLM` is a Flutter-based application that enables seamless interaction with both cloud-based and local AI models. It features a hybrid AI architecture, privacy-first design, cross-platform support (Windows, Linux, Web), secure OAuth2 authentication, and real-time WebSocket communication. The backend services are built with Node.js.
+CloudToLocalLLM is a cross-platform Flutter application (Windows, Linux, Web) that provides a unified interface to cloud AI services (OpenAI, Anthropic) and local models (Ollama, LM Studio). The architecture combines:
+- **Frontend**: Flutter with `provider` state management (Get_It dependency injection)
+- **Backend**: Node.js services with Model Context Protocol SDK
+- **Storage**: PostgreSQL for sessions, SQLite/IndexedDB for local data, secure token storage
 
-## 2. Architecture Highlights
+## Core Architecture Patterns
 
-*   **Hybrid AI Architecture**: The application integrates with cloud AI services (OpenAI, Anthropic) and local AI models (Ollama).
-    *   **Key Files**: `lib/services/llm_provider_manager.dart`, `lib/services/langchain_ollama_service.dart`, `lib/services/openai_compatible_provider.dart`
-*   **Secure Tunneling**: Real-time communication between the client and cloud services is facilitated via WebSocket tunneling.
-    *   **Key Files**: `lib/services/unified_connection_service.dart`, `lib/services/streaming_chat_service.dart`, `lib/services/http_polling_tunnel_client.dart`, `lib/services/tunnel_llm_request_handler.dart`, `lib/services/tunnel_message_protocol.dart`
-*   **Multi-Container Architecture**: Deployment leverages Docker and Google Cloud Run for web, API, and streaming services.
-    *   **Key Files**: `Dockerfile/api`, `Dockerfile/streaming`, `docker-compose.yml`, `docker-compose.multi.yml`
-*   **Authentication**: OAuth2-based authentication with encrypted token storage.
-    *   **Key Files**: `lib/services/auth_service.dart`, `lib/services/gcip_auth_service.dart`, `lib/services/auth_logger.dart`
-*   **State Management**: `provider` is used for state management in the Flutter application.
-    *   **Key Files**: Refer to `lib/main.dart` and `lib/screens/` for examples.
-*   **Backend Services**: Node.js backend utilizing `@modelcontextprotocol/sdk` and `zod`.
-    *   **Key Files**: `package.json`, `server.js` (if present in the root or `services/api-backend/`)
+### Service-Based Architecture (lib/services/)
+The app uses a multi-service design with dependency injection:
+- **Auth**: `auth_service.dart` (Auth0 via `auth0_web_service.dart`/`auth0_desktop_service.dart`) + `session_storage_service.dart` (PostgreSQL backend)
+- **Streaming**: `streaming_chat_service.dart` manages conversations with real-time updates via `StreamingMessage` model
+- **Connections**: `connection_manager_service.dart` routes between local/cloud providers
+- **AI Providers**: `llm_provider_manager.dart` handles failover; `BaseLLMProvider` defines interface; platform-specific providers in `llm_providers/`
+- **Tunneling**: `unified_connection_service.dart` abstracts connection type (Ollama, WebSocket, cloud)
 
-## 3. Developer Workflows
+**Pattern**: Services extend `ChangeNotifier` for reactive state; use `RxDart`'s `BehaviorSubject` for streaming state.
 
-### 3.1. Setup
+### Platform-Specific Code
+Uses conditional imports to handle platform differences:
+```dart
+import 'services/auth0_web_service.dart' if (dart.library.io) 'services/auth0_web_service_stub.dart';
+if (kIsWeb) { /* web code */ } else { /* desktop code */ }
+```
+- Web: Auth0 via JavaScript bridge (`auth0-bridge.js`), `shared_preferences`, no window manager
+- Desktop: Auth0 native, `sqflite_common_ffi`, `window_manager`, `tray_manager`
 
-*   **Flutter**: Ensure Flutter SDK (3.8+) is installed.
-*   **Node.js**: Required for development and testing.
-*   **Ollama**: (Optional) For local AI models.
-*   **Dependencies**:
-    ```bash
-    flutter pub get
-    npm install
-    ```
+### Data Models
+Located in `lib/models/`:
+- `User`: `user_model.dart` (Auth0 user data)
+- **Conversations**: `conversation.dart`, `message.dart` (stored in SQLite/PostgreSQL)
+- **Streaming**: `streaming_message.dart` (progressive chat updates)
+- **Configuration**: `provider_configuration.dart` (Ollama, LM Studio, OpenAI-compatible)
+- **Errors**: `llm_communication_error.dart`, `ollama_connection_error.dart` (detailed error classification)
 
-### 3.2. Running the Application
+## Critical Development Workflows
 
-*   **Desktop (Windows/Linux)**:
-    ```bash
-    flutter run -d windows
-    flutter run -d linux
-    ```
-*   **Web**:
-    ```bash
-    flutter run -d chrome
-    ```
-*   **Backend (Development)**:
-    ```bash
-    npm run dev
-    ```
+### Setup & Dependencies
+```bash
+flutter pub get        # Frontend deps
+npm install            # Backend deps (for services/ if present)
+flutter analyze        # Lint check (MUST pass before commit)
+flutter format .       # Auto-format code
+```
 
-### 3.3. Testing
+### Running
+**Desktop**: `flutter run -d windows` or `-d linux`
+**Web**: `flutter run -d chrome` (uses Auth0 JS bridge)
+**Backend** (if services/): `npm run dev` (nodemon-based)
 
-*   **Flutter Tests**:
-    ```bash
-    flutter test
-    ```
-*   **E2E Tests (Node.js)**:
-    ```bash
-    npm test
-    ```
-*   **Specific Test Suites**:
-    ```bash
-    npm run test:auth
-    npm run test:tunnel
-    ```
+### Testing
+```bash
+flutter test                    # Widget & unit tests; uses test_config.dart for platform mocks
+npm test                        # E2E tests (Playwright in e2e/)
+```
+Platform-specific tests require mocking in `test/test_config.dart` (MethodChannel mocks for window_manager, tray_manager, etc.).
 
-### 3.4. Building
+### Building
+**Release builds must include `--release` flag**:
+- Windows: `flutter build windows --release` (requires Inno Setup)
+- Linux: `flutter build linux --release`
+- Web: `flutter build web --release`
+- **Tagging triggers GitHub Actions**: Push `v4.x.x` tag → automatic desktop build + GitHub release
 
-*   **Windows**:
-    ```bash
-    flutter build windows --release
-    ```
-*   **Linux**:
-    ```bash
-    flutter build linux --release
-    ```
-*   **Web**:
-    ```bash
-    flutter build web --release
-    ```
+### Deployment
+- **Desktop**: GitHub Actions (`.github/workflows/build-release.yml`) on version tags (v4.x.x); creates .exe installer & portable .zip on hosted runners
+- **Docker Images**: GitHub Actions (`.github/workflows/build-images.yml`) builds & pushes to Docker Hub on `develop` branch
+- **Kubernetes**: GitHub Actions (`.github/workflows/deploy-aks.yml`) deploys to Azure AKS on `main` branch pushes
+- **All via GitHub-hosted runners**: No local/self-hosted infrastructure needed
 
-### 3.5. Deployment
+## Project-Specific Conventions
 
-*   **Desktop Application Builds**: Use PowerShell scripts for Windows/macOS/Linux builds and GitHub releases.
-    *   **Key Script**: `scripts/powershell/Deploy-CloudToLocalLLM.ps1`
-*   **Cloud Infrastructure Deployment**: Automatically handled by GitHub Actions on `main` branch pushes, deploying to Google Cloud Run.
-    *   **Key Files**: `.github/workflows/` (if present), `config/cloudrun/OIDC_WIF_SETUP.md`
+### Code Style & Patterns
+1. **Error Handling**: Use typed error classes with classification (e.g., `OllamaConnectionError` with `ErrorClassification` enum)
+2. **Logging**: Use `appLogger` (from `utils/logger.dart`) with named contexts: `appLogger.debug('[ServiceName] message')`
+3. **State Updates**: Always call `notifyListeners()` after state changes in `ChangeNotifier` services
+4. **Comments**: Document non-obvious logic; include `/// dart doc` for public APIs
+5. **Imports**: Use relative imports in same module; absolute for cross-module imports
 
-## 4. Project-Specific Conventions and Patterns
+### Cursor Rules (Refer to `.cursor/rules/`)
+- **Flutter**: Use `dart:js_interop` (not deprecated `js`), `package:web/web.dart` for DOM access
+- **Node.js**: Use `npm ci` for prod; validate JWT; structured logging (not console.log)
+- **General**: Run `flutter analyze` + `eslint` before push; atomic commits with conventional messages (`feat:`, `fix:`, `chore:`)
 
-*   **Environment Variables**: Configuration is managed via a `.env` file in the project root.
-    *   **Example**: `OPENAI_API_KEY`, `SERVER_HOST`, `OAUTH_CLIENT_ID`
-*   **Version Management**: Automated version management scripts are used.
-    *   **Key Scripts**: `scripts/powershell/version_manager.ps1`, `scripts/version_manager.sh`
-*   **Code Style**: Follow Flutter/Dart conventions. Ensure meaningful names, comments for complex logic, and passing tests.
+### Environment & Configuration
+- `.env` file (root) contains: `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `AUTH0_DOMAIN`, `SERVER_HOST`, etc.
+- `lib/config/app_config.dart`: Centralized hardcoded constants (Auth0 domain, API URLs, feature flags)
+- Feature flags: `enableDevMode`, `enableDarkMode`, `enableDebugMode` in `AppConfig`
 
-## 5. Integration Points and External Dependencies
+### Dependency Injection (lib/di/locator.dart)
+- Services registered in `setupCoreServices()` (pre-auth: Auth0, LocalOllama, ProviderDiscovery)
+- Services registered in `setupAuthenticatedServices()` (post-auth: StreamingChat, ConnectionManager)
+- Use `GetIt.instance` to access; register as singletons; some services lazy-initialized
 
-*   **Cloud AI**: OpenAI, Anthropic.
-*   **Local AI**: Ollama.
-*   **Authentication**: Google Cloud Identity Platform (GCIP) for OAuth2.
-*   **Error Tracking**: Sentry.
-*   **Networking**: `http`, `dio`, `web_socket_channel`.
-*   **Local Storage**: `sqflite_common_ffi` (desktop), `shared_preferences` (web).
-*   **System Integration**: `window_manager`, `flutter_secure_storage_x`, `tray_manager`.
-*   **AI Framework**: `langchain`, `langchain_ollama`, `langchain_community`.
+### Build Configuration
+- `build.yaml`: Excludes web-specific code for non-web builds (windows, linux, android)
+- Version in `pubspec.yaml` (e.g., `4.4.0+202511081545`); updated by release scripts
+- `assets/version.json`: Contains version metadata
 
-## 6. Key Directories and Files
+## Key Files by Concern
 
-*   `lib/`: Flutter application source code.
-    *   `lib/services/`: Core application services (authentication, AI, streaming, connection).
-    *   `lib/models/`: Data models.
-    *   `lib/screens/`: UI screens.
-    *   `lib/components/`, `lib/widgets/`: Reusable UI components.
-    *   `lib/config/`: Application configuration.
-*   `scripts/`: Automation scripts (deployment, versioning, environment setup).
-*   `docs/`: Comprehensive project documentation.
-*   `config/`: Configuration files for various environments (Cloud Run, Docker, etc.).
-*   `services/`: Backend service implementations (e.g., `api-backend`, `streaming-proxy`).
-*   `test/`: Unit and integration tests.
-*   `e2e/`: End-to-end tests.
+| Concern | Files |
+|---------|-------|
+| **Auth Flow** | `auth_service.dart`, `auth0_*_service.dart`, `session_storage_service.dart` |
+| **AI Integration** | `llm_provider_manager.dart`, `llm_providers/*.dart`, `langchain_*_service.dart` |
+| **Chat/Streaming** | `streaming_chat_service.dart`, `conversation_storage_service*.dart` |
+| **Connection Mgmt** | `connection_manager_service.dart`, `unified_connection_service.dart` |
+| **Local Models** | `ollama_service.dart`, `local_ollama_connection_service.dart`, `provider_discovery_service.dart` |
+| **Error Handling** | `llm_error_handler.dart`, `llm_communication_error.dart`, `ollama_connection_error.dart` |
+| **Desktop/System** | `window_manager_service*.dart`, `native_tray_service*.dart`, `desktop_client_detection_service.dart` |
+| **Config & Constants** | `lib/config/app_config.dart`, `lib/di/locator.dart` |
 
-Please provide feedback on any unclear or incomplete sections to iterate and improve these instructions.
+## External Dependencies & Integrations
+
+**Cloud AI**: OpenAI, Anthropic APIs
+**Local AI**: Ollama (via HTTP), LM Studio (OpenAI-compatible)
+**Auth**: Auth0 (OAuth2/OIDC; web uses JS SDK via bridge, desktop uses native)
+**Database**: PostgreSQL (sessions), SQLite (local conversations)
+**Networking**: `dio` (HTTP client for all REST APIs and streaming)
+**State**: `provider`, `rxdart` (reactive streams)
+**Storage**: `sqflite_common_ffi` (desktop), `shared_preferences` (web), `flutter_secure_storage_x` (tokens)
+**AI Framework**: LangChain (`langchain`, `langchain_ollama`, `langchain_community`)
+**System**: `window_manager`, `tray_manager`, `flutter_secure_storage_x` (desktop only)
+
+## Testing & Quality Checks
+
+Before pushing:
+1. `flutter analyze` (fix all linter errors)
+2. `flutter format .` (auto-format)
+3. `flutter test` (pass all tests; add mocks to `test/test_config.dart` if needed)
+4. For Node.js code: `npm audit`, `eslint`
+5. Commit: Use conventional messages (`feat:`, `fix:`, `chore:`, `test:`, `docs:`, `refactor:`, `ci:`)
+
+## MCP Tools Available (Docker Desktop)
+
+The following MCP servers are available for direct use:
+
+- **context7**: Library documentation and knowledge base tool for retrieving up-to-date documentation and API references from libraries and frameworks. Use for researching package documentation, API patterns, and best practices.
+- **sequentialthinking**: Reflective problem-solving tool that helps analyze complex problems through multi-step thinking, hypothesis generation, and verification. Use for planning multi-step implementations and validating solutions.
+- **memory**: Persistent memory system for tracking project state, decisions, and context across sessions. Use for maintaining knowledge about ongoing tasks and architectural decisions.
+
+## MCP Test Summary
+
+The MCP toolkit was validated locally against the active Docker containers and the workspace was configured to make these tools available to VS Code and AI agents.
+
+- Resolved library docs via `context7` (found `/cfug/dio` and retrieved usage snippets for `dio`).
+- Ran a multi-step check with `sequentialthinking` — tool is responsive.
+- Created a test entity `mcp-tool-check` in the `memory` server to record observations.
+- Added workspace mappings in `.vscode/settings.json` so the MCP extension can find the containers:
+	- `context7` -> `mcp/context7`
+	- `sequentialthinking` -> `mcp/sequentialthinking`
+	- `memory` -> `mcp/memory`
+
+If you'd like, I can (a) run more targeted queries (library lookups, code snippets), (b) populate `memory` with additional project notes, or (c) remove/rename MCP entries in the workspace settings.
+
+---
+
+**Last Updated**: November 15, 2025 | **Version**: 4.4.0
