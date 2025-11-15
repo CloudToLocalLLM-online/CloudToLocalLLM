@@ -451,56 +451,6 @@ jobs:
         fi
         echo ""
         
-        # Check Flatpak
-        echo "Checking Flatpak..."
-        if flatpak --version; then
-          echo " Flatpak is available"
-        else
-          echo " Flatpak not found"
-          errors=$((errors + 1))
-        fi
-        echo ""
-        
-        # Check flatpak-builder
-        echo "Checking flatpak-builder..."
-        if flatpak-builder --version; then
-          echo " flatpak-builder is available"
-        else
-          echo " flatpak-builder not found"
-          errors=$((errors + 1))
-        fi
-        echo ""
-        
-        # Check dpkg-deb
-        echo "Checking dpkg-deb..."
-        if dpkg-deb --version; then
-          echo " dpkg-deb is available"
-        else
-          echo " dpkg-deb not found"
-          errors=$((errors + 1))
-        fi
-        echo ""
-        
-        # Check fakeroot
-        echo "Checking fakeroot..."
-        if fakeroot --version; then
-          echo " fakeroot is available"
-        else
-          echo " fakeroot not found"
-          errors=$((errors + 1))
-        fi
-        echo ""
-        
-        # Check lintian
-        echo "Checking lintian..."
-        if lintian --version; then
-          echo " lintian is available"
-        else
-          echo " lintian not found"
-          errors=$((errors + 1))
-        fi
-        echo ""
-        
         # Run Flutter doctor
         echo "Running Flutter doctor..."
         flutter doctor -v
@@ -511,7 +461,8 @@ jobs:
           exit 1
         fi
         
-        echo "::notice::All dependencies verified successfully"
+        echo "::notice::Core dependencies verified successfully"
+        echo "::notice::Linux-specific tools will be installed in next steps"
         echo "::endgroup::"
         
     - name:  Configure Windows desktop support
@@ -1033,6 +984,7 @@ jobs:
       shell: powershell
       
     - name:  Start Installer Creation Timer
+      if: matrix.platform == 'windows'
       id: installer-start-time
       run: |
         $START_TIME = [int][double]::Parse((Get-Date -UFormat %s))
