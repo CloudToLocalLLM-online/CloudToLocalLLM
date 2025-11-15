@@ -51,7 +51,7 @@ dependencies:
 
   # State Management
   provider: ^6.1.5+1
-  meta: ^1.16.0
+  meta: ^1.15.0
 
   # System Integration - Flutter plugins for window management and secure storage
   window_manager: ^0.5.1
