@@ -210,8 +210,9 @@ jobs:
         
     - name: Configure Windows desktop support
       run: |
-        Write-Host "Enabling Windows desktop support..."
+        Write-Host "Configuring Flutter for Windows desktop..."
         flutter config --enable-windows-desktop
+        flutter config --no-enable-web
       shell: powershell
       
     - name: Get Flutter dependencies
