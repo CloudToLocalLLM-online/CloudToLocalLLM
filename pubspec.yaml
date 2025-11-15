@@ -6,7 +6,7 @@ repository: https://github.com/imrightguy/CloudToLocalLLM
 version: 4.4.0+202511081545
 
 environment:
-  sdk: '>=3.4.0 <4.0.0'
+  sdk: '>=3.5.0 <4.0.0'
 
 dependencies:
   flutter:
@@ -70,14 +70,14 @@ dependencies:
   dartssh2: ^2.9.0
 
   # LangChain Integration
-  langchain: ^0.7.0
-  langchain_ollama: ^0.3.0
-  langchain_community: ^0.3.0
+  langchain: ^0.8.0+1
+  langchain_ollama: ^0.4.0+1
+  langchain_community: ^0.4.0+1
   get_it: ^9.0.5
   logger: ^2.6.2
 
 dev_dependencies:
-  flutter_lints: ^4.0.0
+  flutter_lints: ^6.0.0
   flutter_test:
     sdk: flutter
   integration_test:

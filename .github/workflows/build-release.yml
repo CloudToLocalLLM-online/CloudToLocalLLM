@@ -41,7 +41,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  FLUTTER_VERSION: '3.24.3'
+  FLUTTER_VERSION: '3.38.1'
 
 jobs:
   # Extract version information
@@ -735,9 +735,6 @@ jobs:
         
         echo "::notice::Android SDK and dependencies verified successfully"
         echo "::endgroup::"
-      
-    - name: Clean pub cache (force fresh dependencies)
-      run: flutter pub cache clean --force
       
     - name: Get Flutter dependencies
       run: flutter pub get
