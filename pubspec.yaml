@@ -6,7 +6,7 @@ repository: https://github.com/imrightguy/CloudToLocalLLM
 version: 4.4.0+202511081545
 
 environment:
-  sdk: '>=3.5.0 <4.0.0'
+  sdk: '>=3.9.0 <4.0.0'
 
 dependencies:
   flutter:
@@ -14,7 +14,7 @@ dependencies:
 
   # UI and Navigation
   cupertino_icons: ^1.0.8
-  go_router: ^16.1.0
+  go_router: ^17.0.0
 
   # Authentication - Auth0
   jwt_decoder: ^2.0.1
@@ -47,17 +47,17 @@ dependencies:
   package_info_plus: ^9.0.0
 
   # File System
-  path: ^1.9.0
+  path: ^1.9.1
   path_provider: ^2.1.5
 
   # Local Storage
   sqflite: ^2.3.3+1  # SQLite for desktop, IndexedDB for web
-  sqflite_common_ffi: ^2.3.3  # FFI support for desktop platforms
+  sqflite_common_ffi: ^2.3.6  # FFI support for desktop platforms
   shared_preferences: ^2.5.3  # For web-compatible auth storage
 
   # State Management
   provider: ^6.1.5+1
-  meta: ^1.15.0
+  meta: ^1.16.0
 
   # System Integration - Flutter plugins for window management and secure storage
   window_manager: ^0.5.1
@@ -76,24 +76,18 @@ dependencies:
   dartssh2: ^2.9.0
 
   # LangChain Integration
-  langchain: ^0.7.0
-  langchain_ollama: ^0.3.0
-  langchain_community: ^0.3.0
+  langchain: ^0.8.0+1
+  langchain_ollama: ^0.4.0+1
+  langchain_community: ^0.4.0+1
   get_it: ^9.0.5
   logger: ^2.6.2
 
 dev_dependencies:
-  flutter_lints: ^4.0.0
+  flutter_lints: ^6.0.0
   flutter_test:
     sdk: flutter
   integration_test:
     sdk: flutter
-
-dependency_overrides:
-  # Force older web package that doesn't use dart:js_interop
-  # This is needed because web-platform plugins pull in web package
-  # but Flutter 3.27.1 tries to compile it for desktop builds
-  web: 0.3.0
 
 flutter:
   uses-material-design: true
