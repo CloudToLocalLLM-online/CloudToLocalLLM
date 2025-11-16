@@ -107,6 +107,9 @@ class AdminCenterService extends ChangeNotifier {
   /// Check if user has any admin role
   bool get isAdmin => _adminRoles.any((role) => role.isActive);
 
+  /// Get Dio instance for direct API calls
+  Dio getDio() => _dio;
+
   /// Get users with pagination and filtering
   Future<Map<String, dynamic>> getUsers({
     int page = 1,
@@ -424,6 +427,329 @@ class AdminCenterService extends ChangeNotifier {
     }
   }
 
+  /// Get email configuration
+  /// Endpoint: GET /api/admin/email/config
+  Future<Map<String, dynamic>> getEmailConfiguration() async {
+    try {
+      _setLoading(true);
+      final response = await _dio.get('/api/admin/email/config');
+      _setError(null);
+      return response.data['data'] ?? {};
+    } catch (e) {
+      debugPrint('[AdminCenterService] Error getting email configuration: $e');
+      _setError('Failed to load email configuration: $e');
+      rethrow;
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  /// Save email configuration
+  /// Endpoint: POST /api/admin/email/config
+  Future<Map<String, dynamic>> saveEmailConfiguration(
+    Map<String, dynamic> config,
+  ) async {
+    try {
+      _setLoading(true);
+      final response = await _dio.post(
+        '/api/admin/email/config',
+        data: config,
+      );
+      _setError(null);
+      return response.data['data'] ?? {};
+    } catch (e) {
+      debugPrint('[AdminCenterService] Error saving email configuration: $e');
+      _setError('Failed to save email configuration: $e');
+      rethrow;
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  /// Send test email
+  /// Endpoint: POST /api/admin/email/test
+  Future<Map<String, dynamic>> sendTestEmail(String recipientEmail) async {
+    try {
+      _setLoading(true);
+      final response = await _dio.post(
+        '/api/admin/email/test',
+        data: {
+          'recipientEmail': recipientEmail,
+          'subject': 'Test Email from CloudToLocalLLM',
+        },
+      );
+      _setError(null);
+      return response.data['data'] ?? {};
+    } catch (e) {
+      debugPrint('[AdminCenterService] Error sending test email: $e');
+      _setError('Failed to send test email: $e');
+      rethrow;
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  /// Start Google Workspace OAuth flow
+  /// Endpoint: POST /api/admin/email/oauth/start
+  Future<String> startEmailOAuthFlow() async {
+    try {
+      _setLoading(true);
+      final response = await _dio.post('/api/admin/email/oauth/start');
+      _setError(null);
+      return response.data['data']['authorizationUrl'] ?? '';
+    } catch (e) {
+      debugPrint('[AdminCenterService] Error starting OAuth flow: $e');
+      _setError('Failed to start OAuth flow: $e');
+      rethrow;
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  /// Handle Google Workspace OAuth callback
+  /// Endpoint: POST /api/admin/email/oauth/callback
+  Future<Map<String, dynamic>> handleEmailOAuthCallback(
+    String code,
+    String state,
+  ) async {
+    try {
+      _setLoading(true);
+      final response = await _dio.post(
+        '/api/admin/email/oauth/callback',
+        data: {
+          'code': code,
+          'state': state,
+        },
+      );
+      _setError(null);
+      return response.data['data'] ?? {};
+    } catch (e) {
+      debugPrint('[AdminCenterService] Error handling OAuth callback: $e');
+      _setError('Failed to handle OAuth callback: $e');
+      rethrow;
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  /// Get email service status
+  /// Endpoint: GET /api/admin/email/status
+  Future<Map<String, dynamic>> getEmailStatus() async {
+    try {
+      _setLoading(true);
+      final response = await _dio.get('/api/admin/email/status');
+      _setError(null);
+      return response.data['data'] ?? {};
+    } catch (e) {
+      debugPrint('[AdminCenterService] Error getting email status: $e');
+      _setError('Failed to load email status: $e');
+      rethrow;
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  /// Get Google Workspace quota usage
+  /// Endpoint: GET /api/admin/email/quota
+  Future<Map<String, dynamic>> getEmailQuota() async {
+    try {
+      _setLoading(true);
+      final response = await _dio.get('/api/admin/email/quota');
+      _setError(null);
+      return response.data['data'] ?? {};
+    } catch (e) {
+      debugPrint('[AdminCenterService] Error getting email quota: $e');
+      _setError('Failed to load email quota: $e');
+      rethrow;
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  /// Get DNS records from Cloudflare
+  /// Endpoint: GET /api/admin/dns/records
+  Future<List<Map<String, dynamic>>> getDnsRecords({
+    String? recordType,
+    String? name,
+  }) async {
+    try {
+      _setLoading(true);
+      final queryParams = {
+        if (recordType != null) 'recordType': recordType,
+        if (name != null) 'name': name,
+      };
+
+      final response = await _dio.get(
+        '/api/admin/dns/records',
+        queryParameters: queryParams,
+      );
+      _setError(null);
+      final records = response.data['data']['records'] as List;
+      return records.cast<Map<String, dynamic>>();
+    } catch (e) {
+      debugPrint('[AdminCenterService] Error getting DNS records: $e');
+      _setError('Failed to load DNS records: $e');
+      rethrow;
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  /// Create a DNS record via Cloudflare
+  /// Endpoint: POST /api/admin/dns/records
+  Future<Map<String, dynamic>> createDnsRecord({
+    required String recordType,
+    required String name,
+    required String value,
+    int ttl = 3600,
+    int? priority,
+  }) async {
+    try {
+      _setLoading(true);
+      final response = await _dio.post(
+        '/api/admin/dns/records',
+        data: {
+          'recordType': recordType,
+          'name': name,
+          'value': value,
+          'ttl': ttl,
+          if (priority != null) 'priority': priority,
+        },
+      );
+      _setError(null);
+      return response.data['data'] ?? {};
+    } catch (e) {
+      debugPrint('[AdminCenterService] Error creating DNS record: $e');
+      _setError('Failed to create DNS record: $e');
+      rethrow;
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  /// Update a DNS record via Cloudflare
+  /// Endpoint: PUT /api/admin/dns/records/:id
+  Future<Map<String, dynamic>> updateDnsRecord({
+    required String recordId,
+    String? value,
+    int? ttl,
+    int? priority,
+  }) async {
+    try {
+      _setLoading(true);
+      final response = await _dio.put(
+        '/api/admin/dns/records/$recordId',
+        data: {
+          if (value != null) 'value': value,
+          if (ttl != null) 'ttl': ttl,
+          if (priority != null) 'priority': priority,
+        },
+      );
+      _setError(null);
+      return response.data['data'] ?? {};
+    } catch (e) {
+      debugPrint('[AdminCenterService] Error updating DNS record: $e');
+      _setError('Failed to update DNS record: $e');
+      rethrow;
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  /// Delete a DNS record via Cloudflare
+  /// Endpoint: DELETE /api/admin/dns/records/:id
+  Future<void> deleteDnsRecord(String recordId) async {
+    try {
+      _setLoading(true);
+      await _dio.delete('/api/admin/dns/records/$recordId');
+      _setError(null);
+    } catch (e) {
+      debugPrint('[AdminCenterService] Error deleting DNS record: $e');
+      _setError('Failed to delete DNS record: $e');
+      rethrow;
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  /// Validate DNS records via Cloudflare
+  /// Endpoint: POST /api/admin/dns/validate
+  Future<Map<String, dynamic>> validateDnsRecords({String? recordId}) async {
+    try {
+      _setLoading(true);
+      final queryParams = {
+        if (recordId != null) 'recordId': recordId,
+      };
+
+      final response = await _dio.post(
+        '/api/admin/dns/validate',
+        queryParameters: queryParams,
+      );
+      _setError(null);
+      return response.data['data'] ?? {};
+    } catch (e) {
+      debugPrint('[AdminCenterService] Error validating DNS records: $e');
+      _setError('Failed to validate DNS records: $e');
+      rethrow;
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  /// Get recommended DNS records for Google Workspace
+  /// Endpoint: GET /api/admin/dns/google-records
+  Future<Map<String, dynamic>> getGoogleWorkspaceDnsRecords({
+    String? domain,
+  }) async {
+    try {
+      _setLoading(true);
+      final queryParams = {
+        if (domain != null) 'domain': domain,
+      };
+
+      final response = await _dio.get(
+        '/api/admin/dns/google-records',
+        queryParameters: queryParams,
+      );
+      _setError(null);
+      return response.data['data'] ?? {};
+    } catch (e) {
+      debugPrint(
+          '[AdminCenterService] Error getting Google Workspace DNS records: $e');
+      _setError('Failed to load Google Workspace DNS records: $e');
+      rethrow;
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  /// One-click setup of Google Workspace DNS records
+  /// Endpoint: POST /api/admin/dns/setup-google
+  Future<Map<String, dynamic>> setupGoogleWorkspaceDns({
+    String? domain,
+    List<String>? recordTypes,
+  }) async {
+    try {
+      _setLoading(true);
+      final response = await _dio.post(
+        '/api/admin/dns/setup-google',
+        data: {
+          if (domain != null) 'domain': domain,
+          if (recordTypes != null) 'recordTypes': recordTypes,
+        },
+      );
+      _setError(null);
+      return response.data['data'] ?? {};
+    } catch (e) {
+      debugPrint(
+          '[AdminCenterService] Error setting up Google Workspace DNS: $e');
+      _setError('Failed to setup Google Workspace DNS: $e');
+      rethrow;
+    } finally {
+      _setLoading(false);
+    }
+  }
+
   /// Get all administrators with their roles and activity summary
   /// Requires Super Admin role
   Future<Map<String, dynamic>> getAdmins() async {
@@ -510,7 +836,7 @@ class AdminCenterService extends ChangeNotifier {
 
   /// Handle auth state changes
   void _onAuthStateChanged() {
-    if (_authService.isAuthenticated == false) {
+    if (!_authService.isAuthenticated.value) {
       // Clear cached data on logout
       _adminRoles = [];
       _dashboardMetrics = null;

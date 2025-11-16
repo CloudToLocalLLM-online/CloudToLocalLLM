@@ -75,17 +75,27 @@ class _EmailProviderConfigTabState extends State<EmailProviderConfigTab> {
     });
 
     try {
-      // TODO: Implement API call to load email configuration
-      // For now, just set loading to false
-      // final config = await adminService.getEmailConfiguration();
+      final configData = await adminService.getEmailConfiguration();
 
-      setState(() {
-        _isLoading = false;
-        // Populate form fields with loaded configuration
-        // _smtpHostController.text = config['smtp_host'] ?? '';
-        // _smtpPortController.text = config['smtp_port']?.toString() ?? '587';
-        // etc.
-      });
+      if (configData['configurations'] != null &&
+          (configData['configurations'] as List).isNotEmpty) {
+        final config = configData['configurations'][0];
+
+        setState(() {
+          _selectedProvider = config['provider'] ?? 'smtp';
+          _smtpHostController.text = config['smtp_host'] ?? '';
+          _smtpPortController.text = config['smtp_port']?.toString() ?? '587';
+          _smtpUsernameController.text = config['smtp_username'] ?? '';
+          _selectedEncryption = config['encryption'] ?? 'tls';
+          _isLoading = false;
+        });
+      } else {
+        setState(() {
+          _isLoading = false;
+          // No configuration found, use defaults
+          _smtpPortController.text = '587';
+        });
+      }
     } catch (e) {
       setState(() {
         _error = 'Failed to load email configuration: $e';
@@ -117,15 +127,14 @@ class _EmailProviderConfigTabState extends State<EmailProviderConfigTab> {
     });
 
     try {
-      // TODO: Implement API call to save email configuration
-      // await adminService.saveEmailConfiguration({
-      //   'provider': _selectedProvider,
-      //   'smtp_host': _smtpHostController.text,
-      //   'smtp_port': int.parse(_smtpPortController.text),
-      //   'smtp_username': _smtpUsernameController.text,
-      //   'smtp_password': _smtpPasswordController.text,
-      //   'encryption': _selectedEncryption,
-      // });
+      await adminService.saveEmailConfiguration({
+        'provider': _selectedProvider,
+        'smtp_host': _smtpHostController.text,
+        'smtp_port': int.parse(_smtpPortController.text),
+        'smtp_username': _smtpUsernameController.text,
+        'smtp_password': _smtpPasswordController.text,
+        'encryption': _selectedEncryption,
+      });
 
       setState(() {
         _isSaving = false;
@@ -174,8 +183,7 @@ class _EmailProviderConfigTabState extends State<EmailProviderConfigTab> {
     });
 
     try {
-      // TODO: Implement API call to send test email
-      // await adminService.sendTestEmail(_testEmailController.text);
+      await adminService.sendTestEmail(_testEmailController.text);
 
       setState(() {
         _isSendingTest = false;
@@ -392,7 +400,7 @@ class _EmailProviderConfigTabState extends State<EmailProviderConfigTab> {
             ),
             const SizedBox(height: 16),
             DropdownButtonFormField<String>(
-              value: _selectedProvider,
+              initialValue: _selectedProvider,
               decoration: const InputDecoration(
                 labelText: 'Provider',
                 border: OutlineInputBorder(),
@@ -499,7 +507,7 @@ class _EmailProviderConfigTabState extends State<EmailProviderConfigTab> {
                   const SizedBox(width: 16),
                   Expanded(
                     child: DropdownButtonFormField<String>(
-                      value: _selectedEncryption,
+                      initialValue: _selectedEncryption,
                       decoration: const InputDecoration(
                         labelText: 'Encryption',
                         border: OutlineInputBorder(),

@@ -34,6 +34,8 @@ import adminReportsRoutes from './admin/reports.js';
 import adminAuditRoutes from './admin/audit.js';
 import adminAdminsRoutes from './admin/admins.js';
 import adminDashboardRoutes from './admin/dashboard.js';
+import adminEmailRoutes from './admin/email.js';
+import adminDNSRoutes from './admin/dns.js';
 
 const router = express.Router();
 
@@ -355,5 +357,7 @@ router.use('/reports', adminReportsRoutes);
 router.use('/audit', adminAuditRoutes);
 router.use('/admins', adminAdminsRoutes);
 router.use('/dashboard', adminDashboardRoutes);
+router.use('/email', adminEmailRoutes);
+router.use('/dns', adminDNSRoutes);
 
 export default router;

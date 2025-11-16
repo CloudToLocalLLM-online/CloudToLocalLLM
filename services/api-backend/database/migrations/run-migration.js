@@ -67,8 +67,36 @@ async function applyMigration(version) {
       return;
     }
 
-    // Read migration file
-    const migrationPath = join(__dirname, `${version}_admin_center_schema.sql`);
+    // Read migration file - try to find the migration file with any name pattern
+    let migrationPath;
+    let migrationName = 'unknown';
+    
+    // Try different naming patterns
+    const patterns = [
+      `${version}_admin_center_schema.sql`,
+      `${version}_email_relay_dns_setup.sql`,
+      `${version}_*.sql`
+    ];
+    
+    // For now, construct the path based on version
+    // Version 001 -> 001_admin_center_schema.sql
+    // Version 002 -> 002_webhook_events_table.sql
+    // Version 003 -> 003_email_relay_dns_setup.sql
+    if (version === '001') {
+      migrationPath = join(__dirname, `${version}_admin_center_schema.sql`);
+      migrationName = 'admin_center_schema';
+    } else if (version === '002') {
+      migrationPath = join(__dirname, `${version}_webhook_events_table.sql`);
+      migrationName = 'webhook_events_table';
+    } else if (version === '003') {
+      migrationPath = join(__dirname, `${version}_email_relay_dns_setup.sql`);
+      migrationName = 'email_relay_dns_setup';
+    } else {
+      // Generic pattern for future migrations
+      migrationPath = join(__dirname, `${version}_*.sql`);
+      migrationName = 'migration';
+    }
+    
     const migrationSQL = readFileSync(migrationPath, 'utf8');
 
     console.log(`Applying migration ${version}...`);
@@ -83,7 +111,7 @@ async function applyMigration(version) {
       // Record migration
       await client.query(
         'INSERT INTO schema_migrations (version, name) VALUES ($1, $2)',
-        [version, 'admin_center_schema']
+        [version, migrationName]
       );
       
       // Commit transaction
@@ -117,8 +145,21 @@ async function rollbackMigration(version) {
       return;
     }
 
-    // Read rollback file
-    const rollbackPath = join(__dirname, `${version}_admin_center_schema_rollback.sql`);
+    // Read rollback file - try to find the rollback file with any name pattern
+    let rollbackPath;
+    
+    // Construct the rollback path based on version
+    if (version === '001') {
+      rollbackPath = join(__dirname, `${version}_admin_center_schema_rollback.sql`);
+    } else if (version === '002') {
+      rollbackPath = join(__dirname, `${version}_webhook_events_table_rollback.sql`);
+    } else if (version === '003') {
+      rollbackPath = join(__dirname, `${version}_email_relay_dns_setup_rollback.sql`);
+    } else {
+      // Generic pattern for future migrations
+      rollbackPath = join(__dirname, `${version}_*_rollback.sql`);
+    }
+    
     const rollbackSQL = readFileSync(rollbackPath, 'utf8');
 
     console.log(`Rolling back migration ${version}...`);

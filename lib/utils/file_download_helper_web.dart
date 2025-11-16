@@ -1,12 +1,18 @@
-import 'dart:html' as html;
+import 'package:web/web.dart';
 import 'dart:typed_data';
+import 'dart:js_interop';
 
 /// Web implementation for file downloads
 void downloadFileImpl(List<int> bytes, String filename, String mimeType) {
-  final blob = html.Blob([Uint8List.fromList(bytes)], mimeType);
-  final url = html.Url.createObjectUrlFromBlob(blob);
-  html.AnchorElement(href: url)
-    ..setAttribute('download', filename)
-    ..click();
-  html.Url.revokeObjectUrl(url);
+  final uint8List = Uint8List.fromList(bytes);
+  final blob = Blob(
+    [uint8List.toJS].toJS,
+    BlobPropertyBag(type: mimeType),
+  );
+  final url = URL.createObjectURL(blob);
+  final anchor = document.createElement('a') as HTMLAnchorElement;
+  anchor.href = url;
+  anchor.setAttribute('download', filename);
+  anchor.click();
+  URL.revokeObjectURL(url);
 }

@@ -193,8 +193,7 @@ class _FinancialReportsTabState extends State<FinancialReportsTab> {
                               style: Theme.of(context).textTheme.labelMedium,
                             ),
                             const SizedBox(height: 8),
-                            DropdownButtonFormField<String>(
-                              value: _selectedReportType,
+                            DropdownButtonFormField<String>(initialValue: _selectedReportType,
                               decoration: const InputDecoration(
                                 border: OutlineInputBorder(),
                                 contentPadding: EdgeInsets.symmetric(
@@ -598,7 +597,7 @@ class _FinancialReportsTabState extends State<FinancialReportsTab> {
               _buildTableCell('\$${avg.toStringAsFixed(2)}'),
             ],
           );
-        }).toList(),
+        }),
       ],
     );
   }
@@ -643,7 +642,7 @@ class _FinancialReportsTabState extends State<FinancialReportsTab> {
               _buildTableCell(canceled.toString()),
             ],
           );
-        }).toList(),
+        }),
       ],
     );
   }
@@ -675,3 +674,5 @@ class _FinancialReportsTabState extends State<FinancialReportsTab> {
     }
   }
 }
+
+

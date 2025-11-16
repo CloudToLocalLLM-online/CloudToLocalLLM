@@ -22,6 +22,8 @@ const ROLE_PERMISSIONS = {
     'terminate_sessions',
     'view_payments',
     'view_audit_logs',
+    'view_email_config',
+    'manage_email_config',
   ],
   finance_admin: [
     'view_users',

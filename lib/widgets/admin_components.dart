@@ -17,7 +17,7 @@
 /// - AdminAccessibility
 /// - AdminResponsive and all responsive components
 
-library admin_components;
+library;
 
 // Core components
 export 'admin_card.dart';
@@ -33,3 +33,4 @@ export 'admin_responsive.dart';
 
 // Also export theme for convenience
 export '../config/theme.dart';
+

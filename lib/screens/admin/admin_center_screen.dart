@@ -12,6 +12,8 @@ import 'financial_reports_tab.dart';
 import 'audit_log_viewer_tab.dart';
 import 'admin_management_tab.dart';
 import 'email_provider_config_tab.dart';
+import 'email_metrics_tab.dart';
+import 'dns_config_tab.dart';
 
 /// Admin Center main screen for managing users, payments, and subscriptions.
 /// This is separate from the AdminPanelScreen which handles system administration
@@ -115,6 +117,20 @@ class _AdminCenterScreenState extends State<AdminCenterScreen> {
         label: 'Email Provider',
         icon: Icons.email,
         builder: () => const EmailProviderConfigTab(),
+        requiredPermissions: [AdminPermission.viewConfiguration],
+      ),
+      _NavigationItem(
+        id: 'email-metrics',
+        label: 'Email Metrics',
+        icon: Icons.analytics,
+        builder: () => const EmailMetricsTab(),
+        requiredPermissions: [AdminPermission.viewConfiguration],
+      ),
+      _NavigationItem(
+        id: 'dns',
+        label: 'DNS Configuration',
+        icon: Icons.dns,
+        builder: () => const DnsConfigTab(),
         requiredPermissions: [AdminPermission.viewConfiguration],
       ),
     ];
@@ -331,7 +347,7 @@ class _AdminCenterScreenState extends State<AdminCenterScreen> {
                 Text(
                   userEmail,
                   style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurface.withOpacity(0.6),
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                   ),
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -411,7 +427,7 @@ class _AdminCenterScreenState extends State<AdminCenterScreen> {
                   size: 20,
                   color: isSelected
                       ? theme.colorScheme.onPrimaryContainer
-                      : theme.colorScheme.onSurface.withOpacity(0.7),
+                      : theme.colorScheme.onSurface.withValues(alpha: 0.7),
                 ),
                 const SizedBox(width: 12),
                 Expanded(

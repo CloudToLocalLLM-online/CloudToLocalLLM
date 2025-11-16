@@ -229,7 +229,7 @@ class _SubscriptionManagementTabState extends State<SubscriptionManagementTab> {
                   // Tier filter
                   Expanded(
                     child: DropdownButtonFormField<String>(
-                      value: _selectedTier,
+                      initialValue: _selectedTier,
                       decoration: InputDecoration(
                         labelText: 'Subscription Tier',
                         border: OutlineInputBorder(
@@ -259,7 +259,7 @@ class _SubscriptionManagementTabState extends State<SubscriptionManagementTab> {
                   // Status filter
                   Expanded(
                     child: DropdownButtonFormField<String>(
-                      value: _selectedStatus,
+                      initialValue: _selectedStatus,
                       decoration: InputDecoration(
                         labelText: 'Status',
                         border: OutlineInputBorder(
@@ -1026,7 +1026,7 @@ class _UpgradeDowngradeDialogState extends State<_UpgradeDowngradeDialog> {
             Text('Current Tier: ${widget.subscription.tier.displayName}'),
             const SizedBox(height: 24),
             DropdownButtonFormField<SubscriptionTier>(
-              value: _selectedTier,
+              initialValue: _selectedTier,
               decoration: const InputDecoration(
                 labelText: 'New Subscription Tier',
                 border: OutlineInputBorder(),
@@ -1216,38 +1216,42 @@ class _CancelSubscriptionDialogState extends State<_CancelSubscriptionDialog> {
               style: TextStyle(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 12),
-            RadioListTile<bool>(
-              title: const Text('Cancel at period end'),
-              subtitle: Text(
-                widget.subscription.currentPeriodEnd != null
-                    ? 'User will retain access until ${_formatDate(widget.subscription.currentPeriodEnd!)}'
-                    : 'User will retain access until the end of the current billing period',
-              ),
-              value: false,
-              groupValue: _immediate,
-              onChanged: _isLoading
+            GestureDetector(
+              onTap: _isLoading
                   ? null
-                  : (value) {
+                  : () {
                       setState(() {
-                        _immediate = value ?? false;
+                        _immediate = false;
                       });
                     },
+              child: RadioListTile<bool>(
+                title: const Text('Cancel at period end'),
+                subtitle: Text(
+                  widget.subscription.currentPeriodEnd != null
+                      ? 'User will retain access until ${_formatDate(widget.subscription.currentPeriodEnd!)}'
+                      : 'User will retain access until the end of the current billing period',
+                ),
+                value: false,
+                selected: !_immediate,
+              ),
             ),
-            RadioListTile<bool>(
-              title: const Text('Cancel immediately'),
-              subtitle: const Text(
-                'User will lose access immediately. No refund will be issued.',
-                style: TextStyle(color: Colors.red),
-              ),
-              value: true,
-              groupValue: _immediate,
-              onChanged: _isLoading
+            GestureDetector(
+              onTap: _isLoading
                   ? null
-                  : (value) {
+                  : () {
                       setState(() {
-                        _immediate = value ?? false;
+                        _immediate = true;
                       });
                     },
+              child: RadioListTile<bool>(
+                title: const Text('Cancel immediately'),
+                subtitle: const Text(
+                  'User will lose access immediately. No refund will be issued.',
+                  style: TextStyle(color: Colors.red),
+                ),
+                value: true,
+                selected: _immediate,
+              ),
             ),
             if (_error != null) ...[
               const SizedBox(height: 16),

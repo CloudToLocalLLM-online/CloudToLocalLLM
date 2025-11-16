@@ -46,8 +46,8 @@ class _AuditLogViewerTabState extends State<AuditLogViewerTab> {
   DateTime? _startDate;
   DateTime? _endDate;
   AuditLogSeverity? _selectedSeverity;
-  String _sortBy = 'created_at';
-  String _sortOrder = 'desc';
+  final String _sortBy = 'created_at';
+  final String _sortOrder = 'desc';
 
   // Controllers
   final TextEditingController _adminUserIdController = TextEditingController();
@@ -482,11 +482,11 @@ class _AuditLogViewerTabState extends State<AuditLogViewerTab> {
   Color _getSeverityColor(AuditLogSeverity severity) {
     switch (severity) {
       case AuditLogSeverity.low:
-        return Colors.green.withOpacity(0.2);
+        return Colors.green.withValues(alpha: 0.2);
       case AuditLogSeverity.medium:
-        return Colors.orange.withOpacity(0.2);
+        return Colors.orange.withValues(alpha: 0.2);
       case AuditLogSeverity.high:
-        return Colors.red.withOpacity(0.2);
+        return Colors.red.withValues(alpha: 0.2);
     }
   }
 
@@ -745,7 +745,7 @@ class _FilterDialogState extends State<_FilterDialog> {
               ),
               const SizedBox(height: 8),
               DropdownButtonFormField<AuditLogSeverity>(
-                value: _severity,
+                initialValue: _severity,
                 decoration: const InputDecoration(
                   border: OutlineInputBorder(),
                   hintText: 'All severities',
@@ -987,3 +987,4 @@ class _LogDetailDialog extends StatelessWidget {
     }
   }
 }
+

@@ -23,7 +23,6 @@ import '../screens/settings/connection_status_screen.dart';
 import '../screens/unified_settings_screen.dart';
 
 // Admin screens
-import '../screens/admin/admin_panel_screen.dart';
 import '../screens/admin/admin_data_flush_screen.dart';
 import '../screens/admin/admin_center_screen.dart';
 
@@ -361,7 +360,7 @@ class AppRouter {
           path: '/settings/downloads',
           name: 'settings-downloads',
           builder: (context, state) =>
-              const UnifiedSettingsScreen(initialSection: 'downloads'),
+              const UnifiedSettingsScreen(initialCategory: 'downloads'),
         ),
 
         // Tunnel Settings route (legacy/advanced tunnel configuration)
@@ -369,7 +368,7 @@ class AppRouter {
           path: '/settings/tunnel',
           name: 'tunnel-settings',
           builder: (context, state) =>
-              const UnifiedSettingsScreen(initialSection: 'tunnel-connection'),
+              const UnifiedSettingsScreen(initialCategory: 'tunnel-connection'),
         ),
 
         // LLM Provider Settings route
@@ -396,16 +395,6 @@ class AppRouter {
           builder: (context, state) {
             debugPrint("[Router] Building ConnectionStatusScreen");
             return const ConnectionStatusScreen();
-          },
-        ),
-
-        // Admin Panel route (requires admin privileges)
-        GoRoute(
-          path: '/admin',
-          name: 'admin-panel',
-          builder: (context, state) {
-            debugPrint("[AdminPanel] Building AdminPanelScreen");
-            return const AdminPanelScreen();
           },
         ),
 

@@ -319,7 +319,8 @@ class _AdminManagementTabState extends State<AdminManagementTab> {
               children: activeRoles.map((role) {
                 return Chip(
                   label: Text(_formatRole(role['role'])),
-                  backgroundColor: _getRoleColor(role['role']).withOpacity(0.1),
+                  backgroundColor:
+                      _getRoleColor(role['role']).withValues(alpha: 0.1),
                   labelStyle: TextStyle(
                     color: _getRoleColor(role['role']),
                     fontWeight: FontWeight.bold,
@@ -520,7 +521,7 @@ class _AddAdminDialogState extends State<_AddAdminDialog> {
             ),
             const SizedBox(height: 8),
             DropdownButtonFormField<AdminRole>(
-              value: _selectedRole,
+              initialValue: _selectedRole,
               decoration: const InputDecoration(
                 prefixIcon: Icon(Icons.admin_panel_settings),
               ),
@@ -611,3 +612,4 @@ class _AddAdminDialogState extends State<_AddAdminDialog> {
     );
   }
 }
+

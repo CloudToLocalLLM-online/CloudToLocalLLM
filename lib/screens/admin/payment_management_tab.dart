@@ -234,7 +234,7 @@ class _PaymentManagementTabState extends State<PaymentManagementTab> {
                   // Status filter
                   Expanded(
                     child: DropdownButtonFormField<String>(
-                      value: _selectedStatus,
+                      initialValue: _selectedStatus,
                       decoration: InputDecoration(
                         labelText: 'Status',
                         border: OutlineInputBorder(
@@ -278,7 +278,7 @@ class _PaymentManagementTabState extends State<PaymentManagementTab> {
                   // Sort options
                   Expanded(
                     child: DropdownButtonFormField<String>(
-                      value: _sortBy,
+                      initialValue: _sortBy,
                       decoration: InputDecoration(
                         labelText: 'Sort By',
                         border: OutlineInputBorder(
@@ -994,36 +994,38 @@ class _RefundDialogState extends State<_RefundDialog> {
               Row(
                 children: [
                   Expanded(
-                    child: RadioListTile<bool>(
-                      title: const Text('Full Refund'),
-                      value: true,
-                      groupValue: _isFullRefund,
-                      onChanged: _isLoading
+                    child: GestureDetector(
+                      onTap: _isLoading
                           ? null
-                          : (value) {
+                          : () {
                               setState(() {
-                                _isFullRefund = value!;
-                                if (_isFullRefund) {
-                                  _amountController.text = widget
-                                      .transaction.amount
-                                      .toStringAsFixed(2);
-                                }
+                                _isFullRefund = true;
+                                _amountController.text = widget
+                                    .transaction.amount
+                                    .toStringAsFixed(2);
                               });
                             },
+                      child: RadioListTile<bool>(
+                        title: const Text('Full Refund'),
+                        value: true,
+                        selected: _isFullRefund,
+                      ),
                     ),
                   ),
                   Expanded(
-                    child: RadioListTile<bool>(
-                      title: const Text('Partial Refund'),
-                      value: false,
-                      groupValue: _isFullRefund,
-                      onChanged: _isLoading
+                    child: GestureDetector(
+                      onTap: _isLoading
                           ? null
-                          : (value) {
+                          : () {
                               setState(() {
-                                _isFullRefund = value!;
+                                _isFullRefund = false;
                               });
                             },
+                      child: RadioListTile<bool>(
+                        title: const Text('Partial Refund'),
+                        value: false,
+                        selected: !_isFullRefund,
+                      ),
                     ),
                   ),
                 ],
@@ -1046,7 +1048,7 @@ class _RefundDialogState extends State<_RefundDialog> {
 
               // Refund reason
               DropdownButtonFormField<RefundReason>(
-                value: _selectedReason,
+                initialValue: _selectedReason,
                 decoration: const InputDecoration(
                   labelText: 'Refund Reason *',
                   border: OutlineInputBorder(),

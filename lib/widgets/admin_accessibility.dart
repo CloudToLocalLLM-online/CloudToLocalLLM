@@ -36,9 +36,9 @@ class AdminAccessibility {
 
   /// Calculate relative luminance of a color
   static double _relativeLuminance(Color color) {
-    final r = _linearize(color.red / 255.0);
-    final g = _linearize(color.green / 255.0);
-    final b = _linearize(color.blue / 255.0);
+    final r = _linearize((color.r * 255.0).round().clamp(0, 255) / 255.0);
+    final g = _linearize((color.g * 255.0).round().clamp(0, 255) / 255.0);
+    final b = _linearize((color.b * 255.0).round().clamp(0, 255) / 255.0);
     return 0.2126 * r + 0.7152 * g + 0.0722 * b;
   }
 
@@ -168,11 +168,13 @@ class AdminAccessibility {
     return Semantics(
       label: semanticLabel ?? label,
       selected: value == groupValue,
-      child: RadioListTile<T>(
-        value: value,
-        groupValue: groupValue,
-        onChanged: onChanged,
-        title: Text(label),
+      child: GestureDetector(
+        onTap: () => onChanged(value),
+        child: RadioListTile<T>(
+          value: value,
+          selected: value == groupValue,
+          title: Text(label),
+        ),
       ),
     );
   }

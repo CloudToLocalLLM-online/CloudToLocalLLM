@@ -154,8 +154,10 @@ void main() {
     });
 
     testWidgets('cancel button resets changes', (WidgetTester tester) async {
-      tester.binding.window.physicalSizeTestValue = const Size(1200, 1200);
-      addTearDown(tester.binding.window.clearPhysicalSizeTestValue);
+      tester.binding.platformDispatcher.views.first.physicalSize =
+          const Size(1200, 1200);
+      addTearDown(
+          tester.binding.platformDispatcher.views.first.resetPhysicalSize);
 
       await tester.pumpWidget(
         MaterialApp(
@@ -184,8 +186,10 @@ void main() {
 
     testWidgets('saves settings when save button is pressed',
         (WidgetTester tester) async {
-      tester.binding.window.physicalSizeTestValue = const Size(1200, 1200);
-      addTearDown(tester.binding.window.clearPhysicalSizeTestValue);
+      tester.binding.platformDispatcher.views.first.physicalSize =
+          const Size(1200, 1200);
+      addTearDown(
+          tester.binding.platformDispatcher.views.first.resetPhysicalSize);
 
       await tester.pumpWidget(
         MaterialApp(

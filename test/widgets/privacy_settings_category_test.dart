@@ -10,8 +10,8 @@ void main() {
 
     testWidgets('renders privacy settings category',
         (WidgetTester tester) async {
-      tester.binding.window.physicalSizeTestValue = const Size(1200, 1200);
-      addTearDown(tester.binding.window.clearPhysicalSizeTestValue);
+      tester.binding.platformDispatcher.views.first.physicalSize = const Size(1200, 1200);
+      addTearDown(tester.binding.platformDispatcher.views.first.resetPhysicalSize);
 
       await tester.pumpWidget(
         MaterialApp(
@@ -30,8 +30,8 @@ void main() {
     });
 
     testWidgets('displays all privacy toggles', (WidgetTester tester) async {
-      tester.binding.window.physicalSizeTestValue = const Size(1200, 1200);
-      addTearDown(tester.binding.window.clearPhysicalSizeTestValue);
+      tester.binding.platformDispatcher.views.first.physicalSize = const Size(1200, 1200);
+      addTearDown(tester.binding.platformDispatcher.views.first.resetPhysicalSize);
 
       await tester.pumpWidget(
         MaterialApp(
@@ -50,8 +50,8 @@ void main() {
     });
 
     testWidgets('displays clear data button', (WidgetTester tester) async {
-      tester.binding.window.physicalSizeTestValue = const Size(1200, 1200);
-      addTearDown(tester.binding.window.clearPhysicalSizeTestValue);
+      tester.binding.platformDispatcher.views.first.physicalSize = const Size(1200, 1200);
+      addTearDown(tester.binding.platformDispatcher.views.first.resetPhysicalSize);
 
       await tester.pumpWidget(
         MaterialApp(
@@ -69,8 +69,8 @@ void main() {
 
     testWidgets('displays save and cancel buttons',
         (WidgetTester tester) async {
-      tester.binding.window.physicalSizeTestValue = const Size(1200, 1200);
-      addTearDown(tester.binding.window.clearPhysicalSizeTestValue);
+      tester.binding.platformDispatcher.views.first.physicalSize = const Size(1200, 1200);
+      addTearDown(tester.binding.platformDispatcher.views.first.resetPhysicalSize);
 
       await tester.pumpWidget(
         MaterialApp(
@@ -88,8 +88,8 @@ void main() {
     });
 
     testWidgets('toggles analytics setting', (WidgetTester tester) async {
-      tester.binding.window.physicalSizeTestValue = const Size(1200, 1200);
-      addTearDown(tester.binding.window.clearPhysicalSizeTestValue);
+      tester.binding.platformDispatcher.views.first.physicalSize = const Size(1200, 1200);
+      addTearDown(tester.binding.platformDispatcher.views.first.resetPhysicalSize);
 
       await tester.pumpWidget(
         MaterialApp(
@@ -116,8 +116,8 @@ void main() {
 
     testWidgets('category is inactive when isActive is false',
         (WidgetTester tester) async {
-      tester.binding.window.physicalSizeTestValue = const Size(1200, 1200);
-      addTearDown(tester.binding.window.clearPhysicalSizeTestValue);
+      tester.binding.platformDispatcher.views.first.physicalSize = const Size(1200, 1200);
+      addTearDown(tester.binding.platformDispatcher.views.first.resetPhysicalSize);
 
       await tester.pumpWidget(
         MaterialApp(
@@ -135,8 +135,8 @@ void main() {
     });
 
     testWidgets('displays analytics description', (WidgetTester tester) async {
-      tester.binding.window.physicalSizeTestValue = const Size(1200, 1200);
-      addTearDown(tester.binding.window.clearPhysicalSizeTestValue);
+      tester.binding.platformDispatcher.views.first.physicalSize = const Size(1200, 1200);
+      addTearDown(tester.binding.platformDispatcher.views.first.resetPhysicalSize);
 
       await tester.pumpWidget(
         MaterialApp(
@@ -158,8 +158,8 @@ void main() {
 
     testWidgets('displays crash reporting description',
         (WidgetTester tester) async {
-      tester.binding.window.physicalSizeTestValue = const Size(1200, 1200);
-      addTearDown(tester.binding.window.clearPhysicalSizeTestValue);
+      tester.binding.platformDispatcher.views.first.physicalSize = const Size(1200, 1200);
+      addTearDown(tester.binding.platformDispatcher.views.first.resetPhysicalSize);
 
       await tester.pumpWidget(
         MaterialApp(
@@ -181,8 +181,8 @@ void main() {
 
     testWidgets('displays usage statistics description',
         (WidgetTester tester) async {
-      tester.binding.window.physicalSizeTestValue = const Size(1200, 1200);
-      addTearDown(tester.binding.window.clearPhysicalSizeTestValue);
+      tester.binding.platformDispatcher.views.first.physicalSize = const Size(1200, 1200);
+      addTearDown(tester.binding.platformDispatcher.views.first.resetPhysicalSize);
 
       await tester.pumpWidget(
         MaterialApp(
@@ -203,8 +203,8 @@ void main() {
     });
 
     testWidgets('displays clear data description', (WidgetTester tester) async {
-      tester.binding.window.physicalSizeTestValue = const Size(1200, 1200);
-      addTearDown(tester.binding.window.clearPhysicalSizeTestValue);
+      tester.binding.platformDispatcher.views.first.physicalSize = const Size(1200, 1200);
+      addTearDown(tester.binding.platformDispatcher.views.first.resetPhysicalSize);
 
       await tester.pumpWidget(
         MaterialApp(
@@ -224,3 +224,4 @@ void main() {
     });
   });
 }
+

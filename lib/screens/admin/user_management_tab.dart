@@ -183,8 +183,7 @@ class _UserManagementTabState extends State<UserManagementTab> {
                 children: [
                   // Tier filter
                   Expanded(
-                    child: DropdownButtonFormField<String>(
-                      value: _selectedTier,
+                    child: DropdownButtonFormField<String>(initialValue: _selectedTier,
                       decoration: InputDecoration(
                         labelText: 'Subscription Tier',
                         border: OutlineInputBorder(
@@ -213,8 +212,7 @@ class _UserManagementTabState extends State<UserManagementTab> {
 
                   // Status filter
                   Expanded(
-                    child: DropdownButtonFormField<String>(
-                      value: _selectedStatus,
+                    child: DropdownButtonFormField<String>(initialValue: _selectedStatus,
                       decoration: InputDecoration(
                         labelText: 'Account Status',
                         border: OutlineInputBorder(
@@ -243,8 +241,7 @@ class _UserManagementTabState extends State<UserManagementTab> {
 
                   // Sort options
                   Expanded(
-                    child: DropdownButtonFormField<String>(
-                      value: _sortBy,
+                    child: DropdownButtonFormField<String>(initialValue: _sortBy,
                       decoration: InputDecoration(
                         labelText: 'Sort By',
                         border: OutlineInputBorder(
@@ -941,8 +938,7 @@ class _EditUserDialogState extends State<_EditUserDialog> {
           children: [
             Text('User: ${widget.user['email']}'),
             const SizedBox(height: 24),
-            DropdownButtonFormField<String>(
-              value: _selectedTier,
+            DropdownButtonFormField<String>(initialValue: _selectedTier,
               decoration: const InputDecoration(
                 labelText: 'Subscription Tier',
                 border: OutlineInputBorder(),
@@ -1219,3 +1215,4 @@ class _ReactivateUserDialogState extends State<_ReactivateUserDialog> {
     );
   }
 }
+
