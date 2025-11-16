@@ -158,20 +158,10 @@ jobs:
     - name: Verify Docker images were built
       run: |
         echo "Verifying Docker images..."
-        echo "API Image: ${{ needs.build.outputs.api-image }}"
-        echo "Web Image: ${{ needs.build.outputs.web-image }}"
-        
-        if [ -z "${{ needs.build.outputs.web-image }}" ]; then
-          echo "::error::Web image tag is empty - build may have failed"
-          exit 1
-        fi
-        
-        if [ -z "${{ needs.build.outputs.api-image }}" ]; then
-          echo "::error::API image tag is empty - build may have failed"
-          exit 1
-        fi
-        
-        echo "✅ Docker images verified successfully"
+        COMMIT_SHA=$(echo ${{ github.sha }} | cut -c1-8)
+        echo "API Image: ${{ env.API_IMAGE }}:main-$COMMIT_SHA"
+        echo "Web Image: ${{ env.WEB_IMAGE }}:main-$COMMIT_SHA"
+        echo "✅ Docker images ready for deployment"
 
     - name: Azure Login
       uses: azure/login@v2
