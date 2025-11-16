@@ -33,7 +33,7 @@ class AdminErrorMessage extends StatelessWidget {
         color: backgroundColor ?? defaultBackgroundColor,
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
-          color: theme.colorScheme.error.withOpacity(0.3),
+          color: theme.colorScheme.error.withAlpha((0.3 * 255).toInt()),
           width: 1,
         ),
       ),
@@ -93,7 +93,7 @@ class AdminSuccessMessage extends StatelessWidget {
         color: backgroundColor ?? defaultBackgroundColor,
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
-          color: Colors.green.withOpacity(0.3),
+          color: Colors.green.withAlpha((0.3 * 255).toInt()),
           width: 1,
         ),
       ),
@@ -153,7 +153,7 @@ class AdminWarningMessage extends StatelessWidget {
         color: backgroundColor ?? defaultBackgroundColor,
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
-          color: Colors.orange.withOpacity(0.3),
+          color: Colors.orange.withAlpha((0.3 * 255).toInt()),
           width: 1,
         ),
       ),
@@ -213,7 +213,7 @@ class AdminInfoMessage extends StatelessWidget {
         color: backgroundColor ?? defaultBackgroundColor,
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
-          color: Colors.blue.withOpacity(0.3),
+          color: Colors.blue.withAlpha((0.3 * 255).toInt()),
           width: 1,
         ),
       ),

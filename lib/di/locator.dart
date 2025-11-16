@@ -33,6 +33,8 @@ import '../services/unified_connection_service.dart';
 import '../services/user_container_service.dart';
 import '../services/web_download_prompt_service.dart'
     if (dart.library.io) '../services/web_download_prompt_service_stub.dart';
+import '../services/settings_preference_service.dart';
+import '../services/settings_import_export_service.dart';
 
 final GetIt serviceLocator = GetIt.instance;
 
@@ -101,6 +103,20 @@ Future<void> setupCoreServices() async {
   );
   serviceLocator.registerSingleton<AppInitializationService>(
     appInitializationService,
+  );
+
+  // Settings preference service - manages user preferences
+  final settingsPreferenceService = SettingsPreferenceService();
+  serviceLocator.registerSingleton<SettingsPreferenceService>(
+    settingsPreferenceService,
+  );
+
+  // Settings import/export service - handles settings backup/restore
+  final settingsImportExportService = SettingsImportExportService(
+    preferencesService: settingsPreferenceService,
+  );
+  serviceLocator.registerSingleton<SettingsImportExportService>(
+    settingsImportExportService,
   );
 
   // Web download prompt service - can be created but won't do heavy work until auth
