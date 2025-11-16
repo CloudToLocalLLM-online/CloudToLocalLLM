@@ -1,0 +1,187 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'k8s/**'
+      - 'services/**'
+      - 'config/**'
+      - 'lib/**'
+      - 'web/**'
+      - 'pubspec.yaml'
+      - 'package.json'
+  workflow_dispatch:
+
+env:
+  REGISTRY: cloudtolocalllm
+  API_IMAGE: cloudtolocalllm/cloudtolocalllm-api
+  WEB_IMAGE: cloudtolocalllm/cloudtolocalllm-web
+
+jobs:
+  build-images:
+    runs-on: ubuntu-latest
+    outputs:
+      api-image: ${{ steps.meta-api.outputs.tags }}
+      web-image: ${{ steps.meta-web.outputs.tags }}
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Log in to Docker Hub
+      uses: docker/login-action@v3
+      with:
+        username: ${{ secrets.DOCKERHUB_USERNAME }}
+        password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+    - name: Extract API metadata
+      id: meta-api
+      uses: docker/metadata-action@v5
+      with:
+        images: ${{ env.API_IMAGE }}
+        tags: |
+          type=sha,prefix={{branch}}-
+          type=raw,value=latest,enable={{is_default_branch}}
+
+    - name: Build and push API image
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        file: ./services/api-backend/Dockerfile.prod
+        push: true
+        tags: ${{ steps.meta-api.outputs.tags }}
+        labels: ${{ steps.meta-api.outputs.labels }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+
+    - name: Extract Web metadata
+      id: meta-web
+      uses: docker/metadata-action@v5
+      with:
+        images: ${{ env.WEB_IMAGE }}
+        tags: |
+          type=sha,prefix={{branch}}-
+          type=raw,value=latest,enable={{is_default_branch}}
+
+    - name: Build and push Web image
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        file: ./config/docker/Dockerfile.web
+        push: true
+        tags: ${{ steps.meta-web.outputs.tags }}
+        labels: ${{ steps.meta-web.outputs.labels }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+
+  deploy:
+    needs: build-images
+    runs-on: ubuntu-latest
+    environment: production
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Azure Login
+      uses: azure/login@v2
+      with:
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+    - name: Get AKS credentials
+      run: |
+        az aks get-credentials \
+          --resource-group cloudtolocalllm-rg \
+          --name cloudtolocalllm-aks
+
+    - name: Update API deployment
+      run: |
+        COMMIT_SHA=$(echo ${{ github.sha }} | cut -c1-8)
+        kubectl set image deployment/api-backend \
+          api-backend=${{ env.API_IMAGE }}:main-$COMMIT_SHA \
+          -n cloudtolocalllm
+
+    - name: Update Web deployment
+      run: |
+        COMMIT_SHA=$(echo ${{ github.sha }} | cut -c1-8)
+        kubectl set image deployment/web \
+          web=${{ env.WEB_IMAGE }}:main-$COMMIT_SHA \
+          -n cloudtolocalllm
+
+    - name: Wait for rollout to complete
+      run: |
+        kubectl rollout status deployment/api-backend -n cloudtolocalllm --timeout=300s
+        kubectl rollout status deployment/web -n cloudtolocalllm --timeout=300s
+
+    - name: Verify deployment
+      run: |
+        kubectl get pods -n cloudtolocalllm
+        kubectl get services -n cloudtolocalllm
+        kubectl get ingress -n cloudtolocalllm
+
+    - name: Purge Cloudflare cache
+      run: |
+        if [ -z "${{ secrets.CLOUDFLARE_API_TOKEN }}" ]; then
+          echo "Cloudflare API token not set, skipping cache purge."
+          exit 0
+        fi
+
+        CF_API_TOKEN="${{ secrets.CLOUDFLARE_API_TOKEN }}"
+        CF_ZONE_ID=$(curl -s -X GET "https://api.cloudflare.com/client/v4/zones?name=cloudtolocalllm.online" \
+          -H "Authorization: Bearer $CF_API_TOKEN" \
+          -H "Content-Type: application/json" | jq -r '.result[0].id')
+
+        if [ "$CF_ZONE_ID" = "null" ] || [ -z "$CF_ZONE_ID" ]; then
+          echo "Unable to determine Cloudflare Zone ID, skipping purge."
+          exit 0
+        fi
+
+        FILES='["https://cloudtolocalllm.online/main.dart.js",
+                 "https://cloudtolocalllm.online/flutter.js",
+                 "https://cloudtolocalllm.online/auth0-bridge.js",
+                 "https://cloudtolocalllm.online/index.html",
+                 "https://app.cloudtolocalllm.online/main.dart.js",
+                 "https://app.cloudtolocalllm.online/flutter.js",
+                 "https://app.cloudtolocalllm.online/auth0-bridge.js",
+                 "https://app.cloudtolocalllm.online/index.html"]'
+
+        curl -s -X POST "https://api.cloudflare.com/client/v4/zones/$CF_ZONE_ID/purge_cache" \
+          -H "Authorization: Bearer $CF_API_TOKEN" \
+          -H "Content-Type: application/json" \
+          --data "{\"files\": $FILES}" | jq
+
+    - name: Configure Cloudflare DNS & SSL
+      run: |
+        CF_API_TOKEN="${{ secrets.CLOUDFLARE_API_TOKEN }}"
+        CF_ZONE_ID=$(curl -s -X GET "https://api.cloudflare.com/client/v4/zones?name=cloudtolocalllm.online" \
+          -H "Authorization: Bearer $CF_API_TOKEN" \
+          -H "Content-Type: application/json" | jq -r '.result[0].id')
+
+        # Get Load Balancer IP
+        LB_IP=$(kubectl get svc -n ingress-nginx ingress-nginx-controller \
+          -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+
+        echo "Load Balancer IP: $LB_IP"
+
+        # Configure SSL/TLS settings
+        curl -s -X PATCH "https://api.cloudflare.com/client/v4/zones/$CF_ZONE_ID/settings/ssl" \
+          -H "Authorization: Bearer $CF_API_TOKEN" \
+          -H "Content-Type: application/json" \
+          --data '{"value": "full"}'
+
+        # Enable Always Use HTTPS
+        curl -s -X PATCH "https://api.cloudflare.com/client/v4/zones/$CF_ZONE_ID/settings/always_use_https" \
+          -H "Authorization: Bearer $CF_API_TOKEN" \
+          -H "Content-Type: application/json" \
+          --data '{"value": "on"}'
+
+        echo "✅ Deployment complete!"
+        echo "Application available at:"
+        echo "  https://cloudtolocalllm.online"
+        echo "  https://app.cloudtolocalllm.online"
+        echo "  https://api.cloudtolocalllm.online"

@@ -2,24 +2,28 @@ name: Build Docker Images
 
 on:
   push:
-    branches: [ develop ]
+    branches: [ main, develop ]
     paths:
       - 'services/api-backend/Dockerfile*'
+      - 'services/api-backend/src/**'
       - 'config/docker/Dockerfile*'
       - 'Dockerfile*'
       - 'services/api-backend/package.json'
       - 'services/api-backend/package-lock.json'
       - 'pubspec.yaml'
+      - 'lib/**'
       - 'web/**'
   pull_request:
     branches: [ main, develop ]
     paths:
       - 'services/api-backend/Dockerfile*'
+      - 'services/api-backend/src/**'
       - 'config/docker/Dockerfile*'
       - 'Dockerfile*'
       - 'services/api-backend/package.json'
       - 'services/api-backend/package-lock.json'
       - 'pubspec.yaml'
+      - 'lib/**'
       - 'web/**'
 
 env:

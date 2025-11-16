@@ -48,21 +48,11 @@ jobs:
           --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
           --name ${{ env.AZURE_CLUSTER_NAME }}
 
-    - name: Build and push web image
-      run: |
-        # Login to Docker Hub
-        echo ${{ secrets.DOCKERHUB_TOKEN }} | docker login -u ${{ secrets.DOCKERHUB_USERNAME }} --password-stdin
-
-        # Build and push web image with commit hash tag
-        COMMIT_SHA=$(echo ${{ github.sha }} | cut -c1-8)
-        docker build --build-arg BUILD_SHA=$COMMIT_SHA -f ./config/docker/Dockerfile.web -t ${{ env.WEB_IMAGE }}:$COMMIT_SHA -t ${{ env.WEB_IMAGE }}:latest .
-        docker push ${{ env.WEB_IMAGE }}:$COMMIT_SHA
-        docker push ${{ env.WEB_IMAGE }}:latest
-
     - name: Update API deployment
       run: |
+        COMMIT_SHA=$(echo ${{ github.sha }} | cut -c1-8)
         kubectl set image deployment/api-backend \
-          api-backend=${{ env.API_IMAGE }}:latest \
+          api-backend=${{ env.API_IMAGE }}:$COMMIT_SHA \
           -n cloudtolocalllm
 
     - name: Update Web deployment
