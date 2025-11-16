@@ -1,0 +1,114 @@
+{
+  "mcpServers": {
+    "playwright": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@executeautomation/playwright-mcp-server"
+      ],
+      "env": {
+        "PLAYWRIGHT_HEADLESS": "true"
+      },
+      "disabled": false,
+      "autoApprove": [
+        "playwright_navigate",
+        "playwright_screenshot",
+        "playwright_click",
+        "playwright_fill",
+        "playwright_select",
+        "playwright_hover",
+        "playwright_evaluate",
+        "playwright_close",
+        "playwright_custom_user_agent",
+        "playwright_get_visible_text"
+      ]
+    },
+    "dockerhub": {
+      "command": "docker",
+      "args": [
+        "mcp",
+        "gateway",
+        "run",
+        "--servers",
+        "dockerhub"
+      ],
+      "env": {
+        "LOCALAPPDATA": "C:\\Users\\rightguy\\AppData\\Local",
+        "ProgramData": "C:\\ProgramData",
+        "ProgramFiles": "C:\\Program Files"
+      },
+      "disabled": false,
+      "autoApprove": [
+        "checkRepository",
+        "checkRepositoryTag",
+        "createRepository",
+        "dockerHardenedImages",
+        "getPersonalNamespace",
+        "getRepositoryInfo",
+        "getRepositoryTag",
+        "listAllNamespacesMemberOf",
+        "listNamespaces",
+        "listRepositoriesByNamespace",
+        "listRepositoryTags",
+        "search",
+        "updateRepositoryInfo"
+      ]
+    },
+    "context7": {
+      "command": "docker",
+      "args": [
+        "mcp",
+        "gateway",
+        "run",
+        "--servers",
+        "context7"
+      ],
+      "env": {
+        "LOCALAPPDATA": "C:\\Users\\rightguy\\AppData\\Local",
+        "ProgramData": "C:\\ProgramData",
+        "ProgramFiles": "C:\\Program Files"
+      },
+      "disabled": false,
+      "autoApprove": [
+        "get-library-docs",
+        "resolve-library-id"
+      ]
+    },
+    "grafana": {
+      "command": "docker",
+      "args": [
+        "mcp",
+        "gateway",
+        "run",
+        "--servers",
+        "grafana"
+      ],
+      "env": {
+        "GRAFANA_API_KEY": "${GRAFANA_API_KEY}",
+        "GRAFANA_URL": "https://grafana.cloudtolocalllm.online",
+        "LOCALAPPDATA": "C:\\Users\\rightguy\\AppData\\Local",
+        "ProgramData": "C:\\ProgramData",
+        "ProgramFiles": "C:\\Program Files"
+      },
+      "disabled": false,
+      "autoApprove": [
+        "query_datasource",
+        "list_dashboards",
+        "get_dashboard",
+        "create_dashboard",
+        "update_dashboard",
+        "delete_dashboard",
+        "list_datasources",
+        "get_datasource",
+        "create_datasource",
+        "update_datasource",
+        "delete_datasource",
+        "list_alerts",
+        "get_alert",
+        "create_alert",
+        "update_alert",
+        "delete_alert"
+      ]
+    }
+  }
+}

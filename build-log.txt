@@ -1,2 +1,0 @@
-Building Windows application...                                    47.8s
-ΓêÜ Built build\windows\x64\runner\Release\cloudtolocalllm.exe

@@ -72,9 +72,6 @@ dist/
 # Playwright
 test-results/
 
-# Kiro
-.kiro/
-
 # Archive
 archive/
 
