@@ -25,6 +25,7 @@ import '../screens/unified_settings_screen.dart';
 // Admin screens
 import '../screens/admin/admin_panel_screen.dart';
 import '../screens/admin/admin_data_flush_screen.dart';
+import '../screens/admin/admin_center_screen.dart';
 
 // Marketing screens (web-only)
 import '../screens/marketing/homepage_screen.dart';
@@ -417,6 +418,32 @@ class AppRouter {
             return const AdminDataFlushScreen();
           },
         ),
+
+        // Admin Center route (requires admin privileges)
+        // This is separate from AdminPanelScreen which handles system administration
+        // Admin Center focuses on user/payment management
+        GoRoute(
+          path: '/admin-center',
+          name: 'admin-center',
+          builder: (context, state) {
+            debugPrint("[Router] Building AdminCenterScreen");
+
+            // Check if user is authenticated
+            final authService = authServiceRef;
+            if (!authService.isAuthenticated.value) {
+              debugPrint(
+                  "[Router] User not authenticated, redirecting to login");
+              // Redirect to login will be handled by redirect logic
+              return const Scaffold(
+                body: Center(
+                  child: CircularProgressIndicator(),
+                ),
+              );
+            }
+
+            return const AdminCenterScreen();
+          },
+        ),
       ],
 
       // Redirect logic for authentication and domain-based routing
@@ -744,6 +771,39 @@ class AppRouter {
             '[Router] ===== REDIRECT DECISION: DESKTOP -> LOGIN =====',
           );
           return '/login';
+        }
+
+        // Check admin-center route access
+        final isAdminCenter = state.matchedLocation == '/admin-center';
+        if (isAdminCenter) {
+          // Require authentication for admin center
+          if (!isAuthenticated) {
+            debugPrint(
+              '[Router] DECISION: Redirecting to login - admin center requires authentication',
+            );
+            debugPrint('[Router] Current route: ${state.matchedLocation}');
+            debugPrint(
+              '[Router] Reason: Admin center requires authenticated user',
+            );
+            debugPrint(
+              '[Router] ===== REDIRECT DECISION: ADMIN CENTER -> LOGIN =====',
+            );
+            return '/login';
+          }
+
+          // Admin authorization check is handled by AdminCenterScreen itself
+          // This allows for proper error messaging and user experience
+          debugPrint(
+            '[Router] DECISION: Allowing access to admin center (authorization checked by screen)',
+          );
+          debugPrint('[Router] Current route: ${state.matchedLocation}');
+          debugPrint(
+            '[Router] Reason: User authenticated, admin authorization will be checked by screen',
+          );
+          debugPrint(
+            '[Router] ===== REDIRECT DECISION: ALLOW ADMIN CENTER =====',
+          );
+          return null;
         }
 
         // Allow access to protected routes

@@ -121,6 +121,52 @@ spec:
                 configMapKeyRef:
                   name: cloudtolocalllm-config
                   key: AUTH0_CLIENT_ID
+            
+            # Admin Center Configuration
+            - name: ADMIN_CENTER_ENABLED
+              valueFrom:
+                configMapKeyRef:
+                  name: cloudtolocalllm-config
+                  key: ADMIN_CENTER_ENABLED
+            - name: ADMIN_EMAIL
+              valueFrom:
+                configMapKeyRef:
+                  name: cloudtolocalllm-config
+                  key: ADMIN_EMAIL
+            
+            # Database Connection Pool
+            - name: DB_POOL_MAX
+              valueFrom:
+                configMapKeyRef:
+                  name: cloudtolocalllm-config
+                  key: DB_POOL_MAX
+            - name: DB_POOL_IDLE_TIMEOUT
+              valueFrom:
+                configMapKeyRef:
+                  name: cloudtolocalllm-config
+                  key: DB_POOL_IDLE_TIMEOUT
+            - name: DB_POOL_CONNECTION_TIMEOUT
+              valueFrom:
+                configMapKeyRef:
+                  name: cloudtolocalllm-config
+                  key: DB_POOL_CONNECTION_TIMEOUT
+            
+            # Stripe API Keys (use test or live based on NODE_ENV)
+            - name: STRIPE_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: cloudtolocalllm-secrets
+                  key: stripe-test-secret-key
+            - name: STRIPE_PUBLISHABLE_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: cloudtolocalllm-secrets
+                  key: stripe-test-publishable-key
+            - name: STRIPE_WEBHOOK_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: cloudtolocalllm-secrets
+                  key: stripe-test-webhook-secret
           
           securityContext:
             runAsNonRoot: true

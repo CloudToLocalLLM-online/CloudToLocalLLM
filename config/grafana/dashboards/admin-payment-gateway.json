@@ -1,0 +1,289 @@
+{
+  "dashboard": {
+    "title": "Admin Center - Payment Gateway Metrics",
+    "tags": ["admin-center", "payments", "stripe"],
+    "timezone": "browser",
+    "schemaVersion": 38,
+    "version": 1,
+    "refresh": "30s",
+    "time": {
+      "from": "now-1h",
+      "to": "now"
+    },
+    "panels": [
+      {
+        "id": 1,
+        "title": "Payment Success Rate",
+        "type": "gauge",
+        "gridPos": { "x": 0, "y": 0, "w": 8, "h": 8 },
+        "targets": [
+          {
+            "expr": "admin:payment_success_percentage:rate5m",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "showThresholdLabels": true,
+          "showThresholdMarkers": true,
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "value": 0, "color": "red" },
+              { "value": 90, "color": "yellow" },
+              { "value": 95, "color": "green" }
+            ]
+          }
+        }
+      },
+      {
+        "id": 2,
+        "title": "Payment Failure Rate",
+        "type": "stat",
+        "gridPos": { "x": 8, "y": 0, "w": 8, "h": 4 },
+        "targets": [
+          {
+            "expr": "admin:payment_failure_percentage:rate5m",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "graphMode": "area",
+          "colorMode": "value",
+          "unit": "percent",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "value": 0, "color": "green" },
+              { "value": 5, "color": "yellow" },
+              { "value": 10, "color": "red" }
+            ]
+          }
+        }
+      },
+      {
+        "id": 3,
+        "title": "Payment Attempts (Success vs Failed)",
+        "type": "graph",
+        "gridPos": { "x": 16, "y": 0, "w": 8, "h": 8 },
+        "targets": [
+          {
+            "expr": "sum(rate(admin_payment_attempts_total{status=\"success\"}[5m]))",
+            "legendFormat": "Successful",
+            "refId": "A"
+          },
+          {
+            "expr": "sum(rate(admin_payment_attempts_total{status=\"failed\"}[5m]))",
+            "legendFormat": "Failed",
+            "refId": "B"
+          }
+        ],
+        "yaxes": [
+          { "format": "ops", "label": "Payments per second" },
+          { "format": "short" }
+        ]
+      },
+      {
+        "id": 4,
+        "title": "Payment Attempts by Method",
+        "type": "graph",
+        "gridPos": { "x": 0, "y": 8, "w": 12, "h": 8 },
+        "targets": [
+          {
+            "expr": "sum by (payment_method) (rate(admin_payment_attempts_total[5m]))",
+            "legendFormat": "{{payment_method}}",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          { "format": "ops", "label": "Payments per second" },
+          { "format": "short" }
+        ]
+      },
+      {
+        "id": 5,
+        "title": "Refund Processing Rate",
+        "type": "graph",
+        "gridPos": { "x": 12, "y": 8, "w": 12, "h": 8 },
+        "targets": [
+          {
+            "expr": "sum(rate(admin_refund_attempts_total{status=\"success\"}[5m]))",
+            "legendFormat": "Successful Refunds",
+            "refId": "A"
+          },
+          {
+            "expr": "sum(rate(admin_refund_attempts_total{status=\"failed\"}[5m]))",
+            "legendFormat": "Failed Refunds",
+            "refId": "B"
+          }
+        ],
+        "yaxes": [
+          { "format": "ops", "label": "Refunds per second" },
+          { "format": "short" }
+        ]
+      },
+      {
+        "id": 6,
+        "title": "Refund Processing Time (P95)",
+        "type": "stat",
+        "gridPos": { "x": 0, "y": 16, "w": 6, "h": 4 },
+        "targets": [
+          {
+            "expr": "admin:refund_processing_time:p95",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "graphMode": "area",
+          "colorMode": "value",
+          "unit": "ms",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "value": 0, "color": "green" },
+              { "value": 3000, "color": "yellow" },
+              { "value": 5000, "color": "red" }
+            ]
+          }
+        }
+      },
+      {
+        "id": 7,
+        "title": "Average Refund Processing Time",
+        "type": "stat",
+        "gridPos": { "x": 6, "y": 16, "w": 6, "h": 4 },
+        "targets": [
+          {
+            "expr": "admin:refund_processing_time:avg",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "graphMode": "area",
+          "colorMode": "value",
+          "unit": "ms"
+        }
+      },
+      {
+        "id": 8,
+        "title": "Refunds by Reason",
+        "type": "piechart",
+        "gridPos": { "x": 12, "y": 16, "w": 12, "h": 8 },
+        "targets": [
+          {
+            "expr": "sum by (reason) (increase(admin_refund_attempts_total{status=\"success\"}[1h]))",
+            "legendFormat": "{{reason}}",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "legend": {
+            "displayMode": "table",
+            "placement": "right",
+            "values": ["value", "percent"]
+          }
+        }
+      },
+      {
+        "id": 9,
+        "title": "Stripe API Call Rate",
+        "type": "graph",
+        "gridPos": { "x": 0, "y": 24, "w": 12, "h": 8 },
+        "targets": [
+          {
+            "expr": "sum by (operation) (rate(admin_stripe_api_calls_total[5m]))",
+            "legendFormat": "{{operation}}",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          { "format": "ops", "label": "API Calls per second" },
+          { "format": "short" }
+        ]
+      },
+      {
+        "id": 10,
+        "title": "Stripe API Response Time",
+        "type": "graph",
+        "gridPos": { "x": 12, "y": 24, "w": 12, "h": 8 },
+        "targets": [
+          {
+            "expr": "admin:stripe_api_response_time:p95",
+            "legendFormat": "P95 - {{operation}}",
+            "refId": "A"
+          },
+          {
+            "expr": "admin:stripe_api_response_time:avg",
+            "legendFormat": "Average - {{operation}}",
+            "refId": "B"
+          }
+        ],
+        "yaxes": [
+          { "format": "ms", "label": "Response Time" },
+          { "format": "short" }
+        ]
+      },
+      {
+        "id": 11,
+        "title": "Stripe API Errors by Type",
+        "type": "graph",
+        "gridPos": { "x": 0, "y": 32, "w": 12, "h": 8 },
+        "targets": [
+          {
+            "expr": "sum by (error_type) (rate(admin_stripe_api_errors_total[5m]))",
+            "legendFormat": "{{error_type}}",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          { "format": "ops", "label": "Errors per second" },
+          { "format": "short" }
+        ]
+      },
+      {
+        "id": 12,
+        "title": "Stripe API Error Rate",
+        "type": "stat",
+        "gridPos": { "x": 12, "y": 32, "w": 12, "h": 8 },
+        "targets": [
+          {
+            "expr": "admin:stripe_api_error_percentage:rate5m",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "graphMode": "area",
+          "colorMode": "value",
+          "unit": "percent",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "value": 0, "color": "green" },
+              { "value": 5, "color": "yellow" },
+              { "value": 10, "color": "red" }
+            ]
+          }
+        }
+      },
+      {
+        "id": 13,
+        "title": "Subscription Operations",
+        "type": "graph",
+        "gridPos": { "x": 0, "y": 40, "w": 24, "h": 8 },
+        "targets": [
+          {
+            "expr": "sum by (operation) (rate(admin_subscription_operations_total[5m]))",
+            "legendFormat": "{{operation}}",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          { "format": "ops", "label": "Operations per second" },
+          { "format": "short" }
+        ]
+      }
+    ]
+  }
+}

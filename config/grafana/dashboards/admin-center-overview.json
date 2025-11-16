@@ -1,0 +1,283 @@
+{
+  "dashboard": {
+    "title": "Admin Center Overview",
+    "tags": ["admin-center", "overview"],
+    "timezone": "browser",
+    "schemaVersion": 38,
+    "version": 1,
+    "refresh": "30s",
+    "time": {
+      "from": "now-1h",
+      "to": "now"
+    },
+    "panels": [
+      {
+        "id": 1,
+        "title": "API Request Rate",
+        "type": "graph",
+        "gridPos": { "x": 0, "y": 0, "w": 12, "h": 8 },
+        "targets": [
+          {
+            "expr": "sum(admin:api_requests:rate5m)",
+            "legendFormat": "Total Requests/s",
+            "refId": "A"
+          },
+          {
+            "expr": "sum(admin:api_errors:rate5m)",
+            "legendFormat": "Errors/s",
+            "refId": "B"
+          }
+        ],
+        "yaxes": [
+          { "format": "reqps", "label": "Requests per second" },
+          { "format": "short" }
+        ]
+      },
+      {
+        "id": 2,
+        "title": "API Error Rate",
+        "type": "stat",
+        "gridPos": { "x": 12, "y": 0, "w": 6, "h": 4 },
+        "targets": [
+          {
+            "expr": "admin:api_error_percentage:rate5m",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "graphMode": "area",
+          "colorMode": "value",
+          "unit": "percent",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "value": 0, "color": "green" },
+              { "value": 2, "color": "yellow" },
+              { "value": 5, "color": "red" }
+            ]
+          }
+        }
+      },
+      {
+        "id": 3,
+        "title": "Active Admin Sessions",
+        "type": "stat",
+        "gridPos": { "x": 18, "y": 0, "w": 6, "h": 4 },
+        "targets": [
+          {
+            "expr": "admin_active_sessions",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "graphMode": "area",
+          "colorMode": "value",
+          "unit": "short"
+        }
+      },
+      {
+        "id": 4,
+        "title": "API Response Time (P95)",
+        "type": "graph",
+        "gridPos": { "x": 12, "y": 4, "w": 12, "h": 8 },
+        "targets": [
+          {
+            "expr": "admin:api_response_time:p95",
+            "legendFormat": "{{endpoint}}",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          { "format": "ms", "label": "Response Time" },
+          { "format": "short" }
+        ],
+        "alert": {
+          "conditions": [
+            {
+              "evaluator": { "params": [2000], "type": "gt" },
+              "operator": { "type": "and" },
+              "query": { "params": ["A", "5m", "now"] },
+              "reducer": { "params": [], "type": "avg" },
+              "type": "query"
+            }
+          ],
+          "executionErrorState": "alerting",
+          "frequency": "1m",
+          "handler": 1,
+          "name": "API Response Time alert",
+          "noDataState": "no_data",
+          "notifications": []
+        }
+      },
+      {
+        "id": 5,
+        "title": "Payment Success Rate",
+        "type": "gauge",
+        "gridPos": { "x": 0, "y": 8, "w": 6, "h": 6 },
+        "targets": [
+          {
+            "expr": "admin_payment_success_rate * 100",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "showThresholdLabels": true,
+          "showThresholdMarkers": true,
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "value": 0, "color": "red" },
+              { "value": 90, "color": "yellow" },
+              { "value": 95, "color": "green" }
+            ]
+          }
+        }
+      },
+      {
+        "id": 6,
+        "title": "Database Connection Pool",
+        "type": "graph",
+        "gridPos": { "x": 6, "y": 8, "w": 12, "h": 6 },
+        "targets": [
+          {
+            "expr": "admin_db_pool_size",
+            "legendFormat": "Pool Size",
+            "refId": "A"
+          },
+          {
+            "expr": "admin_db_pool_idle_connections",
+            "legendFormat": "Idle Connections",
+            "refId": "B"
+          },
+          {
+            "expr": "admin_db_pool_waiting_requests",
+            "legendFormat": "Waiting Requests",
+            "refId": "C"
+          }
+        ],
+        "yaxes": [
+          { "format": "short", "label": "Connections" },
+          { "format": "short" }
+        ]
+      },
+      {
+        "id": 7,
+        "title": "Stripe API Error Rate",
+        "type": "stat",
+        "gridPos": { "x": 18, "y": 8, "w": 6, "h": 6 },
+        "targets": [
+          {
+            "expr": "admin:stripe_api_error_percentage:rate5m",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "graphMode": "area",
+          "colorMode": "value",
+          "unit": "percent",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "value": 0, "color": "green" },
+              { "value": 5, "color": "yellow" },
+              { "value": 10, "color": "red" }
+            ]
+          }
+        }
+      },
+      {
+        "id": 8,
+        "title": "Top API Endpoints by Request Count",
+        "type": "table",
+        "gridPos": { "x": 0, "y": 14, "w": 12, "h": 8 },
+        "targets": [
+          {
+            "expr": "topk(10, sum by (endpoint, method) (rate(admin_api_requests_total[5m])))",
+            "format": "table",
+            "instant": true,
+            "refId": "A"
+          }
+        ],
+        "transformations": [
+          {
+            "id": "organize",
+            "options": {
+              "excludeByName": { "Time": true },
+              "indexByName": {},
+              "renameByName": {
+                "endpoint": "Endpoint",
+                "method": "Method",
+                "Value": "Requests/s"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "id": 9,
+        "title": "Slowest API Endpoints (P95)",
+        "type": "table",
+        "gridPos": { "x": 12, "y": 14, "w": 12, "h": 8 },
+        "targets": [
+          {
+            "expr": "topk(10, admin:api_response_time:p95)",
+            "format": "table",
+            "instant": true,
+            "refId": "A"
+          }
+        ],
+        "transformations": [
+          {
+            "id": "organize",
+            "options": {
+              "excludeByName": { "Time": true },
+              "indexByName": {},
+              "renameByName": {
+                "endpoint": "Endpoint",
+                "method": "Method",
+                "Value": "P95 Response Time (ms)"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "id": 10,
+        "title": "Admin Actions by Type",
+        "type": "graph",
+        "gridPos": { "x": 0, "y": 22, "w": 12, "h": 8 },
+        "targets": [
+          {
+            "expr": "sum by (action) (rate(admin_actions_total[5m]))",
+            "legendFormat": "{{action}}",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          { "format": "ops", "label": "Actions per second" },
+          { "format": "short" }
+        ]
+      },
+      {
+        "id": 11,
+        "title": "Authentication Attempts",
+        "type": "graph",
+        "gridPos": { "x": 12, "y": 22, "w": 12, "h": 8 },
+        "targets": [
+          {
+            "expr": "sum by (result) (rate(admin_auth_attempts_total[5m]))",
+            "legendFormat": "{{result}}",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          { "format": "ops", "label": "Attempts per second" },
+          { "format": "short" }
+        ]
+      }
+    ]
+  }
+}

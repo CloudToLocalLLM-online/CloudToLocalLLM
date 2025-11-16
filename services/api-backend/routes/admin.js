@@ -15,42 +15,34 @@
  */
 
 import express from 'express';
-import rateLimit from 'express-rate-limit';
 import { authenticateJWT, requireAdmin } from '../middleware/auth.js';
 import { adminDataFlushService } from '../admin-data-flush-service.js';
 import logger from '../logger.js';
 
+// Import admin rate limiters
+import {
+  adminRateLimiter,
+  adminCriticalLimiter,
+  adminReadOnlyLimiter,
+} from '../middleware/admin-rate-limiter.js';
+
+// Import admin sub-routes
+import adminUsersRoutes from './admin/users.js';
+import adminPaymentsRoutes from './admin/payments.js';
+import adminSubscriptionsRoutes from './admin/subscriptions.js';
+import adminReportsRoutes from './admin/reports.js';
+import adminAuditRoutes from './admin/audit.js';
+import adminAdminsRoutes from './admin/admins.js';
+import adminDashboardRoutes from './admin/dashboard.js';
+
 const router = express.Router();
-
-// Rate limiting for admin operations
-const adminRateLimit = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 10, // Limit each admin to 10 requests per windowMs
-  message: {
-    error: 'Too many admin requests',
-    code: 'ADMIN_RATE_LIMIT_EXCEEDED',
-  },
-  standardHeaders: true,
-  legacyHeaders: false,
-});
-
-// Strict rate limiting for flush operations
-const flushRateLimit = rateLimit({
-  windowMs: 60 * 60 * 1000, // 1 hour
-  max: 3, // Maximum 3 flush operations per hour
-  message: {
-    error: 'Flush operation rate limit exceeded',
-    code: 'FLUSH_RATE_LIMIT_EXCEEDED',
-  },
-  standardHeaders: true,
-  legacyHeaders: false,
-});
 
 /**
  * GET /api/admin/system/stats
  * Get system statistics for admin dashboard
+ * Rate limit: Read-only (200 req/min)
  */
-router.get('/system/stats', authenticateJWT, requireAdmin, adminRateLimit, async(req, res) => {
+router.get('/system/stats', authenticateJWT, requireAdmin, adminReadOnlyLimiter, async(req, res) => {
   try {
     logger.info('� [AdminAPI] System statistics requested', {
       adminUserId: req.user.sub,
@@ -82,8 +74,9 @@ router.get('/system/stats', authenticateJWT, requireAdmin, adminRateLimit, async
 /**
  * POST /api/admin/flush/prepare
  * Prepare data flush operation and generate confirmation token
+ * Rate limit: Default (100 req/min)
  */
-router.post('/flush/prepare', authenticateJWT, requireAdmin, adminRateLimit, async(req, res) => {
+router.post('/flush/prepare', authenticateJWT, requireAdmin, adminRateLimiter, async(req, res) => {
   try {
     const { targetUserId, scope } = req.body;
     const adminUserId = req.user.sub;
@@ -148,8 +141,9 @@ router.post('/flush/prepare', authenticateJWT, requireAdmin, adminRateLimit, asy
 /**
  * POST /api/admin/flush/execute
  * Execute data flush operation with confirmation token
+ * Rate limit: Critical (5 req/hour)
  */
-router.post('/flush/execute', authenticateJWT, requireAdmin, flushRateLimit, async(req, res) => {
+router.post('/flush/execute', authenticateJWT, requireAdmin, adminCriticalLimiter, async(req, res) => {
   try {
     const { confirmationToken, targetUserId, options = {} } = req.body;
     const adminUserId = req.user.sub;
@@ -213,8 +207,9 @@ router.post('/flush/execute', authenticateJWT, requireAdmin, flushRateLimit, asy
 /**
  * GET /api/admin/flush/status/:operationId
  * Get status of a flush operation
+ * Rate limit: Read-only (200 req/min)
  */
-router.get('/flush/status/:operationId', authenticateJWT, requireAdmin, adminRateLimit, async(req, res) => {
+router.get('/flush/status/:operationId', authenticateJWT, requireAdmin, adminReadOnlyLimiter, async(req, res) => {
   try {
     const { operationId } = req.params;
     const adminUserId = req.user.sub;
@@ -257,8 +252,9 @@ router.get('/flush/status/:operationId', authenticateJWT, requireAdmin, adminRat
 /**
  * GET /api/admin/flush/history
  * Get flush operation history for audit purposes
+ * Rate limit: Read-only (200 req/min)
  */
-router.get('/flush/history', authenticateJWT, requireAdmin, adminRateLimit, async(req, res) => {
+router.get('/flush/history', authenticateJWT, requireAdmin, adminReadOnlyLimiter, async(req, res) => {
   try {
     const { limit = 50 } = req.query;
     const adminUserId = req.user.sub;
@@ -294,8 +290,9 @@ router.get('/flush/history', authenticateJWT, requireAdmin, adminRateLimit, asyn
 /**
  * POST /api/admin/containers/cleanup
  * Emergency cleanup of orphaned containers and networks
+ * Rate limit: Default (100 req/min)
  */
-router.post('/containers/cleanup', authenticateJWT, requireAdmin, adminRateLimit, async(req, res) => {
+router.post('/containers/cleanup', authenticateJWT, requireAdmin, adminRateLimiter, async(req, res) => {
   try {
     const adminUserId = req.user.sub;
 
@@ -349,5 +346,14 @@ router.get('/health', authenticateJWT, requireAdmin, (req, res) => {
     adminUserId: req.user.sub,
   });
 });
+
+// Mount admin sub-routes
+router.use('/users', adminUsersRoutes);
+router.use('/payments', adminPaymentsRoutes);
+router.use('/subscriptions', adminSubscriptionsRoutes);
+router.use('/reports', adminReportsRoutes);
+router.use('/audit', adminAuditRoutes);
+router.use('/admins', adminAdminsRoutes);
+router.use('/dashboard', adminDashboardRoutes);
 
 export default router;

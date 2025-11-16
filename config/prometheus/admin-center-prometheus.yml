@@ -1,0 +1,50 @@
+# Prometheus Configuration for Admin Center Monitoring
+# 
+# This configuration scrapes metrics from the Admin Center API backend
+# and defines recording rules for aggregated metrics.
+#
+# Requirements: Task 31.2, Requirement 12
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    cluster: 'cloudtolocalllm'
+    environment: 'production'
+
+# Scrape configurations
+scrape_configs:
+  # Admin Center API Backend
+  - job_name: 'admin-api'
+    scrape_interval: 10s
+    metrics_path: '/metrics'
+    static_configs:
+      - targets: ['admin-api-backend:3000']
+        labels:
+          service: 'admin-api'
+          component: 'backend'
+    
+  # Admin Center API Backend (Kubernetes service discovery)
+  - job_name: 'admin-api-k8s'
+    kubernetes_sd_configs:
+      - role: pod
+        namespaces:
+          names:
+            - cloudtolocalllm
+    relabel_configs:
+      - source_labels: [__meta_kubernetes_pod_label_app]
+        action: keep
+        regex: admin-api-backend
+      - source_labels: [__meta_kubernetes_pod_name]
+        target_label: pod
+      - source_labels: [__meta_kubernetes_namespace]
+        target_label: namespace
+      - source_labels: [__address__]
+        target_label: __address__
+        regex: ([^:]+)(?::\d+)?
+        replacement: $1:3000
+
+# Recording rules for aggregated metrics
+rule_files:
+  - '/etc/prometheus/admin-center-recording-rules.yml'
+  - '/etc/prometheus/admin-center-alerts.yml'

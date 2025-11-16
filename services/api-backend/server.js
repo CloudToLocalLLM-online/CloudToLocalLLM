@@ -10,8 +10,11 @@ import { StreamingProxyManager } from './streaming-proxy-manager.js';
 import { auth } from 'express-oauth2-jwt-bearer';
 
 import adminRoutes from './routes/admin.js';
+import adminUserRoutes from './routes/admin/users.js';
+import adminSubscriptionRoutes from './routes/admin/subscriptions.js';
 import sessionRoutes from './routes/sessions.js';
 import clientLogRoutes from './routes/client-logs.js';
+import webhookRoutes from './routes/webhooks.js';
 // SSH tunnel integration
 import { SSHProxy } from './tunnel/ssh-proxy.js';
 import { SSHAuthHandler } from './tunnel/ssh-auth-handler.js';
@@ -19,6 +22,9 @@ import { AuthService } from './auth/auth-service.js';
 import { DatabaseMigrator } from './database/migrate.js';
 import { DatabaseMigratorPG } from './database/migrate-pg.js';
 import { AuthDatabaseMigratorPG } from './database/migrate-auth-pg.js';
+import { initializePool } from './database/db-pool.js';
+import { startMonitoring, stopMonitoring } from './database/pool-monitor.js';
+import dbHealthRoutes from './routes/db-health.js';
 import { createTunnelRoutes } from './tunnel/tunnel-routes.js';
 import { createMonitoringRoutes } from './routes/monitoring.js';
 import { createConversationRoutes } from './routes/conversations.js';
@@ -154,6 +160,10 @@ const createConditionalRateLimiter = () => {
 
 app.use(createConditionalRateLimiter());
 
+// Webhook routes MUST be mounted before body parsing middleware
+// Stripe requires raw body for signature verification
+app.use('/api/webhooks', webhookRoutes);
+
 // Body parsing middleware
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
@@ -252,8 +262,13 @@ app.use('/api/auth/sessions', sessionRoutes);
 // Client log ingestion
 app.use('/api/client-logs', clientLogRoutes);
 
+// Database health check routes
+app.use('/api/db', dbHealthRoutes);
+
 // Administrative routes
 app.use('/api/admin', adminRoutes);
+app.use('/api/admin/users', adminUserRoutes);
+app.use('/api/admin', adminSubscriptionRoutes);
 
 // LLM Tunnel Cloud Proxy Endpoints (support both /api/ollama and /ollama)
 const handleOllamaProxyRequest = async(req, res) => {
@@ -688,6 +703,11 @@ let authDbMigrator = null;
 async function initializeTunnelSystem() {
   logger.info('Starting initialization of tunnel system...');
   try {
+    // Initialize centralized database connection pool (Requirement 17)
+    logger.info('Initializing centralized database connection pool...');
+    initializePool();
+    logger.info('Database connection pool initialized successfully');
+
     // Initialize application database
     const dbType = process.env.DB_TYPE || 'sqlite';
     dbMigrator = dbType === 'postgresql' ? new DatabaseMigratorPG() : new DatabaseMigrator();
@@ -700,6 +720,11 @@ async function initializeTunnelSystem() {
     if (!validation.allValid) {
       throw new Error('Database schema validation failed');
     }
+
+    // Start database pool monitoring (Requirement 17)
+    logger.info('Starting database pool monitoring...');
+    startMonitoring();
+    logger.info('Database pool monitoring started successfully');
 
     // Initialize authentication database (separate instance)
     if (process.env.AUTH_DB_HOST) {
@@ -749,6 +774,11 @@ async function gracefulShutdown() {
   logger.info('Received shutdown signal, starting graceful shutdown...');
 
   try {
+    // Stop database pool monitoring (Requirement 17)
+    logger.info('Stopping database pool monitoring...');
+    stopMonitoring();
+    logger.info('Database pool monitoring stopped');
+
     if (sshProxy) {
       await sshProxy.stop();
     }

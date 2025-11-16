@@ -339,6 +339,40 @@ ollama pull mistral:7b
 - `model_switch` - Switch AI model in real-time
 - `status_update` - Receive status updates
 
+### Admin Center API (Backend)
+
+The Admin Center provides secure administrative endpoints for managing users, subscriptions, and payments. **Note: Frontend UI is under development.**
+
+**Available Endpoints:**
+
+- `GET /api/admin/users` - List users with pagination and filtering
+- `GET /api/admin/users/:userId` - Get detailed user profile
+- `PATCH /api/admin/users/:userId` - Update user subscription tier
+- `POST /api/admin/users/:userId/suspend` - Suspend user account
+- `POST /api/admin/users/:userId/reactivate` - Reactivate suspended account
+
+**Features:**
+- Role-based access control (Super Admin, Support Admin, Finance Admin)
+- Comprehensive audit logging for all administrative actions
+- Automatic prorated charge calculation for subscription changes
+- Session invalidation on account suspension
+- PostgreSQL database with migration system
+
+**Documentation:**
+- [Admin API Reference](docs/API/ADMIN_API.md)
+- [Admin Center Requirements](.kiro/specs/admin-center/requirements.md)
+- [Admin Center Design](.kiro/specs/admin-center/design.md)
+- [Database Setup Guide](services/api-backend/database/QUICKSTART.md)
+
+**Quick Setup:**
+```bash
+# Apply database migration
+node services/api-backend/database/migrations/run-migration.js up 001
+
+# Apply seed data (development only)
+node services/api-backend/database/seeds/run-seed.js apply 001
+```
+
 ## Contributing
 
 We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.

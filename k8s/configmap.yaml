@@ -25,4 +25,13 @@ data:
   AUTH0_DOMAIN: "dev-v2f2p008x3dr74ww.us.auth0.com"
   AUTH0_AUDIENCE: "https://api.cloudtolocalllm.online"
   AUTH0_CLIENT_ID: "FuXPnevXpp311CdYHGsbNZe9t3D8Ts7A"
+  
+  # Admin Center Configuration
+  ADMIN_CENTER_ENABLED: "true"
+  ADMIN_EMAIL: "cmaltais@cloudtolocalllm.online"
+  
+  # Database Connection Pool
+  DB_POOL_MAX: "50"
+  DB_POOL_IDLE_TIMEOUT: "600000"
+  DB_POOL_CONNECTION_TIMEOUT: "30000"
 

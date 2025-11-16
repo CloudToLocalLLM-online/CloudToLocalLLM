@@ -1,0 +1,270 @@
+{
+  "dashboard": {
+    "title": "Admin Center - User Management Metrics",
+    "tags": ["admin-center", "users", "management"],
+    "timezone": "browser",
+    "schemaVersion": 38,
+    "version": 1,
+    "refresh": "30s",
+    "time": {
+      "from": "now-1h",
+      "to": "now"
+    },
+    "panels": [
+      {
+        "id": 1,
+        "title": "User Management API Requests",
+        "type": "graph",
+        "gridPos": { "x": 0, "y": 0, "w": 12, "h": 8 },
+        "targets": [
+          {
+            "expr": "sum by (endpoint) (rate(admin_api_requests_total{endpoint=~\"/api/admin/users.*\"}[5m]))",
+            "legendFormat": "{{endpoint}}",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          { "format": "reqps", "label": "Requests per second" },
+          { "format": "short" }
+        ]
+      },
+      {
+        "id": 2,
+        "title": "User Management Response Time (P95)",
+        "type": "graph",
+        "gridPos": { "x": 12, "y": 0, "w": 12, "h": 8 },
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, sum by (endpoint, le) (rate(admin_api_response_time_ms_bucket{endpoint=~\"/api/admin/users.*\"}[5m])))",
+            "legendFormat": "{{endpoint}}",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          { "format": "ms", "label": "Response Time" },
+          { "format": "short" }
+        ]
+      },
+      {
+        "id": 3,
+        "title": "Admin Actions by Type",
+        "type": "graph",
+        "gridPos": { "x": 0, "y": 8, "w": 12, "h": 8 },
+        "targets": [
+          {
+            "expr": "sum by (action) (rate(admin_actions_total[5m]))",
+            "legendFormat": "{{action}}",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          { "format": "ops", "label": "Actions per second" },
+          { "format": "short" }
+        ]
+      },
+      {
+        "id": 4,
+        "title": "Admin Actions by Role",
+        "type": "piechart",
+        "gridPos": { "x": 12, "y": 8, "w": 12, "h": 8 },
+        "targets": [
+          {
+            "expr": "sum by (admin_role) (increase(admin_actions_total[1h]))",
+            "legendFormat": "{{admin_role}}",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "legend": {
+            "displayMode": "table",
+            "placement": "right",
+            "values": ["value", "percent"]
+          }
+        }
+      },
+      {
+        "id": 5,
+        "title": "User Suspensions",
+        "type": "stat",
+        "gridPos": { "x": 0, "y": 16, "w": 6, "h": 4 },
+        "targets": [
+          {
+            "expr": "sum(increase(admin_actions_total{action=\"user_suspend\"}[1h]))",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "graphMode": "area",
+          "colorMode": "value",
+          "unit": "short"
+        }
+      },
+      {
+        "id": 6,
+        "title": "User Reactivations",
+        "type": "stat",
+        "gridPos": { "x": 6, "y": 16, "w": 6, "h": 4 },
+        "targets": [
+          {
+            "expr": "sum(increase(admin_actions_total{action=\"user_reactivate\"}[1h]))",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "graphMode": "area",
+          "colorMode": "value",
+          "unit": "short"
+        }
+      },
+      {
+        "id": 7,
+        "title": "Subscription Changes",
+        "type": "stat",
+        "gridPos": { "x": 12, "y": 16, "w": 6, "h": 4 },
+        "targets": [
+          {
+            "expr": "sum(increase(admin_actions_total{action=\"subscription_change\"}[1h]))",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "graphMode": "area",
+          "colorMode": "value",
+          "unit": "short"
+        }
+      },
+      {
+        "id": 8,
+        "title": "Refunds Processed",
+        "type": "stat",
+        "gridPos": { "x": 18, "y": 16, "w": 6, "h": 4 },
+        "targets": [
+          {
+            "expr": "sum(increase(admin_actions_total{action=\"refund_process\"}[1h]))",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "graphMode": "area",
+          "colorMode": "value",
+          "unit": "short"
+        }
+      },
+      {
+        "id": 9,
+        "title": "Database Query Performance (User Tables)",
+        "type": "graph",
+        "gridPos": { "x": 0, "y": 20, "w": 12, "h": 8 },
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, sum by (table, le) (rate(admin_database_query_time_ms_bucket{table=~\"users|subscriptions|payment_transactions\"}[5m])))",
+            "legendFormat": "P95 - {{table}}",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          { "format": "ms", "label": "Query Time" },
+          { "format": "short" }
+        ]
+      },
+      {
+        "id": 10,
+        "title": "Database Query Rate (User Tables)",
+        "type": "graph",
+        "gridPos": { "x": 12, "y": 20, "w": 12, "h": 8 },
+        "targets": [
+          {
+            "expr": "sum by (table, operation) (rate(admin_database_queries_total{table=~\"users|subscriptions|payment_transactions\"}[5m]))",
+            "legendFormat": "{{operation}} - {{table}}",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          { "format": "ops", "label": "Queries per second" },
+          { "format": "short" }
+        ]
+      },
+      {
+        "id": 11,
+        "title": "Authentication Success Rate",
+        "type": "gauge",
+        "gridPos": { "x": 0, "y": 28, "w": 8, "h": 8 },
+        "targets": [
+          {
+            "expr": "(sum(rate(admin_auth_attempts_total{result=\"success\"}[5m])) / sum(rate(admin_auth_attempts_total[5m]))) * 100",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "showThresholdLabels": true,
+          "showThresholdMarkers": true,
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "value": 0, "color": "red" },
+              { "value": 80, "color": "yellow" },
+              { "value": 95, "color": "green" }
+            ]
+          }
+        }
+      },
+      {
+        "id": 12,
+        "title": "Authentication Attempts",
+        "type": "graph",
+        "gridPos": { "x": 8, "y": 28, "w": 16, "h": 8 },
+        "targets": [
+          {
+            "expr": "sum by (result) (rate(admin_auth_attempts_total[5m]))",
+            "legendFormat": "{{result}}",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          { "format": "ops", "label": "Attempts per second" },
+          { "format": "short" }
+        ]
+      },
+      {
+        "id": 13,
+        "title": "Failed Authentication Reasons",
+        "type": "piechart",
+        "gridPos": { "x": 0, "y": 36, "w": 12, "h": 8 },
+        "targets": [
+          {
+            "expr": "sum by (reason) (increase(admin_auth_attempts_total{result=\"failed\"}[1h]))",
+            "legendFormat": "{{reason}}",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "legend": {
+            "displayMode": "table",
+            "placement": "right",
+            "values": ["value", "percent"]
+          }
+        }
+      },
+      {
+        "id": 14,
+        "title": "Active Admin Sessions",
+        "type": "stat",
+        "gridPos": { "x": 12, "y": 36, "w": 12, "h": 8 },
+        "targets": [
+          {
+            "expr": "admin_active_sessions",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "graphMode": "area",
+          "colorMode": "value",
+          "unit": "short"
+        }
+      }
+    ]
+  }
+}

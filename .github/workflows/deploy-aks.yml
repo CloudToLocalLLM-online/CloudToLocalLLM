@@ -120,6 +120,25 @@ jobs:
           web=${{ env.WEB_IMAGE }}:$COMMIT_SHA \
           -n cloudtolocalllm
 
+    - name: Run Admin Center database migrations
+      run: |
+        echo "Running Admin Center database migrations..."
+        
+        # Delete existing migration job if it exists
+        kubectl delete job admin-center-migration -n cloudtolocalllm --ignore-not-found=true
+        
+        # Apply migration job
+        kubectl apply -f k8s/admin-center-migration-job.yaml
+        
+        # Wait for migration to complete (timeout 5 minutes)
+        kubectl wait --for=condition=complete --timeout=300s job/admin-center-migration -n cloudtolocalllm || {
+          echo "Migration failed or timed out"
+          kubectl logs job/admin-center-migration -n cloudtolocalllm
+          exit 1
+        }
+        
+        echo "✅ Admin Center migrations completed successfully"
+
     - name: Purge Cloudflare cache
       run: |
         if [ -z "${{ secrets.CLOUDFLARE_API_TOKEN }}" ]; then

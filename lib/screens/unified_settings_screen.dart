@@ -1,6 +1,8 @@
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import '../services/auth_service.dart';
+import '../di/locator.dart' as di;
 
 /// Lightweight placeholder for the unified settings experience while the
 /// redesigned implementation is being completed.
@@ -9,8 +11,35 @@ class UnifiedSettingsScreen extends StatelessWidget {
 
   const UnifiedSettingsScreen({super.key, this.initialSection});
 
+  /// Check if the current user has admin privileges
+  bool _isAdminUser() {
+    try {
+      final authService = di.serviceLocator.get<AuthService>();
+      final userEmail = authService.currentUser?.email;
+
+      // Check if user email matches the authorized admin email
+      return userEmail == 'cmaltais@cloudtolocalllm.online';
+    } catch (e) {
+      debugPrint('[UnifiedSettingsScreen] Error checking admin status: $e');
+      return false;
+    }
+  }
+
+  /// Open the Admin Center in a new tab
+  void _openAdminCenter(BuildContext context) {
+    if (kIsWeb) {
+      // For web, open in new tab using go_router
+      context.go('/admin-center');
+    } else {
+      // For desktop, navigate to admin center route
+      context.push('/admin-center');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final isAdmin = _isAdminUser();
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Settings'),
@@ -46,6 +75,27 @@ class UnifiedSettingsScreen extends StatelessWidget {
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 24),
+              // Admin Center button (only visible to admin users)
+              if (isAdmin) ...[
+                Card(
+                  elevation: 2,
+                  child: ListTile(
+                    leading: const Icon(
+                      Icons.admin_panel_settings,
+                      color: Color(0xFF6e8efb),
+                    ),
+                    title: const Text(
+                      'Admin Center',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    subtitle:
+                        const Text('Manage users, payments, and subscriptions'),
+                    trailing: const Icon(Icons.open_in_new),
+                    onTap: () => _openAdminCenter(context),
+                  ),
+                ),
+                const SizedBox(height: 16),
+              ],
               if (kIsWeb)
                 FilledButton.icon(
                   onPressed: () => context.go('/'),

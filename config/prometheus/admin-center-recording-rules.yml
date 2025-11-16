@@ -1,0 +1,200 @@
+# Prometheus Recording Rules for Admin Center
+#
+# Pre-computes frequently used queries and aggregations
+# to improve dashboard performance and reduce query load.
+#
+# Requirements: Task 31.2, Requirement 12
+
+groups:
+  - name: admin_api_aggregations
+    interval: 30s
+    rules:
+      # API request rate (requests per second)
+      - record: admin:api_requests:rate5m
+        expr: rate(admin_api_requests_total[5m])
+      
+      # API error rate (errors per second)
+      - record: admin:api_errors:rate5m
+        expr: rate(admin_api_errors_total[5m])
+      
+      # API error percentage
+      - record: admin:api_error_percentage:rate5m
+        expr: |
+          (
+            sum(rate(admin_api_errors_total[5m]))
+            /
+            sum(rate(admin_api_requests_total[5m]))
+          ) * 100
+      
+      # API P95 response time by endpoint
+      - record: admin:api_response_time:p95
+        expr: histogram_quantile(0.95, rate(admin_api_response_time_ms_bucket[5m]))
+      
+      # API P99 response time by endpoint
+      - record: admin:api_response_time:p99
+        expr: histogram_quantile(0.99, rate(admin_api_response_time_ms_bucket[5m]))
+      
+      # Average API response time
+      - record: admin:api_response_time:avg
+        expr: |
+          rate(admin_api_response_time_ms_sum[5m])
+          /
+          rate(admin_api_response_time_ms_count[5m])
+
+  - name: admin_payment_aggregations
+    interval: 30s
+    rules:
+      # Payment success rate
+      - record: admin:payment_success:rate5m
+        expr: rate(admin_payment_attempts_total{status="success"}[5m])
+      
+      # Payment failure rate
+      - record: admin:payment_failure:rate5m
+        expr: rate(admin_payment_attempts_total{status="failed"}[5m])
+      
+      # Payment failure percentage
+      - record: admin:payment_failure_percentage:rate5m
+        expr: |
+          (
+            sum(rate(admin_payment_attempts_total{status="failed"}[5m]))
+            /
+            sum(rate(admin_payment_attempts_total[5m]))
+          ) * 100
+      
+      # Payment success percentage
+      - record: admin:payment_success_percentage:rate5m
+        expr: |
+          (
+            sum(rate(admin_payment_attempts_total{status="success"}[5m]))
+            /
+            sum(rate(admin_payment_attempts_total[5m]))
+          ) * 100
+
+  - name: admin_refund_aggregations
+    interval: 30s
+    rules:
+      # Refund processing rate
+      - record: admin:refund_attempts:rate5m
+        expr: rate(admin_refund_attempts_total[5m])
+      
+      # Average refund processing time
+      - record: admin:refund_processing_time:avg
+        expr: |
+          rate(admin_refund_processing_time_ms_sum[5m])
+          /
+          rate(admin_refund_processing_time_ms_count[5m])
+      
+      # P95 refund processing time
+      - record: admin:refund_processing_time:p95
+        expr: histogram_quantile(0.95, rate(admin_refund_processing_time_ms_bucket[5m]))
+      
+      # Refund success rate
+      - record: admin:refund_success:rate5m
+        expr: rate(admin_refund_attempts_total{status="success"}[5m])
+      
+      # Refund failure rate
+      - record: admin:refund_failure:rate5m
+        expr: rate(admin_refund_attempts_total{status="failed"}[5m])
+
+  - name: admin_database_aggregations
+    interval: 30s
+    rules:
+      # Database query rate
+      - record: admin:db_queries:rate5m
+        expr: rate(admin_database_queries_total[5m])
+      
+      # Average database query time
+      - record: admin:db_query_time:avg
+        expr: |
+          rate(admin_database_query_time_ms_sum[5m])
+          /
+          rate(admin_database_query_time_ms_count[5m])
+      
+      # P95 database query time
+      - record: admin:db_query_time:p95
+        expr: histogram_quantile(0.95, rate(admin_database_query_time_ms_bucket[5m]))
+      
+      # P99 database query time
+      - record: admin:db_query_time:p99
+        expr: histogram_quantile(0.99, rate(admin_database_query_time_ms_bucket[5m]))
+      
+      # Slow database queries (>100ms)
+      - record: admin:db_slow_queries:rate5m
+        expr: |
+          sum(rate(admin_database_query_time_ms_bucket{le="100"}[5m]))
+          -
+          sum(rate(admin_database_query_time_ms_bucket{le="50"}[5m]))
+
+  - name: admin_stripe_aggregations
+    interval: 30s
+    rules:
+      # Stripe API call rate
+      - record: admin:stripe_api_calls:rate5m
+        expr: rate(admin_stripe_api_calls_total[5m])
+      
+      # Stripe API error rate
+      - record: admin:stripe_api_errors:rate5m
+        expr: rate(admin_stripe_api_errors_total[5m])
+      
+      # Stripe API error percentage
+      - record: admin:stripe_api_error_percentage:rate5m
+        expr: |
+          (
+            sum(rate(admin_stripe_api_errors_total[5m]))
+            /
+            sum(rate(admin_stripe_api_calls_total[5m]))
+          ) * 100
+      
+      # Average Stripe API response time
+      - record: admin:stripe_api_response_time:avg
+        expr: |
+          rate(admin_stripe_api_response_time_ms_sum[5m])
+          /
+          rate(admin_stripe_api_response_time_ms_count[5m])
+      
+      # P95 Stripe API response time
+      - record: admin:stripe_api_response_time:p95
+        expr: histogram_quantile(0.95, rate(admin_stripe_api_response_time_ms_bucket[5m]))
+
+  - name: admin_subscription_aggregations
+    interval: 30s
+    rules:
+      # Subscription operation rate
+      - record: admin:subscription_operations:rate5m
+        expr: rate(admin_subscription_operations_total[5m])
+      
+      # Subscription creation rate
+      - record: admin:subscription_create:rate5m
+        expr: rate(admin_subscription_operations_total{operation="create"}[5m])
+      
+      # Subscription update rate
+      - record: admin:subscription_update:rate5m
+        expr: rate(admin_subscription_operations_total{operation="update"}[5m])
+      
+      # Subscription cancellation rate
+      - record: admin:subscription_cancel:rate5m
+        expr: rate(admin_subscription_operations_total{operation="cancel"}[5m])
+
+  - name: admin_auth_aggregations
+    interval: 30s
+    rules:
+      # Authentication attempt rate
+      - record: admin:auth_attempts:rate5m
+        expr: rate(admin_auth_attempts_total[5m])
+      
+      # Authentication success rate
+      - record: admin:auth_success:rate5m
+        expr: rate(admin_auth_attempts_total{result="success"}[5m])
+      
+      # Authentication failure rate
+      - record: admin:auth_failure:rate5m
+        expr: rate(admin_auth_attempts_total{result="failed"}[5m])
+      
+      # Authentication failure percentage
+      - record: admin:auth_failure_percentage:rate5m
+        expr: |
+          (
+            sum(rate(admin_auth_attempts_total{result="failed"}[5m]))
+            /
+            sum(rate(admin_auth_attempts_total[5m]))
+          ) * 100
