@@ -38,7 +38,10 @@ RUN flutter clean
 RUN flutter pub get
 
 # Build Flutter web app (default renderer)
-RUN flutter build web
+RUN echo "Building Flutter web app..." && \
+    flutter build web --release && \
+    echo "Flutter web build completed successfully" && \
+    ls -la build/web/ | head -20
 
 # ---- Stage 2: Serve with Nginx (non-root) ----
 FROM nginxinc/nginx-unprivileged:alpine
@@ -48,3 +51,12 @@ COPY config/docker/nginx-web.conf /etc/nginx/conf.d/default.conf
 
 # Copy built Flutter web app from builder stage
 COPY --from=builder --chown=nginx:nginx /app/build/web /usr/share/nginx/html
+
+# Verify the web app was copied correctly
+RUN echo "Verifying web app installation..." && \
+    ls -la /usr/share/nginx/html/ && \
+    if [ ! -f /usr/share/nginx/html/index.html ]; then \
+      echo "ERROR: index.html not found in web app directory"; \
+      exit 1; \
+    fi && \
+    echo "Web app verified successfully"
