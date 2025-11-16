@@ -4,56 +4,31 @@ This directory contains all CI/CD workflows for CloudToLocalLLM.
 
 ## Workflow Overview
 
-### 1. **CI/CD Pipeline** (`ci-cd-pipeline.yml`)
-**Primary deployment workflow for production**
+### 1. **Deploy to Azure AKS** (`deploy-aks.yml`)
+**Primary CI/CD workflow for production**
 
-- **Trigger:** Push to `main` branch with changes to:
-  - `k8s/**` - Kubernetes manifests
-  - `services/**` - Backend services
-  - `config/**` - Configuration files
-  - `lib/**` - Flutter app code
-  - `web/**` - Web assets
-  - `pubspec.yaml` - Flutter dependencies
-  - `package.json` - Node.js dependencies
+- **Trigger:** Push to `main` branch (any changes)
 
 - **Jobs:**
-  1. **build-images** - Builds and pushes Docker images to Docker Hub
-     - API image: `cloudtolocalllm/cloudtolocalllm-api:main-{commit-sha}`
-     - Web image: `cloudtolocalllm/cloudtolocalllm-web:main-{commit-sha}`
+  1. **build** - Builds and pushes Docker images to Docker Hub
+     - API image: `cloudtolocalllm/cloudtolocalllm-api:main-{commit-sha}` and `latest`
+     - Web image: `cloudtolocalllm/cloudtolocalllm-web:main-{commit-sha}` and `latest`
+     - Uses Docker Buildx with GitHub Actions cache
   
-  2. **deploy** - Deploys to Azure AKS
+  2. **deploy** - Deploys to Azure AKS (waits for build to complete)
      - Updates Kubernetes deployments with new images
      - Waits for rollout completion
      - Verifies deployment health
      - Purges Cloudflare cache
      - Configures DNS and SSL
 
-- **Status:** ✅ Active and primary deployment pipeline
+- **Manual Trigger:** Can be triggered manually via `workflow_dispatch`
+
+- **Status:** ✅ Active - single source of truth for production deployments
 
 ---
 
-### 2. **Build Docker Images** (`build-images.yml`)
-**Validation workflow for PRs and develop branch**
-
-- **Triggers:**
-  - Push to `develop` branch
-  - Pull requests to `main` or `develop`
-
-- **Jobs:**
-  1. **build-api** - Builds API Docker image
-  2. **build-web** - Builds Web Docker image
-  3. **test-deploy** - Validates Kubernetes manifests (PRs only)
-
-- **Purpose:** 
-  - Validate Docker builds on PRs before merging
-  - Build images for develop branch
-  - Test Kubernetes manifests
-
-- **Status:** ✅ Active for PRs and develop
-
----
-
-### 3. **Build Release** (`build-release.yml`)
+### 2. **Build Release** (`build-release.yml`)
 **Desktop application build and release**
 
 - **Trigger:** Push of version tags (e.g., `v4.5.0`)
@@ -72,7 +47,7 @@ This directory contains all CI/CD workflows for CloudToLocalLLM.
 
 ---
 
-### 4. **Bootstrap Secrets** (`bootstrap-secrets.yml`)
+### 3. **Bootstrap Secrets** (`bootstrap-secrets.yml`)
 **Secrets management workflow**
 
 - **Purpose:** Initialize and manage GitHub secrets
@@ -86,37 +61,18 @@ This directory contains all CI/CD workflows for CloudToLocalLLM.
 ```
 Push to main
     ↓
-CI/CD Pipeline triggers
-    ├─ Build Images
+Deploy to Azure AKS workflow triggers
+    ├─ Build Job
     │  ├─ Build API image
-    │  └─ Build Web image
-    ├─ Deploy (waits for build)
+    │  ├─ Push to Docker Hub
+    │  ├─ Build Web image
+    │  └─ Push to Docker Hub
+    ├─ Deploy Job (waits for build)
     │  ├─ Update AKS deployments
     │  ├─ Wait for rollout
     │  ├─ Verify health
     │  └─ Purge cache & configure DNS
     └─ Complete
-```
-
-### For Develop Branch
-```
-Push to develop
-    ↓
-Build Images workflow triggers
-    ├─ Build API image
-    ├─ Build Web image
-    └─ Complete (no deployment)
-```
-
-### For Pull Requests
-```
-Create/Update PR
-    ↓
-Build Images workflow triggers
-    ├─ Build API image
-    ├─ Build Web image
-    ├─ Validate K8s manifests
-    └─ Complete (no deployment)
 ```
 
 ### For Releases
