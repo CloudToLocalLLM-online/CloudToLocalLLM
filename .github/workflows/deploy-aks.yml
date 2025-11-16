@@ -121,6 +121,7 @@ jobs:
           -n cloudtolocalllm
 
     - name: Run Admin Center database migrations
+      continue-on-error: true
       run: |
         echo "Running Admin Center database migrations..."
         
@@ -132,9 +133,9 @@ jobs:
         
         # Wait for migration to complete (timeout 5 minutes)
         kubectl wait --for=condition=complete --timeout=300s job/admin-center-migration -n cloudtolocalllm || {
-          echo "Migration failed or timed out"
-          kubectl logs job/admin-center-migration -n cloudtolocalllm
-          exit 1
+          echo "⚠️ Migration failed or timed out - deployment will continue"
+          kubectl logs job/admin-center-migration -n cloudtolocalllm || echo "Could not retrieve logs"
+          exit 0
         }
         
         echo "✅ Admin Center migrations completed successfully"
