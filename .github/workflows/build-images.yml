@@ -2,7 +2,7 @@ name: Build Docker Images
 
 on:
   push:
-    branches: [ develop ]
+    branches: [ main, develop ]
     paths:
       - 'services/api-backend/Dockerfile*'
       - 'services/api-backend/src/**'
