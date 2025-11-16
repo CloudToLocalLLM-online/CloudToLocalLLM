@@ -13,6 +13,10 @@ on:
         options:
         - production
 
+concurrency:
+  group: deploy-aks-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   REGISTRY: cloudtolocalllm
   API_IMAGE: cloudtolocalllm/cloudtolocalllm-api
