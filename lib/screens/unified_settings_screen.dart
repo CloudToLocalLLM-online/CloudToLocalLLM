@@ -87,8 +87,17 @@ class _UnifiedSettingsScreenState extends State<UnifiedSettingsScreen> {
   Future<void> _loadVisibleCategories() async {
     try {
       final allCategories = _buildAllCategories();
+      debugPrint(
+          '[UnifiedSettingsScreen] Built ${allCategories.length} categories');
+
       final visibleCategories =
           await _platformFilter.getVisibleCategories(allCategories);
+
+      debugPrint(
+          '[UnifiedSettingsScreen] Filtered to ${visibleCategories.length} visible categories');
+      for (final cat in visibleCategories) {
+        debugPrint('[UnifiedSettingsScreen] Visible category: ${cat.id}');
+      }
 
       if (mounted) {
         setState(() {
@@ -101,6 +110,8 @@ class _UnifiedSettingsScreenState extends State<UnifiedSettingsScreen> {
                 ? _visibleCategories.first.id
                 : SettingsCategoryIds.general;
           }
+          debugPrint(
+              '[UnifiedSettingsScreen] Active category set to: $_activeCategory');
         });
       }
     } catch (e) {
@@ -446,7 +457,13 @@ class _UnifiedSettingsScreenState extends State<UnifiedSettingsScreen> {
               }
               return KeyEventResult.ignored;
             },
-            child: activeCategory.contentBuilder(context),
+            child: Builder(
+              builder: (context) {
+                debugPrint(
+                    '[UnifiedSettingsScreen] Building content for category: ${activeCategory.id}');
+                return activeCategory.contentBuilder(context);
+              },
+            ),
           ),
         ),
       ),
