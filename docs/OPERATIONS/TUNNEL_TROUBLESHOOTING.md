@@ -1,747 +1,738 @@
-# Simplified Tunnel System Troubleshooting Guide
+# Tunnel System Troubleshooting Guide
 
-## Overview
+## Quick Troubleshooting Flowchart
 
-This guide provides comprehensive troubleshooting steps for the Simplified Tunnel System, covering common issues, diagnostic procedures, and resolution strategies. The simplified tunnel system uses a single WebSocket connection and standard HTTP proxy patterns to connect cloud interfaces with local Ollama instances.
+```
+START
+  │
+  ├─> Is the tunnel connected?
+  │   ├─ NO  ──> Check Connection Issues (Section 1)
+  │   └─ YES ──> Continue
+  │
+  ├─> Are requests failing?
+  │   ├─ YES ──> Check Request Issues (Section 2)
+  │   └─ NO  ──> Continue
+  │
+  ├─> Is performance degraded?
+  │   ├─ YES ──> Check Performance Issues (Section 3)
+  │   └─ NO  ──> Continue
+  │
+  └─> Run Diagnostics (Section 4)
+      └─> Contact Support with diagnostic report
+```
 
-## Quick Diagnostic Checklist
+## 1. Connection Issues
 
-Before diving into specific issues, run through this quick checklist:
-
-- [ ] Desktop client is running and shows "Connected" status
-- [ ] Local Ollama is running on `localhost:11434`
-- [ ] Internet connection is stable
-- [ ] JWT token is valid and not expired
-- [ ] No firewall blocking WebSocket connections
-- [ ] System time is synchronized
-
-## Common Issues and Solutions
-
-### 1. Desktop Client Connection Issues
-
-#### 1.1 "Connection Failed" Error
+### Problem: Cannot Connect to Tunnel
 
 **Symptoms:**
-- Desktop client shows "Connection Failed" status
-- Error messages about WebSocket connection failures
-- Cannot establish initial connection to cloud
+- Connection fails immediately
+- Error: "Connection refused"
+- Error code: TUNNEL_001
 
-**Diagnostic Steps:**
-```bash
-# Test WebSocket endpoint accessibility
-curl -I https://api.cloudtolocalllm.online/ws/tunnel
+**Diagnosis Steps:**
 
-# Check DNS resolution
-nslookup api.cloudtolocalllm.online
+1. **Check network connectivity:**
+   ```bash
+   # Test DNS resolution
+   nslookup proxy.cloudtolocalllm.online
+   
+   # Test connectivity
+   ping proxy.cloudtolocalllm.online
+   
+   # Test WebSocket port
+   telnet proxy.cloudtolocalllm.online 443
+   ```
 
-# Test basic connectivity
-ping api.cloudtolocalllm.online
+2. **Check firewall settings:**
+   - Ensure port 443 (HTTPS/WSS) is not blocked
+   - Check corporate firewall rules
+   - Verify VPN is not interfering
+   - Check antivirus/security software
 
-# Check if port 443 is accessible
-telnet api.cloudtolocalllm.online 443
-```
+3. **Verify server availability:**
+   ```bash
+   # Check server health
+   curl https://proxy.cloudtolocalllm.online/api/tunnel/health
+   
+   # Expected response:
+   # {"status": "healthy", "activeConnections": 42, ...}
+   ```
 
-**Common Causes & Solutions:**
-
-**Network/Firewall Issues:**
-```bash
-# Check firewall rules (Linux)
-sudo ufw status
-sudo iptables -L
-
-# Check Windows Firewall
-netsh advfirewall show allprofiles
-
-# Test with firewall temporarily disabled
-sudo ufw disable  # Linux
-# Disable Windows Defender Firewall temporarily
-```
-
-**Corporate Proxy/Network:**
-```bash
-# Check proxy settings
-echo $HTTP_PROXY
-echo $HTTPS_PROXY
-
-# Test with proxy bypass
-export NO_PROXY="api.cloudtolocalllm.online"
-```
-
-**SSL Certificate Issues:**
-```bash
-# Check SSL certificate
-openssl s_client -connect api.cloudtolocalllm.online:443 -servername api.cloudtolocalllm.online
-
-# Update system certificates (Linux)
-sudo apt update && sudo apt install ca-certificates
-sudo update-ca-certificates
-
-# Windows: Update certificates via Windows Update
-```
-
-#### 1.2 "Authentication Failed" Error
-
-**Symptoms:**
-- Connection attempts result in 401/403 errors
-- "Invalid token" messages in logs
-- Desktop client cannot authenticate
-
-**Diagnostic Steps:**
-```bash
-# Check token validity (decode JWT)
-# Use online JWT decoder or:
-echo "eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9..." | base64 -d
-
-# Test token with API
-curl -H "Authorization: Bearer <token>" \
-     https://api.cloudtolocalllm.online/api/tunnel/health
-```
+4. **Check JWT token:**
+   - Verify token is not expired
+   - Verify token is valid (not corrupted)
+   - Check token format: `Bearer <token>`
 
 **Solutions:**
 
-**Expired Token:**
-1. Log out and log back in to desktop client
-2. Check system time synchronization
-3. Verify Auth0 token expiration settings
+| Issue | Solution |
+|-------|----------|
+| DNS resolution fails | Check DNS settings, try alternative DNS (8.8.8.8) |
+| Firewall blocks connection | Whitelist proxy.cloudtolocalllm.online in firewall |
+| Server unavailable | Wait for server to recover, check status page |
+| Invalid JWT token | Re-authenticate, refresh token |
+| Network timeout | Check network speed, try from different network |
 
-**Invalid Token Format:**
-1. Clear application data/cache
-2. Reinstall desktop client if persistent
-3. Check Auth0 application configuration
-
-**Network Time Issues:**
-```bash
-# Sync system time (Linux)
-sudo ntpdate -s time.nist.gov
-sudo timedatectl set-ntp true
-
-# Windows: Sync time
-w32tm /resync
+**Example Log Output:**
+```
+[ERROR] Connection failed: Connection refused
+[ERROR] Error code: TUNNEL_001
+[ERROR] Category: network
+[ERROR] Suggestion: Check your internet connection and firewall settings
+[DEBUG] Server URL: wss://proxy.cloudtolocalllm.online
+[DEBUG] Network conditions: Timeout after 30 seconds
 ```
 
-#### 1.3 Frequent Disconnections
+---
+
+### Problem: Connection Drops Frequently
 
 **Symptoms:**
-- Connection drops every few minutes
-- Constant reconnection attempts
-- Unstable tunnel status
+- Connection established but drops after a few seconds
+- Frequent reconnection attempts
+- Error: "Connection lost"
 
-**Diagnostic Steps:**
-```bash
-# Monitor connection stability
-ping -c 100 api.cloudtolocalllm.online
+**Diagnosis Steps:**
 
-# Check network interface stability
-ip link show  # Linux
-ipconfig /all  # Windows
+1. **Check network stability:**
+   ```bash
+   # Monitor packet loss
+   ping -c 100 proxy.cloudtolocalllm.online
+   
+   # Look for: 0% packet loss (good), >5% packet loss (bad)
+   ```
 
-# Monitor system resources
-top  # Linux
-taskmgr  # Windows
-```
+2. **Check connection quality:**
+   - Run diagnostics: `TunnelService.runDiagnostics()`
+   - Check latency: Should be < 200ms
+   - Check packet loss: Should be < 5%
+
+3. **Check server logs:**
+   ```bash
+   # Get server logs
+   kubectl logs -f deployment/streaming-proxy -n cloudtolocalllm
+   
+   # Look for: Connection closed, timeout, error messages
+   ```
+
+4. **Check client configuration:**
+   - Verify timeout settings are appropriate
+   - Check if using unstable network profile
+   - Verify heartbeat interval (should be 30 seconds)
 
 **Solutions:**
 
-**Network Instability:**
-1. Switch to wired connection if using WiFi
-2. Update network drivers
-3. Check router/modem stability
-4. Contact ISP if persistent
+| Issue | Solution |
+|-------|----------|
+| High packet loss | Switch to stable network, check WiFi signal |
+| High latency | Move closer to router, reduce interference |
+| Server timeout | Increase timeout in configuration |
+| Unstable network | Use `TunnelConfig.unstableNetwork()` profile |
+| Too many reconnections | Check server logs for errors |
 
-**Power Management:**
-```bash
-# Disable USB power management (Linux)
-echo 'on' | sudo tee /sys/bus/usb/devices/*/power/control
-
-# Disable network adapter power saving (Windows)
-# Device Manager → Network Adapters → Properties → Power Management
+**Example Log Output:**
+```
+[WARN] Connection lost after 15 seconds
+[WARN] Reconnection attempt 1/10
+[DEBUG] Latency: 250ms (high)
+[DEBUG] Packet loss: 8% (high)
+[DEBUG] Last activity: 15 seconds ago
+[INFO] Reconnecting with 2 second delay...
 ```
 
-**System Resources:**
-1. Close unnecessary applications
-2. Increase virtual memory/swap
-3. Check for memory leaks in desktop client
+---
 
-### 2. Request Timeout Issues
-
-#### 2.1 "504 Gateway Timeout" Errors
+### Problem: Authentication Fails
 
 **Symptoms:**
-- Web requests timeout after 30 seconds
-- "Gateway timeout" error messages
-- Slow or unresponsive local Ollama
+- Error: "Authentication failed"
+- Error code: TUNNEL_002 or TUNNEL_003
+- Connection rejected immediately
 
-**Diagnostic Steps:**
+**Diagnosis Steps:**
+
+1. **Check JWT token:**
+   ```bash
+   # Decode JWT token (online tool or jwt-cli)
+   jwt decode <token>
+   
+   # Check expiration: exp field should be in future
+   # Check user ID: sub field should match your user ID
+   ```
+
+2. **Check Auth0 configuration:**
+   - Verify Auth0 domain is correct
+   - Verify client ID is correct
+   - Verify redirect URI is configured
+
+3. **Check token refresh:**
+   ```bash
+   # If token is expired, refresh it
+   curl -X POST https://auth.cloudtolocalllm.online/oauth/token \
+     -H "Content-Type: application/json" \
+     -d '{
+       "client_id": "YOUR_CLIENT_ID",
+       "client_secret": "YOUR_CLIENT_SECRET",
+       "grant_type": "refresh_token",
+       "refresh_token": "YOUR_REFRESH_TOKEN"
+     }'
+   ```
+
+**Solutions:**
+
+| Issue | Solution |
+|-------|----------|
+| Token expired | Refresh token or re-authenticate |
+| Invalid token | Check token format, re-authenticate |
+| Auth0 misconfigured | Verify Auth0 settings in config |
+| Token not sent | Check Authorization header format |
+| User not authorized | Check user permissions in Auth0 |
+
+**Example Log Output:**
+```
+[ERROR] Authentication failed
+[ERROR] Error code: TUNNEL_003
+[ERROR] Category: authentication
+[ERROR] Message: Token expired
+[ERROR] Suggestion: Please log in again
+[DEBUG] Token expiration: 2024-01-15T10:00:00Z
+[DEBUG] Current time: 2024-01-15T11:00:00Z
+```
+
+---
+
+## 2. Request Issues
+
+### Problem: Requests Timeout
+
+**Symptoms:**
+- Requests take > 30 seconds
+- Error: "Request timeout"
+- Error code: TUNNEL_007
+
+**Diagnosis Steps:**
+
+1. **Check server load:**
+   ```bash
+   # Get server diagnostics
+   curl -H "Authorization: Bearer $TOKEN" \
+     https://proxy.cloudtolocalllm.online/api/tunnel/diagnostics
+   
+   # Look for: activeConnections, averageLatency, errorRate
+   ```
+
+2. **Check request size:**
+   - Large payloads take longer to process
+   - Check if payload is > 1MB
+   - Consider splitting large requests
+
+3. **Check SSH server:**
+   - Verify SSH server is running
+   - Check SSH server load
+   - Verify SSH credentials are correct
+
+4. **Check network latency:**
+   ```bash
+   # Measure latency
+   ping proxy.cloudtolocalllm.online
+   
+   # Should be < 100ms for good performance
+   ```
+
+**Solutions:**
+
+| Issue | Solution |
+|-------|----------|
+| Server overloaded | Wait for load to decrease, scale up server |
+| Large payload | Split into smaller requests, compress data |
+| SSH server slow | Check SSH server performance, optimize queries |
+| High latency | Move closer to server, check network |
+| Timeout too short | Increase timeout in configuration |
+
+**Example Log Output:**
+```
+[WARN] Request timeout after 30 seconds
+[WARN] Request ID: req-123
+[DEBUG] Payload size: 5MB (large)
+[DEBUG] Server latency: 25 seconds
+[DEBUG] SSH server response time: 28 seconds
+[INFO] Suggestion: Split large requests or increase timeout
+```
+
+---
+
+### Problem: Requests Fail with Rate Limit Error
+
+**Symptoms:**
+- Error: "Rate limit exceeded"
+- Error code: TUNNEL_005
+- HTTP status: 429 Too Many Requests
+
+**Diagnosis Steps:**
+
+1. **Check request rate:**
+   - Count requests per minute
+   - Compare against limit (100 req/min for free tier)
+   - Check if burst of requests
+
+2. **Check user tier:**
+   ```bash
+   # Verify user tier in Auth0
+   # Free: 100 req/min
+   # Premium: 1000 req/min
+   # Enterprise: 10000 req/min
+   ```
+
+3. **Check rate limit headers:**
+   ```bash
+   # Response headers show rate limit status
+   X-RateLimit-Limit: 100
+   X-RateLimit-Remaining: 0
+   X-RateLimit-Reset: 1705318200
+   ```
+
+**Solutions:**
+
+| Issue | Solution |
+|-------|----------|
+| Too many requests | Reduce request rate, implement throttling |
+| Burst of requests | Spread requests over time, use queue |
+| Free tier limit | Upgrade to premium tier |
+| Rate limit reset | Wait for reset time (shown in header) |
+| Concurrent requests | Reduce concurrent connections |
+
+**Example Log Output:**
+```
+[ERROR] Rate limit exceeded
+[ERROR] Error code: TUNNEL_005
+[ERROR] Category: server
+[DEBUG] Requests this minute: 105
+[DEBUG] Limit: 100
+[DEBUG] Reset in: 45 seconds
+[INFO] Suggestion: Reduce request rate or upgrade to premium tier
+```
+
+---
+
+### Problem: Requests Fail with Queue Full Error
+
+**Symptoms:**
+- Error: "Queue full"
+- Error code: TUNNEL_006
+- Requests are being dropped
+
+**Diagnosis Steps:**
+
+1. **Check queue size:**
+   ```bash
+   # Get diagnostics
+   curl -H "Authorization: Bearer $TOKEN" \
+     https://proxy.cloudtolocalllm.online/api/tunnel/diagnostics
+   
+   # Look for: queueSize, queueFillPercentage
+   ```
+
+2. **Check request rate:**
+   - Are requests being sent faster than processed?
+   - Check for burst of requests
+   - Check if SSH server is slow
+
+3. **Check connection status:**
+   - Is connection stable?
+   - Are requests being processed?
+   - Check for network issues
+
+**Solutions:**
+
+| Issue | Solution |
+|-------|----------|
+| Queue overflow | Reduce request rate, wait for queue to drain |
+| Slow SSH server | Optimize SSH server, check performance |
+| Network issues | Check network stability, reconnect |
+| Too many concurrent requests | Reduce concurrency, implement throttling |
+| Queue size too small | Increase queue size in configuration |
+
+**Example Log Output:**
+```
+[ERROR] Queue full
+[ERROR] Error code: TUNNEL_006
+[DEBUG] Queue size: 100/100 (100% full)
+[DEBUG] Requests per second: 50
+[DEBUG] Processing rate: 30 req/sec
+[INFO] Suggestion: Reduce request rate or increase queue size
+```
+
+---
+
+## 3. Performance Issues
+
+### Problem: High Latency
+
+**Symptoms:**
+- Requests take 200ms+ to complete
+- Performance degraded
+- Slow response times
+
+**Diagnosis Steps:**
+
+1. **Check latency metrics:**
+   ```bash
+   # Get diagnostics
+   curl -H "Authorization: Bearer $TOKEN" \
+     https://proxy.cloudtolocalllm.online/api/tunnel/diagnostics
+   
+   # Look for: averageLatency, p95Latency, p99Latency
+   ```
+
+2. **Identify latency source:**
+   - Network latency: Check ping time
+   - Server latency: Check server load
+   - SSH latency: Check SSH server performance
+   - Processing latency: Check request complexity
+
+3. **Check network conditions:**
+   ```bash
+   # Measure network latency
+   ping -c 10 proxy.cloudtolocalllm.online
+   
+   # Should be < 50ms for good performance
+   ```
+
+4. **Check server load:**
+   ```bash
+   # Get server metrics
+   curl https://proxy.cloudtolocalllm.online/api/tunnel/metrics
+   
+   # Look for: tunnel_request_latency_ms histogram
+   ```
+
+**Solutions:**
+
+| Issue | Solution |
+|-------|----------|
+| High network latency | Move closer to server, check network |
+| Server overloaded | Wait for load to decrease, scale up |
+| SSH server slow | Optimize SSH server, check performance |
+| Large payloads | Compress data, split requests |
+| Inefficient queries | Optimize database queries |
+
+**Example Log Output:**
+```
+[WARN] High latency detected
+[WARN] Average latency: 250ms (target: < 100ms)
+[DEBUG] Network latency: 50ms
+[DEBUG] Server latency: 150ms
+[DEBUG] SSH latency: 50ms
+[INFO] Suggestion: Check server load or optimize queries
+```
+
+---
+
+### Problem: High Error Rate
+
+**Symptoms:**
+- Many requests failing
+- Error rate > 5%
+- Errors in logs
+
+**Diagnosis Steps:**
+
+1. **Check error rate:**
+   ```bash
+   # Get diagnostics
+   curl -H "Authorization: Bearer $TOKEN" \
+     https://proxy.cloudtolocalllm.online/api/tunnel/diagnostics
+   
+   # Look for: errorRate, errorsByCategory
+   ```
+
+2. **Identify error types:**
+   - Network errors: Connection issues
+   - Authentication errors: Token issues
+   - Server errors: Server problems
+   - Protocol errors: Protocol issues
+
+3. **Check server logs:**
+   ```bash
+   # Get server logs
+   kubectl logs -f deployment/streaming-proxy -n cloudtolocalllm
+   
+   # Look for: ERROR, WARN, exception messages
+   ```
+
+4. **Check circuit breaker:**
+   ```bash
+   # Get diagnostics
+   curl -H "Authorization: Bearer $TOKEN" \
+     https://proxy.cloudtolocalllm.online/api/tunnel/diagnostics
+   
+   # Look for: circuitBreaker.state (should be "closed")
+   ```
+
+**Solutions:**
+
+| Issue | Solution |
+|-------|----------|
+| Network errors | Check network stability, reconnect |
+| Authentication errors | Refresh token, re-authenticate |
+| Server errors | Check server status, restart if needed |
+| Protocol errors | Check protocol compatibility |
+| Circuit breaker open | Wait for recovery (60 seconds) |
+
+**Example Log Output:**
+```
+[ERROR] High error rate detected
+[ERROR] Error rate: 8% (threshold: 5%)
+[DEBUG] Total requests: 1000
+[DEBUG] Failed requests: 80
+[DEBUG] Error breakdown:
+  - Network: 30
+  - Authentication: 10
+  - Server: 25
+  - Protocol: 15
+[INFO] Suggestion: Check server status and network connectivity
+```
+
+---
+
+## 4. Diagnostic Tools and Commands
+
+### Running Diagnostics
+
+#### Client-Side Diagnostics
+
+```dart
+// Run full diagnostic suite
+final report = await tunnelService.runDiagnostics();
+
+// Print results
+print('Diagnostic Report');
+print('================');
+print('Timestamp: ${report.timestamp}');
+print('Total Tests: ${report.summary.totalTests}');
+print('Passed: ${report.summary.passedTests}');
+print('Failed: ${report.summary.failedTests}');
+print('');
+
+for (final test in report.tests) {
+  final status = test.passed ? '✓' : '✗';
+  print('$status ${test.name} (${test.duration.inMilliseconds}ms)');
+  if (!test.passed && test.errorMessage != null) {
+    print('  Error: ${test.errorMessage}');
+  }
+}
+
+if (report.summary.recommendations.isNotEmpty) {
+  print('');
+  print('Recommendations:');
+  for (final rec in report.summary.recommendations) {
+    print('- $rec');
+  }
+}
+```
+
+#### Server-Side Diagnostics
+
 ```bash
-# Test local Ollama directly
-curl -X GET http://localhost:11434/api/tags
+# Get server diagnostics
+curl -H "Authorization: Bearer $TOKEN" \
+  https://proxy.cloudtolocalllm.online/api/tunnel/diagnostics | jq .
 
-# Check Ollama performance
-curl -X POST http://localhost:11434/api/generate \
+# Get server health
+curl https://proxy.cloudtolocalllm.online/api/tunnel/health | jq .
+
+# Get server metrics
+curl https://proxy.cloudtolocalllm.online/api/tunnel/metrics
+```
+
+#### Kubernetes Diagnostics
+
+```bash
+# Check pod status
+kubectl get pods -n cloudtolocalllm -l app=streaming-proxy
+
+# Check pod logs
+kubectl logs -f deployment/streaming-proxy -n cloudtolocalllm
+
+# Check pod events
+kubectl describe pod <pod-name> -n cloudtolocalllm
+
+# Check resource usage
+kubectl top pod <pod-name> -n cloudtolocalllm
+
+# Check service status
+kubectl get svc streaming-proxy -n cloudtolocalllm
+
+# Check ingress status
+kubectl get ingress -n cloudtolocalllm
+```
+
+### Enabling Debug Logging
+
+#### Client-Side Debug Logging
+
+```dart
+// Enable debug logging
+final config = TunnelConfig(
+  logLevel: LogLevel.debug,
+  // ... other settings
+);
+
+await tunnelService.connect(
+  serverUrl: 'wss://proxy.cloudtolocalllm.online',
+  authToken: authToken,
+  config: config,
+);
+```
+
+#### Server-Side Debug Logging
+
+```bash
+# Update configuration to enable debug logging
+curl -X PUT \
+  -H "Authorization: Bearer $ADMIN_TOKEN" \
   -H "Content-Type: application/json" \
-  -d '{"model":"llama2","prompt":"test","stream":false}'
+  -d '{"monitoring": {"logLevel": "debug"}}' \
+  https://proxy.cloudtolocalllm.online/api/tunnel/config
 
-# Monitor system resources during requests
-htop  # Linux
-perfmon  # Windows
+# Check logs
+kubectl logs -f deployment/streaming-proxy -n cloudtolocalllm | grep DEBUG
 ```
 
-**Solutions:**
+### Monitoring Metrics
 
-**Ollama Performance Issues:**
-```bash
-# Restart Ollama service
-sudo systemctl restart ollama  # Linux
-# Or restart Ollama application on Windows
-
-# Check Ollama logs
-journalctl -u ollama -f  # Linux
-# Check Ollama application logs on Windows
-
-# Optimize Ollama settings
-export OLLAMA_NUM_PARALLEL=1
-export OLLAMA_MAX_LOADED_MODELS=1
-```
-
-**System Resource Constraints:**
-1. Close other applications using GPU/CPU
-2. Increase system RAM if possible
-3. Use smaller/faster models for testing
-4. Check disk space and I/O performance
-
-**Model Loading Issues:**
-```bash
-# Pre-load models to avoid loading delays
-ollama run llama2 "test"
-
-# Check available models
-ollama list
-
-# Pull missing models
-ollama pull llama2
-```
-
-#### 2.2 Slow Response Times
-
-**Symptoms:**
-- Requests take longer than expected
-- High latency in chat responses
-- Performance degradation over time
-
-**Diagnostic Steps:**
-```bash
-# Test network latency
-ping api.cloudtolocalllm.online
-
-# Test local Ollama response time
-time curl -X POST http://localhost:11434/api/generate \
-  -H "Content-Type: application/json" \
-  -d '{"model":"llama2","prompt":"Hello","stream":false}'
-
-# Check tunnel metrics
-curl -H "Authorization: Bearer <token>" \
-     https://api.cloudtolocalllm.online/api/tunnel/metrics
-```
-
-**Solutions:**
-
-**Network Optimization:**
-1. Use wired connection instead of WiFi
-2. Close bandwidth-heavy applications
-3. Check for network congestion
-4. Consider upgrading internet plan
-
-**Local Optimization:**
-```bash
-# Optimize Ollama for performance
-export OLLAMA_HOST=127.0.0.1:11434
-export OLLAMA_ORIGINS="*"
-
-# Use GPU acceleration if available
-nvidia-smi  # Check GPU availability
-export CUDA_VISIBLE_DEVICES=0
-```
-
-**Model Selection:**
-1. Use smaller models for faster responses
-2. Consider quantized models
-3. Pre-load frequently used models
-
-### 3. Authentication and Authorization Issues
-
-#### 3.1 "403 Forbidden" Errors
-
-**Symptoms:**
-- Cannot access tunnel endpoints
-- "Access denied" messages
-- Cross-user access errors
-
-**Diagnostic Steps:**
-```bash
-# Verify user ID in token
-# Decode JWT token and check 'sub' field
-
-# Test with correct user ID
-curl -H "Authorization: Bearer <token>" \
-     https://api.cloudtolocalllm.online/api/tunnel/auth0|correct-user-id/api/tags
-
-# Check Auth0 user profile
-# Login to Auth0 dashboard and verify user details
-```
-
-**Solutions:**
-
-**User ID Mismatch:**
-1. Ensure using correct user ID in API calls
-2. Check Auth0 user profile for correct ID format
-3. Re-authenticate if user ID changed
-
-**Token Permissions:**
-1. Verify Auth0 application scopes
-2. Check token audience and issuer
-3. Ensure token has required permissions
-
-#### 3.2 Rate Limiting Issues
-
-**Symptoms:**
-- "429 Too Many Requests" errors
-- Requests blocked after high usage
-- Rate limit headers in responses
-
-**Diagnostic Steps:**
-```bash
-# Check rate limit headers
-curl -I -H "Authorization: Bearer <token>" \
-     https://api.cloudtolocalllm.online/api/tunnel/health
-
-# Look for headers:
-# X-RateLimit-Limit: 1000
-# X-RateLimit-Remaining: 0
-# X-RateLimit-Reset: 1640995200
-```
-
-**Solutions:**
-
-**Immediate Relief:**
-1. Wait for rate limit window to reset
-2. Reduce request frequency
-3. Implement request queuing in applications
-
-**Long-term Solutions:**
-1. Optimize application to make fewer requests
-2. Implement caching where appropriate
-3. Contact support for rate limit increases if needed
-
-### 4. Local Ollama Issues
-
-#### 4.1 "503 Service Unavailable" Errors
-
-**Symptoms:**
-- Desktop client connected but requests fail
-- "Local Ollama not accessible" errors
-- Connection to localhost:11434 fails
-
-**Diagnostic Steps:**
-```bash
-# Check if Ollama is running
-ps aux | grep ollama  # Linux
-tasklist | findstr ollama  # Windows
-
-# Test Ollama API directly
-curl http://localhost:11434/api/tags
-
-# Check Ollama service status
-sudo systemctl status ollama  # Linux
-```
-
-**Solutions:**
-
-**Ollama Not Running:**
-```bash
-# Start Ollama service (Linux)
-sudo systemctl start ollama
-sudo systemctl enable ollama
-
-# Start Ollama application (Windows)
-# Run Ollama from Start Menu or desktop shortcut
-```
-
-**Port Conflicts:**
-```bash
-# Check what's using port 11434
-sudo netstat -tlnp | grep 11434  # Linux
-netstat -an | findstr 11434  # Windows
-
-# Kill conflicting processes if necessary
-sudo kill -9 <pid>
-```
-
-**Firewall Blocking Local Connections:**
-```bash
-# Allow local connections (Linux)
-sudo ufw allow from 127.0.0.1 to any port 11434
-
-# Windows: Add firewall exception for Ollama
-```
-
-#### 4.2 Model Loading Failures
-
-**Symptoms:**
-- Models not available in Ollama
-- "Model not found" errors
-- Slow model loading
-
-**Diagnostic Steps:**
-```bash
-# List available models
-ollama list
-
-# Check model status
-ollama show llama2
-
-# Check disk space
-df -h  # Linux
-dir C:\ # Windows
-```
-
-**Solutions:**
-
-**Missing Models:**
-```bash
-# Pull required models
-ollama pull llama2
-ollama pull codellama
-
-# Verify model installation
-ollama list
-```
-
-**Disk Space Issues:**
-1. Free up disk space
-2. Move Ollama models to larger drive
-3. Use smaller models if space constrained
-
-**Corrupted Models:**
-```bash
-# Remove and re-pull corrupted models
-ollama rm llama2
-ollama pull llama2
-```
-
-### 5. Performance and Monitoring
-
-#### 5.1 High Memory Usage
-
-**Symptoms:**
-- System becomes slow or unresponsive
-- Out of memory errors
-- Desktop client crashes
-
-**Diagnostic Steps:**
-```bash
-# Monitor memory usage
-free -h  # Linux
-wmic OS get TotalVisibleMemorySize,FreePhysicalMemory  # Windows
-
-# Check process memory usage
-ps aux --sort=-%mem | head  # Linux
-tasklist /fo table | sort /r /+5  # Windows
-```
-
-**Solutions:**
-
-**Ollama Memory Optimization:**
-```bash
-# Limit concurrent models
-export OLLAMA_MAX_LOADED_MODELS=1
-
-# Use smaller models
-ollama pull llama2:7b-chat-q4_0  # Quantized version
-```
-
-**System Optimization:**
-1. Close unnecessary applications
-2. Increase virtual memory/swap
-3. Consider upgrading RAM
-
-#### 5.2 Connection Pool Issues
-
-**Symptoms:**
-- Degraded performance over time
-- Connection errors after extended use
-- Memory leaks in desktop client
-
-**Diagnostic Steps:**
-```bash
-# Check tunnel metrics
-curl -H "Authorization: Bearer <token>" \
-     https://api.cloudtolocalllm.online/api/tunnel/metrics
-
-# Monitor desktop client logs
-# Check application logs for connection pool warnings
-```
-
-**Solutions:**
-
-**Desktop Client Restart:**
-1. Restart desktop client periodically
-2. Monitor for memory leaks
-3. Update to latest version
-
-**Connection Management:**
-1. Implement connection pooling limits
-2. Clean up stale connections
-3. Monitor connection health
-
-## Advanced Diagnostics
-
-### Log Analysis
-
-#### Desktop Client Logs
-
-**Linux:**
-```bash
-# Application logs location
-~/.local/share/cloudtolocalllm/logs/
-
-# View recent logs
-tail -f ~/.local/share/cloudtolocalllm/logs/app.log
-
-# Search for errors
-grep -i error ~/.local/share/cloudtolocalllm/logs/app.log
-```
-
-**Windows:**
-```cmd
-# Application logs location
-%APPDATA%\CloudToLocalLLM\logs\
-
-# View logs
-type "%APPDATA%\CloudToLocalLLM\logs\app.log"
-```
-
-#### Cloud API Logs
+#### Prometheus Metrics
 
 ```bash
-# Docker container logs
-docker-compose logs -f api-backend
+# Scrape metrics
+curl https://proxy.cloudtolocalllm.online/api/tunnel/metrics
 
-# Search for tunnel-related errors
-docker-compose logs api-backend | grep -i tunnel
+# Query specific metric
+curl 'https://prometheus.cloudtolocalllm.online/api/v1/query?query=tunnel_active_connections'
 
-# Monitor real-time logs
-docker-compose logs -f --tail=100 api-backend
+# Query metric range
+curl 'https://prometheus.cloudtolocalllm.online/api/v1/query_range?query=tunnel_request_latency_ms&start=1705314600&end=1705318200&step=60'
 ```
 
-### Network Analysis
+#### Grafana Dashboards
 
-#### Packet Capture
+- **Tunnel System Dashboard**: Real-time metrics and performance
+- **Error Rate Dashboard**: Error tracking and analysis
+- **Connection Dashboard**: Connection metrics and health
+- **Performance Dashboard**: Latency and throughput metrics
 
-```bash
-# Capture WebSocket traffic (Linux)
-sudo tcpdump -i any -w tunnel-capture.pcap host api.cloudtolocalllm.online
+## 5. Common Issues and Solutions
 
-# Analyze with Wireshark
-wireshark tunnel-capture.pcap
-```
+### Issue: "Connection refused"
 
-#### Connection Testing
+**Cause:** Server is not running or port is blocked
 
-```bash
-# Test WebSocket connection with wscat
-npm install -g wscat
-wscat -c "wss://api.cloudtolocalllm.online/ws/tunnel?token=<jwt_token>"
+**Solution:**
+1. Check server status: `curl https://proxy.cloudtolocalllm.online/api/tunnel/health`
+2. Check firewall: Ensure port 443 is open
+3. Check DNS: Verify proxy.cloudtolocalllm.online resolves correctly
+4. Restart server: `kubectl rollout restart deployment/streaming-proxy -n cloudtolocalllm`
 
-# Test HTTP proxy endpoints
-curl -v -H "Authorization: Bearer <token>" \
-     https://api.cloudtolocalllm.online/api/tunnel/<user_id>/api/tags
-```
+---
 
-### Performance Profiling
+### Issue: "Token expired"
 
-#### System Performance
+**Cause:** JWT token has expired
 
-```bash
-# Monitor system performance (Linux)
-iostat -x 1
-vmstat 1
-sar -u 1
+**Solution:**
+1. Refresh token: Use refresh token to get new access token
+2. Re-authenticate: Log in again to get new token
+3. Check token expiration: Decode token to see expiration time
 
-# Windows performance monitoring
-perfmon
-typeperf "\Processor(_Total)\% Processor Time" -si 1
-```
+---
 
-#### Application Performance
+### Issue: "Rate limit exceeded"
 
-```bash
-# Profile desktop client (if debugging symbols available)
-gdb cloudtolocalllm
-perf record -g ./cloudtolocalllm
+**Cause:** Too many requests sent too quickly
 
-# Monitor API backend performance
-docker stats api-backend
-```
+**Solution:**
+1. Reduce request rate: Implement throttling
+2. Upgrade tier: Upgrade to premium for higher limits
+3. Wait for reset: Check X-RateLimit-Reset header
+4. Implement queue: Use request queue to spread requests
 
-## Emergency Procedures
+---
 
-### Complete System Reset
+### Issue: "Circuit breaker open"
 
-If all else fails, perform a complete system reset:
+**Cause:** Too many failures detected
 
-1. **Stop all services:**
-   ```bash
-   # Stop desktop client
-   pkill cloudtolocalllm  # Linux
-   # Close from system tray on Windows
-   
-   # Stop Ollama
-   sudo systemctl stop ollama  # Linux
-   # Close Ollama application on Windows
+**Solution:**
+1. Wait for recovery: Circuit breaker resets after 60 seconds
+2. Check server: Verify SSH server is running
+3. Check logs: Look for error patterns
+4. Restart server: Restart streaming-proxy if needed
+
+---
+
+### Issue: "Queue full"
+
+**Cause:** Too many requests queued
+
+**Solution:**
+1. Reduce request rate: Send fewer requests
+2. Increase queue size: Update configuration
+3. Check SSH server: Verify it's processing requests
+4. Check network: Verify connection is stable
+
+---
+
+## 6. Getting Help
+
+### Collecting Diagnostic Information
+
+Before contacting support, collect:
+
+1. **Diagnostic report:**
+   ```dart
+   final report = await tunnelService.runDiagnostics();
+   // Save report to file
    ```
 
-2. **Clear application data:**
+2. **Server diagnostics:**
    ```bash
-   # Linux
-   rm -rf ~/.local/share/cloudtolocalllm/
-   rm -rf ~/.config/cloudtolocalllm/
-   
-   # Windows
-   rmdir /s "%APPDATA%\CloudToLocalLLM"
-   rmdir /s "%LOCALAPPDATA%\CloudToLocalLLM"
+   curl -H "Authorization: Bearer $TOKEN" \
+     https://proxy.cloudtolocalllm.online/api/tunnel/diagnostics > diagnostics.json
    ```
 
-3. **Restart services:**
+3. **Logs:**
    ```bash
-   # Start Ollama
-   sudo systemctl start ollama  # Linux
-   # Start Ollama application on Windows
-   
-   # Start desktop client
-   ./cloudtolocalllm  # Linux
-   # Start from Start Menu on Windows
+   # Client logs (from app)
+   # Server logs
+   kubectl logs deployment/streaming-proxy -n cloudtolocalllm > server-logs.txt
    ```
 
-4. **Re-authenticate:**
-   - Log in again through desktop client
-   - Verify connection status
-   - Test basic functionality
+4. **System information:**
+   - OS and version
+   - Network type (WiFi, wired, mobile)
+   - Tunnel configuration
+   - Error messages and codes
 
-### Rollback Procedures
+### Support Channels
 
-If issues persist after updates:
+- **Documentation**: https://docs.cloudtolocalllm.online
+- **GitHub Issues**: https://github.com/cloudtolocalllm/issues
+- **Email Support**: support@cloudtolocalllm.online
+- **Community Forum**: https://forum.cloudtolocalllm.online
 
-1. **Revert to previous version:**
-   ```bash
-   # Download previous version
-   wget https://github.com/imrightguy/CloudToLocalLLM/releases/download/v3.10.2/cloudtolocalllm-linux.AppImage
-   
-   # Replace current version
-   chmod +x cloudtolocalllm-linux.AppImage
-   ./cloudtolocalllm-linux.AppImage
-   ```
+### Providing Feedback
 
-2. **Report issues:**
-   - Collect logs and error messages
-   - Document reproduction steps
-   - Submit issue on GitHub repository
+Include in support request:
+1. Description of issue
+2. Steps to reproduce
+3. Expected behavior
+4. Actual behavior
+5. Diagnostic report
+6. Logs (client and server)
+7. System information
+8. Screenshots (if applicable)
 
-## Getting Help
+## Conclusion
 
-### Self-Service Resources
-
-1. **Documentation:**
-   - [API Documentation](../DEVELOPMENT/SIMPLIFIED_TUNNEL_API.md)
-   - [Deployment Guide](../DEPLOYMENT/SIMPLIFIED_TUNNEL_DEPLOYMENT.md)
-   - [System Architecture](../ARCHITECTURE/SYSTEM_ARCHITECTURE.md)
-
-2. **Community:**
-   - GitHub Issues: Report bugs and feature requests
-   - GitHub Discussions: Community support and questions
-
-### Support Escalation
-
-**Level 1 - Self-Service:**
-- Follow this troubleshooting guide
-- Check documentation and FAQ
-- Search existing GitHub issues
-
-**Level 2 - Community Support:**
-- Post in GitHub Discussions
-- Create detailed issue report
-- Provide logs and system information
-
-**Level 3 - Developer Support:**
-- Critical system failures
-- Security vulnerabilities
-- Data loss scenarios
-
-### Issue Reporting Template
-
-When reporting issues, include:
-
-```
-**Environment:**
-- OS: [Linux/Windows version]
-- Desktop Client Version: [version]
-- Ollama Version: [version]
-- Browser: [if web-related]
-
-**Issue Description:**
-[Clear description of the problem]
-
-**Steps to Reproduce:**
-1. [Step 1]
-2. [Step 2]
-3. [Step 3]
-
-**Expected Behavior:**
-[What should happen]
-
-**Actual Behavior:**
-[What actually happens]
-
-**Logs:**
-[Relevant log entries]
-
-**Additional Context:**
-[Any other relevant information]
-```
-
-## Prevention and Best Practices
-
-### Regular Maintenance
-
-1. **Keep software updated:**
-   - Update desktop client regularly
-   - Keep Ollama updated
-   - Update system packages
-
-2. **Monitor system health:**
-   - Check disk space regularly
-   - Monitor memory usage
-   - Review logs periodically
-
-3. **Backup configurations:**
-   - Export important settings
-   - Document custom configurations
-   - Keep installation files
-
-### Performance Optimization
-
-1. **System tuning:**
-   - Optimize network settings
-   - Configure appropriate swap/virtual memory
-   - Use SSD for better I/O performance
-
-2. **Application tuning:**
-   - Configure appropriate model sizes
-   - Optimize Ollama settings
-   - Monitor resource usage
-
-3. **Network optimization:**
-   - Use wired connections when possible
-   - Optimize router/firewall settings
-   - Monitor bandwidth usage
-
-This troubleshooting guide should help resolve most common issues with the Simplified Tunnel System. For issues not covered here, please refer to the support escalation procedures above.
+This troubleshooting guide covers the most common issues and their solutions. For issues not covered here, refer to the API documentation or contact support with diagnostic information.

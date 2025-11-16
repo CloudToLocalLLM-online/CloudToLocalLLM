@@ -329,17 +329,10 @@ class DownloadManagementService extends ChangeNotifier {
       };
 
       // For now, just log the analytics data
-      // In production, this would send to an analytics service
+      // In production, this would send to an analytics service via Dio
       debugPrint(
         '� [DownloadManagement] Analytics data: ${jsonEncode(analyticsData)}',
       );
-
-      // Future implementation would include:
-      // final response = await http.post(
-      //   Uri.parse('${AppConfig.baseUrl}/api/analytics/download'),
-      //   headers: {'Content-Type': 'application/json'},
-      //   body: jsonEncode(analyticsData),
-      // );
     } catch (e) {
       debugPrint('� [DownloadManagement] Error sending analytics: $e');
     }

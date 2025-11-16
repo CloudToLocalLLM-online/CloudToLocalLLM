@@ -28,6 +28,7 @@ import '../services/provider_discovery_service.dart';
 import '../services/streaming_chat_service.dart';
 import '../services/streaming_proxy_service.dart';
 import '../services/tunnel_service.dart';
+import '../services/tunnel/tunnel_config_manager.dart';
 import '../services/unified_connection_service.dart';
 import '../services/user_container_service.dart';
 import '../services/web_download_prompt_service.dart'
@@ -51,7 +52,8 @@ Future<void> setupCoreServices() async {
 
   // Session storage service for PostgreSQL session management
   final sessionStorageService = SessionStorageService();
-  serviceLocator.registerSingleton<SessionStorageService>(sessionStorageService);
+  serviceLocator
+      .registerSingleton<SessionStorageService>(sessionStorageService);
 
   // Auth0 and Auth services - needed for authentication flow
   final auth0Service = kIsWeb ? Auth0WebService() : Auth0DesktopService();
@@ -156,8 +158,7 @@ Future<void> setupAuthenticatedServices() async {
   final localOllamaService = serviceLocator.get<LocalOllamaConnectionService>();
   final providerDiscoveryService =
       serviceLocator.get<ProviderDiscoveryService>();
-  final enhancedUserTierService =
-      serviceLocator.get<EnhancedUserTierService>();
+  final enhancedUserTierService = serviceLocator.get<EnhancedUserTierService>();
   final webDownloadPromptService =
       serviceLocator.get<WebDownloadPromptService>();
 
@@ -173,6 +174,11 @@ Future<void> setupAuthenticatedServices() async {
   // LangChain Prompt Service is already initialized in constructor
 
   // Provider Discovery Service doesn't need initialization - it's already set up
+
+  // Tunnel configuration manager - requires SharedPreferences
+  final tunnelConfigManager = TunnelConfigManager();
+  await tunnelConfigManager.initialize();
+  serviceLocator.registerSingleton<TunnelConfigManager>(tunnelConfigManager);
 
   // Tunnel service - requires authentication token
   final tunnelService = TunnelService(authService: authService);

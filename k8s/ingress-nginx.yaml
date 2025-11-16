@@ -13,8 +13,8 @@ metadata:
     # Using Cloudflare for SSL termination (no cert-manager needed)
     # Cloudflare handles SSL, we use HTTP internally
 
-    # WebSocket support
-    nginx.ingress.kubernetes.io/websocket-services: "api-backend"
+    # WebSocket support for both api-backend and streaming-proxy
+    nginx.ingress.kubernetes.io/websocket-services: "api-backend,streaming-proxy"
 
     # Proxy settings for WebSocket
     nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
@@ -69,10 +69,27 @@ spec:
                 port:
                   number: 8080
     
-    # App subdomain - Web app
+    # App subdomain - Web app and tunnel services
     - host: app.cloudtolocalllm.online
       http:
         paths:
+          # Tunnel WebSocket endpoint
+          - path: /ws
+            pathType: Prefix
+            backend:
+              service:
+                name: streaming-proxy
+                port:
+                  number: 3001
+          # Tunnel API endpoints
+          - path: /api/tunnel
+            pathType: Prefix
+            backend:
+              service:
+                name: streaming-proxy
+                port:
+                  number: 3001
+          # Main API endpoints
           - path: /api
             pathType: Prefix
             backend:
@@ -80,13 +97,7 @@ spec:
                 name: api-backend
                 port:
                   number: 3000
-          - path: /ws
-            pathType: Prefix
-            backend:
-              service:
-                name: api-backend
-                port:
-                  number: 3000
+          # Web app
           - path: /
             pathType: Prefix
             backend:

@@ -30,14 +30,22 @@
     "@opentelemetry/sdk-node": "^0.203.0",
     "@sentry/node": "^10.5.0",
     "@sentry/profiling-node": "^10.5.0",
-    "winston": "^3.11.0"
+    "prom-client": "^15.1.3",
+    "winston": "^3.11.0",
+    "ws": "^8.18.0"
   },
   "engines": {
     "node": ">=18.0.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.28.0",
+    "@types/jest": "^29.5.11",
+    "@types/node": "^22.10.2",
+    "@types/ws": "^8.5.13",
     "eslint": "^9.28.0",
-    "husky": "^9.1.7"
+    "husky": "^9.1.7",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.1.1",
+    "typescript": "^5.7.2"
   }
 }
