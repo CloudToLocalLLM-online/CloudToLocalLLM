@@ -95,10 +95,10 @@ class HomepageScreen extends StatelessWidget {
           Text(
             'Run powerful Large Language Models locally with cloud-based management',
             style: Theme.of(context).textTheme.titleLarge?.copyWith(
-              color: const Color(0xFFe0d7ff),
-              fontWeight: FontWeight.w500,
-              fontSize: 20,
-            ),
+                  color: const Color(0xFFe0d7ff),
+                  fontWeight: FontWeight.w500,
+                  fontSize: 20,
+                ),
             textAlign: TextAlign.center,
           ),
         ],
@@ -166,9 +166,9 @@ class HomepageScreen extends StatelessWidget {
           Text(
             'AppImage • Debian Package • AUR • Pre-built Binary',
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: const Color(0xFFb0b0b0),
-              fontSize: 14,
-            ),
+                  color: const Color(0xFFb0b0b0),
+                  fontSize: 14,
+                ),
             textAlign: TextAlign.center,
           ),
         ],
@@ -254,19 +254,19 @@ class HomepageScreen extends StatelessWidget {
           Text(
             title,
             style: Theme.of(context).textTheme.titleLarge?.copyWith(
-              color: const Color(0xFFa777e3),
-              fontWeight: FontWeight.bold,
-              fontSize: 20,
-              letterSpacing: 0.5,
-            ),
+                  color: const Color(0xFFa777e3),
+                  fontWeight: FontWeight.bold,
+                  fontSize: 20,
+                  letterSpacing: 0.5,
+                ),
           ),
           const SizedBox(height: 12),
           Text(
             description,
             style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-              color: const Color(0xFFb0b0b0),
-              fontSize: 16,
-            ),
+                  color: const Color(0xFFb0b0b0),
+                  fontSize: 16,
+                ),
           ),
           if (features != null) ...[
             const SizedBox(height: 20),

@@ -25,9 +25,8 @@ class AppLogger {
 
   void error(
     String message, {
-     Object? error,
-     StackTrace? stackTrace,
-   }) =>
+    Object? error,
+    StackTrace? stackTrace,
+  }) =>
       _logger.e(message, error: error, stackTrace: stackTrace);
 }
-

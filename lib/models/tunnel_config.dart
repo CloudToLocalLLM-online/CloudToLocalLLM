@@ -5,7 +5,8 @@ class TunnelConfig {
   final String localBackendUrl;
   final String authToken;
   final bool enableCloudProxy;
-  final int? tunnelPort; // SSH server port (if different from cloudProxyUrl port)
+  final int?
+      tunnelPort; // SSH server port (if different from cloudProxyUrl port)
 
   const TunnelConfig({
     required this.userId,

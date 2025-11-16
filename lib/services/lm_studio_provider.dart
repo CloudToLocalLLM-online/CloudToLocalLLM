@@ -137,7 +137,7 @@ class LMStudioProvider extends ChangeNotifier {
   /// Initialize the provider
   Future<void> initialize() async {
     debugPrint('Initializing LM Studio provider...');
-    
+
     try {
       _setLoading(true);
       _clearError();
@@ -146,7 +146,7 @@ class LMStudioProvider extends ChangeNotifier {
       final connectionSuccess = await testConnection();
       if (connectionSuccess) {
         await getModels();
-        
+
         // Set current model to first available if none set
         if (_currentModel == null && _models.isNotEmpty) {
           _currentModel = _models.first.id;
@@ -168,7 +168,8 @@ class LMStudioProvider extends ChangeNotifier {
     try {
       debugPrint('Testing LM Studio connection...');
 
-      final response = await _dio.get('/v1/models', options: Options(headers: _getHeaders()));
+      final response = await _dio.get('/v1/models',
+          options: Options(headers: _getHeaders()));
 
       if (response.statusCode == 200) {
         _isConnected = true;
@@ -195,21 +196,24 @@ class LMStudioProvider extends ChangeNotifier {
 
       debugPrint('Getting LM Studio models...');
 
-      final response = await _dio.get('/v1/models', options: Options(headers: _getHeaders()));
+      final response = await _dio.get('/v1/models',
+          options: Options(headers: _getHeaders()));
 
       if (response.statusCode == 200) {
         final data = response.data;
         final modelsList = data['data'] as List<dynamic>? ?? [];
 
         _models = modelsList
-            .map((model) => LMStudioModel.fromJson(model as Map<String, dynamic>))
+            .map((model) =>
+                LMStudioModel.fromJson(model as Map<String, dynamic>))
             .toList();
 
         debugPrint('Found ${_models.length} LM Studio models');
         return _models;
       } else {
         _setError('Failed to get models: HTTP ${response.statusCode}');
-        debugPrint('Get models failed: ${response.statusCode} - ${response.data}');
+        debugPrint(
+            'Get models failed: ${response.statusCode} - ${response.data}');
         return [];
       }
     } catch (error) {
@@ -252,11 +256,11 @@ class LMStudioProvider extends ChangeNotifier {
       if (response.statusCode == 200) {
         final data = response.data;
         final choices = data['choices'] as List<dynamic>? ?? [];
-        
+
         if (choices.isNotEmpty) {
           final message = choices.first['message'];
           final content = message['content'] as String?;
-          
+
           debugPrint('Chat completion successful');
           return content;
         } else {
@@ -265,7 +269,8 @@ class LMStudioProvider extends ChangeNotifier {
         }
       } else {
         _setError('Chat completion failed: HTTP ${response.statusCode}');
-        debugPrint('Chat completion failed: ${response.statusCode} - ${response.data}');
+        debugPrint(
+            'Chat completion failed: ${response.statusCode} - ${response.data}');
         return null;
       }
     } catch (error) {
@@ -305,27 +310,28 @@ class LMStudioProvider extends ChangeNotifier {
       );
 
       if (response.statusCode == 200) {
-        await for (final chunk in response.data.stream.transform(convert.utf8.decoder)) {
+        await for (final chunk
+            in response.data.stream.transform(convert.utf8.decoder)) {
           // Parse Server-Sent Events format
           final lines = chunk.split('\n');
-          
+
           for (final line in lines) {
             if (line.startsWith('data: ')) {
               final data = line.substring(6).trim();
-              
+
               if (data == '[DONE]') {
                 debugPrint('Streaming completion finished');
                 return;
               }
-              
+
               try {
                 final json = jsonDecode(data);
                 final choices = json['choices'] as List<dynamic>? ?? [];
-                
+
                 if (choices.isNotEmpty) {
                   final delta = choices.first['delta'];
                   final content = delta['content'] as String?;
-                  
+
                   if (content != null && content.isNotEmpty) {
                     yield content;
                   }
@@ -360,8 +366,10 @@ class LMStudioProvider extends ChangeNotifier {
     double? temperature,
     int? maxTokens,
   }) async {
-    final modelToUse = model ?? _currentModel ?? (_models.isNotEmpty ? _models.first.id : null);
-    
+    final modelToUse = model ??
+        _currentModel ??
+        (_models.isNotEmpty ? _models.first.id : null);
+
     if (modelToUse == null) {
       _setError('No model available for completion');
       return null;
@@ -386,8 +394,10 @@ class LMStudioProvider extends ChangeNotifier {
     double? temperature,
     int? maxTokens,
   }) async* {
-    final modelToUse = model ?? _currentModel ?? (_models.isNotEmpty ? _models.first.id : null);
-    
+    final modelToUse = model ??
+        _currentModel ??
+        (_models.isNotEmpty ? _models.first.id : null);
+
     if (modelToUse == null) {
       throw LLMCommunicationError.modelNotFound();
     }
@@ -455,22 +465,23 @@ class LMStudioProvider extends ChangeNotifier {
 
   /// Get provider capabilities
   Map<String, bool> get capabilities => {
-    'chat': true,
-    'completion': true,
-    'streaming': true,
-    'openai_compatible': true,
-    'model_management': false, // LM Studio doesn't support model pulling/deletion via API
-  };
+        'chat': true,
+        'completion': true,
+        'streaming': true,
+        'openai_compatible': true,
+        'model_management':
+            false, // LM Studio doesn't support model pulling/deletion via API
+      };
 
   /// Get provider status
   Map<String, dynamic> get status => {
-    'connected': _isConnected,
-    'loading': _isLoading,
-    'error': _error,
-    'models_count': _models.length,
-    'current_model': _currentModel,
-    'base_url': baseUrl,
-  };
+        'connected': _isConnected,
+        'loading': _isLoading,
+        'error': _error,
+        'models_count': _models.length,
+        'current_model': _currentModel,
+        'base_url': baseUrl,
+      };
 
   @override
   void dispose() {

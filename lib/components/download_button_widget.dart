@@ -47,22 +47,24 @@ class _DownloadButtonWidgetState extends State<DownloadButtonWidget> {
                     children: [
                       Text(
                         widget.downloadOption.name,
-                        style: Theme.of(context).textTheme.titleMedium
+                        style: Theme.of(context)
+                            .textTheme
+                            .titleMedium
                             ?.copyWith(fontWeight: FontWeight.bold),
                       ),
                       const SizedBox(height: 4),
                       Text(
                         widget.downloadOption.description,
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: Colors.grey[600],
-                        ),
+                              color: Colors.grey[600],
+                            ),
                       ),
                       const SizedBox(height: 4),
                       Text(
                         'Size: ${widget.downloadOption.formattedSize}',
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Colors.grey[500],
-                        ),
+                              color: Colors.grey[500],
+                            ),
                       ),
                     ],
                   ),
@@ -94,9 +96,9 @@ class _DownloadButtonWidgetState extends State<DownloadButtonWidget> {
               Text(
                 'Note: Download will start automatically in your browser',
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Colors.grey[500],
-                  fontStyle: FontStyle.italic,
-                ),
+                      color: Colors.grey[500],
+                      fontStyle: FontStyle.italic,
+                    ),
                 textAlign: TextAlign.center,
               ),
             ],

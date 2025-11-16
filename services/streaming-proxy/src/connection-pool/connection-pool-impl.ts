@@ -216,7 +216,10 @@ export class ConnectionPoolImpl implements ConnectionPool {
           await connection.close();
           this.logger.debug(`Connection closed: ${connection.id}`);
         } catch (error) {
-          this.logger.error(`Error closing connection ${connection.id}:`, error);
+          this.logger.error('Error closing connection', {
+            connectionId: connection.id,
+            error: error instanceof Error ? error.message : String(error),
+          });
         }
       })
     );
@@ -308,7 +311,10 @@ export class ConnectionPoolImpl implements ConnectionPool {
           await connection.close();
           cleanedCount++;
         } catch (error) {
-          this.logger.error(`Error closing stale connection ${connection.id}:`, error);
+          this.logger.error('Error closing stale connection', {
+            connectionId: connection.id,
+            error: error instanceof Error ? error.message : String(error),
+          });
         }
       }
       
@@ -335,7 +341,9 @@ export class ConnectionPoolImpl implements ConnectionPool {
       try {
         await this.cleanupStaleConnections(this.config.maxIdleTime);
       } catch (error) {
-        this.logger.error('Error during cleanup task:', error);
+        this.logger.error('Error during cleanup task', {
+          error: error instanceof Error ? error.message : String(error),
+        });
       }
     }, this.config.cleanupInterval);
     

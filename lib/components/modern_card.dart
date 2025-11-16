@@ -105,8 +105,7 @@ class _ModernCardState extends State<ModernCard>
                           AppTheme.borderRadiusM,
                         ),
                         child: Container(
-                          padding:
-                              widget.padding ??
+                          padding: widget.padding ??
                               EdgeInsets.all(AppTheme.spacingL),
                           child: widget.child,
                         ),
@@ -175,10 +174,10 @@ class InfoCard extends StatelessWidget {
                 child: Text(
                   title,
                   style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    color: AppTheme.primaryColor,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 20,
-                  ),
+                        color: AppTheme.primaryColor,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 20,
+                      ),
                 ),
               ),
             ],
@@ -190,10 +189,10 @@ class InfoCard extends StatelessWidget {
           Text(
             description,
             style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-              color: AppTheme.textColorLight,
-              fontSize: 16,
-              height: 1.5,
-            ),
+                  color: AppTheme.textColorLight,
+                  fontSize: 16,
+                  height: 1.5,
+                ),
           ),
 
           // Features list
@@ -217,10 +216,10 @@ class InfoCard extends StatelessWidget {
                       child: Text(
                         feature,
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: AppTheme.textColor,
-                          fontSize: 15,
-                          height: 1.4,
-                        ),
+                              color: AppTheme.textColor,
+                              fontSize: 15,
+                              height: 1.4,
+                            ),
                       ),
                     ),
                   ],

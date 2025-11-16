@@ -165,7 +165,8 @@ class WindowManagerService {
       );
       return false; // Prevent actual window close
     } catch (e) {
-      appLogger.error('[WindowManager] Failed to handle window close', error: e);
+      appLogger.error('[WindowManager] Failed to handle window close',
+          error: e);
       return true; // Allow close if error occurs
     }
   }

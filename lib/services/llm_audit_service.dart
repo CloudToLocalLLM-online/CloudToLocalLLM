@@ -23,7 +23,7 @@ class LLMAuditService extends ChangeNotifier {
   static const String _prefUsageStats = 'llm_usage_stats';
 
   LLMAuditService({required AuthService authService})
-    : _authService = authService;
+      : _authService = authService;
 
   // Getters
   bool get isInitialized => _isInitialized;
@@ -41,7 +41,8 @@ class LLMAuditService extends ChangeNotifier {
       await _loadAuditData();
 
       _isInitialized = true;
-      debugPrint('[llm_audit_service] LLM Audit Service initialized successfully');
+      debugPrint(
+          '[llm_audit_service] LLM Audit Service initialized successfully');
     } catch (e) {
       debugPrint('[LLMAudit] Initialization failed: $e');
       rethrow;
@@ -81,7 +82,8 @@ class LLMAuditService extends ChangeNotifier {
     await _addAuditEvent(event);
     await _updateUsageStats(event);
 
-    debugPrint('[LLMAudit] Logged LLM interaction: provider=$providerId, model=$modelId, type=$requestType, success=$success');
+    debugPrint(
+        '[LLMAudit] Logged LLM interaction: provider=$providerId, model=$modelId, type=$requestType, success=$success');
   }
 
   /// Log a security event
@@ -137,7 +139,8 @@ class LLMAuditService extends ChangeNotifier {
 
     await _addAuditEvent(event);
 
-    debugPrint('[LLMAudit] Logged provider event: provider=$providerId, type=$eventType');
+    debugPrint(
+        '[LLMAudit] Logged provider event: provider=$providerId, type=$eventType');
   }
 
   /// Get usage statistics for a specific period
@@ -226,8 +229,7 @@ class LLMAuditService extends ChangeNotifier {
 
   Future<void> _updateUsageStats(LLMAuditEvent event) async {
     final key = '${event.providerId}:${event.modelId}';
-    final stats =
-        _usageStats[key] ??
+    final stats = _usageStats[key] ??
         LLMUsageStats(providerId: event.providerId!, modelId: event.modelId!);
 
     stats.totalRequests++;
@@ -390,21 +392,21 @@ class LLMAuditEvent {
   });
 
   Map<String, dynamic> toJson() => {
-    'id': id,
-    'timestamp': timestamp.toIso8601String(),
-    'userId': userId,
-    'providerId': providerId,
-    'modelId': modelId,
-    'eventType': eventType.name,
-    'requestType': requestType,
-    'description': description,
-    'requestSize': requestSize,
-    'responseSize': responseSize,
-    'responseTime': responseTime,
-    'success': success,
-    'errorMessage': errorMessage,
-    'metadata': metadata,
-  };
+        'id': id,
+        'timestamp': timestamp.toIso8601String(),
+        'userId': userId,
+        'providerId': providerId,
+        'modelId': modelId,
+        'eventType': eventType.name,
+        'requestType': requestType,
+        'description': description,
+        'requestSize': requestSize,
+        'responseSize': responseSize,
+        'responseTime': responseTime,
+        'success': success,
+        'errorMessage': errorMessage,
+        'metadata': metadata,
+      };
 
   factory LLMAuditEvent.fromJson(Map<String, dynamic> json) {
     return LLMAuditEvent(
@@ -445,17 +447,17 @@ class LLMUsageStats {
   LLMUsageStats({required this.providerId, required this.modelId});
 
   Map<String, dynamic> toJson() => {
-    'providerId': providerId,
-    'modelId': modelId,
-    'totalRequests': totalRequests,
-    'successfulRequests': successfulRequests,
-    'failedRequests': failedRequests,
-    'totalInputTokens': totalInputTokens,
-    'totalOutputTokens': totalOutputTokens,
-    'totalResponseTime': totalResponseTime,
-    'averageResponseTime': averageResponseTime,
-    'lastUsed': lastUsed?.toIso8601String(),
-  };
+        'providerId': providerId,
+        'modelId': modelId,
+        'totalRequests': totalRequests,
+        'successfulRequests': successfulRequests,
+        'failedRequests': failedRequests,
+        'totalInputTokens': totalInputTokens,
+        'totalOutputTokens': totalOutputTokens,
+        'totalResponseTime': totalResponseTime,
+        'averageResponseTime': averageResponseTime,
+        'lastUsed': lastUsed?.toIso8601String(),
+      };
 
   factory LLMUsageStats.fromJson(Map<String, dynamic> json) {
     final stats = LLMUsageStats(
@@ -486,8 +488,6 @@ enum LLMAuditEventType { interaction, security, provider, system }
 /// Provides rate limiting and usage controls for LLM interactions
 /// to prevent abuse and manage resource consumption.
 class LLMRateLimitService {
-  
-
   // Rate limiting state
   final Map<String, List<DateTime>> _requestHistory = {};
   final Map<String, int> _dailyUsage = {};
@@ -513,7 +513,8 @@ class LLMRateLimitService {
 
     // Check token limit
     if (tokenCount != null && tokenCount > maxTokensPerRequest) {
-      debugPrint('[LLMAudit] RATE_LIMIT_EXCEEDED: Token limit exceeded (userId=$userId, provider=$providerId, tokens=$tokenCount, max=$maxTokensPerRequest)');
+      debugPrint(
+          '[LLMAudit] RATE_LIMIT_EXCEEDED: Token limit exceeded (userId=$userId, provider=$providerId, tokens=$tokenCount, max=$maxTokensPerRequest)');
       return false;
     }
 
@@ -528,7 +529,8 @@ class LLMRateLimitService {
         .where((timestamp) => now.difference(timestamp).inDays == 0)
         .length;
     if (dailyRequests >= requestsPerDay) {
-      debugPrint('[LLMAudit] RATE_LIMIT_EXCEEDED: Daily request limit exceeded (userId=$userId, provider=$providerId, requests=$dailyRequests, limit=$requestsPerDay)');
+      debugPrint(
+          '[LLMAudit] RATE_LIMIT_EXCEEDED: Daily request limit exceeded (userId=$userId, provider=$providerId, requests=$dailyRequests, limit=$requestsPerDay)');
       return false;
     }
 
@@ -537,7 +539,8 @@ class LLMRateLimitService {
         .where((timestamp) => now.difference(timestamp).inHours == 0)
         .length;
     if (hourlyRequests >= requestsPerHour) {
-      debugPrint('[LLMAudit] RATE_LIMIT_EXCEEDED: Hourly request limit exceeded (userId=$userId, provider=$providerId, requests=$hourlyRequests, limit=$requestsPerHour)');
+      debugPrint(
+          '[LLMAudit] RATE_LIMIT_EXCEEDED: Hourly request limit exceeded (userId=$userId, provider=$providerId, requests=$hourlyRequests, limit=$requestsPerHour)');
       return false;
     }
 
@@ -546,7 +549,8 @@ class LLMRateLimitService {
         .where((timestamp) => now.difference(timestamp).inMinutes == 0)
         .length;
     if (minuteRequests >= requestsPerMinute) {
-      debugPrint('[LLMAudit] RATE_LIMIT_EXCEEDED: Per-minute request limit exceeded (userId=$userId, provider=$providerId, requests=$minuteRequests, limit=$requestsPerMinute)');
+      debugPrint(
+          '[LLMAudit] RATE_LIMIT_EXCEEDED: Per-minute request limit exceeded (userId=$userId, provider=$providerId, requests=$minuteRequests, limit=$requestsPerMinute)');
       return false;
     }
 
@@ -595,4 +599,3 @@ class LLMRateLimitService {
     _dailyUsage.removeWhere((key, _) => key.startsWith('$userId:'));
   }
 }
-

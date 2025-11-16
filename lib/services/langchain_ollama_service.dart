@@ -18,7 +18,6 @@ import 'connection_manager_service.dart';
 /// Enhanced Ollama service using LangChain framework
 class LangChainOllamaService extends ChangeNotifier {
   final ConnectionManagerService _connectionManager;
-  
 
   // LangChain components
   ChatOllama? _chatModel;
@@ -37,7 +36,7 @@ class LangChainOllamaService extends ChangeNotifier {
   final Map<String, List<Message>> _conversations = {};
 
   LangChainOllamaService({required ConnectionManagerService connectionManager})
-    : _connectionManager = connectionManager;
+      : _connectionManager = connectionManager;
 
   // Getters
   bool get isInitialized => _isInitialized;
@@ -56,7 +55,8 @@ class LangChainOllamaService extends ChangeNotifier {
       _setLoading(true);
       _clearError();
 
-      debugPrint('[langchain_ollama_service] Initializing LangChain Ollama service');
+      debugPrint(
+          '[langchain_ollama_service] Initializing LangChain Ollama service');
 
       // Wait for connection manager to be ready
       if (!_connectionManager.hasAnyConnection) {
@@ -64,8 +64,10 @@ class LangChainOllamaService extends ChangeNotifier {
       }
 
       if (!_connectionManager.hasAnyConnection) {
-        _error = 'No connection available. Connect a desktop bridge to use cloud models.';
-        debugPrint('[LangChainOllama] Initialization skipped: No connection available after connection manager init');
+        _error =
+            'No connection available. Connect a desktop bridge to use cloud models.';
+        debugPrint(
+            '[LangChainOllama] Initialization skipped: No connection available after connection manager init');
         _isInitialized = false;
         notifyListeners();
         return;
@@ -75,7 +77,8 @@ class LangChainOllamaService extends ChangeNotifier {
       try {
         await _initializeChatModel('llama3.2');
       } on StateError catch (e) {
-        _error = 'No connection available. Connect a desktop bridge to use cloud models.';
+        _error =
+            'No connection available. Connect a desktop bridge to use cloud models.';
         debugPrint('[LangChainOllama] Initialization skipped: $e');
         _isInitialized = false;
         notifyListeners();
@@ -86,7 +89,8 @@ class LangChainOllamaService extends ChangeNotifier {
       await _loadAvailableModels();
 
       _isInitialized = true;
-      debugPrint('[langchain_ollama_service] LangChain Ollama service initialized successfully');
+      debugPrint(
+          '[langchain_ollama_service] LangChain Ollama service initialized successfully');
     } catch (e) {
       _error = 'Failed to initialize LangChain service: $e';
       debugPrint('[LangChainOllama] Initialization failed: $e');
@@ -140,19 +144,19 @@ class LangChainOllamaService extends ChangeNotifier {
       ]);
 
       // Create conversation chain with memory
-      _conversationChain =
-          Runnable.fromMap({
-                'input': Runnable.passthrough(),
-                'history': Runnable.mapInput((_) async {
-                  final memoryVars = await _memory!.loadMemoryVariables();
-                  return memoryVars['history'] ?? [];
-                }),
-              })
-              .pipe(promptTemplate)
-              .pipe(_chatModel!)
-              .pipe(const StringOutputParser<ChatResult>());
+      _conversationChain = Runnable.fromMap({
+        'input': Runnable.passthrough(),
+        'history': Runnable.mapInput((_) async {
+          final memoryVars = await _memory!.loadMemoryVariables();
+          return memoryVars['history'] ?? [];
+        }),
+      })
+          .pipe(promptTemplate)
+          .pipe(_chatModel!)
+          .pipe(const StringOutputParser<ChatResult>());
 
-      debugPrint('[langchain_ollama_service] Conversation chain created successfully');
+      debugPrint(
+          '[langchain_ollama_service] Conversation chain created successfully');
     } catch (e) {
       debugPrint('[LangChainOllama] Conversation chain failed: $e');
       rethrow;
@@ -205,7 +209,8 @@ class LangChainOllamaService extends ChangeNotifier {
         ];
       }
 
-      debugPrint('[LangChainOllama] Available models loaded: ${_availableModels.length}');
+      debugPrint(
+          '[LangChainOllama] Available models loaded: ${_availableModels.length}');
     } catch (e) {
       debugPrint('[LangChainOllama] Models load failed: $e');
       // Don't rethrow - this is not critical for basic functionality
@@ -230,7 +235,8 @@ class LangChainOllamaService extends ChangeNotifier {
       // Get or create conversation memory for this conversation
       final memory = _getConversationMemory(convId);
 
-      debugPrint('[LangChainOllama] Sending message: convId=$convId, length=${message.length}');
+      debugPrint(
+          '[LangChainOllama] Sending message: convId=$convId, length=${message.length}');
 
       // Invoke the conversation chain
       final response = await _conversationChain!.invoke({'input': message});
@@ -245,7 +251,8 @@ class LangChainOllamaService extends ChangeNotifier {
       // Update local conversation history
       _updateConversationHistory(convId, message, responseString);
 
-      debugPrint('[LangChainOllama] Message processed: convId=$convId, length=${responseString.length}');
+      debugPrint(
+          '[LangChainOllama] Message processed: convId=$convId, length=${responseString.length}');
 
       return responseString;
     } catch (e) {
@@ -304,7 +311,8 @@ class LangChainOllamaService extends ChangeNotifier {
 
       await _initializeChatModel(modelName);
 
-      debugPrint('[LangChainOllama] Model switched: $_currentModel -> $modelName');
+      debugPrint(
+          '[LangChainOllama] Model switched: $_currentModel -> $modelName');
     } catch (e) {
       _error = 'Failed to switch model: $e';
       debugPrint('[LangChainOllama] Model switch failed: $e');
@@ -346,4 +354,3 @@ class LangChainOllamaService extends ChangeNotifier {
     super.dispose();
   }
 }
-

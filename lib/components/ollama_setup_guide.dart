@@ -34,13 +34,17 @@ class OllamaSetupGuide extends StatelessWidget {
                     children: [
                       Text(
                         'Ollama Setup Guide',
-                        style: Theme.of(context).textTheme.headlineSmall
+                        style: Theme.of(context)
+                            .textTheme
+                            .headlineSmall
                             ?.copyWith(fontWeight: FontWeight.bold),
                       ),
                       if (connectionError != null)
                         Text(
                           '${connectionError!.getErrorIcon()} ${connectionError!.userFriendlyMessage}',
-                          style: Theme.of(context).textTheme.bodyMedium
+                          style: Theme.of(context)
+                              .textTheme
+                              .bodyMedium
                               ?.copyWith(color: Colors.orange),
                         ),
                     ],
@@ -67,7 +71,6 @@ class OllamaSetupGuide extends StatelessWidget {
                       const Divider(),
                       SizedBox(height: AppTheme.spacingL),
                     ],
-
                     _buildGeneralSetupInstructions(context),
                   ],
                 ),
@@ -132,9 +135,9 @@ class OllamaSetupGuide extends StatelessWidget {
               Text(
                 'Specific Issue: ${connectionError!.userFriendlyMessage}',
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: Colors.orange.shade800,
-                ),
+                      fontWeight: FontWeight.bold,
+                      color: Colors.orange.shade800,
+                    ),
               ),
             ],
           ),
@@ -166,7 +169,6 @@ class OllamaSetupGuide extends StatelessWidget {
           ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
         ),
         SizedBox(height: AppTheme.spacingM),
-
         _buildSetupStep(
           context,
           '1',
@@ -175,7 +177,6 @@ class OllamaSetupGuide extends StatelessWidget {
           'Visit https://ollama.ai and download the installer for your operating system.',
           Icons.download,
         ),
-
         _buildSetupStep(
           context,
           '2',
@@ -184,7 +185,6 @@ class OllamaSetupGuide extends StatelessWidget {
           'Linux/macOS: Run "ollama serve" in terminal\nWindows: Ollama should start automatically after installation',
           Icons.play_arrow,
         ),
-
         _buildSetupStep(
           context,
           '3',
@@ -193,7 +193,6 @@ class OllamaSetupGuide extends StatelessWidget {
           'Run "ollama pull llama2" or "ollama pull mistral" to download a model',
           Icons.cloud_download,
         ),
-
         _buildSetupStep(
           context,
           '4',
@@ -202,7 +201,6 @@ class OllamaSetupGuide extends StatelessWidget {
           'Run "ollama list" to see installed models\nTry "ollama run llama2" to test a model',
           Icons.check_circle,
         ),
-
         _buildSetupStep(
           context,
           '5',
@@ -265,8 +263,8 @@ class OllamaSetupGuide extends StatelessWidget {
                     Text(
                       title,
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                            fontWeight: FontWeight.bold,
+                          ),
                     ),
                   ],
                 ),
@@ -274,8 +272,8 @@ class OllamaSetupGuide extends StatelessWidget {
                 Text(
                   subtitle,
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: AppTheme.textColorLight,
-                  ),
+                        color: AppTheme.textColorLight,
+                      ),
                 ),
                 SizedBox(height: AppTheme.spacingS),
                 Text(
@@ -328,9 +326,9 @@ class OllamaQuickTips extends StatelessWidget {
               Text(
                 'Quick Fix',
                 style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: Colors.blue.shade700,
-                ),
+                      fontWeight: FontWeight.bold,
+                      color: Colors.blue.shade700,
+                    ),
               ),
             ],
           ),

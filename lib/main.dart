@@ -159,7 +159,8 @@ class _CloudToLocalLLMAppState extends State<CloudToLocalLLMApp> {
       return;
     }
     if (!di.serviceLocator.isRegistered<AuthService>()) {
-      debugPrint('[App] AuthService not registered yet - deferring listener attachment');
+      debugPrint(
+          '[App] AuthService not registered yet - deferring listener attachment');
       return;
     }
     final authService = di.serviceLocator.get<AuthService>();

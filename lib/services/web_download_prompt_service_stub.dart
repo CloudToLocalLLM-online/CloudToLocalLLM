@@ -68,4 +68,3 @@ class WebDownloadPromptService extends ChangeNotifier {
     };
   }
 }
-

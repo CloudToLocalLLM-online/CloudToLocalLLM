@@ -12,7 +12,7 @@ import '../services/tunnel/diagnostics/diagnostic_test_suite.dart';
 
 /// Tunnel Settings Screen
 class TunnelSettingsScreen extends StatefulWidget {
-  const TunnelSettingsScreen({Key? key}) : super(key: key);
+  const TunnelSettingsScreen({super.key});
 
   @override
   State<TunnelSettingsScreen> createState() => _TunnelSettingsScreenState();
@@ -624,15 +624,13 @@ class _TunnelSettingsScreenState extends State<TunnelSettingsScreen> {
               ),
             ),
             const SizedBox(height: 8),
-            ..._validationErrors
-                .map((error) => Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 4),
-                      child: Text(
-                        '• $error',
-                        style: const TextStyle(color: Colors.red, fontSize: 12),
-                      ),
-                    ))
-                .toList(),
+            ..._validationErrors.map((error) => Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 4),
+                  child: Text(
+                    '• $error',
+                    style: const TextStyle(color: Colors.red, fontSize: 12),
+                  ),
+                )),
           ],
         ),
       ),

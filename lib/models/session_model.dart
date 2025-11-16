@@ -24,9 +24,8 @@ class SessionModel {
     DateTime? createdAt,
     DateTime? lastActivity,
     this.isActive = true,
-  }) :
-    createdAt = createdAt ?? DateTime.now(),
-    lastActivity = lastActivity ?? DateTime.now();
+  })  : createdAt = createdAt ?? DateTime.now(),
+        lastActivity = lastActivity ?? DateTime.now();
 
   /// Check if the session is still valid (not expired and active)
   bool get isValid {

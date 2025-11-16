@@ -67,8 +67,7 @@ class DownloadOption {
       installationType: json['installationType'] as String,
       iconPath: json['iconPath'] as String?,
       isRecommended: json['isRecommended'] as bool? ?? false,
-      requirements:
-          (json['requirements'] as List<dynamic>?)
+      requirements: (json['requirements'] as List<dynamic>?)
               ?.map((e) => e as String)
               .toList() ??
           [],

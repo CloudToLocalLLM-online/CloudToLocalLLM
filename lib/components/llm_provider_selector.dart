@@ -41,7 +41,8 @@ class _LLMProviderSelectorState extends State<LLMProviderSelector> {
   Future<void> _loadSelectedModels() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final keys = prefs.getKeys().where((key) => key.startsWith('selected_model_'));
+      final keys =
+          prefs.getKeys().where((key) => key.startsWith('selected_model_'));
 
       for (final key in keys) {
         final providerId = key.replaceFirst('selected_model_', '');
@@ -107,7 +108,8 @@ class _LLMProviderSelectorState extends State<LLMProviderSelector> {
             if (widget.showModels &&
                 providerManager.getPreferredProvider() != null) ...[
               SizedBox(height: AppTheme.spacingM),
-              _buildModelSelectorFromProvider(providerManager.getPreferredProvider()!),
+              _buildModelSelectorFromProvider(
+                  providerManager.getPreferredProvider()!),
             ],
           ],
         );
@@ -141,12 +143,16 @@ class _LLMProviderSelectorState extends State<LLMProviderSelector> {
                       children: [
                         Text(
                           provider.info.name,
-                          style: Theme.of(context).textTheme.bodyMedium
+                          style: Theme.of(context)
+                              .textTheme
+                              .bodyMedium
                               ?.copyWith(fontWeight: FontWeight.w500),
                         ),
                         Text(
                           provider.info.baseUrl,
-                          style: Theme.of(context).textTheme.bodySmall
+                          style: Theme.of(context)
+                              .textTheme
+                              .bodySmall
                               ?.copyWith(color: AppTheme.textColorLight),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -198,8 +204,10 @@ class _LLMProviderSelectorState extends State<LLMProviderSelector> {
     }
 
     final isConnected = activeProvider.isEnabled;
-    final isConnecting = activeProvider.healthStatus == ProviderHealthStatus.unknown;
-    final hasError = activeProvider.healthStatus == ProviderHealthStatus.unhealthy;
+    final isConnecting =
+        activeProvider.healthStatus == ProviderHealthStatus.unknown;
+    final hasError =
+        activeProvider.healthStatus == ProviderHealthStatus.unhealthy;
 
     Color statusColor;
     IconData statusIcon;
@@ -254,7 +262,8 @@ class _LLMProviderSelectorState extends State<LLMProviderSelector> {
     );
   }
 
-  Widget _buildModelSelectorFromProvider(RegisteredProvider registeredProvider) {
+  Widget _buildModelSelectorFromProvider(
+      RegisteredProvider registeredProvider) {
     if (registeredProvider.info.availableModels.isEmpty) {
       return Container(
         padding: EdgeInsets.all(AppTheme.spacingS),
@@ -296,7 +305,8 @@ class _LLMProviderSelectorState extends State<LLMProviderSelector> {
             child: DropdownButton<String>(
               value: _selectedModels[registeredProvider.info.id],
               isExpanded: true,
-              padding: const EdgeInsets.symmetric(horizontal: AppTheme.spacingM),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: AppTheme.spacingM),
               items: registeredProvider.info.availableModels.map((modelName) {
                 return DropdownMenuItem<String>(
                   value: modelName,
@@ -395,7 +405,8 @@ class _LLMProviderSelectorState extends State<LLMProviderSelector> {
     });
 
     try {
-      final providerManager = Provider.of<LLMProviderManager>(context, listen: false);
+      final providerManager =
+          Provider.of<LLMProviderManager>(context, listen: false);
 
       // Show initial feedback
       ScaffoldMessenger.of(context).showSnackBar(

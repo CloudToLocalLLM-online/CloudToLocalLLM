@@ -70,9 +70,9 @@ class SetupStatusService extends ChangeNotifier {
     required AuthService authService,
     DesktopClientDetectionService? clientDetectionService,
     SetupStatusStorage? storage,
-  }) : _authService = authService,
-       _clientDetectionService = clientDetectionService,
-       _storage = storage ?? SecureSetupStatusStorage();
+  })  : _authService = authService,
+        _clientDetectionService = clientDetectionService,
+        _storage = storage ?? SecureSetupStatusStorage();
 
   // Getters
   UserSetupStatus? get currentStatus => _currentStatus;

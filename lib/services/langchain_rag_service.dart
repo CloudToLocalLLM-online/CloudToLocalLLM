@@ -31,7 +31,7 @@ class LangChainRAGService extends ChangeNotifier {
   int _documentCount = 0;
 
   LangChainRAGService({required LangChainOllamaService ollamaService})
-    : _ollamaService = ollamaService;
+      : _ollamaService = ollamaService;
 
   // Getters
   bool get isInitialized => _isInitialized;
@@ -76,7 +76,8 @@ class LangChainRAGService extends ChangeNotifier {
       await _createRAGChain();
 
       _isInitialized = true;
-      debugPrint('[langchain_rag_service] RAG service initialized successfully');
+      debugPrint(
+          '[langchain_rag_service] RAG service initialized successfully');
     } on StateError catch (e) {
       _error = 'RAG service unavailable: $e';
       debugPrint('[LangChainRAG] Initialization skipped: $e');
@@ -84,7 +85,8 @@ class LangChainRAGService extends ChangeNotifier {
       notifyListeners();
     } on SocketException catch (e) {
       _error = 'RAG service unavailable: $e';
-      debugPrint('[LangChainRAG] Initialization skipped due to network error: $e');
+      debugPrint(
+          '[LangChainRAG] Initialization skipped due to network error: $e');
       _isInitialized = false;
       notifyListeners();
     } catch (e) {
@@ -107,7 +109,8 @@ class LangChainRAGService extends ChangeNotifier {
 
       debugPrint('[langchain_rag_service] Embeddings model initialized');
     } catch (e) {
-      debugPrint('[LangChainRAG] ERROR: EMBEDDINGS_INIT_FAILED - Failed to initialize embeddings model - $e');
+      debugPrint(
+          '[LangChainRAG] ERROR: EMBEDDINGS_INIT_FAILED - Failed to initialize embeddings model - $e');
       rethrow;
     }
   }
@@ -130,7 +133,8 @@ class LangChainRAGService extends ChangeNotifier {
 
       debugPrint('[langchain_rag_service] Vector store created successfully');
     } catch (e) {
-      debugPrint('[LangChainRAG] ERROR: VECTOR_STORE_FAILED - Failed to create vector store - $e');
+      debugPrint(
+          '[LangChainRAG] ERROR: VECTOR_STORE_FAILED - Failed to create vector store - $e');
       rethrow;
     }
   }
@@ -168,20 +172,20 @@ Guidelines:
       }
 
       // Create RAG chain
-      _ragChain =
-          Runnable.fromMap<String>({
-                'context': _retriever!.pipe(
-                  Runnable.mapInput<List<Document>, String>(combineDocuments),
-                ),
-                'question': Runnable.passthrough(),
-              })
-              .pipe(promptTemplate)
-              .pipe(_ollamaService.chatModel!)
-              .pipe(const StringOutputParser<ChatResult>());
+      _ragChain = Runnable.fromMap<String>({
+        'context': _retriever!.pipe(
+          Runnable.mapInput<List<Document>, String>(combineDocuments),
+        ),
+        'question': Runnable.passthrough(),
+      })
+          .pipe(promptTemplate)
+          .pipe(_ollamaService.chatModel!)
+          .pipe(const StringOutputParser<ChatResult>());
 
       debugPrint('[langchain_rag_service] RAG chain created successfully');
     } catch (e) {
-      debugPrint('[LangChainRAG] ERROR: RAG_CHAIN_FAILED - Failed to create RAG chain - $e');
+      debugPrint(
+          '[LangChainRAG] ERROR: RAG_CHAIN_FAILED - Failed to create RAG chain - $e');
       rethrow;
     }
   }
@@ -223,7 +227,8 @@ Guidelines:
       _documents.addAll(documents);
       _documentCount = _documents.length;
 
-      debugPrint('[LangChainRAG] Documents added successfully: ${documents.length} documents, total: $_documentCount');
+      debugPrint(
+          '[LangChainRAG] Documents added successfully: ${documents.length} documents, total: $_documentCount');
 
       notifyListeners();
     } catch (e) {
@@ -267,7 +272,8 @@ Guidelines:
 
       await addDocuments(chunks, metadatas: metadatas);
 
-      debugPrint('[LangChainRAG] Document loaded from file: $fileName (${chunks.length} chunks)');
+      debugPrint(
+          '[LangChainRAG] Document loaded from file: $fileName (${chunks.length} chunks)');
     } catch (e) {
       _error = 'Failed to load document from file: $e';
       debugPrint('[LangChainRAG] ERROR: FILE_LOAD_FAILED - $_error - $e');
@@ -291,13 +297,15 @@ Guidelines:
       _setLoading(true);
       _clearError();
 
-      debugPrint('[LangChainRAG] Processing question: length=${question.length}, docs=$_documentCount');
+      debugPrint(
+          '[LangChainRAG] Processing question: length=${question.length}, docs=$_documentCount');
 
       // Invoke RAG chain
       final answer = await _ragChain!.invoke(question);
 
       final answerString = answer.toString();
-      debugPrint('[LangChainRAG] Question answered successfully: length=${answerString.length}');
+      debugPrint(
+          '[LangChainRAG] Question answered successfully: length=${answerString.length}');
 
       return answerString;
     } catch (e) {
@@ -319,7 +327,8 @@ Guidelines:
       final results = await _retriever!.invoke(query);
       return results.take(limit).toList();
     } catch (e) {
-      debugPrint('[LangChainRAG] ERROR: SEARCH_FAILED - Failed to search documents - $e');
+      debugPrint(
+          '[LangChainRAG] ERROR: SEARCH_FAILED - Failed to search documents - $e');
       rethrow;
     }
   }
@@ -337,7 +346,8 @@ Guidelines:
       debugPrint('[langchain_rag_service] All documents cleared');
       notifyListeners();
     } catch (e) {
-      debugPrint('[LangChainRAG] ERROR: CLEAR_DOCUMENTS_FAILED - Failed to clear documents - $e');
+      debugPrint(
+          '[LangChainRAG] ERROR: CLEAR_DOCUMENTS_FAILED - Failed to clear documents - $e');
       rethrow;
     }
   }
@@ -365,4 +375,3 @@ Guidelines:
     super.dispose();
   }
 }
-

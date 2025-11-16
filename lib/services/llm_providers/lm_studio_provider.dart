@@ -12,8 +12,6 @@ import 'llm_provider.dart';
 /// Provides integration with LM Studio instances through OpenAI-compatible API
 /// endpoints, supporting model management, streaming, and chat completions.
 class LMStudioProvider extends LLMProvider {
-  
-
   // State
   bool _isAvailable = false;
   bool _isConnecting = false;
@@ -88,7 +86,8 @@ class LMStudioProvider extends LLMProvider {
       // Load available models
       await refreshModels();
 
-      debugPrint('[lm_studio_provider] LM Studio provider initialized successfully');
+      debugPrint(
+          '[lm_studio_provider] LM Studio provider initialized successfully');
     } catch (e) {
       _lastError = 'Failed to initialize LM Studio provider: $e';
       debugPrint('[lm_studio_provider] LMSTUDIO_INIT_FAILED: e');
@@ -137,7 +136,8 @@ class LMStudioProvider extends LLMProvider {
   Future<bool> testConnection() async {
     try {
       _dio.options.baseUrl = _config.baseUrl;
-      final response = await _dio.get('/v1/models', options: Options(headers: _getHeaders()));
+      final response = await _dio.get('/v1/models',
+          options: Options(headers: _getHeaders()));
 
       if (response.statusCode == 200) {
         _isAvailable = true;
@@ -161,7 +161,8 @@ class LMStudioProvider extends LLMProvider {
       _setLoading(true);
 
       _dio.options.baseUrl = _config.baseUrl;
-      final response = await _dio.get('/v1/models', options: Options(headers: _getHeaders()));
+      final response = await _dio.get('/v1/models',
+          options: Options(headers: _getHeaders()));
 
       if (response.statusCode == 200) {
         final data = response.data as Map<String, dynamic>;
@@ -177,7 +178,8 @@ class LMStudioProvider extends LLMProvider {
           );
         }).toList();
 
-        debugPrint('[lm_studio_provider] Loaded ${_availableModels.length} models from LM Studio');
+        debugPrint(
+            '[lm_studio_provider] Loaded ${_availableModels.length} models from LM Studio');
       } else {
         throw Exception('HTTP ${response.statusCode}: ${response.data}');
       }
@@ -655,4 +657,3 @@ class _LMStudioSettingsWidgetState extends State<LMStudioSettingsWidget> {
     }
   }
 }
-

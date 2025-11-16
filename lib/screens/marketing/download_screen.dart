@@ -79,11 +79,11 @@ class DownloadScreen extends StatelessWidget {
           Text(
             'Download CloudToLocalLLM',
             style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
-              fontSize: 40,
-              letterSpacing: 1,
-            ),
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 40,
+                  letterSpacing: 1,
+                ),
           ),
           const SizedBox(height: 8),
 
@@ -91,10 +91,10 @@ class DownloadScreen extends StatelessWidget {
           Text(
             'Complete installation guide for Linux distributions',
             style: Theme.of(context).textTheme.titleLarge?.copyWith(
-              color: const Color(0xFFe0d7ff),
-              fontWeight: FontWeight.w500,
-              fontSize: 20,
-            ),
+                  color: const Color(0xFFe0d7ff),
+                  fontWeight: FontWeight.w500,
+                  fontSize: 20,
+                ),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 16),
@@ -477,19 +477,19 @@ cd cloudtolocalllm-${AppConfig.appVersion}-x86_64
           Text(
             title,
             style: Theme.of(context).textTheme.titleLarge?.copyWith(
-              color: const Color(0xFFa777e3),
-              fontWeight: FontWeight.bold,
-              fontSize: 20,
-            ),
+                  color: const Color(0xFFa777e3),
+                  fontWeight: FontWeight.bold,
+                  fontSize: 20,
+                ),
           ),
           if (description != null) ...[
             const SizedBox(height: 12),
             Text(
               description,
               style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                color: const Color(0xFFb0b0b0),
-                fontSize: 16,
-              ),
+                    color: const Color(0xFFb0b0b0),
+                    fontSize: 16,
+                  ),
             ),
           ],
           child,

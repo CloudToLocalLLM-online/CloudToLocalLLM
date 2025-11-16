@@ -149,8 +149,7 @@ class ValidationResult {
     return ValidationResult(
       isSuccess: json['isSuccess'] as bool,
       message: json['message'] as String,
-      tests:
-          (json['tests'] as List<dynamic>?)
+      tests: (json['tests'] as List<dynamic>?)
               ?.map(
                 (test) => ValidationTest.fromJson(test as Map<String, dynamic>),
               )

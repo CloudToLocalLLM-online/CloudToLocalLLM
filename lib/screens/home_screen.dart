@@ -41,9 +41,8 @@ class _HomeScreenState extends State<HomeScreen> {
     return LayoutBuilder(
       builder: (context, constraints) {
         final isCompact = constraints.maxWidth < AppConfig.mobileBreakpoint;
-        final isSidebarCollapsed = isCompact
-            ? (_compactSidebarPreference ?? true)
-            : false;
+        final isSidebarCollapsed =
+            isCompact ? (_compactSidebarPreference ?? true) : false;
 
         return HomeLayout(
           isCompact: isCompact,

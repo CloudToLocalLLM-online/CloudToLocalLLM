@@ -19,7 +19,7 @@ class AppInitializationService extends ChangeNotifier {
   }) : _authService = authService {
     // Listen for auth state changes
     _authService.addListener(_onAuthStateChanged);
-    
+
     // If already authenticated, initialize immediately
     if (_authService.isAuthenticated.value) {
       _initializeServices();
@@ -31,11 +31,14 @@ class AppInitializationService extends ChangeNotifier {
 
   /// Handle authentication state changes
   void _onAuthStateChanged() {
-    if (_authService.isAuthenticated.value && !_isInitialized && !_isInitializing) {
+    if (_authService.isAuthenticated.value &&
+        !_isInitialized &&
+        !_isInitializing) {
       appLogger.info('[AppInit] User authenticated, initializing services...');
       _initializeServices();
     } else if (!_authService.isAuthenticated.value && _isInitialized) {
-      appLogger.debug('[AppInit] User logged out, resetting initialization state');
+      appLogger
+          .debug('[AppInit] User logged out, resetting initialization state');
       _isInitialized = false;
       notifyListeners();
     }
@@ -53,7 +56,7 @@ class AppInitializationService extends ChangeNotifier {
 
       // Note: We can't access context here, so services need to be initialized
       // when this service is consumed by widgets that have access to context
-      
+
       _isInitialized = true;
       appLogger.debug('[AppInit] Service initialization completed');
     } catch (e) {
@@ -88,7 +91,8 @@ class AppInitializationService extends ChangeNotifier {
         try {
           clientDetection = context.read<DesktopClientDetectionService>();
         } catch (e) {
-          appLogger.debug('[AppInit] DesktopClientDetectionService not yet available');
+          appLogger.debug(
+              '[AppInit] DesktopClientDetectionService not yet available');
           return; // Services not loaded yet, wait for authentication
         }
       }
@@ -103,7 +107,8 @@ class AppInitializationService extends ChangeNotifier {
 
       appLogger.debug('[AppInit] Context-based initialization completed');
     } catch (e) {
-      appLogger.error('[AppInit] Context-based initialization failed', error: e);
+      appLogger.error('[AppInit] Context-based initialization failed',
+          error: e);
     }
   }
 

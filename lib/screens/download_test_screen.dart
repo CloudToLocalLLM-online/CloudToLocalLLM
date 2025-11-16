@@ -53,8 +53,8 @@ class _DownloadTestScreenState extends State<DownloadTestScreen> {
                     Text(
                       'Download System Status',
                       style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                            fontWeight: FontWeight.bold,
+                          ),
                     ),
                     const SizedBox(height: 12),
                     _buildStatusRow('Platform', kIsWeb ? 'Web' : 'Desktop'),
@@ -138,8 +138,8 @@ class _DownloadTestScreenState extends State<DownloadTestScreen> {
                     Text(
                       'Manual Download Links',
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                            fontWeight: FontWeight.bold,
+                          ),
                     ),
                     const SizedBox(height: 8),
                     Text(
@@ -175,7 +175,9 @@ class _DownloadTestScreenState extends State<DownloadTestScreen> {
                     children: [
                       Text(
                         'Debug Information',
-                        style: Theme.of(context).textTheme.titleMedium
+                        style: Theme.of(context)
+                            .textTheme
+                            .titleMedium
                             ?.copyWith(fontWeight: FontWeight.bold),
                       ),
                       const SizedBox(height: 8),

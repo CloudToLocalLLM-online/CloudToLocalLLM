@@ -1,5 +1,5 @@
 /// Tunnel connection state model
-/// 
+///
 /// Represents the current state of a tunnel connection with all relevant information
 class TunnelState {
   final bool isConnected;
@@ -133,4 +133,3 @@ class TunnelStats {
     );
   }
 }
-

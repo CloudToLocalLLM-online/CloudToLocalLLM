@@ -155,8 +155,8 @@ class _InstallationGuideState extends State<InstallationGuide> {
                   Text(
                     '${widget.platform.displayName} - ${widget.installationType}',
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Theme.of(context).textTheme.bodySmall?.color,
-                    ),
+                          color: Theme.of(context).textTheme.bodySmall?.color,
+                        ),
                   ),
                 ],
               ),
@@ -260,8 +260,8 @@ class _InstallationGuideState extends State<InstallationGuide> {
             backgroundColor: isCompleted
                 ? Colors.green
                 : isCurrent
-                ? Theme.of(context).primaryColor
-                : Colors.grey,
+                    ? Theme.of(context).primaryColor
+                    : Colors.grey,
             child: isCompleted
                 ? const Icon(Icons.check, color: Colors.white)
                 : Text(
@@ -272,9 +272,9 @@ class _InstallationGuideState extends State<InstallationGuide> {
           title: Text(
             step.title,
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.normal,
-              color: isCompleted ? Colors.green : null,
-            ),
+                  fontWeight: FontWeight.normal,
+                  color: isCompleted ? Colors.green : null,
+                ),
           ),
           subtitle: step.isOptional ? const Text('Optional') : null,
           children: [
@@ -474,8 +474,8 @@ class _InstallationGuideState extends State<InstallationGuide> {
                       Text(
                         entry.key,
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
+                              fontWeight: FontWeight.w600,
+                            ),
                       ),
                       const SizedBox(height: 4),
                       Text(entry.value),

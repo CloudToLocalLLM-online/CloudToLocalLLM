@@ -29,8 +29,8 @@ class LocalOllamaStreamingService extends StreamingService {
   bool _isCircuitBreakerOpen = false;
 
   LocalOllamaStreamingService({String? baseUrl, StreamingConfig? config})
-    : _baseUrl = baseUrl ?? AppConfig.defaultOllamaUrl,
-      _config = config ?? StreamingConfig.local() {
+      : _baseUrl = baseUrl ?? AppConfig.defaultOllamaUrl,
+        _config = config ?? StreamingConfig.local() {
     _setupDio();
     if (kDebugMode) {
       debugPrint('[LocalOllamaStreaming] Service initialized');
@@ -66,7 +66,8 @@ class LocalOllamaStreamingService extends StreamingService {
       final stopwatch = Stopwatch()..start();
 
       // Test basic connectivity
-      final response = await _dio.get('/api/version', options: Options(headers: {'Accept': 'application/json'}));
+      final response = await _dio.get('/api/version',
+          options: Options(headers: {'Accept': 'application/json'}));
 
       stopwatch.stop();
 
@@ -192,10 +193,9 @@ class LocalOllamaStreamingService extends StreamingService {
         );
       }
 
-      await for (final chunk
-          in response.data.stream
-              .transform(convert.utf8.decoder)
-              .transform(const LineSplitter())) {
+      await for (final chunk in response.data.stream
+          .transform(convert.utf8.decoder)
+          .transform(const LineSplitter())) {
         if (chunk.trim().isEmpty) continue;
 
         try {
@@ -279,12 +279,12 @@ class LocalOllamaStreamingService extends StreamingService {
     }
 
     try {
-      final response = await _dio.get('/api/tags', options: Options(headers: {'Accept': 'application/json'}));
+      final response = await _dio.get('/api/tags',
+          options: Options(headers: {'Accept': 'application/json'}));
 
       if (response.statusCode == 200) {
         final data = response.data;
-        final models =
-            (data['models'] as List?)
+        final models = (data['models'] as List?)
                 ?.map((model) => model['name'] as String)
                 .toList() ??
             [];

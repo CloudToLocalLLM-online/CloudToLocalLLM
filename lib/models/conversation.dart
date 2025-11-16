@@ -29,8 +29,7 @@ class Conversation {
       messages: [],
       createdAt: now,
       updatedAt: now,
-      model:
-          model ??
+      model: model ??
           'default', // Ensure model is never null for database constraints
     );
   }
@@ -40,8 +39,7 @@ class Conversation {
     return Conversation(
       id: json['id'] ?? '',
       title: json['title'] ?? 'Untitled Conversation',
-      messages:
-          (json['messages'] as List<dynamic>?)
+      messages: (json['messages'] as List<dynamic>?)
               ?.map((m) => Message.fromJson(m as Map<String, dynamic>))
               .toList() ??
           [],
@@ -98,9 +96,8 @@ class Conversation {
 
   /// Update a message in the conversation
   Conversation updateMessage(String messageId, Message updatedMessage) {
-    final updatedMessages = messages
-        .map((m) => m.id == messageId ? updatedMessage : m)
-        .toList();
+    final updatedMessages =
+        messages.map((m) => m.id == messageId ? updatedMessage : m).toList();
     return copyWith(messages: updatedMessages, updatedAt: DateTime.now());
   }
 

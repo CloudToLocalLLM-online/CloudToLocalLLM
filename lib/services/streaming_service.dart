@@ -210,13 +210,13 @@ class StreamingException implements Exception {
 /// Connection timeout exception
 class ConnectionTimeoutException extends StreamingException {
   const ConnectionTimeoutException(String endpoint)
-    : super('Connection timeout to $endpoint', code: 'CONNECTION_TIMEOUT');
+      : super('Connection timeout to $endpoint', code: 'CONNECTION_TIMEOUT');
 }
 
 /// Stream timeout exception
 class StreamTimeoutException extends StreamingException {
   const StreamTimeoutException()
-    : super('Stream response timeout', code: 'STREAM_TIMEOUT');
+      : super('Stream response timeout', code: 'STREAM_TIMEOUT');
 }
 
 /// Authentication exception

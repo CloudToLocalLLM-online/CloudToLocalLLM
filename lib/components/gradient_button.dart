@@ -81,8 +81,7 @@ class _GradientButtonState extends State<GradientButton>
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
                 width: widget.width,
-                padding:
-                    widget.padding ??
+                padding: widget.padding ??
                     EdgeInsets.symmetric(
                       horizontal: AppTheme.spacingL,
                       vertical: AppTheme.spacingM,

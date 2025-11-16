@@ -92,16 +92,19 @@ class ProviderMetrics {
   }) {
     final now = DateTime.now();
     final newTotalRequests = totalRequests + 1;
-    final newSuccessfulRequests = success ? successfulRequests + 1 : successfulRequests;
+    final newSuccessfulRequests =
+        success ? successfulRequests + 1 : successfulRequests;
     final newFailedRequests = success ? failedRequests : failedRequests + 1;
-    
+
     // Calculate new average response time
     final newAverageResponseTime = totalRequests == 0
         ? responseTime
-        : ((averageResponseTime * totalRequests) + responseTime) / newTotalRequests;
-    
+        : ((averageResponseTime * totalRequests) + responseTime) /
+            newTotalRequests;
+
     // Calculate new success rate
-    final newSuccessRate = newTotalRequests == 0 ? 0.0 : newSuccessfulRequests / newTotalRequests;
+    final newSuccessRate =
+        newTotalRequests == 0 ? 0.0 : newSuccessfulRequests / newTotalRequests;
 
     return ProviderMetrics(
       providerId: providerId,
@@ -123,7 +126,7 @@ class ProviderMetrics {
   /// Get health status based on metrics
   ProviderHealthStatus get healthStatus {
     if (totalRequests == 0) return ProviderHealthStatus.unknown;
-    
+
     if (successRate >= 0.95 && averageResponseTime < 5000) {
       return ProviderHealthStatus.healthy;
     } else if (successRate >= 0.8 && averageResponseTime < 10000) {
@@ -184,8 +187,8 @@ class RegisteredProvider {
   }
 
   /// Check if provider is available for use
-  bool get isAvailable => 
-      isEnabled && 
+  bool get isAvailable =>
+      isEnabled &&
       info.status == ProviderStatus.available &&
       healthStatus != ProviderHealthStatus.unhealthy;
 }
@@ -197,7 +200,7 @@ class LLMProviderManager extends ChangeNotifier {
 
   final Map<String, RegisteredProvider> _registeredProviders = {};
   final Map<String, Timer> _healthCheckTimers = {};
-  
+
   Timer? _periodicHealthCheckTimer;
   bool _isInitialized = false;
   String? _preferredProviderId;
@@ -208,12 +211,11 @@ class LLMProviderManager extends ChangeNotifier {
   LLMProviderManager({
     required ProviderDiscoveryService discoveryService,
     required LangChainIntegrationService langchainService,
-  }) : _discoveryService = discoveryService,
-       _langchainService = langchainService {
-    
+  })  : _discoveryService = discoveryService,
+        _langchainService = langchainService {
     // Listen to discovery service changes
     _discoveryService.addListener(_onDiscoveryChanged);
-    
+
     // Listen to LangChain service changes
     _langchainService.addListener(_onLangChainChanged);
   }
@@ -232,20 +234,18 @@ class LLMProviderManager extends ChangeNotifier {
       List.unmodifiable(_registeredProviders.values);
 
   /// Get available providers (enabled and healthy)
-  List<RegisteredProvider> get availableProviders =>
-      _registeredProviders.values
-          .where((provider) => provider.isAvailable)
-          .toList()
-        ..sort((a, b) => b.priority.compareTo(a.priority));
+  List<RegisteredProvider> get availableProviders => _registeredProviders.values
+      .where((provider) => provider.isAvailable)
+      .toList()
+    ..sort((a, b) => b.priority.compareTo(a.priority));
 
   /// Get healthy providers
-  List<RegisteredProvider> get healthyProviders =>
-      _registeredProviders.values
-          .where((provider) => 
-              provider.isEnabled && 
-              provider.healthStatus == ProviderHealthStatus.healthy)
-          .toList()
-        ..sort((a, b) => b.priority.compareTo(a.priority));
+  List<RegisteredProvider> get healthyProviders => _registeredProviders.values
+      .where((provider) =>
+          provider.isEnabled &&
+          provider.healthStatus == ProviderHealthStatus.healthy)
+      .toList()
+    ..sort((a, b) => b.priority.compareTo(a.priority));
 
   /// Initialize the provider manager
   Future<void> initialize() async {
@@ -255,11 +255,14 @@ class LLMProviderManager extends ChangeNotifier {
 
       // Ensure discovery service is running (skip on web platforms)
       if (!kIsWeb && !_discoveryService.isScanning) {
-        debugPrint(' [LLMProviderManager] Starting provider discovery (desktop platform)');
+        debugPrint(
+            ' [LLMProviderManager] Starting provider discovery (desktop platform)');
         await _discoveryService.scanForProviders();
       } else if (kIsWeb) {
-        debugPrint(' [LLMProviderManager] Skipping provider discovery on web platform');
-        debugPrint(' [LLMProviderManager] Web platform uses tunnel/bridge system for provider access');
+        debugPrint(
+            ' [LLMProviderManager] Skipping provider discovery on web platform');
+        debugPrint(
+            ' [LLMProviderManager] Web platform uses tunnel/bridge system for provider access');
       }
 
       // Ensure LangChain service is initialized
@@ -274,8 +277,8 @@ class LLMProviderManager extends ChangeNotifier {
       _startHealthMonitoring();
 
       _isInitialized = true;
-      debugPrint('LLM Provider Manager initialized with ${_registeredProviders.length} providers');
-
+      debugPrint(
+          'LLM Provider Manager initialized with ${_registeredProviders.length} providers');
     } catch (error) {
       _error = 'Failed to initialize provider manager: $error';
       debugPrint(_error);
@@ -285,7 +288,8 @@ class LLMProviderManager extends ChangeNotifier {
   }
 
   /// Register a provider manually
-  Future<void> registerProvider(ProviderInfo providerInfo, {int priority = 0}) async {
+  Future<void> registerProvider(ProviderInfo providerInfo,
+      {int priority = 0}) async {
     try {
       debugPrint('Registering provider: ${providerInfo.name}');
 
@@ -313,7 +317,6 @@ class LLMProviderManager extends ChangeNotifier {
 
       debugPrint('Provider registered successfully: ${providerInfo.name}');
       notifyListeners();
-
     } catch (error) {
       debugPrint('Failed to register provider ${providerInfo.name}: $error');
       throw LLMCommunicationError.fromException(
@@ -370,7 +373,8 @@ class LLMProviderManager extends ChangeNotifier {
         success = await _langchainService.testProvider(providerId);
       } else {
         // Fallback to discovery service validation
-        success = await _discoveryService.validateProviderEndpoint(provider.info);
+        success =
+            await _discoveryService.validateProviderEndpoint(provider.info);
       }
 
       stopwatch.stop();
@@ -379,9 +383,9 @@ class LLMProviderManager extends ChangeNotifier {
       // Update metrics
       await _updateProviderMetrics(providerId, success, responseTime);
 
-      debugPrint('Connection test for ${provider.info.name}: ${success ? 'SUCCESS' : 'FAILED'}');
+      debugPrint(
+          'Connection test for ${provider.info.name}: ${success ? 'SUCCESS' : 'FAILED'}');
       return success;
-
     } catch (error) {
       stopwatch.stop();
       final responseTime = stopwatch.elapsedMilliseconds.toDouble();
@@ -433,7 +437,6 @@ class LLMProviderManager extends ChangeNotifier {
         debugPrint('Provider ${provider.info.name} reconnection failed');
         return false;
       }
-
     } catch (error) {
       debugPrint('Error reconnecting provider ${provider.info.name}: $error');
 
@@ -482,7 +485,8 @@ class LLMProviderManager extends ChangeNotifier {
     final provider = _registeredProviders[providerId];
     if (provider != null) {
       _registeredProviders[providerId] = provider.copyWith(isEnabled: enabled);
-      debugPrint('Provider ${provider.info.name} ${enabled ? 'enabled' : 'disabled'}');
+      debugPrint(
+          'Provider ${provider.info.name} ${enabled ? 'enabled' : 'disabled'}');
       notifyListeners();
     }
   }
@@ -501,11 +505,11 @@ class LLMProviderManager extends ChangeNotifier {
   Stream<Map<String, ProviderHealthStatus>> monitorProviderHealth() async* {
     while (_isInitialized) {
       final healthMap = <String, ProviderHealthStatus>{};
-      
+
       for (final provider in _registeredProviders.values) {
         healthMap[provider.info.id] = provider.healthStatus;
       }
-      
+
       yield healthMap;
       await Future.delayed(_healthCheckInterval);
     }
@@ -514,10 +518,11 @@ class LLMProviderManager extends ChangeNotifier {
   /// Register all discovered providers
   Future<void> _registerDiscoveredProviders() async {
     final discoveredProviders = _discoveryService.getAvailableProviders();
-    
+
     for (final providerInfo in discoveredProviders) {
       if (!_registeredProviders.containsKey(providerInfo.id)) {
-        await registerProvider(providerInfo, priority: _getDefaultPriority(providerInfo.type));
+        await registerProvider(providerInfo,
+            priority: _getDefaultPriority(providerInfo.type));
       }
     }
   }
@@ -548,7 +553,8 @@ class LLMProviderManager extends ChangeNotifier {
       _startProviderHealthCheck(providerId);
     }
 
-    debugPrint('Started health monitoring for ${_registeredProviders.length} providers');
+    debugPrint(
+        'Started health monitoring for ${_registeredProviders.length} providers');
   }
 
   /// Start health check for specific provider
@@ -573,8 +579,8 @@ class LLMProviderManager extends ChangeNotifier {
 
     try {
       final isHealthy = await testProviderConnection(providerId);
-      final newHealthStatus = isHealthy 
-          ? ProviderHealthStatus.healthy 
+      final newHealthStatus = isHealthy
+          ? ProviderHealthStatus.healthy
           : ProviderHealthStatus.unhealthy;
 
       // Update provider with new health status
@@ -585,13 +591,13 @@ class LLMProviderManager extends ChangeNotifier {
 
       // Notify listeners if health status changed
       if (provider.healthStatus != newHealthStatus) {
-        debugPrint('Provider ${provider.info.name} health changed to: $newHealthStatus');
+        debugPrint(
+            'Provider ${provider.info.name} health changed to: $newHealthStatus');
         notifyListeners();
       }
-
     } catch (error) {
       debugPrint('Health check failed for ${provider.info.name}: $error');
-      
+
       _registeredProviders[providerId] = provider.copyWith(
         healthStatus: ProviderHealthStatus.unhealthy,
         lastHealthCheck: DateTime.now(),
@@ -601,8 +607,8 @@ class LLMProviderManager extends ChangeNotifier {
 
   /// Update provider metrics
   Future<void> _updateProviderMetrics(
-    String providerId, 
-    bool success, 
+    String providerId,
+    bool success,
     double responseTime,
   ) async {
     final provider = _registeredProviders[providerId];
@@ -637,7 +643,7 @@ class LLMProviderManager extends ChangeNotifier {
     for (final entry in _registeredProviders.entries) {
       final providerId = entry.key;
       final provider = entry.value;
-      
+
       final langchainWrapper = _langchainService.getProvider(providerId);
       if (langchainWrapper != provider.langchainWrapper) {
         _registeredProviders[providerId] = provider.copyWith(
@@ -682,13 +688,13 @@ class LLMProviderManager extends ChangeNotifier {
   void dispose() {
     _discoveryService.removeListener(_onDiscoveryChanged);
     _langchainService.removeListener(_onLangChainChanged);
-    
+
     _periodicHealthCheckTimer?.cancel();
     for (final timer in _healthCheckTimers.values) {
       timer.cancel();
     }
     _healthCheckTimers.clear();
-    
+
     super.dispose();
   }
 }

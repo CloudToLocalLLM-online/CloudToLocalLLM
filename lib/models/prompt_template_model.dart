@@ -74,7 +74,7 @@ class PromptTemplateModel {
       ),
       variables: List<String>.from(json['variables'] as List),
       isBuiltIn: json['isBuiltIn'] as bool,
-      createdAt: json['createdAt'] != null 
+      createdAt: json['createdAt'] != null
           ? DateTime.parse(json['createdAt'] as String)
           : null,
       updatedAt: json['updatedAt'] != null

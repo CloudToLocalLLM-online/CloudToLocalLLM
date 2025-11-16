@@ -35,13 +35,15 @@ class DocumentationScreen extends StatelessWidget {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.menu_book, size: 48, color: Color(0xFF6e8efb)),
+                    const Icon(Icons.menu_book,
+                        size: 48, color: Color(0xFF6e8efb)),
                     const SizedBox(height: 16),
                     Text(
                       'Documentation Coming Soon',
-                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
+                      style:
+                          Theme.of(context).textTheme.headlineSmall?.copyWith(
+                                fontWeight: FontWeight.bold,
+                              ),
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 12),

@@ -23,8 +23,8 @@ class WebDownloadPromptService extends ChangeNotifier {
   WebDownloadPromptService({
     required AuthService authService,
     DesktopClientDetectionService? clientDetectionService,
-  }) : _authService = authService,
-       _clientDetectionService = clientDetectionService;
+  })  : _authService = authService,
+        _clientDetectionService = clientDetectionService;
 
   /// Initialize the service
   Future<void> initialize() async {

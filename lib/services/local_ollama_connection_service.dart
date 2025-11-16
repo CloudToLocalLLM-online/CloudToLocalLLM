@@ -39,8 +39,8 @@ class LocalOllamaConnectionService extends ChangeNotifier {
   final Set<String> _activeRequestIds = <String>{};
 
   LocalOllamaConnectionService({String? baseUrl, Duration? timeout})
-    : _baseUrl = baseUrl ?? AppConfig.defaultOllamaUrl,
-      _timeout = timeout ?? AppConfig.ollamaTimeout {
+      : _baseUrl = baseUrl ?? AppConfig.defaultOllamaUrl,
+        _timeout = timeout ?? AppConfig.ollamaTimeout {
     _dio = Dio();
     _setupDio();
 
@@ -134,7 +134,8 @@ class LocalOllamaConnectionService extends ChangeNotifier {
     try {
       debugPrint('[LocalOllama] Testing connection to $_baseUrl');
 
-      final response = await _dio.get('/api/version', options: Options(headers: {'Accept': 'application/json'}));
+      final response = await _dio.get('/api/version',
+          options: Options(headers: {'Accept': 'application/json'}));
 
       if (response.statusCode == 200) {
         final data = response.data;
@@ -187,7 +188,8 @@ class LocalOllamaConnectionService extends ChangeNotifier {
     }
 
     try {
-      final response = await _dio.get('/api/tags', options: Options(headers: {'Accept': 'application/json'}));
+      final response = await _dio.get('/api/tags',
+          options: Options(headers: {'Accept': 'application/json'}));
 
       if (response.statusCode == 200) {
         final data = response.data;

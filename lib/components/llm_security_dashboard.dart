@@ -146,8 +146,8 @@ class _LLMSecurityDashboardState extends State<LLMSecurityDashboard>
                 Text(
                   'Recent Activity',
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
+                        fontWeight: FontWeight.w600,
+                      ),
                 ),
                 SizedBox(height: AppTheme.spacingM),
                 if (recentEvents.isEmpty)
@@ -157,8 +157,8 @@ class _LLMSecurityDashboardState extends State<LLMSecurityDashboard>
                       child: Text(
                         'No recent activity',
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: AppTheme.textColorLight,
-                        ),
+                              color: AppTheme.textColorLight,
+                            ),
                       ),
                     ),
                   )
@@ -186,8 +186,8 @@ class _LLMSecurityDashboardState extends State<LLMSecurityDashboard>
               child: Text(
                 '${events.length} events',
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: AppTheme.textColorLight,
-                ),
+                      color: AppTheme.textColorLight,
+                    ),
               ),
             ),
             TextButton.icon(
@@ -215,8 +215,8 @@ class _LLMSecurityDashboardState extends State<LLMSecurityDashboard>
                     child: Text(
                       'No audit events',
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: AppTheme.textColorLight,
-                      ),
+                            color: AppTheme.textColorLight,
+                          ),
                     ),
                   )
                 : ListView.separated(
@@ -248,8 +248,8 @@ class _LLMSecurityDashboardState extends State<LLMSecurityDashboard>
                 child: Text(
                   'No usage statistics available',
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: AppTheme.textColorLight,
-                  ),
+                        color: AppTheme.textColorLight,
+                      ),
                 ),
               ),
             )
@@ -263,8 +263,8 @@ class _LLMSecurityDashboardState extends State<LLMSecurityDashboard>
                     Text(
                       '${providerStats.providerId} - ${providerStats.modelId}',
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
+                            fontWeight: FontWeight.w600,
+                          ),
                     ),
                     SizedBox(height: AppTheme.spacingM),
                     _buildUsageStatsGrid(providerStats),
@@ -305,19 +305,19 @@ class _LLMSecurityDashboardState extends State<LLMSecurityDashboard>
                           ? 'No Security Issues'
                           : 'Security Events Detected',
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
-                        color: securityEvents.isEmpty
-                            ? Colors.green
-                            : Colors.orange,
-                      ),
+                            fontWeight: FontWeight.w600,
+                            color: securityEvents.isEmpty
+                                ? Colors.green
+                                : Colors.orange,
+                          ),
                     ),
                     Text(
                       securityEvents.isEmpty
                           ? 'All LLM interactions are secure'
                           : '${securityEvents.length} security events require attention',
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: AppTheme.textColorLight,
-                      ),
+                            color: AppTheme.textColorLight,
+                          ),
                     ),
                   ],
                 ),
@@ -381,9 +381,9 @@ class _LLMSecurityDashboardState extends State<LLMSecurityDashboard>
           Text(
             value,
             style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: color,
-            ),
+                  fontWeight: FontWeight.bold,
+                  color: color,
+                ),
           ),
         ],
       ),
@@ -512,10 +512,8 @@ class _LLMSecurityDashboardState extends State<LLMSecurityDashboard>
       final exportData = auditService.exportAuditLog();
 
       // Create filename with timestamp
-      final timestamp = DateTime.now()
-          .toIso8601String()
-          .replaceAll(':', '-')
-          .split('.')[0];
+      final timestamp =
+          DateTime.now().toIso8601String().replaceAll(':', '-').split('.')[0];
       final fileName = 'cloudtolocalllm_audit_log_$timestamp.json';
 
       if (kIsWeb) {

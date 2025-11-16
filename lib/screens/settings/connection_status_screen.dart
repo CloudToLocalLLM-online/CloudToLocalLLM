@@ -94,9 +94,9 @@ class _ConnectionStatusScreenState extends State<ConnectionStatusScreen> {
             Text(
               'System Connection Status',
               style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                color: AppTheme.textColor,
-                fontWeight: FontWeight.bold,
-              ),
+                    color: AppTheme.textColor,
+                    fontWeight: FontWeight.bold,
+                  ),
             ),
             SizedBox(height: AppTheme.spacingS),
             Text(
@@ -262,8 +262,8 @@ class _ConnectionStatusScreenState extends State<ConnectionStatusScreen> {
                 Text(
                   'Cloud proxy allows secure access to local Ollama instances from web browsers and remote clients.',
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: AppTheme.textColorLight,
-                  ),
+                        color: AppTheme.textColorLight,
+                      ),
                 ),
               ],
             ],
@@ -345,9 +345,9 @@ class _ConnectionStatusScreenState extends State<ConnectionStatusScreen> {
         Text(
           title,
           style: Theme.of(context).textTheme.titleLarge?.copyWith(
-            color: AppTheme.textColor,
-            fontWeight: FontWeight.bold,
-          ),
+                color: AppTheme.textColor,
+                fontWeight: FontWeight.bold,
+              ),
         ),
       ],
     );
@@ -368,9 +368,9 @@ class _ConnectionStatusScreenState extends State<ConnectionStatusScreen> {
           Text(
             value,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: valueColor,
-              fontWeight: FontWeight.w500,
-            ),
+                  color: valueColor,
+                  fontWeight: FontWeight.w500,
+                ),
           ),
         ],
       ),

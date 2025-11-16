@@ -24,8 +24,8 @@ class UserContainerService extends ChangeNotifier {
   DateTime? _lastStatusCheck;
 
   UserContainerService({required AuthService authService, String? baseUrl})
-    : _authService = authService,
-      _baseUrl = baseUrl ?? _getDefaultBaseUrl() {
+      : _authService = authService,
+        _baseUrl = baseUrl ?? _getDefaultBaseUrl() {
     _setupDio();
     debugPrint(
       '� [UserContainer] Service initialized with baseUrl: $_baseUrl',

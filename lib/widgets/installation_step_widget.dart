@@ -110,8 +110,8 @@ class _InstallationStepWidgetState extends State<InstallationStepWidget>
         backgroundColor: widget.isCompleted
             ? Colors.green
             : widget.isCurrent
-            ? Theme.of(context).primaryColor
-            : Colors.grey.shade400,
+                ? Theme.of(context).primaryColor
+                : Colors.grey.shade400,
         child: widget.isCompleted
             ? const Icon(Icons.check, color: Colors.white, size: 20)
             : Text(
@@ -133,8 +133,8 @@ class _InstallationStepWidgetState extends State<InstallationStepWidget>
         color: widget.isCompleted
             ? Colors.green.shade700
             : widget.isCurrent
-            ? Theme.of(context).primaryColor
-            : null,
+                ? Theme.of(context).primaryColor
+                : null,
       ),
     );
   }
@@ -144,9 +144,9 @@ class _InstallationStepWidgetState extends State<InstallationStepWidget>
       return Text(
         'Optional',
         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-          color: Colors.grey,
-          fontStyle: FontStyle.italic,
-        ),
+              color: Colors.grey,
+              fontStyle: FontStyle.italic,
+            ),
       );
     }
     return const SizedBox.shrink();

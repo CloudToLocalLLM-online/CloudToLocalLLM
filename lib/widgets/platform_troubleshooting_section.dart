@@ -63,15 +63,15 @@ class _PlatformTroubleshootingSectionState
                 Text(
                   'Common Issues & Solutions',
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: Colors.orange.shade800,
-                  ),
+                        fontWeight: FontWeight.bold,
+                        color: Colors.orange.shade800,
+                      ),
                 ),
                 Text(
                   'Solutions for ${widget.platformConfig.displayName}',
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Colors.orange.shade700,
-                  ),
+                        color: Colors.orange.shade700,
+                      ),
                 ),
               ],
             ),

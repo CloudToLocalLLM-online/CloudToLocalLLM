@@ -56,22 +56,18 @@ class _EnhancedErrorWidgetState extends State<EnhancedErrorWidget> {
             _buildErrorHeader(),
             SizedBox(height: AppTheme.spacingM),
             _buildErrorMessage(),
-            
             if (widget.showTroubleshooting) ...[
               SizedBox(height: AppTheme.spacingM),
               _buildTroubleshootingSection(),
             ],
-            
             if (_showDetails) ...[
               SizedBox(height: AppTheme.spacingM),
               _buildErrorDetails(),
             ],
-            
             if (_showDiagnostics && widget.showDiagnostics) ...[
               SizedBox(height: AppTheme.spacingM),
               _buildDiagnosticsSection(),
             ],
-            
             SizedBox(height: AppTheme.spacingL),
             _buildActionButtons(),
           ],
@@ -83,7 +79,7 @@ class _EnhancedErrorWidgetState extends State<EnhancedErrorWidget> {
   Widget _buildErrorHeader() {
     final errorIcon = _getErrorIcon(widget.error.type);
     final errorColor = _getErrorColor(widget.error.type);
-    
+
     return Row(
       children: [
         Container(
@@ -102,17 +98,17 @@ class _EnhancedErrorWidgetState extends State<EnhancedErrorWidget> {
               Text(
                 _getErrorTitle(widget.error.type),
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: errorColor,
-                  fontWeight: FontWeight.w600,
-                ),
+                      color: errorColor,
+                      fontWeight: FontWeight.w600,
+                    ),
               ),
               if (widget.error.providerId != null) ...[
                 SizedBox(height: AppTheme.spacingXS),
                 Text(
                   'Provider: ${widget.error.providerId}',
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: AppTheme.textColorLight,
-                  ),
+                        color: AppTheme.textColorLight,
+                      ),
                 ),
               ],
             ],
@@ -146,8 +142,8 @@ class _EnhancedErrorWidgetState extends State<EnhancedErrorWidget> {
             Text(
               'Context: ${widget.error.context}',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: AppTheme.textColorLight,
-              ),
+                    color: AppTheme.textColorLight,
+                  ),
             ),
           ],
         ],
@@ -157,13 +153,13 @@ class _EnhancedErrorWidgetState extends State<EnhancedErrorWidget> {
 
   Widget _buildTroubleshootingSection() {
     final suggestions = _getTroubleshootingSuggestions(widget.error.type);
-    
+
     return ExpansionTile(
       title: Text(
         'Troubleshooting Guide',
         style: Theme.of(context).textTheme.titleSmall?.copyWith(
-          fontWeight: FontWeight.w600,
-        ),
+              fontWeight: FontWeight.w600,
+            ),
       ),
       leading: Icon(Icons.help_outline, color: AppTheme.primaryColor),
       children: [
@@ -172,7 +168,8 @@ class _EnhancedErrorWidgetState extends State<EnhancedErrorWidget> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              ...suggestions.map((suggestion) => _buildSuggestionItem(suggestion)),
+              ...suggestions
+                  .map((suggestion) => _buildSuggestionItem(suggestion)),
               SizedBox(height: AppTheme.spacingM),
               _buildQuickActions(),
             ],
@@ -211,17 +208,17 @@ class _EnhancedErrorWidgetState extends State<EnhancedErrorWidget> {
 
   Widget _buildQuickActions() {
     final actions = _getQuickActions(widget.error.type);
-    
+
     if (actions.isEmpty) return const SizedBox.shrink();
-    
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           'Quick Actions',
           style: Theme.of(context).textTheme.titleSmall?.copyWith(
-            fontWeight: FontWeight.w600,
-          ),
+                fontWeight: FontWeight.w600,
+              ),
         ),
         SizedBox(height: AppTheme.spacingS),
         Wrap(
@@ -248,8 +245,8 @@ class _EnhancedErrorWidgetState extends State<EnhancedErrorWidget> {
       title: Text(
         'Technical Details',
         style: Theme.of(context).textTheme.titleSmall?.copyWith(
-          fontWeight: FontWeight.w600,
-        ),
+              fontWeight: FontWeight.w600,
+            ),
       ),
       leading: Icon(Icons.code, color: AppTheme.textColorLight),
       children: [
@@ -260,7 +257,8 @@ class _EnhancedErrorWidgetState extends State<EnhancedErrorWidget> {
           decoration: BoxDecoration(
             color: AppTheme.backgroundCard.withValues(alpha: 0.5),
             borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: AppTheme.textColorLight.withValues(alpha: 0.3)),
+            border: Border.all(
+                color: AppTheme.textColorLight.withValues(alpha: 0.3)),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -277,8 +275,8 @@ class _EnhancedErrorWidgetState extends State<EnhancedErrorWidget> {
                 Text(
                   'Stack Trace:',
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
+                        fontWeight: FontWeight.w600,
+                      ),
                 ),
                 SizedBox(height: AppTheme.spacingXS),
                 Container(
@@ -291,9 +289,9 @@ class _EnhancedErrorWidgetState extends State<EnhancedErrorWidget> {
                   child: Text(
                     widget.error.stackTrace.toString(),
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      fontFamily: 'monospace',
-                      fontSize: 10,
-                    ),
+                          fontFamily: 'monospace',
+                          fontSize: 10,
+                        ),
                   ),
                 ),
               ],
@@ -321,8 +319,8 @@ class _EnhancedErrorWidgetState extends State<EnhancedErrorWidget> {
       title: Text(
         'System Diagnostics',
         style: Theme.of(context).textTheme.titleSmall?.copyWith(
-          fontWeight: FontWeight.w600,
-        ),
+              fontWeight: FontWeight.w600,
+            ),
       ),
       leading: Icon(Icons.medical_services, color: AppTheme.warningColor),
       children: [
@@ -330,10 +328,14 @@ class _EnhancedErrorWidgetState extends State<EnhancedErrorWidget> {
           padding: EdgeInsets.symmetric(horizontal: AppTheme.spacingM),
           child: Column(
             children: [
-              _buildDiagnosticItem('Network Connectivity', 'Checking...', Icons.network_check),
-              _buildDiagnosticItem('Provider Availability', 'Checking...', Icons.computer),
-              _buildDiagnosticItem('Authentication Status', 'Checking...', Icons.security),
-              _buildDiagnosticItem('System Resources', 'Checking...', Icons.memory),
+              _buildDiagnosticItem(
+                  'Network Connectivity', 'Checking...', Icons.network_check),
+              _buildDiagnosticItem(
+                  'Provider Availability', 'Checking...', Icons.computer),
+              _buildDiagnosticItem(
+                  'Authentication Status', 'Checking...', Icons.security),
+              _buildDiagnosticItem(
+                  'System Resources', 'Checking...', Icons.memory),
               SizedBox(height: AppTheme.spacingM),
               Row(
                 children: [
@@ -360,12 +362,13 @@ class _EnhancedErrorWidgetState extends State<EnhancedErrorWidget> {
         children: [
           Icon(icon, size: 16, color: AppTheme.textColorLight),
           SizedBox(width: AppTheme.spacingS),
-          Expanded(child: Text(label, style: Theme.of(context).textTheme.bodySmall)),
+          Expanded(
+              child: Text(label, style: Theme.of(context).textTheme.bodySmall)),
           Text(
             status,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: AppTheme.textColorLight,
-            ),
+                  color: AppTheme.textColorLight,
+                ),
           ),
         ],
       ),
@@ -383,8 +386,8 @@ class _EnhancedErrorWidgetState extends State<EnhancedErrorWidget> {
             child: Text(
               '$label:',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
+                    fontWeight: FontWeight.w600,
+                  ),
             ),
           ),
           Expanded(
@@ -409,7 +412,8 @@ class _EnhancedErrorWidgetState extends State<EnhancedErrorWidget> {
         if (widget.showDiagnostics) ...[
           SizedBox(width: AppTheme.spacingS),
           TextButton.icon(
-            onPressed: () => setState(() => _showDiagnostics = !_showDiagnostics),
+            onPressed: () =>
+                setState(() => _showDiagnostics = !_showDiagnostics),
             icon: Icon(Icons.medical_services),
             label: Text('Diagnostics'),
           ),
@@ -632,7 +636,7 @@ ${widget.error.providerId != null ? 'Provider ID: ${widget.error.providerId}\n' 
 ${widget.error.context?.isNotEmpty == true ? 'Context: ${widget.error.context}\n' : ''}
 ${widget.error.stackTrace != null ? 'Stack Trace:\n${widget.error.stackTrace}\n' : ''}
 ''';
-    
+
     Clipboard.setData(ClipboardData(text: details));
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text('Error details copied to clipboard')),
@@ -665,7 +669,8 @@ ${widget.error.stackTrace != null ? 'Stack Trace:\n${widget.error.stackTrace}\n'
 
   void _scanProviders() async {
     try {
-      final discoveryService = Provider.of<ProviderDiscoveryService>(context, listen: false);
+      final discoveryService =
+          Provider.of<ProviderDiscoveryService>(context, listen: false);
 
       // Show loading snackbar
       ScaffoldMessenger.of(context).showSnackBar(
@@ -760,17 +765,24 @@ class _DiagnosticsDialogState extends State<_DiagnosticsDialog> {
 
     try {
       // Check connection manager
-      final connectionManager = Provider.of<ConnectionManagerService>(context, listen: false);
-      _results.add('✓ Connection Manager: ${connectionManager.hasAnyConnection ? 'Connected' : 'Disconnected'}');
+      final connectionManager =
+          Provider.of<ConnectionManagerService>(context, listen: false);
+      _results.add(
+          '✓ Connection Manager: ${connectionManager.hasAnyConnection ? 'Connected' : 'Disconnected'}');
 
       // Check provider manager
-      final providerManager = Provider.of<LLMProviderManager>(context, listen: false);
-      _results.add('✓ Provider Manager: ${providerManager.isInitialized ? 'Initialized' : 'Not initialized'}');
-      _results.add('✓ Available Providers: ${providerManager.availableProviders.length}');
+      final providerManager =
+          Provider.of<LLMProviderManager>(context, listen: false);
+      _results.add(
+          '✓ Provider Manager: ${providerManager.isInitialized ? 'Initialized' : 'Not initialized'}');
+      _results.add(
+          '✓ Available Providers: ${providerManager.availableProviders.length}');
 
       // Check discovery service
-      final discoveryService = Provider.of<ProviderDiscoveryService>(context, listen: false);
-      _results.add('✓ Discovery Service: ${discoveryService.discoveredProviders.length} providers found');
+      final discoveryService =
+          Provider.of<ProviderDiscoveryService>(context, listen: false);
+      _results.add(
+          '✓ Discovery Service: ${discoveryService.discoveredProviders.length} providers found');
 
       _results.add('✓ Diagnostics completed successfully');
     } catch (e) {
@@ -850,7 +862,8 @@ class _ConnectionTestDialogState extends State<_ConnectionTestDialog> {
 
     try {
       // Test connection manager
-      final connectionManager = Provider.of<ConnectionManagerService>(context, listen: false);
+      final connectionManager =
+          Provider.of<ConnectionManagerService>(context, listen: false);
       _results.add('Testing connection manager...');
 
       if (connectionManager.hasLocalConnection) {
@@ -866,12 +879,15 @@ class _ConnectionTestDialogState extends State<_ConnectionTestDialog> {
       }
 
       // Test providers
-      final providerManager = Provider.of<LLMProviderManager>(context, listen: false);
+      final providerManager =
+          Provider.of<LLMProviderManager>(context, listen: false);
       _results.add('Testing providers...');
 
       for (final provider in providerManager.availableProviders) {
-        final isHealthy = await providerManager.testProviderConnection(provider.info.id);
-        _results.add('${isHealthy ? '✓' : '✗'} ${provider.info.name}: ${isHealthy ? 'Connected' : 'Failed'}');
+        final isHealthy =
+            await providerManager.testProviderConnection(provider.info.id);
+        _results.add(
+            '${isHealthy ? '✓' : '✗'} ${provider.info.name}: ${isHealthy ? 'Connected' : 'Failed'}');
       }
 
       _results.add('Connection tests completed');
@@ -950,26 +966,39 @@ class _SystemStatusDialogState extends State<_SystemStatusDialog> {
     });
 
     try {
-      final connectionManager = Provider.of<ConnectionManagerService>(context, listen: false);
-      final providerManager = Provider.of<LLMProviderManager>(context, listen: false);
+      final connectionManager =
+          Provider.of<ConnectionManagerService>(context, listen: false);
+      final providerManager =
+          Provider.of<LLMProviderManager>(context, listen: false);
 
       _statusData = {
         'Connection Status': {
-          'Local Connection': connectionManager.hasLocalConnection ? 'Connected' : 'Disconnected',
-          'Cloud Connection': connectionManager.hasCloudConnection ? 'Connected' : 'Disconnected',
+          'Local Connection': connectionManager.hasLocalConnection
+              ? 'Connected'
+              : 'Disconnected',
+          'Cloud Connection': connectionManager.hasCloudConnection
+              ? 'Connected'
+              : 'Disconnected',
         },
         'Provider Status': {
-          'Total Providers': providerManager.registeredProviders.length.toString(),
-          'Available Providers': providerManager.availableProviders.length.toString(),
-          'Healthy Providers': providerManager.healthyProviders.length.toString(),
+          'Total Providers':
+              providerManager.registeredProviders.length.toString(),
+          'Available Providers':
+              providerManager.availableProviders.length.toString(),
+          'Healthy Providers':
+              providerManager.healthyProviders.length.toString(),
         },
         'System Info': {
-          'Provider Manager': providerManager.isInitialized ? 'Initialized' : 'Not Initialized',
-          'Connection Type': connectionManager.getBestConnectionType().toString(),
+          'Provider Manager':
+              providerManager.isInitialized ? 'Initialized' : 'Not Initialized',
+          'Connection Type':
+              connectionManager.getBestConnectionType().toString(),
         },
       };
     } catch (e) {
-      _statusData = {'Error': {'Status': 'Failed to load system status: $e'}};
+      _statusData = {
+        'Error': {'Status': 'Failed to load system status: $e'}
+      };
     }
 
     setState(() {

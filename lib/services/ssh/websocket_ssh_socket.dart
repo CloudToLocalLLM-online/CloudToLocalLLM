@@ -35,7 +35,8 @@ class WebSocketSSHSocket implements SSHSocket {
   }
 
   /// Connect to a WebSocket URL and return a WebSocketSSHSocket
-  static Future<WebSocketSSHSocket> connect(Uri wsUri, {Map<String, String>? headers}) async {
+  static Future<WebSocketSSHSocket> connect(Uri wsUri,
+      {Map<String, String>? headers}) async {
     try {
       final channel = WebSocketChannel.connect(wsUri);
       final socket = WebSocketSSHSocket._(channel);

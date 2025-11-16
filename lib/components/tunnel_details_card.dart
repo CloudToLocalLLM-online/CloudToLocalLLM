@@ -38,13 +38,23 @@ class TunnelDetailsCard extends StatelessWidget {
           physics: const NeverScrollableScrollPhysics(),
           childAspectRatio: 3,
           children: [
-            _buildStatItem('Status', tunnelState.isConnected ? 'Connected' : 'Disconnected'),
-            _buildStatItem('Quality', quality.label, color: _getQualityColor(quality)),
-            _buildStatItem('Duration', _formatDuration(tunnelState.connectionDuration)),
-            _buildStatItem('Latency', stats != null ? '${stats.averageLatencyMs} ms' : 'N/A'),
-            _buildStatItem('Transferred', stats != null ? _formatBytes(stats.bytesTransferred) : 'N/A'),
-            _buildStatItem('Received', stats != null ? _formatBytes(stats.bytesReceived) : 'N/A'),
-            _buildStatItem('Success Rate', stats != null ? '${(stats.successRate * 100).toStringAsFixed(1)}%' : 'N/A'),
+            _buildStatItem('Status',
+                tunnelState.isConnected ? 'Connected' : 'Disconnected'),
+            _buildStatItem('Quality', quality.label,
+                color: _getQualityColor(quality)),
+            _buildStatItem(
+                'Duration', _formatDuration(tunnelState.connectionDuration)),
+            _buildStatItem('Latency',
+                stats != null ? '${stats.averageLatencyMs} ms' : 'N/A'),
+            _buildStatItem('Transferred',
+                stats != null ? _formatBytes(stats.bytesTransferred) : 'N/A'),
+            _buildStatItem('Received',
+                stats != null ? _formatBytes(stats.bytesReceived) : 'N/A'),
+            _buildStatItem(
+                'Success Rate',
+                stats != null
+                    ? '${(stats.successRate * 100).toStringAsFixed(1)}%'
+                    : 'N/A'),
           ],
         ),
       ],
@@ -59,8 +69,15 @@ class TunnelDetailsCard extends StatelessWidget {
       ),
       children: [
         _buildInfoRow('Tunnel ID', tunnelState.tunnelId ?? 'N/A'),
-        _buildInfoRow('Tunnel Port', tunnelState.tunnelPort?.toString() ?? 'N/A'),
-        _buildInfoRow('Last Request', tunnelState.stats != null ? DateFormat.yMd().add_Hms().format(tunnelState.stats!.lastRequestAt) : 'N/A'),
+        _buildInfoRow(
+            'Tunnel Port', tunnelState.tunnelPort?.toString() ?? 'N/A'),
+        _buildInfoRow(
+            'Last Request',
+            tunnelState.stats != null
+                ? DateFormat.yMd()
+                    .add_Hms()
+                    .format(tunnelState.stats!.lastRequestAt)
+                : 'N/A'),
       ],
     );
   }
@@ -71,8 +88,13 @@ class TunnelDetailsCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: TextStyle(color: AppTheme.textColorLight, fontSize: 12)),
-          Text(value, style: TextStyle(color: color ?? AppTheme.textColor, fontSize: 14, fontWeight: FontWeight.bold)),
+          Text(label,
+              style: TextStyle(color: AppTheme.textColorLight, fontSize: 12)),
+          Text(value,
+              style: TextStyle(
+                  color: color ?? AppTheme.textColor,
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold)),
         ],
       ),
     );

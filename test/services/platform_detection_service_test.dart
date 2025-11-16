@@ -27,8 +27,8 @@ void main() {
       test(
         'should have platform configurations for all supported platforms',
         () {
-          final supportedPlatforms = platformDetectionService
-              .getSupportedPlatforms();
+          final supportedPlatforms =
+              platformDetectionService.getSupportedPlatforms();
 
           expect(supportedPlatforms, contains(PlatformType.windows));
           expect(supportedPlatforms, contains(PlatformType.linux));
@@ -233,8 +233,8 @@ void main() {
       });
 
       test('should return all supported platforms', () {
-        final supportedPlatforms = platformDetectionService
-            .getSupportedPlatforms();
+        final supportedPlatforms =
+            platformDetectionService.getSupportedPlatforms();
 
         expect(supportedPlatforms.length, 3);
         expect(supportedPlatforms, contains(PlatformType.windows));

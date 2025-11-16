@@ -163,12 +163,12 @@ class LLMProviderConfig {
   });
 
   Map<String, dynamic> toJson() => {
-    'providerId': providerId,
-    'baseUrl': baseUrl,
-    'headers': headers,
-    'timeout': timeout.inMilliseconds,
-    'customSettings': customSettings,
-  };
+        'providerId': providerId,
+        'baseUrl': baseUrl,
+        'headers': headers,
+        'timeout': timeout.inMilliseconds,
+        'customSettings': customSettings,
+      };
 
   factory LLMProviderConfig.fromJson(Map<String, dynamic> json) {
     return LLMProviderConfig(

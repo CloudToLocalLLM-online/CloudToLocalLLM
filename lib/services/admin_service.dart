@@ -43,8 +43,8 @@ class AdminService extends ChangeNotifier {
   DateTime? _lastContainersUpdate;
 
   AdminService({required AuthService authService})
-    : _authService = authService,
-      _dio = Dio() {
+      : _authService = authService,
+        _dio = Dio() {
     _setupDio();
     _authService.addListener(_onAuthStateChanged);
   }

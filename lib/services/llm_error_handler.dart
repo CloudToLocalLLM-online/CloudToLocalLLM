@@ -97,8 +97,8 @@ class LLMErrorHandler extends ChangeNotifier {
   LLMErrorHandler({
     ProviderDiscoveryService? providerDiscovery,
     Map<ProviderType, ProviderErrorConfig>? providerConfigs,
-  }) : _providerDiscovery = providerDiscovery,
-       _providerConfigs = providerConfigs ?? _getDefaultProviderConfigs();
+  })  : _providerDiscovery = providerDiscovery,
+        _providerConfigs = providerConfigs ?? _getDefaultProviderConfigs();
 
   /// Handle LLM communication error with provider-specific logic
   Future<T?> handleError<T>(
@@ -192,10 +192,9 @@ class LLMErrorHandler extends ChangeNotifier {
 
     // Calculate delay with exponential backoff and jitter
     final baseDelay = Duration(
-      milliseconds:
-          (retryConfig.initialDelay.inMilliseconds *
-                  pow(retryConfig.backoffMultiplier, newRetryCount - 1))
-              .round(),
+      milliseconds: (retryConfig.initialDelay.inMilliseconds *
+              pow(retryConfig.backoffMultiplier, newRetryCount - 1))
+          .round(),
     );
 
     final delayWithJitter = Duration(

@@ -6,7 +6,7 @@ class InstallationStep {
   final List<String> commands;
   final List<String> troubleshootingTips;
   final List<String>
-  applicableTypes; // Which installation types this step applies to
+      applicableTypes; // Which installation types this step applies to
   final int order;
   final bool isOptional;
 
@@ -80,18 +80,15 @@ class InstallationStep {
       title: json['title'] as String,
       description: json['description'] as String,
       imageUrl: json['imageUrl'] as String?,
-      commands:
-          (json['commands'] as List<dynamic>?)
+      commands: (json['commands'] as List<dynamic>?)
               ?.map((c) => c as String)
               .toList() ??
           [],
-      troubleshootingTips:
-          (json['troubleshootingTips'] as List<dynamic>?)
+      troubleshootingTips: (json['troubleshootingTips'] as List<dynamic>?)
               ?.map((t) => t as String)
               .toList() ??
           [],
-      applicableTypes:
-          (json['applicableTypes'] as List<dynamic>?)
+      applicableTypes: (json['applicableTypes'] as List<dynamic>?)
               ?.map((t) => t as String)
               .toList() ??
           [],

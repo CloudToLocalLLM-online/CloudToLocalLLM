@@ -184,9 +184,8 @@ class _OllamaTestScreenState extends State<OllamaTestScreen> {
                         ],
                         const SizedBox(height: 8),
                         ElevatedButton(
-                          onPressed: _ollamaService.isLoading
-                              ? null
-                              : _testConnection,
+                          onPressed:
+                              _ollamaService.isLoading ? null : _testConnection,
                           child: _ollamaService.isLoading
                               ? const SizedBox(
                                   width: 16,
@@ -279,9 +278,8 @@ class _OllamaTestScreenState extends State<OllamaTestScreen> {
                       ),
                       const SizedBox(height: 8),
                       ElevatedButton(
-                        onPressed: _ollamaService.isLoading
-                            ? null
-                            : _sendMessage,
+                        onPressed:
+                            _ollamaService.isLoading ? null : _sendMessage,
                         child: _ollamaService.isLoading
                             ? const SizedBox(
                                 width: 16,

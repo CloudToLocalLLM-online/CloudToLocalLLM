@@ -19,13 +19,13 @@ class Auth0DesktopService implements Auth0Service {
 
   static const FlutterSecureStorage _storage = FlutterSecureStorage();
   static final Dio _dio = Dio();
-  
+
   // Storage keys
   static const String _accessTokenKey = 'auth0_access_token';
   static const String _refreshTokenKey = 'auth0_refresh_token';
   static const String _userKey = 'auth0_user';
   static const String _codeVerifierKey = 'auth0_code_verifier';
-  
+
   final _authStateController = StreamController<bool>.broadcast();
   @override
   Stream<bool> get authStateChanges => _authStateController.stream;
@@ -34,7 +34,7 @@ class Auth0DesktopService implements Auth0Service {
   Map<String, dynamic>? _currentUser;
   String? _accessToken;
   String? _refreshToken;
-  
+
   // PKCE code verifier for the current auth session
   String? _codeVerifier;
 
@@ -42,10 +42,10 @@ class Auth0DesktopService implements Auth0Service {
   bool get isAuthenticated => _isAuthenticated;
   @override
   Map<String, dynamic>? get currentUser => _currentUser;
-  
+
   @override
   String? getAccessToken() => _accessToken;
-  
+
   @override
   Future<bool> handleRedirectCallback() async {
     // Desktop handles redirects internally via the callback server
@@ -56,10 +56,10 @@ class Auth0DesktopService implements Auth0Service {
   Future<void> initialize() async {
     try {
       debugPrint(' [Auth0Desktop] Initializing desktop auth service');
-      
+
       // Check if we have stored tokens
       await checkAuthStatus();
-      
+
       debugPrint(' [Auth0Desktop] Initialized successfully');
     } catch (e) {
       debugPrint(' [Auth0Desktop] Initialization error: $e');
@@ -72,11 +72,11 @@ class Auth0DesktopService implements Auth0Service {
       _accessToken = await _storage.read(key: _accessTokenKey);
       _refreshToken = await _storage.read(key: _refreshTokenKey);
       final userJson = await _storage.read(key: _userKey);
-      
+
       if (userJson != null) {
         _currentUser = jsonDecode(userJson);
       }
-      
+
       if (_accessToken != null && _currentUser != null) {
         // Validate token is not expired
         if (await _isTokenValid(_accessToken!)) {
@@ -95,7 +95,7 @@ class Auth0DesktopService implements Auth0Service {
         _isAuthenticated = false;
         debugPrint(' [Auth0Desktop] User is not authenticated');
       }
-      
+
       _authStateController.add(_isAuthenticated);
     } catch (e) {
       debugPrint(' [Auth0Desktop] Error checking auth status: $e');
@@ -108,78 +108,81 @@ class Auth0DesktopService implements Auth0Service {
   Future<void> login() async {
     try {
       debugPrint(' [Auth0Desktop] Starting Auth0 login with PKCE');
-      
+
       // Generate PKCE values
       _codeVerifier = _generateCodeVerifier();
       final codeChallenge = _generateCodeChallenge(_codeVerifier!);
-      
+
       // Store code verifier for later
       await _storage.write(key: _codeVerifierKey, value: _codeVerifier!);
-      
+
       // Generate state parameter for CSRF protection
       final state = _generateRandomString();
-      
+
       // Build authorization URL
       final authUrl = _buildAuthorizationUrl(codeChallenge, state);
-      
+
       // Start listening for callback FIRST
-      debugPrint('🔊 [Auth0Desktop] Starting callback server on localhost:8080');
+      debugPrint(
+          '🔊 [Auth0Desktop] Starting callback server on localhost:8080');
       final callbackFuture = _waitForCallback();
-      
+
       // Give server a moment to start
       await Future.delayed(const Duration(milliseconds: 500));
-      
+
       debugPrint('🌐 [Auth0Desktop] Opening browser for authentication');
-      
+
       // Launch browser for authentication
-      if (!await launchUrl(Uri.parse(authUrl), mode: LaunchMode.externalApplication)) {
+      if (!await launchUrl(Uri.parse(authUrl),
+          mode: LaunchMode.externalApplication)) {
         throw Exception('Failed to launch authentication URL');
       }
-      
+
       // Wait for callback
       final result = await callbackFuture;
-      
+
       if (result['code'] != null && result['state'] != null) {
         await handleAuthorizationCode(result['code']!, result['state']!);
       } else if (result['error'] != null) {
-        throw Exception('Auth0 error: ${result['error']} - ${result['error_description'] ?? ''}');
+        throw Exception(
+            'Auth0 error: ${result['error']} - ${result['error_description'] ?? ''}');
       }
-      
     } catch (e) {
       debugPrint(' [Auth0Desktop] Login error: $e');
       rethrow;
     }
   }
-  
+
   /// Wait for callback from Auth0
   Future<Map<String, String?>> _waitForCallback() async {
     final completer = Completer<Map<String, String?>>();
     HttpServer? server;
-    
+
     try {
       // Start HTTP server on localhost:8080
       // Try to bind to IPv4 loopback, if that fails try any IPv4 interface
       try {
         server = await HttpServer.bind(InternetAddress.loopbackIPv4, 8080);
-        debugPrint(' [Auth0Desktop] Callback server listening on 127.0.0.1:8080');
+        debugPrint(
+            ' [Auth0Desktop] Callback server listening on 127.0.0.1:8080');
       } catch (e) {
         debugPrint(' [Auth0Desktop] Loopback bind failed, trying any IPv4: $e');
         server = await HttpServer.bind(InternetAddress.anyIPv4, 8080);
         debugPrint(' [Auth0Desktop] Callback server listening on 0.0.0.0:8080');
       }
-      
+
       // Handle incoming requests
       server.listen((request) async {
         if (request.method == 'GET') {
           debugPrint('📥 [Auth0Desktop] Received callback: ${request.uri}');
-          
+
           // Parse query parameters
           final params = request.uri.queryParameters;
           final code = params['code'];
           final state = params['state'];
           final error = params['error'];
           final errorDescription = params['error_description'];
-          
+
           // Send success response
           final response = request.response;
           response.statusCode = 200;
@@ -230,7 +233,7 @@ class Auth0DesktopService implements Auth0Service {
             </html>
           ''');
           await response.close();
-          
+
           // Complete the future with result
           if (!completer.isCompleted) {
             completer.complete({
@@ -242,21 +245,21 @@ class Auth0DesktopService implements Auth0Service {
           }
         }
       });
-      
+
       // Wait for callback with timeout
       final result = await completer.future.timeout(
         const Duration(minutes: 5),
         onTimeout: () {
-          throw TimeoutException('Authentication timeout - no callback received');
+          throw TimeoutException(
+              'Authentication timeout - no callback received');
         },
       );
-      
+
       // Close server
       await server.close(force: true);
       debugPrint(' [Auth0Desktop] Callback received, server closed');
-      
+
       return result;
-      
     } catch (e) {
       if (server != null) {
         await server.close(force: true).catchError((_) {});
@@ -269,42 +272,42 @@ class Auth0DesktopService implements Auth0Service {
   Future<void> handleAuthorizationCode(String code, String state) async {
     try {
       debugPrint(' [Auth0Desktop] Handling authorization code');
-      
+
       // Retrieve stored code verifier
       final storedVerifier = await _storage.read(key: _codeVerifierKey);
       if (storedVerifier == null) {
-        throw Exception('No code verifier found. Please restart the login flow.');
+        throw Exception(
+            'No code verifier found. Please restart the login flow.');
       }
-      
+
       // Exchange code for tokens
       final tokenResponse = await _exchangeCodeForTokens(code, storedVerifier);
-      
+
       // Extract tokens
       _accessToken = tokenResponse['access_token'] as String?;
       _refreshToken = tokenResponse['refresh_token'] as String?;
-      
+
       if (_accessToken == null) {
         throw Exception('No access token received from Auth0');
       }
-      
+
       // Get user info
       await _fetchUserInfo();
-      
+
       // Store tokens
       await _storage.write(key: _accessTokenKey, value: _accessToken!);
       if (_refreshToken != null) {
         await _storage.write(key: _refreshTokenKey, value: _refreshToken!);
       }
       await _storage.write(key: _userKey, value: jsonEncode(_currentUser));
-      
+
       // Clean up code verifier
       await _storage.delete(key: _codeVerifierKey);
-      
+
       _isAuthenticated = true;
       _authStateController.add(true);
-      
+
       debugPrint(' [Auth0Desktop] Authentication successful');
-      
     } catch (e) {
       debugPrint(' [Auth0Desktop] Error handling authorization code: $e');
       await logout();
@@ -316,22 +319,21 @@ class Auth0DesktopService implements Auth0Service {
   Future<void> logout() async {
     try {
       debugPrint(' [Auth0Desktop] Logging out');
-      
+
       // Clear all stored data
       await _storage.delete(key: _accessTokenKey);
       await _storage.delete(key: _refreshTokenKey);
       await _storage.delete(key: _userKey);
       await _storage.delete(key: _codeVerifierKey);
-      
+
       _isAuthenticated = false;
       _currentUser = null;
       _accessToken = null;
       _refreshToken = null;
-      
+
       _authStateController.add(false);
-      
+
       debugPrint(' [Auth0Desktop] Logged out successfully');
-      
     } catch (e) {
       debugPrint(' [Auth0Desktop] Logout error: $e');
     }
@@ -353,7 +355,7 @@ class Auth0DesktopService implements Auth0Service {
   /// Build the authorization URL with PKCE parameters
   String _buildAuthorizationUrl(String codeChallenge, String state) {
     final redirectUri = 'http://localhost:8080'; // Match Auth0 configuration
-    
+
     return Uri.https(AppConfig.auth0Domain, 'authorize', {
       'response_type': 'code',
       'client_id': AppConfig.auth0ClientId,
@@ -367,9 +369,10 @@ class Auth0DesktopService implements Auth0Service {
   }
 
   /// Exchange authorization code for tokens
-  Future<Map<String, dynamic>> _exchangeCodeForTokens(String code, String codeVerifier) async {
+  Future<Map<String, dynamic>> _exchangeCodeForTokens(
+      String code, String codeVerifier) async {
     final redirectUri = 'http://localhost:8080';
-    
+
     // Build form-urlencoded body manually
     final bodyParams = {
       'grant_type': 'authorization_code',
@@ -378,11 +381,12 @@ class Auth0DesktopService implements Auth0Service {
       'redirect_uri': redirectUri,
       'code_verifier': codeVerifier,
     };
-    
+
     final bodyString = bodyParams.entries
-        .map((e) => '${Uri.encodeQueryComponent(e.key)}=${Uri.encodeQueryComponent(e.value)}')
+        .map((e) =>
+            '${Uri.encodeQueryComponent(e.key)}=${Uri.encodeQueryComponent(e.value)}')
         .join('&');
-    
+
     debugPrint(' [Auth0Desktop] Exchanging code for tokens');
 
     final uri = 'https://${AppConfig.auth0Domain}/oauth/token';
@@ -394,7 +398,8 @@ class Auth0DesktopService implements Auth0Service {
       ),
     );
 
-    debugPrint('📥 [Auth0Desktop] Token response status: ${response.statusCode}');
+    debugPrint(
+        '📥 [Auth0Desktop] Token response status: ${response.statusCode}');
 
     if (response.statusCode != 200) {
       debugPrint(' [Auth0Desktop] Token exchange failed: ${response.data}');
@@ -416,7 +421,8 @@ class Auth0DesktopService implements Auth0Service {
 
     if (response.statusCode == 200) {
       _currentUser = response.data as Map<String, dynamic>;
-      debugPrint(' [Auth0Desktop] User info fetched: ${_currentUser?['email']}');
+      debugPrint(
+          ' [Auth0Desktop] User info fetched: ${_currentUser?['email']}');
     } else {
       throw Exception('Failed to fetch user info: ${response.data}');
     }
@@ -426,18 +432,19 @@ class Auth0DesktopService implements Auth0Service {
   Future<void> _refreshAccessToken() async {
     try {
       debugPrint(' [Auth0Desktop] Refreshing access token');
-      
+
       // Build form-urlencoded body manually
       final bodyParams = {
         'grant_type': 'refresh_token',
         'client_id': AppConfig.auth0ClientId,
         'refresh_token': _refreshToken!,
       };
-      
+
       final bodyString = bodyParams.entries
-          .map((e) => '${Uri.encodeQueryComponent(e.key)}=${Uri.encodeQueryComponent(e.value)}')
+          .map((e) =>
+              '${Uri.encodeQueryComponent(e.key)}=${Uri.encodeQueryComponent(e.value)}')
           .join('&');
-      
+
       final uri = 'https://${AppConfig.auth0Domain}/oauth/token';
       final response = await _dio.post(
         uri,
@@ -451,10 +458,10 @@ class Auth0DesktopService implements Auth0Service {
         final data = response.data as Map<String, dynamic>;
         _accessToken = data['access_token'] as String;
         _refreshToken = data['refresh_token'] as String? ?? _refreshToken;
-        
+
         await _storage.write(key: _accessTokenKey, value: _accessToken!);
         await _storage.write(key: _refreshTokenKey, value: _refreshToken!);
-        
+
         debugPrint(' [Auth0Desktop] Access token refreshed');
       } else {
         throw Exception('Token refresh failed: ${response.data}');
@@ -472,20 +479,19 @@ class Auth0DesktopService implements Auth0Service {
       // Decode JWT to check expiration
       final parts = token.split('.');
       if (parts.length != 3) return false;
-      
+
       final payload = parts[1];
       final decoded = utf8.decode(base64Url.decode(payload));
       final claims = jsonDecode(decoded) as Map<String, dynamic>;
-      
+
       final exp = claims['exp'] as int?;
       if (exp == null) return false;
-      
+
       final expirationTime = DateTime.fromMillisecondsSinceEpoch(exp * 1000);
       final now = DateTime.now();
-      
+
       // Token is valid if it hasn't expired (with 5 minute buffer)
       return now.isBefore(expirationTime.subtract(const Duration(minutes: 5)));
-      
     } catch (e) {
       debugPrint(' [Auth0Desktop] Error validating token: $e');
       return false;
@@ -494,7 +500,8 @@ class Auth0DesktopService implements Auth0Service {
 
   /// Generate a random code verifier for PKCE
   String _generateCodeVerifier() {
-    final encoded = base64Url.encode(List<int>.generate(32, (_) => _random.nextInt(256)));
+    final encoded =
+        base64Url.encode(List<int>.generate(32, (_) => _random.nextInt(256)));
     // Remove padding (=) as per PKCE spec
     return encoded.replaceAll('=', '');
   }
@@ -510,10 +517,9 @@ class Auth0DesktopService implements Auth0Service {
 
   /// Generate random string for state parameter
   String _generateRandomString() {
-    return base64Url.encode(List<int>.generate(32, (_) => _random.nextInt(256)));
+    return base64Url
+        .encode(List<int>.generate(32, (_) => _random.nextInt(256)));
   }
 
   static final Random _random = Random.secure();
 }
-
-

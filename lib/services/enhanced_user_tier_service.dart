@@ -39,7 +39,7 @@ class EnhancedUserTierService extends ChangeNotifier {
   DateTime? _lastTierCheck;
 
   EnhancedUserTierService({required AuthService authService})
-    : _authService = authService {
+      : _authService = authService {
     _setupDio();
     _initializeTierFeatures();
   }
@@ -159,7 +159,8 @@ class EnhancedUserTierService extends ChangeNotifier {
 
       final accessToken = await _authService.getAccessToken();
       if (accessToken == null || accessToken.isEmpty) {
-        debugPrint(' [UserTier] No access token available, falling back to free tier');
+        debugPrint(
+            ' [UserTier] No access token available, falling back to free tier');
         _setFreeTierDefaults();
         notifyListeners();
         return;
@@ -250,7 +251,8 @@ class EnhancedUserTierService extends ChangeNotifier {
 
       final accessToken = await _authService.getAccessToken();
       if (accessToken == null || accessToken.isEmpty) {
-        debugPrint(' [UserTier] No access token available, cannot request container');
+        debugPrint(
+            ' [UserTier] No access token available, cannot request container');
         return false;
       }
 
@@ -304,7 +306,8 @@ class EnhancedUserTierService extends ChangeNotifier {
 
       final accessToken = await _authService.getAccessToken();
       if (accessToken == null || accessToken.isEmpty) {
-        debugPrint(' [UserTier] No access token available, cannot release container');
+        debugPrint(
+            ' [UserTier] No access token available, cannot release container');
         return false;
       }
 

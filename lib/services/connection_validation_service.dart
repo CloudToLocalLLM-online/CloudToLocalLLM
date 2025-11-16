@@ -17,8 +17,8 @@ class ConnectionValidationService extends ChangeNotifier {
   ConnectionValidationService({
     required AuthService authService,
     String? baseUrl,
-  }) : _authService = authService,
-       _baseUrl = baseUrl ?? _getDefaultBaseUrl() {
+  })  : _authService = authService,
+        _baseUrl = baseUrl ?? _getDefaultBaseUrl() {
     _setupDio();
   }
 

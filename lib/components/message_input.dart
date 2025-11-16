@@ -79,8 +79,7 @@ class _MessageInputState extends State<MessageInput> {
             Expanded(
               child: Container(
                 constraints: BoxConstraints(
-                  maxHeight:
-                      widget.maxLines * 24.0 +
+                  maxHeight: widget.maxLines * 24.0 +
                       32, // Approximate line height + padding
                 ),
                 decoration: BoxDecoration(
@@ -100,14 +99,14 @@ class _MessageInputState extends State<MessageInput> {
                   textInputAction: TextInputAction.newline,
                   enabled: !widget.isLoading,
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: AppTheme.textColor,
-                    height: 1.5,
-                  ),
+                        color: AppTheme.textColor,
+                        height: 1.5,
+                      ),
                   decoration: InputDecoration(
                     hintText: widget.placeholder ?? 'Type your message...',
                     hintStyle: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: AppTheme.textColorLight,
-                    ),
+                          color: AppTheme.textColorLight,
+                        ),
                     border: InputBorder.none,
                     contentPadding: EdgeInsets.all(AppTheme.spacingM),
                   ),
@@ -292,8 +291,8 @@ class ModelSelector extends StatelessWidget {
                     child: Text(
                       model,
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: AppTheme.textColor,
-                      ),
+                            color: AppTheme.textColor,
+                          ),
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),

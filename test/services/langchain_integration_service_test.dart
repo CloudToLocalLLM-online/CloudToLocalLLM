@@ -177,7 +177,8 @@ void main() {
         );
 
         final chunks = <String>[];
-        await for (final chunk in service.processStreamingGeneration(providerId, prompt)) {
+        await for (final chunk
+            in service.processStreamingGeneration(providerId, prompt)) {
           chunks.add(chunk);
         }
 
@@ -266,10 +267,12 @@ void main() {
 
     group('Error Handling', () {
       test('should handle service not initialized', () async {
-        final uninitializedService = LangChainIntegrationService(discoveryService: mockDiscoveryService);
+        final uninitializedService =
+            LangChainIntegrationService(discoveryService: mockDiscoveryService);
 
         expect(
-          () => uninitializedService.processTextGeneration('provider', 'prompt'),
+          () =>
+              uninitializedService.processTextGeneration('provider', 'prompt'),
           throwsStateError,
         );
       });
@@ -286,8 +289,10 @@ void main() {
         const response1 = 'First response';
         const response2 = 'Second response';
 
-        mockDiscoveryService.setTextGenerationResponse(providerId, prompt1, response1);
-        mockDiscoveryService.setTextGenerationResponse(providerId, prompt2, response2);
+        mockDiscoveryService.setTextGenerationResponse(
+            providerId, prompt1, response1);
+        mockDiscoveryService.setTextGenerationResponse(
+            providerId, prompt2, response2);
 
         // Execute concurrent operations
         final futures = [
@@ -328,17 +333,20 @@ class MockProviderDiscoveryService extends ProviderDiscoveryService {
     _providerHealth[providerId] = isHealthy;
   }
 
-  void setTextGenerationResponse(String providerId, String prompt, String response) {
+  void setTextGenerationResponse(
+      String providerId, String prompt, String response) {
     _textGenerationResponses[providerId] ??= {};
     _textGenerationResponses[providerId]![prompt] = response;
   }
 
-  void setTextGenerationError(String providerId, String prompt, Exception error) {
+  void setTextGenerationError(
+      String providerId, String prompt, Exception error) {
     _textGenerationErrors[providerId] ??= {};
     _textGenerationErrors[providerId]![prompt] = error;
   }
 
-  void setStreamingResponse(String providerId, String prompt, List<String> chunks) {
+  void setStreamingResponse(
+      String providerId, String prompt, List<String> chunks) {
     _streamingResponses[providerId] ??= {};
     _streamingResponses[providerId]![prompt] = chunks;
   }

@@ -140,7 +140,8 @@ class NativeTrayService with TrayListener {
       }
 
       _isInitialized = true;
-      appLogger.info('[NativeTray] Native tray service initialized successfully');
+      appLogger
+          .info('[NativeTray] Native tray service initialized successfully');
 
       // Update initial status
       _onTunnelStatusChanged();
@@ -171,7 +172,7 @@ class NativeTrayService with TrayListener {
     _updateDebounceTimer?.cancel();
     _updateDebounceTimer = Timer(const Duration(milliseconds: 500), () {
       final status = _getOverallConnectionStatus();
-      
+
       // Only update if status actually changed
       if (_lastStatus == status) {
         return;
@@ -338,7 +339,8 @@ class NativeTrayService with TrayListener {
       _isInitialized = false;
       appLogger.debug('[NativeTray] Native tray service disposed');
     } catch (e) {
-      appLogger.error('[NativeTray] Error disposing native tray service', error: e);
+      appLogger.error('[NativeTray] Error disposing native tray service',
+          error: e);
     }
   }
 

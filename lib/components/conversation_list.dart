@@ -159,9 +159,9 @@ class _ConversationListState extends State<ConversationList> {
             child: Text(
               'Conversations',
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                color: AppTheme.textColor,
-                fontWeight: FontWeight.bold,
-              ),
+                    color: AppTheme.textColor,
+                    fontWeight: FontWeight.bold,
+                  ),
             ),
           ),
           IconButton(
@@ -273,9 +273,9 @@ class _ConversationListState extends State<ConversationList> {
     return Text(
       conversation.title,
       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-        color: AppTheme.textColor,
-        fontWeight: FontWeight.w500,
-      ),
+            color: AppTheme.textColor,
+            fontWeight: FontWeight.w500,
+          ),
       maxLines: 1,
       overflow: TextOverflow.ellipsis,
     );
@@ -285,9 +285,9 @@ class _ConversationListState extends State<ConversationList> {
     return TextField(
       controller: _editController,
       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-        color: AppTheme.textColor,
-        fontWeight: FontWeight.w500,
-      ),
+            color: AppTheme.textColor,
+            fontWeight: FontWeight.w500,
+          ),
       decoration: const InputDecoration(
         border: OutlineInputBorder(),
         contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),

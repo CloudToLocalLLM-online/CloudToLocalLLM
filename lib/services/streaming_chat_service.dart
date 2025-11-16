@@ -114,8 +114,7 @@ class StreamingChatService extends ChangeNotifier {
   void _createWelcomeConversation() {
     // Ensure we have a model selected before creating conversation
     final availableModels = _connectionManager.availableModels;
-    final modelToUse =
-        _selectedModel ??
+    final modelToUse = _selectedModel ??
         (availableModels.isNotEmpty ? availableModels.first : 'default');
 
     // Update selected model if it was null
@@ -192,9 +191,8 @@ class StreamingChatService extends ChangeNotifier {
     _conversations.removeWhere((c) => c.id == conversation.id);
 
     if (_currentConversation?.id == conversation.id) {
-      _currentConversation = _conversations.isNotEmpty
-          ? _conversations.first
-          : null;
+      _currentConversation =
+          _conversations.isNotEmpty ? _conversations.first : null;
     }
 
     _saveConversations();

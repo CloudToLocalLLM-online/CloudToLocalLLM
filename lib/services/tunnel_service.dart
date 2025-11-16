@@ -4,10 +4,11 @@ import '../config/app_config.dart';
 import '../models/tunnel_config.dart';
 import '../models/tunnel_state.dart';
 import '../services/auth_service.dart';
-import 'ssh/ssh_tunnel_client.dart' if (dart.library.html) 'ssh_tunnel_client_stub.dart';
+import 'ssh/ssh_tunnel_client.dart'
+    if (dart.library.html) 'ssh_tunnel_client_stub.dart';
 
 /// Modern tunnel service with proper state management and error handling
-/// 
+///
 /// Responsibilities:
 /// - Manage tunnel connection lifecycle
 /// - Provide reactive state updates
@@ -20,7 +21,7 @@ class TunnelService extends ChangeNotifier {
   Timer? _healthCheckTimer;
   Timer? _statsTimer;
 
-  TunnelService({required AuthService authService}) 
+  TunnelService({required AuthService authService})
       : _authService = authService {
     _initialize();
   }
@@ -48,7 +49,7 @@ class TunnelService extends ChangeNotifier {
 
   Future<void> _autoConnect() async {
     if (_state.isConnected || _state.isConnecting) return;
-    
+
     try {
       // Give auth service time to populate currentUser
       await Future.delayed(const Duration(milliseconds: 500));
@@ -91,9 +92,8 @@ class TunnelService extends ChangeNotifier {
 
       final config = TunnelConfig(
         userId: userId,
-        cloudProxyUrl: kDebugMode
-            ? AppConfig.tunnelSshUrl
-            : AppConfig.tunnelSshUrl,
+        cloudProxyUrl:
+            kDebugMode ? AppConfig.tunnelSshUrl : AppConfig.tunnelSshUrl,
         localBackendUrl: 'http://localhost:11434',
         authToken: token,
         enableCloudProxy: true,
@@ -120,21 +120,23 @@ class TunnelService extends ChangeNotifier {
         _startHealthMonitoring();
         _startStatsCollection();
       } else {
-        throw Exception('Connection established but client reports disconnected');
+        throw Exception(
+            'Connection established but client reports disconnected');
       }
     } catch (e, stackTrace) {
       debugPrint('[TunnelService] Connection failed: $e');
       debugPrint('[TunnelService] Stack trace: $stackTrace');
-      
+
       // Check for Windows Defender / antivirus quarantine errors
       String errorMessage = e.toString();
       if (errorMessage.contains('ProcessException') ||
           errorMessage.contains('virus') ||
           errorMessage.contains('quarantine') ||
           errorMessage.contains('Windows Defender')) {
-        errorMessage = 'Connection blocked by security software. Please check antivirus settings.';
+        errorMessage =
+            'Connection blocked by security software. Please check antivirus settings.';
       }
-      
+
       _updateState(_state.copyWith(
         isConnecting: false,
         error: errorMessage,
@@ -154,7 +156,7 @@ class TunnelService extends ChangeNotifier {
     try {
       _stopHealthMonitoring();
       _stopStatsCollection();
-      
+
       await _client?.disconnect();
       _client?.dispose();
       _client = null;
@@ -195,7 +197,7 @@ class TunnelService extends ChangeNotifier {
     if (_client == null) return;
 
     final clientConnected = _client!.isConnected;
-    
+
     if (clientConnected != _state.isConnected) {
       if (clientConnected) {
         _updateState(_state.copyWith(
@@ -221,7 +223,7 @@ class TunnelService extends ChangeNotifier {
     _healthCheckTimer?.cancel();
     _healthCheckTimer = Timer.periodic(const Duration(seconds: 10), (_) async {
       if (_client == null || !_client!.isConnected) return;
-      
+
       try {
         final isHealthy = await testConnection();
         if (!isHealthy && _state.isConnected) {
@@ -268,4 +270,3 @@ class TunnelService extends ChangeNotifier {
     super.dispose();
   }
 }
-

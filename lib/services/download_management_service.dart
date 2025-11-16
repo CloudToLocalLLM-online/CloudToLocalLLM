@@ -358,8 +358,8 @@ class DownloadManagementService extends ChangeNotifier {
     stats['packageTypeCounts'] = packageTypeCounts;
     stats['lastDownload'] = _downloadTracking.values.isNotEmpty
         ? _downloadTracking.values
-              .map((t) => t.timestamp)
-              .reduce((a, b) => a.isAfter(b) ? a : b)
+            .map((t) => t.timestamp)
+            .reduce((a, b) => a.isAfter(b) ? a : b)
         : null;
 
     return stats;

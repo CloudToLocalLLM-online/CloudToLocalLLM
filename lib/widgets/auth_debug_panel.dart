@@ -72,12 +72,10 @@ class _AuthDebugPanelState extends State<AuthDebugPanel> {
                     borderRadius: BorderRadius.only(
                       topLeft: Radius.circular(12),
                       topRight: Radius.circular(12),
-                      bottomLeft: _isExpanded
-                          ? Radius.zero
-                          : Radius.circular(12),
-                      bottomRight: _isExpanded
-                          ? Radius.zero
-                          : Radius.circular(12),
+                      bottomLeft:
+                          _isExpanded ? Radius.zero : Radius.circular(12),
+                      bottomRight:
+                          _isExpanded ? Radius.zero : Radius.circular(12),
                     ),
                   ),
                   child: Row(
@@ -192,16 +190,22 @@ class _AuthDebugPanelState extends State<AuthDebugPanel> {
                     child: ListView.builder(
                       itemCount: _logs.length > 10 ? 10 : _logs.length,
                       itemBuilder: (context, index) {
-                        final log =
-                            _logs[_logs.length -
-                                1 -
-                                index]; // Show newest first
+                        final log = _logs[
+                            _logs.length - 1 - index]; // Show newest first
 
                         Color levelColor = Colors.white70;
-                        if (log.contains('[ERROR]')) levelColor = Colors.red;
-                        if (log.contains('[WARNING]')) levelColor = Colors.orange;
-                        if (log.contains('[INFO]')) levelColor = Colors.blue;
-                        if (log.contains('[DEBUG]')) levelColor = Colors.grey;
+                        if (log.contains('[ERROR]')) {
+                          levelColor = Colors.red;
+                        }
+                        if (log.contains('[WARNING]')) {
+                          levelColor = Colors.orange;
+                        }
+                        if (log.contains('[INFO]')) {
+                          levelColor = Colors.blue;
+                        }
+                        if (log.contains('[DEBUG]')) {
+                          levelColor = Colors.grey;
+                        }
 
                         return Padding(
                           padding: const EdgeInsets.only(bottom: 4),

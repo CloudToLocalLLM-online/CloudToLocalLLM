@@ -26,4 +26,3 @@ class _DocumentStub {
 }
 
 final document = _DocumentStub();
-

@@ -173,7 +173,7 @@ class SSHHostKeyManager {
   }
 
   /// Load cached keys from SharedPreferences
-  /// Returns Map<String, String> where key is host and value is base64 encoded key
+  /// Returns Map where key is host and value is base64 encoded key
   Map<String, String> _loadCachedKeys() {
     try {
       final jsonString = _prefs.getString(_storageKey);

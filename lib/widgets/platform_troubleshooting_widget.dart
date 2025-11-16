@@ -45,7 +45,9 @@ class PlatformTroubleshootingWidget extends StatelessWidget {
                       children: [
                         Text(
                           entry.key,
-                          style: Theme.of(context).textTheme.bodyMedium
+                          style: Theme.of(context)
+                              .textTheme
+                              .bodyMedium
                               ?.copyWith(fontWeight: FontWeight.w600),
                         ),
                         const SizedBox(height: 4),

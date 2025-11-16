@@ -162,7 +162,8 @@ class OpenAICompatibleProvider extends ChangeNotifier {
   }) {
     _dio = dio ?? Dio();
     _setupDio();
-    debugPrint('OpenAICompatibleProvider initialized with baseUrl: ${config.baseUrl}');
+    debugPrint(
+        'OpenAICompatibleProvider initialized with baseUrl: ${config.baseUrl}');
   }
 
   void _setupDio() {
@@ -182,7 +183,7 @@ class OpenAICompatibleProvider extends ChangeNotifier {
   /// Initialize the provider
   Future<void> initialize() async {
     debugPrint('Initializing OpenAI-compatible provider...');
-    
+
     try {
       _setLoading(true);
       _clearError();
@@ -191,7 +192,7 @@ class OpenAICompatibleProvider extends ChangeNotifier {
       final connectionSuccess = await testConnection();
       if (connectionSuccess) {
         await getModels();
-        
+
         // Set current model to first available if none set
         if (_currentModel == null && _models.isNotEmpty) {
           _currentModel = _models.first.id;
@@ -260,14 +261,16 @@ class OpenAICompatibleProvider extends ChangeNotifier {
         final modelsList = data['data'] as List<dynamic>? ?? [];
 
         _models = modelsList
-            .map((model) => OpenAICompatibleModel.fromJson(model as Map<String, dynamic>))
+            .map((model) =>
+                OpenAICompatibleModel.fromJson(model as Map<String, dynamic>))
             .toList();
 
         debugPrint('Found ${_models.length} OpenAI-compatible models');
         return _models;
       } else {
         _setError('Failed to get models: HTTP ${response.statusCode}');
-        debugPrint('Get models failed: ${response.statusCode} - ${response.data}');
+        debugPrint(
+            'Get models failed: ${response.statusCode} - ${response.data}');
         return [];
       }
     } catch (error) {
@@ -318,11 +321,11 @@ class OpenAICompatibleProvider extends ChangeNotifier {
       if (response.statusCode == 200) {
         final data = response.data;
         final choices = data['choices'] as List<dynamic>? ?? [];
-        
+
         if (choices.isNotEmpty) {
           final message = choices.first['message'];
           final content = message['content'] as String?;
-          
+
           debugPrint('Chat completion successful');
           return content;
         } else {
@@ -331,7 +334,8 @@ class OpenAICompatibleProvider extends ChangeNotifier {
         }
       } else {
         _setError('Chat completion failed: HTTP ${response.statusCode}');
-        debugPrint('Chat completion failed: ${response.statusCode} - ${response.data}');
+        debugPrint(
+            'Chat completion failed: ${response.statusCode} - ${response.data}');
         return null;
       }
     } catch (error) {
@@ -377,27 +381,28 @@ class OpenAICompatibleProvider extends ChangeNotifier {
       );
 
       if (response.statusCode == 200) {
-        await for (final chunk in response.data.stream.transform(convert.utf8.decoder)) {
+        await for (final chunk
+            in response.data.stream.transform(convert.utf8.decoder)) {
           // Parse Server-Sent Events format
           final lines = chunk.split('\n');
-          
+
           for (final line in lines) {
             if (line.startsWith('data: ')) {
               final data = line.substring(6).trim();
-              
+
               if (data == '[DONE]') {
                 debugPrint('Streaming completion finished');
                 return;
               }
-              
+
               try {
                 final json = jsonDecode(data);
                 final choices = json['choices'] as List<dynamic>? ?? [];
-                
+
                 if (choices.isNotEmpty) {
                   final delta = choices.first['delta'];
                   final content = delta['content'] as String?;
-                  
+
                   if (content != null && content.isNotEmpty) {
                     yield content;
                   }
@@ -433,8 +438,10 @@ class OpenAICompatibleProvider extends ChangeNotifier {
     int? maxTokens,
     Map<String, dynamic>? additionalParams,
   }) async {
-    final modelToUse = model ?? _currentModel ?? (_models.isNotEmpty ? _models.first.id : null);
-    
+    final modelToUse = model ??
+        _currentModel ??
+        (_models.isNotEmpty ? _models.first.id : null);
+
     if (modelToUse == null) {
       _setError('No model available for completion');
       return null;
@@ -461,8 +468,10 @@ class OpenAICompatibleProvider extends ChangeNotifier {
     int? maxTokens,
     Map<String, dynamic>? additionalParams,
   }) async* {
-    final modelToUse = model ?? _currentModel ?? (_models.isNotEmpty ? _models.first.id : null);
-    
+    final modelToUse = model ??
+        _currentModel ??
+        (_models.isNotEmpty ? _models.first.id : null);
+
     if (modelToUse == null) {
       throw LLMCommunicationError.modelNotFound();
     }
@@ -573,26 +582,27 @@ class OpenAICompatibleProvider extends ChangeNotifier {
 
   /// Get provider capabilities
   Map<String, bool> get capabilities => {
-    'chat': true,
-    'completion': true,
-    'streaming': true,
-    'openai_compatible': true,
-    'embeddings': _serverInfo?['supports_embeddings'] == true,
-    'function_calling': _serverInfo?['supports_functions'] == true,
-    'model_management': false, // Most OpenAI-compatible APIs don't support model management
-  };
+        'chat': true,
+        'completion': true,
+        'streaming': true,
+        'openai_compatible': true,
+        'embeddings': _serverInfo?['supports_embeddings'] == true,
+        'function_calling': _serverInfo?['supports_functions'] == true,
+        'model_management':
+            false, // Most OpenAI-compatible APIs don't support model management
+      };
 
   /// Get provider status
   Map<String, dynamic> get status => {
-    'connected': _isConnected,
-    'loading': _isLoading,
-    'error': _error,
-    'models_count': _models.length,
-    'current_model': _currentModel,
-    'base_url': config.baseUrl,
-    'requires_auth': config.requiresAuth,
-    'server_info': _serverInfo,
-  };
+        'connected': _isConnected,
+        'loading': _isLoading,
+        'error': _error,
+        'models_count': _models.length,
+        'current_model': _currentModel,
+        'base_url': config.baseUrl,
+        'requires_auth': config.requiresAuth,
+        'server_info': _serverInfo,
+      };
 
   @override
   void dispose() {

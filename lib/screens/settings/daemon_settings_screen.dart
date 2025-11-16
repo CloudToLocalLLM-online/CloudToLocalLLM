@@ -163,9 +163,9 @@ class _DaemonSettingsScreenState extends State<DaemonSettingsScreen> {
             Text(
               'System Tray Configuration',
               style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                color: AppTheme.textColor,
-                fontWeight: FontWeight.bold,
-              ),
+                    color: AppTheme.textColor,
+                    fontWeight: FontWeight.bold,
+                  ),
             ),
             SizedBox(height: AppTheme.spacingS),
             Text(
@@ -400,9 +400,9 @@ class _DaemonSettingsScreenState extends State<DaemonSettingsScreen> {
         Text(
           title,
           style: Theme.of(context).textTheme.titleLarge?.copyWith(
-            color: AppTheme.textColor,
-            fontWeight: FontWeight.bold,
-          ),
+                color: AppTheme.textColor,
+                fontWeight: FontWeight.bold,
+              ),
         ),
       ],
     );
@@ -425,16 +425,16 @@ class _DaemonSettingsScreenState extends State<DaemonSettingsScreen> {
                 Text(
                   title,
                   style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                    color: AppTheme.textColor,
-                    fontWeight: FontWeight.w500,
-                  ),
+                        color: AppTheme.textColor,
+                        fontWeight: FontWeight.w500,
+                      ),
                 ),
                 SizedBox(height: AppTheme.spacingXS),
                 Text(
                   subtitle,
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: AppTheme.textColorLight,
-                  ),
+                        color: AppTheme.textColorLight,
+                      ),
                 ),
               ],
             ),
@@ -460,9 +460,9 @@ class _DaemonSettingsScreenState extends State<DaemonSettingsScreen> {
           Text(
             title,
             style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-              color: AppTheme.textColor,
-              fontWeight: FontWeight.w500,
-            ),
+                  color: AppTheme.textColor,
+                  fontWeight: FontWeight.w500,
+                ),
           ),
           SizedBox(height: AppTheme.spacingXS),
           Text(
@@ -515,16 +515,16 @@ class _DaemonSettingsScreenState extends State<DaemonSettingsScreen> {
               Text(
                 title,
                 style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  color: AppTheme.textColor,
-                  fontWeight: FontWeight.w500,
-                ),
+                      color: AppTheme.textColor,
+                      fontWeight: FontWeight.w500,
+                    ),
               ),
               Text(
                 '${value.round()}',
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: AppTheme.primaryColor,
-                  fontWeight: FontWeight.bold,
-                ),
+                      color: AppTheme.primaryColor,
+                      fontWeight: FontWeight.bold,
+                    ),
               ),
             ],
           ),
@@ -564,9 +564,9 @@ class _DaemonSettingsScreenState extends State<DaemonSettingsScreen> {
             child: Text(
               value,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: valueColor,
-                fontWeight: FontWeight.w500,
-              ),
+                    color: valueColor,
+                    fontWeight: FontWeight.w500,
+                  ),
               textAlign: TextAlign.end,
             ),
           ),

@@ -151,16 +151,16 @@ class AccessibleProgressIndicator extends StatelessWidget {
               Text(
                 label,
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: AppTheme.textColor,
-                  fontWeight: FontWeight.w500,
-                ),
+                      color: AppTheme.textColor,
+                      fontWeight: FontWeight.w500,
+                    ),
               ),
               if (showPercentage)
                 Text(
                   '$percentage%',
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: AppTheme.textColorLight,
-                  ),
+                        color: AppTheme.textColorLight,
+                      ),
                 ),
             ],
           ),
@@ -295,9 +295,9 @@ class _SuccessAnimationState extends State<SuccessAnimation>
           Text(
             widget.message,
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              color: AppTheme.successColor,
-              fontWeight: FontWeight.bold,
-            ),
+                  color: AppTheme.successColor,
+                  fontWeight: FontWeight.bold,
+                ),
             textAlign: TextAlign.center,
           ),
         ],
@@ -440,9 +440,9 @@ class _ErrorAnimationState extends State<ErrorAnimation>
           Text(
             widget.message,
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              color: AppTheme.dangerColor,
-              fontWeight: FontWeight.bold,
-            ),
+                  color: AppTheme.dangerColor,
+                  fontWeight: FontWeight.bold,
+                ),
             textAlign: TextAlign.center,
           ),
           if (widget.onRetry != null) ...[

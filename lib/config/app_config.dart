@@ -21,7 +21,6 @@ class AppConfig {
   static const String auth0Audience = 'https://api.cloudtolocalllm.online';
   static const String auth0ClientId = 'FuXPnevXpp311CdYHGsbNZe9t3D8Ts7A';
 
-
   // Development mode settings
   static const bool enableDevMode = true; // Set to false for production
   static const String devModeUser = 'dev@cloudtolocalllm.online';
@@ -110,8 +109,6 @@ class AppConfig {
   }
 
   // Bridge Configuration
-  static const String bridgeStatusUrl =
-      '$apiBaseUrl/ollama/bridge/status';
-  static const String bridgeRegisterUrl =
-      '$apiBaseUrl/ollama/bridge/register';
+  static const String bridgeStatusUrl = '$apiBaseUrl/ollama/bridge/status';
+  static const String bridgeRegisterUrl = '$apiBaseUrl/ollama/bridge/register';
 }

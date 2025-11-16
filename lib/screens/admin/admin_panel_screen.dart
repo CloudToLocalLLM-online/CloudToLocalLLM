@@ -208,9 +208,9 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
                 Text(
                   'System Statistics',
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    color: AppTheme.textColor,
-                    fontWeight: FontWeight.bold,
-                  ),
+                        color: AppTheme.textColor,
+                        fontWeight: FontWeight.bold,
+                      ),
                 ),
                 const Spacer(),
                 if (stats != null)
@@ -346,9 +346,9 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
                 Text(
                   'Real-time Metrics',
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    color: AppTheme.textColor,
-                    fontWeight: FontWeight.bold,
-                  ),
+                        color: AppTheme.textColor,
+                        fontWeight: FontWeight.bold,
+                      ),
                 ),
                 const Spacer(),
                 if (adminService.lastRealtimeUpdate != null)
@@ -441,9 +441,9 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
                 Text(
                   'Quick Actions',
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    color: AppTheme.textColor,
-                    fontWeight: FontWeight.bold,
-                  ),
+                        color: AppTheme.textColor,
+                        fontWeight: FontWeight.bold,
+                      ),
                 ),
               ],
             ),
@@ -515,9 +515,9 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
                 Text(
                   'System Health',
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    color: AppTheme.textColor,
-                    fontWeight: FontWeight.bold,
-                  ),
+                        color: AppTheme.textColor,
+                        fontWeight: FontWeight.bold,
+                      ),
                 ),
               ],
             ),
@@ -584,7 +584,9 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
                           const SizedBox(width: 8),
                           Text(
                             'User Management',
-                            style: Theme.of(context).textTheme.titleLarge
+                            style: Theme.of(context)
+                                .textTheme
+                                .titleLarge
                                 ?.copyWith(
                                   color: AppTheme.textColor,
                                   fontWeight: FontWeight.bold,
@@ -756,7 +758,9 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
                           const SizedBox(width: 8),
                           Text(
                             'Container Management',
-                            style: Theme.of(context).textTheme.titleLarge
+                            style: Theme.of(context)
+                                .textTheme
+                                .titleLarge
                                 ?.copyWith(
                                   color: AppTheme.textColor,
                                   fontWeight: FontWeight.bold,
@@ -945,7 +949,9 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
                           const SizedBox(width: 8),
                           Text(
                             'System Configuration',
-                            style: Theme.of(context).textTheme.titleLarge
+                            style: Theme.of(context)
+                                .textTheme
+                                .titleLarge
                                 ?.copyWith(
                                   color: AppTheme.textColor,
                                   fontWeight: FontWeight.bold,

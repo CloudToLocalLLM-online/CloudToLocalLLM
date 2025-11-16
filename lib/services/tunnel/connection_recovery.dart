@@ -1,33 +1,33 @@
 /// Connection Recovery Manager
-/// 
+///
 /// Handles connection recovery flow including detection, reconnection, and state restoration.
-/// 
+///
 /// ## Recovery Flow
-/// 
+///
 /// The connection recovery manager orchestrates the complete recovery process:
-/// 
+///
 /// 1. **Disconnection Detection**
 ///    - Triggered by WebSocket error, heartbeat timeout, or network error
 ///    - Updates connection state to DISCONNECTED
 ///    - Records error for diagnostics
-/// 
+///
 /// 2. **Reconnection Attempt**
 ///    - Updates state to RECONNECTING
 ///    - Uses ReconnectionManager with exponential backoff
 ///    - Retries up to maxAttempts times
-/// 
+///
 /// 3. **State Restoration**
 ///    - After successful reconnection, restores connection state
 ///    - Resets error counters
 ///    - Updates connection metadata
-/// 
+///
 /// 4. **Request Flushing**
 ///    - Flushes queued requests after successful reconnection
 ///    - Ensures no data loss during disconnection
 ///    - Maintains request ordering
-/// 
+///
 /// ## Usage Example
-/// 
+///
 /// ```dart
 /// final recovery = ConnectionRecovery(
 ///   reconnectionManager: manager,
@@ -36,7 +36,7 @@
 ///   requestQueue: queue,
 ///   onLog: (msg) => print('[Recovery] $msg'),
 /// );
-/// 
+///
 /// // Handle disconnection
 /// try {
 ///   await websocket.listen((message) {
@@ -52,7 +52,7 @@
 ///   // Handle error
 /// }
 /// ```
-/// 
+///
 /// Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 1.10
 library;
 
@@ -64,36 +64,36 @@ import 'reconnection_manager.dart';
 import 'connection_state_tracker.dart';
 
 /// Connection recovery manager
-/// 
+///
 /// Orchestrates the complete recovery flow including disconnection detection,
 /// reconnection attempts, state restoration, and request flushing.
 class ConnectionRecovery {
   /// Reconnection manager for exponential backoff
   final ReconnectionManager reconnectionManager;
-  
+
   /// Connection state tracker
   final ConnectionStateTracker stateTracker;
-  
+
   /// Optional request queue for flushing after reconnect
   final RequestQueue? requestQueue;
-  
+
   /// Function to call for reconnection
   final Future<void> Function() connectFunction;
-  
+
   /// Optional logging callback
   final void Function(String message)? onLog;
 
   /// Whether recovery is currently in progress
   bool _isRecovering = false;
-  
+
   /// Timer for recovery timeout
   Timer? _recoveryTimer;
-  
+
   /// Completer for recovery result
   Completer<bool>? _recoveryCompleter;
 
   /// Create a new ConnectionRecovery manager
-  /// 
+  ///
   /// @param reconnectionManager - Manager for reconnection attempts
   /// @param stateTracker - Tracker for connection state
   /// @param connectFunction - Function to call for reconnection
@@ -111,15 +111,15 @@ class ConnectionRecovery {
   bool get isRecovering => _isRecovering;
 
   /// Detect and handle disconnection
-  /// 
+  ///
   /// Called when a disconnection is detected (WebSocket error, heartbeat timeout, etc).
   /// Updates connection state and optionally initiates recovery.
-  /// 
+  ///
   /// @param reason - Reason for disconnection (e.g., 'WebSocket error')
   /// @param error - Optional TunnelError with details
   /// @param autoReconnect - Whether to automatically attempt reconnection
   /// @return true if recovery succeeded, false otherwise
-  /// 
+  ///
   /// @example
   /// ```dart
   /// websocket.onError = (error) async {
@@ -161,15 +161,15 @@ class ConnectionRecovery {
   }
 
   /// Attempt connection recovery
-  /// 
+  ///
   /// Initiates the recovery flow:
   /// 1. Update state to RECONNECTING
   /// 2. Use reconnection manager to attempt reconnection
   /// 3. Restore state on success
   /// 4. Flush queued requests
-  /// 
+  ///
   /// @return true if recovery succeeded, false otherwise
-  /// 
+  ///
   /// @example
   /// ```dart
   /// final success = await recovery.attemptRecovery();
@@ -177,10 +177,6 @@ class ConnectionRecovery {
   ///   print('Connection restored');
   /// }
   /// ```
-  Future<bool> attemptRecovery() async {
-  /// 3. Restore state and flush queue on success
-  ///
-  /// Returns true if recovery succeeded, false otherwise
   Future<bool> attemptRecovery() async {
     if (_isRecovering) {
       _log('Recovery already in progress');

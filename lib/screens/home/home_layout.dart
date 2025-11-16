@@ -33,7 +33,7 @@ class HomeLayout extends StatefulWidget {
   final VoidCallback onSidebarToggle;
   final ScrollController scrollController;
   final void Function(StreamingChatService service, String message)
-  onSendMessage;
+      onSendMessage;
 
   @override
   State<HomeLayout> createState() => _HomeLayoutState();
@@ -340,7 +340,7 @@ class _ChatPane extends StatelessWidget {
   final bool isCompact;
   final ScrollController scrollController;
   final void Function(StreamingChatService service, String message)
-  onSendMessage;
+      onSendMessage;
 
   @override
   Widget build(BuildContext context) {
@@ -471,17 +471,17 @@ class _EmptyConversationState extends StatelessWidget {
                 Text(
                   'Welcome to CloudToLocalLLM',
                   style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                    color: AppTheme.textColor,
-                    fontWeight: FontWeight.bold,
-                  ),
+                        color: AppTheme.textColor,
+                        fontWeight: FontWeight.bold,
+                      ),
                   textAlign: TextAlign.center,
                 ),
                 SizedBox(height: spacing.m),
                 Text(
                   'Start a new conversation to begin chatting with your local LLM',
                   style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                    color: AppTheme.textColorLight,
-                  ),
+                        color: AppTheme.textColorLight,
+                      ),
                   textAlign: TextAlign.center,
                 ),
                 SizedBox(height: spacing.xl),

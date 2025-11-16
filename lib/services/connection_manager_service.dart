@@ -26,10 +26,10 @@ class ConnectionManagerService extends ChangeNotifier {
     required TunnelService tunnelService,
     required AuthService authService,
     required OllamaService ollamaService,
-  }) : _localOllama = localOllama,
-       _tunnelService = tunnelService,
-       _authService = authService,
-       _ollamaService = ollamaService {
+  })  : _localOllama = localOllama,
+        _tunnelService = tunnelService,
+        _authService = authService,
+        _ollamaService = ollamaService {
     _localOllama.addListener(_onConnectionChanged);
     _tunnelService.addListener(_onConnectionChanged);
     _authService.addListener(_onAuthChanged);

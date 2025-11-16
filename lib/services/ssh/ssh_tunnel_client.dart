@@ -63,7 +63,8 @@ class SSHTunnelClient with ChangeNotifier {
         },
       );
 
-      debugPrint('[SSH] WebSocket URL: ${wsUri.toString().replaceAll(_config.authToken, '[REDACTED]')}');
+      debugPrint(
+          '[SSH] WebSocket URL: ${wsUri.toString().replaceAll(_config.authToken, '[REDACTED]')}');
 
       // Connect WebSocket
       final socket = await WebSocketSSHSocket.connect(wsUri);
@@ -96,7 +97,6 @@ class SSHTunnelClient with ChangeNotifier {
 
       notifyListeners();
       debugPrint('[SSH] Connection established');
-
     } catch (e, stackTrace) {
       debugPrint('[SSH] Connection failed: $e');
       debugPrint('[SSH] Stack trace: $stackTrace');
@@ -104,7 +104,6 @@ class SSHTunnelClient with ChangeNotifier {
       rethrow;
     }
   }
-
 
   /// Register tunnel with server
   Future<void> _registerWithServer() async {
@@ -136,7 +135,8 @@ class SSHTunnelClient with ChangeNotifier {
         _tunnelPort = data['serverPort'] as int? ?? _tunnelPort;
         debugPrint('[SSH] Registered with server: port $_tunnelPort');
       } else {
-        debugPrint('[SSH] Registration failed: ${response.statusCode} - ${response.data}');
+        debugPrint(
+            '[SSH] Registration failed: ${response.statusCode} - ${response.data}');
       }
     } catch (e) {
       debugPrint('[SSH] Error registering with server: $e');
@@ -157,7 +157,6 @@ class SSHTunnelClient with ChangeNotifier {
       _forwarder = await _sshClient!.forwardRemote(port: localPort);
 
       debugPrint('[SSH] Reverse tunnel established for local port $localPort');
-
     } catch (e) {
       debugPrint('[SSH] Failed to establish reverse tunnel: $e');
       throw Exception('Failed to establish reverse tunnel: $e');
@@ -212,7 +211,8 @@ class SSHTunnelClient with ChangeNotifier {
     final backoffTime = _getReconnectDelay();
     _reconnectAttempts++;
 
-    debugPrint('[SSH] Reconnecting in ${backoffTime.inSeconds} seconds (attempt $_reconnectAttempts)...');
+    debugPrint(
+        '[SSH] Reconnecting in ${backoffTime.inSeconds} seconds (attempt $_reconnectAttempts)...');
 
     _reconnectTimer = Timer(backoffTime, () {
       _doConnect();

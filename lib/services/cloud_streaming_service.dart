@@ -33,9 +33,9 @@ class CloudStreamingService extends StreamingService {
     String? baseUrl,
     StreamingConfig? config,
     required AuthService authService,
-  }) : _baseUrl = baseUrl ?? AppConfig.cloudOllamaUrl,
-       _config = config ?? StreamingConfig.cloud(),
-       _authService = authService {
+  })  : _baseUrl = baseUrl ?? AppConfig.cloudOllamaUrl,
+        _config = config ?? StreamingConfig.cloud(),
+        _authService = authService {
     _setupDio();
     if (kDebugMode) {
       debugPrint('☁ [CloudStreaming] Service initialized');
@@ -284,8 +284,7 @@ class CloudStreamingService extends StreamingService {
 
       if (response.statusCode == 200) {
         final data = response.data;
-        final models =
-            (data['models'] as List?)
+        final models = (data['models'] as List?)
                 ?.map((model) => model['name'] as String)
                 .toList() ??
             [];

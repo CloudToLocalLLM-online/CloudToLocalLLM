@@ -131,16 +131,18 @@ class ProviderDiscoveryService extends ChangeNotifier {
   bool _isScanning = false;
   final bool _isWebPlatform = kIsWeb;
 
-  ProviderDiscoveryService({Dio? dio})
-    : _dio = dio ?? Dio() {
-
+  ProviderDiscoveryService({Dio? dio}) : _dio = dio ?? Dio() {
     // Log platform detection for debugging
     if (_isWebPlatform) {
-      debugPrint(' [ProviderDiscovery] Web platform detected - discovery service will be limited');
-      debugPrint(' [ProviderDiscovery] Direct localhost scanning disabled to prevent CORS errors');
-      debugPrint(' [ProviderDiscovery] Web platform should use tunnel/bridge system for provider access');
+      debugPrint(
+          ' [ProviderDiscovery] Web platform detected - discovery service will be limited');
+      debugPrint(
+          ' [ProviderDiscovery] Direct localhost scanning disabled to prevent CORS errors');
+      debugPrint(
+          ' [ProviderDiscovery] Web platform should use tunnel/bridge system for provider access');
     } else {
-      debugPrint(' [ProviderDiscovery] Desktop platform detected - full discovery service enabled');
+      debugPrint(
+          ' [ProviderDiscovery] Desktop platform detected - full discovery service enabled');
     }
   }
 
@@ -174,7 +176,8 @@ class ProviderDiscoveryService extends ChangeNotifier {
     // Skip scanning on web platforms to prevent CORS errors
     if (_isWebPlatform) {
       debugPrint(' [ProviderDiscovery] Skipping provider scan on web platform');
-      debugPrint(' [ProviderDiscovery] Web platform should use tunnel/bridge for provider access');
+      debugPrint(
+          ' [ProviderDiscovery] Web platform should use tunnel/bridge for provider access');
       return [];
     }
 
@@ -235,7 +238,8 @@ class ProviderDiscoveryService extends ChangeNotifier {
   Future<ProviderInfo?> detectOllama({int port = 11434}) async {
     // Skip detection on web platforms to prevent CORS errors
     if (_isWebPlatform) {
-      debugPrint(' [ProviderDiscovery] Skipping Ollama detection on web platform (port $port)');
+      debugPrint(
+          ' [ProviderDiscovery] Skipping Ollama detection on web platform (port $port)');
       return null;
     }
 
@@ -293,7 +297,8 @@ class ProviderDiscoveryService extends ChangeNotifier {
   Future<ProviderInfo?> detectLMStudio({int port = 1234}) async {
     // Skip detection on web platforms to prevent CORS errors
     if (_isWebPlatform) {
-      debugPrint(' [ProviderDiscovery] Skipping LM Studio detection on web platform (port $port)');
+      debugPrint(
+          ' [ProviderDiscovery] Skipping LM Studio detection on web platform (port $port)');
       return null;
     }
 
@@ -362,7 +367,8 @@ class ProviderDiscoveryService extends ChangeNotifier {
   Future<List<ProviderInfo>> detectOpenAICompatible() async {
     // Skip detection on web platforms to prevent CORS errors
     if (_isWebPlatform) {
-      debugPrint(' [ProviderDiscovery] Skipping OpenAI-compatible API detection on web platform');
+      debugPrint(
+          ' [ProviderDiscovery] Skipping OpenAI-compatible API detection on web platform');
       return [];
     }
 
@@ -376,7 +382,8 @@ class ProviderDiscoveryService extends ChangeNotifier {
 
       try {
         // Check for OpenAI-compatible API
-        final response = await _dio.get('$baseUrl/v1/models', options: Options(headers: {'Accept': 'application/json'}));
+        final response = await _dio.get('$baseUrl/v1/models',
+            options: Options(headers: {'Accept': 'application/json'}));
 
         if (response.statusCode == 200) {
           final modelsData = response.data;
@@ -453,7 +460,8 @@ class ProviderDiscoveryService extends ChangeNotifier {
   /// Get available models from Ollama
   Future<List<String>> _getOllamaModels(String baseUrl) async {
     try {
-      final response = await _dio.get('$baseUrl/api/tags', options: Options(headers: {'Accept': 'application/json'}));
+      final response = await _dio.get('$baseUrl/api/tags',
+          options: Options(headers: {'Accept': 'application/json'}));
 
       if (response.statusCode == 200) {
         final data = response.data;
@@ -480,7 +488,8 @@ class ProviderDiscoveryService extends ChangeNotifier {
   Future<bool> _isLMStudioEndpoint(String baseUrl) async {
     try {
       // LM Studio often has specific headers or responses that identify it
-      final response = await _dio.get('$baseUrl/v1/models', options: Options(headers: {'Accept': 'application/json'}));
+      final response = await _dio.get('$baseUrl/v1/models',
+          options: Options(headers: {'Accept': 'application/json'}));
 
       // Check for LM Studio-specific indicators in headers or response
       final serverHeader = response.headers.value('server')?.toLowerCase();
@@ -505,7 +514,8 @@ class ProviderDiscoveryService extends ChangeNotifier {
   /// Validate Ollama endpoint
   Future<bool> _validateOllamaEndpoint(ProviderInfo provider) async {
     try {
-      final response = await _dio.get('${provider.baseUrl}/api/version', options: Options(headers: {'Accept': 'application/json'}));
+      final response = await _dio.get('${provider.baseUrl}/api/version',
+          options: Options(headers: {'Accept': 'application/json'}));
 
       return response.statusCode == 200;
     } catch (error) {
@@ -516,7 +526,8 @@ class ProviderDiscoveryService extends ChangeNotifier {
   /// Validate OpenAI-compatible endpoint
   Future<bool> _validateOpenAICompatibleEndpoint(ProviderInfo provider) async {
     try {
-      final response = await _dio.get('${provider.baseUrl}/v1/models', options: Options(headers: {'Accept': 'application/json'}));
+      final response = await _dio.get('${provider.baseUrl}/v1/models',
+          options: Options(headers: {'Accept': 'application/json'}));
 
       return response.statusCode == 200;
     } catch (error) {
@@ -528,7 +539,8 @@ class ProviderDiscoveryService extends ChangeNotifier {
   Future<bool> _validateCustomEndpoint(ProviderInfo provider) async {
     try {
       // For custom endpoints, try a basic health check
-      final response = await _dio.get(provider.baseUrl, options: Options(headers: {'Accept': 'application/json'}));
+      final response = await _dio.get(provider.baseUrl,
+          options: Options(headers: {'Accept': 'application/json'}));
 
       final statusCode = response.statusCode;
       return statusCode != null && statusCode >= 200 && statusCode < 400;

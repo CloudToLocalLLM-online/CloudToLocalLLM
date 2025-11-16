@@ -9,11 +9,9 @@ void main() {
 
     final spacing =
         theme.extension<AppSpacingTheme>() ?? AppSpacingTheme.standard;
-    final colors =
-        theme.extension<AppColorsTheme>() ?? AppColorsTheme.dark;
+    final colors = theme.extension<AppColorsTheme>() ?? AppColorsTheme.dark;
 
     expect(spacing.m, 16);
     expect(colors.primary, const Color(0xFFa777e3));
   });
 }
-

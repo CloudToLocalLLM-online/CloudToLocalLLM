@@ -22,7 +22,7 @@ class ProviderConfigurationManager extends ChangeNotifier {
 
   final Map<String, ProviderConfiguration> _configurations = {};
   final Map<String, dynamic> _preferences = {};
-  
+
   bool _isInitialized = false;
   String? _preferredProviderId;
   String? _error;
@@ -34,7 +34,8 @@ class ProviderConfigurationManager extends ChangeNotifier {
   String? get error => _error;
 
   /// All configured providers
-  List<ProviderConfiguration> get configurations => _configurations.values.toList();
+  List<ProviderConfiguration> get configurations =>
+      _configurations.values.toList();
 
   /// Preferred provider ID
   String? get preferredProviderId => _preferredProviderId;
@@ -53,7 +54,8 @@ class ProviderConfigurationManager extends ChangeNotifier {
       await _migrateConfigurationsIfNeeded();
       _isInitialized = true;
       notifyListeners();
-      debugPrint(' [ConfigManager] Initialized with ${_configurations.length} configurations');
+      debugPrint(
+          ' [ConfigManager] Initialized with ${_configurations.length} configurations');
     } catch (e) {
       _error = 'Failed to initialize configuration manager: $e';
       debugPrint(' [ConfigManager] Initialization failed: $e');
@@ -65,9 +67,11 @@ class ProviderConfigurationManager extends ChangeNotifier {
   Future<void> setConfiguration(ProviderConfiguration config) async {
     try {
       // Validate configuration
-      final validationResult = ProviderConfigurationFactory.validateConfiguration(config);
+      final validationResult =
+          ProviderConfigurationFactory.validateConfiguration(config);
       if (!validationResult.isValid) {
-        throw Exception('Invalid configuration: ${validationResult.errors.join(', ')}');
+        throw Exception(
+            'Invalid configuration: ${validationResult.errors.join(', ')}');
       }
 
       // Log warnings if any
@@ -77,8 +81,9 @@ class ProviderConfigurationManager extends ChangeNotifier {
 
       _configurations[config.providerId] = config;
       await _saveConfigurations();
-      
-      debugPrint(' [ConfigManager] Configuration saved for provider: ${config.providerId}');
+
+      debugPrint(
+          ' [ConfigManager] Configuration saved for provider: ${config.providerId}');
       notifyListeners();
     } catch (e) {
       _error = 'Failed to save configuration: $e';
@@ -92,16 +97,17 @@ class ProviderConfigurationManager extends ChangeNotifier {
   Future<void> removeConfiguration(String providerId) async {
     try {
       _configurations.remove(providerId);
-      
+
       // Clear preferred provider if it was removed
       if (_preferredProviderId == providerId) {
         _preferredProviderId = null;
         await _savePreferences();
       }
-      
+
       await _saveConfigurations();
-      
-      debugPrint(' [ConfigManager] Configuration removed for provider: $providerId');
+
+      debugPrint(
+          ' [ConfigManager] Configuration removed for provider: $providerId');
       notifyListeners();
     } catch (e) {
       _error = 'Failed to remove configuration: $e';
@@ -120,7 +126,7 @@ class ProviderConfigurationManager extends ChangeNotifier {
 
       _preferredProviderId = providerId;
       await _savePreferences();
-      
+
       debugPrint(' [ConfigManager] Preferred provider set to: $providerId');
       notifyListeners();
     } catch (e) {
@@ -149,7 +155,7 @@ class ProviderConfigurationManager extends ChangeNotifier {
     if (config == null) {
       return ConfigurationValidationResult.invalid(['Provider not found']);
     }
-    
+
     return ProviderConfigurationFactory.validateConfiguration(config);
   }
 
@@ -176,7 +182,8 @@ class ProviderConfigurationManager extends ChangeNotifier {
   Map<String, dynamic> exportConfigurations() {
     return {
       'version': _currentConfigVersion,
-      'configurations': _configurations.map((key, config) => MapEntry(key, config.toJson())),
+      'configurations':
+          _configurations.map((key, config) => MapEntry(key, config.toJson())),
       'preferences': _preferences,
       'preferredProviderId': _preferredProviderId,
       'exportedAt': DateTime.now().toIso8601String(),
@@ -195,9 +202,11 @@ class ProviderConfigurationManager extends ChangeNotifier {
       _configurations.clear();
 
       // Import configurations
-      final configurationsData = data['configurations'] as Map<String, dynamic>? ?? {};
+      final configurationsData =
+          data['configurations'] as Map<String, dynamic>? ?? {};
       for (final entry in configurationsData.entries) {
-        final config = ProviderConfigurationFactory.fromJson(entry.value as Map<String, dynamic>);
+        final config = ProviderConfigurationFactory.fromJson(
+            entry.value as Map<String, dynamic>);
         if (config != null) {
           _configurations[entry.key] = config;
         }
@@ -205,7 +214,8 @@ class ProviderConfigurationManager extends ChangeNotifier {
 
       // Import preferences
       _preferences.clear();
-      final preferencesData = data['preferences'] as Map<String, dynamic>? ?? {};
+      final preferencesData =
+          data['preferences'] as Map<String, dynamic>? ?? {};
       _preferences.addAll(preferencesData);
 
       // Import preferred provider
@@ -215,7 +225,8 @@ class ProviderConfigurationManager extends ChangeNotifier {
       await _saveConfigurations();
       await _savePreferences();
 
-      debugPrint(' [ConfigManager] Imported ${_configurations.length} configurations');
+      debugPrint(
+          ' [ConfigManager] Imported ${_configurations.length} configurations');
       notifyListeners();
     } catch (e) {
       _error = 'Failed to import configurations: $e';
@@ -231,10 +242,10 @@ class ProviderConfigurationManager extends ChangeNotifier {
       _configurations.clear();
       _preferences.clear();
       _preferredProviderId = null;
-      
+
       await _saveConfigurations();
       await _savePreferences();
-      
+
       debugPrint(' [ConfigManager] All configurations cleared');
       notifyListeners();
     } catch (e) {
@@ -250,19 +261,21 @@ class ProviderConfigurationManager extends ChangeNotifier {
     try {
       final prefs = await SharedPreferences.getInstance();
       final configJson = prefs.getString(_configKey);
-      
+
       if (configJson != null) {
         final configData = jsonDecode(configJson) as Map<String, dynamic>;
-        
+
         for (final entry in configData.entries) {
-          final config = ProviderConfigurationFactory.fromJson(entry.value as Map<String, dynamic>);
+          final config = ProviderConfigurationFactory.fromJson(
+              entry.value as Map<String, dynamic>);
           if (config != null) {
             _configurations[entry.key] = config;
           }
         }
       }
-      
-      debugPrint(' [ConfigManager] Loaded ${_configurations.length} configurations');
+
+      debugPrint(
+          ' [ConfigManager] Loaded ${_configurations.length} configurations');
     } catch (e) {
       debugPrint(' [ConfigManager] Error loading configurations: $e');
     }
@@ -272,9 +285,10 @@ class ProviderConfigurationManager extends ChangeNotifier {
   Future<void> _saveConfigurations() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final configData = _configurations.map((key, config) => MapEntry(key, config.toJson()));
+      final configData =
+          _configurations.map((key, config) => MapEntry(key, config.toJson()));
       final configJson = jsonEncode(configData);
-      
+
       await prefs.setString(_configKey, configJson);
       await prefs.setInt(_versionKey, _currentConfigVersion);
     } catch (e) {
@@ -288,14 +302,15 @@ class ProviderConfigurationManager extends ChangeNotifier {
     try {
       final prefs = await SharedPreferences.getInstance();
       final preferencesJson = prefs.getString(_preferencesKey);
-      
+
       if (preferencesJson != null) {
-        final preferencesData = jsonDecode(preferencesJson) as Map<String, dynamic>;
+        final preferencesData =
+            jsonDecode(preferencesJson) as Map<String, dynamic>;
         _preferences.addAll(preferencesData);
       }
-      
+
       _preferredProviderId = prefs.getString('preferred_provider_id');
-      
+
       debugPrint(' [ConfigManager] Loaded preferences');
     } catch (e) {
       debugPrint(' [ConfigManager] Error loading preferences: $e');
@@ -307,9 +322,9 @@ class ProviderConfigurationManager extends ChangeNotifier {
     try {
       final prefs = await SharedPreferences.getInstance();
       final preferencesJson = jsonEncode(_preferences);
-      
+
       await prefs.setString(_preferencesKey, preferencesJson);
-      
+
       if (_preferredProviderId != null) {
         await prefs.setString('preferred_provider_id', _preferredProviderId!);
       } else {
@@ -326,13 +341,14 @@ class ProviderConfigurationManager extends ChangeNotifier {
     try {
       final prefs = await SharedPreferences.getInstance();
       final currentVersion = prefs.getInt(_versionKey) ?? 0;
-      
+
       if (currentVersion < _currentConfigVersion) {
-        debugPrint(' [ConfigManager] Migrating configurations from version $currentVersion to $_currentConfigVersion');
-        
+        debugPrint(
+            ' [ConfigManager] Migrating configurations from version $currentVersion to $_currentConfigVersion');
+
         // Perform migration logic here if needed
         // For now, just update the version
-        
+
         await prefs.setInt(_versionKey, _currentConfigVersion);
         debugPrint(' [ConfigManager] Configuration migration completed');
       }

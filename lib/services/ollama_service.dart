@@ -24,12 +24,11 @@ class OllamaService extends ChangeNotifier {
   String? _error;
 
   OllamaService({String? baseUrl, Duration? timeout, AuthService? authService})
-    : _isWeb = kIsWeb,
-      _baseUrl =
-          baseUrl ??
-          (kIsWeb ? AppConfig.cloudOllamaUrl : AppConfig.defaultOllamaUrl),
-      _timeout = timeout ?? AppConfig.ollamaTimeout,
-      _authService = authService {
+      : _isWeb = kIsWeb,
+        _baseUrl = baseUrl ??
+            (kIsWeb ? AppConfig.cloudOllamaUrl : AppConfig.defaultOllamaUrl),
+        _timeout = timeout ?? AppConfig.ollamaTimeout,
+        _authService = authService {
     _setupDio();
     // Debug logging for service initialization
     if (kDebugMode) {
@@ -112,9 +111,7 @@ class OllamaService extends ChangeNotifier {
       _setLoading(true);
       _clearError();
 
-      final url = _isWeb
-          ? AppConfig.bridgeStatusUrl
-          : '$_baseUrl/api/version';
+      final url = _isWeb ? AppConfig.bridgeStatusUrl : '$_baseUrl/api/version';
       if (kDebugMode) {
         debugPrint(
           '[DEBUG] Making ${_isWeb ? 'authenticated' : 'direct'} request to: $url',
@@ -123,7 +120,8 @@ class OllamaService extends ChangeNotifier {
 
       final headers = await _buildRequestHeaders();
       if (_isWeb && headers == null) {
-        debugPrint('[DEBUG] Skipping Ollama bridge status check until user authenticates');
+        debugPrint(
+            '[DEBUG] Skipping Ollama bridge status check until user authenticates');
         _isConnected = false;
         _clearError();
         return false;
@@ -188,9 +186,8 @@ class OllamaService extends ChangeNotifier {
         final data = response.data;
         final modelsList = data['models'] as List<dynamic>? ?? [];
 
-        _models = modelsList
-            .map((model) => OllamaModel.fromJson(model))
-            .toList();
+        _models =
+            modelsList.map((model) => OllamaModel.fromJson(model)).toList();
         debugPrint(
           'Found ${_models.length} Ollama models via ${_isWeb ? 'bridge' : 'direct connection'}',
         );
@@ -328,7 +325,8 @@ class OllamaService extends ChangeNotifier {
 
       final headers = await _buildRequestHeaders();
       if (_isWeb && headers == null) {
-        debugPrint('[OllamaService] Skipping model delete until user authenticates');
+        debugPrint(
+            '[OllamaService] Skipping model delete until user authenticates');
         return false;
       }
 
@@ -377,7 +375,8 @@ class OllamaService extends ChangeNotifier {
   }
 
   /// Create provider from discovered provider info
-  static OllamaService fromProviderInfo(ProviderInfo providerInfo, {AuthService? authService}) {
+  static OllamaService fromProviderInfo(ProviderInfo providerInfo,
+      {AuthService? authService}) {
     if (providerInfo.type != ProviderType.ollama) {
       throw ArgumentError('Provider info must be of type ollama');
     }
@@ -390,23 +389,23 @@ class OllamaService extends ChangeNotifier {
 
   /// Get provider capabilities
   Map<String, bool> get capabilities => {
-    'chat': true,
-    'completion': true,
-    'streaming': true,
-    'embeddings': true,
-    'model_management': true,
-  };
+        'chat': true,
+        'completion': true,
+        'streaming': true,
+        'embeddings': true,
+        'model_management': true,
+      };
 
   /// Get provider status
   Map<String, dynamic> get status => {
-    'connected': _isConnected,
-    'loading': _isLoading,
-    'error': _error,
-    'models_count': _models.length,
-    'version': _version,
-    'base_url': _baseUrl,
-    'is_web': _isWeb,
-  };
+        'connected': _isConnected,
+        'loading': _isLoading,
+        'error': _error,
+        'models_count': _models.length,
+        'version': _version,
+        'base_url': _baseUrl,
+        'is_web': _isWeb,
+      };
 
   /// Send streaming chat message to Ollama
   Stream<String> chatStream({
@@ -423,7 +422,7 @@ class OllamaService extends ChangeNotifier {
       ];
 
       final url = _isWeb ? '$_baseUrl/api/chat' : '$_baseUrl/api/chat';
-      
+
       final headers = await _buildRequestHeaders();
       if (_isWeb && headers == null) {
         debugPrint('[DEBUG] Skipping streaming chat until user authenticates');
@@ -444,15 +443,16 @@ class OllamaService extends ChangeNotifier {
       );
 
       if (response.statusCode == 200) {
-        await for (final chunk in response.data.stream.transform(utf8.decoder)) {
+        await for (final chunk
+            in response.data.stream.transform(utf8.decoder)) {
           try {
             final data = json.decode(chunk);
             final content = data['message']?['content'] as String?;
-            
+
             if (content != null && content.isNotEmpty) {
               yield content;
             }
-            
+
             // Check if done
             if (data['done'] == true) {
               debugPrint('Streaming chat completed');
@@ -487,8 +487,9 @@ class OllamaService extends ChangeNotifier {
     int? maxTokens,
   }) async {
     // Use first available model if none specified
-    final modelToUse = model ?? (_models.isNotEmpty ? _models.first.name : null);
-    
+    final modelToUse =
+        model ?? (_models.isNotEmpty ? _models.first.name : null);
+
     if (modelToUse == null) {
       _setError('No model available for completion');
       return null;
@@ -504,8 +505,9 @@ class OllamaService extends ChangeNotifier {
     double? temperature,
     int? maxTokens,
   }) async* {
-    final modelToUse = model ?? (_models.isNotEmpty ? _models.first.name : null);
-    
+    final modelToUse =
+        model ?? (_models.isNotEmpty ? _models.first.name : null);
+
     if (modelToUse == null) {
       throw LLMCommunicationError.modelNotFound();
     }

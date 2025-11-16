@@ -62,61 +62,28 @@ validateAuthConfig(authConfig);
 
 // Connection Pool - manages SSH connections per user
 const connectionPool = new ConnectionPoolImpl(
-  logger,
-  metricsCollector,
   {
     maxConnectionsPerUser: 3,
-    idleTimeout: 300000, // 5 minutes
-    staleConnectionCheckInterval: 60000, // 1 minute
-  }
+    maxIdleTime: 300000, // 5 minutes
+    cleanupInterval: 60000, // 1 minute
+  },
+  logger
 );
 
 // Rate Limiter - per-user and per-IP rate limiting
-const rateLimiter = new TokenBucketRateLimiter(
-  logger,
-  metricsCollector,
-  {
-    global: {
-      requestsPerMinute: 10000,
-      maxConcurrentConnections: 1000,
-      maxQueueSize: 5000,
-    },
-    perUser: {
-      free: {
-        requestsPerMinute: 100,
-        maxConcurrentConnections: 3,
-        maxQueueSize: 100,
-      },
-      premium: {
-        requestsPerMinute: 1000,
-        maxConcurrentConnections: 10,
-        maxQueueSize: 1000,
-      },
-      enterprise: {
-        requestsPerMinute: 10000,
-        maxConcurrentConnections: 100,
-        maxQueueSize: 10000,
-      },
-    },
-    perIp: {
-      requestsPerMinute: 1000,
-      maxConcurrentConnections: 100,
-      maxQueueSize: 1000,
-    },
-  }
-);
+const rateLimiter = new TokenBucketRateLimiter({
+  requestsPerMinute: 10000,
+  maxConcurrentConnections: 1000,
+  maxQueueSize: 5000,
+});
 
 // Circuit Breaker - prevents cascading failures
-const circuitBreaker = new CircuitBreakerImpl(
-  logger,
-  circuitBreakerMetrics,
-  {
-    failureThreshold: 5,
-    successThreshold: 2,
-    timeout: 60000, // 1 minute
-    resetTimeout: 60000, // 1 minute
-  }
-);
+const circuitBreaker = new CircuitBreakerImpl({
+  failureThreshold: 5,
+  successThreshold: 2,
+  timeout: 60000, // 1 minute
+  resetTimeout: 60000, // 1 minute
+});
 
 // Authentication middleware - Requirement 26.2: Connect AuthMiddleware to all protected endpoints
 const authMiddleware = new JWTValidationMiddleware({
@@ -124,16 +91,20 @@ const authMiddleware = new JWTValidationMiddleware({
   audience: authConfig.auth0.audience,
   issuer: authConfig.auth0.issuer,
 });
-const authAuditLogger = new AuthAuditLogger(logger, metricsCollector);
+const authAuditLogger = new AuthAuditLogger();
+
+// Create Express app
+const app = express();
+
+// Create HTTP server and WebSocket server
+const httpServer = createServer(app);
+const wss = new WebSocketServer({ server: httpServer, path: WEBSOCKET_PATH });
 
 // WebSocket handler - Requirement 26.2: Wire WebSocketHandler with all components
 const wsHandler = new WebSocketHandlerImpl(
-  logger,
-  connectionPool,
+  wss,
   authMiddleware,
-  rateLimiter,
-  metricsCollector,
-  circuitBreaker
+  rateLimiter
 );
 
 // Initialize health checker with all components
@@ -145,14 +116,11 @@ const healthChecker = new HealthChecker(
   rateLimiter
 );
 
-// Create Express app
-const app = express();
-
 // Middleware
 app.use(express.json());
 
 // Request logging middleware
-app.use((req: Request, res: Response, next: NextFunction) => {
+app.use((req: Request, res: Response, next: NextFunction): void => {
   const start = Date.now();
   
   res.on('finish', () => {
@@ -191,7 +159,9 @@ app.get('/api/tunnel/health', async (req: Request, res: Response) => {
       })),
     });
   } catch (error) {
-    logger.error('Health check failed:', error instanceof Error ? error.message : String(error));
+    logger.error('Health check failed', {
+      error: error instanceof Error ? error.message : String(error),
+    });
     res.status(503).json({
       status: 'unhealthy',
       error: 'Health check failed',
@@ -217,7 +187,7 @@ app.get('/api/tunnel/diagnostics', async (req: Request, res: Response) => {
     res.status(200).json(diagnostics);
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
-    logger.error('Diagnostics failed:', errorMessage);
+    logger.error('Diagnostics failed', { error: errorMessage });
     res.status(500).json({
       error: 'Diagnostics failed',
       message: errorMessage,
@@ -240,7 +210,7 @@ app.get('/api/tunnel/metrics', async (req: Request, res: Response) => {
     res.status(200).send(prometheusMetrics);
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
-    logger.error('Error exporting Prometheus metrics:', errorMessage);
+    logger.error('Error exporting Prometheus metrics', { error: errorMessage });
     res.status(500).json({ error: 'Failed to export metrics' });
   }
 });
@@ -257,7 +227,7 @@ app.get('/api/tunnel/metrics/json', (req: Request, res: Response) => {
     res.status(200).json(metrics);
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
-    logger.error('Error exporting JSON metrics:', errorMessage);
+    logger.error('Error exporting JSON metrics', { error: errorMessage });
     res.status(500).json({ error: 'Failed to export metrics' });
   }
 });
@@ -274,7 +244,7 @@ app.get('/api/tunnel/metrics/user/:userId', (req: Request, res: Response) => {
     res.status(200).json(userMetrics);
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
-    logger.error('Error getting user metrics:', errorMessage);
+    logger.error('Error getting user metrics', { error: errorMessage });
     res.status(500).json({ error: 'Failed to get user metrics' });
   }
 });
@@ -295,7 +265,7 @@ app.get('/api/tunnel/circuit-breakers', (req: Request, res: Response) => {
     });
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
-    logger.error('Error getting circuit breaker metrics:', errorMessage);
+    logger.error('Error getting circuit breaker metrics', { error: errorMessage });
     res.status(500).json({ error: 'Failed to get circuit breaker metrics' });
   }
 });
@@ -358,7 +328,7 @@ app.get('/api/tunnel/metrics/history', (req: Request, res: Response) => {
     });
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
-    logger.error('Error getting historical metrics:', errorMessage);
+    logger.error('Error getting historical metrics', { error: errorMessage });
     res.status(500).json({ error: 'Failed to get historical metrics' });
   }
 });
@@ -380,7 +350,7 @@ app.get('/api/tunnel/config/log-level', async (req: Request, res: Response) => {
     });
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
-    logger.error('Error getting log level:', errorMessage);
+    logger.error('Error getting log level', { error: errorMessage });
     res.status(500).json({ error: 'Failed to get log level' });
   }
 });
@@ -427,7 +397,7 @@ app.put('/api/tunnel/config/log-level', async (req: Request, res: Response) => {
     });
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
-    logger.error('Error setting log level:', errorMessage);
+    logger.error('Error setting log level', { error: errorMessage });
     res.status(500).json({ error: 'Failed to set log level' });
   }
 });
@@ -453,7 +423,7 @@ app.get('/api/tunnel/config', (req: Request, res: Response) => {
     });
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
-    logger.error('Error getting configuration:', errorMessage);
+    logger.error('Error getting configuration', { error: errorMessage });
     res.status(500).json({ error: 'Failed to get configuration' });
   }
 });
@@ -497,7 +467,7 @@ app.put('/api/tunnel/config', (req: Request, res: Response) => {
     });
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
-    logger.error('Error updating configuration:', errorMessage);
+    logger.error('Error updating configuration', { error: errorMessage });
     res.status(500).json({ error: 'Failed to update configuration' });
   }
 });
@@ -526,7 +496,7 @@ app.post('/api/tunnel/config/reset', (req: Request, res: Response) => {
     });
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
-    logger.error('Error resetting configuration:', errorMessage);
+    logger.error('Error resetting configuration', { error: errorMessage });
     res.status(500).json({ error: 'Failed to reset configuration' });
   }
 });
@@ -542,18 +512,9 @@ app.use((req: Request, res: Response) => {
  * Error handler
  */
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
-  logger.error('Unhandled error:', err);
+app.use((err: Error, req: Request, res: Response, next: NextFunction): void => {
+  logger.error('Unhandled error', { error: err.message });
   res.status(500).json({ error: 'Internal server error' });
-});
-
-// Create HTTP server
-const httpServer = createServer(app);
-
-// Create WebSocket server
-const wss = new WebSocketServer({
-  server: httpServer,
-  path: WEBSOCKET_PATH,
 });
 
 // WebSocket connection handler
@@ -566,7 +527,10 @@ wss.on('connection', async (ws, req) => {
     // Handle the WebSocket connection with the integrated handler
     await wsHandler.handleConnection(ws, req);
   } catch (error) {
-    logger.error(`Error handling WebSocket connection from ${clientIp}:`, error);
+    logger.error('Error handling WebSocket connection', {
+      clientIp,
+      error: error instanceof Error ? error.message : String(error),
+    });
     ws.close(1011, 'Internal server error');
   }
 });
@@ -594,7 +558,9 @@ const shutdown = async() => {
           // Close with code 1001 "Going Away"
           client.close(1001, 'Server shutting down');
         } catch (error) {
-          logger.error('Error closing client connection:', error);
+          logger.error('Error closing client connection', {
+            error: error instanceof Error ? error.message : String(error),
+          });
         }
       }
     }
@@ -615,7 +581,9 @@ const shutdown = async() => {
       process.exit(1);
     }, 30000);
   } catch (error) {
-    logger.error('Error during shutdown:', error);
+    logger.error('Error during shutdown', {
+      error: error instanceof Error ? error.message : String(error),
+    });
     process.exit(1);
   }
 };

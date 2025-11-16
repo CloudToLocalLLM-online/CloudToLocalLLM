@@ -56,11 +56,11 @@ class LangChainProviderWrapper {
 
   /// Get provider capabilities
   Map<String, bool> get capabilities => {
-    'chat': true,
-    'completion': true,
-    'streaming': supportsStreaming,
-    'embeddings': supportsEmbeddings,
-  };
+        'chat': true,
+        'completion': true,
+        'streaming': supportsStreaming,
+        'embeddings': supportsEmbeddings,
+      };
 }
 
 /// LangChain Integration Service
@@ -94,7 +94,7 @@ class LangChainIntegrationService extends ChangeNotifier {
   String? get preferredProviderId => _preferredProviderId;
 
   /// Get all registered providers
-  List<LangChainProviderWrapper> get providers => 
+  List<LangChainProviderWrapper> get providers =>
       List.unmodifiable(_providers.values);
 
   /// Get available providers (those that are working)
@@ -131,7 +131,8 @@ class LangChainIntegrationService extends ChangeNotifier {
             debugPrint('Initialized LangChain provider: ${providerInfo.name}');
           }
         } catch (error) {
-          debugPrint('Failed to initialize provider ${providerInfo.name}: $error');
+          debugPrint(
+              'Failed to initialize provider ${providerInfo.name}: $error');
         }
       }
 
@@ -142,8 +143,8 @@ class LangChainIntegrationService extends ChangeNotifier {
       }
 
       _isInitialized = true;
-      debugPrint('LangChain initialization completed with ${_providers.length} providers');
-
+      debugPrint(
+          'LangChain initialization completed with ${_providers.length} providers');
     } catch (error) {
       _error = 'Failed to initialize LangChain providers: $error';
       debugPrint(_error);
@@ -206,10 +207,9 @@ class LangChainIntegrationService extends ChangeNotifier {
 
       // Generate response
       final response = await llm.invoke(promptValue);
-      
+
       debugPrint('Text generation completed successfully');
       return response.output;
-
     } catch (error) {
       debugPrint('Text generation failed: $error');
       if (error is LLMCommunicationError) {
@@ -232,7 +232,8 @@ class LangChainIntegrationService extends ChangeNotifier {
       throw LLMCommunicationError.providerNotFound();
     }
 
-    return processTextGeneration(_preferredProviderId!, prompt, parameters: parameters);
+    return processTextGeneration(_preferredProviderId!, prompt,
+        parameters: parameters);
   }
 
   /// Process streaming text generation
@@ -271,7 +272,6 @@ class LangChainIntegrationService extends ChangeNotifier {
       }
 
       debugPrint('Streaming generation completed successfully');
-
     } catch (error) {
       debugPrint('Streaming generation failed: $error');
       if (error is LLMCommunicationError) {
@@ -312,12 +312,13 @@ class LangChainIntegrationService extends ChangeNotifier {
       }
 
       // Simple test prompt
-      const testPrompt = 'Hello, this is a connection test. Please respond with "OK".';
+      const testPrompt =
+          'Hello, this is a connection test. Please respond with "OK".';
       final response = await processTextGeneration(providerId, testPrompt);
 
       final success = response != null && response.isNotEmpty;
       debugPrint('Provider test result for $providerId: $success');
-      
+
       return success;
     } catch (error) {
       debugPrint('Provider test failed for $providerId: $error');
@@ -365,7 +366,8 @@ class LangChainIntegrationService extends ChangeNotifier {
         createdAt: DateTime.now(),
       );
     } catch (error) {
-      debugPrint('Error creating provider wrapper for ${providerInfo.name}: $error');
+      debugPrint(
+          'Error creating provider wrapper for ${providerInfo.name}: $error');
       return null;
     }
   }
@@ -395,11 +397,13 @@ class LangChainIntegrationService extends ChangeNotifier {
   }
 
   /// Create OpenAI-compatible LangChain provider
-  Future<BaseLLM?> _createOpenAICompatibleProvider(ProviderInfo providerInfo) async {
+  Future<BaseLLM?> _createOpenAICompatibleProvider(
+      ProviderInfo providerInfo) async {
     try {
       // For now, we'll use a basic HTTP-based implementation
       // This will be enhanced with proper OpenAI-compatible provider in future
-      debugPrint('OpenAI-compatible providers will be implemented in next iteration');
+      debugPrint(
+          'OpenAI-compatible providers will be implemented in next iteration');
       return null;
     } catch (error) {
       debugPrint('Failed to create OpenAI-compatible provider: $error');

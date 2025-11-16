@@ -4,4 +4,3 @@ void initSqflite() {
   sqfliteFfiInit();
   databaseFactory = databaseFactoryFfi;
 }
-

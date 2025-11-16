@@ -19,4 +19,3 @@ extension type Auth0Bridge._(JSObject _) implements JSObject {
   external JSPromise<JSAny?> getUser();
   external JSPromise<JSAny?> getAccessToken();
 }
-

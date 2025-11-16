@@ -395,7 +395,6 @@ class _AdminDataFlushScreenState extends State<AdminDataFlushScreen>
                   ),
                 ),
                 const SizedBox(height: 16),
-
                 if (adminService.error != null)
                   Container(
                     padding: const EdgeInsets.all(12),
@@ -408,16 +407,13 @@ class _AdminDataFlushScreenState extends State<AdminDataFlushScreen>
                       style: const TextStyle(color: Colors.white),
                     ),
                   ),
-
                 const SizedBox(height: 16),
-
                 Row(
                   children: [
                     Expanded(
                       child: ElevatedButton.icon(
-                        onPressed: adminService.isLoading
-                            ? null
-                            : _prepareFlush,
+                        onPressed:
+                            adminService.isLoading ? null : _prepareFlush,
                         icon: const Icon(Icons.security),
                         label: Text(
                           adminService.hasValidConfirmationToken
@@ -427,8 +423,8 @@ class _AdminDataFlushScreenState extends State<AdminDataFlushScreen>
                         style: ElevatedButton.styleFrom(
                           backgroundColor:
                               adminService.hasValidConfirmationToken
-                              ? Colors.green
-                              : AppTheme.primaryColor,
+                                  ? Colors.green
+                                  : AppTheme.primaryColor,
                           foregroundColor: Colors.white,
                         ),
                       ),
@@ -436,8 +432,7 @@ class _AdminDataFlushScreenState extends State<AdminDataFlushScreen>
                     const SizedBox(width: 16),
                     Expanded(
                       child: ElevatedButton.icon(
-                        onPressed:
-                            adminService.hasValidConfirmationToken &&
+                        onPressed: adminService.hasValidConfirmationToken &&
                                 !adminService.isLoading
                             ? _executeFlush
                             : null,
@@ -451,7 +446,6 @@ class _AdminDataFlushScreenState extends State<AdminDataFlushScreen>
                     ),
                   ],
                 ),
-
                 if (adminService.isLoading)
                   const Padding(
                     padding: EdgeInsets.only(top: 16),
@@ -714,9 +708,8 @@ class _AdminDataFlushScreenState extends State<AdminDataFlushScreen>
               ElevatedButton(
                 onPressed: () => Navigator.of(context).pop(true),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: isDestructive
-                      ? Colors.red
-                      : AppTheme.primaryColor,
+                  backgroundColor:
+                      isDestructive ? Colors.red : AppTheme.primaryColor,
                   foregroundColor: Colors.white,
                 ),
                 child: Text(isDestructive ? 'I Understand' : 'Confirm'),
@@ -823,9 +816,8 @@ class _AdminDataFlushScreenState extends State<AdminDataFlushScreen>
                   child: const Text('Cancel'),
                 ),
                 ElevatedButton(
-                  onPressed: canConfirm
-                      ? () => Navigator.of(context).pop(true)
-                      : null,
+                  onPressed:
+                      canConfirm ? () => Navigator.of(context).pop(true) : null,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.red,
                     foregroundColor: Colors.white,

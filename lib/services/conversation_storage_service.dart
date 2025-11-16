@@ -7,7 +7,8 @@ import '../config/app_config.dart';
 import 'auth_service.dart';
 
 // Conditional imports for desktop-only dependencies - NOT loaded on web
-import 'conversation_storage_service_desktop.dart' if (dart.library.html) 'conversation_storage_service_web.dart';
+import 'conversation_storage_service_desktop.dart'
+    if (dart.library.html) 'conversation_storage_service_web.dart';
 
 /// Conversation storage service with platform-specific storage
 ///
@@ -69,12 +70,14 @@ class ConversationStorageService {
       if (kIsWeb) {
         // Web platform: Use PostgreSQL via API - skip local database
         _isInitialized = true;
-        debugPrint('[ConversationStorage] Web platform initialized (using cloud storage)');
+        debugPrint(
+            '[ConversationStorage] Web platform initialized (using cloud storage)');
       } else {
         // Desktop platform: Use local SQLite
         await _initializeDatabase();
         _isInitialized = true;
-        debugPrint('[ConversationStorage] Desktop platform initialized (using local storage)');
+        debugPrint(
+            '[ConversationStorage] Desktop platform initialized (using local storage)');
       }
     } catch (e, stackTrace) {
       debugPrint('[ConversationStorage] Failed to initialize: $e');
@@ -317,7 +320,8 @@ class ConversationStorageService {
   Future<List<Conversation>> loadConversations() async {
     if (_database == null) {
       if (kIsWeb) {
-        debugPrint('[ConversationStorage] Database not available on web, returning empty list');
+        debugPrint(
+            '[ConversationStorage] Database not available on web, returning empty list');
         return []; // Return empty list on web if database failed to initialize
       }
       throw StateError('Database not initialized');
@@ -469,7 +473,8 @@ class ConversationStorageService {
     try {
       final headers = await _getAuthHeaders();
 
-      final response = await _dio.get('/api/conversations', options: Options(headers: headers));
+      final response = await _dio.get('/api/conversations',
+          options: Options(headers: headers));
 
       if (response.statusCode == 200) {
         final data = response.data as Map<String, dynamic>;
@@ -496,7 +501,8 @@ class ConversationStorageService {
         return [];
       }
     } catch (e) {
-      debugPrint('[ConversationStorage] Error loading conversations from API: $e');
+      debugPrint(
+          '[ConversationStorage] Error loading conversations from API: $e');
       return [];
     }
   }
@@ -506,7 +512,8 @@ class ConversationStorageService {
     try {
       final headers = await _getAuthHeaders();
 
-      final response = await _dio.get('/api/conversations/$conversationId', options: Options(headers: headers));
+      final response = await _dio.get('/api/conversations/$conversationId',
+          options: Options(headers: headers));
 
       if (response.statusCode == 200) {
         final data = response.data as Map<String, dynamic>;
@@ -534,13 +541,15 @@ class ConversationStorageService {
       }
       return null;
     } catch (e) {
-      debugPrint('[ConversationStorage] Error loading conversation from API: $e');
+      debugPrint(
+          '[ConversationStorage] Error loading conversation from API: $e');
       return null;
     }
   }
 
   /// Save conversations via API (web platform)
-  Future<void> _saveConversationsViaAPI(List<Conversation> conversations) async {
+  Future<void> _saveConversationsViaAPI(
+      List<Conversation> conversations) async {
     for (final conversation in conversations) {
       await _saveConversationViaAPI(conversation);
     }
@@ -553,15 +562,18 @@ class ConversationStorageService {
 
       final body = {
         'title': conversation.title,
-        'messages': conversation.messages.map((m) => {
-              'role': m.role.name,
-              'content': m.content,
-              'model': m.model,
-              'timestamp': m.timestamp.toIso8601String(),
-            }).toList(),
+        'messages': conversation.messages
+            .map((m) => {
+                  'role': m.role.name,
+                  'content': m.content,
+                  'model': m.model,
+                  'timestamp': m.timestamp.toIso8601String(),
+                })
+            .toList(),
       };
 
-      final response = await _dio.put('/api/conversations/${conversation.id}', data: body, options: Options(headers: headers));
+      final response = await _dio.put('/api/conversations/${conversation.id}',
+          data: body, options: Options(headers: headers));
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         debugPrint(
@@ -572,18 +584,22 @@ class ConversationStorageService {
         final postBody = {
           'title': conversation.title,
           'model': conversation.model ?? 'default',
-          'messages': conversation.messages.map((m) => {
-                'role': m.role.name,
-                'content': m.content,
-                'model': m.model,
-                'timestamp': m.timestamp.toIso8601String(),
-              }).toList(),
+          'messages': conversation.messages
+              .map((m) => {
+                    'role': m.role.name,
+                    'content': m.content,
+                    'model': m.model,
+                    'timestamp': m.timestamp.toIso8601String(),
+                  })
+              .toList(),
         };
 
-        final postResponse = await _dio.post('/api/conversations', data: postBody, options: Options(headers: headers));
+        final postResponse = await _dio.post('/api/conversations',
+            data: postBody, options: Options(headers: headers));
 
         if (postResponse.statusCode != 201) {
-          throw Exception('Failed to save conversation: ${postResponse.statusCode}');
+          throw Exception(
+              'Failed to save conversation: ${postResponse.statusCode}');
         }
       }
     } catch (e) {
@@ -597,15 +613,19 @@ class ConversationStorageService {
     try {
       final headers = await _getAuthHeaders();
 
-      final response = await _dio.delete('/api/conversations/$conversationId', options: Options(headers: headers));
+      final response = await _dio.delete('/api/conversations/$conversationId',
+          options: Options(headers: headers));
 
       if (response.statusCode == 200) {
-        debugPrint('[ConversationStorage] Deleted conversation via API: $conversationId');
+        debugPrint(
+            '[ConversationStorage] Deleted conversation via API: $conversationId');
       } else {
-        throw Exception('Failed to delete conversation: ${response.statusCode}');
+        throw Exception(
+            'Failed to delete conversation: ${response.statusCode}');
       }
     } catch (e) {
-      debugPrint('[ConversationStorage] Error deleting conversation via API: $e');
+      debugPrint(
+          '[ConversationStorage] Error deleting conversation via API: $e');
       // Do not rethrow
     }
   }
@@ -615,13 +635,16 @@ class ConversationStorageService {
     DatabaseExecutor txn,
     Conversation conversation,
   ) async {
-    await txn.insert(_conversationsTable, {
-      'id': conversation.id,
-      'title': conversation.title,
-      'model': conversation.model,
-      'created_at': conversation.createdAt.millisecondsSinceEpoch,
-      'updated_at': conversation.updatedAt.millisecondsSinceEpoch,
-    }, conflictAlgorithm: ConflictAlgorithm.replace);
+    await txn.insert(
+        _conversationsTable,
+        {
+          'id': conversation.id,
+          'title': conversation.title,
+          'model': conversation.model,
+          'created_at': conversation.createdAt.millisecondsSinceEpoch,
+          'updated_at': conversation.updatedAt.millisecondsSinceEpoch,
+        },
+        conflictAlgorithm: ConflictAlgorithm.replace);
   }
 
   /// Insert messages for a conversation
@@ -630,16 +653,19 @@ class ConversationStorageService {
     Conversation conversation,
   ) async {
     for (final message in conversation.messages) {
-      await txn.insert(_messagesTable, {
-        'id': message.id,
-        'conversation_id': conversation.id,
-        'role': message.role.name,
-        'content': message.content,
-        'model': message.model,
-        'status': message.status.name,
-        'error': message.error,
-        'timestamp': message.timestamp.millisecondsSinceEpoch,
-      }, conflictAlgorithm: ConflictAlgorithm.replace);
+      await txn.insert(
+          _messagesTable,
+          {
+            'id': message.id,
+            'conversation_id': conversation.id,
+            'role': message.role.name,
+            'content': message.content,
+            'model': message.model,
+            'status': message.status.name,
+            'error': message.error,
+            'timestamp': message.timestamp.millisecondsSinceEpoch,
+          },
+          conflictAlgorithm: ConflictAlgorithm.replace);
     }
   }
 
@@ -693,7 +719,8 @@ class ConversationStorageService {
   }
 
   /// Check if the service is properly initialized
-  bool get isInitialized => kIsWeb ? _isInitialized : (_isInitialized && _database != null);
+  bool get isInitialized =>
+      kIsWeb ? _isInitialized : (_isInitialized && _database != null);
 
   /// Get current storage location setting
   Future<String> getStorageLocation() async {
@@ -725,11 +752,14 @@ class ConversationStorageService {
     }
 
     try {
-      await _database!.insert(_settingsTable, {
-        'key': 'storage_location',
-        'value': location,
-        'updated_at': DateTime.now().millisecondsSinceEpoch,
-      }, conflictAlgorithm: ConflictAlgorithm.replace);
+      await _database!.insert(
+          _settingsTable,
+          {
+            'key': 'storage_location',
+            'value': location,
+            'updated_at': DateTime.now().millisecondsSinceEpoch,
+          },
+          conflictAlgorithm: ConflictAlgorithm.replace);
       debugPrint(
         '� [ConversationStorage] Storage location updated to: $location',
       );
@@ -836,11 +866,14 @@ class ConversationStorageService {
       _encryptionEnabled = enabled;
 
       // Update encryption setting in database
-      await _database!.insert(_settingsTable, {
-        'key': 'encryption_enabled',
-        'value': enabled ? 'true' : 'false',
-        'updated_at': DateTime.now().millisecondsSinceEpoch,
-      }, conflictAlgorithm: ConflictAlgorithm.replace);
+      await _database!.insert(
+          _settingsTable,
+          {
+            'key': 'encryption_enabled',
+            'value': enabled ? 'true' : 'false',
+            'updated_at': DateTime.now().millisecondsSinceEpoch,
+          },
+          conflictAlgorithm: ConflictAlgorithm.replace);
 
       debugPrint(
         '� [ConversationStorage] Encryption ${enabled ? 'enabled' : 'disabled'}',

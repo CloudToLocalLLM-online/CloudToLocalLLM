@@ -2,4 +2,3 @@
 void usePathUrlStrategy() {
   // No-op on desktop/mobile platforms
 }
-

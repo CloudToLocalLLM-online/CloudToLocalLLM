@@ -120,8 +120,7 @@ class GitHubRelease {
       body: json['body'] ?? '',
       prerelease: json['prerelease'] ?? false,
       publishedAt: DateTime.parse(json['published_at']),
-      assets:
-          (json['assets'] as List<dynamic>?)
+      assets: (json['assets'] as List<dynamic>?)
               ?.map((asset) => GitHubAsset.fromJson(asset))
               .toList() ??
           [],

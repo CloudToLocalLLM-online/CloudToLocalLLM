@@ -179,15 +179,15 @@ class _ModelDownloadManagerState extends State<ModelDownloadManager> {
               Text(
                 'Model Manager',
                 style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  color: AppTheme.primaryColor,
-                  fontWeight: FontWeight.bold,
-                ),
+                      color: AppTheme.primaryColor,
+                      fontWeight: FontWeight.bold,
+                    ),
               ),
               Text(
                 'Download and manage Ollama models',
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: AppTheme.textColorLight,
-                ),
+                      color: AppTheme.textColorLight,
+                    ),
               ),
             ],
           ),
@@ -388,10 +388,10 @@ class _ModelDownloadManagerState extends State<ModelDownloadManager> {
         Text(
           'Configure the connection to your local Ollama instance. Default settings work for most installations.',
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
-            color: Theme.of(
-              context,
-            ).colorScheme.onSurface.withValues(alpha: 0.6),
-          ),
+                color: Theme.of(
+                  context,
+                ).colorScheme.onSurface.withValues(alpha: 0.6),
+              ),
         ),
       ],
     );
@@ -529,8 +529,7 @@ class _ModelDownloadManagerState extends State<ModelDownloadManager> {
 
   Widget _buildPopularModelsSection(OllamaService ollamaService) {
     final filteredModels = PopularModel.catalog.where((model) {
-      final matchesSearch =
-          _searchQuery.isEmpty ||
+      final matchesSearch = _searchQuery.isEmpty ||
           model.displayName.toLowerCase().contains(_searchQuery) ||
           model.description.toLowerCase().contains(_searchQuery);
 

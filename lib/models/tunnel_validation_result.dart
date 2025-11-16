@@ -109,8 +109,7 @@ class TunnelValidationResult {
       isSuccess: json['isSuccess'] as bool,
       message: json['message'] as String,
       latency: json['latency'] as int?,
-      tests:
-          (json['tests'] as List<dynamic>?)
+      tests: (json['tests'] as List<dynamic>?)
               ?.map(
                 (test) => ValidationTest.fromJson(test as Map<String, dynamic>),
               )

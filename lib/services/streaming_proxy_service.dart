@@ -21,9 +21,9 @@ class StreamingProxyService extends ChangeNotifier {
     String? baseUrl,
     Duration? timeout,
     AuthService? authService,
-  }) : _baseUrl = baseUrl ?? AppConfig.apiBaseUrl,
-       _timeout = timeout ?? AppConfig.apiTimeout,
-       _authService = authService {
+  })  : _baseUrl = baseUrl ?? AppConfig.apiBaseUrl,
+        _timeout = timeout ?? AppConfig.apiTimeout,
+        _authService = authService {
     _setupDio();
     if (kDebugMode) {
       debugPrint('[StreamingProxy] Service initialized');

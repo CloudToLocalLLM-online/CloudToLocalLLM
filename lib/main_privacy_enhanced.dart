@@ -193,11 +193,11 @@ class _CloudToLocalLLMPrivacyAppState extends State<CloudToLocalLLMPrivacyApp> {
         // Authentication service with PostgreSQL session storage
         ChangeNotifierProvider(
           create: (_) {
-            final Auth0Service auth0Service = kIsWeb
-                ? Auth0WebService()
-                : Auth0DesktopService();
+            final Auth0Service auth0Service =
+                kIsWeb ? Auth0WebService() : Auth0DesktopService();
             final sessionStorageService = SessionStorageService();
-            final authService = AuthService(auth0Service, sessionStorageService);
+            final authService =
+                AuthService(auth0Service, sessionStorageService);
             unawaited(authService.init());
             return authService;
           },
@@ -284,8 +284,8 @@ class _CloudToLocalLLMPrivacyAppState extends State<CloudToLocalLLMPrivacyApp> {
         ChangeNotifierProvider(
           create: (context) {
             final authService = context.read<AuthService>();
-            final clientDetection = context
-                .read<DesktopClientDetectionService>();
+            final clientDetection =
+                context.read<DesktopClientDetectionService>();
             final webDownloadPrompt = WebDownloadPromptService(
               authService: authService,
               clientDetectionService: clientDetection,
@@ -391,9 +391,8 @@ class _CloudToLocalLLMPrivacyAppState extends State<CloudToLocalLLMPrivacyApp> {
             // Theme configuration
             theme: AppTheme.lightTheme,
             darkTheme: AppTheme.darkTheme,
-            themeMode: AppConfig.enableDarkMode
-                ? ThemeMode.dark
-                : ThemeMode.light,
+            themeMode:
+                AppConfig.enableDarkMode ? ThemeMode.dark : ThemeMode.light,
 
             // Router configuration
             routerConfig: AppRouter.createRouter(

@@ -126,13 +126,13 @@ class _PrivacyDashboardState extends State<PrivacyDashboard> {
                       Expanded(
                         child: Text(
                           privacyManager.storageLocationDisplay,
-                          style: Theme.of(context).textTheme.titleMedium
-                              ?.copyWith(
-                                color: privacyManager.cloudSyncEnabled
-                                    ? Colors.blue
-                                    : Colors.green,
-                                fontWeight: FontWeight.bold,
-                              ),
+                          style:
+                              Theme.of(context).textTheme.titleMedium?.copyWith(
+                                    color: privacyManager.cloudSyncEnabled
+                                        ? Colors.blue
+                                        : Colors.green,
+                                    fontWeight: FontWeight.bold,
+                                  ),
                         ),
                       ),
                     ],
@@ -454,8 +454,8 @@ class _PrivacyDashboardState extends State<PrivacyDashboard> {
                     Text(
                       'Privacy Controls',
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                            fontWeight: FontWeight.bold,
+                          ),
                     ),
                   ],
                 ),
@@ -489,8 +489,8 @@ class _PrivacyDashboardState extends State<PrivacyDashboard> {
                   onChanged: privacyManager.isEncryptionAvailable
                       ? (value) async {
                           if (value) {
-                            final success = await privacyManager
-                                .enableEncryption();
+                            final success =
+                                await privacyManager.enableEncryption();
                             if (!success && context.mounted) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
@@ -529,8 +529,8 @@ class _PrivacyDashboardState extends State<PrivacyDashboard> {
                     Text(
                       'Data Management',
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                            fontWeight: FontWeight.bold,
+                          ),
                     ),
                   ],
                 ),
@@ -543,8 +543,8 @@ class _PrivacyDashboardState extends State<PrivacyDashboard> {
                   onTap: () async {
                     final messenger = ScaffoldMessenger.of(context);
                     try {
-                      final exportData = await privacyManager
-                          .exportConversations();
+                      final exportData =
+                          await privacyManager.exportConversations();
 
                       // Convert to JSON string for export
                       final jsonString = const JsonEncoder.withIndent(

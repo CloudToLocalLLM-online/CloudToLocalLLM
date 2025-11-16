@@ -5,7 +5,8 @@ class MessageContent extends StatelessWidget {
   final String content;
   final bool isStreaming;
 
-  const MessageContent({super.key, required this.content}) : isStreaming = false;
+  const MessageContent({super.key, required this.content})
+      : isStreaming = false;
   const MessageContent.streaming({super.key, this.content = ''})
       : isStreaming = true;
 
@@ -33,8 +34,7 @@ class MessageContent extends StatelessWidget {
             height: 16,
             child: CircularProgressIndicator(
               strokeWidth: 2,
-              valueColor:
-                  AlwaysStoppedAnimation<Color>(AppTheme.primaryColor),
+              valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryColor),
             ),
           ),
           SizedBox(width: AppTheme.spacingS),

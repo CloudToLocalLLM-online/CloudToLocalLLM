@@ -33,7 +33,8 @@ class _LoginScreenState extends State<LoginScreen> {
 
       // Check if this is a callback URL and redirect to callback route
       if (authService.auth0Service.isCallbackUrl()) {
-        debugPrint('[LoginScreen] Detected callback URL, redirecting to callback route');
+        debugPrint(
+            '[LoginScreen] Detected callback URL, redirecting to callback route');
         if (mounted) {
           context.go('/callback');
         }
@@ -91,11 +92,7 @@ class _LoginScreenState extends State<LoginScreen> {
     try {
       final authService = context.read<AuthService>();
       debugPrint(
-        ' [Login] Platform info: ${authService.isWeb
-            ? "Web"
-            : authService.isMobile
-            ? "Mobile"
-            : "Desktop"}',
+        ' [Login] Platform info: ${authService.isWeb ? "Web" : authService.isMobile ? "Mobile" : "Desktop"}',
       );
       debugPrint(' [Login] Calling authService.login()');
       await authService.login();
@@ -125,7 +122,8 @@ class _LoginScreenState extends State<LoginScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('An unexpected error occurred during login. Please try again.'),
+            content: Text(
+                'An unexpected error occurred during login. Please try again.'),
             backgroundColor: AppTheme.dangerColor,
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(
@@ -197,7 +195,9 @@ class _LoginScreenState extends State<LoginScreen> {
                           // Welcome text
                           Text(
                             'Welcome to (TEST BUILD - NEW ROUTER)',
-                            style: Theme.of(context).textTheme.headlineMedium
+                            style: Theme.of(context)
+                                .textTheme
+                                .headlineMedium
                                 ?.copyWith(
                                   color: AppTheme.textColorLight,
                                   fontSize: 18,
@@ -209,7 +209,9 @@ class _LoginScreenState extends State<LoginScreen> {
 
                           Text(
                             AppConfig.appName,
-                            style: Theme.of(context).textTheme.displayMedium
+                            style: Theme.of(context)
+                                .textTheme
+                                .displayMedium
                                 ?.copyWith(
                                   color: Colors.white,
                                   fontSize: 28,
@@ -222,12 +224,12 @@ class _LoginScreenState extends State<LoginScreen> {
 
                           Text(
                             AppConfig.appDescription,
-                            style: Theme.of(context).textTheme.bodyLarge
-                                ?.copyWith(
-                                  color: AppTheme.textColorLight,
-                                  fontSize: 16,
-                                  height: 1.5,
-                                ),
+                            style:
+                                Theme.of(context).textTheme.bodyLarge?.copyWith(
+                                      color: AppTheme.textColorLight,
+                                      fontSize: 16,
+                                      height: 1.5,
+                                    ),
                             textAlign: TextAlign.center,
                           ),
 
@@ -244,11 +246,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
                           SizedBox(height: AppTheme.spacingL),
 
-                          
-
                           SizedBox(height: AppTheme.spacingM),
-
-                          
                         ],
                       ),
                     ),

@@ -33,10 +33,12 @@ class EnhancedProviderStatusWidget extends StatefulWidget {
   });
 
   @override
-  State<EnhancedProviderStatusWidget> createState() => _EnhancedProviderStatusWidgetState();
+  State<EnhancedProviderStatusWidget> createState() =>
+      _EnhancedProviderStatusWidgetState();
 }
 
-class _EnhancedProviderStatusWidgetState extends State<EnhancedProviderStatusWidget> {
+class _EnhancedProviderStatusWidgetState
+    extends State<EnhancedProviderStatusWidget> {
   bool _isExpanded = false;
 
   @override
@@ -55,7 +57,8 @@ class _EnhancedProviderStatusWidgetState extends State<EnhancedProviderStatusWid
           elevation: 2,
           margin: EdgeInsets.symmetric(vertical: AppTheme.spacingXS),
           child: InkWell(
-            onTap: widget.onProviderTap ?? () => setState(() => _isExpanded = !_isExpanded),
+            onTap: widget.onProviderTap ??
+                () => setState(() => _isExpanded = !_isExpanded),
             borderRadius: BorderRadius.circular(8),
             child: Padding(
               padding: EdgeInsets.all(AppTheme.spacingM),
@@ -101,16 +104,16 @@ class _EnhancedProviderStatusWidgetState extends State<EnhancedProviderStatusWid
                   Text(
                     'No Provider Available',
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      color: AppTheme.warningColor,
-                      fontWeight: FontWeight.w600,
-                    ),
+                          color: AppTheme.warningColor,
+                          fontWeight: FontWeight.w600,
+                        ),
                   ),
                   SizedBox(height: AppTheme.spacingXS),
                   Text(
                     'No LLM providers are currently configured or available.',
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: AppTheme.textColorLight,
-                    ),
+                          color: AppTheme.textColorLight,
+                        ),
                   ),
                 ],
               ),
@@ -143,7 +146,7 @@ class _EnhancedProviderStatusWidgetState extends State<EnhancedProviderStatusWid
           ),
         ),
         SizedBox(width: AppTheme.spacingM),
-        
+
         // Provider info
         Expanded(
           child: Column(
@@ -154,8 +157,8 @@ class _EnhancedProviderStatusWidgetState extends State<EnhancedProviderStatusWid
                   Text(
                     provider.info.name,
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
+                          fontWeight: FontWeight.w600,
+                        ),
                   ),
                   if (isActive) ...[
                     SizedBox(width: AppTheme.spacingS),
@@ -171,9 +174,9 @@ class _EnhancedProviderStatusWidgetState extends State<EnhancedProviderStatusWid
                       child: Text(
                         'ACTIVE',
                         style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                          color: AppTheme.primaryColor,
-                          fontWeight: FontWeight.w600,
-                        ),
+                              color: AppTheme.primaryColor,
+                              fontWeight: FontWeight.w600,
+                            ),
                       ),
                     ),
                   ],
@@ -187,23 +190,23 @@ class _EnhancedProviderStatusWidgetState extends State<EnhancedProviderStatusWid
                   Text(
                     _getHealthStatusText(healthStatus),
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: statusColor,
-                      fontWeight: FontWeight.w500,
-                    ),
+                          color: statusColor,
+                          fontWeight: FontWeight.w500,
+                        ),
                   ),
                   SizedBox(width: AppTheme.spacingM),
                   Text(
                     provider.info.baseUrl,
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: AppTheme.textColorLight,
-                    ),
+                          color: AppTheme.textColorLight,
+                        ),
                   ),
                 ],
               ),
             ],
           ),
         ),
-        
+
         // Expand/collapse indicator
         Icon(
           _isExpanded ? Icons.expand_less : Icons.expand_more,
@@ -213,7 +216,8 @@ class _EnhancedProviderStatusWidgetState extends State<EnhancedProviderStatusWid
     );
   }
 
-  Widget _buildProviderDetails(RegisteredProvider provider, ProviderConfigurationManager configManager) {
+  Widget _buildProviderDetails(
+      RegisteredProvider provider, ProviderConfigurationManager configManager) {
     return Container(
       padding: EdgeInsets.all(AppTheme.spacingM),
       decoration: BoxDecoration(
@@ -226,24 +230,24 @@ class _EnhancedProviderStatusWidgetState extends State<EnhancedProviderStatusWid
           Text(
             'Provider Details',
             style: Theme.of(context).textTheme.titleSmall?.copyWith(
-              fontWeight: FontWeight.w600,
-            ),
+                  fontWeight: FontWeight.w600,
+                ),
           ),
           SizedBox(height: AppTheme.spacingM),
-          
-          _buildDetailRow('Type', provider.info.type.toString().split('.').last),
+          _buildDetailRow(
+              'Type', provider.info.type.toString().split('.').last),
           _buildDetailRow('Port', provider.info.port.toString()),
           _buildDetailRow('Version', provider.info.version ?? 'Unknown'),
-          _buildDetailRow('Models', '${provider.info.availableModels.length} available'),
+          _buildDetailRow(
+              'Models', '${provider.info.availableModels.length} available'),
           _buildDetailRow('Last Seen', _formatLastSeen(provider.info.lastSeen)),
-          
           if (provider.info.capabilities.isNotEmpty) ...[
             SizedBox(height: AppTheme.spacingS),
             Text(
               'Capabilities',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
+                    fontWeight: FontWeight.w600,
+                  ),
             ),
             SizedBox(height: AppTheme.spacingXS),
             Wrap(
@@ -262,7 +266,7 @@ class _EnhancedProviderStatusWidgetState extends State<EnhancedProviderStatusWid
 
   Widget _buildMetricsSection(RegisteredProvider provider) {
     final metrics = provider.metrics;
-    
+
     return Container(
       padding: EdgeInsets.all(AppTheme.spacingM),
       decoration: BoxDecoration(
@@ -275,11 +279,10 @@ class _EnhancedProviderStatusWidgetState extends State<EnhancedProviderStatusWid
           Text(
             'Performance Metrics',
             style: Theme.of(context).textTheme.titleSmall?.copyWith(
-              fontWeight: FontWeight.w600,
-            ),
+                  fontWeight: FontWeight.w600,
+                ),
           ),
           SizedBox(height: AppTheme.spacingM),
-          
           Row(
             children: [
               Expanded(
@@ -301,9 +304,7 @@ class _EnhancedProviderStatusWidgetState extends State<EnhancedProviderStatusWid
               ),
             ],
           ),
-          
           SizedBox(height: AppTheme.spacingM),
-          
           Row(
             children: [
               Expanded(
@@ -320,7 +321,9 @@ class _EnhancedProviderStatusWidgetState extends State<EnhancedProviderStatusWid
                   'Failed Requests',
                   metrics.failedRequests.toString(),
                   Icons.error_outline,
-                  metrics.failedRequests > 0 ? AppTheme.dangerColor : AppTheme.successColor,
+                  metrics.failedRequests > 0
+                      ? AppTheme.dangerColor
+                      : AppTheme.successColor,
                 ),
               ),
             ],
@@ -330,9 +333,10 @@ class _EnhancedProviderStatusWidgetState extends State<EnhancedProviderStatusWid
     );
   }
 
-  Widget _buildConfigurationSection(RegisteredProvider provider, ProviderConfigurationManager configManager) {
+  Widget _buildConfigurationSection(
+      RegisteredProvider provider, ProviderConfigurationManager configManager) {
     final config = configManager.getConfiguration(provider.info.id);
-    
+
     return Container(
       padding: EdgeInsets.all(AppTheme.spacingM),
       decoration: BoxDecoration(
@@ -348,8 +352,8 @@ class _EnhancedProviderStatusWidgetState extends State<EnhancedProviderStatusWid
               Text(
                 'Configuration',
                 style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
+                      fontWeight: FontWeight.w600,
+                    ),
               ),
               TextButton.icon(
                 onPressed: () => _editConfiguration(provider.info.id),
@@ -362,19 +366,19 @@ class _EnhancedProviderStatusWidgetState extends State<EnhancedProviderStatusWid
             ],
           ),
           SizedBox(height: AppTheme.spacingM),
-          
           if (config != null) ...[
             _buildDetailRow('Timeout', '${config.timeout.inSeconds}s'),
             _buildDetailRow('Provider ID', config.providerId),
             if (config.customSettings.isNotEmpty)
-              _buildDetailRow('Custom Settings', '${config.customSettings.length} configured'),
+              _buildDetailRow('Custom Settings',
+                  '${config.customSettings.length} configured'),
           ] else ...[
             Text(
               'No custom configuration found. Using default settings.',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: AppTheme.textColorLight,
-                fontStyle: FontStyle.italic,
-              ),
+                    color: AppTheme.textColorLight,
+                    fontStyle: FontStyle.italic,
+                  ),
             ),
           ],
         ],
@@ -393,9 +397,9 @@ class _EnhancedProviderStatusWidgetState extends State<EnhancedProviderStatusWid
             child: Text(
               label,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: AppTheme.textColorLight,
-                fontWeight: FontWeight.w500,
-              ),
+                    color: AppTheme.textColorLight,
+                    fontWeight: FontWeight.w500,
+                  ),
             ),
           ),
           Expanded(
@@ -425,14 +429,15 @@ class _EnhancedProviderStatusWidgetState extends State<EnhancedProviderStatusWid
       child: Text(
         capability,
         style: Theme.of(context).textTheme.labelSmall?.copyWith(
-          color: AppTheme.primaryColor,
-          fontWeight: FontWeight.w500,
-        ),
+              color: AppTheme.primaryColor,
+              fontWeight: FontWeight.w500,
+            ),
       ),
     );
   }
 
-  Widget _buildMetricCard(String title, String value, IconData icon, Color color) {
+  Widget _buildMetricCard(
+      String title, String value, IconData icon, Color color) {
     return Container(
       padding: EdgeInsets.all(AppTheme.spacingM),
       decoration: BoxDecoration(
@@ -447,15 +452,15 @@ class _EnhancedProviderStatusWidgetState extends State<EnhancedProviderStatusWid
           Text(
             value,
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              color: color,
-              fontWeight: FontWeight.w700,
-            ),
+                  color: color,
+                  fontWeight: FontWeight.w700,
+                ),
           ),
           Text(
             title,
             style: Theme.of(context).textTheme.labelSmall?.copyWith(
-              color: color,
-            ),
+                  color: color,
+                ),
             textAlign: TextAlign.center,
           ),
         ],
@@ -530,10 +535,10 @@ class _EnhancedProviderStatusWidgetState extends State<EnhancedProviderStatusWid
 
   String _formatLastSeen(DateTime? lastSeen) {
     if (lastSeen == null) return 'Never';
-    
+
     final now = DateTime.now();
     final difference = now.difference(lastSeen);
-    
+
     if (difference.inMinutes < 1) return 'Just now';
     if (difference.inMinutes < 60) return '${difference.inMinutes}m ago';
     if (difference.inHours < 24) return '${difference.inHours}h ago';
@@ -580,10 +585,12 @@ class EnhancedProviderSelectorWidget extends StatefulWidget {
   });
 
   @override
-  State<EnhancedProviderSelectorWidget> createState() => _EnhancedProviderSelectorWidgetState();
+  State<EnhancedProviderSelectorWidget> createState() =>
+      _EnhancedProviderSelectorWidgetState();
 }
 
-class _EnhancedProviderSelectorWidgetState extends State<EnhancedProviderSelectorWidget> {
+class _EnhancedProviderSelectorWidgetState
+    extends State<EnhancedProviderSelectorWidget> {
   String? _selectedProviderId;
   final Set<String> _selectedProviderIds = {};
 
@@ -612,14 +619,14 @@ class _EnhancedProviderSelectorWidgetState extends State<EnhancedProviderSelecto
             Text(
               'Available Providers',
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
+                    fontWeight: FontWeight.w600,
+                  ),
             ),
             SizedBox(height: AppTheme.spacingM),
-
-            ...providers.map((provider) => _buildProviderSelectionCard(provider)),
-
-            if (widget.allowMultipleSelection && _selectedProviderIds.isNotEmpty) ...[
+            ...providers
+                .map((provider) => _buildProviderSelectionCard(provider)),
+            if (widget.allowMultipleSelection &&
+                _selectedProviderIds.isNotEmpty) ...[
               SizedBox(height: AppTheme.spacingM),
               _buildSelectionSummary(),
             ],
@@ -644,15 +651,15 @@ class _EnhancedProviderSelectorWidgetState extends State<EnhancedProviderSelecto
             Text(
               'No Providers Found',
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                color: AppTheme.textColorLight,
-              ),
+                    color: AppTheme.textColorLight,
+                  ),
             ),
             SizedBox(height: AppTheme.spacingS),
             Text(
               'No LLM providers are currently available. Please check your configuration.',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: AppTheme.textColorLight,
-              ),
+                    color: AppTheme.textColorLight,
+                  ),
               textAlign: TextAlign.center,
             ),
           ],
@@ -692,10 +699,13 @@ class _EnhancedProviderSelectorWidgetState extends State<EnhancedProviderSelecto
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     border: Border.all(
-                      color: isSelected ? AppTheme.primaryColor : AppTheme.textColorLight,
+                      color: isSelected
+                          ? AppTheme.primaryColor
+                          : AppTheme.textColorLight,
                       width: 2,
                     ),
-                    color: isSelected ? AppTheme.primaryColor : Colors.transparent,
+                    color:
+                        isSelected ? AppTheme.primaryColor : Colors.transparent,
                   ),
                   child: isSelected
                       ? Icon(Icons.check, size: 16, color: Colors.white)
@@ -726,8 +736,8 @@ class _EnhancedProviderSelectorWidgetState extends State<EnhancedProviderSelecto
                       Text(
                         provider.info.name,
                         style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
+                              fontWeight: FontWeight.w600,
+                            ),
                       ),
                       SizedBox(height: AppTheme.spacingXS),
                       Row(
@@ -741,29 +751,35 @@ class _EnhancedProviderSelectorWidgetState extends State<EnhancedProviderSelecto
                             SizedBox(width: AppTheme.spacingXS),
                             Text(
                               _getHealthStatusText(provider.healthStatus),
-                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                color: healthColor,
-                                fontWeight: FontWeight.w500,
-                              ),
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodySmall
+                                  ?.copyWith(
+                                    color: healthColor,
+                                    fontWeight: FontWeight.w500,
+                                  ),
                             ),
                             SizedBox(width: AppTheme.spacingM),
                           ],
                           Text(
                             provider.info.baseUrl,
-                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: AppTheme.textColorLight,
-                            ),
+                            style:
+                                Theme.of(context).textTheme.bodySmall?.copyWith(
+                                      color: AppTheme.textColorLight,
+                                    ),
                           ),
                         ],
                       ),
-                      if (widget.showMetrics && provider.metrics.totalRequests > 0) ...[
+                      if (widget.showMetrics &&
+                          provider.metrics.totalRequests > 0) ...[
                         SizedBox(height: AppTheme.spacingXS),
                         Text(
                           'Success: ${(provider.metrics.successRate * 100).toStringAsFixed(1)}% • '
                           'Avg: ${provider.metrics.averageResponseTime.toStringAsFixed(0)}ms',
-                          style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                            color: AppTheme.textColorLight,
-                          ),
+                          style:
+                              Theme.of(context).textTheme.labelSmall?.copyWith(
+                                    color: AppTheme.textColorLight,
+                                  ),
                         ),
                       ],
                     ],
@@ -784,9 +800,9 @@ class _EnhancedProviderSelectorWidgetState extends State<EnhancedProviderSelecto
                     child: Text(
                       'AVAILABLE',
                       style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                        color: AppTheme.successColor,
-                        fontWeight: FontWeight.w600,
-                      ),
+                            color: AppTheme.successColor,
+                            fontWeight: FontWeight.w600,
+                          ),
                     ),
                   ),
               ],
@@ -813,9 +829,9 @@ class _EnhancedProviderSelectorWidgetState extends State<EnhancedProviderSelecto
             child: Text(
               '${_selectedProviderIds.length} provider${_selectedProviderIds.length == 1 ? '' : 's'} selected',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: AppTheme.primaryColor,
-                fontWeight: FontWeight.w500,
-              ),
+                    color: AppTheme.primaryColor,
+                    fontWeight: FontWeight.w500,
+                  ),
             ),
           ),
           TextButton(
@@ -836,14 +852,17 @@ class _EnhancedProviderSelectorWidgetState extends State<EnhancedProviderSelecto
           _selectedProviderIds.add(providerId);
         }
       } else {
-        _selectedProviderId = _selectedProviderId == providerId ? null : providerId;
+        _selectedProviderId =
+            _selectedProviderId == providerId ? null : providerId;
       }
     });
 
     if (widget.onProviderSelected != null) {
       if (widget.allowMultipleSelection) {
         // For multiple selection, we could pass the first selected or handle differently
-        widget.onProviderSelected!(_selectedProviderIds.isNotEmpty ? _selectedProviderIds.first : null);
+        widget.onProviderSelected!(_selectedProviderIds.isNotEmpty
+            ? _selectedProviderIds.first
+            : null);
       } else {
         widget.onProviderSelected!(_selectedProviderId);
       }

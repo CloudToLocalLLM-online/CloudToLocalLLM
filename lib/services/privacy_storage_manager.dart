@@ -31,9 +31,9 @@ class PrivacyStorageManager extends ChangeNotifier {
     required ConversationStorageService conversationStorage,
     required EnhancedUserTierService userTierService,
     required AuthService authService,
-  }) : _conversationStorage = conversationStorage,
-       _userTierService = userTierService,
-       _authService = authService;
+  })  : _conversationStorage = conversationStorage,
+        _userTierService = userTierService,
+        _authService = authService;
 
   // Getters
   bool get cloudSyncEnabled => _cloudSyncEnabled;

@@ -17,7 +17,7 @@ class NativeTrayService with TrayListener {
 
   bool get isInitialized => _isInitialized;
   bool get isSupported => _isSupported;
-  
+
   Future<bool> initialize({
     required ConnectionManagerService connectionManager,
     required LocalOllamaConnectionService localOllama,
@@ -31,7 +31,6 @@ class NativeTrayService with TrayListener {
     _isInitialized = false;
     return false;
   }
-  
+
   void dispose() {}
 }
-

@@ -150,7 +150,8 @@ class OllamaProvider extends LLMProvider {
     try {
       final baseUrl = _getBaseUrl();
       _dio.options.baseUrl = baseUrl;
-      final response = await _dio.get('/api/version', options: Options(headers: _getHeaders()));
+      final response = await _dio.get('/api/version',
+          options: Options(headers: _getHeaders()));
 
       if (response.statusCode == 200) {
         _isAvailable = true;
@@ -175,7 +176,8 @@ class OllamaProvider extends LLMProvider {
 
       final baseUrl = _getBaseUrl();
       _dio.options.baseUrl = baseUrl;
-      final response = await _dio.get('/api/tags', options: Options(headers: _getHeaders()));
+      final response =
+          await _dio.get('/api/tags', options: Options(headers: _getHeaders()));
 
       if (response.statusCode == 200) {
         final data = response.data as Map<String, dynamic>;
@@ -195,7 +197,8 @@ class OllamaProvider extends LLMProvider {
           );
         }).toList();
 
-        debugPrint('[OllamaProvider] Loaded ${_availableModels.length} models from Ollama');
+        debugPrint(
+            '[OllamaProvider] Loaded ${_availableModels.length} models from Ollama');
       } else {
         throw Exception('HTTP ${response.statusCode}: ${response.data}');
       }
@@ -546,7 +549,6 @@ class _OllamaSettingsWidgetState extends State<OllamaSettingsWidget> {
             ),
             onChanged: _onConfigurationChanged,
           ),
-
           const SizedBox(height: 16),
         ],
 

@@ -99,11 +99,11 @@ class _WebDownloadPromptState extends State<WebDownloadPrompt> {
                     Expanded(
                       child: Text(
                         'Download Desktop App',
-                        style: Theme.of(context).textTheme.headlineSmall
-                            ?.copyWith(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                            ),
+                        style:
+                            Theme.of(context).textTheme.headlineSmall?.copyWith(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                ),
                       ),
                     ),
                     IconButton(
@@ -126,9 +126,9 @@ class _WebDownloadPromptState extends State<WebDownloadPrompt> {
                       Text(
                         'To use CloudToLocalLLM with your local AI models, you need to download and install the desktop application.',
                         style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                          color: AppTheme.textColor,
-                          height: 1.5,
-                        ),
+                              color: AppTheme.textColor,
+                              height: 1.5,
+                            ),
                       ),
                       SizedBox(height: AppTheme.spacingL),
 
@@ -192,9 +192,9 @@ class _WebDownloadPromptState extends State<WebDownloadPrompt> {
         Text(
           'Why download the desktop app?',
           style: Theme.of(context).textTheme.titleMedium?.copyWith(
-            color: AppTheme.textColor,
-            fontWeight: FontWeight.bold,
-          ),
+                color: AppTheme.textColor,
+                fontWeight: FontWeight.bold,
+              ),
         ),
         SizedBox(height: AppTheme.spacingM),
         ...benefits.map(

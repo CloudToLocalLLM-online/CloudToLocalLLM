@@ -31,7 +31,7 @@ class DesktopClientDetectionService extends ChangeNotifier {
   final Dio _dio = Dio();
 
   DesktopClientDetectionService({required AuthService authService})
-    : _authService = authService {
+      : _authService = authService {
     _setupDio();
   }
 
@@ -181,8 +181,7 @@ class DesktopClientDetectionService extends ChangeNotifier {
     required List<DesktopClientInfo> connectedClients,
     String? error,
   }) {
-    final hasChanged =
-        _hasConnectedClients != hasConnectedClients ||
+    final hasChanged = _hasConnectedClients != hasConnectedClients ||
         _connectedClientCount != connectedClientCount ||
         _error != error;
 

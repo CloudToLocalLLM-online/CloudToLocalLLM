@@ -31,7 +31,8 @@ class SessionStorageService {
   }) async {
     // Generate a unique session token
     final token = _generateSessionToken();
-    final expiresAt = DateTime.now().add(const Duration(hours: 24)); // 24 hour sessions
+    final expiresAt =
+        DateTime.now().add(const Duration(hours: 24)); // 24 hour sessions
 
     final sessionData = {
       'userId': user.id,
@@ -162,7 +163,8 @@ class SessionStorageService {
           name: responseData['user']['name'],
           picture: responseData['user']['picture'],
           nickname: responseData['user']['nickname'],
-          emailVerified: responseData['user']['email_verified'] ? DateTime.now() : null,
+          emailVerified:
+              responseData['user']['email_verified'] ? DateTime.now() : null,
           createdAt: DateTime.now(), // API should provide this
           updatedAt: DateTime.now(), // API should provide this
         );
@@ -221,7 +223,8 @@ class SessionStorageService {
 
       if (response.statusCode == 200) {
         final result = response.data;
-        debugPrint('[SessionStorage] Cleaned up ${result['deleted']} expired sessions');
+        debugPrint(
+            '[SessionStorage] Cleaned up ${result['deleted']} expired sessions');
       } else {
         throw Exception('Failed to cleanup sessions: ${response.statusCode}');
       }
@@ -244,4 +247,3 @@ class SessionStorageService {
     return hash.toString().substring(0, 32);
   }
 }
-

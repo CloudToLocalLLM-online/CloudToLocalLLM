@@ -22,8 +22,6 @@ enum PromptCategory {
 
 /// Advanced prompt management service
 class LangChainPromptService extends ChangeNotifier {
-  
-
   // Built-in prompt templates
   final Map<String, ChatPromptTemplate> _builtInTemplates = {};
   final Map<String, ChatPromptTemplate> _customTemplates = {};
@@ -41,9 +39,9 @@ class LangChainPromptService extends ChangeNotifier {
   String? get activeTemplateId => _activeTemplateId;
   Map<String, dynamic> get templateVariables => Map.from(_templateVariables);
   List<String> get availableTemplateIds => [
-    ..._builtInTemplates.keys,
-    ..._customTemplates.keys,
-  ];
+        ..._builtInTemplates.keys,
+        ..._customTemplates.keys,
+      ];
 
   /// Initialize built-in prompt templates
   void _initializeBuiltInTemplates() {
@@ -67,7 +65,8 @@ class LangChainPromptService extends ChangeNotifier {
     );
 
     // Code generation template
-    _builtInTemplates['code_generation'] = ChatPromptTemplate.fromPromptMessages([
+    _builtInTemplates['code_generation'] =
+        ChatPromptTemplate.fromPromptMessages([
       SystemChatMessagePromptTemplate.fromTemplate(
         '''You are an expert software developer. Generate clean, efficient, and well-documented code.
 
@@ -161,7 +160,8 @@ Guidelines:
     );
 
     // Technical documentation template
-    _builtInTemplates['technical_docs'] = ChatPromptTemplate.fromPromptMessages([
+    _builtInTemplates['technical_docs'] =
+        ChatPromptTemplate.fromPromptMessages([
       SystemChatMessagePromptTemplate.fromTemplate(
         '''You are a technical writer creating clear, comprehensive documentation.
 
@@ -225,7 +225,8 @@ Guidelines:
       isBuiltIn: true,
     );
 
-    debugPrint('[LangChainPrompt] Built-in prompt templates initialized: ${_builtInTemplates.length}');
+    debugPrint(
+        '[LangChainPrompt] Built-in prompt templates initialized: ${_builtInTemplates.length}');
   }
 
   /// Get prompt template by ID
@@ -255,7 +256,8 @@ Guidelines:
     _activeTemplateId = templateId;
     _templateVariables = variables ?? {};
 
-    debugPrint('[LangChainPrompt] Active template set: $templateId (${_templateVariables.length} variables)');
+    debugPrint(
+        '[LangChainPrompt] Active template set: $templateId (${_templateVariables.length} variables)');
 
     notifyListeners();
   }
@@ -297,7 +299,8 @@ Guidelines:
       isBuiltIn: false,
     );
 
-    debugPrint('[LangChainPrompt] Custom template created: $id ($name, ${category.name})');
+    debugPrint(
+        '[LangChainPrompt] Custom template created: $id ($name, ${category.name})');
 
     notifyListeners();
   }
@@ -382,4 +385,3 @@ Guidelines:
     notifyListeners();
   }
 }
-
