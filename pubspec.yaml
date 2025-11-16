@@ -83,7 +83,7 @@ dev_dependencies:
   integration_test:
     sdk: flutter
 
-# No dependency overrides needed - replaced package:web with dart:js_interop
+# Removed web package override - using dart:js_interop instead
 
 flutter:
   uses-material-design: true

@@ -54,7 +54,6 @@ ios/
 linux/
 macos/
 windows/
-services/
 test/
 tests/
 e2e/
