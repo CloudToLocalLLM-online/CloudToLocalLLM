@@ -11,6 +11,7 @@ import 'config/router.dart';
 import 'config/theme.dart';
 import 'screens/loading_screen.dart';
 import 'di/locator.dart' as di;
+import 'services/admin_center_service.dart';
 import 'services/admin_data_flush_service.dart';
 import 'services/admin_service.dart';
 import 'services/app_initialization_service.dart';
@@ -229,12 +230,6 @@ class _CloudToLocalLLMAppState extends State<CloudToLocalLLMApp> {
       ),
     );
 
-    providers.add(
-      ChangeNotifierProvider.value(
-        value: di.serviceLocator.get<ProviderConfigurationManager>(),
-      ),
-    );
-
     // Authenticated services - only provide if registered
     // These will be registered after authentication
     _addProviderIfRegistered<TunnelService>(providers);
@@ -251,6 +246,8 @@ class _CloudToLocalLLMAppState extends State<CloudToLocalLLMApp> {
     _addProviderIfRegistered<UnifiedConnectionService>(providers);
     _addProviderIfRegistered<AdminService>(providers);
     _addProviderIfRegistered<AdminDataFlushService>(providers);
+    _addProviderIfRegistered<AdminCenterService>(providers);
+    _addProviderIfRegistered<ProviderConfigurationManager>(providers);
 
     return providers;
   }
