@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../di/locator.dart' as di;
 import '../../services/admin_center_service.dart';
 import '../../models/admin_role_model.dart';
 import 'dart:async';
@@ -53,7 +54,7 @@ class _EmailMetricsTabState extends State<EmailMetricsTab> {
 
   /// Load email metrics from backend
   Future<void> _loadMetrics() async {
-    final adminService = context.read<AdminCenterService>();
+    final adminService = di.serviceLocator.get<AdminCenterService>();
 
     // Check permission
     if (!adminService.hasPermission(AdminPermission.viewConfiguration)) {
@@ -94,23 +95,29 @@ class _EmailMetricsTabState extends State<EmailMetricsTab> {
       };
 
       // Parse hourly data
-      final hourlyData = (data['hourly_breakdown'] as List?)
-              ?.map((item) => HourlyMetric(
-                    hour: DateTime.parse(item['hour']),
-                    sentCount: item['sent_count'] ?? 0,
-                    failedCount: item['failed_count'] ?? 0,
-                    bouncedCount: item['bounced_count'] ?? 0,
-                    totalCount: item['total_count'] ?? 0,
-                  ))
+      final hourlyData =
+          (data['hourly_breakdown'] as List?)
+              ?.map(
+                (item) => HourlyMetric(
+                  hour: DateTime.parse(item['hour']),
+                  sentCount: item['sent_count'] ?? 0,
+                  failedCount: item['failed_count'] ?? 0,
+                  bouncedCount: item['bounced_count'] ?? 0,
+                  totalCount: item['total_count'] ?? 0,
+                ),
+              )
               .toList() ??
           [];
 
       // Parse failure reasons
-      final failureReasons = (data['failure_reasons'] as List?)
-              ?.map((item) => FailureReason(
-                    reason: item['error_reason'] ?? 'Unknown',
-                    count: item['count'] ?? 0,
-                  ))
+      final failureReasons =
+          (data['failure_reasons'] as List?)
+              ?.map(
+                (item) => FailureReason(
+                  reason: item['error_reason'] ?? 'Unknown',
+                  count: item['count'] ?? 0,
+                ),
+              )
               .toList() ??
           [];
 
@@ -172,15 +179,15 @@ class _EmailMetricsTabState extends State<EmailMetricsTab> {
                 Text(
                   'Email Metrics Dashboard',
                   style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 const SizedBox(height: 8),
                 Text(
                   'Monitor email delivery performance and metrics',
-                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        color: Colors.grey.shade700,
-                      ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodyLarge?.copyWith(color: Colors.grey.shade700),
                 ),
               ],
             ),
@@ -209,9 +216,9 @@ class _EmailMetricsTabState extends State<EmailMetricsTab> {
                 const Spacer(),
                 Text(
                   'Auto-refresh: Every 30s',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Colors.grey.shade600,
-                      ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodySmall?.copyWith(color: Colors.grey.shade600),
                 ),
               ],
             ),
@@ -345,16 +352,16 @@ class _EmailMetricsTabState extends State<EmailMetricsTab> {
             Text(
               value,
               style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: color,
-                  ),
+                fontWeight: FontWeight.bold,
+                color: color,
+              ),
             ),
             const SizedBox(height: 8),
             Text(
               title,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Colors.grey.shade600,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(color: Colors.grey.shade600),
               textAlign: TextAlign.center,
             ),
           ],
@@ -374,9 +381,9 @@ class _EmailMetricsTabState extends State<EmailMetricsTab> {
           children: [
             Text(
               'Delivery Time Distribution',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 24),
             Row(
@@ -385,22 +392,26 @@ class _EmailMetricsTabState extends State<EmailMetricsTab> {
                 _buildDeliveryTimeMetric(
                   label: 'Average',
                   value: _formatDuration(
-                      _metrics!['avg_delivery_time_seconds'] as double?),
+                    _metrics!['avg_delivery_time_seconds'] as double?,
+                  ),
                 ),
                 _buildDeliveryTimeMetric(
                   label: 'P50 (Median)',
                   value: _formatDuration(
-                      _metrics!['p50_delivery_time_seconds'] as double?),
+                    _metrics!['p50_delivery_time_seconds'] as double?,
+                  ),
                 ),
                 _buildDeliveryTimeMetric(
                   label: 'P95',
                   value: _formatDuration(
-                      _metrics!['p95_delivery_time_seconds'] as double?),
+                    _metrics!['p95_delivery_time_seconds'] as double?,
+                  ),
                 ),
                 _buildDeliveryTimeMetric(
                   label: 'P99',
                   value: _formatDuration(
-                      _metrics!['p99_delivery_time_seconds'] as double?),
+                    _metrics!['p99_delivery_time_seconds'] as double?,
+                  ),
                 ),
               ],
             ),
@@ -420,16 +431,16 @@ class _EmailMetricsTabState extends State<EmailMetricsTab> {
         Text(
           value,
           style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: Colors.blue,
-              ),
+            fontWeight: FontWeight.bold,
+            color: Colors.blue,
+          ),
         ),
         const SizedBox(height: 8),
         Text(
           label,
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Colors.grey.shade600,
-              ),
+          style: Theme.of(
+            context,
+          ).textTheme.bodySmall?.copyWith(color: Colors.grey.shade600),
         ),
       ],
     );
@@ -447,9 +458,9 @@ class _EmailMetricsTabState extends State<EmailMetricsTab> {
             children: [
               Text(
                 'Hourly Breakdown',
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+                style: Theme.of(
+                  context,
+                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 24),
               Center(
@@ -473,9 +484,9 @@ class _EmailMetricsTabState extends State<EmailMetricsTab> {
           children: [
             Text(
               'Hourly Breakdown',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 24),
             SingleChildScrollView(
@@ -489,30 +500,32 @@ class _EmailMetricsTabState extends State<EmailMetricsTab> {
                   DataColumn(label: Text('Total')),
                 ],
                 rows: _hourlyData
-                    .map((metric) => DataRow(
-                          cells: [
-                            DataCell(Text(_formatDateTime(metric.hour))),
-                            DataCell(
-                              Text(
-                                metric.sentCount.toString(),
-                                style: const TextStyle(color: Colors.green),
-                              ),
+                    .map(
+                      (metric) => DataRow(
+                        cells: [
+                          DataCell(Text(_formatDateTime(metric.hour))),
+                          DataCell(
+                            Text(
+                              metric.sentCount.toString(),
+                              style: const TextStyle(color: Colors.green),
                             ),
-                            DataCell(
-                              Text(
-                                metric.failedCount.toString(),
-                                style: const TextStyle(color: Colors.red),
-                              ),
+                          ),
+                          DataCell(
+                            Text(
+                              metric.failedCount.toString(),
+                              style: const TextStyle(color: Colors.red),
                             ),
-                            DataCell(
-                              Text(
-                                metric.bouncedCount.toString(),
-                                style: const TextStyle(color: Colors.orange),
-                              ),
+                          ),
+                          DataCell(
+                            Text(
+                              metric.bouncedCount.toString(),
+                              style: const TextStyle(color: Colors.orange),
                             ),
-                            DataCell(Text(metric.totalCount.toString())),
-                          ],
-                        ))
+                          ),
+                          DataCell(Text(metric.totalCount.toString())),
+                        ],
+                      ),
+                    )
                     .toList(),
               ),
             ),
@@ -533,9 +546,9 @@ class _EmailMetricsTabState extends State<EmailMetricsTab> {
           children: [
             Text(
               'Top Failure Reasons',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 24),
             ListView.separated(
@@ -567,12 +580,8 @@ class _EmailMetricsTabState extends State<EmailMetricsTab> {
                             const SizedBox(height: 4),
                             Text(
                               '${reason.count} failures ($percentage%)',
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .bodySmall
-                                  ?.copyWith(
-                                    color: Colors.grey.shade600,
-                                  ),
+                              style: Theme.of(context).textTheme.bodySmall
+                                  ?.copyWith(color: Colors.grey.shade600),
                             ),
                           ],
                         ),
@@ -638,8 +647,5 @@ class FailureReason {
   final String reason;
   final int count;
 
-  FailureReason({
-    required this.reason,
-    required this.count,
-  });
+  FailureReason({required this.reason, required this.count});
 }

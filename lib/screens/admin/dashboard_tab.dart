@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../di/locator.dart' as di;
 import '../../services/admin_center_service.dart';
 import '../../widgets/admin_stat_card.dart';
 import '../../widgets/admin_error_message.dart';
@@ -45,7 +46,7 @@ class _DashboardTabState extends State<DashboardTab> {
     });
 
     try {
-      final adminService = context.read<AdminCenterService>();
+      final adminService = di.serviceLocator.get<AdminCenterService>();
       final metrics = await adminService.getDashboardMetrics();
 
       if (mounted) {
@@ -91,8 +92,8 @@ class _DashboardTabState extends State<DashboardTab> {
                 child: Text(
                   'Last updated: ${_formatTime(_lastUpdated!)}',
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: AppTheme.textColorLight,
-                      ),
+                    color: AppTheme.textColorLight,
+                  ),
                 ),
               ),
             ),
@@ -127,9 +128,7 @@ class _DashboardTabState extends State<DashboardTab> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            AdminErrorMessage(
-              errorMessage: _error!,
-            ),
+            AdminErrorMessage(errorMessage: _error!),
             SizedBox(height: AppTheme.spacingM),
             ElevatedButton.icon(
               onPressed: _loadMetrics,
@@ -142,9 +141,7 @@ class _DashboardTabState extends State<DashboardTab> {
     }
 
     if (_metrics == null) {
-      return const Center(
-        child: CircularProgressIndicator(),
-      );
+      return const Center(child: CircularProgressIndicator());
     }
 
     return RefreshIndicator(
@@ -222,7 +219,8 @@ class _DashboardTabState extends State<DashboardTab> {
     final subscriptions = _metrics!['subscriptions'] as Map<String, dynamic>;
     final distribution = subscriptions['distribution'] as Map<String, dynamic>;
 
-    final total = (distribution['free'] as int) +
+    final total =
+        (distribution['free'] as int) +
         (distribution['premium'] as int) +
         (distribution['enterprise'] as int);
 
@@ -234,18 +232,18 @@ class _DashboardTabState extends State<DashboardTab> {
           children: [
             Text(
               'Subscription Distribution',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
             ),
 
             SizedBox(height: AppTheme.spacingM),
 
             Text(
               'Conversion Rate: ${subscriptions['conversionRate']}%',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: AppTheme.textColorLight,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(color: AppTheme.textColorLight),
             ),
 
             SizedBox(height: AppTheme.spacingL),
@@ -281,12 +279,7 @@ class _DashboardTabState extends State<DashboardTab> {
     );
   }
 
-  Widget _buildSubscriptionBar(
-    String tier,
-    int count,
-    int total,
-    Color color,
-  ) {
+  Widget _buildSubscriptionBar(String tier, int count, int total, Color color) {
     final percentage = total > 0 ? (count / total * 100) : 0.0;
 
     return Column(
@@ -297,15 +290,15 @@ class _DashboardTabState extends State<DashboardTab> {
           children: [
             Text(
               tier,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
             ),
             Text(
               '$count (${percentage.toStringAsFixed(1)}%)',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: AppTheme.textColorLight,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(color: AppTheme.textColorLight),
             ),
           ],
         ),
@@ -333,9 +326,9 @@ class _DashboardTabState extends State<DashboardTab> {
           child: Center(
             child: Text(
               'No recent transactions',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: AppTheme.textColorLight,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(color: AppTheme.textColorLight),
             ),
           ),
         ),
@@ -350,18 +343,17 @@ class _DashboardTabState extends State<DashboardTab> {
           children: [
             Text(
               'Recent Transactions',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
             ),
             SizedBox(height: AppTheme.spacingM),
             ListView.separated(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
               itemCount: transactions.length,
-              separatorBuilder: (context, index) => Divider(
-                height: AppTheme.spacingM * 2,
-              ),
+              separatorBuilder: (context, index) =>
+                  Divider(height: AppTheme.spacingM * 2),
               itemBuilder: (context, index) {
                 final transaction = transactions[index] as Map<String, dynamic>;
                 return _buildTransactionItem(transaction);
@@ -394,15 +386,15 @@ class _DashboardTabState extends State<DashboardTab> {
       ),
       title: Text(
         transaction['userEmail'] as String,
-        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              fontWeight: FontWeight.w600,
-            ),
+        style: Theme.of(
+          context,
+        ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
       ),
       subtitle: Text(
         '${transaction['paymentMethod']} •••• ${transaction['last4']} • ${_formatDateTime(transaction['createdAt'])}',
-        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: AppTheme.textColorLight,
-            ),
+        style: Theme.of(
+          context,
+        ).textTheme.bodySmall?.copyWith(color: AppTheme.textColorLight),
       ),
       trailing: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -410,15 +402,15 @@ class _DashboardTabState extends State<DashboardTab> {
         children: [
           Text(
             '\$${_formatCurrency(transaction['amount'])}',
-            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
+            style: Theme.of(
+              context,
+            ).textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.bold),
           ),
           Text(
             transaction['subscriptionTier'] as String,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: AppTheme.textColorLight,
-                ),
+            style: Theme.of(
+              context,
+            ).textTheme.bodySmall?.copyWith(color: AppTheme.textColorLight),
           ),
         ],
       ),

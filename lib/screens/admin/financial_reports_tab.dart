@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../di/locator.dart' as di;
 import '../../services/admin_center_service.dart';
 import '../../models/admin_role_model.dart';
 import 'package:intl/intl.dart';
@@ -31,7 +32,7 @@ class _FinancialReportsTabState extends State<FinancialReportsTab> {
 
   /// Load report based on selected type and date range
   Future<void> _loadReport() async {
-    final adminService = context.read<AdminCenterService>();
+    final adminService = di.serviceLocator.get<AdminCenterService>();
 
     // Check permission
     if (!adminService.hasPermission(AdminPermission.viewReports)) {
@@ -104,7 +105,7 @@ class _FinancialReportsTabState extends State<FinancialReportsTab> {
 
   /// Export report
   Future<void> _exportReport(String format) async {
-    final adminService = context.read<AdminCenterService>();
+    final adminService = di.serviceLocator.get<AdminCenterService>();
 
     // Check permission
     if (!adminService.hasPermission(AdminPermission.exportReports)) {
@@ -159,15 +160,15 @@ class _FinancialReportsTabState extends State<FinancialReportsTab> {
               Text(
                 'Financial Reports',
                 style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               const SizedBox(height: 8),
               Text(
                 'View revenue reports, subscription metrics, and export data',
-                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                      color: Colors.grey.shade700,
-                    ),
+                style: Theme.of(
+                  context,
+                ).textTheme.bodyLarge?.copyWith(color: Colors.grey.shade700),
               ),
             ],
           ),
@@ -193,7 +194,8 @@ class _FinancialReportsTabState extends State<FinancialReportsTab> {
                               style: Theme.of(context).textTheme.labelMedium,
                             ),
                             const SizedBox(height: 8),
-                            DropdownButtonFormField<String>(initialValue: _selectedReportType,
+                            DropdownButtonFormField<String>(
+                              initialValue: _selectedReportType,
                               decoration: const InputDecoration(
                                 border: OutlineInputBorder(),
                                 contentPadding: EdgeInsets.symmetric(
@@ -308,25 +310,18 @@ class _FinancialReportsTabState extends State<FinancialReportsTab> {
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: _loadReport,
-              child: const Text('Retry'),
-            ),
+            ElevatedButton(onPressed: _loadReport, child: const Text('Retry')),
           ],
         ),
       );
     }
 
     if (_isLoading) {
-      return const Center(
-        child: CircularProgressIndicator(),
-      );
+      return const Center(child: CircularProgressIndicator());
     }
 
     if (_reportData == null) {
-      return const Center(
-        child: Text('No data available'),
-      );
+      return const Center(child: Text('No data available'));
     }
 
     if (_selectedReportType == 'revenue') {
@@ -342,8 +337,9 @@ class _FinancialReportsTabState extends State<FinancialReportsTab> {
     final totalRevenue = data['totalRevenue'] ?? 0.0;
     final transactionCount = data['transactionCount'] ?? 0;
     final avgTransactionValue = data['averageTransactionValue'] ?? 0.0;
-    final revenueByTier =
-        List<Map<String, dynamic>>.from(data['revenueByTier'] ?? []);
+    final revenueByTier = List<Map<String, dynamic>>.from(
+      data['revenueByTier'] ?? [],
+    );
 
     return SingleChildScrollView(
       child: Column(
@@ -393,8 +389,8 @@ class _FinancialReportsTabState extends State<FinancialReportsTab> {
                   Text(
                     'Revenue by Subscription Tier',
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   const SizedBox(height: 16),
                   _buildRevenueByTierTable(revenueByTier),
@@ -416,8 +412,9 @@ class _FinancialReportsTabState extends State<FinancialReportsTab> {
     final activeSubscriptions = data['activeSubscriptions'] ?? 0;
     final newSubscriptions = data['newSubscriptions'] ?? 0;
     final canceledSubscriptions = data['canceledSubscriptions'] ?? 0;
-    final subscriptionsByTier =
-        List<Map<String, dynamic>>.from(data['subscriptionsByTier'] ?? []);
+    final subscriptionsByTier = List<Map<String, dynamic>>.from(
+      data['subscriptionsByTier'] ?? [],
+    );
 
     return SingleChildScrollView(
       child: Column(
@@ -506,8 +503,8 @@ class _FinancialReportsTabState extends State<FinancialReportsTab> {
                   Text(
                     'Subscriptions by Tier',
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   const SizedBox(height: 16),
                   _buildSubscriptionsByTierTable(subscriptionsByTier),
@@ -541,8 +538,8 @@ class _FinancialReportsTabState extends State<FinancialReportsTab> {
                   child: Text(
                     title,
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: Colors.grey.shade700,
-                        ),
+                      color: Colors.grey.shade700,
+                    ),
                   ),
                 ),
               ],
@@ -551,9 +548,9 @@ class _FinancialReportsTabState extends State<FinancialReportsTab> {
             Text(
               value,
               style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: color,
-                  ),
+                fontWeight: FontWeight.bold,
+                color: color,
+              ),
             ),
           ],
         ),
@@ -674,5 +671,3 @@ class _FinancialReportsTabState extends State<FinancialReportsTab> {
     }
   }
 }
-
-

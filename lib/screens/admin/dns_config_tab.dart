@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../di/locator.dart' as di;
 import '../../services/admin_center_service.dart';
 import '../../models/admin_role_model.dart';
 
@@ -17,8 +18,9 @@ class _DnsConfigTabState extends State<DnsConfigTab> {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _recordNameController = TextEditingController();
   final TextEditingController _recordValueController = TextEditingController();
-  final TextEditingController _ttlController =
-      TextEditingController(text: '3600');
+  final TextEditingController _ttlController = TextEditingController(
+    text: '3600',
+  );
 
   // State
   bool _isLoading = false;
@@ -47,7 +49,7 @@ class _DnsConfigTabState extends State<DnsConfigTab> {
 
   /// Load DNS records
   Future<void> _loadDnsRecords() async {
-    final adminService = context.read<AdminCenterService>();
+    final adminService = di.serviceLocator.get<AdminCenterService>();
 
     // Check permission
     if (!adminService.hasPermission(AdminPermission.viewConfiguration)) {
@@ -65,17 +67,19 @@ class _DnsConfigTabState extends State<DnsConfigTab> {
     try {
       final recordsData = await adminService.getDnsRecords();
       final records = recordsData
-          .map((record) => DnsRecord(
-                id: record['id'] ?? '',
-                type: record['recordType'] ?? '',
-                name: record['name'] ?? '',
-                value: record['value'] ?? '',
-                ttl: record['ttl'] ?? 3600,
-                status: record['status'] ?? 'pending',
-                validatedAt: record['validatedAt'] != null
-                    ? DateTime.parse(record['validatedAt'])
-                    : null,
-              ))
+          .map(
+            (record) => DnsRecord(
+              id: record['id'] ?? '',
+              type: record['recordType'] ?? '',
+              name: record['name'] ?? '',
+              value: record['value'] ?? '',
+              ttl: record['ttl'] ?? 3600,
+              status: record['status'] ?? 'pending',
+              validatedAt: record['validatedAt'] != null
+                  ? DateTime.parse(record['validatedAt'])
+                  : null,
+            ),
+          )
           .toList();
 
       setState(() {
@@ -96,7 +100,7 @@ class _DnsConfigTabState extends State<DnsConfigTab> {
       return;
     }
 
-    final adminService = context.read<AdminCenterService>();
+    final adminService = di.serviceLocator.get<AdminCenterService>();
 
     // Check permission
     if (!adminService.hasPermission(AdminPermission.editConfiguration)) {
@@ -139,7 +143,7 @@ class _DnsConfigTabState extends State<DnsConfigTab> {
 
   /// Validate DNS records
   Future<void> _validateDnsRecords() async {
-    final adminService = context.read<AdminCenterService>();
+    final adminService = di.serviceLocator.get<AdminCenterService>();
 
     setState(() {
       _isValidating = true;
@@ -166,7 +170,7 @@ class _DnsConfigTabState extends State<DnsConfigTab> {
 
   /// Delete DNS record
   Future<void> _deleteDnsRecord(String recordId) async {
-    final adminService = context.read<AdminCenterService>();
+    final adminService = di.serviceLocator.get<AdminCenterService>();
 
     // Check permission
     if (!adminService.hasPermission(AdminPermission.editConfiguration)) {
@@ -205,15 +209,15 @@ class _DnsConfigTabState extends State<DnsConfigTab> {
               Text(
                 'DNS Configuration',
                 style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               const SizedBox(height: 8),
               Text(
                 'Manage DNS records (MX, SPF, DKIM, DMARC) for email authentication',
-                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                      color: Colors.grey.shade700,
-                    ),
+                style: Theme.of(
+                  context,
+                ).textTheme.bodyLarge?.copyWith(color: Colors.grey.shade700),
               ),
             ],
           ),
@@ -285,17 +289,20 @@ class _DnsConfigTabState extends State<DnsConfigTab> {
                                       DropdownMenuItem(
                                         value: 'SPF',
                                         child: Text(
-                                            'SPF (Sender Policy Framework)'),
+                                          'SPF (Sender Policy Framework)',
+                                        ),
                                       ),
                                       DropdownMenuItem(
                                         value: 'DKIM',
                                         child: Text(
-                                            'DKIM (DomainKeys Identified Mail)'),
+                                          'DKIM (DomainKeys Identified Mail)',
+                                        ),
                                       ),
                                       DropdownMenuItem(
                                         value: 'DMARC',
                                         child: Text(
-                                            'DMARC (Domain-based Message Authentication)'),
+                                          'DMARC (Domain-based Message Authentication)',
+                                        ),
                                       ),
                                       DropdownMenuItem(
                                         value: 'CNAME',
@@ -376,18 +383,22 @@ class _DnsConfigTabState extends State<DnsConfigTab> {
                                         color: Colors.red.shade50,
                                         borderRadius: BorderRadius.circular(8),
                                         border: Border.all(
-                                            color: Colors.red.shade300),
+                                          color: Colors.red.shade300,
+                                        ),
                                       ),
                                       child: Row(
                                         children: [
-                                          const Icon(Icons.error_outline,
-                                              color: Colors.red),
+                                          const Icon(
+                                            Icons.error_outline,
+                                            color: Colors.red,
+                                          ),
                                           const SizedBox(width: 8),
                                           Expanded(
                                             child: Text(
                                               _error!,
                                               style: const TextStyle(
-                                                  color: Colors.red),
+                                                color: Colors.red,
+                                              ),
                                             ),
                                           ),
                                         ],
@@ -402,18 +413,22 @@ class _DnsConfigTabState extends State<DnsConfigTab> {
                                         color: Colors.green.shade50,
                                         borderRadius: BorderRadius.circular(8),
                                         border: Border.all(
-                                            color: Colors.green.shade300),
+                                          color: Colors.green.shade300,
+                                        ),
                                       ),
                                       child: Row(
                                         children: [
-                                          const Icon(Icons.check_circle,
-                                              color: Colors.green),
+                                          const Icon(
+                                            Icons.check_circle,
+                                            color: Colors.green,
+                                          ),
                                           const SizedBox(width: 8),
                                           Expanded(
                                             child: Text(
                                               _successMessage!,
                                               style: const TextStyle(
-                                                  color: Colors.green),
+                                                color: Colors.green,
+                                              ),
                                             ),
                                           ),
                                         ],
@@ -427,15 +442,17 @@ class _DnsConfigTabState extends State<DnsConfigTab> {
                                     mainAxisAlignment: MainAxisAlignment.end,
                                     children: [
                                       ElevatedButton(
-                                        onPressed:
-                                            _isSaving ? null : _saveDnsRecord,
+                                        onPressed: _isSaving
+                                            ? null
+                                            : _saveDnsRecord,
                                         child: _isSaving
                                             ? const SizedBox(
                                                 width: 16,
                                                 height: 16,
                                                 child:
                                                     CircularProgressIndicator(
-                                                        strokeWidth: 2),
+                                                      strokeWidth: 2,
+                                                    ),
                                               )
                                             : const Text('Save Record'),
                                       ),
@@ -454,21 +471,21 @@ class _DnsConfigTabState extends State<DnsConfigTab> {
                           children: [
                             Text(
                               'DNS Records',
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .titleMedium
+                              style: Theme.of(context).textTheme.titleMedium
                                   ?.copyWith(fontWeight: FontWeight.bold),
                             ),
                             ElevatedButton.icon(
-                              onPressed:
-                                  _isValidating ? null : _validateDnsRecords,
+                              onPressed: _isValidating
+                                  ? null
+                                  : _validateDnsRecords,
                               icon: const Icon(Icons.check_circle),
                               label: _isValidating
                                   ? const SizedBox(
                                       width: 16,
                                       height: 16,
                                       child: CircularProgressIndicator(
-                                          strokeWidth: 2),
+                                        strokeWidth: 2,
+                                      ),
                                     )
                                   : const Text('Validate All'),
                             ),
@@ -482,13 +499,17 @@ class _DnsConfigTabState extends State<DnsConfigTab> {
                               padding: const EdgeInsets.all(32.0),
                               child: Column(
                                 children: [
-                                  Icon(Icons.dns,
-                                      size: 48, color: Colors.grey.shade300),
+                                  Icon(
+                                    Icons.dns,
+                                    size: 48,
+                                    color: Colors.grey.shade300,
+                                  ),
                                   const SizedBox(height: 16),
                                   Text(
                                     'No DNS records configured',
-                                    style:
-                                        TextStyle(color: Colors.grey.shade600),
+                                    style: TextStyle(
+                                      color: Colors.grey.shade600,
+                                    ),
                                   ),
                                 ],
                               ),
@@ -507,40 +528,44 @@ class _DnsConfigTabState extends State<DnsConfigTab> {
                                 DataColumn(label: Text('Actions')),
                               ],
                               rows: _records
-                                  .map((record) => DataRow(
-                                        cells: [
-                                          DataCell(Text(record.type)),
-                                          DataCell(Text(record.name)),
-                                          DataCell(
-                                            SizedBox(
-                                              width: 200,
-                                              child: Text(
-                                                record.value,
-                                                overflow: TextOverflow.ellipsis,
-                                              ),
+                                  .map(
+                                    (record) => DataRow(
+                                      cells: [
+                                        DataCell(Text(record.type)),
+                                        DataCell(Text(record.name)),
+                                        DataCell(
+                                          SizedBox(
+                                            width: 200,
+                                            child: Text(
+                                              record.value,
+                                              overflow: TextOverflow.ellipsis,
                                             ),
                                           ),
-                                          DataCell(Text(record.ttl.toString())),
-                                          DataCell(
-                                            Chip(
-                                              label: Text(record.status),
-                                              backgroundColor:
-                                                  record.status == 'valid'
-                                                      ? Colors.green.shade100
-                                                      : Colors.orange.shade100,
-                                            ),
+                                        ),
+                                        DataCell(Text(record.ttl.toString())),
+                                        DataCell(
+                                          Chip(
+                                            label: Text(record.status),
+                                            backgroundColor:
+                                                record.status == 'valid'
+                                                ? Colors.green.shade100
+                                                : Colors.orange.shade100,
                                           ),
-                                          DataCell(
-                                            IconButton(
-                                              icon: const Icon(Icons.delete,
-                                                  color: Colors.red),
-                                              onPressed: () =>
-                                                  _deleteDnsRecord(record.id),
-                                              tooltip: 'Delete Record',
+                                        ),
+                                        DataCell(
+                                          IconButton(
+                                            icon: const Icon(
+                                              Icons.delete,
+                                              color: Colors.red,
                                             ),
+                                            onPressed: () =>
+                                                _deleteDnsRecord(record.id),
+                                            tooltip: 'Delete Record',
                                           ),
-                                        ],
-                                      ))
+                                        ),
+                                      ],
+                                    ),
+                                  )
                                   .toList(),
                             ),
                           ),

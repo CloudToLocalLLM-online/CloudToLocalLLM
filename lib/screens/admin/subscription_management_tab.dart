@@ -4,6 +4,7 @@ import '../../services/payment_gateway_service.dart';
 import '../../services/admin_center_service.dart';
 import '../../models/admin_role_model.dart';
 import '../../models/subscription_model.dart';
+import '../../di/locator.dart' as di;
 import 'dart:async';
 
 /// Subscription Management Tab for the Admin Center
@@ -51,8 +52,8 @@ class _SubscriptionManagementTabState extends State<SubscriptionManagementTab> {
 
   /// Load subscriptions with current filters
   Future<void> _loadSubscriptions() async {
-    final paymentService = context.read<PaymentGatewayService>();
-    final adminService = context.read<AdminCenterService>();
+    final paymentService = di.serviceLocator.get<PaymentGatewayService>();
+    final adminService = di.serviceLocator.get<AdminCenterService>();
 
     // Check permission
     if (!adminService.hasPermission(AdminPermission.viewSubscriptions)) {
@@ -181,15 +182,15 @@ class _SubscriptionManagementTabState extends State<SubscriptionManagementTab> {
               Text(
                 'Subscription Management',
                 style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               const SizedBox(height: 8),
               Text(
                 'View and manage user subscriptions, upgrades, downgrades, and cancellations',
-                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                      color: Colors.grey.shade700,
-                    ),
+                style: Theme.of(
+                  context,
+                ).textTheme.bodyLarge?.copyWith(color: Colors.grey.shade700),
               ),
             ],
           ),
@@ -238,7 +239,9 @@ class _SubscriptionManagementTabState extends State<SubscriptionManagementTab> {
                       ),
                       items: [
                         const DropdownMenuItem(
-                            value: null, child: Text('All Tiers')),
+                          value: null,
+                          child: Text('All Tiers'),
+                        ),
                         ...SubscriptionTier.values.map((tier) {
                           return DropdownMenuItem(
                             value: tier.name,
@@ -268,7 +271,9 @@ class _SubscriptionManagementTabState extends State<SubscriptionManagementTab> {
                       ),
                       items: [
                         const DropdownMenuItem(
-                            value: null, child: Text('All Statuses')),
+                          value: null,
+                          child: Text('All Statuses'),
+                        ),
                         ...SubscriptionStatus.values.map((status) {
                           return DropdownMenuItem(
                             value: status.name,
@@ -310,9 +315,7 @@ class _SubscriptionManagementTabState extends State<SubscriptionManagementTab> {
         const SizedBox(height: 24),
 
         // Subscription table
-        Expanded(
-          child: _buildSubscriptionTable(),
-        ),
+        Expanded(child: _buildSubscriptionTable()),
 
         // Pagination
         if (_totalPages > 1) _buildPagination(),
@@ -322,9 +325,7 @@ class _SubscriptionManagementTabState extends State<SubscriptionManagementTab> {
 
   Widget _buildSubscriptionTable() {
     if (_isLoading) {
-      return const Center(
-        child: CircularProgressIndicator(),
-      );
+      return const Center(child: CircularProgressIndicator());
     }
 
     if (_error != null) {
@@ -560,7 +561,7 @@ class _SubscriptionDetailDialogState extends State<_SubscriptionDetailDialog> {
   }
 
   Future<void> _loadSubscriptionDetails() async {
-    final adminService = context.read<AdminCenterService>();
+    final adminService = di.serviceLocator.get<AdminCenterService>();
 
     setState(() {
       _isLoading = true;
@@ -569,13 +570,15 @@ class _SubscriptionDetailDialogState extends State<_SubscriptionDetailDialog> {
 
     try {
       // Get user details
-      final userDetails =
-          await adminService.getUserDetails(widget.subscription.userId);
+      final userDetails = await adminService.getUserDetails(
+        widget.subscription.userId,
+      );
 
       setState(() {
         _userDetails = userDetails;
         _paymentHistory = List<Map<String, dynamic>>.from(
-            userDetails['payment_history'] ?? []);
+          userDetails['payment_history'] ?? [],
+        );
         _isLoading = false;
       });
     } catch (e) {
@@ -603,8 +606,8 @@ class _SubscriptionDetailDialogState extends State<_SubscriptionDetailDialog> {
                 Text(
                   'Subscription Details',
                   style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 IconButton(
                   icon: const Icon(Icons.close),
@@ -616,9 +619,7 @@ class _SubscriptionDetailDialogState extends State<_SubscriptionDetailDialog> {
             const SizedBox(height: 16),
 
             // Content
-            Expanded(
-              child: _buildContent(),
-            ),
+            Expanded(child: _buildContent()),
 
             // Actions
             const SizedBox(height: 16),
@@ -665,144 +666,123 @@ class _SubscriptionDetailDialogState extends State<_SubscriptionDetailDialog> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Subscription Information
-          _buildSection(
-            'Subscription Information',
-            [
-              _buildInfoRow('Subscription ID', widget.subscription.id),
-              _buildInfoRow('User ID', widget.subscription.userId),
-              _buildInfoRow('Tier', widget.subscription.tier.displayName),
-              _buildInfoRow('Status', widget.subscription.status.displayName),
-              _buildInfoRow(
-                'Created',
-                _formatDateTime(widget.subscription.createdAt),
-              ),
-              _buildInfoRow(
-                'Updated',
-                _formatDateTime(widget.subscription.updatedAt),
-              ),
-            ],
-          ),
+          _buildSection('Subscription Information', [
+            _buildInfoRow('Subscription ID', widget.subscription.id),
+            _buildInfoRow('User ID', widget.subscription.userId),
+            _buildInfoRow('Tier', widget.subscription.tier.displayName),
+            _buildInfoRow('Status', widget.subscription.status.displayName),
+            _buildInfoRow(
+              'Created',
+              _formatDateTime(widget.subscription.createdAt),
+            ),
+            _buildInfoRow(
+              'Updated',
+              _formatDateTime(widget.subscription.updatedAt),
+            ),
+          ]),
 
           const SizedBox(height: 24),
 
           // Billing Information
-          _buildSection(
-            'Billing Information',
-            [
+          _buildSection('Billing Information', [
+            _buildInfoRow(
+              'Current Period Start',
+              widget.subscription.currentPeriodStart != null
+                  ? _formatDateTime(widget.subscription.currentPeriodStart!)
+                  : 'N/A',
+            ),
+            _buildInfoRow(
+              'Current Period End',
+              widget.subscription.currentPeriodEnd != null
+                  ? _formatDateTime(widget.subscription.currentPeriodEnd!)
+                  : 'N/A',
+            ),
+            if (widget.subscription.currentPeriodEnd != null)
               _buildInfoRow(
-                'Current Period Start',
-                widget.subscription.currentPeriodStart != null
-                    ? _formatDateTime(widget.subscription.currentPeriodStart!)
-                    : 'N/A',
+                'Days Remaining',
+                '${widget.subscription.daysRemaining} days',
               ),
+            if (widget.subscription.cancelAtPeriodEnd)
               _buildInfoRow(
-                'Current Period End',
-                widget.subscription.currentPeriodEnd != null
-                    ? _formatDateTime(widget.subscription.currentPeriodEnd!)
-                    : 'N/A',
+                'Cancellation',
+                'Scheduled at period end',
+                isWarning: true,
               ),
-              if (widget.subscription.currentPeriodEnd != null)
-                _buildInfoRow(
-                  'Days Remaining',
-                  '${widget.subscription.daysRemaining} days',
-                ),
-              if (widget.subscription.cancelAtPeriodEnd)
-                _buildInfoRow(
-                  'Cancellation',
-                  'Scheduled at period end',
-                  isWarning: true,
-                ),
-              if (widget.subscription.canceledAt != null)
-                _buildInfoRow(
-                  'Canceled At',
-                  _formatDateTime(widget.subscription.canceledAt!),
-                  isWarning: true,
-                ),
-            ],
-          ),
+            if (widget.subscription.canceledAt != null)
+              _buildInfoRow(
+                'Canceled At',
+                _formatDateTime(widget.subscription.canceledAt!),
+                isWarning: true,
+              ),
+          ]),
 
           const SizedBox(height: 24),
 
           // Trial Information
           if (widget.subscription.trialStart != null ||
               widget.subscription.trialEnd != null)
-            _buildSection(
-              'Trial Information',
-              [
-                if (widget.subscription.trialStart != null)
-                  _buildInfoRow(
-                    'Trial Start',
-                    _formatDateTime(widget.subscription.trialStart!),
-                  ),
-                if (widget.subscription.trialEnd != null)
-                  _buildInfoRow(
-                    'Trial End',
-                    _formatDateTime(widget.subscription.trialEnd!),
-                  ),
+            _buildSection('Trial Information', [
+              if (widget.subscription.trialStart != null)
                 _buildInfoRow(
-                  'Trial Status',
-                  widget.subscription.isTrialing ? 'Active' : 'Ended',
+                  'Trial Start',
+                  _formatDateTime(widget.subscription.trialStart!),
                 ),
-              ],
-            ),
+              if (widget.subscription.trialEnd != null)
+                _buildInfoRow(
+                  'Trial End',
+                  _formatDateTime(widget.subscription.trialEnd!),
+                ),
+              _buildInfoRow(
+                'Trial Status',
+                widget.subscription.isTrialing ? 'Active' : 'Ended',
+              ),
+            ]),
 
           const SizedBox(height: 24),
 
           // Stripe Information
           if (widget.subscription.stripeSubscriptionId != null)
-            _buildSection(
-              'Stripe Information',
-              [
+            _buildSection('Stripe Information', [
+              _buildInfoRow(
+                'Subscription ID',
+                widget.subscription.stripeSubscriptionId!,
+              ),
+              if (widget.subscription.stripeCustomerId != null)
                 _buildInfoRow(
-                  'Subscription ID',
-                  widget.subscription.stripeSubscriptionId!,
+                  'Customer ID',
+                  widget.subscription.stripeCustomerId!,
                 ),
-                if (widget.subscription.stripeCustomerId != null)
-                  _buildInfoRow(
-                    'Customer ID',
-                    widget.subscription.stripeCustomerId!,
-                  ),
-              ],
-            ),
+            ]),
 
           const SizedBox(height: 24),
 
           // User Information
           if (_userDetails != null)
-            _buildSection(
-              'User Information',
-              [
-                _buildInfoRow('Email', _userDetails!['email'] ?? 'N/A'),
-                _buildInfoRow(
-                  'Username',
-                  _userDetails!['username'] ?? _userDetails!['name'] ?? 'N/A',
-                ),
-                _buildInfoRow('Status', _userDetails!['status'] ?? 'N/A'),
-              ],
-            ),
+            _buildSection('User Information', [
+              _buildInfoRow('Email', _userDetails!['email'] ?? 'N/A'),
+              _buildInfoRow(
+                'Username',
+                _userDetails!['username'] ?? _userDetails!['name'] ?? 'N/A',
+              ),
+              _buildInfoRow('Status', _userDetails!['status'] ?? 'N/A'),
+            ]),
 
           const SizedBox(height: 24),
 
           // Payment History
           if (_paymentHistory.isNotEmpty)
-            _buildSection(
-              'Recent Payment History',
-              [
-                _buildPaymentHistoryTable(_paymentHistory),
-              ],
-            ),
+            _buildSection('Recent Payment History', [
+              _buildPaymentHistoryTable(_paymentHistory),
+            ]),
 
           const SizedBox(height: 24),
 
           // Metadata
           if (widget.subscription.metadata != null &&
               widget.subscription.metadata!.isNotEmpty)
-            _buildSection(
-              'Metadata',
-              [
-                _buildMetadataTable(widget.subscription.metadata!),
-              ],
-            ),
+            _buildSection('Metadata', [
+              _buildMetadataTable(widget.subscription.metadata!),
+            ]),
         ],
       ),
     );
@@ -814,9 +794,9 @@ class _SubscriptionDetailDialogState extends State<_SubscriptionDetailDialog> {
       children: [
         Text(
           title,
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+          style: Theme.of(
+            context,
+          ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 12),
         ...children,
@@ -865,11 +845,17 @@ class _SubscriptionDetailDialogState extends State<_SubscriptionDetailDialog> {
       rows: payments.take(5).map((payment) {
         return DataRow(
           cells: [
-            DataCell(Text(_formatDateTime(
-                DateTime.tryParse(payment['created_at'] ?? '') ??
-                    DateTime.now()))),
             DataCell(
-                Text('\$${payment['amount']?.toStringAsFixed(2) ?? '0.00'}')),
+              Text(
+                _formatDateTime(
+                  DateTime.tryParse(payment['created_at'] ?? '') ??
+                      DateTime.now(),
+                ),
+              ),
+            ),
+            DataCell(
+              Text('\$${payment['amount']?.toStringAsFixed(2) ?? '0.00'}'),
+            ),
             DataCell(Text(payment['status'] ?? 'N/A')),
             DataCell(Text(payment['payment_method_type'] ?? 'N/A')),
           ],
@@ -968,8 +954,8 @@ class _UpgradeDowngradeDialogState extends State<_UpgradeDowngradeDialog> {
       return;
     }
 
-    final paymentService = context.read<PaymentGatewayService>();
-    final adminService = context.read<AdminCenterService>();
+    final paymentService = di.serviceLocator.get<PaymentGatewayService>();
+    final adminService = di.serviceLocator.get<AdminCenterService>();
 
     // Check permission
     if (!adminService.hasPermission(AdminPermission.editSubscriptions)) {
@@ -1101,10 +1087,7 @@ class _UpgradeDowngradeDialogState extends State<_UpgradeDowngradeDialog> {
             ],
             if (_error != null) ...[
               const SizedBox(height: 16),
-              Text(
-                _error!,
-                style: const TextStyle(color: Colors.red),
-              ),
+              Text(_error!, style: const TextStyle(color: Colors.red)),
             ],
           ],
         ),
@@ -1150,8 +1133,8 @@ class _CancelSubscriptionDialogState extends State<_CancelSubscriptionDialog> {
   String? _error;
 
   Future<void> _cancelSubscription() async {
-    final paymentService = context.read<PaymentGatewayService>();
-    final adminService = context.read<AdminCenterService>();
+    final paymentService = di.serviceLocator.get<PaymentGatewayService>();
+    final adminService = di.serviceLocator.get<AdminCenterService>();
 
     // Check permission
     if (!adminService.hasPermission(AdminPermission.editSubscriptions)) {
@@ -1255,10 +1238,7 @@ class _CancelSubscriptionDialogState extends State<_CancelSubscriptionDialog> {
             ),
             if (_error != null) ...[
               const SizedBox(height: 16),
-              Text(
-                _error!,
-                style: const TextStyle(color: Colors.red),
-              ),
+              Text(_error!, style: const TextStyle(color: Colors.red)),
             ],
           ],
         ),
@@ -1270,9 +1250,7 @@ class _CancelSubscriptionDialogState extends State<_CancelSubscriptionDialog> {
         ),
         FilledButton(
           onPressed: _isLoading ? null : _cancelSubscription,
-          style: FilledButton.styleFrom(
-            backgroundColor: Colors.red,
-          ),
+          style: FilledButton.styleFrom(backgroundColor: Colors.red),
           child: _isLoading
               ? const SizedBox(
                   width: 16,

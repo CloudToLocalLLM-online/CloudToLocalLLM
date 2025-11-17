@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../di/locator.dart' as di;
 import '../../services/admin_center_service.dart';
 import '../../models/admin_role_model.dart';
 
@@ -38,7 +39,7 @@ class _AdminManagementTabState extends State<AdminManagementTab> {
     });
 
     try {
-      final adminService = context.read<AdminCenterService>();
+      final adminService = di.serviceLocator.get<AdminCenterService>();
       final response = await adminService.getAdmins();
 
       setState(() {
@@ -57,15 +58,15 @@ class _AdminManagementTabState extends State<AdminManagementTab> {
   Future<void> _showAddAdminDialog() async {
     await showDialog(
       context: context,
-      builder: (context) => _AddAdminDialog(
-        onAdminAdded: _loadAdmins,
-      ),
+      builder: (context) => _AddAdminDialog(onAdminAdded: _loadAdmins),
     );
   }
 
   /// Show revoke role confirmation dialog
   Future<void> _showRevokeRoleDialog(
-      Map<String, dynamic> admin, Map<String, dynamic> role) async {
+    Map<String, dynamic> admin,
+    Map<String, dynamic> role,
+  ) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -80,9 +81,7 @@ class _AdminManagementTabState extends State<AdminManagementTab> {
           ),
           FilledButton(
             onPressed: () => Navigator.of(context).pop(true),
-            style: FilledButton.styleFrom(
-              backgroundColor: Colors.red,
-            ),
+            style: FilledButton.styleFrom(backgroundColor: Colors.red),
             child: const Text('Revoke'),
           ),
         ],
@@ -97,7 +96,7 @@ class _AdminManagementTabState extends State<AdminManagementTab> {
   /// Revoke admin role
   Future<void> _revokeRole(String userId, String role) async {
     try {
-      final adminService = context.read<AdminCenterService>();
+      final adminService = di.serviceLocator.get<AdminCenterService>();
       await adminService.revokeAdminRole(userId, role);
 
       if (mounted) {
@@ -108,9 +107,9 @@ class _AdminManagementTabState extends State<AdminManagementTab> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to revoke role: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Failed to revoke role: $e')));
       }
     }
   }
@@ -180,17 +179,15 @@ class _AdminManagementTabState extends State<AdminManagementTab> {
                   children: [
                     Text(
                       'Admin Management',
-                      style:
-                          Theme.of(context).textTheme.headlineSmall?.copyWith(
-                                fontWeight: FontWeight.bold,
-                              ),
+                      style: Theme.of(context).textTheme.headlineSmall
+                          ?.copyWith(fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       'Manage administrator accounts and roles',
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: Colors.grey.shade600,
-                          ),
+                        color: Colors.grey.shade600,
+                      ),
                     ),
                   ],
                 ),
@@ -231,17 +228,9 @@ class _AdminManagementTabState extends State<AdminManagementTab> {
 
         // Loading indicator
         if (_isLoading)
-          const Expanded(
-            child: Center(
-              child: CircularProgressIndicator(),
-            ),
-          )
+          const Expanded(child: Center(child: CircularProgressIndicator()))
         else if (_admins.isEmpty)
-          const Expanded(
-            child: Center(
-              child: Text('No administrators found'),
-            ),
-          )
+          const Expanded(child: Center(child: Text('No administrators found')))
         else
           // Admin list
           Expanded(
@@ -319,8 +308,9 @@ class _AdminManagementTabState extends State<AdminManagementTab> {
               children: activeRoles.map((role) {
                 return Chip(
                   label: Text(_formatRole(role['role'])),
-                  backgroundColor:
-                      _getRoleColor(role['role']).withValues(alpha: 0.1),
+                  backgroundColor: _getRoleColor(
+                    role['role'],
+                  ).withValues(alpha: 0.1),
                   labelStyle: TextStyle(
                     color: _getRoleColor(role['role']),
                     fontWeight: FontWeight.bold,
@@ -383,18 +373,12 @@ class _AdminManagementTabState extends State<AdminManagementTab> {
       children: [
         Text(
           label,
-          style: TextStyle(
-            fontSize: 12,
-            color: Colors.grey.shade600,
-          ),
+          style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
         ),
         const SizedBox(height: 4),
         Text(
           value,
-          style: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-          ),
+          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
         ),
       ],
     );
@@ -404,8 +388,9 @@ class _AdminManagementTabState extends State<AdminManagementTab> {
   String _formatDate(dynamic date) {
     if (date == null) return 'Never';
     try {
-      final dateTime =
-          date is DateTime ? date : DateTime.parse(date.toString());
+      final dateTime = date is DateTime
+          ? date
+          : DateTime.parse(date.toString());
       final now = DateTime.now();
       final difference = now.difference(dateTime);
 
@@ -430,9 +415,7 @@ class _AdminManagementTabState extends State<AdminManagementTab> {
 class _AddAdminDialog extends StatefulWidget {
   final VoidCallback onAdminAdded;
 
-  const _AddAdminDialog({
-    required this.onAdminAdded,
-  });
+  const _AddAdminDialog({required this.onAdminAdded});
 
   @override
   State<_AddAdminDialog> createState() => _AddAdminDialogState();
@@ -461,7 +444,7 @@ class _AddAdminDialogState extends State<_AddAdminDialog> {
     });
 
     try {
-      final adminService = context.read<AdminCenterService>();
+      final adminService = di.serviceLocator.get<AdminCenterService>();
       await adminService.assignAdminRole(
         _emailController.text.trim(),
         _selectedRole,
@@ -515,10 +498,7 @@ class _AddAdminDialogState extends State<_AddAdminDialog> {
             const SizedBox(height: 16),
 
             // Role selection
-            Text(
-              'Select Role',
-              style: Theme.of(context).textTheme.titleSmall,
-            ),
+            Text('Select Role', style: Theme.of(context).textTheme.titleSmall),
             const SizedBox(height: 8),
             DropdownButtonFormField<AdminRole>(
               initialValue: _selectedRole,
@@ -577,8 +557,11 @@ class _AddAdminDialogState extends State<_AddAdminDialog> {
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.error_outline,
-                        color: Colors.red, size: 20),
+                    const Icon(
+                      Icons.error_outline,
+                      color: Colors.red,
+                      size: 20,
+                    ),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
@@ -612,4 +595,3 @@ class _AddAdminDialogState extends State<_AddAdminDialog> {
     );
   }
 }
-

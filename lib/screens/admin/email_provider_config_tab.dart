@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../di/locator.dart' as di;
 import '../../services/admin_center_service.dart';
 import '../../models/admin_role_model.dart';
 
@@ -52,14 +53,16 @@ class _EmailProviderConfigTabState extends State<EmailProviderConfigTab> {
   /// Check if this is a self-hosted instance
   bool get _isSelfHosted {
     // Check deployment type from environment
-    const deploymentType =
-        String.fromEnvironment('DEPLOYMENT_TYPE', defaultValue: 'cloud');
+    const deploymentType = String.fromEnvironment(
+      'DEPLOYMENT_TYPE',
+      defaultValue: 'cloud',
+    );
     return deploymentType == 'self-hosted';
   }
 
   /// Load current email provider configuration
   Future<void> _loadConfiguration() async {
-    final adminService = context.read<AdminCenterService>();
+    final adminService = di.serviceLocator.get<AdminCenterService>();
 
     // Check permission
     if (!adminService.hasPermission(AdminPermission.viewConfiguration)) {
@@ -110,7 +113,7 @@ class _EmailProviderConfigTabState extends State<EmailProviderConfigTab> {
       return;
     }
 
-    final adminService = context.read<AdminCenterService>();
+    final adminService = di.serviceLocator.get<AdminCenterService>();
 
     // Check permission
     if (!adminService.hasPermission(AdminPermission.editConfiguration)) {
@@ -166,7 +169,7 @@ class _EmailProviderConfigTabState extends State<EmailProviderConfigTab> {
       return;
     }
 
-    final adminService = context.read<AdminCenterService>();
+    final adminService = di.serviceLocator.get<AdminCenterService>();
 
     // Check permission
     if (!adminService.hasPermission(AdminPermission.editConfiguration)) {
@@ -217,17 +220,13 @@ class _EmailProviderConfigTabState extends State<EmailProviderConfigTab> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(
-                Icons.cloud_outlined,
-                size: 64,
-                color: Colors.grey.shade400,
-              ),
+              Icon(Icons.cloud_outlined, size: 64, color: Colors.grey.shade400),
               const SizedBox(height: 16),
               Text(
                 'Email Configuration Not Available',
                 style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               const SizedBox(height: 12),
               Text(
@@ -254,15 +253,15 @@ class _EmailProviderConfigTabState extends State<EmailProviderConfigTab> {
               Text(
                 'Email Provider Configuration',
                 style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               const SizedBox(height: 8),
               Text(
                 'Configure email provider settings for sending notifications and communications.',
-                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                      color: Colors.grey.shade700,
-                    ),
+                style: Theme.of(
+                  context,
+                ).textTheme.bodyLarge?.copyWith(color: Colors.grey.shade700),
               ),
               const SizedBox(height: 32),
 
@@ -307,8 +306,10 @@ class _EmailProviderConfigTabState extends State<EmailProviderConfigTab> {
                   ),
                   child: Row(
                     children: [
-                      Icon(Icons.check_circle_outline,
-                          color: Colors.green.shade700),
+                      Icon(
+                        Icons.check_circle_outline,
+                        color: Colors.green.shade700,
+                      ),
                       const SizedBox(width: 12),
                       Expanded(
                         child: Text(
@@ -367,7 +368,8 @@ class _EmailProviderConfigTabState extends State<EmailProviderConfigTab> {
                                 )
                               : const Icon(Icons.save),
                           label: Text(
-                              _isSaving ? 'Saving...' : 'Save Configuration'),
+                            _isSaving ? 'Saving...' : 'Save Configuration',
+                          ),
                           style: FilledButton.styleFrom(
                             padding: const EdgeInsets.symmetric(vertical: 16),
                           ),
@@ -394,9 +396,9 @@ class _EmailProviderConfigTabState extends State<EmailProviderConfigTab> {
           children: [
             Text(
               'Email Service Provider',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
             DropdownButtonFormField<String>(
@@ -407,22 +409,10 @@ class _EmailProviderConfigTabState extends State<EmailProviderConfigTab> {
                 helperText: 'Select your email service provider',
               ),
               items: const [
-                DropdownMenuItem(
-                  value: 'smtp',
-                  child: Text('SMTP Server'),
-                ),
-                DropdownMenuItem(
-                  value: 'sendgrid',
-                  child: Text('SendGrid'),
-                ),
-                DropdownMenuItem(
-                  value: 'mailgun',
-                  child: Text('Mailgun'),
-                ),
-                DropdownMenuItem(
-                  value: 'aws_ses',
-                  child: Text('AWS SES'),
-                ),
+                DropdownMenuItem(value: 'smtp', child: Text('SMTP Server')),
+                DropdownMenuItem(value: 'sendgrid', child: Text('SendGrid')),
+                DropdownMenuItem(value: 'mailgun', child: Text('Mailgun')),
+                DropdownMenuItem(value: 'aws_ses', child: Text('AWS SES')),
               ],
               onChanged: (value) {
                 setState(() {
@@ -453,9 +443,9 @@ class _EmailProviderConfigTabState extends State<EmailProviderConfigTab> {
               _selectedProvider == 'smtp'
                   ? 'SMTP Configuration'
                   : '${_selectedProvider.toUpperCase()} Configuration',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
 
@@ -463,8 +453,9 @@ class _EmailProviderConfigTabState extends State<EmailProviderConfigTab> {
             TextFormField(
               controller: _smtpHostController,
               decoration: InputDecoration(
-                labelText:
-                    _selectedProvider == 'smtp' ? 'SMTP Host' : 'API Endpoint',
+                labelText: _selectedProvider == 'smtp'
+                    ? 'SMTP Host'
+                    : 'API Endpoint',
                 border: const OutlineInputBorder(),
                 helperText: _selectedProvider == 'smtp'
                     ? 'e.g., smtp.gmail.com'
@@ -513,14 +504,8 @@ class _EmailProviderConfigTabState extends State<EmailProviderConfigTab> {
                         border: OutlineInputBorder(),
                       ),
                       items: const [
-                        DropdownMenuItem(
-                          value: 'tls',
-                          child: Text('TLS'),
-                        ),
-                        DropdownMenuItem(
-                          value: 'ssl',
-                          child: Text('SSL'),
-                        ),
+                        DropdownMenuItem(value: 'tls', child: Text('TLS')),
+                        DropdownMenuItem(value: 'ssl', child: Text('SSL')),
                         DropdownMenuItem(
                           value: 'none',
                           child: Text('None (Not Recommended)'),
@@ -569,8 +554,9 @@ class _EmailProviderConfigTabState extends State<EmailProviderConfigTab> {
             TextFormField(
               controller: _smtpPasswordController,
               decoration: InputDecoration(
-                labelText:
-                    _selectedProvider == 'smtp' ? 'Password' : 'API Secret',
+                labelText: _selectedProvider == 'smtp'
+                    ? 'Password'
+                    : 'API Secret',
                 border: const OutlineInputBorder(),
                 helperText: _selectedProvider == 'smtp'
                     ? 'SMTP password or app password'
@@ -636,16 +622,16 @@ class _EmailProviderConfigTabState extends State<EmailProviderConfigTab> {
           children: [
             Text(
               'Test Email',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
             Text(
               'Send a test email to verify your configuration is working correctly.',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Colors.grey.shade700,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(color: Colors.grey.shade700),
             ),
             const SizedBox(height: 16),
             Row(
@@ -664,7 +650,8 @@ class _EmailProviderConfigTabState extends State<EmailProviderConfigTab> {
                       if (value != null && value.isNotEmpty) {
                         // Basic email validation
                         final emailRegex = RegExp(
-                            r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$');
+                          r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$',
+                        );
                         if (!emailRegex.hasMatch(value)) {
                           return 'Please enter a valid email address';
                         }

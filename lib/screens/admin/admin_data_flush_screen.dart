@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../di/locator.dart' as di;
 
 import '../../config/theme.dart';
 import '../../services/admin_data_flush_service.dart';
@@ -47,7 +48,7 @@ class _AdminDataFlushScreenState extends State<AdminDataFlushScreen>
   }
 
   Future<void> _loadInitialData() async {
-    final adminService = context.read<AdminDataFlushService>();
+    final adminService = di.serviceLocator.get<AdminDataFlushService>();
     await adminService.getSystemStatistics();
     await adminService.loadFlushHistory();
   }
@@ -412,8 +413,9 @@ class _AdminDataFlushScreenState extends State<AdminDataFlushScreen>
                   children: [
                     Expanded(
                       child: ElevatedButton.icon(
-                        onPressed:
-                            adminService.isLoading ? null : _prepareFlush,
+                        onPressed: adminService.isLoading
+                            ? null
+                            : _prepareFlush,
                         icon: const Icon(Icons.security),
                         label: Text(
                           adminService.hasValidConfirmationToken
@@ -423,8 +425,8 @@ class _AdminDataFlushScreenState extends State<AdminDataFlushScreen>
                         style: ElevatedButton.styleFrom(
                           backgroundColor:
                               adminService.hasValidConfirmationToken
-                                  ? Colors.green
-                                  : AppTheme.primaryColor,
+                              ? Colors.green
+                              : AppTheme.primaryColor,
                           foregroundColor: Colors.white,
                         ),
                       ),
@@ -432,7 +434,8 @@ class _AdminDataFlushScreenState extends State<AdminDataFlushScreen>
                     const SizedBox(width: 16),
                     Expanded(
                       child: ElevatedButton.icon(
-                        onPressed: adminService.hasValidConfirmationToken &&
+                        onPressed:
+                            adminService.hasValidConfirmationToken &&
                                 !adminService.isLoading
                             ? _executeFlush
                             : null,
@@ -576,7 +579,7 @@ class _AdminDataFlushScreenState extends State<AdminDataFlushScreen>
   }
 
   Future<void> _prepareFlush() async {
-    final adminService = context.read<AdminDataFlushService>();
+    final adminService = di.serviceLocator.get<AdminDataFlushService>();
 
     final confirmed = await _showConfirmationDialog(
       'Prepare Data Flush',
@@ -596,7 +599,7 @@ class _AdminDataFlushScreenState extends State<AdminDataFlushScreen>
   }
 
   Future<void> _executeFlush() async {
-    final adminService = context.read<AdminDataFlushService>();
+    final adminService = di.serviceLocator.get<AdminDataFlushService>();
 
     final confirmed = await _showConfirmationDialog(
       'EXECUTE DATA FLUSH',
@@ -626,7 +629,7 @@ class _AdminDataFlushScreenState extends State<AdminDataFlushScreen>
   }
 
   Future<void> _performEmergencyCleanup() async {
-    final adminService = context.read<AdminDataFlushService>();
+    final adminService = di.serviceLocator.get<AdminDataFlushService>();
 
     final confirmed = await _showConfirmationDialog(
       'Emergency Container Cleanup',
@@ -708,8 +711,9 @@ class _AdminDataFlushScreenState extends State<AdminDataFlushScreen>
               ElevatedButton(
                 onPressed: () => Navigator.of(context).pop(true),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor:
-                      isDestructive ? Colors.red : AppTheme.primaryColor,
+                  backgroundColor: isDestructive
+                      ? Colors.red
+                      : AppTheme.primaryColor,
                   foregroundColor: Colors.white,
                 ),
                 child: Text(isDestructive ? 'I Understand' : 'Confirm'),
@@ -816,8 +820,9 @@ class _AdminDataFlushScreenState extends State<AdminDataFlushScreen>
                   child: const Text('Cancel'),
                 ),
                 ElevatedButton(
-                  onPressed:
-                      canConfirm ? () => Navigator.of(context).pop(true) : null,
+                  onPressed: canConfirm
+                      ? () => Navigator.of(context).pop(true)
+                      : null,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.red,
                     foregroundColor: Colors.white,

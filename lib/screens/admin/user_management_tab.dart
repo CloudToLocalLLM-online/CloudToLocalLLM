@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../services/admin_center_service.dart';
 import '../../models/admin_role_model.dart';
 import '../../models/subscription_model.dart';
+import '../../di/locator.dart' as di;
 import 'dart:async';
 
 /// User Management Tab for the Admin Center
@@ -49,7 +50,7 @@ class _UserManagementTabState extends State<UserManagementTab> {
 
   /// Load users with current filters
   Future<void> _loadUsers() async {
-    final adminService = context.read<AdminCenterService>();
+    final adminService = di.serviceLocator.get<AdminCenterService>();
 
     // Check permission
     if (!adminService.hasPermission(AdminPermission.viewUsers)) {
@@ -68,8 +69,9 @@ class _UserManagementTabState extends State<UserManagementTab> {
       final result = await adminService.getUsers(
         page: _currentPage,
         limit: _pageSize,
-        search:
-            _searchController.text.isNotEmpty ? _searchController.text : null,
+        search: _searchController.text.isNotEmpty
+            ? _searchController.text
+            : null,
         tier: _selectedTier,
         status: _selectedStatus,
         sortBy: _sortBy,
@@ -136,15 +138,15 @@ class _UserManagementTabState extends State<UserManagementTab> {
               Text(
                 'User Management',
                 style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               const SizedBox(height: 8),
               Text(
                 'View and manage user accounts, subscriptions, and permissions',
-                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                      color: Colors.grey.shade700,
-                    ),
+                style: Theme.of(
+                  context,
+                ).textTheme.bodyLarge?.copyWith(color: Colors.grey.shade700),
               ),
             ],
           ),
@@ -183,7 +185,8 @@ class _UserManagementTabState extends State<UserManagementTab> {
                 children: [
                   // Tier filter
                   Expanded(
-                    child: DropdownButtonFormField<String>(initialValue: _selectedTier,
+                    child: DropdownButtonFormField<String>(
+                      initialValue: _selectedTier,
                       decoration: InputDecoration(
                         labelText: 'Subscription Tier',
                         border: OutlineInputBorder(
@@ -192,7 +195,9 @@ class _UserManagementTabState extends State<UserManagementTab> {
                       ),
                       items: [
                         const DropdownMenuItem(
-                            value: null, child: Text('All Tiers')),
+                          value: null,
+                          child: Text('All Tiers'),
+                        ),
                         ...SubscriptionTier.values.map((tier) {
                           return DropdownMenuItem(
                             value: tier.name,
@@ -212,7 +217,8 @@ class _UserManagementTabState extends State<UserManagementTab> {
 
                   // Status filter
                   Expanded(
-                    child: DropdownButtonFormField<String>(initialValue: _selectedStatus,
+                    child: DropdownButtonFormField<String>(
+                      initialValue: _selectedStatus,
                       decoration: InputDecoration(
                         labelText: 'Account Status',
                         border: OutlineInputBorder(
@@ -221,13 +227,21 @@ class _UserManagementTabState extends State<UserManagementTab> {
                       ),
                       items: const [
                         DropdownMenuItem(
-                            value: null, child: Text('All Statuses')),
+                          value: null,
+                          child: Text('All Statuses'),
+                        ),
                         DropdownMenuItem(
-                            value: 'active', child: Text('Active')),
+                          value: 'active',
+                          child: Text('Active'),
+                        ),
                         DropdownMenuItem(
-                            value: 'suspended', child: Text('Suspended')),
+                          value: 'suspended',
+                          child: Text('Suspended'),
+                        ),
                         DropdownMenuItem(
-                            value: 'deleted', child: Text('Deleted')),
+                          value: 'deleted',
+                          child: Text('Deleted'),
+                        ),
                       ],
                       onChanged: (value) {
                         setState(() {
@@ -241,7 +255,8 @@ class _UserManagementTabState extends State<UserManagementTab> {
 
                   // Sort options
                   Expanded(
-                    child: DropdownButtonFormField<String>(initialValue: _sortBy,
+                    child: DropdownButtonFormField<String>(
+                      initialValue: _sortBy,
                       decoration: InputDecoration(
                         labelText: 'Sort By',
                         border: OutlineInputBorder(
@@ -250,10 +265,13 @@ class _UserManagementTabState extends State<UserManagementTab> {
                       ),
                       items: const [
                         DropdownMenuItem(
-                            value: 'created_at',
-                            child: Text('Registration Date')),
+                          value: 'created_at',
+                          child: Text('Registration Date'),
+                        ),
                         DropdownMenuItem(
-                            value: 'last_login', child: Text('Last Login')),
+                          value: 'last_login',
+                          child: Text('Last Login'),
+                        ),
                         DropdownMenuItem(value: 'email', child: Text('Email')),
                       ],
                       onChanged: (value) {
@@ -292,9 +310,7 @@ class _UserManagementTabState extends State<UserManagementTab> {
         const SizedBox(height: 24),
 
         // User table
-        Expanded(
-          child: _buildUserTable(),
-        ),
+        Expanded(child: _buildUserTable()),
 
         // Pagination
         if (_totalPages > 1) _buildPagination(),
@@ -304,9 +320,7 @@ class _UserManagementTabState extends State<UserManagementTab> {
 
   Widget _buildUserTable() {
     if (_isLoading) {
-      return const Center(
-        child: CircularProgressIndicator(),
-      );
+      return const Center(child: CircularProgressIndicator());
     }
 
     if (_error != null) {
@@ -318,10 +332,7 @@ class _UserManagementTabState extends State<UserManagementTab> {
             const SizedBox(height: 16),
             Text(_error!, style: const TextStyle(color: Colors.red)),
             const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: _loadUsers,
-              child: const Text('Retry'),
-            ),
+            ElevatedButton(onPressed: _loadUsers, child: const Text('Retry')),
           ],
         ),
       );
@@ -395,8 +406,11 @@ class _UserManagementTabState extends State<UserManagementTab> {
                 )
               else if (status == 'suspended')
                 IconButton(
-                  icon: const Icon(Icons.check_circle,
-                      size: 20, color: Colors.green),
+                  icon: const Icon(
+                    Icons.check_circle,
+                    size: 20,
+                    color: Colors.green,
+                  ),
                   onPressed: () => _showReactivateDialog(user),
                   tooltip: 'Reactivate',
                 ),
@@ -560,7 +574,7 @@ class _UserDetailDialogState extends State<_UserDetailDialog> {
   }
 
   Future<void> _loadUserDetails() async {
-    final adminService = context.read<AdminCenterService>();
+    final adminService = di.serviceLocator.get<AdminCenterService>();
 
     setState(() {
       _isLoading = true;
@@ -598,8 +612,8 @@ class _UserDetailDialogState extends State<_UserDetailDialog> {
                 Text(
                   'User Details',
                   style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 IconButton(
                   icon: const Icon(Icons.close),
@@ -611,9 +625,7 @@ class _UserDetailDialogState extends State<_UserDetailDialog> {
             const SizedBox(height: 16),
 
             // Content
-            Expanded(
-              child: _buildContent(),
-            ),
+            Expanded(child: _buildContent()),
 
             // Actions
             const SizedBox(height: 16),
@@ -664,82 +676,83 @@ class _UserDetailDialogState extends State<_UserDetailDialog> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Profile Information
-          _buildSection(
-            'Profile Information',
-            [
-              _buildInfoRow('User ID', _userDetails!['id'] ?? 'N/A'),
-              _buildInfoRow('Email', _userDetails!['email'] ?? 'N/A'),
-              _buildInfoRow('Username',
-                  _userDetails!['username'] ?? _userDetails!['name'] ?? 'N/A'),
-              _buildInfoRow('Status', _userDetails!['status'] ?? 'N/A'),
-              _buildInfoRow(
-                  'Registered', _formatDateTime(_userDetails!['created_at'])),
-              _buildInfoRow(
-                  'Last Login', _formatDateTime(_userDetails!['last_login'])),
-            ],
-          ),
+          _buildSection('Profile Information', [
+            _buildInfoRow('User ID', _userDetails!['id'] ?? 'N/A'),
+            _buildInfoRow('Email', _userDetails!['email'] ?? 'N/A'),
+            _buildInfoRow(
+              'Username',
+              _userDetails!['username'] ?? _userDetails!['name'] ?? 'N/A',
+            ),
+            _buildInfoRow('Status', _userDetails!['status'] ?? 'N/A'),
+            _buildInfoRow(
+              'Registered',
+              _formatDateTime(_userDetails!['created_at']),
+            ),
+            _buildInfoRow(
+              'Last Login',
+              _formatDateTime(_userDetails!['last_login']),
+            ),
+          ]),
 
           const SizedBox(height: 24),
 
           // Subscription Information
           if (_userDetails!['subscription'] != null)
-            _buildSection(
-              'Subscription Information',
-              [
+            _buildSection('Subscription Information', [
+              _buildInfoRow(
+                'Tier',
+                _userDetails!['subscription']['tier'] ?? 'N/A',
+              ),
+              _buildInfoRow(
+                'Status',
+                _userDetails!['subscription']['status'] ?? 'N/A',
+              ),
+              _buildInfoRow(
+                'Current Period Start',
+                _formatDateTime(
+                  _userDetails!['subscription']['current_period_start'],
+                ),
+              ),
+              _buildInfoRow(
+                'Current Period End',
+                _formatDateTime(
+                  _userDetails!['subscription']['current_period_end'],
+                ),
+              ),
+              if (_userDetails!['subscription']['cancel_at_period_end'] == true)
                 _buildInfoRow(
-                    'Tier', _userDetails!['subscription']['tier'] ?? 'N/A'),
-                _buildInfoRow(
-                    'Status', _userDetails!['subscription']['status'] ?? 'N/A'),
-                _buildInfoRow(
-                    'Current Period Start',
-                    _formatDateTime(
-                        _userDetails!['subscription']['current_period_start'])),
-                _buildInfoRow(
-                    'Current Period End',
-                    _formatDateTime(
-                        _userDetails!['subscription']['current_period_end'])),
-                if (_userDetails!['subscription']['cancel_at_period_end'] ==
-                    true)
-                  _buildInfoRow('Cancellation', 'Scheduled at period end',
-                      isWarning: true),
-              ],
-            ),
+                  'Cancellation',
+                  'Scheduled at period end',
+                  isWarning: true,
+                ),
+            ]),
 
           const SizedBox(height: 24),
 
           // Payment History
           if (_userDetails!['payment_history'] != null &&
               (_userDetails!['payment_history'] as List).isNotEmpty)
-            _buildSection(
-              'Recent Payment History',
-              [
-                _buildPaymentHistoryTable(_userDetails!['payment_history']),
-              ],
-            ),
+            _buildSection('Recent Payment History', [
+              _buildPaymentHistoryTable(_userDetails!['payment_history']),
+            ]),
 
           const SizedBox(height: 24),
 
           // Session Information
           if (_userDetails!['sessions'] != null &&
               (_userDetails!['sessions'] as List).isNotEmpty)
-            _buildSection(
-              'Active Sessions',
-              [
-                _buildSessionsTable(_userDetails!['sessions']),
-              ],
-            ),
+            _buildSection('Active Sessions', [
+              _buildSessionsTable(_userDetails!['sessions']),
+            ]),
 
           const SizedBox(height: 24),
 
           // Activity Timeline
           if (_userDetails!['activity'] != null &&
               (_userDetails!['activity'] as List).isNotEmpty)
-            _buildSection(
-              'Recent Activity',
-              [
-                _buildActivityTimeline(_userDetails!['activity']),
-              ],
-            ),
+            _buildSection('Recent Activity', [
+              _buildActivityTimeline(_userDetails!['activity']),
+            ]),
         ],
       ),
     );
@@ -751,9 +764,9 @@ class _UserDetailDialogState extends State<_UserDetailDialog> {
       children: [
         Text(
           title,
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+          style: Theme.of(
+            context,
+          ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 12),
         ...children,
@@ -804,7 +817,8 @@ class _UserDetailDialogState extends State<_UserDetailDialog> {
           cells: [
             DataCell(Text(_formatDateTime(payment['created_at']))),
             DataCell(
-                Text('\$${payment['amount']?.toStringAsFixed(2) ?? '0.00'}')),
+              Text('\$${payment['amount']?.toStringAsFixed(2) ?? '0.00'}'),
+            ),
             DataCell(Text(payment['status'] ?? 'N/A')),
             DataCell(Text(payment['payment_method_type'] ?? 'N/A')),
           ],
@@ -869,10 +883,7 @@ class _EditUserDialog extends StatefulWidget {
   final Map<String, dynamic> user;
   final VoidCallback onSaved;
 
-  const _EditUserDialog({
-    required this.user,
-    required this.onSaved,
-  });
+  const _EditUserDialog({required this.user, required this.onSaved});
 
   @override
   State<_EditUserDialog> createState() => _EditUserDialogState();
@@ -890,7 +901,7 @@ class _EditUserDialogState extends State<_EditUserDialog> {
   }
 
   Future<void> _saveChanges() async {
-    final adminService = context.read<AdminCenterService>();
+    final adminService = di.serviceLocator.get<AdminCenterService>();
 
     // Check permission
     if (!adminService.hasPermission(AdminPermission.editUsers)) {
@@ -914,7 +925,8 @@ class _EditUserDialogState extends State<_EditUserDialog> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-              content: Text('User subscription updated successfully')),
+            content: Text('User subscription updated successfully'),
+          ),
         );
         widget.onSaved();
       }
@@ -938,7 +950,8 @@ class _EditUserDialogState extends State<_EditUserDialog> {
           children: [
             Text('User: ${widget.user['email']}'),
             const SizedBox(height: 24),
-            DropdownButtonFormField<String>(initialValue: _selectedTier,
+            DropdownButtonFormField<String>(
+              initialValue: _selectedTier,
               decoration: const InputDecoration(
                 labelText: 'Subscription Tier',
                 border: OutlineInputBorder(),
@@ -961,10 +974,7 @@ class _EditUserDialogState extends State<_EditUserDialog> {
             ),
             if (_error != null) ...[
               const SizedBox(height: 16),
-              Text(
-                _error!,
-                style: const TextStyle(color: Colors.red),
-              ),
+              Text(_error!, style: const TextStyle(color: Colors.red)),
             ],
           ],
         ),
@@ -994,10 +1004,7 @@ class _SuspendUserDialog extends StatefulWidget {
   final Map<String, dynamic> user;
   final VoidCallback onSuspended;
 
-  const _SuspendUserDialog({
-    required this.user,
-    required this.onSuspended,
-  });
+  const _SuspendUserDialog({required this.user, required this.onSuspended});
 
   @override
   State<_SuspendUserDialog> createState() => _SuspendUserDialogState();
@@ -1022,7 +1029,7 @@ class _SuspendUserDialogState extends State<_SuspendUserDialog> {
       return;
     }
 
-    final adminService = context.read<AdminCenterService>();
+    final adminService = di.serviceLocator.get<AdminCenterService>();
 
     // Check permission
     if (!adminService.hasPermission(AdminPermission.suspendUsers)) {
@@ -1086,10 +1093,7 @@ class _SuspendUserDialogState extends State<_SuspendUserDialog> {
             ),
             if (_error != null) ...[
               const SizedBox(height: 16),
-              Text(
-                _error!,
-                style: const TextStyle(color: Colors.red),
-              ),
+              Text(_error!, style: const TextStyle(color: Colors.red)),
             ],
           ],
         ),
@@ -1101,9 +1105,7 @@ class _SuspendUserDialogState extends State<_SuspendUserDialog> {
         ),
         FilledButton(
           onPressed: _isLoading ? null : _suspendUser,
-          style: FilledButton.styleFrom(
-            backgroundColor: Colors.red,
-          ),
+          style: FilledButton.styleFrom(backgroundColor: Colors.red),
           child: _isLoading
               ? const SizedBox(
                   width: 16,
@@ -1136,7 +1138,7 @@ class _ReactivateUserDialogState extends State<_ReactivateUserDialog> {
   String? _error;
 
   Future<void> _reactivateUser() async {
-    final adminService = context.read<AdminCenterService>();
+    final adminService = di.serviceLocator.get<AdminCenterService>();
 
     // Check permission
     if (!adminService.hasPermission(AdminPermission.suspendUsers)) {
@@ -1185,10 +1187,7 @@ class _ReactivateUserDialogState extends State<_ReactivateUserDialog> {
             ),
             if (_error != null) ...[
               const SizedBox(height: 16),
-              Text(
-                _error!,
-                style: const TextStyle(color: Colors.red),
-              ),
+              Text(_error!, style: const TextStyle(color: Colors.red)),
             ],
           ],
         ),
@@ -1200,9 +1199,7 @@ class _ReactivateUserDialogState extends State<_ReactivateUserDialog> {
         ),
         FilledButton(
           onPressed: _isLoading ? null : _reactivateUser,
-          style: FilledButton.styleFrom(
-            backgroundColor: Colors.green,
-          ),
+          style: FilledButton.styleFrom(backgroundColor: Colors.green),
           child: _isLoading
               ? const SizedBox(
                   width: 16,
@@ -1215,4 +1212,3 @@ class _ReactivateUserDialogState extends State<_ReactivateUserDialog> {
     );
   }
 }
-

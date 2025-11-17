@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../di/locator.dart' as di;
 import 'dart:convert';
 import '../../services/admin_center_service.dart';
 import '../../models/admin_audit_log_model.dart';
@@ -75,7 +76,7 @@ class _AuditLogViewerTabState extends State<AuditLogViewerTab> {
     });
 
     try {
-      final adminService = context.read<AdminCenterService>();
+      final adminService = di.serviceLocator.get<AdminCenterService>();
       final response = await adminService.getAuditLogs(
         page: _currentPage,
         limit: _itemsPerPage,
@@ -93,8 +94,9 @@ class _AuditLogViewerTabState extends State<AuditLogViewerTab> {
       final logsData = data['logs'] as List;
       final pagination = data['pagination'] as Map<String, dynamic>;
 
-      final logs =
-          logsData.map((json) => AdminAuditLogModel.fromJson(json)).toList();
+      final logs = logsData
+          .map((json) => AdminAuditLogModel.fromJson(json))
+          .toList();
 
       // Filter by severity if selected (client-side filtering)
       final filteredLogs = _selectedSeverity != null
@@ -118,7 +120,7 @@ class _AuditLogViewerTabState extends State<AuditLogViewerTab> {
   /// Show log detail modal
   void _showLogDetail(AdminAuditLogModel log) async {
     try {
-      final adminService = context.read<AdminCenterService>();
+      final adminService = di.serviceLocator.get<AdminCenterService>();
       final response = await adminService.getAuditLogDetails(log.id);
       final logData = response['data']['log'] as Map<String, dynamic>;
 
@@ -142,7 +144,7 @@ class _AuditLogViewerTabState extends State<AuditLogViewerTab> {
   /// Export audit logs to CSV
   Future<void> _exportLogs() async {
     try {
-      final adminService = context.read<AdminCenterService>();
+      final adminService = di.serviceLocator.get<AdminCenterService>();
       await adminService.exportAuditLogs(
         adminUserId: _selectedAdminUserId,
         action: _selectedAction,
@@ -246,17 +248,14 @@ class _AuditLogViewerTabState extends State<AuditLogViewerTab> {
           child: _isLoading
               ? const Center(child: CircularProgressIndicator())
               : _error != null
-                  ? _buildError()
-                  : _logs.isEmpty
-                      ? _buildEmptyState()
-                      : _buildLogsTable(),
+              ? _buildError()
+              : _logs.isEmpty
+              ? _buildEmptyState()
+              : _buildLogsTable(),
         ),
 
         // Pagination
-        if (_totalPages > 1) ...[
-          const Divider(),
-          _buildPagination(),
-        ],
+        if (_totalPages > 1) ...[const Divider(), _buildPagination()],
       ],
     );
   }
@@ -267,10 +266,7 @@ class _AuditLogViewerTabState extends State<AuditLogViewerTab> {
         // Title
         const Text(
           'Audit Logs',
-          style: TextStyle(
-            fontSize: 24,
-            fontWeight: FontWeight.bold,
-          ),
+          style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
         ),
         const Spacer(),
 
@@ -352,8 +348,9 @@ class _AuditLogViewerTabState extends State<AuditLogViewerTab> {
           ),
         if (_startDate != null)
           Chip(
-            label:
-                Text('From: ${_startDate!.toLocal().toString().split(' ')[0]}'),
+            label: Text(
+              'From: ${_startDate!.toLocal().toString().split(' ')[0]}',
+            ),
             onDeleted: () {
               setState(() => _startDate = null);
               _loadAuditLogs();
@@ -537,10 +534,7 @@ class _AuditLogViewerTabState extends State<AuditLogViewerTab> {
           const SizedBox(height: 16),
           Text('Error: $_error'),
           const SizedBox(height: 16),
-          ElevatedButton(
-            onPressed: _loadAuditLogs,
-            child: const Text('Retry'),
-          ),
+          ElevatedButton(onPressed: _loadAuditLogs, child: const Text('Retry')),
         ],
       ),
     );
@@ -611,8 +605,9 @@ class _FilterDialogState extends State<_FilterDialog> {
     _adminUserIdController = TextEditingController(text: widget.adminUserId);
     _actionController = TextEditingController(text: widget.action);
     _resourceTypeController = TextEditingController(text: widget.resourceType);
-    _affectedUserIdController =
-        TextEditingController(text: widget.affectedUserId);
+    _affectedUserIdController = TextEditingController(
+      text: widget.affectedUserId,
+    );
     _startDate = widget.startDate;
     _endDate = widget.endDate;
     _severity = widget.severity;
@@ -858,10 +853,9 @@ class _LogDetailDialog extends StatelessWidget {
               // Timestamp
               _buildDetailRow(
                 'Timestamp',
-                DateTime.parse(log['createdAt'])
-                    .toLocal()
-                    .toString()
-                    .split('.')[0],
+                DateTime.parse(
+                  log['createdAt'],
+                ).toLocal().toString().split('.')[0],
               ),
               const Divider(),
 
@@ -877,10 +871,7 @@ class _LogDetailDialog extends StatelessWidget {
               // Admin User
               const Text(
                 'Admin User',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                ),
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
               ),
               const SizedBox(height: 8),
               if (adminUser != null) ...[
@@ -895,10 +886,7 @@ class _LogDetailDialog extends StatelessWidget {
               if (affectedUser != null) ...[
                 const Text(
                   'Affected User',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                  ),
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                 ),
                 const SizedBox(height: 8),
                 _buildDetailRow('Email', affectedUser['email']),
@@ -915,10 +903,7 @@ class _LogDetailDialog extends StatelessWidget {
               // Action Details (JSON)
               const Text(
                 'Action Details',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                ),
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
               ),
               const SizedBox(height: 8),
               Container(
@@ -931,10 +916,7 @@ class _LogDetailDialog extends StatelessWidget {
                 ),
                 child: SelectableText(
                   _formatJson(details),
-                  style: const TextStyle(
-                    fontFamily: 'monospace',
-                    fontSize: 12,
-                  ),
+                  style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
                 ),
               ),
             ],
@@ -987,4 +969,3 @@ class _LogDetailDialog extends StatelessWidget {
     }
   }
 }
-

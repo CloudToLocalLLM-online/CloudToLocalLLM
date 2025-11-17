@@ -5,6 +5,7 @@ import '../../services/admin_center_service.dart';
 import '../../models/admin_role_model.dart';
 import '../../models/payment_transaction_model.dart';
 import '../../models/refund_model.dart';
+import '../../di/locator.dart' as di;
 import 'dart:async';
 
 /// Payment Management Tab for the Admin Center
@@ -55,8 +56,8 @@ class _PaymentManagementTabState extends State<PaymentManagementTab> {
 
   /// Load transactions with current filters
   Future<void> _loadTransactions() async {
-    final paymentService = context.read<PaymentGatewayService>();
-    final adminService = context.read<AdminCenterService>();
+    final paymentService = di.serviceLocator.get<PaymentGatewayService>();
+    final adminService = di.serviceLocator.get<AdminCenterService>();
 
     // Check permission
     if (!adminService.hasPermission(AdminPermission.viewPayments)) {
@@ -85,12 +86,14 @@ class _PaymentManagementTabState extends State<PaymentManagementTab> {
       // Apply client-side filtering for amount range
       var filteredTransactions = transactions;
       if (_minAmount != null) {
-        filteredTransactions =
-            filteredTransactions.where((t) => t.amount >= _minAmount!).toList();
+        filteredTransactions = filteredTransactions
+            .where((t) => t.amount >= _minAmount!)
+            .toList();
       }
       if (_maxAmount != null) {
-        filteredTransactions =
-            filteredTransactions.where((t) => t.amount <= _maxAmount!).toList();
+        filteredTransactions = filteredTransactions
+            .where((t) => t.amount <= _maxAmount!)
+            .toList();
       }
 
       // Apply sorting
@@ -186,15 +189,15 @@ class _PaymentManagementTabState extends State<PaymentManagementTab> {
               Text(
                 'Payment Management',
                 style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               const SizedBox(height: 8),
               Text(
                 'View payment transactions, process refunds, and manage payment methods',
-                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                      color: Colors.grey.shade700,
-                    ),
+                style: Theme.of(
+                  context,
+                ).textTheme.bodyLarge?.copyWith(color: Colors.grey.shade700),
               ),
             ],
           ),
@@ -243,7 +246,9 @@ class _PaymentManagementTabState extends State<PaymentManagementTab> {
                       ),
                       items: [
                         const DropdownMenuItem(
-                            value: null, child: Text('All Statuses')),
+                          value: null,
+                          child: Text('All Statuses'),
+                        ),
                         ...TransactionStatus.values.map((status) {
                           return DropdownMenuItem(
                             value: status.value,
@@ -287,11 +292,17 @@ class _PaymentManagementTabState extends State<PaymentManagementTab> {
                       ),
                       items: const [
                         DropdownMenuItem(
-                            value: 'created_at', child: Text('Date')),
+                          value: 'created_at',
+                          child: Text('Date'),
+                        ),
                         DropdownMenuItem(
-                            value: 'amount', child: Text('Amount')),
+                          value: 'amount',
+                          child: Text('Amount'),
+                        ),
                         DropdownMenuItem(
-                            value: 'status', child: Text('Status')),
+                          value: 'status',
+                          child: Text('Status'),
+                        ),
                       ],
                       onChanged: (value) {
                         if (value != null) {
@@ -329,9 +340,7 @@ class _PaymentManagementTabState extends State<PaymentManagementTab> {
         const SizedBox(height: 24),
 
         // Transaction table
-        Expanded(
-          child: _buildTransactionTable(),
-        ),
+        Expanded(child: _buildTransactionTable()),
 
         // Pagination
         if (_totalPages > 1) _buildPagination(),
@@ -341,9 +350,7 @@ class _PaymentManagementTabState extends State<PaymentManagementTab> {
 
   Widget _buildTransactionTable() {
     if (_isLoading) {
-      return const Center(
-        child: CircularProgressIndicator(),
-      );
+      return const Center(child: CircularProgressIndicator());
     }
 
     if (_error != null) {
@@ -428,8 +435,11 @@ class _PaymentManagementTabState extends State<PaymentManagementTab> {
               ),
               if (canRefund)
                 IconButton(
-                  icon: const Icon(Icons.money_off,
-                      size: 20, color: Colors.orange),
+                  icon: const Icon(
+                    Icons.money_off,
+                    size: 20,
+                    color: Colors.orange,
+                  ),
                   onPressed: () => _showRefundDialog(transaction),
                   tooltip: 'Process Refund',
                 ),
@@ -561,7 +571,7 @@ class _TransactionDetailDialogState extends State<_TransactionDetailDialog> {
   }
 
   Future<void> _loadTransactionDetails() async {
-    final paymentService = context.read<PaymentGatewayService>();
+    final paymentService = di.serviceLocator.get<PaymentGatewayService>();
 
     setState(() {
       _isLoading = true;
@@ -570,8 +580,9 @@ class _TransactionDetailDialogState extends State<_TransactionDetailDialog> {
 
     try {
       // Get refunds for this transaction
-      final refunds =
-          await paymentService.getRefundsForTransaction(widget.transaction.id);
+      final refunds = await paymentService.getRefundsForTransaction(
+        widget.transaction.id,
+      );
 
       setState(() {
         _refunds = refunds;
@@ -602,8 +613,8 @@ class _TransactionDetailDialogState extends State<_TransactionDetailDialog> {
                 Text(
                   'Transaction Details',
                   style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 IconButton(
                   icon: const Icon(Icons.close),
@@ -615,9 +626,7 @@ class _TransactionDetailDialogState extends State<_TransactionDetailDialog> {
             const SizedBox(height: 16),
 
             // Content
-            Expanded(
-              child: _buildContent(),
-            ),
+            Expanded(child: _buildContent()),
 
             // Actions
             const SizedBox(height: 16),
@@ -664,90 +673,88 @@ class _TransactionDetailDialogState extends State<_TransactionDetailDialog> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Transaction Information
-          _buildSection(
-            'Transaction Information',
-            [
-              _buildInfoRow('Transaction ID', widget.transaction.id),
-              _buildInfoRow('User ID', widget.transaction.userId),
-              _buildInfoRow('Amount',
-                  '\$${widget.transaction.amount.toStringAsFixed(2)} ${widget.transaction.currency}'),
-              _buildInfoRow('Status', widget.transaction.status.displayName),
-              _buildInfoRow(
-                  'Created', _formatDateTime(widget.transaction.createdAt)),
-              _buildInfoRow(
-                  'Updated', _formatDateTime(widget.transaction.updatedAt)),
-            ],
-          ),
+          _buildSection('Transaction Information', [
+            _buildInfoRow('Transaction ID', widget.transaction.id),
+            _buildInfoRow('User ID', widget.transaction.userId),
+            _buildInfoRow(
+              'Amount',
+              '\$${widget.transaction.amount.toStringAsFixed(2)} ${widget.transaction.currency}',
+            ),
+            _buildInfoRow('Status', widget.transaction.status.displayName),
+            _buildInfoRow(
+              'Created',
+              _formatDateTime(widget.transaction.createdAt),
+            ),
+            _buildInfoRow(
+              'Updated',
+              _formatDateTime(widget.transaction.updatedAt),
+            ),
+          ]),
 
           const SizedBox(height: 24),
 
           // Payment Method Information
-          _buildSection(
-            'Payment Method',
-            [
+          _buildSection('Payment Method', [
+            _buildInfoRow(
+              'Type',
+              widget.transaction.paymentMethodType ?? 'N/A',
+            ),
+            _buildInfoRow(
+              'Last 4 Digits',
+              widget.transaction.paymentMethodLast4 ?? 'N/A',
+            ),
+            if (widget.transaction.receiptUrl != null)
               _buildInfoRow(
-                  'Type', widget.transaction.paymentMethodType ?? 'N/A'),
-              _buildInfoRow('Last 4 Digits',
-                  widget.transaction.paymentMethodLast4 ?? 'N/A'),
-              if (widget.transaction.receiptUrl != null)
-                _buildInfoRow('Receipt', widget.transaction.receiptUrl!,
-                    isLink: true),
-            ],
-          ),
+                'Receipt',
+                widget.transaction.receiptUrl!,
+                isLink: true,
+              ),
+          ]),
 
           const SizedBox(height: 24),
 
           // Stripe Information
           if (widget.transaction.stripePaymentIntentId != null)
-            _buildSection(
-              'Stripe Information',
-              [
-                _buildInfoRow('Payment Intent ID',
-                    widget.transaction.stripePaymentIntentId!),
-                if (widget.transaction.stripeChargeId != null)
-                  _buildInfoRow(
-                      'Charge ID', widget.transaction.stripeChargeId!),
-              ],
-            ),
+            _buildSection('Stripe Information', [
+              _buildInfoRow(
+                'Payment Intent ID',
+                widget.transaction.stripePaymentIntentId!,
+              ),
+              if (widget.transaction.stripeChargeId != null)
+                _buildInfoRow('Charge ID', widget.transaction.stripeChargeId!),
+            ]),
 
           const SizedBox(height: 24),
 
           // Failure Information
           if (widget.transaction.status == TransactionStatus.failed)
-            _buildSection(
-              'Failure Information',
-              [
-                _buildInfoRow(
-                    'Failure Code', widget.transaction.failureCode ?? 'N/A',
-                    isWarning: true),
-                _buildInfoRow('Failure Message',
-                    widget.transaction.failureMessage ?? 'N/A',
-                    isWarning: true),
-              ],
-            ),
+            _buildSection('Failure Information', [
+              _buildInfoRow(
+                'Failure Code',
+                widget.transaction.failureCode ?? 'N/A',
+                isWarning: true,
+              ),
+              _buildInfoRow(
+                'Failure Message',
+                widget.transaction.failureMessage ?? 'N/A',
+                isWarning: true,
+              ),
+            ]),
 
           const SizedBox(height: 24),
 
           // Refund Information
           if (_refunds.isNotEmpty)
-            _buildSection(
-              'Refunds',
-              [
-                _buildRefundsTable(_refunds),
-              ],
-            ),
+            _buildSection('Refunds', [_buildRefundsTable(_refunds)]),
 
           const SizedBox(height: 24),
 
           // Metadata
           if (widget.transaction.metadata != null &&
               widget.transaction.metadata!.isNotEmpty)
-            _buildSection(
-              'Metadata',
-              [
-                _buildMetadataTable(widget.transaction.metadata!),
-              ],
-            ),
+            _buildSection('Metadata', [
+              _buildMetadataTable(widget.transaction.metadata!),
+            ]),
         ],
       ),
     );
@@ -759,9 +766,9 @@ class _TransactionDetailDialogState extends State<_TransactionDetailDialog> {
       children: [
         Text(
           title,
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+          style: Theme.of(
+            context,
+          ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 12),
         ...children,
@@ -769,8 +776,12 @@ class _TransactionDetailDialogState extends State<_TransactionDetailDialog> {
     );
   }
 
-  Widget _buildInfoRow(String label, String value,
-      {bool isWarning = false, bool isLink = false}) {
+  Widget _buildInfoRow(
+    String label,
+    String value, {
+    bool isWarning = false,
+    bool isLink = false,
+  }) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
@@ -863,10 +874,7 @@ class _RefundDialog extends StatefulWidget {
   final PaymentTransactionModel transaction;
   final VoidCallback onRefunded;
 
-  const _RefundDialog({
-    required this.transaction,
-    required this.onRefunded,
-  });
+  const _RefundDialog({required this.transaction, required this.onRefunded});
 
   @override
   State<_RefundDialog> createState() => _RefundDialogState();
@@ -911,8 +919,8 @@ class _RefundDialogState extends State<_RefundDialog> {
       return;
     }
 
-    final paymentService = context.read<PaymentGatewayService>();
-    final adminService = context.read<AdminCenterService>();
+    final paymentService = di.serviceLocator.get<PaymentGatewayService>();
+    final adminService = di.serviceLocator.get<AdminCenterService>();
 
     // Check permission
     if (!adminService.hasPermission(AdminPermission.processRefunds)) {
@@ -983,7 +991,8 @@ class _RefundDialogState extends State<_RefundDialog> {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                        'Amount: \$${widget.transaction.amount.toStringAsFixed(2)}'),
+                      'Amount: \$${widget.transaction.amount.toStringAsFixed(2)}',
+                    ),
                     Text('Status: ${widget.transaction.status.displayName}'),
                   ],
                 ),
@@ -1001,7 +1010,8 @@ class _RefundDialogState extends State<_RefundDialog> {
                               setState(() {
                                 _isFullRefund = true;
                                 _amountController.text = widget
-                                    .transaction.amount
+                                    .transaction
+                                    .amount
                                     .toStringAsFixed(2);
                               });
                             },
@@ -1041,8 +1051,9 @@ class _RefundDialogState extends State<_RefundDialog> {
                   border: const OutlineInputBorder(),
                   enabled: !_isFullRefund && !_isLoading,
                 ),
-                keyboardType:
-                    const TextInputType.numberWithOptions(decimal: true),
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
               ),
               const SizedBox(height: 16),
 
@@ -1141,9 +1152,7 @@ class _RefundDialogState extends State<_RefundDialog> {
         ),
         FilledButton(
           onPressed: _isLoading ? null : _processRefund,
-          style: FilledButton.styleFrom(
-            backgroundColor: Colors.orange,
-          ),
+          style: FilledButton.styleFrom(backgroundColor: Colors.orange),
           child: _isLoading
               ? const SizedBox(
                   width: 16,
