@@ -9,9 +9,9 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../models/provider_configuration.dart';
 import '../../services/provider_configuration_manager.dart';
-import '../../di/locator.dart' as di;
 import 'settings_category_widgets.dart';
 import 'settings_input_widgets.dart';
 
@@ -64,7 +64,7 @@ class _LocalLLMProvidersCategoryContentState
   @override
   void initState() {
     super.initState();
-    _configManager = di.serviceLocator.get<ProviderConfigurationManager>();
+    _configManager = context.read<ProviderConfigurationManager>();
     _loadProviders();
   }
 
@@ -228,9 +228,7 @@ class _LocalLLMProvidersCategoryContentState
             child: const Text('Cancel'),
           ),
           FilledButton(
-            style: FilledButton.styleFrom(
-              backgroundColor: Colors.red.shade600,
-            ),
+            style: FilledButton.styleFrom(backgroundColor: Colors.red.shade600),
             onPressed: () => Navigator.pop(context, true),
             child: const Text('Remove'),
           ),
@@ -391,17 +389,21 @@ class _LocalLLMProvidersCategoryContentState
                     children: [
                       Text(
                         config.providerType.toUpperCase(),
-                        style:
-                            Theme.of(context).textTheme.titleMedium?.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                ),
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(fontWeight: FontWeight.bold),
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        '${config.baseUrl}:${config is OllamaProviderConfiguration ? config.port : config is LMStudioProviderConfiguration ? config.port : config is OpenAICompatibleProviderConfiguration ? config.port : 'N/A'}',
+                        '${config.baseUrl}:${config is OllamaProviderConfiguration
+                            ? config.port
+                            : config is LMStudioProviderConfiguration
+                            ? config.port
+                            : config is OpenAICompatibleProviderConfiguration
+                            ? config.port
+                            : 'N/A'}',
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: Colors.grey.shade600,
-                            ),
+                          color: Colors.grey.shade600,
+                        ),
                       ),
                     ],
                   ),
@@ -552,15 +554,15 @@ class _LocalLLMProvidersCategoryContentState
                   Text(
                     'Configured Providers',
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     'Manage your local LLM provider connections',
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Colors.grey.shade600,
-                        ),
+                      color: Colors.grey.shade600,
+                    ),
                   ),
                 ],
               ),
@@ -572,24 +574,20 @@ class _LocalLLMProvidersCategoryContentState
               padding: const EdgeInsets.all(32),
               child: Column(
                 children: [
-                  Icon(
-                    Icons.storage,
-                    size: 64,
-                    color: Colors.grey.shade400,
-                  ),
+                  Icon(Icons.storage, size: 64, color: Colors.grey.shade400),
                   const SizedBox(height: 16),
                   Text(
                     'No Providers Configured',
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   const SizedBox(height: 8),
                   Text(
                     'Add a local LLM provider to get started',
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Colors.grey.shade600,
-                        ),
+                      color: Colors.grey.shade600,
+                    ),
                   ),
                 ],
               ),
@@ -610,8 +608,8 @@ class _LocalLLMProvidersCategoryContentState
                     Text(
                       'Add New Provider',
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     const SizedBox(height: 16),
 
