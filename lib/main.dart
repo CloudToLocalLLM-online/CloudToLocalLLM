@@ -230,6 +230,13 @@ class _CloudToLocalLLMAppState extends State<CloudToLocalLLMApp> {
       ),
     );
 
+    // ProviderConfigurationManager is always registered, add unconditionally
+    providers.add(
+      ChangeNotifierProvider.value(
+        value: di.serviceLocator.get<ProviderConfigurationManager>(),
+      ),
+    );
+
     // Authenticated services - only provide if registered
     // These will be registered after authentication
     _addProviderIfRegistered<TunnelService>(providers);
@@ -247,7 +254,6 @@ class _CloudToLocalLLMAppState extends State<CloudToLocalLLMApp> {
     _addProviderIfRegistered<AdminService>(providers);
     _addProviderIfRegistered<AdminDataFlushService>(providers);
     _addProviderIfRegistered<AdminCenterService>(providers);
-    _addProviderIfRegistered<ProviderConfigurationManager>(providers);
 
     return providers;
   }

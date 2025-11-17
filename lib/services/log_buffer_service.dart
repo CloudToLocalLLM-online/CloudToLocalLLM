@@ -137,7 +137,7 @@ class LogBufferService {
       _pendingEntries.removeRange(0, batchSize);
 
       await _dio.post(
-        '/client-logs',
+        '/api/client-logs',
         data: {'entries': batch, 'source': 'flutter-web'},
         options: Options(headers: {'Content-Type': 'application/json'}),
       );
