@@ -35,6 +35,7 @@ import '../services/web_download_prompt_service.dart'
     if (dart.library.io) '../services/web_download_prompt_service_stub.dart';
 import '../services/settings_preference_service.dart';
 import '../services/settings_import_export_service.dart';
+import '../services/provider_configuration_manager.dart';
 
 final GetIt serviceLocator = GetIt.instance;
 
@@ -117,6 +118,12 @@ Future<void> setupCoreServices() async {
   );
   serviceLocator.registerSingleton<SettingsImportExportService>(
     settingsImportExportService,
+  );
+
+  // Provider configuration manager - manages local LLM provider configurations
+  final providerConfigurationManager = ProviderConfigurationManager();
+  serviceLocator.registerSingleton<ProviderConfigurationManager>(
+    providerConfigurationManager,
   );
 
   // Web download prompt service - can be created but won't do heavy work until auth

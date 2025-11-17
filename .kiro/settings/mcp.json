@@ -20,7 +20,9 @@
         "playwright_evaluate",
         "playwright_close",
         "playwright_custom_user_agent",
-        "playwright_get_visible_text"
+        "playwright_get_visible_text",
+        "playwright_console_logs",
+        "playwright_get_visible_html"
       ]
     },
     "dockerhub": {
