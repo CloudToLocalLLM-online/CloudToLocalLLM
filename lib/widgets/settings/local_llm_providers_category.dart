@@ -9,9 +9,9 @@
 library;
 
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import '../../models/provider_configuration.dart';
 import '../../services/provider_configuration_manager.dart';
+import '../../di/locator.dart' as di;
 import 'settings_category_widgets.dart';
 import 'settings_input_widgets.dart';
 
@@ -64,7 +64,7 @@ class _LocalLLMProvidersCategoryContentState
   @override
   void initState() {
     super.initState();
-    _configManager = context.read<ProviderConfigurationManager>();
+    _configManager = di.serviceLocator.get<ProviderConfigurationManager>();
     _loadProviders();
   }
 
