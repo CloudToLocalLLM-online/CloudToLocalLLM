@@ -114,21 +114,34 @@ app.use(helmet({
   },
 }));
 
-// Use simple CORS configuration for debugging - updated 2025-11-17
-app.use(cors({
-  origin: ['https://app.cloudtolocalllm.online', 'https://cloudtolocalllm.online', 'https://docs.cloudtolocalllm.online'],
+// CORS configuration - must be before all routes
+const corsOptions = {
+  origin: function (origin, callback) {
+    const allowedOrigins = [
+      'https://app.cloudtolocalllm.online',
+      'https://cloudtolocalllm.online',
+      'https://docs.cloudtolocalllm.online'
+    ];
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
-}));
+  preflightContinue: false,
+  optionsSuccessStatus: 204
+};
 
-// Handle preflight requests explicitly
-app.options('*', cors({
-  origin: ['https://app.cloudtolocalllm.online', 'https://cloudtolocalllm.online', 'https://docs.cloudtolocalllm.online'],
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
-}));
+app.use(cors(corsOptions));
+
+// Handle preflight requests explicitly - CORS middleware will set headers
+app.options('*', cors(corsOptions), (req, res) => {
+  res.status(204).end();
+});
 
 // Rate limiting with different limits for bridge operations
 const createConditionalRateLimiter = () => {
