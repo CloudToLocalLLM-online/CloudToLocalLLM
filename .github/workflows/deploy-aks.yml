@@ -158,9 +158,8 @@ jobs:
     - name: Verify Docker images were built
       run: |
         echo "Verifying Docker images..."
-        COMMIT_SHA=$(echo ${{ github.sha }} | cut -c1-8)
-        echo "API Image: ${{ env.API_IMAGE }}:main-$COMMIT_SHA"
-        echo "Web Image: ${{ env.WEB_IMAGE }}:main-$COMMIT_SHA"
+        echo "API Image: ${{ env.API_IMAGE }}:latest"
+        echo "Web Image: ${{ env.WEB_IMAGE }}:latest"
         echo "✅ Docker images ready for deployment"
 
     - name: Azure Login
@@ -176,15 +175,15 @@ jobs:
 
     - name: Update API deployment
       run: |
-        COMMIT_SHA=$(echo ${{ github.sha }} | cut -c1-8)
+        echo "Updating API deployment with image: ${{ env.API_IMAGE }}:latest"
         kubectl set image deployment/api-backend \
-          api-backend=${{ env.API_IMAGE }}:$COMMIT_SHA \
+          api-backend=${{ env.API_IMAGE }}:latest \
           -n cloudtolocalllm
+        echo "API deployment updated successfully"
 
     - name: Update Web deployment
       run: |
-        COMMIT_SHA=$(echo ${{ github.sha }} | cut -c1-8)
-        echo "Updating web deployment with image: ${{ env.WEB_IMAGE }}:$COMMIT_SHA"
+        echo "Updating web deployment with image: ${{ env.WEB_IMAGE }}:latest"
         
         # Verify deployment exists
         if ! kubectl get deployment web -n cloudtolocalllm &> /dev/null; then
@@ -195,7 +194,7 @@ jobs:
         
         # Update the image
         kubectl set image deployment/web \
-          web=${{ env.WEB_IMAGE }}:$COMMIT_SHA \
+          web=${{ env.WEB_IMAGE }}:latest \
           -n cloudtolocalllm
         
         echo "Web deployment updated successfully"
