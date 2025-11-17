@@ -36,6 +36,7 @@ import '../services/web_download_prompt_service.dart'
 import '../services/settings_preference_service.dart';
 import '../services/settings_import_export_service.dart';
 import '../services/provider_configuration_manager.dart';
+import '../services/admin_center_service.dart';
 
 final GetIt serviceLocator = GetIt.instance;
 
@@ -293,6 +294,10 @@ Future<void> setupAuthenticatedServices() async {
   serviceLocator.registerSingleton<AdminDataFlushService>(
     adminDataFlushService,
   );
+
+  // Admin center service - requires authentication
+  final adminCenterService = AdminCenterService(authService: authService);
+  serviceLocator.registerSingleton<AdminCenterService>(adminCenterService);
 
   debugPrint('[ServiceLocator] Authenticated services registered successfully');
 }
