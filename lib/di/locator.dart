@@ -37,6 +37,7 @@ import '../services/settings_preference_service.dart';
 import '../services/settings_import_export_service.dart';
 import '../services/provider_configuration_manager.dart';
 import '../services/admin_center_service.dart';
+import '../services/theme_provider.dart';
 
 final GetIt serviceLocator = GetIt.instance;
 
@@ -120,6 +121,10 @@ Future<void> setupCoreServices() async {
   serviceLocator.registerSingleton<SettingsImportExportService>(
     settingsImportExportService,
   );
+
+  // Theme provider - manages application theme mode
+  final themeProvider = ThemeProvider();
+  serviceLocator.registerSingleton<ThemeProvider>(themeProvider);
 
   // Provider configuration manager - manages local LLM provider configurations
   final providerConfigurationManager = ProviderConfigurationManager();

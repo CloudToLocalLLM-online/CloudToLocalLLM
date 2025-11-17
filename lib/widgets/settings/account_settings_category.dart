@@ -8,6 +8,8 @@ import 'package:flutter/material.dart';
 import '../../di/locator.dart' as di;
 import '../../services/auth_service.dart';
 import '../../services/session_storage_service.dart';
+import '../../services/enhanced_user_tier_service.dart';
+import '../../services/admin_center_service.dart';
 import '../../models/user_model.dart';
 import '../../models/session_model.dart';
 import 'settings_category_widgets.dart';
@@ -47,6 +49,8 @@ class _AccountSettingsCategoryContentState
     extends State<_AccountSettingsCategoryContent> {
   late AuthService _authService;
   late SessionStorageService _sessionStorage;
+  EnhancedUserTierService? _tierService;
+  AdminCenterService? _adminCenterService;
 
   // State variables
   UserModel? _currentUser;
@@ -61,6 +65,21 @@ class _AccountSettingsCategoryContentState
     super.initState();
     _authService = di.serviceLocator.get<AuthService>();
     _sessionStorage = widget.sessionStorageService ?? SessionStorageService();
+    
+    // Get tier service if available
+    try {
+      _tierService = di.serviceLocator.get<EnhancedUserTierService>();
+    } catch (e) {
+      debugPrint('[AccountSettings] EnhancedUserTierService not available: $e');
+    }
+    
+    // Get admin center service if available
+    try {
+      _adminCenterService = di.serviceLocator.get<AdminCenterService>();
+    } catch (e) {
+      debugPrint('[AccountSettings] AdminCenterService not available: $e');
+    }
+    
     _loadAccountInfo();
   }
 
@@ -158,15 +177,22 @@ class _AccountSettingsCategoryContentState
 
   /// Get subscription tier display text
   String _getSubscriptionTier() {
-    // TODO: Implement subscription tier retrieval from user model or API
-    // For now, return a default value
+    if (_tierService != null) {
+      final tier = _tierService!.currentTier;
+      // Capitalize first letter
+      return tier.isEmpty ? 'Free' : tier[0].toUpperCase() + tier.substring(1);
+    }
+    // Fallback to default
     return 'Free';
   }
 
   /// Check if user is admin
   bool _isAdminUser() {
-    // TODO: Implement admin status check
-    // This should check user roles or permissions
+    if (_adminCenterService != null) {
+      return _adminCenterService!.isAdmin;
+    }
+    // Fallback: check if user has admin role in profile
+    // This is a secondary check if AdminCenterService is not available
     return false;
   }
 

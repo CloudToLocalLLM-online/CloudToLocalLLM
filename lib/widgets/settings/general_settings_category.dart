@@ -7,6 +7,8 @@ library;
 
 import 'package:flutter/material.dart';
 import '../../services/settings_preference_service.dart';
+import '../../services/theme_provider.dart';
+import '../../di/locator.dart' as di;
 import 'settings_category_widgets.dart';
 import 'settings_input_widgets.dart';
 import 'settings_base.dart';
@@ -37,6 +39,7 @@ class _GeneralSettingsCategoryContent extends StatefulWidget {
 class _GeneralSettingsCategoryContentState
     extends State<_GeneralSettingsCategoryContent> {
   late SettingsPreferenceService _preferencesService;
+  ThemeProvider? _themeProvider;
 
   // State variables
   String _selectedTheme = 'system'; // 'light', 'dark', 'system'
@@ -53,14 +56,29 @@ class _GeneralSettingsCategoryContentState
   void initState() {
     super.initState();
     _preferencesService = SettingsPreferenceService();
+    
+    // Get theme provider if available
+    try {
+      _themeProvider = di.serviceLocator.get<ThemeProvider>();
+    } catch (e) {
+      debugPrint('[GeneralSettings] ThemeProvider not available: $e');
+    }
+    
     _loadSettings();
   }
 
   /// Load current settings from preferences
   Future<void> _loadSettings() async {
     try {
-      // Load theme and language preferences
-      final theme = await _preferencesService.getTheme();
+      // Load theme from ThemeProvider if available, otherwise from preferences
+      String theme;
+      if (_themeProvider != null) {
+        theme = _themeProvider!.themeModeString;
+      } else {
+        theme = await _preferencesService.getTheme();
+      }
+      
+      // Load language preferences
       final language = await _preferencesService.getLanguage();
 
       setState(() {
@@ -110,12 +128,11 @@ class _GeneralSettingsCategoryContentState
     });
 
     try {
-      // Save theme and language preferences
-      await _preferencesService.setTheme(_selectedTheme);
+      // Save language preferences
       await _preferencesService.setLanguage(_selectedLanguage);
 
-      // Apply theme change
-      _applyThemeChange();
+      // Apply theme change (this will update ThemeProvider and save to preferences)
+      await _applyThemeChange();
 
       setState(() {
         _isDirty = false;
@@ -142,17 +159,18 @@ class _GeneralSettingsCategoryContentState
   }
 
   /// Apply theme change to the application
-  void _applyThemeChange() {
-    // The theme is controlled by AppConfig.enableDarkMode
-    // In a real implementation, this would update a ThemeProvider
-    // For now, we'll just log the change
+  Future<void> _applyThemeChange() async {
     debugPrint('[GeneralSettings] Theme changed to: $_selectedTheme');
 
-    // TODO: Implement theme provider integration
-    // This would require creating a ThemeProvider service that:
-    // 1. Stores the theme preference
-    // 2. Notifies listeners when theme changes
-    // 3. Updates the MaterialApp.router themeMode property
+    // Update ThemeProvider if available
+    if (_themeProvider != null) {
+      await _themeProvider!.setThemeModeFromString(_selectedTheme);
+      debugPrint('[GeneralSettings] Theme mode updated via ThemeProvider');
+    } else {
+      // Fallback: save to preferences service
+      await _preferencesService.setTheme(_selectedTheme);
+      debugPrint('[GeneralSettings] Theme saved to preferences (ThemeProvider not available)');
+    }
   }
 
   /// Handle theme selection change

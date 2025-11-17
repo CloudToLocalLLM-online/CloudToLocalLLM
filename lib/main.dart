@@ -38,6 +38,7 @@ import 'services/user_container_service.dart';
 import 'services/web_download_prompt_service.dart'
     if (dart.library.io) 'services/web_download_prompt_service_stub.dart';
 import 'services/log_buffer_service.dart';
+import 'services/theme_provider.dart';
 import 'web_plugins_stub.dart'
     if (dart.library.html) 'package:flutter_web_plugins/url_strategy.dart';
 import 'widgets/tray_initializer.dart';
@@ -230,6 +231,13 @@ class _CloudToLocalLLMAppState extends State<CloudToLocalLLMApp> {
       ),
     );
 
+    // Theme provider - manages application theme
+    providers.add(
+      ChangeNotifierProvider.value(
+        value: di.serviceLocator.get<ThemeProvider>(),
+      ),
+    );
+
     // ProviderConfigurationManager is always registered, add unconditionally
     providers.add(
       ChangeNotifierProvider.value(
@@ -320,13 +328,16 @@ class _AppRouterHostState extends State<_AppRouterHost> {
       );
     }
 
+    // Get theme provider from context
+    final themeProvider = context.watch<ThemeProvider>();
+
     return WindowListenerWidget(
       child: MaterialApp.router(
         title: AppConfig.appName,
         debugShowCheckedModeBanner: false,
         theme: AppTheme.lightTheme,
         darkTheme: AppTheme.darkTheme,
-        themeMode: AppConfig.enableDarkMode ? ThemeMode.dark : ThemeMode.light,
+        themeMode: themeProvider.themeMode,
         routerConfig: router,
         builder: (context, child) {
           final mediaQuery = MediaQuery.of(context);

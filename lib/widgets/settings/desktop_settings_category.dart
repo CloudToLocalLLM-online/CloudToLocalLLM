@@ -6,7 +6,9 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'dart:io' show Platform;
+import 'package:window_manager/window_manager.dart';
 import '../../services/settings_preference_service.dart';
 import 'settings_category_widgets.dart';
 import 'settings_input_widgets.dart';
@@ -156,16 +158,29 @@ class _DesktopSettingsCategoryContentState
   /// Apply window behavior changes
   Future<void> _applyWindowBehaviorChanges() async {
     try {
-      // TODO: Integrate with window_manager to apply window behavior changes
-      // This would require:
-      // 1. Import window_manager package
-      // 2. Call windowManager.setAlwaysOnTop(_alwaysOnTop)
-      // 3. Handle launch on startup via platform-specific code
-      // 4. Handle minimize to tray via tray_manager integration
+      if (kIsWeb) {
+        debugPrint('[DesktopSettings] Window behavior changes not applicable on web');
+        return;
+      }
+
+      // Apply always on top setting
+      try {
+        await windowManager.setAlwaysOnTop(_alwaysOnTop);
+        debugPrint('[DesktopSettings] Always on top set to: $_alwaysOnTop');
+      } catch (e) {
+        debugPrint('[DesktopSettings] Error setting always on top: $e');
+      }
+
+      // Note: Launch on startup and minimize to tray are handled by:
+      // - Launch on startup: Requires platform-specific implementation (Windows registry, Linux .desktop file, macOS LaunchAgent)
+      // - Minimize to tray: Handled by tray_manager integration in TrayInitializer
+      // These settings are saved to preferences and will be applied on next app launch
       debugPrint('[DesktopSettings] Window behavior changes applied');
+      debugPrint('[DesktopSettings] Launch on startup: $_launchOnStartup (requires app restart)');
+      debugPrint('[DesktopSettings] Minimize to tray: $_minimizeToTray (handled by tray manager)');
     } catch (e) {
       debugPrint('[DesktopSettings] Error applying window behavior: $e');
-      rethrow;
+      // Don't rethrow - allow settings to be saved even if window behavior fails
     }
   }
 

@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../services/auth_service.dart';
 import '../services/platform_category_filter.dart';
 import '../services/admin_center_service.dart';
+import '../services/enhanced_user_tier_service.dart';
 import '../models/settings_category.dart';
 import '../widgets/settings/settings_category_list.dart';
 import '../widgets/settings/general_settings_category.dart';
@@ -37,6 +38,7 @@ class _UnifiedSettingsScreenState extends State<UnifiedSettingsScreen> {
   late PlatformCategoryFilter _platformFilter;
   late AuthService _authService;
   AdminCenterService? _adminCenterService;
+  EnhancedUserTierService? _tierService;
 
   // State management
   late String _activeCategory;
@@ -66,10 +68,20 @@ class _UnifiedSettingsScreenState extends State<UnifiedSettingsScreen> {
         );
       }
 
+      // Try to get EnhancedUserTierService if available
+      try {
+        _tierService = di.serviceLocator.get<EnhancedUserTierService>();
+      } catch (e) {
+        debugPrint(
+          '[UnifiedSettingsScreen] EnhancedUserTierService not available: $e',
+        );
+      }
+
       // Create platform filter with services
       _platformFilter = PlatformCategoryFilter(
         authService: _authService,
         adminCenterService: _adminCenterService,
+        tierService: _tierService,
       );
 
       // Load visible categories

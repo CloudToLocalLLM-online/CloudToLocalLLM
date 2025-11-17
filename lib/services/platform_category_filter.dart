@@ -8,11 +8,13 @@ import 'package:flutter/foundation.dart';
 import '../models/settings_category.dart';
 import 'auth_service.dart';
 import 'admin_center_service.dart';
+import 'enhanced_user_tier_service.dart';
 
 /// Service for filtering settings categories based on platform and user role
 class PlatformCategoryFilter extends ChangeNotifier {
   final AuthService _authService;
   final AdminCenterService? _adminCenterService;
+  final EnhancedUserTierService? _tierService;
 
   // Platform detection
   late final bool _isWeb;
@@ -33,8 +35,10 @@ class PlatformCategoryFilter extends ChangeNotifier {
   PlatformCategoryFilter({
     required AuthService authService,
     AdminCenterService? adminCenterService,
+    EnhancedUserTierService? tierService,
   })  : _authService = authService,
-        _adminCenterService = adminCenterService {
+        _adminCenterService = adminCenterService,
+        _tierService = tierService {
     _initializePlatformDetection();
     _authService.addListener(_onAuthStateChanged);
   }
@@ -139,8 +143,16 @@ class PlatformCategoryFilter extends ChangeNotifier {
     }
 
     try {
-      // TODO: Implement premium tier check from user model or subscription service
-      // For now, default to false
+      // Check if tier service is available and initialized
+      final tierService = _tierService;
+      if (tierService != null && tierService.isInitialized) {
+        final isPremium = tierService.isPremiumTier;
+        _cachedIsPremiumUser = isPremium;
+        _lastPremiumCheckTime = DateTime.now();
+        return isPremium;
+      }
+
+      // Fallback: default to false
       _cachedIsPremiumUser = false;
       _lastPremiumCheckTime = DateTime.now();
       return false;
