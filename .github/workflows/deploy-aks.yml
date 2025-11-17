@@ -222,7 +222,7 @@ jobs:
     - name: Purge Cloudflare cache
       run: |
         if [ -z "${{ secrets.CLOUDFLARE_API_TOKEN }}" ]; then
-          echo "Cloudflare API token not set, skipping cache purge."
+          echo "❌ Cloudflare API token not set, skipping cache purge."
           exit 0
         fi
 
@@ -232,23 +232,28 @@ jobs:
           -H "Content-Type: application/json" | jq -r '.result[0].id')
 
         if [ "$CF_ZONE_ID" = "null" ] || [ -z "$CF_ZONE_ID" ]; then
-          echo "Unable to determine Cloudflare Zone ID, skipping purge."
+          echo "❌ Unable to determine Cloudflare Zone ID, skipping purge."
           exit 0
         fi
 
-        FILES='["https://cloudtolocalllm.online/main.dart.js",
-                 "https://cloudtolocalllm.online/flutter.js",
-                 "https://cloudtolocalllm.online/auth0-bridge.js",
-                 "https://cloudtolocalllm.online/index.html",
-                 "https://app.cloudtolocalllm.online/main.dart.js",
-                 "https://app.cloudtolocalllm.online/flutter.js",
-                 "https://app.cloudtolocalllm.online/auth0-bridge.js",
-                 "https://app.cloudtolocalllm.online/index.html"]'
-
-        curl -s -X POST "https://api.cloudflare.com/client/v4/zones/$CF_ZONE_ID/purge_cache" \
+        echo "🔄 Purging entire Cloudflare cache for zone: $CF_ZONE_ID"
+        
+        # Purge entire cache (everything)
+        PURGE_RESPONSE=$(curl -s -X POST "https://api.cloudflare.com/client/v4/zones/$CF_ZONE_ID/purge_cache" \
           -H "Authorization: Bearer $CF_API_TOKEN" \
           -H "Content-Type: application/json" \
-          --data "{\"files\": $FILES}" | jq
+          --data '{"purge_everything":true}')
+        
+        echo "$PURGE_RESPONSE" | jq
+        
+        # Check if purge was successful
+        SUCCESS=$(echo "$PURGE_RESPONSE" | jq -r '.success')
+        if [ "$SUCCESS" = "true" ]; then
+          echo "✅ Cloudflare cache purged successfully!"
+        else
+          echo "⚠️ Cloudflare cache purge may have failed, checking response..."
+          echo "$PURGE_RESPONSE" | jq '.errors'
+        fi
 
     - name: Wait for rollout to complete
       continue-on-error: true
