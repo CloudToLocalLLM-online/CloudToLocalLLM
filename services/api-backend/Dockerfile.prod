@@ -6,7 +6,7 @@ WORKDIR /api
 RUN apk add --no-cache python3 make g++
 
 # Copy package files
-COPY services/api-backend/package*.json ./
+COPY package*.json ./
 
 # Install dependencies (run as root for system packages, then change ownership)
 RUN npm ci && \
@@ -30,7 +30,7 @@ RUN mkdir -p /api/data /api/logs && \
 
 # Copy files and change ownership (only API backend files, nothing else)
 COPY --from=base --chown=nodejs:nodejs /api/node_modules ./node_modules
-COPY --chown=nodejs:nodejs services/api-backend/ ./
+COPY --chown=nodejs:nodejs . ./
 
 # Ensure data directories have correct ownership
 RUN chown -R nodejs:nodejs /api/data /api/logs

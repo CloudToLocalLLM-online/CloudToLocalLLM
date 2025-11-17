@@ -1,6 +1,7 @@
 import express from 'express';
 import http from 'http';
 import cors from 'cors';
+import { standardCors } from './middleware/cors-config.js';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import jwt from 'jsonwebtoken';
@@ -114,35 +115,11 @@ app.use(helmet({
   },
 }));
 
-// CORS configuration
-const corsOptions = {
-  origin: function(origin, callback) {
-    const allowedOrigins = [
-      'https://app.cloudtolocalllm.online',
-      'https://cloudtolocalllm.online',
-      'https://docs.cloudtolocalllm.online',
-      'http://localhost:3000', // Development
-      'http://localhost:8080',  // Development
-    ];
-    
-    // Allow requests with no origin (like mobile apps or curl requests)
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-  exposedHeaders: ['Content-Type', 'Authorization'],
-  maxAge: 86400, // 24 hours
-};
-
-app.use(cors(corsOptions));
+// Use the proper CORS configuration from middleware
+app.use(standardCors);
 
 // Handle preflight requests explicitly
-app.options('*', cors(corsOptions));
+app.options('*', standardCors);
 
 // Rate limiting with different limits for bridge operations
 const createConditionalRateLimiter = () => {
