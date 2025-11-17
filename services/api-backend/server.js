@@ -114,7 +114,7 @@ app.use(helmet({
   },
 }));
 
-// Use simple CORS configuration for debugging
+// Use simple CORS configuration for debugging - updated 2025-11-17
 app.use(cors({
   origin: ['https://app.cloudtolocalllm.online', 'https://cloudtolocalllm.online', 'https://docs.cloudtolocalllm.online'],
   credentials: true,
