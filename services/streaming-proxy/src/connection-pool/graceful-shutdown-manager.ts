@@ -12,6 +12,7 @@ import { ConnectionPool } from '../interfaces/connection-pool.js';
 import { Logger } from '../utils/logger.js';
 import { ShutdownEventLogger } from '../utils/shutdown-event-logger.js';
 import { ServerMetricsCollector } from '../metrics/server-metrics-collector.js';
+import { WebSocketServer } from 'ws';
 
 export interface ShutdownConfig {
   /**
@@ -48,18 +49,23 @@ export class GracefulShutdownManager {
   private readonly config: ShutdownConfig;
   private readonly eventLogger: ShutdownEventLogger;
   private readonly metricsCollector?: ServerMetricsCollector;
+  private readonly wss?: WebSocketServer;
   private isShuttingDown: boolean = false;
   private shutdownStartTime?: Date;
+  private inFlightRequests: Set<string> = new Set(); // Track active request IDs
+  private requestCounter: number = 0;
 
   constructor(
     pool: ConnectionPool,
     logger: Logger,
     config?: Partial<ShutdownConfig>,
-    metricsCollector?: ServerMetricsCollector
+    metricsCollector?: ServerMetricsCollector,
+    wss?: WebSocketServer
   ) {
     this.pool = pool;
     this.logger = logger;
     this.metricsCollector = metricsCollector;
+    this.wss = wss;
     this.eventLogger = new ShutdownEventLogger(logger, metricsCollector);
     
     // Default configuration
@@ -155,12 +161,20 @@ export class GracefulShutdownManager {
     try {
       // Step 1: Stop accepting new connections (Requirement 8.9)
       this.logger.info('Step 1: Stopping acceptance of new connections');
-      // TODO: Implement connection acceptance blocking in WebSocket server
-      // This would typically involve setting a flag that prevents new connections
+      if (this.wss) {
+        // Close WebSocket server to prevent new connections
+        this.wss.close(() => {
+          this.logger.info('WebSocket server closed - no new connections accepted');
+        });
+        
+        // Also set a flag to reject any pending upgrade requests
+        this.wss.shouldHandle = () => false;
+      }
 
       // Log pending request count (Requirement 8.6)
       const totalConnections = this.pool.getTotalConnections();
-      this.eventLogger.logPendingRequests(totalConnections);
+      const inFlightCount = this.getInFlightRequestCount();
+      this.eventLogger.logPendingRequests(totalConnections + inFlightCount);
 
       // Step 2: Notify connected clients (Requirement 8.5)
       if (this.config.notifyClients) {
@@ -236,6 +250,27 @@ export class GracefulShutdownManager {
   }
 
   /**
+   * Track in-flight request
+   */
+  trackRequest(requestId: string): void {
+    this.inFlightRequests.add(requestId);
+  }
+
+  /**
+   * Mark request as completed
+   */
+  completeRequest(requestId: string): void {
+    this.inFlightRequests.delete(requestId);
+  }
+
+  /**
+   * Get current in-flight request count
+   */
+  getInFlightRequestCount(): number {
+    return this.inFlightRequests.size;
+  }
+
+  /**
    * Wait for in-flight requests to complete
    */
   private async waitForInFlightRequests(
@@ -245,23 +280,28 @@ export class GracefulShutdownManager {
     const checkInterval = 100; // Check every 100ms
 
     while (Date.now() - startTime < timeout) {
-      // TODO: Implement actual in-flight request tracking
-      // For now, we'll simulate by checking if there are any active connections
+      const inFlightCount = this.inFlightRequests.size;
       const totalConnections = this.pool.getTotalConnections();
       
-      if (totalConnections === 0) {
+      // Check both in-flight requests and active connections
+      if (inFlightCount === 0 && totalConnections === 0) {
         this.logger.info('All in-flight requests completed');
         return { completed: true, remaining: 0 };
       }
 
-      this.logger.debug(`Waiting for requests to complete (${totalConnections} connections active)`);
+      this.logger.debug(
+        `Waiting for requests to complete (${inFlightCount} in-flight, ${totalConnections} connections active)`
+      );
       await new Promise(resolve => setTimeout(resolve, checkInterval));
     }
 
-    const remaining = this.pool.getTotalConnections();
-    this.logger.warn(`Timeout reached with ${remaining} connections still active`);
+    const remaining = this.inFlightRequests.size;
+    const remainingConnections = this.pool.getTotalConnections();
+    this.logger.warn(
+      `Timeout reached with ${remaining} in-flight requests and ${remainingConnections} connections still active`
+    );
     
-    return { completed: false, remaining };
+    return { completed: false, remaining: remaining + remainingConnections };
   }
 
   /**
@@ -330,12 +370,22 @@ export class GracefulShutdownManager {
     try {
       this.logger.info(`Sending SSH disconnect for user ${userId}`);
       
-      // TODO: In production, send actual SSH disconnect message
-      // Example with ssh2 library:
-      // const connection = await this.pool.getConnection(userId);
-      // await connection.disconnect(reason || 'Server shutting down');
-      
-      this.logger.info(`SSH disconnect sent for user ${userId}`);
+      // Get connection for user and close it gracefully
+      // The connection's close() method should send proper SSH disconnect
+      try {
+        const connection = await this.pool.getConnection(userId);
+        if (connection && typeof connection.close === 'function') {
+          await connection.close();
+          this.logger.info(`SSH disconnect sent for user ${userId}`);
+        } else {
+          // Fallback: close connection through pool
+          await this.pool.closeConnection(userId);
+          this.logger.info(`SSH connection closed for user ${userId} via pool`);
+        }
+      } catch (error) {
+        // Connection might not exist or already closed
+        this.logger.debug(`No active SSH connection for user ${userId} to disconnect`);
+      }
       
     } catch (error) {
       this.logger.error(`Error sending SSH disconnect for user ${userId}:`, error);
@@ -356,26 +406,57 @@ export class GracefulShutdownManager {
    * Implements requirement 8.5
    */
   private async notifyClientsOfShutdown(): Promise<void> {
-    // TODO: Implement client notification
-    // This would require access to the WebSocket server instance
-    // Example implementation:
-    // for (const client of this.wss.clients) {
-    //   if (client.readyState === WebSocket.OPEN) {
-    //     client.close(1001, 'Server shutting down');
-    //   }
-    // }
-    
-    this.logger.info('Shutdown notification sent to all connected clients');
+    if (!this.wss) {
+      this.logger.warn('WebSocket server not available for client notification');
+      return;
+    }
+
+    const OPEN = 1; // WebSocket.OPEN
+    let notifiedCount = 0;
+    const errors: string[] = [];
+
+    for (const client of this.wss.clients) {
+      if (client.readyState === OPEN) {
+        try {
+          // Send close frame with code 1001 "Going Away"
+          client.close(1001, 'Server shutting down');
+          notifiedCount++;
+        } catch (error) {
+          const errorMsg = `Error notifying client: ${error instanceof Error ? error.message : String(error)}`;
+          errors.push(errorMsg);
+          this.logger.warn(errorMsg);
+        }
+      }
+    }
+
+    this.logger.info(`Shutdown notification sent to ${notifiedCount} connected clients`, {
+      notifiedCount,
+      errors: errors.length > 0 ? errors : undefined,
+    });
   }
 
   /**
    * Close all connections gracefully
    * Implements requirement 8.6
+   * Sends SSH disconnect messages before closing (Requirement 8.2)
    */
   private async closeAllConnectionsGracefully(): Promise<number> {
     try {
       const initialCount = this.pool.getTotalConnections();
+      const poolStats = this.pool.getPoolStats();
       
+      // Send SSH disconnect messages to all users before closing
+      const userIds = Object.keys(poolStats.connectionsByUser);
+      const disconnectPromises = userIds.map(userId => 
+        this.sendSSHDisconnect(userId, 'Server shutting down').catch(error => {
+          this.logger.warn(`Failed to send SSH disconnect to user ${userId}:`, error);
+          return null; // Continue with shutdown even if disconnect fails
+        })
+      );
+      
+      await Promise.all(disconnectPromises);
+      
+      // Now close all connections
       await this.pool.closeAllConnections();
       
       // Get final connection count
@@ -383,12 +464,11 @@ export class GracefulShutdownManager {
       const closed = initialCount - remaining;
       
       // Log connection closures (Requirement 8.6)
-      // Note: In a real implementation, we would log each connection individually
-      // For now, we log the aggregate
       this.logger.info(`Closed ${closed} connections during shutdown`, {
         initialCount,
         remaining,
         closed,
+        usersNotified: userIds.length,
         timestamp: new Date().toISOString(),
       });
       

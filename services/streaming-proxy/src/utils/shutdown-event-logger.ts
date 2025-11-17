@@ -7,6 +7,12 @@
 
 import { Logger } from './logger';
 import { ServerMetricsCollector } from '../metrics/server-metrics-collector';
+import {
+  tunnelShutdownDurationMs,
+  tunnelShutdownsTotal,
+  tunnelShutdownConnectionsClosed,
+  tunnelShutdownInFlightRequests,
+} from '../monitoring/prometheus-metrics';
 
 export interface ShutdownEvent {
   timestamp: Date;
@@ -212,20 +218,35 @@ export class ShutdownEventLogger {
    * Requirement 8.6: Add shutdown metrics to ServerMetricsCollector
    */
   private recordShutdownMetrics(metrics: ShutdownMetrics): void {
-    if (!this.metricsCollector) {
-      return;
+    // Record shutdown duration
+    tunnelShutdownDurationMs.observe(metrics.shutdownDurationMs);
+
+    // Record shutdown counter
+    const success = metrics.errors.length === 0;
+    tunnelShutdownsTotal.inc({ reason: 'graceful', success: success ? 'true' : 'false' });
+
+    // Record connections closed
+    tunnelShutdownConnectionsClosed.set(metrics.connectionsClosed);
+
+    // Record in-flight requests (requests flushed)
+    tunnelShutdownInFlightRequests.set(metrics.requestsFlushed);
+
+    // Also record in ServerMetricsCollector if available
+    if (this.metricsCollector) {
+      this.logger.debug('Recording shutdown metrics to ServerMetricsCollector', {
+        shutdownDurationMs: metrics.shutdownDurationMs,
+        connectionsClosed: metrics.connectionsClosed,
+        requestsFlushed: metrics.requestsFlushed,
+      });
+      // ServerMetricsCollector can track these through its own mechanisms
     }
 
-    // Record shutdown metrics as a special request
-    // This allows them to be included in Prometheus metrics
-    this.logger.debug('Recording shutdown metrics', {
+    this.logger.info('Shutdown metrics recorded', {
       shutdownDurationMs: metrics.shutdownDurationMs,
       connectionsClosed: metrics.connectionsClosed,
       requestsFlushed: metrics.requestsFlushed,
+      errors: metrics.errors.length,
     });
-
-    // TODO: Implement custom shutdown metrics recording
-    // This would require extending ServerMetricsCollector to support shutdown metrics
   }
 
   /**

@@ -362,6 +362,53 @@ export const tunnelP99LatencyMs = new Gauge({
 });
 
 /**
+ * Histogram: Shutdown duration in milliseconds
+ * 
+ * Requirement: 8.6
+ */
+export const tunnelShutdownDurationMs = new Histogram({
+  name: 'tunnel_shutdown_duration_ms',
+  help: 'Shutdown duration in milliseconds',
+  labelNames: ['reason'],
+  buckets: [100, 500, 1000, 5000, 10000, 30000, 60000],
+  registers: [metricsRegistry],
+});
+
+/**
+ * Counter: Total shutdowns
+ * 
+ * Requirement: 8.6
+ */
+export const tunnelShutdownsTotal = new Counter({
+  name: 'tunnel_shutdowns_total',
+  help: 'Total number of shutdowns',
+  labelNames: ['reason', 'success'],
+  registers: [metricsRegistry],
+});
+
+/**
+ * Gauge: Connections closed during shutdown
+ * 
+ * Requirement: 8.6
+ */
+export const tunnelShutdownConnectionsClosed = new Gauge({
+  name: 'tunnel_shutdown_connections_closed',
+  help: 'Number of connections closed during last shutdown',
+  registers: [metricsRegistry],
+});
+
+/**
+ * Gauge: In-flight requests at shutdown
+ * 
+ * Requirement: 8.6
+ */
+export const tunnelShutdownInFlightRequests = new Gauge({
+  name: 'tunnel_shutdown_in_flight_requests',
+  help: 'Number of in-flight requests at shutdown start',
+  registers: [metricsRegistry],
+});
+
+/**
  * Export metrics in Prometheus text format
  * 
  * Requirement: 11.1

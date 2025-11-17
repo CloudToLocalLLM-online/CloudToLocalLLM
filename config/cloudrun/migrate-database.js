@@ -5,6 +5,7 @@
 const fs = require('fs');
 const path = require('path');
 const sqlite3 = require('sqlite3').verbose();
+const pg = require('pg');
 
 // Configuration
 const config = {
@@ -197,12 +198,125 @@ async function initializeSQLite() {
   });
 }
 
-// Initialize Cloud SQL database (PostgreSQL/MySQL)
+// PostgreSQL schema for Cloud SQL
+const postgresSchema = `
+-- CloudToLocalLLM Database Schema for Cloud SQL (PostgreSQL)
+-- This schema is optimized for Cloud SQL deployment
+
+-- Users table
+CREATE TABLE IF NOT EXISTS users (
+  id SERIAL PRIMARY KEY,
+  auth0_id TEXT UNIQUE NOT NULL,
+  email TEXT UNIQUE NOT NULL,
+  name TEXT,
+  picture TEXT,
+  tier TEXT DEFAULT 'free',
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  last_login TIMESTAMPTZ,
+  is_active BOOLEAN DEFAULT TRUE
+);
+
+-- Sessions table
+CREATE TABLE IF NOT EXISTS sessions (
+  id TEXT PRIMARY KEY,
+  user_id INTEGER NOT NULL,
+  data TEXT,
+  expires_at TIMESTAMPTZ NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+);
+
+-- API keys table
+CREATE TABLE IF NOT EXISTS api_keys (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER NOT NULL,
+  key_hash TEXT UNIQUE NOT NULL,
+  name TEXT,
+  permissions TEXT, -- JSON array of permissions
+  expires_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  last_used TIMESTAMPTZ,
+  is_active BOOLEAN DEFAULT TRUE,
+  FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+);
+
+-- Conversations table
+CREATE TABLE IF NOT EXISTS conversations (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER NOT NULL,
+  title TEXT,
+  model TEXT,
+  system_prompt TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  is_archived BOOLEAN DEFAULT FALSE,
+  FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+);
+
+-- Messages table
+CREATE TABLE IF NOT EXISTS messages (
+  id SERIAL PRIMARY KEY,
+  conversation_id INTEGER NOT NULL,
+  role TEXT NOT NULL, -- 'user', 'assistant', 'system'
+  content TEXT NOT NULL,
+  metadata JSONB, -- JSON metadata
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  FOREIGN KEY (conversation_id) REFERENCES conversations (id) ON DELETE CASCADE
+);
+
+-- Usage tracking table
+CREATE TABLE IF NOT EXISTS usage_tracking (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER NOT NULL,
+  action TEXT NOT NULL, -- 'chat', 'api_call', etc.
+  tokens_used INTEGER DEFAULT 0,
+  cost DECIMAL(10,6) DEFAULT 0,
+  metadata JSONB, -- JSON metadata
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+);
+
+-- System settings table
+CREATE TABLE IF NOT EXISTS system_settings (
+  key TEXT PRIMARY KEY,
+  value TEXT,
+  description TEXT,
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Indexes for performance
+CREATE INDEX IF NOT EXISTS idx_users_auth0_id ON users (auth0_id);
+CREATE INDEX IF NOT EXISTS idx_users_email ON users (email);
+CREATE INDEX IF NOT EXISTS idx_sessions_user_id ON sessions (user_id);
+CREATE INDEX IF NOT EXISTS idx_sessions_expires_at ON sessions (expires_at);
+CREATE INDEX IF NOT EXISTS idx_api_keys_user_id ON api_keys (user_id);
+CREATE INDEX IF NOT EXISTS idx_api_keys_hash ON api_keys (key_hash);
+CREATE INDEX IF NOT EXISTS idx_conversations_user_id ON conversations (user_id);
+CREATE INDEX IF NOT EXISTS idx_messages_conversation_id ON messages (conversation_id);
+CREATE INDEX IF NOT EXISTS idx_usage_tracking_user_id ON usage_tracking (user_id);
+CREATE INDEX IF NOT EXISTS idx_usage_tracking_created_at ON usage_tracking (created_at);
+
+-- Insert default system settings
+INSERT INTO system_settings (key, value, description) VALUES
+  ('app_version', '1.0.0', 'Application version'),
+  ('db_version', '1.0.0', 'Database schema version'),
+  ('deployment_type', 'cloudrun', 'Deployment environment'),
+  ('max_conversations_per_user', '100', 'Maximum conversations per user'),
+  ('max_messages_per_conversation', '1000', 'Maximum messages per conversation'),
+  ('token_limit_free_tier', '10000', 'Token limit for free tier users'),
+  ('token_limit_pro_tier', '100000', 'Token limit for pro tier users')
+ON CONFLICT (key) DO NOTHING;
+`;
+
+// Initialize Cloud SQL database (PostgreSQL)
 async function initializeCloudSQL() {
-  log.info('Initializing Cloud SQL database...');
+  log.info('Initializing Cloud SQL database (PostgreSQL)...');
   
-  // This would require pg or mysql2 package
-  // For now, we'll just log the configuration
+  if (!config.dbHost || !config.dbUser || !config.dbPassword) {
+    throw new Error('Cloud SQL configuration incomplete: DB_HOST, DB_USER, and DB_PASSWORD are required');
+  }
+  
   log.info('Cloud SQL configuration:');
   log.info(`  Host: ${config.dbHost}`);
   log.info(`  Port: ${config.dbPort}`);
@@ -210,9 +324,51 @@ async function initializeCloudSQL() {
   log.info(`  User: ${config.dbUser}`);
   log.info(`  SSL: ${config.dbSsl}`);
   
-  // TODO: Implement Cloud SQL migration
-  log.warn('Cloud SQL migration not yet implemented - using SQLite fallback');
-  return initializeSQLite();
+  // Create PostgreSQL connection pool
+  const pool = new pg.Pool({
+    host: config.dbHost,
+    port: config.dbPort,
+    database: config.dbName,
+    user: config.dbUser,
+    password: config.dbPassword,
+    ssl: config.dbSsl ? { rejectUnauthorized: false } : undefined,
+    max: 10, // Maximum pool size
+    idleTimeoutMillis: 30000,
+    connectionTimeoutMillis: 30000,
+  });
+  
+  try {
+    // Test connection
+    const client = await pool.connect();
+    await client.query('SELECT NOW()');
+    client.release();
+    log.success('Connected to Cloud SQL database');
+    
+    // Execute schema
+    log.info('Executing database schema...');
+    await pool.query(postgresSchema);
+    log.success('Cloud SQL database schema created successfully');
+    
+    // Verify tables exist
+    const result = await pool.query(`
+      SELECT table_name 
+      FROM information_schema.tables 
+      WHERE table_schema = 'public' 
+      AND table_name IN ('users', 'sessions', 'conversations', 'messages', 'system_settings')
+      ORDER BY table_name
+    `);
+    
+    log.info(`Verified ${result.rows.length} tables exist`);
+    
+    // Close pool
+    await pool.end();
+    log.info('Database connection closed');
+    
+  } catch (error) {
+    await pool.end().catch(() => {}); // Try to close pool even on error
+    log.error(`Failed to initialize Cloud SQL database: ${error.message}`);
+    throw error;
+  }
 }
 
 // Create backup of existing database
@@ -228,6 +384,11 @@ async function createBackup() {
       log.error(`Failed to create backup: ${error.message}`);
       throw error;
     }
+  } else if (config.dbType === 'postgres' || config.dbType === 'cloudsql') {
+    // For Cloud SQL, we can create a pg_dump backup
+    // Note: This requires pg_dump to be available in the container
+    log.info('Cloud SQL backup should be handled via Cloud SQL automated backups');
+    log.info('For manual backup, use: pg_dump -h <host> -U <user> -d <database> > backup.sql');
   }
 }
 
