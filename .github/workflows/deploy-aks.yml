@@ -58,7 +58,7 @@ jobs:
       uses: docker/build-push-action@v5
       with:
         context: ./services/api-backend
-        file: Dockerfile.prod
+        file: ./services/api-backend/Dockerfile.prod
         push: true
         tags: ${{ steps.meta-api.outputs.tags }}
         labels: ${{ steps.meta-api.outputs.labels }}
