@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import '../../di/locator.dart' as di;
 import '../../services/admin_center_service.dart';
 import '../../models/admin_role_model.dart';
@@ -160,8 +159,8 @@ class _FinancialReportsTabState extends State<FinancialReportsTab> {
               Text(
                 'Financial Reports',
                 style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
+                      fontWeight: FontWeight.bold,
+                    ),
               ),
               const SizedBox(height: 8),
               Text(
@@ -389,8 +388,8 @@ class _FinancialReportsTabState extends State<FinancialReportsTab> {
                   Text(
                     'Revenue by Subscription Tier',
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+                          fontWeight: FontWeight.bold,
+                        ),
                   ),
                   const SizedBox(height: 16),
                   _buildRevenueByTierTable(revenueByTier),
@@ -503,8 +502,8 @@ class _FinancialReportsTabState extends State<FinancialReportsTab> {
                   Text(
                     'Subscriptions by Tier',
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+                          fontWeight: FontWeight.bold,
+                        ),
                   ),
                   const SizedBox(height: 16),
                   _buildSubscriptionsByTierTable(subscriptionsByTier),
@@ -538,8 +537,8 @@ class _FinancialReportsTabState extends State<FinancialReportsTab> {
                   child: Text(
                     title,
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Colors.grey.shade700,
-                    ),
+                          color: Colors.grey.shade700,
+                        ),
                   ),
                 ),
               ],
@@ -548,9 +547,9 @@ class _FinancialReportsTabState extends State<FinancialReportsTab> {
             Text(
               value,
               style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: color,
-              ),
+                    fontWeight: FontWeight.bold,
+                    color: color,
+                  ),
             ),
           ],
         ),

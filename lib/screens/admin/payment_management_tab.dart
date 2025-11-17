@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import '../../services/payment_gateway_service.dart';
 import '../../services/admin_center_service.dart';
 import '../../models/admin_role_model.dart';
@@ -86,14 +85,12 @@ class _PaymentManagementTabState extends State<PaymentManagementTab> {
       // Apply client-side filtering for amount range
       var filteredTransactions = transactions;
       if (_minAmount != null) {
-        filteredTransactions = filteredTransactions
-            .where((t) => t.amount >= _minAmount!)
-            .toList();
+        filteredTransactions =
+            filteredTransactions.where((t) => t.amount >= _minAmount!).toList();
       }
       if (_maxAmount != null) {
-        filteredTransactions = filteredTransactions
-            .where((t) => t.amount <= _maxAmount!)
-            .toList();
+        filteredTransactions =
+            filteredTransactions.where((t) => t.amount <= _maxAmount!).toList();
       }
 
       // Apply sorting
@@ -189,8 +186,8 @@ class _PaymentManagementTabState extends State<PaymentManagementTab> {
               Text(
                 'Payment Management',
                 style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
+                      fontWeight: FontWeight.bold,
+                    ),
               ),
               const SizedBox(height: 8),
               Text(
@@ -613,8 +610,8 @@ class _TransactionDetailDialogState extends State<_TransactionDetailDialog> {
                 Text(
                   'Transaction Details',
                   style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+                        fontWeight: FontWeight.bold,
+                      ),
                 ),
                 IconButton(
                   icon: const Icon(Icons.close),
@@ -1010,8 +1007,7 @@ class _RefundDialogState extends State<_RefundDialog> {
                               setState(() {
                                 _isFullRefund = true;
                                 _amountController.text = widget
-                                    .transaction
-                                    .amount
+                                    .transaction.amount
                                     .toStringAsFixed(2);
                               });
                             },

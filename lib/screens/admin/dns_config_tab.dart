@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import '../../di/locator.dart' as di;
 import '../../services/admin_center_service.dart';
 import '../../models/admin_role_model.dart';
@@ -209,8 +208,8 @@ class _DnsConfigTabState extends State<DnsConfigTab> {
               Text(
                 'DNS Configuration',
                 style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
+                      fontWeight: FontWeight.bold,
+                    ),
               ),
               const SizedBox(height: 8),
               Text(
@@ -442,17 +441,16 @@ class _DnsConfigTabState extends State<DnsConfigTab> {
                                     mainAxisAlignment: MainAxisAlignment.end,
                                     children: [
                                       ElevatedButton(
-                                        onPressed: _isSaving
-                                            ? null
-                                            : _saveDnsRecord,
+                                        onPressed:
+                                            _isSaving ? null : _saveDnsRecord,
                                         child: _isSaving
                                             ? const SizedBox(
                                                 width: 16,
                                                 height: 16,
                                                 child:
                                                     CircularProgressIndicator(
-                                                      strokeWidth: 2,
-                                                    ),
+                                                  strokeWidth: 2,
+                                                ),
                                               )
                                             : const Text('Save Record'),
                                       ),
@@ -471,13 +469,14 @@ class _DnsConfigTabState extends State<DnsConfigTab> {
                           children: [
                             Text(
                               'DNS Records',
-                              style: Theme.of(context).textTheme.titleMedium
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .titleMedium
                                   ?.copyWith(fontWeight: FontWeight.bold),
                             ),
                             ElevatedButton.icon(
-                              onPressed: _isValidating
-                                  ? null
-                                  : _validateDnsRecords,
+                              onPressed:
+                                  _isValidating ? null : _validateDnsRecords,
                               icon: const Icon(Icons.check_circle),
                               label: _isValidating
                                   ? const SizedBox(
@@ -548,8 +547,8 @@ class _DnsConfigTabState extends State<DnsConfigTab> {
                                             label: Text(record.status),
                                             backgroundColor:
                                                 record.status == 'valid'
-                                                ? Colors.green.shade100
-                                                : Colors.orange.shade100,
+                                                    ? Colors.green.shade100
+                                                    : Colors.orange.shade100,
                                           ),
                                         ),
                                         DataCell(

@@ -179,15 +179,17 @@ class _AdminManagementTabState extends State<AdminManagementTab> {
                   children: [
                     Text(
                       'Admin Management',
-                      style: Theme.of(context).textTheme.headlineSmall
+                      style: Theme.of(context)
+                          .textTheme
+                          .headlineSmall
                           ?.copyWith(fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       'Manage administrator accounts and roles',
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Colors.grey.shade600,
-                      ),
+                            color: Colors.grey.shade600,
+                          ),
                     ),
                   ],
                 ),
@@ -388,9 +390,8 @@ class _AdminManagementTabState extends State<AdminManagementTab> {
   String _formatDate(dynamic date) {
     if (date == null) return 'Never';
     try {
-      final dateTime = date is DateTime
-          ? date
-          : DateTime.parse(date.toString());
+      final dateTime =
+          date is DateTime ? date : DateTime.parse(date.toString());
       final now = DateTime.now();
       final difference = now.difference(dateTime);
 

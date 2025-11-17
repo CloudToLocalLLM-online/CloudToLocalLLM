@@ -5,7 +5,6 @@
 library;
 
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import '../../di/locator.dart' as di;
 import '../../services/auth_service.dart';
 import '../../services/session_storage_service.dart';
@@ -232,15 +231,15 @@ class _AccountSettingsCategoryContentState
                     Text(
                       'Email',
                       style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        fontWeight: FontWeight.w500,
-                      ),
+                            fontWeight: FontWeight.w500,
+                          ),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       'Your email address',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Colors.grey.shade600,
-                      ),
+                            color: Colors.grey.shade600,
+                          ),
                     ),
                     const SizedBox(height: 8),
                     Container(
@@ -286,15 +285,15 @@ class _AccountSettingsCategoryContentState
                     Text(
                       'Display Name',
                       style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        fontWeight: FontWeight.w500,
-                      ),
+                            fontWeight: FontWeight.w500,
+                          ),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       'Your profile name',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Colors.grey.shade600,
-                      ),
+                            color: Colors.grey.shade600,
+                          ),
                     ),
                     const SizedBox(height: 8),
                     Container(
@@ -342,15 +341,15 @@ class _AccountSettingsCategoryContentState
                     Text(
                       'Subscription Tier',
                       style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        fontWeight: FontWeight.w500,
-                      ),
+                            fontWeight: FontWeight.w500,
+                          ),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       'Your current subscription level',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Colors.grey.shade600,
-                      ),
+                            color: Colors.grey.shade600,
+                          ),
                     ),
                     const SizedBox(height: 8),
                     Container(
@@ -367,7 +366,9 @@ class _AccountSettingsCategoryContentState
                           Expanded(
                             child: Text(
                               _getSubscriptionTier(),
-                              style: Theme.of(context).textTheme.bodyMedium
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodyMedium
                                   ?.copyWith(fontWeight: FontWeight.w500),
                             ),
                           ),
@@ -399,15 +400,15 @@ class _AccountSettingsCategoryContentState
                     Text(
                       'Login Time',
                       style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        fontWeight: FontWeight.w500,
-                      ),
+                            fontWeight: FontWeight.w500,
+                          ),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       'When you logged in',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Colors.grey.shade600,
-                      ),
+                            color: Colors.grey.shade600,
+                          ),
                     ),
                     const SizedBox(height: 8),
                     Container(
@@ -455,15 +456,15 @@ class _AccountSettingsCategoryContentState
                     Text(
                       'Token Expiration',
                       style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        fontWeight: FontWeight.w500,
-                      ),
+                            fontWeight: FontWeight.w500,
+                          ),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       'When your session expires',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Colors.grey.shade600,
-                      ),
+                            color: Colors.grey.shade600,
+                          ),
                     ),
                     const SizedBox(height: 8),
                     Container(

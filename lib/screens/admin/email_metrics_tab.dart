@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import '../../di/locator.dart' as di;
 import '../../services/admin_center_service.dart';
 import '../../models/admin_role_model.dart';
@@ -95,8 +94,7 @@ class _EmailMetricsTabState extends State<EmailMetricsTab> {
       };
 
       // Parse hourly data
-      final hourlyData =
-          (data['hourly_breakdown'] as List?)
+      final hourlyData = (data['hourly_breakdown'] as List?)
               ?.map(
                 (item) => HourlyMetric(
                   hour: DateTime.parse(item['hour']),
@@ -110,8 +108,7 @@ class _EmailMetricsTabState extends State<EmailMetricsTab> {
           [];
 
       // Parse failure reasons
-      final failureReasons =
-          (data['failure_reasons'] as List?)
+      final failureReasons = (data['failure_reasons'] as List?)
               ?.map(
                 (item) => FailureReason(
                   reason: item['error_reason'] ?? 'Unknown',
@@ -179,8 +176,8 @@ class _EmailMetricsTabState extends State<EmailMetricsTab> {
                 Text(
                   'Email Metrics Dashboard',
                   style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+                        fontWeight: FontWeight.bold,
+                      ),
                 ),
                 const SizedBox(height: 8),
                 Text(
@@ -352,9 +349,9 @@ class _EmailMetricsTabState extends State<EmailMetricsTab> {
             Text(
               value,
               style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: color,
-              ),
+                    fontWeight: FontWeight.bold,
+                    color: color,
+                  ),
             ),
             const SizedBox(height: 8),
             Text(
@@ -431,9 +428,9 @@ class _EmailMetricsTabState extends State<EmailMetricsTab> {
         Text(
           value,
           style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-            fontWeight: FontWeight.bold,
-            color: Colors.blue,
-          ),
+                fontWeight: FontWeight.bold,
+                color: Colors.blue,
+              ),
         ),
         const SizedBox(height: 8),
         Text(
@@ -580,7 +577,9 @@ class _EmailMetricsTabState extends State<EmailMetricsTab> {
                             const SizedBox(height: 4),
                             Text(
                               '${reason.count} failures ($percentage%)',
-                              style: Theme.of(context).textTheme.bodySmall
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodySmall
                                   ?.copyWith(color: Colors.grey.shade600),
                             ),
                           ],

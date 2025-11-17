@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import '../../services/payment_gateway_service.dart';
 import '../../services/admin_center_service.dart';
 import '../../models/admin_role_model.dart';
@@ -182,8 +181,8 @@ class _SubscriptionManagementTabState extends State<SubscriptionManagementTab> {
               Text(
                 'Subscription Management',
                 style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
+                      fontWeight: FontWeight.bold,
+                    ),
               ),
               const SizedBox(height: 8),
               Text(
@@ -606,8 +605,8 @@ class _SubscriptionDetailDialogState extends State<_SubscriptionDetailDialog> {
                 Text(
                   'Subscription Details',
                   style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+                        fontWeight: FontWeight.bold,
+                      ),
                 ),
                 IconButton(
                   icon: const Icon(Icons.close),

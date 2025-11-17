@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import '../../services/admin_center_service.dart';
 import '../../models/admin_role_model.dart';
 import '../../models/subscription_model.dart';
@@ -69,9 +68,8 @@ class _UserManagementTabState extends State<UserManagementTab> {
       final result = await adminService.getUsers(
         page: _currentPage,
         limit: _pageSize,
-        search: _searchController.text.isNotEmpty
-            ? _searchController.text
-            : null,
+        search:
+            _searchController.text.isNotEmpty ? _searchController.text : null,
         tier: _selectedTier,
         status: _selectedStatus,
         sortBy: _sortBy,
@@ -138,8 +136,8 @@ class _UserManagementTabState extends State<UserManagementTab> {
               Text(
                 'User Management',
                 style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
+                      fontWeight: FontWeight.bold,
+                    ),
               ),
               const SizedBox(height: 8),
               Text(
@@ -612,8 +610,8 @@ class _UserDetailDialogState extends State<_UserDetailDialog> {
                 Text(
                   'User Details',
                   style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+                        fontWeight: FontWeight.bold,
+                      ),
                 ),
                 IconButton(
                   icon: const Icon(Icons.close),

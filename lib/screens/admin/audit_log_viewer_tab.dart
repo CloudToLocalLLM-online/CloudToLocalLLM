@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import '../../di/locator.dart' as di;
 import 'dart:convert';
 import '../../services/admin_center_service.dart';
@@ -94,9 +93,8 @@ class _AuditLogViewerTabState extends State<AuditLogViewerTab> {
       final logsData = data['logs'] as List;
       final pagination = data['pagination'] as Map<String, dynamic>;
 
-      final logs = logsData
-          .map((json) => AdminAuditLogModel.fromJson(json))
-          .toList();
+      final logs =
+          logsData.map((json) => AdminAuditLogModel.fromJson(json)).toList();
 
       // Filter by severity if selected (client-side filtering)
       final filteredLogs = _selectedSeverity != null
@@ -248,10 +246,10 @@ class _AuditLogViewerTabState extends State<AuditLogViewerTab> {
           child: _isLoading
               ? const Center(child: CircularProgressIndicator())
               : _error != null
-              ? _buildError()
-              : _logs.isEmpty
-              ? _buildEmptyState()
-              : _buildLogsTable(),
+                  ? _buildError()
+                  : _logs.isEmpty
+                      ? _buildEmptyState()
+                      : _buildLogsTable(),
         ),
 
         // Pagination

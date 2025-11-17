@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import '../../di/locator.dart' as di;
 import '../../services/admin_center_service.dart';
 import '../../models/admin_role_model.dart';
@@ -225,8 +224,8 @@ class _EmailProviderConfigTabState extends State<EmailProviderConfigTab> {
               Text(
                 'Email Configuration Not Available',
                 style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
+                      fontWeight: FontWeight.bold,
+                    ),
               ),
               const SizedBox(height: 12),
               Text(
@@ -253,8 +252,8 @@ class _EmailProviderConfigTabState extends State<EmailProviderConfigTab> {
               Text(
                 'Email Provider Configuration',
                 style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
+                      fontWeight: FontWeight.bold,
+                    ),
               ),
               const SizedBox(height: 8),
               Text(
@@ -453,9 +452,8 @@ class _EmailProviderConfigTabState extends State<EmailProviderConfigTab> {
             TextFormField(
               controller: _smtpHostController,
               decoration: InputDecoration(
-                labelText: _selectedProvider == 'smtp'
-                    ? 'SMTP Host'
-                    : 'API Endpoint',
+                labelText:
+                    _selectedProvider == 'smtp' ? 'SMTP Host' : 'API Endpoint',
                 border: const OutlineInputBorder(),
                 helperText: _selectedProvider == 'smtp'
                     ? 'e.g., smtp.gmail.com'
@@ -554,9 +552,8 @@ class _EmailProviderConfigTabState extends State<EmailProviderConfigTab> {
             TextFormField(
               controller: _smtpPasswordController,
               decoration: InputDecoration(
-                labelText: _selectedProvider == 'smtp'
-                    ? 'Password'
-                    : 'API Secret',
+                labelText:
+                    _selectedProvider == 'smtp' ? 'Password' : 'API Secret',
                 border: const OutlineInputBorder(),
                 helperText: _selectedProvider == 'smtp'
                     ? 'SMTP password or app password'

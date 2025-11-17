@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import '../../di/locator.dart' as di;
 import '../../services/admin_center_service.dart';
 import '../../models/admin_role_model.dart';
@@ -165,9 +164,9 @@ class _EmailTemplateEditorState extends State<EmailTemplateEditor> {
       };
 
       await adminService.getDio().post(
-        '/api/admin/email/templates',
-        data: requestData,
-      );
+            '/api/admin/email/templates',
+            data: requestData,
+          );
 
       setState(() {
         _isSaving = false;
@@ -233,8 +232,8 @@ class _EmailTemplateEditorState extends State<EmailTemplateEditor> {
 
     try {
       await adminService.getDio().delete(
-        '/api/admin/email/templates/$templateId',
-      );
+            '/api/admin/email/templates/$templateId',
+          );
 
       setState(() {
         _isDeleting = false;
@@ -261,11 +260,11 @@ class _EmailTemplateEditorState extends State<EmailTemplateEditor> {
         .where(
           (template) =>
               template.name.toLowerCase().contains(
-                _searchQuery.toLowerCase(),
-              ) ||
-              (template.description?.toLowerCase().contains(
                     _searchQuery.toLowerCase(),
-                  ) ??
+                  ) ||
+              (template.description?.toLowerCase().contains(
+                        _searchQuery.toLowerCase(),
+                      ) ??
                   false),
         )
         .toList();
@@ -366,52 +365,52 @@ class _EmailTemplateEditorState extends State<EmailTemplateEditor> {
           child: _isLoading
               ? const Center(child: CircularProgressIndicator())
               : _templates.isEmpty
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.mail_outline,
-                        size: 48,
-                        color: Colors.grey.shade300,
+                  ? Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.mail_outline,
+                            size: 48,
+                            color: Colors.grey.shade300,
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            'No templates',
+                            style: TextStyle(color: Colors.grey.shade600),
+                          ),
+                        ],
                       ),
-                      const SizedBox(height: 16),
-                      Text(
-                        'No templates',
-                        style: TextStyle(color: Colors.grey.shade600),
-                      ),
-                    ],
-                  ),
-                )
-              : ListView.builder(
-                  itemCount: _getFilteredTemplates().length,
-                  itemBuilder: (context, index) {
-                    final template = _getFilteredTemplates()[index];
-                    final isSelected = _selectedTemplate?.id == template.id;
+                    )
+                  : ListView.builder(
+                      itemCount: _getFilteredTemplates().length,
+                      itemBuilder: (context, index) {
+                        final template = _getFilteredTemplates()[index];
+                        final isSelected = _selectedTemplate?.id == template.id;
 
-                    return ListTile(
-                      title: Text(template.name),
-                      subtitle: Text(
-                        template.description ?? 'No description',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      selected: isSelected,
-                      selectedTileColor: Colors.blue.shade50,
-                      onTap: () => _selectTemplate(template),
-                      trailing: template.isSystemTemplate
-                          ? Tooltip(
-                              message: 'System template',
-                              child: Icon(
-                                Icons.lock,
-                                size: 16,
-                                color: Colors.grey.shade400,
-                              ),
-                            )
-                          : null,
-                    );
-                  },
-                ),
+                        return ListTile(
+                          title: Text(template.name),
+                          subtitle: Text(
+                            template.description ?? 'No description',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          selected: isSelected,
+                          selectedTileColor: Colors.blue.shade50,
+                          onTap: () => _selectTemplate(template),
+                          trailing: template.isSystemTemplate
+                              ? Tooltip(
+                                  message: 'System template',
+                                  child: Icon(
+                                    Icons.lock,
+                                    size: 16,
+                                    color: Colors.grey.shade400,
+                                  ),
+                                )
+                              : null,
+                        );
+                      },
+                    ),
         ),
       ],
     );
@@ -434,15 +433,17 @@ class _EmailTemplateEditorState extends State<EmailTemplateEditor> {
                   children: [
                     Text(
                       _isEditingNew ? 'New Template' : 'Edit Template',
-                      style: Theme.of(context).textTheme.headlineSmall
+                      style: Theme.of(context)
+                          .textTheme
+                          .headlineSmall
                           ?.copyWith(fontWeight: FontWeight.bold),
                     ),
                     if (!_isEditingNew && _selectedTemplate != null)
                       Text(
                         'Created: ${_formatDate(_selectedTemplate!.createdAt)}',
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Colors.grey.shade600,
-                        ),
+                              color: Colors.grey.shade600,
+                            ),
                       ),
                   ],
                 ),
@@ -665,7 +666,9 @@ class _EmailTemplateEditorState extends State<EmailTemplateEditor> {
                         children: [
                           Text(
                             'Preview',
-                            style: Theme.of(context).textTheme.titleSmall
+                            style: Theme.of(context)
+                                .textTheme
+                                .titleSmall
                                 ?.copyWith(fontWeight: FontWeight.bold),
                           ),
                           const SizedBox(height: 12),

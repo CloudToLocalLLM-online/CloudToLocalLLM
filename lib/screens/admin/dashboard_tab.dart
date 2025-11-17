@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import '../../di/locator.dart' as di;
 import '../../services/admin_center_service.dart';
 import '../../widgets/admin_stat_card.dart';
@@ -92,8 +91,8 @@ class _DashboardTabState extends State<DashboardTab> {
                 child: Text(
                   'Last updated: ${_formatTime(_lastUpdated!)}',
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: AppTheme.textColorLight,
-                  ),
+                        color: AppTheme.textColorLight,
+                      ),
                 ),
               ),
             ),
@@ -219,8 +218,7 @@ class _DashboardTabState extends State<DashboardTab> {
     final subscriptions = _metrics!['subscriptions'] as Map<String, dynamic>;
     final distribution = subscriptions['distribution'] as Map<String, dynamic>;
 
-    final total =
-        (distribution['free'] as int) +
+    final total = (distribution['free'] as int) +
         (distribution['premium'] as int) +
         (distribution['enterprise'] as int);
 
