@@ -27,6 +27,7 @@ import 'services/llm_error_handler.dart';
 import 'services/llm_provider_manager.dart';
 import 'services/local_ollama_connection_service.dart';
 import 'services/ollama_service.dart';
+import 'services/provider_configuration_manager.dart';
 import 'services/provider_discovery_service.dart';
 import 'services/streaming_chat_service.dart';
 import 'services/streaming_proxy_service.dart';
@@ -225,6 +226,12 @@ class _CloudToLocalLLMAppState extends State<CloudToLocalLLMApp> {
     providers.add(
       ChangeNotifierProvider.value(
         value: di.serviceLocator.get<EnhancedUserTierService>(),
+      ),
+    );
+
+    providers.add(
+      ChangeNotifierProvider.value(
+        value: di.serviceLocator.get<ProviderConfigurationManager>(),
       ),
     );
 
