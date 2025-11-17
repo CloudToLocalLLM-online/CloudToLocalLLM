@@ -11,7 +11,7 @@ window.cloudToLocalLLMConfig = {
       'turn:174.138.115.184:5349'
     ],
     username: 'cloudtolocalllm',
-    credential: '' // TODO: Inject securely or fetch from API
+    credential: '' // Will be fetched from API after authentication
   },
   
   // Environment
@@ -24,5 +24,42 @@ window.cloudToLocalLLMConfig = {
   // Auth (SuperTokens)
   authDomain: 'https://auth.cloudtolocalllm.online',
   appDomain: 'https://app.cloudtolocalllm.online'
+};
+
+/**
+ * Fetch TURN server credentials from API
+ * This function should be called after user authentication
+ * 
+ * @param {string} accessToken - JWT access token for authentication
+ * @returns {Promise<void>}
+ */
+window.loadTurnCredentials = async function(accessToken) {
+  try {
+    const response = await fetch('https://api.cloudtolocalllm.online/api/turn/credentials', {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      console.warn('[TURN Config] Failed to fetch credentials:', response.status);
+      return;
+    }
+
+    const data = await response.json();
+    if (data.status === 'success' && data.turnServer) {
+      window.cloudToLocalLLMConfig.turnServer = {
+        urls: data.turnServer.urls,
+        username: data.turnServer.username,
+        credential: data.turnServer.credential,
+      };
+      console.log('[TURN Config] Credentials loaded successfully');
+    }
+  } catch (error) {
+    console.error('[TURN Config] Error loading credentials:', error);
+    // Credentials will remain empty, WebRTC may not work without TURN
+  }
 };
 

@@ -5,6 +5,7 @@
 
 import express from 'express';
 import { TunnelLogger, ERROR_CODES, ErrorResponseBuilder } from '../utils/logger.js';
+import { adminAuth } from '../middleware/admin-auth.js';
 
 const router = express.Router();
 
@@ -19,8 +20,9 @@ export function createMonitoringRoutes(tunnelProxy, logger) {
 
   /**
    * Get comprehensive system performance metrics
+   * Requires admin authentication
    */
-  router.get('/performance', (req, res) => {
+  router.get('/performance', adminAuth(['view_system_metrics']), (req, res) => {
     try {
       const performanceMetrics = tunnelProxy.getPerformanceMetrics();
 
@@ -47,8 +49,9 @@ export function createMonitoringRoutes(tunnelProxy, logger) {
 
   /**
    * Get system health status
+   * Requires admin authentication
    */
-  router.get('/health', (req, res) => {
+  router.get('/health', adminAuth(['view_system_metrics']), (req, res) => {
     try {
       const healthStatus = tunnelProxy.getHealthStatus();
       const statusCode = healthStatus.status === 'healthy' ? 200 : 503;
@@ -76,8 +79,9 @@ export function createMonitoringRoutes(tunnelProxy, logger) {
 
   /**
    * Get performance alerts
+   * Requires admin authentication
    */
-  router.get('/alerts', (req, res) => {
+  router.get('/alerts', adminAuth(['view_system_metrics']), (req, res) => {
     try {
       const alerts = tunnelProxy.performanceAlerts || [];
       const activeAlerts = alerts.filter(alert => {
@@ -114,8 +118,9 @@ export function createMonitoringRoutes(tunnelProxy, logger) {
 
   /**
    * Get connection statistics
+   * Requires admin authentication
    */
-  router.get('/connections', (req, res) => {
+  router.get('/connections', adminAuth(['view_system_metrics']), (req, res) => {
     try {
       const stats = tunnelProxy.getStats();
       const connectionDetails = [];
@@ -160,8 +165,9 @@ export function createMonitoringRoutes(tunnelProxy, logger) {
 
   /**
    * Get request statistics with optional filtering
+   * Requires admin authentication
    */
-  router.get('/requests', (req, res) => {
+  router.get('/requests', adminAuth(['view_system_metrics']), (req, res) => {
     try {
       const { timeframe = '1h' } = req.query;
       const stats = tunnelProxy.getStats();
@@ -214,8 +220,9 @@ export function createMonitoringRoutes(tunnelProxy, logger) {
 
   /**
    * Get memory and resource usage
+   * Requires admin authentication
    */
-  router.get('/resources', (req, res) => {
+  router.get('/resources', adminAuth(['view_system_metrics']), (req, res) => {
     try {
       const performanceMetrics = tunnelProxy.getPerformanceMetrics();
       const processMemory = process.memoryUsage();
@@ -262,8 +269,9 @@ export function createMonitoringRoutes(tunnelProxy, logger) {
 
   /**
    * Get dashboard summary with key metrics
+   * Requires admin authentication
    */
-  router.get('/dashboard', (req, res) => {
+  router.get('/dashboard', adminAuth(['view_system_metrics']), (req, res) => {
     try {
       const performanceMetrics = tunnelProxy.getPerformanceMetrics();
       const healthStatus = tunnelProxy.getHealthStatus();
@@ -325,8 +333,9 @@ export function createMonitoringRoutes(tunnelProxy, logger) {
 
   /**
    * Force performance check (for testing/debugging)
+   * Requires admin authentication
    */
-  router.post('/check', (req, res) => {
+  router.post('/check', adminAuth(['view_system_metrics']), (req, res) => {
     try {
       tunnelProxy.checkPerformanceAlerts();
       tunnelProxy.updateMemoryUsage();

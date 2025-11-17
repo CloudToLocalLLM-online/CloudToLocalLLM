@@ -12,6 +12,7 @@
 
 import logger from '../logger.js';
 import { getPool, getPoolMetrics, healthCheck } from './db-pool.js';
+import { sendAlert } from '../services/alerting-service.js';
 
 // Monitoring configuration
 const HEALTH_CHECK_INTERVAL = parseInt(process.env.DB_HEALTH_CHECK_INTERVAL || '30000', 10); // 30 seconds
@@ -119,11 +120,11 @@ async function performHealthCheck() {
     });
 
     // Alert on health check failure
-    alertHealthCheckFailure(result);
+    await alertHealthCheckFailure(result);
   }
 
   // Check for pool exhaustion
-  checkPoolExhaustion(result.poolMetrics);
+  await checkPoolExhaustion(result.poolMetrics);
 }
 
 /**
@@ -145,7 +146,11 @@ function logPoolMetrics() {
   });
 
   // Check for pool exhaustion
-  checkPoolExhaustion(metrics);
+  checkPoolExhaustion(metrics).catch(error => {
+    logger.error('🔴 [Pool Monitor] Error checking pool exhaustion', {
+      error: error.message,
+    });
+  });
 }
 
 /**
@@ -154,7 +159,7 @@ function logPoolMetrics() {
  * 
  * @param {Object} metrics - Current pool metrics
  */
-function checkPoolExhaustion(metrics) {
+async function checkPoolExhaustion(metrics) {
   if (!metrics || metrics.status === 'not_initialized') {
     return;
   }
@@ -173,7 +178,7 @@ function checkPoolExhaustion(metrics) {
     });
 
     // Alert on pool exhaustion
-    alertPoolExhaustion(metrics, maxConnections, usageRatio);
+    await alertPoolExhaustion(metrics, maxConnections, usageRatio);
   }
 
   // Alert if clients are waiting for connections
@@ -193,7 +198,7 @@ function checkPoolExhaustion(metrics) {
  * 
  * @param {Object} result - Health check result
  */
-function alertHealthCheckFailure(result) {
+async function alertHealthCheckFailure(result) {
   // Log critical alert
   logger.error('🚨 [Pool Monitor] ALERT: Database health check failed', {
     error: result.error,
@@ -202,8 +207,18 @@ function alertHealthCheckFailure(result) {
     action: 'Database connectivity issue detected',
   });
 
-  // TODO: Integrate with alerting system (email, Slack, PagerDuty, etc.)
-  // Example: sendAlert('database_health_check_failed', result);
+  // Send alert via configured channels
+  await sendAlert(
+    'database_health_check_failed',
+    'Database Health Check Failed',
+    'The database connection health check has failed. This may indicate connectivity issues or database unavailability.',
+    {
+      error: result.error?.message || result.error,
+      responseTime: result.responseTime,
+      timestamp: result.timestamp,
+    },
+    'critical'
+  );
 }
 
 /**
@@ -214,7 +229,7 @@ function alertHealthCheckFailure(result) {
  * @param {number} maxConnections - Maximum pool size
  * @param {number} usageRatio - Current usage ratio (0-1)
  */
-function alertPoolExhaustion(metrics, maxConnections, usageRatio) {
+async function alertPoolExhaustion(metrics, maxConnections, usageRatio) {
   // Log critical alert
   logger.error('🚨 [Pool Monitor] ALERT: Connection pool exhaustion', {
     activeConnections: metrics.totalCount,
@@ -224,8 +239,20 @@ function alertPoolExhaustion(metrics, maxConnections, usageRatio) {
     action: 'Immediate attention required - pool capacity exceeded',
   });
 
-  // TODO: Integrate with alerting system (email, Slack, PagerDuty, etc.)
-  // Example: sendAlert('pool_exhaustion', { metrics, maxConnections, usageRatio });
+  // Send alert via configured channels
+  await sendAlert(
+    'pool_exhaustion',
+    'Database Connection Pool Exhaustion',
+    `The database connection pool has reached ${(usageRatio * 100).toFixed(1)}% capacity. Immediate attention required.`,
+    {
+      activeConnections: metrics.totalCount,
+      maxConnections,
+      usagePercentage: `${(usageRatio * 100).toFixed(1)}%`,
+      waitingClients: metrics.waitingCount,
+      idleConnections: metrics.idleCount,
+    },
+    'critical'
+  );
 }
 
 /**

@@ -25,6 +25,7 @@ import { AuthDatabaseMigratorPG } from './database/migrate-auth-pg.js';
 import { initializePool } from './database/db-pool.js';
 import { startMonitoring, stopMonitoring } from './database/pool-monitor.js';
 import dbHealthRoutes from './routes/db-health.js';
+import turnCredentialsRoutes from './routes/turn-credentials.js';
 import { createTunnelRoutes } from './tunnel/tunnel-routes.js';
 import { createMonitoringRoutes } from './routes/monitoring.js';
 import { createConversationRoutes } from './routes/conversations.js';
@@ -279,6 +280,9 @@ app.use('/api/client-logs', clientLogRoutes);
 
 // Database health check routes
 app.use('/api/db', dbHealthRoutes);
+
+// TURN server credentials (authenticated)
+app.use('/api/turn', turnCredentialsRoutes);
 
 // Administrative routes
 app.use('/api/admin', adminRoutes);

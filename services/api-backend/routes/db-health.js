@@ -12,6 +12,7 @@
 import express from 'express';
 import { healthCheck, getPoolMetrics } from '../database/db-pool.js';
 import { getMonitoringStatus } from '../database/pool-monitor.js';
+import { adminAuth } from '../middleware/admin-auth.js';
 import logger from '../logger.js';
 
 const router = express.Router();
@@ -59,11 +60,13 @@ router.get('/pool/health', async (req, res) => {
 /**
  * GET /api/db/pool/metrics
  * Get current connection pool metrics
+ * Requires admin authentication
  * 
  * Response:
  * - 200: Metrics retrieved successfully
+ * - 401: Unauthorized (not admin)
  */
-router.get('/pool/metrics', (req, res) => {
+router.get('/pool/metrics', adminAuth(['view_system_metrics']), (req, res) => {
   try {
     const metrics = getPoolMetrics();
 
@@ -88,11 +91,13 @@ router.get('/pool/metrics', (req, res) => {
 /**
  * GET /api/db/pool/status
  * Get monitoring status
+ * Requires admin authentication
  * 
  * Response:
  * - 200: Status retrieved successfully
+ * - 401: Unauthorized (not admin)
  */
-router.get('/pool/status', (req, res) => {
+router.get('/pool/status', adminAuth(['view_system_metrics']), (req, res) => {
   try {
     const status = getMonitoringStatus();
 
