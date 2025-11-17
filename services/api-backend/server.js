@@ -115,11 +115,21 @@ app.use(helmet({
   },
 }));
 
-// Use the proper CORS configuration from middleware
-app.use(standardCors);
+// Use simple CORS configuration for debugging
+app.use(cors({
+  origin: ['https://app.cloudtolocalllm.online', 'https://cloudtolocalllm.online', 'https://docs.cloudtolocalllm.online'],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
+}));
 
 // Handle preflight requests explicitly
-app.options('*', standardCors);
+app.options('*', cors({
+  origin: ['https://app.cloudtolocalllm.online', 'https://cloudtolocalllm.online', 'https://docs.cloudtolocalllm.online'],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
+}));
 
 // Rate limiting with different limits for bridge operations
 const createConditionalRateLimiter = () => {
