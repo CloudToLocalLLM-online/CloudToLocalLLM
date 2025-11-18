@@ -9,9 +9,9 @@
 library;
 
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import '../../models/provider_configuration.dart';
 import '../../services/provider_configuration_manager.dart';
+import '../../di/locator.dart' as di;
 import 'settings_category_widgets.dart';
 import 'settings_input_widgets.dart';
 
@@ -64,21 +64,17 @@ class _LocalLLMProvidersCategoryContentState
   @override
   void initState() {
     super.initState();
-    // Use post-frame callback to ensure provider is available in the tree
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        try {
-          _configManager = Provider.of<ProviderConfigurationManager>(context, listen: false);
-          _loadProviders();
-        } catch (e) {
-          debugPrint('[LocalLLMProviders] ProviderConfigurationManager not available: $e');
-          setState(() {
-            _errorMessage = 'Provider configuration manager not available. Please try refreshing the page.';
-            _isInitialized = true;
-          });
-        }
-      }
-    });
+    // Get ProviderConfigurationManager from service locator (more reliable than Provider.of)
+    try {
+      _configManager = di.serviceLocator.get<ProviderConfigurationManager>();
+      _loadProviders();
+    } catch (e) {
+      debugPrint('[LocalLLMProviders] ProviderConfigurationManager not available: $e');
+      setState(() {
+        _errorMessage = 'Provider configuration manager not available. Please try refreshing the page.';
+        _isInitialized = true;
+      });
+    }
   }
 
   /// Load providers from configuration manager
