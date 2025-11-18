@@ -9,7 +9,10 @@ import '../../config/app_config.dart';
 import '../../services/ollama_service.dart';
 import '../../services/streaming_proxy_service.dart';
 import '../../services/auth_service.dart';
+import '../../services/llm_provider_manager.dart';
 import '../../components/modern_card.dart';
+import '../../components/llm_provider_selector.dart';
+import '../../components/enhanced_provider_status_widget.dart';
 
 /// LLM Provider Settings Screen - Dedicated settings for Ollama testing and configuration
 class LLMProviderSettingsScreen extends StatefulWidget {
@@ -21,8 +24,9 @@ class LLMProviderSettingsScreen extends StatefulWidget {
 }
 
 class _LLMProviderSettingsScreenState extends State<LLMProviderSettingsScreen> {
-  late OllamaService _ollamaService;
-  late StreamingProxyService _streamingProxyService;
+  OllamaService? _ollamaService;
+  StreamingProxyService? _streamingProxyService;
+  LLMProviderManager? _llmProviderManager;
 
   // Desktop connection settings
   String _ollamaHost = AppConfig.defaultOllamaHost;
@@ -40,9 +44,12 @@ class _LLMProviderSettingsScreenState extends State<LLMProviderSettingsScreen> {
     _streamingProxyService = StreamingProxyService(
       authService: context.read<AuthService>(),
     );
+    _llmProviderManager = context.read<LLMProviderManager>(); // Added
 
     // Initial connection test
-    _testConnection();
+    if (_ollamaService != null && _streamingProxyService != null) {
+      _testConnection();
+    }
   }
 
   @override
@@ -52,17 +59,20 @@ class _LLMProviderSettingsScreenState extends State<LLMProviderSettingsScreen> {
   }
 
   Future<void> _testConnection() async {
+    if (_ollamaService == null || _streamingProxyService == null) return;
     if (kIsWeb) {
       // Web platform: ensure proxy is running first
-      await _streamingProxyService.ensureProxyRunning();
+      await _streamingProxyService!.ensureProxyRunning();
     }
-    await _ollamaService.testConnection();
+    await _ollamaService!.testConnection();
   }
 
   Future<void> _sendTestMessage() async {
-    if (_messageController.text.isEmpty || _selectedModel == null) return;
+    if (_messageController.text.isEmpty ||
+        _selectedModel == null ||
+        _ollamaService == null) return;
 
-    final response = await _ollamaService.chat(
+    final response = await _ollamaService!.chat(
       model: _selectedModel!,
       message: _messageController.text,
     );
@@ -105,6 +115,73 @@ class _LLMProviderSettingsScreenState extends State<LLMProviderSettingsScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Generic LLM Provider Selector
+            ModernCard(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.settings_ethernet,
+                          color: AppTheme.accentColor),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Select LLM Provider',
+                        style: Theme.of(context)
+                            .textTheme
+                            .titleMedium
+                            ?.copyWith(fontWeight: FontWeight.bold),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  LLMProviderSelector(
+                    onProviderChanged: (providerId) {
+                      // Handle provider change if needed
+                      debugPrint('Selected LLM Provider: $providerId');
+                    },
+                    onModelSelected: (providerId, modelName) {
+                      // Handle model selection if needed
+                      debugPrint('Selected Model: $modelName for $providerId');
+                    },
+                    showStatus: true,
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 24),
+
+            // Enhanced Provider Status
+            ModernCard(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.info_outline, color: AppTheme.accentColor),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Provider Status',
+                        style: Theme.of(context)
+                            .textTheme
+                            .titleMedium
+                            ?.copyWith(fontWeight: FontWeight.bold),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  if (_llmProviderManager != null)
+                    EnhancedProviderStatusWidget(
+                      providerId: _llmProviderManager!.preferredProviderId,
+                      showMetrics: true,
+                    )
+                  else
+                    const Text('LLM Provider Manager not available.'),
+                ],
+              ),
+            ),
+            const SizedBox(height: 24),
+
             // Platform-specific connection settings
             if (kIsWeb)
               _buildWebConnectionSettings()
