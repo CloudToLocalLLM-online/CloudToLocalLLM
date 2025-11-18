@@ -178,10 +178,11 @@ If the health check returns status `unhealthy` or `degraded`:
 
 ### Current Implementation
 - Health check: Public (no authentication)
-- Diagnostics: Public (TODO: add admin auth)
+- Diagnostics: Requires admin authentication (JWT token with `view_system_metrics`, `admin`, or `*` permission)
 
 ### Recommended
-- Restrict diagnostics to admin users
+- Health check should remain public for monitoring systems
+- Diagnostics is secured with admin authentication
 - Use authentication middleware
 - Log access to diagnostics endpoint
 

@@ -30,7 +30,7 @@ Task 14 has been successfully completed. This task implements comprehensive heal
 **Implementation:**
 - Created `/api/tunnel/diagnostics` endpoint in `server.ts`
 - Returns detailed system diagnostics and component health
-- Requires admin authentication (TODO: implement auth check)
+- Requires admin authentication (JWT token with `view_system_metrics`, `admin`, or `*` permission)
 - Comprehensive system information
 
 **Features:**

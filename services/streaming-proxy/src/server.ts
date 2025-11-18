@@ -171,17 +171,95 @@ app.get('/api/tunnel/health', async (req: Request, res: Response) => {
 });
 
 /**
+ * Admin authentication middleware for diagnostics endpoint
+ * Checks for admin permissions in JWT token
+ */
+async function requireAdminAuth(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    // Extract token from Authorization header
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      res.status(401).json({
+        error: 'Unauthorized',
+        message: 'Missing or invalid authorization header',
+        timestamp: new Date().toISOString(),
+      });
+      return;
+    }
+
+    const token = authHeader.substring(7); // Remove 'Bearer ' prefix
+
+    // Validate token and get user context
+    const validation = await authMiddleware.validateToken(token);
+    if (!validation.valid || !validation.userId) {
+      res.status(401).json({
+        error: 'Unauthorized',
+        message: validation.error || 'Invalid token',
+        timestamp: new Date().toISOString(),
+      });
+      return;
+    }
+
+    // Get user context to check permissions
+    const userContext = await authMiddleware.getUserContext(token);
+    
+    // Check for admin permissions
+    // Admin permissions can be: 'view_system_metrics', 'admin', or '*' (all permissions)
+    const hasAdminPermission = userContext.permissions.some(perm => 
+      perm === 'view_system_metrics' || 
+      perm === 'admin' || 
+      perm === '*' ||
+      perm.includes('admin')
+    );
+
+    if (!hasAdminPermission) {
+      logger.warn('Diagnostics access denied', {
+        userId: userContext.userId,
+        permissions: userContext.permissions,
+      });
+      res.status(403).json({
+        error: 'Forbidden',
+        message: 'Admin permissions required to access diagnostics',
+        timestamp: new Date().toISOString(),
+      });
+      return;
+    }
+
+    // Log successful admin access
+    const clientIp = req.ip || req.socket.remoteAddress || 'unknown';
+    authAuditLogger.logAuthSuccess(
+      userContext.userId,
+      clientIp,
+      {
+        endpoint: '/api/tunnel/diagnostics',
+        method: 'GET',
+        permissions: userContext.permissions,
+      }
+    );
+
+    // Attach user context to request for use in route handler
+    (req as any).user = userContext;
+    next();
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    logger.error('Admin auth check failed', { error: errorMessage });
+    res.status(500).json({
+      error: 'Internal server error',
+      message: 'Failed to verify admin permissions',
+      timestamp: new Date().toISOString(),
+    });
+  }
+}
+
+/**
  * Diagnostics endpoint
- * Requires authentication
+ * Requires admin authentication
  * Returns detailed system diagnostics and component health information
  * 
  * Requirements: 2.7, 11.2, 26.2
  */
-app.get('/api/tunnel/diagnostics', async (req: Request, res: Response) => {
+app.get('/api/tunnel/diagnostics', requireAdminAuth, async (req: Request, res: Response) => {
   try {
-    // Authentication check can be added here when auth middleware is ready
-    // For now, diagnostics is available to all (can be restricted later)
-    
     const diagnostics = await healthChecker.performDiagnostics();
     
     res.status(200).json(diagnostics);
