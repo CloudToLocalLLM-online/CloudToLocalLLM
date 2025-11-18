@@ -232,22 +232,57 @@ jobs:
           kubectl wait --for=condition=ready pod -l app.kubernetes.io/instance=cert-manager -n cert-manager --timeout=300s
         fi
         
+        # Get Azure subscription and tenant ID from Azure CLI
+        echo "Getting Azure subscription and tenant information..."
+        AZURE_SUBSCRIPTION_ID=$(az account show --query id -o tsv)
+        AZURE_TENANT_ID=$(az account show --query tenantId -o tsv)
+        
+        echo "Azure Subscription ID: $AZURE_SUBSCRIPTION_ID"
+        echo "Azure Tenant ID: $AZURE_TENANT_ID"
+        
+        # Get or create service principal for DNS management
+        # Use existing service principal from Azure credentials if available
+        if [ -z "${{ secrets.AZURE_CLIENT_ID }}" ]; then
+          echo "⚠️ AZURE_CLIENT_ID not set in secrets, using current Azure CLI identity"
+          AZURE_CLIENT_ID=$(az account show --query user.name -o tsv)
+        else
+          AZURE_CLIENT_ID="${{ secrets.AZURE_CLIENT_ID }}"
+        fi
+        
+        if [ -z "${{ secrets.AZURE_CLIENT_SECRET }}" ]; then
+          echo "⚠️ AZURE_CLIENT_SECRET not set in secrets - using managed identity or current Azure CLI session"
+          # For managed identity or Azure CLI, secret may not be needed
+          AZURE_CLIENT_SECRET=""
+        else
+          AZURE_CLIENT_SECRET="${{ secrets.AZURE_CLIENT_SECRET }}"
+        fi
+        
         # Create Azure DNS config secret for cert-manager
         echo "Creating Azure DNS configuration secret..."
-        kubectl create secret generic azure-dns-config \
-          --from-literal=client-id="${{ secrets.AZURE_CLIENT_ID }}" \
-          --from-literal=client-secret="${{ secrets.AZURE_CLIENT_SECRET }}" \
-          --from-literal=subscription-id="${{ secrets.AZURE_SUBSCRIPTION_ID }}" \
-          --from-literal=tenant-id="${{ secrets.AZURE_TENANT_ID }}" \
-          -n cert-manager \
-          --dry-run=client -o yaml | kubectl apply -f -
+        if [ -n "$AZURE_CLIENT_SECRET" ]; then
+          kubectl create secret generic azure-dns-config \
+            --from-literal=client-id="$AZURE_CLIENT_ID" \
+            --from-literal=client-secret="$AZURE_CLIENT_SECRET" \
+            --from-literal=subscription-id="$AZURE_SUBSCRIPTION_ID" \
+            --from-literal=tenant-id="$AZURE_TENANT_ID" \
+            -n cert-manager \
+            --dry-run=client -o yaml | kubectl apply -f -
+        else
+          echo "⚠️ No client secret provided - using Azure CLI/managed identity authentication"
+          kubectl create secret generic azure-dns-config \
+            --from-literal=client-id="$AZURE_CLIENT_ID" \
+            --from-literal=subscription-id="$AZURE_SUBSCRIPTION_ID" \
+            --from-literal=tenant-id="$AZURE_TENANT_ID" \
+            -n cert-manager \
+            --dry-run=client -o yaml | kubectl apply -f - || true
+        fi
         
         # Apply cert-manager ClusterIssuer with Azure DNS-01 challenge
         echo "Applying cert-manager ClusterIssuer configuration..."
-        # Replace placeholders with actual values from secrets
-        sed -i "s|<AZURE_CLIENT_ID>|${{ secrets.AZURE_CLIENT_ID }}|g" k8s/cert-manager-azure-dns.yaml
-        sed -i "s|<AZURE_SUBSCRIPTION_ID>|${{ secrets.AZURE_SUBSCRIPTION_ID }}|g" k8s/cert-manager-azure-dns.yaml
-        sed -i "s|<AZURE_TENANT_ID>|${{ secrets.AZURE_TENANT_ID }}|g" k8s/cert-manager-azure-dns.yaml
+        # Replace placeholders with actual values
+        sed -i "s|<AZURE_CLIENT_ID>|$AZURE_CLIENT_ID|g" k8s/cert-manager-azure-dns.yaml
+        sed -i "s|<AZURE_SUBSCRIPTION_ID>|$AZURE_SUBSCRIPTION_ID|g" k8s/cert-manager-azure-dns.yaml
+        sed -i "s|<AZURE_TENANT_ID>|$AZURE_TENANT_ID|g" k8s/cert-manager-azure-dns.yaml
         kubectl apply -f k8s/cert-manager-azure-dns.yaml
         
         echo "✅ cert-manager configured for automatic SSL certificate provisioning using Azure DNS-01 challenge"

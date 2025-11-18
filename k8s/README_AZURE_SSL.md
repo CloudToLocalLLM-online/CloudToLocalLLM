@@ -1,120 +1,67 @@
-# Azure SSL Certificate Configuration
+# Platform-Independent SSL Certificate Configuration
 
-This document describes the Azure-native SSL certificate options for CloudToLocalLLM on AKS.
+This document describes the SSL certificate setup for CloudToLocalLLM on Kubernetes.
 
-## Current Configuration: cert-manager with Azure DNS-01 Challenge
+## Current Configuration: cert-manager with DNS-01 Challenge
 
-The current setup uses **cert-manager with Azure DNS-01 challenge**, which:
-- ✅ Uses **Azure DNS** for domain validation (Azure-native)
-- ✅ Automatically provisions and renews certificates
-- ⚠️ Still uses Let's Encrypt as the Certificate Authority (CA)
-- ✅ Certificates are stored in Kubernetes secrets
+The current setup uses **cert-manager with DNS-01 challenge**, which is **platform-independent** and works on any Kubernetes cluster:
 
-### Why Azure DNS-01 instead of fully managed?
+- ✅ **Platform-Agnostic**: Works on GKE, EKS, AKS, DOKS, on-premises, or any Kubernetes cluster
+- ✅ **DNS Provider Agnostic**: Supports Azure DNS, AWS Route53, Cloudflare, Google Cloud DNS, etc.
+- ✅ **Standard Kubernetes**: Uses nginx-ingress and cert-manager (industry standards)
+- ✅ **Automatic Renewal**: Certificates are automatically provisioned and renewed
+- ✅ **Portable**: Can easily migrate between cloud providers or to on-premises
 
-Fully Azure-managed SSL certificates (issued by Azure) require:
-- **Azure Application Gateway** or **Azure Front Door** for SSL termination
-- Cannot be directly used with nginx-ingress controller
+### Current DNS Provider: Azure DNS
 
-Since we're using **nginx-ingress**, cert-manager with Azure DNS-01 is the most Azure-native approach available.
+We're currently using **Azure DNS** for DNS-01 validation because:
+- DNS zone is managed in Azure
+- Automatic integration with Azure infrastructure
+- Easy to manage via Azure CLI
+
+**However**, this can be easily changed to any other DNS provider by:
+1. Updating the ClusterIssuer to use a different DNS provider (Route53, Cloudflare, etc.)
+2. Providing credentials for that DNS provider
+3. No other changes needed - cert-manager and nginx-ingress remain unchanged
+
+### Architecture
+
+```
+Internet
+   ↓
+[Platform Load Balancer] (Azure LB, AWS ELB, GCP LB, DigitalOcean LB, etc.)
+   ↓
+[nginx-ingress Controller] (Standard Kubernetes ingress - platform-independent)
+   ↓
+[cert-manager] (Standard Kubernetes cert-manager - platform-independent)
+   ↓
+[DNS Provider API] (Currently Azure DNS, but can be any provider)
+   ↓
+[Let's Encrypt] (Standard ACME CA - same across all providers)
+```
+
+### Why Not Azure Application Gateway?
+
+**Azure Application Gateway would break platform independence**:
+- ❌ Azure-specific: Only works on Azure
+- ❌ Not portable: Can't migrate to GKE, EKS, DOKS, or on-premises
+- ❌ Lock-in: Requires Azure-specific infrastructure
+- ❌ Higher cost: Additional Azure service required
+
+**Our approach maintains portability**:
+- ✅ nginx-ingress: Works anywhere Kubernetes runs
+- ✅ cert-manager: Works anywhere Kubernetes runs
+- ✅ DNS provider: Easy to switch (just change the issuer config)
+- ✅ Certificate authority: Let's Encrypt is provider-independent
 
 ---
 
-## Fully Azure-Managed Certificate Options
+## How It Works
 
-If you want **100% Azure-managed certificates** (no Let's Encrypt), you have these options:
-
-### Option 1: Azure Application Gateway with Managed Certificates
-
-**Fully Azure-managed certificates** require switching from nginx-ingress to **Azure Application Gateway**.
-
-```bash
-# Deploy Application Gateway Ingress Controller (AGIC)
-helm repo add application-gateway-kubernetes-ingress https://appgwingress.blob.core.windows.net/ingress-azure-helm-package/
-helm repo update
-helm install ingress-azure application-gateway-kubernetes-ingress/ingress-azure \
-  --set appgw.subscriptionId=<SUBSCRIPTION_ID> \
-  --set appgw.resourceGroup=cloudtolocalllm-rg \
-  --set appgw.name=<APP_GATEWAY_NAME> \
-  --set appgw.shared=false
-```
-
-**Benefits:**
-- ✅ Fully Azure-managed certificates
-- ✅ Automatic certificate provisioning and renewal
-- ✅ No external CA dependencies
-- ✅ Integrated with Azure Key Vault
-
-**Trade-offs:**
-- ❌ Requires Application Gateway (additional cost)
-- ❌ Different ingress controller (would need to migrate from nginx-ingress)
-
-### Option 2: Azure Key Vault with Imported Certificates
-
-Import your own certificates into Azure Key Vault and mount them using CSI driver:
-
-```bash
-# Install Azure Key Vault CSI driver
-helm repo add csi-secrets-store-provider-azure https://raw.githubusercontent.com/Azure/secrets-store-csi-driver-provider-azure/master/charts
-helm install csi-secrets-store-provider-azure csi-secrets-store-provider-azure/csi-secrets-store-provider-azure \
-  --namespace kube-system
-
-# Create SecretProviderClass to mount certificates from Key Vault
-kubectl apply -f k8s/azure-keyvault-secret-provider.yaml
-```
-
-**Benefits:**
-- ✅ Uses Azure Key Vault for certificate storage
-- ✅ Works with existing nginx-ingress
-- ✅ Full control over certificate source
-
-**Trade-offs:**
-- ❌ Manual certificate import/rotation
-- ❌ Need to obtain certificates from a CA (DigiCert, GlobalSign, etc.)
-
----
-
-## Current Setup Details
-
-### Prerequisites
-
-1. **Azure DNS Zone** created:
-   ```bash
-   az network dns zone create \
-     --resource-group cloudtolocalllm-rg \
-     --name cloudtolocalllm.online
-   ```
-
-2. **Service Principal** with **DNS Zone Contributor** role:
-   ```bash
-   # Get the DNS zone resource ID
-   ZONE_ID=$(az network dns zone show \
-     --resource-group cloudtolocalllm-rg \
-     --name cloudtolocalllm.online \
-     --query id -o tsv)
-   
-   # Assign DNS Zone Contributor role
-   az role assignment create \
-     --role "DNS Zone Contributor" \
-     --assignee <SERVICE_PRINCIPAL_ID> \
-     --scope $ZONE_ID
-   ```
-
-3. **GitHub Secrets** configured:
-   - `AZURE_CLIENT_ID` - Service Principal Client ID
-   - `AZURE_CLIENT_SECRET` - Service Principal Client Secret
-   - `AZURE_SUBSCRIPTION_ID` - Azure Subscription ID
-   - `AZURE_TENANT_ID` - Azure Tenant ID
-
-### How It Works
-
-1. **cert-manager** requests a certificate from Let's Encrypt
-2. **Let's Encrypt** requires domain validation
-3. **cert-manager** uses **Azure DNS-01 challenge**:
-   - Creates TXT record in Azure DNS zone
-   - Validates domain ownership via Azure DNS
-   - Removes TXT record after validation
-4. **Let's Encrypt** issues the certificate
+1. **cert-manager** requests a certificate from Let's Encrypt (platform-independent CA)
+2. **Let's Encrypt** requires domain validation via DNS-01 challenge
+3. **cert-manager** creates TXT record in Azure DNS zone (or any configured DNS provider)
+4. **Let's Encrypt** validates domain ownership via DNS
 5. **cert-manager** stores certificate in Kubernetes secret
 6. **nginx-ingress** uses the secret for TLS termination
 
@@ -122,13 +69,68 @@ kubectl apply -f k8s/azure-keyvault-secret-provider.yaml
 
 - **Provisioning**: Automatic on first deployment
 - **Renewal**: Automatic (cert-manager renews ~30 days before expiry)
-- **Validation**: Uses Azure DNS zone (no external dependencies)
+- **Validation**: Uses Azure DNS zone (can be changed to any DNS provider)
+- **Storage**: Kubernetes secrets (standard Kubernetes - platform-independent)
 
 ---
 
-## Switching to Fully Azure-Managed Certificates
+## Prerequisites
 
-To switch to **Azure Application Gateway with managed certificates**, see `docs/AZURE_APPLICATION_GATEWAY.md` (if created).
+### Platform-Independent Requirements
 
-Otherwise, the current setup with **Azure DNS-01** is the most practical Azure-native solution for nginx-ingress.
+1. **Kubernetes cluster** (any provider or on-premises)
+2. **nginx-ingress controller** (installed via standard Kubernetes manifests)
+3. **cert-manager** (installed via standard Kubernetes manifests)
+4. **DNS provider** with API access (currently Azure DNS, but can be any)
 
+### Azure-Specific Configuration (Current Setup)
+
+1. **Azure DNS zone**: `cloudtolocalllm.online`
+2. **Service Principal** with **DNS Zone Contributor** role on the DNS zone
+3. **Azure CLI credentials** in GitHub Actions workflow
+
+---
+
+## Switching DNS Providers
+
+To switch to a different DNS provider (e.g., AWS Route53, Cloudflare, Google Cloud DNS):
+
+1. **Update ClusterIssuer** (`k8s/cert-manager-azure-dns.yaml`):
+   ```yaml
+   solvers:
+     - dns01:
+         route53:  # or cloudflare, clouddns, etc.
+           accessKeyID: <AWS_ACCESS_KEY>
+           secretAccessKeySecretRef:
+             name: route53-credentials
+             key: secret-access-key
+           region: us-east-1
+   ```
+
+2. **Update secrets** in the deployment workflow
+3. **No other changes needed** - cert-manager and nginx-ingress remain the same
+
+---
+
+## Platform Portability
+
+This setup can run on:
+- ✅ **Azure AKS** (current)
+- ✅ **Google GKE**
+- ✅ **AWS EKS**
+- ✅ **DigitalOcean Kubernetes**
+- ✅ **Self-hosted Kubernetes** (on-premises, bare metal, etc.)
+
+**Only requirement**: A DNS provider with API access for DNS-01 challenge.
+
+**No provider lock-in**: All components (nginx-ingress, cert-manager) are standard Kubernetes tools that work everywhere.
+
+---
+
+## Benefits of This Approach
+
+1. **Platform Independence**: Not locked to Azure or any specific provider
+2. **Cost Effective**: Uses standard Kubernetes tools (no provider-specific services)
+3. **Flexible**: Easy to switch DNS providers or migrate to different cloud
+4. **Standard**: Uses industry-standard tools (nginx-ingress, cert-manager)
+5. **Portable**: Can move between cloud providers or to on-premises with minimal changes
