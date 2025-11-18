@@ -132,7 +132,10 @@ app.use(cors(corsOptions));
 
 // Handle preflight requests explicitly BEFORE other routes
 // This ensures OPTIONS requests are handled before rate limiting or other middleware
-app.options('*', cors(corsOptions));
+app.options('*', cors(corsOptions), (req, res) => {
+  // Explicitly end the OPTIONS request with 204 No Content
+  res.status(204).end();
+});
 
 // Security middleware (after CORS to avoid interference)
 app.use(helmet({
