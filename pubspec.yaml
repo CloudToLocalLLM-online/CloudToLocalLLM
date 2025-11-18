@@ -46,7 +46,7 @@ dependencies:
 
   # Local Storage
   sqflite: ^2.3.3+1  # SQLite for desktop, IndexedDB for web
-  sqflite_common_ffi: ^2.3.6  # FFI support for desktop platforms
+  sqflite_common_ffi: ^2.4.0  # FFI support for desktop platforms
   shared_preferences: ^2.5.3  # For web-compatible auth storage
 
   # State Management
