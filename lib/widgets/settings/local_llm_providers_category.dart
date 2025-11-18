@@ -64,8 +64,21 @@ class _LocalLLMProvidersCategoryContentState
   @override
   void initState() {
     super.initState();
-    _configManager = context.read<ProviderConfigurationManager>();
-    _loadProviders();
+    // Use post-frame callback to ensure provider is available in the tree
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        try {
+          _configManager = Provider.of<ProviderConfigurationManager>(context, listen: false);
+          _loadProviders();
+        } catch (e) {
+          debugPrint('[LocalLLMProviders] ProviderConfigurationManager not available: $e');
+          setState(() {
+            _errorMessage = 'Provider configuration manager not available. Please try refreshing the page.';
+            _isInitialized = true;
+          });
+        }
+      }
+    });
   }
 
   /// Load providers from configuration manager

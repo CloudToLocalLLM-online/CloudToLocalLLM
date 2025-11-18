@@ -102,20 +102,8 @@ try {
 // Use specific proxy configuration to avoid ERR_ERL_PERMISSIVE_TRUST_PROXY
 app.set('trust proxy', 1); // Trust first proxy (nginx)
 
-// Security middleware
-app.use(helmet({
-  contentSecurityPolicy: {
-    directives: {
-      defaultSrc: ['\'self\''],
-      connectSrc: ['\'self\'', 'https:'],
-      scriptSrc: ['\'self\'', '\'unsafe-inline\''],
-      styleSrc: ['\'self\'', '\'unsafe-inline\''],
-      imgSrc: ['\'self\'', 'data:', 'https:'],
-    },
-  },
-}));
-
-// CORS configuration - must be before all routes
+// CORS configuration - MUST be before ALL other middleware (including Helmet)
+// This ensures preflight OPTIONS requests are handled correctly
 const corsOptions = {
   origin: function (origin, callback) {
     const allowedOrigins = [
@@ -133,16 +121,32 @@ const corsOptions = {
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
+  exposedHeaders: ['Content-Length', 'X-Requested-With'],
+  maxAge: 86400, // Cache preflight for 24 hours
   preflightContinue: false,
   optionsSuccessStatus: 204
 };
 
+// Apply CORS middleware FIRST - before Helmet and other middleware
 app.use(cors(corsOptions));
 
-// Handle preflight requests explicitly - CORS middleware will set headers
-app.options('*', cors(corsOptions), (req, res) => {
-  res.status(204).end();
-});
+// Handle preflight requests explicitly BEFORE other routes
+// This ensures OPTIONS requests are handled before rate limiting or other middleware
+app.options('*', cors(corsOptions));
+
+// Security middleware (after CORS to avoid interference)
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ['\'self\''],
+      connectSrc: ['\'self\'', 'https:'],
+      scriptSrc: ['\'self\'', '\'unsafe-inline\''],
+      styleSrc: ['\'self\'', '\'unsafe-inline\''],
+      imgSrc: ['\'self\'', 'data:', 'https:'],
+    },
+  },
+  crossOriginResourcePolicy: { policy: 'cross-origin' }, // Allow CORS requests
+}));
 
 // Rate limiting with different limits for bridge operations
 const createConditionalRateLimiter = () => {
@@ -165,6 +169,11 @@ const createConditionalRateLimiter = () => {
   });
 
   return (req, res, next) => {
+    // Skip rate limiting for OPTIONS (preflight) requests
+    // CORS preflight requests should not be rate limited
+    if (req.method === 'OPTIONS') {
+      return next();
+    }
     // Apply more lenient limits to bridge routes
     if (req.path.startsWith('/api/bridge/')) {
       return bridgeLimiter(req, res, next);
