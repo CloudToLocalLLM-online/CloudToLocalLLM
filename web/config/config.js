@@ -35,7 +35,7 @@ window.cloudToLocalLLMConfig = {
  */
 window.loadTurnCredentials = async function(accessToken) {
   try {
-    const response = await fetch('https://api.cloudtolocalllm.online/api/turn/credentials', {
+        const response = await fetch('https://api.cloudtolocalllm.online/turn/credentials', {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${accessToken}`,

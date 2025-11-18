@@ -53,7 +53,7 @@ void exampleErrorCategorization() {
   final httpError = ErrorCategorizationService.fromHttpStatus(
     429,
     message: 'Too many requests',
-    context: {'endpoint': '/api/tunnel'},
+    context: {'endpoint': '/tunnel'},
   );
 
   print('HTTP 429 Error:');

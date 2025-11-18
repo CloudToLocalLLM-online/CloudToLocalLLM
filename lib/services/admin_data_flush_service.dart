@@ -96,7 +96,7 @@ class AdminDataFlushService extends ChangeNotifier {
     try {
       debugPrint(' [DataFlush] Fetching system statistics');
 
-      final response = await _dio.get('/api/admin/system/stats');
+      final response = await _dio.get('/admin/system/stats');
 
       if (response.statusCode == 200 && response.data['success'] == true) {
         debugPrint(' [DataFlush] System statistics retrieved successfully');
@@ -127,7 +127,7 @@ class AdminDataFlushService extends ChangeNotifier {
       debugPrint(' [DataFlush] Scope: $scope');
 
       final response = await _dio.post(
-        '/api/admin/flush/prepare',
+        '/admin/flush/prepare',
         data: {'targetUserId': targetUserId, 'scope': scope},
       );
 
@@ -173,7 +173,7 @@ class AdminDataFlushService extends ChangeNotifier {
       debugPrint(' [DataFlush] Options: $options');
 
       final response = await _dio.post(
-        '/api/admin/flush/execute',
+        '/admin/flush/execute',
         data: {
           'confirmationToken': _confirmationToken,
           'targetUserId': targetUserId,
@@ -230,7 +230,7 @@ class AdminDataFlushService extends ChangeNotifier {
       debugPrint(' [DataFlush] Loading flush operation history');
 
       final response = await _dio.get(
-        '/api/admin/flush/history',
+        '/admin/flush/history',
         queryParameters: {'limit': limit},
       );
 
@@ -265,7 +265,7 @@ class AdminDataFlushService extends ChangeNotifier {
     try {
       debugPrint(' [DataFlush] Executing emergency container cleanup');
 
-      final response = await _dio.post('/api/admin/containers/cleanup');
+      final response = await _dio.post('/admin/containers/cleanup');
 
       if (response.statusCode == 200 && response.data['success'] == true) {
         _lastOperationResult = response.data;
@@ -290,7 +290,7 @@ class AdminDataFlushService extends ChangeNotifier {
   /// Check if current user has admin privileges
   Future<bool> checkAdminPrivileges() async {
     try {
-      final response = await _dio.get('/api/admin/health');
+      final response = await _dio.get('/admin/health');
       return response.statusCode == 200;
     } catch (e) {
       debugPrint(' [DataFlush] Admin privilege check failed: $e');

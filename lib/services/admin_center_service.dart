@@ -79,7 +79,7 @@ class AdminCenterService extends ChangeNotifier {
   /// Load admin roles for current user
   Future<void> _loadAdminRoles() async {
     try {
-      final response = await _dio.get('/api/admin/auth/roles');
+      final response = await _dio.get('/admin/auth/roles');
       final roles = (response.data['roles'] as List)
           .map((json) => AdminRoleModel.fromJson(json))
           .toList();
@@ -133,7 +133,7 @@ class AdminCenterService extends ChangeNotifier {
       };
 
       final response =
-          await _dio.get('/api/admin/users', queryParameters: queryParams);
+          await _dio.get('/admin/users', queryParameters: queryParams);
       return response.data;
     } catch (e) {
       debugPrint('[AdminCenterService] Error getting users: $e');
@@ -148,7 +148,7 @@ class AdminCenterService extends ChangeNotifier {
   Future<Map<String, dynamic>> getUserDetails(String userId) async {
     try {
       _setLoading(true);
-      final response = await _dio.get('/api/admin/users/$userId');
+      final response = await _dio.get('/admin/users/$userId');
       return response.data;
     } catch (e) {
       debugPrint('[AdminCenterService] Error getting user details: $e');
@@ -163,7 +163,7 @@ class AdminCenterService extends ChangeNotifier {
   Future<void> updateUserSubscription(String userId, String tier) async {
     try {
       _setLoading(true);
-      await _dio.patch('/api/admin/users/$userId', data: {'tier': tier});
+      await _dio.patch('/admin/users/$userId', data: {'tier': tier});
       _setError(null);
     } catch (e) {
       debugPrint('[AdminCenterService] Error updating user subscription: $e');
@@ -179,7 +179,7 @@ class AdminCenterService extends ChangeNotifier {
     try {
       _setLoading(true);
       await _dio
-          .post('/api/admin/users/$userId/suspend', data: {'reason': reason});
+          .post('/admin/users/$userId/suspend', data: {'reason': reason});
       _setError(null);
     } catch (e) {
       debugPrint('[AdminCenterService] Error suspending user: $e');
@@ -194,7 +194,7 @@ class AdminCenterService extends ChangeNotifier {
   Future<void> reactivateUser(String userId) async {
     try {
       _setLoading(true);
-      await _dio.post('/api/admin/users/$userId/reactivate');
+      await _dio.post('/admin/users/$userId/reactivate');
       _setError(null);
     } catch (e) {
       debugPrint('[AdminCenterService] Error reactivating user: $e');
@@ -209,7 +209,7 @@ class AdminCenterService extends ChangeNotifier {
   Future<Map<String, dynamic>> getDashboardMetrics() async {
     try {
       _setLoading(true);
-      final response = await _dio.get('/api/admin/dashboard/metrics');
+      final response = await _dio.get('/admin/dashboard/metrics');
       _dashboardMetrics = response.data;
       _setError(null);
       return response.data;
@@ -237,7 +237,7 @@ class AdminCenterService extends ChangeNotifier {
       };
 
       final response = await _dio.get(
-        '/api/admin/reports/revenue',
+        '/admin/reports/revenue',
         queryParameters: queryParams,
       );
       _setError(null);
@@ -266,7 +266,7 @@ class AdminCenterService extends ChangeNotifier {
       };
 
       final response = await _dio.get(
-        '/api/admin/reports/subscriptions',
+        '/admin/reports/subscriptions',
         queryParameters: queryParams,
       );
       _setError(null);
@@ -297,7 +297,7 @@ class AdminCenterService extends ChangeNotifier {
       };
 
       final response = await _dio.get(
-        '/api/admin/reports/export',
+        '/admin/reports/export',
         queryParameters: queryParams,
         options: Options(
           responseType: ResponseType.bytes,
@@ -351,7 +351,7 @@ class AdminCenterService extends ChangeNotifier {
       };
 
       final response = await _dio.get(
-        '/api/admin/audit/logs',
+        '/admin/audit/logs',
         queryParameters: queryParams,
       );
       _setError(null);
@@ -369,7 +369,7 @@ class AdminCenterService extends ChangeNotifier {
   Future<Map<String, dynamic>> getAuditLogDetails(String logId) async {
     try {
       _setLoading(true);
-      final response = await _dio.get('/api/admin/audit/logs/$logId');
+      final response = await _dio.get('/admin/audit/logs/$logId');
       _setError(null);
       return response.data;
     } catch (e) {
@@ -403,7 +403,7 @@ class AdminCenterService extends ChangeNotifier {
       };
 
       final response = await _dio.get(
-        '/api/admin/audit/export',
+        '/admin/audit/export',
         queryParameters: queryParams,
         options: Options(
           responseType: ResponseType.bytes,
@@ -428,11 +428,11 @@ class AdminCenterService extends ChangeNotifier {
   }
 
   /// Get email configuration
-  /// Endpoint: GET /api/admin/email/config
+  /// Endpoint: GET /admin/email/config
   Future<Map<String, dynamic>> getEmailConfiguration() async {
     try {
       _setLoading(true);
-      final response = await _dio.get('/api/admin/email/config');
+      final response = await _dio.get('/admin/email/config');
       _setError(null);
       return response.data['data'] ?? {};
     } catch (e) {
@@ -445,14 +445,14 @@ class AdminCenterService extends ChangeNotifier {
   }
 
   /// Save email configuration
-  /// Endpoint: POST /api/admin/email/config
+  /// Endpoint: POST /admin/email/config
   Future<Map<String, dynamic>> saveEmailConfiguration(
     Map<String, dynamic> config,
   ) async {
     try {
       _setLoading(true);
       final response = await _dio.post(
-        '/api/admin/email/config',
+        '/admin/email/config',
         data: config,
       );
       _setError(null);
@@ -467,12 +467,12 @@ class AdminCenterService extends ChangeNotifier {
   }
 
   /// Send test email
-  /// Endpoint: POST /api/admin/email/test
+  /// Endpoint: POST /admin/email/test
   Future<Map<String, dynamic>> sendTestEmail(String recipientEmail) async {
     try {
       _setLoading(true);
       final response = await _dio.post(
-        '/api/admin/email/test',
+        '/admin/email/test',
         data: {
           'recipientEmail': recipientEmail,
           'subject': 'Test Email from CloudToLocalLLM',
@@ -490,11 +490,11 @@ class AdminCenterService extends ChangeNotifier {
   }
 
   /// Start Google Workspace OAuth flow
-  /// Endpoint: POST /api/admin/email/oauth/start
+  /// Endpoint: POST /admin/email/oauth/start
   Future<String> startEmailOAuthFlow() async {
     try {
       _setLoading(true);
-      final response = await _dio.post('/api/admin/email/oauth/start');
+      final response = await _dio.post('/admin/email/oauth/start');
       _setError(null);
       return response.data['data']['authorizationUrl'] ?? '';
     } catch (e) {
@@ -507,7 +507,7 @@ class AdminCenterService extends ChangeNotifier {
   }
 
   /// Handle Google Workspace OAuth callback
-  /// Endpoint: POST /api/admin/email/oauth/callback
+  /// Endpoint: POST /admin/email/oauth/callback
   Future<Map<String, dynamic>> handleEmailOAuthCallback(
     String code,
     String state,
@@ -515,7 +515,7 @@ class AdminCenterService extends ChangeNotifier {
     try {
       _setLoading(true);
       final response = await _dio.post(
-        '/api/admin/email/oauth/callback',
+        '/admin/email/oauth/callback',
         data: {
           'code': code,
           'state': state,
@@ -533,11 +533,11 @@ class AdminCenterService extends ChangeNotifier {
   }
 
   /// Get email service status
-  /// Endpoint: GET /api/admin/email/status
+  /// Endpoint: GET /admin/email/status
   Future<Map<String, dynamic>> getEmailStatus() async {
     try {
       _setLoading(true);
-      final response = await _dio.get('/api/admin/email/status');
+      final response = await _dio.get('/admin/email/status');
       _setError(null);
       return response.data['data'] ?? {};
     } catch (e) {
@@ -550,11 +550,11 @@ class AdminCenterService extends ChangeNotifier {
   }
 
   /// Get Google Workspace quota usage
-  /// Endpoint: GET /api/admin/email/quota
+  /// Endpoint: GET /admin/email/quota
   Future<Map<String, dynamic>> getEmailQuota() async {
     try {
       _setLoading(true);
-      final response = await _dio.get('/api/admin/email/quota');
+      final response = await _dio.get('/admin/email/quota');
       _setError(null);
       return response.data['data'] ?? {};
     } catch (e) {
@@ -567,7 +567,7 @@ class AdminCenterService extends ChangeNotifier {
   }
 
   /// Get DNS records from Cloudflare
-  /// Endpoint: GET /api/admin/dns/records
+  /// Endpoint: GET /admin/dns/records
   Future<List<Map<String, dynamic>>> getDnsRecords({
     String? recordType,
     String? name,
@@ -580,7 +580,7 @@ class AdminCenterService extends ChangeNotifier {
       };
 
       final response = await _dio.get(
-        '/api/admin/dns/records',
+        '/admin/dns/records',
         queryParameters: queryParams,
       );
       _setError(null);
@@ -596,7 +596,7 @@ class AdminCenterService extends ChangeNotifier {
   }
 
   /// Create a DNS record via Cloudflare
-  /// Endpoint: POST /api/admin/dns/records
+  /// Endpoint: POST /admin/dns/records
   Future<Map<String, dynamic>> createDnsRecord({
     required String recordType,
     required String name,
@@ -607,7 +607,7 @@ class AdminCenterService extends ChangeNotifier {
     try {
       _setLoading(true);
       final response = await _dio.post(
-        '/api/admin/dns/records',
+        '/admin/dns/records',
         data: {
           'recordType': recordType,
           'name': name,
@@ -628,7 +628,7 @@ class AdminCenterService extends ChangeNotifier {
   }
 
   /// Update a DNS record via Cloudflare
-  /// Endpoint: PUT /api/admin/dns/records/:id
+  /// Endpoint: PUT /admin/dns/records/:id
   Future<Map<String, dynamic>> updateDnsRecord({
     required String recordId,
     String? value,
@@ -638,7 +638,7 @@ class AdminCenterService extends ChangeNotifier {
     try {
       _setLoading(true);
       final response = await _dio.put(
-        '/api/admin/dns/records/$recordId',
+        '/admin/dns/records/$recordId',
         data: {
           if (value != null) 'value': value,
           if (ttl != null) 'ttl': ttl,
@@ -657,11 +657,11 @@ class AdminCenterService extends ChangeNotifier {
   }
 
   /// Delete a DNS record via Cloudflare
-  /// Endpoint: DELETE /api/admin/dns/records/:id
+  /// Endpoint: DELETE /admin/dns/records/:id
   Future<void> deleteDnsRecord(String recordId) async {
     try {
       _setLoading(true);
-      await _dio.delete('/api/admin/dns/records/$recordId');
+      await _dio.delete('/admin/dns/records/$recordId');
       _setError(null);
     } catch (e) {
       debugPrint('[AdminCenterService] Error deleting DNS record: $e');
@@ -673,7 +673,7 @@ class AdminCenterService extends ChangeNotifier {
   }
 
   /// Validate DNS records via Cloudflare
-  /// Endpoint: POST /api/admin/dns/validate
+  /// Endpoint: POST /admin/dns/validate
   Future<Map<String, dynamic>> validateDnsRecords({String? recordId}) async {
     try {
       _setLoading(true);
@@ -682,7 +682,7 @@ class AdminCenterService extends ChangeNotifier {
       };
 
       final response = await _dio.post(
-        '/api/admin/dns/validate',
+        '/admin/dns/validate',
         queryParameters: queryParams,
       );
       _setError(null);
@@ -697,7 +697,7 @@ class AdminCenterService extends ChangeNotifier {
   }
 
   /// Get recommended DNS records for Google Workspace
-  /// Endpoint: GET /api/admin/dns/google-records
+  /// Endpoint: GET /admin/dns/google-records
   Future<Map<String, dynamic>> getGoogleWorkspaceDnsRecords({
     String? domain,
   }) async {
@@ -708,7 +708,7 @@ class AdminCenterService extends ChangeNotifier {
       };
 
       final response = await _dio.get(
-        '/api/admin/dns/google-records',
+        '/admin/dns/google-records',
         queryParameters: queryParams,
       );
       _setError(null);
@@ -724,7 +724,7 @@ class AdminCenterService extends ChangeNotifier {
   }
 
   /// One-click setup of Google Workspace DNS records
-  /// Endpoint: POST /api/admin/dns/setup-google
+  /// Endpoint: POST /admin/dns/setup-google
   Future<Map<String, dynamic>> setupGoogleWorkspaceDns({
     String? domain,
     List<String>? recordTypes,
@@ -732,7 +732,7 @@ class AdminCenterService extends ChangeNotifier {
     try {
       _setLoading(true);
       final response = await _dio.post(
-        '/api/admin/dns/setup-google',
+        '/admin/dns/setup-google',
         data: {
           if (domain != null) 'domain': domain,
           if (recordTypes != null) 'recordTypes': recordTypes,
@@ -755,7 +755,7 @@ class AdminCenterService extends ChangeNotifier {
   Future<Map<String, dynamic>> getAdmins() async {
     try {
       _setLoading(true);
-      final response = await _dio.get('/api/admin/admins');
+      final response = await _dio.get('/admin/admins');
       _setError(null);
       return response.data;
     } catch (e) {
@@ -787,7 +787,7 @@ class AdminCenterService extends ChangeNotifier {
           break;
       }
 
-      await _dio.post('/api/admin/admins', data: {
+      await _dio.post('/admin/admins', data: {
         'email': email,
         'role': roleString,
       });
@@ -806,7 +806,7 @@ class AdminCenterService extends ChangeNotifier {
   Future<void> revokeAdminRole(String userId, String role) async {
     try {
       _setLoading(true);
-      await _dio.delete('/api/admin/admins/$userId/roles/$role');
+      await _dio.delete('/admin/admins/$userId/roles/$role');
       _setError(null);
     } catch (e) {
       debugPrint('[AdminCenterService] Error revoking admin role: $e');

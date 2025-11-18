@@ -72,7 +72,7 @@ class _EmailTemplateEditorState extends State<EmailTemplateEditor> {
 
     try {
       final response = await adminService.getDio().get(
-        '/api/admin/email/templates',
+        '/admin/email/templates',
         queryParameters: {'limit': 100, 'offset': 0},
       );
 
@@ -164,7 +164,7 @@ class _EmailTemplateEditorState extends State<EmailTemplateEditor> {
       };
 
       await adminService.getDio().post(
-            '/api/admin/email/templates',
+            '/admin/email/templates',
             data: requestData,
           );
 
@@ -232,7 +232,7 @@ class _EmailTemplateEditorState extends State<EmailTemplateEditor> {
 
     try {
       await adminService.getDio().delete(
-            '/api/admin/email/templates/$templateId',
+            '/admin/email/templates/$templateId',
           );
 
       setState(() {

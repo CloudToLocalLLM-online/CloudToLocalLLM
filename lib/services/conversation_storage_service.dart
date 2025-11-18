@@ -473,7 +473,7 @@ class ConversationStorageService {
     try {
       final headers = await _getAuthHeaders();
 
-      final response = await _dio.get('/api/conversations',
+      final response = await _dio.get('/conversations',
           options: Options(headers: headers));
 
       if (response.statusCode == 200) {
@@ -512,7 +512,7 @@ class ConversationStorageService {
     try {
       final headers = await _getAuthHeaders();
 
-      final response = await _dio.get('/api/conversations/$conversationId',
+      final response = await _dio.get('/conversations/$conversationId',
           options: Options(headers: headers));
 
       if (response.statusCode == 200) {
@@ -572,7 +572,7 @@ class ConversationStorageService {
             .toList(),
       };
 
-      final response = await _dio.put('/api/conversations/${conversation.id}',
+      final response = await _dio.put('/conversations/${conversation.id}',
           data: body, options: Options(headers: headers));
 
       if (response.statusCode == 200 || response.statusCode == 201) {
@@ -594,7 +594,7 @@ class ConversationStorageService {
               .toList(),
         };
 
-        final postResponse = await _dio.post('/api/conversations',
+        final postResponse = await _dio.post('/conversations',
             data: postBody, options: Options(headers: headers));
 
         if (postResponse.statusCode != 201) {
@@ -613,7 +613,7 @@ class ConversationStorageService {
     try {
       final headers = await _getAuthHeaders();
 
-      final response = await _dio.delete('/api/conversations/$conversationId',
+      final response = await _dio.delete('/conversations/$conversationId',
           options: Options(headers: headers));
 
       if (response.statusCode == 200) {

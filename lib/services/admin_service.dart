@@ -23,7 +23,7 @@ import 'auth_service.dart';
 /// - Audit log access
 ///
 /// Features:
-/// - Connects to admin API backend (/api/admin/*)
+/// - Connects to admin API backend (/admin/*)
 /// - JWT authentication with admin role validation
 /// - Permission-based method access control
 /// - Comprehensive error handling and logging
@@ -128,7 +128,7 @@ class AdminService extends ChangeNotifier {
     try {
       debugPrint('👤 [AdminService] Loading admin roles');
 
-      final response = await _dio.get('/api/admin/auth/roles');
+      final response = await _dio.get('/admin/auth/roles');
 
       if (response.statusCode == 200 && response.data['success'] == true) {
         final rolesList = response.data['data']['roles'] as List;
@@ -199,7 +199,7 @@ class AdminService extends ChangeNotifier {
       if (status != null) queryParams['status'] = status;
 
       final response = await _dio.get(
-        '/api/admin/users',
+        '/admin/users',
         queryParameters: queryParams,
       );
 
@@ -228,7 +228,7 @@ class AdminService extends ChangeNotifier {
       _setLoading(true);
       _setError(null);
 
-      final response = await _dio.get('/api/admin/users/$userId');
+      final response = await _dio.get('/admin/users/$userId');
 
       if (response.statusCode == 200 && response.data['success'] == true) {
         debugPrint('✅ [AdminService] User details fetched');
@@ -259,7 +259,7 @@ class AdminService extends ChangeNotifier {
       _setError(null);
 
       final response = await _dio.patch(
-        '/api/admin/users/$userId/subscription',
+        '/admin/users/$userId/subscription',
         data: {'tier': newTier},
       );
 
@@ -292,7 +292,7 @@ class AdminService extends ChangeNotifier {
       _setError(null);
 
       final response = await _dio.post(
-        '/api/admin/users/$userId/suspend',
+        '/admin/users/$userId/suspend',
         data: {'reason': reason},
       );
 
@@ -321,7 +321,7 @@ class AdminService extends ChangeNotifier {
       _setLoading(true);
       _setError(null);
 
-      final response = await _dio.post('/api/admin/users/$userId/reactivate');
+      final response = await _dio.post('/admin/users/$userId/reactivate');
 
       if (response.statusCode == 200 && response.data['success'] == true) {
         debugPrint('✅ [AdminService] User reactivated');
@@ -374,7 +374,7 @@ class AdminService extends ChangeNotifier {
       if (status != null) queryParams['status'] = status;
 
       final response = await _dio.get(
-        '/api/admin/payments/transactions',
+        '/admin/payments/transactions',
         queryParameters: queryParams,
       );
 
@@ -407,7 +407,7 @@ class AdminService extends ChangeNotifier {
       _setError(null);
 
       final response = await _dio.get(
-        '/api/admin/payments/transactions/$transactionId',
+        '/admin/payments/transactions/$transactionId',
       );
 
       if (response.statusCode == 200 && response.data['success'] == true) {
@@ -455,7 +455,7 @@ class AdminService extends ChangeNotifier {
       }
 
       final response = await _dio.post(
-        '/api/admin/payments/refunds',
+        '/admin/payments/refunds',
         data: requestData,
       );
 
@@ -486,7 +486,7 @@ class AdminService extends ChangeNotifier {
       _setError(null);
 
       final response = await _dio.get(
-        '/api/admin/payments/methods/$userId',
+        '/admin/payments/methods/$userId',
       );
 
       if (response.statusCode == 200 && response.data['success'] == true) {
@@ -538,7 +538,7 @@ class AdminService extends ChangeNotifier {
       if (status != null) queryParams['status'] = status;
 
       final response = await _dio.get(
-        '/api/admin/subscriptions',
+        '/admin/subscriptions',
         queryParameters: queryParams,
       );
 
@@ -571,7 +571,7 @@ class AdminService extends ChangeNotifier {
       _setError(null);
 
       final response = await _dio.get(
-        '/api/admin/subscriptions/$subscriptionId',
+        '/admin/subscriptions/$subscriptionId',
       );
 
       if (response.statusCode == 200 && response.data['success'] == true) {
@@ -604,7 +604,7 @@ class AdminService extends ChangeNotifier {
       _setError(null);
 
       final response = await _dio.patch(
-        '/api/admin/subscriptions/$subscriptionId',
+        '/admin/subscriptions/$subscriptionId',
         data: {'price_id': newPriceId},
       );
 
@@ -637,7 +637,7 @@ class AdminService extends ChangeNotifier {
       _setError(null);
 
       final response = await _dio.post(
-        '/api/admin/subscriptions/$subscriptionId/cancel',
+        '/admin/subscriptions/$subscriptionId/cancel',
         data: {'immediate': immediate},
       );
 
@@ -677,7 +677,7 @@ class AdminService extends ChangeNotifier {
       _setLoading(true);
       _setError(null);
 
-      final response = await _dio.get('/api/admin/dashboard/metrics');
+      final response = await _dio.get('/admin/dashboard/metrics');
 
       if (response.statusCode == 200 && response.data['success'] == true) {
         _dashboardMetrics = response.data['data'];

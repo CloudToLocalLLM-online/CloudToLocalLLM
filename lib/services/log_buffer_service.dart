@@ -137,7 +137,7 @@ class LogBufferService {
       _pendingEntries.removeRange(0, batchSize);
 
       await _dio.post(
-        '/api/client-logs',
+        '/client-logs', // Removed /api prefix since baseUrl is already api subdomain
         data: {'entries': batch, 'source': 'flutter-web'},
         options: Options(headers: {'Content-Type': 'application/json'}),
       );

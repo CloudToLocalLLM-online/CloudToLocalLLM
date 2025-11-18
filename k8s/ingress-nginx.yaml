@@ -116,7 +116,7 @@ spec:
               service:
                 name: api-backend
                 port:
-                  number: 3000
+                  number: 8080
     
     # Auth subdomain - Using Auth0 (external service, no routing needed)
 

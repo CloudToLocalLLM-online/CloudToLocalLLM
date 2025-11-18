@@ -191,6 +191,7 @@ app.use(createConditionalRateLimiter());
 // Webhook routes MUST be mounted before body parsing middleware
 // Stripe requires raw body for signature verification
 app.use('/api/webhooks', webhookRoutes);
+app.use('/webhooks', webhookRoutes); // Also register without /api prefix for api subdomain
 
 // Body parsing middleware
 app.use(express.json({ limit: '10mb' }));
@@ -241,18 +242,21 @@ const tunnelRouter = createTunnelRoutes({
 const monitoringRouter = createMonitoringRoutes(sshProxy, logger);
 
 // API Routes
+// Register routes both with /api prefix (for other subdomains) and without (for api subdomain)
 
 // Simplified tunnel routes
 app.use('/api/tunnel', tunnelRouter);
+app.use('/tunnel', tunnelRouter); // Also register without /api prefix for api subdomain
 
 // Performance monitoring routes
 app.use('/api/monitoring', monitoringRouter);
+app.use('/monitoring', monitoringRouter); // Also register without /api prefix for api subdomain
 
 // Conversation management routes (initialized after database is ready)
 // Will be set up in initializeTunnelSystem() after dbMigrator is initialized
 
 // Database health endpoint
-app.get('/api/db/health', async(req, res) => {
+const dbHealthHandler = async(req, res) => {
   try {
     if (!dbMigrator) {
       return res.status(503).json({
@@ -282,24 +286,33 @@ app.get('/api/db/health', async(req, res) => {
       timestamp: new Date().toISOString(),
     });
   }
-});
+};
+app.get('/api/db/health', dbHealthHandler);
+app.get('/db/health', dbHealthHandler); // Also register without /api prefix for api subdomain
 
 // Session management routes
 app.use('/api/auth/sessions', sessionRoutes);
+app.use('/auth/sessions', sessionRoutes); // Also register without /api prefix for api subdomain
 
 // Client log ingestion
 app.use('/api/client-logs', clientLogRoutes);
+app.use('/client-logs', clientLogRoutes); // Also register without /api prefix for api subdomain
 
 // Database health check routes
 app.use('/api/db', dbHealthRoutes);
+app.use('/db', dbHealthRoutes); // Also register without /api prefix for api subdomain
 
 // TURN server credentials (authenticated)
 app.use('/api/turn', turnCredentialsRoutes);
+app.use('/turn', turnCredentialsRoutes); // Also register without /api prefix for api subdomain
 
 // Administrative routes
 app.use('/api/admin', adminRoutes);
+app.use('/admin', adminRoutes); // Also register without /api prefix for api subdomain
 app.use('/api/admin/users', adminUserRoutes);
+app.use('/admin/users', adminUserRoutes); // Also register without /api prefix for api subdomain
 app.use('/api/admin', adminSubscriptionRoutes);
+app.use('/admin', adminSubscriptionRoutes); // Also register without /api prefix for api subdomain
 
 // LLM Tunnel Cloud Proxy Endpoints (support both /api/ollama and /ollama)
 const handleOllamaProxyRequest = async(req, res) => {
@@ -387,7 +400,7 @@ const OLLAMA_ROUTE_PATHS = ['/api/ollama', '/api/ollama/*', '/ollama', '/ollama/
 app.all(OLLAMA_ROUTE_PATHS, authenticateJWT, addTierInfo, handleOllamaProxyRequest);
 
 // User tier endpoint
-app.get('/api/user/tier', authenticateJWT, addTierInfo, (req, res) => {
+const userTierHandler = [authenticateJWT, addTierInfo, (req, res) => {
   try {
     const userTier = getUserTier(req.user);
     const features = getTierFeatures(userTier);
@@ -405,33 +418,29 @@ app.get('/api/user/tier', authenticateJWT, addTierInfo, (req, res) => {
       code: 'TIER_ERROR',
     });
   }
-});
+}];
+app.get('/api/user/tier', ...userTierHandler);
+app.get('/user/tier', ...userTierHandler); // Also register without /api prefix for api subdomain
 
 // Health check endpoints
-app.get('/health', (req, res) => {
-  res.json({
-    status: 'healthy',
-    timestamp: new Date().toISOString(),
-    tunnelSystem: 'websocket',
-  });
-});
-
-// API health check endpoint (for web app compatibility)
-app.get('/api/health', (req, res) => {
+const healthHandler = (req, res) => {
   res.json({
     status: 'healthy',
     timestamp: new Date().toISOString(),
     tunnelSystem: 'websocket',
     service: 'cloudtolocalllm-api',
   });
-});
+};
+app.get('/health', healthHandler);
+app.get('/api/health', healthHandler); // Also register with /api prefix for backward compatibility
 
 // WebSocket bridge endpoints removed - using HTTP polling only
 
 // Streaming Proxy Management Endpoints
 
 // Start streaming proxy for user
-app.post('/api/proxy/start', authenticateToken, async(req, res) => {
+const proxyStartHandler = authenticateToken;
+const proxyStartRoute = [proxyStartHandler, async(req, res) => {
   try {
     const userId = req.user.sub;
     const userToken = req.headers.authorization;
@@ -460,10 +469,12 @@ app.post('/api/proxy/start', authenticateToken, async(req, res) => {
       message: error.message,
     });
   }
-});
+}];
+app.post('/api/proxy/start', ...proxyStartRoute);
+app.post('/proxy/start', ...proxyStartRoute); // Also register without /api prefix for api subdomain
 
 // Stop streaming proxy for user
-app.post('/api/proxy/stop', authenticateToken, async(req, res) => {
+const proxyStopRoute = [authenticateToken, async(req, res) => {
   try {
     const userId = req.user.sub;
 
@@ -489,10 +500,12 @@ app.post('/api/proxy/stop', authenticateToken, async(req, res) => {
       message: error.message,
     });
   }
-});
+}];
+app.post('/api/proxy/stop', ...proxyStopRoute);
+app.post('/proxy/stop', ...proxyStopRoute); // Also register without /api prefix for api subdomain
 
 // Provision streaming proxy for user (with test mode support)
-app.post('/api/streaming-proxy/provision', authenticateToken, async(req, res) => {
+const proxyProvisionRoute = [authenticateToken, async(req, res) => {
   try {
     const userId = req.user.sub;
     const userToken = req.headers.authorization;
@@ -543,10 +556,12 @@ app.post('/api/streaming-proxy/provision', authenticateToken, async(req, res) =>
       testMode: req.body.testMode || false,
     });
   }
-});
+}];
+app.post('/api/streaming-proxy/provision', ...proxyProvisionRoute);
+app.post('/streaming-proxy/provision', ...proxyProvisionRoute); // Also register without /api prefix for api subdomain
 
 // Get streaming proxy status
-app.get('/api/proxy/status', authenticateToken, async(req, res) => {
+const proxyStatusRoute = [authenticateToken, async(req, res) => {
   try {
     const userId = req.user.sub;
     const status = await proxyManager.getProxyStatus(userId);
@@ -564,7 +579,9 @@ app.get('/api/proxy/status', authenticateToken, async(req, res) => {
       message: error.message,
     });
   }
-});
+}];
+app.get('/api/proxy/status', ...proxyStatusRoute);
+app.get('/proxy/status', ...proxyStatusRoute); // Also register without /api prefix for api subdomain
 
 // Ollama proxy endpoints removed - using HTTP polling tunnel system instead
 
@@ -783,6 +800,7 @@ async function initializeTunnelSystem() {
     // Initialize conversation routes after database is ready
     const conversationRouter = createConversationRoutes(dbMigrator, logger);
     app.use('/api/conversations', conversationRouter);
+    app.use('/conversations', conversationRouter); // Also register without /api prefix for api subdomain
     logger.info('Conversation API routes initialized');
 
     logger.info('WebSocket tunnel system ready');

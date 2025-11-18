@@ -72,7 +72,7 @@ class CloudStreamingService extends StreamingService {
       // Test basic connectivity first
       final headers = await _getHeaders();
       final response = await _dio.get(
-        '/api/version',
+        '/version',
         options: Options(headers: headers),
       );
 
@@ -173,7 +173,7 @@ class CloudStreamingService extends StreamingService {
       final baseHeaders = await _getHeaders();
 
       final response = await _dio.post(
-        '/api/chat',
+        '/chat',
         data: requestBody,
         options: Options(
           headers: {
@@ -278,7 +278,7 @@ class CloudStreamingService extends StreamingService {
     try {
       final headers = await _getHeaders();
       final response = await _dio.get(
-        '/api/tags',
+        '/tags',
         options: Options(headers: headers),
       );
 

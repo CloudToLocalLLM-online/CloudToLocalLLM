@@ -134,7 +134,7 @@ class LocalOllamaConnectionService extends ChangeNotifier {
     try {
       debugPrint('[LocalOllama] Testing connection to $_baseUrl');
 
-      final response = await _dio.get('/api/version',
+      final response = await _dio.get('/version',
           options: Options(headers: {'Accept': 'application/json'}));
 
       if (response.statusCode == 200) {
@@ -188,7 +188,7 @@ class LocalOllamaConnectionService extends ChangeNotifier {
     }
 
     try {
-      final response = await _dio.get('/api/tags',
+      final response = await _dio.get('/tags',
           options: Options(headers: {'Accept': 'application/json'}));
 
       if (response.statusCode == 200) {
@@ -232,7 +232,7 @@ class LocalOllamaConnectionService extends ChangeNotifier {
       ];
 
       final response = await _dio.post(
-        '/api/chat',
+        '/chat',
         data: {
           'model': model,
           'messages': messages,

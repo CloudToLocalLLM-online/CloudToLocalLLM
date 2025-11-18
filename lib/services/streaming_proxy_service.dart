@@ -70,7 +70,7 @@ class StreamingProxyService extends ChangeNotifier {
 
       final headers = await _getHeaders();
       final response = await _dio.post(
-        '/api/proxy/start',
+        '/proxy/start',
         options: Options(headers: headers),
       );
 
@@ -119,7 +119,7 @@ class StreamingProxyService extends ChangeNotifier {
 
       final headers = await _getHeaders();
       final response = await _dio.post(
-        '/api/proxy/stop',
+        '/proxy/stop',
         options: Options(headers: headers),
       );
 
@@ -164,7 +164,7 @@ class StreamingProxyService extends ChangeNotifier {
 
       final headers = await _getHeaders();
       final response = await _dio.get(
-        '/api/proxy/status',
+        '/proxy/status',
         options: Options(headers: headers),
       );
 

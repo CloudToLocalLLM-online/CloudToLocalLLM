@@ -169,7 +169,7 @@ class ConnectionValidationService extends ChangeNotifier {
       }
 
       final response = await _dio.get(
-        '/api/tunnel/status',
+        '/tunnel/status',
         options: Options(headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
@@ -231,7 +231,7 @@ class ConnectionValidationService extends ChangeNotifier {
 
       // Test basic LLM endpoint connectivity
       final response = await _dio.get(
-        '/ollama/api/tags',
+        '/ollama/tags',
         options: Options(headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
@@ -292,7 +292,7 @@ class ConnectionValidationService extends ChangeNotifier {
 
       // Test streaming endpoint availability
       final response = await _dio.post(
-        '/api/chat/stream',
+        '/chat/stream',
         data: {
           'model': 'test',
           'messages': [
@@ -356,7 +356,7 @@ class ConnectionValidationService extends ChangeNotifier {
 
       // Test token validation endpoint
       final response = await _dio.get(
-        '/api/auth/validate',
+        '/auth/validate',
         options: Options(headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',

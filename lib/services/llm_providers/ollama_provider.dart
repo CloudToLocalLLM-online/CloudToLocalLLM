@@ -150,7 +150,7 @@ class OllamaProvider extends LLMProvider {
     try {
       final baseUrl = _getBaseUrl();
       _dio.options.baseUrl = baseUrl;
-      final response = await _dio.get('/api/version',
+      final response = await _dio.get('/version',
           options: Options(headers: _getHeaders()));
 
       if (response.statusCode == 200) {
@@ -177,7 +177,7 @@ class OllamaProvider extends LLMProvider {
       final baseUrl = _getBaseUrl();
       _dio.options.baseUrl = baseUrl;
       final response =
-          await _dio.get('/api/tags', options: Options(headers: _getHeaders()));
+          await _dio.get('/tags', options: Options(headers: _getHeaders()));
 
       if (response.statusCode == 200) {
         final data = response.data as Map<String, dynamic>;
@@ -252,7 +252,7 @@ class OllamaProvider extends LLMProvider {
       final baseUrl = _getBaseUrl();
       _dio.options.baseUrl = baseUrl;
       final response = await _dio.post(
-        '/api/chat',
+        '/chat',
         data: {
           'model': model,
           'messages': messages,
@@ -305,7 +305,7 @@ class OllamaProvider extends LLMProvider {
       final baseUrl = _getBaseUrl();
       _dio.options.baseUrl = baseUrl;
       final response = await _dio.post(
-        '/api/chat',
+        '/chat',
         data: {
           'model': model,
           'messages': messages,

@@ -15,7 +15,7 @@ import 'auth_service.dart';
 /// - Payment method management
 ///
 /// Features:
-/// - Connects to admin API backend (/api/admin/payments)
+/// - Connects to admin API backend (/admin/payments)
 /// - JWT authentication with admin role validation
 /// - Comprehensive error handling and logging
 /// - Real-time data updates
@@ -122,7 +122,7 @@ class PaymentGatewayService extends ChangeNotifier {
       _setError(null);
 
       final response = await _dio.post(
-        '/api/admin/payments/process',
+        '/admin/payments/process',
         data: {
           'user_id': userId,
           'amount': amount,
@@ -189,7 +189,7 @@ class PaymentGatewayService extends ChangeNotifier {
       if (status != null) queryParams['status'] = status;
 
       final response = await _dio.get(
-        '/api/admin/payments/transactions',
+        '/admin/payments/transactions',
         queryParameters: queryParams,
       );
 
@@ -235,7 +235,7 @@ class PaymentGatewayService extends ChangeNotifier {
       _setError(null);
 
       final response = await _dio.get(
-        '/api/admin/payments/transactions/$transactionId',
+        '/admin/payments/transactions/$transactionId',
       );
 
       if (response.statusCode == 200 && response.data['success'] == true) {
@@ -278,7 +278,7 @@ class PaymentGatewayService extends ChangeNotifier {
       _setError(null);
 
       final response = await _dio.post(
-        '/api/admin/subscriptions',
+        '/admin/subscriptions',
         data: {
           'user_id': userId,
           'price_id': priceId,
@@ -321,7 +321,7 @@ class PaymentGatewayService extends ChangeNotifier {
       _setError(null);
 
       final response = await _dio.patch(
-        '/api/admin/subscriptions/$subscriptionId',
+        '/admin/subscriptions/$subscriptionId',
         data: {
           'price_id': newPriceId,
         },
@@ -362,7 +362,7 @@ class PaymentGatewayService extends ChangeNotifier {
       _setError(null);
 
       final response = await _dio.post(
-        '/api/admin/subscriptions/$subscriptionId/cancel',
+        '/admin/subscriptions/$subscriptionId/cancel',
         data: {
           'immediate': immediate,
         },
@@ -421,7 +421,7 @@ class PaymentGatewayService extends ChangeNotifier {
       if (status != null) queryParams['status'] = status;
 
       final response = await _dio.get(
-        '/api/admin/subscriptions',
+        '/admin/subscriptions',
         queryParameters: queryParams,
       );
 
@@ -468,7 +468,7 @@ class PaymentGatewayService extends ChangeNotifier {
       _setError(null);
 
       final response = await _dio.get(
-        '/api/admin/subscriptions/$subscriptionId',
+        '/admin/subscriptions/$subscriptionId',
       );
 
       if (response.statusCode == 200 && response.data['success'] == true) {
@@ -530,7 +530,7 @@ class PaymentGatewayService extends ChangeNotifier {
       }
 
       final response = await _dio.post(
-        '/api/admin/payments/refunds',
+        '/admin/payments/refunds',
         data: requestData,
       );
 
@@ -578,7 +578,7 @@ class PaymentGatewayService extends ChangeNotifier {
       _setError(null);
 
       final response = await _dio.get(
-        '/api/admin/payments/transactions/$transactionId/refunds',
+        '/admin/payments/transactions/$transactionId/refunds',
       );
 
       if (response.statusCode == 200 && response.data['success'] == true) {
@@ -615,7 +615,7 @@ class PaymentGatewayService extends ChangeNotifier {
       _setError(null);
 
       final response = await _dio.get(
-        '/api/admin/payments/methods/$userId',
+        '/admin/payments/methods/$userId',
       );
 
       if (response.statusCode == 200 && response.data['success'] == true) {

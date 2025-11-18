@@ -87,7 +87,7 @@ class UserContainerService extends ChangeNotifier {
       }
 
       final response = await _dio.post(
-        '/api/streaming-proxy/provision',
+        '/streaming-proxy/provision',
         data: {'testMode': testMode},
         options: Options(headers: {
           'Content-Type': 'application/json',
@@ -172,7 +172,7 @@ class UserContainerService extends ChangeNotifier {
       }
 
       final response = await _dio.get(
-        '/api/proxy/status',
+        '/proxy/status',
         options: Options(headers: {'Authorization': 'Bearer $token'}),
       );
 

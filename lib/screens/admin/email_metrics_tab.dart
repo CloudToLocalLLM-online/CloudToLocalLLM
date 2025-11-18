@@ -71,7 +71,7 @@ class _EmailMetricsTabState extends State<EmailMetricsTab> {
     try {
       // Call the metrics endpoint
       final response = await adminService.getDio().get(
-        '/api/admin/email/metrics',
+        '/admin/email/metrics',
         queryParameters: {
           'startDate': _startDate?.toIso8601String(),
           'endDate': _endDate?.toIso8601String(),
