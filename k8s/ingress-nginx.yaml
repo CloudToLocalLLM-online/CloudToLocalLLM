@@ -60,7 +60,7 @@ spec:
               service:
                 name: api-backend
                 port:
-                  number: 3000
+                  number: 8080
           - path: /
             pathType: Prefix
             backend:
@@ -96,7 +96,7 @@ spec:
               service:
                 name: api-backend
                 port:
-                  number: 3000
+                  number: 8080
           # Web app
           - path: /
             pathType: Prefix
