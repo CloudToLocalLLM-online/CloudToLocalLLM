@@ -2,860 +2,857 @@
 
 ## Table of Contents
 
-1. [Getting Started](#getting-started)
-2. [Accessing Admin Center](#accessing-admin-center)
+1. [Introduction](#introduction)
+2. [Getting Started](#getting-started)
 3. [Dashboard Overview](#dashboard-overview)
 4. [User Management](#user-management)
 5. [Payment Management](#payment-management)
 6. [Subscription Management](#subscription-management)
 7. [Financial Reports](#financial-reports)
-8. [Audit Logs](#audit-logs)
+8. [Audit Log Viewer](#audit-log-viewer)
 9. [Admin Management](#admin-management)
-10. [Troubleshooting](#troubleshooting)
+10. [Email Configuration](#email-configuration)
+11. [DNS Configuration](#dns-configuration)
+12. [Role-Based Permissions](#role-based-permissions)
+13. [Troubleshooting](#troubleshooting)
+
+---
+
+## Introduction
+
+The Admin Center is a secure web-based administrative interface for CloudToLocalLLM that enables authorized administrators to manage users, process payments, monitor system health, and perform administrative operations.
+
+### Who Can Access the Admin Center?
+
+Access to the Admin Center is restricted to users with administrator privileges. There are three administrator roles:
+
+- **Super Admin**: Full access to all features including admin management
+- **Support Admin**: Access to user management and account operations
+- **Finance Admin**: Access to payment, subscription, and financial reporting features
+
+### Key Features
+
+- **User Management**: Search, view, and manage user accounts
+- **Payment Processing**: View transactions, process refunds, manage payment methods
+- **Subscription Management**: Upgrade, downgrade, and cancel user subscriptions
+- **Financial Reporting**: Generate revenue reports and subscription metrics
+- **Audit Logging**: Track all administrative actions for compliance
+- **Admin Management**: Assign and revoke administrator roles (Super Admin only)
+- **Email Configuration**: Configure email providers for self-hosted instances
+- **DNS Configuration**: Manage DNS records for email authentication
+
+---
 
 ## Getting Started
 
-### What is Admin Center?
+### Accessing the Admin Center
 
-Admin Center is a comprehensive management interface for CloudToLocalLLM administrators. It provides tools to manage users, process payments, handle refunds, manage subscriptions, generate financial reports, and monitor all administrative activities.
+1. **Log in to CloudToLocalLLM** with your administrator account
+2. **Navigate to Settings** by clicking the settings icon in the main application
+3. **Locate the Admin Center button** in the settings pane (only visible to administrators)
+4. **Click "Admin Center"** to open the administrative interface in a new browser tab
 
-### Admin Roles and Permissions
+> **Note**: The Admin Center button is only visible if your account has administrator privileges. If you don't see this button, contact your Super Admin to request access.
 
-There are three admin roles with different permission levels:
+### Admin Center Interface
 
-**Super Admin**
-- Full access to all features
-- Can manage other administrators
-- Can view and modify all user data
-- Can process payments and refunds
-- Can access all reports and audit logs
-- Default Super Admin: cmaltais@cloudtolocalllm.online
+The Admin Center interface consists of:
 
-**Support Admin**
-- User management (view, edit, suspend, reactivate)
-- View-only access to payments
-- View audit logs
-- Cannot process refunds or manage subscriptions
-- Cannot manage other administrators
+- **Sidebar Navigation**: Access different sections (Dashboard, Users, Payments, etc.)
+- **Header Bar**: Displays current section title and refresh button
+- **Main Content Area**: Shows the selected section's content
+- **Exit Button**: Returns to the main application
 
-**Finance Admin**
-- Payment management (view transactions, process refunds)
-- Subscription management (view, update, cancel)
-- Financial reports and export
-- View audit logs
-- Cannot manage users or other administrators
+### Navigation
 
-### System Requirements
+Use the sidebar to navigate between different sections:
 
-- Modern web browser (Chrome, Firefox, Safari, Edge)
-- Active admin account with assigned role
-- Stable internet connection
-- JavaScript enabled
+- **Dashboard**: Overview metrics and system health
+- **Users**: User account management
+- **Payments**: Transaction and refund management
+- **Subscriptions**: Subscription tier management
+- **Reports**: Financial reports and analytics
+- **Audit Logs**: Administrative action history
+- **Admins**: Administrator role management (Super Admin only)
+- **Email Config**: Email provider settings (self-hosted only)
+- **Email Metrics**: Email delivery statistics (self-hosted only)
+- **DNS Config**: DNS record management (self-hosted only)
 
+> **Note**: Navigation items are filtered based on your role. You will only see sections you have permission to access.
 
-
-## Accessing Admin Center
-
-### Step 1: Log In to CloudToLocalLLM
-
-1. Open CloudToLocalLLM application
-2. Log in with your admin account credentials
-3. You must have an admin role assigned to access Admin Center
-
-### Step 2: Navigate to Settings
-
-1. Click the **Settings** icon in the main application
-2. Look for the **Admin Center** button in the settings panel
-3. If you don't see the Admin Center button, you don't have admin privileges
-
-### Step 3: Open Admin Center
-
-1. Click the **Admin Center** button
-2. Admin Center will open in a new tab or window
-3. You'll see the Admin Center dashboard with navigation sidebar
-
-### Access Control
-
-- Only users with assigned admin roles can access Admin Center
-- Your role determines which features you can access
-- If you try to access a feature you don't have permission for, you'll see an access denied message
-- All access attempts are logged in the audit log
-
-### Session Management
-
-- Your Admin Center session inherits from your main CloudToLocalLLM session
-- If you log out of the main app, your Admin Center session will also end
-- Sessions expire after 24 hours of inactivity
-- You'll be prompted to log in again if your session expires
-
-
+---
 
 ## Dashboard Overview
 
-### Dashboard Layout
+The Dashboard provides a quick overview of key metrics and system health.
 
-The Dashboard is your main view when you open Admin Center. It displays key metrics and quick access to all features.
+### Key Metrics Cards
 
-### Key Metrics
+The dashboard displays four primary metrics:
 
-**Total Users**
-- Shows the total number of registered users
-- Updated in real-time
-- Click to view detailed user list
+1. **Total Users**: Total number of registered users
+2. **Active Users**: Users who logged in within the last 30 days
+3. **Monthly Recurring Revenue (MRR)**: Total recurring revenue from active subscriptions
+4. **Current Month Revenue**: Total revenue generated in the current month
 
-**Active Subscriptions**
-- Shows the number of active paid subscriptions
-- Includes all subscription tiers (Free, Pro, Enterprise)
-- Click to view subscription details
+### Subscription Distribution
 
-**Monthly Revenue**
-- Shows total revenue for the current month
-- Includes all successful payments
-- Excludes refunded amounts
+A visual chart shows the distribution of users across subscription tiers:
 
-**Recent Transactions**
-- Shows the 10 most recent payment transactions
-- Displays transaction date, amount, user, and status
-- Click on a transaction to view details
+- **Free Tier**: Number and percentage of free users
+- **Premium Tier**: Number and percentage of premium subscribers
+- **Enterprise Tier**: Number and percentage of enterprise subscribers
 
-### Navigation Sidebar
+The chart also displays the conversion rate (percentage of users with paid subscriptions).
 
-The left sidebar provides quick access to all Admin Center features:
+### Recent Transactions
 
-- **Dashboard** - Main overview and metrics
-- **User Management** - Manage user accounts and subscriptions
-- **Payment Management** - View transactions and process refunds
-- **Subscription Management** - Manage user subscriptions
-- **Financial Reports** - Generate and export financial reports
-- **Audit Logs** - View all administrative activities
-- **Admin Management** - Manage other administrators (Super Admin only)
+The dashboard shows the 10 most recent payment transactions with:
 
-### Refreshing Data
+- Transaction ID
+- User email
+- Amount
+- Status (Succeeded, Failed, Refunded, etc.)
+- Timestamp
 
-- Dashboard data refreshes automatically every 30 seconds
-- Click the **Refresh** button to manually update data
-- Some operations (like processing refunds) will automatically refresh relevant sections
+### Auto-Refresh
 
+The dashboard automatically refreshes every 60 seconds to display the latest data. You can also manually refresh by clicking the refresh button in the header.
 
+**Last Updated**: The dashboard displays when the data was last refreshed.
+
+---
 
 ## User Management
 
-### Accessing User Management
-
-1. Click **User Management** in the sidebar
-2. You'll see a list of all registered users with their details
-
-### User List View
-
-The user list displays:
-- **Email** - User's email address
-- **Subscription Tier** - Current subscription level (Free, Pro, Enterprise)
-- **Status** - Active or Suspended
-- **Created Date** - When the account was created
-- **Last Active** - Last login date and time
+The User Management section allows you to search, view, and manage user accounts.
 
 ### Searching for Users
 
-1. Use the **Search** box at the top of the user list
-2. Type the user's email address or name
-3. Results update as you type
-4. Click on a user to view detailed information
-
-### Filtering Users
-
-Use the filter options to narrow down the user list:
-
-- **Subscription Tier** - Filter by Free, Pro, or Enterprise
-- **Status** - Filter by Active or Suspended users
-- **Date Range** - Filter by account creation date
+1. **Navigate to the Users section** from the sidebar
+2. **Use the search bar** to search by:
+   - Email address
+   - Username
+   - User ID
+3. **Apply filters** to narrow results:
+   - **Subscription Tier**: Free, Premium, Enterprise
+   - **Account Status**: Active, Suspended, Deleted
+   - **Date Range**: Registration date range
+4. **Click Search** to display results
 
 ### Viewing User Details
 
-1. Click on a user in the list
-2. A detail panel opens showing:
-   - Email address
-   - Full name
-   - Subscription tier and renewal date
-   - Account creation date
-   - Last login date
-   - Account status
-   - Payment methods on file
+1. **Click on a user** in the search results table
+2. **View comprehensive user information**:
+   - Profile details (email, username, registration date)
+   - Current subscription tier and status
+   - Payment history with all transactions
+   - Active sessions and login history
+   - Administrative action timeline
 
-### Updating User Information
+### Updating Subscription Tiers
 
-1. Open user details
-2. Click the **Edit** button
-3. Modify the user's information:
-   - Subscription tier
-   - Account status
-4. Click **Save** to apply changes
-5. The action is logged in the audit log
+**Required Permission**: `edit_users`
 
-### Suspending a User Account
+1. **Open the user detail view**
+2. **Click "Change Subscription"** button
+3. **Select the new tier** (Free, Premium, or Enterprise)
+4. **Review prorated charges** (if upgrading mid-cycle)
+5. **Confirm the change**
+6. **Verify the update** in the user's profile
 
-1. Open user details
-2. Click the **Suspend Account** button
-3. Confirm the suspension
-4. The user will no longer be able to log in
-5. All active sessions will be terminated
+> **Note**: Subscription changes are logged in the audit log and the user receives an email notification (if email is configured).
 
-### Reactivating a Suspended Account
+### Suspending User Accounts
 
-1. Open user details for a suspended user
-2. Click the **Reactivate Account** button
-3. Confirm the reactivation
-4. The user can log in again immediately
+**Required Permission**: `suspend_users`
 
-### Viewing User Sessions
+1. **Open the user detail view**
+2. **Click "Suspend Account"** button
+3. **Select a reason** for suspension:
+   - Terms of Service violation
+   - Payment issues
+   - Security concerns
+   - Other (provide details)
+4. **Enter additional details** (required)
+5. **Confirm suspension**
 
-1. Open user details
-2. Scroll to the **Active Sessions** section
-3. View all active sessions for this user
-4. Click **Terminate Session** to log out a specific session
+**What happens when an account is suspended:**
+- User cannot log in to the application
+- All active sessions are terminated
+- Subscriptions are paused (no billing)
+- User receives suspension notification email
 
+### Reactivating User Accounts
+
+**Required Permission**: `suspend_users`
+
+1. **Open the suspended user's detail view**
+2. **Click "Reactivate Account"** button
+3. **Confirm reactivation**
+4. **User can log in again** and subscriptions resume
+
+---
 
 
 ## Payment Management
 
-### Accessing Payment Management
+The Payment Management section allows you to view transactions, process refunds, and manage payment methods.
 
-1. Click **Payment Management** in the sidebar
-2. You'll see a list of all payment transactions
+### Viewing Payment Transactions
 
-### Payment Transactions
-
-The transaction list displays:
-- **Date** - Transaction date and time
-- **User** - Customer email address
-- **Amount** - Transaction amount
-- **Status** - Succeeded, Failed, or Pending
-- **Type** - One-time payment or subscription charge
-- **Payment Method** - Card ending in (last 4 digits)
-
-### Searching Transactions
-
-1. Use the **Search** box to find transactions
-2. Search by:
-   - User email address
+1. **Navigate to the Payments section** from the sidebar
+2. **View the paginated transaction table** with:
    - Transaction ID
-   - Amount
-3. Results update as you type
+   - User email
+   - Amount and currency
+   - Payment method (last 4 digits)
+   - Status
+   - Timestamp
+3. **Use pagination controls** to navigate through pages (100 transactions per page)
 
 ### Filtering Transactions
 
-Use the filter options to narrow down transactions:
+Apply filters to find specific transactions:
 
-- **Status** - Succeeded, Failed, or Pending
-- **Type** - One-time or Subscription
-- **Date Range** - Filter by transaction date
-- **Amount Range** - Filter by transaction amount
+- **Date Range**: Select start and end dates
+- **Status**: Pending, Succeeded, Failed, Refunded, Partially Refunded, Disputed
+- **User**: Filter by user email or ID
+- **Amount Range**: Minimum and maximum amounts
+- **Sort By**: Date, Amount, or Status
 
 ### Viewing Transaction Details
 
-1. Click on a transaction in the list
-2. A detail panel shows:
-   - Transaction ID
-   - User information
-   - Amount and currency
-   - Payment method details
-   - Transaction status
-   - Timestamp
-   - Stripe transaction ID (for reference)
+1. **Click on a transaction** in the table
+2. **View comprehensive transaction information**:
+   - Transaction ID and Stripe Payment Intent ID
+   - User information (email, username, account status)
+   - Amount, currency, and payment method details
+   - Transaction status and timestamp
+   - Refund information (if applicable)
+   - Subscription information (if related to a subscription)
+   - Metadata and gateway response
 
 ### Processing Refunds
 
-**Important:** Only Finance Admins and Super Admins can process refunds.
+**Required Permission**: `process_refunds`
 
 #### Full Refund
 
-1. Open a successful transaction
-2. Click the **Refund** button
-3. Select **Full Refund**
-4. Enter a reason for the refund (required)
-5. Click **Confirm Refund**
-6. The refund will be processed immediately
-7. The user's account will be credited
+1. **Open the transaction detail view**
+2. **Click "Process Refund"** button
+3. **Select "Full Refund"**
+4. **Choose a reason**:
+   - Customer Request
+   - Billing Error
+   - Service Issue
+   - Duplicate Charge
+   - Fraudulent Transaction
+   - Other
+5. **Enter reason details** (optional but recommended)
+6. **Confirm the refund**
+7. **Wait for processing** (typically 5-10 seconds)
+8. **Verify success** - transaction status updates to "Refunded"
 
 #### Partial Refund
 
-1. Open a successful transaction
-2. Click the **Refund** button
-3. Select **Partial Refund**
-4. Enter the refund amount (must be less than transaction amount)
-5. Enter a reason for the refund
-6. Click **Confirm Refund**
-7. The partial refund will be processed
-8. The user's account will be credited with the refund amount
+1. **Open the transaction detail view**
+2. **Click "Process Refund"** button
+3. **Select "Partial Refund"**
+4. **Enter the refund amount** (must be less than the remaining refundable amount)
+5. **Choose a reason** and enter details
+6. **Confirm the refund**
+7. **Verify success** - transaction status updates to "Partially Refunded"
 
-### Refund Status
+> **Important**: Refunds are processed through Stripe and typically take 5-10 business days to appear in the customer's account. All refund actions are logged in the audit log.
 
-After processing a refund:
-- **Pending** - Refund is being processed (usually 1-2 minutes)
-- **Completed** - Refund has been successfully processed
-- **Failed** - Refund failed (check error message for details)
+### Viewing Payment Methods
 
-### Viewing Refund History
+**Required Permission**: `view_payments`
 
-1. Click on a transaction that has been refunded
-2. Scroll to the **Refund History** section
-3. View all refunds for this transaction
-4. See refund amount, date, and status
+1. **Navigate to a user's detail view**
+2. **Click "Payment Methods"** tab
+3. **View all payment methods** associated with the user:
+   - Payment method type (card, PayPal, etc.)
+   - Card brand (Visa, Mastercard, etc.)
+   - Last 4 digits (for security)
+   - Expiration date
+   - Billing email (masked)
+   - Status (Active, Expired, Failed Verification)
+   - Usage statistics (transaction count, total spent, last used)
 
-### Payment Methods
+> **Security Note**: Full card numbers and CVV codes are never displayed or stored. Only the last 4 digits are shown for identification purposes, in compliance with PCI DSS requirements.
 
-1. Click the **Payment Methods** tab
-2. View all payment methods on file for users
-3. See card details (last 4 digits, expiration date)
-4. View associated user account
-
-
+---
 
 ## Subscription Management
 
-### Accessing Subscription Management
+The Subscription Management section allows you to view and manage user subscriptions.
 
-1. Click **Subscription Management** in the sidebar
-2. You'll see a list of all active subscriptions
+### Viewing Subscriptions
 
-### Subscription List View
-
-The subscription list displays:
-- **User** - Customer email address
-- **Tier** - Subscription tier (Free, Pro, Enterprise)
-- **Status** - Active, Cancelled, or Expired
-- **Start Date** - When the subscription began
-- **Renewal Date** - Next billing date
-- **Amount** - Monthly subscription cost
-
-### Searching Subscriptions
-
-1. Use the **Search** box to find subscriptions
-2. Search by:
-   - User email address
-   - Subscription ID
-3. Results update as you type
+1. **Navigate to the Subscriptions section** from the sidebar
+2. **View the paginated subscription table** with:
+   - User email
+   - Subscription tier (Free, Premium, Enterprise)
+   - Status (Active, Canceled, Past Due, Trialing)
+   - Current period start and end dates
+   - Next billing date
+   - Monthly recurring revenue (MRR)
+3. **Use pagination controls** to navigate through pages
 
 ### Filtering Subscriptions
 
-Use the filter options to narrow down subscriptions:
+Apply filters to find specific subscriptions:
 
-- **Tier** - Filter by Free, Pro, or Enterprise
-- **Status** - Filter by Active, Cancelled, or Expired
-- **Date Range** - Filter by start date or renewal date
+- **Tier**: Free, Premium, Enterprise
+- **Status**: Active, Canceled, Past Due, Trialing, Incomplete
+- **User**: Filter by user email or ID
+- **Upcoming Renewals**: Show subscriptions renewing within a specific timeframe
 
 ### Viewing Subscription Details
 
-1. Click on a subscription in the list
-2. A detail panel shows:
-   - Subscription ID
+1. **Click on a subscription** in the table
+2. **View comprehensive subscription information**:
    - User information
-   - Current tier and price
-   - Start date and renewal date
-   - Billing cycle (monthly/annual)
-   - Payment method
-   - Subscription status
-   - Billing history
+   - Subscription tier and status
+   - Billing cycle information (start, end, next billing)
+   - Payment history for this subscription
+   - Stripe subscription ID and customer ID
+   - Trial information (if applicable)
+   - Cancellation information (if applicable)
 
-### Changing Subscription Tier
+### Upgrading Subscriptions
 
-**Important:** Only Finance Admins and Super Admins can change subscriptions.
+**Required Permission**: `edit_subscriptions`
 
-1. Open a subscription
-2. Click the **Change Tier** button
-3. Select the new tier:
-   - Free
-   - Pro
-   - Enterprise
-4. Review the price change
-5. Click **Confirm Change**
-6. The subscription will be updated immediately
-7. Billing will be adjusted for the new tier
+1. **Open the subscription detail view**
+2. **Click "Upgrade Subscription"** button
+3. **Select the new tier** (must be higher than current tier)
+4. **Review prorated charges**:
+   - Remaining value of current subscription
+   - Cost of new subscription
+   - Prorated amount to charge
+5. **Confirm the upgrade**
+6. **Verify success** - subscription tier updates immediately
 
-### Cancelling a Subscription
+**What happens during an upgrade:**
+- User is charged the prorated amount immediately
+- New tier features are available immediately
+- Next billing date remains the same
+- Billing amount increases for future cycles
 
-1. Open a subscription
-2. Click the **Cancel Subscription** button
-3. Select the cancellation reason (optional)
-4. Confirm the cancellation
-5. The subscription will be cancelled immediately
-6. The user will no longer be charged
-7. Access to paid features will be revoked
+### Downgrading Subscriptions
 
-### Reactivating a Cancelled Subscription
+**Required Permission**: `edit_subscriptions`
 
-1. Open a cancelled subscription
-2. Click the **Reactivate** button
-3. Select the tier to reactivate
-4. Confirm reactivation
-5. The subscription will be active again
-6. Billing will resume
+1. **Open the subscription detail view**
+2. **Click "Downgrade Subscription"** button
+3. **Select the new tier** (must be lower than current tier)
+4. **Choose when to apply**:
+   - **Immediate**: Downgrade takes effect immediately with prorated credit
+   - **End of Period**: Downgrade takes effect at the end of the current billing cycle
+5. **Review prorated credit** (if immediate)
+6. **Confirm the downgrade**
 
-### Viewing Billing History
+**What happens during a downgrade:**
+- **Immediate**: User receives prorated credit, new tier features apply immediately
+- **End of Period**: User keeps current tier until billing cycle ends, then downgrades
 
-1. Open a subscription
-2. Scroll to the **Billing History** section
-3. View all charges for this subscription
-4. See charge date, amount, and status
-5. Click on a charge to view transaction details
+### Canceling Subscriptions
 
-### Subscription Renewal
+**Required Permission**: `edit_subscriptions`
 
-- Subscriptions automatically renew on the renewal date
-- Users are charged the subscription amount
-- If payment fails, the user is notified
-- After 3 failed payment attempts, the subscription is cancelled
+1. **Open the subscription detail view**
+2. **Click "Cancel Subscription"** button
+3. **Choose cancellation type**:
+   - **Immediate**: Cancel immediately and stop billing
+   - **End of Period**: Cancel at the end of the current billing cycle
+4. **Confirm cancellation**
 
+**What happens when a subscription is canceled:**
+- **Immediate**: Access to paid features is revoked immediately, no refund issued
+- **End of Period**: User keeps access until billing cycle ends, then reverts to Free tier
+- Future billing is stopped
+- User receives cancellation confirmation email
 
+> **Note**: All subscription changes are logged in the audit log and trigger email notifications to the user.
+
+---
 
 ## Financial Reports
 
-### Accessing Financial Reports
+The Financial Reports section allows you to generate and export financial reports.
 
-1. Click **Financial Reports** in the sidebar
-2. You'll see report generation options
+### Report Types
 
-### Revenue Report
+Three types of reports are available:
 
-The Revenue Report shows financial performance over a selected time period.
+1. **Revenue Report**: Total revenue, transaction count, average transaction value
+2. **Subscription Metrics**: MRR trends, churn rate, retention metrics
+3. **Transaction Report**: Detailed transaction list with filters
 
-#### Generating a Revenue Report
+### Generating a Revenue Report
 
-1. Click the **Revenue Report** tab
-2. Select the date range:
+**Required Permission**: `view_reports`
+
+1. **Navigate to the Reports section** from the sidebar
+2. **Select "Revenue Report"** from the report type dropdown
+3. **Choose a date range**:
    - Last 7 days
    - Last 30 days
    - Last 90 days
-   - Custom date range
-3. Click **Generate Report**
-4. The report displays:
+   - This month
+   - Last month
+   - Custom range
+4. **Click "Generate Report"**
+5. **View the report** with:
    - Total revenue for the period
-   - Revenue by subscription tier (Free, Pro, Enterprise)
-   - Daily revenue breakdown
-   - Revenue trends chart
+   - Total transaction count
    - Average transaction value
-   - Number of transactions
+   - Revenue breakdown by subscription tier (Free, Premium, Enterprise)
+   - Visual charts showing revenue trends
 
-#### Revenue Report Metrics
+### Generating a Subscription Metrics Report
 
-- **Total Revenue** - Sum of all successful payments
-- **Revenue by Tier** - Breakdown of revenue from each subscription tier
-- **Daily Revenue** - Revenue for each day in the period
-- **Average Transaction Value** - Mean transaction amount
-- **Transaction Count** - Total number of transactions
+**Required Permission**: `view_reports`
 
-### Subscription Metrics Report
-
-The Subscription Metrics Report shows subscription performance and health.
-
-#### Generating a Subscription Metrics Report
-
-1. Click the **Subscription Metrics** tab
-2. Select the date range
-3. Click **Generate Report**
-4. The report displays:
-   - Monthly Recurring Revenue (MRR)
-   - Churn rate (percentage of cancelled subscriptions)
-   - Retention rate (percentage of retained subscriptions)
-   - New subscriptions
-   - Cancelled subscriptions
-   - Subscription trends chart
-
-#### Subscription Metrics Explained
-
-- **MRR** - Expected monthly revenue from active subscriptions
-- **Churn Rate** - Percentage of subscriptions cancelled in the period
-- **Retention Rate** - Percentage of subscriptions that remained active
-- **New Subscriptions** - Number of new subscriptions created
-- **Cancelled Subscriptions** - Number of subscriptions cancelled
+1. **Navigate to the Reports section**
+2. **Select "Subscription Metrics"** from the report type dropdown
+3. **Choose a date range**
+4. **Click "Generate Report"**
+5. **View the report** with:
+   - Monthly Recurring Revenue (MRR) trends
+   - Churn rate (percentage of canceled subscriptions)
+   - Retention metrics (active subscriptions over time)
+   - New subscriptions vs cancellations
+   - Subscription tier distribution
+   - Visual charts showing trends
 
 ### Exporting Reports
 
-#### Export to CSV
+**Required Permission**: `export_reports`
 
-1. Generate a report
-2. Click the **Export to CSV** button
-3. The report will download as a CSV file
-4. Open in Excel or Google Sheets for further analysis
+1. **Generate a report** (as described above)
+2. **Click "Export to CSV"** button
+3. **Wait for file generation** (typically 1-5 seconds)
+4. **Download the CSV file** automatically
 
-#### Export to PDF
+**CSV Format:**
+- Revenue Report: Date, Revenue, Transaction Count, Average Value, Tier Breakdown
+- Subscription Metrics: Date, MRR, Active Subscriptions, New Subscriptions, Cancellations, Churn Rate
+- Transaction Report: Transaction ID, User Email, Amount, Currency, Status, Payment Method, Timestamp
 
-1. Generate a report
-2. Click the **Export to PDF** button
-3. The report will download as a PDF file
-4. Print or share with stakeholders
+> **Note**: Report exports are logged in the audit log for compliance purposes.
 
-### Report Scheduling
+---
 
-Reports can be scheduled to generate automatically:
+## Audit Log Viewer
 
-1. Click **Schedule Report**
-2. Select report type (Revenue or Subscription Metrics)
-3. Select frequency (Daily, Weekly, Monthly)
-4. Select recipients (email addresses)
-5. Click **Save Schedule**
-6. Reports will be generated and emailed automatically
+The Audit Log Viewer allows you to track all administrative actions for compliance and security.
 
+### Viewing Audit Logs
 
+**Required Permission**: `view_audit_logs`
 
-## Audit Logs
-
-### Accessing Audit Logs
-
-1. Click **Audit Logs** in the sidebar
-2. You'll see a list of all administrative activities
-
-### Audit Log List View
-
-The audit log displays:
-- **Date/Time** - When the action occurred
-- **Admin** - Which admin performed the action
-- **Action** - What action was performed
-- **Resource** - What was affected (user, payment, subscription)
-- **Status** - Success or failure
-- **IP Address** - Where the action came from
-
-### Searching Audit Logs
-
-1. Use the **Search** box to find specific log entries
-2. Search by:
-   - Admin email address
-   - User email address
-   - Action type
-   - Resource ID
-3. Results update as you type
+1. **Navigate to the Audit Logs section** from the sidebar
+2. **View the paginated audit log table** with:
+   - Timestamp
+   - Admin user (who performed the action)
+   - Admin role (at the time of action)
+   - Action type (e.g., "user_suspended", "refund_processed")
+   - Resource type (e.g., "user", "transaction")
+   - Affected user (if applicable)
+   - IP address
+3. **Use pagination controls** to navigate through pages
 
 ### Filtering Audit Logs
 
-Use the filter options to narrow down audit logs:
+Apply filters to find specific log entries:
 
-- **Date Range** - Filter by date
-- **Admin User** - Filter by which admin performed the action
-- **Action Type** - Filter by action (user_suspended, refund_processed, etc.)
-- **Affected User** - Filter by which user was affected
-- **Severity** - Filter by critical, warning, or info
+- **Date Range**: Select start and end dates
+- **Admin User**: Filter by administrator email
+- **Action Type**: Filter by specific actions (suspend, refund, subscription change, etc.)
+- **Affected User**: Filter by the user who was affected by the action
+- **Resource Type**: Filter by resource (user, transaction, subscription, etc.)
 
 ### Viewing Log Details
 
-1. Click on a log entry
-2. A detail panel shows:
-   - Full timestamp
-   - Admin user information
-   - Action performed
-   - Resource details
-   - Affected user (if applicable)
+1. **Click on a log entry** in the table
+2. **View comprehensive log information**:
+   - Full timestamp with timezone
+   - Admin user information (email, role)
+   - Action type and description
+   - Resource type and ID
+   - Affected user information (if applicable)
    - Action details (JSON formatted)
    - IP address and user agent
-   - Request ID for support reference
-
-### Audit Log Actions
-
-Common actions logged in the audit log:
-
-**User Management**
-- user_created
-- user_updated
-- user_suspended
-- user_reactivated
-- user_deleted
-
-**Payment Management**
-- payment_processed
-- refund_processed
-- payment_failed
-- payment_method_added
-- payment_method_deleted
-
-**Subscription Management**
-- subscription_created
-- subscription_updated
-- subscription_cancelled
-- subscription_reactivated
-- tier_changed
-
-**Admin Management**
-- admin_role_assigned
-- admin_role_revoked
-- admin_created
-- admin_deleted
+   - Request metadata
 
 ### Exporting Audit Logs
 
-1. Apply filters to narrow down the logs you want to export
-2. Click the **Export** button
-3. Select export format:
-   - CSV - For spreadsheet analysis
-   - JSON - For system integration
-4. The file will download
-5. Use for compliance, auditing, or investigation
+**Required Permission**: `export_audit_logs`
 
-### Audit Log Retention
+1. **Apply filters** to select the logs you want to export
+2. **Click "Export to CSV"** button
+3. **Wait for file generation**
+4. **Download the CSV file** automatically
 
-- Audit logs are retained for 7 years
-- Logs are immutable (cannot be modified or deleted)
-- Logs are cryptographically signed for tamper detection
-- Regular backups are maintained
+**CSV Format:**
+- Timestamp, Admin Email, Admin Role, Action Type, Resource Type, Resource ID, Affected User Email, IP Address, Details
 
-### Compliance and Investigation
+> **Important**: Audit logs are immutable and cannot be deleted or modified. They are retained for a minimum of 7 years for compliance purposes.
 
-Use audit logs for:
-- Investigating suspicious activities
-- Compliance audits
-- Security investigations
-- User support (tracking what happened to an account)
-- Billing disputes
-
+---
 
 
 ## Admin Management
 
-**Note:** This section is only available to Super Admins.
+The Admin Management section allows Super Admins to assign and revoke administrator roles.
 
-### Accessing Admin Management
+> **Note**: This section is only accessible to users with the Super Admin role.
 
-1. Click **Admin Management** in the sidebar
-2. You'll see a list of all administrators
+### Viewing Administrators
 
-### Admin List View
+**Required Permission**: Super Admin role
 
-The admin list displays:
-- **Email** - Admin's email address
-- **Role** - Admin role (Super Admin, Support Admin, Finance Admin)
-- **Granted By** - Which admin assigned this role
-- **Granted Date** - When the role was assigned
-- **Status** - Active or Revoked
+1. **Navigate to the Admins section** from the sidebar
+2. **View the list of all administrators** with:
+   - User email
+   - Assigned roles (Super Admin, Support Admin, Finance Admin)
+   - Role assignment date
+   - Granted by (which Super Admin assigned the role)
+   - Status (Active, Revoked)
+3. **View admin activity summary** for each administrator
 
-### Adding a New Administrator
+### Administrator Roles
 
-1. Click the **Add Admin** button
-2. A dialog opens to search for users
-3. Enter the user's email address
-4. Select from the search results
-5. Choose the admin role:
-   - **Support Admin** - User management and view-only payments
-   - **Finance Admin** - Payment and subscription management
-6. Click **Confirm**
-7. The user is now an administrator
-8. The action is logged in the audit log
+Three administrator roles are available:
 
-### Changing an Admin's Role
+#### Super Admin
+- **Full access** to all Admin Center features
+- Can assign and revoke administrator roles
+- Can manage other administrators
+- Can access all sections and perform all actions
+- Default role for the initial administrator (cmaltais@cloudtolocalllm.online)
 
-1. Click on an admin in the list
-2. Click the **Change Role** button
-3. Select the new role
-4. Click **Confirm**
-5. The role is updated immediately
-6. The action is logged in the audit log
+#### Support Admin
+- **User management**: View, edit, suspend, and reactivate user accounts
+- **Session management**: View and terminate user sessions
+- **Payment viewing**: View payment transactions (read-only)
+- **Audit log viewing**: View audit logs (read-only)
+- **Cannot**: Process refunds, manage subscriptions, delete users, manage admins
 
-### Revoking Admin Access
+#### Finance Admin
+- **User viewing**: View user accounts (read-only)
+- **Payment management**: View transactions, process refunds
+- **Subscription management**: View, upgrade, downgrade, and cancel subscriptions
+- **Financial reports**: Generate and export revenue and subscription reports
+- **Audit log viewing**: View audit logs (read-only)
+- **Cannot**: Suspend users, delete users, manage admins
 
-1. Click on an admin in the list
-2. Click the **Revoke Role** button
-3. Confirm the revocation
-4. The user is no longer an administrator
-5. They can no longer access Admin Center
-6. The action is logged in the audit log
+### Assigning Admin Roles
+
+**Required Permission**: Super Admin role
+
+1. **Click "Add Admin"** button
+2. **Search for a user** by email address
+3. **Select the user** from search results
+4. **Choose a role**:
+   - Support Admin
+   - Finance Admin
+   - Super Admin (use with caution)
+5. **Review the permissions** that will be granted
+6. **Confirm role assignment**
+7. **User receives email notification** (if email is configured)
+
+**What happens when a role is assigned:**
+- User gains access to the Admin Center
+- Admin Center button appears in their settings pane
+- User can access sections based on their role permissions
+- Action is logged in the audit log
+
+> **Best Practice**: Assign the minimum role necessary for the user's responsibilities. Use Support Admin for customer service staff and Finance Admin for accounting staff.
+
+### Revoking Admin Roles
+
+**Required Permission**: Super Admin role
+
+1. **Locate the administrator** in the admin list
+2. **Click "Revoke Role"** button next to their role
+3. **Confirm revocation**
+4. **User loses admin access** immediately
+
+**What happens when a role is revoked:**
+- User can no longer access the Admin Center
+- Admin Center button is hidden from their settings pane
+- All active admin sessions are terminated
+- Action is logged in the audit log
+- User receives email notification (if email is configured)
+
+> **Note**: You cannot revoke your own Super Admin role. Another Super Admin must revoke it.
 
 ### Viewing Admin Activity
 
-1. Click on an admin in the list
-2. Scroll to the **Recent Activity** section
-3. View recent actions performed by this admin
-4. Click on an action to view details
+1. **Click on an administrator** in the admin list
+2. **View their activity timeline** with:
+   - All actions performed
+   - Timestamps
+   - Affected users or resources
+   - Action outcomes (success/failure)
+3. **Filter activity** by date range or action type
 
-### Admin Permissions Reference
+---
 
-**Super Admin**
-- Full access to all features
-- Can manage other administrators
-- Can view and modify all user data
-- Can process payments and refunds
-- Can access all reports and audit logs
+## Email Configuration
 
-**Support Admin**
-- View and manage user accounts
-- Suspend and reactivate users
-- View user sessions and terminate them
-- View-only access to payments
-- View audit logs
-- Cannot process refunds
-- Cannot manage subscriptions
-- Cannot manage other administrators
+The Email Configuration section allows administrators to configure email providers for sending transactional emails.
 
-**Finance Admin**
-- View all users (read-only)
-- View and process payments
-- Process refunds
-- Manage subscriptions (view, update, cancel)
-- Generate and export financial reports
-- View audit logs
-- Cannot manage users
-- Cannot manage other administrators
+> **Note**: This section is only visible in self-hosted deployments. Cloud-hosted instances use pre-configured email services.
 
+### Supported Email Providers
 
+- **Google Workspace**: Gmail API with OAuth 2.0 authentication
+- **SMTP Relay**: Generic SMTP server (SendGrid, Mailgun, AWS SES, etc.)
 
-## Troubleshooting
+### Configuring Google Workspace
 
-### Common Issues and Solutions
+**Required Permission**: Super Admin role
 
-#### I can't see the Admin Center button in Settings
+1. **Navigate to the Email Config section** from the sidebar
+2. **Click "Connect Google Workspace"** button
+3. **Authenticate with Google**:
+   - You will be redirected to Google OAuth consent screen
+   - Sign in with your Google Workspace admin account
+   - Grant permissions for sending emails
+4. **Return to Admin Center** after authentication
+5. **Verify connection status** - should show "Connected"
+6. **View quota usage**:
+   - Daily sending limit
+   - Current usage
+   - Remaining quota
 
-**Possible Causes:**
-- You don't have an admin role assigned
-- Your admin role has been revoked
-- Your session has expired
+### Configuring SMTP Relay
 
-**Solutions:**
-1. Contact a Super Admin to verify your admin role
-2. Log out and log back in
-3. Check the audit logs to see if your role was revoked
+**Required Permission**: Super Admin role
 
-#### I'm getting an "Access Denied" error
+1. **Navigate to the Email Config section**
+2. **Select "SMTP Relay"** as the provider
+3. **Enter SMTP settings**:
+   - **Host**: SMTP server hostname (e.g., smtp.sendgrid.net)
+   - **Port**: SMTP port (typically 587 for TLS, 465 for SSL)
+   - **Username**: SMTP authentication username
+   - **Password**: SMTP authentication password
+   - **Encryption**: TLS, SSL, or None
+   - **From Email**: Email address to send from
+   - **From Name**: Display name for sent emails
+4. **Click "Save Configuration"**
+5. **Credentials are encrypted** before storage
 
-**Possible Causes:**
-- You're trying to access a feature your role doesn't have permission for
-- Your session has expired
-- Your admin role has been revoked
+### Testing Email Configuration
 
-**Solutions:**
-1. Verify your admin role has permission for this feature
-2. Log out and log back in
-3. Contact a Super Admin if you need additional permissions
+1. **After configuring an email provider**
+2. **Click "Send Test Email"** button
+3. **Enter recipient email** (defaults to your admin email)
+4. **Click "Send"**
+5. **Wait for delivery** (typically 5-10 seconds)
+6. **View delivery status**:
+   - **Success**: Email sent successfully
+   - **Failure**: Error message with details
 
-#### Refund processing is failing
+> **Troubleshooting**: If the test email fails, check your SMTP credentials, firewall settings, and ensure the SMTP server allows connections from your server's IP address.
 
-**Possible Causes:**
-- The transaction is too old (older than 90 days)
-- The payment method is no longer valid
-- Stripe API is experiencing issues
-- The refund amount exceeds the transaction amount
+### Email Templates
 
-**Solutions:**
-1. Check the error message for specific details
-2. Verify the refund amount is correct
-3. Try again in a few minutes
-4. Contact support if the issue persists
+The system uses pre-configured email templates for:
 
-#### User search is not returning results
+- **Password Reset**: Sent when users request password resets
+- **Account Verification**: Sent when new users register
+- **Admin Notifications**: Sent for critical system events
+- **Subscription Alerts**: Sent for subscription changes
+- **Payment Confirmations**: Sent after successful payments
 
-**Possible Causes:**
-- The user doesn't exist
-- You're searching by the wrong field
-- The search term is incomplete
+### Email Metrics
 
-**Solutions:**
-1. Try searching by email address
-2. Use the full email address
-3. Check the spelling
-4. Try a partial search (first few letters)
+**Navigate to the Email Metrics section** to view:
 
-#### Reports are not generating
+- **Sent Count**: Total emails sent
+- **Failed Count**: Total emails that failed to send
+- **Bounced Count**: Total emails that bounced
+- **Delivery Time**: Average time to deliver emails
+- **Recent Emails**: List of recently sent emails with status
 
-**Possible Causes:**
-- The date range is invalid
-- There's no data for the selected period
-- The system is experiencing high load
+---
 
-**Solutions:**
-1. Verify the date range is correct
-2. Try a different date range
-3. Try again in a few minutes
-4. Contact support if the issue persists
+## DNS Configuration
 
-#### Session expired while working
+The DNS Configuration section allows administrators to manage DNS records for email authentication.
 
-**Possible Causes:**
-- You've been inactive for more than 24 hours
-- Your main CloudToLocalLLM session expired
-- You logged out of the main app
+> **Note**: This section is only visible in self-hosted deployments. Cloud-hosted instances use pre-configured DNS settings.
 
-**Solutions:**
-1. Log back in to CloudToLocalLLM
-2. Open Admin Center again
-3. Your session will be restored
+### Why DNS Configuration is Important
 
-#### Payment information is not displaying correctly
+Proper DNS configuration is essential for:
 
-**Possible Causes:**
-- The payment data is still loading
-- There's a display issue with your browser
-- The payment information is corrupted
+- **Email Deliverability**: Ensures emails don't end up in spam folders
+- **Email Authentication**: Proves emails are legitimately from your domain
+- **Security**: Prevents email spoofing and phishing attacks
 
-**Solutions:**
-1. Wait a few seconds for data to load
-2. Refresh the page
-3. Clear your browser cache
-4. Try a different browser
-5. Contact support if the issue persists
+### Required DNS Records
 
-### Getting Help
+For proper email authentication, you need:
 
-#### Contacting Support
+1. **MX Records**: Mail exchange records for receiving emails
+2. **SPF Record**: Sender Policy Framework for sender verification
+3. **DKIM Record**: DomainKeys Identified Mail for message authentication
+4. **DMARC Record**: Domain-based Message Authentication for policy enforcement
 
-If you encounter an issue not covered in this guide:
+### Connecting DNS Provider
 
-1. Note the error message and timestamp
-2. Check the audit logs for related entries
-3. Gather any relevant transaction or user IDs
-4. Contact the support team with:
-   - Description of the issue
-   - Steps to reproduce
-   - Error messages
-   - Relevant IDs (transaction, user, subscription)
-   - Timestamp of the issue
+**Required Permission**: Super Admin role
 
-#### Reporting Security Issues
+1. **Navigate to the DNS Config section** from the sidebar
+2. **Select your DNS provider**:
+   - Cloudflare (recommended)
+   - Azure DNS
+   - AWS Route 53
+   - Other (manual configuration)
+3. **Enter API credentials**:
+   - **Cloudflare**: API Token with DNS edit permissions
+   - **Azure DNS**: Service Principal credentials
+   - **AWS Route 53**: Access Key ID and Secret Access Key
+4. **Click "Connect"**
+5. **Verify connection** - should show "Connected"
 
-If you discover a security vulnerability:
+### Getting Google Workspace DNS Records
 
-1. Do not share details publicly
-2. Contact the security team immediately
-3. Provide:
-   - Description of the vulnerability
-   - Steps to reproduce
-   - Potential impact
-   - Your contact information
+If using Google Workspace for email:
 
-### Performance Tips
+1. **Ensure Google Workspace is connected** in Email Config
+2. **Click "Get Google Workspace Records"** button
+3. **DNS record fields are auto-populated** with recommended values
+4. **Review the records** before creating them
 
-#### Improving Admin Center Performance
+### Creating DNS Records
 
-1. **Use Filters** - Narrow down results to reduce data loading
-2. **Search Efficiently** - Use specific search terms
-3. **Limit Date Ranges** - Smaller date ranges load faster
-4. **Clear Browser Cache** - Improves page load times
-5. **Use Modern Browser** - Latest browser versions perform better
-6. **Check Internet Connection** - Ensure stable connection
+**Required Permission**: Super Admin role
 
-#### Optimizing Report Generation
+#### One-Click Setup (Recommended)
 
-1. **Use Smaller Date Ranges** - Reports generate faster
-2. **Generate During Off-Peak Hours** - Less system load
-3. **Export to CSV** - Faster than PDF export
-4. **Schedule Reports** - Generate automatically during off-peak times
+1. **After getting Google Workspace records**
+2. **Click "One-Click Setup"** button
+3. **All required DNS records are created automatically** via DNS provider API
+4. **Wait for creation** (typically 5-10 seconds)
+5. **Verify success** - records appear in the DNS records table
 
-### Best Practices
+#### Manual Setup
 
-#### Security Best Practices
+1. **Click "Add DNS Record"** button
+2. **Select record type**: MX, SPF, DKIM, DMARC, or CNAME
+3. **Enter record details**:
+   - **Name**: Record name (e.g., @ for root domain, _dmarc for DMARC)
+   - **Value**: Record value (e.g., v=spf1 include:_spf.google.com ~all)
+   - **TTL**: Time to live in seconds (default: 3600)
+   - **Priority**: For MX records only (default: 10)
+4. **Click "Create Record"**
+5. **Record is created** via DNS provider API
 
-1. **Never Share Credentials** - Keep your admin password secure
-2. **Log Out When Done** - Always log out after your session
-3. **Use Strong Passwords** - Use unique, complex passwords
-4. **Enable 2FA** - Use two-factor authentication if available
-5. **Review Audit Logs** - Regularly check for suspicious activity
+### Validating DNS Records
 
-#### Operational Best Practices
+1. **After creating DNS records**
+2. **Click "Validate DNS Records"** button
+3. **System performs DNS lookups** to verify records
+4. **View validation status** for each record:
+   - **Valid**: Record is correctly configured and propagated
+   - **Invalid**: Record has incorrect value or format
+   - **Pending**: Record is not yet propagated (wait 5-60 minutes)
+5. **View validation timestamp** for each record
 
-1. **Document Actions** - Keep notes of important changes
-2. **Verify Before Acting** - Double-check before processing refunds
-3. **Use Filters** - Narrow down results before bulk operations
-4. **Test First** - Test with a small dataset before large operations
-5. **Review Audit Logs** - Verify actions were completed successfully
+### DNS Propagation
 
-#### Data Management Best Practices
+After creating or updating DNS records:
 
-1. **Regular Backups** - Ensure data is backed up regularly
-2. **Export Reports** - Keep copies of important reports
-3. **Archive Old Data** - Archive data older than 1 year
-4. **Verify Data Accuracy** - Regularly audit data for accuracy
-5. **Document Changes** - Keep records of significant changes
+- **Propagation time**: Typically 5-60 minutes, can take up to 48 hours
+- **Check propagation status**: Use the "Validate DNS Records" button
+- **Estimated time**: Displayed in the DNS Config section
+
+### Deleting DNS Records
+
+**Required Permission**: Super Admin role
+
+1. **Locate the record** in the DNS records table
+2. **Click "Delete"** button
+3. **Confirm deletion**
+4. **Record is removed** via DNS provider API
+
+> **Warning**: Deleting DNS records can break email functionality. Only delete records if you're certain they're no longer needed.
+
+---
+
+## Role-Based Permissions
+
+The Admin Center uses role-based access control to restrict features based on administrator roles.
+
+### Permission Matrix
+
+| Feature | Super Admin | Support Admin | Finance Admin |
+|---------|-------------|---------------|---------------|
+| **Dashboard** | ✅ | ✅ | ✅ |
+| **View Users** | ✅ | ✅ | ✅ (read-only) |
+| **Edit Users** | ✅ | ✅ | ❌ |
+| **Suspend Users** | ✅ | ✅ | ❌ |
+| **Delete Users** | ✅ | ❌ | ❌ |
+| **View Payments** | ✅ | ✅ (read-only) | ✅ |
+| **Process Refunds** | ✅ | ❌ | ✅ |
+| **View Subscriptions** | ✅ | ✅ (read-only) | ✅ |
+| **Edit Subscriptions** | ✅ | ❌ | ✅ |
+| **View Reports** | ✅ | ❌ | ✅ |
+| **Export Reports** | ✅ | ❌ | ✅ |
+| **View Audit Logs** | ✅ | ✅ | ✅ |
+| **Export Audit Logs** | ✅ | ❌ | ✅ |
+| **Manage Admins** | ✅ | ❌ | ❌ |
+| **Email Config** | ✅ | ❌ | ❌ |
+| **DNS Config** | ✅ | ❌ | ❌ |
+
+### Permission Descriptions
+
+#### User Management Permissions
+
+- **view_users**: View user accounts and profiles
+- **edit_users**: Modify user profiles and subscription tiers
+- **suspend_users**: Suspend and reactivate user accounts
+- **delete_users**: Permanently delete user accounts (use with extreme caution)
+
+#### Payment Permissions
+
+- **view_payments**: View payment transactions and payment methods
+- **process_refunds**: Process full and partial refunds
+
+#### Subscription Permissions
+
+- **view_subscriptions**: View user subscriptions
+- **edit_subscriptions**: Upgrade, downgrade, and cancel subscriptions
+
+#### Reporting Permissions
+
+- **view_reports**: Generate financial reports
+- **export_reports**: Export reports to CSV format
+
+#### Audit Log Permissions
+
+- **view_audit_logs**: View audit log entries
+- **export_audit_logs**: Export audit logs to CSV format
+
+#### Admin Management Permissions
+
+- **manage_admins**: Assign and revoke administrator roles (Super Admin only)
+
+### Checking Your Permissions
+
+1. **Navigate to any section** in the Admin Center
+2. **Sections you don't have access to** are hidden from the sidebar
+3. **If you try to access a restricted feature**, you'll see an error message: "Insufficient permissions"
+4. **Contact your Super Admin** to request additional permissions if needed
+
+---
 

@@ -21,8 +21,12 @@ This document defines the requirements for the Admin Center for CloudToLocalLLM.
 - **Revenue_Report**: A financial summary showing payment transactions, subscriptions, and revenue over a time period
 - **Authentication_Service**: The service that verifies administrator credentials and manages admin sessions
 - **Role_Based_Access_Control**: The system that restricts Admin_Center features based on administrator role (Super Admin, Support Admin, Finance Admin)
-
-
+- **Settings_Screen**: The main application settings interface where authorized administrators can access the Admin_Center
+- **Email_Relay_Service**: The service responsible for sending transactional emails through configured email providers (Google Workspace, SMTP relay)
+- **Google_Workspace**: Google's cloud-based productivity suite providing Gmail API for email sending and OAuth 2.0 authentication
+- **DNS_Provider**: The service that manages DNS records for the domain (Cloudflare, Azure DNS, Route 53)
+- **Email_Queue**: A persistent queue for managing outbound email delivery with retry logic and failure handling
+- **DNS_Record**: A domain name system record (MX, SPF, DKIM, DMARC, CNAME) that configures email authentication and routing
 
 ## Requirements
 
@@ -290,19 +294,48 @@ This document defines the requirements for the Admin Center for CloudToLocalLLM.
 7. WHEN the administrator logs out from either the main application or the Admin_Center, THE Authentication_Service SHALL terminate both sessions simultaneously
 
 
-### Requirement 19: Email Provider Configuration (Self-Hosted Only)
+### Requirement 19: Email Relay Configuration
 
-**User Story:** As an administrator of a self-hosted CloudToLocalLLM instance, I want to configure email provider settings, so that the system can send and receive emails for notifications and communications.
+**User Story:** As an administrator, I want to configure email relay settings with Google Workspace integration, so that the system can send transactional emails for notifications, password resets, and administrative alerts.
 
 #### Acceptance Criteria
 
-1. WHERE the CloudToLocalLLM instance is self-hosted, THE Admin_Center SHALL display an "Email Provider" configuration section
-2. WHERE the CloudToLocalLLM instance is cloud-hosted, THE Admin_Center SHALL hide the "Email Provider" configuration section
-3. THE Admin_Center SHALL provide configuration options for SMTP server settings (host, port, username, password, encryption)
-4. THE Admin_Center SHALL provide integration options for email service providers (SendGrid, Mailgun, AWS SES)
-5. THE Admin_Center SHALL provide a "Test Email" button that sends a test email to verify configuration
-6. WHEN the administrator clicks "Test Email", THE Admin_Center SHALL send a test email within 5 seconds and display the result
-7. THE Admin_Center SHALL display email provider status (connected, disconnected, error) with real-time monitoring
-8. THE Admin_Center SHALL log all email provider configuration changes in the Audit_Log
+1. THE Admin_Center SHALL provide an "Email Configuration" section for managing email relay settings
+2. THE Admin_Center SHALL support Google_Workspace as the primary email provider with Gmail API integration
+3. THE Admin_Center SHALL provide a "Connect Google Workspace" button that initiates OAuth 2.0 authentication flow
+4. WHEN an administrator clicks "Connect Google Workspace", THE Admin_Center SHALL redirect to Google OAuth consent screen and handle the callback
+5. THE Admin_Center SHALL store Google_Workspace OAuth tokens encrypted in the PostgreSQL_Database
+6. THE Admin_Center SHALL support SMTP relay configuration as a fallback option with fields for host, port, username, password, and encryption
+7. THE Admin_Center SHALL encrypt SMTP credentials using AES-256-GCM before storing in the PostgreSQL_Database
+8. THE Admin_Center SHALL provide a "Test Email" button that sends a test email through the configured provider within 5 seconds
+9. WHEN the test email is sent, THE Admin_Center SHALL display delivery status (success or failure with error details)
+10. THE Admin_Center SHALL display Google_Workspace quota usage including daily sending limit and current usage
+11. THE Admin_Center SHALL display email provider status (connected, disconnected, error) with real-time monitoring
+12. THE Admin_Center SHALL provide email template management for password resets, account verification, admin notifications, subscription alerts, and payment confirmations
+13. THE Admin_Center SHALL display email delivery metrics including sent count, failed count, bounced count, and delivery time percentiles
+14. THE Admin_Center SHALL log all email configuration changes in the Audit_Log with administrator ID and timestamp
+15. WHEN Google_Workspace API fails, THE Email_Relay_Service SHALL automatically fall back to SMTP relay if configured
 
-**Note:** Detailed email provider configuration, including email templates, queue management, and analytics, will be specified in a separate email provider configuration spec.
+### Requirement 20: DNS Configuration Management
+
+**User Story:** As an administrator, I want to manage DNS records for email authentication, so that emails sent from the system are properly authenticated and avoid spam filters.
+
+#### Acceptance Criteria
+
+1. THE Admin_Center SHALL provide a "DNS Configuration" section for managing email-related DNS records
+2. THE Admin_Center SHALL support Cloudflare as the primary DNS_Provider with API integration
+3. THE Admin_Center SHALL provide a "Connect DNS Provider" button that accepts API credentials for the DNS_Provider
+4. THE Admin_Center SHALL store DNS_Provider API credentials encrypted in the PostgreSQL_Database
+5. THE Admin_Center SHALL display a "Get Google Workspace Records" button that fetches recommended MX, SPF, DKIM, and DMARC records from Google_Workspace
+6. WHEN the administrator clicks "Get Google Workspace Records", THE Admin_Center SHALL auto-populate DNS record fields with Google_Workspace recommended values
+7. THE Admin_Center SHALL allow administrators to create DNS_Record entries for MX, SPF, DKIM, DMARC, and CNAME record types
+8. THE Admin_Center SHALL display a table of existing DNS records with columns for record type, name, value, TTL, and validation status
+9. THE Admin_Center SHALL provide a "Validate DNS Records" button that verifies DNS records via DNS lookup
+10. WHEN DNS validation is performed, THE Admin_Center SHALL update validation status (valid, invalid, pending) and display validation timestamp
+11. THE Admin_Center SHALL provide a "One-Click Setup" button that automatically creates all required Google_Workspace DNS records via the DNS_Provider API
+12. WHEN DNS records are created or updated, THE Admin_Center SHALL send the changes to the DNS_Provider API within 2 seconds
+13. THE Admin_Center SHALL display DNS propagation status with estimated time to full propagation (typically 5-60 minutes)
+14. THE Admin_Center SHALL allow administrators to delete DNS records with confirmation dialog
+15. THE Admin_Center SHALL log all DNS configuration changes in the Audit_Log with administrator ID, record type, and values
+16. THE Admin_Center SHALL cache DNS records with a 5-minute TTL to reduce API calls to the DNS_Provider
+17. WHERE DNS validation fails, THE Admin_Center SHALL display specific error messages indicating which records are misconfigured
