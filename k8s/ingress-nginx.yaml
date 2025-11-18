@@ -9,10 +9,10 @@ metadata:
   annotations:
     # SSL/TLS configuration - Wildcard certificate via cert-manager with Azure DNS
     # Using wildcard certificate (*.cloudtolocalllm.online) which covers all subdomains
-    # STAGING MODE: Currently using staging issuer to test configuration
+    # PRODUCTION MODE: Using production issuer for trusted certificates
     # cert-manager automatically provisions and renews via Azure DNS-01 challenge
     # Note: This annotation is optional when using Certificate resource directly
-    cert-manager.io/cluster-issuer: "azure-dns-staging"
+    cert-manager.io/cluster-issuer: "azure-dns-prod"
     
     # Force HTTPS redirect
     nginx.ingress.kubernetes.io/ssl-redirect: "true"
@@ -37,12 +37,9 @@ metadata:
     # Rate limiting
     nginx.ingress.kubernetes.io/limit-rps: "100"
 
-    # Security headers
-    nginx.ingress.kubernetes.io/configuration-snippet: |
-      more_set_headers "X-Frame-Options: SAMEORIGIN";
-      more_set_headers "X-Content-Type-Options: nosniff";
-      more_set_headers "X-XSS-Protection: 1; mode=block";
-      more_set_headers "Strict-Transport-Security: max-age=31536000; includeSubDomains";
+    # Security headers (snippet disabled, using individual annotations instead)
+    # nginx.ingress.kubernetes.io/configuration-snippet disabled by admin
+    # Using individual header annotations if needed
 spec:
   ingressClassName: nginx
   # TLS enabled with wildcard certificate
