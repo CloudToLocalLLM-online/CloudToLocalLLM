@@ -378,10 +378,12 @@ jobs:
         done
 
         # Configure SSL/TLS settings
+        # Use "flexible" mode since ingress doesn't have TLS enabled
+        # This allows Cloudflare to connect to origin via HTTP while providing HTTPS to visitors
         curl -s -X PATCH "https://api.cloudflare.com/client/v4/zones/$CF_ZONE_ID/settings/ssl" \
           -H "Authorization: Bearer $CF_API_TOKEN" \
           -H "Content-Type: application/json" \
-          --data '{"value": "full"}'
+          --data '{"value": "flexible"}'
 
         # Enable Always Use HTTPS
         curl -s -X PATCH "https://api.cloudflare.com/client/v4/zones/$CF_ZONE_ID/settings/always_use_https" \
@@ -401,7 +403,7 @@ jobs:
         echo "  api.cloudtolocalllm.online → ${{ steps.lb-ip.outputs.lb_ip }} (proxied)"
         echo "  auth.cloudtolocalllm.online → ${{ steps.lb-ip.outputs.lb_ip }} (proxied)"
         echo ""
-        echo "SSL: Full (strict) encryption enabled"
+        echo "SSL: Flexible encryption enabled (HTTPS to Cloudflare, HTTP to origin)"
         echo "Always Use HTTPS: Enabled"
         echo ""
         echo "🎉 Application will be available at:"
