@@ -160,15 +160,14 @@ export class GracefulShutdownManager {
 
     try {
       // Step 1: Stop accepting new connections (Requirement 8.9)
+      // IMPORTANT: Only prevent new connections, don't close the server yet
+      // We need to notify existing clients before closing
       this.logger.info('Step 1: Stopping acceptance of new connections');
       if (this.wss) {
-        // Close WebSocket server to prevent new connections
-        this.wss.close(() => {
-          this.logger.info('WebSocket server closed - no new connections accepted');
-        });
-        
-        // Also set a flag to reject any pending upgrade requests
+        // Set flag to reject any pending upgrade requests
+        // This prevents new connections without disconnecting existing ones
         this.wss.shouldHandle = () => false;
+        this.logger.info('New connection acceptance disabled');
       }
 
       // Log pending request count (Requirement 8.6)
@@ -177,6 +176,7 @@ export class GracefulShutdownManager {
       this.eventLogger.logPendingRequests(totalConnections + inFlightCount);
 
       // Step 2: Notify connected clients (Requirement 8.5)
+      // This must happen BEFORE closing the server, otherwise clients are already disconnected
       if (this.config.notifyClients) {
         this.logger.info('Step 2: Notifying connected clients of shutdown');
         try {
@@ -186,6 +186,15 @@ export class GracefulShutdownManager {
           this.logger.warn(message);
           errors.push(message);
         }
+      }
+
+      // Step 2.5: Close WebSocket server after clients have been notified
+      // This ensures clients receive the shutdown notification before being disconnected
+      if (this.wss) {
+        this.logger.info('Step 2.5: Closing WebSocket server after client notifications');
+        this.wss.close(() => {
+          this.logger.info('WebSocket server closed - all connections terminated');
+        });
       }
 
       // Step 3: Wait for in-flight requests with timeout (Requirement 8.4)
