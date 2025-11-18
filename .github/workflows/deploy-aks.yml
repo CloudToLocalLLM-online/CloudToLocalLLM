@@ -277,8 +277,8 @@ jobs:
             --dry-run=client -o yaml | kubectl apply -f - || true
         fi
         
-        # Apply cert-manager ClusterIssuer with Azure DNS-01 challenge
-        echo "Applying cert-manager ClusterIssuer configuration..."
+        # Apply cert-manager ClusterIssuers with Azure DNS-01 challenge
+        echo "Applying cert-manager ClusterIssuer configuration (staging and production)..."
         # Replace placeholders with actual values
         sed -i "s|<AZURE_CLIENT_ID>|$AZURE_CLIENT_ID|g" k8s/cert-manager-azure-dns.yaml
         sed -i "s|<AZURE_SUBSCRIPTION_ID>|$AZURE_SUBSCRIPTION_ID|g" k8s/cert-manager-azure-dns.yaml
@@ -286,12 +286,16 @@ jobs:
         kubectl apply -f k8s/cert-manager-azure-dns.yaml
         
         echo "✅ cert-manager configured for automatic SSL certificate provisioning using Azure DNS-01 challenge"
+        echo "   - Staging issuer: azure-dns-staging (for testing)"
+        echo "   - Production issuer: azure-dns-prod (ready for production)"
         
-        # Apply wildcard certificate resource
-        echo "Applying wildcard certificate configuration..."
+        # Apply wildcard certificate resource (staging mode)
+        echo "Applying wildcard certificate configuration (STAGING MODE)..."
         kubectl apply -f k8s/certificate-wildcard.yaml
         
-        echo "✅ Wildcard certificate (*.cloudtolocalllm.online) will be automatically provisioned"
+        echo "✅ Wildcard certificate (*.cloudtolocalllm.online) will be automatically provisioned in STAGING mode"
+        echo "⚠️  Browser will show security warning (expected for staging certificates)"
+        echo "   Once verified working, update k8s/certificate-wildcard.yaml to use 'azure-dns-prod' issuer"
 
     - name: Wait for rollout to complete
       continue-on-error: true

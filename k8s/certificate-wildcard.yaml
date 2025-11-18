@@ -3,6 +3,9 @@
 # 
 # Uses cert-manager with Azure DNS-01 challenge to automatically provision and renew
 # Since we have full control of Azure DNS, we can get wildcard certificates easily
+#
+# STAGING MODE: Currently using staging issuer to test configuration
+# To switch to production: Change issuerRef.name from "azure-dns-staging" to "azure-dns-prod"
 
 apiVersion: cert-manager.io/v1
 kind: Certificate
@@ -18,9 +21,10 @@ spec:
   # Certificate will be stored in this secret
   secretName: cloudtolocalllm-wildcard-tls
   
-  # Use the Azure DNS ClusterIssuer for DNS-01 challenge
+  # STAGING: Use staging issuer first to test (no rate limits)
+  # PRODUCTION: Change to "azure-dns-prod" after testing
   issuerRef:
-    name: azure-dns-prod
+    name: azure-dns-staging
     kind: ClusterIssuer
   
   # Certificate will be automatically renewed 30 days before expiry

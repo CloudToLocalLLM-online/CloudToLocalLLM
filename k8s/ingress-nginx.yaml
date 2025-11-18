@@ -9,8 +9,10 @@ metadata:
   annotations:
     # SSL/TLS configuration - Wildcard certificate via cert-manager with Azure DNS
     # Using wildcard certificate (*.cloudtolocalllm.online) which covers all subdomains
+    # STAGING MODE: Currently using staging issuer to test configuration
     # cert-manager automatically provisions and renews via Azure DNS-01 challenge
-    cert-manager.io/cluster-issuer: "azure-dns-prod"
+    # Note: This annotation is optional when using Certificate resource directly
+    cert-manager.io/cluster-issuer: "azure-dns-staging"
     
     # Force HTTPS redirect
     nginx.ingress.kubernetes.io/ssl-redirect: "true"
