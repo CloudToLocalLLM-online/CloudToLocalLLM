@@ -232,10 +232,25 @@ jobs:
           kubectl wait --for=condition=ready pod -l app.kubernetes.io/instance=cert-manager -n cert-manager --timeout=300s
         fi
         
-        echo "Applying cert-manager ClusterIssuer configuration..."
-        kubectl apply -f k8s/cert-manager.yaml
+        # Create Azure DNS config secret for cert-manager
+        echo "Creating Azure DNS configuration secret..."
+        kubectl create secret generic azure-dns-config \
+          --from-literal=client-id="${{ secrets.AZURE_CLIENT_ID }}" \
+          --from-literal=client-secret="${{ secrets.AZURE_CLIENT_SECRET }}" \
+          --from-literal=subscription-id="${{ secrets.AZURE_SUBSCRIPTION_ID }}" \
+          --from-literal=tenant-id="${{ secrets.AZURE_TENANT_ID }}" \
+          -n cert-manager \
+          --dry-run=client -o yaml | kubectl apply -f -
         
-        echo "✅ cert-manager configured for automatic SSL certificate provisioning"
+        # Apply cert-manager ClusterIssuer with Azure DNS-01 challenge
+        echo "Applying cert-manager ClusterIssuer configuration..."
+        # Replace placeholders with actual values from secrets
+        sed -i "s|<AZURE_CLIENT_ID>|${{ secrets.AZURE_CLIENT_ID }}|g" k8s/cert-manager-azure-dns.yaml
+        sed -i "s|<AZURE_SUBSCRIPTION_ID>|${{ secrets.AZURE_SUBSCRIPTION_ID }}|g" k8s/cert-manager-azure-dns.yaml
+        sed -i "s|<AZURE_TENANT_ID>|${{ secrets.AZURE_TENANT_ID }}|g" k8s/cert-manager-azure-dns.yaml
+        kubectl apply -f k8s/cert-manager-azure-dns.yaml
+        
+        echo "✅ cert-manager configured for automatic SSL certificate provisioning using Azure DNS-01 challenge"
 
     - name: Wait for rollout to complete
       continue-on-error: true
@@ -385,8 +400,9 @@ jobs:
         echo "  api.cloudtolocalllm.online → ${{ steps.lb-ip.outputs.lb_ip }}"
         echo "  auth.cloudtolocalllm.online → ${{ steps.lb-ip.outputs.lb_ip }}"
         echo ""
-        echo "SSL/TLS: Automatic certificate provisioning via cert-manager and Let's Encrypt"
-        echo "  - Certificates are automatically provisioned and renewed"
+        echo "SSL/TLS: Automatic certificate provisioning via cert-manager with Azure DNS"
+        echo "  - Certificates are automatically provisioned using Azure DNS-01 challenge"
+        echo "  - Domain validation uses Azure DNS zone"
         echo "  - HTTPS redirect is enforced at ingress level"
         echo ""
         echo "🎉 Application will be available at:"

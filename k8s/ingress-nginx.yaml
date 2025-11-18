@@ -7,9 +7,10 @@ metadata:
   name: cloudtolocalllm-ingress
   namespace: cloudtolocalllm
   annotations:
-    # SSL/TLS configuration - Azure with cert-manager and Let's Encrypt
-    # cert-manager automatically provisions SSL certificates via Let's Encrypt
-    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    # SSL/TLS configuration - Azure with cert-manager and Azure DNS
+    # cert-manager uses Azure DNS-01 challenge for domain validation
+    # Certificates are stored in Kubernetes secrets and mounted to ingress
+    cert-manager.io/cluster-issuer: "azure-dns-prod"
     
     # Force HTTPS redirect
     nginx.ingress.kubernetes.io/ssl-redirect: "true"
