@@ -7,9 +7,9 @@ metadata:
   name: cloudtolocalllm-ingress
   namespace: cloudtolocalllm
   annotations:
-    # SSL/TLS configuration - Azure with cert-manager and Azure DNS
-    # cert-manager uses Azure DNS-01 challenge for domain validation
-    # Certificates are stored in Kubernetes secrets and mounted to ingress
+    # SSL/TLS configuration - Wildcard certificate via cert-manager with Azure DNS
+    # Using wildcard certificate (*.cloudtolocalllm.online) which covers all subdomains
+    # cert-manager automatically provisions and renews via Azure DNS-01 challenge
     cert-manager.io/cluster-issuer: "azure-dns-prod"
     
     # Force HTTPS redirect
@@ -43,14 +43,17 @@ metadata:
       more_set_headers "Strict-Transport-Security: max-age=31536000; includeSubDomains";
 spec:
   ingressClassName: nginx
-  # TLS enabled with cert-manager automatic certificate provisioning
+  # TLS enabled with wildcard certificate
+  # Wildcard cert covers: cloudtolocalllm.online and *.cloudtolocalllm.online
+  # This means all subdomains are automatically covered
   tls:
     - hosts:
         - cloudtolocalllm.online
         - app.cloudtolocalllm.online
         - api.cloudtolocalllm.online
         - auth.cloudtolocalllm.online
-      secretName: cloudtolocalllm-tls
+        # Wildcard cert covers any other subdomains you add in the future
+      secretName: cloudtolocalllm-wildcard-tls
   
   rules:
     # Main domain - Web app

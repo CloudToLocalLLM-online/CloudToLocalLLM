@@ -2,9 +2,9 @@
 
 This document describes the SSL certificate setup for CloudToLocalLLM on Kubernetes.
 
-## Current Configuration: cert-manager with DNS-01 Challenge
+## Current Configuration: Wildcard Certificate with cert-manager DNS-01 Challenge
 
-The current setup uses **cert-manager with DNS-01 challenge**, which is **platform-independent** and works on any Kubernetes cluster:
+The current setup uses **wildcard certificate (*.cloudtolocalllm.online)** via **cert-manager with DNS-01 challenge**, which is **platform-independent** and works on any Kubernetes cluster:
 
 - ✅ **Platform-Agnostic**: Works on GKE, EKS, AKS, DOKS, on-premises, or any Kubernetes cluster
 - ✅ **DNS Provider Agnostic**: Supports Azure DNS, AWS Route53, Cloudflare, Google Cloud DNS, etc.
@@ -65,12 +65,21 @@ Internet
 5. **cert-manager** stores certificate in Kubernetes secret
 6. **nginx-ingress** uses the secret for TLS termination
 
+### Wildcard Certificate Benefits
+
+- ✅ **Single Certificate**: One certificate covers all subdomains (*.cloudtolocalllm.online)
+- ✅ **Root Domain Included**: Also covers cloudtolocalllm.online
+- ✅ **Future-Proof**: Automatically covers any new subdomains you add
+- ✅ **Fewer Certificates**: No need to request individual certificates for each subdomain
+- ✅ **Easy to Manage**: Single certificate to monitor and renew
+
 ### Certificate Lifecycle
 
-- **Provisioning**: Automatic on first deployment
+- **Provisioning**: Automatic on first deployment (includes root + wildcard)
 - **Renewal**: Automatic (cert-manager renews ~30 days before expiry)
-- **Validation**: Uses Azure DNS zone (can be changed to any DNS provider)
+- **Validation**: Uses Azure DNS zone DNS-01 challenge (can be changed to any DNS provider)
 - **Storage**: Kubernetes secrets (standard Kubernetes - platform-independent)
+- **Coverage**: Covers `cloudtolocalllm.online` and `*.cloudtolocalllm.online`
 
 ---
 

@@ -1,0 +1,28 @@
+# Wildcard SSL Certificate for cloudtolocalllm.online
+# This certificate covers both the root domain and all subdomains (*.cloudtolocalllm.online)
+# 
+# Uses cert-manager with Azure DNS-01 challenge to automatically provision and renew
+# Since we have full control of Azure DNS, we can get wildcard certificates easily
+
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: cloudtolocalllm-wildcard
+  namespace: cloudtolocalllm
+spec:
+  # Request both root domain and wildcard
+  dnsNames:
+    - cloudtolocalllm.online
+    - "*.cloudtolocalllm.online"
+  
+  # Certificate will be stored in this secret
+  secretName: cloudtolocalllm-wildcard-tls
+  
+  # Use the Azure DNS ClusterIssuer for DNS-01 challenge
+  issuerRef:
+    name: azure-dns-prod
+    kind: ClusterIssuer
+  
+  # Certificate will be automatically renewed 30 days before expiry
+  renewBefore: 720h # 30 days
+

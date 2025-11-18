@@ -286,6 +286,12 @@ jobs:
         kubectl apply -f k8s/cert-manager-azure-dns.yaml
         
         echo "✅ cert-manager configured for automatic SSL certificate provisioning using Azure DNS-01 challenge"
+        
+        # Apply wildcard certificate resource
+        echo "Applying wildcard certificate configuration..."
+        kubectl apply -f k8s/certificate-wildcard.yaml
+        
+        echo "✅ Wildcard certificate (*.cloudtolocalllm.online) will be automatically provisioned"
 
     - name: Wait for rollout to complete
       continue-on-error: true
