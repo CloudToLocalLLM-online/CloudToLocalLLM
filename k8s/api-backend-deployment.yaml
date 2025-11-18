@@ -8,8 +8,8 @@ metadata:
 spec:
   type: ClusterIP
   ports:
-    - port: 3000
-      targetPort: 3000
+    - port: 8080
+      targetPort: 8080
       name: http
   selector:
     app: api-backend
@@ -45,7 +45,7 @@ spec:
           image: cloudtolocalllm/cloudtolocalllm-api:latest
           imagePullPolicy: Always
           ports:
-            - containerPort: 3000
+            - containerPort: 8080
               name: http
           env:
             # Configuration from ConfigMap
@@ -188,7 +188,7 @@ spec:
           livenessProbe:
             httpGet:
               path: /health
-              port: 3000
+              port: 8080
             initialDelaySeconds: 30
             periodSeconds: 10
             timeoutSeconds: 5
@@ -196,7 +196,7 @@ spec:
           readinessProbe:
             httpGet:
               path: /health
-              port: 3000
+              port: 8080
             initialDelaySeconds: 10
             periodSeconds: 5
             timeoutSeconds: 3
