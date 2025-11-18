@@ -219,41 +219,23 @@ jobs:
         
         echo "✅ Admin Center migrations completed successfully"
 
-    - name: Purge Cloudflare cache
+    - name: Ensure cert-manager is installed
+      continue-on-error: true
       run: |
-        if [ -z "${{ secrets.CLOUDFLARE_API_TOKEN }}" ]; then
-          echo "❌ Cloudflare API token not set, skipping cache purge."
-          exit 0
-        fi
-
-        CF_API_TOKEN="${{ secrets.CLOUDFLARE_API_TOKEN }}"
-        CF_ZONE_ID=$(curl -s -X GET "https://api.cloudflare.com/client/v4/zones?name=cloudtolocalllm.online" \
-          -H "Authorization: Bearer $CF_API_TOKEN" \
-          -H "Content-Type: application/json" | jq -r '.result[0].id')
-
-        if [ "$CF_ZONE_ID" = "null" ] || [ -z "$CF_ZONE_ID" ]; then
-          echo "❌ Unable to determine Cloudflare Zone ID, skipping purge."
-          exit 0
-        fi
-
-        echo "🔄 Purging entire Cloudflare cache for zone: $CF_ZONE_ID"
-        
-        # Purge entire cache (everything)
-        PURGE_RESPONSE=$(curl -s -X POST "https://api.cloudflare.com/client/v4/zones/$CF_ZONE_ID/purge_cache" \
-          -H "Authorization: Bearer $CF_API_TOKEN" \
-          -H "Content-Type: application/json" \
-          --data '{"purge_everything":true}')
-        
-        echo "$PURGE_RESPONSE" | jq
-        
-        # Check if purge was successful
-        SUCCESS=$(echo "$PURGE_RESPONSE" | jq -r '.success')
-        if [ "$SUCCESS" = "true" ]; then
-          echo "✅ Cloudflare cache purged successfully!"
+        echo "Checking if cert-manager is installed..."
+        if kubectl get namespace cert-manager 2>/dev/null; then
+          echo "✅ cert-manager namespace exists"
         else
-          echo "⚠️ Cloudflare cache purge may have failed, checking response..."
-          echo "$PURGE_RESPONSE" | jq '.errors'
+          echo "Installing cert-manager..."
+          kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.13.0/cert-manager.yaml
+          echo "Waiting for cert-manager to be ready..."
+          kubectl wait --for=condition=ready pod -l app.kubernetes.io/instance=cert-manager -n cert-manager --timeout=300s
         fi
+        
+        echo "Applying cert-manager ClusterIssuer configuration..."
+        kubectl apply -f k8s/cert-manager.yaml
+        
+        echo "✅ cert-manager configured for automatic SSL certificate provisioning"
 
     - name: Wait for rollout to complete
       continue-on-error: true
@@ -335,79 +317,82 @@ jobs:
         echo "Load Balancer IP: $LB_IP"
         echo "lb_ip=$LB_IP" >> $GITHUB_OUTPUT
 
-    - name: Configure Cloudflare DNS & SSL
+    - name: Configure Azure DNS
       run: |
         echo "Load Balancer IP: ${{ steps.lb-ip.outputs.lb_ip }}"
-
-        # Cloudflare API configuration
-        CF_API_TOKEN="${{ secrets.CLOUDFLARE_API_TOKEN }}"
-        CF_ZONE_ID=$(curl -s -X GET "https://api.cloudflare.com/client/v4/zones?name=cloudtolocalllm.online" \
-          -H "Authorization: Bearer $CF_API_TOKEN" \
-          -H "Content-Type: application/json" | jq -r '.result[0].id')
-
-        echo "Cloudflare Zone ID: $CF_ZONE_ID"
-
-        # Delete existing DNS records
-        for record in $(curl -s -X GET "https://api.cloudflare.com/client/v4/zones/$CF_ZONE_ID/dns_records?type=A" \
-          -H "Authorization: Bearer $CF_API_TOKEN" \
-          -H "Content-Type: application/json" | jq -r '.result[].id'); do
-          curl -s -X DELETE "https://api.cloudflare.com/client/v4/zones/$CF_ZONE_ID/dns_records/$record" \
-            -H "Authorization: Bearer $CF_API_TOKEN" \
-            -H "Content-Type: application/json"
-        done
-
-        # Create new DNS records with load balancer IP
-        DOMAINS=("cloudtolocalllm.online" "app.cloudtolocalllm.online" "api.cloudtolocalllm.online" "auth.cloudtolocalllm.online")
-
-        for domain in "${DOMAINS[@]}"; do
-          subdomain="@"
-          if [[ $domain != "cloudtolocalllm.online" ]]; then
-            subdomain=$(echo $domain | sed 's/\.cloudtolocalllm\.online//')
+        
+        RESOURCE_GROUP="${{ env.AZURE_RESOURCE_GROUP }}"
+        DNS_ZONE_NAME="cloudtolocalllm.online"
+        LB_IP="${{ steps.lb-ip.outputs.lb_ip }}"
+        
+        # Create Azure DNS zone if it doesn't exist
+        if ! az network dns zone show --resource-group "$RESOURCE_GROUP" --name "$DNS_ZONE_NAME" &>/dev/null; then
+          echo "Creating Azure DNS zone..."
+          az network dns zone create \
+            --resource-group "$RESOURCE_GROUP" \
+            --name "$DNS_ZONE_NAME"
+          echo "✅ Azure DNS zone created"
+        else
+          echo "✅ Azure DNS zone already exists"
+        fi
+        
+        # Create or update DNS records
+        DOMAINS=("@" "app" "api" "auth")
+        
+        for record_name in "${DOMAINS[@]}"; do
+          echo "Creating/updating DNS record: $record_name → $LB_IP"
+          
+          # Check if record exists
+          if az network dns record-set a show \
+            --resource-group "$RESOURCE_GROUP" \
+            --zone-name "$DNS_ZONE_NAME" \
+            --name "$record_name" &>/dev/null; then
+            # Update existing record
+            az network dns record-set a update \
+              --resource-group "$RESOURCE_GROUP" \
+              --zone-name "$DNS_ZONE_NAME" \
+              --name "$record_name" \
+              --set "aRecords[0].ipv4Address=$LB_IP" "ttl=300" >/dev/null
+            echo "  ✅ Updated"
+          else
+            # Create new record
+            az network dns record-set a create \
+              --resource-group "$RESOURCE_GROUP" \
+              --zone-name "$DNS_ZONE_NAME" \
+              --name "$record_name" \
+              --ttl 300 >/dev/null
+            
+            az network dns record-set a add-record \
+              --resource-group "$RESOURCE_GROUP" \
+              --zone-name "$DNS_ZONE_NAME" \
+              --record-set-name "$record_name" \
+              --ipv4-address "$LB_IP" >/dev/null
+            echo "  ✅ Created"
           fi
-
-          curl -s -X POST "https://api.cloudflare.com/client/v4/zones/$CF_ZONE_ID/dns_records" \
-            -H "Authorization: Bearer $CF_API_TOKEN" \
-            -H "Content-Type: application/json" \
-            --data "{
-              \"type\": \"A\",
-              \"name\": \"$subdomain\",
-              \"content\": \"${{ steps.lb-ip.outputs.lb_ip }}\",
-              \"ttl\": 300,
-              \"proxied\": true
-            }"
         done
-
-        # Configure SSL/TLS settings
-        # Use "flexible" mode since ingress doesn't have TLS enabled
-        # This allows Cloudflare to connect to origin via HTTP while providing HTTPS to visitors
-        curl -s -X PATCH "https://api.cloudflare.com/client/v4/zones/$CF_ZONE_ID/settings/ssl" \
-          -H "Authorization: Bearer $CF_API_TOKEN" \
-          -H "Content-Type: application/json" \
-          --data '{"value": "flexible"}'
-
-        # Enable Always Use HTTPS
-        curl -s -X PATCH "https://api.cloudflare.com/client/v4/zones/$CF_ZONE_ID/settings/always_use_https" \
-          -H "Authorization: Bearer $CF_API_TOKEN" \
-          -H "Content-Type: application/json" \
-          --data '{"value": "on"}'
-
-        echo "✅ Cloudflare DNS & SSL configured automatically!"
+        
+        echo "✅ Azure DNS configured successfully!"
 
     - name: DNS Health Check
       run: |
-        echo "✅ Cloudflare DNS & SSL configured successfully!"
-        echo "Load Balancer IP: ${{ steps.lb-ip.outputs.lb_ip }}"
-        echo "DNS records configured:"
-        echo "  cloudtolocalllm.online → ${{ steps.lb-ip.outputs.lb_ip }} (proxied)"
-        echo "  app.cloudtolocalllm.online → ${{ steps.lb-ip.outputs.lb_ip }} (proxied)"
-        echo "  api.cloudtolocalllm.online → ${{ steps.lb-ip.outputs.lb_ip }} (proxied)"
-        echo "  auth.cloudtolocalllm.online → ${{ steps.lb-ip.outputs.lb_ip }} (proxied)"
+        echo "✅ Azure DNS configuration complete!"
         echo ""
-        echo "SSL: Flexible encryption enabled (HTTPS to Cloudflare, HTTP to origin)"
-        echo "Always Use HTTPS: Enabled"
+        echo "Load Balancer IP: ${{ steps.lb-ip.outputs.lb_ip }}"
+        echo ""
+        echo "DNS Records configured:"
+        echo "  cloudtolocalllm.online → ${{ steps.lb-ip.outputs.lb_ip }}"
+        echo "  app.cloudtolocalllm.online → ${{ steps.lb-ip.outputs.lb_ip }}"
+        echo "  api.cloudtolocalllm.online → ${{ steps.lb-ip.outputs.lb_ip }}"
+        echo "  auth.cloudtolocalllm.online → ${{ steps.lb-ip.outputs.lb_ip }}"
+        echo ""
+        echo "SSL/TLS: Automatic certificate provisioning via cert-manager and Let's Encrypt"
+        echo "  - Certificates are automatically provisioned and renewed"
+        echo "  - HTTPS redirect is enforced at ingress level"
         echo ""
         echo "🎉 Application will be available at:"
         echo "   https://cloudtolocalllm.online"
         echo "   https://app.cloudtolocalllm.online"
         echo "   https://api.cloudtolocalllm.online"
         echo "   https://auth.cloudtolocalllm.online"
+        echo ""
+        echo "Note: SSL certificates may take a few minutes to provision on first deployment"

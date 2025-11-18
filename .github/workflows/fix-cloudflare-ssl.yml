@@ -1,4 +1,4 @@
-name: Fix Cloudflare SSL Mode
+name: Fix Azure SSL (Deprecated - Now using cert-manager)
 
 on:
   workflow_dispatch:

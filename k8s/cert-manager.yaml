@@ -11,7 +11,7 @@ spec:
     server: https://acme-v02.api.letsencrypt.org/directory
     
     # Email for Let's Encrypt notifications
-    email: admin@yourdomain.com
+    email: admin@cloudtolocalllm.online
     
     # Secret to store ACME account private key
     privateKeySecretRef:
@@ -32,7 +32,7 @@ spec:
   acme:
     # Staging Let's Encrypt server (for testing)
     server: https://acme-staging-v02.api.letsencrypt.org/directory
-    email: admin@yourdomain.com
+    email: admin@cloudtolocalllm.online
     privateKeySecretRef:
       name: letsencrypt-staging-key
     solvers:
