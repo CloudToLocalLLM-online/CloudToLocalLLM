@@ -93,12 +93,12 @@ class UserRequestTracker {
 
     // Clean up main window requests
     this.requests = this.requests.filter(
-      (timestamp) => timestamp > windowCutoff
+      (timestamp) => timestamp > windowCutoff,
     );
 
     // Clean up burst window requests
     this.burstRequests = this.burstRequests.filter(
-      (timestamp) => timestamp > burstCutoff
+      (timestamp) => timestamp > burstCutoff,
     );
   }
 
@@ -136,10 +136,10 @@ class UserRequestTracker {
       successRate:
         this.totalRequests > 0
           ? (
-              ((this.totalRequests - this.blockedRequests) /
+            ((this.totalRequests - this.blockedRequests) /
                 this.totalRequests) *
               100
-            ).toFixed(2)
+          ).toFixed(2)
           : 100,
       sessionDuration: Math.round(sessionDuration / 1000), // seconds
       lastRequestTime: this.lastRequestTime,
@@ -196,7 +196,7 @@ export class TunnelRateLimiter {
     const tracker = this.getUserTracker(userId);
     const counts = tracker.getCounts(
       this.config.windowMs,
-      this.config.burstWindowMs
+      this.config.burstWindowMs,
     );
 
     // Check concurrent requests limit
@@ -371,7 +371,7 @@ export class TunnelRateLimiter {
 
     if (stats.totalUsers > 0) {
       stats.averageRequestsPerUser = Math.round(
-        stats.totalRequests / stats.totalUsers
+        stats.totalRequests / stats.totalUsers,
       );
       stats.averageSuccessRate =
         userStats.reduce((sum, stat) => sum + parseFloat(stat.successRate), 0) /
@@ -400,7 +400,7 @@ export class TunnelRateLimiter {
   cleanup() {
     const now = new Date();
     const inactiveThreshold = new Date(
-      now.getTime() - this.config.windowMs * 2
+      now.getTime() - this.config.windowMs * 2,
     );
     const trackersToRemove = [];
 
@@ -472,10 +472,10 @@ export function createTunnelRateLimitMiddleware(config = {}) {
           'X-RateLimit-Remaining': Math.max(
             0,
             (result.limits?.window?.max || rateLimiter.config.maxRequests) -
-              (result.limits?.window?.current || 0)
+              (result.limits?.window?.current || 0),
           ),
           'X-RateLimit-Reset': new Date(
-            Date.now() + result.retryAfter * 1000
+            Date.now() + result.retryAfter * 1000,
           ).toISOString(),
           'Retry-After': result.retryAfter,
         });
@@ -489,7 +489,7 @@ export function createTunnelRateLimitMiddleware(config = {}) {
           reason: result.reason,
           retryAfter: result.retryAfter,
           limits: result.limits,
-        }
+        },
       );
 
       return res.status(429).json(errorResponse);
@@ -501,10 +501,10 @@ export function createTunnelRateLimitMiddleware(config = {}) {
         'X-RateLimit-Limit': result.limits.window.max,
         'X-RateLimit-Remaining': Math.max(
           0,
-          result.limits.window.max - result.limits.window.current
+          result.limits.window.max - result.limits.window.current,
         ),
         'X-RateLimit-Reset': new Date(
-          Date.now() + result.limits.window.windowMs
+          Date.now() + result.limits.window.windowMs,
         ).toISOString(),
       });
     }
@@ -514,7 +514,7 @@ export function createTunnelRateLimitMiddleware(config = {}) {
 
     // Set up response completion handler
     const originalEnd = res.end;
-    res.end = function (...args) {
+    res.end = function(...args) {
       rateLimiter.completeRequest(userId);
       originalEnd.apply(this, args);
     };

@@ -5,12 +5,12 @@
 
 import express from 'express';
 import { authenticateJWT } from '../middleware/auth.js';
-import { addTierInfo, requireFeature } from '../middleware/tier-check.js';
+import { addTierInfo } from '../middleware/tier-check.js';
 import winston from 'winston';
 
 export function createConversationRoutes(
   dbMigrator,
-  logger = winston.createLogger()
+  logger = winston.createLogger(),
 ) {
   const router = express.Router();
 
@@ -22,7 +22,7 @@ export function createConversationRoutes(
    * GET /api/conversations
    * Get all conversations for the authenticated user
    */
-  router.get('/', async (req, res) => {
+  router.get('/', async(req, res) => {
     try {
       const userId = req.auth?.payload?.sub || req.user?.sub;
 
@@ -52,7 +52,7 @@ export function createConversationRoutes(
         FROM conversations
         WHERE user_id = $1
         ORDER BY updated_at DESC`,
-        [userId]
+        [userId],
       );
 
       // Get message counts for each conversation
@@ -65,7 +65,7 @@ export function createConversationRoutes(
           FROM messages
           WHERE conversation_id = ANY($1)
           GROUP BY conversation_id`,
-          [conversationIds]
+          [conversationIds],
         );
 
         messageCounts = counts.reduce((acc, row) => {
@@ -101,7 +101,7 @@ export function createConversationRoutes(
    * GET /api/conversations/:id
    * Get a specific conversation with all its messages
    */
-  router.get('/:id', async (req, res) => {
+  router.get('/:id', async(req, res) => {
     try {
       const userId = req.auth?.payload?.sub || req.user?.sub;
       const conversationId = req.params.id;
@@ -125,7 +125,7 @@ export function createConversationRoutes(
         `SELECT id, title, model, created_at, updated_at, metadata
         FROM conversations
         WHERE id = $1 AND user_id = $2`,
-        [conversationId, userId]
+        [conversationId, userId],
       );
 
       if (conversationRows.length === 0) {
@@ -151,7 +151,7 @@ export function createConversationRoutes(
         FROM messages
         WHERE conversation_id = $1
         ORDER BY timestamp ASC`,
-        [conversationId]
+        [conversationId],
       );
 
       res.json({
@@ -179,7 +179,7 @@ export function createConversationRoutes(
    * POST /api/conversations
    * Create a new conversation
    */
-  router.post('/', async (req, res) => {
+  router.post('/', async(req, res) => {
     try {
       const userId = req.auth?.payload?.sub || req.user?.sub;
       const { title, model, messages } = req.body;
@@ -215,7 +215,7 @@ export function createConversationRoutes(
           `INSERT INTO conversations (user_id, title, model, metadata)
           VALUES ($1, $2, $3, $4::jsonb)
           RETURNING id, title, model, created_at, updated_at, metadata`,
-          [userId, title, model, JSON.stringify(req.body.metadata || {})]
+          [userId, title, model, JSON.stringify(req.body.metadata || {})],
         );
 
         const conversation = conversationRows[0];
@@ -223,7 +223,7 @@ export function createConversationRoutes(
 
         // Insert messages if provided
         if (messages && Array.isArray(messages) && messages.length > 0) {
-          const messageValues = messages.map((msg, index) => ({
+          const messageValues = messages.map((msg) => ({
             conversation_id: conversationId,
             role: msg.role || 'user',
             content: msg.content || '',
@@ -248,7 +248,7 @@ export function createConversationRoutes(
                 msg.error,
                 msg.timestamp,
                 msg.metadata,
-              ]
+              ],
             );
           }
         }
@@ -261,7 +261,7 @@ export function createConversationRoutes(
           FROM messages
           WHERE conversation_id = $1
           ORDER BY timestamp ASC`,
-          [conversationId]
+          [conversationId],
         );
 
         res.status(201).json({
@@ -294,7 +294,7 @@ export function createConversationRoutes(
    * PUT /api/conversations/:id
    * Update a conversation (title, metadata, or add/update messages)
    */
-  router.put('/:id', async (req, res) => {
+  router.put('/:id', async(req, res) => {
     try {
       const userId = req.auth?.payload?.sub || req.user?.sub;
       const conversationId = req.params.id;
@@ -323,7 +323,7 @@ export function createConversationRoutes(
         const { rows: conversationRows } = await client.query(
           `SELECT id FROM conversations
           WHERE id = $1 AND user_id = $2`,
-          [conversationId, userId]
+          [conversationId, userId],
         );
 
         if (conversationRows.length === 0) {
@@ -337,8 +337,8 @@ export function createConversationRoutes(
         // Update conversation title if provided
         if (title) {
           await client.query(
-            `UPDATE conversations SET title = $1 WHERE id = $2`,
-            [title, conversationId]
+            'UPDATE conversations SET title = $1 WHERE id = $2',
+            [title, conversationId],
           );
         }
 
@@ -346,8 +346,8 @@ export function createConversationRoutes(
         if (messages && Array.isArray(messages)) {
           // Delete existing messages
           await client.query(
-            `DELETE FROM messages WHERE conversation_id = $1`,
-            [conversationId]
+            'DELETE FROM messages WHERE conversation_id = $1',
+            [conversationId],
           );
 
           // Insert new messages
@@ -365,7 +365,7 @@ export function createConversationRoutes(
                 msg.error || null,
                 msg.timestamp ? new Date(msg.timestamp) : new Date(),
                 msg.metadata ? JSON.stringify(msg.metadata) : '{}',
-              ]
+              ],
             );
           }
         }
@@ -377,7 +377,7 @@ export function createConversationRoutes(
           `SELECT id, title, model, created_at, updated_at, metadata
           FROM conversations
           WHERE id = $1`,
-          [conversationId]
+          [conversationId],
         );
 
         const { rows: messageRows } = await dbMigrator.pool.query(
@@ -385,7 +385,7 @@ export function createConversationRoutes(
           FROM messages
           WHERE conversation_id = $1
           ORDER BY timestamp ASC`,
-          [conversationId]
+          [conversationId],
         );
 
         res.json({
@@ -419,7 +419,7 @@ export function createConversationRoutes(
    * DELETE /api/conversations/:id
    * Delete a conversation and all its messages
    */
-  router.delete('/:id', async (req, res) => {
+  router.delete('/:id', async(req, res) => {
     try {
       const userId = req.auth?.payload?.sub || req.user?.sub;
       const conversationId = req.params.id;
@@ -443,7 +443,7 @@ export function createConversationRoutes(
         `DELETE FROM conversations
         WHERE id = $1 AND user_id = $2
         RETURNING id`,
-        [conversationId, userId]
+        [conversationId, userId],
       );
 
       if (rows.length === 0) {

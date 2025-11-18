@@ -104,7 +104,7 @@ export class DatabaseMigrator {
    */
   async getAppliedMigrations() {
     const result = await this.db.all(
-      'SELECT version, name, applied_at FROM schema_migrations WHERE success = 1 ORDER BY applied_at'
+      'SELECT version, name, applied_at FROM schema_migrations WHERE success = 1 ORDER BY applied_at',
     );
     return result;
   }
@@ -115,7 +115,7 @@ export class DatabaseMigrator {
   async isMigrationApplied(version) {
     const result = await this.db.get(
       'SELECT 1 FROM schema_migrations WHERE version = ? AND success = 1',
-      [version]
+      [version],
     );
     return result !== undefined;
   }
@@ -151,7 +151,7 @@ export class DatabaseMigrator {
       await this.db.run(
         `INSERT INTO schema_migrations (version, name, checksum, execution_time_ms)
          VALUES (?, ?, ?, ?)`,
-        [version, 'Initial tunnel system schema', checksum, executionTime]
+        [version, 'Initial tunnel system schema', checksum, executionTime],
       );
 
       await this.db.exec('COMMIT');
@@ -169,7 +169,7 @@ export class DatabaseMigrator {
         await this.db.run(
           `INSERT INTO schema_migrations (version, name, checksum, success)
            VALUES (?, ?, ?, 0)`,
-          [version, 'Initial tunnel system schema', 'failed']
+          [version, 'Initial tunnel system schema', 'failed'],
         );
       } catch (recordError) {
         this.logger.error('Failed to record migration failure', {
@@ -219,7 +219,7 @@ export class DatabaseMigrator {
       await client.query(
         `INSERT INTO schema_migrations (version, name, checksum, execution_time_ms) 
          VALUES ($1, $2, $3, $4)`,
-        [version, name, checksum, executionTime]
+        [version, name, checksum, executionTime],
       );
 
       await client.query('COMMIT');
@@ -237,7 +237,7 @@ export class DatabaseMigrator {
       await client.query(
         `INSERT INTO schema_migrations (version, name, checksum, success) 
          VALUES ($1, $2, $3, false)`,
-        [version, name, 'failed']
+        [version, name, 'failed'],
       );
 
       this.logger.error('Failed to apply migration', {
@@ -308,22 +308,22 @@ export class DatabaseMigrator {
       {
         name: 'user_sessions_table',
         query:
-          "SELECT 1 FROM sqlite_master WHERE type='table' AND name='user_sessions'",
+          'SELECT 1 FROM sqlite_master WHERE type=\'table\' AND name=\'user_sessions\'',
       },
       {
         name: 'tunnel_connections_table',
         query:
-          "SELECT 1 FROM sqlite_master WHERE type='table' AND name='tunnel_connections'",
+          'SELECT 1 FROM sqlite_master WHERE type=\'table\' AND name=\'tunnel_connections\'',
       },
       {
         name: 'audit_logs_table',
         query:
-          "SELECT 1 FROM sqlite_master WHERE type='table' AND name='audit_logs'",
+          'SELECT 1 FROM sqlite_master WHERE type=\'table\' AND name=\'audit_logs\'',
       },
       {
         name: 'schema_migrations_table',
         query:
-          "SELECT 1 FROM sqlite_master WHERE type='table' AND name='schema_migrations'",
+          'SELECT 1 FROM sqlite_master WHERE type=\'table\' AND name=\'schema_migrations\'',
       },
     ];
 
@@ -359,7 +359,7 @@ export class DatabaseMigrator {
     const queries = {
       totalSessions: 'SELECT COUNT(*) as count FROM user_sessions',
       activeSessions:
-        "SELECT COUNT(*) as count FROM user_sessions WHERE is_active = 1 AND expires_at > datetime('now')",
+        'SELECT COUNT(*) as count FROM user_sessions WHERE is_active = 1 AND expires_at > datetime(\'now\')',
       totalConnections: 'SELECT COUNT(*) as count FROM tunnel_connections',
       auditLogCount: 'SELECT COUNT(*) as count FROM audit_logs',
     };
@@ -427,30 +427,30 @@ async function runCommand() {
     await migrator.createMigrationsTable();
 
     switch (command) {
-      case 'init':
-        await migrator.applyInitialSchema();
-        break;
+    case 'init':
+      await migrator.applyInitialSchema();
+      break;
 
-      case 'validate': {
-        const validation = await migrator.validateSchema();
-        console.log('Validation results:', validation);
-        break;
-      }
+    case 'validate': {
+      const validation = await migrator.validateSchema();
+      console.log('Validation results:', validation);
+      break;
+    }
 
-      case 'stats': {
-        const stats = await migrator.getDatabaseStats();
-        console.log('Database statistics:', stats);
-        break;
-      }
+    case 'stats': {
+      const stats = await migrator.getDatabaseStats();
+      console.log('Database statistics:', stats);
+      break;
+    }
 
-      case 'status': {
-        const migrations = await migrator.getAppliedMigrations();
-        console.log('Applied migrations:', migrations);
-        break;
-      }
+    case 'status': {
+      const migrations = await migrator.getAppliedMigrations();
+      console.log('Applied migrations:', migrations);
+      break;
+    }
 
-      default:
-        console.log('Usage: node migrate.js [init|validate|stats|status]');
+    default:
+      console.log('Usage: node migrate.js [init|validate|stats|status]');
     }
   } catch (error) {
     console.error('Migration failed:', error.message);

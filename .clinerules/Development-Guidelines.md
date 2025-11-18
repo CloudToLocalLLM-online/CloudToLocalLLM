@@ -5,7 +5,7 @@ This document outlines specific development guidelines and best practices for th
 ## 1. General Development Practices
 
 *   **Code Quality**:
-    *   Always run `flutter analyze` (for Flutter) and ESLint (for Node.js) to catch linting errors before committing.
+    *   **MANDATORY**: Always run `flutter analyze` (for Flutter) and `npm run lint` (for Node.js) to verify linter issues **before pushing** to GitHub. This step is manual and crucial as the CI workflow assumes clean code.
     *   Use `flutter format` and appropriate Node.js formatters to ensure consistent code formatting.
     *   Implement robust error handling with try-catch blocks and structured logging.
 *   **Dependency Management**:

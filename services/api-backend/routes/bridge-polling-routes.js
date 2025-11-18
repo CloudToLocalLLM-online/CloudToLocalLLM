@@ -138,7 +138,7 @@ router.post(
         heartbeatInterval: 60000, // 60 seconds (increased from 30 to reduce rate limiting)
       },
     });
-  }
+  },
 );
 
 /**
@@ -184,7 +184,7 @@ router.get('/:bridgeId/status', authenticateJWT, (req, res) => {
     stats: {
       pendingRequests: pendingRequests.get(bridgeId)?.length || 0,
       completedResponses: Array.from(completedResponses.values()).filter(
-        (r) => r.bridgeId === bridgeId
+        (r) => r.bridgeId === bridgeId,
       ).length,
     },
   });
@@ -262,7 +262,7 @@ router.get(
     req.on('close', () => {
       clearInterval(pollInterval);
     });
-  }
+  },
 );
 
 /**
@@ -305,7 +305,7 @@ router.post(
       message: 'Provider status updated',
       timestamp: new Date().toISOString(),
     });
-  }
+  },
 );
 
 /**
@@ -396,7 +396,7 @@ router.post(
       success: true,
       timestamp: new Date().toISOString(),
     });
-  }
+  },
 );
 
 /**

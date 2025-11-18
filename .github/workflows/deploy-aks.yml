@@ -262,6 +262,47 @@ jobs:
         echo "✅ Wildcard certificate (*.cloudtolocalllm.online) will be automatically provisioned via Cloudflare DNS"
         echo "   Certificate will be issued by Let's Encrypt using Cloudflare DNS-01 challenge"
 
+    - name: Configure Cloudflare SSL (Full Strict)
+      run: |
+        echo "Configuring Cloudflare SSL mode to Full (Strict)..."
+        
+        if [ -z "${{ secrets.CLOUDFLARE_API_TOKEN }}" ]; then
+          echo "❌ Cloudflare API token not set in secrets"
+          exit 1
+        fi
+
+        CF_API_TOKEN="${{ secrets.CLOUDFLARE_API_TOKEN }}"
+        
+        # Get Zone ID
+        CF_ZONE_ID=$(curl -s -X GET "https://api.cloudflare.com/client/v4/zones?name=cloudtolocalllm.online" \
+          -H "Authorization: Bearer $CF_API_TOKEN" \
+          -H "Content-Type: application/json" | jq -r '.result[0].id')
+
+        if [ "$CF_ZONE_ID" = "null" ] || [ -z "$CF_ZONE_ID" ]; then
+          echo "❌ Unable to determine Cloudflare Zone ID"
+          exit 1
+        fi
+
+        echo "Found Zone ID: $CF_ZONE_ID"
+        
+        # Update SSL setting to 'strict' (Full Strict)
+        # This ensures Cloudflare validates the origin certificate (managed by cert-manager)
+        RESPONSE=$(curl -s -X PATCH "https://api.cloudflare.com/client/v4/zones/$CF_ZONE_ID/settings/ssl" \
+          -H "Authorization: Bearer $CF_API_TOKEN" \
+          -H "Content-Type: application/json" \
+          --data '{"value": "strict"}')
+
+        SUCCESS=$(echo "$RESPONSE" | jq -r '.success')
+        if [ "$SUCCESS" = "true" ]; then
+          echo "✅ Cloudflare SSL mode set to 'strict' (Full Strict)"
+          echo "   - Traffic between Cloudflare and AKS is fully encrypted"
+          echo "   - Cloudflare validates the Let's Encrypt certificate on AKS"
+        else
+          echo "❌ Failed to change SSL mode"
+          echo "$RESPONSE" | jq '.errors'
+          exit 1
+        fi
+
     - name: Wait for rollout to complete
       continue-on-error: true
       run: |
@@ -342,65 +383,11 @@ jobs:
         echo "Load Balancer IP: $LB_IP"
         echo "lb_ip=$LB_IP" >> $GITHUB_OUTPUT
 
-    - name: Configure Azure DNS (Optional - Backup)
-      continue-on-error: true
-      run: |
-        echo "⚠️  Note: Using Cloudflare DNS for primary DNS management"
-        echo "This step configures Azure DNS as an optional backup"
-        echo ""
-        echo "Load Balancer IP: ${{ steps.lb-ip.outputs.lb_ip }}"
-        
-        RESOURCE_GROUP="${{ env.AZURE_RESOURCE_GROUP }}"
-        DNS_ZONE_NAME="cloudtolocalllm.online"
-        LB_IP="${{ steps.lb-ip.outputs.lb_ip }}"
-        
-        # Create Azure DNS zone if it doesn't exist (optional backup)
-        if ! az network dns zone show --resource-group "$RESOURCE_GROUP" --name "$DNS_ZONE_NAME" &>/dev/null; then
-          echo "Creating Azure DNS zone (optional backup)..."
-          az network dns zone create \
-            --resource-group "$RESOURCE_GROUP" \
-            --name "$DNS_ZONE_NAME"
-          echo "✅ Azure DNS zone created"
-        else
-          echo "✅ Azure DNS zone already exists"
-        fi
-        
-        # Create or update DNS records (optional backup)
-        DOMAINS=("@" "app" "api" "auth")
-        
-        for record_name in "${DOMAINS[@]}"; do
-          echo "Creating/updating DNS record: $record_name → $LB_IP"
-          
-          # Check if record exists
-          if az network dns record-set a show \
-            --resource-group "$RESOURCE_GROUP" \
-            --zone-name "$DNS_ZONE_NAME" \
-            --name "$record_name" &>/dev/null; then
-            # Update existing record
-            az network dns record-set a update \
-              --resource-group "$RESOURCE_GROUP" \
-              --zone-name "$DNS_ZONE_NAME" \
-              --name "$record_name" \
-              --set "aRecords[0].ipv4Address=$LB_IP" "ttl=300" >/dev/null
-            echo "  ✅ Updated"
-          else
-            # Create new record
-            az network dns record-set a create \
-              --resource-group "$RESOURCE_GROUP" \
-              --zone-name "$DNS_ZONE_NAME" \
-              --name "$record_name" \
-              --ttl 300 >/dev/null
-            
-            az network dns record-set a add-record \
-              --resource-group "$RESOURCE_GROUP" \
-              --zone-name "$DNS_ZONE_NAME" \
-              --record-set-name "$record_name" \
-              --ipv4-address "$LB_IP" >/dev/null
-            echo "  ✅ Created"
-          fi
-        done
-        
-        echo "✅ Azure DNS configured (optional backup)"
+    # - name: Configure Azure DNS (Optional - Backup)
+    #   continue-on-error: true
+    #   run: |
+    #     echo "⚠️  Note: Using Cloudflare DNS for primary DNS management"
+    #     echo "Azure DNS backup configuration disabled to streamline deployment"
 
     - name: DNS Health Check
       run: |

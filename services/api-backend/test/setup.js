@@ -68,9 +68,11 @@ jest.mock('ws', () => {
       this.on(event, handler);
     }
     removeEventListener(event, handler) {
-      if (!this.listeners[event]) return;
+      if (!this.listeners[event]) {
+        return;
+      }
       this.listeners[event] = this.listeners[event].filter(
-        (h) => h !== handler
+        (h) => h !== handler,
       );
     }
     send(_data) {}

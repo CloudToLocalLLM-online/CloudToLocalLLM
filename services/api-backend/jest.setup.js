@@ -7,7 +7,7 @@ let nock;
 try {
   // Avoid adding a hard devDependency; CI will skip if not present
   nock = require('nock');
-} catch (e) {
+} catch {
   // nock not installed; skip network stubbing
 }
 
@@ -16,7 +16,7 @@ if (nock) {
     nock.disableNetConnect();
     // Allow localhost if needed for tests
     nock.enableNetConnect(
-      (host) => host.includes('127.0.0.1') || host.includes('localhost')
+      (host) => host.includes('127.0.0.1') || host.includes('localhost'),
     );
   });
 

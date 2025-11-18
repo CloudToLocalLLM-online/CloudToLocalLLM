@@ -54,11 +54,11 @@ async function testDatabase() {
     console.log('Validation Results:');
     Object.entries(validation.results).forEach(([table, valid]) => {
       console.log(
-        `  ${valid ? '' : ''} ${table}: ${valid ? 'EXISTS' : 'MISSING'}`
+        `  ${valid ? '' : ''} ${table}: ${valid ? 'EXISTS' : 'MISSING'}`,
       );
     });
     console.log(
-      `\n Overall Status: ${validation.allValid ? ' VALID' : ' INVALID'}`
+      `\n Overall Status: ${validation.allValid ? ' VALID' : ' INVALID'}`,
     );
 
     // Test 5: Applied Migrations
@@ -81,13 +81,13 @@ async function testDatabase() {
 
       // Test UUID generation
       const { rows: uuidTest } = await migrator.pool.query(
-        'SELECT gen_random_uuid() as test_uuid'
+        'SELECT gen_random_uuid() as test_uuid',
       );
       console.log(` UUID generation: ${uuidTest[0].test_uuid}`);
 
       // Test JSONB operations
       const { rows: jsonTest } = await migrator.pool.query(
-        'SELECT \'{"test": true}\'::jsonb as test_json'
+        'SELECT \'{"test": true}\'::jsonb as test_json',
       );
       console.log(` JSONB support: ${JSON.stringify(jsonTest[0].test_json)}`);
 
@@ -101,7 +101,7 @@ async function testDatabase() {
       for (const table of tables) {
         try {
           const { rows } = await migrator.pool.query(
-            `SELECT COUNT(*) as count FROM ${table}`
+            `SELECT COUNT(*) as count FROM ${table}`,
           );
           console.log(` ${table}: ${rows[0].count} records`);
         } catch (e) {
@@ -113,7 +113,7 @@ async function testDatabase() {
     console.log('\n� All database tests completed successfully!');
     console.log('\n� Summary:');
     console.log(`  Database Type: ${dbType}`);
-    console.log(`  Connection:  Working`);
+    console.log('  Connection:  Working');
     console.log(`  Schema: ${validation.allValid ? ' Valid' : ' Invalid'}`);
     console.log(`  Migrations: ${migrations.length} applied`);
   } catch (error) {
@@ -124,10 +124,10 @@ async function testDatabase() {
     if (dbType === 'postgresql') {
       console.error('  1. Check Cloud SQL instance is running');
       console.error(
-        '  2. Verify environment variables: DB_HOST, DB_NAME, DB_USER, DB_PASSWORD'
+        '  2. Verify environment variables: DB_HOST, DB_NAME, DB_USER, DB_PASSWORD',
       );
       console.error(
-        '  3. Ensure Cloud Run service account has Cloud SQL Client role'
+        '  3. Ensure Cloud Run service account has Cloud SQL Client role',
       );
       console.error('  4. Check Cloud SQL connection name is correct');
     } else {

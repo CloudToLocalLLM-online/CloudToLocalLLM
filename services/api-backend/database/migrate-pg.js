@@ -30,7 +30,7 @@ export class DatabaseMigratorPG {
       idleTimeoutMillis: parseInt(process.env.DB_POOL_IDLE || '30000', 10),
       connectionTimeoutMillis: parseInt(
         process.env.DB_POOL_CONNECT_TIMEOUT || '30000',
-        10
+        10,
       ),
       ...config,
     };
@@ -76,7 +76,7 @@ export class DatabaseMigratorPG {
 
   async getAppliedMigrations() {
     const { rows } = await this.pool.query(
-      'SELECT version, name, applied_at FROM schema_migrations WHERE success = TRUE ORDER BY applied_at'
+      'SELECT version, name, applied_at FROM schema_migrations WHERE success = TRUE ORDER BY applied_at',
     );
     return rows;
   }
@@ -84,7 +84,7 @@ export class DatabaseMigratorPG {
   async isMigrationApplied(version) {
     const { rows } = await this.pool.query(
       'SELECT 1 FROM schema_migrations WHERE version = $1 AND success = TRUE',
-      [version]
+      [version],
     );
     return rows.length > 0;
   }
@@ -124,18 +124,18 @@ export class DatabaseMigratorPG {
         // Fallback to SQLite schema with manual adjustments (id GUIDs -> UUIDs, DATETIME -> TIMESTAMPTZ)
         const sqliteSchema = readFileSync(
           join(__dirname, 'schema.sql'),
-          'utf8'
+          'utf8',
         );
         schemaSQL = sqliteSchema
           .replaceAll('DATETIME', 'TIMESTAMPTZ')
           .replaceAll('INTEGER DEFAULT 1', 'BOOLEAN DEFAULT TRUE')
           .replaceAll(
             'TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(16))))',
-            'UUID PRIMARY KEY DEFAULT gen_random_uuid()'
+            'UUID PRIMARY KEY DEFAULT gen_random_uuid()',
           )
           .replaceAll(
             'metadata TEXT, -- JSON as text in SQLite',
-            'metadata JSONB'
+            'metadata JSONB',
           );
         // Ensure pgcrypto or uuid-ossp extension for gen_random_uuid
         await client.query('CREATE EXTENSION IF NOT EXISTS pgcrypto');
@@ -147,7 +147,7 @@ export class DatabaseMigratorPG {
       const execMs = Date.now() - start;
       await client.query(
         'INSERT INTO schema_migrations (version, name, checksum, execution_time_ms) VALUES ($1,$2,$3,$4)',
-        [version, 'Initial tunnel system schema', checksum, execMs]
+        [version, 'Initial tunnel system schema', checksum, execMs],
       );
 
       await client.query('COMMIT');
@@ -172,17 +172,17 @@ export class DatabaseMigratorPG {
       {
         name: 'tunnel_connections_table',
         query:
-          "SELECT 1 FROM information_schema.tables WHERE table_name='tunnel_connections'",
+          'SELECT 1 FROM information_schema.tables WHERE table_name=\'tunnel_connections\'',
       },
       {
         name: 'audit_logs_table',
         query:
-          "SELECT 1 FROM information_schema.tables WHERE table_name='audit_logs'",
+          'SELECT 1 FROM information_schema.tables WHERE table_name=\'audit_logs\'',
       },
       {
         name: 'schema_migrations_table',
         query:
-          "SELECT 1 FROM information_schema.tables WHERE table_name='schema_migrations'",
+          'SELECT 1 FROM information_schema.tables WHERE table_name=\'schema_migrations\'',
       },
     ];
 

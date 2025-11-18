@@ -219,8 +219,12 @@ export function combineRateLimiters(...limiters) {
     let index = 0;
 
     const runNext = (err) => {
-      if (err) return next(err);
-      if (index >= limiters.length) return next();
+      if (err) {
+        return next(err);
+      }
+      if (index >= limiters.length) {
+        return next();
+      }
 
       const limiter = limiters[index++];
       limiter(req, res, runNext);

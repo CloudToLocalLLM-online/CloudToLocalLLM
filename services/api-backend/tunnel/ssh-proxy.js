@@ -3,14 +3,7 @@
  * Handles user connections, request forwarding, and connection lifecycle
  */
 
-import WebSocket from 'ws';
-import http from 'http';
-import https from 'https';
-import { URL } from 'url';
 import { Server as SSHServer } from 'ssh2';
-import { AuthService } from '../auth/auth-service.js';
-
-const REQUEST_TIMEOUT = 30000; // 30 seconds
 
 /**
  * Manages SSH tunnel connections for tunneling HTTP requests
@@ -69,14 +62,17 @@ export class SSHProxy {
         },
         (client) => {
           this._handleSSHClient(client);
-        }
+        },
       );
 
       // Start SSH server
       await new Promise((resolve, reject) => {
         this.sshServer.listen(port, (err) => {
-          if (err) reject(err);
-          else resolve();
+          if (err) {
+            reject(err);
+          } else {
+            resolve();
+          }
         });
       });
 
@@ -172,21 +168,23 @@ export class SSHProxy {
     });
 
     client.on('ready', () => {
-      if (!authenticated || !userId) return;
+      if (!authenticated || !userId) {
+        return;
+      }
 
       this.logger.info('SSH client ready', { userId });
 
       // Handle SSH channels (for port forwarding and data transfer)
-      client.on('session', (accept, reject) => {
+      client.on('session', (accept) => {
         const session = accept();
 
         // Handle shell requests (not needed for tunneling)
-        session.on('shell', (accept, reject) => {
+        session.on('shell', (_accept, reject) => {
           reject();
         });
 
         // Handle exec requests (not needed for tunneling)
-        session.on('exec', (accept, reject, info) => {
+        session.on('exec', (_accept, reject, _info) => {
           reject();
         });
       });
@@ -323,7 +321,9 @@ export class SSHProxy {
   _handleSSHData(userId, data) {
     try {
       const connection = this.userConnections.get(userId);
-      if (!connection) return;
+      if (!connection) {
+        return;
+      }
 
       // For HTTP tunneling, we expect JSON-encoded HTTP requests
       const dataStr = data.toString();
@@ -346,7 +346,7 @@ export class SSHProxy {
               error: error.message,
             });
           });
-      } catch (parseError) {
+      } catch {
         // Not JSON, might be raw data - log for debugging
         this.logger.debug('Received non-JSON data through SSH tunnel', {
           userId,
@@ -425,7 +425,7 @@ export class SSHProxy {
 
     while (
       Array.from(this.userConnections.values()).some(
-        (conn) => conn.port === port
+        (conn) => conn.port === port,
       )
     ) {
       port++;
@@ -450,7 +450,7 @@ export class SSHProxy {
         this.logger.info('Connection timeout, cleaning up', { userId });
         this._cleanupConnection(userId);
       },
-      5 * 60 * 1000
+      5 * 60 * 1000,
     );
 
     this.connectionTimeouts.set(userId, timeout);
@@ -467,7 +467,7 @@ export class SSHProxy {
         if (connection.sshStream) {
           connection.sshStream.end();
         }
-      } catch (e) {
+      } catch {
         // Ignore cleanup errors
       }
 

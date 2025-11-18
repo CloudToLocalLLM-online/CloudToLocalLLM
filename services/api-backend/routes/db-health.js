@@ -25,7 +25,7 @@ const router = express.Router();
  * - 200: Pool is healthy
  * - 503: Pool is unhealthy or not initialized
  */
-router.get('/pool/health', async (req, res) => {
+router.get('/pool/health', async(req, res) => {
   try {
     const result = await healthCheck();
 

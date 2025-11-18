@@ -96,7 +96,7 @@ export async function authenticateJWT(req, res, next) {
         ' [Auth] AuthService initialization failed, falling back to Auth0 payload',
         {
           error: initError.message,
-        }
+        },
       );
 
       if (req.auth?.payload) {
@@ -117,7 +117,7 @@ export async function authenticateJWT(req, res, next) {
     // If it's not a valid JWT (opaque token), use Auth0 userinfo endpoint
     if (!decoded || !decoded.header || !decoded.header.kid) {
       logger.debug(
-        ' [Auth] Token appears to be opaque, using Auth0 userinfo endpoint'
+        ' [Auth] Token appears to be opaque, using Auth0 userinfo endpoint',
       );
 
       try {
@@ -139,7 +139,7 @@ export async function authenticateJWT(req, res, next) {
         req.userId = userInfo.sub;
 
         logger.debug(
-          ` [Auth] User authenticated via userinfo: ${userInfo.sub}`
+          ` [Auth] User authenticated via userinfo: ${userInfo.sub}`,
         );
         next();
         return;
@@ -154,12 +154,12 @@ export async function authenticateJWT(req, res, next) {
 
     // If it's a proper JWT token, use the AuthService with pre-validated payload from Auth0 SDK
     logger.debug(
-      ' [Auth] Token appears to be JWT, using AuthService with pre-validated payload'
+      ' [Auth] Token appears to be JWT, using AuthService with pre-validated payload',
     );
     const result = await authService.validateToken(
       token,
       req,
-      req.auth?.payload
+      req.auth?.payload,
     );
 
     if (!result.valid) {
@@ -167,7 +167,7 @@ export async function authenticateJWT(req, res, next) {
         ' [Auth] AuthService validation failed, falling back to Auth0 payload',
         {
           error: result.error,
-        }
+        },
       );
 
       if (req.auth?.payload) {
@@ -252,7 +252,7 @@ export function requireScope(requiredScope) {
 
     if (!userScopes.includes(requiredScope)) {
       logger.warn(
-        ` [Auth] User ${req.user.sub} missing required scope: ${requiredScope}`
+        ` [Auth] User ${req.user.sub} missing required scope: ${requiredScope}`,
       );
       return res.status(403).json({
         error: 'Insufficient permissions',
@@ -296,13 +296,13 @@ export async function optionalAuth(req, res, next) {
           req.user = userInfo;
           req.userId = userInfo.sub;
           logger.debug(
-            ` [Auth] Optional auth successful via userinfo: ${userInfo.sub}`
+            ` [Auth] Optional auth successful via userinfo: ${userInfo.sub}`,
           );
         }
       } catch (userinfoError) {
         logger.debug(
           ' [Auth] Optional userinfo auth failed, continuing without authentication:',
-          userinfoError.message
+          userinfoError.message,
         );
       }
     } else {
@@ -313,7 +313,7 @@ export async function optionalAuth(req, res, next) {
         req.user = result.payload;
         req.userId = result.payload.sub;
         logger.debug(
-          ` [Auth] Optional auth successful via JWT: ${result.payload.sub}`
+          ` [Auth] Optional auth successful via JWT: ${result.payload.sub}`,
         );
       }
     }
@@ -321,7 +321,7 @@ export async function optionalAuth(req, res, next) {
     // Token verification failed, but that's okay for optional auth
     logger.debug(
       ' [Auth] Optional auth failed, continuing without authentication:',
-      error.message
+      error.message,
     );
   }
 

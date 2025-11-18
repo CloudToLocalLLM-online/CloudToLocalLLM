@@ -26,7 +26,7 @@ export function createTunnelRoutes(
   config,
   tunnelProxy,
   logger = winston.createLogger(),
-  authService = null
+  authService = null,
 ) {
   const { AUTH0_DOMAIN, AUTH0_AUDIENCE } = config;
   const router = express.Router();
@@ -52,8 +52,8 @@ export function createTunnelRoutes(
         .json(
           ErrorResponseBuilder.authenticationError(
             'Bearer token is required.',
-            ERROR_CODES.AUTH_TOKEN_MISSING
-          )
+            ERROR_CODES.AUTH_TOKEN_MISSING,
+          ),
         );
     }
 
@@ -71,8 +71,8 @@ export function createTunnelRoutes(
         .json(
           ErrorResponseBuilder.authenticationError(
             'Invalid or expired token.',
-            ERROR_CODES.AUTH_TOKEN_INVALID
-          )
+            ERROR_CODES.AUTH_TOKEN_INVALID,
+          ),
         );
     }
   }
@@ -82,7 +82,7 @@ export function createTunnelRoutes(
 
   // Register SSH client connection
   // Called by desktop client after establishing SSH tunnel
-  router.post('/register', requireFeature('tunneling'), async (req, res) => {
+  router.post('/register', requireFeature('tunneling'), async(req, res) => {
     try {
       const userId = req.userId;
       const { tunnelId, localPort, serverPort } = req.body;
@@ -106,7 +106,7 @@ export function createTunnelRoutes(
         userId,
         tunnelId,
         localPort,
-        serverPort
+        serverPort,
       );
 
       res.json({
@@ -121,15 +121,15 @@ export function createTunnelRoutes(
       tunnelLogger.logTunnelError(
         ERROR_CODES.INTERNAL_SERVER_ERROR,
         'Failed to register client',
-        { error: error.message }
+        { error: error.message },
       );
       res
         .status(500)
         .json(
           ErrorResponseBuilder.internalServerError(
             'Failed to register client.',
-            ERROR_CODES.INTERNAL_SERVER_ERROR
-          )
+            ERROR_CODES.INTERNAL_SERVER_ERROR,
+          ),
         );
     }
   });
@@ -157,15 +157,15 @@ export function createTunnelRoutes(
       tunnelLogger.logTunnelError(
         ERROR_CODES.INTERNAL_SERVER_ERROR,
         'Failed to unregister client',
-        { error: error.message }
+        { error: error.message },
       );
       res
         .status(500)
         .json(
           ErrorResponseBuilder.internalServerError(
             'Failed to unregister client.',
-            ERROR_CODES.INTERNAL_SERVER_ERROR
-          )
+            ERROR_CODES.INTERNAL_SERVER_ERROR,
+          ),
         );
     }
   });
@@ -213,15 +213,15 @@ export function createTunnelRoutes(
       tunnelLogger.logTunnelError(
         ERROR_CODES.INTERNAL_SERVER_ERROR,
         'Failed to get tunnel health status',
-        { error: error.message }
+        { error: error.message },
       );
       res
         .status(500)
         .json(
           ErrorResponseBuilder.internalServerError(
             'Failed to retrieve health status.',
-            ERROR_CODES.INTERNAL_SERVER_ERROR
-          )
+            ERROR_CODES.INTERNAL_SERVER_ERROR,
+          ),
         );
     }
   });

@@ -16,13 +16,9 @@
 
 import express from 'express';
 import { adminAuth } from '../../middleware/admin-auth.js';
-import {
-  logAdminAction,
-  auditMiddleware,
-  createUserManagementDetails,
-} from '../../utils/audit-logger.js';
+import { logAdminAction } from '../../utils/audit-logger.js';
 import logger from '../../logger.js';
-import { getPool } from '../../database/db-pool.js';
+import { getPool, closePool } from '../../database/db-pool.js';
 import {
   adminReadOnlyLimiter,
   adminRateLimiter,
@@ -49,7 +45,7 @@ router.get(
   '/',
   adminReadOnlyLimiter,
   adminAuth(['view_users']),
-  async (req, res) => {
+  async(req, res) => {
     try {
       const pool = getPool();
 
@@ -99,11 +95,11 @@ router.get(
       // Status filter
       if (status) {
         if (status === 'active') {
-          conditions.push(`u.is_suspended = false AND u.deleted_at IS NULL`);
+          conditions.push('u.is_suspended = false AND u.deleted_at IS NULL');
         } else if (status === 'suspended') {
-          conditions.push(`u.is_suspended = true`);
+          conditions.push('u.is_suspended = true');
         } else if (status === 'deleted') {
-          conditions.push(`u.deleted_at IS NOT NULL`);
+          conditions.push('u.deleted_at IS NOT NULL');
         }
       }
 
@@ -210,7 +206,7 @@ router.get(
         details: error.message,
       });
     }
-  }
+  },
 );
 
 export default router;
@@ -230,7 +226,7 @@ router.get(
   '/:userId',
   adminReadOnlyLimiter,
   adminAuth(['view_users']),
-  async (req, res) => {
+  async(req, res) => {
     try {
       const pool = getPool();
       const { userId } = req.params;
@@ -413,7 +409,7 @@ router.get(
             activeSessions: activeSessions.length,
             accountAge: Math.floor(
               (Date.now() - new Date(user.created_at).getTime()) /
-                (1000 * 60 * 60 * 24)
+                (1000 * 60 * 60 * 24),
             ),
           },
         },
@@ -433,7 +429,7 @@ router.get(
         details: error.message,
       });
     }
-  }
+  },
 );
 
 /**
@@ -453,7 +449,7 @@ router.patch(
   '/:userId',
   adminRateLimiter,
   adminAuth(['edit_users']),
-  async (req, res) => {
+  async(req, res) => {
     try {
       const pool = getPool();
       const { userId } = req.params;
@@ -537,16 +533,16 @@ router.patch(
 
           if (subDetails.rows.length > 0) {
             const periodStart = new Date(
-              subDetails.rows[0].current_period_start
+              subDetails.rows[0].current_period_start,
             );
             const periodEnd = new Date(subDetails.rows[0].current_period_end);
             const now = new Date();
 
             const totalDays = Math.ceil(
-              (periodEnd - periodStart) / (1000 * 60 * 60 * 24)
+              (periodEnd - periodStart) / (1000 * 60 * 60 * 24),
             );
             const remainingDays = Math.ceil(
-              (periodEnd - now) / (1000 * 60 * 60 * 24)
+              (periodEnd - now) / (1000 * 60 * 60 * 24),
             );
 
             if (remainingDays > 0) {
@@ -650,7 +646,7 @@ router.patch(
         details: error.message,
       });
     }
-  }
+  },
 );
 
 /**
@@ -669,7 +665,7 @@ router.post(
   '/:userId/suspend',
   adminRateLimiter,
   adminAuth(['suspend_users']),
-  async (req, res) => {
+  async(req, res) => {
     try {
       const pool = getPool();
       const { userId } = req.params;
@@ -807,7 +803,7 @@ router.post(
         details: error.message,
       });
     }
-  }
+  },
 );
 
 /**
@@ -826,7 +822,7 @@ router.post(
   '/:userId/reactivate',
   adminRateLimiter,
   adminAuth(['suspend_users']),
-  async (req, res) => {
+  async(req, res) => {
     try {
       const pool = getPool();
       const { userId } = req.params;
@@ -942,7 +938,7 @@ router.post(
         details: error.message,
       });
     }
-  }
+  },
 );
 
 /**
@@ -950,9 +946,5 @@ router.post(
  * Should be called on application shutdown
  */
 export async function closeUserDbPool() {
-  if (dbPool) {
-    await dbPool.end();
-    dbPool = null;
-    logger.info('✅ [AdminUsers] Database connection pool closed');
-  }
+  await closePool();
 }

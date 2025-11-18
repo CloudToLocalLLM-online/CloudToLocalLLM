@@ -59,7 +59,7 @@ async function applyMigration(version) {
     // Check if migration already applied
     const checkResult = await client.query(
       'SELECT * FROM schema_migrations WHERE version = $1 AND rolled_back_at IS NULL',
-      [version]
+      [version],
     );
 
     if (checkResult.rows.length > 0) {
@@ -70,13 +70,6 @@ async function applyMigration(version) {
     // Read migration file - try to find the migration file with any name pattern
     let migrationPath;
     let migrationName = 'unknown';
-
-    // Try different naming patterns
-    const patterns = [
-      `${version}_admin_center_schema.sql`,
-      `${version}_email_relay_dns_setup.sql`,
-      `${version}_*.sql`,
-    ];
 
     // For now, construct the path based on version
     // Version 001 -> 001_admin_center_schema.sql
@@ -111,7 +104,7 @@ async function applyMigration(version) {
       // Record migration
       await client.query(
         'INSERT INTO schema_migrations (version, name) VALUES ($1, $2)',
-        [version, migrationName]
+        [version, migrationName],
       );
 
       // Commit transaction
@@ -137,7 +130,7 @@ async function rollbackMigration(version) {
     // Check if migration is applied
     const checkResult = await client.query(
       'SELECT * FROM schema_migrations WHERE version = $1 AND rolled_back_at IS NULL',
-      [version]
+      [version],
     );
 
     if (checkResult.rows.length === 0) {
@@ -152,17 +145,17 @@ async function rollbackMigration(version) {
     if (version === '001') {
       rollbackPath = join(
         __dirname,
-        `${version}_admin_center_schema_rollback.sql`
+        `${version}_admin_center_schema_rollback.sql`,
       );
     } else if (version === '002') {
       rollbackPath = join(
         __dirname,
-        `${version}_webhook_events_table_rollback.sql`
+        `${version}_webhook_events_table_rollback.sql`,
       );
     } else if (version === '003') {
       rollbackPath = join(
         __dirname,
-        `${version}_email_relay_dns_setup_rollback.sql`
+        `${version}_email_relay_dns_setup_rollback.sql`,
       );
     } else {
       // Generic pattern for future migrations
@@ -183,7 +176,7 @@ async function rollbackMigration(version) {
       // Update migration record
       await client.query(
         'UPDATE schema_migrations SET rolled_back_at = NOW() WHERE version = $1',
-        [version]
+        [version],
       );
 
       // Commit transaction
@@ -222,7 +215,7 @@ async function showStatus() {
         const status = row.rolled_back_at ? '✗ ROLLED BACK' : '✓ APPLIED';
         const date = row.rolled_back_at || row.applied_at;
         console.log(
-          `${status} | ${row.version} | ${row.name} | ${date.toISOString()}`
+          `${status} | ${row.version} | ${row.name} | ${date.toISOString()}`,
         );
       });
     }
@@ -242,7 +235,7 @@ async function main() {
     console.log('  node run-migration.js up <version>    - Apply migration');
     console.log('  node run-migration.js down <version>  - Rollback migration');
     console.log(
-      '  node run-migration.js status          - Show migration status'
+      '  node run-migration.js status          - Show migration status',
     );
     process.exit(1);
   }
@@ -251,29 +244,29 @@ async function main() {
     await ensureMigrationsTable();
 
     switch (command) {
-      case 'up':
-        if (!version) {
-          console.error('Error: Version required for "up" command');
-          process.exit(1);
-        }
-        await applyMigration(version);
-        break;
-
-      case 'down':
-        if (!version) {
-          console.error('Error: Version required for "down" command');
-          process.exit(1);
-        }
-        await rollbackMigration(version);
-        break;
-
-      case 'status':
-        await showStatus();
-        break;
-
-      default:
-        console.error(`Unknown command: ${command}`);
+    case 'up':
+      if (!version) {
+        console.error('Error: Version required for "up" command');
         process.exit(1);
+      }
+      await applyMigration(version);
+      break;
+
+    case 'down':
+      if (!version) {
+        console.error('Error: Version required for "down" command');
+        process.exit(1);
+      }
+      await rollbackMigration(version);
+      break;
+
+    case 'status':
+      await showStatus();
+      break;
+
+    default:
+      console.error(`Unknown command: ${command}`);
+      process.exit(1);
     }
   } catch (error) {
     console.error('Migration failed:', error);

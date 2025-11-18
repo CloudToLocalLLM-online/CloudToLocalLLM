@@ -49,7 +49,7 @@ router.get(
   authenticateJWT,
   requireAdmin,
   adminReadOnlyLimiter,
-  async (req, res) => {
+  async(req, res) => {
     try {
       logger.info('� [AdminAPI] System statistics requested', {
         adminUserId: req.user.sub,
@@ -75,7 +75,7 @@ router.get(
         details: error.message,
       });
     }
-  }
+  },
 );
 
 /**
@@ -88,7 +88,7 @@ router.post(
   authenticateJWT,
   requireAdmin,
   adminRateLimiter,
-  async (req, res) => {
+  async(req, res) => {
     try {
       const { targetUserId, scope } = req.body;
       const adminUserId = req.user.sub;
@@ -120,7 +120,7 @@ router.post(
       // Generate confirmation token
       const confirmationData = adminDataFlushService.generateConfirmationToken(
         adminUserId,
-        targetUserId || 'ALL_USERS'
+        targetUserId || 'ALL_USERS',
       );
 
       // Log the preparation (but not the token)
@@ -154,7 +154,7 @@ router.post(
         details: error.message,
       });
     }
-  }
+  },
 );
 
 /**
@@ -167,7 +167,7 @@ router.post(
   authenticateJWT,
   requireAdmin,
   adminCriticalLimiter,
-  async (req, res) => {
+  async(req, res) => {
     try {
       const { confirmationToken, targetUserId, options = {} } = req.body;
       const adminUserId = req.user.sub;
@@ -192,7 +192,7 @@ router.post(
         adminUserId,
         confirmationToken,
         targetUserId,
-        options
+        options,
       );
 
       // Log successful completion
@@ -225,7 +225,7 @@ router.post(
         details: error.message,
       });
     }
-  }
+  },
 );
 
 /**
@@ -238,7 +238,7 @@ router.get(
   authenticateJWT,
   requireAdmin,
   adminReadOnlyLimiter,
-  async (req, res) => {
+  async(req, res) => {
     try {
       const { operationId } = req.params;
       const adminUserId = req.user.sub;
@@ -275,7 +275,7 @@ router.get(
         details: error.message,
       });
     }
-  }
+  },
 );
 
 /**
@@ -288,7 +288,7 @@ router.get(
   authenticateJWT,
   requireAdmin,
   adminReadOnlyLimiter,
-  async (req, res) => {
+  async(req, res) => {
     try {
       const { limit = 50 } = req.query;
       const adminUserId = req.user.sub;
@@ -318,7 +318,7 @@ router.get(
         details: error.message,
       });
     }
-  }
+  },
 );
 
 /**
@@ -331,7 +331,7 @@ router.post(
   authenticateJWT,
   requireAdmin,
   adminRateLimiter,
-  async (req, res) => {
+  async(req, res) => {
     try {
       const adminUserId = req.user.sub;
 
@@ -367,7 +367,7 @@ router.post(
         details: error.message,
       });
     }
-  }
+  },
 );
 
 /**

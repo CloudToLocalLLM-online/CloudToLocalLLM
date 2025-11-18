@@ -72,13 +72,13 @@ app.use(
   helmet({
     contentSecurityPolicy: {
       directives: {
-        defaultSrc: ["'self'"],
-        connectSrc: ["'self'", 'wss:', 'https:'],
-        scriptSrc: ["'self'", "'unsafe-inline'"],
-        styleSrc: ["'self'", "'unsafe-inline'"],
-        imgSrc: ["'self'", 'data:', 'https:'],
-        frameSrc: ["'none'"],
-        objectSrc: ["'none'"],
+        defaultSrc: ['\'self\''],
+        connectSrc: ['\'self\'', 'wss:', 'https:'],
+        scriptSrc: ['\'self\'', '\'unsafe-inline\''],
+        styleSrc: ['\'self\'', '\'unsafe-inline\''],
+        imgSrc: ['\'self\'', 'data:', 'https:'],
+        frameSrc: ['\'none\''],
+        objectSrc: ['\'none\''],
       },
     },
     hsts: {
@@ -177,7 +177,7 @@ app.get(
   '/api/admin/system/stats',
   authenticateJWT,
   requireAdmin,
-  async (req, res) => {
+  async(req, res) => {
     try {
       logger.info(' [AdminPanel] System statistics requested', {
         adminUserId: req.user.sub,
@@ -230,8 +230,8 @@ app.get(
         lastFlushOperation:
           adminDataFlushService.flushHistory.length > 0
             ? adminDataFlushService.flushHistory[
-                adminDataFlushService.flushHistory.length - 1
-              ].startTime
+              adminDataFlushService.flushHistory.length - 1
+            ].startTime
             : null,
         timestamp: new Date().toISOString(),
       };
@@ -260,7 +260,7 @@ app.get(
   '/api/admin/system/realtime',
   authenticateJWT,
   requireAdmin,
-  async (req, res) => {
+  async(req, res) => {
     try {
       logger.debug(' [AdminPanel] Real-time system data requested', {
         adminUserId: req.user.sub,
@@ -317,7 +317,7 @@ app.get(
   '/api/admin/containers',
   authenticateJWT,
   requireAdmin,
-  async (req, res) => {
+  async(req, res) => {
     try {
       logger.info(' [AdminPanel] Container list requested', {
         adminUserId: req.user.sub,
@@ -331,7 +331,7 @@ app.get(
       });
 
       const containerDetails = await Promise.all(
-        containers.map(async (containerInfo) => {
+        containers.map(async(containerInfo) => {
           try {
             const container = docker.getContainer(containerInfo.Id);
             const stats = await container.stats({ stream: false });
@@ -416,7 +416,7 @@ app.get(
   '/api/admin/networks',
   authenticateJWT,
   requireAdmin,
-  async (req, res) => {
+  async(req, res) => {
     try {
       logger.info(' [AdminPanel] Network list requested', {
         adminUserId: req.user.sub,
@@ -462,7 +462,7 @@ app.get(
   '/api/admin/sessions',
   authenticateJWT,
   requireAdmin,
-  async (req, res) => {
+  async(req, res) => {
     try {
       logger.info(' [AdminPanel] Active sessions requested', {
         adminUserId: req.user.sub,
@@ -514,7 +514,7 @@ app.get(
   '/api/admin/system/performance',
   authenticateJWT,
   requireAdmin,
-  async (req, res) => {
+  async(req, res) => {
     try {
       logger.debug(' [AdminPanel] Performance metrics requested', {
         adminUserId: req.user.sub,
@@ -583,7 +583,7 @@ app.get(
 );
 
 // User management endpoints
-app.get('/api/admin/users', authenticateJWT, requireAdmin, async (req, res) => {
+app.get('/api/admin/users', authenticateJWT, requireAdmin, async(req, res) => {
   try {
     logger.info(' [AdminPanel] User list requested', {
       adminUserId: req.user.sub,
@@ -670,7 +670,7 @@ app.get(
   '/api/admin/users/:userId/sessions',
   authenticateJWT,
   requireAdmin,
-  async (req, res) => {
+  async(req, res) => {
     try {
       const { userId } = req.params;
 
@@ -688,7 +688,7 @@ app.get(
       });
 
       const sessions = await Promise.all(
-        containers.map(async (containerInfo) => {
+        containers.map(async(containerInfo) => {
           try {
             const container = docker.getContainer(containerInfo.Id);
             const inspect = await container.inspect();
@@ -754,7 +754,7 @@ app.post(
   '/api/admin/users/:userId/sessions/:containerId/terminate',
   authenticateJWT,
   requireAdmin,
-  async (req, res) => {
+  async(req, res) => {
     try {
       const { userId, containerId } = req.params;
 
@@ -817,7 +817,7 @@ app.get(
   '/api/admin/config',
   authenticateJWT,
   requireAdmin,
-  async (req, res) => {
+  async(req, res) => {
     try {
       logger.info(' [AdminPanel] System configuration requested', {
         adminUserId: req.user.sub,
@@ -874,7 +874,7 @@ app.get(
   '/api/admin/config/environment',
   authenticateJWT,
   requireAdmin,
-  async (req, res) => {
+  async(req, res) => {
     try {
       logger.info(' [AdminPanel] Environment variables requested', {
         adminUserId: req.user.sub,
@@ -931,7 +931,7 @@ app.get(
   '/api/admin/config/features',
   authenticateJWT,
   requireAdmin,
-  async (req, res) => {
+  async(req, res) => {
     try {
       logger.info(' [AdminPanel] Feature flags requested', {
         adminUserId: req.user.sub,
@@ -984,7 +984,7 @@ app.get(
   '/api/admin/config/services',
   authenticateJWT,
   requireAdmin,
-  async (req, res) => {
+  async(req, res) => {
     try {
       logger.info(' [AdminPanel] Service status requested', {
         adminUserId: req.user.sub,
@@ -1048,7 +1048,7 @@ app.get(
   '/api/admin/containers/:containerId/logs',
   authenticateJWT,
   requireAdmin,
-  async (req, res) => {
+  async(req, res) => {
     try {
       const { containerId } = req.params;
       const { lines = 100, follow = false } = req.query;
@@ -1132,7 +1132,7 @@ app.get(
   '/api/admin/containers/:containerId/stats',
   authenticateJWT,
   requireAdmin,
-  async (req, res) => {
+  async(req, res) => {
     try {
       const { containerId } = req.params;
 
@@ -1210,7 +1210,7 @@ app.get(
   '/api/admin/network/topology',
   authenticateJWT,
   requireAdmin,
-  async (req, res) => {
+  async(req, res) => {
     try {
       logger.info(' [AdminPanel] Network topology requested', {
         adminUserId: req.user.sub,
@@ -1234,7 +1234,7 @@ app.get(
       // Build network topology
       const topology = {
         networks: await Promise.all(
-          networks.map(async (network) => {
+          networks.map(async(network) => {
             const networkDetail = await docker.getNetwork(network.Id).inspect();
 
             return {
@@ -1352,107 +1352,3 @@ process.on('SIGTERM', () => {
 });
 
 export default app;
-
-</final_file_content>
-
-IMPORTANT: For any future changes to this file, use the final_file_content shown above as your reference. This content reflects the current state of the file, including any auto-formatting (e.g., if you used single quotes but the formatter converted them to double quotes). Always base your SEARCH/REPLACE operations on this final version to ensure accuracy.
-
-<environment_details>
-# Cursor Visible Files
-services/api-backend/admin-server.js
-
-# Cursor Open Tabs
-.clinerules/Development-Guidelines.md
-docs/MCP_WORKFLOW_AND_RULES.md
-lib/screens/settings/llm_provider_settings_screen.dart
-c:/Users/rightguy/AppData/Roaming/Cursor/User/globalStorage/saoudrizwan.claude-dev/settings/cline_mcp_settings.json
-.clinerules/workflows/mcp-tools.md
-services/api-backend/database/migrate-auth-pg.js
-services/api-backend/database/db-pool.js
-services/api-backend/admin-data-flush-service.js
-services/api-backend/admin-server.js
-k8s/README_SSL_ALTERNATIVES.md
-lib/services/ssh/websocket_ssh_socket.dart
-lib/config/router.dart
-pubspec.yaml
-services/api-backend/routes/monitoring.js
-k8s/README_AZURE_SSL.md
-lib/services/log_buffer_service.dart
-services/api-backend/routes/client-logs.js
-lib/services/session_storage_service.dart
-
-# Current Time
-11/18/2025, 5:41:33 PM (America/Toronto, UTC-5:00)
-
-# Context Window Usage
-236,429 / 1,048.576K tokens used (23%)
-
-# Current Mode
-ACT MODE
-</environment_details>
-<environment_details>
-# Cursor Visible Files
-services/api-backend/admin-server.js
-
-# Cursor Open Tabs
-.clinerules/Development-Guidelines.md
-docs/MCP_WORKFLOW_AND_RULES.md
-lib/screens/settings/llm_provider_settings_screen.dart
-c:/Users/rightguy/AppData/Roaming/Cursor/User/globalStorage/saoudrizwan.claude-dev/settings/cline_mcp_settings.json
-.clinerules/workflows/mcp-tools.md
-services/api-backend/database/migrate-auth-pg.js
-services/api-backend/database/db-pool.js
-services/api-backend/admin-data-flush-service.js
-services/api-backend/admin-server.js
-k8s/README_SSL_ALTERNATIVES.md
-lib/services/ssh/websocket_ssh_socket.dart
-lib/config/router.dart
-pubspec.yaml
-services/api-backend/routes/monitoring.js
-k8s/README_AZURE_SSL.md
-lib/services/log_buffer_service.dart
-services/api-backend/routes/client-logs.js
-lib/services/session_storage_service.dart
-
-# Current Time
-11/18/2025, 5:43:03 PM (America/Toronto, UTC-5:00)
-
-# Context Window Usage
-258,914 / 1,048.576K tokens used (25%)
-
-# Current Mode
-ACT MODE
-</environment_details>
-<environment_details>
-# Cursor Visible Files
-services/api-backend/admin-server.js
-
-# Cursor Open Tabs
-.clinerules/Development-Guidelines.md
-docs/MCP_WORKFLOW_AND_RULES.md
-lib/screens/settings/llm_provider_settings_screen.dart
-c:/Users/rightguy/AppData/Roaming/Cursor/User/globalStorage/saoudrizwan.claude-dev/settings/cline_mcp_settings.json
-.clinerules/workflows/mcp-tools.md
-services/api-backend/database/migrate-auth-pg.js
-services/api-backend/database/db-pool.js
-services/api-backend/admin-data-flush-service.js
-services/api-backend/admin-server.js
-k8s/README_SSL_ALTERNATIVES.md
-lib/services/ssh/websocket_ssh_socket.dart
-lib/config/router.dart
-pubspec.yaml
-services/api-backend/routes/monitoring.js
-k8s/README_AZURE_SSL.md
-lib/services/log_buffer_service.dart
-services/api-backend/routes/client-logs.js
-lib/services/session_storage_service.dart
-
-# Current Time
-11/18/2025, 5:43:18 PM (America/Toronto, UTC-5:00)
-
-# Context Window Usage
-270,323 / 1,048.576K tokens used (26%)
-
-# Current Mode
-ACT MODE
-</environment_details>

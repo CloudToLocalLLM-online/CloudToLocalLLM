@@ -7,7 +7,6 @@ import jwt from 'jsonwebtoken';
 import winston from 'winston';
 import dotenv from 'dotenv';
 import { StreamingProxyManager } from './streaming-proxy-manager.js';
-import { auth } from 'express-oauth2-jwt-bearer';
 
 import adminRoutes from './routes/admin.js';
 import adminUserRoutes from './routes/admin/users.js';
@@ -17,7 +16,6 @@ import clientLogRoutes from './routes/client-logs.js';
 import webhookRoutes from './routes/webhooks.js';
 // SSH tunnel integration
 import { SSHProxy } from './tunnel/ssh-proxy.js';
-import { SSHAuthHandler } from './tunnel/ssh-auth-handler.js';
 import { AuthService } from './auth/auth-service.js';
 import { DatabaseMigrator } from './database/migrate.js';
 import { DatabaseMigratorPG } from './database/migrate-pg.js';
@@ -30,18 +28,9 @@ import { createTunnelRoutes } from './tunnel/tunnel-routes.js';
 import { createMonitoringRoutes } from './routes/monitoring.js';
 import { createConversationRoutes } from './routes/conversations.js';
 import { authenticateJWT } from './middleware/auth.js';
-import { addTierInfo, getUserTier } from './middleware/tier-check.js';
+import { addTierInfo, getUserTier, getTierFeatures } from './middleware/tier-check.js';
 
 dotenv.config();
-
-// Auth0 JWT validation middleware
-const checkJwt = auth({
-  audience: process.env.AUTH0_AUDIENCE || 'https://api.cloudtolocalllm.online',
-  issuerBaseURL: process.env.AUTH0_DOMAIN
-    ? `https://${process.env.AUTH0_DOMAIN}`
-    : 'https://cloudtolocalllm.us.auth0.com',
-  tokenSigningAlg: 'RS256',
-});
 
 // Initialize logger
 const logger = winston.createLogger({
@@ -49,14 +38,14 @@ const logger = winston.createLogger({
   format: winston.format.combine(
     winston.format.timestamp(),
     winston.format.errors({ stack: true }),
-    winston.format.json()
+    winston.format.json(),
   ),
   defaultMeta: { service: 'cloudtolocalllm-api' },
   transports: [
     new winston.transports.Console({
       format: winston.format.combine(
         winston.format.timestamp(),
-        winston.format.simple()
+        winston.format.simple(),
       ),
     }),
   ],
@@ -68,7 +57,6 @@ const AUTH0_DOMAIN =
   process.env.AUTH0_DOMAIN || 'dev-v2f2p008x3dr74ww.us.auth0.com';
 const AUTH0_AUDIENCE =
   process.env.AUTH0_AUDIENCE || 'https://api.cloudtolocalllm.online';
-const DOMAIN = process.env.DOMAIN || 'cloudtolocalllm.online';
 
 // AuthService will be initialized in initializeHttpPollingSystem()
 
@@ -78,7 +66,6 @@ const server = http.createServer(app);
 
 // Initialize SSH tunnel server
 let sshProxy = null;
-let sshAuthHandler = null;
 let sshAuthService = null;
 try {
   sshAuthService = new AuthService({
@@ -87,14 +74,14 @@ try {
   });
   await sshAuthService.initialize();
 
-  sshAuthHandler = new SSHAuthHandler(sshAuthService, logger);
+  // sshAuthHandler = new SSHAuthHandler(sshAuthService, logger);
 
   sshProxy = new SSHProxy(
     logger,
     {
       sshPort: parseInt(process.env.SSH_PORT) || 2222,
     },
-    sshAuthService
+    sshAuthService,
   );
 
   await sshProxy.start();
@@ -113,7 +100,7 @@ app.set('trust proxy', 1); // Trust first proxy (nginx)
 // CORS configuration - MUST be before ALL other middleware (including Helmet)
 // This ensures preflight OPTIONS requests are handled correctly
 const corsOptions = {
-  origin: function (origin, callback) {
+  origin: function(origin, callback) {
     const allowedOrigins = [
       'https://app.cloudtolocalllm.online',
       'https://cloudtolocalllm.online',
@@ -156,15 +143,15 @@ app.use(
   helmet({
     contentSecurityPolicy: {
       directives: {
-        defaultSrc: ["'self'"],
-        connectSrc: ["'self'", 'https:'],
-        scriptSrc: ["'self'", "'unsafe-inline'"],
-        styleSrc: ["'self'", "'unsafe-inline'"],
-        imgSrc: ["'self'", 'data:', 'https:'],
+        defaultSrc: ['\'self\''],
+        connectSrc: ['\'self\'', 'https:'],
+        scriptSrc: ['\'self\'', '\'unsafe-inline\''],
+        styleSrc: ['\'self\'', '\'unsafe-inline\''],
+        imgSrc: ['\'self\'', 'data:', 'https:'],
       },
     },
     crossOriginResourcePolicy: { policy: 'cross-origin' }, // Allow CORS requests
-  })
+  }),
 );
 
 // Rate limiting with different limits for bridge operations
@@ -258,7 +245,7 @@ const tunnelRouter = createTunnelRoutes(
   },
   sshProxy,
   logger,
-  sshAuthService
+  sshAuthService,
 );
 
 // Create monitoring routes
@@ -279,7 +266,7 @@ app.use('/monitoring', monitoringRouter); // Also register without /api prefix f
 // Will be set up in initializeTunnelSystem() after dbMigrator is initialized
 
 // Database health endpoint
-const dbHealthHandler = async (req, res) => {
+const dbHealthHandler = async(req, res) => {
   try {
     if (!dbMigrator) {
       return res.status(503).json({
@@ -338,11 +325,10 @@ app.use('/api/admin', adminSubscriptionRoutes);
 app.use('/admin', adminSubscriptionRoutes); // Also register without /api prefix for api subdomain
 
 // LLM Tunnel Cloud Proxy Endpoints (support both /api/ollama and /ollama)
-const handleOllamaProxyRequest = async (req, res) => {
+const handleOllamaProxyRequest = async(req, res) => {
   const startTime = Date.now();
   const requestId = `llm-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
   const userId = req.auth?.payload.sub;
-  const userTier = getUserTier(req.auth?.payload);
 
   if (!userId) {
     return res.status(401).json({
@@ -420,7 +406,7 @@ const handleOllamaProxyRequest = async (req, res) => {
     if (response.body) {
       try {
         res.json(JSON.parse(response.body));
-      } catch (e) {
+      } catch {
         res.send(response.body);
       }
     } else {
@@ -465,7 +451,7 @@ app.all(
   OLLAMA_ROUTE_PATHS,
   authenticateJWT,
   addTierInfo,
-  handleOllamaProxyRequest
+  handleOllamaProxyRequest,
 );
 
 // User tier endpoint
@@ -517,7 +503,7 @@ app.get('/api/health', healthHandler); // Also register with /api prefix for bac
 const proxyStartHandler = authenticateToken;
 const proxyStartRoute = [
   proxyStartHandler,
-  async (req, res) => {
+  async(req, res) => {
     try {
       const userId = req.user.sub;
       const userToken = req.headers.authorization;
@@ -528,7 +514,7 @@ const proxyStartRoute = [
       const proxyMetadata = await proxyManager.provisionProxy(
         userId,
         userToken,
-        req.user
+        req.user,
       );
 
       res.json({
@@ -558,7 +544,7 @@ app.post('/proxy/start', ...proxyStartRoute); // Also register without /api pref
 // Stop streaming proxy for user
 const proxyStopRoute = [
   authenticateToken,
-  async (req, res) => {
+  async(req, res) => {
     try {
       const userId = req.user.sub;
 
@@ -592,20 +578,20 @@ app.post('/proxy/stop', ...proxyStopRoute); // Also register without /api prefix
 // Provision streaming proxy for user (with test mode support)
 const proxyProvisionRoute = [
   authenticateToken,
-  async (req, res) => {
+  async(req, res) => {
     try {
       const userId = req.user.sub;
       const userToken = req.headers.authorization;
       const { testMode = false } = req.body;
 
       logger.info(
-        `Provisioning streaming proxy for user: ${userId}, testMode: ${testMode}`
+        `Provisioning streaming proxy for user: ${userId}, testMode: ${testMode}`,
       );
 
       if (testMode) {
         // In test mode, simulate successful provisioning without creating actual containers
         logger.info(
-          `Test mode: Simulating proxy provisioning for user ${userId}`
+          `Test mode: Simulating proxy provisioning for user ${userId}`,
         );
 
         res.json({
@@ -626,7 +612,7 @@ const proxyProvisionRoute = [
       const proxyMetadata = await proxyManager.provisionProxy(
         userId,
         userToken,
-        req.user
+        req.user,
       );
 
       res.json({
@@ -646,7 +632,7 @@ const proxyProvisionRoute = [
     } catch (error) {
       logger.error(
         `Failed to provision proxy for user ${req.user.sub}:`,
-        error
+        error,
       );
       res.status(500).json({
         error: 'Failed to provision streaming proxy',
@@ -662,7 +648,7 @@ app.post('/streaming-proxy/provision', ...proxyProvisionRoute); // Also register
 // Get streaming proxy status
 const proxyStatusRoute = [
   authenticateToken,
-  async (req, res) => {
+  async(req, res) => {
     try {
       const userId = req.user.sub;
       const status = await proxyManager.getProxyStatus(userId);
@@ -676,7 +662,7 @@ const proxyStatusRoute = [
     } catch (error) {
       logger.error(
         `Failed to get proxy status for user ${req.user.sub}:`,
-        error
+        error,
       );
       res.status(500).json({
         error: 'Failed to get proxy status',
@@ -709,162 +695,8 @@ app.use((req, res) => {
   res.status(404).json({ error: 'Not found' });
 });
 
-// LLM Security and Monitoring Helper Functions
-
-// Rate limiting storage
-const rateLimitStorage = new Map();
-
-// Get rate limits based on user tier
-function getRateLimitsForTier(tier) {
-  const limits = {
-    free: {
-      requestsPerMinute: 10,
-      requestsPerHour: 100,
-      requestsPerDay: 500,
-      maxTokensPerRequest: 2000,
-    },
-    pro: {
-      requestsPerMinute: 60,
-      requestsPerHour: 1000,
-      requestsPerDay: 10000,
-      maxTokensPerRequest: 4000,
-    },
-    enterprise: {
-      requestsPerMinute: 120,
-      requestsPerHour: 5000,
-      requestsPerDay: 50000,
-      maxTokensPerRequest: 8000,
-    },
-  };
-
-  return limits[tier] || limits.free;
-}
-
-// Check rate limit for user
-function checkRateLimit(userId, providerId, limits) {
-  const key = `${userId}:${providerId}`;
-  const now = Date.now();
-
-  // Get or create request history
-  let history = rateLimitStorage.get(key) || [];
-
-  // Clean old requests (older than 24 hours)
-  history = history.filter(
-    (timestamp) => now - timestamp < 24 * 60 * 60 * 1000
-  );
-
-  // Check per-minute limit
-  const minuteRequests = history.filter(
-    (timestamp) => now - timestamp < 60 * 1000
-  ).length;
-  if (minuteRequests >= limits.requestsPerMinute) {
-    logger.warn(
-      `Rate limit exceeded for ${userId}:${providerId} - per minute`,
-      {
-        userId,
-        providerId,
-        minuteRequests,
-        limit: limits.requestsPerMinute,
-      }
-    );
-    return false;
-  }
-
-  // Check per-hour limit
-  const hourRequests = history.filter(
-    (timestamp) => now - timestamp < 60 * 60 * 1000
-  ).length;
-  if (hourRequests >= limits.requestsPerHour) {
-    logger.warn(`Rate limit exceeded for ${userId}:${providerId} - per hour`, {
-      userId,
-      providerId,
-      hourRequests,
-      limit: limits.requestsPerHour,
-    });
-    return false;
-  }
-
-  // Check per-day limit
-  const dayRequests = history.length;
-  if (dayRequests >= limits.requestsPerDay) {
-    logger.warn(`Rate limit exceeded for ${userId}:${providerId} - per day`, {
-      userId,
-      providerId,
-      dayRequests,
-      limit: limits.requestsPerDay,
-    });
-    return false;
-  }
-
-  return true;
-}
-
-// Record a request for rate limiting
-function recordRequest(userId, providerId) {
-  const key = `${userId}:${providerId}`;
-  const history = rateLimitStorage.get(key) || [];
-
-  history.push(Date.now());
-  rateLimitStorage.set(key, history);
-}
-
-// Log LLM audit event
-function logLLMAuditEvent(eventData) {
-  const auditEvent = {
-    id: `audit-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-    timestamp: new Date().toISOString(),
-    type: 'llm_interaction',
-    ...eventData,
-  };
-
-  // Log to Winston for persistence
-  logger.info('LLM Audit Event', auditEvent);
-
-  // Additional security logging for failed requests
-  if (!eventData.success) {
-    logger.warn('LLM Request Failed', {
-      userId: eventData.userId,
-      providerId: eventData.providerId,
-      error: eventData.errorMessage,
-      requestId: eventData.requestId,
-    });
-  }
-
-  // Log suspicious activity
-  if (eventData.responseTime > 60000) {
-    // Requests taking longer than 1 minute
-    logger.warn('Long-running LLM request detected', {
-      userId: eventData.userId,
-      providerId: eventData.providerId,
-      responseTime: eventData.responseTime,
-      requestId: eventData.requestId,
-    });
-  }
-}
-
-// Clean up rate limiting storage periodically (every hour)
-setInterval(
-  () => {
-    const now = Date.now();
-    const cutoff = 24 * 60 * 60 * 1000; // 24 hours
-
-    for (const [key, history] of rateLimitStorage.entries()) {
-      const filteredHistory = history.filter(
-        (timestamp) => now - timestamp < cutoff
-      );
-      if (filteredHistory.length === 0) {
-        rateLimitStorage.delete(key);
-      } else {
-        rateLimitStorage.set(key, filteredHistory);
-      }
-    }
-
-    logger.debug('Rate limiting storage cleaned up', {
-      activeKeys: rateLimitStorage.size,
-    });
-  },
-  60 * 60 * 1000
-); // Run every hour
+// LLM Security and Monitoring Helper Functions - Removed unused functions
+// (getRateLimitsForTier, checkRateLimit, recordRequest, logLLMAuditEvent)
 
 // Initialize Tunnel System
 let authService = null;
@@ -921,7 +753,7 @@ async function initializeTunnelSystem() {
     } catch (error) {
       logger.warn(
         'Authentication service initialization failed, continuing without auth features',
-        { error: error.message }
+        { error: error.message },
       );
       authService = null; // Set to null so routes can handle missing auth service
     }

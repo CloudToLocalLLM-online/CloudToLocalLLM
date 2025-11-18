@@ -12,14 +12,14 @@ const logger = winston.createLogger({
   format: winston.format.combine(
     winston.format.timestamp(),
     winston.format.errors({ stack: true }),
-    winston.format.json()
+    winston.format.json(),
   ),
   defaultMeta: { service: 'proxy-manager' },
   transports: [
     new winston.transports.Console({
       format: winston.format.combine(
         winston.format.timestamp(),
-        winston.format.simple()
+        winston.format.simple(),
       ),
     }),
   ],
@@ -131,7 +131,7 @@ export class StreamingProxyManager {
             userTier,
             userId,
             proxyId,
-          }
+          },
         );
 
         // Return direct tunnel configuration instead of container
@@ -166,7 +166,7 @@ export class StreamingProxyManager {
           userId,
           userTier: getUserTier(user),
           proxyId,
-        }
+        },
       );
 
       // Check if proxy already exists (for premium/enterprise users)
@@ -276,7 +276,7 @@ export class StreamingProxyManager {
         } catch (networkError) {
           logger.warn(
             `Failed to remove network: ${networkInfo.networkName}`,
-            networkError
+            networkError,
           );
         }
       }
@@ -339,7 +339,7 @@ export class StreamingProxyManager {
    * Start periodic cleanup process
    */
   startCleanupProcess() {
-    this.cleanupInterval = setInterval(async () => {
+    this.cleanupInterval = setInterval(async() => {
       await this.cleanupStaleProxies();
     }, 60000); // Check every minute
 
@@ -375,7 +375,7 @@ export class StreamingProxyManager {
       ([userId, metadata]) => ({
         userId,
         ...metadata,
-      })
+      }),
     );
   }
 
@@ -389,7 +389,7 @@ export class StreamingProxyManager {
 
     // Terminate all active proxies
     const terminationPromises = Array.from(this.activeProxies.keys()).map(
-      (userId) => this.terminateProxy(userId)
+      (userId) => this.terminateProxy(userId),
     );
 
     await Promise.allSettled(terminationPromises);

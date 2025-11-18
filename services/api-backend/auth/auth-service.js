@@ -108,7 +108,7 @@ export class AuthService {
       }
 
       this.logger.info(
-        `Token decoded successfully, kid: ${decoded.header.kid}`
+        `Token decoded successfully, kid: ${decoded.header.kid}`,
       );
 
       // Get signing key
@@ -173,7 +173,7 @@ export class AuthService {
       }
 
       this.logger.info(
-        `WebSocket token decoded successfully, kid: ${decoded.header.kid}`
+        `WebSocket token decoded successfully, kid: ${decoded.header.kid}`,
       );
 
       // Get signing key
@@ -224,7 +224,7 @@ export class AuthService {
       const response = await fetch(this.jwksUri);
       if (!response.ok) {
         throw new Error(
-          `Failed to fetch JWKS: ${response.status} ${response.statusText}`
+          `Failed to fetch JWKS: ${response.status} ${response.statusText}`,
         );
       }
 
@@ -236,7 +236,7 @@ export class AuthService {
       if (!key) {
         const availableKids = jwks.keys.map((k) => k.kid);
         throw new Error(
-          `Key with kid '${kid}' not found in JWKS. Available kids: ${availableKids.join(', ')}`
+          `Key with kid '${kid}' not found in JWKS. Available kids: ${availableKids.join(', ')}`,
         );
       }
 
@@ -281,7 +281,7 @@ export class AuthService {
     } catch (error) {
       this.logger.error(
         'Modern crypto approach failed, trying manual conversion:',
-        error
+        error,
       );
 
       // Fallback: Manual RSA key construction
@@ -336,7 +336,7 @@ export class AuthService {
       // Check for existing session with same token
       const existingSession = await this.db.db.get(
         'SELECT * FROM user_sessions WHERE user_id = ? AND jwt_token_hash = ?',
-        [userId, tokenHash]
+        [userId, tokenHash],
       );
 
       this.logger.info('Session lookup result', {
@@ -351,7 +351,7 @@ export class AuthService {
         // Update existing session
         await this.db.db.run(
           'UPDATE user_sessions SET last_activity = CURRENT_TIMESTAMP, expires_at = ? WHERE id = ?',
-          [expiresAt, existingSession.id]
+          [expiresAt, existingSession.id],
         );
 
         this.logger.info('Session updated successfully');
@@ -375,7 +375,7 @@ export class AuthService {
       const result = await this.db.db.run(
         `INSERT INTO user_sessions (user_id, jwt_token_hash, expires_at, ip_address, user_agent)
          VALUES (?, ?, ?, ?, ?)`,
-        [userId, tokenHash, expiresAt, ip, userAgent]
+        [userId, tokenHash, expiresAt, ip, userAgent],
       );
 
       this.logger.info('Session insert result', {
@@ -386,7 +386,7 @@ export class AuthService {
       // Get the created session
       const session = await this.db.db.get(
         'SELECT * FROM user_sessions WHERE id = ?',
-        [result.lastID || this.generateSessionId()]
+        [result.lastID || this.generateSessionId()],
       );
 
       if (!session) {
@@ -419,28 +419,28 @@ export class AuthService {
           {
             userId,
             tokenHashLength: tokenHash.length,
-          }
+          },
         );
 
         try {
           // Try to find the existing session again
           const existingSession = await this.db.db.get(
             'SELECT * FROM user_sessions WHERE user_id = ? AND jwt_token_hash = ?',
-            [userId, tokenHash]
+            [userId, tokenHash],
           );
 
           if (existingSession) {
             // Update the existing session
             await this.db.db.run(
               'UPDATE user_sessions SET last_activity = CURRENT_TIMESTAMP, expires_at = ? WHERE id = ?',
-              [expiresAt, existingSession.id]
+              [expiresAt, existingSession.id],
             );
 
             this.logger.info(
               'Successfully updated existing session after constraint violation',
               {
                 sessionId: existingSession.id,
-              }
+              },
             );
 
             return existingSession;
@@ -484,7 +484,7 @@ export class AuthService {
       const result = await this.db.db.get(
         `SELECT * FROM user_sessions
          WHERE id = ? AND is_active = 1 AND expires_at > datetime('now')`,
-        [sessionId]
+        [sessionId],
       );
 
       return result || null;
@@ -509,14 +509,14 @@ export class AuthService {
       // Get user_id before updating
       const session = await this.db.db.get(
         'SELECT user_id FROM user_sessions WHERE id = ?',
-        [sessionId]
+        [sessionId],
       );
 
       if (session) {
         // Update session to inactive
         await this.db.db.run(
           'UPDATE user_sessions SET is_active = 0 WHERE id = ?',
-          [sessionId]
+          [sessionId],
         );
 
         const userId = session.user_id;
@@ -559,7 +559,7 @@ export class AuthService {
       // Get active sessions count
       const countResult = await this.db.db.get(
         'SELECT COUNT(*) as count FROM user_sessions WHERE user_id = ? AND is_active = 1',
-        [userId]
+        [userId],
       );
 
       const activeCount = parseInt(countResult.count);
@@ -578,7 +578,7 @@ export class AuthService {
              ORDER BY last_activity ASC
              LIMIT ?
            )`,
-          [userId, sessionsToRemove]
+          [userId, sessionsToRemove],
         );
 
         this.logger.info('Cleaned up old sessions', {
@@ -649,7 +649,7 @@ export class AuthService {
           metadata.userId || null,
           metadata.ip || null,
           metadata.userAgent || null,
-        ]
+        ],
       );
     } catch (error) {
       this.logger.error('Failed to log audit event', {
@@ -680,7 +680,7 @@ export class AuthService {
           metadata.userId || null,
           metadata.ip || null,
           metadata.userAgent || null,
-        ]
+        ],
       );
     } catch (error) {
       this.logger.error('Failed to log security event', {
@@ -710,7 +710,7 @@ export class AuthService {
   startSessionCleanup() {
     // Clean up expired sessions every 15 minutes
     setInterval(
-      async () => {
+      async() => {
         try {
           if (!this.db.db) {
             await this.db.initialize();
@@ -719,7 +719,7 @@ export class AuthService {
           // SQLite version: manually clean up expired sessions
           const result = await this.db.db.run(
             `UPDATE user_sessions SET is_active = 0
-           WHERE expires_at < datetime('now') AND is_active = 1`
+           WHERE expires_at < datetime('now') AND is_active = 1`,
           );
 
           const deletedCount = result.changes || 0;
@@ -730,7 +730,7 @@ export class AuthService {
           this.logger.error('Session cleanup failed', { error: error.message });
         }
       },
-      15 * 60 * 1000
+      15 * 60 * 1000,
     ); // 15 minutes
   }
 
@@ -745,25 +745,25 @@ export class AuthService {
 
       // SQLite version: get stats with separate queries
       const activeSessions = await this.db.db.get(
-        'SELECT COUNT(*) as count FROM user_sessions WHERE is_active = 1'
+        'SELECT COUNT(*) as count FROM user_sessions WHERE is_active = 1',
       );
 
       const validSessions = await this.db.db.get(
-        "SELECT COUNT(*) as count FROM user_sessions WHERE expires_at > datetime('now')"
+        'SELECT COUNT(*) as count FROM user_sessions WHERE expires_at > datetime(\'now\')',
       );
 
       const activeUsers = await this.db.db.get(
-        'SELECT COUNT(DISTINCT user_id) as count FROM user_sessions WHERE is_active = 1'
+        'SELECT COUNT(DISTINCT user_id) as count FROM user_sessions WHERE is_active = 1',
       );
 
       const authEvents = await this.db.db.get(
         `SELECT COUNT(*) as count FROM audit_logs
-         WHERE event_category = 'authentication' AND timestamp > datetime('now', '-24 hours')`
+         WHERE event_category = 'authentication' AND timestamp > datetime('now', '-24 hours')`,
       );
 
       const securityEvents = await this.db.db.get(
         `SELECT COUNT(*) as count FROM audit_logs
-         WHERE event_category = 'security' AND timestamp > datetime('now', '-24 hours')`
+         WHERE event_category = 'security' AND timestamp > datetime('now', '-24 hours')`,
       );
 
       return {

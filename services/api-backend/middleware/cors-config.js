@@ -23,13 +23,13 @@ const ALLOWED_ORIGINS = [
   // Development origins
   ...(process.env.NODE_ENV === 'development'
     ? [
-        'http://localhost:3000',
-        'http://localhost:8080',
-        'http://localhost:5000',
-        'http://127.0.0.1:3000',
-        'http://127.0.0.1:8080',
-        'http://127.0.0.1:5000',
-      ]
+      'http://localhost:3000',
+      'http://localhost:8080',
+      'http://localhost:5000',
+      'http://127.0.0.1:3000',
+      'http://127.0.0.1:8080',
+      'http://127.0.0.1:5000',
+    ]
     : []),
 ];
 
@@ -109,11 +109,11 @@ export const adminCorsOptions = {
       'https://app.cloudtolocalllm.online', // Admin center accessed from main app
       ...(process.env.NODE_ENV === 'development'
         ? [
-            'http://localhost:3000',
-            'http://localhost:8080',
-            'http://127.0.0.1:3000',
-            'http://127.0.0.1:8080',
-          ]
+          'http://localhost:3000',
+          'http://localhost:8080',
+          'http://127.0.0.1:3000',
+          'http://127.0.0.1:8080',
+        ]
         : []),
     ];
 
@@ -121,7 +121,7 @@ export const adminCorsOptions = {
       callback(null, true);
     } else {
       console.warn(
-        `CORS: Blocked admin request from unauthorized origin: ${origin}`
+        `CORS: Blocked admin request from unauthorized origin: ${origin}`,
       );
       callback(new Error('Not allowed by CORS - admin access only'));
     }
@@ -171,7 +171,7 @@ export const webhookCorsOptions = {
       callback(null, true);
     } else {
       console.warn(
-        `CORS: Blocked webhook request from unauthorized origin: ${origin}`
+        `CORS: Blocked webhook request from unauthorized origin: ${origin}`,
       );
       callback(new Error('Not allowed by CORS - webhook access only'));
     }
@@ -222,7 +222,7 @@ export function logCorsRequest(req, res, next) {
   if (origin) {
     const allowed = isOriginAllowed(origin);
     console.log(
-      `CORS Request: ${req.method} ${req.path} from ${origin} - ${allowed ? 'ALLOWED' : 'BLOCKED'}`
+      `CORS Request: ${req.method} ${req.path} from ${origin} - ${allowed ? 'ALLOWED' : 'BLOCKED'}`,
     );
   }
   next();
