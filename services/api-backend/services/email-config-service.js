@@ -34,8 +34,12 @@ class EmailConfigService {
       errors.push('Provider is required');
     }
 
-    if (!['google_workspace', 'smtp_relay', 'sendgrid'].includes(config.provider)) {
-      errors.push('Invalid provider. Must be one of: google_workspace, smtp_relay, sendgrid');
+    if (
+      !['google_workspace', 'smtp_relay', 'sendgrid'].includes(config.provider)
+    ) {
+      errors.push(
+        'Invalid provider. Must be one of: google_workspace, smtp_relay, sendgrid'
+      );
     }
 
     if (!config.from_address) {
@@ -44,7 +48,10 @@ class EmailConfigService {
       errors.push('Invalid from address format');
     }
 
-    if (config.reply_to_address && !this._isValidEmail(config.reply_to_address)) {
+    if (
+      config.reply_to_address &&
+      !this._isValidEmail(config.reply_to_address)
+    ) {
       errors.push('Invalid reply-to address format');
     }
 
@@ -67,7 +74,7 @@ class EmailConfigService {
 
     return {
       valid: errors.length === 0,
-      errors
+      errors,
     };
   }
 
@@ -91,7 +98,7 @@ class EmailConfigService {
     from_name = null,
     reply_to_address = null,
     googleOAuth = null,
-    smtpConfig = null
+    smtpConfig = null,
   }) {
     const configId = uuidv4();
 
@@ -104,11 +111,13 @@ class EmailConfigService {
         smtp_host: smtpConfig?.host,
         smtp_port: smtpConfig?.port,
         smtp_username: smtpConfig?.username,
-        smtp_password: smtpConfig?.password
+        smtp_password: smtpConfig?.password,
       });
 
       if (!validation.valid) {
-        throw new Error(`Configuration validation failed: ${validation.errors.join(', ')}`);
+        throw new Error(
+          `Configuration validation failed: ${validation.errors.join(', ')}`
+        );
       }
 
       // Encrypt sensitive data
@@ -118,7 +127,9 @@ class EmailConfigService {
 
       if (googleOAuth) {
         encryptedGoogleToken = this._encryptData(googleOAuth.accessToken);
-        encryptedGoogleRefreshToken = this._encryptData(googleOAuth.refreshToken);
+        encryptedGoogleRefreshToken = this._encryptData(
+          googleOAuth.refreshToken
+        );
       }
 
       if (smtpConfig?.password) {
@@ -162,7 +173,7 @@ class EmailConfigService {
         from_name,
         reply_to_address,
         true,
-        userId
+        userId,
       ]);
 
       // Clear cache
@@ -172,7 +183,7 @@ class EmailConfigService {
         userId,
         provider,
         configId,
-        from_address
+        from_address,
       });
 
       return result.rows[0];
@@ -180,7 +191,7 @@ class EmailConfigService {
       logger.error('Failed to store email configuration', {
         userId,
         provider,
-        error: error.message
+        error: error.message,
       });
       throw error;
     }
@@ -218,10 +229,14 @@ class EmailConfigService {
 
       // Decrypt sensitive fields
       if (config.google_oauth_token_encrypted) {
-        config.googleOAuthToken = this._decryptData(config.google_oauth_token_encrypted);
+        config.googleOAuthToken = this._decryptData(
+          config.google_oauth_token_encrypted
+        );
       }
       if (config.google_oauth_refresh_token_encrypted) {
-        config.googleOAuthRefreshToken = this._decryptData(config.google_oauth_refresh_token_encrypted);
+        config.googleOAuthRefreshToken = this._decryptData(
+          config.google_oauth_refresh_token_encrypted
+        );
       }
       if (config.smtp_password_encrypted) {
         config.smtpPassword = this._decryptData(config.smtp_password_encrypted);
@@ -230,12 +245,12 @@ class EmailConfigService {
       // Cache the result
       this.configCache.set(cacheKey, {
         data: config,
-        timestamp: Date.now()
+        timestamp: Date.now(),
       });
 
       logger.info('Retrieved email configuration', {
         userId,
-        provider
+        provider,
       });
 
       return config;
@@ -243,7 +258,7 @@ class EmailConfigService {
       logger.error('Failed to retrieve email configuration', {
         userId,
         provider,
-        error: error.message
+        error: error.message,
       });
       throw error;
     }
@@ -266,29 +281,35 @@ class EmailConfigService {
       const result = await this.db.query(query, [userId]);
 
       // Decrypt sensitive fields for each config
-      const configs = result.rows.map(config => {
+      const configs = result.rows.map((config) => {
         if (config.google_oauth_token_encrypted) {
-          config.googleOAuthToken = this._decryptData(config.google_oauth_token_encrypted);
+          config.googleOAuthToken = this._decryptData(
+            config.google_oauth_token_encrypted
+          );
         }
         if (config.google_oauth_refresh_token_encrypted) {
-          config.googleOAuthRefreshToken = this._decryptData(config.google_oauth_refresh_token_encrypted);
+          config.googleOAuthRefreshToken = this._decryptData(
+            config.google_oauth_refresh_token_encrypted
+          );
         }
         if (config.smtp_password_encrypted) {
-          config.smtpPassword = this._decryptData(config.smtp_password_encrypted);
+          config.smtpPassword = this._decryptData(
+            config.smtp_password_encrypted
+          );
         }
         return config;
       });
 
       logger.info('Retrieved all email configurations', {
         userId,
-        count: configs.length
+        count: configs.length,
       });
 
       return configs;
     } catch (error) {
       logger.error('Failed to retrieve all email configurations', {
         userId,
-        error: error.message
+        error: error.message,
       });
       throw error;
     }
@@ -315,13 +336,13 @@ class EmailConfigService {
 
       logger.info('Deleted email configuration', {
         userId,
-        provider
+        provider,
       });
     } catch (error) {
       logger.error('Failed to delete email configuration', {
         userId,
         provider,
-        error: error.message
+        error: error.message,
       });
       throw error;
     }
@@ -349,7 +370,7 @@ class EmailConfigService {
     text_body = null,
     description = null,
     variables = [],
-    is_system_template = false
+    is_system_template = false,
   }) {
     const templateId = uuidv4();
 
@@ -392,7 +413,7 @@ class EmailConfigService {
         description,
         JSON.stringify(variables),
         is_system_template,
-        userId
+        userId,
       ]);
 
       // Clear cache
@@ -401,7 +422,7 @@ class EmailConfigService {
       logger.info('Saved email template', {
         userId,
         templateName: name,
-        templateId
+        templateId,
       });
 
       return result.rows[0];
@@ -409,7 +430,7 @@ class EmailConfigService {
       logger.error('Failed to save email template', {
         userId,
         templateName: name,
-        error: error.message
+        error: error.message,
       });
       throw error;
     }
@@ -445,7 +466,7 @@ class EmailConfigService {
       if (result.rows.length === 0) {
         logger.warn('Email template not found', {
           templateName: name,
-          userId
+          userId,
         });
         return null;
       }
@@ -460,12 +481,12 @@ class EmailConfigService {
       // Cache the result
       this.templateCache.set(cacheKey, {
         data: template,
-        timestamp: Date.now()
+        timestamp: Date.now(),
       });
 
       logger.info('Retrieved email template', {
         templateName: name,
-        userId
+        userId,
       });
 
       return template;
@@ -473,7 +494,7 @@ class EmailConfigService {
       logger.error('Failed to retrieve email template', {
         templateName: name,
         userId,
-        error: error.message
+        error: error.message,
       });
       throw error;
     }
@@ -501,7 +522,7 @@ class EmailConfigService {
 
       const result = await this.db.query(query, [userId, limit, offset]);
 
-      const templates = result.rows.map(template => {
+      const templates = result.rows.map((template) => {
         if (typeof template.variables === 'string') {
           template.variables = JSON.parse(template.variables);
         }
@@ -510,14 +531,14 @@ class EmailConfigService {
 
       logger.info('Listed email templates', {
         userId,
-        count: templates.length
+        count: templates.length,
       });
 
       return templates;
     } catch (error) {
       logger.error('Failed to list email templates', {
         userId,
-        error: error.message
+        error: error.message,
       });
       throw error;
     }
@@ -548,13 +569,13 @@ class EmailConfigService {
 
       logger.info('Deleted email template', {
         templateId,
-        userId
+        userId,
       });
     } catch (error) {
       logger.error('Failed to delete email template', {
         templateId,
         userId,
-        error: error.message
+        error: error.message,
       });
       throw error;
     }
@@ -584,22 +605,24 @@ class EmailConfigService {
 
       const renderedSubject = replaceVariables(template.subject);
       const renderedHtmlBody = replaceVariables(template.html_body);
-      const renderedTextBody = template.text_body ? replaceVariables(template.text_body) : null;
+      const renderedTextBody = template.text_body
+        ? replaceVariables(template.text_body)
+        : null;
 
       logger.info('Rendered email template', {
         templateId: template.id,
-        templateName: template.name
+        templateName: template.name,
       });
 
       return {
         subject: renderedSubject,
         htmlBody: renderedHtmlBody,
-        textBody: renderedTextBody
+        textBody: renderedTextBody,
       };
     } catch (error) {
       logger.error('Failed to render email template', {
         templateId: template?.id,
-        error: error.message
+        error: error.message,
       });
       throw error;
     }
@@ -652,25 +675,26 @@ class EmailConfigService {
         failed_count: 0,
         bounced_count: 0,
         pending_count: 0,
-        avg_delivery_time_seconds: null
+        avg_delivery_time_seconds: null,
       };
 
       // Calculate success rate
-      metrics.success_rate = metrics.total_emails > 0
-        ? ((metrics.sent_count / metrics.total_emails) * 100).toFixed(2)
-        : 0;
+      metrics.success_rate =
+        metrics.total_emails > 0
+          ? ((metrics.sent_count / metrics.total_emails) * 100).toFixed(2)
+          : 0;
 
       logger.info('Retrieved delivery metrics', {
         userId,
         totalEmails: metrics.total_emails,
-        successRate: metrics.success_rate
+        successRate: metrics.success_rate,
       });
 
       return metrics;
     } catch (error) {
       logger.error('Failed to retrieve delivery metrics', {
         userId,
-        error: error.message
+        error: error.message,
       });
       throw error;
     }
@@ -722,14 +746,14 @@ class EmailConfigService {
 
       logger.info('Retrieved delivery logs', {
         userId,
-        count: result.rows.length
+        count: result.rows.length,
       });
 
       return result.rows;
     } catch (error) {
       logger.error('Failed to retrieve delivery logs', {
         userId,
-        error: error.message
+        error: error.message,
       });
       throw error;
     }
@@ -761,7 +785,7 @@ class EmailConfigService {
     return JSON.stringify({
       iv: iv.toString('hex'),
       encrypted,
-      authTag: authTag.toString('hex')
+      authTag: authTag.toString('hex'),
     });
   }
 

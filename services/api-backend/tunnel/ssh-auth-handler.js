@@ -95,7 +95,6 @@ export class SSHAuthHandler {
       ctx.user = decoded;
 
       return true;
-
     } catch (error) {
       this.logger.error('SSH authentication error', {
         error: error.message,
@@ -132,7 +131,6 @@ export class SSHAuthHandler {
         userId,
         decoded,
       };
-
     } catch (error) {
       this.logger.warn('WebSocket auth extraction failed', {
         error: error.message,
@@ -202,8 +200,8 @@ export class SSHAuthHandler {
 
     // Simple tier hierarchy: free < premium
     const tierLevels = {
-      'free': 0,
-      'premium': 1,
+      free: 0,
+      premium: 1,
     };
 
     const userLevel = tierLevels[userTier] || 0;

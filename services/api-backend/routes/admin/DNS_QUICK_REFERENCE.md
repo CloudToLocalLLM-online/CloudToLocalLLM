@@ -2,19 +2,20 @@
 
 ## Endpoints Summary
 
-| Method | Endpoint | Permission | Purpose |
-|--------|----------|-----------|---------|
-| POST | `/api/admin/dns/records` | `manage_dns_config` | Create DNS record |
-| GET | `/api/admin/dns/records` | `view_dns_config` | List DNS records |
-| PUT | `/api/admin/dns/records/:id` | `manage_dns_config` | Update DNS record |
-| DELETE | `/api/admin/dns/records/:id` | `manage_dns_config` | Delete DNS record |
-| POST | `/api/admin/dns/validate` | `view_dns_config` | Validate DNS records |
-| GET | `/api/admin/dns/google-records` | `view_dns_config` | Get Google Workspace recommendations |
-| POST | `/api/admin/dns/setup-google` | `manage_dns_config` | One-click Google Workspace setup |
+| Method | Endpoint                        | Permission          | Purpose                              |
+| ------ | ------------------------------- | ------------------- | ------------------------------------ |
+| POST   | `/api/admin/dns/records`        | `manage_dns_config` | Create DNS record                    |
+| GET    | `/api/admin/dns/records`        | `view_dns_config`   | List DNS records                     |
+| PUT    | `/api/admin/dns/records/:id`    | `manage_dns_config` | Update DNS record                    |
+| DELETE | `/api/admin/dns/records/:id`    | `manage_dns_config` | Delete DNS record                    |
+| POST   | `/api/admin/dns/validate`       | `view_dns_config`   | Validate DNS records                 |
+| GET    | `/api/admin/dns/google-records` | `view_dns_config`   | Get Google Workspace recommendations |
+| POST   | `/api/admin/dns/setup-google`   | `manage_dns_config` | One-click Google Workspace setup     |
 
 ## Common Tasks
 
 ### Create MX Record
+
 ```bash
 POST /api/admin/dns/records
 {
@@ -27,6 +28,7 @@ POST /api/admin/dns/records
 ```
 
 ### Create SPF Record
+
 ```bash
 POST /api/admin/dns/records
 {
@@ -38,6 +40,7 @@ POST /api/admin/dns/records
 ```
 
 ### Create DKIM Record
+
 ```bash
 POST /api/admin/dns/records
 {
@@ -49,6 +52,7 @@ POST /api/admin/dns/records
 ```
 
 ### Create DMARC Record
+
 ```bash
 POST /api/admin/dns/records
 {
@@ -60,16 +64,19 @@ POST /api/admin/dns/records
 ```
 
 ### List All Records
+
 ```bash
 GET /api/admin/dns/records
 ```
 
 ### Filter Records by Type
+
 ```bash
 GET /api/admin/dns/records?recordType=MX
 ```
 
 ### Update Record
+
 ```bash
 PUT /api/admin/dns/records/:id
 {
@@ -79,21 +86,25 @@ PUT /api/admin/dns/records/:id
 ```
 
 ### Delete Record
+
 ```bash
 DELETE /api/admin/dns/records/:id
 ```
 
 ### Validate Records
+
 ```bash
 POST /api/admin/dns/validate
 ```
 
 ### Get Google Workspace Recommendations
+
 ```bash
 GET /api/admin/dns/google-records?domain=example.com
 ```
 
 ### Setup Google Workspace DNS (One-Click)
+
 ```bash
 POST /api/admin/dns/setup-google
 {
@@ -132,19 +143,19 @@ POST /api/admin/dns/setup-google
 
 ## Error Codes
 
-| Code | Meaning |
-|------|---------|
-| `MISSING_FIELDS` | Required fields missing |
-| `INVALID_RECORD_TYPE` | Invalid DNS record type |
-| `INVALID_TTL` | TTL outside valid range |
-| `NO_UPDATE_FIELDS` | No fields provided for update |
-| `RECORD_CREATE_FAILED` | Failed to create record |
-| `RECORD_UPDATE_FAILED` | Failed to update record |
-| `RECORD_DELETE_FAILED` | Failed to delete record |
-| `RECORDS_RETRIEVAL_FAILED` | Failed to retrieve records |
-| `VALIDATION_FAILED` | Failed to validate records |
-| `RECOMMENDATIONS_FAILED` | Failed to get recommendations |
-| `SETUP_FAILED` | Failed to setup DNS |
+| Code                       | Meaning                       |
+| -------------------------- | ----------------------------- |
+| `MISSING_FIELDS`           | Required fields missing       |
+| `INVALID_RECORD_TYPE`      | Invalid DNS record type       |
+| `INVALID_TTL`              | TTL outside valid range       |
+| `NO_UPDATE_FIELDS`         | No fields provided for update |
+| `RECORD_CREATE_FAILED`     | Failed to create record       |
+| `RECORD_UPDATE_FAILED`     | Failed to update record       |
+| `RECORD_DELETE_FAILED`     | Failed to delete record       |
+| `RECORDS_RETRIEVAL_FAILED` | Failed to retrieve records    |
+| `VALIDATION_FAILED`        | Failed to validate records    |
+| `RECOMMENDATIONS_FAILED`   | Failed to get recommendations |
+| `SETUP_FAILED`             | Failed to setup DNS           |
 
 ## Rate Limits
 
@@ -154,6 +165,7 @@ POST /api/admin/dns/setup-google
 ## Authentication
 
 All requests require:
+
 - Valid JWT token in `Authorization: Bearer <token>` header
 - Admin role
 - Appropriate permission scope
@@ -161,6 +173,7 @@ All requests require:
 ## Audit Logging
 
 All operations are logged with:
+
 - Admin user ID
 - Action performed
 - Resource ID

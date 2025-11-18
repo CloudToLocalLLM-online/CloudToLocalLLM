@@ -9,6 +9,7 @@ The Audit Log API provides secure administrative endpoints for viewing and expor
 **Authentication:** JWT Bearer token with admin role
 
 **Permissions Required:**
+
 - `view_audit_logs` - View audit log entries
 - `export_audit_logs` - Export audit logs to CSV
 
@@ -26,18 +27,18 @@ The Audit Log API provides secure administrative endpoints for viewing and expor
 
 **Query Parameters:**
 
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| page | integer | 1 | Page number (min: 1) |
-| limit | integer | 100 | Items per page (min: 1, max: 200) |
-| adminUserId | UUID | - | Filter by admin user ID |
-| action | string | - | Filter by action type (e.g., user_suspended, refund_processed) |
-| resourceType | string | - | Filter by resource type (user, subscription, transaction, etc.) |
-| affectedUserId | UUID | - | Filter by affected user ID |
-| startDate | ISO 8601 | - | Filter by date range (start) |
-| endDate | ISO 8601 | - | Filter by date range (end) |
-| sortBy | string | created_at | Sort field (created_at, action, resource_type, admin_user_id) |
-| sortOrder | string | desc | Sort order (asc, desc) |
+| Parameter      | Type     | Default    | Description                                                     |
+| -------------- | -------- | ---------- | --------------------------------------------------------------- |
+| page           | integer  | 1          | Page number (min: 1)                                            |
+| limit          | integer  | 100        | Items per page (min: 1, max: 200)                               |
+| adminUserId    | UUID     | -          | Filter by admin user ID                                         |
+| action         | string   | -          | Filter by action type (e.g., user_suspended, refund_processed)  |
+| resourceType   | string   | -          | Filter by resource type (user, subscription, transaction, etc.) |
+| affectedUserId | UUID     | -          | Filter by affected user ID                                      |
+| startDate      | ISO 8601 | -          | Filter by date range (start)                                    |
+| endDate        | ISO 8601 | -          | Filter by date range (end)                                      |
+| sortBy         | string   | created_at | Sort field (created_at, action, resource_type, admin_user_id)   |
+| sortOrder      | string   | desc       | Sort order (asc, desc)                                          |
 
 **Example Request:**
 
@@ -102,23 +103,23 @@ curl -X GET "https://api.cloudtolocalllm.online/api/admin/audit/logs?page=1&limi
 
 **Response Fields:**
 
-| Field | Type | Description |
-|-------|------|-------------|
-| id | UUID | Unique audit log entry ID |
-| admin_user_id | UUID | ID of admin who performed the action |
-| admin_role | string | Role of admin at time of action |
-| action | string | Action performed (e.g., user_suspended, refund_processed) |
-| resource_type | string | Type of resource affected |
-| resource_id | string | ID of affected resource |
-| affected_user_id | UUID | ID of user affected by action (if applicable) |
-| details | object | Additional action details (JSON) |
-| ip_address | string | IP address of admin |
-| user_agent | string | User agent of admin |
-| created_at | ISO 8601 | Timestamp of action |
-| admin_email | string | Email of admin user |
-| admin_username | string | Username of admin user |
-| affected_user_email | string | Email of affected user |
-| affected_user_username | string | Username of affected user |
+| Field                  | Type     | Description                                               |
+| ---------------------- | -------- | --------------------------------------------------------- |
+| id                     | UUID     | Unique audit log entry ID                                 |
+| admin_user_id          | UUID     | ID of admin who performed the action                      |
+| admin_role             | string   | Role of admin at time of action                           |
+| action                 | string   | Action performed (e.g., user_suspended, refund_processed) |
+| resource_type          | string   | Type of resource affected                                 |
+| resource_id            | string   | ID of affected resource                                   |
+| affected_user_id       | UUID     | ID of user affected by action (if applicable)             |
+| details                | object   | Additional action details (JSON)                          |
+| ip_address             | string   | IP address of admin                                       |
+| user_agent             | string   | User agent of admin                                       |
+| created_at             | ISO 8601 | Timestamp of action                                       |
+| admin_email            | string   | Email of admin user                                       |
+| admin_username         | string   | Username of admin user                                    |
+| affected_user_email    | string   | Email of affected user                                    |
+| affected_user_username | string   | Username of affected user                                 |
 
 **Common Action Types:**
 
@@ -145,9 +146,9 @@ curl -X GET "https://api.cloudtolocalllm.online/api/admin/audit/logs?page=1&limi
 
 **Path Parameters:**
 
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| logId | UUID | Yes | Audit log entry ID |
+| Parameter | Type | Required | Description        |
+| --------- | ---- | -------- | ------------------ |
+| logId     | UUID | Yes      | Audit log entry ID |
 
 **Example Request:**
 
@@ -214,14 +215,14 @@ curl -X GET "https://api.cloudtolocalllm.online/api/admin/audit/logs/550e8400-e2
 
 **Query Parameters:**
 
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| adminUserId | UUID | - | Filter by admin user ID |
-| action | string | - | Filter by action type |
-| resourceType | string | - | Filter by resource type |
-| affectedUserId | UUID | - | Filter by affected user ID |
-| startDate | ISO 8601 | - | Filter by date range (start) |
-| endDate | ISO 8601 | - | Filter by date range (end) |
+| Parameter      | Type     | Default | Description                  |
+| -------------- | -------- | ------- | ---------------------------- |
+| adminUserId    | UUID     | -       | Filter by admin user ID      |
+| action         | string   | -       | Filter by action type        |
+| resourceType   | string   | -       | Filter by resource type      |
+| affectedUserId | UUID     | -       | Filter by affected user ID   |
+| startDate      | ISO 8601 | -       | Filter by date range (start) |
+| endDate        | ISO 8601 | -       | Filter by date range (end)   |
 
 **Example Request:**
 
@@ -346,6 +347,7 @@ All audit endpoints are subject to rate limiting:
 - **Export Rate Limit:** 10 exports per hour per admin
 
 Rate limit headers are included in responses:
+
 - `X-RateLimit-Limit` - Maximum requests allowed
 - `X-RateLimit-Remaining` - Remaining requests
 - `X-RateLimit-Reset` - Time when limit resets (Unix timestamp)
@@ -354,14 +356,14 @@ Rate limit headers are included in responses:
 
 ## Error Codes
 
-| Code | Description |
-|------|-------------|
-| `INVALID_LOG_ID` | Invalid audit log ID format |
-| `LOG_NOT_FOUND` | Audit log entry not found |
-| `AUDIT_LOGS_FAILED` | Failed to retrieve audit logs |
-| `LOG_DETAILS_FAILED` | Failed to retrieve log details |
-| `AUDIT_EXPORT_FAILED` | Failed to export audit logs |
-| `ADMIN_RATE_LIMIT_EXCEEDED` | Rate limit exceeded |
+| Code                        | Description                    |
+| --------------------------- | ------------------------------ |
+| `INVALID_LOG_ID`            | Invalid audit log ID format    |
+| `LOG_NOT_FOUND`             | Audit log entry not found      |
+| `AUDIT_LOGS_FAILED`         | Failed to retrieve audit logs  |
+| `LOG_DETAILS_FAILED`        | Failed to retrieve log details |
+| `AUDIT_EXPORT_FAILED`       | Failed to export audit logs    |
+| `ADMIN_RATE_LIMIT_EXCEEDED` | Rate limit exceeded            |
 
 ---
 
@@ -379,6 +381,7 @@ Rate limit headers are included in responses:
 ## Support
 
 For API support or questions:
+
 - Email: support@cloudtolocalllm.online
 - Documentation: https://docs.cloudtolocalllm.online
 - GitHub Issues: https://github.com/cloudtolocalllm/cloudtolocalllm/issues

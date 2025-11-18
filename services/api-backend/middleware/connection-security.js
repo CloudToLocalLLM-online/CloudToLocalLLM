@@ -40,7 +40,8 @@ const DEFAULT_CONFIG = {
     'X-Frame-Options': 'DENY',
     'X-XSS-Protection': '1; mode=block',
     'Referrer-Policy': 'strict-origin-when-cross-origin',
-    'Content-Security-Policy': 'default-src \'self\'; connect-src \'self\' wss: https:; script-src \'self\' \'unsafe-inline\'; style-src \'self\' \'unsafe-inline\'',
+    'Content-Security-Policy':
+      "default-src 'self'; connect-src 'self' wss: https:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'",
   },
 
   // WebSocket security
@@ -137,17 +138,25 @@ class ConnectionTracker {
    */
   evaluateIPSuspicion(ip) {
     const events = this.securityEvents.get(ip) || [];
-    const recentEvents = events.filter(event =>
-      Date.now() - event.timestamp.getTime() < DEFAULT_CONFIG.securityEventRateLimit.windowMs,
+    const recentEvents = events.filter(
+      (event) =>
+        Date.now() - event.timestamp.getTime() <
+        DEFAULT_CONFIG.securityEventRateLimit.windowMs
     );
 
-    if (recentEvents.length >= DEFAULT_CONFIG.securityEventRateLimit.maxEvents) {
+    if (
+      recentEvents.length >= DEFAULT_CONFIG.securityEventRateLimit.maxEvents
+    ) {
       this.suspiciousIPs.add(ip);
     }
 
     // Auto-block IPs with excessive security events
-    const criticalEvents = recentEvents.filter(event =>
-      ['certificate_validation_failed', 'tls_handshake_failed', 'malicious_request'].includes(event.type),
+    const criticalEvents = recentEvents.filter((event) =>
+      [
+        'certificate_validation_failed',
+        'tls_handshake_failed',
+        'malicious_request',
+      ].includes(event.type)
     );
 
     if (criticalEvents.length >= 5) {
@@ -196,7 +205,7 @@ class ConnectionTracker {
    * Clean up old tracking data
    */
   cleanup() {
-    const cutoff = new Date(Date.now() - (24 * 60 * 60 * 1000)); // 24 hours
+    const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000); // 24 hours
 
     // Clean up old connections
     for (const [ip, tracker] of this.connections.entries()) {
@@ -207,7 +216,7 @@ class ConnectionTracker {
 
     // Clean up old security events
     for (const [ip, events] of this.securityEvents.entries()) {
-      const recentEvents = events.filter(event => event.timestamp > cutoff);
+      const recentEvents = events.filter((event) => event.timestamp > cutoff);
       if (recentEvents.length === 0) {
         this.securityEvents.delete(ip);
       } else {
@@ -219,7 +228,7 @@ class ConnectionTracker {
     const recentSuspicious = new Set();
     for (const ip of this.suspiciousIPs) {
       const events = this.securityEvents.get(ip) || [];
-      const recentEvents = events.filter(event => event.timestamp > cutoff);
+      const recentEvents = events.filter((event) => event.timestamp > cutoff);
       if (recentEvents.length > 0) {
         recentSuspicious.add(ip);
       }
@@ -238,9 +247,12 @@ export class ConnectionSecurityManager {
     this.connectionTracker = new ConnectionTracker();
 
     // Start cleanup interval
-    this.cleanupInterval = setInterval(() => {
-      this.connectionTracker.cleanup();
-    }, 60 * 60 * 1000); // Every hour
+    this.cleanupInterval = setInterval(
+      () => {
+        this.connectionTracker.cleanup();
+      },
+      60 * 60 * 1000
+    ); // Every hour
 
     this.logger.info('Connection security manager initialized', {
       enforceHttps: this.config.enforceHttps,
@@ -314,7 +326,11 @@ export class ConnectionSecurityManager {
       // Validate client certificate if required
       if (this.config.validateClientCertificates) {
         const cert = socket.getPeerCertificate();
-        const certValidation = this.validateClientCertificate(cert, ip, correlationId);
+        const certValidation = this.validateClientCertificate(
+          cert,
+          ip,
+          correlationId
+        );
         if (!certValidation.valid) {
           return certValidation;
         }
@@ -334,7 +350,6 @@ export class ConnectionSecurityManager {
         cipher: cipher?.name,
         authorized: socket.authorized,
       };
-
     } catch (error) {
       this.connectionTracker.recordSecurityEvent(ip, 'tls_validation_error', {
         correlationId,
@@ -363,9 +378,13 @@ export class ConnectionSecurityManager {
    */
   validateClientCertificate(cert, ip, correlationId) {
     if (!cert || Object.keys(cert).length === 0) {
-      this.connectionTracker.recordSecurityEvent(ip, 'missing_client_certificate', {
-        correlationId,
-      });
+      this.connectionTracker.recordSecurityEvent(
+        ip,
+        'missing_client_certificate',
+        {
+          correlationId,
+        }
+      );
 
       return {
         valid: false,
@@ -380,12 +399,16 @@ export class ConnectionSecurityManager {
     const validTo = new Date(cert.valid_to);
 
     if (now < validFrom || now > validTo) {
-      this.connectionTracker.recordSecurityEvent(ip, 'expired_client_certificate', {
-        correlationId,
-        validFrom: cert.valid_from,
-        validTo: cert.valid_to,
-        currentTime: now.toISOString(),
-      });
+      this.connectionTracker.recordSecurityEvent(
+        ip,
+        'expired_client_certificate',
+        {
+          correlationId,
+          validFrom: cert.valid_from,
+          validTo: cert.valid_to,
+          currentTime: now.toISOString(),
+        }
+      );
 
       return {
         valid: false,
@@ -395,14 +418,21 @@ export class ConnectionSecurityManager {
     }
 
     // Check if certificate is self-signed
-    if (cert.issuer && cert.subject &&
-        JSON.stringify(cert.issuer) === JSON.stringify(cert.subject)) {
+    if (
+      cert.issuer &&
+      cert.subject &&
+      JSON.stringify(cert.issuer) === JSON.stringify(cert.subject)
+    ) {
       if (!this.config.allowSelfSignedCerts) {
-        this.connectionTracker.recordSecurityEvent(ip, 'self_signed_certificate', {
-          correlationId,
-          subject: cert.subject,
-          issuer: cert.issuer,
-        });
+        this.connectionTracker.recordSecurityEvent(
+          ip,
+          'self_signed_certificate',
+          {
+            correlationId,
+            subject: cert.subject,
+            issuer: cert.issuer,
+          }
+        );
 
         return {
           valid: false,
@@ -468,8 +498,8 @@ export class ConnectionSecurityManager {
       return true; // Allow all if no restrictions
     }
 
-    return this.config.allowedCiphers.some(allowed =>
-      cipherName.includes(allowed) || allowed.includes(cipherName),
+    return this.config.allowedCiphers.some(
+      (allowed) => cipherName.includes(allowed) || allowed.includes(cipherName)
     );
   }
 
@@ -506,7 +536,7 @@ export class ConnectionSecurityManager {
       return false;
     }
 
-    const isAllowed = this.config.allowedOrigins.some(allowed => {
+    const isAllowed = this.config.allowedOrigins.some((allowed) => {
       if (allowed === '*') {
         return true;
       }
@@ -556,7 +586,10 @@ export class ConnectionSecurityManager {
 
     // Get top suspicious IPs
     const ipEventCounts = [];
-    for (const [ip, events] of this.connectionTracker.securityEvents.entries()) {
+    for (const [
+      ip,
+      events,
+    ] of this.connectionTracker.securityEvents.entries()) {
       ipEventCounts.push({
         ip: this.hashIP(ip),
         eventCount: events.length,
@@ -579,7 +612,11 @@ export class ConnectionSecurityManager {
    * @returns {string} Hashed IP
    */
   hashIP(ip) {
-    return crypto.createHash('sha256').update(ip).digest('hex').substring(0, 16);
+    return crypto
+      .createHash('sha256')
+      .update(ip)
+      .digest('hex')
+      .substring(0, 16);
   }
 
   /**
@@ -605,7 +642,8 @@ export function createConnectionSecurityMiddleware(config = {}) {
 
   return (req, res, next) => {
     const ip = req.ip || req.connection.remoteAddress;
-    const correlationId = req.correlationId || securityManager.logger.generateCorrelationId();
+    const correlationId =
+      req.correlationId || securityManager.logger.generateCorrelationId();
 
     // Check if IP is blocked
     if (securityManager.connectionTracker.isBlocked(ip)) {
@@ -616,19 +654,23 @@ export function createConnectionSecurityMiddleware(config = {}) {
         userAgent: req.get('User-Agent'),
       });
 
-      return res.status(403).json(
-        ErrorResponseBuilder.createErrorResponse(
-          'IP_BLOCKED',
-          'Access denied due to security violations',
-          403,
-        ),
-      );
+      return res
+        .status(403)
+        .json(
+          ErrorResponseBuilder.createErrorResponse(
+            'IP_BLOCKED',
+            'Access denied due to security violations',
+            403
+          )
+        );
     }
 
     // Add security headers
-    Object.entries(securityManager.config.securityHeaders).forEach(([header, value]) => {
-      res.setHeader(header, value);
-    });
+    Object.entries(securityManager.config.securityHeaders).forEach(
+      ([header, value]) => {
+        res.setHeader(header, value);
+      }
+    );
 
     // Track connection
     securityManager.connectionTracker.trackConnection(ip, {
@@ -640,7 +682,10 @@ export function createConnectionSecurityMiddleware(config = {}) {
 
     // Validate TLS connection if available
     if (req.socket && req.socket.encrypted) {
-      const tlsValidation = securityManager.validateTLSConnection(req.socket, ip);
+      const tlsValidation = securityManager.validateTLSConnection(
+        req.socket,
+        ip
+      );
       if (!tlsValidation.valid) {
         securityManager.logger.logSecurity('tls_validation_failed', null, {
           correlationId,
@@ -649,13 +694,15 @@ export function createConnectionSecurityMiddleware(config = {}) {
           errorCode: tlsValidation.errorCode,
         });
 
-        return res.status(400).json(
-          ErrorResponseBuilder.createErrorResponse(
-            tlsValidation.errorCode,
-            tlsValidation.reason,
-            400,
-          ),
-        );
+        return res
+          .status(400)
+          .json(
+            ErrorResponseBuilder.createErrorResponse(
+              tlsValidation.errorCode,
+              tlsValidation.reason,
+              400
+            )
+          );
       }
     }
 
@@ -704,7 +751,10 @@ export function createWebSocketSecurityValidator(config = {}) {
 
     // Validate TLS connection
     if (info.req.socket.encrypted) {
-      const tlsValidation = securityManager.validateTLSConnection(info.req.socket, ip);
+      const tlsValidation = securityManager.validateTLSConnection(
+        info.req.socket,
+        ip
+      );
       if (!tlsValidation.valid) {
         return false;
       }

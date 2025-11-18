@@ -35,21 +35,23 @@ Authorization: Bearer <JWT_TOKEN>
       "transactionCount": 125,
       "averageTransactionValue": "30.81"
     },
-    "recentTransactions": [ /* last 10 transactions */ ]
+    "recentTransactions": [
+      /* last 10 transactions */
+    ]
   }
 }
 ```
 
 ## Key Metrics
 
-| Metric | Description | Calculation |
-|--------|-------------|-------------|
-| Total Users | Registered users (excluding deleted) | `COUNT(users WHERE deleted_at IS NULL)` |
-| Active Users | Users active in last 30 days | `COUNT(DISTINCT user_sessions WHERE last_activity >= NOW() - 30 days)` |
-| New Users | Registrations this month | `COUNT(users WHERE created_at >= current_month_start)` |
-| MRR | Monthly Recurring Revenue | `(Premium × $9.99) + (Enterprise × $29.99)` |
-| Current Month Revenue | Total revenue this month | `SUM(successful_transactions WHERE created_at >= current_month_start)` |
-| Conversion Rate | Paid subscription percentage | `(Paid Subscribers / Total Users) × 100` |
+| Metric                | Description                          | Calculation                                                            |
+| --------------------- | ------------------------------------ | ---------------------------------------------------------------------- |
+| Total Users           | Registered users (excluding deleted) | `COUNT(users WHERE deleted_at IS NULL)`                                |
+| Active Users          | Users active in last 30 days         | `COUNT(DISTINCT user_sessions WHERE last_activity >= NOW() - 30 days)` |
+| New Users             | Registrations this month             | `COUNT(users WHERE created_at >= current_month_start)`                 |
+| MRR                   | Monthly Recurring Revenue            | `(Premium × $9.99) + (Enterprise × $29.99)`                            |
+| Current Month Revenue | Total revenue this month             | `SUM(successful_transactions WHERE created_at >= current_month_start)` |
+| Conversion Rate       | Paid subscription percentage         | `(Paid Subscribers / Total Users) × 100`                               |
 
 ## Quick Test
 

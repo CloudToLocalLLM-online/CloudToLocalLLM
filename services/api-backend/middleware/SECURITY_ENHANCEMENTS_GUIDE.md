@@ -25,7 +25,10 @@ Comprehensive input sanitization to prevent injection attacks and XSS.
 #### Usage
 
 ```javascript
-import { sanitizeAdminInput, sanitizeAll } from './middleware/input-sanitizer.js';
+import {
+  sanitizeAdminInput,
+  sanitizeAll,
+} from './middleware/input-sanitizer.js';
 
 // Apply to all admin routes
 app.use('/api/admin', sanitizeAdminInput);
@@ -46,14 +49,18 @@ import {
   sanitizeUUID,
   sanitizeDate,
   sanitizeEnum,
-  sanitizeLikePattern
+  sanitizeLikePattern,
 } from './middleware/input-sanitizer.js';
 
 // Sanitize email
 const email = sanitizeEmail(req.body.email);
 
 // Sanitize number with constraints
-const amount = sanitizeNumber(req.body.amount, { min: 0, max: 10000, allowFloat: true });
+const amount = sanitizeNumber(req.body.amount, {
+  min: 0,
+  max: 10000,
+  allowFloat: true,
+});
 
 // Sanitize UUID
 const userId = sanitizeUUID(req.params.userId);
@@ -78,12 +85,14 @@ Secure CORS configuration with no wildcard origins.
 #### Allowed Origins
 
 **Production:**
+
 - `https://app.cloudtolocalllm.online`
 - `https://cloudtolocalllm.online`
 - `https://docs.cloudtolocalllm.online`
 - `https://admin.cloudtolocalllm.online`
 
 **Development:**
+
 - `http://localhost:3000`
 - `http://localhost:8080`
 - `http://localhost:5000`
@@ -94,7 +103,11 @@ Secure CORS configuration with no wildcard origins.
 #### Usage
 
 ```javascript
-import { standardCors, adminCors, webhookCors } from './middleware/cors-config.js';
+import {
+  standardCors,
+  adminCors,
+  webhookCors,
+} from './middleware/cors-config.js';
 
 // Standard CORS for public endpoints
 app.use('/api/public', standardCors);
@@ -139,7 +152,10 @@ HTTPS enforcement and security headers.
 #### Usage
 
 ```javascript
-import { httpsEnforcement, adminHttpsEnforcement } from './middleware/https-enforcer.js';
+import {
+  httpsEnforcement,
+  adminHttpsEnforcement,
+} from './middleware/https-enforcer.js';
 
 // Apply to all routes
 app.use(httpsEnforcement);
@@ -151,6 +167,7 @@ app.use('/api/admin', adminHttpsEnforcement);
 #### Cookie Security
 
 Cookies are automatically configured with:
+
 - `secure: true` (production only)
 - `httpOnly: true` (always)
 - `sameSite: 'strict'` (default)
@@ -170,8 +187,14 @@ res.cookie('session', token, {
 ```javascript
 import express from 'express';
 import { standardCors, adminCors } from './middleware/cors-config.js';
-import { httpsEnforcement, adminHttpsEnforcement } from './middleware/https-enforcer.js';
-import { sanitizeAll, sanitizeAdminInput } from './middleware/input-sanitizer.js';
+import {
+  httpsEnforcement,
+  adminHttpsEnforcement,
+} from './middleware/https-enforcer.js';
+import {
+  sanitizeAll,
+  sanitizeAdminInput,
+} from './middleware/input-sanitizer.js';
 
 const app = express();
 
@@ -192,7 +215,8 @@ app.use(express.urlencoded({ extended: true }));
 app.use(sanitizeAll);
 
 // 6. Admin routes with stricter security
-app.use('/api/admin',
+app.use(
+  '/api/admin',
   adminCors,
   adminHttpsEnforcement,
   sanitizeAdminInput,
@@ -249,7 +273,7 @@ const username = sanitizeString(req.body.username);
 
 // Sanitize before displaying
 res.json({
-  username: sanitizeString(user.username)
+  username: sanitizeString(user.username),
 });
 ```
 
@@ -285,7 +309,11 @@ app.post('/api/payment', requireHttps, paymentHandler);
 ### Testing Input Sanitization
 
 ```javascript
-import { sanitizeString, sanitizeEmail, sanitizeUUID } from './middleware/input-sanitizer.js';
+import {
+  sanitizeString,
+  sanitizeEmail,
+  sanitizeUUID,
+} from './middleware/input-sanitizer.js';
 
 describe('Input Sanitization', () => {
   test('sanitizes XSS attempts', () => {
@@ -318,17 +346,18 @@ describe('CORS Configuration', () => {
     const response = await request(app)
       .get('/api/health')
       .set('Origin', 'https://app.cloudtolocalllm.online');
-    
+
     expect(response.status).not.toBe(403);
-    expect(response.headers['access-control-allow-origin'])
-      .toBe('https://app.cloudtolocalllm.online');
+    expect(response.headers['access-control-allow-origin']).toBe(
+      'https://app.cloudtolocalllm.online'
+    );
   });
 
   test('blocks requests from unauthorized origins', async () => {
     const response = await request(app)
       .get('/api/health')
       .set('Origin', 'https://malicious.com');
-    
+
     expect(response.status).toBe(500); // CORS error
   });
 });
@@ -340,22 +369,22 @@ describe('CORS Configuration', () => {
 describe('HTTPS Enforcement', () => {
   test('redirects HTTP to HTTPS in production', async () => {
     process.env.NODE_ENV = 'production';
-    
+
     const response = await request(app)
       .get('/api/users')
       .set('X-Forwarded-Proto', 'http');
-    
+
     expect(response.status).toBe(301);
     expect(response.headers.location).toMatch(/^https:/);
   });
 
   test('sets HSTS header in production', async () => {
     process.env.NODE_ENV = 'production';
-    
+
     const response = await request(app)
       .get('/api/health')
       .set('X-Forwarded-Proto', 'https');
-    
+
     expect(response.headers['strict-transport-security']).toBeDefined();
   });
 });
@@ -391,7 +420,7 @@ function sanitizeAndLog(input, fieldName) {
   if (sanitized !== input) {
     logger.warn(`Potentially malicious input detected in ${fieldName}`, {
       original: input,
-      sanitized: sanitized
+      sanitized: sanitized,
     });
   }
   return sanitized;
@@ -416,7 +445,8 @@ function sanitizeAndLog(input, fieldName) {
 
 **Problem**: Requests blocked by CORS
 
-**Solution**: 
+**Solution**:
+
 1. Check if origin is in allowed list
 2. Add origin to `ADDITIONAL_CORS_ORIGINS` environment variable
 3. Verify credentials are being sent with request
@@ -426,6 +456,7 @@ function sanitizeAndLog(input, fieldName) {
 **Problem**: Infinite redirect loop
 
 **Solution**:
+
 1. Ensure `trust proxy` is set correctly
 2. Check `X-Forwarded-Proto` header from load balancer
 3. Verify nginx/load balancer is setting correct headers
@@ -435,6 +466,7 @@ function sanitizeAndLog(input, fieldName) {
 **Problem**: Valid input being rejected
 
 **Solution**:
+
 1. Check validation constraints (min/max for numbers)
 2. Verify UUID format is correct
 3. Use appropriate sanitizer for data type

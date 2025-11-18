@@ -1,6 +1,6 @@
 /**
  * Admin Authentication and Authorization Middleware
- * 
+ *
  * Provides role-based access control for admin endpoints with comprehensive
  * permission checking and database-backed role verification.
  */
@@ -55,16 +55,18 @@ export function checkPermissions(userRoles, requiredPermissions) {
   }
 
   // Get all permissions for user's roles
-  const userPermissions = userRoles.flatMap(role => ROLE_PERMISSIONS[role] || []);
+  const userPermissions = userRoles.flatMap(
+    (role) => ROLE_PERMISSIONS[role] || []
+  );
 
   // Check if user has all required permissions
-  return requiredPermissions.every(perm => userPermissions.includes(perm));
+  return requiredPermissions.every((perm) => userPermissions.includes(perm));
 }
 
 /**
  * Admin authentication middleware with role checking
  * Verifies JWT token and checks admin role from database
- * 
+ *
  * @param {Array<string>} requiredPermissions - Optional array of required permissions
  * @returns {Function} Express middleware function
  */
@@ -74,9 +76,9 @@ export function adminAuth(requiredPermissions = []) {
       // Verify JWT token
       const token = req.headers.authorization?.split(' ')[1];
       if (!token) {
-        return res.status(401).json({ 
+        return res.status(401).json({
           error: 'No token provided',
-          code: 'NO_TOKEN'
+          code: 'NO_TOKEN',
         });
       }
 
@@ -86,16 +88,18 @@ export function adminAuth(requiredPermissions = []) {
         // For Auth0 tokens, we just decode without verification since Auth0 SDK already verified it
         decoded = jwt.decode(token);
         if (!decoded) {
-          return res.status(401).json({ 
+          return res.status(401).json({
             error: 'Invalid token',
-            code: 'INVALID_TOKEN'
+            code: 'INVALID_TOKEN',
           });
         }
       } catch (error) {
-        logger.error('🔴 [AdminAuth] Token decode failed', { error: error.message });
-        return res.status(401).json({ 
+        logger.error('🔴 [AdminAuth] Token decode failed', {
+          error: error.message,
+        });
+        return res.status(401).json({
           error: 'Invalid token',
-          code: 'INVALID_TOKEN'
+          code: 'INVALID_TOKEN',
         });
       }
 
@@ -114,12 +118,12 @@ export function adminAuth(requiredPermissions = []) {
       );
 
       if (!userResult.rows[0]) {
-        logger.warn('⚠️ [AdminAuth] User not found', { 
-          auth0_id: decoded.sub 
+        logger.warn('⚠️ [AdminAuth] User not found', {
+          auth0_id: decoded.sub,
         });
-        return res.status(403).json({ 
+        return res.status(403).json({
           error: 'User not found',
-          code: 'USER_NOT_FOUND'
+          code: 'USER_NOT_FOUND',
         });
       }
 
@@ -133,10 +137,10 @@ export function adminAuth(requiredPermissions = []) {
           ipAddress: req.ip,
           userAgent: req.get('User-Agent'),
         });
-        return res.status(403).json({ 
+        return res.status(403).json({
           error: 'Admin access required',
           code: 'ADMIN_ACCESS_REQUIRED',
-          message: 'This operation requires administrative privileges'
+          message: 'This operation requires administrative privileges',
         });
       }
 
@@ -151,10 +155,10 @@ export function adminAuth(requiredPermissions = []) {
             required: requiredPermissions,
             ipAddress: req.ip,
           });
-          return res.status(403).json({ 
+          return res.status(403).json({
             error: 'Insufficient permissions',
             code: 'INSUFFICIENT_PERMISSIONS',
-            required: requiredPermissions
+            required: requiredPermissions,
           });
         }
       }
@@ -172,13 +176,13 @@ export function adminAuth(requiredPermissions = []) {
 
       next();
     } catch (error) {
-      logger.error('🔴 [AdminAuth] Authentication failed', { 
+      logger.error('🔴 [AdminAuth] Authentication failed', {
         error: error.message,
-        stack: error.stack
+        stack: error.stack,
       });
-      return res.status(500).json({ 
+      return res.status(500).json({
         error: 'Authentication failed',
-        code: 'AUTH_FAILED'
+        code: 'AUTH_FAILED',
       });
     }
   };
@@ -200,7 +204,7 @@ export function requireRole(role) {
       return res.status(403).json({
         error: 'Insufficient role',
         code: 'INSUFFICIENT_ROLE',
-        required: role
+        required: role,
       });
     }
     next();

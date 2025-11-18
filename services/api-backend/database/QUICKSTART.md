@@ -132,6 +132,7 @@ psql -h $PGHOST -U $PGUSER -d $PGDATABASE -c "\dt"
 ## Troubleshooting
 
 ### Connection Issues
+
 ```bash
 # Test connection
 psql -h $PGHOST -U $PGUSER -d $PGDATABASE -c "SELECT version();"
@@ -142,6 +143,7 @@ echo $PGHOST $PGPORT $PGDATABASE $PGUSER
 ```
 
 ### Migration Already Applied
+
 ```bash
 # Check status
 node database/migrations/run-migration.js status
@@ -152,6 +154,7 @@ node database/migrations/run-migration.js up 001
 ```
 
 ### Seed Data Already Exists
+
 ```bash
 # Clean and reapply
 node database/seeds/run-seed.js clean

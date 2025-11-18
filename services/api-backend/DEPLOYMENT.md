@@ -29,6 +29,7 @@ npm run db:setup-cloud-sql
 ```
 
 This will:
+
 - Create a PostgreSQL 15 instance named `cloudtolocalllm-db`
 - Create the `cloudtolocalllm` database
 - Create an `appuser` with a secure password
@@ -42,6 +43,7 @@ npm run deploy:cloud-run
 ```
 
 This will:
+
 - Build and push the container image
 - Deploy to Cloud Run with PostgreSQL environment variables
 - Configure Cloud SQL connection
@@ -96,6 +98,7 @@ cp .env.production.template .env.production
 ```
 
 Required environment variables:
+
 - `DB_TYPE=postgresql`
 - `DB_NAME=cloudtolocalllm`
 - `DB_USER=appuser`
@@ -191,17 +194,21 @@ gcloud logging read "resource.type=cloudsql_database"
 ### Common Issues
 
 1. **Database Connection Failed**
+
    ```
    Error: Failed to connect to PostgreSQL
    ```
+
    - Check Cloud SQL instance is running
    - Verify environment variables
    - Ensure service account has Cloud SQL Client role
 
 2. **Schema Validation Failed**
+
    ```
    Error: Database schema validation failed
    ```
+
    - Run `npm run db:test` to see specific table issues
    - Check migration logs in Cloud Run
 
@@ -209,18 +216,21 @@ gcloud logging read "resource.type=cloudsql_database"
    ```
    Error: Authentication service not available
    ```
+
    - Verify `AUTH0_DOMAIN` and `AUTH0_AUDIENCE` environment variables
    - Check Auth0 JWT validation configuration
 
 ### Service Account Permissions
 
 Ensure your Cloud Run service account has:
+
 - `roles/cloudsql.client` - For Cloud SQL access
 - Auth0 JWT validation (configured via environment variables)
 
 ### Performance Tuning
 
 For production workloads, consider:
+
 - Upgrading Cloud SQL tier (from `db-f1-micro`)
 - Adjusting connection pool settings
 - Enabling Cloud SQL Insights for monitoring

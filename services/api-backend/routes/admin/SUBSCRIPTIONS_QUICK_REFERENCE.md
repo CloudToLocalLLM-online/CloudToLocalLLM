@@ -2,28 +2,31 @@
 
 ## Endpoints Overview
 
-| Method | Endpoint | Permission | Description |
-|--------|----------|------------|-------------|
-| GET | `/api/admin/subscriptions` | view_subscriptions | List subscriptions with filtering |
-| GET | `/api/admin/subscriptions/:id` | view_subscriptions | Get subscription details |
-| PATCH | `/api/admin/subscriptions/:id` | edit_subscriptions | Update subscription tier |
-| POST | `/api/admin/subscriptions/:id/cancel` | edit_subscriptions | Cancel subscription |
+| Method | Endpoint                              | Permission         | Description                       |
+| ------ | ------------------------------------- | ------------------ | --------------------------------- |
+| GET    | `/api/admin/subscriptions`            | view_subscriptions | List subscriptions with filtering |
+| GET    | `/api/admin/subscriptions/:id`        | view_subscriptions | Get subscription details          |
+| PATCH  | `/api/admin/subscriptions/:id`        | edit_subscriptions | Update subscription tier          |
+| POST   | `/api/admin/subscriptions/:id/cancel` | edit_subscriptions | Cancel subscription               |
 
 ## Quick Examples
 
 ### List Subscriptions
+
 ```bash
 curl -X GET "https://api.cloudtolocalllm.online/api/admin/subscriptions?tier=premium&includeUpcoming=true" \
   -H "Authorization: Bearer <token>"
 ```
 
 ### Get Subscription Details
+
 ```bash
 curl -X GET "https://api.cloudtolocalllm.online/api/admin/subscriptions/{id}" \
   -H "Authorization: Bearer <token>"
 ```
 
 ### Update Subscription Tier
+
 ```bash
 curl -X PATCH "https://api.cloudtolocalllm.online/api/admin/subscriptions/{id}" \
   -H "Authorization: Bearer <token>" \
@@ -32,6 +35,7 @@ curl -X PATCH "https://api.cloudtolocalllm.online/api/admin/subscriptions/{id}" 
 ```
 
 ### Cancel Subscription (End of Period)
+
 ```bash
 curl -X POST "https://api.cloudtolocalllm.online/api/admin/subscriptions/{id}/cancel" \
   -H "Authorization: Bearer <token>" \
@@ -40,6 +44,7 @@ curl -X POST "https://api.cloudtolocalllm.online/api/admin/subscriptions/{id}/ca
 ```
 
 ### Cancel Subscription (Immediate)
+
 ```bash
 curl -X POST "https://api.cloudtolocalllm.online/api/admin/subscriptions/{id}/cancel" \
   -H "Authorization: Bearer <token>" \
@@ -50,6 +55,7 @@ curl -X POST "https://api.cloudtolocalllm.online/api/admin/subscriptions/{id}/ca
 ## Query Parameters
 
 ### List Subscriptions
+
 - `page` - Page number (default: 1)
 - `limit` - Items per page (default: 50, max: 200)
 - `tier` - Filter by tier (free, premium, enterprise)
@@ -62,6 +68,7 @@ curl -X POST "https://api.cloudtolocalllm.online/api/admin/subscriptions/{id}/ca
 ## Request Bodies
 
 ### Update Subscription
+
 ```json
 {
   "tier": "enterprise",
@@ -71,11 +78,13 @@ curl -X POST "https://api.cloudtolocalllm.online/api/admin/subscriptions/{id}/ca
 ```
 
 **Proration Behaviors:**
+
 - `create_prorations` - Create proration invoice items (default)
 - `none` - No proration, charge full amount at next billing
 - `always_invoice` - Always create an invoice immediately
 
 ### Cancel Subscription
+
 ```json
 {
   "immediate": false,
@@ -86,6 +95,7 @@ curl -X POST "https://api.cloudtolocalllm.online/api/admin/subscriptions/{id}/ca
 ## Response Formats
 
 ### List Response
+
 ```json
 {
   "success": true,
@@ -105,6 +115,7 @@ curl -X POST "https://api.cloudtolocalllm.online/api/admin/subscriptions/{id}/ca
 ```
 
 ### Details Response
+
 ```json
 {
   "success": true,
@@ -121,6 +132,7 @@ curl -X POST "https://api.cloudtolocalllm.online/api/admin/subscriptions/{id}/ca
 ```
 
 ### Update Response
+
 ```json
 {
   "success": true,
@@ -138,6 +150,7 @@ curl -X POST "https://api.cloudtolocalllm.online/api/admin/subscriptions/{id}/ca
 ```
 
 ### Cancel Response
+
 ```json
 {
   "success": true,
@@ -153,18 +166,18 @@ curl -X POST "https://api.cloudtolocalllm.online/api/admin/subscriptions/{id}/ca
 
 ## Error Codes
 
-| Code | Status | Description |
-|------|--------|-------------|
-| SUBSCRIPTION_LIST_FAILED | 500 | Failed to retrieve subscriptions |
-| SUBSCRIPTION_NOT_FOUND | 404 | Subscription not found |
-| SUBSCRIPTION_DETAILS_FAILED | 500 | Failed to retrieve details |
-| INVALID_REQUEST | 400 | Missing required fields |
-| INVALID_TIER | 400 | Invalid subscription tier |
-| SUBSCRIPTION_NOT_ACTIVE | 400 | Subscription not active/trialing |
-| SUBSCRIPTION_UPDATE_FAILED | 500 | Update operation failed |
-| SUBSCRIPTION_ALREADY_CANCELED | 400 | Already canceled |
-| SUBSCRIPTION_ALREADY_CANCELING | 400 | Already set to cancel |
-| SUBSCRIPTION_CANCEL_FAILED | 500 | Cancellation failed |
+| Code                           | Status | Description                      |
+| ------------------------------ | ------ | -------------------------------- |
+| SUBSCRIPTION_LIST_FAILED       | 500    | Failed to retrieve subscriptions |
+| SUBSCRIPTION_NOT_FOUND         | 404    | Subscription not found           |
+| SUBSCRIPTION_DETAILS_FAILED    | 500    | Failed to retrieve details       |
+| INVALID_REQUEST                | 400    | Missing required fields          |
+| INVALID_TIER                   | 400    | Invalid subscription tier        |
+| SUBSCRIPTION_NOT_ACTIVE        | 400    | Subscription not active/trialing |
+| SUBSCRIPTION_UPDATE_FAILED     | 500    | Update operation failed          |
+| SUBSCRIPTION_ALREADY_CANCELED  | 400    | Already canceled                 |
+| SUBSCRIPTION_ALREADY_CANCELING | 400    | Already set to cancel            |
+| SUBSCRIPTION_CANCEL_FAILED     | 500    | Cancellation failed              |
 
 ## Permissions
 

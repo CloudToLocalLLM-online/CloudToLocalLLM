@@ -6,7 +6,6 @@
 import { readFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
-import { createHash } from 'crypto';
 import pg from 'pg';
 import winston from 'winston';
 
@@ -20,13 +19,20 @@ export class AuthDatabaseMigratorPG {
     this.config = {
       host: process.env.AUTH_DB_HOST || config.host,
       port: parseInt(process.env.AUTH_DB_PORT || config.port || '5432', 10),
-      database: process.env.AUTH_DB_NAME || config.database || 'cloudtolocalllm_auth',
+      database:
+        process.env.AUTH_DB_NAME || config.database || 'cloudtolocalllm_auth',
       user: process.env.AUTH_DB_USER || config.user,
       password: process.env.AUTH_DB_PASSWORD || config.password,
-      ssl: process.env.AUTH_DB_SSL === 'true' ? { rejectUnauthorized: false } : undefined,
+      ssl:
+        process.env.AUTH_DB_SSL === 'true'
+          ? { rejectUnauthorized: false }
+          : undefined,
       max: parseInt(process.env.AUTH_DB_POOL_MAX || '5', 10), // Smaller pool for auth DB
       idleTimeoutMillis: parseInt(process.env.AUTH_DB_POOL_IDLE || '30000', 10),
-      connectionTimeoutMillis: parseInt(process.env.AUTH_DB_POOL_CONNECT_TIMEOUT || '30000', 10),
+      connectionTimeoutMillis: parseInt(
+        process.env.AUTH_DB_POOL_CONNECT_TIMEOUT || '30000',
+        10
+      ),
       ...config,
     };
 
@@ -44,7 +50,9 @@ export class AuthDatabaseMigratorPG {
       });
       return true;
     } catch (error) {
-      this.logger.error('Failed to connect to Auth PostgreSQL', { error: error.message });
+      this.logger.error('Failed to connect to Auth PostgreSQL', {
+        error: error.message,
+      });
       throw error;
     }
   }
@@ -72,9 +80,12 @@ export class AuthDatabaseMigratorPG {
             } catch (error) {
               // Ignore "already exists" errors for CREATE IF NOT EXISTS
               if (!error.message.includes('already exists')) {
-                this.logger.warn(`Auth migration statement warning: ${error.message}`, {
-                  statement: statement.substring(0, 100),
-                });
+                this.logger.warn(
+                  `Auth migration statement warning: ${error.message}`,
+                  {
+                    statement: statement.substring(0, 100),
+                  }
+                );
               }
             }
           }
@@ -85,7 +96,9 @@ export class AuthDatabaseMigratorPG {
         client.release();
       }
     } catch (error) {
-      this.logger.error('Auth database migration failed', { error: error.message });
+      this.logger.error('Auth database migration failed', {
+        error: error.message,
+      });
       throw error;
     }
   }
@@ -111,4 +124,3 @@ export class AuthDatabaseMigratorPG {
     this.logger.info('Auth PostgreSQL pool closed');
   }
 }
-

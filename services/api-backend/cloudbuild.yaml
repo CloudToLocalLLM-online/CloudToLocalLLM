@@ -4,7 +4,7 @@
 steps:
   # Build the container image
   - name: 'gcr.io/cloud-builders/docker'
-    args: 
+    args:
       - 'build'
       - '-t'
       - 'gcr.io/$PROJECT_ID/cloudtolocalllm-api:$COMMIT_SHA'
@@ -62,10 +62,10 @@ steps:
         # Get the service URL
         SERVICE_URL=$(gcloud run services describe cloudtolocalllm-api --region=us-central1 --format="value(status.url)")
         echo "Service deployed at: $SERVICE_URL"
-        
+
         # Wait for deployment to be ready
         sleep 30
-        
+
         # Test the health endpoint
         echo "Testing health endpoint..."
         curl -f "$SERVICE_URL/api/db/health" || exit 1

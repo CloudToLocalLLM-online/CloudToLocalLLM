@@ -2,12 +2,12 @@
 
 /**
  * Database Migration Runner
- * 
+ *
  * Usage:
  *   node run-migration.js up 001    - Apply migration 001
  *   node run-migration.js down 001  - Rollback migration 001
  *   node run-migration.js status    - Show migration status
- * 
+ *
  * Environment Variables:
  *   DATABASE_URL - PostgreSQL connection string
  *   PGHOST, PGPORT, PGDATABASE, PGUSER, PGPASSWORD - Individual connection params
@@ -61,7 +61,7 @@ async function applyMigration(version) {
       'SELECT * FROM schema_migrations WHERE version = $1 AND rolled_back_at IS NULL',
       [version]
     );
-    
+
     if (checkResult.rows.length > 0) {
       console.log(`⚠ Migration ${version} already applied`);
       return;
@@ -70,14 +70,14 @@ async function applyMigration(version) {
     // Read migration file - try to find the migration file with any name pattern
     let migrationPath;
     let migrationName = 'unknown';
-    
+
     // Try different naming patterns
     const patterns = [
       `${version}_admin_center_schema.sql`,
       `${version}_email_relay_dns_setup.sql`,
-      `${version}_*.sql`
+      `${version}_*.sql`,
     ];
-    
+
     // For now, construct the path based on version
     // Version 001 -> 001_admin_center_schema.sql
     // Version 002 -> 002_webhook_events_table.sql
@@ -96,24 +96,24 @@ async function applyMigration(version) {
       migrationPath = join(__dirname, `${version}_*.sql`);
       migrationName = 'migration';
     }
-    
+
     const migrationSQL = readFileSync(migrationPath, 'utf8');
 
     console.log(`Applying migration ${version}...`);
-    
+
     // Begin transaction
     await client.query('BEGIN');
-    
+
     try {
       // Execute migration
       await client.query(migrationSQL);
-      
+
       // Record migration
       await client.query(
         'INSERT INTO schema_migrations (version, name) VALUES ($1, $2)',
         [version, migrationName]
       );
-      
+
       // Commit transaction
       await client.query('COMMIT');
       console.log(`✓ Migration ${version} applied successfully`);
@@ -139,7 +139,7 @@ async function rollbackMigration(version) {
       'SELECT * FROM schema_migrations WHERE version = $1 AND rolled_back_at IS NULL',
       [version]
     );
-    
+
     if (checkResult.rows.length === 0) {
       console.log(`⚠ Migration ${version} not applied or already rolled back`);
       return;
@@ -147,36 +147,45 @@ async function rollbackMigration(version) {
 
     // Read rollback file - try to find the rollback file with any name pattern
     let rollbackPath;
-    
+
     // Construct the rollback path based on version
     if (version === '001') {
-      rollbackPath = join(__dirname, `${version}_admin_center_schema_rollback.sql`);
+      rollbackPath = join(
+        __dirname,
+        `${version}_admin_center_schema_rollback.sql`
+      );
     } else if (version === '002') {
-      rollbackPath = join(__dirname, `${version}_webhook_events_table_rollback.sql`);
+      rollbackPath = join(
+        __dirname,
+        `${version}_webhook_events_table_rollback.sql`
+      );
     } else if (version === '003') {
-      rollbackPath = join(__dirname, `${version}_email_relay_dns_setup_rollback.sql`);
+      rollbackPath = join(
+        __dirname,
+        `${version}_email_relay_dns_setup_rollback.sql`
+      );
     } else {
       // Generic pattern for future migrations
       rollbackPath = join(__dirname, `${version}_*_rollback.sql`);
     }
-    
+
     const rollbackSQL = readFileSync(rollbackPath, 'utf8');
 
     console.log(`Rolling back migration ${version}...`);
-    
+
     // Begin transaction
     await client.query('BEGIN');
-    
+
     try {
       // Execute rollback
       await client.query(rollbackSQL);
-      
+
       // Update migration record
       await client.query(
         'UPDATE schema_migrations SET rolled_back_at = NOW() WHERE version = $1',
         [version]
       );
-      
+
       // Commit transaction
       await client.query('COMMIT');
       console.log(`✓ Migration ${version} rolled back successfully`);
@@ -202,20 +211,22 @@ async function showStatus() {
       FROM schema_migrations
       ORDER BY applied_at DESC
     `);
-    
+
     console.log('\nMigration Status:');
     console.log('─'.repeat(80));
-    
+
     if (result.rows.length === 0) {
       console.log('No migrations applied yet');
     } else {
-      result.rows.forEach(row => {
+      result.rows.forEach((row) => {
         const status = row.rolled_back_at ? '✗ ROLLED BACK' : '✓ APPLIED';
         const date = row.rolled_back_at || row.applied_at;
-        console.log(`${status} | ${row.version} | ${row.name} | ${date.toISOString()}`);
+        console.log(
+          `${status} | ${row.version} | ${row.name} | ${date.toISOString()}`
+        );
       });
     }
-    
+
     console.log('─'.repeat(80));
   } finally {
     client.release();
@@ -224,13 +235,15 @@ async function showStatus() {
 
 // Main execution
 async function main() {
-  const [,, command, version] = process.argv;
+  const [, , command, version] = process.argv;
 
   if (!command) {
     console.log('Usage:');
     console.log('  node run-migration.js up <version>    - Apply migration');
     console.log('  node run-migration.js down <version>  - Rollback migration');
-    console.log('  node run-migration.js status          - Show migration status');
+    console.log(
+      '  node run-migration.js status          - Show migration status'
+    );
     process.exit(1);
   }
 
@@ -245,7 +258,7 @@ async function main() {
         }
         await applyMigration(version);
         break;
-      
+
       case 'down':
         if (!version) {
           console.error('Error: Version required for "down" command');
@@ -253,11 +266,11 @@ async function main() {
         }
         await rollbackMigration(version);
         break;
-      
+
       case 'status':
         await showStatus();
         break;
-      
+
       default:
         console.error(`Unknown command: ${command}`);
         process.exit(1);

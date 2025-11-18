@@ -19,6 +19,7 @@ The Admin Reports API provides financial and subscription reporting capabilities
 **Status:** ✅ COMPLETED
 
 **Implemented:**
+
 - ✅ Basic endpoint structure
 - ✅ Database connection pooling
 - ✅ Admin authentication middleware
@@ -32,6 +33,7 @@ The Admin Reports API provides financial and subscription reporting capabilities
 - ✅ Error handling with detailed messages
 
 **Features:**
+
 - Date range filtering with ISO 8601 format support
 - Optional tier-based revenue breakdown
 - Total revenue, transaction count, and average calculations
@@ -41,6 +43,7 @@ The Admin Reports API provides financial and subscription reporting capabilities
 - Detailed error messages for invalid inputs
 
 **Example Usage:**
+
 ```bash
 # Basic revenue report
 curl -X GET "https://api.cloudtolocalllm.online/api/admin/reports/revenue?startDate=2025-01-01&endDate=2025-01-31" \
@@ -52,27 +55,28 @@ curl -X GET "https://api.cloudtolocalllm.online/api/admin/reports/revenue?startD
 ```
 
 **Response Format:**
+
 ```json
 {
   "period": {
     "startDate": "2025-01-01T00:00:00.000Z",
     "endDate": "2025-01-31T23:59:59.999Z"
   },
-  "totalRevenue": 15420.50,
+  "totalRevenue": 15420.5,
   "transactionCount": 342,
   "averageTransactionValue": 45.09,
   "revenueByTier": [
     {
       "tier": "premium",
       "transactionCount": 200,
-      "totalRevenue": 10000.00,
-      "averageTransactionValue": 50.00
+      "totalRevenue": 10000.0,
+      "averageTransactionValue": 50.0
     },
     {
       "tier": "enterprise",
       "transactionCount": 100,
-      "totalRevenue": 5000.00,
-      "averageTransactionValue": 50.00
+      "totalRevenue": 5000.0,
+      "averageTransactionValue": 50.0
     }
   ]
 }
@@ -85,6 +89,7 @@ curl -X GET "https://api.cloudtolocalllm.online/api/admin/reports/revenue?startD
 **Status:** ✅ COMPLETED
 
 **Implemented:**
+
 - ✅ Basic endpoint structure
 - ✅ Database connection pooling
 - ✅ Admin authentication middleware
@@ -103,10 +108,11 @@ curl -X GET "https://api.cloudtolocalllm.online/api/admin/reports/revenue?startD
 - ✅ Error handling with detailed messages
 
 **Features:**
+
 - Date range filtering with ISO 8601 format support (defaults to last 30 days)
 - Optional tier-based subscription breakdown
 - MRR calculation based on last 30 days of successful transactions
-- Churn rate: (canceled subscriptions / subscriptions at start) * 100
+- Churn rate: (canceled subscriptions / subscriptions at start) \* 100
 - Retention rate: 100 - churn rate
 - Active, canceled, and new subscription counts
 - Subscriptions at period start and end
@@ -118,6 +124,7 @@ curl -X GET "https://api.cloudtolocalllm.online/api/admin/reports/revenue?startD
 - Detailed error messages for invalid inputs
 
 **Example Usage:**
+
 ```bash
 # Basic subscription metrics (last 30 days)
 curl -X GET "https://api.cloudtolocalllm.online/api/admin/reports/subscriptions" \
@@ -133,13 +140,14 @@ curl -X GET "https://api.cloudtolocalllm.online/api/admin/reports/subscriptions?
 ```
 
 **Response Format:**
+
 ```json
 {
   "period": {
     "startDate": "2025-01-01T00:00:00.000Z",
     "endDate": "2025-01-31T23:59:59.999Z"
   },
-  "monthlyRecurringRevenue": 25000.00,
+  "monthlyRecurringRevenue": 25000.0,
   "churnRate": 5.2,
   "retentionRate": 94.8,
   "activeSubscriptions": 500,
@@ -162,7 +170,7 @@ curl -X GET "https://api.cloudtolocalllm.online/api/admin/reports/subscriptions?
   "mrrByTier": [
     {
       "tier": "premium",
-      "monthlyRecurringRevenue": 14000.00
+      "monthlyRecurringRevenue": 14000.0
     }
   ]
 }
@@ -177,6 +185,7 @@ curl -X GET "https://api.cloudtolocalllm.online/api/admin/reports/subscriptions?
 **Status:** ✅ COMPLETED (CSV format, PDF placeholder)
 
 **Implemented:**
+
 - ✅ Basic endpoint structure
 - ✅ Database connection pooling
 - ✅ Admin authentication middleware
@@ -195,6 +204,7 @@ curl -X GET "https://api.cloudtolocalllm.online/api/admin/reports/subscriptions?
 - ✅ Error handling with detailed messages
 
 **Features:**
+
 - Three report types: revenue, subscriptions, transactions
 - CSV export with proper formatting and escaping
 - PDF export placeholder (returns CSV with note)
@@ -208,6 +218,7 @@ curl -X GET "https://api.cloudtolocalllm.online/api/admin/reports/subscriptions?
 - Detailed error messages for invalid inputs
 
 **Example Usage:**
+
 ```bash
 # Export revenue report as CSV
 curl -X GET "https://api.cloudtolocalllm.online/api/admin/reports/export?type=revenue&format=csv&startDate=2025-01-01&endDate=2025-01-31" \
@@ -228,18 +239,21 @@ curl -X GET "https://api.cloudtolocalllm.online/api/admin/reports/export?type=tr
 **CSV Format Examples:**
 
 **Revenue Report:**
+
 ```csv
 id,created_at,user_email,username,amount,currency,status,subscription_tier,payment_method_type,payment_method_last4
 uuid-1,2025-01-15T10:30:00Z,user@example.com,john_doe,50.00,USD,succeeded,premium,card,4242
 ```
 
 **Subscriptions Report:**
+
 ```csv
 id,created_at,user_email,username,tier,status,current_period_start,current_period_end,canceled_at,cancel_at_period_end
 uuid-1,2025-01-01T00:00:00Z,user@example.com,john_doe,premium,active,2025-01-01T00:00:00Z,2025-02-01T00:00:00Z,,false
 ```
 
 **Transactions Report:**
+
 ```csv
 id,created_at,user_email,username,amount,currency,status,payment_method_type,payment_method_last4,stripe_payment_intent_id,subscription_tier
 uuid-1,2025-01-15T10:30:00Z,user@example.com,john_doe,50.00,USD,succeeded,card,4242,pi_xxx,premium
@@ -250,6 +264,7 @@ uuid-1,2025-01-15T10:30:00Z,user@example.com,john_doe,50.00,USD,succeeded,card,4
 ### 📋 Future Enhancements for Export
 
 **Planned Improvements:**
+
 - PDF export format (currently returns CSV with note)
 - Additional export formats (Excel, JSON)
 - Scheduled exports
@@ -258,6 +273,7 @@ uuid-1,2025-01-15T10:30:00Z,user@example.com,john_doe,50.00,USD,succeeded,card,4
 ## Implementation Progress
 
 ### Phase 1: Revenue Report ✅ COMPLETED
+
 - [x] Create route file structure
 - [x] Set up database connection pooling
 - [x] Add admin authentication
@@ -271,6 +287,7 @@ uuid-1,2025-01-15T10:30:00Z,user@example.com,john_doe,50.00,USD,succeeded,card,4
 - [ ] Write tests (optional)
 
 ### Phase 2: Subscription Metrics ✅ COMPLETED
+
 - [x] Design metrics calculations
 - [x] Implement MRR calculation
 - [x] Implement churn rate calculation
@@ -284,6 +301,7 @@ uuid-1,2025-01-15T10:30:00Z,user@example.com,john_doe,50.00,USD,succeeded,card,4
 - [ ] Write tests (optional)
 
 ### Phase 3: Export Functionality ✅ COMPLETED (CSV)
+
 - [x] Design export format
 - [x] Implement CSV export
 - [x] Add report type selection (revenue, subscriptions, transactions)
@@ -302,8 +320,9 @@ uuid-1,2025-01-15T10:30:00Z,user@example.com,john_doe,50.00,USD,succeeded,card,4
 ### Database Queries
 
 **Revenue Report Query (Implemented):**
+
 ```sql
-SELECT 
+SELECT
   COUNT(*) as transaction_count,
   COALESCE(SUM(amount), 0) as total_revenue,
   COALESCE(AVG(amount), 0) as average_transaction_value
@@ -314,8 +333,9 @@ WHERE status = 'succeeded'
 ```
 
 **Revenue by Tier Query (Implemented):**
+
 ```sql
-SELECT 
+SELECT
   COALESCE(s.tier, 'unknown') as tier,
   COUNT(pt.id) as transaction_count,
   COALESCE(SUM(pt.amount), 0) as total_revenue,
@@ -331,14 +351,16 @@ ORDER BY total_revenue DESC
 
 **Subscription Metrics Queries (Implemented):**
 
-*Active Subscriptions:*
+_Active Subscriptions:_
+
 ```sql
 SELECT COUNT(*) as count
 FROM subscriptions
 WHERE status = 'active'
 ```
 
-*Subscriptions at Period Start:*
+_Subscriptions at Period Start:_
+
 ```sql
 SELECT COUNT(*) as count
 FROM subscriptions
@@ -346,7 +368,8 @@ WHERE created_at < $1
   AND (canceled_at IS NULL OR canceled_at >= $1)
 ```
 
-*New Subscriptions in Period:*
+_New Subscriptions in Period:_
+
 ```sql
 SELECT COUNT(*) as count
 FROM subscriptions
@@ -354,7 +377,8 @@ WHERE created_at >= $1
   AND created_at <= $2
 ```
 
-*Canceled Subscriptions in Period:*
+_Canceled Subscriptions in Period:_
+
 ```sql
 SELECT COUNT(*) as count
 FROM subscriptions
@@ -362,9 +386,10 @@ WHERE canceled_at >= $1
   AND canceled_at <= $2
 ```
 
-*MRR Calculation:*
+_MRR Calculation:_
+
 ```sql
-SELECT 
+SELECT
   COALESCE(SUM(amount), 0) as total_revenue,
   COUNT(DISTINCT user_id) as paying_users
 FROM payment_transactions
@@ -372,9 +397,10 @@ WHERE status = 'succeeded'
   AND created_at >= NOW() - INTERVAL '30 days'
 ```
 
-*Subscriptions by Tier:*
+_Subscriptions by Tier:_
+
 ```sql
-SELECT 
+SELECT
   tier,
   COUNT(*) as total_count,
   SUM(CASE WHEN status = 'active' THEN 1 ELSE 0 END) as active_count,
@@ -385,9 +411,10 @@ GROUP BY tier
 ORDER BY tier
 ```
 
-*MRR by Tier:*
+_MRR by Tier:_
+
 ```sql
-SELECT 
+SELECT
   COALESCE(s.tier, 'unknown') as tier,
   COALESCE(SUM(pt.amount), 0) as revenue
 FROM payment_transactions pt
@@ -401,6 +428,7 @@ ORDER BY revenue DESC
 ### Validation Rules (Implemented)
 
 **Revenue Report Validation:**
+
 - Both startDate and endDate required
 - Dates must be in ISO 8601 format
 - startDate must be <= endDate
@@ -408,22 +436,26 @@ ORDER BY revenue DESC
 - Proper error messages for each validation failure
 
 **Revenue Report Query Parameters:**
+
 - `startDate`: Required, ISO 8601 format
 - `endDate`: Required, ISO 8601 format
 - `groupBy`: Optional, boolean (default: false)
 
 **Subscription Metrics Validation:**
+
 - Dates must be in ISO 8601 format (if provided)
 - startDate must be <= endDate
 - Defaults to last 30 days if not provided
 - Proper error messages for each validation failure
 
 **Subscription Metrics Query Parameters:**
+
 - `startDate`: Optional, ISO 8601 format (defaults to 30 days ago)
 - `endDate`: Optional, ISO 8601 format (defaults to now)
 - `groupBy`: Optional, boolean (default: true)
 
 **Export Validation:**
+
 - All parameters required (type, format, startDate, endDate)
 - Report type must be: revenue, subscriptions, or transactions
 - Format must be: csv or pdf
@@ -432,6 +464,7 @@ ORDER BY revenue DESC
 - Proper error messages for each validation failure
 
 **Export Query Parameters:**
+
 - `type`: Required, one of: revenue, subscriptions, transactions
 - `format`: Required, one of: csv, pdf
 - `startDate`: Required, ISO 8601 format
@@ -440,27 +473,29 @@ ORDER BY revenue DESC
 ### Response Format (Implemented)
 
 **Revenue Report Response:**
+
 ```json
 {
   "period": {
     "startDate": "2025-01-01T00:00:00.000Z",
     "endDate": "2025-01-31T23:59:59.999Z"
   },
-  "totalRevenue": 15420.50,
+  "totalRevenue": 15420.5,
   "transactionCount": 342,
   "averageTransactionValue": 45.09,
   "revenueByTier": [
     {
       "tier": "premium",
       "transactionCount": 200,
-      "totalRevenue": 10000.00,
-      "averageTransactionValue": 50.00
+      "totalRevenue": 10000.0,
+      "averageTransactionValue": 50.0
     }
   ]
 }
 ```
 
 **Error Response Format:**
+
 ```json
 {
   "error": "Missing required parameters",
@@ -472,11 +507,13 @@ ORDER BY revenue DESC
 ## Security Considerations
 
 ### Authentication & Authorization (Implemented)
+
 - All endpoints require valid JWT token
 - Role-based permission checking (`view_reports`)
 - Audit logging for all report operations
 
 ### Input Validation (Implemented)
+
 - Date format validation (ISO 8601)
 - Date range validation (max 1 year)
 - SQL injection prevention via parameterized queries
@@ -484,6 +521,7 @@ ORDER BY revenue DESC
 - Comprehensive error handling
 
 ### Data Protection
+
 - User data included in reports (emails, usernames)
 - Exports should be handled securely
 - Audit trail for all export operations
@@ -491,6 +529,7 @@ ORDER BY revenue DESC
 ## Testing Strategy
 
 ### Unit Tests (Pending)
+
 - Query parameter validation
 - Date range validation
 - Revenue calculation logic
@@ -498,12 +537,14 @@ ORDER BY revenue DESC
 - Error handling
 
 ### Integration Tests (Pending)
+
 - End-to-end report generation
 - Database query execution
 - Audit log creation
 - Permission checking
 
 ### Performance Tests (Pending)
+
 - Large date range queries
 - High transaction volume
 - Concurrent report requests
@@ -511,12 +552,14 @@ ORDER BY revenue DESC
 ## Documentation
 
 ### API Documentation (Completed)
+
 - ✅ Full API reference: `REPORTS_API.md`
 - ✅ Quick reference: `REPORTS_QUICK_REFERENCE.md`
 - ✅ Integration examples
 - ✅ Error handling documentation
 
 ### Code Documentation (Completed)
+
 - ✅ Inline comments for complex logic
 - ✅ JSDoc comments for functions
 - ✅ README updates
@@ -524,6 +567,7 @@ ORDER BY revenue DESC
 ## Timeline
 
 ### Week 1 ✅ COMPLETED
+
 - ✅ Set up route structure
 - ✅ Add authentication
 - ✅ Implement revenue report endpoint
@@ -531,6 +575,7 @@ ORDER BY revenue DESC
 - ✅ Complete documentation
 
 ### Week 2 ✅ COMPLETED
+
 - ✅ Add subscription metrics endpoint
 - ✅ Implement MRR, churn, and retention calculations
 - ✅ Add tier-based breakdown
@@ -539,6 +584,7 @@ ORDER BY revenue DESC
 - ✅ Complete documentation
 
 ### Week 3 (Optional)
+
 - Write unit tests (optional task)
 - Add integration tests (optional task)
 - Performance testing (optional task)
@@ -584,6 +630,7 @@ None - All three endpoints fully implemented and tested manually.
 ## Support
 
 For questions or issues:
+
 - Review API documentation
 - Check audit logs for errors
 - Contact development team

@@ -71,18 +71,28 @@ export class TunnelLogger {
         winston.format.timestamp(),
         winston.format.errors({ stack: true }),
         winston.format.json(),
-        winston.format.printf(({ timestamp, level, message, service, correlationId, userId, ...meta }) => {
-          const logEntry = {
+        winston.format.printf(
+          ({
             timestamp,
             level,
-            service,
             message,
-            ...(correlationId && { correlationId }),
-            ...(userId && { userId: this.hashUserId(userId) }),
-            ...meta,
-          };
-          return JSON.stringify(logEntry);
-        }),
+            service,
+            correlationId,
+            userId,
+            ...meta
+          }) => {
+            const logEntry = {
+              timestamp,
+              level,
+              service,
+              message,
+              ...(correlationId && { correlationId }),
+              ...(userId && { userId: this.hashUserId(userId) }),
+              ...meta,
+            };
+            return JSON.stringify(logEntry);
+          }
+        )
       ),
       defaultMeta: { service: this.service },
       transports: [
@@ -90,11 +100,17 @@ export class TunnelLogger {
           format: winston.format.combine(
             winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
             winston.format.colorize(),
-            winston.format.printf(({ timestamp, level, message, correlationId, userId }) => {
-              const correlationStr = correlationId ? ` [${correlationId}]` : '';
-              const userStr = userId ? ` [user:${userId.substring(0, 8)}...]` : '';
-              return `${timestamp} ${level}:${correlationStr}${userStr} ${message}`;
-            }),
+            winston.format.printf(
+              ({ timestamp, level, message, correlationId, userId }) => {
+                const correlationStr = correlationId
+                  ? ` [${correlationId}]`
+                  : '';
+                const userStr = userId
+                  ? ` [user:${userId.substring(0, 8)}...]`
+                  : '';
+                return `${timestamp} ${level}:${correlationStr}${userStr} ${message}`;
+              }
+            )
           ),
         }),
       ],
@@ -293,11 +309,14 @@ export class ErrorResponseBuilder {
    * @param {string} errorCode - Specific error code
    * @returns {Object} Error response
    */
-  static authenticationError(message = 'Authentication required', errorCode = ERROR_CODES.AUTH_TOKEN_MISSING) {
+  static authenticationError(
+    message = 'Authentication required',
+    errorCode = ERROR_CODES.AUTH_TOKEN_MISSING
+  ) {
     return this.createErrorResponse(
       errorCode,
       message,
-      HTTP_STATUS_CODES.UNAUTHORIZED,
+      HTTP_STATUS_CODES.UNAUTHORIZED
     );
   }
 
@@ -307,11 +326,14 @@ export class ErrorResponseBuilder {
    * @param {string} errorCode - Specific error code
    * @returns {Object} Error response
    */
-  static serviceUnavailableError(message = 'Service temporarily unavailable', errorCode = ERROR_CODES.DESKTOP_CLIENT_DISCONNECTED) {
+  static serviceUnavailableError(
+    message = 'Service temporarily unavailable',
+    errorCode = ERROR_CODES.DESKTOP_CLIENT_DISCONNECTED
+  ) {
     return this.createErrorResponse(
       errorCode,
       message,
-      HTTP_STATUS_CODES.SERVICE_UNAVAILABLE,
+      HTTP_STATUS_CODES.SERVICE_UNAVAILABLE
     );
   }
 
@@ -321,11 +343,14 @@ export class ErrorResponseBuilder {
    * @param {string} errorCode - Specific error code
    * @returns {Object} Error response
    */
-  static gatewayTimeoutError(message = 'Request timed out', errorCode = ERROR_CODES.REQUEST_TIMEOUT) {
+  static gatewayTimeoutError(
+    message = 'Request timed out',
+    errorCode = ERROR_CODES.REQUEST_TIMEOUT
+  ) {
     return this.createErrorResponse(
       errorCode,
       message,
-      HTTP_STATUS_CODES.GATEWAY_TIMEOUT,
+      HTTP_STATUS_CODES.GATEWAY_TIMEOUT
     );
   }
 
@@ -335,11 +360,14 @@ export class ErrorResponseBuilder {
    * @param {string} errorCode - Specific error code
    * @returns {Object} Error response
    */
-  static badRequestError(message = 'Invalid request format', errorCode = ERROR_CODES.INVALID_REQUEST_FORMAT) {
+  static badRequestError(
+    message = 'Invalid request format',
+    errorCode = ERROR_CODES.INVALID_REQUEST_FORMAT
+  ) {
     return this.createErrorResponse(
       errorCode,
       message,
-      HTTP_STATUS_CODES.BAD_REQUEST,
+      HTTP_STATUS_CODES.BAD_REQUEST
     );
   }
 
@@ -349,11 +377,14 @@ export class ErrorResponseBuilder {
    * @param {string} errorCode - Specific error code
    * @returns {Object} Error response
    */
-  static internalServerError(message = 'Internal server error', errorCode = ERROR_CODES.INTERNAL_SERVER_ERROR) {
+  static internalServerError(
+    message = 'Internal server error',
+    errorCode = ERROR_CODES.INTERNAL_SERVER_ERROR
+  ) {
     return this.createErrorResponse(
       errorCode,
       message,
-      HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR,
+      HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR
     );
   }
 }

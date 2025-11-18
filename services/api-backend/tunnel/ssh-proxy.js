@@ -63,11 +63,14 @@ export class SSHProxy {
       const port = this.config.sshPort || 2222; // Use SSH default port range
 
       // Create SSH server
-      this.sshServer = new SSHServer({
-        hostKeys: [], // We'll handle auth via JWT, not host keys
-      }, (client) => {
-        this._handleSSHClient(client);
-      });
+      this.sshServer = new SSHServer(
+        {
+          hostKeys: [], // We'll handle auth via JWT, not host keys
+        },
+        (client) => {
+          this._handleSSHClient(client);
+        }
+      );
 
       // Start SSH server
       await new Promise((resolve, reject) => {
@@ -127,7 +130,7 @@ export class SSHProxy {
         if (ctx.method !== 'password') {
           this.logger.debug('SSH auth method not supported', {
             method: ctx.method,
-            username: ctx.username
+            username: ctx.username,
           });
           return ctx.reject(['password']);
         }
@@ -144,7 +147,7 @@ export class SSHProxy {
 
         if (!decoded) {
           this.logger.warn('SSH auth invalid JWT token', {
-            username: ctx.username
+            username: ctx.username,
           });
           return ctx.reject(['password']);
         }
@@ -155,15 +158,14 @@ export class SSHProxy {
 
         this.logger.info('SSH authentication successful', {
           userId,
-          username: ctx.username
+          username: ctx.username,
         });
 
         ctx.accept();
-
       } catch (error) {
         this.logger.error('SSH authentication error', {
           error: error.message,
-          username: ctx.username
+          username: ctx.username,
         });
         ctx.reject(['password']);
       }
@@ -210,7 +212,7 @@ export class SSHProxy {
     client.on('error', (error) => {
       this.logger.error('SSH client error', {
         error: error.message,
-        userId
+        userId,
       });
       if (userId) {
         this._cleanupConnection(userId);
@@ -262,11 +264,10 @@ export class SSHProxy {
       stream.on('data', (data) => {
         this._handleSSHData(userId, data);
       });
-
     } catch (error) {
       this.logger.error('TCP forward error', {
         error: error.message,
-        userId
+        userId,
       });
       reject();
     }
@@ -301,12 +302,14 @@ export class SSHProxy {
         this.logger.debug('TCP connection closed', { userId });
       });
 
-      this.logger.debug('TCP connection established', { userId, destPort: info.destPort });
-
+      this.logger.debug('TCP connection established', {
+        userId,
+        destPort: info.destPort,
+      });
     } catch (error) {
       this.logger.error('TCP connection error', {
         error: error.message,
-        userId
+        userId,
       });
       reject();
     }
@@ -330,32 +333,30 @@ export class SSHProxy {
 
         // Process the HTTP request
         this._processHTTPTunnelRequest(userId, httpRequest)
-          .then(response => {
+          .then((response) => {
             // Send response back through SSH
             if (connection.sshStream) {
               const responseData = JSON.stringify(response);
               connection.sshStream.write(Buffer.from(responseData));
             }
           })
-          .catch(error => {
+          .catch((error) => {
             this.logger.error('HTTP tunnel request error', {
               userId,
-              error: error.message
+              error: error.message,
             });
           });
-
       } catch (parseError) {
         // Not JSON, might be raw data - log for debugging
         this.logger.debug('Received non-JSON data through SSH tunnel', {
           userId,
-          length: data.length
+          length: data.length,
         });
       }
-
     } catch (error) {
       this.logger.error('Error handling SSH data', {
         userId,
-        error: error.message
+        error: error.message,
       });
     }
   }
@@ -374,7 +375,7 @@ export class SSHProxy {
       this.metrics.totalRequests++;
 
       // Simulate processing time
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
 
       this.metrics.successfulRequests++;
 
@@ -388,17 +389,17 @@ export class SSHProxy {
         body: JSON.stringify({
           message: {
             role: 'assistant',
-            content: 'Hello! This response is coming through the SSH tunnel. The tunneling system is working correctly!',
+            content:
+              'Hello! This response is coming through the SSH tunnel. The tunneling system is working correctly!',
           },
           done: true,
         }),
       };
-
     } catch (error) {
       this.metrics.failedRequests++;
       this.logger.error('HTTP tunnel request processing error', {
         userId,
-        error: error.message
+        error: error.message,
       });
 
       return {
@@ -407,7 +408,7 @@ export class SSHProxy {
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({
           error: 'Internal server error',
-          message: error.message
+          message: error.message,
         }),
       };
     }
@@ -422,7 +423,11 @@ export class SSHProxy {
     const basePort = 9000; // Start from 9000
     let port = basePort;
 
-    while (Array.from(this.userConnections.values()).some(conn => conn.port === port)) {
+    while (
+      Array.from(this.userConnections.values()).some(
+        (conn) => conn.port === port
+      )
+    ) {
       port++;
     }
 
@@ -440,10 +445,13 @@ export class SSHProxy {
     }
 
     // Set new timeout (5 minutes)
-    const timeout = setTimeout(() => {
-      this.logger.info('Connection timeout, cleaning up', { userId });
-      this._cleanupConnection(userId);
-    }, 5 * 60 * 1000);
+    const timeout = setTimeout(
+      () => {
+        this.logger.info('Connection timeout, cleaning up', { userId });
+        this._cleanupConnection(userId);
+      },
+      5 * 60 * 1000
+    );
 
     this.connectionTimeouts.set(userId, timeout);
   }

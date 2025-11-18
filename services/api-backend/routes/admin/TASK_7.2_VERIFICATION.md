@@ -18,6 +18,7 @@ Task 7.2 from `.kiro/specs/admin-center/tasks.md` has been successfully implemen
 ## Implementation Details
 
 ### Endpoint
+
 **URL:** `GET /api/admin/reports/subscriptions`
 
 **Location:** `services/api-backend/routes/admin/reports.js` (lines 200-400+)
@@ -30,7 +31,7 @@ Task 7.2 from `.kiro/specs/admin-center/tasks.md` has been successfully implemen
    - Query: Sums amounts from `payment_transactions` where status='succeeded' and created_at >= NOW() - 30 days
 
 2. **Churn Rate Calculation** ✅
-   - Formula: (canceled subscriptions / subscriptions at period start) * 100
+   - Formula: (canceled subscriptions / subscriptions at period start) \* 100
    - Tracks subscriptions canceled during the specified period
    - Returns percentage with 2 decimal precision
 
@@ -77,7 +78,7 @@ Task 7.2 from `.kiro/specs/admin-center/tasks.md` has been successfully implemen
     "startDate": "2025-01-01T00:00:00.000Z",
     "endDate": "2025-01-31T23:59:59.999Z"
   },
-  "monthlyRecurringRevenue": 25000.00,
+  "monthlyRecurringRevenue": 25000.0,
   "churnRate": 5.2,
   "retentionRate": 94.8,
   "activeSubscriptions": 500,
@@ -114,15 +115,15 @@ Task 7.2 from `.kiro/specs/admin-center/tasks.md` has been successfully implemen
   "mrrByTier": [
     {
       "tier": "premium",
-      "monthlyRecurringRevenue": 14000.00
+      "monthlyRecurringRevenue": 14000.0
     },
     {
       "tier": "enterprise",
-      "monthlyRecurringRevenue": 10500.00
+      "monthlyRecurringRevenue": 10500.0
     },
     {
       "tier": "free",
-      "monthlyRecurringRevenue": 500.00
+      "monthlyRecurringRevenue": 500.0
     }
   ]
 }
@@ -131,6 +132,7 @@ Task 7.2 from `.kiro/specs/admin-center/tasks.md` has been successfully implemen
 ## Database Queries
 
 ### Active Subscriptions Count
+
 ```sql
 SELECT COUNT(*) as count
 FROM subscriptions
@@ -138,6 +140,7 @@ WHERE status = 'active'
 ```
 
 ### Subscriptions at Period Start
+
 ```sql
 SELECT COUNT(*) as count
 FROM subscriptions
@@ -146,6 +149,7 @@ WHERE created_at < $1
 ```
 
 ### New Subscriptions in Period
+
 ```sql
 SELECT COUNT(*) as count
 FROM subscriptions
@@ -154,6 +158,7 @@ WHERE created_at >= $1
 ```
 
 ### Canceled Subscriptions in Period
+
 ```sql
 SELECT COUNT(*) as count
 FROM subscriptions
@@ -162,8 +167,9 @@ WHERE canceled_at >= $1
 ```
 
 ### MRR Calculation
+
 ```sql
-SELECT 
+SELECT
   COALESCE(SUM(amount), 0) as total_revenue,
   COUNT(DISTINCT user_id) as paying_users
 FROM payment_transactions
@@ -172,8 +178,9 @@ WHERE status = 'succeeded'
 ```
 
 ### Subscriptions by Tier
+
 ```sql
-SELECT 
+SELECT
   tier,
   COUNT(*) as total_count,
   SUM(CASE WHEN status = 'active' THEN 1 ELSE 0 END) as active_count,
@@ -185,8 +192,9 @@ ORDER BY tier
 ```
 
 ### MRR by Tier
+
 ```sql
-SELECT 
+SELECT
   COALESCE(s.tier, 'unknown') as tier,
   COALESCE(SUM(pt.amount), 0) as revenue
 FROM payment_transactions pt
@@ -200,6 +208,7 @@ ORDER BY revenue DESC
 ## Error Handling
 
 ### Invalid Date Format
+
 ```json
 {
   "error": "Invalid date format",
@@ -208,6 +217,7 @@ ORDER BY revenue DESC
 ```
 
 ### Invalid Date Range
+
 ```json
 {
   "error": "Invalid date range",
@@ -216,6 +226,7 @@ ORDER BY revenue DESC
 ```
 
 ### Insufficient Permissions
+
 ```json
 {
   "error": "Insufficient permissions",
@@ -226,6 +237,7 @@ ORDER BY revenue DESC
 ## Testing
 
 ### Manual Testing
+
 ```bash
 # Test with default date range (last 30 days)
 curl -X GET "http://localhost:3001/api/admin/reports/subscriptions" \
@@ -241,6 +253,7 @@ curl -X GET "http://localhost:3001/api/admin/reports/subscriptions?groupBy=false
 ```
 
 ### Expected Behavior
+
 1. Returns 401 if no JWT token provided
 2. Returns 403 if user doesn't have admin role or view_reports permission
 3. Returns 400 if date format is invalid

@@ -1,13 +1,13 @@
 /**
  * Admin Center Prometheus Metrics
- * 
+ *
  * Collects metrics for Admin Center API endpoints including:
  * - API request count and response times
  * - Payment success/failure rates
  * - Refund processing times
  * - Database query performance
  * - Stripe API interaction metrics
- * 
+ *
  * Requirements: Task 31.2, Requirement 12
  */
 
@@ -288,7 +288,14 @@ export function initializeAdminMetrics() {
   }
 
   // Initialize refund metrics
-  const refundReasons = ['customer_request', 'billing_error', 'service_issue', 'duplicate', 'fraudulent', 'other'];
+  const refundReasons = [
+    'customer_request',
+    'billing_error',
+    'service_issue',
+    'duplicate',
+    'fraudulent',
+    'other',
+  ];
   for (const status of paymentStatuses) {
     for (const reason of refundReasons) {
       adminRefundAttemptsTotal.labels(status, reason).inc(0);
@@ -436,7 +443,11 @@ export function trackAuthAttempt(result, reason = '') {
 /**
  * Update database pool metrics
  */
-export function updateDbPoolMetrics(poolSize, idleConnections, waitingRequests) {
+export function updateDbPoolMetrics(
+  poolSize,
+  idleConnections,
+  waitingRequests
+) {
   adminDbPoolSize.set(poolSize);
   adminDbPoolIdleConnections.set(idleConnections);
   adminDbPoolWaitingRequests.set(waitingRequests);

@@ -21,27 +21,27 @@ Authorization: Bearer <jwt_token>
 
 ### Roles
 
-- **Super Admin**: All permissions (*)
+- **Super Admin**: All permissions (\*)
 - **Support Admin**: view_users, edit_users, suspend_users, view_sessions, terminate_sessions, view_payments, view_audit_logs
 - **Finance Admin**: view_users, view_payments, process_refunds, view_subscriptions, edit_subscriptions, view_reports, export_reports, view_audit_logs
 
 ### Permission Mapping
 
-| Permission | Super Admin | Support Admin | Finance Admin |
-|------------|-------------|---------------|---------------|
-| view_users | ✅ | ✅ | ✅ |
-| edit_users | ✅ | ✅ | ❌ |
-| suspend_users | ✅ | ✅ | ❌ |
-| view_sessions | ✅ | ✅ | ❌ |
-| terminate_sessions | ✅ | ✅ | ❌ |
-| view_payments | ✅ | ✅ | ✅ |
-| process_refunds | ✅ | ❌ | ✅ |
-| view_subscriptions | ✅ | ❌ | ✅ |
-| edit_subscriptions | ✅ | ❌ | ✅ |
-| view_reports | ✅ | ❌ | ✅ |
-| export_reports | ✅ | ❌ | ✅ |
-| view_audit_logs | ✅ | ✅ | ✅ |
-| export_audit_logs | ✅ | ❌ | ❌ |
+| Permission         | Super Admin | Support Admin | Finance Admin |
+| ------------------ | ----------- | ------------- | ------------- |
+| view_users         | ✅          | ✅            | ✅            |
+| edit_users         | ✅          | ✅            | ❌            |
+| suspend_users      | ✅          | ✅            | ❌            |
+| view_sessions      | ✅          | ✅            | ❌            |
+| terminate_sessions | ✅          | ✅            | ❌            |
+| view_payments      | ✅          | ✅            | ✅            |
+| process_refunds    | ✅          | ❌            | ✅            |
+| view_subscriptions | ✅          | ❌            | ✅            |
+| edit_subscriptions | ✅          | ❌            | ✅            |
+| view_reports       | ✅          | ❌            | ✅            |
+| export_reports     | ✅          | ❌            | ✅            |
+| view_audit_logs    | ✅          | ✅            | ✅            |
+| export_audit_logs  | ✅          | ❌            | ❌            |
 
 ---
 
@@ -108,22 +108,26 @@ Content-Type: application/json
 ## Subscription Management
 
 ### List Subscriptions
+
 ```bash
 GET /api/admin/subscriptions?tier=premium&includeUpcoming=true
 ```
 
 ### Get Subscription Details
+
 ```bash
 GET /api/admin/subscriptions/{id}
 ```
 
 ### Update Subscription Tier
+
 ```bash
 PATCH /api/admin/subscriptions/{id}
 Body: {"tier": "enterprise", "priceId": "price_xxx"}
 ```
 
 ### Cancel Subscription
+
 ```bash
 POST /api/admin/subscriptions/{id}/cancel
 Body: {"immediate": false, "reason": "Customer request"}
@@ -140,6 +144,7 @@ GET /api/admin/payments/transactions?page=1&limit=100&status=succeeded&sortBy=am
 **Permission:** `view_payments`
 
 **Filters:**
+
 - `userId` - Filter by user ID (UUID)
 - `status` - pending, succeeded, failed, refunded, partially_refunded, disputed
 - `startDate` - ISO 8601 date
@@ -174,6 +179,7 @@ Content-Type: application/json
 **Permission:** `process_refunds`
 
 **Refund Reasons:**
+
 - `customer_request` - Customer requested refund
 - `billing_error` - Billing error occurred
 - `service_issue` - Service quality issue
@@ -217,26 +223,26 @@ GET /api/admin/payments/methods/:userId
 
 ## Common Error Codes
 
-| Code | HTTP Status | Description |
-|------|-------------|-------------|
-| NO_TOKEN | 401 | No JWT token provided |
-| INVALID_TOKEN | 401 | Invalid or expired JWT token |
-| USER_NOT_FOUND | 403 | User not found in database |
-| ADMIN_ACCESS_REQUIRED | 403 | User does not have admin role |
-| INSUFFICIENT_PERMISSIONS | 403 | User lacks required permissions |
-| INVALID_USER_ID | 400 | Invalid user ID format |
-| INVALID_TIER | 400 | Invalid subscription tier |
-| TIER_UNCHANGED | 400 | User already has this tier |
-| REASON_REQUIRED | 400 | Reason field is required |
-| ALREADY_SUSPENDED | 400 | User is already suspended |
-| NOT_SUSPENDED | 400 | User is not suspended |
-| INVALID_STATUS | 400 | Invalid transaction status |
-| INVALID_TRANSACTION_ID | 400 | Invalid transaction ID format |
-| TRANSACTION_NOT_FOUND | 404 | Transaction not found |
-| INVALID_REASON | 400 | Invalid refund reason |
-| INVALID_AMOUNT | 400 | Invalid refund amount |
-| INVALID_TRANSACTION_STATUS | 400 | Cannot refund transaction with current status |
-| AMOUNT_EXCEEDS_REMAINING | 400 | Refund amount exceeds remaining refundable amount |
+| Code                       | HTTP Status | Description                                       |
+| -------------------------- | ----------- | ------------------------------------------------- |
+| NO_TOKEN                   | 401         | No JWT token provided                             |
+| INVALID_TOKEN              | 401         | Invalid or expired JWT token                      |
+| USER_NOT_FOUND             | 403         | User not found in database                        |
+| ADMIN_ACCESS_REQUIRED      | 403         | User does not have admin role                     |
+| INSUFFICIENT_PERMISSIONS   | 403         | User lacks required permissions                   |
+| INVALID_USER_ID            | 400         | Invalid user ID format                            |
+| INVALID_TIER               | 400         | Invalid subscription tier                         |
+| TIER_UNCHANGED             | 400         | User already has this tier                        |
+| REASON_REQUIRED            | 400         | Reason field is required                          |
+| ALREADY_SUSPENDED          | 400         | User is already suspended                         |
+| NOT_SUSPENDED              | 400         | User is not suspended                             |
+| INVALID_STATUS             | 400         | Invalid transaction status                        |
+| INVALID_TRANSACTION_ID     | 400         | Invalid transaction ID format                     |
+| TRANSACTION_NOT_FOUND      | 404         | Transaction not found                             |
+| INVALID_REASON             | 400         | Invalid refund reason                             |
+| INVALID_AMOUNT             | 400         | Invalid refund amount                             |
+| INVALID_TRANSACTION_STATUS | 400         | Cannot refund transaction with current status     |
+| AMOUNT_EXCEEDS_REMAINING   | 400         | Refund amount exceeds remaining refundable amount |
 
 ---
 
@@ -356,7 +362,7 @@ WHERE ar.is_active = true;
 ### Check Recent Transactions
 
 ```sql
-SELECT 
+SELECT
   pt.id,
   u.email,
   pt.amount,
@@ -371,7 +377,7 @@ LIMIT 10;
 ### Check Audit Logs
 
 ```sql
-SELECT 
+SELECT
   aal.action,
   admin_u.email as admin_email,
   affected_u.email as affected_email,
@@ -401,6 +407,6 @@ LIMIT 10;
 ## Support
 
 For questions or issues:
+
 - GitHub Issues: https://github.com/imrightguy/CloudToLocalLLM/issues
 - Email: support@cloudtolocalllm.online
-

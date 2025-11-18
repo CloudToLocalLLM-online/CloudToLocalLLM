@@ -9,6 +9,7 @@ The Subscription Management API provides secure administrative endpoints for man
 **Authentication:** JWT Bearer token with admin role
 
 **Permissions Required:**
+
 - `view_subscriptions` - View subscription list and details
 - `edit_subscriptions` - Update and cancel subscriptions
 
@@ -26,16 +27,16 @@ The Subscription Management API provides secure administrative endpoints for man
 
 **Query Parameters:**
 
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| page | integer | 1 | Page number (min: 1) |
-| limit | integer | 50 | Items per page (min: 1, max: 200) |
-| tier | string | - | Filter by tier (free, premium, enterprise) |
-| status | string | - | Filter by status (active, canceled, past_due, trialing, incomplete) |
-| userId | UUID | - | Filter by user ID |
-| includeUpcoming | boolean | false | Include upcoming renewals (next 7 days) |
-| sortBy | string | created_at | Sort field (created_at, current_period_end, tier, status, updated_at) |
-| sortOrder | string | desc | Sort order (asc, desc) |
+| Parameter       | Type    | Default    | Description                                                           |
+| --------------- | ------- | ---------- | --------------------------------------------------------------------- |
+| page            | integer | 1          | Page number (min: 1)                                                  |
+| limit           | integer | 50         | Items per page (min: 1, max: 200)                                     |
+| tier            | string  | -          | Filter by tier (free, premium, enterprise)                            |
+| status          | string  | -          | Filter by status (active, canceled, past_due, trialing, incomplete)   |
+| userId          | UUID    | -          | Filter by user ID                                                     |
+| includeUpcoming | boolean | false      | Include upcoming renewals (next 7 days)                               |
+| sortBy          | string  | created_at | Sort field (created_at, current_period_end, tier, status, updated_at) |
+| sortOrder       | string  | desc       | Sort order (asc, desc)                                                |
 
 **Example Request:**
 
@@ -114,8 +115,8 @@ curl -X GET "https://api.cloudtolocalllm.online/api/admin/subscriptions?page=1&l
 
 **Path Parameters:**
 
-| Parameter | Type | Description |
-|-----------|------|-------------|
+| Parameter      | Type | Description     |
+| -------------- | ---- | --------------- |
 | subscriptionId | UUID | Subscription ID |
 
 **Example Request:**
@@ -206,8 +207,8 @@ curl -X GET "https://api.cloudtolocalllm.online/api/admin/subscriptions/550e8400
 
 **Path Parameters:**
 
-| Parameter | Type | Description |
-|-----------|------|-------------|
+| Parameter      | Type | Description     |
+| -------------- | ---- | --------------- |
 | subscriptionId | UUID | Subscription ID |
 
 **Request Body:**
@@ -222,13 +223,14 @@ curl -X GET "https://api.cloudtolocalllm.online/api/admin/subscriptions/550e8400
 
 **Body Parameters:**
 
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| tier | string | Yes | New subscription tier (free, premium, enterprise) |
-| priceId | string | Yes | Stripe price ID for the new tier |
-| prorationBehavior | string | No | Proration behavior (create_prorations, none, always_invoice) (default: create_prorations) |
+| Parameter         | Type   | Required | Description                                                                               |
+| ----------------- | ------ | -------- | ----------------------------------------------------------------------------------------- |
+| tier              | string | Yes      | New subscription tier (free, premium, enterprise)                                         |
+| priceId           | string | Yes      | Stripe price ID for the new tier                                                          |
+| prorationBehavior | string | No       | Proration behavior (create_prorations, none, always_invoice) (default: create_prorations) |
 
 **Proration Behaviors:**
+
 - `create_prorations` - Create proration invoice items (default)
 - `none` - No proration, charge full amount at next billing
 - `always_invoice` - Always create an invoice immediately
@@ -261,13 +263,13 @@ curl -X PATCH "https://api.cloudtolocalllm.online/api/admin/subscriptions/550e84
       "updatedAt": "2025-01-20T15:00:00Z"
     },
     "prorationDetails": {
-      "proratedAmount": 70.00,
+      "proratedAmount": 70.0,
       "currency": "usd",
       "nextInvoiceDate": "2025-02-15T10:30:00Z",
       "lineItems": [
         {
           "description": "Remaining time on Premium after 15 Jan 2025",
-          "amount": -10.00,
+          "amount": -10.0,
           "period": {
             "start": "2025-01-20T15:00:00Z",
             "end": "2025-02-15T10:30:00Z"
@@ -275,7 +277,7 @@ curl -X PATCH "https://api.cloudtolocalllm.online/api/admin/subscriptions/550e84
         },
         {
           "description": "Remaining time on Enterprise after 20 Jan 2025",
-          "amount": 80.00,
+          "amount": 80.0,
           "period": {
             "start": "2025-01-20T15:00:00Z",
             "end": "2025-02-15T10:30:00Z"
@@ -297,6 +299,7 @@ curl -X PATCH "https://api.cloudtolocalllm.online/api/admin/subscriptions/550e84
 - `500 Internal Server Error` - Server error
 
 **Error Codes:**
+
 - `INVALID_REQUEST` - Missing required fields
 - `INVALID_TIER` - Invalid subscription tier
 - `SUBSCRIPTION_NOT_FOUND` - Subscription not found
@@ -315,8 +318,8 @@ curl -X PATCH "https://api.cloudtolocalllm.online/api/admin/subscriptions/550e84
 
 **Path Parameters:**
 
-| Parameter | Type | Description |
-|-----------|------|-------------|
+| Parameter      | Type | Description     |
+| -------------- | ---- | --------------- |
 | subscriptionId | UUID | Subscription ID |
 
 **Request Body:**
@@ -330,10 +333,10 @@ curl -X PATCH "https://api.cloudtolocalllm.online/api/admin/subscriptions/550e84
 
 **Body Parameters:**
 
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| immediate | boolean | No | Cancel immediately (true) or at period end (false) (default: false) |
-| reason | string | Yes | Reason for cancellation (required for audit trail) |
+| Parameter | Type    | Required | Description                                                         |
+| --------- | ------- | -------- | ------------------------------------------------------------------- |
+| immediate | boolean | No       | Cancel immediately (true) or at period end (false) (default: false) |
+| reason    | string  | Yes      | Reason for cancellation (required for audit trail)                  |
 
 **Example Request (End of Period):**
 
@@ -410,6 +413,7 @@ curl -X POST "https://api.cloudtolocalllm.online/api/admin/subscriptions/550e840
 **Refund Information:**
 
 When `immediate: true` is specified, the response includes `refundInfo` with:
+
 - `eligibleForRefund` - Whether the user is eligible for a prorated refund
 - `proratedAmount` - Calculated prorated refund amount based on days remaining
 - `currency` - Currency of the refund
@@ -428,6 +432,7 @@ When `immediate: true` is specified, the response includes `refundInfo` with:
 - `500 Internal Server Error` - Server error
 
 **Error Codes:**
+
 - `INVALID_REQUEST` - Missing cancellation reason
 - `SUBSCRIPTION_NOT_FOUND` - Subscription not found
 - `SUBSCRIPTION_ALREADY_CANCELED` - Subscription is already canceled
@@ -498,6 +503,7 @@ All subscription operations are synchronized with Stripe:
 ## Support
 
 For API support or questions:
+
 - Documentation: `/docs/API/`
 - Issues: GitHub Issues
 - Email: support@cloudtolocalllm.online

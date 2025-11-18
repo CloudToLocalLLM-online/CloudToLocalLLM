@@ -9,7 +9,12 @@ export default {
   testMatch: ['<rootDir>/../../test/api-backend/**/*.js'],
 
   // Files to ignore
-  testPathIgnorePatterns: ['/node_modules/', '/build/', '/dist/', 'tunnel-server\\.test\\.js$'],
+  testPathIgnorePatterns: [
+    '/node_modules/',
+    '/build/',
+    '/dist/',
+    'tunnel-server\\.test\\.js$',
+  ],
 
   // Expand Jest roots to include repository test directory
   roots: ['<rootDir>', '<rootDir>/../../test'],
@@ -27,14 +32,16 @@ export default {
     '^\\.\\./utils/(.*)\\.js$': '<rootDir>/utils/$1.js',
     '^\\.\\./routes/(.*)\\.js$': '<rootDir>/routes/$1.js',
     '^\\.\\./middleware/(.*)\\.js$': '<rootDir>/middleware/$1.js',
-    '^\\.\\./admin-data-flush-service\\.js$': '<rootDir>/admin-data-flush-service.js',
+    '^\\.\\./admin-data-flush-service\\.js$':
+      '<rootDir>/admin-data-flush-service.js',
 
     // Two-levels up (../../)
     '^\\.\\.\\/\\.\\.\\/tunnel/(.*)\\.js$': '<rootDir>/tunnel/$1.js',
     '^\\.\\.\\/\\.\\.\\/utils/(.*)\\.js$': '<rootDir>/utils/$1.js',
     '^\\.\\.\\/\\.\\.\\/routes/(.*)\\.js$': '<rootDir>/routes/$1.js',
     '^\\.\\.\\/\\.\\.\\/middleware/(.*)\\.js$': '<rootDir>/middleware/$1.js',
-    '^\\.\\.\\/\\.\\.\\/admin-data-flush-service\\.js$': '<rootDir>/admin-data-flush-service.js',
+    '^\\.\\.\\/\\.\\.\\/admin-data-flush-service\\.js$':
+      '<rootDir>/admin-data-flush-service.js',
 
     // Absolute-ish imports from repo root used in some tests
     '^\\.\\.\\/\\.\\.\\/services\\/api-backend\\/(.*)\\.js$': '<rootDir>/$1.js',

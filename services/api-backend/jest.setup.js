@@ -15,7 +15,9 @@ if (nock) {
   beforeAll(() => {
     nock.disableNetConnect();
     // Allow localhost if needed for tests
-    nock.enableNetConnect(host => host.includes('127.0.0.1') || host.includes('localhost'));
+    nock.enableNetConnect(
+      (host) => host.includes('127.0.0.1') || host.includes('localhost')
+    );
   });
 
   afterAll(() => {
@@ -23,5 +25,3 @@ if (nock) {
     nock.restore();
   });
 }
-
-

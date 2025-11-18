@@ -8,7 +8,10 @@ import { authenticateJWT } from '../middleware/auth.js';
 import { addTierInfo, requireFeature } from '../middleware/tier-check.js';
 import winston from 'winston';
 
-export function createConversationRoutes(dbMigrator, logger = winston.createLogger()) {
+export function createConversationRoutes(
+  dbMigrator,
+  logger = winston.createLogger()
+) {
   const router = express.Router();
 
   // All routes require authentication
@@ -22,7 +25,7 @@ export function createConversationRoutes(dbMigrator, logger = winston.createLogg
   router.get('/', async (req, res) => {
     try {
       const userId = req.auth?.payload?.sub || req.user?.sub;
-      
+
       if (!userId) {
         return res.status(401).json({
           error: 'Unauthorized',
@@ -53,9 +56,9 @@ export function createConversationRoutes(dbMigrator, logger = winston.createLogg
       );
 
       // Get message counts for each conversation
-      const conversationIds = conversations.map(c => c.id);
+      const conversationIds = conversations.map((c) => c.id);
       let messageCounts = {};
-      
+
       if (conversationIds.length > 0) {
         const { rows: counts } = await dbMigrator.pool.query(
           `SELECT conversation_id, COUNT(*) as count
@@ -64,14 +67,14 @@ export function createConversationRoutes(dbMigrator, logger = winston.createLogg
           GROUP BY conversation_id`,
           [conversationIds]
         );
-        
+
         messageCounts = counts.reduce((acc, row) => {
           acc[row.conversation_id] = parseInt(row.count, 10);
           return acc;
         }, {});
       }
 
-      const conversationsWithCounts = conversations.map(conv => ({
+      const conversationsWithCounts = conversations.map((conv) => ({
         ...conv,
         messageCount: messageCounts[conv.id] || 0,
       }));
@@ -470,4 +473,3 @@ export function createConversationRoutes(dbMigrator, logger = winston.createLogg
 
   return router;
 }
-

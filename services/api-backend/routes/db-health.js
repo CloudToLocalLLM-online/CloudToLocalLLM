@@ -1,11 +1,11 @@
 /**
  * Database Health Check API Routes
- * 
+ *
  * Provides endpoints for monitoring database connection pool health:
  * - GET /api/db/pool/health - Database connection health check
  * - GET /api/db/pool/metrics - Connection pool metrics
  * - GET /api/db/pool/status - Monitoring status
- * 
+ *
  * Requirements: 17 (Data Persistence and Storage)
  */
 
@@ -20,7 +20,7 @@ const router = express.Router();
 /**
  * GET /api/db/pool/health
  * Perform a health check on the database connection pool
- * 
+ *
  * Response:
  * - 200: Pool is healthy
  * - 503: Pool is unhealthy or not initialized
@@ -61,7 +61,7 @@ router.get('/pool/health', async (req, res) => {
  * GET /api/db/pool/metrics
  * Get current connection pool metrics
  * Requires admin authentication
- * 
+ *
  * Response:
  * - 200: Metrics retrieved successfully
  * - 401: Unauthorized (not admin)
@@ -92,7 +92,7 @@ router.get('/pool/metrics', adminAuth(['view_system_metrics']), (req, res) => {
  * GET /api/db/pool/status
  * Get monitoring status
  * Requires admin authentication
- * 
+ *
  * Response:
  * - 200: Status retrieved successfully
  * - 401: Unauthorized (not admin)

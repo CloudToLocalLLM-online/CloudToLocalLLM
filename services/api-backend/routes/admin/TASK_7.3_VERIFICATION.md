@@ -27,6 +27,7 @@ This guide provides quick steps to verify that the report export endpoint is wor
 ### Test 1: Export Revenue Report (CSV)
 
 **Request:**
+
 ```bash
 curl -X GET "http://localhost:3001/api/admin/reports/export?type=revenue&format=csv&startDate=2025-01-01&endDate=2025-01-31" \
   -H "Authorization: Bearer YOUR_JWT_TOKEN" \
@@ -34,17 +35,20 @@ curl -X GET "http://localhost:3001/api/admin/reports/export?type=revenue&format=
 ```
 
 **Expected Response:**
+
 - Status: `200 OK`
 - Content-Type: `text/csv`
 - Content-Disposition: `attachment; filename="revenue_report_2025-01-01_2025-01-31.csv"`
 - File downloaded: `revenue_report.csv`
 
 **Verify CSV Content:**
+
 ```bash
 cat revenue_report.csv
 ```
 
 **Expected CSV Format:**
+
 ```csv
 id,created_at,user_email,username,amount,currency,status,subscription_tier,payment_method_type,payment_method_last4
 uuid-1,2025-01-15T10:30:00Z,user@example.com,john_doe,50.00,USD,succeeded,premium,card,4242
@@ -52,12 +56,14 @@ uuid-2,2025-01-16T14:20:00Z,user2@example.com,jane_smith,100.00,USD,succeeded,en
 ```
 
 **Verify Audit Log:**
+
 ```bash
 curl -X GET "http://localhost:3001/api/admin/audit/logs?action=report_exported" \
   -H "Authorization: Bearer YOUR_JWT_TOKEN"
 ```
 
 **Expected Audit Log Entry:**
+
 ```json
 {
   "logs": [
@@ -82,6 +88,7 @@ curl -X GET "http://localhost:3001/api/admin/audit/logs?action=report_exported" 
 ### Test 2: Export Subscriptions Report (CSV)
 
 **Request:**
+
 ```bash
 curl -X GET "http://localhost:3001/api/admin/reports/export?type=subscriptions&format=csv&startDate=2025-01-01&endDate=2025-01-31" \
   -H "Authorization: Bearer YOUR_JWT_TOKEN" \
@@ -89,11 +96,13 @@ curl -X GET "http://localhost:3001/api/admin/reports/export?type=subscriptions&f
 ```
 
 **Expected Response:**
+
 - Status: `200 OK`
 - Content-Type: `text/csv`
 - File downloaded: `subscription_report.csv`
 
 **Expected CSV Format:**
+
 ```csv
 id,created_at,user_email,username,tier,status,current_period_start,current_period_end,canceled_at,cancel_at_period_end
 uuid-1,2025-01-01T00:00:00Z,user@example.com,john_doe,premium,active,2025-01-01T00:00:00Z,2025-02-01T00:00:00Z,,false
@@ -104,6 +113,7 @@ uuid-1,2025-01-01T00:00:00Z,user@example.com,john_doe,premium,active,2025-01-01T
 ### Test 3: Export Transactions Report (CSV)
 
 **Request:**
+
 ```bash
 curl -X GET "http://localhost:3001/api/admin/reports/export?type=transactions&format=csv&startDate=2025-01-01&endDate=2025-01-31" \
   -H "Authorization: Bearer YOUR_JWT_TOKEN" \
@@ -111,11 +121,13 @@ curl -X GET "http://localhost:3001/api/admin/reports/export?type=transactions&fo
 ```
 
 **Expected Response:**
+
 - Status: `200 OK`
 - Content-Type: `text/csv`
 - File downloaded: `transaction_report.csv`
 
 **Expected CSV Format:**
+
 ```csv
 id,created_at,user_email,username,amount,currency,status,payment_method_type,payment_method_last4,stripe_payment_intent_id,subscription_tier
 uuid-1,2025-01-15T10:30:00Z,user@example.com,john_doe,50.00,USD,succeeded,card,4242,pi_xxx,premium
@@ -126,6 +138,7 @@ uuid-1,2025-01-15T10:30:00Z,user@example.com,john_doe,50.00,USD,succeeded,card,4
 ### Test 4: PDF Export (Placeholder)
 
 **Request:**
+
 ```bash
 curl -X GET "http://localhost:3001/api/admin/reports/export?type=revenue&format=pdf&startDate=2025-01-01&endDate=2025-01-31" \
   -H "Authorization: Bearer YOUR_JWT_TOKEN" \
@@ -133,6 +146,7 @@ curl -X GET "http://localhost:3001/api/admin/reports/export?type=revenue&format=
 ```
 
 **Expected Response:**
+
 - Status: `200 OK`
 - Content-Type: `text/csv` (not PDF yet)
 - Header: `X-PDF-Note: PDF export not yet implemented, returning CSV format`
@@ -145,12 +159,14 @@ curl -X GET "http://localhost:3001/api/admin/reports/export?type=revenue&format=
 ### Test 5: Invalid Report Type
 
 **Request:**
+
 ```bash
 curl -X GET "http://localhost:3001/api/admin/reports/export?type=invalid&format=csv&startDate=2025-01-01&endDate=2025-01-31" \
   -H "Authorization: Bearer YOUR_JWT_TOKEN"
 ```
 
 **Expected Response:**
+
 ```json
 {
   "error": "Invalid report type",
@@ -165,12 +181,14 @@ curl -X GET "http://localhost:3001/api/admin/reports/export?type=invalid&format=
 ### Test 6: Invalid Format
 
 **Request:**
+
 ```bash
 curl -X GET "http://localhost:3001/api/admin/reports/export?type=revenue&format=xml&startDate=2025-01-01&endDate=2025-01-31" \
   -H "Authorization: Bearer YOUR_JWT_TOKEN"
 ```
 
 **Expected Response:**
+
 ```json
 {
   "error": "Invalid format",
@@ -185,12 +203,14 @@ curl -X GET "http://localhost:3001/api/admin/reports/export?type=revenue&format=
 ### Test 7: Missing Parameters
 
 **Request:**
+
 ```bash
 curl -X GET "http://localhost:3001/api/admin/reports/export?type=revenue&format=csv" \
   -H "Authorization: Bearer YOUR_JWT_TOKEN"
 ```
 
 **Expected Response:**
+
 ```json
 {
   "error": "Missing required parameters",
@@ -206,12 +226,14 @@ curl -X GET "http://localhost:3001/api/admin/reports/export?type=revenue&format=
 ### Test 8: Invalid Date Format
 
 **Request:**
+
 ```bash
 curl -X GET "http://localhost:3001/api/admin/reports/export?type=revenue&format=csv&startDate=invalid&endDate=2025-01-31" \
   -H "Authorization: Bearer YOUR_JWT_TOKEN"
 ```
 
 **Expected Response:**
+
 ```json
 {
   "error": "Invalid date format",
@@ -226,12 +248,14 @@ curl -X GET "http://localhost:3001/api/admin/reports/export?type=revenue&format=
 ### Test 9: Invalid Date Range
 
 **Request:**
+
 ```bash
 curl -X GET "http://localhost:3001/api/admin/reports/export?type=revenue&format=csv&startDate=2025-01-31&endDate=2025-01-01" \
   -H "Authorization: Bearer YOUR_JWT_TOKEN"
 ```
 
 **Expected Response:**
+
 ```json
 {
   "error": "Invalid date range",
@@ -248,12 +272,14 @@ curl -X GET "http://localhost:3001/api/admin/reports/export?type=revenue&format=
 **Setup:** Use a token for a user without `export_reports` permission (e.g., Support Admin)
 
 **Request:**
+
 ```bash
 curl -X GET "http://localhost:3001/api/admin/reports/export?type=revenue&format=csv&startDate=2025-01-01&endDate=2025-01-31" \
   -H "Authorization: Bearer SUPPORT_ADMIN_TOKEN"
 ```
 
 **Expected Response:**
+
 ```json
 {
   "error": "Insufficient permissions",
@@ -268,11 +294,13 @@ curl -X GET "http://localhost:3001/api/admin/reports/export?type=revenue&format=
 ### Test 11: No Authentication
 
 **Request:**
+
 ```bash
 curl -X GET "http://localhost:3001/api/admin/reports/export?type=revenue&format=csv&startDate=2025-01-01&endDate=2025-01-31"
 ```
 
 **Expected Response:**
+
 ```json
 {
   "error": "No token provided"
@@ -365,6 +393,7 @@ echo "=== Verification Complete ==="
 ```
 
 **Usage:**
+
 ```bash
 chmod +x verify_export.sh
 ./verify_export.sh
@@ -397,7 +426,7 @@ chmod +x verify_export.sh
 ### Check Audit Logs
 
 ```sql
-SELECT 
+SELECT
   al.created_at,
   u.email as admin_email,
   al.action,
@@ -412,6 +441,7 @@ LIMIT 10;
 ```
 
 **Expected Result:**
+
 - Audit log entries for each export operation
 - Details include report type, format, date range, record count
 - Admin user email matches the authenticated user
@@ -423,10 +453,12 @@ LIMIT 10;
 ### Test with Large Dataset
 
 **Setup:**
+
 1. Insert 10,000 test transactions
 2. Export revenue report for 1 year
 
 **Request:**
+
 ```bash
 time curl -X GET "http://localhost:3001/api/admin/reports/export?type=revenue&format=csv&startDate=2024-01-01&endDate=2024-12-31" \
   -H "Authorization: Bearer YOUR_JWT_TOKEN" \
@@ -434,6 +466,7 @@ time curl -X GET "http://localhost:3001/api/admin/reports/export?type=revenue&fo
 ```
 
 **Expected:**
+
 - Response time: < 5 seconds (per requirement 9)
 - File size: Appropriate for 10,000 records
 - No memory issues or timeouts
@@ -459,12 +492,14 @@ time curl -X GET "http://localhost:3001/api/admin/reports/export?type=revenue&fo
 ### Test SQL Injection Prevention
 
 **Request:**
+
 ```bash
 curl -X GET "http://localhost:3001/api/admin/reports/export?type=revenue'; DROP TABLE users; --&format=csv&startDate=2025-01-01&endDate=2025-01-31" \
   -H "Authorization: Bearer YOUR_JWT_TOKEN"
 ```
 
 **Expected:**
+
 - Status: `400 Bad Request`
 - Error: "Invalid report type"
 - No SQL injection executed
@@ -476,11 +511,13 @@ curl -X GET "http://localhost:3001/api/admin/reports/export?type=revenue'; DROP 
 ### Issue: 500 Internal Server Error
 
 **Possible Causes:**
+
 1. Database connection issue
 2. Missing database tables
 3. Invalid JWT token format
 
 **Solution:**
+
 1. Check database connection: `psql -h localhost -U postgres -d cloudtolocalllm`
 2. Run migrations: `node services/api-backend/database/migrations/run-migration.js`
 3. Verify JWT token is valid
@@ -488,20 +525,24 @@ curl -X GET "http://localhost:3001/api/admin/reports/export?type=revenue'; DROP 
 ### Issue: Empty CSV File
 
 **Possible Causes:**
+
 1. No data in date range
 2. Database not seeded
 
 **Solution:**
+
 1. Check database: `SELECT COUNT(*) FROM payment_transactions WHERE created_at >= '2025-01-01' AND created_at <= '2025-01-31';`
 2. Run seed script: `node services/api-backend/database/seeds/run-seed.js`
 
 ### Issue: 403 Forbidden
 
 **Possible Causes:**
+
 1. User doesn't have export_reports permission
 2. User is not an admin
 
 **Solution:**
+
 1. Check admin roles: `SELECT * FROM admin_roles WHERE user_id = 'YOUR_USER_ID';`
 2. Assign export_reports permission to user's role
 

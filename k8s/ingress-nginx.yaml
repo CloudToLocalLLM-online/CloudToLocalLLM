@@ -7,12 +7,12 @@ metadata:
   name: cloudtolocalllm-ingress
   namespace: cloudtolocalllm
   annotations:
-    # SSL/TLS configuration - Wildcard certificate via cert-manager with Azure DNS
+    # SSL/TLS configuration - Wildcard certificate via cert-manager with Cloudflare DNS
     # Using wildcard certificate (*.cloudtolocalllm.online) which covers all subdomains
     # PRODUCTION MODE: Using production issuer for trusted certificates
-    # cert-manager automatically provisions and renews via Azure DNS-01 challenge
+    # cert-manager automatically provisions and renews via Cloudflare DNS-01 challenge
     # Note: This annotation is optional when using Certificate resource directly
-    cert-manager.io/cluster-issuer: "azure-dns-prod"
+    cert-manager.io/cluster-issuer: "cloudflare-dns-prod"
     
     # Force HTTPS redirect
     nginx.ingress.kubernetes.io/ssl-redirect: "true"

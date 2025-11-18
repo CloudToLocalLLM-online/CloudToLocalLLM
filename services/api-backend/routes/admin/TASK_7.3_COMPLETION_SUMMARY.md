@@ -19,11 +19,13 @@ The report export endpoint has been successfully implemented in `services/api-ba
 ### 1. ✅ Support CSV and PDF Export Formats
 
 **CSV Export:**
+
 - Fully functional CSV generation with proper escaping
 - Handles commas, quotes, and newlines in data
 - Proper Content-Type and Content-Disposition headers
 
 **PDF Export:**
+
 - Placeholder implementation (returns CSV with note)
 - Header indicates PDF not yet implemented: `X-PDF-Note: PDF export not yet implemented, returning CSV format`
 - Ready for future enhancement with libraries like pdfkit or puppeteer
@@ -33,16 +35,19 @@ The report export endpoint has been successfully implemented in `services/api-ba
 Three report types supported:
 
 **Revenue Report:**
+
 - Columns: id, created_at, user_email, username, amount, currency, status, subscription_tier, payment_method_type, payment_method_last4
 - Includes all successful transactions in date range
 - Joins with users and subscriptions tables
 
 **Subscriptions Report:**
+
 - Columns: id, created_at, user_email, username, tier, status, current_period_start, current_period_end, canceled_at, cancel_at_period_end
 - Includes all subscriptions created in date range
 - Joins with users table
 
 **Transactions Report:**
+
 - Columns: id, created_at, user_email, username, amount, currency, status, payment_method_type, payment_method_last4, stripe_payment_intent_id, subscription_tier
 - Includes all transactions in date range
 - Joins with users and subscriptions tables
@@ -50,6 +55,7 @@ Three report types supported:
 ### 3. ✅ Stream File Download
 
 **Response Headers:**
+
 ```javascript
 res.setHeader('Content-Type', 'text/csv');
 res.setHeader('Content-Disposition', `attachment; filename="${filename}.csv"`);
@@ -57,6 +63,7 @@ res.send(csv);
 ```
 
 **Filename Format:**
+
 - Revenue: `revenue_report_YYYY-MM-DD_YYYY-MM-DD.csv`
 - Subscriptions: `subscription_report_YYYY-MM-DD_YYYY-MM-DD.csv`
 - Transactions: `transaction_report_YYYY-MM-DD_YYYY-MM-DD.csv`
@@ -64,6 +71,7 @@ res.send(csv);
 ### 4. ✅ Log Export Action in Audit Log
 
 **Audit Log Entry:**
+
 ```javascript
 await logAdminAction(pool, {
   adminUserId: req.adminUser.id,
@@ -76,14 +84,15 @@ await logAdminAction(pool, {
     format,
     startDate,
     endDate,
-    recordCount: reportData.length
+    recordCount: reportData.length,
   },
   ipAddress: req.ip,
-  userAgent: req.get('user-agent')
+  userAgent: req.get('user-agent'),
 });
 ```
 
 **Logged Information:**
+
 - Admin user ID and role
 - Report type and format
 - Date range
@@ -94,6 +103,7 @@ await logAdminAction(pool, {
 ### 5. ✅ Require Admin Authentication with export_reports Permission
 
 **Middleware:**
+
 ```javascript
 router.get('/export', adminAuth(['export_reports']), async (req, res) => {
   // Implementation
@@ -101,6 +111,7 @@ router.get('/export', adminAuth(['export_reports']), async (req, res) => {
 ```
 
 **Permission Check:**
+
 - Validates JWT token
 - Verifies admin role
 - Checks for `export_reports` permission
@@ -118,12 +129,12 @@ GET /api/admin/reports/export
 
 ### Query Parameters
 
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `type` | string | Yes | Report type: `revenue`, `subscriptions`, or `transactions` |
-| `format` | string | Yes | Export format: `csv` or `pdf` |
-| `startDate` | string | Yes | Start date in ISO 8601 format |
-| `endDate` | string | Yes | End date in ISO 8601 format |
+| Parameter   | Type   | Required | Description                                                |
+| ----------- | ------ | -------- | ---------------------------------------------------------- |
+| `type`      | string | Yes      | Report type: `revenue`, `subscriptions`, or `transactions` |
+| `format`    | string | Yes      | Export format: `csv` or `pdf`                              |
+| `startDate` | string | Yes      | Start date in ISO 8601 format                              |
+| `endDate`   | string | Yes      | End date in ISO 8601 format                                |
 
 ### Example Request
 
@@ -136,11 +147,13 @@ curl -X GET "https://api.cloudtolocalllm.online/api/admin/reports/export?type=re
 ### Response
 
 **Success (200 OK):**
+
 - Content-Type: `text/csv`
 - Content-Disposition: `attachment; filename="report_name.csv"`
 - Body: CSV data
 
 **Error Responses:**
+
 - `400 Bad Request` - Missing or invalid parameters
 - `401 Unauthorized` - Invalid or missing JWT token
 - `403 Forbidden` - Insufficient permissions
@@ -151,18 +164,22 @@ curl -X GET "https://api.cloudtolocalllm.online/api/admin/reports/export?type=re
 ## Input Validation
 
 ### Required Parameters
+
 - ✅ Validates all required parameters (type, format, startDate, endDate)
 - ✅ Returns 400 with helpful error message if missing
 
 ### Report Type Validation
+
 - ✅ Validates against whitelist: `['revenue', 'subscriptions', 'transactions']`
 - ✅ Returns 400 with valid options if invalid
 
 ### Format Validation
+
 - ✅ Validates against whitelist: `['csv', 'pdf']`
 - ✅ Returns 400 with valid options if invalid
 
 ### Date Validation
+
 - ✅ Validates ISO 8601 format
 - ✅ Validates startDate <= endDate
 - ✅ Returns 400 with helpful error message if invalid
@@ -182,20 +199,24 @@ function convertToCSV(data, headers) {
   }
 
   const csvRows = [];
-  
+
   // Add headers
   csvRows.push(headers.join(','));
 
   // Add data rows with proper escaping
   for (const row of data) {
-    const values = headers.map(header => {
+    const values = headers.map((header) => {
       const value = row[header];
       if (value === null || value === undefined) {
         return '';
       }
       const stringValue = String(value);
       // Escape quotes and wrap in quotes if contains comma or quote
-      if (stringValue.includes(',') || stringValue.includes('"') || stringValue.includes('\n')) {
+      if (
+        stringValue.includes(',') ||
+        stringValue.includes('"') ||
+        stringValue.includes('\n')
+      ) {
         return `"${stringValue.replace(/"/g, '""')}"`;
       }
       return stringValue;
@@ -208,6 +229,7 @@ function convertToCSV(data, headers) {
 ```
 
 **Features:**
+
 - Handles null/undefined values
 - Escapes quotes (double quotes)
 - Wraps values containing commas, quotes, or newlines
@@ -218,7 +240,7 @@ function convertToCSV(data, headers) {
 Queries database for revenue report data:
 
 ```sql
-SELECT 
+SELECT
   pt.id,
   pt.created_at,
   u.email as user_email,
@@ -243,7 +265,7 @@ ORDER BY pt.created_at DESC
 Queries database for subscription report data:
 
 ```sql
-SELECT 
+SELECT
   s.id,
   s.created_at,
   u.email as user_email,
@@ -266,7 +288,7 @@ ORDER BY s.created_at DESC
 Queries database for transaction report data:
 
 ```sql
-SELECT 
+SELECT
   pt.id,
   pt.created_at,
   u.email as user_email,
@@ -291,23 +313,27 @@ ORDER BY pt.created_at DESC
 ## Security Features
 
 ### Authentication & Authorization
+
 - ✅ JWT token validation
 - ✅ Admin role verification
 - ✅ Permission checking (export_reports)
 - ✅ Returns 403 if insufficient permissions
 
 ### Input Validation
+
 - ✅ Parameter validation (type, format, dates)
 - ✅ Whitelist validation for type and format
 - ✅ Date format validation (ISO 8601)
 - ✅ Date range validation
 
 ### SQL Injection Prevention
+
 - ✅ Parameterized queries
 - ✅ No string concatenation in SQL
 - ✅ All user input sanitized
 
 ### Audit Logging
+
 - ✅ All export operations logged
 - ✅ Includes admin user, report type, date range
 - ✅ Includes IP address and user agent
@@ -320,6 +346,7 @@ ORDER BY pt.created_at DESC
 ### Manual Testing
 
 **Test 1: Export Revenue Report (CSV)**
+
 ```bash
 curl -X GET "http://localhost:3001/api/admin/reports/export?type=revenue&format=csv&startDate=2025-01-01&endDate=2025-01-31" \
   -H "Authorization: Bearer YOUR_JWT_TOKEN" \
@@ -327,12 +354,14 @@ curl -X GET "http://localhost:3001/api/admin/reports/export?type=revenue&format=
 ```
 
 **Expected Result:**
+
 - Status: 200 OK
 - Content-Type: text/csv
 - File downloaded: revenue_report_2025-01-01_2025-01-31.csv
 - Audit log entry created
 
 **Test 2: Export Subscriptions Report (CSV)**
+
 ```bash
 curl -X GET "http://localhost:3001/api/admin/reports/export?type=subscriptions&format=csv&startDate=2025-01-01&endDate=2025-01-31" \
   -H "Authorization: Bearer YOUR_JWT_TOKEN" \
@@ -340,12 +369,14 @@ curl -X GET "http://localhost:3001/api/admin/reports/export?type=subscriptions&f
 ```
 
 **Expected Result:**
+
 - Status: 200 OK
 - Content-Type: text/csv
 - File downloaded: subscription_report_2025-01-01_2025-01-31.csv
 - Audit log entry created
 
 **Test 3: Export Transactions Report (CSV)**
+
 ```bash
 curl -X GET "http://localhost:3001/api/admin/reports/export?type=transactions&format=csv&startDate=2025-01-01&endDate=2025-01-31" \
   -H "Authorization: Bearer YOUR_JWT_TOKEN" \
@@ -353,38 +384,45 @@ curl -X GET "http://localhost:3001/api/admin/reports/export?type=transactions&fo
 ```
 
 **Expected Result:**
+
 - Status: 200 OK
 - Content-Type: text/csv
 - File downloaded: transaction_report_2025-01-01_2025-01-31.csv
 - Audit log entry created
 
 **Test 4: Invalid Report Type**
+
 ```bash
 curl -X GET "http://localhost:3001/api/admin/reports/export?type=invalid&format=csv&startDate=2025-01-01&endDate=2025-01-31" \
   -H "Authorization: Bearer YOUR_JWT_TOKEN"
 ```
 
 **Expected Result:**
+
 - Status: 400 Bad Request
 - Error message: "Report type must be one of: revenue, subscriptions, transactions"
 
 **Test 5: Missing Parameters**
+
 ```bash
 curl -X GET "http://localhost:3001/api/admin/reports/export?type=revenue&format=csv" \
   -H "Authorization: Bearer YOUR_JWT_TOKEN"
 ```
 
 **Expected Result:**
+
 - Status: 400 Bad Request
 - Error message: "type, format, startDate, and endDate are required"
 
 **Test 6: Insufficient Permissions**
+
 ```bash
 curl -X GET "http://localhost:3001/api/admin/reports/export?type=revenue&format=csv&startDate=2025-01-01&endDate=2025-01-31" \
   -H "Authorization: Bearer SUPPORT_ADMIN_TOKEN"
 ```
 
 **Expected Result:**
+
 - Status: 403 Forbidden
 - Error message: "Insufficient permissions"
 - Required: ["export_reports"]
@@ -394,16 +432,19 @@ curl -X GET "http://localhost:3001/api/admin/reports/export?type=revenue&format=
 ## Documentation
 
 ### API Documentation
+
 - ✅ Complete API documentation in `REPORTS_API.md`
 - ✅ Includes endpoint details, parameters, examples
 - ✅ Includes error responses and security features
 - ✅ Includes integration examples (JavaScript, Python)
 
 ### Quick Reference
+
 - ✅ Quick reference guide in `REPORTS_QUICK_REFERENCE.md`
 - ✅ Includes common use cases and examples
 
 ### Implementation Summary
+
 - ✅ Implementation summary in `REPORTS_IMPLEMENTATION_SUMMARY.md`
 - ✅ Includes technical details and architecture
 
@@ -412,15 +453,18 @@ curl -X GET "http://localhost:3001/api/admin/reports/export?type=revenue&format=
 ## Requirements Satisfied
 
 ### Requirement 9: Revenue and Financial Reporting
+
 - ✅ Export financial reports to PDF and CSV formats
 - ✅ Generate reports within 5 seconds for date ranges up to 1 year
 
 ### Requirement 10: Audit Logging and Compliance
+
 - ✅ Log all administrative actions in the Audit_Log
 - ✅ Include timestamp, administrator ID, action type, and affected resource
 - ✅ Allow exporting audit logs to CSV format for compliance reporting
 
 ### Requirement 11: Role-Based Access Control
+
 - ✅ Implement role-based permission checking
 - ✅ Require export_reports permission for export operations
 - ✅ Log access attempts in audit log
@@ -430,9 +474,11 @@ curl -X GET "http://localhost:3001/api/admin/reports/export?type=revenue&format=
 ## Future Enhancements
 
 ### PDF Export
+
 Currently, PDF export returns CSV with a note. Future implementation could use:
 
 **Option 1: pdfkit**
+
 ```javascript
 import PDFDocument from 'pdfkit';
 
@@ -445,6 +491,7 @@ function generatePDF(data, headers) {
 ```
 
 **Option 2: puppeteer**
+
 ```javascript
 import puppeteer from 'puppeteer';
 
@@ -459,16 +506,19 @@ async function generatePDF(html) {
 ```
 
 ### Additional Export Formats
+
 - Excel (XLSX) format
 - JSON format for API consumption
 - XML format for legacy systems
 
 ### Report Scheduling
+
 - Schedule automatic report generation
 - Email reports to administrators
 - Store reports in cloud storage
 
 ### Report Templates
+
 - Customizable report templates
 - Branding and styling options
 - Custom column selection

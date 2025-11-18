@@ -17,6 +17,7 @@ Receives and processes Stripe webhook events.
 **Authentication:** Webhook signature verification (no JWT required)
 
 **Headers:**
+
 - `stripe-signature` (required) - Stripe webhook signature for verification
 - `Content-Type: application/json`
 
@@ -24,6 +25,7 @@ Receives and processes Stripe webhook events.
 Raw JSON webhook event from Stripe
 
 **Example Request:**
+
 ```bash
 curl -X POST https://api.cloudtolocalllm.online/api/webhooks/stripe \
   -H "stripe-signature: t=1234567890,v1=signature_here" \
@@ -44,6 +46,7 @@ curl -X POST https://api.cloudtolocalllm.online/api/webhooks/stripe \
 ```
 
 **Success Response (200 OK):**
+
 ```json
 {
   "received": true,
@@ -52,6 +55,7 @@ curl -X POST https://api.cloudtolocalllm.online/api/webhooks/stripe \
 ```
 
 **Idempotent Response (200 OK):**
+
 ```json
 {
   "received": true,
@@ -62,6 +66,7 @@ curl -X POST https://api.cloudtolocalllm.online/api/webhooks/stripe \
 **Error Responses:**
 
 **400 Bad Request** - Invalid signature
+
 ```json
 {
   "error": "Webhook signature verification failed"
@@ -69,6 +74,7 @@ curl -X POST https://api.cloudtolocalllm.online/api/webhooks/stripe \
 ```
 
 **500 Internal Server Error** - Processing error
+
 ```json
 {
   "error": "Error processing webhook"
@@ -76,6 +82,7 @@ curl -X POST https://api.cloudtolocalllm.online/api/webhooks/stripe \
 ```
 
 **500 Internal Server Error** - Configuration error
+
 ```json
 {
   "error": "Webhook configuration error"
@@ -91,16 +98,19 @@ curl -X POST https://api.cloudtolocalllm.online/api/webhooks/stripe \
 Triggered when a payment is successfully completed.
 
 **Actions:**
+
 - Updates payment transaction status to 'succeeded'
 - Records Stripe charge ID
 - Records receipt URL
 - Logs successful payment
 
 **Database Updates:**
+
 - Table: `payment_transactions`
 - Fields: `status`, `stripe_charge_id`, `receipt_url`, `updated_at`
 
 **Example Event Data:**
+
 ```json
 {
   "id": "pi_1234567890",
@@ -110,9 +120,11 @@ Triggered when a payment is successfully completed.
   "status": "succeeded",
   "latest_charge": "ch_1234567890",
   "charges": {
-    "data": [{
-      "receipt_url": "https://pay.stripe.com/receipts/..."
-    }]
+    "data": [
+      {
+        "receipt_url": "https://pay.stripe.com/receipts/..."
+      }
+    ]
   }
 }
 ```
@@ -122,16 +134,19 @@ Triggered when a payment is successfully completed.
 Triggered when a payment fails.
 
 **Actions:**
+
 - Updates payment transaction status to 'failed'
 - Records failure code
 - Records failure message
 - Logs payment failure
 
 **Database Updates:**
+
 - Table: `payment_transactions`
 - Fields: `status`, `failure_code`, `failure_message`, `updated_at`
 
 **Example Event Data:**
+
 ```json
 {
   "id": "pi_1234567890",
@@ -153,16 +168,19 @@ Triggered when a payment fails.
 Triggered when a new subscription is created.
 
 **Actions:**
+
 - Updates subscription with Stripe data
 - Sets billing period dates
 - Records trial period if applicable
 - Logs subscription creation
 
 **Database Updates:**
+
 - Table: `subscriptions`
 - Fields: `status`, `current_period_start`, `current_period_end`, `trial_start`, `trial_end`, `updated_at`
 
 **Example Event Data:**
+
 ```json
 {
   "id": "sub_1234567890",
@@ -181,6 +199,7 @@ Triggered when a new subscription is created.
 Triggered when a subscription is modified.
 
 **Actions:**
+
 - Updates subscription status
 - Updates billing periods
 - Records cancellation information
@@ -188,10 +207,12 @@ Triggered when a subscription is modified.
 - Logs subscription changes
 
 **Database Updates:**
+
 - Table: `subscriptions`
 - Fields: `status`, `current_period_start`, `current_period_end`, `cancel_at_period_end`, `canceled_at`, `trial_start`, `trial_end`, `updated_at`
 
 **Example Event Data:**
+
 ```json
 {
   "id": "sub_1234567890",
@@ -210,15 +231,18 @@ Triggered when a subscription is modified.
 Triggered when a subscription is canceled.
 
 **Actions:**
+
 - Updates subscription status to 'canceled'
 - Records cancellation timestamp
 - Logs subscription deletion
 
 **Database Updates:**
+
 - Table: `subscriptions`
 - Fields: `status`, `canceled_at`, `updated_at`
 
 **Example Event Data:**
+
 ```json
 {
   "id": "sub_1234567890",
@@ -240,23 +264,22 @@ All webhook requests are verified using Stripe's webhook signature:
 4. Invalid signatures are rejected with 400 error
 
 **Signature Format:**
+
 ```
 t=1234567890,v1=signature_here,v0=old_signature
 ```
 
 **Verification Process:**
+
 ```javascript
 const stripe = stripeClient.getClient();
-const event = stripe.webhooks.constructEvent(
-  rawBody,
-  signature,
-  webhookSecret
-);
+const event = stripe.webhooks.constructEvent(rawBody, signature, webhookSecret);
 ```
 
 ### Configuration
 
 **Webhook Secret:**
+
 - Stored in `STRIPE_WEBHOOK_SECRET` environment variable
 - Obtained from Stripe Dashboard > Developers > Webhooks
 - Different secrets for test and production modes
@@ -272,6 +295,7 @@ The webhook endpoint implements idempotency to prevent duplicate processing:
 4. Safe for Stripe's automatic retry mechanism
 
 **Idempotency Table:**
+
 ```sql
 CREATE TABLE webhook_events (
   id UUID PRIMARY KEY,
@@ -284,6 +308,7 @@ CREATE TABLE webhook_events (
 ```
 
 **Idempotency Check:**
+
 ```sql
 SELECT id FROM webhook_events WHERE stripe_event_id = $1
 ```
@@ -330,6 +355,7 @@ Stripe automatically retries failed webhooks:
 - **Idempotency:** Safe to retry due to idempotency implementation
 
 **Retry Schedule:**
+
 - 5 minutes
 - 30 minutes
 - 2 hours
@@ -378,12 +404,14 @@ export STRIPE_WEBHOOK_SECRET=whsec_xxxxxxxxxxxxx
 ### Webhook Delivery
 
 **Stripe Dashboard:**
+
 - Developers > Webhooks > [Your Endpoint]
 - View delivery attempts
 - See response codes
 - Retry failed webhooks
 
 **Application Logs:**
+
 ```bash
 # View webhook activity
 grep "Stripe webhook" /var/log/app.log
@@ -399,8 +427,8 @@ grep "evt_1234567890" /var/log/app.log
 
 ```sql
 -- Check processed webhooks
-SELECT * FROM webhook_events 
-ORDER BY processed_at DESC 
+SELECT * FROM webhook_events
+ORDER BY processed_at DESC
 LIMIT 10;
 
 -- Check payment updates
@@ -421,12 +449,14 @@ ORDER BY updated_at DESC;
 ### Webhook Not Received
 
 **Possible Causes:**
+
 - Webhook endpoint not configured in Stripe
 - Incorrect webhook URL
 - Firewall blocking Stripe IPs
 - Server not accessible from internet
 
 **Solutions:**
+
 1. Verify webhook endpoint in Stripe dashboard
 2. Check webhook URL is correct
 3. Verify server is accessible: `curl https://api.cloudtolocalllm.online/api/webhooks/stripe`
@@ -435,11 +465,13 @@ ORDER BY updated_at DESC;
 ### Signature Verification Fails
 
 **Possible Causes:**
+
 - Incorrect webhook secret
 - Body parsing middleware interfering
 - Webhook secret mismatch (test vs production)
 
 **Solutions:**
+
 1. Verify `STRIPE_WEBHOOK_SECRET` matches Stripe dashboard
 2. Ensure webhook route mounted before body parsing
 3. Check using correct secret for environment (test/production)
@@ -447,11 +479,13 @@ ORDER BY updated_at DESC;
 ### Events Not Processing
 
 **Possible Causes:**
+
 - Database connection error
 - Missing payment transaction or subscription
 - Processing logic error
 
 **Solutions:**
+
 1. Check database connection
 2. Verify payment/subscription exists before webhook
 3. Review application logs for errors
@@ -460,11 +494,13 @@ ORDER BY updated_at DESC;
 ### Duplicate Processing
 
 **Possible Causes:**
+
 - Idempotency table not created
 - Database transaction issues
 - Unique constraint not enforced
 
 **Solutions:**
+
 1. Run database migration: `002_webhook_events_table.sql`
 2. Verify unique constraint on `stripe_event_id`
 3. Check database transaction handling

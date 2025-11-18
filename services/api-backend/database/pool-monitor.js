@@ -1,12 +1,12 @@
 /**
  * Database Connection Pool Monitoring Service
- * 
+ *
  * Provides periodic health checks and monitoring for the database connection pool:
  * - Periodic health check queries every 30 seconds
  * - Connection pool metrics logging
  * - Alerts on connection pool exhaustion
  * - Automatic recovery attempts
- * 
+ *
  * Requirements: 17 (Data Persistence and Storage)
  */
 
@@ -15,9 +15,15 @@ import { getPool, getPoolMetrics, healthCheck } from './db-pool.js';
 import { sendAlert } from '../services/alerting-service.js';
 
 // Monitoring configuration
-const HEALTH_CHECK_INTERVAL = parseInt(process.env.DB_HEALTH_CHECK_INTERVAL || '30000', 10); // 30 seconds
+const HEALTH_CHECK_INTERVAL = parseInt(
+  process.env.DB_HEALTH_CHECK_INTERVAL || '30000',
+  10
+); // 30 seconds
 const POOL_EXHAUSTION_THRESHOLD = 0.9; // Alert when 90% of pool is in use
-const METRICS_LOG_INTERVAL = parseInt(process.env.DB_METRICS_LOG_INTERVAL || '60000', 10); // 60 seconds
+const METRICS_LOG_INTERVAL = parseInt(
+  process.env.DB_METRICS_LOG_INTERVAL || '60000',
+  10
+); // 60 seconds
 
 let healthCheckTimer = null;
 let metricsLogTimer = null;
@@ -64,7 +70,7 @@ export function startMonitoring() {
   }, METRICS_LOG_INTERVAL);
 
   // Perform initial health check
-  performHealthCheck().catch(error => {
+  performHealthCheck().catch((error) => {
     logger.error('🔴 [Pool Monitor] Initial health check failed', {
       error: error.message,
     });
@@ -146,7 +152,7 @@ function logPoolMetrics() {
   });
 
   // Check for pool exhaustion
-  checkPoolExhaustion(metrics).catch(error => {
+  checkPoolExhaustion(metrics).catch((error) => {
     logger.error('🔴 [Pool Monitor] Error checking pool exhaustion', {
       error: error.message,
     });
@@ -156,7 +162,7 @@ function logPoolMetrics() {
 /**
  * Check if the connection pool is nearing exhaustion
  * Alerts when usage exceeds the threshold
- * 
+ *
  * @param {Object} metrics - Current pool metrics
  */
 async function checkPoolExhaustion(metrics) {
@@ -174,7 +180,8 @@ async function checkPoolExhaustion(metrics) {
       maxConnections,
       usagePercentage: `${(usageRatio * 100).toFixed(1)}%`,
       waitingClients: metrics.waitingCount,
-      recommendation: 'Consider increasing DB_POOL_MAX or optimizing query performance',
+      recommendation:
+        'Consider increasing DB_POOL_MAX or optimizing query performance',
     });
 
     // Alert on pool exhaustion
@@ -195,7 +202,7 @@ async function checkPoolExhaustion(metrics) {
 /**
  * Alert on health check failure
  * Can be extended to send notifications (email, Slack, etc.)
- * 
+ *
  * @param {Object} result - Health check result
  */
 async function alertHealthCheckFailure(result) {
@@ -224,7 +231,7 @@ async function alertHealthCheckFailure(result) {
 /**
  * Alert on connection pool exhaustion
  * Can be extended to send notifications (email, Slack, etc.)
- * 
+ *
  * @param {Object} metrics - Current pool metrics
  * @param {number} maxConnections - Maximum pool size
  * @param {number} usageRatio - Current usage ratio (0-1)
@@ -257,7 +264,7 @@ async function alertPoolExhaustion(metrics, maxConnections, usageRatio) {
 
 /**
  * Get monitoring status
- * 
+ *
  * @returns {Object} Current monitoring status
  */
 export function getMonitoringStatus() {

@@ -37,8 +37,10 @@ dotenv.config();
 // Auth0 JWT validation middleware
 const checkJwt = auth({
   audience: process.env.AUTH0_AUDIENCE || 'https://api.cloudtolocalllm.online',
-  issuerBaseURL: process.env.AUTH0_DOMAIN ? `https://${process.env.AUTH0_DOMAIN}` : 'https://cloudtolocalllm.us.auth0.com',
-  tokenSigningAlg: 'RS256'
+  issuerBaseURL: process.env.AUTH0_DOMAIN
+    ? `https://${process.env.AUTH0_DOMAIN}`
+    : 'https://cloudtolocalllm.us.auth0.com',
+  tokenSigningAlg: 'RS256',
 });
 
 // Initialize logger
@@ -47,14 +49,14 @@ const logger = winston.createLogger({
   format: winston.format.combine(
     winston.format.timestamp(),
     winston.format.errors({ stack: true }),
-    winston.format.json(),
+    winston.format.json()
   ),
   defaultMeta: { service: 'cloudtolocalllm-api' },
   transports: [
     new winston.transports.Console({
       format: winston.format.combine(
         winston.format.timestamp(),
-        winston.format.simple(),
+        winston.format.simple()
       ),
     }),
   ],
@@ -62,8 +64,10 @@ const logger = winston.createLogger({
 
 // Configuration
 const PORT = process.env.PORT || 8080;
-const AUTH0_DOMAIN = process.env.AUTH0_DOMAIN || 'dev-v2f2p008x3dr74ww.us.auth0.com';
-const AUTH0_AUDIENCE = process.env.AUTH0_AUDIENCE || 'https://api.cloudtolocalllm.online';
+const AUTH0_DOMAIN =
+  process.env.AUTH0_DOMAIN || 'dev-v2f2p008x3dr74ww.us.auth0.com';
+const AUTH0_AUDIENCE =
+  process.env.AUTH0_AUDIENCE || 'https://api.cloudtolocalllm.online';
 const DOMAIN = process.env.DOMAIN || 'cloudtolocalllm.online';
 
 // AuthService will be initialized in initializeHttpPollingSystem()
@@ -85,9 +89,13 @@ try {
 
   sshAuthHandler = new SSHAuthHandler(sshAuthService, logger);
 
-  sshProxy = new SSHProxy(logger, {
-    sshPort: parseInt(process.env.SSH_PORT) || 2222,
-  }, sshAuthService);
+  sshProxy = new SSHProxy(
+    logger,
+    {
+      sshPort: parseInt(process.env.SSH_PORT) || 2222,
+    },
+    sshAuthService
+  );
 
   await sshProxy.start();
   logger.info('SSH tunnel server initialized successfully');
@@ -109,7 +117,7 @@ const corsOptions = {
     const allowedOrigins = [
       'https://app.cloudtolocalllm.online',
       'https://cloudtolocalllm.online',
-      'https://docs.cloudtolocalllm.online'
+      'https://docs.cloudtolocalllm.online',
     ];
     // Allow requests with no origin (like mobile apps or curl requests)
     if (!origin || allowedOrigins.indexOf(origin) !== -1) {
@@ -120,11 +128,17 @@ const corsOptions = {
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
+  allowedHeaders: [
+    'Content-Type',
+    'Authorization',
+    'X-Requested-With',
+    'Accept',
+    'Origin',
+  ],
   exposedHeaders: ['Content-Length', 'X-Requested-With'],
   maxAge: 86400, // Cache preflight for 24 hours
   preflightContinue: false,
-  optionsSuccessStatus: 204
+  optionsSuccessStatus: 204,
 };
 
 // Apply CORS middleware FIRST - before Helmet and other middleware
@@ -138,18 +152,20 @@ app.options('*', cors(corsOptions), (req, res) => {
 });
 
 // Security middleware (after CORS to avoid interference)
-app.use(helmet({
-  contentSecurityPolicy: {
-    directives: {
-      defaultSrc: ['\'self\''],
-      connectSrc: ['\'self\'', 'https:'],
-      scriptSrc: ['\'self\'', '\'unsafe-inline\''],
-      styleSrc: ['\'self\'', '\'unsafe-inline\''],
-      imgSrc: ['\'self\'', 'data:', 'https:'],
+app.use(
+  helmet({
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        connectSrc: ["'self'", 'https:'],
+        scriptSrc: ["'self'", "'unsafe-inline'"],
+        styleSrc: ["'self'", "'unsafe-inline'"],
+        imgSrc: ["'self'", 'data:', 'https:'],
+      },
     },
-  },
-  crossOriginResourcePolicy: { policy: 'cross-origin' }, // Allow CORS requests
-}));
+    crossOriginResourcePolicy: { policy: 'cross-origin' }, // Allow CORS requests
+  })
+);
 
 // Rate limiting with different limits for bridge operations
 const createConditionalRateLimiter = () => {
@@ -215,7 +231,9 @@ async function authenticateToken(req, res, next) {
 
     // Verify the token using AuthService (fallback if not initialized)
     if (!authService) {
-      return res.status(503).json({ error: 'Authentication service not ready' });
+      return res
+        .status(503)
+        .json({ error: 'Authentication service not ready' });
     }
     const verified = await authService.validateToken(token);
 
@@ -233,10 +251,15 @@ async function authenticateToken(req, res, next) {
 const proxyManager = new StreamingProxyManager();
 
 // Create WebSocket-based tunnel routes
-const tunnelRouter = createTunnelRoutes({
-  AUTH0_DOMAIN,
-  AUTH0_AUDIENCE,
-}, sshProxy, logger, sshAuthService);
+const tunnelRouter = createTunnelRoutes(
+  {
+    AUTH0_DOMAIN,
+    AUTH0_AUDIENCE,
+  },
+  sshProxy,
+  logger,
+  sshAuthService
+);
 
 // Create monitoring routes
 const monitoringRouter = createMonitoringRoutes(sshProxy, logger);
@@ -256,7 +279,7 @@ app.use('/monitoring', monitoringRouter); // Also register without /api prefix f
 // Will be set up in initializeTunnelSystem() after dbMigrator is initialized
 
 // Database health endpoint
-const dbHealthHandler = async(req, res) => {
+const dbHealthHandler = async (req, res) => {
   try {
     if (!dbMigrator) {
       return res.status(503).json({
@@ -315,7 +338,7 @@ app.use('/api/admin', adminSubscriptionRoutes);
 app.use('/admin', adminSubscriptionRoutes); // Also register without /api prefix for api subdomain
 
 // LLM Tunnel Cloud Proxy Endpoints (support both /api/ollama and /ollama)
-const handleOllamaProxyRequest = async(req, res) => {
+const handleOllamaProxyRequest = async (req, res) => {
   const startTime = Date.now();
   const requestId = `llm-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
   const userId = req.auth?.payload.sub;
@@ -338,30 +361,52 @@ const handleOllamaProxyRequest = async(req, res) => {
       ollamaPath = `/${ollamaPath}`;
     }
     const forwardHeaders = { ...req.headers };
-    ['host', 'authorization', 'connection', 'upgrade', 'proxy-authenticate', 'proxy-authorization', 'te', 'trailers', 'transfer-encoding'].forEach(h => delete forwardHeaders[h]);
+    [
+      'host',
+      'authorization',
+      'connection',
+      'upgrade',
+      'proxy-authenticate',
+      'proxy-authorization',
+      'te',
+      'trailers',
+      'transfer-encoding',
+    ].forEach((h) => delete forwardHeaders[h]);
 
     const httpRequest = {
       id: requestId,
       method: req.method,
       path: ollamaPath,
       headers: forwardHeaders,
-      body: req.method !== 'GET' && req.method !== 'HEAD' ? JSON.stringify(req.body) : undefined,
+      body:
+        req.method !== 'GET' && req.method !== 'HEAD'
+          ? JSON.stringify(req.body)
+          : undefined,
     };
 
-    logger.debug(' [LLMTunnel] Forwarding request through tunnel', { userId, requestId, path: ollamaPath });
+    logger.debug(' [LLMTunnel] Forwarding request through tunnel', {
+      userId,
+      requestId,
+      path: ollamaPath,
+    });
 
     if (!sshProxy) {
       return res.status(503).json({
         error: 'Tunnel system not available',
         code: 'TUNNEL_NOT_AVAILABLE',
-        message: 'SSH tunnel server not initialized'
+        message: 'SSH tunnel server not initialized',
       });
     }
 
     const response = await sshProxy.forwardRequest(userId, httpRequest);
 
     const duration = Date.now() - startTime;
-    logger.info(' [LLMTunnel] Request completed successfully via tunnel', { userId, requestId, duration, status: response.status });
+    logger.info(' [LLMTunnel] Request completed successfully via tunnel', {
+      userId,
+      requestId,
+      duration,
+      status: response.status,
+    });
 
     if (response.headers) {
       Object.entries(response.headers).forEach(([key, value]) => {
@@ -381,44 +426,74 @@ const handleOllamaProxyRequest = async(req, res) => {
     } else {
       res.end();
     }
-
   } catch (error) {
     const duration = Date.now() - startTime;
-    logger.error(' [LLMTunnel] Request failed via tunnel', { userId, requestId, duration, error: error.message, code: error.code });
+    logger.error(' [LLMTunnel] Request failed via tunnel', {
+      userId,
+      requestId,
+      duration,
+      error: error.message,
+      code: error.code,
+    });
 
     if (error.code === 'REQUEST_TIMEOUT') {
-      return res.status(504).json({ error: 'LLM request timeout', code: 'LLM_REQUEST_TIMEOUT' });
+      return res
+        .status(504)
+        .json({ error: 'LLM request timeout', code: 'LLM_REQUEST_TIMEOUT' });
     }
     if (error.code === 'DESKTOP_CLIENT_DISCONNECTED') {
-      return res.status(503).json({ error: 'Desktop client not connected', code: 'DESKTOP_CLIENT_DISCONNECTED' });
+      return res
+        .status(503)
+        .json({
+          error: 'Desktop client not connected',
+          code: 'DESKTOP_CLIENT_DISCONNECTED',
+        });
     }
-    res.status(500).json({ error: 'LLM tunnel error', code: 'LLM_TUNNEL_ERROR' });
+    res
+      .status(500)
+      .json({ error: 'LLM tunnel error', code: 'LLM_TUNNEL_ERROR' });
   }
 };
 
-const OLLAMA_ROUTE_PATHS = ['/api/ollama', '/api/ollama/*', '/ollama', '/ollama/*'];
-app.all(OLLAMA_ROUTE_PATHS, authenticateJWT, addTierInfo, handleOllamaProxyRequest);
+const OLLAMA_ROUTE_PATHS = [
+  '/api/ollama',
+  '/api/ollama/*',
+  '/ollama',
+  '/ollama/*',
+];
+app.all(
+  OLLAMA_ROUTE_PATHS,
+  authenticateJWT,
+  addTierInfo,
+  handleOllamaProxyRequest
+);
 
 // User tier endpoint
-const userTierHandler = [authenticateJWT, addTierInfo, (req, res) => {
-  try {
-    const userTier = getUserTier(req.user);
-    const features = getTierFeatures(userTier);
+const userTierHandler = [
+  authenticateJWT,
+  addTierInfo,
+  (req, res) => {
+    try {
+      const userTier = getUserTier(req.user);
+      const features = getTierFeatures(userTier);
 
-    res.json({
-      tier: userTier,
-      features: features,
-      upgradeUrl: process.env.UPGRADE_URL || 'https://app.cloudtolocalllm.online/upgrade',
-      timestamp: new Date().toISOString(),
-    });
-  } catch (error) {
-    logger.error('Error getting user tier:', error);
-    res.status(500).json({
-      error: 'Failed to determine user tier',
-      code: 'TIER_ERROR',
-    });
-  }
-}];
+      res.json({
+        tier: userTier,
+        features: features,
+        upgradeUrl:
+          process.env.UPGRADE_URL ||
+          'https://app.cloudtolocalllm.online/upgrade',
+        timestamp: new Date().toISOString(),
+      });
+    } catch (error) {
+      logger.error('Error getting user tier:', error);
+      res.status(500).json({
+        error: 'Failed to determine user tier',
+        code: 'TIER_ERROR',
+      });
+    }
+  },
+];
 app.get('/api/user/tier', ...userTierHandler);
 app.get('/user/tier', ...userTierHandler); // Also register without /api prefix for api subdomain
 
@@ -440,146 +515,176 @@ app.get('/api/health', healthHandler); // Also register with /api prefix for bac
 
 // Start streaming proxy for user
 const proxyStartHandler = authenticateToken;
-const proxyStartRoute = [proxyStartHandler, async(req, res) => {
-  try {
-    const userId = req.user.sub;
-    const userToken = req.headers.authorization;
+const proxyStartRoute = [
+  proxyStartHandler,
+  async (req, res) => {
+    try {
+      const userId = req.user.sub;
+      const userToken = req.headers.authorization;
 
-    logger.info(`Starting streaming proxy for user: ${userId}`);
+      logger.info(`Starting streaming proxy for user: ${userId}`);
 
-    // Pass the user object for tier checking
-    const proxyMetadata = await proxyManager.provisionProxy(userId, userToken, req.user);
+      // Pass the user object for tier checking
+      const proxyMetadata = await proxyManager.provisionProxy(
+        userId,
+        userToken,
+        req.user
+      );
 
-    res.json({
-      success: true,
-      message: 'Streaming proxy started successfully',
-      proxy: {
-        proxyId: proxyMetadata.proxyId,
-        status: proxyMetadata.status,
-        createdAt: proxyMetadata.createdAt,
-        directTunnel: proxyMetadata.directTunnel || false,
-        endpoint: proxyMetadata.endpoint || null,
-        userTier: proxyMetadata.userTier || 'free',
-      },
-    });
-  } catch (error) {
-    logger.error(`Failed to start proxy for user ${req.user.sub}:`, error);
-    res.status(500).json({
-      error: 'Failed to start streaming proxy',
-      message: error.message,
-    });
-  }
-}];
+      res.json({
+        success: true,
+        message: 'Streaming proxy started successfully',
+        proxy: {
+          proxyId: proxyMetadata.proxyId,
+          status: proxyMetadata.status,
+          createdAt: proxyMetadata.createdAt,
+          directTunnel: proxyMetadata.directTunnel || false,
+          endpoint: proxyMetadata.endpoint || null,
+          userTier: proxyMetadata.userTier || 'free',
+        },
+      });
+    } catch (error) {
+      logger.error(`Failed to start proxy for user ${req.user.sub}:`, error);
+      res.status(500).json({
+        error: 'Failed to start streaming proxy',
+        message: error.message,
+      });
+    }
+  },
+];
 app.post('/api/proxy/start', ...proxyStartRoute);
 app.post('/proxy/start', ...proxyStartRoute); // Also register without /api prefix for api subdomain
 
 // Stop streaming proxy for user
-const proxyStopRoute = [authenticateToken, async(req, res) => {
-  try {
-    const userId = req.user.sub;
+const proxyStopRoute = [
+  authenticateToken,
+  async (req, res) => {
+    try {
+      const userId = req.user.sub;
 
-    logger.info(`Stopping streaming proxy for user: ${userId}`);
+      logger.info(`Stopping streaming proxy for user: ${userId}`);
 
-    const success = await proxyManager.terminateProxy(userId);
+      const success = await proxyManager.terminateProxy(userId);
 
-    if (success) {
-      res.json({
-        success: true,
-        message: 'Streaming proxy stopped successfully',
-      });
-    } else {
-      res.status(404).json({
-        error: 'No active proxy found',
-        message: 'No streaming proxy is currently running for this user',
+      if (success) {
+        res.json({
+          success: true,
+          message: 'Streaming proxy stopped successfully',
+        });
+      } else {
+        res.status(404).json({
+          error: 'No active proxy found',
+          message: 'No streaming proxy is currently running for this user',
+        });
+      }
+    } catch (error) {
+      logger.error(`Failed to stop proxy for user ${req.user.sub}:`, error);
+      res.status(500).json({
+        error: 'Failed to stop streaming proxy',
+        message: error.message,
       });
     }
-  } catch (error) {
-    logger.error(`Failed to stop proxy for user ${req.user.sub}:`, error);
-    res.status(500).json({
-      error: 'Failed to stop streaming proxy',
-      message: error.message,
-    });
-  }
-}];
+  },
+];
 app.post('/api/proxy/stop', ...proxyStopRoute);
 app.post('/proxy/stop', ...proxyStopRoute); // Also register without /api prefix for api subdomain
 
 // Provision streaming proxy for user (with test mode support)
-const proxyProvisionRoute = [authenticateToken, async(req, res) => {
-  try {
-    const userId = req.user.sub;
-    const userToken = req.headers.authorization;
-    const { testMode = false } = req.body;
+const proxyProvisionRoute = [
+  authenticateToken,
+  async (req, res) => {
+    try {
+      const userId = req.user.sub;
+      const userToken = req.headers.authorization;
+      const { testMode = false } = req.body;
 
-    logger.info(`Provisioning streaming proxy for user: ${userId}, testMode: ${testMode}`);
+      logger.info(
+        `Provisioning streaming proxy for user: ${userId}, testMode: ${testMode}`
+      );
 
-    if (testMode) {
-      // In test mode, simulate successful provisioning without creating actual containers
-      logger.info(`Test mode: Simulating proxy provisioning for user ${userId}`);
+      if (testMode) {
+        // In test mode, simulate successful provisioning without creating actual containers
+        logger.info(
+          `Test mode: Simulating proxy provisioning for user ${userId}`
+        );
+
+        res.json({
+          success: true,
+          message: 'Streaming proxy provisioned successfully (test mode)',
+          testMode: true,
+
+          proxy: {
+            proxyId: `test-proxy-${userId}`,
+            status: 'simulated',
+            createdAt: new Date().toISOString(),
+          },
+        });
+        return;
+      }
+
+      // Normal mode - provision actual proxy
+      const proxyMetadata = await proxyManager.provisionProxy(
+        userId,
+        userToken,
+        req.user
+      );
 
       res.json({
         success: true,
-        message: 'Streaming proxy provisioned successfully (test mode)',
-        testMode: true,
+        message: 'Streaming proxy provisioned successfully',
+        testMode: false,
 
         proxy: {
-          proxyId: `test-proxy-${userId}`,
-          status: 'simulated',
-          createdAt: new Date().toISOString(),
+          proxyId: proxyMetadata.proxyId,
+          status: proxyMetadata.status,
+          createdAt: proxyMetadata.createdAt,
+          directTunnel: proxyMetadata.directTunnel || false,
+          endpoint: proxyMetadata.endpoint || null,
+          userTier: proxyMetadata.userTier || 'free',
         },
       });
-      return;
+    } catch (error) {
+      logger.error(
+        `Failed to provision proxy for user ${req.user.sub}:`,
+        error
+      );
+      res.status(500).json({
+        error: 'Failed to provision streaming proxy',
+        message: error.message,
+        testMode: req.body.testMode || false,
+      });
     }
-
-    // Normal mode - provision actual proxy
-    const proxyMetadata = await proxyManager.provisionProxy(userId, userToken, req.user);
-
-    res.json({
-      success: true,
-      message: 'Streaming proxy provisioned successfully',
-      testMode: false,
-
-      proxy: {
-        proxyId: proxyMetadata.proxyId,
-        status: proxyMetadata.status,
-        createdAt: proxyMetadata.createdAt,
-        directTunnel: proxyMetadata.directTunnel || false,
-        endpoint: proxyMetadata.endpoint || null,
-        userTier: proxyMetadata.userTier || 'free',
-      },
-    });
-  } catch (error) {
-    logger.error(`Failed to provision proxy for user ${req.user.sub}:`, error);
-    res.status(500).json({
-      error: 'Failed to provision streaming proxy',
-      message: error.message,
-      testMode: req.body.testMode || false,
-    });
-  }
-}];
+  },
+];
 app.post('/api/streaming-proxy/provision', ...proxyProvisionRoute);
 app.post('/streaming-proxy/provision', ...proxyProvisionRoute); // Also register without /api prefix for api subdomain
 
 // Get streaming proxy status
-const proxyStatusRoute = [authenticateToken, async(req, res) => {
-  try {
-    const userId = req.user.sub;
-    const status = await proxyManager.getProxyStatus(userId);
+const proxyStatusRoute = [
+  authenticateToken,
+  async (req, res) => {
+    try {
+      const userId = req.user.sub;
+      const status = await proxyManager.getProxyStatus(userId);
 
-    // Update activity if proxy is running
-    if (status.status === 'running') {
-      proxyManager.updateProxyActivity(userId);
+      // Update activity if proxy is running
+      if (status.status === 'running') {
+        proxyManager.updateProxyActivity(userId);
+      }
+
+      res.json(status);
+    } catch (error) {
+      logger.error(
+        `Failed to get proxy status for user ${req.user.sub}:`,
+        error
+      );
+      res.status(500).json({
+        error: 'Failed to get proxy status',
+        message: error.message,
+      });
     }
-
-    res.json(status);
-  } catch (error) {
-    logger.error(`Failed to get proxy status for user ${req.user.sub}:`, error);
-    res.status(500).json({
-      error: 'Failed to get proxy status',
-      message: error.message,
-    });
-  }
-}];
+  },
+];
 app.get('/api/proxy/status', ...proxyStatusRoute);
 app.get('/proxy/status', ...proxyStatusRoute); // Also register without /api prefix for api subdomain
 
@@ -592,7 +697,10 @@ app.use((error, req, res, _next) => {
   logger.error('Unhandled error:', error);
   res.status(500).json({
     error: 'Internal server error',
-    message: process.env.NODE_ENV === 'development' ? error.message : 'Something went wrong',
+    message:
+      process.env.NODE_ENV === 'development'
+        ? error.message
+        : 'Something went wrong',
   });
 });
 
@@ -641,22 +749,31 @@ function checkRateLimit(userId, providerId, limits) {
   let history = rateLimitStorage.get(key) || [];
 
   // Clean old requests (older than 24 hours)
-  history = history.filter(timestamp => now - timestamp < 24 * 60 * 60 * 1000);
+  history = history.filter(
+    (timestamp) => now - timestamp < 24 * 60 * 60 * 1000
+  );
 
   // Check per-minute limit
-  const minuteRequests = history.filter(timestamp => now - timestamp < 60 * 1000).length;
+  const minuteRequests = history.filter(
+    (timestamp) => now - timestamp < 60 * 1000
+  ).length;
   if (minuteRequests >= limits.requestsPerMinute) {
-    logger.warn(`Rate limit exceeded for ${userId}:${providerId} - per minute`, {
-      userId,
-      providerId,
-      minuteRequests,
-      limit: limits.requestsPerMinute,
-    });
+    logger.warn(
+      `Rate limit exceeded for ${userId}:${providerId} - per minute`,
+      {
+        userId,
+        providerId,
+        minuteRequests,
+        limit: limits.requestsPerMinute,
+      }
+    );
     return false;
   }
 
   // Check per-hour limit
-  const hourRequests = history.filter(timestamp => now - timestamp < 60 * 60 * 1000).length;
+  const hourRequests = history.filter(
+    (timestamp) => now - timestamp < 60 * 60 * 1000
+  ).length;
   if (hourRequests >= limits.requestsPerHour) {
     logger.warn(`Rate limit exceeded for ${userId}:${providerId} - per hour`, {
       userId,
@@ -714,7 +831,8 @@ function logLLMAuditEvent(eventData) {
   }
 
   // Log suspicious activity
-  if (eventData.responseTime > 60000) { // Requests taking longer than 1 minute
+  if (eventData.responseTime > 60000) {
+    // Requests taking longer than 1 minute
     logger.warn('Long-running LLM request detected', {
       userId: eventData.userId,
       providerId: eventData.providerId,
@@ -725,23 +843,28 @@ function logLLMAuditEvent(eventData) {
 }
 
 // Clean up rate limiting storage periodically (every hour)
-setInterval(() => {
-  const now = Date.now();
-  const cutoff = 24 * 60 * 60 * 1000; // 24 hours
+setInterval(
+  () => {
+    const now = Date.now();
+    const cutoff = 24 * 60 * 60 * 1000; // 24 hours
 
-  for (const [key, history] of rateLimitStorage.entries()) {
-    const filteredHistory = history.filter(timestamp => now - timestamp < cutoff);
-    if (filteredHistory.length === 0) {
-      rateLimitStorage.delete(key);
-    } else {
-      rateLimitStorage.set(key, filteredHistory);
+    for (const [key, history] of rateLimitStorage.entries()) {
+      const filteredHistory = history.filter(
+        (timestamp) => now - timestamp < cutoff
+      );
+      if (filteredHistory.length === 0) {
+        rateLimitStorage.delete(key);
+      } else {
+        rateLimitStorage.set(key, filteredHistory);
+      }
     }
-  }
 
-  logger.debug('Rate limiting storage cleaned up', {
-    activeKeys: rateLimitStorage.size,
-  });
-}, 60 * 60 * 1000); // Run every hour
+    logger.debug('Rate limiting storage cleaned up', {
+      activeKeys: rateLimitStorage.size,
+    });
+  },
+  60 * 60 * 1000
+); // Run every hour
 
 // Initialize Tunnel System
 let authService = null;
@@ -758,7 +881,10 @@ async function initializeTunnelSystem() {
 
     // Initialize application database
     const dbType = process.env.DB_TYPE || 'sqlite';
-    dbMigrator = dbType === 'postgresql' ? new DatabaseMigratorPG() : new DatabaseMigrator();
+    dbMigrator =
+      dbType === 'postgresql'
+        ? new DatabaseMigratorPG()
+        : new DatabaseMigrator();
 
     await dbMigrator.initialize();
     await dbMigrator.createMigrationsTable();
@@ -793,7 +919,10 @@ async function initializeTunnelSystem() {
       await authService.initialize();
       logger.info('Authentication service initialized successfully');
     } catch (error) {
-      logger.warn('Authentication service initialization failed, continuing without auth features', { error: error.message });
+      logger.warn(
+        'Authentication service initialization failed, continuing without auth features',
+        { error: error.message }
+      );
       authService = null; // Set to null so routes can handle missing auth service
     }
 
@@ -809,7 +938,6 @@ async function initializeTunnelSystem() {
     process.on('SIGINT', gracefulShutdown);
 
     logger.info('Tunnel system initialized successfully');
-
   } catch (error) {
     logger.error('Failed to initialize tunnel system', {
       error: error.message,
@@ -850,7 +978,6 @@ async function gracefulShutdown() {
       logger.error('Forced shutdown after timeout');
       process.exit(1);
     }, 10000);
-
   } catch (error) {
     logger.error('Error during shutdown', { error: error.message });
     process.exit(1);
@@ -868,7 +995,6 @@ async function startServer() {
       logger.info(`Environment: ${process.env.NODE_ENV || 'development'}`);
       logger.info('WebSocket tunnel system is ready');
     });
-
   } catch (error) {
     logger.error('Failed to start server', { error: error.message });
     process.exit(1);

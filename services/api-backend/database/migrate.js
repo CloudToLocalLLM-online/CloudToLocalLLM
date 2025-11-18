@@ -19,7 +19,8 @@ export class DatabaseMigrator {
   constructor(config) {
     // SQLite configuration
     this.config = {
-      filename: process.env.DB_PATH || join(__dirname, '../data/cloudtolocalllm.db'),
+      filename:
+        process.env.DB_PATH || join(__dirname, '../data/cloudtolocalllm.db'),
       ...config,
     };
 
@@ -52,7 +53,7 @@ export class DatabaseMigrator {
       // Set driver in config
       const configWithDriver = {
         ...this.config,
-        driver: this.sqlite3.Database
+        driver: this.sqlite3.Database,
       };
 
       // Open SQLite database
@@ -103,7 +104,7 @@ export class DatabaseMigrator {
    */
   async getAppliedMigrations() {
     const result = await this.db.all(
-      'SELECT version, name, applied_at FROM schema_migrations WHERE success = 1 ORDER BY applied_at',
+      'SELECT version, name, applied_at FROM schema_migrations WHERE success = 1 ORDER BY applied_at'
     );
     return result;
   }
@@ -114,7 +115,7 @@ export class DatabaseMigrator {
   async isMigrationApplied(version) {
     const result = await this.db.get(
       'SELECT 1 FROM schema_migrations WHERE version = ? AND success = 1',
-      [version],
+      [version]
     );
     return result !== undefined;
   }
@@ -150,7 +151,7 @@ export class DatabaseMigrator {
       await this.db.run(
         `INSERT INTO schema_migrations (version, name, checksum, execution_time_ms)
          VALUES (?, ?, ?, ?)`,
-        [version, 'Initial tunnel system schema', checksum, executionTime],
+        [version, 'Initial tunnel system schema', checksum, executionTime]
       );
 
       await this.db.exec('COMMIT');
@@ -160,7 +161,6 @@ export class DatabaseMigrator {
         executionTime,
         checksum,
       });
-
     } catch (error) {
       await this.db.exec('ROLLBACK');
 
@@ -169,10 +169,12 @@ export class DatabaseMigrator {
         await this.db.run(
           `INSERT INTO schema_migrations (version, name, checksum, success)
            VALUES (?, ?, ?, 0)`,
-          [version, 'Initial tunnel system schema', 'failed'],
+          [version, 'Initial tunnel system schema', 'failed']
         );
       } catch (recordError) {
-        this.logger.error('Failed to record migration failure', { error: recordError.message });
+        this.logger.error('Failed to record migration failure', {
+          error: recordError.message,
+        });
       }
 
       this.logger.error('Failed to apply initial schema', {
@@ -217,7 +219,7 @@ export class DatabaseMigrator {
       await client.query(
         `INSERT INTO schema_migrations (version, name, checksum, execution_time_ms) 
          VALUES ($1, $2, $3, $4)`,
-        [version, name, checksum, executionTime],
+        [version, name, checksum, executionTime]
       );
 
       await client.query('COMMIT');
@@ -228,7 +230,6 @@ export class DatabaseMigrator {
         executionTime,
         checksum,
       });
-
     } catch (error) {
       await client.query('ROLLBACK');
 
@@ -236,7 +237,7 @@ export class DatabaseMigrator {
       await client.query(
         `INSERT INTO schema_migrations (version, name, checksum, success) 
          VALUES ($1, $2, $3, false)`,
-        [version, name, 'failed'],
+        [version, name, 'failed']
       );
 
       this.logger.error('Failed to apply migration', {
@@ -271,15 +272,13 @@ export class DatabaseMigrator {
         await client.query(rollbackSQL);
 
         // Remove migration record
-        await client.query(
-          'DELETE FROM schema_migrations WHERE version = $1',
-          [version],
-        );
+        await client.query('DELETE FROM schema_migrations WHERE version = $1', [
+          version,
+        ]);
 
         await client.query('COMMIT');
 
         this.logger.info('Migration rolled back successfully', { version });
-
       } catch {
         this.logger.warn('No rollback file found, manual rollback required', {
           version,
@@ -287,7 +286,6 @@ export class DatabaseMigrator {
         });
         throw new Error(`No rollback file found for version ${version}`);
       }
-
     } catch (error) {
       await client.query('ROLLBACK');
 
@@ -309,19 +307,23 @@ export class DatabaseMigrator {
     const validations = [
       {
         name: 'user_sessions_table',
-        query: 'SELECT 1 FROM sqlite_master WHERE type=\'table\' AND name=\'user_sessions\'',
+        query:
+          "SELECT 1 FROM sqlite_master WHERE type='table' AND name='user_sessions'",
       },
       {
         name: 'tunnel_connections_table',
-        query: 'SELECT 1 FROM sqlite_master WHERE type=\'table\' AND name=\'tunnel_connections\'',
+        query:
+          "SELECT 1 FROM sqlite_master WHERE type='table' AND name='tunnel_connections'",
       },
       {
         name: 'audit_logs_table',
-        query: 'SELECT 1 FROM sqlite_master WHERE type=\'table\' AND name=\'audit_logs\'',
+        query:
+          "SELECT 1 FROM sqlite_master WHERE type='table' AND name='audit_logs'",
       },
       {
         name: 'schema_migrations_table',
-        query: 'SELECT 1 FROM sqlite_master WHERE type=\'table\' AND name=\'schema_migrations\'',
+        query:
+          "SELECT 1 FROM sqlite_master WHERE type='table' AND name='schema_migrations'",
       },
     ];
 
@@ -340,7 +342,7 @@ export class DatabaseMigrator {
       }
     }
 
-    const allValid = Object.values(results).every(valid => valid);
+    const allValid = Object.values(results).every((valid) => valid);
 
     this.logger.info('Schema validation completed', {
       results,
@@ -356,7 +358,8 @@ export class DatabaseMigrator {
   async getDatabaseStats() {
     const queries = {
       totalSessions: 'SELECT COUNT(*) as count FROM user_sessions',
-      activeSessions: 'SELECT COUNT(*) as count FROM user_sessions WHERE is_active = 1 AND expires_at > datetime(\'now\')',
+      activeSessions:
+        "SELECT COUNT(*) as count FROM user_sessions WHERE is_active = 1 AND expires_at > datetime('now')",
       totalConnections: 'SELECT COUNT(*) as count FROM tunnel_connections',
       auditLogCount: 'SELECT COUNT(*) as count FROM audit_logs',
     };
@@ -424,32 +427,31 @@ async function runCommand() {
     await migrator.createMigrationsTable();
 
     switch (command) {
-    case 'init':
-      await migrator.applyInitialSchema();
-      break;
+      case 'init':
+        await migrator.applyInitialSchema();
+        break;
 
-    case 'validate': {
-      const validation = await migrator.validateSchema();
-      console.log('Validation results:', validation);
-      break;
+      case 'validate': {
+        const validation = await migrator.validateSchema();
+        console.log('Validation results:', validation);
+        break;
+      }
+
+      case 'stats': {
+        const stats = await migrator.getDatabaseStats();
+        console.log('Database statistics:', stats);
+        break;
+      }
+
+      case 'status': {
+        const migrations = await migrator.getAppliedMigrations();
+        console.log('Applied migrations:', migrations);
+        break;
+      }
+
+      default:
+        console.log('Usage: node migrate.js [init|validate|stats|status]');
     }
-
-    case 'stats': {
-      const stats = await migrator.getDatabaseStats();
-      console.log('Database statistics:', stats);
-      break;
-    }
-
-    case 'status': {
-      const migrations = await migrator.getAppliedMigrations();
-      console.log('Applied migrations:', migrations);
-      break;
-    }
-
-    default:
-      console.log('Usage: node migrate.js [init|validate|stats|status]');
-    }
-
   } catch (error) {
     console.error('Migration failed:', error.message);
     process.exit(1);

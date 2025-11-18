@@ -7,6 +7,7 @@ The Email Configuration API provides secure administrative endpoints for managin
 ## Authentication
 
 All endpoints require:
+
 - Valid JWT token in `Authorization: Bearer <token>` header
 - Admin role with appropriate permissions
 - Permissions: `view_email_config` (read), `manage_email_config` (write)
@@ -22,6 +23,7 @@ All endpoints require:
 **Description:** Initiates Google Workspace OAuth 2.0 authentication flow.
 
 **Request:**
+
 ```bash
 curl -X POST "https://api.cloudtolocalllm.online/api/admin/email/oauth/start" \
   -H "Authorization: Bearer <jwt_token>" \
@@ -29,6 +31,7 @@ curl -X POST "https://api.cloudtolocalllm.online/api/admin/email/oauth/start" \
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -41,6 +44,7 @@ curl -X POST "https://api.cloudtolocalllm.online/api/admin/email/oauth/start" \
 ```
 
 **Error Responses:**
+
 - `500` - Failed to start OAuth flow
 
 ---
@@ -54,6 +58,7 @@ curl -X POST "https://api.cloudtolocalllm.online/api/admin/email/oauth/start" \
 **Description:** Processes Google OAuth callback and stores encrypted credentials.
 
 **Request Body:**
+
 ```json
 {
   "code": "authorization_code_from_google",
@@ -62,6 +67,7 @@ curl -X POST "https://api.cloudtolocalllm.online/api/admin/email/oauth/start" \
 ```
 
 **Request:**
+
 ```bash
 curl -X POST "https://api.cloudtolocalllm.online/api/admin/email/oauth/callback" \
   -H "Authorization: Bearer <jwt_token>" \
@@ -73,6 +79,7 @@ curl -X POST "https://api.cloudtolocalllm.online/api/admin/email/oauth/callback"
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -91,6 +98,7 @@ curl -X POST "https://api.cloudtolocalllm.online/api/admin/email/oauth/callback"
 ```
 
 **Error Responses:**
+
 - `400` - Missing code or state parameter
 - `400` - Invalid or expired state parameter
 - `403` - State mismatch (possible CSRF attempt)
@@ -107,12 +115,14 @@ curl -X POST "https://api.cloudtolocalllm.online/api/admin/email/oauth/callback"
 **Description:** Retrieves current email configuration(s) without sensitive data.
 
 **Request:**
+
 ```bash
 curl -X GET "https://api.cloudtolocalllm.online/api/admin/email/config" \
   -H "Authorization: Bearer <jwt_token>"
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -135,6 +145,7 @@ curl -X GET "https://api.cloudtolocalllm.online/api/admin/email/config" \
 ```
 
 **Error Responses:**
+
 - `500` - Failed to retrieve configuration
 
 ---
@@ -146,18 +157,21 @@ curl -X GET "https://api.cloudtolocalllm.online/api/admin/email/config" \
 **Permissions Required:** `manage_email_config`
 
 **Query Parameters:**
+
 - `provider` (optional): Email provider to delete (default: `google_workspace`)
   - Valid values: `google_workspace`, `smtp_relay`, `sendgrid`
 
 **Description:** Deletes email configuration for specified provider.
 
 **Request:**
+
 ```bash
 curl -X DELETE "https://api.cloudtolocalllm.online/api/admin/email/config?provider=google_workspace" \
   -H "Authorization: Bearer <jwt_token>"
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -167,6 +181,7 @@ curl -X DELETE "https://api.cloudtolocalllm.online/api/admin/email/config?provid
 ```
 
 **Error Responses:**
+
 - `400` - Invalid provider
 - `500` - Failed to delete configuration
 
@@ -181,6 +196,7 @@ curl -X DELETE "https://api.cloudtolocalllm.online/api/admin/email/config?provid
 **Description:** Sends a test email to verify configuration is working.
 
 **Request Body:**
+
 ```json
 {
   "recipientEmail": "test@example.com",
@@ -189,6 +205,7 @@ curl -X DELETE "https://api.cloudtolocalllm.online/api/admin/email/config?provid
 ```
 
 **Request:**
+
 ```bash
 curl -X POST "https://api.cloudtolocalllm.online/api/admin/email/test" \
   -H "Authorization: Bearer <jwt_token>" \
@@ -200,6 +217,7 @@ curl -X POST "https://api.cloudtolocalllm.online/api/admin/email/test" \
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -215,6 +233,7 @@ curl -X POST "https://api.cloudtolocalllm.online/api/admin/email/test" \
 ```
 
 **Error Responses:**
+
 - `400` - Missing recipientEmail parameter
 - `400` - Invalid email format
 - `400` - No Google Workspace configuration found
@@ -231,12 +250,14 @@ curl -X POST "https://api.cloudtolocalllm.online/api/admin/email/test" \
 **Description:** Retrieves current email service status and configuration.
 
 **Request:**
+
 ```bash
 curl -X GET "https://api.cloudtolocalllm.online/api/admin/email/status" \
   -H "Authorization: Bearer <jwt_token>"
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -255,6 +276,7 @@ curl -X GET "https://api.cloudtolocalllm.online/api/admin/email/status" \
 ```
 
 **Error Responses:**
+
 - `500` - Failed to retrieve status
 
 ---
@@ -268,12 +290,14 @@ curl -X GET "https://api.cloudtolocalllm.online/api/admin/email/status" \
 **Description:** Retrieves Gmail quota information and message counts.
 
 **Request:**
+
 ```bash
 curl -X GET "https://api.cloudtolocalllm.online/api/admin/email/quota" \
   -H "Authorization: Bearer <jwt_token>"
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -291,6 +315,7 @@ curl -X GET "https://api.cloudtolocalllm.online/api/admin/email/quota" \
 ```
 
 **Error Responses:**
+
 - `400` - No Google Workspace configuration found
 - `500` - Failed to retrieve quota
 
@@ -299,6 +324,7 @@ curl -X GET "https://api.cloudtolocalllm.online/api/admin/email/quota" \
 ## Audit Logging
 
 All email configuration changes are automatically logged to the audit trail with:
+
 - Admin user ID and role
 - Action type (e.g., `email_oauth_configured`, `test_email_sent`)
 - Resource type and ID
@@ -326,6 +352,7 @@ All endpoints follow consistent error response format:
 ```
 
 Common error codes:
+
 - `NO_TOKEN` - No JWT token provided
 - `INVALID_TOKEN` - Invalid or expired JWT token
 - `INSUFFICIENT_PERMISSIONS` - User lacks required permissions
@@ -350,6 +377,7 @@ Common error codes:
 ### Complete OAuth Setup Flow
 
 1. Start OAuth flow:
+
 ```bash
 curl -X POST "https://api.cloudtolocalllm.online/api/admin/email/oauth/start" \
   -H "Authorization: Bearer <jwt_token>"
@@ -358,6 +386,7 @@ curl -X POST "https://api.cloudtolocalllm.online/api/admin/email/oauth/start" \
 2. User visits the returned `authorizationUrl` and grants permissions
 
 3. Handle callback:
+
 ```bash
 curl -X POST "https://api.cloudtolocalllm.online/api/admin/email/oauth/callback" \
   -H "Authorization: Bearer <jwt_token>" \
@@ -369,12 +398,14 @@ curl -X POST "https://api.cloudtolocalllm.online/api/admin/email/oauth/callback"
 ```
 
 4. Verify configuration:
+
 ```bash
 curl -X GET "https://api.cloudtolocalllm.online/api/admin/email/status" \
   -H "Authorization: Bearer <jwt_token>"
 ```
 
 5. Send test email:
+
 ```bash
 curl -X POST "https://api.cloudtolocalllm.online/api/admin/email/test" \
   -H "Authorization: Bearer <jwt_token>" \

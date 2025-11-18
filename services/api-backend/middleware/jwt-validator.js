@@ -4,7 +4,11 @@
  */
 
 import jwt from 'jsonwebtoken';
-import { TunnelLogger, ERROR_CODES, ErrorResponseBuilder } from '../utils/logger.js';
+import {
+  TunnelLogger,
+  ERROR_CODES,
+  ErrorResponseBuilder,
+} from '../utils/logger.js';
 import { AuthService } from '../auth/auth-service.js';
 
 /**
@@ -91,7 +95,7 @@ class ValidationAttemptTracker {
    */
   getAttemptCount(windowMs) {
     const cutoff = new Date(Date.now() - windowMs);
-    this.attempts = this.attempts.filter(timestamp => timestamp > cutoff);
+    this.attempts = this.attempts.filter((timestamp) => timestamp > cutoff);
     return this.attempts.length;
   }
 }
@@ -165,7 +169,9 @@ export class JWTValidator {
     }
 
     const tracker = this.validationAttempts.get(ip);
-    const attemptCount = tracker.getAttemptCount(this.config.validationWindowMs);
+    const attemptCount = tracker.getAttemptCount(
+      this.config.validationWindowMs
+    );
 
     if (attemptCount >= this.config.maxValidationAttempts) {
       this.logger.logSecurity('jwt_validation_rate_limit_exceeded', null, {
@@ -339,7 +345,6 @@ export class JWTValidator {
         expiresAt,
         needsRefresh,
       };
-
     } catch (error) {
       this.logger.logSecurity('jwt_validation_failed', null, {
         correlationId,
@@ -411,8 +416,8 @@ export class JWTValidator {
     if (claims.scope) {
       const scopes = claims.scope.split(' ');
       const suspiciousScopes = ['admin', 'root', 'superuser', 'system'];
-      const foundSuspicious = scopes.filter(scope =>
-        suspiciousScopes.some(sus => scope.toLowerCase().includes(sus)),
+      const foundSuspicious = scopes.filter((scope) =>
+        suspiciousScopes.some((sus) => scope.toLowerCase().includes(sus))
       );
 
       if (foundSuspicious.length > 0) {
@@ -426,12 +431,24 @@ export class JWTValidator {
 
     // Check for unusual claims
     const standardClaims = [
-      'sub', 'aud', 'iss', 'exp', 'iat', 'nbf', 'jti', 'scope',
-      'email', 'email_verified', 'name', 'picture', 'nickname',
+      'sub',
+      'aud',
+      'iss',
+      'exp',
+      'iat',
+      'nbf',
+      'jti',
+      'scope',
+      'email',
+      'email_verified',
+      'name',
+      'picture',
+      'nickname',
     ];
 
-    const customClaims = Object.keys(claims).filter(claim =>
-      !standardClaims.includes(claim) && !claim.startsWith('https://'),
+    const customClaims = Object.keys(claims).filter(
+      (claim) =>
+        !standardClaims.includes(claim) && !claim.startsWith('https://')
     );
 
     if (customClaims.length > 0) {
@@ -475,8 +492,9 @@ export class JWTValidator {
     // Clean up validation attempts
     const cutoff = new Date(Date.now() - this.config.validationWindowMs);
     for (const [ip, tracker] of this.validationAttempts.entries()) {
-
-      tracker.attempts = tracker.attempts.filter(timestamp => timestamp > cutoff);
+      tracker.attempts = tracker.attempts.filter(
+        (timestamp) => timestamp > cutoff
+      );
 
       if (tracker.attempts.length === 0) {
         this.validationAttempts.delete(ip);
@@ -499,8 +517,13 @@ export class JWTValidator {
    * @returns {Object} Statistics
    */
   getStats() {
-    const cacheHitRate = this.cacheStats.totalValidations > 0 ?
-      (this.cacheStats.hits / this.cacheStats.totalValidations * 100).toFixed(2) : 0;
+    const cacheHitRate =
+      this.cacheStats.totalValidations > 0
+        ? (
+            (this.cacheStats.hits / this.cacheStats.totalValidations) *
+            100
+          ).toFixed(2)
+        : 0;
 
     return {
       cache: {
@@ -548,7 +571,7 @@ export class JWTValidator {
 export function createJWTValidationMiddleware(config = {}) {
   const validator = new JWTValidator(config);
 
-  return async(req, res, next) => {
+  return async (req, res, next) => {
     const correlationId = validator.logger.generateCorrelationId();
     req.correlationId = correlationId;
 
@@ -558,7 +581,7 @@ export function createJWTValidationMiddleware(config = {}) {
     if (!token) {
       const errorResponse = ErrorResponseBuilder.authenticationError(
         'Authorization header with Bearer token is required',
-        ERROR_CODES.AUTH_TOKEN_MISSING,
+        ERROR_CODES.AUTH_TOKEN_MISSING
       );
 
       validator.logger.logSecurity('auth_token_missing', null, {
@@ -599,7 +622,7 @@ export function createJWTValidationMiddleware(config = {}) {
         const errorResponse = ErrorResponseBuilder.createErrorResponse(
           result.errorCode,
           result.error,
-          result.statusCode,
+          result.statusCode
         );
 
         return res.status(result.statusCode).json(errorResponse);
@@ -646,7 +669,6 @@ export function createJWTValidationMiddleware(config = {}) {
       });
 
       next();
-
     } catch (error) {
       validator.logger.error('JWT validation middleware error', error, {
         correlationId,
@@ -656,7 +678,7 @@ export function createJWTValidationMiddleware(config = {}) {
 
       const errorResponse = ErrorResponseBuilder.internalServerError(
         'Token validation failed',
-        ERROR_CODES.INTERNAL_SERVER_ERROR,
+        ERROR_CODES.INTERNAL_SERVER_ERROR
       );
 
       res.status(500).json(errorResponse);

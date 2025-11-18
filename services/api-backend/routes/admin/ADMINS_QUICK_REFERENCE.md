@@ -1,9 +1,11 @@
 # Admin Management API - Quick Reference
 
 ## Base URL
+
 `/api/admin/admins`
 
 ## Authentication
+
 All endpoints require **Super Admin** role.
 
 ---
@@ -11,45 +13,53 @@ All endpoints require **Super Admin** role.
 ## Endpoints
 
 ### List Administrators
+
 ```
 GET /api/admin/admins
 ```
+
 Returns all administrators with roles and activity summary.
 
 ### Assign Admin Role
+
 ```
 POST /api/admin/admins
 Body: { email, role }
 ```
+
 Assigns `support_admin` or `finance_admin` role to a user.
 
 ### Revoke Admin Role
+
 ```
 DELETE /api/admin/admins/:userId/roles/:role
 ```
+
 Revokes specified admin role from user.
 
 ---
 
 ## Valid Roles
 
-| Role | Can Assign? | Permissions |
-|------|-------------|-------------|
-| `super_admin` | ❌ No | Full access, manage admins |
-| `support_admin` | ✅ Yes | User management, view payments |
-| `finance_admin` | ✅ Yes | Payment management, refunds, reports |
+| Role            | Can Assign? | Permissions                          |
+| --------------- | ----------- | ------------------------------------ |
+| `super_admin`   | ❌ No       | Full access, manage admins           |
+| `support_admin` | ✅ Yes      | User management, view payments       |
+| `finance_admin` | ✅ Yes      | Payment management, refunds, reports |
 
 ---
 
 ## Quick Examples
 
 ### List all admins
+
 ```bash
 curl -X GET https://api.cloudtolocalllm.online/api/admin/admins \
   -H "Authorization: Bearer TOKEN"
 ```
 
 ### Assign support admin role
+
 ```bash
 curl -X POST https://api.cloudtolocalllm.online/api/admin/admins \
   -H "Authorization: Bearer TOKEN" \
@@ -58,6 +68,7 @@ curl -X POST https://api.cloudtolocalllm.online/api/admin/admins \
 ```
 
 ### Revoke admin role
+
 ```bash
 curl -X DELETE https://api.cloudtolocalllm.online/api/admin/admins/USER_ID/roles/support_admin \
   -H "Authorization: Bearer TOKEN"
@@ -67,16 +78,16 @@ curl -X DELETE https://api.cloudtolocalllm.online/api/admin/admins/USER_ID/roles
 
 ## Status Codes
 
-| Code | Meaning |
-|------|---------|
-| 200 | Success |
-| 201 | Role assigned |
-| 400 | Invalid input |
-| 401 | Not authenticated |
-| 403 | Not Super Admin |
-| 404 | User/role not found |
-| 409 | Role already assigned |
-| 500 | Server error |
+| Code | Meaning               |
+| ---- | --------------------- |
+| 200  | Success               |
+| 201  | Role assigned         |
+| 400  | Invalid input         |
+| 401  | Not authenticated     |
+| 403  | Not Super Admin       |
+| 404  | User/role not found   |
+| 409  | Role already assigned |
+| 500  | Server error          |
 
 ---
 

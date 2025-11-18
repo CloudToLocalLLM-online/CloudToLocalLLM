@@ -240,6 +240,22 @@ flutter run -d linux
 - [ ] ✅ Proper token expiration handling
 - [ ] ✅ No token leakage in logs
 
+## 🤖 **AUTOMATED TESTING STRATEGY**
+
+For detailed testing strategy, refer to [docs/TESTING_STRATEGY.md](TESTING_STRATEGY.md).
+
+### ✅ **E2E Testing (Playwright)**
+- [ ] ✅ Critical user flows (Login, Chat, Settings) covered by Playwright tests
+- [ ] ✅ Tests pass in CI pipeline
+- [ ] ✅ Visual regression tests (optional)
+
+### ✅ **Unit Testing (Backend)**
+- [ ] ✅ Core services (Auth, Admin, Alerting) covered by Jest tests
+- [ ] ✅ Minimum 80% code coverage for critical paths
+- [ ] ✅ Database migrations tested
+
+---
+
 ## 📋 **FINAL VALIDATION CHECKLIST**
 
 ### ✅ **Core Functionality**

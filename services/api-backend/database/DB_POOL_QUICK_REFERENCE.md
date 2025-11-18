@@ -139,6 +139,7 @@ GET /api/db/pool/status
 ### Automatic Monitoring
 
 The pool monitor automatically:
+
 - Performs health checks every 30 seconds
 - Logs metrics every 60 seconds
 - Alerts when pool usage exceeds 90%
@@ -148,6 +149,7 @@ The pool monitor automatically:
 ### Log Messages
 
 **Normal Operation:**
+
 ```
 🟢 [DB Pool] New client connected
 🟡 [DB Pool] Client acquired from pool
@@ -155,12 +157,14 @@ The pool monitor automatically:
 ```
 
 **Warnings:**
+
 ```
 ⚠️ [Pool Monitor] Connection pool nearing exhaustion
 ⚠️ [Pool Monitor] Clients waiting for database connections
 ```
 
 **Errors:**
+
 ```
 🔴 [DB Pool] Unexpected error on idle client
 🔴 [Pool Monitor] Health check failed
@@ -173,6 +177,7 @@ The pool monitor automatically:
 ### Connection Management
 
 1. **Always release connections:**
+
 ```javascript
 const client = await getClient();
 try {
@@ -183,6 +188,7 @@ try {
 ```
 
 2. **Use query() for simple queries:**
+
 ```javascript
 // Good - automatic connection management
 const result = await query('SELECT * FROM users');
@@ -195,6 +201,7 @@ client.release();
 ```
 
 3. **Use transactions properly:**
+
 ```javascript
 const client = await getClient();
 try {
@@ -212,20 +219,21 @@ try {
 ### Performance Optimization
 
 1. **Use prepared statements for repeated queries:**
+
 ```javascript
-const result = await query(
-  'SELECT * FROM users WHERE email = $1',
-  [email]
-);
+const result = await query('SELECT * FROM users WHERE email = $1', [email]);
 ```
 
 2. **Batch operations when possible:**
+
 ```javascript
 // Good - single query
-await query(
-  'INSERT INTO users (email, name) VALUES ($1, $2), ($3, $4)',
-  [email1, name1, email2, name2]
-);
+await query('INSERT INTO users (email, name) VALUES ($1, $2), ($3, $4)', [
+  email1,
+  name1,
+  email2,
+  name2,
+]);
 
 // Avoid - multiple queries
 await query('INSERT INTO users (email, name) VALUES ($1, $2)', [email1, name1]);
@@ -233,6 +241,7 @@ await query('INSERT INTO users (email, name) VALUES ($1, $2)', [email2, name2]);
 ```
 
 3. **Use indexes for frequently queried columns:**
+
 ```sql
 CREATE INDEX idx_users_email ON users(email);
 ```
@@ -261,11 +270,13 @@ try {
 ### Pool Exhaustion
 
 **Symptoms:**
+
 - Clients waiting for connections
 - Slow API responses
 - Pool usage > 90%
 
 **Solutions:**
+
 1. Increase `DB_POOL_MAX` (if database can handle it)
 2. Optimize slow queries
 3. Check for connection leaks (unreleased clients)
@@ -274,10 +285,12 @@ try {
 ### Health Check Failures
 
 **Symptoms:**
+
 - Health check endpoint returns 503
 - Logs show connection errors
 
 **Solutions:**
+
 1. Verify database is running
 2. Check database credentials
 3. Verify network connectivity
@@ -287,10 +300,12 @@ try {
 ### High Error Count
 
 **Symptoms:**
+
 - Increasing error count in metrics
 - Frequent pool errors in logs
 
 **Solutions:**
+
 1. Check database server health
 2. Review database server logs
 3. Verify connection limits on database server
@@ -302,6 +317,7 @@ try {
 ### Grafana Metrics
 
 Track these metrics in Grafana:
+
 - `db_pool_active_connections` - Active connections
 - `db_pool_idle_connections` - Idle connections
 - `db_pool_waiting_clients` - Waiting clients
@@ -312,6 +328,7 @@ Track these metrics in Grafana:
 ### Alert Rules
 
 Set up alerts for:
+
 - Health check failures (critical)
 - Pool usage > 90% (warning)
 - Waiting clients > 0 for > 1 minute (warning)

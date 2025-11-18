@@ -11,7 +11,9 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-const SERVICE_URL = process.env.SERVICE_URL || 'https://cloudtolocalllm-api-123456789-uc.a.run.app';
+const SERVICE_URL =
+  process.env.SERVICE_URL ||
+  'https://cloudtolocalllm-api-123456789-uc.a.run.app';
 const TEST_TOKEN = process.env.TEST_TOKEN; // Valid Auth0 JWT token for testing
 
 async function testAuthFlow() {
@@ -26,7 +28,7 @@ async function testAuthFlow() {
   try {
     const response = await fetch(`${SERVICE_URL}/api/db/health`);
     const health = await response.json();
-    
+
     if (response.ok) {
       console.log(' Database health check passed');
       console.log(`   Status: ${health.status}`);
@@ -47,7 +49,7 @@ async function testAuthFlow() {
   try {
     const response = await fetch(`${SERVICE_URL}/ollama/bridge/status`);
     const result = await response.json();
-    
+
     if (response.status === 401) {
       console.log(' Unauthenticated request properly rejected');
       console.log(`   Status: ${response.status}`);
@@ -68,18 +70,22 @@ async function testAuthFlow() {
     try {
       // Decode token to show info (without verification)
       const decoded = jwt.decode(TEST_TOKEN);
-      console.log(`   Token User: ${decoded?.email || decoded?.sub || 'Unknown'}`);
-      console.log(`   Token Expires: ${new Date(decoded?.exp * 1000).toISOString()}`);
-      
+      console.log(
+        `   Token User: ${decoded?.email || decoded?.sub || 'Unknown'}`
+      );
+      console.log(
+        `   Token Expires: ${new Date(decoded?.exp * 1000).toISOString()}`
+      );
+
       const response = await fetch(`${SERVICE_URL}/ollama/bridge/status`, {
         headers: {
-          'Authorization': `Bearer ${TEST_TOKEN}`,
-          'Content-Type': 'application/json'
-        }
+          Authorization: `Bearer ${TEST_TOKEN}`,
+          'Content-Type': 'application/json',
+        },
       });
-      
+
       const result = await response.json();
-      
+
       if (response.ok) {
         console.log(' Authenticated request successful');
         console.log(`   Status: ${response.status}`);
@@ -89,7 +95,7 @@ async function testAuthFlow() {
         console.log(' Authenticated request failed');
         console.log(`   Status: ${response.status}`);
         console.log(`   Error: ${result.error || 'Unknown error'}`);
-        
+
         if (response.status === 401) {
           console.log('   � Token may be expired or invalid');
         }
@@ -99,7 +105,9 @@ async function testAuthFlow() {
     }
   } else {
     console.log('\n  Test 3: Skipped (no TEST_TOKEN provided)');
-    console.log('   To test authenticated requests, set TEST_TOKEN environment variable');
+    console.log(
+      '   To test authenticated requests, set TEST_TOKEN environment variable'
+    );
     console.log('   with a valid Auth0 JWT token');
   }
 
@@ -110,19 +118,27 @@ async function testAuthFlow() {
     const response = await fetch(`${SERVICE_URL}/api/db/health`, {
       method: 'OPTIONS',
       headers: {
-        'Origin': 'https://app.cloudtolocalllm.online',
+        Origin: 'https://app.cloudtolocalllm.online',
         'Access-Control-Request-Method': 'GET',
-        'Access-Control-Request-Headers': 'Authorization'
-      }
+        'Access-Control-Request-Headers': 'Authorization',
+      },
     });
-    
+
     const corsHeaders = {
-      'Access-Control-Allow-Origin': response.headers.get('Access-Control-Allow-Origin'),
-      'Access-Control-Allow-Methods': response.headers.get('Access-Control-Allow-Methods'),
-      'Access-Control-Allow-Headers': response.headers.get('Access-Control-Allow-Headers'),
-      'Access-Control-Allow-Credentials': response.headers.get('Access-Control-Allow-Credentials')
+      'Access-Control-Allow-Origin': response.headers.get(
+        'Access-Control-Allow-Origin'
+      ),
+      'Access-Control-Allow-Methods': response.headers.get(
+        'Access-Control-Allow-Methods'
+      ),
+      'Access-Control-Allow-Headers': response.headers.get(
+        'Access-Control-Allow-Headers'
+      ),
+      'Access-Control-Allow-Credentials': response.headers.get(
+        'Access-Control-Allow-Credentials'
+      ),
     };
-    
+
     if (response.ok || response.status === 204) {
       console.log(' CORS preflight successful');
       console.log('   CORS Headers:');
@@ -142,17 +158,24 @@ async function testAuthFlow() {
   console.log('------------------------');
   try {
     console.log('   Making 5 rapid requests to test rate limiting...');
-    const promises = Array(5).fill().map((_, i) => 
-      fetch(`${SERVICE_URL}/api/db/health`).then(r => ({ index: i, status: r.status }))
-    );
-    
+    const promises = Array(5)
+      .fill()
+      .map((_, i) =>
+        fetch(`${SERVICE_URL}/api/db/health`).then((r) => ({
+          index: i,
+          status: r.status,
+        }))
+      );
+
     const results = await Promise.all(promises);
-    const successful = results.filter(r => r.status === 200).length;
-    const rateLimited = results.filter(r => r.status === 429).length;
-    
+    const successful = results.filter((r) => r.status === 200).length;
+    const rateLimited = results.filter((r) => r.status === 429).length;
+
     console.log(`    ${successful} requests successful`);
     if (rateLimited > 0) {
-      console.log(`     ${rateLimited} requests rate limited (this is expected behavior)`);
+      console.log(
+        `     ${rateLimited} requests rate limited (this is expected behavior)`
+      );
     }
   } catch (error) {
     console.log(' Rate limiting test error:', error.message);
@@ -164,7 +187,7 @@ async function testAuthFlow() {
   console.log(' Authentication flow tested');
   console.log(' CORS configuration tested');
   console.log(' Rate limiting tested');
-  
+
   if (!TEST_TOKEN) {
     console.log('\n� For complete testing, provide a TEST_TOKEN:');
     console.log('   1. Login to your Flutter app');

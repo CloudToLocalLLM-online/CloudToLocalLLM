@@ -40,7 +40,9 @@ async function ensureAuthServiceInitialized() {
     await authService.initialize();
     authServiceInitialized = true;
   } catch (error) {
-    logger.error(' [Auth] Failed to initialize AuthService', { error: error.message });
+    logger.error(' [Auth] Failed to initialize AuthService', {
+      error: error.message,
+    });
     throw error;
   }
 }
@@ -90,9 +92,12 @@ export async function authenticateJWT(req, res, next) {
     try {
       await ensureAuthServiceInitialized();
     } catch (initError) {
-      logger.error(' [Auth] AuthService initialization failed, falling back to Auth0 payload', {
-        error: initError.message,
-      });
+      logger.error(
+        ' [Auth] AuthService initialization failed, falling back to Auth0 payload',
+        {
+          error: initError.message,
+        }
+      );
 
       if (req.auth?.payload) {
         req.user = req.auth.payload;
@@ -111,13 +116,15 @@ export async function authenticateJWT(req, res, next) {
 
     // If it's not a valid JWT (opaque token), use Auth0 userinfo endpoint
     if (!decoded || !decoded.header || !decoded.header.kid) {
-      logger.debug(' [Auth] Token appears to be opaque, using Auth0 userinfo endpoint');
+      logger.debug(
+        ' [Auth] Token appears to be opaque, using Auth0 userinfo endpoint'
+      );
 
       try {
         // Validate opaque token using Auth0 userinfo endpoint
         const response = await fetch(`https://${AUTH0_DOMAIN}/userinfo`, {
           headers: {
-            'Authorization': `Bearer ${token}`,
+            Authorization: `Bearer ${token}`,
           },
         });
 
@@ -131,7 +138,9 @@ export async function authenticateJWT(req, res, next) {
         req.user = userInfo;
         req.userId = userInfo.sub;
 
-        logger.debug(` [Auth] User authenticated via userinfo: ${userInfo.sub}`);
+        logger.debug(
+          ` [Auth] User authenticated via userinfo: ${userInfo.sub}`
+        );
         next();
         return;
       } catch (userinfoError) {
@@ -144,13 +153,22 @@ export async function authenticateJWT(req, res, next) {
     }
 
     // If it's a proper JWT token, use the AuthService with pre-validated payload from Auth0 SDK
-    logger.debug(' [Auth] Token appears to be JWT, using AuthService with pre-validated payload');
-    const result = await authService.validateToken(token, req, req.auth?.payload);
+    logger.debug(
+      ' [Auth] Token appears to be JWT, using AuthService with pre-validated payload'
+    );
+    const result = await authService.validateToken(
+      token,
+      req,
+      req.auth?.payload
+    );
 
     if (!result.valid) {
-      logger.warn(' [Auth] AuthService validation failed, falling back to Auth0 payload', {
-        error: result.error,
-      });
+      logger.warn(
+        ' [Auth] AuthService validation failed, falling back to Auth0 payload',
+        {
+          error: result.error,
+        }
+      );
 
       if (req.auth?.payload) {
         req.user = req.auth.payload;
@@ -171,7 +189,6 @@ export async function authenticateJWT(req, res, next) {
 
     logger.debug(` [Auth] User authenticated via JWT: ${result.payload.sub}`);
     next();
-
   } catch (error) {
     logger.error(' [Auth] Token verification failed:', error);
 
@@ -234,7 +251,9 @@ export function requireScope(requiredScope) {
     const userScopes = req.user.scope ? req.user.scope.split(' ') : [];
 
     if (!userScopes.includes(requiredScope)) {
-      logger.warn(` [Auth] User ${req.user.sub} missing required scope: ${requiredScope}`);
+      logger.warn(
+        ` [Auth] User ${req.user.sub} missing required scope: ${requiredScope}`
+      );
       return res.status(403).json({
         error: 'Insufficient permissions',
         code: 'INSUFFICIENT_PERMISSIONS',
@@ -268,7 +287,7 @@ export async function optionalAuth(req, res, next) {
       try {
         const response = await fetch(`https://${AUTH0_DOMAIN}/userinfo`, {
           headers: {
-            'Authorization': `Bearer ${token}`,
+            Authorization: `Bearer ${token}`,
           },
         });
 
@@ -276,10 +295,15 @@ export async function optionalAuth(req, res, next) {
           const userInfo = await response.json();
           req.user = userInfo;
           req.userId = userInfo.sub;
-          logger.debug(` [Auth] Optional auth successful via userinfo: ${userInfo.sub}`);
+          logger.debug(
+            ` [Auth] Optional auth successful via userinfo: ${userInfo.sub}`
+          );
         }
       } catch (userinfoError) {
-        logger.debug(' [Auth] Optional userinfo auth failed, continuing without authentication:', userinfoError.message);
+        logger.debug(
+          ' [Auth] Optional userinfo auth failed, continuing without authentication:',
+          userinfoError.message
+        );
       }
     } else {
       // Try JWT validation
@@ -288,12 +312,17 @@ export async function optionalAuth(req, res, next) {
       if (result.valid) {
         req.user = result.payload;
         req.userId = result.payload.sub;
-        logger.debug(` [Auth] Optional auth successful via JWT: ${result.payload.sub}`);
+        logger.debug(
+          ` [Auth] Optional auth successful via JWT: ${result.payload.sub}`
+        );
       }
     }
   } catch (error) {
     // Token verification failed, but that's okay for optional auth
-    logger.debug(' [Auth] Optional auth failed, continuing without authentication:', error.message);
+    logger.debug(
+      ' [Auth] Optional auth failed, continuing without authentication:',
+      error.message
+    );
   }
 
   next();
@@ -378,8 +407,10 @@ export function requireAdmin(req, res, next) {
     }
 
     // Check for admin role in multiple possible locations
-    const userMetadata = req.user['https://cloudtolocalllm.com/user_metadata'] || {};
-    const appMetadata = req.user['https://cloudtolocalllm.com/app_metadata'] || {};
+    const userMetadata =
+      req.user['https://cloudtolocalllm.com/user_metadata'] || {};
+    const appMetadata =
+      req.user['https://cloudtolocalllm.com/app_metadata'] || {};
     const userRoles = req.user['https://cloudtolocalllm.online/roles'] || [];
     const userScopes = req.user.scope ? req.user.scope.split(' ') : [];
 

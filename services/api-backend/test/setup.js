@@ -64,13 +64,19 @@ jest.mock('ws', () => {
       this.listeners[event] = this.listeners[event] || [];
       this.listeners[event].push(handler);
     }
-    addEventListener(event, handler) { this.on(event, handler); }
+    addEventListener(event, handler) {
+      this.on(event, handler);
+    }
     removeEventListener(event, handler) {
       if (!this.listeners[event]) return;
-      this.listeners[event] = this.listeners[event].filter(h => h !== handler);
+      this.listeners[event] = this.listeners[event].filter(
+        (h) => h !== handler
+      );
     }
     send(_data) {}
-    close() { this.readyState = this.CLOSED; }
+    close() {
+      this.readyState = this.CLOSED;
+    }
   }
   MockWebSocket.Server = class {};
   return MockWebSocket;
@@ -118,7 +124,7 @@ global.testUtils = {
   createMockNext: () => jest.fn(),
 
   // Wait for async operations
-  waitFor: (ms) => new Promise(resolve => setTimeout(resolve, ms)),
+  waitFor: (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
 
   // Generate test JWT token
   generateTestJWT: () => 'test.jwt.token',

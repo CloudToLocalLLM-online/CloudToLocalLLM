@@ -13,7 +13,11 @@
 
 import express from 'express';
 import { authenticateJWT } from '../middleware/auth.js';
-import { addTierInfo, shouldUseDirectTunnel, getUserTier } from '../middleware/tier-check.js';
+import {
+  addTierInfo,
+  shouldUseDirectTunnel,
+  getUserTier,
+} from '../middleware/tier-check.js';
 import { logger } from '../utils/logger.js';
 
 // Configuration constants
@@ -87,7 +91,7 @@ export function createDirectProxyRoutes(tunnelProxy) {
    * Direct proxy endpoint for Ollama API calls with comprehensive security
    * Routes: /api/direct-proxy/:userId/ollama/*
    */
-  router.all('/ollama/*', authenticateJWT, addTierInfo, async(req, res) => {
+  router.all('/ollama/*', authenticateJWT, addTierInfo, async (req, res) => {
     const startTime = Date.now();
     const requestId = `dp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
@@ -98,15 +102,18 @@ export function createDirectProxyRoutes(tunnelProxy) {
 
       // Verify this is a free tier user (security check)
       if (!shouldUseDirectTunnel(req.user)) {
-        logger.warn('� [DirectProxy] Non-free tier user attempted direct proxy access', {
-          userId,
-          userTier,
-          endpoint: req.path,
-          method: req.method,
-          ip: req.ip,
-          userAgent: req.get('User-Agent'),
-          requestId,
-        });
+        logger.warn(
+          '� [DirectProxy] Non-free tier user attempted direct proxy access',
+          {
+            userId,
+            userTier,
+            endpoint: req.path,
+            method: req.method,
+            ip: req.ip,
+            userAgent: req.get('User-Agent'),
+            requestId,
+          }
+        );
 
         return res.status(403).json({
           error: 'Direct proxy access is only available for free tier users',
@@ -129,7 +136,8 @@ export function createDirectProxyRoutes(tunnelProxy) {
         return res.status(503).json({
           error: 'Desktop client not connected',
           code: 'DESKTOP_CLIENT_DISCONNECTED',
-          message: 'Please ensure your CloudToLocalLLM desktop client is running and connected.',
+          message:
+            'Please ensure your CloudToLocalLLM desktop client is running and connected.',
           requestId,
         });
       }
@@ -175,11 +183,18 @@ export function createDirectProxyRoutes(tunnelProxy) {
       // Sanitize headers (remove hop-by-hop and security-sensitive headers)
       const sanitizedHeaders = { ...req.headers };
       const headersToRemove = [
-        'host', 'connection', 'proxy-connection', 'proxy-authorization',
-        'te', 'trailers', 'upgrade', 'authorization', 'cookie',
+        'host',
+        'connection',
+        'proxy-connection',
+        'proxy-authorization',
+        'te',
+        'trailers',
+        'upgrade',
+        'authorization',
+        'cookie',
       ];
 
-      headersToRemove.forEach(header => {
+      headersToRemove.forEach((header) => {
         delete sanitizedHeaders[header];
       });
 
@@ -189,7 +204,10 @@ export function createDirectProxyRoutes(tunnelProxy) {
         method: req.method,
         path: ollamaPath,
         headers: sanitizedHeaders,
-        body: req.method !== 'GET' && req.method !== 'HEAD' ? JSON.stringify(req.body) : undefined,
+        body:
+          req.method !== 'GET' && req.method !== 'HEAD'
+            ? JSON.stringify(req.body)
+            : undefined,
         query: req.query,
         timeout: REQUEST_TIMEOUT,
       };
@@ -207,7 +225,10 @@ export function createDirectProxyRoutes(tunnelProxy) {
       const response = await Promise.race([
         tunnelProxy.forwardRequest(userId, httpRequest),
         new Promise((_, reject) =>
-          setTimeout(() => reject(new Error('Request timeout')), REQUEST_TIMEOUT),
+          setTimeout(
+            () => reject(new Error('Request timeout')),
+            REQUEST_TIMEOUT
+          )
         ),
       ]);
 
@@ -219,7 +240,7 @@ export function createDirectProxyRoutes(tunnelProxy) {
       // Sanitize response headers (remove security-sensitive headers)
       const sanitizedResponseHeaders = { ...response.headers };
       const responseHeadersToRemove = ['set-cookie', 'server', 'x-powered-by'];
-      responseHeadersToRemove.forEach(header => {
+      responseHeadersToRemove.forEach((header) => {
         delete sanitizedResponseHeaders[header];
       });
 
@@ -278,7 +299,6 @@ export function createDirectProxyRoutes(tunnelProxy) {
         duration,
         requestId,
       });
-
     } catch (error) {
       const duration = Date.now() - startTime;
       const userId = req.user?.sub;
@@ -297,7 +317,10 @@ export function createDirectProxyRoutes(tunnelProxy) {
       });
 
       // Handle specific tunnel errors with appropriate HTTP status codes
-      if (error.message === 'Request timeout' || error.code === 'REQUEST_TIMEOUT') {
+      if (
+        error.message === 'Request timeout' ||
+        error.code === 'REQUEST_TIMEOUT'
+      ) {
         return res.status(504).json({
           error: 'Request timeout',
           code: 'REQUEST_TIMEOUT',
@@ -307,11 +330,15 @@ export function createDirectProxyRoutes(tunnelProxy) {
         });
       }
 
-      if (error.code === 'DESKTOP_CLIENT_DISCONNECTED' || error.message.includes('not connected')) {
+      if (
+        error.code === 'DESKTOP_CLIENT_DISCONNECTED' ||
+        error.message.includes('not connected')
+      ) {
         return res.status(503).json({
           error: 'Desktop client not connected',
           code: 'DESKTOP_CLIENT_DISCONNECTED',
-          message: 'Please ensure your CloudToLocalLLM desktop client is running and connected.',
+          message:
+            'Please ensure your CloudToLocalLLM desktop client is running and connected.',
           requestId,
         });
       }
@@ -325,7 +352,10 @@ export function createDirectProxyRoutes(tunnelProxy) {
         });
       }
 
-      if (error.name === 'ValidationError' || error.code === 'INVALID_REQUEST') {
+      if (
+        error.name === 'ValidationError' ||
+        error.code === 'INVALID_REQUEST'
+      ) {
         return res.status(400).json({
           error: 'Invalid request',
           code: 'INVALID_REQUEST',
@@ -348,7 +378,7 @@ export function createDirectProxyRoutes(tunnelProxy) {
    * Direct proxy endpoint for general API calls
    * Routes: /api/direct-proxy/:userId/api/*
    */
-  router.all('/api/*', authenticateJWT, addTierInfo, async(req, res) => {
+  router.all('/api/*', authenticateJWT, addTierInfo, async (req, res) => {
     const userId = req.user.sub;
     const userTier = getUserTier(req.user);
 
@@ -372,10 +402,13 @@ export function createDirectProxyRoutes(tunnelProxy) {
         path: apiPath,
         headers: {
           ...req.headers,
-          'host': undefined,
-          'connection': undefined,
+          host: undefined,
+          connection: undefined,
         },
-        body: req.method !== 'GET' && req.method !== 'HEAD' ? JSON.stringify(req.body) : undefined,
+        body:
+          req.method !== 'GET' && req.method !== 'HEAD'
+            ? JSON.stringify(req.body)
+            : undefined,
         query: req.query,
       };
 
@@ -410,7 +443,6 @@ export function createDirectProxyRoutes(tunnelProxy) {
       } else {
         res.end();
       }
-
     } catch (error) {
       logger.error(' [DirectProxy] API request failed', {
         userId,

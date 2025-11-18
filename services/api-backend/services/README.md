@@ -9,12 +9,14 @@ This directory contains the payment gateway integration services for the Admin C
 The Stripe client wrapper provides a configured Stripe instance with error handling and logging.
 
 **Features:**
+
 - Automatic initialization with environment-based API keys
 - Test/production mode support
 - Standardized error handling
 - Comprehensive error mapping
 
 **Usage:**
+
 ```javascript
 import stripeClient from './services/stripe-client.js';
 
@@ -38,12 +40,14 @@ try {
 Handles payment processing through Stripe, including creating payment intents and storing transactions.
 
 **Features:**
+
 - Process one-time payments
 - Store transaction records in database
 - Handle payment success and failure
 - Retrieve transaction history
 
 **Usage:**
+
 ```javascript
 import PaymentService from './services/payment-service.js';
 
@@ -56,7 +60,9 @@ const result = await paymentService.processPayment({
   currency: 'USD',
   paymentMethodId: 'pm_xxx',
   subscriptionId: 'sub-uuid', // optional
-  metadata: { /* custom data */ }
+  metadata: {
+    /* custom data */
+  },
 });
 
 if (result.success) {
@@ -72,7 +78,7 @@ const transaction = await paymentService.getTransaction('transaction-uuid');
 const transactions = await paymentService.getUserTransactions('user-uuid', {
   limit: 50,
   offset: 0,
-  status: 'succeeded'
+  status: 'succeeded',
 });
 ```
 
@@ -81,6 +87,7 @@ const transactions = await paymentService.getUserTransactions('user-uuid', {
 Manages subscription lifecycle including creation, updates, cancellation, and webhook processing.
 
 **Features:**
+
 - Create subscriptions with Stripe
 - Update subscription tiers
 - Cancel subscriptions (immediate or at period end)
@@ -88,6 +95,7 @@ Manages subscription lifecycle including creation, updates, cancellation, and we
 - Manage customer records
 
 **Usage:**
+
 ```javascript
 import SubscriptionService from './services/subscription-service.js';
 
@@ -99,17 +107,22 @@ const result = await subscriptionService.createSubscription({
   tier: 'premium',
   paymentMethodId: 'pm_xxx',
   priceId: 'price_xxx',
-  metadata: { /* custom data */ }
+  metadata: {
+    /* custom data */
+  },
 });
 
 // Update a subscription
 const updateResult = await subscriptionService.updateSubscription('sub-uuid', {
   tier: 'enterprise',
-  priceId: 'price_yyy'
+  priceId: 'price_yyy',
 });
 
 // Cancel a subscription
-const cancelResult = await subscriptionService.cancelSubscription('sub-uuid', false); // false = at period end
+const cancelResult = await subscriptionService.cancelSubscription(
+  'sub-uuid',
+  false
+); // false = at period end
 
 // Handle webhook
 await subscriptionService.handleWebhook(stripeEvent);
@@ -120,12 +133,14 @@ await subscriptionService.handleWebhook(stripeEvent);
 Processes refunds for transactions with audit logging.
 
 **Features:**
+
 - Full and partial refunds
 - Refund reason tracking
 - Audit logging of admin actions
 - Transaction status updates
 
 **Usage:**
+
 ```javascript
 import RefundService from './services/refund-service.js';
 
@@ -140,7 +155,7 @@ const result = await refundService.processRefund({
   adminUserId: 'admin-uuid',
   adminRole: 'finance_admin',
   ipAddress: '192.168.1.1',
-  userAgent: 'Mozilla/5.0...'
+  userAgent: 'Mozilla/5.0...',
 });
 
 if (result.success) {
@@ -201,6 +216,7 @@ All services return standardized error responses:
 ```
 
 Common error codes:
+
 - `CARD_DECLINED` - Card was declined
 - `INVALID_REQUEST` - Invalid parameters
 - `PAYMENT_GATEWAY_ERROR` - Stripe API error
@@ -213,6 +229,7 @@ Common error codes:
 Use Stripe test mode for development and testing:
 
 **Test Cards:**
+
 - Success: `4242 4242 4242 4242`
 - Declined: `4000 0000 0000 0002`
 - Requires authentication: `4000 0025 0000 3155`
@@ -244,6 +261,7 @@ See [Stripe Testing Documentation](https://stripe.com/docs/testing) for more tes
 ## Monitoring
 
 Monitor the following metrics:
+
 - Payment success/failure rates
 - Refund rates
 - Subscription churn
@@ -255,6 +273,7 @@ Use Grafana dashboards for visualization and alerting.
 ## Support
 
 For Stripe-related issues:
+
 - [Stripe Documentation](https://stripe.com/docs)
 - [Stripe Support](https://support.stripe.com/)
 - [Stripe API Reference](https://stripe.com/docs/api)

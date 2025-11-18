@@ -19,18 +19,18 @@ class EmailQueueService {
     this.db = db;
     this.googleWorkspaceService = googleWorkspaceService;
     this.emailConfigService = emailConfigService;
-    
+
     // Rate limiting tracking
     this.userRateLimits = new Map(); // userId -> { count, resetTime }
     this.systemRateLimit = { count: 0, resetTime: Date.now() + 3600000 };
-    
+
     // Configuration
     this.USER_RATE_LIMIT = 100; // emails per hour
     this.SYSTEM_RATE_LIMIT = 1000; // emails per hour
     this.MAX_RETRIES = 3;
     this.INITIAL_RETRY_DELAY = 5000; // 5 seconds
     this.MAX_RETRY_DELAY = 3600000; // 1 hour
-    
+
     // Processing state
     this.isProcessing = false;
     this.processingInterval = null;
@@ -52,7 +52,7 @@ class EmailQueueService {
     logger.info('Starting email queue processor', { intervalMs });
 
     this.processingInterval = setInterval(() => {
-      this.processPendingEmails().catch(error => {
+      this.processPendingEmails().catch((error) => {
         logger.error('Error processing email queue', { error: error.message });
       });
     }, intervalMs);
@@ -92,7 +92,7 @@ class EmailQueueService {
     templateName = null,
     templateData = {},
     htmlBody = null,
-    textBody = null
+    textBody = null,
   }) {
     const emailId = uuidv4();
 
@@ -110,12 +110,18 @@ class EmailQueueService {
       let finalTextBody = textBody;
 
       if (templateName) {
-        const template = await this.emailConfigService.getTemplate(templateName, userId);
+        const template = await this.emailConfigService.getTemplate(
+          templateName,
+          userId
+        );
         if (!template) {
           throw new Error(`Template not found: ${templateName}`);
         }
 
-        const rendered = this.emailConfigService.renderTemplate(template, templateData);
+        const rendered = this.emailConfigService.renderTemplate(
+          template,
+          templateData
+        );
         finalHtmlBody = rendered.htmlBody;
         finalTextBody = rendered.textBody;
       }
@@ -146,7 +152,7 @@ class EmailQueueService {
         finalTextBody,
         'pending',
         0,
-        this.MAX_RETRIES
+        this.MAX_RETRIES,
       ]);
 
       // Update rate limits
@@ -156,7 +162,7 @@ class EmailQueueService {
         emailId,
         userId,
         recipientEmail,
-        subject
+        subject,
       });
 
       return result.rows[0];
@@ -164,7 +170,7 @@ class EmailQueueService {
       logger.error('Failed to queue email', {
         userId,
         recipientEmail,
-        error: error.message
+        error: error.message,
       });
       throw error;
     }
@@ -210,13 +216,13 @@ class EmailQueueService {
       logger.info('Email queue processing completed', {
         processed: pendingEmails.length,
         sent,
-        failed
+        failed,
       });
 
       return { processed: pendingEmails.length, sent, failed };
     } catch (error) {
       logger.error('Error processing email queue', {
-        error: error.message
+        error: error.message,
       });
       return { processed: 0, sent: 0, failed: 0 };
     }
@@ -256,18 +262,18 @@ class EmailQueueService {
 
       // Update status to sent
       await this._updateEmailStatus(email.id, 'sent', {
-        sent_at: new Date()
+        sent_at: new Date(),
       });
 
       logger.info('Email sent successfully', {
         emailId: email.id,
-        recipientEmail: email.recipient_email
+        recipientEmail: email.recipient_email,
       });
     } catch (error) {
       logger.error('Failed to send email', {
         emailId: email.id,
         recipientEmail: email.recipient_email,
-        error: error.message
+        error: error.message,
       });
       throw error;
     }
@@ -291,7 +297,7 @@ class EmailQueueService {
         to: email.recipient_email,
         subject: email.subject,
         htmlBody: email.html_body,
-        textBody: email.text_body
+        textBody: email.text_body,
       });
 
       // Send via Gmail API
@@ -303,17 +309,17 @@ class EmailQueueService {
       // Store message ID for tracking
       await this._updateEmailStatus(email.id, 'sent', {
         message_id: result.id,
-        sent_at: new Date()
+        sent_at: new Date(),
       });
 
       logger.info('Email sent via Gmail API', {
         emailId: email.id,
-        messageId: result.id
+        messageId: result.id,
       });
     } catch (error) {
       logger.error('Failed to send email via Gmail', {
         emailId: email.id,
-        error: error.message
+        error: error.message,
       });
       throw error;
     }
@@ -332,8 +338,8 @@ class EmailQueueService {
         secure: config.tls_enabled,
         auth: {
           user: config.smtp_username,
-          pass: config.smtpPassword
-        }
+          pass: config.smtpPassword,
+        },
       });
 
       // Send email
@@ -342,23 +348,23 @@ class EmailQueueService {
         to: email.recipient_email,
         subject: email.subject,
         html: email.html_body,
-        text: email.text_body
+        text: email.text_body,
       });
 
       // Store message ID for tracking
       await this._updateEmailStatus(email.id, 'sent', {
         message_id: result.messageId,
-        sent_at: new Date()
+        sent_at: new Date(),
       });
 
       logger.info('Email sent via SMTP relay', {
         emailId: email.id,
-        messageId: result.messageId
+        messageId: result.messageId,
       });
     } catch (error) {
       logger.error('Failed to send email via SMTP', {
         emailId: email.id,
-        error: error.message
+        error: error.message,
       });
       throw error;
     }
@@ -376,21 +382,21 @@ class EmailQueueService {
       // Log delivery failure
       await this._logDeliveryEvent(email.id, email.user_id, 'failed', {
         error_message: error.message,
-        retry_count: retryCount
+        retry_count: retryCount,
       });
 
       if (retryCount >= maxRetries) {
         // Move to dead letter queue
         await this._updateEmailStatus(email.id, 'failed', {
           last_error: error.message,
-          retry_count: retryCount
+          retry_count: retryCount,
         });
 
         logger.warn('Email moved to dead letter queue', {
           emailId: email.id,
           recipientEmail: email.recipient_email,
           retryCount,
-          maxRetries
+          maxRetries,
         });
       } else {
         // Schedule retry with exponential backoff
@@ -400,7 +406,7 @@ class EmailQueueService {
         await this._updateEmailStatus(email.id, 'queued', {
           last_error: error.message,
           retry_count: retryCount,
-          last_retry_at: nextRetryAt
+          last_retry_at: nextRetryAt,
         });
 
         logger.info('Email scheduled for retry', {
@@ -408,13 +414,13 @@ class EmailQueueService {
           recipientEmail: email.recipient_email,
           retryCount,
           nextRetryAt,
-          delayMs
+          delayMs,
         });
       }
     } catch (error) {
       logger.error('Error handling email failure', {
         emailId: email.id,
-        error: error.message
+        error: error.message,
       });
     }
   }
@@ -471,7 +477,7 @@ class EmailQueueService {
       logger.error('Failed to update email status', {
         emailId,
         status,
-        error: error.message
+        error: error.message,
       });
     }
   }
@@ -496,13 +502,13 @@ class EmailQueueService {
         eventType,
         'completed',
         metadata.error_message || null,
-        JSON.stringify(metadata)
+        JSON.stringify(metadata),
       ]);
     } catch (error) {
       logger.error('Failed to log delivery event', {
         emailQueueId,
         eventType,
-        error: error.message
+        error: error.message,
       });
     }
   }
@@ -528,14 +534,18 @@ class EmailQueueService {
     const userLimit = this.userRateLimits.get(userId);
     if (userLimit && now < userLimit.resetTime) {
       if (userLimit.count >= this.USER_RATE_LIMIT) {
-        throw new Error(`User rate limit exceeded (${this.USER_RATE_LIMIT}/hour)`);
+        throw new Error(
+          `User rate limit exceeded (${this.USER_RATE_LIMIT}/hour)`
+        );
       }
     }
 
     // Check system rate limit
     if (now < this.systemRateLimit.resetTime) {
       if (this.systemRateLimit.count >= this.SYSTEM_RATE_LIMIT) {
-        throw new Error(`System rate limit exceeded (${this.SYSTEM_RATE_LIMIT}/hour)`);
+        throw new Error(
+          `System rate limit exceeded (${this.SYSTEM_RATE_LIMIT}/hour)`
+        );
       }
     }
   }
@@ -552,7 +562,7 @@ class EmailQueueService {
     if (!userLimit || now >= userLimit.resetTime) {
       this.userRateLimits.set(userId, {
         count: 1,
-        resetTime: now + 3600000 // 1 hour
+        resetTime: now + 3600000, // 1 hour
       });
     } else {
       userLimit.count++;
@@ -562,7 +572,7 @@ class EmailQueueService {
     if (now >= this.systemRateLimit.resetTime) {
       this.systemRateLimit = {
         count: 1,
-        resetTime: now + 3600000 // 1 hour
+        resetTime: now + 3600000, // 1 hour
       };
     } else {
       this.systemRateLimit.count++;
@@ -637,20 +647,22 @@ class EmailQueueService {
 
       const result = await this.db.query(query, params);
 
-      return result.rows[0] || {
-        total_queued: 0,
-        pending_count: 0,
-        queued_count: 0,
-        sending_count: 0,
-        sent_count: 0,
-        failed_count: 0,
-        bounced_count: 0,
-        avg_delivery_time_seconds: null
-      };
+      return (
+        result.rows[0] || {
+          total_queued: 0,
+          pending_count: 0,
+          queued_count: 0,
+          sending_count: 0,
+          sent_count: 0,
+          failed_count: 0,
+          bounced_count: 0,
+          avg_delivery_time_seconds: null,
+        }
+      );
     } catch (error) {
       logger.error('Failed to get queue statistics', {
         userId,
-        error: error.message
+        error: error.message,
       });
       throw error;
     }
@@ -688,14 +700,14 @@ class EmailQueueService {
 
       logger.info('Retrieved dead letter queue', {
         userId,
-        count: result.rows.length
+        count: result.rows.length,
       });
 
       return result.rows;
     } catch (error) {
       logger.error('Failed to retrieve dead letter queue', {
         userId,
-        error: error.message
+        error: error.message,
       });
       throw error;
     }
@@ -723,14 +735,14 @@ class EmailQueueService {
       }
 
       logger.info('Retried failed email', {
-        emailId
+        emailId,
       });
 
       return result.rows[0];
     } catch (error) {
       logger.error('Failed to retry email', {
         emailId,
-        error: error.message
+        error: error.message,
       });
       throw error;
     }

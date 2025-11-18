@@ -1,6 +1,6 @@
 /**
  * Subscription Management Service
- * 
+ *
  * Handles subscription creation, updates, cancellation, and webhook processing
  * through Stripe. Manages subscription data in the database.
  */
@@ -24,7 +24,7 @@ class SubscriptionService {
 
   /**
    * Create a new subscription for a user
-   * 
+   *
    * @param {Object} params - Subscription parameters
    * @param {string} params.userId - User ID
    * @param {string} params.tier - Subscription tier (free, premium, enterprise)
@@ -33,7 +33,13 @@ class SubscriptionService {
    * @param {Object} [params.metadata] - Optional metadata
    * @returns {Promise<Object>} Created subscription
    */
-  async createSubscription({ userId, tier, paymentMethodId, priceId, metadata = {} }) {
+  async createSubscription({
+    userId,
+    tier,
+    paymentMethodId,
+    priceId,
+    metadata = {},
+  }) {
     if (!this.stripe) {
       this.initialize();
     }
@@ -44,7 +50,7 @@ class SubscriptionService {
       logger.info('Creating subscription', {
         userId,
         tier,
-        subscriptionId
+        subscriptionId,
       });
 
       // Get or create Stripe customer
@@ -60,8 +66,8 @@ class SubscriptionService {
           user_id: userId,
           subscription_id: subscriptionId,
           tier,
-          ...metadata
-        }
+          ...metadata,
+        },
       });
 
       // Store subscription in database
@@ -72,20 +78,30 @@ class SubscriptionService {
         stripeCustomerId: customer.id,
         tier,
         status: this._mapSubscriptionStatus(stripeSubscription.status),
-        currentPeriodStart: new Date(stripeSubscription.current_period_start * 1000),
-        currentPeriodEnd: new Date(stripeSubscription.current_period_end * 1000),
+        currentPeriodStart: new Date(
+          stripeSubscription.current_period_start * 1000
+        ),
+        currentPeriodEnd: new Date(
+          stripeSubscription.current_period_end * 1000
+        ),
         cancelAtPeriodEnd: stripeSubscription.cancel_at_period_end,
-        canceledAt: stripeSubscription.canceled_at ? new Date(stripeSubscription.canceled_at * 1000) : null,
-        trialStart: stripeSubscription.trial_start ? new Date(stripeSubscription.trial_start * 1000) : null,
-        trialEnd: stripeSubscription.trial_end ? new Date(stripeSubscription.trial_end * 1000) : null,
-        metadata
+        canceledAt: stripeSubscription.canceled_at
+          ? new Date(stripeSubscription.canceled_at * 1000)
+          : null,
+        trialStart: stripeSubscription.trial_start
+          ? new Date(stripeSubscription.trial_start * 1000)
+          : null,
+        trialEnd: stripeSubscription.trial_end
+          ? new Date(stripeSubscription.trial_end * 1000)
+          : null,
+        metadata,
       });
 
       logger.info('Subscription created successfully', {
         subscriptionId,
         userId,
         tier,
-        stripeSubscriptionId: stripeSubscription.id
+        stripeSubscriptionId: stripeSubscription.id,
       });
 
       return {
@@ -94,30 +110,29 @@ class SubscriptionService {
         stripeSubscription: {
           id: stripeSubscription.id,
           status: stripeSubscription.status,
-          current_period_end: stripeSubscription.current_period_end
-        }
+          current_period_end: stripeSubscription.current_period_end,
+        },
       };
-
     } catch (error) {
       logger.error('Subscription creation failed', {
         subscriptionId,
         userId,
         tier,
-        error: error.message
+        error: error.message,
       });
 
       const standardizedError = stripeClient.handleStripeError(error);
-      
+
       return {
         success: false,
-        error: standardizedError
+        error: standardizedError,
       };
     }
   }
 
   /**
    * Update an existing subscription
-   * 
+   *
    * @param {string} subscriptionId - Subscription ID
    * @param {Object} updates - Updates to apply
    * @param {string} [updates.tier] - New tier
@@ -133,29 +148,31 @@ class SubscriptionService {
     try {
       // Get existing subscription from database
       const existingSubscription = await this.getSubscription(subscriptionId);
-      
+
       if (!existingSubscription) {
         throw new Error('Subscription not found');
       }
 
       logger.info('Updating subscription', {
         subscriptionId,
-        updates
+        updates,
       });
 
       // Prepare Stripe update parameters
       const stripeUpdates = {};
-      
+
       if (updates.priceId) {
         // Get current subscription items
         const stripeSubscription = await this.stripe.subscriptions.retrieve(
           existingSubscription.stripe_subscription_id
         );
-        
-        stripeUpdates.items = [{
-          id: stripeSubscription.items.data[0].id,
-          price: updates.priceId
-        }];
+
+        stripeUpdates.items = [
+          {
+            id: stripeSubscription.items.data[0].id,
+            price: updates.priceId,
+          },
+        ];
       }
 
       if (updates.cancelAtPeriodEnd !== undefined) {
@@ -189,40 +206,41 @@ class SubscriptionService {
         new Date(stripeSubscription.current_period_start * 1000),
         new Date(stripeSubscription.current_period_end * 1000),
         stripeSubscription.cancel_at_period_end,
-        stripeSubscription.canceled_at ? new Date(stripeSubscription.canceled_at * 1000) : null,
-        subscriptionId
+        stripeSubscription.canceled_at
+          ? new Date(stripeSubscription.canceled_at * 1000)
+          : null,
+        subscriptionId,
       ];
 
       const result = await this.db.query(updateQuery, values);
 
       logger.info('Subscription updated successfully', {
         subscriptionId,
-        updates
+        updates,
       });
 
       return {
         success: true,
-        subscription: result.rows[0]
+        subscription: result.rows[0],
       };
-
     } catch (error) {
       logger.error('Subscription update failed', {
         subscriptionId,
-        error: error.message
+        error: error.message,
       });
 
       const standardizedError = stripeClient.handleStripeError(error);
-      
+
       return {
         success: false,
-        error: standardizedError
+        error: standardizedError,
       };
     }
   }
 
   /**
    * Cancel a subscription
-   * 
+   *
    * @param {string} subscriptionId - Subscription ID
    * @param {boolean} [immediate=false] - Cancel immediately or at period end
    * @returns {Promise<Object>} Cancellation result
@@ -234,14 +252,14 @@ class SubscriptionService {
 
     try {
       const existingSubscription = await this.getSubscription(subscriptionId);
-      
+
       if (!existingSubscription) {
         throw new Error('Subscription not found');
       }
 
       logger.info('Canceling subscription', {
         subscriptionId,
-        immediate
+        immediate,
       });
 
       let stripeSubscription;
@@ -274,40 +292,41 @@ class SubscriptionService {
       const values = [
         this._mapSubscriptionStatus(stripeSubscription.status),
         stripeSubscription.cancel_at_period_end,
-        stripeSubscription.canceled_at ? new Date(stripeSubscription.canceled_at * 1000) : new Date(),
-        subscriptionId
+        stripeSubscription.canceled_at
+          ? new Date(stripeSubscription.canceled_at * 1000)
+          : new Date(),
+        subscriptionId,
       ];
 
       const result = await this.db.query(updateQuery, values);
 
       logger.info('Subscription canceled successfully', {
         subscriptionId,
-        immediate
+        immediate,
       });
 
       return {
         success: true,
-        subscription: result.rows[0]
+        subscription: result.rows[0],
       };
-
     } catch (error) {
       logger.error('Subscription cancellation failed', {
         subscriptionId,
-        error: error.message
+        error: error.message,
       });
 
       const standardizedError = stripeClient.handleStripeError(error);
-      
+
       return {
         success: false,
-        error: standardizedError
+        error: standardizedError,
       };
     }
   }
 
   /**
    * Get subscription by ID
-   * 
+   *
    * @param {string} subscriptionId - Subscription ID
    * @returns {Promise<Object>} Subscription details
    */
@@ -326,7 +345,7 @@ class SubscriptionService {
 
   /**
    * Get subscriptions for a user
-   * 
+   *
    * @param {string} userId - User ID
    * @returns {Promise<Array>} List of subscriptions
    */
@@ -341,14 +360,14 @@ class SubscriptionService {
 
   /**
    * Handle Stripe webhook events
-   * 
+   *
    * @param {Object} event - Stripe webhook event
    * @returns {Promise<void>}
    */
   async handleWebhook(event) {
     logger.info('Processing Stripe webhook', {
       type: event.type,
-      id: event.id
+      id: event.id,
     });
 
     try {
@@ -380,7 +399,7 @@ class SubscriptionService {
       logger.error('Webhook processing failed', {
         eventType: event.type,
         eventId: event.id,
-        error: error.message
+        error: error.message,
       });
       throw error;
     }
@@ -411,10 +430,10 @@ class SubscriptionService {
 
     if (existingSubscription.rows.length > 0) {
       const customerId = existingSubscription.rows[0].stripe_customer_id;
-      
+
       // Attach payment method to existing customer
       await this.stripe.paymentMethods.attach(paymentMethodId, {
-        customer: customerId
+        customer: customerId,
       });
 
       return { id: customerId };
@@ -425,11 +444,11 @@ class SubscriptionService {
       email: userEmail,
       payment_method: paymentMethodId,
       invoice_settings: {
-        default_payment_method: paymentMethodId
+        default_payment_method: paymentMethodId,
       },
       metadata: {
-        user_id: userId
-      }
+        user_id: userId,
+      },
     });
 
     return customer;
@@ -464,7 +483,7 @@ class SubscriptionService {
       data.canceledAt,
       data.trialStart,
       data.trialEnd,
-      JSON.stringify(data.metadata || {})
+      JSON.stringify(data.metadata || {}),
     ];
 
     const result = await this.db.query(query, values);
@@ -477,13 +496,13 @@ class SubscriptionService {
    */
   _mapSubscriptionStatus(stripeStatus) {
     const statusMap = {
-      'active': 'active',
-      'canceled': 'canceled',
-      'incomplete': 'incomplete',
-      'incomplete_expired': 'canceled',
-      'past_due': 'past_due',
-      'trialing': 'trialing',
-      'unpaid': 'past_due'
+      active: 'active',
+      canceled: 'canceled',
+      incomplete: 'incomplete',
+      incomplete_expired: 'canceled',
+      past_due: 'past_due',
+      trialing: 'trialing',
+      unpaid: 'past_due',
     };
 
     return statusMap[stripeStatus] || 'incomplete';
@@ -495,7 +514,7 @@ class SubscriptionService {
    */
   async _handleSubscriptionCreated(subscription) {
     logger.info('Handling subscription.created webhook', {
-      subscriptionId: subscription.id
+      subscriptionId: subscription.id,
     });
     // Webhook handling logic will be implemented when needed
   }
@@ -506,7 +525,7 @@ class SubscriptionService {
    */
   async _handleSubscriptionUpdated(subscription) {
     logger.info('Handling subscription.updated webhook', {
-      subscriptionId: subscription.id
+      subscriptionId: subscription.id,
     });
 
     // Find subscription in database by Stripe subscription ID
@@ -517,7 +536,7 @@ class SubscriptionService {
 
     if (result.rows.length > 0) {
       const subscriptionId = result.rows[0].id;
-      
+
       // Update subscription status
       await this.db.query(
         `UPDATE subscriptions 
@@ -533,8 +552,10 @@ class SubscriptionService {
           new Date(subscription.current_period_start * 1000),
           new Date(subscription.current_period_end * 1000),
           subscription.cancel_at_period_end,
-          subscription.canceled_at ? new Date(subscription.canceled_at * 1000) : null,
-          subscriptionId
+          subscription.canceled_at
+            ? new Date(subscription.canceled_at * 1000)
+            : null,
+          subscriptionId,
         ]
       );
     }
@@ -546,7 +567,7 @@ class SubscriptionService {
    */
   async _handleSubscriptionDeleted(subscription) {
     logger.info('Handling subscription.deleted webhook', {
-      subscriptionId: subscription.id
+      subscriptionId: subscription.id,
     });
 
     // Update subscription status to canceled
@@ -566,7 +587,7 @@ class SubscriptionService {
    */
   async _handleInvoicePaymentSucceeded(invoice) {
     logger.info('Handling invoice.payment_succeeded webhook', {
-      invoiceId: invoice.id
+      invoiceId: invoice.id,
     });
     // Additional invoice handling logic can be added here
   }
@@ -577,7 +598,7 @@ class SubscriptionService {
    */
   async _handleInvoicePaymentFailed(invoice) {
     logger.info('Handling invoice.payment_failed webhook', {
-      invoiceId: invoice.id
+      invoiceId: invoice.id,
     });
     // Additional invoice handling logic can be added here
   }

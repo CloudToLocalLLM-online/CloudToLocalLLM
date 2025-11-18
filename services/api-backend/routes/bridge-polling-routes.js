@@ -79,61 +79,67 @@ const bridgeRegistrationLimiter = rateLimit({
  * Register a desktop client for HTTP polling
  * POST /api/bridge/register
  */
-router.post('/register', bridgeRegistrationLimiter, authenticateJWT, addTierInfo, (req, res) => {
-  const { clientId, platform, version, capabilities } = req.body;
-  const userId = req.user.sub;
-  const bridgeId = uuidv4();
+router.post(
+  '/register',
+  bridgeRegistrationLimiter,
+  authenticateJWT,
+  addTierInfo,
+  (req, res) => {
+    const { clientId, platform, version, capabilities } = req.body;
+    const userId = req.user.sub;
+    const bridgeId = uuidv4();
 
-  if (!clientId || !platform || !version) {
-    return res.status(400).json({
-      error: 'Missing required fields',
-      message: 'clientId, platform, and version are required',
+    if (!clientId || !platform || !version) {
+      return res.status(400).json({
+        error: 'Missing required fields',
+        message: 'clientId, platform, and version are required',
+      });
+    }
+
+    // Store bridge registration
+    const bridgeInfo = {
+      bridgeId,
+      clientId,
+      userId,
+      platform,
+      version,
+      capabilities: capabilities || [],
+      registeredAt: new Date(),
+      lastSeen: new Date(),
+      status: 'registered',
+    };
+
+    bridgeRegistrations.set(bridgeId, bridgeInfo);
+    bridgeHeartbeats.set(bridgeId, Date.now());
+    pendingRequests.set(bridgeId, []);
+
+    logger.info('Bridge registered for HTTP polling', {
+      bridgeId,
+      clientId,
+      userId,
+      platform,
+      version,
+    });
+
+    res.json({
+      success: true,
+      bridgeId,
+      sessionToken: req.headers.authorization, // Reuse existing JWT
+      endpoints: {
+        polling: `/api/bridge/${bridgeId}/poll`,
+        response: `/api/bridge/${bridgeId}/response`,
+        status: `/api/bridge/${bridgeId}/status`,
+        heartbeat: `/api/bridge/${bridgeId}/heartbeat`,
+        providerStatus: `/api/bridge/${bridgeId}/provider-status`,
+      },
+      config: {
+        pollingInterval: 10000, // 10 seconds (increased from 5 to reduce rate limiting)
+        requestTimeout: REQUEST_TIMEOUT,
+        heartbeatInterval: 60000, // 60 seconds (increased from 30 to reduce rate limiting)
+      },
     });
   }
-
-  // Store bridge registration
-  const bridgeInfo = {
-    bridgeId,
-    clientId,
-    userId,
-    platform,
-    version,
-    capabilities: capabilities || [],
-    registeredAt: new Date(),
-    lastSeen: new Date(),
-    status: 'registered',
-  };
-
-  bridgeRegistrations.set(bridgeId, bridgeInfo);
-  bridgeHeartbeats.set(bridgeId, Date.now());
-  pendingRequests.set(bridgeId, []);
-
-  logger.info('Bridge registered for HTTP polling', {
-    bridgeId,
-    clientId,
-    userId,
-    platform,
-    version,
-  });
-
-  res.json({
-    success: true,
-    bridgeId,
-    sessionToken: req.headers.authorization, // Reuse existing JWT
-    endpoints: {
-      polling: `/api/bridge/${bridgeId}/poll`,
-      response: `/api/bridge/${bridgeId}/response`,
-      status: `/api/bridge/${bridgeId}/status`,
-      heartbeat: `/api/bridge/${bridgeId}/heartbeat`,
-      providerStatus: `/api/bridge/${bridgeId}/provider-status`,
-    },
-    config: {
-      pollingInterval: 10000, // 10 seconds (increased from 5 to reduce rate limiting)
-      requestTimeout: REQUEST_TIMEOUT,
-      heartbeatInterval: 60000, // 60 seconds (increased from 30 to reduce rate limiting)
-    },
-  });
-});
+);
 
 /**
  * Get bridge status
@@ -177,8 +183,9 @@ router.get('/:bridgeId/status', authenticateJWT, (req, res) => {
     lastProviderUpdate: bridge.lastProviderUpdate || null,
     stats: {
       pendingRequests: pendingRequests.get(bridgeId)?.length || 0,
-      completedResponses: Array.from(completedResponses.values())
-        .filter(r => r.bridgeId === bridgeId).length,
+      completedResponses: Array.from(completedResponses.values()).filter(
+        (r) => r.bridgeId === bridgeId
+      ).length,
     },
   });
 });
@@ -187,109 +194,119 @@ router.get('/:bridgeId/status', authenticateJWT, (req, res) => {
  * Poll for pending requests (Desktop client calls this)
  * GET /api/bridge/{bridgeId}/poll
  */
-router.get('/:bridgeId/poll', bridgePollingLimiter, authenticateJWT, (req, res) => {
-  const { bridgeId } = req.params;
-  const userId = req.user.sub;
-  const timeout = parseInt(req.query.timeout) || POLLING_TIMEOUT;
+router.get(
+  '/:bridgeId/poll',
+  bridgePollingLimiter,
+  authenticateJWT,
+  (req, res) => {
+    const { bridgeId } = req.params;
+    const userId = req.user.sub;
+    const timeout = parseInt(req.query.timeout) || POLLING_TIMEOUT;
 
-  const bridge = bridgeRegistrations.get(bridgeId);
-  if (!bridge || bridge.userId !== userId) {
-    return res.status(404).json({
-      error: 'Bridge not found or access denied',
-    });
-  }
-
-  // Update heartbeat
-  bridgeHeartbeats.set(bridgeId, Date.now());
-  bridge.lastSeen = new Date();
-
-  const requests = pendingRequests.get(bridgeId) || [];
-
-  if (requests.length > 0) {
-    // Return pending requests immediately
-    const requestsToSend = requests.splice(0, 10); // Send up to 10 requests at once
-
-    logger.debug('Sending pending requests to bridge', {
-      bridgeId,
-      requestCount: requestsToSend.length,
-    });
-
-    return res.json({
-      success: true,
-      requests: requestsToSend,
-      hasMore: requests.length > 0,
-    });
-  }
-
-  // Long polling: wait for requests
-  const startTime = Date.now();
-  const pollInterval = setInterval(() => {
-    const currentRequests = pendingRequests.get(bridgeId) || [];
-
-    if (currentRequests.length > 0 || Date.now() - startTime >= timeout) {
-      clearInterval(pollInterval);
-
-      if (currentRequests.length > 0) {
-        const requestsToSend = currentRequests.splice(0, 10);
-        res.json({
-          success: true,
-          requests: requestsToSend,
-          hasMore: currentRequests.length > 0,
-        });
-      } else {
-        // Timeout - no requests
-        res.json({
-          success: true,
-          requests: [],
-          hasMore: false,
-        });
-      }
+    const bridge = bridgeRegistrations.get(bridgeId);
+    if (!bridge || bridge.userId !== userId) {
+      return res.status(404).json({
+        error: 'Bridge not found or access denied',
+      });
     }
-  }, 1000); // Check every second
 
-  // Cleanup on client disconnect
-  req.on('close', () => {
-    clearInterval(pollInterval);
-  });
-});
+    // Update heartbeat
+    bridgeHeartbeats.set(bridgeId, Date.now());
+    bridge.lastSeen = new Date();
+
+    const requests = pendingRequests.get(bridgeId) || [];
+
+    if (requests.length > 0) {
+      // Return pending requests immediately
+      const requestsToSend = requests.splice(0, 10); // Send up to 10 requests at once
+
+      logger.debug('Sending pending requests to bridge', {
+        bridgeId,
+        requestCount: requestsToSend.length,
+      });
+
+      return res.json({
+        success: true,
+        requests: requestsToSend,
+        hasMore: requests.length > 0,
+      });
+    }
+
+    // Long polling: wait for requests
+    const startTime = Date.now();
+    const pollInterval = setInterval(() => {
+      const currentRequests = pendingRequests.get(bridgeId) || [];
+
+      if (currentRequests.length > 0 || Date.now() - startTime >= timeout) {
+        clearInterval(pollInterval);
+
+        if (currentRequests.length > 0) {
+          const requestsToSend = currentRequests.splice(0, 10);
+          res.json({
+            success: true,
+            requests: requestsToSend,
+            hasMore: currentRequests.length > 0,
+          });
+        } else {
+          // Timeout - no requests
+          res.json({
+            success: true,
+            requests: [],
+            hasMore: false,
+          });
+        }
+      }
+    }, 1000); // Check every second
+
+    // Cleanup on client disconnect
+    req.on('close', () => {
+      clearInterval(pollInterval);
+    });
+  }
+);
 
 /**
  * Update provider status from desktop client
  * POST /api/bridge/{bridgeId}/provider-status
  */
-router.post('/:bridgeId/provider-status', bridgeProviderStatusLimiter, authenticateJWT, (req, res) => {
-  const { bridgeId } = req.params;
-  const userId = req.user.sub;
-  const { providers, timestamp } = req.body;
+router.post(
+  '/:bridgeId/provider-status',
+  bridgeProviderStatusLimiter,
+  authenticateJWT,
+  (req, res) => {
+    const { bridgeId } = req.params;
+    const userId = req.user.sub;
+    const { providers, timestamp } = req.body;
 
-  const bridge = bridgeRegistrations.get(bridgeId);
-  if (!bridge || bridge.userId !== userId) {
-    return res.status(404).json({
-      error: 'Bridge not found or access denied',
+    const bridge = bridgeRegistrations.get(bridgeId);
+    if (!bridge || bridge.userId !== userId) {
+      return res.status(404).json({
+        error: 'Bridge not found or access denied',
+      });
+    }
+
+    // Update bridge with provider information
+    bridge.providers = providers || [];
+    bridge.lastProviderUpdate = timestamp || new Date().toISOString();
+    bridge.lastSeen = new Date();
+
+    // Update heartbeat to indicate bridge is active
+    bridgeHeartbeats.set(bridgeId, Date.now());
+
+    logger.debug('Provider status updated', {
+      bridgeId,
+      userId,
+      providerCount: providers?.length || 0,
+      timestamp,
+    });
+
+    res.json({
+      success: true,
+      message: 'Provider status updated',
+      timestamp: new Date().toISOString(),
     });
   }
-
-  // Update bridge with provider information
-  bridge.providers = providers || [];
-  bridge.lastProviderUpdate = timestamp || new Date().toISOString();
-  bridge.lastSeen = new Date();
-
-  // Update heartbeat to indicate bridge is active
-  bridgeHeartbeats.set(bridgeId, Date.now());
-
-  logger.debug('Provider status updated', {
-    bridgeId,
-    userId,
-    providerCount: providers?.length || 0,
-    timestamp,
-  });
-
-  res.json({
-    success: true,
-    message: 'Provider status updated',
-    timestamp: new Date().toISOString(),
-  });
-});
+);
 
 /**
  * Submit response from desktop client
@@ -357,25 +374,30 @@ router.post('/:bridgeId/response', authenticateJWT, (req, res) => {
  * Send heartbeat (Desktop client calls this)
  * POST /api/bridge/{bridgeId}/heartbeat
  */
-router.post('/:bridgeId/heartbeat', bridgeHeartbeatLimiter, authenticateJWT, (req, res) => {
-  const { bridgeId } = req.params;
-  const userId = req.user.sub;
+router.post(
+  '/:bridgeId/heartbeat',
+  bridgeHeartbeatLimiter,
+  authenticateJWT,
+  (req, res) => {
+    const { bridgeId } = req.params;
+    const userId = req.user.sub;
 
-  const bridge = bridgeRegistrations.get(bridgeId);
-  if (!bridge || bridge.userId !== userId) {
-    return res.status(404).json({
-      error: 'Bridge not found or access denied',
+    const bridge = bridgeRegistrations.get(bridgeId);
+    if (!bridge || bridge.userId !== userId) {
+      return res.status(404).json({
+        error: 'Bridge not found or access denied',
+      });
+    }
+
+    bridgeHeartbeats.set(bridgeId, Date.now());
+    bridge.lastSeen = new Date();
+
+    res.json({
+      success: true,
+      timestamp: new Date().toISOString(),
     });
   }
-
-  bridgeHeartbeats.set(bridgeId, Date.now());
-  bridge.lastSeen = new Date();
-
-  res.json({
-    success: true,
-    timestamp: new Date().toISOString(),
-  });
-});
+);
 
 /**
  * Queue a request for a bridge (Internal API)
@@ -468,7 +490,7 @@ setInterval(() => {
 
   // Clean up expired requests
   for (const [bridgeId, requests] of pendingRequests.entries()) {
-    const validRequests = requests.filter(req => req.timeout > now);
+    const validRequests = requests.filter((req) => req.timeout > now);
     pendingRequests.set(bridgeId, validRequests);
   }
 

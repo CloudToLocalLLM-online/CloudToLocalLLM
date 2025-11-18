@@ -1,64 +1,73 @@
 # Audit Log API - Quick Reference
 
 ## Base URL
+
 ```
 /api/admin/audit
 ```
 
 ## Authentication
+
 All endpoints require JWT Bearer token with admin role and appropriate permissions.
 
 ---
 
 ## Endpoints Summary
 
-| Method | Endpoint | Permission | Description |
-|--------|----------|------------|-------------|
-| GET | `/logs` | `view_audit_logs` | List audit logs with filtering |
-| GET | `/logs/:logId` | `view_audit_logs` | Get detailed audit log entry |
-| GET | `/export` | `export_audit_logs` | Export audit logs to CSV |
+| Method | Endpoint       | Permission          | Description                    |
+| ------ | -------------- | ------------------- | ------------------------------ |
+| GET    | `/logs`        | `view_audit_logs`   | List audit logs with filtering |
+| GET    | `/logs/:logId` | `view_audit_logs`   | Get detailed audit log entry   |
+| GET    | `/export`      | `export_audit_logs` | Export audit logs to CSV       |
 
 ---
 
 ## Quick Examples
 
 ### List Recent Audit Logs
+
 ```bash
 curl -X GET "https://api.cloudtolocalllm.online/api/admin/audit/logs?page=1&limit=50" \
   -H "Authorization: Bearer <jwt_token>"
 ```
 
 ### Filter by Action Type
+
 ```bash
 curl -X GET "https://api.cloudtolocalllm.online/api/admin/audit/logs?action=user_suspended" \
   -H "Authorization: Bearer <jwt_token>"
 ```
 
 ### Filter by Admin User
+
 ```bash
 curl -X GET "https://api.cloudtolocalllm.online/api/admin/audit/logs?adminUserId=<uuid>" \
   -H "Authorization: Bearer <jwt_token>"
 ```
 
 ### Filter by Affected User
+
 ```bash
 curl -X GET "https://api.cloudtolocalllm.online/api/admin/audit/logs?affectedUserId=<uuid>" \
   -H "Authorization: Bearer <jwt_token>"
 ```
 
 ### Filter by Date Range
+
 ```bash
 curl -X GET "https://api.cloudtolocalllm.online/api/admin/audit/logs?startDate=2025-01-01&endDate=2025-01-31" \
   -H "Authorization: Bearer <jwt_token>"
 ```
 
 ### Get Specific Log Entry
+
 ```bash
 curl -X GET "https://api.cloudtolocalllm.online/api/admin/audit/logs/<log_id>" \
   -H "Authorization: Bearer <jwt_token>"
 ```
 
 ### Export to CSV
+
 ```bash
 curl -X GET "https://api.cloudtolocalllm.online/api/admin/audit/export?startDate=2025-01-01&endDate=2025-01-31" \
   -H "Authorization: Bearer <jwt_token>" \
@@ -96,35 +105,36 @@ curl -X GET "https://api.cloudtolocalllm.online/api/admin/audit/export?startDate
 
 ### List Logs (`GET /logs`)
 
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| page | integer | 1 | Page number |
-| limit | integer | 100 | Items per page (max: 200) |
-| adminUserId | UUID | - | Filter by admin user |
-| action | string | - | Filter by action type |
-| resourceType | string | - | Filter by resource type |
-| affectedUserId | UUID | - | Filter by affected user |
-| startDate | ISO 8601 | - | Start date filter |
-| endDate | ISO 8601 | - | End date filter |
-| sortBy | string | created_at | Sort field |
-| sortOrder | string | desc | Sort order (asc/desc) |
+| Parameter      | Type     | Default    | Description               |
+| -------------- | -------- | ---------- | ------------------------- |
+| page           | integer  | 1          | Page number               |
+| limit          | integer  | 100        | Items per page (max: 200) |
+| adminUserId    | UUID     | -          | Filter by admin user      |
+| action         | string   | -          | Filter by action type     |
+| resourceType   | string   | -          | Filter by resource type   |
+| affectedUserId | UUID     | -          | Filter by affected user   |
+| startDate      | ISO 8601 | -          | Start date filter         |
+| endDate        | ISO 8601 | -          | End date filter           |
+| sortBy         | string   | created_at | Sort field                |
+| sortOrder      | string   | desc       | Sort order (asc/desc)     |
 
 ### Export Logs (`GET /export`)
 
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| adminUserId | UUID | Filter by admin user |
-| action | string | Filter by action type |
-| resourceType | string | Filter by resource type |
-| affectedUserId | UUID | Filter by affected user |
-| startDate | ISO 8601 | Start date filter |
-| endDate | ISO 8601 | End date filter |
+| Parameter      | Type     | Description             |
+| -------------- | -------- | ----------------------- |
+| adminUserId    | UUID     | Filter by admin user    |
+| action         | string   | Filter by action type   |
+| resourceType   | string   | Filter by resource type |
+| affectedUserId | UUID     | Filter by affected user |
+| startDate      | ISO 8601 | Start date filter       |
+| endDate        | ISO 8601 | End date filter         |
 
 ---
 
 ## Response Format
 
 ### Success Response
+
 ```json
 {
   "success": true,
@@ -145,6 +155,7 @@ curl -X GET "https://api.cloudtolocalllm.online/api/admin/audit/export?startDate
 ```
 
 ### Error Response
+
 ```json
 {
   "error": "Error message",
@@ -157,13 +168,13 @@ curl -X GET "https://api.cloudtolocalllm.online/api/admin/audit/export?startDate
 
 ## Error Codes
 
-| Code | Description |
-|------|-------------|
-| `INVALID_LOG_ID` | Invalid audit log ID format |
-| `LOG_NOT_FOUND` | Audit log entry not found |
-| `AUDIT_LOGS_FAILED` | Failed to retrieve audit logs |
-| `LOG_DETAILS_FAILED` | Failed to retrieve log details |
-| `AUDIT_EXPORT_FAILED` | Failed to export audit logs |
+| Code                  | Description                    |
+| --------------------- | ------------------------------ |
+| `INVALID_LOG_ID`      | Invalid audit log ID format    |
+| `LOG_NOT_FOUND`       | Audit log entry not found      |
+| `AUDIT_LOGS_FAILED`   | Failed to retrieve audit logs  |
+| `LOG_DETAILS_FAILED`  | Failed to retrieve log details |
+| `AUDIT_EXPORT_FAILED` | Failed to export audit logs    |
 
 ---
 
@@ -176,12 +187,13 @@ curl -X GET "https://api.cloudtolocalllm.online/api/admin/audit/export?startDate
 
 ## Permissions
 
-| Permission | Description |
-|------------|-------------|
-| `view_audit_logs` | View audit log entries |
+| Permission          | Description              |
+| ------------------- | ------------------------ |
+| `view_audit_logs`   | View audit log entries   |
 | `export_audit_logs` | Export audit logs to CSV |
 
 **Role Permissions:**
+
 - **Super Admin:** All permissions
 - **Support Admin:** `view_audit_logs`
 - **Finance Admin:** `view_audit_logs`

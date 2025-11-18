@@ -1,12 +1,12 @@
 /**
  * Input Sanitization Middleware
- * 
+ *
  * Provides comprehensive input sanitization to prevent:
  * - SQL injection attacks
  * - XSS (Cross-Site Scripting) attacks
  * - NoSQL injection attacks
  * - Command injection attacks
- * 
+ *
  * Requirement 15: Security and Data Protection
  */
 
@@ -24,16 +24,19 @@ export function sanitizeString(input) {
 
   // Escape HTML entities to prevent XSS
   let sanitized = validator.escape(input);
-  
+
   // Remove any potential script tags
-  sanitized = sanitized.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
-  
+  sanitized = sanitized.replace(
+    /<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi,
+    ''
+  );
+
   // Remove any potential event handlers
   sanitized = sanitized.replace(/on\w+\s*=\s*["'][^"']*["']/gi, '');
-  
+
   // Remove javascript: protocol
   sanitized = sanitized.replace(/javascript:/gi, '');
-  
+
   return sanitized;
 }
 
@@ -59,21 +62,21 @@ export function sanitizeEmail(email) {
  */
 export function sanitizeNumber(input, options = {}) {
   const { min, max, allowFloat = false } = options;
-  
+
   const num = allowFloat ? parseFloat(input) : parseInt(input, 10);
-  
+
   if (isNaN(num)) {
     return null;
   }
-  
+
   if (min !== undefined && num < min) {
     return null;
   }
-  
+
   if (max !== undefined && num > max) {
     return null;
   }
-  
+
   return num;
 }
 
@@ -135,7 +138,7 @@ export function sanitizeObject(obj, depth = 0, maxDepth = 10) {
   }
 
   if (Array.isArray(obj)) {
-    return obj.map(item => {
+    return obj.map((item) => {
       if (typeof item === 'object') {
         return sanitizeObject(item, depth + 1, maxDepth);
       }
@@ -151,7 +154,7 @@ export function sanitizeObject(obj, depth = 0, maxDepth = 10) {
     for (const [key, value] of Object.entries(obj)) {
       // Sanitize the key
       const sanitizedKey = sanitizeString(key);
-      
+
       // Sanitize the value based on type
       if (typeof value === 'string') {
         sanitized[sanitizedKey] = sanitizeString(value);
@@ -192,10 +195,10 @@ export function sanitizeLikePattern(pattern) {
 
   // Escape special SQL LIKE characters
   let sanitized = pattern
-    .replace(/\\/g, '\\\\')  // Escape backslash
-    .replace(/%/g, '\\%')    // Escape percent
-    .replace(/_/g, '\\_')    // Escape underscore
-    .replace(/'/g, "''");    // Escape single quote
+    .replace(/\\/g, '\\\\') // Escape backslash
+    .replace(/%/g, '\\%') // Escape percent
+    .replace(/_/g, '\\_') // Escape underscore
+    .replace(/'/g, "''"); // Escape single quote
 
   // Remove any potential SQL injection attempts
   sanitized = sanitized.replace(/;/g, '');
@@ -261,7 +264,7 @@ export function sanitizeAdminInput(req, res, next) {
         if (!sanitizedEmail) {
           return res.status(400).json({
             error: 'Invalid email format',
-            code: 'INVALID_EMAIL'
+            code: 'INVALID_EMAIL',
           });
         }
         req.body.email = sanitizedEmail;
@@ -271,26 +274,31 @@ export function sanitizeAdminInput(req, res, next) {
       if (req.body.amount !== undefined) {
         const sanitizedAmount = sanitizeNumber(req.body.amount, {
           min: 0,
-          allowFloat: true
+          allowFloat: true,
         });
         if (sanitizedAmount === null) {
           return res.status(400).json({
             error: 'Invalid amount',
-            code: 'INVALID_AMOUNT'
+            code: 'INVALID_AMOUNT',
           });
         }
         req.body.amount = sanitizedAmount;
       }
 
       // Sanitize UUIDs if present
-      const uuidFields = ['userId', 'transactionId', 'subscriptionId', 'adminUserId'];
+      const uuidFields = [
+        'userId',
+        'transactionId',
+        'subscriptionId',
+        'adminUserId',
+      ];
       for (const field of uuidFields) {
         if (req.body[field]) {
           const sanitizedUUID = sanitizeUUID(req.body[field]);
           if (!sanitizedUUID) {
             return res.status(400).json({
               error: `Invalid ${field} format`,
-              code: 'INVALID_UUID'
+              code: 'INVALID_UUID',
             });
           }
           req.body[field] = sanitizedUUID;
@@ -305,7 +313,7 @@ export function sanitizeAdminInput(req, res, next) {
           if (!sanitizedDate) {
             return res.status(400).json({
               error: `Invalid ${field} format`,
-              code: 'INVALID_DATE'
+              code: 'INVALID_DATE',
             });
           }
           req.body[field] = sanitizedDate.toISOString();
@@ -347,5 +355,5 @@ export default {
   sanitizeQuery,
   sanitizeParams,
   sanitizeAll,
-  sanitizeAdminInput
+  sanitizeAdminInput,
 };

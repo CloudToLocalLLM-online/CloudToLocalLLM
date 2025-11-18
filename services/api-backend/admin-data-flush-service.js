@@ -58,7 +58,7 @@ export class AdminDataFlushService {
    * Clear all user authentication data
    */
   async clearUserAuthenticationData(targetUserId = null) {
-    logger.info('� [AdminFlush] Starting authentication data clearing', {
+    logger.info(' [AdminFlush] Starting authentication data clearing', {
       targetUserId: targetUserId || 'ALL_USERS',
       operation: 'clear_auth_data',
     });
@@ -77,19 +77,23 @@ export class AdminDataFlushService {
       if (targetUserId) {
         // Clear specific user's server-side auth cache
         // Implementation depends on caching strategy (Redis, memory, etc.)
-        logger.info('� [AdminFlush] Clearing auth cache for specific user', { targetUserId });
+        logger.info(' [AdminFlush] Clearing auth cache for specific user', {
+          targetUserId,
+        });
         clearedData.authCache = 1;
       } else {
         // Clear all authentication cache
-        logger.info('� [AdminFlush] Clearing all authentication cache');
+        logger.info(' [AdminFlush] Clearing all authentication cache');
         clearedData.authCache = 1; // Placeholder - implement actual cache clearing
       }
 
-      logger.info('� [AdminFlush] Authentication data clearing completed', clearedData);
+      logger.info(
+        ' [AdminFlush] Authentication data clearing completed',
+        clearedData,
+      );
       return clearedData;
-
     } catch (error) {
-      logger.error('� [AdminFlush] Failed to clear authentication data', {
+      logger.error(' [AdminFlush] Failed to clear authentication data', {
         error: error.message,
         targetUserId,
       });
@@ -101,7 +105,7 @@ export class AdminDataFlushService {
    * Clear all user conversation and chat data
    */
   async clearUserConversationData(targetUserId = null) {
-    logger.info('� [AdminFlush] Starting conversation data clearing', {
+    logger.info(' [AdminFlush] Starting conversation data clearing', {
       targetUserId: targetUserId || 'ALL_USERS',
       operation: 'clear_conversation_data',
     });
@@ -117,20 +121,25 @@ export class AdminDataFlushService {
       // Server-side: Clear any cached conversation metadata or temporary data
 
       if (targetUserId) {
-        logger.info('� [AdminFlush] Clearing conversation cache for specific user', { targetUserId });
+        logger.info(
+          ' [AdminFlush] Clearing conversation cache for specific user',
+          { targetUserId },
+        );
         // Clear user-specific conversation cache
         clearedData.conversations = 1; // Placeholder
       } else {
-        logger.info('� [AdminFlush] Clearing all conversation cache');
+        logger.info(' [AdminFlush] Clearing all conversation cache');
         // Clear all conversation cache
         clearedData.conversations = 1; // Placeholder
       }
 
-      logger.info('� [AdminFlush] Conversation data clearing completed', clearedData);
+      logger.info(
+        ' [AdminFlush] Conversation data clearing completed',
+        clearedData,
+      );
       return clearedData;
-
     } catch (error) {
-      logger.error('� [AdminFlush] Failed to clear conversation data', {
+      logger.error(' [AdminFlush] Failed to clear conversation data', {
         error: error.message,
         targetUserId,
       });
@@ -142,7 +151,7 @@ export class AdminDataFlushService {
    * Clear user preferences and settings
    */
   async clearUserPreferencesData(targetUserId = null) {
-    logger.info('� [AdminFlush] Starting preferences data clearing', {
+    logger.info(' [AdminFlush] Starting preferences data clearing', {
       targetUserId: targetUserId || 'ALL_USERS',
       operation: 'clear_preferences_data',
     });
@@ -158,18 +167,23 @@ export class AdminDataFlushService {
       // Server-side: Clear any cached preference data
 
       if (targetUserId) {
-        logger.info('� [AdminFlush] Clearing preferences cache for specific user', { targetUserId });
+        logger.info(
+          ' [AdminFlush] Clearing preferences cache for specific user',
+          { targetUserId },
+        );
         clearedData.preferences = 1;
       } else {
-        logger.info('� [AdminFlush] Clearing all preferences cache');
+        logger.info(' [AdminFlush] Clearing all preferences cache');
         clearedData.preferences = 1;
       }
 
-      logger.info('� [AdminFlush] Preferences data clearing completed', clearedData);
+      logger.info(
+        ' [AdminFlush] Preferences data clearing completed',
+        clearedData,
+      );
       return clearedData;
-
     } catch (error) {
-      logger.error('� [AdminFlush] Failed to clear preferences data', {
+      logger.error(' [AdminFlush] Failed to clear preferences data', {
         error: error.message,
         targetUserId,
       });
@@ -181,7 +195,7 @@ export class AdminDataFlushService {
    * Clear cached user-specific data
    */
   async clearUserCacheData(targetUserId = null) {
-    logger.info('� [AdminFlush] Starting cache data clearing', {
+    logger.info(' [AdminFlush] Starting cache data clearing', {
       targetUserId: targetUserId || 'ALL_USERS',
       operation: 'clear_cache_data',
     });
@@ -194,20 +208,21 @@ export class AdminDataFlushService {
 
     try {
       if (targetUserId) {
-        logger.info('� [AdminFlush] Clearing cache for specific user', { targetUserId });
+        logger.info(' [AdminFlush] Clearing cache for specific user', {
+          targetUserId,
+        });
         // Clear user-specific cache
         clearedData.memoryCache = 1;
       } else {
-        logger.info('� [AdminFlush] Clearing all cache data');
+        logger.info(' [AdminFlush] Clearing all cache data');
         // Clear all cache
         clearedData.memoryCache = 1;
       }
 
-      logger.info('� [AdminFlush] Cache data clearing completed', clearedData);
+      logger.info(' [AdminFlush] Cache data clearing completed', clearedData);
       return clearedData;
-
     } catch (error) {
-      logger.error('� [AdminFlush] Failed to clear cache data', {
+      logger.error(' [AdminFlush] Failed to clear cache data', {
         error: error.message,
         targetUserId,
       });
@@ -219,7 +234,7 @@ export class AdminDataFlushService {
    * Clear user-specific Docker containers and networks
    */
   async clearUserContainersAndNetworks(targetUserId = null) {
-    logger.info('� [AdminFlush] Starting container and network clearing', {
+    logger.info(' [AdminFlush] Starting container and network clearing', {
       targetUserId: targetUserId || 'ALL_USERS',
       operation: 'clear_containers_networks',
     });
@@ -240,7 +255,7 @@ export class AdminDataFlushService {
       });
 
       // Filter containers by user if specified
-      const targetContainers = containers.filter(container => {
+      const targetContainers = containers.filter((container) => {
         const userLabel = container.Labels['cloudtolocalllm.user'];
         return targetUserId ? userLabel === targetUserId : true;
       });
@@ -250,7 +265,7 @@ export class AdminDataFlushService {
         try {
           const container = docker.getContainer(containerInfo.Id);
 
-          logger.info('� [AdminFlush] Stopping container', {
+          logger.info(' [AdminFlush] Stopping container', {
             containerId: containerInfo.Id,
             containerName: containerInfo.Names[0],
             user: containerInfo.Labels['cloudtolocalllm.user'],
@@ -264,9 +279,8 @@ export class AdminDataFlushService {
           // Remove container
           await container.remove({ force: true });
           clearedData.containers++;
-
         } catch (containerError) {
-          logger.warn('� [AdminFlush] Failed to remove container', {
+          logger.warn(' [AdminFlush] Failed to remove container', {
             containerId: containerInfo.Id,
             error: containerError.message,
           });
@@ -281,7 +295,7 @@ export class AdminDataFlushService {
       });
 
       // Filter networks by user if specified
-      const targetNetworks = networks.filter(network => {
+      const targetNetworks = networks.filter((network) => {
         const userLabel = network.Labels['cloudtolocalllm.user'];
         return targetUserId ? userLabel === targetUserId : true;
       });
@@ -291,7 +305,7 @@ export class AdminDataFlushService {
         try {
           const network = docker.getNetwork(networkInfo.Id);
 
-          logger.info('� [AdminFlush] Removing network', {
+          logger.info(' [AdminFlush] Removing network', {
             networkId: networkInfo.Id,
             networkName: networkInfo.Name,
             user: networkInfo.Labels['cloudtolocalllm.user'],
@@ -299,20 +313,21 @@ export class AdminDataFlushService {
 
           await network.remove();
           clearedData.networks++;
-
         } catch (networkError) {
-          logger.warn('� [AdminFlush] Failed to remove network', {
+          logger.warn(' [AdminFlush] Failed to remove network', {
             networkId: networkInfo.Id,
             error: networkError.message,
           });
         }
       }
 
-      logger.info('� [AdminFlush] Container and network clearing completed', clearedData);
+      logger.info(
+        ' [AdminFlush] Container and network clearing completed',
+        clearedData,
+      );
       return clearedData;
-
     } catch (error) {
-      logger.error('� [AdminFlush] Failed to clear containers and networks', {
+      logger.error(' [AdminFlush] Failed to clear containers and networks', {
         error: error.message,
         targetUserId,
       });
@@ -323,11 +338,16 @@ export class AdminDataFlushService {
   /**
    * Execute complete data flush operation
    */
-  async executeDataFlush(adminUserId, confirmationToken, targetUserId = null, options = {}) {
+  async executeDataFlush(
+    adminUserId,
+    confirmationToken,
+    targetUserId = null,
+    options = {},
+  ) {
     const operationId = crypto.randomUUID();
     const startTime = new Date();
 
-    logger.info('� [AdminFlush] Starting complete data flush operation', {
+    logger.info(' [AdminFlush] Starting complete data flush operation', {
       operationId,
       adminUserId,
       targetUserId: targetUserId || 'ALL_USERS',
@@ -335,7 +355,13 @@ export class AdminDataFlushService {
     });
 
     // Validate confirmation token
-    if (!this.validateConfirmationToken(confirmationToken, adminUserId, targetUserId || 'ALL_USERS')) {
+    if (
+      !this.validateConfirmationToken(
+        confirmationToken,
+        adminUserId,
+        targetUserId || 'ALL_USERS',
+      )
+    ) {
       throw new Error('Invalid or expired confirmation token');
     }
 
@@ -357,12 +383,14 @@ export class AdminDataFlushService {
 
       // 1. Clear authentication data
       if (!options.skipAuth) {
-        results.authentication = await this.clearUserAuthenticationData(targetUserId);
+        results.authentication =
+          await this.clearUserAuthenticationData(targetUserId);
       }
 
       // 2. Clear conversation data
       if (!options.skipConversations) {
-        results.conversations = await this.clearUserConversationData(targetUserId);
+        results.conversations =
+          await this.clearUserConversationData(targetUserId);
       }
 
       // 3. Clear preferences data
@@ -377,7 +405,8 @@ export class AdminDataFlushService {
 
       // 5. Clear containers and networks
       if (!options.skipContainers) {
-        results.containers = await this.clearUserContainersAndNetworks(targetUserId);
+        results.containers =
+          await this.clearUserContainersAndNetworks(targetUserId);
       }
 
       // Update operation status
@@ -391,11 +420,14 @@ export class AdminDataFlushService {
         duration: operation.endTime - operation.startTime,
       });
 
-      logger.info('� [AdminFlush] Data flush operation completed successfully', {
-        operationId,
-        duration: operation.endTime - operation.startTime,
-        results,
-      });
+      logger.info(
+        ' [AdminFlush] Data flush operation completed successfully',
+        {
+          operationId,
+          duration: operation.endTime - operation.startTime,
+          results,
+        },
+      );
 
       return {
         success: true,
@@ -403,20 +435,18 @@ export class AdminDataFlushService {
         results,
         duration: operation.endTime - operation.startTime,
       };
-
     } catch (error) {
       operation.status = 'failed';
       operation.endTime = new Date();
       operation.errors.push(error.message);
 
-      logger.error('� [AdminFlush] Data flush operation failed', {
+      logger.error(' [AdminFlush] Data flush operation failed', {
         operationId,
         error: error.message,
         duration: operation.endTime - operation.startTime,
       });
 
       throw error;
-
     } finally {
       this.activeFlushOperations.delete(operationId);
     }
@@ -456,12 +486,12 @@ export class AdminDataFlushService {
         },
       });
 
-      const userContainers = containers.filter(c =>
-        c.Labels['cloudtolocalllm.type'] === 'streaming-proxy',
+      const userContainers = containers.filter(
+        (c) => c.Labels['cloudtolocalllm.type'] === 'streaming-proxy',
       );
 
       const activeUsers = new Set(
-        userContainers.map(c => c.Labels['cloudtolocalllm.user']),
+        userContainers.map((c) => c.Labels['cloudtolocalllm.user']),
       ).size;
 
       return {
@@ -469,12 +499,13 @@ export class AdminDataFlushService {
         userContainers: userContainers.length,
         userNetworks: networks.length,
         activeUsers,
-        lastFlushOperation: this.flushHistory.length > 0 ?
-          this.flushHistory[this.flushHistory.length - 1].startTime : null,
+        lastFlushOperation:
+          this.flushHistory.length > 0
+            ? this.flushHistory[this.flushHistory.length - 1].startTime
+            : null,
       };
-
     } catch (error) {
-      logger.error('� [AdminFlush] Failed to get system statistics', error);
+      logger.error(' [AdminFlush] Failed to get system statistics', error);
       throw error;
     }
   }

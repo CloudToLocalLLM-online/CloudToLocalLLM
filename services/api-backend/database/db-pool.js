@@ -1,13 +1,13 @@
 /**
  * Centralized Database Connection Pool Configuration
- * 
+ *
  * Provides a singleton PostgreSQL connection pool with:
  * - Maximum pool size of 50 connections
  * - Connection timeout of 30 seconds
  * - Idle connection timeout of 10 minutes
  * - Connection reuse and health monitoring
  * - Comprehensive error handling and logging
- * 
+ *
  * Requirements: 17 (Data Persistence and Storage)
  */
 
@@ -38,21 +38,25 @@ const poolConfig = {
   database: process.env.DB_NAME || 'cloudtolocalllm',
   user: process.env.DB_USER,
   password: process.env.DB_PASSWORD,
-  
+
   // SSL configuration
-  ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : undefined,
-  
+  ssl:
+    process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : undefined,
+
   // Pool settings (Requirement 17)
   max: parseInt(process.env.DB_POOL_MAX || '50', 10), // Maximum pool size: 50 connections
   min: parseInt(process.env.DB_POOL_MIN || '5', 10), // Minimum pool size: 5 connections
-  
+
   // Timeout settings (Requirement 17)
-  connectionTimeoutMillis: parseInt(process.env.DB_POOL_CONNECT_TIMEOUT || '30000', 10), // 30 seconds
+  connectionTimeoutMillis: parseInt(
+    process.env.DB_POOL_CONNECT_TIMEOUT || '30000',
+    10
+  ), // 30 seconds
   idleTimeoutMillis: parseInt(process.env.DB_POOL_IDLE || '600000', 10), // 10 minutes
-  
+
   // Connection reuse settings
   allowExitOnIdle: false, // Keep pool alive even when idle
-  
+
   // Statement timeout (prevent long-running queries)
   statement_timeout: parseInt(process.env.DB_STATEMENT_TIMEOUT || '60000', 10), // 60 seconds
 };
@@ -60,7 +64,7 @@ const poolConfig = {
 /**
  * Initialize the database connection pool
  * Creates a singleton pool instance with health monitoring
- * 
+ *
  * @returns {Pool} PostgreSQL connection pool
  */
 export function initializePool() {
@@ -80,7 +84,7 @@ export function initializePool() {
   pool = new Pool(poolConfig);
 
   // Handle pool errors
-  pool.on('error', (err, client) => {
+  pool.on('error', (err, _client) => {
     poolMetrics.errors++;
     logger.error('🔴 [DB Pool] Unexpected error on idle client', {
       error: err.message,
@@ -90,7 +94,7 @@ export function initializePool() {
   });
 
   // Handle client connection
-  pool.on('connect', (client) => {
+  pool.on('connect', (_client) => {
     poolMetrics.totalConnections++;
     logger.debug('🟢 [DB Pool] New client connected', {
       totalConnections: poolMetrics.totalConnections,
@@ -98,7 +102,7 @@ export function initializePool() {
   });
 
   // Handle client acquisition
-  pool.on('acquire', (client) => {
+  pool.on('acquire', (_client) => {
     logger.debug('🟡 [DB Pool] Client acquired from pool', {
       totalCount: pool.totalCount,
       idleCount: pool.idleCount,
@@ -107,7 +111,7 @@ export function initializePool() {
   });
 
   // Handle client release
-  pool.on('release', (err, client) => {
+  pool.on('release', (err, _client) => {
     if (err) {
       logger.error('🔴 [DB Pool] Error releasing client', {
         error: err.message,
@@ -116,22 +120,24 @@ export function initializePool() {
   });
 
   // Handle client removal
-  pool.on('remove', (client) => {
+  pool.on('remove', (_client) => {
     logger.debug('🔴 [DB Pool] Client removed from pool', {
       totalCount: pool.totalCount,
       idleCount: pool.idleCount,
     });
   });
 
-  logger.info('✅ [DB Pool] PostgreSQL connection pool initialized successfully');
-  
+  logger.info(
+    '✅ [DB Pool] PostgreSQL connection pool initialized successfully'
+  );
+
   return pool;
 }
 
 /**
  * Get the database connection pool
  * Initializes the pool if it doesn't exist
- * 
+ *
  * @returns {Pool} PostgreSQL connection pool
  */
 export function getPool() {
@@ -143,7 +149,7 @@ export function getPool() {
 
 /**
  * Get current pool metrics
- * 
+ *
  * @returns {Object} Pool metrics including connection counts and health status
  */
 export function getPoolMetrics() {
@@ -169,12 +175,12 @@ export function getPoolMetrics() {
 /**
  * Perform a health check on the database connection
  * Tests connectivity and measures response time
- * 
+ *
  * @returns {Promise<Object>} Health check result with status and response time
  */
 export async function healthCheck() {
   const startTime = Date.now();
-  
+
   try {
     if (!pool) {
       return {
@@ -189,10 +195,10 @@ export async function healthCheck() {
     try {
       await client.query('SELECT 1 as health_check');
       const responseTime = Date.now() - startTime;
-      
+
       poolMetrics.lastHealthCheck = new Date().toISOString();
       poolMetrics.healthCheckStatus = 'healthy';
-      
+
       return {
         healthy: true,
         responseTime,
@@ -207,12 +213,12 @@ export async function healthCheck() {
     poolMetrics.lastHealthCheck = new Date().toISOString();
     poolMetrics.healthCheckStatus = 'unhealthy';
     poolMetrics.errors++;
-    
+
     logger.error('🔴 [DB Pool] Health check failed', {
       error: error.message,
       responseTime,
     });
-    
+
     return {
       healthy: false,
       error: error.message,
@@ -225,7 +231,7 @@ export async function healthCheck() {
 /**
  * Close the database connection pool
  * Gracefully shuts down all connections
- * 
+ *
  * @returns {Promise<void>}
  */
 export async function closePool() {
@@ -235,11 +241,11 @@ export async function closePool() {
   }
 
   logger.info('🔵 [DB Pool] Closing database connection pool');
-  
+
   try {
     await pool.end();
     pool = null;
-    
+
     logger.info('✅ [DB Pool] Database connection pool closed successfully');
   } catch (error) {
     logger.error('🔴 [DB Pool] Error closing database pool', {
@@ -252,7 +258,7 @@ export async function closePool() {
 /**
  * Execute a query with automatic connection management
  * Convenience method that handles connection acquisition and release
- * 
+ *
  * @param {string} text - SQL query text
  * @param {Array} params - Query parameters
  * @returns {Promise<Object>} Query result
@@ -265,7 +271,7 @@ export async function query(text, params) {
 /**
  * Get a client from the pool for transaction management
  * Caller is responsible for releasing the client
- * 
+ *
  * @returns {Promise<PoolClient>} Database client
  */
 export async function getClient() {

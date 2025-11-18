@@ -1,6 +1,6 @@
 /**
  * Payment Processing Service
- * 
+ *
  * Handles payment processing through Stripe, including creating payment intents,
  * storing transactions in the database, and handling payment success/failure.
  */
@@ -24,7 +24,7 @@ class PaymentService {
 
   /**
    * Process a payment through Stripe
-   * 
+   *
    * @param {Object} params - Payment parameters
    * @param {string} params.userId - User ID making the payment
    * @param {number} params.amount - Amount in dollars
@@ -34,7 +34,14 @@ class PaymentService {
    * @param {Object} [params.metadata] - Optional metadata
    * @returns {Promise<Object>} Payment result with transaction details
    */
-  async processPayment({ userId, amount, currency = 'USD', paymentMethodId, subscriptionId = null, metadata = {} }) {
+  async processPayment({
+    userId,
+    amount,
+    currency = 'USD',
+    paymentMethodId,
+    subscriptionId = null,
+    metadata = {},
+  }) {
     if (!this.stripe) {
       this.initialize();
     }
@@ -46,7 +53,7 @@ class PaymentService {
         userId,
         amount,
         currency,
-        transactionId
+        transactionId,
       });
 
       // Convert amount to cents for Stripe
@@ -60,17 +67,18 @@ class PaymentService {
         confirm: true,
         automatic_payment_methods: {
           enabled: true,
-          allow_redirects: 'never'
+          allow_redirects: 'never',
         },
         metadata: {
           user_id: userId,
           transaction_id: transactionId,
-          ...metadata
-        }
+          ...metadata,
+        },
       });
 
       // Extract payment method details
-      const paymentMethod = await this.stripe.paymentMethods.retrieve(paymentMethodId);
+      const paymentMethod =
+        await this.stripe.paymentMethods.retrieve(paymentMethodId);
       const paymentMethodType = paymentMethod.type;
       const paymentMethodLast4 = paymentMethod.card?.last4 || null;
 
@@ -92,7 +100,7 @@ class PaymentService {
         failureCode: paymentIntent.last_payment_error?.code || null,
         failureMessage: paymentIntent.last_payment_error?.message || null,
         receiptUrl: paymentIntent.charges?.data[0]?.receipt_url || null,
-        metadata
+        metadata,
       });
 
       logger.info('Payment processed successfully', {
@@ -100,7 +108,7 @@ class PaymentService {
         userId,
         amount,
         status,
-        paymentIntentId: paymentIntent.id
+        paymentIntentId: paymentIntent.id,
       });
 
       return {
@@ -110,16 +118,15 @@ class PaymentService {
           id: paymentIntent.id,
           status: paymentIntent.status,
           amount: paymentIntent.amount,
-          currency: paymentIntent.currency
-        }
+          currency: paymentIntent.currency,
+        },
       };
-
     } catch (error) {
       logger.error('Payment processing failed', {
         transactionId,
         userId,
         amount,
-        error: error.message
+        error: error.message,
       });
 
       // Store failed transaction
@@ -137,26 +144,26 @@ class PaymentService {
         failureCode: error.code || 'unknown',
         failureMessage: error.message,
         receiptUrl: null,
-        metadata
+        metadata,
       });
 
       // Convert Stripe error to standardized format
       const standardizedError = stripeClient.handleStripeError(error);
-      
+
       return {
         success: false,
         error: standardizedError,
         transaction: {
           id: transactionId,
-          status: 'failed'
-        }
+          status: 'failed',
+        },
       };
     }
   }
 
   /**
    * Get transaction details by ID
-   * 
+   *
    * @param {string} transactionId - Transaction ID
    * @returns {Promise<Object>} Transaction details
    */
@@ -175,7 +182,7 @@ class PaymentService {
 
   /**
    * Get transactions for a user
-   * 
+   *
    * @param {string} userId - User ID
    * @param {Object} options - Query options
    * @param {number} [options.limit=50] - Maximum number of transactions
@@ -183,7 +190,10 @@ class PaymentService {
    * @param {string} [options.status] - Filter by status
    * @returns {Promise<Array>} List of transactions
    */
-  async getUserTransactions(userId, { limit = 50, offset = 0, status = null } = {}) {
+  async getUserTransactions(
+    userId,
+    { limit = 50, offset = 0, status = null } = {}
+  ) {
     let query = 'SELECT * FROM payment_transactions WHERE user_id = $1';
     const params = [userId];
 
@@ -192,7 +202,11 @@ class PaymentService {
       params.push(status);
     }
 
-    query += ' ORDER BY created_at DESC LIMIT $' + (params.length + 1) + ' OFFSET $' + (params.length + 2);
+    query +=
+      ' ORDER BY created_at DESC LIMIT $' +
+      (params.length + 1) +
+      ' OFFSET $' +
+      (params.length + 2);
     params.push(limit, offset);
 
     const result = await this.db.query(query, params);
@@ -229,7 +243,7 @@ class PaymentService {
       data.failureCode,
       data.failureMessage,
       data.receiptUrl,
-      JSON.stringify(data.metadata || {})
+      JSON.stringify(data.metadata || {}),
     ];
 
     const result = await this.db.query(query, values);
@@ -242,13 +256,13 @@ class PaymentService {
    */
   _mapPaymentIntentStatus(stripeStatus) {
     const statusMap = {
-      'succeeded': 'succeeded',
-      'processing': 'pending',
-      'requires_payment_method': 'failed',
-      'requires_confirmation': 'pending',
-      'requires_action': 'pending',
-      'canceled': 'failed',
-      'requires_capture': 'pending'
+      succeeded: 'succeeded',
+      processing: 'pending',
+      requires_payment_method: 'failed',
+      requires_confirmation: 'pending',
+      requires_action: 'pending',
+      canceled: 'failed',
+      requires_capture: 'pending',
     };
 
     return statusMap[stripeStatus] || 'pending';

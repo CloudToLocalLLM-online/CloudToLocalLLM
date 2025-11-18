@@ -12,14 +12,14 @@ const logger = winston.createLogger({
   format: winston.format.combine(
     winston.format.timestamp(),
     winston.format.errors({ stack: true }),
-    winston.format.json(),
+    winston.format.json()
   ),
   defaultMeta: { service: 'proxy-manager' },
   transports: [
     new winston.transports.Console({
       format: winston.format.combine(
         winston.format.timestamp(),
-        winston.format.simple(),
+        winston.format.simple()
       ),
     }),
   ],
@@ -79,9 +79,11 @@ export class StreamingProxyManager {
         Internal: false, // Allow external access for API communication
         IPAM: {
           Driver: 'default',
-          Config: [{
-            Subnet: `172.${20 + Math.floor(Math.random() * 200)}.0.0/24`,
-          }],
+          Config: [
+            {
+              Subnet: `172.${20 + Math.floor(Math.random() * 200)}.0.0/24`,
+            },
+          ],
         },
         Labels: {
           'cloudtolocalllm.user': userId,
@@ -123,11 +125,14 @@ export class StreamingProxyManager {
       if (user && shouldUseDirectTunnel(user)) {
         const userTier = getUserTier(user);
 
-        logger.info('� [StreamingProxy] Free tier user detected, providing direct tunnel access', {
-          userTier,
-          userId,
-          proxyId,
-        });
+        logger.info(
+          '� [StreamingProxy] Free tier user detected, providing direct tunnel access',
+          {
+            userTier,
+            userId,
+            proxyId,
+          }
+        );
 
         // Return direct tunnel configuration instead of container
         const directTunnelConfig = {
@@ -155,11 +160,14 @@ export class StreamingProxyManager {
       }
 
       // Premium/Enterprise tier container provisioning
-      logger.info('� [StreamingProxy] Premium tier user detected, provisioning container', {
-        userId,
-        userTier: getUserTier(user),
-        proxyId,
-      });
+      logger.info(
+        '� [StreamingProxy] Premium tier user detected, provisioning container',
+        {
+          userId,
+          userTier: getUserTier(user),
+          proxyId,
+        }
+      );
 
       // Check if proxy already exists (for premium/enterprise users)
       if (this.activeProxies.has(userId)) {
@@ -266,7 +274,10 @@ export class StreamingProxyManager {
           await networkInfo.network.remove();
           logger.info(`Removed user network: ${networkInfo.networkName}`);
         } catch (networkError) {
-          logger.warn(`Failed to remove network: ${networkInfo.networkName}`, networkError);
+          logger.warn(
+            `Failed to remove network: ${networkInfo.networkName}`,
+            networkError
+          );
         }
       }
 
@@ -328,7 +339,7 @@ export class StreamingProxyManager {
    * Start periodic cleanup process
    */
   startCleanupProcess() {
-    this.cleanupInterval = setInterval(async() => {
+    this.cleanupInterval = setInterval(async () => {
       await this.cleanupStaleProxies();
     }, 60000); // Check every minute
 
@@ -360,10 +371,12 @@ export class StreamingProxyManager {
    * Get all active proxies (for monitoring)
    */
   getAllActiveProxies() {
-    return Array.from(this.activeProxies.entries()).map(([userId, metadata]) => ({
-      userId,
-      ...metadata,
-    }));
+    return Array.from(this.activeProxies.entries()).map(
+      ([userId, metadata]) => ({
+        userId,
+        ...metadata,
+      })
+    );
   }
 
   /**
@@ -376,7 +389,7 @@ export class StreamingProxyManager {
 
     // Terminate all active proxies
     const terminationPromises = Array.from(this.activeProxies.keys()).map(
-      userId => this.terminateProxy(userId),
+      (userId) => this.terminateProxy(userId)
     );
 
     await Promise.allSettled(terminationPromises);

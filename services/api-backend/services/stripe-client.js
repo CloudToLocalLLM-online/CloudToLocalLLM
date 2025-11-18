@@ -1,6 +1,6 @@
 /**
  * Stripe Client Wrapper
- * 
+ *
  * Provides a configured Stripe client with error handling and logging.
  * Supports both test and production modes based on environment configuration.
  */
@@ -26,17 +26,21 @@ class StripeClient {
 
     // Determine which API key to use based on environment
     const isProduction = process.env.NODE_ENV === 'production';
-    const apiKey = isProduction 
-      ? process.env.STRIPE_SECRET_KEY_PROD 
+    const apiKey = isProduction
+      ? process.env.STRIPE_SECRET_KEY_PROD
       : process.env.STRIPE_SECRET_KEY_TEST;
 
     if (!apiKey) {
-      const envVar = isProduction ? 'STRIPE_SECRET_KEY_PROD' : 'STRIPE_SECRET_KEY_TEST';
-      throw new Error(`Stripe API key not configured. Please set ${envVar} environment variable.`);
+      const envVar = isProduction
+        ? 'STRIPE_SECRET_KEY_PROD'
+        : 'STRIPE_SECRET_KEY_TEST';
+      throw new Error(
+        `Stripe API key not configured. Please set ${envVar} environment variable.`
+      );
     }
 
     this.isTestMode = !isProduction;
-    
+
     // Initialize Stripe with API version
     this.stripe = new Stripe(apiKey, {
       apiVersion: '2024-11-20.acacia',
@@ -47,7 +51,7 @@ class StripeClient {
 
     logger.info('Stripe client initialized', {
       mode: this.isTestMode ? 'test' : 'production',
-      apiVersion: '2024-11-20.acacia'
+      apiVersion: '2024-11-20.acacia',
     });
   }
 
@@ -82,7 +86,7 @@ class StripeClient {
       code: error.code,
       message: error.message,
       statusCode: error.statusCode,
-      requestId: error.requestId
+      requestId: error.requestId,
     });
 
     // Map Stripe error types to standardized error codes
@@ -94,9 +98,9 @@ class StripeClient {
           message: error.message || 'Card was declined',
           details: {
             decline_code: error.decline_code,
-            param: error.param
+            param: error.param,
           },
-          statusCode: 402
+          statusCode: 402,
         };
 
       case 'StripeInvalidRequestError':
@@ -105,9 +109,9 @@ class StripeClient {
           code: 'INVALID_REQUEST',
           message: error.message || 'Invalid payment request',
           details: {
-            param: error.param
+            param: error.param,
           },
-          statusCode: 400
+          statusCode: 400,
         };
 
       case 'StripeAPIError':
@@ -116,9 +120,9 @@ class StripeClient {
           code: 'PAYMENT_GATEWAY_ERROR',
           message: 'Payment gateway error. Please try again.',
           details: {
-            type: error.type
+            type: error.type,
           },
-          statusCode: 502
+          statusCode: 502,
         };
 
       case 'StripeConnectionError':
@@ -127,7 +131,7 @@ class StripeClient {
           code: 'GATEWAY_CONNECTION_ERROR',
           message: 'Unable to connect to payment gateway',
           details: {},
-          statusCode: 503
+          statusCode: 503,
         };
 
       case 'StripeAuthenticationError':
@@ -136,7 +140,7 @@ class StripeClient {
           code: 'GATEWAY_AUTH_ERROR',
           message: 'Payment gateway authentication failed',
           details: {},
-          statusCode: 500
+          statusCode: 500,
         };
 
       case 'StripeRateLimitError':
@@ -145,7 +149,7 @@ class StripeClient {
           code: 'RATE_LIMIT_EXCEEDED',
           message: 'Too many requests. Please try again later.',
           details: {},
-          statusCode: 429
+          statusCode: 429,
         };
 
       default:
@@ -153,9 +157,9 @@ class StripeClient {
           code: 'UNKNOWN_ERROR',
           message: error.message || 'An unknown error occurred',
           details: {
-            type: error.type
+            type: error.type,
           },
-          statusCode: 500
+          statusCode: 500,
         };
     }
   }

@@ -22,10 +22,16 @@ export class DatabaseMigratorPG {
       database: process.env.DB_NAME || 'cloudtolocalllm',
       user: process.env.DB_USER,
       password: process.env.DB_PASSWORD,
-      ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : undefined,
+      ssl:
+        process.env.DB_SSL === 'true'
+          ? { rejectUnauthorized: false }
+          : undefined,
       max: parseInt(process.env.DB_POOL_MAX || '10', 10),
       idleTimeoutMillis: parseInt(process.env.DB_POOL_IDLE || '30000', 10),
-      connectionTimeoutMillis: parseInt(process.env.DB_POOL_CONNECT_TIMEOUT || '30000', 10),
+      connectionTimeoutMillis: parseInt(
+        process.env.DB_POOL_CONNECT_TIMEOUT || '30000',
+        10
+      ),
       ...config,
     };
 
@@ -43,7 +49,9 @@ export class DatabaseMigratorPG {
       });
       return true;
     } catch (error) {
-      this.logger.error('Failed to connect to PostgreSQL', { error: error.message });
+      this.logger.error('Failed to connect to PostgreSQL', {
+        error: error.message,
+      });
       throw error;
     }
   }
@@ -68,7 +76,7 @@ export class DatabaseMigratorPG {
 
   async getAppliedMigrations() {
     const { rows } = await this.pool.query(
-      'SELECT version, name, applied_at FROM schema_migrations WHERE success = TRUE ORDER BY applied_at',
+      'SELECT version, name, applied_at FROM schema_migrations WHERE success = TRUE ORDER BY applied_at'
     );
     return rows;
   }
@@ -76,7 +84,7 @@ export class DatabaseMigratorPG {
   async isMigrationApplied(version) {
     const { rows } = await this.pool.query(
       'SELECT 1 FROM schema_migrations WHERE version = $1 AND success = TRUE',
-      [version],
+      [version]
     );
     return rows.length > 0;
   }
@@ -114,12 +122,21 @@ export class DatabaseMigratorPG {
         schemaSQL = readFileSync(schemaPathPG, 'utf8');
       } catch {
         // Fallback to SQLite schema with manual adjustments (id GUIDs -> UUIDs, DATETIME -> TIMESTAMPTZ)
-        const sqliteSchema = readFileSync(join(__dirname, 'schema.sql'), 'utf8');
+        const sqliteSchema = readFileSync(
+          join(__dirname, 'schema.sql'),
+          'utf8'
+        );
         schemaSQL = sqliteSchema
           .replaceAll('DATETIME', 'TIMESTAMPTZ')
           .replaceAll('INTEGER DEFAULT 1', 'BOOLEAN DEFAULT TRUE')
-          .replaceAll('TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(16))))', 'UUID PRIMARY KEY DEFAULT gen_random_uuid()')
-          .replaceAll('metadata TEXT, -- JSON as text in SQLite', 'metadata JSONB');
+          .replaceAll(
+            'TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(16))))',
+            'UUID PRIMARY KEY DEFAULT gen_random_uuid()'
+          )
+          .replaceAll(
+            'metadata TEXT, -- JSON as text in SQLite',
+            'metadata JSONB'
+          );
         // Ensure pgcrypto or uuid-ossp extension for gen_random_uuid
         await client.query('CREATE EXTENSION IF NOT EXISTS pgcrypto');
       }
@@ -130,14 +147,19 @@ export class DatabaseMigratorPG {
       const execMs = Date.now() - start;
       await client.query(
         'INSERT INTO schema_migrations (version, name, checksum, execution_time_ms) VALUES ($1,$2,$3,$4)',
-        [version, 'Initial tunnel system schema', checksum, execMs],
+        [version, 'Initial tunnel system schema', checksum, execMs]
       );
 
       await client.query('COMMIT');
-      this.logger.info('Initial schema applied successfully (PG)', { version, execMs });
+      this.logger.info('Initial schema applied successfully (PG)', {
+        version,
+        execMs,
+      });
     } catch (error) {
       await client.query('ROLLBACK');
-      this.logger.error('Failed to apply initial schema (PG)', { error: error.message });
+      this.logger.error('Failed to apply initial schema (PG)', {
+        error: error.message,
+      });
       throw error;
     } finally {
       client.release();
@@ -147,9 +169,21 @@ export class DatabaseMigratorPG {
   async validateSchema() {
     const checks = [
       // user_sessions table moved to separate authentication database
-      { name: 'tunnel_connections_table', query: "SELECT 1 FROM information_schema.tables WHERE table_name='tunnel_connections'" },
-      { name: 'audit_logs_table', query: "SELECT 1 FROM information_schema.tables WHERE table_name='audit_logs'" },
-      { name: 'schema_migrations_table', query: "SELECT 1 FROM information_schema.tables WHERE table_name='schema_migrations'" },
+      {
+        name: 'tunnel_connections_table',
+        query:
+          "SELECT 1 FROM information_schema.tables WHERE table_name='tunnel_connections'",
+      },
+      {
+        name: 'audit_logs_table',
+        query:
+          "SELECT 1 FROM information_schema.tables WHERE table_name='audit_logs'",
+      },
+      {
+        name: 'schema_migrations_table',
+        query:
+          "SELECT 1 FROM information_schema.tables WHERE table_name='schema_migrations'",
+      },
     ];
 
     const results = {};
@@ -159,7 +193,10 @@ export class DatabaseMigratorPG {
         results[c.name] = rows.length > 0;
       } catch (e) {
         results[c.name] = false;
-        this.logger.warn('Schema validation failed (PG)', { validation: c.name, error: e.message });
+        this.logger.warn('Schema validation failed (PG)', {
+          validation: c.name,
+          error: e.message,
+        });
       }
     }
 

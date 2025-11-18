@@ -13,6 +13,7 @@ The Dashboard API provides comprehensive metrics and statistics for the Admin Ce
 ## Authentication
 
 All endpoints require:
+
 - Valid JWT token in Authorization header
 - Admin role (any admin role has access)
 
@@ -112,6 +113,7 @@ Get comprehensive dashboard metrics for the Admin Center.
 ```
 
 **Status Codes:**
+
 - `200 OK`: Metrics retrieved successfully
 - `401 Unauthorized`: Invalid or missing authentication token
 - `403 Forbidden`: User does not have admin privileges
@@ -120,25 +122,33 @@ Get comprehensive dashboard metrics for the Admin Center.
 ## Metrics Calculations
 
 ### Active Users
+
 Users with at least one session activity in the last 30 days.
 
 ### New Users This Month
+
 Users registered between the 1st and last day of the current month.
 
 ### Subscription Tier Distribution
+
 Count of users by their active subscription tier. Users without active subscriptions are counted as "free".
 
 ### Monthly Recurring Revenue (MRR)
+
 Calculated as:
+
 ```
 MRR = (Premium Users × $9.99) + (Enterprise Users × $29.99)
 ```
 
 ### Current Month Revenue
+
 Sum of all successful payment transactions in the current calendar month.
 
 ### Conversion Rate
+
 Percentage of total users with paid subscriptions:
+
 ```
 Conversion Rate = (Paid Subscribers / Total Users) × 100
 ```
@@ -158,9 +168,9 @@ curl -X GET https://api.cloudtolocalllm.online/api/admin/dashboard/metrics \
 const response = await fetch('/api/admin/dashboard/metrics', {
   method: 'GET',
   headers: {
-    'Authorization': `Bearer ${token}`,
-    'Content-Type': 'application/json'
-  }
+    Authorization: `Bearer ${token}`,
+    'Content-Type': 'application/json',
+  },
 });
 
 const data = await response.json();
@@ -208,6 +218,7 @@ print('MRR: \$${metrics['revenue']['mrr']}');
 ## Changelog
 
 ### Version 1.0.0 (2025-11-16)
+
 - Initial implementation
 - Dashboard metrics endpoint
 - Real-time calculations

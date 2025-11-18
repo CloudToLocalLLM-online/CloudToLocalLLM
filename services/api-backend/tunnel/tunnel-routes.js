@@ -4,7 +4,11 @@
 
 import express from 'express';
 import winston from 'winston';
-import { TunnelLogger, ERROR_CODES, ErrorResponseBuilder } from '../utils/logger.js';
+import {
+  TunnelLogger,
+  ERROR_CODES,
+  ErrorResponseBuilder,
+} from '../utils/logger.js';
 import { AuthService } from '../auth/auth-service.js';
 import { addTierInfo, requireFeature } from '../middleware/tier-check.js';
 
@@ -18,11 +22,17 @@ import { addTierInfo, requireFeature } from '../middleware/tier-check.js';
  * @param {AuthService} [authService] - Pre-initialized authentication service.
  * @returns {express.Router} The configured Express router.
  */
-export function createTunnelRoutes(config, tunnelProxy, logger = winston.createLogger(), authService = null) {
+export function createTunnelRoutes(
+  config,
+  tunnelProxy,
+  logger = winston.createLogger(),
+  authService = null
+) {
   const { AUTH0_DOMAIN, AUTH0_AUDIENCE } = config;
   const router = express.Router();
 
-  const tunnelLogger = logger instanceof TunnelLogger ? logger : new TunnelLogger('tunnel-routes');
+  const tunnelLogger =
+    logger instanceof TunnelLogger ? logger : new TunnelLogger('tunnel-routes');
 
   // Use provided auth service or create a new one (fallback)
   if (!authService) {
@@ -37,7 +47,14 @@ export function createTunnelRoutes(config, tunnelProxy, logger = winston.createL
     const token = authHeader && authHeader.split(' ')[1];
 
     if (!token) {
-      return res.status(401).json(ErrorResponseBuilder.authenticationError('Bearer token is required.', ERROR_CODES.AUTH_TOKEN_MISSING));
+      return res
+        .status(401)
+        .json(
+          ErrorResponseBuilder.authenticationError(
+            'Bearer token is required.',
+            ERROR_CODES.AUTH_TOKEN_MISSING
+          )
+        );
     }
 
     try {
@@ -46,8 +63,17 @@ export function createTunnelRoutes(config, tunnelProxy, logger = winston.createL
       req.user = payload; // Also set req.user for addTierInfo middleware
       next();
     } catch (error) {
-      tunnelLogger.logSecurity('auth_token_invalid', null, { error: error.message });
-      res.status(403).json(ErrorResponseBuilder.authenticationError('Invalid or expired token.', ERROR_CODES.AUTH_TOKEN_INVALID));
+      tunnelLogger.logSecurity('auth_token_invalid', null, {
+        error: error.message,
+      });
+      res
+        .status(403)
+        .json(
+          ErrorResponseBuilder.authenticationError(
+            'Invalid or expired token.',
+            ERROR_CODES.AUTH_TOKEN_INVALID
+          )
+        );
     }
   }
 
@@ -76,7 +102,12 @@ export function createTunnelRoutes(config, tunnelProxy, logger = winston.createL
       }
 
       // Register the client connection
-      const assignedPort = tunnelProxy.registerClient(userId, tunnelId, localPort, serverPort);
+      const assignedPort = tunnelProxy.registerClient(
+        userId,
+        tunnelId,
+        localPort,
+        serverPort
+      );
 
       res.json({
         success: true,
@@ -87,8 +118,19 @@ export function createTunnelRoutes(config, tunnelProxy, logger = winston.createL
         message: 'SSH client registered successfully',
       });
     } catch (error) {
-      tunnelLogger.logTunnelError(ERROR_CODES.INTERNAL_SERVER_ERROR, 'Failed to register client', { error: error.message });
-      res.status(500).json(ErrorResponseBuilder.internalServerError('Failed to register client.', ERROR_CODES.INTERNAL_SERVER_ERROR));
+      tunnelLogger.logTunnelError(
+        ERROR_CODES.INTERNAL_SERVER_ERROR,
+        'Failed to register client',
+        { error: error.message }
+      );
+      res
+        .status(500)
+        .json(
+          ErrorResponseBuilder.internalServerError(
+            'Failed to register client.',
+            ERROR_CODES.INTERNAL_SERVER_ERROR
+          )
+        );
     }
   });
 
@@ -112,8 +154,19 @@ export function createTunnelRoutes(config, tunnelProxy, logger = winston.createL
         message: 'SSH client unregistered successfully',
       });
     } catch (error) {
-      tunnelLogger.logTunnelError(ERROR_CODES.INTERNAL_SERVER_ERROR, 'Failed to unregister client', { error: error.message });
-      res.status(500).json(ErrorResponseBuilder.internalServerError('Failed to unregister client.', ERROR_CODES.INTERNAL_SERVER_ERROR));
+      tunnelLogger.logTunnelError(
+        ERROR_CODES.INTERNAL_SERVER_ERROR,
+        'Failed to unregister client',
+        { error: error.message }
+      );
+      res
+        .status(500)
+        .json(
+          ErrorResponseBuilder.internalServerError(
+            'Failed to unregister client.',
+            ERROR_CODES.INTERNAL_SERVER_ERROR
+          )
+        );
     }
   });
 
@@ -121,18 +174,23 @@ export function createTunnelRoutes(config, tunnelProxy, logger = winston.createL
   router.get('/health/:userId', requireFeature('tunneling'), (req, res) => {
     const { userId } = req.params;
     if (userId !== req.userId) {
-      return res.status(403).json({ error: 'Forbidden', message: 'You can only check your own tunnel status.' });
+      return res
+        .status(403)
+        .json({
+          error: 'Forbidden',
+          message: 'You can only check your own tunnel status.',
+        });
     }
-    
+
     if (!tunnelProxy) {
-      return res.json({ 
-        userId, 
-        connected: false, 
+      return res.json({
+        userId,
+        connected: false,
         message: 'SSH tunnel server not initialized',
-        timestamp: new Date().toISOString() 
+        timestamp: new Date().toISOString(),
       });
     }
-    
+
     const status = tunnelProxy.getUserConnectionStatus(userId);
     res.json({ userId, ...status, timestamp: new Date().toISOString() });
   });
@@ -141,19 +199,30 @@ export function createTunnelRoutes(config, tunnelProxy, logger = winston.createL
   router.get('/health', (req, res) => {
     try {
       if (!tunnelProxy) {
-        return res.status(503).json({ 
+        return res.status(503).json({
           status: 'degraded',
           message: 'SSH tunnel server not initialized',
-          timestamp: new Date().toISOString() 
+          timestamp: new Date().toISOString(),
         });
       }
-      
+
       const healthStatus = tunnelProxy.getHealthStatus();
       const statusCode = healthStatus.status === 'healthy' ? 200 : 503;
       res.status(statusCode).json(healthStatus);
     } catch (error) {
-      tunnelLogger.logTunnelError(ERROR_CODES.INTERNAL_SERVER_ERROR, 'Failed to get tunnel health status', { error: error.message });
-      res.status(500).json(ErrorResponseBuilder.internalServerError('Failed to retrieve health status.', ERROR_CODES.INTERNAL_SERVER_ERROR));
+      tunnelLogger.logTunnelError(
+        ERROR_CODES.INTERNAL_SERVER_ERROR,
+        'Failed to get tunnel health status',
+        { error: error.message }
+      );
+      res
+        .status(500)
+        .json(
+          ErrorResponseBuilder.internalServerError(
+            'Failed to retrieve health status.',
+            ERROR_CODES.INTERNAL_SERVER_ERROR
+          )
+        );
     }
   });
 
@@ -165,7 +234,7 @@ export function createTunnelRoutes(config, tunnelProxy, logger = winston.createL
         timestamp: new Date().toISOString(),
       });
     }
-    
+
     const stats = tunnelProxy.getStats();
     res.json({
       system: stats,

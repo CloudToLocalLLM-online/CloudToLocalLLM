@@ -46,7 +46,7 @@
     "jsonwebtoken": "^9.0.2",
     "jwks-client": "^2.0.0",
     "node-fetch": "^3.3.2",
-    "nodemailer": "^6.9.7",
+    "nodemailer": "^7.0.10",
     "pg": "^8.16.3",
     "sqlite": "^5.1.1",
     "sqlite3": "^5.1.7",

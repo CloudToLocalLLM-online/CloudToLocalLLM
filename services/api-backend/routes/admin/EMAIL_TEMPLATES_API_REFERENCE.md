@@ -1,6 +1,7 @@
 # Email Template Management API - Quick Reference
 
 ## Base URL
+
 ```
 /api/admin/email/templates
 ```
@@ -10,15 +11,18 @@
 ## Endpoints
 
 ### 1. List Templates
+
 ```
 GET /api/admin/email/templates
 ```
 
 **Query Parameters:**
+
 - `limit` (optional): 1-100, default 50
 - `offset` (optional): default 0
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -49,11 +53,13 @@ GET /api/admin/email/templates
 ---
 
 ### 2. Create/Update Template
+
 ```
 POST /api/admin/email/templates
 ```
 
 **Request Body:**
+
 ```json
 {
   "name": "password_reset",
@@ -66,6 +72,7 @@ POST /api/admin/email/templates
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -87,6 +94,7 @@ POST /api/admin/email/templates
 ```
 
 **Validation:**
+
 - `name`: Required, non-empty string
 - `subject`: Required, non-empty string
 - `html_body`: Required, non-empty string
@@ -97,14 +105,17 @@ POST /api/admin/email/templates
 ---
 
 ### 3. Update Template
+
 ```
 PUT /api/admin/email/templates/:id
 ```
 
 **URL Parameters:**
+
 - `id`: Template UUID
 
 **Request Body:** (all optional)
+
 ```json
 {
   "name": "password_reset_v2",
@@ -117,6 +128,7 @@ PUT /api/admin/email/templates/:id
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -138,6 +150,7 @@ PUT /api/admin/email/templates/:id
 ```
 
 **Notes:**
+
 - Only provided fields are updated
 - Required fields cannot be emptied
 - Partial updates supported
@@ -145,14 +158,17 @@ PUT /api/admin/email/templates/:id
 ---
 
 ### 4. Delete Template
+
 ```
 DELETE /api/admin/email/templates/:id
 ```
 
 **URL Parameters:**
+
 - `id`: Template UUID
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -166,6 +182,7 @@ DELETE /api/admin/email/templates/:id
 ## Error Responses
 
 ### 400 Bad Request
+
 ```json
 {
   "error": "Template name is required",
@@ -174,6 +191,7 @@ DELETE /api/admin/email/templates/:id
 ```
 
 ### 404 Not Found
+
 ```json
 {
   "error": "Template not found",
@@ -182,6 +200,7 @@ DELETE /api/admin/email/templates/:id
 ```
 
 ### 500 Server Error
+
 ```json
 {
   "error": "Failed to create/update email template",
@@ -194,31 +213,33 @@ DELETE /api/admin/email/templates/:id
 
 ## Common Error Codes
 
-| Code | HTTP | Description |
-|------|------|-------------|
-| MISSING_NAME | 400 | Template name is required |
-| MISSING_SUBJECT | 400 | Template subject is required |
-| MISSING_HTML_BODY | 400 | Template HTML body is required |
-| INVALID_VARIABLES | 400 | Variables must be an array |
-| INVALID_NAME | 400 | Template name cannot be empty |
-| INVALID_SUBJECT | 400 | Template subject cannot be empty |
-| INVALID_HTML_BODY | 400 | Template HTML body cannot be empty |
-| TEMPLATE_NOT_FOUND | 404 | Template not found |
-| TEMPLATE_UPDATE_FAILED | 404 | Template not found or cannot be updated |
-| TEMPLATES_LIST_FAILED | 500 | Failed to list email templates |
-| TEMPLATE_SAVE_FAILED | 500 | Failed to create/update email template |
-| TEMPLATE_UPDATE_ERROR | 500 | Failed to update email template |
-| TEMPLATE_DELETE_FAILED | 500 | Failed to delete email template |
+| Code                   | HTTP | Description                             |
+| ---------------------- | ---- | --------------------------------------- |
+| MISSING_NAME           | 400  | Template name is required               |
+| MISSING_SUBJECT        | 400  | Template subject is required            |
+| MISSING_HTML_BODY      | 400  | Template HTML body is required          |
+| INVALID_VARIABLES      | 400  | Variables must be an array              |
+| INVALID_NAME           | 400  | Template name cannot be empty           |
+| INVALID_SUBJECT        | 400  | Template subject cannot be empty        |
+| INVALID_HTML_BODY      | 400  | Template HTML body cannot be empty      |
+| TEMPLATE_NOT_FOUND     | 404  | Template not found                      |
+| TEMPLATE_UPDATE_FAILED | 404  | Template not found or cannot be updated |
+| TEMPLATES_LIST_FAILED  | 500  | Failed to list email templates          |
+| TEMPLATE_SAVE_FAILED   | 500  | Failed to create/update email template  |
+| TEMPLATE_UPDATE_ERROR  | 500  | Failed to update email template         |
+| TEMPLATE_DELETE_FAILED | 500  | Failed to delete email template         |
 
 ---
 
 ## Authentication & Authorization
 
 **Required Permissions:**
+
 - `view_email_config`: For GET requests
 - `manage_email_config`: For POST/PUT/DELETE requests
 
 **Headers:**
+
 ```
 Authorization: Bearer <jwt_token>
 ```
@@ -247,6 +268,7 @@ Variables use `{{variableName}}` syntax:
 ```
 
 **Variable Rendering:**
+
 - Variables are replaced at send time
 - Missing variables remain as `{{variableName}}`
 - Case-sensitive matching
@@ -256,6 +278,7 @@ Variables use `{{variableName}}` syntax:
 ## Examples
 
 ### Create Password Reset Template
+
 ```bash
 curl -X POST http://localhost:3000/api/admin/email/templates \
   -H "Authorization: Bearer <token>" \
@@ -270,12 +293,14 @@ curl -X POST http://localhost:3000/api/admin/email/templates \
 ```
 
 ### List All Templates
+
 ```bash
 curl -X GET "http://localhost:3000/api/admin/email/templates?limit=10&offset=0" \
   -H "Authorization: Bearer <token>"
 ```
 
 ### Update Template
+
 ```bash
 curl -X PUT http://localhost:3000/api/admin/email/templates/<template-id> \
   -H "Authorization: Bearer <token>" \
@@ -286,6 +311,7 @@ curl -X PUT http://localhost:3000/api/admin/email/templates/<template-id> \
 ```
 
 ### Delete Template
+
 ```bash
 curl -X DELETE http://localhost:3000/api/admin/email/templates/<template-id> \
   -H "Authorization: Bearer <token>"
@@ -296,6 +322,7 @@ curl -X DELETE http://localhost:3000/api/admin/email/templates/<template-id> \
 ## Audit Logging
 
 All template operations are logged with:
+
 - Admin user ID and role
 - Action type (CREATE, UPDATE, DELETE)
 - Template name and ID
@@ -303,4 +330,3 @@ All template operations are logged with:
 - IP address and user agent
 
 Access audit logs via the audit logging API.
-

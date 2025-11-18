@@ -1,9 +1,9 @@
 /**
  * Stripe Webhook Handler
- * 
+ *
  * Handles Stripe webhook events for payment and subscription updates.
  * Implements signature verification and idempotency.
- * 
+ *
  * Events handled:
  * - payment_intent.succeeded
  * - payment_intent.failed
@@ -23,7 +23,10 @@ const { Pool } = pg;
 // Database connection pool
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+  ssl:
+    process.env.NODE_ENV === 'production'
+      ? { rejectUnauthorized: false }
+      : false,
   max: 20,
   idleTimeoutMillis: 30000,
   connectionTimeoutMillis: 2000,
@@ -31,82 +34,88 @@ const pool = new Pool({
 
 /**
  * Stripe webhook endpoint
- * 
+ *
  * POST /api/webhooks/stripe
- * 
+ *
  * Receives and processes Stripe webhook events.
  * Verifies webhook signature for security.
  */
-router.post('/stripe', express.raw({ type: 'application/json' }), async (req, res) => {
-  const sig = req.headers['stripe-signature'];
-  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+router.post(
+  '/stripe',
+  express.raw({ type: 'application/json' }),
+  async (req, res) => {
+    const sig = req.headers['stripe-signature'];
+    const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
-  if (!webhookSecret) {
-    logger.error('Stripe webhook secret not configured');
-    return res.status(500).json({ error: 'Webhook configuration error' });
-  }
-
-  let event;
-
-  try {
-    // Verify webhook signature
-    const stripe = stripeClient.getClient();
-    event = stripe.webhooks.constructEvent(req.body, sig, webhookSecret);
-    
-    logger.info('Stripe webhook received', {
-      type: event.type,
-      id: event.id,
-      created: event.created
-    });
-  } catch (err) {
-    logger.error('Webhook signature verification failed', {
-      error: err.message
-    });
-    return res.status(400).json({ error: 'Webhook signature verification failed' });
-  }
-
-  // Check for idempotency - prevent processing the same event twice
-  const client = await pool.connect();
-  try {
-    // Check if event already processed
-    const existingEvent = await client.query(
-      'SELECT id FROM webhook_events WHERE stripe_event_id = $1',
-      [event.id]
-    );
-
-    if (existingEvent.rows.length > 0) {
-      logger.info('Webhook event already processed', { eventId: event.id });
-      return res.json({ received: true, status: 'already_processed' });
+    if (!webhookSecret) {
+      logger.error('Stripe webhook secret not configured');
+      return res.status(500).json({ error: 'Webhook configuration error' });
     }
 
-    // Record event as being processed
-    await client.query(
-      `INSERT INTO webhook_events (stripe_event_id, event_type, processed_at, event_data)
+    let event;
+
+    try {
+      // Verify webhook signature
+      const stripe = stripeClient.getClient();
+      event = stripe.webhooks.constructEvent(req.body, sig, webhookSecret);
+
+      logger.info('Stripe webhook received', {
+        type: event.type,
+        id: event.id,
+        created: event.created,
+      });
+    } catch (err) {
+      logger.error('Webhook signature verification failed', {
+        error: err.message,
+      });
+      return res
+        .status(400)
+        .json({ error: 'Webhook signature verification failed' });
+    }
+
+    // Check for idempotency - prevent processing the same event twice
+    const client = await pool.connect();
+    try {
+      // Check if event already processed
+      const existingEvent = await client.query(
+        'SELECT id FROM webhook_events WHERE stripe_event_id = $1',
+        [event.id]
+      );
+
+      if (existingEvent.rows.length > 0) {
+        logger.info('Webhook event already processed', { eventId: event.id });
+        return res.json({ received: true, status: 'already_processed' });
+      }
+
+      // Record event as being processed
+      await client.query(
+        `INSERT INTO webhook_events (stripe_event_id, event_type, processed_at, event_data)
        VALUES ($1, $2, NOW(), $3)`,
-      [event.id, event.type, JSON.stringify(event.data.object)]
-    );
+        [event.id, event.type, JSON.stringify(event.data.object)]
+      );
 
-    // Handle the event
-    await handleWebhookEvent(event, client);
+      // Handle the event
+      await handleWebhookEvent(event, client);
 
-    logger.info('Webhook event processed successfully', {
-      type: event.type,
-      id: event.id
-    });
+      logger.info('Webhook event processed successfully', {
+        type: event.type,
+        id: event.id,
+      });
 
-    res.json({ received: true, status: 'processed' });
-  } catch (error) {
-    logger.error('Error processing webhook event', {
-      type: event.type,
-      id: event.id,
-      error: error.message,
-      stack: error.stack
-    });
-    res.status(500).json({ error: 'Error processing webhook' });
-  } finally {
-    client.release();
+      res.json({ received: true, status: 'processed' });
+    } catch (error) {
+      logger.error('Error processing webhook event', {
+        type: event.type,
+        id: event.id,
+        error: error.message,
+        stack: error.stack,
+      });
+      res.status(500).json({ error: 'Error processing webhook' });
+    } finally {
+      client.release();
+    }
   }
-});
+);
 
 /**
  * Handle webhook event based on type
@@ -116,23 +125,23 @@ async function handleWebhookEvent(event, client) {
     case 'payment_intent.succeeded':
       await handlePaymentIntentSucceeded(event.data.object, client);
       break;
-    
+
     case 'payment_intent.failed':
       await handlePaymentIntentFailed(event.data.object, client);
       break;
-    
+
     case 'customer.subscription.created':
       await handleSubscriptionCreated(event.data.object, client);
       break;
-    
+
     case 'customer.subscription.updated':
       await handleSubscriptionUpdated(event.data.object, client);
       break;
-    
+
     case 'customer.subscription.deleted':
       await handleSubscriptionDeleted(event.data.object, client);
       break;
-    
+
     default:
       logger.info('Unhandled webhook event type', { type: event.type });
   }
@@ -145,7 +154,7 @@ async function handlePaymentIntentSucceeded(paymentIntent, client) {
   logger.info('Processing payment_intent.succeeded', {
     paymentIntentId: paymentIntent.id,
     amount: paymentIntent.amount,
-    currency: paymentIntent.currency
+    currency: paymentIntent.currency,
   });
 
   // Update payment transaction status
@@ -160,13 +169,13 @@ async function handlePaymentIntentSucceeded(paymentIntent, client) {
     [
       paymentIntent.latest_charge,
       paymentIntent.charges?.data[0]?.receipt_url,
-      paymentIntent.id
+      paymentIntent.id,
     ]
   );
 
   if (result.rows.length === 0) {
     logger.warn('Payment transaction not found for payment intent', {
-      paymentIntentId: paymentIntent.id
+      paymentIntentId: paymentIntent.id,
     });
     return;
   }
@@ -176,7 +185,7 @@ async function handlePaymentIntentSucceeded(paymentIntent, client) {
   logger.info('Payment transaction updated to succeeded', {
     transactionId: transaction.id,
     userId: transaction.user_id,
-    paymentIntentId: paymentIntent.id
+    paymentIntentId: paymentIntent.id,
   });
 }
 
@@ -187,7 +196,7 @@ async function handlePaymentIntentFailed(paymentIntent, client) {
   logger.info('Processing payment_intent.failed', {
     paymentIntentId: paymentIntent.id,
     failureCode: paymentIntent.last_payment_error?.code,
-    failureMessage: paymentIntent.last_payment_error?.message
+    failureMessage: paymentIntent.last_payment_error?.message,
   });
 
   // Update payment transaction status
@@ -202,13 +211,13 @@ async function handlePaymentIntentFailed(paymentIntent, client) {
     [
       paymentIntent.last_payment_error?.code,
       paymentIntent.last_payment_error?.message,
-      paymentIntent.id
+      paymentIntent.id,
     ]
   );
 
   if (result.rows.length === 0) {
     logger.warn('Payment transaction not found for payment intent', {
-      paymentIntentId: paymentIntent.id
+      paymentIntentId: paymentIntent.id,
     });
     return;
   }
@@ -219,7 +228,7 @@ async function handlePaymentIntentFailed(paymentIntent, client) {
     transactionId: transaction.id,
     userId: transaction.user_id,
     paymentIntentId: paymentIntent.id,
-    failureCode: paymentIntent.last_payment_error?.code
+    failureCode: paymentIntent.last_payment_error?.code,
   });
 }
 
@@ -230,7 +239,7 @@ async function handleSubscriptionCreated(subscription, client) {
   logger.info('Processing customer.subscription.created', {
     subscriptionId: subscription.id,
     customerId: subscription.customer,
-    status: subscription.status
+    status: subscription.status,
   });
 
   // Find user by Stripe customer ID
@@ -243,7 +252,7 @@ async function handleSubscriptionCreated(subscription, client) {
 
   if (userResult.rows.length === 0) {
     logger.warn('Subscription not found in database', {
-      subscriptionId: subscription.id
+      subscriptionId: subscription.id,
     });
     return;
   }
@@ -264,16 +273,18 @@ async function handleSubscriptionCreated(subscription, client) {
       subscription.status,
       subscription.current_period_start,
       subscription.current_period_end,
-      subscription.trial_start ? new Date(subscription.trial_start * 1000) : null,
+      subscription.trial_start
+        ? new Date(subscription.trial_start * 1000)
+        : null,
       subscription.trial_end ? new Date(subscription.trial_end * 1000) : null,
-      dbSubscription.subscription_id
+      dbSubscription.subscription_id,
     ]
   );
 
   logger.info('Subscription created and updated', {
     subscriptionId: subscription.id,
     userId: dbSubscription.user_id,
-    status: subscription.status
+    status: subscription.status,
   });
 }
 
@@ -284,7 +295,7 @@ async function handleSubscriptionUpdated(subscription, client) {
   logger.info('Processing customer.subscription.updated', {
     subscriptionId: subscription.id,
     status: subscription.status,
-    cancelAtPeriodEnd: subscription.cancel_at_period_end
+    cancelAtPeriodEnd: subscription.cancel_at_period_end,
   });
 
   // Update subscription in database
@@ -305,16 +316,20 @@ async function handleSubscriptionUpdated(subscription, client) {
       subscription.current_period_start,
       subscription.current_period_end,
       subscription.cancel_at_period_end,
-      subscription.canceled_at ? new Date(subscription.canceled_at * 1000) : null,
-      subscription.trial_start ? new Date(subscription.trial_start * 1000) : null,
+      subscription.canceled_at
+        ? new Date(subscription.canceled_at * 1000)
+        : null,
+      subscription.trial_start
+        ? new Date(subscription.trial_start * 1000)
+        : null,
       subscription.trial_end ? new Date(subscription.trial_end * 1000) : null,
-      subscription.id
+      subscription.id,
     ]
   );
 
   if (result.rows.length === 0) {
     logger.warn('Subscription not found in database', {
-      subscriptionId: subscription.id
+      subscriptionId: subscription.id,
     });
     return;
   }
@@ -325,7 +340,7 @@ async function handleSubscriptionUpdated(subscription, client) {
     subscriptionId: subscription.id,
     userId: dbSubscription.user_id,
     status: subscription.status,
-    cancelAtPeriodEnd: subscription.cancel_at_period_end
+    cancelAtPeriodEnd: subscription.cancel_at_period_end,
   });
 }
 
@@ -335,7 +350,7 @@ async function handleSubscriptionUpdated(subscription, client) {
 async function handleSubscriptionDeleted(subscription, client) {
   logger.info('Processing customer.subscription.deleted', {
     subscriptionId: subscription.id,
-    status: subscription.status
+    status: subscription.status,
   });
 
   // Update subscription status to canceled
@@ -351,7 +366,7 @@ async function handleSubscriptionDeleted(subscription, client) {
 
   if (result.rows.length === 0) {
     logger.warn('Subscription not found in database', {
-      subscriptionId: subscription.id
+      subscriptionId: subscription.id,
     });
     return;
   }
@@ -360,7 +375,7 @@ async function handleSubscriptionDeleted(subscription, client) {
 
   logger.info('Subscription deleted', {
     subscriptionId: subscription.id,
-    userId: dbSubscription.user_id
+    userId: dbSubscription.user_id,
   });
 }
 

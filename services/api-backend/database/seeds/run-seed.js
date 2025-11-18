@@ -2,15 +2,15 @@
 
 /**
  * Database Seed Runner
- * 
+ *
  * Usage:
  *   node run-seed.js apply 001    - Apply seed data
  *   node run-seed.js clean        - Remove all seed data
- * 
+ *
  * Environment Variables:
  *   DATABASE_URL - PostgreSQL connection string
  *   PGHOST, PGPORT, PGDATABASE, PGUSER, PGPASSWORD - Individual connection params
- * 
+ *
  * WARNING: This script is for DEVELOPMENT ONLY. Do not run in production!
  */
 
@@ -44,18 +44,18 @@ async function applySeed(version) {
 
     console.log(`Applying seed data ${version}...`);
     console.log('⚠️  WARNING: This will insert test data into the database');
-    
+
     // Begin transaction
     await client.query('BEGIN');
-    
+
     try {
       // Execute seed
       await client.query(seedSQL);
-      
+
       // Commit transaction
       await client.query('COMMIT');
       console.log(`✓ Seed data ${version} applied successfully`);
-      
+
       // Show summary
       const summary = await client.query(`
         SELECT 
@@ -73,10 +73,10 @@ async function applySeed(version) {
         UNION ALL
         SELECT 'Audit Logs', COUNT(*) FROM admin_audit_logs
       `);
-      
+
       console.log('\nDatabase Summary:');
       console.log('─'.repeat(40));
-      summary.rows.forEach(row => {
+      summary.rows.forEach((row) => {
         console.log(`${row.entity.padEnd(20)} ${row.count}`);
       });
       console.log('─'.repeat(40));
@@ -98,48 +98,52 @@ async function cleanSeedData() {
   const client = await pool.connect();
   try {
     console.log('Cleaning seed data...');
-    console.log('⚠️  WARNING: This will delete all test data from the database');
-    
+    console.log(
+      '⚠️  WARNING: This will delete all test data from the database'
+    );
+
     // Begin transaction
     await client.query('BEGIN');
-    
+
     try {
       // Delete in reverse order of dependencies
       console.log('  Deleting admin audit logs...');
       await client.query(`DELETE FROM admin_audit_logs WHERE admin_user_id IN (
         SELECT id FROM users WHERE email LIKE 'test.%@example.com' OR email = 'cmaltais@cloudtolocalllm.online'
       )`);
-      
+
       console.log('  Deleting admin roles...');
       await client.query(`DELETE FROM admin_roles WHERE user_id IN (
         SELECT id FROM users WHERE email LIKE 'test.%@example.com'
       )`);
-      
+
       console.log('  Deleting refunds...');
       await client.query(`DELETE FROM refunds WHERE transaction_id IN (
         SELECT id FROM payment_transactions WHERE user_id IN (
           SELECT id FROM users WHERE email LIKE 'test.%@example.com'
         )
       )`);
-      
+
       console.log('  Deleting payment methods...');
       await client.query(`DELETE FROM payment_methods WHERE user_id IN (
         SELECT id FROM users WHERE email LIKE 'test.%@example.com'
       )`);
-      
+
       console.log('  Deleting payment transactions...');
       await client.query(`DELETE FROM payment_transactions WHERE user_id IN (
         SELECT id FROM users WHERE email LIKE 'test.%@example.com'
       )`);
-      
+
       console.log('  Deleting subscriptions...');
       await client.query(`DELETE FROM subscriptions WHERE user_id IN (
         SELECT id FROM users WHERE email LIKE 'test.%@example.com'
       )`);
-      
+
       console.log('  Deleting test users...');
-      await client.query(`DELETE FROM users WHERE email LIKE 'test.%@example.com'`);
-      
+      await client.query(
+        `DELETE FROM users WHERE email LIKE 'test.%@example.com'`
+      );
+
       // Commit transaction
       await client.query('COMMIT');
       console.log('✓ Seed data cleaned successfully');
@@ -158,7 +162,7 @@ async function cleanSeedData() {
 
 // Main execution
 async function main() {
-  const [,, command, version] = process.argv;
+  const [, , command, version] = process.argv;
 
   if (!command) {
     console.log('Usage:');
@@ -184,11 +188,11 @@ async function main() {
         }
         await applySeed(version);
         break;
-      
+
       case 'clean':
         await cleanSeedData();
         break;
-      
+
       default:
         console.error(`Unknown command: ${command}`);
         process.exit(1);

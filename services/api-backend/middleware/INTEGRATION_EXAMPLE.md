@@ -19,9 +19,19 @@ import helmet from 'helmet';
 // ... other imports
 
 // ADD: Security middleware imports
-import { sanitizeAll, sanitizeAdminInput } from './middleware/input-sanitizer.js';
-import { standardCors, adminCors, webhookCors } from './middleware/cors-config.js';
-import { httpsEnforcement, adminHttpsEnforcement } from './middleware/https-enforcer.js';
+import {
+  sanitizeAll,
+  sanitizeAdminInput,
+} from './middleware/input-sanitizer.js';
+import {
+  standardCors,
+  adminCors,
+  webhookCors,
+} from './middleware/cors-config.js';
+import {
+  httpsEnforcement,
+  adminHttpsEnforcement,
+} from './middleware/https-enforcer.js';
 ```
 
 ### 2. Replace CORS Configuration
@@ -61,9 +71,11 @@ app.set('trust proxy', 1);
 app.use(httpsEnforcement);
 
 // Existing helmet configuration
-app.use(helmet({
-  // ... existing helmet config
-}));
+app.use(
+  helmet({
+    // ... existing helmet config
+  })
+);
 ```
 
 ### 4. Add Input Sanitization
@@ -97,7 +109,8 @@ Update admin routes to use stricter security:
 
 ```javascript
 // MODIFY: Admin routes with enhanced security
-app.use('/api/admin',
+app.use(
+  '/api/admin',
   adminCors,
   adminHttpsEnforcement,
   sanitizeAdminInput,
@@ -105,7 +118,8 @@ app.use('/api/admin',
 );
 
 // MODIFY: Admin user routes
-app.use('/api/admin/users',
+app.use(
+  '/api/admin/users',
   adminCors,
   adminHttpsEnforcement,
   sanitizeAdminInput,
@@ -113,7 +127,8 @@ app.use('/api/admin/users',
 );
 
 // MODIFY: Admin subscription routes
-app.use('/api/admin',
+app.use(
+  '/api/admin',
   adminCors,
   adminHttpsEnforcement,
   sanitizeAdminInput,
@@ -133,9 +148,19 @@ import dotenv from 'dotenv';
 // ... other imports
 
 // Security middleware
-import { sanitizeAll, sanitizeAdminInput } from './middleware/input-sanitizer.js';
-import { standardCors, adminCors, webhookCors } from './middleware/cors-config.js';
-import { httpsEnforcement, adminHttpsEnforcement } from './middleware/https-enforcer.js';
+import {
+  sanitizeAll,
+  sanitizeAdminInput,
+} from './middleware/input-sanitizer.js';
+import {
+  standardCors,
+  adminCors,
+  webhookCors,
+} from './middleware/cors-config.js';
+import {
+  httpsEnforcement,
+  adminHttpsEnforcement,
+} from './middleware/https-enforcer.js';
 
 dotenv.config();
 
@@ -149,17 +174,19 @@ app.set('trust proxy', 1);
 app.use(httpsEnforcement);
 
 // Security middleware (helmet)
-app.use(helmet({
-  contentSecurityPolicy: {
-    directives: {
-      defaultSrc: ['\'self\''],
-      connectSrc: ['\'self\'', 'https:'],
-      scriptSrc: ['\'self\'', '\'unsafe-inline\''],
-      styleSrc: ['\'self\'', '\'unsafe-inline\''],
-      imgSrc: ['\'self\'', 'data:', 'https:'],
+app.use(
+  helmet({
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        connectSrc: ["'self'", 'https:'],
+        scriptSrc: ["'self'", "'unsafe-inline'"],
+        styleSrc: ["'self'", "'unsafe-inline'"],
+        imgSrc: ["'self'", 'data:', 'https:'],
+      },
     },
-  },
-}));
+  })
+);
 
 // CORS configuration (standard for most routes)
 app.use(standardCors);
@@ -180,21 +207,24 @@ app.use(sanitizeAll);
 // ... other middleware and routes
 
 // Admin routes with enhanced security
-app.use('/api/admin',
+app.use(
+  '/api/admin',
   adminCors,
   adminHttpsEnforcement,
   sanitizeAdminInput,
   adminRoutes
 );
 
-app.use('/api/admin/users',
+app.use(
+  '/api/admin/users',
   adminCors,
   adminHttpsEnforcement,
   sanitizeAdminInput,
   adminUserRoutes
 );
 
-app.use('/api/admin',
+app.use(
+  '/api/admin',
   adminCors,
   adminHttpsEnforcement,
   sanitizeAdminInput,
@@ -329,6 +359,7 @@ After integration, verify:
 If issues occur, you can quickly rollback:
 
 1. **Remove security imports**:
+
 ```javascript
 // Comment out security imports
 // import { sanitizeAll, sanitizeAdminInput } from './middleware/input-sanitizer.js';
@@ -337,18 +368,22 @@ If issues occur, you can quickly rollback:
 ```
 
 2. **Restore old CORS**:
+
 ```javascript
 // Restore old CORS configuration
-app.use(cors({
-  origin: [
-    'https://app.cloudtolocalllm.online',
-    // ... old origins
-  ],
-  credentials: true,
-}));
+app.use(
+  cors({
+    origin: [
+      'https://app.cloudtolocalllm.online',
+      // ... old origins
+    ],
+    credentials: true,
+  })
+);
 ```
 
 3. **Remove middleware calls**:
+
 ```javascript
 // Comment out new middleware
 // app.use(httpsEnforcement);
@@ -356,6 +391,7 @@ app.use(cors({
 ```
 
 4. **Restart server**:
+
 ```bash
 npm start
 ```
@@ -365,6 +401,7 @@ npm start
 After deployment, monitor:
 
 1. **Error Logs**:
+
 ```bash
 # Check for CORS errors
 grep "CORS: Blocked" logs/app.log
@@ -374,11 +411,13 @@ grep "HTTP request redirected" logs/app.log
 ```
 
 2. **Metrics**:
+
 - CORS blocked requests per hour
 - HTTP to HTTPS redirects per hour
 - Input sanitization triggers per hour
 
 3. **Alerts**:
+
 - High rate of CORS violations
 - High rate of HTTPS violations
 - Unusual input patterns

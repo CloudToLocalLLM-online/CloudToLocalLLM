@@ -53,9 +53,13 @@ async function testDatabase() {
     const validation = await migrator.validateSchema();
     console.log('Validation Results:');
     Object.entries(validation.results).forEach(([table, valid]) => {
-      console.log(`  ${valid ? '' : ''} ${table}: ${valid ? 'EXISTS' : 'MISSING'}`);
+      console.log(
+        `  ${valid ? '' : ''} ${table}: ${valid ? 'EXISTS' : 'MISSING'}`
+      );
     });
-    console.log(`\n Overall Status: ${validation.allValid ? ' VALID' : ' INVALID'}`);
+    console.log(
+      `\n Overall Status: ${validation.allValid ? ' VALID' : ' INVALID'}`
+    );
 
     // Test 5: Applied Migrations
     console.log('\n� Test 5: Applied Migrations');
@@ -63,7 +67,7 @@ async function testDatabase() {
     const migrations = await migrator.getAppliedMigrations();
     if (migrations.length > 0) {
       console.log('Applied migrations:');
-      migrations.forEach(m => {
+      migrations.forEach((m) => {
         console.log(`   ${m.version}: ${m.name} (${m.applied_at})`);
       });
     } else {
@@ -74,20 +78,31 @@ async function testDatabase() {
     if (dbType === 'postgresql') {
       console.log('\n Test 6: Basic PostgreSQL Operations');
       console.log('-------------------------------------');
-      
+
       // Test UUID generation
-      const { rows: uuidTest } = await migrator.pool.query('SELECT gen_random_uuid() as test_uuid');
+      const { rows: uuidTest } = await migrator.pool.query(
+        'SELECT gen_random_uuid() as test_uuid'
+      );
       console.log(` UUID generation: ${uuidTest[0].test_uuid}`);
-      
+
       // Test JSONB operations
-      const { rows: jsonTest } = await migrator.pool.query("SELECT '{\"test\": true}'::jsonb as test_json");
+      const { rows: jsonTest } = await migrator.pool.query(
+        'SELECT \'{"test": true}\'::jsonb as test_json'
+      );
       console.log(` JSONB support: ${JSON.stringify(jsonTest[0].test_json)}`);
-      
+
       // Test table counts
-      const tables = ['user_sessions', 'tunnel_connections', 'audit_logs', 'api_usage'];
+      const tables = [
+        'user_sessions',
+        'tunnel_connections',
+        'audit_logs',
+        'api_usage',
+      ];
       for (const table of tables) {
         try {
-          const { rows } = await migrator.pool.query(`SELECT COUNT(*) as count FROM ${table}`);
+          const { rows } = await migrator.pool.query(
+            `SELECT COUNT(*) as count FROM ${table}`
+          );
           console.log(` ${table}: ${rows[0].count} records`);
         } catch (e) {
           console.log(` ${table}: ${e.message}`);
@@ -101,22 +116,25 @@ async function testDatabase() {
     console.log(`  Connection:  Working`);
     console.log(`  Schema: ${validation.allValid ? ' Valid' : ' Invalid'}`);
     console.log(`  Migrations: ${migrations.length} applied`);
-
   } catch (error) {
     console.error('\n Database test failed:');
     console.error(error.message);
     console.error('\n Troubleshooting:');
-    
+
     if (dbType === 'postgresql') {
       console.error('  1. Check Cloud SQL instance is running');
-      console.error('  2. Verify environment variables: DB_HOST, DB_NAME, DB_USER, DB_PASSWORD');
-      console.error('  3. Ensure Cloud Run service account has Cloud SQL Client role');
+      console.error(
+        '  2. Verify environment variables: DB_HOST, DB_NAME, DB_USER, DB_PASSWORD'
+      );
+      console.error(
+        '  3. Ensure Cloud Run service account has Cloud SQL Client role'
+      );
       console.error('  4. Check Cloud SQL connection name is correct');
     } else {
       console.error('  1. Check SQLite database file permissions');
       console.error('  2. Verify database directory exists and is writable');
     }
-    
+
     process.exit(1);
   } finally {
     if (migrator) {

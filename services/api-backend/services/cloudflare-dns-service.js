@@ -53,18 +53,18 @@ class CloudflareDNSService {
     if (this.rateLimitResetTime > Date.now()) {
       const waitTime = Math.ceil((this.rateLimitResetTime - Date.now()) / 1000);
       logger.warn('Cloudflare API rate limit active, waiting', { waitTime });
-      await new Promise(resolve => setTimeout(resolve, waitTime * 1000));
+      await new Promise((resolve) => setTimeout(resolve, waitTime * 1000));
     }
 
     const url = `${this.apiUrl}${endpoint}`;
     const headers = {
-      'Authorization': `Bearer ${this.apiToken}`,
-      'Content-Type': 'application/json'
+      Authorization: `Bearer ${this.apiToken}`,
+      'Content-Type': 'application/json',
     };
 
     const options = {
       method,
-      headers
+      headers,
     };
 
     if (body) {
@@ -78,22 +78,25 @@ class CloudflareDNSService {
       if (response.status === 429) {
         const retryAfter = response.headers.get('Retry-After');
         this.rateLimitRetryAfter = parseInt(retryAfter || '60', 10);
-        this.rateLimitResetTime = Date.now() + (this.rateLimitRetryAfter * 1000);
+        this.rateLimitResetTime = Date.now() + this.rateLimitRetryAfter * 1000;
 
         logger.warn('Cloudflare API rate limited', {
           retryAfter: this.rateLimitRetryAfter,
-          endpoint
+          endpoint,
         });
 
         // Retry after waiting
-        await new Promise(resolve => setTimeout(resolve, this.rateLimitRetryAfter * 1000));
+        await new Promise((resolve) =>
+          setTimeout(resolve, this.rateLimitRetryAfter * 1000)
+        );
         return this._makeRequest(method, endpoint, body);
       }
 
       const data = await response.json();
 
       if (!response.ok) {
-        const errorMessage = data.errors?.[0]?.message || `HTTP ${response.status}`;
+        const errorMessage =
+          data.errors?.[0]?.message || `HTTP ${response.status}`;
         throw new Error(`Cloudflare API error: ${errorMessage}`);
       }
 
@@ -102,7 +105,7 @@ class CloudflareDNSService {
       logger.error('Cloudflare API request failed', {
         method,
         endpoint,
-        error: error.message
+        error: error.message,
       });
       throw error;
     }
@@ -120,7 +123,14 @@ class CloudflareDNSService {
    * @param {number} [params.priority] - Priority for MX records
    * @returns {Promise<Object>} Created record with provider ID
    */
-  async createRecord({ userId, recordType, name, value, ttl = 3600, priority = null }) {
+  async createRecord({
+    userId,
+    recordType,
+    name,
+    value,
+    ttl = 3600,
+    priority = null,
+  }) {
     this.validateConfiguration();
 
     try {
@@ -129,7 +139,7 @@ class CloudflareDNSService {
         type: recordType,
         name: name,
         content: value,
-        ttl: ttl
+        ttl: ttl,
       };
 
       // Add priority for MX records
@@ -160,7 +170,7 @@ class CloudflareDNSService {
         value,
         ttl,
         priority,
-        status: 'active'
+        status: 'active',
       });
 
       // Invalidate cache
@@ -170,7 +180,7 @@ class CloudflareDNSService {
         userId,
         recordType,
         name,
-        providerId: record.id
+        providerId: record.id,
       });
 
       return dbRecord;
@@ -179,7 +189,7 @@ class CloudflareDNSService {
         userId,
         recordType,
         name,
-        error: error.message
+        error: error.message,
       });
       throw error;
     }
@@ -196,7 +206,13 @@ class CloudflareDNSService {
    * @param {number} [params.priority] - New priority for MX records
    * @returns {Promise<Object>} Updated record
    */
-  async updateRecord({ recordId, userId, value = null, ttl = null, priority = null }) {
+  async updateRecord({
+    recordId,
+    userId,
+    value = null,
+    ttl = null,
+    priority = null,
+  }) {
     this.validateConfiguration();
 
     try {
@@ -216,7 +232,7 @@ class CloudflareDNSService {
         type: dbRecord.record_type,
         name: dbRecord.name,
         content: value || dbRecord.value,
-        ttl: ttl || dbRecord.ttl
+        ttl: ttl || dbRecord.ttl,
       };
 
       if (dbRecord.record_type === 'MX' && (priority || dbRecord.priority)) {
@@ -246,7 +262,7 @@ class CloudflareDNSService {
         value || dbRecord.value,
         ttl || dbRecord.ttl,
         priority || dbRecord.priority,
-        recordId
+        recordId,
       ]);
 
       // Invalidate cache
@@ -255,7 +271,7 @@ class CloudflareDNSService {
       logger.info('DNS record updated successfully', {
         userId,
         recordId,
-        recordType: dbRecord.record_type
+        recordType: dbRecord.record_type,
       });
 
       return result.rows[0];
@@ -263,7 +279,7 @@ class CloudflareDNSService {
       logger.error('Failed to update DNS record', {
         recordId,
         userId,
-        error: error.message
+        error: error.message,
       });
       throw error;
     }
@@ -316,13 +332,13 @@ class CloudflareDNSService {
       logger.info('DNS record deleted successfully', {
         userId,
         recordId,
-        recordType: dbRecord.record_type
+        recordType: dbRecord.record_type,
       });
     } catch (error) {
       logger.error('Failed to delete DNS record', {
         recordId,
         userId,
-        error: error.message
+        error: error.message,
       });
       throw error;
     }
@@ -377,13 +393,13 @@ class CloudflareDNSService {
       // Cache the results
       this.recordCache.set(cacheKey, {
         data: records,
-        timestamp: Date.now()
+        timestamp: Date.now(),
       });
 
       logger.info('Retrieved DNS records', {
         count: records.length,
         userId,
-        recordType
+        recordType,
       });
 
       return records;
@@ -391,7 +407,7 @@ class CloudflareDNSService {
       logger.error('Failed to list DNS records', {
         userId,
         recordType,
-        error: error.message
+        error: error.message,
       });
       throw error;
     }
@@ -425,7 +441,7 @@ class CloudflareDNSService {
       const validationResults = {
         valid: true,
         records: [],
-        errors: []
+        errors: [],
       };
 
       // Validate each record
@@ -438,7 +454,7 @@ class CloudflareDNSService {
           validationResults.errors.push({
             recordId: record.id,
             recordType: record.record_type,
-            error: recordValidation.error
+            error: recordValidation.error,
           });
         }
 
@@ -452,15 +468,16 @@ class CloudflareDNSService {
         await this.db.query(query, [
           recordValidation.valid ? 'valid' : 'invalid',
           recordValidation.error || null,
-          record.id
+          record.id,
         ]);
       }
 
       logger.info('DNS records validated', {
         userId,
         totalRecords: records.length,
-        validRecords: validationResults.records.filter(r => r.valid).length,
-        invalidRecords: validationResults.records.filter(r => !r.valid).length
+        validRecords: validationResults.records.filter((r) => r.valid).length,
+        invalidRecords: validationResults.records.filter((r) => !r.valid)
+          .length,
       });
 
       return validationResults;
@@ -468,7 +485,7 @@ class CloudflareDNSService {
       logger.error('Failed to validate DNS records', {
         userId,
         recordId,
-        error: error.message
+        error: error.message,
       });
       throw error;
     }
@@ -500,7 +517,7 @@ class CloudflareDNSService {
       return {
         valid: false,
         recordType: record.record_type,
-        error: error.message
+        error: error.message,
       };
     }
   }
@@ -520,16 +537,19 @@ class CloudflareDNSService {
       return {
         valid: false,
         recordType: 'MX',
-        error: 'Invalid MX record format. Expected: priority hostname'
+        error: 'Invalid MX record format. Expected: priority hostname',
       };
     }
 
     // Check if it's pointing to Google Workspace
-    if (!record.value.includes('google.com') && !record.value.includes('gmail.com')) {
+    if (
+      !record.value.includes('google.com') &&
+      !record.value.includes('gmail.com')
+    ) {
       return {
         valid: true,
         recordType: 'MX',
-        warning: 'MX record does not point to Google Workspace'
+        warning: 'MX record does not point to Google Workspace',
       };
     }
 
@@ -549,16 +569,19 @@ class CloudflareDNSService {
       return {
         valid: false,
         recordType: 'SPF',
-        error: 'Invalid SPF record format. Must start with v=spf1'
+        error: 'Invalid SPF record format. Must start with v=spf1',
       };
     }
 
     // Check if it includes Google Workspace
-    if (!record.value.includes('google.com') && !record.value.includes('_spf.google.com')) {
+    if (
+      !record.value.includes('google.com') &&
+      !record.value.includes('_spf.google.com')
+    ) {
       return {
         valid: true,
         recordType: 'SPF',
-        warning: 'SPF record does not include Google Workspace'
+        warning: 'SPF record does not include Google Workspace',
       };
     }
 
@@ -578,7 +601,7 @@ class CloudflareDNSService {
       return {
         valid: false,
         recordType: 'DKIM',
-        error: 'Invalid DKIM record format. Must contain v=DKIM1'
+        error: 'Invalid DKIM record format. Must contain v=DKIM1',
       };
     }
 
@@ -598,7 +621,7 @@ class CloudflareDNSService {
       return {
         valid: false,
         recordType: 'DMARC',
-        error: 'Invalid DMARC record format. Must start with v=DMARC1'
+        error: 'Invalid DMARC record format. Must start with v=DMARC1',
       };
     }
 
@@ -621,7 +644,7 @@ class CloudflareDNSService {
     value,
     ttl,
     priority,
-    status
+    status,
   }) {
     const query = `
       INSERT INTO dns_records (
@@ -642,7 +665,7 @@ class CloudflareDNSService {
       ttl,
       priority,
       status,
-      userId
+      userId,
     ]);
 
     return result.rows[0];
@@ -686,7 +709,7 @@ class CloudflareDNSService {
           value: '5 gmail-smtp-in.l.google.com',
           priority: 5,
           ttl: 3600,
-          description: 'Primary Google Workspace mail server'
+          description: 'Primary Google Workspace mail server',
         },
         {
           type: 'MX',
@@ -694,7 +717,7 @@ class CloudflareDNSService {
           value: '10 alt1.gmail-smtp-in.l.google.com',
           priority: 10,
           ttl: 3600,
-          description: 'Secondary Google Workspace mail server'
+          description: 'Secondary Google Workspace mail server',
         },
         {
           type: 'MX',
@@ -702,23 +725,23 @@ class CloudflareDNSService {
           value: '20 alt2.gmail-smtp-in.l.google.com',
           priority: 20,
           ttl: 3600,
-          description: 'Tertiary Google Workspace mail server'
-        }
+          description: 'Tertiary Google Workspace mail server',
+        },
       ],
       spf: {
         type: 'TXT',
         name: domain,
         value: 'v=spf1 include:_spf.google.com ~all',
         ttl: 3600,
-        description: 'SPF record for Google Workspace'
+        description: 'SPF record for Google Workspace',
       },
       dmarc: {
         type: 'TXT',
         name: `_dmarc.${domain}`,
         value: `v=DMARC1; p=quarantine; rua=mailto:postmaster@${domain}`,
         ttl: 3600,
-        description: 'DMARC policy record'
-      }
+        description: 'DMARC policy record',
+      },
     };
   }
 }

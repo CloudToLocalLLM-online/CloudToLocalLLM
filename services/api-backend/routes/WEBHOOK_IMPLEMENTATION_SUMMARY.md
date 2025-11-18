@@ -13,6 +13,7 @@ The Stripe webhook handler processes payment and subscription events from Stripe
 **Authentication:** Webhook signature verification (no JWT required)
 
 **Features:**
+
 - Signature verification using Stripe webhook secret
 - Idempotency tracking to prevent duplicate processing
 - Event logging for audit trail
@@ -25,11 +26,13 @@ The Stripe webhook handler processes payment and subscription events from Stripe
 **Purpose:** Update payment transaction status when payment succeeds
 
 **Actions:**
+
 - Updates `payment_transactions` table status to 'succeeded'
 - Records Stripe charge ID and receipt URL
 - Logs successful payment processing
 
 **Database Updates:**
+
 ```sql
 UPDATE payment_transactions
 SET status = 'succeeded',
@@ -44,11 +47,13 @@ WHERE stripe_payment_intent_id = $3
 **Purpose:** Update payment transaction status when payment fails
 
 **Actions:**
+
 - Updates `payment_transactions` table status to 'failed'
 - Records failure code and message
 - Logs payment failure details
 
 **Database Updates:**
+
 ```sql
 UPDATE payment_transactions
 SET status = 'failed',
@@ -63,12 +68,14 @@ WHERE stripe_payment_intent_id = $3
 **Purpose:** Initialize subscription data when created in Stripe
 
 **Actions:**
+
 - Updates subscription with Stripe-provided data
 - Sets billing period dates
 - Records trial period if applicable
 - Logs subscription creation
 
 **Database Updates:**
+
 ```sql
 UPDATE subscriptions
 SET status = $1,
@@ -85,12 +92,14 @@ WHERE id = $6
 **Purpose:** Sync subscription changes from Stripe
 
 **Actions:**
+
 - Updates subscription status and billing periods
 - Records cancellation information
 - Updates trial period data
 - Logs subscription changes
 
 **Database Updates:**
+
 ```sql
 UPDATE subscriptions
 SET status = $1,
@@ -109,11 +118,13 @@ WHERE stripe_subscription_id = $8
 **Purpose:** Mark subscription as canceled when deleted in Stripe
 
 **Actions:**
+
 - Updates subscription status to 'canceled'
 - Records cancellation timestamp
 - Logs subscription deletion
 
 **Database Updates:**
+
 ```sql
 UPDATE subscriptions
 SET status = 'canceled',
@@ -129,6 +140,7 @@ WHERE stripe_subscription_id = $1
 **Purpose:** Track processed webhook events to prevent duplicate processing
 
 **Schema:**
+
 ```sql
 CREATE TABLE webhook_events (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -141,6 +153,7 @@ CREATE TABLE webhook_events (
 ```
 
 **Indexes:**
+
 - `idx_webhook_events_stripe_event_id` - Fast lookup by Stripe event ID
 - `idx_webhook_events_event_type` - Filter by event type
 - `idx_webhook_events_processed_at` - Sort by processing time
@@ -161,12 +174,14 @@ CREATE TABLE webhook_events (
 **Purpose:** Ensure webhook requests are from Stripe
 
 **Implementation:**
+
 ```javascript
 const stripe = stripeClient.getClient();
 event = stripe.webhooks.constructEvent(req.body, sig, webhookSecret);
 ```
 
 **Configuration:**
+
 - Webhook secret stored in `STRIPE_WEBHOOK_SECRET` environment variable
 - Signature passed in `stripe-signature` header
 - Raw body required for verification (mounted before body parsing middleware)
@@ -174,16 +189,19 @@ event = stripe.webhooks.constructEvent(req.body, sig, webhookSecret);
 ### Error Handling
 
 **Signature Verification Failure:**
+
 - Returns 400 Bad Request
 - Logs verification failure
 - Does not process event
 
 **Processing Errors:**
+
 - Returns 500 Internal Server Error
 - Logs error details with stack trace
 - Event marked as failed (can be retried by Stripe)
 
 **Missing Configuration:**
+
 - Returns 500 Internal Server Error
 - Logs configuration error
 - Prevents webhook processing
@@ -193,10 +211,12 @@ event = stripe.webhooks.constructEvent(req.body, sig, webhookSecret);
 ### Environment Variables
 
 **Required:**
+
 - `STRIPE_WEBHOOK_SECRET` - Webhook signing secret from Stripe dashboard
 - `DATABASE_URL` - PostgreSQL connection string
 
 **Optional:**
+
 - `NODE_ENV` - Environment (production/development)
 - `LOG_LEVEL` - Logging level (default: info)
 
@@ -218,11 +238,13 @@ event = stripe.webhooks.constructEvent(req.body, sig, webhookSecret);
 ### Test Mode
 
 **Setup:**
+
 1. Use Stripe test mode API keys
 2. Configure test webhook endpoint
 3. Use Stripe CLI for local testing
 
 **Stripe CLI Testing:**
+
 ```bash
 # Forward webhooks to local server
 stripe listen --forward-to localhost:8080/api/webhooks/stripe
@@ -238,6 +260,7 @@ stripe trigger customer.subscription.deleted
 ### Manual Testing
 
 **Using Stripe Dashboard:**
+
 1. Navigate to Developers > Webhooks
 2. Select webhook endpoint
 3. Click "Send test webhook"
@@ -247,6 +270,7 @@ stripe trigger customer.subscription.deleted
 ### Verification
 
 **Check Logs:**
+
 ```bash
 # View webhook processing logs
 grep "Stripe webhook" /var/log/app.log
@@ -256,6 +280,7 @@ grep "ERROR.*webhook" /var/log/app.log
 ```
 
 **Check Database:**
+
 ```sql
 -- View processed webhook events
 SELECT * FROM webhook_events ORDER BY processed_at DESC LIMIT 10;
@@ -278,6 +303,7 @@ ORDER BY updated_at DESC;
 ### Key Metrics
 
 **Webhook Processing:**
+
 - Total webhooks received
 - Webhooks processed successfully
 - Webhooks failed
@@ -285,6 +311,7 @@ ORDER BY updated_at DESC;
 - Duplicate events detected
 
 **Event Types:**
+
 - Payment success rate
 - Payment failure rate
 - Subscription creation rate
@@ -293,16 +320,19 @@ ORDER BY updated_at DESC;
 ### Logging
 
 **Info Level:**
+
 - Webhook received
 - Event processed successfully
 - Idempotent event detected
 
 **Warning Level:**
+
 - Payment transaction not found
 - Subscription not found
 - Unhandled event type
 
 **Error Level:**
+
 - Signature verification failed
 - Processing error
 - Database error
@@ -311,11 +341,13 @@ ORDER BY updated_at DESC;
 ### Alerts
 
 **Critical:**
+
 - Webhook signature verification failures > 5 per minute
 - Processing errors > 10% of events
 - Database connection failures
 
 **Warning:**
+
 - Processing time > 5 seconds
 - Duplicate events > 5% of total
 - Unhandled event types
@@ -327,10 +359,12 @@ ORDER BY updated_at DESC;
 **1. Signature Verification Fails**
 
 **Symptoms:**
+
 - 400 Bad Request responses
 - "Webhook signature verification failed" in logs
 
 **Solutions:**
+
 - Verify `STRIPE_WEBHOOK_SECRET` is correct
 - Ensure webhook endpoint receives raw body (mounted before body parsing)
 - Check Stripe dashboard for correct webhook URL
@@ -339,10 +373,12 @@ ORDER BY updated_at DESC;
 **2. Events Not Processing**
 
 **Symptoms:**
+
 - Webhooks received but database not updated
 - No error logs
 
 **Solutions:**
+
 - Check database connection
 - Verify payment transactions exist before webhook
 - Check subscription records exist
@@ -351,10 +387,12 @@ ORDER BY updated_at DESC;
 **3. Duplicate Processing**
 
 **Symptoms:**
+
 - Same event processed multiple times
 - Duplicate database updates
 
 **Solutions:**
+
 - Verify `webhook_events` table exists
 - Check idempotency logic
 - Review database transaction handling
@@ -363,10 +401,12 @@ ORDER BY updated_at DESC;
 **4. Missing Events**
 
 **Symptoms:**
+
 - Expected webhooks not received
 - Database out of sync with Stripe
 
 **Solutions:**
+
 - Verify webhook endpoint is accessible from internet
 - Check Stripe dashboard for webhook delivery status
 - Review webhook event selection in Stripe
@@ -427,6 +467,7 @@ ORDER BY updated_at DESC;
 **File:** `database/migrations/002_webhook_events_table.sql`
 
 **Run Migration:**
+
 ```bash
 # Using migration script
 node database/migrations/run-migration.js 002_webhook_events_table.sql
@@ -436,6 +477,7 @@ psql $DATABASE_URL -f database/migrations/002_webhook_events_table.sql
 ```
 
 **Verify Migration:**
+
 ```sql
 -- Check table exists
 \dt webhook_events
@@ -461,6 +503,7 @@ psql $DATABASE_URL -f database/migrations/002_webhook_events_table.sql
 ## Support
 
 For issues or questions:
+
 1. Check application logs for errors
 2. Review Stripe dashboard webhook delivery logs
 3. Verify database state

@@ -13,8 +13,10 @@
 import { logger } from '../utils/logger.js';
 
 // Environment configuration
-const UPGRADE_URL = process.env.UPGRADE_URL || 'https://app.cloudtolocalllm.online/upgrade';
-const AUTH0_NAMESPACE = process.env.AUTH0_NAMESPACE || 'https://cloudtolocalllm.com';
+const UPGRADE_URL =
+  process.env.UPGRADE_URL || 'https://app.cloudtolocalllm.online/upgrade';
+const AUTH0_NAMESPACE =
+  process.env.AUTH0_NAMESPACE || 'https://cloudtolocalllm.com';
 
 // User tier definitions
 export const USER_TIERS = {
@@ -69,16 +71,21 @@ export const TIER_FEATURES = {
 export function getUserTier(user) {
   // Input validation
   if (!user || typeof user !== 'object') {
-    logger.debug(' [TierCheck] No user object provided, defaulting to free tier');
+    logger.debug(
+      ' [TierCheck] No user object provided, defaulting to free tier'
+    );
     return USER_TIERS.FREE;
   }
 
   // Validate user has required fields
   if (!user.sub || typeof user.sub !== 'string') {
-    logger.warn(' [TierCheck] Invalid user object - missing or invalid sub field', {
-      userObject: typeof user,
-      hasSub: !!user.sub,
-    });
+    logger.warn(
+      ' [TierCheck] Invalid user object - missing or invalid sub field',
+      {
+        userObject: typeof user,
+        hasSub: !!user.sub,
+      }
+    );
     return USER_TIERS.FREE;
   }
 
@@ -121,9 +128,12 @@ export function getUserTier(user) {
 
     // Validate and normalize tier value
     if (!tierValue) {
-      logger.debug(' [TierCheck] No tier information found, defaulting to free', {
-        userId: user.sub,
-      });
+      logger.debug(
+        ' [TierCheck] No tier information found, defaulting to free',
+        {
+          userId: user.sub,
+        }
+      );
       return USER_TIERS.FREE;
     }
 
@@ -144,11 +154,14 @@ export function getUserTier(user) {
       return USER_TIERS.FREE;
     }
   } catch (error) {
-    logger.error(' [TierCheck] Error extracting user tier, defaulting to free', {
-      userId: user.sub,
-      error: error.message,
-      stack: error.stack,
-    });
+    logger.error(
+      ' [TierCheck] Error extracting user tier, defaulting to free',
+      {
+        userId: user.sub,
+        error: error.message,
+        stack: error.stack,
+      }
+    );
     return USER_TIERS.FREE;
   }
 }
@@ -173,10 +186,13 @@ export function getTierFeatures(tier) {
 
   // Validate tier exists
   if (!TIER_FEATURES[normalizedTier]) {
-    logger.warn(' [TierCheck] Unknown tier requested, returning free tier features', {
-      requestedTier: tier,
-      normalizedTier: normalizedTier,
-    });
+    logger.warn(
+      ' [TierCheck] Unknown tier requested, returning free tier features',
+      {
+        requestedTier: tier,
+        normalizedTier: normalizedTier,
+      }
+    );
     return TIER_FEATURES[USER_TIERS.FREE];
   }
 
@@ -235,12 +251,16 @@ export function hasFeature(user, feature) {
 export function requireTier(requiredTier) {
   // Validate required tier at middleware creation time
   if (!requiredTier || typeof requiredTier !== 'string') {
-    throw new Error(`Invalid requiredTier provided to requireTier middleware: ${requiredTier}`);
+    throw new Error(
+      `Invalid requiredTier provided to requireTier middleware: ${requiredTier}`
+    );
   }
 
   const normalizedRequiredTier = requiredTier.toLowerCase().trim();
   if (!Object.values(USER_TIERS).includes(normalizedRequiredTier)) {
-    throw new Error(`Unknown tier provided to requireTier middleware: ${requiredTier}`);
+    throw new Error(
+      `Unknown tier provided to requireTier middleware: ${requiredTier}`
+    );
   }
 
   return (req, res, next) => {
@@ -262,7 +282,11 @@ export function requireTier(requiredTier) {
       }
 
       const userTier = getUserTier(req.user);
-      const tierHierarchy = [USER_TIERS.FREE, USER_TIERS.PREMIUM, USER_TIERS.ENTERPRISE];
+      const tierHierarchy = [
+        USER_TIERS.FREE,
+        USER_TIERS.PREMIUM,
+        USER_TIERS.ENTERPRISE,
+      ];
 
       const userTierLevel = tierHierarchy.indexOf(userTier);
       const requiredTierLevel = tierHierarchy.indexOf(normalizedRequiredTier);

@@ -76,8 +76,10 @@ await googleWorkspaceService.storeOAuthConfiguration({
   userId: user.id,
   accessToken: tokens.access_token,
   refreshToken: tokens.refresh_token,
-  expiresIn: tokens.expiry_date ? Math.floor((tokens.expiry_date - Date.now()) / 1000) : 3600,
-  userEmail: user.email
+  expiresIn: tokens.expiry_date
+    ? Math.floor((tokens.expiry_date - Date.now()) / 1000)
+    : 3600,
+  userEmail: user.email,
 });
 ```
 
@@ -92,7 +94,7 @@ const result = await googleWorkspaceService.sendEmail({
   from: 'noreply@cloudtolocalllm.online',
   replyTo: 'support@cloudtolocalllm.online',
   cc: ['admin@cloudtolocalllm.online'],
-  bcc: []
+  bcc: [],
 });
 
 if (result.success) {
@@ -250,6 +252,7 @@ const accessToken = await googleWorkspaceService.getValidAccessToken(userId);
 ### Rate Limiting
 
 The service respects Google Workspace rate limits:
+
 - Per-user: 100 emails/hour
 - Per-system: 1000 emails/hour
 - Per-recipient: 5 emails/hour
@@ -330,7 +333,7 @@ describe('GoogleWorkspaceService', () => {
       userId: 'user-123',
       to: 'test@example.com',
       subject: 'Test',
-      body: '<p>Test</p>'
+      body: '<p>Test</p>',
     });
     expect(result.success).toBe(true);
     expect(result.messageId).toBeDefined();
@@ -382,7 +385,8 @@ See `routes/admin/email.js` for implementation details.
 
 **Issue**: "Failed to refresh Google Workspace access token"
 
-**Solution**: 
+**Solution**:
+
 - Verify `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` are correct
 - Check that refresh token is stored in database
 - Ensure `ENCRYPTION_KEY` is set correctly
@@ -392,6 +396,7 @@ See `routes/admin/email.js` for implementation details.
 **Issue**: "Failed to send email via Gmail API"
 
 **Solution**:
+
 - Verify Gmail API is enabled in Google Cloud Console
 - Check that OAuth scopes include `gmail.send`
 - Verify sender email matches configured email
@@ -402,6 +407,7 @@ See `routes/admin/email.js` for implementation details.
 **Issue**: "ENCRYPTION_KEY not configured"
 
 **Solution**:
+
 - Generate encryption key: `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`
 - Set `ENCRYPTION_KEY` environment variable
 - Restart service

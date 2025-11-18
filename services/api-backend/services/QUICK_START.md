@@ -34,11 +34,15 @@ npm run db:migrate
 
 ```javascript
 import { Pool } from 'pg';
-import { PaymentService, SubscriptionService, RefundService } from './services/index.js';
+import {
+  PaymentService,
+  SubscriptionService,
+  RefundService,
+} from './services/index.js';
 
 // Create database connection
 const db = new Pool({
-  connectionString: process.env.DATABASE_URL
+  connectionString: process.env.DATABASE_URL,
 });
 
 // Initialize services
@@ -56,8 +60,8 @@ const result = await paymentService.processPayment({
   currency: 'USD',
   paymentMethodId: 'pm_1234567890',
   metadata: {
-    order_id: 'order-123'
-  }
+    order_id: 'order-123',
+  },
 });
 
 if (result.success) {
@@ -77,8 +81,8 @@ const result = await subscriptionService.createSubscription({
   paymentMethodId: 'pm_1234567890',
   priceId: 'price_1234567890', // Get from Stripe Dashboard
   metadata: {
-    source: 'admin_center'
-  }
+    source: 'admin_center',
+  },
 });
 
 if (result.success) {
@@ -98,7 +102,7 @@ const result = await refundService.processRefund({
   adminUserId: 'admin-uuid',
   adminRole: 'finance_admin',
   ipAddress: req.ip,
-  userAgent: req.get('user-agent')
+  userAgent: req.get('user-agent'),
 });
 
 if (result.success) {
@@ -117,7 +121,7 @@ const testCard = {
   number: '4242424242424242',
   exp_month: 12,
   exp_year: 2025,
-  cvc: '123'
+  cvc: '123',
 };
 
 // Declined
@@ -125,7 +129,7 @@ const declinedCard = {
   number: '4000000000000002',
   exp_month: 12,
   exp_year: 2025,
-  cvc: '123'
+  cvc: '123',
 };
 ```
 
@@ -139,7 +143,7 @@ const result = await paymentService.processPayment({...});
 if (!result.success) {
   // Handle error
   const { code, message, statusCode } = result.error;
-  
+
   switch (code) {
     case 'CARD_DECLINED':
       // Show user-friendly message
@@ -169,26 +173,30 @@ import express from 'express';
 
 const app = express();
 
-app.post('/api/webhooks/stripe', express.raw({ type: 'application/json' }), async (req, res) => {
-  const sig = req.headers['stripe-signature'];
-  
-  try {
-    // Verify webhook signature
-    const event = stripe.webhooks.constructEvent(
-      req.body,
-      sig,
-      process.env.STRIPE_WEBHOOK_SECRET
-    );
-    
-    // Handle event
-    await subscriptionService.handleWebhook(event);
-    
-    res.json({ received: true });
-  } catch (err) {
-    console.error('Webhook error:', err.message);
-    res.status(400).send(`Webhook Error: ${err.message}`);
+app.post(
+  '/api/webhooks/stripe',
+  express.raw({ type: 'application/json' }),
+  async (req, res) => {
+    const sig = req.headers['stripe-signature'];
+
+    try {
+      // Verify webhook signature
+      const event = stripe.webhooks.constructEvent(
+        req.body,
+        sig,
+        process.env.STRIPE_WEBHOOK_SECRET
+      );
+
+      // Handle event
+      await subscriptionService.handleWebhook(event);
+
+      res.json({ received: true });
+    } catch (err) {
+      console.error('Webhook error:', err.message);
+      res.status(400).send(`Webhook Error: ${err.message}`);
+    }
   }
-});
+);
 ```
 
 ## Best Practices
@@ -209,6 +217,7 @@ app.post('/api/webhooks/stripe', express.raw({ type: 'application/json' }), asyn
 ### "Stripe API key not configured"
 
 Make sure you've set the correct environment variable:
+
 - Development: `STRIPE_SECRET_KEY_TEST`
 - Production: `STRIPE_SECRET_KEY_PROD`
 
@@ -245,6 +254,7 @@ Check the transaction status. Only transactions with status `succeeded` can be r
 ## Support
 
 For issues or questions:
+
 1. Check the [README](./README.md) for detailed documentation
 2. Review Stripe documentation
 3. Contact the development team

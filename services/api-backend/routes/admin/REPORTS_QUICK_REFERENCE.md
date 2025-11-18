@@ -2,11 +2,11 @@
 
 ## Endpoints Summary
 
-| Endpoint | Method | Permission | Description |
-|----------|--------|------------|-------------|
-| `/api/admin/reports/revenue` | GET | `view_reports` | Generate revenue report |
-| `/api/admin/reports/subscriptions` | GET | `view_reports` | Generate subscription metrics |
-| `/api/admin/reports/export` | GET | `export_reports` | Export report to CSV/PDF |
+| Endpoint                           | Method | Permission       | Description                   |
+| ---------------------------------- | ------ | ---------------- | ----------------------------- |
+| `/api/admin/reports/revenue`       | GET    | `view_reports`   | Generate revenue report       |
+| `/api/admin/reports/subscriptions` | GET    | `view_reports`   | Generate subscription metrics |
+| `/api/admin/reports/export`        | GET    | `export_reports` | Export report to CSV/PDF      |
 
 ---
 
@@ -23,6 +23,7 @@ GET /api/admin/reports/revenue?startDate=2025-01-01&endDate=2025-01-31&groupBy=t
 ```
 
 **Response:**
+
 - `totalRevenue`: Total revenue in period
 - `transactionCount`: Number of successful transactions
 - `averageTransactionValue`: Average transaction amount
@@ -44,6 +45,7 @@ GET /api/admin/reports/subscriptions?groupBy=false
 ```
 
 **Response:**
+
 - `monthlyRecurringRevenue`: Current MRR
 - `churnRate`: Cancellation rate percentage
 - `retentionRate`: Retention rate percentage
@@ -66,11 +68,13 @@ GET /api/admin/reports/export?type=transactions&format=csv&startDate=2025-01-01&
 ```
 
 **Export Types:**
+
 - `revenue`: Transaction details with revenue metrics
 - `subscriptions`: Subscription details with user info
 - `transactions`: Detailed payment transaction data
 
 **Formats:**
+
 - `csv`: Comma-separated values (ready)
 - `pdf`: PDF format (placeholder - returns CSV)
 
@@ -78,13 +82,13 @@ GET /api/admin/reports/export?type=transactions&format=csv&startDate=2025-01-01&
 
 ## Common Parameters
 
-| Parameter | Type | Required | Default | Description |
-|-----------|------|----------|---------|-------------|
-| `startDate` | string | Yes* | 30 days ago | Start date (ISO 8601) |
-| `endDate` | string | Yes* | Now | End date (ISO 8601) |
-| `groupBy` | boolean | No | varies | Group by subscription tier |
-| `type` | string | Yes** | - | Report type (export only) |
-| `format` | string | Yes** | - | Export format (export only) |
+| Parameter   | Type    | Required | Default     | Description                 |
+| ----------- | ------- | -------- | ----------- | --------------------------- |
+| `startDate` | string  | Yes\*    | 30 days ago | Start date (ISO 8601)       |
+| `endDate`   | string  | Yes\*    | Now         | End date (ISO 8601)         |
+| `groupBy`   | boolean | No       | varies      | Group by subscription tier  |
+| `type`      | string  | Yes\*\*  | -           | Report type (export only)   |
+| `format`    | string  | Yes\*\*  | -           | Export format (export only) |
 
 \* Required for revenue and export endpoints, optional for subscriptions  
 \*\* Required only for export endpoint
@@ -99,6 +103,7 @@ All dates must be in ISO 8601 format:
 - `YYYY-MM-DDTHH:mm:ss.sssZ` (e.g., `2025-01-31T23:59:59.999Z`)
 
 **Constraints:**
+
 - Date range cannot exceed 1 year
 - `startDate` must be ≤ `endDate`
 - All dates are in UTC timezone
@@ -108,20 +113,24 @@ All dates must be in ISO 8601 format:
 ## Permissions
 
 ### view_reports
+
 - View revenue reports
 - View subscription metrics
 - Preview report data
 
 **Roles with this permission:**
+
 - Super Admin
 - Finance Admin
 
 ### export_reports
+
 - Export reports to CSV/PDF
 - Download report files
 - All export operations are audit logged
 
 **Roles with this permission:**
+
 - Super Admin
 - Finance Admin
 
@@ -129,13 +138,13 @@ All dates must be in ISO 8601 format:
 
 ## Response Codes
 
-| Code | Meaning | Common Causes |
-|------|---------|---------------|
-| 200 | Success | Request completed successfully |
-| 400 | Bad Request | Invalid parameters, date format, or range |
-| 401 | Unauthorized | Missing or invalid JWT token |
-| 403 | Forbidden | Insufficient permissions |
-| 500 | Server Error | Database or internal error |
+| Code | Meaning      | Common Causes                             |
+| ---- | ------------ | ----------------------------------------- |
+| 200  | Success      | Request completed successfully            |
+| 400  | Bad Request  | Invalid parameters, date format, or range |
+| 401  | Unauthorized | Missing or invalid JWT token              |
+| 403  | Forbidden    | Insufficient permissions                  |
+| 500  | Server Error | Database or internal error                |
 
 ---
 
@@ -159,6 +168,7 @@ All dates must be in ISO 8601 format:
 ## Error Handling
 
 ### Missing Parameters
+
 ```json
 {
   "error": "Missing required parameters",
@@ -167,6 +177,7 @@ All dates must be in ISO 8601 format:
 ```
 
 ### Invalid Date
+
 ```json
 {
   "error": "Invalid date format",
@@ -175,6 +186,7 @@ All dates must be in ISO 8601 format:
 ```
 
 ### Date Range Too Large
+
 ```json
 {
   "error": "Date range too large",
@@ -183,6 +195,7 @@ All dates must be in ISO 8601 format:
 ```
 
 ### Insufficient Permissions
+
 ```json
 {
   "error": "Insufficient permissions",
@@ -205,27 +218,30 @@ All dates must be in ISO 8601 format:
 ## Integration Tips
 
 ### JavaScript/Fetch
+
 ```javascript
 const response = await fetch(
   `/api/admin/reports/revenue?startDate=${start}&endDate=${end}`,
-  { headers: { 'Authorization': `Bearer ${token}` } }
+  { headers: { Authorization: `Bearer ${token}` } }
 );
 const data = await response.json();
 ```
 
 ### Axios
+
 ```javascript
 const { data } = await axios.get('/api/admin/reports/subscriptions', {
   params: { startDate, endDate },
-  headers: { Authorization: `Bearer ${token}` }
+  headers: { Authorization: `Bearer ${token}` },
 });
 ```
 
 ### Download Export
+
 ```javascript
 const response = await fetch(
   `/api/admin/reports/export?type=revenue&format=csv&startDate=${start}&endDate=${end}`,
-  { headers: { 'Authorization': `Bearer ${token}` } }
+  { headers: { Authorization: `Bearer ${token}` } }
 );
 const blob = await response.blob();
 const url = URL.createObjectURL(blob);

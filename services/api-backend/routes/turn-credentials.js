@@ -1,9 +1,9 @@
 /**
  * TURN Server Credentials API Route
- * 
+ *
  * Provides secure access to TURN server credentials for authenticated users.
  * Credentials are never exposed in client-side code.
- * 
+ *
  * GET /api/turn/credentials - Get TURN server credentials (requires authentication)
  */
 
@@ -16,7 +16,7 @@ const router = express.Router();
 /**
  * GET /api/turn/credentials
  * Get TURN server credentials for authenticated users
- * 
+ *
  * Response:
  * - 200: Credentials retrieved successfully
  * - 401: Unauthorized (not authenticated)
@@ -26,13 +26,11 @@ router.get('/credentials', authenticateJWT, (req, res) => {
     // Get TURN credentials from environment variables
     // These should be set securely in production (e.g., Kubernetes secrets)
     const turnUsername = process.env.TURN_USERNAME || 'cloudtolocalllm';
-    const turnCredential = process.env.TURN_CREDENTIAL || process.env.TURN_PASSWORD || '';
-    const turnUrls = process.env.TURN_URLS 
+    const turnCredential =
+      process.env.TURN_CREDENTIAL || process.env.TURN_PASSWORD || '';
+    const turnUrls = process.env.TURN_URLS
       ? process.env.TURN_URLS.split(',')
-      : [
-          'turn:174.138.115.184:3478',
-          'turn:174.138.115.184:5349'
-        ];
+      : ['turn:174.138.115.184:3478', 'turn:174.138.115.184:5349'];
 
     if (!turnCredential) {
       logger.warn('[TURN Credentials] TURN credential not configured');
@@ -54,9 +52,12 @@ router.get('/credentials', authenticateJWT, (req, res) => {
       timestamp: new Date().toISOString(),
     });
 
-    logger.debug('[TURN Credentials] Credentials provided to authenticated user', {
-      userId: req.user?.sub || req.user?.id,
-    });
+    logger.debug(
+      '[TURN Credentials] Credentials provided to authenticated user',
+      {
+        userId: req.user?.sub || req.user?.id,
+      }
+    );
   } catch (error) {
     logger.error('🔴 [TURN Credentials] Error retrieving credentials', {
       error: error.message,
@@ -71,4 +72,3 @@ router.get('/credentials', authenticateJWT, (req, res) => {
 });
 
 export default router;
-

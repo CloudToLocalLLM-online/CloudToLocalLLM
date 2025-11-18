@@ -8,65 +8,78 @@ This document outlines the rules and standard operating procedures for utilizing
 2.  **Atomic Operations**: Each MCP tool call is an atomic step. I will execute one tool at a time and wait for a successful response before proceeding to the next action.
 3.  **Schema Adherence**: Before using any MCP tool, I will consult its input schema to ensure all required arguments are correctly formatted and provided.
 
+## II. Focus and Task Management
+
+1.  **Task Progress Checklist**: For every task, I will maintain and update a `task_progress` checklist. This breaks down complex tasks into manageable steps, provides a clear roadmap, and allows for transparent progress tracking.
+2.  **Single-Minded Execution**: I will focus on completing one step or sub-task at a time, as defined in the `task_progress` checklist. I will avoid context switching or attempting to address multiple unrelated issues simultaneously.
+3.  **Regular Re-evaluation**: Periodically, I will re-evaluate the current task and its progress against the overall objective. If the current approach is not leading to the desired outcome, I will pause, analyze, and adjust the strategy.
+4.  **Proactive Clarification**: If I encounter any ambiguity, missing information, or unclear instructions, I will immediately use `ask_followup_question` to seek clarification from the user. I will not make assumptions that could lead to incorrect or inefficient work.
+5.  **Ignore Irrelevant Information**: I will actively filter out and ignore any information that is not directly relevant to the current task or sub-task. This includes extraneous details in `environment_details` or conversational tangents.
+
 ---
 
-## II. Core Workflow: Structured Task Management
+## III. Core Workflow: Structured Task Management
 
-For any request that requires multiple steps, changes to several files, or a sequence of dependent actions, I will use the `github.com/pashpashpash/mcp-taskmanager` server. This enforces a structured, transparent, and user-approved workflow.
+For any request that requires multiple steps, changes to several files, or a sequence of dependent actions, I will use the `task_progress` parameter in my tool calls to outline and track progress. Upon completion of the task, I will use the `attempt_completion` tool.
 
 ### Task Management Workflow:
 
-1.  **Planning Phase**:
-    *   **Tool**: `request_planning`
-    *   **Action**: I will first break down the user's request into a series of clear, sequential, and logical tasks. This plan will be registered with the task manager.
+1.  **Planning Phase (PLAN MODE)**:
+    *   **Action**: When in `PLAN MODE`, I will gather information using available tools (e.g., `read_file`, `search_files`) and ask clarifying questions using `ask_followup_question`.
+    *   **Tool**: `plan_mode_respond`
+    *   **Action**: I will present a detailed plan to the user using `plan_mode_respond`, including a `task_progress` checklist.
 
-2.  **Execution Cycle (Per-Task)**:
-    *   **Tool**: `get_next_task`
-    *   **Action**: I will retrieve the next pending task from the queue.
-    *   **Execution**: I will perform the necessary actions to complete this single task, using any other tools (standard or MCP) required.
-    *   **Tool**: `mark_task_done`
-    *   **Action**: Once the task is completed, I will mark it as done.
+2.  **Execution Cycle (ACT MODE)**:
+    *   **Action**: Once the user approves the plan and switches to `ACT MODE`, I will execute the steps outlined in the `task_progress` checklist.
+    *   **Tool**: Any available tool (standard or MCP)
+    *   **Action**: I will perform the necessary actions to complete each step, updating the `task_progress` checklist with each tool call.
 
-3.  **User Approval (Critical Step)**:
-    *   **Action**: I will **STOP** and wait for the user to explicitly approve the completion of the task by calling `approve_task_completion`.
-    *   **Rule**: I **will not** proceed to the next task (`get_next_task`) without this explicit user approval. This ensures the user is in full control of the process.
-
-4.  **Request Completion**:
-    *   **Condition**: After the final task is completed and approved.
-    *   **Tool**: `approve_request_completion`
-    *   **Action**: I will wait for the user to approve the completion of the entire request.
+3.  **Completion**:
+    *   **Condition**: After all steps in the `task_progress` checklist are completed.
+    *   **Tool**: `attempt_completion`
+    *   **Action**: I will present the final result of the task to the user, including the completed `task_progress` checklist.
 
 ---
 
-## III. Tool-Specific Rules & Use Cases
+## III. MCP Tool-Specific Rules & Use Cases
 
-### A. Research & Documentation
+### A. Sequential Thinking
 
-*   **Server**: `github.com/pashpashpash/mcp-webresearch`
-    *   **Use Case**: For any task requiring external information, current events, or general knowledge.
-    *   **Tools**: `search_google`, `visit_page`.
-*   **Server**: `github.com/upstash/context7-mcp`
-    *   **Use Case**: When I need to understand how to use a specific software library, framework, or API.
-    *   **Workflow**:
-        1.  Call `resolve-library-id` with the library name to get the correct identifier.
-        2.  Call `get-library-docs` with the resolved ID to fetch relevant documentation.
-
-### B. Web Development & Debugging
-
-*   **Server**: `github.com/AgentDeskAI/browser-tools-mcp`
-    *   **Use Case**: For advanced debugging and quality assurance of web applications, going beyond the standard `browser_action` tool.
+*   **Server**: `github.com/modelcontextprotocol/servers/tree/main/src/sequentialthinking`
+    *   **Tool**: `sequentialthinking`
+    *   **Use Case**: For complex problem-solving, planning, and analysis that requires dynamic and reflective thought processes. This tool allows for breaking down problems, generating hypotheses, verifying them, and adapting the approach as understanding deepens.
     *   **Rules**:
-        *   When a web-related bug is reported, I will use `getConsoleErrors` and `getNetworkErrors` to diagnose the issue.
-        *   When asked to improve a web page, I will use the audit tools (`runAccessibilityAudit`, `runPerformanceAudit`, `runSEOAudit`) to provide a comprehensive analysis and implement improvements.
+        *   Start with an initial estimate of `total_thoughts` but be ready to adjust.
+        *   Feel free to question or revise previous thoughts using `isRevision` and `revisesThought`.
+        *   Add more thoughts if needed, even after reaching the estimated `total_thoughts`, by setting `nextThoughtNeeded` to `true`.
+        *   Express uncertainty and explore alternative approaches.
+        *   Mark thoughts that revise previous thinking or branch into new paths.
+        *   Generate a solution hypothesis when appropriate and verify it.
+        *   Only set `nextThoughtNeeded` to `false` when a satisfactory answer is reached.
 
-### C. Project Management Integration
+### B. Azure Operations
 
-*   **Use Case**: When a task involves project management activities like creating bug reports, feature requests, or updating project status.
+*   **Server**: `github.com/Azure/azure-mcp`
+    *   **Use Case**: For managing and interacting with various Azure services and resources. This includes documentation search, Azure Developer CLI (azd) operations, best practices, Kubernetes (AKS), App Configuration, App Service, Authorization, Cosmos DB, Function Apps, Key Vault, Monitor, SQL, Storage, and more.
+    *   **Rules**:
+        *   Always specify the `intent` parameter for Azure tools.
+        *   Use `learn=true` to discover available sub-commands and parameters for a specific tool.
+        *   Prioritize specific Azure tools (e.g., `aks`, `appservice`, `storage`) over generic CLI commands when managing Azure resources.
+        *   For documentation, use the `documentation` tool with a clear query.
+        *   For generating Azure CLI commands, use `extension_cli_generate`.
+        *   For installing Azure CLI tools, use `extension_cli_install`.
 
-### D. Utilities
+### C. GitHub Operations
 
-*   **Server**: `github.com/Garoth/sleep-mcp`
-    *   **Use Case**: To introduce a deliberate pause in execution. This is useful when waiting for an asynchronous process to complete on a server or to respect API rate limits.
+*   **Server**: `github.com/github/github-mcp-server`
+    *   **Use Case**: For seamless integration with GitHub repositories, including managing pull requests, issues, files, branches, releases, and user/team information.
+    *   **Rules**:
+        *   Always provide `owner` and `repo` parameters for repository-specific operations.
+        *   Use `create_or_update_file` for remote file modifications, providing the `sha` if updating an existing file.
+        *   Use `push_files` for committing multiple files in a single operation.
+        *   For code reviews, use `add_comment_to_pending_review` or `pull_request_review_write`.
+        *   For issue management, use `issue_read` and `issue_write`.
+        *   For searching, use `search_code`, `search_issues`, `search_pull_requests`, `search_repositories`, or `search_users` with appropriate queries.
 
 ---
 

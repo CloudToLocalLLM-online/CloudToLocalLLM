@@ -22,7 +22,10 @@ router.post('/', async (req, res) => {
     const sanitized = entries.slice(0, 200).map((entry) => ({
       timestamp: entry?.timestamp || new Date().toISOString(),
       level: entry?.level || 'INFO',
-      message: typeof entry?.message === 'string' ? entry.message : JSON.stringify(entry?.message ?? ''),
+      message:
+        typeof entry?.message === 'string'
+          ? entry.message
+          : JSON.stringify(entry?.message ?? ''),
       url: entry?.url || null,
       userAgent: entry?.userAgent || req.get('user-agent') || null,
       source,
@@ -30,7 +33,8 @@ router.post('/', async (req, res) => {
     }));
 
     await ensureLogDirectory();
-    const payload = sanitized.map((entry) => JSON.stringify(entry)).join('\n') + '\n';
+    const payload =
+      sanitized.map((entry) => JSON.stringify(entry)).join('\n') + '\n';
     await fs.appendFile(logFilePath, payload, 'utf8');
 
     res.json({ success: true, count: sanitized.length });

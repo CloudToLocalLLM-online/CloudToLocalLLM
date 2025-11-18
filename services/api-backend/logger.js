@@ -36,14 +36,14 @@ const developmentFormat = winston.format.combine(
     }
 
     return log;
-  }),
+  })
 );
 
 // Custom log format for production
 const productionFormat = winston.format.combine(
   winston.format.timestamp(),
   winston.format.errors({ stack: true }),
-  winston.format.json(),
+  winston.format.json()
 );
 
 // Create transports array
@@ -58,7 +58,7 @@ const transports = [
 // Add file transports for production
 if (NODE_ENV === 'production') {
   // Ensure log directory exists
-  import('fs').then(fs => {
+  import('fs').then((fs) => {
     if (!fs.existsSync(LOG_DIR)) {
       fs.mkdirSync(LOG_DIR, { recursive: true });
     }
@@ -72,7 +72,7 @@ if (NODE_ENV === 'production') {
       format: productionFormat,
       maxsize: 10 * 1024 * 1024, // 10MB
       maxFiles: 5,
-    }),
+    })
   );
 
   // Combined log file
@@ -82,7 +82,7 @@ if (NODE_ENV === 'production') {
       format: productionFormat,
       maxsize: 10 * 1024 * 1024, // 10MB
       maxFiles: 5,
-    }),
+    })
   );
 }
 

@@ -1,6 +1,6 @@
 /**
  * Payment Gateway Services Index
- * 
+ *
  * Exports all payment gateway related services for easy importing.
  */
 
@@ -21,5 +21,5 @@ export {
   GoogleWorkspaceService,
   CloudflareDNSService,
   EmailConfigService,
-  EmailQueueService
+  EmailQueueService,
 };

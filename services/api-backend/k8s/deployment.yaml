@@ -18,56 +18,55 @@ spec:
       labels:
         app: api-backend
     spec:
-
       containers:
-      - name: api-backend
-        image: gcr.io/cloudtolocalllm-468303/api-backend:latest
-        ports:
-        - containerPort: 3000
-        env:
-        - name: NODE_ENV
-          value: "production"
-        - name: LOG_LEVEL
-          value: "info"
-        - name: PORT
-          value: "3000"
-        - name: DB_TYPE
-          value: "postgresql"
-        - name: DB_HOST
-          value: "postgres.cloudtolocalllm.svc.cluster.local"
-        - name: DB_PORT
-          value: "5432"
-        - name: DB_NAME
-          value: "cloudtolocalllm"
-        - name: DB_USER
-          value: "appuser"
-        - name: DB_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: api-secrets
-              key: db-password
-        - name: JWT_SECRET
-          valueFrom:
-            secretKeyRef:
-              name: api-secrets
-              key: jwt-secret
+        - name: api-backend
+          image: gcr.io/cloudtolocalllm-468303/api-backend:latest
+          ports:
+            - containerPort: 3000
+          env:
+            - name: NODE_ENV
+              value: 'production'
+            - name: LOG_LEVEL
+              value: 'info'
+            - name: PORT
+              value: '3000'
+            - name: DB_TYPE
+              value: 'postgresql'
+            - name: DB_HOST
+              value: 'postgres.cloudtolocalllm.svc.cluster.local'
+            - name: DB_PORT
+              value: '5432'
+            - name: DB_NAME
+              value: 'cloudtolocalllm'
+            - name: DB_USER
+              value: 'appuser'
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: api-secrets
+                  key: db-password
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: api-secrets
+                  key: jwt-secret
 
-        readinessProbe:
-          httpGet:
-            path: /api/health
-            port: 3000
-          initialDelaySeconds: 5
-          periodSeconds: 10
-        livenessProbe:
-          httpGet:
-            path: /api/health
-            port: 3000
-          initialDelaySeconds: 20
-          periodSeconds: 20
-        resources:
-          requests:
-            cpu: "500m"
-            memory: "1Gi"
-          limits:
-            cpu: "1"
-            memory: "2Gi"
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: 3000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /api/health
+              port: 3000
+            initialDelaySeconds: 20
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: '500m'
+              memory: '1Gi'
+            limits:
+              cpu: '1'
+              memory: '2Gi'

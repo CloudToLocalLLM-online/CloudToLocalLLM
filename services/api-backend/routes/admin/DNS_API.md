@@ -13,6 +13,7 @@ The DNS Configuration API provides secure administrative endpoints for managing 
 ## Authentication
 
 All endpoints require:
+
 - Valid JWT token with admin role
 - Appropriate permission scope (`view_dns_config` or `manage_dns_config`)
 - Rate limiting applied based on operation type
@@ -28,6 +29,7 @@ All endpoints require:
 **Rate Limit:** Write limiter (50 req/min)
 
 **Request Body:**
+
 ```json
 {
   "recordType": "MX",
@@ -39,6 +41,7 @@ All endpoints require:
 ```
 
 **Parameters:**
+
 - `recordType` (required): DNS record type (A, AAAA, CNAME, MX, TXT, SPF, DKIM, DMARC, NS, SRV)
 - `name` (required): Full domain name
 - `value` (required): Record value
@@ -46,6 +49,7 @@ All endpoints require:
 - `priority` (optional): Priority for MX records
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -65,6 +69,7 @@ All endpoints require:
 ```
 
 **Error Responses:**
+
 - `400 Bad Request`: Missing required fields or invalid record type
 - `500 Internal Server Error`: Cloudflare API error
 
@@ -79,10 +84,12 @@ All endpoints require:
 **Rate Limit:** Read-only limiter (200 req/min)
 
 **Query Parameters:**
+
 - `recordType` (optional): Filter by record type
 - `name` (optional): Filter by domain name
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -118,9 +125,11 @@ All endpoints require:
 **Rate Limit:** Write limiter (50 req/min)
 
 **URL Parameters:**
+
 - `id` (required): Record ID
 
 **Request Body:**
+
 ```json
 {
   "value": "10 alt1.gmail-smtp-in.l.google.com",
@@ -130,11 +139,13 @@ All endpoints require:
 ```
 
 **Parameters:**
+
 - `value` (optional): New record value
 - `ttl` (optional): New TTL (60-86400)
 - `priority` (optional): New priority for MX records
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -164,9 +175,11 @@ All endpoints require:
 **Rate Limit:** Write limiter (50 req/min)
 
 **URL Parameters:**
+
 - `id` (required): Record ID
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -186,9 +199,11 @@ All endpoints require:
 **Rate Limit:** Read-only limiter (200 req/min)
 
 **Query Parameters:**
+
 - `recordId` (optional): Validate specific record
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -221,9 +236,11 @@ All endpoints require:
 **Rate Limit:** Read-only limiter (200 req/min)
 
 **Query Parameters:**
+
 - `domain` (optional): Domain name (defaults to configured domain)
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -292,6 +309,7 @@ All endpoints require:
 **Rate Limit:** Write limiter (50 req/min)
 
 **Request Body:**
+
 ```json
 {
   "domain": "cloudtolocalllm.online",
@@ -300,10 +318,12 @@ All endpoints require:
 ```
 
 **Parameters:**
+
 - `domain` (optional): Domain name (defaults to configured domain)
 - `recordTypes` (optional): Array of record types to create (defaults to all)
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -371,6 +391,7 @@ All endpoints return consistent error responses:
 ```
 
 **Common Error Codes:**
+
 - `MISSING_FIELDS`: Required fields are missing
 - `INVALID_RECORD_TYPE`: Invalid DNS record type
 - `INVALID_TTL`: TTL outside valid range (60-86400)
@@ -395,6 +416,7 @@ All DNS operations are logged for audit purposes:
 - **Google Workspace Setup**: `google_workspace_dns_setup`
 
 Audit logs include:
+
 - Admin user ID
 - Admin role
 - Action performed
@@ -428,6 +450,7 @@ Rate limits are per-user and enforced at the middleware level.
 ## Integration with Cloudflare
 
 The DNS API integrates with Cloudflare using:
+
 - **API Token**: `CLOUDFLARE_API_TOKEN` environment variable
 - **Zone ID**: `CLOUDFLARE_ZONE_ID` environment variable
 - **Rate Limit Handling**: Automatic retry with exponential backoff

@@ -31,7 +31,9 @@ class GoogleWorkspaceService {
   initialize() {
     const clientId = process.env.GOOGLE_CLIENT_ID;
     const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
-    const redirectUri = process.env.GOOGLE_REDIRECT_URI || 'https://api.cloudtolocalllm.online/admin/email/oauth/callback';
+    const redirectUri =
+      process.env.GOOGLE_REDIRECT_URI ||
+      'https://api.cloudtolocalllm.online/admin/email/oauth/callback';
 
     if (!clientId || !clientSecret) {
       throw new Error('Google OAuth credentials not configured');
@@ -60,14 +62,14 @@ class GoogleWorkspaceService {
     const scopes = [
       'https://www.googleapis.com/auth/gmail.send',
       'https://www.googleapis.com/auth/gmail.readonly',
-      'https://www.googleapis.com/auth/gmail.modify'
+      'https://www.googleapis.com/auth/gmail.modify',
     ];
 
     return this.oauth2Client.generateAuthUrl({
       access_type: 'offline',
       scope: scopes,
       state: state,
-      prompt: 'consent'
+      prompt: 'consent',
     });
   }
 
@@ -88,13 +90,13 @@ class GoogleWorkspaceService {
       logger.info('Successfully exchanged authorization code for tokens', {
         hasAccessToken: !!tokens.access_token,
         hasRefreshToken: !!tokens.refresh_token,
-        expiresIn: tokens.expiry_date
+        expiresIn: tokens.expiry_date,
       });
 
       return tokens;
     } catch (error) {
       logger.error('Failed to exchange authorization code', {
-        error: error.message
+        error: error.message,
       });
       throw new Error('Failed to exchange authorization code for tokens');
     }
@@ -111,7 +113,13 @@ class GoogleWorkspaceService {
    * @param {string} params.userEmail - Google Workspace user email
    * @returns {Promise<Object>} Stored configuration
    */
-  async storeOAuthConfiguration({ userId, accessToken, refreshToken, expiresIn, userEmail }) {
+  async storeOAuthConfiguration({
+    userId,
+    accessToken,
+    refreshToken,
+    expiresIn,
+    userEmail,
+  }) {
     const configId = uuidv4();
     const encryptedAccessToken = this._encryptToken(accessToken);
     const encryptedRefreshToken = this._encryptToken(refreshToken);
@@ -142,20 +150,20 @@ class GoogleWorkspaceService {
         encryptedRefreshToken,
         userEmail,
         true,
-        userId
+        userId,
       ]);
 
       logger.info('Stored Google Workspace OAuth configuration', {
         userId,
         userEmail,
-        configId
+        configId,
       });
 
       return result.rows[0];
     } catch (error) {
       logger.error('Failed to store OAuth configuration', {
         userId,
-        error: error.message
+        error: error.message,
       });
       throw error;
     }
@@ -184,10 +192,14 @@ class GoogleWorkspaceService {
 
       // Decrypt tokens if they exist
       if (config.google_oauth_token_encrypted) {
-        config.accessToken = this._decryptToken(config.google_oauth_token_encrypted);
+        config.accessToken = this._decryptToken(
+          config.google_oauth_token_encrypted
+        );
       }
       if (config.google_oauth_refresh_token_encrypted) {
-        config.refreshToken = this._decryptToken(config.google_oauth_refresh_token_encrypted);
+        config.refreshToken = this._decryptToken(
+          config.google_oauth_refresh_token_encrypted
+        );
       }
 
       config.userEmail = config.from_address;
@@ -196,7 +208,7 @@ class GoogleWorkspaceService {
     } catch (error) {
       logger.error('Failed to retrieve OAuth configuration', {
         userId,
-        error: error.message
+        error: error.message,
       });
       throw error;
     }
@@ -231,7 +243,7 @@ class GoogleWorkspaceService {
     }
 
     this.oauth2Client.setCredentials({
-      refresh_token: config.refreshToken
+      refresh_token: config.refreshToken,
     });
 
     try {
@@ -242,8 +254,10 @@ class GoogleWorkspaceService {
         userId,
         accessToken: credentials.access_token,
         refreshToken: credentials.refresh_token || config.refreshToken,
-        expiresIn: credentials.expiry_date ? Math.floor((credentials.expiry_date - Date.now()) / 1000) : 3600,
-        userEmail: config.userEmail || config.from_address
+        expiresIn: credentials.expiry_date
+          ? Math.floor((credentials.expiry_date - Date.now()) / 1000)
+          : 3600,
+        userEmail: config.userEmail || config.from_address,
       });
 
       logger.info('Refreshed Google Workspace access token', { userId });
@@ -252,7 +266,7 @@ class GoogleWorkspaceService {
     } catch (error) {
       logger.error('Failed to refresh access token', {
         userId,
-        error: error.message
+        error: error.message,
       });
       throw new Error('Failed to refresh Google Workspace access token');
     }
@@ -272,7 +286,16 @@ class GoogleWorkspaceService {
    * @param {Array} [params.bcc] - BCC recipients
    * @returns {Promise<Object>} Send result with message ID
    */
-  async sendEmail({ userId, to, subject, body, from = null, replyTo = null, cc = [], bcc = [] }) {
+  async sendEmail({
+    userId,
+    to,
+    subject,
+    body,
+    from = null,
+    replyTo = null,
+    cc = [],
+    bcc = [],
+  }) {
     try {
       const accessToken = await this.getValidAccessToken(userId);
       const config = await this.getOAuthConfiguration(userId);
@@ -289,7 +312,7 @@ class GoogleWorkspaceService {
         `To: ${to}`,
         `Subject: ${subject}`,
         'MIME-Version: 1.0',
-        'Content-Type: text/html; charset=utf-8'
+        'Content-Type: text/html; charset=utf-8',
       ];
 
       if (replyTo) {
@@ -325,34 +348,34 @@ class GoogleWorkspaceService {
       const response = await gmail.users.messages.send({
         userId: 'me',
         requestBody: {
-          raw: encodedMessage
-        }
+          raw: encodedMessage,
+        },
       });
 
       logger.info('Email sent successfully via Gmail API', {
         userId,
         to,
         subject,
-        messageId: response.data.id
+        messageId: response.data.id,
       });
 
       return {
         success: true,
         messageId: response.data.id,
-        timestamp: new Date()
+        timestamp: new Date(),
       };
     } catch (error) {
       logger.error('Failed to send email via Gmail API', {
         userId,
         to,
         subject,
-        error: error.message
+        error: error.message,
       });
 
       return {
         success: false,
         error: error.message,
-        timestamp: new Date()
+        timestamp: new Date(),
       };
     }
   }
@@ -383,7 +406,7 @@ class GoogleWorkspaceService {
       const gmail = google.gmail({ version: 'v1', auth: this.oauth2Client });
 
       const response = await gmail.users.getProfile({
-        userId: 'me'
+        userId: 'me',
       });
 
       const quotaData = {
@@ -391,25 +414,25 @@ class GoogleWorkspaceService {
         messagesUnread: response.data.messagesUnread || 0,
         historyId: response.data.historyId,
         emailAddress: response.data.emailAddress,
-        timestamp: new Date()
+        timestamp: new Date(),
       };
 
       // Cache the result
       this.quotaCache.set(cacheKey, {
         data: quotaData,
-        timestamp: Date.now()
+        timestamp: Date.now(),
       });
 
       logger.info('Retrieved Gmail quota usage', {
         userId,
-        messagesTotal: quotaData.messagesTotal
+        messagesTotal: quotaData.messagesTotal,
       });
 
       return quotaData;
     } catch (error) {
       logger.error('Failed to get Gmail quota usage', {
         userId,
-        error: error.message
+        error: error.message,
       });
 
       throw error;
@@ -439,40 +462,40 @@ class GoogleWorkspaceService {
             name: domain,
             value: 'gmail-smtp-in.l.google.com',
             priority: 5,
-            ttl: 3600
+            ttl: 3600,
           },
           {
             type: 'MX',
             name: domain,
             value: 'alt1.gmail-smtp-in.l.google.com',
             priority: 10,
-            ttl: 3600
+            ttl: 3600,
           },
           {
             type: 'MX',
             name: domain,
             value: 'alt2.gmail-smtp-in.l.google.com',
             priority: 20,
-            ttl: 3600
-          }
+            ttl: 3600,
+          },
         ],
         spf: {
           type: 'TXT',
           name: domain,
           value: 'v=spf1 include:_spf.google.com ~all',
-          ttl: 3600
+          ttl: 3600,
         },
         dmarc: {
           type: 'TXT',
           name: '_dmarc.' + domain,
           value: 'v=DMARC1; p=quarantine; rua=mailto:postmaster@' + domain,
-          ttl: 3600
-        }
+          ttl: 3600,
+        },
       };
 
       logger.info('Retrieved recommended DNS records for Google Workspace', {
         userId,
-        domain
+        domain,
       });
 
       return records;
@@ -480,7 +503,7 @@ class GoogleWorkspaceService {
       logger.error('Failed to get recommended DNS records', {
         userId,
         domain,
-        error: error.message
+        error: error.message,
       });
 
       throw error;
@@ -505,7 +528,7 @@ class GoogleWorkspaceService {
 
       logger.info('Processing Gmail webhook notification', {
         messageId,
-        eventType
+        eventType,
       });
 
       // Store webhook event in database for tracking
@@ -519,7 +542,7 @@ class GoogleWorkspaceService {
         uuidv4(),
         messageId,
         eventType,
-        JSON.stringify(notification)
+        JSON.stringify(notification),
       ]);
 
       // Handle specific event types
@@ -530,7 +553,7 @@ class GoogleWorkspaceService {
       }
     } catch (error) {
       logger.error('Failed to handle webhook notification', {
-        error: error.message
+        error: error.message,
       });
     }
   }
@@ -547,7 +570,7 @@ class GoogleWorkspaceService {
       logger.warn('Email bounce detected', {
         messageId,
         bounceType,
-        recipientCount: bouncedRecipients.length
+        recipientCount: bouncedRecipients.length,
       });
 
       // Update email queue status
@@ -557,14 +580,11 @@ class GoogleWorkspaceService {
         WHERE message_id = $2
       `;
 
-      await this.db.query(query, [
-        `Bounce: ${bounceType}`,
-        messageId
-      ]);
+      await this.db.query(query, [`Bounce: ${bounceType}`, messageId]);
     } catch (error) {
       logger.error('Failed to handle bounce event', {
         messageId,
-        error: error.message
+        error: error.message,
       });
     }
   }
@@ -579,7 +599,7 @@ class GoogleWorkspaceService {
 
       logger.info('Email delivered successfully', {
         messageId,
-        deliveryTimestamp
+        deliveryTimestamp,
       });
 
       // Update email queue status
@@ -589,14 +609,11 @@ class GoogleWorkspaceService {
         WHERE message_id = $2
       `;
 
-      await this.db.query(query, [
-        new Date(deliveryTimestamp),
-        messageId
-      ]);
+      await this.db.query(query, [new Date(deliveryTimestamp), messageId]);
     } catch (error) {
       logger.error('Failed to handle delivery event', {
         messageId,
-        error: error.message
+        error: error.message,
       });
     }
   }
@@ -627,7 +644,7 @@ class GoogleWorkspaceService {
     return JSON.stringify({
       iv: iv.toString('hex'),
       encrypted,
-      authTag: authTag.toString('hex')
+      authTag: authTag.toString('hex'),
     });
   }
 
@@ -677,7 +694,7 @@ class GoogleWorkspaceService {
     } catch (error) {
       logger.error('Failed to delete OAuth configuration', {
         userId,
-        error: error.message
+        error: error.message,
       });
       throw error;
     }

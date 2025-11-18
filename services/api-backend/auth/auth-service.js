@@ -25,7 +25,7 @@ export class AuthService {
     };
 
     this.logger = new TunnelLogger('auth-service');
-    
+
     // Use separate auth database if provided, otherwise fallback to main database
     this.authDbMigrator = config.authDbMigrator || null;
     this.db = this.authDbMigrator || new DatabaseMigrator();
@@ -60,7 +60,6 @@ export class AuthService {
 
       // Start session cleanup
       this.startSessionCleanup();
-
     } catch (error) {
       this.logger.error('Failed to initialize authentication service', {
         error: error.message,
@@ -108,7 +107,9 @@ export class AuthService {
         throw new Error('Invalid token format - missing kid in header');
       }
 
-      this.logger.info(`Token decoded successfully, kid: ${decoded.header.kid}`);
+      this.logger.info(
+        `Token decoded successfully, kid: ${decoded.header.kid}`
+      );
 
       // Get signing key
       const key = await this.getSigningKey(decoded.header.kid);
@@ -136,7 +137,6 @@ export class AuthService {
         payload: payload,
         session: session,
       };
-
     } catch (error) {
       this.logger.warn('Token validation failed', {
         error: error.message,
@@ -172,7 +172,9 @@ export class AuthService {
         throw new Error('Invalid token format - missing kid in header');
       }
 
-      this.logger.info(`WebSocket token decoded successfully, kid: ${decoded.header.kid}`);
+      this.logger.info(
+        `WebSocket token decoded successfully, kid: ${decoded.header.kid}`
+      );
 
       // Get signing key
       const key = await this.getSigningKey(decoded.header.kid);
@@ -193,7 +195,6 @@ export class AuthService {
       });
 
       return verified;
-
     } catch (error) {
       this.logger.warn('WebSocket token validation failed', {
         error: error.message,
@@ -222,17 +223,21 @@ export class AuthService {
       // Fetch JWKS from Auth0
       const response = await fetch(this.jwksUri);
       if (!response.ok) {
-        throw new Error(`Failed to fetch JWKS: ${response.status} ${response.statusText}`);
+        throw new Error(
+          `Failed to fetch JWKS: ${response.status} ${response.statusText}`
+        );
       }
 
       const jwks = await response.json();
       this.logger.info(`Fetched JWKS with ${jwks.keys.length} keys`);
 
       // Find the key with matching kid
-      const key = jwks.keys.find(k => k.kid === kid);
+      const key = jwks.keys.find((k) => k.kid === kid);
       if (!key) {
-        const availableKids = jwks.keys.map(k => k.kid);
-        throw new Error(`Key with kid '${kid}' not found in JWKS. Available kids: ${availableKids.join(', ')}`);
+        const availableKids = jwks.keys.map((k) => k.kid);
+        throw new Error(
+          `Key with kid '${kid}' not found in JWKS. Available kids: ${availableKids.join(', ')}`
+        );
       }
 
       this.logger.info(`Found key for kid: ${kid}, converting to PEM`);
@@ -244,7 +249,7 @@ export class AuthService {
 
       // Cache the result for 5 minutes
       this.jwksCache.set(kid, publicKey);
-      this.jwksCacheExpiry = now + (5 * 60 * 1000);
+      this.jwksCacheExpiry = now + 5 * 60 * 1000;
 
       return publicKey;
     } catch (error) {
@@ -274,7 +279,10 @@ export class AuthService {
         format: 'pem',
       });
     } catch (error) {
-      this.logger.error('Modern crypto approach failed, trying manual conversion:', error);
+      this.logger.error(
+        'Modern crypto approach failed, trying manual conversion:',
+        error
+      );
 
       // Fallback: Manual RSA key construction
       // This is a more compatible approach for older Node.js versions
@@ -328,7 +336,7 @@ export class AuthService {
       // Check for existing session with same token
       const existingSession = await this.db.db.get(
         'SELECT * FROM user_sessions WHERE user_id = ? AND jwt_token_hash = ?',
-        [userId, tokenHash],
+        [userId, tokenHash]
       );
 
       this.logger.info('Session lookup result', {
@@ -343,7 +351,7 @@ export class AuthService {
         // Update existing session
         await this.db.db.run(
           'UPDATE user_sessions SET last_activity = CURRENT_TIMESTAMP, expires_at = ? WHERE id = ?',
-          [expiresAt, existingSession.id],
+          [expiresAt, existingSession.id]
         );
 
         this.logger.info('Session updated successfully');
@@ -367,7 +375,7 @@ export class AuthService {
       const result = await this.db.db.run(
         `INSERT INTO user_sessions (user_id, jwt_token_hash, expires_at, ip_address, user_agent)
          VALUES (?, ?, ?, ?, ?)`,
-        [userId, tokenHash, expiresAt, ip, userAgent],
+        [userId, tokenHash, expiresAt, ip, userAgent]
       );
 
       this.logger.info('Session insert result', {
@@ -378,7 +386,7 @@ export class AuthService {
       // Get the created session
       const session = await this.db.db.get(
         'SELECT * FROM user_sessions WHERE id = ?',
-        [result.lastID || this.generateSessionId()],
+        [result.lastID || this.generateSessionId()]
       );
 
       if (!session) {
@@ -400,32 +408,40 @@ export class AuthService {
       });
 
       return session;
-
     } catch (error) {
       // Handle UNIQUE constraint violation by trying to find and update existing session
-      if (error.code === 'SQLITE_CONSTRAINT' && error.message.includes('UNIQUE constraint failed')) {
-        this.logger.info('UNIQUE constraint violation - attempting to find and update existing session', {
-          userId,
-          tokenHashLength: tokenHash.length,
-        });
+      if (
+        error.code === 'SQLITE_CONSTRAINT' &&
+        error.message.includes('UNIQUE constraint failed')
+      ) {
+        this.logger.info(
+          'UNIQUE constraint violation - attempting to find and update existing session',
+          {
+            userId,
+            tokenHashLength: tokenHash.length,
+          }
+        );
 
         try {
           // Try to find the existing session again
           const existingSession = await this.db.db.get(
             'SELECT * FROM user_sessions WHERE user_id = ? AND jwt_token_hash = ?',
-            [userId, tokenHash],
+            [userId, tokenHash]
           );
 
           if (existingSession) {
             // Update the existing session
             await this.db.db.run(
               'UPDATE user_sessions SET last_activity = CURRENT_TIMESTAMP, expires_at = ? WHERE id = ?',
-              [expiresAt, existingSession.id],
+              [expiresAt, existingSession.id]
             );
 
-            this.logger.info('Successfully updated existing session after constraint violation', {
-              sessionId: existingSession.id,
-            });
+            this.logger.info(
+              'Successfully updated existing session after constraint violation',
+              {
+                sessionId: existingSession.id,
+              }
+            );
 
             return existingSession;
           }
@@ -447,10 +463,10 @@ export class AuthService {
         errorConstructor: error.constructor.name,
         fullError: JSON.stringify(error, Object.getOwnPropertyNames(error)),
       });
-      this.logger.error('DETAILED SESSION ERROR', { 
-        error: error.message, 
+      this.logger.error('DETAILED SESSION ERROR', {
+        error: error.message,
         stack: error.stack,
-        properties: Object.getOwnPropertyNames(error)
+        properties: Object.getOwnPropertyNames(error),
       });
       throw error;
     }
@@ -468,7 +484,7 @@ export class AuthService {
       const result = await this.db.db.get(
         `SELECT * FROM user_sessions
          WHERE id = ? AND is_active = 1 AND expires_at > datetime('now')`,
-        [sessionId],
+        [sessionId]
       );
 
       return result || null;
@@ -493,14 +509,14 @@ export class AuthService {
       // Get user_id before updating
       const session = await this.db.db.get(
         'SELECT user_id FROM user_sessions WHERE id = ?',
-        [sessionId],
+        [sessionId]
       );
 
       if (session) {
         // Update session to inactive
         await this.db.db.run(
           'UPDATE user_sessions SET is_active = 0 WHERE id = ?',
-          [sessionId],
+          [sessionId]
         );
 
         const userId = session.user_id;
@@ -543,14 +559,15 @@ export class AuthService {
       // Get active sessions count
       const countResult = await this.db.db.get(
         'SELECT COUNT(*) as count FROM user_sessions WHERE user_id = ? AND is_active = 1',
-        [userId],
+        [userId]
       );
 
       const activeCount = parseInt(countResult.count);
 
       if (activeCount >= this.config.MAX_SESSIONS_PER_USER) {
         // Remove oldest sessions
-        const sessionsToRemove = activeCount - this.config.MAX_SESSIONS_PER_USER + 1;
+        const sessionsToRemove =
+          activeCount - this.config.MAX_SESSIONS_PER_USER + 1;
 
         await this.db.db.run(
           `UPDATE user_sessions
@@ -561,7 +578,7 @@ export class AuthService {
              ORDER BY last_activity ASC
              LIMIT ?
            )`,
-          [userId, sessionsToRemove],
+          [userId, sessionsToRemove]
         );
 
         this.logger.info('Cleaned up old sessions', {
@@ -632,7 +649,7 @@ export class AuthService {
           metadata.userId || null,
           metadata.ip || null,
           metadata.userAgent || null,
-        ],
+        ]
       );
     } catch (error) {
       this.logger.error('Failed to log audit event', {
@@ -663,7 +680,7 @@ export class AuthService {
           metadata.userId || null,
           metadata.ip || null,
           metadata.userAgent || null,
-        ],
+        ]
       );
     } catch (error) {
       this.logger.error('Failed to log security event', {
@@ -692,26 +709,29 @@ export class AuthService {
    */
   startSessionCleanup() {
     // Clean up expired sessions every 15 minutes
-    setInterval(async() => {
-      try {
-        if (!this.db.db) {
-          await this.db.initialize();
-        }
+    setInterval(
+      async () => {
+        try {
+          if (!this.db.db) {
+            await this.db.initialize();
+          }
 
-        // SQLite version: manually clean up expired sessions
-        const result = await this.db.db.run(
-          `UPDATE user_sessions SET is_active = 0
-           WHERE expires_at < datetime('now') AND is_active = 1`,
-        );
+          // SQLite version: manually clean up expired sessions
+          const result = await this.db.db.run(
+            `UPDATE user_sessions SET is_active = 0
+           WHERE expires_at < datetime('now') AND is_active = 1`
+          );
 
-        const deletedCount = result.changes || 0;
-        if (deletedCount > 0) {
-          this.logger.info('Cleaned up expired sessions', { deletedCount });
+          const deletedCount = result.changes || 0;
+          if (deletedCount > 0) {
+            this.logger.info('Cleaned up expired sessions', { deletedCount });
+          }
+        } catch (error) {
+          this.logger.error('Session cleanup failed', { error: error.message });
         }
-      } catch (error) {
-        this.logger.error('Session cleanup failed', { error: error.message });
-      }
-    }, 15 * 60 * 1000); // 15 minutes
+      },
+      15 * 60 * 1000
+    ); // 15 minutes
   }
 
   /**
@@ -725,25 +745,25 @@ export class AuthService {
 
       // SQLite version: get stats with separate queries
       const activeSessions = await this.db.db.get(
-        'SELECT COUNT(*) as count FROM user_sessions WHERE is_active = 1',
+        'SELECT COUNT(*) as count FROM user_sessions WHERE is_active = 1'
       );
 
       const validSessions = await this.db.db.get(
-        'SELECT COUNT(*) as count FROM user_sessions WHERE expires_at > datetime(\'now\')',
+        "SELECT COUNT(*) as count FROM user_sessions WHERE expires_at > datetime('now')"
       );
 
       const activeUsers = await this.db.db.get(
-        'SELECT COUNT(DISTINCT user_id) as count FROM user_sessions WHERE is_active = 1',
+        'SELECT COUNT(DISTINCT user_id) as count FROM user_sessions WHERE is_active = 1'
       );
 
       const authEvents = await this.db.db.get(
         `SELECT COUNT(*) as count FROM audit_logs
-         WHERE event_category = 'authentication' AND timestamp > datetime('now', '-24 hours')`,
+         WHERE event_category = 'authentication' AND timestamp > datetime('now', '-24 hours')`
       );
 
       const securityEvents = await this.db.db.get(
         `SELECT COUNT(*) as count FROM audit_logs
-         WHERE event_category = 'security' AND timestamp > datetime('now', '-24 hours')`,
+         WHERE event_category = 'security' AND timestamp > datetime('now', '-24 hours')`
       );
 
       return {

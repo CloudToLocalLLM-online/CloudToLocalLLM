@@ -5,7 +5,10 @@ const { Pool } = require('pg');
 // Database connection
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
+  ssl:
+    process.env.NODE_ENV === 'production'
+      ? { rejectUnauthorized: false }
+      : false,
 });
 
 /**
@@ -14,10 +17,19 @@ const pool = new Pool({
  */
 router.post('/', async (req, res) => {
   try {
-    const { userId, token, expiresAt, auth0AccessToken, auth0IdToken, userProfile } = req.body;
+    const {
+      userId,
+      token,
+      expiresAt,
+      auth0AccessToken,
+      auth0IdToken,
+      userProfile,
+    } = req.body;
 
     if (!userId || !token || !expiresAt) {
-      return res.status(400).json({ error: 'Missing required fields: userId, token, expiresAt' });
+      return res
+        .status(400)
+        .json({ error: 'Missing required fields: userId, token, expiresAt' });
     }
 
     // First, ensure user exists in users table with Auth0 profile data
@@ -40,7 +52,7 @@ router.post('/', async (req, res) => {
         userProfile?.nickname || null,
         userProfile?.picture || null,
         userProfile?.email_verified || false,
-        userProfile?.locale || null
+        userProfile?.locale || null,
       ]
     );
 
@@ -58,7 +70,7 @@ router.post('/', async (req, res) => {
       id: sessionResult.rows[0].id,
       token: token,
       userId: dbUserId,
-      expiresAt: expiresAt
+      expiresAt: expiresAt,
     });
   } catch (error) {
     console.error('Error creating session:', error);
@@ -105,15 +117,15 @@ router.get('/validate/:token', async (req, res) => {
         auth0IdToken: session.auth0_id_token,
         createdAt: session.created_at,
         lastActivity: session.last_activity,
-        isActive: session.is_active
+        isActive: session.is_active,
       },
       user: {
         id: session.auth0_id,
         email: session.email,
         name: session.name,
         nickname: session.nickname,
-        picture: session.picture
-      }
+        picture: session.picture,
+      },
     });
   } catch (error) {
     console.error('Error validating session:', error);

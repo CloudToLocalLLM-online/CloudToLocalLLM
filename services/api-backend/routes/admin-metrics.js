@@ -1,13 +1,16 @@
 /**
  * Admin Center Metrics Endpoint
- * 
+ *
  * Exposes Prometheus metrics for the Admin Center API
- * 
+ *
  * Requirements: Task 31.2, Requirement 12
  */
 
 import express from 'express';
-import { exportAdminMetricsAsText, initializeAdminMetrics } from '../middleware/admin-metrics.js';
+import {
+  exportAdminMetricsAsText,
+  initializeAdminMetrics,
+} from '../middleware/admin-metrics.js';
 
 const router = express.Router();
 
@@ -16,9 +19,9 @@ initializeAdminMetrics();
 
 /**
  * GET /metrics
- * 
+ *
  * Export Prometheus metrics in text format
- * 
+ *
  * Response: text/plain with Prometheus metrics
  */
 router.get('/metrics', async (req, res) => {

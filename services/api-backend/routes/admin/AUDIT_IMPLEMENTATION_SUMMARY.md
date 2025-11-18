@@ -84,6 +84,7 @@ CREATE INDEX idx_admin_audit_logs_created_at ON admin_audit_logs(created_at DESC
 **File:** `services/api-backend/routes/admin/audit.js`
 
 **Features:**
+
 - Pagination with configurable page size (default: 100, max: 200)
 - Multiple filter options (admin user, action, resource type, affected user, date range)
 - Sorting by created_at, action, resource_type, admin_user_id
@@ -91,6 +92,7 @@ CREATE INDEX idx_admin_audit_logs_created_at ON admin_audit_logs(created_at DESC
 - Comprehensive error handling and logging
 
 **Query Optimization:**
+
 - Uses indexed columns for filtering
 - Efficient pagination with LIMIT/OFFSET
 - Separate count query for total records
@@ -101,6 +103,7 @@ CREATE INDEX idx_admin_audit_logs_created_at ON admin_audit_logs(created_at DESC
 **File:** `services/api-backend/routes/admin/audit.js`
 
 **Features:**
+
 - UUID validation for log ID
 - Detailed log entry with full admin and affected user information
 - JSON parsing for details field
@@ -108,6 +111,7 @@ CREATE INDEX idx_admin_audit_logs_created_at ON admin_audit_logs(created_at DESC
 - 404 handling for non-existent logs
 
 **Security:**
+
 - Permission check (`view_audit_logs`)
 - Admin authentication required
 - Comprehensive audit logging of access
@@ -117,6 +121,7 @@ CREATE INDEX idx_admin_audit_logs_created_at ON admin_audit_logs(created_at DESC
 **File:** `services/api-backend/routes/admin/audit.js`
 
 **Features:**
+
 - CSV format export
 - All filtering options from list endpoint
 - Proper CSV escaping (quotes, commas, newlines)
@@ -125,6 +130,7 @@ CREATE INDEX idx_admin_audit_logs_created_at ON admin_audit_logs(created_at DESC
 - Content-Disposition header for download
 
 **CSV Columns:**
+
 1. Log ID
 2. Timestamp
 3. Admin User ID
@@ -200,21 +206,25 @@ router.use('/audit', adminAuditRoutes);
 The following action types are logged throughout the system:
 
 ### User Management
+
 - `user_suspended` - User account suspended
 - `user_reactivated` - User account reactivated
 - `user_deleted` - User account permanently deleted
 
 ### Subscription Management
+
 - `subscription_tier_changed` - Subscription tier modified
 - `subscription_upgraded` - Subscription upgraded to higher tier
 - `subscription_downgraded` - Subscription downgraded to lower tier
 - `subscription_cancelled` - Subscription cancelled
 
 ### Payment Management
+
 - `refund_processed` - Payment refund processed
 - `payment_method_removed` - Payment method removed from account
 
 ### Admin Management
+
 - `admin_role_granted` - Admin role assigned to user
 - `admin_role_revoked` - Admin role revoked from user
 
@@ -225,6 +235,7 @@ The following action types are logged throughout the system:
 ### Database Indexes
 
 All frequently queried columns have indexes:
+
 - `admin_user_id` - For filtering by admin
 - `action` - For filtering by action type
 - `resource_type` - For filtering by resource
@@ -300,6 +311,7 @@ curl -X GET "http://localhost:3001/api/admin/audit/export?startDate=2025-01-01" 
 ### Integration Testing
 
 Test scenarios:
+
 1. ✅ List logs with pagination
 2. ✅ Filter by admin user
 3. ✅ Filter by action type
@@ -383,6 +395,7 @@ Test scenarios:
 ## Support
 
 For questions or issues:
+
 - **Email:** support@cloudtolocalllm.online
 - **Documentation:** https://docs.cloudtolocalllm.online
 - **GitHub:** https://github.com/cloudtolocalllm/cloudtolocalllm
@@ -394,6 +407,7 @@ For questions or issues:
 ### Version 1.0.0 (January 2025)
 
 **Added:**
+
 - ✅ GET /api/admin/audit/logs endpoint
 - ✅ GET /api/admin/audit/logs/:logId endpoint
 - ✅ GET /api/admin/audit/export endpoint
@@ -404,12 +418,14 @@ For questions or issues:
 - ✅ Database schema and indexes
 
 **Security:**
+
 - ✅ Role-based permission checking
 - ✅ Immutable audit log storage
 - ✅ IP address and user agent tracking
 - ✅ Rate limiting
 
 **Documentation:**
+
 - ✅ Full API reference
 - ✅ Quick reference guide
 - ✅ Implementation summary

@@ -17,6 +17,7 @@ This document summarizes the implementation of the Subscription Management API r
 ### 1. List Subscriptions (`GET /api/admin/subscriptions`)
 
 **Features:**
+
 - Pagination with configurable page size (default: 50, max: 200)
 - Filter by subscription tier (free, premium, enterprise)
 - Filter by status (active, canceled, past_due, trialing, incomplete)
@@ -30,6 +31,7 @@ This document summarizes the implementation of the Subscription Management API r
 **Permission:** `view_subscriptions`
 
 **Response Includes:**
+
 - Subscription list with user details
 - Pagination information (page, limit, total count, total pages)
 - Optional upcoming renewals list
@@ -38,6 +40,7 @@ This document summarizes the implementation of the Subscription Management API r
 ### 2. Get Subscription Details (`GET /api/admin/subscriptions/:subscriptionId`)
 
 **Features:**
+
 - Complete subscription information
 - User profile details (email, username, status, account age, last login)
 - Payment history (last 50 transactions)
@@ -56,6 +59,7 @@ This document summarizes the implementation of the Subscription Management API r
 **Permission:** `view_subscriptions`
 
 **Response Includes:**
+
 - Full subscription details with metadata
 - User information
 - Billing cycle calculations
@@ -65,6 +69,7 @@ This document summarizes the implementation of the Subscription Management API r
 ### 3. Update Subscription (`PATCH /api/admin/subscriptions/:subscriptionId`)
 
 **Features:**
+
 - Upgrade or downgrade subscription tier
 - Automatic proration calculation via Stripe
 - Configurable proration behavior:
@@ -79,6 +84,7 @@ This document summarizes the implementation of the Subscription Management API r
 **Permission:** `edit_subscriptions`
 
 **Request Body:**
+
 ```json
 {
   "tier": "enterprise",
@@ -88,12 +94,14 @@ This document summarizes the implementation of the Subscription Management API r
 ```
 
 **Response Includes:**
+
 - Updated subscription details
 - Proration details with line items
 - Next invoice date and amount
 - Success message with tier change summary
 
 **Validations:**
+
 - Required fields (tier, priceId)
 - Valid tier (free, premium, enterprise)
 - Subscription exists
@@ -102,6 +110,7 @@ This document summarizes the implementation of the Subscription Management API r
 ### 4. Cancel Subscription (`POST /api/admin/subscriptions/:subscriptionId/cancel`)
 
 **Features:**
+
 - Immediate cancellation or cancel at period end
 - Required cancellation reason for audit trail
 - Automatic refund eligibility calculation for immediate cancellations
@@ -113,6 +122,7 @@ This document summarizes the implementation of the Subscription Management API r
 **Permission:** `edit_subscriptions`
 
 **Request Body:**
+
 ```json
 {
   "immediate": false,
@@ -121,10 +131,12 @@ This document summarizes the implementation of the Subscription Management API r
 ```
 
 **Cancellation Types:**
+
 - **End of Period** (default): User retains access until current period ends
 - **Immediate**: User access revoked immediately, refund eligibility calculated
 
 **Response Includes:**
+
 - Updated subscription details
 - Cancellation type (immediate or end_of_period)
 - Effective cancellation date
@@ -136,6 +148,7 @@ This document summarizes the implementation of the Subscription Management API r
 - User-friendly message
 
 **Validations:**
+
 - Required cancellation reason
 - Subscription exists
 - Subscription not already canceled
@@ -146,6 +159,7 @@ This document summarizes the implementation of the Subscription Management API r
 ### Database Integration
 
 All routes use the database connection from `req.db` (injected by middleware):
+
 - Parameterized queries for SQL injection prevention
 - Transaction support for data consistency
 - Efficient JOIN queries for related data
@@ -154,6 +168,7 @@ All routes use the database connection from `req.db` (injected by middleware):
 ### Service Integration
 
 Routes integrate with existing services:
+
 - **SubscriptionService** - Stripe subscription management
   - `updateSubscription()` - Update subscription tier with proration
   - `cancelSubscription()` - Cancel subscription via Stripe
@@ -167,6 +182,7 @@ Routes integrate with existing services:
 ### Error Handling
 
 Consistent error response format:
+
 ```json
 {
   "success": false,
@@ -179,6 +195,7 @@ Consistent error response format:
 ```
 
 **Error Codes:**
+
 - `SUBSCRIPTION_LIST_FAILED` - Failed to retrieve subscriptions list
 - `SUBSCRIPTION_NOT_FOUND` - Subscription not found
 - `SUBSCRIPTION_DETAILS_FAILED` - Failed to retrieve subscription details
@@ -193,6 +210,7 @@ Consistent error response format:
 ### Logging
 
 Comprehensive logging using Winston logger:
+
 - Info level for successful operations
 - Error level for failures with stack traces
 - Includes admin user ID, subscription ID, and operation details
@@ -238,6 +256,7 @@ All subscription operations are synchronized with Stripe:
 ## Testing Recommendations
 
 ### Unit Tests
+
 - Test pagination logic
 - Test filtering and sorting
 - Test input validation
@@ -246,6 +265,7 @@ All subscription operations are synchronized with Stripe:
 - Test refund eligibility calculations
 
 ### Integration Tests
+
 - Test with Stripe test mode
 - Test subscription tier changes
 - Test immediate and end-of-period cancellations
@@ -254,7 +274,9 @@ All subscription operations are synchronized with Stripe:
 - Test permission checking
 
 ### Test Data
+
 Use seed data from `database/seeds/001_admin_center_dev_data.sql`:
+
 - Test subscriptions with various tiers and statuses
 - Test users with different subscription states
 - Test payment transactions for history
@@ -318,6 +340,7 @@ Potential improvements for future iterations:
 ## Support
 
 For issues or questions:
+
 - Admin Center Design: `.kiro/specs/admin-center/design.md`
 - Admin Center Requirements: `.kiro/specs/admin-center/requirements.md`
 - Admin Center Tasks: `.kiro/specs/admin-center/tasks.md`
@@ -328,6 +351,7 @@ For issues or questions:
 The Subscription Management API routes provide comprehensive subscription management capabilities for the Admin Center. All four planned endpoints have been successfully implemented with robust error handling, comprehensive audit logging, and seamless Stripe integration.
 
 **Next Steps:**
+
 - Implement Reporting Routes (Task 7)
 - Implement Audit Log Routes (Task 8)
 - Implement Admin Management Routes (Task 9)

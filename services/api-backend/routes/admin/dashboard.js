@@ -1,6 +1,6 @@
 /**
  * Admin Dashboard Metrics API Routes
- * 
+ *
  * Provides dashboard metrics and statistics for the Admin Center:
  * - Total registered users
  * - Active users (last 30 days)
@@ -9,7 +9,7 @@
  * - Monthly recurring revenue (MRR)
  * - Total revenue (current month)
  * - Recent payment transactions
- * 
+ *
  * Security Features:
  * - Admin authentication required
  * - Comprehensive audit logging
@@ -27,7 +27,7 @@ const router = express.Router();
 /**
  * GET /api/admin/dashboard/metrics
  * Get comprehensive dashboard metrics for Admin Center
- * 
+ *
  * Returns:
  * - Total registered users
  * - Active users (last 30 days)
@@ -36,7 +36,7 @@ const router = express.Router();
  * - Monthly recurring revenue (MRR)
  * - Total revenue (current month)
  * - Recent payment transactions (last 10)
- * 
+ *
  * Requirements: 2, 11
  */
 router.get('/metrics', adminReadOnlyLimiter, adminAuth(), async (req, res) => {
@@ -52,7 +52,15 @@ router.get('/metrics', adminReadOnlyLimiter, adminAuth(), async (req, res) => {
     const now = new Date();
     const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
     const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-    const currentMonthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+    const currentMonthEnd = new Date(
+      now.getFullYear(),
+      now.getMonth() + 1,
+      0,
+      23,
+      59,
+      59,
+      999
+    );
 
     // 1. Get total registered users
     const totalUsersQuery = `
@@ -69,7 +77,9 @@ router.get('/metrics', adminReadOnlyLimiter, adminAuth(), async (req, res) => {
       FROM user_sessions
       WHERE last_activity >= $1
     `;
-    const activeUsersResult = await pool.query(activeUsersQuery, [thirtyDaysAgo]);
+    const activeUsersResult = await pool.query(activeUsersQuery, [
+      thirtyDaysAgo,
+    ]);
     const activeUsers = parseInt(activeUsersResult.rows[0].active);
 
     // 3. Get new user registrations (current month)
@@ -79,7 +89,10 @@ router.get('/metrics', adminReadOnlyLimiter, adminAuth(), async (req, res) => {
       WHERE created_at >= $1 AND created_at <= $2
         AND deleted_at IS NULL
     `;
-    const newUsersResult = await pool.query(newUsersQuery, [currentMonthStart, currentMonthEnd]);
+    const newUsersResult = await pool.query(newUsersQuery, [
+      currentMonthStart,
+      currentMonthEnd,
+    ]);
     const newUsers = parseInt(newUsersResult.rows[0].new_users);
 
     // 4. Get subscription tier distribution
@@ -94,14 +107,14 @@ router.get('/metrics', adminReadOnlyLimiter, adminAuth(), async (req, res) => {
       ORDER BY tier
     `;
     const tierDistributionResult = await pool.query(tierDistributionQuery);
-    
+
     const tierDistribution = {
       free: 0,
       premium: 0,
       enterprise: 0,
     };
-    
-    tierDistributionResult.rows.forEach(row => {
+
+    tierDistributionResult.rows.forEach((row) => {
       tierDistribution[row.tier] = parseInt(row.count);
     });
 
@@ -112,9 +125,9 @@ router.get('/metrics', adminReadOnlyLimiter, adminAuth(), async (req, res) => {
       enterprise: 29.99,
     };
 
-    const mrr = 
-      (tierDistribution.premium * tierPricing.premium) +
-      (tierDistribution.enterprise * tierPricing.enterprise);
+    const mrr =
+      tierDistribution.premium * tierPricing.premium +
+      tierDistribution.enterprise * tierPricing.enterprise;
 
     // 6. Get total revenue (current month)
     const revenueQuery = `
@@ -126,7 +139,10 @@ router.get('/metrics', adminReadOnlyLimiter, adminAuth(), async (req, res) => {
         AND created_at >= $1
         AND created_at <= $2
     `;
-    const revenueResult = await pool.query(revenueQuery, [currentMonthStart, currentMonthEnd]);
+    const revenueResult = await pool.query(revenueQuery, [
+      currentMonthStart,
+      currentMonthEnd,
+    ]);
     const totalRevenue = parseFloat(revenueResult.rows[0].total_revenue);
     const transactionCount = parseInt(revenueResult.rows[0].transaction_count);
 
@@ -158,24 +174,31 @@ router.get('/metrics', adminReadOnlyLimiter, adminAuth(), async (req, res) => {
         total: totalUsers,
         active: activeUsers,
         newThisMonth: newUsers,
-        activePercentage: totalUsers > 0 ? ((activeUsers / totalUsers) * 100).toFixed(2) : 0,
+        activePercentage:
+          totalUsers > 0 ? ((activeUsers / totalUsers) * 100).toFixed(2) : 0,
       },
       subscriptions: {
         distribution: tierDistribution,
         totalSubscribed: tierDistribution.premium + tierDistribution.enterprise,
-        conversionRate: totalUsers > 0 
-          ? (((tierDistribution.premium + tierDistribution.enterprise) / totalUsers) * 100).toFixed(2)
-          : 0,
+        conversionRate:
+          totalUsers > 0
+            ? (
+                ((tierDistribution.premium + tierDistribution.enterprise) /
+                  totalUsers) *
+                100
+              ).toFixed(2)
+            : 0,
       },
       revenue: {
         mrr: mrr.toFixed(2),
         currentMonth: totalRevenue.toFixed(2),
         transactionCount,
-        averageTransactionValue: transactionCount > 0 
-          ? (totalRevenue / transactionCount).toFixed(2)
-          : 0,
+        averageTransactionValue:
+          transactionCount > 0
+            ? (totalRevenue / transactionCount).toFixed(2)
+            : 0,
       },
-      recentTransactions: recentTransactions.map(tx => ({
+      recentTransactions: recentTransactions.map((tx) => ({
         id: tx.id,
         userId: tx.user_id,
         userEmail: tx.user_email,
@@ -199,20 +222,22 @@ router.get('/metrics', adminReadOnlyLimiter, adminAuth(), async (req, res) => {
       },
     };
 
-    logger.info('✅ [AdminDashboard] Dashboard metrics retrieved successfully', {
-      adminUserId: req.adminUser.id,
-      totalUsers,
-      activeUsers,
-      mrr: mrr.toFixed(2),
-      currentMonthRevenue: totalRevenue.toFixed(2),
-    });
+    logger.info(
+      '✅ [AdminDashboard] Dashboard metrics retrieved successfully',
+      {
+        adminUserId: req.adminUser.id,
+        totalUsers,
+        activeUsers,
+        mrr: mrr.toFixed(2),
+        currentMonthRevenue: totalRevenue.toFixed(2),
+      }
+    );
 
     res.json({
       success: true,
       data: metrics,
       timestamp: new Date().toISOString(),
     });
-
   } catch (error) {
     logger.error('🔴 [AdminDashboard] Failed to retrieve dashboard metrics', {
       adminUserId: req.adminUser?.id,

@@ -1,12 +1,12 @@
 /**
  * HTTPS Enforcement Middleware
- * 
+ *
  * Provides HTTPS enforcement and security headers:
  * - Redirects HTTP to HTTPS in production
  * - Sets secure cookie flags
  * - Enables HSTS (HTTP Strict Transport Security) headers
  * - Configures additional security headers
- * 
+ *
  * Requirement 15: Security and Data Protection
  */
 
@@ -26,16 +26,17 @@ export function enforceHttps(req, res, next) {
   }
 
   // Check if request is secure
-  const isSecure = req.secure || 
-                   req.headers['x-forwarded-proto'] === 'https' ||
-                   req.headers['x-forwarded-ssl'] === 'on';
+  const isSecure =
+    req.secure ||
+    req.headers['x-forwarded-proto'] === 'https' ||
+    req.headers['x-forwarded-ssl'] === 'on';
 
   if (!isSecure) {
     // Construct HTTPS URL
     const httpsUrl = `https://${req.hostname}${req.url}`;
-    
+
     console.warn(`HTTP request redirected to HTTPS: ${req.method} ${req.url}`);
-    
+
     // Redirect to HTTPS with 301 (permanent redirect)
     return res.redirect(301, httpsUrl);
   }
@@ -70,7 +71,7 @@ export function setSecureCookieOptions(req, res, next) {
   // Override res.cookie to add secure flags
   const originalCookie = res.cookie.bind(res);
 
-  res.cookie = function(name, value, options = {}) {
+  res.cookie = function (name, value, options = {}) {
     // In production, always set secure flag
     if (process.env.NODE_ENV !== 'development') {
       options.secure = true;
@@ -125,16 +126,17 @@ export function requireHttps(req, res, next) {
   }
 
   // Check if request is secure
-  const isSecure = req.secure || 
-                   req.headers['x-forwarded-proto'] === 'https' ||
-                   req.headers['x-forwarded-ssl'] === 'on';
+  const isSecure =
+    req.secure ||
+    req.headers['x-forwarded-proto'] === 'https' ||
+    req.headers['x-forwarded-ssl'] === 'on';
 
   if (!isSecure) {
     console.error(`HTTPS required: ${req.method} ${req.url} from ${req.ip}`);
     return res.status(403).json({
       error: 'HTTPS required',
       code: 'HTTPS_REQUIRED',
-      message: 'This endpoint requires a secure HTTPS connection'
+      message: 'This endpoint requires a secure HTTPS connection',
     });
   }
 
@@ -161,16 +163,19 @@ export function httpsEnforcement(req, res, next) {
  */
 export function adminHttpsEnforcement(req, res, next) {
   // Always require HTTPS for admin endpoints, even in development
-  const isSecure = req.secure || 
-                   req.headers['x-forwarded-proto'] === 'https' ||
-                   req.headers['x-forwarded-ssl'] === 'on';
+  const isSecure =
+    req.secure ||
+    req.headers['x-forwarded-proto'] === 'https' ||
+    req.headers['x-forwarded-ssl'] === 'on';
 
   if (!isSecure && process.env.NODE_ENV !== 'development') {
-    console.error(`Admin endpoint requires HTTPS: ${req.method} ${req.url} from ${req.ip}`);
+    console.error(
+      `Admin endpoint requires HTTPS: ${req.method} ${req.url} from ${req.ip}`
+    );
     return res.status(403).json({
       error: 'HTTPS required for admin access',
       code: 'ADMIN_HTTPS_REQUIRED',
-      message: 'Admin endpoints require a secure HTTPS connection'
+      message: 'Admin endpoints require a secure HTTPS connection',
     });
   }
 
@@ -187,7 +192,10 @@ export function adminHttpsEnforcement(req, res, next) {
   res.setHeader('X-Frame-Options', 'DENY');
   res.setHeader('X-XSS-Protection', '1; mode=block');
   res.setHeader('Referrer-Policy', 'no-referrer');
-  res.setHeader('Permissions-Policy', 'geolocation=(), microphone=(), camera=(), payment=()');
+  res.setHeader(
+    'Permissions-Policy',
+    'geolocation=(), microphone=(), camera=(), payment=()'
+  );
 
   // Set secure cookie options
   setSecureCookieOptions(req, res, next);
@@ -198,8 +206,9 @@ export function adminHttpsEnforcement(req, res, next) {
  * @returns {boolean} - True if secure
  */
 export function isSecureContext() {
-  return process.env.NODE_ENV === 'production' || 
-         process.env.FORCE_HTTPS === 'true';
+  return (
+    process.env.NODE_ENV === 'production' || process.env.FORCE_HTTPS === 'true'
+  );
 }
 
 /**

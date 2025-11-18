@@ -14,9 +14,11 @@ This migration creates the database schema for the email relay service and DNS c
 ## Tables Created
 
 ### 1. `email_configurations`
+
 Stores email provider configuration including Google Workspace OAuth tokens and SMTP relay credentials.
 
 **Key Columns:**
+
 - `id` - UUID primary key
 - `user_id` - Reference to users table
 - `provider` - Email provider type (google_workspace, smtp_relay, sendgrid)
@@ -30,6 +32,7 @@ Stores email provider configuration including Google Workspace OAuth tokens and 
 - `created_by`, `updated_by` - Audit references
 
 **Indexes:**
+
 - `idx_email_configurations_user_id` - For user lookups
 - `idx_email_configurations_provider` - For provider filtering
 - `idx_email_configurations_is_active` - For active config queries
@@ -37,9 +40,11 @@ Stores email provider configuration including Google Workspace OAuth tokens and 
 - `idx_email_configurations_created_at` - For time-based queries
 
 ### 2. `dns_records`
+
 Stores DNS records managed via Cloudflare or other DNS providers.
 
 **Key Columns:**
+
 - `id` - UUID primary key
 - `user_id` - Reference to users table
 - `provider` - DNS provider (cloudflare, route53, azure_dns)
@@ -54,6 +59,7 @@ Stores DNS records managed via Cloudflare or other DNS providers.
 - `created_at`, `updated_at` - Timestamps
 
 **Indexes:**
+
 - `idx_dns_records_user_id` - For user lookups
 - `idx_dns_records_provider` - For provider filtering
 - `idx_dns_records_record_type` - For record type queries
@@ -62,9 +68,11 @@ Stores DNS records managed via Cloudflare or other DNS providers.
 - `idx_dns_records_created_at` - For time-based queries
 
 ### 3. `email_queue`
+
 Stores pending and processed emails for delivery tracking.
 
 **Key Columns:**
+
 - `id` - UUID primary key
 - `user_id` - Reference to users table
 - `recipient_email`, `recipient_name` - Email recipient info
@@ -79,6 +87,7 @@ Stores pending and processed emails for delivery tracking.
 - `created_at`, `updated_at` - Timestamps
 
 **Indexes:**
+
 - `idx_email_queue_user_id` - For user lookups
 - `idx_email_queue_status` - For status filtering
 - `idx_email_queue_recipient_email` - For recipient lookups
@@ -87,9 +96,11 @@ Stores pending and processed emails for delivery tracking.
 - `idx_email_queue_status_created` - Composite index for status + time queries
 
 ### 4. `email_delivery_logs`
+
 Stores detailed delivery logs for auditing and troubleshooting.
 
 **Key Columns:**
+
 - `id` - UUID primary key
 - `email_queue_id` - Reference to email_queue
 - `user_id` - Reference to users table
@@ -101,15 +112,18 @@ Stores detailed delivery logs for auditing and troubleshooting.
 - `created_at` - Timestamp
 
 **Indexes:**
+
 - `idx_email_delivery_logs_email_queue_id` - For email lookups
 - `idx_email_delivery_logs_user_id` - For user lookups
 - `idx_email_delivery_logs_event_type` - For event type filtering
 - `idx_email_delivery_logs_created_at` - For time-based queries
 
 ### 5. `google_workspace_quota`
+
 Tracks Google Workspace API quota usage and limits.
 
 **Key Columns:**
+
 - `id` - UUID primary key
 - `user_id` - Reference to users table
 - `daily_quota_limit`, `daily_quota_used` - Daily quota tracking
@@ -121,14 +135,17 @@ Tracks Google Workspace API quota usage and limits.
 - `created_at`, `updated_at` - Timestamps
 
 **Indexes:**
+
 - `idx_google_workspace_quota_user_id` - For user lookups
 - `idx_google_workspace_quota_is_quota_exceeded` - For quota status queries
 - `idx_google_workspace_quota_updated_at` - For time-based queries
 
 ### 6. `email_templates`
+
 Stores email templates for different notification types.
 
 **Key Columns:**
+
 - `id` - UUID primary key
 - `user_id` - Reference to users table (NULL for system templates)
 - `name` - Template name
@@ -142,6 +159,7 @@ Stores email templates for different notification types.
 - `created_by`, `updated_by` - Audit references
 
 **Indexes:**
+
 - `idx_email_templates_user_id` - For user lookups
 - `idx_email_templates_name` - For template name lookups
 - `idx_email_templates_is_active` - For active template queries
@@ -150,15 +168,19 @@ Stores email templates for different notification types.
 ## Triggers and Functions
 
 ### 1. `log_email_config_changes()`
+
 Logs email configuration changes to the audit_logs table.
 
 ### 2. `log_dns_record_changes()`
+
 Logs DNS record changes to the audit_logs table.
 
 ### 3. `update_updated_at_column()`
+
 Generic function to automatically update the `updated_at` timestamp on record modifications.
 
 **Triggers using this function:**
+
 - `email_configurations_updated_at_trigger`
 - `dns_records_updated_at_trigger`
 - `email_queue_updated_at_trigger`
@@ -176,18 +198,21 @@ This migration addresses the following requirements:
 ## Usage
 
 ### Apply Migration
+
 ```bash
 cd services/api-backend
 node database/migrations/run-migration.js up 003
 ```
 
 ### Rollback Migration
+
 ```bash
 cd services/api-backend
 node database/migrations/run-migration.js down 003
 ```
 
 ### Check Migration Status
+
 ```bash
 cd services/api-backend
 node database/migrations/run-migration.js status
@@ -196,6 +221,7 @@ node database/migrations/run-migration.js status
 ## Data Encryption
 
 The migration includes encrypted fields for sensitive data:
+
 - `google_oauth_token_encrypted` - Google OAuth access token
 - `google_oauth_refresh_token_encrypted` - Google OAuth refresh token
 - `google_service_account_encrypted` - Google service account JSON
@@ -206,6 +232,7 @@ These fields should be encrypted using AES-256-GCM before storage and decrypted 
 ## Performance Considerations
 
 All tables include strategic indexes on:
+
 - Foreign keys (user_id)
 - Status columns for filtering
 - Timestamp columns for time-range queries
@@ -216,10 +243,12 @@ The `email_queue` table includes a composite index on `(status, created_at)` for
 ## Audit Logging
 
 Configuration changes are automatically logged to the `audit_logs` table via triggers:
+
 - Email configuration changes (create/update)
 - DNS record changes (create/update/delete)
 
 All changes include:
+
 - User ID (who made the change)
 - Action type (CREATE, UPDATE, DELETE)
 - Resource type and ID
@@ -240,23 +269,29 @@ After applying this migration:
 ## Troubleshooting
 
 ### Migration fails with "relation already exists"
+
 The migration may have been partially applied. Check the database state:
+
 ```sql
 SELECT * FROM schema_migrations WHERE version = '003';
 ```
 
 If the migration is marked as applied but tables don't exist, manually clean up:
+
 ```bash
 node database/migrations/run-migration.js down 003
 ```
 
 Then reapply:
+
 ```bash
 node database/migrations/run-migration.js up 003
 ```
 
 ### Cannot connect to database
+
 Ensure PostgreSQL is running and environment variables are set:
+
 ```bash
 export PGHOST=localhost
 export PGPORT=5432
@@ -266,12 +301,15 @@ export PGPASSWORD=yourpassword
 ```
 
 ### Trigger function errors
+
 If trigger functions fail to create, ensure the `audit_logs` table exists:
+
 ```sql
 SELECT * FROM information_schema.tables WHERE table_name = 'audit_logs';
 ```
 
 If it doesn't exist, run the main schema migration first:
+
 ```bash
 node database/migrations/run-migration.js up 001
 ```

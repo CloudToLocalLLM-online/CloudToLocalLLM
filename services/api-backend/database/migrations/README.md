@@ -5,6 +5,7 @@ This directory contains database migration scripts for the Admin Center feature.
 ## Overview
 
 Migrations are versioned SQL scripts that modify the database schema. Each migration has:
+
 - A forward migration file (e.g., `001_admin_center_schema.sql`)
 - A rollback file (e.g., `001_admin_center_schema_rollback.sql`)
 - A tracking entry in the `schema_migrations` table
@@ -12,7 +13,9 @@ Migrations are versioned SQL scripts that modify the database schema. Each migra
 ## Migration Files
 
 ### 001_admin_center_schema.sql
+
 Creates the core admin center tables:
+
 - `subscriptions` - User subscription information
 - `payment_transactions` - Payment transaction records
 - `payment_methods` - User payment method details
@@ -26,6 +29,7 @@ Creates the core admin center tables:
 
 1. Ensure PostgreSQL is running and accessible
 2. Set environment variables for database connection:
+
    ```bash
    export DATABASE_URL="postgresql://user:password@host:port/database"
    # OR
@@ -45,16 +49,19 @@ Creates the core admin center tables:
 ### Running Migrations
 
 #### Apply a Migration
+
 ```bash
 node services/api-backend/database/migrations/run-migration.js up 001
 ```
 
 #### Rollback a Migration
+
 ```bash
 node services/api-backend/database/migrations/run-migration.js down 001
 ```
 
 #### Check Migration Status
+
 ```bash
 node services/api-backend/database/migrations/run-migration.js status
 ```
@@ -64,11 +71,13 @@ node services/api-backend/database/migrations/run-migration.js status
 You can also run migrations manually using `psql`:
 
 #### Apply Migration
+
 ```bash
 psql -h localhost -U postgres -d cloudtolocalllm -f services/api-backend/database/migrations/001_admin_center_schema.sql
 ```
 
 #### Rollback Migration
+
 ```bash
 psql -h localhost -U postgres -d cloudtolocalllm -f services/api-backend/database/migrations/001_admin_center_schema_rollback.sql
 ```
@@ -82,6 +91,7 @@ SELECT * FROM schema_migrations ORDER BY applied_at DESC;
 ```
 
 Columns:
+
 - `version` - Migration version (e.g., '001')
 - `name` - Migration name
 - `applied_at` - When the migration was applied
@@ -90,11 +100,13 @@ Columns:
 ## Creating New Migrations
 
 1. Create a new migration file with the next version number:
+
    ```
    002_feature_name.sql
    ```
 
 2. Create a corresponding rollback file:
+
    ```
    002_feature_name_rollback.sql
    ```
@@ -107,13 +119,14 @@ Columns:
    - Include rollback logic in the rollback file
 
 4. Test the migration:
+
    ```bash
    # Apply
    node run-migration.js up 002
-   
+
    # Verify
    node run-migration.js status
-   
+
    # Rollback (if needed)
    node run-migration.js down 002
    ```
@@ -130,19 +143,25 @@ Columns:
 ## Troubleshooting
 
 ### Migration fails with "relation already exists"
+
 The migration may have been partially applied. Check the database state and either:
+
 - Manually clean up the partial migration
 - Use the rollback script
 - Make the migration idempotent with `IF NOT EXISTS`
 
 ### Cannot connect to database
+
 Check your environment variables and ensure PostgreSQL is running:
+
 ```bash
 psql -h $PGHOST -U $PGUSER -d $PGDATABASE -c "SELECT version();"
 ```
 
 ### Migration tracking table not found
+
 Run the migration runner once to create the tracking table:
+
 ```bash
 node run-migration.js status
 ```
@@ -152,6 +171,7 @@ node run-migration.js status
 For production deployments:
 
 1. **Backup the database first**:
+
    ```bash
    pg_dump -h $PGHOST -U $PGUSER -d $PGDATABASE > backup_$(date +%Y%m%d_%H%M%S).sql
    ```
@@ -161,11 +181,13 @@ For production deployments:
 3. **Run migrations during maintenance window** if possible
 
 4. **Monitor the migration**:
+
    ```bash
    node run-migration.js up 001 2>&1 | tee migration.log
    ```
 
 5. **Verify the migration**:
+
    ```bash
    node run-migration.js status
    psql -h $PGHOST -U $PGUSER -d $PGDATABASE -c "\dt"
@@ -176,6 +198,7 @@ For production deployments:
 ## Support
 
 For issues or questions about migrations, refer to:
+
 - Admin Center Design Document: `.kiro/specs/admin-center/design.md`
 - Admin Center Requirements: `.kiro/specs/admin-center/requirements.md`
 - Database Schema: `services/api-backend/database/schema.pg.sql`

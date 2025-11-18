@@ -11,6 +11,7 @@ The seed runner includes safety checks to prevent execution in production enviro
 ## Overview
 
 Seed scripts populate the database with realistic test data including:
+
 - Test users with different subscription tiers
 - Sample payment transactions
 - Payment methods
@@ -21,7 +22,9 @@ Seed scripts populate the database with realistic test data including:
 ## Seed Files
 
 ### 001_admin_center_dev_data.sql
+
 Creates comprehensive test data for the admin center:
+
 - **5 test users**: free, premium, enterprise, trial, and canceled subscription users
 - **5 subscriptions**: various tiers and statuses
 - **5 payment transactions**: succeeded, failed, pending, and refunded
@@ -35,11 +38,13 @@ Creates comprehensive test data for the admin center:
 ### Prerequisites
 
 1. Ensure the database migrations have been applied first:
+
    ```bash
    node services/api-backend/database/migrations/run-migration.js up 001
    ```
 
 2. Set environment variables for database connection:
+
    ```bash
    export DATABASE_URL="postgresql://user:password@host:port/database"
    # OR
@@ -62,6 +67,7 @@ node services/api-backend/database/seeds/run-seed.js apply 001
 ```
 
 This will:
+
 - Insert all test data
 - Display a summary of inserted records
 - Run in a transaction (rollback on error)
@@ -75,6 +81,7 @@ node services/api-backend/database/seeds/run-seed.js clean
 ```
 
 This will:
+
 - Delete all test users (email like 'test.%@example.com')
 - Delete all related subscriptions, transactions, and audit logs
 - Run in a transaction (rollback on error)
@@ -91,21 +98,21 @@ psql -h localhost -U postgres -d cloudtolocalllm -f services/api-backend/databas
 
 ### Test Users
 
-| Email | Subscription Tier | Status | Purpose |
-|-------|------------------|--------|---------|
-| test.free@example.com | Free | Active | Test free tier features |
-| test.premium@example.com | Premium | Active | Test premium features |
-| test.enterprise@example.com | Enterprise | Active | Test enterprise features |
-| test.trial@example.com | Premium | Trialing | Test trial period |
-| test.canceled@example.com | Premium | Canceled | Test canceled subscriptions |
+| Email                       | Subscription Tier | Status   | Purpose                     |
+| --------------------------- | ----------------- | -------- | --------------------------- |
+| test.free@example.com       | Free              | Active   | Test free tier features     |
+| test.premium@example.com    | Premium           | Active   | Test premium features       |
+| test.enterprise@example.com | Enterprise        | Active   | Test enterprise features    |
+| test.trial@example.com      | Premium           | Trialing | Test trial period           |
+| test.canceled@example.com   | Premium           | Canceled | Test canceled subscriptions |
 
 ### Test Admin Users
 
-| Email | Role | Purpose |
-|-------|------|---------|
-| cmaltais@cloudtolocalllm.online | Super Admin | Full admin access |
-| test.support@example.com | Support Admin | Test support admin permissions |
-| test.finance@example.com | Finance Admin | Test finance admin permissions |
+| Email                           | Role          | Purpose                        |
+| ------------------------------- | ------------- | ------------------------------ |
+| cmaltais@cloudtolocalllm.online | Super Admin   | Full admin access              |
+| test.support@example.com        | Support Admin | Test support admin permissions |
+| test.finance@example.com        | Finance Admin | Test finance admin permissions |
 
 ### Test Payment Transactions
 
@@ -141,6 +148,7 @@ psql -h localhost -U postgres -d cloudtolocalllm -c "SELECT u.email, ar.role, ar
 ## Development Workflow
 
 ### Initial Setup
+
 ```bash
 # 1. Apply migrations
 node services/api-backend/database/migrations/run-migration.js up 001
@@ -153,6 +161,7 @@ node services/api-backend/database/seeds/run-seed.js apply 001 | grep "Database 
 ```
 
 ### Reset Database
+
 ```bash
 # 1. Clean seed data
 node services/api-backend/database/seeds/run-seed.js clean
@@ -168,6 +177,7 @@ node services/api-backend/database/seeds/run-seed.js apply 001
 ```
 
 ### Update Seed Data
+
 ```bash
 # 1. Clean existing seed data
 node services/api-backend/database/seeds/run-seed.js clean
@@ -179,6 +189,7 @@ node services/api-backend/database/seeds/run-seed.js apply 001
 ## Creating New Seed Files
 
 1. Create a new seed file with the next version number:
+
    ```
    002_feature_name_data.sql
    ```
@@ -209,30 +220,38 @@ node services/api-backend/database/seeds/run-seed.js apply 001
 ## Troubleshooting
 
 ### Seed fails with "foreign key violation"
+
 Ensure migrations are applied first:
+
 ```bash
 node services/api-backend/database/migrations/run-migration.js status
 ```
 
 ### Seed fails with "duplicate key value"
+
 The seed data may already exist. Clean and reapply:
+
 ```bash
 node run-seed.js clean
 node run-seed.js apply 001
 ```
 
 ### Cannot connect to database
+
 Check your environment variables and ensure PostgreSQL is running:
+
 ```bash
 psql -h $PGHOST -U $PGUSER -d $PGDATABASE -c "SELECT version();"
 ```
 
 ### Production safety check fails
+
 This is intentional! Never run seed scripts in production. If you need test data in staging, ensure `NODE_ENV` is not set to 'production'.
 
 ## Support
 
 For issues or questions about seed data, refer to:
+
 - Admin Center Design Document: `.kiro/specs/admin-center/design.md`
 - Admin Center Requirements: `.kiro/specs/admin-center/requirements.md`
 - Migration Documentation: `services/api-backend/database/migrations/README.md`

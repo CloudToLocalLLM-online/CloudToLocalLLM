@@ -21,6 +21,7 @@ Provides comprehensive user management capabilities including:
 - **Reactivate Account** (`POST /:userId/reactivate`) - Reactivate suspended user account
 
 **Features:**
+
 - Pagination support (50 users per page, max 100)
 - Search by email, username, user ID, or Auth0 ID
 - Filter by subscription tier, account status, and date range
@@ -31,6 +32,7 @@ Provides comprehensive user management capabilities including:
 - Role-based permission checking
 
 **Permissions Required:**
+
 - `view_users` - View user list and details
 - `edit_users` - Update user subscriptions
 - `suspend_users` - Suspend and reactivate accounts
@@ -47,6 +49,7 @@ Provides comprehensive subscription management capabilities including:
 - **Cancel Subscription** (`POST /subscriptions/:subscriptionId/cancel`) - Cancel subscription (immediate or end-of-period)
 
 **Features:**
+
 - Pagination support (50 subscriptions per page, max 200)
 - Filter by tier, status, and user ID
 - Include upcoming renewals (next 7 days)
@@ -59,6 +62,7 @@ Provides comprehensive subscription management capabilities including:
 - Integration with Stripe for subscription management
 
 **Permissions Required:**
+
 - `view_subscriptions` - View subscription list and details
 - `edit_subscriptions` - Update and cancel subscriptions
 
@@ -76,6 +80,7 @@ Provides comprehensive payment and transaction management capabilities including
 - **Get Payment Methods** (`GET /methods/:userId`) - View user payment methods (masked)
 
 **Features:**
+
 - Pagination support (100 transactions per page, max 200)
 - Filter by user ID, status, date range, and amount
 - Sort by created_at, amount, or status
@@ -87,6 +92,7 @@ Provides comprehensive payment and transaction management capabilities including
 - Usage statistics for payment methods
 
 **Permissions Required:**
+
 - `view_payments` - View transactions and payment methods
 - `process_refunds` - Process refunds
 
@@ -104,6 +110,7 @@ Provides comprehensive subscription management capabilities including:
 - **Cancel Subscription** (`POST /subscriptions/:subscriptionId/cancel`) - Cancel subscription (immediate or end-of-period)
 
 **Features:**
+
 - Pagination support (50 subscriptions per page, max 200)
 - Filter by tier, status, and user ID
 - Include upcoming renewals (next 7 days)
@@ -116,6 +123,7 @@ Provides comprehensive subscription management capabilities including:
 - Integration with Stripe for subscription management
 
 **Permissions Required:**
+
 - `view_subscriptions` - View subscription list and details
 - `edit_subscriptions` - Update and cancel subscriptions
 
@@ -132,7 +140,7 @@ All admin routes use the `adminAuth` middleware which:
 
 ### Admin Roles
 
-- **Super Admin**: All permissions (*)
+- **Super Admin**: All permissions (\*)
 - **Support Admin**: view_users, edit_users, suspend_users, view_sessions, terminate_sessions, view_payments, view_audit_logs
 - **Finance Admin**: view_users, view_payments, process_refunds, view_subscriptions, edit_subscriptions, view_reports, export_reports, view_audit_logs
 
@@ -172,6 +180,7 @@ All routes follow a consistent error response format:
 ```
 
 Common error codes:
+
 - `NO_TOKEN` - No JWT token provided
 - `INVALID_TOKEN` - Invalid or expired JWT token
 - `ADMIN_ACCESS_REQUIRED` - User does not have admin role
@@ -337,11 +346,13 @@ curl -X GET "https://api.cloudtolocalllm.online/api/admin/reports/revenue?startD
 ### Development Environment
 
 1. Apply database migration:
+
    ```bash
    node services/api-backend/database/migrations/run-migration.js up 001
    ```
 
 2. Apply seed data:
+
    ```bash
    node services/api-backend/database/seeds/run-seed.js apply 001
    ```
@@ -351,6 +362,7 @@ curl -X GET "https://api.cloudtolocalllm.online/api/admin/reports/revenue?startD
 ### Test Data
 
 The seed data creates:
+
 - 5 test users with different subscription tiers
 - 3 admin users (super admin, support admin, finance admin)
 - Sample payment transactions and subscriptions
@@ -367,6 +379,7 @@ Provides comprehensive audit trail functionality for all administrative actions 
 - **Export Audit Logs** (`GET /audit/export`) - Export audit logs to CSV format
 
 **Features:**
+
 - Pagination support (100 logs per page, max 200)
 - Filter by admin user, action type, resource type, affected user, and date range
 - Sort by created_at, action, resource_type, admin_user_id
@@ -378,6 +391,7 @@ Provides comprehensive audit trail functionality for all administrative actions 
 - JSON details field for additional context
 
 **Permissions Required:**
+
 - `view_audit_logs` - View audit log entries
 - `export_audit_logs` - Export audit logs to CSV
 
@@ -394,6 +408,7 @@ Provides Super Admin-only endpoints for managing administrator accounts and role
 - **Revoke Admin Role** (`DELETE /admins/:userId/roles/:role`) - Revoke admin role from a user
 
 **Features:**
+
 - Super Admin authentication required for all endpoints
 - Role assignment history tracking
 - Admin activity summary (total actions, last action, recent actions)
@@ -404,9 +419,11 @@ Provides Super Admin-only endpoints for managing administrator accounts and role
 - User search by email for role assignment
 
 **Permissions Required:**
+
 - Super Admin role required (no granular permissions)
 
 **Valid Roles:**
+
 - `support_admin` - User management and support functions
 - `finance_admin` - Financial operations and reporting
 - `super_admin` - Full system access (cannot be assigned via API)
@@ -422,6 +439,7 @@ Provides comprehensive dashboard metrics for the Admin Center including:
 - **Get Dashboard Metrics** (`GET /dashboard/metrics`) - Comprehensive metrics for admin dashboard
 
 **Features:**
+
 - Total registered users count
 - Active users (last 30 days)
 - New user registrations (current month)
@@ -434,9 +452,11 @@ Provides comprehensive dashboard metrics for the Admin Center including:
 - Response time < 500ms for typical datasets
 
 **Permissions Required:**
+
 - Any admin role (no specific permissions required)
 
 **Metrics Provided:**
+
 - User statistics (total, active, new, active percentage)
 - Subscription distribution and conversion rate
 - Revenue metrics (MRR, current month, average transaction value)
@@ -454,6 +474,7 @@ Provides financial and subscription reporting capabilities including:
 - **Revenue Report** (`GET /reports/revenue`) - Generate revenue reports with date range filtering
 
 **Features:**
+
 - Date range filtering (up to 1 year)
 - Optional tier-based grouping
 - Total revenue calculation
@@ -463,10 +484,12 @@ Provides financial and subscription reporting capabilities including:
 - Input validation and sanitization
 
 **Permissions Required:**
+
 - `view_reports` - View revenue reports
 - `export_reports` - Export reports (planned)
 
 **Planned Features:**
+
 - Subscription metrics report (MRR, churn, retention)
 - Report export functionality (CSV, PDF)
 - Additional report types
@@ -496,6 +519,7 @@ Planned routes (see `.kiro/specs/admin-center/tasks.md`):
 ## Support
 
 For issues or questions:
+
 - GitHub Issues: https://github.com/imrightguy/CloudToLocalLLM/issues
 - Documentation: `/docs/`
 - Email: support@cloudtolocalllm.online

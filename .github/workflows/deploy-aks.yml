@@ -232,70 +232,35 @@ jobs:
           kubectl wait --for=condition=ready pod -l app.kubernetes.io/instance=cert-manager -n cert-manager --timeout=300s
         fi
         
-        # Get Azure subscription and tenant ID from Azure CLI
-        echo "Getting Azure subscription and tenant information..."
-        AZURE_SUBSCRIPTION_ID=$(az account show --query id -o tsv)
-        AZURE_TENANT_ID=$(az account show --query tenantId -o tsv)
-        
-        echo "Azure Subscription ID: $AZURE_SUBSCRIPTION_ID"
-        echo "Azure Tenant ID: $AZURE_TENANT_ID"
-        
-        # Get or create service principal for DNS management
-        # Use existing service principal from Azure credentials if available
-        if [ -z "${{ secrets.AZURE_CLIENT_ID }}" ]; then
-          echo "⚠️ AZURE_CLIENT_ID not set in secrets, using current Azure CLI identity"
-          AZURE_CLIENT_ID=$(az account show --query user.name -o tsv)
-        else
-          AZURE_CLIENT_ID="${{ secrets.AZURE_CLIENT_ID }}"
+        # Create Cloudflare API token secret for cert-manager
+        echo "Creating Cloudflare API token secret..."
+        if [ -z "${{ secrets.CLOUDFLARE_API_TOKEN }}" ]; then
+          echo "⚠️ CLOUDFLARE_API_TOKEN not set in secrets"
+          echo "Please set CLOUDFLARE_API_TOKEN in GitHub secrets with DNS:Edit permissions"
+          exit 1
         fi
         
-        if [ -z "${{ secrets.AZURE_CLIENT_SECRET }}" ]; then
-          echo "⚠️ AZURE_CLIENT_SECRET not set in secrets - using managed identity or current Azure CLI session"
-          # For managed identity or Azure CLI, secret may not be needed
-          AZURE_CLIENT_SECRET=""
-        else
-          AZURE_CLIENT_SECRET="${{ secrets.AZURE_CLIENT_SECRET }}"
-        fi
+        kubectl create secret generic cloudflare-api-token \
+          --from-literal=api-token="${{ secrets.CLOUDFLARE_API_TOKEN }}" \
+          -n cert-manager \
+          --dry-run=client -o yaml | kubectl apply -f -
         
-        # Create Azure DNS config secret for cert-manager
-        echo "Creating Azure DNS configuration secret..."
-        if [ -n "$AZURE_CLIENT_SECRET" ]; then
-          kubectl create secret generic azure-dns-config \
-            --from-literal=client-id="$AZURE_CLIENT_ID" \
-            --from-literal=client-secret="$AZURE_CLIENT_SECRET" \
-            --from-literal=subscription-id="$AZURE_SUBSCRIPTION_ID" \
-            --from-literal=tenant-id="$AZURE_TENANT_ID" \
-            -n cert-manager \
-            --dry-run=client -o yaml | kubectl apply -f -
-        else
-          echo "⚠️ No client secret provided - using Azure CLI/managed identity authentication"
-          kubectl create secret generic azure-dns-config \
-            --from-literal=client-id="$AZURE_CLIENT_ID" \
-            --from-literal=subscription-id="$AZURE_SUBSCRIPTION_ID" \
-            --from-literal=tenant-id="$AZURE_TENANT_ID" \
-            -n cert-manager \
-            --dry-run=client -o yaml | kubectl apply -f - || true
-        fi
+        echo "✅ Cloudflare API token secret created"
         
-        # Apply cert-manager ClusterIssuers with Azure DNS-01 challenge
+        # Apply cert-manager ClusterIssuers with Cloudflare DNS-01 challenge
         echo "Applying cert-manager ClusterIssuer configuration (staging and production)..."
-        # Replace placeholders with actual values
-        sed -i "s|<AZURE_CLIENT_ID>|$AZURE_CLIENT_ID|g" k8s/cert-manager-azure-dns.yaml
-        sed -i "s|<AZURE_SUBSCRIPTION_ID>|$AZURE_SUBSCRIPTION_ID|g" k8s/cert-manager-azure-dns.yaml
-        sed -i "s|<AZURE_TENANT_ID>|$AZURE_TENANT_ID|g" k8s/cert-manager-azure-dns.yaml
-        kubectl apply -f k8s/cert-manager-azure-dns.yaml
+        kubectl apply -f k8s/cert-manager-cloudflare-dns.yaml
         
-        echo "✅ cert-manager configured for automatic SSL certificate provisioning using Azure DNS-01 challenge"
-        echo "   - Staging issuer: azure-dns-staging (for testing)"
-        echo "   - Production issuer: azure-dns-prod (ready for production)"
+        echo "✅ cert-manager configured for automatic SSL certificate provisioning using Cloudflare DNS-01 challenge"
+        echo "   - Staging issuer: cloudflare-dns-staging (for testing)"
+        echo "   - Production issuer: cloudflare-dns-prod (ready for production)"
         
-        # Apply wildcard certificate resource (staging mode)
-        echo "Applying wildcard certificate configuration (STAGING MODE)..."
+        # Apply wildcard certificate resource
+        echo "Applying wildcard certificate configuration..."
         kubectl apply -f k8s/certificate-wildcard.yaml
         
-        echo "✅ Wildcard certificate (*.cloudtolocalllm.online) will be automatically provisioned in STAGING mode"
-        echo "⚠️  Browser will show security warning (expected for staging certificates)"
-        echo "   Once verified working, update k8s/certificate-wildcard.yaml to use 'azure-dns-prod' issuer"
+        echo "✅ Wildcard certificate (*.cloudtolocalllm.online) will be automatically provisioned via Cloudflare DNS"
+        echo "   Certificate will be issued by Let's Encrypt using Cloudflare DNS-01 challenge"
 
     - name: Wait for rollout to complete
       continue-on-error: true
@@ -377,17 +342,21 @@ jobs:
         echo "Load Balancer IP: $LB_IP"
         echo "lb_ip=$LB_IP" >> $GITHUB_OUTPUT
 
-    - name: Configure Azure DNS
+    - name: Configure Azure DNS (Optional - Backup)
+      continue-on-error: true
       run: |
+        echo "⚠️  Note: Using Cloudflare DNS for primary DNS management"
+        echo "This step configures Azure DNS as an optional backup"
+        echo ""
         echo "Load Balancer IP: ${{ steps.lb-ip.outputs.lb_ip }}"
         
         RESOURCE_GROUP="${{ env.AZURE_RESOURCE_GROUP }}"
         DNS_ZONE_NAME="cloudtolocalllm.online"
         LB_IP="${{ steps.lb-ip.outputs.lb_ip }}"
         
-        # Create Azure DNS zone if it doesn't exist
+        # Create Azure DNS zone if it doesn't exist (optional backup)
         if ! az network dns zone show --resource-group "$RESOURCE_GROUP" --name "$DNS_ZONE_NAME" &>/dev/null; then
-          echo "Creating Azure DNS zone..."
+          echo "Creating Azure DNS zone (optional backup)..."
           az network dns zone create \
             --resource-group "$RESOURCE_GROUP" \
             --name "$DNS_ZONE_NAME"
@@ -396,7 +365,7 @@ jobs:
           echo "✅ Azure DNS zone already exists"
         fi
         
-        # Create or update DNS records
+        # Create or update DNS records (optional backup)
         DOMAINS=("@" "app" "api" "auth")
         
         for record_name in "${DOMAINS[@]}"; do
@@ -431,23 +400,24 @@ jobs:
           fi
         done
         
-        echo "✅ Azure DNS configured successfully!"
+        echo "✅ Azure DNS configured (optional backup)"
 
     - name: DNS Health Check
       run: |
-        echo "✅ Azure DNS configuration complete!"
+        echo "✅ Deployment configuration complete!"
         echo ""
         echo "Load Balancer IP: ${{ steps.lb-ip.outputs.lb_ip }}"
         echo ""
-        echo "DNS Records configured:"
-        echo "  cloudtolocalllm.online → ${{ steps.lb-ip.outputs.lb_ip }}"
-        echo "  app.cloudtolocalllm.online → ${{ steps.lb-ip.outputs.lb_ip }}"
-        echo "  api.cloudtolocalllm.online → ${{ steps.lb-ip.outputs.lb_ip }}"
-        echo "  auth.cloudtolocalllm.online → ${{ steps.lb-ip.outputs.lb_ip }}"
+        echo "⚠️  DNS Configuration:"
+        echo "  DNS records should be configured in Cloudflare DNS:"
+        echo "    cloudtolocalllm.online → ${{ steps.lb-ip.outputs.lb_ip }}"
+        echo "    app.cloudtolocalllm.online → ${{ steps.lb-ip.outputs.lb_ip }}"
+        echo "    api.cloudtolocalllm.online → ${{ steps.lb-ip.outputs.lb_ip }}"
+        echo "    auth.cloudtolocalllm.online → ${{ steps.lb-ip.outputs.lb_ip }}"
         echo ""
-        echo "SSL/TLS: Automatic certificate provisioning via cert-manager with Azure DNS"
-        echo "  - Certificates are automatically provisioned using Azure DNS-01 challenge"
-        echo "  - Domain validation uses Azure DNS zone"
+        echo "SSL/TLS: Automatic certificate provisioning via cert-manager with Cloudflare DNS"
+        echo "  - Certificates are automatically provisioned using Cloudflare DNS-01 challenge"
+        echo "  - Domain validation uses Cloudflare DNS API"
         echo "  - HTTPS redirect is enforced at ingress level"
         echo ""
         echo "🎉 Application will be available at:"

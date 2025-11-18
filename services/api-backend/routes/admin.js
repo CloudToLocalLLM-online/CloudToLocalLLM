@@ -44,293 +44,331 @@ const router = express.Router();
  * Get system statistics for admin dashboard
  * Rate limit: Read-only (200 req/min)
  */
-router.get('/system/stats', authenticateJWT, requireAdmin, adminReadOnlyLimiter, async(req, res) => {
-  try {
-    logger.info('� [AdminAPI] System statistics requested', {
-      adminUserId: req.user.sub,
-      userAgent: req.get('User-Agent'),
-    });
+router.get(
+  '/system/stats',
+  authenticateJWT,
+  requireAdmin,
+  adminReadOnlyLimiter,
+  async (req, res) => {
+    try {
+      logger.info('� [AdminAPI] System statistics requested', {
+        adminUserId: req.user.sub,
+        userAgent: req.get('User-Agent'),
+      });
 
-    const stats = await adminDataFlushService.getSystemStatistics();
+      const stats = await adminDataFlushService.getSystemStatistics();
 
-    res.json({
-      success: true,
-      data: stats,
-      timestamp: new Date().toISOString(),
-    });
+      res.json({
+        success: true,
+        data: stats,
+        timestamp: new Date().toISOString(),
+      });
+    } catch (error) {
+      logger.error('� [AdminAPI] Failed to get system statistics', {
+        adminUserId: req.user.sub,
+        error: error.message,
+      });
 
-  } catch (error) {
-    logger.error('� [AdminAPI] Failed to get system statistics', {
-      adminUserId: req.user.sub,
-      error: error.message,
-    });
-
-    res.status(500).json({
-      error: 'Failed to retrieve system statistics',
-      code: 'STATS_RETRIEVAL_FAILED',
-      details: error.message,
-    });
+      res.status(500).json({
+        error: 'Failed to retrieve system statistics',
+        code: 'STATS_RETRIEVAL_FAILED',
+        details: error.message,
+      });
+    }
   }
-});
+);
 
 /**
  * POST /api/admin/flush/prepare
  * Prepare data flush operation and generate confirmation token
  * Rate limit: Default (100 req/min)
  */
-router.post('/flush/prepare', authenticateJWT, requireAdmin, adminRateLimiter, async(req, res) => {
-  try {
-    const { targetUserId, scope } = req.body;
-    const adminUserId = req.user.sub;
+router.post(
+  '/flush/prepare',
+  authenticateJWT,
+  requireAdmin,
+  adminRateLimiter,
+  async (req, res) => {
+    try {
+      const { targetUserId, scope } = req.body;
+      const adminUserId = req.user.sub;
 
-    logger.info('� [AdminAPI] Data flush preparation requested', {
-      adminUserId,
-      targetUserId: targetUserId || 'ALL_USERS',
-      scope: scope || 'FULL_FLUSH',
-      userAgent: req.get('User-Agent'),
-    });
+      logger.info('� [AdminAPI] Data flush preparation requested', {
+        adminUserId,
+        targetUserId: targetUserId || 'ALL_USERS',
+        scope: scope || 'FULL_FLUSH',
+        userAgent: req.get('User-Agent'),
+      });
 
-    // Validate scope
-    const validScopes = ['FULL_FLUSH', 'USER_SPECIFIC', 'CONTAINERS_ONLY', 'AUTH_ONLY'];
-    const flushScope = scope || 'FULL_FLUSH';
+      // Validate scope
+      const validScopes = [
+        'FULL_FLUSH',
+        'USER_SPECIFIC',
+        'CONTAINERS_ONLY',
+        'AUTH_ONLY',
+      ];
+      const flushScope = scope || 'FULL_FLUSH';
 
-    if (!validScopes.includes(flushScope)) {
-      return res.status(400).json({
-        error: 'Invalid flush scope',
-        code: 'INVALID_FLUSH_SCOPE',
-        validScopes,
+      if (!validScopes.includes(flushScope)) {
+        return res.status(400).json({
+          error: 'Invalid flush scope',
+          code: 'INVALID_FLUSH_SCOPE',
+          validScopes,
+        });
+      }
+
+      // Generate confirmation token
+      const confirmationData = adminDataFlushService.generateConfirmationToken(
+        adminUserId,
+        targetUserId || 'ALL_USERS'
+      );
+
+      // Log the preparation (but not the token)
+      logger.info('� [AdminAPI] Flush confirmation token generated', {
+        adminUserId,
+        targetUserId: targetUserId || 'ALL_USERS',
+        scope: flushScope,
+        expiresAt: confirmationData.expiresAt,
+      });
+
+      res.json({
+        success: true,
+        message:
+          'Flush operation prepared. Use the confirmation token to execute.',
+        confirmationToken: confirmationData.token,
+        expiresAt: confirmationData.expiresAt,
+        scope: flushScope,
+        targetUserId: targetUserId || 'ALL_USERS',
+        warning:
+          'This operation will permanently delete user data. Ensure you have proper authorization.',
+      });
+    } catch (error) {
+      logger.error('� [AdminAPI] Failed to prepare flush operation', {
+        adminUserId: req.user.sub,
+        error: error.message,
+      });
+
+      res.status(500).json({
+        error: 'Failed to prepare flush operation',
+        code: 'FLUSH_PREPARATION_FAILED',
+        details: error.message,
       });
     }
-
-    // Generate confirmation token
-    const confirmationData = adminDataFlushService.generateConfirmationToken(
-      adminUserId,
-      targetUserId || 'ALL_USERS',
-    );
-
-    // Log the preparation (but not the token)
-    logger.info('� [AdminAPI] Flush confirmation token generated', {
-      adminUserId,
-      targetUserId: targetUserId || 'ALL_USERS',
-      scope: flushScope,
-      expiresAt: confirmationData.expiresAt,
-    });
-
-    res.json({
-      success: true,
-      message: 'Flush operation prepared. Use the confirmation token to execute.',
-      confirmationToken: confirmationData.token,
-      expiresAt: confirmationData.expiresAt,
-      scope: flushScope,
-      targetUserId: targetUserId || 'ALL_USERS',
-      warning: 'This operation will permanently delete user data. Ensure you have proper authorization.',
-    });
-
-  } catch (error) {
-    logger.error('� [AdminAPI] Failed to prepare flush operation', {
-      adminUserId: req.user.sub,
-      error: error.message,
-    });
-
-    res.status(500).json({
-      error: 'Failed to prepare flush operation',
-      code: 'FLUSH_PREPARATION_FAILED',
-      details: error.message,
-    });
   }
-});
+);
 
 /**
  * POST /api/admin/flush/execute
  * Execute data flush operation with confirmation token
  * Rate limit: Critical (5 req/hour)
  */
-router.post('/flush/execute', authenticateJWT, requireAdmin, adminCriticalLimiter, async(req, res) => {
-  try {
-    const { confirmationToken, targetUserId, options = {} } = req.body;
-    const adminUserId = req.user.sub;
+router.post(
+  '/flush/execute',
+  authenticateJWT,
+  requireAdmin,
+  adminCriticalLimiter,
+  async (req, res) => {
+    try {
+      const { confirmationToken, targetUserId, options = {} } = req.body;
+      const adminUserId = req.user.sub;
 
-    if (!confirmationToken) {
-      return res.status(400).json({
-        error: 'Confirmation token required',
-        code: 'CONFIRMATION_TOKEN_REQUIRED',
+      if (!confirmationToken) {
+        return res.status(400).json({
+          error: 'Confirmation token required',
+          code: 'CONFIRMATION_TOKEN_REQUIRED',
+        });
+      }
+
+      logger.warn('� [AdminAPI] CRITICAL: Data flush execution requested', {
+        adminUserId,
+        targetUserId: targetUserId || 'ALL_USERS',
+        options,
+        userAgent: req.get('User-Agent'),
+        ipAddress: req.ip,
+      });
+
+      // Execute the flush operation
+      const result = await adminDataFlushService.executeDataFlush(
+        adminUserId,
+        confirmationToken,
+        targetUserId,
+        options
+      );
+
+      // Log successful completion
+      logger.warn('� [AdminAPI] CRITICAL: Data flush executed successfully', {
+        adminUserId,
+        operationId: result.operationId,
+        targetUserId: targetUserId || 'ALL_USERS',
+        duration: result.duration,
+        results: result.results,
+      });
+
+      res.json({
+        success: true,
+        message: 'Data flush operation completed successfully',
+        operationId: result.operationId,
+        results: result.results,
+        duration: result.duration,
+        timestamp: new Date().toISOString(),
+      });
+    } catch (error) {
+      logger.error('� [AdminAPI] CRITICAL: Data flush execution failed', {
+        adminUserId: req.user.sub,
+        targetUserId: req.body.targetUserId || 'ALL_USERS',
+        error: error.message,
+      });
+
+      res.status(500).json({
+        error: 'Data flush operation failed',
+        code: 'FLUSH_EXECUTION_FAILED',
+        details: error.message,
       });
     }
-
-    logger.warn('� [AdminAPI] CRITICAL: Data flush execution requested', {
-      adminUserId,
-      targetUserId: targetUserId || 'ALL_USERS',
-      options,
-      userAgent: req.get('User-Agent'),
-      ipAddress: req.ip,
-    });
-
-    // Execute the flush operation
-    const result = await adminDataFlushService.executeDataFlush(
-      adminUserId,
-      confirmationToken,
-      targetUserId,
-      options,
-    );
-
-    // Log successful completion
-    logger.warn('� [AdminAPI] CRITICAL: Data flush executed successfully', {
-      adminUserId,
-      operationId: result.operationId,
-      targetUserId: targetUserId || 'ALL_USERS',
-      duration: result.duration,
-      results: result.results,
-    });
-
-    res.json({
-      success: true,
-      message: 'Data flush operation completed successfully',
-      operationId: result.operationId,
-      results: result.results,
-      duration: result.duration,
-      timestamp: new Date().toISOString(),
-    });
-
-  } catch (error) {
-    logger.error('� [AdminAPI] CRITICAL: Data flush execution failed', {
-      adminUserId: req.user.sub,
-      targetUserId: req.body.targetUserId || 'ALL_USERS',
-      error: error.message,
-    });
-
-    res.status(500).json({
-      error: 'Data flush operation failed',
-      code: 'FLUSH_EXECUTION_FAILED',
-      details: error.message,
-    });
   }
-});
+);
 
 /**
  * GET /api/admin/flush/status/:operationId
  * Get status of a flush operation
  * Rate limit: Read-only (200 req/min)
  */
-router.get('/flush/status/:operationId', authenticateJWT, requireAdmin, adminReadOnlyLimiter, async(req, res) => {
-  try {
-    const { operationId } = req.params;
-    const adminUserId = req.user.sub;
+router.get(
+  '/flush/status/:operationId',
+  authenticateJWT,
+  requireAdmin,
+  adminReadOnlyLimiter,
+  async (req, res) => {
+    try {
+      const { operationId } = req.params;
+      const adminUserId = req.user.sub;
 
-    const status = adminDataFlushService.getFlushOperationStatus(operationId);
+      const status = adminDataFlushService.getFlushOperationStatus(operationId);
 
-    if (!status) {
-      return res.status(404).json({
-        error: 'Flush operation not found',
-        code: 'OPERATION_NOT_FOUND',
+      if (!status) {
+        return res.status(404).json({
+          error: 'Flush operation not found',
+          code: 'OPERATION_NOT_FOUND',
+        });
+      }
+
+      logger.info('� [AdminAPI] Flush operation status requested', {
+        adminUserId,
+        operationId,
+        status: status.status,
+      });
+
+      res.json({
+        success: true,
+        data: status,
+      });
+    } catch (error) {
+      logger.error('� [AdminAPI] Failed to get flush operation status', {
+        adminUserId: req.user.sub,
+        operationId: req.params.operationId,
+        error: error.message,
+      });
+
+      res.status(500).json({
+        error: 'Failed to get operation status',
+        code: 'STATUS_RETRIEVAL_FAILED',
+        details: error.message,
       });
     }
-
-    logger.info('� [AdminAPI] Flush operation status requested', {
-      adminUserId,
-      operationId,
-      status: status.status,
-    });
-
-    res.json({
-      success: true,
-      data: status,
-    });
-
-  } catch (error) {
-    logger.error('� [AdminAPI] Failed to get flush operation status', {
-      adminUserId: req.user.sub,
-      operationId: req.params.operationId,
-      error: error.message,
-    });
-
-    res.status(500).json({
-      error: 'Failed to get operation status',
-      code: 'STATUS_RETRIEVAL_FAILED',
-      details: error.message,
-    });
   }
-});
+);
 
 /**
  * GET /api/admin/flush/history
  * Get flush operation history for audit purposes
  * Rate limit: Read-only (200 req/min)
  */
-router.get('/flush/history', authenticateJWT, requireAdmin, adminReadOnlyLimiter, async(req, res) => {
-  try {
-    const { limit = 50 } = req.query;
-    const adminUserId = req.user.sub;
+router.get(
+  '/flush/history',
+  authenticateJWT,
+  requireAdmin,
+  adminReadOnlyLimiter,
+  async (req, res) => {
+    try {
+      const { limit = 50 } = req.query;
+      const adminUserId = req.user.sub;
 
-    logger.info('� [AdminAPI] Flush history requested', {
-      adminUserId,
-      limit: parseInt(limit),
-    });
+      logger.info('� [AdminAPI] Flush history requested', {
+        adminUserId,
+        limit: parseInt(limit),
+      });
 
-    const history = adminDataFlushService.getFlushHistory(parseInt(limit));
+      const history = adminDataFlushService.getFlushHistory(parseInt(limit));
 
-    res.json({
-      success: true,
-      data: history,
-      count: history.length,
-      timestamp: new Date().toISOString(),
-    });
+      res.json({
+        success: true,
+        data: history,
+        count: history.length,
+        timestamp: new Date().toISOString(),
+      });
+    } catch (error) {
+      logger.error('� [AdminAPI] Failed to get flush history', {
+        adminUserId: req.user.sub,
+        error: error.message,
+      });
 
-  } catch (error) {
-    logger.error('� [AdminAPI] Failed to get flush history', {
-      adminUserId: req.user.sub,
-      error: error.message,
-    });
-
-    res.status(500).json({
-      error: 'Failed to retrieve flush history',
-      code: 'HISTORY_RETRIEVAL_FAILED',
-      details: error.message,
-    });
+      res.status(500).json({
+        error: 'Failed to retrieve flush history',
+        code: 'HISTORY_RETRIEVAL_FAILED',
+        details: error.message,
+      });
+    }
   }
-});
+);
 
 /**
  * POST /api/admin/containers/cleanup
  * Emergency cleanup of orphaned containers and networks
  * Rate limit: Default (100 req/min)
  */
-router.post('/containers/cleanup', authenticateJWT, requireAdmin, adminRateLimiter, async(req, res) => {
-  try {
-    const adminUserId = req.user.sub;
+router.post(
+  '/containers/cleanup',
+  authenticateJWT,
+  requireAdmin,
+  adminRateLimiter,
+  async (req, res) => {
+    try {
+      const adminUserId = req.user.sub;
 
-    logger.warn('� [AdminAPI] Emergency container cleanup requested', {
-      adminUserId,
-      userAgent: req.get('User-Agent'),
-    });
+      logger.warn('� [AdminAPI] Emergency container cleanup requested', {
+        adminUserId,
+        userAgent: req.get('User-Agent'),
+      });
 
-    // Execute container cleanup only
-    const result = await adminDataFlushService.clearUserContainersAndNetworks();
+      // Execute container cleanup only
+      const result =
+        await adminDataFlushService.clearUserContainersAndNetworks();
 
-    logger.info('� [AdminAPI] Emergency container cleanup completed', {
-      adminUserId,
-      results: result,
-    });
+      logger.info('� [AdminAPI] Emergency container cleanup completed', {
+        adminUserId,
+        results: result,
+      });
 
-    res.json({
-      success: true,
-      message: 'Container cleanup completed',
-      results: result,
-      timestamp: new Date().toISOString(),
-    });
+      res.json({
+        success: true,
+        message: 'Container cleanup completed',
+        results: result,
+        timestamp: new Date().toISOString(),
+      });
+    } catch (error) {
+      logger.error('� [AdminAPI] Emergency container cleanup failed', {
+        adminUserId: req.user.sub,
+        error: error.message,
+      });
 
-  } catch (error) {
-    logger.error('� [AdminAPI] Emergency container cleanup failed', {
-      adminUserId: req.user.sub,
-      error: error.message,
-    });
-
-    res.status(500).json({
-      error: 'Container cleanup failed',
-      code: 'CLEANUP_FAILED',
-      details: error.message,
-    });
+      res.status(500).json({
+        error: 'Container cleanup failed',
+        code: 'CLEANUP_FAILED',
+        details: error.message,
+      });
+    }
   }
-});
+);
 
 /**
  * GET /api/admin/health

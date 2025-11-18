@@ -9,6 +9,7 @@ The Payment Management API provides secure administrative endpoints for managing
 **Authentication:** JWT Bearer token with admin role
 
 **Permissions Required:**
+
 - `view_payments` - View transactions and payment methods
 - `process_refunds` - Process refunds
 
@@ -26,18 +27,18 @@ The Payment Management API provides secure administrative endpoints for managing
 
 **Query Parameters:**
 
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| page | integer | 1 | Page number (min: 1) |
-| limit | integer | 100 | Items per page (min: 1, max: 200) |
-| userId | UUID | - | Filter by user ID |
-| status | string | - | Filter by status (pending, succeeded, failed, refunded, partially_refunded, disputed) |
-| startDate | ISO 8601 | - | Filter by date range (start) |
-| endDate | ISO 8601 | - | Filter by date range (end) |
-| minAmount | decimal | - | Filter by minimum amount |
-| maxAmount | decimal | - | Filter by maximum amount |
-| sortBy | string | created_at | Sort field (created_at, amount, status) |
-| sortOrder | string | desc | Sort order (asc, desc) |
+| Parameter | Type     | Default    | Description                                                                           |
+| --------- | -------- | ---------- | ------------------------------------------------------------------------------------- |
+| page      | integer  | 1          | Page number (min: 1)                                                                  |
+| limit     | integer  | 100        | Items per page (min: 1, max: 200)                                                     |
+| userId    | UUID     | -          | Filter by user ID                                                                     |
+| status    | string   | -          | Filter by status (pending, succeeded, failed, refunded, partially_refunded, disputed) |
+| startDate | ISO 8601 | -          | Filter by date range (start)                                                          |
+| endDate   | ISO 8601 | -          | Filter by date range (end)                                                            |
+| minAmount | decimal  | -          | Filter by minimum amount                                                              |
+| maxAmount | decimal  | -          | Filter by maximum amount                                                              |
+| sortBy    | string   | created_at | Sort field (created_at, amount, status)                                               |
+| sortOrder | string   | desc       | Sort order (asc, desc)                                                                |
 
 **Example Request:**
 
@@ -95,7 +96,7 @@ curl -X GET "https://api.cloudtolocalllm.online/api/admin/payments/transactions?
     },
     "statistics": {
       "totalCount": 150,
-      "totalRevenue": 4498.50,
+      "totalRevenue": 4498.5,
       "successfulCount": 145,
       "failedCount": 3,
       "refundedCount": 2
@@ -124,8 +125,8 @@ curl -X GET "https://api.cloudtolocalllm.online/api/admin/payments/transactions?
 
 **Path Parameters:**
 
-| Parameter | Type | Description |
-|-----------|------|-------------|
+| Parameter     | Type | Description    |
+| ------------- | ---- | -------------- |
 | transactionId | UUID | Transaction ID |
 
 **Example Request:**
@@ -236,14 +237,15 @@ curl -X GET "https://api.cloudtolocalllm.online/api/admin/payments/transactions/
 
 **Body Parameters:**
 
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| transactionId | UUID | Yes | Transaction ID to refund |
-| amount | decimal | No | Amount to refund (null for full refund) |
-| reason | string | Yes | Refund reason (see valid reasons below) |
-| reasonDetails | string | No | Additional details about the refund |
+| Parameter     | Type    | Required | Description                             |
+| ------------- | ------- | -------- | --------------------------------------- |
+| transactionId | UUID    | Yes      | Transaction ID to refund                |
+| amount        | decimal | No       | Amount to refund (null for full refund) |
+| reason        | string  | Yes      | Refund reason (see valid reasons below) |
+| reasonDetails | string  | No       | Additional details about the refund     |
 
 **Valid Refund Reasons:**
+
 - `customer_request` - Customer requested refund
 - `billing_error` - Billing error occurred
 - `service_issue` - Service quality issue
@@ -312,6 +314,7 @@ curl -X POST "https://api.cloudtolocalllm.online/api/admin/payments/refunds" \
 - `500 Internal Server Error` - Server error
 
 **Error Codes:**
+
 - `TRANSACTION_ID_REQUIRED` - Transaction ID is required
 - `REASON_REQUIRED` - Refund reason is required
 - `INVALID_TRANSACTION_ID` - Invalid transaction ID format
@@ -335,8 +338,8 @@ curl -X POST "https://api.cloudtolocalllm.online/api/admin/payments/refunds" \
 **Path Parameters:**
 
 | Parameter | Type | Description |
-|-----------|------|-------------|
-| userId | UUID | User ID |
+| --------- | ---- | ----------- |
+| userId    | UUID | User ID     |
 
 **Example Request:**
 
@@ -395,6 +398,7 @@ curl -X GET "https://api.cloudtolocalllm.online/api/admin/payments/methods/660e8
 ```
 
 **Security Notes:**
+
 - Billing email is masked (only first 2 characters and domain shown)
 - Only last 4 digits of card number are returned
 - No CVV or full card numbers are ever returned
@@ -454,7 +458,7 @@ All payment management actions are automatically logged to the `admin_audit_logs
 ## Support
 
 For API support or questions:
+
 - Documentation: `/docs/API/`
 - Issues: GitHub Issues
 - Email: support@cloudtolocalllm.online
-

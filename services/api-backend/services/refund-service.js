@@ -1,6 +1,6 @@
 /**
  * Refund Processing Service
- * 
+ *
  * Handles refund processing through Stripe, including creating refunds,
  * storing refund records in the database, and logging admin actions.
  */
@@ -25,7 +25,7 @@ class RefundService {
 
   /**
    * Process a refund for a transaction
-   * 
+   *
    * @param {Object} params - Refund parameters
    * @param {string} params.transactionId - Transaction ID to refund
    * @param {number} [params.amount] - Amount to refund (null for full refund)
@@ -37,15 +37,15 @@ class RefundService {
    * @param {string} [params.userAgent] - Admin user agent
    * @returns {Promise<Object>} Refund result
    */
-  async processRefund({ 
-    transactionId, 
-    amount = null, 
-    reason, 
+  async processRefund({
+    transactionId,
+    amount = null,
+    reason,
     reasonDetails = null,
     adminUserId,
     adminRole,
     ipAddress = null,
-    userAgent = null
+    userAgent = null,
   }) {
     if (!this.stripe) {
       this.initialize();
@@ -66,9 +66,18 @@ class RefundService {
       }
 
       // Validate refund reason
-      const validReasons = ['customer_request', 'billing_error', 'service_issue', 'duplicate', 'fraudulent', 'other'];
+      const validReasons = [
+        'customer_request',
+        'billing_error',
+        'service_issue',
+        'duplicate',
+        'fraudulent',
+        'other',
+      ];
       if (!validReasons.includes(reason)) {
-        throw new Error(`Invalid refund reason. Must be one of: ${validReasons.join(', ')}`);
+        throw new Error(
+          `Invalid refund reason. Must be one of: ${validReasons.join(', ')}`
+        );
       }
 
       logger.info('Processing refund', {
@@ -76,7 +85,7 @@ class RefundService {
         transactionId,
         amount: amount || transaction.amount,
         reason,
-        adminUserId
+        adminUserId,
       });
 
       // Determine refund amount
@@ -102,8 +111,8 @@ class RefundService {
           transaction_id: transactionId,
           admin_user_id: adminUserId,
           reason: reason,
-          reason_details: reasonDetails || ''
-        }
+          reason_details: reasonDetails || '',
+        },
       });
 
       // Store refund in database
@@ -117,11 +126,15 @@ class RefundService {
         reasonDetails,
         status: this._mapRefundStatus(stripeRefund.status),
         failureReason: stripeRefund.failure_reason || null,
-        adminUserId
+        adminUserId,
       });
 
       // Update transaction status
-      await this._updateTransactionStatus(transactionId, refundAmount, transaction.amount);
+      await this._updateTransactionStatus(
+        transactionId,
+        refundAmount,
+        transaction.amount
+      );
 
       // Log admin action in audit log
       await logAdminAction(this.db, {
@@ -137,17 +150,17 @@ class RefundService {
           currency: transaction.currency,
           reason,
           reason_details: reasonDetails,
-          stripe_refund_id: stripeRefund.id
+          stripe_refund_id: stripeRefund.id,
         },
         ipAddress,
-        userAgent
+        userAgent,
       });
 
       logger.info('Refund processed successfully', {
         refundId,
         transactionId,
         amount: refundAmount,
-        stripeRefundId: stripeRefund.id
+        stripeRefundId: stripeRefund.id,
       });
 
       return {
@@ -157,15 +170,14 @@ class RefundService {
           id: stripeRefund.id,
           status: stripeRefund.status,
           amount: stripeRefund.amount,
-          currency: stripeRefund.currency
-        }
+          currency: stripeRefund.currency,
+        },
       };
-
     } catch (error) {
       logger.error('Refund processing failed', {
         refundId,
         transactionId,
-        error: error.message
+        error: error.message,
       });
 
       // Store failed refund attempt
@@ -180,41 +192,41 @@ class RefundService {
           reasonDetails,
           status: 'failed',
           failureReason: error.message,
-          adminUserId
+          adminUserId,
         });
       }
 
       // Convert Stripe error to standardized format
-      const standardizedError = error.type && error.type.startsWith('Stripe')
-        ? stripeClient.handleStripeError(error)
-        : {
-            code: 'REFUND_ERROR',
-            message: error.message,
-            statusCode: 400
-          };
-      
+      const standardizedError =
+        error.type && error.type.startsWith('Stripe')
+          ? stripeClient.handleStripeError(error)
+          : {
+              code: 'REFUND_ERROR',
+              message: error.message,
+              statusCode: 400,
+            };
+
       return {
         success: false,
         error: standardizedError,
         refund: {
           id: refundId,
-          status: 'failed'
-        }
+          status: 'failed',
+        },
       };
     }
   }
 
   /**
    * Get refund by ID
-   * 
+   *
    * @param {string} refundId - Refund ID
    * @returns {Promise<Object>} Refund details
    */
   async getRefund(refundId) {
-    const result = await this.db.query(
-      'SELECT * FROM refunds WHERE id = $1',
-      [refundId]
-    );
+    const result = await this.db.query('SELECT * FROM refunds WHERE id = $1', [
+      refundId,
+    ]);
 
     if (result.rows.length === 0) {
       throw new Error('Refund not found');
@@ -225,7 +237,7 @@ class RefundService {
 
   /**
    * Get refunds for a transaction
-   * 
+   *
    * @param {string} transactionId - Transaction ID
    * @returns {Promise<Array>} List of refunds
    */
@@ -281,7 +293,7 @@ class RefundService {
       data.reasonDetails,
       data.status,
       data.failureReason,
-      data.adminUserId
+      data.adminUserId,
     ];
 
     const result = await this.db.query(query, values);
@@ -292,7 +304,11 @@ class RefundService {
    * Update transaction status after refund
    * @private
    */
-  async _updateTransactionStatus(transactionId, refundAmount, transactionAmount) {
+  async _updateTransactionStatus(
+    transactionId,
+    refundAmount,
+    transactionAmount
+  ) {
     // Determine new status
     let newStatus;
     if (refundAmount >= transactionAmount) {
@@ -313,12 +329,12 @@ class RefundService {
    */
   _mapRefundReasonToStripe(reason) {
     const reasonMap = {
-      'customer_request': 'requested_by_customer',
-      'billing_error': 'duplicate',
-      'service_issue': 'requested_by_customer',
-      'duplicate': 'duplicate',
-      'fraudulent': 'fraudulent',
-      'other': 'requested_by_customer'
+      customer_request: 'requested_by_customer',
+      billing_error: 'duplicate',
+      service_issue: 'requested_by_customer',
+      duplicate: 'duplicate',
+      fraudulent: 'fraudulent',
+      other: 'requested_by_customer',
     };
 
     return reasonMap[reason] || 'requested_by_customer';
@@ -330,10 +346,10 @@ class RefundService {
    */
   _mapRefundStatus(stripeStatus) {
     const statusMap = {
-      'succeeded': 'succeeded',
-      'pending': 'pending',
-      'failed': 'failed',
-      'canceled': 'canceled'
+      succeeded: 'succeeded',
+      pending: 'pending',
+      failed: 'failed',
+      canceled: 'canceled',
     };
 
     return statusMap[stripeStatus] || 'pending';

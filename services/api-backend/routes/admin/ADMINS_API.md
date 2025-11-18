@@ -56,6 +56,7 @@ Get a list of all administrators with their roles and activity summary.
 ```
 
 **Status Codes:**
+
 - `200 OK` - Successfully retrieved administrators
 - `401 Unauthorized` - Invalid or missing authentication token
 - `403 Forbidden` - User is not a Super Admin
@@ -88,6 +89,7 @@ Assign an admin role to a user by email.
 ```
 
 **Request Fields:**
+
 - `email` (string, required) - Email address of the user to make admin
 - `role` (string, required) - Role to assign: `support_admin` or `finance_admin`
 
@@ -110,6 +112,7 @@ Assign an admin role to a user by email.
 ```
 
 **Status Codes:**
+
 - `201 Created` - Admin role assigned successfully
 - `400 Bad Request` - Missing required fields or invalid role
 - `401 Unauthorized` - Invalid or missing authentication token
@@ -131,10 +134,12 @@ curl -X POST https://api.cloudtolocalllm.online/api/admin/admins \
 ```
 
 **Valid Roles:**
+
 - `support_admin` - Can manage users and view payments
 - `finance_admin` - Can manage payments, refunds, and subscriptions
 
 **Notes:**
+
 - Only Super Admins can assign admin roles
 - Cannot assign `super_admin` role through this endpoint
 - User must already exist in the system
@@ -151,6 +156,7 @@ Revoke an admin role from a user.
 **Authentication:** Super Admin required
 
 **URL Parameters:**
+
 - `userId` (string, required) - ID of the user to revoke role from
 - `role` (string, required) - Role to revoke: `super_admin`, `support_admin`, or `finance_admin`
 
@@ -173,6 +179,7 @@ Revoke an admin role from a user.
 ```
 
 **Status Codes:**
+
 - `200 OK` - Admin role revoked successfully
 - `400 Bad Request` - Invalid role
 - `401 Unauthorized` - Invalid or missing authentication token
@@ -188,6 +195,7 @@ curl -X DELETE https://api.cloudtolocalllm.online/api/admin/admins/USER_UUID/rol
 ```
 
 **Notes:**
+
 - Only Super Admins can revoke admin roles
 - Cannot revoke your own Super Admin role (safety measure)
 - Role is marked as inactive (soft delete) for audit trail
@@ -199,12 +207,14 @@ curl -X DELETE https://api.cloudtolocalllm.online/api/admin/admins/USER_UUID/rol
 ## Role Permissions
 
 ### Super Admin
+
 - Full access to all admin features
 - Can manage other administrators
 - Can assign and revoke admin roles
 - Cannot be assigned through API (must be set in database)
 
 ### Support Admin
+
 - View and manage users
 - Suspend/reactivate user accounts
 - View payment information (read-only)
@@ -212,6 +222,7 @@ curl -X DELETE https://api.cloudtolocalllm.online/api/admin/admins/USER_UUID/rol
 - Cannot process refunds or delete users
 
 ### Finance Admin
+
 - View users (read-only)
 - Manage payments and refunds
 - Manage subscriptions
@@ -234,6 +245,7 @@ All endpoints return consistent error responses:
 ```
 
 **Common Error Codes:**
+
 - `NO_TOKEN` - No authentication token provided
 - `INVALID_TOKEN` - Invalid or expired token
 - `ADMIN_ACCESS_REQUIRED` - User is not an admin

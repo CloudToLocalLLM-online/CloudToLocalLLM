@@ -1,7 +1,7 @@
 /**
  * @fileoverview Admin-specific rate limiting middleware
  * Implements per-admin rate limiting with configurable limits for different endpoint types
- * 
+ *
  * Features:
  * - 100 requests per minute per admin (default)
  * - 20 request burst allowance
@@ -10,7 +10,7 @@
  * - Health check exemptions
  * - Rate limit headers in responses
  * - 429 status code on limit exceeded
- * 
+ *
  * Requirements: 15 (Security and Data Protection)
  */
 
@@ -150,7 +150,7 @@ const skipHealthChecks = (req) => {
  */
 export function createAdminRateLimiter(type = 'default', customConfig = {}) {
   const config = RATE_LIMIT_CONFIGS[type] || RATE_LIMIT_CONFIGS.default;
-  
+
   const rateLimiterConfig = {
     ...config,
     ...customConfig,
@@ -240,7 +240,7 @@ export function getRateLimitStats() {
   return {
     message: 'Rate limit statistics are stored in memory',
     recommendation: 'Use Redis store for production deployments',
-    configs: Object.keys(RATE_LIMIT_CONFIGS).map(type => ({
+    configs: Object.keys(RATE_LIMIT_CONFIGS).map((type) => ({
       type,
       windowMs: RATE_LIMIT_CONFIGS[type].windowMs,
       max: RATE_LIMIT_CONFIGS[type].max,

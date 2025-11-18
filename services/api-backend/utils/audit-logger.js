@@ -1,6 +1,6 @@
 /**
  * Audit Logging Utility for Admin Actions
- * 
+ *
  * Provides comprehensive audit logging for all administrative actions
  * with tamper-proof storage in the admin_audit_logs table.
  */
@@ -10,7 +10,7 @@ import { getPool } from '../database/db-pool.js';
 
 /**
  * Log an admin action to the audit log
- * 
+ *
  * @param {Object} params - Audit log parameters
  * @param {string} params.adminUserId - ID of the admin user performing the action
  * @param {string} params.adminRole - Role of the admin at time of action
@@ -102,7 +102,7 @@ export async function logAdminAction({
 /**
  * Express middleware to automatically log admin actions
  * Extracts admin info from request and logs after successful response
- * 
+ *
  * @param {string} action - Action being performed
  * @param {string} resourceType - Type of resource affected
  * @param {Function} [getResourceId] - Function to extract resource ID from request (optional)
@@ -113,7 +113,8 @@ export async function logAdminAction({
 export function auditMiddleware({
   action,
   resourceType,
-  getResourceId = (req) => req.params.id || req.params.userId || req.params.resourceId,
+  getResourceId = (req) =>
+    req.params.id || req.params.userId || req.params.resourceId,
   getAffectedUserId = (req) => req.params.userId || null,
   getDetails = (req) => ({}),
 }) {
@@ -259,7 +260,8 @@ export async function queryAuditLogs(filters = {}) {
       params.push(filters.endDate);
     }
 
-    const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+    const whereClause =
+      conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
     const limit = filters.limit || 100;
     const offset = filters.offset || 0;
 

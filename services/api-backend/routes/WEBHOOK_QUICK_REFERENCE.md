@@ -10,13 +10,13 @@ POST /api/webhooks/stripe
 
 ## Supported Events
 
-| Event Type | Description | Database Update |
-|------------|-------------|-----------------|
-| `payment_intent.succeeded` | Payment completed successfully | Updates `payment_transactions` status to 'succeeded' |
-| `payment_intent.failed` | Payment failed | Updates `payment_transactions` status to 'failed' |
-| `customer.subscription.created` | New subscription created | Updates `subscriptions` with Stripe data |
-| `customer.subscription.updated` | Subscription modified | Updates `subscriptions` status and billing periods |
-| `customer.subscription.deleted` | Subscription canceled | Updates `subscriptions` status to 'canceled' |
+| Event Type                      | Description                    | Database Update                                      |
+| ------------------------------- | ------------------------------ | ---------------------------------------------------- |
+| `payment_intent.succeeded`      | Payment completed successfully | Updates `payment_transactions` status to 'succeeded' |
+| `payment_intent.failed`         | Payment failed                 | Updates `payment_transactions` status to 'failed'    |
+| `customer.subscription.created` | New subscription created       | Updates `subscriptions` with Stripe data             |
+| `customer.subscription.updated` | Subscription modified          | Updates `subscriptions` status and billing periods   |
+| `customer.subscription.deleted` | Subscription canceled          | Updates `subscriptions` status to 'canceled'         |
 
 ## Configuration
 
@@ -81,17 +81,18 @@ WHERE updated_at > NOW() - INTERVAL '1 hour';
 Webhooks are idempotent - sending the same event multiple times will only process it once.
 
 **Implementation:**
+
 - Event ID stored in `webhook_events` table
 - Duplicate events return success without processing
 - Safe to retry failed webhooks
 
 ## Error Responses
 
-| Status Code | Meaning | Action |
-|-------------|---------|--------|
-| 200 | Success | Event processed |
-| 400 | Bad Request | Invalid signature - check webhook secret |
-| 500 | Server Error | Processing failed - Stripe will retry |
+| Status Code | Meaning      | Action                                   |
+| ----------- | ------------ | ---------------------------------------- |
+| 200         | Success      | Event processed                          |
+| 400         | Bad Request  | Invalid signature - check webhook secret |
+| 500         | Server Error | Processing failed - Stripe will retry    |
 
 ## Monitoring
 
@@ -170,7 +171,7 @@ stripe events resend evt_xxx
 All webhooks are verified using Stripe's signature:
 
 ```javascript
-stripe.webhooks.constructEvent(rawBody, signature, webhookSecret)
+stripe.webhooks.constructEvent(rawBody, signature, webhookSecret);
 ```
 
 **Failed verification = rejected request**
