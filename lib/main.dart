@@ -70,12 +70,16 @@ void main() async {
     usePathUrlStrategy();
   }
 
-  FlutterError.onError = (details) {
+  FlutterError.onError = (details) async {
     FlutterError.presentError(details);
     debugPrint('FlutterError: \'${details.exception}\'');
     if (details.stack != null) {
       debugPrint('Stack trace: ${details.stack}');
     }
+    await Sentry.captureException(
+      details.exception,
+      stackTrace: details.stack,
+    );
   };
 
   runZonedGuarded(
@@ -101,9 +105,13 @@ void main() async {
       // TODO: Remove this line after sending the first sample event to sentry.
       await Sentry.captureException(Exception('This is a sample exception.'));
     },
-    (error, stack) {
+    (error, stack) async {
       debugPrint('Uncaught error: $error');
       debugPrint('Stack trace: $stack');
+      await Sentry.captureException(
+        error,
+        stackTrace: stack,
+      );
     },
   );
 }
