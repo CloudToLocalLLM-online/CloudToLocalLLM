@@ -64,34 +64,9 @@ const AUTH0_AUDIENCE =
 const app = express();
 const server = http.createServer(app);
 
-// Initialize SSH tunnel server
+// SSH tunnel server and auth service (initialized in initializeTunnelSystem)
 let sshProxy = null;
 let sshAuthService = null;
-try {
-  sshAuthService = new AuthService({
-    AUTH0_DOMAIN,
-    AUTH0_AUDIENCE,
-  });
-  await sshAuthService.initialize();
-
-  // sshAuthHandler = new SSHAuthHandler(sshAuthService, logger);
-
-  sshProxy = new SSHProxy(
-    logger,
-    {
-      sshPort: parseInt(process.env.SSH_PORT) || 2222,
-    },
-    sshAuthService,
-  );
-
-  await sshProxy.start();
-  logger.info('SSH tunnel server initialized successfully');
-} catch (error) {
-  logger.error('Failed to initialize SSH tunnel server', {
-    error: error.message,
-    stack: error.stack,
-  });
-}
 
 // Trust proxy headers (required for rate limiting behind nginx)
 // Use specific proxy configuration to avoid ERR_ERL_PERMISSIVE_TRUST_PROXY
@@ -750,6 +725,28 @@ async function initializeTunnelSystem() {
       });
       await authService.initialize();
       logger.info('Authentication service initialized successfully');
+
+      // Use the same auth service for SSH proxy
+      sshAuthService = authService;
+
+      // Initialize SSH Proxy
+      try {
+        sshProxy = new SSHProxy(
+          logger,
+          {
+            sshPort: parseInt(process.env.SSH_PORT) || 2222,
+          },
+          sshAuthService,
+        );
+        await sshProxy.start();
+        logger.info('SSH tunnel server initialized successfully');
+      } catch (sshError) {
+        logger.error('Failed to initialize SSH tunnel server', {
+          error: sshError.message,
+          stack: sshError.stack,
+        });
+      }
+
     } catch (error) {
       logger.warn(
         'Authentication service initialization failed, continuing without auth features',
