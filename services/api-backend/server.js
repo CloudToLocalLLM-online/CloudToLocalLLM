@@ -722,6 +722,7 @@ async function initializeTunnelSystem() {
         AUTH0_DOMAIN,
         AUTH0_AUDIENCE,
         authDbMigrator, // Pass auth database connection to auth service
+        dbMigrator, // Pass main database connection to auth service
       });
       await authService.initialize();
       logger.info('Authentication service initialized successfully');

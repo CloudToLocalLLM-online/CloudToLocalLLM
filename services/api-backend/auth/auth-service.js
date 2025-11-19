@@ -28,7 +28,8 @@ export class AuthService {
 
     // Use separate auth database if provided, otherwise fallback to main database
     this.authDbMigrator = config.authDbMigrator || null;
-    this.db = this.authDbMigrator || new DatabaseMigrator();
+    this.mainDbMigrator = config.dbMigrator || null;
+    this.db = this.authDbMigrator || this.mainDbMigrator || new DatabaseMigrator();
 
     // Manual JWKS implementation to avoid jwks-client cache issues
     this.jwksUri = `https://${this.config.AUTH0_DOMAIN}/.well-known/jwks.json`;
@@ -47,8 +48,8 @@ export class AuthService {
     }
 
     try {
-      // If using separate auth database, it's already initialized in server.js
-      if (!this.authDbMigrator) {
+      // If using separate auth database or main db migrator, it's already initialized in server.js
+      if (!this.authDbMigrator && !this.mainDbMigrator) {
         await this.db.initialize();
       }
       this.initialized = true;
