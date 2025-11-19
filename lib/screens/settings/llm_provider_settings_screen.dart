@@ -41,10 +41,20 @@ class _LLMProviderSettingsScreenState extends State<LLMProviderSettingsScreen> {
   void initState() {
     super.initState();
     _ollamaService = OllamaService();
-    _streamingProxyService = StreamingProxyService(
-      authService: context.read<AuthService>(),
-    );
-    _llmProviderManager = context.read<LLMProviderManager>(); // Added
+    
+    try {
+      _streamingProxyService = StreamingProxyService(
+        authService: context.read<AuthService>(),
+      );
+    } catch (e) {
+      debugPrint('Warning: StreamingProxyService could not be initialized: $e');
+    }
+
+    try {
+      _llmProviderManager = context.read<LLMProviderManager>();
+    } catch (e) {
+      debugPrint('Warning: LLMProviderManager not found in context: $e');
+    }
 
     // Initial connection test
     if (_ollamaService != null && _streamingProxyService != null) {
@@ -135,17 +145,27 @@ class _LLMProviderSettingsScreenState extends State<LLMProviderSettingsScreen> {
                     ],
                   ),
                   const SizedBox(height: 16),
-                  LLMProviderSelector(
-                    onProviderChanged: (providerId) {
-                      // Handle provider change if needed
-                      debugPrint('Selected LLM Provider: $providerId');
-                    },
-                    onModelSelected: (providerId, modelName) {
-                      // Handle model selection if needed
-                      debugPrint('Selected Model: $modelName for $providerId');
-                    },
-                    showStatus: true,
-                  ),
+                  if (_llmProviderManager != null)
+                    LLMProviderSelector(
+                      onProviderChanged: (providerId) {
+                        // Handle provider change if needed
+                        debugPrint('Selected LLM Provider: $providerId');
+                      },
+                      onModelSelected: (providerId, modelName) {
+                        // Handle model selection if needed
+                        debugPrint(
+                            'Selected Model: $modelName for $providerId');
+                      },
+                      showStatus: true,
+                    )
+                  else
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 8.0),
+                      child: Text(
+                        'LLM Provider Manager is not available. Please ensure you are authenticated and services are initialized.',
+                        style: TextStyle(color: Colors.orange),
+                      ),
+                    ),
                 ],
               ),
             ),
