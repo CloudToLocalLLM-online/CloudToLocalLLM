@@ -120,7 +120,7 @@ export class SSHProxy {
     let userId = null;
     let authenticated = false;
 
-    client.on('authentication', async (ctx) => {
+    client.on('authentication', async(ctx) => {
       try {
         // Only accept password authentication (JWT as password)
         if (ctx.method !== 'password') {
