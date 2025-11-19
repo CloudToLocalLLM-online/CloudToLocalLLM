@@ -1,5 +1,5 @@
-import 'dart:io';
 import 'package:flutter/foundation.dart';
+import '../utils/platform_helper.dart';
 
 /// Platform service manager for graceful degradation of platform-specific features
 ///
@@ -78,19 +78,19 @@ class PlatformServiceManager extends ChangeNotifier {
         _isMobile = false;
         debugPrint(' [PlatformService] Detected web platform');
       } else {
-        if (Platform.isWindows) {
+        if (PlatformHelper.isWindows) {
           _platformName = 'windows';
           _isDesktop = true;
-        } else if (Platform.isMacOS) {
+        } else if (PlatformHelper.isMacOS) {
           _platformName = 'macos';
           _isDesktop = true;
-        } else if (Platform.isLinux) {
+        } else if (PlatformHelper.isLinux) {
           _platformName = 'linux';
           _isDesktop = true;
-        } else if (Platform.isAndroid) {
+        } else if (PlatformHelper.isAndroid) {
           _platformName = 'android';
           _isMobile = true;
-        } else if (Platform.isIOS) {
+        } else if (PlatformHelper.isIOS) {
           _platformName = 'ios';
           _isMobile = true;
         } else {

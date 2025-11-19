@@ -18,7 +18,8 @@ import '../services/enhanced_user_tier_service.dart';
 import '../services/langchain_integration_service.dart';
 import '../services/langchain_ollama_service.dart';
 import '../services/langchain_prompt_service.dart';
-import '../services/langchain_rag_service.dart';
+import '../services/langchain_rag_service.dart'
+    if (dart.library.html) '../services/langchain_rag_service_stub.dart';
 import '../services/llm_audit_service.dart';
 import '../services/llm_error_handler.dart';
 import '../services/llm_provider_manager.dart';

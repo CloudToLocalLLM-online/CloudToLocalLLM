@@ -7,9 +7,9 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
-import 'dart:io' show Platform;
 import 'package:window_manager/window_manager.dart';
 import '../../services/settings_preference_service.dart';
+import '../../utils/platform_helper.dart';
 import 'settings_category_widgets.dart';
 import 'settings_input_widgets.dart';
 import 'settings_base.dart';
@@ -62,7 +62,7 @@ class _DesktopSettingsCategoryContentState
   void initState() {
     super.initState();
     _preferencesService = SettingsPreferenceService();
-    _isWindows = Platform.isWindows;
+    _isWindows = PlatformHelper.isWindows;
     _loadSettings();
   }
 

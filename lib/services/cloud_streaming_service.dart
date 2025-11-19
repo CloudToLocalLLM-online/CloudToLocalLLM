@@ -1,8 +1,8 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
 import 'dart:convert' as convert;
 import 'package:flutter/foundation.dart';
+import 'package:web_socket_channel/web_socket_channel.dart';
 import 'package:dio/dio.dart';
 import 'package:rxdart/rxdart.dart';
 
@@ -25,7 +25,7 @@ class CloudStreamingService extends StreamingService {
   final BehaviorSubject<StreamingMessage> _messageSubject =
       BehaviorSubject<StreamingMessage>();
 
-  WebSocket? _webSocket;
+  WebSocketChannel? _channel;
   Timer? _heartbeatTimer;
   Timer? _reconnectTimer;
 
@@ -129,8 +129,8 @@ class CloudStreamingService extends StreamingService {
     _reconnectTimer?.cancel();
     _reconnectTimer = null;
 
-    await _webSocket?.close();
-    _webSocket = null;
+    await _channel?.sink.close();
+    _channel = null;
 
     _connection = StreamingConnection.disconnected();
     notifyListeners();
@@ -329,12 +329,12 @@ class CloudStreamingService extends StreamingService {
           .replaceFirst('http://', 'ws://');
       final wsUri = Uri.parse('$wsUrl/ws/stream');
 
-      _webSocket = await WebSocket.connect(wsUri.toString());
+      _channel = WebSocketChannel.connect(wsUri);
 
-      _webSocket!.listen(
+      _channel!.stream.listen(
         (data) {
           try {
-            final message = json.decode(data);
+            final message = json.decode(data as String);
             _handleWebSocketMessage(message);
           } catch (e) {
             debugPrint(
@@ -344,11 +344,11 @@ class CloudStreamingService extends StreamingService {
         },
         onError: (error) {
           debugPrint('☁ [CloudStreaming] WebSocket error: $error');
-          _webSocket = null;
+          _channel = null;
         },
         onDone: () {
           debugPrint('☁ [CloudStreaming] WebSocket connection closed');
-          _webSocket = null;
+          _channel = null;
         },
       );
 
@@ -366,7 +366,7 @@ class CloudStreamingService extends StreamingService {
     switch (type) {
       case 'ping':
         // Respond to ping with pong
-        _webSocket?.add(json.encode({'type': 'pong'}));
+        _channel?.sink.add(json.encode({'type': 'pong'}));
         break;
       case 'status':
         // Handle status updates
@@ -381,8 +381,8 @@ class CloudStreamingService extends StreamingService {
   void _startHeartbeat() {
     _heartbeatTimer?.cancel();
     _heartbeatTimer = Timer.periodic(const Duration(seconds: 30), (timer) {
-      if (_webSocket != null) {
-        _webSocket!.add(
+      if (_channel != null) {
+        _channel!.sink.add(
           json.encode({
             'type': 'ping',
             'timestamp': DateTime.now().toIso8601String(),

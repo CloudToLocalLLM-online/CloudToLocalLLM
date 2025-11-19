@@ -3,7 +3,8 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 
 import '../di/locator.dart';
-import '../main_sqflite_init.dart';
+import '../main_sqflite_init.dart'
+    if (dart.library.html) '../main_sqflite_init_stub.dart';
 
 /// Data returned by [AppBootstrapper] after the core environment is ready.
 class AppBootstrapData {
