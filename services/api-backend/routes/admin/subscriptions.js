@@ -9,7 +9,7 @@
 
 import express from 'express';
 import { adminAuth } from '../../middleware/admin-auth.js';
-import auditLogger from '../../utils/audit-logger.js';
+import { logAdminAction } from '../../utils/audit-logger.js';
 import logger from '../../logger.js';
 import {
   adminReadOnlyLimiter,
@@ -552,8 +552,7 @@ router.patch(
       }
 
       // Log action in audit log
-      await auditLogger.log({
-        db: req.db,
+      await logAdminAction({
         adminUserId: req.adminUser.id,
         adminRole: req.adminRoles[0],
         action: 'subscription_updated',
@@ -763,8 +762,7 @@ router.post(
         : new Date(existingSubscription.current_period_end);
 
       // Log action in audit log
-      await auditLogger.log({
-        db: req.db,
+      await logAdminAction({
         adminUserId: req.adminUser.id,
         adminRole: req.adminRoles[0],
         action: immediate
