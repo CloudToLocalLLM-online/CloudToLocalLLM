@@ -8,7 +8,7 @@
  */
 
 import express from 'express';
-import adminAuth from '../../middleware/admin-auth.js';
+import { adminAuth } from '../../middleware/admin-auth.js';
 import auditLogger from '../../utils/audit-logger.js';
 import logger from '../../logger.js';
 import {
