@@ -826,17 +826,6 @@ class _LocalLLMProvidersCategoryContentState
           ],
 
           const SizedBox(height: 24),
-
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: ElevatedButton(
-              onPressed: () {
-                throw StateError('This is test exception');
-              },
-              child: const Text('Verify Sentry Setup'),
-            ),
-          ),
-          const SizedBox(height: 24),
         ],
       ),
     );
