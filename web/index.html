@@ -117,7 +117,9 @@
         // Enable social connections (Google, GitHub, etc.)
         cacheLocation: 'localstorage',
         // Use a unique cache key to force refresh on audience change
-        cacheKey: 'auth0-cache-v2'
+        cacheKey: 'auth0-cache-v2',
+        // Use refresh tokens to support Incognito/Safari where 3rd party cookies are blocked
+        useRefreshTokens: true
       });
       console.log(' Auth0 initialized with audience:', audience);
     }
