@@ -311,7 +311,7 @@ class _CallbackScreenState extends State<CallbackScreen> {
 
           final authStateVerified = await _waitForAuthenticationState(
             authService,
-            maxAttempts: 3,
+            maxAttempts: 10, // Increased to 10 to allow for slower session creation/timeouts (50s total)
             attemptTimeout: const Duration(seconds: 5),
           );
 
