@@ -81,6 +81,18 @@ For any request that requires multiple steps, changes to several files, or a seq
         *   For issue management, use `issue_read` and `issue_write`.
         *   For searching, use `search_code`, `search_issues`, `search_pull_requests`, `search_repositories`, or `search_users` with appropriate queries.
 
+### D. Browser Tools
+
+*   **Server**: `github.com/AgentDeskAI/browser-tools-mcp`
+    *   **Tools**: `takeScreenshot`, `getConsoleLogs`, `getNetworkLogs`, `getNetworkErrors`, `runAccessibilityAudit`, `runPerformanceAudit`, `runSEOAudit`, `runBestPracticesAudit`, `runNextJSAudit`, `runAuditMode`, `runDebuggerMode`, `getSelectedElement`, `wipeLogs`.
+    *   **Use Case**: For interacting with the browser, capturing screenshots, analyzing console/network logs, and performing comprehensive web audits (accessibility, performance, SEO, best practices).
+    *   **Rules**:
+        *   **Prerequisites**: Ensure the local server is running (`npx @agentdeskai/browser-tools-server@latest`) and the BrowserTools Chrome extension is installed and connected.
+        *   **Visual Verification**: Use `takeScreenshot` to verify the visual state of the application or to debug UI issues.
+        *   **Debugging**: Use `getConsoleLogs` and `getNetworkErrors` to investigate runtime errors or failed network requests without leaving the IDE.
+        *   **Auditing**: Use `runAuditMode` or specific audit tools (`runAccessibilityAudit`, `runPerformanceAudit`, `runSEOAudit`) to check for compliance and optimizations.
+        *   **Context**: Use `getSelectedElement` to analyze the DOM element currently selected in the browser's DevTools.
+
 ---
 
 ## IV. CLI Tools Integration
