@@ -1,3 +1,4 @@
+import * as Sentry from '@sentry/node';
 import express from 'express';
 import http from 'http';
 import cors from 'cors';
@@ -60,8 +61,20 @@ const AUTH0_AUDIENCE =
 
 // AuthService will be initialized in initializeHttpPollingSystem()
 
+// Initialize Sentry
+Sentry.init({
+  dsn: 'https://b2fd3263e0ad7b490b0583f7df2e165a@o4509853774315520.ingest.us.sentry.io/4509853780541440',
+  tracesSampleRate: 1.0,
+});
+
 // Express app setup
 const app = express();
+
+// Sentry Request Handler must be the first middleware on the app
+app.use(Sentry.Handlers.requestHandler());
+// TracingHandler creates a trace for every incoming request
+app.use(Sentry.Handlers.tracingHandler());
+
 const server = http.createServer(app);
 
 // SSH tunnel server and auth service (initialized in initializeTunnelSystem)
@@ -652,6 +665,9 @@ app.get('/proxy/status', ...proxyStatusRoute); // Also register without /api pre
 // Ollama proxy endpoints removed - using HTTP polling tunnel system instead
 
 // The error handler must be registered before any other error middleware and after all controllers
+
+// Sentry Error Handler must be before any other error middleware and after all controllers
+app.use(Sentry.Handlers.errorHandler());
 
 // Error handling middleware
 app.use((error, req, res, _next) => {
