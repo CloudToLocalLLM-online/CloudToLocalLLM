@@ -9,6 +9,7 @@ environment:
   sdk: '>=3.5.0 <4.0.0'
 
 dependencies:
+  sentry_flutter: ^9.8.0
   flutter:
     sdk: flutter
 
@@ -80,6 +81,7 @@ dependencies:
   web: ^1.0.0
 
 dev_dependencies:
+  sentry_dart_plugin: ^3.2.0
   flutter_lints: ^6.0.0
   flutter_test:
     sdk: flutter
@@ -94,3 +96,9 @@ flutter:
   assets:
     - assets/images/
     - assets/version.json
+
+sentry:
+  upload_debug_symbols: true
+  upload_source_maps: true
+  project: cloudtolocalllm
+  org: cloudtolocalllm-lg

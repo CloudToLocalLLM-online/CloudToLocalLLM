@@ -42,6 +42,8 @@ import 'services/theme_provider.dart';
 import 'web_plugins_stub.dart'
     if (dart.library.html) 'package:flutter_web_plugins/url_strategy.dart';
 import 'widgets/tray_initializer.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
+
 import 'widgets/window_listener_widget.dart'
     if (dart.library.html) 'widgets/window_listener_widget_stub.dart';
 
@@ -77,14 +79,27 @@ void main() async {
   };
 
   runZonedGuarded(
-    () {
-      runApp(
-        FutureProvider<AppBootstrapData?>(
-          create: (_) => appLoadFuture,
-          initialData: null,
-          child: const CloudToLocalLLMApp(),
+    () async {
+      await SentryFlutter.init(
+        (options) {
+          options.dsn =
+              'https://b2fd3263e0ad7b490b0583f7df2e165a@o4509853774315520.ingest.us.sentry.io/4509853780541440';
+          // Set tracesSampleRate to 1.0 to capture 100% of transactions for tracing.
+          // We recommend adjusting this value in production.
+          options.tracesSampleRate = 1.0;
+        },
+        appRunner: () => runApp(
+          SentryWidget(
+            child: FutureProvider<AppBootstrapData?>(
+              create: (_) => appLoadFuture,
+              initialData: null,
+              child: const CloudToLocalLLMApp(),
+            ),
+          ),
         ),
       );
+      // TODO: Remove this line after sending the first sample event to sentry.
+      await Sentry.captureException(Exception('This is a sample exception.'));
     },
     (error, stack) {
       debugPrint('Uncaught error: $error');

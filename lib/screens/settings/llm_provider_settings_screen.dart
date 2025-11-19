@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
 
 import '../../config/theme.dart';
 import '../../config/app_config.dart';
@@ -10,6 +11,7 @@ import '../../services/ollama_service.dart';
 import '../../services/streaming_proxy_service.dart';
 import '../../services/auth_service.dart';
 import '../../services/llm_provider_manager.dart';
+import '../../di/locator.dart' as di;
 import '../../components/modern_card.dart';
 import '../../components/llm_provider_selector.dart';
 import '../../components/enhanced_provider_status_widget.dart';
@@ -46,17 +48,48 @@ class _LLMProviderSettingsScreenState extends State<LLMProviderSettingsScreen> {
     _ollamaService = OllamaService();
 
     try {
-      _streamingProxyService = StreamingProxyService(
-        authService: context.read<AuthService>(),
-      );
-    } catch (e) {
+      // Try to get from service locator first if available
+      if (di.serviceLocator.isRegistered<StreamingProxyService>()) {
+        _streamingProxyService = di.serviceLocator.get<StreamingProxyService>();
+      } else {
+        // Fallback to creating a new instance if context has AuthService
+        // Check if AuthService is available in context safely
+        try {
+          final authService = Provider.of<AuthService>(context, listen: false);
+          _streamingProxyService = StreamingProxyService(
+            authService: authService,
+          );
+        } catch (_) {
+          // AuthService not available
+        }
+      }
+    } catch (e, stackTrace) {
       debugPrint('Warning: StreamingProxyService could not be initialized: $e');
+      Sentry.captureException(
+        e,
+        stackTrace: stackTrace,
+        hint: Hint.withMap({'action': 'initStreamingProxyService'}),
+      );
     }
 
     try {
-      _llmProviderManager = context.read<LLMProviderManager>();
-    } catch (e) {
-      debugPrint('Warning: LLMProviderManager not found in context: $e');
+      if (di.serviceLocator.isRegistered<LLMProviderManager>()) {
+        _llmProviderManager = di.serviceLocator.get<LLMProviderManager>();
+      } else {
+        // Try context as fallback but catch error
+        try {
+          _llmProviderManager = Provider.of<LLMProviderManager>(context, listen: false);
+        } catch (_) {
+          // Not found
+        }
+      }
+    } catch (e, stackTrace) {
+      debugPrint('Warning: LLMProviderManager not found: $e');
+      Sentry.captureException(
+        e,
+        stackTrace: stackTrace,
+        hint: Hint.withMap({'action': 'initLLMProviderManager'}),
+      );
     }
 
     // Initial connection test
@@ -72,7 +105,11 @@ class _LLMProviderSettingsScreenState extends State<LLMProviderSettingsScreen> {
   }
 
   void _checkProviders() {
+    // Check if services are available via Provider (inherited widget)
+    // This is used to determine if we can use Consumer widgets later
+    
     try {
+      // Using Provider.of with listen: false to check existence
       Provider.of<StreamingProxyService>(context, listen: false);
       _hasStreamingProxyProvider = true;
     } catch (_) {

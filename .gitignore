@@ -154,3 +154,5 @@ android/*.jks
 android/key.properties
 android/keystore-backup-info.txt
 *.keystore
+
+sentry.properties

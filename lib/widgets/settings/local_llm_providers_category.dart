@@ -9,6 +9,7 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
 import '../../models/provider_configuration.dart';
 import '../../services/provider_configuration_manager.dart';
 import '../../di/locator.dart' as di;
@@ -64,36 +65,57 @@ class _LocalLLMProvidersCategoryContentState
   @override
   void initState() {
     super.initState();
+    _initializeServices();
+  }
+
+  Future<void> _initializeServices() async {
     // Get ProviderConfigurationManager from service locator (more reliable than Provider.of)
     try {
       _configManager = di.serviceLocator.get<ProviderConfigurationManager>();
-      _loadProviders();
-    } catch (e) {
-      debugPrint('[LocalLLMProviders] ProviderConfigurationManager not available: $e');
-      setState(() {
-        _errorMessage = 'Provider configuration manager not available. Please try refreshing the page.';
-        _isInitialized = true;
-      });
+      await _loadProviders();
+    } catch (e, stackTrace) {
+      debugPrint('[LocalLLMProviders] Error initializing services: $e');
+      await Sentry.captureException(
+        e,
+        stackTrace: stackTrace,
+        hint: Hint.withMap({'category': 'LocalLLMProviders'}),
+      );
+      
+      if (mounted) {
+        setState(() {
+          _errorMessage = 'Failed to initialize provider settings. Please try refreshing the page.';
+          _isInitialized = true; // Set initialized to true to show error UI
+        });
+      }
     }
   }
 
   /// Load providers from configuration manager
   Future<void> _loadProviders() async {
     try {
-      setState(() {
-        _isInitialized = true;
-        _errorMessage = null;
+      if (mounted) {
+        setState(() {
+          _isInitialized = true;
+          _errorMessage = null;
 
-        // Initialize provider enabled state
-        for (final config in _configManager.configurations) {
-          _providerEnabled[config.providerId] = true;
-        }
-      });
-    } catch (e) {
+          // Initialize provider enabled state
+          for (final config in _configManager.configurations) {
+            _providerEnabled[config.providerId] = true;
+          }
+        });
+      }
+    } catch (e, stackTrace) {
       debugPrint('[LocalLLMProviders] Error loading providers: $e');
-      setState(() {
-        _errorMessage = 'Failed to load providers';
-      });
+      await Sentry.captureException(
+        e,
+        stackTrace: stackTrace,
+        hint: Hint.withMap({'action': 'loadProviders'}),
+      );
+      if (mounted) {
+        setState(() {
+          _errorMessage = 'Failed to load providers';
+        });
+      }
     }
   }
 
@@ -194,18 +216,20 @@ class _LocalLLMProvidersCategoryContentState
 
       await _configManager.setConfiguration(config);
 
-      setState(() {
-        _isSaving = false;
-        _showAddForm = false;
-        _selectedProviderType = null;
-        _providerName = '';
-        _baseUrl = '';
-        _port = '';
-        _apiKey = null;
-        _fieldErrors.clear();
-        _successMessage = 'Provider added successfully';
-        _providerEnabled[providerId] = true;
-      });
+      if (mounted) {
+        setState(() {
+          _isSaving = false;
+          _showAddForm = false;
+          _selectedProviderType = null;
+          _providerName = '';
+          _baseUrl = '';
+          _port = '';
+          _apiKey = null;
+          _fieldErrors.clear();
+          _successMessage = 'Provider added successfully';
+          _providerEnabled[providerId] = true;
+        });
+      }
 
       // Clear success message after 2 seconds
       Future.delayed(const Duration(seconds: 2), () {
@@ -215,12 +239,19 @@ class _LocalLLMProvidersCategoryContentState
           });
         }
       });
-    } catch (e) {
+    } catch (e, stackTrace) {
       debugPrint('[LocalLLMProviders] Error adding provider: $e');
-      setState(() {
-        _isSaving = false;
-        _errorMessage = 'Failed to add provider: ${e.toString()}';
-      });
+      await Sentry.captureException(
+        e,
+        stackTrace: stackTrace,
+        hint: Hint.withMap({'action': 'addProvider'}),
+      );
+      if (mounted) {
+        setState(() {
+          _isSaving = false;
+          _errorMessage = 'Failed to add provider: ${e.toString()}';
+        });
+      }
     }
   }
 
@@ -250,11 +281,13 @@ class _LocalLLMProvidersCategoryContentState
     try {
       await _configManager.removeConfiguration(providerId);
 
-      setState(() {
-        _providerEnabled.remove(providerId);
-        _testResults.remove(providerId);
-        _successMessage = 'Provider removed successfully';
-      });
+      if (mounted) {
+        setState(() {
+          _providerEnabled.remove(providerId);
+          _testResults.remove(providerId);
+          _successMessage = 'Provider removed successfully';
+        });
+      }
 
       // Clear success message after 2 seconds
       Future.delayed(const Duration(seconds: 2), () {
@@ -264,11 +297,18 @@ class _LocalLLMProvidersCategoryContentState
           });
         }
       });
-    } catch (e) {
+    } catch (e, stackTrace) {
       debugPrint('[LocalLLMProviders] Error removing provider: $e');
-      setState(() {
-        _errorMessage = 'Failed to remove provider: ${e.toString()}';
-      });
+      await Sentry.captureException(
+        e,
+        stackTrace: stackTrace,
+        hint: Hint.withMap({'action': 'removeProvider', 'providerId': providerId}),
+      );
+      if (mounted) {
+        setState(() {
+          _errorMessage = 'Failed to remove provider: ${e.toString()}';
+        });
+      }
     }
   }
 
@@ -290,28 +330,41 @@ class _LocalLLMProvidersCategoryContentState
           ProviderConfigurationFactory.validateConfiguration(config);
 
       if (!validationResult.isValid) {
-        setState(() {
-          _testResults[providerId] =
-              'Invalid configuration: ${validationResult.errors.join(', ')}';
-        });
+        if (mounted) {
+          setState(() {
+            _testResults[providerId] =
+                'Invalid configuration: ${validationResult.errors.join(', ')}';
+          });
+        }
       } else {
         // Simulate connection test (in real implementation, would call actual service)
         await Future.delayed(const Duration(seconds: 2));
 
+        if (mounted) {
+          setState(() {
+            _testResults[providerId] = 'Connection successful';
+          });
+        }
+      }
+    } catch (e, stackTrace) {
+      debugPrint('[LocalLLMProviders] Error testing connection: $e');
+      await Sentry.captureException(
+        e,
+        stackTrace: stackTrace,
+        hint: Hint.withMap({'action': 'testConnection', 'providerId': providerId}),
+      );
+      if (mounted) {
         setState(() {
-          _testResults[providerId] = 'Connection successful';
+          _testResults[providerId] = 'Connection failed: ${e.toString()}';
         });
       }
-    } catch (e) {
-      debugPrint('[LocalLLMProviders] Error testing connection: $e');
-      setState(() {
-        _testResults[providerId] = 'Connection failed: ${e.toString()}';
-      });
     } finally {
-      setState(() {
-        _isTesting = false;
-        _testingProviderId = null;
-      });
+      if (mounted) {
+        setState(() {
+          _isTesting = false;
+          _testingProviderId = null;
+        });
+      }
     }
   }
 
@@ -320,9 +373,11 @@ class _LocalLLMProvidersCategoryContentState
     try {
       await _configManager.setPreferredProvider(providerId);
 
-      setState(() {
-        _successMessage = 'Default provider updated';
-      });
+      if (mounted) {
+        setState(() {
+          _successMessage = 'Default provider updated';
+        });
+      }
 
       // Clear success message after 2 seconds
       Future.delayed(const Duration(seconds: 2), () {
@@ -332,11 +387,18 @@ class _LocalLLMProvidersCategoryContentState
           });
         }
       });
-    } catch (e) {
+    } catch (e, stackTrace) {
       debugPrint('[LocalLLMProviders] Error setting default provider: $e');
-      setState(() {
-        _errorMessage = 'Failed to set default provider: ${e.toString()}';
-      });
+      await Sentry.captureException(
+        e,
+        stackTrace: stackTrace,
+        hint: Hint.withMap({'action': 'setDefaultProvider', 'providerId': providerId}),
+      );
+      if (mounted) {
+        setState(() {
+          _errorMessage = 'Failed to set default provider: ${e.toString()}';
+        });
+      }
     }
   }
 
