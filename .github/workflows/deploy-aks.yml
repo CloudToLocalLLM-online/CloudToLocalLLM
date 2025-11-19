@@ -285,18 +285,20 @@ jobs:
 
         echo "Found Zone ID: $CF_ZONE_ID"
         
-        # Update SSL setting to 'strict' (Full Strict)
-        # This ensures Cloudflare validates the origin certificate (managed by cert-manager)
+        # Update SSL setting to 'full' (Full)
+        # We use 'full' instead of 'strict' to allow self-signed certificates during provisioning
+        # This prevents 526 errors if the Let's Encrypt certificate is renewing or not yet ready
+        # Traffic is still encrypted end-to-end
         RESPONSE=$(curl -s -X PATCH "https://api.cloudflare.com/client/v4/zones/$CF_ZONE_ID/settings/ssl" \
           -H "Authorization: Bearer $CF_API_TOKEN" \
           -H "Content-Type: application/json" \
-          --data '{"value": "strict"}')
+          --data '{"value": "full"}')
 
         SUCCESS=$(echo "$RESPONSE" | jq -r '.success')
         if [ "$SUCCESS" = "true" ]; then
-          echo "✅ Cloudflare SSL mode set to 'strict' (Full Strict)"
-          echo "   - Traffic between Cloudflare and AKS is fully encrypted"
-          echo "   - Cloudflare validates the Let's Encrypt certificate on AKS"
+          echo "✅ Cloudflare SSL mode set to 'full'"
+          echo "   - Traffic between Cloudflare and AKS is encrypted"
+          echo "   - Allows self-signed certificates (prevents 526 errors during provisioning)"
         else
           echo "❌ Failed to change SSL mode"
           echo "$RESPONSE" | jq '.errors'
