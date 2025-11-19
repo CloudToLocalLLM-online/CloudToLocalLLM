@@ -37,11 +37,14 @@ class _LLMProviderSettingsScreenState extends State<LLMProviderSettingsScreen> {
   final TextEditingController _messageController = TextEditingController();
   String? _chatResponse;
 
+  bool _hasStreamingProxyProvider = false;
+  bool _hasOllamaProvider = false;
+
   @override
   void initState() {
     super.initState();
     _ollamaService = OllamaService();
-    
+
     try {
       _streamingProxyService = StreamingProxyService(
         authService: context.read<AuthService>(),
@@ -59,6 +62,28 @@ class _LLMProviderSettingsScreenState extends State<LLMProviderSettingsScreen> {
     // Initial connection test
     if (_ollamaService != null && _streamingProxyService != null) {
       _testConnection();
+    }
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _checkProviders();
+  }
+
+  void _checkProviders() {
+    try {
+      Provider.of<StreamingProxyService>(context, listen: false);
+      _hasStreamingProxyProvider = true;
+    } catch (_) {
+      _hasStreamingProxyProvider = false;
+    }
+
+    try {
+      Provider.of<OllamaService>(context, listen: false);
+      _hasOllamaProvider = true;
+    } catch (_) {
+      _hasOllamaProvider = false;
     }
   }
 
@@ -248,60 +273,66 @@ class _LLMProviderSettingsScreenState extends State<LLMProviderSettingsScreen> {
           const SizedBox(height: 16),
 
           // Streaming proxy status
-          Consumer<StreamingProxyService>(
-            builder: (context, proxyService, child) {
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Icon(
-                        proxyService.isProxyRunning
-                            ? Icons.check_circle
-                            : Icons.error,
-                        color: proxyService.isProxyRunning
-                            ? Colors.green
-                            : Colors.red,
-                        size: 20,
-                      ),
-                      const SizedBox(width: 8),
+          if (_hasStreamingProxyProvider)
+            Consumer<StreamingProxyService>(
+              builder: (context, proxyService, child) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(
+                          proxyService.isProxyRunning
+                              ? Icons.check_circle
+                              : Icons.error,
+                          color: proxyService.isProxyRunning
+                              ? Colors.green
+                              : Colors.red,
+                          size: 20,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          proxyService.isProxyRunning
+                              ? 'Connected via CloudToLocalLLM streaming proxy'
+                              : 'Proxy tunnel connection failed - check authentication',
+                          style: Theme.of(context).textTheme.bodyMedium,
+                        ),
+                      ],
+                    ),
+                    if (proxyService.error != null) ...[
+                      const SizedBox(height: 8),
                       Text(
-                        proxyService.isProxyRunning
-                            ? 'Connected via CloudToLocalLLM streaming proxy'
-                            : 'Proxy tunnel connection failed - check authentication',
-                        style: Theme.of(context).textTheme.bodyMedium,
+                        'Error: ${proxyService.error}',
+                        style: Theme.of(
+                          context,
+                        ).textTheme.bodySmall?.copyWith(color: Colors.red),
                       ),
                     ],
-                  ),
-                  if (proxyService.error != null) ...[
-                    const SizedBox(height: 8),
-                    Text(
-                      'Error: ${proxyService.error}',
-                      style: Theme.of(
-                        context,
-                      ).textTheme.bodySmall?.copyWith(color: Colors.red),
-                    ),
+                    if (proxyService.isProxyRunning &&
+                        proxyService.proxyId != null) ...[
+                      const SizedBox(height: 8),
+                      Text(
+                        'Proxy ID: ${proxyService.proxyId}',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: Theme.of(context).colorScheme.outline,
+                            ),
+                      ),
+                      Text(
+                        'Uptime: ${proxyService.formattedUptime}',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: Theme.of(context).colorScheme.outline,
+                            ),
+                      ),
+                    ],
                   ],
-                  if (proxyService.isProxyRunning &&
-                      proxyService.proxyId != null) ...[
-                    const SizedBox(height: 8),
-                    Text(
-                      'Proxy ID: ${proxyService.proxyId}',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: Theme.of(context).colorScheme.outline,
-                          ),
-                    ),
-                    Text(
-                      'Uptime: ${proxyService.formattedUptime}',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: Theme.of(context).colorScheme.outline,
-                          ),
-                    ),
-                  ],
-                ],
-              );
-            },
-          ),
+                );
+              },
+            )
+          else
+            const Text(
+              'Streaming Proxy Service not available. Please authenticate first.',
+              style: TextStyle(color: Colors.orange),
+            ),
 
           const SizedBox(height: 16),
 
@@ -422,78 +453,88 @@ class _LLMProviderSettingsScreenState extends State<LLMProviderSettingsScreen> {
           const SizedBox(height: 16),
 
           // Connection status
-          Consumer<OllamaService>(
-            builder: (context, ollamaService, child) {
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Icon(
-                        ollamaService.isConnected
-                            ? Icons.check_circle
-                            : Icons.error,
-                        color: ollamaService.isConnected
-                            ? Colors.green
-                            : Colors.red,
-                        size: 20,
-                      ),
-                      const SizedBox(width: 8),
+          if (_hasOllamaProvider)
+            Consumer<OllamaService>(
+              builder: (context, ollamaService, child) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(
+                          ollamaService.isConnected
+                              ? Icons.check_circle
+                              : Icons.error,
+                          color: ollamaService.isConnected
+                              ? Colors.green
+                              : Colors.red,
+                          size: 20,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          ollamaService.isConnected
+                              ? (kIsWeb
+                                  ? 'Connected via CloudToLocalLLM streaming proxy'
+                                  : 'Connected to Ollama at localhost:$_ollamaPort')
+                              : (kIsWeb
+                                  ? 'Proxy tunnel connection failed - check authentication'
+                                  : 'Direct connection failed - ensure Ollama is running locally'),
+                          style: Theme.of(context).textTheme.bodyMedium,
+                        ),
+                      ],
+                    ),
+                    if (ollamaService.version != null) ...[
+                      const SizedBox(height: 8),
                       Text(
-                        ollamaService.isConnected
-                            ? (kIsWeb
-                                ? 'Connected via CloudToLocalLLM streaming proxy'
-                                : 'Connected to Ollama at localhost:$_ollamaPort')
-                            : (kIsWeb
-                                ? 'Proxy tunnel connection failed - check authentication'
-                                : 'Direct connection failed - ensure Ollama is running locally'),
-                        style: Theme.of(context).textTheme.bodyMedium,
+                        'Version: ${ollamaService.version}',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: Theme.of(context).colorScheme.outline,
+                            ),
                       ),
                     ],
-                  ),
-                  if (ollamaService.version != null) ...[
-                    const SizedBox(height: 8),
-                    Text(
-                      'Version: ${ollamaService.version}',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: Theme.of(context).colorScheme.outline,
-                          ),
-                    ),
+                    if (ollamaService.error != null) ...[
+                      const SizedBox(height: 8),
+                      Text(
+                        'Error: ${ollamaService.error}',
+                        style: Theme.of(
+                          context,
+                        ).textTheme.bodySmall?.copyWith(color: Colors.red),
+                      ),
+                    ],
                   ],
-                  if (ollamaService.error != null) ...[
-                    const SizedBox(height: 8),
-                    Text(
-                      'Error: ${ollamaService.error}',
-                      style: Theme.of(
-                        context,
-                      ).textTheme.bodySmall?.copyWith(color: Colors.red),
-                    ),
-                  ],
-                ],
-              );
-            },
-          ),
+                );
+              },
+            )
+          else
+            const Text('Ollama service not connected.'),
 
           const SizedBox(height: 16),
 
           // Test connection button
-          Consumer<OllamaService>(
-            builder: (context, ollamaService, child) {
-              return ElevatedButton.icon(
-                onPressed: ollamaService.isLoading ? null : _testConnection,
-                icon: ollamaService.isLoading
-                    ? const SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Icon(Icons.refresh),
-                label: Text(
-                  ollamaService.isLoading ? 'Testing...' : 'Test Connection',
-                ),
-              );
-            },
-          ),
+          if (_hasOllamaProvider)
+            Consumer<OllamaService>(
+              builder: (context, ollamaService, child) {
+                return ElevatedButton.icon(
+                  onPressed: ollamaService.isLoading ? null : _testConnection,
+                  icon: ollamaService.isLoading
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.refresh),
+                  label: Text(
+                    ollamaService.isLoading ? 'Testing...' : 'Test Connection',
+                  ),
+                );
+              },
+            )
+          else
+            ElevatedButton.icon(
+              onPressed: _testConnection,
+              icon: const Icon(Icons.refresh),
+              label: const Text('Test Connection (Local)'),
+            ),
         ],
       ),
     );
@@ -519,15 +560,89 @@ class _LLMProviderSettingsScreenState extends State<LLMProviderSettingsScreen> {
           const SizedBox(height: 16),
 
           // Available models
-          Consumer<OllamaService>(
-            builder: (context, ollamaService, child) {
-              if (ollamaService.models.isEmpty) {
+          if (_hasOllamaProvider)
+            Consumer<OllamaService>(
+              builder: (context, ollamaService, child) {
+                if (ollamaService.models.isEmpty) {
+                  return Column(
+                    children: [
+                      const Text(
+                        'No models available. Connect to Ollama to load models.',
+                      ),
+                      const SizedBox(height: 16),
+                      ElevatedButton.icon(
+                        onPressed: ollamaService.isLoading
+                            ? null
+                            : () => ollamaService.getModels(),
+                        icon: ollamaService.isLoading
+                            ? const SizedBox(
+                                width: 16,
+                                height: 16,
+                                child:
+                                    CircularProgressIndicator(strokeWidth: 2),
+                              )
+                            : const Icon(Icons.refresh),
+                        label: Text(
+                          ollamaService.isLoading
+                              ? 'Loading...'
+                              : 'Refresh Models',
+                        ),
+                      ),
+                    ],
+                  );
+                }
+
                 return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'No models available. Connect to Ollama to load models.',
+                    Text(
+                      'Available Models (${ollamaService.models.length})',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            fontWeight: FontWeight.w500,
+                          ),
                     ),
+                    const SizedBox(height: 8),
+
+                    // Model selection dropdown
+                    DropdownButtonFormField<String>(
+                      initialValue: _selectedModel,
+                      decoration: const InputDecoration(
+                        labelText: 'Select Model for Testing',
+                        border: OutlineInputBorder(),
+                      ),
+                      items: ollamaService.models.map((model) {
+                        return DropdownMenuItem<String>(
+                          value: model.name,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(model.name),
+                              if (model.size != null)
+                                Text(
+                                  'Size: ${model.size}',
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .bodySmall
+                                      ?.copyWith(
+                                        color: Theme.of(
+                                          context,
+                                        ).colorScheme.outline,
+                                      ),
+                                ),
+                            ],
+                          ),
+                        );
+                      }).toList(),
+                      onChanged: (value) {
+                        setState(() {
+                          _selectedModel = value;
+                        });
+                      },
+                    ),
+
                     const SizedBox(height: 16),
+
+                    // Refresh models button
                     ElevatedButton.icon(
                       onPressed: ollamaService.isLoading
                           ? null
@@ -547,78 +662,11 @@ class _LLMProviderSettingsScreenState extends State<LLMProviderSettingsScreen> {
                     ),
                   ],
                 );
-              }
-
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Available Models (${ollamaService.models.length})',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          fontWeight: FontWeight.w500,
-                        ),
-                  ),
-                  const SizedBox(height: 8),
-
-                  // Model selection dropdown
-                  DropdownButtonFormField<String>(
-                    initialValue: _selectedModel,
-                    decoration: const InputDecoration(
-                      labelText: 'Select Model for Testing',
-                      border: OutlineInputBorder(),
-                    ),
-                    items: ollamaService.models.map((model) {
-                      return DropdownMenuItem<String>(
-                        value: model.name,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(model.name),
-                            if (model.size != null)
-                              Text(
-                                'Size: ${model.size}',
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .bodySmall
-                                    ?.copyWith(
-                                      color: Theme.of(
-                                        context,
-                                      ).colorScheme.outline,
-                                    ),
-                              ),
-                          ],
-                        ),
-                      );
-                    }).toList(),
-                    onChanged: (value) {
-                      setState(() {
-                        _selectedModel = value;
-                      });
-                    },
-                  ),
-
-                  const SizedBox(height: 16),
-
-                  // Refresh models button
-                  ElevatedButton.icon(
-                    onPressed: ollamaService.isLoading
-                        ? null
-                        : () => ollamaService.getModels(),
-                    icon: ollamaService.isLoading
-                        ? const SizedBox(
-                            width: 16,
-                            height: 16,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const Icon(Icons.refresh),
-                    label: Text(
-                      ollamaService.isLoading ? 'Loading...' : 'Refresh Models',
-                    ),
-                  ),
-                ],
-              );
-            },
-          ),
+              },
+            )
+          else
+            const Text(
+                'Ollama service not available in global context. Testing functionality may be limited.'),
         ],
       ),
     );
@@ -658,26 +706,37 @@ class _LLMProviderSettingsScreenState extends State<LLMProviderSettingsScreen> {
           const SizedBox(height: 16),
 
           // Send button
-          Consumer<OllamaService>(
-            builder: (context, ollamaService, child) {
-              return ElevatedButton.icon(
-                onPressed:
-                    (ollamaService.isLoading || _messageController.text.isEmpty)
-                        ? null
-                        : _sendTestMessage,
-                icon: ollamaService.isLoading
-                    ? const SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Icon(Icons.send),
-                label: Text(
-                  ollamaService.isLoading ? 'Sending...' : 'Send Test Message',
-                ),
-              );
-            },
-          ),
+          if (_hasOllamaProvider)
+            Consumer<OllamaService>(
+              builder: (context, ollamaService, child) {
+                return ElevatedButton.icon(
+                  onPressed: (ollamaService.isLoading ||
+                          _messageController.text.isEmpty)
+                      ? null
+                      : _sendTestMessage,
+                  icon: ollamaService.isLoading
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.send),
+                  label: Text(
+                    ollamaService.isLoading
+                        ? 'Sending...'
+                        : 'Send Test Message',
+                  ),
+                );
+              },
+            )
+          else
+            ElevatedButton.icon(
+              onPressed: _messageController.text.isEmpty
+                  ? null
+                  : _sendTestMessage,
+              icon: const Icon(Icons.send),
+              label: const Text('Send Test Message (Local)'),
+            ),
 
           // Response display
           if (_chatResponse != null) ...[
