@@ -23,7 +23,7 @@ import logger from '../../logger.js';
 import { getPool } from '../../database/db-pool.js';
 import {
   adminReadOnlyLimiter,
-  adminWriteLimiter,
+  adminRateLimiter,
 } from '../../middleware/admin-rate-limiter.js';
 import GoogleWorkspaceService from '../../services/google-workspace-service.js';
 import EmailConfigService from '../../services/email-config-service.js';
@@ -63,7 +63,7 @@ function initializeServices(pool) {
  */
 router.post(
   '/oauth/start',
-  adminWriteLimiter,
+  adminRateLimiter,
   adminAuth(['manage_email_config']),
   async(req, res) => {
     try {
@@ -118,7 +118,7 @@ router.post(
  */
 router.post(
   '/oauth/callback',
-  adminWriteLimiter,
+  adminRateLimiter,
   adminAuth(['manage_email_config']),
   async(req, res) => {
     try {
@@ -295,7 +295,7 @@ router.get(
  */
 router.delete(
   '/config',
-  adminWriteLimiter,
+  adminRateLimiter,
   adminAuth(['manage_email_config']),
   async(req, res) => {
     try {
@@ -359,7 +359,7 @@ router.delete(
  */
 router.post(
   '/test',
-  adminWriteLimiter,
+  adminRateLimiter,
   adminAuth(['manage_email_config']),
   async(req, res) => {
     try {
@@ -680,7 +680,7 @@ router.get(
  */
 router.post(
   '/templates',
-  adminWriteLimiter,
+  adminRateLimiter,
   adminAuth(['manage_email_config']),
   async(req, res) => {
     try {
@@ -796,7 +796,7 @@ router.post(
  */
 router.put(
   '/templates/:id',
-  adminWriteLimiter,
+  adminRateLimiter,
   adminAuth(['manage_email_config']),
   async(req, res) => {
     try {
@@ -962,7 +962,7 @@ router.put(
  */
 router.delete(
   '/templates/:id',
-  adminWriteLimiter,
+  adminRateLimiter,
   adminAuth(['manage_email_config']),
   async(req, res) => {
     try {
