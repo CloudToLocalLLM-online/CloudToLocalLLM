@@ -360,7 +360,7 @@ class _CallbackScreenState extends State<CallbackScreen> {
                 debugPrint(
                   '[CallbackScreen] Redirecting to login due to service load failure',
                 );
-                context.go('/login?error=services_load_failed');
+                context.go('/login?login_error=services_load_failed');
               }
             }
           } else {
@@ -385,7 +385,7 @@ class _CallbackScreenState extends State<CallbackScreen> {
               debugPrint(
                 '[CallbackScreen] Redirecting to login due to auth state timeout',
               );
-              context.go('/login?error=auth_state_timeout');
+              context.go('/login?login_error=auth_state_timeout');
             }
           }
         } else {
@@ -408,7 +408,7 @@ class _CallbackScreenState extends State<CallbackScreen> {
             debugPrint(
               '[CallbackScreen] Redirecting to login due to callback failure',
             );
-            context.go('/login?error=callback_failed');
+            context.go('/login?login_error=callback_failed');
           }
         }
       }
@@ -435,8 +435,9 @@ class _CallbackScreenState extends State<CallbackScreen> {
         debugPrint('[CallbackScreen] Redirecting to login due to exception');
         debugPrint('[CallbackScreen] ===== CALLBACK PROCESSING FAILED =====');
 
-        // Redirect to login with error parameter
-        context.go('/login?error=${Uri.encodeComponent(errorInfo['type']!)}');
+        // Redirect to login with error parameter (using login_error to avoid triggering callback detection loop)
+        context.go(
+            '/login?login_error=${Uri.encodeComponent(errorInfo['type']!)}');
       }
     }
   }
