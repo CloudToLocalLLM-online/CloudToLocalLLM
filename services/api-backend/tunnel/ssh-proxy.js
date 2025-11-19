@@ -120,7 +120,7 @@ export class SSHProxy {
     let userId = null;
     let authenticated = false;
 
-    client.on('authentication', (ctx) => {
+    client.on('authentication', async (ctx) => {
       try {
         // Only accept password authentication (JWT as password)
         if (ctx.method !== 'password') {
@@ -139,14 +139,17 @@ export class SSHProxy {
         }
 
         // Validate JWT token
-        const decoded = this.authService.verifyToken(token);
+        const result = await this.authService.validateToken(token);
 
-        if (!decoded) {
+        if (!result.valid) {
           this.logger.warn('SSH auth invalid JWT token', {
             username: ctx.username,
+            error: result.error,
           });
           return ctx.reject(['password']);
         }
+
+        const decoded = result.payload;
 
         // Store user info
         userId = decoded.sub;
