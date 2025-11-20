@@ -27,15 +27,17 @@ spec:
                 configMapKeyRef:
                   name: cloudtolocalllm-config
                   key: DB_NAME
-            # Use appuser as the connection user (the one that actually exists)
             - name: PGUSER
-              value: "appuser"
+              valueFrom:
+                secretKeyRef:
+                  name: cloudtolocalllm-secrets
+                  key: postgres-user
             - name: PGPASSWORD
               valueFrom:
                 secretKeyRef:
                   name: cloudtolocalllm-secrets
                   key: postgres-password
-            - name: CLOUD_ADMIN_PASSWORD
+            - name: APP_USER_PASSWORD
               valueFrom:
                 secretKeyRef:
                   name: cloudtolocalllm-secrets
@@ -53,35 +55,27 @@ spec:
 
               echo "PostgreSQL is ready. Creating/updating users..."
 
-              # Check if cloud_admin exists
-              if psql -h $PGHOST -U $PGUSER -d $PGDATABASE -tAc "SELECT 1 FROM pg_roles WHERE rolname='cloud_admin'" | grep -q 1; then
-                echo "User cloud_admin already exists"
+              # Check if appuser exists
+              if psql -h $PGHOST -U $PGUSER -d $PGDATABASE -tAc "SELECT 1 FROM pg_roles WHERE rolname='appuser'" | grep -q 1; then
+                echo "User appuser already exists"
               else
-                echo "Creating cloud_admin user..."
+                echo "Creating appuser user..."
                 psql -h $PGHOST -U $PGUSER -d $PGDATABASE <<-EOSQL
-                  CREATE USER cloud_admin WITH PASSWORD '$CLOUD_ADMIN_PASSWORD' CREATEDB CREATEROLE;
-                  GRANT ALL PRIVILEGES ON DATABASE $PGDATABASE TO cloud_admin;
+                  CREATE USER appuser WITH PASSWORD '$APP_USER_PASSWORD';
+                  GRANT ALL PRIVILEGES ON DATABASE $PGDATABASE TO appuser;
               EOSQL
-                echo "User cloud_admin created successfully"
+                echo "User appuser created successfully"
               fi
 
               # Grant schema permissions
               echo "Granting schema permissions..."
               psql -h $PGHOST -U $PGUSER -d $PGDATABASE <<-EOSQL
                 -- Grant all privileges on all current tables, sequences, and functions
-                GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO cloud_admin;
-                GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO cloud_admin;
-                GRANT ALL PRIVILEGES ON ALL FUNCTIONS IN SCHEMA public TO cloud_admin;
-                
                 GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO appuser;
                 GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO appuser;
                 GRANT ALL PRIVILEGES ON ALL FUNCTIONS IN SCHEMA public TO appuser;
                 
                 -- Set default privileges for future objects
-                ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO cloud_admin;
-                ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO cloud_admin;
-                ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON FUNCTIONS TO cloud_admin;
-                
                 ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO appuser;
                 ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO appuser;
                 ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON FUNCTIONS TO appuser;

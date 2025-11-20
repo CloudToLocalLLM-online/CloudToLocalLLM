@@ -284,9 +284,13 @@ jobs:
         run: |
           echo "Deploying streaming-proxy resources..."
 
-          # Apply ConfigMap and Secret
+          # Create streaming-proxy secrets
+          kubectl create secret generic streaming-proxy-secrets \
+            --from-literal=SENTRY_DSN='${{ secrets.SENTRY_DSN }}' \
+            -n cloudtolocalllm --dry-run=client -o yaml | kubectl apply -f -
+
+          # Apply ConfigMap and other resources
           kubectl apply -f k8s/streaming-proxy-configmap.yaml
-          kubectl apply -f k8s/streaming-proxy-secret.yaml
           kubectl apply -f k8s/streaming-proxy-service.yaml
           kubectl apply -f k8s/streaming-proxy-deployment.yaml
 
