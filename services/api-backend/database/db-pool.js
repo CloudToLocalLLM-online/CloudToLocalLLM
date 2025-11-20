@@ -13,6 +13,8 @@
 
 import pg from 'pg';
 import logger from '../logger.js';
+import { wrapPool } from './query-wrapper.js';
+import { initializeQueryTracking } from './query-performance-tracker.js';
 
 const { Pool } = pg;
 
@@ -81,7 +83,13 @@ export function initializePool() {
     idleTimeout: `${poolConfig.idleTimeoutMillis}ms`,
   });
 
+  // Initialize query performance tracking
+  initializeQueryTracking();
+
   pool = new Pool(poolConfig);
+
+  // Wrap pool to track query performance
+  wrapPool(pool);
 
   // Handle pool errors
   pool.on('error', (err, _client) => {

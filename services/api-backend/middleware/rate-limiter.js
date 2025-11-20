@@ -8,6 +8,8 @@ import {
   ERROR_CODES,
   ErrorResponseBuilder,
 } from '../utils/logger.js';
+import { RateLimitViolationsService } from '../services/rate-limit-violations-service.js';
+import { rateLimitMetricsService } from '../services/rate-limit-metrics-service.js';
 
 /**
  * Rate limiter configuration
@@ -159,6 +161,7 @@ export class TunnelRateLimiter {
     this.config = { ...DEFAULT_CONFIG, ...config };
     this.userTrackers = new Map();
     this.logger = new TunnelLogger('rate-limiter');
+    this.violationsService = new RateLimitViolationsService();
 
     // Start cleanup interval
     this.cleanupInterval = setInterval(() => {
@@ -190,9 +193,33 @@ export class TunnelRateLimiter {
    * Check if request should be rate limited
    * @param {string} userId - User ID
    * @param {string} correlationId - Request correlation ID
+   * @param {Object} exemptionResult - Exemption check result (optional)
+   * @param {Object} requestContext - Request context for logging
    * @returns {Object} Rate limit result
    */
-  checkRateLimit(userId, correlationId) {
+  checkRateLimit(userId, correlationId, exemptionResult = null, requestContext = {}) {
+    // Check if request is exempt from rate limiting
+    if (exemptionResult && exemptionResult.exempt) {
+      this.logger.debug('Request exempt from rate limiting', {
+        correlationId,
+        userId,
+        exemptionRuleId: exemptionResult.ruleId,
+        exemptionType: exemptionResult.type,
+      });
+
+      return {
+        allowed: true,
+        exempt: true,
+        exemptionRuleId: exemptionResult.ruleId,
+        exemptionType: exemptionResult.type,
+        limits: {
+          window: { current: 0, max: this.config.maxRequests },
+          burst: { current: 0, max: this.config.maxBurstRequests },
+          concurrent: { current: 0, max: this.config.maxConcurrentRequests },
+        },
+      };
+    }
+
     const tracker = this.getUserTracker(userId);
     const counts = tracker.getCounts(
       this.config.windowMs,
@@ -209,6 +236,40 @@ export class TunnelRateLimiter {
         maxConcurrentRequests: this.config.maxConcurrentRequests,
         totalRequests: counts.totalRequests,
         blockedRequests: counts.blockedRequests,
+      });
+
+      // Record metrics
+      rateLimitMetricsService.recordViolation({
+        violationType: 'concurrent_limit_exceeded',
+        userId,
+        ipAddress: requestContext.ipAddress,
+      });
+      rateLimitMetricsService.recordRequestBlocked({
+        violationType: 'concurrent_limit_exceeded',
+        userId,
+      });
+
+      // Log violation asynchronously
+      this.logViolation({
+        userId,
+        violationType: 'concurrent_limit_exceeded',
+        endpoint: requestContext.endpoint,
+        method: requestContext.method,
+        ipAddress: requestContext.ipAddress,
+        userAgent: requestContext.userAgent,
+        context: {
+          correlationId,
+          concurrentRequests: counts.concurrentRequests,
+          maxConcurrentRequests: this.config.maxConcurrentRequests,
+          totalRequests: counts.totalRequests,
+          blockedRequests: counts.blockedRequests,
+        },
+      }).catch((error) => {
+        this.logger.error('Failed to log rate limit violation', {
+          error: error.message,
+          userId,
+          violationType: 'concurrent_limit_exceeded',
+        });
       });
 
       return {
@@ -235,6 +296,41 @@ export class TunnelRateLimiter {
         burstWindowMs: this.config.burstWindowMs,
         totalRequests: counts.totalRequests,
         blockedRequests: counts.blockedRequests,
+      });
+
+      // Record metrics
+      rateLimitMetricsService.recordViolation({
+        violationType: 'burst_limit_exceeded',
+        userId,
+        ipAddress: requestContext.ipAddress,
+      });
+      rateLimitMetricsService.recordRequestBlocked({
+        violationType: 'burst_limit_exceeded',
+        userId,
+      });
+
+      // Log violation asynchronously
+      this.logViolation({
+        userId,
+        violationType: 'burst_limit_exceeded',
+        endpoint: requestContext.endpoint,
+        method: requestContext.method,
+        ipAddress: requestContext.ipAddress,
+        userAgent: requestContext.userAgent,
+        context: {
+          correlationId,
+          burstRequests: counts.burstRequests,
+          maxBurstRequests: this.config.maxBurstRequests,
+          burstWindowMs: this.config.burstWindowMs,
+          totalRequests: counts.totalRequests,
+          blockedRequests: counts.blockedRequests,
+        },
+      }).catch((error) => {
+        this.logger.error('Failed to log rate limit violation', {
+          error: error.message,
+          userId,
+          violationType: 'burst_limit_exceeded',
+        });
       });
 
       return {
@@ -264,6 +360,41 @@ export class TunnelRateLimiter {
         blockedRequests: counts.blockedRequests,
       });
 
+      // Record metrics
+      rateLimitMetricsService.recordViolation({
+        violationType: 'window_limit_exceeded',
+        userId,
+        ipAddress: requestContext.ipAddress,
+      });
+      rateLimitMetricsService.recordRequestBlocked({
+        violationType: 'window_limit_exceeded',
+        userId,
+      });
+
+      // Log violation asynchronously
+      this.logViolation({
+        userId,
+        violationType: 'window_limit_exceeded',
+        endpoint: requestContext.endpoint,
+        method: requestContext.method,
+        ipAddress: requestContext.ipAddress,
+        userAgent: requestContext.userAgent,
+        context: {
+          correlationId,
+          windowRequests: counts.windowRequests,
+          maxRequests: this.config.maxRequests,
+          windowMs: this.config.windowMs,
+          totalRequests: counts.totalRequests,
+          blockedRequests: counts.blockedRequests,
+        },
+      }).catch((error) => {
+        this.logger.error('Failed to log rate limit violation', {
+          error: error.message,
+          userId,
+          violationType: 'window_limit_exceeded',
+        });
+      });
+
       return {
         allowed: false,
         reason: 'window_limit_exceeded',
@@ -280,6 +411,14 @@ export class TunnelRateLimiter {
 
     // Request is allowed
     tracker.addRequest();
+
+    // Record metrics
+    rateLimitMetricsService.recordRequestAllowed({
+      userId,
+    });
+    rateLimitMetricsService.updateWindowUsage(userId, counts.windowRequests + 1, this.config.maxRequests);
+    rateLimitMetricsService.updateBurstUsage(userId, counts.burstRequests + 1, this.config.maxBurstRequests);
+    rateLimitMetricsService.updateConcurrentRequests(userId, counts.concurrentRequests + 1);
 
     this.logger.debug('Rate limit check passed', {
       correlationId,
@@ -318,6 +457,22 @@ export class TunnelRateLimiter {
     const tracker = this.userTrackers.get(userId);
     if (tracker) {
       tracker.completeRequest();
+    }
+  }
+
+  /**
+   * Log a rate limit violation
+   * @param {Object} violation - Violation details
+   * @returns {Promise<void>}
+   */
+  async logViolation(violation) {
+    try {
+      await this.violationsService.logViolation(violation);
+    } catch (error) {
+      this.logger.error('Failed to log violation', {
+        error: error.message,
+        userId: violation.userId,
+      });
     }
   }
 
@@ -461,7 +616,18 @@ export function createTunnelRateLimitMiddleware(config = {}) {
       return next();
     }
 
-    const result = rateLimiter.checkRateLimit(userId, correlationId);
+    // Get exemption result if available (set by exemption middleware)
+    const exemptionResult = req.rateLimitExemption;
+
+    // Prepare request context for violation logging
+    const requestContext = {
+      endpoint: req.path,
+      method: req.method,
+      ipAddress: req.ip || req.connection.remoteAddress,
+      userAgent: req.get('user-agent'),
+    };
+
+    const result = rateLimiter.checkRateLimit(userId, correlationId, exemptionResult, requestContext);
 
     if (!result.allowed) {
       // Set rate limit headers
@@ -507,6 +673,14 @@ export function createTunnelRateLimitMiddleware(config = {}) {
           Date.now() + result.limits.window.windowMs,
         ).toISOString(),
       });
+
+      // Add exemption header if request is exempt
+      if (result.exempt) {
+        res.set({
+          'X-RateLimit-Exempt': 'true',
+          'X-RateLimit-Exempt-Rule': result.exemptionRuleId,
+        });
+      }
     }
 
     // Store rate limiter in request for cleanup

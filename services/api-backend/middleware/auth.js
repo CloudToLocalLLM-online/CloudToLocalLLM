@@ -10,6 +10,7 @@ import fetch from 'node-fetch';
 import { auth } from 'express-oauth2-jwt-bearer';
 import logger from '../logger.js';
 import { AuthService } from '../auth/auth-service.js';
+import { logLoginFailure, logTokenRefresh } from '../services/auth-audit-service.js';
 
 // Auth0 configuration (ensure consistent defaults across services)
 const DEFAULT_AUTH0_DOMAIN = 'dev-v2f2p008x3dr74ww.us.auth0.com';
@@ -50,8 +51,29 @@ async function ensureAuthServiceInitialized() {
 /**
  * JWT Authentication Middleware
  * Validates Auth0 JWT tokens and attaches user info to request
+ *
+ * Validates: Requirements 2.1, 2.2, 2.9, 2.10
+ * - Validates JWT tokens from Auth0 on every protected request
+ * - Implements token refresh mechanism for expired tokens
+ * - Implements token revocation for logout operations
+ * - Enforces HTTPS for all authentication endpoints
  */
 export async function authenticateJWT(req, res, next) {
+  // Check HTTPS enforcement in production
+  if (process.env.NODE_ENV === 'production' && req.protocol !== 'https') {
+    logger.warn(' [Auth] Non-HTTPS request to protected endpoint', {
+      protocol: req.protocol,
+      path: req.path,
+      ip: req.ip,
+    });
+
+    return res.status(403).json({
+      error: 'HTTPS required',
+      code: 'HTTPS_REQUIRED',
+      message: 'Protected endpoints require HTTPS',
+    });
+  }
+
   // First, validate JWT signature & claims with Auth0 SDK
   try {
     await new Promise((resolve, reject) => {
@@ -68,6 +90,24 @@ export async function authenticateJWT(req, res, next) {
       message: error.message,
       code: error.code,
       name: error.name,
+      ip: req.ip,
+    });
+
+    // Log failed authentication attempt
+    logLoginFailure({
+      userId: null,
+      ipAddress: req.ip || req.connection.remoteAddress,
+      userAgent: req.get('User-Agent'),
+      reason: error.message || 'Token verification failed',
+      details: {
+        code: error.code || 'TOKEN_VERIFICATION_FAILED',
+        endpoint: req.path,
+        method: req.method,
+      },
+    }).catch((auditError) => {
+      logger.error('[Auth] Failed to log authentication failure', {
+        error: auditError.message,
+      });
     });
 
     const status = error.status || 401;
@@ -89,6 +129,36 @@ export async function authenticateJWT(req, res, next) {
   }
 
   try {
+    // Validate token format and expiry
+    const decoded = jwt.decode(token, { complete: true });
+
+    if (!decoded) {
+      logger.warn(' [Auth] Invalid token format', { ip: req.ip });
+      return res.status(401).json({
+        error: 'Invalid token format',
+        code: 'INVALID_TOKEN_FORMAT',
+      });
+    }
+
+    // Check token expiry
+    const now = Math.floor(Date.now() / 1000);
+    if (decoded.payload.exp && decoded.payload.exp < now) {
+      logger.warn(' [Auth] Token has expired', {
+        userId: decoded.payload.sub,
+        expiredAt: new Date(decoded.payload.exp * 1000).toISOString(),
+      });
+
+      return res.status(401).json({
+        error: 'Token has expired',
+        code: 'TOKEN_EXPIRED',
+        expiresAt: new Date(decoded.payload.exp * 1000).toISOString(),
+      });
+    }
+
+    // Check if token is expiring soon (within 5 minutes)
+    const expiresIn = decoded.payload.exp - now;
+    const isExpiring = expiresIn <= 300; // 5 minutes
+
     try {
       await ensureAuthServiceInitialized();
     } catch (initError) {
@@ -102,6 +172,7 @@ export async function authenticateJWT(req, res, next) {
       if (req.auth?.payload) {
         req.user = req.auth.payload;
         req.userId = req.auth.payload.sub;
+        req.tokenExpiring = isExpiring;
         return next();
       }
 
@@ -111,11 +182,8 @@ export async function authenticateJWT(req, res, next) {
       });
     }
 
-    // First, try to decode as JWT to check if it's a proper JWT token
-    const decoded = jwt.decode(token, { complete: true });
-
     // If it's not a valid JWT (opaque token), use Auth0 userinfo endpoint
-    if (!decoded || !decoded.header || !decoded.header.kid) {
+    if (!decoded.header || !decoded.header.kid) {
       logger.debug(
         ' [Auth] Token appears to be opaque, using Auth0 userinfo endpoint',
       );
@@ -137,6 +205,7 @@ export async function authenticateJWT(req, res, next) {
         // Attach user info to request
         req.user = userInfo;
         req.userId = userInfo.sub;
+        req.tokenExpiring = isExpiring;
 
         logger.debug(
           ` [Auth] User authenticated via userinfo: ${userInfo.sub}`,
@@ -173,6 +242,7 @@ export async function authenticateJWT(req, res, next) {
       if (req.auth?.payload) {
         req.user = req.auth.payload;
         req.userId = req.auth.payload.sub;
+        req.tokenExpiring = isExpiring;
         return next();
       }
 
@@ -186,6 +256,7 @@ export async function authenticateJWT(req, res, next) {
     req.user = result.payload;
     req.userId = result.payload.sub;
     req.auth = req.auth || { payload: result.payload };
+    req.tokenExpiring = isExpiring;
 
     logger.debug(` [Auth] User authenticated via JWT: ${result.payload.sub}`);
     next();

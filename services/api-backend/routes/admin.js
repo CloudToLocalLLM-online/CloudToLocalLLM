@@ -36,13 +36,57 @@ import adminAdminsRoutes from './admin/admins.js';
 import adminDashboardRoutes from './admin/dashboard.js';
 import adminEmailRoutes from './admin/email.js';
 import adminDNSRoutes from './admin/dns.js';
+import adminBulkOperationsRoutes from './admin/bulk-operations.js';
 
 const router = express.Router();
 
 /**
- * GET /api/admin/system/stats
- * Get system statistics for admin dashboard
- * Rate limit: Read-only (200 req/min)
+ * @swagger
+ * /admin/system/stats:
+ *   get:
+ *     summary: Get system statistics
+ *     description: |
+ *       Retrieves system statistics for the admin dashboard.
+ *       Includes user counts, tunnel metrics, and system health.
+ *       
+ *       **Validates: Requirements 11.5, 11.8**
+ *       - Provides admin dashboards and reporting
+ *       - Provides system health and status endpoints
+ *     tags:
+ *       - Admin
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: System statistics retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     totalUsers:
+ *                       type: integer
+ *                     activeTunnels:
+ *                       type: integer
+ *                     totalRequests:
+ *                       type: integer
+ *                     systemHealth:
+ *                       type: string
+ *                       enum: [healthy, degraded, error]
+ *                 timestamp:
+ *                   type: string
+ *                   format: date-time
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       403:
+ *         $ref: '#/components/responses/ForbiddenError'
+ *       500:
+ *         $ref: '#/components/responses/ServerError'
  */
 router.get(
   '/system/stats',
@@ -79,9 +123,55 @@ router.get(
 );
 
 /**
- * POST /api/admin/flush/prepare
- * Prepare data flush operation and generate confirmation token
- * Rate limit: Default (100 req/min)
+ * @swagger
+ * /admin/flush/prepare:
+ *   post:
+ *     summary: Prepare data flush operation
+ *     description: |
+ *       Prepares a data flush operation and generates a confirmation token.
+ *       This is the first step in a multi-step confirmation process.
+ *       
+ *       **Validates: Requirements 11.3, 11.10**
+ *       - Implements admin audit logging for all operations
+ *       - Supports admin activity logging and audit trails
+ *     tags:
+ *       - Admin
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               targetUserId:
+ *                 type: string
+ *                 description: User ID to flush (optional, all users if omitted)
+ *               scope:
+ *                 type: string
+ *                 enum: [FULL_FLUSH, PARTIAL_FLUSH]
+ *                 description: Flush scope
+ *     responses:
+ *       200:
+ *         description: Flush operation prepared
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 confirmationToken:
+ *                   type: string
+ *                 expiresIn:
+ *                   type: integer
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       403:
+ *         $ref: '#/components/responses/ForbiddenError'
+ *       500:
+ *         $ref: '#/components/responses/ServerError'
  */
 router.post(
   '/flush/prepare',
@@ -397,5 +487,6 @@ router.use('/admins', adminAdminsRoutes);
 router.use('/dashboard', adminDashboardRoutes);
 router.use('/email', adminEmailRoutes);
 router.use('/dns', adminDNSRoutes);
+router.use('/bulk-operations', adminBulkOperationsRoutes);
 
 export default router;

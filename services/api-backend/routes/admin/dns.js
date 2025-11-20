@@ -21,7 +21,7 @@ import logger from '../../logger.js';
 import { getPool } from '../../database/db-pool.js';
 import {
   adminReadOnlyLimiter,
-  adminWriteLimiter,
+  adminRateLimiter,
 } from '../../middleware/admin-rate-limiter.js';
 import CloudflareDNSService from '../../services/cloudflare-dns-service.js';
 
@@ -55,7 +55,7 @@ function initializeService(pool) {
  */
 router.post(
   '/records',
-  adminWriteLimiter,
+  adminRateLimiter,
   adminAuth(['manage_dns_config']),
   async(req, res) => {
     try {
@@ -255,7 +255,7 @@ router.get(
  */
 router.put(
   '/records/:id',
-  adminWriteLimiter,
+  adminRateLimiter,
   adminAuth(['manage_dns_config']),
   async(req, res) => {
     try {
@@ -357,7 +357,7 @@ router.put(
  */
 router.delete(
   '/records/:id',
-  adminWriteLimiter,
+  adminRateLimiter,
   adminAuth(['manage_dns_config']),
   async(req, res) => {
     try {
@@ -555,7 +555,7 @@ router.get(
  */
 router.post(
   '/setup-google',
-  adminWriteLimiter,
+  adminRateLimiter,
   adminAuth(['manage_dns_config']),
   async(req, res) => {
     try {

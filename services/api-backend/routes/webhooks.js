@@ -33,12 +33,58 @@ const pool = new Pool({
 });
 
 /**
- * Stripe webhook endpoint
- *
- * POST /api/webhooks/stripe
- *
- * Receives and processes Stripe webhook events.
- * Verifies webhook signature for security.
+ * @swagger
+ * /webhooks/stripe:
+ *   post:
+ *     summary: Stripe webhook endpoint
+ *     description: |
+ *       Receives and processes Stripe webhook events for payment and subscription updates.
+ *       Verifies webhook signature for security and implements idempotency.
+ *       
+ *       **Validates: Requirements 10.2, 10.3**
+ *       - Implements webhook delivery with retry logic
+ *       - Implements webhook signature verification
+ *     tags:
+ *       - Webhooks
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               id:
+ *                 type: string
+ *                 description: Stripe event ID
+ *               type:
+ *                 type: string
+ *                 description: Event type (e.g., payment_intent.succeeded)
+ *               data:
+ *                 type: object
+ *                 description: Event data
+ *     responses:
+ *       200:
+ *         description: Webhook processed successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 received:
+ *                   type: boolean
+ *                 status:
+ *                   type: string
+ *                   enum: [processed, already_processed]
+ *       400:
+ *         description: Invalid webhook signature
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *             example:
+ *               error: "Webhook signature verification failed"
+ *       500:
+ *         $ref: '#/components/responses/ServerError'
  */
 router.post(
   '/stripe',

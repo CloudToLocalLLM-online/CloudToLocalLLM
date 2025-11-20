@@ -18,12 +18,52 @@ import logger from '../logger.js';
 const router = express.Router();
 
 /**
- * GET /api/db/pool/health
- * Perform a health check on the database connection pool
- *
- * Response:
- * - 200: Pool is healthy
- * - 503: Pool is unhealthy or not initialized
+ * @swagger
+ * /db/pool/health:
+ *   get:
+ *     summary: Database connection pool health check
+ *     description: |
+ *       Performs a health check on the database connection pool.
+ *       Returns pool status, response time, and metrics.
+ *       
+ *       **Validates: Requirements 9.10**
+ *       - Provides database health check endpoints
+ *     tags:
+ *       - Database
+ *     responses:
+ *       200:
+ *         description: Pool is healthy
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   enum: [healthy, unhealthy, error]
+ *                 responseTime:
+ *                   type: integer
+ *                   description: Response time in milliseconds
+ *                 poolMetrics:
+ *                   type: object
+ *                   properties:
+ *                     totalConnections:
+ *                       type: integer
+ *                     availableConnections:
+ *                       type: integer
+ *                     activeConnections:
+ *                       type: integer
+ *                 timestamp:
+ *                   type: string
+ *                   format: date-time
+ *       503:
+ *         description: Pool is unhealthy
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       500:
+ *         $ref: '#/components/responses/ServerError'
  */
 router.get('/pool/health', async(req, res) => {
   try {
@@ -58,13 +98,50 @@ router.get('/pool/health', async(req, res) => {
 });
 
 /**
- * GET /api/db/pool/metrics
- * Get current connection pool metrics
- * Requires admin authentication
- *
- * Response:
- * - 200: Metrics retrieved successfully
- * - 401: Unauthorized (not admin)
+ * @swagger
+ * /db/pool/metrics:
+ *   get:
+ *     summary: Get database connection pool metrics
+ *     description: |
+ *       Returns detailed metrics about the database connection pool.
+ *       Requires admin authentication.
+ *       
+ *       **Validates: Requirements 9.7**
+ *       - Tracks database performance metrics
+ *     tags:
+ *       - Database
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Pool metrics retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                 metrics:
+ *                   type: object
+ *                   properties:
+ *                     totalConnections:
+ *                       type: integer
+ *                     availableConnections:
+ *                       type: integer
+ *                     activeConnections:
+ *                       type: integer
+ *                     waitingRequests:
+ *                       type: integer
+ *                 timestamp:
+ *                   type: string
+ *                   format: date-time
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       403:
+ *         $ref: '#/components/responses/ForbiddenError'
+ *       500:
+ *         $ref: '#/components/responses/ServerError'
  */
 router.get('/pool/metrics', adminAuth(['view_system_metrics']), (req, res) => {
   try {

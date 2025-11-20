@@ -134,7 +134,7 @@ This document specifies requirements for enhancing the existing SSH-over-WebSock
 6. THE System SHALL support SSH connection multiplexing (multiple channels over one connection)
 7. THE Server SHALL limit SSH channel count per connection to 10
 8. THE System SHALL implement SSH compression for large data transfers
-9. THE Client SHALL support SSH agent forwarding for key-based authentication (future)
+9. THE Client SHALL support SSH agent forwarding for key-based authentication (planned for future release)
 10. THE System SHALL log SSH protocol errors with detailed context
 
 ### Requirement 8: Graceful Shutdown and Cleanup
@@ -147,7 +147,7 @@ This document specifies requirements for enhancing the existing SSH-over-WebSock
 2. THE Client SHALL send proper SSH disconnect message to server
 3. THE Client SHALL close WebSocket connection with close code 1000 (normal closure)
 4. THE Server SHALL wait for in-flight requests to complete before closing connections (timeout: 30 seconds)
-5. THE Server SHALL persist connection state for graceful restart
+5. THE Server SHALL persist connection state to Redis for graceful restart and recovery
 6. THE System SHALL log all shutdown events with reason codes
 7. THE Client SHALL save connection preferences and restore them on next startup
 8. THE Server SHALL notify connected clients before planned maintenance shutdowns
@@ -294,7 +294,78 @@ This specification uses native Node.js and Flutter modules for monitoring and ob
 - **Error Tracking**: Use native error handling and categorization in Dart
 - **Diagnostics**: Implement diagnostic test suite using Dart's testing framework
 
+## Future Features (Out of Scope - Planned for Future Releases)
 
+The following features are identified as valuable enhancements but are planned for future releases beyond the current scope:
+
+### Phase 2 Features (v2.0+)
+
+1. **SSH Agent Forwarding**
+   - Support for SSH agent forwarding to enable key-based authentication
+   - Secure forwarding of SSH keys through the tunnel
+   - Integration with system SSH agents (ssh-agent, pageant, etc.)
+   - Status: Planned for future release (referenced in Requirement 7.9)
+
+2. **macOS Platform Support**
+   - Native macOS desktop application
+   - macOS-specific optimizations and integrations
+   - System tray integration for macOS
+   - Status: Planned for future release (referenced in Compatibility)
+
+3. **Advanced Connection Pooling**
+   - Connection reuse across multiple requests
+   - Intelligent connection lifecycle management
+   - Connection warm-up and pre-allocation strategies
+   - Status: Planned for future release
+
+4. **Tunnel Failover and Redundancy**
+   - Support for multiple tunnel endpoints
+   - Automatic failover to backup tunnels
+   - Load balancing across multiple tunnel servers
+   - Status: Planned for future release
+
+5. **Enhanced Diagnostics Dashboard**
+   - Real-time tunnel visualization
+   - Network topology mapping
+   - Advanced troubleshooting tools
+   - Status: Planned for future release
+
+6. **Tunnel Analytics and Reporting**
+   - Historical usage analytics
+   - Performance trend analysis
+   - Custom report generation
+   - Status: Planned for future release
+
+7. **Advanced Rate Limiting Strategies**
+   - Token bucket with burst allowance
+   - Adaptive rate limiting based on system load
+   - Per-endpoint rate limiting
+   - Status: Planned for future release
+
+8. **Tunnel Encryption Enhancements**
+   - Support for additional cipher suites
+   - Post-quantum cryptography support
+   - Hardware security module (HSM) integration
+   - Status: Planned for future release
+
+9. **Multi-Protocol Tunneling**
+   - Support for protocols beyond SSH (HTTP/2, gRPC, etc.)
+   - Protocol-specific optimizations
+   - Transparent protocol detection
+   - Status: Planned for future release
+
+10. **Tunnel Sharing and Collaboration**
+    - Share tunnel access with other users
+    - Role-based access control for shared tunnels
+    - Audit logging for shared access
+    - Status: Planned for future release
+
+### Out of Scope Considerations
+
+- **Android/iOS Mobile Support**: Mobile platform support requires significant architectural changes and is not planned for the current release
+- **Tunnel Clustering**: Advanced clustering features beyond Redis-based state management are deferred
+- **Custom Protocol Handlers**: User-defined protocol handlers are planned for future extensibility
+- **Tunnel Marketplace**: Community-contributed tunnel configurations and plugins are planned for future releases
 
 ## Success Metrics
 

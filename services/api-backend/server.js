@@ -7,14 +7,23 @@ import rateLimit from 'express-rate-limit';
 import jwt from 'jsonwebtoken';
 import winston from 'winston';
 import dotenv from 'dotenv';
+import swaggerUi from 'swagger-ui-express';
+import { specs } from './swagger-config.js';
 import { StreamingProxyManager } from './streaming-proxy-manager.js';
+import { setupMiddlewarePipeline, getAuthMiddleware, getTierInfoMiddleware } from './middleware/pipeline.js';
+import { setupGracefulShutdown } from './middleware/graceful-shutdown.js';
 
 import adminRoutes from './routes/admin.js';
 import adminUserRoutes from './routes/admin/users.js';
 import adminSubscriptionRoutes from './routes/admin/subscriptions.js';
+import userRoutes from './routes/users.js';
+import userProfileRoutes, { initializeUserProfileService } from './routes/user-profile.js';
 import sessionRoutes from './routes/sessions.js';
 import clientLogRoutes from './routes/client-logs.js';
 import webhookRoutes from './routes/webhooks.js';
+import authRoutes from './routes/auth.js';
+import apiKeysRouter from './routes/api-keys.js';
+import tunnelRoutes, { initializeTunnelService } from './routes/tunnels.js';
 // SSH tunnel integration
 import { SSHProxy } from './tunnel/ssh-proxy.js';
 import { AuthService } from './auth/auth-service.js';
@@ -24,12 +33,21 @@ import { AuthDatabaseMigratorPG } from './database/migrate-auth-pg.js';
 import { initializePool } from './database/db-pool.js';
 import { startMonitoring, stopMonitoring } from './database/pool-monitor.js';
 import dbHealthRoutes from './routes/db-health.js';
+import databasePerformanceRoutes from './routes/database-performance.js';
 import turnCredentialsRoutes from './routes/turn-credentials.js';
 import { createTunnelRoutes } from './tunnel/tunnel-routes.js';
 import { createMonitoringRoutes } from './routes/monitoring.js';
 import { createConversationRoutes } from './routes/conversations.js';
 import { authenticateJWT } from './middleware/auth.js';
 import { addTierInfo, getUserTier, getTierFeatures } from './middleware/tier-check.js';
+import { HealthCheckService } from './services/health-check.js';
+import { createQueueStatusHandler, createQueueDrainHandler } from './middleware/request-queuing.js';
+import rateLimitMetricsRoutes from './routes/rate-limit-metrics.js';
+import { metricsCollectionMiddleware } from './middleware/metrics-collection.js';
+import prometheusMetricsRoutes from './routes/prometheus-metrics.js';
+import { metricsService } from './services/metrics-service.js';
+import changelogRoutes from './routes/changelog.js';
+import { getVersionInfoHandler } from './middleware/api-versioning.js';
 
 dotenv.config();
 
@@ -70,23 +88,11 @@ Sentry.init({
 // Express app setup
 const app = express();
 
-// Sentry Request Handler must be the first middleware on the app
-app.use(Sentry.Handlers.requestHandler());
-// TracingHandler creates a trace for every incoming request
-app.use(Sentry.Handlers.tracingHandler());
-
-const server = http.createServer(app);
-
-// SSH tunnel server and auth service (initialized in initializeTunnelSystem)
-let sshProxy = null;
-let sshAuthService = null;
-
 // Trust proxy headers (required for rate limiting behind nginx)
 // Use specific proxy configuration to avoid ERR_ERL_PERMISSIVE_TRUST_PROXY
 app.set('trust proxy', 1); // Trust first proxy (nginx)
 
-// CORS configuration - MUST be before ALL other middleware (including Helmet)
-// This ensures preflight OPTIONS requests are handled correctly
+// CORS configuration
 const corsOptions = {
   origin: function(origin, callback) {
     const allowedOrigins = [
@@ -109,115 +115,91 @@ const corsOptions = {
     'X-Requested-With',
     'Accept',
     'Origin',
+    'X-Correlation-ID',
   ],
-  exposedHeaders: ['Content-Length', 'X-Requested-With'],
+  exposedHeaders: ['Content-Length', 'X-Requested-With', 'X-Correlation-ID', 'X-Response-Time'],
   maxAge: 86400, // Cache preflight for 24 hours
   preflightContinue: false,
   optionsSuccessStatus: 204,
 };
 
-// Apply CORS middleware FIRST - before Helmet and other middleware
-app.use(cors(corsOptions));
-
-// Handle preflight requests explicitly BEFORE other routes
-// This ensures OPTIONS requests are handled before rate limiting or other middleware
-app.options('*', cors(corsOptions), (req, res) => {
-  // Explicitly end the OPTIONS request with 204 No Content
-  res.status(204).end();
+// Setup middleware pipeline with proper ordering
+setupMiddlewarePipeline(app, {
+  corsOptions,
+  rateLimitOptions: {
+    windowMs: 15 * 60 * 1000,
+    max: 100,
+    bridgeMax: 500,
+  },
+  timeoutMs: 30000,
+  enableCompression: true,
 });
 
-// Security middleware (after CORS to avoid interference)
-app.use(
-  helmet({
-    contentSecurityPolicy: {
-      directives: {
-        defaultSrc: ['\'self\''],
-        connectSrc: ['\'self\'', 'https:'],
-        scriptSrc: ['\'self\'', '\'unsafe-inline\''],
-        styleSrc: ['\'self\'', '\'unsafe-inline\''],
-        imgSrc: ['\'self\'', 'data:', 'https:'],
-      },
-    },
-    crossOriginResourcePolicy: { policy: 'cross-origin' }, // Allow CORS requests
-  }),
-);
+const server = http.createServer(app);
 
-// Rate limiting with different limits for bridge operations
-const createConditionalRateLimiter = () => {
-  // Standard rate limiter for general API endpoints
-  const standardLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 100, // limit each IP to 100 requests per windowMs
-    message: 'Too many requests from this IP, please try again later.',
-    standardHeaders: true,
-    legacyHeaders: false,
-  });
+// Setup graceful shutdown with in-flight request completion
+const shutdownManager = setupGracefulShutdown(server, {
+  shutdownTimeoutMs: 10000,
+  onShutdown: async () => {
+    logger.info('Running custom shutdown handlers');
+    // Custom shutdown logic will be added here
+  },
+});
 
-  // More lenient rate limiter for bridge operations
-  const bridgeLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 500, // Allow more requests for bridge operations (5x standard limit)
-    message: 'Too many bridge requests from this IP, please try again later.',
-    standardHeaders: true,
-    legacyHeaders: false,
-  });
+// SSH tunnel server and auth service (initialized in initializeTunnelSystem)
+let sshProxy = null;
+let sshAuthService = null;
 
-  return (req, res, next) => {
-    // Skip rate limiting for OPTIONS (preflight) requests
-    // CORS preflight requests should not be rate limited
-    if (req.method === 'OPTIONS') {
-      return next();
-    }
-    // Apply more lenient limits to bridge routes
-    if (req.path.startsWith('/api/bridge/')) {
-      return bridgeLimiter(req, res, next);
-    }
-    // Apply standard limits to all other routes
-    return standardLimiter(req, res, next);
-  };
-};
-
-app.use(createConditionalRateLimiter());
+// Health check service
+const healthCheckService = new HealthCheckService(logger);
 
 // Webhook routes MUST be mounted before body parsing middleware
 // Stripe requires raw body for signature verification
 app.use('/api/webhooks', webhookRoutes);
 app.use('/webhooks', webhookRoutes); // Also register without /api prefix for api subdomain
 
-// Body parsing middleware
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+// Swagger UI documentation endpoint
+// Serves OpenAPI specification and interactive Swagger UI
+app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(specs, {
+  swaggerOptions: {
+    url: '/api/docs/swagger.json',
+    displayOperationId: true,
+    filter: true,
+    showExtensions: true,
+    deepLinking: true,
+  },
+  customCss: '.swagger-ui .topbar { display: none }',
+  customSiteTitle: 'CloudToLocalLLM API Documentation',
+}));
 
-// Auth middleware
+// Serve OpenAPI specification as JSON
+app.get('/api/docs/swagger.json', (req, res) => {
+  res.setHeader('Content-Type', 'application/json');
+  res.send(specs);
+});
+
+// Also serve docs without /api prefix for api subdomain
+app.use('/docs', swaggerUi.serve, swaggerUi.setup(specs, {
+  swaggerOptions: {
+    url: '/docs/swagger.json',
+    displayOperationId: true,
+    filter: true,
+    showExtensions: true,
+    deepLinking: true,
+  },
+  customCss: '.swagger-ui .topbar { display: none }',
+  customSiteTitle: 'CloudToLocalLLM API Documentation',
+}));
+
+app.get('/docs/swagger.json', (req, res) => {
+  res.setHeader('Content-Type', 'application/json');
+  res.send(specs);
+});
+
+// Auth middleware wrapper for backward compatibility
 async function authenticateToken(req, res, next) {
-  const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1];
-
-  if (!token) {
-    return res.status(401).json({ error: 'Access token required' });
-  }
-
-  try {
-    // Get the signing key
-    const decoded = jwt.decode(token, { complete: true });
-    if (!decoded || !decoded.header.kid) {
-      return res.status(401).json({ error: 'Invalid token format' });
-    }
-
-    // Verify the token using AuthService (fallback if not initialized)
-    if (!authService) {
-      return res
-        .status(503)
-        .json({ error: 'Authentication service not ready' });
-    }
-    const verified = await authService.validateToken(token);
-
-    req.user = verified;
-    next();
-  } catch (error) {
-    logger.error('Token verification failed:', error);
-    return res.status(403).json({ error: 'Invalid or expired token' });
-  }
+  const authMiddleware = getAuthMiddleware();
+  return authMiddleware(req, res, next);
 }
 
 // Bridge connections removed - using HTTP polling only
@@ -288,6 +270,10 @@ const dbHealthHandler = async(req, res) => {
 app.get('/api/db/health', dbHealthHandler);
 app.get('/db/health', dbHealthHandler); // Also register without /api prefix for api subdomain
 
+// Authentication routes (token refresh, validation, logout)
+app.use('/api/auth', authRoutes);
+app.use('/auth', authRoutes); // Also register without /api prefix for api subdomain
+
 // Session management routes
 app.use('/api/auth/sessions', sessionRoutes);
 app.use('/auth/sessions', sessionRoutes); // Also register without /api prefix for api subdomain
@@ -300,6 +286,10 @@ app.use('/client-logs', clientLogRoutes); // Also register without /api prefix f
 app.use('/api/db', dbHealthRoutes);
 app.use('/db', dbHealthRoutes); // Also register without /api prefix for api subdomain
 
+// Database performance metrics routes
+app.use('/api/database/performance', databasePerformanceRoutes);
+app.use('/database/performance', databasePerformanceRoutes); // Also register without /api prefix for api subdomain
+
 // TURN server credentials (authenticated)
 app.use('/api/turn', turnCredentialsRoutes);
 app.use('/turn', turnCredentialsRoutes); // Also register without /api prefix for api subdomain
@@ -311,6 +301,22 @@ app.use('/api/admin/users', adminUserRoutes);
 app.use('/admin/users', adminUserRoutes); // Also register without /api prefix for api subdomain
 app.use('/api/admin', adminSubscriptionRoutes);
 app.use('/admin', adminSubscriptionRoutes); // Also register without /api prefix for api subdomain
+
+// User tier management routes
+app.use('/api/users', userRoutes);
+app.use('/users', userRoutes); // Also register without /api prefix for api subdomain
+
+// User profile management routes
+app.use('/api/users', userProfileRoutes);
+app.use('/users', userProfileRoutes); // Also register without /api prefix for api subdomain
+
+// API Key management routes (for service-to-service authentication)
+app.use('/api/api-keys', apiKeysRouter);
+app.use('/api-keys', apiKeysRouter); // Also register without /api prefix for api subdomain
+
+// Tunnel lifecycle management routes
+app.use('/api/tunnels', tunnelRoutes);
+app.use('/tunnels', tunnelRoutes); // Also register without /api prefix for api subdomain
 
 // LLM Tunnel Cloud Proxy Endpoints (support both /api/ollama and /ollama)
 const handleOllamaProxyRequest = async(req, res) => {
@@ -472,16 +478,78 @@ app.get('/api/user/tier', ...userTierHandler);
 app.get('/user/tier', ...userTierHandler); // Also register without /api prefix for api subdomain
 
 // Health check endpoints
-const healthHandler = (req, res) => {
-  res.json({
-    status: 'healthy',
-    timestamp: new Date().toISOString(),
-    tunnelSystem: 'websocket',
-    service: 'cloudtolocalllm-api',
-  });
+const healthHandler = async (req, res) => {
+  try {
+    const healthStatus = await healthCheckService.getHealthStatus();
+    
+    // Return appropriate HTTP status code based on health status
+    let statusCode = 200;
+    if (healthStatus.status === 'unhealthy') {
+      statusCode = 503; // Service Unavailable
+    } else if (healthStatus.status === 'degraded') {
+      statusCode = 200; // Still return 200 but indicate degraded status
+    }
+    
+    res.status(statusCode).json(healthStatus);
+  } catch (error) {
+    logger.error('Health check endpoint error:', error);
+    res.status(503).json({
+      status: 'unhealthy',
+      timestamp: new Date().toISOString(),
+      service: 'cloudtolocalllm-api',
+      error: 'Health check failed',
+      message: error.message,
+    });
+  }
 };
 app.get('/health', healthHandler);
 app.get('/api/health', healthHandler); // Also register with /api prefix for backward compatibility
+
+// API Version Information Endpoint
+// Returns information about supported API versions
+/**
+ * @swagger
+ * /api/versions:
+ *   get:
+ *     summary: Get API version information
+ *     description: Returns information about all supported API versions, including current version, default version, and deprecation status
+ *     tags:
+ *       - System
+ *     responses:
+ *       200:
+ *         description: API version information
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/APIVersionInfo'
+ *       500:
+ *         $ref: '#/components/responses/ServerError'
+ */
+const versionInfoHandler = getVersionInfoHandler();
+app.get('/api/versions', versionInfoHandler);
+app.get('/versions', versionInfoHandler); // Also register without /api prefix for api subdomain
+
+// Rate limit metrics routes
+app.use('/api/metrics', rateLimitMetricsRoutes);
+app.use('/metrics', rateLimitMetricsRoutes); // Also register without /api prefix for api subdomain
+
+// Prometheus metrics routes
+app.use('/api/prometheus', prometheusMetricsRoutes);
+app.use('/prometheus', prometheusMetricsRoutes); // Also register without /api prefix for api subdomain
+
+// Changelog and release notes routes
+app.use('/api/changelog', changelogRoutes);
+app.use('/changelog', changelogRoutes); // Also register without /api prefix for api subdomain
+
+// Queue status endpoints
+const queueStatusHandler = createQueueStatusHandler();
+app.get('/api/queue/status', queueStatusHandler);
+app.get('/queue/status', queueStatusHandler); // Also register without /api prefix for api subdomain
+
+// Queue drain endpoint (for testing/debugging)
+const queueDrainHandler = createQueueDrainHandler();
+app.post('/api/queue/drain', authenticateJWT, queueDrainHandler);
+app.post('/queue/drain', authenticateJWT, queueDrainHandler); // Also register without /api prefix for api subdomain
 
 // WebSocket bridge endpoints removed - using HTTP polling only
 
@@ -718,6 +786,10 @@ async function initializeTunnelSystem() {
       throw new Error('Database schema validation failed');
     }
 
+    // Register database with health check service
+    healthCheckService.registerDatabase(dbMigrator);
+    logger.info('Database registered with health check service');
+
     // Start database pool monitoring (Requirement 17)
     logger.info('Starting database pool monitoring...');
     startMonitoring();
@@ -743,6 +815,14 @@ async function initializeTunnelSystem() {
       await authService.initialize();
       logger.info('Authentication service initialized successfully');
 
+      // Register auth service with health check service
+      healthCheckService.registerService('auth-service', async () => {
+        return {
+          status: authService ? 'healthy' : 'unhealthy',
+          message: authService ? 'Authentication service is running' : 'Authentication service is not available',
+        };
+      });
+
       // Use the same auth service for SSH proxy
       sshAuthService = authService;
 
@@ -757,10 +837,26 @@ async function initializeTunnelSystem() {
         );
         await sshProxy.start();
         logger.info('SSH tunnel server initialized successfully');
+
+        // Register SSH proxy with health check service
+        healthCheckService.registerService('ssh-tunnel', async () => {
+          return {
+            status: sshProxy && sshProxy.isRunning ? 'healthy' : 'unhealthy',
+            message: sshProxy && sshProxy.isRunning ? 'SSH tunnel is running' : 'SSH tunnel is not running',
+          };
+        });
       } catch (sshError) {
         logger.error('Failed to initialize SSH tunnel server', {
           error: sshError.message,
           stack: sshError.stack,
+        });
+        
+        // Register SSH proxy as unhealthy
+        healthCheckService.registerService('ssh-tunnel', async () => {
+          return {
+            status: 'unhealthy',
+            message: 'SSH tunnel failed to initialize',
+          };
         });
       }
 
@@ -772,6 +868,28 @@ async function initializeTunnelSystem() {
       authService = null; // Set to null so routes can handle missing auth service
     }
 
+    // Initialize user profile service after database is ready
+    try {
+      await initializeUserProfileService();
+      logger.info('User profile service initialized successfully');
+    } catch (error) {
+      logger.error('Failed to initialize user profile service', {
+        error: error.message,
+      });
+      // Don't fail the entire server startup, just log the error
+    }
+
+    // Initialize tunnel service after database is ready
+    try {
+      await initializeTunnelService();
+      logger.info('Tunnel service initialized successfully');
+    } catch (error) {
+      logger.error('Failed to initialize tunnel service', {
+        error: error.message,
+      });
+      // Don't fail the entire server startup, just log the error
+    }
+
     // Initialize conversation routes after database is ready
     const conversationRouter = createConversationRoutes(dbMigrator, logger);
     app.use('/api/conversations', conversationRouter);
@@ -780,8 +898,10 @@ async function initializeTunnelSystem() {
 
     logger.info('WebSocket tunnel system ready');
 
-    process.on('SIGTERM', gracefulShutdown);
-    process.on('SIGINT', gracefulShutdown);
+    // Register custom shutdown handler with graceful shutdown manager
+    shutdownManager.shutdown = async () => {
+      await gracefulShutdown();
+    };
 
     logger.info('Tunnel system initialized successfully');
   } catch (error) {
@@ -815,15 +935,7 @@ async function gracefulShutdown() {
       await dbMigrator.close();
     }
 
-    server.close(() => {
-      logger.info('Server closed successfully');
-      process.exit(0);
-    });
-
-    setTimeout(() => {
-      logger.error('Forced shutdown after timeout');
-      process.exit(1);
-    }, 10000);
+    logger.info('All services closed successfully');
   } catch (error) {
     logger.error('Error during shutdown', { error: error.message });
     process.exit(1);

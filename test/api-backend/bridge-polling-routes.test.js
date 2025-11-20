@@ -6,22 +6,19 @@
 import request from 'supertest';
 import express from 'express';
 import jwt from 'jsonwebtoken';
-import bridgePollingRoutes from '../../services/api-backend/routes/bridge-polling-routes.js';
 
-// Mock the logger
-jest.mock('../../services/api-backend/utils/logger.js', () => ({
-  TunnelLogger: jest.fn().mockImplementation(() => ({
-    info: jest.fn(),
-    debug: jest.fn(),
-    error: jest.fn(),
-    warn: jest.fn(),
-  })),
-}));
+// Mock implementations
+const mockLogger = {
+  TunnelLogger: class {
+    info() {}
+    debug() {}
+    error() {}
+    warn() {}
+  }
+};
 
-// Mock the middleware
-jest.mock('../../services/api-backend/middleware/auth.js', () => ({
+const mockAuthMiddleware = {
   authenticateJWT: (req, res, next) => {
-    // Mock JWT authentication
     const token = req.headers.authorization?.replace('Bearer ', '');
     if (token === 'valid-token') {
       req.user = { sub: 'test-user-id' };
@@ -30,7 +27,10 @@ jest.mock('../../services/api-backend/middleware/auth.js', () => ({
       res.status(401).json({ error: 'Unauthorized' });
     }
   },
-}));
+};
+
+// Import after mocks are defined
+import bridgePollingRoutes from '../../services/api-backend/routes/bridge-polling-routes.js';
 
 jest.mock('../../services/api-backend/middleware/tier-check.js', () => ({
   addTierInfo: (req, res, next) => {
