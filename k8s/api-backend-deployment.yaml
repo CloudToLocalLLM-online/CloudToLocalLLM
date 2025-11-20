@@ -108,19 +108,19 @@ spec:
                   key: jwt-secret
             - name: AUTH0_DOMAIN
               valueFrom:
-                configMapKeyRef:
-                  name: cloudtolocalllm-config
-                  key: AUTH0_DOMAIN
+                secretKeyRef:
+                  name: cloudtolocalllm-secrets
+                  key: auth0-domain
             - name: AUTH0_AUDIENCE
               valueFrom:
-                configMapKeyRef:
-                  name: cloudtolocalllm-config
-                  key: AUTH0_AUDIENCE
+                secretKeyRef:
+                  name: cloudtolocalllm-secrets
+                  key: auth0-audience
             - name: AUTH0_CLIENT_ID
               valueFrom:
-                configMapKeyRef:
-                  name: cloudtolocalllm-config
-                  key: AUTH0_CLIENT_ID
+                secretKeyRef:
+                  name: cloudtolocalllm-secrets
+                  key: auth0-client-id
             
             # Admin Center Configuration
             - name: ADMIN_CENTER_ENABLED
@@ -200,4 +200,3 @@ spec:
             initialDelaySeconds: 10
             periodSeconds: 5
             timeoutSeconds: 3
-
