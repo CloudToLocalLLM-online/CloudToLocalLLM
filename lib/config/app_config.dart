@@ -21,6 +21,18 @@ class AppConfig {
   static const String auth0Audience = 'https://api.cloudtolocalllm.online';
   static const String auth0ClientId = 'FuXPnevXpp311CdYHGsbNZe9t3D8Ts7A';
 
+  // Sentry Configuration
+  // Can be overridden at compile time using --dart-define=SENTRY_DSN=your_dsn
+  static const String sentryDsn = String.fromEnvironment(
+    'SENTRY_DSN',
+    defaultValue:
+        'https://b2fd3263e0ad7b490b0583f7df2e165a@o4509853774315520.ingest.us.sentry.io/4509853780541440',
+  );
+  static const String sentryEnvironment = String.fromEnvironment(
+    'SENTRY_ENVIRONMENT',
+    defaultValue: kReleaseMode ? 'production' : 'development',
+  );
+
   // Development mode settings
   static const bool enableDevMode = true; // Set to false for production
   static const String devModeUser = 'dev@cloudtolocalllm.online';

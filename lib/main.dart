@@ -52,48 +52,53 @@ final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  _initializeClientLogBuffer();
 
-  Future<AppBootstrapData> loadApp() async {
-    // Note: Auth0 callback handling is now done by the router and CallbackScreen
-    // The router will detect callback parameters and route to /callback,
-    // where CallbackScreen will process the authentication
+  // Initialize Sentry FIRST to catch all errors including during app bootstrap
+  await SentryFlutter.init(
+    (options) {
+      options.dsn = AppConfig.sentryDsn;
+      options.environment = AppConfig.sentryEnvironment;
+      options.release = '${AppConfig.appName}@${AppConfig.appVersion}';
+      // Lower sample rate in production to reduce costs
+      options.tracesSampleRate = kReleaseMode ? 0.1 : 1.0;
+      // Enable debug only in development
+      options.debug = !kReleaseMode;
+    },
+    appRunner: () async {
+      // Now that Sentry is initialized, set up error handlers
+      FlutterError.onError = (details) {
+        FlutterError.presentError(details);
+        debugPrint('FlutterError: \'${details.exception}\'');
+        if (details.stack != null) {
+          debugPrint('Stack trace: ${details.stack}');
+        }
+        Sentry.captureException(
+          details.exception,
+          stackTrace: details.stack,
+        );
+      };
 
-    // Run the main bootstrap process
-    final bootstrapper = AppBootstrapper();
-    return await bootstrapper.load();
-  }
+      _initializeClientLogBuffer();
 
-  final appLoadFuture = loadApp();
+      Future<AppBootstrapData> loadApp() async {
+        // Note: Auth0 callback handling is now done by the router and CallbackScreen
+        // The router will detect callback parameters and route to /callback,
+        // where CallbackScreen will process the authentication
 
-  if (kIsWeb) {
-    usePathUrlStrategy();
-  }
+        // Run the main bootstrap process
+        final bootstrapper = AppBootstrapper();
+        return await bootstrapper.load();
+      }
 
-  FlutterError.onError = (details) async {
-    FlutterError.presentError(details);
-    debugPrint('FlutterError: \'${details.exception}\'');
-    if (details.stack != null) {
-      debugPrint('Stack trace: ${details.stack}');
-    }
-    await Sentry.captureException(
-      details.exception,
-      stackTrace: details.stack,
-    );
-  };
+      final appLoadFuture = loadApp();
 
-  runZonedGuarded(
-    () async {
-      await SentryFlutter.init(
-        (options) {
-          options.dsn =
-              'https://b2fd3263e0ad7b490b0583f7df2e165a@o4509853774315520.ingest.us.sentry.io/4509853780541440';
-          // Set tracesSampleRate to 1.0 to capture 100% of transactions for tracing.
-          // We recommend adjusting this value in production.
-          options.tracesSampleRate = 1.0;
-          options.debug = true; // Enable debug to see logs in console
-        },
-        appRunner: () => runApp(
+      if (kIsWeb) {
+        usePathUrlStrategy();
+      }
+
+      // Run the app inside a zone to catch async errors
+      runZonedGuarded(
+        () => runApp(
           SentryWidget(
             child: FutureProvider<AppBootstrapData?>(
               create: (_) => appLoadFuture,
@@ -102,17 +107,20 @@ void main() async {
             ),
           ),
         ),
+        (error, stack) {
+          debugPrint('Uncaught error: $error');
+          debugPrint('Stack trace: $stack');
+          Sentry.captureException(
+            error,
+            stackTrace: stack,
+          );
+        },
       );
-      // TODO: Remove this line after sending the first sample event to sentry.
-      await Sentry.captureException(Exception('This is a sample exception.'));
-    },
-    (error, stack) async {
-      debugPrint('Uncaught error: $error');
-      debugPrint('Stack trace: $stack');
-      await Sentry.captureException(
-        error,
-        stackTrace: stack,
-      );
+
+      // TODO: Remove this line after verifying Sentry works in production
+      if (!kReleaseMode) {
+        await Sentry.captureException(Exception('This is a sample exception.'));
+      }
     },
   );
 }

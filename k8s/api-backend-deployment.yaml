@@ -168,6 +168,14 @@ spec:
                   name: cloudtolocalllm-secrets
                   key: stripe-test-webhook-secret
 
+            # Sentry Configuration
+            - name: SENTRY_DSN
+              valueFrom:
+                secretKeyRef:
+                  name: cloudtolocalllm-secrets
+                  key: sentry-dsn
+                  optional: true
+
           securityContext:
             runAsNonRoot: true
             runAsUser: 1001

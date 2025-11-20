@@ -5,7 +5,19 @@ import * as Sentry from '@sentry/node';
 
 Sentry.init({
   dsn: process.env.SENTRY_DSN,
-  tracesSampleRate: 1.0,
+  environment: process.env.NODE_ENV || 'development',
+  release: process.env.VERSION || process.env.npm_package_version,
+  tracesSampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 1.0,
+  serverName: process.env.HOSTNAME || process.env.PROXY_ID || 'streaming-proxy',
+  beforeSend(event) {
+    // Add custom tags
+    if (event.tags) {
+      event.tags.service = 'streaming-proxy';
+      event.tags.userId = process.env.USER_ID || 'unknown';
+      event.tags.proxyId = process.env.PROXY_ID || 'unknown';
+    }
+    return event;
+  },
 });
 
 // Configuration from environment variables
@@ -161,74 +173,74 @@ if (OLLAMA_BASE_URL) {
 }
 
 // HTTP server for health checks and tunnel testing
-const server = http.createServer(async(req, res) => {
+const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, `http://${req.headers.host}`);
 
   switch (url.pathname) {
-  case '/health':
-    res.writeHead(200, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({
-      status: 'healthy',
-      userId: USER_ID,
-      proxyId: PROXY_ID,
-      ollamaBaseUrl: OLLAMA_BASE_URL,
-      tunnelConfigured: !!OLLAMA_BASE_URL,
-      uptime: process.uptime(),
-      timestamp: new Date().toISOString(),
-    }));
-    break;
-
-  case '/test-tunnel':
-    if (!httpClient) {
-      res.writeHead(503, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({
-        error: 'Tunnel not configured',
-        message: 'OLLAMA_BASE_URL environment variable not set',
-      }));
-      return;
-    }
-
-    try {
-      const isConnected = await httpClient.testConnectivity();
+    case '/health':
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({
-        tunnelConnected: isConnected,
-        stats: httpClient.getStats(),
-        timestamp: new Date().toISOString(),
-      }));
-    } catch (error) {
-      res.writeHead(500, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({
-        error: 'Tunnel test failed',
-        message: error.message,
-        stats: httpClient.getStats(),
-      }));
-    }
-    break;
-
-  case '/stats':
-    res.writeHead(200, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({
-      container: {
+        status: 'healthy',
         userId: USER_ID,
         proxyId: PROXY_ID,
+        ollamaBaseUrl: OLLAMA_BASE_URL,
+        tunnelConfigured: !!OLLAMA_BASE_URL,
         uptime: process.uptime(),
-        memoryUsage: process.memoryUsage(),
-      },
-      tunnel: httpClient ? {
-        configured: true,
-        baseUrl: OLLAMA_BASE_URL,
-        stats: httpClient.getStats(),
-      } : {
-        configured: false,
-      },
-      timestamp: new Date().toISOString(),
-    }));
-    break;
+        timestamp: new Date().toISOString(),
+      }));
+      break;
 
-  default:
-    res.writeHead(404, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ error: 'Not found' }));
+    case '/test-tunnel':
+      if (!httpClient) {
+        res.writeHead(503, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({
+          error: 'Tunnel not configured',
+          message: 'OLLAMA_BASE_URL environment variable not set',
+        }));
+        return;
+      }
+
+      try {
+        const isConnected = await httpClient.testConnectivity();
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({
+          tunnelConnected: isConnected,
+          stats: httpClient.getStats(),
+          timestamp: new Date().toISOString(),
+        }));
+      } catch (error) {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({
+          error: 'Tunnel test failed',
+          message: error.message,
+          stats: httpClient.getStats(),
+        }));
+      }
+      break;
+
+    case '/stats':
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({
+        container: {
+          userId: USER_ID,
+          proxyId: PROXY_ID,
+          uptime: process.uptime(),
+          memoryUsage: process.memoryUsage(),
+        },
+        tunnel: httpClient ? {
+          configured: true,
+          baseUrl: OLLAMA_BASE_URL,
+          stats: httpClient.getStats(),
+        } : {
+          configured: false,
+        },
+        timestamp: new Date().toISOString(),
+      }));
+      break;
+
+    default:
+      res.writeHead(404, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Not found' }));
   }
 });
 
@@ -247,7 +259,7 @@ process.on('SIGINT', () => {
 });
 
 // Start the container server
-server.listen(PORT, async() => {
+server.listen(PORT, async () => {
   logger.info(`Container server listening on port ${PORT}`, {
     userId: USER_ID,
     proxyId: PROXY_ID,
@@ -258,7 +270,7 @@ server.listen(PORT, async() => {
 
   // Test tunnel connectivity on startup if configured
   if (httpClient) {
-    setTimeout(async() => {
+    setTimeout(async () => {
       try {
         await httpClient.testConnectivity();
         logger.info('Initial tunnel connectivity test completed');
@@ -271,7 +283,7 @@ server.listen(PORT, async() => {
 
 // Periodic tunnel connectivity check
 if (httpClient) {
-  setInterval(async() => {
+  setInterval(async () => {
     try {
       await httpClient.testConnectivity();
     } catch (error) {
