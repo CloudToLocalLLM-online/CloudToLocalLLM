@@ -259,26 +259,6 @@ jobs:
 
           echo "✅ Admin Center migrations completed successfully"
 
-      - name: Initialize PostgreSQL database users
-        continue-on-error: false
-        run: |
-          echo "Initializing PostgreSQL database users..."
-
-          # Delete existing init job if it exists
-          kubectl delete job postgres-init-users -n cloudtolocalllm --ignore-not-found=true
-
-          # Apply database init job
-          kubectl apply -f k8s/postgres-init-users-job.yaml
-
-          # Wait for init to complete (timeout 3 minutes)
-          kubectl wait --for=condition=complete --timeout=180s job/postgres-init-users -n cloudtolocalllm || {
-            echo "⚠️ Database initialization failed or timed out"
-            kubectl logs job/postgres-init-users -n cloudtolocalllm || echo "Could not retrieve logs"
-            exit 1
-          }
-
-          echo "✅ Database users initialized successfully"
-
       - name: Apply streaming-proxy resources
         continue-on-error: false
         run: |
