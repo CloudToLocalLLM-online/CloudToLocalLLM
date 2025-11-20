@@ -1,16 +1,12 @@
 import * as Sentry from '@sentry/node';
 import express from 'express';
 import http from 'http';
-import cors from 'cors';
-import helmet from 'helmet';
-import rateLimit from 'express-rate-limit';
-import jwt from 'jsonwebtoken';
 import winston from 'winston';
 import dotenv from 'dotenv';
 import swaggerUi from 'swagger-ui-express';
 import { specs } from './swagger-config.js';
 import { StreamingProxyManager } from './streaming-proxy-manager.js';
-import { setupMiddlewarePipeline, getAuthMiddleware, getTierInfoMiddleware } from './middleware/pipeline.js';
+import { setupMiddlewarePipeline, getAuthMiddleware } from './middleware/pipeline.js'; // Removed getTierInfoMiddleware as it's not directly used here
 import { setupGracefulShutdown } from './middleware/graceful-shutdown.js';
 
 import adminRoutes from './routes/admin.js';
@@ -43,13 +39,17 @@ import { addTierInfo, getUserTier, getTierFeatures } from './middleware/tier-che
 import { HealthCheckService } from './services/health-check.js';
 import { createQueueStatusHandler, createQueueDrainHandler } from './middleware/request-queuing.js';
 import rateLimitMetricsRoutes from './routes/rate-limit-metrics.js';
-import { metricsCollectionMiddleware } from './middleware/metrics-collection.js';
 import prometheusMetricsRoutes from './routes/prometheus-metrics.js';
-import { metricsService } from './services/metrics-service.js';
 import changelogRoutes from './routes/changelog.js';
 import { getVersionInfoHandler } from './middleware/api-versioning.js';
 
 dotenv.config();
+
+// Initialize Sentry
+Sentry.init({
+  dsn: 'https://b2fd3263e0ad7b490b0583f7df2e165a@o4509853774315520.ingest.us.sentry.io/4509853780541440',
+  tracesSampleRate: 1.0,
+});
 
 // Initialize logger
 const logger = winston.createLogger({
@@ -78,12 +78,6 @@ const AUTH0_AUDIENCE =
   process.env.AUTH0_AUDIENCE || 'https://api.cloudtolocalllm.online';
 
 // AuthService will be initialized in initializeHttpPollingSystem()
-
-// Initialize Sentry
-Sentry.init({
-  dsn: 'https://b2fd3263e0ad7b490b0583f7df2e165a@o4509853774315520.ingest.us.sentry.io/4509853780541440',
-  tracesSampleRate: 1.0,
-});
 
 // Express app setup
 const app = express();
