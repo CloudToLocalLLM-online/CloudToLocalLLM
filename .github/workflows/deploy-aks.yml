@@ -436,3 +436,18 @@ jobs:
         
         echo "❌ API health check failed after $timeout seconds."
         exit 1
+
+    - name: Get API Backend Pod Logs on Failure
+      if: failure()
+      run: |
+        echo "::group::API Backend Pod Logs (on health check failure)"
+        echo "Attempting to retrieve logs for API backend pods..."
+        API_POD_NAME=$(kubectl get pods -n cloudtolocalllm -l app=api-backend -o jsonpath='{.items[0].metadata.name}' 2>/dev/null)
+        
+        if [ -n "$API_POD_NAME" ]; then
+          echo "Found API pod: $API_POD_NAME"
+          kubectl logs "$API_POD_NAME" -n cloudtolocalllm || echo "Could not retrieve logs for $API_POD_NAME"
+        else
+          echo "No API backend pods found to retrieve logs from."
+        fi
+        echo "::endgroup::"
