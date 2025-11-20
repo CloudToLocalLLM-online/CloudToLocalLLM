@@ -91,10 +91,10 @@ spec:
                   key: DB_NAME
             - name: DB_USER
               valueFrom:
-                configMapKeyRef:
-                  name: cloudtolocalllm-config
-                  key: DB_USER
-            
+                secretKeyRef:
+                  name: cloudtolocalllm-secrets
+                  key: postgres-user
+
             # Secrets
             - name: DB_PASSWORD
               valueFrom:
@@ -121,7 +121,7 @@ spec:
                 secretKeyRef:
                   name: cloudtolocalllm-secrets
                   key: auth0-client-id
-            
+
             # Admin Center Configuration
             - name: ADMIN_CENTER_ENABLED
               valueFrom:
@@ -133,7 +133,7 @@ spec:
                 configMapKeyRef:
                   name: cloudtolocalllm-config
                   key: ADMIN_EMAIL
-            
+
             # Database Connection Pool
             - name: DB_POOL_MAX
               valueFrom:
@@ -150,7 +150,7 @@ spec:
                 configMapKeyRef:
                   name: cloudtolocalllm-config
                   key: DB_POOL_CONNECTION_TIMEOUT
-            
+
             # Stripe API Keys (use test or live based on NODE_ENV)
             - name: STRIPE_SECRET_KEY
               valueFrom:
@@ -167,7 +167,7 @@ spec:
                 secretKeyRef:
                   name: cloudtolocalllm-secrets
                   key: stripe-test-webhook-secret
-          
+
           securityContext:
             runAsNonRoot: true
             runAsUser: 1001
@@ -176,7 +176,7 @@ spec:
               drop:
                 - ALL
             readOnlyRootFilesystem: false
-          
+
           resources:
             requests:
               memory: "512Mi"
@@ -184,7 +184,7 @@ spec:
             limits:
               memory: "2Gi"
               cpu: "500m"
-          
+
           livenessProbe:
             httpGet:
               path: /health
@@ -192,7 +192,7 @@ spec:
             initialDelaySeconds: 30
             periodSeconds: 10
             timeoutSeconds: 5
-          
+
           readinessProbe:
             httpGet:
               path: /health
