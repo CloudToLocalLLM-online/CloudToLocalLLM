@@ -413,26 +413,27 @@ jobs:
 
     - name: DNS Health Check
       run: |
-        echo "✅ Deployment configuration complete!"
-        echo ""
+        echo "Performing DNS and API health check..."
         echo "Load Balancer IP: ${{ steps.lb-ip.outputs.lb_ip }}"
-        echo ""
-        echo "⚠️  DNS Configuration:"
-        echo "  DNS records should be configured in Cloudflare DNS:"
-        echo "    cloudtolocalllm.online → ${{ steps.lb-ip.outputs.lb_ip }}"
-        echo "    app.cloudtolocalllm.online → ${{ steps.lb-ip.outputs.lb_ip }}"
-        echo "    api.cloudtolocalllm.online → ${{ steps.lb-ip.outputs.lb_ip }}"
-        echo "    auth.cloudtolocalllm.online → ${{ steps.lb-ip.outputs.lb_ip }}"
-        echo ""
-        echo "SSL/TLS: Automatic certificate provisioning via cert-manager with Cloudflare DNS"
-        echo "  - Certificates are automatically provisioned using Cloudflare DNS-01 challenge"
-        echo "  - Domain validation uses Cloudflare DNS API"
-        echo "  - HTTPS redirect is enforced at ingress level"
-        echo ""
-        echo "🎉 Application will be available at:"
-        echo "   https://cloudtolocalllm.online"
-        echo "   https://app.cloudtolocalllm.online"
-        echo "   https://api.cloudtolocalllm.online"
-        echo "   https://auth.cloudtolocalllm.online"
-        echo ""
-        echo "Note: SSL certificates may take a few minutes to provision on first deployment"
+        
+        # Wait up to 5 minutes for DNS to propagate and API to become healthy
+        timeout=300
+        interval=15
+        elapsed=0
+        
+        while [ $elapsed -lt $timeout ]; do
+          echo "Attempting to reach API at https://api.cloudtolocalllm.online/health..."
+          response_code=$(curl -s -o /dev/null -w "%{http_code}" https://api.cloudtolocalllm.online/health)
+          
+          if [ "$response_code" -eq 200 ]; then
+            echo "✅ API is healthy and reachable! (Status: $response_code)"
+            exit 0
+          else
+            echo "API not yet healthy (Status: $response_code). Retrying in $interval seconds..."
+            sleep $interval
+            elapsed=$((elapsed + interval))
+          fi
+        done
+        
+        echo "❌ API health check failed after $timeout seconds."
+        exit 1
