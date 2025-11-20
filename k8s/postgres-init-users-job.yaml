@@ -1,0 +1,94 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: postgres-init-users
+  namespace: cloudtolocalllm
+  labels:
+    app: postgres-init
+spec:
+  ttlSecondsAfterFinished: 300 # Clean up job after 5 minutes
+  backoffLimit: 3
+  template:
+    metadata:
+      labels:
+        app: postgres-init
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: postgres-init
+          image: postgres:16-alpine
+          env:
+            - name: PGHOST
+              value: "postgres.cloudtolocalllm.svc.cluster.local"
+            - name: PGPORT
+              value: "5432"
+            - name: PGDATABASE
+              valueFrom:
+                configMapKeyRef:
+                  name: cloudtolocalllm-config
+                  key: DB_NAME
+            # Use appuser as the connection user (the one that actually exists)
+            - name: PGUSER
+              value: "appuser"
+            - name: PGPASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: cloudtolocalllm-secrets
+                  key: postgres-password
+            - name: CLOUD_ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: cloudtolocalllm-secrets
+                  key: postgres-password
+          command:
+            - /bin/sh
+            - -c
+            - |
+              set -e
+              echo "Waiting for PostgreSQL to be ready..."
+              until pg_isready -h $PGHOST -p $PGPORT -U $PGUSER; do
+                echo "Waiting for postgres..."
+                sleep 2
+              done
+
+              echo "PostgreSQL is ready. Creating/updating users..."
+
+              # Check if cloud_admin exists
+              if psql -h $PGHOST -U $PGUSER -d $PGDATABASE -tAc "SELECT 1 FROM pg_roles WHERE rolname='cloud_admin'" | grep -q 1; then
+                echo "User cloud_admin already exists"
+              else
+                echo "Creating cloud_admin user..."
+                psql -h $PGHOST -U $PGUSER -d $PGDATABASE <<-EOSQL
+                  CREATE USER cloud_admin WITH PASSWORD '$CLOUD_ADMIN_PASSWORD' CREATEDB CREATEROLE;
+                  GRANT ALL PRIVILEGES ON DATABASE $PGDATABASE TO cloud_admin;
+              EOSQL
+                echo "User cloud_admin created successfully"
+              fi
+
+              # Grant schema permissions
+              echo "Granting schema permissions..."
+              psql -h $PGHOST -U $PGUSER -d $PGDATABASE <<-EOSQL
+                -- Grant all privileges on all current tables, sequences, and functions
+                GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO cloud_admin;
+                GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO cloud_admin;
+                GRANT ALL PRIVILEGES ON ALL FUNCTIONS IN SCHEMA public TO cloud_admin;
+                
+                GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO appuser;
+                GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO appuser;
+                GRANT ALL PRIVILEGES ON ALL FUNCTIONS IN SCHEMA public TO appuser;
+                
+                -- Set default privileges for future objects
+                ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO cloud_admin;
+                ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO cloud_admin;
+                ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON FUNCTIONS TO cloud_admin;
+                
+                ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO appuser;
+                ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO appuser;
+                ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON FUNCTIONS TO appuser;
+              EOSQL
+
+              echo "Database initialization completed successfully"
+
+              # List all users
+              echo "Current database users:"
+              psql -h $PGHOST -U $PGUSER -d postgres -c "\du"

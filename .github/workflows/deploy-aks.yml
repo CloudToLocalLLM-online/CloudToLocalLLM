@@ -23,6 +23,7 @@ env:
   REGISTRY: cloudtolocalllm
   API_IMAGE: cloudtolocalllm/cloudtolocalllm-api
   WEB_IMAGE: cloudtolocalllm/cloudtolocalllm-web
+  STREAMING_PROXY_IMAGE: cloudtolocalllm/cloudtolocalllm-streaming-proxy
   AZURE_RESOURCE_GROUP: cloudtolocalllm-rg
   AZURE_CLUSTER_NAME: cloudtolocalllm-aks
   AZURE_CONTAINER_REGISTRY: cloudtolocalllm
@@ -146,6 +147,26 @@ jobs:
           build-args: |
             BUILD_SHA=${{ github.sha }}
 
+      - name: Extract Streaming Proxy metadata
+        id: meta-streaming-proxy
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.STREAMING_PROXY_IMAGE }}
+          tags: |
+            type=sha,prefix={{branch}}-
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build and push Streaming Proxy image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./services/streaming-proxy
+          file: ./services/streaming-proxy/Dockerfile
+          push: true
+          tags: ${{ steps.meta-streaming-proxy.outputs.tags }}
+          labels: ${{ steps.meta-streaming-proxy.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
   deploy:
     needs: build
     runs-on: ubuntu-latest
@@ -237,6 +258,39 @@ jobs:
           }
 
           echo "✅ Admin Center migrations completed successfully"
+
+      - name: Initialize PostgreSQL database users
+        continue-on-error: false
+        run: |
+          echo "Initializing PostgreSQL database users..."
+
+          # Delete existing init job if it exists
+          kubectl delete job postgres-init-users -n cloudtolocalllm --ignore-not-found=true
+
+          # Apply database init job
+          kubectl apply -f k8s/postgres-init-users-job.yaml
+
+          # Wait for init to complete (timeout 3 minutes)
+          kubectl wait --for=condition=complete --timeout=180s job/postgres-init-users -n cloudtolocalllm || {
+            echo "⚠️ Database initialization failed or timed out"
+            kubectl logs job/postgres-init-users -n cloudtolocalllm || echo "Could not retrieve logs"
+            exit 1
+          }
+
+          echo "✅ Database users initialized successfully"
+
+      - name: Apply streaming-proxy resources
+        continue-on-error: false
+        run: |
+          echo "Deploying streaming-proxy resources..."
+
+          # Apply ConfigMap and Secret
+          kubectl apply -f k8s/streaming-proxy-configmap.yaml
+          kubectl apply -f k8s/streaming-proxy-secret.yaml
+          kubectl apply -f k8s/streaming-proxy-service.yaml
+          kubectl apply -f k8s/streaming-proxy-deployment.yaml
+
+          echo "✅ Streaming-proxy resources deployed"
 
       - name: Ensure cert-manager is installed
         continue-on-error: true
