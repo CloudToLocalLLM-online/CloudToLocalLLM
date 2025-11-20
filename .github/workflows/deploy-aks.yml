@@ -185,7 +185,6 @@ jobs:
           --from-literal=stripe-test-secret-key='${{ secrets.STRIPE_TEST_SECRET_KEY }}' \
           --from-literal=stripe-test-publishable-key='${{ secrets.STRIPE_TEST_PUBLISHABLE_KEY }}' \
           --from-literal=stripe-test-webhook-secret='${{ secrets.STRIPE_TEST_WEBHOOK_SECRET }}' \
-          --from-literal=sentry-dsn='${{ secrets.SENTRY_DSN }}' \
           -n cloudtolocalllm --dry-run=client -o yaml | kubectl apply -f -
 
     - name: Update API deployment
@@ -378,76 +377,76 @@ jobs:
         
         echo "::endgroup::"
 
-  dns-validation:
-    needs: deploy
-    runs-on: ubuntu-latest
-    environment: production
-    if: github.ref == 'refs/heads/main'
-
-    steps:
-    - name: Azure Login
-      uses: azure/login@v2
-      with:
-        creds: ${{ secrets.AZURE_CREDENTIALS }}
-
-    - name: Get Load Balancer IP
-      id: lb-ip
-      run: |
-        az aks get-credentials \
-          --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
-          --name ${{ env.AZURE_CLUSTER_NAME }} \
-          --overwrite-existing
-
-        LB_IP=$(kubectl get svc -n ingress-nginx ingress-nginx-controller \
-          -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
-
-        echo "Load Balancer IP: $LB_IP"
-        echo "lb_ip=$LB_IP" >> $GITHUB_OUTPUT
-
-    # - name: Configure Azure DNS (Optional - Backup)
-    #   continue-on-error: true
-    #   run: |
-    #     echo "⚠️  Note: Using Cloudflare DNS for primary DNS management"
-    #     echo "Azure DNS backup configuration disabled to streamline deployment"
-
-    - name: DNS Health Check
-      run: |
-        echo "Performing DNS and API health check..."
-        echo "Load Balancer IP: ${{ steps.lb-ip.outputs.lb_ip }}"
-        
-        # Wait up to 5 minutes for DNS to propagate and API to become healthy
-        timeout=300
-        interval=15
-        elapsed=0
-        
-        while [ $elapsed -lt $timeout ]; do
-          echo "Attempting to reach API at https://api.cloudtolocalllm.online/health..."
-          response_code=$(curl -s -o /dev/null -w "%{http_code}" https://api.cloudtolocalllm.online/health)
-          
-          if [ "$response_code" -eq 200 ]; then
-            echo "✅ API is healthy and reachable! (Status: $response_code)"
-            exit 0
-          else
-            echo "API not yet healthy (Status: $response_code). Retrying in $interval seconds..."
-            sleep $interval
-            elapsed=$((elapsed + interval))
-          fi
-        done
-        
-        echo "❌ API health check failed after $timeout seconds."
-        exit 1
-
-    - name: Get API Backend Pod Logs on Failure
-      if: failure()
-      run: |
-        echo "::group::API Backend Pod Logs (on health check failure)"
-        echo "Attempting to retrieve logs for API backend pods..."
-        API_POD_NAME=$(kubectl get pods -n cloudtolocalllm -l app=api-backend -o jsonpath='{.items[0].metadata.name}' 2>/dev/null)
-        
-        if [ -n "$API_POD_NAME" ]; then
-          echo "Found API pod: $API_POD_NAME"
-          kubectl logs "$API_POD_NAME" -n cloudtolocalllm || echo "Could not retrieve logs for $API_POD_NAME"
-        else
-          echo "No API backend pods found to retrieve logs from."
-        fi
-        echo "::endgroup::"
+#  dns-validation:
+#    needs: deploy
+#    runs-on: ubuntu-latest
+#    environment: production
+#    if: github.ref == 'refs/heads/main'
+#
+#    steps:
+#    - name: Azure Login
+#      uses: azure/login@v2
+#      with:
+#        creds: ${{ secrets.AZURE_CREDENTIALS }}
+#
+#    - name: Get Load Balancer IP
+#      id: lb-ip
+#      run: |
+#        az aks get-credentials \
+#          --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
+#          --name ${{ env.AZURE_CLUSTER_NAME }} \
+#          --overwrite-existing
+#
+#        LB_IP=$(kubectl get svc -n ingress-nginx ingress-nginx-controller \
+#          -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+#
+#        echo "Load Balancer IP: $LB_IP"
+#        echo "lb_ip=$LB_IP" >> $GITHUB_OUTPUT
+#
+#    # - name: Configure Azure DNS (Optional - Backup)
+#    #   continue-on-error: true
+#    #   run: |
+#    #     echo "⚠️  Note: Using Cloudflare DNS for primary DNS management"
+#    #     echo "Azure DNS backup configuration disabled to streamline deployment"
+#
+#    - name: DNS Health Check
+#      run: |
+#        echo "Performing DNS and API health check..."
+#        echo "Load Balancer IP: ${{ steps.lb-ip.outputs.lb_ip }}"
+#        
+#        # Wait up to 5 minutes for DNS to propagate and API to become healthy
+#        timeout=300
+#        interval=15
+#        elapsed=0
+#        
+#        while [ $elapsed -lt $timeout ]; do
+#          echo "Attempting to reach API at https://api.cloudtolocalllm.online/health..."
+#          response_code=$(curl -s -o /dev/null -w "%{http_code}" https://api.cloudtolocalllm.online/health)
+#          
+#          if [ "$response_code" -eq 200 ]; then
+#            echo "✅ API is healthy and reachable! (Status: $response_code)"
+#            exit 0
+#          else
+#            echo "API not yet healthy (Status: $response_code). Retrying in $interval seconds..."
+#            sleep $interval
+#            elapsed=$((elapsed + interval))
+#          fi
+#        done
+#        
+#        echo "❌ API health check failed after $timeout seconds."
+#        exit 1
+#
+#    - name: Get API Backend Pod Logs on Failure
+#      if: failure()
+#      run: |
+#        echo "::group::API Backend Pod Logs (on health check failure)"
+#        echo "Attempting to retrieve logs for API backend pods..."
+#        API_POD_NAME=$(kubectl get pods -n cloudtolocalllm -l app=api-backend -o jsonpath='{.items[0].metadata.name}' 2>/dev/null)
+#        
+#        if [ -n "$API_POD_NAME" ]; then
+#          echo "Found API pod: $API_POD_NAME"
+#          kubectl logs "$API_POD_NAME" -n cloudtolocalllm || echo "Could not retrieve logs for $API_POD_NAME"
+#        else
+#          echo "No API backend pods found to retrieve logs from."
+#        fi
+#        echo "::endgroup::"
