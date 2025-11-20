@@ -8,7 +8,6 @@
  * @version 1.0.0
  */
 
-import * as Sentry from '@sentry/node';
 import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
@@ -28,8 +27,8 @@ import logger from '../logger.js';
 /**
  * Middleware Pipeline Order (CRITICAL - DO NOT CHANGE WITHOUT UNDERSTANDING IMPLICATIONS)
  *
- * 1. Sentry Request Handler - Must be first for error tracking
- * 2. Sentry Tracing Handler - Distributed tracing
+ * 1. Sentry Request Handler - Removed (Handled by Sentry.init in server.js)
+ * 2. Sentry Tracing Handler - Removed (Handled by Sentry.init in server.js)
  * 3. CORS Middleware - Handle preflight requests early
  * 4. Helmet Security Headers - Security headers
  * 5. Request Logging - Log all requests with correlation IDs
@@ -60,12 +59,6 @@ export function setupMiddlewarePipeline(app, options = {}) {
     timeoutMs = 30000,
     enableCompression = true,
   } = options;
-
-  // 1. Sentry Request Handler - MUST be first
-  app.use(Sentry.Handlers.requestHandler());
-
-  // 2. Sentry Tracing Handler - For distributed tracing
-  app.use(Sentry.Handlers.tracingHandler());
 
   // 3. CORS Middleware - Handle preflight requests
   app.use(cors(corsOptions));

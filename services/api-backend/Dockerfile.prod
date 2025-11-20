@@ -1,5 +1,5 @@
 # ---- Base Node ----
-FROM node:24-alpine AS base
+FROM node:20-alpine AS base
 WORKDIR /api
 
 # Build tools for native modules (sqlite3)
@@ -13,7 +13,7 @@ RUN npm ci && \
     chown -R 1001:1001 /api
 
 # ---- Production ----
-FROM node:24-alpine AS production
+FROM node:20-alpine AS production
 
 # Install curl for health checks
 RUN apk add --no-cache curl

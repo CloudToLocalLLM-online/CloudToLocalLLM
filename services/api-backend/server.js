@@ -6,7 +6,7 @@ import dotenv from 'dotenv';
 import swaggerUi from 'swagger-ui-express';
 import { specs } from './swagger-config.js';
 import { StreamingProxyManager } from './streaming-proxy-manager.js';
-import { setupMiddlewarePipeline, getAuthMiddleware } from './middleware/pipeline.js'; // Removed getTierInfoMiddleware as it's not directly used here
+import { setupMiddlewarePipeline, getAuthMiddleware } from './middleware/pipeline.js';
 import { setupGracefulShutdown } from './middleware/graceful-shutdown.js';
 
 import adminRoutes from './routes/admin.js';
@@ -134,7 +134,7 @@ const server = http.createServer(app);
 // Setup graceful shutdown with in-flight request completion
 const shutdownManager = setupGracefulShutdown(server, {
   shutdownTimeoutMs: 10000,
-  onShutdown: async () => {
+  onShutdown: async() => {
     logger.info('Running custom shutdown handlers');
     // Custom shutdown logic will be added here
   },
@@ -472,7 +472,7 @@ app.get('/api/user/tier', ...userTierHandler);
 app.get('/user/tier', ...userTierHandler); // Also register without /api prefix for api subdomain
 
 // Health check endpoints
-const healthHandler = async (req, res) => {
+const healthHandler = async(req, res) => {
   try {
     const healthStatus = await healthCheckService.getHealthStatus();
     
@@ -729,7 +729,7 @@ app.get('/proxy/status', ...proxyStatusRoute); // Also register without /api pre
 // The error handler must be registered before any other error middleware and after all controllers
 
 // Sentry Error Handler must be before any other error middleware and after all controllers
-app.use(Sentry.Handlers.errorHandler());
+Sentry.setupExpressErrorHandler(app);
 
 // Error handling middleware
 app.use((error, req, res, _next) => {

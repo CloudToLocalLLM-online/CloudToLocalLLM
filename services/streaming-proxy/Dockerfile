@@ -1,5 +1,5 @@
 # Node.js streaming proxy
-FROM node:24-alpine
+FROM node:20-alpine
 WORKDIR /app
 
 # Install deps using files in the build context (services/streaming-proxy as context)

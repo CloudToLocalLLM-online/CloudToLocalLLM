@@ -341,7 +341,7 @@ ollama pull mistral:7b
 
 ### Admin Center API (Backend)
 
-The Admin Center provides secure administrative endpoints for managing users, subscriptions, and payments. **Note: Frontend UI is under development.**
+The Admin Center provides secure administrative endpoints and a comprehensive UI for managing users, subscriptions, and payments.
 
 **Available Endpoints:**
 
