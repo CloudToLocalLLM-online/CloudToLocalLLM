@@ -1,6 +1,7 @@
-const express = require('express');
+import express from 'express';
 const router = express.Router();
-const { Pool } = require('pg');
+import pg from 'pg';
+const { Pool } = pg;
 
 // Database connection
 const pool = new Pool({
@@ -174,4 +175,4 @@ router.post('/cleanup', async(req, res) => {
   }
 });
 
-module.exports = router;
+export default router;
