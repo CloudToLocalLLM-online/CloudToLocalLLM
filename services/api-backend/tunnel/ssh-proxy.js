@@ -3,7 +3,8 @@
  * Handles user connections, request forwarding, and connection lifecycle
  */
 
-import { Server as SSHServer } from 'ssh2';
+import ssh2 from 'ssh2';
+const { Server: SSHServer } = ssh2;
 
 /**
  * Manages SSH tunnel connections for tunneling HTTP requests
