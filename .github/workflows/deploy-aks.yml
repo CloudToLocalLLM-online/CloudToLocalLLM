@@ -29,7 +29,7 @@ env:
 
 jobs:
   build:
-    # This job builds and pushes the Docker images.
+    # This job builds and pushes the Docker images. (Forcing new commit)
     runs-on: ubuntu-latest
     outputs:
       api-image: ${{ steps.meta-api.outputs.tags }}
