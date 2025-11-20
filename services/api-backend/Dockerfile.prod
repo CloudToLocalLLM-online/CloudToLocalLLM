@@ -3,7 +3,7 @@ FROM node:24-alpine AS base
 WORKDIR /api
 
 # Build tools for native modules (sqlite3)
-RUN apk add --no-cache python3 make g++
+RUN apk add --no-cache python3 py3-setuptools make g++
 
 # Copy package files
 COPY package*.json ./
