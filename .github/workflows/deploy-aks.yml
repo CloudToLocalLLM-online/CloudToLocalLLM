@@ -220,6 +220,9 @@ jobs:
 
       - name: Create or update Kubernetes secret
         run: |
+          # Ensure namespace exists
+          kubectl apply -f k8s/namespace.yaml
+
           kubectl create secret generic cloudtolocalllm-secrets \
             --from-literal=postgres-user='cloud_admin' \
             --from-literal=postgres-password='CloudToLocalSecurePass2024!' \
@@ -235,6 +238,9 @@ jobs:
 
       - name: Update API deployment
         run: |
+          echo "Applying API deployment manifest..."
+          kubectl apply -f k8s/api-backend-deployment.yaml
+
           echo "Updating API deployment with image: ${{ env.API_IMAGE }}:latest"
           kubectl set image deployment/api-backend \
             api-backend=${{ env.API_IMAGE }}:latest \
@@ -246,24 +252,20 @@ jobs:
 
       - name: Update Web deployment
         run: |
+          echo "Applying Web deployment manifest..."
+          kubectl apply -f k8s/web-deployment.yaml
+
           echo "Updating web deployment with image: ${{ env.WEB_IMAGE }}:latest"
-
-          # Verify deployment exists
-          if ! kubectl get deployment web -n cloudtolocalllm &> /dev/null; then
-            echo "::error::Web deployment not found in cloudtolocalllm namespace"
-            kubectl get deployments -n cloudtolocalllm
-            exit 1
-          fi
-
-          # Update the image
           kubectl set image deployment/web \
             web=${{ env.WEB_IMAGE }}:latest \
             -n cloudtolocalllm
-
           echo "Web deployment updated successfully"
 
       - name: Update Postgres deployment
         run: |
+          echo "Applying Postgres StatefulSet manifest..."
+          kubectl apply -f k8s/postgres-statefulset.yaml
+
           echo "Updating Postgres deployment with image: ${{ env.POSTGRES_IMAGE }}:latest"
           kubectl set image statefulset/postgres \
             postgres=${{ env.POSTGRES_IMAGE }}:latest \
