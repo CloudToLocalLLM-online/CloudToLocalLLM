@@ -22,7 +22,7 @@ export function createConversationRoutes(
    * GET /api/conversations
    * Get all conversations for the authenticated user
    */
-  router.get('/', async (req, res) => {
+  router.get('/', async(req, res) => {
     try {
       const userId = req.auth?.payload?.sub || req.user?.sub;
 
@@ -101,7 +101,7 @@ export function createConversationRoutes(
    * GET /api/conversations/:id
    * Get a specific conversation with all its messages
    */
-  router.get('/:id', async (req, res) => {
+  router.get('/:id', async(req, res) => {
     try {
       const userId = req.auth?.payload?.sub || req.user?.sub;
       const conversationId = req.params.id;
@@ -179,7 +179,7 @@ export function createConversationRoutes(
    * POST /api/conversations
    * Create a new conversation
    */
-  router.post('/', async (req, res) => {
+  router.post('/', async(req, res) => {
     try {
       const userId = req.auth?.payload?.sub || req.user?.sub;
       const { title, model, messages } = req.body;
@@ -294,7 +294,7 @@ export function createConversationRoutes(
    * PUT /api/conversations/:id
    * Update a conversation (title, metadata, or add/update messages)
    */
-  router.put('/:id', async (req, res) => {
+  router.put('/:id', async(req, res) => {
     try {
       const userId = req.auth?.payload?.sub || req.user?.sub;
       const conversationId = req.params.id;
@@ -337,7 +337,7 @@ export function createConversationRoutes(
           await client.query(
             `INSERT INTO conversations (id, user_id, title, model, metadata)
             VALUES ($1, $2, $3, $4, $5::jsonb)`,
-            [conversationId, userId, newTitle, newModel, JSON.stringify(metadata || {})]
+            [conversationId, userId, newTitle, newModel, JSON.stringify(metadata || {})],
           );
         } else {
           // Update existing conversation
@@ -434,7 +434,7 @@ export function createConversationRoutes(
    * DELETE /api/conversations/:id
    * Delete a conversation and all its messages
    */
-  router.delete('/:id', async (req, res) => {
+  router.delete('/:id', async(req, res) => {
     try {
       const userId = req.auth?.payload?.sub || req.user?.sub;
       const conversationId = req.params.id;
