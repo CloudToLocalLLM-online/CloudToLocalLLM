@@ -278,26 +278,6 @@ jobs:
           kubectl rollout restart statefulset/postgres -n cloudtolocalllm
           echo "Postgres deployment updated successfully"
 
-      - name: Run Admin Center database migrations
-        continue-on-error: true
-        run: |
-          echo "Running Admin Center database migrations..."
-
-          # Delete existing migration job if it exists
-          kubectl delete job admin-center-migration -n cloudtolocalllm --ignore-not-found=true
-
-          # Apply migration job
-          kubectl apply -f k8s/admin-center-migration-job.yaml
-
-          # Wait for migration to complete (timeout 5 minutes)
-          kubectl wait --for=condition=complete --timeout=300s job/admin-center-migration -n cloudtolocalllm || {
-            echo "⚠️ Migration failed or timed out - deployment will continue"
-            kubectl logs job/admin-center-migration -n cloudtolocalllm || echo "Could not retrieve logs"
-            exit 0
-          }
-
-          echo "✅ Admin Center migrations completed successfully"
-
       - name: Apply streaming-proxy resources
         continue-on-error: false
         run: |
@@ -359,6 +339,12 @@ jobs:
 
           echo "✅ Wildcard certificate (*.cloudtolocalllm.online) will be automatically provisioned via Cloudflare DNS"
           echo "   Certificate will be issued by Let's Encrypt using Cloudflare DNS-01 challenge"
+
+      - name: Apply Ingress Configuration
+        run: |
+          echo "Applying Ingress configuration..."
+          kubectl apply -f k8s/ingress-nginx.yaml
+          echo "✅ Ingress applied successfully"
 
       - name: Configure Cloudflare SSL (Full Strict)
         env:
