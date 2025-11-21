@@ -414,6 +414,25 @@ jobs:
           echo ""
           echo "Deployment rollout check completed"
 
+      - name: Fail Fast on Pod Restarts
+        run: |
+          echo "Checking for pod instability..."
+          # Get the number of restarts for api-backend pods
+          RESTARTS=$(kubectl get pods -n cloudtolocalllm -l app=api-backend -o jsonpath='{.items[*].status.containerStatuses[*].restartCount}' | awk '{s+=$1} END {print s}')
+
+          if [ -z "$RESTARTS" ]; then RESTARTS=0; fi
+
+          echo "Total API Backend Restarts: $RESTARTS"
+
+          # If restarts > 0, fail the deployment immediately
+          if [ "$RESTARTS" -gt 0 ]; then
+            echo "❌ Detected pod restarts! Failing deployment to prevent bad rollout."
+            kubectl get pods -n cloudtolocalllm -l app=api-backend
+            kubectl logs -n cloudtolocalllm -l app=api-backend --tail=50 --previous || true
+            exit 1
+          fi
+          echo "✅ No immediate restarts detected."
+
       - name: Verify deployment
         run: |
           echo "::group::Deployment Verification"
