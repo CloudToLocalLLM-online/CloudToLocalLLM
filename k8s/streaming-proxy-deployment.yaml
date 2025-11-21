@@ -40,7 +40,7 @@ metadata:
     app: streaming-proxy
     tier: backend
 spec:
-  replicas: 2
+  replicas: 1
   strategy:
     type: RollingUpdate
     rollingUpdate:

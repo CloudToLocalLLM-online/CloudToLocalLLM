@@ -22,7 +22,7 @@ metadata:
   labels:
     app: web
 spec:
-  replicas: 2
+  replicas: 1
   strategy:
     type: RollingUpdate
     rollingUpdate:
@@ -72,4 +72,3 @@ spec:
               port: 8080
             initialDelaySeconds: 5
             periodSeconds: 5
-
