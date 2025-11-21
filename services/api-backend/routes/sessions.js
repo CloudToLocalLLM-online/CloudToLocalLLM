@@ -1,22 +1,12 @@
 import express from 'express';
 const router = express.Router();
-import pg from 'pg';
-const { Pool } = pg;
-
-// Database connection
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl:
-    process.env.NODE_ENV === 'production'
-      ? { rejectUnauthorized: false }
-      : false,
-});
+import db from '../database/db-pool.js';
 
 /**
  * POST /auth/sessions
  * Create a new session for an authenticated user
  */
-router.post('/', async(req, res) => {
+router.post('/', async (req, res) => {
   try {
     const {
       userId,
@@ -34,7 +24,7 @@ router.post('/', async(req, res) => {
     }
 
     // First, ensure user exists in users table with Auth0 profile data
-    const userResult = await pool.query(
+    const result = await db.query(
       `INSERT INTO users (auth0_id, email, name, nickname, picture, email_verified, locale, created_at, updated_at)
        VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), NOW())
        ON CONFLICT (auth0_id) DO UPDATE SET
@@ -57,10 +47,10 @@ router.post('/', async(req, res) => {
       ],
     );
 
-    const dbUserId = userResult.rows[0].id;
+    const dbUserId = result.rows[0].id;
 
     // Create session
-    const sessionResult = await pool.query(
+    const sessionResult = await db.query(
       `INSERT INTO user_sessions (user_id, session_token, expires_at, auth0_access_token, auth0_id_token, created_at, last_activity)
        VALUES ($1, $2, $3, $4, $5, NOW(), NOW())
        RETURNING id`,
@@ -83,11 +73,11 @@ router.post('/', async(req, res) => {
  * GET /auth/sessions/validate/:token
  * Validate a session token and return session data
  */
-router.get('/validate/:token', async(req, res) => {
+router.get('/validate/:token', async (req, res) => {
   try {
     const { token } = req.params;
 
-    const result = await pool.query(
+    const result = await db.query(
       `SELECT s.id, s.session_token, s.expires_at, s.auth0_access_token, s.auth0_id_token,
               s.created_at, s.last_activity, s.is_active,
               u.id as user_id, u.auth0_id, u.email, u.name, u.nickname, u.picture
@@ -104,7 +94,7 @@ router.get('/validate/:token', async(req, res) => {
     const session = result.rows[0];
 
     // Update last activity
-    await pool.query(
+    await db.query(
       'UPDATE user_sessions SET last_activity = NOW() WHERE id = $1',
       [session.id],
     );
@@ -138,11 +128,11 @@ router.get('/validate/:token', async(req, res) => {
  * DELETE /auth/sessions/:token
  * Invalidate a session
  */
-router.delete('/:token', async(req, res) => {
+router.delete('/:token', async (req, res) => {
   try {
     const { token } = req.params;
 
-    const result = await pool.query(
+    const result = await db.query(
       'UPDATE user_sessions SET is_active = false WHERE session_token = $1',
       [token],
     );
@@ -162,9 +152,9 @@ router.delete('/:token', async(req, res) => {
  * POST /auth/sessions/cleanup
  * Clean up expired sessions
  */
-router.post('/cleanup', async(req, res) => {
+router.post('/cleanup', async (req, res) => {
   try {
-    const result = await pool.query(
+    const result = await db.query(
       'DELETE FROM user_sessions WHERE expires_at < NOW() OR is_active = false',
     );
 

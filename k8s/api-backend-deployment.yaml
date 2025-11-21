@@ -59,6 +59,11 @@ spec:
                 configMapKeyRef:
                   name: cloudtolocalllm-config
                   key: LOG_LEVEL
+            - name: CLIENT_LOG_DIR
+              valueFrom:
+                configMapKeyRef:
+                  name: cloudtolocalllm-config
+                  key: CLIENT_LOG_DIR
             - name: PORT
               valueFrom:
                 configMapKeyRef:

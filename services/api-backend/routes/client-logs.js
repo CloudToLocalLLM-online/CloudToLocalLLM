@@ -3,7 +3,7 @@ import path from 'path';
 import { promises as fs } from 'fs';
 
 const router = express.Router();
-const logDir = process.env.CLIENT_LOG_DIR || '/var/log/cloudtolocalllm';
+const logDir = process.env.CLIENT_LOG_DIR || '/app/logs';
 const logFileName = process.env.CLIENT_LOG_FILE || 'client-web.log';
 const logFilePath = path.join(logDir, logFileName);
 
@@ -11,7 +11,7 @@ async function ensureLogDirectory() {
   await fs.mkdir(logDir, { recursive: true });
 }
 
-router.post('/', async(req, res) => {
+router.post('/', async (req, res) => {
   try {
     const { entries, source = 'web-client', sessionId = null } = req.body || {};
 
