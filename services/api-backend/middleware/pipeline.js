@@ -121,6 +121,10 @@ export function setupMiddlewarePipeline(app, options = {}) {
     if (req.method === 'OPTIONS') {
       return next();
     }
+    // Skip rate limiting for health checks
+    if (req.path === '/health') {
+      return next();
+    }
     // Apply more lenient limits to bridge routes
     if (req.path.startsWith('/api/bridge/')) {
       return bridgeLimiter(req, res, next);
