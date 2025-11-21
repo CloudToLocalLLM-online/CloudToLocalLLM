@@ -375,6 +375,14 @@ const handleOllamaProxyRequest = async (req, res) => {
       path: ollamaPath,
     });
 
+    if (ollamaPath === '/bridge/status') {
+      const isConnected = sshProxy && sshProxy.isUserConnected(userId);
+      return res.json({
+        status: isConnected ? 'connected' : 'disconnected',
+        message: isConnected ? 'Bridge is connected' : 'Bridge is disconnected',
+      });
+    }
+
     if (!sshProxy) {
       return res.status(503).json({
         error: 'Tunnel system not available',

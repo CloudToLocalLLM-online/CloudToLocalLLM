@@ -22,7 +22,7 @@ export function createConversationRoutes(
    * GET /api/conversations
    * Get all conversations for the authenticated user
    */
-  router.get('/', async(req, res) => {
+  router.get('/', async (req, res) => {
     try {
       const userId = req.auth?.payload?.sub || req.user?.sub;
 
@@ -101,7 +101,7 @@ export function createConversationRoutes(
    * GET /api/conversations/:id
    * Get a specific conversation with all its messages
    */
-  router.get('/:id', async(req, res) => {
+  router.get('/:id', async (req, res) => {
     try {
       const userId = req.auth?.payload?.sub || req.user?.sub;
       const conversationId = req.params.id;
@@ -179,7 +179,7 @@ export function createConversationRoutes(
    * POST /api/conversations
    * Create a new conversation
    */
-  router.post('/', async(req, res) => {
+  router.post('/', async (req, res) => {
     try {
       const userId = req.auth?.payload?.sub || req.user?.sub;
       const { title, model, messages } = req.body;
@@ -294,11 +294,11 @@ export function createConversationRoutes(
    * PUT /api/conversations/:id
    * Update a conversation (title, metadata, or add/update messages)
    */
-  router.put('/:id', async(req, res) => {
+  router.put('/:id', async (req, res) => {
     try {
       const userId = req.auth?.payload?.sub || req.user?.sub;
       const conversationId = req.params.id;
-      const { title, messages } = req.body;
+      const { title, messages, model, metadata } = req.body;
 
       if (!userId) {
         return res.status(401).json({
@@ -319,7 +319,7 @@ export function createConversationRoutes(
       try {
         await client.query('BEGIN');
 
-        // Verify conversation belongs to user
+        // Check if conversation exists
         const { rows: conversationRows } = await client.query(
           `SELECT id FROM conversations
           WHERE id = $1 AND user_id = $2`,
@@ -327,19 +327,34 @@ export function createConversationRoutes(
         );
 
         if (conversationRows.length === 0) {
-          await client.query('ROLLBACK');
-          return res.status(404).json({
-            error: 'Not Found',
-            message: 'Conversation not found',
-          });
-        }
+          // Conversation not found - handle as Upsert (Create)
+          // This supports client-generated IDs (e.g. conv_timestamp)
 
-        // Update conversation title if provided
-        if (title) {
+          // For creation, we need at least a model. Title can be defaulted.
+          const newModel = model || 'gpt-3.5-turbo'; // Default if missing
+          const newTitle = title || 'New Conversation';
+
           await client.query(
-            'UPDATE conversations SET title = $1 WHERE id = $2',
-            [title, conversationId],
+            `INSERT INTO conversations (id, user_id, title, model, metadata)
+            VALUES ($1, $2, $3, $4, $5::jsonb)`,
+            [conversationId, userId, newTitle, newModel, JSON.stringify(metadata || {})]
           );
+        } else {
+          // Update existing conversation
+          if (title) {
+            await client.query(
+              'UPDATE conversations SET title = $1 WHERE id = $2',
+              [title, conversationId],
+            );
+          }
+
+          // Update metadata if provided
+          if (metadata) {
+            await client.query(
+              'UPDATE conversations SET metadata = $1::jsonb WHERE id = $2',
+              [JSON.stringify(metadata), conversationId],
+            );
+          }
         }
 
         // Replace all messages if provided
@@ -360,7 +375,7 @@ export function createConversationRoutes(
                 conversationId,
                 msg.role || 'user',
                 msg.content || '',
-                msg.model || null,
+                msg.model || model || null,
                 msg.status || 'sent',
                 msg.error || null,
                 msg.timestamp ? new Date(msg.timestamp) : new Date(),
@@ -372,7 +387,7 @@ export function createConversationRoutes(
 
         await client.query('COMMIT');
 
-        // Get updated conversation
+        // Get updated/created conversation
         const { rows: updatedConversation } = await dbMigrator.pool.query(
           `SELECT id, title, model, created_at, updated_at, metadata
           FROM conversations
@@ -419,7 +434,7 @@ export function createConversationRoutes(
    * DELETE /api/conversations/:id
    * Delete a conversation and all its messages
    */
-  router.delete('/:id', async(req, res) => {
+  router.delete('/:id', async (req, res) => {
     try {
       const userId = req.auth?.payload?.sub || req.user?.sub;
       const conversationId = req.params.id;
