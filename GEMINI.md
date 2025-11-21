@@ -65,4 +65,11 @@ Here are some of the tools I can use to help with development:
 *   **`glob(pattern)`**: Finds files matching a glob pattern.
 *   **`gh [COMMAND]`**: Interacts with the GitHub CLI.
 
+## User Preferences & Rules
+*   **Automation First**: Automate tasks whenever possible. Do not ask for manual user intervention unless absolutely required.
+*   **Deployment**: Deployment to AKS is automated via GitHub Actions when pushing to the `main` branch.
+*   **Git Operations**: Always commit and push changes to the repository after completing a task. Do not leave changes uncommitted.
+
+
+
 I will use these tools to carry out the development plan and assist with your requests.

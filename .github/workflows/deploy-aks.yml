@@ -24,6 +24,7 @@ env:
   API_IMAGE: cloudtolocalllm/cloudtolocalllm-api
   WEB_IMAGE: cloudtolocalllm/cloudtolocalllm-web
   STREAMING_PROXY_IMAGE: cloudtolocalllm/cloudtolocalllm-streaming-proxy
+  POSTGRES_IMAGE: cloudtolocalllm/cloudtolocalllm-postgres
   AZURE_RESOURCE_GROUP: cloudtolocalllm-rg
   AZURE_CLUSTER_NAME: cloudtolocalllm-aks
   AZURE_CONTAINER_REGISTRY: cloudtolocalllm
@@ -35,6 +36,7 @@ jobs:
     outputs:
       api-image: ${{ steps.meta-api.outputs.tags }}
       web-image: ${{ steps.meta-web.outputs.tags }}
+      postgres-image: ${{ steps.meta-postgres.outputs.tags }}
 
     steps:
       - name: Checkout code
@@ -167,6 +169,26 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
+      - name: Extract Postgres metadata
+        id: meta-postgres
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.POSTGRES_IMAGE }}
+          tags: |
+            type=sha,prefix={{branch}}-
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build and push Postgres image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./config/docker
+          file: ./config/docker/Dockerfile.postgres
+          push: true
+          tags: ${{ steps.meta-postgres.outputs.tags }}
+          labels: ${{ steps.meta-postgres.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
   deploy:
     needs: build
     runs-on: ubuntu-latest
@@ -182,6 +204,7 @@ jobs:
           echo "Verifying Docker images..."
           echo "API Image: ${{ env.API_IMAGE }}:latest"
           echo "Web Image: ${{ env.WEB_IMAGE }}:latest"
+          echo "Postgres Image: ${{ env.POSTGRES_IMAGE }}:latest"
           echo "✅ Docker images ready for deployment"
 
       - name: Azure Login
@@ -238,6 +261,17 @@ jobs:
             -n cloudtolocalllm
 
           echo "Web deployment updated successfully"
+
+      - name: Update Postgres deployment
+        run: |
+          echo "Updating Postgres deployment with image: ${{ env.POSTGRES_IMAGE }}:latest"
+          kubectl set image statefulset/postgres \
+            postgres=${{ env.POSTGRES_IMAGE }}:latest \
+            -n cloudtolocalllm
+
+          # Force restart to ensure new image is pulled
+          kubectl rollout restart statefulset/postgres -n cloudtolocalllm
+          echo "Postgres deployment updated successfully"
 
       - name: Run Admin Center database migrations
         continue-on-error: true
