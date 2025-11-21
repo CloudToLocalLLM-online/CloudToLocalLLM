@@ -18,7 +18,7 @@ data:
   DB_NAME: "cloudtolocalllm"
 
   # API configuration
-  PORT: "3000"
+  PORT: "8080"
 
   # Auth0 Configuration
   AUTH0_DOMAIN: "dev-v2f2p008x3dr74ww.us.auth0.com"

@@ -68,7 +68,7 @@ Here are some of the tools I can use to help with development:
 ## User Preferences & Rules
 *   **Automation First**: Automate tasks whenever possible. Do not ask for manual user intervention unless absolutely required.
 *   **Deployment**: Deployment to AKS is automated via GitHub Actions when pushing to the `main` branch.
-*   **Git Operations**: Always commit and push changes to the repository after completing a task. Do not leave changes uncommitted.
+*   **Git Operations**: Always commit and push changes to the repository after completing a task. Do not ask for permission to perform git operations. Do not leave changes uncommitted.
 
 
 

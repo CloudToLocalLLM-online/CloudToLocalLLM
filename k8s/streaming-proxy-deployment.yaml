@@ -11,9 +11,9 @@ metadata:
   name: streaming-proxy-role
   namespace: cloudtolocalllm
 rules:
-- apiGroups: [""]
-  resources: ["configmaps", "secrets"]
-  verbs: ["get", "list", "watch"]
+  - apiGroups: [""]
+    resources: ["configmaps", "secrets"]
+    verbs: ["get", "list", "watch"]
 
 ---
 apiVersion: rbac.authorization.k8s.io/v1
@@ -26,9 +26,9 @@ roleRef:
   kind: Role
   name: streaming-proxy-role
 subjects:
-- kind: ServiceAccount
-  name: streaming-proxy-sa
-  namespace: cloudtolocalllm
+  - kind: ServiceAccount
+    name: streaming-proxy-sa
+    namespace: cloudtolocalllm
 
 ---
 apiVersion: apps/v1
@@ -65,96 +65,96 @@ spec:
         runAsUser: 1000
         fsGroup: 1000
       containers:
-      - name: streaming-proxy
-        image: cloudtolocalllm/cloudtolocalllm-streaming-proxy:latest
-        imagePullPolicy: Always
-        ports:
-        - name: http
-          containerPort: 3001
-          protocol: TCP
-        
-        # Environment variables from ConfigMap and Secrets
-        envFrom:
-        - configMapRef:
-            name: streaming-proxy-config
-        - secretRef:
-            name: streaming-proxy-secrets
-        
-        # Additional environment variables
-        env:
-        - name: NODE_ENV
-          value: "production"
-        - name: LOG_LEVEL
-          value: "info"
-        - name: OTEL_EXPORTER_JAEGER_ENDPOINT
-          valueFrom:
-            configMapKeyRef:
-              name: streaming-proxy-config
-              key: otel_exporter_jaeger_endpoint
-              optional: true
-        
-        # Resource requests and limits
-        resources:
-          requests:
-            cpu: 100m
-            memory: 256Mi
-          limits:
-            cpu: 500m
-            memory: 512Mi
-        
-        # Liveness probe - checks if container is alive
-        livenessProbe:
-          httpGet:
-            path: /api/tunnel/health
-            port: http
-            scheme: HTTP
-          initialDelaySeconds: 30
-          periodSeconds: 10
-          timeoutSeconds: 5
-          failureThreshold: 3
-        
-        # Readiness probe - checks if container is ready to accept traffic
-        readinessProbe:
-          httpGet:
-            path: /api/tunnel/health
-            port: http
-            scheme: HTTP
-          initialDelaySeconds: 10
-          periodSeconds: 5
-          timeoutSeconds: 3
-          failureThreshold: 2
-        
-        # Security context for container
-        securityContext:
-          allowPrivilegeEscalation: false
-          readOnlyRootFilesystem: false
-          capabilities:
-            drop:
-            - ALL
-        
-        # Volume mounts
-        volumeMounts:
-        - name: tmp
-          mountPath: /tmp
-      
+        - name: streaming-proxy
+          image: cloudtolocalllm/cloudtolocalllm-streaming-proxy:latest
+          imagePullPolicy: Always
+          ports:
+            - name: http
+              containerPort: 3001
+              protocol: TCP
+
+          # Environment variables from ConfigMap and Secrets
+          envFrom:
+            - configMapRef:
+                name: streaming-proxy-config
+            - secretRef:
+                name: streaming-proxy-secrets
+
+          # Additional environment variables
+          env:
+            - name: NODE_ENV
+              value: "production"
+            - name: LOG_LEVEL
+              value: "info"
+            - name: OTEL_EXPORTER_JAEGER_ENDPOINT
+              valueFrom:
+                configMapKeyRef:
+                  name: streaming-proxy-config
+                  key: otel_exporter_jaeger_endpoint
+                  optional: true
+
+          # Resource requests and limits
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+
+          # Liveness probe - checks if container is alive
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+              scheme: HTTP
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+
+          # Readiness probe - checks if container is ready to accept traffic
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+              scheme: HTTP
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 2
+
+          # Security context for container
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: false
+            capabilities:
+              drop:
+                - ALL
+
+          # Volume mounts
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+
       # Volumes
       volumes:
-      - name: tmp
-        emptyDir: {}
-      
+        - name: tmp
+          emptyDir: {}
+
       # Pod disruption budget for high availability
       affinity:
         podAntiAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:
-          - weight: 100
-            podAffinityTerm:
-              labelSelector:
-                matchExpressions:
-                - key: app
-                  operator: In
-                  values:
-                  - streaming-proxy
-              topologyKey: kubernetes.io/hostname
-      
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchExpressions:
+                    - key: app
+                      operator: In
+                      values:
+                        - streaming-proxy
+                topologyKey: kubernetes.io/hostname
+
       # Termination grace period for graceful shutdown
       terminationGracePeriodSeconds: 30

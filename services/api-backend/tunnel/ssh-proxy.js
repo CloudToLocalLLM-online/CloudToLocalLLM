@@ -49,6 +49,14 @@ export class SSHProxy {
   }
 
   /**
+   * Check if SSH server is running
+   * @returns {boolean} True if running
+   */
+  get isRunning() {
+    return !!this.sshServer;
+  }
+
+  /**
    * Start SSH server
    * @returns {Promise<void>}
    */
@@ -121,7 +129,7 @@ export class SSHProxy {
     let userId = null;
     let authenticated = false;
 
-    client.on('authentication', async(ctx) => {
+    client.on('authentication', async (ctx) => {
       try {
         // Only accept password authentication (JWT as password)
         if (ctx.method !== 'password') {
