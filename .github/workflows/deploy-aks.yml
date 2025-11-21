@@ -223,6 +223,9 @@ jobs:
           # Ensure namespace exists
           kubectl apply -f k8s/namespace.yaml
 
+          # Apply ConfigMap
+          kubectl apply -f k8s/configmap.yaml
+
           kubectl create secret generic cloudtolocalllm-secrets \
             --from-literal=postgres-user='cloud_admin' \
             --from-literal=postgres-password='CloudToLocalSecurePass2024!' \
