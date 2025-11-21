@@ -428,7 +428,10 @@ jobs:
           if [ "$RESTARTS" -gt 0 ]; then
             echo "❌ Detected pod restarts! Failing deployment to prevent bad rollout."
             kubectl get pods -n cloudtolocalllm -l app=api-backend
-            kubectl logs -n cloudtolocalllm -l app=api-backend --tail=50 --previous || true
+            echo "--- Current Logs ---"
+            kubectl logs -n cloudtolocalllm -l app=api-backend --tail=50 --all-containers=true || true
+            echo "--- Previous Logs ---"
+            kubectl logs -n cloudtolocalllm -l app=api-backend --tail=50 --previous --all-containers=true || true
             exit 1
           fi
           echo "✅ No immediate restarts detected."
