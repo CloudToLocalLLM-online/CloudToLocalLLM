@@ -10,7 +10,7 @@ data:
   # Node environment
   NODE_ENV: "production"
   LOG_LEVEL: "info"
-  CLIENT_LOG_DIR: "/app/logs"
+  CLIENT_LOG_DIR: "/tmp/logs"
 
   # Database configuration
   DB_TYPE: "postgresql"

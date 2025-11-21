@@ -138,7 +138,14 @@ export class DatabaseMigratorPG {
             'metadata JSONB',
           );
         // Ensure pgcrypto or uuid-ossp extension for gen_random_uuid
-        await client.query('CREATE EXTENSION IF NOT EXISTS pgcrypto');
+        try {
+          await client.query('CREATE EXTENSION IF NOT EXISTS pgcrypto');
+        } catch (err) {
+          // Ignore unique_violation (23505) which happens during concurrent creation
+          if (err.code !== '23505') {
+            throw err;
+          }
+        }
       }
 
       const checksum = this.calculateChecksum(schemaSQL);

@@ -3,7 +3,7 @@ import path from 'path';
 import { promises as fs } from 'fs';
 
 const router = express.Router();
-const logDir = process.env.CLIENT_LOG_DIR || '/app/logs';
+const logDir = process.env.CLIENT_LOG_DIR || '/tmp/logs';
 const logFileName = process.env.CLIENT_LOG_FILE || 'client-web.log';
 const logFilePath = path.join(logDir, logFileName);
 
