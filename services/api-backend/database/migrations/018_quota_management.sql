@@ -16,13 +16,14 @@
 -- Create quota_definitions table
 CREATE TABLE IF NOT EXISTS quota_definitions (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  tier VARCHAR(50) NOT NULL UNIQUE,
+  tier VARCHAR(50) NOT NULL,
   resource_type VARCHAR(100) NOT NULL,
   limit_value BIGINT NOT NULL,
   limit_unit VARCHAR(50) NOT NULL,
   reset_period VARCHAR(50) NOT NULL DEFAULT 'monthly',
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(tier, resource_type)
 );
 
 -- Create user_quotas table
