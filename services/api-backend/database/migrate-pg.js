@@ -57,21 +57,41 @@ export class DatabaseMigratorPG {
   }
 
   async createMigrationsTable() {
-    const sql = `
-      CREATE TABLE IF NOT EXISTS schema_migrations (
-        id SERIAL PRIMARY KEY,
-        version TEXT UNIQUE NOT NULL,
-        name TEXT NOT NULL,
-        applied_at TIMESTAMPTZ DEFAULT NOW(),
-        checksum TEXT NOT NULL,
-        execution_time_ms INTEGER,
-        success BOOLEAN DEFAULT TRUE
-      );
-      CREATE INDEX IF NOT EXISTS idx_schema_migrations_version ON schema_migrations(version);
-      CREATE INDEX IF NOT EXISTS idx_schema_migrations_applied_at ON schema_migrations(applied_at);
-    `;
-    await this.pool.query(sql);
-    this.logger.info('Migrations table created/verified (PG)');
+    try {
+      // Check if table already exists
+      const { rows } = await this.pool.query(`
+        SELECT EXISTS (
+          SELECT 1 FROM information_schema.tables
+          WHERE table_schema = 'public'
+          AND table_name = 'schema_migrations'
+        ) as table_exists;
+      `);
+
+      if (rows[0].table_exists) {
+        this.logger.info('Migrations table already exists (PG)');
+        return;
+      }
+
+      // Table doesn't exist, create it
+      const sql = `
+        CREATE TABLE schema_migrations (
+          id SERIAL PRIMARY KEY,
+          version TEXT UNIQUE NOT NULL,
+          name TEXT NOT NULL,
+          applied_at TIMESTAMPTZ DEFAULT NOW(),
+          checksum TEXT NOT NULL,
+          execution_time_ms INTEGER,
+          success BOOLEAN DEFAULT TRUE
+        );
+        CREATE INDEX idx_schema_migrations_version ON schema_migrations(version);
+        CREATE INDEX idx_schema_migrations_applied_at ON schema_migrations(applied_at);
+      `;
+      await this.pool.query(sql);
+      this.logger.info('Migrations table created/verified (PG)');
+    } catch (error) {
+      this.logger.error('Failed to create migrations table', { error: error.message });
+      throw error;
+    }
   }
 
   async getAppliedMigrations() {
