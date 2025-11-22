@@ -458,14 +458,19 @@ class ConversationStorageService {
     }
 
     final token = await _authService.getValidatedAccessToken();
+    debugPrint('[ConversationStorage] Got token: ${token != null ? "YES (${token.length} chars)" : "NO"}');
+
     if (token == null) {
+      debugPrint('[ConversationStorage] Auth service authenticated: ${_authService.isAuthenticated}');
       throw StateError('No access token available');
     }
 
-    return {
+    final headers = {
       'Authorization': 'Bearer $token',
       'Content-Type': 'application/json',
     };
+    debugPrint('[ConversationStorage] Headers: ${headers.keys.join(", ")}');
+    return headers;
   }
 
   /// Load conversations from API (web platform)
