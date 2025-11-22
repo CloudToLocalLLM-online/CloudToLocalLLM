@@ -762,10 +762,21 @@ app.use((error, req, res, _next) => {
   });
 });
 
-// 404 handler - moved to after dynamic routes are added
-// app.use((req, res) => {
-//   res.status(404).json({ error: 'Not found' });
-// });
+// Add conversation routes directly to main app for testing
+app.get('/conversations/test', (req, res) => {
+  logger.info('Main app conversation test route accessed');
+  res.json({ message: 'Main app conversation test working' });
+});
+
+app.get('/conversations/', (req, res) => {
+  logger.info('Main app conversation root route accessed');
+  res.json({ message: 'Main app conversation root working' });
+});
+
+// 404 handler
+app.use((req, res) => {
+  res.status(404).json({ error: 'Not found' });
+});
 
 // LLM Security and Monitoring Helper Functions - Removed unused functions
 // (getRateLimitsForTier, checkRateLimit, recordRequest, logLLMAuditEvent)
@@ -913,17 +924,22 @@ async function initializeTunnelSystem() {
         res.json({ message: 'Direct app route working' });
       });
 
+      // Test direct routes on app
+      app.get('/conversations/test', (req, res) => {
+        logger.info('Direct conversation test route accessed');
+        res.json({ message: 'Direct conversation test working' });
+      });
+
+      app.get('/conversations/', (req, res) => {
+        logger.info('Direct conversation root route accessed');
+        res.json({ message: 'Direct conversation root working' });
+      });
+
       const conversationRouter = createConversationRoutes(dbMigrator, logger);
       logger.info('Conversation router created', { routerExists: !!conversationRouter });
       app.use('/api/conversations', conversationRouter);
-      app.use('/conversations', conversationRouter); // Also register without /api prefix for api subdomain
+      app.use('/conversations-router', conversationRouter); // Use different path to avoid conflict
       logger.info('Conversation API routes initialized');
-
-      // Test route after conversation routes
-      app.get('/test-after-conversations', (req, res) => {
-        logger.info('Test route after conversations accessed');
-        res.json({ message: 'Route after conversations working' });
-      });
 
       // Add 404 handler after all routes are mounted
       app.use((req, res) => {
