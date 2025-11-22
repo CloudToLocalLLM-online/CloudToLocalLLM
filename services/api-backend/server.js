@@ -6,14 +6,19 @@ import dotenv from 'dotenv';
 import swaggerUi from 'swagger-ui-express';
 import { specs } from './swagger-config.js';
 import { StreamingProxyManager } from './streaming-proxy-manager.js';
-import { setupMiddlewarePipeline, getAuthMiddleware } from './middleware/pipeline.js';
+import {
+  setupMiddlewarePipeline,
+  getAuthMiddleware,
+} from './middleware/pipeline.js';
 import { setupGracefulShutdown } from './middleware/graceful-shutdown.js';
 
 import adminRoutes from './routes/admin.js';
 import adminUserRoutes from './routes/admin/users.js';
 import adminSubscriptionRoutes from './routes/admin/subscriptions.js';
 import userRoutes from './routes/users.js';
-import userProfileRoutes, { initializeUserProfileService } from './routes/user-profile.js';
+import userProfileRoutes, {
+  initializeUserProfileService,
+} from './routes/user-profile.js';
 import sessionRoutes from './routes/sessions.js';
 import clientLogRoutes from './routes/client-logs.js';
 import webhookRoutes from './routes/webhooks.js';
@@ -35,9 +40,16 @@ import { createTunnelRoutes } from './tunnel/tunnel-routes.js';
 import { createMonitoringRoutes } from './routes/monitoring.js';
 import { createConversationRoutes } from './routes/conversations.js';
 import { authenticateJWT } from './middleware/auth.js';
-import { addTierInfo, getUserTier, getTierFeatures } from './middleware/tier-check.js';
+import {
+  addTierInfo,
+  getUserTier,
+  getTierFeatures,
+} from './middleware/tier-check.js';
 import { HealthCheckService } from './services/health-check.js';
-import { createQueueStatusHandler, createQueueDrainHandler } from './middleware/request-queuing.js';
+import {
+  createQueueStatusHandler,
+  createQueueDrainHandler,
+} from './middleware/request-queuing.js';
 import rateLimitMetricsRoutes from './routes/rate-limit-metrics.js';
 import prometheusMetricsRoutes from './routes/prometheus-metrics.js';
 import changelogRoutes from './routes/changelog.js';
@@ -47,7 +59,9 @@ dotenv.config();
 
 // Initialize Sentry
 Sentry.init({
-  dsn: process.env.SENTRY_DSN || 'https://b2fd3263e0ad7b490b0583f7df2e165a@o4509853774315520.ingest.us.sentry.io/4509853780541440',
+  dsn:
+    process.env.SENTRY_DSN ||
+    'https://b2fd3263e0ad7b490b0583f7df2e165a@o4509853774315520.ingest.us.sentry.io/4509853780541440',
   environment: process.env.NODE_ENV || 'development',
   release: process.env.VERSION || process.env.npm_package_version,
   tracesSampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 1.0,
@@ -122,7 +136,12 @@ const corsOptions = {
     'Origin',
     'X-Correlation-ID',
   ],
-  exposedHeaders: ['Content-Length', 'X-Requested-With', 'X-Correlation-ID', 'X-Response-Time'],
+  exposedHeaders: [
+    'Content-Length',
+    'X-Requested-With',
+    'X-Correlation-ID',
+    'X-Response-Time',
+  ],
   maxAge: 86400, // Cache preflight for 24 hours
   preflightContinue: false,
   optionsSuccessStatus: 204,
@@ -165,17 +184,21 @@ app.use('/webhooks', webhookRoutes); // Also register without /api prefix for ap
 
 // Swagger UI documentation endpoint
 // Serves OpenAPI specification and interactive Swagger UI
-app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(specs, {
-  swaggerOptions: {
-    url: '/api/docs/swagger.json',
-    displayOperationId: true,
-    filter: true,
-    showExtensions: true,
-    deepLinking: true,
-  },
-  customCss: '.swagger-ui .topbar { display: none }',
-  customSiteTitle: 'CloudToLocalLLM API Documentation',
-}));
+app.use(
+  '/api/docs',
+  swaggerUi.serve,
+  swaggerUi.setup(specs, {
+    swaggerOptions: {
+      url: '/api/docs/swagger.json',
+      displayOperationId: true,
+      filter: true,
+      showExtensions: true,
+      deepLinking: true,
+    },
+    customCss: '.swagger-ui .topbar { display: none }',
+    customSiteTitle: 'CloudToLocalLLM API Documentation',
+  }),
+);
 
 // Serve OpenAPI specification as JSON
 app.get('/api/docs/swagger.json', (req, res) => {
@@ -184,17 +207,21 @@ app.get('/api/docs/swagger.json', (req, res) => {
 });
 
 // Also serve docs without /api prefix for api subdomain
-app.use('/docs', swaggerUi.serve, swaggerUi.setup(specs, {
-  swaggerOptions: {
-    url: '/docs/swagger.json',
-    displayOperationId: true,
-    filter: true,
-    showExtensions: true,
-    deepLinking: true,
-  },
-  customCss: '.swagger-ui .topbar { display: none }',
-  customSiteTitle: 'CloudToLocalLLM API Documentation',
-}));
+app.use(
+  '/docs',
+  swaggerUi.serve,
+  swaggerUi.setup(specs, {
+    swaggerOptions: {
+      url: '/docs/swagger.json',
+      displayOperationId: true,
+      filter: true,
+      showExtensions: true,
+      deepLinking: true,
+    },
+    customCss: '.swagger-ui .topbar { display: none }',
+    customSiteTitle: 'CloudToLocalLLM API Documentation',
+  }),
+);
 
 app.get('/docs/swagger.json', (req, res) => {
   res.setHeader('Content-Type', 'application/json');
@@ -435,12 +462,10 @@ const handleOllamaProxyRequest = async(req, res) => {
         .json({ error: 'LLM request timeout', code: 'LLM_REQUEST_TIMEOUT' });
     }
     if (error.code === 'DESKTOP_CLIENT_DISCONNECTED') {
-      return res
-        .status(503)
-        .json({
-          error: 'Desktop client not connected',
-          code: 'DESKTOP_CLIENT_DISCONNECTED',
-        });
+      return res.status(503).json({
+        error: 'Desktop client not connected',
+        code: 'DESKTOP_CLIENT_DISCONNECTED',
+      });
     }
     res
       .status(500)
@@ -763,15 +788,22 @@ app.use((error, req, res, _next) => {
 });
 
 // Conversation routes - implemented directly due to router mounting issues
-app.get('/conversations/', async (req, res) => {
+app.get('/conversations/', authenticateJWT, async(req, res) => {
   try {
     const userId = req.auth?.payload?.sub || req.user?.sub;
     if (!userId) {
-      return res.status(401).json({ error: 'Unauthorized', message: 'User ID not found in token' });
+      return res
+        .status(401)
+        .json({ error: 'Unauthorized', message: 'User ID not found in token' });
     }
 
     if (!dbMigrator || !dbMigrator.pool) {
-      return res.status(503).json({ error: 'Service Unavailable', message: 'Database not initialized' });
+      return res
+        .status(503)
+        .json({
+          error: 'Service Unavailable',
+          message: 'Database not initialized',
+        });
     }
 
     const client = await dbMigrator.pool.connect();
@@ -790,22 +822,34 @@ app.get('/conversations/', async (req, res) => {
     }
   } catch (error) {
     logger.error('Failed to get conversations', { error: error.message });
-    res.status(500).json({ error: 'Internal Server Error', message: 'Failed to get conversations' });
+    res
+      .status(500)
+      .json({
+        error: 'Internal Server Error',
+        message: 'Failed to get conversations',
+      });
   }
 });
 
-app.put('/conversations/:id', async (req, res) => {
+app.put('/conversations/:id', authenticateJWT, async(req, res) => {
   try {
     const userId = req.auth?.payload?.sub || req.user?.sub;
     const conversationId = req.params.id;
     const { title, messages, model, metadata } = req.body;
 
     if (!userId) {
-      return res.status(401).json({ error: 'Unauthorized', message: 'User ID not found in token' });
+      return res
+        .status(401)
+        .json({ error: 'Unauthorized', message: 'User ID not found in token' });
     }
 
     if (!dbMigrator || !dbMigrator.pool) {
-      return res.status(503).json({ error: 'Service Unavailable', message: 'Database not initialized' });
+      return res
+        .status(503)
+        .json({
+          error: 'Service Unavailable',
+          message: 'Database not initialized',
+        });
     }
 
     const client = await dbMigrator.pool.connect();
@@ -814,7 +858,7 @@ app.put('/conversations/:id', async (req, res) => {
 
       // Check if conversation exists
       const { rows: conversationRows } = await client.query(
-        `SELECT id FROM conversations WHERE id = $1 AND user_id = $2`,
+        'SELECT id FROM conversations WHERE id = $1 AND user_id = $2',
         [conversationId, userId],
       );
 
@@ -826,21 +870,35 @@ app.put('/conversations/:id', async (req, res) => {
         await client.query(
           `INSERT INTO conversations (id, user_id, title, model, metadata)
            VALUES ($1, $2, $3, $4, $5::jsonb)`,
-          [conversationId, userId, newTitle, newModel, JSON.stringify(metadata || {})],
+          [
+            conversationId,
+            userId,
+            newTitle,
+            newModel,
+            JSON.stringify(metadata || {}),
+          ],
         );
       } else {
         // Update existing conversation
         if (title) {
-          await client.query('UPDATE conversations SET title = $1 WHERE id = $2', [title, conversationId]);
+          await client.query(
+            'UPDATE conversations SET title = $1 WHERE id = $2',
+            [title, conversationId],
+          );
         }
         if (metadata) {
-          await client.query('UPDATE conversations SET metadata = $1::jsonb WHERE id = $2', [JSON.stringify(metadata), conversationId]);
+          await client.query(
+            'UPDATE conversations SET metadata = $1::jsonb WHERE id = $2',
+            [JSON.stringify(metadata), conversationId],
+          );
         }
       }
 
       // Replace messages if provided
       if (messages && Array.isArray(messages)) {
-        await client.query('DELETE FROM messages WHERE conversation_id = $1', [conversationId]);
+        await client.query('DELETE FROM messages WHERE conversation_id = $1', [
+          conversationId,
+        ]);
 
         for (const msg of messages) {
           await client.query(
@@ -864,7 +922,7 @@ app.put('/conversations/:id', async (req, res) => {
 
       // Get updated conversation
       const { rows: updatedConversation } = await client.query(
-        `SELECT id, title, model, created_at, updated_at, metadata FROM conversations WHERE id = $1`,
+        'SELECT id, title, model, created_at, updated_at, metadata FROM conversations WHERE id = $1',
         [conversationId],
       );
 
@@ -888,19 +946,27 @@ app.put('/conversations/:id', async (req, res) => {
       client.release();
     }
   } catch (error) {
-    logger.error('Failed to update conversation', { error: error.message, conversationId: req.params.id });
-    res.status(500).json({ error: 'Internal Server Error', message: 'Failed to update conversation' });
+    logger.error('Failed to update conversation', {
+      error: error.message,
+      conversationId: req.params.id,
+    });
+    res
+      .status(500)
+      .json({
+        error: 'Internal Server Error',
+        message: 'Failed to update conversation',
+      });
   }
 });
 
 // Also mount at /api/conversations for backward compatibility
-app.get('/api/conversations/', async (req, res) => {
+app.get('/api/conversations/', async(req, res) => {
   // Redirect to the main route
   const url = req.originalUrl.replace('/api/conversations/', '/conversations/');
   res.redirect(307, url);
 });
 
-app.put('/api/conversations/:id', async (req, res) => {
+app.put('/api/conversations/:id', async(req, res) => {
   // Redirect to the main route
   const url = req.originalUrl.replace('/api/conversations/', '/conversations/');
   res.redirect(307, url);
@@ -977,7 +1043,9 @@ async function initializeTunnelSystem() {
       healthCheckService.registerService('auth-service', async() => {
         return {
           status: authService ? 'healthy' : 'unhealthy',
-          message: authService ? 'Authentication service is running' : 'Authentication service is not available',
+          message: authService
+            ? 'Authentication service is running'
+            : 'Authentication service is not available',
         };
       });
 
@@ -1000,7 +1068,10 @@ async function initializeTunnelSystem() {
         healthCheckService.registerService('ssh-tunnel', async() => {
           return {
             status: sshProxy && sshProxy.isRunning ? 'healthy' : 'unhealthy',
-            message: sshProxy && sshProxy.isRunning ? 'SSH tunnel is running' : 'SSH tunnel is not running',
+            message:
+              sshProxy && sshProxy.isRunning
+                ? 'SSH tunnel is running'
+                : 'SSH tunnel is not running',
           };
         });
       } catch (sshError) {
@@ -1017,7 +1088,6 @@ async function initializeTunnelSystem() {
           };
         });
       }
-
     } catch (error) {
       logger.warn(
         'Authentication service initialization failed, continuing without auth features',
@@ -1069,7 +1139,9 @@ async function initializeTunnelSystem() {
       });
 
       const conversationRouter = createConversationRoutes(dbMigrator, logger);
-      logger.info('Conversation router created', { routerExists: !!conversationRouter });
+      logger.info('Conversation router created', {
+        routerExists: !!conversationRouter,
+      });
       app.use('/api/conversations', conversationRouter);
       app.use('/conversations-router', conversationRouter); // Use different path to avoid conflict
       logger.info('Conversation API routes initialized');
