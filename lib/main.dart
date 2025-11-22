@@ -116,11 +116,6 @@ void main() async {
           );
         },
       );
-
-      // TODO: Remove this line after verifying Sentry works in production
-      if (!kReleaseMode) {
-        await Sentry.captureException(Exception('This is a sample exception.'));
-      }
     },
   );
 }
