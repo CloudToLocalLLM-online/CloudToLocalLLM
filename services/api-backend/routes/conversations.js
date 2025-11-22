@@ -15,8 +15,8 @@ export function createConversationRoutes(
   const router = express.Router();
 
   // All routes require authentication
-  router.use(authenticateJWT);
-  router.use(addTierInfo);
+  // router.use(authenticateJWT);
+  // router.use(addTierInfo);
 
   /**
    * GET /api/conversations

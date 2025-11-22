@@ -905,10 +905,19 @@ async function initializeTunnelSystem() {
     }
 
     // Initialize conversation routes after database is ready
-    const conversationRouter = createConversationRoutes(dbMigrator, logger);
-    app.use('/api/conversations', conversationRouter);
-    app.use('/conversations', conversationRouter); // Also register without /api prefix for api subdomain
-    logger.info('Conversation API routes initialized');
+    try {
+      const conversationRouter = createConversationRoutes(dbMigrator, logger);
+      logger.info('Conversation router created', { routerExists: !!conversationRouter });
+      app.use('/api/conversations', conversationRouter);
+      app.use('/conversations', conversationRouter); // Also register without /api prefix for api subdomain
+      logger.info('Conversation API routes initialized');
+    } catch (error) {
+      logger.error('Failed to initialize conversation routes', {
+        error: error.message,
+        stack: error.stack,
+      });
+      // Don't fail the entire server startup, just log the error
+    }
 
     logger.info('WebSocket tunnel system ready');
 
