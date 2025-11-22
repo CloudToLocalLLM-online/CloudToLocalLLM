@@ -20,17 +20,17 @@ export function createConversationRoutes(
   // router.use(authenticateJWT);
   // router.use(addTierInfo);
 
-    // Temporary test route without auth
-    router.get('/test', (req, res) => {
-      logger.info('Conversation test route accessed');
-      res.json({ message: 'Conversation routes working' });
-    });
+  // Temporary test route without auth
+  router.get('/test', (req, res) => {
+    logger.info('Conversation test route accessed');
+    res.json({ message: 'Conversation routes working' });
+  });
 
-    // Another test route
-    router.get('/', (req, res) => {
-      logger.info('Conversation root route accessed');
-      res.json({ message: 'Conversation root working' });
-    });
+  // Another test route
+  router.get('/', (req, res) => {
+    logger.info('Conversation root route accessed');
+    res.json({ message: 'Conversation root working' });
+  });
 
   /**
    * GET /api/conversations

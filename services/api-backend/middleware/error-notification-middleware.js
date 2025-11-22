@@ -70,7 +70,7 @@ export function createErrorNotificationMiddleware(_options = {}) {
  * @returns {Function} - Wrapped handler
  */
 export function withErrorNotification(handler) {
-  return async (req, res, next) => {
+  return async(req, res, next) => {
     try {
       await handler(req, res, next);
     } catch (error) {
@@ -238,7 +238,7 @@ export function createErrorResetHandler() {
  * @returns {Function} - Express route handler
  */
 export function createManualErrorNotificationHandler() {
-  return async (req, res) => {
+  return async(req, res) => {
     try {
       const { message, category, severity } = req.body;
 

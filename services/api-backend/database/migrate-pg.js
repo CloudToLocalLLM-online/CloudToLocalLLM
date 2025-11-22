@@ -120,7 +120,7 @@ export class DatabaseMigratorPG {
         } catch (cleanupError) {
           this.logger.error('Failed to create migrations table even after cleanup', {
             originalError: error.message,
-            cleanupError: cleanupError.message
+            cleanupError: cleanupError.message,
           });
           throw cleanupError;
         }
