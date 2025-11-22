@@ -762,13 +762,148 @@ app.use((error, req, res, _next) => {
   });
 });
 
-// Add conversation routes directly to main app for testing
-app.get('/conversations/test', (req, res) => {
-  res.json({ message: 'Main app conversation test working' });
+// Conversation routes - implemented directly due to router mounting issues
+app.get('/conversations/', async (req, res) => {
+  try {
+    const userId = req.auth?.payload?.sub || req.user?.sub;
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized', message: 'User ID not found in token' });
+    }
+
+    if (!dbMigrator || !dbMigrator.pool) {
+      return res.status(503).json({ error: 'Service Unavailable', message: 'Database not initialized' });
+    }
+
+    const client = await dbMigrator.pool.connect();
+    try {
+      const { rows } = await client.query(
+        `SELECT id, title, model, created_at, updated_at, metadata
+         FROM conversations
+         WHERE user_id = $1
+         ORDER BY updated_at DESC`,
+        [userId],
+      );
+
+      res.json({ conversations: rows });
+    } finally {
+      client.release();
+    }
+  } catch (error) {
+    logger.error('Failed to get conversations', { error: error.message });
+    res.status(500).json({ error: 'Internal Server Error', message: 'Failed to get conversations' });
+  }
 });
 
-app.get('/conversations/', (req, res) => {
-  res.json({ message: 'Main app conversation root working' });
+app.put('/conversations/:id', async (req, res) => {
+  try {
+    const userId = req.auth?.payload?.sub || req.user?.sub;
+    const conversationId = req.params.id;
+    const { title, messages, model, metadata } = req.body;
+
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized', message: 'User ID not found in token' });
+    }
+
+    if (!dbMigrator || !dbMigrator.pool) {
+      return res.status(503).json({ error: 'Service Unavailable', message: 'Database not initialized' });
+    }
+
+    const client = await dbMigrator.pool.connect();
+    try {
+      await client.query('BEGIN');
+
+      // Check if conversation exists
+      const { rows: conversationRows } = await client.query(
+        `SELECT id FROM conversations WHERE id = $1 AND user_id = $2`,
+        [conversationId, userId],
+      );
+
+      if (conversationRows.length === 0) {
+        // Create new conversation
+        const newModel = model || 'gpt-3.5-turbo';
+        const newTitle = title || 'New Conversation';
+
+        await client.query(
+          `INSERT INTO conversations (id, user_id, title, model, metadata)
+           VALUES ($1, $2, $3, $4, $5::jsonb)`,
+          [conversationId, userId, newTitle, newModel, JSON.stringify(metadata || {})],
+        );
+      } else {
+        // Update existing conversation
+        if (title) {
+          await client.query('UPDATE conversations SET title = $1 WHERE id = $2', [title, conversationId]);
+        }
+        if (metadata) {
+          await client.query('UPDATE conversations SET metadata = $1::jsonb WHERE id = $2', [JSON.stringify(metadata), conversationId]);
+        }
+      }
+
+      // Replace messages if provided
+      if (messages && Array.isArray(messages)) {
+        await client.query('DELETE FROM messages WHERE conversation_id = $1', [conversationId]);
+
+        for (const msg of messages) {
+          await client.query(
+            `INSERT INTO messages (conversation_id, role, content, model, status, error, timestamp, metadata)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8::jsonb)`,
+            [
+              conversationId,
+              msg.role || 'user',
+              msg.content || '',
+              msg.model || model || null,
+              msg.status || 'sent',
+              msg.error || null,
+              msg.timestamp ? new Date(msg.timestamp) : new Date(),
+              msg.metadata ? JSON.stringify(msg.metadata) : '{}',
+            ],
+          );
+        }
+      }
+
+      await client.query('COMMIT');
+
+      // Get updated conversation
+      const { rows: updatedConversation } = await client.query(
+        `SELECT id, title, model, created_at, updated_at, metadata FROM conversations WHERE id = $1`,
+        [conversationId],
+      );
+
+      const { rows: messageRows } = await client.query(
+        `SELECT id, role, content, model, status, error, timestamp, metadata
+         FROM messages WHERE conversation_id = $1 ORDER BY timestamp ASC`,
+        [conversationId],
+      );
+
+      res.json({
+        success: true,
+        conversation: {
+          ...updatedConversation[0],
+          messages: messageRows,
+        },
+      });
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
+  } catch (error) {
+    logger.error('Failed to update conversation', { error: error.message, conversationId: req.params.id });
+    res.status(500).json({ error: 'Internal Server Error', message: 'Failed to update conversation' });
+  }
+});
+
+// Also mount at /api/conversations for backward compatibility
+app.get('/api/conversations/', async (req, res) => {
+  // Redirect to the main route
+  const url = req.originalUrl.replace('/api/conversations/', '/conversations/');
+  res.redirect(307, url);
+});
+
+app.put('/api/conversations/:id', async (req, res) => {
+  // Redirect to the main route
+  const url = req.originalUrl.replace('/api/conversations/', '/conversations/');
+  res.redirect(307, url);
 });
 
 // 404 handler
