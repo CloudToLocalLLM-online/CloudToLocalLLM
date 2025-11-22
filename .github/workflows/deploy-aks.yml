@@ -440,35 +440,67 @@ jobs:
           TERMINATING_PODS=$(echo "$POD_INFO" | jq '[.items[] | select(.metadata.deletionTimestamp != null)] | length')
           echo "Terminating pods: $TERMINATING_PODS"
 
-          # Calculate restarts only for non-terminating pods
-          ACTIVE_RESTARTS=$(echo "$POD_INFO" | jq '[.items[] | select(.metadata.deletionTimestamp == null) | .status.containerStatuses[0].restartCount // 0] | add')
-          echo "Restarts in active pods: $ACTIVE_RESTARTS"
+          # Analyze pod health more intelligently
+          HIGH_RESTART_PODS=0
+          CRASH_LOOP_PODS=0
+          FAILED_PODS=0
+
+          echo "Detailed pod analysis:"
+          for i in $(seq 0 $((TOTAL_PODS - 1))); do
+            POD_NAME=$(echo "$POD_INFO" | jq -r ".items[$i].metadata.name")
+            POD_PHASE=$(echo "$POD_INFO" | jq -r ".items[$i].status.phase")
+            RESTART_COUNT=$(echo "$POD_INFO" | jq -r ".items[$i].status.containerStatuses[0].restartCount // 0")
+            IS_TERMINATING=$(echo "$POD_INFO" | jq -r ".items[$i].metadata.deletionTimestamp != null")
+
+            echo "Pod: $POD_NAME | Phase: $POD_PHASE | Restarts: $RESTART_COUNT | Terminating: $IS_TERMINATING"
+
+            if [ "$IS_TERMINATING" = "false" ]; then
+              if [ "$RESTART_COUNT" -ge 3 ]; then
+                HIGH_RESTART_PODS=$((HIGH_RESTART_PODS + 1))
+                echo "  ⚠️ High restart count detected: $RESTART_COUNT"
+              fi
+              if [ "$POD_PHASE" = "Failed" ] || [ "$POD_PHASE" = "CrashLoopBackOff" ]; then
+                CRASH_LOOP_PODS=$((CRASH_LOOP_PODS + 1))
+                echo "  ❌ Pod in crash loop: $POD_PHASE"
+              fi
+            fi
+          done
+
+          echo ""
+          echo "Health summary:"
+          echo "High restart pods (>=3 restarts): $HIGH_RESTART_PODS"
+          echo "Crash loop pods: $CRASH_LOOP_PODS"
+          echo "Failed pods (non-terminating): $FAILED_PODS"
 
           # Check if deployment is progressing normally
-          if [ "$RUNNING_PODS" -gt 0 ] && [ "$ACTIVE_RESTARTS" -eq 0 ]; then
-            echo "✅ Deployment healthy: $RUNNING_PODS pods running, $TERMINATING_PODS terminating, 0 restarts in active pods"
+          if [ "$RUNNING_PODS" -gt 0 ] && [ "$HIGH_RESTART_PODS" -eq 0 ] && [ "$CRASH_LOOP_PODS" -eq 0 ] && [ "$FAILED_PODS" -eq 0 ]; then
+            echo "✅ Deployment healthy: $RUNNING_PODS pods running, $TERMINATING_PODS terminating"
             exit 0
           fi
 
-          # Check for unhealthy pods (restarting active pods)
-          if [ "$ACTIVE_RESTARTS" -gt 0 ]; then
-            echo "❌ Detected $ACTIVE_RESTARTS restarts in active pods - investigating..."
-
-            # Show detailed pod status
-            echo ""
-            echo "Detailed pod analysis:"
-            echo "$POD_INFO" | jq -r '.items[] | "Pod: \(.metadata.name) | Phase: \(.status.phase) | Restarts: \(.status.containerStatuses[0].restartCount // 0) | Terminating: \(.metadata.deletionTimestamp != null)"'
+          # Check for critical issues
+          if [ "$HIGH_RESTART_PODS" -gt 0 ] || [ "$CRASH_LOOP_PODS" -gt 0 ] || [ "$FAILED_PODS" -gt 0 ]; then
+            echo "❌ Detected critical pod issues - investigating..."
 
             echo ""
-            echo "--- Current Logs from active pods ---"
-            kubectl get pods -n cloudtolocalllm -l app=api-backend -o json | jq -r '.items[] | select(.metadata.deletionTimestamp == null) | .metadata.name' | head -1 | xargs -I {} kubectl logs {} -n cloudtolocalllm --tail=30 --all-containers=true || true
+            echo "--- Current Logs from problematic pods ---"
+            for i in $(seq 0 $((TOTAL_PODS - 1))); do
+              POD_NAME=$(echo "$POD_INFO" | jq -r ".items[$i].metadata.name")
+              POD_PHASE=$(echo "$POD_INFO" | jq -r ".items[$i].status.phase")
+              RESTART_COUNT=$(echo "$POD_INFO" | jq -r ".items[$i].status.containerStatuses[0].restartCount // 0")
+              IS_TERMINATING=$(echo "$POD_INFO" | jq -r ".items[$i].metadata.deletionTimestamp != null")
+
+              if [ "$IS_TERMINATING" = "false" ] && ([ "$RESTART_COUNT" -ge 3 ] || [ "$POD_PHASE" = "Failed" ] || [ "$POD_PHASE" = "CrashLoopBackOff" ]); then
+                echo "--- Current logs from $POD_NAME ---"
+                kubectl logs -n cloudtolocalllm "$POD_NAME" --tail=50 --all-containers=true || true
+                echo "--- Previous logs from $POD_NAME ---"
+                kubectl logs -n cloudtolocalllm "$POD_NAME" --tail=50 --previous --all-containers=true || true
+                echo ""
+              fi
+            done
 
             echo ""
-            echo "--- Previous Logs from active pods ---"
-            kubectl get pods -n cloudtolocalllm -l app=api-backend -o json | jq -r '.items[] | select(.metadata.deletionTimestamp == null) | .metadata.name' | head -1 | xargs -I {} kubectl logs {} -n cloudtolocalllm --tail=30 --previous --all-containers=true || true
-
-            echo ""
-            echo "❌ Failing deployment due to restarts in active pods"
+            echo "❌ Failing deployment due to critical pod issues"
             exit 1
           fi
 

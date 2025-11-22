@@ -72,9 +72,9 @@ export class DatabaseMigratorPG {
         return;
       }
 
-      // Table doesn't exist, create it
+      // Table doesn't exist, create it with better error handling
       const sql = `
-        CREATE TABLE schema_migrations (
+        CREATE TABLE IF NOT EXISTS schema_migrations (
           id SERIAL PRIMARY KEY,
           version TEXT UNIQUE NOT NULL,
           name TEXT NOT NULL,
@@ -83,12 +83,49 @@ export class DatabaseMigratorPG {
           execution_time_ms INTEGER,
           success BOOLEAN DEFAULT TRUE
         );
-        CREATE INDEX idx_schema_migrations_version ON schema_migrations(version);
-        CREATE INDEX idx_schema_migrations_applied_at ON schema_migrations(applied_at);
+        CREATE UNIQUE INDEX IF NOT EXISTS idx_schema_migrations_version ON schema_migrations(version);
+        CREATE INDEX IF NOT EXISTS idx_schema_migrations_applied_at ON schema_migrations(applied_at);
       `;
       await this.pool.query(sql);
       this.logger.info('Migrations table created/verified (PG)');
     } catch (error) {
+      // If we get a type constraint error, it might be due to sequence conflicts
+      // Try to clean up and retry
+      if (error.message.includes('pg_type_typname_nsp_index')) {
+        this.logger.warn('Detected type constraint conflict, attempting cleanup...', { error: error.message });
+        try {
+          // Drop any conflicting sequences that might exist
+          await this.pool.query(`
+            DROP SEQUENCE IF EXISTS schema_migrations_id_seq CASCADE;
+          `);
+          this.logger.info('Cleaned up conflicting sequence, retrying table creation...');
+
+          // Retry table creation
+          const sql = `
+            CREATE TABLE IF NOT EXISTS schema_migrations (
+              id SERIAL PRIMARY KEY,
+              version TEXT UNIQUE NOT NULL,
+              name TEXT NOT NULL,
+              applied_at TIMESTAMPTZ DEFAULT NOW(),
+              checksum TEXT NOT NULL,
+              execution_time_ms INTEGER,
+              success BOOLEAN DEFAULT TRUE
+            );
+            CREATE UNIQUE INDEX IF NOT EXISTS idx_schema_migrations_version ON schema_migrations(version);
+            CREATE INDEX IF NOT EXISTS idx_schema_migrations_applied_at ON schema_migrations(applied_at);
+          `;
+          await this.pool.query(sql);
+          this.logger.info('Migrations table created after cleanup (PG)');
+          return;
+        } catch (cleanupError) {
+          this.logger.error('Failed to create migrations table even after cleanup', {
+            originalError: error.message,
+            cleanupError: cleanupError.message
+          });
+          throw cleanupError;
+        }
+      }
+
       this.logger.error('Failed to create migrations table', { error: error.message });
       throw error;
     }
