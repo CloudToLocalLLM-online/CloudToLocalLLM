@@ -42,7 +42,7 @@ export function createProxyMetricsRoutes(metricsService) {
  * Record a proxy metrics event
  * Validates: Requirements 5.6
  */
-router.post('/metrics/:proxyId/record', authenticateJWT, addTierInfo, async (req, res) => {
+router.post('/metrics/:proxyId/record', authenticateJWT, addTierInfo, async function(req, res) {
   try {
     const { proxyId } = req.params;
     const userId = req.user?.sub;
@@ -72,7 +72,7 @@ router.post('/metrics/:proxyId/record', authenticateJWT, addTierInfo, async (req
       });
     }
 
-    const event = await proxyMetricsService.recordMetricsEvent(proxyId, userId, eventType, metrics);
+    await proxyMetricsService.recordMetricsEvent(proxyId, userId, eventType, metrics);
 
     logger.info('Proxy metrics event recorded', {
       proxyId,
@@ -105,7 +105,7 @@ router.post('/metrics/:proxyId/record', authenticateJWT, addTierInfo, async (req
  * Get daily metrics for a proxy
  * Validates: Requirements 5.6
  */
-router.get('/metrics/:proxyId/daily/:date', authenticateJWT, addTierInfo, async (req, res) => {
+router.get('/metrics/:proxyId/daily/:date', authenticateJWT, addTierInfo, async function(req, res) {
   try {
     const { proxyId, date } = req.params;
     const userId = req.user?.sub;
@@ -168,7 +168,7 @@ router.get('/metrics/:proxyId/daily/:date', authenticateJWT, addTierInfo, async 
  * Query params: startDate, endDate (YYYY-MM-DD format)
  * Validates: Requirements 5.6
  */
-router.get('/metrics/:proxyId/daily', authenticateJWT, addTierInfo, async (req, res) => {
+router.get('/metrics/:proxyId/daily', authenticateJWT, addTierInfo, async function(req, res) {
   try {
     const { proxyId } = req.params;
     const { startDate, endDate } = req.query;
@@ -241,7 +241,7 @@ router.get('/metrics/:proxyId/daily', authenticateJWT, addTierInfo, async (req, 
  * Query params: periodStart, periodEnd (YYYY-MM-DD format)
  * Validates: Requirements 5.6
  */
-router.get('/metrics/:proxyId/aggregation', authenticateJWT, addTierInfo, async (req, res) => {
+router.get('/metrics/:proxyId/aggregation', authenticateJWT, addTierInfo, async function(req, res) {
   try {
     const { proxyId } = req.params;
     const { periodStart, periodEnd } = req.query;

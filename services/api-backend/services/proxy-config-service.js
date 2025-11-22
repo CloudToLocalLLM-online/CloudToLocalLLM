@@ -1,5 +1,4 @@
 import winston from 'winston';
-import { v4 as uuidv4 } from 'uuid';
 
 /**
  * ProxyConfigService - Manages proxy configuration settings

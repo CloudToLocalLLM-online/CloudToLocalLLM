@@ -240,7 +240,7 @@ export class WebhookTestingService {
         } else {
           result.responseBody = await response.text();
         }
-      } catch (e) {
+      } catch {
         result.responseBody = null;
       }
 
@@ -315,7 +315,7 @@ export class WebhookTestingService {
       }
 
       return crypto.timingSafeEqual(signatureBuf, expectedBuf);
-    } catch (error) {
+    } catch {
       // If any error occurs during validation, return false
       return false;
     }
@@ -523,7 +523,7 @@ export class WebhookTestingService {
           if (isNaN(date.getTime())) {
             errors.push('Timestamp must be a valid ISO 8601 date string');
           }
-        } catch (e) {
+        } catch {
           errors.push('Timestamp must be a valid ISO 8601 date string');
         }
       }

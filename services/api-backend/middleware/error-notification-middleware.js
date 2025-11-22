@@ -1,9 +1,9 @@
 /**
  * Error Notification Middleware
- * 
+ *
  * Integrates error notification service into the request pipeline.
  * Detects critical errors and triggers notifications.
- * 
+ *
  * Requirement 7.9: THE API SHALL support error notifications for critical issues
  */
 
@@ -31,11 +31,11 @@ const logger = winston.createLogger({
 /**
  * Error notification middleware
  * Wraps error handling to detect and notify critical errors
- * 
+ *
  * @param {Object} options - Middleware options
  * @returns {Function} - Express middleware
  */
-export function createErrorNotificationMiddleware(options = {}) {
+export function createErrorNotificationMiddleware(_options = {}) {
   return (error, req, res, next) => {
     // Extract context from request
     const context = {
@@ -65,7 +65,7 @@ export function createErrorNotificationMiddleware(options = {}) {
 
 /**
  * Wrap route handler to catch and notify errors
- * 
+ *
  * @param {Function} handler - Route handler
  * @returns {Function} - Wrapped handler
  */
@@ -102,7 +102,7 @@ export function withErrorNotification(handler) {
 
 /**
  * Create error notification status endpoint
- * 
+ *
  * @returns {Function} - Express route handler
  */
 export function createErrorNotificationStatusHandler() {
@@ -122,7 +122,7 @@ export function createErrorNotificationStatusHandler() {
 
 /**
  * Create error history endpoint
- * 
+ *
  * @returns {Function} - Express route handler
  */
 export function createErrorHistoryHandler() {
@@ -152,7 +152,7 @@ export function createErrorHistoryHandler() {
 
 /**
  * Create error statistics endpoint
- * 
+ *
  * @returns {Function} - Express route handler
  */
 export function createErrorStatisticsHandler() {
@@ -172,7 +172,7 @@ export function createErrorStatisticsHandler() {
 
 /**
  * Create error metrics endpoint
- * 
+ *
  * @returns {Function} - Express route handler
  */
 export function createErrorMetricsHandler() {
@@ -192,7 +192,7 @@ export function createErrorMetricsHandler() {
 
 /**
  * Create error reset endpoint (admin only)
- * 
+ *
  * @returns {Function} - Express route handler
  */
 export function createErrorResetHandler() {
@@ -234,7 +234,7 @@ export function createErrorResetHandler() {
 
 /**
  * Create manual error notification endpoint (for testing)
- * 
+ *
  * @returns {Function} - Express route handler
  */
 export function createManualErrorNotificationHandler() {
@@ -249,6 +249,14 @@ export function createManualErrorNotificationHandler() {
       }
 
       const error = new Error(message);
+      // Attach category and severity if provided, for testing purposes
+      if (category) {
+        error.category = category;
+      }
+      if (severity) {
+        error.severity = severity;
+      }
+
       const context = {
         method: req.method,
         path: req.path,

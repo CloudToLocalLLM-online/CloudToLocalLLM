@@ -385,7 +385,7 @@ export class UserProfileService {
         if (avatar.length > 0) {
           try {
             new URL(avatar);
-          } catch (error) {
+          } catch {
             throw new Error('Invalid avatar URL format');
           }
         }

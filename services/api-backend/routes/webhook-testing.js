@@ -104,7 +104,7 @@ router.post('/test/payload', authenticateJWT, (req, res) => {
  *   ...
  * }
  */
-router.post('/test/send', authenticateJWT, async (req, res) => {
+router.post('/test/send', authenticateJWT, async(req, res) => {
   try {
     const { webhookUrl, eventType, customData, secret } = req.body;
 
@@ -230,7 +230,7 @@ router.get('/test/events/:testId', authenticateJWT, (req, res) => {
  *   "statistics": { ... }
  * }
  */
-router.get('/:webhookId/debug', authenticateJWT, async (req, res) => {
+router.get('/:webhookId/debug', authenticateJWT, async(req, res) => {
   try {
     const { webhookId } = req.params;
     const userId = req.user.sub;
@@ -267,7 +267,7 @@ router.get('/:webhookId/debug', authenticateJWT, async (req, res) => {
  *   "delivery": { ... }
  * }
  */
-router.get('/deliveries/:deliveryId/details', authenticateJWT, async (req, res) => {
+router.get('/deliveries/:deliveryId/details', authenticateJWT, async(req, res) => {
   try {
     const { deliveryId } = req.params;
     const userId = req.user.sub;

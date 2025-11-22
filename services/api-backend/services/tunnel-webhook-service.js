@@ -263,7 +263,7 @@ export class TunnelWebhookService {
       updateQuery += ` WHERE id = $${paramIndex} AND user_id = $${paramIndex + 1}`;
       params.push(webhookId, userId);
 
-      const result = await client.query(updateQuery, params);
+      await client.query(updateQuery, params);
 
       await client.query('COMMIT');
 
@@ -481,7 +481,7 @@ export class TunnelWebhookService {
       // Check if max retries exceeded
       if (delivery.attempt_count >= delivery.max_attempts) {
         await client.query(
-          `UPDATE tunnel_webhook_deliveries SET status = $1, updated_at = NOW() WHERE id = $2`,
+          'UPDATE tunnel_webhook_deliveries SET status = $1, updated_at = NOW() WHERE id = $2',
           ['failed', deliveryId],
         );
 

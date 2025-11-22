@@ -168,7 +168,7 @@ export function wrapClientQueryWithCache(originalQuery, options = {}) {
 export function wrapPoolWithCache(pool, options = {}) {
   const originalQuery = pool.query.bind(pool);
 
-  pool.query = async function (queryText, params) {
+  pool.query = async function(queryText, params) {
     return executeCachedQuery(
       () => originalQuery(queryText, params),
       queryText,
@@ -192,7 +192,7 @@ export function wrapPoolWithCache(pool, options = {}) {
 export function wrapClientWithCache(client, options = {}) {
   const originalQuery = client.query.bind(client);
 
-  client.query = async function (queryText, params) {
+  client.query = async function(queryText, params) {
     return executeCachedQuery(
       () => originalQuery(queryText, params),
       queryText,

@@ -1,9 +1,9 @@
 /**
  * Graceful Degradation Middleware
- * 
+ *
  * Implements graceful degradation for API endpoints when services are unavailable.
  * Provides fallback responses and reduced functionality modes.
- * 
+ *
  * Requirement 7.6: THE API SHALL implement graceful degradation when services are unavailable
  */
 
@@ -34,20 +34,20 @@ const logger = winston.createLogger({
  * @param {Object} options - Configuration options
  * @returns {Function} - Express middleware
  */
-export function createGracefulDegradationMiddleware(serviceName, options = {}) {
+export function createGracefulDegradationMiddleware(serviceName, _options = {}) {
   return (req, res, next) => {
     const status = gracefulDegradationService.getStatus(serviceName);
-    
+
     // Add degradation status to request
     req.degradationStatus = status;
-    
+
     // If service is degraded and endpoint is critical, return error
     if (status.isDegraded && gracefulDegradationService.isCriticalEndpoint(serviceName, req.path)) {
       logger.warn(`Critical endpoint accessed during degradation: ${req.path}`, {
         service: serviceName,
         degradationReason: status.reason,
       });
-      
+
       return res.status(503).json({
         error: {
           code: 'SERVICE_DEGRADED',
@@ -64,7 +64,7 @@ export function createGracefulDegradationMiddleware(serviceName, options = {}) {
         },
       });
     }
-    
+
     next();
   };
 }
@@ -76,12 +76,12 @@ export function createGracefulDegradationMiddleware(serviceName, options = {}) {
 export function degradationStatusMiddleware(req, res, next) {
   // Add degradation status to response headers
   const report = gracefulDegradationService.getReport();
-  
+
   if (report.summary.overallStatus === 'degraded') {
     res.set('X-Service-Status', 'degraded');
     res.set('X-Degraded-Services', report.degradedServices.toString());
   }
-  
+
   next();
 }
 
@@ -92,7 +92,7 @@ export function degradationStatusMiddleware(req, res, next) {
  */
 export function getDegradationStatus(req, res) {
   const serviceName = req.params.serviceName;
-  
+
   if (serviceName) {
     const status = gracefulDegradationService.getStatus(serviceName);
     return res.json({
@@ -100,7 +100,7 @@ export function getDegradationStatus(req, res) {
       timestamp: new Date().toISOString(),
     });
   }
-  
+
   const report = gracefulDegradationService.getReport();
   res.json(report);
 }
@@ -125,7 +125,7 @@ export function getAllDegradationStatuses(req, res) {
  */
 export function markServiceDegraded(req, res) {
   const { serviceName, reason, severity } = req.body;
-  
+
   if (!serviceName) {
     return res.status(400).json({
       error: {
@@ -134,9 +134,9 @@ export function markServiceDegraded(req, res) {
       },
     });
   }
-  
+
   gracefulDegradationService.markDegraded(serviceName, reason || 'Manual degradation', severity || 'warning');
-  
+
   const status = gracefulDegradationService.getStatus(serviceName);
   res.json({
     message: `Service marked as degraded: ${serviceName}`,
@@ -152,7 +152,7 @@ export function markServiceDegraded(req, res) {
  */
 export function markServiceRecovered(req, res) {
   const { serviceName } = req.body;
-  
+
   if (!serviceName) {
     return res.status(400).json({
       error: {
@@ -161,9 +161,9 @@ export function markServiceRecovered(req, res) {
       },
     });
   }
-  
+
   gracefulDegradationService.markRecovered(serviceName);
-  
+
   const status = gracefulDegradationService.getStatus(serviceName);
   res.json({
     message: `Service marked as recovered: ${serviceName}`,
@@ -192,7 +192,7 @@ export function getDegradationMetrics(req, res) {
  */
 export function resetAllDegradation(req, res) {
   gracefulDegradationService.resetAll();
-  
+
   res.json({
     message: 'All degradation states reset',
     timestamp: new Date().toISOString(),
@@ -219,15 +219,15 @@ export async function executeWithGracefulDegradation(serviceName, primaryFn, con
 export function createReducedFunctionalityMiddleware(serviceName) {
   return (req, res, next) => {
     const status = gracefulDegradationService.getStatus(serviceName);
-    
+
     if (status.isDegraded && !gracefulDegradationService.isCriticalEndpoint(serviceName, req.path)) {
       // Add reduced functionality info to request
       req.reducedFunctionality = gracefulDegradationService.getReducedFunctionalityResponse(
         serviceName,
-        req.path
+        req.path,
       );
     }
-    
+
     next();
   };
 }

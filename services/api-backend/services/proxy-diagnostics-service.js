@@ -338,7 +338,7 @@ export class ProxyDiagnosticsService {
    * @param {Array} recentLogs - Recent logs
    * @returns {string} Diagnostic status
    */
-  analyzeDiagnostics(proxyId, recentErrors, recentLogs) {
+  analyzeDiagnostics(_proxyId, recentErrors, _recentLogs) {
     if (recentErrors.length === 0) {
       return 'healthy';
     }
@@ -362,7 +362,7 @@ export class ProxyDiagnosticsService {
    * @param {Array} recentEvents - Recent events
    * @returns {Array} Array of suggestions
    */
-  generateTroubleshootingSuggestions(proxyId, recentErrors, recentEvents) {
+  generateTroubleshootingSuggestions(proxyId, recentErrors, _recentEvents) {
     const suggestions = [];
 
     if (recentErrors.length === 0) {
@@ -484,41 +484,41 @@ export class ProxyDiagnosticsService {
 
     issues.forEach((issue) => {
       switch (issue.type) {
-        case 'connection':
-          actions.push({
-            action: 'Check network connectivity',
-            steps: [
-              'Verify proxy endpoint is reachable',
-              'Check firewall rules',
-              'Verify DNS resolution',
-              'Check proxy logs for connection details',
-            ],
-          });
-          break;
-        case 'timeout':
-          actions.push({
-            action: 'Increase timeout settings',
-            steps: [
-              'Review current timeout configuration',
-              'Increase timeout values if appropriate',
-              'Check for slow network conditions',
-              'Monitor proxy performance metrics',
-            ],
-          });
-          break;
-        case 'resource':
-          actions.push({
-            action: 'Address resource constraints',
-            steps: [
-              'Check proxy memory usage',
-              'Consider increasing allocated resources',
-              'Restart proxy if necessary',
-              'Monitor resource usage over time',
-            ],
-          });
-          break;
-        default:
-          break;
+      case 'connection':
+        actions.push({
+          action: 'Check network connectivity',
+          steps: [
+            'Verify proxy endpoint is reachable',
+            'Check firewall rules',
+            'Verify DNS resolution',
+            'Check proxy logs for connection details',
+          ],
+        });
+        break;
+      case 'timeout':
+        actions.push({
+          action: 'Increase timeout settings',
+          steps: [
+            'Review current timeout configuration',
+            'Increase timeout values if appropriate',
+            'Check for slow network conditions',
+            'Monitor proxy performance metrics',
+          ],
+        });
+        break;
+      case 'resource':
+        actions.push({
+          action: 'Address resource constraints',
+          steps: [
+            'Check proxy memory usage',
+            'Consider increasing allocated resources',
+            'Restart proxy if necessary',
+            'Monitor resource usage over time',
+          ],
+        });
+        break;
+      default:
+        break;
       }
     });
 

@@ -351,7 +351,7 @@ export async function getAuthAuditLogsCount(userId, options = {}) {
   const { eventType = null, startDate = null, endDate = null } = options;
 
   try {
-    let sql = `SELECT COUNT(*) as count FROM auth_audit_logs WHERE user_id = $1`;
+    let sql = 'SELECT COUNT(*) as count FROM auth_audit_logs WHERE user_id = $1';
     const params = [userId];
     let paramIndex = 2;
 
@@ -526,7 +526,7 @@ export async function getAuthAuditLogsCountForAdmin(options = {}) {
   const { eventType = null, severity = null, startDate = null, endDate = null } = options;
 
   try {
-    let sql = `SELECT COUNT(*) as count FROM auth_audit_logs WHERE 1=1`;
+    let sql = 'SELECT COUNT(*) as count FROM auth_audit_logs WHERE 1=1';
     const params = [];
     let paramIndex = 1;
 

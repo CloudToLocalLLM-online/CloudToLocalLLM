@@ -65,7 +65,7 @@ export async function initializeWebhookEventFilterService() {
  * Authentication: Required (JWT)
  * Rate Limit: Standard (100 req/min)
  */
-router.post('/:tunnelId/webhooks/:webhookId/filters', authenticateJWT, async (req, res) => {
+router.post('/:tunnelId/webhooks/:webhookId/filters', authenticateJWT, async(req, res) => {
   try {
     if (!req.user) {
       return res.status(401).json({
@@ -154,7 +154,7 @@ router.post('/:tunnelId/webhooks/:webhookId/filters', authenticateJWT, async (re
  * Authentication: Required (JWT)
  * Rate Limit: Standard (100 req/min)
  */
-router.get('/:tunnelId/webhooks/:webhookId/filters', authenticateJWT, async (req, res) => {
+router.get('/:tunnelId/webhooks/:webhookId/filters', authenticateJWT, async(req, res) => {
   try {
     if (!req.user) {
       return res.status(401).json({
@@ -228,7 +228,7 @@ router.get('/:tunnelId/webhooks/:webhookId/filters', authenticateJWT, async (req
  * Authentication: Required (JWT)
  * Rate Limit: Standard (100 req/min)
  */
-router.put('/:tunnelId/webhooks/:webhookId/filters', authenticateJWT, async (req, res) => {
+router.put('/:tunnelId/webhooks/:webhookId/filters', authenticateJWT, async(req, res) => {
   try {
     if (!req.user) {
       return res.status(401).json({
@@ -315,7 +315,7 @@ router.put('/:tunnelId/webhooks/:webhookId/filters', authenticateJWT, async (req
  * Authentication: Required (JWT)
  * Rate Limit: Standard (100 req/min)
  */
-router.delete('/:tunnelId/webhooks/:webhookId/filters', authenticateJWT, async (req, res) => {
+router.delete('/:tunnelId/webhooks/:webhookId/filters', authenticateJWT, async(req, res) => {
   try {
     if (!req.user) {
       return res.status(401).json({
@@ -382,7 +382,7 @@ router.delete('/:tunnelId/webhooks/:webhookId/filters', authenticateJWT, async (
  * Authentication: Required (JWT)
  * Rate Limit: Standard (100 req/min)
  */
-router.post('/:tunnelId/webhooks/:webhookId/filters/validate', authenticateJWT, async (req, res) => {
+router.post('/:tunnelId/webhooks/:webhookId/filters/validate', authenticateJWT, async(req, res) => {
   try {
     if (!filterService) {
       return res.status(503).json({
@@ -434,7 +434,7 @@ router.post('/:tunnelId/webhooks/:webhookId/filters/validate', authenticateJWT, 
  * Authentication: Required (JWT)
  * Rate Limit: Standard (100 req/min)
  */
-router.post('/:tunnelId/webhooks/:webhookId/filters/test', authenticateJWT, async (req, res) => {
+router.post('/:tunnelId/webhooks/:webhookId/filters/test', authenticateJWT, async(req, res) => {
   try {
     if (!filterService) {
       return res.status(503).json({

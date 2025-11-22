@@ -55,11 +55,11 @@ export function sanitizeString(input) {
     '<': '&lt;',
     '>': '&gt;',
     '"': '&quot;',
-    "'": '&#x27;',
+    '\'': '&#x27;',
     '/': '&#x2F;',
   };
 
-  sanitized = sanitized.replace(/[&<>"'\/]/g, (char) => htmlEscapeMap[char]);
+  sanitized = sanitized.replace(/[&<>"'/]/g, (char) => htmlEscapeMap[char]);
 
   return sanitized;
 }
@@ -94,7 +94,7 @@ export function isValidUrl(url) {
   try {
     new URL(url);
     return true;
-  } catch (error) {
+  } catch {
     return false;
   }
 }
@@ -158,7 +158,7 @@ export function isSlugFormat(input) {
 }
 
 /**
- * Validate that input is a valid boolean
+ * Validate string contains only alphanumeric characters, hyphens, and underscores
  *
  * @param {*} input - Input to validate
  * @returns {boolean} True if valid boolean

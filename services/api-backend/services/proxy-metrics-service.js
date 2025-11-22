@@ -122,7 +122,7 @@ export class ProxyMetricsService {
       }
 
       const result = await this.pool.query(
-        `SELECT * FROM proxy_metrics_daily WHERE proxy_id = $1 AND date = $2`,
+        'SELECT * FROM proxy_metrics_daily WHERE proxy_id = $1 AND date = $2',
         [proxyId, date],
       );
 

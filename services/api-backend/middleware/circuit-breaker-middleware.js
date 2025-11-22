@@ -1,6 +1,6 @@
 /**
  * Circuit Breaker Middleware
- * 
+ *
  * Integrates circuit breaker pattern into Express middleware pipeline
  * for protecting service-to-service calls and external API calls.
  */

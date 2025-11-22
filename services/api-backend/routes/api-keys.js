@@ -52,7 +52,7 @@ const router = express.Router();
  *   "expiresAt": "ISO8601 or null"
  * }
  */
-router.post('/', authenticateJWT, async (req, res) => {
+router.post('/', authenticateJWT, async(req, res) => {
   try {
     const userId = extractUserId(req);
     const { name, description, scopes, rateLimit, expiresIn } = req.body;
@@ -138,7 +138,7 @@ router.post('/', authenticateJWT, async (req, res) => {
  *   }
  * ]
  */
-router.get('/', authenticateJWT, async (req, res) => {
+router.get('/', authenticateJWT, async(req, res) => {
   try {
     const userId = extractUserId(req);
 
@@ -181,7 +181,7 @@ router.get('/', authenticateJWT, async (req, res) => {
  *   "lastUsedAt": "ISO8601 or null"
  * }
  */
-router.get('/:keyId', authenticateJWT, async (req, res) => {
+router.get('/:keyId', authenticateJWT, async(req, res) => {
   try {
     const userId = extractUserId(req);
     const { keyId } = req.params;
@@ -227,7 +227,7 @@ router.get('/:keyId', authenticateJWT, async (req, res) => {
  *
  * Response: Updated API key object
  */
-router.patch('/:keyId', authenticateJWT, async (req, res) => {
+router.patch('/:keyId', authenticateJWT, async(req, res) => {
   try {
     const userId = extractUserId(req);
     const { keyId } = req.params;
@@ -315,7 +315,7 @@ router.patch('/:keyId', authenticateJWT, async (req, res) => {
  *   "expiresAt": "ISO8601 or null"
  * }
  */
-router.post('/:keyId/rotate', authenticateJWT, async (req, res) => {
+router.post('/:keyId/rotate', authenticateJWT, async(req, res) => {
   try {
     const userId = extractUserId(req);
     const { keyId } = req.params;
@@ -357,7 +357,7 @@ router.post('/:keyId/rotate', authenticateJWT, async (req, res) => {
  *   "message": "API key revoked successfully"
  * }
  */
-router.post('/:keyId/revoke', authenticateJWT, async (req, res) => {
+router.post('/:keyId/revoke', authenticateJWT, async(req, res) => {
   try {
     const userId = extractUserId(req);
     const { keyId } = req.params;
@@ -405,7 +405,7 @@ router.post('/:keyId/revoke', authenticateJWT, async (req, res) => {
  *   }
  * ]
  */
-router.get('/:keyId/audit-logs', authenticateJWT, async (req, res) => {
+router.get('/:keyId/audit-logs', authenticateJWT, async(req, res) => {
   try {
     const userId = extractUserId(req);
     const { keyId } = req.params;

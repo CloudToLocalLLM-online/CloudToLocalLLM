@@ -21,7 +21,7 @@ export class MetricsService {
    */
   initializeMetrics() {
     // ============ HTTP Request Metrics ============
-    
+
     // HTTP request duration histogram
     this.httpRequestDuration = new Histogram({
       name: 'http_request_duration_seconds',

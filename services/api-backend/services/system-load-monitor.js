@@ -43,9 +43,15 @@ class SystemMetricsSnapshot {
    */
   getLoadLevel() {
     const load = this.getLoadPercentage();
-    if (load < 30) return 'low';
-    if (load < 60) return 'medium';
-    if (load < 80) return 'high';
+    if (load < 30) {
+      return 'low';
+    }
+    if (load < 60) {
+      return 'medium';
+    }
+    if (load < 80) {
+      return 'high';
+    }
     return 'critical';
   }
 

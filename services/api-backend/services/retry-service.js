@@ -1,9 +1,9 @@
 /**
  * Retry Service with Exponential Backoff
- * 
+ *
  * Implements retry logic with exponential backoff for transient failures.
  * Supports per-service configuration and metrics collection.
- * 
+ *
  * Features:
  * - Exponential backoff with jitter
  * - Per-service retry configuration
@@ -45,8 +45,8 @@ export class RetryService {
     }
 
     // Retry on network errors
-    if (error.code === 'ECONNREFUSED' || 
-        error.code === 'ECONNRESET' || 
+    if (error.code === 'ECONNREFUSED' ||
+        error.code === 'ECONNRESET' ||
         error.code === 'ETIMEDOUT' ||
         error.code === 'EHOSTUNREACH' ||
         error.code === 'ENETUNREACH') {
@@ -74,13 +74,13 @@ export class RetryService {
   calculateDelay(attemptNumber) {
     // Exponential backoff: initialDelay * (multiplier ^ attemptNumber)
     const exponentialDelay = this.initialDelayMs * Math.pow(this.backoffMultiplier, attemptNumber);
-    
+
     // Cap at max delay
     const cappedDelay = Math.min(exponentialDelay, this.maxDelayMs);
-    
+
     // Add jitter: random value between -jitterFactor and +jitterFactor of the delay
     const jitter = cappedDelay * this.jitterFactor * (Math.random() * 2 - 1);
-    
+
     return Math.max(0, Math.round(cappedDelay + jitter));
   }
 
@@ -108,7 +108,7 @@ export class RetryService {
       try {
         const result = await fn.apply(context, args);
         this.metrics.successfulAttempts++;
-        
+
         // Record retry count if this wasn't the first attempt
         if (attempt > 0) {
           this.metrics.retriedAttempts++;

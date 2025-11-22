@@ -176,7 +176,7 @@ export function requireApiKeyScope(requiredScopes) {
  * @param {Object} options - Rate limiting options
  * @returns {Function} Express middleware
  */
-export function rateLimitByApiKey(options = {}) {
+export function apiKeyAuth(_options = {}) {
   const keyRequests = new Map();
 
   return (req, res, next) => {

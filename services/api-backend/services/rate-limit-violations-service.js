@@ -1,29 +1,10 @@
-/**
- * @fileoverview Rate Limit Violations Service
- * Handles logging, tracking, and analysis of rate limit violations
- *
- * Validates: Requirements 6.8
- * - Logs all rate limit violations
- * - Includes violation context (user, IP, endpoint)
- * - Provides violation analysis endpoints
- */
-
 import { v4 as uuidv4 } from 'uuid';
-import { TunnelLogger } from '../utils/logger.js';
+import { TunnelLogger } from '../logger.js';
 import { getPool } from '../database/db-pool.js';
 
 /**
- * Rate limit violation types
- */
-export const VIOLATION_TYPES = {
-  WINDOW_LIMIT_EXCEEDED: 'window_limit_exceeded',
-  BURST_LIMIT_EXCEEDED: 'burst_limit_exceeded',
-  CONCURRENT_LIMIT_EXCEEDED: 'concurrent_limit_exceeded',
-  IP_LIMIT_EXCEEDED: 'ip_limit_exceeded',
-};
-
-/**
- * Rate Limit Violations Service
+ * @fileoverview Rate Limit Violations Service
+ * Handles logging, tracking, and analysis of rate limit violations
  */
 export class RateLimitViolationsService {
   constructor() {
@@ -259,7 +240,7 @@ export class RateLimitViolationsService {
         paramIndex++;
       }
 
-      query += ` GROUP BY user_id`;
+      query += ' GROUP BY user_id';
 
       const result = await this.pool.query(query, params);
 
@@ -339,7 +320,7 @@ export class RateLimitViolationsService {
         paramIndex++;
       }
 
-      query += ` GROUP BY ip_address`;
+      query += ' GROUP BY ip_address';
 
       const result = await this.pool.query(query, params);
 
@@ -518,18 +499,6 @@ export class RateLimitViolationsService {
    * @param {Object} options - Query options
    * @param {number} options.limit - Number of results
    * @param {string} options.startTime - Start time for filtering
-   * @param {string} options.endTime - End time for filtering
-   * @returns {Promise<Array>} Endpoint violations
-   */
-  async getEndpointViolations(endpoint, options = {}) {
-    const {
-      limit = 100,
-      startTime = null,
-      endTime = null,
-    } = options;
-
-    try {
-      let query = `
         SELECT
           COUNT(*) as violation_count,
           COUNT(DISTINCT user_id) as unique_users,
@@ -557,7 +526,7 @@ export class RateLimitViolationsService {
         paramIndex++;
       }
 
-      query += ` GROUP BY endpoint`;
+      query += ' GROUP BY endpoint';
 
       const result = await this.pool.query(query, params);
 

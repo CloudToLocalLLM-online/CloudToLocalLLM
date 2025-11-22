@@ -300,7 +300,7 @@ export class TunnelFailoverService {
       return; // Already checking
     }
 
-    const interval = setInterval(async () => {
+    const interval = setInterval(async() => {
       try {
         await this.checkEndpointRecovery(endpointId, tunnelId);
       } catch (error) {
@@ -436,7 +436,7 @@ export class TunnelFailoverService {
     try {
       // Verify tunnel ownership
       const tunnelResult = await this.pool.query(
-        `SELECT id FROM tunnels WHERE id = $1 AND user_id = $2`,
+        'SELECT id FROM tunnels WHERE id = $1 AND user_id = $2',
         [tunnelId, userId],
       );
 
@@ -446,7 +446,7 @@ export class TunnelFailoverService {
 
       // Get endpoints
       const endpointsResult = await this.pool.query(
-        `SELECT * FROM tunnel_endpoints WHERE tunnel_id = $1 ORDER BY priority DESC`,
+        'SELECT * FROM tunnel_endpoints WHERE tunnel_id = $1',
         [tunnelId],
       );
 
@@ -508,7 +508,7 @@ export class TunnelFailoverService {
     try {
       // Verify tunnel ownership
       const tunnelResult = await this.pool.query(
-        `SELECT id FROM tunnels WHERE id = $1 AND user_id = $2`,
+        'SELECT id FROM tunnels WHERE id = $1 AND user_id = $2',
         [tunnelId, userId],
       );
 
@@ -518,7 +518,7 @@ export class TunnelFailoverService {
 
       // Verify endpoint belongs to tunnel
       const endpointResult = await this.pool.query(
-        `SELECT * FROM tunnel_endpoints WHERE id = $1 AND tunnel_id = $2`,
+        'SELECT * FROM tunnel_endpoints WHERE id = $1 AND tunnel_id = $2',
         [endpointId, tunnelId],
       );
 
@@ -570,17 +570,5 @@ export class TunnelFailoverService {
       });
       throw error;
     }
-  }
-
-  /**
-   * Cleanup - stop all recovery checks
-   */
-  cleanup() {
-    for (const [endpointId, interval] of this.recoveryIntervals.entries()) {
-      clearInterval(interval);
-    }
-    this.recoveryIntervals.clear();
-    this.endpointStates.clear();
-    logger.info('[TunnelFailoverService] Tunnel failover service cleaned up');
   }
 }

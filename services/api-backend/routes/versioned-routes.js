@@ -8,7 +8,7 @@
  */
 
 import express from 'express';
-import { versionRouter } from '../middleware/api-versioning.js';
+
 
 /**
  * Create versioned health check endpoint

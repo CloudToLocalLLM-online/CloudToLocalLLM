@@ -20,7 +20,6 @@
 
 import express from 'express';
 import logger from '../logger.js';
-import { QuotaService } from '../services/quota-service.js';
 import { authenticateJWT } from '../middleware/auth.js';
 import { authorizeRBAC } from '../middleware/rbac.js';
 import { validateInput } from '../utils/input-validation.js';
@@ -42,7 +41,7 @@ export function initializeQuotaRoutes(service) {
  * Response: 200 OK with all quotas
  * Error: 401 Unauthorized, 500 Internal Server Error
  */
-router.get('/quotas', authenticateJWT, async (req, res) => {
+router.get('/quotas', authenticateJWT, async function(req, res) {
   try {
     const userId = req.user.sub;
 
@@ -82,7 +81,7 @@ router.get('/quotas', authenticateJWT, async (req, res) => {
  * Response: 200 OK with quota
  * Error: 400 Bad Request, 401 Unauthorized, 404 Not Found, 500 Internal Server Error
  */
-router.get('/quotas/:resourceType', authenticateJWT, async (req, res) => {
+router.get('/quotas/:resourceType', authenticateJWT, async function(req, res) {
   try {
     const { resourceType } = req.params;
     const userId = req.user.sub;
@@ -151,7 +150,7 @@ router.get('/quotas/:resourceType', authenticateJWT, async (req, res) => {
  * Response: 200 OK with quota events
  * Error: 401 Unauthorized, 500 Internal Server Error
  */
-router.get('/quotas/events', authenticateJWT, async (req, res) => {
+router.get('/quotas/events', authenticateJWT, async function(req, res) {
   try {
     const userId = req.user.sub;
     const { resourceType, eventType, limit = 100, offset = 0 } = req.query;
@@ -198,7 +197,7 @@ router.get('/quotas/events', authenticateJWT, async (req, res) => {
  * Response: 200 OK with quota summary
  * Error: 401 Unauthorized, 500 Internal Server Error
  */
-router.get('/quotas/summary', authenticateJWT, async (req, res) => {
+router.get('/quotas/summary', authenticateJWT, async function(req, res) {
   try {
     const userId = req.user.sub;
 
@@ -238,7 +237,7 @@ router.get('/quotas/summary', authenticateJWT, async (req, res) => {
  * Response: 200 OK with reset quota
  * Error: 400 Bad Request, 401 Unauthorized, 403 Forbidden, 404 Not Found, 500 Internal Server Error
  */
-router.post('/quotas/:resourceType/reset', authenticateJWT, authorizeRBAC('admin'), async (req, res) => {
+router.post('/quotas/:resourceType/reset', authenticateJWT, authorizeRBAC('admin'), async function(req, res) {
   try {
     const { resourceType } = req.params;
     const { userId } = req.body;

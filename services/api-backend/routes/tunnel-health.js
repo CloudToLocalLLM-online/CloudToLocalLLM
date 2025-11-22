@@ -56,7 +56,7 @@ export async function initializeTunnelHealthService() {
  * Authentication: Required (JWT)
  * Rate Limit: Standard (100 req/min)
  */
-router.get('/:id/status', authenticateJWT, async (req, res) => {
+router.get('/:id/status', authenticateJWT, async(req, res) => {
   try {
     if (!req.user) {
       return res.status(401).json({
@@ -125,7 +125,7 @@ router.get('/:id/status', authenticateJWT, async (req, res) => {
  * Authentication: Required (JWT)
  * Rate Limit: Standard (100 req/min)
  */
-router.get('/:id/health', authenticateJWT, async (req, res) => {
+router.get('/:id/health', authenticateJWT, async(req, res) => {
   try {
     if (!req.user) {
       return res.status(401).json({
@@ -194,7 +194,7 @@ router.get('/:id/health', authenticateJWT, async (req, res) => {
  * Authentication: Required (JWT)
  * Rate Limit: Standard (100 req/min)
  */
-router.post('/:id/health-check', authenticateJWT, async (req, res) => {
+router.post('/:id/health-check', authenticateJWT, async(req, res) => {
   try {
     if (!req.user) {
       return res.status(401).json({
@@ -219,7 +219,7 @@ router.post('/:id/health-check', authenticateJWT, async (req, res) => {
     const { getPool } = await import('../database/db-pool.js');
     const pool = getPool();
     const tunnelResult = await pool.query(
-      `SELECT id FROM tunnels WHERE id = $1 AND user_id = $2`,
+      'SELECT id FROM tunnels WHERE id = $1 AND user_id = $2',
       [tunnelId, userId],
     );
 
@@ -274,7 +274,7 @@ router.post('/:id/health-check', authenticateJWT, async (req, res) => {
  * Authentication: Required (JWT)
  * Rate Limit: Standard (100 req/min)
  */
-router.get('/:id/metrics', authenticateJWT, async (req, res) => {
+router.get('/:id/metrics', authenticateJWT, async(req, res) => {
   try {
     if (!req.user) {
       return res.status(401).json({
@@ -299,7 +299,7 @@ router.get('/:id/metrics', authenticateJWT, async (req, res) => {
     const { getPool } = await import('../database/db-pool.js');
     const pool = getPool();
     const tunnelResult = await pool.query(
-      `SELECT metrics FROM tunnels WHERE id = $1 AND user_id = $2`,
+      'SELECT metrics FROM tunnels WHERE id = $1 AND user_id = $2',
       [tunnelId, userId],
     );
 
@@ -356,7 +356,7 @@ router.get('/:id/metrics', authenticateJWT, async (req, res) => {
  * Authentication: Required (JWT)
  * Rate Limit: Standard (100 req/min)
  */
-router.post('/:id/metrics/record', authenticateJWT, async (req, res) => {
+router.post('/:id/metrics/record', authenticateJWT, async(req, res) => {
   try {
     if (!req.user) {
       return res.status(401).json({
@@ -399,7 +399,7 @@ router.post('/:id/metrics/record', authenticateJWT, async (req, res) => {
     const { getPool } = await import('../database/db-pool.js');
     const pool = getPool();
     const tunnelResult = await pool.query(
-      `SELECT id FROM tunnels WHERE id = $1 AND user_id = $2`,
+      'SELECT id FROM tunnels WHERE id = $1 AND user_id = $2',
       [tunnelId, userId],
     );
 
@@ -456,7 +456,7 @@ router.post('/:id/metrics/record', authenticateJWT, async (req, res) => {
  * Authentication: Required (JWT)
  * Rate Limit: Standard (100 req/min)
  */
-router.post('/:id/metrics/flush', authenticateJWT, async (req, res) => {
+router.post('/:id/metrics/flush', authenticateJWT, async(req, res) => {
   try {
     if (!req.user) {
       return res.status(401).json({
@@ -481,7 +481,7 @@ router.post('/:id/metrics/flush', authenticateJWT, async (req, res) => {
     const { getPool } = await import('../database/db-pool.js');
     const pool = getPool();
     const tunnelResult = await pool.query(
-      `SELECT id FROM tunnels WHERE id = $1 AND user_id = $2`,
+      'SELECT id FROM tunnels WHERE id = $1 AND user_id = $2',
       [tunnelId, userId],
     );
 

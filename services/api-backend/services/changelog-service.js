@@ -205,7 +205,7 @@ class ChangelogService {
       }
 
       return true;
-    } catch (error) {
+    } catch {
       return false;
     }
   }

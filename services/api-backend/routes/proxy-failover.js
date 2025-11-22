@@ -17,7 +17,7 @@ export function createProxyFailoverRoutes(db, logger) {
    * POST /proxy/failover/config
    * Create or update failover configuration for a proxy
    */
-  router.post('/proxy/failover/config', authenticateJWT, async (req, res) => {
+  router.post('/proxy/failover/config', authenticateJWT, async(req, res) => {
     try {
       const { proxyId, config } = req.body;
       const userId = req.user.sub;
@@ -58,7 +58,7 @@ export function createProxyFailoverRoutes(db, logger) {
    * GET /proxy/failover/config/:proxyId
    * Get failover configuration for a proxy
    */
-  router.get('/proxy/failover/config/:proxyId', authenticateJWT, async (req, res) => {
+  router.get('/proxy/failover/config/:proxyId', authenticateJWT, async(req, res) => {
     try {
       const { proxyId } = req.params;
 
@@ -97,7 +97,7 @@ export function createProxyFailoverRoutes(db, logger) {
    * POST /proxy/instances
    * Register a proxy instance
    */
-  router.post('/proxy/instances', authenticateJWT, async (req, res) => {
+  router.post('/proxy/instances', authenticateJWT, async(req, res) => {
     try {
       const { proxyId, instanceData } = req.body;
       const userId = req.user.sub;
@@ -138,7 +138,7 @@ export function createProxyFailoverRoutes(db, logger) {
    * GET /proxy/:proxyId/instances
    * Get all instances for a proxy
    */
-  router.get('/proxy/:proxyId/instances', authenticateJWT, async (req, res) => {
+  router.get('/proxy/:proxyId/instances', authenticateJWT, async(req, res) => {
     try {
       const { proxyId } = req.params;
 
@@ -168,7 +168,7 @@ export function createProxyFailoverRoutes(db, logger) {
    * PUT /proxy/instances/:instanceId/health
    * Update instance health status
    */
-  router.put('/proxy/instances/:instanceId/health', authenticateJWT, async (req, res) => {
+  router.put('/proxy/instances/:instanceId/health', authenticateJWT, async(req, res) => {
     try {
       const { instanceId } = req.params;
       const { healthStatus, metrics } = req.body;
@@ -209,7 +209,7 @@ export function createProxyFailoverRoutes(db, logger) {
    * POST /proxy/failover/evaluate
    * Evaluate if failover is needed
    */
-  router.post('/proxy/failover/evaluate', authenticateJWT, async (req, res) => {
+  router.post('/proxy/failover/evaluate', authenticateJWT, async(req, res) => {
     try {
       const { proxyId } = req.body;
       const userId = req.user.sub;
@@ -249,7 +249,7 @@ export function createProxyFailoverRoutes(db, logger) {
    * POST /proxy/failover/execute
    * Execute failover operation
    */
-  router.post('/proxy/failover/execute', authenticateJWT, authorizeRBAC('admin'), async (req, res) => {
+  router.post('/proxy/failover/execute', authenticateJWT, authorizeRBAC('admin'), async(req, res) => {
     try {
       const { proxyId, sourceInstanceId, targetInstanceId, reason } = req.body;
       const userId = req.user.sub;
@@ -296,7 +296,7 @@ export function createProxyFailoverRoutes(db, logger) {
    * PUT /proxy/failover/events/:eventId/complete
    * Complete a failover event
    */
-  router.put('/proxy/failover/events/:eventId/complete', authenticateJWT, authorizeRBAC('admin'), async (req, res) => {
+  router.put('/proxy/failover/events/:eventId/complete', authenticateJWT, authorizeRBAC('admin'), async(req, res) => {
     try {
       const { eventId } = req.params;
       const { status, errorMessage, durationMs } = req.body;
@@ -337,7 +337,7 @@ export function createProxyFailoverRoutes(db, logger) {
    * GET /proxy/:proxyId/redundancy
    * Get redundancy status for a proxy
    */
-  router.get('/proxy/:proxyId/redundancy', authenticateJWT, async (req, res) => {
+  router.get('/proxy/:proxyId/redundancy', authenticateJWT, async(req, res) => {
     try {
       const { proxyId } = req.params;
 
@@ -376,7 +376,7 @@ export function createProxyFailoverRoutes(db, logger) {
    * PUT /proxy/:proxyId/redundancy
    * Update redundancy status for a proxy
    */
-  router.put('/proxy/:proxyId/redundancy', authenticateJWT, authorizeRBAC('admin'), async (req, res) => {
+  router.put('/proxy/:proxyId/redundancy', authenticateJWT, authorizeRBAC('admin'), async(req, res) => {
     try {
       const { proxyId } = req.params;
       const userId = req.user.sub;
@@ -408,7 +408,7 @@ export function createProxyFailoverRoutes(db, logger) {
    * GET /proxy/:proxyId/failover/events
    * Get failover events for a proxy
    */
-  router.get('/proxy/:proxyId/failover/events', authenticateJWT, async (req, res) => {
+  router.get('/proxy/:proxyId/failover/events', authenticateJWT, async(req, res) => {
     try {
       const { proxyId } = req.params;
       const limit = parseInt(req.query.limit || '50', 10);

@@ -295,7 +295,7 @@ export async function getUserActivityLogsCount(userId, options = {}) {
   }
 
   try {
-    let sql = `SELECT COUNT(*) as count FROM user_activity_logs WHERE user_id = $1`;
+    let sql = 'SELECT COUNT(*) as count FROM user_activity_logs WHERE user_id = $1';
     const params = [userId];
     let paramIndex = 2;
 
@@ -416,7 +416,7 @@ export async function getUserActivitySummary(userId, options = {}) {
     }
 
     // Add ordering
-    sql += ` ORDER BY period_start DESC`;
+    sql += ' ORDER BY period_start DESC';
 
     const result = await query(sql, params);
     return result.rows;
@@ -516,7 +516,7 @@ export async function getAllUserActivityLogsCount(options = {}) {
   const { action = null, severity = null, startDate = null, endDate = null } = options;
 
   try {
-    let sql = `SELECT COUNT(*) as count FROM user_activity_logs WHERE 1=1`;
+    let sql = 'SELECT COUNT(*) as count FROM user_activity_logs WHERE 1=1';
     const params = [];
     let paramIndex = 1;
 

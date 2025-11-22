@@ -59,7 +59,7 @@ export async function initializeUserProfileService() {
  * Authentication: Required (JWT)
  * Rate Limit: Standard (100 req/min)
  */
-router.get('/profile', authenticateJWT, async (req, res) => {
+router.get('/profile', authenticateJWT, async(req, res) => {
   try {
     if (!req.user) {
       return res.status(401).json({
@@ -137,7 +137,7 @@ router.get('/profile', authenticateJWT, async (req, res) => {
  * Authentication: Required (JWT)
  * Rate Limit: Standard (100 req/min)
  */
-router.put('/profile', authenticateJWT, async (req, res) => {
+router.put('/profile', authenticateJWT, async(req, res) => {
   try {
     if (!req.user) {
       return res.status(401).json({
@@ -239,7 +239,7 @@ router.put('/profile', authenticateJWT, async (req, res) => {
  * Authentication: Required (JWT)
  * Rate Limit: Standard (100 req/min)
  */
-router.get('/preferences', authenticateJWT, async (req, res) => {
+router.get('/preferences', authenticateJWT, async(req, res) => {
   try {
     if (!req.user) {
       return res.status(401).json({
@@ -309,7 +309,7 @@ router.get('/preferences', authenticateJWT, async (req, res) => {
  * Authentication: Required (JWT)
  * Rate Limit: Standard (100 req/min)
  */
-router.put('/preferences', authenticateJWT, async (req, res) => {
+router.put('/preferences', authenticateJWT, async(req, res) => {
   try {
     if (!req.user) {
       return res.status(401).json({
@@ -415,7 +415,7 @@ router.put('/preferences', authenticateJWT, async (req, res) => {
  * Authentication: Required (JWT)
  * Rate Limit: Standard (100 req/min)
  */
-router.put('/avatar', authenticateJWT, async (req, res) => {
+router.put('/avatar', authenticateJWT, async(req, res) => {
   try {
     if (!req.user) {
       return res.status(401).json({

@@ -11,7 +11,7 @@ async function ensureLogDirectory() {
   await fs.mkdir(logDir, { recursive: true });
 }
 
-router.post('/', async (req, res) => {
+router.post('/', async(req, res) => {
   try {
     const { entries, source = 'web-client', sessionId = null } = req.body || {};
 

@@ -64,7 +64,7 @@ export async function initializeTunnelWebhookService() {
  * Authentication: Required (JWT)
  * Rate Limit: Standard (100 req/min)
  */
-router.post('/:tunnelId/webhooks', authenticateJWT, async (req, res) => {
+router.post('/:tunnelId/webhooks', authenticateJWT, async(req, res) => {
   try {
     if (!req.user) {
       return res.status(401).json({
@@ -154,7 +154,7 @@ router.post('/:tunnelId/webhooks', authenticateJWT, async (req, res) => {
  * Authentication: Required (JWT)
  * Rate Limit: Standard (100 req/min)
  */
-router.get('/:tunnelId/webhooks', authenticateJWT, async (req, res) => {
+router.get('/:tunnelId/webhooks', authenticateJWT, async(req, res) => {
   try {
     if (!req.user) {
       return res.status(401).json({
@@ -221,7 +221,7 @@ router.get('/:tunnelId/webhooks', authenticateJWT, async (req, res) => {
  * Authentication: Required (JWT)
  * Rate Limit: Standard (100 req/min)
  */
-router.get('/:tunnelId/webhooks/:webhookId', authenticateJWT, async (req, res) => {
+router.get('/:tunnelId/webhooks/:webhookId', authenticateJWT, async(req, res) => {
   try {
     if (!req.user) {
       return res.status(401).json({
@@ -295,7 +295,7 @@ router.get('/:tunnelId/webhooks/:webhookId', authenticateJWT, async (req, res) =
  * Authentication: Required (JWT)
  * Rate Limit: Standard (100 req/min)
  */
-router.put('/:tunnelId/webhooks/:webhookId', authenticateJWT, async (req, res) => {
+router.put('/:tunnelId/webhooks/:webhookId', authenticateJWT, async(req, res) => {
   try {
     if (!req.user) {
       return res.status(401).json({
@@ -371,7 +371,7 @@ router.put('/:tunnelId/webhooks/:webhookId', authenticateJWT, async (req, res) =
  * Authentication: Required (JWT)
  * Rate Limit: Standard (100 req/min)
  */
-router.delete('/:tunnelId/webhooks/:webhookId', authenticateJWT, async (req, res) => {
+router.delete('/:tunnelId/webhooks/:webhookId', authenticateJWT, async(req, res) => {
   try {
     if (!req.user) {
       return res.status(401).json({
@@ -442,7 +442,7 @@ router.delete('/:tunnelId/webhooks/:webhookId', authenticateJWT, async (req, res
  * Authentication: Required (JWT)
  * Rate Limit: Standard (100 req/min)
  */
-router.get('/:tunnelId/webhooks/:webhookId/deliveries', authenticateJWT, async (req, res) => {
+router.get('/:tunnelId/webhooks/:webhookId/deliveries', authenticateJWT, async(req, res) => {
   try {
     if (!req.user) {
       return res.status(401).json({
@@ -517,7 +517,7 @@ router.get('/:tunnelId/webhooks/:webhookId/deliveries', authenticateJWT, async (
  * Authentication: Required (JWT)
  * Rate Limit: Standard (100 req/min)
  */
-router.get('/:tunnelId/webhooks/:webhookId/deliveries/:deliveryId', authenticateJWT, async (req, res) => {
+router.get('/:tunnelId/webhooks/:webhookId/deliveries/:deliveryId', authenticateJWT, async(req, res) => {
   try {
     if (!req.user) {
       return res.status(401).json({

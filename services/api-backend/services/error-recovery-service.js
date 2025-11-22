@@ -1,9 +1,9 @@
 /**
  * Error Recovery Service
- * 
+ *
  * Implements error recovery procedures and manual intervention endpoints.
  * Provides recovery status reporting and recovery procedure execution.
- * 
+ *
  * Requirement 7.7: THE API SHALL provide error recovery endpoints for manual intervention
  */
 
@@ -35,13 +35,13 @@ export class ErrorRecoveryService {
   constructor() {
     // Track recovery procedures
     this.recoveryProcedures = new Map();
-    
+
     // Track recovery status for each service
     this.recoveryStatus = new Map();
-    
+
     // Track recovery history
     this.recoveryHistory = [];
-    
+
     // Metrics
     this.metrics = {
       totalRecoveryAttempts: 0,
@@ -130,7 +130,7 @@ export class ErrorRecoveryService {
       const result = await this._executeWithTimeout(
         procedure.procedure,
         procedure.timeoutMs,
-        recoveryId
+        recoveryId,
       );
 
       const duration = Date.now() - startTime;
@@ -216,14 +216,14 @@ export class ErrorRecoveryService {
    * @param {string} recoveryId - Recovery ID for logging
    * @returns {Promise} - Result of function
    */
-  async _executeWithTimeout(fn, timeoutMs, recoveryId) {
+  async _executeWithTimeout(fn, timeoutMs, _recoveryId) {
     return Promise.race([
       fn(),
       new Promise((_, reject) =>
         setTimeout(
           () => reject(new Error(`Recovery procedure timeout after ${timeoutMs}ms`)),
-          timeoutMs
-        )
+          timeoutMs,
+        ),
       ),
     ]);
   }
@@ -253,7 +253,7 @@ export class ErrorRecoveryService {
       recoveryCount: status.recoveryCount,
       successCount: status.successCount,
       failureCount: status.failureCount,
-      successRate: status.recoveryCount > 0 
+      successRate: status.recoveryCount > 0
         ? (status.successCount / status.recoveryCount * 100).toFixed(2) + '%'
         : 'N/A',
       description: procedure?.description || 'Unknown',

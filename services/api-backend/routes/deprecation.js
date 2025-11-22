@@ -68,7 +68,7 @@ router.get('/status', (req, res) => {
   try {
     const report = getDeprecationStatusReport();
     res.json(report);
-  } catch (error) {
+  } catch {
     res.status(500).json({
       error: {
         code: 'DEPRECATION_STATUS_ERROR',
@@ -124,7 +124,7 @@ router.get('/deprecated', (req, res) => {
       endpoints,
       count: endpoints.length,
     });
-  } catch (error) {
+  } catch {
     res.status(500).json({
       error: {
         code: 'DEPRECATED_LIST_ERROR',
@@ -174,7 +174,7 @@ router.get('/sunset', (req, res) => {
       endpoints,
       count: endpoints.length,
     });
-  } catch (error) {
+  } catch {
     res.status(500).json({
       error: {
         code: 'SUNSET_LIST_ERROR',
@@ -251,7 +251,7 @@ router.get('/migration-guide/:guideId', (req, res) => {
     }
 
     res.json(guide);
-  } catch (error) {
+  } catch {
     res.status(500).json({
       error: {
         code: 'MIGRATION_GUIDE_ERROR',
@@ -334,7 +334,7 @@ router.get('/endpoint-info', (req, res) => {
       ...info,
       migrationGuide: getMigrationGuide(path),
     });
-  } catch (error) {
+  } catch {
     res.status(500).json({
       error: {
         code: 'ENDPOINT_INFO_ERROR',

@@ -19,7 +19,7 @@ import logger from '../logger.js';
 export function createRequestQueuingMiddleware(options = {}) {
   const queueService = getRequestQueueService(options);
 
-  return async (req, res, next) => {
+  return async(req, res, next) => {
     // Skip queuing for certain request types
     if (req.method === 'OPTIONS' || req.method === 'GET' || req.method === 'HEAD') {
       return next();
@@ -75,7 +75,7 @@ export function createRequestQueuingMiddleware(options = {}) {
     // Wait for request to be processed from queue
     try {
       const result = await queueResult.promise;
-      
+
       // Mark request as processed from queue
       req.isQueued = true;
       req.queuedDuration = result.queuedDuration;
@@ -211,7 +211,9 @@ export function createQueueDrainHandler() {
       let processed = 0;
       while (true) {
         const entry = queueService.processNextRequest(identifier, queueType);
-        if (!entry) break;
+        if (!entry) {
+          break;
+        }
         processed++;
       }
 

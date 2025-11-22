@@ -7,7 +7,7 @@
  * Requirements: 12.4
  */
 
-import express from 'express';
+
 
 /**
  * API version configuration
@@ -57,7 +57,7 @@ export function extractVersionFromPath(path) {
 export function apiVersioningMiddleware() {
   return (req, res, next) => {
     const version = extractVersionFromPath(req.path);
-    
+
     if (version) {
       // Version found in URL
       if (!API_VERSIONS[version]) {
@@ -113,7 +113,7 @@ export function versionRouter(handlers) {
           code: 'VERSION_NOT_IMPLEMENTED',
           message: `This endpoint is not available in API version ${version}`,
           statusCode: 501,
-          suggestion: `Try using a different API version`,
+          suggestion: 'Try using a different API version',
         },
       });
     }
@@ -200,7 +200,8 @@ export function backwardCompatibilityMiddleware() {
       const originalSend = res.send;
 
       // Override send to transform response for v1
-      res.send = function(data) {
+      /* eslint-disable space-before-function-paren */
+      res.send = function (data) {
         // Transform v2 response format to v1 if needed
         if (typeof data === 'object' && data !== null) {
           // Add v1-specific fields or transformations here

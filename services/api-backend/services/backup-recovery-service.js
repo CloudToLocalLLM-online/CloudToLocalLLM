@@ -13,7 +13,7 @@ import fs from 'fs';
 import path from 'path';
 import crypto from 'crypto';
 import logger from '../logger.js';
-import { getPool, getClient } from '../database/db-pool.js';
+import { getClient } from '../database/db-pool.js';
 
 const execAsync = promisify(exec);
 const fsPromises = fs.promises;
@@ -87,7 +87,7 @@ export class BackupRecoveryService {
    * @param {Object} options - Backup options
    * @returns {Promise<Object>} Backup metadata
    */
-  async createFullBackup(options = {}) {
+  async createFullBackup(_options = {}) {
     const backupId = this._generateBackupId();
     const timestamp = new Date().toISOString();
 

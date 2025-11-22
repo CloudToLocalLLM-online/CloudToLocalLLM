@@ -36,7 +36,7 @@ const router = express.Router();
  *     description: |
  *       Returns the current user's subscription tier and available features.
  *       Includes feature descriptions, limits, and upgrade options.
- *       
+ *
  *       **Validates: Requirements 3.3**
  *       - Implements user tier management and upgrades
  *     tags:
@@ -146,10 +146,10 @@ router.get('/tier', authenticateJWT, (req, res) => {
       },
       upgrade: nextTier
         ? {
-            availableTier: nextTier,
-            message: getUpgradeMessage(userTier, 'advanced features'),
-            benefits: getTierFeatures(nextTier),
-          }
+          availableTier: nextTier,
+          message: getUpgradeMessage(userTier, 'advanced features'),
+          benefits: getTierFeatures(nextTier),
+        }
         : null,
       timestamp: new Date().toISOString(),
     };

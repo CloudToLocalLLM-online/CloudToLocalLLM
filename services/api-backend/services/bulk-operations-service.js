@@ -33,7 +33,7 @@ class BulkOperationsService {
    */
   async createBulkOperation(operationType, userIds, operationData) {
     const operationId = uuidv4();
-    const pool = getPool();
+
 
     // Validate operation type
     const validTypes = ['tier_update', 'suspend', 'reactivate', 'delete'];
@@ -160,43 +160,43 @@ class BulkOperationsService {
     const { type, userIds, operationData } = operation;
 
     switch (type) {
-      case 'tier_update':
-        return await this._executeTierUpdate(
-          operation,
-          userIds,
-          operationData,
-          adminUserId,
-          adminRole,
-          pool,
-        );
-      case 'suspend':
-        return await this._executeSuspend(
-          operation,
-          userIds,
-          operationData,
-          adminUserId,
-          adminRole,
-          pool,
-        );
-      case 'reactivate':
-        return await this._executeReactivate(
-          operation,
-          userIds,
-          adminUserId,
-          adminRole,
-          pool,
-        );
-      case 'delete':
-        return await this._executeDelete(
-          operation,
-          userIds,
-          operationData,
-          adminUserId,
-          adminRole,
-          pool,
-        );
-      default:
-        throw new Error(`Unknown operation type: ${type}`);
+    case 'tier_update':
+      return await this._executeTierUpdate(
+        operation,
+        userIds,
+        operationData,
+        adminUserId,
+        adminRole,
+        pool,
+      );
+    case 'suspend':
+      return await this._executeSuspend(
+        operation,
+        userIds,
+        operationData,
+        adminUserId,
+        adminRole,
+        pool,
+      );
+    case 'reactivate':
+      return await this._executeReactivate(
+        operation,
+        userIds,
+        adminUserId,
+        adminRole,
+        pool,
+      );
+    case 'delete':
+      return await this._executeDelete(
+        operation,
+        userIds,
+        operationData,
+        adminUserId,
+        adminRole,
+        pool,
+      );
+    default:
+      throw new Error(`Unknown operation type: ${type}`);
     }
   }
 
@@ -287,7 +287,7 @@ class BulkOperationsService {
           newTier: tier,
         });
       } catch (error) {
-        await pool.query('ROLLBACK').catch(() => {});
+        await pool.query('ROLLBACK').catch(() => { });
         operation.failureCount++;
         results.errors.push({
           userId,
@@ -333,7 +333,7 @@ class BulkOperationsService {
         // Check if already suspended
         const checkQuery = `
           SELECT id, is_suspended FROM users WHERE id = $1
-        `;
+            `;
         const checkResult = await pool.query(checkQuery, [userId]);
 
         if (checkResult.rows.length === 0) {
@@ -350,12 +350,12 @@ class BulkOperationsService {
           UPDATE users 
           SET is_suspended = true, suspended_at = NOW(), suspension_reason = $1
           WHERE id = $2
-        `;
+            `;
         await pool.query(suspendQuery, [reason, userId]);
 
         // Invalidate sessions
         await pool.query(
-          `UPDATE user_sessions SET expires_at = NOW() WHERE user_id = $1 AND expires_at > NOW()`,
+          'UPDATE user_sessions SET expires_at = NOW() WHERE user_id = $1 AND expires_at > NOW()',
           [userId],
         );
 
@@ -380,7 +380,7 @@ class BulkOperationsService {
         operation.successCount++;
         results.suspendedUsers.push(userId);
       } catch (error) {
-        await pool.query('ROLLBACK').catch(() => {});
+        await pool.query('ROLLBACK').catch(() => { });
         operation.failureCount++;
         results.errors.push({
           userId,
@@ -424,7 +424,7 @@ class BulkOperationsService {
         // Check if suspended
         const checkQuery = `
           SELECT id, is_suspended FROM users WHERE id = $1
-        `;
+            `;
         const checkResult = await pool.query(checkQuery, [userId]);
 
         if (checkResult.rows.length === 0) {
@@ -441,7 +441,7 @@ class BulkOperationsService {
           UPDATE users 
           SET is_suspended = false, suspended_at = NULL, suspension_reason = NULL
           WHERE id = $1
-        `;
+            `;
         await pool.query(reactivateQuery, [userId]);
 
         // Log action
@@ -464,7 +464,7 @@ class BulkOperationsService {
         operation.successCount++;
         results.reactivatedUsers.push(userId);
       } catch (error) {
-        await pool.query('ROLLBACK').catch(() => {});
+        await pool.query('ROLLBACK').catch(() => { });
         operation.failureCount++;
         results.errors.push({
           userId,
@@ -513,17 +513,17 @@ class BulkOperationsService {
             UPDATE users 
             SET deleted_at = NOW()
             WHERE id = $1
-          `;
+            `;
           await pool.query(deleteQuery, [userId]);
         } else {
           // Hard delete - cascade delete related data
-          await pool.query(`DELETE FROM user_sessions WHERE user_id = $1`, [
+          await pool.query('DELETE FROM user_sessions WHERE user_id = $1', [
             userId,
           ]);
-          await pool.query(`DELETE FROM subscriptions WHERE user_id = $1`, [
+          await pool.query('DELETE FROM subscriptions WHERE user_id = $1', [
             userId,
           ]);
-          await pool.query(`DELETE FROM users WHERE id = $1`, [userId]);
+          await pool.query('DELETE FROM users WHERE id = $1', [userId]);
         }
 
         // Log action
@@ -547,7 +547,7 @@ class BulkOperationsService {
         operation.successCount++;
         results.deletedUsers.push(userId);
       } catch (error) {
-        await pool.query('ROLLBACK').catch(() => {});
+        await pool.query('ROLLBACK').catch(() => { });
         operation.failureCount++;
         results.errors.push({
           userId,

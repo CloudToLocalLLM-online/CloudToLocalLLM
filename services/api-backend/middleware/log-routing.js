@@ -178,27 +178,27 @@ export function routeLog(logEntry, req = null) {
   // Send to each destination
   destinations.forEach((destination) => {
     switch (destination) {
-      case 'loki':
-        if (lokiBatcher) {
-          lokiBatcher.add(logEntry);
-        }
-        break;
-      case 'elk':
-        if (elkBatcher) {
-          elkBatcher.add(logEntry);
-        }
-        break;
-      case 'console':
-        // Already handled by Winston
-        break;
-      case 'file':
-        // Already handled by Winston
-        break;
-      case 'sentry':
-        // Handled by Sentry middleware
-        break;
-      default:
-        break;
+    case 'loki':
+      if (lokiBatcher) {
+        lokiBatcher.add(logEntry);
+      }
+      break;
+    case 'elk':
+      if (elkBatcher) {
+        elkBatcher.add(logEntry);
+      }
+      break;
+    case 'console':
+      // Already handled by Winston
+      break;
+    case 'file':
+      // Already handled by Winston
+      break;
+    case 'sentry':
+      // Handled by Sentry middleware
+      break;
+    default:
+      break;
     }
   });
 }

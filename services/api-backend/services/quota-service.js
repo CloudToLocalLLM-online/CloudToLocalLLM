@@ -94,7 +94,7 @@ export class QuotaService {
 
       // Get all quota definitions for the tier
       const definitionsResult = await client.query(
-        `SELECT * FROM quota_definitions WHERE tier = $1`,
+        'SELECT * FROM quota_definitions WHERE tier = $1',
         [userTier],
       );
 

@@ -61,7 +61,7 @@ export async function initializeTunnelFailoverService() {
  * Authentication: Required (JWT)
  * Rate Limit: Standard (100 req/min)
  */
-router.get('/:tunnelId/failover/endpoint', authenticateJWT, async (req, res) => {
+router.get('/:tunnelId/failover/endpoint', authenticateJWT, async(req, res) => {
   try {
     if (!req.user) {
       return res.status(401).json({
@@ -80,7 +80,6 @@ router.get('/:tunnelId/failover/endpoint', authenticateJWT, async (req, res) => 
     }
 
     const { tunnelId } = req.params;
-    const userId = req.user.sub;
 
     const endpoint = await failoverService.selectEndpoint(tunnelId);
 
@@ -129,7 +128,7 @@ router.get('/:tunnelId/failover/endpoint', authenticateJWT, async (req, res) => 
  * Authentication: Required (JWT)
  * Rate Limit: Standard (100 req/min)
  */
-router.get('/:tunnelId/failover/status', authenticateJWT, async (req, res) => {
+router.get('/:tunnelId/failover/status', authenticateJWT, async(req, res) => {
   try {
     if (!req.user) {
       return res.status(401).json({
@@ -191,7 +190,7 @@ router.get('/:tunnelId/failover/status', authenticateJWT, async (req, res) => {
  * Authentication: Required (JWT)
  * Rate Limit: Standard (100 req/min)
  */
-router.post('/:tunnelId/failover/manual', authenticateJWT, async (req, res) => {
+router.post('/:tunnelId/failover/manual', authenticateJWT, async(req, res) => {
   try {
     if (!req.user) {
       return res.status(401).json({
@@ -280,7 +279,7 @@ router.post('/:tunnelId/failover/manual', authenticateJWT, async (req, res) => {
  * Authentication: Required (JWT)
  * Rate Limit: Standard (100 req/min)
  */
-router.post('/:tunnelId/failover/record-failure', authenticateJWT, async (req, res) => {
+router.post('/:tunnelId/failover/record-failure', authenticateJWT, async(req, res) => {
   try {
     if (!req.user) {
       return res.status(401).json({
@@ -354,7 +353,7 @@ router.post('/:tunnelId/failover/record-failure', authenticateJWT, async (req, r
  * Authentication: Required (JWT)
  * Rate Limit: Standard (100 req/min)
  */
-router.post('/:tunnelId/failover/record-success', authenticateJWT, async (req, res) => {
+router.post('/:tunnelId/failover/record-success', authenticateJWT, async(req, res) => {
   try {
     if (!req.user) {
       return res.status(401).json({
@@ -418,7 +417,7 @@ router.post('/:tunnelId/failover/record-success', authenticateJWT, async (req, r
  * Authentication: Required (JWT)
  * Rate Limit: Standard (100 req/min)
  */
-router.post('/:tunnelId/failover/reset-failures', authenticateJWT, async (req, res) => {
+router.post('/:tunnelId/failover/reset-failures', authenticateJWT, async(req, res) => {
   try {
     if (!req.user) {
       return res.status(401).json({

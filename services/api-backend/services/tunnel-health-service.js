@@ -57,7 +57,7 @@ export class TunnelHealthService {
       return;
     }
 
-    const interval = setInterval(async () => {
+    const interval = setInterval(async() => {
       try {
         await this.performHealthCheck(tunnelId);
       } catch (error) {
@@ -92,16 +92,14 @@ export class TunnelHealthService {
   }
 
   /**
-   * Perform health check for tunnel endpoints
+   * Perform health check for a tunnel
    *
    * @param {string} tunnelId - Tunnel ID
-   * @returns {Promise<Object>} Health check results
    */
   async performHealthCheck(tunnelId) {
     try {
-      // Get tunnel endpoints
       const endpointsResult = await this.pool.query(
-        `SELECT * FROM tunnel_endpoints WHERE tunnel_id = $1 ORDER BY priority DESC`,
+        'SELECT * FROM tunnel_endpoints WHERE tunnel_id = $1',
         [tunnelId],
       );
 
@@ -320,19 +318,17 @@ export class TunnelHealthService {
     try {
       // Get tunnel
       const tunnelResult = await this.pool.query(
-        `SELECT * FROM tunnels WHERE id = $1 AND user_id = $2`,
+        'SELECT * FROM tunnels WHERE id = $1 AND user_id = $2',
         [tunnelId, userId],
       );
 
-      if (tunnelResult.rows.length === 0) {
+      const tunnel = tunnelResult.rows[0];
+      if (!tunnel) {
         throw new Error('Tunnel not found');
       }
 
-      const tunnel = tunnelResult.rows[0];
-
-      // Get endpoints with health status
       const endpointsResult = await this.pool.query(
-        `SELECT * FROM tunnel_endpoints WHERE tunnel_id = $1 ORDER BY priority DESC`,
+        'SELECT * FROM tunnel_endpoints WHERE tunnel_id = $1',
         [tunnelId],
       );
 
@@ -379,7 +375,7 @@ export class TunnelHealthService {
     try {
       // Verify tunnel ownership
       const tunnelResult = await this.pool.query(
-        `SELECT id FROM tunnels WHERE id = $1 AND user_id = $2`,
+        'SELECT id FROM tunnels WHERE id = $1 AND user_id = $2',
         [tunnelId, userId],
       );
 
@@ -389,7 +385,7 @@ export class TunnelHealthService {
 
       // Get endpoints
       const endpointsResult = await this.pool.query(
-        `SELECT * FROM tunnel_endpoints WHERE tunnel_id = $1 ORDER BY priority DESC`,
+        'SELECT * FROM tunnel_endpoints WHERE tunnel_id = $1 ORDER BY priority DESC',
         [tunnelId],
       );
 
@@ -449,7 +445,7 @@ export class TunnelHealthService {
    * Cleanup - stop all health checks
    */
   cleanup() {
-    for (const [tunnelId, interval] of this.healthCheckIntervals.entries()) {
+    for (const interval of this.healthCheckIntervals.values()) {
       clearInterval(interval);
     }
     this.healthCheckIntervals.clear();

@@ -27,12 +27,12 @@ import {
  * @returns {Function} Express middleware function
  */
 export function authSuccessAuditMiddleware() {
-  return async (req, res, next) => {
+  return async(req, res, next) => {
     // Store original json method
     const originalJson = res.json;
 
     // Override json method to intercept responses
-    res.json = function (data) {
+    res.json = function(data) {
       // Check if this is a successful auth response
       if (req.path === '/auth/me' && res.statusCode === 200 && req.user) {
         // Log successful authentication
@@ -66,12 +66,12 @@ export function authSuccessAuditMiddleware() {
  * @returns {Function} Express middleware function
  */
 export function authFailureAuditMiddleware() {
-  return async (req, res, next) => {
+  return async(req, res, next) => {
     // Store original json method
     const originalJson = res.json;
 
     // Override json method to intercept error responses
-    res.json = function (data) {
+    res.json = function(data) {
       // Check if this is an authentication error
       if (
         res.statusCode === 401 &&
@@ -116,12 +116,12 @@ export function authFailureAuditMiddleware() {
  * @returns {Function} Express middleware function
  */
 export function logoutAuditMiddleware() {
-  return async (req, res, next) => {
+  return async(req, res, next) => {
     // Store original json method
     const originalJson = res.json;
 
     // Override json method to intercept logout responses
-    res.json = function (data) {
+    res.json = function(data) {
       // Check if this is a successful logout response
       if (req.path === '/auth/logout' && res.statusCode === 200 && data.success) {
         // Log logout
@@ -155,12 +155,12 @@ export function logoutAuditMiddleware() {
  * @returns {Function} Express middleware function
  */
 export function tokenRefreshAuditMiddleware() {
-  return async (req, res, next) => {
+  return async(req, res, next) => {
     // Store original json method
     const originalJson = res.json;
 
     // Override json method to intercept token refresh responses
-    res.json = function (data) {
+    res.json = function(data) {
       // Check if this is a successful token refresh response
       if (
         req.path === '/auth/token/refresh' &&
@@ -199,12 +199,12 @@ export function tokenRefreshAuditMiddleware() {
  * @returns {Function} Express middleware function
  */
 export function tokenRevokeAuditMiddleware() {
-  return async (req, res, next) => {
+  return async(req, res, next) => {
     // Store original json method
     const originalJson = res.json;
 
     // Override json method to intercept token revocation responses
-    res.json = function (data) {
+    res.json = function(data) {
       // Check if this is a successful token revocation response
       if (
         req.path === '/auth/session/revoke' &&
@@ -243,12 +243,12 @@ export function tokenRevokeAuditMiddleware() {
  * @returns {Function} Express middleware function
  */
 export function sessionTimeoutAuditMiddleware() {
-  return async (req, res, next) => {
+  return async(req, res, next) => {
     // Store original json method
     const originalJson = res.json;
 
     // Override json method to intercept session timeout responses
-    res.json = function (data) {
+    res.json = function(data) {
       // Check if this is a session timeout error
       if (
         res.statusCode === 401 &&
@@ -285,12 +285,12 @@ export function sessionTimeoutAuditMiddleware() {
  * @returns {Function} Express middleware function
  */
 export function comprehensiveAuthAuditMiddleware() {
-  return async (req, res, next) => {
+  return async(req, res, next) => {
     // Store original json method
     const originalJson = res.json;
 
     // Override json method to intercept all responses
-    res.json = function (data) {
+    res.json = function(data) {
       // Log successful authentication
       if (req.path === '/auth/me' && res.statusCode === 200 && req.user) {
         logLoginSuccess({

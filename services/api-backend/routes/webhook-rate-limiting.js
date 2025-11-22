@@ -15,7 +15,6 @@ import logger from '../logger.js';
 import { webhookRateLimiterService } from '../services/webhook-rate-limiter.js';
 import { authenticateJWT } from '../middleware/auth.js';
 import {
-  webhookRateLimiterMiddleware,
   webhookRateLimitConfigMiddleware,
 } from '../middleware/webhook-rate-limiter.js';
 
@@ -28,7 +27,7 @@ const router = express.Router();
 router.get(
   '/:webhookId/rate-limit',
   authenticateJWT,
-  async (req, res) => {
+  async function(req, res) {
     try {
       const { webhookId } = req.params;
       const userId = req.user.id;
@@ -71,7 +70,7 @@ router.put(
   '/:webhookId/rate-limit',
   authenticateJWT,
   webhookRateLimitConfigMiddleware,
-  async (req, res) => {
+  async function(req, res) {
     try {
       const { webhookId } = req.params;
       const userId = req.user.id;
@@ -126,7 +125,7 @@ router.put(
 router.get(
   '/:webhookId/rate-limit/stats',
   authenticateJWT,
-  async (req, res) => {
+  async function(req, res) {
     try {
       const { webhookId } = req.params;
       const userId = req.user.id;

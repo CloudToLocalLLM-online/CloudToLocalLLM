@@ -54,7 +54,7 @@ export async function initializeTunnelService() {
  *     description: |
  *       Creates a new tunnel with specified configuration and endpoints.
  *       Tunnels are used to establish secure connections to local services.
- *       
+ *
  *       **Validates: Requirements 4.1, 4.3**
  *       - Provides endpoints for tunnel lifecycle management (create, start, stop, delete)
  *       - Implements tunnel configuration management
@@ -126,7 +126,7 @@ export async function initializeTunnelService() {
  *       500:
  *         $ref: '#/components/responses/ServerError'
  */
-router.post('/', authenticateJWT, async (req, res) => {
+router.post('/', authenticateJWT, async(req, res) => {
   try {
     if (!req.user) {
       return res.status(401).json({
@@ -216,7 +216,7 @@ router.post('/', authenticateJWT, async (req, res) => {
  * Authentication: Required (JWT)
  * Rate Limit: Standard (100 req/min)
  */
-router.get('/', authenticateJWT, async (req, res) => {
+router.get('/', authenticateJWT, async(req, res) => {
   try {
     if (!req.user) {
       return res.status(401).json({
@@ -284,7 +284,7 @@ router.get('/', authenticateJWT, async (req, res) => {
  * Authentication: Required (JWT)
  * Rate Limit: Standard (100 req/min)
  */
-router.get('/:id', authenticateJWT, async (req, res) => {
+router.get('/:id', authenticateJWT, async(req, res) => {
   try {
     if (!req.user) {
       return res.status(401).json({
@@ -358,7 +358,7 @@ router.get('/:id', authenticateJWT, async (req, res) => {
  * Authentication: Required (JWT)
  * Rate Limit: Standard (100 req/min)
  */
-router.put('/:id', authenticateJWT, async (req, res) => {
+router.put('/:id', authenticateJWT, async(req, res) => {
   try {
     if (!req.user) {
       return res.status(401).json({
@@ -443,7 +443,7 @@ router.put('/:id', authenticateJWT, async (req, res) => {
  * Authentication: Required (JWT)
  * Rate Limit: Standard (100 req/min)
  */
-router.delete('/:id', authenticateJWT, async (req, res) => {
+router.delete('/:id', authenticateJWT, async(req, res) => {
   try {
     if (!req.user) {
       return res.status(401).json({
@@ -513,7 +513,7 @@ router.delete('/:id', authenticateJWT, async (req, res) => {
  * Authentication: Required (JWT)
  * Rate Limit: Standard (100 req/min)
  */
-router.post('/:id/start', authenticateJWT, async (req, res) => {
+router.post('/:id/start', authenticateJWT, async(req, res) => {
   try {
     if (!req.user) {
       return res.status(401).json({
@@ -590,7 +590,7 @@ router.post('/:id/start', authenticateJWT, async (req, res) => {
  * Authentication: Required (JWT)
  * Rate Limit: Standard (100 req/min)
  */
-router.post('/:id/stop', authenticateJWT, async (req, res) => {
+router.post('/:id/stop', authenticateJWT, async(req, res) => {
   try {
     if (!req.user) {
       return res.status(401).json({
@@ -669,7 +669,7 @@ router.post('/:id/stop', authenticateJWT, async (req, res) => {
  * Authentication: Required (JWT)
  * Rate Limit: Standard (100 req/min)
  */
-router.get('/:id/metrics', authenticateJWT, async (req, res) => {
+router.get('/:id/metrics', authenticateJWT, async(req, res) => {
   try {
     if (!req.user) {
       return res.status(401).json({
@@ -740,7 +740,7 @@ router.get('/:id/metrics', authenticateJWT, async (req, res) => {
  * Authentication: Required (JWT)
  * Rate Limit: Standard (100 req/min)
  */
-router.get('/:id/activity', authenticateJWT, async (req, res) => {
+router.get('/:id/activity', authenticateJWT, async(req, res) => {
   try {
     if (!req.user) {
       return res.status(401).json({
@@ -819,7 +819,7 @@ router.get('/:id/activity', authenticateJWT, async (req, res) => {
  * Authentication: Required (JWT)
  * Rate Limit: Standard (100 req/min)
  */
-router.get('/:id/config', authenticateJWT, async (req, res) => {
+router.get('/:id/config', authenticateJWT, async(req, res) => {
   try {
     if (!req.user) {
       return res.status(401).json({
@@ -893,7 +893,7 @@ router.get('/:id/config', authenticateJWT, async (req, res) => {
  * Authentication: Required (JWT)
  * Rate Limit: Standard (100 req/min)
  */
-router.put('/:id/config', authenticateJWT, async (req, res) => {
+router.put('/:id/config', authenticateJWT, async(req, res) => {
   try {
     if (!req.user) {
       return res.status(401).json({
@@ -983,7 +983,7 @@ router.put('/:id/config', authenticateJWT, async (req, res) => {
  * Authentication: Required (JWT)
  * Rate Limit: Standard (100 req/min)
  */
-router.post('/:id/config/reset', authenticateJWT, async (req, res) => {
+router.post('/:id/config/reset', authenticateJWT, async(req, res) => {
   try {
     if (!req.user) {
       return res.status(401).json({

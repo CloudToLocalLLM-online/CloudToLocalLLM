@@ -1,9 +1,9 @@
 /**
  * Circuit Breaker Pattern Implementation
- * 
+ *
  * Prevents cascading failures by monitoring service calls and failing fast
  * when a service is unavailable.
- * 
+ *
  * States:
  * - CLOSED: Normal operation, requests pass through
  * - OPEN: Service is failing, requests fail immediately
@@ -102,7 +102,9 @@ export class CircuitBreaker {
    * Check if enough time has passed to attempt reset
    */
   shouldAttemptReset() {
-    if (!this.lastFailureTime) return false;
+    if (!this.lastFailureTime) {
+      return false;
+    }
     return Date.now() - this.lastFailureTime >= this.timeout;
   }
 
@@ -110,7 +112,9 @@ export class CircuitBreaker {
    * Transition to a new state
    */
   transitionTo(newState) {
-    if (this.state === newState) return;
+    if (this.state === newState) {
+      return;
+    }
 
     const oldState = this.state;
     this.state = newState;

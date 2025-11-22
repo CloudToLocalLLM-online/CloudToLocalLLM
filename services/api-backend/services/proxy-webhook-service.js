@@ -481,7 +481,7 @@ export class ProxyWebhookService {
       // Check if max retries exceeded
       if (delivery.attempt_count >= delivery.max_attempts) {
         await client.query(
-          `UPDATE proxy_webhook_deliveries SET status = $1, updated_at = NOW() WHERE id = $2`,
+          'UPDATE proxy_webhook_deliveries SET status = $1, updated_at = NOW() WHERE id = $2',
           ['failed', deliveryId],
         );
 

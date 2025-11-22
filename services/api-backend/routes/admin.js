@@ -48,7 +48,7 @@ const router = express.Router();
  *     description: |
  *       Retrieves system statistics for the admin dashboard.
  *       Includes user counts, tunnel metrics, and system health.
- *       
+ *
  *       **Validates: Requirements 11.5, 11.8**
  *       - Provides admin dashboards and reporting
  *       - Provides system health and status endpoints
@@ -130,7 +130,7 @@ router.get(
  *     description: |
  *       Prepares a data flush operation and generates a confirmation token.
  *       This is the first step in a multi-step confirmation process.
- *       
+ *
  *       **Validates: Requirements 11.3, 11.10**
  *       - Implements admin audit logging for all operations
  *       - Supports admin activity logging and audit trails

@@ -8,7 +8,7 @@ const handler = {
     if (prop in globalThis) {
       return globalThis[prop];
     }
-    
+
     // Return safe functions
     if (typeof prop === 'string' && prop.startsWith('safe')) {
       return (...args) => {
@@ -39,7 +39,9 @@ const handler = {
             let result = obj;
             for (const key of keys) {
               result = result?.[key];
-              if (result === undefined) return defaultValue;
+              if (result === undefined) {
+                return defaultValue;
+              }
             }
             return result;
           }
@@ -48,7 +50,9 @@ const handler = {
             const keys = String(path).split('.');
             let current = obj;
             for (let i = 0; i < keys.length - 1; i++) {
-              if (!(keys[i] in current)) current[keys[i]] = {};
+              if (!(keys[i] in current)) {
+                current[keys[i]] = {};
+              }
               current = current[keys[i]];
             }
             current[keys[keys.length - 1]] = value;
@@ -59,12 +63,12 @@ const handler = {
             return Object.prototype.hasOwnProperty.call(obj, key);
           }
           return args[0];
-        } catch (error) {
+        } catch {
           return args[0];
         }
       };
     }
-    
+
     // Return a no-op function for anything else
     return () => undefined;
   },

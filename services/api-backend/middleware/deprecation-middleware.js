@@ -42,7 +42,7 @@ export function deprecationMiddleware() {
     // Check if endpoint is deprecated
     if (isDeprecated(req.path)) {
       const deprecationHeaders = getDeprecationHeaders(req.path);
-      
+
       // Add deprecation headers to response
       Object.entries(deprecationHeaders).forEach(([key, value]) => {
         res.set(key, value);
@@ -66,7 +66,7 @@ export function deprecationWarningMiddleware() {
   return (req, res, next) => {
     if (isDeprecated(req.path)) {
       const warning = formatDeprecationWarning(req.path);
-      
+
       // Log deprecation warning
       console.warn(`[DEPRECATION] ${warning}`, {
         path: req.path,

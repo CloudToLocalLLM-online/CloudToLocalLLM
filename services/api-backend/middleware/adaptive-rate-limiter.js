@@ -167,7 +167,8 @@ export class AdaptiveRateLimiter {
   /**
    * Check if request should be rate limited
    */
-  checkRateLimit(userId, correlationId, requestContext = {}) {
+  /* eslint-disable space-before-function-paren */
+  checkRateLimit(userId, correlationId, _requestContext = {}) {
     const tracker = this.getUserTracker(userId);
     const adaptiveLimits = this.getAdaptiveLimits();
 
@@ -400,7 +401,7 @@ export function createAdaptiveRateLimitMiddleware(config = {}) {
           'X-RateLimit-Remaining': Math.max(
             0,
             (result.limits?.window?.max || rateLimiter.config.baseMaxRequests) -
-              (result.limits?.window?.current || 0),
+            (result.limits?.window?.current || 0),
           ),
           'X-RateLimit-Reset': new Date(
             Date.now() + result.retryAfter * 1000,
@@ -448,7 +449,7 @@ export function createAdaptiveRateLimitMiddleware(config = {}) {
 
     // Set up response completion handler
     const originalEnd = res.end;
-    res.end = function(...args) {
+    res.end = function (...args) {
       rateLimiter.completeRequest(userId);
       originalEnd.apply(this, args);
     };

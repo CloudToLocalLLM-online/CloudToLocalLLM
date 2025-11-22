@@ -1,9 +1,9 @@
 /**
  * Error Recovery Routes
- * 
+ *
  * Provides endpoints for manual error recovery intervention.
  * Allows admins to trigger recovery procedures and monitor recovery status.
- * 
+ *
  * Requirement 7.7: THE API SHALL provide error recovery endpoints for manual intervention
  */
 
@@ -41,7 +41,7 @@ const logger = winston.createLogger({
 router.get('/status', authenticateJWT, createRequireAdminMiddleware(), (req, res) => {
   try {
     const statuses = errorRecoveryService.getAllRecoveryStatuses();
-    
+
     res.json({
       status: 'success',
       data: statuses,
@@ -66,7 +66,7 @@ router.get('/status', authenticateJWT, createRequireAdminMiddleware(), (req, res
 router.get('/status/:serviceName', authenticateJWT, createRequireAdminMiddleware(), (req, res) => {
   try {
     const { serviceName } = req.params;
-    
+
     if (!serviceName) {
       return res.status(400).json({
         status: 'error',
@@ -76,7 +76,7 @@ router.get('/status/:serviceName', authenticateJWT, createRequireAdminMiddleware
     }
 
     const status = errorRecoveryService.getRecoveryStatus(serviceName);
-    
+
     res.json({
       status: 'success',
       data: status,
@@ -99,7 +99,7 @@ router.get('/status/:serviceName', authenticateJWT, createRequireAdminMiddleware
  * Requires: Admin role
  * Body: { reason?: string }
  */
-router.post('/recover/:serviceName', authenticateJWT, createRequireAdminMiddleware(), async (req, res) => {
+router.post('/recover/:serviceName', authenticateJWT, createRequireAdminMiddleware(), async(req, res) => {
   try {
     const { serviceName } = req.params;
     const { reason } = req.body;
@@ -130,7 +130,7 @@ router.post('/recover/:serviceName', authenticateJWT, createRequireAdminMiddlewa
     });
   } catch (error) {
     logger.error('Error executing recovery:', error);
-    
+
     // Check if error is due to recovery already in progress
     if (error.message.includes('already in progress')) {
       return res.status(409).json({
@@ -169,14 +169,20 @@ router.post('/recover/:serviceName', authenticateJWT, createRequireAdminMiddlewa
 router.get('/history', authenticateJWT, createRequireAdminMiddleware(), (req, res) => {
   try {
     const { serviceName, status, limit } = req.query;
-    
+
     const options = {};
-    if (serviceName) options.serviceName = serviceName;
-    if (status) options.status = status;
-    if (limit) options.limit = parseInt(limit, 10);
+    if (serviceName) {
+      options.serviceName = serviceName;
+    }
+    if (status) {
+      options.status = status;
+    }
+    if (limit) {
+      options.limit = parseInt(limit, 10);
+    }
 
     const history = errorRecoveryService.getRecoveryHistory(options);
-    
+
     res.json({
       status: 'success',
       data: history,
@@ -202,7 +208,7 @@ router.get('/history', authenticateJWT, createRequireAdminMiddleware(), (req, re
 router.get('/metrics', authenticateJWT, createRequireAdminMiddleware(), (req, res) => {
   try {
     const metrics = errorRecoveryService.getMetrics();
-    
+
     res.json({
       status: 'success',
       data: metrics,
@@ -227,7 +233,7 @@ router.get('/metrics', authenticateJWT, createRequireAdminMiddleware(), (req, re
 router.get('/report', authenticateJWT, createRequireAdminMiddleware(), (req, res) => {
   try {
     const report = errorRecoveryService.getReport();
-    
+
     res.json({
       status: 'success',
       data: report,
@@ -252,7 +258,7 @@ router.get('/report', authenticateJWT, createRequireAdminMiddleware(), (req, res
 router.delete('/history', authenticateJWT, createRequireAdminMiddleware(), (req, res) => {
   try {
     errorRecoveryService.clearHistory();
-    
+
     res.json({
       status: 'success',
       message: 'Recovery history cleared',
@@ -277,7 +283,7 @@ router.delete('/history', authenticateJWT, createRequireAdminMiddleware(), (req,
 router.post('/reset-metrics', authenticateJWT, createRequireAdminMiddleware(), (req, res) => {
   try {
     errorRecoveryService.resetMetrics();
-    
+
     res.json({
       status: 'success',
       message: 'Recovery metrics reset',

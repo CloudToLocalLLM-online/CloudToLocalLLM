@@ -80,7 +80,7 @@ router.post('/invalidate', (req, res) => {
       try {
         const regex = new RegExp(pattern);
         invalidatedCount = cache.invalidate(regex);
-      } catch (err) {
+      } catch {
         return res.status(400).json({
           success: false,
           error: 'Invalid regex pattern',

@@ -166,7 +166,7 @@ export class TunnelService {
   async getTunnelById(tunnelId, userId) {
     try {
       const result = await this.pool.query(
-        `SELECT * FROM tunnels WHERE id = $1 AND user_id = $2`,
+        'SELECT * FROM tunnels WHERE id = $1 AND user_id = $2',
         [tunnelId, userId],
       );
 
@@ -178,7 +178,7 @@ export class TunnelService {
 
       // Get endpoints
       const endpointsResult = await this.pool.query(
-        `SELECT * FROM tunnel_endpoints WHERE tunnel_id = $1 ORDER BY priority DESC, weight DESC`,
+        'SELECT * FROM tunnel_endpoints WHERE tunnel_id = $1 ORDER BY priority DESC, weight DESC',
         [tunnelId],
       );
 
@@ -230,14 +230,14 @@ export class TunnelService {
 
       // Get tunnels
       const result = await this.pool.query(
-        `SELECT * FROM tunnels WHERE user_id = $1 ORDER BY created_at DESC LIMIT $2 OFFSET $3`,
+        'SELECT * FROM tunnels WHERE user_id = $1 ORDER BY created_at DESC LIMIT $2 OFFSET $3',
         [userId, limit, offset],
       );
 
       const tunnels = await Promise.all(
-        result.rows.map(async (tunnel) => {
+        result.rows.map(async(tunnel) => {
           const endpointsResult = await this.pool.query(
-            `SELECT * FROM tunnel_endpoints WHERE tunnel_id = $1 ORDER BY priority DESC`,
+            'SELECT * FROM tunnel_endpoints WHERE tunnel_id = $1 ORDER BY priority DESC',
             [tunnel.id],
           );
 
@@ -290,7 +290,6 @@ export class TunnelService {
         throw new Error('Tunnel not found');
       }
 
-      const tunnel = tunnelResult.rows[0];
       const { name, config, endpoints } = updateData;
 
       // Update tunnel fields
@@ -331,7 +330,7 @@ export class TunnelService {
       updateQuery += ` WHERE id = $${paramIndex} AND user_id = $${paramIndex + 1}`;
       params.push(tunnelId, userId);
 
-      const updatedResult = await client.query(updateQuery, params);
+      await client.query(updateQuery, params);
 
       // Update endpoints if provided
       if (endpoints !== undefined && Array.isArray(endpoints)) {
@@ -405,22 +404,6 @@ export class TunnelService {
       await client.query('BEGIN');
 
       // Verify tunnel ownership
-      const tunnelResult = await client.query(
-        'SELECT * FROM tunnels WHERE id = $1 AND user_id = $2',
-        [tunnelId, userId],
-      );
-
-      if (tunnelResult.rows.length === 0) {
-        throw new Error('Tunnel not found');
-      }
-
-      // Update status
-      await client.query(
-        'UPDATE tunnels SET status = $1, updated_at = NOW() WHERE id = $2',
-        [status, tunnelId],
-      );
-
-      // Log activity
       await client.query(
         `INSERT INTO tunnel_activity_logs (tunnel_id, user_id, action, status, ip_address, user_agent)
          VALUES ($1, $2, $3, $4, $5, $6)`,
@@ -580,7 +563,7 @@ export class TunnelService {
       }
 
       const result = await this.pool.query(
-        `SELECT * FROM tunnel_activity_logs WHERE tunnel_id = $1 ORDER BY created_at DESC LIMIT $2 OFFSET $3`,
+        'SELECT * FROM tunnel_activity_logs WHERE tunnel_id = $1 ORDER BY created_at DESC LIMIT $2 OFFSET $3',
         [tunnelId, limit, offset],
       );
 

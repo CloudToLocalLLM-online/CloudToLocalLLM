@@ -165,14 +165,14 @@ export function setupGracefulShutdown(server, options = {}) {
   const shutdownManager = createGracefulShutdownManager(server, options);
 
   // Handle SIGTERM signal
-  process.on('SIGTERM', async () => {
+  process.on('SIGTERM', async() => {
     logger.info('Received SIGTERM signal');
     await shutdownManager.shutdown();
     process.exit(0);
   });
 
   // Handle SIGINT signal (Ctrl+C)
-  process.on('SIGINT', async () => {
+  process.on('SIGINT', async() => {
     logger.info('Received SIGINT signal');
     await shutdownManager.shutdown();
     process.exit(0);

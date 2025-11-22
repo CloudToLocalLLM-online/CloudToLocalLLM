@@ -10,7 +10,7 @@ import fetch from 'node-fetch';
 import { auth } from 'express-oauth2-jwt-bearer';
 import logger from '../logger.js';
 import { AuthService } from '../auth/auth-service.js';
-import { logLoginFailure, logTokenRefresh } from '../services/auth-audit-service.js';
+import { logLoginFailure } from '../services/auth-audit-service.js';
 
 // Auth0 configuration (ensure consistent defaults across services)
 const DEFAULT_AUTH0_DOMAIN = 'dev-v2f2p008x3dr74ww.us.auth0.com';

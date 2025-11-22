@@ -24,13 +24,6 @@ const AUTH0_CLIENT_SECRET = process.env.AUTH0_CLIENT_SECRET;
 
 // Token refresh configuration
 const TOKEN_REFRESH_WINDOW = parseInt(process.env.TOKEN_REFRESH_WINDOW) || 300; // 5 minutes before expiry
-const REFRESH_TOKEN_EXPIRY = parseInt(process.env.REFRESH_TOKEN_EXPIRY) || 7 * 24 * 60 * 60 * 1000; // 7 days
-const SECURE_COOKIE_OPTIONS = {
-  httpOnly: true,
-  secure: process.env.NODE_ENV === 'production',
-  sameSite: 'strict',
-  maxAge: REFRESH_TOKEN_EXPIRY,
-};
 
 /**
  * @swagger
@@ -40,7 +33,7 @@ const SECURE_COOKIE_OPTIONS = {
  *     description: |
  *       Exchanges a refresh token for a new access token. Supports both
  *       request body and secure cookie-based refresh tokens.
- *       
+ *
  *       **Validates: Requirements 2.1, 2.2**
  *       - Validates JWT tokens from Auth0 on every protected request
  *       - Implements token refresh mechanism for expired tokens
@@ -112,7 +105,7 @@ const SECURE_COOKIE_OPTIONS = {
  *                 message: Token refresh failed
  *                 statusCode: 500
  */
-router.post('/token/refresh', async (req, res) => {
+router.post('/token/refresh', async function(req, res) {
   try {
     const { refreshToken } = req.body;
     const cookieRefreshToken = req.cookies?.refreshToken;
@@ -134,6 +127,7 @@ router.post('/token/refresh', async (req, res) => {
       return res.status(401).json({
         error: 'Invalid refresh token format',
         code: 'INVALID_REFRESH_TOKEN',
+        statusCode: 401,
       });
     }
 
@@ -231,7 +225,7 @@ router.post('/token/refresh', async (req, res) => {
  *     description: |
  *       Validates a JWT token and returns its status, expiry information,
  *       and user details. Does not require authentication.
- *       
+ *
  *       **Validates: Requirements 2.1**
  *       - Validates JWT tokens from Auth0 on every protected request
  *     tags:
@@ -297,7 +291,7 @@ router.post('/token/refresh', async (req, res) => {
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.post('/token/validate', async (req, res) => {
+router.post('/token/validate', async function(req, res) {
   try {
     const { token } = req.body;
     const authHeader = req.headers.authorization;
@@ -364,7 +358,7 @@ router.post('/token/validate', async (req, res) => {
  *     description: |
  *       Revokes the current JWT token and invalidates the session.
  *       Clears secure refresh token cookies.
- *       
+ *
  *       **Validates: Requirements 2.9, 2.10**
  *       - Implements token revocation for logout operations
  *       - Enforces HTTPS for all authentication endpoints
@@ -402,7 +396,7 @@ router.post('/token/validate', async (req, res) => {
  *       500:
  *         $ref: '#/components/responses/ServerError'
  */
-router.post('/logout', authenticateJWT, async (req, res) => {
+router.post('/logout', authenticateJWT, async function(req, res) {
   try {
     const userId = extractUserId(req);
     const authHeader = req.headers.authorization;
@@ -491,7 +485,7 @@ router.post('/logout', authenticateJWT, async (req, res) => {
  *     description: |
  *       Revokes a specific session by ID. Useful for revoking sessions
  *       from other devices or browsers.
- *       
+ *
  *       **Validates: Requirements 2.9**
  *       - Implements token revocation for logout operations
  *     tags:
@@ -535,7 +529,7 @@ router.post('/logout', authenticateJWT, async (req, res) => {
  *       500:
  *         $ref: '#/components/responses/ServerError'
  */
-router.post('/session/revoke', authenticateJWT, async (req, res) => {
+router.post('/session/revoke', authenticateJWT, async function(req, res) {
   try {
     const userId = extractUserId(req);
     const { sessionId } = req.body;
@@ -593,7 +587,7 @@ router.post('/session/revoke', authenticateJWT, async (req, res) => {
  *     description: |
  *       Returns information about the currently authenticated user
  *       extracted from the JWT token.
- *       
+ *
  *       **Validates: Requirements 2.1**
  *       - Validates JWT tokens from Auth0 on every protected request
  *     tags:
@@ -634,7 +628,7 @@ router.post('/session/revoke', authenticateJWT, async (req, res) => {
  *       500:
  *         $ref: '#/components/responses/ServerError'
  */
-router.get('/me', authenticateJWT, async (req, res) => {
+router.get('/me', authenticateJWT, async function(req, res) {
   try {
     const userId = extractUserId(req);
 
@@ -668,7 +662,7 @@ router.get('/me', authenticateJWT, async (req, res) => {
  *     description: |
  *       Checks if a token is expiring soon (within 5 minutes) and needs
  *       to be refreshed. Useful for proactive token refresh.
- *       
+ *
  *       **Validates: Requirements 2.2**
  *       - Implements token refresh mechanism for expired tokens
  *     tags:
@@ -718,7 +712,7 @@ router.get('/me', authenticateJWT, async (req, res) => {
  *       500:
  *         $ref: '#/components/responses/ServerError'
  */
-router.post('/token/check-expiry', async (req, res) => {
+router.post('/token/check-expiry', async function(req, res) {
   try {
     const { token } = req.body;
     const authHeader = req.headers.authorization;

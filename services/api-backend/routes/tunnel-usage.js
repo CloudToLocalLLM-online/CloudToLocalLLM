@@ -19,7 +19,7 @@
 
 import express from 'express';
 import logger from '../logger.js';
-import { TunnelUsageService } from '../services/tunnel-usage-service.js';
+
 import { authenticateJWT } from '../middleware/auth.js';
 import { validateInput } from '../utils/input-validation.js';
 
@@ -43,7 +43,7 @@ export function initializeTunnelUsageRoutes(service) {
  * Response: 200 OK with usage metrics
  * Error: 400 Bad Request, 401 Unauthorized, 404 Not Found, 500 Internal Server Error
  */
-router.get('/tunnels/:tunnelId/usage/:date', authenticateJWT, async (req, res) => {
+router.get('/tunnels/:tunnelId/usage/:date', authenticateJWT, async function(req, res) {
   try {
     const { tunnelId, date } = req.params;
     const userId = req.user.sub;
@@ -112,7 +112,7 @@ router.get('/tunnels/:tunnelId/usage/:date', authenticateJWT, async (req, res) =
  * Response: 200 OK with usage metrics array
  * Error: 400 Bad Request, 401 Unauthorized, 404 Not Found, 500 Internal Server Error
  */
-router.get('/tunnels/:tunnelId/usage', authenticateJWT, async (req, res) => {
+router.get('/tunnels/:tunnelId/usage', authenticateJWT, async function(req, res) {
   try {
     const { tunnelId } = req.params;
     const { startDate, endDate } = req.query;
@@ -196,7 +196,7 @@ router.get('/tunnels/:tunnelId/usage', authenticateJWT, async (req, res) => {
  * Response: 200 OK with usage report
  * Error: 400 Bad Request, 401 Unauthorized, 500 Internal Server Error
  */
-router.get('/users/usage/report', authenticateJWT, async (req, res) => {
+router.get('/users/usage/report', authenticateJWT, async function(req, res) {
   try {
     const userId = req.user.sub;
     const { startDate, endDate, groupBy = 'day' } = req.query;
@@ -281,7 +281,7 @@ router.get('/users/usage/report', authenticateJWT, async (req, res) => {
  * Response: 200 OK with billing summary
  * Error: 400 Bad Request, 401 Unauthorized, 500 Internal Server Error
  */
-router.get('/users/usage/billing', authenticateJWT, async (req, res) => {
+router.get('/users/usage/billing', authenticateJWT, async function(req, res) {
   try {
     const userId = req.user.sub;
     const { periodStart, periodEnd } = req.query;
@@ -359,7 +359,7 @@ router.get('/users/usage/billing', authenticateJWT, async (req, res) => {
  * Response: 201 Created with event data
  * Error: 400 Bad Request, 401 Unauthorized, 404 Not Found, 500 Internal Server Error
  */
-router.post('/tunnels/:tunnelId/usage/events', authenticateJWT, async (req, res) => {
+router.post('/tunnels/:tunnelId/usage/events', authenticateJWT, async function(req, res) {
   try {
     const { tunnelId } = req.params;
     const userId = req.user.sub;

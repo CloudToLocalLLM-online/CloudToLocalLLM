@@ -16,7 +16,7 @@
  * @version 1.0.0
  */
 
-import { v4 as uuidv4 } from 'uuid';
+
 import logger from '../logger.js';
 import { getPool } from '../database/db-pool.js';
 
@@ -121,7 +121,7 @@ export class TunnelUsageService {
       }
 
       const result = await this.pool.query(
-        `SELECT * FROM tunnel_usage_metrics WHERE tunnel_id = $1 AND date = $2`,
+        'SELECT * FROM tunnel_usage_metrics WHERE tunnel_id = $1 AND date = $2',
         [tunnelId, date],
       );
 

@@ -19,13 +19,13 @@ export class RequestQueueService {
     this.maxQueueSize = options.maxQueueSize || 1000;
     this.queueTimeoutMs = options.queueTimeoutMs || 30000; // 30 seconds
     this.queueThresholdPercent = options.queueThresholdPercent || 80; // Start queuing at 80% of limit
-    
+
     // Per-user queues: Map<userId, Queue>
     this.userQueues = new Map();
-    
+
     // Per-IP queues: Map<ip, Queue>
     this.ipQueues = new Map();
-    
+
     // Queue statistics
     this.stats = {
       totalQueued: 0,
@@ -56,13 +56,13 @@ export class RequestQueueService {
    */
   queueRequest(identifier, queueType, requestData) {
     const queueMap = queueType === 'user' ? this.userQueues : this.ipQueues;
-    
+
     if (!queueMap.has(identifier)) {
       queueMap.set(identifier, []);
     }
 
     const queue = queueMap.get(identifier);
-    
+
     // Check if queue is full
     if (queue.length >= this.maxQueueSize) {
       this.stats.totalRejected++;
@@ -72,7 +72,7 @@ export class RequestQueueService {
         queueSize: queue.length,
         maxQueueSize: this.maxQueueSize,
       });
-      
+
       return {
         queued: false,
         error: 'QUEUE_FULL',
@@ -101,7 +101,7 @@ export class RequestQueueService {
       const timeoutId = setTimeout(() => {
         this.removeFromQueue(identifier, queueType, queueEntry.id);
         this.stats.totalExpired++;
-        
+
         logger.warn(`Queued request expired for ${queueType} ${identifier}`, {
           queueType,
           identifier,
@@ -149,7 +149,7 @@ export class RequestQueueService {
     }
 
     const queueEntry = queue.shift();
-    
+
     // Clear timeout
     if (queueEntry.timeoutId) {
       clearTimeout(queueEntry.timeoutId);
@@ -195,7 +195,7 @@ export class RequestQueueService {
     }
 
     const queueEntry = queue[index];
-    
+
     // Clear timeout
     if (queueEntry.timeoutId) {
       clearTimeout(queueEntry.timeoutId);
@@ -277,8 +277,8 @@ export class RequestQueueService {
    */
   getHealthStatus() {
     const stats = this.getStatistics();
-    const avgQueueSize = stats.totalQueuesCount > 0 
-      ? stats.currentQueuedRequests / stats.totalQueuesCount 
+    const avgQueueSize = stats.totalQueuesCount > 0
+      ? stats.currentQueuedRequests / stats.totalQueuesCount
       : 0;
 
     return {

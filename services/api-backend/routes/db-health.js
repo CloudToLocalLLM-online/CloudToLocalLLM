@@ -25,7 +25,7 @@ const router = express.Router();
  *     description: |
  *       Performs a health check on the database connection pool.
  *       Returns pool status, response time, and metrics.
- *       
+ *
  *       **Validates: Requirements 9.10**
  *       - Provides database health check endpoints
  *     tags:
@@ -105,7 +105,7 @@ router.get('/pool/health', async(req, res) => {
  *     description: |
  *       Returns detailed metrics about the database connection pool.
  *       Requires admin authentication.
- *       
+ *
  *       **Validates: Requirements 9.7**
  *       - Tracks database performance metrics
  *     tags:

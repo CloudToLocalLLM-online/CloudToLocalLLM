@@ -120,7 +120,6 @@ class AlertTriggeringService {
       timestamp: buffer[buffer.length - 1].timestamp,
     };
   }
-
   /**
    * Evaluate all metrics and trigger alerts
    */
@@ -128,7 +127,7 @@ class AlertTriggeringService {
     try {
       const thresholds = alertConfigService.getThresholds();
 
-      for (const [metric, threshold] of Object.entries(thresholds)) {
+      for (const metric of Object.keys(thresholds)) {
         const stats = this.getMetricStats(metric);
 
         if (!stats) {

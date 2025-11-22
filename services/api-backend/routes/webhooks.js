@@ -40,7 +40,7 @@ const pool = new Pool({
  *     description: |
  *       Receives and processes Stripe webhook events for payment and subscription updates.
  *       Verifies webhook signature for security and implements idempotency.
- *       
+ *
  *       **Validates: Requirements 10.2, 10.3**
  *       - Implements webhook delivery with retry logic
  *       - Implements webhook signature verification

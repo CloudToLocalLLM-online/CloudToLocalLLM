@@ -55,7 +55,7 @@ class ExemptionRule {
 
     try {
       return this.matcher(req);
-    } catch (error) {
+    } catch {
       // If matcher throws, don't exempt
       return false;
     }

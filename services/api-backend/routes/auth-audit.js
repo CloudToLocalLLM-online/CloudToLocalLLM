@@ -39,7 +39,7 @@ const router = express.Router();
  * - Logs all authentication attempts (success and failure)
  * - Provides audit log retrieval for users
  */
-router.get('/audit-logs/me', authenticateJWT, async (req, res) => {
+router.get('/audit-logs/me', authenticateJWT, async(req, res) => {
   try {
     const userId = req.user?.sub || req.userId;
 
@@ -58,11 +58,17 @@ router.get('/audit-logs/me', authenticateJWT, async (req, res) => {
     const endDate = req.query.endDate || null;
 
     // Validate and constrain limit
-    if (limit < 1) limit = 1;
-    if (limit > 100) limit = 100;
+    if (limit < 1) {
+      limit = 1;
+    }
+    if (limit > 100) {
+      limit = 100;
+    }
 
     // Validate and constrain offset
-    if (offset < 0) offset = 0;
+    if (offset < 0) {
+      offset = 0;
+    }
 
     logger.info('[AuthAudit] Retrieving audit logs for user', {
       userId,
@@ -125,7 +131,7 @@ router.get('/audit-logs/me', authenticateJWT, async (req, res) => {
  * - Logs all authentication attempts (success and failure)
  * - Provides failed login attempt retrieval
  */
-router.get('/audit-logs/failed-attempts', authenticateJWT, async (req, res) => {
+router.get('/audit-logs/failed-attempts', authenticateJWT, async(req, res) => {
   try {
     const userId = req.user?.sub || req.userId;
 
@@ -143,11 +149,17 @@ router.get('/audit-logs/failed-attempts', authenticateJWT, async (req, res) => {
     const endDate = req.query.endDate || null;
 
     // Validate and constrain limit
-    if (limit < 1) limit = 1;
-    if (limit > 100) limit = 100;
+    if (limit < 1) {
+      limit = 1;
+    }
+    if (limit > 100) {
+      limit = 100;
+    }
 
     // Validate and constrain offset
-    if (offset < 0) offset = 0;
+    if (offset < 0) {
+      offset = 0;
+    }
 
     logger.info('[AuthAudit] Retrieving failed login attempts for user', {
       userId,
@@ -210,7 +222,7 @@ router.get('/audit-logs/failed-attempts', authenticateJWT, async (req, res) => {
  * - Supports admin activity logging and audit trails
  * - Provides system-wide audit log retrieval
  */
-router.get('/admin/auth/audit-logs', authenticateJWT, requireAdmin, async (req, res) => {
+router.get('/admin/auth/audit-logs', authenticateJWT, requireAdmin, async(req, res) => {
   try {
     // Parse query parameters
     let limit = parseInt(req.query.limit) || 100;
@@ -221,11 +233,17 @@ router.get('/admin/auth/audit-logs', authenticateJWT, requireAdmin, async (req, 
     const endDate = req.query.endDate || null;
 
     // Validate and constrain limit
-    if (limit < 1) limit = 1;
-    if (limit > 500) limit = 500;
+    if (limit < 1) {
+      limit = 1;
+    }
+    if (limit > 500) {
+      limit = 500;
+    }
 
     // Validate and constrain offset
-    if (offset < 0) offset = 0;
+    if (offset < 0) {
+      offset = 0;
+    }
 
     logger.info('[AuthAudit] Admin retrieving system-wide audit logs', {
       adminUserId: req.user?.sub,
@@ -291,7 +309,7 @@ router.get('/admin/auth/audit-logs', authenticateJWT, requireAdmin, async (req, 
  * - Supports admin activity logging and audit trails
  * - Provides system-wide failed login attempt retrieval
  */
-router.get('/admin/auth/audit-logs/failed-attempts', authenticateJWT, requireAdmin, async (req, res) => {
+router.get('/admin/auth/audit-logs/failed-attempts', authenticateJWT, requireAdmin, async(req, res) => {
   try {
     // Parse query parameters
     let limit = parseInt(req.query.limit) || 100;
@@ -300,11 +318,17 @@ router.get('/admin/auth/audit-logs/failed-attempts', authenticateJWT, requireAdm
     const endDate = req.query.endDate || null;
 
     // Validate and constrain limit
-    if (limit < 1) limit = 1;
-    if (limit > 500) limit = 500;
+    if (limit < 1) {
+      limit = 1;
+    }
+    if (limit > 500) {
+      limit = 500;
+    }
 
     // Validate and constrain offset
-    if (offset < 0) offset = 0;
+    if (offset < 0) {
+      offset = 0;
+    }
 
     logger.info('[AuthAudit] Admin retrieving all failed login attempts', {
       adminUserId: req.user?.sub,
@@ -363,7 +387,7 @@ router.get('/admin/auth/audit-logs/failed-attempts', authenticateJWT, requireAdm
  * - Supports admin activity logging and audit trails
  * - Provides audit log summary statistics
  */
-router.get('/admin/auth/audit-logs/summary', authenticateJWT, requireAdmin, async (req, res) => {
+router.get('/admin/auth/audit-logs/summary', authenticateJWT, requireAdmin, async(req, res) => {
   try {
     const startDate = req.query.startDate || null;
     const endDate = req.query.endDate || null;

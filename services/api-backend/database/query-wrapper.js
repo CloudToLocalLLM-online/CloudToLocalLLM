@@ -20,16 +20,36 @@ import logger from '../logger.js';
 function getQueryType(queryText) {
   const trimmed = queryText.trim().toUpperCase();
 
-  if (trimmed.startsWith('SELECT')) return 'SELECT';
-  if (trimmed.startsWith('INSERT')) return 'INSERT';
-  if (trimmed.startsWith('UPDATE')) return 'UPDATE';
-  if (trimmed.startsWith('DELETE')) return 'DELETE';
-  if (trimmed.startsWith('BEGIN')) return 'BEGIN';
-  if (trimmed.startsWith('COMMIT')) return 'COMMIT';
-  if (trimmed.startsWith('ROLLBACK')) return 'ROLLBACK';
-  if (trimmed.startsWith('CREATE')) return 'CREATE';
-  if (trimmed.startsWith('ALTER')) return 'ALTER';
-  if (trimmed.startsWith('DROP')) return 'DROP';
+  if (trimmed.startsWith('SELECT')) {
+    return 'SELECT';
+  }
+  if (trimmed.startsWith('INSERT')) {
+    return 'INSERT';
+  }
+  if (trimmed.startsWith('UPDATE')) {
+    return 'UPDATE';
+  }
+  if (trimmed.startsWith('DELETE')) {
+    return 'DELETE';
+  }
+  if (trimmed.startsWith('BEGIN')) {
+    return 'BEGIN';
+  }
+  if (trimmed.startsWith('COMMIT')) {
+    return 'COMMIT';
+  }
+  if (trimmed.startsWith('ROLLBACK')) {
+    return 'ROLLBACK';
+  }
+  if (trimmed.startsWith('CREATE')) {
+    return 'CREATE';
+  }
+  if (trimmed.startsWith('ALTER')) {
+    return 'ALTER';
+  }
+  if (trimmed.startsWith('DROP')) {
+    return 'DROP';
+  }
 
   return 'OTHER';
 }
@@ -118,7 +138,7 @@ export function wrapClientQuery(originalQuery) {
 export function wrapPool(pool) {
   const originalQuery = pool.query.bind(pool);
 
-  pool.query = async function (queryText, params) {
+  pool.query = async function(queryText, params) {
     return executeTrackedQuery(
       () => originalQuery(queryText, params),
       queryText,
@@ -141,7 +161,7 @@ export function wrapPool(pool) {
 export function wrapClient(client) {
   const originalQuery = client.query.bind(client);
 
-  client.query = async function (queryText, params) {
+  client.query = async function(queryText, params) {
     return executeTrackedQuery(
       () => originalQuery(queryText, params),
       queryText,

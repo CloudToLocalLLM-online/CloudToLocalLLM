@@ -179,10 +179,10 @@ export function getPerformanceMetrics() {
     slowQueryPercentage:
       performanceMetrics.totalQueries > 0
         ? (
-            (performanceMetrics.totalSlowQueries /
+          (performanceMetrics.totalSlowQueries /
               performanceMetrics.totalQueries) *
             100
-          ).toFixed(2)
+        ).toFixed(2)
         : 0,
     averageQueryTime: performanceMetrics.averageQueryTime.toFixed(2),
     slowQueryThreshold: performanceMetrics.slowQueryThreshold,
@@ -276,10 +276,10 @@ export function analyzePerformance() {
       slowQueryPercentage:
         performanceMetrics.totalQueries > 0
           ? (
-              (performanceMetrics.totalSlowQueries /
+            (performanceMetrics.totalSlowQueries /
                 performanceMetrics.totalQueries) *
               100
-            ).toFixed(2)
+          ).toFixed(2)
           : 0,
     },
     byQueryType: {},

@@ -23,7 +23,7 @@ const violationsService = new RateLimitViolationsService();
  * Get violations for a specific user
  * Admin only
  */
-router.get('/violations/user/:userId', authenticateJWT, requireAdmin, async (req, res) => {
+router.get('/violations/user/:userId', authenticateJWT, requireAdmin, async(req, res) => {
   try {
     const { userId } = req.params;
     const { limit = 100, offset = 0, startTime, endTime } = req.query;
@@ -69,7 +69,7 @@ router.get('/violations/user/:userId', authenticateJWT, requireAdmin, async (req
  * Get violations for a specific IP address
  * Admin only
  */
-router.get('/violations/ip/:ipAddress', authenticateJWT, requireAdmin, async (req, res) => {
+router.get('/violations/ip/:ipAddress', authenticateJWT, requireAdmin, async(req, res) => {
   try {
     const { ipAddress } = req.params;
     const { limit = 100, offset = 0, startTime, endTime } = req.query;
@@ -115,7 +115,7 @@ router.get('/violations/ip/:ipAddress', authenticateJWT, requireAdmin, async (re
  * Get violation statistics for a user
  * Admin only
  */
-router.get('/violations/stats/user/:userId', authenticateJWT, requireAdmin, async (req, res) => {
+router.get('/violations/stats/user/:userId', authenticateJWT, requireAdmin, async(req, res) => {
   try {
     const { userId } = req.params;
     const { startTime, endTime } = req.query;
@@ -154,7 +154,7 @@ router.get('/violations/stats/user/:userId', authenticateJWT, requireAdmin, asyn
  * Get violation statistics for an IP address
  * Admin only
  */
-router.get('/violations/stats/ip/:ipAddress', authenticateJWT, requireAdmin, async (req, res) => {
+router.get('/violations/stats/ip/:ipAddress', authenticateJWT, requireAdmin, async(req, res) => {
   try {
     const { ipAddress } = req.params;
     const { startTime, endTime } = req.query;
@@ -193,7 +193,7 @@ router.get('/violations/stats/ip/:ipAddress', authenticateJWT, requireAdmin, asy
  * Get top violating users
  * Admin only
  */
-router.get('/violations/top-violators', authenticateJWT, requireAdmin, async (req, res) => {
+router.get('/violations/top-violators', authenticateJWT, requireAdmin, async(req, res) => {
   try {
     const { limit = 10, startTime, endTime } = req.query;
 
@@ -231,7 +231,7 @@ router.get('/violations/top-violators', authenticateJWT, requireAdmin, async (re
  * Get top violating IP addresses
  * Admin only
  */
-router.get('/violations/top-ips', authenticateJWT, requireAdmin, async (req, res) => {
+router.get('/violations/top-ips', authenticateJWT, requireAdmin, async(req, res) => {
   try {
     const { limit = 10, startTime, endTime } = req.query;
 
@@ -269,7 +269,7 @@ router.get('/violations/top-ips', authenticateJWT, requireAdmin, async (req, res
  * Get violations for a specific endpoint
  * Admin only
  */
-router.get('/violations/endpoint/:endpoint', authenticateJWT, requireAdmin, async (req, res) => {
+router.get('/violations/endpoint/:endpoint', authenticateJWT, requireAdmin, async(req, res) => {
   try {
     const { endpoint } = req.params;
     const { startTime, endTime } = req.query;

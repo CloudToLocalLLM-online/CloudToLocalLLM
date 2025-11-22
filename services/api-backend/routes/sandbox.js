@@ -13,7 +13,6 @@
 import express from 'express';
 import winston from 'winston';
 import { sandboxService } from '../services/sandbox-service.js';
-import { authenticateJWT } from '../middleware/auth.js';
 
 const router = express.Router();
 

@@ -24,7 +24,6 @@ import {
   getUserActivityLogsCount,
   getUserUsageMetrics,
   getUserActivitySummary,
-  ACTIVITY_ACTIONS,
 } from '../services/user-activity-service.js';
 import logger from '../logger.js';
 
@@ -51,7 +50,7 @@ const router = express.Router();
  * Authentication: Required (JWT)
  * Rate Limit: Standard (100 req/min)
  */
-router.get('/activity', authenticateJWT, async (req, res) => {
+router.get('/activity', authenticateJWT, async function(req, res) {
   try {
     if (!req.user) {
       return res.status(401).json({
@@ -151,7 +150,7 @@ router.get('/activity', authenticateJWT, async (req, res) => {
  * Authentication: Required (JWT)
  * Rate Limit: Standard (100 req/min)
  */
-router.get('/metrics', authenticateJWT, async (req, res) => {
+router.get('/metrics', authenticateJWT, async function(req, res) {
   try {
     if (!req.user) {
       return res.status(401).json({
@@ -234,7 +233,7 @@ router.get('/metrics', authenticateJWT, async (req, res) => {
  * Authentication: Required (JWT)
  * Rate Limit: Standard (100 req/min)
  */
-router.get('/activity/summary', authenticateJWT, async (req, res) => {
+router.get('/activity/summary', authenticateJWT, async function(req, res) {
   try {
     if (!req.user) {
       return res.status(401).json({

@@ -20,9 +20,9 @@ const logger = new TunnelLogger('rate-limit-metrics-routes');
  *     summary: Prometheus metrics endpoint
  *     description: |
  *       Public endpoint for Prometheus scraping. Returns metrics in Prometheus text format.
- *       
+ *
  *       **Rate Limit:** Exempt (health check endpoint)
- *       
+ *
  *       **Metrics Exposed:**
  *       - `rate_limit_violations_total` - Total rate limit violations
  *       - `rate_limit_requests_allowed_total` - Requests allowed by rate limiter
@@ -50,7 +50,7 @@ const logger = new TunnelLogger('rate-limit-metrics-routes');
  *       500:
  *         $ref: '#/components/responses/ServerError'
  */
-router.get('/metrics', async (req, res) => {
+router.get('/metrics', async(req, res) => {
   try {
     res.set('Content-Type', register.contentType);
     res.end(await register.metrics());
@@ -72,9 +72,9 @@ router.get('/metrics', async (req, res) => {
  *     summary: Get rate limit metrics summary
  *     description: |
  *       Returns a summary of rate limit metrics for the authenticated user.
- *       
+ *
  *       **Rate Limit:** 100 requests/minute (free), 500 requests/minute (premium)
- *       
+ *
  *       **Includes:**
  *       - Top violators (users hitting rate limits)
  *       - Top violating IPs
@@ -128,7 +128,7 @@ router.get('/metrics', async (req, res) => {
  *       500:
  *         $ref: '#/components/responses/ServerError'
  */
-router.get('/rate-limit-metrics/summary', authenticateJWT, async (req, res) => {
+router.get('/rate-limit-metrics/summary', authenticateJWT, async(req, res) => {
   try {
     const summary = rateLimitMetricsService.getMetricsSummary();
 
@@ -155,11 +155,11 @@ router.get('/rate-limit-metrics/summary', authenticateJWT, async (req, res) => {
  *     summary: Get top rate limit violators
  *     description: |
  *       Returns the top users who have violated rate limits.
- *       
+ *
  *       **Admin Only:** Requires admin role
- *       
+ *
  *       **Rate Limit:** Exempt (admin endpoint)
- *       
+ *
  *       **Query Parameters:**
  *       - `limit` (optional): Number of top violators to return (default: 10, max: 100)
  *     tags:
@@ -217,7 +217,7 @@ router.get(
   '/rate-limit-metrics/top-violators',
   authenticateJWT,
   requireAdmin,
-  async (req, res) => {
+  async(req, res) => {
     try {
       const limit = Math.min(parseInt(req.query.limit) || 10, 100);
       const topViolators = rateLimitMetricsService.getTopViolators(limit);
@@ -251,16 +251,16 @@ router.get(
  *     summary: Get top violating IP addresses
  *     description: |
  *       Returns the top IP addresses that have violated rate limits.
- *       
+ *
  *       **Admin Only:** Requires admin role
- *       
+ *
  *       **Rate Limit:** Exempt (admin endpoint)
- *       
+ *
  *       **Use Cases:**
  *       - Identify DDoS attacks
  *       - Monitor suspicious traffic patterns
  *       - Configure IP-based blocking
- *       
+ *
  *       **Query Parameters:**
  *       - `limit` (optional): Number of top IPs to return (default: 10, max: 100)
  *     tags:
@@ -318,7 +318,7 @@ router.get(
   '/rate-limit-metrics/top-ips',
   authenticateJWT,
   requireAdmin,
-  async (req, res) => {
+  async(req, res) => {
     try {
       const limit = Math.min(parseInt(req.query.limit) || 10, 100);
       const topIps = rateLimitMetricsService.getTopViolatingIps(limit);
@@ -352,17 +352,17 @@ router.get(
  *     summary: Get comprehensive rate limit dashboard data
  *     description: |
  *       Returns comprehensive rate limit metrics for admin dashboards.
- *       
+ *
  *       **Admin Only:** Requires admin role
- *       
+ *
  *       **Rate Limit:** Exempt (admin endpoint)
- *       
+ *
  *       **Includes:**
  *       - Summary statistics (total violators, total violating IPs)
  *       - Top 10 violating users
  *       - Top 10 violating IP addresses
  *       - Timestamp of data collection
- *       
+ *
  *       **Use Cases:**
  *       - Admin dashboard display
  *       - Rate limit monitoring
@@ -430,7 +430,7 @@ router.get(
   '/rate-limit-metrics/dashboard-data',
   authenticateJWT,
   requireAdmin,
-  async (req, res) => {
+  async(req, res) => {
     try {
       const summary = rateLimitMetricsService.getMetricsSummary();
       const topViolators = rateLimitMetricsService.getTopViolators(10);

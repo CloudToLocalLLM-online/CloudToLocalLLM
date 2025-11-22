@@ -338,7 +338,7 @@ export class ProxyHealthService {
       intervalMs: this.healthCheckIntervalMs,
     });
 
-    this.healthCheckInterval = setInterval(async () => {
+    this.healthCheckInterval = setInterval(async() => {
       try {
         await healthCheckFn();
       } catch (error) {

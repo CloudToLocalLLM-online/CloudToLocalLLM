@@ -11,7 +11,7 @@
 export function stringify(obj, space = 2) {
   try {
     return JSON.stringify(obj, null, space);
-  } catch (error) {
+  } catch {
     return String(obj);
   }
 }

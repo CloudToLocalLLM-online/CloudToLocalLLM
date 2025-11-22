@@ -141,7 +141,7 @@ class AlertConfigurationService {
   updateEnabledChannels(channels) {
     try {
       for (const [channel, enabled] of Object.entries(channels)) {
-        if (this.enabledChannels.hasOwnProperty(channel)) {
+        if (Object.prototype.hasOwnProperty.call(this.enabledChannels, channel)) {
           this.enabledChannels[channel] = Boolean(enabled);
         }
       }

@@ -66,7 +66,7 @@ export async function initializeUserDeletionService() {
  * Rate Limit: Standard (100 req/min)
  * Authorization: User can only delete their own account
  */
-router.delete('/:id', authenticateJWT, async (req, res) => {
+router.delete('/:id', authenticateJWT, async(req, res) => {
   try {
     if (!req.user) {
       return res.status(401).json({
@@ -164,7 +164,7 @@ router.delete('/:id', authenticateJWT, async (req, res) => {
  * Rate Limit: Standard (100 req/min)
  * Authorization: User can only restore their own account
  */
-router.post('/:id/restore', authenticateJWT, async (req, res) => {
+router.post('/:id/restore', authenticateJWT, async(req, res) => {
   try {
     if (!req.user) {
       return res.status(401).json({
@@ -251,7 +251,7 @@ router.post('/:id/restore', authenticateJWT, async (req, res) => {
  * Rate Limit: Standard (100 req/min)
  * Authorization: User can only check their own status
  */
-router.get('/:id/deletion-status', authenticateJWT, async (req, res) => {
+router.get('/:id/deletion-status', authenticateJWT, async(req, res) => {
   try {
     if (!req.user) {
       return res.status(401).json({
@@ -352,7 +352,7 @@ router.get('/:id/deletion-status', authenticateJWT, async (req, res) => {
  * Rate Limit: Standard (100 req/min)
  * Authorization: Admin only
  */
-router.post('/:id/permanent-delete', authenticateJWT, async (req, res) => {
+router.post('/:id/permanent-delete', authenticateJWT, async(req, res) => {
   try {
     if (!req.user) {
       return res.status(401).json({

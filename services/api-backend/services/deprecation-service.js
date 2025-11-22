@@ -172,7 +172,9 @@ export function isDeprecated(path) {
  */
 export function isSunset(path) {
   const info = getDeprecationInfo(path);
-  if (!info) return false;
+  if (!info) {
+    return false;
+  }
 
   const sunsetDate = new Date(info.sunsetAt);
   const today = new Date();
@@ -202,7 +204,9 @@ export function getMigrationGuide(path) {
  */
 export function formatDeprecationWarning(path) {
   const info = getDeprecationInfo(path);
-  if (!info) return '';
+  if (!info) {
+    return '';
+  }
 
   const daysUntilSunset = calculateDaysUntilSunset(info.sunsetAt);
   const replacedBy = info.replacedBy ? ` Use ${info.replacedBy} instead.` : '';

@@ -42,7 +42,7 @@ export function createProxyConfigRoutes(configService) {
  * Create or initialize proxy configuration
  * Validates: Requirements 5.4
  */
-router.post('/config/:proxyId', authenticateJWT, addTierInfo, async (req, res) => {
+router.post('/config/:proxyId', authenticateJWT, addTierInfo, async(req, res) => {
   try {
     const { proxyId } = req.params;
     const userId = req.user?.sub;
@@ -78,7 +78,7 @@ router.post('/config/:proxyId', authenticateJWT, addTierInfo, async (req, res) =
           });
         }
         configToUse = { ...JSON.parse(template.template_config), ...config };
-      } catch (error) {
+      } catch {
         return res.status(400).json({
           error: 'INVALID_REQUEST',
           message: 'Failed to parse template configuration',
@@ -133,7 +133,7 @@ router.post('/config/:proxyId', authenticateJWT, addTierInfo, async (req, res) =
  * Get proxy configuration
  * Validates: Requirements 5.4
  */
-router.get('/config/:proxyId', authenticateJWT, addTierInfo, async (req, res) => {
+router.get('/config/:proxyId', authenticateJWT, addTierInfo, async(req, res) => {
   try {
     const { proxyId } = req.params;
     const userId = req.user?.sub;
@@ -193,7 +193,7 @@ router.get('/config/:proxyId', authenticateJWT, addTierInfo, async (req, res) =>
  * Update proxy configuration
  * Validates: Requirements 5.4
  */
-router.put('/config/:proxyId', authenticateJWT, addTierInfo, async (req, res) => {
+router.put('/config/:proxyId', authenticateJWT, addTierInfo, async(req, res) => {
   try {
     const { proxyId } = req.params;
     const userId = req.user?.sub;
@@ -278,7 +278,7 @@ router.put('/config/:proxyId', authenticateJWT, addTierInfo, async (req, res) =>
  * Delete proxy configuration
  * Validates: Requirements 5.4
  */
-router.delete('/config/:proxyId', authenticateJWT, addTierInfo, async (req, res) => {
+router.delete('/config/:proxyId', authenticateJWT, addTierInfo, async(req, res) => {
   try {
     const { proxyId } = req.params;
     const userId = req.user?.sub;
@@ -340,7 +340,7 @@ router.delete('/config/:proxyId', authenticateJWT, addTierInfo, async (req, res)
  * Get configuration change history
  * Validates: Requirements 5.4
  */
-router.get('/config/:proxyId/history', authenticateJWT, addTierInfo, async (req, res) => {
+router.get('/config/:proxyId/history', authenticateJWT, addTierInfo, async(req, res) => {
   try {
     const { proxyId } = req.params;
     const userId = req.user?.sub;
@@ -395,7 +395,7 @@ router.get('/config/:proxyId/history', authenticateJWT, addTierInfo, async (req,
  * Create configuration template
  * Validates: Requirements 5.4
  */
-router.post('/config/templates', authenticateJWT, addTierInfo, async (req, res) => {
+router.post('/config/templates', authenticateJWT, addTierInfo, async(req, res) => {
   try {
     const userId = req.user?.sub;
     const { name, config, description, isDefault } = req.body;
@@ -472,7 +472,7 @@ router.post('/config/templates', authenticateJWT, addTierInfo, async (req, res) 
  * Get all configuration templates
  * Validates: Requirements 5.4
  */
-router.get('/config/templates', authenticateJWT, addTierInfo, async (req, res) => {
+router.get('/config/templates', authenticateJWT, addTierInfo, async(req, res) => {
   try {
     const userId = req.user?.sub;
 
@@ -514,7 +514,7 @@ router.get('/config/templates', authenticateJWT, addTierInfo, async (req, res) =
  * Get default configuration template
  * Validates: Requirements 5.4
  */
-router.get('/config/templates/default', authenticateJWT, addTierInfo, async (req, res) => {
+router.get('/config/templates/default', authenticateJWT, addTierInfo, async(req, res) => {
   try {
     const userId = req.user?.sub;
 
@@ -567,7 +567,7 @@ router.post(
   '/config/:proxyId/apply-template/:templateId',
   authenticateJWT,
   addTierInfo,
-  async (req, res) => {
+  async(req, res) => {
     try {
       const { proxyId, templateId } = req.params;
       const userId = req.user?.sub;

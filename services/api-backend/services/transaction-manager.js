@@ -383,7 +383,7 @@ export class TransactionManager {
    * @returns {Promise<Array>} Array of query results
    */
   static async executeQueries(queries, options = {}) {
-    return this.withTransaction(async (transaction) => {
+    return this.withTransaction(async(transaction) => {
       const results = [];
 
       for (const { text, params } of queries) {

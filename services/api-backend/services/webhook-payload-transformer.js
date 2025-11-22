@@ -512,7 +512,7 @@ export class WebhookPayloadTransformer {
   _applyCustomTransform(payload, script) {
     try {
       // Create a safe function context
-      // eslint-disable-next-line no-new-func
+
       const transformFn = new Function('payload', `return (${script})(payload)`);
       return transformFn(payload);
     } catch (error) {
@@ -568,7 +568,7 @@ export class WebhookPayloadTransformer {
 
     case 'custom':
       try {
-        // eslint-disable-next-line no-new-func
+
         const transformFn = new Function('value', `return (${transform.fn})(value)`);
         return transformFn(value);
       } catch (error) {
@@ -648,7 +648,7 @@ export class WebhookPayloadTransformer {
 
     case 'custom':
       try {
-        // eslint-disable-next-line no-new-func
+
         const enrichFn = new Function(`return (${enrichment.value})()`);
         return enrichFn();
       } catch (error) {

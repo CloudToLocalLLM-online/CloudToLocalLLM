@@ -38,7 +38,7 @@ await transformer.initialize();
 router.post(
   '/api/tunnels/:tunnelId/webhooks/:webhookId/transformations',
   authenticateJWT,
-  async (req, res) => {
+  async(req, res) => {
     try {
       const { tunnelId, webhookId } = req.params;
       const userId = req.user.sub;
@@ -86,7 +86,7 @@ router.post(
 router.get(
   '/api/tunnels/:tunnelId/webhooks/:webhookId/transformations',
   authenticateJWT,
-  async (req, res) => {
+  async(req, res) => {
     try {
       const { webhookId } = req.params;
       const userId = req.user.sub;
@@ -128,7 +128,7 @@ router.get(
 router.put(
   '/api/tunnels/:tunnelId/webhooks/:webhookId/transformations',
   authenticateJWT,
-  async (req, res) => {
+  async(req, res) => {
     try {
       const { webhookId } = req.params;
       const userId = req.user.sub;
@@ -175,7 +175,7 @@ router.put(
 router.delete(
   '/api/tunnels/:tunnelId/webhooks/:webhookId/transformations',
   authenticateJWT,
-  async (req, res) => {
+  async(req, res) => {
     try {
       const { webhookId } = req.params;
       const userId = req.user.sub;
@@ -211,7 +211,7 @@ router.delete(
 router.post(
   '/api/tunnels/:tunnelId/webhooks/:webhookId/transformations/validate',
   authenticateJWT,
-  async (req, res) => {
+  async(req, res) => {
     try {
       const transformConfig = req.body;
 
@@ -244,7 +244,7 @@ router.post(
 router.post(
   '/api/tunnels/:tunnelId/webhooks/:webhookId/transformations/test',
   authenticateJWT,
-  async (req, res) => {
+  async(req, res) => {
     try {
       const { payload, transformation } = req.body;
 

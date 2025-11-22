@@ -1,9 +1,9 @@
 /**
  * Graceful Degradation Service
- * 
+ *
  * Implements graceful degradation when services are unavailable.
  * Provides fallback mechanisms and reduced functionality modes.
- * 
+ *
  * Requirement 7.6: THE API SHALL implement graceful degradation when services are unavailable
  */
 
@@ -35,13 +35,13 @@ export class GracefulDegradationService {
   constructor() {
     // Track degradation state for each service
     this.degradationStates = new Map();
-    
+
     // Define fallback strategies for each service
     this.fallbackStrategies = new Map();
-    
+
     // Track when degradation started
     this.degradationStartTimes = new Map();
-    
+
     // Metrics
     this.metrics = {
       totalDegradations: 0,
@@ -126,7 +126,7 @@ export class GracefulDegradationService {
     if (state.isDegraded) {
       this.metrics.activeDegradations--;
       this.metrics.recoveries++;
-      
+
       const degradationDuration = Date.now() - (this.degradationStartTimes.get(serviceName) || Date.now());
       logger.info(`Service recovered: ${serviceName}`, {
         degradationDurationMs: degradationDuration,
@@ -200,12 +200,12 @@ export class GracefulDegradationService {
     try {
       // Try primary function
       const result = await primaryFn.apply(context, args);
-      
+
       // If successful and was degraded, mark as recovered
       if (state.isDegraded) {
         this.markRecovered(serviceName);
       }
-      
+
       return result;
     } catch (error) {
       // Mark as degraded
@@ -243,12 +243,12 @@ export class GracefulDegradationService {
     }
 
     const reducedFunctionality = strategy.reducedFunctionality;
-    
+
     return {
       isDegraded: true,
       service: serviceName,
       endpoint,
-      message: `Service is operating in reduced functionality mode`,
+      message: 'Service is operating in reduced functionality mode',
       availableFeatures: reducedFunctionality.availableFeatures || [],
       unavailableFeatures: reducedFunctionality.unavailableFeatures || [],
       estimatedRecoveryTime: reducedFunctionality.estimatedRecoveryTime || null,
@@ -301,7 +301,7 @@ export class GracefulDegradationService {
   getReport() {
     const statuses = this.getAllStatuses();
     const degradedServices = statuses.filter(s => s.isDegraded);
-    
+
     return {
       timestamp: new Date().toISOString(),
       totalServices: statuses.length,

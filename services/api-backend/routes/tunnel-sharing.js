@@ -61,7 +61,7 @@ export async function initializeTunnelSharingService() {
  * Authentication: Required (JWT)
  * Rate Limit: Standard (100 req/min)
  */
-router.post('/:id/shares', authenticateJWT, async (req, res) => {
+router.post('/:id/shares', authenticateJWT, async(req, res) => {
   try {
     if (!req.user) {
       return res.status(401).json({
@@ -158,7 +158,7 @@ router.post('/:id/shares', authenticateJWT, async (req, res) => {
  * Authentication: Required (JWT)
  * Rate Limit: Standard (100 req/min)
  */
-router.get('/:id/shares', authenticateJWT, async (req, res) => {
+router.get('/:id/shares', authenticateJWT, async(req, res) => {
   try {
     if (!req.user) {
       return res.status(401).json({
@@ -226,7 +226,7 @@ router.get('/:id/shares', authenticateJWT, async (req, res) => {
  * Authentication: Required (JWT)
  * Rate Limit: Standard (100 req/min)
  */
-router.delete('/:id/shares/:sharedWithUserId', authenticateJWT, async (req, res) => {
+router.delete('/:id/shares/:sharedWithUserId', authenticateJWT, async(req, res) => {
   try {
     if (!req.user) {
       return res.status(401).json({
@@ -307,7 +307,7 @@ router.delete('/:id/shares/:sharedWithUserId', authenticateJWT, async (req, res)
  * Authentication: Required (JWT)
  * Rate Limit: Standard (100 req/min)
  */
-router.get('/shared-with-me', authenticateJWT, async (req, res) => {
+router.get('/shared-with-me', authenticateJWT, async(req, res) => {
   try {
     if (!req.user) {
       return res.status(401).json({
@@ -379,7 +379,7 @@ router.get('/shared-with-me', authenticateJWT, async (req, res) => {
  * Authentication: Required (JWT)
  * Rate Limit: Standard (100 req/min)
  */
-router.post('/:id/share-tokens', authenticateJWT, async (req, res) => {
+router.post('/:id/share-tokens', authenticateJWT, async(req, res) => {
   try {
     if (!req.user) {
       return res.status(401).json({
@@ -467,7 +467,7 @@ router.post('/:id/share-tokens', authenticateJWT, async (req, res) => {
  * Authentication: Required (JWT)
  * Rate Limit: Standard (100 req/min)
  */
-router.get('/:id/share-tokens', authenticateJWT, async (req, res) => {
+router.get('/:id/share-tokens', authenticateJWT, async(req, res) => {
   try {
     if (!req.user) {
       return res.status(401).json({
@@ -535,7 +535,7 @@ router.get('/:id/share-tokens', authenticateJWT, async (req, res) => {
  * Authentication: Required (JWT)
  * Rate Limit: Standard (100 req/min)
  */
-router.delete('/:id/share-tokens/:tokenId', authenticateJWT, async (req, res) => {
+router.delete('/:id/share-tokens/:tokenId', authenticateJWT, async(req, res) => {
   try {
     if (!req.user) {
       return res.status(401).json({
@@ -609,7 +609,7 @@ router.delete('/:id/share-tokens/:tokenId', authenticateJWT, async (req, res) =>
  * Authentication: Required (JWT)
  * Rate Limit: Standard (100 req/min)
  */
-router.get('/:id/access-logs', authenticateJWT, async (req, res) => {
+router.get('/:id/access-logs', authenticateJWT, async(req, res) => {
   try {
     if (!req.user) {
       return res.status(401).json({
@@ -691,7 +691,7 @@ router.get('/:id/access-logs', authenticateJWT, async (req, res) => {
  * Authentication: Required (JWT)
  * Rate Limit: Standard (100 req/min)
  */
-router.put('/:id/shares/:shareId/permission', authenticateJWT, async (req, res) => {
+router.put('/:id/shares/:shareId/permission', authenticateJWT, async(req, res) => {
   try {
     if (!req.user) {
       return res.status(401).json({

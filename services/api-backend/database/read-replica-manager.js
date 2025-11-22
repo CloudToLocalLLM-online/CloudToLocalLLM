@@ -232,7 +232,7 @@ export class ReadReplicaManager {
   startHealthChecks() {
     const interval = parseInt(process.env.REPLICA_HEALTH_CHECK_INTERVAL || '30000', 10);
 
-    this.healthCheckInterval = setInterval(async () => {
+    this.healthCheckInterval = setInterval(async() => {
       for (let i = 0; i < this.replicaPools.length; i++) {
         await this.checkReplicaHealth(i);
       }

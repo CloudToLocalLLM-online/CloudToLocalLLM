@@ -1,9 +1,9 @@
 /**
  * Error Notification Service
- * 
+ *
  * Implements critical error detection and notification mechanisms.
  * Provides notification configuration and delivery for critical issues.
- * 
+ *
  * Requirement 7.9: THE API SHALL support error notifications for critical issues
  */
 
@@ -69,7 +69,7 @@ export const NotificationChannel = {
 export class ErrorNotificationService extends EventEmitter {
   constructor(config = {}) {
     super();
-    
+
     // Configuration
     this.config = {
       enableNotifications: config.enableNotifications !== false,
@@ -112,7 +112,7 @@ export class ErrorNotificationService extends EventEmitter {
    */
   _initializeDefaultHandlers() {
     // Log handler (always available)
-    this.registerNotificationHandler(NotificationChannel.LOG, async (notification) => {
+    this.registerNotificationHandler(NotificationChannel.LOG, async(notification) => {
       logger.error('Critical error notification', {
         errorId: notification.errorId,
         category: notification.category,
@@ -124,7 +124,7 @@ export class ErrorNotificationService extends EventEmitter {
 
     // Webhook handler (if configured)
     if (this.config.webhookUrl) {
-      this.registerNotificationHandler(NotificationChannel.WEBHOOK, async (notification) => {
+      this.registerNotificationHandler(NotificationChannel.WEBHOOK, async(notification) => {
         try {
           const response = await fetch(this.config.webhookUrl, {
             method: 'POST',
@@ -151,7 +151,7 @@ export class ErrorNotificationService extends EventEmitter {
 
     // Email handler (if configured)
     if (this.config.emailService) {
-      this.registerNotificationHandler(NotificationChannel.EMAIL, async (notification) => {
+      this.registerNotificationHandler(NotificationChannel.EMAIL, async(notification) => {
         try {
           await this.config.emailService.sendCriticalErrorNotification(notification);
         } catch (error) {
@@ -165,7 +165,7 @@ export class ErrorNotificationService extends EventEmitter {
 
     // Slack handler (if configured)
     if (this.config.slackWebhook) {
-      this.registerNotificationHandler(NotificationChannel.SLACK, async (notification) => {
+      this.registerNotificationHandler(NotificationChannel.SLACK, async(notification) => {
         try {
           const message = {
             text: `🚨 Critical Error: ${notification.message}`,

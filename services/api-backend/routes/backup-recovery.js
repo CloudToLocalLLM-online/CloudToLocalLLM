@@ -21,7 +21,7 @@ const backupService = getBackupRecoveryService();
  * Create a full database backup
  * Admin only
  */
-router.post('/backup/create', authenticateJWT, authorizeAdmin, async (req, res) => {
+router.post('/backup/create', authenticateJWT, authorizeAdmin, async(req, res) => {
   const correlationId = req.correlationId || 'unknown';
 
   try {
@@ -63,7 +63,7 @@ router.post('/backup/create', authenticateJWT, authorizeAdmin, async (req, res) 
  * List all available backups
  * Admin only
  */
-router.get('/backup/list', authenticateJWT, authorizeAdmin, async (req, res) => {
+router.get('/backup/list', authenticateJWT, authorizeAdmin, async(req, res) => {
   const correlationId = req.correlationId || 'unknown';
 
   try {
@@ -100,7 +100,7 @@ router.get('/backup/list', authenticateJWT, authorizeAdmin, async (req, res) => 
  * Get backup metadata
  * Admin only
  */
-router.get('/backup/:backupId', authenticateJWT, authorizeAdmin, async (req, res) => {
+router.get('/backup/:backupId', authenticateJWT, authorizeAdmin, async(req, res) => {
   const correlationId = req.correlationId || 'unknown';
   const { backupId } = req.params;
 
@@ -139,7 +139,7 @@ router.get('/backup/:backupId', authenticateJWT, authorizeAdmin, async (req, res
  * Verify backup integrity
  * Admin only
  */
-router.post('/backup/:backupId/verify', authenticateJWT, authorizeAdmin, async (req, res) => {
+router.post('/backup/:backupId/verify', authenticateJWT, authorizeAdmin, async(req, res) => {
   const correlationId = req.correlationId || 'unknown';
   const { backupId } = req.params;
 
@@ -184,7 +184,7 @@ router.post('/backup/:backupId/verify', authenticateJWT, authorizeAdmin, async (
  * Restore database from backup
  * Admin only - requires confirmation
  */
-router.post('/backup/:backupId/restore', authenticateJWT, authorizeAdmin, async (req, res) => {
+router.post('/backup/:backupId/restore', authenticateJWT, authorizeAdmin, async(req, res) => {
   const correlationId = req.correlationId || 'unknown';
   const { backupId } = req.params;
   const { confirmed } = req.body;
@@ -240,7 +240,7 @@ router.post('/backup/:backupId/restore', authenticateJWT, authorizeAdmin, async 
  * Delete a backup
  * Admin only
  */
-router.delete('/backup/:backupId', authenticateJWT, authorizeAdmin, async (req, res) => {
+router.delete('/backup/:backupId', authenticateJWT, authorizeAdmin, async(req, res) => {
   const correlationId = req.correlationId || 'unknown';
   const { backupId } = req.params;
 

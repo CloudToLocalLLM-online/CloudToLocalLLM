@@ -1,6 +1,6 @@
 /**
  * Retry Middleware
- * 
+ *
  * Integrates retry logic with circuit breaker for resilient service calls.
  * Provides a unified interface for executing operations with both retry and circuit breaker protection.
  */
@@ -44,7 +44,7 @@ export async function executeWithRetryAndCircuitBreaker(serviceName, fn, options
 
   try {
     // Execute through circuit breaker, which will execute through retry
-    return await circuitBreaker.execute(async () => {
+    return await circuitBreaker.execute(async() => {
       return await retryService.execute(fn, context, args);
     });
   } catch (error) {
@@ -92,7 +92,7 @@ export function createRetryableClient(serviceName, client, options = {}) {
             circuitBreakerConfig,
             context: client,
             args,
-          }
+          },
         );
       };
     }
@@ -106,7 +106,7 @@ export function createRetryableClient(serviceName, client, options = {}) {
  */
 export function retryContextMiddleware(req, res, next) {
   // Add retry execution helper to request
-  req.executeWithRetry = async (serviceName, fn, options = {}) => {
+  req.executeWithRetry = async(serviceName, fn, options = {}) => {
     return executeWithRetryAndCircuitBreaker(serviceName, fn, {
       ...options,
       correlationId: req.correlationId,

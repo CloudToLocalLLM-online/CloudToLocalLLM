@@ -56,7 +56,9 @@ export class QueryCacheService {
    */
   get(key) {
     if (!this.cache.has(key)) {
-      if (this.enableMetrics) this.metrics.misses++;
+      if (this.enableMetrics) {
+        this.metrics.misses++;
+      }
       return null;
     }
 
@@ -65,11 +67,15 @@ export class QueryCacheService {
     if (ttlEntry && Date.now() > ttlEntry.expiresAt) {
       this.cache.delete(key);
       this.ttlMap.delete(key);
-      if (this.enableMetrics) this.metrics.misses++;
+      if (this.enableMetrics) {
+        this.metrics.misses++;
+      }
       return null;
     }
 
-    if (this.enableMetrics) this.metrics.hits++;
+    if (this.enableMetrics) {
+      this.metrics.hits++;
+    }
     return this.cache.get(key);
   }
 
@@ -88,7 +94,7 @@ export class QueryCacheService {
       this.cache.delete(oldestKey);
       this.ttlMap.delete(oldestKey);
       this.dependencyMap.delete(oldestKey);
-      
+
       // Remove from table map
       for (const [table, keys] of this.tableMap.entries()) {
         const idx = keys.indexOf(oldestKey);
@@ -99,8 +105,10 @@ export class QueryCacheService {
           }
         }
       }
-      
-      if (this.enableMetrics) this.metrics.evictions++;
+
+      if (this.enableMetrics) {
+        this.metrics.evictions++;
+      }
     }
 
     this.cache.set(key, value);
@@ -152,7 +160,9 @@ export class QueryCacheService {
       }
     }
 
-    if (this.enableMetrics) this.metrics.invalidations += invalidatedCount;
+    if (this.enableMetrics) {
+      this.metrics.invalidations += invalidatedCount;
+    }
 
     if (invalidatedCount > 0) {
       logger.debug(`[Query Cache] Invalidated ${invalidatedCount} entries`, {
@@ -185,7 +195,9 @@ export class QueryCacheService {
     }
 
     this.tableMap.delete(tableName.toUpperCase());
-    if (this.enableMetrics) this.metrics.invalidations += invalidatedCount;
+    if (this.enableMetrics) {
+      this.metrics.invalidations += invalidatedCount;
+    }
 
     return invalidatedCount;
   }

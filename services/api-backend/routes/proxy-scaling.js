@@ -42,7 +42,7 @@ export function createProxyScalingRoutes(scalingService) {
  * Create or update scaling policy for a proxy
  * Validates: Requirements 5.5
  */
-router.post('/scaling/policies/:proxyId', authenticateJWT, addTierInfo, async (req, res) => {
+router.post('/scaling/policies/:proxyId', authenticateJWT, addTierInfo, async(req, res) => {
   try {
     const { proxyId } = req.params;
     const userId = req.user?.sub;
@@ -107,7 +107,7 @@ router.post('/scaling/policies/:proxyId', authenticateJWT, addTierInfo, async (r
  * Get scaling policy for a proxy
  * Validates: Requirements 5.5
  */
-router.get('/scaling/policies/:proxyId', authenticateJWT, addTierInfo, async (req, res) => {
+router.get('/scaling/policies/:proxyId', authenticateJWT, addTierInfo, async(req, res) => {
   try {
     const { proxyId } = req.params;
     const userId = req.user?.sub;
@@ -166,7 +166,7 @@ router.get('/scaling/policies/:proxyId', authenticateJWT, addTierInfo, async (re
  * Record load metrics for a proxy
  * Validates: Requirements 5.5
  */
-router.post('/scaling/metrics/:proxyId', authenticateJWT, addTierInfo, async (req, res) => {
+router.post('/scaling/metrics/:proxyId', authenticateJWT, addTierInfo, async(req, res) => {
   try {
     const { proxyId } = req.params;
     const userId = req.user?.sub;
@@ -231,7 +231,7 @@ router.post('/scaling/metrics/:proxyId', authenticateJWT, addTierInfo, async (re
  * Get current load metrics for a proxy
  * Validates: Requirements 5.5
  */
-router.get('/scaling/metrics/:proxyId', authenticateJWT, addTierInfo, async (req, res) => {
+router.get('/scaling/metrics/:proxyId', authenticateJWT, addTierInfo, async(req, res) => {
   try {
     const { proxyId } = req.params;
     const userId = req.user?.sub;
@@ -290,7 +290,7 @@ router.get('/scaling/metrics/:proxyId', authenticateJWT, addTierInfo, async (req
  * Evaluate if scaling is needed based on current metrics
  * Validates: Requirements 5.5
  */
-router.post('/scaling/evaluate/:proxyId', authenticateJWT, addTierInfo, async (req, res) => {
+router.post('/scaling/evaluate/:proxyId', authenticateJWT, addTierInfo, async(req, res) => {
   try {
     const { proxyId } = req.params;
     const userId = req.user?.sub;
@@ -343,7 +343,7 @@ router.post('/scaling/evaluate/:proxyId', authenticateJWT, addTierInfo, async (r
  * Execute scaling operation
  * Validates: Requirements 5.5
  */
-router.post('/proxy/scaling/execute/:proxyId', authenticateJWT, addTierInfo, async (req, res) => {
+router.post('/proxy/scaling/execute/:proxyId', authenticateJWT, addTierInfo, async(req, res) => {
   try {
     const { proxyId } = req.params;
     const userId = req.user?.sub;
@@ -423,7 +423,7 @@ router.post('/proxy/scaling/execute/:proxyId', authenticateJWT, addTierInfo, asy
  * Get scaling events for a proxy
  * Validates: Requirements 5.5
  */
-router.get('/scaling/events/:proxyId', authenticateJWT, addTierInfo, async (req, res) => {
+router.get('/scaling/events/:proxyId', authenticateJWT, addTierInfo, async(req, res) => {
   try {
     const { proxyId } = req.params;
     const userId = req.user?.sub;
@@ -477,7 +477,7 @@ router.get('/scaling/events/:proxyId', authenticateJWT, addTierInfo, async (req,
  * Get scaling metrics summary for a proxy
  * Validates: Requirements 5.5
  */
-router.get('/scaling/summary/:proxyId', authenticateJWT, addTierInfo, async (req, res) => {
+router.get('/scaling/summary/:proxyId', authenticateJWT, addTierInfo, async(req, res) => {
   try {
     const { proxyId } = req.params;
     const userId = req.user?.sub;

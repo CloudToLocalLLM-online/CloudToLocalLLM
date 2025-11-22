@@ -425,7 +425,7 @@ export class FailoverManager {
   startHealthChecks() {
     const interval = parseInt(process.env.FAILOVER_HEALTH_CHECK_INTERVAL || '10000', 10);
 
-    this.healthCheckInterval = setInterval(async () => {
+    this.healthCheckInterval = setInterval(async() => {
       try {
         await this.checkPrimaryHealth();
 
