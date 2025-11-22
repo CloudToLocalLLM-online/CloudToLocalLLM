@@ -764,12 +764,10 @@ app.use((error, req, res, _next) => {
 
 // Add conversation routes directly to main app for testing
 app.get('/conversations/test', (req, res) => {
-  logger.info('Main app conversation test route accessed');
   res.json({ message: 'Main app conversation test working' });
 });
 
 app.get('/conversations/', (req, res) => {
-  logger.info('Main app conversation root route accessed');
   res.json({ message: 'Main app conversation root working' });
 });
 
