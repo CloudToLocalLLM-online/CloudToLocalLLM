@@ -126,7 +126,7 @@ class _EmailTemplateEditorState extends State<EmailTemplateEditor> {
 
   /// Save template
   Future<void> _saveTemplate() async {
-    if (!_formKey.currentState!.validate()) {
+    if (_formKey.currentState == null || !_formKey.currentState!.validate()) {
       return;
     }
 

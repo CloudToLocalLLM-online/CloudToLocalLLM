@@ -95,7 +95,7 @@ class _DnsConfigTabState extends State<DnsConfigTab> {
 
   /// Create or update DNS record
   Future<void> _saveDnsRecord() async {
-    if (!_formKey.currentState!.validate()) {
+    if (_formKey.currentState == null || !_formKey.currentState!.validate()) {
       return;
     }
 

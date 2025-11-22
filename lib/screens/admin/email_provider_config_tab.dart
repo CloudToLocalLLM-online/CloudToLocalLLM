@@ -108,7 +108,7 @@ class _EmailProviderConfigTabState extends State<EmailProviderConfigTab> {
 
   /// Save email provider configuration
   Future<void> _saveConfiguration() async {
-    if (!_formKey.currentState!.validate()) {
+    if (_formKey.currentState == null || !_formKey.currentState!.validate()) {
       return;
     }
 
