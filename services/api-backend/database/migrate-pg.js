@@ -212,6 +212,97 @@ export class DatabaseMigratorPG {
     return { results, allValid };
   }
 
+  async migrate() {
+    const { readdirSync, existsSync, mkdirSync } = await import('fs');
+    const migrationsDir = join(__dirname, 'migrations');
+
+    // Ensure migrations directory exists
+    if (!existsSync(migrationsDir)) {
+      try {
+        mkdirSync(migrationsDir, { recursive: true });
+      } catch (error) {
+        this.logger.warn('Failed to create migrations directory', { error: error.message });
+        return;
+      }
+      return;
+    }
+
+    // Get all migration files
+    const files = readdirSync(migrationsDir)
+      .filter((f) => f.endsWith('.sql'))
+      .sort();
+
+    this.logger.info(`Found ${files.length} migration files`);
+
+    for (const file of files) {
+      await this.applyMigration(file);
+    }
+  }
+
+  async applyMigration(migrationFile) {
+    const version = this.extractVersionFromFilename(migrationFile);
+    const name = this.extractNameFromFilename(migrationFile);
+
+    if (await this.isMigrationApplied(version)) {
+      return;
+    }
+
+    this.logger.info(`Applying migration: ${migrationFile}`);
+    const start = Date.now();
+    const client = await this.pool.connect();
+
+    try {
+      await client.query('BEGIN');
+
+      // Read migration file
+      const migrationPath = join(__dirname, 'migrations', migrationFile);
+      const migrationSQL = readFileSync(migrationPath, 'utf8');
+
+      // Calculate checksum
+      const checksum = this.calculateChecksum(migrationSQL);
+
+      // Execute migration
+      await client.query(migrationSQL);
+
+      // Record migration
+      const execMs = Date.now() - start;
+      await client.query(
+        'INSERT INTO schema_migrations (version, name, checksum, execution_time_ms) VALUES ($1, $2, $3, $4)',
+        [version, name, checksum, execMs],
+      );
+
+      await client.query('COMMIT');
+
+      this.logger.info('Migration applied successfully (PG)', {
+        version,
+        name,
+        execMs,
+      });
+    } catch (error) {
+      await client.query('ROLLBACK');
+
+      // Record failed migration
+      try {
+        await client.query(
+          'INSERT INTO schema_migrations (version, name, checksum, success) VALUES ($1, $2, $3, FALSE)',
+          [version, name, 'failed'],
+        );
+      } catch (recError) {
+        this.logger.warn('Failed to record migration failure', { error: recError.message });
+      }
+
+      this.logger.error('Failed to apply migration (PG)', {
+        version,
+        name,
+        error: error.message,
+      });
+
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+
   async close() {
     await this.pool.end();
     this.logger.info('PostgreSQL pool closed');
