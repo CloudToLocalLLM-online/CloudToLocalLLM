@@ -209,10 +209,22 @@ export class DatabaseMigratorPG {
       await client.query(schemaSQL);
 
       const execMs = Date.now() - start;
-      await client.query(
-        'INSERT INTO schema_migrations (version, name, checksum, execution_time_ms) VALUES ($1,$2,$3,$4)',
-        [version, 'Initial tunnel system schema', checksum, execMs],
+
+      // Check if this version is already applied
+      const existing = await client.query(
+        'SELECT id FROM schema_migrations WHERE version = $1',
+        [version],
       );
+
+      if (existing.rows.length === 0) {
+        await client.query(
+          'INSERT INTO schema_migrations (version, name, checksum, execution_time_ms) VALUES ($1,$2,$3,$4)',
+          [version, 'Initial tunnel system schema', checksum, execMs],
+        );
+        this.logger.info('Initial schema migration recorded (PG)', { version });
+      } else {
+        this.logger.info('Initial schema migration already recorded (PG)', { version });
+      }
 
       await client.query('COMMIT');
       this.logger.info('Initial schema applied successfully (PG)', {
