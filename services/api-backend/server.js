@@ -762,10 +762,10 @@ app.use((error, req, res, _next) => {
   });
 });
 
-// 404 handler
-app.use((req, res) => {
-  res.status(404).json({ error: 'Not found' });
-});
+// 404 handler - moved to after dynamic routes are added
+// app.use((req, res) => {
+//   res.status(404).json({ error: 'Not found' });
+// });
 
 // LLM Security and Monitoring Helper Functions - Removed unused functions
 // (getRateLimitsForTier, checkRateLimit, recordRequest, logLLMAuditEvent)
@@ -905,18 +905,41 @@ async function initializeTunnelSystem() {
     }
 
     // Initialize conversation routes after database is ready
+    logger.info('About to initialize conversation routes');
     try {
+      // Temporary test route directly on app
+      app.get('/test-route', (req, res) => {
+        logger.info('Test route accessed directly on app');
+        res.json({ message: 'Direct app route working' });
+      });
+
       const conversationRouter = createConversationRoutes(dbMigrator, logger);
       logger.info('Conversation router created', { routerExists: !!conversationRouter });
       app.use('/api/conversations', conversationRouter);
       app.use('/conversations', conversationRouter); // Also register without /api prefix for api subdomain
       logger.info('Conversation API routes initialized');
+
+      // Test route after conversation routes
+      app.get('/test-after-conversations', (req, res) => {
+        logger.info('Test route after conversations accessed');
+        res.json({ message: 'Route after conversations working' });
+      });
+
+      // Add 404 handler after all routes are mounted
+      app.use((req, res) => {
+        res.status(404).json({ error: 'Not found' });
+      });
+      logger.info('404 handler registered');
     } catch (error) {
       logger.error('Failed to initialize conversation routes', {
         error: error.message,
         stack: error.stack,
       });
       // Don't fail the entire server startup, just log the error
+      // Still add 404 handler
+      app.use((req, res) => {
+        res.status(404).json({ error: 'Not found' });
+      });
     }
 
     logger.info('WebSocket tunnel system ready');
