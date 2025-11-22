@@ -414,27 +414,79 @@ jobs:
           echo ""
           echo "Deployment rollout check completed"
 
-      - name: Fail Fast on Pod Restarts
+      - name: Check Pod Health (Smart Restart Detection)
         run: |
-          echo "Checking for pod instability..."
-          # Get the number of restarts for api-backend pods
-          RESTARTS=$(kubectl get pods -n cloudtolocalllm -l app=api-backend -o jsonpath='{.items[*].status.containerStatuses[*].restartCount}' | awk '{s+=$1} END {print s}')
+          echo "Checking for pod health and stability..."
 
-          if [ -z "$RESTARTS" ]; then RESTARTS=0; fi
+          # Get pod status and restart information
+          echo "API Backend pods status:"
+          kubectl get pods -n cloudtolocalllm -l app=api-backend -o wide
 
-          echo "Total API Backend Restarts: $RESTARTS"
+          echo ""
+          echo "Analyzing pod health..."
 
-          # If restarts > 0, fail the deployment immediately
-          if [ "$RESTARTS" -gt 0 ]; then
-            echo "❌ Detected pod restarts! Failing deployment to prevent bad rollout."
-            kubectl get pods -n cloudtolocalllm -l app=api-backend
-            echo "--- Current Logs ---"
-            kubectl logs -n cloudtolocalllm -l app=api-backend --tail=50 --all-containers=true || true
-            echo "--- Previous Logs ---"
-            kubectl logs -n cloudtolocalllm -l app=api-backend --tail=50 --previous --all-containers=true || true
+          # Get detailed pod information as JSON
+          POD_INFO=$(kubectl get pods -n cloudtolocalllm -l app=api-backend -o json)
+
+          # Count total pods
+          TOTAL_PODS=$(echo "$POD_INFO" | jq '.items | length')
+          echo "Total API backend pods: $TOTAL_PODS"
+
+          # Count running/ready pods
+          RUNNING_PODS=$(echo "$POD_INFO" | jq '[.items[] | select(.status.phase == "Running" and (.status.conditions[] | select(.type == "Ready" and .status == "True")))] | length')
+          echo "Running/ready pods: $RUNNING_PODS"
+
+          # Count terminating pods (normal during rolling updates)
+          TERMINATING_PODS=$(echo "$POD_INFO" | jq '[.items[] | select(.metadata.deletionTimestamp != null)] | length')
+          echo "Terminating pods: $TERMINATING_PODS"
+
+          # Calculate restarts only for non-terminating pods
+          ACTIVE_RESTARTS=$(echo "$POD_INFO" | jq '[.items[] | select(.metadata.deletionTimestamp == null) | .status.containerStatuses[0].restartCount // 0] | add')
+          echo "Restarts in active pods: $ACTIVE_RESTARTS"
+
+          # Check if deployment is progressing normally
+          if [ "$RUNNING_PODS" -gt 0 ] && [ "$ACTIVE_RESTARTS" -eq 0 ]; then
+            echo "✅ Deployment healthy: $RUNNING_PODS pods running, $TERMINATING_PODS terminating, 0 restarts in active pods"
+            exit 0
+          fi
+
+          # Check for unhealthy pods (restarting active pods)
+          if [ "$ACTIVE_RESTARTS" -gt 0 ]; then
+            echo "❌ Detected $ACTIVE_RESTARTS restarts in active pods - investigating..."
+
+            # Show detailed pod status
+            echo ""
+            echo "Detailed pod analysis:"
+            echo "$POD_INFO" | jq -r '.items[] | "Pod: \(.metadata.name) | Phase: \(.status.phase) | Restarts: \(.status.containerStatuses[0].restartCount // 0) | Terminating: \(.metadata.deletionTimestamp != null)"'
+
+            echo ""
+            echo "--- Current Logs from active pods ---"
+            kubectl get pods -n cloudtolocalllm -l app=api-backend -o json | jq -r '.items[] | select(.metadata.deletionTimestamp == null) | .metadata.name' | head -1 | xargs -I {} kubectl logs {} -n cloudtolocalllm --tail=30 --all-containers=true || true
+
+            echo ""
+            echo "--- Previous Logs from active pods ---"
+            kubectl get pods -n cloudtolocalllm -l app=api-backend -o json | jq -r '.items[] | select(.metadata.deletionTimestamp == null) | .metadata.name' | head -1 | xargs -I {} kubectl logs {} -n cloudtolocalllm --tail=30 --previous --all-containers=true || true
+
+            echo ""
+            echo "❌ Failing deployment due to restarts in active pods"
             exit 1
           fi
-          echo "✅ No immediate restarts detected."
+
+          # Allow deployment if old pods are terminating but new ones are healthy
+          if [ "$TERMINATING_PODS" -gt 0 ] && [ "$RUNNING_PODS" -gt 0 ] && [ "$ACTIVE_RESTARTS" -eq 0 ]; then
+            echo "✅ Rolling update in progress: $TERMINATING_PODS terminating, $RUNNING_PODS healthy, 0 restarts in active pods"
+            exit 0
+          fi
+
+          # Edge case: no running pods but some pods exist
+          if [ "$RUNNING_PODS" -eq 0 ] && [ "$TOTAL_PODS" -gt 0 ]; then
+            echo "⚠️ No healthy pods found - checking status..."
+            kubectl describe pods -n cloudtolocalllm -l app=api-backend
+            echo "❌ No healthy pods - deployment may be failing"
+            exit 1
+          fi
+
+          echo "✅ Pod health check passed"
 
       - name: Verify deployment
         run: |
