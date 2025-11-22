@@ -262,7 +262,16 @@ export class DatabaseMigratorPG {
       const checksum = this.calculateChecksum(migrationSQL);
 
       // Execute migration
-      await client.query(migrationSQL);
+      try {
+        await client.query(migrationSQL);
+      } catch (sqlError) {
+        this.logger.error(`Failed to apply migration ${migrationFile}`, {
+          error: sqlError.message,
+          migrationFile,
+          sqlPreview: migrationSQL.substring(0, 200) + (migrationSQL.length > 200 ? '...' : ''),
+        });
+        throw sqlError;
+      }
 
       // Record migration
       const execMs = Date.now() - start;
