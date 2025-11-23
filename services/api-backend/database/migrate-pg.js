@@ -69,6 +69,28 @@ export class DatabaseMigratorPG {
 
       if (rows[0].table_exists) {
         this.logger.info('Migrations table already exists (PG)');
+
+        // Repair: Ensure ID column has a default value (sequence)
+        // This fixes an issue where the sequence might have been dropped by previous error handling
+        try {
+          await this.pool.query(`
+            DO $$
+            BEGIN
+              -- Check if id column has a default value
+              IF (SELECT column_default FROM information_schema.columns WHERE table_name = 'schema_migrations' AND column_name = 'id') IS NULL THEN
+                -- Create sequence if not exists
+                CREATE SEQUENCE IF NOT EXISTS schema_migrations_id_seq;
+                -- Set default
+                ALTER TABLE schema_migrations ALTER COLUMN id SET DEFAULT nextval('schema_migrations_id_seq');
+                -- Sync sequence
+                PERFORM setval('schema_migrations_id_seq', COALESCE((SELECT MAX(id) FROM schema_migrations), 0) + 1, false);
+              END IF;
+            END $$;
+          `);
+        } catch (repairError) {
+          this.logger.warn('Failed to repair schema_migrations sequence', { error: repairError.message });
+        }
+
         return;
       }
 
@@ -95,9 +117,10 @@ export class DatabaseMigratorPG {
         this.logger.warn('Detected type constraint conflict, attempting cleanup...', { error: error.message });
         try {
           // Drop any conflicting sequences that might exist
-          await this.pool.query(`
-            DROP SEQUENCE IF EXISTS schema_migrations_id_seq CASCADE;
-          `);
+          // WARNING: This is dangerous if the table exists! It strips the default value from the ID column.
+          // await this.pool.query(`
+          //   DROP SEQUENCE IF EXISTS schema_migrations_id_seq CASCADE;
+          // `);
           this.logger.info('Cleaned up conflicting sequence, retrying table creation...');
 
           // Retry table creation
