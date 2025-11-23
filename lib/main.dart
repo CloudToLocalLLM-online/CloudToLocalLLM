@@ -63,6 +63,8 @@ void main() async {
       options.tracesSampleRate = kReleaseMode ? 0.1 : 1.0;
       // Enable debug only in development
       options.debug = !kReleaseMode;
+      // Enable Sentry Logs
+      options.enableLogs = true;
     },
     appRunner: () async {
       // Now that Sentry is initialized, set up error handlers

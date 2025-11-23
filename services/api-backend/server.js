@@ -76,6 +76,18 @@ Sentry.init({
   },
 });
 
+import Transport from 'winston-transport';
+
+// ... (imports)
+
+// Initialize Sentry
+Sentry.init({
+  // ... (existing config)
+});
+
+// Initialize Sentry Winston Transport
+const SentryWinstonTransport = Sentry.createSentryWinstonTransport(Transport);
+
 // Initialize logger
 const logger = winston.createLogger({
   level: process.env.LOG_LEVEL || 'info',
@@ -91,6 +103,9 @@ const logger = winston.createLogger({
         winston.format.timestamp(),
         winston.format.simple(),
       ),
+    }),
+    new SentryWinstonTransport({
+      level: 'info', // Capture info and above
     }),
   ],
 });
@@ -113,7 +128,7 @@ app.set('trust proxy', 1); // Trust first proxy (nginx)
 
 // CORS configuration
 const corsOptions = {
-  origin: function(origin, callback) {
+  origin: function (origin, callback) {
     const allowedOrigins = [
       'https://app.cloudtolocalllm.online',
       'https://cloudtolocalllm.online',
@@ -164,7 +179,7 @@ const server = http.createServer(app);
 // Setup graceful shutdown with in-flight request completion
 const shutdownManager = setupGracefulShutdown(server, {
   shutdownTimeoutMs: 10000,
-  onShutdown: async() => {
+  onShutdown: async () => {
     logger.info('Running custom shutdown handlers');
     // Custom shutdown logic will be added here
   },
@@ -268,7 +283,7 @@ app.use('/monitoring', monitoringRouter); // Also register without /api prefix f
 // Will be set up in initializeTunnelSystem() after dbMigrator is initialized
 
 // Database health endpoint
-const dbHealthHandler = async(req, res) => {
+const dbHealthHandler = async (req, res) => {
   try {
     if (!dbMigrator) {
       return res.status(503).json({
@@ -351,7 +366,7 @@ app.use('/api/tunnels', tunnelRoutes);
 app.use('/tunnels', tunnelRoutes); // Also register without /api prefix for api subdomain
 
 // LLM Tunnel Cloud Proxy Endpoints (support both /api/ollama and /ollama)
-const handleOllamaProxyRequest = async(req, res) => {
+const handleOllamaProxyRequest = async (req, res) => {
   const startTime = Date.now();
   const requestId = `llm-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
   const userId = req.auth?.payload.sub;
@@ -516,7 +531,7 @@ app.get('/api/user/tier', ...userTierHandler);
 app.get('/user/tier', ...userTierHandler); // Also register without /api prefix for api subdomain
 
 // Health check endpoints
-const healthHandler = async(req, res) => {
+const healthHandler = async (req, res) => {
   try {
     const healthStatus = await healthCheckService.getHealthStatus();
 
@@ -597,7 +612,7 @@ app.post('/queue/drain', authenticateJWT, queueDrainHandler); // Also register w
 const proxyStartHandler = authenticateToken;
 const proxyStartRoute = [
   proxyStartHandler,
-  async(req, res) => {
+  async (req, res) => {
     try {
       const userId = req.user.sub;
       const userToken = req.headers.authorization;
@@ -638,7 +653,7 @@ app.post('/proxy/start', ...proxyStartRoute); // Also register without /api pref
 // Stop streaming proxy for user
 const proxyStopRoute = [
   authenticateToken,
-  async(req, res) => {
+  async (req, res) => {
     try {
       const userId = req.user.sub;
 
@@ -672,7 +687,7 @@ app.post('/proxy/stop', ...proxyStopRoute); // Also register without /api prefix
 // Provision streaming proxy for user (with test mode support)
 const proxyProvisionRoute = [
   authenticateToken,
-  async(req, res) => {
+  async (req, res) => {
     try {
       const userId = req.user.sub;
       const userToken = req.headers.authorization;
@@ -742,7 +757,7 @@ app.post('/streaming-proxy/provision', ...proxyProvisionRoute); // Also register
 // Get streaming proxy status
 const proxyStatusRoute = [
   authenticateToken,
-  async(req, res) => {
+  async (req, res) => {
     try {
       const userId = req.user.sub;
       const status = await proxyManager.getProxyStatus(userId);
@@ -788,7 +803,7 @@ app.use((error, req, res, _next) => {
 });
 
 // Conversation routes - implemented directly due to router mounting issues
-app.get('/conversations/', authenticateJWT, async(req, res) => {
+app.get('/conversations/', authenticateJWT, async (req, res) => {
   try {
     const userId = req.auth?.payload?.sub || req.user?.sub;
     if (!userId) {
@@ -831,7 +846,7 @@ app.get('/conversations/', authenticateJWT, async(req, res) => {
   }
 });
 
-app.put('/conversations/:id', authenticateJWT, async(req, res) => {
+app.put('/conversations/:id', authenticateJWT, async (req, res) => {
   try {
     const userId = req.auth?.payload?.sub || req.user?.sub;
     const conversationId = req.params.id;
@@ -960,13 +975,13 @@ app.put('/conversations/:id', authenticateJWT, async(req, res) => {
 });
 
 // Also mount at /api/conversations for backward compatibility
-app.get('/api/conversations/', async(req, res) => {
+app.get('/api/conversations/', async (req, res) => {
   // Redirect to the main route
   const url = req.originalUrl.replace('/api/conversations/', '/conversations/');
   res.redirect(307, url);
 });
 
-app.put('/api/conversations/:id', async(req, res) => {
+app.put('/api/conversations/:id', async (req, res) => {
   // Redirect to the main route
   const url = req.originalUrl.replace('/api/conversations/', '/conversations/');
   res.redirect(307, url);
@@ -1040,7 +1055,7 @@ async function initializeTunnelSystem() {
       logger.info('Authentication service initialized successfully');
 
       // Register auth service with health check service
-      healthCheckService.registerService('auth-service', async() => {
+      healthCheckService.registerService('auth-service', async () => {
         return {
           status: authService ? 'healthy' : 'unhealthy',
           message: authService
@@ -1065,7 +1080,7 @@ async function initializeTunnelSystem() {
         logger.info('SSH tunnel server initialized successfully');
 
         // Register SSH proxy with health check service
-        healthCheckService.registerService('ssh-tunnel', async() => {
+        healthCheckService.registerService('ssh-tunnel', async () => {
           return {
             status: sshProxy && sshProxy.isRunning ? 'healthy' : 'unhealthy',
             message:
@@ -1081,7 +1096,7 @@ async function initializeTunnelSystem() {
         });
 
         // Register SSH proxy as unhealthy
-        healthCheckService.registerService('ssh-tunnel', async() => {
+        healthCheckService.registerService('ssh-tunnel', async () => {
           return {
             status: 'unhealthy',
             message: 'SSH tunnel failed to initialize',
@@ -1166,7 +1181,7 @@ async function initializeTunnelSystem() {
     logger.info('WebSocket tunnel system ready');
 
     // Register custom shutdown handler with graceful shutdown manager
-    shutdownManager.shutdown = async() => {
+    shutdownManager.shutdown = async () => {
       await gracefulShutdown();
     };
 
