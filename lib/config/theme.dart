@@ -86,8 +86,15 @@ class AppTheme {
       colorScheme: colorScheme,
       extensions: const [AppSpacingTheme.standard, AppColorsTheme.dark],
       scaffoldBackgroundColor: backgroundMain,
-      // Use default system font
+      // Use default system font with robust fallbacks
       fontFamily: null,
+      fontFamilyFallback: const [
+        'Segoe UI',
+        'Roboto',
+        'Helvetica Neue',
+        'Arial',
+        'sans-serif',
+      ],
       textTheme: TextTheme(
         displayLarge: TextStyle(
           fontSize: 32,
@@ -361,8 +368,15 @@ class AppTheme {
       useMaterial3: true,
       colorScheme: colorScheme,
       extensions: const [AppSpacingTheme.standard, AppColorsTheme.light],
-      // Use default system font
+      // Use default system font with robust fallbacks
       fontFamily: null,
+      fontFamilyFallback: const [
+        'Segoe UI',
+        'Roboto',
+        'Helvetica Neue',
+        'Arial',
+        'sans-serif',
+      ],
       textTheme: TextTheme(
         displayLarge: TextStyle(
           fontSize: 32,
