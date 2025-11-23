@@ -1,8 +1,11 @@
+import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter/material.dart';
 import 'theme_extensions.dart';
 
 /// Modern Material Design 3 theme configuration matching homepage design
 class AppTheme {
+  // ... (keep existing colors and constants) ...
+
   // Color scheme matching homepage design
   static const Color primaryColor = Color(
     0xFFa777e3,
@@ -86,7 +89,57 @@ class AppTheme {
       colorScheme: colorScheme,
       extensions: const [AppSpacingTheme.standard, AppColorsTheme.dark],
       scaffoldBackgroundColor: backgroundMain,
-      fontFamily: 'Roboto',
+      textTheme:
+          GoogleFonts.robotoTextTheme(ThemeData.dark().textTheme).copyWith(
+        displayLarge: TextStyle(
+          fontSize: 32,
+          fontWeight: FontWeight.bold,
+          color: Colors.white,
+          height: 1.2,
+        ),
+        displayMedium: TextStyle(
+          fontSize: 28,
+          fontWeight: FontWeight.bold,
+          color: Colors.white,
+          height: 1.2,
+        ),
+        headlineLarge: TextStyle(
+          fontSize: 24,
+          fontWeight: FontWeight.w600,
+          color: Colors.white,
+          height: 1.3,
+        ),
+        headlineMedium: TextStyle(
+          fontSize: 20,
+          fontWeight: FontWeight.w600,
+          color: Colors.white,
+          height: 1.3,
+        ),
+        headlineSmall: TextStyle(
+          fontSize: 18,
+          fontWeight: FontWeight.w600,
+          color: primaryColor,
+          height: 1.3,
+        ),
+        bodyLarge: TextStyle(
+          fontSize: 16,
+          fontWeight: FontWeight.normal,
+          color: textColor,
+          height: 1.5,
+        ),
+        bodyMedium: TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.normal,
+          color: textColor,
+          height: 1.5,
+        ),
+        bodySmall: TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.normal,
+          color: textColorLight,
+          height: 1.5,
+        ),
+      ),
 
       // AppBar theme
       appBarTheme: const AppBarTheme(
@@ -290,58 +343,6 @@ class AppTheme {
           ),
         ),
       ),
-
-      // Text theme
-      textTheme: const TextTheme(
-        displayLarge: TextStyle(
-          fontSize: 32,
-          fontWeight: FontWeight.bold,
-          color: Colors.white,
-          height: 1.2,
-        ),
-        displayMedium: TextStyle(
-          fontSize: 28,
-          fontWeight: FontWeight.bold,
-          color: Colors.white,
-          height: 1.2,
-        ),
-        headlineLarge: TextStyle(
-          fontSize: 24,
-          fontWeight: FontWeight.w600,
-          color: Colors.white,
-          height: 1.3,
-        ),
-        headlineMedium: TextStyle(
-          fontSize: 20,
-          fontWeight: FontWeight.w600,
-          color: Colors.white,
-          height: 1.3,
-        ),
-        headlineSmall: TextStyle(
-          fontSize: 18,
-          fontWeight: FontWeight.w600,
-          color: primaryColor,
-          height: 1.3,
-        ),
-        bodyLarge: TextStyle(
-          fontSize: 16,
-          fontWeight: FontWeight.normal,
-          color: textColor,
-          height: 1.5,
-        ),
-        bodyMedium: TextStyle(
-          fontSize: 14,
-          fontWeight: FontWeight.normal,
-          color: textColor,
-          height: 1.5,
-        ),
-        bodySmall: TextStyle(
-          fontSize: 12,
-          fontWeight: FontWeight.normal,
-          color: textColorLight,
-          height: 1.5,
-        ),
-      ),
     );
   }
 
@@ -362,7 +363,7 @@ class AppTheme {
       useMaterial3: true,
       colorScheme: colorScheme,
       extensions: const [AppSpacingTheme.standard, AppColorsTheme.light],
-      fontFamily: 'Roboto',
+      textTheme: GoogleFonts.robotoTextTheme(ThemeData.light().textTheme),
 
       // AppBar theme
       appBarTheme: AppBarTheme(

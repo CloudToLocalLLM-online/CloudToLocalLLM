@@ -79,6 +79,7 @@ dependencies:
 
   # Web interop for dart:js_interop
   web: ^1.0.0
+  google_fonts: ^6.3.2
 
 dev_dependencies:
   sentry_dart_plugin: ^3.2.0
