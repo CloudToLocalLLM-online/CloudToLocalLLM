@@ -21,6 +21,12 @@ This document defines the requirements for a comprehensive, platform-adaptive se
 - **Ollama_Instance**: The default local LLM provider - an Ollama server that hosts and serves AI models locally
 - **Provider_Configuration**: Settings specific to a local LLM provider including host, port, and authentication details
 - **LangChain_Integration**: The unified interface that enables CloudToLocalLLM to connect to multiple local LLM providers through a consistent API
+- **Admin_Center**: A specialized administrative dashboard for managing system-wide settings, users, and application configuration
+- **Admin_User**: A user account with administrative privileges and permissions to access the Admin Center
+- **Admin_Button**: A UI control that navigates authenticated admin users to the Admin Center dashboard
+- **Admin_Status**: The authorization level of the current user (Admin or Non-Admin)
+- **Role_Based_Access_Control**: A security mechanism that restricts access to features based on user roles and permissions
+- **Admin_Center_URL**: The URL endpoint for accessing the Admin Center dashboard
 
 
 ## Requirements
@@ -192,3 +198,18 @@ This document defines the requirements for a comprehensive, platform-adaptive se
 4. WHILE running on Mobile_Platform, THE Settings_Screen SHALL provide proper accessibility labels for VoiceOver (iOS) and TalkBack (Android)
 5. THE Settings_Screen SHALL maintain a minimum contrast ratio of 4.5:1 for all text elements
 6. WHEN the screen width changes, THE Settings_Screen SHALL reflow content within 300 milliseconds without data loss
+
+### Requirement 14: Admin Center Access
+
+**User Story:** As an admin user, I want to access the Admin Center from the settings screen, so that I can manage system-wide settings and user accounts.
+
+#### Acceptance Criteria
+
+1. WHEN the Settings_Screen initializes, THE AuthService SHALL check the current user's admin status within 200 milliseconds
+2. WHILE the user is authenticated as an admin, THE Settings_Screen SHALL display an Admin Center button in the Account settings category
+3. WHILE the user is not authenticated as an admin, THE Settings_Screen SHALL hide the Admin Center button
+4. WHEN the user clicks the Admin Center button, THE Navigation_Service SHALL navigate to the Admin Center URL within 500 milliseconds
+5. WHEN navigating to the Admin Center, THE current session token SHALL be passed to maintain authentication
+6. THE Admin Center button SHALL be keyboard accessible (Tab, Enter) and have a visible focus indicator
+7. THE Admin Center button SHALL have a descriptive ARIA label for screen reader compatibility
+8. IF the Admin Center URL is invalid or unreachable, THE Settings_Screen SHALL display a user-friendly error message with a retry option

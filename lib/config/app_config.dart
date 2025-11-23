@@ -11,6 +11,7 @@ class AppConfig {
   // URLs
   static const String homepageUrl = 'https://cloudtolocalllm.online';
   static const String appUrl = 'https://app.cloudtolocalllm.online';
+  static const String adminCenterUrl = 'https://admin.cloudtolocalllm.online';
   static const String githubUrl =
       'https://github.com/imrightguy/CloudToLocalLLM';
   static const String githubReleasesUrl =

@@ -41,9 +41,6 @@ void main() {
       loadingFinder.evaluate().isNotEmpty || appFinder.evaluate().isNotEmpty,
       isTrue,
     );
-
-    // Clean up any pending timers
-    await tester.pumpAndSettle(const Duration(seconds: 5));
   });
 
   testWidgets('App handles plugin initialization gracefully', (
@@ -60,8 +57,5 @@ void main() {
     // Verify no exceptions were thrown and app is still running
     expect(tester.takeException(), isNull);
     expect(find.byType(MaterialApp), findsWidgets);
-
-    // Clean up any pending timers
-    await tester.pumpAndSettle(const Duration(seconds: 5));
   });
 }

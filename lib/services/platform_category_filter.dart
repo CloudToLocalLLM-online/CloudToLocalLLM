@@ -207,7 +207,7 @@ class PlatformCategoryFilter extends ChangeNotifier {
     final isAdmin = await isAdminUser();
     final isPremium = await isPremiumUser();
 
-    // Check platform visibility
+    // Check platform visibility first
     if (!CategoryVisibilityRules.isVisibleOnPlatform(
       categoryId,
       isWeb: _isWeb,
@@ -219,16 +219,12 @@ class PlatformCategoryFilter extends ChangeNotifier {
       return false;
     }
 
-    // Check user role visibility
-    if (!CategoryVisibilityRules.isVisibleForUserRole(
+    // Then check user role visibility
+    return CategoryVisibilityRules.isVisibleForUserRole(
       categoryId: categoryId,
       isAdminUser: isAdmin,
       isPremiumUser: isPremium,
-    )) {
-      return false;
-    }
-
-    return true;
+    );
   }
 
   /// Get platform information for debugging

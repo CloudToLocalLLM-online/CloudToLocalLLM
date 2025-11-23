@@ -314,12 +314,19 @@ void main() {
 
     group('Notification Behavior', () {
       test('should have listener support', () {
+        var listenerCalled = false;
         platformCategoryFilter.addListener(() {
-          // Listener callback
+          listenerCalled = true;
         });
 
-        // Verify listener was added by checking that dispose doesn't throw
-        expect(() => platformCategoryFilter.dispose(), returnsNormally);
+        // Verify listener was added
+        expect(listenerCalled, false); // Not called yet
+
+        // Trigger a notification
+        platformCategoryFilter.notifyListeners();
+
+        // Listener should have been called
+        expect(listenerCalled, true);
       });
     });
 

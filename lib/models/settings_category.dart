@@ -152,15 +152,15 @@ class CategoryVisibilityRules {
   }) {
     switch (categoryId) {
       case SettingsCategoryIds.adminCenter:
-        // Always show Admin Center category so users can see the entry point
-        // Access control is handled within the Admin Center screen itself
-        return true;
+        // Only show Admin Center for admin users
+        return isAdminUser;
 
       case SettingsCategoryIds.premiumFeatures:
-        // Always show Premium Features to allow users to upgrade
-        return true;
+        // Only show Premium Features for premium users
+        return isPremiumUser;
 
       default:
+        // All other categories are visible to all users
         return true;
     }
   }

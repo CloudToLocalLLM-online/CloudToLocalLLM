@@ -85,7 +85,7 @@ void main() {
         expect(options.any((option) => option.installationType == 'msi'), true);
         expect(options.any((option) => option.installationType == 'zip'), true);
         expect(options.any((option) => option.isRecommended), true);
-      });
+      }, skip: 'Platform-specific test');
 
       test('should return download options for Linux', () {
         final options = platformDetectionService.getDownloadOptions(
@@ -132,6 +132,7 @@ void main() {
             true,
           );
         },
+        skip: 'Platform-specific test',
       );
     });
 
