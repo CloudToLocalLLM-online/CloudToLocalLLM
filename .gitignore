@@ -28,6 +28,9 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
+test_output.txt
+test_output_v2.txt
+test_output*.txt
 
 # Environment variables
 .env*
