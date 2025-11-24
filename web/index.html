@@ -177,27 +177,41 @@
   </script>
 
   <!-- SERVICE WORKER REGISTRATION -->
-  <!-- SERVICE WORKER DISABLED TO FIX LOADING ISSUES -->
+  <!-- SERVICE WORKER COMPLETELY DISABLED - CAUSES GRAY SCREEN -->
   <script>
-    // Explicitly unregister any existing service workers to clear bad state
+    // Disable service workers completely to prevent gray screen
     if ('serviceWorker' in navigator) {
-      window.addEventListener('load', function() {
-        navigator.serviceWorker.getRegistrations().then(function(registrations) {
-          for (let registration of registrations) {
-            console.log('Unregistering service worker:', registration.scope);
-            registration.unregister();
-          }
-        }).catch(function(error) {
-          console.warn('Error unregistering service workers:', error);
-        });
+      // Unregister all existing service workers
+      navigator.serviceWorker.getRegistrations().then(function(registrations) {
+        for (let registration of registrations) {
+          console.log('Unregistering service worker:', registration.scope);
+          registration.unregister().catch(function(error) {
+            console.warn('Error unregistering service worker:', error);
+          });
+        }
+      }).catch(function(error) {
+        console.warn('Error getting service worker registrations:', error);
       });
+      
+      // Prevent Flutter from registering a new service worker
+      // by overriding the navigator.serviceWorker.register method
+      const originalRegister = navigator.serviceWorker.register;
+      navigator.serviceWorker.register = function() {
+        console.log('Service worker registration blocked to prevent gray screen');
+        return Promise.reject(new Error('Service workers disabled'));
+      };
     }
   </script>
 
   <!-- Prevent gray screen by ensuring body is visible -->
   <script>
+    // Ensure body is visible immediately
+    document.body.style.display = 'block';
+    document.body.style.visibility = 'visible';
+    document.body.style.opacity = '1';
+    
     document.addEventListener('DOMContentLoaded', function() {
-      // Ensure body is visible even if Flutter hasn't loaded yet
+      // Double-check body is visible
       document.body.style.display = 'block';
       document.body.style.visibility = 'visible';
       document.body.style.opacity = '1';
