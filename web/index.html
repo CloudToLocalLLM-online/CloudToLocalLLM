@@ -177,29 +177,23 @@
   </script>
 
   <!-- SERVICE WORKER REGISTRATION -->
-  <!-- SERVICE WORKER COMPLETELY DISABLED - CAUSES GRAY SCREEN -->
+  <!-- Use minimal service worker to prevent timeout -->
   <script>
-    // Disable service workers completely to prevent gray screen
+    // Unregister any problematic service workers
     if ('serviceWorker' in navigator) {
-      // Unregister all existing service workers
       navigator.serviceWorker.getRegistrations().then(function(registrations) {
         for (let registration of registrations) {
-          console.log('Unregistering service worker:', registration.scope);
-          registration.unregister().catch(function(error) {
-            console.warn('Error unregistering service worker:', error);
-          });
+          // Only unregister if it's not our minimal one
+          if (!registration.scope.includes('flutter_service_worker')) {
+            console.log('Unregistering old service worker:', registration.scope);
+            registration.unregister().catch(function(error) {
+              console.warn('Error unregistering service worker:', error);
+            });
+          }
         }
       }).catch(function(error) {
         console.warn('Error getting service worker registrations:', error);
       });
-      
-      // Prevent Flutter from registering a new service worker
-      // by overriding the navigator.serviceWorker.register method
-      const originalRegister = navigator.serviceWorker.register;
-      navigator.serviceWorker.register = function() {
-        console.log('Service worker registration blocked to prevent gray screen');
-        return Promise.reject(new Error('Service workers disabled'));
-      };
     }
   </script>
 
