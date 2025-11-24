@@ -159,3 +159,5 @@ android/keystore-backup-info.txt
 *.keystore
 
 sentry.properties
+sentry_issues.json
+sentry_issues.txt
