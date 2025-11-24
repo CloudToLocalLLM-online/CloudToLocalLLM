@@ -242,6 +242,7 @@ void _verifyCoreServicesRegistered() {
 Future<void> setupAuthenticatedServices() async {
   if (_authenticatedServicesRegistered) {
     debugPrint('[ServiceLocator] Authenticated services already registered');
+    // Services are already registered, so we're done
     return;
   }
 

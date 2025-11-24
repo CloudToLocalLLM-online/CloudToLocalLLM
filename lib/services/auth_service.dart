@@ -4,6 +4,9 @@ import 'package:flutter/foundation.dart';
 import '../models/user_model.dart';
 import 'auth0_service.dart';
 import 'session_storage_service.dart';
+import 'connection_manager_service.dart';
+import 'streaming_chat_service.dart';
+import 'tunnel_service.dart';
 import '../di/locator.dart' as di;
 
 /// Auth0-based Authentication Service with PostgreSQL Session Storage
@@ -162,12 +165,35 @@ class AuthService extends ChangeNotifier {
       debugPrint(
         '[AuthService] Authenticated services loaded state before: ${_areAuthenticatedServicesLoaded.value}',
       );
+
+      // Check if critical authenticated services are already registered
+      // This handles session restoration where services were already set up in a previous session
+      final hasConnectionManager =
+          di.serviceLocator.isRegistered<ConnectionManagerService>();
+      final hasStreamingChat =
+          di.serviceLocator.isRegistered<StreamingChatService>();
+      final hasTunnelService = di.serviceLocator.isRegistered<TunnelService>();
+
+      if (hasConnectionManager && hasStreamingChat && hasTunnelService) {
+        debugPrint(
+          '[AuthService] Authenticated services already registered from previous session',
+        );
+        _areAuthenticatedServicesLoaded.value = true;
+        debugPrint(
+          '[AuthService] Authenticated services loaded state after: ${_areAuthenticatedServicesLoaded.value}',
+        );
+        notifyListeners();
+        return;
+      }
+
       final startTime = DateTime.now();
       await di.setupAuthenticatedServices();
       final duration = DateTime.now().difference(startTime);
       debugPrint(
         '[AuthService] SUCCESS: Authenticated services loaded in ${duration.inMilliseconds}ms',
       );
+      // Always set to true after setupAuthenticatedServices completes
+      // This handles both initial setup and session restoration scenarios
       _areAuthenticatedServicesLoaded.value = true;
       debugPrint(
         '[AuthService] Authenticated services loaded state after: ${_areAuthenticatedServicesLoaded.value}',
@@ -179,6 +205,7 @@ class AuthService extends ChangeNotifier {
       );
       debugPrint('[AuthService] Stack trace: $stackTrace');
       _areAuthenticatedServicesLoaded.value = false;
+      notifyListeners();
     }
   }
 
