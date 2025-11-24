@@ -1,4 +1,5 @@
-// TODO: ChatScreen is missing from the codebase. Re-enable when ChatScreen is restored.
+// ChatScreen is not yet implemented in this version
+// This test file is reserved for future ChatScreen platform property tests
 void main() {
-  // Test disabled
+  // Test placeholder - ChatScreen implementation pending
 }
