@@ -668,6 +668,13 @@ class AppRouter {
             return '/';
           }
 
+          // If on loading screen but services are loaded, redirect to home
+          if (isLoading && isAuthenticated && areServicesLoaded) {
+            debugPrint(
+                '[Router] DECISION: Services loaded, redirecting from loading to home');
+            return '/';
+          }
+
           debugPrint('[Router] DECISION: Allowing access to auth/loading page');
           debugPrint('[Router] Route: ${state.matchedLocation}');
           debugPrint('[Router] Auth state: isAuthenticated=$isAuthenticated');
