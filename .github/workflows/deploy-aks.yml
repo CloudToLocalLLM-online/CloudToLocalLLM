@@ -577,7 +577,8 @@ jobs:
           # Purge all cache for the zone
           PURGE_RESPONSE=$(curl -s -X POST "https://api.cloudflare.com/client/v4/zones/$CF_ZONE_ID/purge_cache/purge_everything" \
             -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
-            -H "Content-Type: application/json")
+            -H "Content-Type: application/json" \
+            -d '{"purge_everything":true}')
 
           SUCCESS=$(echo "$PURGE_RESPONSE" | jq -r '.success')
           if [ "$SUCCESS" = "true" ]; then
