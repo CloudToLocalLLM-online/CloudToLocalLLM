@@ -37,6 +37,16 @@ RUN flutter clean
 # Get dependencies (Flutter will create .dart_tool and other cache dirs)
 RUN flutter pub get
 
+# Verify web/index.html exists and show its content for debugging
+RUN echo "Checking web/index.html..." && \
+    if [ -f web/index.html ]; then \
+      echo "✓ web/index.html found" && \
+      grep -i "service worker" web/index.html | head -5 || echo "No service worker text found"; \
+    else \
+      echo "✗ web/index.html NOT FOUND"; \
+      exit 1; \
+    fi
+
 # Build Flutter web app (default renderer)
 RUN echo "Building Flutter web app..." && \
     flutter build web --release && \
