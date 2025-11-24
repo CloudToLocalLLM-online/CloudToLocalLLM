@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import '../services/platform_adapter.dart';
 
 /// Loading screen with unified theming and platform adaptation
 ///
@@ -19,7 +17,6 @@ class LoadingScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final platformAdapter = Provider.of<PlatformAdapter>(context);
     final theme = Theme.of(context);
     final screenWidth = MediaQuery.of(context).size.width;
 
@@ -83,8 +80,11 @@ class LoadingScreen extends StatelessWidget {
                   child: SizedBox(
                     width: indicatorSize,
                     height: indicatorSize,
-                    child: platformAdapter.buildLoadingIndicator(
-                      color: theme.colorScheme.primary,
+                    child: CircularProgressIndicator(
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        theme.colorScheme.primary,
+                      ),
+                      strokeWidth: indicatorSize / 10,
                     ),
                   ),
                 ),
