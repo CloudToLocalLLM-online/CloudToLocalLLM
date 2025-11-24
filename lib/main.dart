@@ -39,6 +39,7 @@ import 'services/web_download_prompt_service.dart'
     if (dart.library.io) 'services/web_download_prompt_service_stub.dart';
 import 'services/log_buffer_service.dart';
 import 'services/theme_provider.dart';
+import 'services/platform_adapter.dart';
 import 'web_plugins_stub.dart'
     if (dart.library.html) 'package:flutter_web_plugins/url_strategy.dart';
 import 'widgets/tray_initializer.dart';
@@ -228,6 +229,12 @@ class _CloudToLocalLLMAppState extends State<CloudToLocalLLMApp> {
     providers.add(
       ChangeNotifierProvider.value(
         value: di.serviceLocator.get<DesktopClientDetectionService>(),
+      ),
+    );
+
+    providers.add(
+      Provider.value(
+        value: di.serviceLocator.get<PlatformAdapter>(),
       ),
     );
 
