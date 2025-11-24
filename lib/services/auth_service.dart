@@ -202,6 +202,13 @@ class AuthService extends ChangeNotifier {
         _isAuthenticated.value = true;
         debugPrint('[AuthService] Auth state after: ${_isAuthenticated.value}');
         notifyListeners();
+
+        // Load authenticated services now that session is restored
+        // This is critical for app reload scenarios where the user is already authenticated
+        debugPrint(
+          '[AuthService] Session restored - loading authenticated services...',
+        );
+        await _loadAuthenticatedServices();
       } else {
         debugPrint('[AuthService] No valid stored session found');
         if (session != null) {
