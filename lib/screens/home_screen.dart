@@ -38,6 +38,25 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Check if StreamingChatService is available before rendering
+    try {
+      context.read<StreamingChatService>();
+    } catch (e) {
+      debugPrint('[HomeScreen] StreamingChatService not available: $e');
+      return const Scaffold(
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(height: 16),
+              Text('Loading application modules...'),
+            ],
+          ),
+        ),
+      );
+    }
+
     return LayoutBuilder(
       builder: (context, constraints) {
         final isCompact = constraints.maxWidth < AppConfig.mobileBreakpoint;
