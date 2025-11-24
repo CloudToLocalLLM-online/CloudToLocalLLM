@@ -121,7 +121,7 @@ class AppRouter {
 
     return GoRouter(
       navigatorKey: navigatorKey,
-      initialLocation: initialLocation,
+      initialLocation: '/login',
       debugLogDiagnostics: true,
       refreshListenable: authService,
       routes: [
