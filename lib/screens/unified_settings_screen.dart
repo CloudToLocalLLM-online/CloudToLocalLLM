@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../services/auth_service.dart';
 import '../services/platform_category_filter.dart';
 import '../services/admin_center_service.dart';
 import '../services/enhanced_user_tier_service.dart';
+import '../services/theme_provider.dart';
+import '../services/platform_adapter.dart';
+import '../services/platform_detection_service.dart';
 import '../models/settings_category.dart';
 import '../widgets/settings/settings_category_list.dart';
 import '../widgets/settings/general_settings_category.dart';
@@ -36,6 +40,8 @@ class UnifiedSettingsScreen extends StatefulWidget {
 class _UnifiedSettingsScreenState extends State<UnifiedSettingsScreen> {
   late PlatformCategoryFilter _platformFilter;
   late AuthService _authService;
+  late PlatformAdapter _platformAdapter;
+  late PlatformDetectionService _platformDetectionService;
   AdminCenterService? _adminCenterService;
   EnhancedUserTierService? _tierService;
 
@@ -57,6 +63,9 @@ class _UnifiedSettingsScreenState extends State<UnifiedSettingsScreen> {
   void _initializeServices() {
     try {
       _authService = di.serviceLocator.get<AuthService>();
+      _platformDetectionService =
+          di.serviceLocator.get<PlatformDetectionService>();
+      _platformAdapter = di.serviceLocator.get<PlatformAdapter>();
 
       // Try to get AdminCenterService if available
       try {
@@ -300,40 +309,55 @@ class _UnifiedSettingsScreenState extends State<UnifiedSettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoading) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
-    }
+    // Use ThemeProvider to ensure real-time theme updates
+    return Consumer<ThemeProvider>(
+      builder: (context, themeProvider, child) {
+        if (_isLoading) {
+          return Scaffold(
+            body: Center(
+              child: _platformAdapter.buildProgressIndicator(),
+            ),
+          );
+        }
 
-    if (_errorMessage != null) {
-      return Scaffold(
-        appBar: AppBar(title: const Text('Settings Error')),
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.error_outline, size: 48, color: Colors.red),
-              const SizedBox(height: 16),
-              Text(_errorMessage!, textAlign: TextAlign.center),
-              const SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: () {
-                  setState(() {
-                    _isLoading = true;
-                    _errorMessage = null;
-                  });
-                  _loadVisibleCategories();
-                },
-                child: const Text('Retry'),
+        if (_errorMessage != null) {
+          return Scaffold(
+            appBar: AppBar(title: const Text('Settings Error')),
+            body: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.error_outline,
+                    size: 48,
+                    color: Theme.of(context).colorScheme.error,
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    _errorMessage!,
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.bodyLarge,
+                  ),
+                  const SizedBox(height: 16),
+                  _platformAdapter.buildButton(
+                    onPressed: () {
+                      setState(() {
+                        _isLoading = true;
+                        _errorMessage = null;
+                      });
+                      _loadVisibleCategories();
+                    },
+                    child: const Text('Retry'),
+                  ),
+                ],
               ),
-            ],
-          ),
-        ),
-      );
-    }
+            ),
+          );
+        }
 
-    return _buildResponsiveLayout(context);
+        return _buildResponsiveLayout(context);
+      },
+    );
   }
 
   Widget _buildResponsiveLayout(BuildContext context) {
@@ -352,12 +376,18 @@ class _UnifiedSettingsScreenState extends State<UnifiedSettingsScreen> {
   Widget _buildMobileLayout() {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Settings'),
+        title: Text(
+          'Settings',
+          style: Theme.of(context).textTheme.titleLarge,
+        ),
         centerTitle: true,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () => context.canPop() ? context.pop() : context.go('/'),
+          tooltip: 'Back',
         ),
+        backgroundColor: Theme.of(context).colorScheme.surface,
+        foregroundColor: Theme.of(context).colorScheme.onSurface,
       ),
       body: Column(
         children: [
@@ -379,17 +409,32 @@ class _UnifiedSettingsScreenState extends State<UnifiedSettingsScreen> {
   Widget _buildTabletLayout() {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Settings'),
+        title: Text(
+          'Settings',
+          style: Theme.of(context).textTheme.titleLarge,
+        ),
         centerTitle: false,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () => context.canPop() ? context.pop() : context.go('/'),
+          tooltip: 'Back',
         ),
+        backgroundColor: Theme.of(context).colorScheme.surface,
+        foregroundColor: Theme.of(context).colorScheme.onSurface,
       ),
       body: Row(
         children: [
-          SizedBox(
+          Container(
             width: 280,
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surface,
+              border: Border(
+                right: BorderSide(
+                  color: Theme.of(context).dividerColor,
+                  width: 1,
+                ),
+              ),
+            ),
             child: Column(
               children: [
                 _buildSearchBar(),
@@ -407,9 +452,11 @@ class _UnifiedSettingsScreenState extends State<UnifiedSettingsScreen> {
               ],
             ),
           ),
-          const VerticalDivider(width: 1),
           Expanded(
-            child: _buildActiveCategoryContent(),
+            child: Container(
+              color: Theme.of(context).colorScheme.background,
+              child: _buildActiveCategoryContent(),
+            ),
           ),
         ],
       ),
@@ -420,8 +467,17 @@ class _UnifiedSettingsScreenState extends State<UnifiedSettingsScreen> {
     return Scaffold(
       body: Row(
         children: [
-          SizedBox(
+          Container(
             width: 320,
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surface,
+              border: Border(
+                right: BorderSide(
+                  color: Theme.of(context).dividerColor,
+                  width: 1,
+                ),
+              ),
+            ),
             child: Column(
               children: [
                 Padding(
@@ -432,11 +488,17 @@ class _UnifiedSettingsScreenState extends State<UnifiedSettingsScreen> {
                         icon: const Icon(Icons.arrow_back),
                         onPressed: () =>
                             context.canPop() ? context.pop() : context.go('/'),
+                        tooltip: 'Back',
                       ),
                       const SizedBox(width: 8),
                       Text(
                         'Settings',
-                        style: Theme.of(context).textTheme.headlineMedium,
+                        style: Theme.of(context)
+                            .textTheme
+                            .headlineMedium
+                            ?.copyWith(
+                              color: Theme.of(context).colorScheme.onSurface,
+                            ),
                       ),
                     ],
                   ),
@@ -456,9 +518,11 @@ class _UnifiedSettingsScreenState extends State<UnifiedSettingsScreen> {
               ],
             ),
           ),
-          const VerticalDivider(width: 1),
           Expanded(
-            child: _buildActiveCategoryContent(),
+            child: Container(
+              color: Theme.of(context).colorScheme.background,
+              child: _buildActiveCategoryContent(),
+            ),
           ),
         ],
       ),
@@ -468,15 +532,8 @@ class _UnifiedSettingsScreenState extends State<UnifiedSettingsScreen> {
   Widget _buildSearchBar() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-      child: TextField(
-        decoration: InputDecoration(
-          hintText: 'Search settings...',
-          prefixIcon: const Icon(Icons.search),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16),
-        ),
+      child: _platformAdapter.buildTextField(
+        placeholder: 'Search settings...',
         onChanged: (value) {
           setState(() {
             _searchQuery = value;
@@ -522,11 +579,19 @@ class _UnifiedSettingsScreenState extends State<UnifiedSettingsScreen> {
       MaterialPageRoute(
         builder: (context) => Scaffold(
           appBar: AppBar(
-            title: Text(SettingsCategoryMetadata.getTitle(categoryId)),
+            title: Text(
+              SettingsCategoryMetadata.getTitle(categoryId),
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+            backgroundColor: Theme.of(context).colorScheme.surface,
+            foregroundColor: Theme.of(context).colorScheme.onSurface,
           ),
-          body: SingleChildScrollView(
-            padding: const EdgeInsets.all(16.0),
-            child: _buildCategoryContentById(categoryId),
+          body: Container(
+            color: Theme.of(context).colorScheme.background,
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(16.0),
+              child: _buildCategoryContentById(categoryId),
+            ),
           ),
         ),
       ),

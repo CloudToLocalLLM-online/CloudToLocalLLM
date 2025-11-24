@@ -274,6 +274,10 @@ void main() {
 
       test('should notify listeners when detection is refreshed', () {
         var notificationCount = 0;
+
+        // Clear cache first to ensure refresh actually re-detects
+        platformDetectionService.clearCache();
+
         platformDetectionService.addListener(() {
           notificationCount++;
         });
@@ -303,6 +307,77 @@ void main() {
         );
 
         expect(platformDetectionService.selectedPlatform, null);
+      });
+    });
+
+    group('Platform Information', () {
+      test('should provide platform information getters', () {
+        expect(platformDetectionService.isWeb, isA<bool>());
+        expect(platformDetectionService.isWindows, isA<bool>());
+        expect(platformDetectionService.isLinux, isA<bool>());
+        expect(platformDetectionService.isMacOS, isA<bool>());
+        expect(platformDetectionService.isDesktop, isA<bool>());
+        expect(platformDetectionService.isMobile, isA<bool>());
+      });
+
+      test('should provide detection info with caching', () {
+        final info1 = platformDetectionService.getDetectionInfo();
+        expect(info1, isA<Map<String, dynamic>>());
+        expect(info1['isWeb'], isA<bool>());
+        expect(info1['isWindows'], isA<bool>());
+        expect(info1['isLinux'], isA<bool>());
+        expect(info1['isMacOS'], isA<bool>());
+        expect(info1['isDesktop'], isA<bool>());
+        expect(info1['isMobile'], isA<bool>());
+        expect(info1['cachedAt'], isA<String>());
+
+        // Second call should return cached value
+        final info2 = platformDetectionService.getDetectionInfo();
+        expect(info2['cachedAt'], equals(info1['cachedAt']));
+      });
+
+      test('should provide screen info', () {
+        final screenInfo = platformDetectionService.getScreenInfo(800, 600);
+        expect(screenInfo['width'], equals(800));
+        expect(screenInfo['height'], equals(600));
+        expect(screenInfo['isMobileSize'], isA<bool>());
+        expect(screenInfo['isTabletSize'], isA<bool>());
+        expect(screenInfo['isDesktopSize'], isA<bool>());
+      });
+
+      test('should correctly categorize screen sizes', () {
+        final mobileInfo = platformDetectionService.getScreenInfo(400, 800);
+        expect(mobileInfo['isMobileSize'], true);
+        expect(mobileInfo['isTabletSize'], false);
+        expect(mobileInfo['isDesktopSize'], false);
+
+        final tabletInfo = platformDetectionService.getScreenInfo(768, 1024);
+        expect(tabletInfo['isMobileSize'], false);
+        expect(tabletInfo['isTabletSize'], true);
+        expect(tabletInfo['isDesktopSize'], false);
+
+        final desktopInfo = platformDetectionService.getScreenInfo(1920, 1080);
+        expect(desktopInfo['isMobileSize'], false);
+        expect(desktopInfo['isTabletSize'], false);
+        expect(desktopInfo['isDesktopSize'], true);
+      });
+    });
+
+    group('Caching', () {
+      test('should cache platform detection', () {
+        final platform1 = platformDetectionService.detectPlatform();
+        final platform2 = platformDetectionService.detectPlatform();
+
+        expect(platform1, equals(platform2));
+      });
+
+      test('should clear cache when requested', () {
+        platformDetectionService.getDetectionInfo();
+
+        expect(
+          () => platformDetectionService.clearCache(),
+          returnsNormally,
+        );
       });
     });
   });

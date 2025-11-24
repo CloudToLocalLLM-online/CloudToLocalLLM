@@ -5,12 +5,22 @@ import 'package:go_router/go_router.dart';
 import '../utils/web_interop_stub.dart'
     if (dart.library.html) '../utils/web_interop.dart';
 import '../services/auth_service.dart';
-import '../screens/loading_screen.dart';
+import '../services/theme_provider.dart';
+import '../services/platform_adapter.dart';
 
 // Callback forwarding flag key - must match router.dart
 const _callbackForwardedKey = 'auth0_callback_forwarded';
 
-/// Auth0 callback screen that processes authentication results
+/// Auth0 callback screen that processes authentication results with unified theming
+///
+/// Requirements:
+/// - 8.1: Apply unified theme system to all UI elements
+/// - 8.2: Display appropriate loading and status messages
+/// - 8.3: Handle authentication callbacks consistently across all platforms
+/// - 8.4: Display error messages clearly if authentication fails
+/// - 8.5: Redirect to appropriate screen when authentication completes
+/// - 13.1-13.3: Responsive design for mobile, tablet, desktop
+/// - 14.1-14.6: Accessibility features
 class CallbackScreen extends StatefulWidget {
   const CallbackScreen({super.key, this.queryParams = const {}});
 
@@ -21,6 +31,10 @@ class CallbackScreen extends StatefulWidget {
 }
 
 class _CallbackScreenState extends State<CallbackScreen> {
+  String _statusMessage = 'Processing authentication...';
+  String? _errorMessage;
+  bool _isProcessing = true;
+
   @override
   void initState() {
     super.initState();
@@ -29,6 +43,24 @@ class _CallbackScreenState extends State<CallbackScreen> {
       debugPrint(' [CallbackScreen] postFrameCallback triggered');
       _processCallback();
     });
+  }
+
+  void _updateStatus(String message) {
+    if (mounted) {
+      setState(() {
+        _statusMessage = message;
+        _errorMessage = null;
+      });
+    }
+  }
+
+  void _showError(String message) {
+    if (mounted) {
+      setState(() {
+        _errorMessage = message;
+        _isProcessing = false;
+      });
+    }
   }
 
   /// Wait for authentication state to become true with timeout and retry logic
@@ -196,6 +228,9 @@ class _CallbackScreenState extends State<CallbackScreen> {
     try {
       debugPrint('[CallbackScreen] ===== CALLBACK PROCESSING START =====');
       debugPrint('[CallbackScreen] _processCallback started');
+
+      _updateStatus('Initializing authentication...');
+
       final authService = context.read<AuthService>();
       debugPrint('[CallbackScreen] AuthService obtained from context');
       debugPrint(
@@ -276,6 +311,8 @@ class _CallbackScreenState extends State<CallbackScreen> {
         '[CallbackScreen] Auth state before callback: ${authService.isAuthenticated.value}',
       );
 
+      _updateStatus('Verifying authentication...');
+
       String? originalUrl;
       if (kIsWeb && routeParams.isNotEmpty) {
         final queryString = Uri(queryParameters: routeParams).query;
@@ -309,9 +346,12 @@ class _CallbackScreenState extends State<CallbackScreen> {
             '[CallbackScreen] Callback successful, waiting for session persistence...',
           );
 
+          _updateStatus('Creating session...');
+
           final authStateVerified = await _waitForAuthenticationState(
             authService,
-            maxAttempts: 10, // Increased to 10 to allow for slower session creation/timeouts (50s total)
+            maxAttempts:
+                10, // Increased to 10 to allow for slower session creation/timeouts (50s total)
             attemptTimeout: const Duration(seconds: 5),
           );
 
@@ -321,6 +361,8 @@ class _CallbackScreenState extends State<CallbackScreen> {
             debugPrint(
               '[CallbackScreen] Authentication state verified successfully',
             );
+
+            _updateStatus('Loading services...');
 
             // Verify authenticated services are loaded
             final servicesLoaded = _verifyAuthenticatedServicesLoaded(
@@ -349,18 +391,17 @@ class _CallbackScreenState extends State<CallbackScreen> {
               _clearCallbackParametersFromUrl();
 
               if (mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text(
-                      'Authentication succeeded but services failed to load. Please try again.',
-                    ),
-                    backgroundColor: Colors.orange,
-                  ),
+                _showError(
+                  'Authentication succeeded but services failed to load. Please try again.',
                 );
                 debugPrint(
                   '[CallbackScreen] Redirecting to login due to service load failure',
                 );
-                context.go('/login?login_error=services_load_failed');
+                // Delay to show error message
+                await Future.delayed(const Duration(seconds: 2));
+                if (mounted) {
+                  context.go('/login?login_error=services_load_failed');
+                }
               }
             }
           } else {
@@ -374,18 +415,17 @@ class _CallbackScreenState extends State<CallbackScreen> {
             _clearCallbackParametersFromUrl();
 
             if (mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text(
-                    'Authentication timed out. Session may not have been created. Please try again.',
-                  ),
-                  backgroundColor: Colors.red,
-                ),
+              _showError(
+                'Authentication timed out. Session may not have been created. Please try again.',
               );
               debugPrint(
                 '[CallbackScreen] Redirecting to login due to auth state timeout',
               );
-              context.go('/login?login_error=auth_state_timeout');
+              // Delay to show error message
+              await Future.delayed(const Duration(seconds: 2));
+              if (mounted) {
+                context.go('/login?login_error=auth_state_timeout');
+              }
             }
           }
         } else {
@@ -397,18 +437,17 @@ class _CallbackScreenState extends State<CallbackScreen> {
           _clearCallbackParametersFromUrl();
 
           if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text(
-                  'Authentication failed. Please try logging in again.',
-                ),
-                backgroundColor: Colors.red,
-              ),
+            _showError(
+              'Authentication failed. Please try logging in again.',
             );
             debugPrint(
               '[CallbackScreen] Redirecting to login due to callback failure',
             );
-            context.go('/login?login_error=callback_failed');
+            // Delay to show error message
+            await Future.delayed(const Duration(seconds: 2));
+            if (mounted) {
+              context.go('/login?login_error=callback_failed');
+            }
           }
         }
       }
@@ -425,25 +464,151 @@ class _CallbackScreenState extends State<CallbackScreen> {
         final errorInfo = _categorizeError(e);
         debugPrint('[CallbackScreen] Error type: ${errorInfo['type']}');
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(errorInfo['message']!),
-            backgroundColor: Colors.red,
-            duration: const Duration(seconds: 5),
-          ),
-        );
+        _showError(errorInfo['message']!);
         debugPrint('[CallbackScreen] Redirecting to login due to exception');
         debugPrint('[CallbackScreen] ===== CALLBACK PROCESSING FAILED =====');
 
-        // Redirect to login with error parameter (using login_error to avoid triggering callback detection loop)
-        context.go(
-            '/login?login_error=${Uri.encodeComponent(errorInfo['type']!)}');
+        // Delay to show error message
+        await Future.delayed(const Duration(seconds: 3));
+
+        if (mounted) {
+          // Redirect to login with error parameter (using login_error to avoid triggering callback detection loop)
+          context.go(
+              '/login?login_error=${Uri.encodeComponent(errorInfo['type']!)}');
+        }
       }
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return const LoadingScreen(message: 'Processing authentication...');
+    // Get theme and platform services
+    // Watch ThemeProvider to rebuild when theme changes
+    context.watch<ThemeProvider>();
+    final platformAdapter = context.read<PlatformAdapter>();
+
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final textTheme = theme.textTheme;
+
+    // Determine screen size for responsive layout
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isMobile = screenWidth < 600;
+    final isTablet = screenWidth >= 600 && screenWidth < 1024;
+
+    // Calculate responsive padding
+    final horizontalPadding = isMobile ? 24.0 : (isTablet ? 48.0 : 64.0);
+    final verticalPadding = isMobile ? 32.0 : (isTablet ? 48.0 : 64.0);
+
+    return Scaffold(
+      backgroundColor: colorScheme.surface,
+      body: SafeArea(
+        child: Center(
+          child: SingleChildScrollView(
+            padding: EdgeInsets.symmetric(
+              horizontal: horizontalPadding,
+              vertical: verticalPadding,
+            ),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                maxWidth: isMobile ? double.infinity : 500,
+              ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  // App logo or icon
+                  Icon(
+                    Icons.lock_outline,
+                    size: isMobile ? 64 : 80,
+                    color: colorScheme.primary,
+                    semanticLabel: 'Authentication in progress',
+                  ),
+                  SizedBox(height: isMobile ? 24 : 32),
+
+                  // Title
+                  Text(
+                    'Authentication',
+                    style: textTheme.headlineMedium?.copyWith(
+                      color: colorScheme.onSurface,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    textAlign: TextAlign.center,
+                    semanticsLabel: 'Authentication screen',
+                  ),
+                  SizedBox(height: isMobile ? 16 : 24),
+
+                  // Status message or error
+                  if (_errorMessage != null) ...[
+                    // Error display
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: colorScheme.errorContainer,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: colorScheme.error,
+                          width: 1,
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.error_outline,
+                            color: colorScheme.error,
+                            size: 24,
+                            semanticLabel: 'Error',
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              _errorMessage!,
+                              style: textTheme.bodyMedium?.copyWith(
+                                color: colorScheme.onErrorContainer,
+                              ),
+                              semanticsLabel: 'Error: $_errorMessage',
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ] else ...[
+                    // Loading indicator
+                    platformAdapter.buildLoadingIndicator(
+                      size: isMobile ? 48 : 56,
+                      color: colorScheme.primary,
+                    ),
+                    SizedBox(height: isMobile ? 16 : 24),
+
+                    // Status message
+                    Text(
+                      _statusMessage,
+                      style: textTheme.bodyLarge?.copyWith(
+                        color: colorScheme.onSurface.withOpacity(0.8),
+                      ),
+                      textAlign: TextAlign.center,
+                      semanticsLabel: 'Status: $_statusMessage',
+                    ),
+                  ],
+
+                  SizedBox(height: isMobile ? 24 : 32),
+
+                  // Additional info
+                  Text(
+                    _isProcessing
+                        ? 'Please wait while we complete your authentication...'
+                        : 'Redirecting...',
+                    style: textTheme.bodySmall?.copyWith(
+                      color: colorScheme.onSurface.withOpacity(0.6),
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }

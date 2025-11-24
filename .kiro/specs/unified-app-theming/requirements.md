@@ -142,7 +142,7 @@ This document defines the requirements for applying unified theme and platform d
 
 ### Requirement 9: Loading Screen Platform Adaptation
 
-**User Story:** As a user, I want the loading screen to display consistently across platforms with appropriate styling, so that I understand the application is initializing.
+**User Story:** As a user, I want to see a loading indicator during app initialization, so that I understand the application is loading and not frozen.
 
 #### Acceptance Criteria
 
@@ -150,7 +150,8 @@ This document defines the requirements for applying unified theme and platform d
 2. THE Loading_Screen SHALL display a loading indicator appropriate for the platform
 3. THE Loading_Screen SHALL display status messages clearly
 4. THE Loading_Screen SHALL adapt its layout for different screen sizes
-5. WHEN the application finishes loading, THE Loading_Screen SHALL transition to the appropriate next screen
+5. THE Loading_Screen SHALL be displayed during initial app load to prevent black screen appearance
+6. WHEN the application finishes loading, THE Loading_Screen SHALL transition to the appropriate next screen
 
 ### Requirement 10: Diagnostic Screens Platform Adaptation
 

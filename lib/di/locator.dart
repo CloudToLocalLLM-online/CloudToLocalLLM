@@ -39,6 +39,8 @@ import '../services/settings_import_export_service.dart';
 import '../services/provider_configuration_manager.dart';
 import '../services/admin_center_service.dart';
 import '../services/theme_provider.dart';
+import '../services/platform_detection_service.dart';
+import '../services/platform_adapter.dart';
 
 final GetIt serviceLocator = GetIt.instance;
 
@@ -122,6 +124,16 @@ Future<void> setupCoreServices() async {
   serviceLocator.registerSingleton<SettingsImportExportService>(
     settingsImportExportService,
   );
+
+  // Platform detection service - detects current platform and provides platform info
+  final platformDetectionService = PlatformDetectionService();
+  serviceLocator.registerSingleton<PlatformDetectionService>(
+    platformDetectionService,
+  );
+
+  // Platform adapter - provides platform-appropriate UI components
+  final platformAdapter = PlatformAdapter(platformDetectionService);
+  serviceLocator.registerSingleton<PlatformAdapter>(platformAdapter);
 
   // Theme provider - manages application theme mode
   final themeProvider = ThemeProvider();

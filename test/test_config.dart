@@ -3,6 +3,11 @@
 
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:cloudtolocalllm/di/locator.dart' as di;
+import 'package:cloudtolocalllm/services/theme_provider.dart';
+import 'package:cloudtolocalllm/services/platform_detection_service.dart';
+import 'package:cloudtolocalllm/services/platform_adapter.dart';
 
 /// Test configuration class that sets up mocks for plugins
 class TestConfig {
@@ -15,6 +20,12 @@ class TestConfig {
 
     // Ensure Flutter test binding is initialized
     TestWidgetsFlutterBinding.ensureInitialized();
+
+    // Mock SharedPreferences
+    SharedPreferences.setMockInitialValues({});
+
+    // Setup service locator for tests
+    _setupServiceLocator();
 
     // Mock window_manager plugin
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
@@ -176,9 +187,37 @@ class TestConfig {
     );
   }
 
+  /// Setup service locator with test services
+  static void _setupServiceLocator() {
+    // Reset service locator if already initialized
+    if (di.serviceLocator.isRegistered<ThemeProvider>()) {
+      di.serviceLocator.reset();
+    }
+
+    // Register core services
+    di.serviceLocator.registerLazySingleton<ThemeProvider>(
+      () => ThemeProvider(),
+    );
+
+    di.serviceLocator.registerLazySingleton<PlatformDetectionService>(
+      () => PlatformDetectionService(),
+    );
+
+    di.serviceLocator.registerLazySingleton<PlatformAdapter>(
+      () => PlatformAdapter(
+        di.serviceLocator.get<PlatformDetectionService>(),
+      ),
+    );
+  }
+
   /// Clean up test environment
   static void cleanup() {
     if (!_initialized) return;
+
+    // Reset service locator
+    if (di.serviceLocator.isRegistered<ThemeProvider>()) {
+      di.serviceLocator.reset();
+    }
 
     // Reset all mock handlers
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
@@ -212,6 +251,16 @@ class TestConfig {
     );
 
     _initialized = false;
+  }
+
+  /// Setup test environment (alias for initialize)
+  static Future<void> setupTestEnvironment() async {
+    initialize();
+  }
+
+  /// Teardown test environment (alias for cleanup)
+  static Future<void> teardownTestEnvironment() async {
+    cleanup();
   }
 }
 

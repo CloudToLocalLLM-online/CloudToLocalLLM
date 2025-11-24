@@ -11,6 +11,9 @@ import '../../services/ollama_service.dart';
 import '../../services/streaming_proxy_service.dart';
 import '../../services/auth_service.dart';
 import '../../services/llm_provider_manager.dart';
+import '../../services/theme_provider.dart';
+import '../../services/platform_detection_service.dart';
+import '../../services/platform_adapter.dart';
 import '../../di/locator.dart' as di;
 import '../../components/modern_card.dart';
 import '../../components/llm_provider_selector.dart';
@@ -78,7 +81,8 @@ class _LLMProviderSettingsScreenState extends State<LLMProviderSettingsScreen> {
       } else {
         // Try context as fallback but catch error
         try {
-          _llmProviderManager = Provider.of<LLMProviderManager>(context, listen: false);
+          _llmProviderManager =
+              Provider.of<LLMProviderManager>(context, listen: false);
         } catch (_) {
           // Not found
         }
@@ -107,7 +111,7 @@ class _LLMProviderSettingsScreenState extends State<LLMProviderSettingsScreen> {
   void _checkProviders() {
     // Check if services are available via Provider (inherited widget)
     // This is used to determine if we can use Consumer widgets later
-    
+
     try {
       // Using Provider.of with listen: false to check existence
       Provider.of<StreamingProxyService>(context, listen: false);
@@ -173,17 +177,28 @@ class _LLMProviderSettingsScreenState extends State<LLMProviderSettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final themeProvider = Provider.of<ThemeProvider>(context);
+    final platformService = Provider.of<PlatformDetectionService>(context);
+    final platformAdapter = Provider.of<PlatformAdapter>(context);
+    final theme = Theme.of(context);
+    final screenWidth = MediaQuery.of(context).size.width;
+
+    // Responsive layout breakpoints
+    final isMobile = screenWidth < 600;
+    final isTablet = screenWidth >= 600 && screenWidth < 1024;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('LLM Provider Settings'),
-        backgroundColor: Theme.of(context).colorScheme.surface,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
+        backgroundColor: theme.appBarTheme.backgroundColor,
+        foregroundColor: theme.appBarTheme.foregroundColor,
+        leading: platformAdapter.buildBackButton(
+          context,
           onPressed: () => context.go('/settings'),
         ),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
+        padding: EdgeInsets.all(isMobile ? 12.0 : 16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -768,9 +783,8 @@ class _LLMProviderSettingsScreenState extends State<LLMProviderSettingsScreen> {
             )
           else
             ElevatedButton.icon(
-              onPressed: _messageController.text.isEmpty
-                  ? null
-                  : _sendTestMessage,
+              onPressed:
+                  _messageController.text.isEmpty ? null : _sendTestMessage,
               icon: const Icon(Icons.send),
               label: const Text('Send Test Message (Local)'),
             ),

@@ -1,3 +1,4 @@
+import 'dart:io' show Platform;
 import 'package:flutter/foundation.dart';
 import '../models/platform_config.dart';
 import '../models/download_option.dart';
@@ -13,9 +14,20 @@ class PlatformDetectionService extends ChangeNotifier {
   PlatformType? _detectedPlatform;
   PlatformType? _selectedPlatform;
   bool _isInitialized = false;
+  String? _lastError;
+
+  // Platform detection caching
+  DateTime? _lastDetectionTime;
+  static const Duration _cacheValidityDuration = Duration(minutes: 5);
 
   // Platform configurations
   late final Map<PlatformType, PlatformConfig> _platformConfigs;
+
+  // Platform information cache
+  Map<String, dynamic>? _cachedPlatformInfo;
+
+  // Default fallback platform for error recovery (Requirement 17.2)
+  static const PlatformType _defaultFallbackPlatform = PlatformType.windows;
 
   PlatformDetectionService() {
     _initializePlatformConfigs();
@@ -27,8 +39,9 @@ class PlatformDetectionService extends ChangeNotifier {
   PlatformType? get detectedPlatform => _detectedPlatform;
   PlatformType? get selectedPlatform => _selectedPlatform;
   PlatformType get currentPlatform =>
-      _selectedPlatform ?? _detectedPlatform ?? PlatformType.unknown;
+      _selectedPlatform ?? _detectedPlatform ?? _defaultFallbackPlatform;
   bool get isInitialized => _isInitialized;
+  String? get lastError => _lastError;
 
   /// Initialize platform configurations with download options and installation steps
   void _initializePlatformConfigs() {
@@ -40,16 +53,54 @@ class PlatformDetectionService extends ChangeNotifier {
     _isInitialized = true;
   }
 
-  /// Detect platform from browser user agent
+  /// Detect platform from browser user agent or native platform
+  /// Implements error recovery as per Requirement 17.2
   PlatformType detectPlatform() {
-    if (!kIsWeb) {
-      // For non-web platforms, we can't detect from user agent
-      // Default to unknown and let user select manually
-      _detectedPlatform = PlatformType.unknown;
-      _isInitialized = true;
+    // Check if cached detection is still valid
+    if (_detectedPlatform != null &&
+        _lastDetectionTime != null &&
+        DateTime.now().difference(_lastDetectionTime!) <
+            _cacheValidityDuration) {
       debugPrint(
-        ' [PlatformDetection] Non-web platform detected, defaulting to unknown',
-      );
+          ' [PlatformDetection] Using cached platform: $_detectedPlatform');
+      return _detectedPlatform!;
+    }
+
+    _lastError = null;
+
+    if (!kIsWeb) {
+      // For non-web platforms, detect from dart:io Platform
+      try {
+        if (Platform.isWindows) {
+          _detectedPlatform = PlatformType.windows;
+        } else if (Platform.isLinux) {
+          _detectedPlatform = PlatformType.linux;
+        } else if (Platform.isMacOS) {
+          _detectedPlatform = PlatformType.macos;
+        } else if (Platform.isAndroid) {
+          _detectedPlatform = PlatformType.unknown; // Android not in enum yet
+        } else if (Platform.isIOS) {
+          _detectedPlatform = PlatformType.unknown; // iOS not in enum yet
+        } else {
+          _detectedPlatform = PlatformType.unknown;
+        }
+
+        debugPrint(
+          ' [PlatformDetection] Native platform detected: $_detectedPlatform',
+        );
+      } catch (e) {
+        _lastError = 'Failed to detect native platform: $e';
+        debugPrint(' [PlatformDetection] Error detecting native platform: $e');
+
+        // Error recovery: use default fallback platform (Requirement 17.2)
+        _detectedPlatform = _defaultFallbackPlatform;
+        debugPrint(
+          ' [PlatformDetection] Using fallback platform: $_detectedPlatform',
+        );
+      }
+
+      _isInitialized = true;
+      _lastDetectionTime = DateTime.now();
       notifyListeners();
       return _detectedPlatform!;
     }
@@ -67,12 +118,21 @@ class PlatformDetectionService extends ChangeNotifier {
       debugPrint(' [PlatformDetection] Detected platform: $_detectedPlatform');
 
       _isInitialized = true;
+      _lastDetectionTime = DateTime.now();
       notifyListeners();
       return _detectedPlatform!;
     } catch (e) {
+      _lastError = 'Failed to detect web platform: $e';
       debugPrint(' [PlatformDetection] Error detecting platform: $e');
-      _detectedPlatform = PlatformType.unknown;
+
+      // Error recovery: use default fallback platform (Requirement 17.2)
+      _detectedPlatform = _defaultFallbackPlatform;
+      debugPrint(
+        ' [PlatformDetection] Using fallback platform: $_detectedPlatform',
+      );
+
       _isInitialized = true;
+      _lastDetectionTime = DateTime.now();
       notifyListeners();
       return _detectedPlatform!;
     }
@@ -459,13 +519,101 @@ class PlatformDetectionService extends ChangeNotifier {
 
   /// Get platform detection information for debugging
   Map<String, dynamic> getDetectionInfo() {
-    return {
+    if (_cachedPlatformInfo != null &&
+        _lastDetectionTime != null &&
+        DateTime.now().difference(_lastDetectionTime!) <
+            _cacheValidityDuration) {
+      return _cachedPlatformInfo!;
+    }
+
+    _cachedPlatformInfo = {
       'isWeb': kIsWeb,
+      'isWindows': isWindows,
+      'isLinux': isLinux,
+      'isMacOS': isMacOS,
+      'isDesktop': isDesktop,
+      'isMobile': isMobile,
       'detectedPlatform': _detectedPlatform?.name,
       'selectedPlatform': _selectedPlatform?.name,
       'currentPlatform': currentPlatform.name,
       'isInitialized': _isInitialized,
       'userAgent': kIsWeb ? getUserAgent() : 'N/A (non-web)',
+      'cachedAt': DateTime.now().toIso8601String(),
+    };
+
+    return _cachedPlatformInfo!;
+  }
+
+  /// Check if running on web platform
+  bool get isWeb => kIsWeb;
+
+  /// Check if running on Windows
+  bool get isWindows {
+    if (!kIsWeb) {
+      try {
+        return Platform.isWindows;
+      } catch (e) {
+        return false;
+      }
+    }
+    return currentPlatform == PlatformType.windows;
+  }
+
+  /// Check if running on Linux
+  bool get isLinux {
+    if (!kIsWeb) {
+      try {
+        return Platform.isLinux;
+      } catch (e) {
+        return false;
+      }
+    }
+    return currentPlatform == PlatformType.linux;
+  }
+
+  /// Check if running on macOS
+  bool get isMacOS {
+    if (!kIsWeb) {
+      try {
+        return Platform.isMacOS;
+      } catch (e) {
+        return false;
+      }
+    }
+    return currentPlatform == PlatformType.macos;
+  }
+
+  /// Check if running on desktop platform (Windows, Linux, macOS)
+  bool get isDesktop => isWindows || isLinux || isMacOS;
+
+  /// Check if running on mobile platform (iOS, Android)
+  bool get isMobile {
+    if (!kIsWeb) {
+      try {
+        return Platform.isAndroid || Platform.isIOS;
+      } catch (e) {
+        return false;
+      }
+    }
+    return false;
+  }
+
+  /// Clear platform detection cache
+  void clearCache() {
+    _cachedPlatformInfo = null;
+    _lastDetectionTime = null;
+    debugPrint(' [PlatformDetection] Cache cleared');
+  }
+
+  /// Get screen size information (requires BuildContext in actual usage)
+  /// This is a placeholder for component selection logic
+  Map<String, dynamic> getScreenInfo(double width, double height) {
+    return {
+      'width': width,
+      'height': height,
+      'isMobileSize': width < 600,
+      'isTabletSize': width >= 600 && width < 1024,
+      'isDesktopSize': width >= 1024,
     };
   }
 }

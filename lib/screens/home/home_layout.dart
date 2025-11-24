@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
@@ -7,6 +8,8 @@ import '../../config/app_config.dart';
 import '../../config/theme.dart';
 import '../../models/chat_model.dart';
 import '../../services/streaming_chat_service.dart';
+import '../../services/theme_provider.dart';
+import '../../services/platform_detection_service.dart';
 import '../../components/message_bubble.dart';
 import '../../components/message_input.dart';
 import '../../components/app_logo.dart';
@@ -40,58 +43,142 @@ class HomeLayout extends StatefulWidget {
 }
 
 class _HomeLayoutState extends State<HomeLayout> {
+  final Map<LogicalKeySet, Intent> _shortcuts = {
+    LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.keyN):
+        const _NewConversationIntent(),
+    LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.keyK):
+        const _FocusSearchIntent(),
+    LogicalKeySet(LogicalKeyboardKey.escape): const _CloseSidebarIntent(),
+  };
+
+  final Map<Type, Action<Intent>> _actions = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _actions[_NewConversationIntent] = CallbackAction<_NewConversationIntent>(
+      onInvoke: (_) => _handleNewConversation(),
+    );
+    _actions[_FocusSearchIntent] = CallbackAction<_FocusSearchIntent>(
+      onInvoke: (_) => _handleFocusSearch(),
+    );
+    _actions[_CloseSidebarIntent] = CallbackAction<_CloseSidebarIntent>(
+      onInvoke: (_) => _handleCloseSidebar(),
+    );
+  }
+
+  void _handleNewConversation() {
+    final chatService = context.read<StreamingChatService>();
+    chatService.createConversation();
+    return null;
+  }
+
+  void _handleFocusSearch() {
+    // Focus search/input - implementation depends on MessageInput widget
+    return null;
+  }
+
+  void _handleCloseSidebar() {
+    if (widget.isCompact && !widget.isSidebarCollapsed) {
+      widget.onSidebarToggle();
+    }
+    return null;
+  }
+
   @override
   Widget build(BuildContext context) {
+    final themeProvider = context.watch<ThemeProvider>();
+    final platformService = context.read<PlatformDetectionService>();
+    final theme = Theme.of(context);
     final showSidebar = !widget.isSidebarCollapsed;
 
+    // Apply keyboard shortcuts on desktop platforms
+    final body = Stack(
+      children: [
+        Column(
+          children: [
+            Container(
+              decoration: BoxDecoration(
+                gradient: themeProvider.isDarkMode
+                    ? LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          theme.primaryColor,
+                          theme.primaryColor.withValues(alpha: 0.8),
+                        ],
+                      )
+                    : AppTheme.headerGradient,
+              ),
+              child: _HeaderBar(
+                isCompact: widget.isCompact,
+                isSidebarCollapsed: widget.isSidebarCollapsed,
+                onSidebarToggle: widget.onSidebarToggle,
+              ),
+            ),
+            Expanded(
+              child: Row(
+                children: [
+                  AnimatedContainer(
+                    duration: const Duration(milliseconds: 250),
+                    curve: Curves.easeInOut,
+                    width: showSidebar ? (widget.isCompact ? 260 : 300) : 0,
+                    child: showSidebar
+                        ? const _SidebarPane()
+                        : const SizedBox.shrink(),
+                  ),
+                  Expanded(
+                    child: _ChatPane(
+                      isCompact: widget.isCompact,
+                      scrollController: widget.scrollController,
+                      onSendMessage: widget.onSendMessage,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        if (kIsWeb) const Positioned.fill(child: _WebDownloadOverlay()),
+        if (kIsWeb) const TunnelStatusButton(),
+      ],
+    );
+
+    // Wrap with keyboard shortcuts on desktop
     return Scaffold(
-      backgroundColor: AppTheme.backgroundMain,
-      body: Stack(
-        children: [
-          Column(
-            children: [
-              Container(
-                decoration: const BoxDecoration(
-                  gradient: AppTheme.headerGradient,
-                ),
-                child: _HeaderBar(
-                  isCompact: widget.isCompact,
-                  isSidebarCollapsed: widget.isSidebarCollapsed,
-                  onSidebarToggle: widget.onSidebarToggle,
+      backgroundColor: theme.scaffoldBackgroundColor,
+      body: platformService.isDesktop
+          ? Shortcuts(
+              shortcuts: _shortcuts,
+              child: Actions(
+                actions: _actions,
+                child: Focus(
+                  autofocus: true,
+                  child: body,
                 ),
               ),
-              Expanded(
-                child: Row(
-                  children: [
-                    AnimatedContainer(
-                      duration: const Duration(milliseconds: 250),
-                      curve: Curves.easeInOut,
-                      width: showSidebar ? (widget.isCompact ? 260 : 300) : 0,
-                      child: showSidebar
-                          ? const _SidebarPane()
-                          : const SizedBox.shrink(),
-                    ),
-                    Expanded(
-                      child: _ChatPane(
-                        isCompact: widget.isCompact,
-                        scrollController: widget.scrollController,
-                        onSendMessage: widget.onSendMessage,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          if (kIsWeb) const Positioned.fill(child: _WebDownloadOverlay()),
-          if (kIsWeb) const TunnelStatusButton(),
-        ],
-      ),
+            )
+          : body,
       floatingActionButton: widget.isCompact && widget.isSidebarCollapsed
-          ? const _NewConversationButton()
+          ? _NewConversationButton(
+              minTouchTarget: widget.isCompact ? 44.0 : 32.0,
+            )
           : null,
     );
   }
+}
+
+// Intent classes for keyboard shortcuts
+class _NewConversationIntent extends Intent {
+  const _NewConversationIntent();
+}
+
+class _FocusSearchIntent extends Intent {
+  const _FocusSearchIntent();
+}
+
+class _CloseSidebarIntent extends Intent {
+  const _CloseSidebarIntent();
 }
 
 class _HeaderBar extends StatelessWidget {
@@ -108,7 +195,10 @@ class _HeaderBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final themeProvider = context.watch<ThemeProvider>();
     final spacing = AppTheme.spacingOf(context);
+    final iconColor =
+        themeProvider.isDarkMode ? theme.colorScheme.onPrimary : Colors.white;
 
     return Padding(
       padding: EdgeInsets.all(spacing.m),
@@ -122,7 +212,12 @@ class _HeaderBar extends StatelessWidget {
                   onPressed: onSidebarToggle,
                   icon: Icon(
                     isSidebarCollapsed ? Icons.menu : Icons.close,
-                    color: Colors.white,
+                    color: iconColor,
+                  ),
+                  // Ensure minimum touch target size on mobile
+                  constraints: BoxConstraints(
+                    minWidth: isCompact ? 44.0 : 32.0,
+                    minHeight: isCompact ? 44.0 : 32.0,
                   ),
                 ),
               Row(
@@ -137,7 +232,7 @@ class _HeaderBar extends StatelessWidget {
                   Text(
                     AppConfig.appName,
                     style: theme.textTheme.titleMedium?.copyWith(
-                      color: Colors.white,
+                      color: iconColor,
                       fontWeight: FontWeight.bold,
                     ),
                     overflow: TextOverflow.ellipsis,
@@ -344,6 +439,8 @@ class _ChatPane extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Consumer<StreamingChatService>(
       builder: (context, chatService, child) {
         final conversation = chatService.currentConversation;
@@ -354,7 +451,7 @@ class _ChatPane extends StatelessWidget {
         }
 
         return Container(
-          color: AppTheme.backgroundMain,
+          color: theme.scaffoldBackgroundColor,
           child: Column(
             children: [
               Expanded(
@@ -369,7 +466,7 @@ class _ChatPane extends StatelessWidget {
                   left: spacing.m,
                   right: spacing.m,
                 ),
-                color: AppTheme.backgroundMain,
+                color: theme.scaffoldBackgroundColor,
                 child: MessageInput(
                   onSendMessage: (message) =>
                       onSendMessage(chatService, message),
@@ -454,7 +551,11 @@ class _EmptyConversationState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final spacing = AppTheme.spacingOf(context);
+    final textColor = theme.colorScheme.onSurface;
+    final textColorLight = theme.colorScheme.onSurface.withValues(alpha: 0.6);
+
     return Column(
       children: [
         Expanded(
@@ -465,13 +566,13 @@ class _EmptyConversationState extends StatelessWidget {
                 Icon(
                   Icons.chat_bubble_outline,
                   size: 64,
-                  color: AppTheme.textColorLight,
+                  color: textColorLight,
                 ),
                 SizedBox(height: spacing.l),
                 Text(
                   'Welcome to CloudToLocalLLM',
                   style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                        color: AppTheme.textColor,
+                        color: textColor,
                         fontWeight: FontWeight.bold,
                       ),
                   textAlign: TextAlign.center,
@@ -480,7 +581,7 @@ class _EmptyConversationState extends StatelessWidget {
                 Text(
                   'Start a new conversation to begin chatting with your local LLM',
                   style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        color: AppTheme.textColorLight,
+                        color: textColorLight,
                       ),
                   textAlign: TextAlign.center,
                 ),
@@ -492,12 +593,14 @@ class _EmptyConversationState extends StatelessWidget {
                       icon: const Icon(Icons.add),
                       label: const Text('Start New Conversation'),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: AppTheme.primaryColor,
+                        backgroundColor: theme.primaryColor,
                         foregroundColor: Colors.white,
                         padding: EdgeInsets.symmetric(
                           horizontal: spacing.l,
                           vertical: spacing.m,
                         ),
+                        // Ensure minimum touch target size
+                        minimumSize: const Size(44, 44),
                       ),
                     );
                   },
@@ -538,16 +641,24 @@ class _WebDownloadOverlay extends StatelessWidget {
 }
 
 class _NewConversationButton extends StatelessWidget {
-  const _NewConversationButton();
+  const _NewConversationButton({this.minTouchTarget = 44.0});
+
+  final double minTouchTarget;
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Consumer<StreamingChatService>(
       builder: (context, chatService, child) {
-        return FloatingActionButton(
-          onPressed: () => chatService.createConversation(),
-          backgroundColor: AppTheme.primaryColor,
-          child: const Icon(Icons.add, color: Colors.white),
+        return SizedBox(
+          width: minTouchTarget,
+          height: minTouchTarget,
+          child: FloatingActionButton(
+            onPressed: () => chatService.createConversation(),
+            backgroundColor: theme.primaryColor,
+            child: const Icon(Icons.add, color: Colors.white),
+          ),
         );
       },
     );

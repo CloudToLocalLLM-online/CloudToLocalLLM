@@ -2,21 +2,22 @@
 
 ## Overview
 
-The Unified App Theming system provides a centralized approach to applying consistent themes and platform-appropriate UI components across all screens in CloudToLocalLLM. This design extends the successful Platform Settings Screen implementation to encompass the entire application, ensuring that all user-facing screens (Homepage, Chat Interface, Settings, Admin Center, Login, and diagnostic screens) respect user theme preferences and adapt to the detected platform. The system leverages existing services (`ThemeProvider`, `PlatformDetectionService`) while adding new orchestration logic to coordinate theme application and platform adaptation across the application.
+The Unified App Theming system provides a centralized approach to applying consistent themes and platform-appropriate UI components across all screens in CloudToLocalLLM. This design extends the successful Platform Settings Screen implementation to encompass the entire application, ensuring that all user-facing screens (Homepage, Chat Interface, Settings, Admin Center, Login, Callback, Loading, diagnostic screens, Admin Data Flush, and Documentation) respect user theme preferences and adapt to the detected platform. The system leverages existing services (`ThemeProvider`, `PlatformDetectionService`) while adding new orchestration logic to coordinate theme application and platform adaptation across the application.
+
+**Platform Support:** The system supports Web (Flutter web), Windows (desktop), and Linux (desktop) platforms. Material Design components are used for Web, while native-feeling desktop components are used for Windows and Linux. Future support for iOS and Android is architecturally possible but not currently implemented.
 
 ## Architecture
 
 ### Component Hierarchy
 
 ```
-AppRoot (MaterialApp/CupertinoApp)
+AppRoot (MaterialApp)
 ├── ThemeProvider (State Management)
 │   ├── Theme Configuration
 │   ├── Platform Detection
 │   └── Theme Persistence
 ├── PlatformAdapter (Component Selection)
-│   ├── Material Components (Web/Android)
-│   ├── Cupertino Components (iOS)
+│   ├── Material Components (Web)
 │   └── Desktop Components (Windows/Linux)
 └── Screen Hierarchy
     ├── Homepage (Web only)
@@ -106,10 +107,8 @@ PlatformDetectionService.detectPlatform()
 **Component Selection Logic:**
 ```dart
 Widget buildPlatformComponent(String componentType) {
-  if (platformService.isWeb || platformService.isAndroid) {
+  if (platformService.isWeb) {
     return MaterialComponent(componentType);
-  } else if (platformService.isIOS) {
-    return CupertinoComponent(componentType);
   } else if (platformService.isWindows || platformService.isLinux) {
     return DesktopComponent(componentType);
   }
@@ -123,14 +122,14 @@ Widget buildPlatformComponent(String componentType) {
 **Features:**
 - Unified theme application
 - Responsive layout (mobile, tablet, desktop)
-- Platform-specific download options
-- Clear calls-to-action
+- App description and overview
+- Login button for unauthenticated users
 - Proper typography and spacing
 
 **Integration:**
 - Uses ThemeProvider for theming
 - Uses PlatformDetectionService for platform info
-- Displays platform-specific content
+- Redirects to login page when Login button is clicked
 
 ### 4. ChatInterface (Enhanced)
 
@@ -213,17 +212,20 @@ Widget buildPlatformComponent(String componentType) {
 
 ### 9. LoadingScreen (Enhanced)
 
-**Responsibility:** Loading interface with theme and platform adaptation.
+**Responsibility:** Loading interface displayed during app initialization and loading states with theme and platform adaptation.
 
 **Features:**
 - Unified theme application
-- Platform-appropriate loading indicator
-- Status messages
+- Platform-appropriate loading indicator (visible and animated)
+- Status messages describing current operation
 - Responsive layout
+- Displayed during initial app load to prevent black screen appearance
 
 **Integration:**
 - Uses ThemeProvider for theming
 - Uses PlatformAdapter for components
+- Shown during app bootstrap and initialization
+- Shown during authentication and session restoration
 
 ### 10. DiagnosticScreens (Enhanced)
 
@@ -311,20 +313,13 @@ Uses `PlatformDetectionService` to determine:
 - `isWeb` - Flutter web platform
 - `isWindows` - Windows desktop
 - `isLinux` - Linux desktop
-- `isAndroid` - Android mobile
-- `isIOS` - iOS mobile
 
 ### Component Selection
 
 ```dart
-// Material Design (Web, Android)
-if (platformService.isWeb || platformService.isAndroid) {
+// Material Design (Web)
+if (platformService.isWeb) {
   return MaterialButton(...);
-}
-
-// Cupertino (iOS)
-if (platformService.isIOS) {
-  return CupertinoButton(...);
 }
 
 // Desktop (Windows, Linux)
@@ -586,11 +581,12 @@ Support new themes by:
 
 ### Platform Support
 
-Add new platforms by:
-1. Extending PlatformDetectionService
-2. Adding platform-specific components
-3. Testing responsive layout
-4. Updating accessibility features
+The current implementation supports Web, Windows, and Linux. Future support for iOS and Android would require:
+1. Extending PlatformDetectionService with iOS/Android detection
+2. Adding Cupertino components for iOS
+3. Adding Material components for Android
+4. Testing responsive layout on mobile devices
+5. Updating accessibility features for mobile platforms
 
 </content>
 </invoke>

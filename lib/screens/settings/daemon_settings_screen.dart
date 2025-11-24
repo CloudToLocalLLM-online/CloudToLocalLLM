@@ -5,6 +5,9 @@ import '../../config/theme.dart';
 import '../../components/modern_card.dart';
 import '../../components/gradient_button.dart';
 import '../../services/unified_connection_service.dart';
+import '../../services/theme_provider.dart';
+import '../../services/platform_detection_service.dart';
+import '../../services/platform_adapter.dart';
 
 /// System Tray Daemon Settings Screen
 class DaemonSettingsScreen extends StatefulWidget {
@@ -142,20 +145,30 @@ class _DaemonSettingsScreenState extends State<DaemonSettingsScreen> {
   @override
   Widget build(BuildContext context) {
     debugPrint(" [DaemonSettingsScreen] Building widget");
+    final themeProvider = Provider.of<ThemeProvider>(context);
+    final platformService = Provider.of<PlatformDetectionService>(context);
+    final platformAdapter = Provider.of<PlatformAdapter>(context);
+    final theme = Theme.of(context);
+    final screenWidth = MediaQuery.of(context).size.width;
+
+    // Responsive layout breakpoints
+    final isMobile = screenWidth < 600;
+    final isTablet = screenWidth >= 600 && screenWidth < 1024;
+
     return Scaffold(
-      backgroundColor: AppTheme.backgroundMain,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
         title: const Text('System Tray Daemon Settings'),
-        backgroundColor: AppTheme.backgroundMain,
-        foregroundColor: AppTheme.textColor,
+        backgroundColor: theme.appBarTheme.backgroundColor,
+        foregroundColor: theme.appBarTheme.foregroundColor,
         elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
+        leading: platformAdapter.buildBackButton(
+          context,
           onPressed: () => context.go('/settings'),
         ),
       ),
       body: SingleChildScrollView(
-        padding: EdgeInsets.all(AppTheme.spacingL),
+        padding: EdgeInsets.all(isMobile ? 12.0 : AppTheme.spacingL),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [

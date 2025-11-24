@@ -4,14 +4,25 @@ import 'package:go_router/go_router.dart';
 import '../config/theme.dart';
 import '../config/app_config.dart';
 import '../services/auth_service.dart';
-import '../components/gradient_button.dart';
-import '../components/modern_card.dart';
+import '../services/theme_provider.dart';
+import '../services/platform_detection_service.dart';
+import '../services/platform_adapter.dart';
 
 // Conditional import for debug panel - only import on web platform
 import '../widgets/auth_debug_panel.dart'
     if (dart.library.io) '../widgets/auth_debug_panel_stub.dart';
 
-/// Modern login screen with Auth0 integration
+/// Modern login screen with Auth0 integration and unified theming
+///
+/// Requirements:
+/// - 7.1: Apply unified theme system to all UI elements
+/// - 7.2: Use platform-appropriate components and layouts
+/// - 7.3: Display Auth0 authentication interface consistently
+/// - 7.4: Adapt layout for different screen sizes
+/// - 7.5: Maintain proper spacing and typography
+/// - 7.6: Update when system theme settings change
+/// - 13.1-13.3: Responsive design for mobile, tablet, desktop
+/// - 14.1-14.6: Accessibility features
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
@@ -142,111 +153,187 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Get unified theme and platform services (Requirements 7.1, 7.2, 7.6)
+    // ThemeProvider is watched to ensure updates when system theme changes
+    context.watch<ThemeProvider>();
+    final platformService = context.watch<PlatformDetectionService>();
+    final platformAdapter = PlatformAdapter(platformService);
+
     final size = MediaQuery.of(context).size;
-    final isDesktop = size.width > AppConfig.tabletBreakpoint;
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final isDarkMode = theme.brightness == Brightness.dark;
+
+    // Responsive layout breakpoints (Requirements 13.1, 13.2, 13.3, 7.4)
+    final isMobile = size.width < 600;
+    final isTablet = size.width >= 600 && size.width < 1024;
+
+    // Platform-appropriate spacing (Requirement 7.5)
+    final horizontalPadding = isMobile ? 16.0 : (isTablet ? 32.0 : 48.0);
+    final verticalPadding = isMobile ? 16.0 : 24.0;
+    final cardMaxWidth =
+        isMobile ? double.infinity : (isTablet ? 500.0 : 450.0);
+
+    // Platform-appropriate typography (Requirement 7.5)
+    final welcomeFontSize = isMobile ? 16.0 : 18.0;
+    final titleFontSize = isMobile ? 24.0 : 28.0;
+    final descriptionFontSize = isMobile ? 14.0 : 16.0;
 
     return Scaffold(
-      backgroundColor: AppTheme.backgroundMain,
+      backgroundColor: colorScheme.surface,
       body: Stack(
         children: [
+          // Background with theme-aware gradient (Requirement 7.1)
           Container(
-            decoration: const BoxDecoration(gradient: AppTheme.headerGradient),
+            decoration: BoxDecoration(
+              gradient: isDarkMode
+                  ? LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        colorScheme.primary.withValues(alpha: 0.2),
+                        colorScheme.surface,
+                      ],
+                    )
+                  : LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        colorScheme.primary.withValues(alpha: 0.1),
+                        colorScheme.surface,
+                      ],
+                    ),
+            ),
             child: SafeArea(
               child: Center(
                 child: SingleChildScrollView(
-                  padding: EdgeInsets.all(AppTheme.spacingL),
+                  padding: EdgeInsets.symmetric(
+                    horizontal: horizontalPadding,
+                    vertical: verticalPadding,
+                  ),
                   child: ConstrainedBox(
                     constraints: BoxConstraints(
-                      maxWidth: isDesktop ? 400 : double.infinity,
+                      maxWidth: cardMaxWidth,
                     ),
-                    child: ModernCard(
-                      padding: EdgeInsets.all(AppTheme.spacingXL),
+                    // Platform-appropriate card (Requirement 7.2)
+                    child: platformAdapter.buildCard(
+                      padding: EdgeInsets.all(isMobile ? 24.0 : 32.0),
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          // Logo/Icon
+                          // Logo/Icon with theme-aware colors (Requirement 7.1)
                           Container(
-                            width: 80,
-                            height: 80,
+                            width: isMobile ? 64.0 : 80.0,
+                            height: isMobile ? 64.0 : 80.0,
                             decoration: BoxDecoration(
-                              gradient: AppTheme.buttonGradient,
-                              borderRadius: BorderRadius.circular(
-                                AppTheme.borderRadiusM,
+                              gradient: LinearGradient(
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                                colors: [
+                                  colorScheme.primary,
+                                  colorScheme.secondary,
+                                ],
                               ),
+                              borderRadius: BorderRadius.circular(16.0),
                               boxShadow: [
                                 BoxShadow(
-                                  color: AppTheme.primaryColor.withValues(
-                                    alpha: 0.4,
+                                  color: colorScheme.primary.withValues(
+                                    alpha: 0.3,
                                   ),
                                   blurRadius: 16,
                                   offset: const Offset(0, 4),
                                 ),
                               ],
                             ),
-                            child: const Icon(
+                            child: Icon(
                               Icons.cloud_download_outlined,
                               color: Colors.white,
-                              size: 40,
+                              size: isMobile ? 32.0 : 40.0,
                             ),
                           ),
 
-                          SizedBox(height: AppTheme.spacingXL),
+                          SizedBox(height: isMobile ? 24.0 : 32.0),
 
-                          // Welcome text
+                          // Welcome text with theme-aware colors (Requirement 7.1, 7.5)
                           Text(
-                            'Welcome to (TEST BUILD - NEW ROUTER)',
-                            style: Theme.of(context)
-                                .textTheme
-                                .headlineMedium
-                                ?.copyWith(
-                                  color: AppTheme.textColorLight,
-                                  fontSize: 18,
-                                ),
+                            'Welcome to',
+                            style: theme.textTheme.headlineMedium?.copyWith(
+                              color:
+                                  colorScheme.onSurface.withValues(alpha: 0.7),
+                              fontSize: welcomeFontSize,
+                            ),
                             textAlign: TextAlign.center,
                           ),
 
-                          SizedBox(height: AppTheme.spacingS),
+                          SizedBox(height: 8.0),
 
+                          // App name with theme-aware colors (Requirement 7.1, 7.5)
                           Text(
                             AppConfig.appName,
-                            style: Theme.of(context)
-                                .textTheme
-                                .displayMedium
-                                ?.copyWith(
-                                  color: Colors.white,
-                                  fontSize: 28,
-                                  fontWeight: FontWeight.bold,
-                                ),
+                            style: theme.textTheme.displayMedium?.copyWith(
+                              color: colorScheme.onSurface,
+                              fontSize: titleFontSize,
+                              fontWeight: FontWeight.bold,
+                            ),
                             textAlign: TextAlign.center,
                           ),
 
-                          SizedBox(height: AppTheme.spacingM),
+                          SizedBox(height: 16.0),
 
+                          // Description with theme-aware colors (Requirement 7.1, 7.5)
                           Text(
                             AppConfig.appDescription,
-                            style:
-                                Theme.of(context).textTheme.bodyLarge?.copyWith(
-                                      color: AppTheme.textColorLight,
-                                      fontSize: 16,
-                                      height: 1.5,
-                                    ),
+                            style: theme.textTheme.bodyLarge?.copyWith(
+                              color:
+                                  colorScheme.onSurface.withValues(alpha: 0.8),
+                              fontSize: descriptionFontSize,
+                              height: 1.5,
+                            ),
                             textAlign: TextAlign.center,
                           ),
 
-                          SizedBox(height: AppTheme.spacingXXL),
+                          SizedBox(height: isMobile ? 32.0 : 40.0),
 
-                          // Login button
-                          GradientButton(
-                            text: 'Sign In',
-                            icon: Icons.login,
+                          // Platform-appropriate login button (Requirements 7.2, 13.6)
+                          SizedBox(
                             width: double.infinity,
-                            isLoading: _isLoading,
-                            onPressed: _handleLogin,
+                            height: isMobile
+                                ? 48.0
+                                : 52.0, // Touch target size (Requirement 13.6)
+                            child: platformAdapter.buildButton(
+                              onPressed: _isLoading ? null : _handleLogin,
+                              isPrimary: true,
+                              child: _isLoading
+                                  ? SizedBox(
+                                      width: 20,
+                                      height: 20,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        valueColor:
+                                            AlwaysStoppedAnimation<Color>(
+                                          Colors.white,
+                                        ),
+                                      ),
+                                    )
+                                  : Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: [
+                                        const Icon(Icons.login, size: 20),
+                                        const SizedBox(width: 8),
+                                        Text(
+                                          'Sign In',
+                                          style: TextStyle(
+                                            fontSize: isMobile ? 16.0 : 18.0,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                            ),
                           ),
 
-                          SizedBox(height: AppTheme.spacingL),
-
-                          SizedBox(height: AppTheme.spacingM),
+                          SizedBox(height: 16.0),
                         ],
                       ),
                     ),

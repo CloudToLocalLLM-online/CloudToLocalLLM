@@ -176,22 +176,30 @@
     });
   </script>
 
-  <!-- DISABLE SERVICE WORKER COMPLETELY -->
+  <!-- SERVICE WORKER ENABLED -->
   <script>
-    // Completely disable service workers to avoid caching issues during development
-    console.log('SERVICE WORKERS DISABLED FOR DEVELOPMENT');
+    // Enable service workers for offline support and caching
+    console.log('SERVICE WORKERS ENABLED');
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.getRegistrations().then(function(registrations) {
-        registrations.forEach(function(registration) {
-          console.log('Unregistering service worker:', registration.scope);
-          registration.unregister();
-        });
+      window.addEventListener('load', function() {
+        navigator.serviceWorker.register('flutter_service_worker.js?v=' + Date.now())
+          .then(function(registration) {
+            console.log('Service worker registered successfully:', registration.scope);
+            // Update service worker when new version is available
+            registration.addEventListener('updatefound', function() {
+              const newWorker = registration.installing;
+              console.log('New service worker found, installing...');
+              newWorker.addEventListener('statechange', function() {
+                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                  console.log('New service worker installed, ready to activate');
+                }
+              });
+            });
+          })
+          .catch(function(error) {
+            console.warn('Service worker registration failed:', error);
+          });
       });
-      // Prevent new service workers from registering
-      navigator.serviceWorker.register = function() {
-        console.log('Service worker registration blocked');
-        return Promise.reject(new Error('Service workers disabled'));
-      };
     }
   </script>
 
