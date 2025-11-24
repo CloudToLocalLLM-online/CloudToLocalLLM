@@ -72,6 +72,7 @@ class HomepageScreen extends StatelessWidget {
         horizontal: horizontalPadding,
       ),
       child: Stack(
+        alignment: Alignment.center,
         children: [
           Align(
             alignment: Alignment.topRight,
@@ -215,8 +216,6 @@ class HomepageScreen extends StatelessWidget {
         children: [
           _buildInfoCard(context, isMobile: isMobile),
           SizedBox(height: cardSpacing),
-          _buildDownloadCard(context, isMobile: isMobile),
-          SizedBox(height: cardSpacing),
           _buildWebAppCard(context, isMobile: isMobile),
         ],
       ),
@@ -234,73 +233,6 @@ class HomepageScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildDownloadCard(BuildContext context, {required bool isMobile}) {
-    final theme = Theme.of(context);
-    final platformService = Provider.of<PlatformDetectionService>(context);
-    final platformAdapter = PlatformAdapter(platformService);
-
-    // Platform-specific download text
-    String downloadText = 'Download Options';
-    String platformInfo = 'AppImage • Debian Package • AUR • Pre-built Binary';
-
-    if (platformService.isWindows) {
-      downloadText = 'Download for Windows';
-      platformInfo = 'Windows Installer • Portable ZIP';
-    } else if (platformService.isLinux) {
-      downloadText = 'Download for Linux';
-      platformInfo = 'AppImage • Debian Package • AUR • Pre-built Binary';
-    }
-
-    return _buildCard(
-      context,
-      isMobile: isMobile,
-      title: 'Download CloudToLocalLLM',
-      description:
-          'Get the desktop application with multiple installation options',
-      child: Column(
-        children: [
-          SizedBox(height: isMobile ? 16 : 24),
-          // Use platform-appropriate button with minimum touch target size
-          ConstrainedBox(
-            constraints: BoxConstraints(
-              minWidth: isMobile ? 200 : 220,
-              minHeight: 44, // Minimum touch target for mobile
-            ),
-            child: Semantics(
-              button: true,
-              label: 'Navigate to download page',
-              child: platformAdapter.buildButton(
-                onPressed: () => context.go('/download'),
-                isPrimary: true,
-                child: Padding(
-                  padding: EdgeInsets.symmetric(
-                    vertical: isMobile ? 12 : 14,
-                    horizontal: isMobile ? 20 : 28,
-                  ),
-                  child: Text(
-                    downloadText,
-                    style: TextStyle(
-                      fontSize: isMobile ? 16 : 17,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-          SizedBox(height: isMobile ? 12 : 16),
-          Text(
-            platformInfo,
-            style: theme.textTheme.bodySmall?.copyWith(
-              fontSize: isMobile ? 12 : 14,
-            ),
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildWebAppCard(BuildContext context, {required bool isMobile}) {
     final platformService = Provider.of<PlatformDetectionService>(context);
     final platformAdapter = PlatformAdapter(platformService);
@@ -311,50 +243,54 @@ class HomepageScreen extends StatelessWidget {
       title: 'Web Application',
       description:
           'Access CloudToLocalLLM through your web browser with cloud streaming',
-      child: Column(
-        children: [
-          SizedBox(height: isMobile ? 16 : 24),
-          // Use platform-appropriate button with minimum touch target size
-          ConstrainedBox(
-            constraints: BoxConstraints(
-              minWidth: isMobile ? 200 : 220,
-              minHeight: 44, // Minimum touch target for mobile
-            ),
-            child: Semantics(
-              button: true,
-              label: 'Launch web application',
-              child: platformAdapter.buildButton(
-                onPressed: () async {
-                  // Redirect to app subdomain instead of local route
-                  if (kIsWeb) {
-                    // Use url_launcher to navigate to app subdomain
-                    final uri = Uri.parse('https://app.cloudtolocalllm.online');
-                    if (await canLaunchUrl(uri)) {
-                      await launchUrl(uri, webOnlyWindowName: '_self');
+      child: SizedBox(
+        width: double.infinity,
+        child: Column(
+          children: [
+            SizedBox(height: isMobile ? 16 : 24),
+            // Use platform-appropriate button with minimum touch target size
+            ConstrainedBox(
+              constraints: BoxConstraints(
+                minWidth: isMobile ? 200 : 220,
+                minHeight: 44, // Minimum touch target for mobile
+              ),
+              child: Semantics(
+                button: true,
+                label: 'Launch web application',
+                child: platformAdapter.buildButton(
+                  onPressed: () async {
+                    // Redirect to app subdomain instead of local route
+                    if (kIsWeb) {
+                      // Use url_launcher to navigate to app subdomain
+                      final uri =
+                          Uri.parse('https://app.cloudtolocalllm.online');
+                      if (await canLaunchUrl(uri)) {
+                        await launchUrl(uri, webOnlyWindowName: '_self');
+                      }
+                    } else {
+                      // For desktop, use local routing
+                      context.go('/chat');
                     }
-                  } else {
-                    // For desktop, use local routing
-                    context.go('/chat');
-                  }
-                },
-                isPrimary: true,
-                child: Padding(
-                  padding: EdgeInsets.symmetric(
-                    vertical: isMobile ? 12 : 14,
-                    horizontal: isMobile ? 20 : 28,
-                  ),
-                  child: Text(
-                    'Launch Web App',
-                    style: TextStyle(
-                      fontSize: isMobile ? 16 : 17,
-                      fontWeight: FontWeight.w600,
+                  },
+                  isPrimary: true,
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(
+                      vertical: isMobile ? 12 : 14,
+                      horizontal: isMobile ? 20 : 28,
+                    ),
+                    child: Text(
+                      'Launch Web App',
+                      style: TextStyle(
+                        fontSize: isMobile ? 16 : 17,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
                 ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
