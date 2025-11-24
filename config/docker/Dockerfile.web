@@ -28,6 +28,9 @@ USER 1000
 ARG BUILD_SHA
 ENV BUILD_SHA=${BUILD_SHA}
 
+# Force cache invalidation when BUILD_SHA changes
+RUN echo "Building from commit: ${BUILD_SHA}"
+
 # Copy source code from build context
 COPY --chown=1000:1000 . .
 
