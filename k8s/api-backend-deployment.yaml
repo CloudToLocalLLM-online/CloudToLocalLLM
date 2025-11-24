@@ -40,6 +40,24 @@ spec:
         runAsNonRoot: true
         runAsUser: 1001
         fsGroup: 1001
+      initContainers:
+        - name: wait-for-postgres
+          image: busybox:1.35
+          command:
+            - sh
+            - -c
+            - |
+              echo "Waiting for PostgreSQL to be ready..."
+              for i in $(seq 1 30); do
+                if nc -z postgres.cloudtolocalllm.svc.cluster.local 5432; then
+                  echo "PostgreSQL is ready!"
+                  exit 0
+                fi
+                echo "Attempt $i/30: PostgreSQL not ready yet, waiting..."
+                sleep 2
+              done
+              echo "PostgreSQL failed to become ready after 60 seconds"
+              exit 1
       containers:
         - name: api-backend
           image: cloudtolocalllm/cloudtolocalllm-api:latest
@@ -198,13 +216,23 @@ spec:
               memory: "2Gi"
               cpu: "500m"
 
+          startupProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 30
+
           livenessProbe:
             httpGet:
               path: /health
               port: 8080
-            initialDelaySeconds: 30
+            initialDelaySeconds: 60
             periodSeconds: 10
             timeoutSeconds: 5
+            failureThreshold: 3
 
           readinessProbe:
             httpGet:
@@ -213,3 +241,4 @@ spec:
             initialDelaySeconds: 10
             periodSeconds: 5
             timeoutSeconds: 3
+            failureThreshold: 3
