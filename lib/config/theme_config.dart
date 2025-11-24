@@ -237,9 +237,9 @@ class ThemeConfig {
   /// Calculate relative luminance of a color
   /// Formula: 0.2126 * R + 0.7152 * G + 0.0722 * B
   static double _calculateRelativeLuminance(Color color) {
-    final double r = _linearizeColorComponent(color.red / 255.0);
-    final double g = _linearizeColorComponent(color.green / 255.0);
-    final double b = _linearizeColorComponent(color.blue / 255.0);
+    final double r = _linearizeColorComponent((color.r * 255).round() / 255.0);
+    final double g = _linearizeColorComponent((color.g * 255).round() / 255.0);
+    final double b = _linearizeColorComponent((color.b * 255).round() / 255.0);
     return 0.2126 * r + 0.7152 * g + 0.0722 * b;
   }
 

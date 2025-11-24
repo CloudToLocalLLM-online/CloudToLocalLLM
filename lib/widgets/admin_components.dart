@@ -33,4 +33,3 @@ export 'admin_responsive.dart';
 
 // Also export theme for convenience
 export '../config/theme.dart';
-

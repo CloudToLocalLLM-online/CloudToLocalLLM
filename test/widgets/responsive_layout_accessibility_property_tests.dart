@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:cloudtolocalllm/utils/responsive_layout.dart';
+
 import 'package:cloudtolocalllm/utils/accessibility_helpers.dart';
 
 void main() {
@@ -212,13 +212,13 @@ void main() {
                   body: Column(
                     children: [
                       Focus(
-                        onKey: (node, event) => KeyEventResult.handled,
+                        onKeyEvent: (node, event) => KeyEventResult.handled,
                         child: const TextField(
                           decoration: InputDecoration(label: Text('Field 1')),
                         ),
                       ),
                       Focus(
-                        onKey: (node, event) => KeyEventResult.handled,
+                        onKeyEvent: (node, event) => KeyEventResult.handled,
                         child: const TextField(
                           decoration: InputDecoration(label: Text('Field 2')),
                         ),
@@ -258,7 +258,7 @@ void main() {
               MaterialApp(
                 home: Scaffold(
                   body: Focus(
-                    onKey: (node, event) => KeyEventResult.handled,
+                    onKeyEvent: (node, event) => KeyEventResult.handled,
                     child: Container(
                       decoration: BoxDecoration(
                         border: Border.all(color: Colors.blue, width: 2),
@@ -294,15 +294,13 @@ void main() {
           int passCount = 0;
 
           for (int i = 0; i < iterations; i++) {
-            bool keyHandled = false;
-
             await tester.pumpWidget(
               MaterialApp(
                 home: Scaffold(
                   body: Focus(
-                    onKey: (node, event) {
-                      if (event.isKeyPressed(LogicalKeyboardKey.enter)) {
-                        keyHandled = true;
+                    onKeyEvent: (node, event) {
+                      if (event is KeyDownEvent &&
+                          event.logicalKey == LogicalKeyboardKey.enter) {
                         return KeyEventResult.handled;
                       }
                       return KeyEventResult.ignored;

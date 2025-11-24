@@ -335,7 +335,6 @@ void main() {
       await provider1.setThemeMode(ThemeMode.dark);
       await Future.delayed(const Duration(milliseconds: 100));
 
-      final firstLoadTime = DateTime.now();
       provider1.dispose();
 
       // Second startup - should use cache

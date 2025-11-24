@@ -1,0 +1,117 @@
+Analyzing CloudToLocalLLM...                                    
+
+   info - 'red' is deprecated and shouldn't be used. Use (*.r * 255.0).round().clamp(0, 255) - lib\config\theme_config.dart:240:53 - deprecated_member_use
+   info - 'green' is deprecated and shouldn't be used. Use (*.g * 255.0).round().clamp(0, 255) - lib\config\theme_config.dart:241:53 - deprecated_member_use
+   info - 'blue' is deprecated and shouldn't be used. Use (*.b * 255.0).round().clamp(0, 255) - lib\config\theme_config.dart:242:53 - deprecated_member_use
+warning - The value of the field '_platformService' isn't used - lib\screens\admin\admin_center_screen.dart:55:33 - unused_field
+warning - The value of the local variable 'themeProvider' isn't used - lib\screens\admin\admin_center_screen.dart:207:11 - unused_local_variable
+warning - The value of the local variable 'theme' isn't used - lib\screens\admin\admin_center_screen.dart:406:11 - unused_local_variable
+warning - The value of the local variable 'theme' isn't used - lib\screens\admin\admin_center_screen.dart:434:11 - unused_local_variable
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\callback_screen.dart:602:52 - deprecated_member_use
+warning - The value of the local variable 'isTablet' isn't used - lib\screens\ollama_test_screen.dart:69:11 - unused_local_variable
+   info - 'value' is deprecated and shouldn't be used. Use initialValue instead. This will set the initial value for the form field. This feature was deprecated after v3.33.0-1.0.pre - lib\screens\ollama_test_screen.dart:304:31 - deprecated_member_use
+  error - Expected to find '}' - lib\screens\settings\connection_status_screen.dart:60:3 - expected_token
+  error - Expected to find '}' - lib\screens\settings\daemon_settings_screen.dart:141:3 - expected_token
+   info - 'announce' is deprecated and shouldn't be used. Use sendAnnouncement instead. This API is incompatible with multiple windows. This feature was deprecated after v3.35.0-0.1.pre - lib\services\accessibility_service.dart:134:24 - deprecated_member_use
+   info - The import of 'package:flutter/cupertino.dart' is unnecessary because all of the used elements are also provided by the import of 'package:flutter/material.dart' - lib\services\platform_adapter.dart:2:8 - unnecessary_import
+   info - 'groupValue' is deprecated and shouldn't be used. Use a RadioGroup ancestor to manage group value instead. This feature was deprecated after v3.32.0-0.0.pre - lib\services\platform_adapter.dart:403:9 - deprecated_member_use
+   info - 'onChanged' is deprecated and shouldn't be used. Use RadioGroup to handle value change instead. This feature was deprecated after v3.32.0-0.0.pre - lib\services\platform_adapter.dart:404:9 - deprecated_member_use
+   info - 'groupValue' is deprecated and shouldn't be used. Use a RadioGroup ancestor to manage group value instead. This feature was deprecated after v3.32.0-0.0.pre - lib\services\platform_adapter.dart:410:9 - deprecated_member_use
+   info - 'onChanged' is deprecated and shouldn't be used. Use RadioGroup to handle value change instead. This feature was deprecated after v3.32.0-0.0.pre - lib\services\platform_adapter.dart:411:9 - deprecated_member_use
+   info - 'onKey' is deprecated and shouldn't be used. Use onKeyEvent instead. This feature was deprecated after v3.18.0-2.0.pre - lib\widgets\settings\admin_center_button.dart:204:7 - deprecated_member_use
+   info - 'isKeyPressed' is deprecated and shouldn't be used. Use HardwareKeyboard.instance.isLogicalKeyPressed instead. This feature was deprecated after v3.18.0-2.0.pre - lib\widgets\settings\admin_center_button.dart:205:19 - deprecated_member_use
+   info - 'isKeyPressed' is deprecated and shouldn't be used. Use HardwareKeyboard.instance.isLogicalKeyPressed instead. This feature was deprecated after v3.18.0-2.0.pre - lib\widgets\settings\admin_center_button.dart:206:19 - deprecated_member_use
+   info - 'groupValue' is deprecated and shouldn't be used. Use a RadioGroup ancestor to manage group value instead. This feature was deprecated after v3.32.0-0.0.pre - lib\widgets\theme_error_handler_widget.dart:101:15 - deprecated_member_use
+   info - 'onChanged' is deprecated and shouldn't be used. Use RadioGroup to handle value change instead. This feature was deprecated after v3.32.0-0.0.pre - lib\widgets\theme_error_handler_widget.dart:102:15 - deprecated_member_use
+   info - 'groupValue' is deprecated and shouldn't be used. Use a RadioGroup ancestor to manage group value instead. This feature was deprecated after v3.32.0-0.0.pre - lib\widgets\theme_error_handler_widget.dart:123:15 - deprecated_member_use
+   info - 'onChanged' is deprecated and shouldn't be used. Use RadioGroup to handle value change instead. This feature was deprecated after v3.32.0-0.0.pre - lib\widgets\theme_error_handler_widget.dart:124:15 - deprecated_member_use
+   info - 'groupValue' is deprecated and shouldn't be used. Use a RadioGroup ancestor to manage group value instead. This feature was deprecated after v3.32.0-0.0.pre - lib\widgets\theme_error_handler_widget.dart:145:15 - deprecated_member_use
+   info - 'onChanged' is deprecated and shouldn't be used. Use RadioGroup to handle value change instead. This feature was deprecated after v3.32.0-0.0.pre - lib\widgets\theme_error_handler_widget.dart:146:15 - deprecated_member_use
+warning - Unused import: 'package:cloudtolocalllm/services/auth_service.dart' - test\helpers\mock_services.dart:10:8 - unused_import
+warning - Unused import: 'package:cloudtolocalllm/services/admin_center_service.dart' - test\helpers\mock_services.dart:11:8 - unused_import
+   info - 'red' is deprecated and shouldn't be used. Use (*.r * 255.0).round().clamp(0, 255) - test\helpers\test_utilities.dart:152:30 - deprecated_member_use
+   info - 'green' is deprecated and shouldn't be used. Use (*.g * 255.0).round().clamp(0, 255) - test\helpers\test_utilities.dart:153:30 - deprecated_member_use
+   info - 'blue' is deprecated and shouldn't be used. Use (*.b * 255.0).round().clamp(0, 255) - test\helpers\test_utilities.dart:154:30 - deprecated_member_use
+warning - The value of the local variable 'themeProvider' isn't used - test\integration\admin_center_responsive_property_test.dart:23:24 - unused_local_variable
+warning - The value of the local variable 'platformAdapter' isn't used - test\integration\admin_center_responsive_property_test.dart:25:26 - unused_local_variable
+warning - The value of the local variable 'authService' isn't used - test\integration\admin_center_responsive_property_test.dart:26:26 - unused_local_variable
+warning - The value of the local variable 'adminService' isn't used - test\integration\admin_center_responsive_property_test.dart:27:33 - unused_local_variable
+  error - Target of URI doesn't exist: 'package:cloudtolocalllm/screens/chat/chat_screen.dart' - test\integration\chat_interface_platform_property_test.dart:3:8 - uri_does_not_exist
+  error - The name 'ChatScreen' isn't a class - test\integration\chat_interface_platform_property_test.dart:44:19 - creation_with_non_type
+  error - Undefined name 'ChatScreen' - test\integration\chat_interface_platform_property_test.dart:52:28 - undefined_identifier
+  error - The name 'ChatScreen' isn't a class - test\integration\chat_interface_platform_property_test.dart:61:19 - creation_with_non_type
+  error - Target of URI doesn't exist: 'package:cloudtolocalllm/screens/chat/chat_screen.dart' - test\integration\chat_interface_responsive_property_test.dart:3:8 - uri_does_not_exist
+  error - The name 'ChatScreen' isn't a class - test\integration\chat_interface_responsive_property_test.dart:35:21 - creation_with_non_type
+  error - Undefined name 'ChatScreen' - test\integration\chat_interface_responsive_property_test.dart:45:28 - undefined_identifier
+  error - Undefined name 'ChatScreen' - test\integration\chat_interface_responsive_property_test.dart:46:55 - undefined_identifier
+  error - The name 'ChatScreen' isn't a class - test\integration\chat_interface_responsive_property_test.dart:58:21 - creation_with_non_type
+  error - Undefined name 'ChatScreen' - test\integration\chat_interface_responsive_property_test.dart:68:28 - undefined_identifier
+  error - Undefined name 'ChatScreen' - test\integration\chat_interface_responsive_property_test.dart:69:55 - undefined_identifier
+  error - The name 'ChatScreen' isn't a class - test\integration\chat_interface_responsive_property_test.dart:81:21 - creation_with_non_type
+  error - Undefined name 'ChatScreen' - test\integration\chat_interface_responsive_property_test.dart:91:28 - undefined_identifier
+  error - Undefined name 'ChatScreen' - test\integration\chat_interface_responsive_property_test.dart:92:55 - undefined_identifier
+  error - The name 'ChatScreen' isn't a class - test\integration\chat_interface_responsive_property_test.dart:104:21 - creation_with_non_type
+  error - The name 'ChatScreen' isn't a class - test\integration\chat_interface_responsive_property_test.dart:118:23 - creation_with_non_type
+  error - Undefined name 'ChatScreen' - test\integration\chat_interface_responsive_property_test.dart:129:28 - undefined_identifier
+  error - Target of URI doesn't exist: 'package:cloudtolocalllm/screens/chat/chat_screen.dart' - test\integration\chat_interface_theme_property_test.dart:3:8 - uri_does_not_exist
+  error - The name 'ChatScreen' isn't a class - test\integration\chat_interface_theme_property_test.dart:38:19 - creation_with_non_type
+  error - Undefined name 'ChatScreen' - test\integration\chat_interface_theme_property_test.dart:47:28 - undefined_identifier
+  error - The name 'ChatScreen' isn't a class - test\integration\chat_interface_theme_property_test.dart:58:19 - creation_with_non_type
+  error - Undefined name 'ChatScreen' - test\integration\chat_interface_theme_property_test.dart:67:28 - undefined_identifier
+  error - The name 'ChatScreen' isn't a class - test\integration\chat_interface_theme_property_test.dart:78:19 - creation_with_non_type
+  error - Target of URI doesn't exist: 'package:cloudtolocalllm/screens/chat/chat_screen.dart' - test\integration\chat_interface_touch_target_property_test.dart:3:8 - uri_does_not_exist
+  error - The name 'ChatScreen' isn't a class - test\integration\chat_interface_touch_target_property_test.dart:34:21 - creation_with_non_type
+  error - Undefined name 'ChatScreen' - test\integration\chat_interface_touch_target_property_test.dart:44:28 - undefined_identifier
+  error - The name 'ChatScreen' isn't a class - test\integration\chat_interface_touch_target_property_test.dart:82:21 - creation_with_non_type
+  error - The name 'ChatScreen' isn't a class - test\integration\chat_interface_touch_target_property_test.dart:104:21 - creation_with_non_type
+warning - Unused import: '../test_config.dart' - test\integration\diagnostic_screens_platform_property_test.dart:12:8 - unused_import
+warning - The declaration 'tearDown' isn't referenced - test\integration\diagnostic_screens_platform_property_test.dart:36:5 - unused_element
+  error - The getter 'currentTheme' isn't defined for the type 'ThemeProvider' - test\integration\diagnostic_screens_platform_property_test.dart:57:32 - undefined_getter
+warning - Unused import: 'package:cloudtolocalllm/services/auth_service.dart' - test\integration\end_to_end_theme_integration_test.dart:8:8 - unused_import
+warning - Unused import: 'package:cloudtolocalllm/screens/login_screen.dart' - test\integration\end_to_end_theme_integration_test.dart:14:8 - unused_import
+warning - The value of the local variable 'platformDetectionService' isn't used - test\integration\end_to_end_theme_integration_test.dart:31:35 - unused_local_variable
+   info - 'onPopPage' is deprecated and shouldn't be used. Use onDidRemovePage instead. This feature was deprecated after v3.16.0-17.0.pre - test\integration\end_to_end_theme_integration_test.dart:213:15 - deprecated_member_use
+warning - The value of the local variable 'initialTheme' isn't used - test\integration\error_recovery_property_test.dart:58:15 - unused_local_variable
+warning - Unused import: 'package:flutter/material.dart' - test\integration\homepage_responsive_property_test.dart:1:8 - unused_import
+warning - Unused import: 'package:flutter/material.dart' - test\integration\platform_features_integration_test.dart:1:8 - unused_import
+warning - The value of the local variable 'lastScreenSize' isn't used - test\integration\responsive_layout_adaptation_property_test.dart:30:21 - unused_local_variable
+warning - Unused import: 'package:flutter/material.dart' - test\integration\settings_screen_responsive_property_test.dart:1:8 - unused_import
+warning - The value of the local variable 'firstLoadTime' isn't used - test\integration\theme_persistence_property_test.dart:338:13 - unused_local_variable
+warning - Unused import: 'package:cloudtolocalllm/di/locator.dart' - test\widgets\account_settings_category_test.dart:12:8 - unused_import
+warning - Unused import: 'package:flutter/material.dart' - test\widgets\admin_center_property_tests.dart:1:8 - unused_import
+warning - The value of the local variable 'isAdmin' isn't used - test\widgets\admin_center_property_tests.dart:28:19 - unused_local_variable
+warning - The value of the local variable 'isLoading' isn't used - test\widgets\admin_center_property_tests.dart:244:18 - unused_local_variable
+   info - The import of 'package:flutter/material.dart' is unnecessary because all of the used elements are also provided by the import of 'package:flutter/foundation.dart' - test\widgets\category_visibility_filtering_test.dart:3:8 - unnecessary_import
+warning - Unused import: 'package:cloudtolocalllm/services/settings_validator.dart' - test\widgets\import_export_property_tests.dart:6:8 - unused_import
+warning - Unused import: 'package:sentry_flutter/sentry_flutter.dart' - test\widgets\local_llm_providers_category_test.dart:8:8 - unused_import
+   info - The import of 'package:cloudtolocalllm/models/provider_configuration.dart' is unnecessary because all of the used elements are also provided by the import of 'package:cloudtolocalllm/models/provider_configuration.dart' - test\widgets\local_llm_providers_category_test.dart:9:8 - unnecessary_import
+warning - The method doesn't override an inherited method - test\widgets\local_llm_providers_category_test.dart:18:39 - override_on_non_overriding_member
+warning - The method doesn't override an inherited method - test\widgets\local_llm_providers_category_test.dart:21:34 - override_on_non_overriding_member
+warning - The method doesn't override an inherited method - test\widgets\local_llm_providers_category_test.dart:30:16 - override_on_non_overriding_member
+warning - The method doesn't override an inherited method - test\widgets\local_llm_providers_category_test.dart:35:16 - override_on_non_overriding_member
+warning - The method doesn't override an inherited method - test\widgets\local_llm_providers_category_test.dart:40:16 - override_on_non_overriding_member
+warning - The method doesn't override an inherited method - test\widgets\local_llm_providers_category_test.dart:49:16 - override_on_non_overriding_member
+warning - The method doesn't override an inherited method - test\widgets\local_llm_providers_category_test.dart:52:16 - override_on_non_overriding_member
+warning - The getter doesn't override an inherited getter - test\widgets\local_llm_providers_category_test.dart:57:15 - override_on_non_overriding_member
+warning - The method doesn't override an inherited method - test\widgets\local_llm_providers_category_test.dart:60:24 - override_on_non_overriding_member
+warning - The method doesn't override an inherited method - test\widgets\local_llm_providers_category_test.dart:70:16 - override_on_non_overriding_member
+warning - The method doesn't override an inherited method - test\widgets\local_llm_providers_category_test.dart:73:16 - override_on_non_overriding_member
+warning - The method doesn't override an inherited method - test\widgets\local_llm_providers_category_test.dart:76:16 - override_on_non_overriding_member
+warning - The method doesn't override an inherited method - test\widgets\local_llm_providers_category_test.dart:79:32 - override_on_non_overriding_member
+warning - The method doesn't override an inherited method - test\widgets\local_llm_providers_category_test.dart:83:16 - override_on_non_overriding_member
+warning - The getter doesn't override an inherited getter - test\widgets\local_llm_providers_category_test.dart:86:43 - override_on_non_overriding_member
+warning - The method doesn't override an inherited method - test\widgets\local_llm_providers_category_test.dart:90:16 - override_on_non_overriding_member
+warning - The method doesn't override an inherited method - test\widgets\local_llm_providers_category_test.dart:94:32 - override_on_non_overriding_member
+warning - The method doesn't override an inherited method - test\widgets\local_llm_providers_category_test.dart:98:16 - override_on_non_overriding_member
+warning - The value of the local variable 'random' isn't used - test\widgets\local_llm_providers_enable_disable_idempotence_test.dart:228:13 - unused_local_variable
+warning - The value of the local variable 'platformName' isn't used - test\widgets\platform_detection_property_tests.dart:560:19 - unused_local_variable
+warning - Unused import: 'package:cloudtolocalllm/utils/responsive_layout.dart' - test\widgets\responsive_layout_accessibility_property_tests.dart:4:8 - unused_import
+   info - 'onKey' is deprecated and shouldn't be used. Use onKeyEvent instead. This feature was deprecated after v3.18.0-2.0.pre - test\widgets\responsive_layout_accessibility_property_tests.dart:215:25 - deprecated_member_use
+   info - 'onKey' is deprecated and shouldn't be used. Use onKeyEvent instead. This feature was deprecated after v3.18.0-2.0.pre - test\widgets\responsive_layout_accessibility_property_tests.dart:221:25 - deprecated_member_use
+   info - 'onKey' is deprecated and shouldn't be used. Use onKeyEvent instead. This feature was deprecated after v3.18.0-2.0.pre - test\widgets\responsive_layout_accessibility_property_tests.dart:261:21 - deprecated_member_use
+warning - The value of the local variable 'keyHandled' isn't used - test\widgets\responsive_layout_accessibility_property_tests.dart:297:18 - unused_local_variable
+   info - 'onKey' is deprecated and shouldn't be used. Use onKeyEvent instead. This feature was deprecated after v3.18.0-2.0.pre - test\widgets\responsive_layout_accessibility_property_tests.dart:303:21 - deprecated_member_use
+   info - 'isKeyPressed' is deprecated and shouldn't be used. Use HardwareKeyboard.instance.isLogicalKeyPressed instead. This feature was deprecated after v3.18.0-2.0.pre - test\widgets\responsive_layout_accessibility_property_tests.dart:304:33 - deprecated_member_use
+warning - Unused import: 'package:flutter/services.dart' - test\widgets\settings_search_property_tests.dart:2:8 - unused_import
+warning - Unused import: 'package:flutter/material.dart' - test\widgets\validation_error_handling_property_tests.dart:1:8 - unused_import
+

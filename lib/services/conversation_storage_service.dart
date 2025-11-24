@@ -458,10 +458,12 @@ class ConversationStorageService {
     }
 
     final token = await _authService.getValidatedAccessToken();
-    debugPrint('[ConversationStorage] Got token: ${token != null ? "YES (${token.length} chars)" : "NO"}');
+    debugPrint(
+        '[ConversationStorage] Got token: ${token != null ? "YES (${token.length} chars)" : "NO"}');
 
     if (token == null) {
-      debugPrint('[ConversationStorage] Auth service authenticated: ${_authService.isAuthenticated}');
+      debugPrint(
+          '[ConversationStorage] Auth service authenticated: ${_authService.isAuthenticated}');
       throw StateError('No access token available');
     }
 
@@ -478,8 +480,8 @@ class ConversationStorageService {
     try {
       final headers = await _getAuthHeaders();
 
-      final response = await _dio.get('/conversations',
-          options: Options(headers: headers));
+      final response =
+          await _dio.get('/conversations', options: Options(headers: headers));
 
       if (response.statusCode == 200) {
         final data = response.data as Map<String, dynamic>;

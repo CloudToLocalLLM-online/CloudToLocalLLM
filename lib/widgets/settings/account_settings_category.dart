@@ -65,21 +65,21 @@ class _AccountSettingsCategoryContentState
     super.initState();
     _authService = di.serviceLocator.get<AuthService>();
     _sessionStorage = widget.sessionStorageService ?? SessionStorageService();
-    
+
     // Get tier service if available
     try {
       _tierService = di.serviceLocator.get<EnhancedUserTierService>();
     } catch (e) {
       debugPrint('[AccountSettings] EnhancedUserTierService not available: $e');
     }
-    
+
     // Get admin center service if available
     try {
       _adminCenterService = di.serviceLocator.get<AdminCenterService>();
     } catch (e) {
       debugPrint('[AccountSettings] AdminCenterService not available: $e');
     }
-    
+
     _loadAccountInfo();
   }
 

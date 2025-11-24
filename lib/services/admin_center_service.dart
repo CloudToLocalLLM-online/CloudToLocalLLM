@@ -178,8 +178,7 @@ class AdminCenterService extends ChangeNotifier {
   Future<void> suspendUser(String userId, String reason) async {
     try {
       _setLoading(true);
-      await _dio
-          .post('/admin/users/$userId/suspend', data: {'reason': reason});
+      await _dio.post('/admin/users/$userId/suspend', data: {'reason': reason});
       _setError(null);
     } catch (e) {
       debugPrint('[AdminCenterService] Error suspending user: $e');

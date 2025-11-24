@@ -225,7 +225,6 @@ void main() {
       /// **Validates: Requirements 3.9**
 
       const int iterations = 100;
-      final random = Random();
 
       // Create a provider with specific configuration
       final config = LMStudioProviderConfiguration(

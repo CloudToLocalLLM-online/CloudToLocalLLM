@@ -6,7 +6,7 @@ import '../services/admin_center_service.dart';
 import '../services/enhanced_user_tier_service.dart';
 import '../services/theme_provider.dart';
 import '../services/platform_adapter.dart';
-import '../services/platform_detection_service.dart';
+
 import '../models/settings_category.dart';
 import '../widgets/settings/settings_category_list.dart';
 import '../widgets/settings/general_settings_category.dart';
@@ -41,7 +41,7 @@ class _UnifiedSettingsScreenState extends State<UnifiedSettingsScreen> {
   late PlatformCategoryFilter _platformFilter;
   late AuthService _authService;
   late PlatformAdapter _platformAdapter;
-  late PlatformDetectionService _platformDetectionService;
+
   AdminCenterService? _adminCenterService;
   EnhancedUserTierService? _tierService;
 
@@ -63,8 +63,7 @@ class _UnifiedSettingsScreenState extends State<UnifiedSettingsScreen> {
   void _initializeServices() {
     try {
       _authService = di.serviceLocator.get<AuthService>();
-      _platformDetectionService =
-          di.serviceLocator.get<PlatformDetectionService>();
+
       _platformAdapter = di.serviceLocator.get<PlatformAdapter>();
 
       // Try to get AdminCenterService if available
@@ -454,7 +453,7 @@ class _UnifiedSettingsScreenState extends State<UnifiedSettingsScreen> {
           ),
           Expanded(
             child: Container(
-              color: Theme.of(context).colorScheme.background,
+              color: Theme.of(context).colorScheme.surface,
               child: _buildActiveCategoryContent(),
             ),
           ),
@@ -520,7 +519,7 @@ class _UnifiedSettingsScreenState extends State<UnifiedSettingsScreen> {
           ),
           Expanded(
             child: Container(
-              color: Theme.of(context).colorScheme.background,
+              color: Theme.of(context).colorScheme.surface,
               child: _buildActiveCategoryContent(),
             ),
           ),
@@ -587,7 +586,7 @@ class _UnifiedSettingsScreenState extends State<UnifiedSettingsScreen> {
             foregroundColor: Theme.of(context).colorScheme.onSurface,
           ),
           body: Container(
-            color: Theme.of(context).colorScheme.background,
+            color: Theme.of(context).colorScheme.surface,
             child: SingleChildScrollView(
               padding: const EdgeInsets.all(16.0),
               child: _buildCategoryContentById(categoryId),

@@ -1,13 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:provider/provider.dart';
-import '../../services/auth_service.dart';
 import '../../services/admin_center_service.dart';
-import '../../services/theme_provider.dart';
-import '../../services/platform_detection_service.dart';
 import '../../services/platform_adapter.dart';
-import '../../models/admin_role_model.dart';
+import '../../services/auth_service.dart';
 import '../../di/locator.dart' as di;
+import '../../models/admin_role_model.dart';
 import 'dashboard_tab.dart';
 import 'user_management_tab.dart';
 import 'payment_management_tab.dart';
@@ -52,7 +49,7 @@ class _AdminCenterScreenState extends State<AdminCenterScreen> {
   String? _errorMessage;
   String _selectedTabId = 'dashboard';
   late AdminCenterService _adminService;
-  late PlatformDetectionService _platformService;
+
   late PlatformAdapter _platformAdapter;
 
   // Define all navigation items
@@ -62,7 +59,6 @@ class _AdminCenterScreenState extends State<AdminCenterScreen> {
   void initState() {
     super.initState();
     _adminService = di.serviceLocator.get<AdminCenterService>();
-    _platformService = di.serviceLocator.get<PlatformDetectionService>();
     _platformAdapter = di.serviceLocator.get<PlatformAdapter>();
     _initializeNavigationItems();
     _checkAdminAuthorization();
@@ -204,7 +200,6 @@ class _AdminCenterScreenState extends State<AdminCenterScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final themeProvider = Provider.of<ThemeProvider>(context);
     final theme = Theme.of(context);
     final screenWidth = MediaQuery.of(context).size.width;
     final isMobile = screenWidth < 600;
@@ -403,7 +398,6 @@ class _AdminCenterScreenState extends State<AdminCenterScreen> {
     BuildContext context,
     List<_NavigationItem> visibleItems,
   ) {
-    final theme = Theme.of(context);
     // Show only first 5 items in bottom nav, rest in overflow menu
     final bottomNavItems = visibleItems.take(5).toList();
 
@@ -431,7 +425,6 @@ class _AdminCenterScreenState extends State<AdminCenterScreen> {
     BuildContext context,
     List<_NavigationItem> visibleItems,
   ) {
-    final theme = Theme.of(context);
     final selectedIndex = visibleItems
         .indexWhere((item) => item.id == _selectedTabId)
         .clamp(0, visibleItems.length - 1);

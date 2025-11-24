@@ -3,7 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:cloudtolocalllm/services/settings_import_export_service.dart';
 import 'package:cloudtolocalllm/services/settings_preference_service.dart';
-import 'package:cloudtolocalllm/services/settings_validator.dart';
+
 import 'package:cloudtolocalllm/utils/settings_error_handler.dart';
 
 void main() {

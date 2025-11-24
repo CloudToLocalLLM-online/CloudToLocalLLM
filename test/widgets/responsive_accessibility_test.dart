@@ -7,8 +7,10 @@ void main() {
   group('ResponsiveLayout Tests', () {
     testWidgets('ResponsiveLayout provides screen size detection',
         (WidgetTester tester) async {
-      addTearDown(tester.binding.platformDispatcher.views.first.resetPhysicalSize);
-      tester.binding.platformDispatcher.views.first.physicalSize = const Size(400, 800);
+      addTearDown(
+          tester.binding.platformDispatcher.views.first.resetPhysicalSize);
+      tester.binding.platformDispatcher.views.first.physicalSize =
+          const Size(400, 800);
 
       await tester.pumpWidget(
         MaterialApp(
@@ -28,8 +30,10 @@ void main() {
 
     testWidgets('getResponsivePadding returns correct values',
         (WidgetTester tester) async {
-      addTearDown(tester.binding.platformDispatcher.views.first.resetPhysicalSize);
-      tester.binding.platformDispatcher.views.first.physicalSize = const Size(400, 800);
+      addTearDown(
+          tester.binding.platformDispatcher.views.first.resetPhysicalSize);
+      tester.binding.platformDispatcher.views.first.physicalSize =
+          const Size(400, 800);
 
       await tester.pumpWidget(
         MaterialApp(
@@ -49,8 +53,10 @@ void main() {
 
     testWidgets('getResponsiveColumnCount returns correct values',
         (WidgetTester tester) async {
-      addTearDown(tester.binding.platformDispatcher.views.first.resetPhysicalSize);
-      tester.binding.platformDispatcher.views.first.physicalSize = const Size(400, 800);
+      addTearDown(
+          tester.binding.platformDispatcher.views.first.resetPhysicalSize);
+      tester.binding.platformDispatcher.views.first.physicalSize =
+          const Size(400, 800);
 
       await tester.pumpWidget(
         MaterialApp(
@@ -71,8 +77,10 @@ void main() {
 
     testWidgets('ResponsiveWidget rebuilds on screen size change',
         (WidgetTester tester) async {
-      addTearDown(tester.binding.platformDispatcher.views.first.resetPhysicalSize);
-      tester.binding.platformDispatcher.views.first.physicalSize = const Size(400, 800);
+      addTearDown(
+          tester.binding.platformDispatcher.views.first.resetPhysicalSize);
+      tester.binding.platformDispatcher.views.first.physicalSize =
+          const Size(400, 800);
 
       await tester.pumpWidget(
         MaterialApp(
@@ -91,8 +99,10 @@ void main() {
 
     testWidgets('ResponsiveContainer applies responsive padding',
         (WidgetTester tester) async {
-      addTearDown(tester.binding.platformDispatcher.views.first.resetPhysicalSize);
-      tester.binding.platformDispatcher.views.first.physicalSize = const Size(400, 800);
+      addTearDown(
+          tester.binding.platformDispatcher.views.first.resetPhysicalSize);
+      tester.binding.platformDispatcher.views.first.physicalSize =
+          const Size(400, 800);
 
       await tester.pumpWidget(
         MaterialApp(
@@ -349,4 +359,3 @@ void main() {
     });
   });
 }
-

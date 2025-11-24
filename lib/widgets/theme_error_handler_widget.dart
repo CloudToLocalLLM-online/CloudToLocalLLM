@@ -98,7 +98,9 @@ class ThemeSettingsExample extends StatelessWidget {
             RadioListTile<ThemeMode>(
               title: const Text('Light'),
               value: ThemeMode.light,
+              // ignore: deprecated_member_use
               groupValue: themeProvider.themeMode,
+              // ignore: deprecated_member_use
               onChanged: (value) async {
                 if (value != null) {
                   try {
@@ -120,7 +122,9 @@ class ThemeSettingsExample extends StatelessWidget {
             RadioListTile<ThemeMode>(
               title: const Text('Dark'),
               value: ThemeMode.dark,
+              // ignore: deprecated_member_use
               groupValue: themeProvider.themeMode,
+              // ignore: deprecated_member_use
               onChanged: (value) async {
                 if (value != null) {
                   try {
@@ -142,7 +146,9 @@ class ThemeSettingsExample extends StatelessWidget {
             RadioListTile<ThemeMode>(
               title: const Text('System'),
               value: ThemeMode.system,
+              // ignore: deprecated_member_use
               groupValue: themeProvider.themeMode,
+              // ignore: deprecated_member_use
               onChanged: (value) async {
                 if (value != null) {
                   try {

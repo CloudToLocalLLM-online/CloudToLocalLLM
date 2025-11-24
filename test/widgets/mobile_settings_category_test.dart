@@ -10,8 +10,10 @@ void main() {
 
     testWidgets('renders mobile settings category',
         (WidgetTester tester) async {
-      tester.binding.platformDispatcher.views.first.physicalSize = const Size(800, 1200);
-      addTearDown(tester.binding.platformDispatcher.views.first.resetPhysicalSize);
+      tester.binding.platformDispatcher.views.first.physicalSize =
+          const Size(800, 1200);
+      addTearDown(
+          tester.binding.platformDispatcher.views.first.resetPhysicalSize);
 
       await tester.pumpWidget(
         MaterialApp(
@@ -31,8 +33,10 @@ void main() {
 
     testWidgets('displays all mobile settings toggles',
         (WidgetTester tester) async {
-      tester.binding.platformDispatcher.views.first.physicalSize = const Size(800, 1200);
-      addTearDown(tester.binding.platformDispatcher.views.first.resetPhysicalSize);
+      tester.binding.platformDispatcher.views.first.physicalSize =
+          const Size(800, 1200);
+      addTearDown(
+          tester.binding.platformDispatcher.views.first.resetPhysicalSize);
 
       await tester.pumpWidget(
         MaterialApp(
@@ -52,8 +56,10 @@ void main() {
     });
 
     testWidgets('displays accessibility note', (WidgetTester tester) async {
-      tester.binding.platformDispatcher.views.first.physicalSize = const Size(800, 1200);
-      addTearDown(tester.binding.platformDispatcher.views.first.resetPhysicalSize);
+      tester.binding.platformDispatcher.views.first.physicalSize =
+          const Size(800, 1200);
+      addTearDown(
+          tester.binding.platformDispatcher.views.first.resetPhysicalSize);
 
       await tester.pumpWidget(
         MaterialApp(
@@ -76,8 +82,10 @@ void main() {
 
     testWidgets('displays save and cancel buttons',
         (WidgetTester tester) async {
-      tester.binding.platformDispatcher.views.first.physicalSize = const Size(800, 1200);
-      addTearDown(tester.binding.platformDispatcher.views.first.resetPhysicalSize);
+      tester.binding.platformDispatcher.views.first.physicalSize =
+          const Size(800, 1200);
+      addTearDown(
+          tester.binding.platformDispatcher.views.first.resetPhysicalSize);
 
       await tester.pumpWidget(
         MaterialApp(
@@ -95,8 +103,10 @@ void main() {
     });
 
     testWidgets('renders with scrollable content', (WidgetTester tester) async {
-      tester.binding.platformDispatcher.views.first.physicalSize = const Size(800, 1200);
-      addTearDown(tester.binding.platformDispatcher.views.first.resetPhysicalSize);
+      tester.binding.platformDispatcher.views.first.physicalSize =
+          const Size(800, 1200);
+      addTearDown(
+          tester.binding.platformDispatcher.views.first.resetPhysicalSize);
 
       await tester.pumpWidget(
         MaterialApp(
@@ -115,8 +125,10 @@ void main() {
 
     testWidgets('has all required settings groups',
         (WidgetTester tester) async {
-      tester.binding.platformDispatcher.views.first.physicalSize = const Size(800, 1200);
-      addTearDown(tester.binding.platformDispatcher.views.first.resetPhysicalSize);
+      tester.binding.platformDispatcher.views.first.physicalSize =
+          const Size(800, 1200);
+      addTearDown(
+          tester.binding.platformDispatcher.views.first.resetPhysicalSize);
 
       await tester.pumpWidget(
         MaterialApp(
@@ -139,8 +151,10 @@ void main() {
 
     testWidgets('displays descriptions for all settings',
         (WidgetTester tester) async {
-      tester.binding.platformDispatcher.views.first.physicalSize = const Size(800, 1200);
-      addTearDown(tester.binding.platformDispatcher.views.first.resetPhysicalSize);
+      tester.binding.platformDispatcher.views.first.physicalSize =
+          const Size(800, 1200);
+      addTearDown(
+          tester.binding.platformDispatcher.views.first.resetPhysicalSize);
 
       await tester.pumpWidget(
         MaterialApp(
@@ -165,4 +179,3 @@ void main() {
     });
   });
 }
-

@@ -149,9 +149,9 @@ double calculateContrastRatio(Color color1, Color color2) {
 
 /// Calculates relative luminance of a color
 double _calculateRelativeLuminance(Color color) {
-  final r = _linearize(color.red / 255.0);
-  final g = _linearize(color.green / 255.0);
-  final b = _linearize(color.blue / 255.0);
+  final r = _linearize((color.r * 255).round() / 255.0);
+  final g = _linearize((color.g * 255).round() / 255.0);
+  final b = _linearize((color.b * 255).round() / 255.0);
 
   return 0.2126 * r + 0.7152 * g + 0.0722 * b;
 }

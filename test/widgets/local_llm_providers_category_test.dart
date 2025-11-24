@@ -5,19 +5,14 @@ import 'package:cloudtolocalllm/models/settings_category.dart';
 import 'package:cloudtolocalllm/services/provider_configuration_manager.dart';
 import 'package:cloudtolocalllm/models/provider_configuration.dart';
 import 'package:cloudtolocalllm/di/locator.dart' as di;
-import 'package:sentry_flutter/sentry_flutter.dart';
-import 'package:cloudtolocalllm/models/provider_configuration.dart'
-    show ConfigurationValidationResult;
 
 // Mock ProviderConfigurationManager
 class MockProviderConfigurationManager implements ProviderConfigurationManager {
   final List<ProviderConfiguration> _providers = [];
   String? _defaultProviderId;
 
-  @override
   Future<List<ProviderConfiguration>> getProviders() async => _providers;
 
-  @override
   Future<ProviderConfiguration?> getProvider(String id) async {
     try {
       return _providers.firstWhere((p) => p.providerId == id);
@@ -26,17 +21,14 @@ class MockProviderConfigurationManager implements ProviderConfigurationManager {
     }
   }
 
-  @override
   Future<void> addProvider(ProviderConfiguration provider) async {
     _providers.add(provider);
   }
 
-  @override
   Future<void> removeProvider(String id) async {
     _providers.removeWhere((p) => p.providerId == id);
   }
 
-  @override
   Future<void> updateProvider(ProviderConfiguration provider) async {
     final index =
         _providers.indexWhere((p) => p.providerId == provider.providerId);
@@ -45,18 +37,14 @@ class MockProviderConfigurationManager implements ProviderConfigurationManager {
     }
   }
 
-  @override
   Future<bool> testConnection(String providerId) async => true;
 
-  @override
   Future<void> setDefaultProvider(String providerId) async {
     _defaultProviderId = providerId;
   }
 
-  @override
   String? get defaultProviderId => _defaultProviderId;
 
-  @override
   Future<List<String>> getAvailableModels(String providerId) async =>
       ['model1', 'model2'];
 
@@ -66,35 +54,26 @@ class MockProviderConfigurationManager implements ProviderConfigurationManager {
   @override
   void dispose() {}
 
-  @override
   Future<void> enableProvider(String providerId) async {}
 
-  @override
   Future<void> disableProvider(String providerId) async {}
 
-  @override
   Future<bool> isProviderEnabled(String providerId) async => true;
 
-  @override
   Future<Map<String, dynamic>> getProviderMetrics(String providerId) async =>
       {};
 
-  @override
   Future<void> clearCache() async {}
 
-  @override
   Stream<List<ProviderConfiguration>> get providersStream =>
       Stream.value(_providers);
 
-  @override
   Future<void> validateProviderConfiguration(
       ProviderConfiguration provider) async {}
 
-  @override
   Future<Map<String, dynamic>> getConnectionStatus(String providerId) async =>
       {'status': 'connected'};
 
-  @override
   Future<void> syncWithRemote() async {}
 
   @override
@@ -321,7 +300,7 @@ void main() {
         baseUrl: 'http://localhost',
         port: 11434,
       );
-      await mockConfigManager.addProvider(provider);
+      await mockConfigManager.setConfiguration(provider);
 
       await tester.pumpWidget(
         MaterialApp(
@@ -345,7 +324,7 @@ void main() {
         baseUrl: 'http://localhost',
         port: 11434,
       );
-      await mockConfigManager.addProvider(provider);
+      await mockConfigManager.setConfiguration(provider);
 
       await tester.pumpWidget(
         MaterialApp(
@@ -369,7 +348,7 @@ void main() {
         baseUrl: 'http://localhost',
         port: 11434,
       );
-      await mockConfigManager.addProvider(provider);
+      await mockConfigManager.setConfiguration(provider);
 
       await tester.pumpWidget(
         MaterialApp(
@@ -393,7 +372,7 @@ void main() {
         baseUrl: 'http://localhost',
         port: 11434,
       );
-      await mockConfigManager.addProvider(provider);
+      await mockConfigManager.setConfiguration(provider);
 
       await tester.pumpWidget(
         MaterialApp(

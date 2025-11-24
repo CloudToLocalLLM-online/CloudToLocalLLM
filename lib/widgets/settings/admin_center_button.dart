@@ -201,9 +201,10 @@ class _AdminCenterButtonState extends State<AdminCenterButton> {
 
     return Focus(
       focusNode: _focusNode,
-      onKey: (node, event) {
-        if (event.isKeyPressed(LogicalKeyboardKey.enter) ||
-            event.isKeyPressed(LogicalKeyboardKey.space)) {
+      onKeyEvent: (node, event) {
+        if (event is KeyDownEvent &&
+            (event.logicalKey == LogicalKeyboardKey.enter ||
+                event.logicalKey == LogicalKeyboardKey.space)) {
           _navigateToAdminCenter();
           return KeyEventResult.handled;
         }

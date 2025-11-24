@@ -5,8 +5,7 @@ import '../../config/theme.dart';
 import '../../components/modern_card.dart';
 import '../../components/gradient_button.dart';
 import '../../services/unified_connection_service.dart';
-import '../../services/theme_provider.dart';
-import '../../services/platform_detection_service.dart';
+
 import '../../services/platform_adapter.dart';
 
 /// System Tray Daemon Settings Screen
@@ -145,15 +144,12 @@ class _DaemonSettingsScreenState extends State<DaemonSettingsScreen> {
   @override
   Widget build(BuildContext context) {
     debugPrint(" [DaemonSettingsScreen] Building widget");
-    final themeProvider = Provider.of<ThemeProvider>(context);
-    final platformService = Provider.of<PlatformDetectionService>(context);
     final platformAdapter = Provider.of<PlatformAdapter>(context);
     final theme = Theme.of(context);
     final screenWidth = MediaQuery.of(context).size.width;
 
     // Responsive layout breakpoints
     final isMobile = screenWidth < 600;
-    final isTablet = screenWidth >= 600 && screenWidth < 1024;
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,

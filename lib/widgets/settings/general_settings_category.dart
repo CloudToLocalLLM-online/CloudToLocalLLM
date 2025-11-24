@@ -56,14 +56,14 @@ class _GeneralSettingsCategoryContentState
   void initState() {
     super.initState();
     _preferencesService = SettingsPreferenceService();
-    
+
     // Get theme provider if available
     try {
       _themeProvider = di.serviceLocator.get<ThemeProvider>();
     } catch (e) {
       debugPrint('[GeneralSettings] ThemeProvider not available: $e');
     }
-    
+
     _loadSettings();
   }
 
@@ -77,7 +77,7 @@ class _GeneralSettingsCategoryContentState
       } else {
         theme = await _preferencesService.getTheme();
       }
-      
+
       // Load language preferences
       final language = await _preferencesService.getLanguage();
 
@@ -169,7 +169,8 @@ class _GeneralSettingsCategoryContentState
     } else {
       // Fallback: save to preferences service
       await _preferencesService.setTheme(_selectedTheme);
-      debugPrint('[GeneralSettings] Theme saved to preferences (ThemeProvider not available)');
+      debugPrint(
+          '[GeneralSettings] Theme saved to preferences (ThemeProvider not available)');
     }
   }
 

@@ -80,10 +80,11 @@ class _LocalLLMProvidersCategoryContentState
         stackTrace: stackTrace,
         hint: Hint.withMap({'category': 'LocalLLMProviders'}),
       );
-      
+
       if (mounted) {
         setState(() {
-          _errorMessage = 'Failed to initialize provider settings. Please try refreshing the page.';
+          _errorMessage =
+              'Failed to initialize provider settings. Please try refreshing the page.';
           _isInitialized = true; // Set initialized to true to show error UI
         });
       }
@@ -302,7 +303,8 @@ class _LocalLLMProvidersCategoryContentState
       await Sentry.captureException(
         e,
         stackTrace: stackTrace,
-        hint: Hint.withMap({'action': 'removeProvider', 'providerId': providerId}),
+        hint: Hint.withMap(
+            {'action': 'removeProvider', 'providerId': providerId}),
       );
       if (mounted) {
         setState(() {
@@ -351,7 +353,8 @@ class _LocalLLMProvidersCategoryContentState
       await Sentry.captureException(
         e,
         stackTrace: stackTrace,
-        hint: Hint.withMap({'action': 'testConnection', 'providerId': providerId}),
+        hint: Hint.withMap(
+            {'action': 'testConnection', 'providerId': providerId}),
       );
       if (mounted) {
         setState(() {
@@ -392,7 +395,8 @@ class _LocalLLMProvidersCategoryContentState
       await Sentry.captureException(
         e,
         stackTrace: stackTrace,
-        hint: Hint.withMap({'action': 'setDefaultProvider', 'providerId': providerId}),
+        hint: Hint.withMap(
+            {'action': 'setDefaultProvider', 'providerId': providerId}),
       );
       if (mounted) {
         setState(() {
@@ -460,21 +464,17 @@ class _LocalLLMProvidersCategoryContentState
                     children: [
                       Text(
                         config.providerType.toUpperCase(),
-                        style: Theme.of(context).textTheme.titleMedium
+                        style: Theme.of(context)
+                            .textTheme
+                            .titleMedium
                             ?.copyWith(fontWeight: FontWeight.bold),
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        '${config.baseUrl}:${config is OllamaProviderConfiguration
-                            ? config.port
-                            : config is LMStudioProviderConfiguration
-                            ? config.port
-                            : config is OpenAICompatibleProviderConfiguration
-                            ? config.port
-                            : 'N/A'}',
+                        '${config.baseUrl}:${config is OllamaProviderConfiguration ? config.port : config is LMStudioProviderConfiguration ? config.port : config is OpenAICompatibleProviderConfiguration ? config.port : 'N/A'}',
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Colors.grey.shade600,
-                        ),
+                              color: Colors.grey.shade600,
+                            ),
                       ),
                     ],
                   ),
@@ -625,15 +625,15 @@ class _LocalLLMProvidersCategoryContentState
                   Text(
                     'Configured Providers',
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+                          fontWeight: FontWeight.bold,
+                        ),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     'Manage your local LLM provider connections',
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Colors.grey.shade600,
-                    ),
+                          color: Colors.grey.shade600,
+                        ),
                   ),
                 ],
               ),
@@ -650,15 +650,15 @@ class _LocalLLMProvidersCategoryContentState
                   Text(
                     'No Providers Configured',
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+                          fontWeight: FontWeight.bold,
+                        ),
                   ),
                   const SizedBox(height: 8),
                   Text(
                     'Add a local LLM provider to get started',
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Colors.grey.shade600,
-                    ),
+                          color: Colors.grey.shade600,
+                        ),
                   ),
                 ],
               ),
@@ -679,8 +679,8 @@ class _LocalLLMProvidersCategoryContentState
                     Text(
                       'Add New Provider',
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                            fontWeight: FontWeight.bold,
+                          ),
                     ),
                     const SizedBox(height: 16),
 

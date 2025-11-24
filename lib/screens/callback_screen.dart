@@ -33,7 +33,6 @@ class CallbackScreen extends StatefulWidget {
 class _CallbackScreenState extends State<CallbackScreen> {
   String _statusMessage = 'Processing authentication...';
   String? _errorMessage;
-  bool _isProcessing = true;
 
   @override
   void initState() {
@@ -58,7 +57,6 @@ class _CallbackScreenState extends State<CallbackScreen> {
     if (mounted) {
       setState(() {
         _errorMessage = message;
-        _isProcessing = false;
       });
     }
   }
@@ -547,7 +545,6 @@ class _CallbackScreenState extends State<CallbackScreen> {
                         color: colorScheme.errorContainer,
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
-                          color: colorScheme.error,
                           width: 1,
                         ),
                       ),
@@ -579,12 +576,17 @@ class _CallbackScreenState extends State<CallbackScreen> {
                       color: colorScheme.primary,
                     ),
                     SizedBox(height: isMobile ? 16 : 24),
+                    Text(
+                      _statusMessage,
+                      style: textTheme.bodyLarge,
+                      textAlign: TextAlign.center,
+                    ),
 
                     // Status message
                     Text(
                       _statusMessage,
                       style: textTheme.bodyLarge?.copyWith(
-                        color: colorScheme.onSurface.withOpacity(0.8),
+                        color: colorScheme.onSurface.withValues(alpha: 0.8),
                       ),
                       textAlign: TextAlign.center,
                       semanticsLabel: 'Status: $_statusMessage',
@@ -595,11 +597,9 @@ class _CallbackScreenState extends State<CallbackScreen> {
 
                   // Additional info
                   Text(
-                    _isProcessing
-                        ? 'Please wait while we complete your authentication...'
-                        : 'Redirecting...',
+                    'Please wait while we complete your authentication...',
                     style: textTheme.bodySmall?.copyWith(
-                      color: colorScheme.onSurface.withOpacity(0.6),
+                      color: colorScheme.onSurface.withValues(alpha: 0.6),
                     ),
                     textAlign: TextAlign.center,
                   ),

@@ -7,8 +7,6 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:cloudtolocalllm/services/auth_service.dart';
-import 'package:cloudtolocalllm/services/admin_center_service.dart';
 import 'package:cloudtolocalllm/services/platform_detection_service.dart';
 import 'package:cloudtolocalllm/services/platform_adapter.dart';
 
@@ -153,4 +151,49 @@ MockAuthService createMockAuthService({bool authenticated = false}) {
 /// Creates a mock AdminCenterService
 MockAdminCenterService createMockAdminCenterService() {
   return MockAdminCenterService();
+}
+
+/// Mock PlatformDetectionService for testing
+class MockPlatformDetectionService extends PlatformDetectionService {
+  bool _isWeb = false;
+  bool _isAndroid = false;
+  bool _isIOS = false;
+  bool _isWindows = false;
+  bool _isLinux = false;
+  bool _isMacOS = false;
+
+  @override
+  bool get isWeb => _isWeb;
+  @override
+  bool get isWindows => _isWindows;
+  @override
+  bool get isLinux => _isLinux;
+  @override
+  bool get isMacOS => _isMacOS;
+  @override
+  bool get isMobile => _isAndroid || _isIOS;
+  @override
+  bool get isDesktop => _isWindows || _isLinux || _isMacOS;
+
+  void setPlatform({
+    bool isWeb = false,
+    bool isAndroid = false,
+    bool isIOS = false,
+    bool isWindows = false,
+    bool isLinux = false,
+    bool isMacOS = false,
+  }) {
+    _isWeb = isWeb;
+    _isAndroid = isAndroid;
+    _isIOS = isIOS;
+    _isWindows = isWindows;
+    _isLinux = isLinux;
+    _isMacOS = isMacOS;
+    notifyListeners();
+  }
+}
+
+/// Mock PlatformAdapter for testing
+class MockPlatformAdapter extends PlatformAdapter {
+  MockPlatformAdapter() : super(MockPlatformDetectionService());
 }

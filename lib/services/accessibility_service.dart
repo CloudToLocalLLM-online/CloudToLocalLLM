@@ -131,6 +131,7 @@ class AccessibilityService extends ChangeNotifier {
   void announceToScreenReader(BuildContext context, String message) {
     if (_screenReaderEnabled) {
       // Use SemanticsService to announce to screen reader
+      // ignore: deprecated_member_use
       SemanticsService.announce(message, TextDirection.ltr);
     }
   }

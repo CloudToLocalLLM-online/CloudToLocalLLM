@@ -101,7 +101,8 @@ class AdminDropdownFilter<T> extends StatelessWidget {
           ),
         ),
         SizedBox(height: AppTheme.spacingXS),
-        DropdownButtonFormField<T>(initialValue: value,
+        DropdownButtonFormField<T>(
+          initialValue: value,
           items: items,
           onChanged: onChanged,
           hint: hint != null
@@ -146,4 +147,3 @@ class AdminDropdownFilter<T> extends StatelessWidget {
     );
   }
 }
-

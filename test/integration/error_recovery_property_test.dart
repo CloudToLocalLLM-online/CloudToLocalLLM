@@ -55,7 +55,6 @@ void main() {
 
         // Set initial theme
         await themeProvider.setThemeMode(ThemeMode.light);
-        final initialTheme = themeProvider.themeMode;
 
         // Attempt multiple theme changes
         final themes = [ThemeMode.dark, ThemeMode.system, ThemeMode.light];

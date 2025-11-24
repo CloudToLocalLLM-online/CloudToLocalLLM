@@ -1,12 +1,3 @@
-import 'package:flutter/material.dart';
-import 'package:flutter_test/flutter_test.dart';
-
-import 'package:cloudtolocalllm/services/platform_detection_service.dart';
-import 'package:cloudtolocalllm/services/platform_adapter.dart';
-import 'package:cloudtolocalllm/di/locator.dart' as di;
-
-/// Integration test for platform-specific features
-///
 /// This test verifies that:
 /// 1. Platform detection works correctly
 /// 2. Platform-specific components are selected appropriately
@@ -14,6 +5,11 @@ import 'package:cloudtolocalllm/di/locator.dart' as di;
 /// 4. Fallback behavior works when platform-specific features are unavailable
 ///
 /// **Validates: Requirements 2, 16, 17**
+
+import 'package:flutter_test/flutter_test.dart';
+import 'package:cloudtolocalllm/services/platform_detection_service.dart';
+import 'package:cloudtolocalllm/services/platform_adapter.dart';
+import 'package:cloudtolocalllm/di/locator.dart' as di;
 
 void main() {
   group('Platform Features Integration Tests', () {

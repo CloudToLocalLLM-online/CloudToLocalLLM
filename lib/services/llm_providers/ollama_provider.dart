@@ -150,8 +150,8 @@ class OllamaProvider extends LLMProvider {
     try {
       final baseUrl = _getBaseUrl();
       _dio.options.baseUrl = baseUrl;
-      final response = await _dio.get('/version',
-          options: Options(headers: _getHeaders()));
+      final response =
+          await _dio.get('/version', options: Options(headers: _getHeaders()));
 
       if (response.statusCode == 200) {
         _isAvailable = true;

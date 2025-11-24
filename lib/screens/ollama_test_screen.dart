@@ -3,8 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import '../services/ollama_service.dart';
 import '../services/auth_service.dart';
-import '../services/theme_provider.dart';
-import '../services/platform_detection_service.dart';
+
 import '../services/platform_adapter.dart';
 
 class OllamaTestScreen extends StatefulWidget {
@@ -61,15 +60,12 @@ class _OllamaTestScreenState extends State<OllamaTestScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final themeProvider = Provider.of<ThemeProvider>(context);
-    final platformService = Provider.of<PlatformDetectionService>(context);
     final platformAdapter = Provider.of<PlatformAdapter>(context);
     final theme = Theme.of(context);
     final screenWidth = MediaQuery.of(context).size.width;
 
     // Responsive layout breakpoints
     final isMobile = screenWidth < 600;
-    final isTablet = screenWidth >= 600 && screenWidth < 1024;
 
     return Scaffold(
       appBar: AppBar(
@@ -92,7 +88,6 @@ class _OllamaTestScreenState extends State<OllamaTestScreen> {
           // Back to Home button (hide on mobile)
           if (!isMobile) ...[
             platformAdapter.buildButton(
-              context,
               onPressed: () => context.go('/'),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
@@ -108,7 +103,6 @@ class _OllamaTestScreenState extends State<OllamaTestScreen> {
           Consumer<AuthService>(
             builder: (context, authService, child) {
               return platformAdapter.buildButton(
-                context,
                 onPressed: () async {
                   await authService.logout();
                   if (context.mounted) {
@@ -247,7 +241,6 @@ class _OllamaTestScreenState extends State<OllamaTestScreen> {
                               width: double.infinity,
                               height: isMobile ? 44 : 48,
                               child: platformAdapter.buildButton(
-                                context,
                                 onPressed: _ollamaService.isLoading
                                     ? null
                                     : _testConnection,
@@ -307,7 +300,8 @@ class _OllamaTestScreenState extends State<OllamaTestScreen> {
                             ),
                             SizedBox(height: isMobile ? 10 : 12),
                             DropdownButtonFormField<String>(
-                              value: _selectedModel,
+                              key: ValueKey(_selectedModel),
+                              initialValue: _selectedModel,
                               isExpanded: true,
                               decoration: InputDecoration(
                                 border: OutlineInputBorder(
@@ -370,7 +364,7 @@ class _OllamaTestScreenState extends State<OllamaTestScreen> {
                               hintText: 'Enter a message to test the model...',
                               hintStyle: theme.textTheme.bodyMedium?.copyWith(
                                 color: theme.colorScheme.onSurface
-                                    .withOpacity(0.5),
+                                    .withValues(alpha: 0.5),
                               ),
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(8),
@@ -384,7 +378,6 @@ class _OllamaTestScreenState extends State<OllamaTestScreen> {
                             width: double.infinity,
                             height: isMobile ? 44 : 48,
                             child: platformAdapter.buildButton(
-                              context,
                               onPressed: _ollamaService.isLoading
                                   ? null
                                   : _sendMessage,
@@ -418,7 +411,7 @@ class _OllamaTestScreenState extends State<OllamaTestScreen> {
                                 borderRadius: BorderRadius.circular(8),
                                 border: Border.all(
                                   color: theme.colorScheme.outline
-                                      .withOpacity(0.2),
+                                      .withValues(alpha: 0.2),
                                 ),
                               ),
                               child: Text(

@@ -159,7 +159,8 @@ class _DesktopSettingsCategoryContentState
   Future<void> _applyWindowBehaviorChanges() async {
     try {
       if (kIsWeb) {
-        debugPrint('[DesktopSettings] Window behavior changes not applicable on web');
+        debugPrint(
+            '[DesktopSettings] Window behavior changes not applicable on web');
         return;
       }
 
@@ -176,8 +177,10 @@ class _DesktopSettingsCategoryContentState
       // - Minimize to tray: Handled by tray_manager integration in TrayInitializer
       // These settings are saved to preferences and will be applied on next app launch
       debugPrint('[DesktopSettings] Window behavior changes applied');
-      debugPrint('[DesktopSettings] Launch on startup: $_launchOnStartup (requires app restart)');
-      debugPrint('[DesktopSettings] Minimize to tray: $_minimizeToTray (handled by tray manager)');
+      debugPrint(
+          '[DesktopSettings] Launch on startup: $_launchOnStartup (requires app restart)');
+      debugPrint(
+          '[DesktopSettings] Minimize to tray: $_minimizeToTray (handled by tray manager)');
     } catch (e) {
       debugPrint('[DesktopSettings] Error applying window behavior: $e');
       // Don't rethrow - allow settings to be saved even if window behavior fails

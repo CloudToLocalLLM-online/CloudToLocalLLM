@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:cloudtolocalllm/screens/admin/admin_center_screen.dart';
-import 'package:cloudtolocalllm/services/theme_provider.dart';
 import 'package:cloudtolocalllm/services/platform_detection_service.dart';
-import 'package:cloudtolocalllm/services/platform_adapter.dart';
 import '../helpers/mock_services.dart';
 import '../helpers/test_app_wrapper.dart';
 import '../helpers/test_utilities.dart';
@@ -20,19 +18,11 @@ void main() {
   });
 
   group('Admin Center Responsive Layout Property Tests', () {
-    late ThemeProvider themeProvider;
     late PlatformDetectionService platformService;
-    late PlatformAdapter platformAdapter;
-    late MockAuthService authService;
-    late MockAdminCenterService adminService;
 
     setUp(() async {
       await initializeMockPlugins();
-      themeProvider = ThemeProvider();
       platformService = PlatformDetectionService();
-      platformAdapter = PlatformAdapter(platformService);
-      authService = createMockAuthService(authenticated: true);
-      adminService = createMockAdminCenterService();
     });
 
     testWidgets(

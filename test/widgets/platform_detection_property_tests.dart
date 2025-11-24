@@ -556,14 +556,8 @@ void main() {
           for (int i = 0; i < iterations; i++) {
             bool allPlatformsCompatible = true;
 
-            for (final (
-                  platformName,
-                  isWeb,
-                  isWindows,
-                  isLinux,
-                  isAndroid,
-                  isIOS
-                ) in platforms) {
+            for (final (_, isWeb, isWindows, isLinux, isAndroid, isIOS)
+                in platforms) {
               final mockAuth = _MockAuthService();
               final filter = PlatformCategoryFilter(
                 authService: mockAuth,

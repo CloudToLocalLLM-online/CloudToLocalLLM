@@ -1,10 +1,4 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-
-/// Admin Center Property-Based Tests
-///
-/// These tests validate the correctness properties for the Admin Center button
-/// functionality as specified in the design document.
 
 void main() {
   group('Admin Center Property-Based Tests', () {
@@ -25,7 +19,7 @@ void main() {
             final stopwatch = Stopwatch()..start();
 
             // Simulate admin status check
-            final isAdmin = i % 2 == 0; // Alternate between admin and non-admin
+            // final isAdmin = i % 2 == 0; // Alternate between admin and non-admin
 
             stopwatch.stop();
 
@@ -176,9 +170,9 @@ void main() {
           int passCount = 0;
 
           for (int i = 0; i < iterations; i++) {
-            final isAdmin = false;
+            final isAdmin = false; // Non-admin user
 
-            // For non-admin users, button should not render (SizedBox.shrink)
+            // Button should not render for non-admin users
             final shouldNotRender = !isAdmin;
 
             if (shouldNotRender) {
@@ -241,9 +235,7 @@ void main() {
             final stopwatch = Stopwatch()..start();
 
             // Simulate state transitions
-            bool isLoading = false;
-            isLoading = true;
-            isLoading = false;
+            // State changes: idle -> loading -> idle
 
             stopwatch.stop();
 

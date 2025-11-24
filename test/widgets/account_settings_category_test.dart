@@ -9,7 +9,6 @@ import 'package:cloudtolocalllm/services/auth0_service.dart';
 import 'package:cloudtolocalllm/services/session_storage_service.dart';
 import 'package:cloudtolocalllm/models/user_model.dart';
 import 'package:cloudtolocalllm/models/session_model.dart';
-import 'package:cloudtolocalllm/di/locator.dart' as di;
 
 // Mock Auth0Service
 class MockAuth0Service implements Auth0Service {

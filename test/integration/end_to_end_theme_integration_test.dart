@@ -5,13 +5,11 @@ import 'package:provider/provider.dart';
 import 'package:cloudtolocalllm/services/theme_provider.dart';
 import 'package:cloudtolocalllm/services/platform_detection_service.dart';
 import 'package:cloudtolocalllm/services/platform_adapter.dart';
-import 'package:cloudtolocalllm/services/auth_service.dart';
 import 'package:cloudtolocalllm/di/locator.dart' as di;
 import 'package:cloudtolocalllm/config/theme.dart';
 
 // Import screens to test
 import 'package:cloudtolocalllm/screens/loading_screen.dart';
-import 'package:cloudtolocalllm/screens/login_screen.dart';
 import 'package:cloudtolocalllm/screens/marketing/homepage_screen.dart';
 import 'package:cloudtolocalllm/screens/marketing/documentation_screen.dart';
 
@@ -28,7 +26,6 @@ import 'package:cloudtolocalllm/screens/marketing/documentation_screen.dart';
 void main() {
   group('End-to-End Theme Integration Tests', () {
     late ThemeProvider themeProvider;
-    late PlatformDetectionService platformDetectionService;
     late PlatformAdapter platformAdapter;
 
     setUp(() async {
@@ -39,8 +36,6 @@ void main() {
 
       // Get services from locator
       themeProvider = di.serviceLocator.get<ThemeProvider>();
-      platformDetectionService =
-          di.serviceLocator.get<PlatformDetectionService>();
       platformAdapter = di.serviceLocator.get<PlatformAdapter>();
 
       // Reset theme to light mode for consistent testing
@@ -210,7 +205,7 @@ void main() {
                 MaterialPage(child: LoadingScreen(message: 'Screen 1')),
                 MaterialPage(child: HomepageScreen()),
               ],
-              onPopPage: (route, result) => route.didPop(result),
+              onDidRemovePage: (page) {},
             ),
           ),
         ),

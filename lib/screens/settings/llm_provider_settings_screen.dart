@@ -11,8 +11,7 @@ import '../../services/ollama_service.dart';
 import '../../services/streaming_proxy_service.dart';
 import '../../services/auth_service.dart';
 import '../../services/llm_provider_manager.dart';
-import '../../services/theme_provider.dart';
-import '../../services/platform_detection_service.dart';
+
 import '../../services/platform_adapter.dart';
 import '../../di/locator.dart' as di;
 import '../../components/modern_card.dart';
@@ -177,15 +176,12 @@ class _LLMProviderSettingsScreenState extends State<LLMProviderSettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final themeProvider = Provider.of<ThemeProvider>(context);
-    final platformService = Provider.of<PlatformDetectionService>(context);
     final platformAdapter = Provider.of<PlatformAdapter>(context);
     final theme = Theme.of(context);
     final screenWidth = MediaQuery.of(context).size.width;
 
     // Responsive layout breakpoints
     final isMobile = screenWidth < 600;
-    final isTablet = screenWidth >= 600 && screenWidth < 1024;
 
     return Scaffold(
       appBar: AppBar(

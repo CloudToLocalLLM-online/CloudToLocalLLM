@@ -27,7 +27,6 @@ void main() {
         String? displayedText;
         int? displayedNumber;
         List<int>? displayedList;
-        ScreenSize? lastScreenSize;
         int reflowCount = 0;
         final reflowTimes = <Duration>[];
 
@@ -39,7 +38,6 @@ void main() {
                 preserveState: true,
                 onScreenSizeChanged: (oldSize, newSize) {
                   reflowCount++;
-                  lastScreenSize = newSize;
                 },
                 unifiedBuilder: (context, screenSize) {
                   // Preserve data across reflows
