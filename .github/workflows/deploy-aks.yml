@@ -261,7 +261,10 @@ jobs:
           kubectl set image deployment/web \
             web=${{ env.WEB_IMAGE }}:latest \
             -n cloudtolocalllm
-          echo "Web deployment updated successfully"
+          
+          # Force restart to pull new image even if tag is the same
+          kubectl rollout restart deployment/web -n cloudtolocalllm
+          echo "Web deployment updated and restarted successfully"
 
       - name: Update Postgres deployment
         run: |
