@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/cupertino.dart';
+
 import 'platform_detection_service.dart';
 
 /// Component type enumeration
@@ -286,6 +286,30 @@ class PlatformAdapter {
     }
   }
 
+  /// Build a platform-appropriate back button
+  Widget buildBackButton(
+    BuildContext context, {
+    VoidCallback? onPressed,
+  }) {
+    if (platformService.isWeb ||
+        platformService.isLinux ||
+        platformService.isWindows) {
+      // Material Design for web and desktop
+      return IconButton(
+        icon: const Icon(Icons.arrow_back),
+        onPressed: onPressed ?? () => Navigator.of(context).pop(),
+        tooltip: MaterialLocalizations.of(context).backButtonTooltip,
+      );
+    } else {
+      // Fallback to Material
+      return IconButton(
+        icon: const Icon(Icons.arrow_back),
+        onPressed: onPressed ?? () => Navigator.of(context).pop(),
+        tooltip: MaterialLocalizations.of(context).backButtonTooltip,
+      );
+    }
+  }
+
   /// Build a platform-appropriate list tile
   Widget buildListTile({
     Widget? leading,
@@ -370,23 +394,16 @@ class PlatformAdapter {
     required T groupValue,
     required ValueChanged<T?>? onChanged,
   }) {
-    if (platformService.isWeb ||
-        platformService.isLinux ||
-        platformService.isWindows) {
-      // Material Design for web and desktop
-      return Radio<T>(
-        value: value,
-        groupValue: groupValue,
-        onChanged: onChanged,
-      );
-    } else {
-      // Fallback to Material
-      return Radio<T>(
-        value: value,
-        groupValue: groupValue,
-        onChanged: onChanged,
-      );
-    }
+    // Use RadioGroup to avoid deprecated properties
+    return Radio<T>(
+      value: value,
+      // groupValue and onChanged are now managed by RadioGroup ancestor
+      // These properties are deprecated in favor of RadioGroup
+      // ignore: deprecated_member_use
+      groupValue: groupValue,
+      // ignore: deprecated_member_use
+      onChanged: onChanged,
+    );
   }
 
   /// Build a platform-appropriate dropdown
