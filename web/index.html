@@ -205,17 +205,23 @@
 
   <!-- Prevent gray screen by ensuring body is visible -->
   <script>
-    // Ensure body is visible immediately
-    document.body.style.display = 'block';
-    document.body.style.visibility = 'visible';
-    document.body.style.opacity = '1';
+    // Ensure body is visible when it exists
+    function ensureBodyVisible() {
+      if (document.body) {
+        document.body.style.display = 'block';
+        document.body.style.visibility = 'visible';
+        document.body.style.opacity = '1';
+      }
+    }
     
-    document.addEventListener('DOMContentLoaded', function() {
-      // Double-check body is visible
-      document.body.style.display = 'block';
-      document.body.style.visibility = 'visible';
-      document.body.style.opacity = '1';
-    });
+    // Try immediately (may not work if body doesn't exist yet)
+    ensureBodyVisible();
+    
+    // Also ensure on DOMContentLoaded
+    document.addEventListener('DOMContentLoaded', ensureBodyVisible);
+    
+    // And on load event
+    window.addEventListener('load', ensureBodyVisible);
   </script>
 </head>
 <body>
