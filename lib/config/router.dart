@@ -121,7 +121,7 @@ class AppRouter {
 
     return GoRouter(
       navigatorKey: navigatorKey,
-      initialLocation: '/login',
+      initialLocation: initialLocation,
       debugLogDiagnostics: true,
       refreshListenable: authService,
       routes: [
@@ -661,6 +661,13 @@ class AppRouter {
 
         // Allow access to login and loading pages
         if (isLoggingIn || isLoading) {
+          // On web main domain, redirect /login to / (marketing homepage)
+          if (isLoggingIn && kIsWeb && !isAppSubdomain) {
+            debugPrint(
+                '[Router] DECISION: Redirecting /login to / on main domain');
+            return '/';
+          }
+
           debugPrint('[Router] DECISION: Allowing access to auth/loading page');
           debugPrint('[Router] Route: ${state.matchedLocation}');
           debugPrint('[Router] Auth state: isAuthenticated=$isAuthenticated');

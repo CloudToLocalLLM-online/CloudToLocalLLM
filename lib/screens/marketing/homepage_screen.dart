@@ -71,78 +71,117 @@ class HomepageScreen extends StatelessWidget {
         vertical: verticalPadding,
         horizontal: horizontalPadding,
       ),
-      child: Column(
+      child: Stack(
         children: [
-          // Logo with semantic label for accessibility
-          Semantics(
-            label: 'CloudToLocalLLM Logo',
-            child: Container(
-              width: logoSize,
-              height: logoSize,
-              decoration: BoxDecoration(
-                color: ThemeConfig.secondaryColor,
-                borderRadius: BorderRadius.circular(logoSize / 2),
-                border: Border.all(
-                  color: ThemeConfig.primaryColor,
-                  width: 3,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.2),
-                    blurRadius: 12,
-                    offset: const Offset(0, 2),
+          Align(
+            alignment: Alignment.topRight,
+            child: Semantics(
+              button: true,
+              label: 'Login to application',
+              child: TextButton(
+                onPressed: () async {
+                  final uri = Uri.parse('https://app.cloudtolocalllm.online');
+                  if (await canLaunchUrl(uri)) {
+                    await launchUrl(uri, webOnlyWindowName: '_self');
+                  }
+                },
+                style: TextButton.styleFrom(
+                  foregroundColor: Colors.white,
+                  backgroundColor: Colors.white.withValues(alpha: 0.1),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 12,
                   ),
-                ],
-              ),
-              child: Center(
-                child: Text(
-                  'LLM',
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
+                    side:
+                        BorderSide(color: Colors.white.withValues(alpha: 0.3)),
+                  ),
+                ),
+                child: const Text(
+                  'Login',
                   style: TextStyle(
-                    fontSize: isMobile ? 20 : 24,
-                    fontWeight: FontWeight.bold,
-                    color: ThemeConfig.primaryColor,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ),
             ),
           ),
-          SizedBox(height: isMobile ? 16 : 20),
-
-          // Title with proper typography
-          Text(
-            'CloudToLocalLLM',
-            style: theme.textTheme.displayLarge?.copyWith(
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
-              fontSize: titleFontSize,
-              letterSpacing: 1,
-              shadows: [
-                Shadow(
-                  color: ThemeConfig.secondaryColor.withValues(alpha: 0.27),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
+          Column(
+            children: [
+              // Logo with semantic label for accessibility
+              Semantics(
+                label: 'CloudToLocalLLM Logo',
+                child: Container(
+                  width: logoSize,
+                  height: logoSize,
+                  decoration: BoxDecoration(
+                    color: ThemeConfig.secondaryColor,
+                    borderRadius: BorderRadius.circular(logoSize / 2),
+                    border: Border.all(
+                      color: ThemeConfig.primaryColor,
+                      width: 3,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.2),
+                        blurRadius: 12,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Center(
+                    child: Text(
+                      'LLM',
+                      style: TextStyle(
+                        fontSize: isMobile ? 20 : 24,
+                        fontWeight: FontWeight.bold,
+                        color: ThemeConfig.primaryColor,
+                      ),
+                    ),
+                  ),
                 ),
-              ],
-            ),
-            textAlign: TextAlign.center,
-          ),
-          SizedBox(height: isMobile ? 8 : 12),
-
-          // Subtitle with responsive sizing
-          Padding(
-            padding: EdgeInsets.symmetric(
-              horizontal: isMobile ? 8.0 : 0.0,
-            ),
-            child: Text(
-              'Run powerful Large Language Models locally with cloud-based management',
-              style: theme.textTheme.titleLarge?.copyWith(
-                color: const Color(0xFFe0d7ff),
-                fontWeight: FontWeight.w500,
-                fontSize: subtitleFontSize,
-                height: 1.4,
               ),
-              textAlign: TextAlign.center,
-            ),
+              SizedBox(height: isMobile ? 16 : 20),
+
+              // Title with proper typography
+              Text(
+                'CloudToLocalLLM',
+                style: theme.textTheme.displayLarge?.copyWith(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: titleFontSize,
+                  letterSpacing: 1,
+                  shadows: [
+                    Shadow(
+                      color: ThemeConfig.secondaryColor.withValues(alpha: 0.27),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                textAlign: TextAlign.center,
+              ),
+              SizedBox(height: isMobile ? 8 : 12),
+
+              // Subtitle with responsive sizing
+              Padding(
+                padding: EdgeInsets.symmetric(
+                  horizontal: isMobile ? 8.0 : 0.0,
+                ),
+                child: Text(
+                  'Run powerful Large Language Models locally with cloud-based management',
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    color: const Color(0xFFe0d7ff),
+                    fontWeight: FontWeight.w500,
+                    fontSize: subtitleFontSize,
+                    height: 1.4,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            ],
           ),
         ],
       ),
