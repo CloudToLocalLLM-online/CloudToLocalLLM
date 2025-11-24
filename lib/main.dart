@@ -88,8 +88,15 @@ void main() async {
         // where CallbackScreen will process the authentication
 
         // Run the main bootstrap process
-        final bootstrapper = AppBootstrapper();
-        return await bootstrapper.load();
+        try {
+          final bootstrapper = AppBootstrapper();
+          return await bootstrapper.load();
+        } catch (e, stack) {
+          debugPrint('Bootstrap failed: $e');
+          Sentry.captureException(e, stackTrace: stack);
+          // Return minimal bootstrap data to allow app to load error screen or retry
+          return AppBootstrapData(isWeb: kIsWeb, supportsNativeShell: !kIsWeb);
+        }
       }
 
       final appLoadFuture = loadApp();
