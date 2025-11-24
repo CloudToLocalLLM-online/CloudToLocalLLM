@@ -176,13 +176,13 @@
     });
   </script>
 
-  <!-- SERVICE WORKER ENABLED -->
+  <!-- SERVICE WORKER REGISTRATION -->
   <script>
-    // Enable service workers for offline support and caching
-    console.log('SERVICE WORKERS ENABLED');
+    // Register service worker for offline support and caching
+    console.log('SERVICE WORKER REGISTRATION ENABLED');
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', function() {
-        navigator.serviceWorker.register('flutter_service_worker.js?v=' + Date.now())
+        navigator.serviceWorker.register('flutter_service_worker.js')
           .then(function(registration) {
             console.log('Service worker registered successfully:', registration.scope);
             // Update service worker when new version is available
@@ -201,32 +201,6 @@
           });
       });
     }
-  </script>
-
-  <!-- FORCE CACHE BUSTING BY REPLACING MAIN.DART.JS URL -->
-  <script>
-    console.log('FORCE CACHE BUSTING FOR MAIN.DART.JS');
-    // Override the main.dart.js URL before Flutter loads
-    const originalFetch = window.fetch;
-    window.fetch = function(url, options) {
-      if (typeof url === 'string' && url.includes('main.dart.js') && !url.includes('cache_bust')) {
-        const separator = url.includes('?') ? '&' : '?';
-        url = url + separator + 'cache_bust=' + Date.now();
-        console.log('Modified fetch URL:', url);
-      }
-      return originalFetch.call(this, url, options);
-    };
-
-    // Also override XMLHttpRequest for script loading
-    const originalOpen = XMLHttpRequest.prototype.open;
-    XMLHttpRequest.prototype.open = function(method, url, ...args) {
-      if (typeof url === 'string' && url.includes('main.dart.js') && !url.includes('cache_bust')) {
-        const separator = url.includes('?') ? '&' : '?';
-        url = url + separator + 'cache_bust=' + Date.now();
-        console.log('Modified XMLHttpRequest URL:', url);
-      }
-      return originalOpen.call(this, method, url, ...args);
-    };
   </script>
 </head>
 <body>
