@@ -178,10 +178,47 @@
 
   <!-- SERVICE WORKER REGISTRATION -->
   <script>
+    // Service worker cache version - increment to force cache clear
+    const SW_CACHE_VERSION = 'v2';
+    
     // Register service worker for offline support and caching
-    console.log('SERVICE WORKER REGISTRATION ENABLED');
+    console.log('SERVICE WORKER REGISTRATION ENABLED - Cache Version:', SW_CACHE_VERSION);
+    
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', function() {
+        // Check if we need to clear old cache
+        const currentVersion = localStorage.getItem('sw_cache_version');
+        if (currentVersion !== SW_CACHE_VERSION) {
+          console.log('Cache version changed from', currentVersion, 'to', SW_CACHE_VERSION, '- clearing old cache');
+          
+          // Unregister old service workers
+          navigator.serviceWorker.getRegistrations().then(function(registrations) {
+            registrations.forEach(function(registration) {
+              console.log('Unregistering old service worker:', registration.scope);
+              registration.unregister();
+            });
+          });
+          
+          // Clear all caches
+          if ('caches' in window) {
+            caches.keys().then(function(names) {
+              names.forEach(function(name) {
+                console.log('Deleting cache:', name);
+                caches.delete(name);
+              });
+            });
+          }
+          
+          // Update version in localStorage
+          localStorage.setItem('sw_cache_version', SW_CACHE_VERSION);
+          
+          // Reload page to get fresh content
+          console.log('Reloading page with fresh content...');
+          window.location.reload(true);
+          return;
+        }
+        
+        // Register service worker
         navigator.serviceWorker.register('flutter_service_worker.js')
           .then(function(registration) {
             console.log('Service worker registered successfully:', registration.scope);
