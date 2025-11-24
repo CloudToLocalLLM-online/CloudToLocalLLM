@@ -487,12 +487,15 @@ class Auth0WebService implements Auth0Service {
   Future<void> checkAuthStatus() async {
     debugPrint('[Auth0WebService] Checking authentication status...');
     try {
-      // Try to ensure client is ready, but don't fail if it's not
+      // Ensure client is ready with extended timeout for initial auth check
+      // This is critical for app reload scenarios where Auth0 might still be initializing
+      debugPrint(
+          '[Auth0WebService] Ensuring Auth0 client is ready for auth check...');
       try {
-        await _ensureClientReady();
+        await _ensureClientReadyForCallback(); // Use extended timeout for initial check
       } catch (e) {
         debugPrint(
-          '[Auth0WebService] Auth0 client not ready for auth check: $e',
+          '[Auth0WebService] Auth0 client not ready for auth check after extended timeout: $e',
         );
         debugPrint('[Auth0WebService] Setting auth state to false');
         _isAuthenticated = false;
