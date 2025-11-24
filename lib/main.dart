@@ -39,6 +39,8 @@ import 'services/web_download_prompt_service.dart'
     if (dart.library.io) 'services/web_download_prompt_service_stub.dart';
 import 'services/log_buffer_service.dart';
 import 'services/theme_provider.dart';
+import 'services/platform_detection_service.dart';
+import 'services/platform_adapter.dart';
 import 'web_plugins_stub.dart'
     if (dart.library.html) 'package:flutter_web_plugins/url_strategy.dart';
 import 'widgets/tray_initializer.dart';
@@ -247,6 +249,21 @@ class _CloudToLocalLLMAppState extends State<CloudToLocalLLMApp> {
     _addCoreProvider<EnhancedUserTierService>(providers);
     _addCoreProvider<ThemeProvider>(providers);
     _addCoreProvider<ProviderConfigurationManager>(providers);
+    _addCoreProvider<PlatformDetectionService>(providers);
+
+    // PlatformAdapter - doesn't extend ChangeNotifier, so use Provider.value
+    try {
+      if (di.serviceLocator.isRegistered<PlatformAdapter>()) {
+        final platformAdapter = di.serviceLocator.get<PlatformAdapter>();
+        providers.add(
+          Provider<PlatformAdapter>.value(value: platformAdapter),
+        );
+      }
+    } catch (e, stack) {
+      debugPrint('[Providers] Error adding PlatformAdapter: $e');
+      debugPrint('[Providers] Stack: $stack');
+      Sentry.captureException(e, stackTrace: stack);
+    }
 
     // Authenticated services - only provide if registered
     _addProviderIfRegistered<TunnelService>(providers);
