@@ -39,7 +39,6 @@ import 'services/web_download_prompt_service.dart'
     if (dart.library.io) 'services/web_download_prompt_service_stub.dart';
 import 'services/log_buffer_service.dart';
 import 'services/theme_provider.dart';
-import 'services/platform_adapter.dart';
 import 'web_plugins_stub.dart'
     if (dart.library.html) 'package:flutter_web_plugins/url_strategy.dart';
 import 'widgets/tray_initializer.dart';
@@ -185,13 +184,37 @@ class _CloudToLocalLLMAppState extends State<CloudToLocalLLMApp> {
 
     // Build providers list - authenticated services will be added when registered
     // This rebuilds when auth state changes
-    return MultiProvider(
-      providers: _buildProviders(),
-      child: TrayInitializer(
-        navigatorKey: navigatorKey,
-        child: const _AppRouterHost(),
-      ),
-    );
+    try {
+      return MultiProvider(
+        providers: _buildProviders(),
+        child: TrayInitializer(
+          navigatorKey: navigatorKey,
+          child: const _AppRouterHost(),
+        ),
+      );
+    } catch (e, stack) {
+      debugPrint('[App] Error building providers: $e');
+      debugPrint('[App] Stack: $stack');
+      Sentry.captureException(e, stackTrace: stack);
+      // Return error screen instead of crashing
+      return MaterialApp(
+        debugShowCheckedModeBanner: false,
+        home: Scaffold(
+          body: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.error_outline, size: 64, color: Colors.red),
+                const SizedBox(height: 16),
+                const Text('Initialization Error'),
+                const SizedBox(height: 8),
+                Text(e.toString()),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
   }
 
   void _ensureAuthListener() {
@@ -212,84 +235,20 @@ class _CloudToLocalLLMAppState extends State<CloudToLocalLLMApp> {
   List<SingleChildWidget> _buildProviders() {
     final providers = <SingleChildWidget>[];
 
-    // Core services - always available
-    providers.add(
-      ChangeNotifierProvider.value(
-        value: di.serviceLocator.get<AuthService>(),
-      ),
-    );
-
-    // Core services that don't require authentication
-    providers.add(
-      ChangeNotifierProvider.value(
-        value: di.serviceLocator.get<LocalOllamaConnectionService>(),
-      ),
-    );
-
-    providers.add(
-      ChangeNotifierProvider.value(
-        value: di.serviceLocator.get<DesktopClientDetectionService>(),
-      ),
-    );
-
-    providers.add(
-      Provider.value(
-        value: di.serviceLocator.get<PlatformAdapter>(),
-      ),
-    );
-
-    providers.add(
-      ChangeNotifierProvider.value(
-        value: di.serviceLocator.get<AppInitializationService>(),
-      ),
-    );
-
-    providers.add(
-      ChangeNotifierProvider.value(
-        value: di.serviceLocator.get<WebDownloadPromptService>(),
-      ),
-    );
-
-    providers.add(
-      ChangeNotifierProvider.value(
-        value: di.serviceLocator.get<ProviderDiscoveryService>(),
-      ),
-    );
-
-    providers.add(
-      ChangeNotifierProvider.value(
-        value: di.serviceLocator.get<LLMErrorHandler>(),
-      ),
-    );
-
-    providers.add(
-      ChangeNotifierProvider.value(
-        value: di.serviceLocator.get<LangChainPromptService>(),
-      ),
-    );
-
-    providers.add(
-      ChangeNotifierProvider.value(
-        value: di.serviceLocator.get<EnhancedUserTierService>(),
-      ),
-    );
-
-    // Theme provider - manages application theme
-    providers.add(
-      ChangeNotifierProvider.value(
-        value: di.serviceLocator.get<ThemeProvider>(),
-      ),
-    );
-
-    // ProviderConfigurationManager is always registered, add unconditionally
-    providers.add(
-      ChangeNotifierProvider.value(
-        value: di.serviceLocator.get<ProviderConfigurationManager>(),
-      ),
-    );
+    // Core services - always available, but check before adding
+    _addCoreProvider<AuthService>(providers);
+    _addCoreProvider<LocalOllamaConnectionService>(providers);
+    _addCoreProvider<DesktopClientDetectionService>(providers);
+    _addCoreProvider<AppInitializationService>(providers);
+    _addCoreProvider<WebDownloadPromptService>(providers);
+    _addCoreProvider<ProviderDiscoveryService>(providers);
+    _addCoreProvider<LLMErrorHandler>(providers);
+    _addCoreProvider<LangChainPromptService>(providers);
+    _addCoreProvider<EnhancedUserTierService>(providers);
+    _addCoreProvider<ThemeProvider>(providers);
+    _addCoreProvider<ProviderConfigurationManager>(providers);
 
     // Authenticated services - only provide if registered
-    // These will be registered after authentication
     _addProviderIfRegistered<TunnelService>(providers);
     _addProviderIfRegistered<StreamingProxyService>(providers);
     _addProviderIfRegistered<OllamaService>(providers);
@@ -309,21 +268,40 @@ class _CloudToLocalLLMAppState extends State<CloudToLocalLLMApp> {
     return providers;
   }
 
+  /// Helper method to safely add a core provider
+  void _addCoreProvider<T extends ChangeNotifier>(
+    List<SingleChildWidget> providers,
+  ) {
+    try {
+      if (di.serviceLocator.isRegistered<T>()) {
+        final service = di.serviceLocator.get<T>();
+        providers.add(
+          ChangeNotifierProvider<T>.value(value: service),
+        );
+      } else {
+        debugPrint('[Providers] Core service $T not registered yet');
+      }
+    } catch (e, stack) {
+      debugPrint('[Providers] Error adding core provider $T: $e');
+      debugPrint('[Providers] Stack: $stack');
+      Sentry.captureException(e, stackTrace: stack);
+    }
+  }
+
   /// Helper method to safely add a provider only if the service is registered
   void _addProviderIfRegistered<T extends ChangeNotifier>(
     List<SingleChildWidget> providers,
   ) {
     try {
       if (di.serviceLocator.isRegistered<T>()) {
+        final service = di.serviceLocator.get<T>();
         providers.add(
-          ChangeNotifierProvider.value(
-            value: di.serviceLocator.get<T>(),
-          ),
+          ChangeNotifierProvider<T>.value(value: service),
         );
       }
-    } catch (e) {
-      // Service not registered yet - skip it
-      debugPrint('[Providers] Service $T not registered yet, skipping');
+    } catch (e, stack) {
+      debugPrint('[Providers] Error adding provider $T: $e');
+      debugPrint('[Providers] Stack: $stack');
     }
   }
 }
@@ -371,30 +349,59 @@ class _AppRouterHostState extends State<_AppRouterHost> {
       );
     }
 
-    // Get theme provider from context
-    final themeProvider = context.watch<ThemeProvider>();
+    try {
+      // Get theme provider from context - use a safe accessor
+      ThemeProvider? themeProvider;
+      try {
+        themeProvider = context.watch<ThemeProvider>();
+      } catch (e) {
+        debugPrint('[AppRouterHost] Warning: ThemeProvider not available: $e');
+        // Continue without theme provider - will use defaults
+      }
 
-    return WindowListenerWidget(
-      child: MaterialApp.router(
-        title: AppConfig.appName,
-        debugShowCheckedModeBanner: false,
-        theme: AppTheme.lightTheme,
-        darkTheme: AppTheme.darkTheme,
-        themeMode: themeProvider.themeMode,
-        routerConfig: router,
-        builder: (context, child) {
-          final mediaQuery = MediaQuery.of(context);
-          return MediaQuery(
-            data: mediaQuery.copyWith(
-              textScaler: TextScaler.linear(
-                mediaQuery.textScaler.scale(1.0).clamp(0.8, 1.2),
+      return WindowListenerWidget(
+        child: MaterialApp.router(
+          title: AppConfig.appName,
+          debugShowCheckedModeBanner: false,
+          theme: AppTheme.lightTheme,
+          darkTheme: AppTheme.darkTheme,
+          themeMode: themeProvider?.themeMode ?? ThemeMode.system,
+          routerConfig: router,
+          builder: (context, child) {
+            final mediaQuery = MediaQuery.of(context);
+            return MediaQuery(
+              data: mediaQuery.copyWith(
+                textScaler: TextScaler.linear(
+                  mediaQuery.textScaler.scale(1.0).clamp(0.8, 1.2),
+                ),
               ),
+              child: child ?? const SizedBox.shrink(),
+            );
+          },
+        ),
+      );
+    } catch (e, stack) {
+      debugPrint('[AppRouterHost] Error building router: $e');
+      debugPrint('[AppRouterHost] Stack: $stack');
+      Sentry.captureException(e, stackTrace: stack);
+      return MaterialApp(
+        debugShowCheckedModeBanner: false,
+        home: Scaffold(
+          body: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.error_outline, size: 64, color: Colors.red),
+                const SizedBox(height: 16),
+                const Text('Router Error'),
+                const SizedBox(height: 8),
+                Text(e.toString()),
+              ],
             ),
-            child: child ?? const SizedBox.shrink(),
-          );
-        },
-      ),
-    );
+          ),
+        ),
+      );
+    }
   }
 
   void _initializeRouter(AuthService authService) {

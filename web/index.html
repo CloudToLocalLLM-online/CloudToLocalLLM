@@ -187,9 +187,21 @@
             console.log('Unregistering service worker:', registration.scope);
             registration.unregister();
           }
+        }).catch(function(error) {
+          console.warn('Error unregistering service workers:', error);
         });
       });
     }
+  </script>
+
+  <!-- Prevent gray screen by ensuring body is visible -->
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      // Ensure body is visible even if Flutter hasn't loaded yet
+      document.body.style.display = 'block';
+      document.body.style.visibility = 'visible';
+      document.body.style.opacity = '1';
+    });
   </script>
 </head>
 <body>

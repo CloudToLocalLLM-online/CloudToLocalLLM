@@ -56,6 +56,7 @@ Future<void> setupCoreServices() async {
   }
   _coreServicesRegistered = true;
 
+  debugPrint('[ServiceLocator] ===== REGISTERING CORE SERVICES START =====');
   debugPrint('[ServiceLocator] Registering core services...');
 
   // Session storage service for PostgreSQL session management
@@ -165,6 +166,74 @@ Future<void> setupCoreServices() async {
   // Don't initialize yet - wait for auth token
 
   debugPrint('[ServiceLocator] Core services registered successfully');
+  debugPrint('[ServiceLocator] ===== REGISTERING CORE SERVICES END =====');
+
+  // Verify all core services are registered
+  _verifyCoreServicesRegistered();
+}
+
+/// Verify that all critical core services are registered
+void _verifyCoreServicesRegistered() {
+  final criticalServices = [
+    'AuthService',
+    'ThemeProvider',
+    'ProviderConfigurationManager',
+    'LocalOllamaConnectionService',
+    'DesktopClientDetectionService',
+    'AppInitializationService',
+  ];
+
+  debugPrint('[ServiceLocator] Verifying core services registration...');
+  for (final serviceName in criticalServices) {
+    try {
+      switch (serviceName) {
+        case 'AuthService':
+          if (serviceLocator.isRegistered<AuthService>()) {
+            debugPrint('[ServiceLocator] ✓ $serviceName registered');
+          } else {
+            debugPrint('[ServiceLocator] ✗ $serviceName NOT registered');
+          }
+          break;
+        case 'ThemeProvider':
+          if (serviceLocator.isRegistered<ThemeProvider>()) {
+            debugPrint('[ServiceLocator] ✓ $serviceName registered');
+          } else {
+            debugPrint('[ServiceLocator] ✗ $serviceName NOT registered');
+          }
+          break;
+        case 'ProviderConfigurationManager':
+          if (serviceLocator.isRegistered<ProviderConfigurationManager>()) {
+            debugPrint('[ServiceLocator] ✓ $serviceName registered');
+          } else {
+            debugPrint('[ServiceLocator] ✗ $serviceName NOT registered');
+          }
+          break;
+        case 'LocalOllamaConnectionService':
+          if (serviceLocator.isRegistered<LocalOllamaConnectionService>()) {
+            debugPrint('[ServiceLocator] ✓ $serviceName registered');
+          } else {
+            debugPrint('[ServiceLocator] ✗ $serviceName NOT registered');
+          }
+          break;
+        case 'DesktopClientDetectionService':
+          if (serviceLocator.isRegistered<DesktopClientDetectionService>()) {
+            debugPrint('[ServiceLocator] ✓ $serviceName registered');
+          } else {
+            debugPrint('[ServiceLocator] ✗ $serviceName NOT registered');
+          }
+          break;
+        case 'AppInitializationService':
+          if (serviceLocator.isRegistered<AppInitializationService>()) {
+            debugPrint('[ServiceLocator] ✓ $serviceName registered');
+          } else {
+            debugPrint('[ServiceLocator] ✗ $serviceName NOT registered');
+          }
+          break;
+      }
+    } catch (e) {
+      debugPrint('[ServiceLocator] Error checking $serviceName: $e');
+    }
+  }
 }
 
 /// Registers authenticated services that require authentication tokens.
@@ -176,12 +245,17 @@ Future<void> setupAuthenticatedServices() async {
     return;
   }
 
+  debugPrint(
+      '[ServiceLocator] ===== REGISTERING AUTHENTICATED SERVICES START =====');
+
   // Verify authentication before proceeding
   final authService = serviceLocator.get<AuthService>();
   if (!authService.isAuthenticated.value) {
     debugPrint(
       '[ServiceLocator] Cannot register authenticated services - user not authenticated',
     );
+    debugPrint(
+        '[ServiceLocator] ===== REGISTERING AUTHENTICATED SERVICES END (SKIPPED) =====');
     return;
   }
 
@@ -191,6 +265,8 @@ Future<void> setupAuthenticatedServices() async {
     debugPrint(
       '[ServiceLocator] Cannot register authenticated services - no access token',
     );
+    debugPrint(
+        '[ServiceLocator] ===== REGISTERING AUTHENTICATED SERVICES END (SKIPPED) =====');
     return;
   }
 
@@ -318,6 +394,8 @@ Future<void> setupAuthenticatedServices() async {
   serviceLocator.registerSingleton<AdminCenterService>(adminCenterService);
 
   debugPrint('[ServiceLocator] Authenticated services registered successfully');
+  debugPrint(
+      '[ServiceLocator] ===== REGISTERING AUTHENTICATED SERVICES END =====');
 }
 
 /// Legacy function for backward compatibility.
