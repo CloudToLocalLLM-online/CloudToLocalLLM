@@ -723,9 +723,13 @@ class AppRouter {
           }
         }
 
-        // If authenticated but services not yet loaded, show loading screen
-        // This prevents redirect to login during service initialization
-        if (isAuthenticated && !areServicesLoaded && !isLoading) {
+        // If authenticated but services not yet loaded, only redirect to loading
+        // for protected routes that require authenticated services
+        // Don't redirect from home route (/) as it handles loading state internally
+        if (isAuthenticated &&
+            !areServicesLoaded &&
+            !isLoading &&
+            !isHomepage) {
           debugPrint(
             '[Router] DECISION: Authenticated but services not loaded - showing loading screen',
           );
