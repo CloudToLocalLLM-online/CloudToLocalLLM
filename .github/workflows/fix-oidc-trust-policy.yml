@@ -49,7 +49,7 @@ jobs:
         if: github.event.inputs.apply_policy == 'true'
         run: |
           echo "Applying new trust policy..."
-          aws iam update-assume-role-policy-document \
+          aws iam update-assume-role-policy \
             --role-name ${{ env.ROLE_NAME }} \
             --policy-document file://trust-policy-new.json
           echo "✓ Trust policy updated successfully"

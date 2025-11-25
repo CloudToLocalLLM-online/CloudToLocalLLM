@@ -4,17 +4,17 @@ on:
   push:
     branches: [main]
     paths:
-      - 'lib/**'
-      - 'services/**'
-      - 'k8s/**'
-      - 'web/**'
-      - '.github/workflows/deploy-aws-eks.yml'
+      - "lib/**"
+      - "services/**"
+      - "k8s/**"
+      - "web/**"
+      - ".github/workflows/deploy-aws-eks.yml"
   workflow_dispatch:
     inputs:
       environment:
-        description: 'Deployment environment'
+        description: "Deployment environment"
         required: true
-        default: 'production'
+        default: "production"
         type: choice
         options:
           - development
@@ -35,7 +35,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      id-token: write  # Required for OIDC token exchange
+      id-token: write # Required for OIDC token exchange
 
     steps:
       - name: Checkout code
@@ -81,7 +81,7 @@ jobs:
       - name: Build and push web app image
         uses: docker/build-push-action@v4
         with:
-          context: .
+          context: ./web
           file: ./web/Dockerfile
           push: true
           tags: |
@@ -120,9 +120,9 @@ jobs:
           if [ -z "$ENVIRONMENT" ]; then
             ENVIRONMENT="production"
           fi
-          
+
           echo "ENVIRONMENT=$ENVIRONMENT" >> $GITHUB_ENV
-          
+
           # Set namespace based on environment
           case $ENVIRONMENT in
             development)
@@ -139,7 +139,7 @@ jobs:
               exit 1
               ;;
           esac
-          
+
           echo "NAMESPACE=$NAMESPACE" >> $GITHUB_ENV
           echo "Deploying to environment: $ENVIRONMENT"
           echo "Using namespace: $NAMESPACE"
@@ -151,26 +151,26 @@ jobs:
       - name: Apply base Kubernetes manifests
         run: |
           echo "Applying base Kubernetes manifests..."
-          
+
           # Apply base manifests in order
           kubectl apply -f k8s/namespace.yaml
           kubectl apply -f k8s/configmap.yaml -n ${{ env.NAMESPACE }}
           kubectl apply -f k8s/secrets.yaml -n ${{ env.NAMESPACE }} || true
           kubectl apply -f k8s/rbac.yaml -n ${{ env.NAMESPACE }}
           kubectl apply -f k8s/network-policies.yaml -n ${{ env.NAMESPACE }}
-          
+
           echo "Base manifests applied successfully"
 
       - name: Apply Kustomize overlays for environment
         run: |
           echo "Applying Kustomize overlay for ${{ env.ENVIRONMENT }} environment..."
-          
+
           # Apply the environment-specific kustomization
           kubectl kustomize k8s/overlays/${{ env.ENVIRONMENT }} | \
             sed "s|cloudtolocalllm/cloudtolocalllm-web:latest|${{ env.DOCKER_REGISTRY }}/cloudtolocalllm-web:${{ github.sha }}|g" | \
             sed "s|cloudtolocalllm/cloudtolocalllm-api:latest|${{ env.DOCKER_REGISTRY }}/cloudtolocalllm-api:${{ github.sha }}|g" | \
             kubectl apply -f - -n ${{ env.NAMESPACE }}
-          
+
           echo "Kustomize overlay applied successfully"
 
       - name: Update Kubernetes manifests with new image tags
@@ -180,7 +180,7 @@ jobs:
             web=${{ env.DOCKER_REGISTRY }}/cloudtolocalllm-web:${{ github.sha }} \
             -n ${{ env.NAMESPACE }} \
             --record || echo "Web deployment update skipped (may not exist yet)"
-          
+
           # Update API backend deployment
           kubectl set image deployment/api-backend \
             api-backend=${{ env.DOCKER_REGISTRY }}/cloudtolocalllm-api:${{ github.sha }} \
@@ -191,7 +191,7 @@ jobs:
         run: |
           echo "Waiting for web deployment..."
           kubectl rollout status deployment/web -n ${{ env.NAMESPACE }} --timeout=5m
-          
+
           echo "Waiting for API backend deployment..."
           kubectl rollout status deployment/api-backend -n ${{ env.NAMESPACE }} --timeout=5m
 
@@ -199,11 +199,11 @@ jobs:
         run: |
           echo "Checking pod status..."
           kubectl get pods -n ${{ env.NAMESPACE }}
-          
+
           echo ""
           echo "Checking service status..."
           kubectl get svc -n ${{ env.NAMESPACE }}
-          
+
           echo ""
           echo "Checking ingress status..."
           kubectl get ingress -n ${{ env.NAMESPACE }}
@@ -217,13 +217,13 @@ jobs:
         run: |
           # Get the load balancer IP/hostname
           LB_ENDPOINT=$(kubectl get svc web -n ${{ env.NAMESPACE }} -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
-          
+
           if [ -z "$LB_ENDPOINT" ]; then
             LB_ENDPOINT=$(kubectl get svc web -n ${{ env.NAMESPACE }} -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
           fi
-          
+
           echo "Load Balancer Endpoint: $LB_ENDPOINT"
-          
+
           # Wait for endpoint to be ready
           for i in {1..30}; do
             if curl -f -s "http://$LB_ENDPOINT/health" > /dev/null 2>&1; then
@@ -233,23 +233,23 @@ jobs:
             echo "Attempt $i/30: Waiting for application to be ready..."
             sleep 10
           done
-          
+
           echo "✗ Application did not become accessible within timeout"
           exit 1
 
       - name: Track deployment history
         run: |
           echo "Recording deployment history..."
-          
+
           # Get deployment revisions
           echo ""
           echo "Web Deployment History:"
           kubectl rollout history deployment/web -n ${{ env.NAMESPACE }}
-          
+
           echo ""
           echo "API Backend Deployment History:"
           kubectl rollout history deployment/api-backend -n ${{ env.NAMESPACE }}
-          
+
           # Store deployment metadata
           DEPLOYMENT_METADATA=$(cat <<EOF
           {
@@ -265,21 +265,21 @@ jobs:
           }
           EOF
           )
-          
+
           echo "Deployment metadata recorded"
 
       - name: Record deployment status
         if: always()
         run: |
           echo "Recording deployment status..."
-          
+
           # Determine deployment status
           if [ $? -eq 0 ]; then
             DEPLOYMENT_STATUS="success"
           else
             DEPLOYMENT_STATUS="failure"
           fi
-          
+
           # Create deployment status file
           cat > deployment-status.json <<EOF
           {
@@ -294,7 +294,7 @@ jobs:
             "actor": "${{ github.actor }}"
           }
           EOF
-          
+
           echo "Deployment status recorded"
           cat deployment-status.json
 
@@ -304,29 +304,29 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
         run: |
           echo "Setting up Cloudflare DNS integration..."
-          
+
           # Update kubeconfig
           aws eks update-kubeconfig \
             --name ${{ env.EKS_CLUSTER_NAME }} \
             --region ${{ env.AWS_REGION }}
-          
+
           # Get NLB endpoint
           NLB_ENDPOINT=$(kubectl get ingress -n ${{ env.NAMESPACE }} -o jsonpath='{.items[0].status.loadBalancer.ingress[0].hostname}')
-          
+
           if [ -z "$NLB_ENDPOINT" ]; then
             NLB_ENDPOINT=$(kubectl get ingress -n ${{ env.NAMESPACE }} -o jsonpath='{.items[0].status.loadBalancer.ingress[0].ip}')
           fi
-          
+
           echo "NLB Endpoint: $NLB_ENDPOINT"
-          
+
           # Get Cloudflare Zone ID
           ZONE_RESPONSE=$(curl -s -X GET "https://api.cloudflare.com/client/v4/zones?name=cloudtolocalllm.online" \
             -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
             -H "Content-Type: application/json")
-          
+
           ZONE_ID=$(echo "$ZONE_RESPONSE" | jq -r '.result[0].id')
           echo "Cloudflare Zone ID: $ZONE_ID"
-          
+
           # Update DNS records for each domain
           for DOMAIN in "cloudtolocalllm.online" "app.cloudtolocalllm.online" "api.cloudtolocalllm.online" "auth.cloudtolocalllm.online"; do
             echo "Updating DNS record for: $DOMAIN"
@@ -371,29 +371,29 @@ jobs:
               echo "  ✓ Created DNS record for $DOMAIN"
             fi
           done
-          
+
           # Configure SSL/TLS settings
           echo "Configuring SSL/TLS settings..."
-          
+
           # Set SSL mode to "Full"
           curl -s -X PATCH "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/settings/ssl" \
             -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
             -H "Content-Type: application/json" \
             -d '{"value": "full"}' > /dev/null
-          
+
           # Enable "Always Use HTTPS"
           curl -s -X PATCH "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/settings/always_use_https" \
             -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
             -H "Content-Type: application/json" \
             -d '{"value": "on"}' > /dev/null
-          
+
           # Purge cache
           echo "Purging Cloudflare cache..."
           curl -s -X POST "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/purge_cache" \
             -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
             -H "Content-Type: application/json" \
             -d '{"purge_everything": true}' > /dev/null
-          
+
           echo "✓ Cloudflare DNS integration complete"
 
       - name: Deployment successful
@@ -425,7 +425,7 @@ jobs:
         continue-on-error: true
         run: |
           echo "Testing rollback mechanism with intentional failure..."
-          
+
           # Deploy a broken version to test rollback
           echo "Deploying broken version for rollback test..."
           kubectl set image deployment/web-app \
@@ -433,56 +433,56 @@ jobs:
             -n ${{ env.NAMESPACE }} \
             --record \
             --dry-run=client -o yaml | kubectl apply -f -
-          
+
           # Wait briefly for deployment to start
           sleep 10
-          
+
           # This will fail because the image doesn't exist, triggering rollback
           echo "Waiting for deployment (will fail)..."
           kubectl rollout status deployment/web-app -n ${{ env.NAMESPACE }} --timeout=2m || true
-          
+
           echo "Rollback test completed"
 
       - name: Rollback on failure
         if: failure()
         run: |
           echo "Deployment failed. Rolling back to previous version..."
-          
+
           # Set namespace if not already set
           NAMESPACE="${{ env.NAMESPACE }}"
           if [ -z "$NAMESPACE" ]; then
             NAMESPACE="cloudtolocalllm"
           fi
-          
+
           # Store current revision before rollback
           WEB_REVISION=$(kubectl rollout history deployment/web -n "$NAMESPACE" 2>/dev/null | tail -2 | head -1 | awk '{print $1}' || echo "N/A")
           API_REVISION=$(kubectl rollout history deployment/api-backend -n "$NAMESPACE" 2>/dev/null | tail -2 | head -1 | awk '{print $1}' || echo "N/A")
-          
+
           echo "Current web revision: $WEB_REVISION"
           echo "Current api-backend revision: $API_REVISION"
-          
+
           # Perform rollback
           echo "Rolling back web deployment..."
           kubectl rollout undo deployment/web -n "$NAMESPACE" || echo "Web rollback skipped"
-          
+
           echo "Rolling back api-backend deployment..."
           kubectl rollout undo deployment/api-backend -n "$NAMESPACE" || echo "API backend rollback skipped"
-          
+
           # Wait for rollback to complete
           echo "Waiting for web rollback to complete..."
           kubectl rollout status deployment/web -n "$NAMESPACE" --timeout=5m || echo "Web rollback status check skipped"
-          
+
           echo "Waiting for api-backend rollback to complete..."
           kubectl rollout status deployment/api-backend -n "$NAMESPACE" --timeout=5m || echo "API backend rollback status check skipped"
-          
+
           # Verify application is accessible after rollback
           echo "Verifying application accessibility after rollback..."
           LB_ENDPOINT=$(kubectl get svc web -n "$NAMESPACE" -o jsonpath='{.status.loadBalancer.ingress[0].hostname}' 2>/dev/null || echo "")
-          
+
           if [ -z "$LB_ENDPOINT" ]; then
             LB_ENDPOINT=$(kubectl get svc web -n "$NAMESPACE" -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null || echo "")
           fi
-          
+
           for i in {1..10}; do
             if curl -f -s "http://$LB_ENDPOINT/health" > /dev/null 2>&1; then
               echo "✓ Application is accessible after rollback"
@@ -491,7 +491,7 @@ jobs:
             echo "Attempt $i/10: Waiting for application to be ready after rollback..."
             sleep 5
           done
-          
+
           # Log rollback details
           echo ""
           echo "Rollback Summary:"
@@ -501,12 +501,12 @@ jobs:
           echo "- Rollback Timestamp: $(date -u +'%Y-%m-%dT%H:%M:%SZ')"
           echo "- Commit: ${{ github.sha }}"
           echo "- Branch: ${{ github.ref }}"
-          
+
           # Get current pod status
           echo ""
           echo "Pod Status After Rollback:"
           kubectl get pods -n "$NAMESPACE" -o wide 2>/dev/null || echo "Unable to retrieve pod status"
-          
+
           echo ""
           echo "✓ Rollback completed successfully"
           exit 1

@@ -6,7 +6,7 @@
           "token.actions.githubusercontent.com:aud": "sts.amazonaws.com"
         },
         "StringLike": {
-          "token.actions.githubusercontent.com:sub": "repo:cloudtolocalllm/cloudtolocalllm:*"
+          "token.actions.githubusercontent.com:sub": "repo:imrightguy/CloudToLocalLLM:*"
         }
       },
       "Action": "sts:AssumeRoleWithWebIdentity",
