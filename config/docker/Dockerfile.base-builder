@@ -12,7 +12,8 @@ RUN dnf -y update && \
     dnf clean all
 
 # Install Java (for Android/Flutter tools)
-RUN dnf -y install java-17-openjdk-devel && \
+# Fedora Rawhide likely moved to Java 21+
+RUN dnf -y install java-21-openjdk-devel && \
     dnf clean all
 
 # Install Node.js and NPM
