@@ -53,8 +53,8 @@ spec:
                 topologyKey: kubernetes.io/hostname
       securityContext:
         runAsNonRoot: true
-        runAsUser: 101
-        fsGroup: 101
+        runAsUser: 1000
+        fsGroup: 1000
       containers:
         - name: web
           image: cloudtolocalllm/cloudtolocalllm-web:latest

@@ -53,8 +53,8 @@ spec:
                 topologyKey: kubernetes.io/hostname
       securityContext:
         runAsNonRoot: true
-        runAsUser: 1001
-        fsGroup: 1001
+        runAsUser: 1000
+        fsGroup: 1000
       initContainers:
         - name: wait-for-postgres
           image: busybox:1.35

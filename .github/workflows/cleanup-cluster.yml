@@ -1,0 +1,128 @@
+name: Cleanup EKS Cluster
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Environment to clean"
+        required: true
+        default: "production"
+        type: choice
+        options:
+          - development
+          - staging
+          - production
+      confirm:
+        description: "Type 'CONFIRM' to proceed with cleanup"
+        required: true
+        type: string
+
+env:
+  AWS_REGION: us-east-1
+  EKS_CLUSTER_NAME: cloudtolocalllm-eks
+
+jobs:
+  cleanup:
+    name: Cleanup Cluster
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write # Required for OIDC token exchange
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Validate confirmation
+        run: |
+          if [ "${{ github.event.inputs.confirm }}" != "CONFIRM" ]; then
+            echo "❌ Cleanup not confirmed. Please type 'CONFIRM' to proceed."
+            exit 1
+          fi
+          echo "✓ Cleanup confirmed"
+
+      - name: Configure AWS credentials via OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::422017356244:role/github-actions-role
+          aws-region: ${{ env.AWS_REGION }}
+          role-session-name: github-actions-eks-cleanup-${{ github.run_id }}
+          role-duration-seconds: 3600
+
+      - name: Update kubeconfig
+        run: |
+          aws eks update-kubeconfig \
+            --name ${{ env.EKS_CLUSTER_NAME }} \
+            --region ${{ env.AWS_REGION }}
+
+      - name: Determine namespace
+        run: |
+          ENVIRONMENT="${{ github.event.inputs.environment }}"
+
+          case $ENVIRONMENT in
+            development)
+              NAMESPACE="cloudtolocalllm-dev"
+              ;;
+            staging)
+              NAMESPACE="cloudtolocalllm-staging"
+              ;;
+            production)
+              NAMESPACE="cloudtolocalllm"
+              ;;
+            *)
+              echo "Invalid environment: $ENVIRONMENT"
+              exit 1
+              ;;
+          esac
+
+          echo "NAMESPACE=$NAMESPACE" >> $GITHUB_ENV
+          echo "ENVIRONMENT=$ENVIRONMENT" >> $GITHUB_ENV
+
+      - name: Show current resources
+        run: |
+          echo "Current resources in namespace: ${{ env.NAMESPACE }}"
+          echo ""
+          echo "Deployments:"
+          kubectl get deployments -n ${{ env.NAMESPACE }} || echo "No deployments found"
+          echo ""
+          echo "Pods:"
+          kubectl get pods -n ${{ env.NAMESPACE }} || echo "No pods found"
+          echo ""
+          echo "Services:"
+          kubectl get services -n ${{ env.NAMESPACE }} || echo "No services found"
+
+      - name: Delete all deployments
+        run: |
+          echo "Deleting all deployments in namespace: ${{ env.NAMESPACE }}"
+          kubectl delete deployment --all -n ${{ env.NAMESPACE }} --ignore-not-found=true
+
+      - name: Wait for pods to terminate
+        run: |
+          echo "Waiting for all pods to terminate..."
+          kubectl wait --for=delete pod --all -n ${{ env.NAMESPACE }} --timeout=180s || true
+
+      - name: Delete all services (except ClusterIP default)
+        run: |
+          echo "Deleting all services in namespace: ${{ env.NAMESPACE }}"
+          kubectl delete service --all -n ${{ env.NAMESPACE }} --ignore-not-found=true
+
+      - name: Delete all configmaps
+        run: |
+          echo "Deleting all configmaps in namespace: ${{ env.NAMESPACE }}"
+          kubectl delete configmap --all -n ${{ env.NAMESPACE }} --ignore-not-found=true
+
+      - name: Verify cleanup
+        run: |
+          echo "Verifying cleanup..."
+          echo ""
+          echo "Remaining deployments:"
+          kubectl get deployments -n ${{ env.NAMESPACE }} || echo "✓ No deployments"
+          echo ""
+          echo "Remaining pods:"
+          kubectl get pods -n ${{ env.NAMESPACE }} || echo "✓ No pods"
+          echo ""
+          echo "Remaining services:"
+          kubectl get services -n ${{ env.NAMESPACE }} || echo "✓ No services"
+
+      - name: Cleanup complete
+        run: |
+          echo "✓ Cleanup of ${{ env.ENVIRONMENT }} environment completed successfully"
