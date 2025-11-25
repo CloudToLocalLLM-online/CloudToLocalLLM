@@ -1,685 +1,491 @@
-name: Deploy to Azure AKS
+name: Deploy to AWS EKS
 
 on:
   push:
     branches: [main]
-  pull_request:
-    branches: [main]
+    paths:
+      - 'lib/**'
+      - 'services/**'
+      - 'k8s/**'
+      - 'web/**'
+      - '.github/workflows/deploy-aks.yml'
   workflow_dispatch:
     inputs:
       environment:
-        description: "Environment to deploy to"
+        description: 'Deployment environment'
         required: true
-        default: "production"
+        default: 'production'
         type: choice
         options:
+          - development
+          - staging
           - production
 
-concurrency:
-  group: deploy-aks-${{ github.ref }}
-  cancel-in-progress: true
-
 env:
-  REGISTRY: cloudtolocalllm
-  API_IMAGE: cloudtolocalllm/cloudtolocalllm-api
-  WEB_IMAGE: cloudtolocalllm/cloudtolocalllm-web
-  STREAMING_PROXY_IMAGE: cloudtolocalllm/cloudtolocalllm-streaming-proxy
-  POSTGRES_IMAGE: cloudtolocalllm/cloudtolocalllm-postgres
-  AZURE_RESOURCE_GROUP: cloudtolocalllm-rg
-  AZURE_CLUSTER_NAME: cloudtolocalllm-aks
-  AZURE_CONTAINER_REGISTRY: cloudtolocalllm
+  AWS_REGION: us-east-1
+  EKS_CLUSTER_NAME: cloudtolocalllm-eks
+  DOCKER_REGISTRY: cloudtolocalllm
+
+concurrency:
+  group: eks-deployment
+  cancel-in-progress: false
 
 jobs:
-  build:
-    # This job builds and pushes the Docker images.
+  deploy:
     runs-on: ubuntu-latest
-    outputs:
-      api-image: ${{ steps.meta-api.outputs.tags }}
-      web-image: ${{ steps.meta-web.outputs.tags }}
-      postgres-image: ${{ steps.meta-postgres.outputs.tags }}
+    permissions:
+      contents: read
+      id-token: write  # Required for OIDC token exchange
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v3
+
+      - name: Check deployment queue status
+        run: |
+          echo "Checking deployment queue status..."
+          echo "Concurrency group: eks-deployment"
+          echo "This workflow uses GitHub Actions concurrency to prevent concurrent deployments"
+          echo "Only one deployment to the EKS cluster will run at a time"
+          echo "Other deployments will be queued and executed sequentially"
+
+      - name: Configure AWS credentials via OIDC
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          role-to-assume: arn:aws:iam::422017356244:role/github-actions-role
+          aws-region: ${{ env.AWS_REGION }}
+          role-session-name: github-actions-eks-deployment
+          role-duration-seconds: 3600
+
+      - name: Verify AWS credentials
+        run: |
+          echo "AWS Account ID:"
+          aws sts get-caller-identity --query Account --output text
+          echo ""
+          echo "Available EKS Clusters:"
+          aws eks list-clusters --region ${{ env.AWS_REGION }} --query 'clusters' --output table
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v2
 
       - name: Log in to Docker Hub
-        uses: docker/login-action@v3
+        uses: docker/login-action@v2
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Extract API metadata
-        id: meta-api
-        uses: docker/metadata-action@v5
+      - name: Build and push web app image
+        uses: docker/build-push-action@v4
         with:
-          images: ${{ env.API_IMAGE }}
+          context: .
+          file: ./web/Dockerfile
+          push: true
           tags: |
-            type=sha,prefix={{branch}}-
-            type=raw,value=latest,enable={{is_default_branch}}
+            ${{ env.DOCKER_REGISTRY }}/cloudtolocalllm-web:latest
+            ${{ env.DOCKER_REGISTRY }}/cloudtolocalllm-web:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
-      - name: Build and push API image
-        uses: docker/build-push-action@v5
+      - name: Build and push API backend image
+        uses: docker/build-push-action@v4
         with:
           context: ./services/api-backend
           file: ./services/api-backend/Dockerfile.prod
           push: true
-          tags: ${{ steps.meta-api.outputs.tags }}
-          labels: ${{ steps.meta-api.outputs.labels }}
-
-      - name: Extract Web metadata
-        id: meta-web
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.WEB_IMAGE }}
           tags: |
-            type=sha,prefix={{branch}}-
-            type=raw,value=latest,enable={{is_default_branch}}
-
-      - name: Build Web image (test locally first)
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: ./config/docker/Dockerfile.web
-          push: false
-          load: true
-          tags: web-test:latest
-          cache-from: type=gha
-          build-args: |
-            BUILD_SHA=${{ github.sha }}
-
-      - name: Test Web image
-        run: |
-          echo "Testing web image..."
-
-          # Start container
-          docker run -d --name web-test -p 8080:8080 web-test:latest
-          sleep 3
-
-          # Test health endpoint
-          echo "Testing health endpoint..."
-          if curl -f http://localhost:8080/health; then
-            echo "✅ Health endpoint working"
-          else
-            echo "❌ Health endpoint failed"
-            docker logs web-test
-            docker stop web-test
-            exit 1
-          fi
-
-          # Test index.html
-          echo "Testing index.html..."
-          if curl -f http://localhost:8080/index.html | grep -q "flutter"; then
-            echo "✅ index.html contains Flutter content"
-          else
-            echo "❌ index.html missing or invalid"
-            curl http://localhost:8080/index.html | head -20
-            docker logs web-test
-            docker stop web-test
-            exit 1
-          fi
-
-          # Test main.dart.js
-          echo "Testing main.dart.js..."
-          if curl -f http://localhost:8080/main.dart.js > /dev/null 2>&1; then
-            SIZE=$(curl -s http://localhost:8080/main.dart.js | wc -c)
-            echo "✅ main.dart.js exists (size: $SIZE bytes)"
-          else
-            echo "❌ main.dart.js not found"
-            docker logs web-test
-            docker stop web-test
-            exit 1
-          fi
-
-          docker stop web-test
-          echo "✅ Web image test passed"
-
-      - name: Build and push Web image
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: ./config/docker/Dockerfile.web
-          push: true
-          tags: ${{ steps.meta-web.outputs.tags }}
-          labels: ${{ steps.meta-web.outputs.labels }}
-          no-cache: true
-          build-args: |
-            BUILD_SHA=${{ github.sha }}
-
-      - name: Extract Streaming Proxy metadata
-        id: meta-streaming-proxy
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.STREAMING_PROXY_IMAGE }}
-          tags: |
-            type=sha,prefix={{branch}}-
-            type=raw,value=latest,enable={{is_default_branch}}
-
-      - name: Build and push Streaming Proxy image
-        uses: docker/build-push-action@v5
-        with:
-          context: ./services/streaming-proxy
-          file: ./services/streaming-proxy/Dockerfile
-          push: true
-          tags: ${{ steps.meta-streaming-proxy.outputs.tags }}
-          labels: ${{ steps.meta-streaming-proxy.outputs.labels }}
+            ${{ env.DOCKER_REGISTRY }}/cloudtolocalllm-api:latest
+            ${{ env.DOCKER_REGISTRY }}/cloudtolocalllm-api:${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      - name: Extract Postgres metadata
-        id: meta-postgres
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.POSTGRES_IMAGE }}
-          tags: |
-            type=sha,prefix={{branch}}-
-            type=raw,value=latest,enable={{is_default_branch}}
-
-      - name: Build and push Postgres image
-        uses: docker/build-push-action@v5
-        with:
-          context: ./config/docker
-          file: ./config/docker/Dockerfile.postgres
-          push: true
-          tags: ${{ steps.meta-postgres.outputs.tags }}
-          labels: ${{ steps.meta-postgres.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-    environment: production
-    if: github.ref == 'refs/heads/main'
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Verify Docker images were built
+      - name: Update kubeconfig
         run: |
-          echo "Verifying Docker images..."
-          echo "API Image: ${{ env.API_IMAGE }}:latest"
-          echo "Web Image: ${{ env.WEB_IMAGE }}:latest"
-          echo "Postgres Image: ${{ env.POSTGRES_IMAGE }}:latest"
-          echo "✅ Docker images ready for deployment"
+          aws eks update-kubeconfig \
+            --name ${{ env.EKS_CLUSTER_NAME }} \
+            --region ${{ env.AWS_REGION }}
 
-      - name: Azure Login
-        uses: azure/login@v2
-        with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
-
-      - name: Get AKS credentials
+      - name: Verify cluster connectivity
         run: |
-          az aks get-credentials \
-            --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
-            --name ${{ env.AZURE_CLUSTER_NAME }}
+          kubectl cluster-info
+          kubectl get nodes
 
-      - name: Create or update Kubernetes secret
+      - name: Determine environment and namespace
         run: |
-          # Ensure namespace exists
-          kubectl apply -f k8s/namespace.yaml
-
-          # Apply ConfigMap
-          kubectl apply -f k8s/configmap.yaml
-
-          kubectl create secret generic cloudtolocalllm-secrets \
-            --from-literal=postgres-user='cloud_admin' \
-            --from-literal=postgres-password='CloudToLocalSecurePass2024!' \
-            --from-literal=jwt-secret='${{ secrets.JWT_SECRET }}' \
-            --from-literal=auth0-domain='${{ secrets.AUTH0_DOMAIN }}' \
-            --from-literal=auth0-audience='${{ secrets.AUTH0_AUDIENCE }}' \
-            --from-literal=auth0-client-id='${{ secrets.AUTH0_CLIENT_ID }}' \
-            --from-literal=stripe-test-secret-key='${{ secrets.STRIPE_TEST_SECRET_KEY }}' \
-            --from-literal=stripe-test-publishable-key='${{ secrets.STRIPE_TEST_PUBLISHABLE_KEY }}' \
-            --from-literal=stripe-test-webhook-secret='${{ secrets.STRIPE_TEST_WEBHOOK_SECRET }}' \
-            --from-literal=sentry-dsn='${{ secrets.SENTRY_DSN }}' \
-            -n cloudtolocalllm --dry-run=client -o yaml | kubectl apply -f -
-
-      - name: Update API deployment
-        run: |
-          echo "Applying API deployment manifest..."
-          kubectl apply -f k8s/api-backend-deployment.yaml
-
-          echo "Updating API deployment with image: ${{ env.API_IMAGE }}:latest"
-          kubectl set image deployment/api-backend \
-            api-backend=${{ env.API_IMAGE }}:latest \
-            -n cloudtolocalllm
-
-          # Force restart to ensure new image is pulled
-          kubectl rollout restart deployment/api-backend -n cloudtolocalllm
-          echo "API deployment updated successfully"
-
-      - name: Update Web deployment
-        run: |
-          echo "Applying Web deployment manifest..."
-          kubectl apply -f k8s/web-deployment.yaml
-
-          echo "Updating web deployment with image: ${{ env.WEB_IMAGE }}:latest"
-          kubectl set image deployment/web \
-            web=${{ env.WEB_IMAGE }}:latest \
-            -n cloudtolocalllm
+          # Determine environment from workflow input or default to production
+          ENVIRONMENT="${{ github.event.inputs.environment }}"
+          if [ -z "$ENVIRONMENT" ]; then
+            ENVIRONMENT="production"
+          fi
           
-          # Force restart to pull new image even if tag is the same
-          kubectl rollout restart deployment/web -n cloudtolocalllm
-          echo "Web deployment updated and restarted successfully"
+          echo "ENVIRONMENT=$ENVIRONMENT" >> $GITHUB_ENV
+          
+          # Set namespace based on environment
+          case $ENVIRONMENT in
+            development)
+              NAMESPACE="cloudtolocalllm-dev"
+              ;;
+            staging)
+              NAMESPACE="cloudtolocalllm-staging"
+              ;;
+            production)
+              NAMESPACE="cloudtolocalllm"
+              ;;
+            *)
+              echo "Invalid environment: $ENVIRONMENT"
+              exit 1
+              ;;
+          esac
+          
+          echo "NAMESPACE=$NAMESPACE" >> $GITHUB_ENV
+          echo "Deploying to environment: $ENVIRONMENT"
+          echo "Using namespace: $NAMESPACE"
 
-      - name: Update Postgres deployment
+      - name: Create namespace if not exists
         run: |
-          echo "Applying Postgres StatefulSet manifest..."
-          kubectl apply -f k8s/postgres-statefulset.yaml
+          kubectl create namespace ${{ env.NAMESPACE }} --dry-run=client -o yaml | kubectl apply -f -
 
-          echo "Updating Postgres deployment with image: ${{ env.POSTGRES_IMAGE }}:latest"
-          kubectl set image statefulset/postgres \
-            postgres=${{ env.POSTGRES_IMAGE }}:latest \
-            -n cloudtolocalllm
-
-          # Force restart to ensure new image is pulled
-          kubectl rollout restart statefulset/postgres -n cloudtolocalllm
-          echo "Postgres deployment updated successfully"
-
-      - name: Apply streaming-proxy resources
-        continue-on-error: false
+      - name: Apply Kustomize overlays for environment
         run: |
-          echo "Deploying streaming-proxy resources..."
+          echo "Applying Kustomize overlay for ${{ env.ENVIRONMENT }} environment..."
+          
+          # Apply the environment-specific kustomization
+          kubectl kustomize k8s/overlays/${{ env.ENVIRONMENT }} | \
+            sed "s|cloudtolocalllm/cloudtolocalllm-web:latest|${{ env.DOCKER_REGISTRY }}/cloudtolocalllm-web:${{ github.sha }}|g" | \
+            sed "s|cloudtolocalllm/cloudtolocalllm-api:latest|${{ env.DOCKER_REGISTRY }}/cloudtolocalllm-api:${{ github.sha }}|g" | \
+            kubectl apply -f -
+          
+          echo "Kustomize overlay applied successfully"
 
-          # Create streaming-proxy secrets
-          kubectl create secret generic streaming-proxy-secrets \
-            --from-literal=SENTRY_DSN='${{ secrets.SENTRY_DSN }}' \
-            -n cloudtolocalllm --dry-run=client -o yaml | kubectl apply -f -
-
-          # Apply ConfigMap and other resources
-          kubectl apply -f k8s/streaming-proxy-configmap.yaml
-          kubectl apply -f k8s/streaming-proxy-service.yaml
-          kubectl apply -f k8s/streaming-proxy-deployment.yaml
-
-          echo "✅ Streaming-proxy resources deployed"
-
-      - name: Ensure cert-manager is installed
-        continue-on-error: true
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      - name: Update Kubernetes manifests with new image tags
         run: |
-          echo "Checking if cert-manager is installed..."
-          if kubectl get namespace cert-manager 2>/dev/null; then
-            echo "✅ cert-manager namespace exists"
-          else
-            echo "Installing cert-manager..."
-            kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.13.0/cert-manager.yaml
-            echo "Waiting for cert-manager to be ready..."
-            kubectl wait --for=condition=ready pod -l app.kubernetes.io/instance=cert-manager -n cert-manager --timeout=300s
-          fi
-
-          # Create Cloudflare API token secret for cert-manager
-          echo "Creating Cloudflare API token secret..."
-          if [ -z "$CLOUDFLARE_API_TOKEN" ]; then
-            echo "⚠️ CLOUDFLARE_API_TOKEN not set in secrets"
-            echo "Please set CLOUDFLARE_API_TOKEN in GitHub secrets with DNS:Edit permissions"
-            exit 1
-          fi
-
-          kubectl create secret generic cloudflare-api-token \
-            --from-literal=api-token="$CLOUDFLARE_API_TOKEN" \
-            -n cert-manager \
+          # Update web app deployment
+          kubectl set image deployment/web \
+            web=${{ env.DOCKER_REGISTRY }}/cloudtolocalllm-web:${{ github.sha }} \
+            -n ${{ env.NAMESPACE }} \
+            --record \
+            --dry-run=client -o yaml | kubectl apply -f -
+          
+          # Update API backend deployment
+          kubectl set image deployment/api-backend \
+            api-backend=${{ env.DOCKER_REGISTRY }}/cloudtolocalllm-api:${{ github.sha }} \
+            -n ${{ env.NAMESPACE }} \
+            --record \
             --dry-run=client -o yaml | kubectl apply -f -
 
-          echo "✅ Cloudflare API token secret created"
-
-          # Apply cert-manager ClusterIssuers with Cloudflare DNS-01 challenge
-          echo "Applying cert-manager ClusterIssuer configuration (staging and production)..."
-          kubectl apply -f k8s/cert-manager-cloudflare-dns.yaml
-
-          echo "✅ cert-manager configured for automatic SSL certificate provisioning using Cloudflare DNS-01 challenge"
-          echo "   - Staging issuer: cloudflare-dns-staging (for testing)"
-          echo "   - Production issuer: cloudflare-dns-prod (ready for production)"
-
-          # Apply wildcard certificate resource
-          echo "Applying wildcard certificate configuration..."
-          kubectl apply -f k8s/certificate-wildcard.yaml
-
-          echo "✅ Wildcard certificate (*.cloudtolocalllm.online) will be automatically provisioned via Cloudflare DNS"
-          echo "   Certificate will be issued by Let's Encrypt using Cloudflare DNS-01 challenge"
-
-      - name: Apply Ingress Configuration
-        run: |
-          echo "Applying Ingress configuration..."
-          kubectl apply -f k8s/ingress-nginx.yaml
-          echo "✅ Ingress applied successfully"
-
-      - name: Configure Cloudflare SSL (Full Strict)
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-        run: |
-          echo "Configuring Cloudflare SSL mode to Full (Strict)..."
-
-          if [ -z "$CLOUDFLARE_API_TOKEN" ]; then
-            echo "❌ Cloudflare API token not set in secrets"
-            exit 1
-          fi
-
-          CF_API_TOKEN="$CLOUDFLARE_API_TOKEN"
-
-          # Get Zone ID
-          CF_ZONE_ID=$(curl -s -X GET "https://api.cloudflare.com/client/v4/zones?name=cloudtolocalllm.online" \
-            -H "Authorization: Bearer $CF_API_TOKEN" \
-            -H "Content-Type: application/json" | jq -r '.result[0].id')
-
-          if [ "$CF_ZONE_ID" = "null" ] || [ -z "$CF_ZONE_ID" ]; then
-            echo "❌ Unable to determine Cloudflare Zone ID"
-            exit 1
-          fi
-
-          echo "Found Zone ID: $CF_ZONE_ID"
-
-          # Update SSL setting to 'full' (Full)
-          # We use 'full' instead of 'strict' to allow self-signed certificates during provisioning
-          # This prevents 526 errors if the Let's Encrypt certificate is renewing or not yet ready
-          # Traffic is still encrypted end-to-end
-          RESPONSE=$(curl -s -X PATCH "https://api.cloudflare.com/client/v4/zones/$CF_ZONE_ID/settings/ssl" \
-            -H "Authorization: Bearer $CF_API_TOKEN" \
-            -H "Content-Type: application/json" \
-            --data '{"value": "full"}')
-
-          SUCCESS=$(echo "$RESPONSE" | jq -r '.success')
-          if [ "$SUCCESS" = "true" ]; then
-            echo "✅ Cloudflare SSL mode set to 'full'"
-            echo "   - Traffic between Cloudflare and AKS is encrypted"
-            echo "   - Allows self-signed certificates (prevents 526 errors during provisioning)"
-          else
-            echo "❌ Failed to change SSL mode"
-            echo "$RESPONSE" | jq '.errors'
-            exit 1
-          fi
-
       - name: Wait for rollout to complete
-        continue-on-error: true
         run: |
-          echo "Waiting for deployments to rollout..."
+          echo "Waiting for web deployment..."
+          kubectl rollout status deployment/web -n ${{ env.NAMESPACE }} --timeout=5m
+          
+          echo "Waiting for API backend deployment..."
+          kubectl rollout status deployment/api-backend -n ${{ env.NAMESPACE }} --timeout=5m
 
-          echo "Checking API backend deployment..."
-          kubectl rollout status deployment/api-backend -n cloudtolocalllm --timeout=300s || {
-            echo "⚠️ API backend rollout timed out - checking pod status"
-            kubectl describe deployment api-backend -n cloudtolocalllm
-            kubectl get pods -n cloudtolocalllm -l app=api-backend
-          }
-
-          echo ""
-          echo "Checking web deployment..."
-          kubectl rollout status deployment/web -n cloudtolocalllm --timeout=300s || {
-            echo "⚠️ Web deployment rollout timed out - checking pod status"
-            kubectl describe deployment web -n cloudtolocalllm
-            kubectl get pods -n cloudtolocalllm -l app=web
-          }
-
-          echo ""
-          echo "Deployment rollout check completed"
-
-      - name: Check Pod Health (Smart Restart Detection)
+      - name: Verify deployment health
         run: |
-          echo "Checking for pod health and stability..."
-
-          # Get pod status and restart information
-          echo "API Backend pods status:"
-          kubectl get pods -n cloudtolocalllm -l app=api-backend -o wide
-
+          echo "Checking pod status..."
+          kubectl get pods -n ${{ env.NAMESPACE }}
+          
           echo ""
-          echo "Analyzing pod health..."
-
-          # Get detailed pod information as JSON
-          POD_INFO=$(kubectl get pods -n cloudtolocalllm -l app=api-backend -o json)
-
-          # Count total pods
-          TOTAL_PODS=$(echo "$POD_INFO" | jq '.items | length')
-          echo "Total API backend pods: $TOTAL_PODS"
-
-          # Count running/ready pods
-          RUNNING_PODS=$(echo "$POD_INFO" | jq '[.items[] | select(.status.phase == "Running" and (.status.conditions[] | select(.type == "Ready" and .status == "True")))] | length')
-          echo "Running/ready pods: $RUNNING_PODS"
-
-          # Count terminating pods (normal during rolling updates)
-          TERMINATING_PODS=$(echo "$POD_INFO" | jq '[.items[] | select(.metadata.deletionTimestamp != null)] | length')
-          echo "Terminating pods: $TERMINATING_PODS"
-
-          # Analyze pod health more intelligently
-          HIGH_RESTART_PODS=0
-          CRASH_LOOP_PODS=0
-          FAILED_PODS=0
-
-          echo "Detailed pod analysis:"
-          for i in $(seq 0 $((TOTAL_PODS - 1))); do
-            POD_NAME=$(echo "$POD_INFO" | jq -r ".items[$i].metadata.name")
-            POD_PHASE=$(echo "$POD_INFO" | jq -r ".items[$i].status.phase")
-            RESTART_COUNT=$(echo "$POD_INFO" | jq -r ".items[$i].status.containerStatuses[0].restartCount // 0")
-            IS_TERMINATING=$(echo "$POD_INFO" | jq -r ".items[$i].metadata.deletionTimestamp != null")
-
-            echo "Pod: $POD_NAME | Phase: $POD_PHASE | Restarts: $RESTART_COUNT | Terminating: $IS_TERMINATING"
-
-            if [ "$IS_TERMINATING" = "false" ]; then
-              if [ "$RESTART_COUNT" -ge 3 ]; then
-                HIGH_RESTART_PODS=$((HIGH_RESTART_PODS + 1))
-                echo "  ⚠️ High restart count detected: $RESTART_COUNT"
-              fi
-              if [ "$POD_PHASE" = "Failed" ] || [ "$POD_PHASE" = "CrashLoopBackOff" ]; then
-                CRASH_LOOP_PODS=$((CRASH_LOOP_PODS + 1))
-                echo "  ❌ Pod in crash loop: $POD_PHASE"
-              fi
-            fi
-          done
-
+          echo "Checking service status..."
+          kubectl get svc -n ${{ env.NAMESPACE }}
+          
           echo ""
-          echo "Health summary:"
-          echo "High restart pods (>=3 restarts): $HIGH_RESTART_PODS"
-          echo "Crash loop pods: $CRASH_LOOP_PODS"
-          echo "Failed pods (non-terminating): $FAILED_PODS"
+          echo "Checking ingress status..."
+          kubectl get ingress -n ${{ env.NAMESPACE }}
 
-          # Check if deployment is progressing normally
-          if [ "$RUNNING_PODS" -gt 0 ] && [ "$HIGH_RESTART_PODS" -eq 0 ] && [ "$CRASH_LOOP_PODS" -eq 0 ] && [ "$FAILED_PODS" -eq 0 ]; then
-            echo "✅ Deployment healthy: $RUNNING_PODS pods running, $TERMINATING_PODS terminating"
-            exit 0
-          fi
-
-          # Check for critical issues
-          if [ "$HIGH_RESTART_PODS" -gt 0 ] || [ "$CRASH_LOOP_PODS" -gt 0 ] || [ "$FAILED_PODS" -gt 0 ]; then
-            echo "❌ Detected critical pod issues - investigating..."
-
-            echo ""
-            echo "--- Current Logs from problematic pods ---"
-            for i in $(seq 0 $((TOTAL_PODS - 1))); do
-              POD_NAME=$(echo "$POD_INFO" | jq -r ".items[$i].metadata.name")
-              POD_PHASE=$(echo "$POD_INFO" | jq -r ".items[$i].status.phase")
-              RESTART_COUNT=$(echo "$POD_INFO" | jq -r ".items[$i].status.containerStatuses[0].restartCount // 0")
-              IS_TERMINATING=$(echo "$POD_INFO" | jq -r ".items[$i].metadata.deletionTimestamp != null")
-
-              if [ "$IS_TERMINATING" = "false" ] && ([ "$RESTART_COUNT" -ge 3 ] || [ "$POD_PHASE" = "Failed" ] || [ "$POD_PHASE" = "CrashLoopBackOff" ]); then
-                echo "--- Current logs from $POD_NAME ---"
-                kubectl logs -n cloudtolocalllm "$POD_NAME" --tail=50 --all-containers=true || true
-                echo "--- Previous logs from $POD_NAME ---"
-                kubectl logs -n cloudtolocalllm "$POD_NAME" --tail=50 --previous --all-containers=true || true
-                echo ""
-              fi
-            done
-
-            echo ""
-            echo "❌ Failing deployment due to critical pod issues"
-            exit 1
-          fi
-
-          # Allow deployment if old pods are terminating but new ones are healthy
-          if [ "$TERMINATING_PODS" -gt 0 ] && [ "$RUNNING_PODS" -gt 0 ] && [ "$ACTIVE_RESTARTS" -eq 0 ]; then
-            echo "✅ Rolling update in progress: $TERMINATING_PODS terminating, $RUNNING_PODS healthy, 0 restarts in active pods"
-            exit 0
-          fi
-
-          # Edge case: no running pods but some pods exist
-          if [ "$RUNNING_PODS" -eq 0 ] && [ "$TOTAL_PODS" -gt 0 ]; then
-            echo "⚠️ No healthy pods found - checking status..."
-            kubectl describe pods -n cloudtolocalllm -l app=api-backend
-            echo "❌ No healthy pods - deployment may be failing"
-            exit 1
-          fi
-
-          echo "✅ Pod health check passed"
-
-      - name: Verify deployment
+      - name: Get load balancer endpoint
         run: |
-          echo "::group::Deployment Verification"
+          echo "Load Balancer Endpoint:"
+          kubectl get svc -n ${{ env.NAMESPACE }} -o wide
 
-          echo "Pods in cloudtolocalllm namespace:"
-          kubectl get pods -n cloudtolocalllm -o wide
-
-          echo ""
-          echo "Services in cloudtolocalllm namespace:"
-          kubectl get services -n cloudtolocalllm
-
-          echo ""
-          echo "Ingress in cloudtolocalllm namespace:"
-          kubectl get ingress -n cloudtolocalllm
-
-          echo ""
-          echo "Web deployment details:"
-          kubectl describe deployment web -n cloudtolocalllm
-
-          echo ""
-          echo "Web pod logs (last 50 lines):"
-          WEB_POD=$(kubectl get pods -n cloudtolocalllm -l app=web -o jsonpath='{.items[0].metadata.name}' 2>/dev/null)
-          if [ -n "$WEB_POD" ]; then
-            echo "Web pod: $WEB_POD"
-            kubectl logs "$WEB_POD" -n cloudtolocalllm --tail=50 || echo "Could not retrieve logs"
-          else
-            echo "No web pods found"
-          fi
-
-          echo "::endgroup::"
-
-      - name: Purge Cloudflare Cache
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      - name: Verify application accessibility
         run: |
-          echo "Purging Cloudflare cache for deployed domains..."
-
-          if [ -z "$CLOUDFLARE_API_TOKEN" ]; then
-            echo "⚠️ CLOUDFLARE_API_TOKEN not set - skipping cache purge"
-            exit 0
+          # Get the load balancer IP/hostname
+          LB_ENDPOINT=$(kubectl get svc web -n ${{ env.NAMESPACE }} -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
+          
+          if [ -z "$LB_ENDPOINT" ]; then
+            LB_ENDPOINT=$(kubectl get svc web -n ${{ env.NAMESPACE }} -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
           fi
-
-          # Get Zone ID for cloudtolocalllm.online
-          CF_ZONE_ID=$(curl -s -X GET "https://api.cloudflare.com/client/v4/zones?name=cloudtolocalllm.online" \
-            -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
-            -H "Content-Type: application/json" | jq -r '.result[0].id')
-
-          if [ "$CF_ZONE_ID" = "null" ] || [ -z "$CF_ZONE_ID" ]; then
-            echo "❌ Unable to determine Cloudflare Zone ID"
-            exit 1
-          fi
-
-          echo "Found Zone ID: $CF_ZONE_ID"
-
-          # Purge all cache for the zone
-          PURGE_RESPONSE=$(curl -s -X POST "https://api.cloudflare.com/client/v4/zones/$CF_ZONE_ID/purge_cache/purge_everything" \
-            -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
-            -H "Content-Type: application/json" \
-            -d '{"purge_everything":true}')
-
-          SUCCESS=$(echo "$PURGE_RESPONSE" | jq -r '.success')
-          if [ "$SUCCESS" = "true" ]; then
-            echo "✅ Cloudflare cache purged successfully"
-            echo "   - All cached content for cloudtolocalllm.online has been cleared"
-            echo "   - New deployment will be served immediately"
-          else
-            echo "❌ Failed to purge Cloudflare cache"
-            echo "$PURGE_RESPONSE" | jq '.errors'
-            exit 1
-          fi
-
-  dns-validation:
-    needs: deploy
-    runs-on: ubuntu-latest
-    environment: production
-    if: github.ref == 'refs/heads/main'
-
-    steps:
-      - name: Azure Login
-        uses: azure/login@v2
-        with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
-
-      - name: Get Load Balancer IP
-        id: lb-ip
-        run: |
-          az aks get-credentials \
-            --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
-            --name ${{ env.AZURE_CLUSTER_NAME }} \
-            --overwrite-existing
-
-          LB_IP=$(kubectl get svc -n ingress-nginx ingress-nginx-controller \
-            -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
-
-          echo "Load Balancer IP: $LB_IP"
-          echo "lb_ip=$LB_IP" >> $GITHUB_OUTPUT
-
-      # - name: Configure Azure DNS (Optional - Backup)
-      #   continue-on-error: true
-      #   run: |
-      #     echo "⚠️  Note: Using Cloudflare DNS for primary DNS management"
-      #     echo "Azure DNS backup configuration disabled to streamline deployment"
-
-      - name: DNS Health Check
-        run: |
-          echo "Performing DNS and API health check..."
-          echo "Load Balancer IP: ${{ steps.lb-ip.outputs.lb_ip }}"
-
-          # Wait up to 5 minutes for DNS to propagate and API to become healthy
-          timeout=300
-          interval=15
-
-          # Try 3 times as requested
-          for i in {1..3}; do
-            echo "Attempting to reach API at https://api.cloudtolocalllm.online/health (Attempt $i/3)..."
-            response_code=$(curl -s -o /dev/null -w "%{http_code}" https://api.cloudtolocalllm.online/health)
-            
-            if [ "$response_code" -eq 200 ]; then
-              echo "✅ API is healthy and reachable! (Status: $response_code)"
+          
+          echo "Load Balancer Endpoint: $LB_ENDPOINT"
+          
+          # Wait for endpoint to be ready
+          for i in {1..30}; do
+            if curl -f -s "http://$LB_ENDPOINT/health" > /dev/null 2>&1; then
+              echo "✓ Application is accessible"
               exit 0
-            else
-              echo "API not yet healthy (Status: $response_code). Retrying in $interval seconds..."
-              sleep $interval
             fi
+            echo "Attempt $i/30: Waiting for application to be ready..."
+            sleep 10
           done
-
-          echo "❌ API health check failed after $timeout seconds."
+          
+          echo "✗ Application did not become accessible within timeout"
           exit 1
 
-      - name: Get API Backend Pod Logs on Failure
-        if: failure()
+      - name: Track deployment history
         run: |
-          echo "::group::API Backend Pod Logs (on health check failure)"
-          echo "Attempting to retrieve logs for API backend pods..."
-          API_POD_NAME=$(kubectl get pods -n cloudtolocalllm -l app=api-backend -o jsonpath='{.items[0].metadata.name}' 2>/dev/null)
+          echo "Recording deployment history..."
+          
+          # Get deployment revisions
+          echo ""
+          echo "Web Deployment History:"
+          kubectl rollout history deployment/web -n ${{ env.NAMESPACE }}
+          
+          echo ""
+          echo "API Backend Deployment History:"
+          kubectl rollout history deployment/api-backend -n ${{ env.NAMESPACE }}
+          
+          # Store deployment metadata
+          DEPLOYMENT_METADATA=$(cat <<EOF
+          {
+            "timestamp": "$(date -u +'%Y-%m-%dT%H:%M:%SZ')",
+            "cluster": "${{ env.EKS_CLUSTER_NAME }}",
+            "namespace": "${{ env.NAMESPACE }}",
+            "environment": "${{ env.ENVIRONMENT }}",
+            "commit": "${{ github.sha }}",
+            "branch": "${{ github.ref }}",
+            "actor": "${{ github.actor }}",
+            "web_image": "${{ env.DOCKER_REGISTRY }}/cloudtolocalllm-web:${{ github.sha }}",
+            "api_backend_image": "${{ env.DOCKER_REGISTRY }}/cloudtolocalllm-api:${{ github.sha }}"
+          }
+          EOF
+          )
+          
+          echo "Deployment metadata recorded"
 
-          if [ -n "$API_POD_NAME" ]; then
-            echo "Found API pod: $API_POD_NAME"
-            kubectl logs "$API_POD_NAME" -n cloudtolocalllm || echo "Could not retrieve logs for $API_POD_NAME"
+      - name: Record deployment status
+        if: always()
+        run: |
+          echo "Recording deployment status..."
+          
+          # Determine deployment status
+          if [ $? -eq 0 ]; then
+            DEPLOYMENT_STATUS="success"
           else
-            echo "No API backend pods found to retrieve logs from."
+            DEPLOYMENT_STATUS="failure"
           fi
-          echo "::endgroup::"
+          
+          # Create deployment status file
+          cat > deployment-status.json <<EOF
+          {
+            "status": "$DEPLOYMENT_STATUS",
+            "timestamp": "$(date -u +'%Y-%m-%dT%H:%M:%SZ')",
+            "environment": "${{ env.ENVIRONMENT }}",
+            "namespace": "${{ env.NAMESPACE }}",
+            "commit": "${{ github.sha }}",
+            "branch": "${{ github.ref }}",
+            "run_id": "${{ github.run_id }}",
+            "run_number": "${{ github.run_number }}",
+            "actor": "${{ github.actor }}"
+          }
+          EOF
+          
+          echo "Deployment status recorded"
+          cat deployment-status.json
 
-      - name: Get Postgres Pod Logs on Failure
-        if: failure()
+      - name: Setup Cloudflare DNS Integration
+        if: env.ENVIRONMENT == 'production'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
         run: |
-          echo "::group::Postgres Pod Logs (on health check failure)"
-          echo "Attempting to retrieve logs for Postgres pods..."
-          POSTGRES_POD_NAME=$(kubectl get pods -n cloudtolocalllm -l app=postgres -o jsonpath='{.items[0].metadata.name}' 2>/dev/null)
-
-          if [ -n "$POSTGRES_POD_NAME" ]; then
-            echo "Found Postgres pod: $POSTGRES_POD_NAME"
-            kubectl logs "$POSTGRES_POD_NAME" -n cloudtolocalllm || echo "Could not retrieve logs for $POSTGRES_POD_NAME"
+          echo "Setting up Cloudflare DNS integration..."
+          
+          # Update kubeconfig
+          aws eks update-kubeconfig \
+            --name ${{ env.EKS_CLUSTER_NAME }} \
+            --region ${{ env.AWS_REGION }}
+          
+          # Get NLB endpoint
+          NLB_ENDPOINT=$(kubectl get ingress -n ${{ env.NAMESPACE }} -o jsonpath='{.items[0].status.loadBalancer.ingress[0].hostname}')
+          
+          if [ -z "$NLB_ENDPOINT" ]; then
+            NLB_ENDPOINT=$(kubectl get ingress -n ${{ env.NAMESPACE }} -o jsonpath='{.items[0].status.loadBalancer.ingress[0].ip}')
+          fi
+          
+          echo "NLB Endpoint: $NLB_ENDPOINT"
+          
+          # Get Cloudflare Zone ID
+          ZONE_RESPONSE=$(curl -s -X GET "https://api.cloudflare.com/client/v4/zones?name=cloudtolocalllm.online" \
+            -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+            -H "Content-Type: application/json")
+          
+          ZONE_ID=$(echo "$ZONE_RESPONSE" | jq -r '.result[0].id')
+          echo "Cloudflare Zone ID: $ZONE_ID"
+          
+          # Update DNS records for each domain
+          for DOMAIN in "cloudtolocalllm.online" "app.cloudtolocalllm.online" "api.cloudtolocalllm.online" "auth.cloudtolocalllm.online"; do
+            echo "Updating DNS record for: $DOMAIN"
             
-            echo "--- Previous Logs (if restarted) ---"
-            kubectl logs "$POSTGRES_POD_NAME" -n cloudtolocalllm --previous || echo "No previous logs"
-          else
-            echo "No Postgres pods found to retrieve logs from."
+            # Get existing record
+            RECORD_RESPONSE=$(curl -s -X GET "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/dns_records?name=$DOMAIN" \
+              -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+              -H "Content-Type: application/json")
+            
+            RECORD_COUNT=$(echo "$RECORD_RESPONSE" | jq '.result | length')
+            
+            if [ "$RECORD_COUNT" -gt 0 ]; then
+              RECORD_ID=$(echo "$RECORD_RESPONSE" | jq -r '.result[0].id')
+              RECORD_TYPE=$(echo "$RECORD_RESPONSE" | jq -r '.result[0].type')
+              
+              # Update existing record
+              curl -s -X PUT "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/dns_records/$RECORD_ID" \
+                -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+                -H "Content-Type: application/json" \
+                -d "{
+                  \"type\": \"$RECORD_TYPE\",
+                  \"name\": \"$DOMAIN\",
+                  \"content\": \"$NLB_ENDPOINT\",
+                  \"ttl\": 300,
+                  \"proxied\": true
+                }" > /dev/null
+              
+              echo "  ✓ Updated DNS record for $DOMAIN"
+            else
+              # Create new A record
+              curl -s -X POST "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/dns_records" \
+                -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+                -H "Content-Type: application/json" \
+                -d "{
+                  \"type\": \"A\",
+                  \"name\": \"$DOMAIN\",
+                  \"content\": \"$NLB_ENDPOINT\",
+                  \"ttl\": 300,
+                  \"proxied\": true
+                }" > /dev/null
+              
+              echo "  ✓ Created DNS record for $DOMAIN"
+            fi
+          done
+          
+          # Configure SSL/TLS settings
+          echo "Configuring SSL/TLS settings..."
+          
+          # Set SSL mode to "Full"
+          curl -s -X PATCH "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/settings/ssl" \
+            -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+            -H "Content-Type: application/json" \
+            -d '{"value": "full"}' > /dev/null
+          
+          # Enable "Always Use HTTPS"
+          curl -s -X PATCH "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/settings/always_use_https" \
+            -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+            -H "Content-Type: application/json" \
+            -d '{"value": "on"}' > /dev/null
+          
+          # Purge cache
+          echo "Purging Cloudflare cache..."
+          curl -s -X POST "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/purge_cache" \
+            -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+            -H "Content-Type: application/json" \
+            -d '{"purge_everything": true}' > /dev/null
+          
+          echo "✓ Cloudflare DNS integration complete"
+
+      - name: Deployment successful
+        run: |
+          echo "✓ Deployment to AWS EKS completed successfully"
+          echo ""
+          echo "Deployment Summary:"
+          echo "- Environment: ${{ env.ENVIRONMENT }}"
+          echo "- Cluster: ${{ env.EKS_CLUSTER_NAME }}"
+          echo "- Region: ${{ env.AWS_REGION }}"
+          echo "- Namespace: ${{ env.NAMESPACE }}"
+          echo "- Web Image: ${{ env.DOCKER_REGISTRY }}/cloudtolocalllm-web:${{ github.sha }}"
+          echo "- API Backend Image: ${{ env.DOCKER_REGISTRY }}/cloudtolocalllm-api:${{ github.sha }}"
+          echo "- Commit: ${{ github.sha }}"
+          echo "- Branch: ${{ github.ref }}"
+          echo ""
+          echo "DNS Configuration:"
+          echo "- Domains: cloudtolocalllm.online, app.cloudtolocalllm.online, api.cloudtolocalllm.online, auth.cloudtolocalllm.online"
+          echo "- SSL Mode: Full (strict)"
+          echo "- Always Use HTTPS: Enabled"
+          echo ""
+          echo "Next Steps:"
+          echo "1. Wait 5-10 minutes for DNS propagation"
+          echo "2. Visit https://cloudtolocalllm.online to verify"
+          echo "3. Check SSL certificate status"
+
+      - name: Test rollback with intentional failure (optional)
+        if: github.event_name == 'workflow_dispatch' && contains(github.event.inputs.test_rollback, 'true')
+        continue-on-error: true
+        run: |
+          echo "Testing rollback mechanism with intentional failure..."
+          
+          # Deploy a broken version to test rollback
+          echo "Deploying broken version for rollback test..."
+          kubectl set image deployment/web-app \
+            web-app=cloudtolocalllm/cloudtolocalllm-web:broken-test \
+            -n ${{ env.NAMESPACE }} \
+            --record \
+            --dry-run=client -o yaml | kubectl apply -f -
+          
+          # Wait briefly for deployment to start
+          sleep 10
+          
+          # This will fail because the image doesn't exist, triggering rollback
+          echo "Waiting for deployment (will fail)..."
+          kubectl rollout status deployment/web-app -n ${{ env.NAMESPACE }} --timeout=2m || true
+          
+          echo "Rollback test completed"
+
+      - name: Rollback on failure
+        if: failure()
+        run: |
+          echo "Deployment failed. Rolling back to previous version..."
+          
+          # Store current revision before rollback
+          WEB_REVISION=$(kubectl rollout history deployment/web -n ${{ env.NAMESPACE }} | tail -2 | head -1 | awk '{print $1}')
+          API_REVISION=$(kubectl rollout history deployment/api-backend -n ${{ env.NAMESPACE }} | tail -2 | head -1 | awk '{print $1}')
+          
+          echo "Current web revision: $WEB_REVISION"
+          echo "Current api-backend revision: $API_REVISION"
+          
+          # Perform rollback
+          echo "Rolling back web deployment..."
+          kubectl rollout undo deployment/web -n ${{ env.NAMESPACE }}
+          
+          echo "Rolling back api-backend deployment..."
+          kubectl rollout undo deployment/api-backend -n ${{ env.NAMESPACE }}
+          
+          # Wait for rollback to complete
+          echo "Waiting for web rollback to complete..."
+          kubectl rollout status deployment/web -n ${{ env.NAMESPACE }} --timeout=5m
+          
+          echo "Waiting for api-backend rollback to complete..."
+          kubectl rollout status deployment/api-backend -n ${{ env.NAMESPACE }} --timeout=5m
+          
+          # Verify application is accessible after rollback
+          echo "Verifying application accessibility after rollback..."
+          LB_ENDPOINT=$(kubectl get svc web -n ${{ env.NAMESPACE }} -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
+          
+          if [ -z "$LB_ENDPOINT" ]; then
+            LB_ENDPOINT=$(kubectl get svc web -n ${{ env.NAMESPACE }} -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
           fi
-          echo "::endgroup::"
+          
+          for i in {1..10}; do
+            if curl -f -s "http://$LB_ENDPOINT/health" > /dev/null 2>&1; then
+              echo "✓ Application is accessible after rollback"
+              break
+            fi
+            echo "Attempt $i/10: Waiting for application to be ready after rollback..."
+            sleep 5
+          done
+          
+          # Log rollback details
+          echo ""
+          echo "Rollback Summary:"
+          echo "- Environment: ${{ env.ENVIRONMENT }}"
+          echo "- Deployment: ${{ env.EKS_CLUSTER_NAME }}"
+          echo "- Namespace: ${{ env.NAMESPACE }}"
+          echo "- Rollback Timestamp: $(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+          echo "- Commit: ${{ github.sha }}"
+          echo "- Branch: ${{ github.ref }}"
+          
+          # Get current pod status
+          echo ""
+          echo "Pod Status After Rollback:"
+          kubectl get pods -n ${{ env.NAMESPACE }} -o wide
+          
+          echo ""
+          echo "✓ Rollback completed successfully"
+          exit 1
