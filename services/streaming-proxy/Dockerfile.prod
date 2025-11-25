@@ -1,13 +1,17 @@
-# ---- Base Node ----
-FROM node:24-alpine AS base
-WORKDIR /app
-COPY services/streaming-proxy/package*.json ./
-RUN npm ci
+# ============================================================================
+# Runtime Dockerfile for CloudToLocalLLM Streaming Proxy
+# Uses artifacts from the Universal Builder
+# ============================================================================
 
-# ---- Production ----
-FROM node:24-alpine AS production
+# Use Debian Slim to match the Builder
+FROM node:20-slim
+
 WORKDIR /app
-COPY --from=base /app/node_modules ./node_modules
-COPY services/streaming-proxy/ ./
+
+# Copy artifacts from Universal Builder
+COPY --from=cloudtolocalllm/builder:latest --chown=node:node /artifacts/streaming-proxy ./
+
+USER node
+
 EXPOSE 3001
 CMD [ "npm", "start" ]

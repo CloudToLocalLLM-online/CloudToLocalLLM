@@ -1,44 +1,34 @@
-# ---- Base Node ----
-FROM node:20-alpine AS base
-WORKDIR /api
+# ============================================================================
+# Runtime Dockerfile for CloudToLocalLLM API Backend
+# Uses artifacts from the Universal Builder
+# ============================================================================
 
-# Build tools for native modules (sqlite3)
-RUN apk add --no-cache python3 py3-setuptools make g++
+# Use Debian Slim to match the Builder (Debian-based) for native module compatibility
+FROM node:20-slim
 
-# Copy package files
-COPY package*.json ./
+# Install curl for health checks and python3/build-essential for any runtime rebuilds if absolutely needed (though we try to avoid it)
+RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
 
-# Install dependencies (run as root for system packages, then change ownership)
-RUN npm ci && \
-    chown -R 1001:1001 /api
-
-# ---- Production ----
-FROM node:20-alpine AS production
-
-# Install curl for health checks
-RUN apk add --no-cache curl
-
-# Create non-root user
-RUN addgroup -g 1001 -S nodejs && \
-    adduser -S nodejs -u 1001
+# Create non-root user (node image comes with 'node' user, usually 1000)
+# We'll use the existing 'node' user
 
 WORKDIR /api
 
-# Create isolated data directories for this container (logs, database, etc.)
+# Create isolated data directories
 RUN mkdir -p /api/data /api/logs && \
-    chown -R 1001:1001 /api
+    chown -R node:node /api
 
-# Copy files and change ownership (only API backend files, nothing else)
-COPY --from=base --chown=nodejs:nodejs /api/node_modules ./node_modules
-COPY --chown=nodejs:nodejs . ./
+# Copy artifacts from Universal Builder
+# Note: /artifacts/api-backend contains node_modules AND source code
+COPY --from=cloudtolocalllm/builder:latest --chown=node:node /artifacts/api-backend ./
 
 # Ensure data directories have correct ownership
-RUN chown -R nodejs:nodejs /api/data /api/logs
+RUN chown -R node:node /api/data /api/logs
 
 # Switch to non-root user
-USER nodejs
+USER node
 
-# Set environment variables to use container-specific paths
+# Set environment variables
 ENV LOG_DIR=/api/logs
 ENV DB_PATH=/api/data/cloudtolocalllm.db
 ENV SSH_PORT=2222
