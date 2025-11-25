@@ -50,13 +50,12 @@ jobs:
           echo "Other deployments will be queued and executed sequentially"
 
       - name: Configure AWS credentials via OIDC
-        uses: aws-actions/configure-aws-credentials@v2
+        uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: arn:aws:iam::422017356244:role/github-actions-role
           aws-region: ${{ env.AWS_REGION }}
           role-session-name: github-actions-eks-deployment-${{ github.run_id }}
           role-duration-seconds: 3600
-          role-skip-session-tagging: true
 
       - name: Verify AWS credentials
         continue-on-error: true
@@ -66,6 +65,9 @@ jobs:
           echo ""
           echo "Available EKS Clusters:"
           aws eks list-clusters --region ${{ env.AWS_REGION }} --query 'clusters' --output table || echo "Failed to list clusters"
+          echo ""
+          echo "Checking IAM role trust policy..."
+          aws iam get-role --role-name github-actions-role --query 'Role.AssumeRolePolicyDocument' || echo "Failed to get role"
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
