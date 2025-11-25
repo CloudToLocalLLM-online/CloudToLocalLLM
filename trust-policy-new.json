@@ -1,0 +1,20 @@
+{
+  "Statement": [
+    {
+      "Condition": {
+        "StringEquals": {
+          "token.actions.githubusercontent.com:aud": "sts.amazonaws.com"
+        },
+        "StringLike": {
+          "token.actions.githubusercontent.com:sub": "repo:cloudtolocalllm/cloudtolocalllm:*"
+        }
+      },
+      "Action": "sts:AssumeRoleWithWebIdentity",
+      "Principal": {
+        "Federated": "arn:aws:iam::422017356244:oidc-provider/token.actions.githubusercontent.com"
+      },
+      "Effect": "Allow"
+    }
+  ],
+  "Version": "2012-10-17"
+}
