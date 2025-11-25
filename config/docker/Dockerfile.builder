@@ -4,10 +4,12 @@
 FROM ghcr.io/cirruslabs/flutter:stable AS builder
 
 # Install Node.js 20 (LTS) - Run as root
-RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
+RUN apt-get update && apt-get install -y curl git && \
+    curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
     apt-get install -y nodejs && \
     node --version && \
-    npm --version
+    npm --version && \
+    which npm
 
 # Fix Flutter SDK ownership/permissions so non-root user can use it
 # The SDK is at /sdks/flutter in this image
