@@ -162,12 +162,17 @@ jobs:
 
           echo "Base manifests applied successfully"
 
+      - name: Install Kustomize
+        run: |
+          curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh" | bash
+          sudo mv kustomize /usr/local/bin/
+
       - name: Apply Kustomize overlays for environment
         run: |
           echo "Applying Kustomize overlay for ${{ env.ENVIRONMENT }} environment..."
 
           # Apply the environment-specific kustomization
-          kubectl kustomize k8s/overlays/${{ env.ENVIRONMENT }} | \
+          kustomize build --load-restrictor LoadRestrictionsNone k8s/overlays/${{ env.ENVIRONMENT }} | \
             sed "s|cloudtolocalllm/cloudtolocalllm-web:latest|${{ env.DOCKER_REGISTRY }}/cloudtolocalllm-web:${{ github.sha }}|g" | \
             sed "s|cloudtolocalllm/cloudtolocalllm-api:latest|${{ env.DOCKER_REGISTRY }}/cloudtolocalllm-api:${{ github.sha }}|g" | \
             kubectl apply -f - -n ${{ env.NAMESPACE }}
