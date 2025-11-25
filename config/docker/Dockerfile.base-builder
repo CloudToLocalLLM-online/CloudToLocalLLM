@@ -32,12 +32,12 @@ RUN curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | b
     . "$NVM_DIR/nvm.sh" && \
     nvm install 22 && \
     nvm alias default 22 && \
-    nvm use default
+    nvm use default && \
+    ln -s $(dirname $(nvm which default)) /home/cloudtolocalllm/node-bin
 
 # Add Node.js and Flutter to PATH
-# We hardcode the path for v22 as ENV variables are static. 
-# If nvm installs a minor update, this path might need adjustment, but for a builder image it's acceptable.
-ENV PATH="/home/cloudtolocalllm/.nvm/versions/node/v22.11.0/bin:$FLUTTER_ROOT/bin:$FLUTTER_ROOT/bin/cache/dart-sdk/bin:$PATH"
+# We use the symlink created above to avoid hardcoding the version
+ENV PATH="/home/cloudtolocalllm/node-bin:$FLUTTER_ROOT/bin:$FLUTTER_ROOT/bin/cache/dart-sdk/bin:$PATH"
 
 # Download and extract Flutter SDK
 # Using stable channel
