@@ -8,6 +8,7 @@ on:
       - "services/**"
       - "k8s/**"
       - "web/**"
+      - "scripts/**"
       - ".github/workflows/deploy-aws-eks.yml"
   workflow_dispatch:
     inputs:
