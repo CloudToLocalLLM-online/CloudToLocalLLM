@@ -1,5 +1,9 @@
 name: Deploy to AWS EKS
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 on:
   push:
     branches: [main]
@@ -26,10 +30,6 @@ env:
   AWS_REGION: us-east-1
   EKS_CLUSTER_NAME: cloudtolocalllm-eks
   DOCKER_REGISTRY: cloudtolocalllm
-
-concurrency:
-  group: eks-deployment
-  cancel-in-progress: false
 
 jobs:
   deploy:
