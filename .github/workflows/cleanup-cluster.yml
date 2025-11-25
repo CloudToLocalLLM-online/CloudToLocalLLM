@@ -90,19 +90,20 @@ jobs:
           echo "Services:"
           kubectl get services -n ${{ env.NAMESPACE }} || echo "No services found"
 
-      - name: Delete all deployments
+      - name: Delete all deployments (force)
         run: |
-          echo "Deleting all deployments in namespace: ${{ env.NAMESPACE }}"
-          kubectl delete deployment --all -n ${{ env.NAMESPACE }} --ignore-not-found=true
+          echo "Force deleting all deployments in namespace: ${{ env.NAMESPACE }}"
+          kubectl delete deployment --all -n ${{ env.NAMESPACE }} --force --grace-period=0 --ignore-not-found=true
 
-      - name: Wait for pods to terminate
+      - name: Delete all pods (force)
         run: |
-          echo "Waiting for all pods to terminate..."
-          if ! kubectl wait --for=delete pod --all -n ${{ env.NAMESPACE }} --timeout=120s; then
-            echo "⚠️  Pods did not terminate gracefully, force deleting..."
-            kubectl delete pod --all -n ${{ env.NAMESPACE }} --force --grace-period=0
-            sleep 10
-          fi
+          echo "Force deleting all pods in namespace: ${{ env.NAMESPACE }}"
+          kubectl delete pod --all -n ${{ env.NAMESPACE }} --force --grace-period=0 --ignore-not-found=true
+
+      - name: Delete all statefulsets (force)
+        run: |
+          echo "Force deleting all statefulsets in namespace: ${{ env.NAMESPACE }}"
+          kubectl delete statefulset --all -n ${{ env.NAMESPACE }} --force --grace-period=0 --ignore-not-found=true
 
       - name: Delete all services (except ClusterIP default)
         run: |
