@@ -1,0 +1,100 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'GitHub Actions OIDC Role for EKS Deployment'
+
+Parameters:
+  GitHubOrgRepo:
+    Type: String
+    Default: cloudtolocalllm/cloudtolocalllm
+    Description: GitHub organization/repository
+  
+  GitHubBranch:
+    Type: String
+    Default: main
+    Description: GitHub branch to allow
+
+Resources:
+  GitHubActionsRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: github-actions-role
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Federated: !Sub 'arn:aws:iam::${AWS::AccountId}:oidc-provider/token.actions.githubusercontent.com'
+            Action: 'sts:AssumeRoleWithWebIdentity'
+            Condition:
+              StringEquals:
+                'token.actions.githubusercontent.com:aud': 'sts.amazonaws.com'
+              StringLike:
+                'token.actions.githubusercontent.com:sub': !Sub 'repo:${GitHubOrgRepo}:*'
+      ManagedPolicyArns:
+        - !Ref EKSDeploymentPolicy
+      Tags:
+        - Key: Purpose
+          Value: GitHubActionsEKSDeployment
+
+  EKSDeploymentPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      ManagedPolicyName: github-actions-eks-deployment-policy
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: EKSAccess
+            Effect: Allow
+            Action:
+              - 'eks:DescribeCluster'
+              - 'eks:ListClusters'
+              - 'eks:AccessKubernetesApi'
+            Resource: '*'
+          
+          - Sid: ECRAccess
+            Effect: Allow
+            Action:
+              - 'ecr:GetAuthorizationToken'
+              - 'ecr:BatchGetImage'
+              - 'ecr:GetDownloadUrlForLayer'
+              - 'ecr:DescribeImages'
+              - 'ecr:DescribeRepositories'
+            Resource: '*'
+          
+          - Sid: KubernetesAccess
+            Effect: Allow
+            Action:
+              - 'ec2:DescribeSecurityGroups'
+              - 'ec2:DescribeSubnets'
+              - 'ec2:DescribeVpcs'
+              - 'ec2:DescribeNetworkInterfaces'
+            Resource: '*'
+          
+          - Sid: CloudWatchLogs
+            Effect: Allow
+            Action:
+              - 'logs:CreateLogGroup'
+              - 'logs:CreateLogStream'
+              - 'logs:PutLogEvents'
+              - 'logs:DescribeLogStreams'
+            Resource: 'arn:aws:logs:*:*:*'
+          
+          - Sid: CloudFormation
+            Effect: Allow
+            Action:
+              - 'cloudformation:DescribeStacks'
+              - 'cloudformation:DescribeStackResources'
+              - 'cloudformation:ListStacks'
+            Resource: '*'
+
+Outputs:
+  RoleArn:
+    Description: ARN of the GitHub Actions role
+    Value: !GetAtt GitHubActionsRole.Arn
+    Export:
+      Name: GitHubActionsRoleArn
+  
+  RoleName:
+    Description: Name of the GitHub Actions role
+    Value: !Ref GitHubActionsRole
+    Export:
+      Name: GitHubActionsRoleName
