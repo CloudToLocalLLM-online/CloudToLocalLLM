@@ -347,18 +347,6 @@ jobs:
 
       - name: Wait for rollout to complete
         run: |
-          # Start background pod status monitoring
-          (
-            echo "Starting pod status monitor..."
-            end=$((SECONDS+300))
-            while [ $SECONDS -lt $end ]; do
-              echo "--- Pod Status ($(date +%T)) ---"
-              kubectl get pods -n ${{ env.NAMESPACE }} -o wide
-              sleep 10
-            done
-          ) &
-          MONITOR_PID=$!
-
           echo "Waiting for web deployment..."
           kubectl rollout status deployment/web -n ${{ env.NAMESPACE }} --timeout=5m
 
@@ -367,9 +355,6 @@ jobs:
 
           echo "Waiting for Streaming Proxy deployment..."
           kubectl rollout status deployment/streaming-proxy -n ${{ env.NAMESPACE }} --timeout=5m
-
-          # Kill monitor if it's still running
-          kill $MONITOR_PID 2>/dev/null || true
 
   validation:
     name: Validate Deployment
