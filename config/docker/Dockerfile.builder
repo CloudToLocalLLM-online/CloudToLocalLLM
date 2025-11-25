@@ -24,6 +24,17 @@ RUN chown -R 1000:1000 /app
 # Switch to non-root user (UID 1000 is standard in this image)
 USER 1000
 
+# Ensure standard paths are included
+ENV PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:$PATH"
+
+# Debug environment
+RUN echo "User: $(whoami)" && \
+    echo "PATH: $PATH" && \
+    ls -l /usr/bin/npm || echo "npm not in /usr/bin" && \
+    ls -l /usr/local/bin/npm || echo "npm not in /usr/local/bin" && \
+    node --version && \
+    npm --version
+
 # Copy ALL source code as non-root user
 COPY --chown=1000:1000 . .
 
