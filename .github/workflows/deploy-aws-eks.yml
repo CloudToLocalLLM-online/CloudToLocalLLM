@@ -141,13 +141,6 @@ jobs:
           echo "Deploying to environment: $ENVIRONMENT"
           echo "Using namespace: $NAMESPACE"
 
-      - name: Clean up existing deployments (Fresh Start)
-        run: |
-          echo "Deleting existing deployments to ensure fresh start..."
-          kubectl delete deployment web api-backend streaming-proxy -n ${{ env.NAMESPACE }} --ignore-not-found=true
-          echo "Waiting for cleanup..."
-          sleep 30
-
       - name: Create namespace if not exists
         run: |
           kubectl create namespace ${{ env.NAMESPACE }} --dry-run=client -o yaml | kubectl apply -f -
