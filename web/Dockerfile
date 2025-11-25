@@ -16,4 +16,4 @@ RUN chown -R 101:101 /usr/share/nginx/html /var/cache/nginx /var/log/nginx /var/
 USER 101
 
 EXPOSE 8080
-CMD ["nginx", "-g", "daemon off;"]
+CMD ["nginx", "-g", "pid /tmp/nginx.pid; daemon off;"]
