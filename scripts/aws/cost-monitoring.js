@@ -5,9 +5,12 @@
  *
  * Monitors AWS EKS cluster costs and generates reports
  * Integrates with AWS Cost Explorer and CloudWatch
+ * 
+ * Migrated to AWS SDK v3
  */
 
-const AWS = require('aws-sdk');
+const { CostExplorerClient, GetCostAndUsageCommand } = require('@aws-sdk/client-ce');
+const { CloudWatchClient, PutDashboardCommand, PutMetricAlarmCommand } = require('@aws-sdk/client-cloudwatch');
 const fs = require('fs');
 const path = require('path');
 
@@ -15,9 +18,9 @@ const AWS_ACCOUNT_ID = '422017356244';
 const AWS_REGION = 'us-east-1';
 const CLUSTER_NAME = 'cloudtolocalllm-eks';
 
-// Initialize AWS SDK
-const costExplorer = new AWS.CostExplorer({ region: AWS_REGION });
-const cloudwatch = new AWS.CloudWatch({ region: AWS_REGION });
+// Initialize AWS SDK v3 clients
+const costExplorerClient = new CostExplorerClient({ region: AWS_REGION });
+const cloudwatchClient = new CloudWatchClient({ region: AWS_REGION });
 
 /**
  * Cost estimation data for common resources
@@ -65,7 +68,7 @@ const COST_ESTIMATES = {
  */
 async function getCostAndUsageData(startDate, endDate) {
   try {
-    const params = {
+    const command = new GetCostAndUsageCommand({
       TimePeriod: {
         Start: startDate,
         End: endDate,
@@ -84,9 +87,9 @@ async function getCostAndUsageData(startDate, endDate) {
           Values: ['development'],
         },
       },
-    };
+    });
 
-    const response = await costExplorer.getCostAndUsage(params).promise();
+    const response = await costExplorerClient.send(command);
     return response;
   } catch (error) {
     console.error('Error fetching cost data:', error);
@@ -193,12 +196,12 @@ async function createCostDashboard() {
       ],
     };
 
-    const params = {
+    const command = new PutDashboardCommand({
       DashboardName: `${CLUSTER_NAME}-cost-tracking`,
       DashboardBody: JSON.stringify(dashboardBody),
-    };
+    });
 
-    const response = await cloudwatch.putDashboard(params).promise();
+    const response = await cloudwatchClient.send(command);
     return response;
   } catch (error) {
     console.error('Error creating CloudWatch dashboard:', error);
@@ -211,7 +214,7 @@ async function createCostDashboard() {
  */
 async function configureCostAlerts(monthlyBudget) {
   try {
-    const params = {
+    const command = new PutMetricAlarmCommand({
       AlarmName: `${CLUSTER_NAME}-monthly-cost-alert`,
       ComparisonOperator: 'GreaterThanThreshold',
       EvaluationPeriods: 1,
@@ -221,16 +224,16 @@ async function configureCostAlerts(monthlyBudget) {
       Statistic: 'Maximum',
       Threshold: monthlyBudget,
       ActionsEnabled: true,
-      AlarmDescription: `Alert when monthly AWS costs exceed $${monthlyBudget}`,
+      AlarmDescription: `Alert when monthly AWS costs exceed ${monthlyBudget}`,
       Dimensions: [
         {
           Name: 'Currency',
           Value: 'USD',
         },
       ],
-    };
+    });
 
-    const response = await cloudwatch.putMetricAlarm(params).promise();
+    const response = await cloudwatchClient.send(command);
     return response;
   } catch (error) {
     console.error('Error configuring cost alerts:', error);
