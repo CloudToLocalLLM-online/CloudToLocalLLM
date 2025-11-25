@@ -1,0 +1,214 @@
+# Ingress for AWS EKS with Network Load Balancer (NLB)
+# This manifest configures HTTP/HTTPS routing with SSL/TLS termination
+# and health checks for the CloudToLocalLLM application on AWS EKS
+#
+# Prerequisites:
+# - AWS Load Balancer Controller installed: https://docs.aws.amazon.com/eks/latest/userguide/aws-load-balancer-controller.html
+# - Cloudflare DNS records pointing to NLB
+# - SSL/TLS certificate in AWS Certificate Manager (ACM)
+
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: cloudtolocalllm-ingress-aws
+  namespace: cloudtolocalllm
+  annotations:
+    # AWS Load Balancer Controller annotations
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+    
+    # SSL/TLS configuration with AWS Certificate Manager
+    # Certificate must be created in ACM for the domain
+    alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:us-east-1:422017356244:certificate/cloudtolocalllm-wildcard
+    alb.ingress.kubernetes.io/ssl-policy: ELBSecurityPolicy-TLS-1-2-2017-01
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS": 443}]'
+    
+    # Force HTTPS redirect
+    alb.ingress.kubernetes.io/ssl-redirect: '443'
+    
+    # Health check configuration
+    alb.ingress.kubernetes.io/healthcheck-path: /health
+    alb.ingress.kubernetes.io/healthcheck-protocol: HTTP
+    alb.ingress.kubernetes.io/healthcheck-interval-seconds: '30'
+    alb.ingress.kubernetes.io/healthcheck-timeout-seconds: '5'
+    alb.ingress.kubernetes.io/healthy-threshold-count: '2'
+    alb.ingress.kubernetes.io/unhealthy-threshold-count: '2'
+    
+    # Load balancer attributes
+    alb.ingress.kubernetes.io/load-balancer-attributes: idle_timeout.connection.s=60,deletion_protection.enabled=false
+    
+    # WebSocket support
+    alb.ingress.kubernetes.io/target-group-attributes: deregistration_delay.timeout_seconds=30,stickiness.enabled=true,stickiness.type=lb_cookie,stickiness.lb_cookie.duration_seconds=86400
+    
+    # Tags for the load balancer
+    alb.ingress.kubernetes.io/tags: Environment=production,Application=cloudtolocalllm,ManagedBy=kubernetes
+    
+    # Security group configuration
+    alb.ingress.kubernetes.io/security-groups: cloudtolocalllm-alb-sg
+    
+    # Subnets for the load balancer (optional, uses default if not specified)
+    # alb.ingress.kubernetes.io/subnets: subnet-12345678,subnet-87654321
+
+spec:
+  ingressClassName: alb
+  
+  # TLS configuration with wildcard certificate
+  tls:
+    - hosts:
+        - cloudtolocalllm.online
+        - app.cloudtolocalllm.online
+        - api.cloudtolocalllm.online
+        - auth.cloudtolocalllm.online
+      secretName: cloudtolocalllm-wildcard-tls
+  
+  rules:
+    # Main domain - Web app and API
+    - host: cloudtolocalllm.online
+      http:
+        paths:
+          # API endpoints
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: api-backend
+                port:
+                  number: 8080
+          # Web app
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: web
+                port:
+                  number: 8080
+    
+    # App subdomain - Web app, tunnel services, and API
+    - host: app.cloudtolocalllm.online
+      http:
+        paths:
+          # Tunnel WebSocket endpoint
+          - path: /ws
+            pathType: Prefix
+            backend:
+              service:
+                name: streaming-proxy
+                port:
+                  number: 3001
+          # Tunnel API endpoints
+          - path: /api/tunnel
+            pathType: Prefix
+            backend:
+              service:
+                name: streaming-proxy
+                port:
+                  number: 3001
+          # Main API endpoints
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: api-backend
+                port:
+                  number: 8080
+          # Web app
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: web
+                port:
+                  number: 8080
+    
+    # API subdomain - API backend only
+    - host: api.cloudtolocalllm.online
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: api-backend
+                port:
+                  number: 8080
+
+---
+# Network Load Balancer Service for AWS EKS
+# This service exposes the ingress controller via NLB
+apiVersion: v1
+kind: Service
+metadata:
+  name: aws-load-balancer-controller
+  namespace: kube-system
+  annotations:
+    service.beta.kubernetes.io/aws-load-balancer-type: nlb
+    service.beta.kubernetes.io/aws-load-balancer-cross-zone-load-balancing-enabled: 'true'
+    service.beta.kubernetes.io/aws-load-balancer-backend-protocol: tcp
+    service.beta.kubernetes.io/aws-load-balancer-healthcheck-healthy-threshold: '2'
+    service.beta.kubernetes.io/aws-load-balancer-healthcheck-unhealthy-threshold: '2'
+    service.beta.kubernetes.io/aws-load-balancer-healthcheck-interval: '30'
+    service.beta.kubernetes.io/aws-load-balancer-healthcheck-timeout: '5'
+spec:
+  type: LoadBalancer
+  selector:
+    app.kubernetes.io/name: aws-load-balancer-controller
+  ports:
+    - name: http
+      port: 80
+      targetPort: 80
+      protocol: TCP
+    - name: https
+      port: 443
+      targetPort: 443
+      protocol: TCP
+
+---
+# Health check endpoint configuration
+# This ConfigMap defines health check paths for the application
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: health-check-config
+  namespace: cloudtolocalllm
+data:
+  # Health check paths for each service
+  web-health-path: /health
+  api-health-path: /health
+  streaming-proxy-health-path: /health
+  
+  # Health check intervals (in seconds)
+  health-check-interval: '30'
+  health-check-timeout: '5'
+  
+  # Health check thresholds
+  healthy-threshold: '2'
+  unhealthy-threshold: '2'
+
+---
+# Security Group for AWS Load Balancer
+# This defines ingress/egress rules for the load balancer
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: alb-security-group-config
+  namespace: cloudtolocalllm
+data:
+  # Security group rules (informational, actual SG managed by AWS)
+  ingress-rules: |
+    - IpProtocol: tcp
+      FromPort: 80
+      ToPort: 80
+      IpRanges:
+        - CidrIp: 0.0.0.0/0
+          Description: Allow HTTP from anywhere
+    - IpProtocol: tcp
+      FromPort: 443
+      ToPort: 443
+      IpRanges:
+        - CidrIp: 0.0.0.0/0
+          Description: Allow HTTPS from anywhere
+  
+  egress-rules: |
+    - IpProtocol: -1
+      CidrIp: 0.0.0.0/0
+      Description: Allow all outbound traffic

@@ -6,6 +6,8 @@ metadata:
 data:
   # Domain configuration
   DOMAIN: "cloudtolocalllm.online"
+  WEB_DOMAIN: "app.cloudtolocalllm.online"
+  API_DOMAIN: "api.cloudtolocalllm.online"
 
   # Node environment
   NODE_ENV: "production"
@@ -17,11 +19,13 @@ data:
   DB_HOST: "postgres.cloudtolocalllm.svc.cluster.local"
   DB_PORT: "5432"
   DB_NAME: "cloudtolocalllm"
+  DB_USER: "cloudtolocalllm"
 
   # API configuration
   PORT: "8080"
+  API_PORT: "8080"
 
-  # Auth0 Configuration
+  # Auth0 Configuration (non-sensitive values only)
   AUTH0_DOMAIN: "dev-v2f2p008x3dr74ww.us.auth0.com"
   AUTH0_AUDIENCE: "https://api.cloudtolocalllm.online"
   AUTH0_CLIENT_ID: "FuXPnevXpp311CdYHGsbNZe9t3D8Ts7A"
@@ -34,3 +38,13 @@ data:
   DB_POOL_MAX: "50"
   DB_POOL_IDLE_TIMEOUT: "600000"
   DB_POOL_CONNECTION_TIMEOUT: "30000"
+
+  # Kubernetes cluster configuration
+  CLUSTER_NAME: "cloudtolocalllm-eks"
+  CLUSTER_REGION: "us-east-1"
+  NAMESPACE: "cloudtolocalllm"
+
+  # Logging and monitoring
+  LOG_FORMAT: "json"
+  ENABLE_METRICS: "true"
+  METRICS_PORT: "9090"

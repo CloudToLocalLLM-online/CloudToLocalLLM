@@ -1,0 +1,305 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'CloudFormation template for EKS cluster and node group'
+
+Parameters:
+  ClusterName:
+    Type: String
+    Default: cloudtolocalllm-eks
+    Description: Name of the EKS cluster
+  
+  KubernetesVersion:
+    Type: String
+    Default: '1.30'
+    AllowedValues:
+      - '1.28'
+      - '1.29'
+      - '1.30'
+    Description: Kubernetes version for the cluster
+  
+  NodeInstanceType:
+    Type: String
+    Default: t3.medium
+    AllowedValues:
+      - t3.medium
+      - t3.large
+      - t3.xlarge
+    Description: EC2 instance type for nodes
+  
+  DesiredNodeCount:
+    Type: Number
+    Default: 2
+    MinValue: 1
+    MaxValue: 10
+    Description: Desired number of nodes in the cluster
+  
+  MinNodeCount:
+    Type: Number
+    Default: 1
+    MinValue: 1
+    MaxValue: 5
+    Description: Minimum number of nodes
+  
+  MaxNodeCount:
+    Type: Number
+    Default: 5
+    MinValue: 2
+    MaxValue: 20
+    Description: Maximum number of nodes
+  
+  EKSServiceRoleArn:
+    Type: String
+    Description: ARN of the EKS Service Role
+  
+  NodeInstanceRoleArn:
+    Type: String
+    Description: ARN of the Node Instance Role
+  
+  VPCId:
+    Type: String
+    Description: VPC ID for the cluster
+  
+  PrivateSubnetIds:
+    Type: CommaDelimitedList
+    Description: List of private subnet IDs for the cluster
+  
+  NodeSecurityGroupId:
+    Type: String
+    Description: Security group ID for nodes
+
+Resources:
+  # EKS Cluster
+  EKSCluster:
+    Type: AWS::EKS::Cluster
+    Properties:
+      Name: !Ref ClusterName
+      Version: !Ref KubernetesVersion
+      RoleArn: !Ref EKSServiceRoleArn
+      ResourcesVpcConfig:
+        SubnetIds: !Ref PrivateSubnetIds
+        SecurityGroupIds:
+          - !Ref NodeSecurityGroupId
+        EndpointPrivateAccess: true
+        EndpointPublicAccess: true
+      Logging:
+        ClusterLogging:
+          - LogTypes:
+              - api
+              - audit
+              - authenticator
+              - controllerManager
+              - scheduler
+            Enabled: true
+      Tags:
+        - Key: Name
+          Value: !Ref ClusterName
+        - Key: Environment
+          Value: production
+
+  # Node Group
+  NodeGroup:
+    Type: AWS::EKS::Nodegroup
+    DependsOn: EKSCluster
+    Properties:
+      ClusterName: !Ref ClusterName
+      NodegroupName: !Sub '${ClusterName}-node-group'
+      NodeRole: !Ref NodeInstanceRoleArn
+      Subnets: !Ref PrivateSubnetIds
+      InstanceTypes:
+        - !Ref NodeInstanceType
+      DesiredSize: !Ref DesiredNodeCount
+      MinSize: !Ref MinNodeCount
+      MaxSize: !Ref MaxNodeCount
+      ScalingConfig:
+        DesiredSize: !Ref DesiredNodeCount
+        MinSize: !Ref MinNodeCount
+        MaxSize: !Ref MaxNodeCount
+      Tags:
+        - Key: Name
+          Value: !Sub '${ClusterName}-node-group'
+        - Key: Environment
+          Value: production
+
+  # Auto Scaling Group Tags for Cluster Autoscaler
+  NodeGroupAutoScalingTag:
+    Type: AWS::CloudFormation::CustomResource
+    Properties:
+      ServiceToken: !Sub 'arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:cfn-asg-tag'
+      NodeGroupName: !Ref NodeGroup
+      ClusterName: !Ref ClusterName
+
+  # CloudWatch Log Group for EKS Cluster Logs
+  EKSClusterLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub '/aws/eks/${ClusterName}/cluster'
+      RetentionInDays: 30
+
+  # Network Load Balancer for Ingress
+  NetworkLoadBalancer:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      Name: !Sub '${ClusterName}-nlb'
+      Type: network
+      Scheme: internet-facing
+      IpAddressType: ipv4
+      Subnets: !Ref PrivateSubnetIds
+      Tags:
+        - Key: Name
+          Value: !Sub '${ClusterName}-nlb'
+        - Key: Environment
+          Value: production
+
+  # Target Group for HTTP
+  HTTPTargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      Name: !Sub '${ClusterName}-http-tg'
+      Port: 80
+      Protocol: TCP
+      VpcId: !Ref VPCId
+      TargetType: ip
+      HealthCheckEnabled: true
+      HealthCheckProtocol: TCP
+      HealthCheckPort: '80'
+      HealthCheckIntervalSeconds: 30
+      HealthyThresholdCount: 3
+      UnhealthyThresholdCount: 3
+      Tags:
+        - Key: Name
+          Value: !Sub '${ClusterName}-http-tg'
+
+  # Target Group for HTTPS
+  HTTPSTargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      Name: !Sub '${ClusterName}-https-tg'
+      Port: 443
+      Protocol: TCP
+      VpcId: !Ref VPCId
+      TargetType: ip
+      HealthCheckEnabled: true
+      HealthCheckProtocol: TCP
+      HealthCheckPort: '443'
+      HealthCheckIntervalSeconds: 30
+      HealthyThresholdCount: 3
+      UnhealthyThresholdCount: 3
+      Tags:
+        - Key: Name
+          Value: !Sub '${ClusterName}-https-tg'
+
+  # Listener for HTTP
+  HTTPListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      LoadBalancerArn: !GetAtt NetworkLoadBalancer.LoadBalancerArn
+      Port: 80
+      Protocol: TCP
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn: !GetAtt HTTPTargetGroup.TargetGroupArn
+
+  # Listener for HTTPS
+  HTTPSListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      LoadBalancerArn: !GetAtt NetworkLoadBalancer.LoadBalancerArn
+      Port: 443
+      Protocol: TCP
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn: !GetAtt HTTPSTargetGroup.TargetGroupArn
+
+  # CloudWatch Alarms for Cluster Health
+  UnhealthyNodeCountAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub '${ClusterName}-unhealthy-nodes'
+      AlarmDescription: Alert when nodes are unhealthy
+      MetricName: NodeCount
+      Namespace: AWS/EKS
+      Statistic: Average
+      Period: 300
+      EvaluationPeriods: 2
+      Threshold: 0
+      ComparisonOperator: LessThanThreshold
+      Dimensions:
+        - Name: ClusterName
+          Value: !Ref ClusterName
+
+  # CloudWatch Alarms for API Server
+  APIServerErrorRateAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub '${ClusterName}-api-server-errors'
+      AlarmDescription: Alert when API server error rate is high
+      MetricName: APIServerErrorRate
+      Namespace: AWS/EKS
+      Statistic: Average
+      Period: 300
+      EvaluationPeriods: 2
+      Threshold: 5
+      ComparisonOperator: GreaterThanThreshold
+      Dimensions:
+        - Name: ClusterName
+          Value: !Ref ClusterName
+
+Outputs:
+  ClusterName:
+    Description: EKS Cluster Name
+    Value: !Ref EKSCluster
+    Export:
+      Name: !Sub '${ClusterName}-name'
+
+  ClusterArn:
+    Description: EKS Cluster ARN
+    Value: !GetAtt EKSCluster.Arn
+    Export:
+      Name: !Sub '${ClusterName}-arn'
+
+  ClusterEndpoint:
+    Description: EKS Cluster Endpoint
+    Value: !GetAtt EKSCluster.Endpoint
+    Export:
+      Name: !Sub '${ClusterName}-endpoint'
+
+  ClusterSecurityGroupId:
+    Description: EKS Cluster Security Group ID
+    Value: !GetAtt EKSCluster.ClusterSecurityGroupId
+    Export:
+      Name: !Sub '${ClusterName}-sg-id'
+
+  NodeGroupId:
+    Description: Node Group ID
+    Value: !Ref NodeGroup
+    Export:
+      Name: !Sub '${ClusterName}-node-group-id'
+
+  LoadBalancerDNS:
+    Description: Network Load Balancer DNS Name
+    Value: !GetAtt NetworkLoadBalancer.DNSName
+    Export:
+      Name: !Sub '${ClusterName}-nlb-dns'
+
+  LoadBalancerArn:
+    Description: Network Load Balancer ARN
+    Value: !GetAtt NetworkLoadBalancer.LoadBalancerArn
+    Export:
+      Name: !Sub '${ClusterName}-nlb-arn'
+
+  HTTPTargetGroupArn:
+    Description: HTTP Target Group ARN
+    Value: !GetAtt HTTPTargetGroup.TargetGroupArn
+    Export:
+      Name: !Sub '${ClusterName}-http-tg-arn'
+
+  HTTPSTargetGroupArn:
+    Description: HTTPS Target Group ARN
+    Value: !GetAtt HTTPSTargetGroup.TargetGroupArn
+    Export:
+      Name: !Sub '${ClusterName}-https-tg-arn'
+
+  ClusterLogGroupName:
+    Description: CloudWatch Log Group for Cluster Logs
+    Value: !Ref EKSClusterLogGroup
+    Export:
+      Name: !Sub '${ClusterName}-log-group'

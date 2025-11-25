@@ -1,0 +1,244 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'CloudFormation template for IAM roles and policies for EKS cluster'
+
+Parameters:
+  GitHubOIDCProviderArn:
+    Type: String
+    Description: ARN of the GitHub OIDC provider
+    Default: 'arn:aws:iam::422017356244:oidc-provider/token.actions.githubusercontent.com'
+  
+  GitHubRepository:
+    Type: String
+    Description: GitHub repository in format owner/repo
+    Default: 'cloudtolocalllm/cloudtolocalllm'
+
+Resources:
+  # EKS Service Role
+  EKSServiceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: cloudtolocalllm-eks-service-role
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: eks.amazonaws.com
+            Action: 'sts:AssumeRole'
+      ManagedPolicyArns:
+        - 'arn:aws:iam::aws:policy/AmazonEKSServiceRolePolicy'
+        - 'arn:aws:iam::aws:policy/AmazonEKSVPCResourceController'
+      Tags:
+        - Key: Name
+          Value: cloudtolocalllm-eks-service-role
+        - Key: Environment
+          Value: production
+
+  # EKS Node Instance Role
+  NodeInstanceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: cloudtolocalllm-eks-node-role
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ec2.amazonaws.com
+            Action: 'sts:AssumeRole'
+      ManagedPolicyArns:
+        - 'arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy'
+        - 'arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy'
+        - 'arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly'
+        - 'arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy'
+      Tags:
+        - Key: Name
+          Value: cloudtolocalllm-eks-node-role
+        - Key: Environment
+          Value: production
+
+  # Node Instance Profile
+  NodeInstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      InstanceProfileName: cloudtolocalllm-eks-node-profile
+      Roles:
+        - !Ref NodeInstanceRole
+
+  # GitHub Actions OIDC Role
+  GitHubActionsRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: github-actions-role
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Federated: !Ref GitHubOIDCProviderArn
+            Action: 'sts:AssumeRoleWithWebIdentity'
+            Condition:
+              StringEquals:
+                'token.actions.githubusercontent.com:aud': 'sts.amazonaws.com'
+              StringLike:
+                'token.actions.githubusercontent.com:sub': !Sub 'repo:${GitHubRepository}:ref:refs/heads/main'
+      Tags:
+        - Key: Name
+          Value: github-actions-role
+        - Key: Environment
+          Value: production
+
+  # GitHub Actions Policy - EKS Deployment
+  GitHubActionsEKSPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: github-actions-eks-policy
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          # EKS permissions
+          - Effect: Allow
+            Action:
+              - 'eks:DescribeCluster'
+              - 'eks:ListClusters'
+              - 'eks:DescribeNodegroup'
+              - 'eks:ListNodegroups'
+            Resource: '*'
+          # ECR permissions
+          - Effect: Allow
+            Action:
+              - 'ecr:GetAuthorizationToken'
+              - 'ecr:BatchGetImage'
+              - 'ecr:GetDownloadUrlForLayer'
+            Resource: '*'
+          # CloudWatch permissions
+          - Effect: Allow
+            Action:
+              - 'cloudwatch:PutMetricAlarm'
+              - 'cloudwatch:DescribeAlarms'
+              - 'cloudwatch:GetMetricStatistics'
+            Resource: '*'
+          # IAM permissions for IRSA
+          - Effect: Allow
+            Action:
+              - 'iam:GetRole'
+              - 'iam:ListRolePolicies'
+              - 'iam:ListAttachedRolePolicies'
+            Resource: !Sub 'arn:aws:iam::${AWS::AccountId}:role/*'
+      Roles:
+        - !Ref GitHubActionsRole
+
+  # GitHub Actions Policy - kubectl access
+  GitHubActionsKubectlPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: github-actions-kubectl-policy
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action:
+              - 'eks:DescribeCluster'
+            Resource: !Sub 'arn:aws:eks:${AWS::Region}:${AWS::AccountId}:cluster/cloudtolocalllm-eks'
+      Roles:
+        - !Ref GitHubActionsRole
+
+  # Pod Execution Role for EKS pods
+  PodExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: cloudtolocalllm-pod-execution-role
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Federated: !Sub 'arn:aws:iam::${AWS::AccountId}:oidc-provider/oidc.eks.${AWS::Region}.amazonaws.com/id/EXAMPLEID'
+            Action: 'sts:AssumeRoleWithWebIdentity'
+            Condition:
+              StringEquals:
+                !Sub 'oidc.eks.${AWS::Region}.amazonaws.com/id/EXAMPLEID:sub': 'system:serviceaccount:cloudtolocalllm:default'
+      ManagedPolicyArns:
+        - 'arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy'
+      Tags:
+        - Key: Name
+          Value: cloudtolocalllm-pod-execution-role
+        - Key: Environment
+          Value: production
+
+  # Pod Execution Policy for accessing secrets
+  PodExecutionPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: pod-execution-policy
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action:
+              - 'secretsmanager:GetSecretValue'
+              - 'secretsmanager:DescribeSecret'
+            Resource: !Sub 'arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:cloudtolocalllm/*'
+          - Effect: Allow
+            Action:
+              - 'kms:Decrypt'
+            Resource: !Sub 'arn:aws:kms:${AWS::Region}:${AWS::AccountId}:key/*'
+      Roles:
+        - !Ref PodExecutionRole
+
+  # CloudWatch Logs Role for EKS
+  EKSCloudWatchLogsRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: cloudtolocalllm-eks-cloudwatch-logs-role
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: eks.amazonaws.com
+            Action: 'sts:AssumeRole'
+      ManagedPolicyArns:
+        - 'arn:aws:iam::aws:policy/CloudWatchLogsFullAccess'
+      Tags:
+        - Key: Name
+          Value: cloudtolocalllm-eks-cloudwatch-logs-role
+        - Key: Environment
+          Value: production
+
+Outputs:
+  EKSServiceRoleArn:
+    Description: ARN of EKS Service Role
+    Value: !GetAtt EKSServiceRole.Arn
+    Export:
+      Name: cloudtolocalllm-eks-service-role-arn
+
+  NodeInstanceRoleArn:
+    Description: ARN of Node Instance Role
+    Value: !GetAtt NodeInstanceRole.Arn
+    Export:
+      Name: cloudtolocalllm-node-instance-role-arn
+
+  NodeInstanceProfileArn:
+    Description: ARN of Node Instance Profile
+    Value: !GetAtt NodeInstanceProfile.Arn
+    Export:
+      Name: cloudtolocalllm-node-instance-profile-arn
+
+  GitHubActionsRoleArn:
+    Description: ARN of GitHub Actions Role
+    Value: !GetAtt GitHubActionsRole.Arn
+    Export:
+      Name: github-actions-role-arn
+
+  PodExecutionRoleArn:
+    Description: ARN of Pod Execution Role
+    Value: !GetAtt PodExecutionRole.Arn
+    Export:
+      Name: cloudtolocalllm-pod-execution-role-arn
+
+  EKSCloudWatchLogsRoleArn:
+    Description: ARN of EKS CloudWatch Logs Role
+    Value: !GetAtt EKSCloudWatchLogsRole.Arn
+    Export:
+      Name: cloudtolocalllm-eks-cloudwatch-logs-role-arn

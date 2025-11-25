@@ -5,6 +5,7 @@ metadata:
   namespace: cloudtolocalllm
   labels:
     app: api-backend
+    environment: development
 spec:
   type: ClusterIP
   ports:
@@ -21,8 +22,9 @@ metadata:
   namespace: cloudtolocalllm
   labels:
     app: api-backend
+    environment: development
 spec:
-  replicas: 1
+  replicas: 2
   strategy:
     type: RollingUpdate
     rollingUpdate:
@@ -35,7 +37,20 @@ spec:
     metadata:
       labels:
         app: api-backend
+        environment: development
     spec:
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchExpressions:
+                    - key: app
+                      operator: In
+                      values:
+                        - api-backend
+                topologyKey: kubernetes.io/hostname
       securityContext:
         runAsNonRoot: true
         runAsUser: 1001
@@ -211,9 +226,9 @@ spec:
           resources:
             requests:
               memory: "512Mi"
-              cpu: "100m"
+              cpu: "200m"
             limits:
-              memory: "2Gi"
+              memory: "1Gi"
               cpu: "500m"
 
           startupProbe:

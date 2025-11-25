@@ -8,9 +8,36 @@ resources:
   - ../../web-deployment.yaml
   - ../../configmap.yaml
   - ../../secrets.yaml
+  - ../../postgres-statefulset.yaml
+  - ../../ingress-aws-nlb.yaml
+  - ../../rbac.yaml
+  - ../../network-policies.yaml
 
+# Production environment patches
 patches:
+  - path: configmap-patch.yaml
+    target:
+      kind: ConfigMap
+      name: cloudtolocalllm-config
+  - path: web-deployment-patch.yaml
+    target:
+      kind: Deployment
+      name: web
+  - path: api-backend-deployment-patch.yaml
+    target:
+      kind: Deployment
+      name: api-backend
   - path: stripe-production-patch.yaml
     target:
       kind: Deployment
       name: api-backend
+
+# Common labels for all resources
+commonLabels:
+  environment: production
+  managed-by: kustomize
+
+# Common annotations
+commonAnnotations:
+  environment.cloudtolocalllm.online/type: production
+  environment.cloudtolocalllm.online/cost-optimized: "false"

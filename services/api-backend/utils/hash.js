@@ -30,8 +30,19 @@ export function randomHash() {
   return crypto.randomBytes(32).toString('hex');
 }
 
+/**
+ * Generic hash function (defaults to SHA256)
+ * @param {string} str - String to hash
+ * @param {string} algorithm - Hash algorithm (default: sha256)
+ * @returns {string} Hex-encoded hash
+ */
+export function hash(str, algorithm = 'sha256') {
+  return crypto.createHash(algorithm).update(str).digest('hex');
+}
+
 export default {
   sha256,
   md5,
   randomHash,
+  hash,
 };

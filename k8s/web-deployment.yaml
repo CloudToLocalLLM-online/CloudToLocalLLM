@@ -5,6 +5,7 @@ metadata:
   namespace: cloudtolocalllm
   labels:
     app: web
+    environment: development
 spec:
   type: ClusterIP
   ports:
@@ -21,8 +22,9 @@ metadata:
   namespace: cloudtolocalllm
   labels:
     app: web
+    environment: development
 spec:
-  replicas: 1
+  replicas: 2
   strategy:
     type: RollingUpdate
     rollingUpdate:
@@ -35,7 +37,20 @@ spec:
     metadata:
       labels:
         app: web
+        environment: development
     spec:
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchExpressions:
+                    - key: app
+                      operator: In
+                      values:
+                        - web
+                topologyKey: kubernetes.io/hostname
       securityContext:
         runAsNonRoot: true
         runAsUser: 101
@@ -53,22 +68,42 @@ spec:
           ports:
             - containerPort: 8080
               name: http
+          env:
+            - name: ENVIRONMENT
+              value: "development"
+            - name: API_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: cloudtolocalllm-config
+                  key: API_DOMAIN
           resources:
             requests:
-              memory: "128Mi"
+              memory: "256Mi"
               cpu: "100m"
             limits:
-              memory: "256Mi"
+              memory: "512Mi"
               cpu: "500m"
-          livenessProbe:
-            httpGet:
-              path: /health
-              port: 8080
-            initialDelaySeconds: 10
-            periodSeconds: 10
-          readinessProbe:
+          startupProbe:
             httpGet:
               path: /health
               port: 8080
             initialDelaySeconds: 5
             periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 30
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 3

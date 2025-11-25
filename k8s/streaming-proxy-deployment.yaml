@@ -102,6 +102,17 @@ spec:
               cpu: 500m
               memory: 512Mi
 
+          # Startup probe - checks if container has started successfully
+          startupProbe:
+            httpGet:
+              path: /health
+              port: http
+              scheme: HTTP
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 30
+
           # Liveness probe - checks if container is alive
           livenessProbe:
             httpGet:

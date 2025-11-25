@@ -279,6 +279,40 @@ kubectl apply -f k8s/
 **Development:**
 - **[MCP Development Workflow](docs/MCP_DEVELOPMENT_WORKFLOW.md)** - Guidelines for model-driven development
 
+**Operations & Cost Management:**
+- **[AWS EKS Operations Runbook](docs/AWS_EKS_OPERATIONS_RUNBOOK.md)** - Daily operations and maintenance procedures
+- **[Cost Monitoring Implementation](docs/TASK_17_COST_MONITORING_IMPLEMENTATION.md)** - Cost tracking and optimization
+
+## Cost Monitoring
+
+CloudToLocalLLM includes automated cost monitoring for AWS EKS deployments:
+
+```bash
+# Generate cost report
+node scripts/aws/cost-monitoring.js
+```
+
+**Features:**
+- Calculates estimated monthly costs based on cluster configuration
+- Provides detailed cost breakdown by service
+- Generates cost optimization recommendations
+- Creates CloudWatch dashboards for cost tracking
+- Configures monthly cost alerts
+
+**Estimated Monthly Costs (Development):**
+- 2x t3.small instances: $61.44
+- Network Load Balancer: $16.56
+- Storage & Data Transfer: $20
+- **Total: ~$98/month** (well under $300 budget)
+
+**Cost Optimization Tips:**
+- Use t3.micro instances ($7.68/month) instead of t3.small for lower costs
+- Scale down to 2 nodes during off-hours
+- Disable unused services (storage, logging) if not needed
+- Use Reserved Instances for 30-50% savings on long-term deployments
+
+See [Cost Monitoring Documentation](docs/TASK_17_COST_MONITORING_IMPLEMENTATION.md) for detailed setup and usage.
+
 ## Configuration
 
 ### Environment Variables
