@@ -2,16 +2,22 @@
 # Runtime Dockerfile for CloudToLocalLLM Streaming Proxy
 # Uses artifacts from the Universal Builder
 # ============================================================================
+# ============================================================================
+# Runtime Dockerfile for CloudToLocalLLM Streaming Proxy
+# Uses artifacts from the Universal Builder
+# ============================================================================
 
 # Use Debian Slim to match the Builder
 FROM node:20-slim
 
 WORKDIR /app
 
-# Copy artifacts from Universal Builder
-COPY --from=cloudtolocalllm/builder:latest --chown=node:node /artifacts/streaming-proxy ./
+# Copy artifacts (node_modules + code) from local filesystem
+# The workflow downloads artifacts to services/streaming-proxy
+COPY services/streaming-proxy/node_modules ./node_modules
+COPY services/streaming-proxy/ .
 
 USER node
 
-EXPOSE 3001
-CMD [ "npm", "start" ]
+EXPOSE 8081
+CMD [ "node", "dist/main.js" ]

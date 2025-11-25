@@ -18,17 +18,16 @@ WORKDIR /api
 RUN mkdir -p /api/data /api/logs && \
     chown -R node:node /api
 
-# Copy artifacts from Universal Builder
-# Note: /artifacts/api-backend contains node_modules AND source code
-COPY --from=cloudtolocalllm/builder:latest --chown=node:node /artifacts/api-backend ./
+# Copy artifacts (node_modules + code) from local filesystem
+# The workflow downloads artifacts to services/api-backend
+COPY services/api-backend/node_modules ./node_modules
+COPY services/api-backend/ .
 
 # Ensure data directories have correct ownership
 RUN chown -R node:node /api/data /api/logs
 
 # Switch to non-root user
 USER node
-
-# Set environment variables
 ENV LOG_DIR=/api/logs
 ENV DB_PATH=/api/data/cloudtolocalllm.db
 ENV SSH_PORT=2222

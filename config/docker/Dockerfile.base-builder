@@ -1,0 +1,54 @@
+# Base Builder Image for CloudToLocalLLM
+# Contains Flutter SDK, Node.js, and build tools.
+# Based on Fedora as requested.
+
+FROM fedora:latest
+
+# Install system dependencies
+# git, curl, unzip, which, xz: for Flutter
+# nodejs, npm: for Backend/Proxy
+# java-17-openjdk-devel: for Android builds (if needed) or general Java tools
+# clang, cmake, ninja-build, pkg-config, gtk3-devel: for Linux desktop builds (optional but good for completeness)
+RUN dnf update -y && \
+    dnf install -y \
+    git \
+    curl \
+    wget \
+    unzip \
+    which \
+    xz \
+    java-17-openjdk-devel \
+    nodejs \
+    npm \
+    make \
+    gcc-c++ \
+    && dnf clean all
+
+# Create non-root user 'builder' (UID 1000)
+RUN useradd -u 1000 -m -s /bin/bash builder
+
+# Install Flutter SDK
+# We install it to /opt/flutter and give ownership to 'builder'
+ENV FLUTTER_ROOT=/opt/flutter
+RUN mkdir -p $FLUTTER_ROOT && \
+    chown -R builder:builder $FLUTTER_ROOT
+
+USER builder
+WORKDIR /home/builder
+
+# Download and extract Flutter SDK
+# Using stable channel
+RUN git clone https://github.com/flutter/flutter.git -b stable $FLUTTER_ROOT
+
+# Add Flutter to PATH
+ENV PATH="$FLUTTER_ROOT/bin:$FLUTTER_ROOT/bin/cache/dart-sdk/bin:$PATH"
+
+# Pre-download Flutter artifacts
+RUN flutter doctor
+
+# Verify installations
+RUN node --version && \
+    npm --version && \
+    flutter --version
+
+WORKDIR /app
