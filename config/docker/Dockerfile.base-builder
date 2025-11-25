@@ -1,28 +1,21 @@
 # Base Builder Image for CloudToLocalLLM
 # Contains Flutter SDK, Node.js, and build tools.
-# Based on Fedora as requested.
+# Based on Fedora 41 (Stable).
 
-FROM fedora:latest
+FROM fedora:41
 
-# Install system dependencies
-# git, curl, unzip, which, xz: for Flutter
-# nodejs, npm: for Backend/Proxy
-# java-17-openjdk-devel: for Android builds (if needed) or general Java tools
-# clang, cmake, ninja-build, pkg-config, gtk3-devel: for Linux desktop builds (optional but good for completeness)
-RUN dnf update -y && \
-    dnf install -y \
-    git \
-    curl \
-    wget \
-    unzip \
-    which \
-    xz \
-    java-17-openjdk-devel \
-    nodejs \
-    npm \
-    make \
-    gcc-c++ \
-    && dnf clean all
+# Install Base Tools
+RUN dnf -y update && \
+    dnf -y install git curl wget unzip which xz make gcc-c++ && \
+    dnf clean all
+
+# Install Java (for Android/Flutter tools)
+RUN dnf -y install java-17-openjdk-devel && \
+    dnf clean all
+
+# Install Node.js and NPM
+RUN dnf -y install nodejs npm && \
+    dnf clean all
 
 # Create non-root user 'builder' (UID 1000)
 RUN useradd -u 1000 -m -s /bin/bash builder
