@@ -73,4 +73,10 @@ Here are some of the tools I can use to help with development:
 
 
 
+## Lessons Learned & Project Structure Notes
+
+*   **Kustomize Structure:** The project uses a Kustomize overlay structure (`k8s/overlays/production/`) where patch files (e.g., `web-deployment-patch.yaml`) override base configurations. When modifying deployment settings like replica counts, ensure you check both the base `k8s/` files and the environment-specific overlays to avoid conflicting configurations.
+*   **File Management:** Avoid creating new files unless explicitly necessary. Modify existing files to achieve configuration changes.
+*   **Communication:** Be explicit when modifying "patch" files to avoid confusion about whether a new file is being created or an existing one is being edited.
+
 I will use these tools to carry out the development plan and assist with your requests.
