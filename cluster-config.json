@@ -1,0 +1,30 @@
+{
+    "name": "cloudtolocalllm-eks",
+    "version": "1.34",
+    "roleArn": "arn:aws:iam::422017356244:role/cloudtolocalllm-eks-cluster-role",
+    "resourcesVpcConfig": {
+        "subnetIds": [
+            "subnet-0f86ad9e6835c66ad",
+            "subnet-02604349a698e0e50",
+            "subnet-029797aeb6cd6d69c",
+            "subnet-04c42b1dbf2649b38"
+        ],
+        "securityGroupIds": [
+            "sg-041ab736a29d8bd67"
+        ]
+    },
+    "logging": {
+        "clusterLogging": [
+            {
+                "types": [
+                    "api",
+                    "audit",
+                    "authenticator",
+                    "controllerManager",
+                    "scheduler"
+                ],
+                "enabled": true
+            }
+        ]
+    }
+}

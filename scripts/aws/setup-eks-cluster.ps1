@@ -10,7 +10,7 @@ param(
     [int]$MinNodes = 2,
     [int]$MaxNodes = 3,
     [int]$DesiredNodes = 2,
-    [string]$KubernetesVersion = "1.28"
+    [string]$KubernetesVersion = "1.34"
 )
 
 $ErrorActionPreference = "Stop"
