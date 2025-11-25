@@ -70,6 +70,7 @@ Here are some of the tools I can use to help with development:
 *   **Deployment**: Deployment to AKS is automated via GitHub Actions when pushing to the `main` branch.
 *   **Git Operations**: Always commit and push changes to the repository after completing a task. Do not ask for permission to perform git operations. Do not leave changes uncommitted.
 *   **Latest Stable Versions**: Always use the latest stable version for all dependencies, tools, and infrastructure (e.g., Kubernetes, Node.js, Flutter) unless explicitly pinned for compatibility. Avoid using older or deprecated versions.
+*   **Latest Tech Stack**: Always use the latest major versions of GitHub Actions, libraries, and tools. Deprecated versions are strictly forbidden. If a tool is deprecated, upgrade immediately.
 
 
 
