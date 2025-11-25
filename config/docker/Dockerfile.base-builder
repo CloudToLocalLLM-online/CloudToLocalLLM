@@ -16,10 +16,6 @@ RUN dnf -y update && \
 RUN dnf -y install java-21-openjdk-devel && \
     dnf clean all
 
-# Install Node.js and NPM
-RUN dnf -y install nodejs npm && \
-    dnf clean all
-
 # Install Flutter SDK
 # We install it to /opt/flutter and give ownership to 'cloudtolocalllm'
 ENV FLUTTER_ROOT=/opt/flutter
@@ -30,12 +26,22 @@ RUN mkdir -p $FLUTTER_ROOT && \
 USER cloudtolocalllm
 WORKDIR /home/cloudtolocalllm
 
+# Install NVM and Node.js (LTS)
+ENV NVM_DIR=/home/cloudtolocalllm/.nvm
+RUN curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash && \
+    . "$NVM_DIR/nvm.sh" && \
+    nvm install 22 && \
+    nvm alias default 22 && \
+    nvm use default
+
+# Add Node.js and Flutter to PATH
+# We hardcode the path for v22 as ENV variables are static. 
+# If nvm installs a minor update, this path might need adjustment, but for a builder image it's acceptable.
+ENV PATH="/home/cloudtolocalllm/.nvm/versions/node/v22.11.0/bin:$FLUTTER_ROOT/bin:$FLUTTER_ROOT/bin/cache/dart-sdk/bin:$PATH"
+
 # Download and extract Flutter SDK
 # Using stable channel
 RUN git clone https://github.com/flutter/flutter.git -b stable $FLUTTER_ROOT
-
-# Add Flutter to PATH
-ENV PATH="$FLUTTER_ROOT/bin:$FLUTTER_ROOT/bin/cache/dart-sdk/bin:$PATH"
 
 # Pre-download Flutter artifacts
 RUN flutter doctor

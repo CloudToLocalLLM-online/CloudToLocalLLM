@@ -115,30 +115,32 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: cloudtolocalllm/base-builder:latest
-      # Run as cloudtolocalllm user (UID 1000)
-      options: --user 1000
+      # Run container as root to allow actions/checkout to work
+      options: --user root
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Fix permissions
+        run: |
+          chown -R cloudtolocalllm:cloudtolocalllm .
+
       - name: Build Flutter Web
         run: |
-          echo "Building Flutter Web..."
-          flutter clean
-          flutter pub get
-          flutter build web --release
+          su cloudtolocalllm -c "flutter config --no-analytics"
+          su cloudtolocalllm -c "flutter pub get"
+          su cloudtolocalllm -c "flutter build web --release --no-tree-shake-icons"
+        working-directory: ./web
 
-      - name: Build API Backend Dependencies
+      - name: Install API Dependencies
         run: |
-          echo "Building API Backend..."
-          cd services/api-backend
-          npm ci --omit=dev
+          su cloudtolocalllm -c "npm ci --omit=dev"
+        working-directory: ./services/api-backend
 
-      - name: Build Streaming Proxy Dependencies
+      - name: Install Streaming Dependencies
         run: |
-          echo "Building Streaming Proxy..."
-          cd services/streaming-proxy
-          npm ci --omit=dev
+          su cloudtolocalllm -c "npm ci --omit=dev"
+        working-directory: ./services/streaming-proxy
 
       - name: Upload Web Artifacts
         uses: actions/upload-artifact@v4
