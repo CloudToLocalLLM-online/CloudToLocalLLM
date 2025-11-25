@@ -3,21 +3,27 @@
 
 FROM ghcr.io/cirruslabs/flutter:stable AS builder
 
-# Install Node.js 20 (LTS)
+# Install Node.js 20 (LTS) - Run as root
 RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
     apt-get install -y nodejs && \
     node --version && \
     npm --version
 
-# Set working directory
+# Fix Flutter SDK ownership/permissions so non-root user can use it
+# The SDK is at /sdks/flutter in this image
+RUN chown -R 1000:1000 /sdks/flutter && \
+    chmod -R u+w /sdks/flutter && \
+    git config --global --add safe.directory /sdks/flutter
+
+# Create app directory and fix ownership
 WORKDIR /app
+RUN chown -R 1000:1000 /app
 
-# Fix permissions for Flutter SDK (if needed) and /app
-# The cirruslabs image runs as root by default, but let's be safe
-RUN chown -R root:root /app
+# Switch to non-root user (UID 1000 is standard in this image)
+USER 1000
 
-# Copy ALL source code
-COPY . .
+# Copy ALL source code as non-root user
+COPY --chown=1000:1000 . .
 
 # --- Build Web (Flutter) ---
 RUN echo "Building Flutter Web..."
