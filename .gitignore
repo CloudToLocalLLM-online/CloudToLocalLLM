@@ -162,3 +162,6 @@ sentry.properties
 sentry_issues.json
 sentry_issues.txt
 sentry_issues_latest.txt
+run_logs_new.txt
+.gitignore
+run_logs.txt
