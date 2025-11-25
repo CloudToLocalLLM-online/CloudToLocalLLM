@@ -32,43 +32,12 @@ env:
   DOCKER_REGISTRY: cloudtolocalllm
 
 jobs:
-  deploy:
+  build:
+    name: Build and Push Images
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      id-token: write # Required for OIDC token exchange
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
-
-      - name: Check deployment queue status
-        run: |
-          echo "Checking deployment queue status..."
-          echo "Concurrency group: eks-deployment"
-          echo "This workflow uses GitHub Actions concurrency to prevent concurrent deployments"
-          echo "Only one deployment to the EKS cluster will run at a time"
-          echo "Other deployments will be queued and executed sequentially"
-
-      - name: Configure AWS credentials via OIDC
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          role-to-assume: arn:aws:iam::422017356244:role/github-actions-role
-          aws-region: ${{ env.AWS_REGION }}
-          role-session-name: github-actions-eks-deployment-${{ github.run_id }}
-          role-duration-seconds: 3600
-
-      - name: Verify AWS credentials
-        continue-on-error: true
-        run: |
-          echo "AWS Account ID:"
-          aws sts get-caller-identity --query Account --output text || echo "Failed to get caller identity"
-          echo ""
-          echo "Available EKS Clusters:"
-          aws eks list-clusters --region ${{ env.AWS_REGION }} --query 'clusters' --output table || echo "Failed to list clusters"
-          echo ""
-          echo "Checking IAM role trust policy..."
-          aws iam get-role --role-name github-actions-role --query 'Role.AssumeRolePolicyDocument' || echo "Failed to get role"
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
@@ -103,16 +72,43 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
+      - name: Build and push Streaming Proxy image
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          file: ./services/streaming-proxy/Dockerfile.prod
+          push: true
+          tags: |
+            ${{ env.DOCKER_REGISTRY }}/cloudtolocalllm-streaming:latest
+            ${{ env.DOCKER_REGISTRY }}/cloudtolocalllm-streaming:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy:
+    name: Deploy to EKS
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write # Required for OIDC token exchange
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Configure AWS credentials via OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::422017356244:role/github-actions-role
+          aws-region: ${{ env.AWS_REGION }}
+          role-session-name: github-actions-eks-deployment-${{ github.run_id }}
+          role-duration-seconds: 3600
+
       - name: Update kubeconfig
         run: |
           aws eks update-kubeconfig \
             --name ${{ env.EKS_CLUSTER_NAME }} \
             --region ${{ env.AWS_REGION }}
-
-      - name: Verify cluster connectivity
-        run: |
-          kubectl cluster-info
-          kubectl get nodes
 
       - name: Determine environment and namespace
         run: |
@@ -149,6 +145,13 @@ jobs:
         run: |
           kubectl create namespace ${{ env.NAMESPACE }} --dry-run=client -o yaml | kubectl apply -f -
 
+      - name: Clean up existing deployments (Fresh Start)
+        run: |
+          echo "Deleting existing deployments to ensure fresh start..."
+          kubectl delete deployment web api-backend streaming-proxy -n ${{ env.NAMESPACE }} --ignore-not-found=true
+          echo "Waiting for cleanup..."
+          sleep 10
+
       - name: Apply base Kubernetes manifests
         run: |
           echo "Applying base Kubernetes manifests..."
@@ -175,6 +178,7 @@ jobs:
           kustomize build --load-restrictor LoadRestrictionsNone k8s/overlays/${{ env.ENVIRONMENT }} | \
             sed "s|cloudtolocalllm/cloudtolocalllm-web:latest|${{ env.DOCKER_REGISTRY }}/cloudtolocalllm-web:${{ github.sha }}|g" | \
             sed "s|cloudtolocalllm/cloudtolocalllm-api:latest|${{ env.DOCKER_REGISTRY }}/cloudtolocalllm-api:${{ github.sha }}|g" | \
+            sed "s|cloudtolocalllm/cloudtolocalllm-streaming:latest|${{ env.DOCKER_REGISTRY }}/cloudtolocalllm-streaming:${{ github.sha }}|g" | \
             kubectl apply -f - -n ${{ env.NAMESPACE }}
 
           echo "Kustomize overlay applied successfully"
@@ -193,6 +197,12 @@ jobs:
             -n ${{ env.NAMESPACE }} \
             --record || echo "API backend deployment update skipped (may not exist yet)"
 
+          # Update Streaming Proxy deployment
+          kubectl set image deployment/streaming-proxy \
+            streaming-proxy=${{ env.DOCKER_REGISTRY }}/cloudtolocalllm-streaming:${{ github.sha }} \
+            -n ${{ env.NAMESPACE }} \
+            --record || echo "Streaming proxy deployment update skipped (may not exist yet)"
+
       - name: Wait for rollout to complete
         run: |
           echo "Waiting for web deployment..."
@@ -200,6 +210,59 @@ jobs:
 
           echo "Waiting for API backend deployment..."
           kubectl rollout status deployment/api-backend -n ${{ env.NAMESPACE }} --timeout=5m
+
+          echo "Waiting for Streaming Proxy deployment..."
+          kubectl rollout status deployment/streaming-proxy -n ${{ env.NAMESPACE }} --timeout=5m
+
+  validation:
+    name: Validate Deployment
+    needs: deploy
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write # Required for OIDC token exchange
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Configure AWS credentials via OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::422017356244:role/github-actions-role
+          aws-region: ${{ env.AWS_REGION }}
+          role-session-name: github-actions-eks-validation-${{ github.run_id }}
+          role-duration-seconds: 3600
+
+      - name: Update kubeconfig
+        run: |
+          aws eks update-kubeconfig \
+            --name ${{ env.EKS_CLUSTER_NAME }} \
+            --region ${{ env.AWS_REGION }}
+
+      - name: Determine environment and namespace
+        run: |
+          # Determine environment from workflow input or default to production
+          ENVIRONMENT="${{ github.event.inputs.environment }}"
+          if [ -z "$ENVIRONMENT" ]; then
+            ENVIRONMENT="production"
+          fi
+
+          # Set namespace based on environment
+          case $ENVIRONMENT in
+            development)
+              NAMESPACE="cloudtolocalllm-dev"
+              ;;
+            staging)
+              NAMESPACE="cloudtolocalllm-staging"
+              ;;
+            production)
+              NAMESPACE="cloudtolocalllm"
+              ;;
+          esac
+
+          echo "ENVIRONMENT=$ENVIRONMENT" >> $GITHUB_ENV
+          echo "NAMESPACE=$NAMESPACE" >> $GITHUB_ENV
 
       - name: Verify deployment health
         run: |
@@ -256,53 +319,9 @@ jobs:
           echo "API Backend Deployment History:"
           kubectl rollout history deployment/api-backend -n ${{ env.NAMESPACE }}
 
-          # Store deployment metadata
-          DEPLOYMENT_METADATA=$(cat <<EOF
-          {
-            "timestamp": "$(date -u +'%Y-%m-%dT%H:%M:%SZ')",
-            "cluster": "${{ env.EKS_CLUSTER_NAME }}",
-            "namespace": "${{ env.NAMESPACE }}",
-            "environment": "${{ env.ENVIRONMENT }}",
-            "commit": "${{ github.sha }}",
-            "branch": "${{ github.ref }}",
-            "actor": "${{ github.actor }}",
-            "web_image": "${{ env.DOCKER_REGISTRY }}/cloudtolocalllm-web:${{ github.sha }}",
-            "api_backend_image": "${{ env.DOCKER_REGISTRY }}/cloudtolocalllm-api:${{ github.sha }}"
-          }
-          EOF
-          )
-
-          echo "Deployment metadata recorded"
-
-      - name: Record deployment status
-        if: always()
-        run: |
-          echo "Recording deployment status..."
-
-          # Determine deployment status
-          if [ $? -eq 0 ]; then
-            DEPLOYMENT_STATUS="success"
-          else
-            DEPLOYMENT_STATUS="failure"
-          fi
-
-          # Create deployment status file
-          cat > deployment-status.json <<EOF
-          {
-            "status": "$DEPLOYMENT_STATUS",
-            "timestamp": "$(date -u +'%Y-%m-%dT%H:%M:%SZ')",
-            "environment": "${{ env.ENVIRONMENT }}",
-            "namespace": "${{ env.NAMESPACE }}",
-            "commit": "${{ github.sha }}",
-            "branch": "${{ github.ref }}",
-            "run_id": "${{ github.run_id }}",
-            "run_number": "${{ github.run_number }}",
-            "actor": "${{ github.actor }}"
-          }
-          EOF
-
-          echo "Deployment status recorded"
-          cat deployment-status.json
+          echo ""
+          echo "Streaming Proxy Deployment History:"
+          kubectl rollout history deployment/streaming-proxy -n ${{ env.NAMESPACE }}
 
       - name: Setup Cloudflare DNS Integration
         if: env.ENVIRONMENT == 'production'
@@ -310,11 +329,6 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
         run: |
           echo "Setting up Cloudflare DNS integration..."
-
-          # Update kubeconfig
-          aws eks update-kubeconfig \
-            --name ${{ env.EKS_CLUSTER_NAME }} \
-            --region ${{ env.AWS_REGION }}
 
           # Get NLB endpoint
           NLB_ENDPOINT=$(kubectl get ingress -n ${{ env.NAMESPACE }} -o jsonpath='{.items[0].status.loadBalancer.ingress[0].hostname}')
@@ -413,106 +427,6 @@ jobs:
           echo "- Namespace: ${{ env.NAMESPACE }}"
           echo "- Web Image: ${{ env.DOCKER_REGISTRY }}/cloudtolocalllm-web:${{ github.sha }}"
           echo "- API Backend Image: ${{ env.DOCKER_REGISTRY }}/cloudtolocalllm-api:${{ github.sha }}"
+          echo "- Streaming Proxy Image: ${{ env.DOCKER_REGISTRY }}/cloudtolocalllm-streaming:${{ github.sha }}"
           echo "- Commit: ${{ github.sha }}"
           echo "- Branch: ${{ github.ref }}"
-          echo ""
-          echo "DNS Configuration:"
-          echo "- Domains: cloudtolocalllm.online, app.cloudtolocalllm.online, api.cloudtolocalllm.online, auth.cloudtolocalllm.online"
-          echo "- SSL Mode: Full (strict)"
-          echo "- Always Use HTTPS: Enabled"
-          echo ""
-          echo "Next Steps:"
-          echo "1. Wait 5-10 minutes for DNS propagation"
-          echo "2. Visit https://cloudtolocalllm.online to verify"
-          echo "3. Check SSL certificate status"
-
-      - name: Test rollback with intentional failure (optional)
-        if: github.event_name == 'workflow_dispatch' && contains(github.event.inputs.test_rollback, 'true')
-        continue-on-error: true
-        run: |
-          echo "Testing rollback mechanism with intentional failure..."
-
-          # Deploy a broken version to test rollback
-          echo "Deploying broken version for rollback test..."
-          kubectl set image deployment/web-app \
-            web-app=cloudtolocalllm/cloudtolocalllm-web:broken-test \
-            -n ${{ env.NAMESPACE }} \
-            --record \
-            --dry-run=client -o yaml | kubectl apply -f -
-
-          # Wait briefly for deployment to start
-          sleep 10
-
-          # This will fail because the image doesn't exist, triggering rollback
-          echo "Waiting for deployment (will fail)..."
-          kubectl rollout status deployment/web-app -n ${{ env.NAMESPACE }} --timeout=2m || true
-
-          echo "Rollback test completed"
-
-      - name: Rollback on failure
-        if: failure()
-        run: |
-          echo "Deployment failed. Rolling back to previous version..."
-
-          # Set namespace if not already set
-          NAMESPACE="${{ env.NAMESPACE }}"
-          if [ -z "$NAMESPACE" ]; then
-            NAMESPACE="cloudtolocalllm"
-          fi
-
-          # Store current revision before rollback
-          WEB_REVISION=$(kubectl rollout history deployment/web -n "$NAMESPACE" 2>/dev/null | tail -2 | head -1 | awk '{print $1}' || echo "N/A")
-          API_REVISION=$(kubectl rollout history deployment/api-backend -n "$NAMESPACE" 2>/dev/null | tail -2 | head -1 | awk '{print $1}' || echo "N/A")
-
-          echo "Current web revision: $WEB_REVISION"
-          echo "Current api-backend revision: $API_REVISION"
-
-          # Perform rollback
-          echo "Rolling back web deployment..."
-          kubectl rollout undo deployment/web -n "$NAMESPACE" || echo "Web rollback skipped"
-
-          echo "Rolling back api-backend deployment..."
-          kubectl rollout undo deployment/api-backend -n "$NAMESPACE" || echo "API backend rollback skipped"
-
-          # Wait for rollback to complete
-          echo "Waiting for web rollback to complete..."
-          kubectl rollout status deployment/web -n "$NAMESPACE" --timeout=5m || echo "Web rollback status check skipped"
-
-          echo "Waiting for api-backend rollback to complete..."
-          kubectl rollout status deployment/api-backend -n "$NAMESPACE" --timeout=5m || echo "API backend rollback status check skipped"
-
-          # Verify application is accessible after rollback
-          echo "Verifying application accessibility after rollback..."
-          LB_ENDPOINT=$(kubectl get svc web -n "$NAMESPACE" -o jsonpath='{.status.loadBalancer.ingress[0].hostname}' 2>/dev/null || echo "")
-
-          if [ -z "$LB_ENDPOINT" ]; then
-            LB_ENDPOINT=$(kubectl get svc web -n "$NAMESPACE" -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null || echo "")
-          fi
-
-          for i in {1..10}; do
-            if curl -f -s "http://$LB_ENDPOINT/health" > /dev/null 2>&1; then
-              echo "✓ Application is accessible after rollback"
-              break
-            fi
-            echo "Attempt $i/10: Waiting for application to be ready after rollback..."
-            sleep 5
-          done
-
-          # Log rollback details
-          echo ""
-          echo "Rollback Summary:"
-          echo "- Environment: $NAMESPACE"
-          echo "- Deployment: ${{ env.EKS_CLUSTER_NAME }}"
-          echo "- Namespace: $NAMESPACE"
-          echo "- Rollback Timestamp: $(date -u +'%Y-%m-%dT%H:%M:%SZ')"
-          echo "- Commit: ${{ github.sha }}"
-          echo "- Branch: ${{ github.ref }}"
-
-          # Get current pod status
-          echo ""
-          echo "Pod Status After Rollback:"
-          kubectl get pods -n "$NAMESPACE" -o wide 2>/dev/null || echo "Unable to retrieve pod status"
-
-          echo ""
-          echo "✓ Rollback completed successfully"
-          exit 1
