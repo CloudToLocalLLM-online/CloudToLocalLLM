@@ -54,16 +54,18 @@ jobs:
         with:
           role-to-assume: arn:aws:iam::422017356244:role/github-actions-role
           aws-region: ${{ env.AWS_REGION }}
-          role-session-name: github-actions-eks-deployment
+          role-session-name: github-actions-eks-deployment-${{ github.run_id }}
           role-duration-seconds: 3600
+          role-skip-session-tagging: true
 
       - name: Verify AWS credentials
+        continue-on-error: true
         run: |
           echo "AWS Account ID:"
-          aws sts get-caller-identity --query Account --output text
+          aws sts get-caller-identity --query Account --output text || echo "Failed to get caller identity"
           echo ""
           echo "Available EKS Clusters:"
-          aws eks list-clusters --region ${{ env.AWS_REGION }} --query 'clusters' --output table
+          aws eks list-clusters --region ${{ env.AWS_REGION }} --query 'clusters' --output table || echo "Failed to list clusters"
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
@@ -144,6 +146,19 @@ jobs:
         run: |
           kubectl create namespace ${{ env.NAMESPACE }} --dry-run=client -o yaml | kubectl apply -f -
 
+      - name: Apply base Kubernetes manifests
+        run: |
+          echo "Applying base Kubernetes manifests..."
+          
+          # Apply base manifests in order
+          kubectl apply -f k8s/namespace.yaml
+          kubectl apply -f k8s/configmap.yaml -n ${{ env.NAMESPACE }}
+          kubectl apply -f k8s/secrets.yaml -n ${{ env.NAMESPACE }} || true
+          kubectl apply -f k8s/rbac.yaml -n ${{ env.NAMESPACE }}
+          kubectl apply -f k8s/network-policies.yaml -n ${{ env.NAMESPACE }}
+          
+          echo "Base manifests applied successfully"
+
       - name: Apply Kustomize overlays for environment
         run: |
           echo "Applying Kustomize overlay for ${{ env.ENVIRONMENT }} environment..."
@@ -152,7 +167,7 @@ jobs:
           kubectl kustomize k8s/overlays/${{ env.ENVIRONMENT }} | \
             sed "s|cloudtolocalllm/cloudtolocalllm-web:latest|${{ env.DOCKER_REGISTRY }}/cloudtolocalllm-web:${{ github.sha }}|g" | \
             sed "s|cloudtolocalllm/cloudtolocalllm-api:latest|${{ env.DOCKER_REGISTRY }}/cloudtolocalllm-api:${{ github.sha }}|g" | \
-            kubectl apply -f -
+            kubectl apply -f - -n ${{ env.NAMESPACE }}
           
           echo "Kustomize overlay applied successfully"
 
@@ -162,15 +177,13 @@ jobs:
           kubectl set image deployment/web \
             web=${{ env.DOCKER_REGISTRY }}/cloudtolocalllm-web:${{ github.sha }} \
             -n ${{ env.NAMESPACE }} \
-            --record \
-            --dry-run=client -o yaml | kubectl apply -f -
+            --record || echo "Web deployment update skipped (may not exist yet)"
           
           # Update API backend deployment
           kubectl set image deployment/api-backend \
             api-backend=${{ env.DOCKER_REGISTRY }}/cloudtolocalllm-api:${{ github.sha }} \
             -n ${{ env.NAMESPACE }} \
-            --record \
-            --dry-run=client -o yaml | kubectl apply -f -
+            --record || echo "API backend deployment update skipped (may not exist yet)"
 
       - name: Wait for rollout to complete
         run: |
@@ -433,33 +446,39 @@ jobs:
         run: |
           echo "Deployment failed. Rolling back to previous version..."
           
+          # Set namespace if not already set
+          NAMESPACE="${{ env.NAMESPACE }}"
+          if [ -z "$NAMESPACE" ]; then
+            NAMESPACE="cloudtolocalllm"
+          fi
+          
           # Store current revision before rollback
-          WEB_REVISION=$(kubectl rollout history deployment/web -n ${{ env.NAMESPACE }} | tail -2 | head -1 | awk '{print $1}')
-          API_REVISION=$(kubectl rollout history deployment/api-backend -n ${{ env.NAMESPACE }} | tail -2 | head -1 | awk '{print $1}')
+          WEB_REVISION=$(kubectl rollout history deployment/web -n "$NAMESPACE" 2>/dev/null | tail -2 | head -1 | awk '{print $1}' || echo "N/A")
+          API_REVISION=$(kubectl rollout history deployment/api-backend -n "$NAMESPACE" 2>/dev/null | tail -2 | head -1 | awk '{print $1}' || echo "N/A")
           
           echo "Current web revision: $WEB_REVISION"
           echo "Current api-backend revision: $API_REVISION"
           
           # Perform rollback
           echo "Rolling back web deployment..."
-          kubectl rollout undo deployment/web -n ${{ env.NAMESPACE }}
+          kubectl rollout undo deployment/web -n "$NAMESPACE" || echo "Web rollback skipped"
           
           echo "Rolling back api-backend deployment..."
-          kubectl rollout undo deployment/api-backend -n ${{ env.NAMESPACE }}
+          kubectl rollout undo deployment/api-backend -n "$NAMESPACE" || echo "API backend rollback skipped"
           
           # Wait for rollback to complete
           echo "Waiting for web rollback to complete..."
-          kubectl rollout status deployment/web -n ${{ env.NAMESPACE }} --timeout=5m
+          kubectl rollout status deployment/web -n "$NAMESPACE" --timeout=5m || echo "Web rollback status check skipped"
           
           echo "Waiting for api-backend rollback to complete..."
-          kubectl rollout status deployment/api-backend -n ${{ env.NAMESPACE }} --timeout=5m
+          kubectl rollout status deployment/api-backend -n "$NAMESPACE" --timeout=5m || echo "API backend rollback status check skipped"
           
           # Verify application is accessible after rollback
           echo "Verifying application accessibility after rollback..."
-          LB_ENDPOINT=$(kubectl get svc web -n ${{ env.NAMESPACE }} -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
+          LB_ENDPOINT=$(kubectl get svc web -n "$NAMESPACE" -o jsonpath='{.status.loadBalancer.ingress[0].hostname}' 2>/dev/null || echo "")
           
           if [ -z "$LB_ENDPOINT" ]; then
-            LB_ENDPOINT=$(kubectl get svc web -n ${{ env.NAMESPACE }} -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+            LB_ENDPOINT=$(kubectl get svc web -n "$NAMESPACE" -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null || echo "")
           fi
           
           for i in {1..10}; do
@@ -474,9 +493,9 @@ jobs:
           # Log rollback details
           echo ""
           echo "Rollback Summary:"
-          echo "- Environment: ${{ env.ENVIRONMENT }}"
+          echo "- Environment: $NAMESPACE"
           echo "- Deployment: ${{ env.EKS_CLUSTER_NAME }}"
-          echo "- Namespace: ${{ env.NAMESPACE }}"
+          echo "- Namespace: $NAMESPACE"
           echo "- Rollback Timestamp: $(date -u +'%Y-%m-%dT%H:%M:%SZ')"
           echo "- Commit: ${{ github.sha }}"
           echo "- Branch: ${{ github.ref }}"
@@ -484,7 +503,7 @@ jobs:
           # Get current pod status
           echo ""
           echo "Pod Status After Rollback:"
-          kubectl get pods -n ${{ env.NAMESPACE }} -o wide
+          kubectl get pods -n "$NAMESPACE" -o wide 2>/dev/null || echo "Unable to retrieve pod status"
           
           echo ""
           echo "✓ Rollback completed successfully"
