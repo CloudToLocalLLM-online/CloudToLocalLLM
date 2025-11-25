@@ -233,6 +233,18 @@ jobs:
           cache-from: type=registry,ref=${{ env.DOCKER_REGISTRY }}/streaming-proxy:latest
           cache-to: type=inline
 
+      - name: Build and push PostgreSQL image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./services/postgres/Dockerfile
+          push: true
+          tags: |
+            ${{ env.DOCKER_REGISTRY }}/postgres:${{ github.sha }}
+            ${{ env.DOCKER_REGISTRY }}/postgres:latest
+          cache-from: type=registry,ref=${{ env.DOCKER_REGISTRY }}/postgres:latest
+          cache-to: type=inline
+
   deploy:
     name: Deploy to EKS
     needs: build_images

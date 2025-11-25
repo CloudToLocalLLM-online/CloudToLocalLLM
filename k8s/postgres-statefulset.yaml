@@ -37,7 +37,7 @@ spec:
         environment: development
     spec:
       securityContext:
-        fsGroup: 999
+        fsGroup: 1000
       affinity:
         nodeAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:
@@ -50,7 +50,7 @@ spec:
                       - t3.medium
       containers:
         - name: postgres
-          image: cloudtolocalllm/cloudtolocalllm-postgres:latest
+          image: cloudtolocalllm/postgres:latest
           imagePullPolicy: Always
           ports:
             - containerPort: 5432
