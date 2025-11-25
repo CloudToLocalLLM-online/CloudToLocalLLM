@@ -1,8 +1,10 @@
 # Base Builder Image for CloudToLocalLLM
-# Contains Flutter SDK, Node.js, and build tools.
-# Based on Fedora 41 (Stable).
+# Inherits from our custom base (Fedora + cloudtolocalllm user)
 
-FROM fedora:41
+FROM cloudtolocalllm/base:latest
+
+# Switch to root for installation
+USER root
 
 # Install Base Tools
 RUN dnf -y update && \
@@ -17,17 +19,15 @@ RUN dnf -y install java-17-openjdk-devel && \
 RUN dnf -y install nodejs npm && \
     dnf clean all
 
-# Create non-root user 'builder' (UID 1000)
-RUN useradd -u 1000 -m -s /bin/bash builder
-
 # Install Flutter SDK
-# We install it to /opt/flutter and give ownership to 'builder'
+# We install it to /opt/flutter and give ownership to 'cloudtolocalllm'
 ENV FLUTTER_ROOT=/opt/flutter
 RUN mkdir -p $FLUTTER_ROOT && \
-    chown -R builder:builder $FLUTTER_ROOT
+    chown -R cloudtolocalllm:cloudtolocalllm $FLUTTER_ROOT
 
-USER builder
-WORKDIR /home/builder
+# Switch back to non-root user
+USER cloudtolocalllm
+WORKDIR /home/cloudtolocalllm
 
 # Download and extract Flutter SDK
 # Using stable channel

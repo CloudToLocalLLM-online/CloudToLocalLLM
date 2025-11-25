@@ -2,22 +2,24 @@
 # Runtime Dockerfile for CloudToLocalLLM Streaming Proxy
 # Uses artifacts from the Universal Builder
 # ============================================================================
-# ============================================================================
-# Runtime Dockerfile for CloudToLocalLLM Streaming Proxy
-# Uses artifacts from the Universal Builder
-# ============================================================================
 
-# Use Debian Slim to match the Builder
-FROM node:20-slim
+# Use custom Fedora base (cloudtolocalllm/base:latest)
+FROM cloudtolocalllm/base:latest
+
+# Switch to root to install Node.js
+USER root
+RUN dnf -y install nodejs npm && \
+    dnf clean all
 
 WORKDIR /app
 
 # Copy artifacts (node_modules + code) from local filesystem
-# The workflow downloads artifacts to services/streaming-proxy
-COPY services/streaming-proxy/node_modules ./node_modules
-COPY services/streaming-proxy/ .
+# Ensure ownership by cloudtolocalllm
+COPY --chown=cloudtolocalllm:cloudtolocalllm services/streaming-proxy/node_modules ./node_modules
+COPY --chown=cloudtolocalllm:cloudtolocalllm services/streaming-proxy/ .
 
-USER node
+# Switch to non-root user
+USER cloudtolocalllm
 
 EXPOSE 8081
 CMD [ "node", "dist/main.js" ]

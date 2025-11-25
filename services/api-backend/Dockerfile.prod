@@ -3,31 +3,28 @@
 # Uses artifacts from the Universal Builder
 # ============================================================================
 
-# Use Debian Slim to match the Builder (Debian-based) for native module compatibility
-FROM node:20-slim
+# Use custom Fedora base (cloudtolocalllm/base:latest)
+FROM cloudtolocalllm/base:latest
 
-# Install curl for health checks and python3/build-essential for any runtime rebuilds if absolutely needed (though we try to avoid it)
-RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
-
-# Create non-root user (node image comes with 'node' user, usually 1000)
-# We'll use the existing 'node' user
-
-WORKDIR /api
+# Switch to root to install Node.js
+USER root
+RUN dnf -y install nodejs npm && \
+    dnf clean all
 
 # Create isolated data directories
+WORKDIR /api
 RUN mkdir -p /api/data /api/logs && \
-    chown -R node:node /api
+    chown -R cloudtolocalllm:cloudtolocalllm /api
 
 # Copy artifacts (node_modules + code) from local filesystem
-# The workflow downloads artifacts to services/api-backend
-COPY services/api-backend/node_modules ./node_modules
-COPY services/api-backend/ .
-
-# Ensure data directories have correct ownership
-RUN chown -R node:node /api/data /api/logs
+# Ensure ownership by cloudtolocalllm
+COPY --chown=cloudtolocalllm:cloudtolocalllm services/api-backend/node_modules ./node_modules
+COPY --chown=cloudtolocalllm:cloudtolocalllm services/api-backend/ .
 
 # Switch to non-root user
-USER node
+USER cloudtolocalllm
+
+# Set environment variables
 ENV LOG_DIR=/api/logs
 ENV DB_PATH=/api/data/cloudtolocalllm.db
 ENV SSH_PORT=2222

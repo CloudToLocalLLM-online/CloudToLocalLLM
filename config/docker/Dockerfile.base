@@ -1,0 +1,16 @@
+# Base Image for CloudToLocalLLM
+# Based on Fedora 43 (Rawhide/Future) as requested.
+# If 43 is not found, we might need to fallback, but we try 43 first.
+
+FROM fedora:rawhide
+
+# Create custom user 'cloudtolocalllm' (UID 1000)
+# We do this first to ensure it exists in all derived images
+RUN useradd -u 1000 -m -s /bin/bash cloudtolocalllm
+
+# Set up working directory
+WORKDIR /app
+RUN chown cloudtolocalllm:cloudtolocalllm /app
+
+# Default to non-root user
+USER cloudtolocalllm
