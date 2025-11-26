@@ -7,7 +7,9 @@ FROM cloudtolocalllm/base:latest
 # Switch to root to install Nginx
 USER root
 RUN dnf -y install nginx && \
-    dnf clean all
+    dnf clean all && \
+    sed -i '/^user/d' /etc/nginx/nginx.conf && \
+    sed -i '/^pid/d' /etc/nginx/nginx.conf
 
 # Configure Nginx
 COPY web/nginx.conf /etc/nginx/conf.d/default.conf
