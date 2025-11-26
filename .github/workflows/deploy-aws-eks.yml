@@ -564,15 +564,29 @@ jobs:
         run: |
           echo "Setting up Cloudflare DNS integration..."
 
-          # Get NLB endpoint from Ingress
-          NLB_ENDPOINT=$(kubectl get ingress -n ${{ env.NAMESPACE }} -o jsonpath='{.items[0].status.loadBalancer.ingress[0].hostname}')
-
-          if [ -z "$NLB_ENDPOINT" ]; then
+          echo "Waiting for Ingress Load Balancer endpoint..."
+          NLB_ENDPOINT=""
+          for i in {1..60}; do
+            NLB_ENDPOINT=$(kubectl get ingress -n ${{ env.NAMESPACE }} -o jsonpath='{.items[0].status.loadBalancer.ingress[0].hostname}')
+            if [ -n "$NLB_ENDPOINT" ]; then
+              echo "Found hostname: $NLB_ENDPOINT"
+              break
+            fi
+            
             NLB_ENDPOINT=$(kubectl get ingress -n ${{ env.NAMESPACE }} -o jsonpath='{.items[0].status.loadBalancer.ingress[0].ip}')
-          fi
+            if [ -n "$NLB_ENDPOINT" ]; then
+              echo "Found IP: $NLB_ENDPOINT"
+              break
+            fi
+            
+            echo "Attempt $i/60: Ingress endpoint not ready yet..."
+            sleep 10
+          done
 
           if [ -z "$NLB_ENDPOINT" ]; then
-             echo "Error: Could not retrieve Ingress Load Balancer endpoint."
+             echo "Error: Could not retrieve Ingress Load Balancer endpoint after waiting."
+             echo "Debug: Ingress status:"
+             kubectl get ingress -n ${{ env.NAMESPACE }} -o yaml
              exit 1
           fi
 
