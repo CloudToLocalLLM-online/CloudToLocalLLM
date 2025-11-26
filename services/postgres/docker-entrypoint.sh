@@ -27,7 +27,7 @@ PID=$!
 # Wait for PostgreSQL to start
 echo "Waiting for PostgreSQL to be ready..."
 export PGPASSWORD="$POSTGRES_PASSWORD"
-until pg_isready -U "$POSTGRES_USER" -d "$POSTGRES_DB"; do
+until pg_isready -U "$POSTGRES_USER" -d "$POSTGRES_DB" -h 127.0.0.1; do
     echo "Waiting for PostgreSQL to start..."
     sleep 1
 done
