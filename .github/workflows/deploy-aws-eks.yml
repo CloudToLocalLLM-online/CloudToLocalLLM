@@ -361,10 +361,30 @@ jobs:
         run: |
           echo "Applying base Kubernetes manifests..."
 
+          # Create secrets dynamically from GitHub Secrets
+          # We use a template or direct creation to ensure secrets are not logged
+          kubectl create secret generic cloudtolocalllm-secrets \
+            --namespace ${{ env.NAMESPACE }} \
+            --from-literal=postgres-user=cloud_admin \
+            --from-literal=postgres-password='${{ secrets.POSTGRES_PASSWORD }}' \
+            --from-literal=jwt-secret='${{ secrets.JWT_SECRET }}' \
+            --from-literal=auth0-domain='dev-v2f2p008x3dr74ww.us.auth0.com' \
+            --from-literal=auth0-audience='https://api.cloudtolocalllm.online' \
+            --from-literal=auth0-client-id='FuXPnevXpp311CdYHGsbNZe9t3D8Ts7A' \
+            --from-literal=auth0-client-secret='${{ secrets.AUTH0_CLIENT_SECRET }}' \
+            --from-literal=stripe-test-secret-key='${{ secrets.STRIPE_TEST_SECRET_KEY }}' \
+            --from-literal=stripe-test-publishable-key='${{ secrets.STRIPE_TEST_PUBLISHABLE_KEY }}' \
+            --from-literal=stripe-test-webhook-secret='${{ secrets.STRIPE_TEST_WEBHOOK_SECRET }}' \
+            --from-literal=stripe-live-secret-key='${{ secrets.STRIPE_LIVE_SECRET_KEY }}' \
+            --from-literal=stripe-live-publishable-key='${{ secrets.STRIPE_LIVE_PUBLISHABLE_KEY }}' \
+            --from-literal=stripe-live-webhook-secret='${{ secrets.STRIPE_LIVE_WEBHOOK_SECRET }}' \
+            --from-literal=sentry-dsn='${{ secrets.SENTRY_DSN }}' \
+            --dry-run=client -o yaml | kubectl apply -f -
+
           # Apply base manifests in order
           kubectl apply -f k8s/namespace.yaml
           kubectl apply -f k8s/configmap.yaml -n ${{ env.NAMESPACE }}
-          kubectl apply -f k8s/secrets.yaml -n ${{ env.NAMESPACE }} || true
+          # secrets.yaml is no longer applied from file
           kubectl apply -f k8s/rbac.yaml -n ${{ env.NAMESPACE }}
           kubectl apply -f k8s/network-policies.yaml -n ${{ env.NAMESPACE }}
 
