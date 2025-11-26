@@ -86,8 +86,6 @@
     "npmlog": "npm:proc-log@^5.0.0",
     "gauge": "npm:are-we-there-yet@^5.0.0",
     "are-we-there-yet": "^5.0.0",
-    "lodash.get": "^4.4.2",
-    "lodash.isequal": "^4.5.0",
     "google-p12-pem": "npm:gcp-metadata@^6.1.0"
   },
   "keywords": [
