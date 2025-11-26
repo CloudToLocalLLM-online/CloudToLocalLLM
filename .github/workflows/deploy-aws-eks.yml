@@ -360,9 +360,10 @@ jobs:
         run: |
           kubectl create namespace ${{ env.NAMESPACE }} --dry-run=client -o yaml | kubectl apply -f -
 
-      - name: Clean up existing Postgres StatefulSet
+      - name: Clean up existing deployments
         run: |
-          echo "Deleting Postgres StatefulSet to allow immutable field updates..."
+          echo "Deleting existing deployments to allow immutable field updates..."
+          kubectl delete deployment web api-backend streaming-proxy -n ${{ env.NAMESPACE }} --ignore-not-found=true
           kubectl delete statefulset postgres -n ${{ env.NAMESPACE }} --ignore-not-found=true
 
       - name: Apply base Kubernetes manifests
