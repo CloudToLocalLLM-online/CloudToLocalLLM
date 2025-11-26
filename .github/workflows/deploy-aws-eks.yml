@@ -453,11 +453,21 @@ jobs:
           echo "Applying Kustomize overlay for ${{ env.ENVIRONMENT }} environment..."
 
           # Apply the environment-specific kustomization
+          # Apply the environment-specific kustomization
+          # Generate full manifest
           kustomize build --load-restrictor LoadRestrictionsNone k8s/overlays/${{ env.ENVIRONMENT }} | \
             sed "s|cloudtolocalllm/web:latest|${{ env.DOCKER_REGISTRY }}/web:${{ github.sha }}|g" | \
             sed "s|cloudtolocalllm/api-backend:latest|${{ env.DOCKER_REGISTRY }}/api-backend:${{ github.sha }}|g" | \
-            sed "s|cloudtolocalllm/streaming-proxy:latest|${{ env.DOCKER_REGISTRY }}/streaming-proxy:${{ github.sha }}|g" | \
-            kubectl apply -f - -n ${{ env.NAMESPACE }}
+            sed "s|cloudtolocalllm/streaming-proxy:latest|${{ env.DOCKER_REGISTRY }}/streaming-proxy:${{ github.sha }}|g" > full-manifest.yaml
+
+          echo "Deploying Postgres first..."
+          kubectl apply -f full-manifest.yaml -l app=postgres -n ${{ env.NAMESPACE }}
+
+          echo "Waiting for Postgres to be ready..."
+          kubectl rollout status statefulset/postgres -n ${{ env.NAMESPACE }} --timeout=5m
+
+          echo "Deploying remaining services..."
+          kubectl apply -f full-manifest.yaml -n ${{ env.NAMESPACE }}
 
           echo "Kustomize overlay applied successfully"
 
