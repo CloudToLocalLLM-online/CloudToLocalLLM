@@ -21,7 +21,7 @@ fi
 
 # Start PostgreSQL in background
 echo "Starting PostgreSQL..."
-postgres -D "$PGDATA" &
+postgres -D "$PGDATA" -c logging_collector=off &
 PID=$!
 
 # Wait for PostgreSQL to start
