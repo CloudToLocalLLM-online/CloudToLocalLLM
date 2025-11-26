@@ -454,9 +454,9 @@ jobs:
 
           # Apply the environment-specific kustomization
           kustomize build --load-restrictor LoadRestrictionsNone k8s/overlays/${{ env.ENVIRONMENT }} | \
-            sed "s|cloudtolocalllm/cloudtolocalllm-web:latest|${{ env.DOCKER_REGISTRY }}/cloudtolocalllm-web:${{ github.sha }}|g" | \
-            sed "s|cloudtolocalllm/cloudtolocalllm-api:latest|${{ env.DOCKER_REGISTRY }}/cloudtolocalllm-api:${{ github.sha }}|g" | \
-            sed "s|cloudtolocalllm/cloudtolocalllm-streaming:latest|${{ env.DOCKER_REGISTRY }}/cloudtolocalllm-streaming:${{ github.sha }}|g" | \
+            sed "s|cloudtolocalllm/web:latest|${{ env.DOCKER_REGISTRY }}/web:${{ github.sha }}|g" | \
+            sed "s|cloudtolocalllm/api-backend:latest|${{ env.DOCKER_REGISTRY }}/api-backend:${{ github.sha }}|g" | \
+            sed "s|cloudtolocalllm/streaming-proxy:latest|${{ env.DOCKER_REGISTRY }}/streaming-proxy:${{ github.sha }}|g" | \
             kubectl apply -f - -n ${{ env.NAMESPACE }}
 
           echo "Kustomize overlay applied successfully"
@@ -465,19 +465,19 @@ jobs:
         run: |
           # Update web app deployment
           kubectl set image deployment/web \
-            web=${{ env.DOCKER_REGISTRY }}/cloudtolocalllm-web:${{ github.sha }} \
+            web=${{ env.DOCKER_REGISTRY }}/web:${{ github.sha }} \
             -n ${{ env.NAMESPACE }} \
             --record || echo "Web deployment update skipped (may not exist yet)"
 
           # Update API backend deployment
           kubectl set image deployment/api-backend \
-            api-backend=${{ env.DOCKER_REGISTRY }}/cloudtolocalllm-api:${{ github.sha }} \
+            api-backend=${{ env.DOCKER_REGISTRY }}/api-backend:${{ github.sha }} \
             -n ${{ env.NAMESPACE }} \
             --record || echo "API backend deployment update skipped (may not exist yet)"
 
           # Update Streaming Proxy deployment
           kubectl set image deployment/streaming-proxy \
-            streaming-proxy=${{ env.DOCKER_REGISTRY }}/cloudtolocalllm-streaming:${{ github.sha }} \
+            streaming-proxy=${{ env.DOCKER_REGISTRY }}/streaming-proxy:${{ github.sha }} \
             -n ${{ env.NAMESPACE }} \
             --record || echo "Streaming proxy deployment update skipped (may not exist yet)"
 
@@ -703,8 +703,8 @@ jobs:
           echo "- Cluster: ${{ env.EKS_CLUSTER_NAME }}"
           echo "- Region: ${{ env.AWS_REGION }}"
           echo "- Namespace: ${{ env.NAMESPACE }}"
-          echo "- Web Image: ${{ env.DOCKER_REGISTRY }}/cloudtolocalllm-web:${{ github.sha }}"
-          echo "- API Backend Image: ${{ env.DOCKER_REGISTRY }}/cloudtolocalllm-api:${{ github.sha }}"
-          echo "- Streaming Proxy Image: ${{ env.DOCKER_REGISTRY }}/cloudtolocalllm-streaming:${{ github.sha }}"
+          echo "- Web Image: ${{ env.DOCKER_REGISTRY }}/web:${{ github.sha }}"
+          echo "- API Backend Image: ${{ env.DOCKER_REGISTRY }}/api-backend:${{ github.sha }}"
+          echo "- Streaming Proxy Image: ${{ env.DOCKER_REGISTRY }}/streaming-proxy:${{ github.sha }}"
           echo "- Commit: ${{ github.sha }}"
           echo "- Branch: ${{ github.ref }}"
