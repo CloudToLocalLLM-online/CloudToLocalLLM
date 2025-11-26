@@ -19,24 +19,6 @@ playwright-report/
 # Documentation
 docs/
 *.md
-!README.md
-
-# Docker
-Dockerfile*
-docker-compose*
-
-# Kubernetes
-k8s/
-
-# Scripts (keep only necessary ones)
-scripts/
-!scripts/setup-web.sh
-
-# Keep only web build related files
-android/
-ios/
-linux/
-macos/
 windows/
 test/
 tests/
