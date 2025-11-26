@@ -280,7 +280,21 @@ jobs:
             docker logs test-postgres
             docker rm test-postgres
             exit 1
+            docker rm test-postgres
+            exit 1
           fi
+
+      - name: Build and push Deployer image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./config/docker/Dockerfile.deployer
+          push: true
+          tags: |
+            ${{ env.DOCKER_REGISTRY }}/deployer:${{ github.sha }}
+            ${{ env.DOCKER_REGISTRY }}/deployer:latest
+          cache-from: type=registry,ref=${{ env.DOCKER_REGISTRY }}/deployer:latest
+          cache-to: type=inline
 
   deploy:
     name: Deploy to EKS
@@ -443,64 +457,42 @@ jobs:
 
           echo "Base manifests applied successfully"
 
-      - name: Install Kustomize
+      - name: Apply Deployer RBAC
         run: |
-          curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh" | bash
-          sudo mv kustomize /usr/local/bin/
+          kubectl apply -f k8s/deployer-rbac.yaml
 
-      - name: Apply Kustomize overlays for environment
+      - name: Run In-Cluster Deployment Job
+        env:
+          WEB_IMAGE: ${{ env.DOCKER_REGISTRY }}/web:${{ github.sha }}
+          API_IMAGE: ${{ env.DOCKER_REGISTRY }}/api-backend:${{ github.sha }}
+          STREAMING_IMAGE: ${{ env.DOCKER_REGISTRY }}/streaming-proxy:${{ github.sha }}
+          POSTGRES_IMAGE: ${{ env.DOCKER_REGISTRY }}/postgres:${{ github.sha }}
         run: |
-          echo "Applying Kustomize overlay for ${{ env.ENVIRONMENT }} environment..."
+          echo "Preparing deployment job..."
 
-          # Apply the environment-specific kustomization
-          # Apply the environment-specific kustomization
-          # Generate full manifest
-          kustomize build --load-restrictor LoadRestrictionsNone k8s/overlays/${{ env.ENVIRONMENT }} | \
-            sed "s|cloudtolocalllm/web:latest|${{ env.DOCKER_REGISTRY }}/web:${{ github.sha }}|g" | \
-            sed "s|cloudtolocalllm/api-backend:latest|${{ env.DOCKER_REGISTRY }}/api-backend:${{ github.sha }}|g" | \
-            sed "s|cloudtolocalllm/streaming-proxy:latest|${{ env.DOCKER_REGISTRY }}/streaming-proxy:${{ github.sha }}|g" > full-manifest.yaml
+          # Delete previous job if exists
+          kubectl delete job deploy-job -n ${{ env.NAMESPACE }} --ignore-not-found=true
 
-          echo "Deploying Postgres first..."
-          kubectl apply -f full-manifest.yaml -l app=postgres -n ${{ env.NAMESPACE }}
+          # Substitute env vars in job template
+          # We use envsubst to replace ${VAR} with actual values
+          envsubst < k8s/deployer-job.yaml | sed "s|cloudtolocalllm/deployer:latest|${{ env.DOCKER_REGISTRY }}/deployer:${{ github.sha }}|g" > deploy-job-final.yaml
 
-          echo "Waiting for Postgres to be ready..."
-          kubectl rollout status statefulset/postgres -n ${{ env.NAMESPACE }} --timeout=5m
+          echo "Applying deployment job..."
+          kubectl apply -f deploy-job-final.yaml
 
-          echo "Deploying remaining services..."
-          kubectl apply -f full-manifest.yaml -n ${{ env.NAMESPACE }}
+          echo "Waiting for deployment job to start..."
+          kubectl wait --for=condition=ready pod -l job-name=deploy-job -n ${{ env.NAMESPACE }} --timeout=60s || true
 
-          echo "Kustomize overlay applied successfully"
+          echo "Streaming deployment logs..."
+          # Get the pod name
+          POD_NAME=$(kubectl get pods -l job-name=deploy-job -n ${{ env.NAMESPACE }} -o jsonpath='{.items[0].metadata.name}')
 
-      - name: Update Kubernetes manifests with new image tags
-        run: |
-          # Update web app deployment
-          kubectl set image deployment/web \
-            web=${{ env.DOCKER_REGISTRY }}/web:${{ github.sha }} \
-            -n ${{ env.NAMESPACE }} \
-            --record || echo "Web deployment update skipped (may not exist yet)"
+          # Stream logs and wait for completion
+          kubectl logs -f $POD_NAME -n ${{ env.NAMESPACE }}
 
-          # Update API backend deployment
-          kubectl set image deployment/api-backend \
-            api-backend=${{ env.DOCKER_REGISTRY }}/api-backend:${{ github.sha }} \
-            -n ${{ env.NAMESPACE }} \
-            --record || echo "API backend deployment update skipped (may not exist yet)"
-
-          # Update Streaming Proxy deployment
-          kubectl set image deployment/streaming-proxy \
-            streaming-proxy=${{ env.DOCKER_REGISTRY }}/streaming-proxy:${{ github.sha }} \
-            -n ${{ env.NAMESPACE }} \
-            --record || echo "Streaming proxy deployment update skipped (may not exist yet)"
-
-      - name: Wait for rollout to complete
-        run: |
-          echo "Waiting for web deployment..."
-          kubectl rollout status deployment/web -n ${{ env.NAMESPACE }} --timeout=5m
-
-          echo "Waiting for API backend deployment..."
-          kubectl rollout status deployment/api-backend -n ${{ env.NAMESPACE }} --timeout=5m
-
-          echo "Waiting for Streaming Proxy deployment..."
-          kubectl rollout status deployment/streaming-proxy -n ${{ env.NAMESPACE }} --timeout=5m
+          # Check job exit status
+          echo "Checking job status..."
+          kubectl wait --for=condition=complete job/deploy-job -n ${{ env.NAMESPACE }} --timeout=600s
 
   validation:
     name: Validate Deployment
