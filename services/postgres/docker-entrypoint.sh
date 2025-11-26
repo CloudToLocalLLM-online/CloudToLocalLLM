@@ -27,7 +27,7 @@ PID=$!
 # Wait for PostgreSQL to start
 echo "Waiting for PostgreSQL to be ready..."
 export PGPASSWORD="$POSTGRES_PASSWORD"
-until pg_isready -U "$POSTGRES_USER" -d "$POSTGRES_DB" -h 127.0.0.1; do
+until pg_isready -U "$POSTGRES_USER" -d postgres -h 127.0.0.1; do
     # Check if the background process is still running
     if ! kill -0 $PID 2>/dev/null; then
         echo "PostgreSQL process (PID $PID) died during startup!"
