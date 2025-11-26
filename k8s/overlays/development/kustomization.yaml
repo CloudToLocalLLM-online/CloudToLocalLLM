@@ -34,8 +34,9 @@ patches:
 
 # Common labels for all resources
 labels:
-  environment: development
-  managed-by: kustomize
+  - pairs:
+      environment: development
+      managed-by: kustomize
 
 # Common annotations
 commonAnnotations:

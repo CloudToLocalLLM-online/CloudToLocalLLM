@@ -30,8 +30,9 @@ patches:
 
 # Common labels for all resources
 labels:
-  environment: staging
-  managed-by: kustomize
+  - pairs:
+      environment: staging
+      managed-by: kustomize
 
 # Common annotations
 commonAnnotations:
