@@ -269,7 +269,7 @@ jobs:
         run: |
           echo "Verifying Postgres container startup..."
           # Postgres needs a password to start
-          docker run -d --name test-postgres -e POSTGRES_PASSWORD=testpassword ${{ env.DOCKER_REGISTRY }}/postgres:${{ github.sha }}
+          docker run -d --name test-postgres -e POSTGRES_PASSWORD=testpassword -e POSTGRES_USER=cloud_admin ${{ env.DOCKER_REGISTRY }}/postgres:${{ github.sha }}
           sleep 10
           if [ "$(docker inspect -f '{{.State.Running}}' test-postgres)" = "true" ]; then
             echo "Postgres container is running."
