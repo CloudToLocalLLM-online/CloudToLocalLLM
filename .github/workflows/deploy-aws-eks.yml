@@ -269,11 +269,58 @@ jobs:
           role-session-name: github-actions-eks-deployment-${{ github.run_id }}
           role-duration-seconds: 3600
 
-      - name: Update kubeconfig
+      - name: Set kubectl credentials without kubeconfig
+        id: set-kubectl
         run: |
-          aws eks update-kubeconfig \
-            --name ${{ env.EKS_CLUSTER_NAME }} \
-            --region ${{ env.AWS_REGION }}
+          # Get cluster endpoint and CA data
+          CLUSTER_INFO=$(aws eks describe-cluster --name ${{ env.EKS_CLUSTER_NAME }} --region ${{ env.AWS_REGION }} --query "cluster.{endpoint: endpoint, certificateAuthorityData: certificateAuthority.data}" --output json)
+          echo "KUBE_ENDPOINT=$(echo $CLUSTER_INFO | jq -r .endpoint)" >> $GITHUB_ENV
+          echo "KUBE_CA_DATA=$(echo $CLUSTER_INFO | jq -r .certificateAuthorityData)" >> $GITHUB_ENV
+
+          # Get authentication token
+          KUBE_TOKEN=$(aws eks get-token --cluster-name ${{ env.EKS_CLUSTER_NAME }} --region ${{ env.AWS_REGION }} --query "status.token" --output text)
+          echo "KUBE_TOKEN=$KUBE_TOKEN" >> $GITHUB_ENV
+
+          # Build a temporary kubeconfig file
+          cat <<EOF > /tmp/kubeconfig
+          apiVersion: v1
+          kind: Config
+          clusters:
+          - name: eks-cluster
+            cluster:
+              server: $KUBE_ENDPOINT
+              certificate-authority-data: $KUBE_CA_DATA
+          contexts:
+          - name: eks-context
+            context:
+              cluster: eks-cluster
+              user: eks-user
+          current-context: eks-context
+          users:
+          - name: eks-user
+            user:
+              token: $KUBE_TOKEN
+          EOF
+          export KUBECONFIG=/tmp/kubeconfig
+          echo "KUBECONFIG=/tmp/kubeconfig" >> $GITHUB_ENV
+
+      - name: Determine environment and namespace
+        run: |
+          # Determine environment from workflow input or default to production
+          ENVIRONMENT="${{ github.event.inputs.environment }}"
+          if [ -z "$ENVIRONMENT" ]; then
+            ENVIRONMENT="production"
+          fi
+          echo "ENVIRONMENT=$ENVIRONMENT" >> $GITHUB_ENV
+
+          # Set namespace based on environment
+          case $ENVIRONMENT in
+            development) NAMESPACE="cloudtolocalllm-dev" ;;
+            staging)     NAMESPACE="cloudtolocalllm-staging" ;;
+            production)  NAMESPACE="cloudtolocalllm" ;;
+            *) echo "Invalid environment: $ENVIRONMENT"; exit 1 ;;
+          esac
+          echo "NAMESPACE=$NAMESPACE" >> $GITHUB_ENV
 
       - name: Determine environment and namespace
         run: |
