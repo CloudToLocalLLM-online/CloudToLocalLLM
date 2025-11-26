@@ -557,52 +557,6 @@ jobs:
           echo "Checking ingress status..."
           kubectl get ingress -n ${{ env.NAMESPACE }}
 
-      - name: Get load balancer endpoint
-        run: |
-          echo "Load Balancer Endpoint:"
-          kubectl get svc -n ${{ env.NAMESPACE }} -o wide
-
-      - name: Verify application accessibility
-        run: |
-          # Get the load balancer IP/hostname
-          LB_ENDPOINT=$(kubectl get svc web -n ${{ env.NAMESPACE }} -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
-
-          if [ -z "$LB_ENDPOINT" ]; then
-            LB_ENDPOINT=$(kubectl get svc web -n ${{ env.NAMESPACE }} -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
-          fi
-
-          echo "Load Balancer Endpoint: $LB_ENDPOINT"
-
-          # Wait for endpoint to be ready
-          for i in {1..30}; do
-            if curl -f -s "http://$LB_ENDPOINT/health" > /dev/null 2>&1; then
-              echo "✓ Application is accessible"
-              exit 0
-            fi
-            echo "Attempt $i/30: Waiting for application to be ready..."
-            sleep 10
-          done
-
-          echo "✗ Application did not become accessible within timeout"
-          exit 1
-
-      - name: Track deployment history
-        run: |
-          echo "Recording deployment history..."
-
-          # Get deployment revisions
-          echo ""
-          echo "Web Deployment History:"
-          kubectl rollout history deployment/web -n ${{ env.NAMESPACE }}
-
-          echo ""
-          echo "API Backend Deployment History:"
-          kubectl rollout history deployment/api-backend -n ${{ env.NAMESPACE }}
-
-          echo ""
-          echo "Streaming Proxy Deployment History:"
-          kubectl rollout history deployment/streaming-proxy -n ${{ env.NAMESPACE }}
-
       - name: Setup Cloudflare DNS Integration
         if: env.ENVIRONMENT == 'production'
         env:
@@ -610,11 +564,16 @@ jobs:
         run: |
           echo "Setting up Cloudflare DNS integration..."
 
-          # Get NLB endpoint
+          # Get NLB endpoint from Ingress
           NLB_ENDPOINT=$(kubectl get ingress -n ${{ env.NAMESPACE }} -o jsonpath='{.items[0].status.loadBalancer.ingress[0].hostname}')
 
           if [ -z "$NLB_ENDPOINT" ]; then
             NLB_ENDPOINT=$(kubectl get ingress -n ${{ env.NAMESPACE }} -o jsonpath='{.items[0].status.loadBalancer.ingress[0].ip}')
+          fi
+
+          if [ -z "$NLB_ENDPOINT" ]; then
+             echo "Error: Could not retrieve Ingress Load Balancer endpoint."
+             exit 1
           fi
 
           echo "NLB Endpoint: $NLB_ENDPOINT"
@@ -695,6 +654,52 @@ jobs:
             -d '{"purge_everything": true}' > /dev/null
 
           echo "✓ Cloudflare DNS integration complete"
+
+      - name: Verify application accessibility
+        run: |
+          if [ "${{ env.ENVIRONMENT }}" == "production" ]; then
+            TARGET_URL="https://app.cloudtolocalllm.online/health"
+            echo "Verifying production endpoint: $TARGET_URL"
+          else
+            # For non-production, try to get Ingress endpoint
+             NLB_ENDPOINT=$(kubectl get ingress -n ${{ env.NAMESPACE }} -o jsonpath='{.items[0].status.loadBalancer.ingress[0].hostname}')
+             if [ -z "$NLB_ENDPOINT" ]; then
+                NLB_ENDPOINT=$(kubectl get ingress -n ${{ env.NAMESPACE }} -o jsonpath='{.items[0].status.loadBalancer.ingress[0].ip}')
+             fi
+             # We use http here as certs won't match
+             TARGET_URL="http://$NLB_ENDPOINT/health"
+             echo "Verifying non-production endpoint: $TARGET_URL"
+          fi
+
+          # Wait for endpoint to be ready
+          for i in {1..30}; do
+            if curl -f -s "$TARGET_URL" > /dev/null 2>&1; then
+              echo "✓ Application is accessible at $TARGET_URL"
+              exit 0
+            fi
+            echo "Attempt $i/30: Waiting for application to be ready..."
+            sleep 10
+          done
+
+          echo "✗ Application did not become accessible within timeout"
+          exit 1
+
+      - name: Track deployment history
+        run: |
+          echo "Recording deployment history..."
+
+          # Get deployment revisions
+          echo ""
+          echo "Web Deployment History:"
+          kubectl rollout history deployment/web -n ${{ env.NAMESPACE }}
+
+          echo ""
+          echo "API Backend Deployment History:"
+          kubectl rollout history deployment/api-backend -n ${{ env.NAMESPACE }}
+
+          echo ""
+          echo "Streaming Proxy Deployment History:"
+          kubectl rollout history deployment/streaming-proxy -n ${{ env.NAMESPACE }}
 
       - name: Deployment successful
         run: |
