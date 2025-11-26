@@ -41,8 +41,6 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
       - name: Check for changes to Dockerfile.base
         uses: dorny/paths-filter@v3
@@ -81,8 +79,6 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
       - name: Check for changes to Dockerfiles
         uses: dorny/paths-filter@v3
