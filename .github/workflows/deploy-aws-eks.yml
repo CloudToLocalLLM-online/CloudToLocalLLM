@@ -360,6 +360,11 @@ jobs:
         run: |
           kubectl create namespace ${{ env.NAMESPACE }} --dry-run=client -o yaml | kubectl apply -f -
 
+      - name: Clean up existing Postgres StatefulSet
+        run: |
+          echo "Deleting Postgres StatefulSet to allow immutable field updates..."
+          kubectl delete statefulset postgres -n ${{ env.NAMESPACE }} --ignore-not-found=true
+
       - name: Apply base Kubernetes manifests
         env:
           POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
