@@ -274,8 +274,11 @@ jobs:
         run: |
           # Get cluster endpoint and CA data
           CLUSTER_INFO=$(aws eks describe-cluster --name ${{ env.EKS_CLUSTER_NAME }} --region ${{ env.AWS_REGION }} --query "cluster.{endpoint: endpoint, certificateAuthorityData: certificateAuthority.data}" --output json)
-          echo "KUBE_ENDPOINT=$(echo $CLUSTER_INFO | jq -r .endpoint)" >> $GITHUB_ENV
-          echo "KUBE_CA_DATA=$(echo $CLUSTER_INFO | jq -r .certificateAuthorityData)" >> $GITHUB_ENV
+          KUBE_ENDPOINT=$(echo $CLUSTER_INFO | jq -r .endpoint)
+          KUBE_CA_DATA=$(echo $CLUSTER_INFO | jq -r .certificateAuthorityData)
+
+          echo "KUBE_ENDPOINT=$KUBE_ENDPOINT" >> $GITHUB_ENV
+          echo "KUBE_CA_DATA=$KUBE_CA_DATA" >> $GITHUB_ENV
 
           # Get authentication token
           KUBE_TOKEN=$(aws eks get-token --cluster-name ${{ env.EKS_CLUSTER_NAME }} --region ${{ env.AWS_REGION }} --query "status.token" --output text)
