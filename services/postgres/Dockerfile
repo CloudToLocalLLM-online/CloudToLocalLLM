@@ -12,9 +12,10 @@ RUN dnf -y install postgresql-server postgresql-contrib && \
     dnf clean all
 
 # Create necessary directories with correct ownership
-RUN mkdir -p /var/lib/postgresql/data && \
-    chown -R cloudtolocalllm:cloudtolocalllm /var/lib/postgresql && \
-    chmod 700 /var/lib/postgresql/data
+RUN mkdir -p /var/lib/postgresql/data /var/run/postgresql && \
+    chown -R cloudtolocalllm:cloudtolocalllm /var/lib/postgresql /var/run/postgresql && \
+    chmod 700 /var/lib/postgresql/data && \
+    chmod 775 /var/run/postgresql
 
 # Copy entrypoint script
 COPY services/postgres/docker-entrypoint.sh /usr/local/bin/
