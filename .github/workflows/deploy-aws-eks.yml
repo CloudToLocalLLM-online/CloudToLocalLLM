@@ -249,6 +249,39 @@ jobs:
           cache-from: type=registry,ref=${{ env.DOCKER_REGISTRY }}/postgres:latest
           cache-to: type=inline
 
+      - name: Verify Web Container Startup
+        run: |
+          echo "Verifying Web container startup..."
+          docker run -d --name test-web ${{ env.DOCKER_REGISTRY }}/web:${{ github.sha }}
+          sleep 5
+          if [ "$(docker inspect -f '{{.State.Running}}' test-web)" = "true" ]; then
+            echo "Web container is running."
+            docker stop test-web
+            docker rm test-web
+          else
+            echo "Web container failed to start."
+            docker logs test-web
+            docker rm test-web
+            exit 1
+          fi
+
+      - name: Verify Postgres Container Startup
+        run: |
+          echo "Verifying Postgres container startup..."
+          # Postgres needs a password to start
+          docker run -d --name test-postgres -e POSTGRES_PASSWORD=testpassword ${{ env.DOCKER_REGISTRY }}/postgres:${{ github.sha }}
+          sleep 10
+          if [ "$(docker inspect -f '{{.State.Running}}' test-postgres)" = "true" ]; then
+            echo "Postgres container is running."
+            docker stop test-postgres
+            docker rm test-postgres
+          else
+            echo "Postgres container failed to start."
+            docker logs test-postgres
+            docker rm test-postgres
+            exit 1
+          fi
+
   deploy:
     name: Deploy to EKS
     needs: build_images
