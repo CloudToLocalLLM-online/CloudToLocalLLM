@@ -57,14 +57,8 @@ spec:
         fsGroup: 1000
       containers:
         - name: web
-          image: cloudtolocalllm/cloudtolocalllm-web:latest
+          image: cloudtolocalllm/web:latest
           imagePullPolicy: Always
-          securityContext:
-            allowPrivilegeEscalation: false
-            capabilities:
-              drop:
-                - ALL
-            readOnlyRootFilesystem: false
           ports:
             - containerPort: 8080
               name: http

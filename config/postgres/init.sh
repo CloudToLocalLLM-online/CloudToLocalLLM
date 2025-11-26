@@ -2,7 +2,7 @@
 set -e
 
 # Wait for PostgreSQL to start
-until pg_isready -U postgres; do
+until pg_isready -U "$POSTGRES_USER"; do
   echo "Waiting for PostgreSQL to start..."
   sleep 1
 done

@@ -66,7 +66,7 @@ spec:
         fsGroup: 1000
       containers:
         - name: streaming-proxy
-          image: cloudtolocalllm/cloudtolocalllm-streaming-proxy:latest
+          image: cloudtolocalllm/streaming-proxy:latest
           imagePullPolicy: Always
           ports:
             - name: http

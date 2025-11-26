@@ -10,7 +10,9 @@ fi
 # Initialize database if version file doesn't exist
 if [ ! -s "$PGDATA/PG_VERSION" ]; then
     echo "Initializing PostgreSQL database in $PGDATA..."
-    initdb -D "$PGDATA"
+    echo "$POSTGRES_PASSWORD" > /tmp/pwfile
+    initdb -D "$PGDATA" -U "$POSTGRES_USER" --pwfile=/tmp/pwfile
+    rm /tmp/pwfile
     
     # Configure access
     echo "host all all 0.0.0.0/0 md5" >> "$PGDATA/pg_hba.conf"
@@ -24,7 +26,8 @@ PID=$!
 
 # Wait for PostgreSQL to start
 echo "Waiting for PostgreSQL to be ready..."
-until pg_isready -U "$POSTGRES_USER" -d "$POSTGRES_DB" -h localhost; do
+export PGPASSWORD="$POSTGRES_PASSWORD"
+until pg_isready -U "$POSTGRES_USER" -d "$POSTGRES_DB"; do
     echo "Waiting for PostgreSQL to start..."
     sleep 1
 done

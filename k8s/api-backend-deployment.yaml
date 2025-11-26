@@ -75,7 +75,7 @@ spec:
               exit 1
       containers:
         - name: api-backend
-          image: cloudtolocalllm/cloudtolocalllm-api:latest
+          image: cloudtolocalllm/api-backend:latest
           imagePullPolicy: Always
           ports:
             - containerPort: 8080
