@@ -32,7 +32,7 @@ patches:
       name: api-backend
 
 # Common labels for all resources
-commonLabels:
+labels:
   environment: production
   managed-by: kustomize
 

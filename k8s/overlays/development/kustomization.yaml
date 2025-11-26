@@ -33,7 +33,7 @@ patches:
       name: postgres
 
 # Common labels for all resources
-commonLabels:
+labels:
   environment: development
   managed-by: kustomize
 
