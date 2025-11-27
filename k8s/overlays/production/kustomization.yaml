@@ -8,7 +8,7 @@ resources:
   - ../../web-deployment.yaml
   - ../../configmap.yaml
   - ../../postgres-statefulset.yaml
-  - ../../ingress-aws-nlb.yaml
+  - ../../cloudflared.yaml
   - ../../rbac.yaml
   - ../../network-policies.yaml
 
