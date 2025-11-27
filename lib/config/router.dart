@@ -457,8 +457,8 @@ class AppRouter {
 
         // Check for Auth0 callback parameters in URL (code and state)
         // Use both state.uri and Uri.base to catch all cases
+        // Check for Auth0 callback parameters in URL (code and state)
         final stateUri = state.uri;
-        final baseUri = kIsWeb ? Uri.base : stateUri;
 
         // Debug logging for callback detection
         debugPrint('[Router] ===== CALLBACK PARAMETER DETECTION START =====');
@@ -466,23 +466,15 @@ class AppRouter {
         debugPrint(
           '[Router] stateUri.queryParameters: ${stateUri.queryParameters}',
         );
-        debugPrint('[Router] baseUri: ${baseUri.toString()}');
-        debugPrint(
-          '[Router] baseUri.queryParameters: ${baseUri.queryParameters}',
-        );
 
-        // For web, get query parameters from current browser location
-        Map<String, String> queryParams;
+        // For web, get query parameters from the target state URI
+        // CRITICAL: Do NOT use Uri.base here, as it reflects the *current* URL
+        // which might be different from the *target* URL (state.uri) during navigation.
+        // Using Uri.base causes infinite loops when navigating away from a URL with params.
+        Map<String, String> queryParams = stateUri.queryParameters;
         bool callbackParamsFromSessionStorage = false;
         bool callbackAlreadyForwarded = false;
         if (kIsWeb) {
-          final currentUri = Uri.base;
-          queryParams = currentUri.queryParameters;
-          debugPrint(
-            '[Router] Using Uri.base for web query params: $currentUri',
-          );
-          debugPrint('[Router] Uri.base query params: $queryParams');
-
           // Check if callback parameters have already been forwarded
           try {
             final sessionStorage = window.sessionStorage;
@@ -522,12 +514,6 @@ class AppRouter {
               );
             }
           }
-        } else {
-          queryParams = stateUri.queryParameters.isNotEmpty
-              ? stateUri.queryParameters
-              : (baseUri.queryParameters.isNotEmpty
-                  ? baseUri.queryParameters
-                  : {});
         }
 
         // Determine if we have callback parameters that haven't been forwarded yet
