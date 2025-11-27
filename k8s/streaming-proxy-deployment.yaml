@@ -119,27 +119,6 @@ spec:
               path: /health
               port: http
               scheme: HTTP
-            initialDelaySeconds: 30
-            periodSeconds: 10
-            timeoutSeconds: 5
-            failureThreshold: 3
-
-          # Readiness probe - checks if container is ready to accept traffic
-          readinessProbe:
-            httpGet:
-              path: /health
-              port: http
-              scheme: HTTP
-            initialDelaySeconds: 10
-            periodSeconds: 5
-            timeoutSeconds: 3
-            failureThreshold: 2
-
-          # Security context for container
-          securityContext:
-            allowPrivilegeEscalation: false
-            readOnlyRootFilesystem: false
-            capabilities:
               drop:
                 - ALL
 

@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: builder
+  namespace: cloudtolocalllm
+  labels:
+    app: builder
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: builder
+  template:
+    metadata:
+      labels:
+        app: builder
+    spec:
+      serviceAccountName: builder-sa
+      securityContext:
+        runAsUser: 1000
+        fsGroup: 1000
+      containers:
+        - name: builder
+          image: cloudtolocalllm/builder:latest
+          imagePullPolicy: Always
+          command: ["/bin/bash", "-c", "while true; do sleep 3600; done"]
+          resources:
+            requests:
+              memory: "1Gi"
+              cpu: "500m"
+            limits:
+              memory: "4Gi"
+              cpu: "2000m"
+          volumeMounts:
+            - name: build-cache
+              mountPath: /app
+      volumes:
+        - name: build-cache
+          emptyDir: {}

@@ -1,75 +1,53 @@
-# Universal Builder for CloudToLocalLLM
-# Builds artifacts for Web (Flutter), API (Node), and Streaming Proxy (Node)
+# ============================================================================
+# Builder Dockerfile for CloudToLocalLLM
+# Contains tools to build Flutter, Node.js, and sync artifacts
+# ============================================================================
+FROM cloudtolocalllm/base:latest
 
-FROM ghcr.io/cirruslabs/flutter:stable AS builder
+USER root
 
-# Install Node.js 20 (LTS) - Run as root
-RUN apt-get update && apt-get install -y curl git && \
-    curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
-    apt-get install -y nodejs && \
-    node --version && \
-    npm --version && \
-    which npm
+# Install build dependencies
+# - git: for pulling code
+# - kubectl: for exec-ing into pods
+# - nodejs/npm: for building API/Streaming
+# - java/clang/cmake/ninja/pkg-config/gtk3-devel: for Flutter Linux build (if needed) or just basic tools
+# - unzip: for flutter installation
+RUN dnf -y install \
+    git \
+    nodejs \
+    npm \
+    java-17-openjdk-devel \
+    clang \
+    cmake \
+    ninja-build \
+    pkg-config \
+    gtk3-devel \
+    unzip \
+    which \
+    xz \
+    && dnf clean all
 
-# Fix Flutter SDK ownership/permissions so non-root user can use it
-# The SDK is at /sdks/flutter in this image
-RUN chown -R 1000:1000 /sdks/flutter && \
-    chmod -R u+w /sdks/flutter && \
-    git config --global --add safe.directory /sdks/flutter
+# Install kubectl
+RUN curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl" && \
+    install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl && \
+    rm kubectl
 
-# Create app directory and fix ownership
+# Switch to cloudtolocalllm user for Flutter install
+USER cloudtolocalllm
+WORKDIR /home/cloudtolocalllm
+
+# Install Flutter
+RUN git clone https://github.com/flutter/flutter.git -b stable
+ENV PATH="/home/cloudtolocalllm/flutter/bin:$PATH"
+RUN flutter config --no-analytics
+RUN flutter doctor
+
+# Set up app directory
 WORKDIR /app
-RUN chown -R 1000:1000 /app
 
-# Switch to non-root user (UID 1000 is standard in this image)
-USER 1000
+# Copy build script
+COPY --chown=cloudtolocalllm:cloudtolocalllm scripts/build-and-sync.sh /app/scripts/build-and-sync.sh
+RUN chmod +x /app/scripts/build-and-sync.sh
 
-# Ensure standard paths are included
-ENV PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:$PATH"
-
-# Debug environment
-RUN echo "User: $(whoami)" && \
-    echo "PATH: $PATH" && \
-    ls -l /usr/bin/npm || echo "npm not in /usr/bin" && \
-    ls -l /usr/local/bin/npm || echo "npm not in /usr/local/bin" && \
-    node --version && \
-    npm --version
-
-# Copy ALL source code as non-root user
-COPY --chown=1000:1000 . .
-
-# --- Build Web (Flutter) ---
-RUN echo "Building Flutter Web..."
-RUN flutter clean
-RUN flutter pub get
-RUN flutter build web --release
-
-# --- Build API Backend (Node) ---
-RUN echo "Building API Backend..."
-WORKDIR /app/services/api-backend
-# Install production dependencies only
-RUN npm ci --omit=dev
-
-# --- Build Streaming Proxy (Node) ---
-RUN echo "Building Streaming Proxy..."
-WORKDIR /app/services/streaming-proxy
-# Install production dependencies only
-RUN npm ci --omit=dev
-
-# Final stage: Minimal image to hold artifacts (optional, but good for inspection)
-# We will push this image to Docker Hub
-FROM debian:bookworm-slim
-WORKDIR /artifacts
-
-# Copy Web artifacts
-COPY --from=builder /app/build/web ./web
-
-# Copy API artifacts (node_modules + code)
-# We copy the whole directory because the runtime needs code + modules
-COPY --from=builder /app/services/api-backend ./api-backend
-
-# Copy Streaming artifacts
-COPY --from=builder /app/services/streaming-proxy ./streaming-proxy
-
-# List artifacts for verification
-RUN ls -R /artifacts
+# Keep the container running
+CMD ["/bin/bash", "-c", "while true; do sleep 3600; done"]

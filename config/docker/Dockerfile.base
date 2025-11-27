@@ -8,6 +8,10 @@ FROM fedora:rawhide
 # We do this first to ensure it exists in all derived images
 RUN useradd -u 1000 -m -s /bin/bash cloudtolocalllm
 
+# Install essential tools for rsync-based deployment
+RUN dnf -y install rsync tar openssh-clients && \
+    dnf clean all
+
 # Set up working directory
 WORKDIR /app
 RUN chown cloudtolocalllm:cloudtolocalllm /app
