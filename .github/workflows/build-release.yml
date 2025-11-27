@@ -1,7 +1,7 @@
 name: Build Desktop Apps & Create Release
 
 # This workflow builds desktop applications using GitHub-hosted runners (FREE for public repos)
-# 
+#
 # Triggers:
 #   - Push tags matching 'v*' (e.g., v4.5.0) - Automatic release build
 #   - Manual workflow dispatch - For testing or custom builds
@@ -14,87 +14,238 @@ name: Build Desktop Apps & Create Release
 #   5. Creates GitHub release with all artifacts
 #
 # Cost: $0/month for public repositories (free unlimited minutes)
-          
-          # Fallback to commit-based version if not found
-          if [ -z "$VERSION" ]; then
-            SHORT_SHA=$(git rev-parse --short HEAD)
-            VERSION="0.0.0+dev-$SHORT_SHA"
-            IS_RELEASE="false"
+# Build time: ~15-20 minutes per build
+#
+# For troubleshooting, see: docs/BUILD_TROUBLESHOOTING.md
+
+on:
+  push:
+    branches:
+      - build
+    tags:
+      - "v*" # Trigger on version tags (e.g., v4.5.0)
+  workflow_dispatch:
+    inputs:
+      build_type:
+        description: "Build type"
+        required: true
+        default: "release"
+        type: choice
+        options:
+          - release
+
+permissions:
+  contents: write
+  id-token: write
+
+concurrency:
+  group: build-release-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  FLUTTER_VERSION: "3.38.1"
+
+jobs:
+  # Extract version information
+  version-info:
+    name: Extract Version Information
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      build_number: ${{ steps.version.outputs.build_number }}
+      full_version: ${{ steps.version.outputs.full_version }}
+      tag_name: ${{ steps.version.outputs.tag_name }}
+      release_name: ${{ steps.version.outputs.release_name }}
+      is_release: ${{ steps.version.outputs.is_release }}
+
+    steps:
+      - name: Job Started - Version Information Extraction
+        run: |
+          echo "::group::Job Information"
+          echo "Job: Extract Version Information"
+          echo "Runner: ubuntu-latest"
+          echo "Trigger: ${{ github.event_name }}"
+          echo "Ref: ${{ github.ref }}"
+          echo "SHA: ${{ github.sha }}"
+          echo "::endgroup::"
+
+      - name: Start Time Tracking
+        id: start-time
+        run: |
+          START_TIME=$(date +%s)
+          echo "start_time=$START_TIME" >> $GITHUB_OUTPUT
+          echo "Started at: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+
+      - name: Checkout code
+        run: |
+          echo "::group::Checking out repository"
+          echo "Repository: ${{ github.repository }}"
+          echo "Ref: ${{ github.ref }}"
+          echo "::endgroup::"
+
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Fetch full history for version detection
+
+      - name: Checkout Complete
+        run: |
+          echo "::notice::Repository checked out successfully"
+          echo "Current directory: $(pwd)"
+          echo "Git status:"
+          git status --short || echo "No changes"
+
+      - name: Setup GitHub CLI
+        run: |
+          echo "::group::Setting up GitHub CLI"
+          if ! command -v gh &> /dev/null; then
+            echo "GitHub CLI not found. Installing..."
+            curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg
+            echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null
+            sudo apt update && sudo apt install gh -y
+            
+            if [ $? -eq 0 ]; then
+              echo "::notice::GitHub CLI installed successfully"
+            else
+              echo "::error::Failed to install GitHub CLI"
+              exit 1
+            fi
           else
-            # Always create release for any version on main branch
-            # Extract version from previous commit's pubspec.yaml if available
-            PREV_PUBSPEC_VERSION=""
-            if git show HEAD~1:pubspec.yaml 2>/dev/null | grep -q "^version:"; then
-              PREV_PUBSPEC_VERSION=$(git show HEAD~1:pubspec.yaml 2>/dev/null | grep "^version:" | sed 's/version: //' | sed 's/+.*//' | tr -d ' ' || echo "")
+            echo "::notice::GitHub CLI already installed"
+            gh --version
+          fi
+          echo "GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}" >> $GITHUB_ENV
+          echo "::endgroup::"
+
+      - name: Extract version and generate build number
+        id: version
+        run: |
+          echo "::group::Version Extraction"
+          echo "Extracting version information from repository..."
+          echo ""
+
+          # Check if this is a tag push, workflow_dispatch with release, or main branch
+          BUILD_TYPE="${{ github.event.inputs.build_type }}"
+
+          echo "Build trigger: ${{ github.event_name }}"
+          echo "Build type: $BUILD_TYPE"
+          echo "Git ref: ${{ github.ref }}"
+          echo ""
+
+          if [[ "${{ github.ref }}" == refs/tags/v* ]]; then
+            # Release build from tag
+            TAG_REF="${GITHUB_REF_NAME:-${{ github.ref_name }}}"
+            VERSION="${TAG_REF#v}"
+            IS_RELEASE="true"
+          elif [[ "$BUILD_TYPE" == "release" ]]; then
+            # Manual release build via workflow_dispatch
+            if [ -f pubspec.yaml ]; then
+              VERSION=$(grep "^version:" pubspec.yaml | sed 's/version: //' | sed 's/+.*//')
             fi
             
-            echo "Current version: $VERSION"
-            echo "Previous version: $PREV_PUBSPEC_VERSION"
-            
-            # Always create release for main branch builds
-            echo "Creating release for version $VERSION on main branch"
+            # Fallback if version not found
+            if [ -z "$VERSION" ]; then
+              SHORT_SHA=$(git rev-parse --short HEAD)
+              VERSION="0.0.0-dev-$SHORT_SHA"
+            fi
             IS_RELEASE="true"
+          elif [[ "${{ github.ref }}" == "refs/heads/build" ]]; then
+            # Build branch - no release
+            if [ -f pubspec.yaml ]; then
+              VERSION=$(grep "^version:" pubspec.yaml | sed 's/version: //' | sed 's/+.*//')
+            fi
+            
+            # Fallback if version not found
+            if [ -z "$VERSION" ]; then
+              SHORT_SHA=$(git rev-parse --short HEAD)
+              VERSION="0.0.0-build-$SHORT_SHA"
+            fi
+            IS_RELEASE="false"
+          else
+            # Main branch build - extract version from pubspec.yaml
+            if [ -f pubspec.yaml ]; then
+              VERSION=$(grep "^version:" pubspec.yaml | sed 's/version: //' | sed 's/+.*//')
+            fi
+            
+            # Fallback to commit-based version if not found
+            if [ -z "$VERSION" ]; then
+              SHORT_SHA=$(git rev-parse --short HEAD)
+              VERSION="0.0.0+dev-$SHORT_SHA"
+              IS_RELEASE="false"
+            else
+              # Always create release for any version on main branch
+              # Extract version from previous commit's pubspec.yaml if available
+              PREV_PUBSPEC_VERSION=""
+              if git show HEAD~1:pubspec.yaml 2>/dev/null | grep -q "^version:"; then
+                PREV_PUBSPEC_VERSION=$(git show HEAD~1:pubspec.yaml 2>/dev/null | grep "^version:" | sed 's/version: //' | sed 's/+.*//' | tr -d ' ' || echo "")
+              fi
+              
+              echo "Current version: $VERSION"
+              echo "Previous version: $PREV_PUBSPEC_VERSION"
+              
+              # Always create release for main branch builds
+              echo "Creating release for version $VERSION on main branch"
+              IS_RELEASE="true"
+            fi
           fi
-        fi
 
-        # Generate build number as YYYYMMDDHHMM (UTC)
-        BUILD_NUMBER=$(date -u +%Y%m%d%H%M)
+          # Generate build number as YYYYMMDDHHMM (UTC)
+          BUILD_NUMBER=$(date -u +%Y%m%d%H%M)
 
-        # Full version: x.x.x+YYYYMMDDHHMM (or with commit SHA for dev builds)
-        if [ "$IS_RELEASE" == "true" ]; then
-          FULL_VERSION="$VERSION+$BUILD_NUMBER"
-          TAG_NAME="v$VERSION"
-          RELEASE_NAME="CloudToLocalLLM v$VERSION"
-        else
-          SHORT_SHA=$(git rev-parse --short HEAD)
-          FULL_VERSION="$VERSION+$BUILD_NUMBER-$SHORT_SHA"
-          TAG_NAME=""
-          RELEASE_NAME="CloudToLocalLLM Dev Build $BUILD_NUMBER"
-        fi
+          # Full version: x.x.x+YYYYMMDDHHMM (or with commit SHA for dev builds)
+          if [ "$IS_RELEASE" == "true" ]; then
+            FULL_VERSION="$VERSION+$BUILD_NUMBER"
+            TAG_NAME="v$VERSION"
+            RELEASE_NAME="CloudToLocalLLM v$VERSION"
+          else
+            SHORT_SHA=$(git rev-parse --short HEAD)
+            FULL_VERSION="$VERSION+$BUILD_NUMBER-$SHORT_SHA"
+            TAG_NAME=""
+            RELEASE_NAME="CloudToLocalLLM Dev Build $BUILD_NUMBER"
+          fi
 
-        echo "version=$VERSION" >> $GITHUB_OUTPUT
-        echo "build_number=$BUILD_NUMBER" >> $GITHUB_OUTPUT
-        echo "full_version=$FULL_VERSION" >> $GITHUB_OUTPUT
-        echo "tag_name=$TAG_NAME" >> $GITHUB_OUTPUT
-        echo "release_name=$RELEASE_NAME" >> $GITHUB_OUTPUT
-        echo "is_release=$IS_RELEASE" >> $GITHUB_OUTPUT
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "build_number=$BUILD_NUMBER" >> $GITHUB_OUTPUT
+          echo "full_version=$FULL_VERSION" >> $GITHUB_OUTPUT
+          echo "tag_name=$TAG_NAME" >> $GITHUB_OUTPUT
+          echo "release_name=$RELEASE_NAME" >> $GITHUB_OUTPUT
+          echo "is_release=$IS_RELEASE" >> $GITHUB_OUTPUT
 
-        echo ""
-        echo "::notice::Version extraction completed successfully"
-        echo "::group::Version Information"
-        echo "Version: $VERSION"
-        echo "Build Number: $BUILD_NUMBER"
-        echo "Full Version: $FULL_VERSION"
-        echo "Is Release: $IS_RELEASE"
-        if [ "$IS_RELEASE" == "true" ]; then
-          echo "Tag: $TAG_NAME"
-          echo "Release Name: $RELEASE_NAME"
-        fi
-        echo "::endgroup::"
-        
-    - name:  Version Info Job Duration
-      if: always()
-      run: |
-        END_TIME=$(date +%s)
-        DURATION=$((END_TIME - ${{ steps.start-time.outputs.start_time }}))
-        echo "::notice::Version info job completed in ${DURATION}s"
-        echo "Duration: ${DURATION}s" >> $GITHUB_STEP_SUMMARY
-        
-    - name:  Job Failed - Error Summary
-      if: failure()
-      run: |
-        echo "::error::Version info job failed"
-        echo "##  Version Info Job Failed" >> $GITHUB_STEP_SUMMARY
-        echo "" >> $GITHUB_STEP_SUMMARY
-        echo "**Common Issues:**" >> $GITHUB_STEP_SUMMARY
-        echo "- pubspec.yaml not found or invalid format" >> $GITHUB_STEP_SUMMARY
-        echo "- Git history not available (check fetch-depth)" >> $GITHUB_STEP_SUMMARY
-        echo "- Invalid version format in pubspec.yaml" >> $GITHUB_STEP_SUMMARY
-        echo "" >> $GITHUB_STEP_SUMMARY
-        echo "**Troubleshooting:**" >> $GITHUB_STEP_SUMMARY
-        echo "1. Verify pubspec.yaml exists and has valid version field" >> $GITHUB_STEP_SUMMARY
-        echo "2. Check git tags are properly formatted (v*)" >> $GITHUB_STEP_SUMMARY
-        echo "3. Review workflow logs for specific error messages" >> $GITHUB_STEP_SUMMARY
+          echo ""
+          echo "::notice::Version extraction completed successfully"
+          echo "::group::Version Information"
+          echo "Version: $VERSION"
+          echo "Build Number: $BUILD_NUMBER"
+          echo "Full Version: $FULL_VERSION"
+          echo "Is Release: $IS_RELEASE"
+          if [ "$IS_RELEASE" == "true" ]; then
+            echo "Tag: $TAG_NAME"
+            echo "Release Name: $RELEASE_NAME"
+          fi
+          echo "::endgroup::"
+
+      - name: Version Info Job Duration
+        if: always()
+        run: |
+          END_TIME=$(date +%s)
+          DURATION=$((END_TIME - ${{ steps.start-time.outputs.start_time }}))
+          echo "::notice::Version info job completed in ${DURATION}s"
+          echo "Duration: ${DURATION}s" >> $GITHUB_STEP_SUMMARY
+
+      - name: Job Failed - Error Summary
+        if: failure()
+        run: |
+          echo "::error::Version info job failed"
+          echo "##  Version Info Job Failed" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Common Issues:**" >> $GITHUB_STEP_SUMMARY
+          echo "- pubspec.yaml not found or invalid format" >> $GITHUB_STEP_SUMMARY
+          echo "- Git history not available (check fetch-depth)" >> $GITHUB_STEP_SUMMARY
+          echo "- Invalid version format in pubspec.yaml" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Troubleshooting:**" >> $GITHUB_STEP_SUMMARY
+          echo "1. Verify pubspec.yaml exists and has valid version field" >> $GITHUB_STEP_SUMMARY
+          echo "2. Check git tags are properly formatted (v*)" >> $GITHUB_STEP_SUMMARY
+          echo "3. Review workflow logs for specific error messages" >> $GITHUB_STEP_SUMMARY
 
   # Build application using matrix strategy
   build-desktop:
@@ -109,644 +260,612 @@ name: Build Desktop Apps & Create Release
             os: windows-latest
             build-command: flutter build windows --release
             artifact-name: windows-desktop
-          
+
           # Linux and Android builds temporarily disabled - focus on Windows first
           # - platform: linux
           #   os: ubuntu-latest
           #   build-command: flutter build linux --release
           #   artifact-name: linux-desktop
-          
+
           # - platform: android
           #   os: ubuntu-latest
           #   build-command: flutter build apk --release --split-per-abi
           #   artifact-name: android-apk
-    
-    steps:
-    - name:  Job Started - Build ${{ matrix.platform }} App (Windows)
-      if: matrix.platform == 'windows'
-      run: |
-        Write-Host "::group::Build Job Information" -ForegroundColor Green
-        Write-Host "=== Build ${{ matrix.platform }} Job Started ===" -ForegroundColor Green
-        Write-Host ""
-        Write-Host "Platform: ${{ matrix.platform }}" -ForegroundColor Cyan
-        Write-Host "Runner OS: ${{ runner.os }}" -ForegroundColor Cyan
-        Write-Host "Runner Architecture: ${{ runner.arch }}" -ForegroundColor Cyan
-        Write-Host "Version: ${{ needs.version-info.outputs.version }}" -ForegroundColor Cyan
-        Write-Host "Full Version: ${{ needs.version-info.outputs.full_version }}" -ForegroundColor Cyan
-        Write-Host "Is Release: ${{ needs.version-info.outputs.is_release }}" -ForegroundColor Cyan
-        Write-Host "Build Command: ${{ matrix.build-command }}" -ForegroundColor Cyan
-        Write-Host ""
-        Write-Host "Started at: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss UTC')" -ForegroundColor Cyan
-        Write-Host "::endgroup::"
-      shell: powershell
-      
-    - name:  Job Started - Build ${{ matrix.platform }} App (Linux)
-      if: matrix.platform == 'linux'
-      run: |
-        echo "::group::Build Job Information"
-        echo "=== Build ${{ matrix.platform }} Job Started ==="
-        echo ""
-        echo "Platform: ${{ matrix.platform }}"
-        echo "Runner OS: ${{ runner.os }}"
-        echo "Runner Architecture: ${{ runner.arch }}"
-        echo "Version: ${{ needs.version-info.outputs.version }}"
-        echo "Full Version: ${{ needs.version-info.outputs.full_version }}"
-        echo "Is Release: ${{ needs.version-info.outputs.is_release }}"
-        echo "Build Command: ${{ matrix.build-command }}"
-        echo ""
-        echo "Started at: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
-        echo "::endgroup::"
-      
-    - name:  Job Started - Build ${{ matrix.platform }} App (Android)
-      if: matrix.platform == 'android'
-      run: |
-        echo "::group::Build Job Information"
-        echo "=== Build ${{ matrix.platform }} Job Started ==="
-        echo ""
-        echo "Platform: ${{ matrix.platform }}"
-        echo "Runner OS: ${{ runner.os }}"
-        echo "Runner Architecture: ${{ runner.arch }}"
-        echo "Version: ${{ needs.version-info.outputs.version }}"
-        echo "Full Version: ${{ needs.version-info.outputs.full_version }}"
-        echo "Is Release: ${{ needs.version-info.outputs.is_release }}"
-        echo "Build Command: ${{ matrix.build-command }}"
-        echo "Target Architectures: ARM64, ARMv7, x86_64"
-        echo ""
-        echo "Started at: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
-        echo "::endgroup::"
-      
-    - name:  Start Build Time Tracking (Windows)
-      if: matrix.platform == 'windows'
-      id: build-start-time-windows
-      run: |
-        $START_TIME = [int][double]::Parse((Get-Date -UFormat %s))
-        echo "start_time=$START_TIME" >> $env:GITHUB_OUTPUT
-        Write-Host "Build timer started"
-      shell: powershell
-      
-    - name:  Start Build Time Tracking (Linux)
-      if: matrix.platform == 'linux'
-      id: build-start-time-linux
-      run: |
-        START_TIME=$(date +%s)
-        echo "start_time=$START_TIME" >> $GITHUB_OUTPUT
-        echo "Build timer started"
-      
-    - name:  Start Build Time Tracking (Android)
-      if: matrix.platform == 'android'
-      id: build-start-time-android
-      run: |
-        START_TIME=$(date +%s)
-        echo "start_time=$START_TIME" >> $GITHUB_OUTPUT
-        echo "Build timer started"
-      
-    - uses: actions/checkout@v4
-      
-    - uses: subosito/flutter-action@v2
-      with:
-        flutter-version: ${{ env.FLUTTER_VERSION }}
-        channel: 'stable'
-        cache: true
-        cache-key: 'flutter-:os:-:channel:-:version:-:arch:-:hash:'
-        cache-path: '${{ runner.tool_cache }}/flutter/:channel:-:version:-:arch:'
-      
-    # Caching disabled temporarily due to hanging issues with large .dart_tool directory
-    # - name: Cache Flutter pub dependencies
-    #   uses: actions/cache@v4
-    #   with:
-    #     path: |
-    #       ${{ runner.temp }}\.pub-cache
-    #       ${{ runner.temp }}\pub-cache
-    #       ~/.pub-cache
-    #       .dart_tool
-    #     key: ${{ matrix.platform }}-flutter-pub-${{ hashFiles('**/pubspec.lock') }}
-    #     restore-keys: |
-    #       ${{ matrix.platform }}-flutter-pub-
-    #       flutter-pub-
-    #   continue-on-error: true
-      
-    # Chocolatey cache disabled temporarily due to hanging issues
-    # - name: Cache Chocolatey packages
-    #   if: matrix.platform == 'windows'
-    #   uses: actions/cache@v4
-    #   with:
-    #     path: |
-    #       ${{ runner.temp }}\chocolatey
-    #       C:\ProgramData\chocolatey\lib
-    #       C:\ProgramData\chocolatey\bin
-    #     key: ${{ runner.os }}-chocolatey-innosetup-${{ hashFiles('.github/workflows/build-release.yml') }}
-    #     restore-keys: |
-    #       ${{ runner.os }}-chocolatey-innosetup-
-    #       ${{ runner.os }}-chocolatey-
-    #   continue-on-error: true
-        
-    - name:  Verify all build dependencies (Windows)
-      if: matrix.platform == 'windows'
-      run: |
-        Write-Host "::group::Verifying Build Dependencies" -ForegroundColor Green
-        Write-Host "=== Dependency Verification ===" -ForegroundColor Green
-        Write-Host ""
-        
-        $errors = @()
-        
-        # Check Flutter
-        Write-Host "Checking Flutter..." -ForegroundColor Cyan
-        try {
-          flutter --version
-          Write-Host " Flutter is available" -ForegroundColor Green
-        } catch {
-          Write-Host " Flutter not found" -ForegroundColor Red
-          $errors += "Flutter not found"
-        }
-        Write-Host ""
-        
-        # Check Git
-        Write-Host "Checking Git..." -ForegroundColor Cyan
-        try {
-          git --version
-          Write-Host " Git is available" -ForegroundColor Green
-        } catch {
-          Write-Host " Git not found" -ForegroundColor Red
-          $errors += "Git not found"
-        }
-        Write-Host ""
-        
-        # Run Flutter doctor
-        Write-Host "Running Flutter doctor..." -ForegroundColor Cyan
-        flutter doctor -v
-        Write-Host ""
-        
-        if ($errors.Count -gt 0) {
-          Write-Host "::error::Dependency verification failed" -ForegroundColor Red
-          foreach ($error in $errors) {
-            Write-Host "::error::$error"
-          }
-          exit 1
-        }
-        
-        Write-Host "::notice::All dependencies verified successfully" -ForegroundColor Green
-        Write-Host "::endgroup::"
-      shell: powershell
-      
-    - name:  Verify all build dependencies (Linux)
-      if: matrix.platform == 'linux'
-      run: |
-        echo "::group::Verifying Build Dependencies"
-        echo "=== Dependency Verification ==="
-        echo ""
-        
-        errors=0
-        
-        # Check Flutter
-        echo "Checking Flutter..."
-        if flutter --version; then
-          echo " Flutter is available"
-        else
-          echo " Flutter not found"
-          errors=$((errors + 1))
-        fi
-        echo ""
-        
-        # Check Git
-        echo "Checking Git..."
-        if git --version; then
-          echo " Git is available"
-        else
-          echo " Git not found"
-          errors=$((errors + 1))
-        fi
-        echo ""
-        
-        # Run Flutter doctor
-        echo "Running Flutter doctor..."
-        flutter doctor -v
-        echo ""
-        
-        if [ $errors -gt 0 ]; then
-          echo "::error::Dependency verification failed with $errors errors"
-          exit 1
-        fi
-        
-        echo "::notice::Core dependencies verified successfully"
-        echo "::notice::Linux-specific tools will be installed in next steps"
-        echo "::endgroup::"
-        
-    - name:  Configure Windows desktop support
-      if: matrix.platform == 'windows'
-      run: |
-        Write-Host "::group::Configuring Flutter for Windows" -ForegroundColor Green
-        Write-Host "Enabling Windows desktop support..."
-        flutter config --enable-windows-desktop
-        
-        Write-Host "Disabling web support..."
-        flutter config --no-enable-web
-        
-        Write-Host "::notice::Flutter configured for Windows desktop" -ForegroundColor Green
-        Write-Host "::endgroup::"
-      shell: powershell
-      
-    - name:  Configure Linux desktop support
-      if: matrix.platform == 'linux'
-      run: |
-        echo "::group::Configuring Flutter for Linux"
-        echo "Enabling Linux desktop support..."
-        flutter config --enable-linux-desktop
-        
-        echo "Disabling web support..."
-        flutter config --no-enable-web
-        
-        echo "::notice::Flutter configured for Linux desktop"
-        echo "::endgroup::"
-      
-    - name:  Install Linux build dependencies
-      if: matrix.platform == 'linux'
-      run: |
-        echo "::group::Installing Linux build dependencies"
-        echo "=== Installing Linux Build Dependencies ==="
-        echo ""
-        
-        echo "Updating package lists..."
-        sudo apt-get update
-        
-        echo ""
-        echo "Installing Flutter Linux dependencies..."
-        sudo apt-get install -y \
-          clang cmake ninja-build pkg-config \
-          libgtk-3-dev liblzma-dev \
-          libsecret-1-dev \
-          desktop-file-utils
-        
-        echo ""
-        echo "::notice::Linux build dependencies installed successfully"
-        echo "::endgroup::"
-      
-    - name:  Install Flatpak build tools
-      if: matrix.platform == 'linux'
-      run: |
-        echo "::group::Installing Flatpak build tools"
-        echo "=== Installing Flatpak Build Tools ==="
-        echo ""
-        
-        echo "Installing Flatpak and flatpak-builder..."
-        sudo apt-get install -y flatpak flatpak-builder
-        
-        echo ""
-        echo "Adding Flathub repository..."
-        sudo flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
-        
-        echo ""
-        echo "Installing Freedesktop SDK and Platform..."
-        sudo flatpak install -y flathub org.freedesktop.Platform//23.08 org.freedesktop.Sdk//23.08
-        
-        echo ""
-        echo "::notice::Flatpak build tools installed successfully"
-        echo "::endgroup::"
-      
-    - name:  Install .deb packaging tools
-      if: matrix.platform == 'linux'
-      run: |
-        echo "::group::Installing .deb packaging tools"
-        echo "=== Installing .deb Packaging Tools ==="
-        echo ""
-        
-        echo "Installing dpkg-dev, fakeroot, and lintian..."
-        sudo apt-get install -y \
-          dpkg-dev \
-          fakeroot \
-          lintian
-        
-        echo ""
-        echo "Verifying installations..."
-        dpkg-deb --version
-        fakeroot --version
-        lintian --version
-        
-        echo ""
-        echo "::notice::.deb packaging tools installed successfully"
-        echo "::endgroup::"
-      
-    - name:  Setup Java for Android
-      if: matrix.platform == 'android'
-      uses: actions/setup-java@v4
-      with:
-        distribution: 'zulu'
-        java-version: '17'
-        cache: 'gradle'
-    
-    - name:  Setup Android SDK
-      if: matrix.platform == 'android'
-      uses: android-actions/setup-android@v3
-      with:
-        api-level: 33
-        build-tools: 33.0.2
-        ndk-version: 25.2.9519653
-    
-    - name:  Cache Gradle dependencies
-      if: matrix.platform == 'android'
-      uses: actions/cache@v4
-      with:
-        path: |
-          ~/.gradle/caches
-          ~/.gradle/wrapper
-          android/.gradle
-        key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
-        restore-keys: |
-          ${{ runner.os }}-gradle-
-      continue-on-error: true
-    
-    - name:  Setup Android signing configuration
-      if: matrix.platform == 'android'
-      run: |
-        echo "::group::Setting up Android signing"
-        echo "=== Setting up Android Signing Configuration ==="
-        echo ""
-        
-        # Create key.properties file for signing
-        mkdir -p android
-        cat > android/key.properties << EOF
-        storePassword=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-        keyPassword=${{ secrets.ANDROID_KEY_PASSWORD }}
-        keyAlias=${{ secrets.ANDROID_KEY_ALIAS }}
-        storeFile=../release-keystore.jks
-        EOF
-        
-        echo " key.properties file created"
-        echo ""
-        
-        # Decode and save keystore from secrets
-        echo "Decoding keystore from GitHub Secrets..."
-        echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d > android/release-keystore.jks
-        
-        if [ -f android/release-keystore.jks ]; then
-          KEYSTORE_SIZE=$(du -h android/release-keystore.jks | cut -f1)
-          echo " Keystore file created: android/release-keystore.jks"
-          echo "  Size: $KEYSTORE_SIZE"
-        else
-          echo "::error::Failed to create keystore file"
-          exit 1
-        fi
-        
-        echo ""
-        echo "::notice::Android signing configuration created successfully"
-        echo "::endgroup::"
-    
-    - name:  Verify Android SDK and dependencies
-      if: matrix.platform == 'android'
-      run: |
-        echo "::group::Verifying Android SDK"
-        echo "=== Verifying Android SDK and Dependencies ==="
-        echo ""
-        
-        errors=0
-        
-        # Check Java
-        echo "Checking Java..."
-        if java -version 2>&1; then
-          echo " Java is available"
-        else
-          echo " Java not found"
-          errors=$((errors + 1))
-        fi
-        echo ""
-        
-        # Check Android SDK
-        echo "Checking Android SDK..."
-        if [ -n "$ANDROID_HOME" ] && [ -d "$ANDROID_HOME" ]; then
-          echo " Android SDK location: $ANDROID_HOME"
-        else
-          echo " Android SDK not found"
-          errors=$((errors + 1))
-        fi
-        echo ""
-        
-        # List installed SDK components
-        if [ -n "$ANDROID_HOME" ] && [ -d "$ANDROID_HOME/cmdline-tools" ]; then
-          echo "Installed SDK components:"
-          $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --list_installed || true
-          echo ""
-        fi
-        
-        # Accept licenses
-        echo "Accepting Android SDK licenses..."
-        yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses 2>&1 || true
-        echo ""
-        
-        # Check Flutter
-        echo "Checking Flutter..."
-        if flutter --version; then
-          echo " Flutter is available"
-        else
-          echo " Flutter not found"
-          errors=$((errors + 1))
-        fi
-        echo ""
-        
-        # Run Flutter doctor
-        echo "Running Flutter doctor..."
-        flutter doctor -v
-        echo ""
-        
-        if [ $errors -gt 0 ]; then
-          echo "::error::Dependency verification failed with $errors errors"
-          exit 1
-        fi
-        
-        echo "::notice::Android SDK and dependencies verified successfully"
-        echo "::endgroup::"
-      
-    - name: Get Flutter dependencies
-      run: flutter pub get
-      
-    - name:  Patch web package for non-web platforms
-      if: matrix.platform != 'web'
-      run: |
-        if [ "${{ matrix.platform }}" == "windows" ]; then
-          pwsh scripts/patch-web-package.ps1
-        else
-          # For Linux/Android, create bash version
-          WEB_PKG="$PUB_CACHE/hosted/pub.dev/web-1.1.1"
-          if [ -d "$WEB_PKG" ]; then
-            echo "Patching web package..."
-            cp "$WEB_PKG/lib/web.dart" "$WEB_PKG/lib/web.dart.backup" 2>/dev/null || true
-            echo "// Stub for non-web platforms" > "$WEB_PKG/lib/web.dart"
-            echo "library web;" >> "$WEB_PKG/lib/web.dart"
-            echo "Web package patched"
-          fi
-        fi
-      shell: bash
-      
-    - name:  Build Windows application
-      if: matrix.platform == 'windows'
-      run: |
-        Write-Host "::group::Building Windows application" -ForegroundColor Green
-        Write-Host "Running: flutter build windows --release"
-        Write-Host ""
-        
-        # Build without running the INSTALL target to avoid CMake errors
-        flutter build windows --release --no-tree-shake-icons
-        
-        if ($LASTEXITCODE -ne 0) {
-          Write-Host "::error::Flutter build failed with exit code $LASTEXITCODE"
-          exit 1
-        }
-        
-        Write-Host ""
-        Write-Host "::notice::Windows application built successfully" -ForegroundColor Green
-        Write-Host "::endgroup::"
-      shell: powershell
-      
-    - name:  Build Linux application
-      if: matrix.platform == 'linux'
-      run: |
-        echo "::group::Building Linux application"
-        echo "Running: flutter build linux --release"
-        echo ""
-        
-        flutter build linux --release
-        
-        if [ $? -ne 0 ]; then
-          echo "::error::Flutter build failed"
-          exit 1
-        fi
-        
-        echo ""
-        echo "::notice::Linux application built successfully"
-        echo "::endgroup::"
-      
 
-      
-    - name:  Verify Build Output (Windows)
-      if: matrix.platform == 'windows'
-      run: |
-        Write-Host "::group::Verifying build output" -ForegroundColor Green
-        $buildPath = "build\windows\x64\runner\Release"
-        
-        if (-not (Test-Path $buildPath)) {
-          Write-Host "::error::Build output directory not found: $buildPath"
-          exit 1
-        }
-        
-        Write-Host "Build output directory exists: $buildPath"
-        Write-Host ""
-        Write-Host "Build artifacts:"
-        Get-ChildItem $buildPath -Recurse -File | Select-Object Name, Length, LastWriteTime | Format-Table -AutoSize
-        
-        Write-Host "::notice::Build output verified successfully" -ForegroundColor Green
-        Write-Host "::endgroup::"
-      shell: powershell
-      
-    - name:  Verify Build Output (Linux)
-      if: matrix.platform == 'linux'
-      run: |
-        echo "::group::Verifying build output"
-        buildPath="build/linux/x64/release/bundle"
-        
-        if [ ! -d "$buildPath" ]; then
-          echo "::error::Build output directory not found: $buildPath"
-          exit 1
-        fi
-        
-        echo "Build output directory exists: $buildPath"
-        echo ""
-        echo "Build artifacts:"
-        ls -lh "$buildPath"
-        
-        echo ""
-        echo "::notice::Build output verified successfully"
-        echo "::endgroup::"
-      
-    - name:  Verify Flatpak manifest
-      if: matrix.platform == 'linux'
-      run: |
-        echo "::group::Verifying Flatpak manifest"
-        echo "=== Verifying Flatpak Manifest ==="
-        echo ""
-        
-        MANIFEST_FILE="com.cloudtolocalllm.CloudToLocalLLM.yml"
-        
-        if [ ! -f "$MANIFEST_FILE" ]; then
-          echo "::error::Flatpak manifest not found: $MANIFEST_FILE"
-          exit 1
-        fi
-        
-        echo " Flatpak manifest found: $MANIFEST_FILE"
-        echo ""
-        echo "Manifest contents:"
-        cat "$MANIFEST_FILE"
-        
-        echo ""
-        echo "::notice::Flatpak manifest verified successfully"
-        echo "::endgroup::"
-      
-    - name:  Install Inno Setup
-      if: matrix.platform == 'windows'
-      run: |
-        Write-Host "::group::Installing Inno Setup" -ForegroundColor Green
-        Write-Host "=== Installing Inno Setup ===" -ForegroundColor Green
-        Write-Host ""
-        
-        # Check if Inno Setup is already installed
-        $innoSetupPaths = @(
-          "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe",
-          "${env:ProgramFiles}\Inno Setup 6\ISCC.exe",
-          "${env:ProgramFiles(x86)}\Inno Setup 5\ISCC.exe",
-          "${env:ProgramFiles}\Inno Setup 5\ISCC.exe"
-        )
-        
-        $innoPath = $null
-        foreach ($path in $innoSetupPaths) {
-          if (Test-Path $path) {
-            $innoPath = $path
-            Write-Host "Inno Setup already installed at: $innoPath" -ForegroundColor Cyan
-            break
-          }
-        }
-        
-        # Install if not found
-        if (-not $innoPath) {
-          Write-Host "Inno Setup not found. Installing..." -ForegroundColor Yellow
+    steps:
+      - name: Job Started - Build ${{ matrix.platform }} App (Windows)
+        if: matrix.platform == 'windows'
+        run: |
+          Write-Host "::group::Build Job Information" -ForegroundColor Green
+          Write-Host "=== Build ${{ matrix.platform }} Job Started ===" -ForegroundColor Green
           Write-Host ""
-          
-          # Try Chocolatey first
-          Write-Host "Attempting installation via Chocolatey..." -ForegroundColor Cyan
+          Write-Host "Platform: ${{ matrix.platform }}" -ForegroundColor Cyan
+          Write-Host "Runner OS: ${{ runner.os }}" -ForegroundColor Cyan
+          Write-Host "Runner Architecture: ${{ runner.arch }}" -ForegroundColor Cyan
+          Write-Host "Version: ${{ needs.version-info.outputs.version }}" -ForegroundColor Cyan
+          Write-Host "Full Version: ${{ needs.version-info.outputs.full_version }}" -ForegroundColor Cyan
+          Write-Host "Is Release: ${{ needs.version-info.outputs.is_release }}" -ForegroundColor Cyan
+          Write-Host "Build Command: ${{ matrix.build-command }}" -ForegroundColor Cyan
+          Write-Host ""
+          Write-Host "Started at: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss UTC')" -ForegroundColor Cyan
+          Write-Host "::endgroup::"
+        shell: powershell
+
+      - name: Job Started - Build ${{ matrix.platform }} App (Linux)
+        if: matrix.platform == 'linux'
+        run: |
+          echo "::group::Build Job Information"
+          echo "=== Build ${{ matrix.platform }} Job Started ==="
+          echo ""
+          echo "Platform: ${{ matrix.platform }}"
+          echo "Runner OS: ${{ runner.os }}"
+          echo "Runner Architecture: ${{ runner.arch }}"
+          echo "Version: ${{ needs.version-info.outputs.version }}"
+          echo "Full Version: ${{ needs.version-info.outputs.full_version }}"
+          echo "Is Release: ${{ needs.version-info.outputs.is_release }}"
+          echo "Build Command: ${{ matrix.build-command }}"
+          echo ""
+          echo "Started at: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+          echo "::endgroup::"
+
+      - name: Job Started - Build ${{ matrix.platform }} App (Android)
+        if: matrix.platform == 'android'
+        run: |
+          echo "::group::Build Job Information"
+          echo "=== Build ${{ matrix.platform }} Job Started ==="
+          echo ""
+          echo "Platform: ${{ matrix.platform }}"
+          echo "Runner OS: ${{ runner.os }}"
+          echo "Runner Architecture: ${{ runner.arch }}"
+          echo "Version: ${{ needs.version-info.outputs.version }}"
+          echo "Full Version: ${{ needs.version-info.outputs.full_version }}"
+          echo "Is Release: ${{ needs.version-info.outputs.is_release }}"
+          echo "Build Command: ${{ matrix.build-command }}"
+          echo "Target Architectures: ARM64, ARMv7, x86_64"
+          echo ""
+          echo "Started at: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+          echo "::endgroup::"
+
+      - name: Start Build Time Tracking (Windows)
+        if: matrix.platform == 'windows'
+        id: build-start-time-windows
+        run: |
+          $START_TIME = [int][double]::Parse((Get-Date -UFormat %s))
+          echo "start_time=$START_TIME" >> $env:GITHUB_OUTPUT
+          Write-Host "Build timer started"
+        shell: powershell
+
+      - name: Start Build Time Tracking (Linux)
+        if: matrix.platform == 'linux'
+        id: build-start-time-linux
+        run: |
+          START_TIME=$(date +%s)
+          echo "start_time=$START_TIME" >> $GITHUB_OUTPUT
+          echo "Build timer started"
+
+      - name: Start Build Time Tracking (Android)
+        if: matrix.platform == 'android'
+        id: build-start-time-android
+        run: |
+          START_TIME=$(date +%s)
+          echo "start_time=$START_TIME" >> $GITHUB_OUTPUT
+          echo "Build timer started"
+
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: "stable"
+          cache: true
+          cache-key: "flutter-:os:-:channel:-:version:-:arch:-:hash:"
+          cache-path: "${{ runner.tool_cache }}/flutter/:channel:-:version:-:arch:"
+
+      # Caching disabled temporarily due to hanging issues with large .dart_tool directory
+      # - name: Cache Flutter pub dependencies
+      #   uses: actions/cache@v4
+      #   with:
+      #     path: |
+      #       ${{ runner.temp }}\.pub-cache
+      #       ${{ runner.temp }}\pub-cache
+      #       ~/.pub-cache
+      #       .dart_tool
+      #     key: ${{ matrix.platform }}-flutter-pub-${{ hashFiles('**/pubspec.lock') }}
+      #     restore-keys: |
+      #       ${{ matrix.platform }}-flutter-pub-
+      #       flutter-pub-
+      #   continue-on-error: true
+
+      # Chocolatey cache disabled temporarily due to hanging issues
+      # - name: Cache Chocolatey packages
+      #   if: matrix.platform == 'windows'
+      #   uses: actions/cache@v4
+      #   with:
+      #     path: |
+      #       ${{ runner.temp }}\chocolatey
+      #       C:\ProgramData\chocolatey\lib
+      #       C:\ProgramData\chocolatey\bin
+      #     key: ${{ runner.os }}-chocolatey-innosetup-${{ hashFiles('.github/workflows/build-release.yml') }}
+      #     restore-keys: |
+      #       ${{ runner.os }}-chocolatey-innosetup-
+      #       ${{ runner.os }}-chocolatey-
+      #   continue-on-error: true
+
+      - name: Verify all build dependencies (Windows)
+        if: matrix.platform == 'windows'
+        run: |
+          Write-Host "::group::Verifying Build Dependencies" -ForegroundColor Green
+          Write-Host "=== Dependency Verification ===" -ForegroundColor Green
+          Write-Host ""
+
+          $errors = @()
+
+          # Check Flutter
+          Write-Host "Checking Flutter..." -ForegroundColor Cyan
           try {
-            $chocoInstalled = Get-Command choco -ErrorAction SilentlyContinue
-            if ($chocoInstalled) {
-              Write-Host "Chocolatey found. Installing Inno Setup..."
-              choco install innosetup -y --no-progress
-              
-              if ($LASTEXITCODE -eq 0) {
-                Write-Host "Inno Setup installed successfully via Chocolatey" -ForegroundColor Green
-                
-                # Verify installation
-                foreach ($path in $innoSetupPaths) {
-                  if (Test-Path $path) {
-                    $innoPath = $path
-                    break
-                  }
-                }
-              } else {
-                Write-Host "Chocolatey installation failed with exit code: $LASTEXITCODE" -ForegroundColor Yellow
-              }
-            } else {
-              Write-Host "Chocolatey not found on system" -ForegroundColor Yellow
-            }
+            flutter --version
+            Write-Host " Flutter is available" -ForegroundColor Green
           } catch {
-            Write-Host "Chocolatey installation failed: $_" -ForegroundColor Yellow
+            Write-Host " Flutter not found" -ForegroundColor Red
+            $errors += "Flutter not found"
           }
-          
-          # Fallback to Winget if Chocolatey failed
+          Write-Host ""
+
+          # Check Git
+          Write-Host "Checking Git..." -ForegroundColor Cyan
+          try {
+            git --version
+            Write-Host " Git is available" -ForegroundColor Green
+          } catch {
+            Write-Host " Git not found" -ForegroundColor Red
+            $errors += "Git not found"
+          }
+          Write-Host ""
+
+          # Run Flutter doctor
+          Write-Host "Running Flutter doctor..." -ForegroundColor Cyan
+          flutter doctor -v
+          Write-Host ""
+
+          if ($errors.Count -gt 0) {
+            Write-Host "::error::Dependency verification failed" -ForegroundColor Red
+            foreach ($error in $errors) {
+              Write-Host "::error::$error"
+            }
+            exit 1
+          }
+
+          Write-Host "::notice::All dependencies verified successfully" -ForegroundColor Green
+          Write-Host "::endgroup::"
+        shell: powershell
+
+      - name: Verify all build dependencies (Linux)
+        if: matrix.platform == 'linux'
+        run: |
+          echo "::group::Verifying Build Dependencies"
+          echo "=== Dependency Verification ==="
+          echo ""
+
+          errors=0
+
+          # Check Flutter
+          echo "Checking Flutter..."
+          if flutter --version; then
+            echo " Flutter is available"
+          else
+            echo " Flutter not found"
+            errors=$((errors + 1))
+          fi
+          echo ""
+
+          # Check Git
+          echo "Checking Git..."
+          if git --version; then
+            echo " Git is available"
+          else
+            echo " Git not found"
+            errors=$((errors + 1))
+          fi
+          echo ""
+
+          # Run Flutter doctor
+          echo "Running Flutter doctor..."
+          flutter doctor -v
+          echo ""
+
+          if [ $errors -gt 0 ]; then
+            echo "::error::Dependency verification failed with $errors errors"
+            exit 1
+          fi
+
+          echo "::notice::Core dependencies verified successfully"
+          echo "::notice::Linux-specific tools will be installed in next steps"
+          echo "::endgroup::"
+
+      - name: Configure Windows desktop support
+        if: matrix.platform == 'windows'
+        run: |
+          Write-Host "::group::Configuring Flutter for Windows" -ForegroundColor Green
+          Write-Host "Enabling Windows desktop support..."
+          flutter config --enable-windows-desktop
+
+          Write-Host "Disabling web support..."
+          flutter config --no-enable-web
+
+          Write-Host "::notice::Flutter configured for Windows desktop" -ForegroundColor Green
+          Write-Host "::endgroup::"
+        shell: powershell
+
+      - name: Configure Linux desktop support
+        if: matrix.platform == 'linux'
+        run: |
+          echo "::group::Configuring Flutter for Linux"
+          echo "Enabling Linux desktop support..."
+          flutter config --enable-linux-desktop
+
+          echo "Disabling web support..."
+          flutter config --no-enable-web
+
+          echo "::notice::Flutter configured for Linux desktop"
+          echo "::endgroup::"
+
+      - name: Install Linux build dependencies
+        if: matrix.platform == 'linux'
+        run: |
+          echo "::group::Installing Linux build dependencies"
+          echo "=== Installing Linux Build Dependencies ==="
+          echo ""
+
+          echo "Updating package lists..."
+          sudo apt-get update
+
+          echo ""
+          echo "Installing Flutter Linux dependencies..."
+          sudo apt-get install -y \
+            clang cmake ninja-build pkg-config \
+            libgtk-3-dev liblzma-dev \
+            libsecret-1-dev \
+            desktop-file-utils
+
+          echo ""
+          echo "::notice::Linux build dependencies installed successfully"
+          echo "::endgroup::"
+
+      - name: Install Flatpak build tools
+        if: matrix.platform == 'linux'
+        run: |
+          echo "::group::Installing Flatpak build tools"
+          echo "=== Installing Flatpak Build Tools ==="
+          echo ""
+
+          echo "Installing Flatpak and flatpak-builder..."
+          sudo apt-get install -y flatpak flatpak-builder
+
+          echo ""
+          echo "Adding Flathub repository..."
+          sudo flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
+
+          echo ""
+          echo "Installing Freedesktop SDK and Platform..."
+          sudo flatpak install -y flathub org.freedesktop.Platform//23.08 org.freedesktop.Sdk//23.08
+
+          echo ""
+          echo "::notice::Flatpak build tools installed successfully"
+          echo "::endgroup::"
+
+      - name: Install .deb packaging tools
+        if: matrix.platform == 'linux'
+        run: |
+          echo "::group::Installing .deb packaging tools"
+          echo "=== Installing .deb Packaging Tools ==="
+          echo ""
+
+          echo "Installing dpkg-dev, fakeroot, and lintian..."
+          sudo apt-get install -y \
+            dpkg-dev \
+            fakeroot \
+            lintian
+
+          echo ""
+          echo "Verifying installations..."
+          dpkg-deb --version
+          fakeroot --version
+          lintian --version
+
+          echo ""
+          echo "::notice::.deb packaging tools installed successfully"
+          echo "::endgroup::"
+
+      - name: Setup Java for Android
+        if: matrix.platform == 'android'
+        uses: actions/setup-java@v4
+        with:
+          distribution: "zulu"
+          java-version: "17"
+          cache: "gradle"
+
+      - name: Setup Android SDK
+        if: matrix.platform == 'android'
+        uses: android-actions/setup-android@v3
+        with:
+          api-level: 33
+          build-tools: 33.0.2
+          ndk-version: 25.2.9519653
+
+      - name: Cache Gradle dependencies
+        if: matrix.platform == 'android'
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+            android/.gradle
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+        continue-on-error: true
+
+      - name: Setup Android signing configuration
+        if: matrix.platform == 'android'
+        run: |
+          echo "::group::Setting up Android signing"
+          echo "=== Setting up Android Signing Configuration ==="
+          echo ""
+
+          # Create key.properties file for signing
+          mkdir -p android
+          cat > android/key.properties << EOF
+          storePassword=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          keyPassword=${{ secrets.ANDROID_KEY_PASSWORD }}
+          keyAlias=${{ secrets.ANDROID_KEY_ALIAS }}
+          storeFile=../release-keystore.jks
+          EOF
+
+          echo " key.properties file created"
+          echo ""
+
+          # Decode and save keystore from secrets
+          echo "Decoding keystore from GitHub Secrets..."
+          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d > android/release-keystore.jks
+
+          if [ -f android/release-keystore.jks ]; then
+            KEYSTORE_SIZE=$(du -h android/release-keystore.jks | cut -f1)
+            echo " Keystore file created: android/release-keystore.jks"
+            echo "  Size: $KEYSTORE_SIZE"
+          else
+            echo "::error::Failed to create keystore file"
+            exit 1
+          fi
+
+          echo ""
+          echo "::notice::Android signing configuration created successfully"
+          echo "::endgroup::"
+
+      - name: Verify Android SDK and dependencies
+        if: matrix.platform == 'android'
+        run: |
+          echo "::group::Verifying Android SDK"
+          echo "=== Verifying Android SDK and Dependencies ==="
+          echo ""
+
+          errors=0
+
+          # Check Java
+          echo "Checking Java..."
+          if java -version 2>&1; then
+            echo " Java is available"
+          else
+            echo " Java not found"
+            errors=$((errors + 1))
+          fi
+          echo ""
+
+          # Check Android SDK
+          echo "Checking Android SDK..."
+          if [ -n "$ANDROID_HOME" ] && [ -d "$ANDROID_HOME" ]; then
+            echo " Android SDK location: $ANDROID_HOME"
+          else
+            echo " Android SDK not found"
+            errors=$((errors + 1))
+          fi
+          echo ""
+
+          # List installed SDK components
+          if [ -n "$ANDROID_HOME" ] && [ -d "$ANDROID_HOME/cmdline-tools" ]; then
+            echo "Installed SDK components:"
+            $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --list_installed || true
+            echo ""
+          fi
+
+          # Accept licenses
+          echo "Accepting Android SDK licenses..."
+          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses 2>&1 || true
+          echo ""
+
+          # Check Flutter
+          echo "Checking Flutter..."
+          if flutter --version; then
+            echo " Flutter is available"
+          else
+            echo " Flutter not found"
+            errors=$((errors + 1))
+          fi
+          echo ""
+
+          # Run Flutter doctor
+          echo "Running Flutter doctor..."
+          flutter doctor -v
+          echo ""
+
+          if [ $errors -gt 0 ]; then
+            echo "::error::Dependency verification failed with $errors errors"
+            exit 1
+          fi
+
+          echo "::notice::Android SDK and dependencies verified successfully"
+          echo "::endgroup::"
+
+      - name: Get Flutter dependencies
+        run: flutter pub get
+
+      - name: Patch web package for non-web platforms
+        if: matrix.platform != 'web'
+        run: |
+          if [ "${{ matrix.platform }}" == "windows" ]; then
+            pwsh scripts/patch-web-package.ps1
+          else
+            # For Linux/Android, create bash version
+            WEB_PKG="$PUB_CACHE/hosted/pub.dev/web-1.1.1"
+            if [ -d "$WEB_PKG" ]; then
+              echo "Patching web package..."
+              cp "$WEB_PKG/lib/web.dart" "$WEB_PKG/lib/web.dart.backup" 2>/dev/null || true
+              echo "// Stub for non-web platforms" > "$WEB_PKG/lib/web.dart"
+              echo "library web;" >> "$WEB_PKG/lib/web.dart"
+              echo "Web package patched"
+            fi
+          fi
+        shell: bash
+
+      - name: Build Windows application
+        if: matrix.platform == 'windows'
+        run: |
+          Write-Host "::group::Building Windows application" -ForegroundColor Green
+          Write-Host "Running: flutter build windows --release"
+          Write-Host ""
+
+          # Build without running the INSTALL target to avoid CMake errors
+          flutter build windows --release --no-tree-shake-icons
+
+          if ($LASTEXITCODE -ne 0) {
+            Write-Host "::error::Flutter build failed with exit code $LASTEXITCODE"
+            exit 1
+          }
+
+          Write-Host ""
+          Write-Host "::notice::Windows application built successfully" -ForegroundColor Green
+          Write-Host "::endgroup::"
+        shell: powershell
+
+      - name: Build Linux application
+        if: matrix.platform == 'linux'
+        run: |
+          echo "::group::Building Linux application"
+          echo "Running: flutter build linux --release"
+          echo ""
+
+          flutter build linux --release
+
+          if [ $? -ne 0 ]; then
+            echo "::error::Flutter build failed"
+            exit 1
+          fi
+
+          echo ""
+          echo "::notice::Linux application built successfully"
+          echo "::endgroup::"
+
+      - name: Verify Build Output (Windows)
+        if: matrix.platform == 'windows'
+        run: |
+          Write-Host "::group::Verifying build output" -ForegroundColor Green
+          $buildPath = "build\windows\x64\runner\Release"
+
+          if (-not (Test-Path $buildPath)) {
+            Write-Host "::error::Build output directory not found: $buildPath"
+            exit 1
+          }
+
+          Write-Host "Build output directory exists: $buildPath"
+          Write-Host ""
+          Write-Host "Build artifacts:"
+          Get-ChildItem $buildPath -Recurse -File | Select-Object Name, Length, LastWriteTime | Format-Table -AutoSize
+
+          Write-Host "::notice::Build output verified successfully" -ForegroundColor Green
+          Write-Host "::endgroup::"
+        shell: powershell
+
+      - name: Verify Build Output (Linux)
+        if: matrix.platform == 'linux'
+        run: |
+          echo "::group::Verifying build output"
+          buildPath="build/linux/x64/release/bundle"
+
+          if [ ! -d "$buildPath" ]; then
+            echo "::error::Build output directory not found: $buildPath"
+            exit 1
+          fi
+
+          echo "Build output directory exists: $buildPath"
+          echo ""
+          echo "Build artifacts:"
+          ls -lh "$buildPath"
+
+          echo ""
+          echo "::notice::Build output verified successfully"
+          echo "::endgroup::"
+
+      - name: Verify Flatpak manifest
+        if: matrix.platform == 'linux'
+        run: |
+          echo "::group::Verifying Flatpak manifest"
+          echo "=== Verifying Flatpak Manifest ==="
+          echo ""
+
+          MANIFEST_FILE="com.cloudtolocalllm.CloudToLocalLLM.yml"
+
+          if [ ! -f "$MANIFEST_FILE" ]; then
+            echo "::error::Flatpak manifest not found: $MANIFEST_FILE"
+            exit 1
+          fi
+
+          echo " Flatpak manifest found: $MANIFEST_FILE"
+          echo ""
+          echo "Manifest contents:"
+          cat "$MANIFEST_FILE"
+
+          echo ""
+          echo "::notice::Flatpak manifest verified successfully"
+          echo "::endgroup::"
+
+      - name: Install Inno Setup
+        if: matrix.platform == 'windows'
+        run: |
+          Write-Host "::group::Installing Inno Setup" -ForegroundColor Green
+          Write-Host "=== Installing Inno Setup ===" -ForegroundColor Green
+          Write-Host ""
+
+          # Check if Inno Setup is already installed
+          $innoSetupPaths = @(
+            "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe",
+            "${env:ProgramFiles}\Inno Setup 6\ISCC.exe",
+            "${env:ProgramFiles(x86)}\Inno Setup 5\ISCC.exe",
+            "${env:ProgramFiles}\Inno Setup 5\ISCC.exe"
+          )
+
+          $innoPath = $null
+          foreach ($path in $innoSetupPaths) {
+            if (Test-Path $path) {
+              $innoPath = $path
+              Write-Host "Inno Setup already installed at: $innoPath" -ForegroundColor Cyan
+              break
+            }
+          }
+
+          # Install if not found
           if (-not $innoPath) {
+            Write-Host "Inno Setup not found. Installing..." -ForegroundColor Yellow
             Write-Host ""
-            Write-Host "Attempting installation via Winget..." -ForegroundColor Cyan
+            
+            # Try Chocolatey first
+            Write-Host "Attempting installation via Chocolatey..." -ForegroundColor Cyan
             try {
-              $wingetInstalled = Get-Command winget -ErrorAction SilentlyContinue
-              if ($wingetInstalled) {
-                Write-Host "Winget found. Installing Inno Setup..."
-                winget install --id JRSoftware.InnoSetup --silent --accept-source-agreements --accept-package-agreements
+              $chocoInstalled = Get-Command choco -ErrorAction SilentlyContinue
+              if ($chocoInstalled) {
+                Write-Host "Chocolatey found. Installing Inno Setup..."
+                choco install innosetup -y --no-progress
                 
                 if ($LASTEXITCODE -eq 0) {
-                  Write-Host "Inno Setup installed successfully via Winget" -ForegroundColor Green
+                  Write-Host "Inno Setup installed successfully via Chocolatey" -ForegroundColor Green
                   
                   # Verify installation
                   foreach ($path in $innoSetupPaths) {
@@ -756,1473 +875,191 @@ name: Build Desktop Apps & Create Release
                     }
                   }
                 } else {
-                  Write-Host "Winget installation failed with exit code: $LASTEXITCODE" -ForegroundColor Yellow
+                  Write-Host "Chocolatey installation failed with exit code: $LASTEXITCODE" -ForegroundColor Yellow
                 }
               } else {
-                Write-Host "Winget not found on system" -ForegroundColor Yellow
+                Write-Host "Chocolatey not found on system" -ForegroundColor Yellow
               }
             } catch {
-              Write-Host "Winget installation failed: $_" -ForegroundColor Yellow
+              Write-Host "Chocolatey installation failed: $_" -ForegroundColor Yellow
+            }
+            
+            # Fallback to Winget if Chocolatey failed
+            if (-not $innoPath) {
+              Write-Host ""
+              Write-Host "Attempting installation via Winget..." -ForegroundColor Cyan
+              try {
+                $wingetInstalled = Get-Command winget -ErrorAction SilentlyContinue
+                if ($wingetInstalled) {
+                  Write-Host "Winget found. Installing Inno Setup..."
+                  winget install --id JRSoftware.InnoSetup --silent --accept-source-agreements --accept-package-agreements
+                  
+                  if ($LASTEXITCODE -eq 0) {
+                    Write-Host "Inno Setup installed successfully via Winget" -ForegroundColor Green
+                    
+                    # Verify installation
+                    foreach ($path in $innoSetupPaths) {
+                      if (Test-Path $path) {
+                        $innoPath = $path
+                        break
+                      }
+                    }
+                  } else {
+                    Write-Host "Winget installation failed with exit code: $LASTEXITCODE" -ForegroundColor Yellow
+                  }
+                } else {
+                  Write-Host "Winget not found on system" -ForegroundColor Yellow
+                }
+              } catch {
+                Write-Host "Winget installation failed: $_" -ForegroundColor Yellow
+              }
+            }
+            
+            # Final check
+            if (-not $innoPath) {
+              Write-Host "::error::Failed to install Inno Setup via Chocolatey or Winget"
+              Write-Host ""
+              Write-Host "Manual installation options:" -ForegroundColor Yellow
+              Write-Host "1. Chocolatey: choco install innosetup -y"
+              Write-Host "2. Winget: winget install JRSoftware.InnoSetup"
+              Write-Host "3. Direct download: https://jrsoftware.org/isdl.php"
+              exit 1
             }
           }
-          
-          # Final check
-          if (-not $innoPath) {
-            Write-Host "::error::Failed to install Inno Setup via Chocolatey or Winget"
-            Write-Host ""
-            Write-Host "Manual installation options:" -ForegroundColor Yellow
-            Write-Host "1. Chocolatey: choco install innosetup -y"
-            Write-Host "2. Winget: winget install JRSoftware.InnoSetup"
-            Write-Host "3. Direct download: https://jrsoftware.org/isdl.php"
+
+          Write-Host ""
+          Write-Host "::notice::Inno Setup installation verified successfully" -ForegroundColor Green
+          Write-Host "::endgroup::"
+        shell: powershell
+
+      - name: Detect Inno Setup path and set environment variable
+        if: matrix.platform == 'windows'
+        run: |
+          Write-Host "::group::Detecting Inno Setup path" -ForegroundColor Green
+          Write-Host "=== Detecting Inno Setup Installation Path ===" -ForegroundColor Green
+          Write-Host ""
+
+          $innoSetupPaths = @(
+            "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe",
+            "${env:ProgramFiles}\Inno Setup 6\ISCC.exe",
+            "${env:ProgramFiles(x86)}\Inno Setup 5\ISCC.exe",
+            "${env:ProgramFiles}\Inno Setup 5\ISCC.exe"
+          )
+
+          $innoPath = $null
+          foreach ($path in $innoSetupPaths) {
+            if (Test-Path $path) {
+              $innoPath = $path
+              Write-Host "Inno Setup found at: $innoPath" -ForegroundColor Green
+              break
+            }
+          }
+
+          if ($innoPath) {
+            echo "INNO_SETUP_PATH=$innoPath" >> $env:GITHUB_ENV
+            Write-Host "Environment variable INNO_SETUP_PATH set to: $innoPath"
+          } else {
+            Write-Host "::error::Inno Setup not found even after installation attempt"
             exit 1
           }
-        }
-        
-        Write-Host ""
-        Write-Host "::notice::Inno Setup installation verified successfully" -ForegroundColor Green
-        Write-Host "::endgroup::"
-      shell: powershell
-      
-    - name:  Detect Inno Setup path and set environment variable
-      if: matrix.platform == 'windows'
-      run: |
-        Write-Host "::group::Detecting Inno Setup path" -ForegroundColor Green
-        Write-Host "=== Detecting Inno Setup Installation Path ===" -ForegroundColor Green
-        Write-Host ""
-        
-        $innoSetupPaths = @(
-          "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe",
-          "${env:ProgramFiles}\Inno Setup 6\ISCC.exe",
-          "${env:ProgramFiles(x86)}\Inno Setup 5\ISCC.exe",
-          "${env:ProgramFiles}\Inno Setup 5\ISCC.exe"
-        )
-        
-        $innoPath = $null
-        foreach ($path in $innoSetupPaths) {
-          if (Test-Path $path) {
-            $innoPath = $path
-            Write-Host "Inno Setup found at: $innoPath" -ForegroundColor Cyan
-            break
-          }
-        }
-        
-        if (-not $innoPath) {
-          Write-Host "::error::Inno Setup executable not found after installation"
-          Write-Host "Searched paths:" -ForegroundColor Yellow
-          foreach ($path in $innoSetupPaths) {
-            Write-Host "  - $path"
-          }
-          exit 1
-        }
-        
-        # Set environment variable for subsequent steps
-        echo "INNO_SETUP_PATH=$innoPath" >> $env:GITHUB_ENV
-        Write-Host ""
-        Write-Host "::notice::Environment variable INNO_SETUP_PATH set to: $innoPath" -ForegroundColor Green
-        Write-Host "::endgroup::"
-      shell: powershell
-      
-    - name:  Verify Inno Setup is accessible
-      if: matrix.platform == 'windows'
-      run: |
-        Write-Host "::group::Verifying Inno Setup accessibility" -ForegroundColor Green
-        Write-Host "=== Verifying Inno Setup Accessibility ===" -ForegroundColor Green
-        Write-Host ""
-        
-        if (-not $env:INNO_SETUP_PATH) {
-          Write-Host "::error::INNO_SETUP_PATH environment variable is not set"
-          exit 1
-        }
-        
-        if (-not (Test-Path $env:INNO_SETUP_PATH)) {
-          Write-Host "::error::Inno Setup executable not found at: $env:INNO_SETUP_PATH"
-          exit 1
-        }
-        
-        Write-Host "Inno Setup path: $env:INNO_SETUP_PATH" -ForegroundColor Cyan
-        Write-Host " Inno Setup is accessible and ready to use" -ForegroundColor Green
-        Write-Host ""
-        Write-Host "::notice::Inno Setup is accessible and ready to use" -ForegroundColor Green
-        Write-Host "::endgroup::"
-      shell: powershell
-      
-    - name:  Start Installer Creation Timer
-      if: matrix.platform == 'windows'
-      id: installer-start-time
-      run: |
-        $START_TIME = [int][double]::Parse((Get-Date -UFormat %s))
-        echo "start_time=$START_TIME" >> $env:GITHUB_OUTPUT
-        Write-Host "Installer creation timer started"
-      shell: powershell
-      
-    - name:  Create Windows installer
-      if: matrix.platform == 'windows'
-      run: |
-        Write-Host "::group::Creating Windows installer" -ForegroundColor Green
-        Write-Host "=== Creating Windows Installer ===" -ForegroundColor Green
-        Write-Host ""
-        
-        $FULL_VERSION = "${{ needs.version-info.outputs.full_version }}"
-        $VERSION = "${{ needs.version-info.outputs.version }}"
-        $PACKAGE_PATH = "dist/windows"
-        
-        Write-Host "Version: $VERSION" -ForegroundColor Cyan
-        Write-Host "Full Version: $FULL_VERSION" -ForegroundColor Cyan
-        Write-Host "Output Path: $PACKAGE_PATH" -ForegroundColor Cyan
-        Write-Host ""
-        
-        # Create dist directory
-        Write-Host "Creating output directory..."
-        New-Item -ItemType Directory -Force -Path $PACKAGE_PATH | Out-Null
-        
-        # Path to InnoSetup script
-        $issFile = "build-tools\installers\windows\CloudToLocalLLM_Simple.iss"
-        
-        Write-Host "Checking for Inno Setup script..."
-        if (-not (Test-Path $issFile)) {
-          Write-Host "::error::InnoSetup script not found at: $issFile"
-          exit 1
-        }
-        Write-Host " Inno Setup script found: $issFile" -ForegroundColor Green
-        Write-Host ""
-        
-        # Compile installer
-        Write-Host "Compiling Windows installer with Inno Setup..." -ForegroundColor Cyan
-        # Escape the version for Inno Setup preprocessor (quote if contains special chars)
-        $escapedVersion = $VERSION
-        if ($escapedVersion -match '[^0-9.]') {
-          $escapedVersion = "`"$escapedVersion`""
-        }
-        # Get absolute paths
-        $projectRoot = (Get-Location).Path
-        $buildSource = Join-Path $projectRoot "build\windows\x64\runner\Release"
-        Write-Host "Project root: $projectRoot"
-        Write-Host "Build source: $buildSource"
-        
-        $innoArgs = @(
-          "`"$issFile`"",
-          "/DMyAppVersion=$escapedVersion",
-          "/DSourceDir=$projectRoot",
-          "/DBuildDir=$buildSource",
-          "/O`"$PACKAGE_PATH`""
-        )
-        
-        Write-Host "Running Inno Setup compiler..."
-        $process = Start-Process -FilePath $env:INNO_SETUP_PATH -ArgumentList $innoArgs -Wait -PassThru -NoNewWindow
-        
-        if ($process.ExitCode -ne 0) {
-          Write-Host "::error::Inno Setup compilation failed with exit code: $($process.ExitCode)"
-          exit 1
-        }
-        Write-Host " Inno Setup compilation completed successfully" -ForegroundColor Green
-        Write-Host ""
-        
-        # Find the created installer (output filename may vary)
-        Write-Host "Locating created installer..."
-        $installerPattern = "CloudToLocalLLM*Setup*.exe"
-        $installer = Get-ChildItem -Path $PACKAGE_PATH -Filter $installerPattern -ErrorAction SilentlyContinue | Select-Object -First 1
-        
-        if ($installer) {
-          Write-Host " Installer created: $($installer.FullName)" -ForegroundColor Green
-          Write-Host "  Size: $([math]::Round($installer.Length / 1MB, 2)) MB"
-          echo "INSTALLER_FILE=$($installer.FullName)" >> $env:GITHUB_ENV
-          
-          # Generate SHA256 checksum for installer
+
+          Write-Host "::endgroup::"
+        shell: powershell
+
+      - name: Create Windows Installer
+        if: matrix.platform == 'windows'
+        run: |
+          Write-Host "::group::Creating Windows Installer" -ForegroundColor Green
+          Write-Host "=== Creating Windows Installer ===" -ForegroundColor Green
           Write-Host ""
-          Write-Host "Generating SHA256 checksum..."
-          $hash = Get-FileHash $installer.FullName -Algorithm SHA256
-          $checksumFile = "$($installer.FullName).sha256"
-          $hash.Hash + "  $($installer.Name)" | Out-File $checksumFile -Encoding ASCII
-          Write-Host " Checksum generated: $checksumFile" -ForegroundColor Green
-          Write-Host "  SHA256: $($hash.Hash)"
-          echo "INSTALLER_CHECKSUM=$checksumFile" >> $env:GITHUB_ENV
-        } else {
-          Write-Host "::error::Installer file not found in $PACKAGE_PATH"
-          Write-Host "Directory contents:"
-          Get-ChildItem $PACKAGE_PATH
-          exit 1
-        }
-        
-        Write-Host ""
-        Write-Host "::notice::Windows installer created successfully" -ForegroundColor Green
-        Write-Host "::endgroup::"
-      shell: powershell
-      
-    - name:  Installer Creation Duration
-      if: matrix.platform == 'windows'
-      run: |
-        $END_TIME = [int][double]::Parse((Get-Date -UFormat %s))
-        $DURATION = $END_TIME - ${{ steps.installer-start-time.outputs.start_time }}
-        Write-Host "::notice::Installer created in ${DURATION}s" -ForegroundColor Green
-        echo "Installer creation time: ${DURATION}s" >> $env:GITHUB_STEP_SUMMARY
-      shell: powershell
-      
-    - name:  Start Flatpak Build Timer
-      if: matrix.platform == 'linux'
-      id: flatpak-start-time
-      run: |
-        START_TIME=$(date +%s)
-        echo "start_time=$START_TIME" >> $GITHUB_OUTPUT
-        echo "Flatpak build timer started"
-      
-    - name:  Build Flatpak package
-      if: matrix.platform == 'linux'
-      run: |
-        echo "::group::Building Flatpak package"
-        echo "=== Building Flatpak Package ==="
-        echo ""
-        
-        VERSION="${{ needs.version-info.outputs.version }}"
-        PACKAGE_PATH="dist/linux"
-        FLATPAK_NAME="cloudtolocalllm-${VERSION}.flatpak"
-        
-        echo "Version: $VERSION"
-        echo "Package name: $FLATPAK_NAME"
-        echo "Output path: $PACKAGE_PATH"
-        echo ""
-        
-        # Create dist directory
-        echo "Creating output directory..."
-        mkdir -p "$PACKAGE_PATH"
-        
-        # Build Flatpak
-        echo "Building Flatpak with flatpak-builder..."
-        flatpak-builder --repo=repo --force-clean build-dir com.cloudtolocalllm.CloudToLocalLLM.yml
-        
-        if [ $? -ne 0 ]; then
-          echo "::error::Flatpak build failed"
-          exit 1
-        fi
-        echo " Flatpak build completed successfully"
-        echo ""
-        
-        # Create bundle
-        echo "Creating Flatpak bundle..."
-        flatpak build-bundle repo "$PACKAGE_PATH/$FLATPAK_NAME" com.cloudtolocalllm.CloudToLocalLLM
-        
-        if [ $? -ne 0 ]; then
-          echo "::error::Flatpak bundle creation failed"
-          exit 1
-        fi
-        echo " Flatpak bundle created: $PACKAGE_PATH/$FLATPAK_NAME"
-        
-        # Get file size
-        FLATPAK_SIZE=$(du -h "$PACKAGE_PATH/$FLATPAK_NAME" | cut -f1)
-        echo "  Size: $FLATPAK_SIZE"
-        echo ""
-        
-        # Generate SHA256 checksum
-        echo "Generating SHA256 checksum..."
-        cd "$PACKAGE_PATH"
-        sha256sum "$FLATPAK_NAME" > "${FLATPAK_NAME}.sha256"
-        CHECKSUM=$(cat "${FLATPAK_NAME}.sha256" | cut -d' ' -f1)
-        echo " Checksum generated: ${FLATPAK_NAME}.sha256"
-        echo "  SHA256: $CHECKSUM"
-        cd -
-        
-        # Set environment variables for artifact upload
-        echo "FLATPAK_FILE=$PACKAGE_PATH/$FLATPAK_NAME" >> $GITHUB_ENV
-        echo "FLATPAK_CHECKSUM=$PACKAGE_PATH/${FLATPAK_NAME}.sha256" >> $GITHUB_ENV
-        
-        echo ""
-        echo "::notice::Flatpak package created successfully"
-        echo "::endgroup::"
-      
-    - name:  Flatpak Build Duration
-      if: matrix.platform == 'linux'
-      run: |
-        END_TIME=$(date +%s)
-        DURATION=$((END_TIME - ${{ steps.flatpak-start-time.outputs.start_time }}))
-        echo "::notice::Flatpak package created in ${DURATION}s"
-        echo "Flatpak build time: ${DURATION}s" >> $GITHUB_STEP_SUMMARY
-      
-    - name:  Start .deb Package Build Timer
-      if: matrix.platform == 'linux'
-      id: deb-start-time
-      run: |
-        START_TIME=$(date +%s)
-        echo "start_time=$START_TIME" >> $GITHUB_OUTPUT
-        echo ".deb package build timer started"
-      
-    - name:  Create .deb package structure
-      if: matrix.platform == 'linux'
-      run: |
-        echo "::group::Creating .deb package structure"
-        echo "=== Creating .deb Package Structure ==="
-        echo ""
-        
-        VERSION="${{ needs.version-info.outputs.version }}"
-        PACKAGE_NAME="cloudtolocalllm"
-        DEB_DIR="dist/linux/deb"
-        PKG_DIR="$DEB_DIR/${PACKAGE_NAME}_${VERSION}_amd64"
-        
-        echo "Version: $VERSION"
-        echo "Package name: ${PACKAGE_NAME}_${VERSION}_amd64.deb"
-        echo "Build directory: $PKG_DIR"
-        echo ""
-        
-        # Create directory structure
-        echo "Creating directory structure..."
-        mkdir -p "$PKG_DIR/DEBIAN"
-        mkdir -p "$PKG_DIR/usr/bin"
-        mkdir -p "$PKG_DIR/usr/lib/$PACKAGE_NAME"
-        mkdir -p "$PKG_DIR/usr/share/applications"
-        mkdir -p "$PKG_DIR/usr/share/icons/hicolor/16x16/apps"
-        mkdir -p "$PKG_DIR/usr/share/icons/hicolor/32x32/apps"
-        mkdir -p "$PKG_DIR/usr/share/icons/hicolor/48x48/apps"
-        mkdir -p "$PKG_DIR/usr/share/icons/hicolor/64x64/apps"
-        mkdir -p "$PKG_DIR/usr/share/icons/hicolor/128x128/apps"
-        mkdir -p "$PKG_DIR/usr/share/metainfo"
-        mkdir -p "$PKG_DIR/usr/share/doc/$PACKAGE_NAME"
-        echo " Directory structure created"
-        echo ""
-        
-        # Copy application files
-        echo "Copying application files..."
-        cp -r build/linux/x64/release/bundle/* "$PKG_DIR/usr/lib/$PACKAGE_NAME/"
-        echo " Application files copied"
-        echo ""
-        
-        # Create launcher script
-        echo "Creating launcher script..."
-        cat > "$PKG_DIR/usr/bin/$PACKAGE_NAME" << 'EOFLAUNCHER'
-        #!/bin/bash
-        exec /usr/lib/cloudtolocalllm/cloudtolocalllm "$@"
-        EOFLAUNCHER
-        chmod +x "$PKG_DIR/usr/bin/$PACKAGE_NAME"
-        echo " Launcher script created"
-        echo ""
-        
-        # Copy desktop integration files
-        echo "Copying desktop integration files..."
-        cp linux/com.cloudtolocalllm.CloudToLocalLLM.desktop "$PKG_DIR/usr/share/applications/"
-        cp linux/com.cloudtolocalllm.CloudToLocalLLM.metainfo.xml "$PKG_DIR/usr/share/metainfo/"
-        echo " Desktop integration files copied"
-        echo ""
-        
-        # Copy icons
-        echo "Copying icons..."
-        cp linux/icons/cloudtolocalllm-16.png "$PKG_DIR/usr/share/icons/hicolor/16x16/apps/com.cloudtolocalllm.CloudToLocalLLM.png"
-        cp linux/icons/cloudtolocalllm-32.png "$PKG_DIR/usr/share/icons/hicolor/32x32/apps/com.cloudtolocalllm.CloudToLocalLLM.png"
-        cp linux/icons/cloudtolocalllm-48.png "$PKG_DIR/usr/share/icons/hicolor/48x48/apps/com.cloudtolocalllm.CloudToLocalLLM.png"
-        cp linux/icons/cloudtolocalllm-64.png "$PKG_DIR/usr/share/icons/hicolor/64x64/apps/com.cloudtolocalllm.CloudToLocalLLM.png"
-        cp linux/icons/cloudtolocalllm-128.png "$PKG_DIR/usr/share/icons/hicolor/128x128/apps/com.cloudtolocalllm.CloudToLocalLLM.png"
-        echo " Icons copied"
-        echo ""
-        
-        # Create copyright file
-        echo "Creating copyright file..."
-        cat > "$PKG_DIR/usr/share/doc/$PACKAGE_NAME/copyright" << 'EOFCOPYRIGHT'
-        Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
-        Upstream-Name: CloudToLocalLLM
-        Upstream-Contact: https://github.com/imrightguy/CloudToLocalLLM
-        Source: https://github.com/imrightguy/CloudToLocalLLM
-        
-        Files: *
-        Copyright: 2024 CloudToLocalLLM Contributors
-        License: MIT
-         Permission is hereby granted, free of charge, to any person obtaining a copy
-         of this software and associated documentation files (the "Software"), to deal
-         in the Software without restriction, including without limitation the rights
-         to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-         copies of the Software, and to permit persons to whom the Software is
-         furnished to do so, subject to the following conditions:
-         .
-         The above copyright notice and this permission notice shall be included in all
-         copies or substantial portions of the Software.
-         .
-         THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-         IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-         FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-         AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-         LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-         OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-         SOFTWARE.
-        EOFCOPYRIGHT
-        echo " Copyright file created"
-        echo ""
-        
-        # Create DEBIAN control file
-        echo "Creating DEBIAN control file..."
-        INSTALLED_SIZE=$(du -sk "$PKG_DIR/usr" | cut -f1)
-        cat > "$PKG_DIR/DEBIAN/control" << EOFCONTROL
-        Package: $PACKAGE_NAME
-        Version: $VERSION
-        Section: utils
-        Priority: optional
-        Architecture: amd64
-        Installed-Size: $INSTALLED_SIZE
-        Depends: libgtk-3-0, libglib2.0-0, libcairo2, libpango-1.0-0, libgdk-pixbuf-2.0-0
-        Maintainer: CloudToLocalLLM Contributors <https://github.com/imrightguy/CloudToLocalLLM>
-        Homepage: https://github.com/imrightguy/CloudToLocalLLM
-        Description: Bridge cloud AI services with local AI models
-         CloudToLocalLLM is a cross-platform application that bridges cloud-based AI
-         services with local AI models, providing a hybrid AI architecture with
-         privacy-first design.
-         .
-         Features:
-          - Seamlessly switch between cloud AI (OpenAI, Anthropic) and local models
-          - Privacy-first: sensitive data stays local
-          - Secure tunneling for real-time communication
-          - Cross-platform support
-        EOFCONTROL
-        echo " DEBIAN control file created"
-        echo ""
-        
-        # Create postinst script
-        echo "Creating postinst script..."
-        cat > "$PKG_DIR/DEBIAN/postinst" << 'EOFPOSTINST'
-        #!/bin/bash
-        set -e
-        
-        # Update desktop database
-        if command -v update-desktop-database >/dev/null 2>&1; then
-            update-desktop-database -q /usr/share/applications || true
-        fi
-        
-        # Update icon cache
-        if command -v gtk-update-icon-cache >/dev/null 2>&1; then
-            gtk-update-icon-cache -q -t -f /usr/share/icons/hicolor || true
-        fi
-        
-        exit 0
-        EOFPOSTINST
-        chmod +x "$PKG_DIR/DEBIAN/postinst"
-        echo " postinst script created"
-        echo ""
-        
-        # Create prerm script
-        echo "Creating prerm script..."
-        cat > "$PKG_DIR/DEBIAN/prerm" << 'EOFPRERM'
-        #!/bin/bash
-        set -e
-        
-        exit 0
-        EOFPRERM
-        chmod +x "$PKG_DIR/DEBIAN/prerm"
-        echo " prerm script created"
-        echo ""
-        
-        echo "::notice::.deb package structure created successfully"
-        echo "::endgroup::"
-      
-    - name:  Build .deb package
-      if: matrix.platform == 'linux'
-      run: |
-        echo "::group::Building .deb package"
-        echo "=== Building .deb Package ==="
-        echo ""
-        
-        VERSION="${{ needs.version-info.outputs.version }}"
-        PACKAGE_NAME="cloudtolocalllm"
-        DEB_DIR="dist/linux/deb"
-        PKG_DIR="$DEB_DIR/${PACKAGE_NAME}_${VERSION}_amd64"
-        DEB_FILE="${PACKAGE_NAME}_${VERSION}_amd64.deb"
-        
-        echo "Building package with dpkg-deb..."
-        cd "$DEB_DIR"
-        fakeroot dpkg-deb --build "${PACKAGE_NAME}_${VERSION}_amd64"
-        
-        if [ $? -ne 0 ]; then
-          echo "::error::.deb package build failed"
-          exit 1
-        fi
-        
-        echo " .deb package built successfully"
-        echo ""
-        
-        # Get file size
-        DEB_SIZE=$(du -h "$DEB_FILE" | cut -f1)
-        echo "Package: $DEB_FILE"
-        echo "Size: $DEB_SIZE"
-        echo ""
-        
-        # Move to dist/linux for consistency
-        mv "$DEB_FILE" ../
-        cd -
-        
-        echo "::notice::.deb package built successfully"
-        echo "::endgroup::"
-      
-    - name:  Validate .deb package with lintian
-      if: matrix.platform == 'linux'
-      run: |
-        echo "::group::Validating .deb package"
-        echo "=== Validating .deb Package with Lintian ==="
-        echo ""
-        
-        VERSION="${{ needs.version-info.outputs.version }}"
-        PACKAGE_NAME="cloudtolocalllm"
-        DEB_FILE="dist/linux/${PACKAGE_NAME}_${VERSION}_amd64.deb"
-        
-        echo "Running lintian on $DEB_FILE..."
-        echo ""
-        
-        # Run lintian with informational output
-        # We use --no-tag-display-limit to see all issues
-        # Exit code 0 or 1 is acceptable (1 means warnings/info, not errors)
-        lintian --no-tag-display-limit "$DEB_FILE" || LINTIAN_EXIT=$?
-        
-        echo ""
-        if [ "${LINTIAN_EXIT:-0}" -le 1 ]; then
-          echo " .deb package validation completed"
-          echo "::notice::.deb package validated successfully"
-        else
-          echo "::warning::Lintian found issues (exit code: ${LINTIAN_EXIT})"
-          echo "Package is still usable, but may have quality issues"
-        fi
-        
-        echo "::endgroup::"
-      
-    - name:  Generate SHA256 checksum for .deb package
-      if: matrix.platform == 'linux'
-      run: |
-        echo "::group::Generating .deb checksum"
-        echo "=== Generating SHA256 Checksum ==="
-        echo ""
-        
-        VERSION="${{ needs.version-info.outputs.version }}"
-        PACKAGE_NAME="cloudtolocalllm"
-        DEB_FILE="${PACKAGE_NAME}_${VERSION}_amd64.deb"
-        
-        cd dist/linux
-        
-        echo "Generating SHA256 checksum for $DEB_FILE..."
-        sha256sum "$DEB_FILE" > "${DEB_FILE}.sha256"
-        
-        CHECKSUM=$(cat "${DEB_FILE}.sha256" | cut -d' ' -f1)
-        echo " Checksum generated: ${DEB_FILE}.sha256"
-        echo "  SHA256: $CHECKSUM"
-        
-        cd -
-        
-        # Set environment variables for artifact upload
-        echo "DEB_FILE=dist/linux/$DEB_FILE" >> $GITHUB_ENV
-        echo "DEB_CHECKSUM=dist/linux/${DEB_FILE}.sha256" >> $GITHUB_ENV
-        
-        echo ""
-        echo "::notice::.deb package checksum generated successfully"
-        echo "::endgroup::"
-      
-    - name:  .deb Package Build Duration
-      if: matrix.platform == 'linux'
-      run: |
-        END_TIME=$(date +%s)
-        DURATION=$((END_TIME - ${{ steps.deb-start-time.outputs.start_time }}))
-        echo "::notice::.deb package created in ${DURATION}s"
-        echo ".deb build time: ${DURATION}s" >> $GITHUB_STEP_SUMMARY
-      
-    - name:  Build Android APKs with split-per-abi
-      if: matrix.platform == 'android'
-      run: |
-        echo "::group::Building Android APKs"
-        echo "=== Building Android APKs with Split-Per-ABI ==="
-        echo ""
-        echo "Build command: flutter build apk --release --split-per-abi"
-        echo "Target architectures: ARM64 (arm64-v8a), ARMv7 (armeabi-v7a), x86_64"
-        echo ""
-        
-        # Build release APKs with split-per-abi for smaller downloads
-        flutter build apk --release --split-per-abi
-        
-        if [ $? -ne 0 ]; then
-          echo "::error::Android APK build failed"
-          exit 1
-        fi
-        
-        echo ""
-        echo "::notice::Android APKs built successfully"
-        echo "::endgroup::"
-    
-    - name:  Verify Android APKs
-      if: matrix.platform == 'android'
-      run: |
-        echo "::group::Verifying Android APKs"
-        echo "=== Verifying Android APKs ==="
-        echo ""
-        
-        APK_DIR="build/app/outputs/flutter-apk"
-        
-        # Expected APK files
-        APK_ARM64="$APK_DIR/app-arm64-v8a-release.apk"
-        APK_ARMV7="$APK_DIR/app-armeabi-v7a-release.apk"
-        APK_X86_64="$APK_DIR/app-x86_64-release.apk"
-        
-        errors=0
-        
-        # Check ARM64 APK
-        echo "Checking ARM64 APK..."
-        if [ -f "$APK_ARM64" ]; then
-          APK_SIZE=$(du -h "$APK_ARM64" | cut -f1)
-          echo " ARM64 APK found: $APK_ARM64"
-          echo "  Size: $APK_SIZE"
-        else
-          echo " ARM64 APK not found: $APK_ARM64"
-          errors=$((errors + 1))
-        fi
-        echo ""
-        
-        # Check ARMv7 APK
-        echo "Checking ARMv7 APK..."
-        if [ -f "$APK_ARMV7" ]; then
-          APK_SIZE=$(du -h "$APK_ARMV7" | cut -f1)
-          echo " ARMv7 APK found: $APK_ARMV7"
-          echo "  Size: $APK_SIZE"
-        else
-          echo " ARMv7 APK not found: $APK_ARMV7"
-          errors=$((errors + 1))
-        fi
-        echo ""
-        
-        # Check x86_64 APK
-        echo "Checking x86_64 APK..."
-        if [ -f "$APK_X86_64" ]; then
-          APK_SIZE=$(du -h "$APK_X86_64" | cut -f1)
-          echo " x86_64 APK found: $APK_X86_64"
-          echo "  Size: $APK_SIZE"
-        else
-          echo " x86_64 APK not found: $APK_X86_64"
-          errors=$((errors + 1))
-        fi
-        echo ""
-        
-        if [ $errors -gt 0 ]; then
-          echo "::error::$errors APK(s) not found"
-          echo "Available files in $APK_DIR:"
-          ls -lh "$APK_DIR"
-          exit 1
-        fi
-        
-        # Verify APK signatures
-        echo "Verifying APK signatures..."
-        echo ""
-        
-        for apk in "$APK_ARM64" "$APK_ARMV7" "$APK_X86_64"; do
-          if [ -f "$apk" ]; then
-            echo "Verifying $(basename $apk)..."
-            if $ANDROID_HOME/build-tools/33.0.2/apksigner verify --verbose "$apk"; then
-              echo " Signature valid"
-            else
-              echo " Signature verification failed"
-              errors=$((errors + 1))
-            fi
-            echo ""
-          fi
-        done
-        
-        if [ $errors -gt 0 ]; then
-          echo "::error::APK signature verification failed"
-          exit 1
-        fi
-        
-        echo "::notice::All Android APKs verified successfully"
-        echo "::endgroup::"
-    
-    - name:  Package Android APKs
-      if: matrix.platform == 'android'
-      run: |
-        echo "::group::Packaging Android APKs"
-        echo "=== Packaging Android APKs ==="
-        echo ""
-        
-        VERSION="${{ needs.version-info.outputs.version }}"
-        PACKAGE_PATH="dist/android"
-        APK_DIR="build/app/outputs/flutter-apk"
-        
-        echo "Version: $VERSION"
-        echo "Output path: $PACKAGE_PATH"
-        echo ""
-        
-        # Create dist directory
-        mkdir -p "$PACKAGE_PATH"
-        
-        # Copy and rename APKs
-        echo "Copying APKs..."
-        
-        # ARM64 APK
-        if [ -f "$APK_DIR/app-arm64-v8a-release.apk" ]; then
-          APK_NAME="cloudtolocalllm-${VERSION}-arm64-v8a.apk"
-          cp "$APK_DIR/app-arm64-v8a-release.apk" "$PACKAGE_PATH/$APK_NAME"
-          echo " ARM64 APK: $APK_NAME"
-        fi
-        
-        # ARMv7 APK
-        if [ -f "$APK_DIR/app-armeabi-v7a-release.apk" ]; then
-          APK_NAME="cloudtolocalllm-${VERSION}-armeabi-v7a.apk"
-          cp "$APK_DIR/app-armeabi-v7a-release.apk" "$PACKAGE_PATH/$APK_NAME"
-          echo " ARMv7 APK: $APK_NAME"
-        fi
-        
-        # x86_64 APK
-        if [ -f "$APK_DIR/app-x86_64-release.apk" ]; then
-          APK_NAME="cloudtolocalllm-${VERSION}-x86_64.apk"
-          cp "$APK_DIR/app-x86_64-release.apk" "$PACKAGE_PATH/$APK_NAME"
-          echo " x86_64 APK: $APK_NAME"
-        fi
-        
-        echo ""
-        echo "Packaged APKs:"
-        ls -lh "$PACKAGE_PATH"/*.apk
-        
-        echo ""
-        echo "::notice::Android APKs packaged successfully"
-        echo "::endgroup::"
-    
-    - name:  Generate SHA256 checksums for Android APKs
-      if: matrix.platform == 'android'
-      run: |
-        echo "::group::Generating SHA256 checksums"
-        echo "=== Generating SHA256 Checksums for Android APKs ==="
-        echo ""
-        
-        PACKAGE_PATH="dist/android"
-        
-        cd "$PACKAGE_PATH"
-        
-        # Generate checksums for all APKs
-        for apk in *.apk; do
-          if [ -f "$apk" ]; then
-            echo "Generating checksum for $apk..."
-            sha256sum "$apk" > "${apk}.sha256"
-            CHECKSUM=$(cat "${apk}.sha256" | cut -d' ' -f1)
-            echo " Checksum: $CHECKSUM"
-            echo ""
-          fi
-        done
-        
-        cd -
-        
-        # Set environment variables for artifact upload
-        echo "APK_DIR=$PACKAGE_PATH" >> $GITHUB_ENV
-        
-        echo "::notice::SHA256 checksums generated successfully"
-        echo "::endgroup::"
-      
-    - name:  Start Portable Package Timer
-      if: matrix.platform == 'windows'
-      id: portable-start-time
-      run: |
-        $START_TIME = [int][double]::Parse((Get-Date -UFormat %s))
-        echo "start_time=$START_TIME" >> $env:GITHUB_OUTPUT
-        Write-Host "Portable package timer started"
-      shell: powershell
-      
-    - name:  Create portable package
-      if: matrix.platform == 'windows'
-      run: |
-        Write-Host "::group::Creating portable package" -ForegroundColor Green
-        Write-Host "=== Creating Portable Package ===" -ForegroundColor Green
-        Write-Host ""
-        
-        $FULL_VERSION = "${{ needs.version-info.outputs.full_version }}"
-        $PACKAGE_NAME = "cloudtolocalllm-$FULL_VERSION-portable"
-        $PACKAGE_PATH = "dist/windows"
 
-        Write-Host "Package name: $PACKAGE_NAME" -ForegroundColor Cyan
-        Write-Host "Output path: $PACKAGE_PATH" -ForegroundColor Cyan
-        Write-Host ""
+          $issFile = "installers/windows/inno_setup.iss"
+          if (-not (Test-Path $issFile)) {
+            Write-Host "::error::Inno Setup script not found: $issFile"
+            exit 1
+          }
 
-        # Copy build output
-        Write-Host "Copying build output..."
-        Copy-Item -Recurse "build\windows\x64\runner\Release" "$PACKAGE_PATH/$PACKAGE_NAME"
-        Write-Host " Build output copied" -ForegroundColor Green
-        Write-Host ""
+          Write-Host "Compiling Inno Setup script..." -ForegroundColor Cyan
+          & "${env:INNO_SETUP_PATH}" "$issFile"
 
-        # Create ZIP archive
-        Write-Host "Creating ZIP archive..."
-        Compress-Archive -Path "$PACKAGE_PATH/$PACKAGE_NAME" -DestinationPath "$PACKAGE_PATH/$PACKAGE_NAME.zip" -Force
-        
-        $zipFile = Get-Item "$PACKAGE_PATH/$PACKAGE_NAME.zip"
-        Write-Host " ZIP archive created: $($zipFile.FullName)" -ForegroundColor Green
-        Write-Host "  Size: $([math]::Round($zipFile.Length / 1MB, 2)) MB"
-        Write-Host ""
+          if ($LASTEXITCODE -ne 0) {
+            Write-Host "::error::Inno Setup compilation failed with exit code $LASTEXITCODE"
+            exit 1
+          }
 
-        # Generate SHA256 checksum
-        Write-Host "Generating SHA256 checksum..."
-        $hash = Get-FileHash "$PACKAGE_PATH/$PACKAGE_NAME.zip" -Algorithm SHA256
-        $hash.Hash + "  $PACKAGE_NAME.zip" | Out-File "$PACKAGE_PATH/$PACKAGE_NAME.zip.sha256" -Encoding ASCII
-        Write-Host " Checksum generated" -ForegroundColor Green
-        Write-Host "  SHA256: $($hash.Hash)"
-        Write-Host ""
+          Write-Host ""
+          Write-Host "::notice::Windows installer created successfully" -ForegroundColor Green
+          Write-Host "::endgroup::"
+        shell: powershell
 
-        echo "PACKAGE_FILE=$PACKAGE_PATH/$PACKAGE_NAME.zip" >> $env:GITHUB_ENV
-        echo "CHECKSUM_FILE=$PACKAGE_PATH/$PACKAGE_NAME.zip.sha256" >> $env:GITHUB_ENV
-        
-        Write-Host "::notice::Portable package created successfully" -ForegroundColor Green
-        Write-Host "::endgroup::"
-      shell: powershell
-      
-    - name:  Portable Package Duration
-      if: matrix.platform == 'windows'
-      run: |
-        $END_TIME = [int][double]::Parse((Get-Date -UFormat %s))
-        $DURATION = $END_TIME - ${{ steps.portable-start-time.outputs.start_time }}
-        Write-Host "::notice::Portable package created in ${DURATION}s" -ForegroundColor Green
-        echo "Portable package time: ${DURATION}s" >> $env:GITHUB_STEP_SUMMARY
-      shell: powershell
-      
-    - name:  Upload build artifacts (Windows)
-      if: matrix.platform == 'windows'
-      run: |
-        Write-Host "::group::Uploading build artifacts" -ForegroundColor Green
-        Write-Host "=== Uploading Build Artifacts ===" -ForegroundColor Green
-        Write-Host ""
-        Write-Host "Artifact name: ${{ matrix.artifact-name }}"
-        Write-Host "Files to upload:"
-        Write-Host "  - $env:PACKAGE_FILE"
-        Write-Host "  - $env:CHECKSUM_FILE"
-        Write-Host "  - $env:INSTALLER_FILE"
-        Write-Host "  - $env:INSTALLER_CHECKSUM"
-        Write-Host "::endgroup::"
-      shell: powershell
-      
-    - uses: actions/upload-artifact@v4
-      if: matrix.platform == 'windows'
-      with:
-        name: ${{ matrix.artifact-name }}
-        path: |
-          ${{ env.PACKAGE_FILE }}
-          ${{ env.CHECKSUM_FILE }}
-          ${{ env.INSTALLER_FILE }}
-          ${{ env.INSTALLER_CHECKSUM }}
-        retention-days: 30
-        
-    - name:  Upload build artifacts (Linux)
-      if: matrix.platform == 'linux'
-      run: |
-        echo "::group::Uploading build artifacts"
-        echo "=== Uploading Build Artifacts ==="
-        echo ""
-        echo "Artifact name: ${{ matrix.artifact-name }}"
-        echo "Files to upload:"
-        echo "  - $FLATPAK_FILE"
-        echo "  - $FLATPAK_CHECKSUM"
-        echo "  - $DEB_FILE"
-        echo "  - $DEB_CHECKSUM"
-        echo "::endgroup::"
-      
-    - uses: actions/upload-artifact@v4
-      if: matrix.platform == 'linux'
-      with:
-        name: ${{ matrix.artifact-name }}
-        path: |
-          ${{ env.FLATPAK_FILE }}
-          ${{ env.FLATPAK_CHECKSUM }}
-          ${{ env.DEB_FILE }}
-          ${{ env.DEB_CHECKSUM }}
-        retention-days: 30
-        
-    - name:  Upload build artifacts (Android)
-      if: matrix.platform == 'android'
-      run: |
-        echo "::group::Uploading build artifacts"
-        echo "=== Uploading Build Artifacts ==="
-        echo ""
-        echo "Artifact name: ${{ matrix.artifact-name }}"
-        echo "Files to upload:"
-        ls -lh $APK_DIR/*.apk $APK_DIR/*.sha256
-        echo "::endgroup::"
-    
-    - uses: actions/upload-artifact@v4
-      if: matrix.platform == 'android'
-      with:
-        name: ${{ matrix.artifact-name }}
-        path: |
-          ${{ env.APK_DIR }}/*.apk
-          ${{ env.APK_DIR }}/*.sha256
-        retention-days: 30
-        
-    - name:  Artifacts Uploaded (Windows)
-      if: matrix.platform == 'windows'
-      run: |
-        Write-Host "::notice::Build artifacts uploaded successfully" -ForegroundColor Green
-      shell: powershell
-      
-    - name:  Artifacts Uploaded (Linux)
-      if: matrix.platform == 'linux'
-      run: |
-        echo "::notice::Build artifacts uploaded successfully"
-      
-    - name:  Artifacts Uploaded (Android)
-      if: matrix.platform == 'android'
-      run: |
-        echo "::notice::Build artifacts uploaded successfully"
-      
-    - name:  Total Build Job Duration (Windows)
-      if: always() && matrix.platform == 'windows'
-      run: |
-        $END_TIME = [int][double]::Parse((Get-Date -UFormat %s))
-        $DURATION = $END_TIME - ${{ steps.build-start-time-windows.outputs.start_time }}
-        $MINUTES = [math]::Floor($DURATION / 60)
-        $SECONDS = $DURATION % 60
-        
-        Write-Host "::notice::Build job completed in ${MINUTES}m ${SECONDS}s" -ForegroundColor Green
-        
-        echo "##  Build Summary" >> $env:GITHUB_STEP_SUMMARY
-        echo "" >> $env:GITHUB_STEP_SUMMARY
-        echo "**Platform:** ${{ matrix.platform }}" >> $env:GITHUB_STEP_SUMMARY
-        echo "**Total Duration:** ${MINUTES}m ${SECONDS}s" >> $env:GITHUB_STEP_SUMMARY
-      shell: powershell
-      
-    - name:  Total Build Job Duration (Linux)
-      if: always() && matrix.platform == 'linux'
-      run: |
-        END_TIME=$(date +%s)
-        DURATION=$((END_TIME - ${{ steps.build-start-time-linux.outputs.start_time }}))
-        MINUTES=$((DURATION / 60))
-        SECONDS=$((DURATION % 60))
-        
-        echo "::notice::Build job completed in ${MINUTES}m ${SECONDS}s"
-        
-        echo "##  Build Summary" >> $GITHUB_STEP_SUMMARY
-        echo "" >> $GITHUB_STEP_SUMMARY
-        echo "**Platform:** ${{ matrix.platform }}" >> $GITHUB_STEP_SUMMARY
-        echo "**Total Duration:** ${MINUTES}m ${SECONDS}s" >> $GITHUB_STEP_SUMMARY
-      
-    - name:  Total Build Job Duration (Android)
-      if: always() && matrix.platform == 'android'
-      run: |
-        END_TIME=$(date +%s)
-        DURATION=$((END_TIME - ${{ steps.build-start-time-android.outputs.start_time }}))
-        MINUTES=$((DURATION / 60))
-        SECONDS=$((DURATION % 60))
-        
-        echo "::notice::Build job completed in ${MINUTES}m ${SECONDS}s"
-        
-        echo "##  Build Summary" >> $GITHUB_STEP_SUMMARY
-        echo "" >> $GITHUB_STEP_SUMMARY
-        echo "**Platform:** ${{ matrix.platform }}" >> $GITHUB_STEP_SUMMARY
-        echo "**Total Duration:** ${MINUTES}m ${SECONDS}s" >> $GITHUB_STEP_SUMMARY
-      
-    - name:  Job Failed - Error Summary (Windows)
-      if: failure() && matrix.platform == 'windows'
-      run: |
-        Write-Host "::error::Build job failed" -ForegroundColor Red
-        
-        echo "##  Build Job Failed" >> $env:GITHUB_STEP_SUMMARY
-        echo "" >> $env:GITHUB_STEP_SUMMARY
-        echo "**Platform:** ${{ matrix.platform }}" >> $env:GITHUB_STEP_SUMMARY
-        echo "" >> $env:GITHUB_STEP_SUMMARY
-        echo "**Common Issues:**" >> $env:GITHUB_STEP_SUMMARY
-        echo "- Flutter SDK installation failed" >> $env:GITHUB_STEP_SUMMARY
-        echo "- Dependency download failed (network issues)" >> $env:GITHUB_STEP_SUMMARY
-        echo "- Flutter build compilation errors" >> $env:GITHUB_STEP_SUMMARY
-        echo "- Inno Setup installation or compilation failed" >> $env:GITHUB_STEP_SUMMARY
-        echo "- Artifact creation or upload failed" >> $env:GITHUB_STEP_SUMMARY
-        echo "" >> $env:GITHUB_STEP_SUMMARY
-        echo "**Troubleshooting:**" >> $env:GITHUB_STEP_SUMMARY
-        echo "1. Check Flutter doctor output for missing dependencies" >> $env:GITHUB_STEP_SUMMARY
-        echo "2. Verify pubspec.yaml dependencies are valid" >> $env:GITHUB_STEP_SUMMARY
-        echo "3. Review build logs for compilation errors" >> $env:GITHUB_STEP_SUMMARY
-        echo "4. Verify Inno Setup script exists and is valid" >> $env:GITHUB_STEP_SUMMARY
-        echo "5. Check GitHub Actions status for service issues" >> $env:GITHUB_STEP_SUMMARY
-        echo "" >> $env:GITHUB_STEP_SUMMARY
-        echo "**Quick Fixes:**" >> $env:GITHUB_STEP_SUMMARY
-        echo "- Re-run the workflow (transient network issues)" >> $env:GITHUB_STEP_SUMMARY
-        echo "- Clear caches if dependency issues persist" >> $env:GITHUB_STEP_SUMMARY
-        echo "- Test build locally to isolate the issue" >> $env:GITHUB_STEP_SUMMARY
-      shell: powershell
-      
-    - name:  Job Failed - Error Summary (Linux)
-      if: failure() && matrix.platform == 'linux'
-      run: |
-        echo "::error::Build job failed"
-        
-        echo "##  Build Job Failed" >> $GITHUB_STEP_SUMMARY
-        echo "" >> $GITHUB_STEP_SUMMARY
-        echo "**Platform:** ${{ matrix.platform }}" >> $GITHUB_STEP_SUMMARY
-        echo "" >> $GITHUB_STEP_SUMMARY
-        echo "**Common Issues:**" >> $GITHUB_STEP_SUMMARY
-        echo "- Flutter SDK installation failed" >> $GITHUB_STEP_SUMMARY
-        echo "- Dependency download failed (network issues)" >> $GITHUB_STEP_SUMMARY
-        echo "- Flutter build compilation errors" >> $GITHUB_STEP_SUMMARY
-        echo "- Flatpak or .deb packaging failed" >> $GITHUB_STEP_SUMMARY
-        echo "- Artifact creation or upload failed" >> $GITHUB_STEP_SUMMARY
-        echo "" >> $GITHUB_STEP_SUMMARY
-        echo "**Troubleshooting:**" >> $GITHUB_STEP_SUMMARY
-        echo "1. Check Flutter doctor output for missing dependencies" >> $GITHUB_STEP_SUMMARY
-        echo "2. Verify pubspec.yaml dependencies are valid" >> $GITHUB_STEP_SUMMARY
-        echo "3. Review build logs for compilation errors" >> $GITHUB_STEP_SUMMARY
-        echo "4. Verify Flatpak manifest and .deb structure" >> $GITHUB_STEP_SUMMARY
-        echo "5. Check GitHub Actions status for service issues" >> $GITHUB_STEP_SUMMARY
-        echo "" >> $GITHUB_STEP_SUMMARY
-        echo "**Quick Fixes:**" >> $GITHUB_STEP_SUMMARY
-        echo "- Re-run the workflow (transient network issues)" >> $GITHUB_STEP_SUMMARY
-        echo "- Clear caches if dependency issues persist" >> $GITHUB_STEP_SUMMARY
-        echo "- Test build locally to isolate the issue" >> $GITHUB_STEP_SUMMARY
-      
-    - name:  Job Failed - Error Summary (Android)
-      if: failure() && matrix.platform == 'android'
-      run: |
-        echo "::error::Build job failed"
-        
-        echo "##  Build Job Failed" >> $GITHUB_STEP_SUMMARY
-        echo "" >> $GITHUB_STEP_SUMMARY
-        echo "**Platform:** ${{ matrix.platform }}" >> $GITHUB_STEP_SUMMARY
-        echo "" >> $GITHUB_STEP_SUMMARY
-        echo "**Common Issues:**" >> $GITHUB_STEP_SUMMARY
-        echo "- Flutter SDK installation failed" >> $GITHUB_STEP_SUMMARY
-        echo "- Java or Android SDK installation failed" >> $GITHUB_STEP_SUMMARY
-        echo "- Android signing configuration missing or invalid" >> $GITHUB_STEP_SUMMARY
-        echo "- Gradle build failed" >> $GITHUB_STEP_SUMMARY
-        echo "- APK signing failed" >> $GITHUB_STEP_SUMMARY
-        echo "- Artifact creation or upload failed" >> $GITHUB_STEP_SUMMARY
-        echo "" >> $GITHUB_STEP_SUMMARY
-        echo "**Troubleshooting:**" >> $GITHUB_STEP_SUMMARY
-        echo "1. Verify Android keystore secrets are configured" >> $GITHUB_STEP_SUMMARY
-        echo "2. Check Flutter doctor output for Android setup" >> $GITHUB_STEP_SUMMARY
-        echo "3. Verify Android SDK licenses are accepted" >> $GITHUB_STEP_SUMMARY
-        echo "4. Review Gradle build logs for errors" >> $GITHUB_STEP_SUMMARY
-        echo "5. Check GitHub Actions status for service issues" >> $GITHUB_STEP_SUMMARY
-        echo "" >> $GITHUB_STEP_SUMMARY
-        echo "**Quick Fixes:**" >> $GITHUB_STEP_SUMMARY
-        echo "- Re-run the workflow (transient network issues)" >> $GITHUB_STEP_SUMMARY
-        echo "- Verify keystore secrets in repository settings" >> $GITHUB_STEP_SUMMARY
-        echo "- Clear Gradle caches if build issues persist" >> $GITHUB_STEP_SUMMARY
+      - name: Create Portable Package (Windows)
+        if: matrix.platform == 'windows'
+        run: |
+          Write-Host "::group::Creating Portable Package" -ForegroundColor Green
+          Write-Host "=== Creating Portable Package ===" -ForegroundColor Green
+          Write-Host ""
 
-  # Create GitHub release with all platform builds (only for tag pushes)
+          $buildPath = "build\windows\x64\runner\Release"
+          $version = "${{ needs.version-info.outputs.version }}"
+          $zipName = "CloudToLocalLLM-Windows-Portable-$version.zip"
+
+          Write-Host "Compressing build output to $zipName..." -ForegroundColor Cyan
+          Compress-Archive -Path "$buildPath\*" -DestinationPath $zipName -Force
+
+          if (Test-Path $zipName) {
+            $size = (Get-Item $zipName).Length / 1MB
+            Write-Host "Portable package created: $zipName ({0:N2} MB)" -f $size
+          } else {
+            Write-Host "::error::Failed to create portable package"
+            exit 1
+          }
+
+          Write-Host ""
+          Write-Host "::notice::Portable package created successfully" -ForegroundColor Green
+          Write-Host "::endgroup::"
+        shell: powershell
+
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact-name }}
+          path: |
+            build/windows/x64/runner/Release/*
+            build/linux/x64/release/bundle/*
+            build/app/outputs/flutter-apk/*
+            *.zip
+            Output/*.exe
+          if-no-files-found: warn
+
+  # Create GitHub Release
   create-release:
-    name: Create GitHub Release
-    if: needs.version-info.outputs.is_release == 'true'
+    name: Create Release
     runs-on: ubuntu-latest
     needs: [version-info, build-desktop]
+    if: needs.version-info.outputs.is_release == 'true'
+    permissions:
+      contents: write
 
     steps:
-    - name:  Job Started - Create GitHub Release
-      run: |
-        echo "::group::Release Job Information"
-        echo "=== Create GitHub Release Job Started ==="
-        echo ""
-        echo "Version: ${{ needs.version-info.outputs.version }}"
-        echo "Tag: ${{ needs.version-info.outputs.tag_name }}"
-        echo "Release Name: ${{ needs.version-info.outputs.release_name }}"
-        echo "Is Release: ${{ needs.version-info.outputs.is_release }}"
-        echo ""
-        echo "Started at: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
-        echo "::endgroup::"
-        
-    - name:  Start Release Time Tracking
-      id: release-start-time
-      run: |
-        START_TIME=$(date +%s)
-        echo "start_time=$START_TIME" >> $GITHUB_OUTPUT
-        echo "Release timer started"
-        
-    - name:  Checkout Repository
-      run: |
-        echo "::group::Checking out repository"
-        echo "Repository: ${{ github.repository }}"
-        echo "Ref: ${{ github.ref }}"
-        echo "::endgroup::"
-      
-    - uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
-        token: ${{ secrets.GITHUB_TOKEN }}
-      
-    - name:  Checkout Complete
-      run: |
-        echo "::notice::Repository checked out successfully"
-        echo "Current directory: $(pwd)"
-        
-    - name:  Download all build artifacts
-      run: |
-        echo "::group::Downloading build artifacts"
-        echo "=== Downloading Build Artifacts ==="
-        echo ""
-        echo "Pattern: *-desktop"
-        echo "Destination: artifacts/"
-        echo "::endgroup::"
-      
-    - uses: actions/download-artifact@v4
-      with:
-        path: artifacts/
-        pattern: '*-desktop'
-        merge-multiple: false
-        
-    - name:  Artifacts Downloaded
-      run: |
-        echo "::notice::Build artifacts downloaded successfully"
-        echo "::group::Downloaded Artifacts"
-        echo "Artifact structure:"
-        find artifacts/ -type f -exec ls -lh {} \;
-        echo "::endgroup::"
-        
-    - name:  Prepare release assets
-      run: |
-        echo "::group::Preparing Release Assets"
-        echo "=== Preparing Release Assets ==="
-        echo ""
-        mkdir -p release-assets
-        
-        # Display downloaded artifacts structure
-        echo "Downloaded artifacts structure:"
-        find artifacts/ -type f
-        echo ""
-        
-        # Process Windows artifacts
-        echo "Processing Windows artifacts..."
-        if [ -d "artifacts/windows-desktop" ]; then
-          # Copy Windows installer
-          WINDOWS_INSTALLER=$(find artifacts/windows-desktop -name "*.exe" -type f | head -1)
-          if [ -n "$WINDOWS_INSTALLER" ]; then
-            cp "$WINDOWS_INSTALLER" release-assets/
-            echo " Copied Windows installer: $(basename "$WINDOWS_INSTALLER")"
-          fi
-          
-          # Copy Windows installer checksum
-          WINDOWS_INSTALLER_HASH=$(find artifacts/windows-desktop -name "*.exe.sha256" -type f | head -1)
-          if [ -n "$WINDOWS_INSTALLER_HASH" ]; then
-            cp "$WINDOWS_INSTALLER_HASH" release-assets/
-            echo " Copied Windows installer checksum: $(basename "$WINDOWS_INSTALLER_HASH")"
-          fi
-          
-          # Copy Windows portable package
-          WINDOWS_PORTABLE=$(find artifacts/windows-desktop -name "*-portable.zip" -type f | head -1)
-          if [ -n "$WINDOWS_PORTABLE" ]; then
-            cp "$WINDOWS_PORTABLE" release-assets/
-            echo " Copied Windows portable: $(basename "$WINDOWS_PORTABLE")"
-          fi
-          
-          # Copy Windows portable checksum
-          WINDOWS_PORTABLE_HASH=$(find artifacts/windows-desktop -name "*-portable.zip.sha256" -type f | head -1)
-          if [ -n "$WINDOWS_PORTABLE_HASH" ]; then
-            cp "$WINDOWS_PORTABLE_HASH" release-assets/
-            echo " Copied Windows portable checksum: $(basename "$WINDOWS_PORTABLE_HASH")"
-          fi
-        else
-          echo " Windows artifacts not found"
-        fi
-        
-        # Process Linux artifacts
-        echo ""
-        if [ -d "artifacts/linux-desktop" ]; then
-          echo "Processing Linux artifacts..."
-          
-          # Copy Flatpak package
-          LINUX_FLATPAK=$(find artifacts/linux-desktop -name "*.flatpak" -type f | head -1)
-          if [ -n "$LINUX_FLATPAK" ]; then
-            cp "$LINUX_FLATPAK" release-assets/
-            echo " Copied Linux Flatpak: $(basename "$LINUX_FLATPAK")"
-          fi
-          
-          # Copy Flatpak checksum
-          LINUX_FLATPAK_HASH=$(find artifacts/linux-desktop -name "*.flatpak.sha256" -type f | head -1)
-          if [ -n "$LINUX_FLATPAK_HASH" ]; then
-            cp "$LINUX_FLATPAK_HASH" release-assets/
-            echo " Copied Linux Flatpak checksum: $(basename "$LINUX_FLATPAK_HASH")"
-          fi
-        else
-          echo " Linux artifacts not found"
-        fi
-        
-        # Process Android artifacts
-        echo ""
-        if [ -d "artifacts/android-apk" ]; then
-          echo "Processing Android artifacts..."
-          
-          # Copy all Android APKs
-          ANDROID_APKS=$(find artifacts/android-apk -name "*.apk" -type f)
-          if [ -n "$ANDROID_APKS" ]; then
-            for apk in $ANDROID_APKS; do
-              cp "$apk" release-assets/
-              echo " Copied Android APK: $(basename "$apk")"
-            done
-          fi
-          
-          # Copy all Android APK checksums
-          ANDROID_CHECKSUMS=$(find artifacts/android-apk -name "*.apk.sha256" -type f)
-          if [ -n "$ANDROID_CHECKSUMS" ]; then
-            for checksum in $ANDROID_CHECKSUMS; do
-              cp "$checksum" release-assets/
-              echo " Copied Android checksum: $(basename "$checksum")"
-            done
-          fi
-        else
-          echo " Android artifacts not found"
-        fi
-        
-        echo ""
-        echo "=== Release Assets Summary ==="
-        ls -lh release-assets/
-        
-        # Verify we have at least some artifacts
-        ASSET_COUNT=$(find release-assets/ -type f | wc -l)
-        if [ "$ASSET_COUNT" -eq 0 ]; then
-          echo "::error::No release assets found!"
-          exit 1
-        fi
-        echo "Total assets: $ASSET_COUNT"
-        echo ""
-        echo "::notice::Release assets prepared successfully"
-        echo "::endgroup::"
-        
-    - name:  Generate release notes
-      run: |
-        echo "::group::Generating Release Notes"
-        VERSION="${{ needs.version-info.outputs.version }}"
-        
-        echo "=== Generating Release Notes ==="
-        echo "Version: $VERSION"
-        echo ""
-        
-        # Detect which platforms have artifacts
-        HAS_WINDOWS=false
-        HAS_LINUX=false
-        HAS_ANDROID=false
-        
-        if [ -f "release-assets/CloudToLocalLLM-Windows-"*"-Setup.exe" ] 2>/dev/null; then
-          HAS_WINDOWS=true
-        fi
-        
-        if ls release-assets/*.flatpak 1> /dev/null 2>&1; then
-          HAS_LINUX=true
-        fi
-        
-        if ls release-assets/*.apk 1> /dev/null 2>&1; then
-          HAS_ANDROID=true
-        fi
-        
-        # Start building release notes
-        cat > release-notes.md << 'EOF'
-        # CloudToLocalLLM v$VERSION
-        
-        ## What's Changed
-        - Version $VERSION release
-        - Updated dependencies and bug fixes
-        - Performance improvements
-        
-        ## Download
-        
-        EOF
-        
-        # Replace VERSION placeholder
-        sed -i "s/\$VERSION/$VERSION/g" release-notes.md
-        
-        # Add Windows section if available
-        if [ "$HAS_WINDOWS" = true ]; then
-          cat >> release-notes.md << 'EOF'
-        ### Windows
-        - **CloudToLocalLLM-Windows-$VERSION-Setup.exe** - Windows installer (recommended)
-        - **cloudtolocalllm-$VERSION-portable.zip** - Portable version (no installation required)
-        
-        **Installation:**
-        1. Download the installer or portable ZIP
-        2. Run the installer or extract the ZIP
-        3. Launch CloudToLocalLLM
-        
-        EOF
-          sed -i "s/\$VERSION/$VERSION/g" release-notes.md
-        fi
-        
-        # Add Linux section if available
-        if [ "$HAS_LINUX" = true ]; then
-          cat >> release-notes.md << 'EOF'
-        ### Linux
-        - **cloudtolocalllm-$VERSION.flatpak** - Universal Flatpak package (works on all major distributions)
-        
-        **Installation:**
-        1. Download the Flatpak package
-        2. Install: `flatpak install cloudtolocalllm-$VERSION.flatpak`
-        3. Run: `flatpak run com.cloudtolocalllm.CloudToLocalLLM`
-        
-        **Supported Distributions:**
-        - Ubuntu 20.04+
-        - Fedora 35+
-        - Arch Linux
-        - Debian 11+
-        - openSUSE Leap 15.3+
-        - And any other distribution with Flatpak support
-        
-        EOF
-          sed -i "s/\$VERSION/$VERSION/g" release-notes.md
-        fi
-        
-        # Add Android section
-        if [ "$HAS_ANDROID" = true ]; then
-          cat >> release-notes.md << 'EOF'
-        ### Android
-        Choose the APK for your device architecture:
-        - **cloudtolocalllm-$VERSION-arm64-v8a.apk** - 64-bit ARM (most modern devices)
-        - **cloudtolocalllm-$VERSION-armeabi-v7a.apk** - 32-bit ARM (older devices)
-        - **cloudtolocalllm-$VERSION-x86_64.apk** - 64-bit x86 (emulators, some tablets)
-        
-        **Installation:**
-        1. Download the APK for your device architecture (arm64-v8a for most modern devices)
-        2. Enable "Install from Unknown Sources" in Settings → Security
-        3. Open the APK file to install
-        4. Launch CloudToLocalLLM from your app drawer
-        
-        **Requirements:**
-        - Android 5.0 (Lollipop) or higher (API level 21+)
-        - Minimum 2GB RAM recommended
-        - 100MB free storage space
-        
-        **Note**: Split APKs reduce download size by 30-40% compared to universal APKs.
-        
-        EOF
-          sed -i "s/\$VERSION/$VERSION/g" release-notes.md
-        fi
-        
-        # Add checksums section
-        cat >> release-notes.md << 'EOF'
-        ## Checksums
-        SHA256 checksums are provided for all packages to verify integrity.
-        
-        **Full Changelog**: https://github.com/imrightguy/CloudToLocalLLM/compare/v$PREV_VERSION...v$VERSION
-        EOF
-        
-        # Try to get previous version for changelog link
-        PREV_VERSION=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
-        if [ -z "$PREV_VERSION" ]; then
-          PREV_VERSION="v$VERSION"
-        fi
-        
-        sed -i "s/\$VERSION/$VERSION/g" release-notes.md
-        sed -i "s/\$PREV_VERSION/$PREV_VERSION/g" release-notes.md
-        
-        echo ""
-        echo "::notice::Release notes generated successfully"
-        echo "::group::Release Notes Preview"
-        cat release-notes.md
-        echo "::endgroup::"
-        echo "::endgroup::"
-        
-    - name:  Create git tag
-      run: |
-        echo "::group::Creating Git Tag"
-        VERSION="${{ needs.version-info.outputs.version }}"
-        TAG_NAME="v$VERSION"
-        
-        echo "Tag name: $TAG_NAME"
-        echo ""
-        
-        # Configure git
-        echo "Configuring git..."
-        git config user.name "GitHub Actions"
-        git config user.email "actions@github.com"
-        
-        # Check if tag already exists locally or remotely
-        if git rev-parse "$TAG_NAME" >/dev/null 2>&1; then
-          echo "::warning::Tag $TAG_NAME already exists locally, skipping tag creation"
-        elif git ls-remote --tags origin "$TAG_NAME" | grep -q "$TAG_NAME"; then
-          echo "::warning::Tag $TAG_NAME already exists on remote, skipping tag creation"
-        else
-          echo "Creating tag $TAG_NAME..."
-          git tag -a "$TAG_NAME" -m "Release $TAG_NAME"
-          
-          echo "Pushing tag to remote..."
-          if git push origin "$TAG_NAME"; then
-            echo "::notice::Tag $TAG_NAME created and pushed successfully"
-          else
-            echo "::warning::Tag push failed (may already exist)"
-          fi
-        fi
-        echo "::endgroup::"
-      
-    - name:  Create GitHub Release
-      run: |
-        echo "::group::Creating GitHub Release"
-        echo "=== Creating GitHub Release ==="
-        echo ""
-        echo "Tag: ${{ needs.version-info.outputs.tag_name }}"
-        echo "Name: ${{ needs.version-info.outputs.release_name }}"
-        echo "Assets: $(find release-assets/ -type f | wc -l) files"
-        echo "::endgroup::"
-      
-    - uses: softprops/action-gh-release@v1
-      with:
-        tag_name: ${{ needs.version-info.outputs.tag_name }}
-        name: ${{ needs.version-info.outputs.release_name }}
-        body_path: release-notes.md
-        files: release-assets/*
-        draft: false
-        prerelease: false
-        generate_release_notes: true
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        
-    - name:  Release Created
-      run: |
-        echo "::notice::GitHub release created successfully"
-        echo "Release URL: https://github.com/${{ github.repository }}/releases/tag/${{ needs.version-info.outputs.tag_name }}"
-        
-    - name:  Create release summary
-      run: |
-        echo "##  Desktop Release Created" >> $GITHUB_STEP_SUMMARY
-        echo "" >> $GITHUB_STEP_SUMMARY
-        echo "**Release Details:**" >> $GITHUB_STEP_SUMMARY
-        echo "- **Version:** ${{ needs.version-info.outputs.version }}" >> $GITHUB_STEP_SUMMARY
-        echo "- **Tag:** ${{ needs.version-info.outputs.tag_name }}" >> $GITHUB_STEP_SUMMARY
-        echo "- **Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
-        echo "" >> $GITHUB_STEP_SUMMARY
-        echo "**Available Platforms:**" >> $GITHUB_STEP_SUMMARY
-        
-        # Dynamically list available platforms based on artifacts
-        if [ -f release-assets/*Setup.exe ]; then
-          echo "-  Windows Installer (.exe)" >> $GITHUB_STEP_SUMMARY
-        fi
-        
-        if [ -f release-assets/*-portable.zip ]; then
-          echo "-  Windows Portable (ZIP)" >> $GITHUB_STEP_SUMMARY
-        fi
-        
-        # Linux platform check
-        if ls release-assets/*.flatpak 1> /dev/null 2>&1; then
-          echo "-  Linux Flatpak" >> $GITHUB_STEP_SUMMARY
-        fi
-        
-        # Android platform check
-        if ls release-assets/*.apk 1> /dev/null 2>&1; then
-          echo "-  Android APKs (ARM64, ARMv7, x86_64)" >> $GITHUB_STEP_SUMMARY
-        fi
-        
-        echo "" >> $GITHUB_STEP_SUMMARY
-        echo "**Release Assets:**" >> $GITHUB_STEP_SUMMARY
-        for file in release-assets/*; do
-          if [ -f "$file" ]; then
-            filename=$(basename "$file")
-            filesize=$(du -h "$file" | cut -f1)
-            echo "- \`$filename\` ($filesize)" >> $GITHUB_STEP_SUMMARY
-          fi
-        done
-        
-        echo "" >> $GITHUB_STEP_SUMMARY
-        echo "**Download:** [GitHub Releases](https://github.com/imrightguy/CloudToLocalLLM/releases/tag/${{ needs.version-info.outputs.tag_name }})" >> $GITHUB_STEP_SUMMARY
-        
-    - name:  Total Release Job Duration
-      if: always()
-      run: |
-        END_TIME=$(date +%s)
-        DURATION=$((END_TIME - ${{ steps.release-start-time.outputs.start_time }}))
-        MINUTES=$((DURATION / 60))
-        SECONDS=$((DURATION % 60))
-        
-        echo "::notice::Release job completed in ${MINUTES}m ${SECONDS}s"
-        echo "" >> $GITHUB_STEP_SUMMARY
-        echo "**Release Duration:** ${MINUTES}m ${SECONDS}s" >> $GITHUB_STEP_SUMMARY
-        
-    - name:  Job Failed - Error Summary
-      if: failure()
-      run: |
-        echo "::error::Release creation job failed"
-        echo "##  Release Creation Failed" >> $GITHUB_STEP_SUMMARY
-        echo "" >> $GITHUB_STEP_SUMMARY
-        echo "**Common Issues:**" >> $GITHUB_STEP_SUMMARY
-        echo "- Build artifacts not found or incomplete" >> $GITHUB_STEP_SUMMARY
-        echo "- Git tag already exists" >> $GITHUB_STEP_SUMMARY
-        echo "- GitHub release creation failed (permissions)" >> $GITHUB_STEP_SUMMARY
-        echo "- Release notes generation failed" >> $GITHUB_STEP_SUMMARY
-        echo "- Artifact download failed" >> $GITHUB_STEP_SUMMARY
-        echo "" >> $GITHUB_STEP_SUMMARY
-        echo "**Troubleshooting:**" >> $GITHUB_STEP_SUMMARY
-        echo "1. Verify all build jobs completed successfully" >> $GITHUB_STEP_SUMMARY
-        echo "2. Check GITHUB_TOKEN has write permissions" >> $GITHUB_STEP_SUMMARY
-        echo "3. Verify tag doesn't already exist on remote" >> $GITHUB_STEP_SUMMARY
-        echo "4. Check artifact retention hasn't expired" >> $GITHUB_STEP_SUMMARY
-        echo "5. Review release notes template for errors" >> $GITHUB_STEP_SUMMARY
-        echo "" >> $GITHUB_STEP_SUMMARY
-        echo "**Quick Fixes:**" >> $GITHUB_STEP_SUMMARY
-        echo "- Delete existing tag if duplicate: git push --delete origin TAG_NAME" >> $GITHUB_STEP_SUMMARY
-        echo "- Re-run workflow after fixing build issues" >> $GITHUB_STEP_SUMMARY
-        echo "- Manually create release if automation fails" >> $GITHUB_STEP_SUMMARY
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+
+      - name: Display downloaded artifacts
+        run: |
+          echo "::group::Downloaded Artifacts"
+          ls -R
+          echo "::endgroup::"
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ needs.version-info.outputs.tag_name }}
+          name: ${{ needs.version-info.outputs.release_name }}
+          draft: false
+          prerelease: false
+          files: |
+            windows-desktop/*.zip
+            windows-desktop/Output/*.exe
+            linux-desktop/*
+            android-apk/*
+          generate_release_notes: true
