@@ -53,16 +53,16 @@ storeCallbackParams();
 
 window.auth0Bridge = {
   // Check if Auth0 client is initialized (synchronous check)
-  isInitialized: function() {
+  isInitialized: function () {
     return window.auth0Client != null;
   },
 
   // Login with redirect (will show Auth0 Universal Login)
-  loginWithRedirect: async function() {
+  loginWithRedirect: async function () {
     if (!window.auth0Client) {
       throw new Error('Auth0 client not initialized');
     }
-    
+
     try {
       await window.auth0Client.loginWithRedirect({
         authorizationParams: {
@@ -77,13 +77,13 @@ window.auth0Bridge = {
   },
 
   // Login with Google
-  loginWithGoogle: async function() {
+  loginWithGoogle: async function () {
     if (!window.auth0Client) {
       const error = new Error('Auth0 client not initialized');
       console.error(' Auth0 login error:', error);
       throw error;
     }
-    
+
     try {
       const audience = API_AUDIENCE;
       console.log(' Starting Auth0 Google login redirect with audience:', audience);
@@ -103,13 +103,13 @@ window.auth0Bridge = {
   },
 
   // Check if this is a callback URL (has auth params)
-  isCallbackUrl: function() {
+  isCallbackUrl: function () {
     const urlParams = new URLSearchParams(window.location.search);
     return urlParams.has('code') || urlParams.has('state') || urlParams.has('error');
   },
 
   // Handle redirect callback (call this after page load)
-  handleRedirectCallback: async function() {
+  handleRedirectCallback: async function () {
     if (!window.auth0Client) {
       return { success: false, error: 'Auth0 client not initialized' };
     }
@@ -185,11 +185,11 @@ window.auth0Bridge = {
   },
 
   // Check if user is authenticated
-  isAuthenticated: async function() {
+  isAuthenticated: async function () {
     if (!window.auth0Client) {
       return false;
     }
-    
+
     try {
       return await window.auth0Client.isAuthenticated();
     } catch (error) {
@@ -199,17 +199,17 @@ window.auth0Bridge = {
   },
 
   // Get user info
-  getUser: async function() {
+  getUser: async function () {
     if (!window.auth0Client) {
       return null;
     }
-    
+
     try {
       const isAuth = await window.auth0Client.isAuthenticated();
       if (!isAuth) {
         return null;
       }
-      
+
       const user = await window.auth0Client.getUser();
       return user ? JSON.stringify(user) : null;
     } catch (error) {
@@ -219,17 +219,17 @@ window.auth0Bridge = {
   },
 
   // Get access token
-  getAccessToken: async function() {
+  getAccessToken: async function () {
     if (!window.auth0Client) {
       return null;
     }
-    
+
     try {
       const isAuth = await window.auth0Client.isAuthenticated();
       if (!isAuth) {
         return null;
       }
-      
+
       const audience = API_AUDIENCE;
       return await window.auth0Client.getTokenSilently({
         authorizationParams: {
@@ -239,20 +239,18 @@ window.auth0Bridge = {
       });
     } catch (error) {
       console.error('Auth0 getAccessToken error:', error);
-      // If getting token silently fails, try to re-authenticate
-      if (error.error === 'login_required') {
-        await window.auth0Bridge.loginWithRedirect();
-      }
+      // Do NOT automatically redirect here. Let the app handle the failure.
+      // If we redirect here, it causes an infinite loop if silent auth fails.
       return null;
     }
   },
 
   // Logout
-  logout: async function() {
+  logout: async function () {
     if (!window.auth0Client) {
       throw new Error('Auth0 client not initialized');
     }
-    
+
     try {
       await window.auth0Client.logout({
         logoutParams: {
