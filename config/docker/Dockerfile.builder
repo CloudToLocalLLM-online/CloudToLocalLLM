@@ -16,7 +16,7 @@ RUN dnf -y install \
     git \
     nodejs \
     npm \
-    java-17-openjdk-devel \
+    java-devel \
     clang \
     cmake \
     ninja-build \
@@ -24,7 +24,6 @@ RUN dnf -y install \
     gtk3-devel \
     unzip \
     which \
-    xz \
     && dnf clean all
 
 # Install kubectl
