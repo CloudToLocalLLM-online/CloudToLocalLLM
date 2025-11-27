@@ -409,6 +409,10 @@ jobs:
           kubectl delete deployment web api-backend streaming-proxy -n ${{ env.NAMESPACE }} --ignore-not-found=true
           kubectl delete statefulset postgres -n ${{ env.NAMESPACE }} --ignore-not-found=true
 
+          echo "Deleting obsolete AWS Load Balancer webhooks..."
+          kubectl delete validatingwebhookconfiguration aws-load-balancer-webhook --ignore-not-found=true
+          kubectl delete mutatingwebhookconfiguration aws-load-balancer-webhook --ignore-not-found=true
+
       - name: Apply base Kubernetes manifests
         env:
           POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
