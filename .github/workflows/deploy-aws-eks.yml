@@ -203,3 +203,77 @@ jobs:
 
           # Exec the script
           kubectl exec -n cloudtolocalllm $BUILDER_POD -- /app/scripts/build-and-sync.sh
+
+  validation:
+    name: Validate Deployment
+    needs: trigger_sync
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write # Required for OIDC token exchange
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials via OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::422017356244:role/github-actions-role
+          aws-region: ${{ env.AWS_REGION }}
+          role-session-name: github-actions-eks-validation-${{ github.run_id }}
+          role-duration-seconds: 3600
+
+      - name: Update kubeconfig
+        run: |
+          aws eks update-kubeconfig \
+            --name ${{ env.EKS_CLUSTER_NAME }} \
+            --region ${{ env.AWS_REGION }}
+
+      - name: Determine environment and namespace
+        run: |
+          # Always production for now
+          ENVIRONMENT="production"
+          NAMESPACE="cloudtolocalllm"
+
+          echo "ENVIRONMENT=$ENVIRONMENT" >> $GITHUB_ENV
+          echo "NAMESPACE=$NAMESPACE" >> $GITHUB_ENV
+
+      - name: Verify deployment health
+        run: |
+          echo "Checking pod status..."
+          kubectl get pods -n ${{ env.NAMESPACE }}
+
+          echo ""
+          echo "Checking service status..."
+          kubectl get svc -n ${{ env.NAMESPACE }}
+
+      - name: Verify application accessibility
+        run: |
+          TARGET_URL="https://app.cloudtolocalllm.online/health"
+          echo "Verifying production endpoint: $TARGET_URL"
+
+          # Wait for endpoint to be ready
+          for i in {1..30}; do
+            if curl -f -s "$TARGET_URL" > /dev/null 2>&1; then
+              echo "✓ Application is accessible at $TARGET_URL"
+              exit 0
+            fi
+            echo "Attempt $i/30: Waiting for application to be ready..."
+            sleep 10
+          done
+
+          echo "✗ Application did not become accessible within timeout"
+          exit 1
+
+      - name: Deployment successful
+        run: |
+          echo "✓ Deployment to AWS EKS completed successfully"
+          echo ""
+          echo "Deployment Summary:"
+          echo "- Environment: ${{ env.ENVIRONMENT }}"
+          echo "- Cluster: ${{ env.EKS_CLUSTER_NAME }}"
+          echo "- Region: ${{ env.AWS_REGION }}"
+          echo "- Namespace: ${{ env.NAMESPACE }}"
+          echo "- Commit: ${{ github.sha }}"
+          echo "- Branch: ${{ github.ref }}"
