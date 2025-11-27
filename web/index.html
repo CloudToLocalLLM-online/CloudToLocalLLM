@@ -287,6 +287,34 @@
     });
   </script>
 
-  <script src="flutter_bootstrap.js?v=2" async></script>
+  <script>
+    console.log(' [Index] Page body parsed. Starting flutter_bootstrap.js load...');
+    
+    // Track window load event
+    window.addEventListener('load', function() {
+      console.log(' [Index] Window load event fired');
+    });
+
+    // Manually load flutter_bootstrap.js to track its status
+    var script = document.createElement('script');
+    script.src = 'flutter_bootstrap.js?v=2';
+    script.async = true;
+    
+    script.onload = function() {
+      console.log(' [Index] flutter_bootstrap.js loaded successfully');
+    };
+    
+    script.onerror = function(e) {
+      console.error(' [Index] Failed to load flutter_bootstrap.js:', e);
+      // Update loading screen to show error
+      const loadingText = document.querySelector('#flutter-loading p');
+      if (loadingText) {
+        loadingText.textContent = 'Error loading application. Please check console.';
+        loadingText.style.color = '#ff6b6b';
+      }
+    };
+    
+    document.body.appendChild(script);
+  </script>
 </body>
 </html>
