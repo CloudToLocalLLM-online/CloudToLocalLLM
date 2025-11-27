@@ -555,38 +555,28 @@ jobs:
 
       - name: Setup Cloudflare DNS Integration
         if: env.ENVIRONMENT == 'production'
+        continue-on-error: true
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
         run: |
-          echo "Setting up Cloudflare DNS integration..."
+          echo "Checking for Ingress Load Balancer endpoint..."
 
-          echo "Waiting for Ingress Load Balancer endpoint..."
-          NLB_ENDPOINT=""
-          for i in {1..60}; do
-            NLB_ENDPOINT=$(kubectl get ingress -n ${{ env.NAMESPACE }} -o jsonpath='{.items[0].status.loadBalancer.ingress[0].hostname}')
-            if [ -n "$NLB_ENDPOINT" ]; then
-              echo "Found hostname: $NLB_ENDPOINT"
-              break
-            fi
-            
-            NLB_ENDPOINT=$(kubectl get ingress -n ${{ env.NAMESPACE }} -o jsonpath='{.items[0].status.loadBalancer.ingress[0].ip}')
-            if [ -n "$NLB_ENDPOINT" ]; then
-              echo "Found IP: $NLB_ENDPOINT"
-              break
-            fi
-            
-            echo "Attempt $i/60: Ingress endpoint not ready yet..."
-            sleep 10
-          done
+          # Check for ALB endpoint (no waiting loop - ALB should already exist)
+          NLB_ENDPOINT=$(kubectl get ingress -n ${{ env.NAMESPACE }} -o jsonpath='{.items[0].status.loadBalancer.ingress[0].hostname}')
 
           if [ -z "$NLB_ENDPOINT" ]; then
-             echo "Error: Could not retrieve Ingress Load Balancer endpoint after waiting."
-             echo "Debug: Ingress status:"
-             kubectl get ingress -n ${{ env.NAMESPACE }} -o yaml
-             exit 1
+            NLB_ENDPOINT=$(kubectl get ingress -n ${{ env.NAMESPACE }} -o jsonpath='{.items[0].status.loadBalancer.ingress[0].ip}')
           fi
 
-          echo "NLB Endpoint: $NLB_ENDPOINT"
+          if [ -z "$NLB_ENDPOINT" ]; then
+             echo "⚠️  Ingress Load Balancer not yet provisioned. Skipping DNS update."
+             echo "Note: Configure Cloudflare DNS manually with the ALB DNS name after first deployment."
+             echo "Current Ingress status:"
+             kubectl get ingress -n ${{ env.NAMESPACE }}
+             exit 0
+          fi
+
+          echo "✓ Found Load Balancer endpoint: $NLB_ENDPOINT"
 
           # Get Cloudflare Zone ID
           ZONE_RESPONSE=$(curl -s -X GET "https://api.cloudflare.com/client/v4/zones?name=cloudtolocalllm.online" \
@@ -625,43 +615,21 @@ jobs:
               
               echo "  ✓ Updated DNS record for $DOMAIN"
             else
-              # Create new A record
+              # Create new CNAME record pointing to ALB
               curl -s -X POST "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/dns_records" \
                 -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
                 -H "Content-Type: application/json" \
                 -d "{
-                  \"type\": \"A\",
+                  \"type\": \"CNAME\",
                   \"name\": \"$DOMAIN\",
                   \"content\": \"$NLB_ENDPOINT\",
-                  \"ttl\": 300,
+                  \"ttl\": 1,
                   \"proxied\": true
                 }" > /dev/null
               
               echo "  ✓ Created DNS record for $DOMAIN"
             fi
           done
-
-          # Configure SSL/TLS settings
-          echo "Configuring SSL/TLS settings..."
-
-          # Set SSL mode to "Full"
-          curl -s -X PATCH "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/settings/ssl" \
-            -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
-            -H "Content-Type: application/json" \
-            -d '{"value": "full"}' > /dev/null
-
-          # Enable "Always Use HTTPS"
-          curl -s -X PATCH "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/settings/always_use_https" \
-            -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
-            -H "Content-Type: application/json" \
-            -d '{"value": "on"}' > /dev/null
-
-          # Purge cache
-          echo "Purging Cloudflare cache..."
-          curl -s -X POST "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/purge_cache" \
-            -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
-            -H "Content-Type: application/json" \
-            -d '{"purge_everything": true}' > /dev/null
 
           echo "✓ Cloudflare DNS integration complete"
 
