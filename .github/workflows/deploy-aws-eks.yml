@@ -421,6 +421,7 @@ jobs:
           STRIPE_LIVE_PUBLISHABLE_KEY: ${{ secrets.STRIPE_LIVE_PUBLISHABLE_KEY }}
           STRIPE_LIVE_WEBHOOK_SECRET: ${{ secrets.STRIPE_LIVE_WEBHOOK_SECRET }}
           SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
+          CLOUDFLARE_TUNNEL_TOKEN: ${{ secrets.CLOUDFLARE_TUNNEL_TOKEN }}
         run: |
           echo "Applying base Kubernetes manifests..."
 
@@ -450,6 +451,17 @@ jobs:
           # secrets.yaml is no longer applied from file
           kubectl apply -f k8s/rbac.yaml -n ${{ env.NAMESPACE }}
           kubectl apply -f k8s/network-policies.yaml -n ${{ env.NAMESPACE }}
+
+          # Deploy Cloudflare Tunnel
+          echo "Deploying Cloudflare Tunnel..."
+          # Create secret for tunnel token
+          kubectl create secret generic tunnel-credentials \
+            --namespace ${{ env.NAMESPACE }} \
+            --from-literal=token="$CLOUDFLARE_TUNNEL_TOKEN" \
+            --dry-run=client -o yaml | kubectl apply -f -
+
+          # Apply tunnel manifests
+          kubectl apply -f k8s/cloudflared.yaml -n ${{ env.NAMESPACE }}
 
           echo "Base manifests applied successfully"
 
@@ -550,88 +562,8 @@ jobs:
           kubectl get svc -n ${{ env.NAMESPACE }}
 
           echo ""
-          echo "Checking ingress status..."
-          kubectl get ingress -n ${{ env.NAMESPACE }}
-
-      - name: Setup Cloudflare DNS Integration
-        if: env.ENVIRONMENT == 'production'
-        continue-on-error: true
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-        run: |
-          echo "Checking for Ingress Load Balancer endpoint..."
-
-          # Check for ALB endpoint (no waiting loop - ALB should already exist)
-          NLB_ENDPOINT=$(kubectl get ingress -n ${{ env.NAMESPACE }} -o jsonpath='{.items[0].status.loadBalancer.ingress[0].hostname}')
-
-          if [ -z "$NLB_ENDPOINT" ]; then
-            NLB_ENDPOINT=$(kubectl get ingress -n ${{ env.NAMESPACE }} -o jsonpath='{.items[0].status.loadBalancer.ingress[0].ip}')
-          fi
-
-          if [ -z "$NLB_ENDPOINT" ]; then
-             echo "⚠️  Ingress Load Balancer not yet provisioned. Skipping DNS update."
-             echo "Note: Configure Cloudflare DNS manually with the ALB DNS name after first deployment."
-             echo "Current Ingress status:"
-             kubectl get ingress -n ${{ env.NAMESPACE }}
-             exit 0
-          fi
-
-          echo "✓ Found Load Balancer endpoint: $NLB_ENDPOINT"
-
-          # Get Cloudflare Zone ID
-          ZONE_RESPONSE=$(curl -s -X GET "https://api.cloudflare.com/client/v4/zones?name=cloudtolocalllm.online" \
-            -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
-            -H "Content-Type: application/json")
-
-          ZONE_ID=$(echo "$ZONE_RESPONSE" | jq -r '.result[0].id')
-          echo "Cloudflare Zone ID: $ZONE_ID"
-
-          # Update DNS records for each domain
-          for DOMAIN in "cloudtolocalllm.online" "app.cloudtolocalllm.online" "api.cloudtolocalllm.online" "auth.cloudtolocalllm.online"; do
-            echo "Updating DNS record for: $DOMAIN"
-            
-            # Get existing record
-            RECORD_RESPONSE=$(curl -s -X GET "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/dns_records?name=$DOMAIN" \
-              -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
-              -H "Content-Type: application/json")
-            
-            RECORD_COUNT=$(echo "$RECORD_RESPONSE" | jq '.result | length')
-            
-            if [ "$RECORD_COUNT" -gt 0 ]; then
-              RECORD_ID=$(echo "$RECORD_RESPONSE" | jq -r '.result[0].id')
-              RECORD_TYPE=$(echo "$RECORD_RESPONSE" | jq -r '.result[0].type')
-              
-              # Update existing record
-              curl -s -X PUT "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/dns_records/$RECORD_ID" \
-                -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
-                -H "Content-Type: application/json" \
-                -d "{
-                  \"type\": \"$RECORD_TYPE\",
-                  \"name\": \"$DOMAIN\",
-                  \"content\": \"$NLB_ENDPOINT\",
-                  \"ttl\": 300,
-                  \"proxied\": true
-                }" > /dev/null
-              
-              echo "  ✓ Updated DNS record for $DOMAIN"
-            else
-              # Create new CNAME record pointing to ALB
-              curl -s -X POST "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/dns_records" \
-                -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
-                -H "Content-Type: application/json" \
-                -d "{
-                  \"type\": \"CNAME\",
-                  \"name\": \"$DOMAIN\",
-                  \"content\": \"$NLB_ENDPOINT\",
-                  \"ttl\": 1,
-                  \"proxied\": true
-                }" > /dev/null
-              
-              echo "  ✓ Created DNS record for $DOMAIN"
-            fi
-          done
-
-          echo "✓ Cloudflare DNS integration complete"
+          echo "Checking service status..."
+          kubectl get svc -n ${{ env.NAMESPACE }}
 
       - name: Verify application accessibility
         run: |
@@ -639,14 +571,9 @@ jobs:
             TARGET_URL="https://app.cloudtolocalllm.online/health"
             echo "Verifying production endpoint: $TARGET_URL"
           else
-            # For non-production, try to get Ingress endpoint
-             NLB_ENDPOINT=$(kubectl get ingress -n ${{ env.NAMESPACE }} -o jsonpath='{.items[0].status.loadBalancer.ingress[0].hostname}')
-             if [ -z "$NLB_ENDPOINT" ]; then
-                NLB_ENDPOINT=$(kubectl get ingress -n ${{ env.NAMESPACE }} -o jsonpath='{.items[0].status.loadBalancer.ingress[0].ip}')
-             fi
-             # We use http here as certs won't match
-             TARGET_URL="http://$NLB_ENDPOINT/health"
-             echo "Verifying non-production endpoint: $TARGET_URL"
+             # For non-production, we might need a different strategy or skip
+             echo "Skipping verification for non-production environment: ${{ env.ENVIRONMENT }}"
+             exit 0
           fi
 
           # Wait for endpoint to be ready

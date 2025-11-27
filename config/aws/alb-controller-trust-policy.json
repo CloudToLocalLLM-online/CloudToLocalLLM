@@ -1,0 +1,18 @@
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Principal": {
+                "Federated": "arn:aws:iam::422017356244:oidc-provider/oidc.eks.us-east-1.amazonaws.com/id/0682372CDD6A68D8CBBC05C520A27647"
+            },
+            "Action": "sts:AssumeRoleWithWebIdentity",
+            "Condition": {
+                "StringEquals": {
+                    "oidc.eks.us-east-1.amazonaws.com/id/0682372CDD6A68D8CBBC05C520A27647:aud": "sts.amazonaws.com",
+                    "oidc.eks.us-east-1.amazonaws.com/id/0682372CDD6A68D8CBBC05C520A27647:sub": "system:serviceaccount:kube-system:aws-load-balancer-controller"
+                }
+            }
+        }
+    ]
+}
