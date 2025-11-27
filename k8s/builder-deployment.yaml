@@ -23,14 +23,14 @@ spec:
         - name: builder
           image: cloudtolocalllm/builder:latest
           imagePullPolicy: Always
-          command: ["/bin/bash", "-c", "while true; do sleep 3600; done"]
+          command: ["/bin/bash", "-c", "tail -f /dev/null"]
           resources:
             requests:
               memory: "1Gi"
-              cpu: "500m"
+              cpu: "250m"
             limits:
-              memory: "4Gi"
-              cpu: "2000m"
+              memory: "2Gi"
+              cpu: "1000m"
           volumeMounts:
             - name: build-cache
               mountPath: /app
