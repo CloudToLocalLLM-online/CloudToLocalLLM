@@ -11,6 +11,10 @@ resources:
   - ../../cloudflared.yaml
   - ../../rbac.yaml
   - ../../network-policies.yaml
+  - ../../streaming-proxy-deployment.yaml
+  - ../../streaming-proxy-service.yaml
+  - ../../streaming-proxy-configmap.yaml
+  - ../../streaming-proxy-secret.yaml
 
 # Production environment patches
 patches:
