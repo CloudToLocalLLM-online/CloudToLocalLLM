@@ -6,7 +6,7 @@ concurrency:
 
 on:
   push:
-    branches: [main, develop, staging]
+    branches: [main]
     paths:
       - "lib/**"
       - "services/**"
@@ -25,8 +25,6 @@ on:
         default: "production"
         type: choice
         options:
-          - development
-          - staging
           - production
 
 env:
@@ -352,30 +350,11 @@ jobs:
 
       - name: Determine environment and namespace
         run: |
-          # Determine environment from workflow input or branch
-          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
-            ENVIRONMENT="${{ github.event.inputs.environment }}"
-          else
-            if [ "${{ github.ref }}" == "refs/heads/develop" ]; then
-              ENVIRONMENT="development"
-            elif [ "${{ github.ref }}" == "refs/heads/staging" ]; then
-              ENVIRONMENT="staging"
-            elif [ "${{ github.ref }}" == "refs/heads/main" ]; then
-              ENVIRONMENT="production"
-            else
-              ENVIRONMENT="production"
-            fi
-          fi
+          # Always deploy to production
+          ENVIRONMENT="production"
+          NAMESPACE="cloudtolocalllm"
 
           echo "ENVIRONMENT=$ENVIRONMENT" >> $GITHUB_ENV
-
-          # Set namespace based on environment
-          case $ENVIRONMENT in
-            development) NAMESPACE="cloudtolocalllm-dev" ;;
-            staging)     NAMESPACE="cloudtolocalllm-staging" ;;
-            production)  NAMESPACE="cloudtolocalllm" ;;
-            *) echo "Invalid environment: $ENVIRONMENT"; exit 1 ;;
-          esac
           echo "NAMESPACE=$NAMESPACE" >> $GITHUB_ENV
 
           echo "Deploying to environment: $ENVIRONMENT"
