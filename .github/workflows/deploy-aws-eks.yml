@@ -6,7 +6,7 @@ concurrency:
 
 on:
   push:
-    branches: [main]
+    branches: [main, develop, staging]
     paths:
       - "lib/**"
       - "services/**"
@@ -352,11 +352,21 @@ jobs:
 
       - name: Determine environment and namespace
         run: |
-          # Determine environment from workflow input or default to production
-          ENVIRONMENT="${{ github.event.inputs.environment }}"
-          if [ -z "$ENVIRONMENT" ]; then
-            ENVIRONMENT="production"
+          # Determine environment from workflow input or branch
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            ENVIRONMENT="${{ github.event.inputs.environment }}"
+          else
+            if [ "${{ github.ref }}" == "refs/heads/develop" ]; then
+              ENVIRONMENT="development"
+            elif [ "${{ github.ref }}" == "refs/heads/staging" ]; then
+              ENVIRONMENT="staging"
+            elif [ "${{ github.ref }}" == "refs/heads/main" ]; then
+              ENVIRONMENT="production"
+            else
+              ENVIRONMENT="production"
+            fi
           fi
+
           echo "ENVIRONMENT=$ENVIRONMENT" >> $GITHUB_ENV
 
           # Set namespace based on environment
@@ -368,34 +378,6 @@ jobs:
           esac
           echo "NAMESPACE=$NAMESPACE" >> $GITHUB_ENV
 
-      - name: Determine environment and namespace
-        run: |
-          # Determine environment from workflow input or default to production
-          ENVIRONMENT="${{ github.event.inputs.environment }}"
-          if [ -z "$ENVIRONMENT" ]; then
-            ENVIRONMENT="production"
-          fi
-
-          echo "ENVIRONMENT=$ENVIRONMENT" >> $GITHUB_ENV
-
-          # Set namespace based on environment
-          case $ENVIRONMENT in
-            development)
-              NAMESPACE="cloudtolocalllm-dev"
-              ;;
-            staging)
-              NAMESPACE="cloudtolocalllm-staging"
-              ;;
-            production)
-              NAMESPACE="cloudtolocalllm"
-              ;;
-            *)
-              echo "Invalid environment: $ENVIRONMENT"
-              exit 1
-              ;;
-          esac
-
-          echo "NAMESPACE=$NAMESPACE" >> $GITHUB_ENV
           echo "Deploying to environment: $ENVIRONMENT"
           echo "Using namespace: $NAMESPACE"
 
@@ -534,26 +516,30 @@ jobs:
 
       - name: Determine environment and namespace
         run: |
-          # Determine environment from workflow input or default to production
-          ENVIRONMENT="${{ github.event.inputs.environment }}"
-          if [ -z "$ENVIRONMENT" ]; then
-            ENVIRONMENT="production"
+          # Determine environment from workflow input or branch
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            ENVIRONMENT="${{ github.event.inputs.environment }}"
+          else
+            if [ "${{ github.ref }}" == "refs/heads/develop" ]; then
+              ENVIRONMENT="development"
+            elif [ "${{ github.ref }}" == "refs/heads/staging" ]; then
+              ENVIRONMENT="staging"
+            elif [ "${{ github.ref }}" == "refs/heads/main" ]; then
+              ENVIRONMENT="production"
+            else
+              ENVIRONMENT="production"
+            fi
           fi
+
+          echo "ENVIRONMENT=$ENVIRONMENT" >> $GITHUB_ENV
 
           # Set namespace based on environment
           case $ENVIRONMENT in
-            development)
-              NAMESPACE="cloudtolocalllm-dev"
-              ;;
-            staging)
-              NAMESPACE="cloudtolocalllm-staging"
-              ;;
-            production)
-              NAMESPACE="cloudtolocalllm"
-              ;;
+            development) NAMESPACE="cloudtolocalllm-dev" ;;
+            staging)     NAMESPACE="cloudtolocalllm-staging" ;;
+            production)  NAMESPACE="cloudtolocalllm" ;;
+            *) echo "Invalid environment: $ENVIRONMENT"; exit 1 ;;
           esac
-
-          echo "ENVIRONMENT=$ENVIRONMENT" >> $GITHUB_ENV
           echo "NAMESPACE=$NAMESPACE" >> $GITHUB_ENV
 
       - name: Verify deployment health
