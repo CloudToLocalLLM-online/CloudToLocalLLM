@@ -8,6 +8,14 @@ NAMESPACE="${NAMESPACE:-cloudtolocalllm}"
 
 echo "Starting Build and Sync Process..."
 
+# 0. Enable Swap (Prevent OOM)
+echo "Setting up 4GB Swap file..."
+fallocate -l 4G /swapfile || dd if=/dev/zero of=/swapfile bs=1M count=4096
+chmod 600 /swapfile
+mkswap /swapfile
+swapon /swapfile || echo "WARNING: Failed to enable swap (privileged mode required)"
+free -h
+
 # 1. Update Code
 echo "Updating code from $REPO_URL..."
 if [ ! -d "/app/CloudToLocalLLM" ]; then
@@ -18,9 +26,8 @@ else
     git reset --hard origin/$BRANCH
 fi
 
-# Optimize memory usage for low-memory environments (2GB target)
-export DART_VM_OPTIONS="--old_gen_heap_size=768"
-export NODE_OPTIONS="--max-old-space-size=768"
+# Optimize memory usage for low-memory environments
+# Removed explicit heap limits to allow usage up to container limit (3Gi)
 
 cd /app/CloudToLocalLLM
 
