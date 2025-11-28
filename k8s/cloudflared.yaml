@@ -45,8 +45,9 @@ spec:
               path: /ready
               port: 2000
             failureThreshold: 1
-            initialDelaySeconds: 10
+            initialDelaySeconds: 30
             periodSeconds: 10
+            failureThreshold: 3
       volumes:
         - name: config
           configMap:
