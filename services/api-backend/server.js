@@ -488,11 +488,10 @@ const handleOllamaProxyRequest = async (req, res) => {
   }
 };
 
-const OLLAMA_ROUTE_PATHS = [
-  '/api/ollama',
-  '/api/ollama/:path(.*)',
+'/api/ollama',
+  '/api/ollama/*',
   '/ollama',
-  '/ollama/:path(.*)',
+  '/ollama/*',
 ];
 app.all(
   OLLAMA_ROUTE_PATHS,
