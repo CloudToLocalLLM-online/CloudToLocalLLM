@@ -54,7 +54,17 @@ class AuthService extends ChangeNotifier {
           // Auth0 authenticated - handle successful callback with blocking session persistence
           await _handleSuccessfulCallback();
         } else {
-          // Auth0 logged out - clear PostgreSQL session
+          // Auth0 logged out
+
+          // CRITICAL FIX: If we have a valid SQL session token, IGNORE Auth0's "not authenticated" state.
+          // This happens on reload when silent auth fails but the user is still valid in our DB.
+          if (_sessionToken != null) {
+            debugPrint(
+                '[AuthService] Auth0 reported unauthenticated, but valid SQL session exists. Keeping user logged in.');
+            return;
+          }
+
+          // Only clear if we really don't have a session
           await _clearStoredSession();
           _isAuthenticated.value = false;
           _areAuthenticatedServicesLoaded.value = false;
@@ -216,7 +226,16 @@ class AuthService extends ChangeNotifier {
       debugPrint(
         '[AuthService] Auth state before check: ${_isAuthenticated.value}',
       );
-      final session = await _sessionStorage.getCurrentSession();
+
+      // Enforce 5-second timeout to prevent hanging on startup
+      final session = await _sessionStorage.getCurrentSession().timeout(
+        const Duration(seconds: 5),
+        onTimeout: () {
+          debugPrint('[AuthService] WARNING: Session check timed out after 5s');
+          return null;
+        },
+      );
+
       if (session != null && session.isValid) {
         debugPrint('[AuthService] SUCCESS: Found valid session');
         debugPrint('[AuthService] Session user ID: ${session.userId}');
@@ -366,6 +385,9 @@ class AuthService extends ChangeNotifier {
     notifyListeners();
 
     try {
+      // Clear stored session FIRST to ensure listener doesn't block logout
+      await _clearStoredSession();
+
       debugPrint('[AuthService] Calling Auth0Service.logout()...');
       await _auth0Service.logout();
       debugPrint('[AuthService] Auth0Service.logout() completed');
