@@ -24,7 +24,7 @@ cd /app/CloudToLocalLLM
 echo "Building Flutter Web..."
 cd web
 flutter pub get
-flutter build web --release --no-tree-shake-icons
+flutter build web --release --no-tree-shake-icons --verbose
 cd ..
 
 # 3. Build API

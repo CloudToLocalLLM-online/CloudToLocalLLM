@@ -50,6 +50,7 @@ jobs:
             builder:
               - 'config/docker/Dockerfile.builder'
               - 'config/docker/Dockerfile.base'
+              - 'scripts/build-and-sync.sh'
 
       - name: Login to Docker Hub
         if: steps.changes.outputs.base == 'true' || steps.changes.outputs.builder == 'true'
