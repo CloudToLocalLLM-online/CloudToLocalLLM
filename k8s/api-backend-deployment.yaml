@@ -18,51 +18,6 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: api-backend
-  namespace: cloudtolocalllm
-  labels:
-    app: api-backend
-    environment: development
-spec:
-  replicas: 2
-  strategy:
-    type: RollingUpdate
-    rollingUpdate:
-      maxUnavailable: 0
-      maxSurge: 1
-  selector:
-    matchLabels:
-      app: api-backend
-  template:
-    metadata:
-      labels:
-        app: api-backend
-        environment: development
-    spec:
-      affinity:
-        podAntiAffinity:
-          preferredDuringSchedulingIgnoredDuringExecution:
-            - weight: 100
-              podAffinityTerm:
-                labelSelector:
-                  matchExpressions:
-                    - key: app
-                      operator: In
-                      values:
-                        - api-backend
-                topologyKey: kubernetes.io/hostname
-      securityContext:
-        runAsNonRoot: true
-        runAsUser: 1000
-        fsGroup: 1000
-      initContainers:
-        - name: wait-for-postgres
-          image: busybox:1.35
-          command:
-            - sh
-            - -c
-            - |
-              echo "Waiting for PostgreSQL to be ready..."
               for i in $(seq 1 30); do
                 if nc -z postgres.cloudtolocalllm.svc.cluster.local 5432; then
                   echo "PostgreSQL is ready!"
