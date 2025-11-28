@@ -101,16 +101,11 @@ jobs:
         run: |
           az aks get-credentials --resource-group ${{ env.AZURE_RESOURCE_GROUP }} --name ${{ env.AZURE_CLUSTER_NAME }} --overwrite-existing
 
-      - name: Flush and Recreate Namespace
+      - name: Ensure Namespace Exists
         run: |
-          echo "Flushing namespace cloudtolocalllm..."
-          kubectl delete namespace cloudtolocalllm --ignore-not-found --timeout=120s || echo "Namespace deletion timed out or failed, continuing..."
-          # Wait a bit to ensure resources are gone if deletion was async
-          sleep 10
-          echo "Creating namespace cloudtolocalllm..."
-          kubectl create namespace cloudtolocalllm
+          kubectl create namespace cloudtolocalllm --dry-run=client -o yaml | kubectl apply -f -
 
-      - name: Create Secrets
+      - name: Create/Update Secrets
         env:
           DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
           DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
@@ -132,7 +127,7 @@ jobs:
             --docker-username=$DOCKERHUB_USERNAME \
             --docker-password=$DOCKERHUB_TOKEN \
             --docker-email=github-actions@cloudtolocalllm.online \
-            -n cloudtolocalllm
+            -n cloudtolocalllm --dry-run=client -o yaml | kubectl apply -f -
 
           # App Secrets
           kubectl create secret generic cloudtolocalllm-secrets \
@@ -150,17 +145,20 @@ jobs:
             --from-literal=stripe-live-secret-key="$STRIPE_LIVE_SECRET_KEY" \
             --from-literal=stripe-live-publishable-key="$STRIPE_LIVE_PUBLISHABLE_KEY" \
             --from-literal=stripe-live-webhook-secret="$STRIPE_LIVE_WEBHOOK_SECRET" \
-            --from-literal=sentry-dsn="$SENTRY_DSN"
+            --from-literal=sentry-dsn="$SENTRY_DSN" \
+            --dry-run=client -o yaml | kubectl apply -f -
 
           # Cloudflare Tunnel Secret
           kubectl create secret generic tunnel-credentials \
             --namespace cloudtolocalllm \
-            --from-literal=token="$CLOUDFLARE_TUNNEL_TOKEN"
+            --from-literal=token="$CLOUDFLARE_TUNNEL_TOKEN" \
+            --dry-run=client -o yaml | kubectl apply -f -
 
           # Streaming Proxy Secret
           kubectl create secret generic streaming-proxy-secrets \
             --namespace cloudtolocalllm \
-            --from-literal=SENTRY_DSN="$SENTRY_DSN"
+            --from-literal=SENTRY_DSN="$SENTRY_DSN" \
+            --dry-run=client -o yaml | kubectl apply -f -
 
       - name: Deploy Manifests
         run: |
