@@ -1,0 +1,220 @@
+name: Deploy to Azure AKS
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "lib/**"
+      - "services/**"
+      - "k8s/**"
+      - "web/**"
+      - "scripts/**"
+      - "config/**"
+      - ".github/workflows/**"
+      - ".dockerignore"
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Deployment environment"
+        required: true
+        default: "production"
+        type: choice
+        options:
+          - production
+
+env:
+  AZURE_RESOURCE_GROUP: cloudtolocalllm-rg
+  AZURE_CLUSTER_NAME: cloudtolocalllm-aks
+  DOCKER_REGISTRY: cloudtolocalllm
+
+jobs:
+  build_images:
+    name: Build Base/Builder Images
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Check for changes to Dockerfiles
+        uses: dorny/paths-filter@v3
+        id: changes
+        with:
+          filters: |
+            base:
+              - 'config/docker/Dockerfile.base'
+            builder:
+              - 'config/docker/Dockerfile.builder'
+              - 'config/docker/Dockerfile.base'
+              - 'scripts/build-and-sync.sh'
+
+      - name: Login to Docker Hub
+        if: steps.changes.outputs.base == 'true' || steps.changes.outputs.builder == 'true'
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        if: steps.changes.outputs.base == 'true' || steps.changes.outputs.builder == 'true'
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push Base Image
+        if: steps.changes.outputs.base == 'true'
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./config/docker/Dockerfile.base
+          push: true
+          tags: ${{ env.DOCKER_REGISTRY }}/base:latest
+          cache-from: type=registry,ref=${{ env.DOCKER_REGISTRY }}/base:latest
+          cache-to: type=inline
+
+      - name: Build and push Builder Image
+        if: steps.changes.outputs.builder == 'true'
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./config/docker/Dockerfile.builder
+          push: true
+          tags: ${{ env.DOCKER_REGISTRY }}/builder:latest
+          cache-from: type=registry,ref=${{ env.DOCKER_REGISTRY }}/builder:latest
+          cache-to: type=inline
+
+  deploy_infrastructure:
+    name: Deploy Infrastructure
+    needs: build_images
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Get AKS credentials
+        run: |
+          az aks get-credentials --resource-group ${{ env.AZURE_RESOURCE_GROUP }} --name ${{ env.AZURE_CLUSTER_NAME }} --overwrite-existing
+
+      - name: Flush and Recreate Namespace
+        run: |
+          echo "Flushing namespace cloudtolocalllm..."
+          kubectl delete namespace cloudtolocalllm --ignore-not-found --timeout=120s || echo "Namespace deletion timed out or failed, continuing..."
+          # Wait a bit to ensure resources are gone if deletion was async
+          sleep 10
+          echo "Creating namespace cloudtolocalllm..."
+          kubectl create namespace cloudtolocalllm
+
+      - name: Create Secrets
+        env:
+          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          AUTH0_CLIENT_SECRET: ${{ secrets.AUTH0_CLIENT_SECRET }}
+          STRIPE_TEST_SECRET_KEY: ${{ secrets.STRIPE_TEST_SECRET_KEY }}
+          STRIPE_TEST_PUBLISHABLE_KEY: ${{ secrets.STRIPE_TEST_PUBLISHABLE_KEY }}
+          STRIPE_TEST_WEBHOOK_SECRET: ${{ secrets.STRIPE_TEST_WEBHOOK_SECRET }}
+          STRIPE_LIVE_SECRET_KEY: ${{ secrets.STRIPE_LIVE_SECRET_KEY }}
+          STRIPE_LIVE_PUBLISHABLE_KEY: ${{ secrets.STRIPE_LIVE_PUBLISHABLE_KEY }}
+          STRIPE_LIVE_WEBHOOK_SECRET: ${{ secrets.STRIPE_LIVE_WEBHOOK_SECRET }}
+          SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
+          CLOUDFLARE_TUNNEL_TOKEN: ${{ secrets.CLOUDFLARE_TUNNEL_TOKEN }}
+        run: |
+          # Docker Registry Secret
+          kubectl create secret docker-registry regcred \
+            --docker-server=https://index.docker.io/v1/ \
+            --docker-username=$DOCKERHUB_USERNAME \
+            --docker-password=$DOCKERHUB_TOKEN \
+            --docker-email=github-actions@cloudtolocalllm.online \
+            -n cloudtolocalllm
+
+          # App Secrets
+          kubectl create secret generic cloudtolocalllm-secrets \
+            --namespace cloudtolocalllm \
+            --from-literal=postgres-user=cloud_admin \
+            --from-literal=postgres-password="$POSTGRES_PASSWORD" \
+            --from-literal=jwt-secret="$JWT_SECRET" \
+            --from-literal=auth0-domain='dev-v2f2p008x3dr74ww.us.auth0.com' \
+            --from-literal=auth0-audience='https://api.cloudtolocalllm.online' \
+            --from-literal=auth0-client-id='FuXPnevXpp311CdYHGsbNZe9t3D8Ts7A' \
+            --from-literal=auth0-client-secret="$AUTH0_CLIENT_SECRET" \
+            --from-literal=stripe-test-secret-key="$STRIPE_TEST_SECRET_KEY" \
+            --from-literal=stripe-test-publishable-key="$STRIPE_TEST_PUBLISHABLE_KEY" \
+            --from-literal=stripe-test-webhook-secret="$STRIPE_TEST_WEBHOOK_SECRET" \
+            --from-literal=stripe-live-secret-key="$STRIPE_LIVE_SECRET_KEY" \
+            --from-literal=stripe-live-publishable-key="$STRIPE_LIVE_PUBLISHABLE_KEY" \
+            --from-literal=stripe-live-webhook-secret="$STRIPE_LIVE_WEBHOOK_SECRET" \
+            --from-literal=sentry-dsn="$SENTRY_DSN"
+
+          # Cloudflare Tunnel Secret
+          kubectl create secret generic tunnel-credentials \
+            --namespace cloudtolocalllm \
+            --from-literal=token="$CLOUDFLARE_TUNNEL_TOKEN"
+
+      - name: Deploy Manifests
+        run: |
+          # ConfigMaps and RBAC
+          kubectl apply -f k8s/configmap.yaml -n cloudtolocalllm
+          kubectl apply -f k8s/rbac.yaml -n cloudtolocalllm
+          kubectl apply -f k8s/builder-rbac.yaml
+
+          # Infrastructure
+          kubectl apply -f k8s/postgres-statefulset.yaml -n cloudtolocalllm
+          kubectl apply -f k8s/cloudflared.yaml
+
+          # App Deployments (will be updated by builder later)
+          kubectl apply -f k8s/web-deployment.yaml
+          kubectl apply -f k8s/api-backend-deployment.yaml
+          kubectl apply -f k8s/streaming-proxy-deployment.yaml
+
+          # Builder
+          kubectl apply -f k8s/builder-deployment.yaml
+
+          # Wait for Builder
+          kubectl rollout status deployment/builder -n cloudtolocalllm --timeout=300s
+
+  trigger_sync:
+    name: Trigger Build & Sync
+    needs: deploy_infrastructure
+    runs-on: ubuntu-latest
+    steps:
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Get AKS credentials
+        run: |
+          az aks get-credentials --resource-group ${{ env.AZURE_RESOURCE_GROUP }} --name ${{ env.AZURE_CLUSTER_NAME }} --overwrite-existing
+
+      - name: Execute Build and Sync
+        run: |
+          echo "Triggering in-cluster build and sync..."
+          BUILDER_POD=$(kubectl get pods -n cloudtolocalllm -l app=builder -o jsonpath='{.items[0].metadata.name}')
+          kubectl exec -n cloudtolocalllm $BUILDER_POD -- /usr/local/bin/build-and-sync.sh
+
+  validation:
+    name: Validate Deployment
+    needs: trigger_sync
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify application accessibility
+        run: |
+          TARGET_URL="https://app.cloudtolocalllm.online/health"
+          echo "Verifying endpoint: $TARGET_URL"
+          for i in {1..30}; do
+            if curl -f -s "$TARGET_URL" > /dev/null 2>&1; then
+              echo "✓ Application is accessible"
+              exit 0
+            fi
+            echo "Attempt $i/30: Waiting..."
+            sleep 10
+          done
+          echo "✗ Application did not become accessible"
+          exit 1
