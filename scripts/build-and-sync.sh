@@ -18,13 +18,18 @@ else
     git reset --hard origin/$BRANCH
 fi
 
+# Optimize memory usage for low-memory environments (2GB target)
+export DART_VM_OPTIONS="--old_gen_heap_size=2048"
+export NODE_OPTIONS="--max-old-space-size=2048"
+
 cd /app/CloudToLocalLLM
 
 # 2. Build Web
 echo "Building Flutter Web..."
 cd web
 flutter pub get
-flutter build web --release --no-tree-shake-icons --verbose
+flutter clean
+flutter build web --release --no-tree-shake-icons
 cd ..
 
 # 3. Build API
