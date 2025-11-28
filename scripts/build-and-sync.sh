@@ -19,8 +19,8 @@ else
 fi
 
 # Optimize memory usage for low-memory environments (2GB target)
-export DART_VM_OPTIONS="--old_gen_heap_size=1024"
-export NODE_OPTIONS="--max-old-space-size=1024"
+export DART_VM_OPTIONS="--old_gen_heap_size=768"
+export NODE_OPTIONS="--max-old-space-size=768"
 
 cd /app/CloudToLocalLLM
 
