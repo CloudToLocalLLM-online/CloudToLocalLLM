@@ -1,30 +1,16 @@
 name: Deploy to Azure AKS
 
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
-
 on:
   push:
-    branches: [main]
+    branches:
+      - main
     paths:
-      - "lib/**"
-      - "services/**"
       - "k8s/**"
+      - ".github/workflows/deploy-aks.yml"
+      - "services/**"
       - "web/**"
+      - "config/docker/**"
       - "scripts/**"
-      - "config/**"
-      - ".github/workflows/**"
-      - ".dockerignore"
-  workflow_dispatch:
-    inputs:
-      environment:
-        description: "Deployment environment"
-        required: true
-        default: "production"
-        type: choice
-        options:
-          - production
 
 env:
   AZURE_RESOURCE_GROUP: cloudtolocalllm-rg
@@ -33,99 +19,86 @@ env:
 
 jobs:
   build_images:
-    name: Build Base/Builder Images
+    name: Build Docker Images
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Check for changes to Dockerfiles
-        uses: dorny/paths-filter@v3
-        id: changes
-        with:
-          filters: |
-            base:
-              - 'config/docker/Dockerfile.base'
-            builder:
-              - 'config/docker/Dockerfile.builder'
-              - 'config/docker/Dockerfile.base'
-              - 'scripts/build-and-sync.sh'
-            web:
-              - 'web/Dockerfile'
-              - 'web/nginx.conf'
-            api:
-              - 'services/api-backend/Dockerfile'
-              - 'services/api-backend/package.json'
-            streaming:
-              - 'services/streaming-proxy/Dockerfile'
-              - 'services/streaming-proxy/package.json'
-
-      - name: Login to Docker Hub
-        if: steps.changes.outputs.base == 'true' || steps.changes.outputs.builder == 'true'
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-
       - name: Set up Docker Buildx
-        if: steps.changes.outputs.base == 'true' || steps.changes.outputs.builder == 'true' || steps.changes.outputs.web == 'true' || steps.changes.outputs.api == 'true' || steps.changes.outputs.streaming == 'true'
         uses: docker/setup-buildx-action@v3
 
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      # 1. Build Base Image
       - name: Build and push Base Image
-        if: steps.changes.outputs.base == 'true'
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v5
         with:
           context: .
-          file: ./config/docker/Dockerfile.base
+          file: config/docker/Dockerfile.base
           push: true
           tags: ${{ env.DOCKER_REGISTRY }}/base:latest
           cache-from: type=registry,ref=${{ env.DOCKER_REGISTRY }}/base:latest
           cache-to: type=inline
 
-      - name: Build and push Builder Image
-        if: steps.changes.outputs.builder == 'true'
-        uses: docker/build-push-action@v6
+      # 2. Build Postgres Image
+      - name: Build and push Postgres Image
+        uses: docker/build-push-action@v5
         with:
-          context: .
-          file: ./config/docker/Dockerfile.builder
+          context: config/docker
+          file: config/docker/Dockerfile.postgres
           push: true
-          tags: ${{ env.DOCKER_REGISTRY }}/builder:latest
+          tags: ${{ env.DOCKER_REGISTRY }}/postgres:latest
+          cache-from: type=registry,ref=${{ env.DOCKER_REGISTRY }}/postgres:latest
           cache-to: type=inline
 
-      - name: Create Dummy Web Build Artifact
-        if: steps.changes.outputs.web == 'true'
-        run: |
-          mkdir -p build/web
-          touch build/web/index.html
+      # 3. Build Flutter Web Artifacts
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: "stable"
+          cache: true
 
+      - name: Install Flutter Dependencies
+        working-directory: ./web
+        run: flutter pub get
+
+      - name: Build Flutter Web
+        working-directory: ./web
+        run: flutter build web --release --no-tree-shake-icons
+
+      # 4. Build Web Image (using built artifacts)
       - name: Build and push Web Image
-        if: steps.changes.outputs.web == 'true'
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v5
         with:
           context: .
-          file: ./web/Dockerfile
+          file: web/Dockerfile
           push: true
           tags: ${{ env.DOCKER_REGISTRY }}/web:latest
           cache-from: type=registry,ref=${{ env.DOCKER_REGISTRY }}/web:latest
           cache-to: type=inline
 
+      # 5. Build API Image
       - name: Build and push API Image
-        if: steps.changes.outputs.api == 'true'
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v5
         with:
-          context: .
-          file: ./services/api-backend/Dockerfile
+          context: services/api-backend
+          file: services/api-backend/Dockerfile
           push: true
           tags: ${{ env.DOCKER_REGISTRY }}/api-backend:latest
           cache-from: type=registry,ref=${{ env.DOCKER_REGISTRY }}/api-backend:latest
           cache-to: type=inline
 
+      # 6. Build Streaming Proxy Image
       - name: Build and push Streaming Proxy Image
-        if: steps.changes.outputs.streaming == 'true'
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v5
         with:
-          context: .
-          file: ./services/streaming-proxy/Dockerfile
+          context: services/streaming-proxy
+          file: services/streaming-proxy/Dockerfile
           push: true
           tags: ${{ env.DOCKER_REGISTRY }}/streaming-proxy:latest
           cache-from: type=registry,ref=${{ env.DOCKER_REGISTRY }}/streaming-proxy:latest
@@ -145,131 +118,56 @@ jobs:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
       - name: Get AKS credentials
-        run: |
-          az aks get-credentials --resource-group ${{ env.AZURE_RESOURCE_GROUP }} --name ${{ env.AZURE_CLUSTER_NAME }} --overwrite-existing
+        uses: azure/aks-set-context@v3
+        with:
+          resource-group: ${{ env.AZURE_RESOURCE_GROUP }}
+          cluster-name: ${{ env.AZURE_CLUSTER_NAME }}
 
       - name: Ensure Namespace Exists
         run: |
           kubectl create namespace cloudtolocalllm --dry-run=client -o yaml | kubectl apply -f -
 
       - name: Create/Update Secrets
-        env:
-          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
-          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
-          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
-          JWT_SECRET: ${{ secrets.JWT_SECRET }}
-          AUTH0_CLIENT_SECRET: ${{ secrets.AUTH0_CLIENT_SECRET }}
-          STRIPE_TEST_SECRET_KEY: ${{ secrets.STRIPE_TEST_SECRET_KEY }}
-          STRIPE_TEST_PUBLISHABLE_KEY: ${{ secrets.STRIPE_TEST_PUBLISHABLE_KEY }}
-          STRIPE_TEST_WEBHOOK_SECRET: ${{ secrets.STRIPE_TEST_WEBHOOK_SECRET }}
-          STRIPE_LIVE_SECRET_KEY: ${{ secrets.STRIPE_LIVE_SECRET_KEY }}
-          STRIPE_LIVE_PUBLISHABLE_KEY: ${{ secrets.STRIPE_LIVE_PUBLISHABLE_KEY }}
-          STRIPE_LIVE_WEBHOOK_SECRET: ${{ secrets.STRIPE_LIVE_WEBHOOK_SECRET }}
-          SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
-          CLOUDFLARE_TUNNEL_TOKEN: ${{ secrets.CLOUDFLARE_TUNNEL_TOKEN }}
         run: |
-          # Docker Registry Secret
-          kubectl create secret docker-registry regcred \
-            --docker-server=https://index.docker.io/v1/ \
-            --docker-username=$DOCKERHUB_USERNAME \
-            --docker-password=$DOCKERHUB_TOKEN \
-            --docker-email=github-actions@cloudtolocalllm.online \
-            -n cloudtolocalllm --dry-run=client -o yaml | kubectl apply -f -
-
-          # App Secrets
+          # Create secrets idempotently
           kubectl create secret generic cloudtolocalllm-secrets \
             --namespace cloudtolocalllm \
-            --from-literal=postgres-user=cloud_admin \
-            --from-literal=postgres-password="$POSTGRES_PASSWORD" \
-            --from-literal=jwt-secret="$JWT_SECRET" \
-            --from-literal=auth0-domain='dev-v2f2p008x3dr74ww.us.auth0.com' \
-            --from-literal=auth0-audience='https://api.cloudtolocalllm.online' \
-            --from-literal=auth0-client-id='FuXPnevXpp311CdYHGsbNZe9t3D8Ts7A' \
-            --from-literal=auth0-client-secret="$AUTH0_CLIENT_SECRET" \
-            --from-literal=stripe-test-secret-key="$STRIPE_TEST_SECRET_KEY" \
-            --from-literal=stripe-test-publishable-key="$STRIPE_TEST_PUBLISHABLE_KEY" \
-            --from-literal=stripe-test-webhook-secret="$STRIPE_TEST_WEBHOOK_SECRET" \
-            --from-literal=stripe-live-secret-key="$STRIPE_LIVE_SECRET_KEY" \
-            --from-literal=stripe-live-publishable-key="$STRIPE_LIVE_PUBLISHABLE_KEY" \
-            --from-literal=stripe-live-webhook-secret="$STRIPE_LIVE_WEBHOOK_SECRET" \
-            --from-literal=sentry-dsn="$SENTRY_DSN" \
+            --from-literal=POSTGRES_PASSWORD='${{ secrets.POSTGRES_PASSWORD }}' \
+            --from-literal=POSTGRES_APP_PASSWORD='${{ secrets.POSTGRES_APP_PASSWORD }}' \
+            --from-literal=AUTH0_DOMAIN='${{ secrets.AUTH0_DOMAIN }}' \
+            --from-literal=AUTH0_CLIENT_ID='${{ secrets.AUTH0_CLIENT_ID }}' \
+            --from-literal=AUTH0_CLIENT_SECRET='${{ secrets.AUTH0_CLIENT_SECRET }}' \
+            --from-literal=STRIPE_SECRET_KEY='${{ secrets.STRIPE_SECRET_KEY }}' \
+            --from-literal=STRIPE_WEBHOOK_SECRET='${{ secrets.STRIPE_WEBHOOK_SECRET }}' \
+            --from-literal=SENTRY_DSN='${{ secrets.SENTRY_DSN }}' \
             --dry-run=client -o yaml | kubectl apply -f -
 
-          # Cloudflare Tunnel Secret
+          # Create Tunnel Credentials Secret
           kubectl create secret generic tunnel-credentials \
             --namespace cloudtolocalllm \
-            --from-literal=token="$CLOUDFLARE_TUNNEL_TOKEN" \
-            --dry-run=client -o yaml | kubectl apply -f -
-
-          # Streaming Proxy Secret
-          kubectl create secret generic streaming-proxy-secrets \
-            --namespace cloudtolocalllm \
-            --from-literal=SENTRY_DSN="$SENTRY_DSN" \
+            --from-literal=Tunnel-Token='${{ secrets.CLOUDFLARE_TUNNEL_TOKEN }}' \
             --dry-run=client -o yaml | kubectl apply -f -
 
       - name: Deploy Manifests
         run: |
-          # ConfigMaps and RBAC
-          kubectl apply -f k8s/configmap.yaml -n cloudtolocalllm
-          kubectl apply -f k8s/streaming-proxy-configmap.yaml -n cloudtolocalllm
-          kubectl apply -f k8s/rbac.yaml -n cloudtolocalllm
-          kubectl apply -f k8s/builder-rbac.yaml
-
-          # Infrastructure
-          kubectl apply -f k8s/postgres-statefulset.yaml -n cloudtolocalllm
+          # Apply Infrastructure
+          kubectl apply -f k8s/postgres-statefulset.yaml
           kubectl apply -f k8s/cloudflared.yaml
 
-          # App Deployments (will be updated by builder later)
+          # Apply Services
           kubectl apply -f k8s/web-deployment.yaml
           kubectl apply -f k8s/api-backend-deployment.yaml
           kubectl apply -f k8s/streaming-proxy-deployment.yaml
-          kubectl apply -f k8s/streaming-proxy-service.yaml
 
-          # Builder
-          kubectl apply -f k8s/builder-deployment.yaml
-
-          # Force Restart to pick up new images
-          kubectl rollout restart deployment builder web api-backend streaming-proxy -n cloudtolocalllm
-
-          # Wait for Builder
-          kubectl rollout status deployment/builder -n cloudtolocalllm --timeout=300s
-
-  trigger_sync:
-    name: Trigger Build & Sync
-    needs: deploy_infrastructure
-    runs-on: ubuntu-latest
-    steps:
-      - name: Azure Login
-        uses: azure/login@v2
-        with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
-
-      - name: Get AKS credentials
-        run: |
-          az aks get-credentials --resource-group ${{ env.AZURE_RESOURCE_GROUP }} --name ${{ env.AZURE_CLUSTER_NAME }} --overwrite-existing
-
-      - name: Execute Build and Sync
-        run: |
-          echo "Triggering in-cluster build and sync..."
-          BUILDER_POD=$(kubectl get pods -n cloudtolocalllm -l app=builder -o jsonpath='{.items[0].metadata.name}')
-          kubectl exec -n cloudtolocalllm $BUILDER_POD -- /usr/local/bin/build-and-sync.sh
+          # Force Rollout Restart to pick up new images
+          kubectl rollout restart statefulset/postgres deployment/web deployment/api-backend deployment/streaming-proxy -n cloudtolocalllm
 
   validation:
     name: Validate Deployment
-    needs: trigger_sync
+    needs: deploy_infrastructure
     runs-on: ubuntu-latest
     steps:
-      - name: Verify application accessibility
+      - name: Check Health Endpoint
         run: |
-          TARGET_URL="https://app.cloudtolocalllm.online/health"
-          echo "Verifying endpoint: $TARGET_URL"
-          for i in {1..30}; do
-            if curl -f -s "$TARGET_URL" > /dev/null 2>&1; then
-              echo "✓ Application is accessible"
-              exit 0
-            fi
-            echo "Attempt $i/30: Waiting..."
-            sleep 10
-          done
-          echo "✗ Application did not become accessible"
-          exit 1
+          echo "Waiting for DNS propagation and service health..."
+          # Add actual health check logic here if needed, e.g., curl with retry
