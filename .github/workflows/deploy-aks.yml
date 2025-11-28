@@ -329,8 +329,8 @@ jobs:
       - name: Check Health Endpoint
         run: |
           echo "Waiting for DNS propagation and service health..."
-          # Retry loop for 5 minutes
-          for i in {1..60}; do
+          # Retry loop for 2 minutes
+          for i in {1..24}; do
             if curl -s -f https://app.cloudtolocalllm.online/health; then
               echo "Health check passed!"
               exit 0
@@ -338,5 +338,5 @@ jobs:
             echo "Attempt $i: Health check failed, waiting 5s..."
             sleep 5
           done
-          echo "Health check failed after 5 minutes."
+          echo "Health check failed after 2 minutes."
           exit 1
