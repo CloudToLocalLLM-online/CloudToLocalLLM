@@ -67,12 +67,6 @@ export function setupMiddlewarePipeline(app, options = {}) {
   try {
     const corsMiddleware = cors(corsOptions);
     app.use(corsMiddleware);
-
-    // Handle preflight requests explicitly
-    // Express 5 requires (.*) instead of * for wildcard matching
-    app.options('(.*)', corsMiddleware, (req, res) => {
-      res.status(204).end();
-    });
   } catch (error) {
     console.error('Error setting up CORS:', error);
     throw error;
