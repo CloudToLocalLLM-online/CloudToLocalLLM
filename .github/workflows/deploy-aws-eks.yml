@@ -119,7 +119,6 @@ jobs:
 
           kubectl apply -f k8s/builder-rbac.yaml
           kubectl apply -f k8s/builder-deployment.yaml
-          kubectl apply -f k8s/builder-deployment.yaml
           kubectl rollout status deployment/builder -n cloudtolocalllm --timeout=300s
 
       - name: Debug Builder Deployment Failure
