@@ -320,6 +320,12 @@ jobs:
           # Force Rollout Restart to pick up new images
           kubectl rollout restart statefulset/postgres deployment/web deployment/api-backend deployment/streaming-proxy -n cloudtolocalllm
 
+          # Wait for Rollout to Complete
+          kubectl rollout status statefulset/postgres -n cloudtolocalllm --timeout=300s
+          kubectl rollout status deployment/web -n cloudtolocalllm --timeout=300s
+          kubectl rollout status deployment/api-backend -n cloudtolocalllm --timeout=300s
+          kubectl rollout status deployment/streaming-proxy -n cloudtolocalllm --timeout=300s
+
   validation:
     name: Validate Deployment
     needs: deploy_infrastructure
