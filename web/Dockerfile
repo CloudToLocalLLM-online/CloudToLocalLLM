@@ -5,19 +5,6 @@
 FROM cloudtolocalllm/base:latest
 
 # Switch to root to install Nginx
-USER root
-RUN dnf -y install nginx && \
-    dnf clean all && \
-    sed -i '/^user/d' /etc/nginx/nginx.conf && \
-    sed -i '/^pid/d' /etc/nginx/nginx.conf
-
-# Configure Nginx
-COPY web/nginx.conf /etc/nginx/conf.d/default.conf
-
-# Copy built Flutter web app from local artifacts
-# Ensure ownership by cloudtolocalllm
-COPY --chown=cloudtolocalllm:cloudtolocalllm build/web /usr/share/nginx/html
-
 # Fix permissions for non-root Nginx
 RUN chown -R cloudtolocalllm:cloudtolocalllm /usr/share/nginx/html /var/log/nginx /var/lib/nginx /run && \
     chmod -R 755 /usr/share/nginx/html && \
