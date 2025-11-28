@@ -119,8 +119,6 @@ spec:
               path: /health
               port: http
               scheme: HTTP
-              drop:
-                - ALL
 
           # Volume mounts
           volumeMounts:
