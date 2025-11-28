@@ -14,8 +14,8 @@ RUN npm ci --omit=dev --ignore-scripts && npm rebuild sqlite3 && npm cache clean
 # Copy application source
 COPY . .
 
-# Fix ownership for cloudtolocalllm user
-RUN chown -R cloudtolocalllm:cloudtolocalllm /app
+# Fix ownership for cloudtolocalllm user and ensure logs dir exists
+RUN mkdir -p /app/logs && chown -R cloudtolocalllm:cloudtolocalllm /app
 
 # Health port
 EXPOSE 3000
