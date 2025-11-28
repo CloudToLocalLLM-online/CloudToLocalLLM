@@ -8,8 +8,8 @@ FROM fedora:rawhide
 # We do this first to ensure it exists in all derived images
 RUN useradd -u 1000 -m -s /bin/bash cloudtolocalllm
 
-# Install essential tools for rsync-based deployment
-RUN dnf -y install rsync tar openssh-clients && \
+# Install essential tools for rsync-based deployment and Node.js runtime
+RUN dnf -y install rsync tar openssh-clients nodejs npm && \
     dnf clean all
 
 # Set up working directory
