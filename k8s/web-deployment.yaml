@@ -51,6 +51,9 @@ spec:
                       values:
                         - web
                 topologyKey: kubernetes.io/hostname
+      serviceAccountName: web-sa
+      imagePullSecrets:
+        - name: regcred
       containers:
         - name: web
           image: cloudtolocalllm/web:latest
