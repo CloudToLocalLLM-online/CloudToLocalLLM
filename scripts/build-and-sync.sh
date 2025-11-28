@@ -53,6 +53,10 @@ sync_to_pods() {
     
     for POD in $PODS; do
         echo "Syncing to $POD..."
+        echo "Pod Status:"
+        kubectl get pod $POD -n $NAMESPACE
+        echo "Pod Description:"
+        kubectl describe pod $POD -n $NAMESPACE
         # Use tar to copy files to avoid rsync issues if rsync isn't in path or behaves differently
         # But user requested rsync. Let's try rsync if available, or tar pipe.
         # Since we control both images, we know rsync is there.
