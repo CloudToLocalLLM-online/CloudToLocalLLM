@@ -40,6 +40,8 @@ spec:
       imagePullSecrets:
         - name: regcred
       securityContext:
+        fsGroup: 999
+      containers:
         - name: postgres
           image: cloudtolocalllm/postgres:latest
           imagePullPolicy: Always
