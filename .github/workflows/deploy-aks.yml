@@ -79,7 +79,7 @@ jobs:
 
   build_postgres:
     needs: [changes, build_base]
-    if: ${{ always() && (needs.changes.outputs.postgres == 'true' || needs.changes.outputs.base == 'true') && (needs.build_base.result == 'success' || needs.build_base.result == 'skipped') }}
+    if: ${{ !cancelled() && (needs.changes.outputs.postgres == 'true' || needs.changes.outputs.base == 'true') && (needs.build_base.result == 'success' || needs.build_base.result == 'skipped') }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -99,7 +99,7 @@ jobs:
 
   build_web:
     needs: [changes, build_base]
-    if: ${{ always() && (needs.changes.outputs.web == 'true' || needs.changes.outputs.base == 'true') && (needs.build_base.result == 'success' || needs.build_base.result == 'skipped') }}
+    if: ${{ !cancelled() && (needs.changes.outputs.web == 'true' || needs.changes.outputs.base == 'true') && (needs.build_base.result == 'success' || needs.build_base.result == 'skipped') }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -125,7 +125,7 @@ jobs:
 
   build_api:
     needs: [changes, build_base]
-    if: ${{ always() && (needs.changes.outputs.api == 'true' || needs.changes.outputs.base == 'true') && (needs.build_base.result == 'success' || needs.build_base.result == 'skipped') }}
+    if: ${{ !cancelled() && (needs.changes.outputs.api == 'true' || needs.changes.outputs.base == 'true') && (needs.build_base.result == 'success' || needs.build_base.result == 'skipped') }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -145,7 +145,7 @@ jobs:
 
   build_proxy:
     needs: [changes, build_base]
-    if: ${{ always() && (needs.changes.outputs.proxy == 'true' || needs.changes.outputs.base == 'true') && (needs.build_base.result == 'success' || needs.build_base.result == 'skipped') }}
+    if: ${{ !cancelled() && (needs.changes.outputs.proxy == 'true' || needs.changes.outputs.base == 'true') && (needs.build_base.result == 'success' || needs.build_base.result == 'skipped') }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -168,7 +168,7 @@ jobs:
     needs:
       [changes, build_base, build_postgres, build_web, build_api, build_proxy]
     if: |
-      always() && 
+      !cancelled() && 
       (needs.build_base.result == 'success' || needs.build_base.result == 'skipped') &&
       (needs.build_postgres.result == 'success' || needs.build_postgres.result == 'skipped') &&
       (needs.build_web.result == 'success' || needs.build_web.result == 'skipped') &&
@@ -266,7 +266,7 @@ jobs:
   validation:
     name: Validate Deployment
     needs: deploy_infrastructure
-    if: always()
+    if: ${{ !cancelled() && (needs.deploy_infrastructure.result == 'success' || needs.deploy_infrastructure.result == 'skipped') }}
     runs-on: ubuntu-latest
     steps:
       - name: Check Health Endpoint
