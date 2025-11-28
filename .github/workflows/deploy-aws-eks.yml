@@ -132,11 +132,11 @@ jobs:
         run: |
           if ! kubectl get statefulset postgres -n cloudtolocalllm > /dev/null 2>&1; then
             echo "Postgres not found. Deploying..."
-            # Create secrets first if needed (assuming they exist or are managed elsewhere, 
+            # Create secrets first if needed assuming they exist or are managed elsewhere, 
             # but for safety we apply the base secret logic if it was here. 
             # In this simplified flow, we assume secrets are present or applied via a separate process 
             # or we should apply them here. The original workflow applied them.
-            # Let's apply base manifests to be safe.)
+            # Let's apply base manifests to be safe.
             
             # Apply base manifests (Namespace, ConfigMap, Secrets, RBAC)
             # We need to recreate the secret logic from the original workflow
