@@ -31,8 +31,8 @@ jobs:
       - name: Login to Docker Hub
         uses: docker/login-action@v3
         with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       # 1. Build Base Image
       - name: Build and push Base Image
@@ -128,24 +128,58 @@ jobs:
           kubectl create namespace cloudtolocalllm --dry-run=client -o yaml | kubectl apply -f -
 
       - name: Create/Update Secrets
+        env:
+          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          AUTH0_CLIENT_SECRET: ${{ secrets.AUTH0_CLIENT_SECRET }}
+          STRIPE_TEST_SECRET_KEY: ${{ secrets.STRIPE_TEST_SECRET_KEY }}
+          STRIPE_TEST_PUBLISHABLE_KEY: ${{ secrets.STRIPE_TEST_PUBLISHABLE_KEY }}
+          STRIPE_TEST_WEBHOOK_SECRET: ${{ secrets.STRIPE_TEST_WEBHOOK_SECRET }}
+          STRIPE_LIVE_SECRET_KEY: ${{ secrets.STRIPE_LIVE_SECRET_KEY }}
+          STRIPE_LIVE_PUBLISHABLE_KEY: ${{ secrets.STRIPE_LIVE_PUBLISHABLE_KEY }}
+          STRIPE_LIVE_WEBHOOK_SECRET: ${{ secrets.STRIPE_LIVE_WEBHOOK_SECRET }}
+          SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
+          CLOUDFLARE_TUNNEL_TOKEN: ${{ secrets.CLOUDFLARE_TUNNEL_TOKEN }}
         run: |
-          # Create secrets idempotently
+          # Docker Registry Secret
+          kubectl create secret docker-registry regcred \
+            --docker-server=https://index.docker.io/v1/ \
+            --docker-username=$DOCKERHUB_USERNAME \
+            --docker-password=$DOCKERHUB_TOKEN \
+            --docker-email=github-actions@cloudtolocalllm.online \
+            -n cloudtolocalllm --dry-run=client -o yaml | kubectl apply -f -
+
+          # App Secrets
           kubectl create secret generic cloudtolocalllm-secrets \
             --namespace cloudtolocalllm \
-            --from-literal=POSTGRES_PASSWORD='${{ secrets.POSTGRES_PASSWORD }}' \
-            --from-literal=POSTGRES_APP_PASSWORD='${{ secrets.POSTGRES_APP_PASSWORD }}' \
-            --from-literal=AUTH0_DOMAIN='${{ secrets.AUTH0_DOMAIN }}' \
-            --from-literal=AUTH0_CLIENT_ID='${{ secrets.AUTH0_CLIENT_ID }}' \
-            --from-literal=AUTH0_CLIENT_SECRET='${{ secrets.AUTH0_CLIENT_SECRET }}' \
-            --from-literal=STRIPE_SECRET_KEY='${{ secrets.STRIPE_SECRET_KEY }}' \
-            --from-literal=STRIPE_WEBHOOK_SECRET='${{ secrets.STRIPE_WEBHOOK_SECRET }}' \
-            --from-literal=SENTRY_DSN='${{ secrets.SENTRY_DSN }}' \
+            --from-literal=postgres-user=cloud_admin \
+            --from-literal=postgres-password="$POSTGRES_PASSWORD" \
+            --from-literal=jwt-secret="$JWT_SECRET" \
+            --from-literal=auth0-domain='dev-v2f2p008x3dr74ww.us.auth0.com' \
+            --from-literal=auth0-audience='https://api.cloudtolocalllm.online' \
+            --from-literal=auth0-client-id='FuXPnevXpp311CdYHGsbNZe9t3D8Ts7A' \
+            --from-literal=auth0-client-secret="$AUTH0_CLIENT_SECRET" \
+            --from-literal=stripe-test-secret-key="$STRIPE_TEST_SECRET_KEY" \
+            --from-literal=stripe-test-publishable-key="$STRIPE_TEST_PUBLISHABLE_KEY" \
+            --from-literal=stripe-test-webhook-secret="$STRIPE_TEST_WEBHOOK_SECRET" \
+            --from-literal=stripe-live-secret-key="$STRIPE_LIVE_SECRET_KEY" \
+            --from-literal=stripe-live-publishable-key="$STRIPE_LIVE_PUBLISHABLE_KEY" \
+            --from-literal=stripe-live-webhook-secret="$STRIPE_LIVE_WEBHOOK_SECRET" \
+            --from-literal=sentry-dsn="$SENTRY_DSN" \
             --dry-run=client -o yaml | kubectl apply -f -
 
-          # Create Tunnel Credentials Secret
+          # Cloudflare Tunnel Secret
           kubectl create secret generic tunnel-credentials \
             --namespace cloudtolocalllm \
-            --from-literal=Tunnel-Token='${{ secrets.CLOUDFLARE_TUNNEL_TOKEN }}' \
+            --from-literal=token="$CLOUDFLARE_TUNNEL_TOKEN" \
+            --dry-run=client -o yaml | kubectl apply -f -
+
+          # Streaming Proxy Secret
+          kubectl create secret generic streaming-proxy-secrets \
+            --namespace cloudtolocalllm \
+            --from-literal=SENTRY_DSN="$SENTRY_DSN" \
             --dry-run=client -o yaml | kubectl apply -f -
 
       - name: Deploy Manifests
