@@ -31,7 +31,7 @@ spec:
               memory: "128Mi"
               cpu: "50m"
             limits:
-              memory: "1280Mi"
+              memory: "4Gi"
               cpu: "2000m"
           volumeMounts:
             - name: build-cache
