@@ -69,13 +69,19 @@ sync_to_pods() {
         # No, kubectl cp is a copy.
         # Let's use the tar pipe method which is robust.
         
-        tar cf - -C $(dirname $src) $(basename $src) | kubectl exec -i -n $NAMESPACE $POD -- tar xf - -C $dest
+        # Use tar to copy files. We pipe local tar to remote tar.
+        # We specify the container name explicitly to avoid ambiguity.
+        
+        CONTAINER_FLAG=""
+        if [ "$label" == "web" ]; then
+             CONTAINER_FLAG="-c web"
+        fi
+
+        tar cf - -C $(dirname $src) $(basename $src) | kubectl exec -i -n $NAMESPACE $POD $CONTAINER_FLAG -- tar xf - -C $dest
         
         # Signal reload (if supported by app, e.g. touch a file)
-        # For Node.js with nodemon, touching a watched file works.
-        # For Nginx (Web), we might need to reload nginx.
         if [ "$label" == "web" ]; then
-             kubectl exec -n $NAMESPACE $POD -- nginx -s reload
+             kubectl exec -n $NAMESPACE $POD $CONTAINER_FLAG -- nginx -s reload
         fi
     done
 }
@@ -84,6 +90,9 @@ sync_to_pods() {
 # Web serves from /usr/share/nginx/html usually, or /app/web/build/web depending on config.
 # Let's check web-deployment.yaml mount path.
 # Assuming /app/web/build/web based on previous plan.
+echo "Checking web build directory..."
+ls -la web/build/web || echo "Directory web/build/web not found!"
+
 sync_to_pods "web" "web/build/web/." "/app/web/build/web"
 
 # Sync API

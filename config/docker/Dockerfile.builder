@@ -14,6 +14,7 @@ USER root
 # - unzip: for flutter installation
 RUN dnf -y install \
     git \
+    # Node.js 22 (LTS) is the default in Fedora 41+. Ensure package.json engines match this.
     nodejs \
     npm \
     java-devel \
