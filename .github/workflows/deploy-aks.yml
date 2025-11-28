@@ -84,7 +84,7 @@ jobs:
           password: ${{ secrets.DOCKERHUB_TOKEN }}
       - uses: docker/build-push-action@v5
         with:
-          context: config/docker
+          context: .
           file: config/docker/Dockerfile.postgres
           push: true
           tags: ${{ env.DOCKER_REGISTRY }}/postgres:latest
