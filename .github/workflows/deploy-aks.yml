@@ -35,18 +35,23 @@ jobs:
           filters: |
             base:
               - 'config/docker/Dockerfile.base'
+              - '.github/workflows/deploy-aks.yml'
             postgres:
               - 'config/docker/Dockerfile.postgres'
               - 'config/docker/postgres-init.sh'
+              - '.github/workflows/deploy-aks.yml'
             web:
               - 'web/**'
               - 'config/docker/Dockerfile.base'
+              - '.github/workflows/deploy-aks.yml'
             api:
               - 'services/api-backend/**'
               - 'config/docker/Dockerfile.base'
+              - '.github/workflows/deploy-aks.yml'
             proxy:
               - 'services/streaming-proxy/**'
               - 'config/docker/Dockerfile.base'
+              - '.github/workflows/deploy-aks.yml'
 
   build_base:
     needs: changes
