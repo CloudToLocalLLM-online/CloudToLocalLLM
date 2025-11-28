@@ -3,10 +3,10 @@
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: web-app-sa
+  name: web-sa
   namespace: cloudtolocalllm
   labels:
-    app: web-app
+    app: web
     component: frontend
 
 ---
@@ -36,10 +36,10 @@ metadata:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
-  name: web-app-role
+  name: web-role
   namespace: cloudtolocalllm
   labels:
-    app: web-app
+    app: web
 rules:
   # Read ConfigMaps for application configuration
   - apiGroups: [""]
@@ -113,17 +113,17 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
-  name: web-app-rolebinding
+  name: web-rolebinding
   namespace: cloudtolocalllm
   labels:
-    app: web-app
+    app: web
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
-  name: web-app-role
+  name: web-role
 subjects:
   - kind: ServiceAccount
-    name: web-app-sa
+    name: web-sa
     namespace: cloudtolocalllm
 
 ---

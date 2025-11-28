@@ -305,20 +305,6 @@ jobs:
           # Replace image registry in manifests
           sed -i "s|cloudtolocalllm/postgres:latest|${{ env.DOCKER_REGISTRY }}/postgres:latest|g" k8s/postgres-statefulset.yaml
           sed -i "s|cloudtolocalllm/web:latest|${{ env.DOCKER_REGISTRY }}/web:latest|g" k8s/web-deployment.yaml
-          sed -i "s|cloudtolocalllm/api-backend:latest|${{ env.DOCKER_REGISTRY }}/api-backend:latest|g" k8s/api-backend-deployment.yaml
-          sed -i "s|cloudtolocalllm/streaming-proxy:latest|${{ env.DOCKER_REGISTRY }}/streaming-proxy:latest|g" k8s/streaming-proxy-deployment.yaml
-
-          # Apply Infrastructure
-          kubectl apply -f k8s/postgres-statefulset.yaml
-          kubectl apply -f k8s/cloudflared.yaml
-
-          # Apply Services
-          kubectl apply -f k8s/web-deployment.yaml
-          kubectl apply -f k8s/api-backend-deployment.yaml
-          kubectl apply -f k8s/streaming-proxy-deployment.yaml
-
-          # Force Rollout Restart to pick up new images
-          kubectl rollout restart statefulset/postgres deployment/web deployment/api-backend deployment/streaming-proxy -n cloudtolocalllm
 
           # Wait for Rollout to Complete
           kubectl rollout status statefulset/postgres -n cloudtolocalllm --timeout=300s
