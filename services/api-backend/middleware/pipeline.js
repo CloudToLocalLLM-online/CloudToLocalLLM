@@ -61,12 +61,20 @@ export function setupMiddlewarePipeline(app, options = {}) {
   } = options;
 
   // 3. CORS Middleware - Handle preflight requests
-  app.use(cors(corsOptions));
+  console.log('CORS type:', typeof cors);
+  console.log('CORS value:', cors);
+  try {
+    const corsMiddleware = cors(corsOptions);
+    app.use(corsMiddleware);
 
-  // Handle preflight requests explicitly
-  app.options('*', cors(corsOptions), (req, res) => {
-    res.status(204).end();
-  });
+    // Handle preflight requests explicitly
+    app.options('*', corsMiddleware, (req, res) => {
+      res.status(204).end();
+    });
+  } catch (error) {
+    console.error('Error setting up CORS:', error);
+    throw error;
+  }
 
   // 4. Helmet Security Headers
   app.use(
