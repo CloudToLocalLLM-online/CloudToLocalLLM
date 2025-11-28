@@ -64,14 +64,13 @@ export function setupMiddlewarePipeline(app, options = {}) {
   } = options;
 
   // 3. CORS Middleware - Handle preflight requests
-  console.log('CORS type:', typeof cors);
-  console.log('CORS value:', cors);
   try {
     const corsMiddleware = cors(corsOptions);
     app.use(corsMiddleware);
 
     // Handle preflight requests explicitly
-    app.options('*', corsMiddleware, (req, res) => {
+    // Express 5 requires (.*) instead of * for wildcard matching
+    app.options('(.*)', corsMiddleware, (req, res) => {
       res.status(204).end();
     });
   } catch (error) {
