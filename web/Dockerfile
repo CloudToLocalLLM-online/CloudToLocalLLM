@@ -12,9 +12,6 @@ RUN dnf -y install nginx && \
 
 # Configure Nginx
 COPY web/nginx.conf /etc/nginx/conf.d/default.conf
-
-# Copy built Flutter web app from local artifacts
-# Ensure ownership by cloudtolocalllm
 COPY --chown=cloudtolocalllm:cloudtolocalllm build/web /usr/share/nginx/html
 
 # Fix permissions for non-root Nginx
