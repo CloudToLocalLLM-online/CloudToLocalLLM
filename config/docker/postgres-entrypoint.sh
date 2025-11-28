@@ -38,4 +38,4 @@ if [ ! -s "$PGDATA/PG_VERSION" ]; then
 fi
 
 echo "Starting PostgreSQL..."
-exec postgres -D "$PGDATA"
+exec postgres -D "$PGDATA" -c logging_collector=off
