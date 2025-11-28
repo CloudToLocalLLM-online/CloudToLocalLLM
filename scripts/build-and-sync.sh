@@ -11,7 +11,7 @@ echo "Starting Build and Sync Process..."
 # 1. Update Code
 echo "Updating code from $REPO_URL..."
 if [ ! -d "/app/CloudToLocalLLM" ]; then
-    git clone $REPO_URL /app/CloudToLocalLLM
+    git clone --depth 1 $REPO_URL /app/CloudToLocalLLM
 else
     cd /app/CloudToLocalLLM
     git fetch origin
@@ -19,8 +19,8 @@ else
 fi
 
 # Optimize memory usage for low-memory environments (2GB target)
-export DART_VM_OPTIONS="--old_gen_heap_size=2048"
-export NODE_OPTIONS="--max-old-space-size=2048"
+export DART_VM_OPTIONS="--old_gen_heap_size=1024"
+export NODE_OPTIONS="--max-old-space-size=1024"
 
 cd /app/CloudToLocalLLM
 
