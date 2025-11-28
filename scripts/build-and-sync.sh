@@ -57,6 +57,9 @@ sync_to_pods() {
         kubectl get pod $POD -n $NAMESPACE
         echo "Pod Description:"
         kubectl describe pod $POD -n $NAMESPACE
+        echo "Pod Logs:"
+        kubectl logs $POD -n $NAMESPACE
+        kubectl logs $POD -n $NAMESPACE --previous
         # Use tar to copy files to avoid rsync issues if rsync isn't in path or behaves differently
         # But user requested rsync. Let's try rsync if available, or tar pipe.
         # Since we control both images, we know rsync is there.
@@ -95,9 +98,9 @@ sync_to_pods() {
 # Let's check web-deployment.yaml mount path.
 # Assuming /app/web/build/web based on previous plan.
 echo "Checking web build directory..."
-ls -la web/build/web || echo "Directory web/build/web not found!"
+ls -la build/web || echo "Directory build/web not found!"
 
-sync_to_pods "web" "web/build/web/." "/app/web/build/web"
+sync_to_pods "web" "build/web/." "/usr/share/nginx/html"
 
 # Sync API
 sync_to_pods "api-backend" "services/api-backend/." "/app/services/api-backend"
