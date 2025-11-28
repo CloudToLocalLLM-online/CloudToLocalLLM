@@ -10,8 +10,8 @@ RUN dnf -y install postgresql-server postgresql-contrib findutils && \
     dnf clean all
 
 # Create directories and fix permissions
-RUN mkdir -p /var/lib/postgresql/data /docker-entrypoint-initdb.d && \
-    chown -R cloudtolocalllm:cloudtolocalllm /var/lib/postgresql /docker-entrypoint-initdb.d
+RUN mkdir -p /var/lib/postgresql/data /docker-entrypoint-initdb.d /var/run/postgresql && \
+    chown -R cloudtolocalllm:cloudtolocalllm /var/lib/postgresql /docker-entrypoint-initdb.d /var/run/postgresql
 
 # Copy entrypoint and init scripts
 COPY config/docker/postgres-entrypoint.sh /usr/local/bin/

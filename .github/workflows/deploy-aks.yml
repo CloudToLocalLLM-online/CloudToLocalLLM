@@ -59,6 +59,7 @@ jobs:
 
   build_base:
     needs: changes
+    if: ${{ needs.changes.outputs.base == 'true' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -78,6 +79,7 @@ jobs:
 
   build_postgres:
     needs: [changes, build_base]
+    if: ${{ needs.changes.outputs.postgres == 'true' || needs.changes.outputs.base == 'true' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -97,6 +99,7 @@ jobs:
 
   build_web:
     needs: [changes, build_base]
+    if: ${{ needs.changes.outputs.web == 'true' || needs.changes.outputs.base == 'true' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -122,6 +125,7 @@ jobs:
 
   build_api:
     needs: [changes, build_base]
+    if: ${{ needs.changes.outputs.api == 'true' || needs.changes.outputs.base == 'true' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -141,6 +145,7 @@ jobs:
 
   build_proxy:
     needs: [changes, build_base]
+    if: ${{ needs.changes.outputs.proxy == 'true' || needs.changes.outputs.base == 'true' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
