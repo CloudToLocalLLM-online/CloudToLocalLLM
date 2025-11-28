@@ -1,3 +1,20 @@
+# ============================================================================
+# Runtime Dockerfile for CloudToLocalLLM Web Application
+# Uses artifacts from the Universal Builder
+# ============================================================================
+FROM cloudtolocalllm/base:latest
+
+# Switch to root to install Nginx
+USER root
+RUN dnf -y install nginx && \
+    dnf clean all && \
+    rm -rf /etc/nginx/conf.d/* /etc/nginx/default.d/*
+
+# Configure Nginx
+COPY web/nginx-main.conf /etc/nginx/nginx.conf
+COPY web/nginx.conf /etc/nginx/conf.d/default.conf
+COPY --chown=cloudtolocalllm:cloudtolocalllm build/web /usr/share/nginx/html
+
 # Fix permissions for non-root Nginx
 RUN chown -R cloudtolocalllm:cloudtolocalllm /usr/share/nginx/html /var/log/nginx /var/lib/nginx /run && \
     chmod -R 755 /usr/share/nginx/html && \
