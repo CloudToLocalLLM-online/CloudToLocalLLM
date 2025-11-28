@@ -18,6 +18,40 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
+  name: api-backend
+  namespace: cloudtolocalllm
+  labels:
+    app: api-backend
+    environment: development
+spec:
+  replicas: 1
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: api-backend
+  template:
+    metadata:
+      labels:
+        app: api-backend
+        tier: backend
+    spec:
+      serviceAccountName: api-backend-sa
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+      initContainers:
+        - name: wait-for-postgres
+          image: busybox:1.35
+          command:
+            - sh
+            - -c
+            - |
+              echo "Waiting for PostgreSQL to be ready..."
               for i in $(seq 1 30); do
                 if nc -z postgres.cloudtolocalllm.svc.cluster.local 5432; then
                   echo "PostgreSQL is ready!"
