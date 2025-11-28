@@ -1,4 +1,30 @@
-FROM postgres:16-alpine
+# ============================================================================
+# Custom Postgres Image for CloudToLocalLLM
+# Based on cloudtolocalllm/base:latest (Fedora)
+# ============================================================================
+FROM cloudtolocalllm/base:latest
 
-COPY postgres-init.sh /docker-entrypoint-initdb.d/01-init.sh
-RUN chmod +x /docker-entrypoint-initdb.d/01-init.sh
+# Install PostgreSQL
+USER root
+RUN dnf -y install postgresql-server postgresql-contrib findutils && \
+    dnf clean all
+
+# Create directories and fix permissions
+RUN mkdir -p /var/lib/postgresql/data /docker-entrypoint-initdb.d && \
+    chown -R cloudtolocalllm:cloudtolocalllm /var/lib/postgresql /docker-entrypoint-initdb.d
+
+# Copy entrypoint and init scripts
+COPY config/docker/postgres-entrypoint.sh /usr/local/bin/
+COPY config/docker/postgres-init.sh /docker-entrypoint-initdb.d/01-init.sh
+
+# Make scripts executable
+RUN chmod +x /usr/local/bin/postgres-entrypoint.sh /docker-entrypoint-initdb.d/01-init.sh
+
+# Switch to non-root user
+USER cloudtolocalllm
+
+# Expose Postgres port
+EXPOSE 5432
+
+# Set entrypoint
+ENTRYPOINT ["/usr/local/bin/postgres-entrypoint.sh"]
