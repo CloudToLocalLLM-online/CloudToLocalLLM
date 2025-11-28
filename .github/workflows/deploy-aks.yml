@@ -266,6 +266,7 @@ jobs:
   validation:
     name: Validate Deployment
     needs: deploy_infrastructure
+    if: always()
     runs-on: ubuntu-latest
     steps:
       - name: Check Health Endpoint
