@@ -11,7 +11,7 @@ metadata:
   namespace: cloudtolocalllm
 rules:
   - apiGroups: [""]
-    resources: ["pods", "pods/exec"]
+    resources: ["pods", "pods/exec", "pods/log"]
     verbs: ["get", "list", "watch", "create"]
   - apiGroups: ["apps"]
     resources: ["deployments", "statefulsets"]
