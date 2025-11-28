@@ -261,11 +261,15 @@ jobs:
           ACR_USERNAME: ${{ secrets.AZURE_CLIENT_ID }}
           ACR_PASSWORD: ${{ secrets.AZURE_CLIENT_SECRET }}
         run: |
+          # Get ACR Admin Credentials
+          ACR_ADMIN_USER=$(az acr credential show --name ${{ env.ACR_NAME }} --query username --output tsv)
+          ACR_ADMIN_PASS=$(az acr credential show --name ${{ env.ACR_NAME }} --query passwords[0].value --output tsv)
+
           # Docker Registry Secret for ACR
           kubectl create secret docker-registry regcred \
             --docker-server=${{ env.DOCKER_REGISTRY }} \
-            --docker-username=$ACR_USERNAME \
-            --docker-password=$ACR_PASSWORD \
+            --docker-username=$ACR_ADMIN_USER \
+            --docker-password=$ACR_ADMIN_PASS \
             --docker-email=github-actions@cloudtolocalllm.online \
             -n cloudtolocalllm --dry-run=client -o yaml | kubectl apply -f -
 
