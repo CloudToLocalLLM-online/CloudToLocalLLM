@@ -60,6 +60,8 @@ spec:
         prometheus.io/path: "/api/tunnel/metrics"
     spec:
       serviceAccountName: streaming-proxy-sa
+      imagePullSecrets:
+        - name: regcred
       securityContext:
         runAsNonRoot: true
         runAsUser: 1000

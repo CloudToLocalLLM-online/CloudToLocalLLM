@@ -238,9 +238,7 @@ jobs:
 
       - name: Setup ACR Integration
         run: |
-          # Attach ACR to AKS
-          az aks update -n ${{ env.AZURE_CLUSTER_NAME }} -g ${{ env.AZURE_RESOURCE_GROUP }} --attach-acr ${{ env.ACR_NAME }}
-          # Get Login Server
+          # Get Login Server (ACR assumed to exist or created in build steps)
           echo "DOCKER_REGISTRY=$(az acr show --name ${{ env.ACR_NAME }} --query loginServer --output tsv)" >> $GITHUB_ENV
 
       - name: Ensure Namespace Exists
@@ -260,7 +258,17 @@ jobs:
           STRIPE_LIVE_WEBHOOK_SECRET: ${{ secrets.STRIPE_LIVE_WEBHOOK_SECRET }}
           SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
           CLOUDFLARE_TUNNEL_TOKEN: ${{ secrets.CLOUDFLARE_TUNNEL_TOKEN }}
+          ACR_USERNAME: ${{ secrets.AZURE_CLIENT_ID }}
+          ACR_PASSWORD: ${{ secrets.AZURE_CLIENT_SECRET }}
         run: |
+          # Docker Registry Secret for ACR
+          kubectl create secret docker-registry regcred \
+            --docker-server=${{ env.DOCKER_REGISTRY }} \
+            --docker-username=$ACR_USERNAME \
+            --docker-password=$ACR_PASSWORD \
+            --docker-email=github-actions@cloudtolocalllm.online \
+            -n cloudtolocalllm --dry-run=client -o yaml | kubectl apply -f -
+
           # App Secrets
           kubectl create secret generic cloudtolocalllm-secrets \
             --namespace cloudtolocalllm \

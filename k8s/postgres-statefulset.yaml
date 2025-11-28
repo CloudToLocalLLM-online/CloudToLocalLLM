@@ -28,22 +28,6 @@ spec:
   serviceName: postgres
   replicas: 1
   selector:
-    matchLabels:
-      app: postgres
-  template:
-    metadata:
-      labels:
-        app: postgres
-        environment: development
-    spec:
-      securityContext:
-        fsGroup: 1000
-      affinity:
-        nodeAffinity:
-          preferredDuringSchedulingIgnoredDuringExecution:
-            - weight: 100
-              preference:
-                matchExpressions:
                   - key: node.kubernetes.io/instance-type
                     operator: In
                     values:

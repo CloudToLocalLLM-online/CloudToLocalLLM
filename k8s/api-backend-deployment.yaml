@@ -40,6 +40,8 @@ spec:
         tier: backend
     spec:
       serviceAccountName: api-backend-sa
+      imagePullSecrets:
+        - name: regcred
       securityContext:
         runAsNonRoot: true
         runAsUser: 1000
