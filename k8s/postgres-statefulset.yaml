@@ -28,11 +28,18 @@ spec:
   serviceName: postgres
   replicas: 1
   selector:
-                  - key: node.kubernetes.io/instance-type
-                    operator: In
-                    values:
-                      - t3.medium
-      containers:
+    matchLabels:
+      app: postgres
+  template:
+    metadata:
+      labels:
+        app: postgres
+        environment: development
+    spec:
+      serviceAccountName: postgres-sa
+      imagePullSecrets:
+        - name: regcred
+      securityContext:
         - name: postgres
           image: cloudtolocalllm/postgres:latest
           imagePullPolicy: Always
