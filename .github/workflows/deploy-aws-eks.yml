@@ -109,6 +109,14 @@ jobs:
 
       - name: Deploy Builder
         run: |
+          # Create registry secret
+          kubectl create secret docker-registry regcred \
+            --docker-server=${{ env.DOCKER_REGISTRY }} \
+            --docker-username=${{ secrets.DOCKERHUB_USERNAME }} \
+            --docker-password=${{ secrets.DOCKERHUB_TOKEN }} \
+            --docker-email=github-actions@cloudtolocalllm.online \
+            -n cloudtolocalllm --dry-run=client -o yaml | kubectl apply -f -
+
           kubectl apply -f k8s/builder-rbac.yaml
           kubectl apply -f k8s/builder-deployment.yaml
           kubectl rollout status deployment/builder -n cloudtolocalllm --timeout=300s
@@ -202,7 +210,7 @@ jobs:
           BUILDER_POD=$(kubectl get pods -n cloudtolocalllm -l app=builder -o jsonpath='{.items[0].metadata.name}')
 
           # Exec the script
-          kubectl exec -n cloudtolocalllm $BUILDER_POD -- /app/scripts/build-and-sync.sh
+          kubectl exec -n cloudtolocalllm $BUILDER_POD -- /usr/local/bin/build-and-sync.sh
 
   validation:
     name: Validate Deployment

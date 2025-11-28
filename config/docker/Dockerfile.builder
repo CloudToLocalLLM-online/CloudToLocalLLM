@@ -45,8 +45,8 @@ RUN flutter doctor
 WORKDIR /app
 
 # Copy build script
-COPY --chown=cloudtolocalllm:cloudtolocalllm scripts/build-and-sync.sh /app/scripts/build-and-sync.sh
-RUN chmod +x /app/scripts/build-and-sync.sh
+COPY --chown=cloudtolocalllm:cloudtolocalllm scripts/build-and-sync.sh /usr/local/bin/build-and-sync.sh
+RUN chmod +x /usr/local/bin/build-and-sync.sh
 
 # Keep the container running
 CMD ["/bin/bash", "-c", "while true; do sleep 3600; done"]
