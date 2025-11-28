@@ -1,0 +1,752 @@
+Build Base/Builder Images	UNKNOWN STEP	﻿2025-11-28T15:44:05.4793331Z Current runner version: '2.329.0'
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:05.4816001Z ##[group]Runner Image Provisioner
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:05.4816751Z Hosted Compute Agent
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:05.4817257Z Version: 20251016.436
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:05.4817882Z Commit: 8ab8ac8bfd662a3739dab9fe09456aba92132568
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:05.4818561Z Build Date: 2025-10-15T20:44:12Z
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:05.4819099Z ##[endgroup]
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:05.4819717Z ##[group]Operating System
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:05.4820229Z Ubuntu
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:05.4820647Z 24.04.3
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:05.4821084Z LTS
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:05.4821525Z ##[endgroup]
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:05.4821952Z ##[group]Runner Image
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:05.4822771Z Image: ubuntu-24.04
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:05.4823245Z Version: 20251112.124.1
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:05.4824153Z Included Software: https://github.com/actions/runner-images/blob/ubuntu24/20251112.124/images/ubuntu/Ubuntu2404-Readme.md
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:05.4825574Z Image Release: https://github.com/actions/runner-images/releases/tag/ubuntu24%2F20251112.124
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:05.4826472Z ##[endgroup]
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:05.4827462Z ##[group]GITHUB_TOKEN Permissions
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:05.4829305Z Contents: read
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:05.4829966Z Metadata: read
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:05.4830426Z Packages: read
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:05.4830898Z ##[endgroup]
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:05.4832843Z Secret source: Actions
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:05.4833457Z Prepare workflow directory
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:05.5227487Z Prepare all required actions
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:05.5279208Z Getting action download info
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:05.9526522Z Download action repository 'actions/checkout@v4' (SHA:34e114876b0b11c390a56381ad16ebd13914f8d5)
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:06.7557848Z Download action repository 'dorny/paths-filter@v3' (SHA:de90cc6fb38fc0963ad72b210f1f284cd68cea36)
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:07.4133680Z Download action repository 'docker/login-action@v3' (SHA:5e57cd118135c172c3672efd75eb46360885c0ef)
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:08.3437970Z Download action repository 'docker/setup-buildx-action@v3' (SHA:e468171a9de216ec08956ac3ada2f0791b6bd435)
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:09.2997223Z Download action repository 'docker/build-push-action@v6' (SHA:263435318d21b8e681c14492fe198d362a7d2c83)
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:10.4202555Z Complete job name: Build Base/Builder Images
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:10.4783473Z ##[group]Run actions/checkout@v4
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:10.4783970Z with:
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:10.4784178Z   repository: imrightguy/CloudToLocalLLM
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:10.4784627Z   token: ***
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:10.4784825Z   ssh-strict: true
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:10.4785022Z   ssh-user: git
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:10.4785210Z   persist-credentials: true
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:10.4785421Z   clean: true
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:10.4785632Z   sparse-checkout-cone-mode: true
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:10.4785874Z   fetch-depth: 1
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:10.4786053Z   fetch-tags: false
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:10.4786237Z   show-progress: true
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:10.4786414Z   lfs: false
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:10.4786594Z   submodules: false
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:10.4786784Z   set-safe-directory: true
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:10.4787130Z env:
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:10.4787353Z   AZURE_RESOURCE_GROUP: ***-rg
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:10.4787648Z   AZURE_CLUSTER_NAME: ***-aks
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:10.4787888Z   DOCKER_REGISTRY: ***
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:10.4788073Z ##[endgroup]
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:10.5812569Z Syncing repository: imrightguy/CloudToLocalLLM
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:10.5813938Z ##[group]Getting Git version info
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:10.5814453Z Working directory is '/home/runner/work/CloudToLocalLLM/CloudToLocalLLM'
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:10.5815004Z [command]/usr/bin/git version
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:10.5851042Z git version 2.51.2
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:10.5873947Z ##[endgroup]
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:10.5887006Z Temporarily overriding HOME='/home/runner/work/_temp/39cecf85-9f60-4c64-8c28-3f8409a4bc87' before making global git config changes
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:10.5887917Z Adding repository directory to the temporary git global config as a safe directory
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:10.5900463Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/CloudToLocalLLM/CloudToLocalLLM
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:10.5931503Z Deleting the contents of '/home/runner/work/CloudToLocalLLM/CloudToLocalLLM'
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:10.5934536Z ##[group]Initializing the repository
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:10.5938398Z [command]/usr/bin/git init /home/runner/work/CloudToLocalLLM/CloudToLocalLLM
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:10.6033159Z hint: Using 'master' as the name for the initial branch. This default branch name
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:10.6034005Z hint: is subject to change. To configure the initial branch name to use in all
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:10.6034782Z hint: of your new repositories, which will suppress this warning, call:
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:10.6035310Z hint:
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:10.6035756Z hint: 	git config --global init.defaultBranch <name>
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:10.6036218Z hint:
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:10.6036673Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:10.6037341Z hint: 'development'. The just-created branch can be renamed via this command:
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:10.6037665Z hint:
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:10.6037861Z hint: 	git branch -m <name>
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:10.6038065Z hint:
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:10.6038364Z hint: Disable this message with "git config set advice.defaultBranchName false"
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:10.6038918Z Initialized empty Git repository in /home/runner/work/CloudToLocalLLM/CloudToLocalLLM/.git/
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:10.6048427Z [command]/usr/bin/git remote add origin https://github.com/imrightguy/CloudToLocalLLM
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:10.6078379Z ##[endgroup]
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:10.6079006Z ##[group]Disabling automatic garbage collection
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:10.6083589Z [command]/usr/bin/git config --local gc.auto 0
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:10.6105856Z ##[endgroup]
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:10.6106227Z ##[group]Setting up auth
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:10.6112487Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:10.6135529Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:10.6400350Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:10.6425131Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:10.6591872Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:10.6617252Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:10.6798845Z [command]/usr/bin/git config --local http.https://github.com/.extraheader AUTHORIZATION: basic ***
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:10.6826609Z ##[endgroup]
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:10.6827112Z ##[group]Fetching the repository
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:10.6834417Z [command]/usr/bin/git -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +d29a13b8b6ba5da7036ef840c9d838f9db46b12a:refs/remotes/origin/main
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:13.3939112Z From https://github.com/imrightguy/CloudToLocalLLM
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:13.3940239Z  * [new ref]         d29a13b8b6ba5da7036ef840c9d838f9db46b12a -> origin/main
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:13.3970240Z ##[endgroup]
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:13.3970905Z ##[group]Determining the checkout info
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:13.3971529Z ##[endgroup]
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:13.3974653Z [command]/usr/bin/git sparse-checkout disable
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:13.4008091Z [command]/usr/bin/git config --local --unset-all extensions.worktreeConfig
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:13.4028137Z ##[group]Checking out the ref
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:13.4033166Z [command]/usr/bin/git checkout --progress --force -B main refs/remotes/origin/main
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:13.6407319Z Switched to a new branch 'main'
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:13.6407974Z branch 'main' set up to track 'origin/main'.
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:13.6430162Z ##[endgroup]
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:13.6461787Z [command]/usr/bin/git log -1 --format=%H
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:13.6481245Z d29a13b8b6ba5da7036ef840c9d838f9db46b12a
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:13.6640674Z ##[group]Run dorny/paths-filter@v3
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:13.6640942Z with:
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:13.6642201Z   filters: base:
+Build Base/Builder Images	UNKNOWN STEP	  - 'config/docker/Dockerfile.base'
+Build Base/Builder Images	UNKNOWN STEP	builder:
+Build Base/Builder Images	UNKNOWN STEP	  - 'config/docker/Dockerfile.builder'
+Build Base/Builder Images	UNKNOWN STEP	  - 'config/docker/Dockerfile.base'
+Build Base/Builder Images	UNKNOWN STEP	  - 'scripts/build-and-sync.sh'
+Build Base/Builder Images	UNKNOWN STEP	web:
+Build Base/Builder Images	UNKNOWN STEP	  - 'web/Dockerfile'
+Build Base/Builder Images	UNKNOWN STEP	  - 'web/nginx.conf'
+Build Base/Builder Images	UNKNOWN STEP	api:
+Build Base/Builder Images	UNKNOWN STEP	  - 'services/api-backend/Dockerfile'
+Build Base/Builder Images	UNKNOWN STEP	  - 'services/api-backend/package.json'
+Build Base/Builder Images	UNKNOWN STEP	streaming:
+Build Base/Builder Images	UNKNOWN STEP	  - 'services/streaming-proxy/Dockerfile'
+Build Base/Builder Images	UNKNOWN STEP	  - 'services/streaming-proxy/package.json'
+Build Base/Builder Images	UNKNOWN STEP	
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:13.6643650Z   token: ***
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:13.6643829Z   list-files: none
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:13.6644019Z   initial-fetch-depth: 100
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:13.6644217Z env:
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:13.6644418Z   AZURE_RESOURCE_GROUP: ***-rg
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:13.6644664Z   AZURE_CLUSTER_NAME: ***-aks
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:13.6644904Z   DOCKER_REGISTRY: ***
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:13.6645090Z ##[endgroup]
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:13.7481470Z ##[group]Get current git ref
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:13.7519102Z [command]/usr/bin/git branch --show-current
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:13.7551787Z main
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:13.7571917Z ##[endgroup]
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:13.7572529Z Changes will be detected between 2b1f2a559212bdf13b822aba280dca536f3764ba and main
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:13.7573887Z ##[group]Ensuring 2b1f2a559212bdf13b822aba280dca536f3764ba is fetched from origin
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:13.7584832Z [command]/usr/bin/git cat-file -e 2b1f2a559212bdf13b822aba280dca536f3764ba^{commit}
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:13.7604849Z fatal: Not a valid object name 2b1f2a559212bdf13b822aba280dca536f3764ba^{commit}
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:13.7619081Z [command]/usr/bin/git fetch --depth=1 --no-tags origin 2b1f2a559212bdf13b822aba280dca536f3764ba
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:14.1164476Z From https://github.com/imrightguy/CloudToLocalLLM
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:14.1165335Z  * branch            2b1f2a559212bdf13b822aba280dca536f3764ba -> FETCH_HEAD
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:14.1199377Z [command]/usr/bin/git cat-file -e 2b1f2a559212bdf13b822aba280dca536f3764ba^{commit}
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:14.1224642Z ##[endgroup]
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:14.1225541Z ##[group]Ensuring main is fetched from origin
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:14.1244074Z [command]/usr/bin/git show-ref main
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:14.1263812Z d29a13b8b6ba5da7036ef840c9d838f9db46b12a refs/heads/main
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:14.1265088Z d29a13b8b6ba5da7036ef840c9d838f9db46b12a refs/remotes/origin/main
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:14.1271912Z ##[endgroup]
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:14.1272832Z ##[group]Change detection 2b1f2a559212bdf13b822aba280dca536f3764ba..main
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:14.1285130Z [command]/usr/bin/git diff --no-renames --name-status -z 2b1f2a559212bdf13b822aba280dca536f3764ba..refs/remotes/origin/main
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:14.1315278Z M web/Dockerfile 
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:14.1316037Z ##[endgroup]
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:14.1316563Z Detected 1 changed files
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:14.1322149Z Results:
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:14.1323082Z ##[group]Filter base = false
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:14.1323531Z Matching files: none
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:14.1331539Z ##[endgroup]
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:14.1332553Z ##[group]Filter builder = false
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:14.1333085Z Matching files: none
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:14.1333937Z ##[endgroup]
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:14.1334615Z ##[group]Filter web = true
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:14.1335230Z Matching files:
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:14.1335624Z web/Dockerfile [modified]
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:14.1336336Z ##[endgroup]
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:14.1337125Z ##[group]Filter api = false
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:14.1337565Z Matching files: none
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:14.1338278Z ##[endgroup]
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:14.1338863Z ##[group]Filter streaming = false
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:14.1339390Z Matching files: none
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:14.1340932Z ##[endgroup]
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:14.1341392Z Changes output set to ["web"]
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:14.1500557Z ##[group]Run docker/setup-buildx-action@v3
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:14.1500956Z with:
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:14.1501180Z   driver: docker-container
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:14.1501447Z   install: false
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:14.1501735Z   use: true
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:14.1501950Z   keep-state: false
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:14.1502212Z   cache-binary: true
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:14.1502499Z   cleanup: true
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:14.1502822Z env:
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:14.1503301Z   AZURE_RESOURCE_GROUP: ***-rg
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:14.1503670Z   AZURE_CLUSTER_NAME: ***-aks
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:14.1504000Z   DOCKER_REGISTRY: ***
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:14.1504213Z ##[endgroup]
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:14.4113049Z ##[group]Docker info
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:14.4132829Z [command]/usr/bin/docker version
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:14.4821195Z Client: Docker Engine - Community
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:14.4823405Z  Version:           28.0.4
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:14.4824376Z  API version:       1.48
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:14.4824777Z  Go version:        go1.23.7
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:14.4825384Z  Git commit:        b8034c0
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:14.4825671Z  Built:             Tue Mar 25 15:07:16 2025
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:14.4826021Z  OS/Arch:           linux/amd64
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:14.4826316Z  Context:           default
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:14.4826485Z 
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:14.4826610Z Server: Docker Engine - Community
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:14.4826905Z  Engine:
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:14.4827157Z   Version:          28.0.4
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:14.4827456Z   API version:      1.48 (minimum version 1.24)
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:14.4827806Z   Go version:       go1.23.7
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:14.4828097Z   Git commit:       6430e49
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:14.4828400Z   Built:            Tue Mar 25 15:07:16 2025
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:14.4828686Z   OS/Arch:          linux/amd64
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:14.4828985Z   Experimental:     false
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:14.4829293Z  containerd:
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:14.4829509Z   Version:          v2.1.5
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:14.4830126Z   GitCommit:        fcd43222d6b07379a4be9786bda52438f0dd16a1
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:14.4830490Z  runc:
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:14.4830712Z   Version:          1.3.3
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:14.4831004Z   GitCommit:        v1.3.3-0-gd842d771
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:14.4831349Z  docker-init:
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:14.4831570Z   Version:          0.19.0
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:14.4831870Z   GitCommit:        de40ad0
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:14.4871770Z [command]/usr/bin/docker info
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:16.2980420Z Client: Docker Engine - Community
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:16.2981008Z  Version:    28.0.4
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:16.2988964Z  Context:    default
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:16.2990214Z  Debug Mode: false
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:16.2990697Z  Plugins:
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:16.2991046Z   buildx: Docker Buildx (Docker Inc.)
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:16.2991546Z     Version:  v0.29.1
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:16.2992155Z     Path:     /usr/libexec/docker/cli-plugins/docker-buildx
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:16.2992703Z   compose: Docker Compose (Docker Inc.)
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:16.2993202Z     Version:  v2.38.2
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:16.2993717Z     Path:     /usr/libexec/docker/cli-plugins/docker-compose
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:16.2994039Z 
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:16.2994184Z Server:
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:16.2994528Z  Containers: 0
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:16.2994966Z   Running: 0
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:16.2995267Z   Paused: 0
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:16.2995658Z   Stopped: 0
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:16.2996079Z  Images: 0
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:16.2996433Z  Server Version: 28.0.4
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:16.2996810Z  Storage Driver: overlay2
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:16.2997302Z   Backing Filesystem: extfs
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:16.2997735Z   Supports d_type: true
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:16.2998148Z   Using metacopy: false
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:16.2998603Z   Native Overlay Diff: false
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:16.2999051Z   userxattr: false
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:16.2999406Z  Logging Driver: json-file
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:16.3000109Z  Cgroup Driver: systemd
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:16.3000490Z  Cgroup Version: 2
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:16.3000835Z  Plugins:
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:16.3001248Z   Volume: local
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:16.3001649Z   Network: bridge host ipvlan macvlan null overlay
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:16.3002735Z   Log: awslogs fluentd gcplogs gelf journald json-file local splunk syslog
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:16.3003492Z  Swarm: inactive
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:16.3003912Z  Runtimes: io.containerd.runc.v2 runc
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:16.3004369Z  Default Runtime: runc
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:16.3004870Z  Init Binary: docker-init
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:16.3005430Z  containerd version: fcd43222d6b07379a4be9786bda52438f0dd16a1
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:16.3006063Z  runc version: v1.3.3-0-gd842d771
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:16.3006813Z  init version: de40ad0
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:16.3007231Z  Security Options:
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:16.3007542Z   apparmor
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:16.3007969Z   seccomp
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:16.3008372Z    Profile: builtin
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:16.3008727Z   cgroupns
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:16.3009158Z  Kernel Version: 6.11.0-1018-azure
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:16.3010129Z  Operating System: Ubuntu 24.04.3 LTS
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:16.3010578Z  OSType: linux
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:16.3011041Z  Architecture: x86_64
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:16.3011485Z  CPUs: 4
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:16.3011812Z  Total Memory: 15.62GiB
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:16.3012252Z  Name: runnervmg1sw1
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:16.3012711Z  ID: 25309008-d3b6-4795-9b53-5704e2dd5a06
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:16.3013208Z  Docker Root Dir: /var/lib/docker
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:16.3013704Z  Debug Mode: false
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:16.3014148Z  Username: githubactions
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:16.3014561Z  Experimental: false
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:16.3014994Z  Insecure Registries:
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:16.3021139Z   ::1/128
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:16.3021523Z   127.0.0.0/8
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:16.3022012Z  Live Restore Enabled: false
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:16.3022370Z 
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:16.3023505Z ##[endgroup]
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:16.3951793Z ##[group]Buildx version
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:16.3973209Z [command]/usr/bin/docker buildx version
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:16.4658676Z github.com/docker/buildx v0.29.1 a32761aeb3debd39be1eca514af3693af0db334b
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:16.4678577Z ##[endgroup]
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:16.4820818Z ##[group]Inspecting default docker context
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:16.4944162Z [
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:16.4944664Z   {
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:16.4944894Z     "Name": "default",
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:16.4945161Z     "Metadata": {},
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:16.4945436Z     "Endpoints": {
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:16.4945672Z       "docker": {
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:16.4945931Z         "Host": "unix:///var/run/docker.sock",
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:16.4946294Z         "SkipTLSVerify": false
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:16.4946617Z       }
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:16.4946878Z     },
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:16.4947095Z     "TLSMaterial": {},
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:16.4947384Z     "Storage": {
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:16.4947667Z       "MetadataPath": "<IN MEMORY>",
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:16.4948101Z       "TLSPath": "<IN MEMORY>"
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:16.4948430Z     }
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:16.4948696Z   }
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:16.4948914Z ]
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:16.4949709Z ##[endgroup]
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:16.4950354Z ##[group]Creating a new builder instance
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:16.6307009Z [command]/usr/bin/docker buildx create --name builder-3ae1c230-f033-4299-b95f-5d8e53d8f08d --driver docker-container --buildkitd-flags --allow-insecure-entitlement security.insecure --allow-insecure-entitlement network.host --use
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:16.6903942Z builder-3ae1c230-f033-4299-b95f-5d8e53d8f08d
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:16.6924694Z ##[endgroup]
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:16.6925445Z ##[group]Booting builder
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:16.6956190Z [command]/usr/bin/docker buildx inspect --bootstrap --builder builder-3ae1c230-f033-4299-b95f-5d8e53d8f08d
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:16.7401540Z #1 [internal] booting buildkit
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:16.8906960Z #1 pulling image moby/buildkit:buildx-stable-1
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:20.3567853Z #1 pulling image moby/buildkit:buildx-stable-1 3.6s done
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:20.5072358Z #1 creating container buildx_buildkit_builder-3ae1c230-f033-4299-b95f-5d8e53d8f08d0
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:20.7407394Z #1 creating container buildx_buildkit_builder-3ae1c230-f033-4299-b95f-5d8e53d8f08d0 0.4s done
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:20.7464017Z #1 DONE 4.0s
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:20.7707468Z Name:          builder-3ae1c230-f033-4299-b95f-5d8e53d8f08d
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:20.7708430Z Driver:        docker-container
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:20.7710298Z Last Activity: 2025-11-28 15:44:16 +0000 UTC
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:20.7710674Z 
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:20.7710872Z Nodes:
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:20.7711326Z Name:                  builder-3ae1c230-f033-4299-b95f-5d8e53d8f08d0
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:20.7711687Z Endpoint:              unix:///var/run/docker.sock
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:20.7712053Z Status:                running
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:20.7712603Z BuildKit daemon flags: --allow-insecure-entitlement security.insecure --allow-insecure-entitlement network.host
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:20.7713228Z BuildKit version:      v0.26.2
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:20.7713685Z Platforms:             linux/amd64, linux/amd64/v2, linux/amd64/v3, linux/amd64/v4, linux/386
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:20.7806141Z Labels:
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:20.7806524Z  org.mobyproject.buildkit.worker.executor:         oci
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:20.7807230Z  org.mobyproject.buildkit.worker.hostname:         ba18a21ab4b8
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:20.7807769Z  org.mobyproject.buildkit.worker.network:          host
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:20.7808307Z  org.mobyproject.buildkit.worker.oci.process-mode: sandbox
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:20.7808857Z  org.mobyproject.buildkit.worker.selinux.enabled:  false
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:20.7809393Z  org.mobyproject.buildkit.worker.snapshotter:      overlayfs
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:20.7809989Z GC Policy rule#0:
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:20.7810254Z  All:            false
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:20.7810746Z  Filters:        type==source.local,type==exec.cachemount,type==source.git.checkout
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:20.7811277Z  Keep Duration:  48h0m0s
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:20.7811577Z  Max Used Space: 488.3MiB
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:20.7811891Z GC Policy rule#1:
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:20.7812164Z  All:            false
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:20.7812501Z  Keep Duration:  1440h0m0s
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:20.7812876Z  Reserved Space: 7.451GiB
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:20.7813182Z  Max Used Space: 54.02GiB
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:20.7813498Z  Min Free Space: 13.97GiB
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:20.7813818Z GC Policy rule#2:
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:20.7815054Z  All:            false
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:20.7815393Z  Reserved Space: 7.451GiB
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:20.7815740Z  Max Used Space: 54.02GiB
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:20.7816066Z  Min Free Space: 13.97GiB
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:20.7816428Z GC Policy rule#3:
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:20.7816745Z  All:            true
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:20.7817088Z  Reserved Space: 7.451GiB
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:20.7817478Z  Max Used Space: 54.02GiB
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:20.7817938Z  Min Free Space: 13.97GiB
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:20.7818719Z ##[endgroup]
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:20.8555436Z ##[group]Inspect builder
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:20.8558848Z {
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:20.8559120Z   "nodes": [
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:20.8559371Z     {
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:20.8559867Z       "name": "builder-3ae1c230-f033-4299-b95f-5d8e53d8f08d0",
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:20.8560398Z       "endpoint": "unix:///var/run/docker.sock",
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:20.8560746Z       "status": "running",
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:20.8561247Z       "buildkitd-flags": "--allow-insecure-entitlement security.insecure --allow-insecure-entitlement network.host",
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:20.8561712Z       "buildkit": "v0.26.2",
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:20.8562056Z       "platforms": "linux/amd64,linux/amd64/v2,linux/amd64/v3,linux/amd64/v4,linux/386",
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:20.8562393Z       "features": {
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:20.8562661Z         "Automatically load images to the Docker Engine image store": true,
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:20.8562966Z         "Cache export": true,
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:20.8563174Z         "Direct push": true,
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:20.8563384Z         "Docker exporter": true,
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:20.8563596Z         "Multi-platform build": true,
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:20.8563830Z         "OCI exporter": true
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:20.8564019Z       },
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:20.8564162Z       "labels": {
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:20.8564393Z         "org.mobyproject.buildkit.worker.executor": "oci",
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:20.8564750Z         "org.mobyproject.buildkit.worker.hostname": "ba18a21ab4b8",
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:20.8565093Z         "org.mobyproject.buildkit.worker.network": "host",
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:20.8565448Z         "org.mobyproject.buildkit.worker.oci.process-mode": "sandbox",
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:20.8566055Z         "org.mobyproject.buildkit.worker.selinux.enabled": "false",
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:20.8566436Z         "org.mobyproject.buildkit.worker.snapshotter": "overlayfs"
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:20.8566713Z       },
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:20.8566871Z       "gcPolicy": [
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:20.8567040Z         {
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:20.8567186Z           "all": false,
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:20.8567370Z           "filter": [
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:20.8567565Z             "type==source.local",
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:20.8567869Z             "type==exec.cachemount",
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:20.8568122Z             "type==source.git.checkout"
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:20.8568335Z           ],
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:20.8568501Z           "keepDuration": "48h0m0s",
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:20.8568720Z           "maxUsedSpace": "488.3MiB"
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:20.8568918Z         },
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:20.8569061Z         {
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:20.8569211Z           "all": false,
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:20.8569408Z           "keepDuration": "1440h0m0s",
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:20.8569817Z           "reservedSpace": "7.451GiB",
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:20.8570056Z           "maxUsedSpace": "54.02GiB",
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:20.8570276Z           "minFreeSpace": "13.97GiB"
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:20.8570469Z         },
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:20.8570619Z         {
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:20.8570774Z           "all": false,
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:20.8570961Z           "reservedSpace": "7.451GiB",
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:20.8571188Z           "maxUsedSpace": "54.02GiB",
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:20.8571413Z           "minFreeSpace": "13.97GiB"
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:20.8571614Z         },
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:20.8571760Z         {
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:20.8571917Z           "all": true,
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:20.8572097Z           "reservedSpace": "7.451GiB",
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:20.8572321Z           "maxUsedSpace": "54.02GiB",
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:20.8572537Z           "minFreeSpace": "13.97GiB"
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:20.8572728Z         }
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:20.8572875Z       ]
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:20.8573016Z     }
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:20.8573149Z   ],
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:20.8573359Z   "name": "builder-3ae1c230-f033-4299-b95f-5d8e53d8f08d",
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:20.8573644Z   "driver": "docker-container",
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:20.8573865Z   "lastActivity": "2025-11-28T15:44:16.000Z"
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:20.8574081Z }
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:20.8574433Z ##[endgroup]
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:20.8574738Z ##[group]BuildKit version
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:20.8574996Z builder-3ae1c230-f033-4299-b95f-5d8e53d8f08d0: v0.26.2
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:20.8575376Z ##[endgroup]
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:20.8663286Z ##[group]Run mkdir -p build/web
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:20.8663667Z [36;1mmkdir -p build/web[0m
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:20.8663932Z [36;1mtouch build/web/index.html[0m
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:20.8685918Z shell: /usr/bin/bash -e {0}
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:20.8686131Z env:
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:20.8686405Z   AZURE_RESOURCE_GROUP: ***-rg
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:20.8686652Z   AZURE_CLUSTER_NAME: ***-aks
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:20.8686893Z   DOCKER_REGISTRY: ***
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:20.8687072Z ##[endgroup]
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:20.8840113Z ##[group]Run docker/build-push-action@v6
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:20.8840360Z with:
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:20.8840529Z   context: .
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:20.8840693Z   file: ./web/Dockerfile
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:20.8840888Z   push: true
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:20.8841119Z   tags: ***/web:latest
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:20.8841375Z   cache-from: type=registry,ref=***/web:latest
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:20.8841618Z   cache-to: type=inline
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:20.8841808Z   load: false
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:20.8841972Z   no-cache: false
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:20.8842137Z   pull: false
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:20.8842451Z   github-token: ***
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:20.8842620Z env:
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:20.8842809Z   AZURE_RESOURCE_GROUP: ***-rg
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:20.8843039Z   AZURE_CLUSTER_NAME: ***-aks
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:20.8843263Z   DOCKER_REGISTRY: ***
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:20.8843446Z ##[endgroup]
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.1390896Z ##[group]GitHub Actions runtime token ACs
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.1401345Z refs/heads/main: read/write
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.1402253Z ##[endgroup]
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.1404059Z ##[group]Docker info
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.1448874Z [command]/usr/bin/docker version
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.1640040Z Client: Docker Engine - Community
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.1642781Z  Version:           28.0.4
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.1643355Z  API version:       1.48
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.1643819Z  Go version:        go1.23.7
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.1644172Z  Git commit:        b8034c0
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.1644529Z  Built:             Tue Mar 25 15:07:16 2025
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.1644925Z  OS/Arch:           linux/amd64
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.1645174Z  Context:           default
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.1645594Z 
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.1645683Z Server: Docker Engine - Community
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.1645892Z  Engine:
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.1646044Z   Version:          28.0.4
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.1646262Z   API version:      1.48 (minimum version 1.24)
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.1646514Z   Go version:       go1.23.7
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.1646711Z   Git commit:       6430e49
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.1646934Z   Built:            Tue Mar 25 15:07:16 2025
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.1647162Z   OS/Arch:          linux/amd64
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.1647367Z   Experimental:     false
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.1647568Z  containerd:
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.1647732Z   Version:          v2.1.5
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.1647972Z   GitCommit:        fcd43222d6b07379a4be9786bda52438f0dd16a1
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.1648234Z  runc:
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.1648390Z   Version:          1.3.3
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.1648668Z   GitCommit:        v1.3.3-0-gd842d771
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.1649011Z  docker-init:
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.1649254Z   Version:          0.19.0
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.1649692Z   GitCommit:        de40ad0
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.1685098Z [command]/usr/bin/docker info
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.2166740Z Client: Docker Engine - Community
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.2167863Z  Version:    28.0.4
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.2168694Z  Context:    default
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.2169433Z  Debug Mode: false
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.2170842Z  Plugins:
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.2171158Z   buildx: Docker Buildx (Docker Inc.)
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.2171611Z     Version:  v0.29.1
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.2172044Z     Path:     /usr/libexec/docker/cli-plugins/docker-buildx
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.2172571Z   compose: Docker Compose (Docker Inc.)
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.2173827Z     Version:  v2.38.2
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.2174286Z     Path:     /usr/libexec/docker/cli-plugins/docker-compose
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.2174661Z 
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.2174779Z Server:
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.2175023Z  Containers: 1
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.2175318Z   Running: 1
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.2175594Z   Paused: 0
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.2175866Z   Stopped: 0
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.2176162Z  Images: 1
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.2176441Z  Server Version: 28.0.4
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.2176777Z  Storage Driver: overlay2
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.2177145Z   Backing Filesystem: extfs
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.2177514Z   Supports d_type: true
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.2177843Z   Using metacopy: false
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.2178187Z   Native Overlay Diff: false
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.2178568Z   userxattr: false
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.2179273Z  Logging Driver: json-file
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.2179793Z  Cgroup Driver: systemd
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.2180141Z  Cgroup Version: 2
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.2180498Z  Plugins:
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.2180753Z   Volume: local
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.2181133Z   Network: bridge host ipvlan macvlan null overlay
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.2181773Z   Log: awslogs fluentd gcplogs gelf journald json-file local splunk syslog
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.2182358Z  Swarm: inactive
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.2182704Z  Runtimes: runc io.containerd.runc.v2
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.2183122Z  Default Runtime: runc
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.2183485Z  Init Binary: docker-init
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.2183963Z  containerd version: fcd43222d6b07379a4be9786bda52438f0dd16a1
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.2184501Z  runc version: v1.3.3-0-gd842d771
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.2184888Z  init version: de40ad0
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.2185220Z  Security Options:
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.2185520Z   apparmor
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.2185800Z   seccomp
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.2186097Z    Profile: builtin
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.2186395Z   cgroupns
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.2186696Z  Kernel Version: 6.11.0-1018-azure
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.2187123Z  Operating System: Ubuntu 24.04.3 LTS
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.2187513Z  OSType: linux
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.2187827Z  Architecture: x86_64
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.2188131Z  CPUs: 4
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.2188404Z  Total Memory: 15.62GiB
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.2188742Z  Name: runnervmg1sw1
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.2189087Z  ID: 25309008-d3b6-4795-9b53-5704e2dd5a06
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.2189673Z  Docker Root Dir: /var/lib/docker
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.2190078Z  Debug Mode: false
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.2190657Z  Username: githubactions
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.2190998Z  Experimental: false
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.2191347Z  Insecure Registries:
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.2191708Z   ::1/128
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.2191971Z   127.0.0.0/8
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.2192283Z  Live Restore Enabled: false
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.2192528Z 
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.2192986Z ##[endgroup]
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.2193541Z ##[group]Proxy configuration
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.2193961Z No proxy configuration found
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.2194532Z ##[endgroup]
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.2757904Z ##[group]Buildx version
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.2778022Z [command]/usr/bin/docker buildx version
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.3244796Z github.com/docker/buildx v0.29.1 a32761aeb3debd39be1eca514af3693af0db334b
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.3263520Z ##[endgroup]
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.3263971Z ##[group]Builder info
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.4079011Z {
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.4079364Z   "nodes": [
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.4079890Z     {
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.4080303Z       "name": "builder-3ae1c230-f033-4299-b95f-5d8e53d8f08d0",
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.4080899Z       "endpoint": "unix:///var/run/docker.sock",
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.4081337Z       "status": "running",
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.4082123Z       "buildkitd-flags": "--allow-insecure-entitlement security.insecure --allow-insecure-entitlement network.host",
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.4082946Z       "buildkit": "v0.26.2",
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.4083556Z       "platforms": "linux/amd64,linux/amd64/v2,linux/amd64/v3,linux/amd64/v4,linux/386",
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.4084169Z       "features": {
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.4084660Z         "Automatically load images to the Docker Engine image store": true,
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.4085245Z         "Cache export": true,
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.4085596Z         "Direct push": true,
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.4085961Z         "Docker exporter": true,
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.4086366Z         "Multi-platform build": true,
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.4086769Z         "OCI exporter": true
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.4087115Z       },
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.4087380Z       "labels": {
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.4087729Z         "org.mobyproject.buildkit.worker.executor": "oci",
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.4088312Z         "org.mobyproject.buildkit.worker.hostname": "ba18a21ab4b8",
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.4088933Z         "org.mobyproject.buildkit.worker.network": "host",
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.4089773Z         "org.mobyproject.buildkit.worker.oci.process-mode": "sandbox",
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.4090823Z         "org.mobyproject.buildkit.worker.selinux.enabled": "false",
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.4091588Z         "org.mobyproject.buildkit.worker.snapshotter": "overlayfs"
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.4092115Z       },
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.4092400Z       "gcPolicy": [
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.4092718Z         {
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.4092993Z           "all": false,
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.4093326Z           "filter": [
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.4093678Z             "type==source.local",
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.4094077Z             "type==exec.cachemount",
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.4094463Z             "type==source.git.checkout"
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.4094797Z           ],
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.4095088Z           "keepDuration": "48h0m0s",
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.4095475Z           "maxUsedSpace": "488.3MiB"
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.4095811Z         },
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.4096055Z         {
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.4096295Z           "all": false,
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.4096625Z           "keepDuration": "1440h0m0s",
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.4097018Z           "reservedSpace": "7.451GiB",
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.4097439Z           "maxUsedSpace": "54.02GiB",
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.4097831Z           "minFreeSpace": "13.97GiB"
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.4098187Z         },
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.4098456Z         {
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.4098721Z           "all": false,
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.4099037Z           "reservedSpace": "7.451GiB",
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.4099436Z           "maxUsedSpace": "54.02GiB",
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.4099959Z           "minFreeSpace": "13.97GiB"
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.4100330Z         },
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.4100599Z         {
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.4100871Z           "all": true,
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.4101201Z           "reservedSpace": "7.451GiB",
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.4101846Z           "maxUsedSpace": "54.02GiB",
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.4102217Z           "minFreeSpace": "13.97GiB"
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.4102582Z         }
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.4102849Z       ]
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.4103097Z     }
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.4103358Z   ],
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.4103722Z   "name": "builder-3ae1c230-f033-4299-b95f-5d8e53d8f08d",
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.4104252Z   "driver": "docker-container",
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.4104647Z   "lastActivity": "2025-11-28T15:44:16.000Z"
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.4105040Z }
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.4105618Z ##[endgroup]
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.5486761Z [command]/usr/bin/docker buildx build --cache-from type=registry,ref=***/web:latest --cache-to type=inline --file ./web/Dockerfile --iidfile /home/runner/work/_temp/docker-actions-toolkit-Z4I3eZ/build-iidfile-a83f17b7a9.txt --attest type=provenance,mode=max,builder-id=https://github.com/imrightguy/CloudToLocalLLM/actions/runs/19768358269/attempts/1 --tag ***/web:latest --metadata-file /home/runner/work/_temp/docker-actions-toolkit-Z4I3eZ/build-metadata-d391431606.json --push .
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.8340855Z #0 building with "builder-3ae1c230-f033-4299-b95f-5d8e53d8f08d" instance using docker-container driver
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.8341343Z 
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.8341487Z #1 [internal] load build definition from Dockerfile
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.8341828Z #1 transferring dockerfile: 869B done
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.8342089Z #1 DONE 0.0s
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.8342249Z 
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:21.8342564Z #2 [internal] load metadata for docker.io/***/base:latest
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:22.0291056Z #2 ...
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:22.0291248Z 
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:22.0291633Z #3 [auth] ***/base:pull token for registry-1.docker.io
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:22.0291974Z #3 DONE 0.0s
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:22.1798248Z 
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:22.1799148Z #2 [internal] load metadata for docker.io/***/base:latest
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:22.5954962Z #2 DONE 0.9s
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:22.7623502Z 
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:22.7624027Z #4 [internal] load .dockerignore
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:22.7624606Z #4 transferring context: 273B done
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:22.7625053Z #4 DONE 0.0s
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:22.7625199Z 
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:22.7625759Z #5 [1/2] FROM docker.io/***/base:latest@sha256:c19866962e53df6021bc4a1c653ef7cd7d917ecf92cea5b65883db6e1f897962
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:22.7626611Z #5 resolve docker.io/***/base:latest@sha256:c19866962e53df6021bc4a1c653ef7cd7d917ecf92cea5b65883db6e1f897962 done
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:22.7627117Z #5 DONE 0.0s
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:22.7627654Z 
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:22.7627849Z #6 importing cache manifest from ***/web:latest
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:22.9227356Z #6 ...
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:22.9227598Z 
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:22.9229260Z #7 [auth] ***/web:pull token for registry-1.docker.io
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:22.9229814Z #7 DONE 0.0s
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:23.0275184Z 
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:23.0276034Z #6 importing cache manifest from ***/web:latest
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:23.0276668Z #6 inferred cache manifest type: application/vnd.oci.image.index.v1+json done
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:24.6747996Z #6 DONE 2.1s
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:24.7870610Z 
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:24.7871844Z #5 [1/2] FROM docker.io/***/base:latest@sha256:c19866962e53df6021bc4a1c653ef7cd7d917ecf92cea5b65883db6e1f897962
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:24.7872486Z #5 sha256:19c37689fdafcbe68cd7c1411116c4d7145d0b1cf2e320cdf2e861975e36aa95 95B / 95B 0.1s done
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:24.8981202Z #5 sha256:34ef340ddb3ccedae3a2a15502e20cb5225c20740673e72d4dc4556a02e77484 1.64kB / 1.64kB 0.2s done
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:24.8982129Z #5 sha256:d29879729df2e1208f17c8a17f36d1649eec08ac5b11db00a90ca8302b1e4c51 93B / 93B 0.2s done
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:24.8982845Z #5 sha256:bd63ffd976f7462ac655b47492501337aedebb98483fbf1d3babf912cf556756 0B / 6.72MB 0.2s
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:24.9994335Z #5 sha256:bd63ffd976f7462ac655b47492501337aedebb98483fbf1d3babf912cf556756 1.05MB / 6.72MB 0.3s
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:24.9995254Z #5 sha256:1753a74b79ee9b19fdde96e348f34a1804c5f4b3c138eceac03988959e2a4d5e 0B / 66.56MB 0.2s
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:25.2377897Z #5 sha256:bd63ffd976f7462ac655b47492501337aedebb98483fbf1d3babf912cf556756 6.72MB / 6.72MB 0.3s done
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:25.2379299Z #5 sha256:1753a74b79ee9b19fdde96e348f34a1804c5f4b3c138eceac03988959e2a4d5e 12.58MB / 66.56MB 0.3s
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:25.2380089Z #5 sha256:1753a74b79ee9b19fdde96e348f34a1804c5f4b3c138eceac03988959e2a4d5e 39.85MB / 66.56MB 0.5s
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:25.3877973Z #5 sha256:1753a74b79ee9b19fdde96e348f34a1804c5f4b3c138eceac03988959e2a4d5e 66.56MB / 66.56MB 0.6s
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:25.5413623Z #5 sha256:1753a74b79ee9b19fdde96e348f34a1804c5f4b3c138eceac03988959e2a4d5e 66.56MB / 66.56MB 0.6s done
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:25.5414736Z #5 extracting sha256:1753a74b79ee9b19fdde96e348f34a1804c5f4b3c138eceac03988959e2a4d5e
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:26.5152740Z #5 extracting sha256:1753a74b79ee9b19fdde96e348f34a1804c5f4b3c138eceac03988959e2a4d5e 1.1s done
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:26.5153619Z #5 DONE 1.8s
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:26.6276505Z 
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:26.6277859Z #5 [1/2] FROM docker.io/***/base:latest@sha256:c19866962e53df6021bc4a1c653ef7cd7d917ecf92cea5b65883db6e1f897962
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:26.6278988Z #5 extracting sha256:34ef340ddb3ccedae3a2a15502e20cb5225c20740673e72d4dc4556a02e77484 done
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:26.6280190Z #5 extracting sha256:bd63ffd976f7462ac655b47492501337aedebb98483fbf1d3babf912cf556756 0.1s done
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:26.6280727Z #5 DONE 2.0s
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:26.8243775Z 
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:26.8244862Z #5 [1/2] FROM docker.io/***/base:latest@sha256:c19866962e53df6021bc4a1c653ef7cd7d917ecf92cea5b65883db6e1f897962
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:26.8246030Z #5 extracting sha256:d29879729df2e1208f17c8a17f36d1649eec08ac5b11db00a90ca8302b1e4c51 done
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:26.8247089Z #5 extracting sha256:19c37689fdafcbe68cd7c1411116c4d7145d0b1cf2e320cdf2e861975e36aa95 done
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:26.8247886Z #5 DONE 2.0s
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:26.8248078Z 
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:26.8249491Z #8 [2/2] RUN chown -R ***:*** /usr/share/nginx/html /var/log/nginx /var/lib/nginx /run &&     chmod -R 755 /usr/share/nginx/html &&     chmod -R 770 /var/log/nginx /var/lib/nginx /run &&     touch /var/log/nginx/error.log &&     chown ***:*** /var/log/nginx/error.log
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:26.8251188Z #8 0.040 chown: cannot access '/usr/share/nginx/html': No such file or directory
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:26.8251860Z #8 0.040 chown: cannot access '/var/log/nginx': No such file or directory
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:26.8252522Z #8 0.040 chown: cannot access '/var/lib/nginx': No such file or directory
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:26.8253206Z #8 0.040 chown: changing ownership of '/run/dnf': Operation not permitted
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:26.8254318Z #8 0.040 chown: changing ownership of '/run': Operation not permitted
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:26.9621981Z #8 ERROR: process "/bin/sh -c chown -R ***:*** /usr/share/nginx/html /var/log/nginx /var/lib/nginx /run &&     chmod -R 755 /usr/share/nginx/html &&     chmod -R 770 /var/log/nginx /var/lib/nginx /run &&     touch /var/log/nginx/error.log &&     chown ***:*** /var/log/nginx/error.log" did not complete successfully: exit code: 1
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:26.9894112Z ------
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:26.9896178Z  > [2/2] RUN chown -R ***:*** /usr/share/nginx/html /var/log/nginx /var/lib/nginx /run &&     chmod -R 755 /usr/share/nginx/html &&     chmod -R 770 /var/log/nginx /var/lib/nginx /run &&     touch /var/log/nginx/error.log &&     chown ***:*** /var/log/nginx/error.log:
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:26.9898012Z 0.040 chown: cannot access '/usr/share/nginx/html': No such file or directory
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:26.9898870Z 0.040 chown: cannot access '/var/log/nginx': No such file or directory
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:26.9899791Z 0.040 chown: cannot access '/var/lib/nginx': No such file or directory
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:26.9900607Z 0.040 chown: changing ownership of '/run/dnf': Operation not permitted
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:26.9901295Z 0.040 chown: changing ownership of '/run': Operation not permitted
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:26.9901844Z ------
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:26.9903167Z Dockerfile:9
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:26.9903952Z --------------------
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:26.9904439Z    8 |     # Fix permissions for non-root Nginx
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:26.9905399Z    9 | >>> RUN chown -R ***:*** /usr/share/nginx/html /var/log/nginx /var/lib/nginx /run && \
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:26.9906356Z   10 | >>>     chmod -R 755 /usr/share/nginx/html && \
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:26.9906886Z   11 | >>>     chmod -R 770 /var/log/nginx /var/lib/nginx /run && \
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:26.9907436Z   12 | >>>     touch /var/log/nginx/error.log && \
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:26.9907994Z   13 | >>>     chown ***:*** /var/log/nginx/error.log
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:26.9908315Z   14 |     
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:26.9908573Z --------------------
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:26.9910748Z ERROR: failed to build: failed to solve: process "/bin/sh -c chown -R ***:*** /usr/share/nginx/html /var/log/nginx /var/lib/nginx /run &&     chmod -R 755 /usr/share/nginx/html &&     chmod -R 770 /var/log/nginx /var/lib/nginx /run &&     touch /var/log/nginx/error.log &&     chown ***:*** /var/log/nginx/error.log" did not complete successfully: exit code: 1
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:26.9958890Z ##[group]Reference
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:27.0721997Z builder-3ae1c230-f033-4299-b95f-5d8e53d8f08d/builder-3ae1c230-f033-4299-b95f-5d8e53d8f08d0/nzh61uisjm9b64w667dz9vl7l
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:27.0723098Z ##[endgroup]
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:27.0724945Z ##[group]Check build summary support
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:27.0728795Z Build summary supported!
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:27.0729360Z ##[endgroup]
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:27.0758337Z ##[error]buildx failed with: ERROR: failed to build: failed to solve: process "/bin/sh -c chown -R ***:*** /usr/share/nginx/html /var/log/nginx /var/lib/nginx /run &&     chmod -R 755 /usr/share/nginx/html &&     chmod -R 770 /var/log/nginx /var/lib/nginx /run &&     touch /var/log/nginx/error.log &&     chown ***:*** /var/log/nginx/error.log" did not complete successfully: exit code: 1
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:27.0861277Z Post job cleanup.
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:27.3358190Z ##[group]Generating build summary
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:27.3361188Z exporting build record to /home/runner/work/_temp/docker-actions-toolkit-SgMIJO/export
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:27.4857921Z [command]/usr/bin/docker buildx history export --builder builder-3ae1c230-f033-4299-b95f-5d8e53d8f08d --output /home/runner/work/_temp/docker-actions-toolkit-SgMIJO/export/imrightguy~CloudToLocalLLM~NZH61U.dockerbuild nzh61uisjm9b64w667dz9vl7l --finalize
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:27.6209866Z Build record written to /home/runner/work/_temp/docker-actions-toolkit-SgMIJO/export/imrightguy~CloudToLocalLLM~NZH61U.dockerbuild (17.76 KB)
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:27.6232141Z Uploading imrightguy~CloudToLocalLLM~NZH61U.dockerbuild to blob storage
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:27.8731409Z Beginning upload of artifact content to blob storage
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:27.8822317Z Uploaded bytes 18184
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:28.1477725Z Finished uploading artifact content to blob storage!
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:28.1483289Z SHA256 hash of uploaded artifact is 8b6abec0312dde8c23c7b1f6903891ccd2baafe5c096ee93bb4e41bcba1da2e1
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:28.1484432Z Finalizing artifact upload
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:28.4222639Z Artifact successfully finalized (4708357491)
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:28.4225326Z Artifact download URL: https://github.com/imrightguy/CloudToLocalLLM/actions/runs/19768358269/artifacts/4708357491
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:28.4250243Z Writing summary
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:28.4262108Z ##[endgroup]
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:28.4262942Z ##[group]Removing temp folder /home/runner/work/_temp/docker-actions-toolkit-Z4I3eZ
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:28.4268338Z ##[endgroup]
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:28.4268898Z ##[group]Post cache
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:28.4269922Z State not set
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:28.4270527Z ##[endgroup]
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:28.4375654Z Post job cleanup.
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:28.6890076Z ##[group]Removing builder
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:28.7806001Z [command]/usr/bin/docker buildx rm builder-3ae1c230-f033-4299-b95f-5d8e53d8f08d
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:29.0585228Z builder-3ae1c230-f033-4299-b95f-5d8e53d8f08d removed
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:29.0608011Z ##[endgroup]
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:29.0609122Z ##[group]Cleaning up certificates
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:29.0614607Z ##[endgroup]
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:29.0615077Z ##[group]Post cache
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:29.0616803Z State not set
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:29.0617361Z ##[endgroup]
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:29.0729982Z Post job cleanup.
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:29.1583546Z [command]/usr/bin/git version
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:29.1615335Z git version 2.51.2
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:29.1653392Z Temporarily overriding HOME='/home/runner/work/_temp/94d855f9-7ca2-4e32-b894-28183c52a32f' before making global git config changes
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:29.1654626Z Adding repository directory to the temporary git global config as a safe directory
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:29.1659512Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/CloudToLocalLLM/CloudToLocalLLM
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:29.1690755Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:29.1716047Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:29.1892683Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:29.1909670Z http.https://github.com/.extraheader
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:29.1920047Z [command]/usr/bin/git config --local --unset-all http.https://github.com/.extraheader
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:29.1945115Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:29.2117487Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:29.2144105Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+Build Base/Builder Images	UNKNOWN STEP	2025-11-28T15:44:29.2395143Z Cleaning up orphan processes
