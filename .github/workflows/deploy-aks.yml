@@ -50,6 +50,15 @@ jobs:
               - 'config/docker/Dockerfile.builder'
               - 'config/docker/Dockerfile.base'
               - 'scripts/build-and-sync.sh'
+            web:
+              - 'web/Dockerfile'
+              - 'web/nginx.conf'
+            api:
+              - 'services/api-backend/Dockerfile'
+              - 'services/api-backend/package.json'
+            streaming:
+              - 'services/streaming-proxy/Dockerfile'
+              - 'services/streaming-proxy/package.json'
 
       - name: Login to Docker Hub
         if: steps.changes.outputs.base == 'true' || steps.changes.outputs.builder == 'true'
@@ -59,7 +68,7 @@ jobs:
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Set up Docker Buildx
-        if: steps.changes.outputs.base == 'true' || steps.changes.outputs.builder == 'true'
+        if: steps.changes.outputs.base == 'true' || steps.changes.outputs.builder == 'true' || steps.changes.outputs.web == 'true' || steps.changes.outputs.api == 'true' || steps.changes.outputs.streaming == 'true'
         uses: docker/setup-buildx-action@v3
 
       - name: Build and push Base Image
@@ -81,7 +90,45 @@ jobs:
           file: ./config/docker/Dockerfile.builder
           push: true
           tags: ${{ env.DOCKER_REGISTRY }}/builder:latest
-          cache-from: type=registry,ref=${{ env.DOCKER_REGISTRY }}/builder:latest
+          cache-to: type=inline
+
+      - name: Create Dummy Web Build Artifact
+        if: steps.changes.outputs.web == 'true'
+        run: |
+          mkdir -p build/web
+          touch build/web/index.html
+
+      - name: Build and push Web Image
+        if: steps.changes.outputs.web == 'true'
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./web/Dockerfile
+          push: true
+          tags: ${{ env.DOCKER_REGISTRY }}/web:latest
+          cache-from: type=registry,ref=${{ env.DOCKER_REGISTRY }}/web:latest
+          cache-to: type=inline
+
+      - name: Build and push API Image
+        if: steps.changes.outputs.api == 'true'
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./services/api-backend/Dockerfile
+          push: true
+          tags: ${{ env.DOCKER_REGISTRY }}/api-backend:latest
+          cache-from: type=registry,ref=${{ env.DOCKER_REGISTRY }}/api-backend:latest
+          cache-to: type=inline
+
+      - name: Build and push Streaming Proxy Image
+        if: steps.changes.outputs.streaming == 'true'
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./services/streaming-proxy/Dockerfile
+          push: true
+          tags: ${{ env.DOCKER_REGISTRY }}/streaming-proxy:latest
+          cache-from: type=registry,ref=${{ env.DOCKER_REGISTRY }}/streaming-proxy:latest
           cache-to: type=inline
 
   deploy_infrastructure:
@@ -180,6 +227,9 @@ jobs:
 
           # Builder
           kubectl apply -f k8s/builder-deployment.yaml
+
+          # Force Restart to pick up new images
+          kubectl rollout restart deployment builder web api-backend streaming-proxy -n cloudtolocalllm
 
           # Wait for Builder
           kubectl rollout status deployment/builder -n cloudtolocalllm --timeout=300s
