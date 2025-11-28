@@ -28,10 +28,10 @@ spec:
           command: ["/bin/bash", "-c", "tail -f /dev/null"]
           resources:
             requests:
-              memory: "1Gi"
+              memory: "512Mi"
               cpu: "250m"
             limits:
-              memory: "2Gi"
+              memory: "1Gi"
               cpu: "1000m"
           volumeMounts:
             - name: build-cache
