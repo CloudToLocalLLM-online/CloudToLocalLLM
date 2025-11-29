@@ -100,7 +100,7 @@ data:
       
       # Root Domain - Web Frontend
       - hostname: cloudtolocalllm.online
-        service: http://web.cloudtolocalllm.svc.cluster.local:80
+        service: http://web.cloudtolocalllm.svc.cluster.local:8080
       
       # Catch-all 404
       - service: http_status:404
