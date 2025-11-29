@@ -31,12 +31,11 @@ class Auth0WebService implements Auth0Service {
       'FuXPnevXpp311CdYHGsbNZe9t3D8Ts7A',
     );
 
+    // onLoad handles the callback if present
     await _auth0Web.onLoad(
-        authorizeOptions: AuthorizeOptions(
       audience: 'https://api.cloudtolocalllm.online',
-      scope: 'openid profile email offline_access',
-    ));
-
+    );
+    
     await checkAuthStatus();
     debugPrint('[Auth0WebService] Initialization complete.');
   }
@@ -45,10 +44,9 @@ class Auth0WebService implements Auth0Service {
   Future<void> login() async {
     debugPrint('[Auth0WebService] Logging in with redirect...');
     await _auth0Web.loginWithRedirect(
-      authorizationParams: {
-        'audience': 'https://api.cloudtolocalllm.online',
-        'scope': 'openid profile email offline_access',
-      },
+      audience: 'https://api.cloudtolocalllm.online',
+      scopes: {'openid', 'profile', 'email', 'offline_access'},
+      redirectUrl: Uri.base.origin,
     );
   }
 
