@@ -79,6 +79,7 @@ dependencies:
 
   # Web interop for dart:js_interop
   web: ^1.0.0
+  auth0_flutter: ^1.14.0
 
 
 dev_dependencies:

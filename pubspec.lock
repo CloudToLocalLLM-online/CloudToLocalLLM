@@ -33,6 +33,22 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.13.0"
+  auth0_flutter:
+    dependency: "direct main"
+    description:
+      name: auth0_flutter
+      sha256: "2498e3593326687ae37a0736ecaa005397bf27bc352e95a86ddf749a0aa5e3c9"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.14.0"
+  auth0_flutter_platform_interface:
+    dependency: transitive
+    description:
+      name: auth0_flutter_platform_interface
+      sha256: "4ec77a30eb5c464a7e5744c72ab380a1f073752de3a8542eb0c5c717053b4e71"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.14.0"
   beautiful_soup_dart:
     dependency: transitive
     description:
