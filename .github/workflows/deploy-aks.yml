@@ -380,33 +380,6 @@ jobs:
           kubectl rollout restart deployment/web -n cloudtolocalllm
           kubectl rollout restart deployment/api-backend -n cloudtolocalllm
           kubectl rollout restart deployment/streaming-proxy -n cloudtolocalllm
-          kubectl rollout restart deployment/cloudflared -n cloudtolocalllm
-
-      - name: Verify Cloudflare Tunnel
-        run: |
-          echo "Waiting for Cloudflare Tunnel to be ready..."
-          kubectl wait --for=condition=ready pod -l app=cloudflared -n cloudtolocalllm --timeout=60s
-
-          echo "Checking Tunnel Logs..."
-          # Retry checking logs for connection success message
-          for i in {1..12}; do
-            if kubectl logs -l app=cloudflared -n cloudtolocalllm | grep -q "Registered tunnel connection"; then
-              echo "Tunnel connection verified!"
-              exit 0
-            fi
-            echo "Attempt $i: Tunnel not yet registered, waiting 5s..."
-            sleep 5
-        run: |
-
-          set -x
-          # --- Update Cloudflare DNS Records ---
-          ZONE_NAME="cloudtolocalllm.online"
-          TUNNEL_ID="ee26f195-904b-4406-a8ae-9265c9971004"
-          TUNNEL_CNAME="$TUNNEL_ID.cfargotunnel.com"
-          TUNNEL_TOKEN="${{ secrets.CLOUDFLARE_TUNNEL_TOKEN }}"
-
-          if [ -z "$TUNNEL_TOKEN" ]; then
-            echo "Error: CLOUDFLARE_TUNNEL_TOKEN secret is empty"
             exit 1
           fi
 
