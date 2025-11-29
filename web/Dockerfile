@@ -13,7 +13,7 @@ RUN dnf -y install nginx && \
 # Configure Nginx
 COPY web/nginx-main.conf /etc/nginx/nginx.conf
 COPY web/nginx.conf /etc/nginx/conf.d/default.conf
-COPY --chown=cloudtolocalllm:cloudtolocalllm build/web /usr/share/nginx/html
+COPY --chown=cloudtolocalllm:cloudtolocalllm web/build/web /usr/share/nginx/html
 
 # Fix permissions for non-root Nginx
 RUN chown -R cloudtolocalllm:cloudtolocalllm /usr/share/nginx/html /var/log/nginx /var/lib/nginx /run && \
