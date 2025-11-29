@@ -308,6 +308,12 @@ jobs:
             fi
           }
 
+          # --- Create Kubernetes Secrets ---
+
+          # Get ACR Admin Credentials
+          ACR_ADMIN_USER=$(az acr credential show --name ${{ env.ACR_NAME }} --query username --output tsv)
+          ACR_ADMIN_PASS=$(az acr credential show --name ${{ env.ACR_NAME }} --query passwords[0].value --output tsv)
+
           # Docker Registry Secret for ACR
           kubectl create secret docker-registry regcred \
             --docker-server=${{ env.DOCKER_REGISTRY }} \
