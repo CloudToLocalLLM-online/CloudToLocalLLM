@@ -1,0 +1,79 @@
+name: Fix Cloudflare DNS
+
+on:
+  workflow_dispatch:
+
+jobs:
+  fix_dns:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Update DNS Records
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          ZONE_NAME: "cloudtolocalllm.online"
+          TUNNEL_CNAME: "ee26f195-904b-4406-a8ae-9265c9971004.cfargotunnel.com"
+        run: |
+          # 1. Get Zone ID
+          echo "Fetching Zone ID for $ZONE_NAME..."
+          ZONE_ID=$(curl -s -X GET "https://api.cloudflare.com/client/v4/zones?name=$ZONE_NAME" \
+            -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+            -H "Content-Type: application/json" | jq -r '.result[0].id')
+
+          if [ "$ZONE_ID" == "null" ] || [ -z "$ZONE_ID" ]; then
+            echo "Error: Could not find Zone ID for $ZONE_NAME"
+            exit 1
+          fi
+          echo "Zone ID: $ZONE_ID"
+
+          # Function to update or create CNAME record
+          update_record() {
+            local NAME=$1
+            local CONTENT=$2
+            local PROXIED=$3
+            
+            echo "---------------------------------------------------"
+            echo "Processing record: $NAME (Target: $CONTENT, Proxied: $PROXIED)"
+
+            # List existing records for this name
+            local RECORD_JSON=$(curl -s -X GET "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/dns_records?type=CNAME&name=$NAME" \
+              -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+              -H "Content-Type: application/json")
+            
+            local RECORD_ID=$(echo "$RECORD_JSON" | jq -r '.result[0].id')
+            
+            if [ "$RECORD_ID" != "null" ] && [ -z "$RECORD_ID" ]; then
+               # Record exists, update it
+               echo "Record exists (ID: $RECORD_ID). Updating..."
+               curl -s -X PUT "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/dns_records/$RECORD_ID" \
+                 -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+                 -H "Content-Type: application/json" \
+                 --data "{\"type\":\"CNAME\",\"name\":\"$NAME\",\"content\":\"$CONTENT\",\"proxied\":$PROXIED,\"ttl\":1}" | jq -r '.success'
+            else
+               # Record does not exist (or is not CNAME), try to create
+               # Note: If it exists as A record, creation might fail. We'll try to delete if creation fails? 
+               # For now, let's assume we just want to create/update CNAME.
+               
+               if [ "$RECORD_ID" == "null" ]; then
+                   echo "Record does not exist. Creating..."
+                   curl -s -X POST "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/dns_records" \
+                     -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+                     -H "Content-Type: application/json" \
+                     --data "{\"type\":\"CNAME\",\"name\":\"$NAME\",\"content\":\"$CONTENT\",\"proxied\":$PROXIED,\"ttl\":1}" | jq -r '.success'
+               else
+                   echo "Record exists (ID: $RECORD_ID). Updating..."
+                   curl -s -X PUT "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/dns_records/$RECORD_ID" \
+                     -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+                     -H "Content-Type: application/json" \
+                     --data "{\"type\":\"CNAME\",\"name\":\"$NAME\",\"content\":\"$CONTENT\",\"proxied\":$PROXIED,\"ttl\":1}" | jq -r '.success'
+               fi
+            fi
+          }
+
+          # Update 'app' subdomain
+          update_record "app.cloudtolocalllm.online" "$TUNNEL_CNAME" true
+
+          # Update 'api' subdomain
+          update_record "api.cloudtolocalllm.online" "$TUNNEL_CNAME" true
+
+          # Update root domain '@'
+          update_record "cloudtolocalllm.online" "$TUNNEL_CNAME" true
