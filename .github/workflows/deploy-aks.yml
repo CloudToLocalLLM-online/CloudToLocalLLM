@@ -263,8 +263,10 @@ jobs:
           CLOUDFLARE_TUNNEL_TOKEN: ${{ secrets.CLOUDFLARE_TUNNEL_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
-          # DNS updated in dedicated step after tunnel verification
-
+          # DNS updated in dedicated step after tunnel verification
+
+
+
 
           # --- Create Kubernetes Secrets ---
 
@@ -359,24 +361,14 @@ jobs:
           kubectl logs -l app=cloudflared -n cloudtolocalllm
           exit 1
 
-      - name: Check Health Endpoint
+      - name: Update Cloudflare DNS
+
+        env:
+
+          CLOUDFLARE_DNS_TOKEN: ${{ secrets.CLOUDFLARE_DNS_TOKEN }}
+
         run: |
-          echo "Waiting for DNS propagation and service health..."
-          # Retry loop for 2 minutes
-          for i in {1..24}; do
-            if curl -s -f https://app.cloudtolocalllm.online/health; then
-              echo "Health check passed!"
-              exit 0
-            fi
-            echo "Attempt $i: Health check failed, waiting 5s..."
-            sleep 5
-          done
-          echo "Health check failed after 2 minutes."
-          exit 1
-      - name: Update Cloudflare DNS
-        env:
-          CLOUDFLARE_DNS_TOKEN: ${{ secrets.CLOUDFLARE_DNS_TOKEN }}
-        run: |
+
           set -x
           # --- Update Cloudflare DNS Records ---
           ZONE_NAME="cloudtolocalllm.online"
@@ -433,3 +425,18 @@ jobs:
           update_dns_record "app" "$TUNNEL_CNAME" true
           update_dns_record "api" "$TUNNEL_CNAME" true
           update_dns_record "@" "$TUNNEL_CNAME" true
+      - name: Check Health Endpoint
+        run: |
+          echo "Waiting for DNS propagation and service health..."
+          # Retry loop for 2 minutes
+          for i in {1..24}; do
+            if curl -s -f https://app.cloudtolocalllm.online/health; then
+              echo "Health check passed!"
+              exit 0
+            fi
+            echo "Attempt $i: Health check failed, waiting 5s..."
+            sleep 5
+          done
+          echo "Health check failed after 2 minutes."
+          exit 1
+
