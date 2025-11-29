@@ -387,8 +387,6 @@ jobs:
           kubectl rollout restart deployment/api-backend -n cloudtolocalllm
           kubectl rollout restart deployment/streaming-proxy -n cloudtolocalllm
 
-          kubectl rollout restart deployment/streaming-proxy -n cloudtolocalllm
-
       - name: Verify Cloudflare Tunnel
         run: |
           echo "Waiting for Cloudflare Tunnel to be ready..."
