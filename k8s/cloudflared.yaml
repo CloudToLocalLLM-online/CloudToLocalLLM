@@ -79,6 +79,11 @@ data:
         path: /api/tunnel
         service: http://streaming-proxy.cloudtolocalllm.svc.cluster.local:3001
       
+      # App Subdomain - API Backend Health
+      - hostname: app.cloudtolocalllm.online
+        path: /health
+        service: http://api-backend.cloudtolocalllm.svc.cluster.local:3000
+
       # App Subdomain - API Backend
       - hostname: app.cloudtolocalllm.online
         path: /api
