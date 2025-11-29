@@ -488,15 +488,10 @@ const handleOllamaProxyRequest = async (req, res) => {
   }
 };
 
-// Define Ollama route paths
-const OLLAMA_ROUTE_PATHS = [
-  '/api/ollama',
-  '/api/ollama/*',
-  '/ollama',
-  '/ollama/*',
-];
+// Define Ollama route regex to match /api/ollama, /ollama, and their subpaths
+const OLLAMA_ROUTE_REGEX = /^\/(api\/)?ollama(\/.*)?$/;
 app.all(
-  OLLAMA_ROUTE_PATHS,
+  OLLAMA_ROUTE_REGEX,
   authenticateJWT,
   addTierInfo,
   handleOllamaProxyRequest,

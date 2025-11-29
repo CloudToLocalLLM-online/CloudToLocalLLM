@@ -24,4 +24,4 @@ EXPOSE 3000
 USER cloudtolocalllm
 
 # Start with npm script to ensure proper environment
-CMD ["sh", "-c", "grep -C 5 OLLAMA_ROUTE_PATHS server.js && npm start"]
+CMD ["npm", "start"]
