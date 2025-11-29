@@ -53,80 +53,106 @@ import 'widgets/window_listener_widget.dart'
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 void main() async {
+  // Immediate logging to verify Dart entry point is reached
+  print('----- DART MAIN START -----');
+
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Initialize Sentry FIRST to catch all errors including during app bootstrap
-  await SentryFlutter.init(
-    (options) {
-      options.dsn = AppConfig.sentryDsn;
-      options.environment = AppConfig.sentryEnvironment;
-      options.release = '${AppConfig.appName}@${AppConfig.appVersion}';
-      // Lower sample rate in production to reduce costs
-      options.tracesSampleRate = kReleaseMode ? 0.1 : 1.0;
-      // Enable debug only in development
-      options.debug = !kReleaseMode;
-      // Enable Sentry Logs
-      options.enableLogs = true;
-    },
-    appRunner: () async {
-      // Now that Sentry is initialized, set up error handlers
-      FlutterError.onError = (details) {
-        FlutterError.presentError(details);
-        debugPrint('FlutterError: \'${details.exception}\'');
-        if (details.stack != null) {
-          debugPrint('Stack trace: ${details.stack}');
-        }
-        Sentry.captureException(
-          details.exception,
-          stackTrace: details.stack,
-        );
-      };
+  try {
+    // Initialize Sentry with a timeout to prevent hanging
+    await SentryFlutter.init(
+      (options) {
+        options.dsn = AppConfig.sentryDsn;
+        options.environment = AppConfig.sentryEnvironment;
+        options.release = '${AppConfig.appName}@${AppConfig.appVersion}';
+        // Lower sample rate in production to reduce costs
+        options.tracesSampleRate = kReleaseMode ? 0.1 : 1.0;
+        // Enable debug only in development
+        options.debug = !kReleaseMode;
+        // Enable Sentry Logs
+        options.enableLogs = true;
+      },
+      appRunner: () async {
+        _runAppWithSentry();
+      },
+    ).timeout(const Duration(seconds: 5));
+  } catch (e, stack) {
+    print('Sentry initialization failed or timed out: $e');
+    // If Sentry fails, run the app anyway without Sentry wrapping
+    _runAppWithoutSentry();
+  }
+}
 
-      _initializeClientLogBuffer();
+void _runAppWithSentry() {
+  // Now that Sentry is initialized, set up error handlers
+  FlutterError.onError = (details) {
+    FlutterError.presentError(details);
+    debugPrint('FlutterError: \'${details.exception}\'');
+    if (details.stack != null) {
+      debugPrint('Stack trace: ${details.stack}');
+    }
+    Sentry.captureException(
+      details.exception,
+      stackTrace: details.stack,
+    );
+  };
 
-      Future<AppBootstrapData> loadApp() async {
-        // Note: Auth0 callback handling is now done by the router and CallbackScreen
-        // The router will detect callback parameters and route to /callback,
-        // where CallbackScreen will process the authentication
+  _initializeClientLogBuffer();
+  _runAppCommon();
+}
 
-        // Run the main bootstrap process
-        try {
-          final bootstrapper = AppBootstrapper();
-          return await bootstrapper.load();
-        } catch (e, stack) {
-          debugPrint('Bootstrap failed: $e');
-          Sentry.captureException(e, stackTrace: stack);
-          // Return minimal bootstrap data to allow app to load error screen or retry
-          return AppBootstrapData(isWeb: kIsWeb, supportsNativeShell: !kIsWeb);
-        }
-      }
+void _runAppWithoutSentry() {
+  print('Running app without Sentry');
+  _initializeClientLogBuffer();
+  _runAppCommon();
+}
 
-      final appLoadFuture = loadApp();
+void _runAppCommon() {
+  Future<AppBootstrapData> loadApp() async {
+    // Note: Auth0 callback handling is now done by the router and CallbackScreen
+    // The router will detect callback parameters and route to /callback,
+    // where CallbackScreen will process the authentication
 
-      if (kIsWeb) {
-        usePathUrlStrategy();
-      }
+    // Run the main bootstrap process
+    try {
+      final bootstrapper = AppBootstrapper();
+      return await bootstrapper.load();
+    } catch (e, stack) {
+      debugPrint('Bootstrap failed: $e');
+      try {
+        Sentry.captureException(e, stackTrace: stack);
+      } catch (_) {} // Ignore Sentry errors here
+      // Return minimal bootstrap data to allow app to load error screen or retry
+      return AppBootstrapData(isWeb: kIsWeb, supportsNativeShell: !kIsWeb);
+    }
+  }
 
-      // Run the app inside a zone to catch async errors
-      runZonedGuarded(
-        () => runApp(
-          SentryWidget(
-            child: FutureProvider<AppBootstrapData?>(
-              create: (_) => appLoadFuture,
-              initialData: null,
-              child: const CloudToLocalLLMApp(),
-            ),
-          ),
+  final appLoadFuture = loadApp();
+
+  if (kIsWeb) {
+    usePathUrlStrategy();
+  }
+
+  // Run the app inside a zone to catch async errors
+  runZonedGuarded(
+    () => runApp(
+      SentryWidget(
+        child: FutureProvider<AppBootstrapData?>(
+          create: (_) => appLoadFuture,
+          initialData: null,
+          child: const CloudToLocalLLMApp(),
         ),
-        (error, stack) {
-          debugPrint('Uncaught error: $error');
-          debugPrint('Stack trace: $stack');
-          Sentry.captureException(
-            error,
-            stackTrace: stack,
-          );
-        },
-      );
+      ),
+    ),
+    (error, stack) {
+      debugPrint('Uncaught error: $error');
+      debugPrint('Stack trace: $stack');
+      try {
+        Sentry.captureException(
+          error,
+          stackTrace: stack,
+        );
+      } catch (_) {} // Ignore Sentry errors here
     },
   );
 }
