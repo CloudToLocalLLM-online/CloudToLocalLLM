@@ -375,21 +375,12 @@ jobs:
           kubectl apply -f k8s/api-backend-deployment.yaml
           kubectl apply -f k8s/streaming-proxy-deployment.yaml
 
-          # Force Rollout Restart to pick up new images
-          kubectl rollout restart statefulset/postgres deployment/web deployment/api-backend deployment/streaming-proxy -n cloudtolocalllm
+          # Force rollout restart to pick up latest images
+          kubectl rollout restart statefulset/postgres -n cloudtolocalllm
+          kubectl rollout restart deployment/web -n cloudtolocalllm
+          kubectl rollout restart deployment/api-backend -n cloudtolocalllm
+          kubectl rollout restart deployment/streaming-proxy -n cloudtolocalllm
 
-          # Wait for Rollout to Complete
-          kubectl rollout status statefulset/postgres -n cloudtolocalllm --timeout=300s
-          kubectl rollout status deployment/web -n cloudtolocalllm --timeout=300s
-          kubectl rollout status deployment/api-backend -n cloudtolocalllm --timeout=300s
-          kubectl rollout status deployment/streaming-proxy -n cloudtolocalllm --timeout=300s
-
-  validation:
-    name: Validate Deployment
-    needs: deploy_infrastructure
-    if: ${{ !cancelled() && (needs.deploy_infrastructure.result == 'success' || needs.deploy_infrastructure.result == 'skipped') }}
-    runs-on: ubuntu-latest
-    steps:
       - name: Check Health Endpoint
         run: |
           echo "Waiting for DNS propagation and service health..."
