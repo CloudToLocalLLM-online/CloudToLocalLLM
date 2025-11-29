@@ -167,3 +167,6 @@ run_logs_new.txt
 run_logs.txt
 run_logs_latest.txt
 run_log.txt
+
+# Logs directory
+logs/
