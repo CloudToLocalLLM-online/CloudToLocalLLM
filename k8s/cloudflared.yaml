@@ -22,14 +22,14 @@ spec:
         app: cloudflared
     spec:
       serviceAccountName: cloudflared
-      containers:
-        - name: cloudflared
-          image: cloudflare/cloudflared:latest
-          args:
-            - tunnel
-            - run
-            - --token
-            - $(TUNNEL_TOKEN)
+      initContainers:
+        - name: setup-credentials
+          image: busybox
+          command:
+            - sh
+            - -c
+            - |
+              echo "{\"AccountTag\":\"\",\"TunnelSecret\":\"$TUNNEL_TOKEN\",\"TunnelID\":\"ee26f195-904b-4406-a8ae-9265c9971004\"}" > /credentials/credentials.json
           env:
             - name: TUNNEL_TOKEN
               valueFrom:
@@ -37,8 +37,24 @@ spec:
                   name: tunnel-credentials
                   key: token
           volumeMounts:
+            - name: credentials
+              mountPath: /credentials
+      containers:
+        - name: cloudflared
+          image: cloudflare/cloudflared:latest
+          args:
+            - tunnel
+            - --config
+            - /etc/cloudflared/config/config.yaml
+            - --credentials-file
+            - /credentials/credentials.json
+            - run
+          volumeMounts:
             - name: config
               mountPath: /etc/cloudflared/config
+              readOnly: true
+            - name: credentials
+              mountPath: /credentials
               readOnly: true
           livenessProbe:
             httpGet:
@@ -55,6 +71,8 @@ spec:
             items:
               - key: config.yaml
                 path: config.yaml
+        - name: credentials
+          emptyDir: {}
 ---
 apiVersion: v1
 kind: ConfigMap
