@@ -256,37 +256,21 @@ jobs:
           STRIPE_TEST_WEBHOOK_SECRET: ${{ secrets.STRIPE_TEST_WEBHOOK_SECRET }}
           STRIPE_LIVE_SECRET_KEY: ${{ secrets.STRIPE_LIVE_SECRET_KEY }}
           STRIPE_LIVE_PUBLISHABLE_KEY: ${{ secrets.STRIPE_LIVE_PUBLISHABLE_KEY }}
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          STRIPE_LIVE_WEBHOOK_SECRET: ${{ secrets.STRIPE_LIVE_WEBHOOK_SECRET }}
+          SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
+          CLOUDFLARE_DNS_TOKEN: ${{ secrets.CLOUDFLARE_DNS_TOKEN }}
+          CLOUDFLARE_TUNNEL_TOKEN: ${{ secrets.CLOUDFLARE_TUNNEL_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
-          # --- Fetch Cloudflare Tunnel Token ---
-          TUNNEL_ID="ee26f195-904b-4406-a8ae-9265c9971004"
-          echo "Fetching token for tunnel ID: $TUNNEL_ID"
-
-          TUNNEL_TOKEN=$(curl -s -X GET "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/tunnels/$TUNNEL_ID/token" \
-            -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
-            -H "Content-Type: application/json" | jq -r '.result')
-
-          if [ "$TUNNEL_TOKEN" == "null" ] || [ -z "$TUNNEL_TOKEN" ]; then
-             echo "Retrying with cfd_tunnel endpoint..."
-             TUNNEL_TOKEN=$(curl -s -X GET "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/cfd_tunnel/$TUNNEL_ID/token" \
-               -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
-               -H "Content-Type: application/json" | jq -r '.result')
-          fi
-
-          if [ "$TUNNEL_TOKEN" == "null" ] || [ -z "$TUNNEL_TOKEN" ]; then
-            echo "Error: Failed to fetch tunnel token"
-            exit 1
-          fi
-          echo "Successfully fetched tunnel token."
-
+          set -x
           # --- Update Cloudflare DNS Records ---
           ZONE_NAME="cloudtolocalllm.online"
+          TUNNEL_ID="ee26f195-904b-4406-a8ae-9265c9971004"
           TUNNEL_CNAME="$TUNNEL_ID.cfargotunnel.com"
 
           echo "Fetching Zone ID for $ZONE_NAME..."
           ZONE_ID=$(curl -s -X GET "https://api.cloudflare.com/client/v4/zones?name=$ZONE_NAME" \
-            -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+            -H "Authorization: Bearer $CLOUDFLARE_DNS_TOKEN" \
             -H "Content-Type: application/json" | jq -r '.result[0].id')
 
           if [ "$ZONE_ID" == "null" ] || [ -z "$ZONE_ID" ]; then
@@ -304,7 +288,7 @@ jobs:
             
             # Check if record exists
             local RECORD_JSON=$(curl -s -X GET "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/dns_records?type=CNAME&name=$NAME" \
-              -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+              -H "Authorization: Bearer $CLOUDFLARE_DNS_TOKEN" \
               -H "Content-Type: application/json")
             
             local RECORD_ID=$(echo "$RECORD_JSON" | jq -r '.result[0].id')
@@ -312,28 +296,17 @@ jobs:
             if [ "$RECORD_ID" != "null" ] && [ -n "$RECORD_ID" ]; then
                # Update existing
                curl -s -X PUT "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/dns_records/$RECORD_ID" \
-                 -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+                 -H "Authorization: Bearer $CLOUDFLARE_DNS_TOKEN" \
                  -H "Content-Type: application/json" \
                  --data "{\"type\":\"CNAME\",\"name\":\"$NAME\",\"content\":\"$CONTENT\",\"proxied\":$PROXIED,\"ttl\":1}" > /dev/null
             else
                # Create new
                curl -s -X POST "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/dns_records" \
-                 -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+                 -H "Authorization: Bearer $CLOUDFLARE_DNS_TOKEN" \
                  -H "Content-Type: application/json" \
                  --data "{\"type\":\"CNAME\",\"name\":\"$NAME\",\"content\":\"$CONTENT\",\"proxied\":$PROXIED,\"ttl\":1}" > /dev/null
             fi
           }
-
-          update_dns_record "app.cloudtolocalllm.online" "$TUNNEL_CNAME" true
-          update_dns_record "api.cloudtolocalllm.online" "$TUNNEL_CNAME" true
-          update_dns_record "cloudtolocalllm.online" "$TUNNEL_CNAME" true
-          echo "DNS records updated."
-
-          # --- Create Kubernetes Secrets ---
-
-          # Get ACR Admin Credentials
-          ACR_ADMIN_USER=$(az acr credential show --name ${{ env.ACR_NAME }} --query username --output tsv)
-          ACR_ADMIN_PASS=$(az acr credential show --name ${{ env.ACR_NAME }} --query passwords[0].value --output tsv)
 
           # Docker Registry Secret for ACR
           kubectl create secret docker-registry regcred \
