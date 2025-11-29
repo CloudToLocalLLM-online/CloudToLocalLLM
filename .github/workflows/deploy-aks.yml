@@ -309,6 +309,57 @@ jobs:
             fi
           }
 
+          # Update Records
+          update_dns_record "app" "$TUNNEL_CNAME" true
+          update_dns_record "api" "$TUNNEL_CNAME" true
+          update_dns_record "@" "$TUNNEL_CNAME" true
+
+          # --- Create Kubernetes Secrets ---
+          # --- Update Cloudflare DNS Records ---
+          ZONE_NAME="cloudtolocalllm.online"
+          TUNNEL_ID="ee26f195-904b-4406-a8ae-9265c9971004"
+          TUNNEL_CNAME="$TUNNEL_ID.cfargotunnel.com"
+
+          echo "Fetching Zone ID for $ZONE_NAME..."
+          ZONE_ID=$(curl -s -X GET "https://api.cloudflare.com/client/v4/zones?name=$ZONE_NAME" \
+            -H "Authorization: Bearer $CLOUDFLARE_DNS_TOKEN" \
+            -H "Content-Type: application/json" | jq -r '.result[0].id')
+
+          if [ "$ZONE_ID" == "null" ] || [ -z "$ZONE_ID" ]; then
+            echo "Error: Could not find Zone ID for $ZONE_NAME"
+            exit 1
+          fi
+
+          # Function to update or create CNAME record
+          update_dns_record() {
+            local NAME=$1
+            local CONTENT=$2
+            local PROXIED=$3
+            
+            echo "Updating DNS record: $NAME -> $CONTENT (Proxied: $PROXIED)"
+            
+            # Check if record exists
+            local RECORD_JSON=$(curl -s -X GET "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/dns_records?type=CNAME&name=$NAME" \
+              -H "Authorization: Bearer $CLOUDFLARE_DNS_TOKEN" \
+              -H "Content-Type: application/json")
+            
+            local RECORD_ID=$(echo "$RECORD_JSON" | jq -r '.result[0].id')
+            
+            if [ "$RECORD_ID" != "null" ] && [ -n "$RECORD_ID" ]; then
+               # Update existing
+               curl -s -X PUT "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/dns_records/$RECORD_ID" \
+                 -H "Authorization: Bearer $CLOUDFLARE_DNS_TOKEN" \
+                 -H "Content-Type: application/json" \
+                 --data "{\"type\":\"CNAME\",\"name\":\"$NAME\",\"content\":\"$CONTENT\",\"proxied\":$PROXIED,\"ttl\":1}" > /dev/null
+            else
+               # Create new
+               curl -s -X POST "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/dns_records" \
+                 -H "Authorization: Bearer $CLOUDFLARE_DNS_TOKEN" \
+                 -H "Content-Type: application/json" \
+                 --data "{\"type\":\"CNAME\",\"name\":\"$NAME\",\"content\":\"$CONTENT\",\"proxied\":$PROXIED,\"ttl\":1}" > /dev/null
+            fi
+          }
+
           # --- Create Kubernetes Secrets ---
 
           # Get ACR Admin Credentials
