@@ -227,62 +227,9 @@
         const loadingText = document.querySelector('#flutter-loading p');
         if (loadingText) {
           loadingText.textContent = 'Application startup timed out. Please refresh.';
-          loadingText.style.color = '#ff6b6b';
-        }
-      } else {
-        console.log(' [Check] Flutter global object exists.');
-      }
-    }, 10000);
-  </script>
 
-  <!-- SERVICE WORKER REGISTRATION -->
-  <!-- Use minimal service worker to prevent timeout -->
-  <script>
-    // Only unregister service workers that are NOT from flutter_service_worker.js
-    // This prevents the "unregister -> reload -> unregister" loop
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', function () {
-        navigator.serviceWorker.getRegistrations().then(function (registrations) {
-          for (let registration of registrations) {
-            // Check if the script URL contains flutter_service_worker.js
-            // If it does, LEAVE IT ALONE. It's the good one.
-            const scriptURL = registration.active?.scriptURL || registration.installing?.scriptURL || registration.waiting?.scriptURL || '';
-
-            if (scriptURL && !scriptURL.includes('flutter_service_worker.js')) {
-              console.log('Unregistering non-Flutter service worker:', scriptURL);
-              registration.unregister().catch(function (error) {
-                console.warn('Error unregistering service worker:', error);
-              });
-            } else {
-              console.log('Found active Flutter service worker, keeping it:', scriptURL);
-            }
-          }
-        }).catch(function (error) {
-          console.warn('Error getting service worker registrations:', error);
-        });
-      });
-    }
-  </script>
-
-  <!-- Prevent gray screen by ensuring body is visible -->
-  <script>
-    // Ensure body is visible when it exists
-    function ensureBodyVisible() {
-      if (document.body) {
-        document.body.style.display = 'block';
-        document.body.style.visibility = 'visible';
-        document.body.style.opacity = '1';
-      }
-    }
-
-    // Try immediately (may not work if body doesn't exist yet)
-    ensureBodyVisible();
-
-    // Also ensure on DOMContentLoaded
-    document.addEventListener('DOMContentLoaded', ensureBodyVisible);
-
-    // And on load event
-    window.addEventListener('load', ensureBodyVisible);
+          // And on load event
+          window.addEventListener('load', ensureBodyVisible);
   </script>
 </head>
 
@@ -342,49 +289,49 @@
   </style>
 
   <script>
-    // Hide loading screen when Flutter is ready
-    window.addEventListener('load', function () {
-      setTimeout(function () {
-        const loadingScreen = document.getElementById('flutter-loading');
-        if (loadingScreen) {
-          loadingScreen.style.opacity = '0';
-          loadingScreen.style.transition = 'opacity 0.3s ease-out';
-          setTimeout(function () {
-            loadingScreen.style.display = 'none';
-          }, 300);
-        }
-      }, 500);
-    });
+          // Hide loading screen when Flutter is ready
+          window.addEventListener('load', function () {
+            setTimeout(function () {
+              const loadingScreen = document.getElementById('flutter-loading');
+              if (loadingScreen) {
+                loadingScreen.style.opacity = '0';
+                loadingScreen.style.transition = 'opacity 0.3s ease-out';
+                setTimeout(function () {
+                  loadingScreen.style.display = 'none';
+                }, 300);
+              }
+            }, 500);
+          });
   </script>
 
   <script>
-    console.log(' [Index] Page body parsed. Starting flutter_bootstrap.js load...');
+          console.log(' [Index] Page body parsed. Starting flutter_bootstrap.js load...');
 
-    // Track window load event
-    window.addEventListener('load', function () {
-      console.log(' [Index] Window load event fired');
-    });
+          // Track window load event
+          window.addEventListener('load', function () {
+            console.log(' [Index] Window load event fired');
+          });
 
-    // Manually load flutter_bootstrap.js to track its status
-    var script = document.createElement('script');
-    script.src = 'flutter_bootstrap.js?v=2';
-    script.async = true;
+          // Manually load flutter_bootstrap.js to track its status
+          var script = document.createElement('script');
+          script.src = 'flutter_bootstrap.js?v=2';
+          script.async = true;
 
-    script.onload = function () {
-      console.log(' [Index] flutter_bootstrap.js loaded successfully');
-    };
+          script.onload = function () {
+            console.log(' [Index] flutter_bootstrap.js loaded successfully');
+          };
 
-    script.onerror = function (e) {
-      console.error(' [Index] Failed to load flutter_bootstrap.js:', e);
-      // Update loading screen to show error
-      const loadingText = document.querySelector('#flutter-loading p');
-      if (loadingText) {
-        loadingText.textContent = 'Error loading application. Please check console.';
-        loadingText.style.color = '#ff6b6b';
-      }
-    };
+          script.onerror = function (e) {
+            console.error(' [Index] Failed to load flutter_bootstrap.js:', e);
+            // Update loading screen to show error
+            const loadingText = document.querySelector('#flutter-loading p');
+            if (loadingText) {
+              loadingText.textContent = 'Error loading application. Please check console.';
+              loadingText.style.color = '#ff6b6b';
+            }
+          };
 
-    document.body.appendChild(script);
+          document.body.appendChild(script);
   </script>
 </body>
 
