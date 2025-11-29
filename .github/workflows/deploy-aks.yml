@@ -211,7 +211,6 @@ jobs:
           cache-from: type=registry,ref=${{ env.DOCKER_REGISTRY }}/streaming-proxy:latest
           cache-to: type=inline
 
-
   deploy_infrastructure:
     # Run if any build job ran OR if k8s files changed
     needs:
@@ -404,13 +403,13 @@ jobs:
                local RESPONSE=$(curl -s -X PUT "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/dns_records/$RECORD_ID" \
                  -H "Authorization: Bearer $CLOUDFLARE_DNS_TOKEN" \
                  -H "Content-Type: application/json" \
-                 --data "{\"type\":\"CNAME\",\"name\":\"$NAME\",\"content\":\"$CONTENT\",\"proxied\":$PROXIED,\"ttl\":1}" > /dev/null
+                 --data "{\"type\":\"CNAME\",\"name\":\"$NAME\",\"content\":\"$CONTENT\",\"proxied\":$PROXIED,\"ttl\":1}")
             else
                # Create new
                local RESPONSE=$(curl -s -X POST "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/dns_records" \
                  -H "Authorization: Bearer $CLOUDFLARE_DNS_TOKEN" \
                  -H "Content-Type: application/json" \
-                 --data "{\"type\":\"CNAME\",\"name\":\"$NAME\",\"content\":\"$CONTENT\",\"proxied\":$PROXIED,\"ttl\":1}" > /dev/null
+                 --data "{\"type\":\"CNAME\",\"name\":\"$NAME\",\"content\":\"$CONTENT\",\"proxied\":$PROXIED,\"ttl\":1}")
             fi
           }
 
