@@ -22,23 +22,6 @@ spec:
         app: cloudflared
     spec:
       serviceAccountName: cloudflared
-      initContainers:
-        - name: setup-credentials
-          image: busybox
-          command:
-            - sh
-            - -c
-            - |
-              echo "{\"AccountTag\":\"35fa09929e656c4e96e4aa79909d11b7\",\"TunnelSecret\":\"$TUNNEL_TOKEN\",\"TunnelID\":\"62da6c19-947b-4bf6-acad-100a73de4e0d\"}" > /credentials/credentials.json
-          env:
-            - name: TUNNEL_TOKEN
-              valueFrom:
-                secretKeyRef:
-                  name: tunnel-credentials
-                  key: token
-          volumeMounts:
-            - name: credentials
-              mountPath: /credentials
       containers:
         - name: cloudflared
           image: cloudflare/cloudflared:latest
@@ -46,15 +29,18 @@ spec:
             - tunnel
             - --config
             - /etc/cloudflared/config/config.yaml
-            - --credentials-file
-            - /credentials/credentials.json
             - run
+            - --token
+            - $(TUNNEL_TOKEN)
+          env:
+            - name: TUNNEL_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: tunnel-credentials
+                  key: token
           volumeMounts:
             - name: config
               mountPath: /etc/cloudflared/config
-              readOnly: true
-            - name: credentials
-              mountPath: /credentials
               readOnly: true
           livenessProbe:
             httpGet:
@@ -71,8 +57,6 @@ spec:
             items:
               - key: config.yaml
                 path: config.yaml
-        - name: credentials
-          emptyDir: {}
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -98,24 +82,11 @@ data:
       # App Subdomain - API Backend
       - hostname: app.cloudtolocalllm.online
         path: /api
-        service: http://api-backend.cloudtolocalllm.svc.cluster.local:8080
+        service: http://api-backend.cloudtolocalllm.svc.cluster.local:3000
       
-      # App Subdomain - Web App (Catch-all)
-      - hostname: app.cloudtolocalllm.online
-        service: http://web.cloudtolocalllm.svc.cluster.local:8080
-      
-      # API Subdomain
-      - hostname: api.cloudtolocalllm.online
-        service: http://api-backend.cloudtolocalllm.svc.cluster.local:8080
-      
-      # Root Domain - API Backend
+      # Root Domain - Web Frontend
       - hostname: cloudtolocalllm.online
-        path: /api
-        service: http://api-backend.cloudtolocalllm.svc.cluster.local:8080
+        service: http://web.cloudtolocalllm.svc.cluster.local:80
       
-      # Root Domain - Web App (Catch-all)
-      - hostname: cloudtolocalllm.online
-        service: http://web.cloudtolocalllm.svc.cluster.local:8080
-      
-      # 404 Catch-all
+      # Catch-all 404
       - service: http_status:404
