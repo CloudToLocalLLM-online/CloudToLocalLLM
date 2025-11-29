@@ -82,12 +82,12 @@ data:
       # App Subdomain - API Backend Health
       - hostname: app.cloudtolocalllm.online
         path: /health
-        service: http://api-backend.cloudtolocalllm.svc.cluster.local:3000
+        service: http://api-backend.cloudtolocalllm.svc.cluster.local:8080
 
       # App Subdomain - API Backend
       - hostname: app.cloudtolocalllm.online
         path: /api
-        service: http://api-backend.cloudtolocalllm.svc.cluster.local:3000
+        service: http://api-backend.cloudtolocalllm.svc.cluster.local:8080
       
       # Root Domain - Web Frontend
       - hostname: cloudtolocalllm.online
