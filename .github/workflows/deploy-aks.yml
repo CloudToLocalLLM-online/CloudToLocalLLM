@@ -211,6 +211,7 @@ jobs:
           cache-from: type=registry,ref=${{ env.DOCKER_REGISTRY }}/streaming-proxy:latest
           cache-to: type=inline
 
+
   deploy_infrastructure:
     # Run if any build job ran OR if k8s files changed
     needs:
@@ -242,6 +243,167 @@ jobs:
         run: |
           # Get Login Server (ACR assumed to exist or created in build steps)
           echo "DOCKER_REGISTRY=$(az acr show --name ${{ env.ACR_NAME }} --query loginServer --output tsv)" >> $GITHUB_ENV
+
+      - name: Ensure Namespace Exists
+        run: |
+          kubectl create namespace cloudtolocalllm --dry-run=client -o yaml | kubectl apply -f -
+
+      - name: Create/Update Secrets
+        env:
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          AUTH0_CLIENT_SECRET: ${{ secrets.AUTH0_CLIENT_SECRET }}
+          STRIPE_TEST_SECRET_KEY: ${{ secrets.STRIPE_TEST_SECRET_KEY }}
+          STRIPE_TEST_PUBLISHABLE_KEY: ${{ secrets.STRIPE_TEST_PUBLISHABLE_KEY }}
+          STRIPE_TEST_WEBHOOK_SECRET: ${{ secrets.STRIPE_TEST_WEBHOOK_SECRET }}
+          STRIPE_LIVE_SECRET_KEY: ${{ secrets.STRIPE_LIVE_SECRET_KEY }}
+          STRIPE_LIVE_PUBLISHABLE_KEY: ${{ secrets.STRIPE_LIVE_PUBLISHABLE_KEY }}
+          STRIPE_LIVE_WEBHOOK_SECRET: ${{ secrets.STRIPE_LIVE_WEBHOOK_SECRET }}
+          SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
+          CLOUDFLARE_DNS_TOKEN: ${{ secrets.CLOUDFLARE_DNS_TOKEN }}
+          CLOUDFLARE_TUNNEL_TOKEN: ${{ secrets.CLOUDFLARE_TUNNEL_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          # --- Create Kubernetes Secrets ---
+
+          # Get ACR Admin Credentials
+          ACR_ADMIN_USER=$(az acr credential show --name ${{ env.ACR_NAME }} --query username --output tsv)
+          ACR_ADMIN_PASS=$(az acr credential show --name ${{ env.ACR_NAME }} --query passwords[0].value --output tsv)
+
+          # Docker Registry Secret for ACR
+          kubectl create secret docker-registry regcred \
+            --docker-server=${{ env.DOCKER_REGISTRY }} \
+            --docker-username=$ACR_ADMIN_USER \
+            --docker-password=$ACR_ADMIN_PASS \
+            --docker-email=github-actions@cloudtolocalllm.online \
+            -n cloudtolocalllm --dry-run=client -o yaml | kubectl apply -f -
+
+          # App Secrets
+          kubectl create secret generic cloudtolocalllm-secrets \
+            --namespace cloudtolocalllm \
+            --from-literal=postgres-user=cloud_admin \
+            --from-literal=postgres-password="$POSTGRES_PASSWORD" \
+            --from-literal=jwt-secret="$JWT_SECRET" \
+            --from-literal=auth0-domain='dev-v2f2p008x3dr74ww.us.auth0.com' \
+            --from-literal=auth0-audience='https://api.cloudtolocalllm.online' \
+            --from-literal=auth0-client-id='FuXPnevXpp311CdYHGsbNZe9t3D8Ts7A' \
+            --from-literal=auth0-client-secret="$AUTH0_CLIENT_SECRET" \
+            --from-literal=stripe-test-secret-key="$STRIPE_TEST_SECRET_KEY" \
+            --from-literal=stripe-test-publishable-key="$STRIPE_TEST_PUBLISHABLE_KEY" \
+            --from-literal=stripe-test-webhook-secret="$STRIPE_TEST_WEBHOOK_SECRET" \
+            --from-literal=stripe-live-secret-key="$STRIPE_LIVE_SECRET_KEY" \
+            --from-literal=stripe-live-publishable-key="$STRIPE_LIVE_PUBLISHABLE_KEY" \
+            --from-literal=stripe-live-webhook-secret="$STRIPE_LIVE_WEBHOOK_SECRET" \
+            --from-literal=sentry-dsn="$SENTRY_DSN" \
+            --dry-run=client -o yaml | kubectl apply -f -
+
+          # Cloudflare Tunnel Secret
+          kubectl create secret generic tunnel-credentials \
+            --namespace cloudtolocalllm \
+            --from-literal=token="$CLOUDFLARE_TUNNEL_TOKEN" \
+            --dry-run=client -o yaml | kubectl apply -f -
+
+          # Streaming Proxy Secret
+          kubectl create secret generic streaming-proxy-secrets \
+            --namespace cloudtolocalllm \
+            --from-literal=SENTRY_DSN="$SENTRY_DSN" \
+            --dry-run=client -o yaml | kubectl apply -f -
+
+      - name: Deploy Manifests
+        run: |
+          # Replace image registry in manifests
+          sed -i "s|cloudtolocalllm/postgres:latest|${{ env.DOCKER_REGISTRY }}/postgres:latest|g" k8s/postgres-statefulset.yaml
+          sed -i "s|cloudtolocalllm/web:latest|${{ env.DOCKER_REGISTRY }}/web:latest|g" k8s/web-deployment.yaml
+          sed -i "s|cloudtolocalllm/api-backend:latest|${{ env.DOCKER_REGISTRY }}/api-backend:latest|g" k8s/api-backend-deployment.yaml
+          sed -i "s|cloudtolocalllm/streaming-proxy:latest|${{ env.DOCKER_REGISTRY }}/streaming-proxy:latest|g" k8s/streaming-proxy-deployment.yaml
+
+          # Apply RBAC and ConfigMaps first
+          kubectl apply -f k8s/rbac.yaml
+          kubectl apply -f k8s/configmap.yaml
+          kubectl apply -f k8s/streaming-proxy-configmap.yaml
+
+          # Apply Infrastructure
+          kubectl apply -f k8s/postgres-statefulset.yaml
+          kubectl apply -f k8s/cloudflared.yaml
+
+          # Apply Services
+          kubectl apply -f k8s/web-deployment.yaml
+          kubectl apply -f k8s/api-backend-deployment.yaml
+          kubectl apply -f k8s/streaming-proxy-deployment.yaml
+
+          # Force roll out restart to pick up latest images and secrets
+          kubectl rollout restart statefulset/postgres -n cloudtolocalllm
+          kubectl rollout restart deployment/web -n cloudtolocalllm
+          kubectl rollout restart deployment/api-backend -n cloudtolocalllm
+          kubectl rollout restart deployment/streaming-proxy -n cloudtolocalllm
+          kubectl rollout restart deployment/cloudflared -n cloudtolocalllm
+
+      - name: Verify Cloudflare Tunnel
+        run: |
+          echo "Waiting for Cloudflare Tunnel to be ready..."
+          kubectl wait --for=condition=ready pod -l app=cloudflared -n cloudtolocalllm --timeout=300s
+
+          echo "Checking Tunnel Logs..."
+          # Retry checking logs for connection success message (increased to 24 attempts = 2 minutes)
+          for i in {1..24}; do
+            if kubectl logs -l app=cloudflared -n cloudtolocalllm | grep -q "Registered tunnel connection"; then
+              echo "Tunnel connection verified!"
+              exit 0
+            fi
+            echo "Attempt $i: Tunnel not yet registered, waiting 5s..."
+            sleep 5
+          done
+          echo "Tunnel verification failed. Dumping logs:"
+          kubectl logs -l app=cloudflared -n cloudtolocalllm
+          exit 1
+
+      - name: Update Cloudflare DNS
+        env:
+          CLOUDFLARE_DNS_TOKEN: ${{ secrets.CLOUDFLARE_DNS_TOKEN }}
+          CLOUDFLARE_TUNNEL_TOKEN: ${{ secrets.CLOUDFLARE_TUNNEL_TOKEN }}
+        run: |
+          set -x
+          # --- Update Cloudflare DNS Records ---
+          ZONE_NAME="cloudtolocalllm.online"
+          TUNNEL_ID="62da6c19-947b-4bf6-acad-100a73de4e0d"
+          TUNNEL_CNAME="$TUNNEL_ID.cfargotunnel.com"
+          TUNNEL_TOKEN="${{ secrets.CLOUDFLARE_TUNNEL_TOKEN }}"
+
+          if [ -z "$TUNNEL_TOKEN" ]; then
+            echo "Error: CLOUDFLARE_TUNNEL_TOKEN secret is empty"
+            exit 1
+          fi
+
+          echo "Fetching Zone ID for $ZONE_NAME..."
+          ZONE_ID=$(curl -s -X GET "https://api.cloudflare.com/client/v4/zones?name=$ZONE_NAME" \
+            -H "Authorization: Bearer $CLOUDFLARE_DNS_TOKEN" \
+            -H "Content-Type: application/json" | jq -r '.result[0].id')
+
+          if [ "$ZONE_ID" == "null" ] || [ -z "$ZONE_ID" ]; then
+            echo "Error: Could not find Zone ID for $ZONE_NAME"
+            exit 1
+          fi
+
+          # Function to update or create CNAME record
+          update_dns_record() {
+            local NAME=$1
+            local CONTENT=$2
+            local PROXIED=$3
+            
+            echo "Updating DNS record: $NAME -> $CONTENT (Proxied: $PROXIED)"
+            
+            # Check if record exists
+            local RECORD_JSON=$(curl -s -X GET "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/dns_records?type=CNAME&name=$NAME" \
+              -H "Authorization: Bearer $CLOUDFLARE_DNS_TOKEN" \
+              -H "Content-Type: application/json")
+            
+            local RECORD_ID=$(echo "$RECORD_JSON" | jq -r '.result[0].id')
+            
+            if [ "$RECORD_ID" != "null" ] && [ -n "$RECORD_ID" ]; then
+               # Update existing
+               local RESPONSE=$(curl -s -X PUT "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/dns_records/$RECORD_ID" \
+                 -H "Authorization: Bearer $CLOUDFLARE_DNS_TOKEN" \
+                 -H "Content-Type: application/json" \
                  --data "{\"type\":\"CNAME\",\"name\":\"$NAME\",\"content\":\"$CONTENT\",\"proxied\":$PROXIED,\"ttl\":1}" > /dev/null
             else
                # Create new
@@ -256,6 +418,7 @@ jobs:
           update_dns_record "app" "$TUNNEL_CNAME" true
           update_dns_record "api" "$TUNNEL_CNAME" true
           update_dns_record "@" "$TUNNEL_CNAME" true
+
       - name: Check Health Endpoint
         run: |
           echo "Waiting for DNS propagation and service health..."
