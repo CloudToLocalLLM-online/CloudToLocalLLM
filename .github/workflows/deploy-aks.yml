@@ -142,10 +142,9 @@ jobs:
         with:
           channel: "stable"
           cache: true
-      - working-directory: ./web
-        run: flutter pub get && flutter build web --release --no-tree-shake-icons
+      - run: flutter pub get && flutter build web --release --no-tree-shake-icons
       - name: Debug - List web build
-        run: ls -R web/build || echo "web/build not found"
+        run: ls -R build/web || echo "build/web not found"
       - uses: docker/build-push-action@v5
         with:
           context: .
