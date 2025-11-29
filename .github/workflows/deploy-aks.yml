@@ -315,52 +315,6 @@ jobs:
           update_dns_record "@" "$TUNNEL_CNAME" true
 
           # --- Create Kubernetes Secrets ---
-          # --- Update Cloudflare DNS Records ---
-          ZONE_NAME="cloudtolocalllm.online"
-          TUNNEL_ID="ee26f195-904b-4406-a8ae-9265c9971004"
-          TUNNEL_CNAME="$TUNNEL_ID.cfargotunnel.com"
-
-          echo "Fetching Zone ID for $ZONE_NAME..."
-          ZONE_ID=$(curl -s -X GET "https://api.cloudflare.com/client/v4/zones?name=$ZONE_NAME" \
-            -H "Authorization: Bearer $CLOUDFLARE_DNS_TOKEN" \
-            -H "Content-Type: application/json" | jq -r '.result[0].id')
-
-          if [ "$ZONE_ID" == "null" ] || [ -z "$ZONE_ID" ]; then
-            echo "Error: Could not find Zone ID for $ZONE_NAME"
-            exit 1
-          fi
-
-          # Function to update or create CNAME record
-          update_dns_record() {
-            local NAME=$1
-            local CONTENT=$2
-            local PROXIED=$3
-            
-            echo "Updating DNS record: $NAME -> $CONTENT (Proxied: $PROXIED)"
-            
-            # Check if record exists
-            local RECORD_JSON=$(curl -s -X GET "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/dns_records?type=CNAME&name=$NAME" \
-              -H "Authorization: Bearer $CLOUDFLARE_DNS_TOKEN" \
-              -H "Content-Type: application/json")
-            
-            local RECORD_ID=$(echo "$RECORD_JSON" | jq -r '.result[0].id')
-            
-            if [ "$RECORD_ID" != "null" ] && [ -n "$RECORD_ID" ]; then
-               # Update existing
-               curl -s -X PUT "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/dns_records/$RECORD_ID" \
-                 -H "Authorization: Bearer $CLOUDFLARE_DNS_TOKEN" \
-                 -H "Content-Type: application/json" \
-                 --data "{\"type\":\"CNAME\",\"name\":\"$NAME\",\"content\":\"$CONTENT\",\"proxied\":$PROXIED,\"ttl\":1}" > /dev/null
-            else
-               # Create new
-               curl -s -X POST "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/dns_records" \
-                 -H "Authorization: Bearer $CLOUDFLARE_DNS_TOKEN" \
-                 -H "Content-Type: application/json" \
-                 --data "{\"type\":\"CNAME\",\"name\":\"$NAME\",\"content\":\"$CONTENT\",\"proxied\":$PROXIED,\"ttl\":1}" > /dev/null
-            fi
-          }
-
-          # --- Create Kubernetes Secrets ---
 
           # Get ACR Admin Credentials
           ACR_ADMIN_USER=$(az acr credential show --name ${{ env.ACR_NAME }} --query username --output tsv)
@@ -432,6 +386,27 @@ jobs:
           kubectl rollout restart deployment/web -n cloudtolocalllm
           kubectl rollout restart deployment/api-backend -n cloudtolocalllm
           kubectl rollout restart deployment/streaming-proxy -n cloudtolocalllm
+
+          kubectl rollout restart deployment/streaming-proxy -n cloudtolocalllm
+
+      - name: Verify Cloudflare Tunnel
+        run: |
+          echo "Waiting for Cloudflare Tunnel to be ready..."
+          kubectl wait --for=condition=ready pod -l app=cloudflared -n cloudtolocalllm --timeout=60s
+
+          echo "Checking Tunnel Logs..."
+          # Retry checking logs for connection success message
+          for i in {1..12}; do
+            if kubectl logs -l app=cloudflared -n cloudtolocalllm | grep -q "Registered tunnel connection"; then
+              echo "Tunnel connection verified!"
+              exit 0
+            fi
+            echo "Attempt $i: Tunnel not yet registered, waiting 5s..."
+            sleep 5
+          done
+          echo "Tunnel verification failed. Dumping logs:"
+          kubectl logs -l app=cloudflared -n cloudtolocalllm
+          exit 1
 
       - name: Check Health Endpoint
         run: |
