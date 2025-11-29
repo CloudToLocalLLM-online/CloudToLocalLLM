@@ -4,6 +4,8 @@ set -e
 # Data directory
 PGDATA="/var/lib/postgresql/data/pgdata"
 export PGDATA
+export PGPASSWORD="$POSTGRES_PASSWORD"
+export PGUSER="$POSTGRES_USER"
 
 # Ensure data directory exists and has correct permissions
 if [ ! -d "$PGDATA" ]; then
