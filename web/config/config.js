@@ -3,7 +3,7 @@ window.cloudToLocalLLMConfig = {
   // API endpoints
   apiEndpoint: 'https://api.cloudtolocalllm.online',
   wsEndpoint: 'wss://api.cloudtolocalllm.online/ws/tunnel',
-  
+
   // TURN server for WebRTC
   turnServer: {
     urls: [
@@ -13,14 +13,14 @@ window.cloudToLocalLLMConfig = {
     username: 'cloudtolocalllm',
     credential: '' // Will be fetched from API after authentication
   },
-  
+
   // Environment
   environment: 'production',
-  
+
   // Features
   enableAnalytics: false,
-  enableSentry: false,
-  
+  enableSentry: true,
+
   // Auth (SuperTokens)
   authDomain: 'https://auth.cloudtolocalllm.online',
   appDomain: 'https://app.cloudtolocalllm.online'
@@ -33,9 +33,9 @@ window.cloudToLocalLLMConfig = {
  * @param {string} accessToken - JWT access token for authentication
  * @returns {Promise<void>}
  */
-window.loadTurnCredentials = async function(accessToken) {
+window.loadTurnCredentials = async function (accessToken) {
   try {
-        const response = await fetch('https://api.cloudtolocalllm.online/turn/credentials', {
+    const response = await fetch('https://api.cloudtolocalllm.online/turn/credentials', {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${accessToken}`,

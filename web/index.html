@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html>
+
 <head>
   <!--
     If you are serving your web app in a path other than the root, change the
@@ -22,7 +23,8 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
-  <meta name="description" content="Manage and run powerful Large Language Models locally, orchestrated via a cloud interface.">
+  <meta name="description"
+    content="Manage and run powerful Large Language Models locally, orchestrated via a cloud interface.">
 
   <!-- iOS meta tags & icons -->
   <meta name="mobile-web-app-capable" content="yes">
@@ -33,13 +35,19 @@
   <meta name="theme-color" content="#a777e3">
   <meta name="color-scheme" content="dark">
   <style>
-    body { background-color: #181a20; }
-    #loading { background-color: #181a20; color: #f1f1f1; }
+    body {
+      background-color: #181a20;
+    }
+
+    #loading {
+      background-color: #181a20;
+      color: #f1f1f1;
+    }
   </style>
   <link rel="apple-touch-icon" href="icons/Icon-192.png">
 
   <!-- Favicon -->
-  <link rel="icon" type="image/png" href="favicon.png"/>
+  <link rel="icon" type="image/png" href="favicon.png" />
 
   <title>CloudToLocalLLM</title>
   <link rel="manifest" href="manifest.json">
@@ -51,7 +59,7 @@
   <script src="https://cdn.auth0.com/js/auth0-spa-js/2.1/auth0-spa-js.production.js"></script>
   <script>
     // Clear old Auth0 cache if it exists with wrong audience (must run before Auth0 SDK loads)
-    (function() {
+    (function () {
       try {
         // Only clear cache entries that have the WRONG audience format
         // The current audience is 'https://api.cloudtolocalllm.online' which is correct
@@ -131,14 +139,36 @@
       window.addEventListener('DOMContentLoaded', initializeAuth0);
     }
   </script>
-  
+
   <!-- Auth0 Bridge for Flutter -->
   <script src="auth0-bridge.js"></script>
+
+  <!-- Sentry SDK -->
+  <script src="https://js.sentry-cdn.com/b2fd3263e0ad7b490b0583f7df2e165a.min.js" crossorigin="anonymous"></script>
+  <script>
+    // Initialize Sentry immediately
+    window.Sentry = window.Sentry || {};
+    window.Sentry.onLoad = function (Sentry) {
+      Sentry.init({
+        dsn: "https://b2fd3263e0ad7b490b0583f7df2e165a@o4509853774315520.ingest.us.sentry.io/4509853780541440",
+        environment: 'production',
+        release: 'CloudToLocalLLM@4.4.0',
+        integrations: [
+          new Sentry.BrowserTracing(),
+          new Sentry.Replay(),
+        ],
+        tracesSampleRate: 1.0,
+        replaysSessionSampleRate: 0.1,
+        replaysOnErrorSampleRate: 1.0,
+      });
+      console.log(' [Sentry] Initialized in index.html');
+    };
+  </script>
 
   <!-- Global error handler to prevent page reload on errors -->
   <script>
     // Global error handler to catch unhandled errors and prevent page reload
-    window.addEventListener('error', function(event) {
+    window.addEventListener('error', function (event) {
       console.error(' Global error caught:', {
         message: event.message,
         filename: event.filename,
@@ -146,26 +176,38 @@
         colno: event.colno,
         error: event.error
       });
+
+      // Report to Sentry if available
+      if (window.Sentry && window.Sentry.captureException) {
+        window.Sentry.captureException(event.error || event.message);
+      }
+
       // Prevent default error handling that might reload the page
       event.preventDefault();
       return true;
     });
 
     // Handle unhandled promise rejections
-    window.addEventListener('unhandledrejection', function(event) {
+    window.addEventListener('unhandledrejection', function (event) {
       console.error(' Unhandled promise rejection:', {
         reason: event.reason,
         promise: event.promise
       });
+
+      // Report to Sentry if available
+      if (window.Sentry && window.Sentry.captureException) {
+        window.Sentry.captureException(event.reason);
+      }
+
       // Prevent default error handling
       event.preventDefault();
     });
 
     // Prevent Auth0 errors from causing reloads
-    window.addEventListener('DOMContentLoaded', function() {
+    window.addEventListener('DOMContentLoaded', function () {
       // Override console.error to capture errors but not reload
       const originalConsoleError = console.error;
-      console.error = function(...args) {
+      console.error = function (...args) {
         originalConsoleError.apply(console, args);
         // Check if it's an Auth0 error and handle gracefully
         const errorMessage = args.join(' ');
@@ -174,6 +216,23 @@
         }
       };
     });
+
+    // Startup Timeout Check
+    setTimeout(function () {
+      if (!window._flutter) {
+        console.error(' [CRITICAL] Flutter engine failed to load after 10 seconds!');
+        if (window.Sentry && window.Sentry.captureMessage) {
+          window.Sentry.captureMessage('Flutter engine failed to load after 10 seconds', 'fatal');
+        }
+        const loadingText = document.querySelector('#flutter-loading p');
+        if (loadingText) {
+          loadingText.textContent = 'Application startup timed out. Please refresh.';
+          loadingText.style.color = '#ff6b6b';
+        }
+      } else {
+        console.log(' [Check] Flutter global object exists.');
+      }
+    }, 10000);
   </script>
 
   <!-- SERVICE WORKER REGISTRATION -->
@@ -182,23 +241,23 @@
     // Only unregister service workers that are NOT from flutter_service_worker.js
     // This prevents the "unregister -> reload -> unregister" loop
     if ('serviceWorker' in navigator) {
-      window.addEventListener('load', function() {
-        navigator.serviceWorker.getRegistrations().then(function(registrations) {
+      window.addEventListener('load', function () {
+        navigator.serviceWorker.getRegistrations().then(function (registrations) {
           for (let registration of registrations) {
             // Check if the script URL contains flutter_service_worker.js
             // If it does, LEAVE IT ALONE. It's the good one.
             const scriptURL = registration.active?.scriptURL || registration.installing?.scriptURL || registration.waiting?.scriptURL || '';
-            
+
             if (scriptURL && !scriptURL.includes('flutter_service_worker.js')) {
               console.log('Unregistering non-Flutter service worker:', scriptURL);
-              registration.unregister().catch(function(error) {
+              registration.unregister().catch(function (error) {
                 console.warn('Error unregistering service worker:', error);
               });
             } else {
-               console.log('Found active Flutter service worker, keeping it:', scriptURL);
+              console.log('Found active Flutter service worker, keeping it:', scriptURL);
             }
           }
-        }).catch(function(error) {
+        }).catch(function (error) {
           console.warn('Error getting service worker registrations:', error);
         });
       });
@@ -215,17 +274,18 @@
         document.body.style.opacity = '1';
       }
     }
-    
+
     // Try immediately (may not work if body doesn't exist yet)
     ensureBodyVisible();
-    
+
     // Also ensure on DOMContentLoaded
     document.addEventListener('DOMContentLoaded', ensureBodyVisible);
-    
+
     // And on load event
     window.addEventListener('load', ensureBodyVisible);
   </script>
 </head>
+
 <body>
   <!-- Fallback loading screen in case Flutter fails to load -->
   <div id="flutter-loading" style="
@@ -275,19 +335,21 @@
 
   <style>
     @keyframes spin {
-      to { transform: rotate(360deg); }
+      to {
+        transform: rotate(360deg);
+      }
     }
   </style>
 
   <script>
     // Hide loading screen when Flutter is ready
-    window.addEventListener('load', function() {
-      setTimeout(function() {
+    window.addEventListener('load', function () {
+      setTimeout(function () {
         const loadingScreen = document.getElementById('flutter-loading');
         if (loadingScreen) {
           loadingScreen.style.opacity = '0';
           loadingScreen.style.transition = 'opacity 0.3s ease-out';
-          setTimeout(function() {
+          setTimeout(function () {
             loadingScreen.style.display = 'none';
           }, 300);
         }
@@ -297,9 +359,9 @@
 
   <script>
     console.log(' [Index] Page body parsed. Starting flutter_bootstrap.js load...');
-    
+
     // Track window load event
-    window.addEventListener('load', function() {
+    window.addEventListener('load', function () {
       console.log(' [Index] Window load event fired');
     });
 
@@ -307,12 +369,12 @@
     var script = document.createElement('script');
     script.src = 'flutter_bootstrap.js?v=2';
     script.async = true;
-    
-    script.onload = function() {
+
+    script.onload = function () {
       console.log(' [Index] flutter_bootstrap.js loaded successfully');
     };
-    
-    script.onerror = function(e) {
+
+    script.onerror = function (e) {
       console.error(' [Index] Failed to load flutter_bootstrap.js:', e);
       // Update loading screen to show error
       const loadingText = document.querySelector('#flutter-loading p');
@@ -321,8 +383,9 @@
         loadingText.style.color = '#ff6b6b';
       }
     };
-    
+
     document.body.appendChild(script);
   </script>
 </body>
+
 </html>
