@@ -179,20 +179,28 @@
   <!-- SERVICE WORKER REGISTRATION -->
   <!-- Use minimal service worker to prevent timeout -->
   <script>
-    // Unregister any problematic service workers
+    // Only unregister service workers that are NOT from flutter_service_worker.js
+    // This prevents the "unregister -> reload -> unregister" loop
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.getRegistrations().then(function(registrations) {
-        for (let registration of registrations) {
-          // Only unregister if it's not our minimal one
-          if (!registration.scope.includes('flutter_service_worker')) {
-            console.log('Unregistering old service worker:', registration.scope);
-            registration.unregister().catch(function(error) {
-              console.warn('Error unregistering service worker:', error);
-            });
+      window.addEventListener('load', function() {
+        navigator.serviceWorker.getRegistrations().then(function(registrations) {
+          for (let registration of registrations) {
+            // Check if the script URL contains flutter_service_worker.js
+            // If it does, LEAVE IT ALONE. It's the good one.
+            const scriptURL = registration.active?.scriptURL || registration.installing?.scriptURL || registration.waiting?.scriptURL || '';
+            
+            if (scriptURL && !scriptURL.includes('flutter_service_worker.js')) {
+              console.log('Unregistering non-Flutter service worker:', scriptURL);
+              registration.unregister().catch(function(error) {
+                console.warn('Error unregistering service worker:', error);
+              });
+            } else {
+               console.log('Found active Flutter service worker, keeping it:', scriptURL);
+            }
           }
-        }
-      }).catch(function(error) {
-        console.warn('Error getting service worker registrations:', error);
+        }).catch(function(error) {
+          console.warn('Error getting service worker registrations:', error);
+        });
       });
     }
   </script>
