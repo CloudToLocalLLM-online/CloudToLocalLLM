@@ -159,113 +159,21 @@
         ],
         tracesSampleRate: 1.0,
         replaysSessionSampleRate: 0.1,
-        replaysOnErrorSampleRate: 1.0,
-      });
-      console.log(' [Sentry] Initialized in index.html');
-    };
-  </script>
-
-  <!-- Global error handler to prevent page reload on errors -->
-  <script>
-    // Global error handler to catch unhandled errors and prevent page reload
-    window.addEventListener('error', function (event) {
-      console.error(' Global error caught:', {
-        message: event.message,
-        filename: event.filename,
-        lineno: event.lineno,
-        colno: event.colno,
-        error: event.error
-      });
-
-      // Report to Sentry if available
-      if (window.Sentry && window.Sentry.captureException) {
-        window.Sentry.captureException(event.error || event.message);
-      }
-
-      // Prevent default error handling that might reload the page
-      event.preventDefault();
-      return true;
-    });
-
-    // Handle unhandled promise rejections
-    window.addEventListener('unhandledrejection', function (event) {
-      console.error(' Unhandled promise rejection:', {
-        reason: event.reason,
-        promise: event.promise
-      });
-
-      // Report to Sentry if available
-      if (window.Sentry && window.Sentry.captureException) {
-        window.Sentry.captureException(event.reason);
-      }
-
-      // Prevent default error handling
-      event.preventDefault();
-    });
-
-    // Prevent Auth0 errors from causing reloads
-    window.addEventListener('DOMContentLoaded', function () {
-      // Override console.error to capture errors but not reload
-      const originalConsoleError = console.error;
-      console.error = function (...args) {
-        originalConsoleError.apply(console, args);
-        // Check if it's an Auth0 error and handle gracefully
-        const errorMessage = args.join(' ');
-        if (errorMessage.includes('Auth0') && errorMessage.includes('error')) {
-          console.warn(' Auth0 error detected - will not reload page');
-        }
-      };
-    });
-
-    // Startup Timeout Check
-    setTimeout(function () {
-      if (!window._flutter) {
-        console.error(' [CRITICAL] Flutter engine failed to load after 10 seconds!');
-        if (window.Sentry && window.Sentry.captureMessage) {
-          window.Sentry.captureMessage('Flutter engine failed to load after 10 seconds', 'fatal');
-        }
-        const loadingText = document.querySelector('#flutter-loading p');
-        if (loadingText) {
-          loadingText.textContent = 'Application startup timed out. Please refresh.';
-
-          // And on load event
-          window.addEventListener('load', ensureBodyVisible);
-  </script>
-</head>
-
-<body>
-  <!-- Fallback loading screen in case Flutter fails to load -->
-  <div id="flutter-loading" style="
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: #181a20;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    color: #f1f1f1;
-    z-index: 9999;
-  ">
-    <div style="text-align: center;">
-      <div style="
+      < div style = "
         width: 80px;
-        height: 80px;
-        margin: 0 auto 24px;
-        background: linear-gradient(135deg, #a777e3 0%, #7c3aed 100%);
-        border-radius: 12px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        box-shadow: 0 6px 20px rgba(167, 119, 227, 0.3);
+      height: 80px;
+      margin: 0 auto 24px;
+      background: linear - gradient(135deg, #a777e3 0 %, #7c3aed 100 %);
+      border - radius: 12px;
+      display: flex;
+      align - items: center;
+      justify - content: center;
+      box - shadow: 0 6px 20px rgba(167, 119, 227, 0.3);
       ">
-        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+        < svg width = "40" height = "40" viewBox = "0 0 24 24" fill = "none" stroke = "white" stroke - width="2" >
           <path d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3v-6"></path>
-        </svg>
-      </div>
+        </svg >
+      </div >
       <h1 style="margin: 0 0 8px 0; font-size: 24px; font-weight: 600;">CloudToLocalLLM</h1>
       <p style="margin: 0 0 24px 0; font-size: 14px; color: #a0a0a0;">Initializing application...</p>
       <div style="
@@ -277,8 +185,8 @@
         animation: spin 1s linear infinite;
         margin: 0 auto;
       "></div>
-    </div>
-  </div>
+    </div >
+  </div >
 
   <style>
     @keyframes spin {
@@ -333,6 +241,6 @@
 
           document.body.appendChild(script);
   </script>
-</body>
+  </body>
 
 </html>
