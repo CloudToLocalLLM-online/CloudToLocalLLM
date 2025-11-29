@@ -396,51 +396,6 @@ jobs:
             fi
             echo "Attempt $i: Tunnel not yet registered, waiting 5s..."
             sleep 5
-          done
-          echo "Tunnel verification failed. Dumping logs:"
-          kubectl logs -l app=cloudflared -n cloudtolocalllm
-          exit 1
-
-      - name: Get Tunnel Credentials via API
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_DNS_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        run: |
-          set -x
-          TUNNEL_ID="ee26f195-904b-4406-a8ae-9265c9971004"
-
-          echo "Fetching tunnel credentials from Cloudflare API..."
-          TUNNEL_RESPONSE=$(curl -s -X GET "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/cfd_tunnel/$TUNNEL_ID" \
-            -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
-            -H "Content-Type: application/json")
-
-          echo "Tunnel API Response: $TUNNEL_RESPONSE"
-
-          # Extract tunnel token from response
-          TUNNEL_TOKEN=$(echo "$TUNNEL_RESPONSE" | jq -r '.result.token // empty')
-
-          if [ -z "$TUNNEL_TOKEN" ]; then
-            echo "Failed to get tunnel token from API. Creating tunnel secret with placeholder..."
-            # Use existing secret as fallback
-            TUNNEL_TOKEN="${{ secrets.CLOUDFLARE_TUNNEL_TOKEN }}"
-          else
-            echo "Successfully retrieved tunnel token from API"
-          fi
-
-          # Update Kubernetes secret with API-retrieved token
-          kubectl create secret generic tunnel-credentials \
-            --namespace cloudtolocalllm \
-            --from-literal=token="$TUNNEL_TOKEN" \
-            --dry-run=client -o yaml | kubectl apply -f -
-
-          # Restart cloudflared to pick up new credentials
-          kubectl rollout restart deployment/cloudflared -n cloudtolocalllm
-
-      - name: Update Cloudflare DNS
-
-        env:
-          CLOUDFLARE_DNS_TOKEN: ${{ secrets.CLOUDFLARE_DNS_TOKEN }}
-
         run: |
 
           set -x
