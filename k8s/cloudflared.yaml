@@ -89,9 +89,9 @@ data:
         path: /api
         service: http://api-backend.cloudtolocalllm.svc.cluster.local:8080
 
-      # App Subdomain - API Backend (Root)
+      # App Subdomain - Web Frontend (Root)
       - hostname: app.cloudtolocalllm.online
-        service: http://api-backend.cloudtolocalllm.svc.cluster.local:8080
+        service: http://web.cloudtolocalllm.svc.cluster.local:8080
 
       # API Subdomain - API Backend Health
       - hostname: api.cloudtolocalllm.online
