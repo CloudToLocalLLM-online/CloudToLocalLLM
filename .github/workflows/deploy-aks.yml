@@ -387,11 +387,12 @@ jobs:
           kubectl apply -f k8s/api-backend-deployment.yaml
           kubectl apply -f k8s/streaming-proxy-deployment.yaml
 
-          # Force rollout restart to pick up latest images
+          # Force roll out restart to pick up latest images and secrets
           kubectl rollout restart statefulset/postgres -n cloudtolocalllm
           kubectl rollout restart deployment/web -n cloudtolocalllm
           kubectl rollout restart deployment/api-backend -n cloudtolocalllm
           kubectl rollout restart deployment/streaming-proxy -n cloudtolocalllm
+          kubectl rollout restart deployment/cloudflared -n cloudtolocalllm
 
       - name: Verify Cloudflare Tunnel
         run: |
