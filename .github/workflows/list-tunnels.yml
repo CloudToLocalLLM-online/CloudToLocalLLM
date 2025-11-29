@@ -1,0 +1,28 @@
+name: List Cloudflare Tunnels
+
+on:
+  workflow_dispatch:
+
+jobs:
+  list_tunnels:
+    runs-on: ubuntu-latest
+    steps:
+      - name: List Tunnels
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          # 1. Get Account ID
+          ACCOUNT_RESPONSE=$(curl -s -X GET "https://api.cloudflare.com/client/v4/accounts" \
+            -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+            -H "Content-Type: application/json")
+
+          ACCOUNT_ID=$(echo $ACCOUNT_RESPONSE | jq -r '.result[0].id')
+          echo "Account ID: $ACCOUNT_ID"
+
+          # 2. List Tunnels
+          echo "Listing Tunnels..."
+          TUNNELS_RESPONSE=$(curl -s -X GET "https://api.cloudflare.com/client/v4/accounts/$ACCOUNT_ID/cfd_tunnel?is_deleted=false" \
+            -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+            -H "Content-Type: application/json")
+
+          echo $TUNNELS_RESPONSE | jq '.result[] | {id: .id, name: .name, status: .status}'
