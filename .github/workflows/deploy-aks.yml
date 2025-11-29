@@ -302,13 +302,13 @@ jobs:
             
             if [ "$RECORD_ID" != "null" ] && [ -n "$RECORD_ID" ]; then
                # Update existing
-               curl -s -X PUT "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/dns_records/$RECORD_ID" \
+               local RESPONSE=$(curl -s -X PUT "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/dns_records/$RECORD_ID" \
                  -H "Authorization: Bearer $CLOUDFLARE_DNS_TOKEN" \
                  -H "Content-Type: application/json" \
                  --data "{\"type\":\"CNAME\",\"name\":\"$NAME\",\"content\":\"$CONTENT\",\"proxied\":$PROXIED,\"ttl\":1}" > /dev/null
             else
                # Create new
-               curl -s -X POST "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/dns_records" \
+               local RESPONSE=$(curl -s -X POST "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/dns_records" \
                  -H "Authorization: Bearer $CLOUDFLARE_DNS_TOKEN" \
                  -H "Content-Type: application/json" \
                  --data "{\"type\":\"CNAME\",\"name\":\"$NAME\",\"content\":\"$CONTENT\",\"proxied\":$PROXIED,\"ttl\":1}" > /dev/null
