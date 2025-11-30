@@ -32,10 +32,8 @@ class Auth0WebService implements Auth0Service {
     );
 
     // onLoad handles the callback if present
-    await _auth0Web.onLoad(
-      audience: 'https://api.cloudtolocalllm.online',
-    );
-    
+    await _auth0Web.onLoad();
+
     await checkAuthStatus();
     debugPrint('[Auth0WebService] Initialization complete.');
   }
