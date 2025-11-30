@@ -17,11 +17,16 @@ class SupabaseAuthService {
     debugPrint('[SupabaseAuthService] Logging in with Google...');
     try {
       String? redirectTo;
+      String? redirectTo;
       if (kIsWeb) {
-        // Dynamically determine the redirect URL based on the current origin
-        // This ensures it works on whatever port the app is running on (e.g. localhost:12345)
-        // provided that URL is whitelisted in Supabase
-        redirectTo = '${Uri.base.origin}/callback';
+        // If running locally, enforce port 3000 to match Supabase whitelist.
+        // If running in production (not localhost), use the current origin.
+        final host = Uri.base.host;
+        if (host == 'localhost' || host == '127.0.0.1') {
+          redirectTo = 'http://localhost:3000/callback';
+        } else {
+          redirectTo = '${Uri.base.origin}/callback';
+        }
       } else {
         redirectTo = 'io.supabase.flutterquickstart://login-callback/';
       }
