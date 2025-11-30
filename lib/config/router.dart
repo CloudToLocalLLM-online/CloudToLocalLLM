@@ -460,12 +460,21 @@ class AppRouter {
         );
 
         // Determine if we have callback parameters
+        // Check both state.uri and Uri.base (fallback) to ensure we catch them on initial load
+        final hasStateParams = stateUri.queryParameters.containsKey('code') ||
+            stateUri.queryParameters.containsKey('error_description');
+
+        // On web, also check the browser's current URL directly
+        // This is necessary because sometimes GoRouter state doesn't reflect the full URL on initial load
+        final baseUri = Uri.base;
+        final hasBaseParams = baseUri.queryParameters.containsKey('code') ||
+            baseUri.queryParameters.containsKey('error_description');
+
         final rawHasCallbackParams =
-            stateUri.queryParameters.containsKey('code') ||
-                stateUri.queryParameters.containsKey('error_description');
+            hasStateParams || (kIsWeb && hasBaseParams);
 
         debugPrint(
-          '[Router] rawHasCallbackParams: $rawHasCallbackParams',
+          '[Router] rawHasCallbackParams: $rawHasCallbackParams (state: $hasStateParams, base: $hasBaseParams)',
         );
         debugPrint('[Router] ===== CALLBACK PARAMETER DETECTION END =====');
 
@@ -492,9 +501,14 @@ class AppRouter {
           );
 
           // Preserve query parameters when redirecting to callback
+          // Use state params if available, otherwise fall back to base params
+          final paramsToUse = hasStateParams
+              ? stateUri.queryParameters
+              : baseUri.queryParameters;
+
           final callbackUri = Uri(
             path: '/callback',
-            queryParameters: stateUri.queryParameters,
+            queryParameters: paramsToUse,
           );
           debugPrint(
             '[Router] Redirecting from ${state.matchedLocation} to: ${callbackUri.toString()}',
