@@ -37,10 +37,7 @@ class Auth0WebService implements Auth0Service {
       // onLoad handles the callback if present
       debugPrint('[Auth0WebService] Calling _auth0Web.onLoad()...');
       await _auth0Web.onLoad(
-        authorizeOptions: AuthorizeOptions(
-          audience: 'https://api.cloudtolocalllm.online',
-          scope: 'openid profile email',
-        ),
+        audience: 'https://api.cloudtolocalllm.online',
       );
       debugPrint('[Auth0WebService] _auth0Web.onLoad() returned.');
 
