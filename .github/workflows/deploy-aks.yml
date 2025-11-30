@@ -51,6 +51,8 @@ jobs:
               - '.github/workflows/deploy-aks.yml'
             web:
               - 'web/**'
+              - 'lib/**'
+              - 'pubspec.**'
               - 'config/docker/Dockerfile.base'
               - '.github/workflows/deploy-aks.yml'
             api:
