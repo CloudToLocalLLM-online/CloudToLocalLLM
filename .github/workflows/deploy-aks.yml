@@ -9,6 +9,8 @@ on:
       - ".github/workflows/deploy-aks.yml"
       - "services/**"
       - "web/**"
+      - "lib/**"
+      - "pubspec.**"
       - "config/docker/**"
       - "scripts/**"
   workflow_dispatch:
