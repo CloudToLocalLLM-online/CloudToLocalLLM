@@ -16,10 +16,21 @@ class SupabaseAuthService {
   Future<void> loginWithGoogle() async {
     debugPrint('[SupabaseAuthService] Logging in with Google...');
     try {
+      String? redirectTo;
+      if (kIsWeb) {
+        // Dynamically determine the redirect URL based on the current origin
+        // This ensures it works on whatever port the app is running on (e.g. localhost:12345)
+        // provided that URL is whitelisted in Supabase
+        redirectTo = '${Uri.base.origin}/callback';
+      } else {
+        redirectTo = 'io.supabase.flutterquickstart://login-callback/';
+      }
+
+      debugPrint('[SupabaseAuthService] Using redirectTo: $redirectTo');
+
       await _supabase.auth.signInWithOAuth(
         OAuthProvider.google,
-        redirectTo:
-            kIsWeb ? null : 'io.supabase.flutterquickstart://login-callback/',
+        redirectTo: redirectTo,
       );
       debugPrint('[SupabaseAuthService] OAuth flow initiated');
     } catch (e) {
