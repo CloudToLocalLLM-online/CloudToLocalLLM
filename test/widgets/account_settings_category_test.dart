@@ -5,43 +5,12 @@ import 'package:get_it/get_it.dart';
 import 'package:cloudtolocalllm/widgets/settings/account_settings_category.dart';
 import 'package:cloudtolocalllm/models/settings_category.dart';
 import 'package:cloudtolocalllm/services/auth_service.dart';
-import 'package:cloudtolocalllm/services/auth0_service.dart';
+
 import 'package:cloudtolocalllm/services/session_storage_service.dart';
 import 'package:cloudtolocalllm/models/user_model.dart';
 import 'package:cloudtolocalllm/models/session_model.dart';
 
 // Mock Auth0Service
-class MockAuth0Service implements Auth0Service {
-  @override
-  Future<void> initialize() async {}
-
-  @override
-  Future<void> login() async {}
-
-  @override
-  Future<void> logout() async {}
-
-  @override
-  Future<bool> handleRedirectCallback() async => true;
-
-  @override
-  bool isCallbackUrl() => false;
-
-  @override
-  bool get isAuthenticated => true;
-
-  @override
-  String? getAccessToken() => 'test-token';
-
-  @override
-  Map<String, dynamic>? get currentUser => null;
-
-  @override
-  Stream<bool> get authStateChanges => Stream.value(true);
-
-  @override
-  void dispose() {}
-}
 
 // Mock SessionStorageService
 class MockSessionStorageService extends SessionStorageService {
@@ -91,9 +60,6 @@ class MockAuthService extends ChangeNotifier implements AuthService {
   Future<bool> handleCallback({String? callbackUrl}) async => true;
 
   @override
-  Future<bool> handleRedirectCallback() async => true;
-
-  @override
   Future<void> login({String? tenantId}) async {}
 
   @override
@@ -115,12 +81,6 @@ class MockAuthService extends ChangeNotifier implements AuthService {
   bool get isWeb => true;
 
   @override
-  bool get isMobile => false;
-
-  @override
-  bool get isDesktop => false;
-
-  @override
   Future<void> get sessionBootstrapFuture => Future.value();
 
   @override
@@ -131,9 +91,6 @@ class MockAuthService extends ChangeNotifier implements AuthService {
 
   @override
   ValueNotifier<bool> get areAuthenticatedServicesLoaded => ValueNotifier(true);
-
-  @override
-  Auth0Service get auth0Service => MockAuth0Service();
 }
 
 void main() {

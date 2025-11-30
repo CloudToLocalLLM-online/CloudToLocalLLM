@@ -172,11 +172,10 @@ class _CallbackScreenState extends State<CallbackScreen> {
         'message':
             'Authentication failed: Unable to create session. Please check your connection and try again.',
       };
-    } else if (errorString.contains('auth0 client not initialized') ||
-        errorString.contains('client initialization failed') ||
+    } else if (errorString.contains('client initialization failed') ||
         errorString.contains('bridge not available')) {
       return {
-        'type': 'auth0_client_not_ready',
+        'type': 'client_not_ready',
         'message':
             'Authentication failed: Service not ready. Please refresh the page and try again.',
       };
@@ -286,21 +285,17 @@ class _CallbackScreenState extends State<CallbackScreen> {
         '[CallbackScreen] Has callback params: $hasRouteCallbackParams',
       );
 
-      // Check if this is a callback URL using either the route params or Auth0 service
-      final isCallbackUrl =
-          hasRouteCallbackParams || authService.auth0Service.isCallbackUrl();
+      // Check if this is a callback URL using route params
+      final isCallbackUrl = hasRouteCallbackParams;
       debugPrint(
         '[CallbackScreen] Is callback URL: $isCallbackUrl (route params present: $hasRouteCallbackParams)',
       );
 
       if (!isCallbackUrl) {
-        debugPrint('[CallbackScreen] Not a callback URL, redirecting to login');
-        debugPrint('[CallbackScreen] Reason: No callback parameters found');
-        _clearCallbackForwardedFlag();
-        if (mounted) {
-          context.go('/login');
-        }
-        return;
+        // For Supabase, we might not have route params if it uses hash fragment which Flutter router might handle differently
+        // But if we are here, we should probably wait for auth state or redirect
+        debugPrint(
+            '[CallbackScreen] No explicit callback params found, checking auth state...');
       }
 
       // Web platform - process the callback normally

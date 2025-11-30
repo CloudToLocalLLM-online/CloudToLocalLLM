@@ -12,12 +12,12 @@ import '../services/platform_adapter.dart';
 import '../widgets/auth_debug_panel.dart'
     if (dart.library.io) '../widgets/auth_debug_panel_stub.dart';
 
-/// Modern login screen with Auth0 integration and unified theming
+/// Modern login screen with Supabase integration and unified theming
 ///
 /// Requirements:
 /// - 7.1: Apply unified theme system to all UI elements
 /// - 7.2: Use platform-appropriate components and layouts
-/// - 7.3: Display Auth0 authentication interface consistently
+/// - 7.3: Display Authentication interface consistently
 /// - 7.4: Adapt layout for different screen sizes
 /// - 7.5: Maintain proper spacing and typography
 /// - 7.6: Update when system theme settings change
@@ -41,15 +41,6 @@ class _LoginScreenState extends State<LoginScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final authService = context.read<AuthService>();
       authService.isAuthenticated.addListener(_onAuthStateChanged);
-
-      // Check if this is a callback URL and redirect to callback route
-      if (authService.auth0Service.isCallbackUrl()) {
-        debugPrint(
-            '[LoginScreen] Detected callback URL, redirecting to callback route');
-        if (mounted) {
-          context.go('/callback');
-        }
-      }
     });
   }
 
@@ -103,7 +94,7 @@ class _LoginScreenState extends State<LoginScreen> {
     try {
       final authService = context.read<AuthService>();
       debugPrint(
-        ' [Login] Platform info: ${authService.isWeb ? "Web" : authService.isMobile ? "Mobile" : "Desktop"}',
+        ' [Login] Platform info: ${authService.isWeb ? "Web" : "Native"}',
       );
       debugPrint(' [Login] Calling authService.login()');
       await authService.login();

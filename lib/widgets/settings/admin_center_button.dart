@@ -11,7 +11,7 @@ import '../../di/locator.dart' as di;
 import '../../services/auth_service.dart';
 import '../../services/admin_center_service.dart';
 import '../../services/navigation_service.dart';
-import '../../services/auth0_service.dart';
+
 import '../../models/user_model.dart';
 
 /// Admin Center Button - Navigation to Admin Center for Admin Users
@@ -318,15 +318,7 @@ class _MinimalAuthService extends ChangeNotifier implements AuthService {
       ValueNotifier(false);
 
   @override
-  Auth0Service get auth0Service => throw UnimplementedError();
-
-  @override
   UserModel? get currentUser => null;
-
-  @override
-  Future<void> dispose() async {
-    super.dispose();
-  }
 
   @override
   Future<String?> getAccessToken() async => null;
@@ -338,22 +330,13 @@ class _MinimalAuthService extends ChangeNotifier implements AuthService {
   Future<bool> handleCallback({String? callbackUrl}) async => false;
 
   @override
-  Future<bool> handleRedirectCallback() async => false;
-
-  @override
   Future<void> init() async {}
 
   @override
   ValueNotifier<bool> get isAuthenticated => ValueNotifier(false);
 
   @override
-  bool get isDesktop => !kIsWeb;
-
-  @override
   ValueNotifier<bool> get isLoading => ValueNotifier(false);
-
-  @override
-  bool get isMobile => !kIsWeb;
 
   @override
   bool get isRestoringSession => false;

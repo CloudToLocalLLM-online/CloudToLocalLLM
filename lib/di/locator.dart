@@ -6,10 +6,7 @@ import 'package:get_it/get_it.dart';
 import '../services/admin_data_flush_service.dart';
 import '../services/admin_service.dart';
 import '../services/app_initialization_service.dart';
-import '../services/auth0_desktop_service.dart';
-import '../services/auth0_service.dart';
-import '../services/auth0_web_service.dart'
-    if (dart.library.io) '../services/auth0_web_service_stub.dart';
+import '../services/supabase_auth_service.dart';
 import '../services/auth_service.dart';
 import '../services/session_storage_service.dart';
 import '../services/connection_manager_service.dart';
@@ -64,11 +61,11 @@ Future<void> setupCoreServices() async {
   serviceLocator
       .registerSingleton<SessionStorageService>(sessionStorageService);
 
-  // Auth0 and Auth services - needed for authentication flow
-  final auth0Service = kIsWeb ? Auth0WebService() : Auth0DesktopService();
-  serviceLocator.registerSingleton<Auth0Service>(auth0Service);
+  // Supabase Auth service
+  final supabaseAuthService = SupabaseAuthService();
+  serviceLocator.registerSingleton<SupabaseAuthService>(supabaseAuthService);
 
-  final authService = AuthService(auth0Service, sessionStorageService);
+  final authService = AuthService(supabaseAuthService);
   await authService.init();
   serviceLocator.registerSingleton<AuthService>(authService);
 

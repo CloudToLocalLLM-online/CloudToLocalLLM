@@ -16,14 +16,9 @@ public final class GeneratedPluginRegistrant {
   private static final String TAG = "GeneratedPluginRegistrant";
   public static void registerWith(@NonNull FlutterEngine flutterEngine) {
     try {
-      flutterEngine.getPlugins().add(new com.auth0.auth0_flutter.Auth0FlutterPlugin());
+      flutterEngine.getPlugins().add(new com.llfbandit.app_links.AppLinksPlugin());
     } catch (Exception e) {
-      Log.e(TAG, "Error registering plugin auth0_flutter, com.auth0.auth0_flutter.Auth0FlutterPlugin", e);
-    }
-    try {
-      flutterEngine.getPlugins().add(new dev.fluttercommunity.plus.connectivity.ConnectivityPlugin());
-    } catch (Exception e) {
-      Log.e(TAG, "Error registering plugin connectivity_plus, dev.fluttercommunity.plus.connectivity.ConnectivityPlugin", e);
+      Log.e(TAG, "Error registering plugin app_links, com.llfbandit.app_links.AppLinksPlugin", e);
     }
     try {
       flutterEngine.getPlugins().add(new com.it_nomads.fluttersecurestorage.FlutterSecureStoragePlugin());

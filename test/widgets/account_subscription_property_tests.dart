@@ -1,53 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:cloudtolocalllm/services/auth_service.dart';
-import 'package:cloudtolocalllm/services/auth0_service.dart';
+
 import 'package:cloudtolocalllm/services/session_storage_service.dart';
 import 'package:cloudtolocalllm/models/user_model.dart';
 import 'package:cloudtolocalllm/models/session_model.dart';
 import 'package:cloudtolocalllm/models/settings_category.dart';
-
-// Mock Auth0Service
-class MockAuth0Service implements Auth0Service {
-  bool _isAuthenticated = true;
-  String? _accessToken = 'test-access-token';
-
-  @override
-  Future<void> initialize() async {}
-
-  @override
-  Future<void> login() async {
-    _isAuthenticated = true;
-    _accessToken = 'test-access-token';
-  }
-
-  @override
-  Future<void> logout() async {
-    _isAuthenticated = false;
-    _accessToken = null;
-  }
-
-  @override
-  Future<bool> handleRedirectCallback() async => true;
-
-  @override
-  bool isCallbackUrl() => false;
-
-  @override
-  bool get isAuthenticated => _isAuthenticated;
-
-  @override
-  String? getAccessToken() => _accessToken;
-
-  @override
-  Map<String, dynamic>? get currentUser => null;
-
-  @override
-  Stream<bool> get authStateChanges => Stream.value(_isAuthenticated);
-
-  @override
-  void dispose() {}
-}
 
 // Mock SessionStorageService
 class MockSessionStorageService extends SessionStorageService {
@@ -91,20 +49,18 @@ class MockSessionStorageService extends SessionStorageService {
 
 // Mock AuthService for testing with subscription tier support
 class TestableAuthService extends ChangeNotifier implements AuthService {
-  final MockAuth0Service _mockAuth0Service;
   final MockSessionStorageService _mockSessionStorage;
   final String _subscriptionTier;
 
   UserModel? _currentUser;
   bool _isAuthenticated = false;
   String? _sessionToken;
+  String? _accessToken;
 
   TestableAuthService({
-    required MockAuth0Service mockAuth0Service,
     required MockSessionStorageService mockSessionStorage,
     required String subscriptionTier,
-  })  : _mockAuth0Service = mockAuth0Service,
-        _mockSessionStorage = mockSessionStorage,
+  })  : _mockSessionStorage = mockSessionStorage,
         _subscriptionTier = subscriptionTier {
     _isAuthenticated = true;
     _currentUser = UserModel(
@@ -115,17 +71,18 @@ class TestableAuthService extends ChangeNotifier implements AuthService {
       updatedAt: DateTime.now(),
     );
     _sessionToken = 'test-session-token';
+    _accessToken = 'test-access-token';
   }
 
   @override
   Future<void> logout() async {
-    await _mockAuth0Service.logout();
     if (_sessionToken != null) {
       await _mockSessionStorage.invalidateSession(_sessionToken!);
     }
     _isAuthenticated = false;
     _currentUser = null;
     _sessionToken = null;
+    _accessToken = null;
     notifyListeners();
   }
 
@@ -136,17 +93,17 @@ class TestableAuthService extends ChangeNotifier implements AuthService {
   Future<bool> handleCallback({String? callbackUrl}) async => true;
 
   @override
-  Future<bool> handleRedirectCallback() async => true;
+  Future<void> login({String? tenantId}) async {
+    _isAuthenticated = true;
+    _accessToken = 'test-access-token';
+    notifyListeners();
+  }
 
   @override
-  Future<void> login({String? tenantId}) async {}
+  Future<String?> getAccessToken() async => _accessToken;
 
   @override
-  Future<String?> getAccessToken() async => _mockAuth0Service.getAccessToken();
-
-  @override
-  Future<String?> getValidatedAccessToken() async =>
-      _mockAuth0Service.getAccessToken();
+  Future<String?> getValidatedAccessToken() async => _accessToken;
 
   @override
   Future<void> updateDisplayName(String displayName) async {}
@@ -161,12 +118,6 @@ class TestableAuthService extends ChangeNotifier implements AuthService {
   bool get isWeb => true;
 
   @override
-  bool get isMobile => false;
-
-  @override
-  bool get isDesktop => false;
-
-  @override
   Future<void> get sessionBootstrapFuture => Future.value();
 
   @override
@@ -177,9 +128,6 @@ class TestableAuthService extends ChangeNotifier implements AuthService {
 
   @override
   ValueNotifier<bool> get areAuthenticatedServicesLoaded => ValueNotifier(true);
-
-  @override
-  Auth0Service get auth0Service => _mockAuth0Service;
 
   @override
   UserModel? get currentUser => _currentUser;
@@ -208,10 +156,8 @@ void main() {
           int passCount = 0;
 
           for (int i = 0; i < iterations; i++) {
-            final mockAuth0Service = MockAuth0Service();
             final mockSessionStorage = MockSessionStorageService();
             final authService = TestableAuthService(
-              mockAuth0Service: mockAuth0Service,
               mockSessionStorage: mockSessionStorage,
               subscriptionTier: 'Free',
             );
@@ -219,7 +165,7 @@ void main() {
             // Verify initial state
             expect(authService.isLoggedOut, false);
             expect(authService.sessionTokenCleared, false);
-            expect(mockAuth0Service.getAccessToken(), isNotNull);
+            expect(await authService.getAccessToken(), isNotNull);
 
             // Measure logout time
             final stopwatch = Stopwatch()..start();
@@ -229,7 +175,7 @@ void main() {
             // Verify all tokens cleared
             if (authService.isLoggedOut &&
                 authService.sessionTokenCleared &&
-                mockAuth0Service.getAccessToken() == null &&
+                await authService.getAccessToken() == null &&
                 authService.sessionInvalidated &&
                 stopwatch.elapsedMilliseconds < 1000) {
               passCount++;
@@ -252,21 +198,19 @@ void main() {
           int passCount = 0;
 
           for (int i = 0; i < iterations; i++) {
-            final mockAuth0Service = MockAuth0Service();
             final mockSessionStorage = MockSessionStorageService();
             final authService = TestableAuthService(
-              mockAuth0Service: mockAuth0Service,
               mockSessionStorage: mockSessionStorage,
               subscriptionTier: 'Premium',
             );
 
-            expect(mockAuth0Service.getAccessToken(), isNotNull);
+            expect(await authService.getAccessToken(), isNotNull);
 
             final stopwatch = Stopwatch()..start();
             await authService.logout();
             stopwatch.stop();
 
-            if (mockAuth0Service.getAccessToken() == null &&
+            if (await authService.getAccessToken() == null &&
                 stopwatch.elapsedMilliseconds < 1000) {
               passCount++;
             }
@@ -288,10 +232,8 @@ void main() {
           int passCount = 0;
 
           for (int i = 0; i < iterations; i++) {
-            final mockAuth0Service = MockAuth0Service();
             final mockSessionStorage = MockSessionStorageService();
             final authService = TestableAuthService(
-              mockAuth0Service: mockAuth0Service,
               mockSessionStorage: mockSessionStorage,
               subscriptionTier: 'Free',
             );
@@ -334,10 +276,8 @@ void main() {
           int passCount = 0;
 
           for (int i = 0; i < iterations; i++) {
-            final mockAuth0Service = MockAuth0Service();
             final mockSessionStorage = MockSessionStorageService();
             final authService = TestableAuthService(
-              mockAuth0Service: mockAuth0Service,
               mockSessionStorage: mockSessionStorage,
               subscriptionTier: 'Free',
             );
@@ -375,10 +315,8 @@ void main() {
           int passCount = 0;
 
           for (int i = 0; i < iterations; i++) {
-            final mockAuth0Service = MockAuth0Service();
             final mockSessionStorage = MockSessionStorageService();
             final authService = TestableAuthService(
-              mockAuth0Service: mockAuth0Service,
               mockSessionStorage: mockSessionStorage,
               subscriptionTier: 'Free',
             );
@@ -411,10 +349,8 @@ void main() {
           int passCount = 0;
 
           for (int i = 0; i < iterations; i++) {
-            final mockAuth0Service = MockAuth0Service();
             final mockSessionStorage = MockSessionStorageService();
             final authService = TestableAuthService(
-              mockAuth0Service: mockAuth0Service,
               mockSessionStorage: mockSessionStorage,
               subscriptionTier: 'Free',
             );
@@ -450,10 +386,8 @@ void main() {
           int passCount = 0;
 
           for (int i = 0; i < iterations; i++) {
-            final mockAuth0Service = MockAuth0Service();
             final mockSessionStorage = MockSessionStorageService();
             final authService = TestableAuthService(
-              mockAuth0Service: mockAuth0Service,
               mockSessionStorage: mockSessionStorage,
               subscriptionTier: 'Premium',
             );
@@ -491,10 +425,8 @@ void main() {
           int passCount = 0;
 
           for (int i = 0; i < iterations; i++) {
-            final mockAuth0Service = MockAuth0Service();
             final mockSessionStorage = MockSessionStorageService();
             final authService = TestableAuthService(
-              mockAuth0Service: mockAuth0Service,
               mockSessionStorage: mockSessionStorage,
               subscriptionTier: 'Premium',
             );
@@ -527,10 +459,8 @@ void main() {
           int passCount = 0;
 
           for (int i = 0; i < iterations; i++) {
-            final mockAuth0Service = MockAuth0Service();
             final mockSessionStorage = MockSessionStorageService();
             final authService = TestableAuthService(
-              mockAuth0Service: mockAuth0Service,
               mockSessionStorage: mockSessionStorage,
               subscriptionTier: 'Premium',
             );
@@ -566,10 +496,8 @@ void main() {
           int passCount = 0;
 
           for (int i = 0; i < iterations; i++) {
-            final mockAuth0Service = MockAuth0Service();
             final mockSessionStorage = MockSessionStorageService();
             final authService = TestableAuthService(
-              mockAuth0Service: mockAuth0Service,
               mockSessionStorage: mockSessionStorage,
               subscriptionTier: 'Free',
             );
@@ -602,10 +530,8 @@ void main() {
           int passCount = 0;
 
           for (int i = 0; i < iterations; i++) {
-            final mockAuth0Service = MockAuth0Service();
             final mockSessionStorage = MockSessionStorageService();
             final authService = TestableAuthService(
-              mockAuth0Service: mockAuth0Service,
               mockSessionStorage: mockSessionStorage,
               subscriptionTier: 'Free',
             );
@@ -641,10 +567,8 @@ void main() {
           int passCount = 0;
 
           for (int i = 0; i < iterations; i++) {
-            final mockAuth0Service = MockAuth0Service();
             final mockSessionStorage = MockSessionStorageService();
             final authService = TestableAuthService(
-              mockAuth0Service: mockAuth0Service,
               mockSessionStorage: mockSessionStorage,
               subscriptionTier: 'Free',
             );

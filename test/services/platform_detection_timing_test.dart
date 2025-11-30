@@ -2,7 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:cloudtolocalllm/services/platform_category_filter.dart';
 import 'package:cloudtolocalllm/services/auth_service.dart';
 import 'package:cloudtolocalllm/models/user_model.dart';
-import 'package:cloudtolocalllm/services/auth0_service.dart';
+
 import 'package:flutter/foundation.dart';
 
 void main() {
@@ -187,9 +187,6 @@ class _MinimalAuthService extends ChangeNotifier implements AuthService {
       _areAuthenticatedServicesLoaded;
 
   @override
-  Auth0Service get auth0Service => throw UnimplementedError();
-
-  @override
   UserModel? get currentUser => null;
 
   @override
@@ -210,30 +207,6 @@ class _MinimalAuthService extends ChangeNotifier implements AuthService {
   Future<bool> handleCallback({String? callbackUrl}) async => false;
 
   @override
-  Future<bool> handleRedirectCallback() async => false;
-
-  @override
-  Future<void> init() async {}
-
-  @override
-  ValueNotifier<bool> get isAuthenticated => _isAuthenticated;
-
-  @override
-  bool get isDesktop => !kIsWeb;
-
-  @override
-  ValueNotifier<bool> get isLoading => _isLoading;
-
-  @override
-  bool get isMobile => !kIsWeb;
-
-  @override
-  bool get isRestoringSession => false;
-
-  @override
-  bool get isSessionBootstrapComplete => false;
-
-  @override
   bool get isWeb => kIsWeb;
 
   @override
@@ -244,6 +217,21 @@ class _MinimalAuthService extends ChangeNotifier implements AuthService {
 
   @override
   Future<void> get sessionBootstrapFuture async {}
+
+  @override
+  ValueNotifier<bool> get isAuthenticated => _isAuthenticated;
+
+  @override
+  ValueNotifier<bool> get isLoading => _isLoading;
+
+  @override
+  bool get isRestoringSession => false;
+
+  @override
+  bool get isSessionBootstrapComplete => true;
+
+  @override
+  Future<void> init() async {}
 
   @override
   Future<void> updateDisplayName(String displayName) async {}

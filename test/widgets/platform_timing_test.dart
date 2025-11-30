@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:cloudtolocalllm/services/platform_category_filter.dart';
 import 'package:cloudtolocalllm/services/auth_service.dart';
-import 'package:cloudtolocalllm/services/auth0_service.dart';
+
 import 'package:cloudtolocalllm/models/user_model.dart';
 import 'package:flutter/foundation.dart';
 
@@ -173,45 +173,10 @@ void main() {
   });
 }
 
-class _MockAuth0Service implements Auth0Service {
-  @override
-  Stream<bool> get authStateChanges => Stream.value(false);
-
-  @override
-  Map<String, dynamic>? get currentUser => null;
-
-  @override
-  void dispose() {}
-
-  @override
-  String? getAccessToken() => null;
-
-  @override
-  Future<bool> handleRedirectCallback() async => false;
-
-  @override
-  Future<void> initialize() async {}
-
-  @override
-  bool get isAuthenticated => false;
-
-  @override
-  bool isCallbackUrl() => false;
-
-  @override
-  Future<void> login() async {}
-
-  @override
-  Future<void> logout() async {}
-}
-
 class _MinimalAuthService extends ChangeNotifier implements AuthService {
   @override
   ValueNotifier<bool> get areAuthenticatedServicesLoaded =>
       ValueNotifier(false);
-
-  @override
-  Auth0Service get auth0Service => _MockAuth0Service();
 
   @override
   UserModel? get currentUser => null;
@@ -231,22 +196,13 @@ class _MinimalAuthService extends ChangeNotifier implements AuthService {
   Future<bool> handleCallback({String? callbackUrl}) async => false;
 
   @override
-  Future<bool> handleRedirectCallback() async => false;
-
-  @override
   Future<void> init() async {}
 
   @override
   ValueNotifier<bool> get isAuthenticated => ValueNotifier(false);
 
   @override
-  bool get isDesktop => !kIsWeb;
-
-  @override
   ValueNotifier<bool> get isLoading => ValueNotifier(false);
-
-  @override
-  bool get isMobile => !kIsWeb;
 
   @override
   bool get isRestoringSession => false;

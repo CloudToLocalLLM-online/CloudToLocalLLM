@@ -1,52 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:cloudtolocalllm/services/auth_service.dart';
-import 'package:cloudtolocalllm/services/auth0_service.dart';
 import 'package:cloudtolocalllm/services/session_storage_service.dart';
 import 'package:cloudtolocalllm/models/user_model.dart';
 import 'package:cloudtolocalllm/models/session_model.dart';
-
-// Mock Auth0Service
-class MockAuth0Service implements Auth0Service {
-  bool _isAuthenticated = true;
-  String? _accessToken = 'test-access-token';
-
-  @override
-  Future<void> initialize() async {}
-
-  @override
-  Future<void> login() async {
-    _isAuthenticated = true;
-    _accessToken = 'test-access-token';
-  }
-
-  @override
-  Future<void> logout() async {
-    _isAuthenticated = false;
-    _accessToken = null;
-  }
-
-  @override
-  Future<bool> handleRedirectCallback() async => true;
-
-  @override
-  bool isCallbackUrl() => false;
-
-  @override
-  bool get isAuthenticated => _isAuthenticated;
-
-  @override
-  String? getAccessToken() => _accessToken;
-
-  @override
-  Map<String, dynamic>? get currentUser => null;
-
-  @override
-  Stream<bool> get authStateChanges => Stream.value(_isAuthenticated);
-
-  @override
-  void dispose() {}
-}
 
 // Mock SessionStorageService
 class MockSessionStorageService extends SessionStorageService {
@@ -90,18 +47,16 @@ class MockSessionStorageService extends SessionStorageService {
 
 // Mock AuthService for testing
 class TestableAuthService extends ChangeNotifier implements AuthService {
-  final MockAuth0Service _mockAuth0Service;
   final MockSessionStorageService _mockSessionStorage;
 
   UserModel? _currentUser;
   bool _isAuthenticated = false;
   String? _sessionToken;
+  String? _accessToken;
 
   TestableAuthService({
-    required MockAuth0Service mockAuth0Service,
     required MockSessionStorageService mockSessionStorage,
-  })  : _mockAuth0Service = mockAuth0Service,
-        _mockSessionStorage = mockSessionStorage {
+  }) : _mockSessionStorage = mockSessionStorage {
     _isAuthenticated = true;
     _currentUser = UserModel(
       id: 'test-user-id',
@@ -111,12 +66,13 @@ class TestableAuthService extends ChangeNotifier implements AuthService {
       updatedAt: DateTime.now(),
     );
     _sessionToken = 'test-session-token';
+    _accessToken = 'test-access-token';
   }
 
   @override
   Future<void> logout() async {
     // Simulate logout process
-    await _mockAuth0Service.logout();
+    _accessToken = null;
     if (_sessionToken != null) {
       await _mockSessionStorage.invalidateSession(_sessionToken!);
     }
@@ -133,17 +89,13 @@ class TestableAuthService extends ChangeNotifier implements AuthService {
   Future<bool> handleCallback({String? callbackUrl}) async => true;
 
   @override
-  Future<bool> handleRedirectCallback() async => true;
-
-  @override
   Future<void> login({String? tenantId}) async {}
 
   @override
-  Future<String?> getAccessToken() async => _mockAuth0Service.getAccessToken();
+  Future<String?> getAccessToken() async => _accessToken;
 
   @override
-  Future<String?> getValidatedAccessToken() async =>
-      _mockAuth0Service.getAccessToken();
+  Future<String?> getValidatedAccessToken() async => _accessToken;
 
   @override
   Future<void> updateDisplayName(String displayName) async {}
@@ -158,12 +110,6 @@ class TestableAuthService extends ChangeNotifier implements AuthService {
   bool get isWeb => true;
 
   @override
-  bool get isMobile => false;
-
-  @override
-  bool get isDesktop => false;
-
-  @override
   Future<void> get sessionBootstrapFuture => Future.value();
 
   @override
@@ -174,9 +120,6 @@ class TestableAuthService extends ChangeNotifier implements AuthService {
 
   @override
   ValueNotifier<bool> get areAuthenticatedServicesLoaded => ValueNotifier(true);
-
-  @override
-  Auth0Service get auth0Service => _mockAuth0Service;
 
   @override
   UserModel? get currentUser => _currentUser;
@@ -190,15 +133,12 @@ class TestableAuthService extends ChangeNotifier implements AuthService {
 
 void main() {
   group('Logout Token Clearing Timing', () {
-    late MockAuth0Service mockAuth0Service;
     late MockSessionStorageService mockSessionStorage;
     late TestableAuthService authService;
 
     setUp(() {
-      mockAuth0Service = MockAuth0Service();
       mockSessionStorage = MockSessionStorageService();
       authService = TestableAuthService(
-        mockAuth0Service: mockAuth0Service,
         mockSessionStorage: mockSessionStorage,
       );
     });
@@ -214,7 +154,7 @@ void main() {
           reason: 'User should be authenticated initially');
       expect(authService.sessionTokenCleared, false,
           reason: 'Session token should exist initially');
-      expect(mockAuth0Service.getAccessToken(), isNotNull,
+      expect(await authService.getAccessToken(), isNotNull,
           reason: 'Access token should exist initially');
 
       // Measure time to clear tokens during logout
@@ -229,7 +169,7 @@ void main() {
           reason: 'User should be logged out after logout');
       expect(authService.sessionTokenCleared, true,
           reason: 'Session token should be cleared after logout');
-      expect(mockAuth0Service.getAccessToken(), isNull,
+      expect(await authService.getAccessToken(), isNull,
           reason: 'Access token should be cleared after logout');
       expect(authService.sessionInvalidated, true,
           reason: 'Session should be invalidated after logout');
@@ -252,8 +192,7 @@ void main() {
       // Test multiple logout cycles
       for (int i = 0; i < 3; i++) {
         // Re-authenticate for next cycle
-        mockAuth0Service._isAuthenticated = true;
-        mockAuth0Service._accessToken = 'test-access-token-$i';
+        authService._accessToken = 'test-access-token-$i';
         mockSessionStorage._sessionInvalidated = false;
         mockSessionStorage._storedToken = 'test-session-token-$i';
         authService._isAuthenticated = true;
@@ -300,7 +239,7 @@ void main() {
       // **Validates: Requirements 4.3**
 
       // Verify Auth0 token exists
-      expect(mockAuth0Service.getAccessToken(), isNotNull,
+      expect(await authService.getAccessToken(), isNotNull,
           reason: 'Auth0 access token should exist initially');
 
       final stopwatch = Stopwatch()..start();
@@ -310,7 +249,7 @@ void main() {
       stopwatch.stop();
 
       // Verify Auth0 token is cleared
-      expect(mockAuth0Service.getAccessToken(), isNull,
+      expect(await authService.getAccessToken(), isNull,
           reason: 'Auth0 access token should be cleared after logout');
 
       // Verify timing

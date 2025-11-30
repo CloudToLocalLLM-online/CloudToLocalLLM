@@ -3,7 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:cloudtolocalllm/services/platform_category_filter.dart';
 import 'package:cloudtolocalllm/services/auth_service.dart';
-import 'package:cloudtolocalllm/services/auth0_service.dart';
+
 import 'package:cloudtolocalllm/models/settings_category.dart';
 import 'package:cloudtolocalllm/models/user_model.dart';
 import '../test_config.dart';
@@ -35,15 +35,6 @@ class _MockAuthService extends ChangeNotifier implements AuthService {
   bool isWeb = kIsWeb;
 
   @override
-  bool isMobile = !kIsWeb;
-
-  @override
-  bool isDesktop = !kIsWeb;
-
-  @override
-  Auth0Service get auth0Service => throw UnimplementedError();
-
-  @override
   Future<void> init() => Future.value();
 
   @override
@@ -60,9 +51,6 @@ class _MockAuthService extends ChangeNotifier implements AuthService {
 
   @override
   Future<bool> handleCallback({String? callbackUrl}) => Future.value(false);
-
-  @override
-  Future<bool> handleRedirectCallback() => Future.value(false);
 
   @override
   Future<void> updateDisplayName(String displayName) => Future.value();

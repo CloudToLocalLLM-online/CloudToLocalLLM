@@ -1,9 +1,6 @@
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import '../utils/web_interop_stub.dart'
-    if (dart.library.html) '../utils/web_interop.dart';
-
 import '../services/auth_service.dart';
 import '../services/connection_manager_service.dart';
 import '../services/streaming_chat_service.dart';
@@ -30,9 +27,6 @@ import '../screens/admin/admin_center_screen.dart';
 import '../screens/marketing/homepage_screen.dart';
 import '../screens/marketing/download_screen.dart';
 import '../screens/marketing/documentation_screen.dart';
-
-const _callbackStorageKey = 'auth0_callback_params';
-const _callbackForwardedKey = 'auth0_callback_forwarded';
 
 /// Utility function to get the current hostname in web environment
 String _getCurrentHostname() {
@@ -98,7 +92,7 @@ class AppRouter {
     // Store authService for use in route builders
     final authServiceRef = authService;
     // For web, get the full URL including query parameters to preserve callback data
-    // This ensures Auth0 callback parameters are available to the router
+    // This ensures callback parameters are available to the router
     String initialLocation;
     if (kIsWeb) {
       try {
@@ -132,17 +126,16 @@ class AppRouter {
           builder: (context, state) {
             debugPrint('[Router] ===== NEW HOME ROUTE BUILDER START =====');
 
-            // Check if user is already authenticated with Auth0
+            // Check if user is already authenticated
             bool isAlreadyAuthenticated = false;
 
             if (kIsWeb) {
               try {
-                // Check if Auth0 client is ready and user is authenticated
-                debugPrint('[Router] Checking Auth0 authentication status...');
-                isAlreadyAuthenticated =
-                    authServiceRef.auth0Service.isAuthenticated;
+                // Check if user is authenticated via Supabase
+                debugPrint('[Router] Checking authentication status...');
+                isAlreadyAuthenticated = authServiceRef.isAuthenticated.value;
                 debugPrint(
-                  '[Router] Auth0 isAuthenticated: $isAlreadyAuthenticated',
+                  '[Router] isAuthenticated: $isAlreadyAuthenticated',
                 );
               } catch (e) {
                 debugPrint('[Router] Error checking auth status: $e');
@@ -455,9 +448,8 @@ class AppRouter {
         final isDownload = state.matchedLocation == '/download' && kIsWeb;
         final isDocs = state.matchedLocation == '/docs' && kIsWeb;
 
-        // Check for Auth0 callback parameters in URL (code and state)
-        // Use both state.uri and Uri.base to catch all cases
-        // Check for Auth0 callback parameters in URL (code and state)
+        // Check for callback parameters in URL (code and state)
+        // Supabase might use hash fragment or query params depending on config
         final stateUri = state.uri;
 
         // Debug logging for callback detection
@@ -467,73 +459,13 @@ class AppRouter {
           '[Router] stateUri.queryParameters: ${stateUri.queryParameters}',
         );
 
-        // For web, get query parameters from the target state URI
-        // CRITICAL: Do NOT use Uri.base here, as it reflects the *current* URL
-        // which might be different from the *target* URL (state.uri) during navigation.
-        // Using Uri.base causes infinite loops when navigating away from a URL with params.
-        Map<String, String> queryParams = stateUri.queryParameters;
-        bool callbackParamsFromSessionStorage = false;
-        bool callbackAlreadyForwarded = false;
-        if (kIsWeb) {
-          // Check if callback parameters have already been forwarded
-          try {
-            final sessionStorage = window.sessionStorage;
-            final forwardedFlag = sessionStorage.getItem(_callbackForwardedKey);
-            callbackAlreadyForwarded = forwardedFlag == 'true';
-            debugPrint(
-              '[Router] Callback forwarded flag from sessionStorage: $forwardedFlag',
-            );
-          } catch (e) {
-            debugPrint('[Router] Error reading callback forwarded flag: $e');
-          }
-
-          if (queryParams.isEmpty) {
-            try {
-              final sessionStorage = window.sessionStorage;
-              final storedParams = sessionStorage.getItem(_callbackStorageKey);
-              if (storedParams != null && storedParams.isNotEmpty) {
-                final sanitized = storedParams.startsWith('?')
-                    ? storedParams.substring(1)
-                    : storedParams;
-                final storedQueryParams = Uri.splitQueryString(sanitized);
-                if (storedQueryParams.isNotEmpty) {
-                  queryParams = storedQueryParams;
-                  callbackParamsFromSessionStorage = true;
-                  debugPrint(
-                    '[Router] Loaded callback params from sessionStorage: $storedQueryParams',
-                  );
-                }
-              } else {
-                debugPrint(
-                  '[Router] No callback params found in sessionStorage',
-                );
-              }
-            } catch (e) {
-              debugPrint(
-                '[Router] Error reading sessionStorage callback params: $e',
-              );
-            }
-          }
-        }
-
-        // Determine if we have callback parameters that haven't been forwarded yet
+        // Determine if we have callback parameters
         final rawHasCallbackParams =
-            queryParams.containsKey('code') && queryParams.containsKey('state');
-        final hasCallbackParams =
-            kIsWeb && rawHasCallbackParams && !callbackAlreadyForwarded;
+            stateUri.queryParameters.containsKey('code') ||
+                stateUri.queryParameters.containsKey('error_description');
 
         debugPrint(
-          '[Router] rawHasCallbackParams: $rawHasCallbackParams (code: ${queryParams.containsKey('code')}, state: ${queryParams.containsKey('state')})',
-        );
-        debugPrint(
-          '[Router] callbackAlreadyForwarded: $callbackAlreadyForwarded',
-        );
-        debugPrint(
-          '[Router] hasCallbackParams (unforwarded): $hasCallbackParams',
-        );
-        debugPrint('[Router] queryParams keys: ${queryParams.keys.toList()}');
-        debugPrint(
-          '[Router] callbackParamsFromSessionStorage: $callbackParamsFromSessionStorage',
+          '[Router] rawHasCallbackParams: $rawHasCallbackParams',
         );
         debugPrint('[Router] ===== CALLBACK PARAMETER DETECTION END =====');
 
@@ -543,7 +475,6 @@ class AppRouter {
         debugPrint('[Router] ===== REDIRECT DECISION LOGIC START =====');
         debugPrint('[Router] Current route: ${state.matchedLocation}');
         debugPrint('[Router] Full URI: ${stateUri.toString()}');
-        debugPrint('[Router] Query params: $queryParams');
         debugPrint(
           '[Router] Auth state: isAuthenticated=$isAuthenticated, isAuthLoading=$isAuthLoading',
         );
@@ -553,38 +484,17 @@ class AppRouter {
         debugPrint(
           '[Router] Route flags: isLoggingIn=$isLoggingIn, isCallback=$isCallback, isLoading=$isLoading, isHomepage=$isHomepage',
         );
-        debugPrint(
-          '[Router] Callback state: hasCallbackParams=$hasCallbackParams, rawHasCallbackParams=$rawHasCallbackParams, callbackAlreadyForwarded=$callbackAlreadyForwarded',
-        );
 
-        // CRITICAL: If we have unforwarded callback parameters but we're not on /callback route, redirect there
-        // This ensures callback parameters are processed exactly once
-        if (hasCallbackParams && !isCallback && kIsWeb) {
+        // If we have callback parameters but we're not on /callback route, redirect there
+        if (rawHasCallbackParams && !isCallback && kIsWeb) {
           debugPrint(
-            '[Router] DECISION: Detected unforwarded Auth0 callback parameters, redirecting to /callback',
+            '[Router] DECISION: Detected callback parameters, redirecting to /callback',
           );
-          debugPrint('[Router] Callback params to forward: $queryParams');
-          debugPrint('[Router] Current route: ${state.matchedLocation}');
-          debugPrint(
-            '[Router] Reason: Callback parameters present but not on callback route',
-          );
-
-          // Mark callback parameters as forwarded to prevent re-processing
-          try {
-            window.sessionStorage.setItem(_callbackForwardedKey, 'true');
-            debugPrint(
-              '[Router] Successfully marked callback params as forwarded in sessionStorage',
-            );
-          } catch (e) {
-            debugPrint(
-              '[Router] ERROR: Failed to mark callback params as forwarded: $e',
-            );
-          }
 
           // Preserve query parameters when redirecting to callback
           final callbackUri = Uri(
             path: '/callback',
-            queryParameters: queryParams.cast<String, dynamic>(),
+            queryParameters: stateUri.queryParameters,
           );
           debugPrint(
             '[Router] Redirecting from ${state.matchedLocation} to: ${callbackUri.toString()}',
@@ -596,21 +506,9 @@ class AppRouter {
         }
 
         // If we're on the callback route with callback parameters, allow processing
-        // NEVER redirect from /callback to /login when callback parameters are present
         if (isCallback && rawHasCallbackParams && kIsWeb) {
           debugPrint(
             '[Router] DECISION: On /callback route with callback parameters present',
-          );
-          debugPrint('[Router] Query params: $queryParams');
-          debugPrint('[Router] Auth state: isAuthenticated=$isAuthenticated');
-          debugPrint(
-            '[Router] Allowing callback processing (no redirect to login)',
-          );
-          debugPrint(
-            '[Router] Reason: Callback route with valid callback parameters',
-          );
-          debugPrint(
-            '[Router] ===== REDIRECT DECISION: ALLOW CALLBACK PROCESSING =====',
           );
           return null;
         }
@@ -677,7 +575,7 @@ class AppRouter {
             debugPrint(
               '[Router] DECISION: Allowing access to callback page (web)',
             );
-            debugPrint('[Router] Query params: $queryParams');
+            debugPrint('[Router] Query params: ${state.uri.queryParameters}');
             debugPrint('[Router] Reason: Web platform callback processing');
             debugPrint(
               '[Router] ===== REDIRECT DECISION: ALLOW CALLBACK PAGE =====',

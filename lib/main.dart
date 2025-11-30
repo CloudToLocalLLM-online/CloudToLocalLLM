@@ -9,6 +9,8 @@ import 'bootstrap/bootstrapper.dart';
 import 'config/app_config.dart';
 import 'config/router.dart';
 import 'config/theme.dart';
+import 'config/supabase_config.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'screens/loading_screen.dart';
 import 'di/locator.dart' as di;
 import 'services/admin_center_service.dart';
@@ -58,6 +60,11 @@ void main() async {
 
   WidgetsFlutterBinding.ensureInitialized();
 
+  await Supabase.initialize(
+    url: SupabaseConfig.url,
+    anonKey: SupabaseConfig.anonKey,
+  );
+
   try {
     // Initialize Sentry with a timeout to prevent hanging
     await SentryFlutter.init(
@@ -76,7 +83,7 @@ void main() async {
         _runAppWithSentry();
       },
     ).timeout(const Duration(seconds: 5));
-  } catch (e, stack) {
+  } catch (e) {
     print('Sentry initialization failed or timed out: $e');
     // If Sentry fails, run the app anyway without Sentry wrapping
     _runAppWithoutSentry();

@@ -7,12 +7,11 @@ import 'screens/loading_screen.dart';
 import 'config/theme.dart';
 import 'config/router.dart';
 import 'config/app_config.dart';
+import 'config/supabase_config.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'services/auth_service.dart';
-import 'services/session_storage_service.dart';
-import 'services/auth0_service.dart';
-import 'services/auth0_web_service.dart'
-    if (dart.library.io) 'services/auth0_web_service_stub.dart';
-import 'services/auth0_desktop_service.dart';
+
+import 'services/supabase_auth_service.dart';
 import 'services/enhanced_user_tier_service.dart';
 import 'services/ollama_service.dart';
 import 'services/streaming_proxy_service.dart';
@@ -38,6 +37,11 @@ final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  await Supabase.initialize(
+    url: SupabaseConfig.url,
+    anonKey: SupabaseConfig.anonKey,
+  );
 
   // Initialize platform detection early
   final platformManager = PlatformServiceManager();
@@ -193,11 +197,8 @@ class _CloudToLocalLLMPrivacyAppState extends State<CloudToLocalLLMPrivacyApp> {
         // Authentication service with PostgreSQL session storage
         ChangeNotifierProvider(
           create: (_) {
-            final Auth0Service auth0Service =
-                kIsWeb ? Auth0WebService() : Auth0DesktopService();
-            final sessionStorageService = SessionStorageService();
-            final authService =
-                AuthService(auth0Service, sessionStorageService);
+            final supabaseAuthService = SupabaseAuthService();
+            final authService = AuthService(supabaseAuthService);
             unawaited(authService.init());
             return authService;
           },
