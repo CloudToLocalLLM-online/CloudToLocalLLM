@@ -18,14 +18,9 @@ class SupabaseAuthService {
     try {
       String? redirectTo;
       if (kIsWeb) {
-        // If running locally, enforce port 3000 to match Supabase whitelist.
-        // If running in production (not localhost), use the current origin.
-        final host = Uri.base.host;
-        if (host == 'localhost' || host == '127.0.0.1') {
-          redirectTo = 'http://localhost:3000/callback';
-        } else {
-          redirectTo = '${Uri.base.origin}/callback';
-        }
+        // Use the current origin (scheme + host + port)
+        // Requires 'http://localhost:**' to be configured in Supabase Redirect URLs
+        redirectTo = '${Uri.base.origin}/callback';
       } else {
         redirectTo = 'io.supabase.flutterquickstart://login-callback/';
       }
