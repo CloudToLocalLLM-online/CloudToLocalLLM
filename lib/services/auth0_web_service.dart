@@ -40,12 +40,17 @@ class Auth0WebService implements Auth0Service {
 
   @override
   Future<void> login() async {
-    debugPrint('[Auth0WebService] Logging in with redirect...');
-    await _auth0Web.loginWithRedirect(
-      audience: 'https://api.cloudtolocalllm.online',
-      scopes: {'openid', 'profile', 'email', 'offline_access'},
-      redirectUrl: Uri.base.origin,
-    );
+    try {
+      debugPrint('[Auth0WebService] Logging in with redirect...');
+      await _auth0Web.loginWithRedirect(
+        audience: 'https://api.cloudtolocalllm.online',
+        scopes: {'openid', 'profile', 'email'},
+        redirectUrl: Uri.base.origin,
+      );
+    } catch (e) {
+      debugPrint('[Auth0WebService] Login failed: $e');
+      rethrow;
+    }
   }
 
   @override
