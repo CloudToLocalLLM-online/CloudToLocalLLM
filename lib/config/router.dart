@@ -49,8 +49,10 @@ bool _isAppSubdomain() {
   if (!kIsWeb) return false;
 
   final hostname = _getCurrentHostname();
-  final isApp =
-      hostname.startsWith('app.') || hostname == 'app.cloudtolocalllm.online';
+  final isApp = hostname.startsWith('app.') ||
+      hostname == 'app.cloudtolocalllm.online' ||
+      hostname == 'localhost' ||
+      hostname == '127.0.0.1';
 
   debugPrint('[Router] Hostname: $hostname, isApp: $isApp');
   return isApp;
@@ -98,9 +100,23 @@ class AppRouter {
       try {
         // Use Uri.base to get the full current URL with query parameters
         final currentUri = Uri.base;
-        initialLocation = currentUri.path;
-        if (currentUri.hasQuery) {
-          initialLocation += '?${currentUri.query}';
+
+        // Check for auth callback parameters
+        // If present, force initial location to /callback to ensure processing
+        // This bypasses the redirect logic which might fail on initial load
+        if (currentUri.queryParameters.containsKey('code') ||
+            currentUri.queryParameters.containsKey('error_description')) {
+          debugPrint(
+              '[Router] Detected auth callback parameters in initial URL');
+          initialLocation = '/callback';
+          if (currentUri.hasQuery) {
+            initialLocation += '?${currentUri.query}';
+          }
+        } else {
+          initialLocation = currentUri.path;
+          if (currentUri.hasQuery) {
+            initialLocation += '?${currentUri.query}';
+          }
         }
         debugPrint(
           '[Router] Initial location with query params: $initialLocation',
@@ -125,6 +141,27 @@ class AppRouter {
           name: 'home',
           builder: (context, state) {
             debugPrint('[Router] ===== NEW HOME ROUTE BUILDER START =====');
+
+            // FAILSAFE: Check for callback parameters directly in the builder
+            // This handles cases where redirect logic fails to move us to /callback
+            if (kIsWeb) {
+              final uri = state.uri;
+              final hasStateParams = uri.queryParameters.containsKey('code') ||
+                  uri.queryParameters.containsKey('error_description');
+              final baseUri = Uri.base;
+              final hasBaseParams =
+                  baseUri.queryParameters.containsKey('code') ||
+                      baseUri.queryParameters.containsKey('error_description');
+
+              if (hasStateParams || hasBaseParams) {
+                debugPrint(
+                    '[Router] FAILSAFE: Detected callback params in home builder - rendering CallbackScreen');
+                final params = hasStateParams
+                    ? uri.queryParameters
+                    : baseUri.queryParameters;
+                return CallbackScreen(queryParams: params);
+              }
+            }
 
             // Check if user is already authenticated
             bool isAlreadyAuthenticated = false;
