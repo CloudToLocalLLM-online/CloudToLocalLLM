@@ -19,8 +19,9 @@ class SupabaseAuthService {
       String? redirectTo;
       if (kIsWeb) {
         // Use the current origin (scheme + host + port)
-        // Requires 'http://localhost:**' to be configured in Supabase Redirect URLs
-        redirectTo = '${Uri.base.origin}/callback';
+        // Redirects to root (e.g. https://cloudtolocalllm.online:3000/)
+        // Router will handle the 'code' parameter and route to /callback
+        redirectTo = Uri.base.origin;
       } else {
         redirectTo = 'io.supabase.flutterquickstart://login-callback/';
       }
