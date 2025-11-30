@@ -17,7 +17,6 @@ class SupabaseAuthService {
     debugPrint('[SupabaseAuthService] Logging in with Google...');
     try {
       String? redirectTo;
-      String? redirectTo;
       if (kIsWeb) {
         // If running locally, enforce port 3000 to match Supabase whitelist.
         // If running in production (not localhost), use the current origin.
