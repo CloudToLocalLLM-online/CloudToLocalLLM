@@ -25,17 +25,33 @@ class Auth0WebService implements Auth0Service {
 
   @override
   Future<void> initialize() async {
-    debugPrint('[Auth0WebService] Initializing Auth0Web...');
-    _auth0Web = Auth0Web(
-      'dev-v2f2p008x3dr74ww.us.auth0.com',
-      'FuXPnevXpp311CdYHGsbNZe9t3D8Ts7A',
-    );
+    debugPrint('[Auth0WebService] initialize() called');
+    try {
+      debugPrint('[Auth0WebService] Creating Auth0Web instance...');
+      _auth0Web = Auth0Web(
+        'dev-v2f2p008x3dr74ww.us.auth0.com',
+        'FuXPnevXpp311CdYHGsbNZe9t3D8Ts7A',
+      );
+      debugPrint('[Auth0WebService] Auth0Web instance created.');
 
-    // onLoad handles the callback if present
-    await _auth0Web.onLoad();
+      // onLoad handles the callback if present
+      debugPrint('[Auth0WebService] Calling _auth0Web.onLoad()...');
+      await _auth0Web.onLoad(
+        authorizeOptions: AuthorizeOptions(
+          audience: 'https://api.cloudtolocalllm.online',
+          scope: 'openid profile email',
+        ),
+      );
+      debugPrint('[Auth0WebService] _auth0Web.onLoad() returned.');
 
-    await checkAuthStatus();
-    debugPrint('[Auth0WebService] Initialization complete.');
+      debugPrint('[Auth0WebService] Calling checkAuthStatus()...');
+      await checkAuthStatus();
+      debugPrint('[Auth0WebService] Initialization complete.');
+    } catch (e, stackTrace) {
+      debugPrint('[Auth0WebService] CRITICAL ERROR in initialize: $e');
+      debugPrint('[Auth0WebService] Stack trace: $stackTrace');
+      rethrow;
+    }
   }
 
   @override
