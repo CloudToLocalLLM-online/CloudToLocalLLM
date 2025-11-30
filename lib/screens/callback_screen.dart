@@ -306,29 +306,30 @@ class _CallbackScreenState extends State<CallbackScreen> {
 
       _updateStatus('Verifying authentication...');
 
-      String? originalUrl;
-      if (kIsWeb && routeParams.isNotEmpty) {
-        final queryString = Uri(queryParameters: routeParams).query;
-        final newHref =
-            '${window.location.origin}${window.location.pathname}?$queryString';
-        originalUrl = window.location.href;
+      // Extract code from route params
+      final code = routeParams['code'];
+      debugPrint('[CallbackScreen] Auth code present: ${code != null}');
+
+      if (code != null) {
+        _updateStatus('Exchanging authentication code...');
         debugPrint(
-          '[CallbackScreen] Temporarily updating URL for callback processing',
-        );
-        window.history.replaceState(null, document.title, newHref);
+            '[CallbackScreen] Calling authService.handleCallback(code: ...)');
+        final success = await authService.handleCallback(code: code);
+        debugPrint('[CallbackScreen] handleCallback returned: $success');
+
+        if (success) {
+          // ... success logic handled below
+        }
+      } else {
+        // Fallback for implicit flow or if code is missing but we want to check session
+        debugPrint('[CallbackScreen] No code found, checking session state...');
+        await authService.handleCallback();
       }
 
-      debugPrint('[CallbackScreen] Calling authService.handleCallback()...');
-      final success = await authService.handleCallback();
-
-      if (originalUrl != null) {
-        debugPrint('[CallbackScreen] Restoring original URL');
-        window.history.replaceState(null, document.title, originalUrl);
-      }
-
-      debugPrint('[CallbackScreen] handleCallback returned: $success');
+      // Re-check auth state
+      final success = authService.isAuthenticated.value;
       debugPrint(
-        '[CallbackScreen] Auth state immediately after callback: ${authService.isAuthenticated.value}',
+        '[CallbackScreen] Auth state after callback processing: $success',
       );
 
       if (mounted) {

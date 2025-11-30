@@ -173,7 +173,25 @@ class AuthService extends ChangeNotifier {
   Future<String?> getValidatedAccessToken() async => getAccessToken();
 
   Future<void> updateDisplayName(String name) async {}
-  Future<bool> handleCallback({String? callbackUrl}) async => true;
+  Future<bool> handleCallback({String? callbackUrl, String? code}) async {
+    if (code != null) {
+      try {
+        debugPrint('[AuthService] Exchanging code for session...');
+        final response =
+            await Supabase.instance.client.auth.exchangeCodeForSession(code);
+        debugPrint('[AuthService] Code exchange successful');
+        await _handleAuthenticatedSession(response.session);
+        return true;
+      } catch (e) {
+        debugPrint('[AuthService] Code exchange failed: $e');
+        return false;
+      }
+    }
+    // If no code is provided, we assume the session might be handled automatically
+    // or we are just verifying the state.
+    debugPrint('[AuthService] No code provided to handleCallback');
+    return _isAuthenticated.value;
+  }
 
   @override
   void dispose() {

@@ -86,7 +86,8 @@ class TestableAuthService extends ChangeNotifier implements AuthService {
   Future<void> init() async {}
 
   @override
-  Future<bool> handleCallback({String? callbackUrl}) async => true;
+  Future<bool> handleCallback({String? callbackUrl, String? code}) async =>
+      true;
 
   @override
   Future<void> login({String? tenantId}) async {}
