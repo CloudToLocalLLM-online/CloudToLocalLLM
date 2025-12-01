@@ -1,5 +1,6 @@
 # Base Image for CloudToLocalLLM
 # Using Ubuntu 24.04 as requested to match GitHub Actions runner.
+# Updated to force full rebuild of all services.
 
 FROM ubuntu:24.04
 
