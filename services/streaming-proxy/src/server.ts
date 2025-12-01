@@ -86,11 +86,7 @@ const circuitBreaker = new CircuitBreakerImpl({
 });
 
 // Authentication middleware - Requirement 26.2: Connect AuthMiddleware to all protected endpoints
-const authMiddleware = new JWTValidationMiddleware({
-  domain: authConfig.auth0.domain,
-  audience: authConfig.auth0.audience,
-  issuer: authConfig.auth0.issuer,
-});
+const authMiddleware = new JWTValidationMiddleware(authConfig);
 const authAuditLogger = new AuthAuditLogger();
 
 // Create Express app

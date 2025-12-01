@@ -160,8 +160,8 @@ curl -I https://app.cloudtolocalllm.online
 # F12 → Console → localStorage.clear()
 ```
 
-#### **Check Auth0 Status**
-1. Visit [status.auth0.com](https://status.auth0.com)
+#### **Check Supabase Auth Status**
+1. Visit [status.supabase-auth.com](https://status.supabase-auth.com)
 2. Verify no ongoing incidents
 3. Try authentication in incognito mode
 

@@ -76,7 +76,7 @@ The SSH WebSocket Tunnel Enhancement project has been successfully completed. Al
 1. **ConnectionPoolImpl** - SSH connection pooling per user
 2. **TokenBucketRateLimiter** - Per-user and per-IP rate limiting
 3. **CircuitBreakerImpl** - Failure prevention pattern
-4. **JWTValidationMiddleware** - Auth0 JWT validation
+4. **JWTValidationMiddleware** - Supabase Auth JWT validation
 5. **WebSocketHandlerImpl** - WebSocket protocol handling
 6. **ServerMetricsCollector** - Server-side metrics collection
 7. **AuthAuditLogger** - Security audit logging
@@ -191,7 +191,7 @@ The SSH WebSocket Tunnel Enhancement project has been successfully completed. Al
 
 ### Authentication & Authorization
 - ✅ JWT token validation on every request
-- ✅ Auth0 integration with JWKS caching
+- ✅ Supabase Auth integration with JWKS caching
 - ✅ Token expiration handling
 - ✅ Audit logging for all auth events
 

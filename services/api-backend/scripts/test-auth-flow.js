@@ -14,7 +14,7 @@ dotenv.config();
 const SERVICE_URL =
   process.env.SERVICE_URL ||
   'https://cloudtolocalllm-api-123456789-uc.a.run.app';
-const TEST_TOKEN = process.env.TEST_TOKEN; // Valid Auth0 JWT token for testing
+const TEST_TOKEN = process.env.TEST_TOKEN; // Valid JWT JWT token for testing
 
 async function testAuthFlow() {
   console.log(' CloudToLocalLLM Authentication Flow Testing');
@@ -108,7 +108,7 @@ async function testAuthFlow() {
     console.log(
       '   To test authenticated requests, set TEST_TOKEN environment variable',
     );
-    console.log('   with a valid Auth0 JWT token');
+    console.log('   with a valid JWT JWT token');
   }
 
   // Test 4: CORS Headers

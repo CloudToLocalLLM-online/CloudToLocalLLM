@@ -122,7 +122,7 @@ describe('Authentication Audit Logging Service', () => {
         userId: testUserId,
         ipAddress: testIpAddress,
         userAgent: testUserAgent,
-        details: { provider: 'auth0' },
+        details: { provider: 'jwt' },
       });
 
       expect(result).toBeDefined();
@@ -358,7 +358,7 @@ describe('Authentication Audit Logging Service', () => {
     it('should preserve all audit log details on round trip', async () => {
       const testDetails = {
         method: 'oauth',
-        provider: 'auth0',
+        provider: 'jwt',
         timestamp: new Date().toISOString(),
       };
 

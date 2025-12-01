@@ -39,7 +39,7 @@ describe('Tier Detection Logic', () => {
 
     it('should detect free tier from user metadata', () => {
       const user = {
-        sub: 'auth0|user123',
+        sub: 'jwt|user123',
         'https://cloudtolocalllm.com/user_metadata': { tier: 'free' }
       };
       expect(getUserTier(user)).toBe(USER_TIERS.FREE);
@@ -47,7 +47,7 @@ describe('Tier Detection Logic', () => {
 
     it('should detect premium tier from user metadata', () => {
       const user = {
-        sub: 'auth0|user123',
+        sub: 'jwt|user123',
         'https://cloudtolocalllm.com/user_metadata': { tier: 'premium' }
       };
       expect(getUserTier(user)).toBe(USER_TIERS.PREMIUM);
@@ -55,7 +55,7 @@ describe('Tier Detection Logic', () => {
 
     it('should detect enterprise tier from user metadata', () => {
       const user = {
-        sub: 'auth0|user123',
+        sub: 'jwt|user123',
         'https://cloudtolocalllm.com/user_metadata': { tier: 'enterprise' }
       };
       expect(getUserTier(user)).toBe(USER_TIERS.ENTERPRISE);
@@ -63,7 +63,7 @@ describe('Tier Detection Logic', () => {
 
     it('should fallback to app metadata when user metadata is empty', () => {
       const user = {
-        sub: 'auth0|user123',
+        sub: 'jwt|user123',
         'https://cloudtolocalllm.com/user_metadata': {},
         'https://cloudtolocalllm.com/app_metadata': { tier: 'premium' }
       };
@@ -72,7 +72,7 @@ describe('Tier Detection Logic', () => {
 
     it('should fallback to subscription field', () => {
       const user = {
-        sub: 'auth0|user123',
+        sub: 'jwt|user123',
         'https://cloudtolocalllm.com/user_metadata': { subscription: 'enterprise' }
       };
       expect(getUserTier(user)).toBe(USER_TIERS.ENTERPRISE);
@@ -80,7 +80,7 @@ describe('Tier Detection Logic', () => {
 
     it('should handle case insensitive tier values', () => {
       const user = {
-        sub: 'auth0|user123',
+        sub: 'jwt|user123',
         'https://cloudtolocalllm.com/user_metadata': { tier: 'PREMIUM' }
       };
       expect(getUserTier(user)).toBe(USER_TIERS.PREMIUM);
@@ -88,7 +88,7 @@ describe('Tier Detection Logic', () => {
 
     it('should handle tier values with whitespace', () => {
       const user = {
-        sub: 'auth0|user123',
+        sub: 'jwt|user123',
         'https://cloudtolocalllm.com/user_metadata': { tier: '  enterprise  ' }
       };
       expect(getUserTier(user)).toBe(USER_TIERS.ENTERPRISE);
@@ -96,7 +96,7 @@ describe('Tier Detection Logic', () => {
 
     it('should default to free for unknown tier values', () => {
       const user = {
-        sub: 'auth0|user123',
+        sub: 'jwt|user123',
         'https://cloudtolocalllm.com/user_metadata': { tier: 'unknown_tier' }
       };
       expect(getUserTier(user)).toBe(USER_TIERS.FREE);
@@ -104,7 +104,7 @@ describe('Tier Detection Logic', () => {
 
     it('should handle malformed metadata gracefully', () => {
       const user = {
-        sub: 'auth0|user123',
+        sub: 'jwt|user123',
         'https://cloudtolocalllm.com/user_metadata': 'invalid_metadata'
       };
       expect(getUserTier(user)).toBe(USER_TIERS.FREE);
@@ -152,12 +152,12 @@ describe('Tier Detection Logic', () => {
 
   describe('hasFeature', () => {
     const freeUser = {
-      sub: 'auth0|free123',
+      sub: 'jwt|free123',
       'https://cloudtolocalllm.com/user_metadata': { tier: 'free' }
     };
 
     const premiumUser = {
-      sub: 'auth0|premium123',
+      sub: 'jwt|premium123',
       'https://cloudtolocalllm.com/user_metadata': { tier: 'premium' }
     };
 
@@ -188,7 +188,7 @@ describe('Tier Detection Logic', () => {
   describe('shouldUseDirectTunnel', () => {
     it('should return true for free tier users', () => {
       const user = {
-        sub: 'auth0|free123',
+        sub: 'jwt|free123',
         'https://cloudtolocalllm.com/user_metadata': { tier: 'free' }
       };
       expect(shouldUseDirectTunnel(user)).toBe(true);
@@ -196,7 +196,7 @@ describe('Tier Detection Logic', () => {
 
     it('should return false for premium tier users', () => {
       const user = {
-        sub: 'auth0|premium123',
+        sub: 'jwt|premium123',
         'https://cloudtolocalllm.com/user_metadata': { tier: 'premium' }
       };
       expect(shouldUseDirectTunnel(user)).toBe(false);
@@ -204,7 +204,7 @@ describe('Tier Detection Logic', () => {
 
     it('should return false for enterprise tier users', () => {
       const user = {
-        sub: 'auth0|enterprise123',
+        sub: 'jwt|enterprise123',
         'https://cloudtolocalllm.com/user_metadata': { tier: 'enterprise' }
       };
       expect(shouldUseDirectTunnel(user)).toBe(false);
@@ -212,7 +212,7 @@ describe('Tier Detection Logic', () => {
 
     it('should return true for users with no tier (defaults to free)', () => {
       const user = {
-        sub: 'auth0|notier123',
+        sub: 'jwt|notier123',
         'https://cloudtolocalllm.com/user_metadata': {}
       };
       expect(shouldUseDirectTunnel(user)).toBe(true);
@@ -228,7 +228,7 @@ describe('Tier Detection Logic', () => {
       const testCases = [
         {
           user: {
-            sub: 'auth0|test1',
+            sub: 'jwt|test1',
             'https://cloudtolocalllm.com/user_metadata': { tier: 'free' }
           },
           expectedTier: USER_TIERS.FREE,
@@ -237,7 +237,7 @@ describe('Tier Detection Logic', () => {
         },
         {
           user: {
-            sub: 'auth0|test2',
+            sub: 'jwt|test2',
             'https://cloudtolocalllm.com/user_metadata': { tier: 'premium' }
           },
           expectedTier: USER_TIERS.PREMIUM,
@@ -246,7 +246,7 @@ describe('Tier Detection Logic', () => {
         },
         {
           user: {
-            sub: 'auth0|test3',
+            sub: 'jwt|test3',
             'https://cloudtolocalllm.com/user_metadata': { tier: 'enterprise' }
           },
           expectedTier: USER_TIERS.ENTERPRISE,

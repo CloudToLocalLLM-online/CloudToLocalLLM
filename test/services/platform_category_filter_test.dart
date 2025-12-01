@@ -50,7 +50,8 @@ class _MockAuthService extends ChangeNotifier implements AuthService {
   Future<String?> getValidatedAccessToken() => Future.value(null);
 
   @override
-  Future<bool> handleCallback({String? callbackUrl}) => Future.value(false);
+  Future<bool> handleCallback({String? callbackUrl, String? code}) async =>
+      true;
 
   @override
   Future<void> updateDisplayName(String displayName) => Future.value();

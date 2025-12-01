@@ -125,9 +125,9 @@ CIRCUIT_BREAKER_FAILURE_THRESHOLD=5
 CIRCUIT_BREAKER_SUCCESS_THRESHOLD=2
 CIRCUIT_BREAKER_TIMEOUT=60000
 
-# Auth0 Configuration
-AUTH0_DOMAIN=your-auth0-domain.auth0.com
-AUTH0_AUDIENCE=https://api.cloudtolocalllm.online
+# Supabase Auth Configuration
+JWT_ISSUER_DOMAIN=your-supabase-auth-domain.supabase-auth.com
+JWT_AUDIENCE=https://api.cloudtolocalllm.online
 
 # Monitoring
 METRICS_ENABLED=true
@@ -144,10 +144,10 @@ Create `.env` file in project root:
 API_BASE_URL=http://localhost:3001
 WS_URL=ws://localhost:3001
 
-# Auth0 Configuration
-AUTH0_DOMAIN=your-auth0-domain.auth0.com
-AUTH0_CLIENT_ID=your-client-id
-AUTH0_REDIRECT_URI=http://localhost:5000/callback
+# Supabase Auth Configuration
+JWT_ISSUER_DOMAIN=your-supabase-auth-domain.supabase-auth.com
+JWT_CLIENT_ID=your-client-id
+JWT_REDIRECT_URI=http://localhost:5000/callback
 
 # SSH Configuration
 SSH_HOST=localhost

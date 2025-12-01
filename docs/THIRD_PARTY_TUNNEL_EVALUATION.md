@@ -6,7 +6,7 @@
 - **Protocol**: WebSocket-based HTTP reverse proxy
 - **Client**: Flutter/Dart desktop application
 - **Server**: Node.js API backend
-- **Authentication**: JWT-based (Auth0)
+- **Authentication**: JWT-based (Supabase Auth)
 - **Traffic**: HTTP requests to local Ollama (localhost:11434)
 - **Features Needed**:
   - Persistent connection

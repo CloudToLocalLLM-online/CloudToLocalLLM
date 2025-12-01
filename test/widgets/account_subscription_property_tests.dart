@@ -90,7 +90,8 @@ class TestableAuthService extends ChangeNotifier implements AuthService {
   Future<void> init() async {}
 
   @override
-  Future<bool> handleCallback({String? callbackUrl}) async => true;
+  Future<bool> handleCallback({String? callbackUrl, String? code}) async =>
+      true;
 
   @override
   Future<void> login({String? tenantId}) async {
@@ -192,7 +193,7 @@ void main() {
       );
 
       test(
-        'Auth0 token cleared immediately on logout across 100 iterations',
+        'JWT token cleared immediately on logout across 100 iterations',
         () async {
           const int iterations = 100;
           int passCount = 0;
@@ -220,7 +221,7 @@ void main() {
             passCount,
             equals(iterations),
             reason:
-                'Auth0 token should be cleared within 1 second in all iterations',
+                'JWT token should be cleared within 1 second in all iterations',
           );
         },
       );

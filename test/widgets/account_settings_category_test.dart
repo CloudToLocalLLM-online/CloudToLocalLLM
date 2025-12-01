@@ -10,7 +10,7 @@ import 'package:cloudtolocalllm/services/session_storage_service.dart';
 import 'package:cloudtolocalllm/models/user_model.dart';
 import 'package:cloudtolocalllm/models/session_model.dart';
 
-// Mock Auth0Service
+// Mock JWTService
 
 // Mock SessionStorageService
 class MockSessionStorageService extends SessionStorageService {
@@ -57,7 +57,8 @@ class MockAuthService extends ChangeNotifier implements AuthService {
   Future<void> init() async {}
 
   @override
-  Future<bool> handleCallback({String? callbackUrl}) async => true;
+  Future<bool> handleCallback({String? callbackUrl, String? code}) async =>
+      true;
 
   @override
   Future<void> login({String? tenantId}) async {}

@@ -5,7 +5,7 @@
 - Node.js 18+ installed
 - TypeScript knowledge
 - Understanding of WebSocket protocol
-- JWT authentication setup (Auth0)
+- JWT authentication setup (Supabase Auth)
 
 ## Installation
 
@@ -23,10 +23,10 @@ npm install
 Create `.env` file in `services/streaming-proxy/`:
 
 ```bash
-# Auth0 Configuration
-AUTH0_DOMAIN=your-domain.auth0.com
-AUTH0_AUDIENCE=https://api.cloudtolocalllm.com
-AUTH0_ISSUER=https://your-domain.auth0.com/
+# Supabase Auth Configuration
+SUPABASE_AUTH_DOMAIN=your-domain.supabase-auth.com
+SUPABASE_AUTH_AUDIENCE=https://api.cloudtolocalllm.com
+SUPABASE_AUTH_ISSUER=https://your-domain.supabase-auth.com/
 
 # WebSocket Configuration
 WEBSOCKET_PORT=3001
@@ -66,9 +66,9 @@ const PORT = parseInt(process.env.WEBSOCKET_PORT || '3001');
 
 // Create auth middleware
 const authMiddleware = new JWTValidationMiddleware({
-  domain: process.env.AUTH0_DOMAIN!,
-  audience: process.env.AUTH0_AUDIENCE!,
-  issuer: process.env.AUTH0_ISSUER!,
+  domain: process.env.SUPABASE_AUTH_DOMAIN!,
+  audience: process.env.SUPABASE_AUTH_AUDIENCE!,
+  issuer: process.env.SUPABASE_AUTH_ISSUER!,
 });
 
 // Create rate limiter
@@ -316,7 +316,7 @@ npm run dev | jq 'select(.type | endswith("error"))'
 **Solutions**:
 1. Verify JWT token is valid: Use jwt.io to decode
 2. Check token expiration
-3. Verify Auth0 configuration (domain, audience, issuer)
+3. Verify Supabase Auth configuration (domain, audience, issuer)
 4. Check token is passed correctly (query string or header)
 
 ### Problem: Rate Limit Exceeded

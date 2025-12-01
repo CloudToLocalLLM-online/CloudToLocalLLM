@@ -35,8 +35,8 @@ describe('Tunnel Webhooks', () => {
     // Create test user
     userId = uuidv4();
     await pool.query(
-      `INSERT INTO users (id, email, auth0_id, tier) VALUES ($1, $2, $3, $4)`,
-      [userId, `test-${userId}@example.com`, `auth0-${userId}`, 'free'],
+      `INSERT INTO users (id, email, jwt_id, tier) VALUES ($1, $2, $3, $4)`,
+      [userId, `test-${userId}@example.com`, `jwt-${userId}`, 'free'],
     );
 
     // Create test tunnel

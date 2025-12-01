@@ -102,7 +102,7 @@ EXPOSE 80
 **Responsibilities**:
 - Flutter web application serving (app.cloudtolocalllm.online)
 - Marketing homepage (cloudtolocalllm.online)
-- Auth0 authentication UI
+- Supabase Auth authentication UI
 - Chat interface and settings
 - Static asset serving with caching
 
@@ -133,7 +133,7 @@ const dockerode = require('dockerode');
 **Responsibilities**:
 - Bridge API endpoints for desktop communication
 - WebSocket connection management for real-time updates
-- User authentication and authorization (Auth0 integration)
+- User authentication and authorization (Supabase Auth integration)
 - Streaming proxy container orchestration
 - Health monitoring and metrics collection
 

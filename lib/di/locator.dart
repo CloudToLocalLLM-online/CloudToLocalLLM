@@ -65,9 +65,12 @@ Future<void> setupCoreServices() async {
   final supabaseAuthService = SupabaseAuthService();
   serviceLocator.registerSingleton<SupabaseAuthService>(supabaseAuthService);
 
+  print('[Locator] Registering AuthService...');
   final authService = AuthService(supabaseAuthService);
-  await authService.init();
   serviceLocator.registerSingleton<AuthService>(authService);
+  print('[Locator] Initializing AuthService...');
+  await authService.init();
+  print('[Locator] AuthService initialized');
 
   // Local Ollama service - create but don't initialize until auth
   final localOllamaService = LocalOllamaConnectionService();
@@ -245,9 +248,12 @@ Future<void> setupAuthenticatedServices() async {
 
   debugPrint(
       '[ServiceLocator] ===== REGISTERING AUTHENTICATED SERVICES START =====');
+  print('[Locator] setupAuthenticatedServices called');
 
   // Verify authentication before proceeding
   final authService = serviceLocator.get<AuthService>();
+  debugPrint(
+      '[ServiceLocator] Checking auth state: ${authService.isAuthenticated.value}');
   if (!authService.isAuthenticated.value) {
     debugPrint(
       '[ServiceLocator] Cannot register authenticated services - user not authenticated',
@@ -259,6 +265,8 @@ Future<void> setupAuthenticatedServices() async {
 
   // Verify token is available
   final token = await authService.getAccessToken();
+  debugPrint(
+      '[ServiceLocator] Checking access token: ${token != null && token.isNotEmpty ? "PRESENT" : "MISSING"}');
   if (token == null || token.isEmpty) {
     debugPrint(
       '[ServiceLocator] Cannot register authenticated services - no access token',

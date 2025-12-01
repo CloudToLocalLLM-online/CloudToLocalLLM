@@ -151,7 +151,7 @@ ENV NO_UPDATE_NOTIFIER=true
 
 ### **Web Client to Local LLM Flow**
 ```
-1. Web Client → Auth0 Authentication
+1. Web Client → Supabase Auth Authentication
 2. API Backend → JWT Validation
 3. Proxy Manager → Create User Container
 4. Streaming Proxy → Connect to Local Desktop
@@ -212,7 +212,7 @@ Connection Fallback Hierarchy:
 ```
 
 ### **Security Features**
-- **Auth0 JWT Validation**: Validates user authentication before tunnel access
+- **Supabase Auth JWT Validation**: Validates user authentication before tunnel access
 - **Token Verification**: Checks for valid access tokens
 - **Secure URLs**: Provides authenticated tunnel access
 - **Access Control**: Prevents unauthorized tunnel usage

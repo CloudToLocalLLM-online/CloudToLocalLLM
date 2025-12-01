@@ -13,7 +13,7 @@ CloudToLocalLLM is a cross-platform Flutter application (Windows, Linux, Web) th
 
 ### Service-Based Architecture (lib/services/)
 The app uses a multi-service design with dependency injection:
-- **Auth**: `auth_service.dart` (Auth0 via `auth0_web_service.dart`/`auth0_desktop_service.dart`) + `session_storage_service.dart` (PostgreSQL backend)
+- **Auth**: `auth_service.dart` (Supabase Auth) + `session_storage_service.dart` (PostgreSQL backend)
 - **Streaming**: `streaming_chat_service.dart` manages conversations with real-time updates via `StreamingMessage` model
 - **Connections**: `connection_manager_service.dart` routes between local/cloud providers
 - **AI Providers**: `llm_provider_manager.dart` handles failover; `BaseLLMProvider` defines interface; platform-specific providers in `llm_providers/`
@@ -24,15 +24,15 @@ The app uses a multi-service design with dependency injection:
 ### Platform-Specific Code
 Uses conditional imports to handle platform differences:
 ```dart
-import 'services/auth0_web_service.dart' if (dart.library.io) 'services/auth0_web_service_stub.dart';
+import 'services/auth_web_service.dart' if (dart.library.io) 'services/auth_web_service_stub.dart';
 if (kIsWeb) { /* web code */ } else { /* desktop code */ }
 ```
-- Web: Auth0 via JavaScript bridge (`auth0-bridge.js`), `shared_preferences`, no window manager
-- Desktop: Auth0 native, `sqflite_common_ffi`, `window_manager`, `tray_manager`
+- Web: Supabase Auth via JavaScript SDK, `shared_preferences`, no window manager
+- Desktop: Supabase Auth native, `sqflite_common_ffi`, `window_manager`, `tray_manager`
 
 ### Data Models
 Located in `lib/models/`:
-- `User`: `user_model.dart` (Auth0 user data)
+- `User`: `user_model.dart` (user authentication data)
 - **Conversations**: `conversation.dart`, `message.dart` (stored in SQLite/PostgreSQL)
 - **Streaming**: `streaming_message.dart` (progressive chat updates)
 - **Configuration**: `provider_configuration.dart` (Ollama, LM Studio, OpenAI-compatible)
@@ -88,12 +88,12 @@ Platform-specific tests require mocking in `test/test_config.dart` (MethodChanne
 - **General**: Run `flutter analyze` + `eslint` before push; atomic commits with conventional messages (`feat:`, `fix:`, `chore:`)
 
 ### Environment & Configuration
-- `.env` file (root) contains: `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `AUTH0_DOMAIN`, `SERVER_HOST`, etc.
-- `lib/config/app_config.dart`: Centralized hardcoded constants (Auth0 domain, API URLs, feature flags)
+- `.env` file (root) contains: `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `JWT_ISSUER_DOMAIN`, `SERVER_HOST`, etc.
+- `lib/config/app_config.dart`: Centralized hardcoded constants (API URLs, feature flags)
 - Feature flags: `enableDevMode`, `enableDarkMode`, `enableDebugMode` in `AppConfig`
 
 ### Dependency Injection (lib/di/locator.dart)
-- Services registered in `setupCoreServices()` (pre-auth: Auth0, LocalOllama, ProviderDiscovery)
+- Services registered in `setupCoreServices()` (pre-auth: AuthService, LocalOllama, ProviderDiscovery)
 - Services registered in `setupAuthenticatedServices()` (post-auth: StreamingChat, ConnectionManager)
 - Use `GetIt.instance` to access; register as singletons; some services lazy-initialized
 
@@ -137,7 +137,7 @@ Platform-specific tests require mocking in `test/test_config.dart` (MethodChanne
 
 **Cloud AI**: OpenAI, Anthropic APIs
 **Local AI**: Ollama (via HTTP), LM Studio (OpenAI-compatible)
-**Auth**: Auth0 (OAuth2/OIDC; web uses JS SDK via bridge, desktop uses native)
+**Auth**: Supabase Auth (OAuth2/OIDC; web uses JS SDK, desktop uses native)
 **Database**: PostgreSQL (sessions), SQLite (local conversations)
 **Networking**: `dio` (HTTP client for all REST APIs and streaming)
 **State**: `provider`, `rxdart` (reactive streams)

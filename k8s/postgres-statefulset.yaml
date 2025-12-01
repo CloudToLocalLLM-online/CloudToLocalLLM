@@ -40,7 +40,9 @@ spec:
       imagePullSecrets:
         - name: regcred
       securityContext:
-        fsGroup: 999
+        fsGroup: 1000
+        runAsUser: 1000
+        runAsGroup: 1000
       containers:
         - name: postgres
           image: cloudtolocalllm/postgres:latest
@@ -86,7 +88,7 @@ spec:
               command:
                 - sh
                 - -c
-                - pg_isready -U cloud_admin -d cloudtolocalllm
+                - export PGPASSWORD=$POSTGRES_PASSWORD; pg_isready -U $POSTGRES_USER -d $POSTGRES_DB
             initialDelaySeconds: 10
             periodSeconds: 5
             timeoutSeconds: 3
@@ -96,7 +98,7 @@ spec:
               command:
                 - sh
                 - -c
-                - pg_isready -U cloud_admin -d cloudtolocalllm
+                - export PGPASSWORD=$POSTGRES_PASSWORD; pg_isready -U $POSTGRES_USER -d $POSTGRES_DB
             initialDelaySeconds: 60
             periodSeconds: 10
             timeoutSeconds: 5
@@ -106,7 +108,7 @@ spec:
               command:
                 - sh
                 - -c
-                - pg_isready -U cloud_admin -d cloudtolocalllm
+                - export PGPASSWORD=$POSTGRES_PASSWORD; pg_isready -U $POSTGRES_USER -d $POSTGRES_DB
             initialDelaySeconds: 10
             periodSeconds: 5
             timeoutSeconds: 3

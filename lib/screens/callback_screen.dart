@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../utils/web_interop_stub.dart'
     if (dart.library.html) '../utils/web_interop.dart';
 import '../services/auth_service.dart';
@@ -9,9 +10,9 @@ import '../services/theme_provider.dart';
 import '../services/platform_adapter.dart';
 
 // Callback forwarding flag key - must match router.dart
-const _callbackForwardedKey = 'auth0_callback_forwarded';
+const _callbackForwardedKey = 'callback_forwarded';
 
-/// Auth0 callback screen that processes authentication results with unified theming
+/// Authentication callback screen that processes authentication results with unified theming
 ///
 /// Requirements:
 /// - 8.1: Apply unified theme system to all UI elements
@@ -263,6 +264,25 @@ class _CallbackScreenState extends State<CallbackScreen> {
         return;
       }
 
+      // Check if Supabase already has a session (it handles OAuth automatically)
+      final supabaseSession = Supabase.instance.client.auth.currentSession;
+      if (supabaseSession != null) {
+        debugPrint(
+          '[CallbackScreen] Supabase session already exists, waiting for auth state sync...',
+        );
+        // Give auth service a moment to sync the state
+        await Future.delayed(const Duration(milliseconds: 500));
+
+        if (authService.isAuthenticated.value ||
+            Supabase.instance.client.auth.currentSession != null) {
+          debugPrint('[CallbackScreen] Session confirmed, redirecting to home');
+          if (mounted) {
+            context.go('/');
+          }
+          return;
+        }
+      }
+
       // Check if user is already authenticated - if so, just redirect to home
       if (authService.isAuthenticated.value) {
         debugPrint(
@@ -306,29 +326,30 @@ class _CallbackScreenState extends State<CallbackScreen> {
 
       _updateStatus('Verifying authentication...');
 
-      String? originalUrl;
-      if (kIsWeb && routeParams.isNotEmpty) {
-        final queryString = Uri(queryParameters: routeParams).query;
-        final newHref =
-            '${window.location.origin}${window.location.pathname}?$queryString';
-        originalUrl = window.location.href;
+      // Extract code from route params
+      final code = routeParams['code'];
+      debugPrint('[CallbackScreen] Auth code present: ${code != null}');
+
+      if (code != null) {
+        _updateStatus('Exchanging authentication code...');
         debugPrint(
-          '[CallbackScreen] Temporarily updating URL for callback processing',
-        );
-        window.history.replaceState(null, document.title, newHref);
+            '[CallbackScreen] Calling authService.handleCallback(code: ...)');
+        final success = await authService.handleCallback(code: code);
+        debugPrint('[CallbackScreen] handleCallback returned: $success');
+
+        if (success) {
+          // ... success logic handled below
+        }
+      } else {
+        // Fallback for implicit flow or if code is missing but we want to check session
+        debugPrint('[CallbackScreen] No code found, checking session state...');
+        await authService.handleCallback();
       }
 
-      debugPrint('[CallbackScreen] Calling authService.handleCallback()...');
-      final success = await authService.handleCallback();
-
-      if (originalUrl != null) {
-        debugPrint('[CallbackScreen] Restoring original URL');
-        window.history.replaceState(null, document.title, originalUrl);
-      }
-
-      debugPrint('[CallbackScreen] handleCallback returned: $success');
+      // Re-check auth state
+      final success = authService.isAuthenticated.value;
       debugPrint(
-        '[CallbackScreen] Auth state immediately after callback: ${authService.isAuthenticated.value}',
+        '[CallbackScreen] Auth state after callback processing: $success',
       );
 
       if (mounted) {

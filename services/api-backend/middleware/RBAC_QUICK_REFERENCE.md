@@ -141,7 +141,7 @@ if (hasAnyPermission(req.userRoles, [PERMISSIONS.VIEW_USERS, PERMISSIONS.EDIT_US
 After authentication and RBAC middleware:
 
 ```javascript
-req.user       // Authenticated user from Auth0
+req.user       // Authenticated user from Supabase Auth
 req.userRoles  // Array of roles assigned to user
                // Example: ['super_admin'] or ['premium_user']
 ```

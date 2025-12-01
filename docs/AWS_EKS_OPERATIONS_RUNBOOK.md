@@ -187,9 +187,9 @@ This runbook provides step-by-step procedures for common operational tasks on th
 
    # Create new secret
    kubectl create secret generic app-secrets \
-     --from-literal=auth0-domain=$AUTH0_DOMAIN \
-     --from-literal=auth0-client-id=$AUTH0_CLIENT_ID \
-     --from-literal=auth0-client-secret=$AUTH0_CLIENT_SECRET \
+     --from-literal=supabase-auth-domain=$JWT_ISSUER_DOMAIN \
+     --from-literal=supabase-auth-client-id=$JWT_CLIENT_ID \
+     --from-literal=supabase-auth-client-secret=$JWT_CLIENT_SECRET \
      -n cloudtolocalllm
 
    # Restart pods to apply changes
@@ -200,7 +200,7 @@ This runbook provides step-by-step procedures for common operational tasks on th
 3. **Verify Changes**
    ```bash
    # Check pod environment
-   kubectl exec <pod-name> -n cloudtolocalllm -- env | grep AUTH0
+   kubectl exec <pod-name> -n cloudtolocalllm -- env | grep JWT
 
    # Check application logs
    kubectl logs -n cloudtolocalllm deployment/web-app --tail=50

@@ -41,10 +41,10 @@ describe('Tunnel Lifecycle Property-Based Tests', () => {
 
     // Create test user
     const userResult = await pool.query(
-      `INSERT INTO users (auth0_id, email, name)
+      `INSERT INTO users (jwt_id, email, name)
        VALUES ($1, $2, $3)
        RETURNING id`,
-      ['test-auth0-id-pbt', 'test-pbt@example.com', 'Test User PBT'],
+      ['test-jwt-id-pbt', 'test-pbt@example.com', 'Test User PBT'],
     );
     testUserId = userResult.rows[0].id;
   });

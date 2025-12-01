@@ -1,16 +1,32 @@
 # Base Image for CloudToLocalLLM
-# Based on Fedora 43 (Rawhide/Future) as requested.
-# If 43 is not found, we might need to fallback, but we try 43 first.
+# Using Ubuntu 24.04 as requested to match GitHub Actions runner.
+# Updated to force full rebuild of all services.
 
-FROM fedora:rawhide
+FROM ubuntu:24.04
+
+# Prevent interactive prompts during package installation
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Install essential tools and Node.js 24
+# We need curl to setup nodesource
+RUN apt-get update && \
+    apt-get install -y curl ca-certificates gnupg rsync tar openssh-client && \
+    mkdir -p /etc/apt/keyrings && \
+    curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg && \
+    echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_24.x nodistro main" | tee /etc/apt/sources.list.d/nodesource.list && \
+    apt-get update && \
+    apt-get install -y nodejs && \
+    rm -rf /var/lib/apt/lists/*
 
 # Create custom user 'cloudtolocalllm' (UID 1000)
-# We do this first to ensure it exists in all derived images
-RUN useradd -u 1000 -m -s /bin/bash cloudtolocalllm
-
-# Install essential tools for rsync-based deployment and Node.js runtime
-RUN dnf -y install rsync tar openssh-clients nodejs npm && \
-    dnf clean all
+# Ubuntu 24.04 has a default user 'ubuntu' with UID 1000.
+# We rename it to 'cloudtolocalllm' to match our expectation.
+RUN if id -u ubuntu >/dev/null 2>&1; then \
+    usermod -l cloudtolocalllm -d /home/cloudtolocalllm -m ubuntu; \
+    groupmod -n cloudtolocalllm ubuntu; \
+    else \
+    useradd -u 1000 -m -s /bin/bash cloudtolocalllm; \
+    fi
 
 # Set up working directory
 WORKDIR /app

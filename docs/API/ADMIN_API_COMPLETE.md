@@ -69,7 +69,7 @@ Permissions:
 
 ### Authentication Flow
 
-1. User logs in to main application via Auth0
+1. User logs in to main application via Supabase Auth
 2. JWT token issued with user claims
 3. Admin role verified from `admin_roles` table
 4. Token passed to Admin Center via session inheritance
@@ -79,7 +79,7 @@ Permissions:
 
 ```json
 {
-  "sub": "auth0|123456789",
+  "sub": "supabase-auth|123456789",
   "email": "admin@cloudtolocalllm.online",
   "iat": 1705843200,
   "exp": 1705929600

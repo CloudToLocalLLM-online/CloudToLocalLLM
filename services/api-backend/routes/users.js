@@ -8,7 +8,7 @@
  * - Managing tier-based preferences
  *
  * All endpoints require authentication via JWT token.
- * Tier information is extracted from Auth0 user metadata.
+ * Tier information is extracted from JWT user metadata.
  *
  * @fileoverview User tier management endpoints
  * @version 1.0.0

@@ -23,11 +23,14 @@ class AuthService extends ChangeNotifier {
   AuthService(this._supabaseAuthService);
 
   Future<void> init() async {
+    print('[AuthService] init() called');
     if (_initialized) {
+      print('[AuthService] Already initialized');
       return;
     }
     _initialized = true;
     await _initSupabase();
+    print('[AuthService] init() completed');
   }
 
   /// Initialize Supabase Auth
@@ -38,6 +41,7 @@ class AuthService extends ChangeNotifier {
       notifyListeners();
 
       await _supabaseAuthService.initialize();
+      print('[AuthService] Supabase service initialized');
 
       // Listen to Supabase auth state changes
       _supabaseAuthService.authStateChanges.listen((AuthState state) async {
@@ -65,7 +69,11 @@ class AuthService extends ChangeNotifier {
       // Check current session
       final currentSession = Supabase.instance.client.auth.currentSession;
       if (currentSession != null) {
+        print('[AuthService] Found current session, handling...');
         await _handleAuthenticatedSession(currentSession);
+        print('[AuthService] Current session handled');
+      } else {
+        print('[AuthService] No current session found');
       }
     } catch (e) {
       debugPrint(' Failed to initialize Supabase Auth: $e');
@@ -99,6 +107,7 @@ class AuthService extends ChangeNotifier {
     notifyListeners();
 
     await _loadAuthenticatedServices();
+    print('[AuthService] Authenticated services loaded');
   }
 
   /// Load authenticated services after authentication is confirmed
@@ -115,7 +124,9 @@ class AuthService extends ChangeNotifier {
         return;
       }
 
+      print('[AuthService] Calling setupAuthenticatedServices...');
       await di.setupAuthenticatedServices();
+      print('[AuthService] setupAuthenticatedServices returned');
       _areAuthenticatedServicesLoaded.value = true;
       notifyListeners();
     } catch (e) {
@@ -173,7 +184,25 @@ class AuthService extends ChangeNotifier {
   Future<String?> getValidatedAccessToken() async => getAccessToken();
 
   Future<void> updateDisplayName(String name) async {}
-  Future<bool> handleCallback({String? callbackUrl}) async => true;
+  Future<bool> handleCallback({String? callbackUrl, String? code}) async {
+    if (code != null) {
+      try {
+        debugPrint('[AuthService] Exchanging code for session...');
+        final response =
+            await Supabase.instance.client.auth.exchangeCodeForSession(code);
+        debugPrint('[AuthService] Code exchange successful');
+        await _handleAuthenticatedSession(response.session);
+        return true;
+      } catch (e) {
+        debugPrint('[AuthService] Code exchange failed: $e');
+        return false;
+      }
+    }
+    // If no code is provided, we assume the session might be handled automatically
+    // or we are just verifying the state.
+    debugPrint('[AuthService] No code provided to handleCallback');
+    return _isAuthenticated.value;
+  }
 
   @override
   void dispose() {

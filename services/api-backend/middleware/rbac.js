@@ -291,12 +291,12 @@ export function authorizeRBAC(req, res, next) {
 
     const userRoles = [];
 
-    // Check for admin roles from Auth0 metadata
+    // Check for admin roles from JWT metadata
     const userMetadata =
       req.user['https://cloudtolocalllm.com/user_metadata'] || {};
     const appMetadata =
       req.user['https://cloudtolocalllm.com/app_metadata'] || {};
-    const auth0Roles = req.user['https://cloudtolocalllm.online/roles'] || [];
+    const jwtRoles = req.user['https://cloudtolocalllm.online/roles'] || [];
 
     // Add admin roles if present
     if (userMetadata.role === 'super_admin' || appMetadata.role === 'super_admin') {
@@ -313,9 +313,9 @@ export function authorizeRBAC(req, res, next) {
       userRoles.push(ROLES.FINANCE_ADMIN);
     }
 
-    // Add roles from Auth0 roles array
-    if (Array.isArray(auth0Roles)) {
-      auth0Roles.forEach((role) => {
+    // Add roles from JWT roles array
+    if (Array.isArray(jwtRoles)) {
+      jwtRoles.forEach((role) => {
         if (Object.values(ROLES).includes(role) && !userRoles.includes(role)) {
           userRoles.push(role);
         }

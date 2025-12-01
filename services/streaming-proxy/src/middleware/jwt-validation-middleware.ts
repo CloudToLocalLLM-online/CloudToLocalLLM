@@ -1,6 +1,6 @@
 /**
  * JWT Validation Middleware Implementation
- * Integrates with Auth0 JWKS for token validation
+ * Integrates with Supabase JWKS for token validation (RS256)
  * Implements caching and distinguishes between expired and invalid tokens
  */
 
@@ -12,6 +12,8 @@ import {
   RateLimitConfig,
   AuthEvent,
 } from '../interfaces/auth-middleware';
+import jwt from 'jsonwebtoken';
+import jwksClient from 'jwks-rsa';
 
 interface JWTHeader {
   alg: string;
@@ -33,25 +35,44 @@ interface CachedValidation {
   cachedAt: Date;
 }
 
-interface Auth0Config {
-  domain: string;
-  audience: string;
-  issuer: string;
+interface SupabaseConfig {
+  supabase: {
+    url: string;
+  };
 }
 
 /**
  * JWT Validation Middleware
- * Validates JWT tokens from Auth0 with caching
+ * Validates JWT tokens from Supabase with caching using RS256
  */
 export class JWTValidationMiddleware implements AuthMiddleware {
-  private readonly config: Auth0Config;
+  private readonly config: SupabaseConfig;
   private readonly validationCache: Map<string, CachedValidation> = new Map();
   private readonly cacheDuration = 5 * 60 * 1000; // 5 minutes
-  private jwksCache: Map<string, string> = new Map();
-  private jwksCacheExpiry: Date | null = null;
+  private readonly client: jwksClient.JwksClient;
 
-  constructor(config: Auth0Config) {
+  constructor(config: SupabaseConfig) {
     this.config = config;
+    this.client = jwksClient({
+      jwksUri: `${config.supabase.url}/auth/v1/.well-known/jwks.json`,
+      cache: true,
+      rateLimit: true,
+      jwksRequestsPerMinute: 5,
+    });
+  }
+
+  /**
+   * Get signing key from JWKS
+   */
+  private getKey(header: jwt.JwtHeader, callback: jwt.SigningKeyCallback) {
+    this.client.getSigningKey(header.kid, (err, key) => {
+      if (err) {
+        callback(err);
+        return;
+      }
+      const signingKey = key?.getPublicKey();
+      callback(null, signingKey);
+    });
   }
 
   /**
@@ -64,76 +85,48 @@ export class JWTValidationMiddleware implements AuthMiddleware {
       return cached.result;
     }
 
-    try {
-      // Decode token without verification
-      const decoded = this.decodeToken(token);
-      if (!decoded) {
-        const result = { valid: false, error: 'Invalid token format' };
-        this.cacheValidation(token, result);
-        return result;
-      }
+    return new Promise((resolve) => {
+      jwt.verify(
+        token,
+        this.getKey.bind(this),
+        { algorithms: ['RS256'] },
+        (err, decoded) => {
+          if (err) {
+            let result: TokenValidationResult;
+            if (err instanceof jwt.TokenExpiredError) {
+              const decodedToken = jwt.decode(token) as JWTPayload;
+              result = {
+                valid: false,
+                error: 'Token expired',
+                userId: decodedToken?.sub,
+                expiresAt: decodedToken?.exp ? new Date(decodedToken.exp * 1000) : undefined,
+              };
+            } else {
+              result = {
+                valid: false,
+                error: err.message,
+              };
+            }
+            // Cache invalid results too (except expired which are distinct)
+            if (err.name !== 'TokenExpiredError') {
+              this.cacheValidation(token, result);
+            }
+            resolve(result);
+            return;
+          }
 
-      const { header, payload } = decoded;
+          const payload = decoded as JWTPayload;
+          const result: TokenValidationResult = {
+            valid: true,
+            userId: payload.sub,
+            expiresAt: new Date(payload.exp * 1000),
+          };
 
-      // Verify issuer
-      if (payload.iss !== this.config.issuer) {
-        const result = { valid: false, error: 'Invalid issuer' };
-        this.cacheValidation(token, result);
-        return result;
-      }
-
-      // Verify audience
-      const audiences = Array.isArray(payload.aud) ? payload.aud : [payload.aud];
-      if (!audiences.includes(this.config.audience)) {
-        const result = { valid: false, error: 'Invalid audience' };
-        this.cacheValidation(token, result);
-        return result;
-      }
-
-      // Check expiration
-      const now = Math.floor(Date.now() / 1000);
-      if (payload.exp && payload.exp < now) {
-        const result = {
-          valid: false,
-          error: 'Token expired',
-          userId: payload.sub,
-          expiresAt: new Date(payload.exp * 1000),
-        };
-        // Don't cache expired tokens
-        return result;
-      }
-
-      // Get public key and verify signature
-      const publicKey = await this.getPublicKey(header.kid);
-      if (!publicKey) {
-        const result = { valid: false, error: 'Unable to retrieve public key' };
-        this.cacheValidation(token, result);
-        return result;
-      }
-
-      const isValid = await this.verifySignature(token, publicKey);
-      if (!isValid) {
-        const result = { valid: false, error: 'Invalid signature' };
-        this.cacheValidation(token, result);
-        return result;
-      }
-
-      // Token is valid
-      const result: TokenValidationResult = {
-        valid: true,
-        userId: payload.sub,
-        expiresAt: new Date(payload.exp * 1000),
-      };
-
-      this.cacheValidation(token, result);
-      return result;
-    } catch (error) {
-      const result = {
-        valid: false,
-        error: error instanceof Error ? error.message : 'Unknown validation error',
-      };
-      return result;
-    }
+          this.cacheValidation(token, result);
+          resolve(result);
+        }
+      );
+    });
   }
 
   /**
@@ -155,18 +148,16 @@ export class JWTValidationMiddleware implements AuthMiddleware {
       throw new Error('Invalid token - cannot extract user context');
     }
 
-    const decoded = this.decodeToken(token);
+    const decoded = jwt.decode(token) as JWTPayload;
     if (!decoded) {
       throw new Error('Failed to decode token');
     }
 
-    const { payload } = decoded;
-
     // Extract user tier from token claims
-    const tier = this.extractUserTier(payload);
+    const tier = this.extractUserTier(decoded);
     
     // Extract permissions
-    const permissions = this.extractPermissions(payload);
+    const permissions = this.extractPermissions(decoded);
 
     // Get rate limit config based on tier
     const rateLimit = this.getRateLimitForTier(tier);
@@ -207,112 +198,6 @@ export class JWTValidationMiddleware implements AuthMiddleware {
     };
 
     console.log(JSON.stringify(logEntry));
-  }
-
-  /**
-   * Decode JWT token without verification
-   */
-  private decodeToken(token: string): { header: JWTHeader; payload: JWTPayload } | null {
-    try {
-      const parts = token.split('.');
-      if (parts.length !== 3) {
-        return null;
-      }
-
-      const header = JSON.parse(this.base64UrlDecode(parts[0]));
-      const payload = JSON.parse(this.base64UrlDecode(parts[1]));
-
-      return { header, payload };
-    } catch {
-      return null;
-    }
-  }
-
-  /**
-   * Get public key from Auth0 JWKS endpoint
-   */
-  private async getPublicKey(kid: string): Promise<string | null> {
-    // Check cache
-    if (this.jwksCacheExpiry && Date.now() < this.jwksCacheExpiry.getTime()) {
-      const cached = this.jwksCache.get(kid);
-      if (cached) {
-        return cached;
-      }
-    }
-
-    try {
-      const jwksUrl = `https://${this.config.domain}/.well-known/jwks.json`;
-      const response = await fetch(jwksUrl);
-      
-      if (!response.ok) {
-        console.error('Failed to fetch JWKS:', response.statusText);
-        return null;
-      }
-
-      const jwks = await response.json();
-      
-      // Cache all keys
-      this.jwksCache.clear();
-      for (const key of jwks.keys) {
-        if (key.kid && key.x5c && key.x5c.length > 0) {
-          // Convert x5c certificate to PEM format
-          const cert = key.x5c[0];
-          const pem = `-----BEGIN CERTIFICATE-----\n${cert}\n-----END CERTIFICATE-----`;
-          this.jwksCache.set(key.kid, pem);
-        }
-      }
-
-      // Set cache expiry (1 hour)
-      this.jwksCacheExpiry = new Date(Date.now() + 60 * 60 * 1000);
-
-      return this.jwksCache.get(kid) || null;
-    } catch (error) {
-      console.error('Error fetching JWKS:', error);
-      return null;
-    }
-  }
-
-  /**
-   * Verify JWT signature using public key
-   */
-  private async verifySignature(token: string, publicKey: string): Promise<boolean> {
-    try {
-      // Use Web Crypto API for signature verification
-      const parts = token.split('.');
-      const header = parts[0];
-      const payload = parts[1];
-      const signature = parts[2];
-
-      const data = `${header}.${payload}`;
-      const signatureBytes = this.base64UrlDecodeToBytes(signature);
-
-      // Import public key
-      const keyData = this.pemToArrayBuffer(publicKey);
-      const cryptoKey = await crypto.subtle.importKey(
-        'spki',
-        keyData,
-        {
-          name: 'RSASSA-PKCS1-v1_5',
-          hash: 'SHA-256',
-        },
-        false,
-        ['verify']
-      );
-
-      // Verify signature
-      const dataBytes = new TextEncoder().encode(data);
-      const isValid = await crypto.subtle.verify(
-        'RSASSA-PKCS1-v1_5',
-        cryptoKey,
-        signatureBytes as BufferSource,
-        dataBytes
-      );
-
-      return isValid;
-    } catch (error) {
-      console.error('Signature verification error:', error);
-      return false;
-    }
   }
 
   /**
@@ -397,51 +282,5 @@ export class JWTValidationMiddleware implements AuthMiddleware {
           maxQueueSize: 100,
         };
     }
-  }
-
-  /**
-   * Base64 URL decode to string
-   */
-  private base64UrlDecode(str: string): string {
-    // Replace URL-safe characters
-    let base64 = str.replace(/-/g, '+').replace(/_/g, '/');
-    
-    // Add padding
-    while (base64.length % 4 !== 0) {
-      base64 += '=';
-    }
-
-    // Decode
-    return Buffer.from(base64, 'base64').toString('utf-8');
-  }
-
-  /**
-   * Base64 URL decode to bytes
-   */
-  private base64UrlDecodeToBytes(str: string): Uint8Array {
-    // Replace URL-safe characters
-    let base64 = str.replace(/-/g, '+').replace(/_/g, '/');
-    
-    // Add padding
-    while (base64.length % 4 !== 0) {
-      base64 += '=';
-    }
-
-    // Decode
-    return new Uint8Array(Buffer.from(base64, 'base64'));
-  }
-
-  /**
-   * Convert PEM certificate to ArrayBuffer
-   */
-  private pemToArrayBuffer(pem: string): ArrayBuffer {
-    // Remove PEM headers and newlines
-    const b64 = pem
-      .replace(/-----BEGIN CERTIFICATE-----/, '')
-      .replace(/-----END CERTIFICATE-----/, '')
-      .replace(/\n/g, '');
-
-    const binary = Buffer.from(b64, 'base64');
-    return binary.buffer.slice(binary.byteOffset, binary.byteOffset + binary.byteLength);
   }
 }

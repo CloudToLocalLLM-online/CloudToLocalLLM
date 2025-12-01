@@ -3,8 +3,8 @@
  * Handles user connections, request forwarding, and connection lifecycle
  */
 
-import ssh2 from 'ssh2';
-const { Server: SSHServer } = ssh2;
+// import ssh2 from 'ssh2'; // Lazy loaded
+// const { Server: SSHServer } = ssh2;
 
 /**
  * Manages SSH tunnel connections for tunneling HTTP requests
@@ -63,6 +63,16 @@ export class SSHProxy {
   async start() {
     try {
       const port = this.config.sshPort || 2222; // Use SSH default port range
+
+      // Lazy load ssh2
+      let ssh2;
+      try {
+        ssh2 = await import('ssh2');
+      } catch (err) {
+        this.logger.error('Failed to load ssh2 module', { error: err.message });
+        throw err;
+      }
+      const { Server: SSHServer } = ssh2.default || ssh2;
 
       // Create SSH server
       this.sshServer = new SSHServer(
@@ -129,7 +139,7 @@ export class SSHProxy {
     let userId = null;
     let authenticated = false;
 
-    client.on('authentication', async(ctx) => {
+    client.on('authentication', async (ctx) => {
       try {
         // Only accept password authentication (JWT as password)
         if (ctx.method !== 'password') {

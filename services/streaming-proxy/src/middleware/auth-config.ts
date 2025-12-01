@@ -4,10 +4,8 @@
  */
 
 export interface AuthConfig {
-  auth0: {
-    domain: string;
-    audience: string;
-    issuer: string;
+  supabase: {
+    url: string;
   };
   cache: {
     validationDuration: number; // milliseconds
@@ -28,18 +26,15 @@ export interface AuthConfig {
  * Load authentication configuration from environment variables
  */
 export function loadAuthConfig(): AuthConfig {
-  const auth0Domain = process.env.AUTH0_DOMAIN;
-  const auth0Audience = process.env.AUTH0_AUDIENCE;
+  const supabaseUrl = process.env.SUPABASE_URL;
 
-  if (!auth0Domain || !auth0Audience) {
-    throw new Error('AUTH0_DOMAIN and AUTH0_AUDIENCE environment variables are required');
+  if (!supabaseUrl) {
+    throw new Error('SUPABASE_URL environment variable is required');
   }
 
   return {
-    auth0: {
-      domain: auth0Domain,
-      audience: auth0Audience,
-      issuer: process.env.AUTH0_ISSUER || `https://${auth0Domain}/`,
+    supabase: {
+      url: supabaseUrl,
     },
     cache: {
       validationDuration: parseInt(process.env.AUTH_CACHE_DURATION || '300000'), // 5 minutes
@@ -61,16 +56,8 @@ export function loadAuthConfig(): AuthConfig {
  * Validate authentication configuration
  */
 export function validateAuthConfig(config: AuthConfig): void {
-  if (!config.auth0.domain) {
-    throw new Error('Auth0 domain is required');
-  }
-
-  if (!config.auth0.audience) {
-    throw new Error('Auth0 audience is required');
-  }
-
-  if (!config.auth0.issuer) {
-    throw new Error('Auth0 issuer is required');
+  if (!config.supabase.url) {
+    throw new Error('Supabase URL is required');
   }
 
   if (config.cache.validationDuration < 0) {
@@ -95,10 +82,8 @@ export function validateAuthConfig(config: AuthConfig): void {
  */
 export function getDefaultAuthConfig(): AuthConfig {
   return {
-    auth0: {
-      domain: 'your-tenant.auth0.com',
-      audience: 'https://api.cloudtolocalllm.com',
-      issuer: 'https://your-tenant.auth0.com/',
+    supabase: {
+      url: 'https://your-project.supabase.co',
     },
     cache: {
       validationDuration: 5 * 60 * 1000, // 5 minutes

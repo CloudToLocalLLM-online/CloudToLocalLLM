@@ -217,15 +217,7 @@ export class DatabaseMigratorPG {
             'metadata TEXT, -- JSON as text in SQLite',
             'metadata JSONB',
           );
-        // Ensure pgcrypto or uuid-ossp extension for gen_random_uuid
-        try {
-          await client.query('CREATE EXTENSION IF NOT EXISTS pgcrypto');
-        } catch (err) {
-          // Ignore unique_violation (23505) which happens during concurrent creation
-          if (err.code !== '23505') {
-            throw err;
-          }
-        }
+        // pgcrypto not needed for gen_random_uuid() in Postgres 13+
       }
 
       const checksum = this.calculateChecksum(schemaSQL);

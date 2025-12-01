@@ -105,7 +105,7 @@ Content-Type: application/json
 - Search by email (case-insensitive)
 - Search by username
 - Search by user ID
-- Search by Auth0 ID
+- Search by Supabase Auth ID
 
 ✅ **Filtering**
 - Filter by subscription tier (free, premium, enterprise)

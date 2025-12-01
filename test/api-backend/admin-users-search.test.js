@@ -71,7 +71,7 @@ describe('Admin User Search and Listing - Implementation Validation', () => {
     it('should support search by email, username, and user ID', () => {
       // Validates search functionality
       // Search should use ILIKE for case-insensitive matching
-      // Should search across: email, username, user ID, auth0_id
+      // Should search across: email, username, user ID, jwt_id
       
       const searchTerm = 'john';
       const searchPattern = `%${searchTerm}%`;
@@ -166,7 +166,7 @@ describe('Admin User Search and Listing - Implementation Validation', () => {
         id: 'user-uuid-1',
         email: 'user@example.com',
         username: 'user1',
-        auth0_id: 'auth0|123',
+        jwt_id: 'jwt|123',
         created_at: new Date('2024-01-01'),
         last_login: new Date('2024-01-15'),
         is_suspended: false,

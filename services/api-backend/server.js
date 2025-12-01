@@ -112,10 +112,6 @@ const logger = winston.createLogger({
 
 // Configuration
 const PORT = process.env.PORT || 8080;
-const AUTH0_DOMAIN =
-  process.env.AUTH0_DOMAIN || 'dev-v2f2p008x3dr74ww.us.auth0.com';
-const AUTH0_AUDIENCE =
-  process.env.AUTH0_AUDIENCE || 'https://api.cloudtolocalllm.online';
 
 // AuthService will be initialized in initializeHttpPollingSystem()
 
@@ -156,6 +152,8 @@ const corsOptions = {
     'X-Requested-With',
     'X-Correlation-ID',
     'X-Response-Time',
+    'X-Token-Refresh-Suggested',
+    'X-Token-Expires-At',
   ],
   maxAge: 86400, // Cache preflight for 24 hours
   preflightContinue: false,
@@ -256,10 +254,7 @@ const proxyManager = new StreamingProxyManager();
 
 // Create WebSocket-based tunnel routes
 const tunnelRouter = createTunnelRoutes(
-  {
-    AUTH0_DOMAIN,
-    AUTH0_AUDIENCE,
-  },
+  {}, // No config needed for Supabase (uses env vars)
   sshProxy,
   logger,
   sshAuthService,
@@ -1042,8 +1037,6 @@ async function initializeTunnelSystem() {
     // Initialize auth service (optional - don't fail if it doesn't work)
     try {
       authService = new AuthService({
-        AUTH0_DOMAIN,
-        AUTH0_AUDIENCE,
         authDbMigrator, // Pass auth database connection to auth service
         dbMigrator, // Pass main database connection to auth service
       });
@@ -1094,8 +1087,9 @@ async function initializeTunnelSystem() {
         // Register SSH proxy as unhealthy
         healthCheckService.registerService('ssh-tunnel', async () => {
           return {
-            status: 'unhealthy',
-            message: 'SSH tunnel failed to initialize',
+            status: 'degraded',
+            message: 'SSH tunnel service failed to initialize (non-critical)',
+            error: sshError.message,
           };
         });
       }

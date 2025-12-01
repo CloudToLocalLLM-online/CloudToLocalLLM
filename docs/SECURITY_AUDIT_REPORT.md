@@ -96,7 +96,7 @@ A comprehensive security audit was performed on the CloudToLocalLLM repository t
    - ESLint security rules configured
 
 3. **Authentication & Authorization**
-   - Auth0 OAuth2 integration
+   - Supabase Auth OAuth2 integration
    - JWT token validation
    - Secure token storage (flutter_secure_storage)
 

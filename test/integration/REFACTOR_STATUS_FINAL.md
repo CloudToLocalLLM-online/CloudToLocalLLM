@@ -12,7 +12,7 @@ Comprehensive test refactor initiated with proper mock services, test utilities,
 
 #### Created Files:
 1. **`test/helpers/mock_services.dart`** (150 lines)
-   - MockAuth0Service
+   - MockJWTService
    - MockSessionStorage
    - MockAuthService (ChangeNotifier)
    - MockAdminCenterService (ChangeNotifier)

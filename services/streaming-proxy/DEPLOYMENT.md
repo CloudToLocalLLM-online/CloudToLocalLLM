@@ -147,21 +147,21 @@ spec:
           value: "production"
         - name: WEBSOCKET_PORT
           value: "3001"
-        - name: AUTH0_DOMAIN
+        - name: SUPABASE_AUTH_DOMAIN
           valueFrom:
             secretKeyRef:
               name: cloudtolocalllm-secrets
-              key: auth0-domain
-        - name: AUTH0_AUDIENCE
+              key: supabase-auth-domain
+        - name: SUPABASE_AUTH_AUDIENCE
           valueFrom:
             secretKeyRef:
               name: cloudtolocalllm-secrets
-              key: auth0-audience
-        - name: AUTH0_ISSUER
+              key: supabase-auth-audience
+        - name: SUPABASE_AUTH_ISSUER
           valueFrom:
             secretKeyRef:
               name: cloudtolocalllm-secrets
-              key: auth0-issuer
+              key: supabase-auth-issuer
         - name: PING_INTERVAL
           value: "30000"
         - name: PONG_TIMEOUT
@@ -283,10 +283,10 @@ RUN npm ci  # ← This installs ws and all dependencies
 Required environment variables for streaming-proxy:
 
 ```bash
-# Auth0 Configuration
-AUTH0_DOMAIN=your-domain.auth0.com
-AUTH0_AUDIENCE=https://api.cloudtolocalllm.com
-AUTH0_ISSUER=https://your-domain.auth0.com/
+# Supabase Auth Configuration
+SUPABASE_AUTH_DOMAIN=your-domain.supabase-auth.com
+SUPABASE_AUTH_AUDIENCE=https://api.cloudtolocalllm.com
+SUPABASE_AUTH_ISSUER=https://your-domain.supabase-auth.com/
 
 # WebSocket Configuration
 WEBSOCKET_PORT=3001
@@ -330,9 +330,9 @@ metadata:
   namespace: cloudtolocalllm
 type: Opaque
 stringData:
-  auth0-domain: "your-domain.auth0.com"
-  auth0-audience: "https://api.cloudtolocalllm.com"
-  auth0-issuer: "https://your-domain.auth0.com/"
+  supabase-auth-domain: "your-domain.supabase-auth.com"
+  supabase-auth-audience: "https://api.cloudtolocalllm.com"
+  supabase-auth-issuer: "https://your-domain.supabase-auth.com/"
 ```
 
 ## Deployment Steps
@@ -480,8 +480,8 @@ curl http://streaming-proxy.cloudtolocalllm.svc.cluster.local:3001/health
 # Check secrets
 kubectl get secret cloudtolocalllm-secrets -n cloudtolocalllm -o yaml
 
-# Verify Auth0 configuration
-kubectl exec -it streaming-proxy-xxxxx -n cloudtolocalllm -- env | grep AUTH0
+# Verify Supabase Auth configuration
+kubectl exec -it streaming-proxy-xxxxx -n cloudtolocalllm -- env | grep SUPABASE_AUTH
 ```
 
 ## Summary

@@ -85,7 +85,7 @@ final updated = subscription.copyWith(
 **Purpose:** Represents user account information
 
 **Key Features:**
-- Auth0 integration
+- Supabase Auth integration
 - Profile information
 - Suspension tracking
 - Account status

@@ -23,7 +23,7 @@ Before starting, ensure you have:
 - [ ] **Internet connection** - For model downloads and optional web features
 
 ### **Optional**
-- [ ] **Auth0 account** - For web interface access
+- [ ] **Supabase Auth account** - For web interface access
 - [ ] **Modern web browser** - For web interface testing
 
 ---
@@ -189,7 +189,7 @@ Write a short poem about local AI
 ### **Access Web Interface**
 1. **Visit**: [app.cloudtolocalllm.online](https://app.cloudtolocalllm.online)
 2. **Authenticate**: Choose login method (Google, GitHub, Email)
-3. **Grant Permissions**: Allow necessary permissions for Auth0
+3. **Grant Permissions**: Allow necessary permissions for Supabase Auth
 
 ### **Configure Cloud Tunnel**
 1. **Navigate to Settings**: In web interface

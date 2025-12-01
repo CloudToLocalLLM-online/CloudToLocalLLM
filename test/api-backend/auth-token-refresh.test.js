@@ -11,10 +11,10 @@
 import jwt from 'jsonwebtoken';
 import fetch from 'node-fetch';
 
-// Mock Auth0 configuration
-const AUTH0_DOMAIN = 'dev-v2f2p008x3dr74ww.us.auth0.com';
-const AUTH0_AUDIENCE = 'https://api.cloudtolocalllm.online';
-const TEST_USER_ID = 'auth0|test-user-123';
+// Mock JWT configuration
+const JWT_ISSUER_DOMAIN = 'dev-v2f2p008x3dr74ww.us.jwt.com';
+const JWT_AUDIENCE = 'https://api.cloudtolocalllm.online';
+const TEST_USER_ID = 'jwt|test-user-123';
 const TEST_EMAIL = 'test@example.com';
 
 /**
@@ -25,15 +25,15 @@ function generateTestToken(options = {}) {
     sub: options.userId || TEST_USER_ID,
     email: options.email || TEST_EMAIL,
     email_verified: true,
-    aud: AUTH0_AUDIENCE,
-    iss: `https://${AUTH0_DOMAIN}/`,
+    aud: JWT_AUDIENCE,
+    iss: `https://${JWT_ISSUER_DOMAIN}/`,
     iat: Math.floor(Date.now() / 1000),
     exp: Math.floor(Date.now() / 1000) + (options.expiresIn || 3600),
     ...options.payload,
   };
 
   // For testing, we'll use a simple HS256 token
-  // In production, Auth0 uses RS256
+  // In production, JWT uses RS256
   return jwt.sign(payload, 'test-secret', { algorithm: 'HS256' });
 }
 
@@ -105,14 +105,14 @@ describe('JWT Token Validation and Refresh', () => {
       const token = generateTestToken();
       const decoded = jwt.decode(token);
 
-      expect(decoded.aud).toBe(AUTH0_AUDIENCE);
+      expect(decoded.aud).toBe(JWT_AUDIENCE);
     });
 
     test('should validate token issuer', () => {
       const token = generateTestToken();
       const decoded = jwt.decode(token);
 
-      expect(decoded.iss).toBe(`https://${AUTH0_DOMAIN}/`);
+      expect(decoded.iss).toBe(`https://${JWT_ISSUER_DOMAIN}/`);
     });
 
     test('should handle invalid token format', () => {
@@ -166,8 +166,8 @@ describe('JWT Token Validation and Refresh', () => {
       const payload = {
         sub: TEST_USER_ID,
         email: TEST_EMAIL,
-        aud: AUTH0_AUDIENCE,
-        iss: `https://${AUTH0_DOMAIN}/`,
+        aud: JWT_AUDIENCE,
+        iss: `https://${JWT_ISSUER_DOMAIN}/`,
       };
 
       const token = jwt.sign(payload, 'test-secret', { algorithm: 'HS256' });
@@ -205,7 +205,7 @@ describe('JWT Token Validation and Refresh', () => {
     });
 
     test('should preserve user ID during refresh', () => {
-      const userId = 'auth0|specific-user-id';
+      const userId = 'jwt|specific-user-id';
       const oldToken = generateTestToken({ userId });
       const oldDecoded = jwt.decode(oldToken);
 
@@ -250,8 +250,8 @@ describe('JWT Token Validation and Refresh', () => {
     });
 
     test('should allow use of non-revoked token', () => {
-      const token1 = generateTestToken({ userId: 'auth0|user1' });
-      const token2 = generateTestToken({ userId: 'auth0|user2' });
+      const token1 = generateTestToken({ userId: 'jwt|user1' });
+      const token2 = generateTestToken({ userId: 'jwt|user2' });
       const revokedTokens = new Set();
 
       revokedTokens.add(token1);
@@ -321,7 +321,7 @@ describe('JWT Token Validation and Refresh', () => {
     test('should validate token audience matches expected', () => {
       const token = generateTestToken();
       const decoded = jwt.decode(token);
-      const expectedAudience = AUTH0_AUDIENCE;
+      const expectedAudience = JWT_AUDIENCE;
 
       expect(decoded.aud).toBe(expectedAudience);
     });
@@ -329,7 +329,7 @@ describe('JWT Token Validation and Refresh', () => {
     test('should validate token issuer matches expected', () => {
       const token = generateTestToken();
       const decoded = jwt.decode(token);
-      const expectedIssuer = `https://${AUTH0_DOMAIN}/`;
+      const expectedIssuer = `https://${JWT_ISSUER_DOMAIN}/`;
 
       expect(decoded.iss).toBe(expectedIssuer);
     });
@@ -374,7 +374,7 @@ describe('JWT Token Validation and Refresh', () => {
     });
 
     test('should maintain user identity through multiple refreshes', () => {
-      const userId = 'auth0|test-user';
+      const userId = 'jwt|test-user';
       const email = 'test@example.com';
 
       // Generate multiple tokens

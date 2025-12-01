@@ -24,6 +24,7 @@ env:
   AZURE_CLUSTER_NAME: cloudtolocalllm-aks
   ACR_NAME: cloudtolocalllm
   # DOCKER_REGISTRY will be set dynamically to the ACR login server
+  DOCKER_REGISTRY: ""
 
 jobs:
   # Job to detect changes in specific paths
@@ -121,6 +122,8 @@ jobs:
           file: config/docker/Dockerfile.postgres
           push: true
           tags: ${{ env.DOCKER_REGISTRY }}/postgres:latest
+          build-args: |
+            BASE_REGISTRY=${{ env.DOCKER_REGISTRY }}
           cache-from: type=registry,ref=${{ env.DOCKER_REGISTRY }}/postgres:latest
           cache-to: type=inline
 
@@ -156,6 +159,8 @@ jobs:
           file: web/Dockerfile
           push: true
           tags: ${{ env.DOCKER_REGISTRY }}/web:latest
+          build-args: |
+            BASE_REGISTRY=${{ env.DOCKER_REGISTRY }}
           cache-from: type=registry,ref=${{ env.DOCKER_REGISTRY }}/web:latest
           cache-to: type=inline
 
@@ -184,6 +189,8 @@ jobs:
           file: services/api-backend/Dockerfile
           push: true
           tags: ${{ env.DOCKER_REGISTRY }}/api-backend:latest
+          build-args: |
+            BASE_REGISTRY=${{ env.DOCKER_REGISTRY }}
           cache-from: type=registry,ref=${{ env.DOCKER_REGISTRY }}/api-backend:latest
           cache-to: type=inline
 
@@ -212,6 +219,8 @@ jobs:
           file: services/streaming-proxy/Dockerfile
           push: true
           tags: ${{ env.DOCKER_REGISTRY }}/streaming-proxy:latest
+          build-args: |
+            BASE_REGISTRY=${{ env.DOCKER_REGISTRY }}
           cache-from: type=registry,ref=${{ env.DOCKER_REGISTRY }}/streaming-proxy:latest
           cache-to: type=inline
 
@@ -266,6 +275,7 @@ jobs:
           CLOUDFLARE_DNS_TOKEN: ${{ secrets.CLOUDFLARE_DNS_TOKEN }}
           CLOUDFLARE_TUNNEL_TOKEN: ${{ secrets.CLOUDFLARE_TUNNEL_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          SUPABASE_JWT_SECRET: ${{ secrets.SUPABASE_JWT_SECRET }}
         run: |
           # --- Create Kubernetes Secrets ---
 
@@ -298,6 +308,8 @@ jobs:
             --from-literal=stripe-live-publishable-key="$STRIPE_LIVE_PUBLISHABLE_KEY" \
             --from-literal=stripe-live-webhook-secret="$STRIPE_LIVE_WEBHOOK_SECRET" \
             --from-literal=sentry-dsn="$SENTRY_DSN" \
+            --from-literal=supabase-jwt-secret="$SUPABASE_JWT_SECRET" \
+            --from-literal=supabase-url="https://cvaqhvpbnemweqrojasm.supabase.co" \
             --dry-run=client -o yaml | kubectl apply -f -
 
           # Cloudflare Tunnel Secret
@@ -310,6 +322,8 @@ jobs:
           kubectl create secret generic streaming-proxy-secrets \
             --namespace cloudtolocalllm \
             --from-literal=SENTRY_DSN="$SENTRY_DSN" \
+            --from-literal=SUPABASE_JWT_SECRET="$SUPABASE_JWT_SECRET" \
+            --from-literal=SUPABASE_URL="https://cvaqhvpbnemweqrojasm.supabase.co" \
             --dry-run=client -o yaml | kubectl apply -f -
 
       - name: Deploy Manifests
@@ -335,6 +349,8 @@ jobs:
           kubectl apply -f k8s/streaming-proxy-deployment.yaml
 
           # Force roll out restart to pick up latest images and secrets
+          # Force delete postgres pod to ensure it picks up new spec (fix for stuck CrashLoopBackOff)
+          kubectl delete pod postgres-0 -n cloudtolocalllm --force --grace-period=0 || true
           kubectl rollout restart statefulset/postgres -n cloudtolocalllm
           kubectl rollout restart deployment/web -n cloudtolocalllm
           kubectl rollout restart deployment/api-backend -n cloudtolocalllm
@@ -434,5 +450,10 @@ jobs:
             echo "Attempt $i: Health check failed, waiting 5s..."
             sleep 5
           done
-          echo "Health check failed after 2 minutes."
+          echo "Health check failed after 2 minutes. Dumping api-backend logs:"
+          kubectl get pods -n cloudtolocalllm
+          kubectl logs postgres-0 -n cloudtolocalllm --tail=50
+          kubectl describe pod postgres-0 -n cloudtolocalllm
+          kubectl logs -l app=api-backend -n cloudtolocalllm --tail=100
+          kubectl describe pod -l app=api-backend -n cloudtolocalllm
           exit 1

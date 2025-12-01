@@ -20,7 +20,7 @@ The tier validation middleware was already implemented with comprehensive functi
 
 #### Key Functions:
 
-- **`getUserTier(user)`** - Extracts user tier from Auth0 JWT metadata
+- **`getUserTier(user)`** - Extracts user tier from Supabase Auth JWT metadata
   - Supports multiple metadata locations (user_metadata, app_metadata)
   - Handles fallback fields (tier, subscription, plan)
   - Normalizes tier values to lowercase
@@ -298,7 +298,7 @@ if (hasFeature(req.user, 'apiAccess')) {
 2. **Error Handling**: Comprehensive error handling with appropriate HTTP status codes
 3. **Logging**: All tier checks are logged for audit purposes
 4. **Defaults**: Invalid/missing tier data defaults to 'free' tier (most restrictive)
-5. **Metadata Validation**: Validates Auth0 metadata structure before use
+5. **Metadata Validation**: Validates Supabase Auth metadata structure before use
 6. **Hierarchy Enforcement**: Tier hierarchy is consistently enforced across all functions
 
 ## Performance Characteristics
@@ -327,7 +327,7 @@ if (hasFeature(req.user, 'apiAccess')) {
 ## Compliance
 
 ✅ **Requirement 2.4**: THE API SHALL implement user tier system (free, premium, enterprise)
-- ✅ Tier extraction from Auth0 metadata
+- ✅ Tier extraction from Supabase Auth metadata
 - ✅ Feature-based access control
 - ✅ Tier hierarchy enforcement
 - ✅ User-facing tier information endpoints

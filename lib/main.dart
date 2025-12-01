@@ -11,7 +11,6 @@ import 'config/router.dart';
 import 'config/theme.dart';
 import 'config/supabase_config.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'screens/loading_screen.dart';
 import 'di/locator.dart' as di;
 import 'services/admin_center_service.dart';
 import 'services/admin_data_flush_service.dart';
@@ -60,13 +59,16 @@ void main() async {
 
   WidgetsFlutterBinding.ensureInitialized();
 
+  print('[Main] Initializing Supabase...');
   await Supabase.initialize(
     url: SupabaseConfig.url,
     anonKey: SupabaseConfig.anonKey,
   );
+  print('[Main] Supabase initialized');
 
   try {
     // Initialize Sentry with a timeout to prevent hanging
+    print('[Main] Initializing Sentry...');
     await SentryFlutter.init(
       (options) {
         options.dsn = AppConfig.sentryDsn;
@@ -80,9 +82,11 @@ void main() async {
         options.enableLogs = true;
       },
       appRunner: () async {
+        print('[Main] Sentry initialized, running app with Sentry...');
         _runAppWithSentry();
       },
     ).timeout(const Duration(seconds: 5));
+    print('[Main] Sentry init completed');
   } catch (e) {
     print('Sentry initialization failed or timed out: $e');
     // If Sentry fails, run the app anyway without Sentry wrapping
@@ -116,14 +120,17 @@ void _runAppWithoutSentry() {
 
 void _runAppCommon() {
   Future<AppBootstrapData> loadApp() async {
-    // Note: Auth0 callback handling is now done by the router and CallbackScreen
+    // Callback handling is now done by the router and CallbackScreen
     // The router will detect callback parameters and route to /callback,
     // where CallbackScreen will process the authentication
 
     // Run the main bootstrap process
     try {
+      print('[Main] Bootstrapper loading...');
       final bootstrapper = AppBootstrapper();
-      return await bootstrapper.load();
+      final result = await bootstrapper.load();
+      print('[Main] Bootstrapper loaded');
+      return result;
     } catch (e, stack) {
       debugPrint('Bootstrap failed: $e');
       try {
@@ -209,9 +216,13 @@ class _CloudToLocalLLMAppState extends State<CloudToLocalLLMApp> {
   Widget build(BuildContext context) {
     final bootstrap = context.watch<AppBootstrapData?>();
     if (bootstrap == null) {
-      return const MaterialApp(
+      return MaterialApp(
         debugShowCheckedModeBanner: false,
-        home: LoadingScreen(message: 'Initializing CloudToLocalLLM...'),
+        home: Scaffold(
+          body: Center(
+            child: CircularProgressIndicator(),
+          ),
+        ),
       );
     }
 
@@ -393,9 +404,13 @@ class _AppRouterHostState extends State<_AppRouterHost> {
   Widget build(BuildContext context) {
     final router = _router;
     if (router == null) {
-      return const MaterialApp(
+      return MaterialApp(
         debugShowCheckedModeBanner: false,
-        home: LoadingScreen(message: 'Preparing router...'),
+        home: Scaffold(
+          body: Center(
+            child: CircularProgressIndicator(),
+          ),
+        ),
       );
     }
 

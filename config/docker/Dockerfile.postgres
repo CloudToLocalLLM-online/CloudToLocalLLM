@@ -2,12 +2,18 @@
 # Custom Postgres Image for CloudToLocalLLM
 # Based on cloudtolocalllm/base:latest (Fedora)
 # ============================================================================
-FROM cloudtolocalllm/base:latest
+ARG BASE_REGISTRY=cloudtolocalllm
+FROM ${BASE_REGISTRY}/base:latest
 
 # Install PostgreSQL
 USER root
-RUN dnf -y install postgresql-server postgresql-contrib findutils && \
-    dnf clean all
+# Ubuntu/Debian uses 'postgresql' instead of 'postgresql-server'
+RUN apt-get update && \
+    apt-get install -y postgresql postgresql-contrib findutils bash && \
+    rm -rf /var/lib/apt/lists/*
+
+# Add PostgreSQL binaries to PATH (Ubuntu 24.04 uses Postgres 16)
+ENV PATH="/usr/lib/postgresql/16/bin:$PATH"
 
 # Create directories and fix permissions
 RUN mkdir -p /var/lib/postgresql/data /docker-entrypoint-initdb.d /var/run/postgresql && \

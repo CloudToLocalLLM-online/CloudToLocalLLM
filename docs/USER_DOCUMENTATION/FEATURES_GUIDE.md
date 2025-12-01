@@ -37,7 +37,7 @@ CloudToLocalLLM provides a comprehensive suite of features for local and cloud L
 - **Load Balancing**: Intelligent routing for optimal performance
 
 ### **Advanced Authentication**
-- **Auth0 Integration**: Enterprise-grade authentication with SSO support
+- **Supabase Auth Integration**: Enterprise-grade authentication with SSO support
 - **JWT Token Management**: Secure token handling with automatic refresh
 - **Multi-Factor Authentication**: Enhanced security with MFA support
 - **Session Management**: Persistent authentication across application restarts
@@ -124,13 +124,13 @@ context7-mcp --test-connection
 
 ### **Authentication Architecture**
 
-#### **Auth0 Direct Login Implementation**
+#### **Supabase Auth Direct Login Implementation**
 
 **Configuration Setup:**
 ```javascript
-// Auth0 Configuration
-const auth0Config = {
-  domain: 'dev-v2f2p008x3dr74ww.us.auth0.com',
+// Supabase Auth Configuration
+const supabase-authConfig = {
+  domain: 'dev-v2f2p008x3dr74ww.us.supabase-auth.com',
   clientId: 'FuXPnevXpp311CdYHGsbNZe9t3D8Ts7A',
   audience: 'https://api.cloudtolocalllm.online',
   redirectUri: {
@@ -143,13 +143,13 @@ const auth0Config = {
 **PKCE Flow Implementation:**
 ```dart
 // Flutter PKCE implementation
-class Auth0Service {
-  static const String domain = 'dev-xafu7oedkd5wlrbo.us.auth0.com';
+class Supabase AuthService {
+  static const String domain = 'dev-xafu7oedkd5wlrbo.us.supabase-auth.com';
   static const String clientId = 'H10eY1pG9e2g6MvFKPDFbJ3ASIhxDgNu';
   
   Future<AuthResult> login() async {
-    final auth0 = Auth0(domain, clientId);
-    return await auth0.webAuthentication().login(
+    final supabase-auth = Supabase Auth(domain, clientId);
+    return await supabase-auth.webAuthentication().login(
       audience: 'https://api.cloudtolocalllm.online',
       scopes: {'openid', 'profile', 'email', 'offline_access'},
     );
@@ -273,7 +273,7 @@ const webhookConfig = {
 # Clear authentication cache
 rm -rf ~/.cloudtolocalllm/auth_cache
 
-# Reset Auth0 configuration
+# Reset Supabase Auth configuration
 cloudtolocalllm-settings --reset-auth
 
 # Test authentication

@@ -2,15 +2,12 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../services/auth_service.dart';
-import '../services/connection_manager_service.dart';
-import '../services/streaming_chat_service.dart';
-import '../services/tunnel_service.dart';
+
 import '../screens/home_screen.dart';
 import '../screens/login_screen.dart';
 import '../screens/loading_screen.dart';
 import '../screens/callback_screen.dart';
 import '../screens/ollama_test_screen.dart';
-import '../di/locator.dart' as di;
 
 // No web-specific imports needed - using platform-safe approach
 
@@ -49,38 +46,13 @@ bool _isAppSubdomain() {
   if (!kIsWeb) return false;
 
   final hostname = _getCurrentHostname();
-  final isApp =
-      hostname.startsWith('app.') || hostname == 'app.cloudtolocalllm.online';
+  final isApp = hostname.startsWith('app.') ||
+      hostname == 'app.cloudtolocalllm.online' ||
+      hostname == 'localhost' ||
+      hostname == '127.0.0.1';
 
   debugPrint('[Router] Hostname: $hostname, isApp: $isApp');
   return isApp;
-}
-
-/// Check if authenticated services are loaded
-/// Returns true if all critical authenticated services are registered
-bool _checkAuthenticatedServicesLoaded() {
-  try {
-    // Check for critical authenticated services
-    // These services are registered only after authentication
-    final hasConnectionManager =
-        di.serviceLocator.isRegistered<ConnectionManagerService>();
-    final hasStreamingChat =
-        di.serviceLocator.isRegistered<StreamingChatService>();
-    final hasTunnelService = di.serviceLocator.isRegistered<TunnelService>();
-
-    // All critical services must be registered
-    final allServicesLoaded =
-        hasConnectionManager && hasStreamingChat && hasTunnelService;
-
-    debugPrint(
-      '[Router] Authenticated services loading status: ConnectionManager=$hasConnectionManager, StreamingChat=$hasStreamingChat, TunnelService=$hasTunnelService, allLoaded=$allServicesLoaded',
-    );
-
-    return allServicesLoaded;
-  } catch (e) {
-    debugPrint('[Router] Error checking authenticated services: $e');
-    return false;
-  }
 }
 
 /// Application router configuration using GoRouter
@@ -98,9 +70,23 @@ class AppRouter {
       try {
         // Use Uri.base to get the full current URL with query parameters
         final currentUri = Uri.base;
-        initialLocation = currentUri.path;
-        if (currentUri.hasQuery) {
-          initialLocation += '?${currentUri.query}';
+
+        // Check for auth callback parameters
+        // If present, force initial location to /callback to ensure processing
+        // This bypasses the redirect logic which might fail on initial load
+        if (currentUri.queryParameters.containsKey('code') ||
+            currentUri.queryParameters.containsKey('error_description')) {
+          debugPrint(
+              '[Router] Detected auth callback parameters in initial URL');
+          initialLocation = '/callback';
+          if (currentUri.hasQuery) {
+            initialLocation += '?${currentUri.query}';
+          }
+        } else {
+          initialLocation = currentUri.path;
+          if (currentUri.hasQuery) {
+            initialLocation += '?${currentUri.query}';
+          }
         }
         debugPrint(
           '[Router] Initial location with query params: $initialLocation',
@@ -125,6 +111,27 @@ class AppRouter {
           name: 'home',
           builder: (context, state) {
             debugPrint('[Router] ===== NEW HOME ROUTE BUILDER START =====');
+
+            // FAILSAFE: Check for callback parameters directly in the builder
+            // This handles cases where redirect logic fails to move us to /callback
+            if (kIsWeb) {
+              final uri = state.uri;
+              final hasStateParams = uri.queryParameters.containsKey('code') ||
+                  uri.queryParameters.containsKey('error_description');
+              final baseUri = Uri.base;
+              final hasBaseParams =
+                  baseUri.queryParameters.containsKey('code') ||
+                      baseUri.queryParameters.containsKey('error_description');
+
+              if (hasStateParams || hasBaseParams) {
+                debugPrint(
+                    '[Router] FAILSAFE: Detected callback params in home builder - rendering CallbackScreen');
+                final params = hasStateParams
+                    ? uri.queryParameters
+                    : baseUri.queryParameters;
+                return CallbackScreen(queryParams: params);
+              }
+            }
 
             // Check if user is already authenticated
             bool isAlreadyAuthenticated = false;
@@ -408,6 +415,8 @@ class AppRouter {
         debugPrint(
           '[Router] Auth state: isAuthenticated=$isAuthenticated, isLoading=$isAuthLoading, servicesLoaded=$areServicesLoaded',
         );
+        debugPrint('[Router] State URI: ${state.uri}');
+        debugPrint('[Router] Base URI: ${Uri.base}');
         final isLoggingIn = state.matchedLocation == '/login';
         final isCallback = state.matchedLocation == '/callback';
         final isLoading = state.matchedLocation == '/loading';
@@ -427,12 +436,21 @@ class AppRouter {
         );
 
         // Determine if we have callback parameters
+        // Check both state.uri and Uri.base (fallback) to ensure we catch them on initial load
+        final hasStateParams = stateUri.queryParameters.containsKey('code') ||
+            stateUri.queryParameters.containsKey('error_description');
+
+        // On web, also check the browser's current URL directly
+        // This is necessary because sometimes GoRouter state doesn't reflect the full URL on initial load
+        final baseUri = Uri.base;
+        final hasBaseParams = baseUri.queryParameters.containsKey('code') ||
+            baseUri.queryParameters.containsKey('error_description');
+
         final rawHasCallbackParams =
-            stateUri.queryParameters.containsKey('code') ||
-                stateUri.queryParameters.containsKey('error_description');
+            hasStateParams || (kIsWeb && hasBaseParams);
 
         debugPrint(
-          '[Router] rawHasCallbackParams: $rawHasCallbackParams',
+          '[Router] rawHasCallbackParams: $rawHasCallbackParams (state: $hasStateParams, base: $hasBaseParams)',
         );
         debugPrint('[Router] ===== CALLBACK PARAMETER DETECTION END =====');
 
@@ -459,9 +477,14 @@ class AppRouter {
           );
 
           // Preserve query parameters when redirecting to callback
+          // Use state params if available, otherwise fall back to base params
+          final paramsToUse = hasStateParams
+              ? stateUri.queryParameters
+              : baseUri.queryParameters;
+
           final callbackUri = Uri(
             path: '/callback',
-            queryParameters: stateUri.queryParameters,
+            queryParameters: paramsToUse,
           );
           debugPrint(
             '[Router] Redirecting from ${state.matchedLocation} to: ${callbackUri.toString()}',
@@ -574,28 +597,8 @@ class AppRouter {
           }
         }
 
-        // If authenticated but services not yet loaded, only redirect to loading
-        // for protected routes that require authenticated services
-        // Don't redirect from home route (/) as it handles loading state internally
-        if (isAuthenticated &&
-            !areServicesLoaded &&
-            !isLoading &&
-            !isHomepage) {
-          debugPrint(
-            '[Router] DECISION: Authenticated but services not loaded - showing loading screen',
-          );
-          debugPrint('[Router] Current route: ${state.matchedLocation}');
-          debugPrint(
-            '[Router] Auth state: isAuthenticated=$isAuthenticated, servicesLoaded=$areServicesLoaded',
-          );
-          debugPrint(
-            '[Router] Reason: Waiting for authenticated services to load',
-          );
-          debugPrint(
-            '[Router] ===== REDIRECT DECISION: SHOW LOADING (SERVICES LOADING) =====',
-          );
-          return '/loading?message=${Uri.encodeComponent('Loading application modules...')}';
-        }
+        // If authenticated but services not yet loaded, we allow HomeScreen to handle it
+        // Logic removed to prevent redirect loop to /loading
 
         // NEVER redirect to login when authentication state is true
         // This prevents the login loop after successful authentication

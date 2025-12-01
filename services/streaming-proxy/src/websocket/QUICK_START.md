@@ -16,9 +16,9 @@ import { TokenBucketRateLimiter } from './rate-limiter';
 
 // Create dependencies
 const authMiddleware = new JWTValidationMiddleware({
-  domain: process.env.AUTH0_DOMAIN!,
-  audience: process.env.AUTH0_AUDIENCE!,
-  issuer: process.env.AUTH0_ISSUER!,
+  domain: process.env.SUPABASE_AUTH_DOMAIN!,
+  audience: process.env.SUPABASE_AUTH_AUDIENCE!,
+  issuer: process.env.SUPABASE_AUTH_ISSUER!,
 });
 
 const rateLimiter = new TokenBucketRateLimiter();

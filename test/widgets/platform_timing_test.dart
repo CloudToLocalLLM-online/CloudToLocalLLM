@@ -193,7 +193,8 @@ class _MinimalAuthService extends ChangeNotifier implements AuthService {
   Future<String?> getValidatedAccessToken() async => null;
 
   @override
-  Future<bool> handleCallback({String? callbackUrl}) async => false;
+  Future<bool> handleCallback({String? callbackUrl, String? code}) async =>
+      true;
 
   @override
   Future<void> init() async {}

@@ -298,7 +298,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **GET /api/admin/audit/logs/:logId** - Get detailed audit log entry
   - Complete audit log entry with full context
-  - Admin user information (email, username, role, Auth0 ID)
+  - Admin user information (email, username, role, Supabase Auth ID)
   - Affected user information (if applicable)
   - Full action details (JSON formatted)
   - IP address and user agent tracking
@@ -331,7 +331,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 #### User Management API Routes
 - **GET /api/admin/users** - List users with pagination, search, and filtering
   - Pagination support (50 users per page, max 100)
-  - Search by email, username, user ID, or Auth0 ID
+  - Search by email, username, user ID, or Supabase Auth ID
   - Filter by subscription tier (free, premium, enterprise)
   - Filter by account status (active, suspended, deleted)
   - Filter by registration date range
@@ -718,7 +718,7 @@ For administrators setting up the Admin Center:
 - **Horizontal Pod Autoscaling** (HPA) support
 - **Multi-replica deployment** for high availability
 - **WebSocket traffic routing** via ingress
-- **Environment variable configuration** for Auth0 and WebSocket settings
+- **Environment variable configuration** for Supabase Auth and WebSocket settings
 - **Deployment rollout verification** in CI/CD pipeline
 - **Redis state management** for multi-instance deployments
 
@@ -1476,7 +1476,7 @@ For users upgrading from v3.1.x:
 ### Added
 - System tray integration with independent daemon
 - Enhanced connection management
-- Improved authentication with Auth0 integration
+- Improved authentication with Supabase Auth integration
 - Material Design 3 dark theme implementation
 
 ### Changed

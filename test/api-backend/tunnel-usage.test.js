@@ -36,7 +36,7 @@ describe('TunnelUsageService', () => {
 
     // Create test user
     const userResult = await pool.query(
-      `INSERT INTO users (auth0_id, email, name) 
+      `INSERT INTO users (jwt_id, email, name) 
        VALUES ($1, $2, $3) 
        RETURNING id`,
       [uuidv4(), `test-${uuidv4()}@example.com`, 'Test User'],
@@ -239,7 +239,7 @@ describe('TunnelUsageService', () => {
     it('should handle user with no tunnels', async () => {
       const newUserId = uuidv4();
       await pool.query(
-        `INSERT INTO users (auth0_id, email, name) 
+        `INSERT INTO users (jwt_id, email, name) 
          VALUES ($1, $2, $3)`,
         [uuidv4(), `test-${uuidv4()}@example.com`, 'Test User 2'],
       );
