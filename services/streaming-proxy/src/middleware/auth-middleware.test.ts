@@ -10,9 +10,9 @@ import { UserTier } from '../interfaces/auth-middleware';
 
 // Mock configuration
 const mockConfig = {
-  domain: 'test-tenant.auth0.com',
+  domain: 'test-tenant.example.com',
   audience: 'https://api.test.com',
-  issuer: 'https://test-tenant.auth0.com/',
+  issuer: 'https://test-tenant.example.com/',
 };
 
 describe('JWTValidationMiddleware', () => {

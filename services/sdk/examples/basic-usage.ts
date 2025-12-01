@@ -14,7 +14,7 @@ async function main() {
   });
 
   try {
-    // In a real application, you would get these tokens from Auth0
+    // In a real application, you would get these tokens from OAuth provider
     const accessToken = 'your-access-token';
     const refreshToken = 'your-refresh-token';
 

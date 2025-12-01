@@ -57,7 +57,7 @@ const options = {
           type: 'http',
           scheme: 'bearer',
           bearerFormat: 'JWT',
-          description: 'JWT token from Auth0',
+          description: 'JWT authentication token',
         },
         apiKeyAuth: {
           type: 'apiKey',

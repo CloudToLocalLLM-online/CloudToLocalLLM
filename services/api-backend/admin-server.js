@@ -55,10 +55,11 @@ const logger = winston.createLogger({
 
 // Configuration
 const ADMIN_PORT = process.env.ADMIN_PORT || 3001;
-const AUTH0_DOMAIN =
-  process.env.AUTH0_DOMAIN || 'dev-v2f2p008x3dr74ww.us.auth0.com';
-const AUTH0_AUDIENCE =
-  process.env.AUTH0_AUDIENCE || 'https://api.cloudtolocalllm.online';
+const AUTH_DOMAIN = process.env.AUTH_DOMAIN || process.env.SUPABASE_URL
+  ? new URL(process.env.SUPABASE_URL || '').hostname
+  : '';
+const AUTH_AUDIENCE =
+  process.env.AUTH_AUDIENCE || 'https://api.cloudtolocalllm.online';
 
 // Docker client for container management
 const docker = new Docker();
@@ -832,8 +833,8 @@ app.get(
           logLevel: process.env.LOG_LEVEL || 'info',
         },
         auth: {
-          auth0Domain: AUTH0_DOMAIN,
-          auth0Audience: AUTH0_AUDIENCE,
+          authDomain: AUTH_DOMAIN,
+          authAudience: AUTH_AUDIENCE,
         },
         docker: {
           host: process.env.DOCKER_HOST || 'unix:///var/run/docker.sock',
@@ -882,7 +883,7 @@ app.get(
 
       // Filter environment variables (exclude sensitive ones)
       const sensitiveKeys = [
-        'AUTH0_CLIENT_SECRET',
+        'AUTH_CLIENT_SECRET',
         'JWT_SECRET',
         'DATABASE_PASSWORD',
         'API_KEY',
@@ -1004,8 +1005,8 @@ app.get(
         },
         auth: {
           status: 'unknown',
-          domain: AUTH0_DOMAIN,
-          audience: AUTH0_AUDIENCE,
+          domain: AUTH_DOMAIN,
+          audience: AUTH_AUDIENCE,
         },
       };
 
@@ -1020,7 +1021,7 @@ app.get(
         services.docker.error = dockerError.message;
       }
 
-      // Check Auth0 connectivity (simplified)
+      // Check OAuth connectivity (simplified)
       services.auth.status = 'configured';
 
       res.json({
@@ -1337,8 +1338,8 @@ server.listen(ADMIN_PORT, () => {
   logger.info(' [AdminPanel] CloudToLocalLLM Admin Server started', {
     port: ADMIN_PORT,
     environment: process.env.NODE_ENV || 'development',
-    auth0Domain: AUTH0_DOMAIN,
-    auth0Audience: AUTH0_AUDIENCE,
+    authDomain: AUTH_DOMAIN,
+    authAudience: AUTH_AUDIENCE,
   });
 });
 

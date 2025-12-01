@@ -130,10 +130,10 @@ export class JWTValidationMiddleware implements AuthMiddleware {
   }
 
   /**
-   * Refresh expired token (placeholder - actual implementation depends on Auth0 setup)
+   * Refresh expired token (placeholder - actual implementation depends on OAuth setup)
    */
   async refreshToken(token: string): Promise<string> {
-    // This would typically involve calling Auth0's token refresh endpoint
+    // This would typically involve calling OAuth token refresh endpoint
     // For now, throw an error indicating the client should re-authenticate
     throw new Error('Token refresh not implemented - please re-authenticate');
   }

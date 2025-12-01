@@ -52,7 +52,7 @@ export class UserProfileService {
 
   /**
    * Get user profile by user ID
-   * @param {string} userId - Auth0 user ID
+   * @param {string} userId - User ID
    * @returns {Promise<Object>} User profile object
    */
   async getUserProfile(userId) {
@@ -124,7 +124,7 @@ export class UserProfileService {
 
   /**
    * Update user profile
-   * @param {string} userId - Auth0 user ID
+   * @param {string} userId - User ID
    * @param {Object} profileData - Profile data to update
    * @returns {Promise<Object>} Updated user profile
    */
@@ -218,7 +218,7 @@ export class UserProfileService {
 
   /**
    * Update user preferences
-   * @param {string} userId - Auth0 user ID
+   * @param {string} userId - User ID
    * @param {Object} preferences - Preferences object
    * @returns {Promise<Object>} Updated preferences
    */
@@ -272,7 +272,7 @@ export class UserProfileService {
 
   /**
    * Get user preferences
-   * @param {string} userId - Auth0 user ID
+   * @param {string} userId - User ID
    * @returns {Promise<Object>} User preferences
    */
   async getUserPreferences(userId) {
@@ -310,7 +310,7 @@ export class UserProfileService {
 
   /**
    * Update user avatar
-   * @param {string} userId - Auth0 user ID
+   * @param {string} userId - User ID
    * @param {string} avatarUrl - Avatar URL
    * @returns {Promise<Object>} Updated user profile
    */

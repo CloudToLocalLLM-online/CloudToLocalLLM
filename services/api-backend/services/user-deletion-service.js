@@ -48,7 +48,7 @@ export class UserDeletionService {
 
   /**
    * Delete user account with cascading cleanup
-   * @param {string} userId - Auth0 user ID
+   * @param {string} userId - User ID
    * @param {Object} options - Deletion options
    * @param {boolean} options.softDelete - If true, mark as deleted instead of hard delete
    * @param {string} options.reason - Reason for deletion (for audit purposes)
@@ -200,7 +200,7 @@ export class UserDeletionService {
 
   /**
    * Restore a soft-deleted user account
-   * @param {string} userId - Auth0 user ID
+   * @param {string} userId - User ID
    * @returns {Promise<Object>} Restoration result
    */
   async restoreUserAccount(userId) {
@@ -245,7 +245,7 @@ export class UserDeletionService {
 
   /**
    * Check if a user is soft-deleted
-   * @param {string} userId - Auth0 user ID
+   * @param {string} userId - User ID
    * @returns {Promise<boolean>} True if user is soft-deleted
    */
   async isUserDeleted(userId) {
@@ -278,7 +278,7 @@ export class UserDeletionService {
 
   /**
    * Get deletion information for a soft-deleted user
-   * @param {string} userId - Auth0 user ID
+   * @param {string} userId - User ID
    * @returns {Promise<Object>} Deletion information
    */
   async getDeletionInfo(userId) {
@@ -325,7 +325,7 @@ export class UserDeletionService {
 
   /**
    * Permanently delete a soft-deleted user (after retention period)
-   * @param {string} userId - Auth0 user ID
+   * @param {string} userId - User ID
    * @returns {Promise<Object>} Permanent deletion result
    */
   async permanentlyDeleteUser(userId) {

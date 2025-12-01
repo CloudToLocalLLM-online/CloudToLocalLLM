@@ -351,7 +351,7 @@ router.get(
         id,
         email,
         username,
-        auth0_id,
+        user_id,
         created_at,
         is_suspended
       FROM users

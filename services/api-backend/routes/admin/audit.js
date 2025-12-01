@@ -270,10 +270,10 @@ router.get(
         aal.created_at,
         admin_user.email as admin_email,
         admin_user.username as admin_username,
-        admin_user.auth0_id as admin_auth0_id,
+        admin_user.user_id as admin_user_id,
         affected_user.email as affected_user_email,
         affected_user.username as affected_user_username,
-        affected_user.auth0_id as affected_user_auth0_id
+        affected_user.user_id as affected_user_user_id
       FROM admin_audit_logs aal
       LEFT JOIN users admin_user ON aal.admin_user_id = admin_user.id
       LEFT JOIN users affected_user ON aal.affected_user_id = affected_user.id
@@ -323,7 +323,7 @@ router.get(
               id: log.admin_user_id,
               email: log.admin_email,
               username: log.admin_username,
-              auth0Id: log.admin_auth0_id,
+              userId: log.admin_user_id,
               role: log.admin_role,
             },
             affectedUser: log.affected_user_id
@@ -331,7 +331,7 @@ router.get(
                 id: log.affected_user_id,
                 email: log.affected_user_email,
                 username: log.affected_user_username,
-                auth0Id: log.affected_user_auth0_id,
+                userId: log.affected_user_user_id,
               }
               : null,
           },

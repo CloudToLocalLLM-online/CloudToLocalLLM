@@ -105,7 +105,7 @@ export class StreamingProxyManager {
    * For free tier users, returns direct tunnel configuration instead of container
    * For premium/enterprise users, provisions isolated container environment
    *
-   * @param {string} userId - User identifier from Auth0
+   * @param {string} userId - User identifier
    * @param {string} _userToken - User authentication token (unused but kept for compatibility)
    * @param {Object} user - Decoded JWT user object for tier detection
    * @returns {Promise<Object>} Proxy configuration object

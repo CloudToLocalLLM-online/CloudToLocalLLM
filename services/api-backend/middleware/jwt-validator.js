@@ -257,7 +257,7 @@ export class JWTValidator {
    * @param {Object} options - Validation options
    * @param {string} options.audience - Expected audience
    * @param {string} options.issuer - Expected issuer
-   * @param {string} options.domain - Auth0 domain
+   * @param {string} options.domain - OAuth domain
    * @param {string} [options.ip] - Client IP for rate limiting
    * @returns {Promise<Object>} Validation result
    */
@@ -558,8 +558,8 @@ export class JWTValidator {
 /**
  * Create Express middleware for comprehensive JWT validation
  * @param {Object} config - Validator configuration
- * @param {string} config.domain - Auth0 domain
- * @param {string} config.audience - Auth0 audience
+ * @param {string} config.domain - OAuth domain
+ * @param {string} config.audience - OAuth audience
  * @returns {Function} Express middleware
  */
 export function createJWTValidationMiddleware(config = {}) {
