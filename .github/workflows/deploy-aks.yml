@@ -448,6 +448,9 @@ jobs:
             sleep 5
           done
           echo "Health check failed after 2 minutes. Dumping api-backend logs:"
+          kubectl get pods -n cloudtolocalllm
+          kubectl logs postgres-0 -n cloudtolocalllm --tail=50
+          kubectl describe pod postgres-0 -n cloudtolocalllm
           kubectl logs -l app=api-backend -n cloudtolocalllm --tail=100
           kubectl describe pod -l app=api-backend -n cloudtolocalllm
           exit 1
