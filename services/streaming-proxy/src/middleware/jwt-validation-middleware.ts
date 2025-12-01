@@ -1,6 +1,6 @@
 /**
  * JWT Validation Middleware Implementation
- * Integrates with Auth0 JWKS for token validation
+ * Integrates with Supabase JWKS for token validation (RS256)
  * Implements caching and distinguishes between expired and invalid tokens
  */
 
@@ -12,7 +12,8 @@ import {
   RateLimitConfig,
   AuthEvent,
 } from '../interfaces/auth-middleware';
-import crypto from 'crypto';
+import jwt from 'jsonwebtoken';
+import jwksClient from 'jwks-rsa';
 
 interface JWTHeader {
   alg: string;
@@ -36,26 +37,44 @@ interface CachedValidation {
 
 interface SupabaseConfig {
   supabase: {
-    jwtSecret: string;
+    url: string;
   };
 }
 
 /**
  * JWT Validation Middleware
- * Validates JWT tokens from Supabase with caching
+ * Validates JWT tokens from Supabase with caching using RS256
  */
 export class JWTValidationMiddleware implements AuthMiddleware {
   private readonly config: SupabaseConfig;
   private readonly validationCache: Map<string, CachedValidation> = new Map();
   private readonly cacheDuration = 5 * 60 * 1000; // 5 minutes
+  private readonly client: jwksClient.JwksClient;
 
   constructor(config: SupabaseConfig) {
     this.config = config;
+    this.client = jwksClient({
+      jwksUri: `${config.supabase.url}/auth/v1/.well-known/jwks.json`,
+      cache: true,
+      rateLimit: true,
+      jwksRequestsPerMinute: 5,
+    });
   }
 
   /**
-   * Validate JWT token with caching
+   * Get signing key from JWKS
    */
+  private getKey(header: jwt.JwtHeader, callback: jwt.SigningKeyCallback) {
+    this.client.getSigningKey(header.kid, (err, key) => {
+      if (err) {
+        callback(err);
+        return;
+      }
+      const signingKey = key?.getPublicKey();
+      callback(null, signingKey);
+    });
+  }
+
   /**
    * Validate JWT token with caching
    */
@@ -66,54 +85,48 @@ export class JWTValidationMiddleware implements AuthMiddleware {
       return cached.result;
     }
 
-    try {
-      // Decode token without verification
-      const decoded = this.decodeToken(token);
-      if (!decoded) {
-        const result = { valid: false, error: 'Invalid token format' };
-        this.cacheValidation(token, result);
-        return result;
-      }
+    return new Promise((resolve) => {
+      jwt.verify(
+        token,
+        this.getKey.bind(this),
+        { algorithms: ['RS256'] },
+        (err, decoded) => {
+          if (err) {
+            let result: TokenValidationResult;
+            if (err instanceof jwt.TokenExpiredError) {
+              const decodedToken = jwt.decode(token) as JWTPayload;
+              result = {
+                valid: false,
+                error: 'Token expired',
+                userId: decodedToken?.sub,
+                expiresAt: decodedToken?.exp ? new Date(decodedToken.exp * 1000) : undefined,
+              };
+            } else {
+              result = {
+                valid: false,
+                error: err.message,
+              };
+            }
+            // Cache invalid results too (except expired which are distinct)
+            if (err.name !== 'TokenExpiredError') {
+              this.cacheValidation(token, result);
+            }
+            resolve(result);
+            return;
+          }
 
-      const { payload } = decoded;
+          const payload = decoded as JWTPayload;
+          const result: TokenValidationResult = {
+            valid: true,
+            userId: payload.sub,
+            expiresAt: new Date(payload.exp * 1000),
+          };
 
-      // Check expiration
-      const now = Math.floor(Date.now() / 1000);
-      if (payload.exp && payload.exp < now) {
-        const result = {
-          valid: false,
-          error: 'Token expired',
-          userId: payload.sub,
-          expiresAt: new Date(payload.exp * 1000),
-        };
-        // Don't cache expired tokens
-        return result;
-      }
-
-      // Verify signature using HS256 (HMAC-SHA256) with Supabase JWT Secret
-      const isValid = await this.verifySignature(token, this.config.supabase.jwtSecret);
-      if (!isValid) {
-        const result = { valid: false, error: 'Invalid signature' };
-        this.cacheValidation(token, result);
-        return result;
-      }
-
-      // Token is valid
-      const result: TokenValidationResult = {
-        valid: true,
-        userId: payload.sub,
-        expiresAt: new Date(payload.exp * 1000),
-      };
-
-      this.cacheValidation(token, result);
-      return result;
-    } catch (error) {
-      const result = {
-        valid: false,
-        error: error instanceof Error ? error.message : 'Unknown validation error',
-      };
-      return result;
-    }
+          this.cacheValidation(token, result);
+          resolve(result);
+        }
+      );
+    });
   }
 
   /**
@@ -135,18 +148,16 @@ export class JWTValidationMiddleware implements AuthMiddleware {
       throw new Error('Invalid token - cannot extract user context');
     }
 
-    const decoded = this.decodeToken(token);
+    const decoded = jwt.decode(token) as JWTPayload;
     if (!decoded) {
       throw new Error('Failed to decode token');
     }
 
-    const { payload } = decoded;
-
     // Extract user tier from token claims
-    const tier = this.extractUserTier(payload);
+    const tier = this.extractUserTier(decoded);
     
     // Extract permissions
-    const permissions = this.extractPermissions(payload);
+    const permissions = this.extractPermissions(decoded);
 
     // Get rate limit config based on tier
     const rateLimit = this.getRateLimitForTier(tier);
@@ -187,54 +198,6 @@ export class JWTValidationMiddleware implements AuthMiddleware {
     };
 
     console.log(JSON.stringify(logEntry));
-  }
-
-  /**
-   * Decode JWT token without verification
-   */
-  private decodeToken(token: string): { header: JWTHeader; payload: JWTPayload } | null {
-    try {
-      const parts = token.split('.');
-      if (parts.length !== 3) {
-        return null;
-      }
-
-      const header = JSON.parse(this.base64UrlDecode(parts[0]));
-      const payload = JSON.parse(this.base64UrlDecode(parts[1]));
-
-      return { header, payload };
-    } catch {
-      return null;
-    }
-  }
-
-
-
-  /**
-   * Verify JWT signature using HS256 (HMAC-SHA256)
-   */
-  private async verifySignature(token: string, secret: string): Promise<boolean> {
-    try {
-      const parts = token.split('.');
-      const header = parts[0];
-      const payload = parts[1];
-      const signature = parts[2];
-
-      const data = `${header}.${payload}`;
-      
-      // Calculate expected signature
-      const hmac = crypto.createHmac('sha256', secret);
-      hmac.update(data);
-      const calculatedSignature = hmac.digest('base64')
-        .replace(/\+/g, '-')
-        .replace(/\//g, '_')
-        .replace(/=/g, '');
-
-      return signature === calculatedSignature;
-    } catch (error) {
-      console.error('Signature verification error:', error);
-      return false;
-    }
   }
 
   /**
@@ -320,24 +283,4 @@ export class JWTValidationMiddleware implements AuthMiddleware {
         };
     }
   }
-
-  /**
-   * Base64 URL decode to string
-   */
-  private base64UrlDecode(str: string): string {
-    // Replace URL-safe characters
-    let base64 = str.replace(/-/g, '+').replace(/_/g, '/');
-    
-    // Add padding
-    while (base64.length % 4 !== 0) {
-      base64 += '=';
-    }
-
-    // Decode
-    return Buffer.from(base64, 'base64').toString('utf-8');
-  }
-
-
-
-
 }

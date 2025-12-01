@@ -300,6 +300,7 @@ jobs:
             --from-literal=stripe-live-webhook-secret="$STRIPE_LIVE_WEBHOOK_SECRET" \
             --from-literal=sentry-dsn="$SENTRY_DSN" \
             --from-literal=supabase-jwt-secret="$SUPABASE_JWT_SECRET" \
+            --from-literal=supabase-url="https://cvaqhvpbnemweqrojasm.supabase.co" \
             --dry-run=client -o yaml | kubectl apply -f -
 
           # Cloudflare Tunnel Secret
@@ -313,6 +314,7 @@ jobs:
             --namespace cloudtolocalllm \
             --from-literal=SENTRY_DSN="$SENTRY_DSN" \
             --from-literal=SUPABASE_JWT_SECRET="$SUPABASE_JWT_SECRET" \
+            --from-literal=SUPABASE_URL="https://cvaqhvpbnemweqrojasm.supabase.co" \
             --dry-run=client -o yaml | kubectl apply -f -
 
       - name: Deploy Manifests

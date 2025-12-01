@@ -5,7 +5,7 @@
 
 export interface AuthConfig {
   supabase: {
-    jwtSecret: string;
+    url: string;
   };
   cache: {
     validationDuration: number; // milliseconds
@@ -26,15 +26,15 @@ export interface AuthConfig {
  * Load authentication configuration from environment variables
  */
 export function loadAuthConfig(): AuthConfig {
-  const jwtSecret = process.env.SUPABASE_JWT_SECRET;
+  const supabaseUrl = process.env.SUPABASE_URL;
 
-  if (!jwtSecret) {
-    throw new Error('SUPABASE_JWT_SECRET environment variable is required');
+  if (!supabaseUrl) {
+    throw new Error('SUPABASE_URL environment variable is required');
   }
 
   return {
     supabase: {
-      jwtSecret: jwtSecret,
+      url: supabaseUrl,
     },
     cache: {
       validationDuration: parseInt(process.env.AUTH_CACHE_DURATION || '300000'), // 5 minutes
@@ -56,8 +56,8 @@ export function loadAuthConfig(): AuthConfig {
  * Validate authentication configuration
  */
 export function validateAuthConfig(config: AuthConfig): void {
-  if (!config.supabase.jwtSecret) {
-    throw new Error('Supabase JWT secret is required');
+  if (!config.supabase.url) {
+    throw new Error('Supabase URL is required');
   }
 
   if (config.cache.validationDuration < 0) {
@@ -83,7 +83,7 @@ export function validateAuthConfig(config: AuthConfig): void {
 export function getDefaultAuthConfig(): AuthConfig {
   return {
     supabase: {
-      jwtSecret: 'your-supabase-jwt-secret',
+      url: 'https://your-project.supabase.co',
     },
     cache: {
       validationDuration: 5 * 60 * 1000, // 5 minutes

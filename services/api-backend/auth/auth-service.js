@@ -6,6 +6,7 @@
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 import fetch from 'node-fetch';
+import jwksClient from 'jwks-rsa';
 import { TunnelLogger } from '../utils/logger.js';
 import { DatabaseMigrator } from '../database/migrate.js';
 
@@ -16,14 +17,14 @@ import { DatabaseMigrator } from '../database/migrate.js';
 export class AuthService {
   constructor(config) {
     this.config = {
-      SUPABASE_JWT_SECRET: process.env.SUPABASE_JWT_SECRET,
+      SUPABASE_URL: process.env.SUPABASE_URL,
       SESSION_TIMEOUT: parseInt(process.env.SESSION_TIMEOUT) || 3600000, // 1 hour
       MAX_SESSIONS_PER_USER: parseInt(process.env.MAX_SESSIONS_PER_USER) || 5,
       ...config,
     };
 
-    if (!this.config.SUPABASE_JWT_SECRET) {
-      throw new Error('SUPABASE_JWT_SECRET environment variable is required');
+    if (!this.config.SUPABASE_URL) {
+      throw new Error('SUPABASE_URL environment variable is required');
     }
 
     this.logger = new TunnelLogger('auth-service');
@@ -34,6 +35,14 @@ export class AuthService {
     this.db = this.authDbMigrator || this.mainDbMigrator || new DatabaseMigrator();
 
     this.initialized = false;
+
+    // Initialize JWKS client
+    this.jwksClient = jwksClient({
+      jwksUri: `${this.config.SUPABASE_URL}/auth/v1/.well-known/jwks.json`,
+      cache: true,
+      rateLimit: true,
+      jwksRequestsPerMinute: 5,
+    });
   }
 
   /**
@@ -51,7 +60,7 @@ export class AuthService {
       }
       this.initialized = true;
 
-      this.logger.info('Authentication service initialized (Supabase)');
+      this.logger.info('Authentication service initialized (Supabase RS256)');
 
       // Start session cleanup
       this.startSessionCleanup();
@@ -61,6 +70,20 @@ export class AuthService {
       });
       throw error;
     }
+  }
+
+  /**
+   * Get signing key from JWKS
+   */
+  getKey(header, callback) {
+    this.jwksClient.getSigningKey(header.kid, (err, key) => {
+      if (err) {
+        callback(err);
+        return;
+      }
+      const signingKey = key.getPublicKey();
+      callback(null, signingKey);
+    });
   }
 
   /**
@@ -77,11 +100,22 @@ export class AuthService {
         this.logger.info('Using pre-validated token payload');
         payload = preValidatedPayload;
       } else {
-        // Full validation using Supabase JWT Secret (HS256)
-        this.logger.info('Starting full token validation (Supabase)');
+        // Full validation using Supabase JWKS (RS256)
+        this.logger.info('Starting full token validation (Supabase RS256)');
 
-        payload = jwt.verify(token, this.config.SUPABASE_JWT_SECRET, {
-          algorithms: ['HS256'],
+        payload = await new Promise((resolve, reject) => {
+          jwt.verify(
+            token,
+            this.getKey.bind(this),
+            { algorithms: ['RS256'] },
+            (err, decoded) => {
+              if (err) {
+                reject(err);
+              } else {
+                resolve(decoded);
+              }
+            }
+          );
         });
 
         this.logger.info('Token verification successful');
@@ -126,10 +160,21 @@ export class AuthService {
    */
   async validateTokenForWebSocket(token) {
     try {
-      this.logger.info('Starting WebSocket token validation (Supabase)');
+      this.logger.info('Starting WebSocket token validation (Supabase RS256)');
 
-      const verified = jwt.verify(token, this.config.SUPABASE_JWT_SECRET, {
-        algorithms: ['HS256'],
+      const verified = await new Promise((resolve, reject) => {
+        jwt.verify(
+          token,
+          this.getKey.bind(this),
+          { algorithms: ['RS256'] },
+          (err, decoded) => {
+            if (err) {
+              reject(err);
+            } else {
+              resolve(decoded);
+            }
+          }
+        );
       });
 
       this.logger.info('WebSocket token verification successful', {
@@ -147,8 +192,6 @@ export class AuthService {
       throw error;
     }
   }
-
-  // Removed getSigningKey and jwkToPem as they are not needed for HS256
 
 
 

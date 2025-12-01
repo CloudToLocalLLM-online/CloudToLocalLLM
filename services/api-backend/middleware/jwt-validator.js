@@ -145,7 +145,7 @@ export class JWTValidator {
     const key = 'default';
     if (!this.authServices.has(key)) {
       const authService = new AuthService({
-        SUPABASE_JWT_SECRET: process.env.SUPABASE_JWT_SECRET,
+        SUPABASE_URL: process.env.SUPABASE_URL,
       });
 
       this.authServices.set(key, authService);
