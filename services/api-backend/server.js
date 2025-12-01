@@ -1037,8 +1037,6 @@ async function initializeTunnelSystem() {
     // Initialize auth service (optional - don't fail if it doesn't work)
     try {
       authService = new AuthService({
-        AUTH0_DOMAIN,
-        AUTH0_AUDIENCE,
         authDbMigrator, // Pass auth database connection to auth service
         dbMigrator, // Pass main database connection to auth service
       });
