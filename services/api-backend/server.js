@@ -78,13 +78,6 @@ Sentry.init({
 
 import Transport from 'winston-transport';
 
-// ... (imports)
-
-// Initialize Sentry
-Sentry.init({
-  // ... (existing config)
-});
-
 // Initialize Sentry Winston Transport
 const SentryWinstonTransport = Sentry.createSentryWinstonTransport(Transport);
 

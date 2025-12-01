@@ -486,4 +486,17 @@ const options = {
   ],
 };
 
-export const specs = swaggerJsdoc(options);
+let specs;
+try {
+  specs = swaggerJsdoc(options);
+} catch (error) {
+  console.error('Failed to generate Swagger documentation:', error);
+  // Fallback to empty spec if generation fails
+  specs = {
+    openapi: '3.0.0',
+    info: options.definition.info,
+    paths: {},
+  };
+}
+
+export { specs };

@@ -1,181 +1,64 @@
-# CloudToLocalLLM Copilot Instructions
+# CloudToLocalLLM — Copilot / AI Agent Instructions (concise)
 
-Guidelines for AI agents contributing to the CloudToLocalLLM project.
+This file gives AI coding agents the actionable, repo-specific knowledge needed to be productive quickly. It focuses on architecture, key files, developer workflows, and integration points discovered in the workspace.
 
-## Project Overview
+Core architecture (big picture)
+- Frontend: Flutter app in `lib/` and `android/` — cross-platform (Windows, Linux, Web). Key pattern: `provider` + `GetIt` for DI.
+- Backend/Tools: `services/` and `api/` contain Node.js services and MCP helpers. `config/mcp/` holds MCP server wiring used by local tooling.
+- Data: PostgreSQL for server sessions (services), local SQLite/IndexedDB for client conversation storage.
 
-CloudToLocalLLM is a cross-platform Flutter application (Windows, Linux, Web) that provides a unified interface to cloud AI services (OpenAI, Anthropic) and local models (Ollama, LM Studio). The architecture combines:
-- **Frontend**: Flutter with `provider` state management (Get_It dependency injection)
-- **Backend**: Node.js services with Model Context Protocol SDK
-- **Storage**: PostgreSQL for sessions, SQLite/IndexedDB for local data, secure token storage
+Essential files & locations (start here)
+- Frontend app: `lib/`, `pubspec.yaml`, `android/`, `windows/` folders.
+- Node services: `services/` (look for `api-backend` and `server.js`).
+- MCP configs: `config/mcp/` and repo-root `mcp.json` (workspace MCP server mapping).
+- VS Code user MCP: user-level `mcp.json` lives at `%APPDATA%/Code/User/mcp.json` (we use this to add remote servers like Sentry).
+- Workspace VS Code: `.vscode/settings.json` contains `mcpServers` and other agent mappings.
 
-## Core Architecture Patterns
+Developer workflows (commands you will use)
+- Flutter dev: `flutter pub get`, `flutter run -d windows` / `-d chrome` (web), `flutter analyze`, `flutter test`.
+- Backend dev: `npm install` then `npm run dev` in service folders (nodemon/watch common).
+- MCP remote access (examples):
+	- Direct (OAuth-enabled clients): add `{ "Sentry": { "url": "https://mcp.sentry.dev/mcp" } }` to `mcp.json` and let the client handle OAuth.
+	- Legacy / wrapper: `npx -y mcp-remote@latest https://mcp.sentry.dev/mcp` — opens browser for OAuth and exposes a local STDIO bridge for clients that need it.
 
-### Service-Based Architecture (lib/services/)
-The app uses a multi-service design with dependency injection:
-- **Auth**: `auth_service.dart` (Supabase Auth) + `session_storage_service.dart` (PostgreSQL backend)
-- **Streaming**: `streaming_chat_service.dart` manages conversations with real-time updates via `StreamingMessage` model
-- **Connections**: `connection_manager_service.dart` routes between local/cloud providers
-- **AI Providers**: `llm_provider_manager.dart` handles failover; `BaseLLMProvider` defines interface; platform-specific providers in `llm_providers/`
-- **Tunneling**: `unified_connection_service.dart` abstracts connection type (Ollama, WebSocket, cloud)
+Project-specific conventions
+- Commit messages: conventional form with agent prefix for automated commits (example: `ai(Cursor): update provider DI`). Keep small, focused commits.
+- Formatting & lint: run `flutter format .`, `flutter analyze` before pushing; Node code: `eslint`, `npm audit`.
+- DI pattern: `lib/di/locator.dart` registers services in `setupCoreServices()` and `setupAuthenticatedServices()` — prefer adding services via these functions.
 
-**Pattern**: Services extend `ChangeNotifier` for reactive state; use `RxDart`'s `BehaviorSubject` for streaming state.
+Integration & cross-component notes
+- Auth: Auth0 is used; web uses a JS bridge (`auth0-bridge.js`) while desktop uses native flows. See `auth_service.dart` and `auth0_*_service.dart`.
+- Local models: Ollama/LM Studio integrations are in `lib/services/` and `llm_providers/`. They use OpenAI-compatible APIs; follow provider config in `provider_configuration.dart`.
+- MCP servers: repo includes `config/mcp` and a workspace `mcp.json`. VS Code may also use a user `mcp.json`. Avoid editing user-level files in commits; add or update workspace `mcp.json` when you intend the team to share MCP server definitions.
 
-### Platform-Specific Code
-Uses conditional imports to handle platform differences:
-```dart
-import 'services/auth_web_service.dart' if (dart.library.io) 'services/auth_web_service_stub.dart';
-if (kIsWeb) { /* web code */ } else { /* desktop code */ }
-```
-- Web: Supabase Auth via JavaScript SDK, `shared_preferences`, no window manager
-- Desktop: Supabase Auth native, `sqflite_common_ffi`, `window_manager`, `tray_manager`
+AI-agent operational rules (must-follow)
+- Use the `manage_todo_list` tool to claim, in-progress, and complete multi-step work. Update it as you progress.
+- Respect `.cursor/rules/` and other agent steering files before making changes.
+- Do not change unrelated files; keep edits minimal and scoped to the issue.
+- If multiple agents may touch a file, create a feature branch and open a PR rather than pushing directly to `main`.
 
-### Data Models
-Located in `lib/models/`:
-- `User`: `user_model.dart` (user authentication data)
-- **Conversations**: `conversation.dart`, `message.dart` (stored in SQLite/PostgreSQL)
-- **Streaming**: `streaming_message.dart` (progressive chat updates)
-- **Configuration**: `provider_configuration.dart` (Ollama, LM Studio, OpenAI-compatible)
-- **Errors**: `llm_communication_error.dart`, `ollama_connection_error.dart` (detailed error classification)
+Examples (concrete snippets)
+- Add Sentry remote (workspace `mcp.json`):
+	```json
+	{
+		"Sentry": { "command": "npx", "args": ["-y","mcp-remote@latest","https://mcp.sentry.dev/mcp"] }
+	}
+	```
 
-## Critical Development Workflows
+Troubleshooting notes
+- If `mcp-remote` starts and you see `Unexpected end of JSON input`, it usually means the bridge started but no local client connected to STDIO — ensure your MCP-capable client (VS Code MCP extension or other) is configured to use the local proxy or use a direct `url` entry supporting OAuth.
 
-### Setup & Dependencies
-```bash
-flutter pub get        # Frontend deps
-npm install            # Backend deps (for services/ if present)
-flutter analyze        # Lint check (MUST pass before commit)
-flutter format .       # Auto-format code
-```
+Available MCP tools (workspace-configured, in `.vscode/settings.json`)
+- **context7**: Library documentation and knowledge base retrieval — use to look up package docs, API patterns, best practices.
+- **sequentialthinking**: Multi-step problem-solving tool — use for planning complex implementations, validating solutions.
+- **memory**: Persistent knowledge store — use to track project decisions, architectural notes, and ongoing work across sessions.
+- **Sentry (getsentry/sentry-mcp)**: Issue tracking and AI debugging — configured in user `mcp.json` to use `https://mcp.sentry.dev/mcp` with OAuth.
 
-### Running
-**Desktop**: `flutter run -d windows` or `-d linux`
-**Web**: `flutter run -d chrome` (uses Auth0 JS bridge)
-**Backend** (if services/): `npm run dev` (nodemon-based)
+Where to look for more context
+- `config/mcp/` and `config/mcp/servers/` — local server wiring (Auth0, DigitalOcean, Kubernetes, Docker, GitHub integrations)
+- `.github/workflows/` — CI build and deploy flows (`build-release.yml`, `deploy-aks.yml`)
+- `lib/` and `services/` — implementation surfaces for feature work
 
-### Testing
-```bash
-flutter test                    # Widget & unit tests; uses test_config.dart for platform mocks
-npm test                        # E2E tests (Playwright in e2e/)
-```
-Platform-specific tests require mocking in `test/test_config.dart` (MethodChannel mocks for window_manager, tray_manager, etc.).
+If anything's unclear or you'd like this shorter/longer, tell me which parts to expand (auth, MCP, Flutter dev, or CI). After your feedback I'll iterate.
 
-### Building
-**Release builds must include `--release` flag**:
-- Windows: `flutter build windows --release` (requires Inno Setup)
-- Linux: `flutter build linux --release`
-- Web: `flutter build web --release`
-- **Tagging triggers GitHub Actions**: Push `v4.x.x` tag → automatic desktop build + GitHub release
-
-### Deployment
-- **Desktop**: GitHub Actions (`.github/workflows/build-release.yml`) on version tags (v4.x.x); creates .exe installer & portable .zip on hosted runners
-- **Docker Images**: GitHub Actions (`.github/workflows/build-images.yml`) builds & pushes to Docker Hub on `develop` branch
-- **Kubernetes**: GitHub Actions (`.github/workflows/deploy-aks.yml`) deploys to Azure AKS on `main` branch pushes
-- **All via GitHub-hosted runners**: No local/self-hosted infrastructure needed
-
-## Project-Specific Conventions
-
-### Code Style & Patterns
-1. **Error Handling**: Use typed error classes with classification (e.g., `OllamaConnectionError` with `ErrorClassification` enum)
-2. **Logging**: Use `appLogger` (from `utils/logger.dart`) with named contexts: `appLogger.debug('[ServiceName] message')`
-3. **State Updates**: Always call `notifyListeners()` after state changes in `ChangeNotifier` services
-4. **Comments**: Document non-obvious logic; include `/// dart doc` for public APIs
-5. **Imports**: Use relative imports in same module; absolute for cross-module imports
-
-### Cursor Rules (Refer to `.cursor/rules/`)
-- **Flutter**: Use `dart:js_interop` (not deprecated `js`), `package:web/web.dart` for DOM access
-- **Node.js**: Use `npm ci` for prod; validate JWT; structured logging (not console.log)
-- **General**: Run `flutter analyze` + `eslint` before push; atomic commits with conventional messages (`feat:`, `fix:`, `chore:`)
-
-### Environment & Configuration
-- `.env` file (root) contains: `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `JWT_ISSUER_DOMAIN`, `SERVER_HOST`, etc.
-- `lib/config/app_config.dart`: Centralized hardcoded constants (API URLs, feature flags)
-- Feature flags: `enableDevMode`, `enableDarkMode`, `enableDebugMode` in `AppConfig`
-
-### Dependency Injection (lib/di/locator.dart)
-- Services registered in `setupCoreServices()` (pre-auth: AuthService, LocalOllama, ProviderDiscovery)
-- Services registered in `setupAuthenticatedServices()` (post-auth: StreamingChat, ConnectionManager)
-- Use `GetIt.instance` to access; register as singletons; some services lazy-initialized
-
-### Build Configuration
-- `build.yaml`: Excludes web-specific code for non-web builds (windows, linux, android)
-- Version in `pubspec.yaml` (e.g., `4.4.0+202511081545`); updated by release scripts
-- `assets/version.json`: Contains version metadata
-
-## Working With Other AI Agents
-
-- **Awareness**: Other AI agents (for example, Kiro and Cursor) may be actively working in this repository. Before making edits, inspect their steering and rule files (check `.cursor/rules/`, any `kiro`-related config files, and `.github/*` instructions) and respect those directives.
-
-- **Claiming work**: Use the repository `manage_todo_list` workflow to claim tasks and mark status. Always mark a task `in-progress` before making significant edits and mark `completed` immediately after pushing commits.
-
-- **Edit coordination**: Avoid simultaneous edits to the same file. If you need to work on a file another agent may touch, create a feature branch and open a PR rather than pushing directly to `main`.
-
-- **Commit messages**: Include the agent name and concise intent in commit messages, e.g., `ai(Kiro): fix auth flow` or `ai(Cursor): update provider DI`.
-
-- **Workspace settings**: Do not add or push workspace-local files (e.g., `.vscode/settings.json`) unless the team explicitly agrees; keep such changes local or in a clearly labeled PR.
-
-- **Conflict handling**: If edits conflict with another agent's changes, create a small PR, tag human reviewers, and add a `memory` observation describing the conflict and proposed resolution.
-
-- **Steering compliance**: Prefer minimal, well-scoped changes; run `flutter analyze` and relevant tests locally where possible; annotate generated code and decisions in `memory` for transparency.
-
-### Build Configuration
-
-## Key Files by Concern
-
-| Concern | Files |
-|---------|-------|
-| **Auth Flow** | `auth_service.dart`, `auth0_*_service.dart`, `session_storage_service.dart` |
-| **AI Integration** | `llm_provider_manager.dart`, `llm_providers/*.dart`, `langchain_*_service.dart` |
-| **Chat/Streaming** | `streaming_chat_service.dart`, `conversation_storage_service*.dart` |
-| **Connection Mgmt** | `connection_manager_service.dart`, `unified_connection_service.dart` |
-| **Local Models** | `ollama_service.dart`, `local_ollama_connection_service.dart`, `provider_discovery_service.dart` |
-| **Error Handling** | `llm_error_handler.dart`, `llm_communication_error.dart`, `ollama_connection_error.dart` |
-| **Desktop/System** | `window_manager_service*.dart`, `native_tray_service*.dart`, `desktop_client_detection_service.dart` |
-| **Config & Constants** | `lib/config/app_config.dart`, `lib/di/locator.dart` |
-
-## External Dependencies & Integrations
-
-**Cloud AI**: OpenAI, Anthropic APIs
-**Local AI**: Ollama (via HTTP), LM Studio (OpenAI-compatible)
-**Auth**: Supabase Auth (OAuth2/OIDC; web uses JS SDK, desktop uses native)
-**Database**: PostgreSQL (sessions), SQLite (local conversations)
-**Networking**: `dio` (HTTP client for all REST APIs and streaming)
-**State**: `provider`, `rxdart` (reactive streams)
-**Storage**: `sqflite_common_ffi` (desktop), `shared_preferences` (web), `flutter_secure_storage_x` (tokens)
-**AI Framework**: LangChain (`langchain`, `langchain_ollama`, `langchain_community`)
-**System**: `window_manager`, `tray_manager`, `flutter_secure_storage_x` (desktop only)
-
-## Testing & Quality Checks
-
-Before pushing:
-1. `flutter analyze` (fix all linter errors)
-2. `flutter format .` (auto-format)
-3. `flutter test` (pass all tests; add mocks to `test/test_config.dart` if needed)
-4. For Node.js code: `npm audit`, `eslint`
-5. Commit: Use conventional messages (`feat:`, `fix:`, `chore:`, `test:`, `docs:`, `refactor:`, `ci:`)
-
-## MCP Tools Available (Docker Desktop)
-
-The following MCP servers are available for direct use:
-
-- **context7**: Library documentation and knowledge base tool for retrieving up-to-date documentation and API references from libraries and frameworks. Use for researching package documentation, API patterns, and best practices.
-- **sequentialthinking**: Reflective problem-solving tool that helps analyze complex problems through multi-step thinking, hypothesis generation, and verification. Use for planning multi-step implementations and validating solutions.
-- **memory**: Persistent memory system for tracking project state, decisions, and context across sessions. Use for maintaining knowledge about ongoing tasks and architectural decisions.
-
-## MCP Test Summary
-
-The MCP toolkit was validated locally against the active Docker containers and the workspace was configured to make these tools available to VS Code and AI agents.
-
-- Resolved library docs via `context7` (found `/cfug/dio` and retrieved usage snippets for `dio`).
-- Ran a multi-step check with `sequentialthinking` — tool is responsive.
-- Created a test entity `mcp-tool-check` in the `memory` server to record observations.
-- Added workspace mappings in `.vscode/settings.json` so the MCP extension can find the containers:
-	- `context7` -> `mcp/context7`
-	- `sequentialthinking` -> `mcp/sequentialthinking`
-	- `memory` -> `mcp/memory`
-
-If you'd like, I can (a) run more targeted queries (library lookups, code snippets), (b) populate `memory` with additional project notes, or (c) remove/rename MCP entries in the workspace settings.
-
----
-
-**Last Updated**: November 15, 2025 | **Version**: 4.4.0
+**Last updated**: autogenerated on commit

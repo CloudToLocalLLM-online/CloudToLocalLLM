@@ -98,15 +98,6 @@ The `access_mcp_resource` command is used to retrieve data or information provid
     3.  Optionally, specify a `topic` (e.g., "routing", "hooks") to narrow down the documentation results.
     4.  If the exact library ID is already known, it can be directly provided to `get-library-docs` to skip the `resolve-library-id` step.
 
-### E. Browser Tools (`github.com/AgentDeskAI/browser-tools-mcp`)
-
-*   **Purpose**: Interact with the browser, capture screenshots, analyze logs, and perform comprehensive web audits.
-*   **Workflow**:
-    1.  **Prerequisites**: Ensure the `browser-tools-server` is running (`npx @agentdeskai/browser-tools-server@latest`) and the Chrome extension is connected.
-    2.  **Visual Verification**: Use `takeScreenshot` to capture the current browser state for visual verification or debugging UI issues.
-    3.  **Debugging**: Use `getConsoleLogs` and `getNetworkErrors` to inspect runtime issues and failed network requests.
-    4.  **Auditing**: Use `runAuditMode` to run a full suite of audits, or specific tools like `runAccessibilityAudit`, `runPerformanceAudit`, `runSEOAudit`, and `runBestPracticesAudit` for targeted checks.
-    5.  **Context Analysis**: Use `getSelectedElement` to inspect the DOM element currently selected in the browser's DevTools.
 
 ## 6. Error Handling and Debugging MCP Tool Calls
 
