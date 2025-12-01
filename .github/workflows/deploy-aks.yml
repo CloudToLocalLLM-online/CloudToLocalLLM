@@ -447,5 +447,7 @@ jobs:
             echo "Attempt $i: Health check failed, waiting 5s..."
             sleep 5
           done
-          echo "Health check failed after 2 minutes."
+          echo "Health check failed after 2 minutes. Dumping api-backend logs:"
+          kubectl logs -l app=api-backend -n cloudtolocalllm --tail=100
+          kubectl describe pod -l app=api-backend -n cloudtolocalllm
           exit 1
