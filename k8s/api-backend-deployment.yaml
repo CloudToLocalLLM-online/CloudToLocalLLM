@@ -135,6 +135,11 @@ spec:
                 secretKeyRef:
                   name: cloudtolocalllm-secrets
                   key: jwt-secret
+            - name: SUPABASE_JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: cloudtolocalllm-secrets
+                  key: supabase-jwt-secret
             - name: AUTH0_DOMAIN
               valueFrom:
                 secretKeyRef:
