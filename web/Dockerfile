@@ -6,9 +6,10 @@ FROM cloudtolocalllm/base:latest
 
 # Switch to root to install Nginx
 USER root
-RUN dnf -y install nginx && \
-    dnf clean all && \
-    rm -rf /etc/nginx/conf.d/* /etc/nginx/default.d/*
+RUN apt-get update && \
+    apt-get install -y nginx && \
+    rm -rf /var/lib/apt/lists/* && \
+    rm -rf /etc/nginx/conf.d/* /etc/nginx/sites-enabled/*
 
 # Configure Nginx
 COPY web/nginx-main.conf /etc/nginx/nginx.conf

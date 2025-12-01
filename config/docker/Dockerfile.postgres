@@ -6,8 +6,10 @@ FROM cloudtolocalllm/base:latest
 
 # Install PostgreSQL
 USER root
-RUN dnf -y install postgresql-server postgresql-contrib findutils && \
-    dnf clean all
+# Ubuntu/Debian uses 'postgresql' instead of 'postgresql-server'
+RUN apt-get update && \
+    apt-get install -y postgresql postgresql-contrib findutils && \
+    rm -rf /var/lib/apt/lists/*
 
 # Create directories and fix permissions
 RUN mkdir -p /var/lib/postgresql/data /docker-entrypoint-initdb.d /var/run/postgresql && \
