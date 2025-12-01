@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../utils/web_interop_stub.dart'
     if (dart.library.html) '../utils/web_interop.dart';
 import '../services/auth_service.dart';
@@ -261,6 +262,25 @@ class _CallbackScreenState extends State<CallbackScreen> {
           }
         }
         return;
+      }
+
+      // Check if Supabase already has a session (it handles OAuth automatically)
+      final supabaseSession = Supabase.instance.client.auth.currentSession;
+      if (supabaseSession != null) {
+        debugPrint(
+          '[CallbackScreen] Supabase session already exists, waiting for auth state sync...',
+        );
+        // Give auth service a moment to sync the state
+        await Future.delayed(const Duration(milliseconds: 500));
+
+        if (authService.isAuthenticated.value ||
+            Supabase.instance.client.auth.currentSession != null) {
+          debugPrint('[CallbackScreen] Session confirmed, redirecting to home');
+          if (mounted) {
+            context.go('/');
+          }
+          return;
+        }
       }
 
       // Check if user is already authenticated - if so, just redirect to home
