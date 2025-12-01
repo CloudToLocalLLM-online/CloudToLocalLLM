@@ -1,34 +1,24 @@
 # Base Image for CloudToLocalLLM
-# Using official Node.js 24 image as requested by user.
-# Switching to Debian-based commands (apt-get) as node:24 is likely Debian-based.
+# Using Ubuntu 24.04 as requested to match GitHub Actions runner.
 
-FROM node:24
+FROM ubuntu:24.04
+
+# Prevent interactive prompts during package installation
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Install essential tools and Node.js 24
+# We need curl to setup nodesource
+RUN apt-get update && \
+    apt-get install -y curl ca-certificates gnupg rsync tar openssh-client && \
+    mkdir -p /etc/apt/keyrings && \
+    curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg && \
+    echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_24.x nodistro main" | tee /etc/apt/sources.list.d/nodesource.list && \
+    apt-get update && \
+    apt-get install -y nodejs && \
+    rm -rf /var/lib/apt/lists/*
 
 # Create custom user 'cloudtolocalllm' (UID 1000)
-# We do this first to ensure it exists in all derived images
-# node image usually has 'node' user at 1000, we can use it or create ours.
-# To avoid conflict, we'll use the existing 'node' user or create ours if ID 1000 is free.
-# Actually, node image has user 'node' with uid 1000. We should probably use that or rename it.
-# For compatibility with existing setup, let's try to use 'cloudtolocalllm'.
-# If 1000 is taken, we might need to modify it.
-# Let's check if we can just use useradd. If it fails, we handle it.
-# Safer: Just use the 'node' user but alias it? Or just create cloudtolocalllm with 1001?
-# User requested "NO ROOT EVER" and custom user 'cloudtolocalllm'.
-# We will try to create it. If 1000 is taken, we'll use 1001.
-# BUT, previous dockerfiles assume 1000.
-# Let's modify the node user to cloudtolocalllm if it exists.
-
-RUN if id -u node >/dev/null 2>&1; then \
-    usermod -l cloudtolocalllm -d /home/cloudtolocalllm -m node; \
-    groupmod -n cloudtolocalllm node; \
-    else \
-    useradd -u 1000 -m -s /bin/bash cloudtolocalllm; \
-    fi
-
-# Install essential tools for rsync-based deployment
-RUN apt-get update && \
-    apt-get install -y rsync tar openssh-client && \
-    rm -rf /var/lib/apt/lists/*
+RUN useradd -u 1000 -m -s /bin/bash cloudtolocalllm
 
 # Set up working directory
 WORKDIR /app
