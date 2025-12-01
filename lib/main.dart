@@ -60,13 +60,16 @@ void main() async {
 
   WidgetsFlutterBinding.ensureInitialized();
 
+  print('[Main] Initializing Supabase...');
   await Supabase.initialize(
     url: SupabaseConfig.url,
     anonKey: SupabaseConfig.anonKey,
   );
+  print('[Main] Supabase initialized');
 
   try {
     // Initialize Sentry with a timeout to prevent hanging
+    print('[Main] Initializing Sentry...');
     await SentryFlutter.init(
       (options) {
         options.dsn = AppConfig.sentryDsn;
@@ -80,9 +83,11 @@ void main() async {
         options.enableLogs = true;
       },
       appRunner: () async {
+        print('[Main] Sentry initialized, running app with Sentry...');
         _runAppWithSentry();
       },
     ).timeout(const Duration(seconds: 5));
+    print('[Main] Sentry init completed');
   } catch (e) {
     print('Sentry initialization failed or timed out: $e');
     // If Sentry fails, run the app anyway without Sentry wrapping
@@ -122,8 +127,11 @@ void _runAppCommon() {
 
     // Run the main bootstrap process
     try {
+      print('[Main] Bootstrapper loading...');
       final bootstrapper = AppBootstrapper();
-      return await bootstrapper.load();
+      final result = await bootstrapper.load();
+      print('[Main] Bootstrapper loaded');
+      return result;
     } catch (e, stack) {
       debugPrint('Bootstrap failed: $e');
       try {
