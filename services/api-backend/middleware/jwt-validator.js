@@ -138,21 +138,18 @@ export class JWTValidator {
   }
 
   /**
-   * Get or create AuthService for domain
-   * @param {string} domain - Auth0 domain
-   * @param {string} audience - Auth0 audience
+   * Get or create AuthService
    * @returns {AuthService} AuthService instance
    */
-  getAuthService(domain, audience) {
-    const key = `${domain}:${audience}`;
+  getAuthService() {
+    const key = 'default';
     if (!this.authServices.has(key)) {
       const authService = new AuthService({
-        AUTH0_DOMAIN: domain,
-        AUTH0_AUDIENCE: audience,
+        SUPABASE_JWT_SECRET: process.env.SUPABASE_JWT_SECRET,
       });
 
       this.authServices.set(key, authService);
-      this.logger.debug('Created AuthService', { domain, audience });
+      this.logger.debug('Created AuthService (Supabase)');
     }
 
     return this.authServices.get(key);
@@ -265,7 +262,7 @@ export class JWTValidator {
    * @returns {Promise<Object>} Validation result
    */
   async validateToken(token, options = {}) {
-    const { audience, issuer, domain, ip } = options;
+    const { ip } = options;
     const correlationId = this.logger.generateCorrelationId();
 
     this.cacheStats.totalValidations++;
@@ -310,7 +307,7 @@ export class JWTValidator {
       }
 
       // Verify token using AuthService
-      const authService = this.getAuthService(domain, audience);
+      const authService = this.getAuthService();
       const verified = await authService.validateToken(token);
 
       // Additional security checks
@@ -351,9 +348,6 @@ export class JWTValidator {
         error: error.message,
         errorName: error.name,
         ip,
-        audience,
-        issuer,
-        domain,
       });
 
       // Categorize error for better handling
@@ -521,7 +515,7 @@ export class JWTValidator {
       this.cacheStats.totalValidations > 0
         ? (
           (this.cacheStats.hits / this.cacheStats.totalValidations) *
-            100
+          100
         ).toFixed(2)
         : 0;
 
@@ -571,7 +565,7 @@ export class JWTValidator {
 export function createJWTValidationMiddleware(config = {}) {
   const validator = new JWTValidator(config);
 
-  return async(req, res, next) => {
+  return async (req, res, next) => {
     const correlationId = validator.logger.generateCorrelationId();
     req.correlationId = correlationId;
 
@@ -596,9 +590,6 @@ export function createJWTValidationMiddleware(config = {}) {
 
     try {
       const result = await validator.validateToken(token, {
-        audience: config.audience,
-        issuer: `https://${config.domain}/`,
-        domain: config.domain,
         ip: req.ip,
       });
 

@@ -12,6 +12,7 @@ import {
   RateLimitConfig,
   AuthEvent,
 } from '../interfaces/auth-middleware';
+import crypto from 'crypto';
 
 interface JWTHeader {
   alg: string;
@@ -33,27 +34,28 @@ interface CachedValidation {
   cachedAt: Date;
 }
 
-interface Auth0Config {
-  domain: string;
-  audience: string;
-  issuer: string;
+interface SupabaseConfig {
+  supabase: {
+    jwtSecret: string;
+  };
 }
 
 /**
  * JWT Validation Middleware
- * Validates JWT tokens from Auth0 with caching
+ * Validates JWT tokens from Supabase with caching
  */
 export class JWTValidationMiddleware implements AuthMiddleware {
-  private readonly config: Auth0Config;
+  private readonly config: SupabaseConfig;
   private readonly validationCache: Map<string, CachedValidation> = new Map();
   private readonly cacheDuration = 5 * 60 * 1000; // 5 minutes
-  private jwksCache: Map<string, string> = new Map();
-  private jwksCacheExpiry: Date | null = null;
 
-  constructor(config: Auth0Config) {
+  constructor(config: SupabaseConfig) {
     this.config = config;
   }
 
+  /**
+   * Validate JWT token with caching
+   */
   /**
    * Validate JWT token with caching
    */
@@ -73,22 +75,7 @@ export class JWTValidationMiddleware implements AuthMiddleware {
         return result;
       }
 
-      const { header, payload } = decoded;
-
-      // Verify issuer
-      if (payload.iss !== this.config.issuer) {
-        const result = { valid: false, error: 'Invalid issuer' };
-        this.cacheValidation(token, result);
-        return result;
-      }
-
-      // Verify audience
-      const audiences = Array.isArray(payload.aud) ? payload.aud : [payload.aud];
-      if (!audiences.includes(this.config.audience)) {
-        const result = { valid: false, error: 'Invalid audience' };
-        this.cacheValidation(token, result);
-        return result;
-      }
+      const { payload } = decoded;
 
       // Check expiration
       const now = Math.floor(Date.now() / 1000);
@@ -103,15 +90,8 @@ export class JWTValidationMiddleware implements AuthMiddleware {
         return result;
       }
 
-      // Get public key and verify signature
-      const publicKey = await this.getPublicKey(header.kid);
-      if (!publicKey) {
-        const result = { valid: false, error: 'Unable to retrieve public key' };
-        this.cacheValidation(token, result);
-        return result;
-      }
-
-      const isValid = await this.verifySignature(token, publicKey);
+      // Verify signature using HS256 (HMAC-SHA256) with Supabase JWT Secret
+      const isValid = await this.verifySignature(token, this.config.supabase.jwtSecret);
       if (!isValid) {
         const result = { valid: false, error: 'Invalid signature' };
         this.cacheValidation(token, result);
@@ -228,87 +208,29 @@ export class JWTValidationMiddleware implements AuthMiddleware {
     }
   }
 
-  /**
-   * Get public key from Auth0 JWKS endpoint
-   */
-  private async getPublicKey(kid: string): Promise<string | null> {
-    // Check cache
-    if (this.jwksCacheExpiry && Date.now() < this.jwksCacheExpiry.getTime()) {
-      const cached = this.jwksCache.get(kid);
-      if (cached) {
-        return cached;
-      }
-    }
 
-    try {
-      const jwksUrl = `https://${this.config.domain}/.well-known/jwks.json`;
-      const response = await fetch(jwksUrl);
-      
-      if (!response.ok) {
-        console.error('Failed to fetch JWKS:', response.statusText);
-        return null;
-      }
-
-      const jwks = await response.json();
-      
-      // Cache all keys
-      this.jwksCache.clear();
-      for (const key of jwks.keys) {
-        if (key.kid && key.x5c && key.x5c.length > 0) {
-          // Convert x5c certificate to PEM format
-          const cert = key.x5c[0];
-          const pem = `-----BEGIN CERTIFICATE-----\n${cert}\n-----END CERTIFICATE-----`;
-          this.jwksCache.set(key.kid, pem);
-        }
-      }
-
-      // Set cache expiry (1 hour)
-      this.jwksCacheExpiry = new Date(Date.now() + 60 * 60 * 1000);
-
-      return this.jwksCache.get(kid) || null;
-    } catch (error) {
-      console.error('Error fetching JWKS:', error);
-      return null;
-    }
-  }
 
   /**
-   * Verify JWT signature using public key
+   * Verify JWT signature using HS256 (HMAC-SHA256)
    */
-  private async verifySignature(token: string, publicKey: string): Promise<boolean> {
+  private async verifySignature(token: string, secret: string): Promise<boolean> {
     try {
-      // Use Web Crypto API for signature verification
       const parts = token.split('.');
       const header = parts[0];
       const payload = parts[1];
       const signature = parts[2];
 
       const data = `${header}.${payload}`;
-      const signatureBytes = this.base64UrlDecodeToBytes(signature);
+      
+      // Calculate expected signature
+      const hmac = crypto.createHmac('sha256', secret);
+      hmac.update(data);
+      const calculatedSignature = hmac.digest('base64')
+        .replace(/\+/g, '-')
+        .replace(/\//g, '_')
+        .replace(/=/g, '');
 
-      // Import public key
-      const keyData = this.pemToArrayBuffer(publicKey);
-      const cryptoKey = await crypto.subtle.importKey(
-        'spki',
-        keyData,
-        {
-          name: 'RSASSA-PKCS1-v1_5',
-          hash: 'SHA-256',
-        },
-        false,
-        ['verify']
-      );
-
-      // Verify signature
-      const dataBytes = new TextEncoder().encode(data);
-      const isValid = await crypto.subtle.verify(
-        'RSASSA-PKCS1-v1_5',
-        cryptoKey,
-        signatureBytes as BufferSource,
-        dataBytes
-      );
-
-      return isValid;
+      return signature === calculatedSignature;
     } catch (error) {
       console.error('Signature verification error:', error);
       return false;
@@ -415,33 +337,7 @@ export class JWTValidationMiddleware implements AuthMiddleware {
     return Buffer.from(base64, 'base64').toString('utf-8');
   }
 
-  /**
-   * Base64 URL decode to bytes
-   */
-  private base64UrlDecodeToBytes(str: string): Uint8Array {
-    // Replace URL-safe characters
-    let base64 = str.replace(/-/g, '+').replace(/_/g, '/');
-    
-    // Add padding
-    while (base64.length % 4 !== 0) {
-      base64 += '=';
-    }
 
-    // Decode
-    return new Uint8Array(Buffer.from(base64, 'base64'));
-  }
 
-  /**
-   * Convert PEM certificate to ArrayBuffer
-   */
-  private pemToArrayBuffer(pem: string): ArrayBuffer {
-    // Remove PEM headers and newlines
-    const b64 = pem
-      .replace(/-----BEGIN CERTIFICATE-----/, '')
-      .replace(/-----END CERTIFICATE-----/, '')
-      .replace(/\n/g, '');
 
-    const binary = Buffer.from(b64, 'base64');
-    return binary.buffer.slice(binary.byteOffset, binary.byteOffset + binary.byteLength);
-  }
 }

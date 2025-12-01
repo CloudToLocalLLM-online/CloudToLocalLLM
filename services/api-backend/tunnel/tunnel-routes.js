@@ -15,8 +15,7 @@ import { addTierInfo, requireFeature } from '../middleware/tier-check.js';
 /**
  * Creates tunnel-related routes, primarily for health and status checks.
  * @param {Object} config - Configuration object.
- * @param {string} config.AUTH0_DOMAIN - Auth0 domain.
- * @param {string} config.AUTH0_AUDIENCE - Auth0 audience.
+ * @param {Object} config - Configuration object.
  * @param {Object} tunnelProxy - The tunnel proxy instance (SSHProxy when implemented).
  * @param {winston.Logger} [logger] - Logger instance.
  * @param {AuthService} [authService] - Pre-initialized authentication service.
@@ -28,7 +27,6 @@ export function createTunnelRoutes(
   logger = winston.createLogger(),
   authService = null,
 ) {
-  const { AUTH0_DOMAIN, AUTH0_AUDIENCE } = config;
   const router = express.Router();
 
   const tunnelLogger =
@@ -37,8 +35,7 @@ export function createTunnelRoutes(
   // Use provided auth service or create a new one (fallback)
   if (!authService) {
     authService = new AuthService({
-      AUTH0_DOMAIN,
-      AUTH0_AUDIENCE,
+      SUPABASE_JWT_SECRET: process.env.SUPABASE_JWT_SECRET,
     });
   }
 
@@ -82,7 +79,7 @@ export function createTunnelRoutes(
 
   // Register SSH client connection
   // Called by desktop client after establishing SSH tunnel
-  router.post('/register', requireFeature('tunneling'), async(req, res) => {
+  router.post('/register', requireFeature('tunneling'), async (req, res) => {
     try {
       const userId = req.userId;
       const { tunnelId, localPort, serverPort } = req.body;

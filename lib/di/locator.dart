@@ -66,8 +66,8 @@ Future<void> setupCoreServices() async {
   serviceLocator.registerSingleton<SupabaseAuthService>(supabaseAuthService);
 
   final authService = AuthService(supabaseAuthService);
-  await authService.init();
   serviceLocator.registerSingleton<AuthService>(authService);
+  await authService.init();
 
   // Local Ollama service - create but don't initialize until auth
   final localOllamaService = LocalOllamaConnectionService();

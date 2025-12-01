@@ -16,13 +16,15 @@ import { DatabaseMigrator } from '../database/migrate.js';
 export class AuthService {
   constructor(config) {
     this.config = {
-      AUTH0_DOMAIN: process.env.AUTH0_DOMAIN,
-      AUTH0_AUDIENCE: process.env.AUTH0_AUDIENCE,
-      JWT_SECRET: process.env.JWT_SECRET,
+      SUPABASE_JWT_SECRET: process.env.SUPABASE_JWT_SECRET,
       SESSION_TIMEOUT: parseInt(process.env.SESSION_TIMEOUT) || 3600000, // 1 hour
       MAX_SESSIONS_PER_USER: parseInt(process.env.MAX_SESSIONS_PER_USER) || 5,
       ...config,
     };
+
+    if (!this.config.SUPABASE_JWT_SECRET) {
+      throw new Error('SUPABASE_JWT_SECRET environment variable is required');
+    }
 
     this.logger = new TunnelLogger('auth-service');
 
@@ -30,11 +32,6 @@ export class AuthService {
     this.authDbMigrator = config.authDbMigrator || null;
     this.mainDbMigrator = config.dbMigrator || null;
     this.db = this.authDbMigrator || this.mainDbMigrator || new DatabaseMigrator();
-
-    // Manual JWKS implementation to avoid jwks-client cache issues
-    this.jwksUri = `https://${this.config.AUTH0_DOMAIN}/.well-known/jwks.json`;
-    this.jwksCache = new Map(); // Simple in-memory cache
-    this.jwksCacheExpiry = 0;
 
     this.initialized = false;
   }
@@ -54,10 +51,7 @@ export class AuthService {
       }
       this.initialized = true;
 
-      this.logger.info('Authentication service initialized', {
-        domain: this.config.AUTH0_DOMAIN,
-        audience: this.config.AUTH0_AUDIENCE,
-      });
+      this.logger.info('Authentication service initialized (Supabase)');
 
       // Start session cleanup
       this.startSessionCleanup();
@@ -73,61 +67,29 @@ export class AuthService {
    * Validate JWT token
    * @param {string} token - JWT token to validate
    * @param {object} req - Request object
-   * @param {object} preValidatedPayload - Optional pre-validated payload from Auth0 SDK
+   * @param {object} preValidatedPayload - Optional pre-validated payload
    */
   async validateToken(token, req = {}, preValidatedPayload = null) {
     try {
       let payload;
 
       if (preValidatedPayload) {
-        // Use pre-validated payload from Auth0 SDK - skip JWT verification
         this.logger.info('Using pre-validated token payload');
         payload = preValidatedPayload;
+      } else {
+        // Full validation using Supabase JWT Secret (HS256)
+        this.logger.info('Starting full token validation (Supabase)');
 
-        // Create or update session
-        const session = await this.createOrUpdateSession(payload, token, req);
-
-        this.logger.info('Session created/updated for pre-validated token', {
-          userId: payload.sub,
-          sessionId: session.id,
+        payload = jwt.verify(token, this.config.SUPABASE_JWT_SECRET, {
+          algorithms: ['HS256'],
         });
 
-        return {
-          valid: true,
-          payload: payload,
-          session: session,
-        };
+        this.logger.info('Token verification successful');
       }
-
-      // Fallback: full validation for cases where pre-validated payload not available
-      this.logger.info('Starting full token validation');
-
-      // Decode token to get header
-      const decoded = jwt.decode(token, { complete: true });
-      if (!decoded || !decoded.header.kid) {
-        throw new Error('Invalid token format - missing kid in header');
-      }
-
-      this.logger.info(
-        `Token decoded successfully, kid: ${decoded.header.kid}`,
-      );
-
-      // Get signing key
-      const key = await this.getSigningKey(decoded.header.kid);
-
-      this.logger.info('Got signing key, verifying token');
-
-      // Verify token with full validation
-      payload = jwt.verify(token, key, {
-        audience: this.config.AUTH0_AUDIENCE,
-        issuer: `https://${this.config.AUTH0_DOMAIN}/`,
-        algorithms: ['RS256'],
-      });
 
       // Create or update session
       const session = await this.createOrUpdateSession(payload, token, req);
 
-      this.logger.info('Token verification successful');
       this.logger.info('Token validated successfully', {
         userId: payload.sub,
         sessionId: session.id,
@@ -144,7 +106,6 @@ export class AuthService {
         ip: req.ip,
       });
 
-      // Log security event
       await this.logSecurityEvent('token_validation_failure', {
         error: error.message,
         ip: req.ip,
@@ -165,28 +126,10 @@ export class AuthService {
    */
   async validateTokenForWebSocket(token) {
     try {
-      this.logger.info('Starting WebSocket token validation');
+      this.logger.info('Starting WebSocket token validation (Supabase)');
 
-      // Decode token to get header
-      const decoded = jwt.decode(token, { complete: true });
-      if (!decoded || !decoded.header.kid) {
-        throw new Error('Invalid token format - missing kid in header');
-      }
-
-      this.logger.info(
-        `WebSocket token decoded successfully, kid: ${decoded.header.kid}`,
-      );
-
-      // Get signing key
-      const key = await this.getSigningKey(decoded.header.kid);
-
-      this.logger.info('Got signing key for WebSocket, verifying token');
-
-      // Verify token with full validation (no session creation)
-      const verified = jwt.verify(token, key, {
-        audience: this.config.AUTH0_AUDIENCE,
-        issuer: `https://${this.config.AUTH0_DOMAIN}/`,
-        algorithms: ['RS256'],
+      const verified = jwt.verify(token, this.config.SUPABASE_JWT_SECRET, {
+        algorithms: ['HS256'],
       });
 
       this.logger.info('WebSocket token verification successful', {
@@ -205,109 +148,9 @@ export class AuthService {
     }
   }
 
-  /**
-   * Get signing key from JWKS (manual implementation to avoid jwks-client issues)
-   */
-  async getSigningKey(kid) {
-    try {
-      this.logger.info(`Getting signing key for kid: ${kid}`);
+  // Removed getSigningKey and jwkToPem as they are not needed for HS256
 
-      // Check cache first (5 minute expiry)
-      const now = Date.now();
-      if (this.jwksCacheExpiry > now && this.jwksCache.has(kid)) {
-        this.logger.info(`Using cached key for kid: ${kid}`);
-        return this.jwksCache.get(kid);
-      }
 
-      this.logger.info(`Fetching JWKS from: ${this.jwksUri}`);
-
-      // Fetch JWKS from Auth0
-      const response = await fetch(this.jwksUri);
-      if (!response.ok) {
-        throw new Error(
-          `Failed to fetch JWKS: ${response.status} ${response.statusText}`,
-        );
-      }
-
-      const jwks = await response.json();
-      this.logger.info(`Fetched JWKS with ${jwks.keys.length} keys`);
-
-      // Find the key with matching kid
-      const key = jwks.keys.find((k) => k.kid === kid);
-      if (!key) {
-        const availableKids = jwks.keys.map((k) => k.kid);
-        throw new Error(
-          `Key with kid '${kid}' not found in JWKS. Available kids: ${availableKids.join(', ')}`,
-        );
-      }
-
-      this.logger.info(`Found key for kid: ${kid}, converting to PEM`);
-
-      // Convert JWK to PEM format
-      const publicKey = this.jwkToPem(key);
-
-      this.logger.info('Successfully converted key to PEM format');
-
-      // Cache the result for 5 minutes
-      this.jwksCache.set(kid, publicKey);
-      this.jwksCacheExpiry = now + 5 * 60 * 1000;
-
-      return publicKey;
-    } catch (error) {
-      this.logger.error(`Failed to get signing key for kid '${kid}':`, error);
-      throw error;
-    }
-  }
-
-  /**
-   * Convert JWK to PEM format using manual RSA key construction
-   */
-  jwkToPem(jwk) {
-    // For RS256, we need to convert the JWK to PEM
-    if (jwk.kty !== 'RSA') {
-      throw new Error('Only RSA keys are supported');
-    }
-
-    try {
-      // Try the modern Node.js crypto approach first
-      const keyObject = crypto.createPublicKey({
-        key: jwk,
-        format: 'jwk',
-      });
-
-      return keyObject.export({
-        type: 'spki',
-        format: 'pem',
-      });
-    } catch (error) {
-      this.logger.error(
-        'Modern crypto approach failed, trying manual conversion:',
-        error,
-      );
-
-      // Fallback: Manual RSA key construction
-      // This is a more compatible approach for older Node.js versions
-      // Note: For manual ASN.1 construction, we would use:
-      // const n = Buffer.from(jwk.n, 'base64url');
-      // const e = Buffer.from(jwk.e, 'base64url');
-      // But we're using the x5c certificate approach instead
-
-      // For now, let's try using the x5c certificate if available
-      if (jwk.x5c && jwk.x5c.length > 0) {
-        const cert = jwk.x5c[0];
-        const pemCert = `-----BEGIN CERTIFICATE-----\n${cert.match(/.{1,64}/g).join('\n')}\n-----END CERTIFICATE-----`;
-
-        // Extract public key from certificate
-        const certObject = crypto.createPublicKey(pemCert);
-        return certObject.export({
-          type: 'spki',
-          format: 'pem',
-        });
-      }
-
-      throw new Error('Unable to convert JWK to PEM format');
-    }
-  }
 
   /**
    * Create or update user session
@@ -711,7 +554,7 @@ export class AuthService {
   startSessionCleanup() {
     // Clean up expired sessions every 15 minutes
     setInterval(
-      async() => {
+      async () => {
         try {
           if (!this.db.db) {
             await this.db.initialize();
