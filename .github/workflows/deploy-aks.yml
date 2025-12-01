@@ -24,6 +24,7 @@ env:
   AZURE_CLUSTER_NAME: cloudtolocalllm-aks
   ACR_NAME: cloudtolocalllm
   # DOCKER_REGISTRY will be set dynamically to the ACR login server
+  DOCKER_REGISTRY: ""
 
 jobs:
   # Job to detect changes in specific paths
