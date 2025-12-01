@@ -1087,8 +1087,9 @@ async function initializeTunnelSystem() {
         // Register SSH proxy as unhealthy
         healthCheckService.registerService('ssh-tunnel', async () => {
           return {
-            status: 'unhealthy',
-            message: 'SSH tunnel failed to initialize',
+            status: 'degraded',
+            message: 'SSH tunnel service failed to initialize (non-critical)',
+            error: sshError.message,
           };
         });
       }
