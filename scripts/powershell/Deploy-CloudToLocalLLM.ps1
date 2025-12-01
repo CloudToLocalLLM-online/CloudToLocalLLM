@@ -35,10 +35,16 @@ git status --porcelain
 if ($LASTEXITCODE -eq 0) {
 $uncommittedChanges = git status --porcelain
 if ($uncommittedChanges) {
-    Write-Host "ERROR: You have uncommitted changes. Commit and push all changes before building:" -ForegroundColor Red
-    Write-Host $uncommittedChanges -ForegroundColor Red
-    Write-Host "Run: git add . && git commit -m 'message' && git push origin main" -ForegroundColor Yellow
-    exit 1
+    if ($Force) {
+        Write-Host "WARNING: You have uncommitted changes but continuing with -Force flag:" -ForegroundColor Yellow
+        Write-Host $uncommittedChanges -ForegroundColor Yellow
+    } else {
+        Write-Host "ERROR: You have uncommitted changes. Commit and push all changes before building:" -ForegroundColor Red
+        Write-Host $uncommittedChanges -ForegroundColor Red
+        Write-Host "Run: git add . && git commit -m 'message' && git push origin main" -ForegroundColor Yellow
+        Write-Host "Or use -Force to proceed anyway" -ForegroundColor Yellow
+        exit 1
+    }
 }
 }
 Write-Host "? Found pubspec.yaml"
