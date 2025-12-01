@@ -9,7 +9,7 @@ FROM ${BASE_REGISTRY}/base:latest
 USER root
 # Ubuntu/Debian uses 'postgresql' instead of 'postgresql-server'
 RUN apt-get update && \
-    apt-get install -y postgresql postgresql-contrib findutils && \
+    apt-get install -y postgresql postgresql-contrib findutils bash && \
     rm -rf /var/lib/apt/lists/*
 
 # Create directories and fix permissions
