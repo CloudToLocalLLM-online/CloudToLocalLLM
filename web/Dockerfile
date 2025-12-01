@@ -2,7 +2,8 @@
 # Runtime Dockerfile for CloudToLocalLLM Web Application
 # Uses artifacts from the Universal Builder
 # ============================================================================
-FROM cloudtolocalllm/base:latest
+ARG BASE_REGISTRY=cloudtolocalllm
+FROM ${BASE_REGISTRY}/base:latest
 
 # Switch to root to install Nginx
 USER root

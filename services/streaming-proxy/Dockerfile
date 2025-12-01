@@ -1,6 +1,7 @@
 # Node.js streaming proxy
 # Node.js streaming proxy
-FROM cloudtolocalllm/base:latest
+ARG BASE_REGISTRY=cloudtolocalllm
+FROM ${BASE_REGISTRY}/base:latest
 WORKDIR /app
 
 # Install deps using files in the build context (services/streaming-proxy as context)

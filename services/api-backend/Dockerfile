@@ -1,6 +1,7 @@
 # Node.js API backend
 # Node.js API backend
-FROM cloudtolocalllm/base:latest
+ARG BASE_REGISTRY=cloudtolocalllm
+FROM ${BASE_REGISTRY}/base:latest
 WORKDIR /app
 
 # Install deps using files in the build context (services/api-backend as context)

@@ -2,7 +2,8 @@
 # Custom Postgres Image for CloudToLocalLLM
 # Based on cloudtolocalllm/base:latest (Fedora)
 # ============================================================================
-FROM cloudtolocalllm/base:latest
+ARG BASE_REGISTRY=cloudtolocalllm
+FROM ${BASE_REGISTRY}/base:latest
 
 # Install PostgreSQL
 USER root

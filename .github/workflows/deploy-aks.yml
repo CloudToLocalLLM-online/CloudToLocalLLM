@@ -121,6 +121,8 @@ jobs:
           file: config/docker/Dockerfile.postgres
           push: true
           tags: ${{ env.DOCKER_REGISTRY }}/postgres:latest
+          build-args: |
+            BASE_REGISTRY=${{ env.DOCKER_REGISTRY }}
           cache-from: type=registry,ref=${{ env.DOCKER_REGISTRY }}/postgres:latest
           cache-to: type=inline
 
@@ -156,6 +158,8 @@ jobs:
           file: web/Dockerfile
           push: true
           tags: ${{ env.DOCKER_REGISTRY }}/web:latest
+          build-args: |
+            BASE_REGISTRY=${{ env.DOCKER_REGISTRY }}
           cache-from: type=registry,ref=${{ env.DOCKER_REGISTRY }}/web:latest
           cache-to: type=inline
 
@@ -184,6 +188,8 @@ jobs:
           file: services/api-backend/Dockerfile
           push: true
           tags: ${{ env.DOCKER_REGISTRY }}/api-backend:latest
+          build-args: |
+            BASE_REGISTRY=${{ env.DOCKER_REGISTRY }}
           cache-from: type=registry,ref=${{ env.DOCKER_REGISTRY }}/api-backend:latest
           cache-to: type=inline
 
@@ -212,6 +218,8 @@ jobs:
           file: services/streaming-proxy/Dockerfile
           push: true
           tags: ${{ env.DOCKER_REGISTRY }}/streaming-proxy:latest
+          build-args: |
+            BASE_REGISTRY=${{ env.DOCKER_REGISTRY }}
           cache-from: type=registry,ref=${{ env.DOCKER_REGISTRY }}/streaming-proxy:latest
           cache-to: type=inline
 
