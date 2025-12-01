@@ -478,6 +478,8 @@ class AppRouter {
         debugPrint(
           '[Router] Auth state: isAuthenticated=$isAuthenticated, isLoading=$isAuthLoading, servicesLoaded=$areServicesLoaded',
         );
+        debugPrint('[Router] State URI: ${state.uri}');
+        debugPrint('[Router] Base URI: ${Uri.base}');
         final isLoggingIn = state.matchedLocation == '/login';
         final isCallback = state.matchedLocation == '/callback';
         final isLoading = state.matchedLocation == '/loading';
