@@ -2,15 +2,12 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../services/auth_service.dart';
-import '../services/connection_manager_service.dart';
-import '../services/streaming_chat_service.dart';
-import '../services/tunnel_service.dart';
+
 import '../screens/home_screen.dart';
 import '../screens/login_screen.dart';
 import '../screens/loading_screen.dart';
 import '../screens/callback_screen.dart';
 import '../screens/ollama_test_screen.dart';
-import '../di/locator.dart' as di;
 
 // No web-specific imports needed - using platform-safe approach
 
@@ -56,33 +53,6 @@ bool _isAppSubdomain() {
 
   debugPrint('[Router] Hostname: $hostname, isApp: $isApp');
   return isApp;
-}
-
-/// Check if authenticated services are loaded
-/// Returns true if all critical authenticated services are registered
-bool _checkAuthenticatedServicesLoaded() {
-  try {
-    // Check for critical authenticated services
-    // These services are registered only after authentication
-    final hasConnectionManager =
-        di.serviceLocator.isRegistered<ConnectionManagerService>();
-    final hasStreamingChat =
-        di.serviceLocator.isRegistered<StreamingChatService>();
-    final hasTunnelService = di.serviceLocator.isRegistered<TunnelService>();
-
-    // All critical services must be registered
-    final allServicesLoaded =
-        hasConnectionManager && hasStreamingChat && hasTunnelService;
-
-    debugPrint(
-      '[Router] Authenticated services loading status: ConnectionManager=$hasConnectionManager, StreamingChat=$hasStreamingChat, TunnelService=$hasTunnelService, allLoaded=$allServicesLoaded',
-    );
-
-    return allServicesLoaded;
-  } catch (e) {
-    debugPrint('[Router] Error checking authenticated services: $e');
-    return false;
-  }
 }
 
 /// Application router configuration using GoRouter
@@ -192,17 +162,6 @@ class AppRouter {
               debugPrint(
                 '[Router] User already authenticated, showing main app',
               );
-              // Verify authenticated services are loaded before showing HomeScreen
-              final hasAuthenticatedServices =
-                  _checkAuthenticatedServicesLoaded();
-              if (!hasAuthenticatedServices) {
-                debugPrint(
-                  '[Router] Authenticated services not yet loaded, showing loading screen',
-                );
-                return const LoadingScreen(
-                  message: 'Loading application modules...',
-                );
-              }
               debugPrint('[Router] Showing home screen for authenticated user');
               return const HomeScreen();
             }
@@ -229,18 +188,6 @@ class AppRouter {
                 }
 
                 if (isAuthenticated) {
-                  // Verify authenticated services are loaded before showing HomeScreen
-                  // This ensures modules are only loaded after authentication
-                  final hasAuthenticatedServices =
-                      _checkAuthenticatedServicesLoaded();
-                  if (!hasAuthenticatedServices) {
-                    debugPrint(
-                      '[Router] Authenticated services not yet loaded, showing loading screen',
-                    );
-                    return const LoadingScreen(
-                      message: 'Loading application modules...',
-                    );
-                  }
                   debugPrint('[Router] Showing home screen');
                   return const HomeScreen();
                 } else {
@@ -266,13 +213,7 @@ class AppRouter {
             // Verify authenticated services are loaded before showing HomeScreen
             final isAuthenticated = authService.isAuthenticated.value;
             if (isAuthenticated) {
-              final hasAuthenticatedServices =
-                  _checkAuthenticatedServicesLoaded();
-              if (!hasAuthenticatedServices) {
-                return const LoadingScreen(
-                  message: 'Loading application modules...',
-                );
-              }
+              // Services check removed, HomeScreen handles loading
             }
             return const HomeScreen();
           },
@@ -660,28 +601,8 @@ class AppRouter {
           }
         }
 
-        // If authenticated but services not yet loaded, only redirect to loading
-        // for protected routes that require authenticated services
-        // Don't redirect from home route (/) as it handles loading state internally
-        if (isAuthenticated &&
-            !areServicesLoaded &&
-            !isLoading &&
-            !isHomepage) {
-          debugPrint(
-            '[Router] DECISION: Authenticated but services not loaded - showing loading screen',
-          );
-          debugPrint('[Router] Current route: ${state.matchedLocation}');
-          debugPrint(
-            '[Router] Auth state: isAuthenticated=$isAuthenticated, servicesLoaded=$areServicesLoaded',
-          );
-          debugPrint(
-            '[Router] Reason: Waiting for authenticated services to load',
-          );
-          debugPrint(
-            '[Router] ===== REDIRECT DECISION: SHOW LOADING (SERVICES LOADING) =====',
-          );
-          return '/loading?message=${Uri.encodeComponent('Loading application modules...')}';
-        }
+        // If authenticated but services not yet loaded, we allow HomeScreen to handle it
+        // Logic removed to prevent redirect loop to /loading
 
         // NEVER redirect to login when authentication state is true
         // This prevents the login loop after successful authentication
