@@ -19,7 +19,14 @@ RUN apt-get update && \
     rm -rf /var/lib/apt/lists/*
 
 # Create custom user 'cloudtolocalllm' (UID 1000)
-RUN useradd -u 1000 -m -s /bin/bash cloudtolocalllm
+# Ubuntu 24.04 has a default user 'ubuntu' with UID 1000.
+# We rename it to 'cloudtolocalllm' to match our expectation.
+RUN if id -u ubuntu >/dev/null 2>&1; then \
+    usermod -l cloudtolocalllm -d /home/cloudtolocalllm -m ubuntu; \
+    groupmod -n cloudtolocalllm ubuntu; \
+    else \
+    useradd -u 1000 -m -s /bin/bash cloudtolocalllm; \
+    fi
 
 # Set up working directory
 WORKDIR /app
