@@ -60,7 +60,7 @@ Task 26 focused on integrating all tunnel components together and preparing for 
    - Initialized `WebSocketHandlerImpl` for WebSocket management
 
 2. **Authentication Configuration**
-   - Loaded Auth0 configuration from environment variables
+   - Loaded Supabase Auth configuration from environment variables
    - Validated authentication configuration
    - Integrated JWT validation middleware
 

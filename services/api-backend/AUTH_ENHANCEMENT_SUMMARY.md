@@ -17,7 +17,7 @@ Created a comprehensive authentication routes module with the following endpoint
 - **Functionality**:
   - Accepts refresh token from request body or cookies
   - Validates refresh token format
-  - Exchanges refresh token for new access token via Auth0
+  - Exchanges refresh token for new access token via Supabase Auth
   - Returns new access token with updated expiry
 - **Security**: Validates token format before processing
 - **Requirements**: 2.1, 2.2
@@ -35,7 +35,7 @@ Created a comprehensive authentication routes module with the following endpoint
 - **Purpose**: Revoke a token and invalidate session
 - **Functionality**:
   - Requires authentication
-  - Revokes token via Auth0 revocation endpoint
+  - Revokes token via Supabase Auth revocation endpoint
   - Clears refresh token cookie
   - Logs logout event
 - **Security**: HTTPS enforced in production
@@ -86,7 +86,7 @@ Enhanced the JWT authentication middleware with:
 - Logs security events
 
 #### Token Validation Flow
-1. Validates JWT signature with Auth0 SDK
+1. Validates JWT signature with Supabase Auth SDK
 2. Checks HTTPS in production
 3. Extracts and validates token format
 4. Checks token expiry
@@ -147,7 +147,7 @@ Created 32 comprehensive tests covering:
 ## Security Features
 
 ### 1. Token Validation
-- JWT signature verification with Auth0
+- JWT signature verification with Supabase Auth
 - Token expiry checking
 - Token audience validation
 - Token issuer validation
@@ -156,11 +156,11 @@ Created 32 comprehensive tests covering:
 ### 2. Token Refresh
 - Secure refresh token handling
 - Refresh token format validation
-- Auth0 integration for token exchange
+- Supabase Auth integration for token exchange
 - User identity preservation
 
 ### 3. Token Revocation
-- Token revocation via Auth0
+- Token revocation via Supabase Auth
 - Session invalidation
 - Refresh token cookie clearing
 - Audit logging
@@ -180,10 +180,10 @@ Created 32 comprehensive tests covering:
 ## Configuration
 
 ### Environment Variables
-- `AUTH0_DOMAIN`: Auth0 domain (default: dev-v2f2p008x3dr74ww.us.auth0.com)
-- `AUTH0_AUDIENCE`: Auth0 audience (default: https://api.cloudtolocalllm.online)
-- `AUTH0_CLIENT_ID`: Auth0 client ID (required for token refresh)
-- `AUTH0_CLIENT_SECRET`: Auth0 client secret (required for token refresh)
+- `SUPABASE_AUTH_DOMAIN`: Supabase Auth domain (default: dev-v2f2p008x3dr74ww.us.supabase-auth.com)
+- `SUPABASE_AUTH_AUDIENCE`: Supabase Auth audience (default: https://api.cloudtolocalllm.online)
+- `SUPABASE_AUTH_CLIENT_ID`: Supabase Auth client ID (required for token refresh)
+- `SUPABASE_AUTH_CLIENT_SECRET`: Supabase Auth client secret (required for token refresh)
 - `TOKEN_REFRESH_WINDOW`: Seconds before expiry to trigger refresh (default: 300)
 - `REFRESH_TOKEN_EXPIRY`: Refresh token expiry in milliseconds (default: 7 days)
 - `NODE_ENV`: Environment (production/development)
@@ -251,7 +251,7 @@ npm test -- test/api-backend/auth-token-refresh.test.js
 ## Requirements Compliance
 
 ### Requirement 2.1: JWT Token Validation
-✓ Validates JWT tokens from Auth0 on every protected request
+✓ Validates JWT tokens from Supabase Auth on every protected request
 ✓ Checks token signature, expiry, audience, and issuer
 ✓ Returns appropriate error codes for invalid tokens
 
@@ -263,7 +263,7 @@ npm test -- test/api-backend/auth-token-refresh.test.js
 
 ### Requirement 2.9: Token Revocation
 ✓ Implements logout endpoint
-✓ Revokes tokens via Auth0
+✓ Revokes tokens via Supabase Auth
 ✓ Invalidates sessions
 ✓ Clears refresh token cookies
 
@@ -283,6 +283,6 @@ npm test -- test/api-backend/auth-token-refresh.test.js
 
 ## References
 
-- Auth0 Documentation: https://auth0.com/docs
+- Supabase Auth Documentation: https://supabase-auth.com/docs
 - JWT Best Practices: https://tools.ietf.org/html/rfc8725
 - OWASP Authentication Cheat Sheet: https://cheatsheetseries.owasp.org/cheatsheets/Authentication_Cheat_Sheet.html

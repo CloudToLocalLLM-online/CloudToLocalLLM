@@ -11,8 +11,8 @@ The Administrative Data Flush mechanism provides secure administrative functiona
 ## 🔒 **Security Architecture**
 
 ### **Multi-Layer Authentication**
-- **Admin Role Validation**: Requires `admin` role in Auth0 user metadata or scopes
-- **JWT Token Verification**: Standard Auth0 JWT validation with RS256 algorithm
+- **Admin Role Validation**: Requires `admin` role in Supabase Auth user metadata or scopes
+- **JWT Token Verification**: Standard Supabase Auth JWT validation with RS256 algorithm
 - **Multi-Step Confirmation**: Secure confirmation token with 5-minute expiration
 - **Rate Limiting**: Strict limits on flush operations (3 per hour maximum)
 
@@ -83,7 +83,7 @@ Administrative UI with three main tabs:
 ## 🚀 **Usage Guide**
 
 ### **Prerequisites**
-1. **Admin Privileges**: User must have `admin` role in Auth0
+1. **Admin Privileges**: User must have `admin` role in Supabase Auth
 2. **Valid Authentication**: Active JWT token with proper scopes
 3. **Network Access**: Connection to CloudToLocalLLM API backend
 
@@ -309,7 +309,7 @@ Add to existing deployment verification:
 #### **Authentication Failures**
 ```
 Error: Admin access required
-Solution: Verify user has 'admin' role in Auth0 metadata
+Solution: Verify user has 'admin' role in Supabase Auth metadata
 ```
 
 #### **Token Expiration**

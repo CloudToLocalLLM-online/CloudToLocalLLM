@@ -44,7 +44,7 @@ Retrieve a paginated list of users with search and filtering capabilities.
 |-----------|------|---------|-------------|
 | page | integer | 1 | Page number (min: 1) |
 | limit | integer | 50 | Items per page (min: 1, max: 100) |
-| search | string | - | Search by email, username, user ID, or Auth0 ID |
+| search | string | - | Search by email, username, user ID, or Supabase Auth ID |
 | tier | string | - | Filter by subscription tier (free, premium, enterprise) |
 | status | string | - | Filter by account status (active, suspended, deleted) |
 | startDate | string | - | Filter by registration date (ISO 8601 format) |
@@ -70,7 +70,7 @@ curl -X GET "https://api.cloudtolocalllm.online/api/admin/users?page=1&limit=50&
         "id": "550e8400-e29b-41d4-a716-446655440000",
         "email": "user@example.com",
         "username": "johndoe",
-        "auth0_id": "auth0|123456789",
+        "supabase-auth_id": "supabase-auth|123456789",
         "created_at": "2025-01-15T10:30:00Z",
         "last_login": "2025-01-20T14:22:00Z",
         "is_suspended": false,
@@ -144,7 +144,7 @@ curl -X GET "https://api.cloudtolocalllm.online/api/admin/users/550e8400-e29b-41
       "id": "550e8400-e29b-41d4-a716-446655440000",
       "email": "user@example.com",
       "username": "johndoe",
-      "auth0_id": "auth0|123456789",
+      "supabase-auth_id": "supabase-auth|123456789",
       "created_at": "2025-01-15T10:30:00Z",
       "last_login": "2025-01-20T14:22:00Z",
       "is_suspended": false,

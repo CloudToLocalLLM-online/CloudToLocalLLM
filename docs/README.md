@@ -30,7 +30,7 @@ Welcome to the CloudToLocalLLM documentation! This directory contains comprehens
 - **[Zrok Tunnel System](ARCHITECTURE/TUNNEL_ARCHITECTURE.md)** - Secure tunnel management with zrok
   - Automatic fallback hierarchy
   - Platform abstraction patterns
-  - Auth0 JWT validation integration
+  - Supabase Auth JWT validation integration
   - Cross-platform compatibility
   - Troubleshooting and support
 

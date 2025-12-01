@@ -75,12 +75,12 @@ if ($generateJwt -ne "n") {
 }
 
 Write-Host ""
-Write-Host "5. Auth0 Domain" -ForegroundColor Cyan
-$auth0Domain = Read-Host "Enter Auth0 domain (e.g., your-tenant.us.auth0.com)"
+Write-Host "5. JWT Domain" -ForegroundColor Cyan
+$jwtDomain = Read-Host "Enter JWT domain (e.g., your-tenant.us.jwt.com)"
 
 Write-Host ""
-Write-Host "6. Auth0 Audience" -ForegroundColor Cyan
-$auth0Audience = Read-Host "Enter Auth0 audience (e.g., https://app.$domain)"
+Write-Host "6. JWT Audience" -ForegroundColor Cyan
+$jwtAudience = Read-Host "Enter JWT audience (e.g., https://app.$domain)"
 
 Write-Host ""
 Write-Host "7. Sentry DSN (optional)" -ForegroundColor Cyan
@@ -110,8 +110,8 @@ Set-GitHubSecret "DIGITALOCEAN_ACCESS_TOKEN" $doToken
 Set-GitHubSecret "DOMAIN" $domain
 Set-GitHubSecret "POSTGRES_PASSWORD" $pgPassword
 Set-GitHubSecret "JWT_SECRET" $jwtSecret
-Set-GitHubSecret "AUTH0_DOMAIN" $auth0Domain
-Set-GitHubSecret "AUTH0_AUDIENCE" $auth0Audience
+Set-GitHubSecret "JWT_ISSUER_DOMAIN" $jwtDomain
+Set-GitHubSecret "JWT_AUDIENCE" $jwtAudience
 Set-GitHubSecret "SENTRY_DSN" $sentryDsn
 
 Write-Host ""
@@ -134,8 +134,8 @@ Write-Host ""
 # Save configuration locally for reference
 $config = @{
     domain = $domain
-    auth0Domain = $auth0Domain
-    auth0Audience = $auth0Audience
+    jwtDomain = $jwtDomain
+    jwtAudience = $jwtAudience
     postgresPassword = $pgPassword
     jwtSecret = $jwtSecret
 }

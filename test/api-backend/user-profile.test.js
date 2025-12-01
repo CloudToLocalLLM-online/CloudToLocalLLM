@@ -42,10 +42,10 @@ describe('UserProfileService', () => {
 
   describe('getUserProfile', () => {
     it('should retrieve user profile successfully', async () => {
-      const userId = 'auth0|123456';
+      const userId = 'jwt|123456';
       const mockUserData = {
         id: 'user-uuid-1',
-        auth0_id: userId,
+        jwt_id: userId,
         email: 'user@example.com',
         name: 'John Doe',
         nickname: 'johndoe',
@@ -72,7 +72,7 @@ describe('UserProfileService', () => {
 
       expect(profile).toEqual({
         id: 'user-uuid-1',
-        auth0Id: userId,
+        jwtId: userId,
         email: 'user@example.com',
         profile: {
           firstName: 'John',
@@ -98,7 +98,7 @@ describe('UserProfileService', () => {
     });
 
     it('should throw error when user not found', async () => {
-      const userId = 'auth0|nonexistent';
+      const userId = 'jwt|nonexistent';
 
       mockPool.query.mockResolvedValueOnce({
         rows: [],
@@ -120,10 +120,10 @@ describe('UserProfileService', () => {
     });
 
     it('should handle default preferences when not set', async () => {
-      const userId = 'auth0|123456';
+      const userId = 'jwt|123456';
       const mockUserData = {
         id: 'user-uuid-1',
-        auth0_id: userId,
+        jwt_id: userId,
         email: 'user@example.com',
         name: 'John Doe',
         nickname: null,
@@ -154,7 +154,7 @@ describe('UserProfileService', () => {
 
   describe('updateUserProfile', () => {
     it('should update user profile successfully', async () => {
-      const userId = 'auth0|123456';
+      const userId = 'jwt|123456';
       const profileData = {
         profile: {
           firstName: 'Jane',
@@ -182,7 +182,7 @@ describe('UserProfileService', () => {
         rows: [
           {
             id: 'user-uuid-1',
-            auth0_id: userId,
+            jwt_id: userId,
             email: 'user@example.com',
             name: 'Jane Smith',
             nickname: 'janesmith',
@@ -216,7 +216,7 @@ describe('UserProfileService', () => {
     });
 
     it('should validate profile data before updating', async () => {
-      const userId = 'auth0|123456';
+      const userId = 'jwt|123456';
 
       // Invalid first name (too long)
       const invalidData = {
@@ -231,7 +231,7 @@ describe('UserProfileService', () => {
     });
 
     it('should validate avatar URL format', async () => {
-      const userId = 'auth0|123456';
+      const userId = 'jwt|123456';
 
       const invalidData = {
         profile: {
@@ -245,7 +245,7 @@ describe('UserProfileService', () => {
     });
 
     it('should rollback transaction on error', async () => {
-      const userId = 'auth0|123456';
+      const userId = 'jwt|123456';
       const profileData = {
         profile: {
           firstName: 'Jane',
@@ -270,7 +270,7 @@ describe('UserProfileService', () => {
 
   describe('updateUserPreferences', () => {
     it('should update user preferences successfully', async () => {
-      const userId = 'auth0|123456';
+      const userId = 'jwt|123456';
       const preferences = {
         theme: 'dark',
         language: 'fr',
@@ -294,7 +294,7 @@ describe('UserProfileService', () => {
     });
 
     it('should validate theme preference', async () => {
-      const userId = 'auth0|123456';
+      const userId = 'jwt|123456';
       const invalidPreferences = {
         theme: 'invalid-theme',
       };
@@ -305,7 +305,7 @@ describe('UserProfileService', () => {
     });
 
     it('should validate notifications preference type', async () => {
-      const userId = 'auth0|123456';
+      const userId = 'jwt|123456';
       const invalidPreferences = {
         notifications: 'yes', // Should be boolean
       };
@@ -316,7 +316,7 @@ describe('UserProfileService', () => {
     });
 
     it('should throw error when user not found', async () => {
-      const userId = 'auth0|nonexistent';
+      const userId = 'jwt|nonexistent';
       const preferences = { theme: 'dark' };
 
       mockPool.query.mockResolvedValueOnce({
@@ -331,7 +331,7 @@ describe('UserProfileService', () => {
 
   describe('getUserPreferences', () => {
     it('should retrieve user preferences successfully', async () => {
-      const userId = 'auth0|123456';
+      const userId = 'jwt|123456';
       const preferences = {
         theme: 'dark',
         language: 'en',
@@ -348,7 +348,7 @@ describe('UserProfileService', () => {
     });
 
     it('should return default preferences when not set', async () => {
-      const userId = 'auth0|123456';
+      const userId = 'jwt|123456';
 
       mockPool.query.mockResolvedValueOnce({
         rows: [{ preferences: null }],
@@ -364,7 +364,7 @@ describe('UserProfileService', () => {
     });
 
     it('should throw error when user not found', async () => {
-      const userId = 'auth0|nonexistent';
+      const userId = 'jwt|nonexistent';
 
       mockPool.query.mockResolvedValueOnce({
         rows: [],
@@ -378,7 +378,7 @@ describe('UserProfileService', () => {
 
   describe('updateUserAvatar', () => {
     it('should update user avatar successfully', async () => {
-      const userId = 'auth0|123456';
+      const userId = 'jwt|123456';
       const avatarUrl = 'https://example.com/new-avatar.jpg';
 
       mockPool.query.mockResolvedValueOnce({
@@ -390,7 +390,7 @@ describe('UserProfileService', () => {
         rows: [
           {
             id: 'user-uuid-1',
-            auth0_id: userId,
+            jwt_id: userId,
             email: 'user@example.com',
             name: 'John Doe',
             nickname: 'johndoe',
@@ -420,7 +420,7 @@ describe('UserProfileService', () => {
     });
 
     it('should validate avatar URL format', async () => {
-      const userId = 'auth0|123456';
+      const userId = 'jwt|123456';
       const invalidUrl = 'not-a-valid-url';
 
       await expect(
@@ -435,7 +435,7 @@ describe('UserProfileService', () => {
     });
 
     it('should throw error when user not found', async () => {
-      const userId = 'auth0|nonexistent';
+      const userId = 'jwt|nonexistent';
       const avatarUrl = 'https://example.com/avatar.jpg';
 
       mockPool.query.mockResolvedValueOnce({
@@ -450,7 +450,7 @@ describe('UserProfileService', () => {
 
   describe('Preference Validation', () => {
     it('should validate all preference fields', async () => {
-      const userId = 'auth0|123456';
+      const userId = 'jwt|123456';
 
       // Valid preferences
       const validPreferences = {
@@ -472,7 +472,7 @@ describe('UserProfileService', () => {
     });
 
     it('should allow partial preference updates', async () => {
-      const userId = 'auth0|123456';
+      const userId = 'jwt|123456';
 
       // Partial preferences
       const partialPreferences = {
@@ -492,7 +492,7 @@ describe('UserProfileService', () => {
     });
 
     it('should validate language length', async () => {
-      const userId = 'auth0|123456';
+      const userId = 'jwt|123456';
 
       const invalidPreferences = {
         language: 'a'.repeat(11), // Too long
@@ -506,7 +506,7 @@ describe('UserProfileService', () => {
 
   describe('Profile Data Validation', () => {
     it('should validate name lengths', async () => {
-      const userId = 'auth0|123456';
+      const userId = 'jwt|123456';
 
       const invalidData = {
         profile: {
@@ -520,7 +520,7 @@ describe('UserProfileService', () => {
     });
 
     it('should validate nickname length', async () => {
-      const userId = 'auth0|123456';
+      const userId = 'jwt|123456';
 
       const invalidData = {
         profile: {
@@ -534,7 +534,7 @@ describe('UserProfileService', () => {
     });
 
     it('should allow empty avatar URL', async () => {
-      const userId = 'auth0|123456';
+      const userId = 'jwt|123456';
 
       const mockClient = {
         query: jest.fn(),
@@ -548,7 +548,7 @@ describe('UserProfileService', () => {
         rows: [
           {
             id: 'user-uuid-1',
-            auth0_id: userId,
+            jwt_id: userId,
             email: 'user@example.com',
             name: 'John Doe',
             nickname: 'johndoe',

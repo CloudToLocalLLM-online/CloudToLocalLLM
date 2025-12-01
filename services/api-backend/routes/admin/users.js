@@ -79,7 +79,7 @@ router.get(
         u.email ILIKE $${paramIndex} OR 
         u.username ILIKE $${paramIndex} OR 
         u.id::text ILIKE $${paramIndex} OR
-        u.auth0_id ILIKE $${paramIndex}
+        u.jwt_id ILIKE $${paramIndex}
       )`);
         params.push(`%${search}%`);
         paramIndex++;
@@ -137,7 +137,7 @@ router.get(
         u.id,
         u.email,
         u.username,
-        u.auth0_id,
+        u.jwt_id,
         u.created_at,
         u.last_login,
         u.is_suspended,
@@ -247,7 +247,7 @@ router.get(
         u.id,
         u.email,
         u.username,
-        u.auth0_id,
+        u.jwt_id,
         u.created_at,
         u.last_login,
         u.is_suspended,

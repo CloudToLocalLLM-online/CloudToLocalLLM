@@ -53,7 +53,7 @@ graph TB
     end
     
     G -.->|Secure Tunnel| C
-    H --> M[Auth0 JWT Validation]
+    H --> M[Supabase Auth JWT Validation]
     F --> N[Connection Pool Manager]
 ```
 
@@ -61,7 +61,7 @@ graph TB
 
 #### **1. Secure Tunnel System**
 - **WebSocket-based Communication**: Persistent, bidirectional connections
-- **JWT Authentication**: Auth0 integration with role-based access control
+- **JWT Authentication**: Supabase Auth integration with role-based access control
 - **Connection Multiplexing**: Multiple requests over single tunnel connection
 - **Automatic Reconnection**: Resilient connection management with exponential backoff
 
@@ -87,12 +87,12 @@ graph TB
 sequenceDiagram
     participant U as User
     participant W as Web Interface
-    participant A as Auth0
+    participant A as Supabase Auth
     participant T as Tunnel Manager
     participant D as Desktop Client
     
     U->>W: Access Application
-    W->>A: Redirect to Auth0
+    W->>A: Redirect to Supabase Auth
     A->>U: Authentication Challenge
     U->>A: Provide Credentials
     A->>W: JWT Token
@@ -112,7 +112,7 @@ sequenceDiagram
 - **WebSocket Secure (WSS)**: Encrypted WebSocket connections
 
 #### **Authentication & Authorization**
-- **Auth0 Integration**: Enterprise-grade identity management
+- **Supabase Auth Integration**: Enterprise-grade identity management
 - **JWT Tokens**: Stateless authentication with configurable expiration
 - **Role-Based Access Control (RBAC)**: Fine-grained permission system
 - **Multi-Factor Authentication (MFA)**: Optional 2FA for enhanced security
@@ -263,7 +263,7 @@ CREATE TABLE audit_logs (
 - **Description**: Implement WebSocket-based tunnel server with JWT authentication
 - **Acceptance Criteria**:
   - WebSocket server handles 1000+ concurrent connections
-  - JWT validation with Auth0 integration
+  - JWT validation with Supabase Auth integration
   - Message protocol implementation with correlation IDs
   - Connection health monitoring and automatic reconnection
 - **Dependencies**: None
@@ -282,9 +282,9 @@ CREATE TABLE audit_logs (
 - **Files**: `config/database/`
 
 #### **Task 1.3: Authentication Service**
-- **Description**: Integrate Auth0 JWT validation with role-based access control
+- **Description**: Integrate Supabase Auth JWT validation with role-based access control
 - **Acceptance Criteria**:
-  - Auth0 configuration and integration
+  - Supabase Auth configuration and integration
   - JWT token validation middleware
   - Role-based permission system
   - Session management with secure cookies
@@ -475,7 +475,7 @@ jobs:
 ### **Security Testing Requirements**
 
 #### **Penetration Testing**
-- **Authentication Bypass**: Attempt to bypass Auth0 JWT validation
+- **Authentication Bypass**: Attempt to bypass Supabase Auth JWT validation
 - **Session Hijacking**: Test for session token vulnerabilities
 - **WebSocket Security**: Validate WSS connection security
 - **Input Validation**: Test for injection attacks and XSS
@@ -542,7 +542,7 @@ const PERFORMANCE_THRESHOLDS = {
 
 ### **API Documentation**
 - **[Tunnel API Reference](../DEVELOPMENT/TUNNEL_API.md)** - WebSocket API specification
-- **[Authentication API](../DEVELOPMENT/AUTH_API.md)** - Auth0 integration details
+- **[Authentication API](../DEVELOPMENT/AUTH_API.md)** - Supabase Auth integration details
 - **[Web Interface API](../DEVELOPMENT/WEB_API.md)** - Frontend API documentation
 
 ---
@@ -587,7 +587,7 @@ CloudToLocalLLM/
 │       │   ├── connection-manager.js     # Connection pooling
 │       │   └── security-middleware.js    # Security validation
 │       ├── auth/
-│       │   ├── auth0-integration.js      # Auth0 JWT validation
+│       │   ├── supabase-auth-integration.js      # Supabase Auth JWT validation
 │       │   ├── session-manager.js        # Session handling
 │       │   └── rbac-middleware.js        # Role-based access
 │       └── database/
@@ -648,8 +648,8 @@ tunnel:
 
   security:
     jwtSecret: "${JWT_SECRET}"
-    auth0Domain: "${AUTH0_DOMAIN}"
-    auth0Audience: "${AUTH0_AUDIENCE}"
+    supabase-authDomain: "${JWT_ISSUER_DOMAIN}"
+    supabase-authAudience: "${JWT_AUDIENCE}"
     corsOrigins:
       - "https://app.cloudtolocalllm.online"
       - "https://cloudtolocalllm.online"
@@ -741,7 +741,7 @@ class TunnelHealthChecker {
     const checks = {
       websocket: await this.checkWebSocketServer(),
       database: await this.checkDatabaseConnection(),
-      auth: await this.checkAuth0Connection(),
+      auth: await this.checkSupabase AuthConnection(),
       memory: await this.checkMemoryUsage(),
       connections: await this.checkConnectionLimits()
     };
@@ -766,15 +766,15 @@ const jwt = require('jsonwebtoken');
 const jwksClient = require('jwks-rsa');
 
 class JWTValidator {
-  constructor(auth0Domain, audience) {
+  constructor(supabase-authDomain, audience) {
     this.client = jwksClient({
-      jwksUri: `https://${auth0Domain}/.well-known/jwks.json`,
+      jwksUri: `https://${supabase-authDomain}/.well-known/jwks.json`,
       cache: true,
       cacheMaxEntries: 5,
       cacheMaxAge: 600000 // 10 minutes
     });
     this.audience = audience;
-    this.issuer = `https://${auth0Domain}/`;
+    this.issuer = `https://${supabase-authDomain}/`;
   }
 
   async validateToken(token) {
@@ -848,7 +848,7 @@ class TunnelRateLimiter {
    - Add message serialization/deserialization
 
 3. **Authentication Integration** (4 days)
-   - Auth0 JWT validation setup
+   - Supabase Auth JWT validation setup
    - Session management implementation
    - Role-based access control middleware
 
@@ -864,7 +864,7 @@ class TunnelRateLimiter {
 
 **Acceptance Criteria:**
 - [ ] WebSocket server handles 1000+ concurrent connections
-- [ ] JWT validation with Auth0 integration working
+- [ ] JWT validation with Supabase Auth integration working
 - [ ] Message protocol with correlation IDs implemented
 - [ ] Connection health monitoring active
 - [ ] Security middleware protecting all endpoints
@@ -901,8 +901,8 @@ class TunnelRateLimiter {
 
 #### **Task 1.3: Authentication Service**
 **Subtasks:**
-1. **Auth0 Configuration** (2 days)
-   - Set up Auth0 application and APIs
+1. **Supabase Auth Configuration** (2 days)
+   - Set up Supabase Auth application and APIs
    - Configure JWT token settings
    - Implement custom claims and scopes
 
@@ -922,7 +922,7 @@ class TunnelRateLimiter {
    - Admin interface for role management
 
 **Acceptance Criteria:**
-- [ ] Auth0 integration with custom configuration
+- [ ] Supabase Auth integration with custom configuration
 - [ ] JWT validation with proper error handling
 - [ ] Secure session management with timeout
 - [ ] Role-based access control working
@@ -1215,9 +1215,9 @@ function Deploy-TunnelSystem {
 function Test-TunnelPrerequisites {
     Write-Host "🔍 Validating tunnel prerequisites..." -ForegroundColor Yellow
 
-    # Check Auth0 configuration
-    if (-not $env:AUTH0_DOMAIN -or -not $env:AUTH0_AUDIENCE) {
-        throw "Auth0 configuration missing"
+    # Check Supabase Auth configuration
+    if (-not $env:JWT_ISSUER_DOMAIN -or -not $env:JWT_AUDIENCE) {
+        throw "Supabase Auth configuration missing"
     }
 
     # Check database connectivity
@@ -1570,7 +1570,7 @@ tunnelLogger.logSecurity = (event, userId, metadata) => {
 ## 🎯 **Final Implementation Checklist**
 
 ### **Pre-Implementation Requirements**
-- [ ] Auth0 tenant configured with appropriate settings
+- [ ] Supabase Auth tenant configured with appropriate settings
 - [ ] PostgreSQL database provisioned with proper permissions
 - [ ] Redis instance configured for rate limiting and caching
 - [ ] SSL certificates obtained and configured
@@ -1579,7 +1579,7 @@ tunnelLogger.logSecurity = (event, userId, metadata) => {
 
 ### **Phase 1 Completion Criteria**
 - [ ] WebSocket server handling 1000+ concurrent connections
-- [ ] JWT authentication with Auth0 integration
+- [ ] JWT authentication with Supabase Auth integration
 - [ ] Database schema with proper indexing and constraints
 - [ ] Rate limiting and security middleware active
 - [ ] Comprehensive monitoring and alerting configured

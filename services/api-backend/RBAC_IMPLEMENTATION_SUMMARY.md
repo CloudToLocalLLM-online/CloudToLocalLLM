@@ -47,7 +47,7 @@ A comprehensive role-based access control middleware that provides:
 
 4. **authorizeRBAC(req, res, next)**
    - Global middleware that assigns roles to authenticated users
-   - Checks Auth0 metadata for admin roles
+   - Checks Supabase Auth metadata for admin roles
    - Falls back to user tier-based roles
    - Attaches roles to req.userRoles
 
@@ -128,7 +128,7 @@ requireSuperAdmin() // Super admin only
 ```
 
 ### 3. Automatic Role Assignment
-- Checks Auth0 metadata for admin roles
+- Checks Supabase Auth metadata for admin roles
 - Falls back to user tier-based roles
 - Supports multiple role sources
 - Seamlessly integrated with authentication

@@ -12,8 +12,8 @@ router.post('/', async(req, res) => {
       userId,
       token,
       expiresAt,
-      auth0AccessToken,
-      auth0IdToken,
+      jwtAccessToken,
+      jwtIdToken,
       userProfile,
     } = req.body;
 
@@ -23,11 +23,11 @@ router.post('/', async(req, res) => {
         .json({ error: 'Missing required fields: userId, token, expiresAt' });
     }
 
-    // First, ensure user exists in users table with Auth0 profile data
+    // First, ensure user exists in users table with JWT profile data
     const result = await db.query(
-      `INSERT INTO users (auth0_id, email, name, nickname, picture, email_verified, locale, created_at, updated_at)
+      `INSERT INTO users (jwt_id, email, name, nickname, picture, email_verified, locale, created_at, updated_at)
        VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), NOW())
-       ON CONFLICT (auth0_id) DO UPDATE SET
+       ON CONFLICT (jwt_id) DO UPDATE SET
          email = EXCLUDED.email,
          name = EXCLUDED.name,
          nickname = EXCLUDED.nickname,
@@ -38,7 +38,7 @@ router.post('/', async(req, res) => {
        RETURNING id`,
       [
         userId,
-        userProfile?.email || `${userId}@auth0.local`,
+        userProfile?.email || `${userId}@jwt.local`,
         userProfile?.name || 'Unknown User',
         userProfile?.nickname || null,
         userProfile?.picture || null,
@@ -51,10 +51,10 @@ router.post('/', async(req, res) => {
 
     // Create session
     const sessionResult = await db.query(
-      `INSERT INTO user_sessions (user_id, session_token, expires_at, auth0_access_token, auth0_id_token, created_at, last_activity)
+      `INSERT INTO user_sessions (user_id, session_token, expires_at, jwt_access_token, jwt_id_token, created_at, last_activity)
        VALUES ($1, $2, $3, $4, $5, NOW(), NOW())
        RETURNING id`,
-      [dbUserId, token, expiresAt, auth0AccessToken, auth0IdToken],
+      [dbUserId, token, expiresAt, jwtAccessToken, jwtIdToken],
     );
 
     res.status(201).json({
@@ -78,9 +78,9 @@ router.get('/validate/:token', async(req, res) => {
     const { token } = req.params;
 
     const result = await db.query(
-      `SELECT s.id, s.session_token, s.expires_at, s.auth0_access_token, s.auth0_id_token,
+      `SELECT s.id, s.session_token, s.expires_at, s.jwt_access_token, s.jwt_id_token,
               s.created_at, s.last_activity, s.is_active,
-              u.id as user_id, u.auth0_id, u.email, u.name, u.nickname, u.picture
+              u.id as user_id, u.jwt_id, u.email, u.name, u.nickname, u.picture
        FROM user_sessions s
        JOIN users u ON s.user_id = u.id
        WHERE s.session_token = $1 AND s.is_active = true AND s.expires_at > NOW()`,
@@ -104,14 +104,14 @@ router.get('/validate/:token', async(req, res) => {
         id: session.id,
         token: session.session_token,
         expiresAt: session.expires_at,
-        auth0AccessToken: session.auth0_access_token,
-        auth0IdToken: session.auth0_id_token,
+        jwtAccessToken: session.jwt_access_token,
+        jwtIdToken: session.jwt_id_token,
         createdAt: session.created_at,
         lastActivity: session.last_activity,
         isActive: session.is_active,
       },
       user: {
-        id: session.auth0_id,
+        id: session.jwt_id,
         email: session.email,
         name: session.name,
         nickname: session.nickname,

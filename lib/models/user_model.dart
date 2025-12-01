@@ -20,8 +20,8 @@ class UserModel {
     required this.updatedAt,
   });
 
-  /// Create UserModel from Auth0 profile
-  factory UserModel.fromAuth0Profile(dynamic profile) {
+  /// Create UserModel from authentication profile
+  factory UserModel.fromProfile(dynamic profile) {
     // Handle both UserProfile object and Map<String, dynamic>
     final Map<String, dynamic> profileData;
     if (profile is Map<String, dynamic>) {

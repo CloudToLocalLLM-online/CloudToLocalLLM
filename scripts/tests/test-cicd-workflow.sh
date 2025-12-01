@@ -36,7 +36,7 @@ check_env_vars() {
         "GCP_PROJECT_ID"
         "GCP_SA_KEY"
         "JWT_SECRET"
-        "AUTH0_AUDIENCE"
+        "JWT_AUDIENCE"
     )
 
     for var in "${required_vars[@]}"; do

@@ -16,11 +16,10 @@ import { logTokenRefresh, logLoginFailure, logLogout, logTokenRevoke } from '../
 
 const router = express.Router();
 
-// Auth0 configuration
-const AUTH0_DOMAIN = process.env.AUTH0_DOMAIN || 'dev-v2f2p008x3dr74ww.us.auth0.com';
-const AUTH0_AUDIENCE = process.env.AUTH0_AUDIENCE || 'https://api.cloudtolocalllm.online';
-const AUTH0_CLIENT_ID = process.env.AUTH0_CLIENT_ID;
-const AUTH0_CLIENT_SECRET = process.env.AUTH0_CLIENT_SECRET;
+// JWT configuration
+const JWT_AUDIENCE = process.env.JWT_AUDIENCE || 'https://api.cloudtolocalllm.online';
+const JWT_CLIENT_ID = process.env.JWT_CLIENT_ID;
+const JWT_CLIENT_SECRET = process.env.JWT_CLIENT_SECRET;
 
 // Token refresh configuration
 const TOKEN_REFRESH_WINDOW = parseInt(process.env.TOKEN_REFRESH_WINDOW) || 300; // 5 minutes before expiry
@@ -34,9 +33,9 @@ const TOKEN_REFRESH_WINDOW = parseInt(process.env.TOKEN_REFRESH_WINDOW) || 300; 
  *       Exchanges a refresh token for a new access token. Supports both
  *       request body and secure cookie-based refresh tokens.
  *
- *       **Validates: Requirements 2.1, 2.2**
- *       - Validates JWT tokens from Auth0 on every protected request
- *       - Implements token refresh mechanism for expired tokens
+       **Validates: Requirements 2.1, 2.2**
+       - Validates JWT tokens on every protected request
+       - Implements token refresh mechanism for expired tokens
  *     tags:
  *       - Authentication
  *     requestBody:
@@ -70,7 +69,7 @@ const TOKEN_REFRESH_WINDOW = parseInt(process.env.TOKEN_REFRESH_WINDOW) || 300; 
  *                   description: Token expiry in seconds
  *                 refreshToken:
  *                   type: string
- *                   description: New refresh token (if provided by Auth0)
+ *                   description: New refresh token (if provided by JWT)
  *       400:
  *         description: Missing refresh token
  *         content:
@@ -131,16 +130,16 @@ router.post('/token/refresh', async function(req, res) {
       });
     }
 
-    // Exchange refresh token for new access token via Auth0
-    const tokenResponse = await fetch(`https://${AUTH0_DOMAIN}/oauth/token`, {
+    // Exchange refresh token for new access token via JWT
+    const tokenResponse = await fetch(`https://${JWT_ISSUER_DOMAIN}/oauth/token`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        client_id: AUTH0_CLIENT_ID,
-        client_secret: AUTH0_CLIENT_SECRET,
-        audience: AUTH0_AUDIENCE,
+        client_id: JWT_CLIENT_ID,
+        client_secret: JWT_CLIENT_SECRET,
+        audience: JWT_AUDIENCE,
         grant_type: 'refresh_token',
         refresh_token: token,
       }),
@@ -148,7 +147,7 @@ router.post('/token/refresh', async function(req, res) {
 
     if (!tokenResponse.ok) {
       const errorData = await tokenResponse.json();
-      logger.warn('[Auth] Auth0 token refresh failed', {
+      logger.warn('[Auth] JWT token refresh failed', {
         status: tokenResponse.status,
         error: errorData.error,
       });
@@ -227,7 +226,7 @@ router.post('/token/refresh', async function(req, res) {
  *       and user details. Does not require authentication.
  *
  *       **Validates: Requirements 2.1**
- *       - Validates JWT tokens from Auth0 on every protected request
+ *       - Validates JWT tokens from JWT on every protected request
  *     tags:
  *       - Authentication
  *     requestBody:
@@ -404,30 +403,30 @@ router.post('/logout', authenticateJWT, async function(req, res) {
 
     logger.info('[Auth] User logout initiated', { userId });
 
-    // Revoke token via Auth0 (if using Auth0 token revocation endpoint)
-    if (AUTH0_CLIENT_ID && AUTH0_CLIENT_SECRET) {
+    // Revoke token via JWT (if using JWT token revocation endpoint)
+    if (JWT_CLIENT_ID && JWT_CLIENT_SECRET) {
       try {
-        const revokeResponse = await fetch(`https://${AUTH0_DOMAIN}/oauth/revoke`, {
+        const revokeResponse = await fetch(`https://${JWT_ISSUER_DOMAIN}/oauth/revoke`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            client_id: AUTH0_CLIENT_ID,
-            client_secret: AUTH0_CLIENT_SECRET,
+            client_id: JWT_CLIENT_ID,
+            client_secret: JWT_CLIENT_SECRET,
             token: token,
           }),
         });
 
         if (revokeResponse.ok) {
-          logger.info('[Auth] Token revoked successfully via Auth0', { userId });
+          logger.info('[Auth] Token revoked successfully via JWT', { userId });
         } else {
-          logger.warn('[Auth] Auth0 token revocation failed', {
+          logger.warn('[Auth] JWT token revocation failed', {
             status: revokeResponse.status,
           });
         }
       } catch (revokeError) {
-        logger.warn('[Auth] Auth0 token revocation error', {
+        logger.warn('[Auth] JWT token revocation error', {
           error: revokeError.message,
         });
         // Continue with logout even if revocation fails
@@ -589,7 +588,7 @@ router.post('/session/revoke', authenticateJWT, async function(req, res) {
  *       extracted from the JWT token.
  *
  *       **Validates: Requirements 2.1**
- *       - Validates JWT tokens from Auth0 on every protected request
+ *       - Validates JWT tokens from JWT on every protected request
  *     tags:
  *       - Authentication
  *     security:

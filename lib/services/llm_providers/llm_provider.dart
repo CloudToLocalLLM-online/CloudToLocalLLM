@@ -5,7 +5,7 @@ import 'base_llm_provider.dart';
 
 /// Shared base class for concrete LLM providers.
 ///
-/// Stores the Auth0-aware auth service reference and provider configuration,
+/// Stores the auth service reference and provider configuration,
 /// exposing protected helpers for subclasses while keeping the public API
 /// defined by [BaseLLMProvider].
 abstract class LLMProvider extends BaseLLMProvider {

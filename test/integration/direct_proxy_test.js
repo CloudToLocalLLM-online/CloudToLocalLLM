@@ -25,7 +25,7 @@ describe('Direct Proxy Integration Tests', () => {
     // Mock auth middleware
     mockAuth = (req, res, next) => {
       req.user = {
-        sub: 'auth0|test-user-123',
+        sub: 'jwt|test-user-123',
         'https://cloudtolocalllm.com/user_metadata': { tier: 'free' }
       };
       next();
@@ -59,7 +59,7 @@ describe('Direct Proxy Integration Tests', () => {
       });
 
       expect(response.body.timestamp).toBeDefined();
-      expect(mockTunnelProxy.isUserConnected).toHaveBeenCalledWith('auth0|test-user-123');
+      expect(mockTunnelProxy.isUserConnected).toHaveBeenCalledWith('jwt|test-user-123');
     });
 
     it('should handle tunnel proxy errors gracefully', async () => {
@@ -99,7 +99,7 @@ describe('Direct Proxy Integration Tests', () => {
 
       expect(response.body).toEqual({ models: [] });
       expect(mockTunnelProxy.forwardRequest).toHaveBeenCalledWith(
-        'auth0|test-user-123',
+        'jwt|test-user-123',
         expect.objectContaining({
           method: 'GET',
           path: '/api/tags',
@@ -126,7 +126,7 @@ describe('Direct Proxy Integration Tests', () => {
 
       expect(response.body).toEqual({ success: true });
       expect(mockTunnelProxy.forwardRequest).toHaveBeenCalledWith(
-        'auth0|test-user-123',
+        'jwt|test-user-123',
         expect.objectContaining({
           method: 'POST',
           path: '/api/generate',
@@ -237,7 +237,7 @@ describe('Direct Proxy Integration Tests', () => {
       // Override auth middleware for premium user
       app.use('/premium-test', (req, res, next) => {
         req.user = {
-          sub: 'auth0|premium-user-123',
+          sub: 'jwt|premium-user-123',
           'https://cloudtolocalllm.com/user_metadata': { tier: 'premium' }
         };
         next();

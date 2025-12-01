@@ -277,8 +277,8 @@ class MockDioClient {
   /// Mock response for Ollama API calls
   Map<String, dynamic> get ollamaResponse => {'version': '0.9.2', 'models': []};
 
-  /// Mock response for Auth0 calls
-  Map<String, dynamic> get auth0Response => {
+  /// Mock response for JWT calls
+  Map<String, dynamic> get jwtResponse => {
         'error': 'Test environment - no real auth',
       };
 }

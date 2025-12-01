@@ -16,8 +16,8 @@ Future<void> initializeMockPlugins() async {
   SharedPreferences.setMockInitialValues({});
 }
 
-/// Mock Auth0 Service for testing
-class MockAuth0Service {
+/// Mock JWT Service for testing
+class MockJWTService {
   bool isAuthenticated = false;
   String? accessToken;
   String? idToken;

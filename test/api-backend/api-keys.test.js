@@ -28,10 +28,10 @@ describe('API Key Service', () => {
   beforeAll(async () => {
     // Create test user
     const userResult = await query(
-      `INSERT INTO users (auth0_id, email, name)
+      `INSERT INTO users (jwt_id, email, name)
        VALUES ($1, $2, $3)
        RETURNING id`,
-      ['test-auth0-id', 'test@example.com', 'Test User'],
+      ['test-jwt-id', 'test@example.com', 'Test User'],
     );
     testUserId = userResult.rows[0].id;
   });
@@ -392,10 +392,10 @@ describe('API Key Routes', () => {
 
     // Create test user
     const userResult = await query(
-      `INSERT INTO users (auth0_id, email, name)
+      `INSERT INTO users (jwt_id, email, name)
        VALUES ($1, $2, $3)
        RETURNING id`,
-      ['test-auth0-routes', 'test-routes@example.com', 'Test Routes User'],
+      ['test-jwt-routes', 'test-routes@example.com', 'Test Routes User'],
     );
     testUserUUID = userResult.rows[0].id;
     testUserId = testUserUUID.toString();
@@ -597,10 +597,10 @@ describe('API Key Middleware', () => {
 
     // Create test user
     const userResult = await query(
-      `INSERT INTO users (auth0_id, email, name)
+      `INSERT INTO users (jwt_id, email, name)
        VALUES ($1, $2, $3)
        RETURNING id`,
-      ['test-auth0-middleware', 'test-middleware@example.com', 'Test Middleware User'],
+      ['test-jwt-middleware', 'test-middleware@example.com', 'Test Middleware User'],
     );
     testUserUUID = userResult.rows[0].id;
     testUserId = testUserUUID.toString();

@@ -154,7 +154,7 @@ generate_release_notes() {
 
 ### Security & Performance
 - **Non-root container architecture** with proper privilege dropping
-- **Enhanced authentication flow** with Auth0 PKCE support
+- **Enhanced authentication flow** with JWT PKCE support
 - **Improved error handling** and logging
 - **Memory optimization** and resource management
 

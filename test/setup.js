@@ -6,8 +6,8 @@ import { jest, afterEach } from '@jest/globals';
 // Set test environment variables
 process.env.NODE_ENV = 'test';
 process.env.JWT_SECRET = 'test-secret-key';
-process.env.AUTH0_DOMAIN = 'test.auth0.com';
-process.env.AUTH0_AUDIENCE = 'test-audience';
+process.env.JWT_ISSUER_DOMAIN = 'test.jwt.com';
+process.env.JWT_AUDIENCE = 'test-audience';
 process.env.LOG_LEVEL = 'error'; // Reduce log noise in tests
 
 // Global test timeout

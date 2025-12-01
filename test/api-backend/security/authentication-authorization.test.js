@@ -9,16 +9,16 @@ import express from 'express';
 
 // Test configuration
 const TEST_CONFIG = {
-  domain: 'test-domain.auth0.com',
+  domain: 'test-domain.jwt.com',
   audience: 'https://test.example.com',
 };
 
 // Test users with different roles and permissions
 const TEST_USERS = {
   validUser: {
-    id: 'auth0|valid-user',
+    id: 'jwt|valid-user',
     claims: {
-      sub: 'auth0|valid-user',
+      sub: 'jwt|valid-user',
       aud: TEST_CONFIG.audience,
       iss: `https://${TEST_CONFIG.domain}/`,
       exp: Math.floor(Date.now() / 1000) + 3600,
@@ -28,9 +28,9 @@ const TEST_USERS = {
     },
   },
   expiredUser: {
-    id: 'auth0|expired-user',
+    id: 'jwt|expired-user',
     claims: {
-      sub: 'auth0|expired-user',
+      sub: 'jwt|expired-user',
       aud: TEST_CONFIG.audience,
       iss: `https://${TEST_CONFIG.domain}/`,
       exp: Math.floor(Date.now() / 1000) - 3600,
@@ -40,9 +40,9 @@ const TEST_USERS = {
     },
   },
   adminUser: {
-    id: 'auth0|admin-user',
+    id: 'jwt|admin-user',
     claims: {
-      sub: 'auth0|admin-user',
+      sub: 'jwt|admin-user',
       aud: TEST_CONFIG.audience,
       iss: `https://${TEST_CONFIG.domain}/`,
       exp: Math.floor(Date.now() / 1000) + 3600,

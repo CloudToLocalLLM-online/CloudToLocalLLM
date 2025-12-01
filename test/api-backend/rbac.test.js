@@ -247,7 +247,7 @@ describe('RBAC Middleware', () => {
       expect(next).toHaveBeenCalled();
     });
 
-    it('should attach roles from Auth0 roles array', () => {
+    it('should attach roles from JWT roles array', () => {
       const req = {
         user: {
           sub: 'user123',

@@ -1,6 +1,6 @@
 /**
  * @fileoverview Authentication Service for CloudToLocalLLM Tunnel
- * Handles Auth0 JWT validation, session management, and role-based access control
+ * Handles JWT JWT validation, session management, and role-based access control
  */
 
 import jwt from 'jsonwebtoken';
@@ -11,7 +11,7 @@ import { TunnelLogger } from '../utils/logger.js';
 import { DatabaseMigrator } from '../database/migrate.js';
 
 /**
- * Authentication service with Auth0 integration
+ * Authentication service with JWT integration
  * Uses separate authentication database for security isolation
  */
 export class AuthService {

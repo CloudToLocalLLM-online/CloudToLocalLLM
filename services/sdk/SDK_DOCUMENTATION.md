@@ -450,7 +450,7 @@ const client = new CloudToLocalLLMClient({
 });
 
 // After OAuth login
-const { accessToken, refreshToken } = await getTokensFromAuth0();
+const { accessToken, refreshToken } = await getTokensFromSupabase Auth();
 client.setTokens(accessToken, refreshToken);
 
 // Use the client

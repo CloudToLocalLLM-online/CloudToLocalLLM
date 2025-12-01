@@ -7,8 +7,6 @@ class SessionModel {
   final String token;
   final DateTime expiresAt;
   final UserModel user;
-  final String? auth0AccessToken;
-  final String? auth0IdToken;
   final DateTime createdAt;
   final DateTime lastActivity;
   final bool isActive;
@@ -19,8 +17,6 @@ class SessionModel {
     required this.token,
     required this.expiresAt,
     required this.user,
-    this.auth0AccessToken,
-    this.auth0IdToken,
     DateTime? createdAt,
     DateTime? lastActivity,
     this.isActive = true,
@@ -39,8 +35,6 @@ class SessionModel {
     String? token,
     DateTime? expiresAt,
     UserModel? user,
-    String? auth0AccessToken,
-    String? auth0IdToken,
     DateTime? createdAt,
     DateTime? lastActivity,
     bool? isActive,
@@ -51,8 +45,6 @@ class SessionModel {
       token: token ?? this.token,
       expiresAt: expiresAt ?? this.expiresAt,
       user: user ?? this.user,
-      auth0AccessToken: auth0AccessToken ?? this.auth0AccessToken,
-      auth0IdToken: auth0IdToken ?? this.auth0IdToken,
       createdAt: createdAt ?? this.createdAt,
       lastActivity: lastActivity ?? this.lastActivity,
       isActive: isActive ?? this.isActive,

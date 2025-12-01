@@ -48,7 +48,7 @@ export class UserDeletionService {
 
   /**
    * Delete user account with cascading cleanup
-   * @param {string} userId - Auth0 user ID
+   * @param {string} userId - JWT user ID
    * @param {Object} options - Deletion options
    * @param {boolean} options.softDelete - If true, mark as deleted instead of hard delete
    * @param {string} options.reason - Reason for deletion (for audit purposes)
@@ -66,8 +66,8 @@ export class UserDeletionService {
     try {
       await client.query('BEGIN');
 
-      // Get user UUID from auth0_id
-      const userQuery = 'SELECT id FROM users WHERE auth0_id = $1';
+      // Get user UUID from jwt_id
+      const userQuery = 'SELECT id FROM users WHERE jwt_id = $1';
       const userResult = await client.query(userQuery, [userId]);
 
       if (userResult.rows.length === 0) {
@@ -200,7 +200,7 @@ export class UserDeletionService {
 
   /**
    * Restore a soft-deleted user account
-   * @param {string} userId - Auth0 user ID
+   * @param {string} userId - JWT user ID
    * @returns {Promise<Object>} Restoration result
    */
   async restoreUserAccount(userId) {
@@ -214,7 +214,7 @@ export class UserDeletionService {
         SET 
           metadata = metadata - 'deleted_at' - 'deletion_reason' - 'is_deleted',
           updated_at = NOW()
-        WHERE auth0_id = $1 AND metadata->>'is_deleted' = 'true'
+        WHERE jwt_id = $1 AND metadata->>'is_deleted' = 'true'
         RETURNING id
       `;
 
@@ -245,7 +245,7 @@ export class UserDeletionService {
 
   /**
    * Check if a user is soft-deleted
-   * @param {string} userId - Auth0 user ID
+   * @param {string} userId - JWT user ID
    * @returns {Promise<boolean>} True if user is soft-deleted
    */
   async isUserDeleted(userId) {
@@ -257,7 +257,7 @@ export class UserDeletionService {
       const query = `
         SELECT metadata->>'is_deleted' as is_deleted
         FROM users
-        WHERE auth0_id = $1
+        WHERE jwt_id = $1
       `;
 
       const result = await this.pool.query(query, [userId]);
@@ -278,7 +278,7 @@ export class UserDeletionService {
 
   /**
    * Get deletion information for a soft-deleted user
-   * @param {string} userId - Auth0 user ID
+   * @param {string} userId - JWT user ID
    * @returns {Promise<Object>} Deletion information
    */
   async getDeletionInfo(userId) {
@@ -293,7 +293,7 @@ export class UserDeletionService {
           metadata->>'deletion_reason' as deletion_reason,
           metadata->>'is_deleted' as is_deleted
         FROM users
-        WHERE auth0_id = $1
+        WHERE jwt_id = $1
       `;
 
       const result = await this.pool.query(query, [userId]);
@@ -325,7 +325,7 @@ export class UserDeletionService {
 
   /**
    * Permanently delete a soft-deleted user (after retention period)
-   * @param {string} userId - Auth0 user ID
+   * @param {string} userId - JWT user ID
    * @returns {Promise<Object>} Permanent deletion result
    */
   async permanentlyDeleteUser(userId) {
@@ -339,7 +339,7 @@ export class UserDeletionService {
       await client.query('BEGIN');
 
       // Get user UUID
-      const userQuery = 'SELECT id FROM users WHERE auth0_id = $1';
+      const userQuery = 'SELECT id FROM users WHERE jwt_id = $1';
       const userResult = await client.query(userQuery, [userId]);
 
       if (userResult.rows.length === 0) {

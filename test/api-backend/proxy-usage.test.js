@@ -33,10 +33,10 @@ describe('Proxy Usage Tracking', () => {
 
     // Create test user
     const userResult = await pool.query(
-      `INSERT INTO users (id, email, auth0_id, tier, is_active)
+      `INSERT INTO users (id, email, jwt_id, tier, is_active)
        VALUES ($1, $2, $3, $4, $5)
        RETURNING id`,
-      [uuidv4(), 'test-proxy-usage@example.com', 'auth0|test-proxy-usage', 'premium', true],
+      [uuidv4(), 'test-proxy-usage@example.com', 'jwt|test-proxy-usage', 'premium', true],
     );
     testUserId = userResult.rows[0].id;
 
@@ -291,9 +291,9 @@ describe('Proxy Usage Tracking', () => {
 
       // Create user without proxies
       await pool.query(
-        `INSERT INTO users (id, email, auth0_id, tier, is_active)
+        `INSERT INTO users (id, email, jwt_id, tier, is_active)
          VALUES ($1, $2, $3, $4, $5)`,
-        [otherUserId, 'test-no-proxy@example.com', 'auth0|test-no-proxy', 'free', true],
+        [otherUserId, 'test-no-proxy@example.com', 'jwt|test-no-proxy', 'free', true],
       );
 
       const aggregation = await proxyUsageService.aggregateUserUsage(

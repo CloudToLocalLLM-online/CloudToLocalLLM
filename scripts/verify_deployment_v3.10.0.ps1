@@ -7,7 +7,7 @@ param(
     [string]$DeploymentUrl,
     
     [Parameter(Mandatory = $false)]
-    [string]$Auth0Domain = "",
+    [string]$JWTDomain = "",
     
     [Parameter(Mandatory = $false)]
     [int]$TimeoutSeconds = 30,
@@ -208,7 +208,7 @@ Write-Host "Manual Login Loop Fix Verification" -ForegroundColor Cyan
 Write-Host "===================================" -ForegroundColor Cyan
 Write-Host "To verify the login loop race condition fix:"
 Write-Host "1. Open $DeploymentUrl in a browser"
-Write-Host "2. Click 'Sign In with Auth0'"
+Write-Host "2. Click 'Sign In with JWT'"
 Write-Host "3. Complete authentication"
 Write-Host "4. Verify you're redirected to home page (not back to login)"
 Write-Host "5. Check browser console for debug messages:"
@@ -216,10 +216,10 @@ Write-Host "   - ' [Callback] Authentication successful, redirecting to home'"
 Write-Host "   - ' [Router] Allowing access to protected route'"
 Write-Host ""
 
-if ($Auth0Domain) {
-    Write-Host "Auth0 Configuration Check" -ForegroundColor Cyan
+if ($JWTDomain) {
+    Write-Host "JWT Configuration Check" -ForegroundColor Cyan
     Write-Host "=========================" -ForegroundColor Cyan
-    Write-Host "Ensure these URLs are configured in Auth0:"
+    Write-Host "Ensure these URLs are configured in JWT:"
     Write-Host "Callback URLs: $DeploymentUrl/callback"
     Write-Host "Logout URLs: $DeploymentUrl/"
     Write-Host "Web Origins: $DeploymentUrl"

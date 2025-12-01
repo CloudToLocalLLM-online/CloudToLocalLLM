@@ -216,7 +216,7 @@ The error rate has exceeded 5% for the last 5 minutes. This indicates that a sig
 
 **How to resolve:**
 1. **If authentication errors:**
-   - Verify Auth0 configuration
+   - Verify Supabase Auth configuration
    - Check JWT token validity
    - Restart API backend if needed
 

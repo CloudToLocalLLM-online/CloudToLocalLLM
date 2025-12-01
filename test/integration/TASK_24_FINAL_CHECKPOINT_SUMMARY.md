@@ -27,7 +27,7 @@ authService = AuthService();
 adminService = AdminCenterService();
 
 // CORRECT (should be):
-authService = AuthService(mockAuth0Service, mockSessionStorage);
+authService = AuthService(mockJWTService, mockSessionStorage);
 adminService = AdminCenterService(authService: mockAuthService);
 ```
 
@@ -106,7 +106,7 @@ Based on the design document, we should have 15 property-based tests:
 
 The primary issue is that many property-based tests were created with incorrect assumptions about the service APIs:
 
-1. **Service Constructors:** Tests assume services can be instantiated without parameters, but many services require dependencies (AuthService needs Auth0Service and SessionStorage, AdminCenterService needs AuthService, etc.)
+1. **Service Constructors:** Tests assume services can be instantiated without parameters, but many services require dependencies (AuthService needs JWTService and SessionStorage, AdminCenterService needs AuthService, etc.)
 
 2. **ThemeProvider API:** Tests assume ThemeProvider has `lightTheme` and `darkTheme` properties, but it only has `themeMode`. The actual theme data comes from `AppTheme` class.
 

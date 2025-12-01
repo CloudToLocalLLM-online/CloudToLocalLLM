@@ -234,14 +234,14 @@ void main() {
     });
 
     test(
-        'Property 15: Logout Token Clearing Timing - Auth0 token cleared immediately',
+        'Property 15: Logout Token Clearing Timing - JWT token cleared immediately',
         () async {
       // **Feature: platform-settings-screen, Property 15: Logout Token Clearing Timing**
       // **Validates: Requirements 4.3**
 
-      // Verify Auth0 token exists
+      // Verify JWT token exists
       expect(await authService.getAccessToken(), isNotNull,
-          reason: 'Auth0 access token should exist initially');
+          reason: 'JWT access token should exist initially');
 
       final stopwatch = Stopwatch()..start();
 
@@ -249,9 +249,9 @@ void main() {
 
       stopwatch.stop();
 
-      // Verify Auth0 token is cleared
+      // Verify JWT token is cleared
       expect(await authService.getAccessToken(), isNull,
-          reason: 'Auth0 access token should be cleared after logout');
+          reason: 'JWT access token should be cleared after logout');
 
       // Verify timing
       expect(

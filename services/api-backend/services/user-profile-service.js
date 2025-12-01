@@ -52,7 +52,7 @@ export class UserProfileService {
 
   /**
    * Get user profile by user ID
-   * @param {string} userId - Auth0 user ID
+   * @param {string} userId - JWT user ID
    * @returns {Promise<Object>} User profile object
    */
   async getUserProfile(userId) {
@@ -64,7 +64,7 @@ export class UserProfileService {
       const query = `
         SELECT 
           u.id,
-          u.auth0_id,
+          u.jwt_id,
           u.email,
           u.name,
           u.nickname,
@@ -79,7 +79,7 @@ export class UserProfileService {
           COALESCE(up.preferences, '{}'::jsonb) as preferences
         FROM users u
         LEFT JOIN user_preferences up ON u.id = up.user_id
-        WHERE u.auth0_id = $1
+        WHERE u.jwt_id = $1
       `;
 
       const result = await this.pool.query(query, [userId]);
@@ -92,7 +92,7 @@ export class UserProfileService {
 
       return {
         id: user.id,
-        auth0Id: user.auth0_id,
+        jwtId: user.jwt_id,
         email: user.email,
         profile: {
           firstName: user.name ? user.name.split(' ')[0] : '',
@@ -124,7 +124,7 @@ export class UserProfileService {
 
   /**
    * Update user profile
-   * @param {string} userId - Auth0 user ID
+   * @param {string} userId - JWT user ID
    * @param {Object} profileData - Profile data to update
    * @returns {Promise<Object>} Updated user profile
    */
@@ -168,7 +168,7 @@ export class UserProfileService {
               nickname = COALESCE($2, nickname),
               picture = COALESCE($3, picture),
               updated_at = NOW()
-            WHERE auth0_id = $4
+            WHERE jwt_id = $4
             RETURNING *
           `;
 
@@ -186,7 +186,7 @@ export class UserProfileService {
             INSERT INTO user_preferences (user_id, preferences, created_at, updated_at)
             SELECT u.id, $1::jsonb, NOW(), NOW()
             FROM users u
-            WHERE u.auth0_id = $2
+            WHERE u.jwt_id = $2
             ON CONFLICT (user_id) DO UPDATE
             SET preferences = $1::jsonb, updated_at = NOW()
           `;
@@ -218,7 +218,7 @@ export class UserProfileService {
 
   /**
    * Update user preferences
-   * @param {string} userId - Auth0 user ID
+   * @param {string} userId - JWT user ID
    * @param {Object} preferences - Preferences object
    * @returns {Promise<Object>} Updated preferences
    */
@@ -245,7 +245,7 @@ export class UserProfileService {
         INSERT INTO user_preferences (user_id, preferences, created_at, updated_at)
         SELECT u.id, $1::jsonb, NOW(), NOW()
         FROM users u
-        WHERE u.auth0_id = $2
+        WHERE u.jwt_id = $2
         ON CONFLICT (user_id) DO UPDATE
         SET preferences = $1::jsonb, updated_at = NOW()
         RETURNING preferences
@@ -272,7 +272,7 @@ export class UserProfileService {
 
   /**
    * Get user preferences
-   * @param {string} userId - Auth0 user ID
+   * @param {string} userId - JWT user ID
    * @returns {Promise<Object>} User preferences
    */
   async getUserPreferences(userId) {
@@ -285,7 +285,7 @@ export class UserProfileService {
         SELECT COALESCE(up.preferences, '{}'::jsonb) as preferences
         FROM users u
         LEFT JOIN user_preferences up ON u.id = up.user_id
-        WHERE u.auth0_id = $1
+        WHERE u.jwt_id = $1
       `;
 
       const result = await this.pool.query(query, [userId]);
@@ -310,7 +310,7 @@ export class UserProfileService {
 
   /**
    * Update user avatar
-   * @param {string} userId - Auth0 user ID
+   * @param {string} userId - JWT user ID
    * @param {string} avatarUrl - Avatar URL
    * @returns {Promise<Object>} Updated user profile
    */
@@ -334,7 +334,7 @@ export class UserProfileService {
       const query = `
         UPDATE users
         SET picture = $1, updated_at = NOW()
-        WHERE auth0_id = $2
+        WHERE jwt_id = $2
         RETURNING *
       `;
 

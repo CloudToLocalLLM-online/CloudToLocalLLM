@@ -8,7 +8,6 @@ import '../models/session_model.dart';
 import '../config/app_config.dart';
 
 /// Session storage service for managing authentication sessions in PostgreSQL
-/// This provides persistent session storage while keeping Auth0 for authentication
 class SessionStorageService {
   final String _baseUrl = AppConfig.apiBaseUrl;
   final Dio _dio = Dio();
@@ -26,8 +25,6 @@ class SessionStorageService {
   /// Create a new session for an authenticated user
   Future<SessionModel> createSession({
     required UserModel user,
-    String? auth0AccessToken,
-    String? auth0IdToken,
   }) async {
     // Generate a unique session token
     final token = _generateSessionToken();
@@ -38,8 +35,6 @@ class SessionStorageService {
       'userId': user.id,
       'token': token,
       'expiresAt': expiresAt.toIso8601String(),
-      'auth0AccessToken': auth0AccessToken,
-      'auth0IdToken': auth0IdToken,
       'userProfile': {
         'email': user.email,
         'name': user.name,
@@ -65,8 +60,6 @@ class SessionStorageService {
           token: token,
           expiresAt: expiresAt,
           user: user,
-          auth0AccessToken: auth0AccessToken,
-          auth0IdToken: auth0IdToken,
         );
 
         // Store session token locally
@@ -85,8 +78,6 @@ class SessionStorageService {
         token: token,
         expiresAt: expiresAt,
         user: user,
-        auth0AccessToken: auth0AccessToken,
-        auth0IdToken: auth0IdToken,
         createdAt: DateTime.now(),
         lastActivity: DateTime.now(),
       );
@@ -175,8 +166,6 @@ class SessionStorageService {
           token: token,
           expiresAt: DateTime.parse(responseData['session']['expiresAt']),
           user: user,
-          auth0AccessToken: responseData['session']['auth0AccessToken'],
-          auth0IdToken: responseData['session']['auth0IdToken'],
           createdAt: DateTime.parse(responseData['session']['createdAt']),
           lastActivity: DateTime.parse(responseData['session']['lastActivity']),
         );

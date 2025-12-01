@@ -8,8 +8,8 @@ const path = require('path');
 // Test configuration
 const CONFIG = {
   DEPLOYMENT_URL: process.env.DEPLOYMENT_URL || 'https://your-vercel-app.vercel.app',
-  AUTH0_TEST_EMAIL: process.env.AUTH0_TEST_EMAIL || 'test@example.com',
-  AUTH0_TEST_PASSWORD: process.env.AUTH0_TEST_PASSWORD || 'TestPassword123!',
+  JWT_TEST_EMAIL: process.env.JWT_TEST_EMAIL || 'test@example.com',
+  JWT_TEST_PASSWORD: process.env.JWT_TEST_PASSWORD || 'TestPassword123!',
   MAX_REDIRECTS: 10, // Maximum redirects before considering it a loop
   TIMEOUT: 30000, // 30 seconds timeout
   DELAY_THRESHOLD: 100, // Expected delay from our fix (ms)
@@ -167,7 +167,7 @@ test.describe('CloudToLocalLLM v3.10.0 Authentication Loop Analysis', () => {
     await page.screenshot({ path: 'test-results/02-login-page.png' });
     testReport.screenshots.push('02-login-page.png');
 
-    const loginButton = page.locator('button:has-text("Sign In with Auth0")');
+    const loginButton = page.locator('button:has-text("Sign In with JWT")');
     await expect(loginButton).toBeVisible({ timeout: 10000 });
 
     // Step 5: Start authentication flow monitoring
@@ -209,27 +209,27 @@ test.describe('CloudToLocalLLM v3.10.0 Authentication Loop Analysis', () => {
       }
     }, 100);
 
-    // Click login button and handle Auth0 flow
+    // Click login button and handle JWT flow
     try {
       await loginButton.click();
       
-      // Wait for Auth0 redirect or popup
+      // Wait for JWT redirect or popup
       await page.waitForURL('**/authorize**', { timeout: 10000 });
-      testReport.events.push({ timestamp: new Date().toISOString(), event: 'AUTH0_REDIRECT' });
+      testReport.events.push({ timestamp: new Date().toISOString(), event: 'AUTH_REDIRECT' });
       
-      await page.screenshot({ path: 'test-results/03-auth0-page.png' });
-      testReport.screenshots.push('03-auth0-page.png');
+      await page.screenshot({ path: 'test-results/03-jwt-page.png' });
+      testReport.screenshots.push('03-jwt-page.png');
 
-      // Handle Auth0 authentication (if test credentials provided)
-      if (CONFIG.AUTH0_TEST_EMAIL && CONFIG.AUTH0_TEST_PASSWORD) {
+      // Handle JWT authentication (if test credentials provided)
+      if (CONFIG.JWT_TEST_EMAIL && CONFIG.JWT_TEST_PASSWORD) {
         try {
-          await page.fill('input[name="email"]', CONFIG.AUTH0_TEST_EMAIL);
-          await page.fill('input[name="password"]', CONFIG.AUTH0_TEST_PASSWORD);
+          await page.fill('input[name="email"]', CONFIG.JWT_TEST_EMAIL);
+          await page.fill('input[name="password"]', CONFIG.JWT_TEST_PASSWORD);
           await page.click('button[type="submit"]');
           
-          testReport.events.push({ timestamp: new Date().toISOString(), event: 'AUTH0_CREDENTIALS_SUBMITTED' });
+          testReport.events.push({ timestamp: new Date().toISOString(), event: 'AUTH_CREDENTIALS_SUBMITTED' });
         } catch (error) {
-          testReport.issues.push(`Auth0 form interaction failed: ${error.message}`);
+          testReport.issues.push(`JWT form interaction failed: ${error.message}`);
         }
       }
 
@@ -318,16 +318,16 @@ test.describe('CloudToLocalLLM v3.10.0 Authentication Loop Analysis', () => {
       });
     }
 
-    // Step 7: Analyze network requests for Auth0 API calls
-    const auth0Requests = testReport.networkRequests.filter(req =>
-      req.url && (req.url.includes('auth0.com') || req.url.includes('/oauth/'))
+    // Step 7: Analyze network requests for JWT API calls
+    const jwtRequests = testReport.networkRequests.filter(req =>
+      req.url && (req.url.includes('jwt.com') || req.url.includes('/oauth/'))
     );
 
     testReport.events.push({
       timestamp: new Date().toISOString(),
-      event: 'ANALYZE_AUTH0_REQUESTS',
-      auth0RequestCount: auth0Requests.length,
-      auth0Requests: auth0Requests.slice(0, 10) // Limit to first 10 for readability
+      event: 'ANALYZE_AUTH_REQUESTS',
+      jwtRequestCount: jwtRequests.length,
+      jwtRequests: jwtRequests.slice(0, 10) // Limit to first 10 for readability
     });
 
     // Step 8: Check for timing issues
@@ -351,7 +351,7 @@ test.describe('CloudToLocalLLM v3.10.0 Authentication Loop Analysis', () => {
     console.log(`Total redirects: ${redirectCount}`);
     console.log(`Issues found: ${testReport.issues.length}`);
     console.log(`Debug logs captured: ${authLogs.length}`);
-    console.log(`Auth0 requests: ${auth0Requests.length}`);
+    console.log(`JWT requests: ${jwtRequests.length}`);
 
     if (testReport.timings.authComplete) {
       console.log(`Total auth time: ${testReport.timings.authComplete - testReport.timings.authStart}ms`);

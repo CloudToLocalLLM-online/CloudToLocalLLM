@@ -9,9 +9,9 @@ import '../services/theme_provider.dart';
 import '../services/platform_adapter.dart';
 
 // Callback forwarding flag key - must match router.dart
-const _callbackForwardedKey = 'auth0_callback_forwarded';
+const _callbackForwardedKey = 'callback_forwarded';
 
-/// Auth0 callback screen that processes authentication results with unified theming
+/// Authentication callback screen that processes authentication results with unified theming
 ///
 /// Requirements:
 /// - 8.1: Apply unified theme system to all UI elements

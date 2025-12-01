@@ -11,7 +11,7 @@ Refactor all failing property-based tests with proper mocks and test utilities t
 
 #### A. Mock Services (`test/helpers/mock_services.dart`)
 Created comprehensive mock implementations:
-- `MockAuth0Service` - Mock authentication service
+- `MockJWTService` - Mock authentication service
 - `MockSessionStorage` - Mock session storage
 - `MockAuthService` - Mock AuthService with ChangeNotifier
 - `MockAdminCenterService` - Mock AdminCenterService

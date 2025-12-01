@@ -56,7 +56,7 @@ for ($i = 1; $i -le $maxChecks; $i++) {
                     Write-Host "Hard refresh (Ctrl+Shift+R) to clear cache!" -ForegroundColor Yellow
                     Write-Host ""
                     Write-Host "Expected console:" -ForegroundColor White
-                    Write-Host "   Auth0 initialized" -ForegroundColor Green
+                    Write-Host "   JWT initialized" -ForegroundColor Green
                     Write-Host "   No Sentry errors!" -ForegroundColor Green
                     
                     exit 0

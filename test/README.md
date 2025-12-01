@@ -18,7 +18,7 @@ This test suite uses Playwright to perform comprehensive end-to-end analysis of 
 - ✅ Callback processing takes >100ms (verifying our delay fix)
 - ✅ Authentication state properly synchronized before navigation
 - ✅ Debug messages present in console logs
-- ✅ Auth0 API calls successful
+- ✅ JWT API calls successful
 - ✅ User successfully lands on home page after authentication
 
 ## 🚀 Quick Start
@@ -26,7 +26,7 @@ This test suite uses Playwright to perform comprehensive end-to-end analysis of 
 ### Prerequisites
 - Node.js 16+ installed
 - Access to deployed CloudToLocalLLM v3.10.0 application
-- Optional: Auth0 test credentials for full flow testing
+- Optional: JWT test credentials for full flow testing
 
 ### Installation
 ```bash
@@ -44,11 +44,11 @@ npx playwright install-deps
 
 #### Using PowerShell Script (Recommended)
 ```powershell
-# Basic test (without Auth0 credentials)
+# Basic test (without JWT credentials)
 .\run-auth-loop-test.ps1 -DeploymentUrl "https://your-app.vercel.app"
 
-# Full test with Auth0 credentials
-.\run-auth-loop-test.ps1 -DeploymentUrl "https://your-app.vercel.app" -Auth0TestEmail "test@example.com" -Auth0TestPassword "password123"
+# Full test with JWT credentials
+.\run-auth-loop-test.ps1 -DeploymentUrl "https://your-app.vercel.app" -JWTTestEmail "test@example.com" -JWTTestPassword "password123"
 
 # Debug mode (opens browser, slower execution)
 .\run-auth-loop-test.ps1 -DeploymentUrl "https://your-app.vercel.app" -Debug
@@ -61,8 +61,8 @@ npx playwright install-deps
 ```bash
 # Set environment variables
 export DEPLOYMENT_URL="https://your-app.vercel.app"
-export AUTH0_TEST_EMAIL="test@example.com"  # Optional
-export AUTH0_TEST_PASSWORD="password123"    # Optional
+export JWT_TEST_EMAIL="test@example.com"  # Optional
+export JWT_TEST_PASSWORD="password123"    # Optional
 
 # Run tests
 npm run test:auth-loop          # Headless mode
@@ -124,7 +124,7 @@ Look for these debug messages in the test output:
 
 ### Network Request Analysis
 Monitor these key requests:
-- Auth0 authorization endpoint calls
+- JWT authorization endpoint calls
 - Token exchange requests (`/oauth/token`)
 - User profile requests (`/userinfo`)
 - Application callback handling
@@ -141,9 +141,9 @@ Monitor these key requests:
 # Required
 DEPLOYMENT_URL=https://your-app.vercel.app
 
-# Optional (for full Auth0 flow testing)
-AUTH0_TEST_EMAIL=test@example.com
-AUTH0_TEST_PASSWORD=password123
+# Optional (for full JWT flow testing)
+JWT_TEST_EMAIL=test@example.com
+JWT_TEST_PASSWORD=password123
 
 # Test configuration
 LOCAL_TEST=false              # Set to true for local build testing
@@ -167,15 +167,15 @@ Tests run on multiple browsers by default:
    - Check if the application is properly deployed
    - Ensure no firewall or network restrictions
 
-2. **"Auth0 form interaction failed"**
-   - Verify Auth0 test credentials are correct
-   - Check if Auth0 application is properly configured
-   - Ensure callback URLs are set correctly in Auth0
+2. **"JWT form interaction failed"**
+   - Verify JWT test credentials are correct
+   - Check if JWT application is properly configured
+   - Ensure callback URLs are set correctly in JWT
 
 3. **"Infinite loop detected"**
    - This indicates the race condition fix is NOT working
    - Check if the correct version (3.10.0) is deployed
-   - Review Auth0 configuration for callback URLs
+   - Review JWT configuration for callback URLs
 
 4. **"Callback processing too fast"**
    - Indicates the 100ms delay might not be implemented
@@ -198,8 +198,8 @@ This will:
 
 ### Scenario 1: Normal Authentication Flow
 1. Navigate to deployment
-2. Click "Sign In with Auth0"
-3. Complete Auth0 authentication
+2. Click "Sign In with JWT"
+3. Complete JWT authentication
 4. Process callback with 100ms delay
 5. Successfully navigate to home page
 
@@ -216,7 +216,7 @@ This will:
 4. Check fallback behavior
 
 ### Scenario 4: Network Analysis
-1. Capture all Auth0 API calls
+1. Capture all JWT API calls
 2. Monitor token exchange process
 3. Track user profile loading
 4. Analyze request/response timing

@@ -220,7 +220,7 @@ Key environment variables:
 ### Integration Tests
 - **API Integration**: Cross-service communication testing
 - **Deployment Integration**: End-to-end deployment workflow testing
-- **Authentication Integration**: Auth0 integration validation
+- **Authentication Integration**: Supabase Auth integration validation
 
 ### End-to-End Tests
 - **User Journey Testing**: Complete user workflows

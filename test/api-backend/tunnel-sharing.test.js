@@ -40,15 +40,15 @@ describe('Tunnel Sharing Service', () => {
 
     // Insert test users
     await pool.query(
-      `INSERT INTO users (id, email, auth0_id, tier, is_active)
+      `INSERT INTO users (id, email, jwt_id, tier, is_active)
        VALUES ($1, $2, $3, $4, $5)`,
-      [testUserId1, 'test1@example.com', 'auth0|test1', 'free', true],
+      [testUserId1, 'test1@example.com', 'jwt|test1', 'free', true],
     );
 
     await pool.query(
-      `INSERT INTO users (id, email, auth0_id, tier, is_active)
+      `INSERT INTO users (id, email, jwt_id, tier, is_active)
        VALUES ($1, $2, $3, $4, $5)`,
-      [testUserId2, 'test2@example.com', 'auth0|test2', 'free', true],
+      [testUserId2, 'test2@example.com', 'jwt|test2', 'free', true],
     );
 
     // Create test tunnel
@@ -373,9 +373,9 @@ describe('Tunnel Sharing Service', () => {
     it('should deny access for user without permission', async () => {
       const otherUserId = uuidv4();
       await pool.query(
-        `INSERT INTO users (id, email, auth0_id, tier, is_active)
+        `INSERT INTO users (id, email, jwt_id, tier, is_active)
          VALUES ($1, $2, $3, $4, $5)`,
-        [otherUserId, 'test3@example.com', 'auth0|test3', 'free', true],
+        [otherUserId, 'test3@example.com', 'jwt|test3', 'free', true],
       );
 
       const access = await tunnelSharingService.verifyTunnelAccess(

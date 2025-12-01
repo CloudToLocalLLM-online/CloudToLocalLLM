@@ -25,7 +25,7 @@ async function globalSetup(config) {
   
   // Validate environment variables
   const requiredEnvVars = ['DEPLOYMENT_URL'];
-  const optionalEnvVars = ['AUTH0_TEST_EMAIL', 'AUTH0_TEST_PASSWORD'];
+  const optionalEnvVars = ['JWT_TEST_EMAIL', 'JWT_TEST_PASSWORD'];
   
   console.log('\n� Environment Configuration:');
   console.log('==============================');
@@ -43,7 +43,7 @@ async function globalSetup(config) {
     if (process.env[envVar]) {
       console.log(` ${envVar}: ****** (set)`);
     } else {
-      console.log(`  ${envVar}: NOT SET (optional - will skip Auth0 form interaction)`);
+      console.log(`  ${envVar}: NOT SET (optional - will skip JWT form interaction)`);
     }
   });
   
@@ -92,7 +92,7 @@ async function globalSetup(config) {
     timestamp: new Date().toISOString(),
     version: '3.10.0',
     deploymentUrl: process.env.DEPLOYMENT_URL,
-    hasAuth0Credentials: !!(process.env.AUTH0_TEST_EMAIL && process.env.AUTH0_TEST_PASSWORD),
+    hasJWTCredentials: !!(process.env.JWT_TEST_EMAIL && process.env.JWT_TEST_PASSWORD),
     testEnvironment: process.env.CI ? 'CI' : 'LOCAL',
     browsers: config.projects.map(p => p.name),
     expectedFeatures: [
@@ -112,7 +112,7 @@ async function globalSetup(config) {
   console.log('\n Test Configuration:');
   console.log('======================');
   console.log(`Test Environment: ${testConfig.testEnvironment}`);
-  console.log(`Auth0 Credentials: ${testConfig.hasAuth0Credentials ? 'Available' : 'Not Available'}`);
+  console.log(`JWT Credentials: ${testConfig.hasJWTCredentials ? 'Available' : 'Not Available'}`);
   console.log(`Browsers: ${testConfig.browsers.join(', ')}`);
   
   console.log('\n Test Objectives:');
@@ -127,7 +127,7 @@ async function globalSetup(config) {
   console.log('\n� Known Issues to Test:');
   console.log('========================');
   console.log('- Race condition between auth state setting and router checks');
-  console.log('- Infinite loops: login → Auth0 → callback → login');
+  console.log('- Infinite loops: login → JWT → callback → login');
   console.log('- Authentication state not propagating before navigation');
   console.log('- Token exchange or profile loading failures');
   

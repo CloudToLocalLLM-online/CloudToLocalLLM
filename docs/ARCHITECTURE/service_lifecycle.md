@@ -19,7 +19,7 @@ CloudToLocalLLM now uses a centralized service locator (`lib/di/locator.dart`) t
 
 ```mermaid
 graph TD
-  Auth0 --> AuthService
+  Supabase Auth --> AuthService
   AuthService --> TunnelService
   AuthService --> EnhancedUserTierService
   AuthService --> StreamingProxyService
@@ -43,7 +43,7 @@ graph TD
 
 Legend:
 
-- **Auth0Service** instances differ for web/desktop at registration time.
+- **Supabase AuthService** instances differ for web/desktop at registration time.
 - **AuthService** publishes authentication state and is the primary trigger for services that depend on user session context.
 - **ConnectionManagerService** orchestrates local Ollama, secure tunnels, and cloud connections.
 

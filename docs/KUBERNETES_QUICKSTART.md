@@ -63,8 +63,8 @@ Edit `secrets.yaml`:
 stringData:
   postgres-password: "YOUR_STRONG_DB_PASSWORD"      # Make it strong!
   jwt-secret: "YOUR_JWT_SECRET"                     # Generate: openssl rand -base64 32
-  auth0-domain: "your-tenant.us.auth0.com"          # Your Auth0 domain
-  auth0-audience: "https://app.yourdomain.com"      # Your Auth0 audience
+  supabase-auth-domain: "your-tenant.us.supabase-auth.com"          # Your Supabase Auth domain
+  supabase-auth-audience: "https://app.yourdomain.com"      # Your Supabase Auth audience
 ```
 
 ### 3.2 Update ConfigMap
@@ -173,7 +173,7 @@ curl https://api.yourdomain.com/health
 ## Step 8: Launch Desktop App
 
 1. Start your Windows CloudToLocalLLM desktop app
-2. Sign in with Auth0
+2. Sign in with Supabase Auth
 3. Desktop app will connect to `https://api.yourdomain.com/api/bridge/register`
 4. Start chatting with your local Ollama!
 
@@ -235,7 +235,7 @@ kubectl logs -n cloudtolocalllm postgres-0
 ### Desktop App Can't Connect?
 
 1. **Check API is accessible**: `curl https://api.yourdomain.com/health`
-2. **Check Auth0 configuration**: Verify domain and audience
+2. **Check Supabase Auth configuration**: Verify domain and audience
 3. **Check desktop app logs**: Look for connection errors
 4. **Verify DNS**: Make sure DNS points to load balancer IP
 

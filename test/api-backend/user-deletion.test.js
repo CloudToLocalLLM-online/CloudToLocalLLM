@@ -47,7 +47,7 @@ describe('UserDeletionService', () => {
 
   describe('deleteUserAccount - Soft Delete', () => {
     it('should soft delete user account successfully', async () => {
-      const userId = 'auth0|123456';
+      const userId = 'jwt|123456';
       const userUuid = 'user-uuid-1';
       const reason = 'User requested deletion';
 
@@ -70,7 +70,7 @@ describe('UserDeletionService', () => {
     });
 
     it('should include deletion reason in metadata', async () => {
-      const userId = 'auth0|123456';
+      const userId = 'jwt|123456';
       const userUuid = 'user-uuid-1';
       const reason = 'Account no longer needed';
 
@@ -92,7 +92,7 @@ describe('UserDeletionService', () => {
     });
 
     it('should rollback on error during soft delete', async () => {
-      const userId = 'auth0|123456';
+      const userId = 'jwt|123456';
 
       mockClient.query
         .mockResolvedValueOnce(undefined) // BEGIN
@@ -107,7 +107,7 @@ describe('UserDeletionService', () => {
     });
 
     it('should throw error when user not found', async () => {
-      const userId = 'auth0|nonexistent';
+      const userId = 'jwt|nonexistent';
 
       mockClient.query
         .mockResolvedValueOnce(undefined) // BEGIN
@@ -131,7 +131,7 @@ describe('UserDeletionService', () => {
 
   describe('deleteUserAccount - Hard Delete', () => {
     it('should hard delete user account with cascading cleanup', async () => {
-      const userId = 'auth0|123456';
+      const userId = 'jwt|123456';
       const userUuid = 'user-uuid-1';
 
       mockClient.query
@@ -165,7 +165,7 @@ describe('UserDeletionService', () => {
     });
 
     it('should handle zero records deleted gracefully', async () => {
-      const userId = 'auth0|123456';
+      const userId = 'jwt|123456';
       const userUuid = 'user-uuid-1';
 
       mockClient.query
@@ -191,7 +191,7 @@ describe('UserDeletionService', () => {
     });
 
     it('should rollback on error during hard delete', async () => {
-      const userId = 'auth0|123456';
+      const userId = 'jwt|123456';
       const userUuid = 'user-uuid-1';
 
       mockClient.query
@@ -210,7 +210,7 @@ describe('UserDeletionService', () => {
 
   describe('restoreUserAccount', () => {
     it('should restore soft-deleted user account', async () => {
-      const userId = 'auth0|123456';
+      const userId = 'jwt|123456';
 
       mockPool.query.mockResolvedValueOnce({
         rows: [{ id: 'user-uuid-1' }],
@@ -224,7 +224,7 @@ describe('UserDeletionService', () => {
     });
 
     it('should throw error when user not found or not deleted', async () => {
-      const userId = 'auth0|nonexistent';
+      const userId = 'jwt|nonexistent';
 
       mockPool.query.mockResolvedValueOnce({
         rows: [],
@@ -248,7 +248,7 @@ describe('UserDeletionService', () => {
 
   describe('isUserDeleted', () => {
     it('should return true for deleted user', async () => {
-      const userId = 'auth0|123456';
+      const userId = 'jwt|123456';
 
       mockPool.query.mockResolvedValueOnce({
         rows: [{ is_deleted: 'true' }],
@@ -260,7 +260,7 @@ describe('UserDeletionService', () => {
     });
 
     it('should return false for active user', async () => {
-      const userId = 'auth0|123456';
+      const userId = 'jwt|123456';
 
       mockPool.query.mockResolvedValueOnce({
         rows: [{ is_deleted: 'false' }],
@@ -272,7 +272,7 @@ describe('UserDeletionService', () => {
     });
 
     it('should throw error when user not found', async () => {
-      const userId = 'auth0|nonexistent';
+      const userId = 'jwt|nonexistent';
 
       mockPool.query.mockResolvedValueOnce({
         rows: [],
@@ -292,7 +292,7 @@ describe('UserDeletionService', () => {
 
   describe('getDeletionInfo', () => {
     it('should retrieve deletion information for deleted user', async () => {
-      const userId = 'auth0|123456';
+      const userId = 'jwt|123456';
       const deletedAt = '2024-01-15T10:30:00Z';
       const reason = 'User requested deletion';
 
@@ -315,7 +315,7 @@ describe('UserDeletionService', () => {
     });
 
     it('should throw error for non-deleted user', async () => {
-      const userId = 'auth0|123456';
+      const userId = 'jwt|123456';
 
       mockPool.query.mockResolvedValueOnce({
         rows: [
@@ -333,7 +333,7 @@ describe('UserDeletionService', () => {
     });
 
     it('should throw error when user not found', async () => {
-      const userId = 'auth0|nonexistent';
+      const userId = 'jwt|nonexistent';
 
       mockPool.query.mockResolvedValueOnce({
         rows: [],
@@ -353,7 +353,7 @@ describe('UserDeletionService', () => {
 
   describe('permanentlyDeleteUser', () => {
     it('should permanently delete user with all related data', async () => {
-      const userId = 'auth0|123456';
+      const userId = 'jwt|123456';
       const userUuid = 'user-uuid-1';
 
       mockClient.query
@@ -378,7 +378,7 @@ describe('UserDeletionService', () => {
     });
 
     it('should rollback on error during permanent deletion', async () => {
-      const userId = 'auth0|123456';
+      const userId = 'jwt|123456';
       const userUuid = 'user-uuid-1';
 
       mockClient.query
@@ -395,7 +395,7 @@ describe('UserDeletionService', () => {
     });
 
     it('should throw error when user not found', async () => {
-      const userId = 'auth0|nonexistent';
+      const userId = 'jwt|nonexistent';
 
       mockClient.query
         .mockResolvedValueOnce(undefined) // BEGIN
@@ -415,7 +415,7 @@ describe('UserDeletionService', () => {
 
   describe('Cascading Cleanup Verification', () => {
     it('should delete all related data in correct order', async () => {
-      const userId = 'auth0|123456';
+      const userId = 'jwt|123456';
       const userUuid = 'user-uuid-1';
 
       mockClient.query
@@ -448,7 +448,7 @@ describe('UserDeletionService', () => {
     });
 
     it('should track cleanup statistics accurately', async () => {
-      const userId = 'auth0|123456';
+      const userId = 'jwt|123456';
       const userUuid = 'user-uuid-1';
 
       mockClient.query
@@ -481,7 +481,7 @@ describe('UserDeletionService', () => {
 
   describe('Default Options', () => {
     it('should default to soft delete when not specified', async () => {
-      const userId = 'auth0|123456';
+      const userId = 'jwt|123456';
       const userUuid = 'user-uuid-1';
 
       mockClient.query
@@ -496,7 +496,7 @@ describe('UserDeletionService', () => {
     });
 
     it('should use default reason when not provided', async () => {
-      const userId = 'auth0|123456';
+      const userId = 'jwt|123456';
       const userUuid = 'user-uuid-1';
 
       mockClient.query

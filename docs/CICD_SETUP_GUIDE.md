@@ -147,7 +147,7 @@ Automatic on push to `main` branch (for cloud services only)
 - 🔌 **API**: Running at https://api.cloudtolocalllm.online
 - 🗄️ **Database**: PostgreSQL with Azure storage
 - ⚖️ **Load Balancer**: Active with SSL certificates
-- 🔒 **Security**: Auth0 integration configured
+- 🔒 **Security**: Supabase Auth integration configured
 
 ## 🔧 Troubleshooting
 
