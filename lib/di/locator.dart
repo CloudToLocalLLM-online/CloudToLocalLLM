@@ -252,6 +252,8 @@ Future<void> setupAuthenticatedServices() async {
 
   // Verify authentication before proceeding
   final authService = serviceLocator.get<AuthService>();
+  debugPrint(
+      '[ServiceLocator] Checking auth state: ${authService.isAuthenticated.value}');
   if (!authService.isAuthenticated.value) {
     debugPrint(
       '[ServiceLocator] Cannot register authenticated services - user not authenticated',
@@ -263,6 +265,8 @@ Future<void> setupAuthenticatedServices() async {
 
   // Verify token is available
   final token = await authService.getAccessToken();
+  debugPrint(
+      '[ServiceLocator] Checking access token: ${token != null && token.isNotEmpty ? "PRESENT" : "MISSING"}');
   if (token == null || token.isEmpty) {
     debugPrint(
       '[ServiceLocator] Cannot register authenticated services - no access token',
