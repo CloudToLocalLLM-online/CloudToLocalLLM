@@ -11,7 +11,6 @@ import 'config/router.dart';
 import 'config/theme.dart';
 import 'config/supabase_config.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'screens/loading_screen.dart';
 import 'di/locator.dart' as di;
 import 'services/admin_center_service.dart';
 import 'services/admin_data_flush_service.dart';
@@ -217,9 +216,13 @@ class _CloudToLocalLLMAppState extends State<CloudToLocalLLMApp> {
   Widget build(BuildContext context) {
     final bootstrap = context.watch<AppBootstrapData?>();
     if (bootstrap == null) {
-      return const MaterialApp(
+      return MaterialApp(
         debugShowCheckedModeBanner: false,
-        home: LoadingScreen(message: 'Initializing CloudToLocalLLM...'),
+        home: Scaffold(
+          body: Center(
+            child: CircularProgressIndicator(),
+          ),
+        ),
       );
     }
 
@@ -401,9 +404,13 @@ class _AppRouterHostState extends State<_AppRouterHost> {
   Widget build(BuildContext context) {
     final router = _router;
     if (router == null) {
-      return const MaterialApp(
+      return MaterialApp(
         debugShowCheckedModeBanner: false,
-        home: LoadingScreen(message: 'Preparing router...'),
+        home: Scaffold(
+          body: Center(
+            child: CircularProgressIndicator(),
+          ),
+        ),
       );
     }
 
