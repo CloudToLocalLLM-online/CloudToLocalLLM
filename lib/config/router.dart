@@ -155,17 +155,7 @@ class AppRouter {
               debugPrint(
                 '[Router] User already authenticated, showing main app',
               );
-              // Verify authenticated services are loaded before showing HomeScreen
-              final hasAuthenticatedServices =
-                  _checkAuthenticatedServicesLoaded();
-              if (!hasAuthenticatedServices) {
-                debugPrint(
-                  '[Router] Authenticated services not yet loaded, showing loading screen',
-                );
-                return const LoadingScreen(
-                  message: 'Loading application modules...',
-                );
-              }
+              // HomeScreen handles loading state internally
               debugPrint('[Router] Showing home screen for authenticated user');
               return const HomeScreen();
             }
@@ -192,18 +182,6 @@ class AppRouter {
                 }
 
                 if (isAuthenticated) {
-                  // Verify authenticated services are loaded before showing HomeScreen
-                  // This ensures modules are only loaded after authentication
-                  final hasAuthenticatedServices =
-                      _checkAuthenticatedServicesLoaded();
-                  if (!hasAuthenticatedServices) {
-                    debugPrint(
-                      '[Router] Authenticated services not yet loaded, showing loading screen',
-                    );
-                    return const LoadingScreen(
-                      message: 'Loading application modules...',
-                    );
-                  }
                   debugPrint('[Router] Showing home screen');
                   return const HomeScreen();
                 } else {
@@ -226,17 +204,6 @@ class AppRouter {
           path: '/chat',
           name: 'chat',
           builder: (context, state) {
-            // Verify authenticated services are loaded before showing HomeScreen
-            final isAuthenticated = authService.isAuthenticated.value;
-            if (isAuthenticated) {
-              final hasAuthenticatedServices =
-                  _checkAuthenticatedServicesLoaded();
-              if (!hasAuthenticatedServices) {
-                return const LoadingScreen(
-                  message: 'Loading application modules...',
-                );
-              }
-            }
             return const HomeScreen();
           },
         ),
@@ -444,7 +411,7 @@ class AppRouter {
         final isLoggingIn = state.matchedLocation == '/login';
         final isCallback = state.matchedLocation == '/callback';
         final isLoading = state.matchedLocation == '/loading';
-        final isHomepage = state.matchedLocation == '/' && kIsWeb;
+        final isHomepage = state.matchedLocation == '/';
         final isDownload = state.matchedLocation == '/download' && kIsWeb;
         final isDocs = state.matchedLocation == '/docs' && kIsWeb;
 

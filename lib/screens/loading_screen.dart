@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../components/loading_animation.dart';
 
 /// Loading screen with unified theming and platform adaptation
 ///
@@ -75,18 +76,10 @@ class LoadingScreen extends StatelessWidget {
                 SizedBox(height: spacing * 1.5),
 
                 // Platform-appropriate loading indicator
-                Semantics(
-                  label: 'Loading indicator',
-                  child: SizedBox(
-                    width: indicatorSize,
-                    height: indicatorSize,
-                    child: CircularProgressIndicator(
-                      valueColor: AlwaysStoppedAnimation<Color>(
-                        theme.colorScheme.primary,
-                      ),
-                      strokeWidth: indicatorSize / 10,
-                    ),
-                  ),
+                LoadingAnimation(
+                  size: indicatorSize,
+                  showMessage: false,
+                  color: theme.colorScheme.primary,
                 ),
 
                 SizedBox(height: spacing),

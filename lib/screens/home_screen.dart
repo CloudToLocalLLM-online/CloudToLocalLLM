@@ -7,6 +7,7 @@ import '../config/app_config.dart';
 import '../services/app_initialization_service.dart';
 import '../services/streaming_chat_service.dart';
 import 'home/home_layout.dart';
+import 'loading_screen.dart';
 
 /// Modern ChatGPT-like chat interface
 class HomeScreen extends StatefulWidget {
@@ -43,18 +44,7 @@ class _HomeScreenState extends State<HomeScreen> {
       context.read<StreamingChatService>();
     } catch (e) {
       debugPrint('[HomeScreen] StreamingChatService not available: $e');
-      return const Scaffold(
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              CircularProgressIndicator(),
-              SizedBox(height: 16),
-              Text('Loading application modules...'),
-            ],
-          ),
-        ),
-      );
+      return const LoadingScreen(message: 'Loading application modules...');
     }
 
     return LayoutBuilder(
