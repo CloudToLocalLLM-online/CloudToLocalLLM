@@ -2,7 +2,8 @@
 -- This is the PostgreSQL-optimized version of schema.sql
 
 -- Enable required extensions
-CREATE EXTENSION IF NOT EXISTS pgcrypto;
+-- Enable required extensions
+-- pgcrypto not needed for gen_random_uuid() in Postgres 13+
 
 -- Users table to cache Auth0 user profiles and manage local user data
 CREATE TABLE IF NOT EXISTS users (
