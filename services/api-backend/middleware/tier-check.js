@@ -2,7 +2,7 @@
  * User Tier Checking Middleware for CloudToLocalLLM API Backend
  *
  * Provides tier detection and feature access control for API endpoints
- * based on Auth0 user metadata. Implements secure tier validation with
+ * based on user metadata. Implements secure tier validation with
  * comprehensive error handling and audit logging.
  *
  * @fileoverview Tier-based access control middleware
@@ -15,8 +15,8 @@ import { logger } from '../utils/logger.js';
 // Environment configuration
 const UPGRADE_URL =
   process.env.UPGRADE_URL || 'https://app.cloudtolocalllm.online/upgrade';
-const AUTH0_NAMESPACE =
-  process.env.AUTH0_NAMESPACE || 'https://cloudtolocalllm.com';
+const AUTH_NAMESPACE =
+  process.env.AUTH_NAMESPACE || 'https://cloudtolocalllm.com';
 
 // User tier definitions
 export const USER_TIERS = {
@@ -63,7 +63,7 @@ export const TIER_FEATURES = {
 };
 
 /**
- * Extract user tier from Auth0 JWT token with comprehensive validation
+ * Extract user tier from JWT token with comprehensive validation
  * @param {Object} user - Decoded JWT user object
  * @returns {string} User tier (free, premium, enterprise)
  * @throws {Error} If user object is malformed
@@ -91,8 +91,8 @@ export function getUserTier(user) {
 
   try {
     // Use environment variable for namespace to avoid hardcoding
-    const userMetadataKey = `${AUTH0_NAMESPACE}/user_metadata`;
-    const appMetadataKey = `${AUTH0_NAMESPACE}/app_metadata`;
+    const userMetadataKey = `${AUTH_NAMESPACE}/user_metadata`;
+    const appMetadataKey = `${AUTH_NAMESPACE}/app_metadata`;
 
     // Safely extract metadata with validation
     const userMetadata = user[userMetadataKey] || {};

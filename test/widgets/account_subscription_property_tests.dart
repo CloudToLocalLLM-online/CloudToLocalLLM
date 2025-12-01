@@ -193,7 +193,7 @@ void main() {
       );
 
       test(
-        'Auth0 token cleared immediately on logout across 100 iterations',
+        'Auth token cleared immediately on logout across 100 iterations',
         () async {
           const int iterations = 100;
           int passCount = 0;
@@ -221,7 +221,7 @@ void main() {
             passCount,
             equals(iterations),
             reason:
-                'Auth0 token should be cleared within 1 second in all iterations',
+                'Auth token should be cleared within 1 second in all iterations',
           );
         },
       );

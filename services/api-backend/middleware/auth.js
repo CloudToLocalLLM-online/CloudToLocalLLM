@@ -2,7 +2,7 @@
  * Authentication Middleware for CloudToLocalLLM API Backend
  *
  * Provides JWT authentication and authorization for API endpoints
- * with Auth0 integration and user ID extraction utilities.
+ * with OAuth2 integration and user ID extraction utilities.
  */
 
 import jwt from 'jsonwebtoken';
@@ -12,24 +12,23 @@ import logger from '../logger.js';
 import { AuthService } from '../auth/auth-service.js';
 import { logLoginFailure } from '../services/auth-audit-service.js';
 
-// Auth0 configuration (ensure consistent defaults across services)
-const DEFAULT_AUTH0_DOMAIN = 'dev-v2f2p008x3dr74ww.us.auth0.com';
-const DEFAULT_AUTH0_AUDIENCE = 'https://api.cloudtolocalllm.online';
-const AUTH0_DOMAIN = process.env.AUTH0_DOMAIN || DEFAULT_AUTH0_DOMAIN;
-const AUTH0_AUDIENCE = process.env.AUTH0_AUDIENCE || DEFAULT_AUTH0_AUDIENCE;
+// OAuth configuration (ensure consistent defaults across services)
+const DEFAULT_AUTH_DOMAIN = process.env.SUPABASE_URL
+  ? new URL(process.env.SUPABASE_URL).hostname
+  : '';
+const DEFAULT_AUTH_AUDIENCE = 'https://api.cloudtolocalllm.online';
+const AUTH_DOMAIN = process.env.AUTH_DOMAIN || DEFAULT_AUTH_DOMAIN;
+const AUTH_AUDIENCE = process.env.AUTH_AUDIENCE || DEFAULT_AUTH_AUDIENCE;
 
-// Primary JWT validator from Auth0 SDK (handles JWKS caching internally)
+// Primary JWT validator from OAuth SDK (handles JWKS caching internally)
 const checkJwt = auth({
-  audience: AUTH0_AUDIENCE,
-  issuerBaseURL: `https://${AUTH0_DOMAIN}`,
+  audience: AUTH_AUDIENCE,
+  issuerBaseURL: `https://${AUTH_DOMAIN}`,
   tokenSigningAlg: 'RS256',
 });
 
 // Use AuthService for extended validation/session management
-const authService = new AuthService({
-  AUTH0_DOMAIN,
-  AUTH0_AUDIENCE,
-});
+const authService = new AuthService({});
 
 let authServiceInitialized = false;
 
@@ -50,10 +49,10 @@ async function ensureAuthServiceInitialized() {
 
 /**
  * JWT Authentication Middleware
- * Validates Auth0 JWT tokens and attaches user info to request
+ * Validates JWT tokens and attaches user info to request
  *
  * Validates: Requirements 2.1, 2.2, 2.9, 2.10
- * - Validates JWT tokens from Auth0 on every protected request
+ * - Validates JWT tokens on every protected request
  * - Implements token refresh mechanism for expired tokens
  * - Implements token revocation for logout operations
  * - Enforces HTTPS for all authentication endpoints
@@ -74,7 +73,7 @@ export async function authenticateJWT(req, res, next) {
     });
   }
 
-  // First, validate JWT signature & claims with Auth0 SDK
+  // First, validate JWT signature & claims with OAuth SDK
   try {
     await new Promise((resolve, reject) => {
       checkJwt(req, res, (err) => {
@@ -86,7 +85,7 @@ export async function authenticateJWT(req, res, next) {
       });
     });
   } catch (error) {
-    logger.warn(' [Auth] Auth0 SDK token verification failed', {
+    logger.warn(' [Auth] OAuth SDK token verification failed', {
       message: error.message,
       code: error.code,
       name: error.name,
@@ -163,7 +162,7 @@ export async function authenticateJWT(req, res, next) {
       await ensureAuthServiceInitialized();
     } catch (initError) {
       logger.error(
-        ' [Auth] AuthService initialization failed, falling back to Auth0 payload',
+        ' [Auth] AuthService initialization failed, falling back to OAuth payload',
         {
           error: initError.message,
         },
@@ -182,22 +181,22 @@ export async function authenticateJWT(req, res, next) {
       });
     }
 
-    // If it's not a valid JWT (opaque token), use Auth0 userinfo endpoint
+    // If it's not a valid JWT (opaque token), use OAuth userinfo endpoint
     if (!decoded.header || !decoded.header.kid) {
       logger.debug(
-        ' [Auth] Token appears to be opaque, using Auth0 userinfo endpoint',
+        ' [Auth] Token appears to be opaque, using OAuth userinfo endpoint',
       );
 
       try {
-        // Validate opaque token using Auth0 userinfo endpoint
-        const response = await fetch(`https://${AUTH0_DOMAIN}/userinfo`, {
+        // Validate opaque token using OAuth userinfo endpoint
+        const response = await fetch(`https://${AUTH_DOMAIN}/userinfo`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },
         });
 
         if (!response.ok) {
-          throw new Error(`Auth0 userinfo failed: ${response.status}`);
+          throw new Error(`OAuth userinfo failed: ${response.status}`);
         }
 
         const userInfo = await response.json();
@@ -221,7 +220,7 @@ export async function authenticateJWT(req, res, next) {
       }
     }
 
-    // If it's a proper JWT token, use the AuthService with pre-validated payload from Auth0 SDK
+    // If it's a proper JWT token, use the AuthService with pre-validated payload from OAuth SDK
     logger.debug(
       ' [Auth] Token appears to be JWT, using AuthService with pre-validated payload',
     );
@@ -233,7 +232,7 @@ export async function authenticateJWT(req, res, next) {
 
     if (!result.valid) {
       logger.warn(
-        ' [Auth] AuthService validation failed, falling back to Auth0 payload',
+        ' [Auth] AuthService validation failed, falling back to OAuth payload',
         {
           error: result.error,
         },
@@ -354,9 +353,9 @@ export async function optionalAuth(req, res, next) {
     const decoded = jwt.decode(token, { complete: true });
 
     if (!decoded || !decoded.header || !decoded.header.kid) {
-      // Try Auth0 userinfo endpoint for opaque tokens
+      // Try OAuth userinfo endpoint for opaque tokens
       try {
-        const response = await fetch(`https://${AUTH0_DOMAIN}/userinfo`, {
+        const response = await fetch(`https://${AUTH_DOMAIN}/userinfo`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },

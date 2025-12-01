@@ -121,7 +121,7 @@ void _runAppWithoutSentry() {
 
 void _runAppCommon() {
   Future<AppBootstrapData> loadApp() async {
-    // Note: Auth0 callback handling is now done by the router and CallbackScreen
+    // Note: Callback handling is now done by the router and CallbackScreen
     // The router will detect callback parameters and route to /callback,
     // where CallbackScreen will process the authentication
 

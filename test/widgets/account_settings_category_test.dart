@@ -10,7 +10,7 @@ import 'package:cloudtolocalllm/services/session_storage_service.dart';
 import 'package:cloudtolocalllm/models/user_model.dart';
 import 'package:cloudtolocalllm/models/session_model.dart';
 
-// Mock Auth0Service
+// Mock AuthService
 
 // Mock SessionStorageService
 class MockSessionStorageService extends SessionStorageService {

@@ -85,7 +85,7 @@ export function adminAuth(requiredPermissions = []) {
       // Decode and verify token
       let decoded;
       try {
-        // For Auth0 tokens, we just decode without verification since Auth0 SDK already verified it
+        // For OAuth tokens, we just decode without verification since OAuth SDK already verified it
         decoded = jwt.decode(token);
         if (!decoded) {
           return res.status(401).json({
@@ -108,18 +108,18 @@ export function adminAuth(requiredPermissions = []) {
 
       // Get user and their admin roles from database
       const userResult = await pool.query(
-        `SELECT u.id, u.email, u.auth0_id,
+        `SELECT u.id, u.email, u.user_id,
                 array_agg(ar.role) FILTER (WHERE ar.role IS NOT NULL) as roles
          FROM users u
          LEFT JOIN admin_roles ar ON u.id = ar.user_id AND ar.is_active = true
-         WHERE u.auth0_id = $1
-         GROUP BY u.id, u.email, u.auth0_id`,
+         WHERE u.user_id = $1
+         GROUP BY u.id, u.email, u.user_id`,
         [decoded.sub],
       );
 
       if (!userResult.rows[0]) {
         logger.warn('⚠️ [AdminAuth] User not found', {
-          auth0_id: decoded.sub,
+          user_id: decoded.sub,
         });
         return res.status(403).json({
           error: 'User not found',
