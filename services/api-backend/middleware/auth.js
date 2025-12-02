@@ -14,12 +14,21 @@ import { logLoginFailure } from '../services/auth-audit-service.js';
 
 // JWT configuration
 const DEFAULT_JWT_AUDIENCE = 'https://api.cloudtolocalllm.online';
-const JWT_AUDIENCE = process.env.JWT_AUDIENCE || DEFAULT_JWT_AUDIENCE;
+const JWT_AUDIENCE = process.env.JWT_AUDIENCE || process.env.AUTH0_AUDIENCE || DEFAULT_JWT_AUDIENCE;
+const JWT_ISSUER_DOMAIN = process.env.JWT_ISSUER_DOMAIN || process.env.AUTH0_DOMAIN;
+
+// Resolve issuer URL from JWT_ISSUER_URL or AUTH0_DOMAIN
+const issuerBaseURL = process.env.JWT_ISSUER_URL || 
+  (process.env.AUTH0_DOMAIN ? `https://${process.env.AUTH0_DOMAIN}/` : undefined);
+
+if (!issuerBaseURL) {
+  logger.error('[Auth] JWT issuer configuration missing. Set JWT_ISSUER_URL or AUTH0_DOMAIN environment variable.');
+}
 
 // Primary JWT validator (handles JWKS caching internally)
 const checkJwt = auth({
   audience: JWT_AUDIENCE,
-  issuerBaseURL: process.env.JWT_ISSUER_URL,
+  issuerBaseURL: issuerBaseURL,
   tokenSigningAlg: 'RS256',
 });
 
