@@ -40,6 +40,7 @@
     "dockerode": "^4.0.2",
     "dotenv": "^16.3.1",
     "express": "^5.1.0",
+    "express-oauth2-jwt-bearer": "^1.7.1",
     "express-rate-limit": "^7.1.5",
     "googleapis": "^166.0.0",
     "helmet": "^8.1.0",
