@@ -8,6 +8,10 @@
 import jwt from 'jsonwebtoken';
 import fetch from 'node-fetch';
 import { auth } from 'express-oauth2-jwt-bearer';
+import crypto from 'crypto';
+import Redis from 'ioredis';
+import { RedisStore } from 'rate-limit-redis';
+import rateLimit from 'express-rate-limit';
 import logger from '../logger.js';
 import { AuthService } from '../auth/auth-service.js';
 import { logLoginFailure } from '../services/auth-audit-service.js';
@@ -18,7 +22,7 @@ const JWT_AUDIENCE = process.env.JWT_AUDIENCE || process.env.AUTH0_AUDIENCE || D
 const JWT_ISSUER_DOMAIN = process.env.JWT_ISSUER_DOMAIN || process.env.AUTH0_DOMAIN;
 
 // Resolve issuer URL from JWT_ISSUER_URL or AUTH0_DOMAIN
-const issuerBaseURL = process.env.JWT_ISSUER_URL || 
+const issuerBaseURL = process.env.JWT_ISSUER_URL ||
   (process.env.AUTH0_DOMAIN ? `https://${process.env.AUTH0_DOMAIN}/` : undefined);
 
 if (!issuerBaseURL) {
@@ -410,28 +414,44 @@ export async function optionalAuth(req, res, next) {
  * Validates container tokens for internal API calls
  */
 export function authenticateContainer(req, res, next) {
-  const containerToken = req.headers['x-container-token'];
+  const timestamp = req.headers['x-timestamp'];
+  const signature = req.headers['x-signature'];
   const containerId = req.headers['x-container-id'];
+  const sharedSecret = process.env.CONTAINER_SHARED_SECRET; // Load from secure env var
 
-  if (!containerToken || !containerId) {
+  if (!timestamp || !signature || !containerId) {
     return res.status(401).json({
-      error: 'Container authentication required',
-      code: 'CONTAINER_AUTH_REQUIRED',
+      error: 'Container authentication headers required',
+      code: 'CONTAINER_AUTH_HEADERS_REQUIRED',
     });
   }
 
-  // FUTURE ENHANCEMENT: Implement proper container token validation with secure token store
-  // Current implementation provides basic validation for premium/enterprise tier containers
-  if (!validateContainerToken(containerToken, containerId)) {
+  // 1. Check timestamp validity (e.g., within 5 minutes)
+  const now = Date.now();
+  const requestTime = new Date(timestamp).getTime();
+  if (isNaN(requestTime) || Math.abs(now - requestTime) > 300000) { // 5 minutes
     return res.status(403).json({
-      error: 'Invalid container credentials',
-      code: 'INVALID_CONTAINER_CREDENTIALS',
+      error: 'Invalid or expired timestamp',
+      code: 'INVALID_TIMESTAMP',
+    });
+  }
+
+  // 2. Reconstruct the message and generate the expected signature
+  const message = `${timestamp}.${req.method}.${req.path}`;
+  const expectedSignature = crypto
+    .createHmac('sha256', sharedSecret)
+    .update(message)
+    .digest('hex');
+
+  // 3. Compare signatures
+  if (!crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expectedSignature))) {
+    return res.status(403).json({
+      error: 'Invalid signature',
+      code: 'INVALID_SIGNATURE',
     });
   }
 
   req.containerId = containerId;
-  req.containerToken = containerToken;
-
   logger.debug(` [Auth] Container authenticated: ${containerId}`);
   next();
 }
@@ -443,32 +463,6 @@ export function authenticateContainer(req, res, next) {
  * Current implementation provides basic validation for premium/enterprise tier containers.
  * This is sufficient for tier-based architecture deployment as free tier users don't use containers.
  */
-function validateContainerToken(token, containerId) {
-  // Enhanced validation pattern for container tokens
-  // Validates token format, container ID format, and basic security checks
-  if (!token || !containerId) {
-    return false;
-  }
-
-  // Validate token format (must start with 'container-' and have sufficient length)
-  if (!token.startsWith('container-') || token.length < 20) {
-    return false;
-  }
-
-  // Validate container ID format (alphanumeric with hyphens)
-  const containerIdPattern = /^[a-zA-Z0-9-]+$/;
-  if (!containerIdPattern.test(containerId)) {
-    return false;
-  }
-
-  // Basic token-container ID correlation check
-  const expectedTokenSuffix = containerId.slice(-8);
-  if (!token.includes(expectedTokenSuffix)) {
-    return false;
-  }
-
-  return true;
-}
 
 /**
  * Admin authentication middleware
@@ -546,36 +540,30 @@ export function requireAdmin(req, res, next) {
  */
 export function rateLimitByUser(options = {}) {
   const { windowMs = 15 * 60 * 1000, max = 100 } = options;
-  const userRequests = new Map();
 
-  return (req, res, next) => {
-    const userId = req.userId || req.ip; // Fallback to IP if no user ID
-    const now = Date.now();
+  // Create a Redis client.
+  const redisClient = new Redis({
+    host: process.env.REDIS_HOST || 'localhost',
+    port: process.env.REDIS_PORT || 6379,
+    password: process.env.REDIS_PASSWORD,
+  });
 
-    // Clean up old entries
-    for (const [key, data] of userRequests.entries()) {
-      if (now - data.windowStart > windowMs) {
-        userRequests.delete(key);
-      }
-    }
+  // Create a new store for the rate limiter.
+  const store = new RedisStore({
+    sendCommand: (...args) => redisClient.call(...args),
+  });
 
-    // Get or create user request data
-    let userData = userRequests.get(userId);
-    if (!userData || now - userData.windowStart > windowMs) {
-      userData = { count: 0, windowStart: now };
-      userRequests.set(userId, userData);
-    }
-
-    userData.count++;
-
-    if (userData.count > max) {
-      return res.status(429).json({
+  // Create a rate limiter that uses the Redis store.
+  return rateLimit({
+    store,
+    windowMs,
+    max,
+    keyGenerator: (req) => req.userId || req.ip, // Use user ID or fallback to IP
+    handler: (req, res) => {
+      res.status(429).json({
         error: 'Too many requests',
         code: 'RATE_LIMIT_EXCEEDED',
-        retryAfter: Math.ceil((windowMs - (now - userData.windowStart)) / 1000),
       });
-    }
-
-    next();
-  };
+    },
+  });
 }

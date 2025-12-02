@@ -93,7 +93,7 @@ jobs:
           context: .
           file: config/docker/Dockerfile.base
           push: true
-          tags: ${{ env.DOCKER_REGISTRY }}/base:latest
+          tags: ${{ env.DOCKER_REGISTRY }}/base:${{ github.sha }}
           cache-from: type=registry,ref=${{ env.DOCKER_REGISTRY }}/base:latest
           cache-to: type=inline
 
@@ -121,7 +121,7 @@ jobs:
           context: .
           file: config/docker/Dockerfile.postgres
           push: true
-          tags: ${{ env.DOCKER_REGISTRY }}/postgres:latest
+          tags: ${{ env.DOCKER_REGISTRY }}/postgres:${{ github.sha }}
           build-args: |
             BASE_REGISTRY=${{ env.DOCKER_REGISTRY }}
           cache-from: type=registry,ref=${{ env.DOCKER_REGISTRY }}/postgres:latest
@@ -158,7 +158,7 @@ jobs:
           context: .
           file: web/Dockerfile
           push: true
-          tags: ${{ env.DOCKER_REGISTRY }}/web:latest
+          tags: ${{ env.DOCKER_REGISTRY }}/web:${{ github.sha }}
           build-args: |
             BASE_REGISTRY=${{ env.DOCKER_REGISTRY }}
           cache-from: type=registry,ref=${{ env.DOCKER_REGISTRY }}/web:latest
@@ -188,7 +188,7 @@ jobs:
           context: services/api-backend
           file: services/api-backend/Dockerfile
           push: true
-          tags: ${{ env.DOCKER_REGISTRY }}/api-backend:latest
+          tags: ${{ env.DOCKER_REGISTRY }}/api-backend:${{ github.sha }}
           build-args: |
             BASE_REGISTRY=${{ env.DOCKER_REGISTRY }}
           cache-from: type=registry,ref=${{ env.DOCKER_REGISTRY }}/api-backend:latest
@@ -218,7 +218,7 @@ jobs:
           context: services/streaming-proxy
           file: services/streaming-proxy/Dockerfile
           push: true
-          tags: ${{ env.DOCKER_REGISTRY }}/streaming-proxy:latest
+          tags: ${{ env.DOCKER_REGISTRY }}/streaming-proxy:${{ github.sha }}
           build-args: |
             BASE_REGISTRY=${{ env.DOCKER_REGISTRY }}
           cache-from: type=registry,ref=${{ env.DOCKER_REGISTRY }}/streaming-proxy:latest
@@ -260,79 +260,60 @@ jobs:
         run: |
           kubectl create namespace cloudtolocalllm --dry-run=client -o yaml | kubectl apply -f -
 
-      - name: Create/Update Secrets
-        env:
-          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
-          JWT_SECRET: ${{ secrets.JWT_SECRET }}
-          AUTH0_CLIENT_SECRET: ${{ secrets.AUTH0_CLIENT_SECRET }}
-          STRIPE_TEST_SECRET_KEY: ${{ secrets.STRIPE_TEST_SECRET_KEY }}
-          STRIPE_TEST_PUBLISHABLE_KEY: ${{ secrets.STRIPE_TEST_PUBLISHABLE_KEY }}
-          STRIPE_TEST_WEBHOOK_SECRET: ${{ secrets.STRIPE_TEST_WEBHOOK_SECRET }}
-          STRIPE_LIVE_SECRET_KEY: ${{ secrets.STRIPE_LIVE_SECRET_KEY }}
-          STRIPE_LIVE_PUBLISHABLE_KEY: ${{ secrets.STRIPE_LIVE_PUBLISHABLE_KEY }}
-          STRIPE_LIVE_WEBHOOK_SECRET: ${{ secrets.STRIPE_LIVE_WEBHOOK_SECRET }}
-          SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
-          CLOUDFLARE_DNS_TOKEN: ${{ secrets.CLOUDFLARE_DNS_TOKEN }}
-          CLOUDFLARE_TUNNEL_TOKEN: ${{ secrets.CLOUDFLARE_TUNNEL_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          SUPABASE_JWT_SECRET: ${{ secrets.SUPABASE_JWT_SECRET }}
+      - name: Setup Azure Key Vault and Secrets Store CSI Driver
         run: |
-          # --- Create Kubernetes Secrets ---
+          # Install the Secrets Store CSI Driver
+          helm repo add secrets-store-csi-driver https://kubernetes-sigs.github.io/secrets-store-csi-driver/charts
+          helm install csi-secrets-store secrets-store-csi-driver/secrets-store-csi-driver --namespace kube-system
 
-          # Get ACR Admin Credentials
-          ACR_ADMIN_USER=$(az acr credential show --name ${{ env.ACR_NAME }} --query username --output tsv)
-          ACR_ADMIN_PASS=$(az acr credential show --name ${{ env.ACR_NAME }} --query passwords[0].value --output tsv)
+          # Install the Azure Key Vault Provider
+          helm repo add azure-keyvault-provider https://raw.githubusercontent.com/Azure/secrets-store-csi-driver-provider-azure/main/charts
+          helm install akv-provider azure-keyvault-provider/csi-driver-provider-azure --namespace kube-system
 
-          # Docker Registry Secret for ACR
-          kubectl create secret docker-registry regcred \
-            --docker-server=${{ env.DOCKER_REGISTRY }} \
-            --docker-username=$ACR_ADMIN_USER \
-            --docker-password=$ACR_ADMIN_PASS \
-            --docker-email=github-actions@cloudtolocalllm.online \
-            -n cloudtolocalllm --dry-run=client -o yaml | kubectl apply -f -
-
-          # App Secrets
-          kubectl create secret generic cloudtolocalllm-secrets \
-            --namespace cloudtolocalllm \
-            --from-literal=postgres-user=cloud_admin \
-            --from-literal=postgres-password="$POSTGRES_PASSWORD" \
-            --from-literal=jwt-secret="$JWT_SECRET" \
-            --from-literal=auth0-domain='dev-v2f2p008x3dr74ww.us.auth0.com' \
-            --from-literal=auth0-audience='https://api.cloudtolocalllm.online' \
-            --from-literal=auth0-client-id='FuXPnevXpp311CdYHGsbNZe9t3D8Ts7A' \
-            --from-literal=auth0-client-secret="$AUTH0_CLIENT_SECRET" \
-            --from-literal=stripe-test-secret-key="$STRIPE_TEST_SECRET_KEY" \
-            --from-literal=stripe-test-publishable-key="$STRIPE_TEST_PUBLISHABLE_KEY" \
-            --from-literal=stripe-test-webhook-secret="$STRIPE_TEST_WEBHOOK_SECRET" \
-            --from-literal=stripe-live-secret-key="$STRIPE_LIVE_SECRET_KEY" \
-            --from-literal=stripe-live-publishable-key="$STRIPE_LIVE_PUBLISHABLE_KEY" \
-            --from-literal=stripe-live-webhook-secret="$STRIPE_LIVE_WEBHOOK_SECRET" \
-            --from-literal=sentry-dsn="$SENTRY_DSN" \
-            --from-literal=supabase-jwt-secret="$SUPABASE_JWT_SECRET" \
-            --from-literal=supabase-url="https://cvaqhvpbnemweqrojasm.supabase.co" \
-            --dry-run=client -o yaml | kubectl apply -f -
-
-          # Cloudflare Tunnel Secret
-          kubectl create secret generic tunnel-credentials \
-            --namespace cloudtolocalllm \
-            --from-literal=token="$CLOUDFLARE_TUNNEL_TOKEN" \
-            --dry-run=client -o yaml | kubectl apply -f -
-
-          # Streaming Proxy Secret
-          kubectl create secret generic streaming-proxy-secrets \
-            --namespace cloudtolocalllm \
-            --from-literal=SENTRY_DSN="$SENTRY_DSN" \
-            --from-literal=SUPABASE_JWT_SECRET="$SUPABASE_JWT_SECRET" \
-            --from-literal=SUPABASE_URL="https://cvaqhvpbnemweqrojasm.supabase.co" \
-            --dry-run=client -o yaml | kubectl apply -f -
+      - name: Create SecretProviderClass
+        uses: azure/k8s-create-secret@v1
+        with:
+          namespace: cloudtolocalllm
+          secret-name: cloudtolocalllm-secrets-from-akv
+          secret-type: Opaque
+          secret-provider-class: |
+            apiVersion: secrets-store.csi.x-k8s.io/v1
+            kind: SecretProviderClass
+            metadata:
+              name: azure-kvname-user-msi
+            spec:
+              provider: azure
+              parameters:
+                usePodIdentity: "false"
+                useVMManagedIdentity: "true"
+                userAssignedIdentityID: "" # Set this to the client ID of the user-assigned managed identity if you use one.
+                keyvaultName: ${{ secrets.AZURE_KEY_VAULT_NAME }}
+                objects:  |
+                  array:
+                    - |
+                      objectName: POSTGRES-PASSWORD
+                      objectType: secret
+                    - |
+                      objectName: JWT-SECRET
+                      objectType: secret
+                    - |
+                      objectName: AUTH0-CLIENT-SECRET
+                      objectType: secret
+                    - |
+                      objectName: STRIPE-TEST-SECRET-KEY
+                      objectType: secret
+                    - |
+                      objectName: CLOUDFLARE-TUNNEL-TOKEN
+                      objectType: secret
+                tenantId: ${{ secrets.AZURE_TENANT_ID }}
 
       - name: Deploy Manifests
         run: |
           # Replace image registry in manifests
-          sed -i "s|cloudtolocalllm/postgres:latest|${{ env.DOCKER_REGISTRY }}/postgres:latest|g" k8s/postgres-statefulset.yaml
-          sed -i "s|cloudtolocalllm/web:latest|${{ env.DOCKER_REGISTRY }}/web:latest|g" k8s/web-deployment.yaml
-          sed -i "s|cloudtolocalllm/api-backend:latest|${{ env.DOCKER_REGISTRY }}/api-backend:latest|g" k8s/api-backend-deployment.yaml
-          sed -i "s|cloudtolocalllm/streaming-proxy:latest|${{ env.DOCKER_REGISTRY }}/streaming-proxy:latest|g" k8s/streaming-proxy-deployment.yaml
+          sed -i "s|cloudtolocalllm/postgres:latest|${{ env.DOCKER_REGISTRY }}/postgres:${{ github.sha }}|g" k8s/postgres-statefulset.yaml
+          sed -i "s|cloudtolocalllm/web:latest|${{ env.DOCKER_REGISTRY }}/web:${{ github.sha }}|g" k8s/web-deployment.yaml
+          sed -i "s|cloudtolocalllm/api-backend:latest|${{ env.DOCKER_REGISTRY }}/api-backend:${{ github.sha }}|g" k8s/api-backend-deployment.yaml
+          sed -i "s|cloudtolocalllm/streaming-proxy:latest|${{ env.DOCKER_REGISTRY }}/streaming-proxy:${{ github.sha }}|g" k8s/streaming-proxy-deployment.yaml
 
           # Apply RBAC and ConfigMaps first
           kubectl apply -f k8s/rbac.yaml

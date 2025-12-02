@@ -5,7 +5,6 @@ import winston from 'winston';
 import dotenv from 'dotenv';
 import swaggerUi from 'swagger-ui-express';
 import { specs } from './swagger-config.js';
-import { StreamingProxyManager } from './streaming-proxy-manager.js';
 import {
   setupMiddlewarePipeline,
   getAuthMiddleware,
@@ -25,6 +24,41 @@ import webhookRoutes from './routes/webhooks.js';
 import authRoutes from './routes/auth.js';
 import apiKeysRouter from './routes/api-keys.js';
 import tunnelRoutes, { initializeTunnelService } from './routes/tunnels.js';
+import adaptiveRateLimitingRoutes from './routes/adaptive-rate-limiting.js';
+import adminMetricsRoutes from './routes/admin-metrics.js';
+import alertConfigurationRoutes from './routes/alert-configuration.js';
+import authAuditRoutes from './routes/auth-audit.js';
+import backupRecoveryRoutes from './routes/backup-recovery.js';
+import bridgePollingRoutes from './routes/bridge-polling-routes.js';
+import cacheMetricsRoutes from './routes/cache-metrics.js';
+import deprecationRoutes from './routes/deprecation.js';
+import directProxyRoutes from './routes/direct-proxy-routes.js';
+import errorRecoveryRoutes from './routes/error-recovery.js';
+import failoverRoutes from './routes/failover.js';
+import proxyConfigRoutes from './routes/proxy-config.js';
+import proxyDiagnosticsRoutes from './routes/proxy-diagnostics.js';
+import proxyFailoverRoutes from './routes/proxy-failover.js';
+import proxyHealthRoutes from './routes/proxy-health.js';
+import proxyMetricsRoutes from './routes/proxy-metrics.js';
+import proxyScalingRoutes from './routes/proxy-scaling.js';
+import proxyUsageRoutes from './routes/proxy-usage.js';
+import proxyWebhooksRoutes from './routes/proxy-webhooks.js';
+import quotasRoutes from './routes/quotas.js';
+import rateLimitExemptionsRoutes from './routes/rate-limit-exemptions.js';
+import rateLimitViolationsRoutes from './routes/rate-limit-violations.js';
+import sandboxRoutes from './routes/sandbox.js';
+import tunnelFailoverRoutes from './routes/tunnel-failover.js';
+import tunnelHealthRoutes from './routes/tunnel-health.js';
+import tunnelSharingRoutes from './routes/tunnel-sharing.js';
+import tunnelUsageRoutes from './routes/tunnel-usage.js';
+import tunnelWebhooksRoutes from './routes/tunnel-webhooks.js';
+import userActivityRoutes from './routes/user-activity.js';
+import userDeletionRoutes from './routes/user-deletion.js';
+import versionedRoutes from './routes/versioned-routes.js';
+import webhookEventFiltersRoutes from './routes/webhook-event-filters.js';
+import webhookPayloadTransformationsRoutes from './routes/webhook-payload-transformations.js';
+import webhookRateLimitingRoutes from './routes/webhook-rate-limiting.js';
+import webhookTestingRoutes from './routes/webhook-testing.js';
 // SSH tunnel integration
 import { SSHProxy } from './tunnel/ssh-proxy.js';
 import { AuthService } from './auth/auth-service.js';
@@ -42,18 +76,25 @@ import { createConversationRoutes } from './routes/conversations.js';
 import { authenticateJWT } from './middleware/auth.js';
 import {
   addTierInfo,
-  getUserTier,
-  getTierFeatures,
 } from './middleware/tier-check.js';
 import { HealthCheckService } from './services/health-check.js';
 import {
-  createQueueStatusHandler,
-  createQueueDrainHandler,
-} from './middleware/request-queuing.js';
+  setDbMigrator,
+  dbHealthHandler,
+  setSshProxy,
+  handleOllamaProxyRequest,
+  userTierHandler,
+  versionInfoHandler,
+  queueStatusHandler,
+  queueDrainHandler,
+  proxyStartHandler,
+  proxyStopHandler,
+  proxyProvisionHandler,
+  proxyStatusHandler,
+} from './routes/handlers.js';
 import rateLimitMetricsRoutes from './routes/rate-limit-metrics.js';
 import prometheusMetricsRoutes from './routes/prometheus-metrics.js';
 import changelogRoutes from './routes/changelog.js';
-import { getVersionInfoHandler } from './middleware/api-versioning.js';
 
 dotenv.config();
 
@@ -117,7 +158,7 @@ app.set('trust proxy', 1); // Trust first proxy (nginx)
 
 // CORS configuration
 const corsOptions = {
-  origin: function (origin, callback) {
+  origin: function(origin, callback) {
     const allowedOrigins = [
       'https://app.cloudtolocalllm.online',
       'https://cloudtolocalllm.online',
@@ -170,7 +211,7 @@ const server = http.createServer(app);
 // Setup graceful shutdown with in-flight request completion
 const shutdownManager = setupGracefulShutdown(server, {
   shutdownTimeoutMs: 10000,
-  onShutdown: async () => {
+  onShutdown: async() => {
     logger.info('Running custom shutdown handlers');
     // Custom shutdown logic will be added here
   },
@@ -243,7 +284,6 @@ async function authenticateToken(req, res, next) {
 // Bridge connections removed - using HTTP polling only
 
 // Initialize streaming proxy manager
-const proxyManager = new StreamingProxyManager();
 
 // Create WebSocket-based tunnel routes
 const tunnelRouter = createTunnelRoutes(
@@ -259,222 +299,97 @@ const monitoringRouter = createMonitoringRoutes(sshProxy, logger);
 // API Routes
 // Register routes both with /api prefix (for other subdomains) and without (for api subdomain)
 
+function registerRoutes(path, router) {
+  app.use(`/api${path}`, router);
+  app.use(path, router);
+}
+
 // Simplified tunnel routes
-app.use('/api/tunnel', tunnelRouter);
-app.use('/tunnel', tunnelRouter); // Also register without /api prefix for api subdomain
+registerRoutes('/tunnel', tunnelRouter);
 
 // Performance monitoring routes
-app.use('/api/monitoring', monitoringRouter);
-app.use('/monitoring', monitoringRouter); // Also register without /api prefix for api subdomain
+registerRoutes('/monitoring', monitoringRouter);
 
 // Conversation management routes (initialized after database is ready)
 // Will be set up in initializeTunnelSystem() after dbMigrator is initialized
 
 // Database health endpoint
-const dbHealthHandler = async (req, res) => {
-  try {
-    if (!dbMigrator) {
-      return res.status(503).json({
-        status: 'error',
-        message: 'Database migrator not initialized',
-        timestamp: new Date().toISOString(),
-      });
-    }
-
-    // Perform a simple health check
-    const validation = await dbMigrator.validateSchema();
-    const dbType = process.env.DB_TYPE || 'sqlite';
-
-    res.json({
-      status: validation.allValid ? 'healthy' : 'degraded',
-      database_type: dbType,
-      schema_validation: validation.results,
-      all_tables_valid: validation.allValid,
-      timestamp: new Date().toISOString(),
-    });
-  } catch (error) {
-    logger.error('Database health check failed:', error);
-    res.status(503).json({
-      status: 'error',
-      message: 'Database health check failed',
-      error: error.message,
-      timestamp: new Date().toISOString(),
-    });
-  }
-};
-app.get('/api/db/health', dbHealthHandler);
-app.get('/db/health', dbHealthHandler); // Also register without /api prefix for api subdomain
+setDbMigrator(dbMigrator);
+registerRoutes('/db/health', dbHealthHandler);
 
 // Authentication routes (token refresh, validation, logout)
-app.use('/api/auth', authRoutes);
-app.use('/auth', authRoutes); // Also register without /api prefix for api subdomain
+registerRoutes('/auth', authRoutes);
 
 // Session management routes
-app.use('/api/auth/sessions', sessionRoutes);
-app.use('/auth/sessions', sessionRoutes); // Also register without /api prefix for api subdomain
+registerRoutes('/auth/sessions', sessionRoutes);
 
 // Client log ingestion
-app.use('/api/client-logs', clientLogRoutes);
-app.use('/client-logs', clientLogRoutes); // Also register without /api prefix for api subdomain
+registerRoutes('/client-logs', clientLogRoutes);
 
 // Database health check routes
-app.use('/api/db', dbHealthRoutes);
-app.use('/db', dbHealthRoutes); // Also register without /api prefix for api subdomain
+registerRoutes('/db', dbHealthRoutes);
 
 // Database performance metrics routes
-app.use('/api/database/performance', databasePerformanceRoutes);
-app.use('/database/performance', databasePerformanceRoutes); // Also register without /api prefix for api subdomain
+registerRoutes('/database/performance', databasePerformanceRoutes);
 
 // TURN server credentials (authenticated)
-app.use('/api/turn', turnCredentialsRoutes);
-app.use('/turn', turnCredentialsRoutes); // Also register without /api prefix for api subdomain
+registerRoutes('/turn', turnCredentialsRoutes);
 
 // Administrative routes
-app.use('/api/admin', adminRoutes);
-app.use('/admin', adminRoutes); // Also register without /api prefix for api subdomain
-app.use('/api/admin/users', adminUserRoutes);
-app.use('/admin/users', adminUserRoutes); // Also register without /api prefix for api subdomain
-app.use('/api/admin', adminSubscriptionRoutes);
-app.use('/admin', adminSubscriptionRoutes); // Also register without /api prefix for api subdomain
+registerRoutes('/admin', adminRoutes);
+registerRoutes('/admin/users', adminUserRoutes);
+registerRoutes('/admin', adminSubscriptionRoutes);
 
 // User tier management routes
-app.use('/api/users', userRoutes);
-app.use('/users', userRoutes); // Also register without /api prefix for api subdomain
+registerRoutes('/users', userRoutes);
 
 // User profile management routes
-app.use('/api/users', userProfileRoutes);
-app.use('/users', userProfileRoutes); // Also register without /api prefix for api subdomain
+registerRoutes('/users', userProfileRoutes);
 
 // API Key management routes (for service-to-service authentication)
-app.use('/api/api-keys', apiKeysRouter);
-app.use('/api-keys', apiKeysRouter); // Also register without /api prefix for api subdomain
+registerRoutes('/api-keys', apiKeysRouter);
 
 // Tunnel lifecycle management routes
-app.use('/api/tunnels', tunnelRoutes);
-app.use('/tunnels', tunnelRoutes); // Also register without /api prefix for api subdomain
+registerRoutes('/tunnels', tunnelRoutes);
+
+registerRoutes('/adaptive-rate-limiting', adaptiveRateLimitingRoutes);
+registerRoutes('/admin-metrics', adminMetricsRoutes);
+registerRoutes('/alert-configuration', alertConfigurationRoutes);
+registerRoutes('/auth-audit', authAuditRoutes);
+registerRoutes('/backup-recovery', backupRecoveryRoutes);
+registerRoutes('/bridge-polling', bridgePollingRoutes);
+registerRoutes('/cache-metrics', cacheMetricsRoutes);
+registerRoutes('/deprecation', deprecationRoutes);
+registerRoutes('/direct-proxy', directProxyRoutes);
+registerRoutes('/error-recovery', errorRecoveryRoutes);
+registerRoutes('/failover', failoverRoutes);
+registerRoutes('/proxy-config', proxyConfigRoutes);
+registerRoutes('/proxy-diagnostics', proxyDiagnosticsRoutes);
+registerRoutes('/proxy-failover', proxyFailoverRoutes);
+registerRoutes('/proxy-health', proxyHealthRoutes);
+registerRoutes('/proxy-metrics', proxyMetricsRoutes);
+registerRoutes('/proxy-scaling', proxyScalingRoutes);
+registerRoutes('/proxy-usage', proxyUsageRoutes);
+registerRoutes('/proxy-webhooks', proxyWebhooksRoutes);
+registerRoutes('/quotas', quotasRoutes);
+registerRoutes('/rate-limit-exemptions', rateLimitExemptionsRoutes);
+registerRoutes('/rate-limit-violations', rateLimitViolationsRoutes);
+registerRoutes('/sandbox', sandboxRoutes);
+registerRoutes('/tunnel-failover', tunnelFailoverRoutes);
+registerRoutes('/tunnel-health', tunnelHealthRoutes);
+registerRoutes('/tunnel-sharing', tunnelSharingRoutes);
+registerRoutes('/tunnel-usage', tunnelUsageRoutes);
+registerRoutes('/tunnel-webhooks', tunnelWebhooksRoutes);
+registerRoutes('/user-activity', userActivityRoutes);
+registerRoutes('/user-deletion', userDeletionRoutes);
+registerRoutes('/versioned-routes', versionedRoutes);
+registerRoutes('/webhook-event-filters', webhookEventFiltersRoutes);
+registerRoutes('/webhook-payload-transformations', webhookPayloadTransformationsRoutes);
+registerRoutes('/webhook-rate-limiting', webhookRateLimitingRoutes);
+registerRoutes('/webhook-testing', webhookTestingRoutes);
 
 // LLM Tunnel Cloud Proxy Endpoints (support both /api/ollama and /ollama)
-const handleOllamaProxyRequest = async (req, res) => {
-  const startTime = Date.now();
-  const requestId = `llm-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-  const userId = req.auth?.payload.sub;
-
-  if (!userId) {
-    return res.status(401).json({
-      error: 'Authentication required',
-      code: 'AUTH_REQUIRED',
-      message: 'Please authenticate to access LLM services.',
-    });
-  }
-
-  try {
-    const basePath = req.path.startsWith('/ollama') ? '/ollama' : '/api/ollama';
-    let ollamaPath = req.path.substring(basePath.length);
-    if (!ollamaPath || ollamaPath.length === 0) {
-      ollamaPath = '/';
-    } else if (!ollamaPath.startsWith('/')) {
-      ollamaPath = `/${ollamaPath}`;
-    }
-    const forwardHeaders = { ...req.headers };
-    [
-      'host',
-      'authorization',
-      'connection',
-      'upgrade',
-      'proxy-authenticate',
-      'proxy-authorization',
-      'te',
-      'trailers',
-      'transfer-encoding',
-    ].forEach((h) => delete forwardHeaders[h]);
-
-    const httpRequest = {
-      id: requestId,
-      method: req.method,
-      path: ollamaPath,
-      headers: forwardHeaders,
-      body:
-        req.method !== 'GET' && req.method !== 'HEAD'
-          ? JSON.stringify(req.body)
-          : undefined,
-    };
-
-    logger.debug(' [LLMTunnel] Forwarding request through tunnel', {
-      userId,
-      requestId,
-      path: ollamaPath,
-    });
-
-    if (ollamaPath === '/bridge/status') {
-      const isConnected = sshProxy && sshProxy.isUserConnected(userId);
-      return res.json({
-        status: isConnected ? 'connected' : 'disconnected',
-        message: isConnected ? 'Bridge is connected' : 'Bridge is disconnected',
-      });
-    }
-
-    if (!sshProxy) {
-      return res.status(503).json({
-        error: 'Tunnel system not available',
-        code: 'TUNNEL_NOT_AVAILABLE',
-        message: 'SSH tunnel server not initialized',
-      });
-    }
-
-    const response = await sshProxy.forwardRequest(userId, httpRequest);
-
-    const duration = Date.now() - startTime;
-    logger.info(' [LLMTunnel] Request completed successfully via tunnel', {
-      userId,
-      requestId,
-      duration,
-      status: response.status,
-    });
-
-    if (response.headers) {
-      Object.entries(response.headers).forEach(([key, value]) => {
-        if (key.toLowerCase() !== 'transfer-encoding') {
-          res.set(key, value);
-        }
-      });
-    }
-
-    res.status(response.status || 200);
-    if (response.body) {
-      try {
-        res.json(JSON.parse(response.body));
-      } catch {
-        res.send(response.body);
-      }
-    } else {
-      res.end();
-    }
-  } catch (error) {
-    const duration = Date.now() - startTime;
-    logger.error(' [LLMTunnel] Request failed via tunnel', {
-      userId,
-      requestId,
-      duration,
-      error: error.message,
-      code: error.code,
-    });
-
-    if (error.code === 'REQUEST_TIMEOUT') {
-      return res
-        .status(504)
-        .json({ error: 'LLM request timeout', code: 'LLM_REQUEST_TIMEOUT' });
-    }
-    if (error.code === 'DESKTOP_CLIENT_DISCONNECTED') {
-      return res.status(503).json({
-        error: 'Desktop client not connected',
-        code: 'DESKTOP_CLIENT_DISCONNECTED',
-      });
-    }
-    res
-      .status(500)
-      .json({ error: 'LLM tunnel error', code: 'LLM_TUNNEL_ERROR' });
-  }
-};
+setSshProxy(sshProxy);
 
 // Define Ollama route regex to match /api/ollama, /ollama, and their subpaths
 const OLLAMA_ROUTE_REGEX = /^\/(api\/)?ollama(\/.*)?$/;
@@ -486,49 +401,19 @@ app.all(
 );
 
 // User tier endpoint
-const userTierHandler = [
-  authenticateJWT,
-  addTierInfo,
-  (req, res) => {
-    try {
-      const userTier = getUserTier(req.user);
-      const features = getTierFeatures(userTier);
-
-      res.json({
-        tier: userTier,
-        features: features,
-        upgradeUrl:
-          process.env.UPGRADE_URL ||
-          'https://app.cloudtolocalllm.online/upgrade',
-        timestamp: new Date().toISOString(),
-      });
-    } catch (error) {
-      logger.error('Error getting user tier:', error);
-      res.status(500).json({
-        error: 'Failed to determine user tier',
-        code: 'TIER_ERROR',
-      });
-    }
-  },
-];
-app.get('/api/user/tier', ...userTierHandler);
-app.get('/user/tier', ...userTierHandler); // Also register without /api prefix for api subdomain
+registerRoutes('/user/tier', authenticateJWT, addTierInfo, ...userTierHandler);
 
 // Health check endpoints
-const healthHandler = async (req, res) => {
-  try {
-    const healthStatus = await healthCheckService.getHealthStatus();
-
-    // Return appropriate HTTP status code based on health status
+registerRoutes('/health', (req, res) => {
+  healthCheckService.getHealthStatus().then(healthStatus => {
     let statusCode = 200;
     if (healthStatus.status === 'unhealthy') {
       statusCode = 503; // Service Unavailable
     } else if (healthStatus.status === 'degraded') {
       statusCode = 200; // Still return 200 but indicate degraded status
     }
-
     res.status(statusCode).json(healthStatus);
-  } catch (error) {
+  }).catch(error => {
     logger.error('Health check endpoint error:', error);
     res.status(503).json({
       status: 'unhealthy',
@@ -537,10 +422,8 @@ const healthHandler = async (req, res) => {
       error: 'Health check failed',
       message: error.message,
     });
-  }
-};
-app.get('/health', healthHandler);
-app.get('/api/health', healthHandler); // Also register with /api prefix for backward compatibility
+  });
+});
 
 // API Version Information Endpoint
 // Returns information about supported API versions
@@ -562,210 +445,54 @@ app.get('/api/health', healthHandler); // Also register with /api prefix for bac
  *       500:
  *         $ref: '#/components/responses/ServerError'
  */
-const versionInfoHandler = getVersionInfoHandler();
-app.get('/api/versions', versionInfoHandler);
-app.get('/versions', versionInfoHandler); // Also register without /api prefix for api subdomain
+registerRoutes('/versions', versionInfoHandler);
 
 // Rate limit metrics routes
-app.use('/api/metrics', rateLimitMetricsRoutes);
-app.use('/metrics', rateLimitMetricsRoutes); // Also register without /api prefix for api subdomain
+registerRoutes('/metrics', rateLimitMetricsRoutes);
 
 // Prometheus metrics routes
-app.use('/api/prometheus', prometheusMetricsRoutes);
-app.use('/prometheus', prometheusMetricsRoutes); // Also register without /api prefix for api subdomain
+registerRoutes('/prometheus', prometheusMetricsRoutes);
 
 // Changelog and release notes routes
-app.use('/api/changelog', changelogRoutes);
-app.use('/changelog', changelogRoutes); // Also register without /api prefix for api subdomain
+registerRoutes('/changelog', changelogRoutes);
 
 // Queue status endpoints
-const queueStatusHandler = createQueueStatusHandler();
-app.get('/api/queue/status', queueStatusHandler);
-app.get('/queue/status', queueStatusHandler); // Also register without /api prefix for api subdomain
+registerRoutes('/queue/status', queueStatusHandler);
 
 // Queue drain endpoint (for testing/debugging)
-const queueDrainHandler = createQueueDrainHandler();
-app.post('/api/queue/drain', authenticateJWT, queueDrainHandler);
-app.post('/queue/drain', authenticateJWT, queueDrainHandler); // Also register without /api prefix for api subdomain
+registerRoutes('/queue/drain', authenticateJWT, queueDrainHandler);
 
 // WebSocket bridge endpoints removed - using HTTP polling only
 
 // Streaming Proxy Management Endpoints
 
 // Start streaming proxy for user
-const proxyStartHandler = authenticateToken;
 const proxyStartRoute = [
+  authenticateToken,
   proxyStartHandler,
-  async (req, res) => {
-    try {
-      const userId = req.user.sub;
-      const userToken = req.headers.authorization;
-
-      logger.info(`Starting streaming proxy for user: ${userId}`);
-
-      // Pass the user object for tier checking
-      const proxyMetadata = await proxyManager.provisionProxy(
-        userId,
-        userToken,
-        req.user,
-      );
-
-      res.json({
-        success: true,
-        message: 'Streaming proxy started successfully',
-        proxy: {
-          proxyId: proxyMetadata.proxyId,
-          status: proxyMetadata.status,
-          createdAt: proxyMetadata.createdAt,
-          directTunnel: proxyMetadata.directTunnel || false,
-          endpoint: proxyMetadata.endpoint || null,
-          userTier: proxyMetadata.userTier || 'free',
-        },
-      });
-    } catch (error) {
-      logger.error(`Failed to start proxy for user ${req.user.sub}:`, error);
-      res.status(500).json({
-        error: 'Failed to start streaming proxy',
-        message: error.message,
-      });
-    }
-  },
 ];
-app.post('/api/proxy/start', ...proxyStartRoute);
-app.post('/proxy/start', ...proxyStartRoute); // Also register without /api prefix for api subdomain
+registerRoutes('/proxy/start', ...proxyStartRoute);
 
 // Stop streaming proxy for user
 const proxyStopRoute = [
   authenticateToken,
-  async (req, res) => {
-    try {
-      const userId = req.user.sub;
-
-      logger.info(`Stopping streaming proxy for user: ${userId}`);
-
-      const success = await proxyManager.terminateProxy(userId);
-
-      if (success) {
-        res.json({
-          success: true,
-          message: 'Streaming proxy stopped successfully',
-        });
-      } else {
-        res.status(404).json({
-          error: 'No active proxy found',
-          message: 'No streaming proxy is currently running for this user',
-        });
-      }
-    } catch (error) {
-      logger.error(`Failed to stop proxy for user ${req.user.sub}:`, error);
-      res.status(500).json({
-        error: 'Failed to stop streaming proxy',
-        message: error.message,
-      });
-    }
-  },
+  proxyStopHandler,
 ];
-app.post('/api/proxy/stop', ...proxyStopRoute);
-app.post('/proxy/stop', ...proxyStopRoute); // Also register without /api prefix for api subdomain
+registerRoutes('/proxy/stop', ...proxyStopRoute);
 
 // Provision streaming proxy for user (with test mode support)
 const proxyProvisionRoute = [
   authenticateToken,
-  async (req, res) => {
-    try {
-      const userId = req.user.sub;
-      const userToken = req.headers.authorization;
-      const { testMode = false } = req.body;
-
-      logger.info(
-        `Provisioning streaming proxy for user: ${userId}, testMode: ${testMode}`,
-      );
-
-      if (testMode) {
-        // In test mode, simulate successful provisioning without creating actual containers
-        logger.info(
-          `Test mode: Simulating proxy provisioning for user ${userId}`,
-        );
-
-        res.json({
-          success: true,
-          message: 'Streaming proxy provisioned successfully (test mode)',
-          testMode: true,
-
-          proxy: {
-            proxyId: `test-proxy-${userId}`,
-            status: 'simulated',
-            createdAt: new Date().toISOString(),
-          },
-        });
-        return;
-      }
-
-      // Normal mode - provision actual proxy
-      const proxyMetadata = await proxyManager.provisionProxy(
-        userId,
-        userToken,
-        req.user,
-      );
-
-      res.json({
-        success: true,
-        message: 'Streaming proxy provisioned successfully',
-        testMode: false,
-
-        proxy: {
-          proxyId: proxyMetadata.proxyId,
-          status: proxyMetadata.status,
-          createdAt: proxyMetadata.createdAt,
-          directTunnel: proxyMetadata.directTunnel || false,
-          endpoint: proxyMetadata.endpoint || null,
-          userTier: proxyMetadata.userTier || 'free',
-        },
-      });
-    } catch (error) {
-      logger.error(
-        `Failed to provision proxy for user ${req.user.sub}:`,
-        error,
-      );
-      res.status(500).json({
-        error: 'Failed to provision streaming proxy',
-        message: error.message,
-        testMode: req.body.testMode || false,
-      });
-    }
-  },
+  proxyProvisionHandler,
 ];
-app.post('/api/streaming-proxy/provision', ...proxyProvisionRoute);
-app.post('/streaming-proxy/provision', ...proxyProvisionRoute); // Also register without /api prefix for api subdomain
+registerRoutes('/streaming-proxy/provision', ...proxyProvisionRoute);
 
 // Get streaming proxy status
 const proxyStatusRoute = [
   authenticateToken,
-  async (req, res) => {
-    try {
-      const userId = req.user.sub;
-      const status = await proxyManager.getProxyStatus(userId);
-
-      // Update activity if proxy is running
-      if (status.status === 'running') {
-        proxyManager.updateProxyActivity(userId);
-      }
-
-      res.json(status);
-    } catch (error) {
-      logger.error(
-        `Failed to get proxy status for user ${req.user.sub}:`,
-        error,
-      );
-      res.status(500).json({
-        error: 'Failed to get proxy status',
-        message: error.message,
-      });
-    }
-  },
+  proxyStatusHandler,
 ];
-app.get('/api/proxy/status', ...proxyStatusRoute);
-app.get('/proxy/status', ...proxyStatusRoute); // Also register without /api prefix for api subdomain
+registerRoutes('/proxy/status', ...proxyStatusRoute);
 
 // Ollama proxy endpoints removed - using HTTP polling tunnel system instead
 
@@ -787,7 +514,7 @@ app.use((error, req, res, _next) => {
 });
 
 // Conversation routes - implemented directly due to router mounting issues
-app.get('/conversations/', authenticateJWT, async (req, res) => {
+app.get('/conversations/', authenticateJWT, async(req, res) => {
   try {
     const userId = req.auth?.payload?.sub || req.user?.sub;
     if (!userId) {
@@ -830,7 +557,7 @@ app.get('/conversations/', authenticateJWT, async (req, res) => {
   }
 });
 
-app.put('/conversations/:id', authenticateJWT, async (req, res) => {
+app.put('/conversations/:id', authenticateJWT, async(req, res) => {
   try {
     const userId = req.auth?.payload?.sub || req.user?.sub;
     const conversationId = req.params.id;
@@ -959,13 +686,13 @@ app.put('/conversations/:id', authenticateJWT, async (req, res) => {
 });
 
 // Also mount at /api/conversations for backward compatibility
-app.get('/api/conversations/', async (req, res) => {
+app.get('/api/conversations/', async(req, res) => {
   // Redirect to the main route
   const url = req.originalUrl.replace('/api/conversations/', '/conversations/');
   res.redirect(307, url);
 });
 
-app.put('/api/conversations/:id', async (req, res) => {
+app.put('/api/conversations/:id', async(req, res) => {
   // Redirect to the main route
   const url = req.originalUrl.replace('/api/conversations/', '/conversations/');
   res.redirect(307, url);
@@ -1037,7 +764,7 @@ async function initializeTunnelSystem() {
       logger.info('Authentication service initialized successfully');
 
       // Register auth service with health check service
-      healthCheckService.registerService('auth-service', async () => {
+      healthCheckService.registerService('auth-service', async() => {
         return {
           status: authService ? 'healthy' : 'unhealthy',
           message: authService
@@ -1062,7 +789,7 @@ async function initializeTunnelSystem() {
         logger.info('SSH tunnel server initialized successfully');
 
         // Register SSH proxy with health check service
-        healthCheckService.registerService('ssh-tunnel', async () => {
+        healthCheckService.registerService('ssh-tunnel', async() => {
           return {
             status: sshProxy && sshProxy.isRunning ? 'healthy' : 'unhealthy',
             message:
@@ -1078,7 +805,7 @@ async function initializeTunnelSystem() {
         });
 
         // Register SSH proxy as unhealthy
-        healthCheckService.registerService('ssh-tunnel', async () => {
+        healthCheckService.registerService('ssh-tunnel', async() => {
           return {
             status: 'degraded',
             message: 'SSH tunnel service failed to initialize (non-critical)',
@@ -1164,7 +891,7 @@ async function initializeTunnelSystem() {
     logger.info('WebSocket tunnel system ready');
 
     // Register custom shutdown handler with graceful shutdown manager
-    shutdownManager.shutdown = async () => {
+    shutdownManager.shutdown = async() => {
       await gracefulShutdown();
     };
 
