@@ -54,4 +54,4 @@ Platform-specific install steps and troubleshooting: `docs/INSTALLATION/README.m
 - Install help: `docs/INSTALLATION/`
 - Issues & questions: open a GitHub Issue or Discussion on the repo.
 
-For development, architecture, and CI details, see `docs/README.md` and `docs/DEVELOPMENT/`. This README is focused on customers using the app.***
+For development, architecture, backend documentation, and CI details, see `docs/README.md`. This README is focused on customers using the app.

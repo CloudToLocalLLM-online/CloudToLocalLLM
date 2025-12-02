@@ -29,7 +29,12 @@ For any request that requires multiple steps, changes to several files, or a seq
     *   **Tool**: `plan_mode_respond`
     *   **Action**: I will present a detailed plan to the user using `plan_mode_respond`, including a `task_progress` checklist.
 
-2.  **Execution Cycle (ACT MODE)**:
+2.  **Complex Reasoning & Analysis**:
+    *   **Condition**: For tasks requiring deep analysis, architectural decisions, or complex problem-solving (especially when using models like Gemini).
+    *   **Tool**: `sequentialthinking`
+    *   **Action**: I will use the `sequentialthinking` tool to break down the problem, hypothesize solutions, and self-correct before proceeding with execution. This ensures a logical and well-thought-out approach.
+
+3.  **Execution Cycle (ACT MODE)**:
     *   **Action**: Once the user approves the plan and switches to `ACT MODE`, I will execute the steps outlined in the `task_progress` checklist.
     *   **Tool**: Any available tool (standard or MCP)
     *   **Action**: I will perform the necessary actions to complete each step, updating the `task_progress` checklist with each tool call.

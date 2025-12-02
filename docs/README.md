@@ -42,22 +42,28 @@ Welcome to the CloudToLocalLLM documentation! This directory contains comprehens
 - **[Self-Hosting Guide](OPERATIONS/SELF_HOSTING.md)** - Deploy your own instance
 - **[Infrastructure Guide](OPERATIONS/INFRASTRUCTURE_GUIDE.md)** - Server requirements and setup
 - **[Versioning Strategy](DEPLOYMENT/VERSIONING_STRATEGY.md)** - Version management approach
+- **[AWS Operations](ops/aws/README.md)** - AWS infrastructure and deployment
+- **[Kubernetes Operations](ops/kubernetes/README.md)** - Kubernetes deployment and management
+- **[CI/CD Operations](ops/cicd/README.md)** - CI/CD pipelines and workflows
 
 ### 👨‍💻 **Development**
 - **[Developer Onboarding](DEVELOPMENT/DEVELOPER_ONBOARDING.md)** - Get started with development
-- **[Development Workflow](DEVELOPMENT/DEVELOPMENT_WORKFLOW.md)** - Development tools and automation
+- **[Development Workflow](development/DEVELOPMENT_WORKFLOW.md)** - Development tools and automation
 - **[Building Guide](DEVELOPMENT/BUILDING_GUIDE.md)** - Build applications for all platforms
 - **[API Documentation](DEVELOPMENT/API_DOCUMENTATION.md)** - Technical API reference
-- **[Contribution Guidelines](../CONTRIBUTING.md)** - How to contribute to the project
+- **[Contribution Guidelines](development/CONTRIBUTING.md)** - How to contribute to the project
 
-### 🔧 Operations Documentation
-- **[Infrastructure Guide](OPERATIONS/INFRASTRUCTURE.md)** - Infrastructure management
-- **[Self-Hosting Guide](OPERATIONS/SELF_HOSTING.md)** - Self-hosting instructions
+### 🔧 **Backend Documentation**
+- **[Backend Overview](backend/README.md)** - Overview of backend services
+- **[API Guides](backend/api/README.md)** - Versioning, deprecation, and error codes
+- **[Feature Implementations](backend/features/README.md)** - Detailed feature guides
+- **[Backend Operations](backend/ops/README.md)** - Backup, failover, and monitoring
 
 ### 📋 **Additional Resources**
 - **[Release Notes](RELEASE/RELEASE_NOTES.md)** - Version history and changes
 - **[Legal Documentation](LEGAL/)** - Privacy policy and terms of service
 - **[LangChain Integration](LANGCHAIN_INTEGRATION_PLAN.md)** - Advanced AI capabilities
+- **[Archive](archive/README.md)** - Archived documentation and reports
 
 ## 📖 Documentation Standards
 
@@ -87,7 +93,7 @@ We welcome improvements to our documentation! Here's how you can help:
 - Test all instructions before submitting
 - Use clear, concise language appropriate for the target audience
 
-See our [Contribution Guidelines](../CONTRIBUTING.md) for detailed information on contributing.
+See our [Contribution Guidelines](development/CONTRIBUTING.md) for detailed information on contributing.
 
 ## 📖 Quick Navigation
 
@@ -105,17 +111,16 @@ See our [Contribution Guidelines](../CONTRIBUTING.md) for detailed information o
 
 ### **👨‍💻 Developers**
 1. **[Developer Onboarding](DEVELOPMENT/DEVELOPER_ONBOARDING.md)** - Set up development environment
-2. **[Development Workflow](DEVELOPMENT/DEVELOPMENT_WORKFLOW.md)** - Learn the development process
+2. **[Development Workflow](development/DEVELOPMENT_WORKFLOW.md)** - Learn the development process
 3. **[Building Guide](DEVELOPMENT/BUILDING_GUIDE.md)** - Build for different platforms
 4. **[API Documentation](DEVELOPMENT/API_DOCUMENTATION.md)** - Technical API reference
-5. **[Contribution Guidelines](../CONTRIBUTING.md)** - How to contribute
+5. **[Contribution Guidelines](development/CONTRIBUTING.md)** - How to contribute
 
 ### **🔧 System Administrators**
 1. **[Deployment Overview](DEPLOYMENT/DEPLOYMENT_OVERVIEW.md)** - Understand deployment options
-2. **[Kubernetes Quick Start](../KUBERNETES_QUICKSTART.md)** - Kubernetes deployment example
-3. **[Self-Hosted Kubernetes](../KUBERNETES_SELF_HOSTED_GUIDE.md)** - For businesses deploying on-premises
-4. **[Kubernetes README](../k8s/README.md)** - Complete Kubernetes deployment guide
-5. **[Infrastructure Guide](OPERATIONS/INFRASTRUCTURE_GUIDE.md)** - Server management
+2. **[Kubernetes Operations](ops/kubernetes/README.md)** - Kubernetes deployment guide
+3. **[Infrastructure Guide](OPERATIONS/INFRASTRUCTURE_GUIDE.md)** - Server management
+4. **[Backend Operations](backend/ops/README.md)** - Backend maintenance
 
 ### For Developers
 1. Review [System Architecture](ARCHITECTURE/SYSTEM_ARCHITECTURE.md)
@@ -160,8 +165,15 @@ We welcome contributions to improve documentation:
 | Deployment | ✅ Complete | 2025-07-12 |
 | Development | ✅ Complete | 2025-07-12 |
 | Operations | ✅ Complete | 2025-07-12 |
+| Backend | ✅ Consolidated | 2025-12-02 |
 
 ## 🔄 Recent Updates
+
+### 2025-12-02: Documentation Consolidation
+- Consolidated backend documentation from `services/api-backend/` to `docs/backend/`
+- Organized operational docs into `docs/ops/` (AWS, Kubernetes, CI/CD)
+- Archived older task summaries to `docs/archive/`
+- Updated documentation structure for better discoverability
 
 ### 2025-07-12: Documentation Consolidation and Architecture Standardization
 - Updated all documentation to reflect current version 3.10.3

@@ -8,6 +8,7 @@ This document outlines the recommended workflow and best practices for effective
 *   **Atomic Operations**: Each `use_mcp_tool` or `access_mcp_resource` call is an atomic operation. Execute one tool call at a time and await its successful completion before initiating subsequent actions. This ensures clear progress tracking and simplifies debugging.
 *   **Schema Adherence**: Before invoking any MCP tool, thoroughly review its input schema. Ensure all required parameters are provided with correct data types and formats. Incorrect parameters will lead to tool failure.
 *   **Contextual Awareness**: Understand the purpose and limitations of each MCP tool. Use them in appropriate contexts to maximize their effectiveness and avoid unnecessary calls.
+*   **Sequential Thinking**: For tasks involving complex reasoning, architectural planning, or multi-step problem solving, strictly adhere to using the `sequentialthinking` tool. This ensures a structured, reflective, and self-correcting thought process, which is critical for maintaining high-quality outputs.
 
 ## 2. Discovering MCP Servers and Tools
 
