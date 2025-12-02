@@ -357,6 +357,13 @@ jobs:
           kubectl rollout restart deployment/streaming-proxy -n cloudtolocalllm
           kubectl rollout restart deployment/cloudflared -n cloudtolocalllm
 
+          # Wait for Rollout to Complete (with Fail Fast)
+          chmod +x scripts/watch_rollout.sh
+          ./scripts/watch_rollout.sh cloudtolocalllm statefulset postgres
+          ./scripts/watch_rollout.sh cloudtolocalllm deployment web
+          ./scripts/watch_rollout.sh cloudtolocalllm deployment api-backend
+          ./scripts/watch_rollout.sh cloudtolocalllm deployment streaming-proxy
+
       - name: Verify Cloudflare Tunnel
         run: |
           echo "Waiting for Cloudflare Tunnel to be ready..."
