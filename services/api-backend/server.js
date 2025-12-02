@@ -1,3 +1,4 @@
+console.log('Starting api-backend server process...');
 import * as Sentry from '@sentry/node';
 import express from 'express';
 import http from 'http';
