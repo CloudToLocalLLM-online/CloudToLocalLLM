@@ -536,6 +536,28 @@ export function logValidationError(endpoint, userId, field, reason, context = {}
   });
 }
 
+/**
+ * Generic input validator
+ *
+ * @param {*} value - Value to validate
+ * @param {string} name - Field name
+ * @param {string} type - Expected type
+ * @throws {Error} If validation fails
+ */
+export function validateInput(value, name, type) {
+  // Handle uuid type check (string with specific format)
+  if (type === 'uuid') {
+    if (typeof value !== 'string' || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value)) {
+      throw new Error(`Invalid ${name}: expected UUID`);
+    }
+    return;
+  }
+
+  if (typeof value !== type) {
+    throw new Error(`Invalid ${name}: expected ${type}, got ${typeof value}`);
+  }
+}
+
 export default {
   ValidationError,
   sanitizeString,
@@ -561,4 +583,5 @@ export default {
   validateAndSanitizeProfile,
   validateAndSanitizePreferences,
   logValidationError,
+  validateInput,
 };

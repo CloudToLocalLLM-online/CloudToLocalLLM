@@ -1,5 +1,5 @@
 import { v4 as uuidv4 } from 'uuid';
-import { TunnelLogger } from '../logger.js';
+import { TunnelLogger } from '../utils/logger.js';
 import { getPool } from '../database/db-pool.js';
 
 /**
