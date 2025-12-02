@@ -1031,6 +1031,27 @@ jobs:
             Output/*.exe
           if-no-files-found: warn
 
+      - name: Build Job Failed - Error Summary
+        if: failure()
+        run: |
+          echo "## Build job failed for platform: ${{ matrix.platform }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "**Context:**" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Version: ${{ needs.version-info.outputs.version }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Full Version: ${{ needs.version-info.outputs.full_version }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Is Release: ${{ needs.version-info.outputs.is_release }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "**Common causes:**" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Missing or invalid Flutter/SDK tooling on runner" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Dependency resolution failures (flutter pub get)" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Platform-specific build configuration issues (CMake, Windows SDK, Android SDK)" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Inno Setup not installed or installer script errors (Windows)" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "**Next steps:**" >> "$GITHUB_STEP_SUMMARY"
+          echo "1. Scroll up to the first error in the job logs." >> "$GITHUB_STEP_SUMMARY"
+          echo "2. Check dependency verification steps for missing tools." >> "$GITHUB_STEP_SUMMARY"
+          echo "3. For installer issues, verify installers/windows/inno_setup.iss and Inno Setup path." >> "$GITHUB_STEP_SUMMARY"
+
   # Create GitHub Release
   create-release:
     name: Create Release

@@ -251,6 +251,27 @@ jobs:
           resource-group: ${{ env.AZURE_RESOURCE_GROUP }}
           cluster-name: ${{ env.AZURE_CLUSTER_NAME }}
 
+      - name: Validate Required CLI Tools
+        run: |
+          set -e
+
+          echo "Validating required CLI tools (az, kubectl, jq)..."
+
+          missing=0
+          for cmd in az kubectl jq; do
+            if ! command -v "$cmd" >/dev/null 2>&1; then
+              echo "Error: required CLI tool '$cmd' is not installed or not in PATH"
+              missing=1
+            else
+              echo "Found $cmd: $(command -v "$cmd")"
+            fi
+          done
+
+          if [ "$missing" -ne 0 ]; then
+            echo "One or more required CLI tools are missing. Failing before deployment."
+            exit 1
+          fi
+
       - name: Setup ACR Integration
         run: |
           # Get Login Server (ACR assumed to exist or created in build steps)
@@ -259,7 +280,6 @@ jobs:
       - name: Ensure Namespace Exists
         run: |
           kubectl create namespace cloudtolocalllm --dry-run=client -o yaml | kubectl apply -f -
-
       - name: Setup Azure Key Vault and Secrets Store CSI Driver
         run: |
           # Install the Secrets Store CSI Driver and Azure Provider
@@ -302,6 +322,109 @@ jobs:
               tenantId: ${{ secrets.AZURE_TENANT_ID }}
           EOF
 
+      - name: Validate Required Secrets
+        env:
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          AUTH0_CLIENT_SECRET: ${{ secrets.AUTH0_CLIENT_SECRET }}
+          STRIPE_TEST_SECRET_KEY: ${{ secrets.STRIPE_TEST_SECRET_KEY }}
+          STRIPE_LIVE_SECRET_KEY: ${{ secrets.STRIPE_LIVE_SECRET_KEY }}
+          SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
+          CLOUDFLARE_DNS_TOKEN: ${{ secrets.CLOUDFLARE_DNS_TOKEN }}
+          CLOUDFLARE_TUNNEL_TOKEN: ${{ secrets.CLOUDFLARE_TUNNEL_TOKEN }}
+          SUPABASE_JWT_SECRET: ${{ secrets.SUPABASE_JWT_SECRET }}
+        run: |
+          missing=0
+          check_secret() {
+            name="$1"
+            value="$2"
+            if [ -z "$value" ]; then
+              echo "Error: required secret $name is empty or not set"
+              missing=1
+            fi
+          }
+
+          check_secret POSTGRES_PASSWORD "$POSTGRES_PASSWORD"
+          check_secret JWT_SECRET "$JWT_SECRET"
+          check_secret AUTH0_CLIENT_SECRET "$AUTH0_CLIENT_SECRET"
+          check_secret STRIPE_TEST_SECRET_KEY "$STRIPE_TEST_SECRET_KEY"
+          check_secret STRIPE_LIVE_SECRET_KEY "$STRIPE_LIVE_SECRET_KEY"
+          check_secret SENTRY_DSN "$SENTRY_DSN"
+          check_secret CLOUDFLARE_DNS_TOKEN "$CLOUDFLARE_DNS_TOKEN"
+          check_secret CLOUDFLARE_TUNNEL_TOKEN "$CLOUDFLARE_TUNNEL_TOKEN"
+          check_secret SUPABASE_JWT_SECRET "$SUPABASE_JWT_SECRET"
+
+          if [ "$missing" -ne 0 ]; then
+            echo "One or more required secrets are missing. Failing before deployment."
+            exit 1
+          fi
+
+      - name: Create/Update Secrets
+        env:
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          AUTH0_CLIENT_SECRET: ${{ secrets.AUTH0_CLIENT_SECRET }}
+          STRIPE_TEST_SECRET_KEY: ${{ secrets.STRIPE_TEST_SECRET_KEY }}
+          STRIPE_TEST_PUBLISHABLE_KEY: ${{ secrets.STRIPE_TEST_PUBLISHABLE_KEY }}
+          STRIPE_TEST_WEBHOOK_SECRET: ${{ secrets.STRIPE_TEST_WEBHOOK_SECRET }}
+          STRIPE_LIVE_SECRET_KEY: ${{ secrets.STRIPE_LIVE_SECRET_KEY }}
+          STRIPE_LIVE_PUBLISHABLE_KEY: ${{ secrets.STRIPE_LIVE_PUBLISHABLE_KEY }}
+          STRIPE_LIVE_WEBHOOK_SECRET: ${{ secrets.STRIPE_LIVE_WEBHOOK_SECRET }}
+          SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
+          CLOUDFLARE_DNS_TOKEN: ${{ secrets.CLOUDFLARE_DNS_TOKEN }}
+          CLOUDFLARE_TUNNEL_TOKEN: ${{ secrets.CLOUDFLARE_TUNNEL_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          SUPABASE_JWT_SECRET: ${{ secrets.SUPABASE_JWT_SECRET }}
+        run: |
+          # --- Create Kubernetes Secrets ---
+
+          # Get ACR Admin Credentials
+          ACR_ADMIN_USER=$(az acr credential show --name ${{ env.ACR_NAME }} --query username --output tsv)
+          ACR_ADMIN_PASS=$(az acr credential show --name ${{ env.ACR_NAME }} --query passwords[0].value --output tsv)
+
+          # Docker Registry Secret for ACR
+          kubectl create secret docker-registry regcred \
+            --docker-server=${{ env.DOCKER_REGISTRY }} \
+            --docker-username=$ACR_ADMIN_USER \
+            --docker-password=$ACR_ADMIN_PASS \
+            --docker-email=github-actions@cloudtolocalllm.online \
+            -n cloudtolocalllm --dry-run=client -o yaml | kubectl apply -f -
+
+          # App Secrets
+          kubectl create secret generic cloudtolocalllm-secrets \
+            --namespace cloudtolocalllm \
+            --from-literal=postgres-user=cloud_admin \
+            --from-literal=postgres-password="$POSTGRES_PASSWORD" \
+            --from-literal=jwt-secret="$JWT_SECRET" \
+            --from-literal=auth0-domain='dev-v2f2p008x3dr74ww.us.auth0.com' \
+            --from-literal=auth0-audience='https://api.cloudtolocalllm.online' \
+            --from-literal=auth0-client-id='FuXPnevXpp311CdYHGsbNZe9t3D8Ts7A' \
+            --from-literal=auth0-client-secret="$AUTH0_CLIENT_SECRET" \
+            --from-literal=stripe-test-secret-key="$STRIPE_TEST_SECRET_KEY" \
+            --from-literal=stripe-test-publishable-key="$STRIPE_TEST_PUBLISHABLE_KEY" \
+            --from-literal=stripe-test-webhook-secret="$STRIPE_TEST_WEBHOOK_SECRET" \
+            --from-literal=stripe-live-secret-key="$STRIPE_LIVE_SECRET_KEY" \
+            --from-literal=stripe-live-publishable-key="$STRIPE_LIVE_PUBLISHABLE_KEY" \
+            --from-literal=stripe-live-webhook-secret="$STRIPE_LIVE_WEBHOOK_SECRET" \
+            --from-literal=sentry-dsn="$SENTRY_DSN" \
+            --from-literal=supabase-jwt-secret="$SUPABASE_JWT_SECRET" \
+            --from-literal=supabase-url="https://cvaqhvpbnemweqrojasm.supabase.co" \
+            --dry-run=client -o yaml | kubectl apply -f -
+
+          # Cloudflare Tunnel Secret
+          kubectl create secret generic tunnel-credentials \
+            --namespace cloudtolocalllm \
+            --from-literal=token="$CLOUDFLARE_TUNNEL_TOKEN" \
+            --dry-run=client -o yaml | kubectl apply -f -
+
+          # Streaming Proxy Secret
+          kubectl create secret generic streaming-proxy-secrets \
+            --namespace cloudtolocalllm \
+            --from-literal=SENTRY_DSN="$SENTRY_DSN" \
+            --from-literal=SUPABASE_JWT_SECRET="$SUPABASE_JWT_SECRET" \
+            --from-literal=SUPABASE_URL="https://cvaqhvpbnemweqrojasm.supabase.co" \
+            --dry-run=client -o yaml | kubectl apply -f -
+
       - name: Deploy Manifests
         run: |
           # Replace image registry in manifests
@@ -309,6 +432,17 @@ jobs:
           sed -i "s|cloudtolocalllm/web:latest|${{ env.DOCKER_REGISTRY }}/web:${{ github.sha }}|g" k8s/web-deployment.yaml
           sed -i "s|cloudtolocalllm/api-backend:latest|${{ env.DOCKER_REGISTRY }}/api-backend:${{ github.sha }}|g" k8s/api-backend-deployment.yaml
           sed -i "s|cloudtolocalllm/streaming-proxy:latest|${{ env.DOCKER_REGISTRY }}/streaming-proxy:${{ github.sha }}|g" k8s/streaming-proxy-deployment.yaml
+
+          # Validate manifests with server-side dry-run before applying
+          echo "Validating Kubernetes manifests with server-side dry-run..."
+          kubectl apply --dry-run=server -f k8s/rbac.yaml
+          kubectl apply --dry-run=server -f k8s/configmap.yaml
+          kubectl apply --dry-run=server -f k8s/streaming-proxy-configmap.yaml
+          kubectl apply --dry-run=server -f k8s/postgres-statefulset.yaml
+          kubectl apply --dry-run=server -f k8s/cloudflared.yaml
+          kubectl apply --dry-run=server -f k8s/web-deployment.yaml
+          kubectl apply --dry-run=server -f k8s/api-backend-deployment.yaml
+          kubectl apply --dry-run=server -f k8s/streaming-proxy-deployment.yaml
 
           # Apply RBAC and ConfigMaps first
           kubectl apply -f k8s/rbac.yaml
@@ -342,21 +476,31 @@ jobs:
 
       - name: Verify Cloudflare Tunnel
         run: |
-          echo "Waiting for Cloudflare Tunnel to be ready..."
+          set -e
+
+          echo "Waiting for Cloudflare Tunnel pod to be ready..."
           kubectl wait --for=condition=ready pod -l app=cloudflared -n cloudtolocalllm --timeout=300s
 
-          echo "Checking Tunnel Logs..."
-          # Retry checking logs for connection success message (increased to 24 attempts = 2 minutes)
+          echo "Checking Tunnel Logs for successful registration..."
+          start_ts=$(date +%s)
+          # Retry checking logs for connection success message (24 attempts = ~2 minutes)
           for i in {1..24}; do
             if kubectl logs -l app=cloudflared -n cloudtolocalllm | grep -q "Registered tunnel connection"; then
-              echo "Tunnel connection verified!"
+              elapsed=$(( $(date +%s) - start_ts ))
+              echo "Tunnel connection verified after ${elapsed}s."
               exit 0
             fi
-            echo "Attempt $i: Tunnel not yet registered, waiting 5s..."
+            echo "Attempt $i/24: Tunnel not yet registered, waiting 5s..."
             sleep 5
           done
-          echo "Tunnel verification failed. Dumping logs:"
-          kubectl logs -l app=cloudflared -n cloudtolocalllm
+
+          echo "Tunnel verification failed after 24 attempts (~2 minutes). Collecting diagnostics..."
+          echo "--- cloudflared pods ---"
+          kubectl get pods -l app=cloudflared -n cloudtolocalllm -o wide || true
+          echo "--- recent cloudflared logs ---"
+          kubectl logs -l app=cloudflared -n cloudtolocalllm --tail=200 || true
+          echo "--- describe cloudflared pods ---"
+          kubectl describe pod -l app=cloudflared -n cloudtolocalllm || true
           exit 1
 
       - name: Update Cloudflare DNS
@@ -423,20 +567,41 @@ jobs:
 
       - name: Check Health Endpoint
         run: |
+          set -e
+
           echo "Waiting for DNS propagation and service health..."
+          start_ts=$(date +%s)
+
           # Retry loop for 2 minutes
           for i in {1..24}; do
-            if curl -s -f https://app.cloudtolocalllm.online/health; then
-              echo "Health check passed!"
+            http_status=$(curl -s -o /dev/null -w "%{http_code}" https://app.cloudtolocalllm.online/health || echo "000")
+            if [ "$http_status" = "200" ]; then
+              elapsed=$(( $(date +%s) - start_ts ))
+              echo "Health check passed with HTTP 200 after ${elapsed}s!"
               exit 0
             fi
-            echo "Attempt $i: Health check failed, waiting 5s..."
+
+            echo "Attempt $i/24: Health check returned HTTP $http_status, waiting 5s..."
             sleep 5
           done
-          echo "Health check failed after 2 minutes. Dumping api-backend logs:"
-          kubectl get pods -n cloudtolocalllm
-          kubectl logs postgres-0 -n cloudtolocalllm --tail=50
-          kubectl describe pod postgres-0 -n cloudtolocalllm
-          kubectl logs -l app=api-backend -n cloudtolocalllm --tail=100
-          kubectl describe pod -l app=api-backend -n cloudtolocalllm
+
+          echo "Health check failed after 24 attempts (~2 minutes). Collecting diagnostics..."
+          kubectl get pods -n cloudtolocalllm || true
+          echo "--- postgres logs (tail 50) ---"
+          kubectl logs postgres-0 -n cloudtolocalllm --tail=50 || true
+          kubectl describe pod postgres-0 -n cloudtolocalllm || true
+          echo "--- api-backend logs (tail 100) ---"
+          kubectl logs -l app=api-backend -n cloudtolocalllm --tail=100 || true
+          kubectl describe pod -l app=api-backend -n cloudtolocalllm || true
           exit 1
+
+      - name: Deployment Summary
+        if: success()
+        run: |
+          echo "Deployment to Azure AKS completed successfully."
+          echo "Cluster: ${{ env.AZURE_CLUSTER_NAME }} (resource group: ${{ env.AZURE_RESOURCE_GROUP }})"
+          echo "Namespace: cloudtolocalllm"
+          echo "Images pulled from registry: ${{ env.DOCKER_REGISTRY }}"
+          echo "Public endpoints:"
+          echo "  - App:  https://app.cloudtolocalllm.online/"
+          echo "  - API:  https://api.cloudtolocalllm.online/"
