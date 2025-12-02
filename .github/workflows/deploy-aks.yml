@@ -326,9 +326,7 @@ jobs:
         env:
           POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
           JWT_SECRET: ${{ secrets.JWT_SECRET }}
-          AUTH0_CLIENT_SECRET: ${{ secrets.AUTH0_CLIENT_SECRET }}
           STRIPE_TEST_SECRET_KEY: ${{ secrets.STRIPE_TEST_SECRET_KEY }}
-          STRIPE_LIVE_SECRET_KEY: ${{ secrets.STRIPE_LIVE_SECRET_KEY }}
           SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
           CLOUDFLARE_DNS_TOKEN: ${{ secrets.CLOUDFLARE_DNS_TOKEN }}
           CLOUDFLARE_TUNNEL_TOKEN: ${{ secrets.CLOUDFLARE_TUNNEL_TOKEN }}
@@ -346,9 +344,7 @@ jobs:
 
           check_secret POSTGRES_PASSWORD "$POSTGRES_PASSWORD"
           check_secret JWT_SECRET "$JWT_SECRET"
-          check_secret AUTH0_CLIENT_SECRET "$AUTH0_CLIENT_SECRET"
           check_secret STRIPE_TEST_SECRET_KEY "$STRIPE_TEST_SECRET_KEY"
-          check_secret STRIPE_LIVE_SECRET_KEY "$STRIPE_LIVE_SECRET_KEY"
           check_secret SENTRY_DSN "$SENTRY_DSN"
           check_secret CLOUDFLARE_DNS_TOKEN "$CLOUDFLARE_DNS_TOKEN"
           check_secret CLOUDFLARE_TUNNEL_TOKEN "$CLOUDFLARE_TUNNEL_TOKEN"
