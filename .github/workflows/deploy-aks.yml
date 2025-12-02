@@ -447,8 +447,6 @@ jobs:
           kubectl apply -f k8s/streaming-proxy-deployment.yaml
 
           # Force roll out restart to pick up latest images and secrets
-          # Force delete postgres pod to ensure it picks up new spec (fix for stuck CrashLoopBackOff)
-          kubectl delete pod postgres-0 -n cloudtolocalllm --force --grace-period=0 || true
           kubectl rollout restart statefulset/postgres -n cloudtolocalllm
           kubectl rollout restart deployment/web -n cloudtolocalllm
           kubectl rollout restart deployment/api-backend -n cloudtolocalllm
