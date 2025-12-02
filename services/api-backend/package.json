@@ -41,7 +41,7 @@
     "dotenv": "^16.3.1",
     "express": "^5.1.0",
     "express-oauth2-jwt-bearer": "^1.7.1",
-    "express-rate-limit": "^7.1.5",
+    "express-rate-limit": "^8.2.1",
     "googleapis": "^166.0.0",
     "helmet": "^8.1.0",
     "ioredis": "^5.4.1",
