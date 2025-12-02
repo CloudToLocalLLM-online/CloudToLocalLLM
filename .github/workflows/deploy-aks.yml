@@ -262,50 +262,45 @@ jobs:
 
       - name: Setup Azure Key Vault and Secrets Store CSI Driver
         run: |
-          # Install the Secrets Store CSI Driver
+          # Install the Secrets Store CSI Driver and Azure Provider
           helm repo add secrets-store-csi-driver https://kubernetes-sigs.github.io/secrets-store-csi-driver/charts
-          helm install csi-secrets-store secrets-store-csi-driver/secrets-store-csi-driver --namespace kube-system
-
-          # Install the Azure Key Vault Provider
-          helm repo add azure-keyvault-provider https://raw.githubusercontent.com/Azure/secrets-store-csi-driver-provider-azure/main/charts
-          helm install akv-provider azure-keyvault-provider/csi-driver-provider-azure --namespace kube-system
+          helm repo add csi-secrets-store-provider-azure https://azure.github.io/secrets-store-csi-driver-provider-azure/charts
+          helm upgrade --install csi-secrets-store secrets-store-csi-driver/secrets-store-csi-driver --namespace kube-system --set "providers.azure.enabled=true"
 
       - name: Create SecretProviderClass
-        uses: azure/k8s-create-secret@v1
-        with:
-          namespace: cloudtolocalllm
-          secret-name: cloudtolocalllm-secrets-from-akv
-          secret-type: Opaque
-          secret-provider-class: |
-            apiVersion: secrets-store.csi.x-k8s.io/v1
-            kind: SecretProviderClass
-            metadata:
-              name: azure-kvname-user-msi
-            spec:
-              provider: azure
-              parameters:
-                usePodIdentity: "false"
-                useVMManagedIdentity: "true"
-                userAssignedIdentityID: "" # Set this to the client ID of the user-assigned managed identity if you use one.
-                keyvaultName: ${{ secrets.AZURE_KEY_VAULT_NAME }}
-                objects:  |
-                  array:
-                    - |
-                      objectName: POSTGRES-PASSWORD
-                      objectType: secret
-                    - |
-                      objectName: JWT-SECRET
-                      objectType: secret
-                    - |
-                      objectName: AUTH0-CLIENT-SECRET
-                      objectType: secret
-                    - |
-                      objectName: STRIPE-TEST-SECRET-KEY
-                      objectType: secret
-                    - |
-                      objectName: CLOUDFLARE-TUNNEL-TOKEN
-                      objectType: secret
-                tenantId: ${{ secrets.AZURE_TENANT_ID }}
+        run: |
+          cat <<EOF | kubectl apply -f -
+          apiVersion: secrets-store.csi.x-k8s.io/v1
+          kind: SecretProviderClass
+          metadata:
+            name: azure-kvname-user-msi
+            namespace: cloudtolocalllm
+          spec:
+            provider: azure
+            parameters:
+              usePodIdentity: "false"
+              useVMManagedIdentity: "true"
+              userAssignedIdentityID: "" # Set this to the client ID of the user-assigned managed identity if you use one.
+              keyvaultName: ${{ secrets.AZURE_KEY_VAULT_NAME }}
+              objects:  |
+                array:
+                  - |
+                    objectName: POSTGRES-PASSWORD
+                    objectType: secret
+                  - |
+                    objectName: JWT-SECRET
+                    objectType: secret
+                  - |
+                    objectName: AUTH0-CLIENT-SECRET
+                    objectType: secret
+                  - |
+                    objectName: STRIPE-TEST-SECRET-KEY
+                    objectType: secret
+                  - |
+                    objectName: CLOUDFLARE-TUNNEL-TOKEN
+                    objectType: secret
+              tenantId: ${{ secrets.AZURE_TENANT_ID }}
+          EOF
 
       - name: Deploy Manifests
         run: |

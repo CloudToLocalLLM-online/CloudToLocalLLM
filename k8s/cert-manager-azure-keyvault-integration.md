@@ -46,7 +46,6 @@ Sync certificates from Kubernetes secrets to Azure Key Vault automatically.
 
 ```bash
 # Install Azure Key Vault Provider for Secrets Store CSI Driver
-kubectl apply -f https://raw.githubusercontent.com/Azure/secrets-store-csi-driver-provider-azure/master/deployment/secrets-store-csi-driver.yaml
 
 # Or use Helm
 helm repo add secrets-store-csi-driver https://kubernetes-sigs.github.io/secrets-store-csi-driver/charts
@@ -236,7 +235,8 @@ helm repo add secrets-store-csi-driver https://kubernetes-sigs.github.io/secrets
 helm install csi-secrets-store secrets-store-csi-driver/secrets-store-csi-driver --namespace kube-system
 
 # Install Azure provider
-kubectl apply -f https://raw.githubusercontent.com/Azure/secrets-store-csi-driver-provider-azure/master/deployment/secrets-store-csi-driver.yaml
+helm repo add csi-secrets-store-provider-azure https://raw.githubusercontent.com/Azure/secrets-store-csi-driver-provider-azure/main/charts
+helm install csi-secrets-store-provider-azure/csi-secrets-store-provider-azure --namespace kube-system
 ```
 
 4. **Configure SecretProviderClass** (see Option 1 above)
