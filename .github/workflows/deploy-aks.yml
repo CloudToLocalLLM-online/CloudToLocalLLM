@@ -311,9 +311,6 @@ jobs:
                     objectName: JWT-SECRET
                     objectType: secret
                   - |
-                    objectName: AUTH0-CLIENT-SECRET
-                    objectType: secret
-                  - |
                     objectName: STRIPE-TEST-SECRET-KEY
                     objectType: secret
                   - |
@@ -359,7 +356,6 @@ jobs:
         env:
           POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
           JWT_SECRET: ${{ secrets.JWT_SECRET }}
-          AUTH0_CLIENT_SECRET: ${{ secrets.AUTH0_CLIENT_SECRET }}
           STRIPE_TEST_SECRET_KEY: ${{ secrets.STRIPE_TEST_SECRET_KEY }}
           STRIPE_TEST_PUBLISHABLE_KEY: ${{ secrets.STRIPE_TEST_PUBLISHABLE_KEY }}
           STRIPE_TEST_WEBHOOK_SECRET: ${{ secrets.STRIPE_TEST_WEBHOOK_SECRET }}
@@ -392,10 +388,6 @@ jobs:
             --from-literal=postgres-user=cloud_admin \
             --from-literal=postgres-password="$POSTGRES_PASSWORD" \
             --from-literal=jwt-secret="$JWT_SECRET" \
-            --from-literal=auth0-domain='dev-v2f2p008x3dr74ww.us.auth0.com' \
-            --from-literal=auth0-audience='https://api.cloudtolocalllm.online' \
-            --from-literal=auth0-client-id='FuXPnevXpp311CdYHGsbNZe9t3D8Ts7A' \
-            --from-literal=auth0-client-secret="$AUTH0_CLIENT_SECRET" \
             --from-literal=stripe-test-secret-key="$STRIPE_TEST_SECRET_KEY" \
             --from-literal=stripe-test-publishable-key="$STRIPE_TEST_PUBLISHABLE_KEY" \
             --from-literal=stripe-test-webhook-secret="$STRIPE_TEST_WEBHOOK_SECRET" \

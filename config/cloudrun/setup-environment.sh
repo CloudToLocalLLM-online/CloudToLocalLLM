@@ -50,9 +50,6 @@ load_env_config() {
     required_vars=(
         "GOOGLE_CLOUD_PROJECT"
         "GOOGLE_CLOUD_REGION"
-        "AUTH0_DOMAIN"
-        "AUTH0_CLIENT_ID"
-        "AUTH0_CLIENT_SECRET"
         "JWT_SECRET"
     )
     
@@ -70,8 +67,6 @@ load_env_config() {
 create_secrets() {
     log_info "Creating secrets in Google Secret Manager..."
     
-    # Auth0 secrets
-    echo -n "$AUTH0_CLIENT_SECRET" | gcloud secrets create auth0-client-secret --data-file=- --replication-policy=automatic || log_warning "Secret auth0-client-secret already exists"
     echo -n "$JWT_SECRET" | gcloud secrets create jwt-secret --data-file=- --replication-policy=automatic || log_warning "Secret jwt-secret already exists"
     
     # Database secrets (if using Cloud SQL)
@@ -94,7 +89,7 @@ grant_secret_access() {
     local service_account="cloudtolocalllm-runner@$GOOGLE_CLOUD_PROJECT.iam.gserviceaccount.com"
     
     # Grant access to all secrets
-    local secrets=("auth0-client-secret" "jwt-secret")
+    local secrets=("jwt-secret")
     
     if [ -n "${DB_PASSWORD:-}" ]; then
         secrets+=("db-password")
@@ -181,8 +176,8 @@ update_cloud_run_services() {
         gcloud run services update cloudtolocalllm-api \
             --platform=managed \
             --region="$GOOGLE_CLOUD_REGION" \
-            --set-env-vars="NODE_ENV=production,LOG_LEVEL=info,AUTH0_DOMAIN=$AUTH0_DOMAIN,AUTH0_CLIENT_ID=$AUTH0_CLIENT_ID,DB_TYPE=${DB_TYPE:-sqlite},CORS_ORIGINS=$web_url" \
-            --set-secrets="AUTH0_CLIENT_SECRET=auth0-client-secret:latest,JWT_SECRET=jwt-secret:latest" \
+            --set-env-vars="NODE_ENV=production,LOG_LEVEL=info,DB_TYPE=${DB_TYPE:-sqlite},CORS_ORIGINS=$web_url" \
+            --set-secrets="JWT_SECRET=jwt-secret:latest" \
             --quiet
     fi
     
