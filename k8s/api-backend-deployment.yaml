@@ -44,8 +44,8 @@ spec:
         - name: regcred
       securityContext:
         runAsNonRoot: true
-        runAsUser: 1000
-        fsGroup: 1000
+        runAsUser: 1001
+        fsGroup: 1001
       initContainers:
         - name: wait-for-postgres
           image: busybox:1.35

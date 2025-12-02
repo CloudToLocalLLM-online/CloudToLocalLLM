@@ -3,12 +3,24 @@ import path from 'path';
 import { promises as fs } from 'fs';
 
 const router = express.Router();
-const logDir = process.env.CLIENT_LOG_DIR || '/tmp/logs';
+let logDir = process.env.CLIENT_LOG_DIR || '/tmp/logs';
 const logFileName = process.env.CLIENT_LOG_FILE || 'client-web.log';
-const logFilePath = path.join(logDir, logFileName);
+let logFilePath = path.join(logDir, logFileName);
 
 async function ensureLogDirectory() {
-  await fs.mkdir(logDir, { recursive: true });
+  try {
+    await fs.mkdir(logDir, { recursive: true });
+    await fs.access(logDir, fs.constants.W_OK);
+  } catch (error) {
+    if (logDir !== '/tmp/logs') {
+      console.warn(`[ClientLogs] Failed to access configured log directory ${logDir}, falling back to /tmp/logs`, error.message);
+      logDir = '/tmp/logs';
+      logFilePath = path.join(logDir, logFileName);
+      await fs.mkdir(logDir, { recursive: true });
+    } else {
+      throw error;
+    }
+  }
 }
 
 router.post('/', async(req, res) => {

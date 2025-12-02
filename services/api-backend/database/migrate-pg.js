@@ -221,7 +221,19 @@ export class DatabaseMigratorPG {
       }
 
       const checksum = this.calculateChecksum(schemaSQL);
-      await client.query(schemaSQL);
+
+      try {
+        await client.query(schemaSQL);
+      } catch (sqlError) {
+        // Ignore specific extension errors that might cause race conditions
+        if (sqlError.code === '23505' && sqlError.constraint === 'pg_extension_name_index') {
+          this.logger.warn('Ignored extension duplicate error during initial schema application', { error: sqlError.message });
+        } else if (sqlError.message && sqlError.message.includes('already exists')) {
+          this.logger.warn('Ignored "already exists" error during initial schema application', { error: sqlError.message });
+        } else {
+          throw sqlError;
+        }
+      }
 
       const execMs = Date.now() - start;
 
