@@ -48,14 +48,14 @@ spec:
         fsGroup: 1001
       initContainers:
         - name: wait-for-postgres
-          image: busybox:1.35
+          image: postgres:15
           command:
             - sh
             - -c
             - |
               echo "Waiting for PostgreSQL to be ready..."
               for i in $(seq 1 30); do
-                if nc -z postgres.cloudtolocalllm.svc.cluster.local 5432; then
+                if pg_isready -h postgres.cloudtolocalllm.svc.cluster.local -p 5432; then
                   echo "PostgreSQL is ready!"
                   exit 0
                 fi
