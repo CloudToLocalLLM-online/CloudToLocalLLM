@@ -31,29 +31,10 @@ echo "Commits to analyze:"
 echo "$COMMITS"
 echo ""
 
-# Prepare prompt for Gemini
-PROMPT="You are a semantic versioning expert. Analyze these git commits and determine the appropriate version bump.
+# Prepare prompt for Gemini (escape special characters for JSON)
+COMMITS_ESCAPED=$(echo "$COMMITS" | sed 's/"/\\"/g' | tr '\n' ' ')
 
-Current version: $CURRENT_VERSION
-
-Commits:
-$COMMITS
-
-Rules:
-- BREAKING CHANGE or breaking: → MAJOR bump (x.0.0)
-- feat: or feature: → MINOR bump (0.x.0)
-- fix: or bugfix: → PATCH bump (0.0.x)
-- chore:, docs:, style:, refactor:, test: → PATCH bump (0.0.x)
-- If multiple types, use the highest priority (MAJOR > MINOR > PATCH)
-
-Respond with ONLY a JSON object:
-{
-  \"bump_type\": \"major|minor|patch\",
-  \"new_version\": \"x.y.z\",
-  \"reasoning\": \"brief explanation\"
-}
-
-Do not include any other text, markdown, or formatting. Only the JSON object."
+PROMPT="You are a semantic versioning expert. Analyze these git commits and determine the appropriate version bump. Current version: $CURRENT_VERSION. Commits: $COMMITS_ESCAPED. Rules: BREAKING CHANGE or breaking: means MAJOR bump (x.0.0), feat: or feature: means MINOR bump (0.x.0), fix: or bugfix: means PATCH bump (0.0.x), chore:, docs:, style:, refactor:, test: means PATCH bump (0.0.x). If multiple types, use the highest priority (MAJOR > MINOR > PATCH). Respond with ONLY a JSON object with this exact format: {\"bump_type\": \"major or minor or patch\", \"new_version\": \"x.y.z\", \"reasoning\": \"brief explanation\"}. Do not include any other text, markdown, code blocks, or formatting. Only the raw JSON object."
 
 # Call Gemini
 echo "Calling Gemini AI to analyze commits..."
