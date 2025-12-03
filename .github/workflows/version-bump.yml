@@ -24,8 +24,17 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 50  # Last 50 commits should be enough for analysis
+          fetch-depth: 0  # Need full history for git describe
+          fetch-tags: true  # Explicitly fetch tags
           token: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Configure Git
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          # Ensure we're on main branch
+          git checkout main
+          git pull --rebase origin main
       
       - name: Setup Gemini CLI
         run: |
@@ -55,31 +64,60 @@ jobs:
       
       - name: Commit Version Changes
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          
           NEW_VERSION="${{ steps.analyze.outputs.new_version }}"
           
-          git add -A
-          git commit -m "chore: bump version to $NEW_VERSION [skip ci]" || echo "No changes to commit"
-          git push origin main
+          # Check if there are changes to commit
+          if git diff --quiet && git diff --cached --quiet; then
+            echo "No version changes to commit"
+          else
+            git add -A
+            git commit -m "chore: bump version to $NEW_VERSION [skip ci]"
+            
+            # Push with retry logic
+            for i in {1..3}; do
+              if git push origin main; then
+                echo "✅ Pushed version changes"
+                break
+              else
+                echo "⚠️  Push failed, retrying in 5s... (attempt $i/3)"
+                sleep 5
+                git pull --rebase origin main
+              fi
+            done
+          fi
       
       - name: Create Platform Tags
         env:
           VERSION: ${{ steps.analyze.outputs.new_version }}
         run: |
+          # Get latest commit SHA after version bump
+          git pull --rebase origin main || true
           SHORT_SHA=$(git rev-parse --short HEAD)
           
           # Create platform-specific tags
-          git tag "${VERSION}-cloud-${SHORT_SHA}"
-          git tag "${VERSION}-desktop-${SHORT_SHA}"
-          git tag "${VERSION}-mobile-${SHORT_SHA}"
+          TAG_CLOUD="${VERSION}-cloud-${SHORT_SHA}"
+          TAG_DESKTOP="${VERSION}-desktop-${SHORT_SHA}"
+          TAG_MOBILE="${VERSION}-mobile-${SHORT_SHA}"
           
-          # Push all tags
-          git push origin --tags
+          # Only create tags if they don't exist
+          git tag "$TAG_CLOUD" 2>/dev/null || echo "Tag $TAG_CLOUD already exists"
+          git tag "$TAG_DESKTOP" 2>/dev/null || echo "Tag $TAG_DESKTOP already exists"
+          git tag "$TAG_MOBILE" 2>/dev/null || echo "Tag $TAG_MOBILE already exists"
           
-          echo "✅ Created tags:"
-          echo "  - ${VERSION}-cloud-${SHORT_SHA}"
-          echo "  - ${VERSION}-desktop-${SHORT_SHA}"
-          echo "  - ${VERSION}-mobile-${SHORT_SHA}"
+          # Push tags with retry logic
+          for i in {1..3}; do
+            if git push origin --tags; then
+              echo "✅ Tags pushed successfully"
+              break
+            else
+              echo "⚠️  Tag push failed, retrying... (attempt $i/3)"
+              sleep 5
+            fi
+          done
+          
+          echo ""
+          echo "✅ Platform tags:"
+          echo "  - ${TAG_CLOUD}"
+          echo "  - ${TAG_DESKTOP}"
+          echo "  - ${TAG_MOBILE}"
 
