@@ -62,18 +62,33 @@ if [ -z "$GEMINI_API_KEY" ]; then
     NEW_VERSION="${MAJOR}.${MINOR}.${PATCH}"
     BUMP_TYPE="patch"
 else
-    RESPONSE=$(gemini-cli "$PROMPT" 2>/dev/null || echo '{"bump_type":"patch","new_version":"'$CURRENT_VERSION'","reasoning":"Gemini call failed, defaulting to patch"}')
+    # Call Gemini and capture both stdout and stderr
+    RESPONSE=$(gemini-cli "$PROMPT" 2>&1)
+    EXIT_CODE=$?
     
-    # Extract values from JSON response
-    BUMP_TYPE=$(echo "$RESPONSE" | jq -r '.bump_type // "patch"')
-    NEW_VERSION=$(echo "$RESPONSE" | jq -r '.new_version // "'$CURRENT_VERSION'"')
-    REASONING=$(echo "$RESPONSE" | jq -r '.reasoning // "Auto-generated"')
-    
-    echo ""
-    echo "Gemini Analysis:"
-    echo "  Bump type: $BUMP_TYPE"
-    echo "  New version: $NEW_VERSION"
-    echo "  Reasoning: $REASONING"
+    if [ $EXIT_CODE -ne 0 ]; then
+        echo "⚠️  Gemini CLI failed with exit code: $EXIT_CODE"
+        echo "Response: $RESPONSE"
+        echo "Falling back to patch bump"
+        
+        # Parse current version
+        IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT_VERSION"
+        PATCH=$((PATCH + 1))
+        NEW_VERSION="${MAJOR}.${MINOR}.${PATCH}"
+        BUMP_TYPE="patch"
+        REASONING="Gemini call failed, defaulting to patch"
+    else
+        # Extract values from JSON response
+        BUMP_TYPE=$(echo "$RESPONSE" | jq -r '.bump_type // "patch"')
+        NEW_VERSION=$(echo "$RESPONSE" | jq -r '.new_version // "'$CURRENT_VERSION'"')
+        REASONING=$(echo "$RESPONSE" | jq -r '.reasoning // "Auto-generated"')
+        
+        echo ""
+        echo "✅ Gemini Analysis:"
+        echo "  Bump type: $BUMP_TYPE"
+        echo "  New version: $NEW_VERSION"
+        echo "  Reasoning: $REASONING"
+    fi
 fi
 
 # Validate and fallback if Gemini gave invalid version
