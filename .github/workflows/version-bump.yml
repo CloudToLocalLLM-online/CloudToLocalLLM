@@ -30,8 +30,10 @@ jobs:
       - name: Setup Gemini CLI
         run: |
           # Make Gemini CLI wrapper executable and add to PATH
-          chmod +x scripts/gemini-cli.js
-          sudo ln -sf "$(pwd)/scripts/gemini-cli.js" /usr/local/bin/gemini-cli
+          chmod +x scripts/gemini-cli.cjs
+          sudo ln -sf "$(pwd)/scripts/gemini-cli.cjs" /usr/local/bin/gemini-cli
+          # Test Gemini CLI
+          gemini-cli "Respond with just OK" || echo "Gemini test failed, will fallback to patch bump"
           echo "✅ Gemini CLI installed"
       
       - name: Analyze Commits with Gemini
