@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 
 import '../config/app_config.dart';
 import '../services/app_initialization_service.dart';
+import '../services/auth_service.dart';
 import '../services/streaming_chat_service.dart';
 import 'home/home_layout.dart';
 import 'loading_screen.dart';
