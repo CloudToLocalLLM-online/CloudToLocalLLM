@@ -7,8 +7,8 @@ on:
   push:
     branches:
       - cloud  # Trigger on cloud branch pushes
-    tags:
-      - '*-cloud-*'  # Also support tag-based deployment
+  repository_dispatch:
+    types: [cloud-deploy]  # Trigger via repository_dispatch event
   workflow_dispatch:
     inputs:
       version_tag:
