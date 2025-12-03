@@ -360,7 +360,7 @@ jobs:
       id-token: write
     # Run after image builds (or if they were skipped due to unchanged paths)
     needs:
-      [changes, build_base, build_postgres, build_web, build_api, build_proxy]
+      [extract_version, changes, build_base, build_postgres, build_web, build_api, build_proxy]
     if: |
       !cancelled() &&
       (needs.build_base.result == 'success' || needs.build_base.result == 'skipped') &&
