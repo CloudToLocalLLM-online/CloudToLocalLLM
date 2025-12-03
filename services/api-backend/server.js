@@ -314,8 +314,7 @@ registerRoutes('/monitoring', monitoringRouter);
 // Conversation management routes (initialized after database is ready)
 // Will be set up in initializeTunnelSystem() after dbMigrator is initialized
 
-// Database health endpoint
-setDbMigrator(dbMigrator);
+// Database health endpoint (dbMigrator will be set after initialization)
 registerRoutes('/db/health', dbHealthHandler);
 
 // Authentication routes (token refresh, validation, logout)
@@ -736,6 +735,9 @@ async function initializeTunnelSystem() {
     if (!validation.allValid) {
       throw new Error('Database schema validation failed');
     }
+    
+    // Set dbMigrator for health endpoint now that it's initialized
+    setDbMigrator(dbMigrator);
 
     // Register database with health check service
     healthCheckService.registerDatabase(dbMigrator);
