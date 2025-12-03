@@ -709,25 +709,6 @@ jobs:
           sed -i "s|cloudtolocalllm/web:latest|${{ env.DOCKER_REGISTRY }}/web:${WEB_TAG}|g" k8s/web-deployment.yaml
           sed -i "s|cloudtolocalllm/api-backend:latest|${{ env.DOCKER_REGISTRY }}/api-backend:${API_TAG}|g" k8s/api-backend-deployment.yaml
           sed -i "s|cloudtolocalllm/streaming-proxy:latest|${{ env.DOCKER_REGISTRY }}/streaming-proxy:${PROXY_TAG}|g" k8s/streaming-proxy-deployment.yaml
-          
-          # Add deployment annotations to force pod recreation on each deploy
-          DEPLOY_TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
-          DEPLOY_SHA="${{ github.sha }}"
-          
-          # Add annotations to each deployment to force updates
-          # This ensures pods are recreated even if image tag hasn't changed
-          for deployment_file in k8s/web-deployment.yaml k8s/api-backend-deployment.yaml k8s/streaming-proxy-deployment.yaml; do
-            # Check if annotations section exists in spec.template.metadata
-            if grep -q "spec:" "$deployment_file" && grep -q "template:" "$deployment_file"; then
-              # Add or update annotations in pod template
-              sed -i "/^      labels:/a\\      annotations:\\n        deployment.kubernetes.io/revision: \"${DEPLOY_SHA}\"\\n        deployment.kubernetes.io/timestamp: \"${DEPLOY_TIMESTAMP}\"" "$deployment_file"
-            fi
-          done
-          
-          # For StatefulSet (postgres)
-          if grep -q "spec:" k8s/postgres-statefulset.yaml && grep -q "template:" k8s/postgres-statefulset.yaml; then
-            sed -i "/^      labels:/a\\      annotations:\\n        deployment.kubernetes.io/revision: \"${DEPLOY_SHA}\"\\n        deployment.kubernetes.io/timestamp: \"${DEPLOY_TIMESTAMP}\"" k8s/postgres-statefulset.yaml
-          fi
 
           # Validate manifests with server-side dry-run before applying
           echo "Validating Kubernetes manifests with server-side dry-run..."
@@ -752,6 +733,12 @@ jobs:
           
           kubectl apply -f k8s/postgres-statefulset.yaml
           
+          # Add annotation to force update
+          kubectl annotate statefulset postgres -n cloudtolocalllm \
+            deployment.kubernetes.io/revision="${{ github.sha }}" \
+            deployment.kubernetes.io/timestamp="$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            --overwrite
+          
           # Force delete postgres pod to ensure it picks up new spec (if it exists)
           kubectl delete pod postgres-0 -n cloudtolocalllm --force --grace-period=0 2>/dev/null || true
           kubectl rollout restart statefulset/postgres -n cloudtolocalllm
@@ -771,8 +758,13 @@ jobs:
           
           kubectl apply -f k8s/api-backend-deployment.yaml
           
-          # Force pod recreation - annotations will trigger rolling update
-          kubectl rollout status deployment/api-backend -n cloudtolocalllm --timeout=10s || true
+          # Add annotation to force update
+          kubectl annotate deployment api-backend -n cloudtolocalllm \
+            deployment.kubernetes.io/revision="${{ github.sha }}" \
+            deployment.kubernetes.io/timestamp="$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            --overwrite
+          
+          # Trigger rolling update
           kubectl rollout restart deployment/api-backend -n cloudtolocalllm
           
           echo "Waiting for API Backend to be ready..."
@@ -787,8 +779,13 @@ jobs:
           
           kubectl apply -f k8s/streaming-proxy-deployment.yaml
           
-          # Force pod recreation - annotations will trigger rolling update
-          kubectl rollout status deployment/streaming-proxy -n cloudtolocalllm --timeout=10s || true
+          # Add annotation to force update
+          kubectl annotate deployment streaming-proxy -n cloudtolocalllm \
+            deployment.kubernetes.io/revision="${{ github.sha }}" \
+            deployment.kubernetes.io/timestamp="$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            --overwrite
+          
+          # Trigger rolling update
           kubectl rollout restart deployment/streaming-proxy -n cloudtolocalllm
           
           echo "Waiting for Streaming Proxy to be ready..."
@@ -804,11 +801,19 @@ jobs:
           kubectl apply -f k8s/web-deployment.yaml
           kubectl apply -f k8s/cloudflared.yaml
           
-          # Force pod recreation - annotations will trigger rolling update
-          kubectl rollout status deployment/web -n cloudtolocalllm --timeout=10s || true
-          kubectl rollout restart deployment/web -n cloudtolocalllm
+          # Add annotations to force updates
+          kubectl annotate deployment web -n cloudtolocalllm \
+            deployment.kubernetes.io/revision="${{ github.sha }}" \
+            deployment.kubernetes.io/timestamp="$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            --overwrite
           
-          kubectl rollout status deployment/cloudflared -n cloudtolocalllm --timeout=10s || true
+          kubectl annotate deployment cloudflared -n cloudtolocalllm \
+            deployment.kubernetes.io/revision="${{ github.sha }}" \
+            deployment.kubernetes.io/timestamp="$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            --overwrite
+          
+          # Trigger rolling updates
+          kubectl rollout restart deployment/web -n cloudtolocalllm
           kubectl rollout restart deployment/cloudflared -n cloudtolocalllm
           
           echo "Waiting for Web to be ready..."
