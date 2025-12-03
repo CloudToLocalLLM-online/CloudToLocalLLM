@@ -5,12 +5,14 @@ permissions:
 
 on:
   push:
+    branches:
+      - cloud  # Trigger on cloud branch pushes
     tags:
-      - '*-cloud-*'  # Trigger on cloud platform tags (e.g., 4.5.0-cloud-abc123)
+      - '*-cloud-*'  # Also support tag-based deployment
   workflow_dispatch:
     inputs:
       version_tag:
-        description: 'Version tag to deploy (e.g., 4.5.0-cloud-abc123)'
+        description: 'Version tag to deploy (optional, uses version.json if not provided)'
         required: false
         type: string
 
@@ -26,38 +28,50 @@ env:
   DOCKER_REGISTRY: ""
 
 jobs:
-  # Extract version info from tag
+  # Extract version info from branch or tag
   extract_version:
     runs-on: ubuntu-latest
     outputs:
       app_version: ${{ steps.parse.outputs.app_version }}
       commit_sha: ${{ steps.parse.outputs.commit_sha }}
-      version_tag: ${{ steps.parse.outputs.version_tag }}
+      deploy_source: ${{ steps.parse.outputs.deploy_source }}
     steps:
-      - name: Parse Version Tag
+      - uses: actions/checkout@v4
+      
+      - name: Parse Version
         id: parse
         run: |
-          # Get tag name
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+          # Determine source: branch, tag, or manual
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ -n "${{ inputs.version_tag }}" ]; then
+            # Manual trigger with tag
             TAG_NAME="${{ inputs.version_tag }}"
-          else
+            APP_VERSION=$(echo "$TAG_NAME" | sed -E 's/([0-9]+\.[0-9]+\.[0-9]+)-.*/\1/')
+            COMMIT_SHA=$(echo "$TAG_NAME" | sed -E 's/.*-([a-f0-9]+)$/\1/')
+            SOURCE="manual-tag"
+          elif [[ "${{ github.ref }}" == refs/tags/* ]]; then
+            # Tag push
             TAG_NAME="${GITHUB_REF#refs/tags/}"
+            APP_VERSION=$(echo "$TAG_NAME" | sed -E 's/([0-9]+\.[0-9]+\.[0-9]+)-.*/\1/')
+            COMMIT_SHA=$(echo "$TAG_NAME" | sed -E 's/.*-([a-f0-9]+)$/\1/')
+            SOURCE="tag"
+          else
+            # Branch push (cloud branch)
+            APP_VERSION=$(jq -r '.version' assets/version.json)
+            COMMIT_SHA=$(git rev-parse --short HEAD)
+            SOURCE="cloud-branch"
           fi
-          
-          echo "Parsing tag: $TAG_NAME"
-          
-          # Parse tag format: 4.5.0-cloud-abc123
-          # Extract: version=4.5.0, platform=cloud, commit=abc123
-          APP_VERSION=$(echo "$TAG_NAME" | sed -E 's/([0-9]+\.[0-9]+\.[0-9]+)-.*/\1/')
-          COMMIT_SHA=$(echo "$TAG_NAME" | sed -E 's/.*-([a-f0-9]+)$/\1/')
           
           echo "app_version=$APP_VERSION" >> $GITHUB_OUTPUT
           echo "commit_sha=$COMMIT_SHA" >> $GITHUB_OUTPUT
-          echo "version_tag=$TAG_NAME" >> $GITHUB_OUTPUT
+          echo "deploy_source=$SOURCE" >> $GITHUB_OUTPUT
           
-          echo "✅ Version: $APP_VERSION"
-          echo "✅ Commit: $COMMIT_SHA"
-          echo "✅ Tag: $TAG_NAME"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "Cloud Deployment for v$APP_VERSION"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "Version: $APP_VERSION"
+          echo "Commit: $COMMIT_SHA"
+          echo "Source: $SOURCE"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
   # Job to detect changes in specific paths (compare against last cloud tag)
   changes:
