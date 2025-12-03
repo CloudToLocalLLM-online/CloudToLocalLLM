@@ -840,6 +840,7 @@ jobs:
           echo "   4. Web + Cloudflared"
 
       - name: Purge Cloudflare Cache
+        continue-on-error: true
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
         run: |
@@ -886,9 +887,16 @@ jobs:
             echo ""
             echo "✅ Users will now receive the latest deployed version"
           else
-            echo "❌ Cache purge failed"
+            echo "⚠️  Cache purge failed - deployment will continue"
             echo "Response: $RESPONSE"
-            exit 1
+            echo ""
+            echo "To fix this, update your Cloudflare API token permissions:"
+            echo "1. Go to https://dash.cloudflare.com/profile/api-tokens"
+            echo "2. Edit your API token"
+            echo "3. Add permission: Zone > Cache Purge > Purge"
+            echo "4. Update GitHub secret: gh secret set CLOUDFLARE_API_TOKEN"
+            echo ""
+            echo "For now, users may see cached content until it expires or they hard refresh (Ctrl+Shift+R)"
           fi
 
       - name: Verify Cloudflare Tunnel
