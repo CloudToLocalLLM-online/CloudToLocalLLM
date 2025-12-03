@@ -77,7 +77,9 @@ jobs:
       - name: Azure Login
         uses: azure/login@v2
         with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
       - name: Create Azure Resource Group if not exists
         run: az group create --name ${{ env.AZURE_RESOURCE_GROUP }} --location eastus --query "properties.provisioningState" --output tsv
       - name: Setup ACR
@@ -105,7 +107,9 @@ jobs:
       - name: Azure Login
         uses: azure/login@v2
         with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
       - name: Create Azure Resource Group if not exists
         run: az group create --name ${{ env.AZURE_RESOURCE_GROUP }} --location eastus --query "properties.provisioningState" --output tsv
       - name: Get ACR Login Server
@@ -131,7 +135,9 @@ jobs:
       - name: Azure Login
         uses: azure/login@v2
         with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
       - name: Create Azure Resource Group if not exists
         run: az group create --name ${{ env.AZURE_RESOURCE_GROUP }} --location eastus --query "properties.provisioningState" --output tsv
       - name: Get ACR Login Server
@@ -164,7 +170,9 @@ jobs:
       - name: Azure Login
         uses: azure/login@v2
         with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
       - name: Create Azure Resource Group if not exists
         run: az group create --name ${{ env.AZURE_RESOURCE_GROUP }} --location eastus --query "properties.provisioningState" --output tsv
       - name: Get ACR Login Server
@@ -227,7 +235,9 @@ jobs:
       - name: Azure Login
         uses: azure/login@v2
         with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
       - name: Bootstrap Azure RG/ACR/Key Vault
         run: |
           chmod +x scripts/bootstrap-azure-infra.sh
