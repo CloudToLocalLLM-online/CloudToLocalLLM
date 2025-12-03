@@ -394,9 +394,45 @@ jobs:
       - name: Setup Azure Key Vault and Secrets Store CSI Driver
         run: |
           # Install the Secrets Store CSI Driver and Azure Provider
-          helm repo add secrets-store-csi-driver https://kubernetes-sigs.github.io/secrets-store-csi-driver/charts
-          helm repo add csi-secrets-store-provider-azure https://azure.github.io/secrets-store-csi-driver-provider-azure/charts
-          helm upgrade --install csi-secrets-store secrets-store-csi-driver/secrets-store-csi-driver --namespace kube-system --set "providers.azure.enabled=true"
+          helm repo add secrets-store-csi-driver https://kubernetes-sigs.github.io/secrets-store-csi-driver/charts 2>/dev/null || true
+          helm repo add csi-secrets-store-provider-azure https://azure.github.io/secrets-store-csi-driver-provider-azure/charts 2>/dev/null || true
+          helm repo update
+          
+          # Check if there's a pending helm operation and wait for it
+          if helm list -n kube-system | grep -q "pending"; then
+            echo "Found pending Helm operation, waiting up to 60s for it to complete..."
+            for i in {1..12}; do
+              sleep 5
+              if ! helm list -n kube-system | grep -q "pending"; then
+                echo "Pending operation completed"
+                break
+              fi
+              echo "Still waiting... ($((i*5))s)"
+            done
+          fi
+          
+          # Install/upgrade with retry logic
+          RETRIES=3
+          for i in $(seq 1 $RETRIES); do
+            echo "Attempt $i/$RETRIES: Installing CSI Secret Store driver..."
+            if helm upgrade --install csi-secrets-store \
+              secrets-store-csi-driver/secrets-store-csi-driver \
+              --namespace kube-system \
+              --set "providers.azure.enabled=true" \
+              --wait \
+              --timeout 5m; then
+              echo "✅ CSI Secret Store driver installed successfully"
+              break
+            else
+              if [ $i -lt $RETRIES ]; then
+                echo "⚠️  Attempt $i failed, waiting 10s before retry..."
+                sleep 10
+              else
+                echo "❌ Failed after $RETRIES attempts"
+                exit 1
+              fi
+            fi
+          done
 
       - name: Create SecretProviderClass
         run: |
