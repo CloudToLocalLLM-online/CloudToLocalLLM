@@ -179,3 +179,6 @@ minikube-linux-amd64
 .github-secrets-reference.txt
 azure-config-*.json
 .cursor/mcp.json
+
+# Cloudflare credentials (DO NOT COMMIT - contains API keys)
+.cloudflare-credentials.json

@@ -881,8 +881,8 @@ jobs:
             -H "Content-Type: application/json" \
             --data '{"purge_everything": true}')
           
-          # Check if successful
-          if echo "$RESPONSE" | grep -q '"success":true'; then
+          # Check if successful (note the space after colon in Cloudflare's response)
+          if echo "$RESPONSE" | grep -q '"success": true'; then
             echo "✅ Cache purged successfully for all domains:"
             echo "   - cloudtolocalllm.online"
             echo "   - app.cloudtolocalllm.online"
