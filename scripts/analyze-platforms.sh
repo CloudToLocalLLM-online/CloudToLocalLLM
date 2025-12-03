@@ -45,7 +45,14 @@ if [ -z "$GEMINI_API_KEY" ]; then
     NEEDS_MOBILE="false"
 else
     set +e
-    RESPONSE=$(gemini-cli "$PROMPT" 2>&1)
+    # Try to find gemini-cli in PATH or use local script
+    if command -v gemini-cli >/dev/null 2>&1; then
+        RESPONSE=$(gemini-cli "$PROMPT" 2>&1)
+    else
+        # Use local script path
+        SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+        RESPONSE=$("${SCRIPT_DIR}/gemini-cli.cjs" "$PROMPT" 2>&1)
+    fi
     EXIT_CODE=$?
     set -e
     
@@ -64,8 +71,10 @@ else
         NEEDS_DESKTOP="false"
         NEEDS_MOBILE="false"
     else
-        # Extract JSON from response
-        JSON_RESPONSE=$(echo "$RESPONSE" | grep -o '{.*}' | head -1 || echo "$RESPONSE")
+        # Extract JSON from response (Gemini wraps in ```json ``` blocks)
+        # Remove markdown code blocks if present
+        CLEAN_RESPONSE=$(echo "$RESPONSE" | sed 's/```json//g' | sed 's/```//g')
+        JSON_RESPONSE=$(echo "$CLEAN_RESPONSE" | grep -o '{.*}' | head -1 || echo "$CLEAN_RESPONSE")
         
         echo "DEBUG: Extracted JSON:"
         echo "$JSON_RESPONSE"
