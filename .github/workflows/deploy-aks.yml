@@ -101,7 +101,9 @@ jobs:
           context: .
           file: config/docker/Dockerfile.base
           push: true
-          tags: ${{ env.DOCKER_REGISTRY }}/base:${{ github.sha }}
+          tags: |
+            ${{ env.DOCKER_REGISTRY }}/base:${{ github.sha }}
+            ${{ env.DOCKER_REGISTRY }}/base:latest
           cache-from: type=registry,ref=${{ env.DOCKER_REGISTRY }}/base:latest
           cache-to: type=inline
 
@@ -134,7 +136,9 @@ jobs:
           context: .
           file: config/docker/Dockerfile.postgres
           push: true
-          tags: ${{ env.DOCKER_REGISTRY }}/postgres:${{ github.sha }}
+          tags: |
+            ${{ env.DOCKER_REGISTRY }}/postgres:${{ github.sha }}
+            ${{ env.DOCKER_REGISTRY }}/postgres:latest
           build-args: |
             BASE_REGISTRY=${{ env.DOCKER_REGISTRY }}
           cache-from: type=registry,ref=${{ env.DOCKER_REGISTRY }}/postgres:latest
@@ -176,7 +180,9 @@ jobs:
           context: .
           file: web/Dockerfile
           push: true
-          tags: ${{ env.DOCKER_REGISTRY }}/web:${{ github.sha }}
+          tags: |
+            ${{ env.DOCKER_REGISTRY }}/web:${{ github.sha }}
+            ${{ env.DOCKER_REGISTRY }}/web:latest
           build-args: |
             BASE_REGISTRY=${{ env.DOCKER_REGISTRY }}
           cache-from: type=registry,ref=${{ env.DOCKER_REGISTRY }}/web:latest
@@ -211,7 +217,9 @@ jobs:
           context: services/api-backend
           file: services/api-backend/Dockerfile
           push: true
-          tags: ${{ env.DOCKER_REGISTRY }}/api-backend:${{ github.sha }}
+          tags: |
+            ${{ env.DOCKER_REGISTRY }}/api-backend:${{ github.sha }}
+            ${{ env.DOCKER_REGISTRY }}/api-backend:latest
           build-args: |
             BASE_REGISTRY=${{ env.DOCKER_REGISTRY }}
           cache-from: type=registry,ref=${{ env.DOCKER_REGISTRY }}/api-backend:latest
@@ -246,7 +254,9 @@ jobs:
           context: services/streaming-proxy
           file: services/streaming-proxy/Dockerfile
           push: true
-          tags: ${{ env.DOCKER_REGISTRY }}/streaming-proxy:${{ github.sha }}
+          tags: |
+            ${{ env.DOCKER_REGISTRY }}/streaming-proxy:${{ github.sha }}
+            ${{ env.DOCKER_REGISTRY }}/streaming-proxy:latest
           build-args: |
             BASE_REGISTRY=${{ env.DOCKER_REGISTRY }}
           cache-from: type=registry,ref=${{ env.DOCKER_REGISTRY }}/streaming-proxy:latest
