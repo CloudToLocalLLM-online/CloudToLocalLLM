@@ -106,12 +106,12 @@ jobs:
           
           echo "Comparing against previous tag: $PREV_TAG"
           
-          # Check for changes in each service
-          BASE_CHANGED=$(git diff --name-only $PREV_TAG HEAD | grep -E '^config/docker/Dockerfile\.base' && echo "true" || echo "false")
-          POSTGRES_CHANGED=$(git diff --name-only $PREV_TAG HEAD | grep -E '^config/docker/(Dockerfile\.postgres|postgres-)' && echo "true" || echo "false")
-          WEB_CHANGED=$(git diff --name-only $PREV_TAG HEAD | grep -E '^(web|lib|pubspec\.)' && echo "true" || echo "false")
-          API_CHANGED=$(git diff --name-only $PREV_TAG HEAD | grep -E '^services/api-backend' && echo "true" || echo "false")
-          PROXY_CHANGED=$(git diff --name-only $PREV_TAG HEAD | grep -E '^services/streaming-proxy' && echo "true" || echo "false")
+          # Check for changes in each service (suppress grep output, only capture true/false)
+          BASE_CHANGED=$(git diff --name-only $PREV_TAG HEAD | grep -qE '^config/docker/Dockerfile\.base' && echo "true" || echo "false")
+          POSTGRES_CHANGED=$(git diff --name-only $PREV_TAG HEAD | grep -qE '^config/docker/(Dockerfile\.postgres|postgres-)' && echo "true" || echo "false")
+          WEB_CHANGED=$(git diff --name-only $PREV_TAG HEAD | grep -qE '^(web|lib|pubspec\.)' && echo "true" || echo "false")
+          API_CHANGED=$(git diff --name-only $PREV_TAG HEAD | grep -qE '^services/api-backend' && echo "true" || echo "false")
+          PROXY_CHANGED=$(git diff --name-only $PREV_TAG HEAD | grep -qE '^services/streaming-proxy' && echo "true" || echo "false")
           
           echo "base=$BASE_CHANGED" >> $GITHUB_OUTPUT
           echo "postgres=$POSTGRES_CHANGED" >> $GITHUB_OUTPUT
