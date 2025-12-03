@@ -571,8 +571,7 @@ jobs:
           JWT_SECRET: ${{ secrets.JWT_SECRET }}
           STRIPE_TEST_SECRET_KEY: ${{ secrets.STRIPE_TEST_SECRET_KEY }}
           SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
-          CLOUDFLARE_API_KEY: ${{ secrets.CLOUDFLARE_API_KEY }}
-          CLOUDFLARE_EMAIL: ${{ secrets.CLOUDFLARE_EMAIL }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_TUNNEL_TOKEN: ${{ secrets.CLOUDFLARE_TUNNEL_TOKEN }}
           SUPABASE_JWT_SECRET: ${{ secrets.SUPABASE_JWT_SECRET }}
         run: |
@@ -590,8 +589,7 @@ jobs:
           check_secret JWT_SECRET "$JWT_SECRET"
           check_secret STRIPE_TEST_SECRET_KEY "$STRIPE_TEST_SECRET_KEY"
           check_secret SENTRY_DSN "$SENTRY_DSN"
-          check_secret CLOUDFLARE_API_KEY "$CLOUDFLARE_API_KEY"
-          check_secret CLOUDFLARE_EMAIL "$CLOUDFLARE_EMAIL"
+          check_secret CLOUDFLARE_API_TOKEN "$CLOUDFLARE_API_TOKEN"
           check_secret CLOUDFLARE_TUNNEL_TOKEN "$CLOUDFLARE_TUNNEL_TOKEN"
           check_secret SUPABASE_JWT_SECRET "$SUPABASE_JWT_SECRET"
 
@@ -844,8 +842,7 @@ jobs:
       - name: Purge Cloudflare Cache
         continue-on-error: true
         env:
-          CLOUDFLARE_API_KEY: ${{ secrets.CLOUDFLARE_API_KEY }}
-          CLOUDFLARE_EMAIL: ${{ secrets.CLOUDFLARE_EMAIL }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
         run: |
           set -e
           
@@ -853,13 +850,12 @@ jobs:
           echo "Purging Cloudflare Cache"
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
           
-          # Get Zone ID for cloudtolocalllm.online
+          # Get Zone ID for cloudtolocalllm.online (using scoped API token)
           DOMAIN="cloudtolocalllm.online"
           echo "Fetching Zone ID for: $DOMAIN"
           
           ZONE_RESPONSE=$(curl -s -X GET "https://api.cloudflare.com/client/v4/zones?name=$DOMAIN" \
-            -H "X-Auth-Email: ${CLOUDFLARE_EMAIL}" \
-            -H "X-Auth-Key: ${CLOUDFLARE_API_KEY}" \
+            -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
             -H "Content-Type: application/json")
           
           ZONE_ID=$(echo "$ZONE_RESPONSE" | grep -o '"id":"[^"]*"' | head -1 | cut -d'"' -f4)
@@ -871,6 +867,7 @@ jobs:
           fi
           
           echo "✅ Zone ID: $ZONE_ID"
+          echo "✅ Using scoped API token (Zone Read + Cache Purge permissions only)"
           echo ""
           
           # Purge everything for the zone (covers all subdomains)
@@ -878,8 +875,7 @@ jobs:
           
           RESPONSE=$(curl -s -X POST \
             "https://api.cloudflare.com/client/v4/zones/${ZONE_ID}/purge_cache" \
-            -H "X-Auth-Email: ${CLOUDFLARE_EMAIL}" \
-            -H "X-Auth-Key: ${CLOUDFLARE_API_KEY}" \
+            -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
             -H "Content-Type: application/json" \
             --data '{"purge_everything": true}')
           
