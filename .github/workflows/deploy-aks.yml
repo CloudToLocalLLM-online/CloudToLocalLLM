@@ -5,18 +5,14 @@ permissions:
 
 on:
   push:
-    branches:
-      - main
-    paths:
-      - "k8s/**"
-      - ".github/workflows/deploy-aks.yml"
-      - "services/**"
-      - "web/**"
-      - "lib/**"
-      - "pubspec.**"
-      - "config/docker/**"
-      - "scripts/**"
+    tags:
+      - '*-cloud-*'  # Trigger on cloud platform tags (e.g., 4.5.0-cloud-abc123)
   workflow_dispatch:
+    inputs:
+      version_tag:
+        description: 'Version tag to deploy (e.g., 4.5.0-cloud-abc123)'
+        required: false
+        type: string
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -30,50 +26,96 @@ env:
   DOCKER_REGISTRY: ""
 
 jobs:
-  # Job to detect changes in specific paths
-  changes:
+  # Extract version info from tag
+  extract_version:
     runs-on: ubuntu-latest
     outputs:
-      base: ${{ steps.filter.outputs.base }}
-      postgres: ${{ steps.filter.outputs.postgres }}
-      web: ${{ steps.filter.outputs.web }}
-      api: ${{ steps.filter.outputs.api }}
-      proxy: ${{ steps.filter.outputs.proxy }}
+      app_version: ${{ steps.parse.outputs.app_version }}
+      commit_sha: ${{ steps.parse.outputs.commit_sha }}
+      version_tag: ${{ steps.parse.outputs.version_tag }}
+    steps:
+      - name: Parse Version Tag
+        id: parse
+        run: |
+          # Get tag name
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            TAG_NAME="${{ inputs.version_tag }}"
+          else
+            TAG_NAME="${GITHUB_REF#refs/tags/}"
+          fi
+          
+          echo "Parsing tag: $TAG_NAME"
+          
+          # Parse tag format: 4.5.0-cloud-abc123
+          # Extract: version=4.5.0, platform=cloud, commit=abc123
+          APP_VERSION=$(echo "$TAG_NAME" | sed -E 's/([0-9]+\.[0-9]+\.[0-9]+)-.*/\1/')
+          COMMIT_SHA=$(echo "$TAG_NAME" | sed -E 's/.*-([a-f0-9]+)$/\1/')
+          
+          echo "app_version=$APP_VERSION" >> $GITHUB_OUTPUT
+          echo "commit_sha=$COMMIT_SHA" >> $GITHUB_OUTPUT
+          echo "version_tag=$TAG_NAME" >> $GITHUB_OUTPUT
+          
+          echo "✅ Version: $APP_VERSION"
+          echo "✅ Commit: $COMMIT_SHA"
+          echo "✅ Tag: $TAG_NAME"
+
+  # Job to detect changes in specific paths (compare against last cloud tag)
+  changes:
+    needs: extract_version
+    runs-on: ubuntu-latest
+    outputs:
+      base: ${{ steps.detect.outputs.base }}
+      postgres: ${{ steps.detect.outputs.postgres }}
+      web: ${{ steps.detect.outputs.web }}
+      api: ${{ steps.detect.outputs.api }}
+      proxy: ${{ steps.detect.outputs.proxy }}
     steps:
       - uses: actions/checkout@v4
-      - uses: dorny/paths-filter@v2
-        id: filter
         with:
-          filters: |
-            base:
-              - 'config/docker/Dockerfile.base'
-              - '.github/workflows/deploy-aks.yml'
-            postgres:
-              - 'config/docker/Dockerfile.postgres'
-              - 'config/docker/postgres-init.sh'
-              - 'config/docker/postgres-entrypoint.sh'
-              - '.github/workflows/deploy-aks.yml'
-            web:
-              - 'web/**'
-              - 'lib/**'
-              - 'pubspec.**'
-              - 'config/docker/Dockerfile.base'
-              - '.github/workflows/deploy-aks.yml'
-            api:
-              - 'services/api-backend/**'
-              - 'config/docker/Dockerfile.base'
-              - '.github/workflows/deploy-aks.yml'
-            proxy:
-              - 'services/streaming-proxy/**'
-              - 'config/docker/Dockerfile.base'
-              - '.github/workflows/deploy-aks.yml'
+          fetch-depth: 0
+      
+      - name: Detect Service Changes
+        id: detect
+        run: |
+          # Find the previous cloud tag
+          PREV_TAG=$(git tag -l "*-cloud-*" --sort=-version:refname | head -2 | tail -1 || echo "")
+          
+          if [ -z "$PREV_TAG" ]; then
+            echo "No previous tag found, building all services"
+            echo "base=true" >> $GITHUB_OUTPUT
+            echo "postgres=true" >> $GITHUB_OUTPUT
+            echo "web=true" >> $GITHUB_OUTPUT
+            echo "api=true" >> $GITHUB_OUTPUT
+            echo "proxy=true" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+          
+          echo "Comparing against previous tag: $PREV_TAG"
+          
+          # Check for changes in each service
+          BASE_CHANGED=$(git diff --name-only $PREV_TAG HEAD | grep -E '^config/docker/Dockerfile\.base' && echo "true" || echo "false")
+          POSTGRES_CHANGED=$(git diff --name-only $PREV_TAG HEAD | grep -E '^config/docker/(Dockerfile\.postgres|postgres-)' && echo "true" || echo "false")
+          WEB_CHANGED=$(git diff --name-only $PREV_TAG HEAD | grep -E '^(web|lib|pubspec\.)' && echo "true" || echo "false")
+          API_CHANGED=$(git diff --name-only $PREV_TAG HEAD | grep -E '^services/api-backend' && echo "true" || echo "false")
+          PROXY_CHANGED=$(git diff --name-only $PREV_TAG HEAD | grep -E '^services/streaming-proxy' && echo "true" || echo "false")
+          
+          echo "base=$BASE_CHANGED" >> $GITHUB_OUTPUT
+          echo "postgres=$POSTGRES_CHANGED" >> $GITHUB_OUTPUT
+          echo "web=$WEB_CHANGED" >> $GITHUB_OUTPUT
+          echo "api=$API_CHANGED" >> $GITHUB_OUTPUT
+          echo "proxy=$PROXY_CHANGED" >> $GITHUB_OUTPUT
+          
+          echo "Change detection:"
+          echo "  Base: $BASE_CHANGED"
+          echo "  Postgres: $POSTGRES_CHANGED"
+          echo "  Web: $WEB_CHANGED"
+          echo "  API: $API_CHANGED"
+          echo "  Proxy: $PROXY_CHANGED"
 
   build_base:
-    needs: changes
+    needs: [extract_version, changes]
     if: ${{ !cancelled() && needs.changes.outputs.base == 'true' }}
     runs-on: ubuntu-latest
-    outputs:
-      base_version: ${{ steps.set_version.outputs.base_version }}
     steps:
       - uses: actions/checkout@v4
       - name: Azure Login
@@ -99,27 +141,20 @@ jobs:
           echo "$ACR_PASSWORD" | docker login ${{ env.DOCKER_REGISTRY }} --username "$ACR_USERNAME" --password-stdin
       - uses: docker/setup-buildx-action@v3
       
-      - name: Set Base Version
-        id: set_version
-        run: |
-          BASE_VERSION=$(jq -r '.version' assets/version.json)-base
-          echo "base_version=$BASE_VERSION" >> $GITHUB_OUTPUT
-          echo "✅ Base version: $BASE_VERSION"
-      
       - uses: docker/build-push-action@v5
         with:
           context: .
           file: config/docker/Dockerfile.base
           push: true
           tags: |
-            ${{ env.DOCKER_REGISTRY }}/base:${{ steps.set_version.outputs.base_version }}
-            ${{ env.DOCKER_REGISTRY }}/base:${{ github.sha }}
+            ${{ env.DOCKER_REGISTRY }}/base:${{ needs.extract_version.outputs.app_version }}-base
+            ${{ env.DOCKER_REGISTRY }}/base:${{ needs.extract_version.outputs.commit_sha }}
             ${{ env.DOCKER_REGISTRY }}/base:latest
           cache-from: type=registry,ref=${{ env.DOCKER_REGISTRY }}/base:latest
           cache-to: type=inline
 
   build_postgres:
-    needs: [changes, build_base, build_web]
+    needs: [extract_version, changes, build_base]
     if: ${{ !cancelled() && (needs.build_base.result == 'success' || needs.build_base.result == 'skipped') && needs.changes.outputs.postgres == 'true' }}
     runs-on: ubuntu-latest
     steps:
@@ -143,24 +178,14 @@ jobs:
           echo "$ACR_PASSWORD" | docker login ${{ env.DOCKER_REGISTRY }} --username "$ACR_USERNAME" --password-stdin
       - uses: docker/setup-buildx-action@v3
       
-      - name: Set Postgres Version
-        run: |
-          chmod +x scripts/get-next-service-version.sh
-          
-          # Get next version from ACR for postgres service
-          NEXT_VERSION=$(./scripts/get-next-service-version.sh postgres ${{ env.ACR_NAME }})
-          POSTGRES_VERSION="${NEXT_VERSION}-postgres"
-          echo "POSTGRES_VERSION=$POSTGRES_VERSION" >> $GITHUB_ENV
-          echo "✅ Postgres version: $POSTGRES_VERSION"
-      
       - uses: docker/build-push-action@v5
         with:
           context: .
           file: config/docker/Dockerfile.postgres
           push: true
           tags: |
-            ${{ env.DOCKER_REGISTRY }}/postgres:${{ env.POSTGRES_VERSION }}
-            ${{ env.DOCKER_REGISTRY }}/postgres:${{ github.sha }}
+            ${{ env.DOCKER_REGISTRY }}/postgres:${{ needs.extract_version.outputs.app_version }}-postgres
+            ${{ env.DOCKER_REGISTRY }}/postgres:${{ needs.extract_version.outputs.commit_sha }}
             ${{ env.DOCKER_REGISTRY }}/postgres:latest
           build-args: |
             BASE_REGISTRY=${{ env.DOCKER_REGISTRY }}
@@ -168,86 +193,11 @@ jobs:
           cache-to: type=inline
 
   build_web:
-    needs: [changes, build_base]
+    needs: [extract_version, changes, build_base]
     if: ${{ !cancelled() && (needs.build_base.result == 'success' || needs.build_base.result == 'skipped') && needs.changes.outputs.web == 'true' }}
     runs-on: ubuntu-latest
-    outputs:
-      app_version: ${{ steps.bump_version.outputs.app_version }}
-      build_number: ${{ steps.bump_version.outputs.build_number }}
     steps:
       - uses: actions/checkout@v4
-      
-      - name: Bump Web Version
-        id: bump_version
-        run: |
-          chmod +x scripts/get-next-service-version.sh
-          
-          # Get next version from ACR for web service
-          NEXT_VERSION=$(./scripts/get-next-service-version.sh web ${{ env.ACR_NAME }})
-          BUILD_NUMBER=$(date +%Y%m%d%H%M)
-          BUILD_DATE=$(date -u +%Y-%m-%dT%H:%M:%SZ)
-          GIT_COMMIT=$(git rev-parse --short HEAD)
-          BUILD_TIMESTAMP=$(date +"%Y-%m-%d %H:%M:%S")
-          
-          # Update version.json using jq
-          jq -n \
-            --arg version "$NEXT_VERSION" \
-            --arg build_number "$BUILD_NUMBER" \
-            --arg build_date "$BUILD_DATE" \
-            --arg git_commit "$GIT_COMMIT" \
-            --arg buildTimestamp "$BUILD_TIMESTAMP" \
-            '{
-              version: $version,
-              build_number: $build_number,
-              build_date: $build_date,
-              git_commit: $git_commit,
-              buildTimestamp: $buildTimestamp
-            }' > assets/version.json
-          
-          echo "app_version=$NEXT_VERSION" >> $GITHUB_OUTPUT
-          echo "build_number=$BUILD_NUMBER" >> $GITHUB_OUTPUT
-          
-          echo "✅ Web version: $NEXT_VERSION"
-          echo "✅ Build number: $BUILD_NUMBER"
-      
-      - name: Sync Component Versions
-        run: |
-          # Create component versions file for web to display
-          WEB_VERSION=$(jq -r '.version' assets/version.json)
-          
-          # Query ACR for latest versions of all components
-          API_VERSION=$(./scripts/get-next-service-version.sh api-backend ${{ env.ACR_NAME }} 2>/dev/null || echo "$WEB_VERSION")
-          POSTGRES_VERSION=$(./scripts/get-next-service-version.sh postgres ${{ env.ACR_NAME }} 2>/dev/null || echo "$WEB_VERSION")
-          PROXY_VERSION=$(./scripts/get-next-service-version.sh streaming-proxy ${{ env.ACR_NAME }} 2>/dev/null || echo "$WEB_VERSION")
-          BASE_VERSION=$(./scripts/get-next-service-version.sh base ${{ env.ACR_NAME }} 2>/dev/null || echo "$WEB_VERSION")
-          
-          # Create component versions file using jq
-          jq -n \
-            --arg web "$WEB_VERSION" \
-            --arg api "${API_VERSION}-api" \
-            --arg postgres "${POSTGRES_VERSION}-postgres" \
-            --arg streaming_proxy "${PROXY_VERSION}-proxy" \
-            --arg base "${BASE_VERSION}-base" \
-            --arg last_updated "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
-            '{
-              web: $web,
-              api: $api,
-              postgres: $postgres,
-              streaming_proxy: $streaming_proxy,
-              base: $base,
-              last_updated: $last_updated
-            }' > assets/component-versions.json
-          
-          echo "✅ Component versions synced"
-          cat assets/component-versions.json
-      
-      - name: Commit Version Bump
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add assets/version.json assets/component-versions.json
-          git commit -m "chore: bump web to $(jq -r '.version' assets/version.json) and sync component versions [skip ci]" || echo "No version changes to commit"
-          git push || echo "No changes to push"
       - name: Azure Login
         uses: azure/login@v2
         with:
@@ -305,8 +255,8 @@ jobs:
           file: web/Dockerfile
           push: true
           tags: |
-            ${{ env.DOCKER_REGISTRY }}/web:${{ steps.bump_version.outputs.app_version }}
-            ${{ env.DOCKER_REGISTRY }}/web:${{ github.sha }}
+            ${{ env.DOCKER_REGISTRY }}/web:${{ needs.extract_version.outputs.app_version }}
+            ${{ env.DOCKER_REGISTRY }}/web:${{ needs.extract_version.outputs.commit_sha }}
             ${{ env.DOCKER_REGISTRY }}/web:latest
           build-args: |
             BASE_REGISTRY=${{ env.DOCKER_REGISTRY }}
@@ -314,7 +264,7 @@ jobs:
           cache-to: type=inline
   
   build_api:
-    needs: [changes, build_base, build_web]
+    needs: [extract_version, changes, build_base]
     if: ${{ !cancelled() && (needs.build_base.result == 'success' || needs.build_base.result == 'skipped') && needs.changes.outputs.api == 'true' }}
     runs-on: ubuntu-latest
     steps:
@@ -338,24 +288,14 @@ jobs:
           echo "$ACR_PASSWORD" | docker login ${{ env.DOCKER_REGISTRY }} --username "$ACR_USERNAME" --password-stdin
       - uses: docker/setup-buildx-action@v3
       
-      - name: Set API Version
-        run: |
-          chmod +x scripts/get-next-service-version.sh
-          
-          # Get next version from ACR for api-backend service
-          NEXT_VERSION=$(./scripts/get-next-service-version.sh api-backend ${{ env.ACR_NAME }})
-          API_VERSION="${NEXT_VERSION}-api"
-          echo "API_VERSION=$API_VERSION" >> $GITHUB_ENV
-          echo "✅ API version: $API_VERSION"
-      
       - uses: docker/build-push-action@v5
         with:
           context: services/api-backend
           file: services/api-backend/Dockerfile
           push: true
           tags: |
-            ${{ env.DOCKER_REGISTRY }}/api-backend:${{ env.API_VERSION }}
-            ${{ env.DOCKER_REGISTRY }}/api-backend:${{ github.sha }}
+            ${{ env.DOCKER_REGISTRY }}/api-backend:${{ needs.extract_version.outputs.app_version }}-api
+            ${{ env.DOCKER_REGISTRY }}/api-backend:${{ needs.extract_version.outputs.commit_sha }}
             ${{ env.DOCKER_REGISTRY }}/api-backend:latest
           build-args: |
             BASE_REGISTRY=${{ env.DOCKER_REGISTRY }}
@@ -363,7 +303,7 @@ jobs:
           cache-to: type=inline
 
   build_proxy:
-    needs: [changes, build_base, build_web]
+    needs: [extract_version, changes, build_base]
     if: ${{ !cancelled() && (needs.build_base.result == 'success' || needs.build_base.result == 'skipped') && needs.changes.outputs.proxy == 'true' }}
     runs-on: ubuntu-latest
     steps:
@@ -387,24 +327,14 @@ jobs:
           echo "$ACR_PASSWORD" | docker login ${{ env.DOCKER_REGISTRY }} --username "$ACR_USERNAME" --password-stdin
       - uses: docker/setup-buildx-action@v3
       
-      - name: Set Proxy Version
-        run: |
-          chmod +x scripts/get-next-service-version.sh
-          
-          # Get next version from ACR for streaming-proxy service
-          NEXT_VERSION=$(./scripts/get-next-service-version.sh streaming-proxy ${{ env.ACR_NAME }})
-          PROXY_VERSION="${NEXT_VERSION}-proxy"
-          echo "PROXY_VERSION=$PROXY_VERSION" >> $GITHUB_ENV
-          echo "✅ Proxy version: $PROXY_VERSION"
-      
       - uses: docker/build-push-action@v5
         with:
           context: services/streaming-proxy
           file: services/streaming-proxy/Dockerfile
           push: true
           tags: |
-            ${{ env.DOCKER_REGISTRY }}/streaming-proxy:${{ env.PROXY_VERSION }}
-            ${{ env.DOCKER_REGISTRY }}/streaming-proxy:${{ github.sha }}
+            ${{ env.DOCKER_REGISTRY }}/streaming-proxy:${{ needs.extract_version.outputs.app_version }}-proxy
+            ${{ env.DOCKER_REGISTRY }}/streaming-proxy:${{ needs.extract_version.outputs.commit_sha }}
             ${{ env.DOCKER_REGISTRY }}/streaming-proxy:latest
           build-args: |
             BASE_REGISTRY=${{ env.DOCKER_REGISTRY }}
@@ -818,76 +748,32 @@ jobs:
           WEB_BUILT: ${{ needs.changes.outputs.web }}
           API_BUILT: ${{ needs.changes.outputs.api }}
           PROXY_BUILT: ${{ needs.changes.outputs.proxy }}
-          WEB_APP_VERSION: ${{ needs.build_web.outputs.app_version }}
+          APP_VERSION: ${{ needs.extract_version.outputs.app_version }}
+          COMMIT_SHA: ${{ needs.extract_version.outputs.commit_sha }}
         run: |
           set -e  # Exit immediately on any error
           
-          # Use semantic version tag if service was built, otherwise use latest
-          # Web build determines the app version - it's the source of truth
-          if [ "$POSTGRES_BUILT" = "true" ]; then
-            chmod +x scripts/get-next-service-version.sh
-            POSTGRES_VERSION=$(./scripts/get-next-service-version.sh postgres ${{ env.ACR_NAME }})
-            POSTGRES_TAG="${POSTGRES_VERSION}-postgres"
-          else
-            POSTGRES_TAG="latest"
-          fi
-          
-          if [ "$WEB_BUILT" = "true" ]; then
-            WEB_TAG="${WEB_APP_VERSION}"
-          else
-            WEB_TAG="latest"
-          fi
-          
-          if [ "$API_BUILT" = "true" ]; then
-            chmod +x scripts/get-next-service-version.sh
-            API_VERSION=$(./scripts/get-next-service-version.sh api-backend ${{ env.ACR_NAME }})
-            API_TAG="${API_VERSION}-api"
-          else
-            API_TAG="latest"
-          fi
-          
-          if [ "$PROXY_BUILT" = "true" ]; then
-            chmod +x scripts/get-next-service-version.sh
-            PROXY_VERSION=$(./scripts/get-next-service-version.sh streaming-proxy ${{ env.ACR_NAME }})
-            PROXY_TAG="${PROXY_VERSION}-proxy"
-          else
-            PROXY_TAG="latest"
-          fi
+          # Use semantic version if service was built, otherwise use latest
+          [ "$POSTGRES_BUILT" = "true" ] && POSTGRES_TAG="${APP_VERSION}-postgres" || POSTGRES_TAG="latest"
+          [ "$WEB_BUILT" = "true" ] && WEB_TAG="${APP_VERSION}" || WEB_TAG="latest"
+          [ "$API_BUILT" = "true" ] && API_TAG="${APP_VERSION}-api" || API_TAG="latest"
+          [ "$PROXY_BUILT" = "true" ] && PROXY_TAG="${APP_VERSION}-proxy" || PROXY_TAG="latest"
           
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-          echo "Image Versions for Deployment"
+          echo "Deployment Version: $APP_VERSION (from tag)"
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
           echo "  Postgres: $POSTGRES_TAG"
-          echo "  Web:      $WEB_TAG (Source of Truth)"
+          echo "  Web:      $WEB_TAG"
           echo "  API:      $API_TAG"
           echo "  Proxy:    $PROXY_TAG"
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
           echo ""
           
-          # Get current app version (web is source of truth)
-          APP_VERSION=$(jq -r '.version' assets/version.json 2>/dev/null || echo "unknown")
-          BUILD_NUMBER=$(jq -r '.build_number' assets/version.json 2>/dev/null || echo "unknown")
-          GIT_COMMIT=$(jq -r '.git_commit' assets/version.json 2>/dev/null || echo "$(git rev-parse --short HEAD)")
-          
-          echo "App Version (from web): $APP_VERSION"
-          
-          # Replace image registry in manifests with appropriate tags
+          # Replace image registry in manifests
           sed -i "s|cloudtolocalllm/postgres:latest|${{ env.DOCKER_REGISTRY }}/postgres:${POSTGRES_TAG}|g" k8s/postgres-statefulset.yaml
           sed -i "s|cloudtolocalllm/web:latest|${{ env.DOCKER_REGISTRY }}/web:${WEB_TAG}|g" k8s/web-deployment.yaml
           sed -i "s|cloudtolocalllm/api-backend:latest|${{ env.DOCKER_REGISTRY }}/api-backend:${API_TAG}|g" k8s/api-backend-deployment.yaml
           sed -i "s|cloudtolocalllm/streaming-proxy:latest|${{ env.DOCKER_REGISTRY }}/streaming-proxy:${PROXY_TAG}|g" k8s/streaming-proxy-deployment.yaml
-          
-          # Inject version environment variables into API and Proxy deployments
-          # Note: These files contain multiple YAML documents (Service + Deployment)
-          # We need to target only the Deployment document (index 1)
-          
-          # Add API_VERSION env var to api-backend Deployment (document index 1)
-          yq e 'select(document_index == 1) | .spec.template.spec.containers[0].env += [{"name": "API_VERSION", "value": "'$APP_VERSION'-api"}, {"name": "BUILD_NUMBER", "value": "'$BUILD_NUMBER'"}, {"name": "GIT_COMMIT", "value": "'$GIT_COMMIT'"}]' k8s/api-backend-deployment.yaml > /tmp/api-backend-deployment.yaml
-          mv /tmp/api-backend-deployment.yaml k8s/api-backend-deployment.yaml
-          
-          # Add PROXY_VERSION env var to streaming-proxy Deployment (document index 1)
-          yq e 'select(document_index == 1) | .spec.template.spec.containers[0].env += [{"name": "PROXY_VERSION", "value": "'$APP_VERSION'-proxy"}, {"name": "BUILD_NUMBER", "value": "'$BUILD_NUMBER'"}, {"name": "GIT_COMMIT", "value": "'$GIT_COMMIT'"}]' k8s/streaming-proxy-deployment.yaml > /tmp/streaming-proxy-deployment.yaml
-          mv /tmp/streaming-proxy-deployment.yaml k8s/streaming-proxy-deployment.yaml
 
           # Validate manifests with server-side dry-run before applying
           echo "Validating Kubernetes manifests with server-side dry-run..."

@@ -1,0 +1,101 @@
+name: Version Bump & Tagging
+
+on:
+  push:
+    branches:
+      - main
+    # Don't trigger on version bump commits or tags
+    tags-ignore:
+      - '**'
+
+# Prevent multiple version bumps running simultaneously
+concurrency:
+  group: version-bump
+  cancel-in-progress: false
+
+jobs:
+  analyze_and_bump:
+    # Skip if commit message contains [skip ci] or [no-version]
+    if: "!contains(github.event.head_commit.message, '[skip ci]') && !contains(github.event.head_commit.message, '[no-version]')"
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Need full history for commit analysis
+          token: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Install Gemini CLI
+        run: |
+          # Install Gemini CLI (using Google's AI SDK)
+          npm install -g @google/generative-ai
+          
+          # Create Gemini CLI wrapper
+          cat > /usr/local/bin/gemini-cli <<'EOF'
+#!/usr/bin/env node
+const { GoogleGenerativeAI } = require('@google/generative-ai');
+
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+
+async function main() {
+  const prompt = process.argv.slice(2).join(' ');
+  const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
+  const result = await model.generateContent(prompt);
+  const response = await result.response;
+  console.log(response.text());
+}
+
+main().catch(console.error);
+EOF
+          chmod +x /usr/local/bin/gemini-cli
+          echo "✅ Gemini CLI installed"
+      
+      - name: Analyze Commits with Gemini
+        id: analyze
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: |
+          chmod +x scripts/analyze-version-bump.sh
+          ./scripts/analyze-version-bump.sh
+      
+      - name: Update All Version References
+        env:
+          NEW_VERSION: ${{ steps.analyze.outputs.new_version }}
+          BUMP_TYPE: ${{ steps.analyze.outputs.bump_type }}
+          COMMIT_SHA: ${{ github.sha }}
+        run: |
+          chmod +x scripts/update-all-versions.sh
+          ./scripts/update-all-versions.sh "$NEW_VERSION" "$COMMIT_SHA"
+      
+      - name: Commit Version Changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          
+          NEW_VERSION="${{ steps.analyze.outputs.new_version }}"
+          
+          git add -A
+          git commit -m "chore: bump version to $NEW_VERSION [skip ci]" || echo "No changes to commit"
+          git push origin main
+      
+      - name: Create Platform Tags
+        env:
+          VERSION: ${{ steps.analyze.outputs.new_version }}
+        run: |
+          SHORT_SHA=$(git rev-parse --short HEAD)
+          
+          # Create platform-specific tags
+          git tag "${VERSION}-cloud-${SHORT_SHA}"
+          git tag "${VERSION}-desktop-${SHORT_SHA}"
+          git tag "${VERSION}-mobile-${SHORT_SHA}"
+          
+          # Push all tags
+          git push origin --tags
+          
+          echo "✅ Created tags:"
+          echo "  - ${VERSION}-cloud-${SHORT_SHA}"
+          echo "  - ${VERSION}-desktop-${SHORT_SHA}"
+          echo "  - ${VERSION}-mobile-${SHORT_SHA}"
+
