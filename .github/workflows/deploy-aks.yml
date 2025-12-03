@@ -105,8 +105,8 @@ jobs:
           cache-to: type=inline
 
   build_postgres:
-    needs: changes
-    if: ${{ !cancelled() && needs.changes.outputs.postgres == 'true' }}
+    needs: [changes, build_base]
+    if: ${{ !cancelled() && (needs.build_base.result == 'success' || needs.build_base.result == 'skipped') && needs.changes.outputs.postgres == 'true' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -139,8 +139,8 @@ jobs:
           cache-to: type=inline
 
   build_web:
-    needs: changes
-    if: ${{ !cancelled() && needs.changes.outputs.web == 'true' }}
+    needs: [changes, build_base]
+    if: ${{ !cancelled() && (needs.build_base.result == 'success' || needs.build_base.result == 'skipped') && needs.changes.outputs.web == 'true' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -180,8 +180,8 @@ jobs:
           cache-to: type=inline
   
   build_api:
-    needs: changes
-    if: ${{ !cancelled() && needs.changes.outputs.api == 'true' }}
+    needs: [changes, build_base]
+    if: ${{ !cancelled() && (needs.build_base.result == 'success' || needs.build_base.result == 'skipped') && needs.changes.outputs.api == 'true' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -214,8 +214,8 @@ jobs:
           cache-to: type=inline
 
   build_proxy:
-    needs: changes
-    if: ${{ !cancelled() && needs.changes.outputs.proxy == 'true' }}
+    needs: [changes, build_base]
+    if: ${{ !cancelled() && (needs.build_base.result == 'success' || needs.build_base.result == 'skipped') && needs.changes.outputs.proxy == 'true' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
