@@ -599,33 +599,53 @@ jobs:
           echo "✅ PostgreSQL is ready"
           echo ""
           
-          # ===== STEP 2: Deploy application services (now that database is ready) =====
+          # ===== STEP 2: Deploy API Backend (depends on postgres) =====
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-          echo "STEP 2: Deploying application services"
+          echo "STEP 2: Deploying API Backend (depends on postgres)"
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
           
-          kubectl apply -f k8s/cloudflared.yaml
-          kubectl apply -f k8s/web-deployment.yaml
           kubectl apply -f k8s/api-backend-deployment.yaml
-          kubectl apply -f k8s/streaming-proxy-deployment.yaml
-          
-          # Restart deployments to pick up latest images
-          kubectl rollout restart deployment/cloudflared -n cloudtolocalllm
-          kubectl rollout restart deployment/web -n cloudtolocalllm
           kubectl rollout restart deployment/api-backend -n cloudtolocalllm
-          kubectl rollout restart deployment/streaming-proxy -n cloudtolocalllm
-
-          # Wait for all application services to be ready
-          echo "Monitoring web rollout..."
-          ./scripts/watch_rollout.sh cloudtolocalllm deployment web
           
-          echo "Monitoring api-backend rollout..."
+          echo "Waiting for API Backend to be ready..."
           ./scripts/watch_rollout.sh cloudtolocalllm deployment api-backend
+          echo "✅ API Backend is ready"
+          echo ""
           
-          echo "Monitoring streaming-proxy rollout..."
+          # ===== STEP 3: Deploy Streaming Proxy (depends on api-backend) =====
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "STEP 3: Deploying Streaming Proxy (depends on api-backend)"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          
+          kubectl apply -f k8s/streaming-proxy-deployment.yaml
+          kubectl rollout restart deployment/streaming-proxy -n cloudtolocalllm
+          
+          echo "Waiting for Streaming Proxy to be ready..."
           ./scripts/watch_rollout.sh cloudtolocalllm deployment streaming-proxy
+          echo "✅ Streaming Proxy is ready"
+          echo ""
           
-          echo "✅ All application services deployed successfully"
+          # ===== STEP 4: Deploy Web and Cloudflared (depend on api-backend and streaming) =====
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "STEP 4: Deploying Web Frontend and Cloudflared"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          
+          kubectl apply -f k8s/web-deployment.yaml
+          kubectl apply -f k8s/cloudflared.yaml
+          
+          kubectl rollout restart deployment/web -n cloudtolocalllm
+          kubectl rollout restart deployment/cloudflared -n cloudtolocalllm
+          
+          echo "Waiting for Web to be ready..."
+          ./scripts/watch_rollout.sh cloudtolocalllm deployment web
+          echo "✅ Web is ready"
+          echo ""
+          
+          echo "✅ All services deployed successfully in dependency order:
+          echo "   1. PostgreSQL"
+          echo "   2. API Backend"
+          echo "   3. Streaming Proxy"
+          echo "   4. Web + Cloudflared"
 
       - name: Verify Cloudflare Tunnel
         run: |

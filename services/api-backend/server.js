@@ -382,7 +382,7 @@ registerRoutes('/tunnel-usage', tunnelUsageRoutes);
 registerRoutes('/tunnel-webhooks', tunnelWebhooksRoutes);
 registerRoutes('/user-activity', userActivityRoutes);
 registerRoutes('/user-deletion', userDeletionRoutes);
-registerRoutes('/versioned-routes', versionedRoutes);
+// Note: versionedRoutes is a utility module, not a router - don't register it
 registerRoutes('/webhook-event-filters', webhookEventFiltersRoutes);
 registerRoutes('/webhook-payload-transformations', webhookPayloadTransformationsRoutes);
 registerRoutes('/webhook-rate-limiting', webhookRateLimitingRoutes);
