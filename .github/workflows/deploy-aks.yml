@@ -1,5 +1,8 @@
 name: Deploy to Azure AKS
 
+permissions:
+  id-token: write
+
 on:
   push:
     branches:
