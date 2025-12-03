@@ -173,3 +173,9 @@ logs/
 
 # Local tooling binaries
 minikube-linux-amd64
+
+# Azure deployment configuration (DO NOT COMMIT - contains sensitive data)
+.azure-deployment-config.json
+.github-secrets-reference.txt
+azure-config-*.json
+.cursor/mcp.json
