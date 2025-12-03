@@ -162,9 +162,9 @@ jobs:
           cache-to: type=inline
 
       - name: Azure Login
-      uses: azure/login@v2
-      with:
-      creds: ${{ secrets.AZURE_CREDENTIALS }}
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
       - name: Create Azure Resource Group if not exists
         run: az group create --name ${{ env.AZURE_RESOURCE_GROUP }} --location eastus --query "properties.provisioningState" --output tsv
       - name: Get ACR Login Server
