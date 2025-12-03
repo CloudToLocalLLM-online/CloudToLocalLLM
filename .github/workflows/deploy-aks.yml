@@ -641,7 +641,7 @@ jobs:
           echo "✅ Web is ready"
           echo ""
           
-          echo "✅ All services deployed successfully in dependency order:
+          echo "✅ All services deployed successfully in dependency order:"
           echo "   1. PostgreSQL"
           echo "   2. API Backend"
           echo "   3. Streaming Proxy"
