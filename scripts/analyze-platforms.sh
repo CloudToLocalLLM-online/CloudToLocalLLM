@@ -92,8 +92,16 @@ echo "  Desktop: $NEEDS_DESKTOP"
 echo "  Mobile: $NEEDS_MOBILE"
 
 # Output for GitHub Actions
-echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
-echo "needs_cloud=$NEEDS_CLOUD" >> $GITHUB_OUTPUT
-echo "needs_desktop=$NEEDS_DESKTOP" >> $GITHUB_OUTPUT
-echo "needs_mobile=$NEEDS_MOBILE" >> $GITHUB_OUTPUT
+if [ -n "$GITHUB_OUTPUT" ]; then
+    echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
+    echo "needs_cloud=$NEEDS_CLOUD" >> $GITHUB_OUTPUT
+    echo "needs_desktop=$NEEDS_DESKTOP" >> $GITHUB_OUTPUT
+    echo "needs_mobile=$NEEDS_MOBILE" >> $GITHUB_OUTPUT
+else
+    echo "Running locally - GITHUB_OUTPUT not set"
+    echo "new_version=$NEW_VERSION"
+    echo "needs_cloud=$NEEDS_CLOUD"
+    echo "needs_desktop=$NEEDS_DESKTOP"
+    echo "needs_mobile=$NEEDS_MOBILE"
+fi
 
