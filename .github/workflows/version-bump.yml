@@ -27,6 +27,7 @@ jobs:
           fetch-depth: 0  # Need full history for git describe
           fetch-tags: true  # Explicitly fetch tags
           token: ${{ secrets.GITHUB_TOKEN }}
+          persist-credentials: true
       
       - name: Configure Git
         run: |
@@ -86,9 +87,10 @@ jobs:
             done
           fi
       
-      - name: Create Platform Tags
+      - name: Create Platform Tags and Trigger Deployments
         env:
           VERSION: ${{ steps.analyze.outputs.new_version }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           # Get latest commit SHA after version bump
           git pull --rebase origin main || true
@@ -99,12 +101,14 @@ jobs:
           TAG_DESKTOP="${VERSION}-desktop-${SHORT_SHA}"
           TAG_MOBILE="${VERSION}-mobile-${SHORT_SHA}"
           
+          echo "Creating tags..."
           # Only create tags if they don't exist
           git tag "$TAG_CLOUD" 2>/dev/null || echo "Tag $TAG_CLOUD already exists"
           git tag "$TAG_DESKTOP" 2>/dev/null || echo "Tag $TAG_DESKTOP already exists"
           git tag "$TAG_MOBILE" 2>/dev/null || echo "Tag $TAG_MOBILE already exists"
           
-          # Push tags with retry logic
+          # Push tags
+          echo "Pushing tags..."
           for i in {1..3}; do
             if git push origin --tags; then
               echo "✅ Tags pushed successfully"
@@ -116,8 +120,15 @@ jobs:
           done
           
           echo ""
-          echo "✅ Platform tags:"
+          echo "✅ Platform tags created:"
           echo "  - ${TAG_CLOUD}"
           echo "  - ${TAG_DESKTOP}"
           echo "  - ${TAG_MOBILE}"
+          echo ""
+          
+          # Manually trigger cloud deployment workflow
+          # (GitHub Actions don't auto-trigger on tags pushed by GITHUB_TOKEN)
+          echo "Triggering cloud deployment workflow..."
+          gh workflow run deploy-aks.yml -f version_tag="$TAG_CLOUD"
+          echo "✅ Cloud deployment triggered for $TAG_CLOUD"
 
