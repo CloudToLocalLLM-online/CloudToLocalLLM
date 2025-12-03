@@ -131,10 +131,5 @@ jobs:
           echo "  - ${TAG_DESKTOP}"
           echo "  - ${TAG_MOBILE}"
           echo ""
-          
-          # Manually trigger cloud deployment workflow
-          # (GitHub Actions don't auto-trigger on tags pushed by GITHUB_TOKEN)
-          echo "Triggering cloud deployment workflow..."
-          gh workflow run deploy-aks.yml -f version_tag="$TAG_CLOUD"
-          echo "✅ Cloud deployment triggered for $TAG_CLOUD"
+          echo "ℹ️  Note: Cloud deployment workflow will auto-trigger on tag: $TAG_CLOUD"
 
