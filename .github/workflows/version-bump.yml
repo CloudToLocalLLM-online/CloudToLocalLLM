@@ -38,12 +38,18 @@ jobs:
           git pull --rebase origin main
       
       - name: Setup Gemini CLI
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: |
           # Make Gemini CLI wrapper executable and add to PATH
           chmod +x scripts/gemini-cli.cjs
           sudo ln -sf "$(pwd)/scripts/gemini-cli.cjs" /usr/local/bin/gemini-cli
           # Test Gemini CLI
-          gemini-cli "Respond with just OK" || echo "Gemini test failed, will fallback to patch bump"
+          if [ -n "$GEMINI_API_KEY" ]; then
+            gemini-cli "Respond with just OK" && echo "✅ Gemini CLI test passed" || echo "⚠️  Gemini test failed, will fallback to patch bump"
+          else
+            echo "⚠️  GEMINI_API_KEY not set, will fallback to patch bump"
+          fi
           echo "✅ Gemini CLI installed"
       
       - name: Analyze Commits with Gemini
