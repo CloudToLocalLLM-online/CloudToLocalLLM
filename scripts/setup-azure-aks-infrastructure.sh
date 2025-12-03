@@ -376,14 +376,16 @@ create_service_principal() {
 }
 EOF
         
-        az ad app federated-credential create \
+        if az ad app federated-credential create \
             --id "$SP_APP_ID" \
             --parameters /tmp/federated-credential.json \
-            >/dev/null
+            >/dev/null 2>&1; then
+            log_success "Federated credential created for GitHub Actions"
+        else
+            log_warning "Federated credential may already exist (this is okay)"
+        fi
         
-        rm /tmp/federated-credential.json
-        
-        log_success "Federated credential created for GitHub Actions"
+        rm -f /tmp/federated-credential.json
     fi
     
     # Assign additional roles

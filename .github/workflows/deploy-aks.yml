@@ -25,7 +25,7 @@ concurrency:
 env:
   AZURE_RESOURCE_GROUP: cloudtolocalllm-rg
   AZURE_CLUSTER_NAME: cloudtolocalllm-aks
-  ACR_NAME: cloudtolocalllm
+  ACR_NAME: imrightguycloudtolocalllm
   # DOCKER_REGISTRY will be set dynamically to the ACR login server
   DOCKER_REGISTRY: ""
 
