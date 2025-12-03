@@ -27,29 +27,11 @@ jobs:
           fetch-depth: 0  # Need full history for commit analysis
           token: ${{ secrets.GITHUB_TOKEN }}
       
-      - name: Install Gemini CLI
+      - name: Setup Gemini CLI
         run: |
-          # Install Gemini CLI (using Google's AI SDK)
-          npm install -g @google/generative-ai
-          
-          # Create Gemini CLI wrapper
-          cat > /usr/local/bin/gemini-cli <<'EOF'
-#!/usr/bin/env node
-const { GoogleGenerativeAI } = require('@google/generative-ai');
-
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-
-async function main() {
-  const prompt = process.argv.slice(2).join(' ');
-  const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
-  const result = await model.generateContent(prompt);
-  const response = await result.response;
-  console.log(response.text());
-}
-
-main().catch(console.error);
-EOF
-          chmod +x /usr/local/bin/gemini-cli
+          # Make Gemini CLI wrapper executable and add to PATH
+          chmod +x scripts/gemini-cli.js
+          sudo ln -sf "$(pwd)/scripts/gemini-cli.js" /usr/local/bin/gemini-cli
           echo "✅ Gemini CLI installed"
       
       - name: Analyze Commits with Gemini
