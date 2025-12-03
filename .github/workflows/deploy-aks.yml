@@ -77,7 +77,7 @@ jobs:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-          auth-type: federated
+          auth-type: SERVICE_PRINCIPAL
       - name: Setup ACR
         run: |
           # Create ACR if not exists
@@ -112,7 +112,7 @@ jobs:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-          auth-type: federated
+          auth-type: SERVICE_PRINCIPAL
       - name: Get ACR Login Server
         run: echo "DOCKER_REGISTRY=$(az acr show --name ${{ env.ACR_NAME }} --query loginServer --output tsv)" >> $GITHUB_ENV
       - name: Docker Login to ACR
@@ -145,7 +145,7 @@ jobs:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-          auth-type: federated
+          auth-type: SERVICE_PRINCIPAL
       - name: Get ACR Login Server
         run: echo "DOCKER_REGISTRY=$(az acr show --name ${{ env.ACR_NAME }} --query loginServer --output tsv)" >> $GITHUB_ENV
       - name: Docker Login to ACR
@@ -185,7 +185,7 @@ jobs:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-          auth-type: federated
+          auth-type: SERVICE_PRINCIPAL
       - name: Get ACR Login Server
         run: echo "DOCKER_REGISTRY=$(az acr show --name ${{ env.ACR_NAME }} --query loginServer --output tsv)" >> $GITHUB_ENV
       - name: Docker Login to ACR
@@ -218,7 +218,7 @@ jobs:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-          auth-type: federated
+          auth-type: SERVICE_PRINCIPAL
       - name: Get ACR Login Server
         run: echo "DOCKER_REGISTRY=$(az acr show --name ${{ env.ACR_NAME }} --query loginServer --output tsv)" >> $GITHUB_ENV
       - name: Docker Login to ACR
@@ -263,7 +263,7 @@ jobs:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-          auth-type: federated
+          auth-type: SERVICE_PRINCIPAL
 
       - name: Get AKS credentials
         uses: azure/aks-set-context@v3
