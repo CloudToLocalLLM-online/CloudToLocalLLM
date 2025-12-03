@@ -364,19 +364,28 @@ jobs:
             echo "AKS managed identity not found, skipping RBAC configuration"
             exit 0
           fi
+          echo "AKS Managed Identity Object ID: $AKS_MI_ID"
+          
           ROLE="Key Vault Secrets User"
-          COUNT=$(az role assignment list --assignee "$AKS_MI_ID" --scope "$KV_ID" --query "[?roleDefinitionName=='$ROLE'] | length(@)" -o tsv)
+          COUNT=$(az role assignment list --assignee-object-id "$AKS_MI_ID" --scope "$KV_ID" --query "[?roleDefinitionName=='$ROLE'] | length(@)" -o tsv 2>/dev/null || echo "0")
+          
           if [ "$COUNT" = "0" ] || [ -z "$COUNT" ]; then
             echo "Attempting to assign Key Vault RBAC role..."
-            if az role assignment create --assignee "$AKS_MI_ID" --role "$ROLE" --scope "$KV_ID" 2>/dev/null; then
-              echo "Successfully assigned Key Vault RBAC role"
+            # Use --assignee-object-id and --assignee-principal-type to avoid Graph API lookup
+            if az role assignment create \
+              --assignee-object-id "$AKS_MI_ID" \
+              --assignee-principal-type "ServicePrincipal" \
+              --role "$ROLE" \
+              --scope "$KV_ID" 2>&1; then
+              echo "✅ Successfully assigned Key Vault RBAC role"
             else
-              echo "WARNING: Could not assign Key Vault RBAC role (insufficient permissions)"
-              echo "You may need to manually grant 'Key Vault Secrets User' role to AKS managed identity"
+              echo "⚠️  WARNING: Could not assign Key Vault RBAC role (insufficient permissions)"
+              echo "    This may be okay if using Kubernetes secrets instead of Key Vault CSI"
+              echo "    To fix manually, grant 'Key Vault Secrets User' role to: $AKS_MI_ID"
               exit 0
             fi
           else
-            echo "Key Vault RBAC role already assigned"
+            echo "✅ Key Vault RBAC role already assigned"
           fi
 
       - name: Ensure Namespace Exists
@@ -571,32 +580,42 @@ jobs:
           kubectl apply -f k8s/configmap.yaml
           kubectl apply -f k8s/streaming-proxy-configmap.yaml
 
-          # Apply Infrastructure
+          # ===== STEP 1: Deploy and wait for PostgreSQL (all services depend on it) =====
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "STEP 1: Deploying PostgreSQL (all services depend on this)"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          
           kubectl apply -f k8s/postgres-statefulset.yaml
+          
+          # Force delete postgres pod to ensure it picks up new spec (if it exists)
+          kubectl delete pod postgres-0 -n cloudtolocalllm --force --grace-period=0 2>/dev/null || true
+          kubectl rollout restart statefulset/postgres -n cloudtolocalllm
+          
+          # Wait for postgres to be ready before proceeding
+          echo "Waiting for PostgreSQL to be ready..."
+          chmod +x scripts/watch_rollout.sh
+          ./scripts/watch_rollout.sh cloudtolocalllm statefulset postgres
+          
+          echo "✅ PostgreSQL is ready"
+          echo ""
+          
+          # ===== STEP 2: Deploy application services (now that database is ready) =====
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "STEP 2: Deploying application services"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          
           kubectl apply -f k8s/cloudflared.yaml
-
-          # Apply Services
           kubectl apply -f k8s/web-deployment.yaml
           kubectl apply -f k8s/api-backend-deployment.yaml
           kubectl apply -f k8s/streaming-proxy-deployment.yaml
-
-          # Force roll out restart to pick up latest images and secrets
-          # Force delete postgres pod to ensure it picks up new spec (fix for stuck CrashLoopBackOff)
-          # Allow this to fail if pod doesn't exist yet
-          kubectl delete pod postgres-0 -n cloudtolocalllm --force --grace-period=0 2>/dev/null || true
-          kubectl rollout restart statefulset/postgres -n cloudtolocalllm
+          
+          # Restart deployments to pick up latest images
+          kubectl rollout restart deployment/cloudflared -n cloudtolocalllm
           kubectl rollout restart deployment/web -n cloudtolocalllm
           kubectl rollout restart deployment/api-backend -n cloudtolocalllm
           kubectl rollout restart deployment/streaming-proxy -n cloudtolocalllm
-          kubectl rollout restart deployment/cloudflared -n cloudtolocalllm
 
-          # Wait for Rollout to Complete (with Fail Fast - all pods must succeed)
-          chmod +x scripts/watch_rollout.sh
-          set -e  # Exit immediately if any command fails
-          
-          echo "Monitoring postgres rollout..."
-          ./scripts/watch_rollout.sh cloudtolocalllm statefulset postgres
-          
+          # Wait for all application services to be ready
           echo "Monitoring web rollout..."
           ./scripts/watch_rollout.sh cloudtolocalllm deployment web
           
@@ -606,7 +625,7 @@ jobs:
           echo "Monitoring streaming-proxy rollout..."
           ./scripts/watch_rollout.sh cloudtolocalllm deployment streaming-proxy
           
-          echo "✅ All deployments rolled out successfully"
+          echo "✅ All application services deployed successfully"
 
       - name: Verify Cloudflare Tunnel
         run: |
