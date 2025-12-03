@@ -571,7 +571,8 @@ jobs:
           JWT_SECRET: ${{ secrets.JWT_SECRET }}
           STRIPE_TEST_SECRET_KEY: ${{ secrets.STRIPE_TEST_SECRET_KEY }}
           SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
-          CLOUDFLARE_DNS_TOKEN: ${{ secrets.CLOUDFLARE_DNS_TOKEN }}
+          CLOUDFLARE_API_KEY: ${{ secrets.CLOUDFLARE_API_KEY }}
+          CLOUDFLARE_EMAIL: ${{ secrets.CLOUDFLARE_EMAIL }}
           CLOUDFLARE_TUNNEL_TOKEN: ${{ secrets.CLOUDFLARE_TUNNEL_TOKEN }}
           SUPABASE_JWT_SECRET: ${{ secrets.SUPABASE_JWT_SECRET }}
         run: |
@@ -589,7 +590,8 @@ jobs:
           check_secret JWT_SECRET "$JWT_SECRET"
           check_secret STRIPE_TEST_SECRET_KEY "$STRIPE_TEST_SECRET_KEY"
           check_secret SENTRY_DSN "$SENTRY_DSN"
-          check_secret CLOUDFLARE_DNS_TOKEN "$CLOUDFLARE_DNS_TOKEN"
+          check_secret CLOUDFLARE_API_KEY "$CLOUDFLARE_API_KEY"
+          check_secret CLOUDFLARE_EMAIL "$CLOUDFLARE_EMAIL"
           check_secret CLOUDFLARE_TUNNEL_TOKEN "$CLOUDFLARE_TUNNEL_TOKEN"
           check_secret SUPABASE_JWT_SECRET "$SUPABASE_JWT_SECRET"
 
