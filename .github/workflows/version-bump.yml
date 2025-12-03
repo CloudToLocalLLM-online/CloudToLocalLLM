@@ -26,7 +26,7 @@ jobs:
         with:
           fetch-depth: 0  # Need full history for git describe
           fetch-tags: true  # Explicitly fetch tags
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.PAT_TOKEN }}  # Use PAT to trigger other workflows
           persist-credentials: true
       
       - name: Configure Git
