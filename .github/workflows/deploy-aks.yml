@@ -189,16 +189,20 @@ jobs:
           GIT_COMMIT=$(git rev-parse --short HEAD)
           BUILD_TIMESTAMP=$(date +"%Y-%m-%d %H:%M:%S")
           
-          # Update version.json
-          cat > assets/version.json <<EOF
-{
-  "version": "$NEXT_VERSION",
-  "build_number": "$BUILD_NUMBER",
-  "build_date": "$BUILD_DATE",
-  "git_commit": "$GIT_COMMIT",
-  "buildTimestamp": "$BUILD_TIMESTAMP"
-}
-EOF
+          # Update version.json using jq
+          jq -n \
+            --arg version "$NEXT_VERSION" \
+            --arg build_number "$BUILD_NUMBER" \
+            --arg build_date "$BUILD_DATE" \
+            --arg git_commit "$GIT_COMMIT" \
+            --arg buildTimestamp "$BUILD_TIMESTAMP" \
+            '{
+              version: $version,
+              build_number: $build_number,
+              build_date: $build_date,
+              git_commit: $git_commit,
+              buildTimestamp: $buildTimestamp
+            }' > assets/version.json
           
           echo "app_version=$NEXT_VERSION" >> $GITHUB_OUTPUT
           echo "build_number=$BUILD_NUMBER" >> $GITHUB_OUTPUT
@@ -217,17 +221,22 @@ EOF
           PROXY_VERSION=$(./scripts/get-next-service-version.sh streaming-proxy ${{ env.ACR_NAME }} 2>/dev/null || echo "$WEB_VERSION")
           BASE_VERSION=$(./scripts/get-next-service-version.sh base ${{ env.ACR_NAME }} 2>/dev/null || echo "$WEB_VERSION")
           
-          # Create component versions file
-          cat > assets/component-versions.json <<EOF
-{
-  "web": "$WEB_VERSION",
-  "api": "${API_VERSION}-api",
-  "postgres": "${POSTGRES_VERSION}-postgres",
-  "streaming_proxy": "${PROXY_VERSION}-proxy",
-  "base": "${BASE_VERSION}-base",
-  "last_updated": "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-}
-EOF
+          # Create component versions file using jq
+          jq -n \
+            --arg web "$WEB_VERSION" \
+            --arg api "${API_VERSION}-api" \
+            --arg postgres "${POSTGRES_VERSION}-postgres" \
+            --arg streaming_proxy "${PROXY_VERSION}-proxy" \
+            --arg base "${BASE_VERSION}-base" \
+            --arg last_updated "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            '{
+              web: $web,
+              api: $api,
+              postgres: $postgres,
+              streaming_proxy: $streaming_proxy,
+              base: $base,
+              last_updated: $last_updated
+            }' > assets/component-versions.json
           
           echo "✅ Component versions synced"
           cat assets/component-versions.json
