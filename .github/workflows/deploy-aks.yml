@@ -168,11 +168,25 @@ jobs:
           # Login to ACR
           echo "$ACR_PASSWORD" | docker login ${{ env.DOCKER_REGISTRY }} --username "$ACR_USERNAME" --password-stdin
       - uses: docker/setup-buildx-action@v3
-      - uses: subosito/flutter-action@v2
+      - name: Check if Flutter is already installed
+        id: flutter_check
+        run: |
+          if command -v flutter >/dev/null 2>&1; then
+            FLUTTER_VERSION=$(flutter --version | head -n1 || echo "unknown")
+            echo "Flutter is already installed: $FLUTTER_VERSION"
+            echo "flutter_installed=true" >> $GITHUB_OUTPUT
+          else
+            echo "Flutter not found, will install"
+            echo "flutter_installed=false" >> $GITHUB_OUTPUT
+          fi
+      - name: Install Flutter (if needed)
+        if: steps.flutter_check.outputs.flutter_installed != 'true'
+        uses: subosito/flutter-action@v2
         with:
           channel: "stable"
           cache: true
-      - run: flutter pub get && flutter build web --release --no-tree-shake-icons
+      - name: Build Flutter Web
+        run: flutter pub get && flutter build web --release --no-tree-shake-icons
       - name: Debug - List web build
         run: ls -R build/web || echo "build/web not found"
       - uses: docker/build-push-action@v5
@@ -290,7 +304,14 @@ jobs:
           scripts/bootstrap-azure-infra.sh "${{ env.AZURE_RESOURCE_GROUP }}" "eastus" "${{ env.ACR_NAME }}" "${{ secrets.AZURE_KEY_VAULT_NAME }}"
       - name: Create AKS Cluster if not exists
         run: |
-          if ! az aks show --resource-group ${{ env.AZURE_RESOURCE_GROUP }} --name ${{ env.AZURE_CLUSTER_NAME }} --query "name" --output tsv; then
+          if az aks show --resource-group ${{ env.AZURE_RESOURCE_GROUP }} --name ${{ env.AZURE_CLUSTER_NAME }} --query "name" --output tsv >/dev/null 2>&1; then
+            echo "✅ AKS cluster ${{ env.AZURE_CLUSTER_NAME }} already exists"
+            CLUSTER_STATE=$(az aks show --resource-group ${{ env.AZURE_RESOURCE_GROUP }} --name ${{ env.AZURE_CLUSTER_NAME }} --query "provisioningState" --output tsv)
+            echo "Cluster state: $CLUSTER_STATE"
+            if [ "$CLUSTER_STATE" != "Succeeded" ]; then
+              echo "⚠️  Warning: Cluster is not in Succeeded state"
+            fi
+          else
             echo "AKS cluster ${{ env.AZURE_CLUSTER_NAME }} not found. Creating..."
             az aks create \
               --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
@@ -306,8 +327,7 @@ jobs:
               --location eastus \
               --generate-ssh-keys \
               --attach-acr ${{ env.ACR_NAME }}
-          else
-            echo "AKS cluster ${{ env.AZURE_CLUSTER_NAME }} already exists."
+            echo "✅ AKS cluster created successfully"
           fi
       
       - name: Get AKS credentials
@@ -398,6 +418,21 @@ jobs:
           helm repo add secrets-store-csi-driver https://kubernetes-sigs.github.io/secrets-store-csi-driver/charts 2>/dev/null || true
           helm repo add csi-secrets-store-provider-azure https://azure.github.io/secrets-store-csi-driver-provider-azure/charts 2>/dev/null || true
           helm repo update
+          
+          # Check if CSI driver is already installed and healthy
+          if helm status csi-secrets-store -n kube-system >/dev/null 2>&1; then
+            HELM_STATUS=$(helm status csi-secrets-store -n kube-system -o json | jq -r '.info.status' 2>/dev/null || echo "unknown")
+            if [ "$HELM_STATUS" = "deployed" ]; then
+              echo "✅ CSI Secret Store driver is already deployed and healthy"
+              echo "Skipping installation"
+              exit 0
+            else
+              echo "⚠️  CSI Secret Store driver exists but status is: $HELM_STATUS"
+              echo "Will attempt to fix..."
+            fi
+          else
+            echo "CSI Secret Store driver not found, will install"
+          fi
           
           # Function to check and clear Helm locks
           clear_helm_locks() {
