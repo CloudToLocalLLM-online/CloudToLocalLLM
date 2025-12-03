@@ -709,6 +709,25 @@ jobs:
           sed -i "s|cloudtolocalllm/web:latest|${{ env.DOCKER_REGISTRY }}/web:${WEB_TAG}|g" k8s/web-deployment.yaml
           sed -i "s|cloudtolocalllm/api-backend:latest|${{ env.DOCKER_REGISTRY }}/api-backend:${API_TAG}|g" k8s/api-backend-deployment.yaml
           sed -i "s|cloudtolocalllm/streaming-proxy:latest|${{ env.DOCKER_REGISTRY }}/streaming-proxy:${PROXY_TAG}|g" k8s/streaming-proxy-deployment.yaml
+          
+          # Add deployment annotations to force pod recreation on each deploy
+          DEPLOY_TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+          DEPLOY_SHA="${{ github.sha }}"
+          
+          # Add annotations to each deployment to force updates
+          # This ensures pods are recreated even if image tag hasn't changed
+          for deployment_file in k8s/web-deployment.yaml k8s/api-backend-deployment.yaml k8s/streaming-proxy-deployment.yaml; do
+            # Check if annotations section exists in spec.template.metadata
+            if grep -q "spec:" "$deployment_file" && grep -q "template:" "$deployment_file"; then
+              # Add or update annotations in pod template
+              sed -i "/^      labels:/a\\      annotations:\\n        deployment.kubernetes.io/revision: \"${DEPLOY_SHA}\"\\n        deployment.kubernetes.io/timestamp: \"${DEPLOY_TIMESTAMP}\"" "$deployment_file"
+            fi
+          done
+          
+          # For StatefulSet (postgres)
+          if grep -q "spec:" k8s/postgres-statefulset.yaml && grep -q "template:" k8s/postgres-statefulset.yaml; then
+            sed -i "/^      labels:/a\\      annotations:\\n        deployment.kubernetes.io/revision: \"${DEPLOY_SHA}\"\\n        deployment.kubernetes.io/timestamp: \"${DEPLOY_TIMESTAMP}\"" k8s/postgres-statefulset.yaml
+          fi
 
           # Validate manifests with server-side dry-run before applying
           echo "Validating Kubernetes manifests with server-side dry-run..."
@@ -751,6 +770,9 @@ jobs:
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
           
           kubectl apply -f k8s/api-backend-deployment.yaml
+          
+          # Force pod recreation - annotations will trigger rolling update
+          kubectl rollout status deployment/api-backend -n cloudtolocalllm --timeout=10s || true
           kubectl rollout restart deployment/api-backend -n cloudtolocalllm
           
           echo "Waiting for API Backend to be ready..."
@@ -764,6 +786,9 @@ jobs:
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
           
           kubectl apply -f k8s/streaming-proxy-deployment.yaml
+          
+          # Force pod recreation - annotations will trigger rolling update
+          kubectl rollout status deployment/streaming-proxy -n cloudtolocalllm --timeout=10s || true
           kubectl rollout restart deployment/streaming-proxy -n cloudtolocalllm
           
           echo "Waiting for Streaming Proxy to be ready..."
@@ -779,7 +804,11 @@ jobs:
           kubectl apply -f k8s/web-deployment.yaml
           kubectl apply -f k8s/cloudflared.yaml
           
+          # Force pod recreation - annotations will trigger rolling update
+          kubectl rollout status deployment/web -n cloudtolocalllm --timeout=10s || true
           kubectl rollout restart deployment/web -n cloudtolocalllm
+          
+          kubectl rollout status deployment/cloudflared -n cloudtolocalllm --timeout=10s || true
           kubectl rollout restart deployment/cloudflared -n cloudtolocalllm
           
           echo "Waiting for Web to be ready..."
@@ -792,6 +821,49 @@ jobs:
           echo "   2. API Backend"
           echo "   3. Streaming Proxy"
           echo "   4. Web + Cloudflared"
+
+      - name: Purge Cloudflare Cache
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_DNS_TOKEN }}
+          CLOUDFLARE_ZONE_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -e
+          
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "Purging Cloudflare Cache"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          
+          # Purge cache for all domains
+          DOMAINS=(
+            "cloudtolocalllm.online"
+            "app.cloudtolocalllm.online"
+            "api.cloudtolocalllm.online"
+          )
+          
+          for DOMAIN in "${DOMAINS[@]}"; do
+            echo "Purging cache for: $DOMAIN"
+            
+            # Purge everything for this domain
+            RESPONSE=$(curl -s -X POST \
+              "https://api.cloudflare.com/client/v4/zones/${CLOUDFLARE_ZONE_ID}/purge_cache" \
+              -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
+              -H "Content-Type: application/json" \
+              --data '{
+                "purge_everything": true
+              }')
+            
+            # Check if successful
+            if echo "$RESPONSE" | grep -q '"success":true'; then
+              echo "✅ Cache purged successfully for $DOMAIN"
+            else
+              echo "⚠️  Warning: Cache purge may have failed for $DOMAIN"
+              echo "Response: $RESPONSE"
+            fi
+          done
+          
+          echo ""
+          echo "✅ Cloudflare cache purge completed"
+          echo "Users will now receive the latest deployed version"
 
       - name: Verify Cloudflare Tunnel
         run: |
