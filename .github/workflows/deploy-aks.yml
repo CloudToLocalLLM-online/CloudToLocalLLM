@@ -242,7 +242,6 @@ jobs:
       (needs.build_api.result == 'success' || needs.build_api.result == 'skipped') &&
       (needs.build_proxy.result == 'success' || needs.build_proxy.result == 'skipped')
     runs-on: ubuntu-latest
-    steps:
       - name: Azure Login
         uses: azure/login@v2
         with:
@@ -250,6 +249,27 @@ jobs:
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
           auth-type: SERVICE_PRINCIPAL
+      - name: Create AKS Cluster if not exists
+        run: |
+          if ! az aks show --resource-group ${{ env.AZURE_RESOURCE_GROUP }} --name ${{ env.AZURE_CLUSTER_NAME }} --query "name" --output tsv; then
+            echo "AKS cluster ${{ env.AZURE_CLUSTER_NAME }} not found. Creating..."
+            az aks create \
+              --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
+              --name ${{ env.AZURE_CLUSTER_NAME }} \
+              --node-count 1 \
+              --enable-addons monitoring \
+              --enable-msi-auth \
+              --enable-oidc-issuer \
+              --enable-workload-identity \
+              --network-plugin kubenet \
+              --docker-bridge-address 172.17.0.1/16 \
+              --dns-service-ip 10.2.0.10 \
+              --service-cidr 10.2.0.0/24 \
+              --location eastus \
+              --generate-ssh-keys
+          else
+            echo "AKS cluster ${{ env.AZURE_CLUSTER_NAME }} already exists."
+          fi
       - name: Create Azure Resource Group if not exists
         run: az group create --name ${{ env.AZURE_RESOURCE_GROUP }} --location eastus --query "properties.provisioningState" --output tsv
 
