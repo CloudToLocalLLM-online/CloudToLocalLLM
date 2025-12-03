@@ -89,11 +89,12 @@ jobs:
           # Get Login Server
           echo "DOCKER_REGISTRY=$(az acr show --name ${{ env.ACR_NAME }} --query loginServer --output tsv)" >> $GITHUB_ENV
       - name: Docker Login to ACR
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ env.DOCKER_REGISTRY }}
-          username: ${{ secrets.AZURE_CLIENT_ID }}
-          password: ${{ secrets.AZURE_CLIENT_SECRET }}
+        run: |
+          # Get ACR admin credentials
+          ACR_USERNAME=$(az acr credential show --name ${{ env.ACR_NAME }} --query username --output tsv)
+          ACR_PASSWORD=$(az acr credential show --name ${{ env.ACR_NAME }} --query passwords[0].value --output tsv)
+          # Login to ACR
+          echo "$ACR_PASSWORD" | docker login ${{ env.DOCKER_REGISTRY }} --username "$ACR_USERNAME" --password-stdin
       - uses: docker/setup-buildx-action@v3
       - uses: docker/build-push-action@v5
         with:
@@ -121,11 +122,12 @@ jobs:
       - name: Get ACR Login Server
         run: echo "DOCKER_REGISTRY=$(az acr show --name ${{ env.ACR_NAME }} --query loginServer --output tsv)" >> $GITHUB_ENV
       - name: Docker Login to ACR
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ env.DOCKER_REGISTRY }}
-          username: ${{ secrets.AZURE_CLIENT_ID }}
-          password: ${{ secrets.AZURE_CLIENT_SECRET }}
+        run: |
+          # Get ACR admin credentials
+          ACR_USERNAME=$(az acr credential show --name ${{ env.ACR_NAME }} --query username --output tsv)
+          ACR_PASSWORD=$(az acr credential show --name ${{ env.ACR_NAME }} --query passwords[0].value --output tsv)
+          # Login to ACR
+          echo "$ACR_PASSWORD" | docker login ${{ env.DOCKER_REGISTRY }} --username "$ACR_USERNAME" --password-stdin
       - uses: docker/setup-buildx-action@v3
       - uses: docker/build-push-action@v5
         with:
@@ -155,11 +157,12 @@ jobs:
       - name: Get ACR Login Server
         run: echo "DOCKER_REGISTRY=$(az acr show --name ${{ env.ACR_NAME }} --query loginServer --output tsv)" >> $GITHUB_ENV
       - name: Docker Login to ACR
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ env.DOCKER_REGISTRY }}
-          username: ${{ secrets.AZURE_CLIENT_ID }}
-          password: ${{ secrets.AZURE_CLIENT_SECRET }}
+        run: |
+          # Get ACR admin credentials
+          ACR_USERNAME=$(az acr credential show --name ${{ env.ACR_NAME }} --query username --output tsv)
+          ACR_PASSWORD=$(az acr credential show --name ${{ env.ACR_NAME }} --query passwords[0].value --output tsv)
+          # Login to ACR
+          echo "$ACR_PASSWORD" | docker login ${{ env.DOCKER_REGISTRY }} --username "$ACR_USERNAME" --password-stdin
       - uses: docker/setup-buildx-action@v3
       - uses: subosito/flutter-action@v2
         with:
@@ -196,11 +199,12 @@ jobs:
       - name: Get ACR Login Server
         run: echo "DOCKER_REGISTRY=$(az acr show --name ${{ env.ACR_NAME }} --query loginServer --output tsv)" >> $GITHUB_ENV
       - name: Docker Login to ACR
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ env.DOCKER_REGISTRY }}
-          username: ${{ secrets.AZURE_CLIENT_ID }}
-          password: ${{ secrets.AZURE_CLIENT_SECRET }}
+        run: |
+          # Get ACR admin credentials
+          ACR_USERNAME=$(az acr credential show --name ${{ env.ACR_NAME }} --query username --output tsv)
+          ACR_PASSWORD=$(az acr credential show --name ${{ env.ACR_NAME }} --query passwords[0].value --output tsv)
+          # Login to ACR
+          echo "$ACR_PASSWORD" | docker login ${{ env.DOCKER_REGISTRY }} --username "$ACR_USERNAME" --password-stdin
       - uses: docker/setup-buildx-action@v3
       - uses: docker/build-push-action@v5
         with:
@@ -230,11 +234,12 @@ jobs:
       - name: Get ACR Login Server
         run: echo "DOCKER_REGISTRY=$(az acr show --name ${{ env.ACR_NAME }} --query loginServer --output tsv)" >> $GITHUB_ENV
       - name: Docker Login to ACR
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ env.DOCKER_REGISTRY }}
-          username: ${{ secrets.AZURE_CLIENT_ID }}
-          password: ${{ secrets.AZURE_CLIENT_SECRET }}
+        run: |
+          # Get ACR admin credentials
+          ACR_USERNAME=$(az acr credential show --name ${{ env.ACR_NAME }} --query username --output tsv)
+          ACR_PASSWORD=$(az acr credential show --name ${{ env.ACR_NAME }} --query passwords[0].value --output tsv)
+          # Login to ACR
+          echo "$ACR_PASSWORD" | docker login ${{ env.DOCKER_REGISTRY }} --username "$ACR_USERNAME" --password-stdin
       - uses: docker/setup-buildx-action@v3
       - uses: docker/build-push-action@v5
         with:
