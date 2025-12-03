@@ -31,7 +31,7 @@ data:
 
   # Admin Center Configuration
   ADMIN_CENTER_ENABLED: "true"
-  ADMIN_EMAIL: "cmaltais@cloudtolocalllm.online"
+  ADMIN_EMAIL: "christopher.maltais@gmail.com"
 
   # Database Connection Pool (larger for production)
   DB_POOL_MAX: "50"

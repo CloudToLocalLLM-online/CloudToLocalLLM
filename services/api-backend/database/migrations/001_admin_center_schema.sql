@@ -236,12 +236,12 @@ CREATE TRIGGER update_admin_roles_updated_at BEFORE UPDATE ON admin_roles
 -- ============================================================================
 -- DEFAULT DATA INSERTION
 -- ============================================================================
--- Insert default Super Admin role for cmaltais@cloudtolocalllm.online
+-- Insert default Super Admin role for christopher.maltais@gmail.com
 -- This will be executed during initial database setup
 INSERT INTO admin_roles (user_id, role, is_active)
 SELECT id, 'super_admin', true
 FROM users
-WHERE email = 'cmaltais@cloudtolocalllm.online'
+WHERE email = 'christopher.maltais@gmail.com'
 ON CONFLICT (user_id, role) DO NOTHING;
 
 -- ============================================================================
@@ -251,4 +251,4 @@ ON CONFLICT (user_id, role) DO NOTHING;
 -- Tables created: subscriptions, payment_transactions, payment_methods, refunds, admin_roles, admin_audit_logs
 -- Indexes created: 30+ indexes for query optimization
 -- Triggers created: 5 updated_at triggers
--- Default data: Super Admin role for cmaltais@cloudtolocalllm.online
+-- Default data: Super Admin role for christopher.maltais@gmail.com

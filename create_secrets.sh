@@ -1,6 +1,6 @@
 #!/bin/bash
 API_KEY="abc12d491e2bc24a60e9e276be8d5b1af62bf"
-EMAIL="cmaltais@cloudtolocalllm.online"
+EMAIL="christopher.maltais@gmail.com"
 TUNNEL_ID="ee26f195-904b-4406-a8ae-9265c9971004"
 
 echo "Fetching Account ID..."
