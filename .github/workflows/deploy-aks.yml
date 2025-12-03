@@ -72,6 +72,8 @@ jobs:
     needs: changes
     if: ${{ !cancelled() && needs.changes.outputs.base == 'true' }}
     runs-on: ubuntu-latest
+    outputs:
+      base_version: ${{ steps.set_version.outputs.base_version }}
     steps:
       - uses: actions/checkout@v4
       - name: Azure Login
@@ -96,12 +98,21 @@ jobs:
           # Login to ACR
           echo "$ACR_PASSWORD" | docker login ${{ env.DOCKER_REGISTRY }} --username "$ACR_USERNAME" --password-stdin
       - uses: docker/setup-buildx-action@v3
+      
+      - name: Set Base Version
+        id: set_version
+        run: |
+          BASE_VERSION=$(jq -r '.version' assets/version.json)-base
+          echo "base_version=$BASE_VERSION" >> $GITHUB_OUTPUT
+          echo "✅ Base version: $BASE_VERSION"
+      
       - uses: docker/build-push-action@v5
         with:
           context: .
           file: config/docker/Dockerfile.base
           push: true
           tags: |
+            ${{ env.DOCKER_REGISTRY }}/base:${{ steps.set_version.outputs.base_version }}
             ${{ env.DOCKER_REGISTRY }}/base:${{ github.sha }}
             ${{ env.DOCKER_REGISTRY }}/base:latest
           cache-from: type=registry,ref=${{ env.DOCKER_REGISTRY }}/base:latest
@@ -111,6 +122,8 @@ jobs:
     needs: [changes, build_base]
     if: ${{ !cancelled() && (needs.build_base.result == 'success' || needs.build_base.result == 'skipped') && needs.changes.outputs.postgres == 'true' }}
     runs-on: ubuntu-latest
+    outputs:
+      postgres_version: ${{ steps.set_version.outputs.postgres_version }}
     steps:
       - uses: actions/checkout@v4
       - name: Azure Login
@@ -131,12 +144,21 @@ jobs:
           # Login to ACR
           echo "$ACR_PASSWORD" | docker login ${{ env.DOCKER_REGISTRY }} --username "$ACR_USERNAME" --password-stdin
       - uses: docker/setup-buildx-action@v3
+      
+      - name: Set Postgres Version
+        id: set_version
+        run: |
+          POSTGRES_VERSION=$(jq -r '.version' assets/version.json)-postgres
+          echo "postgres_version=$POSTGRES_VERSION" >> $GITHUB_OUTPUT
+          echo "✅ Postgres version: $POSTGRES_VERSION"
+      
       - uses: docker/build-push-action@v5
         with:
           context: .
           file: config/docker/Dockerfile.postgres
           push: true
           tags: |
+            ${{ env.DOCKER_REGISTRY }}/postgres:${{ steps.set_version.outputs.postgres_version }}
             ${{ env.DOCKER_REGISTRY }}/postgres:${{ github.sha }}
             ${{ env.DOCKER_REGISTRY }}/postgres:latest
           build-args: |
@@ -148,8 +170,35 @@ jobs:
     needs: [changes, build_base]
     if: ${{ !cancelled() && (needs.build_base.result == 'success' || needs.build_base.result == 'skipped') && needs.changes.outputs.web == 'true' }}
     runs-on: ubuntu-latest
+    outputs:
+      app_version: ${{ steps.bump_version.outputs.app_version }}
+      build_number: ${{ steps.bump_version.outputs.build_number }}
     steps:
       - uses: actions/checkout@v4
+      
+      - name: Bump Version
+        id: bump_version
+        run: |
+          chmod +x scripts/bump-version.sh
+          ./scripts/bump-version.sh patch
+          
+          # Export for use in other steps
+          APP_VERSION=$(jq -r '.version' assets/version.json)
+          BUILD_NUMBER=$(jq -r '.build_number' assets/version.json)
+          
+          echo "app_version=$APP_VERSION" >> $GITHUB_OUTPUT
+          echo "build_number=$BUILD_NUMBER" >> $GITHUB_OUTPUT
+          
+          echo "✅ App version: $APP_VERSION"
+          echo "✅ Build number: $BUILD_NUMBER"
+      
+      - name: Commit Version Bump
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add assets/version.json
+          git commit -m "chore: bump version to $(jq -r '.version' assets/version.json) [skip ci]" || echo "No version changes to commit"
+          git push || echo "No changes to push"
       - name: Azure Login
         uses: azure/login@v2
         with:
@@ -207,6 +256,7 @@ jobs:
           file: web/Dockerfile
           push: true
           tags: |
+            ${{ env.DOCKER_REGISTRY }}/web:${{ steps.bump_version.outputs.app_version }}
             ${{ env.DOCKER_REGISTRY }}/web:${{ github.sha }}
             ${{ env.DOCKER_REGISTRY }}/web:latest
           build-args: |
@@ -218,6 +268,8 @@ jobs:
     needs: [changes, build_base]
     if: ${{ !cancelled() && (needs.build_base.result == 'success' || needs.build_base.result == 'skipped') && needs.changes.outputs.api == 'true' }}
     runs-on: ubuntu-latest
+    outputs:
+      api_version: ${{ steps.set_version.outputs.api_version }}
     steps:
       - uses: actions/checkout@v4
       - name: Azure Login
@@ -238,12 +290,21 @@ jobs:
           # Login to ACR
           echo "$ACR_PASSWORD" | docker login ${{ env.DOCKER_REGISTRY }} --username "$ACR_USERNAME" --password-stdin
       - uses: docker/setup-buildx-action@v3
+      
+      - name: Set API Version
+        id: set_version
+        run: |
+          API_VERSION=$(jq -r '.version' assets/version.json)-api
+          echo "api_version=$API_VERSION" >> $GITHUB_OUTPUT
+          echo "✅ API version: $API_VERSION"
+      
       - uses: docker/build-push-action@v5
         with:
           context: services/api-backend
           file: services/api-backend/Dockerfile
           push: true
           tags: |
+            ${{ env.DOCKER_REGISTRY }}/api-backend:${{ steps.set_version.outputs.api_version }}
             ${{ env.DOCKER_REGISTRY }}/api-backend:${{ github.sha }}
             ${{ env.DOCKER_REGISTRY }}/api-backend:latest
           build-args: |
@@ -255,6 +316,8 @@ jobs:
     needs: [changes, build_base]
     if: ${{ !cancelled() && (needs.build_base.result == 'success' || needs.build_base.result == 'skipped') && needs.changes.outputs.proxy == 'true' }}
     runs-on: ubuntu-latest
+    outputs:
+      proxy_version: ${{ steps.set_version.outputs.proxy_version }}
     steps:
       - uses: actions/checkout@v4
       - name: Azure Login
@@ -275,12 +338,21 @@ jobs:
           # Login to ACR
           echo "$ACR_PASSWORD" | docker login ${{ env.DOCKER_REGISTRY }} --username "$ACR_USERNAME" --password-stdin
       - uses: docker/setup-buildx-action@v3
+      
+      - name: Set Proxy Version
+        id: set_version
+        run: |
+          PROXY_VERSION=$(jq -r '.version' assets/version.json)-proxy
+          echo "proxy_version=$PROXY_VERSION" >> $GITHUB_OUTPUT
+          echo "✅ Proxy version: $PROXY_VERSION"
+      
       - uses: docker/build-push-action@v5
         with:
           context: services/streaming-proxy
           file: services/streaming-proxy/Dockerfile
           push: true
           tags: |
+            ${{ env.DOCKER_REGISTRY }}/streaming-proxy:${{ steps.set_version.outputs.proxy_version }}
             ${{ env.DOCKER_REGISTRY }}/streaming-proxy:${{ github.sha }}
             ${{ env.DOCKER_REGISTRY }}/streaming-proxy:latest
           build-args: |
@@ -695,26 +767,35 @@ jobs:
           WEB_BUILT: ${{ needs.changes.outputs.web }}
           API_BUILT: ${{ needs.changes.outputs.api }}
           PROXY_BUILT: ${{ needs.changes.outputs.proxy }}
+          POSTGRES_VERSION: ${{ needs.build_postgres.outputs.postgres_version }}
+          WEB_VERSION: ${{ needs.build_web.outputs.app_version }}
+          API_VERSION: ${{ needs.build_api.outputs.api_version }}
+          PROXY_VERSION: ${{ needs.build_proxy.outputs.proxy_version }}
         run: |
           set -e  # Exit immediately on any error
           
-          # Use SHA tag if service was built, otherwise use latest
-          POSTGRES_TAG=${{ github.sha }}
-          WEB_TAG=${{ github.sha }}
-          API_TAG=${{ github.sha }}
-          PROXY_TAG=${{ github.sha }}
+          # Use semantic version tag if service was built, otherwise use latest
+          # Web build determines the app version - it's the source of truth
+          POSTGRES_TAG="${POSTGRES_VERSION:-latest}"
+          WEB_TAG="${WEB_VERSION:-latest}"
+          API_TAG="${API_VERSION:-latest}"
+          PROXY_TAG="${PROXY_VERSION:-latest}"
           
-          # Fall back to latest if service wasn't built this run
+          # Override with latest if service wasn't built this run
           [[ "$POSTGRES_BUILT" != "true" ]] && POSTGRES_TAG="latest"
           [[ "$WEB_BUILT" != "true" ]] && WEB_TAG="latest"
           [[ "$API_BUILT" != "true" ]] && API_TAG="latest"
           [[ "$PROXY_BUILT" != "true" ]] && PROXY_TAG="latest"
           
-          echo "Image tags to use:"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "Image Versions for Deployment"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
           echo "  Postgres: $POSTGRES_TAG"
-          echo "  Web: $WEB_TAG"
-          echo "  API: $API_TAG"
-          echo "  Proxy: $PROXY_TAG"
+          echo "  Web:      $WEB_TAG (Source of Truth)"
+          echo "  API:      $API_TAG"
+          echo "  Proxy:    $PROXY_TAG"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo ""
           
           # Replace image registry in manifests with appropriate tags
           sed -i "s|cloudtolocalllm/postgres:latest|${{ env.DOCKER_REGISTRY }}/postgres:${POSTGRES_TAG}|g" k8s/postgres-statefulset.yaml
