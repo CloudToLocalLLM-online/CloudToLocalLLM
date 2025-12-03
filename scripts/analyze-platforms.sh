@@ -35,15 +35,11 @@ PROMPT="You are a semantic versioning and platform deployment expert. Analyze th
 echo "Calling Gemini AI..."
 
 if [ -z "$GEMINI_API_KEY" ]; then
-    echo "⚠️  GEMINI_API_KEY not set, using defaults"
-    # Default: patch bump, all platforms
-    IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT_VERSION"
-    PATCH=$((PATCH + 1))
-    NEW_VERSION="${MAJOR}.${MINOR}.${PATCH}"
-    NEEDS_CLOUD="true"
-    NEEDS_DESKTOP="false"
-    NEEDS_MOBILE="false"
-else
+    echo "❌ ERROR: GEMINI_API_KEY not set"
+    echo "Version bump REQUIRES Gemini AI analysis"
+    echo "Add the secret: gh secret set GEMINI_API_KEY"
+    exit 1
+fi
     set +e
     # Try to find gemini-cli in PATH or use local script
     if command -v gemini-cli >/dev/null 2>&1; then
@@ -63,14 +59,11 @@ else
     echo ""
     
     if [ $EXIT_CODE -ne 0 ] || [ -z "$RESPONSE" ]; then
-        echo "⚠️  Gemini failed (exit $EXIT_CODE), using defaults"
-        IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT_VERSION"
-        PATCH=$((PATCH + 1))
-        NEW_VERSION="${MAJOR}.${MINOR}.${PATCH}"
-        NEEDS_CLOUD="true"
-        NEEDS_DESKTOP="false"
-        NEEDS_MOBILE="false"
-    else
+        echo "❌ ERROR: Gemini API call failed (exit code: $EXIT_CODE)"
+        echo "Response: $RESPONSE"
+        echo "Version bump REQUIRES successful Gemini analysis"
+        exit 1
+    fi
         # Extract JSON from response (Gemini wraps in ```json ``` blocks)
         # Remove markdown code blocks and extract multi-line JSON
         JSON_RESPONSE=$(echo "$RESPONSE" | sed '/```json/,/```/!d' | sed '/```/d' | tr -d '\n' | sed 's/  */ /g')
@@ -92,32 +85,26 @@ else
         NEEDS_MOBILE=$(echo "$JSON_RESPONSE" | jq -r '.needs_mobile // empty' 2>/dev/null || echo "")
         REASONING=$(echo "$JSON_RESPONSE" | jq -r '.reasoning // empty' 2>/dev/null || echo "")
         
-        # If parsing failed, use defaults
+        # If parsing failed, EXIT - no fallback
         if [ -z "$NEW_VERSION" ] || [ -z "$NEEDS_CLOUD" ]; then
-            echo "⚠️  JSON parsing failed, using defaults"
-            IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT_VERSION"
-            PATCH=$((PATCH + 1))
-            NEW_VERSION="${MAJOR}.${MINOR}.${PATCH}"
-            NEEDS_CLOUD="true"
-            NEEDS_DESKTOP="false"
-            NEEDS_MOBILE="false"
-        else
-            echo "✅ Gemini Analysis:"
-            echo "  New version: $NEW_VERSION"
-            echo "  Cloud: $NEEDS_CLOUD"
-            echo "  Desktop: $NEEDS_DESKTOP"
-            echo "  Mobile: $NEEDS_MOBILE"
-            echo "  Reasoning: $REASONING"
+            echo "❌ ERROR: Failed to parse Gemini response"
+            echo "Extracted JSON: $JSON_RESPONSE"
+            echo "Version bump REQUIRES valid Gemini analysis"
+            exit 1
         fi
-    fi
-fi
+        
+        echo "✅ Gemini Analysis:"
+        echo "  New version: $NEW_VERSION"
+        echo "  Cloud: $NEEDS_CLOUD"
+        echo "  Desktop: $NEEDS_DESKTOP"
+        echo "  Mobile: $NEEDS_MOBILE"
+        echo "  Reasoning: $REASONING"
 
-# Validate version
+# Validate version format
 if ! echo "$NEW_VERSION" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+$'; then
-    echo "⚠️  Invalid version, calculating fallback..."
-    IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT_VERSION"
-    PATCH=$((PATCH + 1))
-    NEW_VERSION="${MAJOR}.${MINOR}.${PATCH}"
+    echo "❌ ERROR: Invalid version format from Gemini: $NEW_VERSION"
+    echo "Expected format: x.y.z (e.g., 4.5.0)"
+    exit 1
 fi
 
 echo ""
