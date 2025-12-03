@@ -104,6 +104,12 @@ jobs:
           cache-from: type=registry,ref=${{ env.DOCKER_REGISTRY }}/base:latest
           cache-to: type=inline
 
+  build_postgres:
+    needs: changes
+    if: ${{ !cancelled() && needs.changes.outputs.postgres == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
       - name: Azure Login
         uses: azure/login@v2
         with:
@@ -132,6 +138,12 @@ jobs:
           cache-from: type=registry,ref=${{ env.DOCKER_REGISTRY }}/postgres:latest
           cache-to: type=inline
 
+  build_web:
+    needs: changes
+    if: ${{ !cancelled() && needs.changes.outputs.web == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
       - name: Azure Login
         uses: azure/login@v2
         with:
@@ -166,7 +178,13 @@ jobs:
             BASE_REGISTRY=${{ env.DOCKER_REGISTRY }}
           cache-from: type=registry,ref=${{ env.DOCKER_REGISTRY }}/web:latest
           cache-to: type=inline
-
+  
+  build_api:
+    needs: changes
+    if: ${{ !cancelled() && needs.changes.outputs.api == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
       - name: Azure Login
         uses: azure/login@v2
         with:
@@ -195,10 +213,18 @@ jobs:
           cache-from: type=registry,ref=${{ env.DOCKER_REGISTRY }}/api-backend:latest
           cache-to: type=inline
 
+  build_proxy:
+    needs: changes
+    if: ${{ !cancelled() && needs.changes.outputs.proxy == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
       - name: Azure Login
         uses: azure/login@v2
         with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
       - name: Create Azure Resource Group if not exists
         run: az group create --name ${{ env.AZURE_RESOURCE_GROUP }} --location eastus --query "properties.provisioningState" --output tsv
       - name: Get ACR Login Server
@@ -224,12 +250,16 @@ jobs:
   deploy_infrastructure:
     permissions:
       id-token: write
-    # Run if any build job ran OR if k8s files changed
+    # Run after image builds (or if they were skipped due to unchanged paths)
     needs:
-      [changes, build_base]
+      [changes, build_base, build_postgres, build_web, build_api, build_proxy]
     if: |
       !cancelled() &&
-      (needs.build_base.result == 'success' || needs.build_base.result == 'skipped')
+      (needs.build_base.result == 'success' || needs.build_base.result == 'skipped') &&
+      (needs.build_postgres.result == 'success' || needs.build_postgres.result == 'skipped') &&
+      (needs.build_web.result == 'success' || needs.build_web.result == 'skipped') &&
+      (needs.build_api.result == 'success' || needs.build_api.result == 'skipped') &&
+      (needs.build_proxy.result == 'success' || needs.build_proxy.result == 'skipped')
     runs-on: ubuntu-latest
     steps:
       - name: Azure Login
