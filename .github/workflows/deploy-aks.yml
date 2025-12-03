@@ -186,7 +186,19 @@ jobs:
           channel: "stable"
           cache: true
       - name: Build Flutter Web
-        run: flutter pub get && flutter build web --release --no-tree-shake-icons
+        run: |
+          flutter pub get
+          flutter build web --release --no-tree-shake-icons --base-href / --dart-define=FLUTTER_BUILD_NUMBER=${{ github.sha }}
+      - name: Apply Cache Busting to index.html
+        run: |
+          # Replace placeholder with actual build number (Git SHA)
+          sed -i "s|\$FLUTTER_BUILD_NUMBER|${{ github.sha }}|g" build/web/index.html
+          # Ensure base href is correctly set for root path
+          sed -i "s|\$FLUTTER_BASE_HREF|/|g" build/web/index.html
+      - name: Debug - Verify index.html cache busting
+        run: |
+          echo "Checking if cache-busting was applied:"
+          grep "flutter_bootstrap.js" build/web/index.html
       - name: Debug - List web build
         run: ls -R build/web || echo "build/web not found"
       - uses: docker/build-push-action@v5
