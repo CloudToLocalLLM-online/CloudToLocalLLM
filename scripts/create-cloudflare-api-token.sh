@@ -56,7 +56,7 @@ echo ""
 
 TOKEN_REQUEST=$(cat <<EOF
 {
-  "name": "CloudToLocalLLM Deployment - Cache Purge",
+  "name": "CloudToLocalLLM Deployment - Cache Purge (No IP Restrictions)",
   "policies": [
     {
       "effect": "allow",
@@ -74,13 +74,7 @@ TOKEN_REQUEST=$(cat <<EOF
         }
       ]
     }
-  ],
-  "condition": {
-    "request.ip": {
-      "in": [],
-      "not_in": []
-    }
-  }
+  ]
 }
 EOF
 )
