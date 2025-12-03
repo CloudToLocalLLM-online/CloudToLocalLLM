@@ -3,7 +3,7 @@ description: Manage and run powerful Large Language Models locally, orchestrated
 publish_to: none
 homepage: https://cloudtolocalllm.online
 repository: https://github.com/imrightguy/CloudToLocalLLM
-version: 4.4.3+202512032204
+version: 4.4.4+202512032207
 
 environment:
   sdk: ">=3.5.0 <4.0.0"
