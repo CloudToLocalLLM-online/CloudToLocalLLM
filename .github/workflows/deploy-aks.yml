@@ -81,6 +81,8 @@ jobs:
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
           auth-type: SERVICE_PRINCIPAL
+      - name: Create Azure Resource Group if not exists
+        run: az group create --name ${{ env.AZURE_RESOURCE_GROUP }} --location eastus --query "properties.provisioningState" --output tsv
       - name: Setup ACR
         run: |
           # Create ACR if not exists
@@ -103,12 +105,6 @@ jobs:
           cache-from: type=registry,ref=${{ env.DOCKER_REGISTRY }}/base:latest
           cache-to: type=inline
 
-  build_postgres:
-    needs: [changes, build_base]
-    if: ${{ !cancelled() && (needs.changes.outputs.postgres == 'true' || needs.changes.outputs.base == 'true') && (needs.build_base.result == 'success' || needs.build_base.result == 'skipped') }}
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
       - name: Azure Login
         uses: azure/login@v2
         with:
@@ -116,6 +112,8 @@ jobs:
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
           auth-type: SERVICE_PRINCIPAL
+      - name: Create Azure Resource Group if not exists
+        run: az group create --name ${{ env.AZURE_RESOURCE_GROUP }} --location eastus --query "properties.provisioningState" --output tsv
       - name: Get ACR Login Server
         run: echo "DOCKER_REGISTRY=$(az acr show --name ${{ env.ACR_NAME }} --query loginServer --output tsv)" >> $GITHUB_ENV
       - name: Docker Login to ACR
@@ -136,12 +134,6 @@ jobs:
           cache-from: type=registry,ref=${{ env.DOCKER_REGISTRY }}/postgres:latest
           cache-to: type=inline
 
-  build_web:
-    needs: [changes, build_base]
-    if: ${{ !cancelled() && (needs.changes.outputs.web == 'true' || needs.changes.outputs.base == 'true') && (needs.build_base.result == 'success' || needs.build_base.result == 'skipped') }}
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
       - name: Azure Login
         uses: azure/login@v2
         with:
@@ -149,6 +141,8 @@ jobs:
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
           auth-type: SERVICE_PRINCIPAL
+      - name: Create Azure Resource Group if not exists
+        run: az group create --name ${{ env.AZURE_RESOURCE_GROUP }} --location eastus --query "properties.provisioningState" --output tsv
       - name: Get ACR Login Server
         run: echo "DOCKER_REGISTRY=$(az acr show --name ${{ env.ACR_NAME }} --query loginServer --output tsv)" >> $GITHUB_ENV
       - name: Docker Login to ACR
@@ -176,12 +170,6 @@ jobs:
           cache-from: type=registry,ref=${{ env.DOCKER_REGISTRY }}/web:latest
           cache-to: type=inline
 
-  build_api:
-    needs: [changes, build_base]
-    if: ${{ !cancelled() && (needs.changes.outputs.api == 'true' || needs.changes.outputs.base == 'true') && (needs.build_base.result == 'success' || needs.build_base.result == 'skipped') }}
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
       - name: Azure Login
         uses: azure/login@v2
         with:
@@ -189,6 +177,8 @@ jobs:
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
           auth-type: SERVICE_PRINCIPAL
+      - name: Create Azure Resource Group if not exists
+        run: az group create --name ${{ env.AZURE_RESOURCE_GROUP }} --location eastus --query "properties.provisioningState" --output tsv
       - name: Get ACR Login Server
         run: echo "DOCKER_REGISTRY=$(az acr show --name ${{ env.ACR_NAME }} --query loginServer --output tsv)" >> $GITHUB_ENV
       - name: Docker Login to ACR
@@ -209,12 +199,6 @@ jobs:
           cache-from: type=registry,ref=${{ env.DOCKER_REGISTRY }}/api-backend:latest
           cache-to: type=inline
 
-  build_proxy:
-    needs: [changes, build_base]
-    if: ${{ !cancelled() && (needs.changes.outputs.proxy == 'true' || needs.changes.outputs.base == 'true') && (needs.build_base.result == 'success' || needs.build_base.result == 'skipped') }}
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
       - name: Azure Login
         uses: azure/login@v2
         with:
@@ -222,6 +206,8 @@ jobs:
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
           auth-type: SERVICE_PRINCIPAL
+      - name: Create Azure Resource Group if not exists
+        run: az group create --name ${{ env.AZURE_RESOURCE_GROUP }} --location eastus --query "properties.provisioningState" --output tsv
       - name: Get ACR Login Server
         run: echo "DOCKER_REGISTRY=$(az acr show --name ${{ env.ACR_NAME }} --query loginServer --output tsv)" >> $GITHUB_ENV
       - name: Docker Login to ACR
@@ -257,9 +243,6 @@ jobs:
       (needs.build_proxy.result == 'success' || needs.build_proxy.result == 'skipped')
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
       - name: Azure Login
         uses: azure/login@v2
         with:
@@ -267,6 +250,8 @@ jobs:
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
           auth-type: SERVICE_PRINCIPAL
+      - name: Create Azure Resource Group if not exists
+        run: az group create --name ${{ env.AZURE_RESOURCE_GROUP }} --location eastus --query "properties.provisioningState" --output tsv
 
       - name: Get AKS credentials
         uses: azure/aks-set-context@v3
