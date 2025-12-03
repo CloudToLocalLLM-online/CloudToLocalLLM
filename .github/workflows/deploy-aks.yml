@@ -240,6 +240,8 @@ jobs:
           cache-to: type=inline
 
   deploy_infrastructure:
+    permissions:
+      id-token: write
     # Run if any build job ran OR if k8s files changed
     needs:
       [changes, build_base, build_postgres, build_web, build_api, build_proxy]
