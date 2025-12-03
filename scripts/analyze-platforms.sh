@@ -49,8 +49,14 @@ else
     EXIT_CODE=$?
     set -e
     
+    echo "DEBUG: Gemini exit code: $EXIT_CODE"
+    echo "DEBUG: Gemini response length: ${#RESPONSE}"
+    echo "DEBUG: Gemini response (first 1000 chars):"
+    echo "${RESPONSE:0:1000}"
+    echo ""
+    
     if [ $EXIT_CODE -ne 0 ] || [ -z "$RESPONSE" ]; then
-        echo "⚠️  Gemini failed, using defaults"
+        echo "⚠️  Gemini failed (exit $EXIT_CODE), using defaults"
         IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT_VERSION"
         PATCH=$((PATCH + 1))
         NEW_VERSION="${MAJOR}.${MINOR}.${PATCH}"
@@ -58,21 +64,37 @@ else
         NEEDS_DESKTOP="false"
         NEEDS_MOBILE="false"
     else
-        # Extract JSON
-        JSON_RESPONSE=$(echo "$RESPONSE" | grep -o '{.*}' | head -1)
+        # Extract JSON from response
+        JSON_RESPONSE=$(echo "$RESPONSE" | grep -o '{.*}' | head -1 || echo "$RESPONSE")
         
-        NEW_VERSION=$(echo "$JSON_RESPONSE" | jq -r '.new_version // "'$CURRENT_VERSION'"')
-        NEEDS_CLOUD=$(echo "$JSON_RESPONSE" | jq -r '.needs_cloud // true')
-        NEEDS_DESKTOP=$(echo "$JSON_RESPONSE" | jq -r '.needs_desktop // false')
-        NEEDS_MOBILE=$(echo "$JSON_RESPONSE" | jq -r '.needs_mobile // false')
-        REASONING=$(echo "$JSON_RESPONSE" | jq -r '.reasoning // "Auto-generated"')
+        echo "DEBUG: Extracted JSON:"
+        echo "$JSON_RESPONSE"
+        echo ""
         
-        echo "✅ Gemini Analysis:"
-        echo "  New version: $NEW_VERSION"
-        echo "  Cloud: $NEEDS_CLOUD"
-        echo "  Desktop: $NEEDS_DESKTOP"
-        echo "  Mobile: $NEEDS_MOBILE"
-        echo "  Reasoning: $REASONING"
+        # Parse with fallbacks
+        NEW_VERSION=$(echo "$JSON_RESPONSE" | jq -r '.new_version // empty' 2>/dev/null || echo "")
+        NEEDS_CLOUD=$(echo "$JSON_RESPONSE" | jq -r '.needs_cloud // empty' 2>/dev/null || echo "")
+        NEEDS_DESKTOP=$(echo "$JSON_RESPONSE" | jq -r '.needs_desktop // empty' 2>/dev/null || echo "")
+        NEEDS_MOBILE=$(echo "$JSON_RESPONSE" | jq -r '.needs_mobile // empty' 2>/dev/null || echo "")
+        REASONING=$(echo "$JSON_RESPONSE" | jq -r '.reasoning // empty' 2>/dev/null || echo "")
+        
+        # If parsing failed, use defaults
+        if [ -z "$NEW_VERSION" ] || [ -z "$NEEDS_CLOUD" ]; then
+            echo "⚠️  JSON parsing failed, using defaults"
+            IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT_VERSION"
+            PATCH=$((PATCH + 1))
+            NEW_VERSION="${MAJOR}.${MINOR}.${PATCH}"
+            NEEDS_CLOUD="true"
+            NEEDS_DESKTOP="false"
+            NEEDS_MOBILE="false"
+        else
+            echo "✅ Gemini Analysis:"
+            echo "  New version: $NEW_VERSION"
+            echo "  Cloud: $NEEDS_CLOUD"
+            echo "  Desktop: $NEEDS_DESKTOP"
+            echo "  Mobile: $NEEDS_MOBILE"
+            echo "  Reasoning: $REASONING"
+        fi
     fi
 fi
 
