@@ -24,7 +24,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # Need full history for commit analysis
+          fetch-depth: 50  # Last 50 commits should be enough for analysis
           token: ${{ secrets.GITHUB_TOKEN }}
       
       - name: Setup Gemini CLI
