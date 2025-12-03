@@ -842,7 +842,8 @@ jobs:
       - name: Purge Cloudflare Cache
         continue-on-error: true
         env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_API_KEY: ${{ secrets.CLOUDFLARE_API_KEY }}
+          CLOUDFLARE_EMAIL: ${{ secrets.CLOUDFLARE_EMAIL }}
         run: |
           set -e
           
@@ -855,7 +856,8 @@ jobs:
           echo "Fetching Zone ID for: $DOMAIN"
           
           ZONE_RESPONSE=$(curl -s -X GET "https://api.cloudflare.com/client/v4/zones?name=$DOMAIN" \
-            -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
+            -H "X-Auth-Email: ${CLOUDFLARE_EMAIL}" \
+            -H "X-Auth-Key: ${CLOUDFLARE_API_KEY}" \
             -H "Content-Type: application/json")
           
           ZONE_ID=$(echo "$ZONE_RESPONSE" | grep -o '"id":"[^"]*"' | head -1 | cut -d'"' -f4)
@@ -874,7 +876,8 @@ jobs:
           
           RESPONSE=$(curl -s -X POST \
             "https://api.cloudflare.com/client/v4/zones/${ZONE_ID}/purge_cache" \
-            -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
+            -H "X-Auth-Email: ${CLOUDFLARE_EMAIL}" \
+            -H "X-Auth-Key: ${CLOUDFLARE_API_KEY}" \
             -H "Content-Type: application/json" \
             --data '{"purge_everything": true}')
           
