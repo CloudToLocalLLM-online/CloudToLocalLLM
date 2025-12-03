@@ -308,6 +308,49 @@ validate_service_principal() {
         
         if [[ "$role_count" -gt 0 ]]; then
             log_success "Role assignments found ($role_count)"
+            
+            # Check for specific required roles (check all scopes)
+            local has_contributor=$(az role assignment list --assignee "$sp_object_id" --all --query "[?roleDefinitionName=='Contributor'] | length(@)" -o tsv 2>/dev/null || echo "0")
+            local has_user_access=$(az role assignment list --assignee "$sp_object_id" --all --query "[?roleDefinitionName=='User Access Administrator'] | length(@)" -o tsv 2>/dev/null || echo "0")
+            
+            if [[ "$has_contributor" -gt 0 ]]; then
+                log_success "Has Contributor role (can create resources)"
+            else
+                log_warning "Missing Contributor role"
+            fi
+            
+            if [[ "$has_user_access" -gt 0 ]]; then
+                log_success "Has User Access Administrator role (can assign roles)"
+            else
+                log_error "Missing User Access Administrator role (cannot assign roles to AKS)"
+                log_info "Grant with: az role assignment create --assignee $sp_object_id --role 'User Access Administrator' --scope /subscriptions/\$SUBSCRIPTION_ID/resourceGroups/$RESOURCE_GROUP"
+            fi
+            
+            # Check ACR push permissions
+            if [[ -n "$ACR_NAME" ]]; then
+                local acr_id=$(az acr show --name "$ACR_NAME" --resource-group "$RESOURCE_GROUP" --query id -o tsv 2>/dev/null || echo "")
+                if [[ -n "$acr_id" ]]; then
+                    local has_acr_push=$(az role assignment list --assignee "$sp_object_id" --scope "$acr_id" --query "[?roleDefinitionName=='AcrPush'] | length(@)" -o tsv 2>/dev/null || echo "0")
+                    if [[ "$has_acr_push" -gt 0 ]]; then
+                        log_success "Has AcrPush role (can push to ACR)"
+                    else
+                        log_warning "Missing AcrPush role for ACR"
+                    fi
+                fi
+            fi
+            
+            # Check Key Vault permissions
+            if [[ -n "$KEYVAULT_NAME" ]]; then
+                local kv_id=$(az keyvault show --name "$KEYVAULT_NAME" --resource-group "$RESOURCE_GROUP" --query id -o tsv 2>/dev/null || echo "")
+                if [[ -n "$kv_id" ]]; then
+                    local has_kv_secrets=$(az role assignment list --assignee "$sp_object_id" --scope "$kv_id" --query "[?roleDefinitionName=='Key Vault Secrets Officer'] | length(@)" -o tsv 2>/dev/null || echo "0")
+                    if [[ "$has_kv_secrets" -gt 0 ]]; then
+                        log_success "Has Key Vault Secrets Officer role"
+                    else
+                        log_warning "Missing Key Vault Secrets Officer role"
+                    fi
+                fi
+            fi
         else
             log_error "No role assignments found for service principal"
         fi
