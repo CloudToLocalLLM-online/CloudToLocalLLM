@@ -294,6 +294,20 @@ class _CloudToLocalLLMAppState extends State<CloudToLocalLLMApp> {
     _attachedAuthService = authService;
     _authListenerAttached = true;
     
+    // Listen for authenticated services to load and trigger rebuild
+    authService.areAuthenticatedServicesLoaded.addListener(() {
+      if (authService.areAuthenticatedServicesLoaded.value && mounted) {
+        debugPrint('[App] Authenticated services became loaded, triggering rebuild...');
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            setState(() {
+              debugPrint('[App] Provider tree rebuilt with authenticated services');
+            });
+          }
+        });
+      }
+    });
+    
     // If authenticated services are already loaded, trigger a rebuild now
     // to ensure they get added to the Provider tree
     if (authService.areAuthenticatedServicesLoaded.value) {
