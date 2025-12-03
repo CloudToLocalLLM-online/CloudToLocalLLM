@@ -170,3 +170,6 @@ run_log.txt
 
 # Logs directory
 logs/
+
+# Local tooling binaries
+minikube-linux-amd64

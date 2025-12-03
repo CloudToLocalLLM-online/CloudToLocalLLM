@@ -233,14 +233,10 @@ jobs:
       id-token: write
     # Run if any build job ran OR if k8s files changed
     needs:
-      [changes, build_base, build_postgres, build_web, build_api, build_proxy]
+      [changes, build_base]
     if: |
-      !cancelled() && 
-      (needs.build_base.result == 'success' || needs.build_base.result == 'skipped') &&
-      (needs.build_postgres.result == 'success' || needs.build_postgres.result == 'skipped') &&
-      (needs.build_web.result == 'success' || needs.build_web.result == 'skipped') &&
-      (needs.build_api.result == 'success' || needs.build_api.result == 'skipped') &&
-      (needs.build_proxy.result == 'success' || needs.build_proxy.result == 'skipped')
+      !cancelled() &&
+      (needs.build_base.result == 'success' || needs.build_base.result == 'skipped')
     runs-on: ubuntu-latest
     steps:
       - name: Azure Login
