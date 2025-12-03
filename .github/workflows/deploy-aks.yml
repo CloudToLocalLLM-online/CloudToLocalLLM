@@ -818,25 +818,41 @@ jobs:
           WEB_BUILT: ${{ needs.changes.outputs.web }}
           API_BUILT: ${{ needs.changes.outputs.api }}
           PROXY_BUILT: ${{ needs.changes.outputs.proxy }}
-          POSTGRES_VERSION: ${{ needs.build_postgres.outputs.postgres_version }}
-          WEB_VERSION: ${{ needs.build_web.outputs.app_version }}
-          API_VERSION: ${{ needs.build_api.outputs.api_version }}
-          PROXY_VERSION: ${{ needs.build_proxy.outputs.proxy_version }}
+          WEB_APP_VERSION: ${{ needs.build_web.outputs.app_version }}
         run: |
           set -e  # Exit immediately on any error
           
           # Use semantic version tag if service was built, otherwise use latest
           # Web build determines the app version - it's the source of truth
-          POSTGRES_TAG="${POSTGRES_VERSION:-latest}"
-          WEB_TAG="${WEB_VERSION:-latest}"
-          API_TAG="${API_VERSION:-latest}"
-          PROXY_TAG="${PROXY_VERSION:-latest}"
+          if [ "$POSTGRES_BUILT" = "true" ]; then
+            chmod +x scripts/get-next-service-version.sh
+            POSTGRES_VERSION=$(./scripts/get-next-service-version.sh postgres ${{ env.ACR_NAME }})
+            POSTGRES_TAG="${POSTGRES_VERSION}-postgres"
+          else
+            POSTGRES_TAG="latest"
+          fi
           
-          # Override with latest if service wasn't built this run
-          [[ "$POSTGRES_BUILT" != "true" ]] && POSTGRES_TAG="latest"
-          [[ "$WEB_BUILT" != "true" ]] && WEB_TAG="latest"
-          [[ "$API_BUILT" != "true" ]] && API_TAG="latest"
-          [[ "$PROXY_BUILT" != "true" ]] && PROXY_TAG="latest"
+          if [ "$WEB_BUILT" = "true" ]; then
+            WEB_TAG="${WEB_APP_VERSION}"
+          else
+            WEB_TAG="latest"
+          fi
+          
+          if [ "$API_BUILT" = "true" ]; then
+            chmod +x scripts/get-next-service-version.sh
+            API_VERSION=$(./scripts/get-next-service-version.sh api-backend ${{ env.ACR_NAME }})
+            API_TAG="${API_VERSION}-api"
+          else
+            API_TAG="latest"
+          fi
+          
+          if [ "$PROXY_BUILT" = "true" ]; then
+            chmod +x scripts/get-next-service-version.sh
+            PROXY_VERSION=$(./scripts/get-next-service-version.sh streaming-proxy ${{ env.ACR_NAME }})
+            PROXY_TAG="${PROXY_VERSION}-proxy"
+          else
+            PROXY_TAG="latest"
+          fi
           
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
           echo "Image Versions for Deployment"
