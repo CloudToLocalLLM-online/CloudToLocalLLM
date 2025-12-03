@@ -930,12 +930,16 @@ jobs:
           exit 1
 
       - name: Update Cloudflare DNS
+        if: false  # DNS is already configured - only run if manual DNS changes are needed
         env:
-          CLOUDFLARE_DNS_TOKEN: ${{ secrets.CLOUDFLARE_DNS_TOKEN }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_TUNNEL_TOKEN: ${{ secrets.CLOUDFLARE_TUNNEL_TOKEN }}
         run: |
           set -x
           # --- Update Cloudflare DNS Records ---
+          # NOTE: DNS records are typically set up once and don't need updates on every deployment
+          # This step is disabled by default. Enable it if DNS changes are needed.
+          
           ZONE_NAME="cloudtolocalllm.online"
           TUNNEL_ID="62da6c19-947b-4bf6-acad-100a73de4e0d"
           TUNNEL_CNAME="$TUNNEL_ID.cfargotunnel.com"
@@ -948,7 +952,7 @@ jobs:
 
           echo "Fetching Zone ID for $ZONE_NAME..."
           ZONE_ID=$(curl -s -X GET "https://api.cloudflare.com/client/v4/zones?name=$ZONE_NAME" \
-            -H "Authorization: Bearer $CLOUDFLARE_DNS_TOKEN" \
+            -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
             -H "Content-Type: application/json" | jq -r '.result[0].id')
           
           if [ "$ZONE_ID" == "null" ] || [ -z "$ZONE_ID" ]; then
@@ -970,7 +974,7 @@ jobs:
             fi
 
             local RECORD_JSON=$(curl -s -X GET "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/dns_records?type=CNAME&name=$FQDN" \
-              -H "Authorization: Bearer $CLOUDFLARE_DNS_TOKEN" \
+              -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
               -H "Content-Type: application/json")
 
             local RECORD_ID=$(echo "$RECORD_JSON" | jq -r '.result[0].id')
@@ -985,12 +989,12 @@ jobs:
 
             if [ "$RECORD_ID" != "null" ] && [ -n "$RECORD_ID" ]; then
               curl -s -X PUT "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/dns_records/$RECORD_ID" \
-                -H "Authorization: Bearer $CLOUDFLARE_DNS_TOKEN" \
+                -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
                 -H "Content-Type: application/json" \
                 --data "{\"type\":\"CNAME\",\"name\":\"$FQDN\",\"content\":\"$CONTENT\",\"proxied\":$PROXIED,\"ttl\":1}" >/dev/null
             else
               curl -s -X POST "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/dns_records" \
-                -H "Authorization: Bearer $CLOUDFLARE_DNS_TOKEN" \
+                -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
                 -H "Content-Type: application/json" \
                 --data "{\"type\":\"CNAME\",\"name\":\"$FQDN\",\"content\":\"$CONTENT\",\"proxied\":$PROXIED,\"ttl\":1}" >/dev/null
             fi
