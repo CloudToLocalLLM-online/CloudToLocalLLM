@@ -15,8 +15,8 @@ on:
         type: string
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  group: cloud-deployment  # All cloud deployments share same concurrency group
+  cancel-in-progress: true  # Cancel old deployment when new version arrives
 
 env:
   AZURE_RESOURCE_GROUP: cloudtolocalllm-rg
