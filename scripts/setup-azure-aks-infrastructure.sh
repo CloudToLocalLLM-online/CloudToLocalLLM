@@ -417,6 +417,19 @@ EOF
         log_info "Key Vault Secrets Officer role already assigned"
     fi
     
+    # User Access Administrator role (needed to assign roles to AKS managed identity)
+    RG_SCOPE="/subscriptions/$SUBSCRIPTION_ID/resourceGroups/$RESOURCE_GROUP"
+    if ! az role assignment list --assignee "$SP_OBJECT_ID" --scope "$RG_SCOPE" --query "[?roleDefinitionName=='User Access Administrator']" -o tsv | grep -q .; then
+        az role assignment create \
+            --assignee "$SP_OBJECT_ID" \
+            --role "User Access Administrator" \
+            --scope "$RG_SCOPE" \
+            >/dev/null
+        log_success "Assigned User Access Administrator role for resource group"
+    else
+        log_info "User Access Administrator role already assigned"
+    fi
+    
     # Store the app ID for output
     AZURE_CLIENT_ID="$SP_APP_ID"
 }
