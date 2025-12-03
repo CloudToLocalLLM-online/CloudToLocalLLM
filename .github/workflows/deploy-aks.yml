@@ -547,6 +547,8 @@ jobs:
 
       - name: Deploy Manifests
         run: |
+          set -e  # Exit immediately on any error
+          
           # Replace image registry in manifests
           sed -i "s|cloudtolocalllm/postgres:latest|${{ env.DOCKER_REGISTRY }}/postgres:${{ github.sha }}|g" k8s/postgres-statefulset.yaml
           sed -i "s|cloudtolocalllm/web:latest|${{ env.DOCKER_REGISTRY }}/web:${{ github.sha }}|g" k8s/web-deployment.yaml
@@ -580,19 +582,31 @@ jobs:
 
           # Force roll out restart to pick up latest images and secrets
           # Force delete postgres pod to ensure it picks up new spec (fix for stuck CrashLoopBackOff)
-          kubectl delete pod postgres-0 -n cloudtolocalllm --force --grace-period=0 || true
+          # Allow this to fail if pod doesn't exist yet
+          kubectl delete pod postgres-0 -n cloudtolocalllm --force --grace-period=0 2>/dev/null || true
           kubectl rollout restart statefulset/postgres -n cloudtolocalllm
           kubectl rollout restart deployment/web -n cloudtolocalllm
           kubectl rollout restart deployment/api-backend -n cloudtolocalllm
           kubectl rollout restart deployment/streaming-proxy -n cloudtolocalllm
           kubectl rollout restart deployment/cloudflared -n cloudtolocalllm
 
-          # Wait for Rollout to Complete (with Fail Fast)
+          # Wait for Rollout to Complete (with Fail Fast - all pods must succeed)
           chmod +x scripts/watch_rollout.sh
-          ./scripts/watch_rollout.sh cloudtolocalllm statefulset postgres || echo "Postgres rollout timed out, continuing to check others..."
-          ./scripts/watch_rollout.sh cloudtolocalllm deployment web || echo "Web rollout timed out, continuing to check others..."
+          set -e  # Exit immediately if any command fails
+          
+          echo "Monitoring postgres rollout..."
+          ./scripts/watch_rollout.sh cloudtolocalllm statefulset postgres
+          
+          echo "Monitoring web rollout..."
+          ./scripts/watch_rollout.sh cloudtolocalllm deployment web
+          
+          echo "Monitoring api-backend rollout..."
           ./scripts/watch_rollout.sh cloudtolocalllm deployment api-backend
+          
+          echo "Monitoring streaming-proxy rollout..."
           ./scripts/watch_rollout.sh cloudtolocalllm deployment streaming-proxy
+          
+          echo "✅ All deployments rolled out successfully"
 
       - name: Verify Cloudflare Tunnel
         run: |
