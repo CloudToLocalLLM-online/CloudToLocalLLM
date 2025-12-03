@@ -393,42 +393,94 @@ jobs:
           kubectl create namespace cloudtolocalllm --dry-run=client -o yaml | kubectl apply -f -
       - name: Setup Azure Key Vault and Secrets Store CSI Driver
         run: |
+          set -e
           # Install the Secrets Store CSI Driver and Azure Provider
           helm repo add secrets-store-csi-driver https://kubernetes-sigs.github.io/secrets-store-csi-driver/charts 2>/dev/null || true
           helm repo add csi-secrets-store-provider-azure https://azure.github.io/secrets-store-csi-driver-provider-azure/charts 2>/dev/null || true
           helm repo update
           
-          # Check if there's a pending helm operation and wait for it
-          if helm list -n kube-system | grep -q "pending"; then
-            echo "Found pending Helm operation, waiting up to 60s for it to complete..."
-            for i in {1..12}; do
+          # Function to check and clear Helm locks
+          clear_helm_locks() {
+            local release_name="$1"
+            local namespace="$2"
+            
+            echo "Checking for Helm locks for release: $release_name in namespace: $namespace"
+            
+            # Check if release exists and is in pending state
+            local release_status=$(helm status "$release_name" -n "$namespace" 2>&1 || echo "not_found")
+            if echo "$release_status" | grep -q "pending"; then
+              echo "⚠️  Found pending Helm release, attempting to clear..."
+              # Try to rollback to clear the pending state
+              helm rollback "$release_name" -n "$namespace" 2>/dev/null || true
               sleep 5
-              if ! helm list -n kube-system | grep -q "pending"; then
-                echo "Pending operation completed"
-                break
-              fi
-              echo "Still waiting... ($((i*5))s)"
-            done
+            fi
+            
+            # Check for stuck releases and delete them if needed
+            local stuck_release=$(helm list -n "$namespace" --pending 2>/dev/null | grep "$release_name" || echo "")
+            if [ -n "$stuck_release" ]; then
+              echo "⚠️  Found stuck Helm release, attempting to uninstall..."
+              helm uninstall "$release_name" -n "$namespace" --ignore-not-found || true
+              sleep 5
+            fi
+          }
+          
+          # Clear any existing locks for csi-secrets-store
+          clear_helm_locks "csi-secrets-store" "kube-system"
+          
+          # Wait for any concurrent operations to complete
+          echo "Waiting for any concurrent Helm operations to complete..."
+          MAX_WAIT=120
+          WAITED=0
+          while [ $WAITED -lt $MAX_WAIT ]; do
+            if ! helm list -n kube-system --pending 2>/dev/null | grep -q "csi-secrets-store"; then
+              echo "✅ No pending operations detected"
+              break
+            fi
+            echo "Still waiting for pending operations... (${WAITED}s/${MAX_WAIT}s)"
+            sleep 5
+            WAITED=$((WAITED + 5))
+          done
+          
+          if [ $WAITED -ge $MAX_WAIT ]; then
+            echo "⚠️  Timeout waiting for pending operations, attempting to force clear..."
+            helm uninstall csi-secrets-store -n kube-system --ignore-not-found || true
+            sleep 10
           fi
           
           # Install/upgrade with retry logic
-          RETRIES=3
+          RETRIES=5
           for i in $(seq 1 $RETRIES); do
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
             echo "Attempt $i/$RETRIES: Installing CSI Secret Store driver..."
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+            
+            # Clear locks before each attempt
+            if [ $i -gt 1 ]; then
+              clear_helm_locks "csi-secrets-store" "kube-system"
+              sleep 10
+            fi
+            
             if helm upgrade --install csi-secrets-store \
               secrets-store-csi-driver/secrets-store-csi-driver \
               --namespace kube-system \
               --set "providers.azure.enabled=true" \
               --wait \
-              --timeout 5m; then
+              --timeout 10m \
+              --atomic; then
               echo "✅ CSI Secret Store driver installed successfully"
               break
             else
+              local exit_code=$?
+              echo "⚠️  Attempt $i failed with exit code: $exit_code"
+              
               if [ $i -lt $RETRIES ]; then
-                echo "⚠️  Attempt $i failed, waiting 10s before retry..."
-                sleep 10
+                echo "Waiting 15s before retry..."
+                sleep 15
               else
                 echo "❌ Failed after $RETRIES attempts"
+                echo "Checking release status..."
+                helm status csi-secrets-store -n kube-system || true
+                helm list -n kube-system || true
                 exit 1
               fi
             fi
