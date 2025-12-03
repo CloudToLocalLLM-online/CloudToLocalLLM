@@ -1,9 +1,33 @@
-console.log('Starting api-backend server process...');
+// Import Sentry FIRST to catch all errors from the very beginning
 import * as Sentry from '@sentry/node';
+import dotenv from 'dotenv';
+
+// Load environment variables before anything else
+dotenv.config();
+
+// Initialize Sentry IMMEDIATELY - before any other code runs
+Sentry.init({
+  dsn:
+    process.env.SENTRY_DSN ||
+    'https://b2fd3263e0ad7b490b0583f7df2e165a@o4509853774315520.ingest.us.sentry.io/4509853780541440',
+  environment: process.env.NODE_ENV || 'development',
+  release: process.env.VERSION || process.env.npm_package_version,
+  tracesSampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 1.0,
+  serverName: process.env.HOSTNAME || 'api-backend',
+  beforeSend(event) {
+    // Add custom tags
+    if (event.tags) {
+      event.tags.service = 'api-backend';
+      event.tags.region = process.env.AZURE_REGION || 'unknown';
+    }
+    return event;
+  },
+});
+
+console.log('Starting api-backend server process...');
 import express from 'express';
 import http from 'http';
 import winston from 'winston';
-import dotenv from 'dotenv';
 import swaggerUi from 'swagger-ui-express';
 import { specs } from './swagger-config.js';
 import {
@@ -97,26 +121,7 @@ import rateLimitMetricsRoutes from './routes/rate-limit-metrics.js';
 import prometheusMetricsRoutes from './routes/prometheus-metrics.js';
 import changelogRoutes from './routes/changelog.js';
 
-dotenv.config();
-
-// Initialize Sentry
-Sentry.init({
-  dsn:
-    process.env.SENTRY_DSN ||
-    'https://b2fd3263e0ad7b490b0583f7df2e165a@o4509853774315520.ingest.us.sentry.io/4509853780541440',
-  environment: process.env.NODE_ENV || 'development',
-  release: process.env.VERSION || process.env.npm_package_version,
-  tracesSampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 1.0,
-  serverName: process.env.HOSTNAME || 'api-backend',
-  beforeSend(event) {
-    // Add custom tags
-    if (event.tags) {
-      event.tags.service = 'api-backend';
-      event.tags.region = process.env.AZURE_REGION || 'unknown';
-    }
-    return event;
-  },
-});
+// Sentry and dotenv already initialized at top of file
 
 import Transport from 'winston-transport';
 

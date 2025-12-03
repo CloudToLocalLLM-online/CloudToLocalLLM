@@ -57,18 +57,13 @@ void main() async {
   // Immediate logging to verify Dart entry point is reached
   print('----- DART MAIN START -----');
 
+  // Flutter requires WidgetsFlutterBinding to be initialized first
   WidgetsFlutterBinding.ensureInitialized();
 
-  print('[Main] Initializing Supabase...');
-  await Supabase.initialize(
-    url: SupabaseConfig.url,
-    anonKey: SupabaseConfig.anonKey,
-  );
-  print('[Main] Supabase initialized');
-
+  // Initialize Sentry IMMEDIATELY after Flutter binding (before all other services)
+  print('[Main] Initializing Sentry (FIRST after Flutter binding)...');
+  
   try {
-    // Initialize Sentry with a timeout to prevent hanging
-    print('[Main] Initializing Sentry...');
     await SentryFlutter.init(
       (options) {
         options.dsn = AppConfig.sentryDsn;
@@ -83,6 +78,15 @@ void main() async {
       },
       appRunner: () async {
         print('[Main] Sentry initialized, running app with Sentry...');
+        
+        // Initialize Supabase after Sentry is ready
+        print('[Main] Initializing Supabase...');
+        await Supabase.initialize(
+          url: SupabaseConfig.url,
+          anonKey: SupabaseConfig.anonKey,
+        );
+        print('[Main] Supabase initialized');
+        
         _runAppWithSentry();
       },
     ).timeout(const Duration(seconds: 5));
@@ -90,6 +94,19 @@ void main() async {
   } catch (e) {
     print('Sentry initialization failed or timed out: $e');
     // If Sentry fails, run the app anyway without Sentry wrapping
+    
+    // Initialize Supabase even if Sentry fails
+    print('[Main] Initializing Supabase...');
+    try {
+      await Supabase.initialize(
+        url: SupabaseConfig.url,
+        anonKey: SupabaseConfig.anonKey,
+      );
+      print('[Main] Supabase initialized');
+    } catch (supabaseError) {
+      print('Supabase initialization failed: $supabaseError');
+    }
+    
     _runAppWithoutSentry();
   }
 }

@@ -8,6 +8,29 @@
  * Requirements: All server-side requirements
  */
 
+// Import Sentry FIRST to catch all errors from the very beginning
+import * as Sentry from '@sentry/node';
+
+// Initialize Sentry IMMEDIATELY - before any other code runs
+// Environment variables are provided by Kubernetes secrets
+Sentry.init({
+  dsn: process.env.SENTRY_DSN,
+  environment: process.env.NODE_ENV || 'development',
+  release: process.env.VERSION,
+  tracesSampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 1.0,
+  serverName: process.env.HOSTNAME || 'streaming-proxy',
+  beforeSend(event) {
+    // Add custom tags
+    if (event.tags) {
+      event.tags.service = 'streaming-proxy';
+      event.tags.region = process.env.AZURE_REGION || 'unknown';
+    }
+    return event;
+  },
+});
+
+console.log('Starting streaming-proxy server process...');
+
 import express, { Request, Response, NextFunction } from 'express';
 import { createServer } from 'http';
 import { WebSocketServer } from 'ws';
@@ -28,7 +51,7 @@ import { AuthAuditLogger } from './middleware/auth-audit-logger';
 import { loadAuthConfig, validateAuthConfig } from './middleware/auth-config';
 
 // Initialize OpenTelemetry tracing
-// Must be done before any other imports that might create spans
+// Must be done after Sentry
 initializeTracing();
 
 // Initialize log level manager and set it in logger
