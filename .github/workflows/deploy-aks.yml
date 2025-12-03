@@ -555,14 +555,37 @@ jobs:
             --dry-run=client -o yaml | kubectl apply -f -
 
       - name: Deploy Manifests
+        env:
+          POSTGRES_BUILT: ${{ needs.changes.outputs.postgres }}
+          WEB_BUILT: ${{ needs.changes.outputs.web }}
+          API_BUILT: ${{ needs.changes.outputs.api }}
+          PROXY_BUILT: ${{ needs.changes.outputs.proxy }}
         run: |
           set -e  # Exit immediately on any error
           
-          # Replace image registry in manifests
-          sed -i "s|cloudtolocalllm/postgres:latest|${{ env.DOCKER_REGISTRY }}/postgres:${{ github.sha }}|g" k8s/postgres-statefulset.yaml
-          sed -i "s|cloudtolocalllm/web:latest|${{ env.DOCKER_REGISTRY }}/web:${{ github.sha }}|g" k8s/web-deployment.yaml
-          sed -i "s|cloudtolocalllm/api-backend:latest|${{ env.DOCKER_REGISTRY }}/api-backend:${{ github.sha }}|g" k8s/api-backend-deployment.yaml
-          sed -i "s|cloudtolocalllm/streaming-proxy:latest|${{ env.DOCKER_REGISTRY }}/streaming-proxy:${{ github.sha }}|g" k8s/streaming-proxy-deployment.yaml
+          # Use SHA tag if service was built, otherwise use latest
+          POSTGRES_TAG=${{ github.sha }}
+          WEB_TAG=${{ github.sha }}
+          API_TAG=${{ github.sha }}
+          PROXY_TAG=${{ github.sha }}
+          
+          # Fall back to latest if service wasn't built this run
+          [[ "$POSTGRES_BUILT" != "true" ]] && POSTGRES_TAG="latest"
+          [[ "$WEB_BUILT" != "true" ]] && WEB_TAG="latest"
+          [[ "$API_BUILT" != "true" ]] && API_TAG="latest"
+          [[ "$PROXY_BUILT" != "true" ]] && PROXY_TAG="latest"
+          
+          echo "Image tags to use:"
+          echo "  Postgres: $POSTGRES_TAG"
+          echo "  Web: $WEB_TAG"
+          echo "  API: $API_TAG"
+          echo "  Proxy: $PROXY_TAG"
+          
+          # Replace image registry in manifests with appropriate tags
+          sed -i "s|cloudtolocalllm/postgres:latest|${{ env.DOCKER_REGISTRY }}/postgres:${POSTGRES_TAG}|g" k8s/postgres-statefulset.yaml
+          sed -i "s|cloudtolocalllm/web:latest|${{ env.DOCKER_REGISTRY }}/web:${WEB_TAG}|g" k8s/web-deployment.yaml
+          sed -i "s|cloudtolocalllm/api-backend:latest|${{ env.DOCKER_REGISTRY }}/api-backend:${API_TAG}|g" k8s/api-backend-deployment.yaml
+          sed -i "s|cloudtolocalllm/streaming-proxy:latest|${{ env.DOCKER_REGISTRY }}/streaming-proxy:${PROXY_TAG}|g" k8s/streaming-proxy-deployment.yaml
 
           # Validate manifests with server-side dry-run before applying
           echo "Validating Kubernetes manifests with server-side dry-run..."
