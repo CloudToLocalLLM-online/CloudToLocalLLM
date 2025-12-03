@@ -242,6 +242,7 @@ jobs:
       (needs.build_api.result == 'success' || needs.build_api.result == 'skipped') &&
       (needs.build_proxy.result == 'success' || needs.build_proxy.result == 'skipped')
     runs-on: ubuntu-latest
+    steps:
       - name: Azure Login
         uses: azure/login@v2
         with:
@@ -249,6 +250,10 @@ jobs:
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
           auth-type: SERVICE_PRINCIPAL
+      - name: Bootstrap Azure RG/ACR/Key Vault
+        run: |
+          chmod +x scripts/bootstrap-azure-infra.sh
+          scripts/bootstrap-azure-infra.sh "${{ env.AZURE_RESOURCE_GROUP }}" "eastus" "${{ env.ACR_NAME }}" "${{ secrets.AZURE_KEY_VAULT_NAME }}"
       - name: Create AKS Cluster if not exists
         run: |
           if ! az aks show --resource-group ${{ env.AZURE_RESOURCE_GROUP }} --name ${{ env.AZURE_CLUSTER_NAME }} --query "name" --output tsv; then
@@ -270,9 +275,7 @@ jobs:
           else
             echo "AKS cluster ${{ env.AZURE_CLUSTER_NAME }} already exists."
           fi
-      - name: Create Azure Resource Group if not exists
-        run: az group create --name ${{ env.AZURE_RESOURCE_GROUP }} --location eastus --query "properties.provisioningState" --output tsv
-
+      
       - name: Get AKS credentials
         uses: azure/aks-set-context@v3
         with:
@@ -304,6 +307,30 @@ jobs:
         run: |
           # Get Login Server (ACR assumed to exist or created in build steps)
           echo "DOCKER_REGISTRY=$(az acr show --name ${{ env.ACR_NAME }} --query loginServer --output tsv)" >> $GITHUB_ENV
+
+      - name: Configure Key Vault RBAC for AKS
+        run: |
+          set -e
+          KV_NAME="${{ secrets.AZURE_KEY_VAULT_NAME }}"
+          if [ -z "$KV_NAME" ]; then
+            exit 0
+          fi
+          KV_ID=$(az keyvault show -g ${{ env.AZURE_RESOURCE_GROUP }} -n "$KV_NAME" --query id -o tsv 2>/dev/null || echo "")
+          if [ -z "$KV_ID" ]; then
+            exit 0
+          fi
+          AKS_MI_ID=$(az aks show -g ${{ env.AZURE_RESOURCE_GROUP }} -n ${{ env.AZURE_CLUSTER_NAME }} --query identityProfile.kubeletidentity.objectId -o tsv 2>/dev/null || echo "")
+          if [ -z "$AKS_MI_ID" ]; then
+            AKS_MI_ID=$(az aks show -g ${{ env.AZURE_RESOURCE_GROUP }} -n ${{ env.AZURE_CLUSTER_NAME }} --query identity.principalId -o tsv 2>/dev/null || echo "")
+          fi
+          if [ -z "$AKS_MI_ID" ]; then
+            exit 0
+          fi
+          ROLE="Key Vault Secrets User"
+          COUNT=$(az role assignment list --assignee "$AKS_MI_ID" --scope "$KV_ID" --query "[?roleDefinitionName=='$ROLE'] | length(@)" -o tsv)
+          if [ "$COUNT" = "0" ] || [ -z "$COUNT" ]; then
+            az role assignment create --assignee "$AKS_MI_ID" --role "$ROLE" --scope "$KV_ID"
+          fi
 
       - name: Ensure Namespace Exists
         run: |
@@ -379,6 +406,36 @@ jobs:
             echo "One or more required secrets are missing. Failing before deployment."
             exit 1
           fi
+
+      - name: Seed Azure Key Vault from secrets
+        env:
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          STRIPE_TEST_SECRET_KEY: ${{ secrets.STRIPE_TEST_SECRET_KEY }}
+          CLOUDFLARE_TUNNEL_TOKEN: ${{ secrets.CLOUDFLARE_TUNNEL_TOKEN }}
+          SUPABASE_JWT_SECRET: ${{ secrets.SUPABASE_JWT_SECRET }}
+        run: |
+          set -e
+          KV_NAME="${{ secrets.AZURE_KEY_VAULT_NAME }}"
+          if [ -z "$KV_NAME" ]; then
+            exit 0
+          fi
+          ensure_kv_secret() {
+            local name="$1"
+            local value="$2"
+            if [ -z "$value" ]; then
+              return
+            fi
+            if az keyvault secret show --vault-name "$KV_NAME" --name "$name" >/dev/null 2>&1; then
+              return
+            fi
+            az keyvault secret set --vault-name "$KV_NAME" --name "$name" --value "$value" >/dev/null
+          }
+          ensure_kv_secret POSTGRES-PASSWORD "$POSTGRES_PASSWORD"
+          ensure_kv_secret JWT-SECRET "$JWT_SECRET"
+          ensure_kv_secret STRIPE-TEST-SECRET-KEY "$STRIPE_TEST_SECRET_KEY"
+          ensure_kv_secret CLOUDFLARE-TUNNEL-TOKEN "$CLOUDFLARE_TUNNEL_TOKEN"
+          ensure_kv_secret SUPABASE-JWT-SECRET "$SUPABASE_JWT_SECRET"
 
       - name: Create/Update Secrets
         env:
@@ -540,7 +597,7 @@ jobs:
           ZONE_ID=$(curl -s -X GET "https://api.cloudflare.com/client/v4/zones?name=$ZONE_NAME" \
             -H "Authorization: Bearer $CLOUDFLARE_DNS_TOKEN" \
             -H "Content-Type: application/json" | jq -r '.result[0].id')
-
+          
           if [ "$ZONE_ID" == "null" ] || [ -z "$ZONE_ID" ]; then
             echo "Error: Could not find Zone ID for $ZONE_NAME"
             exit 1
@@ -551,28 +608,38 @@ jobs:
             local NAME=$1
             local CONTENT=$2
             local PROXIED=$3
-            
-            echo "Updating DNS record: $NAME -> $CONTENT (Proxied: $PROXIED)"
-            
-            # Check if record exists
-            local RECORD_JSON=$(curl -s -X GET "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/dns_records?type=CNAME&name=$NAME" \
+            local FQDN
+
+            if [ "$NAME" = "@" ]; then
+              FQDN="$ZONE_NAME"
+            else
+              FQDN="$NAME.$ZONE_NAME"
+            fi
+
+            local RECORD_JSON=$(curl -s -X GET "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/dns_records?type=CNAME&name=$FQDN" \
               -H "Authorization: Bearer $CLOUDFLARE_DNS_TOKEN" \
               -H "Content-Type: application/json")
-            
+
             local RECORD_ID=$(echo "$RECORD_JSON" | jq -r '.result[0].id')
-            
+            local CURRENT_CONTENT=$(echo "$RECORD_JSON" | jq -r '.result[0].content')
+
+            if [ "$CURRENT_CONTENT" = "$CONTENT" ]; then
+              echo "DNS record $FQDN already points to $CONTENT; no update required."
+              return 0
+            fi
+
+            echo "Updating DNS record: $FQDN -> $CONTENT (Proxied: $PROXIED)"
+
             if [ "$RECORD_ID" != "null" ] && [ -n "$RECORD_ID" ]; then
-               # Update existing
-               local RESPONSE=$(curl -s -X PUT "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/dns_records/$RECORD_ID" \
-                 -H "Authorization: Bearer $CLOUDFLARE_DNS_TOKEN" \
-                 -H "Content-Type: application/json" \
-                 --data "{\"type\":\"CNAME\",\"name\":\"$NAME\",\"content\":\"$CONTENT\",\"proxied\":$PROXIED,\"ttl\":1}")
+              curl -s -X PUT "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/dns_records/$RECORD_ID" \
+                -H "Authorization: Bearer $CLOUDFLARE_DNS_TOKEN" \
+                -H "Content-Type: application/json" \
+                --data "{\"type\":\"CNAME\",\"name\":\"$FQDN\",\"content\":\"$CONTENT\",\"proxied\":$PROXIED,\"ttl\":1}" >/dev/null
             else
-               # Create new
-               local RESPONSE=$(curl -s -X POST "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/dns_records" \
-                 -H "Authorization: Bearer $CLOUDFLARE_DNS_TOKEN" \
-                 -H "Content-Type: application/json" \
-                 --data "{\"type\":\"CNAME\",\"name\":\"$NAME\",\"content\":\"$CONTENT\",\"proxied\":$PROXIED,\"ttl\":1}")
+              curl -s -X POST "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/dns_records" \
+                -H "Authorization: Bearer $CLOUDFLARE_DNS_TOKEN" \
+                -H "Content-Type: application/json" \
+                --data "{\"type\":\"CNAME\",\"name\":\"$FQDN\",\"content\":\"$CONTENT\",\"proxied\":$PROXIED,\"ttl\":1}" >/dev/null
             fi
           }
 
