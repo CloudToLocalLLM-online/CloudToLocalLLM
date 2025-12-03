@@ -99,6 +99,7 @@ import { createTunnelRoutes } from './tunnel/tunnel-routes.js';
 import { createMonitoringRoutes } from './routes/monitoring.js';
 import { createConversationRoutes } from './routes/conversations.js';
 import { authenticateJWT } from './middleware/auth.js';
+import serviceVersionHandler from './routes/service-version.js';
 import {
   addTierInfo,
 } from './middleware/tier-check.js';
@@ -309,6 +310,10 @@ function registerRoutes(path, router) {
   app.use(`/api${path}`, router);
   app.use(path, router);
 }
+
+// Service version endpoint (no auth required)
+app.get('/api/service-version', serviceVersionHandler);
+app.get('/service-version', serviceVersionHandler);
 
 // Simplified tunnel routes
 registerRoutes('/tunnel', tunnelRouter);

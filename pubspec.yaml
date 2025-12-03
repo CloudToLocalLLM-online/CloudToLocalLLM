@@ -95,6 +95,7 @@ flutter:
   assets:
     - assets/images/
     - assets/version.json
+    - assets/component-versions.json
 
 sentry:
   upload_debug_symbols: true

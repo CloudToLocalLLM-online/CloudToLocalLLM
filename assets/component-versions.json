@@ -1,0 +1,9 @@
+{
+  "web": "4.4.0",
+  "api": "4.4.0-api",
+  "postgres": "4.4.0-postgres",
+  "streaming_proxy": "4.4.0-proxy",
+  "base": "4.4.0-base",
+  "last_updated": "2025-12-03T20:00:00Z"
+}
+
