@@ -105,17 +105,30 @@ class _AboutSettingsCategoryContentState
   }
 
   Widget _buildAppInfoSection(BuildContext context) {
-    return SettingsSectionWidget(
-      title: 'Application',
-      children: [
-        _buildInfoRow(context, 'Name', 'CloudToLocalLLM'),
-        _buildInfoRow(context, 'Version', _versionInfo?['version'] ?? 'Unknown'),
-        _buildInfoRow(
-          context,
-          'Build',
-          _versionInfo?['build_number'] ?? 'Unknown',
+    return Card(
+      margin: const EdgeInsets.only(bottom: 16),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Application',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+            ),
+            const SizedBox(height: 16),
+            _buildInfoRow(context, 'Name', 'CloudToLocalLLM'),
+            _buildInfoRow(context, 'Version', _versionInfo?['version'] ?? 'Unknown'),
+            _buildInfoRow(
+              context,
+              'Build',
+              _versionInfo?['build_number'] ?? 'Unknown',
+            ),
+          ],
         ),
-      ],
+      ),
     );
   }
 
@@ -124,44 +137,70 @@ class _AboutSettingsCategoryContentState
       return const SizedBox.shrink();
     }
 
-    return SettingsSectionWidget(
-      title: 'Component Versions',
-      children: [
-        _buildInfoRow(context, 'Web', _componentVersions!['web'] ?? 'Unknown'),
-        _buildInfoRow(
-            context, 'API Backend', _componentVersions!['api'] ?? 'Unknown'),
-        _buildInfoRow(context, 'Streaming Proxy',
-            _componentVersions!['streaming_proxy'] ?? 'Unknown'),
-        _buildInfoRow(
-            context, 'Database', _componentVersions!['postgres'] ?? 'Unknown'),
-        _buildInfoRow(
-            context, 'Base Image', _componentVersions!['base'] ?? 'Unknown'),
-        const Divider(height: 24),
-        _buildInfoRow(
-          context,
-          'Last Updated',
-          _formatDateTime(_componentVersions!['last_updated']),
-          isSubtle: true,
+    return Card(
+      margin: const EdgeInsets.only(bottom: 16),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Component Versions',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+            ),
+            const SizedBox(height: 16),
+            _buildInfoRow(context, 'Web', _componentVersions!['web'] ?? 'Unknown'),
+            _buildInfoRow(
+                context, 'API Backend', _componentVersions!['api'] ?? 'Unknown'),
+            _buildInfoRow(context, 'Streaming Proxy',
+                _componentVersions!['streaming_proxy'] ?? 'Unknown'),
+            _buildInfoRow(
+                context, 'Database', _componentVersions!['postgres'] ?? 'Unknown'),
+            _buildInfoRow(
+                context, 'Base Image', _componentVersions!['base'] ?? 'Unknown'),
+            const Divider(height: 24),
+            _buildInfoRow(
+              context,
+              'Last Updated',
+              _formatDateTime(_componentVersions!['last_updated']),
+              isSubtle: true,
+            ),
+          ],
         ),
-      ],
+      ),
     );
   }
 
   Widget _buildBuildInfoSection(BuildContext context) {
-    return SettingsSectionWidget(
-      title: 'Build Information',
-      children: [
-        _buildInfoRow(
-          context,
-          'Git Commit',
-          _versionInfo?['git_commit'] ?? 'Unknown',
+    return Card(
+      margin: const EdgeInsets.only(bottom: 16),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Build Information',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+            ),
+            const SizedBox(height: 16),
+            _buildInfoRow(
+              context,
+              'Git Commit',
+              _versionInfo?['git_commit'] ?? 'Unknown',
+            ),
+            _buildInfoRow(
+              context,
+              'Build Date',
+              _formatDateTime(_versionInfo?['build_date']),
+            ),
+          ],
         ),
-        _buildInfoRow(
-          context,
-          'Build Date',
-          _formatDateTime(_versionInfo?['build_date']),
-        ),
-      ],
+      ),
     );
   }
 
