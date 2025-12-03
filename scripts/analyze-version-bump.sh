@@ -1,8 +1,12 @@
 #!/bin/bash
 set -e
+set -o pipefail
 
 # Script to analyze commits and determine version bump using Gemini AI
 # Outputs: new_version and bump_type to GITHUB_OUTPUT
+
+# Enable error tracing
+trap 'echo "Error on line $LINENO"' ERR
 
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "Analyzing Commits with Gemini AI"
@@ -63,12 +67,16 @@ if [ -z "$GEMINI_API_KEY" ]; then
     BUMP_TYPE="patch"
 else
     # Call Gemini and capture both stdout and stderr
+    set +e  # Temporarily disable exit on error
     RESPONSE=$(gemini-cli "$PROMPT" 2>&1)
     EXIT_CODE=$?
+    set -e  # Re-enable exit on error
     
-    if [ $EXIT_CODE -ne 0 ]; then
+    echo "Gemini CLI exit code: $EXIT_CODE"
+    echo "Gemini response (first 500 chars): ${RESPONSE:0:500}"
+    
+    if [ $EXIT_CODE -ne 0 ] || [ -z "$RESPONSE" ]; then
         echo "⚠️  Gemini CLI failed with exit code: $EXIT_CODE"
-        echo "Response: $RESPONSE"
         echo "Falling back to patch bump"
         
         # Parse current version
@@ -78,10 +86,13 @@ else
         BUMP_TYPE="patch"
         REASONING="Gemini call failed, defaulting to patch"
     else
+        # Try to extract JSON from response (Gemini might add extra text)
+        JSON_RESPONSE=$(echo "$RESPONSE" | grep -o '{.*}' | head -1 || echo "$RESPONSE")
+        
         # Extract values from JSON response
-        BUMP_TYPE=$(echo "$RESPONSE" | jq -r '.bump_type // "patch"')
-        NEW_VERSION=$(echo "$RESPONSE" | jq -r '.new_version // "'$CURRENT_VERSION'"')
-        REASONING=$(echo "$RESPONSE" | jq -r '.reasoning // "Auto-generated"')
+        BUMP_TYPE=$(echo "$JSON_RESPONSE" | jq -r '.bump_type // "patch"' 2>/dev/null || echo "patch")
+        NEW_VERSION=$(echo "$JSON_RESPONSE" | jq -r '.new_version // "'$CURRENT_VERSION'"' 2>/dev/null || echo "$CURRENT_VERSION")
+        REASONING=$(echo "$JSON_RESPONSE" | jq -r '.reasoning // "Auto-generated"' 2>/dev/null || echo "Auto-generated")
         
         echo ""
         echo "✅ Gemini Analysis:"
