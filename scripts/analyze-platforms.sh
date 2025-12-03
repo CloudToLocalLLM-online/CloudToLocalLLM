@@ -72,9 +72,14 @@ else
         NEEDS_MOBILE="false"
     else
         # Extract JSON from response (Gemini wraps in ```json ``` blocks)
-        # Remove markdown code blocks if present
-        CLEAN_RESPONSE=$(echo "$RESPONSE" | sed 's/```json//g' | sed 's/```//g')
-        JSON_RESPONSE=$(echo "$CLEAN_RESPONSE" | grep -o '{.*}' | head -1 || echo "$CLEAN_RESPONSE")
+        # Remove markdown code blocks and extract multi-line JSON
+        JSON_RESPONSE=$(echo "$RESPONSE" | sed '/```json/,/```/!d' | sed '/```/d' | tr -d '\n' | sed 's/  */ /g')
+        
+        # If that didn't work, try simpler extraction
+        if [ -z "$JSON_RESPONSE" ] || ! echo "$JSON_RESPONSE" | jq . >/dev/null 2>&1; then
+            # Try to extract anything between first { and last }
+            JSON_RESPONSE=$(echo "$RESPONSE" | tr '\n' ' ' | sed 's/.*{\(.*\)}.*/{\1}/')
+        fi
         
         echo "DEBUG: Extracted JSON:"
         echo "$JSON_RESPONSE"
