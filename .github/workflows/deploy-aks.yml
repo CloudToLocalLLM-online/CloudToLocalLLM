@@ -878,11 +878,16 @@ jobs:
           sed -i "s|cloudtolocalllm/streaming-proxy:latest|${{ env.DOCKER_REGISTRY }}/streaming-proxy:${PROXY_TAG}|g" k8s/streaming-proxy-deployment.yaml
           
           # Inject version environment variables into API and Proxy deployments
-          # Add API_VERSION env var to api-backend
-          yq e '.spec.template.spec.containers[0].env += [{"name": "API_VERSION", "value": "'$APP_VERSION'-api"}, {"name": "BUILD_NUMBER", "value": "'$BUILD_NUMBER'"}, {"name": "GIT_COMMIT", "value": "'$GIT_COMMIT'"}]' -i k8s/api-backend-deployment.yaml
+          # Note: These files contain multiple YAML documents (Service + Deployment)
+          # We need to target only the Deployment document (index 1)
           
-          # Add PROXY_VERSION env var to streaming-proxy
-          yq e '.spec.template.spec.containers[0].env += [{"name": "PROXY_VERSION", "value": "'$APP_VERSION'-proxy"}, {"name": "BUILD_NUMBER", "value": "'$BUILD_NUMBER'"}, {"name": "GIT_COMMIT", "value": "'$GIT_COMMIT'"}]' -i k8s/streaming-proxy-deployment.yaml
+          # Add API_VERSION env var to api-backend Deployment (document index 1)
+          yq e 'select(document_index == 1) | .spec.template.spec.containers[0].env += [{"name": "API_VERSION", "value": "'$APP_VERSION'-api"}, {"name": "BUILD_NUMBER", "value": "'$BUILD_NUMBER'"}, {"name": "GIT_COMMIT", "value": "'$GIT_COMMIT'"}]' k8s/api-backend-deployment.yaml > /tmp/api-backend-deployment.yaml
+          mv /tmp/api-backend-deployment.yaml k8s/api-backend-deployment.yaml
+          
+          # Add PROXY_VERSION env var to streaming-proxy Deployment (document index 1)
+          yq e 'select(document_index == 1) | .spec.template.spec.containers[0].env += [{"name": "PROXY_VERSION", "value": "'$APP_VERSION'-proxy"}, {"name": "BUILD_NUMBER", "value": "'$BUILD_NUMBER'"}, {"name": "GIT_COMMIT", "value": "'$GIT_COMMIT'"}]' k8s/streaming-proxy-deployment.yaml > /tmp/streaming-proxy-deployment.yaml
+          mv /tmp/streaming-proxy-deployment.yaml k8s/streaming-proxy-deployment.yaml
 
           # Validate manifests with server-side dry-run before applying
           echo "Validating Kubernetes manifests with server-side dry-run..."
