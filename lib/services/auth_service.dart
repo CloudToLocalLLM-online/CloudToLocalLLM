@@ -90,7 +90,7 @@ class AuthService extends ChangeNotifier {
 
   Future<void> _handleAuthenticatedSession(Session session) async {
     if (_isAuthenticated.value) {
-      debugPrint('[AuthService] Already authenticated, completing bootstrap');
+      print('[AuthService] Already authenticated, completing bootstrap');
       _completeSessionBootstrap();
       return;
     }
@@ -224,11 +224,11 @@ class AuthService extends ChangeNotifier {
 
   void _completeSessionBootstrap() {
     if (!_sessionBootstrapCompleter.isCompleted) {
-      debugPrint('[AuthService] Completing session bootstrap');
+      print('[AuthService] Completing session bootstrap');
       _sessionBootstrapCompleter.complete();
-      debugPrint('[AuthService] Session bootstrap completed');
+      print('[AuthService] Session bootstrap completed');
     } else {
-      debugPrint('[AuthService] Session bootstrap already completed');
+      print('[AuthService] Session bootstrap already completed');
     }
   }
 
