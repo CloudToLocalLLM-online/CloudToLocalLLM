@@ -7,7 +7,7 @@
  * Requirements: 12.1, 12.2, 12.3
  */
 
-import swaggerJsdoc from 'swagger-jsdoc';
+// import swaggerJsdoc from 'swagger-jsdoc'; // Temporarily disabled for Node.js v24 compatibility
 
 const options = {
   definition: {
@@ -487,16 +487,12 @@ const options = {
 };
 
 let specs;
-try {
-  specs = swaggerJsdoc(options);
-} catch (error) {
-  console.error('Failed to generate Swagger documentation:', error);
-  // Fallback to empty spec if generation fails
-  specs = {
-    openapi: '3.0.0',
-    info: options.definition.info,
-    paths: {},
-  };
-}
+// Temporarily disable swagger generation to fix Node.js v24 compatibility
+// TODO: Re-enable once swagger-jsdoc is compatible with Node.js v24
+specs = {
+  openapi: '3.0.0',
+  info: options.definition.info,
+  paths: {},
+};
 
 export { specs };

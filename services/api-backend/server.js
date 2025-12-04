@@ -739,7 +739,11 @@ async function initializeTunnelSystem() {
     await dbMigrator.initialize();
     await dbMigrator.createMigrationsTable();
     await dbMigrator.applyInitialSchema();
-    await dbMigrator.migrate();
+
+    // Only run migrations for PostgreSQL (SQLite doesn't have migration files)
+    if (dbType === 'postgresql') {
+      await dbMigrator.migrate();
+    }
 
     const validation = await dbMigrator.validateSchema();
     if (!validation.allValid) {
