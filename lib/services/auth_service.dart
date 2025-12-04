@@ -220,7 +220,11 @@ class AuthService extends ChangeNotifier {
 
   void _completeSessionBootstrap() {
     if (!_sessionBootstrapCompleter.isCompleted) {
+      debugPrint('[AuthService] Completing session bootstrap');
       _sessionBootstrapCompleter.complete();
+      debugPrint('[AuthService] Session bootstrap completed');
+    } else {
+      debugPrint('[AuthService] Session bootstrap already completed');
     }
   }
 
