@@ -44,6 +44,8 @@ class _HomeScreenState extends State<HomeScreen> {
     return ValueListenableBuilder<bool>(
       valueListenable: authService.areAuthenticatedServicesLoaded,
       builder: (context, areServicesLoaded, child) {
+        debugPrint(
+            '[HomeScreen] areAuthenticatedServicesLoaded: $areServicesLoaded');
         if (!areServicesLoaded) {
           return const Scaffold(
             body: Center(
