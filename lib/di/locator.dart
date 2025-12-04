@@ -241,7 +241,8 @@ void _verifyCoreServicesRegistered() {
 /// This prevents unnecessary initialization and improves security.
 Future<void> setupAuthenticatedServices() async {
   if (_authenticatedServicesRegistered) {
-    debugPrint('[ServiceLocator] Authenticated services already registered');
+    print(
+        '[ServiceLocator] Authenticated services already registered (Early Exit)');
     // Services are already registered, so we're done
     return;
   }
