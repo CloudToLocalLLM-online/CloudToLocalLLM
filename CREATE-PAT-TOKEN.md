@@ -90,3 +90,4 @@ gh secret list | grep PAT
 **If empty**: Follow steps above to create PAT_TOKEN  
 **If exists**: System is fully operational!
 
+## System is operational
