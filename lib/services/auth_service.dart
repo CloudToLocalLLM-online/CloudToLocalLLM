@@ -111,11 +111,14 @@ class AuthService extends ChangeNotifier {
 
     _currentUser = user;
     _isAuthenticated.value = true;
+    debugPrint(
+        '[AuthService] _isAuthenticated set to true, notifying listeners.');
     notifyListeners();
 
     await _loadAuthenticatedServices();
-    print('[AuthService] Authenticated services loaded');
-    
+    debugPrint(
+        '[AuthService] Authenticated services loaded, _areAuthenticatedServicesLoaded.value: ${_areAuthenticatedServicesLoaded.value}');
+
     // Complete session bootstrap after authenticated services are ready
     _completeSessionBootstrap();
   }
@@ -130,19 +133,25 @@ class AuthService extends ChangeNotifier {
 
       if (hasConnectionManager) {
         _areAuthenticatedServicesLoaded.value = true;
+        debugPrint(
+            '[AuthService] ConnectionManagerService already registered, _areAuthenticatedServicesLoaded set to true, notifying listeners.');
         notifyListeners();
         return;
       }
 
-      print('[AuthService] Calling setupAuthenticatedServices...');
+      debugPrint('[AuthService] Calling setupAuthenticatedServices...');
       await di.setupAuthenticatedServices();
-      print('[AuthService] setupAuthenticatedServices returned');
+      debugPrint('[AuthService] setupAuthenticatedServices returned');
       _areAuthenticatedServicesLoaded.value = true;
+      debugPrint(
+          '[AuthService] _areAuthenticatedServicesLoaded set to true after setupAuthenticatedServices, notifying listeners.');
       notifyListeners();
     } catch (e) {
       debugPrint(
           '[AuthService] ERROR: Failed to load authenticated services: $e');
       _areAuthenticatedServicesLoaded.value = false;
+      debugPrint(
+          '[AuthService] _areAuthenticatedServicesLoaded set to false due to error, notifying listeners.');
       notifyListeners();
     }
   }
