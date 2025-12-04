@@ -248,7 +248,7 @@ Future<void> setupAuthenticatedServices() async {
 
   debugPrint(
       '[ServiceLocator] ===== REGISTERING AUTHENTICATED SERVICES START =====');
-  print('[Locator] setupAuthenticatedServices called');
+  print('[Locator] setupAuthenticatedServices called (Entry Point)');
 
   // Verify authentication before proceeding
   final authService = serviceLocator.get<AuthService>();
