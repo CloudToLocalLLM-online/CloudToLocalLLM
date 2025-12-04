@@ -9,7 +9,6 @@ import 'package:cloudtolocalllm/di/locator.dart' as di;
 import 'package:cloudtolocalllm/config/theme.dart';
 
 // Import screens to test
-import 'package:cloudtolocalllm/screens/loading_screen.dart';
 import 'package:cloudtolocalllm/screens/marketing/homepage_screen.dart';
 import 'package:cloudtolocalllm/screens/marketing/documentation_screen.dart';
 
@@ -59,38 +58,6 @@ void main() {
         ),
       );
     }
-
-    testWidgets('LoadingScreen renders with light theme', (tester) async {
-      await tester.pumpWidget(createTestApp(
-        const LoadingScreen(message: 'Test Loading'),
-      ));
-      await tester.pumpAndSettle();
-
-      // Verify screen renders
-      expect(find.text('Test Loading'), findsOneWidget);
-      expect(find.byType(CircularProgressIndicator), findsOneWidget);
-
-      // Verify theme is applied
-      final materialApp = tester.widget<MaterialApp>(find.byType(MaterialApp));
-      expect(materialApp.themeMode, equals(ThemeMode.light));
-    });
-
-    testWidgets('LoadingScreen renders with dark theme', (tester) async {
-      // Change to dark theme
-      await themeProvider.setThemeMode(ThemeMode.dark);
-
-      await tester.pumpWidget(createTestApp(
-        const LoadingScreen(message: 'Test Loading'),
-      ));
-      await tester.pumpAndSettle();
-
-      // Verify screen renders
-      expect(find.text('Test Loading'), findsOneWidget);
-
-      // Verify theme is applied
-      final materialApp = tester.widget<MaterialApp>(find.byType(MaterialApp));
-      expect(materialApp.themeMode, equals(ThemeMode.dark));
-    });
 
     testWidgets('HomepageScreen renders with light theme', (tester) async {
       await tester.pumpWidget(createTestApp(
@@ -154,25 +121,6 @@ void main() {
       expect(materialApp.themeMode, equals(ThemeMode.dark));
     });
 
-    testWidgets('Theme changes propagate to LoadingScreen', (tester) async {
-      await tester.pumpWidget(createTestApp(
-        const LoadingScreen(message: 'Test Loading'),
-      ));
-      await tester.pumpAndSettle();
-
-      // Initial theme should be light
-      var materialApp = tester.widget<MaterialApp>(find.byType(MaterialApp));
-      expect(materialApp.themeMode, equals(ThemeMode.light));
-
-      // Change to dark theme
-      await themeProvider.setThemeMode(ThemeMode.dark);
-      await tester.pumpAndSettle();
-
-      // Theme should now be dark
-      materialApp = tester.widget<MaterialApp>(find.byType(MaterialApp));
-      expect(materialApp.themeMode, equals(ThemeMode.dark));
-    });
-
     testWidgets('Theme changes propagate to HomepageScreen', (tester) async {
       await tester.pumpWidget(createTestApp(
         const HomepageScreen(),
@@ -202,7 +150,6 @@ void main() {
             themeMode: themeProvider.themeMode,
             home: Navigator(
               pages: const [
-                MaterialPage(child: LoadingScreen(message: 'Screen 1')),
                 MaterialPage(child: HomepageScreen()),
               ],
               onDidRemovePage: (page) {},
@@ -213,7 +160,6 @@ void main() {
       await tester.pumpAndSettle();
 
       // Both screens should be present
-      expect(find.byType(LoadingScreen), findsOneWidget);
       expect(find.byType(HomepageScreen), findsOneWidget);
 
       // Theme should be applied to both

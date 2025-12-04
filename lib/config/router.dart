@@ -5,7 +5,6 @@ import '../services/auth_service.dart';
 
 import '../screens/home_screen.dart';
 import '../screens/login_screen.dart';
-import '../screens/loading_screen.dart';
 import '../screens/callback_screen.dart';
 import '../screens/ollama_test_screen.dart';
 
@@ -181,13 +180,6 @@ class AppRouter {
                 );
 
                 // If authentication is still loading, show loading screen
-                if (isAuthLoading) {
-                  debugPrint('[Router] Showing loading screen');
-                  return const LoadingScreen(
-                    message: 'Checking authentication...',
-                  );
-                }
-
                 if (isAuthenticated) {
                   debugPrint('[Router] Showing home screen');
                   return const HomeScreen();
@@ -294,17 +286,6 @@ class AppRouter {
               '[Router] Building CallbackScreen with query params: $callbackParams',
             );
             return CallbackScreen(queryParams: callbackParams);
-          },
-        ),
-
-        // Loading route
-        GoRoute(
-          path: '/loading',
-          name: 'loading',
-          builder: (context, state) {
-            final message =
-                state.uri.queryParameters['message'] ?? 'Loading...';
-            return LoadingScreen(message: message);
           },
         ),
 
@@ -419,7 +400,6 @@ class AppRouter {
         debugPrint('[Router] Base URI: ${Uri.base}');
         final isLoggingIn = state.matchedLocation == '/login';
         final isCallback = state.matchedLocation == '/callback';
-        final isLoading = state.matchedLocation == '/loading';
         final isHomepage = state.matchedLocation == '/';
         final isDownload = state.matchedLocation == '/download' && kIsWeb;
         final isDocs = state.matchedLocation == '/docs' && kIsWeb;
@@ -467,7 +447,7 @@ class AppRouter {
           '[Router] Platform state: kIsWeb=$kIsWeb, isAppSubdomain=$isAppSubdomain',
         );
         debugPrint(
-          '[Router] Route flags: isLoggingIn=$isLoggingIn, isCallback=$isCallback, isLoading=$isLoading, isHomepage=$isHomepage',
+          '[Router] Route flags: isLoggingIn=$isLoggingIn, isCallback=$isCallback, isHomepage=$isHomepage',
         );
 
         // If we have callback parameters but we're not on /callback route, redirect there
@@ -534,18 +514,11 @@ class AppRouter {
         }
 
         // Allow access to login and loading pages
-        if (isLoggingIn || isLoading) {
+        if (isLoggingIn) {
           // On web main domain, redirect /login to / (marketing homepage)
           if (isLoggingIn && kIsWeb && !isAppSubdomain) {
             debugPrint(
                 '[Router] DECISION: Redirecting /login to / on main domain');
-            return '/';
-          }
-
-          // If on loading screen but services are loaded, redirect to home
-          if (isLoading && isAuthenticated && areServicesLoaded) {
-            debugPrint(
-                '[Router] DECISION: Services loaded, redirecting from loading to home');
             return '/';
           }
 

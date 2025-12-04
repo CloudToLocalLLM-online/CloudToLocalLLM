@@ -7,7 +7,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'dart:convert';
 import 'settings_category_widgets.dart';
-import 'settings_base.dart';
 
 /// About Settings Category - Version Info and System Details
 class AboutSettingsCategory extends SettingsCategoryContentWidget {
@@ -120,7 +119,8 @@ class _AboutSettingsCategoryContentState
             ),
             const SizedBox(height: 16),
             _buildInfoRow(context, 'Name', 'CloudToLocalLLM'),
-            _buildInfoRow(context, 'Version', _versionInfo?['version'] ?? 'Unknown'),
+            _buildInfoRow(
+                context, 'Version', _versionInfo?['version'] ?? 'Unknown'),
             _buildInfoRow(
               context,
               'Build',
@@ -151,15 +151,16 @@ class _AboutSettingsCategoryContentState
                   ),
             ),
             const SizedBox(height: 16),
-            _buildInfoRow(context, 'Web', _componentVersions!['web'] ?? 'Unknown'),
             _buildInfoRow(
-                context, 'API Backend', _componentVersions!['api'] ?? 'Unknown'),
+                context, 'Web', _componentVersions!['web'] ?? 'Unknown'),
+            _buildInfoRow(context, 'API Backend',
+                _componentVersions!['api'] ?? 'Unknown'),
             _buildInfoRow(context, 'Streaming Proxy',
                 _componentVersions!['streaming_proxy'] ?? 'Unknown'),
-            _buildInfoRow(
-                context, 'Database', _componentVersions!['postgres'] ?? 'Unknown'),
-            _buildInfoRow(
-                context, 'Base Image', _componentVersions!['base'] ?? 'Unknown'),
+            _buildInfoRow(context, 'Database',
+                _componentVersions!['postgres'] ?? 'Unknown'),
+            _buildInfoRow(context, 'Base Image',
+                _componentVersions!['base'] ?? 'Unknown'),
             const Divider(height: 24),
             _buildInfoRow(
               context,
@@ -220,7 +221,7 @@ class _AboutSettingsCategoryContentState
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   fontWeight: FontWeight.w500,
                   color: isSubtle
-                      ? Theme.of(context).colorScheme.onSurface.withOpacity(0.6)
+                      ? Theme.of(context).colorScheme.onSurface.withAlpha(153)
                       : null,
                 ),
           ),
@@ -229,7 +230,7 @@ class _AboutSettingsCategoryContentState
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   fontFamily: 'monospace',
                   color: isSubtle
-                      ? Theme.of(context).colorScheme.onSurface.withOpacity(0.6)
+                      ? Theme.of(context).colorScheme.onSurface.withAlpha(153)
                       : Theme.of(context).colorScheme.primary,
                 ),
           ),
@@ -251,4 +252,3 @@ class _AboutSettingsCategoryContentState
     }
   }
 }
-

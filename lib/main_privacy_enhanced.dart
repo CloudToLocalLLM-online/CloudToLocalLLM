@@ -3,7 +3,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
-import 'screens/loading_screen.dart';
 import 'config/theme.dart';
 import 'config/router.dart';
 import 'config/app_config.dart';
@@ -370,7 +369,18 @@ class _CloudToLocalLLMPrivacyAppState extends State<CloudToLocalLLMPrivacyApp> {
         themeMode: AppConfig.enableDarkMode ? ThemeMode.dark : ThemeMode.light,
         home: _isInitialized
             ? _buildMainApp()
-            : LoadingScreen(message: _initializationStatus),
+            : Scaffold(
+                body: Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const CircularProgressIndicator(),
+                      const SizedBox(height: 16),
+                      Text(_initializationStatus),
+                    ],
+                  ),
+                ),
+              ),
       ),
     );
   }

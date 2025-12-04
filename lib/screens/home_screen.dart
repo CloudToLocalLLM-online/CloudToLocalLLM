@@ -5,9 +5,9 @@ import 'package:provider/provider.dart';
 
 import '../config/app_config.dart';
 import '../services/app_initialization_service.dart';
+import '../services/auth_service.dart';
 import '../services/streaming_chat_service.dart';
 import 'home/home_layout.dart';
-import 'loading_screen.dart';
 
 /// Modern ChatGPT-like chat interface
 class HomeScreen extends StatefulWidget {
@@ -39,33 +39,56 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Check if StreamingChatService is available before rendering
-    try {
-      context.read<StreamingChatService>();
-    } catch (e) {
-      debugPrint('[HomeScreen] StreamingChatService not available: $e');
-      return const LoadingScreen(message: 'Loading application modules...');
-    }
+    return Consumer<AuthService>(
+      builder: (context, authService, child) {
+        if (!authService.areAuthenticatedServicesLoaded.value) {
+          return const Scaffold(
+            body: Center(
+              child: CircularProgressIndicator(),
+            ),
+          );
+        }
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final isCompact = constraints.maxWidth < AppConfig.mobileBreakpoint;
-        final isSidebarCollapsed =
-            isCompact ? (_compactSidebarPreference ?? true) : false;
+        // Check if StreamingChatService is available before rendering
+        try {
+          context.read<StreamingChatService>();
+        } catch (e) {
+          debugPrint('[HomeScreen] StreamingChatService not available: $e');
+          return const Scaffold(
+            body: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CircularProgressIndicator(),
+                  SizedBox(height: 16),
+                  Text('Loading application modules...'),
+                ],
+              ),
+            ),
+          );
+        }
 
-        return HomeLayout(
-          isCompact: isCompact,
-          isSidebarCollapsed: isSidebarCollapsed,
-          onSidebarToggle: () {
-            if (!isCompact) {
-              return;
-            }
-            setState(() {
-              _compactSidebarPreference = !isSidebarCollapsed;
-            });
+        return LayoutBuilder(
+          builder: (context, constraints) {
+            final isCompact = constraints.maxWidth < AppConfig.mobileBreakpoint;
+            final isSidebarCollapsed =
+                isCompact ? (_compactSidebarPreference ?? true) : false;
+
+            return HomeLayout(
+              isCompact: isCompact,
+              isSidebarCollapsed: isSidebarCollapsed,
+              onSidebarToggle: () {
+                if (!isCompact) {
+                  return;
+                }
+                setState(() {
+                  _compactSidebarPreference = !isSidebarCollapsed;
+                });
+              },
+              scrollController: _scrollController,
+              onSendMessage: _handleSendMessage,
+            );
           },
-          scrollController: _scrollController,
-          onSendMessage: _handleSendMessage,
         );
       },
     );
