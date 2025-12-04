@@ -151,10 +151,9 @@ class AuthService extends ChangeNotifier {
           '[AuthService] _areAuthenticatedServicesLoaded set to true after setupAuthenticatedServices, notifying listeners.');
       notifyListeners();
     } catch (e) {
-      debugPrint(
-          '[AuthService] ERROR: Failed to load authenticated services: $e');
+      print('[AuthService] ERROR: Failed to load authenticated services: $e');
       _areAuthenticatedServicesLoaded.value = false;
-      debugPrint(
+      print(
           '[AuthService] _areAuthenticatedServicesLoaded set to false due to error, notifying listeners.');
       notifyListeners();
     }

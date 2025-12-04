@@ -43,6 +43,7 @@ final GetIt serviceLocator = GetIt.instance;
 
 bool _coreServicesRegistered = false;
 bool _authenticatedServicesRegistered = false;
+bool _isRegisteringAuthenticatedServices = false;
 
 /// Registers core services that are needed before authentication.
 /// These services don't require authentication tokens and can be safely
@@ -247,162 +248,190 @@ Future<void> setupAuthenticatedServices() async {
     return;
   }
 
-  debugPrint(
-      '[ServiceLocator] ===== REGISTERING AUTHENTICATED SERVICES START =====');
-  print('[Locator] setupAuthenticatedServices called (Entry Point)');
-
-  // Verify authentication before proceeding
-  final authService = serviceLocator.get<AuthService>();
-  debugPrint(
-      '[ServiceLocator] Checking auth state: ${authService.isAuthenticated.value}');
-  if (!authService.isAuthenticated.value) {
-    debugPrint(
-      '[ServiceLocator] Cannot register authenticated services - user not authenticated',
-    );
-    debugPrint(
-        '[ServiceLocator] ===== REGISTERING AUTHENTICATED SERVICES END (SKIPPED) =====');
+  if (_isRegisteringAuthenticatedServices) {
+    print(
+        '[ServiceLocator] Authenticated services registration already in progress (Race Condition Avoided)');
     return;
   }
 
-  // Verify token is available
-  final token = await authService.getAccessToken();
-  debugPrint(
-      '[ServiceLocator] Checking access token: ${token != null && token.isNotEmpty ? "PRESENT" : "MISSING"}');
-  if (token == null || token.isEmpty) {
+  _isRegisteringAuthenticatedServices = true;
+
+  try {
     debugPrint(
-      '[ServiceLocator] Cannot register authenticated services - no access token',
+        '[ServiceLocator] ===== REGISTERING AUTHENTICATED SERVICES START =====');
+    print('[Locator] setupAuthenticatedServices called (Entry Point)');
+
+    // Verify authentication before proceeding
+    print('[Locator] Getting AuthService from serviceLocator...');
+    final authService = serviceLocator.get<AuthService>();
+    print('[Locator] Got AuthService instance');
+
+    print('[Locator] Accessing isAuthenticated.value...');
+    final isAuthenticated = authService.isAuthenticated.value;
+    print('[ServiceLocator] Checking auth state: $isAuthenticated');
+    if (!isAuthenticated) {
+      print(
+        '[ServiceLocator] Cannot register authenticated services - user not authenticated',
+      );
+      return;
+    }
+
+    // Verify token is available
+    final token = await authService.getAccessToken();
+    print(
+        '[ServiceLocator] Checking access token: ${token != null && token.isNotEmpty ? "PRESENT" : "MISSING"}');
+    if (token == null || token.isEmpty) {
+      print(
+        '[ServiceLocator] Cannot register authenticated services - no access token',
+      );
+      return;
+    }
+
+    print('[ServiceLocator] Registering authenticated services...');
+    _authenticatedServicesRegistered = true;
+
+    final localOllamaService =
+        serviceLocator.get<LocalOllamaConnectionService>();
+    final providerDiscoveryService =
+        serviceLocator.get<ProviderDiscoveryService>();
+    final enhancedUserTierService =
+        serviceLocator.get<EnhancedUserTierService>();
+    final webDownloadPromptService =
+        serviceLocator.get<WebDownloadPromptService>();
+
+    // Initialize enhanced user tier service now that we have auth
+    print('[ServiceLocator] Initializing EnhancedUserTierService...');
+    unawaited(enhancedUserTierService.initialize());
+
+    // Initialize web download prompt service
+    print('[ServiceLocator] Initializing WebDownloadPromptService...');
+    await webDownloadPromptService.initialize();
+
+    // Initialize LocalOllama service now that we have auth
+    print('[ServiceLocator] Initializing LocalOllamaConnectionService...');
+    await localOllamaService.initialize();
+
+    // LangChain Prompt Service is already initialized in constructor
+
+    // Provider Discovery Service doesn't need initialization - it's already set up
+
+    // Tunnel configuration manager - requires SharedPreferences
+    print('[ServiceLocator] Initializing TunnelConfigManager...');
+    final tunnelConfigManager = TunnelConfigManager();
+    await tunnelConfigManager.initialize();
+    serviceLocator.registerSingleton<TunnelConfigManager>(tunnelConfigManager);
+
+    // Tunnel service - requires authentication token
+    final tunnelService = TunnelService(authService: authService);
+    serviceLocator.registerSingleton<TunnelService>(tunnelService);
+
+    // Streaming proxy service - requires authentication token
+    final streamingProxyService =
+        StreamingProxyService(authService: authService);
+    serviceLocator.registerSingleton<StreamingProxyService>(
+      streamingProxyService,
     );
+
+    // Ollama service - requires authentication token
+    print('[ServiceLocator] Initializing OllamaService...');
+    final ollamaService = OllamaService(authService: authService);
+    await ollamaService.initialize();
+    serviceLocator.registerSingleton<OllamaService>(ollamaService);
+
+    // User container service - requires authentication token
+    final userContainerService = UserContainerService(authService: authService);
+    serviceLocator
+        .registerSingleton<UserContainerService>(userContainerService);
+
+    // LangChain integration service - requires authentication for provider access
+    print('[ServiceLocator] Initializing LangChainIntegrationService...');
+    final langchainIntegrationService = LangChainIntegrationService(
+      discoveryService: providerDiscoveryService,
+    );
+    await langchainIntegrationService.initializeProviders();
+    serviceLocator.registerSingleton<LangChainIntegrationService>(
+      langchainIntegrationService,
+    );
+
+    // LLM Provider Manager - requires authentication
+    print('[ServiceLocator] Initializing LLMProviderManager...');
+    final llmProviderManager = LLMProviderManager(
+      discoveryService: providerDiscoveryService,
+      langchainService: langchainIntegrationService,
+    );
+    await llmProviderManager.initialize();
+    serviceLocator.registerSingleton<LLMProviderManager>(llmProviderManager);
+
+    // Connection Manager - requires authentication for tunnel/cloud connections
+    final connectionManager = ConnectionManagerService(
+      localOllama: localOllamaService,
+      tunnelService: tunnelService,
+      authService: authService,
+      ollamaService: ollamaService,
+    );
+    await connectionManager.initialize();
+    serviceLocator
+        .registerSingleton<ConnectionManagerService>(connectionManager);
+
+    // LangChain Ollama service - requires connection manager (which requires auth)
+    final langchainOllamaService = LangChainOllamaService(
+      connectionManager: connectionManager,
+    );
+    await langchainOllamaService.initialize();
+    serviceLocator.registerSingleton<LangChainOllamaService>(
+      langchainOllamaService,
+    );
+
+    // LangChain RAG service - requires LangChain Ollama service
+    final langchainRagService = LangChainRAGService(
+      ollamaService: langchainOllamaService,
+    );
+    await langchainRagService.initialize();
+    serviceLocator.registerSingleton<LangChainRAGService>(langchainRagService);
+
+    // LLM Audit service - requires authentication
+    final llmAuditService = LLMAuditService(authService: authService);
+    await llmAuditService.initialize();
+    serviceLocator.registerSingleton<LLMAuditService>(llmAuditService);
+
+    // Streaming chat service - requires connection manager
+    final streamingChatService = StreamingChatService(
+      connectionManager,
+      authService,
+    );
+    serviceLocator
+        .registerSingleton<StreamingChatService>(streamingChatService);
+
+    // Unified connection service - requires connection manager
+    print('[ServiceLocator] Initializing UnifiedConnectionService...');
+    final unifiedConnectionService = UnifiedConnectionService();
+    unifiedConnectionService.setConnectionManager(connectionManager);
+    await unifiedConnectionService.initialize();
+    serviceLocator.registerSingleton<UnifiedConnectionService>(
+      unifiedConnectionService,
+    );
+
+    // Admin services - require authentication and admin privileges
+    final adminService = AdminService(authService: authService);
+    serviceLocator.registerSingleton<AdminService>(adminService);
+
+    final adminDataFlushService =
+        AdminDataFlushService(authService: authService);
+    serviceLocator.registerSingleton<AdminDataFlushService>(
+      adminDataFlushService,
+    );
+
+    // Admin center service - requires authentication
+    final adminCenterService = AdminCenterService(authService: authService);
+    serviceLocator.registerSingleton<AdminCenterService>(adminCenterService);
+
     debugPrint(
-        '[ServiceLocator] ===== REGISTERING AUTHENTICATED SERVICES END (SKIPPED) =====');
-    return;
+        '[ServiceLocator] Authenticated services registered successfully');
+    debugPrint(
+        '[ServiceLocator] ===== REGISTERING AUTHENTICATED SERVICES END =====');
+  } finally {
+    _isRegisteringAuthenticatedServices = false;
   }
-
-  debugPrint('[ServiceLocator] Registering authenticated services...');
-  _authenticatedServicesRegistered = true;
-
-  final localOllamaService = serviceLocator.get<LocalOllamaConnectionService>();
-  final providerDiscoveryService =
-      serviceLocator.get<ProviderDiscoveryService>();
-  final enhancedUserTierService = serviceLocator.get<EnhancedUserTierService>();
-  final webDownloadPromptService =
-      serviceLocator.get<WebDownloadPromptService>();
-
-  // Initialize enhanced user tier service now that we have auth
-  unawaited(enhancedUserTierService.initialize());
-
-  // Initialize web download prompt service
-  await webDownloadPromptService.initialize();
-
-  // Initialize LocalOllama service now that we have auth
-  await localOllamaService.initialize();
-
-  // LangChain Prompt Service is already initialized in constructor
-
-  // Provider Discovery Service doesn't need initialization - it's already set up
-
-  // Tunnel configuration manager - requires SharedPreferences
-  final tunnelConfigManager = TunnelConfigManager();
-  await tunnelConfigManager.initialize();
-  serviceLocator.registerSingleton<TunnelConfigManager>(tunnelConfigManager);
-
-  // Tunnel service - requires authentication token
-  final tunnelService = TunnelService(authService: authService);
-  serviceLocator.registerSingleton<TunnelService>(tunnelService);
-
-  // Streaming proxy service - requires authentication token
-  final streamingProxyService = StreamingProxyService(authService: authService);
-  serviceLocator.registerSingleton<StreamingProxyService>(
-    streamingProxyService,
-  );
-
-  // Ollama service - requires authentication token
-  final ollamaService = OllamaService(authService: authService);
-  await ollamaService.initialize();
-  serviceLocator.registerSingleton<OllamaService>(ollamaService);
-
-  // User container service - requires authentication token
-  final userContainerService = UserContainerService(authService: authService);
-  serviceLocator.registerSingleton<UserContainerService>(userContainerService);
-
-  // LangChain integration service - requires authentication for provider access
-  final langchainIntegrationService = LangChainIntegrationService(
-    discoveryService: providerDiscoveryService,
-  );
-  await langchainIntegrationService.initializeProviders();
-  serviceLocator.registerSingleton<LangChainIntegrationService>(
-    langchainIntegrationService,
-  );
-
-  // LLM Provider Manager - requires authentication
-  final llmProviderManager = LLMProviderManager(
-    discoveryService: providerDiscoveryService,
-    langchainService: langchainIntegrationService,
-  );
-  await llmProviderManager.initialize();
-  serviceLocator.registerSingleton<LLMProviderManager>(llmProviderManager);
-
-  // Connection Manager - requires authentication for tunnel/cloud connections
-  final connectionManager = ConnectionManagerService(
-    localOllama: localOllamaService,
-    tunnelService: tunnelService,
-    authService: authService,
-    ollamaService: ollamaService,
-  );
-  await connectionManager.initialize();
-  serviceLocator.registerSingleton<ConnectionManagerService>(connectionManager);
-
-  // LangChain Ollama service - requires connection manager (which requires auth)
-  final langchainOllamaService = LangChainOllamaService(
-    connectionManager: connectionManager,
-  );
-  await langchainOllamaService.initialize();
-  serviceLocator.registerSingleton<LangChainOllamaService>(
-    langchainOllamaService,
-  );
-
-  // LangChain RAG service - requires LangChain Ollama service
-  final langchainRagService = LangChainRAGService(
-    ollamaService: langchainOllamaService,
-  );
-  await langchainRagService.initialize();
-  serviceLocator.registerSingleton<LangChainRAGService>(langchainRagService);
-
-  // LLM Audit service - requires authentication
-  final llmAuditService = LLMAuditService(authService: authService);
-  await llmAuditService.initialize();
-  serviceLocator.registerSingleton<LLMAuditService>(llmAuditService);
-
-  // Streaming chat service - requires connection manager
-  final streamingChatService = StreamingChatService(
-    connectionManager,
-    authService,
-  );
-  serviceLocator.registerSingleton<StreamingChatService>(streamingChatService);
-
-  // Unified connection service - requires connection manager
-  final unifiedConnectionService = UnifiedConnectionService();
-  unifiedConnectionService.setConnectionManager(connectionManager);
-  await unifiedConnectionService.initialize();
-  serviceLocator.registerSingleton<UnifiedConnectionService>(
-    unifiedConnectionService,
-  );
-
-  // Admin services - require authentication and admin privileges
-  final adminService = AdminService(authService: authService);
-  serviceLocator.registerSingleton<AdminService>(adminService);
-
-  final adminDataFlushService = AdminDataFlushService(authService: authService);
-  serviceLocator.registerSingleton<AdminDataFlushService>(
-    adminDataFlushService,
-  );
-
-  // Admin center service - requires authentication
-  final adminCenterService = AdminCenterService(authService: authService);
-  serviceLocator.registerSingleton<AdminCenterService>(adminCenterService);
-
-  debugPrint('[ServiceLocator] Authenticated services registered successfully');
-  debugPrint(
-      '[ServiceLocator] ===== REGISTERING AUTHENTICATED SERVICES END =====');
 }
 
 /// Legacy function for backward compatibility.
