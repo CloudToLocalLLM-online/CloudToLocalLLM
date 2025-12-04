@@ -69,10 +69,6 @@ Future<void> setupCoreServices() async {
   print('[Locator] Registering AuthService...');
   final authService = AuthService(supabaseAuthService);
   serviceLocator.registerSingleton<AuthService>(authService);
-  print('[Locator] Initializing AuthService...');
-  await authService.init();
-  print('[Locator] AuthService initialized');
-
   // Local Ollama service - create but don't initialize until auth
   final localOllamaService = LocalOllamaConnectionService();
   serviceLocator.registerSingleton<LocalOllamaConnectionService>(
@@ -167,6 +163,12 @@ Future<void> setupCoreServices() async {
   // Don't initialize yet - wait for auth token
 
   debugPrint('[ServiceLocator] Core services registered successfully');
+
+  // Initialize AuthService last, after all dependencies are registered
+  print('[Locator] Initializing AuthService...');
+  await authService.init();
+  print('[Locator] AuthService initialized');
+
   debugPrint('[ServiceLocator] ===== REGISTERING CORE SERVICES END =====');
 
   // Verify all core services are registered
