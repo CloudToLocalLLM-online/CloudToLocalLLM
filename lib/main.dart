@@ -55,7 +55,7 @@ final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 void main() async {
   // Immediate logging to verify Dart entry point is reached
-  print('----- DART MAIN START ----- v4.6.11');
+  print('----- DART MAIN START ----- v4.6.12');
 
   // Flutter requires WidgetsFlutterBinding to be initialized first
   WidgetsFlutterBinding.ensureInitialized();
