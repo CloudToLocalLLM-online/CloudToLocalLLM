@@ -1,7 +1,7 @@
 {
-  "version": "4.6.23",
-  "build_number": "202512042229",
-  "build_date": "2025-12-04T22:29:47Z",
-  "git_commit": "6651c6b8",
-  "buildTimestamp": "2025-12-04 22:29:47"
+  "version": "4.6.24",
+  "build_number": "202512042344",
+  "build_date": "2025-12-04T23:44:18Z",
+  "git_commit": "af05625a",
+  "buildTimestamp": "2025-12-04 23:44:18"
 }
