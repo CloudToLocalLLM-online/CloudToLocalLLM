@@ -89,7 +89,11 @@ class AuthService extends ChangeNotifier {
   }
 
   Future<void> _handleAuthenticatedSession(Session session) async {
-    if (_isAuthenticated.value) return;
+    if (_isAuthenticated.value) {
+      debugPrint('[AuthService] Already authenticated, completing bootstrap');
+      _completeSessionBootstrap();
+      return;
+    }
 
     final user = UserModel(
       id: session.user.id,
