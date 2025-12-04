@@ -89,6 +89,12 @@ if [ -f "docs/VERSIONING.md" ]; then
     sed -i "s/4\.[0-9]\+\.[0-9]\+/${NEW_VERSION}/g" docs/VERSIONING.md || true
 fi
 
+# 8. Update lib/main.dart version string
+echo "8. Updating lib/main.dart version string..."
+if [ -f "lib/main.dart" ]; then
+    sed -i "s/DART MAIN START ----- v[0-9]\+\.[0-9]\+\.[0-9]\+/DART MAIN START ----- v${NEW_VERSION}/g" lib/main.dart
+fi
+
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "✅ All Version References Updated"
@@ -100,6 +106,7 @@ echo "  ✅ assets/component-versions.json → all services"
 echo "  ✅ pubspec.yaml → ${NEW_VERSION}+${BUILD_NUMBER}"
 echo "  ✅ services/api-backend/package.json → $NEW_VERSION"
 echo "  ✅ services/streaming-proxy/package.json → $NEW_VERSION"
+echo "  ✅ lib/main.dart → v${NEW_VERSION}"
 echo "  ✅ README.md → updated badges"
 echo "  ✅ docs/VERSIONING.md → updated examples"
 echo ""
