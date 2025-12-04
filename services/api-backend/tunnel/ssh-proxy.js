@@ -3,6 +3,9 @@
  * Handles user connections, request forwarding, and connection lifecycle
  */
 
+import { WebSocketServer, createWebSocketStream } from 'ws';
+import net from 'net';
+
 // import ssh2 from 'ssh2'; // Lazy loaded
 // const { Server: SSHServer } = ssh2;
 
@@ -19,6 +22,10 @@ export class SSHProxy {
     this.logger = logger;
     this.config = config;
     this.authService = authService;
+
+    // WebSocket server for handling upgrades
+    this.wss = new WebSocketServer({ noServer: true });
+    this._setupWebSocketServer();
 
     // SSH server instance
     this.sshServer = null;
@@ -46,6 +53,54 @@ export class SSHProxy {
 
     // Connection timeout cleanup
     this.connectionTimeouts = new Map();
+  }
+
+  /**
+   * Setup WebSocket server handlers
+   */
+  _setupWebSocketServer() {
+    this.wss.on('connection', (ws, req) => {
+      this.logger.info('WebSocket connection established for SSH tunnel');
+
+      // Connect to local SSH server
+      const sshPort = this.config.sshPort || 2222;
+      const sshSocket = net.connect(sshPort, 'localhost');
+
+      const wsStream = createWebSocketStream(ws);
+
+      wsStream.pipe(sshSocket);
+      sshSocket.pipe(wsStream);
+
+      wsStream.on('error', (err) => {
+        this.logger.error('WebSocket stream error', { error: err.message });
+        sshSocket.destroy();
+      });
+
+      sshSocket.on('error', (err) => {
+        this.logger.error('SSH socket error', { error: err.message });
+        ws.close();
+      });
+
+      sshSocket.on('close', () => {
+        ws.close();
+      });
+
+      ws.on('close', () => {
+        sshSocket.destroy();
+      });
+    });
+  }
+
+  /**
+   * Handle WebSocket upgrade request
+   * @param {http.IncomingMessage} request
+   * @param {net.Socket} socket
+   * @param {Buffer} head
+   */
+  handleUpgrade(request, socket, head) {
+    this.wss.handleUpgrade(request, socket, head, (ws) => {
+      this.wss.emit('connection', ws, request);
+    });
   }
 
   /**
