@@ -231,8 +231,11 @@ class _CloudToLocalLLMAppState extends State<CloudToLocalLLMApp> {
 
   @override
   Widget build(BuildContext context) {
+    debugPrint('[App] build() called');
     final bootstrap = context.watch<AppBootstrapData?>();
+    debugPrint('[App] bootstrap: $bootstrap');
     if (bootstrap == null) {
+      debugPrint('[App] Bootstrap is null, showing loading screen');
       return MaterialApp(
         debugShowCheckedModeBanner: false,
         home: Scaffold(
@@ -243,6 +246,7 @@ class _CloudToLocalLLMAppState extends State<CloudToLocalLLMApp> {
       );
     }
 
+    debugPrint('[App] Bootstrap loaded, building app');
     _ensureAuthListener();
 
     // Build providers list - authenticated services will be added when registered
