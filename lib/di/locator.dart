@@ -269,7 +269,6 @@ Future<void> setupAuthenticatedServices() async {
     print('[Locator] Got AuthService instance');
 
     print('[Locator] Accessing isAuthenticated.value...');
-    final isAuthenticated = authService.isAuthenticated.value;
     // Verify token is available
     final token = await authService.getAccessToken();
     print(

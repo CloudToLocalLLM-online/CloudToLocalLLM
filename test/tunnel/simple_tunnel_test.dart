@@ -23,12 +23,14 @@ void main() async {
     // Test 3: Tunnel connection flow simulation
     await _testConnectionFlow();
 
-    debugPrint('[SimpleTunnelTest] ✅ All basic tests completed successfully!');
-    debugPrint('[SimpleTunnelTest] Next steps:');
-    debugPrint('  1. Start backend tunnel server');
-    debugPrint('  2. Configure proper authentication');
-    debugPrint('  3. Run full integration tests');
-    debugPrint('  4. Test actual SSH/WebSocket connections');
+    // Test 4: Tunnel registration simulation
+    await _testTunnelRegistration();
+
+    // Test 5: Health monitoring simulation
+    await _testHealthMonitoring();
+
+    // Display summary
+    _displayTestSummary();
   } catch (e, stackTrace) {
     debugPrint('[SimpleTunnelTest] ❌ Test failed with error: $e');
     debugPrint('[SimpleTunnelTest] Stack trace: $stackTrace');
