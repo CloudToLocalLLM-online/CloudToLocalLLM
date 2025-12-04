@@ -39,31 +39,15 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<AuthService>(
-      builder: (context, authService, child) {
-        if (!authService.areAuthenticatedServicesLoaded.value) {
+    final authService = context.read<AuthService>();
+
+    return ValueListenableBuilder<bool>(
+      valueListenable: authService.areAuthenticatedServicesLoaded,
+      builder: (context, areServicesLoaded, child) {
+        if (!areServicesLoaded) {
           return const Scaffold(
             body: Center(
               child: CircularProgressIndicator(),
-            ),
-          );
-        }
-
-        // Check if StreamingChatService is available before rendering
-        try {
-          context.read<StreamingChatService>();
-        } catch (e) {
-          debugPrint('[HomeScreen] StreamingChatService not available: $e');
-          return const Scaffold(
-            body: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  CircularProgressIndicator(),
-                  SizedBox(height: 16),
-                  Text('Loading application modules...'),
-                ],
-              ),
             ),
           );
         }
