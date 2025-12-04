@@ -420,32 +420,34 @@ class _AppRouterHost extends StatefulWidget {
 
 class _AppRouterHostState extends State<_AppRouterHost> {
   GoRouter? _router;
-  bool _waitingForBootstrap = false;
+  bool _initialized = false;
 
   @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    debugPrint('[AppRouterHost] didChangeDependencies called, _router: $_router, _waitingForBootstrap: $_waitingForBootstrap');
-    if (_router != null || _waitingForBootstrap) {
-      return;
-    }
+  void initState() {
+    super.initState();
+    debugPrint('[AppRouterHost] initState called');
+    // Initialize router after first frame to ensure context is available
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || _initialized) return;
+      _initialized = true;
+      _initializeRouterWhenReady();
+    });
+  }
 
+  void _initializeRouterWhenReady() async {
+    debugPrint('[AppRouterHost] _initializeRouterWhenReady called');
     final authService = context.read<AuthService>();
     debugPrint('[AppRouterHost] isSessionBootstrapComplete: ${authService.isSessionBootstrapComplete}');
+    
     if (authService.isSessionBootstrapComplete) {
       debugPrint('[AppRouterHost] Bootstrap already complete, initializing router');
       _initializeRouter(authService);
     } else {
       debugPrint('[AppRouterHost] Bootstrap not complete, waiting...');
-      _waitingForBootstrap = true;
-      authService.sessionBootstrapFuture.whenComplete(() {
-        debugPrint('[AppRouterHost] Bootstrap completed, initializing router');
-        if (!mounted) {
-          return;
-        }
-        _waitingForBootstrap = false;
-        _initializeRouter(authService);
-      });
+      await authService.sessionBootstrapFuture;
+      debugPrint('[AppRouterHost] Bootstrap completed, initializing router');
+      if (!mounted) return;
+      _initializeRouter(authService);
     }
   }
 
