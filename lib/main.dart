@@ -425,16 +425,21 @@ class _AppRouterHostState extends State<_AppRouterHost> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    debugPrint('[AppRouterHost] didChangeDependencies called, _router: $_router, _waitingForBootstrap: $_waitingForBootstrap');
     if (_router != null || _waitingForBootstrap) {
       return;
     }
 
     final authService = context.read<AuthService>();
+    debugPrint('[AppRouterHost] isSessionBootstrapComplete: ${authService.isSessionBootstrapComplete}');
     if (authService.isSessionBootstrapComplete) {
+      debugPrint('[AppRouterHost] Bootstrap already complete, initializing router');
       _initializeRouter(authService);
     } else {
+      debugPrint('[AppRouterHost] Bootstrap not complete, waiting...');
       _waitingForBootstrap = true;
       authService.sessionBootstrapFuture.whenComplete(() {
+        debugPrint('[AppRouterHost] Bootstrap completed, initializing router');
         if (!mounted) {
           return;
         }
@@ -514,11 +519,13 @@ class _AppRouterHostState extends State<_AppRouterHost> {
   }
 
   void _initializeRouter(AuthService authService) {
+    debugPrint('[AppRouterHost] _initializeRouter called');
     setState(() {
       _router = AppRouter.createRouter(
         navigatorKey: navigatorKey,
         authService: authService,
       );
+      debugPrint('[AppRouterHost] Router created and set');
     });
   }
 }
