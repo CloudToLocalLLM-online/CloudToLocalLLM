@@ -6,7 +6,9 @@ permissions:
 on:
   push:
     branches:
-      - cloud  # Trigger ONLY on cloud branch pushes
+      - cloud  # Trigger on cloud branch pushes (requires external PAT/App)
+  repository_dispatch:
+    types: [cloud-deploy]  # Trigger via repository_dispatch (works with GITHUB_TOKEN)
   workflow_dispatch:
     inputs:
       version_tag:
