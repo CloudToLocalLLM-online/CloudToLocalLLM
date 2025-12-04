@@ -89,8 +89,11 @@ class AuthService extends ChangeNotifier {
   }
 
   Future<void> _handleAuthenticatedSession(Session session) async {
-    if (_isAuthenticated.value) {
-      print('[AuthService] Already authenticated, completing bootstrap');
+    // Ensure services are loaded even if already authenticated to prevent race conditions
+    // and ensure _areAuthenticatedServicesLoaded is correctly set.
+    if (_isAuthenticated.value && _areAuthenticatedServicesLoaded.value) {
+      debugPrint(
+          '[AuthService] Already authenticated and services loaded, completing bootstrap.');
       _completeSessionBootstrap();
       return;
     }
@@ -110,14 +113,15 @@ class AuthService extends ChangeNotifier {
     );
 
     _currentUser = user;
-    _isAuthenticated.value = true;
-    debugPrint(
-        '[AuthService] _isAuthenticated set to true, notifying listeners.');
-    notifyListeners();
 
     await _loadAuthenticatedServices();
     debugPrint(
         '[AuthService] Authenticated services loaded, _areAuthenticatedServicesLoaded.value: ${_areAuthenticatedServicesLoaded.value}');
+
+    _isAuthenticated.value = true;
+    debugPrint(
+        '[AuthService] _isAuthenticated set to true, notifying listeners.');
+    notifyListeners();
 
     // Complete session bootstrap after authenticated services are ready
     _completeSessionBootstrap();
