@@ -10,17 +10,17 @@ The CloudToLocalLLM project uses semantic versioning for all Docker images. The 
 <major>.<minor>.<patch>
 ```
 
-Example: `4.6.22`
+Example: `4.6.23`
 
 ### Service-Specific Tags
 
 Each service gets tagged with both the app version and a service identifier:
 
-- **Web**: `4.6.22`
-- **API**: `4.6.22-api`
-- **Streaming Proxy**: `4.6.22-proxy`
-- **Postgres**: `4.6.22-postgres`
-- **Base**: `4.6.22-base`
+- **Web**: `4.6.23`
+- **API**: `4.6.23-api`
+- **Streaming Proxy**: `4.6.23-proxy`
+- **Postgres**: `4.6.23-postgres`
+- **Base**: `4.6.23-base`
 
 ### Additional Tags
 
@@ -34,7 +34,7 @@ Version information is stored in `assets/version.json`:
 
 ```json
 {
-  "version": "4.6.22",
+  "version": "4.6.23",
   "build_number": "202512031420",
   "build_date": "2025-12-03T14:20:00Z",
   "git_commit": "b61da9d3",
@@ -55,9 +55,9 @@ When `lib/**`, `web/**`, or `pubspec.**` files change:
 
 ### Bump Types
 
-- **Patch** (4.6.22 → 4.6.22): Bug fixes, minor changes
-- **Minor** (4.6.22 → 4.6.22): New features, backwards compatible
-- **Major** (4.6.22 → 5.0.0): Breaking changes
+- **Patch** (4.6.23 → 4.6.23): Bug fixes, minor changes
+- **Minor** (4.6.23 → 4.6.23): New features, backwards compatible
+- **Major** (4.6.23 → 5.0.0): Breaking changes
 
 ## Manual Version Bumping
 
@@ -87,7 +87,7 @@ The script will:
 ### When Services are Built
 
 If a service's source files changed:
-- ✅ **Uses semantic version tag** (e.g., `4.6.22-api`)
+- ✅ **Uses semantic version tag** (e.g., `4.6.23-api`)
 - ✅ Image is freshly built and tagged
 - ✅ Version is tracked and traceable
 
@@ -107,7 +107,7 @@ Deployments get annotated with versions:
 ```yaml
 metadata:
   annotations:
-    kubernetes.io/revision: "4.6.22"
+    kubernetes.io/revision: "4.6.23"
     deployment.kubernetes.io/timestamp: "2025-12-03T14:20:00Z"
 ```
 
@@ -116,7 +116,7 @@ metadata:
 Images are stored with multiple tags:
 
 ```
-imrightguycloudtolocalllm.azurecr.io/web:4.6.22
+imrightguycloudtolocalllm.azurecr.io/web:4.6.23
 imrightguycloudtolocalllm.azurecr.io/web:b61da9d3
 imrightguycloudtolocalllm.azurecr.io/web:latest
 ```
@@ -139,7 +139,7 @@ To rollback to a previous version:
 az acr repository show-tags --name imrightguycloudtolocalllm --repository web --orderby time_desc
 
 # Update deployment to use specific version
-kubectl set image deployment/web web=imrightguycloudtolocalllm.azurecr.io/web:4.6.22 -n cloudtolocalllm
+kubectl set image deployment/web web=imrightguycloudtolocalllm.azurecr.io/web:4.6.23 -n cloudtolocalllm
 ```
 
 ## Benefits
@@ -156,17 +156,17 @@ kubectl set image deployment/web web=imrightguycloudtolocalllm.azurecr.io/web:4.
 
 ```
 Changes detected: services/api-backend/**
-Current version: 4.6.22
+Current version: 4.6.23
 
 Build Process:
-├─ Web: SKIP (no changes) → use 4.6.22 (latest)
-├─ API: BUILD → tag as 4.6.22-api
+├─ Web: SKIP (no changes) → use 4.6.23 (latest)
+├─ API: BUILD → tag as 4.6.23-api
 ├─ Proxy: SKIP (no changes) → use latest
 └─ Postgres: SKIP (no changes) → use latest
 
 Deployment:
-├─ Web: 4.6.22 (cached)
-├─ API: 4.6.22-api (new)
+├─ Web: 4.6.23 (cached)
+├─ API: 4.6.23-api (new)
 ├─ Proxy: latest (cached)
 └─ Postgres: latest (cached)
 ```
@@ -175,19 +175,19 @@ Deployment:
 
 ```
 Changes detected: lib/**, web/**
-Current version: 4.6.22
+Current version: 4.6.23
 
 Versioning:
-└─ Bump to: 4.6.22 (patch bump)
+└─ Bump to: 4.6.23 (patch bump)
 
 Build Process:
-├─ Web: BUILD → tag as 4.6.22, 4.6.22-api, etc.
+├─ Web: BUILD → tag as 4.6.23, 4.6.23-api, etc.
 ├─ API: SKIP → use latest
 ├─ Proxy: SKIP → use latest
 └─ Postgres: SKIP → use latest
 
 Deployment:
-├─ Web: 4.6.22 (new version!)
+├─ Web: 4.6.23 (new version!)
 ├─ API: latest (cached)
 ├─ Proxy: latest (cached)
 └─ Postgres: latest (cached)
