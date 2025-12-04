@@ -268,14 +268,6 @@ Future<void> setupAuthenticatedServices() async {
 
     print('[Locator] Accessing isAuthenticated.value...');
     final isAuthenticated = authService.isAuthenticated.value;
-    print('[ServiceLocator] Checking auth state: $isAuthenticated');
-    if (!isAuthenticated) {
-      print(
-        '[ServiceLocator] Cannot register authenticated services - user not authenticated',
-      );
-      return;
-    }
-
     // Verify token is available
     final token = await authService.getAccessToken();
     print(
