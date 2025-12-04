@@ -6,9 +6,7 @@ permissions:
 on:
   push:
     branches:
-      - cloud  # Trigger on cloud branch pushes
-  repository_dispatch:
-    types: [cloud-deploy]  # Trigger via repository_dispatch event
+      - cloud  # Trigger ONLY on cloud branch pushes
   workflow_dispatch:
     inputs:
       version_tag:
