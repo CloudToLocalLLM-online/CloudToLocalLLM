@@ -74,13 +74,16 @@ class AuthService extends ChangeNotifier {
         print('[AuthService] Current session handled');
       } else {
         print('[AuthService] No current session found');
+        // Complete bootstrap if no session exists
+        _completeSessionBootstrap();
       }
     } catch (e) {
       debugPrint(' Failed to initialize Supabase Auth: $e');
+      // Complete bootstrap even on error to unblock the app
+      _completeSessionBootstrap();
     } finally {
       _isRestoringSession = false;
       _isLoading.value = false;
-      _completeSessionBootstrap();
       notifyListeners();
     }
   }
@@ -108,6 +111,9 @@ class AuthService extends ChangeNotifier {
 
     await _loadAuthenticatedServices();
     print('[AuthService] Authenticated services loaded');
+    
+    // Complete session bootstrap after authenticated services are ready
+    _completeSessionBootstrap();
   }
 
   /// Load authenticated services after authentication is confirmed
