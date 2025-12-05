@@ -165,7 +165,7 @@ app.set('trust proxy', 1); // Trust first proxy (nginx)
 
 // CORS configuration
 const corsOptions = {
-  origin: function(origin, callback) {
+  origin: function (origin, callback) {
     const allowedOrigins = [
       'https://app.cloudtolocalllm.online',
       'https://cloudtolocalllm.online',
@@ -218,7 +218,7 @@ const server = http.createServer(app);
 // Setup graceful shutdown with in-flight request completion
 const shutdownManager = setupGracefulShutdown(server, {
   shutdownTimeoutMs: 10000,
-  onShutdown: async() => {
+  onShutdown: async () => {
     logger.info('Running custom shutdown handlers');
     // Custom shutdown logic will be added here
   },
@@ -435,6 +435,53 @@ registerRoutes('/health', (req, res) => {
   });
 });
 
+// TEMPORARY DEBUG ENDPOINT
+app.get('/debug-dump', async (req, res) => {
+  try {
+    const debugInfo = {
+      timestamp: new Date().toISOString(),
+      env: {
+        DB_TYPE: process.env.DB_TYPE,
+        NODE_ENV: process.env.NODE_ENV,
+        // Don't expose secrets
+      },
+      migrator: dbMigrator ? dbMigrator.constructor.name : 'null',
+    };
+
+    if (dbMigrator && dbMigrator.pool) {
+      const client = await dbMigrator.pool.connect();
+      try {
+        // Check users table columns
+        const columns = await client.query(`
+          SELECT column_name, data_type 
+          FROM information_schema.columns 
+          WHERE table_name = 'users'
+        `);
+        debugInfo.usersColumns = columns.rows;
+
+        // Check migrations
+        const migrations = await client.query('SELECT * FROM schema_migrations ORDER BY applied_at DESC');
+        debugInfo.migrations = migrations.rows;
+
+        // Check if Postgres
+        const version = await client.query('SELECT version()');
+        debugInfo.dbVersion = version.rows[0];
+
+      } catch (e) {
+        debugInfo.dbError = e.message;
+      } finally {
+        client.release();
+      }
+    } else {
+      debugInfo.dbStatus = 'Not connected or initialized';
+    }
+
+    res.json(debugInfo);
+  } catch (error) {
+    res.status(500).json({ error: error.message, stack: error.stack });
+  }
+});
+
 // API Version Information Endpoint
 // Returns information about supported API versions
 /**
@@ -483,26 +530,26 @@ server.on('upgrade', (request, socket, head) => {
       // Handle WebSocket upgrade for SSH tunnel
       // The SSH server (ssh2) doesn't natively support WebSocket, so we need to bridge it
       // We'll use the 'ws' library to handle the WebSocket connection and pipe it to the SSH server
-      
+
       // Note: This requires the 'ws' library to be imported and a WebSocket server to be attached
       // Since we're using a custom implementation, we'll need to implement the WebSocket handling here
       // or in the SSHProxy class.
-      
+
       // For now, let's log that we received an upgrade request
       logger.info('Received WebSocket upgrade request for /ssh');
-      
+
       // In a real implementation, we would:
       // 1. Authenticate the request (using the token in the query string)
       // 2. Upgrade the connection to WebSocket
       // 3. Create a stream from the WebSocket
       // 4. Pass the stream to the SSH server as a connection
-      
+
       // Since ssh2.Server expects a raw TCP connection, we need to wrap the WebSocket
       // into a stream that looks like a TCP socket.
-      
+
       // This implementation is complex and requires additional dependencies/setup.
       // For this test, we'll assume the SSHProxy handles it if we pass the request.
-      
+
       if (sshProxy.handleUpgrade) {
         sshProxy.handleUpgrade(request, socket, head);
       } else {
@@ -569,7 +616,7 @@ app.use((error, req, res, _next) => {
 });
 
 // Conversation routes - implemented directly due to router mounting issues
-app.get('/conversations/', authenticateJWT, async(req, res) => {
+app.get('/conversations/', authenticateJWT, async (req, res) => {
   try {
     const userId = req.auth?.payload?.sub || req.user?.sub;
     if (!userId) {
@@ -612,7 +659,7 @@ app.get('/conversations/', authenticateJWT, async(req, res) => {
   }
 });
 
-app.put('/conversations/:id', authenticateJWT, async(req, res) => {
+app.put('/conversations/:id', authenticateJWT, async (req, res) => {
   try {
     const userId = req.auth?.payload?.sub || req.user?.sub;
     const conversationId = req.params.id;
@@ -741,13 +788,13 @@ app.put('/conversations/:id', authenticateJWT, async(req, res) => {
 });
 
 // Also mount at /api/conversations for backward compatibility
-app.get('/api/conversations/', async(req, res) => {
+app.get('/api/conversations/', async (req, res) => {
   // Redirect to the main route
   const url = req.originalUrl.replace('/api/conversations/', '/conversations/');
   res.redirect(307, url);
 });
 
-app.put('/api/conversations/:id', async(req, res) => {
+app.put('/api/conversations/:id', async (req, res) => {
   // Redirect to the main route
   const url = req.originalUrl.replace('/api/conversations/', '/conversations/');
   res.redirect(307, url);
@@ -794,7 +841,7 @@ async function initializeTunnelSystem() {
     if (!validation.allValid) {
       throw new Error('Database schema validation failed');
     }
-    
+
     // Set dbMigrator for health endpoint now that it's initialized
     setDbMigrator(dbMigrator);
 
@@ -826,7 +873,7 @@ async function initializeTunnelSystem() {
       logger.info('Authentication service initialized successfully');
 
       // Register auth service with health check service
-      healthCheckService.registerService('auth-service', async() => {
+      healthCheckService.registerService('auth-service', async () => {
         return {
           status: authService ? 'healthy' : 'unhealthy',
           message: authService
@@ -851,7 +898,7 @@ async function initializeTunnelSystem() {
         logger.info('SSH tunnel server initialized successfully');
 
         // Register SSH proxy with health check service
-        healthCheckService.registerService('ssh-tunnel', async() => {
+        healthCheckService.registerService('ssh-tunnel', async () => {
           return {
             status: sshProxy && sshProxy.isRunning ? 'healthy' : 'unhealthy',
             message:
@@ -867,7 +914,7 @@ async function initializeTunnelSystem() {
         });
 
         // Register SSH proxy as unhealthy
-        healthCheckService.registerService('ssh-tunnel', async() => {
+        healthCheckService.registerService('ssh-tunnel', async () => {
           return {
             status: 'degraded',
             message: 'SSH tunnel service failed to initialize (non-critical)',
@@ -953,7 +1000,7 @@ async function initializeTunnelSystem() {
     logger.info('WebSocket tunnel system ready');
 
     // Register custom shutdown handler with graceful shutdown manager
-    shutdownManager.shutdown = async() => {
+    shutdownManager.shutdown = async () => {
       await gracefulShutdown();
     };
 
