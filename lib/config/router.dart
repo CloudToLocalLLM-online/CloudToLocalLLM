@@ -6,23 +6,19 @@ import '../services/auth_service.dart';
 import '../screens/home_screen.dart';
 import '../screens/login_screen.dart';
 import '../screens/callback_screen.dart';
-import '../screens/ollama_test_screen.dart';
+// Ollama test screen is lazy-loaded
 
 // No web-specific imports needed - using platform-safe approach
 
-import '../screens/settings/llm_provider_settings_screen.dart';
-import '../screens/settings/daemon_settings_screen.dart';
-import '../screens/settings/connection_status_screen.dart';
-import '../screens/unified_settings_screen.dart';
+// Settings screens are lazy-loaded
+import '../screens/settings/settings_lazy.dart' deferred as settings_lazy;
 
-// Admin screens
-import '../screens/admin/admin_data_flush_screen.dart';
-import '../screens/admin/admin_center_screen.dart';
+// Admin screens are lazy-loaded
+import '../screens/admin/admin_lazy.dart' deferred as admin_lazy;
+import '../screens/ollama_test_lazy.dart' deferred as ollama_test_lazy;
 
-// Marketing screens (web-only)
-import '../screens/marketing/homepage_screen.dart';
-import '../screens/marketing/download_screen.dart';
-import '../screens/marketing/documentation_screen.dart';
+// Marketing screens (web-only) are lazy-loaded
+import '../screens/marketing/marketing_lazy.dart' deferred as marketing_lazy;
 
 /// Utility function to get the current hostname in web environment
 String _getCurrentHostname() {
@@ -188,8 +184,20 @@ class AppRouter {
                   return const LoginScreen();
                 }
               } else {
-                // Root domain - show marketing homepage
-                return const HomepageScreen();
+                // Root domain - show marketing homepage (lazy loaded)
+                return FutureBuilder<void>(
+                  future: marketing_lazy.loadLibrary(),
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.done) {
+                      return marketing_lazy.HomepageScreen();
+                    }
+                    return const Scaffold(
+                      body: Center(
+                        child: CircularProgressIndicator(),
+                      ),
+                    );
+                  },
+                );
               }
             } else {
               // For desktop, home is the chat interface
@@ -207,35 +215,28 @@ class AppRouter {
           },
         ),
 
-        // Download route - web-only marketing page
-        GoRoute(
-          path: '/download',
-          name: 'download',
-          builder: (context, state) {
-            // Only available on web platform
-            if (kIsWeb) {
-              return const DownloadScreen();
-            } else {
-              // Redirect desktop users to main app
-              return const HomeScreen();
-            }
+        // Lazy-loaded marketing routes
+        ShellRoute(
+          builder: (context, state, child) {
+            return FutureBuilder<void>(
+              future: marketing_lazy.loadLibrary(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.done) {
+                  if (snapshot.hasError) {
+                    return Center(
+                        child: Text(
+                            'Error loading marketing module: ${snapshot.error}'));
+                  }
+                  return child;
+                }
+                return const Center(child: CircularProgressIndicator());
+              },
+            );
           },
+          routes: marketing_lazy.marketingRoutes,
         ),
 
-        // Documentation route - web-only
-        GoRoute(
-          path: '/docs',
-          name: 'docs',
-          builder: (context, state) {
-            // Only available on web platform
-            if (kIsWeb) {
-              return const DocumentationScreen();
-            } else {
-              // Redirect desktop users to main app
-              return const HomeScreen();
-            }
-          },
-        ),
+
 
         // Login route
         GoRoute(
@@ -289,97 +290,67 @@ class AppRouter {
           },
         ),
 
-        // Ollama test route
-        GoRoute(
-          path: '/ollama-test',
-          name: 'ollama-test',
-          builder: (context, state) => const OllamaTestScreen(),
-        ),
-
-        // Settings route - unified settings interface with sidebar layout
-        GoRoute(
-          path: '/settings',
-          name: 'settings',
-          builder: (context, state) => const UnifiedSettingsScreen(),
-        ),
-
-        // Settings with specific section
-        GoRoute(
-          path: '/settings/downloads',
-          name: 'settings-downloads',
-          builder: (context, state) =>
-              const UnifiedSettingsScreen(initialCategory: 'downloads'),
-        ),
-
-        // Tunnel Settings route (legacy/advanced tunnel configuration)
-        GoRoute(
-          path: '/settings/tunnel',
-          name: 'tunnel-settings',
-          builder: (context, state) =>
-              const UnifiedSettingsScreen(initialCategory: 'tunnel-connection'),
-        ),
-
-        // LLM Provider Settings route
-        GoRoute(
-          path: '/settings/llm-provider',
-          name: 'llm-provider-settings',
-          builder: (context, state) => const LLMProviderSettingsScreen(),
-        ),
-
-        // Daemon Settings route
-        GoRoute(
-          path: '/settings/daemon',
-          name: 'daemon-settings',
-          builder: (context, state) {
-            debugPrint("[Router] Building DaemonSettingsScreen");
-            return const DaemonSettingsScreen();
+        // Lazy-loaded Ollama test route
+        ShellRoute(
+          builder: (context, state, child) {
+            return FutureBuilder<void>(
+              future: ollama_test_lazy.loadLibrary(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.done) {
+                  if (snapshot.hasError) {
+                    return Center(
+                        child: Text(
+                            'Error loading test module: ${snapshot.error}'));
+                  }
+                  return child;
+                }
+                return const Center(child: CircularProgressIndicator());
+              },
+            );
           },
+          routes: ollama_test_lazy.ollamaTestRoutes,
         ),
 
-        // Connection Status route
-        GoRoute(
-          path: '/settings/connection-status',
-          name: 'connection-status',
-          builder: (context, state) {
-            debugPrint("[Router] Building ConnectionStatusScreen");
-            return const ConnectionStatusScreen();
+        // Lazy-loaded settings routes
+        ShellRoute(
+          builder: (context, state, child) {
+            return FutureBuilder<void>(
+              future: settings_lazy.loadLibrary(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.done) {
+                  if (snapshot.hasError) {
+                    return Center(
+                        child: Text(
+                            'Error loading settings module: ${snapshot.error}'));
+                  }
+                  return child;
+                }
+                return const Center(child: CircularProgressIndicator());
+              },
+            );
           },
+          routes: settings_lazy.settingsRoutes,
         ),
 
-        // Admin Data Flush route (requires admin privileges)
-        GoRoute(
-          path: '/admin/data-flush',
-          name: 'admin-data-flush',
-          builder: (context, state) {
-            debugPrint("[Router] Building AdminDataFlushScreen");
-            return const AdminDataFlushScreen();
+        // Lazy-loaded admin routes
+        ShellRoute(
+          builder: (context, state, child) {
+            return FutureBuilder<void>(
+              future: admin_lazy.loadLibrary(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.done) {
+                  if (snapshot.hasError) {
+                    return Center(
+                        child: Text(
+                            'Error loading admin module: ${snapshot.error}'));
+                  }
+                  return child;
+                }
+                return const Center(child: CircularProgressIndicator());
+              },
+            );
           },
-        ),
-
-        // Admin Center route (requires admin privileges)
-        // This is separate from AdminPanelScreen which handles system administration
-        // Admin Center focuses on user/payment management
-        GoRoute(
-          path: '/admin-center',
-          name: 'admin-center',
-          builder: (context, state) {
-            debugPrint("[Router] Building AdminCenterScreen");
-
-            // Check if user is authenticated
-            final authService = authServiceRef;
-            if (!authService.isAuthenticated.value) {
-              debugPrint(
-                  "[Router] User not authenticated, redirecting to login");
-              // Redirect to login will be handled by redirect logic
-              return const Scaffold(
-                body: Center(
-                  child: CircularProgressIndicator(),
-                ),
-              );
-            }
-
-            return const AdminCenterScreen();
-          },
+          routes: admin_lazy.adminRoutes,
         ),
       ],
 
