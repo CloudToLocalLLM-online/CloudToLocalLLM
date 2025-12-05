@@ -62,7 +62,7 @@ void main() async {
 
   // Initialize Sentry IMMEDIATELY after Flutter binding (before all other services)
   print('[Main] Initializing Sentry (FIRST after Flutter binding)...');
-  
+
   try {
     await SentryFlutter.init(
       (options) {
@@ -78,7 +78,7 @@ void main() async {
       },
       appRunner: () async {
         print('[Main] Sentry initialized, running app with Sentry...');
-        
+
         // Initialize Supabase after Sentry is ready
         print('[Main] Initializing Supabase...');
         await Supabase.initialize(
@@ -86,7 +86,7 @@ void main() async {
           anonKey: SupabaseConfig.anonKey,
         );
         print('[Main] Supabase initialized');
-        
+
         _runAppWithSentry();
       },
     ).timeout(const Duration(seconds: 5));
@@ -94,7 +94,7 @@ void main() async {
   } catch (e) {
     print('Sentry initialization failed or timed out: $e');
     // If Sentry fails, run the app anyway without Sentry wrapping
-    
+
     // Initialize Supabase even if Sentry fails
     print('[Main] Initializing Supabase...');
     try {
@@ -106,7 +106,7 @@ void main() async {
     } catch (supabaseError) {
       print('Supabase initialization failed: $supabaseError');
     }
-    
+
     _runAppWithoutSentry();
   }
 }
@@ -231,11 +231,11 @@ class _CloudToLocalLLMAppState extends State<CloudToLocalLLMApp> {
 
   @override
   Widget build(BuildContext context) {
-    debugPrint('[App] build() called');
+    print('[App] build() called');
     final bootstrap = context.watch<AppBootstrapData?>();
-    debugPrint('[App] bootstrap: $bootstrap');
+    print('[App] bootstrap: $bootstrap');
     if (bootstrap == null) {
-      debugPrint('[App] Bootstrap is null, showing loading screen');
+      print('[App] Bootstrap is null, showing loading screen');
       return MaterialApp(
         debugShowCheckedModeBanner: false,
         home: Scaffold(
@@ -246,7 +246,7 @@ class _CloudToLocalLLMAppState extends State<CloudToLocalLLMApp> {
       );
     }
 
-    debugPrint('[App] Bootstrap loaded, building app');
+    print('[App] Bootstrap loaded, building app');
     _ensureAuthListener();
 
     // Build providers list - authenticated services will be added when registered
@@ -260,8 +260,8 @@ class _CloudToLocalLLMAppState extends State<CloudToLocalLLMApp> {
         ),
       );
     } catch (e, stack) {
-      debugPrint('[App] Error building providers: $e');
-      debugPrint('[App] Stack: $stack');
+      print('[App] Error building providers: $e');
+      print('[App] Stack: $stack');
       Sentry.captureException(e, stackTrace: stack);
       // Return error screen instead of crashing
       return MaterialApp(
@@ -289,7 +289,7 @@ class _CloudToLocalLLMAppState extends State<CloudToLocalLLMApp> {
       return;
     }
     if (!di.serviceLocator.isRegistered<AuthService>()) {
-      debugPrint(
+      print(
           '[App] AuthService not registered yet - deferring listener attachment');
       return;
     }
@@ -297,29 +297,31 @@ class _CloudToLocalLLMAppState extends State<CloudToLocalLLMApp> {
     authService.addListener(_onAuthStateChanged);
     _attachedAuthService = authService;
     _authListenerAttached = true;
-    
+
     // Listen for authenticated services to load and trigger rebuild
     authService.areAuthenticatedServicesLoaded.addListener(() {
       if (authService.areAuthenticatedServicesLoaded.value && mounted) {
-        debugPrint('[App] Authenticated services became loaded, triggering rebuild...');
+        print(
+            '[App] Authenticated services became loaded, triggering rebuild...');
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (mounted) {
             setState(() {
-              debugPrint('[App] Provider tree rebuilt with authenticated services');
+              print('[App] Provider tree rebuilt with authenticated services');
             });
           }
         });
       }
     });
-    
+
     // If authenticated services are already loaded, trigger a rebuild now
     // to ensure they get added to the Provider tree
     if (authService.areAuthenticatedServicesLoaded.value) {
-      debugPrint('[App] Authenticated services already loaded, triggering rebuild...');
+      print(
+          '[App] Authenticated services already loaded, triggering rebuild...');
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
           setState(() {
-            debugPrint('[App] Provider tree rebuilt with authenticated services');
+            print('[App] Provider tree rebuilt with authenticated services');
           });
         }
       });
@@ -352,8 +354,8 @@ class _CloudToLocalLLMAppState extends State<CloudToLocalLLMApp> {
         );
       }
     } catch (e, stack) {
-      debugPrint('[Providers] Error adding PlatformAdapter: $e');
-      debugPrint('[Providers] Stack: $stack');
+      print('[Providers] Error adding PlatformAdapter: $e');
+      print('[Providers] Stack: $stack');
       Sentry.captureException(e, stackTrace: stack);
     }
 
@@ -388,11 +390,11 @@ class _CloudToLocalLLMAppState extends State<CloudToLocalLLMApp> {
           ChangeNotifierProvider<T>.value(value: service),
         );
       } else {
-        debugPrint('[Providers] Core service $T not registered yet');
+        print('[Providers] Core service $T not registered yet');
       }
     } catch (e, stack) {
-      debugPrint('[Providers] Error adding core provider $T: $e');
-      debugPrint('[Providers] Stack: $stack');
+      print('[Providers] Error adding core provider $T: $e');
+      print('[Providers] Stack: $stack');
       Sentry.captureException(e, stackTrace: stack);
     }
   }
@@ -409,8 +411,8 @@ class _CloudToLocalLLMAppState extends State<CloudToLocalLLMApp> {
         );
       }
     } catch (e, stack) {
-      debugPrint('[Providers] Error adding provider $T: $e');
-      debugPrint('[Providers] Stack: $stack');
+      print('[Providers] Error adding provider $T: $e');
+      print('[Providers] Stack: $stack');
     }
   }
 }
@@ -429,7 +431,7 @@ class _AppRouterHostState extends State<_AppRouterHost> {
   @override
   void initState() {
     super.initState();
-    debugPrint('[AppRouterHost] initState called');
+    print('[AppRouterHost] initState called');
     // Initialize router after first frame to ensure context is available
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted || _initialized) return;
@@ -439,17 +441,18 @@ class _AppRouterHostState extends State<_AppRouterHost> {
   }
 
   void _initializeRouterWhenReady() async {
-    debugPrint('[AppRouterHost] _initializeRouterWhenReady called');
+    print('[AppRouterHost] _initializeRouterWhenReady called');
     final authService = context.read<AuthService>();
-    debugPrint('[AppRouterHost] isSessionBootstrapComplete: ${authService.isSessionBootstrapComplete}');
-    
+    print(
+        '[AppRouterHost] isSessionBootstrapComplete: ${authService.isSessionBootstrapComplete}');
+
     if (authService.isSessionBootstrapComplete) {
-      debugPrint('[AppRouterHost] Bootstrap already complete, initializing router');
+      print('[AppRouterHost] Bootstrap already complete, initializing router');
       _initializeRouter(authService);
     } else {
-      debugPrint('[AppRouterHost] Bootstrap not complete, waiting...');
+      print('[AppRouterHost] Bootstrap not complete, waiting...');
       await authService.sessionBootstrapFuture;
-      debugPrint('[AppRouterHost] Bootstrap completed, initializing router');
+      print('[AppRouterHost] Bootstrap completed, initializing router');
       if (!mounted) return;
       _initializeRouter(authService);
     }
@@ -475,7 +478,7 @@ class _AppRouterHostState extends State<_AppRouterHost> {
       try {
         themeProvider = context.watch<ThemeProvider>();
       } catch (e) {
-        debugPrint('[AppRouterHost] Warning: ThemeProvider not available: $e');
+        print('[AppRouterHost] Warning: ThemeProvider not available: $e');
         // Continue without theme provider - will use defaults
       }
 
@@ -501,8 +504,8 @@ class _AppRouterHostState extends State<_AppRouterHost> {
         ),
       );
     } catch (e, stack) {
-      debugPrint('[AppRouterHost] Error building router: $e');
-      debugPrint('[AppRouterHost] Stack: $stack');
+      print('[AppRouterHost] Error building router: $e');
+      print('[AppRouterHost] Stack: $stack');
       Sentry.captureException(e, stackTrace: stack);
       return MaterialApp(
         debugShowCheckedModeBanner: false,
@@ -525,13 +528,13 @@ class _AppRouterHostState extends State<_AppRouterHost> {
   }
 
   void _initializeRouter(AuthService authService) {
-    debugPrint('[AppRouterHost] _initializeRouter called');
+    print('[AppRouterHost] _initializeRouter called');
     setState(() {
       _router = AppRouter.createRouter(
         navigatorKey: navigatorKey,
         authService: authService,
       );
-      debugPrint('[AppRouterHost] Router created and set');
+      print('[AppRouterHost] Router created and set');
     });
   }
 }
