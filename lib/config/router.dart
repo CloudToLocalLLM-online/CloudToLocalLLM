@@ -533,15 +533,16 @@ class AppRouter {
             return null;
           }
 
-          // Allow access to protected routes
-          print('[Router] DECISION: Allowing access to protected route');
+          // Allow access to protected routes (access control handled in route builders)
+          print(
+              '[Router] DECISION: Pass-through to route builder (access control handled in builder)');
           print('[Router] Route: ${state.matchedLocation}');
           print(
             '[Router] Auth state: isAuthenticated=$isAuthenticated, servicesLoaded=$areServicesLoaded',
           );
-          print('[Router] Reason: Protected route access granted');
+          print('[Router] Reason: Route builder defines access logic');
           print(
-            '[Router] ===== REDIRECT DECISION: ALLOW PROTECTED ROUTE =====',
+            '[Router] ===== REDIRECT DECISION: PASS-THROUGH =====',
           );
           return null;
         },
