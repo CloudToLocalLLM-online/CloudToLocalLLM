@@ -443,7 +443,6 @@ app.get('/debug-dump', async (req, res) => {
       env: {
         DB_TYPE: process.env.DB_TYPE,
         NODE_ENV: process.env.NODE_ENV,
-        // Don't expose secrets
       },
       migrator: dbMigrator ? dbMigrator.constructor.name : 'null',
     };
@@ -451,7 +450,7 @@ app.get('/debug-dump', async (req, res) => {
     if (dbMigrator && dbMigrator.pool) {
       const client = await dbMigrator.pool.connect();
       try {
-        // Check users table columns
+        // 1. Schema Check
         const columns = await client.query(`
           SELECT column_name, data_type 
           FROM information_schema.columns 
@@ -459,13 +458,39 @@ app.get('/debug-dump', async (req, res) => {
         `);
         debugInfo.usersColumns = columns.rows;
 
-        // Check migrations
-        const migrations = await client.query('SELECT * FROM schema_migrations ORDER BY applied_at DESC');
+        // 2. Migration Check
+        const migrations = await client.query('SELECT * FROM schema_migrations ORDER BY applied_at DESC LIMIT 5');
         debugInfo.migrations = migrations.rows;
 
-        // Check if Postgres
-        const version = await client.query('SELECT version()');
-        debugInfo.dbVersion = version.rows[0];
+        // 3. WRITE TEST (The smoking gun check)
+        try {
+          // Use a random UUID for testing to avoid collisions
+          const testUuid = '00000000-0000-0000-0000-000000000000';
+          const testJwtId = 'debug-test-' + Date.now();
+
+          await client.query('BEGIN');
+          const insertResult = await client.query(
+            `INSERT INTO users (id, jwt_id, email, name, created_at, updated_at)
+             VALUES ($1, $2, $3, $4, NOW(), NOW())
+             ON CONFLICT (jwt_id) DO UPDATE SET updated_at = NOW()
+             RETURNING id`,
+            [testUuid, testJwtId, 'debug@test.local', 'Debug User']
+          );
+
+          await client.query('ROLLBACK'); // Don't actually keep it
+          debugInfo.writeTest = {
+            success: true,
+            insertedId: insertResult.rows[0].id
+          };
+        } catch (writeError) {
+          await client.query('ROLLBACK');
+          debugInfo.writeTest = {
+            success: false,
+            error: writeError.message,
+            code: writeError.code,
+            detail: writeError.detail
+          };
+        }
 
       } catch (e) {
         debugInfo.dbError = e.message;
