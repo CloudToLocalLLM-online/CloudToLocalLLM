@@ -101,6 +101,13 @@ class OllamaService extends ChangeNotifier {
       return null;
     }
 
+    if (kDebugMode) {
+      final tokenPreview = accessToken.length > 10
+          ? '${accessToken.substring(0, 10)}...'
+          : accessToken;
+      debugPrint('[DEBUG] Attaching Bearer token: $tokenPreview');
+    }
+
     headers['Authorization'] = 'Bearer $accessToken';
     return headers;
   }
