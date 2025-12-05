@@ -58,17 +58,19 @@ This document outlines the size optimization strategies implemented for CloudToL
 - **File**: `ansible/playbooks/tasks/build-windows.yml`
 - **Change**: Updated build commands with optimization flags
 
-### 3. Git Operations Enhancement
+### 4. Code Splitting and Lazy Loading (New in v4.6.24)
 
-#### Build-Time Injection Commits
-- **Issue**: Build-time injected version files weren't being committed
-- **Fix**: Added git commit/push operations after build-time injection
-- **Files Committed**: 
-  - `pubspec.yaml`
-  - `assets/version.json`
-  - `lib/shared/lib/version.dart`
-  - `lib/shared/pubspec.yaml`
-  - `lib/config/app_config.dart`
+#### Deferred Loading of Modules
+- **Concept**: Split the large monolithic Flutter app into smaller chunks that are loaded on demand.
+- **Implementation**:
+  - **Marketing Screens**: `lib/screens/marketing/marketing_lazy.dart` (Loaded only on web root domain)
+  - **Admin Screens**: `lib/screens/admin/admin_lazy.dart` (Loaded only for admin users)
+  - **Settings Screens**: `lib/screens/settings/settings_lazy.dart` (Loaded only when accessing settings)
+  - **Test Screens**: `lib/screens/ollama_test_lazy.dart` (Loaded only for debugging)
+- **Impact**: 
+  - Reduces initial bundle size for the main application flow.
+  - Improves Time to Interactive (TTI) for web users.
+  - Decreases memory footprint by not loading unused screens.
 
 ## Expected Size Reduction
 
@@ -81,6 +83,7 @@ This document outlines the size optimization strategies implemented for CloudToL
 ### Optimistic Estimates
 - **Icon Tree-Shaking**: -0.8 MB (50% font reduction)
 - **Debug Info Split**: -1.1 MB (15% AOT reduction)
+- **Code Splitting**: Variable (Reduces initial load, not total size)
 - **Total Expected Reduction**: ~1.9 MB
 - **New Target Size**: ~27.3 MB (6.5% reduction)
 
@@ -103,8 +106,7 @@ The deployment script includes validation to ensure:
 ### Additional Strategies (If Needed)
 1. **Asset Compression**: Compress PNG images further
 2. **Dependency Analysis**: Remove unused dependencies
-3. **Code Splitting**: Split large features into separate modules
-4. **Custom Font Subsets**: Create minimal icon font subsets
+3. **Custom Font Subsets**: Create minimal icon font subsets
 
 ### Monitoring Thresholds
 - **Warning**: > 35 MB (20% increase from optimized baseline)

@@ -42,32 +42,47 @@ docs.cloudtolocalllm.online → static-site container (VitePress docs - unchange
 
 ## Flutter Route Configuration
 
-### Platform-Specific Routing
+### Platform-Specific Routing with Lazy Loading
 ```dart
+// Lazy load marketing screens
+import '../screens/marketing/marketing_lazy.dart' deferred as marketing_lazy;
+
 // Home route - platform-specific behavior
 GoRoute(
   path: '/',
   name: 'home',
   builder: (context, state) {
     if (kIsWeb) {
-      return const HomepageScreen(); // Marketing homepage
+      // Lazy load HomepageScreen
+      return FutureBuilder<void>(
+        future: marketing_lazy.loadLibrary(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.done) {
+            return marketing_lazy.HomepageScreen();
+          }
+          return const Center(child: CircularProgressIndicator());
+        },
+      );
     } else {
       return const HomeScreen(); // Desktop chat interface
     }
   },
 ),
 
-// Download route - web-only
-GoRoute(
-  path: '/download',
-  name: 'download',
-  builder: (context, state) {
-    if (kIsWeb) {
-      return const DownloadScreen();
-    } else {
-      return const HomeScreen(); // Fallback for desktop
-    }
+// Lazy-loaded marketing routes
+ShellRoute(
+  builder: (context, state, child) {
+    return FutureBuilder<void>(
+      future: marketing_lazy.loadLibrary(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.done) {
+          return child;
+        }
+        return const Center(child: CircularProgressIndicator());
+      },
+    );
   },
+  routes: marketing_lazy.marketingRoutes,
 ),
 ```
 
@@ -96,6 +111,7 @@ redirect: (context, state) {
 ### Marketing Screens
 - **Location**: `lib/screens/marketing/`
 - **Files**: `homepage_screen.dart`, `download_screen.dart`
+- **Lazy Loading**: `marketing_lazy.dart` bundles screens for deferred loading
 - **Design**: Material Design 3 with static site color scheme
 - **Responsive**: Mobile-first responsive design
 - **Content**: Replicates existing static site functionality
@@ -136,6 +152,7 @@ server {
 - Shared Flutter assets and dependencies
 - Reduced infrastructure complexity
 - Faster build and deployment times
+- **Optimized Loading**: Route-based code splitting reduces initial bundle size
 
 ### Developer Experience
 - Single codebase for all web features
@@ -150,6 +167,7 @@ server {
 - [x] Update router with platform detection
 - [x] Configure nginx domain routing
 - [x] Update Docker configuration
+- [x] Implement route-based code splitting
 
 ### Phase 2: Testing
 - [ ] Verify homepage functionality on main domain
@@ -199,10 +217,10 @@ The static-site container will be retained for documentation hosting but can be 
 - Consider migrating docs to Flutter in future versions
 
 ### Performance Optimization
-- Implement route-based code splitting
 - Optimize Flutter web bundle size
 - Add progressive web app features
 - Consider service worker caching
+- **Completed**: Route-based code splitting
 
 ### SEO and Analytics
 - Add meta tags for marketing pages
