@@ -1,6 +1,6 @@
 {
   "name": "cloudtolocalllm-api-backend",
-  "version": "4.8.0",
+  "version": "4.9.0",
   "description": "CloudToLocalLLM API Backend for Bridge Communication",
   "main": "server.js",
   "type": "module",
