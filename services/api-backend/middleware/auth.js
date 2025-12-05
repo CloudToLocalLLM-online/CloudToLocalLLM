@@ -83,70 +83,75 @@ export async function authenticateJWT(req, res, next) {
   }
 
   try {
-    // Verify JWT signature & claims using Supabase Secret (HS256)
-    const decoded = jwt.verify(token, SUPABASE_JWT_SECRET, {
-      algorithms: ['HS256'],
-      audience: 'authenticated', // Supabase default audience
-    });
-
-    if (!decoded) {
-      throw new Error('Token decoding returned null');
-    }
-
-    // Check token expiry (jwt.verify does this, but explicit check for logging doesn't hurt)
-    const now = Math.floor(Date.now() / 1000);
-    const expiresIn = (decoded.exp || 0) - now;
-    const isExpiring = expiresIn <= 300; // 5 minutes
-
+    // 1. Try to verify with Secret (HS256) - Fast path for internal/legacy tokens
+    let decoded;
     try {
-      await ensureAuthServiceInitialized();
-    } catch (initError) {
-      logger.error(
-        ' [Auth] AuthService initialization failed, falling back to JWT payload',
-        {
-          error: initError.message,
-        },
-      );
-
-      req.user = decoded;
-      req.userId = decoded.sub;
-      req.tokenExpiring = isExpiring;
-      return next();
-    }
-
-    // Use AuthService with pre-validated payload
-    // This skips the internal RS256 check in AuthService and goes straight to session logic
-    logger.debug(
-      ' [Auth] Token verified via Secret, using AuthService with pre-validated payload',
-    );
-    const result = await authService.validateToken(
-      token,
-      req,
-      decoded,
-    );
-
-    if (!result.valid) {
-      logger.warn(
-        ' [Auth] AuthService validation failed',
-        {
-          error: result.error,
-        },
-      );
-
-      return res.status(401).json({
-        error: result.error || 'Token validation failed',
-        code: 'TOKEN_VALIDATION_FAILED',
+      decoded = jwt.verify(token, SUPABASE_JWT_SECRET, {
+        algorithms: ['HS256'],
+        audience: 'authenticated',
+      });
+    } catch (hs256Error) {
+      // If HS256 fails, we'll try RS256 via AuthService below
+      logger.debug(' [Auth] HS256 verification failed, trying RS256 via AuthService', {
+        error: hs256Error.message,
       });
     }
 
-    // Attach user info to request
+    // 2. If HS256 succeeded, use the decoded payload
+    if (decoded) {
+      // Check token expiry
+      const now = Math.floor(Date.now() / 1000);
+      const expiresIn = (decoded.exp || 0) - now;
+      const isExpiring = expiresIn <= 300;
+
+      // Ensure AuthService is initialized (for session tracking)
+      try {
+        await ensureAuthServiceInitialized();
+        // Use AuthService with pre-validated payload to create/update session
+        const result = await authService.validateToken(token, req, decoded);
+
+        if (result.valid) {
+          req.user = result.payload;
+          req.userId = result.payload.sub;
+          req.auth = { payload: result.payload };
+          req.tokenExpiring = isExpiring;
+          return next();
+        }
+      } catch (serviceError) {
+        // If AuthService fails but token is valid HS256, we might still want to proceed
+        // depending on strictness. For now, let's fall back to just the token payload.
+        logger.warn(' [Auth] AuthService session tracking failed for HS256 token', {
+          error: serviceError.message
+        });
+        req.user = decoded;
+        req.userId = decoded.sub;
+        req.auth = { payload: decoded };
+        req.tokenExpiring = isExpiring;
+        return next();
+      }
+    }
+
+    // 3. If HS256 failed (decoded is undefined), try full validation via AuthService (RS256)
+    await ensureAuthServiceInitialized();
+    const result = await authService.validateToken(token, req);
+
+    if (!result.valid) {
+      throw new Error(result.error || 'Token validation failed');
+    }
+
+    // Success via RS256
+    const now = Math.floor(Date.now() / 1000);
+    const expiresIn = (result.payload.exp || 0) - now;
+    const isExpiring = expiresIn <= 300;
+
     req.user = result.payload;
     req.userId = result.payload.sub;
-    req.auth = { payload: result.payload }; // Backward compatibility
+    req.auth = { payload: result.payload };
     req.tokenExpiring = isExpiring;
 
-    logger.debug(` [Auth] User authenticated via JWT: ${result.payload.sub}`);
+    logger.debug(` [Auth] User authenticated via RS256: ${result.payload.sub}`);
     next();
+
   } catch (error) {
     logger.warn(' [Auth] Token verification failed', {
       message: error.message,
@@ -172,24 +177,10 @@ export async function authenticateJWT(req, res, next) {
       });
     });
 
-    let errorCode = 'TOKEN_VERIFICATION_FAILED';
-    let errorMessage = 'Invalid or expired token';
-
-    if (error.name === 'TokenExpiredError') {
-      errorCode = 'TOKEN_EXPIRED';
-      errorMessage = 'Token has expired';
-    } else if (error.name === 'JsonWebTokenError') {
-      errorCode = 'INVALID_TOKEN';
-      errorMessage = 'Invalid token';
-    } else if (error.name === 'NotBeforeError') {
-      errorCode = 'TOKEN_NOT_ACTIVE';
-      errorMessage = 'Token not active';
-    }
-
     const status = 401;
     return res.status(status).json({
-      error: errorMessage,
-      code: errorCode,
+      error: 'Invalid or expired token',
+      code: 'TOKEN_VERIFICATION_FAILED',
       details: error.message,
     });
   }
@@ -270,7 +261,7 @@ export async function optionalAuth(req, res, next) {
     if (decoded) {
       // Validate via AuthService (session logic)
       const result = await authService.validateToken(token, req, decoded);
-      
+
       if (result.valid) {
         req.user = result.payload;
         req.userId = result.payload.sub;

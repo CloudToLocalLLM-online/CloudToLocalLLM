@@ -7,6 +7,9 @@ import 'supabase_auth_service.dart';
 import 'connection_manager_service.dart';
 import '../di/locator.dart' as di;
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:app_links/app_links.dart';
+import 'package:dio/dio.dart';
+import '../config/app_config.dart';
 
 /// Supabase-based Authentication Service with PostgreSQL Session Storage
 class AuthService extends ChangeNotifier {
@@ -29,7 +32,11 @@ class AuthService extends ChangeNotifier {
       return;
     }
     _initialized = true;
+    _initialized = true;
     await _initSupabase();
+    if (!kIsWeb) {
+      _initDeepLinkListener();
+    }
     print('[AuthService] init() completed');
   }
 
@@ -113,6 +120,10 @@ class AuthService extends ChangeNotifier {
     );
 
     _currentUser = user;
+
+    // Register session with backend explicitly as requested
+    // This ensures the backend database is updated with the new session
+    await _registerSession(session);
 
     await _loadAuthenticatedServices();
     debugPrint(
@@ -247,5 +258,95 @@ class AuthService extends ChangeNotifier {
   // Helper to clear session
   Future<void> _clearStoredSession() async {
     // Logic to clear any local session storage if needed
+  }
+
+  /// Explicitly register session with backend
+  Future<void> _registerSession(Session session) async {
+    try {
+      debugPrint('[AuthService] Registering session with backend...');
+      // Use a fresh Dio instance to avoid interceptor recursion/dependency issues
+      final dio = Dio();
+
+      final response = await dio.post(
+        '${AppConfig.apiBaseUrl}/auth/sessions',
+        options: Options(
+          headers: {
+            'Authorization': 'Bearer ${session.accessToken}',
+            'Content-Type': 'application/json',
+          },
+          validateStatus: (status) =>
+              status! < 500, // Accept 4xx to parse error
+        ),
+        data: {
+          'userId': session.user.id,
+          'token': session.accessToken,
+          // Default to 1 hour if expiresIn is null
+          'expiresAt': DateTime.now()
+              .add(Duration(seconds: session.expiresIn ?? 3600))
+              .toIso8601String(),
+          'jwtAccessToken': session.accessToken,
+          'jwtIdToken': session.providerToken,
+          'userProfile': {
+            'email': session.user.email,
+            'name':
+                session.user.userMetadata?['full_name'] ?? session.user.email,
+            'nickname': session.user.userMetadata?['preferred_username'],
+            'picture': session.user.userMetadata?['avatar_url'],
+            'email_verified': session.user.emailConfirmedAt != null,
+          },
+        },
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        debugPrint('[AuthService] Session registered successfully');
+      } else {
+        debugPrint(
+            '[AuthService] Session registration returned status ${response.statusCode}: ${response.data}');
+      }
+    } catch (e) {
+      debugPrint('[AuthService] Failed to register session: $e');
+      // We don't block the auth flow here, just log the error
+    }
+  }
+
+  /// Initialize deep link listener for desktop platforms
+  void _initDeepLinkListener() {
+    debugPrint('[AuthService] Initializing deep link listener...');
+    final appLinks = AppLinks();
+
+    // Handle initial link if app was launched via deep link
+    appLinks.getInitialLink().then((uri) {
+      if (uri != null) {
+        debugPrint('[AuthService] Initial deep link: $uri');
+        _handleDeepLink(uri);
+      }
+    });
+
+    // Handle subsequent links while app is running
+    appLinks.uriLinkStream.listen((uri) {
+      debugPrint('[AuthService] Deep link received: $uri');
+      _handleDeepLink(uri);
+    }, onError: (err) {
+      debugPrint('[AuthService] Deep link error: $err');
+    });
+  }
+
+  /// Handle deep link URI
+  Future<void> _handleDeepLink(Uri uri) async {
+    debugPrint('[AuthService] Handling deep link: $uri');
+
+    // Check if it's our auth callback
+    // Scheme: io.supabase.flutterquickstart
+    // Host: login-callback
+    if (uri.scheme == 'io.supabase.flutterquickstart' &&
+        uri.host == 'login-callback') {
+      final code = uri.queryParameters['code'];
+      if (code != null) {
+        debugPrint('[AuthService] Auth code found in deep link, exchanging...');
+        await handleCallback(code: code);
+      } else {
+        debugPrint('[AuthService] No code found in auth callback deep link');
+      }
+    }
   }
 }
