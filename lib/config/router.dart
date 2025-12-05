@@ -11,14 +11,14 @@ import '../screens/callback_screen.dart';
 // No web-specific imports needed - using platform-safe approach
 
 // Settings screens are lazy-loaded
-import '../screens/settings/settings_lazy.dart' deferred as settings_lazy;
+import '../screens/settings/settings_lazy.dart' as settings_lazy;
 
 // Admin screens are lazy-loaded
-import '../screens/admin/admin_lazy.dart' deferred as admin_lazy;
-import '../screens/ollama_test_lazy.dart' deferred as ollama_test_lazy;
+import '../screens/admin/admin_lazy.dart' as admin_lazy;
+import '../screens/ollama_test_lazy.dart' as ollama_test_lazy;
 
 // Marketing screens (web-only) are lazy-loaded
-import '../screens/marketing/marketing_lazy.dart' deferred as marketing_lazy;
+import '../screens/marketing/marketing_lazy.dart' as marketing_lazy;
 
 /// Utility function to get the current hostname in web environment
 String _getCurrentHostname() {
@@ -50,7 +50,6 @@ bool _isAppSubdomain() {
   return isApp;
 }
 
-/// Application router configuration using GoRouter
 /// Application router configuration using GoRouter
 class AppRouter {
   static GoRouter createRouter({
@@ -191,19 +190,8 @@ class AppRouter {
                   }
                 } else {
                   // Root domain - show marketing homepage (lazy loaded)
-                  return FutureBuilder<void>(
-                    future: marketing_lazy.loadLibrary(),
-                    builder: (context, snapshot) {
-                      if (snapshot.connectionState == ConnectionState.done) {
-                        return marketing_lazy.HomepageScreen();
-                      }
-                      return const Scaffold(
-                        body: Center(
-                          child: CircularProgressIndicator(),
-                        ),
-                      );
-                    },
-                  );
+                  // No longer deferred
+                  return const marketing_lazy.HomepageScreen();
                 }
               } else {
                 // For desktop, home is the chat interface
@@ -221,26 +209,8 @@ class AppRouter {
             },
           ),
 
-          // Lazy-loaded marketing routes
-          ShellRoute(
-            builder: (context, state, child) {
-              return FutureBuilder<void>(
-                future: marketing_lazy.loadLibrary(),
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.done) {
-                    if (snapshot.hasError) {
-                      return Center(
-                          child: Text(
-                              'Error loading marketing module: ${snapshot.error}'));
-                    }
-                    return child;
-                  }
-                  return const Center(child: CircularProgressIndicator());
-                },
-              );
-            },
-            routes: marketing_lazy.marketingRoutes,
-          ),
+          // Marketing routes (formerly lazy-loaded)
+          ...marketing_lazy.marketingRoutes,
 
           // Login route
           GoRoute(
@@ -294,68 +264,14 @@ class AppRouter {
             },
           ),
 
-          // Lazy-loaded Ollama test route
-          ShellRoute(
-            builder: (context, state, child) {
-              return FutureBuilder<void>(
-                future: ollama_test_lazy.loadLibrary(),
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.done) {
-                    if (snapshot.hasError) {
-                      return Center(
-                          child: Text(
-                              'Error loading test module: ${snapshot.error}'));
-                    }
-                    return child;
-                  }
-                  return const Center(child: CircularProgressIndicator());
-                },
-              );
-            },
-            routes: ollama_test_lazy.ollamaTestRoutes,
-          ),
+          // Ollama test routes (formerly lazy-loaded)
+          ...ollama_test_lazy.ollamaTestRoutes,
 
-          // Lazy-loaded settings routes
-          ShellRoute(
-            builder: (context, state, child) {
-              return FutureBuilder<void>(
-                future: settings_lazy.loadLibrary(),
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.done) {
-                    if (snapshot.hasError) {
-                      return Center(
-                          child: Text(
-                              'Error loading settings module: ${snapshot.error}'));
-                    }
-                    return child;
-                  }
-                  return const Center(child: CircularProgressIndicator());
-                },
-              );
-            },
-            routes: settings_lazy.settingsRoutes,
-          ),
+          // Settings routes (formerly lazy-loaded)
+          ...settings_lazy.settingsRoutes,
 
-          // Lazy-loaded admin routes
-          ShellRoute(
-            builder: (context, state, child) {
-              return FutureBuilder<void>(
-                future: admin_lazy.loadLibrary(),
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.done) {
-                    if (snapshot.hasError) {
-                      return Center(
-                          child: Text(
-                              'Error loading admin module: ${snapshot.error}'));
-                    }
-                    return child;
-                  }
-                  return const Center(child: CircularProgressIndicator());
-                },
-              );
-            },
-            routes: admin_lazy.adminRoutes,
-          ),
+          // Admin routes (formerly lazy-loaded)
+          ...admin_lazy.adminRoutes,
         ],
 
         // Redirect logic for authentication and domain-based routing
