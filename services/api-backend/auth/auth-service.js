@@ -9,6 +9,7 @@ import fetch from 'node-fetch';
 import jwksClient from 'jwks-rsa';
 import { TunnelLogger } from '../utils/logger.js';
 import { DatabaseMigrator } from '../database/migrate.js';
+import { DatabaseMigratorPG } from '../database/migrate-pg.js';
 
 /**
  * Authentication service with JWT integration
@@ -32,7 +33,21 @@ export class AuthService {
     // Use separate auth database if provided, otherwise fallback to main database
     this.authDbMigrator = config.authDbMigrator || null;
     this.mainDbMigrator = config.dbMigrator || null;
-    this.db = this.authDbMigrator || this.mainDbMigrator || new DatabaseMigrator();
+
+    // Determine which database implementation to use
+    if (this.authDbMigrator) {
+      this.db = this.authDbMigrator;
+    } else if (this.mainDbMigrator) {
+      this.db = this.mainDbMigrator;
+    } else {
+      // Fallback based on environment
+      const dbType = process.env.DB_TYPE || 'sqlite';
+      if (dbType === 'postgresql') {
+        this.db = new DatabaseMigratorPG();
+      } else {
+        this.db = new DatabaseMigrator();
+      }
+    }
 
     this.initialized = false;
 

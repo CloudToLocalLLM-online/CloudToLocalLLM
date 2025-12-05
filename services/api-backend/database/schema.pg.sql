@@ -8,6 +8,7 @@
 CREATE TABLE IF NOT EXISTS users (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   email TEXT UNIQUE NOT NULL,
+  jwt_id TEXT UNIQUE,
   name TEXT,
   nickname TEXT,
   picture TEXT,
@@ -127,6 +128,7 @@ CREATE INDEX IF NOT EXISTS idx_api_usage_endpoint ON api_usage(endpoint);
 CREATE INDEX IF NOT EXISTS idx_api_usage_created_at ON api_usage(created_at);
 
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+CREATE INDEX IF NOT EXISTS idx_users_jwt_id ON users(jwt_id);
 CREATE INDEX IF NOT EXISTS idx_users_created_at ON users(created_at);
 
 CREATE INDEX IF NOT EXISTS idx_user_sessions_user_id ON user_sessions(user_id);
