@@ -462,29 +462,34 @@ app.get('/debug-dump', async (req, res) => {
         const migrations = await client.query('SELECT * FROM schema_migrations ORDER BY applied_at DESC LIMIT 5');
         debugInfo.migrations = migrations.rows;
 
-        // 3. WRITE TEST (The smoking gun check)
+        // 3. UUID Generaton Test
         try {
-          // Use a random UUID for testing to avoid collisions
-          const testUuid = '00000000-0000-0000-0000-000000000000';
-          const testJwtId = 'debug-test-' + Date.now();
+          const uuidResult = await client.query('SELECT gen_random_uuid() as val');
+          debugInfo.uuidGenTest = { success: true, value: uuidResult.rows[0].val };
+        } catch (uuidError) {
+          debugInfo.uuidGenTest = { success: false, error: uuidError.message };
+        }
+
+        // 4. WRITE TEST (Relying on Default ID)
+        try {
+          const testJwtId = 'debug-test-default-' + Date.now();
 
           await client.query('BEGIN');
           const insertResult = await client.query(
-            `INSERT INTO users (id, jwt_id, email, name, created_at, updated_at)
-             VALUES ($1, $2, $3, $4, NOW(), NOW())
-             ON CONFLICT (jwt_id) DO UPDATE SET updated_at = NOW()
+            `INSERT INTO users (jwt_id, email, name, created_at, updated_at)
+             VALUES ($1, $2, $3, NOW(), NOW())
              RETURNING id`,
-            [testUuid, testJwtId, 'debug@test.local', 'Debug User']
+            [testJwtId, 'debug-default@test.local', 'Debug User Default']
           );
 
-          await client.query('ROLLBACK'); // Don't actually keep it
-          debugInfo.writeTest = {
+          await client.query('ROLLBACK');
+          debugInfo.writeTestDefaultId = {
             success: true,
             insertedId: insertResult.rows[0].id
           };
         } catch (writeError) {
           await client.query('ROLLBACK');
-          debugInfo.writeTest = {
+          debugInfo.writeTestDefaultId = {
             success: false,
             error: writeError.message,
             code: writeError.code,
