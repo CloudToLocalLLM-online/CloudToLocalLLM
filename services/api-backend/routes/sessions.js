@@ -78,7 +78,7 @@ router.get('/validate/:token', async (req, res) => {
     const { token } = req.params;
 
     const result = await db.query(
-      `SELECT s.id, s.session_token, s.expires_at, s.jwt_access_token, s.jwt_id_token,
+      `SELECT s.id, s.session_token, s.expires_at,
               s.created_at, s.last_activity, s.is_active,
               u.id as user_id, u.jwt_id, u.email, u.name, u.nickname, u.picture
        FROM user_sessions s
