@@ -54,7 +54,7 @@ import 'package:cloudtolocalllm/config/navigator_key.dart';
 
 void main() async {
   // Immediate logging to verify Dart entry point is reached
-  print('----- DART MAIN START ----- v4.14.8');
+  print('----- DART MAIN START ----- v4.14.9');
 
   // Flutter requires WidgetsFlutterBinding to be initialized first
   WidgetsFlutterBinding.ensureInitialized();
