@@ -1,7 +1,10 @@
 {
+  "name": "CloudToLocalLLM",
   "version": "4.12.7",
-  "build_number": "202512052051",
-  "build_date": "2025-12-05T20:51:45Z",
-  "git_commit": "ad7ce696",
-  "buildTimestamp": "2025-12-05 20:51:45"
+  "description": "Cloud to Local LLM Tunnel System",
+  "private": true,
+  "build_number": "202512052029",
+  "build_date": "2025-12-05T20:29:59Z",
+  "git_commit": "HEAD",
+  "dependencies": {}
 }
