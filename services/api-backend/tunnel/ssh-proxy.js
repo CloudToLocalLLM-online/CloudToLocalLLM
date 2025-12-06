@@ -59,7 +59,7 @@ export class SSHProxy {
    * Setup WebSocket server handlers
    */
   _setupWebSocketServer() {
-    this.wss.on('connection', (ws, req) => {
+    this.wss.on('connection', (ws) => {
       this.logger.info('WebSocket connection established for SSH tunnel');
 
       // Connect to local SSH server
@@ -194,7 +194,7 @@ export class SSHProxy {
     let userId = null;
     let authenticated = false;
 
-    client.on('authentication', async (ctx) => {
+    client.on('authentication', async(ctx) => {
       try {
         // Only accept password authentication (JWT as password)
         if (ctx.method !== 'password') {
@@ -212,8 +212,9 @@ export class SSHProxy {
           return ctx.reject(['password']);
         }
 
-        // Validate JWT token
-        const result = await this.authService.validateToken(token);
+        // Verify token with AuthService - now accepts request object for logging
+        const _req = {}; // Placeholder for an unused request object
+        const result = await this.authService.validateToken(token, _req);
 
         if (!result.valid) {
           this.logger.warn('SSH auth invalid JWT token', {

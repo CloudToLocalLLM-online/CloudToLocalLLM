@@ -35,7 +35,7 @@ export function createTunnelRoutes(
   // Use provided auth service or create a new one (fallback)
   if (!authService) {
     authService = new AuthService({
-      SUPABASE_JWT_SECRET: process.env.SUPABASE_JWT_SECRET,
+      ENTRA_ISSUER_URL: process.env.ENTRA_ISSUER_URL,
     });
   }
 
@@ -79,7 +79,7 @@ export function createTunnelRoutes(
 
   // Register SSH client connection
   // Called by desktop client after establishing SSH tunnel
-  router.post('/register', requireFeature('tunneling'), async (req, res) => {
+  router.post('/register', requireFeature('tunneling'), async(req, res) => {
     try {
       const userId = req.userId;
       const { tunnelId, localPort, serverPort } = req.body;

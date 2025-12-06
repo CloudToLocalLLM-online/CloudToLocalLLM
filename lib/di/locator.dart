@@ -6,7 +6,6 @@ import 'package:get_it/get_it.dart';
 import '../services/admin_data_flush_service.dart';
 import '../services/admin_service.dart';
 import '../services/app_initialization_service.dart';
-import '../services/supabase_auth_service.dart';
 import '../services/auth_service.dart';
 import '../services/session_storage_service.dart';
 import '../services/connection_manager_service.dart';
@@ -62,12 +61,9 @@ Future<void> setupCoreServices() async {
   serviceLocator
       .registerSingleton<SessionStorageService>(sessionStorageService);
 
-  // Supabase Auth service
-  final supabaseAuthService = SupabaseAuthService();
-  serviceLocator.registerSingleton<SupabaseAuthService>(supabaseAuthService);
-
   print('[Locator] Registering AuthService...');
-  final authService = AuthService(supabaseAuthService);
+  print('[Locator] Registering AuthService...');
+  final authService = AuthService();
   serviceLocator.registerSingleton<AuthService>(authService);
   // Local Ollama service - create but don't initialize until auth
   final localOllamaService = LocalOllamaConnectionService();

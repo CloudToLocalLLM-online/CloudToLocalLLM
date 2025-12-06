@@ -17,15 +17,15 @@ import { DatabaseMigratorPG } from '../database/migrate-pg.js';
 export class AuthService {
   constructor(config) {
     this.config = {
-      SUPABASE_URL: process.env.SUPABASE_URL,
-      SUPABASE_JWT_SECRET: process.env.SUPABASE_JWT_SECRET,
+      ENTRA_ISSUER_URL: process.env.ENTRA_ISSUER_URL,
+      ENTRA_CLIENT_ID: process.env.ENTRA_CLIENT_ID,
       SESSION_TIMEOUT: parseInt(process.env.SESSION_TIMEOUT) || 3600000, // 1 hour
       MAX_SESSIONS_PER_USER: parseInt(process.env.MAX_SESSIONS_PER_USER) || 5,
       ...config,
     };
 
-    if (!this.config.SUPABASE_URL) {
-      throw new Error('SUPABASE_URL environment variable is required');
+    if (!this.config.ENTRA_ISSUER_URL) {
+      throw new Error('ENTRA_ISSUER_URL environment variable is required');
     }
 
     this.logger = new TunnelLogger('auth-service');
@@ -51,9 +51,15 @@ export class AuthService {
 
     this.initialized = false;
 
+    // Entra ID JWKS URI
+    // Ensure no trailing slash for consistency
+    const issuer = this.config.ENTRA_ISSUER_URL.replace(/\/$/, '');
+    const jwksUri = `${issuer}/discovery/v2.0/keys`;
+    this.logger.info('Configured for Microsoft Entra ID Auth', { issuer });
+
     // Initialize JWKS client
     this.jwksClient = jwksClient({
-      jwksUri: `${this.config.SUPABASE_URL}/auth/v1/.well-known/jwks.json`,
+      jwksUri: jwksUri,
       cache: true,
       rateLimit: true,
       jwksRequestsPerMinute: 5,
@@ -75,7 +81,7 @@ export class AuthService {
       }
       this.initialized = true;
 
-      this.logger.info('Authentication service initialized (Supabase HS256/RS256/ES256)');
+      this.logger.info('Authentication service initialized (Entra ID RS256/ES256)');
 
       // Start session cleanup
       this.startSessionCleanup();
@@ -115,7 +121,7 @@ export class AuthService {
           return {
             lastID: result.rows.length > 0 ? result.rows[0].id : null,
             changes: result.rowCount,
-            rows: result.rows // Keep rows for flexibility
+            rows: result.rows, // Keep rows for flexibility
           };
         } else if (type === 'get') {
           return result.rows[0];
@@ -133,19 +139,10 @@ export class AuthService {
       }
     } else {
       // SQLite implementation
-      if (!this.db.db) await this.db.initialize();
-
-      try {
-        if (type === 'run') {
-          return await this.db.db.run(sql, params);
-        } else if (type === 'get') {
-          return await this.db.db.get(sql, params);
-        } else {
-          return await this.db.db.all(sql, params);
-        }
-      } catch (err) {
-        throw err;
+      if (!this.db.db) {
+        await this.db.initialize();
       }
+
     }
   }
 
@@ -187,37 +184,24 @@ export class AuthService {
         this.logger.info(`Starting token validation (Alg: ${alg})`);
 
         payload = await new Promise((resolve, reject) => {
-          if (alg === 'HS256') {
-            // Symmetric Secret Validation
-            if (!this.config.SUPABASE_JWT_SECRET) {
-              return reject(new Error('HS256 token received but SUPABASE_JWT_SECRET is not configured'));
-            }
-            jwt.verify(
-              token,
-              this.config.SUPABASE_JWT_SECRET,
-              { algorithms: ['HS256'] },
-              (err, decodedToken) => {
-                if (err) reject(err);
-                else resolve(decodedToken);
+          // Asymmetric JWKS Validation (RS256, ES256)
+          jwt.verify(
+            token,
+            this.getKey.bind(this),
+            { algorithms: ['RS256', 'ES256'] },
+            (err, decodedToken) => {
+              if (err) {
+                reject(err);
+              } else {
+                resolve(decodedToken);
               }
-            );
-          } else {
-            // Asymmetric JWKS Validation (RS256, ES256)
-            jwt.verify(
-              token,
-              this.getKey.bind(this),
-              { algorithms: ['RS256', 'ES256'] },
-              (err, decodedToken) => {
-                if (err) reject(err);
-                else resolve(decodedToken);
-              }
-            );
-          }
+            },
+          );
         });
       }
 
       // Check if session exists/is valid
-      const sessionToken = payload.session_id || payload.sub; // Use sub as fallback if needed
+      // const sessionToken = payload.session_id || payload.sub; // Use sub as fallback if needed
 
       // In Supabase, the access token doesn't always contain the session_id unless configured.
       // We will create/update our local session based on the validated token.
@@ -270,32 +254,19 @@ export class AuthService {
       this.logger.info(`Starting WebSocket token validation (Alg: ${alg})`);
 
       const verified = await new Promise((resolve, reject) => {
-        if (alg === 'HS256') {
-          // Symmetric Secret Validation
-          if (!this.config.SUPABASE_JWT_SECRET) {
-            return reject(new Error('HS256 token received but SUPABASE_JWT_SECRET is not configured'));
-          }
-          jwt.verify(
-            token,
-            this.config.SUPABASE_JWT_SECRET,
-            { algorithms: ['HS256'] },
-            (err, decodedToken) => {
-              if (err) reject(err);
-              else resolve(decodedToken);
+        // Asymmetric JWKS Validation (RS256, ES256)
+        jwt.verify(
+          token,
+          this.getKey.bind(this),
+          { algorithms: ['RS256', 'ES256'] },
+          (err, decodedToken) => {
+            if (err) {
+              reject(err);
+            } else {
+              resolve(decodedToken);
             }
-          );
-        } else {
-          // Asymmetric JWKS Validation (RS256, ES256)
-          jwt.verify(
-            token,
-            this.getKey.bind(this),
-            { algorithms: ['RS256', 'ES256'] },
-            (err, decodedToken) => {
-              if (err) reject(err);
-              else resolve(decodedToken);
-            }
-          );
-        }
+          },
+        );
       });
 
       this.logger.info('WebSocket token verification successful', {
@@ -330,7 +301,7 @@ export class AuthService {
       const existingUser = await this.runQuery(
         'SELECT id FROM users WHERE jwt_id = ?',
         [auth0Id],
-        'get'
+        'get',
       );
 
       if (existingUser) {
@@ -342,13 +313,13 @@ export class AuthService {
       const existingByEmail = await this.runQuery(
         'SELECT id FROM users WHERE email = ?',
         [userEmail],
-        'get'
+        'get',
       );
 
       if (existingByEmail) {
         this.logger.info('Found existing user by email, linking jwt_id', {
           userId: existingByEmail.id,
-          email: userEmail
+          email: userEmail,
         });
 
         // Link the jwt_id to the existing user
@@ -369,9 +340,9 @@ export class AuthService {
             userInfo.picture,
             userInfo.email_verified || false,
             userInfo.locale,
-            existingByEmail.id
+            existingByEmail.id,
           ],
-          'run'
+          'run',
         );
         return existingByEmail.id;
       }
@@ -389,9 +360,9 @@ export class AuthService {
           userInfo.nickname,
           userInfo.picture,
           userInfo.email_verified || false,
-          userInfo.locale
+          userInfo.locale,
         ],
-        'run'
+        'run',
       );
 
       if (newUser && newUser.rows && newUser.rows.length > 0) {
@@ -446,7 +417,7 @@ export class AuthService {
       const existingSession = await this.runQuery(
         'SELECT * FROM user_sessions WHERE user_id = ? AND jwt_token_hash = ?',
         [userId, tokenHash],
-        'get'
+        'get',
       );
 
       this.logger.info('Session lookup result', {
@@ -462,7 +433,7 @@ export class AuthService {
         await this.runQuery(
           `UPDATE user_sessions SET last_activity = ${nowFunc}, expires_at = ? WHERE id = ?`,
           [expiresAt, existingSession.id],
-          'run'
+          'run',
         );
 
         this.logger.info('Session updated successfully');
@@ -483,7 +454,7 @@ export class AuthService {
         process.env.DB_TYPE === 'postgresql'
           ? [userId, tokenHash, expiresAt, ip, userAgent, this.generateSessionId()]
           : [userId, tokenHash, expiresAt, ip, userAgent],
-        'run'
+        'run',
       );
 
       // Get the created session
@@ -492,13 +463,13 @@ export class AuthService {
         session = await this.runQuery(
           'SELECT * FROM user_sessions WHERE id = ?',
           [result.lastID],
-          'get'
+          'get',
         );
       } else {
         session = await this.runQuery(
           'SELECT * FROM user_sessions WHERE user_id = ? AND jwt_token_hash = ?',
           [userId, tokenHash],
-          'get'
+          'get',
         );
       }
 
@@ -532,21 +503,21 @@ export class AuthService {
 
         this.logger.info(
           'UNIQUE constraint violation - attempting to find and update existing session',
-          { userId }
+          { userId },
         );
 
         try {
           const existingSession = await this.runQuery(
             'SELECT * FROM user_sessions WHERE user_id = ? AND jwt_token_hash = ?',
             [userId, tokenHash],
-            'get'
+            'get',
           );
 
           if (existingSession) {
             await this.runQuery(
               `UPDATE user_sessions SET last_activity = ${nowFunc}, expires_at = ? WHERE id = ?`,
               [expiresAt, existingSession.id],
-              'run'
+              'run',
             );
             return existingSession;
           }
@@ -573,9 +544,9 @@ export class AuthService {
     try {
       const result = await this.runQuery(
         `SELECT * FROM user_sessions
-         WHERE id = ? AND is_active = 1 AND expires_at > ${process.env.DB_TYPE === 'postgresql' ? 'NOW()' : "datetime('now')"}`,
+         WHERE id = ? AND is_active = 1 AND expires_at > ${process.env.DB_TYPE === 'postgresql' ? 'NOW()' : 'datetime(\'now\')'}`,
         [sessionId],
-        'get'
+        'get',
       );
 
       return result || null;
@@ -597,7 +568,7 @@ export class AuthService {
       const session = await this.runQuery(
         'SELECT user_id FROM user_sessions WHERE id = ?',
         [sessionId],
-        'get'
+        'get',
       );
 
       if (session) {
@@ -605,7 +576,7 @@ export class AuthService {
         await this.runQuery(
           'UPDATE user_sessions SET is_active = 0 WHERE id = ?',
           [sessionId],
-          'run'
+          'run',
         );
 
         const userId = session.user_id;
@@ -645,7 +616,7 @@ export class AuthService {
       const countResult = await this.runQuery(
         'SELECT COUNT(*) as count FROM user_sessions WHERE user_id = ? AND is_active = 1',
         [userId],
-        'get'
+        'get',
       );
 
       const activeCount = parseInt(countResult.count);
@@ -667,7 +638,7 @@ export class AuthService {
            SET is_active = 0
            WHERE id IN (${subQuery})`,
           [userId, sessionsToRemove],
-          'run'
+          'run',
         );
 
         this.logger.info('Cleaned up old sessions', {
@@ -743,7 +714,7 @@ export class AuthService {
           metadata.ip || null,
           metadata.userAgent || null,
         ],
-        'run'
+        'run',
       );
     } catch (error) {
       this.logger.error(`Failed to log audit event: ${error.message}`, {
@@ -780,15 +751,15 @@ export class AuthService {
   startSessionCleanup() {
     // Clean up expired sessions every 15 minutes
     setInterval(
-      async () => {
+      async() => {
         try {
-          const nowFunc = process.env.DB_TYPE === 'postgresql' ? 'NOW()' : "datetime('now')";
+          const nowFunc = process.env.DB_TYPE === 'postgresql' ? 'NOW()' : 'datetime(\'now\')';
           // Clean up expired sessions
           const result = await this.runQuery(
             `UPDATE user_sessions SET is_active = 0
              WHERE expires_at < ${nowFunc} AND is_active = 1`,
             [],
-            'run'
+            'run',
           );
 
           const deletedCount = result.changes || 0;
@@ -808,37 +779,37 @@ export class AuthService {
    */
   async getAuthStats() {
     try {
-      const nowFunc = process.env.DB_TYPE === 'postgresql' ? 'NOW()' : "datetime('now')";
+      const nowFunc = process.env.DB_TYPE === 'postgresql' ? 'NOW()' : 'datetime(\'now\')';
 
       const activeSessions = await this.runQuery(
         'SELECT COUNT(*) as count FROM user_sessions WHERE is_active = 1',
-        [], 'get'
+        [], 'get',
       );
 
       const validSessions = await this.runQuery(
         `SELECT COUNT(*) as count FROM user_sessions WHERE expires_at > ${nowFunc}`,
-        [], 'get'
+        [], 'get',
       );
 
       const activeUsers = await this.runQuery(
         'SELECT COUNT(DISTINCT user_id) as count FROM user_sessions WHERE is_active = 1',
-        [], 'get'
+        [], 'get',
       );
 
       // PG specific interval syntax vs SQLite
-      const interval = process.env.DB_TYPE === 'postgresql' ? "NOW() - INTERVAL '24 HOURS'" : "datetime('now', '-24 hours')";
+      const interval = process.env.DB_TYPE === 'postgresql' ? 'NOW() - INTERVAL \'24 HOURS\'' : 'datetime(\'now\', \'-24 hours\')';
       const timestampColumn = process.env.DB_TYPE === 'postgresql' ? 'created_at' : 'timestamp';
 
       const authEvents = await this.runQuery(
         `SELECT COUNT(*) as count FROM audit_logs
          WHERE event_category = 'authentication' AND ${timestampColumn} > ${interval}`,
-        [], 'get'
+        [], 'get',
       );
 
       const securityEvents = await this.runQuery(
         `SELECT COUNT(*) as count FROM audit_logs
          WHERE event_category = 'security' AND ${timestampColumn} > ${interval}`,
-        [], 'get'
+        [], 'get',
       );
 
       return {

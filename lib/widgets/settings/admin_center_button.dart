@@ -340,9 +340,6 @@ class _MinimalAuthService extends ChangeNotifier implements AuthService {
   ValueNotifier<bool> get isLoading => ValueNotifier(false);
 
   @override
-  bool get isRestoringSession => false;
-
-  @override
   bool get isSessionBootstrapComplete => false;
 
   @override
@@ -356,7 +353,4 @@ class _MinimalAuthService extends ChangeNotifier implements AuthService {
 
   @override
   Future<void> get sessionBootstrapFuture async {}
-
-  @override
-  Future<void> updateDisplayName(String displayName) async {}
 }

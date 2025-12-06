@@ -79,7 +79,6 @@ import tunnelUsageRoutes from './routes/tunnel-usage.js';
 import tunnelWebhooksRoutes from './routes/tunnel-webhooks.js';
 import userActivityRoutes from './routes/user-activity.js';
 import userDeletionRoutes from './routes/user-deletion.js';
-import versionedRoutes from './routes/versioned-routes.js';
 import webhookEventFiltersRoutes from './routes/webhook-event-filters.js';
 import webhookPayloadTransformationsRoutes from './routes/webhook-payload-transformations.js';
 import webhookRateLimitingRoutes from './routes/webhook-rate-limiting.js';
@@ -165,7 +164,7 @@ app.set('trust proxy', 1); // Trust first proxy (nginx)
 
 // CORS configuration
 const corsOptions = {
-  origin: function (origin, callback) {
+  origin: function(origin, callback) {
     const allowedOrigins = [
       'https://app.cloudtolocalllm.online',
       'https://cloudtolocalllm.online',
@@ -218,7 +217,7 @@ const server = http.createServer(app);
 // Setup graceful shutdown with in-flight request completion
 const shutdownManager = setupGracefulShutdown(server, {
   shutdownTimeoutMs: 10000,
-  onShutdown: async () => {
+  onShutdown: async() => {
     logger.info('Running custom shutdown handlers');
     // Custom shutdown logic will be added here
   },
@@ -294,7 +293,7 @@ async function authenticateToken(req, res, next) {
 
 // Create WebSocket-based tunnel routes
 const tunnelRouter = createTunnelRoutes(
-  {}, // No config needed for Supabase (uses env vars)
+  {}, // Config placeholder
   sshProxy,
   logger,
   sshAuthService,
@@ -438,7 +437,7 @@ registerRoutes('/health', (req, res) => {
 });
 
 // TEMPORARY DEBUG ENDPOINT
-app.get('/debug-dump', async (req, res) => {
+app.get('/debug-dump', async(req, res) => {
   try {
     const debugInfo = {
       timestamp: new Date().toISOString(),
@@ -481,13 +480,13 @@ app.get('/debug-dump', async (req, res) => {
             `INSERT INTO users (jwt_id, email, name, created_at, updated_at)
              VALUES ($1, $2, $3, NOW(), NOW())
              RETURNING id`,
-            [testJwtId, 'debug-default@test.local', 'Debug User Default']
+            [testJwtId, 'debug-default@test.local', 'Debug User Default'],
           );
 
           await client.query('ROLLBACK');
           debugInfo.writeTestDefaultId = {
             success: true,
-            insertedId: insertResult.rows[0].id
+            insertedId: insertResult.rows[0].id,
           };
         } catch (writeError) {
           await client.query('ROLLBACK');
@@ -495,7 +494,7 @@ app.get('/debug-dump', async (req, res) => {
             success: false,
             error: writeError.message,
             code: writeError.code,
-            detail: writeError.detail
+            detail: writeError.detail,
           };
         }
 
@@ -648,7 +647,7 @@ app.use((error, req, res, _next) => {
 });
 
 // Conversation routes - implemented directly due to router mounting issues
-app.get('/conversations/', authenticateJWT, async (req, res) => {
+app.get('/conversations/', authenticateJWT, async(req, res) => {
   try {
     const userId = req.auth?.payload?.sub || req.user?.sub;
     if (!userId) {
@@ -691,7 +690,7 @@ app.get('/conversations/', authenticateJWT, async (req, res) => {
   }
 });
 
-app.put('/conversations/:id', authenticateJWT, async (req, res) => {
+app.put('/conversations/:id', authenticateJWT, async(req, res) => {
   try {
     const userId = req.auth?.payload?.sub || req.user?.sub;
     const conversationId = req.params.id;
@@ -820,13 +819,13 @@ app.put('/conversations/:id', authenticateJWT, async (req, res) => {
 });
 
 // Also mount at /api/conversations for backward compatibility
-app.get('/api/conversations/', async (req, res) => {
+app.get('/api/conversations/', async(req, res) => {
   // Redirect to the main route
   const url = req.originalUrl.replace('/api/conversations/', '/conversations/');
   res.redirect(307, url);
 });
 
-app.put('/api/conversations/:id', async (req, res) => {
+app.put('/api/conversations/:id', async(req, res) => {
   // Redirect to the main route
   const url = req.originalUrl.replace('/api/conversations/', '/conversations/');
   res.redirect(307, url);
@@ -905,7 +904,7 @@ async function initializeTunnelSystem() {
       logger.info('Authentication service initialized successfully');
 
       // Register auth service with health check service
-      healthCheckService.registerService('auth-service', async () => {
+      healthCheckService.registerService('auth-service', async() => {
         return {
           status: authService ? 'healthy' : 'unhealthy',
           message: authService
@@ -930,7 +929,7 @@ async function initializeTunnelSystem() {
         logger.info('SSH tunnel server initialized successfully');
 
         // Register SSH proxy with health check service
-        healthCheckService.registerService('ssh-tunnel', async () => {
+        healthCheckService.registerService('ssh-tunnel', async() => {
           return {
             status: sshProxy && sshProxy.isRunning ? 'healthy' : 'unhealthy',
             message:
@@ -946,7 +945,7 @@ async function initializeTunnelSystem() {
         });
 
         // Register SSH proxy as unhealthy
-        healthCheckService.registerService('ssh-tunnel', async () => {
+        healthCheckService.registerService('ssh-tunnel', async() => {
           return {
             status: 'degraded',
             message: 'SSH tunnel service failed to initialize (non-critical)',
@@ -1032,7 +1031,7 @@ async function initializeTunnelSystem() {
     logger.info('WebSocket tunnel system ready');
 
     // Register custom shutdown handler with graceful shutdown manager
-    shutdownManager.shutdown = async () => {
+    shutdownManager.shutdown = async() => {
       await gracefulShutdown();
     };
 

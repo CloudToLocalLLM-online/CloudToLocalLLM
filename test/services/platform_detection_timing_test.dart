@@ -226,16 +226,10 @@ class _MinimalAuthService extends ChangeNotifier implements AuthService {
   ValueNotifier<bool> get isLoading => _isLoading;
 
   @override
-  bool get isRestoringSession => false;
-
-  @override
   bool get isSessionBootstrapComplete => true;
 
   @override
   Future<void> init() async {}
-
-  @override
-  Future<void> updateDisplayName(String displayName) async {}
 }
 
 AuthService _createMockAuthService() {

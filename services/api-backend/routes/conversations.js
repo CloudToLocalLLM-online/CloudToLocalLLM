@@ -4,8 +4,6 @@
  */
 
 import express from 'express';
-import { authenticateJWT } from '../middleware/auth.js';
-import { addTierInfo } from '../middleware/tier-check.js';
 import winston from 'winston';
 
 export function createConversationRoutes(
@@ -56,13 +54,13 @@ export function createConversationRoutes(
 
       // Get conversations for user, ordered by most recently updated
       const { rows: conversations } = await dbMigrator.pool.query(
-        `SELECT 
-          id,
-          title,
-          model,
-          created_at,
-          updated_at,
-          metadata
+        `SELECT
+id,
+  title,
+  model,
+  created_at,
+  updated_at,
+  metadata
         FROM conversations
         WHERE user_id = $1
         ORDER BY updated_at DESC`,
@@ -153,15 +151,15 @@ export function createConversationRoutes(
 
       // Get messages for this conversation
       const { rows: messages } = await dbMigrator.pool.query(
-        `SELECT 
-          id,
-          role,
-          content,
-          model,
-          status,
-          error,
-          timestamp,
-          metadata
+        `SELECT
+id,
+  role,
+  content,
+  model,
+  status,
+  error,
+  timestamp,
+  metadata
         FROM messages
         WHERE conversation_id = $1
         ORDER BY timestamp ASC`,
@@ -226,8 +224,8 @@ export function createConversationRoutes(
 
         // Create conversation
         const { rows: conversationRows } = await client.query(
-          `INSERT INTO conversations (user_id, title, model, metadata)
-          VALUES ($1, $2, $3, $4::jsonb)
+          `INSERT INTO conversations(user_id, title, model, metadata)
+VALUES($1, $2, $3, $4:: jsonb)
           RETURNING id, title, model, created_at, updated_at, metadata`,
           [userId, title, model, JSON.stringify(req.body.metadata || {})],
         );
@@ -250,9 +248,9 @@ export function createConversationRoutes(
 
           for (const msg of messageValues) {
             await client.query(
-              `INSERT INTO messages (
-                conversation_id, role, content, model, status, error, timestamp, metadata
-              ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8::jsonb)`,
+              `INSERT INTO messages(
+  conversation_id, role, content, model, status, error, timestamp, metadata
+) VALUES($1, $2, $3, $4, $5, $6, $7, $8:: jsonb)`,
               [
                 msg.conversation_id,
                 msg.role,
@@ -349,8 +347,8 @@ export function createConversationRoutes(
           const newTitle = title || 'New Conversation';
 
           await client.query(
-            `INSERT INTO conversations (id, user_id, title, model, metadata)
-            VALUES ($1, $2, $3, $4, $5::jsonb)`,
+            `INSERT INTO conversations(id, user_id, title, model, metadata)
+VALUES($1, $2, $3, $4, $5:: jsonb)`,
             [conversationId, userId, newTitle, newModel, JSON.stringify(metadata || {})],
           );
         } else {
@@ -382,9 +380,9 @@ export function createConversationRoutes(
           // Insert new messages
           for (const msg of messages) {
             await client.query(
-              `INSERT INTO messages (
-                conversation_id, role, content, model, status, error, timestamp, metadata
-              ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8::jsonb)`,
+              `INSERT INTO messages(
+  conversation_id, role, content, model, status, error, timestamp, metadata
+) VALUES($1, $2, $3, $4, $5, $6, $7, $8:: jsonb)`,
               [
                 conversationId,
                 msg.role || 'user',

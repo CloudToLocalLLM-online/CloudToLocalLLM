@@ -9,8 +9,7 @@ import 'bootstrap/bootstrapper.dart';
 import 'config/app_config.dart';
 import 'config/router.dart';
 import 'config/theme.dart';
-import 'config/supabase_config.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+
 import 'di/locator.dart' as di;
 import 'services/admin_center_service.dart';
 import 'services/admin_data_flush_service.dart';
@@ -49,9 +48,9 @@ import 'package:sentry_flutter/sentry_flutter.dart';
 
 import 'widgets/window_listener_widget.dart'
     if (dart.library.html) 'widgets/window_listener_widget_stub.dart';
+import 'config/navigator_key.dart';
 
-// Global navigator key for navigation from system tray
-final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+// navigatorKey is now imported from config/navigator_key.dart
 
 void main() async {
   // Immediate logging to verify Dart entry point is reached
@@ -79,14 +78,6 @@ void main() async {
       appRunner: () async {
         print('[Main] Sentry initialized, running app with Sentry...');
 
-        // Initialize Supabase after Sentry is ready
-        print('[Main] Initializing Supabase...');
-        await Supabase.initialize(
-          url: SupabaseConfig.url,
-          anonKey: SupabaseConfig.anonKey,
-        );
-        print('[Main] Supabase initialized');
-
         _runAppWithSentry();
       },
     ).timeout(const Duration(seconds: 5));
@@ -96,16 +87,8 @@ void main() async {
     // If Sentry fails, run the app anyway without Sentry wrapping
 
     // Initialize Supabase even if Sentry fails
-    print('[Main] Initializing Supabase...');
-    try {
-      await Supabase.initialize(
-        url: SupabaseConfig.url,
-        anonKey: SupabaseConfig.anonKey,
-      );
-      print('[Main] Supabase initialized');
-    } catch (supabaseError) {
-      print('Supabase initialization failed: $supabaseError');
-    }
+    // print('[Main] Initializing Supabase...');
+    // Supabase initialization removed for Entra ID migration
 
     _runAppWithoutSentry();
   }

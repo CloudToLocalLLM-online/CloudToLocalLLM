@@ -565,7 +565,7 @@ export class JWTValidator {
 export function createJWTValidationMiddleware(config = {}) {
   const validator = new JWTValidator(config);
 
-  return async (req, res, next) => {
+  return async(req, res, next) => {
     const correlationId = validator.logger.generateCorrelationId();
     req.correlationId = correlationId;
 

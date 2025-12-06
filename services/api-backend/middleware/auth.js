@@ -6,7 +6,6 @@
  */
 
 import jwt from 'jsonwebtoken';
-import fetch from 'node-fetch';
 import crypto from 'crypto';
 import Redis from 'ioredis';
 import { RedisStore } from 'rate-limit-redis';
@@ -121,7 +120,7 @@ export async function authenticateJWT(req, res, next) {
         // If AuthService fails but token is valid HS256, we might still want to proceed
         // depending on strictness. For now, let's fall back to just the token payload.
         logger.warn(' [Auth] AuthService session tracking failed for HS256 token', {
-          error: serviceError.message
+          error: serviceError.message,
         });
         req.user = decoded;
         req.userId = decoded.sub;

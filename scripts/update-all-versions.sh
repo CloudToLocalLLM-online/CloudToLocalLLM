@@ -95,6 +95,23 @@ if [ -f "lib/main.dart" ]; then
     sed -i "s/DART MAIN START ----- v[0-9]\+\.[0-9]\+\.[0-9]\+/DART MAIN START ----- v${NEW_VERSION}/g" lib/main.dart
 fi
 
+# 9. Update SECURITY.md
+echo "9. Updating SECURITY.md..."
+if [ -f "SECURITY.md" ]; then
+    # Extract Major.Minor (e.g., 4.14.3 -> 4.14)
+    MAJOR_MINOR=$(echo "$NEW_VERSION" | cut -d. -f1-2)
+    NEW_ROW="| ${MAJOR_MINOR}.x  | :white_check_mark: |"
+    
+    # Check if this version is already listed
+    if ! grep -q "| ${MAJOR_MINOR}.x" SECURITY.md; then
+        # Insert after the table header separator line
+        sed -i "/| ------- | ------------------ |/a $NEW_ROW" SECURITY.md
+        echo "   Added version ${MAJOR_MINOR}.x to supported list"
+    else
+        echo "   Version ${MAJOR_MINOR}.x already listed"
+    fi
+fi
+
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "✅ All Version References Updated"
@@ -109,5 +126,6 @@ echo "  ✅ services/streaming-proxy/package.json → $NEW_VERSION"
 echo "  ✅ lib/main.dart → v${NEW_VERSION}"
 echo "  ✅ README.md → updated badges"
 echo "  ✅ docs/VERSIONING.md → updated examples"
+echo "  ✅ SECURITY.md → added new version row"
 echo ""
 

@@ -35,7 +35,6 @@
     "@opentelemetry/exporter-trace-otlp-http": "^0.203.0",
     "@opentelemetry/sdk-node": "^0.203.0",
     "@sentry/node": "^10.26.0",
-    "@supabase/supabase-js": "^2.45.0",
     "cors": "^2.8.5",
     "dockerode": "^4.0.2",
     "dotenv": "^16.3.1",

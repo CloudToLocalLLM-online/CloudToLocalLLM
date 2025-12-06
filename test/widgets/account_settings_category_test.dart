@@ -70,12 +70,6 @@ class MockAuthService extends ChangeNotifier implements AuthService {
   Future<String?> getValidatedAccessToken() async => 'test-token';
 
   @override
-  Future<void> updateDisplayName(String displayName) async {}
-
-  @override
-  bool get isRestoringSession => false;
-
-  @override
   bool get isSessionBootstrapComplete => true;
 
   @override

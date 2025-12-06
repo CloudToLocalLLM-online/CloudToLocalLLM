@@ -66,8 +66,8 @@ dependencies:
 
   # Web interop for dart:js_interop
   web: ^1.0.0
-  supabase_flutter: ^2.8.3
   app_links: ^6.4.1
+  aad_oauth: ^1.0.1
 
 dev_dependencies:
   sentry_dart_plugin: ^3.2.0

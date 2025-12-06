@@ -1,6 +1,6 @@
 /**
  * Service Version Endpoint
- * 
+ *
  * Returns the deployed version of the API backend service
  */
 
@@ -24,7 +24,7 @@ async function loadVersion() {
     const packagePath = join(__dirname, '../package.json');
     const packageData = await readFile(packagePath, 'utf8');
     const packageJson = JSON.parse(packageData);
-    
+
     cachedVersion = {
       service: 'api-backend',
       version: packageJson.version || process.env.API_VERSION || 'unknown',
@@ -35,9 +35,9 @@ async function loadVersion() {
       node_version: process.version,
       timestamp: new Date().toISOString(),
     };
-    
+
     return cachedVersion;
-  } catch (error) {
+  } catch {
     // Fallback if file reading fails
     cachedVersion = {
       service: 'api-backend',
@@ -49,7 +49,7 @@ async function loadVersion() {
       timestamp: new Date().toISOString(),
       error: 'Could not read version from package.json',
     };
-    
+
     return cachedVersion;
   }
 }

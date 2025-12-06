@@ -6,14 +6,12 @@ import db from '../database/db-pool.js';
  * POST /auth/sessions
  * Create a new session for an authenticated user
  */
-router.post('/', async (req, res) => {
+router.post('/', async(req, res) => {
   try {
     const {
       userId,
       token,
       expiresAt,
-      jwtAccessToken,
-      jwtIdToken,
       userProfile,
     } = req.body;
 
@@ -127,7 +125,7 @@ router.post('/', async (req, res) => {
  * GET /auth/sessions/validate/:token
  * Validate a session token and return session data
  */
-router.get('/validate/:token', async (req, res) => {
+router.get('/validate/:token', async(req, res) => {
   try {
     const { token } = req.params;
 
@@ -182,7 +180,7 @@ router.get('/validate/:token', async (req, res) => {
  * DELETE /auth/sessions/:token
  * Invalidate a session
  */
-router.delete('/:token', async (req, res) => {
+router.delete('/:token', async(req, res) => {
   try {
     const { token } = req.params;
 
@@ -206,7 +204,7 @@ router.delete('/:token', async (req, res) => {
  * POST /auth/sessions/cleanup
  * Clean up expired sessions
  */
-router.post('/cleanup', async (req, res) => {
+router.post('/cleanup', async(req, res) => {
   try {
     const result = await db.query(
       'DELETE FROM user_sessions WHERE expires_at < NOW() OR is_active = false',

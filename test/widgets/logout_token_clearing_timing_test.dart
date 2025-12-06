@@ -99,12 +99,6 @@ class TestableAuthService extends ChangeNotifier implements AuthService {
   Future<String?> getValidatedAccessToken() async => _accessToken;
 
   @override
-  Future<void> updateDisplayName(String displayName) async {}
-
-  @override
-  bool get isRestoringSession => false;
-
-  @override
   bool get isSessionBootstrapComplete => true;
 
   @override
