@@ -102,6 +102,11 @@ router.post('/', async (req, res) => {
     const sessionResult = await db.query(
       `INSERT INTO user_sessions (user_id, session_token, expires_at, created_at, last_activity)
        VALUES ($1, $2, $3, NOW(), NOW())
+       ON CONFLICT (session_token)
+       DO UPDATE SET
+         last_activity = NOW(),
+         expires_at = EXCLUDED.expires_at,
+         user_id = EXCLUDED.user_id
        RETURNING id`,
       [dbUserId, token, expiresAt],
     );
