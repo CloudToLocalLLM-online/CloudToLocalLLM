@@ -8,12 +8,25 @@
  */
 
 import express from 'express';
+import rateLimit from 'express-rate-limit';
 import jwt from 'jsonwebtoken';
 import logger from '../logger.js';
 import { authenticateJWT, extractUserId } from '../middleware/auth.js';
 import { logLoginFailure, logLogout, logTokenRevoke } from '../services/auth-audit-service.js';
 
 const router = express.Router();
+
+// Rate limiter for auth checks to prevent brute force/enumeration
+const authCheckLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // Limit each IP to 100 checks per 15 min
+  message: {
+    error: 'Too many auth checks',
+    message: 'Please try again later',
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
 
 // Token refresh configuration
 const TOKEN_REFRESH_WINDOW = parseInt(process.env.TOKEN_REFRESH_WINDOW) || 300; // 5 minutes before expiry
@@ -32,7 +45,7 @@ const TOKEN_REFRESH_WINDOW = parseInt(process.env.TOKEN_REFRESH_WINDOW) || 300; 
  *       400:
  *         description: Operation not supported on backend
  */
-router.post('/token/refresh', async function(req, res) {
+router.post('/token/refresh', authCheckLimiter, async function (req, res) {
   return res.status(400).json({
     error: 'Token refresh should be handled by Supabase client SDK',
     code: 'USE_SUPABASE_CLIENT',
@@ -113,7 +126,7 @@ router.post('/token/refresh', async function(req, res) {
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.post('/token/validate', async function(req, res) {
+router.post('/token/validate', authCheckLimiter, async function (req, res) {
   try {
     const { token } = req.body;
     const authHeader = req.headers.authorization;
@@ -218,7 +231,7 @@ router.post('/token/validate', async function(req, res) {
  *       500:
  *         $ref: '#/components/responses/ServerError'
  */
-router.post('/logout', authenticateJWT, async function(req, res) {
+router.post('/logout', authenticateJWT, async function (req, res) {
   try {
     const userId = extractUserId(req);
 
@@ -319,7 +332,7 @@ router.post('/logout', authenticateJWT, async function(req, res) {
  *       500:
  *         $ref: '#/components/responses/ServerError'
  */
-router.post('/session/revoke', authenticateJWT, async function(req, res) {
+router.post('/session/revoke', authenticateJWT, async function (req, res) {
   try {
     const userId = extractUserId(req);
     const { sessionId } = req.body;
@@ -418,7 +431,7 @@ router.post('/session/revoke', authenticateJWT, async function(req, res) {
  *       500:
  *         $ref: '#/components/responses/ServerError'
  */
-router.get('/me', authenticateJWT, async function(req, res) {
+router.get('/me', authenticateJWT, async function (req, res) {
   try {
     const userId = extractUserId(req);
 
@@ -502,7 +515,7 @@ router.get('/me', authenticateJWT, async function(req, res) {
  *       500:
  *         $ref: '#/components/responses/ServerError'
  */
-router.post('/token/check-expiry', async function(req, res) {
+router.post('/token/check-expiry', authCheckLimiter, async function (req, res) {
   try {
     const { token } = req.body;
     const authHeader = req.headers.authorization;

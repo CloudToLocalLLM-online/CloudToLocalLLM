@@ -52,7 +52,7 @@ export async function authenticateApiKey(req, res, next) {
 
     if (!keyMetadata) {
       logger.warn('[APIKeyAuth] Invalid or expired API key', {
-        keyPrefix: apiKey.substring(0, 8),
+        // keyPrefix removed for security
         ip: req.ip,
         path: req.path,
       });
@@ -157,7 +157,7 @@ export function requireApiKeyScope(requiredScopes) {
       logger.warn('[APIKeyAuth] Insufficient API key scopes', {
         keyId: req.apiKey.id,
         requiredScopes: scopes,
-        keyScopes,
+        // keyScopes, // Redacted
       });
 
       return res.status(403).json({
@@ -214,7 +214,7 @@ export function apiKeyAuth(_options = {}) {
       logger.warn('[APIKeyAuth] API key rate limit exceeded', {
         keyId,
         limit: rateLimit,
-        requests: keyData.count,
+        // requests: keyData.count, // Potentially sensitive volume data
       });
 
       return res.status(429).json({

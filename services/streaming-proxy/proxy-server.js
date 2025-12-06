@@ -167,7 +167,7 @@ class TunnelHttpClient {
 let httpClient = null;
 if (OLLAMA_BASE_URL) {
   httpClient = new TunnelHttpClient(OLLAMA_BASE_URL);
-  logger.info(`Initialized HTTP client for tunnel endpoint: ${OLLAMA_BASE_URL}`);
+  logger.info(`Initialized HTTP client for tunnel endpoint: ${OLLAMA_BASE_URL ? '***REDACTED***' : 'unknown'}`);
 } else {
   logger.warn('OLLAMA_BASE_URL not configured - tunnel client disabled');
 }
@@ -264,7 +264,7 @@ server.listen(PORT, async () => {
     userId: USER_ID,
     proxyId: PROXY_ID,
     port: PORT,
-    ollamaBaseUrl: OLLAMA_BASE_URL,
+    ollamaBaseUrl: OLLAMA_BASE_URL ? '***REDACTED***' : 'not configured',
     nodeVersion: process.version,
   });
 
