@@ -265,6 +265,8 @@ export async function optionalAuth(req, res, next) {
       if (result.valid) {
         req.user = result.payload;
         req.userId = result.payload.sub;
+        // Set req.auth for consistency with authenticateJWT
+        req.auth = { payload: result.payload };
         logger.debug(
           ` [Auth] Optional auth successful via JWT: ${result.payload.sub}`,
         );
