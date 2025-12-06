@@ -290,15 +290,54 @@ export class AuthService {
         return existingUser.id; // Return the UUID
       }
 
-      // 2. Verified user doesn't exist, create new user
+      // 2. Try to find user by email (backfill scenario)
+      const userEmail = userInfo.email || `${auth0Id}@placeholder.local`;
+      const existingByEmail = await this.runQuery(
+        'SELECT id FROM users WHERE email = ?',
+        [userEmail],
+        'get'
+      );
+
+      if (existingByEmail) {
+        this.logger.info('Found existing user by email, linking jwt_id', {
+          userId: existingByEmail.id,
+          email: userEmail
+        });
+
+        // Link the jwt_id to the existing user
+        await this.runQuery(
+          `UPDATE users SET 
+             jwt_id = ?, 
+             name = COALESCE(?, name),
+             nickname = COALESCE(?, nickname),
+             picture = COALESCE(?, picture),
+             email_verified = ?, 
+             locale = COALESCE(?, locale),
+             updated_at = NOW() 
+           WHERE id = ?`,
+          [
+            auth0Id,
+            userInfo.name,
+            userInfo.nickname,
+            userInfo.picture,
+            userInfo.email_verified || false,
+            userInfo.locale,
+            existingByEmail.id
+          ],
+          'run'
+        );
+        return existingByEmail.id;
+      }
+
+      // 3. User doesn't exist by ID or Email, create new user
       this.logger.info('Creating new user record for Auth0 ID', { auth0Id });
 
       const newUser = await this.runQuery(
         `INSERT INTO users (jwt_id, email, name, nickname, picture, email_verified, locale, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), NOW())`,
+         VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), NOW()) RETURNING id`,
         [
           auth0Id,
-          userInfo.email || `${auth0Id}@placeholder.local`, // Fallback for email
+          userEmail,
           userInfo.name,
           userInfo.nickname,
           userInfo.picture,
@@ -308,8 +347,14 @@ export class AuthService {
         'run'
       );
 
+      if (newUser && newUser.rows && newUser.rows.length > 0) {
+        const newId = newUser.rows[0].id;
+        this.logger.info('Created new user', { userId: newId });
+        return newId;
+      }
+
+      // Fallback for drivers that don't return rows on insert (shouldn't happen with pg driver but good safety)
       if (newUser && newUser.lastID) {
-        this.logger.info('Created new user', { userId: newUser.lastID });
         return newUser.lastID;
       }
 
