@@ -5,50 +5,50 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:provider/single_child_widget.dart';
 
-import 'bootstrap/bootstrapper.dart';
-import 'config/app_config.dart';
-import 'config/router.dart';
-import 'config/theme.dart';
+import 'package:cloudtolocalllm/bootstrap/bootstrapper.dart';
+import 'package:cloudtolocalllm/config/app_config.dart';
+import 'package:cloudtolocalllm/config/router.dart';
+import 'package:cloudtolocalllm/config/theme.dart';
 
-import 'di/locator.dart' as di;
-import 'services/admin_center_service.dart';
-import 'services/admin_data_flush_service.dart';
-import 'services/admin_service.dart';
-import 'services/app_initialization_service.dart';
-import 'services/auth_service.dart';
-import 'services/connection_manager_service.dart';
-import 'services/desktop_client_detection_service.dart';
-import 'services/enhanced_user_tier_service.dart';
-import 'services/langchain_integration_service.dart';
-import 'services/langchain_ollama_service.dart';
-import 'services/langchain_prompt_service.dart';
-import 'services/langchain_rag_service.dart';
-import 'services/llm_audit_service.dart';
-import 'services/llm_error_handler.dart';
-import 'services/llm_provider_manager.dart';
-import 'services/local_ollama_connection_service.dart';
-import 'services/ollama_service.dart';
-import 'services/provider_configuration_manager.dart';
-import 'services/provider_discovery_service.dart';
-import 'services/streaming_chat_service.dart';
-import 'services/streaming_proxy_service.dart';
-import 'services/tunnel_service.dart';
-import 'services/unified_connection_service.dart';
-import 'services/user_container_service.dart';
-import 'services/web_download_prompt_service.dart'
-    if (dart.library.io) 'services/web_download_prompt_service_stub.dart';
-import 'services/log_buffer_service.dart';
-import 'services/theme_provider.dart';
-import 'services/platform_detection_service.dart';
-import 'services/platform_adapter.dart';
+import 'package:cloudtolocalllm/di/locator.dart' as di;
+import 'package:cloudtolocalllm/services/admin_center_service.dart';
+import 'package:cloudtolocalllm/services/admin_data_flush_service.dart';
+import 'package:cloudtolocalllm/services/admin_service.dart';
+import 'package:cloudtolocalllm/services/app_initialization_service.dart';
+import 'package:cloudtolocalllm/services/auth_service.dart';
+import 'package:cloudtolocalllm/services/connection_manager_service.dart';
+import 'package:cloudtolocalllm/services/desktop_client_detection_service.dart';
+import 'package:cloudtolocalllm/services/enhanced_user_tier_service.dart';
+import 'package:cloudtolocalllm/services/langchain_integration_service.dart';
+import 'package:cloudtolocalllm/services/langchain_ollama_service.dart';
+import 'package:cloudtolocalllm/services/langchain_prompt_service.dart';
+import 'package:cloudtolocalllm/services/langchain_rag_service.dart';
+import 'package:cloudtolocalllm/services/llm_audit_service.dart';
+import 'package:cloudtolocalllm/services/llm_error_handler.dart';
+import 'package:cloudtolocalllm/services/llm_provider_manager.dart';
+import 'package:cloudtolocalllm/services/local_ollama_connection_service.dart';
+import 'package:cloudtolocalllm/services/ollama_service.dart';
+import 'package:cloudtolocalllm/services/provider_configuration_manager.dart';
+import 'package:cloudtolocalllm/services/provider_discovery_service.dart';
+import 'package:cloudtolocalllm/services/streaming_chat_service.dart';
+import 'package:cloudtolocalllm/services/streaming_proxy_service.dart';
+import 'package:cloudtolocalllm/services/tunnel_service.dart';
+import 'package:cloudtolocalllm/services/unified_connection_service.dart';
+import 'package:cloudtolocalllm/services/user_container_service.dart';
+import 'package:cloudtolocalllm/services/web_download_prompt_service.dart'
+    if (dart.library.io) 'package:cloudtolocalllm/services/web_download_prompt_service_stub.dart';
+import 'package:cloudtolocalllm/services/log_buffer_service.dart';
+import 'package:cloudtolocalllm/services/theme_provider.dart';
+import 'package:cloudtolocalllm/services/platform_detection_service.dart';
+import 'package:cloudtolocalllm/services/platform_adapter.dart';
 import 'web_plugins_stub.dart'
     if (dart.library.html) 'package:flutter_web_plugins/url_strategy.dart';
-import 'widgets/tray_initializer.dart';
+import 'package:cloudtolocalllm/widgets/tray_initializer.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 
-import 'widgets/window_listener_widget.dart'
-    if (dart.library.html) 'widgets/window_listener_widget_stub.dart';
-import 'config/navigator_key.dart';
+import 'package:cloudtolocalllm/widgets/window_listener_widget.dart'
+    if (dart.library.html) 'package:cloudtolocalllm/widgets/window_listener_widget_stub.dart';
+import 'package:cloudtolocalllm/config/navigator_key.dart';
 
 // navigatorKey is now imported from config/navigator_key.dart
 

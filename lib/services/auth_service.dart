@@ -38,9 +38,11 @@ class AuthService extends ChangeNotifier {
       clientId:
           "1a72fdf6-4e48-4cb8-943b-a4a4ac513148", // Restored from previous step output
       scope: "openid profile email offline_access",
-      redirectUri:
-          "https://login.microsoftonline.com/common/oauth2/nativeclient",
+      redirectUri: kIsWeb
+          ? Uri.base.origin
+          : "https://login.microsoftonline.com/common/oauth2/nativeclient",
       navigatorKey: navigatorKey,
+      webUseRedirect: true,
     );
     _oauth = AadOAuth(config);
   }

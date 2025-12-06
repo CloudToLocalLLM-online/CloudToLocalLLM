@@ -3,40 +3,40 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:get_it/get_it.dart';
 
-import '../services/admin_data_flush_service.dart';
-import '../services/admin_service.dart';
-import '../services/app_initialization_service.dart';
-import '../services/auth_service.dart';
-import '../services/session_storage_service.dart';
-import '../services/connection_manager_service.dart';
-import '../services/desktop_client_detection_service.dart';
-import '../services/enhanced_user_tier_service.dart';
-import '../services/langchain_integration_service.dart';
-import '../services/langchain_ollama_service.dart';
-import '../services/langchain_prompt_service.dart';
-import '../services/langchain_rag_service.dart'
-    if (dart.library.html) '../services/langchain_rag_service_stub.dart';
-import '../services/llm_audit_service.dart';
-import '../services/llm_error_handler.dart';
-import '../services/llm_provider_manager.dart';
-import '../services/local_ollama_connection_service.dart';
-import '../services/ollama_service.dart';
-import '../services/provider_discovery_service.dart';
-import '../services/streaming_chat_service.dart';
-import '../services/streaming_proxy_service.dart';
-import '../services/tunnel_service.dart';
-import '../services/tunnel/tunnel_config_manager.dart';
-import '../services/unified_connection_service.dart';
-import '../services/user_container_service.dart';
-import '../services/web_download_prompt_service.dart'
-    if (dart.library.io) '../services/web_download_prompt_service_stub.dart';
-import '../services/settings_preference_service.dart';
-import '../services/settings_import_export_service.dart';
-import '../services/provider_configuration_manager.dart';
-import '../services/admin_center_service.dart';
-import '../services/theme_provider.dart';
-import '../services/platform_detection_service.dart';
-import '../services/platform_adapter.dart';
+import 'package:cloudtolocalllm/services/admin_data_flush_service.dart';
+import 'package:cloudtolocalllm/services/admin_service.dart';
+import 'package:cloudtolocalllm/services/app_initialization_service.dart';
+import 'package:cloudtolocalllm/services/auth_service.dart';
+import 'package:cloudtolocalllm/services/session_storage_service.dart';
+import 'package:cloudtolocalllm/services/connection_manager_service.dart';
+import 'package:cloudtolocalllm/services/desktop_client_detection_service.dart';
+import 'package:cloudtolocalllm/services/enhanced_user_tier_service.dart';
+import 'package:cloudtolocalllm/services/langchain_integration_service.dart';
+import 'package:cloudtolocalllm/services/langchain_ollama_service.dart';
+import 'package:cloudtolocalllm/services/langchain_prompt_service.dart';
+import 'package:cloudtolocalllm/services/langchain_rag_service.dart'
+    if (dart.library.html) 'package:cloudtolocalllm/services/langchain_rag_service_stub.dart';
+import 'package:cloudtolocalllm/services/llm_audit_service.dart';
+import 'package:cloudtolocalllm/services/llm_error_handler.dart';
+import 'package:cloudtolocalllm/services/llm_provider_manager.dart';
+import 'package:cloudtolocalllm/services/local_ollama_connection_service.dart';
+import 'package:cloudtolocalllm/services/ollama_service.dart';
+import 'package:cloudtolocalllm/services/provider_discovery_service.dart';
+import 'package:cloudtolocalllm/services/streaming_chat_service.dart';
+import 'package:cloudtolocalllm/services/streaming_proxy_service.dart';
+import 'package:cloudtolocalllm/services/tunnel_service.dart';
+import 'package:cloudtolocalllm/services/tunnel/tunnel_config_manager.dart';
+import 'package:cloudtolocalllm/services/unified_connection_service.dart';
+import 'package:cloudtolocalllm/services/user_container_service.dart';
+import 'package:cloudtolocalllm/services/web_download_prompt_service.dart'
+    if (dart.library.io) 'package:cloudtolocalllm/services/web_download_prompt_service_stub.dart';
+import 'package:cloudtolocalllm/services/settings_preference_service.dart';
+import 'package:cloudtolocalllm/services/settings_import_export_service.dart';
+import 'package:cloudtolocalllm/services/provider_configuration_manager.dart';
+import 'package:cloudtolocalllm/services/admin_center_service.dart';
+import 'package:cloudtolocalllm/services/theme_provider.dart';
+import 'package:cloudtolocalllm/services/platform_detection_service.dart';
+import 'package:cloudtolocalllm/services/platform_adapter.dart';
 
 final GetIt serviceLocator = GetIt.instance;
 
@@ -156,6 +156,7 @@ Future<void> setupCoreServices() async {
   serviceLocator.registerSingleton<EnhancedUserTierService>(
     enhancedUserTierService,
   );
+
   // Don't initialize yet - wait for auth token
 
   debugPrint('[ServiceLocator] Core services registered successfully');
