@@ -1,7 +1,7 @@
 {
-  "version": "4.13.0",
-  "build_number": "202512060909",
-  "build_date": "2025-12-06T09:09:46Z",
-  "git_commit": "168ac403",
-  "buildTimestamp": "2025-12-06 09:09:46"
+  "version": "4.13.1",
+  "build_number": "202512060920",
+  "build_date": "2025-12-06T09:20:45Z",
+  "git_commit": "c3e896fd",
+  "buildTimestamp": "2025-12-06 09:20:45"
 }
