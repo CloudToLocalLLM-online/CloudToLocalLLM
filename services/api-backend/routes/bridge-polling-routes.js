@@ -6,7 +6,7 @@
 import express from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import rateLimit from 'express-rate-limit';
-import { authenticateJWT } from '../middleware/auth.js';
+import { authenticateComposite } from '../middleware/composite-auth.js';
 import { addTierInfo } from '../middleware/tier-check.js';
 import { TunnelLogger } from '../utils/logger.js';
 
@@ -82,7 +82,7 @@ const bridgeRegistrationLimiter = rateLimit({
 router.post(
   '/register',
   bridgeRegistrationLimiter,
-  authenticateJWT,
+  ...authenticateComposite,
   addTierInfo,
   (req, res) => {
     const { clientId, platform, version, capabilities } = req.body;
@@ -145,7 +145,7 @@ router.post(
  * Get bridge status
  * GET /api/bridge/{bridgeId}/status
  */
-router.get('/:bridgeId/status', authenticateJWT, (req, res) => {
+router.get('/:bridgeId/status', ...authenticateComposite, (req, res) => {
   const { bridgeId } = req.params;
   const userId = req.user.sub;
 
@@ -197,7 +197,7 @@ router.get('/:bridgeId/status', authenticateJWT, (req, res) => {
 router.get(
   '/:bridgeId/poll',
   bridgePollingLimiter,
-  authenticateJWT,
+  ...authenticateComposite,
   (req, res) => {
     const { bridgeId } = req.params;
     const userId = req.user.sub;
@@ -272,7 +272,7 @@ router.get(
 router.post(
   '/:bridgeId/provider-status',
   bridgeProviderStatusLimiter,
-  authenticateJWT,
+  ...authenticateComposite,
   (req, res) => {
     const { bridgeId } = req.params;
     const userId = req.user.sub;
@@ -312,7 +312,7 @@ router.post(
  * Submit response from desktop client
  * POST /api/bridge/{bridgeId}/response
  */
-router.post('/:bridgeId/response', authenticateJWT, (req, res) => {
+router.post('/:bridgeId/response', ...authenticateComposite, (req, res) => {
   const { bridgeId } = req.params;
   const userId = req.user.sub;
   const { requestId, status, headers, body, error } = req.body;
@@ -377,7 +377,7 @@ router.post('/:bridgeId/response', authenticateJWT, (req, res) => {
 router.post(
   '/:bridgeId/heartbeat',
   bridgeHeartbeatLimiter,
-  authenticateJWT,
+  ...authenticateComposite,
   (req, res) => {
     const { bridgeId } = req.params;
     const userId = req.user.sub;

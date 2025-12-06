@@ -401,11 +401,13 @@ registerRoutes('/webhook-testing', webhookTestingRoutes);
 // LLM Tunnel Cloud Proxy Endpoints (support both /api/ollama and /ollama)
 setSshProxy(sshProxy);
 
+import { authenticateComposite } from './middleware/composite-auth.js';
+
 // Define Ollama route regex to match /api/ollama, /ollama, and their subpaths
 const OLLAMA_ROUTE_REGEX = /^\/(api\/)?ollama(\/.*)?$/;
 app.all(
   OLLAMA_ROUTE_REGEX,
-  authenticateJWT,
+  ...authenticateComposite,
   addTierInfo,
   handleOllamaProxyRequest,
 );
