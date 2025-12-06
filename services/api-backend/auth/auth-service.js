@@ -686,12 +686,11 @@ export class AuthService {
       const jsonColumnName = process.env.DB_TYPE === 'postgresql' ? 'details' : 'metadata';
 
       await this.runQuery(
-        `INSERT INTO audit_logs (event_type, event_category, action, ${jsonColumnName}, user_id, ip_address, user_agent)
-         VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO audit_logs (action, resource_type, ${jsonColumnName}, user_id, ip_address, user_agent)
+       VALUES (?, ?, ?, ?, ?, ? )`,
         [
-          eventType,
-          category,
-          eventType,
+          eventType, // action
+          category,  // resource_type
           metaStr,
           metadata.userId || null,
           metadata.ip || null,
