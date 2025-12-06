@@ -1,32 +1,36 @@
 name: Gemini Security Scan
 
 on:
-  schedule:
-    - cron: '0 * * * *'  # Run every hour
-  workflow_dispatch:      # Allow manual trigger
+    push:
+        branches: ["main"]
+    pull_request:
+        branches: ["main"]
+    schedule:
+        - cron: "0 * * * *" # Run every hour
+    workflow_dispatch: # Allow manual trigger
 
 jobs:
-  gemini-scan:
-    name: Run Gemini Security Analysis
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
+    gemini-scan:
+        name: Run Gemini Security Analysis
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout Repository
+              uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
+            - name: Setup Node.js
+              uses: actions/setup-node@v4
+              with:
+                  node-version: "20"
 
-      - name: Install Gemini CLI
-        run: npm install -g @google/gemini-cli
+            - name: Install Gemini CLI
+              run: npm install -g @google/gemini-cli
 
-      - name: Install Security Extension
-        run: gemini extensions install https://github.com/gemini-cli-extensions/security
-        env:
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+            - name: Install Security Extension
+              run: gemini extensions install https://github.com/gemini-cli-extensions/security
+              env:
+                  GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
 
-      - name: Run Security Analysis
-        run: gemini /security:analyze
-        env:
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+            - name: Run Security Analysis
+              run: gemini /security:analyze
+              env:
+                  GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
