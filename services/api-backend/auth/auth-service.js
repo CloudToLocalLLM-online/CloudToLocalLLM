@@ -108,7 +108,7 @@ export class AuthService {
       }
 
       try {
-        const result = await this.db.query(finalSql, params);
+        const result = await this.db.pool.query(finalSql, params);
 
         if (type === 'run') {
           // Emulate SQLite 'run' output
