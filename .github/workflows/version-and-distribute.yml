@@ -14,7 +14,7 @@ concurrency:
 
 jobs:
   analyze_and_distribute:
-    if: "!contains(github.event.head_commit.message, '[skip ci]') && !contains(github.event.head_commit.message, '[no-version]')"
+    if: ${{ !contains(github.event.head_commit.message, '[skip ci]') && !contains(github.event.head_commit.message, '[no-version]') }}
     runs-on: ubuntu-latest
     permissions:
       contents: write
