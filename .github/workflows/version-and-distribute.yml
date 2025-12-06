@@ -18,19 +18,19 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
-    
+
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 50
           fetch-tags: true
           token: ${{ secrets.PAT_TOKEN || secrets.GITHUB_TOKEN }}
-      
+
       - name: Configure Git
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-      
+
       - name: Setup Gemini CLI
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
@@ -41,7 +41,7 @@ jobs:
             gemini-cli "Respond with just OK" && echo "✅ Gemini CLI test passed" || echo "⚠️  Gemini test failed"
           fi
           echo "✅ Gemini CLI ready"
-      
+
       - name: Analyze Changes with Gemini
         id: analyze
         env:
@@ -49,7 +49,7 @@ jobs:
         run: |
           chmod +x scripts/analyze-platforms.sh
           ./scripts/analyze-platforms.sh
-      
+
       - name: Update Version Files
         env:
           NEW_VERSION: ${{ steps.analyze.outputs.new_version }}
@@ -57,7 +57,7 @@ jobs:
         run: |
           chmod +x scripts/update-all-versions.sh
           ./scripts/update-all-versions.sh "$NEW_VERSION" "$COMMIT_SHA"
-      
+
       - name: Commit and Push to Platform Branches
         env:
           NEW_VERSION: ${{ steps.analyze.outputs.new_version }}
@@ -66,18 +66,18 @@ jobs:
           NEEDS_MOBILE: ${{ steps.analyze.outputs.needs_mobile }}
         run: |
           SHORT_SHA=$(git rev-parse --short HEAD)
-          
+
           # Commit version changes to main
           git add -A
           if ! git diff --cached --quiet; then
             git commit -m "chore: bump version to $NEW_VERSION [skip ci]"
             git push origin main
           fi
-          
+
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
           echo "Platform Distribution for v$NEW_VERSION"
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-          
+
           # Push to cloud branch if needed
           if [ "$NEEDS_CLOUD" = "true" ]; then
             echo "☁️  Pushing to cloud branch..."
@@ -89,7 +89,7 @@ jobs:
           else
             echo "⏭️  Cloud: No changes, skipping"
           fi
-          
+
           # Push to desktop branch if needed
           if [ "$NEEDS_DESKTOP" = "true" ]; then
             echo "🖥️  Pushing to desktop branch..."
@@ -101,7 +101,7 @@ jobs:
           else
             echo "⏭️  Desktop: No changes, skipping"
           fi
-          
+
           # Push to mobile branch if needed
           if [ "$NEEDS_MOBILE" = "true" ]; then
             echo "📱 Pushing to mobile branch..."
@@ -113,15 +113,15 @@ jobs:
           else
             echo "⏭️  Mobile: No changes, skipping"
           fi
-          
+
           # Return to main
           git checkout main
-          
+
           echo ""
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
           echo "✅ Version $NEW_VERSION distributed to platforms"
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-          
+
           # Trigger deployments via repository_dispatch (GitHub limitation workaround)
           # Note: Workflows cannot trigger other workflows even with PAT (security feature)
           if [ "$NEEDS_CLOUD" = "true" ]; then
@@ -131,7 +131,6 @@ jobs:
               -H "Authorization: Bearer ${{ secrets.PAT_TOKEN || secrets.GITHUB_TOKEN }}" \
               -H "X-GitHub-Api-Version: 2022-11-28" \
               "https://api.github.com/repos/${{ github.repository }}/dispatches" \
-              -d "{\"event_type\":\"cloud-deploy\",\"client_payload\":{\"version\":\"${NEW_VERSION}\",\"commit\":\"${SHORT_SHA}\"}}"
+              -d "{\"event_type\":\"cloud-deploy-version\",\"client_payload\":{\"version\":\"${NEW_VERSION}\",\"commit\":\"${SHORT_SHA}\"}}"
             echo "✅ Cloud deployment triggered"
           fi
-
