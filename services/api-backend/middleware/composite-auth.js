@@ -24,6 +24,17 @@ export const authenticateComposite = [
             return next();
         }
 
+        // Diagnostic logging for debugging 401s
+        const authHeader = req.headers['authorization'];
+        const hasToken = authHeader && authHeader.startsWith('Bearer ');
+        const tokenPreview = hasToken ? authHeader.substring(7, 15) + '...' : 'none';
+
+        console.warn(`[CompositeAuth] Authentication failed for ${req.method} ${req.path}`);
+        console.warn(`[CompositeAuth] - Has User: ${!!req.user}`);
+        console.warn(`[CompositeAuth] - Has API Key: ${!!req.apiKey}`);
+        console.warn(`[CompositeAuth] - Auth Header provided: ${!!authHeader}`);
+        console.warn(`[CompositeAuth] - Token preview: ${tokenPreview}`);
+
         // If we're here, neither auth method succeeded
         return res.status(401).json({
             error: 'Authentication required',

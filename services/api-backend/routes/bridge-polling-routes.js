@@ -86,7 +86,12 @@ router.post(
   addTierInfo,
   (req, res) => {
     const { clientId, platform, version, capabilities } = req.body;
-    const userId = req.user.sub;
+    // Use req.userId which is populated by both JWT and API Key auth
+    const userId = req.userId || req.user?.sub;
+
+    if (!userId) {
+      return res.status(401).json({ error: 'User ID not found' });
+    }
     const bridgeId = uuidv4();
 
     if (!clientId || !platform || !version) {
@@ -147,7 +152,11 @@ router.post(
  */
 router.get('/:bridgeId/status', ...authenticateComposite, (req, res) => {
   const { bridgeId } = req.params;
-  const userId = req.user.sub;
+  const userId = req.userId || req.user?.sub;
+
+  if (!userId) {
+    return res.status(401).json({ error: 'User ID not found' });
+  }
 
   const bridge = bridgeRegistrations.get(bridgeId);
   if (!bridge) {
@@ -200,7 +209,7 @@ router.get(
   ...authenticateComposite,
   (req, res) => {
     const { bridgeId } = req.params;
-    const userId = req.user.sub;
+    const userId = req.userId || req.user?.sub;
     const timeout = parseInt(req.query.timeout) || POLLING_TIMEOUT;
 
     const bridge = bridgeRegistrations.get(bridgeId);
@@ -275,7 +284,7 @@ router.post(
   ...authenticateComposite,
   (req, res) => {
     const { bridgeId } = req.params;
-    const userId = req.user.sub;
+    const userId = req.userId || req.user?.sub;
     const { providers, timestamp } = req.body;
 
     const bridge = bridgeRegistrations.get(bridgeId);
@@ -314,7 +323,7 @@ router.post(
  */
 router.post('/:bridgeId/response', ...authenticateComposite, (req, res) => {
   const { bridgeId } = req.params;
-  const userId = req.user.sub;
+  const userId = req.userId || req.user?.sub;
   const { requestId, status, headers, body, error } = req.body;
 
   const bridge = bridgeRegistrations.get(bridgeId);
@@ -380,7 +389,7 @@ router.post(
   ...authenticateComposite,
   (req, res) => {
     const { bridgeId } = req.params;
-    const userId = req.user.sub;
+    const userId = req.userId || req.user?.sub;
 
     const bridge = bridgeRegistrations.get(bridgeId);
     if (!bridge || bridge.userId !== userId) {
