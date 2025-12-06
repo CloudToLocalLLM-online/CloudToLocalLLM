@@ -209,7 +209,7 @@ export class AuthService {
         session: session,
       };
     } catch (error) {
-      this.logger.warn('Token validation failed', {
+      this.logger.warn(`Token validation failed: ${error.message}`, {
         error: error.message,
         ip: req.ip,
       });
@@ -700,7 +700,7 @@ export class AuthService {
         'run'
       );
     } catch (error) {
-      this.logger.error('Failed to log audit event', {
+      this.logger.error(`Failed to log audit event: ${error.message}`, {
         eventType,
         error: error.message,
       });
