@@ -18,6 +18,7 @@ export class AuthService {
   constructor(config) {
     this.config = {
       SUPABASE_URL: process.env.SUPABASE_URL,
+      SUPABASE_JWT_SECRET: process.env.SUPABASE_JWT_SECRET,
       SESSION_TIMEOUT: parseInt(process.env.SESSION_TIMEOUT) || 3600000, // 1 hour
       MAX_SESSIONS_PER_USER: parseInt(process.env.MAX_SESSIONS_PER_USER) || 5,
       ...config,
@@ -74,7 +75,7 @@ export class AuthService {
       }
       this.initialized = true;
 
-      this.logger.info('Authentication service initialized (Supabase RS256)');
+      this.logger.info('Authentication service initialized (Supabase HS256/RS256/ES256)');
 
       // Start session cleanup
       this.startSessionCleanup();
@@ -102,17 +103,19 @@ export class AuthService {
 
       // Special handling for INSERT to get lastID
       let finalSql = pgSql;
-      if (type === 'run' && sql.trim().toUpperCase().startsWith('INSERT') && !sql.toLowerCase().includes('returning')) {
+      if (type === 'run' && sql.trim().toUpperCase().startsWith('INSERT')) {
         finalSql += ' RETURNING id';
       }
 
       try {
-        const result = await this.db.pool.query(finalSql, params);
+        const result = await this.db.query(finalSql, params);
 
         if (type === 'run') {
+          // Emulate SQLite 'run' output
           return {
-            lastID: result.rows[0]?.id, // Only works if we added RETURNING id
-            changes: result.rowCount
+            lastID: result.rows.length > 0 ? result.rows[0].id : null,
+            changes: result.rowCount,
+            rows: result.rows // Keep rows for flexibility
           };
         } else if (type === 'get') {
           return result.rows[0];
@@ -120,8 +123,8 @@ export class AuthService {
           return result.rows;
         }
       } catch (err) {
-        // Handle unique constraint violation normalization if needed
-        if (err.code === '23505') { // unique_violation
+        // Handle constraint violations
+        if (err.code === '23505') { // UNIQUE_VIOLATION
           const wrapper = new Error('UNIQUE constraint failed: ' + err.detail);
           wrapper.code = 'SQLITE_CONSTRAINT'; // Mimic SQLite code for logic compatibility
           throw wrapper;
@@ -174,28 +177,51 @@ export class AuthService {
         this.logger.info('Using pre-validated token payload');
         payload = preValidatedPayload;
       } else {
-        // Full validation using Supabase JWKS (RS256)
-        this.logger.info('Starting full token validation (Supabase RS256)');
+        // Decode header to check algorithm
+        const decoded = jwt.decode(token, { complete: true });
+        if (!decoded || !decoded.header) {
+          throw new Error('Invalid token structure');
+        }
+
+        const alg = decoded.header.alg;
+        this.logger.info(`Starting token validation (Alg: ${alg})`);
 
         payload = await new Promise((resolve, reject) => {
-          jwt.verify(
-            token,
-            this.getKey.bind(this),
-            { algorithms: ['RS256'] },
-            (err, decoded) => {
-              if (err) {
-                reject(err);
-              } else {
-                resolve(decoded);
-              }
+          if (alg === 'HS256') {
+            // Symmetric Secret Validation
+            if (!this.config.SUPABASE_JWT_SECRET) {
+              return reject(new Error('HS256 token received but SUPABASE_JWT_SECRET is not configured'));
             }
-          );
+            jwt.verify(
+              token,
+              this.config.SUPABASE_JWT_SECRET,
+              { algorithms: ['HS256'] },
+              (err, decodedToken) => {
+                if (err) reject(err);
+                else resolve(decodedToken);
+              }
+            );
+          } else {
+            // Asymmetric JWKS Validation (RS256, ES256)
+            jwt.verify(
+              token,
+              this.getKey.bind(this),
+              { algorithms: ['RS256', 'ES256'] },
+              (err, decodedToken) => {
+                if (err) reject(err);
+                else resolve(decodedToken);
+              }
+            );
+          }
         });
-
-        this.logger.info('Token verification successful');
       }
 
-      // Create or update session
+      // Check if session exists/is valid
+      const sessionToken = payload.session_id || payload.sub; // Use sub as fallback if needed
+
+      // In Supabase, the access token doesn't always contain the session_id unless configured.
+      // We will create/update our local session based on the validated token.
+
       const session = await this.createOrUpdateSession(payload, token, req);
 
       this.logger.info('Token validated successfully', {
@@ -234,21 +260,42 @@ export class AuthService {
    */
   async validateTokenForWebSocket(token) {
     try {
-      this.logger.info('Starting WebSocket token validation (Supabase RS256)');
+      // Decode header to check algorithm
+      const decoded = jwt.decode(token, { complete: true });
+      if (!decoded || !decoded.header) {
+        throw new Error('Invalid token structure');
+      }
+
+      const alg = decoded.header.alg;
+      this.logger.info(`Starting WebSocket token validation (Alg: ${alg})`);
 
       const verified = await new Promise((resolve, reject) => {
-        jwt.verify(
-          token,
-          this.getKey.bind(this),
-          { algorithms: ['RS256'] },
-          (err, decoded) => {
-            if (err) {
-              reject(err);
-            } else {
-              resolve(decoded);
-            }
+        if (alg === 'HS256') {
+          // Symmetric Secret Validation
+          if (!this.config.SUPABASE_JWT_SECRET) {
+            return reject(new Error('HS256 token received but SUPABASE_JWT_SECRET is not configured'));
           }
-        );
+          jwt.verify(
+            token,
+            this.config.SUPABASE_JWT_SECRET,
+            { algorithms: ['HS256'] },
+            (err, decodedToken) => {
+              if (err) reject(err);
+              else resolve(decodedToken);
+            }
+          );
+        } else {
+          // Asymmetric JWKS Validation (RS256, ES256)
+          jwt.verify(
+            token,
+            this.getKey.bind(this),
+            { algorithms: ['RS256', 'ES256'] },
+            (err, decodedToken) => {
+              if (err) reject(err);
+              else resolve(decodedToken);
+            }
+          );
+        }
       });
 
       this.logger.info('WebSocket token verification successful', {
