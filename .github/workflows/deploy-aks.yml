@@ -713,6 +713,9 @@ jobs:
           CLOUDFLARE_TUNNEL_TOKEN: ${{ secrets.CLOUDFLARE_TUNNEL_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           SUPABASE_JWT_SECRET: ${{ secrets.SUPABASE_JWT_SECRET }}
+          ENTRA_ISSUER_URL: ${{ secrets.ENTRA_ISSUER_URL }}
+          ENTRA_CLIENT_ID: ${{ secrets.ENTRA_CLIENT_ID }}
+          ENTRA_TENANT_ID: ${{ secrets.ENTRA_TENANT_ID }}
         run: |
           # --- Create Kubernetes Secrets ---
 
@@ -743,6 +746,9 @@ jobs:
             --from-literal=sentry-dsn="$SENTRY_DSN" \
             --from-literal=supabase-jwt-secret="$SUPABASE_JWT_SECRET" \
             --from-literal=supabase-url="https://cvaqhvpbnemweqrojasm.supabase.co" \
+            --from-literal=entra-issuer-url="$ENTRA_ISSUER_URL" \
+            --from-literal=entra-client-id="$ENTRA_CLIENT_ID" \
+            --from-literal=entra-tenant-id="$ENTRA_TENANT_ID" \
             --dry-run=client -o yaml | kubectl apply -f -
 
           # Cloudflare Tunnel Secret
