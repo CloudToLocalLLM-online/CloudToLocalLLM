@@ -30,6 +30,10 @@
   <title>CloudToLocalLLM</title>
   <link rel="manifest" href="manifest.json">
 
+  <!-- MSAL required for aad_oauth -->
+  <script type="text/javascript" src="https://alcdn.msauth.net/browser/2.13.1/js/msal-browser.min.js" integrity="sha384-2Vr9MyareT7qv+wLp1zBt78ZWB4aljfCTMUrml3/cxm0W81ahmDOC6uyNmmn0Vrc" crossorigin="anonymous"></script>
+  <script src="assets/packages/aad_oauth/assets/msalv2.js"></script>
+
   <!-- Runtime app config -->
   <script src="config/config.js"></script>
   <style id="splash-screen-style">

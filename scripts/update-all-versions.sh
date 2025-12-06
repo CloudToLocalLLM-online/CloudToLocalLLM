@@ -112,6 +112,12 @@ if [ -f "SECURITY.md" ]; then
     fi
 fi
 
+# 10. Update lib/config/app_config.dart
+echo "10. Updating lib/config/app_config.dart..."
+if [ -f "lib/config/app_config.dart" ]; then
+    sed -i "s/static const String appVersion = '.*';/static const String appVersion = '${NEW_VERSION}';/" lib/config/app_config.dart
+fi
+
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "✅ All Version References Updated"
@@ -127,5 +133,6 @@ echo "  ✅ lib/main.dart → v${NEW_VERSION}"
 echo "  ✅ README.md → updated badges"
 echo "  ✅ docs/VERSIONING.md → updated examples"
 echo "  ✅ SECURITY.md → added new version row"
+echo "  ✅ lib/config/app_config.dart → $NEW_VERSION"
 echo ""
 
