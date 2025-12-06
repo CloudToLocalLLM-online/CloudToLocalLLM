@@ -1,0 +1,53 @@
+name: Inspect Cloudflare Availability
+
+on:
+    workflow_dispatch:
+
+jobs:
+    inspect:
+        runs-on: ubuntu-latest
+        steps:
+            - name: Inspect Cloudflare Settings
+              env:
+                  CF_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+                  DOMAIN: "cloudtolocalllm.online"
+              run: |
+                  if [ -z "$CF_API_TOKEN" ]; then
+                    echo "::error::CLOUDFLARE_API_TOKEN secret is missing"
+                    exit 1
+                  fi
+
+                  echo "🔍 Fetching Zone ID for $DOMAIN..."
+                  ZONE_ID=$(curl -s -X GET "https://api.cloudflare.com/client/v4/zones?name=$DOMAIN" \
+                    -H "Authorization: Bearer $CF_API_TOKEN" \
+                    -H "Content-Type: application/json" | jq -r '.result[0].id')
+
+                  if [ -z "$ZONE_ID" ] || [ "$ZONE_ID" == "null" ]; then
+                    echo "::error::Failed to find Zone ID for $DOMAIN"
+                    exit 1
+                  fi
+                  echo "✅ Zone ID: $ZONE_ID"
+
+                  echo "----------------------------------------"
+                  echo "🔍 Checking Page Rules..."
+                  curl -s -X GET "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/pagerules?status=active" \
+                    -H "Authorization: Bearer $CF_API_TOKEN" \
+                    -H "Content-Type: application/json" | jq '.result[] | {targets: .targets, actions: .actions, priority: .priority}'
+
+                  echo "----------------------------------------"
+                  echo "🔍 Checking WAF Packages..."
+                  curl -s -X GET "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/firewall/waf/packages" \
+                    -H "Authorization: Bearer $CF_API_TOKEN" \
+                    -H "Content-Type: application/json" | jq '.result[] | {name: .name, sensitivity: .sensitivity, action_mode: .action_mode}'
+                    
+                  echo "----------------------------------------"
+                  echo "🔍 Checking Firewall Rules..."
+                  curl -s -X GET "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/firewall/rules" \
+                    -H "Authorization: Bearer $CF_API_TOKEN" \
+                    -H "Content-Type: application/json" | jq '.result[] | {description: .description, filter: .filter.expression, action: .action}'
+
+                  echo "----------------------------------------"
+                  echo "🔍 Checking Transform Rules (HTTP Request Header Modification)..."
+                   curl -s -X GET "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/rulesets/phases/http_request_late_transform/entrypoint" \
+                    -H "Authorization: Bearer $CF_API_TOKEN" \
+                    -H "Content-Type: application/json" | jq '.result.rules[]? | {description: .description, expression: .expression, action: .action}'
