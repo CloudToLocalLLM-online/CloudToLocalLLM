@@ -74,6 +74,26 @@ void main() async {
         options.debug = !kReleaseMode;
         // Enable Sentry Logs
         options.enableLogs = true;
+
+        options.beforeSend = (SentryEvent event, {Hint? hint}) {
+          // Filter out Noise
+          final exception = event.throwable;
+          if (exception.toString().contains('ConnectionClosed') ||
+              exception.toString().contains('CanceledError') ||
+              exception.toString().contains('NetworkError')) {
+            return Future.value(null); // Drop event
+          }
+
+          // Add Custom Tags
+          event.tags ??= {};
+          event.tags!['platform'] =
+              kIsWeb ? 'web' : (defaultTargetPlatform.name.toLowerCase());
+          event.tags!['build_mode'] =
+              kReleaseMode ? 'release' : (kProfileMode ? 'profile' : 'debug');
+          // Add device info if available (simplified for now)
+
+          return Future.value(event);
+        };
       },
       appRunner: () async {
         print('[Main] Sentry initialized, running app with Sentry...');
