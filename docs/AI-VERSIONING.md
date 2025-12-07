@@ -59,6 +59,7 @@ docs: update README         → PATCH bump (4.4.0 → 4.4.1)
 
 - **BREAKING CHANGE** > **feat:** > **fix:** > **chore:**
 - Multiple commit types → uses highest priority
+- **Refined Rule**: Backend improvements, infrastructure changes, or provider swaps (e.g., changing auth provider) that do not add new user-facing functionality should be **PATCH** bumps, even if labeled as `feat`.
 - If Kilo Code unavailable → defaults to PATCH bump
 
 ## Files Updated by Version Bump
@@ -190,9 +191,9 @@ kubectl set image deployment/api-backend api-backend=registry/api-backend:4.4.0-
 
 ## Benefits
 
-✅ **AI-Powered**: Kilo Code determines appropriate version bumps
-✅ **Consistent**: All version references updated atomically
-✅ **Platform-Specific**: Separate tags for cloud/desktop/mobile
+✅ **AI-Powered**: Kilo Code determines appropriate version bumps  
+✅ **Consistent**: All version references updated atomically  
+✅ **Platform-Specific**: Separate tags for cloud/desktop/mobile  
 ✅ **Traceable**: Every version has a git tag with commit SHA  
 ✅ **Efficient**: Only changed services rebuild  
 ✅ **Clean**: Simple deployment logic  
@@ -221,4 +222,3 @@ kubectl set image deployment/api-backend api-backend=registry/api-backend:4.4.0-
 3. **Changelog Generation**: Kilo Code generates release notes
 4. **Release Notes**: Auto-create GitHub releases with AI-generated notes
 5. **Version Validation**: Kilo Code validates version consistency
-
