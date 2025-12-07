@@ -4,6 +4,7 @@ The following versions of the CloudToLocalLLM project are currently supported wi
 
 | Version | Supported          |
 | ------- | ------------------ |
+| 4.16.x  | :white_check_mark: |
 | 4.15.x  | :white_check_mark: |
 | 4.14.x  | :white_check_mark: |
 | 4.13.x  | :x:                |
