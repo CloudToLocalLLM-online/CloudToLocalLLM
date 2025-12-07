@@ -46,7 +46,7 @@ class EntraAuthProvider implements AuthProvider {
 
   final String _clientId = '1a72fdf6-4e48-4cb8-943b-a4a4ac513148';
   final String _authority =
-      'https://cloudtolocalllm.b2clogin.com/cloudtolocalllm.onmicrosoft.com/b2c_1_sign_up_in';
+      'https://cloudtolocalllm.b2clogin.com/cloudtolocalllm.onmicrosoft.com/B2X_1_cloudtolocalllm';
   final List<String> _scopes = [
     'https://cloudtolocalllm.onmicrosoft.com/api/read'
   ];
@@ -68,6 +68,9 @@ class EntraAuthProvider implements AuthProvider {
 
     try {
       debugPrint('[EntraAuthProvider] Initializing MSAL...');
+      debugPrint('[EntraAuthProvider] Client ID: $_clientId');
+      debugPrint('[EntraAuthProvider] Authority: $_authority');
+      debugPrint('[EntraAuthProvider] Redirect URI: $_redirectUri');
 
       final msalConfig = {
         'auth': {
@@ -81,7 +84,17 @@ class EntraAuthProvider implements AuthProvider {
           'cacheLocation': 'localStorage',
           'storeAuthStateInCookie': true,
         },
-        'system': {'allowNativeBroker': false}
+        'system': {
+          'allowNativeBroker': false,
+          'loggerOptions': {
+            'loggerCallback': (int level, String message, bool containsPii) {
+              if (containsPii) return;
+              debugPrint('[MSAL] [$level] $message');
+            },
+            'piiLoggingEnabled': false,
+            'logLevel': 3 // Verbose
+          }
+        }
       }.jsify() as JSObject;
 
       _msalInstance = PublicClientApplication(msalConfig);

@@ -1,32 +1,39 @@
-# Repository Guidelines
+# Agent Rules Standard
 
-## Project Structure & Module Organization
-- `lib/` contains the Flutter app (screens, services, widgets); `web/` holds Flutter web config; `assets/` stores static media and version metadata.
-- `services/api-backend/` is the Node/Express API; `services/streaming-proxy/` handles the proxy runtime; `services/sdk/` ships client helpers; `services/postgres/` covers database support.
-- `scripts/` and `build-tools/` manage packaging and installers; `infra/`, `k8s/`, and `config/` house deployment manifests and shared configuration.
-- Tests: `test/` (unit/widget/integration plus Playwright helpers), backend Jest specs in `test/api-backend` and `services/api-backend/test`, and sample Playwright E2E in `e2e/`.
+## MCP Tool Usage Guidelines
 
-## Build, Test, and Development Commands
-- Flutter: `flutter pub get`; dev web via `./run_dev.sh` (Chrome on :3000) or desktop with `flutter run -d linux`; format/lint using `dart format lib test` and `flutter analyze`.
-- Flutter tests: `flutter test` for unit/widget; narrow scope with `flutter test test/widgets/widget_test.dart`.
-- Backend (from `services/api-backend`): `npm install`, `npm run dev` (nodemon), `npm start`, `npm test`, and `npm test -- --coverage`.
-- Playwright: `npx playwright install` once, then `npx playwright test e2e` for smoke checks.
+This section outlines the operational rules and behavioral guidelines for using Model Context Protocol (MCP) tools. These rules ensure optimal task execution, context management, and system stability.
 
-## Coding Style & Naming Conventions
-- Dart/Flutter: 2-space indent, `PascalCase` classes/widgets, `snake_case` files, prefer const widgets and typed services; document public APIs when behavior is non-obvious.
-- JavaScript backend: ES modules (`import`/`export`), `camelCase` functions, `SCREAMING_SNAKE_CASE` env vars; keep middleware ordering explicit.
-- Configuration comes from `.env` (copy `env.template`); do not commit secrets or generated binaries.
+### 1. Tool Selection Criteria
 
-## Testing Guidelines
-- Jest matches `**/test/**/*.test.js`; keep mocks local to specs and reset state per test.
-- Flutter tests live in `test/` with `*_test.dart`; favor widget/golden coverage for UI and integration coverage for tunnel/auth flows.
-- Add at least one automated check per feature and avoid regressing coverage on `services/**` (Jest collects from there).
+Select the appropriate tool based on the specific requirements of the task:
 
-## Commit & Pull Request Guidelines
-- Use the conventional prefixes seen in history (`feat:`, `fix:`, `chore:`, `docs:`, `refactor:`); keep subjects imperative and under ~70 chars.
-- PRs should include a short summary, how to run/verify (commands above), linked issue/ticket, and screenshots or logs for UX/back-end changes.
-- Note configuration/env var changes or migrations in the PR and update `docs/` when user-facing behavior shifts.
+- **Playwright (`playwright`):** Use for browser automation, end-to-end testing, web scraping, and verifying UI interactions.
+- **Context7 (`context7`):** Use for retrieving up-to-date documentation and code examples for libraries and frameworks. Always resolve the library ID first.
+- **n8n MCP (`n8n-mcp`):** Use for workflow automation, managing n8n executions, and integrating external services via n8n nodes.
 
-## Security & Configuration Tips
-- Rotate secrets via env vars; never hardcode DSNs or tokens in code or tests.
-- Keep Sentry/remote calls toggleable via config, prefer localhost defaults for development, and avoid exposing debug ports publicly.
+**Note:** Refer to `.kilocode/rules/MCP-TOOLS.md` for detailed documentation and examples for each tool.
+
+### 2. Function Call Syntax
+
+- **Strict Schema Adherence:** All tool calls must strictly adhere to the defined input schema.
+- **JSON Formatting:** Ensure all arguments are valid JSON.
+- **Parameter Completeness:** Provide all required parameters. Do not omit mandatory fields.
+
+### 3. Error Handling Protocols
+
+- **Check Results:** Always verify the result of a tool call before proceeding.
+- **Graceful Failure:** If a tool fails, analyze the error message and attempt a correction or alternative approach. Do not blindly retry the same failed operation.
+- **Context Preservation:** If a tool call interrupts the flow, ensure the context is preserved for the next step.
+
+### 4. Usage Hierarchy
+
+1. **Exploration:** Use `codebase_search` and `list_files` to understand the environment.
+2. **Planning:** Use internal reasoning to plan the steps.
+3. **Execution:** Use specific MCP tools (`playwright`, `context7`, `n8n-mcp`) to execute the plan.
+4. **Verification:** Verify the output of each step.
+
+### 5. Context Management
+
+- **One Tool Per Message:** Execute only one tool per message to ensure clear state management.
+- **Wait for Confirmation:** Always wait for the user's response/confirmation after a tool use.
