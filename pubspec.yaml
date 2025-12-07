@@ -67,7 +67,8 @@ dependencies:
   # Web interop for dart:js_interop
   web: ^1.0.0
   app_links: ^6.4.1
-  aad_oauth: ^1.0.1
+  aad_oauth:
+    path: packages/aad_oauth
 
 dev_dependencies:
   sentry_dart_plugin: ^3.2.0
