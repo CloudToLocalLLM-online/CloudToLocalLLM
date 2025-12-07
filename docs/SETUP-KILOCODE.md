@@ -1,6 +1,6 @@
-# Setting Up Gemini API for AI-Powered Versioning
+# Setting Up Kilo Code CLI for AI-Powered Versioning
 
-## Get Your Gemini API Key
+## Get Your API Key
 
 1. **Go to Google AI Studio**:
    - Visit: https://makersuite.google.com/app/apikey
@@ -11,23 +11,28 @@
    - Select "Create API key in new project" (or existing project)
    - Copy the generated key
 
-3. **Add to GitHub Secrets**:
+3. **Configure Kilo Code**:
+   Run the setup script to configure your environment:
    ```bash
-   cd /home/rightguy/development/CloudToLocalLLM
-   gh secret set GEMINI_API_KEY --body 'your_api_key_here'
+   ./scripts/setup-kilocode.sh 'your_api_key_here'
+   ```
+
+   Or manually add to GitHub Secrets:
+   ```bash
+   gh secret set KILOCODE_API_KEY --body 'your_api_key_here'
    ```
 
 4. **Verify**:
    ```bash
-   gh secret list | grep GEMINI
-   # Should show: GEMINI_API_KEY
+   gh secret list | grep KILOCODE
+   # Should show: KILOCODE_API_KEY
    ```
 
 ## Test Locally (Optional)
 
 ```bash
-# Export your key
-export GEMINI_API_KEY='your_key_here'
+# Export your key (if not using setup script)
+export KILOCODE_API_KEY='your_key_here'
 
 # Test version analysis
 ./scripts/analyze-version-bump.sh
@@ -38,7 +43,7 @@ export GEMINI_API_KEY='your_key_here'
 
 ## Fallback Behavior
 
-If `GEMINI_API_KEY` is not set:
+If `KILOCODE_API_KEY` is not set:
 - ✅ Workflow still works
 - ⚠️  Defaults to PATCH bump
 - ⚠️  No intelligent analysis
@@ -46,14 +51,14 @@ If `GEMINI_API_KEY` is not set:
 
 ## Cost
 
-- **Gemini Pro API**: Free tier includes 60 requests/minute
+- **Kilo Code (via Gemini API)**: Free tier includes 60 requests/minute
 - **Each version bump**: 1 API call
 - **Typical usage**: ~10-50 calls/month
 - **Cost**: $0 (within free tier)
 
 ## Privacy
 
-Gemini receives:
+Kilo Code receives:
 - ✅ Commit messages (public repo info)
 - ✅ Current version number
 - ❌ No source code
@@ -62,7 +67,7 @@ Gemini receives:
 
 ## Alternative: Manual Versioning
 
-If you prefer not to use Gemini:
+If you prefer not to use Kilo Code:
 
 ```bash
 # Disable version-bump workflow

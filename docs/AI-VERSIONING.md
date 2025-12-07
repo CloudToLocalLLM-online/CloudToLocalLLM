@@ -2,16 +2,16 @@
 
 ## Overview
 
-CloudToLocalLLM uses an intelligent, AI-powered versioning system powered by Gemini to analyze commits and automatically determine appropriate version bumps across all platforms.
+CloudToLocalLLM uses an intelligent, AI-powered versioning system powered by Kilo Code (via Gemini API) to analyze commits and automatically determine appropriate version bumps across all platforms.
 
 ## Architecture
 
-### 🤖 **Workflow 1: Version Bump (Gemini AI)**
+### 🤖 **Workflow 1: Version Bump (Kilo Code AI)**
 
 **Trigger**: Push to `main` branch (excludes tags and `[skip ci]` commits)
 
 **Process**:
-1. **Gemini AI analyzes** recent commits
+1. **Kilo Code AI analyzes** recent commits
 2. **Determines bump type**: major, minor, or patch
 3. **Updates ALL version references** across project
 4. **Commits changes** with `[skip ci]`
@@ -45,7 +45,7 @@ Builds for Android, iOS
 
 ## Version Determination Logic
 
-### Gemini AI Analyzes Commits:
+### Kilo Code AI Analyzes Commits:
 
 ```
 feat: add new feature       → MINOR bump (4.4.0 → 4.5.0)
@@ -59,7 +59,7 @@ docs: update README         → PATCH bump (4.4.0 → 4.4.1)
 
 - **BREAKING CHANGE** > **feat:** > **fix:** > **chore:**
 - Multiple commit types → uses highest priority
-- If Gemini unavailable → defaults to PATCH bump
+- If Kilo Code unavailable → defaults to PATCH bump
 
 ## Files Updated by Version Bump
 
@@ -106,8 +106,8 @@ Examples:
 ### Required GitHub Secrets:
 
 ```bash
-# Gemini API Key (for AI-powered version analysis)
-gh secret set GEMINI_API_KEY --body 'your_gemini_api_key'
+# Kilo Code API Key (for AI-powered version analysis)
+gh secret set KILOCODE_API_KEY --body 'your_api_key_here'
 
 # Get your key at: https://makersuite.google.com/app/apikey
 ```
@@ -127,14 +127,14 @@ git add .
 git commit -m "feat: add user dashboard"
 git push origin main
 
-# Gemini analyzes → minor bump → creates tags → deploys
+# Kilo Code analyzes → minor bump → creates tags → deploys
 ```
 
 ### Manual Version Bump:
 
 ```bash
 # Run locally to test
-./scripts/analyze-version-bump.sh  # See what Gemini suggests
+./scripts/analyze-version-bump.sh  # See what Kilo Code suggests
 ./scripts/update-all-versions.sh 4.6.0 $(git rev-parse --short HEAD)
 
 # Commit and push
@@ -190,9 +190,9 @@ kubectl set image deployment/api-backend api-backend=registry/api-backend:4.4.0-
 
 ## Benefits
 
-✅ **AI-Powered**: Gemini determines appropriate version bumps  
-✅ **Consistent**: All version references updated atomically  
-✅ **Platform-Specific**: Separate tags for cloud/desktop/mobile  
+✅ **AI-Powered**: Kilo Code determines appropriate version bumps
+✅ **Consistent**: All version references updated atomically
+✅ **Platform-Specific**: Separate tags for cloud/desktop/mobile
 ✅ **Traceable**: Every version has a git tag with commit SHA  
 ✅ **Efficient**: Only changed services rebuild  
 ✅ **Clean**: Simple deployment logic  
@@ -201,10 +201,10 @@ kubectl set image deployment/api-backend api-backend=registry/api-backend:4.4.0-
 
 ## Troubleshooting
 
-### Gemini API Key Missing:
+### Kilo Code API Key Missing:
 - Workflow falls back to PATCH bump
 - Warning shown in logs
-- Add key: `gh secret set GEMINI_API_KEY`
+- Add key: `gh secret set KILOCODE_API_KEY`
 
 ### Wrong Version Bump:
 - Override with manual commit: `git tag 4.5.1-cloud-$(git rev-parse --short HEAD)`
@@ -218,7 +218,7 @@ kubectl set image deployment/api-backend api-backend=registry/api-backend:4.4.0-
 
 1. **Desktop Workflow**: Electron builds for Linux/Windows/macOS
 2. **Mobile Workflow**: Flutter builds for Android/iOS
-3. **Changelog Generation**: Gemini generates release notes
+3. **Changelog Generation**: Kilo Code generates release notes
 4. **Release Notes**: Auto-create GitHub releases with AI-generated notes
-5. **Version Validation**: Gemini validates version consistency
+5. **Version Validation**: Kilo Code validates version consistency
 

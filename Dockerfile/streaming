@@ -22,6 +22,10 @@ RUN npm ci --omit=dev --ignore-scripts && \
 # Copy application code
 COPY services/streaming-proxy/ ./
 
+# Install Kilo Code CLI
+COPY scripts/kilocode-cli.cjs /usr/local/bin/kilocode-cli
+RUN chmod +x /usr/local/bin/kilocode-cli
+
 # Set proper ownership
 RUN chown -R nodejs:nodejs /app
 

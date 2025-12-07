@@ -31,20 +31,26 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-      - name: Setup Gemini CLI
+      - name: Setup Kilo Code CLI
         env:
+          KILOCODE_API_KEY: ${{ secrets.KILOCODE_API_KEY }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: |
-          chmod +x scripts/gemini-cli.cjs
-          sudo ln -sf "$(pwd)/scripts/gemini-cli.cjs" /usr/local/bin/gemini-cli
-          if [ -n "$GEMINI_API_KEY" ]; then
-            gemini-cli "Respond with just OK" && echo "✅ Gemini CLI test passed" || echo "⚠️  Gemini test failed"
+          chmod +x scripts/kilocode-cli.cjs
+          sudo ln -sf "$(pwd)/scripts/kilocode-cli.cjs" /usr/local/bin/kilocode-cli
+          
+          # Use KILOCODE_API_KEY if available, otherwise fallback to GEMINI_API_KEY
+          export KILOCODE_API_KEY="${KILOCODE_API_KEY:-$GEMINI_API_KEY}"
+          
+          if [ -n "$KILOCODE_API_KEY" ]; then
+            kilocode-cli "Respond with just OK" && echo "✅ Kilo Code CLI test passed" || echo "⚠️  Kilo Code test failed"
           fi
-          echo "✅ Gemini CLI ready"
+          echo "✅ Kilo Code CLI ready"
 
-      - name: Analyze Changes with Gemini
+      - name: Analyze Changes with Kilo Code
         id: analyze
         env:
+          KILOCODE_API_KEY: ${{ secrets.KILOCODE_API_KEY }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: |
           chmod +x scripts/analyze-platforms.sh

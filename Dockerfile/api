@@ -40,6 +40,10 @@ COPY services/api-backend/ ./
 # Copy Cloud Run specific configurations
 COPY services/api-backend/database/migrate-pg.js ./migrate-database.js
 
+# Install Kilo Code CLI
+COPY scripts/kilocode-cli.cjs /usr/local/bin/kilocode-cli
+RUN chmod +x /usr/local/bin/kilocode-cli
+
 # Create necessary directories and set permissions
 RUN mkdir -p /app/data /app/logs /app/backups && \
     chown -R nodejs:nodejs /app

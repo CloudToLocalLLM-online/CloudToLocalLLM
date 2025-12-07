@@ -2,14 +2,14 @@
 set -e
 set -o pipefail
 
-# Script to analyze commits and determine version bump using Gemini AI
+# Script to analyze commits and determine version bump using Kilo Code AI
 # Outputs: new_version and bump_type to GITHUB_OUTPUT
 
 # Enable error tracing
 trap 'echo "Error on line $LINENO"' ERR
 
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "Analyzing Commits with Gemini AI"
+echo "Analyzing Commits with Kilo Code AI"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
 # Get current version
@@ -31,33 +31,44 @@ echo "Commits to analyze:"
 echo "$COMMITS"
 echo ""
 
-# Prepare prompt for Gemini (escape special characters for JSON)
+# Prepare prompt for Kilo Code (escape special characters for JSON)
 COMMITS_ESCAPED=$(echo "$COMMITS" | sed 's/"/\\"/g' | tr '\n' ' ')
 
 PROMPT="You are a semantic versioning expert. Analyze these git commits and determine the appropriate version bump. Current version: $CURRENT_VERSION. Commits: $COMMITS_ESCAPED. Rules: BREAKING CHANGE or breaking: means MAJOR bump (x.0.0), feat: or feature: means MINOR bump (0.x.0), fix: or bugfix: means PATCH bump (0.0.x), chore:, docs:, style:, refactor:, test: means PATCH bump (0.0.x). If multiple types, use the highest priority (MAJOR > MINOR > PATCH). Respond with ONLY a JSON object with this exact format: {\"bump_type\": \"major or minor or patch\", \"new_version\": \"x.y.z\", \"reasoning\": \"brief explanation\"}. Do not include any other text, markdown, code blocks, or formatting. Only the raw JSON object."
 
-# Call Gemini
-echo "Calling Gemini AI to analyze commits..."
+# Call Kilo Code
+echo "Calling Kilo Code AI to analyze commits..."
 
-if [ -z "$GEMINI_API_KEY" ]; then
-    echo "⚠️  GEMINI_API_KEY not set, falling back to patch bump"
+# Check for KILOCODE_API_KEY, fallback to GEMINI_API_KEY for migration
+API_KEY="${KILOCODE_API_KEY:-$GEMINI_API_KEY}"
+
+if [ -z "$API_KEY" ]; then
+    echo "⚠️  KILOCODE_API_KEY not set, falling back to patch bump"
     # Parse current version
     IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT_VERSION"
     PATCH=$((PATCH + 1))
     NEW_VERSION="${MAJOR}.${MINOR}.${PATCH}"
     BUMP_TYPE="patch"
 else
-    # Call Gemini and capture both stdout and stderr
+    # Call Kilo Code and capture both stdout and stderr
     set +e  # Temporarily disable exit on error
-    RESPONSE=$(gemini-cli "$PROMPT" 2>&1)
+    
+    # Try to find kilocode-cli in PATH or use local script
+    if command -v kilocode-cli >/dev/null 2>&1; then
+        RESPONSE=$(kilocode-cli "$PROMPT" 2>&1)
+    else
+        SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+        RESPONSE=$("${SCRIPT_DIR}/kilocode-cli.cjs" "$PROMPT" 2>&1)
+    fi
+    
     EXIT_CODE=$?
     set -e  # Re-enable exit on error
     
-    echo "Gemini CLI exit code: $EXIT_CODE"
-    echo "Gemini response (first 500 chars): ${RESPONSE:0:500}"
+    echo "Kilo Code CLI exit code: $EXIT_CODE"
+    echo "Kilo Code response (first 500 chars): ${RESPONSE:0:500}"
     
     if [ $EXIT_CODE -ne 0 ] || [ -z "$RESPONSE" ]; then
-        echo "⚠️  Gemini CLI failed with exit code: $EXIT_CODE"
+        echo "⚠️  Kilo Code CLI failed with exit code: $EXIT_CODE"
         echo "Falling back to patch bump"
         
         # Parse current version
@@ -65,9 +76,9 @@ else
         PATCH=$((PATCH + 1))
         NEW_VERSION="${MAJOR}.${MINOR}.${PATCH}"
         BUMP_TYPE="patch"
-        REASONING="Gemini call failed, defaulting to patch"
+        REASONING="Kilo Code call failed, defaulting to patch"
     else
-        # Try to extract JSON from response (Gemini might add extra text)
+        # Try to extract JSON from response (Kilo Code might add extra text)
         JSON_RESPONSE=$(echo "$RESPONSE" | grep -o '{.*}' | head -1 || echo "$RESPONSE")
         
         # Extract values from JSON response
@@ -76,16 +87,16 @@ else
         REASONING=$(echo "$JSON_RESPONSE" | jq -r '.reasoning // "Auto-generated"' 2>/dev/null || echo "Auto-generated")
         
         echo ""
-        echo "✅ Gemini Analysis:"
+        echo "✅ Kilo Code Analysis:"
         echo "  Bump type: $BUMP_TYPE"
         echo "  New version: $NEW_VERSION"
         echo "  Reasoning: $REASONING"
     fi
 fi
 
-# Validate and fallback if Gemini gave invalid version
+# Validate and fallback if Kilo Code gave invalid version
 if ! echo "$NEW_VERSION" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+$'; then
-    echo "⚠️  Invalid version from Gemini: $NEW_VERSION"
+    echo "⚠️  Invalid version from Kilo Code: $NEW_VERSION"
     echo "Calculating fallback..."
     
     IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT_VERSION"
