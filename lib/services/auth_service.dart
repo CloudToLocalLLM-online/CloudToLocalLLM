@@ -33,13 +33,19 @@ class AuthService extends ChangeNotifier {
         : AppConfig.aadTenantId;
 
     // Use custom domain for authority if provided, otherwise standard B2C or Entra pattern
-    // Pattern: https://<custom-domain>/<tenant-id>/<policy>/v2.0/
+    // Pattern: https://<custom-domain>/<tenant-name>.onmicrosoft.com/<policy>/v2.0/
     String? customDomainUrlWithTenantId;
     if (isB2C &&
         AppConfig.aadCustomDomain != null &&
         AppConfig.aadPolicy != null) {
+      // We need the full tenant domain for the path even if using custom domain
+      // If aadDomain is short name "CloudToLocalLLM", append .onmicrosoft.com for the path
+      final tenantDomain = AppConfig.aadDomain!.contains('.')
+          ? AppConfig.aadDomain
+          : '${AppConfig.aadDomain}.onmicrosoft.com';
+
       customDomainUrlWithTenantId =
-          "https://${AppConfig.aadCustomDomain}/${AppConfig.aadTenantId}/${AppConfig.aadPolicy}/v2.0/";
+          "https://${AppConfig.aadCustomDomain}/$tenantDomain/${AppConfig.aadPolicy}/v2.0/";
     }
 
     final config = Config(

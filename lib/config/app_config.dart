@@ -24,7 +24,7 @@ class AppConfig {
   // Azure AD B2C / External Identities Configuration
   // If aadPolicy is set, auth will switch to B2C mode.
   static const String? aadPolicy = "B2C_1_sign_up_in"; // Standard default
-  static const String? aadDomain = "CloudToLocalLLM.onmicrosoft.com";
+  static const String? aadDomain = "CloudToLocalLLM";
   // If aadCustomDomain is set, it overrides the default authority construction.
   // Example: "auth.cloudtolocalllm.online"
   static const String? aadCustomDomain = "auth.cloudtolocalllm.online";
