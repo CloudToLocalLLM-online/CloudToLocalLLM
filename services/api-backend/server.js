@@ -1,8 +1,49 @@
+// Import Sentry FIRST to catch all errors from the very beginning
 import * as Sentry from '@sentry/node';
+import dotenv from 'dotenv';
+
+// Load environment variables before anything else
+dotenv.config();
+
+// Initialize Sentry IMMEDIATELY - before any other code runs
+Sentry.init({
+  dsn:
+    process.env.SENTRY_DSN ||
+    'https://b2fd3263e0ad7b490b0583f7df2e165a@o4509853774315520.ingest.us.sentry.io/4509853780541440',
+  environment: process.env.NODE_ENV || 'development',
+  release: process.env.VERSION || process.env.npm_package_version,
+  tracesSampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 1.0,
+  serverName: process.env.HOSTNAME || 'api-backend',
+  ignoreErrors: [
+    'UnauthorizedError',
+    'ForbiddenError',
+    'Validation failed',
+    'SequelizeValidationError',
+    'JsonWebTokenError',
+    'TokenExpiredError',
+    /^40[134]/, // Ignore 401, 403, 404
+  ],
+  beforeSend(event) {
+    // Add custom tags
+    event.tags = event.tags || {};
+    event.tags.service = 'api-backend';
+    event.tags.region = process.env.AZURE_REGION || 'unknown';
+    event.tags.db_type = process.env.DB_TYPE || 'postgres';
+    event.tags.node_env = process.env.NODE_ENV || 'development';
+
+    // Scrub user data if present in extra
+    if (event.extra && event.extra.user) {
+      delete event.extra.user.email;
+    }
+
+    return event;
+  },
+});
+
+console.log('Starting api-backend server process...');
 import express from 'express';
 import http from 'http';
 import winston from 'winston';
-import dotenv from 'dotenv';
 import swaggerUi from 'swagger-ui-express';
 import { specs } from './swagger-config.js';
 import {
@@ -54,7 +95,6 @@ import tunnelUsageRoutes from './routes/tunnel-usage.js';
 import tunnelWebhooksRoutes from './routes/tunnel-webhooks.js';
 import userActivityRoutes from './routes/user-activity.js';
 import userDeletionRoutes from './routes/user-deletion.js';
-import versionedRoutes from './routes/versioned-routes.js';
 import webhookEventFiltersRoutes from './routes/webhook-event-filters.js';
 import webhookPayloadTransformationsRoutes from './routes/webhook-payload-transformations.js';
 import webhookRateLimitingRoutes from './routes/webhook-rate-limiting.js';
@@ -74,6 +114,7 @@ import { createTunnelRoutes } from './tunnel/tunnel-routes.js';
 import { createMonitoringRoutes } from './routes/monitoring.js';
 import { createConversationRoutes } from './routes/conversations.js';
 import { authenticateJWT } from './middleware/auth.js';
+import serviceVersionHandler from './routes/service-version.js';
 import {
   addTierInfo,
 } from './middleware/tier-check.js';
@@ -96,26 +137,7 @@ import rateLimitMetricsRoutes from './routes/rate-limit-metrics.js';
 import prometheusMetricsRoutes from './routes/prometheus-metrics.js';
 import changelogRoutes from './routes/changelog.js';
 
-dotenv.config();
-
-// Initialize Sentry
-Sentry.init({
-  dsn:
-    process.env.SENTRY_DSN ||
-    'https://b2fd3263e0ad7b490b0583f7df2e165a@o4509853774315520.ingest.us.sentry.io/4509853780541440',
-  environment: process.env.NODE_ENV || 'development',
-  release: process.env.VERSION || process.env.npm_package_version,
-  tracesSampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 1.0,
-  serverName: process.env.HOSTNAME || 'api-backend',
-  beforeSend(event) {
-    // Add custom tags
-    if (event.tags) {
-      event.tags.service = 'api-backend';
-      event.tags.region = process.env.AZURE_REGION || 'unknown';
-    }
-    return event;
-  },
-});
+// Sentry and dotenv already initialized at top of file
 
 import Transport from 'winston-transport';
 
@@ -158,7 +180,7 @@ app.set('trust proxy', 1); // Trust first proxy (nginx)
 
 // CORS configuration
 const corsOptions = {
-  origin: function(origin, callback) {
+  origin: function (origin, callback) {
     const allowedOrigins = [
       'https://app.cloudtolocalllm.online',
       'https://cloudtolocalllm.online',
@@ -211,7 +233,7 @@ const server = http.createServer(app);
 // Setup graceful shutdown with in-flight request completion
 const shutdownManager = setupGracefulShutdown(server, {
   shutdownTimeoutMs: 10000,
-  onShutdown: async() => {
+  onShutdown: async () => {
     logger.info('Running custom shutdown handlers');
     // Custom shutdown logic will be added here
   },
@@ -287,7 +309,7 @@ async function authenticateToken(req, res, next) {
 
 // Create WebSocket-based tunnel routes
 const tunnelRouter = createTunnelRoutes(
-  {}, // No config needed for Supabase (uses env vars)
+  {}, // Config placeholder
   sshProxy,
   logger,
   sshAuthService,
@@ -304,6 +326,10 @@ function registerRoutes(path, router) {
   app.use(path, router);
 }
 
+// Service version endpoint (no auth required)
+app.get('/api/service-version', serviceVersionHandler);
+app.get('/service-version', serviceVersionHandler);
+
 // Simplified tunnel routes
 registerRoutes('/tunnel', tunnelRouter);
 
@@ -313,8 +339,7 @@ registerRoutes('/monitoring', monitoringRouter);
 // Conversation management routes (initialized after database is ready)
 // Will be set up in initializeTunnelSystem() after dbMigrator is initialized
 
-// Database health endpoint
-setDbMigrator(dbMigrator);
+// Database health endpoint (dbMigrator will be set after initialization)
 registerRoutes('/db/health', dbHealthHandler);
 
 // Authentication routes (token refresh, validation, logout)
@@ -382,7 +407,7 @@ registerRoutes('/tunnel-usage', tunnelUsageRoutes);
 registerRoutes('/tunnel-webhooks', tunnelWebhooksRoutes);
 registerRoutes('/user-activity', userActivityRoutes);
 registerRoutes('/user-deletion', userDeletionRoutes);
-registerRoutes('/versioned-routes', versionedRoutes);
+// Note: versionedRoutes is a utility module, not a router - don't register it
 registerRoutes('/webhook-event-filters', webhookEventFiltersRoutes);
 registerRoutes('/webhook-payload-transformations', webhookPayloadTransformationsRoutes);
 registerRoutes('/webhook-rate-limiting', webhookRateLimitingRoutes);
@@ -391,11 +416,13 @@ registerRoutes('/webhook-testing', webhookTestingRoutes);
 // LLM Tunnel Cloud Proxy Endpoints (support both /api/ollama and /ollama)
 setSshProxy(sshProxy);
 
+import { authenticateComposite } from './middleware/composite-auth.js';
+
 // Define Ollama route regex to match /api/ollama, /ollama, and their subpaths
 const OLLAMA_ROUTE_REGEX = /^\/(api\/)?ollama(\/.*)?$/;
 app.all(
   OLLAMA_ROUTE_REGEX,
-  authenticateJWT,
+  ...authenticateComposite,
   addTierInfo,
   handleOllamaProxyRequest,
 );
@@ -423,6 +450,83 @@ registerRoutes('/health', (req, res) => {
       message: error.message,
     });
   });
+});
+
+// TEMPORARY DEBUG ENDPOINT
+app.get('/debug-dump', async (req, res) => {
+  try {
+    const debugInfo = {
+      timestamp: new Date().toISOString(),
+      env: {
+        DB_TYPE: process.env.DB_TYPE,
+        NODE_ENV: process.env.NODE_ENV,
+      },
+      migrator: dbMigrator ? dbMigrator.constructor.name : 'null',
+    };
+
+    if (dbMigrator && dbMigrator.pool) {
+      const client = await dbMigrator.pool.connect();
+      try {
+        // 1. Schema Check
+        const columns = await client.query(`
+          SELECT column_name, data_type 
+          FROM information_schema.columns 
+          WHERE table_name = 'users'
+        `);
+        debugInfo.usersColumns = columns.rows;
+
+        // 2. Migration Check
+        const migrations = await client.query('SELECT * FROM schema_migrations ORDER BY applied_at DESC LIMIT 5');
+        debugInfo.migrations = migrations.rows;
+
+        // 3. UUID Generaton Test
+        try {
+          const uuidResult = await client.query('SELECT gen_random_uuid() as val');
+          debugInfo.uuidGenTest = { success: true, value: uuidResult.rows[0].val };
+        } catch (uuidError) {
+          debugInfo.uuidGenTest = { success: false, error: uuidError.message };
+        }
+
+        // 4. WRITE TEST (Relying on Default ID)
+        try {
+          const testJwtId = 'debug-test-default-' + Date.now();
+
+          await client.query('BEGIN');
+          const insertResult = await client.query(
+            `INSERT INTO users (jwt_id, email, name, created_at, updated_at)
+             VALUES ($1, $2, $3, NOW(), NOW())
+             RETURNING id`,
+            [testJwtId, 'debug-default@test.local', 'Debug User Default'],
+          );
+
+          await client.query('ROLLBACK');
+          debugInfo.writeTestDefaultId = {
+            success: true,
+            insertedId: insertResult.rows[0].id,
+          };
+        } catch (writeError) {
+          await client.query('ROLLBACK');
+          debugInfo.writeTestDefaultId = {
+            success: false,
+            error: writeError.message,
+            code: writeError.code,
+            detail: writeError.detail,
+          };
+        }
+
+      } catch (e) {
+        debugInfo.dbError = e.message;
+      } finally {
+        client.release();
+      }
+    } else {
+      debugInfo.dbStatus = 'Not connected or initialized';
+    }
+
+    res.json(debugInfo);
+  } catch (error) {
+    res.status(500).json({ error: error.message, stack: error.stack });
+  }
 });
 
 // API Version Information Endpoint
@@ -463,6 +567,51 @@ registerRoutes('/queue/status', queueStatusHandler);
 registerRoutes('/queue/drain', authenticateJWT, queueDrainHandler);
 
 // WebSocket bridge endpoints removed - using HTTP polling only
+
+// WebSocket upgrade handling for SSH tunnel
+server.on('upgrade', (request, socket, head) => {
+  const pathname = new URL(request.url, `http://${request.headers.host}`).pathname;
+
+  if (pathname === '/ssh') {
+    if (sshProxy && sshProxy.sshServer) {
+      // Handle WebSocket upgrade for SSH tunnel
+      // The SSH server (ssh2) doesn't natively support WebSocket, so we need to bridge it
+      // We'll use the 'ws' library to handle the WebSocket connection and pipe it to the SSH server
+
+      // Note: This requires the 'ws' library to be imported and a WebSocket server to be attached
+      // Since we're using a custom implementation, we'll need to implement the WebSocket handling here
+      // or in the SSHProxy class.
+
+      // For now, let's log that we received an upgrade request
+      logger.info('Received WebSocket upgrade request for /ssh');
+
+      // In a real implementation, we would:
+      // 1. Authenticate the request (using the token in the query string)
+      // 2. Upgrade the connection to WebSocket
+      // 3. Create a stream from the WebSocket
+      // 4. Pass the stream to the SSH server as a connection
+
+      // Since ssh2.Server expects a raw TCP connection, we need to wrap the WebSocket
+      // into a stream that looks like a TCP socket.
+
+      // This implementation is complex and requires additional dependencies/setup.
+      // For this test, we'll assume the SSHProxy handles it if we pass the request.
+
+      if (sshProxy.handleUpgrade) {
+        sshProxy.handleUpgrade(request, socket, head);
+      } else {
+        logger.warn('SSHProxy does not support handleUpgrade');
+        socket.destroy();
+      }
+    } else {
+      logger.warn('SSH proxy not initialized, rejecting upgrade');
+      socket.destroy();
+    }
+  } else {
+    // Let other handlers handle it or destroy
+    // socket.destroy();
+  }
+});
 
 // Streaming Proxy Management Endpoints
 
@@ -514,7 +663,7 @@ app.use((error, req, res, _next) => {
 });
 
 // Conversation routes - implemented directly due to router mounting issues
-app.get('/conversations/', authenticateJWT, async(req, res) => {
+app.get('/conversations/', authenticateJWT, async (req, res) => {
   try {
     const userId = req.auth?.payload?.sub || req.user?.sub;
     if (!userId) {
@@ -557,7 +706,7 @@ app.get('/conversations/', authenticateJWT, async(req, res) => {
   }
 });
 
-app.put('/conversations/:id', authenticateJWT, async(req, res) => {
+app.put('/conversations/:id', authenticateJWT, async (req, res) => {
   try {
     const userId = req.auth?.payload?.sub || req.user?.sub;
     const conversationId = req.params.id;
@@ -686,13 +835,13 @@ app.put('/conversations/:id', authenticateJWT, async(req, res) => {
 });
 
 // Also mount at /api/conversations for backward compatibility
-app.get('/api/conversations/', async(req, res) => {
+app.get('/api/conversations/', async (req, res) => {
   // Redirect to the main route
   const url = req.originalUrl.replace('/api/conversations/', '/conversations/');
   res.redirect(307, url);
 });
 
-app.put('/api/conversations/:id', async(req, res) => {
+app.put('/api/conversations/:id', async (req, res) => {
   // Redirect to the main route
   const url = req.originalUrl.replace('/api/conversations/', '/conversations/');
   res.redirect(307, url);
@@ -729,12 +878,19 @@ async function initializeTunnelSystem() {
     await dbMigrator.initialize();
     await dbMigrator.createMigrationsTable();
     await dbMigrator.applyInitialSchema();
-    await dbMigrator.migrate();
+
+    // Only run migrations for PostgreSQL (SQLite doesn't have migration files)
+    if (dbType === 'postgresql') {
+      await dbMigrator.migrate();
+    }
 
     const validation = await dbMigrator.validateSchema();
     if (!validation.allValid) {
       throw new Error('Database schema validation failed');
     }
+
+    // Set dbMigrator for health endpoint now that it's initialized
+    setDbMigrator(dbMigrator);
 
     // Register database with health check service
     healthCheckService.registerDatabase(dbMigrator);
@@ -764,7 +920,7 @@ async function initializeTunnelSystem() {
       logger.info('Authentication service initialized successfully');
 
       // Register auth service with health check service
-      healthCheckService.registerService('auth-service', async() => {
+      healthCheckService.registerService('auth-service', async () => {
         return {
           status: authService ? 'healthy' : 'unhealthy',
           message: authService
@@ -789,7 +945,7 @@ async function initializeTunnelSystem() {
         logger.info('SSH tunnel server initialized successfully');
 
         // Register SSH proxy with health check service
-        healthCheckService.registerService('ssh-tunnel', async() => {
+        healthCheckService.registerService('ssh-tunnel', async () => {
           return {
             status: sshProxy && sshProxy.isRunning ? 'healthy' : 'unhealthy',
             message:
@@ -805,7 +961,7 @@ async function initializeTunnelSystem() {
         });
 
         // Register SSH proxy as unhealthy
-        healthCheckService.registerService('ssh-tunnel', async() => {
+        healthCheckService.registerService('ssh-tunnel', async () => {
           return {
             status: 'degraded',
             message: 'SSH tunnel service failed to initialize (non-critical)',
@@ -891,7 +1047,7 @@ async function initializeTunnelSystem() {
     logger.info('WebSocket tunnel system ready');
 
     // Register custom shutdown handler with graceful shutdown manager
-    shutdownManager.shutdown = async() => {
+    shutdownManager.shutdown = async () => {
       await gracefulShutdown();
     };
 

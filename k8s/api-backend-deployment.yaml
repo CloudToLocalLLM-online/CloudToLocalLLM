@@ -46,24 +46,6 @@ spec:
         runAsNonRoot: true
         runAsUser: 1001
         fsGroup: 1001
-      initContainers:
-        - name: wait-for-postgres
-          image: postgres:15
-          command:
-            - sh
-            - -c
-            - |
-              echo "Waiting for PostgreSQL to be ready..."
-              for i in $(seq 1 30); do
-                if pg_isready -h postgres.cloudtolocalllm.svc.cluster.local -p 5432; then
-                  echo "PostgreSQL is ready!"
-                  exit 0
-                fi
-                echo "Attempt $i/30: PostgreSQL not ready yet, waiting..."
-                sleep 2
-              done
-              echo "PostgreSQL failed to become ready after 60 seconds"
-              exit 1
       containers:
         - name: api-backend
           image: cloudtolocalllm/api-backend:latest
@@ -145,21 +127,21 @@ spec:
                 secretKeyRef:
                   name: cloudtolocalllm-secrets
                   key: supabase-url
-            - name: AUTH0_DOMAIN
+            - name: ENTRA_ISSUER_URL
               valueFrom:
                 secretKeyRef:
                   name: cloudtolocalllm-secrets
-                  key: auth0-domain
-            - name: AUTH0_AUDIENCE
+                  key: entra-issuer-url
+            - name: ENTRA_CLIENT_ID
               valueFrom:
                 secretKeyRef:
                   name: cloudtolocalllm-secrets
-                  key: auth0-audience
-            - name: AUTH0_CLIENT_ID
+                  key: entra-client-id
+            - name: ENTRA_TENANT_ID
               valueFrom:
                 secretKeyRef:
                   name: cloudtolocalllm-secrets
-                  key: auth0-client-id
+                  key: entra-tenant-id
 
             # Admin Center Configuration
             - name: ADMIN_CENTER_ENABLED

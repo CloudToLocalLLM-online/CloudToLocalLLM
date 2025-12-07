@@ -5,70 +5,64 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:provider/single_child_widget.dart';
 
-import 'bootstrap/bootstrapper.dart';
-import 'config/app_config.dart';
-import 'config/router.dart';
-import 'config/theme.dart';
-import 'config/supabase_config.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
-import 'di/locator.dart' as di;
-import 'services/admin_center_service.dart';
-import 'services/admin_data_flush_service.dart';
-import 'services/admin_service.dart';
-import 'services/app_initialization_service.dart';
-import 'services/auth_service.dart';
-import 'services/connection_manager_service.dart';
-import 'services/desktop_client_detection_service.dart';
-import 'services/enhanced_user_tier_service.dart';
-import 'services/langchain_integration_service.dart';
-import 'services/langchain_ollama_service.dart';
-import 'services/langchain_prompt_service.dart';
-import 'services/langchain_rag_service.dart';
-import 'services/llm_audit_service.dart';
-import 'services/llm_error_handler.dart';
-import 'services/llm_provider_manager.dart';
-import 'services/local_ollama_connection_service.dart';
-import 'services/ollama_service.dart';
-import 'services/provider_configuration_manager.dart';
-import 'services/provider_discovery_service.dart';
-import 'services/streaming_chat_service.dart';
-import 'services/streaming_proxy_service.dart';
-import 'services/tunnel_service.dart';
-import 'services/unified_connection_service.dart';
-import 'services/user_container_service.dart';
-import 'services/web_download_prompt_service.dart'
-    if (dart.library.io) 'services/web_download_prompt_service_stub.dart';
-import 'services/log_buffer_service.dart';
-import 'services/theme_provider.dart';
-import 'services/platform_detection_service.dart';
-import 'services/platform_adapter.dart';
+import 'package:cloudtolocalllm/bootstrap/bootstrapper.dart';
+import 'package:cloudtolocalllm/config/app_config.dart';
+import 'package:cloudtolocalllm/config/router.dart';
+import 'package:cloudtolocalllm/config/theme.dart';
+
+import 'package:cloudtolocalllm/di/locator.dart' as di;
+import 'package:cloudtolocalllm/services/admin_center_service.dart';
+import 'package:cloudtolocalllm/services/admin_data_flush_service.dart';
+import 'package:cloudtolocalllm/services/admin_service.dart';
+import 'package:cloudtolocalllm/services/app_initialization_service.dart';
+import 'package:cloudtolocalllm/services/auth_service.dart';
+import 'package:cloudtolocalllm/services/connection_manager_service.dart';
+import 'package:cloudtolocalllm/services/desktop_client_detection_service.dart';
+import 'package:cloudtolocalllm/services/enhanced_user_tier_service.dart';
+import 'package:cloudtolocalllm/services/langchain_integration_service.dart';
+import 'package:cloudtolocalllm/services/langchain_ollama_service.dart';
+import 'package:cloudtolocalllm/services/langchain_prompt_service.dart';
+import 'package:cloudtolocalllm/services/langchain_rag_service.dart';
+import 'package:cloudtolocalllm/services/llm_audit_service.dart';
+import 'package:cloudtolocalllm/services/llm_error_handler.dart';
+import 'package:cloudtolocalllm/services/llm_provider_manager.dart';
+import 'package:cloudtolocalllm/services/local_ollama_connection_service.dart';
+import 'package:cloudtolocalllm/services/ollama_service.dart';
+import 'package:cloudtolocalllm/services/provider_configuration_manager.dart';
+import 'package:cloudtolocalllm/services/provider_discovery_service.dart';
+import 'package:cloudtolocalllm/services/streaming_chat_service.dart';
+import 'package:cloudtolocalllm/services/streaming_proxy_service.dart';
+import 'package:cloudtolocalllm/services/tunnel_service.dart';
+import 'package:cloudtolocalllm/services/unified_connection_service.dart';
+import 'package:cloudtolocalllm/services/user_container_service.dart';
+import 'package:cloudtolocalllm/services/web_download_prompt_service.dart'
+    if (dart.library.io) 'package:cloudtolocalllm/services/web_download_prompt_service_stub.dart';
+import 'package:cloudtolocalllm/services/log_buffer_service.dart';
+import 'package:cloudtolocalllm/services/theme_provider.dart';
+import 'package:cloudtolocalllm/services/platform_detection_service.dart';
+import 'package:cloudtolocalllm/services/platform_adapter.dart';
 import 'web_plugins_stub.dart'
     if (dart.library.html) 'package:flutter_web_plugins/url_strategy.dart';
-import 'widgets/tray_initializer.dart';
+import 'package:cloudtolocalllm/widgets/tray_initializer.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 
-import 'widgets/window_listener_widget.dart'
-    if (dart.library.html) 'widgets/window_listener_widget_stub.dart';
+import 'package:cloudtolocalllm/widgets/window_listener_widget.dart'
+    if (dart.library.html) 'package:cloudtolocalllm/widgets/window_listener_widget_stub.dart';
+import 'package:cloudtolocalllm/config/navigator_key.dart';
 
-// Global navigator key for navigation from system tray
-final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+// navigatorKey is now imported from config/navigator_key.dart
 
 void main() async {
   // Immediate logging to verify Dart entry point is reached
-  print('----- DART MAIN START -----');
+  print('----- DART MAIN START ----- v4.17.4');
 
+  // Flutter requires WidgetsFlutterBinding to be initialized first
   WidgetsFlutterBinding.ensureInitialized();
 
-  print('[Main] Initializing Supabase...');
-  await Supabase.initialize(
-    url: SupabaseConfig.url,
-    anonKey: SupabaseConfig.anonKey,
-  );
-  print('[Main] Supabase initialized');
+  // Initialize Sentry IMMEDIATELY after Flutter binding (before all other services)
+  print('[Main] Initializing Sentry (FIRST after Flutter binding)...');
 
   try {
-    // Initialize Sentry with a timeout to prevent hanging
-    print('[Main] Initializing Sentry...');
     await SentryFlutter.init(
       (options) {
         options.dsn = AppConfig.sentryDsn;
@@ -80,9 +74,32 @@ void main() async {
         options.debug = !kReleaseMode;
         // Enable Sentry Logs
         options.enableLogs = true;
+
+        /*
+        options.beforeSend = (SentryEvent event, {Hint? hint}) {
+          // Filter out Noise
+          final exception = event.throwable;
+          if (exception.toString().contains('ConnectionClosed') ||
+              exception.toString().contains('CanceledError') ||
+              exception.toString().contains('NetworkError')) {
+            return null; // Drop event
+          }
+
+          // Add Custom Tags
+          event.tags ??= {};
+          event.tags!['platform'] =
+              kIsWeb ? 'web' : (defaultTargetPlatform.name.toLowerCase());
+          event.tags!['build_mode'] =
+              kReleaseMode ? 'release' : (kProfileMode ? 'profile' : 'debug');
+          // Add device info if available (simplified for now)
+
+          return event;
+        };
+        */
       },
       appRunner: () async {
         print('[Main] Sentry initialized, running app with Sentry...');
+
         _runAppWithSentry();
       },
     ).timeout(const Duration(seconds: 5));
@@ -90,6 +107,11 @@ void main() async {
   } catch (e) {
     print('Sentry initialization failed or timed out: $e');
     // If Sentry fails, run the app anyway without Sentry wrapping
+
+    // Initialize Supabase even if Sentry fails
+    // print('[Main] Initializing Supabase...');
+    // Supabase initialization removed for Entra ID migration
+
     _runAppWithoutSentry();
   }
 }
@@ -214,8 +236,11 @@ class _CloudToLocalLLMAppState extends State<CloudToLocalLLMApp> {
 
   @override
   Widget build(BuildContext context) {
+    print('[App] build() called');
     final bootstrap = context.watch<AppBootstrapData?>();
+    print('[App] bootstrap: $bootstrap');
     if (bootstrap == null) {
+      print('[App] Bootstrap is null, showing loading screen');
       return MaterialApp(
         debugShowCheckedModeBanner: false,
         home: Scaffold(
@@ -226,6 +251,7 @@ class _CloudToLocalLLMAppState extends State<CloudToLocalLLMApp> {
       );
     }
 
+    print('[App] Bootstrap loaded, building app');
     _ensureAuthListener();
 
     // Build providers list - authenticated services will be added when registered
@@ -239,8 +265,8 @@ class _CloudToLocalLLMAppState extends State<CloudToLocalLLMApp> {
         ),
       );
     } catch (e, stack) {
-      debugPrint('[App] Error building providers: $e');
-      debugPrint('[App] Stack: $stack');
+      print('[App] Error building providers: $e');
+      print('[App] Stack: $stack');
       Sentry.captureException(e, stackTrace: stack);
       // Return error screen instead of crashing
       return MaterialApp(
@@ -268,7 +294,7 @@ class _CloudToLocalLLMAppState extends State<CloudToLocalLLMApp> {
       return;
     }
     if (!di.serviceLocator.isRegistered<AuthService>()) {
-      debugPrint(
+      print(
           '[App] AuthService not registered yet - deferring listener attachment');
       return;
     }
@@ -276,6 +302,35 @@ class _CloudToLocalLLMAppState extends State<CloudToLocalLLMApp> {
     authService.addListener(_onAuthStateChanged);
     _attachedAuthService = authService;
     _authListenerAttached = true;
+
+    // Listen for authenticated services to load and trigger rebuild
+    authService.areAuthenticatedServicesLoaded.addListener(() {
+      if (authService.areAuthenticatedServicesLoaded.value && mounted) {
+        print(
+            '[App] Authenticated services became loaded, triggering rebuild...');
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            setState(() {
+              print('[App] Provider tree rebuilt with authenticated services');
+            });
+          }
+        });
+      }
+    });
+
+    // If authenticated services are already loaded, trigger a rebuild now
+    // to ensure they get added to the Provider tree
+    if (authService.areAuthenticatedServicesLoaded.value) {
+      print(
+          '[App] Authenticated services already loaded, triggering rebuild...');
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          setState(() {
+            print('[App] Provider tree rebuilt with authenticated services');
+          });
+        }
+      });
+    }
   }
 
   List<SingleChildWidget> _buildProviders() {
@@ -304,8 +359,8 @@ class _CloudToLocalLLMAppState extends State<CloudToLocalLLMApp> {
         );
       }
     } catch (e, stack) {
-      debugPrint('[Providers] Error adding PlatformAdapter: $e');
-      debugPrint('[Providers] Stack: $stack');
+      print('[Providers] Error adding PlatformAdapter: $e');
+      print('[Providers] Stack: $stack');
       Sentry.captureException(e, stackTrace: stack);
     }
 
@@ -340,11 +395,11 @@ class _CloudToLocalLLMAppState extends State<CloudToLocalLLMApp> {
           ChangeNotifierProvider<T>.value(value: service),
         );
       } else {
-        debugPrint('[Providers] Core service $T not registered yet');
+        print('[Providers] Core service $T not registered yet');
       }
     } catch (e, stack) {
-      debugPrint('[Providers] Error adding core provider $T: $e');
-      debugPrint('[Providers] Stack: $stack');
+      print('[Providers] Error adding core provider $T: $e');
+      print('[Providers] Stack: $stack');
       Sentry.captureException(e, stackTrace: stack);
     }
   }
@@ -361,8 +416,8 @@ class _CloudToLocalLLMAppState extends State<CloudToLocalLLMApp> {
         );
       }
     } catch (e, stack) {
-      debugPrint('[Providers] Error adding provider $T: $e');
-      debugPrint('[Providers] Stack: $stack');
+      print('[Providers] Error adding provider $T: $e');
+      print('[Providers] Stack: $stack');
     }
   }
 }
@@ -376,27 +431,35 @@ class _AppRouterHost extends StatefulWidget {
 
 class _AppRouterHostState extends State<_AppRouterHost> {
   GoRouter? _router;
-  bool _waitingForBootstrap = false;
+  bool _initialized = false;
 
   @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    if (_router != null || _waitingForBootstrap) {
-      return;
-    }
+  void initState() {
+    super.initState();
+    print('[AppRouterHost] initState called');
+    // Initialize router after first frame to ensure context is available
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || _initialized) return;
+      _initialized = true;
+      _initializeRouterWhenReady();
+    });
+  }
 
+  void _initializeRouterWhenReady() async {
+    print('[AppRouterHost] _initializeRouterWhenReady called');
     final authService = context.read<AuthService>();
+    print(
+        '[AppRouterHost] isSessionBootstrapComplete: ${authService.isSessionBootstrapComplete}');
+
     if (authService.isSessionBootstrapComplete) {
+      print('[AppRouterHost] Bootstrap already complete, initializing router');
       _initializeRouter(authService);
     } else {
-      _waitingForBootstrap = true;
-      authService.sessionBootstrapFuture.whenComplete(() {
-        if (!mounted) {
-          return;
-        }
-        _waitingForBootstrap = false;
-        _initializeRouter(authService);
-      });
+      print('[AppRouterHost] Bootstrap not complete, waiting...');
+      await authService.sessionBootstrapFuture;
+      print('[AppRouterHost] Bootstrap completed, initializing router');
+      if (!mounted) return;
+      _initializeRouter(authService);
     }
   }
 
@@ -420,7 +483,7 @@ class _AppRouterHostState extends State<_AppRouterHost> {
       try {
         themeProvider = context.watch<ThemeProvider>();
       } catch (e) {
-        debugPrint('[AppRouterHost] Warning: ThemeProvider not available: $e');
+        print('[AppRouterHost] Warning: ThemeProvider not available: $e');
         // Continue without theme provider - will use defaults
       }
 
@@ -446,8 +509,8 @@ class _AppRouterHostState extends State<_AppRouterHost> {
         ),
       );
     } catch (e, stack) {
-      debugPrint('[AppRouterHost] Error building router: $e');
-      debugPrint('[AppRouterHost] Stack: $stack');
+      print('[AppRouterHost] Error building router: $e');
+      print('[AppRouterHost] Stack: $stack');
       Sentry.captureException(e, stackTrace: stack);
       return MaterialApp(
         debugShowCheckedModeBanner: false,
@@ -470,11 +533,13 @@ class _AppRouterHostState extends State<_AppRouterHost> {
   }
 
   void _initializeRouter(AuthService authService) {
+    print('[AppRouterHost] _initializeRouter called');
     setState(() {
       _router = AppRouter.createRouter(
         navigatorKey: navigatorKey,
         authService: authService,
       );
+      print('[AppRouterHost] Router created and set');
     });
   }
 }

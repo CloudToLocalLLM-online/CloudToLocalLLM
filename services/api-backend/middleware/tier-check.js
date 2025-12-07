@@ -15,8 +15,6 @@ import { logger } from '../utils/logger.js';
 // Environment configuration
 const UPGRADE_URL =
   process.env.UPGRADE_URL || 'https://app.cloudtolocalllm.online/upgrade';
-const JWT_NAMESPACE =
-  process.env.JWT_NAMESPACE || 'https://cloudtolocalllm.com';
 
 // User tier definitions
 export const USER_TIERS = {
@@ -90,13 +88,9 @@ export function getUserTier(user) {
   }
 
   try {
-    // Use environment variable for namespace to avoid hardcoding
-    const userMetadataKey = `${JWT_NAMESPACE}/user_metadata`;
-    const appMetadataKey = `${JWT_NAMESPACE}/app_metadata`;
-
-    // Safely extract metadata with validation
-    const userMetadata = user[userMetadataKey] || {};
-    const appMetadata = user[appMetadataKey] || {};
+    // Safely extract metadata with validation (Supabase structure)
+    const userMetadata = user.user_metadata || {};
+    const appMetadata = user.app_metadata || {};
 
     // Validate metadata objects
     if (typeof userMetadata !== 'object' || typeof appMetadata !== 'object') {

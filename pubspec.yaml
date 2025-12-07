@@ -3,7 +3,7 @@ description: Manage and run powerful Large Language Models locally, orchestrated
 publish_to: none
 homepage: https://cloudtolocalllm.online
 repository: https://github.com/imrightguy/CloudToLocalLLM
-version: 4.4.0+202511081545
+version: 4.17.4+202512071123
 
 environment:
   sdk: ">=3.5.0 <4.0.0"
@@ -39,7 +39,7 @@ dependencies:
   # System Integration - Flutter plugins for window management and secure storage
   window_manager: ^0.5.1
 
-  flutter_secure_storage_x: ^11.3.0
+  flutter_secure_storage: ^9.2.2
   sqflite: ^2.4.1
   sqflite_common_ffi: ^2.3.4
   path_provider: ^2.1.5
@@ -66,7 +66,9 @@ dependencies:
 
   # Web interop for dart:js_interop
   web: ^1.0.0
-  supabase_flutter: ^2.8.3
+  app_links: ^6.4.1
+  aad_oauth:
+    path: packages/aad_oauth
 
 dev_dependencies:
   sentry_dart_plugin: ^3.2.0
@@ -76,6 +78,7 @@ dev_dependencies:
   integration_test:
     sdk: flutter
   flutter_native_splash: ^2.4.1
+  flutter_launcher_icons: ^0.14.4
 
 flutter_native_splash:
   color: "#181a20"
@@ -95,6 +98,7 @@ flutter:
   assets:
     - assets/images/
     - assets/version.json
+    - assets/component-versions.json
 
 sentry:
   upload_debug_symbols: true

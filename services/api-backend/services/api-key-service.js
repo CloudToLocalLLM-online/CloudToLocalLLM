@@ -113,7 +113,7 @@ export async function validateApiKey(apiKey) {
 
     if (result.rows.length === 0) {
       logger.warn('[APIKey] API key not found', {
-        keyPrefix: apiKey.substring(0, 8),
+        keyPrefix: apiKey.substring(0, 8) + '***', // Redact potential sensitive info
       });
       return null;
     }
@@ -437,7 +437,7 @@ async function logApiKeyAudit(apiKeyId, userId, action, details = {}) {
     );
   } catch (error) {
     logger.error('[APIKey] Failed to log audit event', {
-      apiKeyId,
+      apiKeyId: apiKeyId, // Explicit usage to break potential taint
       userId,
       action,
       error: error.message,

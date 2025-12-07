@@ -1,5 +1,5 @@
 import 'package:flutter/foundation.dart';
-import 'package:flutter_secure_storage_x/flutter_secure_storage_x.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'conversation_storage_service.dart';
 import 'auth_logger.dart';
 

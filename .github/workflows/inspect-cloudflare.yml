@@ -1,0 +1,57 @@
+name: Inspect Cloudflare Availability
+
+on:
+    workflow_dispatch:
+
+jobs:
+    inspect:
+        runs-on: ubuntu-latest
+        steps:
+            - name: Inspect Cloudflare Settings
+              env:
+                  CF_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+                  DOMAIN: "cloudtolocalllm.online"
+              run: |
+                  if [ -z "$CF_API_TOKEN" ]; then
+                    echo "::error::CLOUDFLARE_API_TOKEN secret is missing"
+                    exit 1
+                  fi
+
+                  echo "🔍 Fetching Zone ID for $DOMAIN..."
+                  ZONE_ID=$(curl -s -X GET "https://api.cloudflare.com/client/v4/zones?name=$DOMAIN" \
+                    -H "Authorization: Bearer $CF_API_TOKEN" \
+                    -H "Content-Type: application/json" | jq -r '.result[0].id')
+
+                  if [ -z "$ZONE_ID" ] || [ "$ZONE_ID" == "null" ]; then
+                    echo "::error::Failed to find Zone ID for $DOMAIN"
+                    exit 1
+                  fi
+                  echo "✅ Zone ID: $ZONE_ID"
+
+                  echo "----------------------------------------"
+                  echo "🔍 Checking Page Rules..."
+                  PR_RESPONSE=$(curl -s -X GET "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/pagerules?status=active" \
+                    -H "Authorization: Bearer $CF_API_TOKEN" \
+                    -H "Content-Type: application/json") || echo "Failed to fetch Page Rules"
+                  echo "$PR_RESPONSE" | jq '.result[] | {targets: .targets, actions: .actions, priority: .priority}' 2>/dev/null || echo "No active Page Rules found or failed to parse."
+
+                  echo "----------------------------------------"
+                  echo "🔍 Checking WAF Packages..."
+                  WAF_RESPONSE=$(curl -s -X GET "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/firewall/waf/packages" \
+                    -H "Authorization: Bearer $CF_API_TOKEN" \
+                    -H "Content-Type: application/json") || echo "Failed to fetch WAF Packages"
+                  echo "$WAF_RESPONSE" | jq '.result[] | {name: .name, sensitivity: .sensitivity, action_mode: .action_mode}' 2>/dev/null || echo "No WAF Packages found or failed to parse."
+                    
+                  echo "----------------------------------------"
+                  echo "🔍 Checking Firewall Rules..."
+                  FW_RESPONSE=$(curl -s -X GET "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/firewall/rules" \
+                    -H "Authorization: Bearer $CF_API_TOKEN" \
+                    -H "Content-Type: application/json") || echo "Failed to fetch Firewall Rules"
+                  echo "$FW_RESPONSE" | jq '.result[] | {description: .description, filter: .filter.expression, action: .action}' 2>/dev/null || echo "No Firewall Rules found or failed to parse."
+
+                  echo "----------------------------------------"
+                  echo "🔍 Checking Transform Rules (HTTP Request Header Modification)..."
+                   TR_RESPONSE=$(curl -s -X GET "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/rulesets/phases/http_request_late_transform/entrypoint" \
+                    -H "Authorization: Bearer $CF_API_TOKEN" \
+                    -H "Content-Type: application/json") || echo "Failed to fetch Transform Rules"
+                   echo "$TR_RESPONSE" | jq '.result.rules[]? | {description: .description, expression: .expression, action: .action}' 2>/dev/null || echo "No Transform Rules found or failed to parse."

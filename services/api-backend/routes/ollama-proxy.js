@@ -9,7 +9,8 @@ export function setSshProxy(proxy) {
 export const handleOllamaProxyRequest = async(req, res) => {
   const startTime = Date.now();
   const requestId = `llm-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-  const userId = req.auth?.payload.sub;
+  // Use req.userId which is normalized across JWT and API Key auth
+  const userId = req.userId || req.auth?.payload.sub;
 
   if (!userId) {
     return res.status(401).json({

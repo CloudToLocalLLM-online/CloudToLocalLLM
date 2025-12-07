@@ -1,0 +1,997 @@
+deploy_infrastructure	UNKNOWN STEP	﻿2025-12-01T17:31:03.3640208Z Current runner version: '2.329.0'
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:03.3664023Z ##[group]Runner Image Provisioner
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:03.3664948Z Hosted Compute Agent
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:03.3665671Z Version: 20251016.436
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:03.3666474Z Commit: 8ab8ac8bfd662a3739dab9fe09456aba92132568
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:03.3667240Z Build Date: 2025-10-15T20:44:12Z
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:03.3668038Z ##[endgroup]
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:03.3668654Z ##[group]Operating System
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:03.3669355Z Ubuntu
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:03.3670169Z 24.04.3
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:03.3670790Z LTS
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:03.3671420Z ##[endgroup]
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:03.3672063Z ##[group]Runner Image
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:03.3672875Z Image: ubuntu-24.04
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:03.3673527Z Version: 20251112.124.1
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:03.3674721Z Included Software: https://github.com/actions/runner-images/blob/ubuntu24/20251112.124/images/ubuntu/Ubuntu2404-Readme.md
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:03.3676415Z Image Release: https://github.com/actions/runner-images/releases/tag/ubuntu24%2F20251112.124
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:03.3677651Z ##[endgroup]
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:03.3679021Z ##[group]GITHUB_TOKEN Permissions
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:03.3681243Z Contents: read
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:03.3681998Z Metadata: read
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:03.3682670Z Packages: read
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:03.3683787Z ##[endgroup]
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:03.3686813Z Secret source: Actions
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:03.3687767Z Prepare workflow directory
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:03.4126477Z Prepare all required actions
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:03.4180689Z Getting action download info
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:03.7824143Z Download action repository 'actions/checkout@v4' (SHA:34e114876b0b11c390a56381ad16ebd13914f8d5)
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:04.1406636Z Download action repository 'azure/login@v2' (SHA:a457da9ea143d694b1b9c7c869ebb04ebe844ef5)
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:04.3128623Z Download action repository 'azure/aks-set-context@v3' (SHA:4edaee69f820359371ee8bc85189ac03a21d3a58)
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:06.5851727Z Complete job name: deploy_infrastructure
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:06.6502790Z ##[group]Run actions/checkout@v4
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:06.6503449Z with:
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:06.6503779Z   repository: imrightguy/CloudToLocalLLM
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:06.6504297Z   token: ***
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:06.6504570Z   ssh-strict: true
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:06.6504843Z   ssh-user: git
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:06.6505133Z   persist-credentials: true
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:06.6505436Z   clean: true
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:06.6505744Z   sparse-checkout-cone-mode: true
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:06.6506077Z   fetch-depth: 1
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:06.6506361Z   fetch-tags: false
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:06.6506656Z   show-progress: true
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:06.6506934Z   lfs: false
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:06.6507195Z   submodules: false
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:06.6507473Z   set-safe-directory: true
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:06.6507965Z env:
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:06.6508260Z   AZURE_RESOURCE_GROUP: cloudtolocalllm-rg
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:06.6508627Z   AZURE_CLUSTER_NAME: cloudtolocalllm-aks
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:06.6508987Z   ACR_NAME: cloudtolocalllm
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:06.6509331Z   DOCKER_REGISTRY: 
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:06.6509603Z ##[endgroup]
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:06.7630827Z Syncing repository: imrightguy/CloudToLocalLLM
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:06.7632506Z ##[group]Getting Git version info
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:06.7633021Z Working directory is '/home/runner/work/CloudToLocalLLM/CloudToLocalLLM'
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:06.7633707Z [command]/usr/bin/git version
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:06.7649389Z git version 2.51.2
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:06.7675495Z ##[endgroup]
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:06.7696359Z Temporarily overriding HOME='/home/runner/work/_temp/6844b918-3ec8-4a04-ada2-6b44047b9924' before making global git config changes
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:06.7697257Z Adding repository directory to the temporary git global config as a safe directory
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:06.7701826Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/CloudToLocalLLM/CloudToLocalLLM
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:06.7738855Z Deleting the contents of '/home/runner/work/CloudToLocalLLM/CloudToLocalLLM'
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:06.7742781Z ##[group]Initializing the repository
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:06.7746917Z [command]/usr/bin/git init /home/runner/work/CloudToLocalLLM/CloudToLocalLLM
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:06.7862714Z hint: Using 'master' as the name for the initial branch. This default branch name
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:06.7864144Z hint: is subject to change. To configure the initial branch name to use in all
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:06.7864923Z hint: of your new repositories, which will suppress this warning, call:
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:06.7865497Z hint:
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:06.7866300Z hint: 	git config --global init.defaultBranch <name>
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:06.7867201Z hint:
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:06.7867796Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:06.7869120Z hint: 'development'. The just-created branch can be renamed via this command:
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:06.7870563Z hint:
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:06.7871215Z hint: 	git branch -m <name>
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:06.7871925Z hint:
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:06.7872912Z hint: Disable this message with "git config set advice.defaultBranchName false"
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:06.7874456Z Initialized empty Git repository in /home/runner/work/CloudToLocalLLM/CloudToLocalLLM/.git/
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:06.7881495Z [command]/usr/bin/git remote add origin https://github.com/imrightguy/CloudToLocalLLM
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:06.7915331Z ##[endgroup]
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:06.7916211Z ##[group]Disabling automatic garbage collection
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:06.7920368Z [command]/usr/bin/git config --local gc.auto 0
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:06.7947981Z ##[endgroup]
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:06.7948870Z ##[group]Setting up auth
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:06.7955450Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:06.7985509Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:06.8356715Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:06.8385601Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:06.8603649Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:06.8634503Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:06.8858062Z [command]/usr/bin/git config --local http.https://github.com/.extraheader AUTHORIZATION: basic ***
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:06.8891759Z ##[endgroup]
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:06.8892420Z ##[group]Fetching the repository
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:06.8901069Z [command]/usr/bin/git -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +c65b74c8b338ba61cfefc0ad953d05d808e933fd:refs/remotes/origin/main
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:09.5387091Z From https://github.com/imrightguy/CloudToLocalLLM
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:09.5387827Z  * [new ref]         c65b74c8b338ba61cfefc0ad953d05d808e933fd -> origin/main
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:09.5420418Z ##[endgroup]
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:09.5421085Z ##[group]Determining the checkout info
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:09.5422370Z ##[endgroup]
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:09.5427660Z [command]/usr/bin/git sparse-checkout disable
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:09.5469941Z [command]/usr/bin/git config --local --unset-all extensions.worktreeConfig
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:09.5495869Z ##[group]Checking out the ref
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:09.5502399Z [command]/usr/bin/git checkout --progress --force -B main refs/remotes/origin/main
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:10.0481646Z Switched to a new branch 'main'
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:10.0482347Z branch 'main' set up to track 'origin/main'.
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:10.0530593Z ##[endgroup]
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:10.0570281Z [command]/usr/bin/git log -1 --format=%H
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:10.0593081Z c65b74c8b338ba61cfefc0ad953d05d808e933fd
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:10.0789269Z ##[group]Run azure/login@v2
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:10.0789587Z with:
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:10.0790801Z   creds: ***
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:10.0791044Z   enable-AzPSSession: false
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:10.0791516Z   environment: azurecloud
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:10.0791781Z   allow-no-subscriptions: false
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:10.0792086Z   audience: api://AzureADTokenExchange
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:10.0792386Z   auth-type: SERVICE_PRINCIPAL
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:10.0792633Z env:
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:10.0792860Z   AZURE_RESOURCE_GROUP: cloudtolocalllm-rg
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:10.0793168Z   AZURE_CLUSTER_NAME: cloudtolocalllm-aks
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:10.0793469Z   ACR_NAME: cloudtolocalllm
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:10.0793714Z   DOCKER_REGISTRY: 
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:10.0793926Z ##[endgroup]
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:10.1168532Z Running Azure CLI Login.
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:26.7998855Z [command]/usr/bin/az cloud set -n azurecloud
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:27.0292995Z Done setting cloud: "azurecloud"
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:27.0295162Z Note: Azure/login action also supports OIDC login mechanism. Refer https://github.com/azure/login#configure-a-service-principal-with-a-federated-credential-to-use-oidc-based-authentication for more details.
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:27.0297047Z Attempting Azure CLI login by using service principal with secret...
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:28.4633921Z Subscription is set successfully.
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:28.4634695Z Azure CLI login succeeds by using service principal with secret.
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:28.4738143Z ##[group]Run azure/aks-set-context@v3
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:28.4738686Z with:
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:28.4739088Z   resource-group: cloudtolocalllm-rg
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:28.4739633Z   cluster-name: cloudtolocalllm-aks
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:28.4740356Z   admin: false
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:28.4740754Z   use-kubelogin: false
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:28.4741145Z env:
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:28.4741541Z   AZURE_RESOURCE_GROUP: cloudtolocalllm-rg
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:28.4742084Z   AZURE_CLUSTER_NAME: cloudtolocalllm-aks
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:28.4742579Z   ACR_NAME: cloudtolocalllm
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:28.4742997Z   DOCKER_REGISTRY: 
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:28.4743355Z ##[endgroup]
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:28.5165871Z [command]/usr/bin/az aks get-credentials --resource-group cloudtolocalllm-rg --name cloudtolocalllm-aks -f /home/runner/work/_temp/kubeconfig_1764610288512
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:29.2901354Z WARNING: Merged "cloudtolocalllm-aks" as current context in /home/runner/work/_temp/kubeconfig_1764610288512
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:29.3939171Z ##[group]Run # Get Login Server (ACR assumed to exist or created in build steps)
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:29.3939988Z [36;1m# Get Login Server (ACR assumed to exist or created in build steps)[0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:29.3940636Z [36;1mecho "DOCKER_REGISTRY=$(az acr show --name cloudtolocalllm --query loginServer --output tsv)" >> $GITHUB_ENV[0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:29.3976401Z shell: /usr/bin/bash -e {0}
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:29.3976672Z env:
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:29.3976916Z   AZURE_RESOURCE_GROUP: cloudtolocalllm-rg
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:29.3977249Z   AZURE_CLUSTER_NAME: cloudtolocalllm-aks
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:29.3977545Z   ACR_NAME: cloudtolocalllm
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:29.3977785Z   DOCKER_REGISTRY: 
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:29.3978018Z   AZURE_HTTP_USER_AGENT: 
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:29.3978260Z   AZUREPS_HOST_ENVIRONMENT: 
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:29.3978593Z   KUBECONFIG: /home/runner/work/_temp/kubeconfig_1764610288512
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:29.3979053Z   KUBE_CONFIG_PATH: /home/runner/work/_temp/kubeconfig_1764610288512
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:29.3979444Z ##[endgroup]
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:30.9179446Z ##[group]Run kubectl create namespace cloudtolocalllm --dry-run=client -o yaml | kubectl apply -f -
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:30.9180957Z [36;1mkubectl create namespace cloudtolocalllm --dry-run=client -o yaml | kubectl apply -f -[0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:30.9227956Z shell: /usr/bin/bash -e {0}
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:30.9228406Z env:
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:30.9228831Z   AZURE_RESOURCE_GROUP: cloudtolocalllm-rg
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:30.9229411Z   AZURE_CLUSTER_NAME: cloudtolocalllm-aks
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:30.9230215Z   ACR_NAME: cloudtolocalllm
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:30.9230741Z   DOCKER_REGISTRY: cloudtolocalllm.azurecr.io
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:30.9231318Z   AZURE_HTTP_USER_AGENT: 
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:30.9231764Z   AZUREPS_HOST_ENVIRONMENT: 
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:30.9232342Z   KUBECONFIG: /home/runner/work/_temp/kubeconfig_1764610288512
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:30.9233414Z   KUBE_CONFIG_PATH: /home/runner/work/_temp/kubeconfig_1764610288512
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:30.9234049Z ##[endgroup]
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:36.5096377Z namespace/cloudtolocalllm unchanged
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:36.5162302Z ##[group]Run # --- Create Kubernetes Secrets ---
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:36.5162748Z [36;1m# --- Create Kubernetes Secrets ---[0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:36.5163056Z [36;1m[0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:36.5163290Z [36;1m# Get ACR Admin Credentials[0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:36.5163761Z [36;1mACR_ADMIN_USER=$(az acr credential show --name cloudtolocalllm --query username --output tsv)[0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:36.5164433Z [36;1mACR_ADMIN_PASS=$(az acr credential show --name cloudtolocalllm --query passwords[0].value --output tsv)[0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:36.5164907Z [36;1m[0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:36.5165139Z [36;1m# Docker Registry Secret for ACR[0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:36.5165488Z [36;1mkubectl create secret docker-registry regcred \[0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:36.5165886Z [36;1m  --docker-server=cloudtolocalllm.azurecr.io \[0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:36.5166257Z [36;1m  --docker-username=$ACR_ADMIN_USER \[0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:36.5166740Z [36;1m  --docker-*** \[0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:36.5167115Z [36;1m  --docker-email=github-actions@cloudtolocalllm.online \[0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:36.5167588Z [36;1m  -n cloudtolocalllm --dry-run=client -o yaml | kubectl apply -f -[0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:36.5167970Z [36;1m[0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:36.5168192Z [36;1m# App Secrets[0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:36.5168524Z [36;1mkubectl create secret generic cloudtolocalllm-secrets \[0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:36.5168910Z [36;1m  --namespace cloudtolocalllm \[0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:36.5169250Z [36;1m  --from-literal=postgres-user=cloud_admin \[0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:36.5169677Z [36;1m  --from-literal=postgres-*** \[0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:36.5170206Z [36;1m  --from-literal=jwt-secret="$JWT_SECRET" \[0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:36.5170637Z [36;1m  --from-literal=auth0-domain='dev-v2f2p008x3dr74ww.us.auth0.com' \[0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:36.5171172Z [36;1m  --from-literal=auth0-audience='https://api.cloudtolocalllm.online' \[0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:36.5171716Z [36;1m  --from-literal=auth0-client-id='FuXPnevXpp311CdYHGsbNZe9t3D8Ts7A' \[0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:36.5172215Z [36;1m  --from-literal=auth0-client-secret="$AUTH0_CLIENT_SECRET" \[0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:36.5172693Z [36;1m  --from-literal=stripe-test-secret-key="$STRIPE_TEST_SECRET_KEY" \[0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:36.5173233Z [36;1m  --from-literal=stripe-test-publishable-key="$STRIPE_TEST_PUBLISHABLE_KEY" \[0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:36.5173798Z [36;1m  --from-literal=stripe-test-webhook-secret="$STRIPE_TEST_WEBHOOK_SECRET" \[0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:36.5174313Z [36;1m  --from-literal=stripe-live-secret-key="$STRIPE_LIVE_SECRET_KEY" \[0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:36.5174842Z [36;1m  --from-literal=stripe-live-publishable-key="$STRIPE_LIVE_PUBLISHABLE_KEY" \[0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:36.5175402Z [36;1m  --from-literal=stripe-live-webhook-secret="$STRIPE_LIVE_WEBHOOK_SECRET" \[0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:36.5175961Z [36;1m  --from-literal=sentry-dsn="$SENTRY_DSN" \[0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:36.5198630Z [36;1m  --from-literal=supabase-jwt-secret="$SUPABASE_JWT_SECRET" \[0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:36.5199522Z [36;1m  --from-literal=supabase-url="https://cvaqhvpbnemweqrojasm.supabase.co" \[0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:36.5200523Z [36;1m  --dry-run=client -o yaml | kubectl apply -f -[0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:36.5201091Z [36;1m[0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:36.5201470Z [36;1m# Cloudflare Tunnel Secret[0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:36.5202064Z [36;1mkubectl create secret generic tunnel-credentials \[0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:36.5202689Z [36;1m  --namespace cloudtolocalllm \[0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:36.5203303Z [36;1m  --from-literal=token="$CLOUDFLARE_TUNNEL_TOKEN" \[0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:36.5203971Z [36;1m  --dry-run=client -o yaml | kubectl apply -f -[0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:36.5204522Z [36;1m[0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:36.5204897Z [36;1m# Streaming Proxy Secret[0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:36.5205514Z [36;1mkubectl create secret generic streaming-proxy-secrets \[0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:36.5206185Z [36;1m  --namespace cloudtolocalllm \[0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:36.5207030Z [36;1m  --from-literal=SENTRY_DSN="$SENTRY_DSN" \[0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:36.5207719Z [36;1m  --from-literal=SUPABASE_JWT_SECRET="$SUPABASE_JWT_SECRET" \[0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:36.5208858Z [36;1m  --from-literal=SUPABASE_URL="https://cvaqhvpbnemweqrojasm.supabase.co" \[0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:36.5209717Z [36;1m  --dry-run=client -o yaml | kubectl apply -f -[0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:36.5243410Z shell: /usr/bin/bash -e {0}
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:36.5243693Z env:
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:36.5243940Z   AZURE_RESOURCE_GROUP: cloudtolocalllm-rg
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:36.5244278Z   AZURE_CLUSTER_NAME: cloudtolocalllm-aks
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:36.5244583Z   ACR_NAME: cloudtolocalllm
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:36.5244871Z   DOCKER_REGISTRY: cloudtolocalllm.azurecr.io
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:36.5245179Z   AZURE_HTTP_USER_AGENT: 
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:36.5245440Z   AZUREPS_HOST_ENVIRONMENT: 
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:36.5245773Z   KUBECONFIG: /home/runner/work/_temp/kubeconfig_1764610288512
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:36.5246220Z   KUBE_CONFIG_PATH: /home/runner/work/_temp/kubeconfig_1764610288512
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:36.5246711Z   POSTGRES_PASSWORD: ***
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:36.5247093Z   JWT_SECRET: ***
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:36.5247328Z   AUTH0_CLIENT_SECRET: 
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:36.5247658Z   STRIPE_TEST_SECRET_KEY: ***
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:36.5247970Z   STRIPE_TEST_PUBLISHABLE_KEY: ***
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:36.5248356Z   STRIPE_TEST_WEBHOOK_SECRET: ***
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:36.5248659Z   STRIPE_LIVE_SECRET_KEY: 
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:36.5248911Z   STRIPE_LIVE_PUBLISHABLE_KEY: 
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:36.5249180Z   STRIPE_LIVE_WEBHOOK_SECRET: 
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:36.5249674Z   SENTRY_DSN: ***
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:36.5250252Z   CLOUDFLARE_DNS_TOKEN: ***
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:36.5251347Z   CLOUDFLARE_TUNNEL_TOKEN: ***
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:36.5251674Z   CLOUDFLARE_ACCOUNT_ID: ***
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:36.5253051Z   SUPABASE_JWT_SECRET: ***
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:36.5253311Z ##[endgroup]
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:39.5248346Z secret/regcred unchanged
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:39.7396695Z secret/cloudtolocalllm-secrets unchanged
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:40.1380019Z secret/tunnel-credentials unchanged
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:40.3640144Z secret/streaming-proxy-secrets unchanged
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:40.3710507Z ##[group]Run # Replace image registry in manifests
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:40.3711264Z [36;1m# Replace image registry in manifests[0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:40.3712373Z [36;1msed -i "s|cloudtolocalllm/postgres:latest|cloudtolocalllm.azurecr.io/postgres:latest|g" k8s/postgres-statefulset.yaml[0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:40.3713822Z [36;1msed -i "s|cloudtolocalllm/web:latest|cloudtolocalllm.azurecr.io/web:latest|g" k8s/web-deployment.yaml[0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:40.3715300Z [36;1msed -i "s|cloudtolocalllm/api-backend:latest|cloudtolocalllm.azurecr.io/api-backend:latest|g" k8s/api-backend-deployment.yaml[0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:40.3716995Z [36;1msed -i "s|cloudtolocalllm/streaming-proxy:latest|cloudtolocalllm.azurecr.io/streaming-proxy:latest|g" k8s/streaming-proxy-deployment.yaml[0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:40.3718138Z [36;1m[0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:40.3718531Z [36;1m# Apply RBAC and ConfigMaps first[0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:40.3719092Z [36;1mkubectl apply -f k8s/rbac.yaml[0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:40.3719674Z [36;1mkubectl apply -f k8s/configmap.yaml[0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:40.3720866Z [36;1mkubectl apply -f k8s/streaming-proxy-configmap.yaml[0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:40.3721462Z [36;1m[0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:40.3721819Z [36;1m# Apply Infrastructure[0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:40.3722372Z [36;1mkubectl apply -f k8s/postgres-statefulset.yaml[0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:40.3723005Z [36;1mkubectl apply -f k8s/cloudflared.yaml[0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:40.3723510Z [36;1m[0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:40.3723861Z [36;1m# Apply Services[0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:40.3724351Z [36;1mkubectl apply -f k8s/web-deployment.yaml[0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:40.3725001Z [36;1mkubectl apply -f k8s/api-backend-deployment.yaml[0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:40.3725727Z [36;1mkubectl apply -f k8s/streaming-proxy-deployment.yaml[0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:40.3726331Z [36;1m[0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:40.3726846Z [36;1m# Force roll out restart to pick up latest images and secrets[0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:40.3728112Z [36;1m# Force delete postgres pod to ensure it picks up new spec (fix for stuck CrashLoopBackOff)[0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:40.3729220Z [36;1mkubectl delete pod postgres-0 -n cloudtolocalllm --force --grace-period=0 || true[0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:40.3730547Z [36;1mkubectl rollout restart statefulset/postgres -n cloudtolocalllm[0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:40.3731378Z [36;1mkubectl rollout restart deployment/web -n cloudtolocalllm[0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:40.3732264Z [36;1mkubectl rollout restart deployment/api-backend -n cloudtolocalllm[0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:40.3733166Z [36;1mkubectl rollout restart deployment/streaming-proxy -n cloudtolocalllm[0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:40.3734084Z [36;1mkubectl rollout restart deployment/cloudflared -n cloudtolocalllm[0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:40.3780876Z shell: /usr/bin/bash -e {0}
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:40.3781319Z env:
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:40.3781715Z   AZURE_RESOURCE_GROUP: cloudtolocalllm-rg
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:40.3782258Z   AZURE_CLUSTER_NAME: cloudtolocalllm-aks
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:40.3782778Z   ACR_NAME: cloudtolocalllm
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:40.3783261Z   DOCKER_REGISTRY: cloudtolocalllm.azurecr.io
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:40.3783812Z   AZURE_HTTP_USER_AGENT: 
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:40.3784251Z   AZUREPS_HOST_ENVIRONMENT: 
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:40.3784833Z   KUBECONFIG: /home/runner/work/_temp/kubeconfig_1764610288512
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:40.3785592Z   KUBE_CONFIG_PATH: /home/runner/work/_temp/kubeconfig_1764610288512
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:40.3786202Z ##[endgroup]
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:41.2821078Z serviceaccount/web-sa unchanged
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:41.3633068Z serviceaccount/api-backend-sa unchanged
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:41.4429605Z serviceaccount/postgres-sa unchanged
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:41.4790534Z role.rbac.authorization.k8s.io/web-role unchanged
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:41.5122470Z role.rbac.authorization.k8s.io/api-backend-role unchanged
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:41.5582430Z role.rbac.authorization.k8s.io/postgres-role unchanged
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:41.5988209Z rolebinding.rbac.authorization.k8s.io/web-rolebinding unchanged
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:41.6237314Z rolebinding.rbac.authorization.k8s.io/api-backend-rolebinding unchanged
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:41.6529415Z rolebinding.rbac.authorization.k8s.io/postgres-rolebinding unchanged
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:41.8821973Z configmap/cloudtolocalllm-config unchanged
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:42.3642815Z configmap/streaming-proxy-config unchanged
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:42.6361333Z service/postgres unchanged
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:42.6752941Z statefulset.apps/postgres unchanged
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:42.8985918Z serviceaccount/cloudflared unchanged
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:42.9375830Z deployment.apps/cloudflared unchanged
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:43.0058753Z configmap/cloudflared-config unchanged
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:43.6846376Z service/web unchanged
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:43.7266261Z deployment.apps/web unchanged
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:43.9795666Z service/api-backend unchanged
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:44.0219337Z deployment.apps/api-backend unchanged
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:44.5896553Z serviceaccount/streaming-proxy-sa unchanged
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:44.6131317Z role.rbac.authorization.k8s.io/streaming-proxy-role unchanged
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:44.6353333Z rolebinding.rbac.authorization.k8s.io/streaming-proxy-rolebinding unchanged
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:44.6860578Z deployment.apps/streaming-proxy unchanged
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:44.7317340Z Warning: Immediate deletion does not wait for confirmation that the running resource has been terminated. The resource may continue to run on the cluster indefinitely.
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:44.8225286Z pod "postgres-0" force deleted from cloudtolocalllm namespace
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:45.0358714Z statefulset.apps/postgres restarted
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:45.1733254Z deployment.apps/web restarted
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:45.9639701Z deployment.apps/api-backend restarted
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:46.4967783Z deployment.apps/streaming-proxy restarted
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:46.6380173Z deployment.apps/cloudflared restarted
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:46.6432562Z ##[group]Run echo "Waiting for Cloudflare Tunnel to be ready..."
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:46.6433060Z [36;1mecho "Waiting for Cloudflare Tunnel to be ready..."[0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:46.6433602Z [36;1mkubectl wait --for=condition=ready pod -l app=cloudflared -n cloudtolocalllm --timeout=300s[0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:46.6434239Z [36;1m[0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:46.6434462Z [36;1mecho "Checking Tunnel Logs..."[0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:46.6434923Z [36;1m# Retry checking logs for connection success message (increased to 24 attempts = 2 minutes)[0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:46.6435384Z [36;1mfor i in {1..24}; do[0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:46.6435855Z [36;1m  if kubectl logs -l app=cloudflared -n cloudtolocalllm | grep -q "Registered tunnel connection"; then[0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:46.6436353Z [36;1m    echo "Tunnel connection verified!"[0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:46.6436650Z [36;1m    exit 0[0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:46.6436865Z [36;1m  fi[0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:46.6437188Z [36;1m  echo "Attempt $i: Tunnel not yet registered, waiting 5s..."[0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:46.6437537Z [36;1m  sleep 5[0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:46.6437756Z [36;1mdone[0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:46.6438023Z [36;1mecho "Tunnel verification failed. Dumping logs:"[0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:46.6438430Z [36;1mkubectl logs -l app=cloudflared -n cloudtolocalllm[0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:46.6438753Z [36;1mexit 1[0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:46.6471562Z shell: /usr/bin/bash -e {0}
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:46.6471824Z env:
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:46.6472074Z   AZURE_RESOURCE_GROUP: cloudtolocalllm-rg
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:46.6472397Z   AZURE_CLUSTER_NAME: cloudtolocalllm-aks
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:46.6472702Z   ACR_NAME: cloudtolocalllm
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:46.6472976Z   DOCKER_REGISTRY: cloudtolocalllm.azurecr.io
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:46.6473278Z   AZURE_HTTP_USER_AGENT: 
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:46.6473530Z   AZUREPS_HOST_ENVIRONMENT: 
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:46.6473860Z   KUBECONFIG: /home/runner/work/_temp/kubeconfig_1764610288512
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:46.6474296Z   KUBE_CONFIG_PATH: /home/runner/work/_temp/kubeconfig_1764610288512
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:46.6474652Z ##[endgroup]
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:46.6527339Z Waiting for Cloudflare Tunnel to be ready...
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:47.3646854Z pod/cloudflared-64bf4b6896-t79ws condition met
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:51.0637590Z pod/cloudflared-6bd467db49-8xf57 condition met
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:51.0661426Z Checking Tunnel Logs...
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:51.1982327Z Tunnel connection verified!
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:51.2012266Z ##[group]Run set -x
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:51.2012594Z [36;1mset -x[0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:51.2012863Z [36;1m# --- Update Cloudflare DNS Records ---[0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:51.2013210Z [36;1mZONE_NAME="cloudtolocalllm.online"[0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:51.2013575Z [36;1mTUNNEL_ID="62da6c19-947b-4bf6-acad-100a73de4e0d"[0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:51.2013951Z [36;1mTUNNEL_CNAME="$TUNNEL_ID.cfargotunnel.com"[0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:51.2015458Z [36;1mTUNNEL_TOKEN="***"[0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:51.2015720Z [36;1m[0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:51.2015940Z [36;1mif [ -z "$TUNNEL_TOKEN" ]; then[0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:51.2016300Z [36;1m  echo "Error: CLOUDFLARE_TUNNEL_TOKEN secret is empty"[0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:51.2016639Z [36;1m  exit 1[0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:51.2016853Z [36;1mfi[0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:51.2017046Z [36;1m[0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:51.2017294Z [36;1mecho "Fetching Zone ID for $ZONE_NAME..."[0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:51.2017820Z [36;1mZONE_ID=$(curl -s -X GET "https://api.cloudflare.com/client/v4/zones?name=$ZONE_NAME" \[0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:51.2018360Z [36;1m  -H "Authorization: ***" \[0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:51.2018738Z [36;1m  -H "Content-Type: application/json" | jq -r '.result[0].id')[0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:51.2019096Z [36;1m[0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:51.2019352Z [36;1mif [ "$ZONE_ID" == "null" ] || [ -z "$ZONE_ID" ]; then[0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:51.2019913Z [36;1m  echo "Error: Could not find Zone ID for $ZONE_NAME"[0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:51.2020414Z [36;1m  exit 1[0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:51.2020636Z [36;1mfi[0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:51.2020831Z [36;1m[0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:51.2021073Z [36;1m# Function to update or create CNAME record[0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:51.2021391Z [36;1mupdate_dns_record() {[0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:51.2021655Z [36;1m  local NAME=$1[0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:51.2021894Z [36;1m  local CONTENT=$2[0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:51.2022156Z [36;1m  local PROXIED=$3[0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:51.2022592Z [36;1m  [0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:51.2022905Z [36;1m  echo "Updating DNS record: $NAME -> $CONTENT (Proxied: $PROXIED)"[0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:51.2023289Z [36;1m  [0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:51.2023509Z [36;1m  # Check if record exists[0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:51.2024067Z [36;1m  local RECORD_JSON=$(curl -s -X GET "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/dns_records?type=CNAME&name=$NAME" \[0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:51.2024712Z [36;1m    -H "Authorization: ***" \[0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:51.2025027Z [36;1m    -H "Content-Type: application/json")[0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:51.2025321Z [36;1m  [0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:51.2025608Z [36;1m  local RECORD_ID=$(echo "$RECORD_JSON" | jq -r '.result[0].id')[0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:51.2025954Z [36;1m  [0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:51.2026211Z [36;1m  if [ "$RECORD_ID" != "null" ] && [ -n "$RECORD_ID" ]; then[0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:51.2026547Z [36;1m     # Update existing[0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:51.2027040Z [36;1m     local RESPONSE=$(curl -s -X PUT "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/dns_records/$RECORD_ID" \[0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:51.2027625Z [36;1m       -H "Authorization: ***" \[0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:51.2027951Z [36;1m       -H "Content-Type: application/json" \[0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:51.2028411Z [36;1m       --data "{\"type\":\"CNAME\",\"name\":\"$NAME\",\"content\":\"$CONTENT\",\"proxied\":$PROXIED,\"ttl\":1}")[0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:51.2028829Z [36;1m  else[0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:51.2029042Z [36;1m     # Create new[0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:51.2029490Z [36;1m     local RESPONSE=$(curl -s -X POST "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/dns_records" \[0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:51.2030228Z [36;1m       -H "Authorization: ***" \[0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:51.2030543Z [36;1m       -H "Content-Type: application/json" \[0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:51.2030998Z [36;1m       --data "{\"type\":\"CNAME\",\"name\":\"$NAME\",\"content\":\"$CONTENT\",\"proxied\":$PROXIED,\"ttl\":1}")[0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:51.2031405Z [36;1m  fi[0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:51.2031607Z [36;1m}[0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:51.2031803Z [36;1m[0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:51.2032008Z [36;1m# Update Records[0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:51.2032471Z [36;1mupdate_dns_record "app" "$TUNNEL_CNAME" true[0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:51.2032825Z [36;1mupdate_dns_record "api" "$TUNNEL_CNAME" true[0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:51.2033174Z [36;1mupdate_dns_record "@" "$TUNNEL_CNAME" true[0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:51.2065109Z shell: /usr/bin/bash -e {0}
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:51.2065373Z env:
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:51.2065623Z   AZURE_RESOURCE_GROUP: cloudtolocalllm-rg
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:51.2065951Z   AZURE_CLUSTER_NAME: cloudtolocalllm-aks
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:51.2066250Z   ACR_NAME: cloudtolocalllm
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:51.2066531Z   DOCKER_REGISTRY: cloudtolocalllm.azurecr.io
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:51.2066837Z   AZURE_HTTP_USER_AGENT: 
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:51.2067092Z   AZUREPS_HOST_ENVIRONMENT: 
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:51.2067420Z   KUBECONFIG: /home/runner/work/_temp/kubeconfig_1764610288512
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:51.2067848Z   KUBE_CONFIG_PATH: /home/runner/work/_temp/kubeconfig_1764610288512
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:51.2068327Z   CLOUDFLARE_DNS_TOKEN: ***
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:51.2069413Z   CLOUDFLARE_TUNNEL_TOKEN: ***
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:51.2069666Z ##[endgroup]
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:51.2119468Z + ZONE_NAME=cloudtolocalllm.online
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:51.2120195Z + TUNNEL_ID=62da6c19-947b-4bf6-acad-100a73de4e0d
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:51.2120865Z + TUNNEL_CNAME=62da6c19-947b-4bf6-acad-100a73de4e0d.cfargotunnel.com
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:51.2122225Z + TUNNEL_TOKEN=***
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:51.2123248Z + '[' -z *** ']'
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:51.2123549Z + echo 'Fetching Zone ID for cloudtolocalllm.online...'
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:51.2123932Z Fetching Zone ID for cloudtolocalllm.online...
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:51.2127002Z ++ curl -s -X GET 'https://api.cloudflare.com/client/v4/zones?name=cloudtolocalllm.online' -H 'Authorization: ***' -H 'Content-Type: application/json'
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:51.2128471Z ++ jq -r '.result[0].id'
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:52.2228696Z + ZONE_ID=01bae6fa9d97d5e731a1fa6fc8e1f960
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:52.2229239Z + '[' 01bae6fa9d97d5e731a1fa6fc8e1f960 == null ']'
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:52.2230539Z + '[' -z 01bae6fa9d97d5e731a1fa6fc8e1f960 ']'
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:52.2231420Z + update_dns_record app 62da6c19-947b-4bf6-acad-100a73de4e0d.cfargotunnel.com true
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:52.2232271Z + local NAME=app
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:52.2232732Z + local CONTENT=62da6c19-947b-4bf6-acad-100a73de4e0d.cfargotunnel.com
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:52.2233220Z + local PROXIED=true
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:52.2233811Z + echo 'Updating DNS record: app -> 62da6c19-947b-4bf6-acad-100a73de4e0d.cfargotunnel.com (Proxied: true)'
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:52.2235762Z ++ curl -s -X GET 'https://api.cloudflare.com/client/v4/zones/01bae6fa9d97d5e731a1fa6fc8e1f960/dns_records?type=CNAME&name=app' -H 'Authorization: ***' -H 'Content-Type: application/json'
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:52.2236999Z Updating DNS record: app -> 62da6c19-947b-4bf6-acad-100a73de4e0d.cfargotunnel.com (Proxied: true)
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:52.6240240Z + local 'RECORD_JSON={"result":[],"success":true,"errors":[],"messages":[],"result_info":{"page":1,"per_page":100,"count":0,"total_count":0,"total_pages":1}}'
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:52.6244802Z ++ echo '{"result":[],"success":true,"errors":[],"messages":[],"result_info":{"page":1,"per_page":100,"count":0,"total_count":0,"total_pages":1}}'
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:52.6245819Z ++ jq -r '.result[0].id'
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:52.6274436Z + local RECORD_ID=null
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:52.6274853Z + '[' null '!=' null ']'
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:52.6279061Z ++ curl -s -X POST https://api.cloudflare.com/client/v4/zones/01bae6fa9d97d5e731a1fa6fc8e1f960/dns_records -H 'Authorization: ***' -H 'Content-Type: application/json' --data '{"type":"CNAME","name":"app","content":"62da6c19-947b-4bf6-acad-100a73de4e0d.cfargotunnel.com","proxied":true,"ttl":1}'
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:52.8912651Z + local 'RESPONSE={"result":null,"success":false,"errors":[{"code":81053,"message":"An A, AAAA, or CNAME record with that host already exists. For more details, refer to \u003chttps://developers.cloudflare.com/dns/manage-dns-records/troubleshooting/records-with-same-name/\u003e."}],"messages":[]}'
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:52.8915085Z + update_dns_record api 62da6c19-947b-4bf6-acad-100a73de4e0d.cfargotunnel.com true
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:52.8916277Z + local NAME=api
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:52.8916819Z + local CONTENT=62da6c19-947b-4bf6-acad-100a73de4e0d.cfargotunnel.com
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:52.8917434Z + local PROXIED=true
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:52.8918161Z + echo 'Updating DNS record: api -> 62da6c19-947b-4bf6-acad-100a73de4e0d.cfargotunnel.com (Proxied: true)'
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:52.8919217Z Updating DNS record: api -> 62da6c19-947b-4bf6-acad-100a73de4e0d.cfargotunnel.com (Proxied: true)
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:52.8921425Z ++ curl -s -X GET 'https://api.cloudflare.com/client/v4/zones/01bae6fa9d97d5e731a1fa6fc8e1f960/dns_records?type=CNAME&name=api' -H 'Authorization: ***' -H 'Content-Type: application/json'
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:53.1453209Z + local 'RECORD_JSON={"result":[],"success":true,"errors":[],"messages":[],"result_info":{"page":1,"per_page":100,"count":0,"total_count":0,"total_pages":1}}'
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:53.1459458Z ++ echo '{"result":[],"success":true,"errors":[],"messages":[],"result_info":{"page":1,"per_page":100,"count":0,"total_count":0,"total_pages":1}}'
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:53.1461232Z ++ jq -r '.result[0].id'
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:53.1489491Z + local RECORD_ID=null
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:53.1490104Z + '[' null '!=' null ']'
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:53.1494834Z ++ curl -s -X POST https://api.cloudflare.com/client/v4/zones/01bae6fa9d97d5e731a1fa6fc8e1f960/dns_records -H 'Authorization: ***' -H 'Content-Type: application/json' --data '{"type":"CNAME","name":"api","content":"62da6c19-947b-4bf6-acad-100a73de4e0d.cfargotunnel.com","proxied":true,"ttl":1}'
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:53.4325521Z + local 'RESPONSE={"result":null,"success":false,"errors":[{"code":81053,"message":"An A, AAAA, or CNAME record with that host already exists. For more details, refer to \u003chttps://developers.cloudflare.com/dns/manage-dns-records/troubleshooting/records-with-same-name/\u003e."}],"messages":[]}'
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:53.4327930Z Updating DNS record: @ -> 62da6c19-947b-4bf6-acad-100a73de4e0d.cfargotunnel.com (Proxied: true)
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:53.4329048Z + update_dns_record @ 62da6c19-947b-4bf6-acad-100a73de4e0d.cfargotunnel.com true
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:53.4329553Z + local NAME=@
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:53.4330080Z + local CONTENT=62da6c19-947b-4bf6-acad-100a73de4e0d.cfargotunnel.com
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:53.4330537Z + local PROXIED=true
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:53.4331056Z + echo 'Updating DNS record: @ -> 62da6c19-947b-4bf6-acad-100a73de4e0d.cfargotunnel.com (Proxied: true)'
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:53.4332639Z ++ curl -s -X GET 'https://api.cloudflare.com/client/v4/zones/01bae6fa9d97d5e731a1fa6fc8e1f960/dns_records?type=CNAME&name=@' -H 'Authorization: ***' -H 'Content-Type: application/json'
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:53.7458936Z + local 'RECORD_JSON={"result":[],"success":true,"errors":[],"messages":[],"result_info":{"page":1,"per_page":100,"count":0,"total_count":0,"total_pages":1}}'
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:53.7463851Z ++ echo '{"result":[],"success":true,"errors":[],"messages":[],"result_info":{"page":1,"per_page":100,"count":0,"total_count":0,"total_pages":1}}'
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:53.7465551Z ++ jq -r '.result[0].id'
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:53.7494049Z + local RECORD_ID=null
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:53.7494507Z + '[' null '!=' null ']'
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:53.7498758Z ++ curl -s -X POST https://api.cloudflare.com/client/v4/zones/01bae6fa9d97d5e731a1fa6fc8e1f960/dns_records -H 'Authorization: ***' -H 'Content-Type: application/json' --data '{"type":"CNAME","name":"@","content":"62da6c19-947b-4bf6-acad-100a73de4e0d.cfargotunnel.com","proxied":true,"ttl":1}'
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:54.0645500Z + local 'RESPONSE={"result":null,"success":false,"errors":[{"code":81053,"message":"An A, AAAA, or CNAME record with that host already exists. For more details, refer to \u003chttps://developers.cloudflare.com/dns/manage-dns-records/troubleshooting/records-with-same-name/\u003e."}],"messages":[]}'
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:54.0687093Z ##[group]Run echo "Waiting for DNS propagation and service health..."
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:54.0687972Z [36;1mecho "Waiting for DNS propagation and service health..."[0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:54.0688637Z [36;1m# Retry loop for 2 minutes[0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:54.0689130Z [36;1mfor i in {1..24}; do[0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:54.0689962Z [36;1m  if curl -s -f https://app.cloudtolocalllm.online/health; then[0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:54.0690668Z [36;1m    echo "Health check passed!"[0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:54.0701734Z [36;1m    exit 0[0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:54.0702175Z [36;1m  fi[0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:54.0702689Z [36;1m  echo "Attempt $i: Health check failed, waiting 5s..."[0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:54.0703289Z [36;1m  sleep 5[0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:54.0703687Z [36;1mdone[0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:54.0704248Z [36;1mecho "Health check failed after 2 minutes. Dumping api-backend logs:"[0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:54.0705005Z [36;1mkubectl get pods -n cloudtolocalllm[0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:54.0705722Z [36;1mkubectl logs postgres-0 -n cloudtolocalllm --tail=50[0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:54.0706466Z [36;1mkubectl describe pod postgres-0 -n cloudtolocalllm[0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:54.0707250Z [36;1mkubectl logs -l app=api-backend -n cloudtolocalllm --tail=100[0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:54.0708088Z [36;1mkubectl describe pod -l app=api-backend -n cloudtolocalllm[0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:54.0708734Z [36;1mexit 1[0m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:54.0754703Z shell: /usr/bin/bash -e {0}
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:54.0755161Z env:
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:54.0755557Z   AZURE_RESOURCE_GROUP: cloudtolocalllm-rg
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:54.0756154Z   AZURE_CLUSTER_NAME: cloudtolocalllm-aks
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:54.0756681Z   ACR_NAME: cloudtolocalllm
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:54.0757191Z   DOCKER_REGISTRY: cloudtolocalllm.azurecr.io
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:54.0757730Z   AZURE_HTTP_USER_AGENT: 
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:54.0758170Z   AZUREPS_HOST_ENVIRONMENT: 
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:54.0758749Z   KUBECONFIG: /home/runner/work/_temp/kubeconfig_1764610288512
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:54.0759522Z   KUBE_CONFIG_PATH: /home/runner/work/_temp/kubeconfig_1764610288512
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:54.0760401Z ##[endgroup]
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:54.0826660Z Waiting for DNS propagation and service health...
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:54.1584751Z Attempt 1: Health check failed, waiting 5s...
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:31:59.2318918Z Attempt 2: Health check failed, waiting 5s...
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:32:04.2956340Z Attempt 3: Health check failed, waiting 5s...
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:32:09.3662744Z Attempt 4: Health check failed, waiting 5s...
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:32:14.4560184Z Attempt 5: Health check failed, waiting 5s...
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:32:19.5141220Z Attempt 6: Health check failed, waiting 5s...
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:32:24.5818864Z Attempt 7: Health check failed, waiting 5s...
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:32:29.6415787Z Attempt 8: Health check failed, waiting 5s...
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:32:34.7029282Z Attempt 9: Health check failed, waiting 5s...
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:32:39.7649664Z Attempt 10: Health check failed, waiting 5s...
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:32:44.8234415Z Attempt 11: Health check failed, waiting 5s...
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:32:49.9045521Z Attempt 12: Health check failed, waiting 5s...
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:32:54.9755736Z Attempt 13: Health check failed, waiting 5s...
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:00.0527721Z Attempt 14: Health check failed, waiting 5s...
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:05.1391590Z Attempt 15: Health check failed, waiting 5s...
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:10.1973595Z Attempt 16: Health check failed, waiting 5s...
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:15.2792840Z Attempt 17: Health check failed, waiting 5s...
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:20.3411865Z Attempt 18: Health check failed, waiting 5s...
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:25.3966112Z Attempt 19: Health check failed, waiting 5s...
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:30.4613959Z Attempt 20: Health check failed, waiting 5s...
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:35.5215478Z Attempt 21: Health check failed, waiting 5s...
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:40.5856377Z Attempt 22: Health check failed, waiting 5s...
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:45.6591987Z Attempt 23: Health check failed, waiting 5s...
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:50.7140750Z Attempt 24: Health check failed, waiting 5s...
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:55.7156553Z Health check failed after 2 minutes. Dumping api-backend logs:
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:55.8301763Z NAME                               READY   STATUS             RESTARTS         AGE
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:55.8302629Z api-backend-56d577957c-fsksz       0/1     CrashLoopBackOff   3 (27s ago)      2m9s
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:55.8303595Z api-backend-6495b998d4-2v668       0/1     CrashLoopBackOff   44 (3m56s ago)   3h28m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:55.8304495Z cloudflared-6bd467db49-8xf57       1/1     Running            0                2m9s
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:55.8305282Z postgres-0                         1/1     Running            0                112s
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:55.8306100Z streaming-proxy-6d568d44b6-4lc9q   1/1     Running            0                2m9s
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:55.8306958Z web-5f5cb76cbf-rskf6               1/1     Running            0                2m10s
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:56.4206899Z  done
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:56.4207413Z server started
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:56.4207919Z Running initialization scripts...
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:56.4208889Z /usr/local/bin/postgres-entrypoint.sh: running /docker-entrypoint-initdb.d/01-init.sh
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:56.4210073Z Starting database initialization...
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:56.4210629Z CREATE DATABASE
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:56.4211024Z DO
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:56.4211383Z GRANT
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:56.4211737Z GRANT
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:56.4212072Z GRANT
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:56.4212409Z GRANT
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:56.4212821Z ALTER DEFAULT PRIVILEGES
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:56.4213179Z ALTER DEFAULT PRIVILEGES
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:56.4213442Z ALTER DEFAULT PRIVILEGES
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:56.4213718Z Database initialization completed.
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:56.4214111Z 2025-12-01 17:32:06.045 UTC [27] LOG:  received fast shutdown request
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:56.4214708Z waiting for server to shut down....2025-12-01 17:32:06.051 UTC [27] LOG:  aborting any active transactions
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:56.4215449Z 2025-12-01 17:32:06.055 UTC [27] LOG:  background worker "logical replication launcher" (PID 33) exited with exit code 1
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:56.4216022Z 2025-12-01 17:32:06.056 UTC [28] LOG:  shutting down
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:56.4216460Z 2025-12-01 17:32:06.060 UTC [28] LOG:  checkpoint starting: shutdown immediate
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:56.4217562Z 2025-12-01 17:32:06.147 UTC [28] LOG:  checkpoint complete: wrote 936 buffers (5.7%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.058 s, sync=0.013 s, total=0.091 s; sync files=308, longest=0.005 s, average=0.001 s; distance=4274 kB, estimate=4274 kB; lsn=0/191C740, redo lsn=0/191C740
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:56.4220148Z 2025-12-01 17:32:06.157 UTC [27] LOG:  database system is shut down
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:56.4220573Z  done
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:56.4220784Z server stopped
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:56.4221062Z Checking if database cloudtolocalllm exists...
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:56.4221919Z waiting for server to start....2025-12-01 17:32:06.293 UTC [42] LOG:  starting PostgreSQL 16.10 (Ubuntu 16.10-0ubuntu0.24.04.1) on x86_64-pc-linux-gnu, compiled by gcc (Ubuntu 13.3.0-6ubuntu2~24.04) 13.3.0, 64-bit
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:56.4222826Z 2025-12-01 17:32:06.293 UTC [42] LOG:  listening on IPv4 address "0.0.0.0", port 5432
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:56.4227267Z 2025-12-01 17:32:06.294 UTC [42] LOG:  listening on IPv6 address "::", port 5432
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:56.4227853Z 2025-12-01 17:32:06.311 UTC [42] LOG:  listening on Unix socket "/var/run/postgresql/.s.PGSQL.5432"
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:56.4228415Z 2025-12-01 17:32:06.331 UTC [45] LOG:  database system was shut down at 2025-12-01 17:32:06 UTC
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:56.4228902Z 2025-12-01 17:32:06.340 UTC [42] LOG:  database system is ready to accept connections
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:56.4229269Z  done
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:56.4229455Z server started
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:56.4229686Z Database cloudtolocalllm exists.
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:56.4230366Z waiting for server to shut down...2025-12-01 17:32:06.383 UTC [42] LOG:  received fast shutdown request
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:56.4230874Z .2025-12-01 17:32:06.388 UTC [42] LOG:  aborting any active transactions
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:56.4231422Z 2025-12-01 17:32:06.393 UTC [42] LOG:  background worker "logical replication launcher" (PID 48) exited with exit code 1
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:56.4232411Z 2025-12-01 17:32:06.393 UTC [43] LOG:  shutting down
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:56.4232812Z 2025-12-01 17:32:06.397 UTC [43] LOG:  checkpoint starting: shutdown immediate
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:56.4233739Z 2025-12-01 17:32:06.423 UTC [43] LOG:  checkpoint complete: wrote 4 buffers (0.0%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.007 s, sync=0.007 s, total=0.031 s; sync files=3, longest=0.004 s, average=0.003 s; distance=0 kB, estimate=0 kB; lsn=0/191C7B8, redo lsn=0/191C7B8
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:56.4234636Z 2025-12-01 17:32:06.429 UTC [42] LOG:  database system is shut down
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:56.4234954Z  done
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:56.4235139Z server stopped
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:56.4235358Z Starting PostgreSQL...
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:56.4235945Z 2025-12-01 17:32:06.520 UTC [1] LOG:  starting PostgreSQL 16.10 (Ubuntu 16.10-0ubuntu0.24.04.1) on x86_64-pc-linux-gnu, compiled by gcc (Ubuntu 13.3.0-6ubuntu2~24.04) 13.3.0, 64-bit
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:56.4236641Z 2025-12-01 17:32:06.520 UTC [1] LOG:  listening on IPv4 address "0.0.0.0", port 5432
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:56.4237099Z 2025-12-01 17:32:06.520 UTC [1] LOG:  listening on IPv6 address "::", port 5432
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:56.4237582Z 2025-12-01 17:32:06.529 UTC [1] LOG:  listening on Unix socket "/var/run/postgresql/.s.PGSQL.5432"
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:56.4238104Z 2025-12-01 17:32:06.539 UTC [55] LOG:  database system was shut down at 2025-12-01 17:32:06 UTC
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:56.4238576Z 2025-12-01 17:32:06.548 UTC [1] LOG:  database system is ready to accept connections
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.4401022Z Name:             postgres-0
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.4401484Z Namespace:        cloudtolocalllm
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.4401887Z Priority:         0
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.4402271Z Service Account:  postgres-sa
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.4402746Z Node:             aks-nodepool1-16498327-vmss000000/10.224.0.4
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.4403310Z Start Time:       Mon, 01 Dec 2025 17:32:03 +0000
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.4403828Z Labels:           app=postgres
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.4404325Z                   apps.kubernetes.io/pod-index=0
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.4404893Z                   controller-revision-hash=postgres-5b98cb7cd5
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.4405411Z                   environment=development
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.4405917Z                   statefulset.kubernetes.io/pod-name=postgres-0
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.4407046Z Annotations:      kubectl.kubernetes.io/restartedAt: 2025-12-01T17:31:45Z
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.4407691Z Status:           Running
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.4408084Z IP:               10.244.0.251
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.4408513Z IPs:
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.4408833Z   IP:           10.244.0.251
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.4409219Z Controlled By:  StatefulSet/postgres
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.4409514Z Containers:
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.4409965Z   postgres:
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.4410488Z     Container ID:   containerd://529bd32ffffcc88204edfc555016aca91dbdc0356b45ba988c5d9226d31a9150
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.4411148Z     Image:          cloudtolocalllm.azurecr.io/postgres:latest
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.4411973Z     Image ID:       cloudtolocalllm.azurecr.io/postgres@sha256:e6f14f1517031f3164d27401505321c57af865c55d1b60f10e622050b3887e38
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.4412597Z     Port:           5432/TCP (postgres)
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.4412914Z     Host Port:      0/TCP (postgres)
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.4413189Z     State:          Running
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.4413458Z       Started:      Mon, 01 Dec 2025 17:32:04 +0000
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.4413754Z     Ready:          True
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.4413987Z     Restart Count:  0
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.4414198Z     Limits:
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.4414397Z       cpu:     500m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.4414599Z       memory:  1Gi
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.4414808Z     Requests:
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.4415006Z       cpu:      250m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.4415223Z       memory:   256Mi
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.4415829Z     Liveness:   exec [sh -c export PGPASSWORD=$POSTGRES_PASSWORD; pg_isready -U $POSTGRES_USER -d $POSTGRES_DB] delay=60s timeout=5s period=10s #success=1 #failure=3
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.4417038Z     Readiness:  exec [sh -c export PGPASSWORD=$POSTGRES_PASSWORD; pg_isready -U $POSTGRES_USER -d $POSTGRES_DB] delay=10s timeout=3s period=5s #success=1 #failure=3
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.4418016Z     Startup:    exec [sh -c export PGPASSWORD=$POSTGRES_PASSWORD; pg_isready -U $POSTGRES_USER -d $POSTGRES_DB] delay=10s timeout=3s period=5s #success=1 #failure=30
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.4418623Z     Environment:
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.4419031Z       POSTGRES_DB:        <set to the key 'DB_NAME' of config map 'cloudtolocalllm-config'>         Optional: false
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.4419665Z       POSTGRES_USER:      <set to the key 'postgres-user' in secret 'cloudtolocalllm-secrets'>      Optional: false
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.4420532Z       POSTGRES_PASSWORD:  <set to the key 'postgres-password' in secret 'cloudtolocalllm-secrets'>  Optional: false
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.4421193Z       APP_USER_PASSWORD:  <set to the key 'postgres-password' in secret 'cloudtolocalllm-secrets'>  Optional: false
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.4421693Z       PGDATA:             /var/lib/postgresql/data/pgdata
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.4421996Z     Mounts:
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.4422239Z       /var/lib/postgresql/data from postgres-data (rw)
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.4422687Z       /var/run/secrets/kubernetes.io/serviceaccount from kube-api-access-xmckj (ro)
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.4423086Z Conditions:
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.4423293Z   Type                        Status
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.4423570Z   PodReadyToStartContainers   True 
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.4423846Z   Initialized                 True 
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.4424093Z   Ready                       True 
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.4424343Z   ContainersReady             True 
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.4424591Z   PodScheduled                True 
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.4424832Z Volumes:
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.4425030Z   postgres-data:
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.4425340Z     Type:       EmptyDir (a temporary directory that shares a pod's lifetime)
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.4425694Z     Medium:     
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.4425901Z     SizeLimit:  <unset>
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.4426141Z   kube-api-access-xmckj:
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.4426507Z     Type:                    Projected (a volume that contains injected data from multiple sources)
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.4426917Z     TokenExpirationSeconds:  3607
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.4427268Z     ConfigMapName:           kube-root-ca.crt
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.4427697Z     Optional:                false
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.4427951Z     DownwardAPI:             true
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.4428212Z QoS Class:                   Burstable
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.4428482Z Node-Selectors:              <none>
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.4428861Z Tolerations:                 node.kubernetes.io/memory-pressure:NoSchedule op=Exists
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.4429321Z                              node.kubernetes.io/not-ready:NoExecute op=Exists for 300s
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.4429908Z                              node.kubernetes.io/unreachable:NoExecute op=Exists for 300s
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.4430259Z Events:
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.4430485Z   Type    Reason     Age   From               Message
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.4430808Z   ----    ------     ----  ----               -------
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.4431402Z   Normal  Scheduled  114s  default-scheduler  Successfully assigned cloudtolocalllm/postgres-0 to aks-nodepool1-16498327-vmss000000
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.4432155Z   Normal  Pulling    114s  kubelet            Pulling image "cloudtolocalllm.azurecr.io/postgres:latest"
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.4433040Z   Normal  Pulled     113s  kubelet            Successfully pulled image "cloudtolocalllm.azurecr.io/postgres:latest" in 248ms (248ms including waiting). Image size: 223381014 bytes.
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.4433794Z   Normal  Created    113s  kubelet            Created container: postgres
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.4434237Z   Normal  Started    113s  kubelet            Started container postgres
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.5141382Z Defaulted container "api-backend" out of: api-backend, wait-for-postgres (init)
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.5142417Z Defaulted container "api-backend" out of: api-backend, wait-for-postgres (init)
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.5360872Z 
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.5361679Z > cloudtolocalllm-api-backend@1.0.0 start
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.5362335Z > node server.js
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.5362582Z 
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.5362788Z /app/node_modules/swagger-jsdoc/src/specification.js:263
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.5363301Z           const anchorString = anchor.cstNode.toString();
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.5363701Z                                       ^
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.5363958Z 
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.5364242Z TypeError: Cannot read properties of undefined (reading 'cstNode')
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.5364841Z     at /app/node_modules/swagger-jsdoc/src/specification.js:263:39
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.5365270Z     at Array.forEach (<anonymous>)
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.5365695Z     at build (/app/node_modules/swagger-jsdoc/src/specification.js:253:25)
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.5366266Z     at module.exports (/app/node_modules/swagger-jsdoc/src/lib.js:32:10)
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.5366733Z     at file:///app/swagger-config.js:489:22
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.5367167Z     at ModuleJob.run (node:internal/modules/esm/module_job:377:25)
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.5367747Z     at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:671:26)
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.5368425Z     at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:5)
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.5368831Z 
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.5368935Z Node.js v24.11.1
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.5369180Z npm notice
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.5369521Z npm notice New patch version of npm available! 11.6.2 -> 11.6.4
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.5370292Z npm notice Changelog: https://github.com/npm/cli/releases/tag/v11.6.4
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.5370810Z npm notice To update run: npm install -g npm@11.6.4
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.5371171Z npm notice
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.5566683Z 
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.5567041Z > cloudtolocalllm-api-backend@1.0.0 start
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.5567603Z > node server.js
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.5567858Z 
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.5568138Z /app/node_modules/swagger-jsdoc/src/specification.js:263
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.5568803Z           const anchorString = anchor.cstNode.toString();
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.5569347Z                                       ^
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.5569647Z 
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.5570189Z TypeError: Cannot read properties of undefined (reading 'cstNode')
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.5570950Z     at /app/node_modules/swagger-jsdoc/src/specification.js:263:39
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.5571827Z     at Array.forEach (<anonymous>)
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.5572444Z     at build (/app/node_modules/swagger-jsdoc/src/specification.js:253:25)
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.5573248Z     at module.exports (/app/node_modules/swagger-jsdoc/src/lib.js:32:10)
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.5573919Z     at file:///app/swagger-config.js:489:22
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.5574543Z     at ModuleJob.run (node:internal/modules/esm/module_job:377:25)
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.5575389Z     at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:671:26)
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.5576362Z     at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:5)
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.5576946Z 
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.5577096Z Node.js v24.11.1
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.5577460Z npm notice
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.5577947Z npm notice New patch version of npm available! 11.6.2 -> 11.6.4
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.5578742Z npm notice Changelog: https://github.com/npm/cli/releases/tag/v11.6.4
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.5579484Z npm notice To update run: npm install -g npm@11.6.4
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.5580181Z npm notice
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7693727Z Name:             api-backend-56d577957c-fsksz
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7694314Z Namespace:        cloudtolocalllm
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7694776Z Priority:         0
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7695172Z Service Account:  api-backend-sa
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7695701Z Node:             aks-nodepool1-16498327-vmss000000/10.224.0.4
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7696292Z Start Time:       Mon, 01 Dec 2025 17:31:47 +0000
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7696817Z Labels:           app=api-backend
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7697153Z                   pod-template-hash=56d577957c
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7697611Z                   tier=backend
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7698343Z Annotations:      kubectl.kubernetes.io/restartedAt: 2025-12-01T17:31:45Z
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7698790Z Status:           Running
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7699054Z IP:               10.244.0.97
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7699306Z IPs:
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7699516Z   IP:           10.244.0.97
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7700051Z Controlled By:  ReplicaSet/api-backend-56d577957c
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7700387Z Init Containers:
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7700614Z   wait-for-postgres:
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7701091Z     Container ID:  containerd://b839a143a4becedada584193ed4aaf3386dc28f99c25f1b220723365ddd0e8f4
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7701596Z     Image:         busybox:1.35
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7702107Z     Image ID:      docker.io/library/busybox@sha256:98ad9d1a2be345201bb0709b0d38655eb1b370145c7d94ca1fe9c421f76e245a
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7702637Z     Port:          <none>
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7702876Z     Host Port:     <none>
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7703135Z     Command:
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7703330Z       sh
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7703530Z       -c
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7703773Z       echo "Waiting for PostgreSQL to be ready..."
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7704102Z       for i in $(seq 1 30); do
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7704463Z         if nc -z postgres.cloudtolocalllm.svc.cluster.local 5432; then
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7704855Z           echo "PostgreSQL is ready!"
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7705125Z           exit 0
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7705333Z         fi
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7705613Z         echo "Attempt $i/30: PostgreSQL not ready yet, waiting..."
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7705951Z         sleep 2
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7706160Z       done
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7706429Z       echo "PostgreSQL failed to become ready after 60 seconds"
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7706769Z       exit 1
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7706963Z       
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7707167Z     State:          Terminated
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7707421Z       Reason:       Completed
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7707675Z       Exit Code:    0
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7707926Z       Started:      Mon, 01 Dec 2025 17:31:49 +0000
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7708254Z       Finished:     Mon, 01 Dec 2025 17:32:20 +0000
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7708553Z     Ready:          True
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7708800Z     Restart Count:  0
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7709036Z     Environment:    <none>
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7709268Z     Mounts:
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7709888Z       /var/run/secrets/kubernetes.io/serviceaccount from kube-api-access-658d9 (ro)
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7710293Z Containers:
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7710488Z   api-backend:
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7710894Z     Container ID:   containerd://3aba706f50f51524b1e51f7de98492f9b721acf6cfffcf4b912f58bfcacfc7a3
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7711426Z     Image:          cloudtolocalllm.azurecr.io/api-backend:latest
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7712021Z     Image ID:       cloudtolocalllm.azurecr.io/api-backend@sha256:9349c6165bdfffe1be5c162095a0a73a2f10233e709d7b12a5293e5d60666b34
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7712565Z     Port:           8080/TCP (http)
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7712829Z     Host Port:      0/TCP (http)
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7713081Z     State:          Waiting
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7713330Z       Reason:       CrashLoopBackOff
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7713599Z     Last State:     Terminated
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7713855Z       Reason:       Error
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7714080Z       Exit Code:    1
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7714333Z       Started:      Mon, 01 Dec 2025 17:33:25 +0000
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7714643Z       Finished:     Mon, 01 Dec 2025 17:33:28 +0000
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7714924Z     Ready:          False
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7715147Z     Restart Count:  3
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7715357Z     Limits:
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7715551Z       cpu:     500m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7715757Z       memory:  1Gi
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7715959Z     Requests:
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7716159Z       cpu:      200m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7716367Z       memory:   256Mi
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7716759Z     Liveness:   http-get http://:8080/health delay=60s timeout=5s period=10s #success=1 #failure=3
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7717343Z     Readiness:  http-get http://:8080/health delay=10s timeout=3s period=5s #success=1 #failure=3
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7718035Z     Startup:    http-get http://:8080/health delay=5s timeout=3s period=5s #success=1 #failure=30
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7718448Z     Environment:
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7718864Z       NODE_ENV:                    <set to the key 'NODE_ENV' of config map 'cloudtolocalllm-config'>                    Optional: false
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7719519Z       LOG_LEVEL:                   <set to the key 'LOG_LEVEL' of config map 'cloudtolocalllm-config'>                   Optional: false
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7720286Z       CLIENT_LOG_DIR:              <set to the key 'CLIENT_LOG_DIR' of config map 'cloudtolocalllm-config'>              Optional: false
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7720929Z       PORT:                        <set to the key 'PORT' of config map 'cloudtolocalllm-config'>                        Optional: false
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7721560Z       DOMAIN:                      <set to the key 'DOMAIN' of config map 'cloudtolocalllm-config'>                      Optional: false
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7722189Z       DB_TYPE:                     <set to the key 'DB_TYPE' of config map 'cloudtolocalllm-config'>                     Optional: false
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7722809Z       DB_HOST:                     <set to the key 'DB_HOST' of config map 'cloudtolocalllm-config'>                     Optional: false
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7723423Z       DB_PORT:                     <set to the key 'DB_PORT' of config map 'cloudtolocalllm-config'>                     Optional: false
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7724038Z       DB_NAME:                     <set to the key 'DB_NAME' of config map 'cloudtolocalllm-config'>                     Optional: false
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7724663Z       DB_USER:                     <set to the key 'postgres-user' in secret 'cloudtolocalllm-secrets'>                  Optional: false
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7725336Z       DB_PASSWORD:                 <set to the key 'postgres-password' in secret 'cloudtolocalllm-secrets'>              Optional: false
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7726017Z       JWT_SECRET:                  <set to the key 'jwt-secret' in secret 'cloudtolocalllm-secrets'>                     Optional: false
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7726714Z       SUPABASE_JWT_SECRET:         <set to the key 'supabase-jwt-secret' in secret 'cloudtolocalllm-secrets'>            Optional: false
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7727544Z       SUPABASE_URL:                <set to the key 'supabase-url' in secret 'cloudtolocalllm-secrets'>                   Optional: false
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7728237Z       AUTH0_DOMAIN:                <set to the key 'auth0-domain' in secret 'cloudtolocalllm-secrets'>                   Optional: false
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7728941Z       AUTH0_AUDIENCE:              <set to the key 'auth0-audience' in secret 'cloudtolocalllm-secrets'>                 Optional: false
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7729636Z       AUTH0_CLIENT_ID:             <set to the key 'auth0-client-id' in secret 'cloudtolocalllm-secrets'>                Optional: false
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7730452Z       ADMIN_CENTER_ENABLED:        <set to the key 'ADMIN_CENTER_ENABLED' of config map 'cloudtolocalllm-config'>        Optional: false
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7731143Z       ADMIN_EMAIL:                 <set to the key 'ADMIN_EMAIL' of config map 'cloudtolocalllm-config'>                 Optional: false
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7732287Z       DB_POOL_MAX:                 <set to the key 'DB_POOL_MAX' of config map 'cloudtolocalllm-config'>                 Optional: false
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7733373Z       DB_POOL_IDLE_TIMEOUT:        <set to the key 'DB_POOL_IDLE_TIMEOUT' of config map 'cloudtolocalllm-config'>        Optional: false
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7734558Z       DB_POOL_CONNECTION_TIMEOUT:  <set to the key 'DB_POOL_CONNECTION_TIMEOUT' of config map 'cloudtolocalllm-config'>  Optional: false
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7735519Z       STRIPE_SECRET_KEY:           <set to the key 'stripe-test-secret-key' in secret 'cloudtolocalllm-secrets'>         Optional: false
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7736451Z       STRIPE_PUBLISHABLE_KEY:      <set to the key 'stripe-test-publishable-key' in secret 'cloudtolocalllm-secrets'>    Optional: false
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7737238Z       STRIPE_WEBHOOK_SECRET:       <set to the key 'stripe-test-webhook-secret' in secret 'cloudtolocalllm-secrets'>     Optional: false
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7737962Z       SENTRY_DSN:                  <set to the key 'sentry-dsn' in secret 'cloudtolocalllm-secrets'>                     Optional: true
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7738418Z     Mounts:
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7738766Z       /var/run/secrets/kubernetes.io/serviceaccount from kube-api-access-658d9 (ro)
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7739167Z Conditions:
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7739374Z   Type                        Status
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7739651Z   PodReadyToStartContainers   True 
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7740080Z   Initialized                 True 
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7740335Z   Ready                       False 
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7740591Z   ContainersReady             False 
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7740855Z   PodScheduled                True 
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7741109Z Volumes:
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7741325Z   kube-api-access-658d9:
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7741692Z     Type:                    Projected (a volume that contains injected data from multiple sources)
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7742104Z     TokenExpirationSeconds:  3607
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7742397Z     ConfigMapName:           kube-root-ca.crt
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7742685Z     Optional:                false
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7742934Z     DownwardAPI:             true
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7743189Z QoS Class:                   Burstable
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7743491Z Node-Selectors:              <none>
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7743863Z Tolerations:                 node.kubernetes.io/memory-pressure:NoSchedule op=Exists
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7744326Z                              node.kubernetes.io/not-ready:NoExecute op=Exists for 300s
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7744750Z                              node.kubernetes.io/unreachable:NoExecute op=Exists for 300s
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7745085Z Events:
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7745339Z   Type     Reason            Age                From               Message
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7745717Z   ----     ------            ----               ----               -------
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7746473Z   Warning  FailedScheduling  2m11s              default-scheduler  0/1 nodes are available: 1 Insufficient cpu. preemption: 0/1 nodes are available: 1 No preemption victims found for incoming pod.
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7747678Z   Normal   Scheduled         2m9s               default-scheduler  Successfully assigned cloudtolocalllm/api-backend-56d577957c-fsksz to aks-nodepool1-16498327-vmss000000
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7748471Z   Normal   Pulled            2m8s               kubelet            Container image "busybox:1.35" already present on machine
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7749018Z   Normal   Created           2m8s               kubelet            Created container: wait-for-postgres
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7749516Z   Normal   Started           2m8s               kubelet            Started container wait-for-postgres
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7750414Z   Normal   Pulled            96s                kubelet            Successfully pulled image "cloudtolocalllm.azurecr.io/api-backend:latest" in 256ms (256ms including waiting). Image size: 310213312 bytes.
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7751490Z   Normal   Pulled            92s                kubelet            Successfully pulled image "cloudtolocalllm.azurecr.io/api-backend:latest" in 294ms (294ms including waiting). Image size: 310213312 bytes.
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7752563Z   Normal   Pulled            65s                kubelet            Successfully pulled image "cloudtolocalllm.azurecr.io/api-backend:latest" in 229ms (229ms including waiting). Image size: 310213312 bytes.
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7753420Z   Normal   Pulling           33s (x4 over 96s)  kubelet            Pulling image "cloudtolocalllm.azurecr.io/api-backend:latest"
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7754285Z   Normal   Pulled            33s                kubelet            Successfully pulled image "cloudtolocalllm.azurecr.io/api-backend:latest" in 266ms (266ms including waiting). Image size: 310213312 bytes.
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7755191Z   Normal   Created           32s (x4 over 96s)  kubelet            Created container: api-backend
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7755699Z   Normal   Started           32s (x4 over 96s)  kubelet            Started container api-backend
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7756531Z   Warning  BackOff           8s (x10 over 87s)  kubelet            Back-off restarting failed container api-backend in pod api-backend-56d577957c-fsksz_cloudtolocalllm(501d0dc3-e8c0-4091-a31b-dfeb24fa6302)
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7892164Z 
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7892274Z 
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7892626Z Name:             api-backend-6495b998d4-2v668
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7893429Z Namespace:        cloudtolocalllm
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7893889Z Priority:         0
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7894202Z Service Account:  api-backend-sa
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7894606Z Node:             aks-nodepool1-16498327-vmss000000/10.224.0.4
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7895058Z Start Time:       Mon, 01 Dec 2025 14:05:53 +0000
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7895447Z Labels:           app=api-backend
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7895806Z                   pod-template-hash=6495b998d4
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7896159Z                   tier=backend
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7896591Z Annotations:      kubectl.kubernetes.io/restartedAt: 2025-12-01T14:05:51Z
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7897057Z Status:           Running
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7897352Z IP:               10.244.0.237
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7897632Z IPs:
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7897872Z   IP:           10.244.0.237
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7898219Z Controlled By:  ReplicaSet/api-backend-6495b998d4
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7898602Z Init Containers:
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7898871Z   wait-for-postgres:
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7899409Z     Container ID:  containerd://44f3cc2e5fc0e90c6a8c9bd5c473bc789b433cc68c2952f38b78584a16de5a4f
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7900161Z     Image:         busybox:1.35
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7900655Z     Image ID:      docker.io/library/busybox@sha256:98ad9d1a2be345201bb0709b0d38655eb1b370145c7d94ca1fe9c421f76e245a
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7901151Z     Port:          <none>
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7901388Z     Host Port:     <none>
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7901614Z     Command:
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7901805Z       sh
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7901995Z       -c
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7902224Z       echo "Waiting for PostgreSQL to be ready..."
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7902719Z       for i in $(seq 1 30); do
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7903057Z         if nc -z postgres.cloudtolocalllm.svc.cluster.local 5432; then
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7903426Z           echo "PostgreSQL is ready!"
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7903697Z           exit 0
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7903912Z         fi
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7904178Z         echo "Attempt $i/30: PostgreSQL not ready yet, waiting..."
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7904504Z         sleep 2
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7904705Z       done
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7904963Z       echo "PostgreSQL failed to become ready after 60 seconds"
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7905283Z       exit 1
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7905470Z       
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7905673Z     State:          Terminated
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7905919Z       Reason:       Completed
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7906166Z       Exit Code:    0
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7906410Z       Started:      Mon, 01 Dec 2025 14:05:55 +0000
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7906720Z       Finished:     Mon, 01 Dec 2025 14:06:25 +0000
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7907003Z     Ready:          True
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7907238Z     Restart Count:  0
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7907460Z     Environment:    <none>
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7907688Z     Mounts:
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7908026Z       /var/run/secrets/kubernetes.io/serviceaccount from kube-api-access-hr9qw (ro)
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7908435Z Containers:
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7908627Z   api-backend:
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7909037Z     Container ID:   containerd://cc2949aa8403f006f2d7b0714b16d980dd5652232496697dd008198040ec301d
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7909577Z     Image:          cloudtolocalllm.azurecr.io/api-backend:latest
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7910386Z     Image ID:       cloudtolocalllm.azurecr.io/api-backend@sha256:9349c6165bdfffe1be5c162095a0a73a2f10233e709d7b12a5293e5d60666b34
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7911187Z     Port:           8080/TCP (http)
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7911671Z     Host Port:      0/TCP (http)
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7912109Z     State:          Waiting
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7912524Z       Reason:       CrashLoopBackOff
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7913010Z     Last State:     Terminated
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7913443Z       Reason:       Error
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7913854Z       Exit Code:    1
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7914284Z       Started:      Mon, 01 Dec 2025 17:29:56 +0000
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7914827Z       Finished:     Mon, 01 Dec 2025 17:29:59 +0000
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7915239Z     Ready:          False
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7915479Z     Restart Count:  44
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7915694Z     Limits:
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7915890Z       cpu:     500m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7916098Z       memory:  1Gi
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7916297Z     Requests:
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7916498Z       cpu:      200m
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7916710Z       memory:   256Mi
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7917110Z     Liveness:   http-get http://:8080/health delay=60s timeout=5s period=10s #success=1 #failure=3
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7917698Z     Readiness:  http-get http://:8080/health delay=10s timeout=3s period=5s #success=1 #failure=3
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7918262Z     Startup:    http-get http://:8080/health delay=5s timeout=3s period=5s #success=1 #failure=30
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7918668Z     Environment:
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7919095Z       NODE_ENV:                    <set to the key 'NODE_ENV' of config map 'cloudtolocalllm-config'>                    Optional: false
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7919951Z       LOG_LEVEL:                   <set to the key 'LOG_LEVEL' of config map 'cloudtolocalllm-config'>                   Optional: false
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7920630Z       CLIENT_LOG_DIR:              <set to the key 'CLIENT_LOG_DIR' of config map 'cloudtolocalllm-config'>              Optional: false
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7921271Z       PORT:                        <set to the key 'PORT' of config map 'cloudtolocalllm-config'>                        Optional: false
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7921947Z       DOMAIN:                      <set to the key 'DOMAIN' of config map 'cloudtolocalllm-config'>                      Optional: false
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7923094Z       DB_TYPE:                     <set to the key 'DB_TYPE' of config map 'cloudtolocalllm-config'>                     Optional: false
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7924349Z       DB_HOST:                     <set to the key 'DB_HOST' of config map 'cloudtolocalllm-config'>                     Optional: false
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7924979Z       DB_PORT:                     <set to the key 'DB_PORT' of config map 'cloudtolocalllm-config'>                     Optional: false
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7925599Z       DB_NAME:                     <set to the key 'DB_NAME' of config map 'cloudtolocalllm-config'>                     Optional: false
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7926246Z       DB_USER:                     <set to the key 'postgres-user' in secret 'cloudtolocalllm-secrets'>                  Optional: false
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7926929Z       DB_PASSWORD:                 <set to the key 'postgres-password' in secret 'cloudtolocalllm-secrets'>              Optional: false
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7927614Z       JWT_SECRET:                  <set to the key 'jwt-secret' in secret 'cloudtolocalllm-secrets'>                     Optional: false
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7928319Z       SUPABASE_JWT_SECRET:         <set to the key 'supabase-jwt-secret' in secret 'cloudtolocalllm-secrets'>            Optional: false
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7929044Z       SUPABASE_URL:                <set to the key 'supabase-url' in secret 'cloudtolocalllm-secrets'>                   Optional: false
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7929887Z       AUTH0_DOMAIN:                <set to the key 'auth0-domain' in secret 'cloudtolocalllm-secrets'>                   Optional: false
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7930604Z       AUTH0_AUDIENCE:              <set to the key 'auth0-audience' in secret 'cloudtolocalllm-secrets'>                 Optional: false
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7931426Z       AUTH0_CLIENT_ID:             <set to the key 'auth0-client-id' in secret 'cloudtolocalllm-secrets'>                Optional: false
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7932140Z       ADMIN_CENTER_ENABLED:        <set to the key 'ADMIN_CENTER_ENABLED' of config map 'cloudtolocalllm-config'>        Optional: false
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7932839Z       ADMIN_EMAIL:                 <set to the key 'ADMIN_EMAIL' of config map 'cloudtolocalllm-config'>                 Optional: false
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7933484Z       DB_POOL_MAX:                 <set to the key 'DB_POOL_MAX' of config map 'cloudtolocalllm-config'>                 Optional: false
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7934214Z       DB_POOL_IDLE_TIMEOUT:        <set to the key 'DB_POOL_IDLE_TIMEOUT' of config map 'cloudtolocalllm-config'>        Optional: false
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7934940Z       DB_POOL_CONNECTION_TIMEOUT:  <set to the key 'DB_POOL_CONNECTION_TIMEOUT' of config map 'cloudtolocalllm-config'>  Optional: false
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7935681Z       STRIPE_SECRET_KEY:           <set to the key 'stripe-test-secret-key' in secret 'cloudtolocalllm-secrets'>         Optional: false
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7936436Z       STRIPE_PUBLISHABLE_KEY:      <set to the key 'stripe-test-publishable-key' in secret 'cloudtolocalllm-secrets'>    Optional: false
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7937210Z       STRIPE_WEBHOOK_SECRET:       <set to the key 'stripe-test-webhook-secret' in secret 'cloudtolocalllm-secrets'>     Optional: false
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7937923Z       SENTRY_DSN:                  <set to the key 'sentry-dsn' in secret 'cloudtolocalllm-secrets'>                     Optional: true
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7938386Z     Mounts:
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7938736Z       /var/run/secrets/kubernetes.io/serviceaccount from kube-api-access-hr9qw (ro)
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7939150Z Conditions:
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7939357Z   Type                        Status
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7939641Z   PodReadyToStartContainers   True 
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7940128Z   Initialized                 True 
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7940389Z   Ready                       False 
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7940649Z   ContainersReady             False 
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7940917Z   PodScheduled                True 
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7941164Z Volumes:
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7941371Z   kube-api-access-hr9qw:
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7941891Z     Type:                    Projected (a volume that contains injected data from multiple sources)
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7942314Z     TokenExpirationSeconds:  3607
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7942613Z     ConfigMapName:           kube-root-ca.crt
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7942972Z     Optional:                false
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7943408Z     DownwardAPI:             true
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7943879Z QoS Class:                   Burstable
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7944270Z Node-Selectors:              <none>
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7944760Z Tolerations:                 node.kubernetes.io/memory-pressure:NoSchedule op=Exists
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7964856Z                              node.kubernetes.io/not-ready:NoExecute op=Exists for 300s
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7965480Z                              node.kubernetes.io/unreachable:NoExecute op=Exists for 300s
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7965916Z Events:
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7966167Z   Type     Reason   Age                      From     Message
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7966528Z   ----     ------   ----                     ----     -------
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7967123Z   Normal   Pulling  4m2s (x45 over 3h27m)    kubelet  Pulling image "cloudtolocalllm.azurecr.io/api-backend:latest"
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7968135Z   Warning  BackOff  2m11s (x989 over 3h27m)  kubelet  Back-off restarting failed container api-backend in pod api-backend-6495b998d4-2v668_cloudtolocalllm(fe29a35b-9a85-4a40-86a7-f284838b194a)
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.7977824Z ##[error]Process completed with exit code 1.
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.8047456Z Post job cleanup.
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.8433176Z Clearing azure cli accounts from the local cache.
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:57.8442060Z [command]/usr/bin/az account clear
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:58.2897804Z Post job cleanup.
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:58.3866559Z [command]/usr/bin/git version
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:58.3902426Z git version 2.51.2
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:58.3946058Z Temporarily overriding HOME='/home/runner/work/_temp/c70135b6-890a-49a7-beb9-b7f9b981e473' before making global git config changes
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:58.3947435Z Adding repository directory to the temporary git global config as a safe directory
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:58.3952861Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/CloudToLocalLLM/CloudToLocalLLM
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:58.3992862Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:58.4024894Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:58.4254576Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:58.4275045Z http.https://github.com/.extraheader
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:58.4287704Z [command]/usr/bin/git config --local --unset-all http.https://github.com/.extraheader
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:58.4318282Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:58.4560445Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:58.4597780Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+deploy_infrastructure	UNKNOWN STEP	2025-12-01T17:33:58.4966790Z Cleaning up orphan processes

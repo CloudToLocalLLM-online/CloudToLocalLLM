@@ -77,27 +77,10 @@ configure_api_service() {
     # Prepare environment variables
     local env_vars="NODE_ENV=production,LOG_LEVEL=info,DB_TYPE=sqlite,CORS_ORIGINS=$WEB_URL"
     
-    # Add Auth0 configuration if available
-    if [ -n "${AUTH0_DOMAIN:-}" ]; then
-        env_vars="$env_vars,AUTH0_DOMAIN=$AUTH0_DOMAIN"
-    fi
-    
-    if [ -n "${AUTH0_CLIENT_ID:-}" ]; then
-        env_vars="$env_vars,AUTH0_CLIENT_ID=$AUTH0_CLIENT_ID"
-    fi
-    
     # Prepare secrets
     local secrets=""
-    if gcloud secrets describe auth0-client-secret &>/dev/null; then
-        secrets="AUTH0_CLIENT_SECRET=auth0-client-secret:latest"
-    fi
-    
     if gcloud secrets describe jwt-secret &>/dev/null; then
-        if [ -n "$secrets" ]; then
-            secrets="$secrets,JWT_SECRET=jwt-secret:latest"
-        else
-            secrets="JWT_SECRET=jwt-secret:latest"
-        fi
+        secrets="JWT_SECRET=jwt-secret:latest"
     fi
     
     # Update the service
@@ -199,7 +182,6 @@ create_service_config() {
   },
   "configuration": {
     "cors_origins": "$WEB_URL",
-    "auth0_domain": "${AUTH0_DOMAIN:-}",
     "environment": "production",
     "region": "$GOOGLE_CLOUD_REGION"
   },

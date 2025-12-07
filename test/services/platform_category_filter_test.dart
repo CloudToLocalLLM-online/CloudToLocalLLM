@@ -26,9 +26,6 @@ class _MockAuthService extends ChangeNotifier implements AuthService {
   Future<void> get sessionBootstrapFuture => Future.value();
 
   @override
-  bool isRestoringSession = false;
-
-  @override
   UserModel? currentUser;
 
   @override
@@ -52,9 +49,6 @@ class _MockAuthService extends ChangeNotifier implements AuthService {
   @override
   Future<bool> handleCallback({String? callbackUrl, String? code}) async =>
       true;
-
-  @override
-  Future<void> updateDisplayName(String displayName) => Future.value();
 
   @override
   void dispose() {

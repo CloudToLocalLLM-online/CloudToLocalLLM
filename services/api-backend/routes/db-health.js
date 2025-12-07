@@ -37,3 +37,5 @@ export const dbHealthHandler = async(req, res) => {
     });
   }
 };
+
+export default dbHealthHandler;

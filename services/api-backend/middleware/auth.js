@@ -6,8 +6,6 @@
  */
 
 import jwt from 'jsonwebtoken';
-import fetch from 'node-fetch';
-import { auth } from 'express-oauth2-jwt-bearer';
 import crypto from 'crypto';
 import Redis from 'ioredis';
 import { RedisStore } from 'rate-limit-redis';
@@ -18,23 +16,12 @@ import { logLoginFailure } from '../services/auth-audit-service.js';
 
 // JWT configuration
 const DEFAULT_JWT_AUDIENCE = 'https://api.cloudtolocalllm.online';
-const JWT_AUDIENCE = process.env.JWT_AUDIENCE || process.env.AUTH0_AUDIENCE || DEFAULT_JWT_AUDIENCE;
-const JWT_ISSUER_DOMAIN = process.env.JWT_ISSUER_DOMAIN || process.env.AUTH0_DOMAIN;
+const JWT_AUDIENCE = process.env.JWT_AUDIENCE || DEFAULT_JWT_AUDIENCE;
+const SUPABASE_JWT_SECRET = process.env.SUPABASE_JWT_SECRET;
 
-// Resolve issuer URL from JWT_ISSUER_URL or AUTH0_DOMAIN
-const issuerBaseURL = process.env.JWT_ISSUER_URL ||
-  (process.env.AUTH0_DOMAIN ? `https://${process.env.AUTH0_DOMAIN}/` : undefined);
-
-if (!issuerBaseURL) {
-  logger.error('[Auth] JWT issuer configuration missing. Set JWT_ISSUER_URL or AUTH0_DOMAIN environment variable.');
+if (!SUPABASE_JWT_SECRET) {
+  logger.warn('[Auth] SUPABASE_JWT_SECRET is missing. JWT verification will fail.');
 }
-
-// Primary JWT validator (handles JWKS caching internally)
-const checkJwt = auth({
-  audience: JWT_AUDIENCE,
-  issuerBaseURL: issuerBaseURL,
-  tokenSigningAlg: 'RS256',
-});
 
 // Use AuthService for extended validation/session management
 const authService = new AuthService({
@@ -60,10 +47,10 @@ async function ensureAuthServiceInitialized() {
 
 /**
  * JWT Authentication Middleware
- * Validates JWT JWT tokens and attaches user info to request
+ * Validates JWT tokens and attaches user info to request
  *
  * Validates: Requirements 2.1, 2.2, 2.9, 2.10
- * - Validates JWT tokens from JWT on every protected request
+ * - Validates JWT tokens from Supabase on every protected request
  * - Implements token refresh mechanism for expired tokens
  * - Implements token revocation for logout operations
  * - Enforces HTTPS for all authentication endpoints
@@ -84,19 +71,88 @@ export async function authenticateJWT(req, res, next) {
     });
   }
 
-  // First, validate JWT signature & claims with JWT SDK
-  try {
-    await new Promise((resolve, reject) => {
-      checkJwt(req, res, (err) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve();
-        }
-      });
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+
+  if (!token) {
+    return res.status(401).json({
+      error: 'Access token required',
+      code: 'MISSING_TOKEN',
     });
+  }
+
+  try {
+    // 1. Try to verify with Secret (HS256) - Fast path for internal/legacy tokens
+    let decoded;
+    try {
+      decoded = jwt.verify(token, SUPABASE_JWT_SECRET, {
+        algorithms: ['HS256'],
+        audience: 'authenticated',
+      });
+    } catch (hs256Error) {
+      // If HS256 fails, we'll try RS256 via AuthService below
+      logger.debug(' [Auth] HS256 verification failed, trying RS256 via AuthService', {
+        error: hs256Error.message,
+      });
+    }
+
+    // 2. If HS256 succeeded, use the decoded payload
+    if (decoded) {
+      // Check token expiry
+      const now = Math.floor(Date.now() / 1000);
+      const expiresIn = (decoded.exp || 0) - now;
+      const isExpiring = expiresIn <= 300;
+
+      // Ensure AuthService is initialized (for session tracking)
+      try {
+        await ensureAuthServiceInitialized();
+        // Use AuthService with pre-validated payload to create/update session
+        const result = await authService.validateToken(token, req, decoded);
+
+        if (result.valid) {
+          req.user = result.payload;
+          req.userId = result.payload.sub;
+          req.auth = { payload: result.payload };
+          req.tokenExpiring = isExpiring;
+          return next();
+        }
+      } catch (serviceError) {
+        // If AuthService fails but token is valid HS256, we might still want to proceed
+        // depending on strictness. For now, let's fall back to just the token payload.
+        logger.warn(' [Auth] AuthService session tracking failed for HS256 token', {
+          error: serviceError.message,
+        });
+        req.user = decoded;
+        req.userId = decoded.sub;
+        req.auth = { payload: decoded };
+        req.tokenExpiring = isExpiring;
+        return next();
+      }
+    }
+
+    // 3. If HS256 failed (decoded is undefined), try full validation via AuthService (RS256)
+    await ensureAuthServiceInitialized();
+    const result = await authService.validateToken(token, req);
+
+    if (!result.valid) {
+      throw new Error(result.error || 'Token validation failed');
+    }
+
+    // Success via RS256
+    const now = Math.floor(Date.now() / 1000);
+    const expiresIn = (result.payload.exp || 0) - now;
+    const isExpiring = expiresIn <= 300;
+
+    req.user = result.payload;
+    req.userId = result.payload.sub;
+    req.auth = { payload: result.payload };
+    req.tokenExpiring = isExpiring;
+
+    logger.debug(` [Auth] User authenticated via RS256: ${result.payload.sub}`);
+    next();
+
   } catch (error) {
-    logger.warn(' [Auth] JWT SDK token verification failed', {
+    logger.warn(' [Auth] Token verification failed', {
       message: error.message,
       code: error.code,
       name: error.name,
@@ -120,176 +176,11 @@ export async function authenticateJWT(req, res, next) {
       });
     });
 
-    const status = error.status || 401;
+    const status = 401;
     return res.status(status).json({
       error: 'Invalid or expired token',
-      code: error.code || 'TOKEN_VERIFICATION_FAILED',
+      code: 'TOKEN_VERIFICATION_FAILED',
       details: error.message,
-    });
-  }
-
-  const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1];
-
-  if (!token) {
-    return res.status(401).json({
-      error: 'Access token required',
-      code: 'MISSING_TOKEN',
-    });
-  }
-
-  try {
-    // Validate token format and expiry
-    const decoded = jwt.decode(token, { complete: true });
-
-    if (!decoded) {
-      logger.warn(' [Auth] Invalid token format', { ip: req.ip });
-      return res.status(401).json({
-        error: 'Invalid token format',
-        code: 'INVALID_TOKEN_FORMAT',
-      });
-    }
-
-    // Check token expiry
-    const now = Math.floor(Date.now() / 1000);
-    if (decoded.payload.exp && decoded.payload.exp < now) {
-      logger.warn(' [Auth] Token has expired', {
-        userId: decoded.payload.sub,
-        expiredAt: new Date(decoded.payload.exp * 1000).toISOString(),
-      });
-
-      return res.status(401).json({
-        error: 'Token has expired',
-        code: 'TOKEN_EXPIRED',
-        expiresAt: new Date(decoded.payload.exp * 1000).toISOString(),
-      });
-    }
-
-    // Check if token is expiring soon (within 5 minutes)
-    const expiresIn = decoded.payload.exp - now;
-    const isExpiring = expiresIn <= 300; // 5 minutes
-
-    try {
-      await ensureAuthServiceInitialized();
-    } catch (initError) {
-      logger.error(
-        ' [Auth] AuthService initialization failed, falling back to JWT payload',
-        {
-          error: initError.message,
-        },
-      );
-
-      if (req.auth?.payload) {
-        req.user = req.auth.payload;
-        req.userId = req.auth.payload.sub;
-        req.tokenExpiring = isExpiring;
-        return next();
-      }
-
-      return res.status(503).json({
-        error: 'Authentication service unavailable',
-        code: 'AUTH_SERVICE_UNAVAILABLE',
-      });
-    }
-
-    // If it's not a valid JWT (opaque token), use JWT userinfo endpoint
-    if (!decoded.header || !decoded.header.kid) {
-      logger.debug(
-        ' [Auth] Token appears to be opaque, using JWT userinfo endpoint',
-      );
-
-      try {
-        // Validate opaque token using JWT userinfo endpoint
-        const response = await fetch(`https://${JWT_ISSUER_DOMAIN}/userinfo`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-
-        if (!response.ok) {
-          throw new Error(`JWT userinfo failed: ${response.status}`);
-        }
-
-        const userInfo = await response.json();
-
-        // Attach user info to request
-        req.user = userInfo;
-        req.userId = userInfo.sub;
-        req.tokenExpiring = isExpiring;
-
-        logger.debug(
-          ` [Auth] User authenticated via userinfo: ${userInfo.sub}`,
-        );
-        next();
-        return;
-      } catch (userinfoError) {
-        logger.error(' [Auth] Userinfo validation failed:', userinfoError);
-        return res.status(401).json({
-          error: 'Token validation failed',
-          code: 'TOKEN_VALIDATION_FAILED',
-        });
-      }
-    }
-
-    // If it's a proper JWT token, use the AuthService with pre-validated payload from JWT SDK
-    logger.debug(
-      ' [Auth] Token appears to be JWT, using AuthService with pre-validated payload',
-    );
-    const result = await authService.validateToken(
-      token,
-      req,
-      req.auth?.payload,
-    );
-
-    if (!result.valid) {
-      logger.warn(
-        ' [Auth] AuthService validation failed, falling back to JWT payload',
-        {
-          error: result.error,
-        },
-      );
-
-      if (req.auth?.payload) {
-        req.user = req.auth.payload;
-        req.userId = req.auth.payload.sub;
-        req.tokenExpiring = isExpiring;
-        return next();
-      }
-
-      return res.status(401).json({
-        error: result.error || 'Token validation failed',
-        code: 'TOKEN_VALIDATION_FAILED',
-      });
-    }
-
-    // Attach user info to request
-    req.user = result.payload;
-    req.userId = result.payload.sub;
-    req.auth = req.auth || { payload: result.payload };
-    req.tokenExpiring = isExpiring;
-
-    logger.debug(` [Auth] User authenticated via JWT: ${result.payload.sub}`);
-    next();
-  } catch (error) {
-    logger.error(' [Auth] Token verification failed:', error);
-
-    let errorCode = 'TOKEN_VERIFICATION_FAILED';
-    let errorMessage = 'Invalid or expired token';
-
-    if (error.name === 'TokenExpiredError') {
-      errorCode = 'TOKEN_EXPIRED';
-      errorMessage = 'Token has expired';
-    } else if (error.name === 'JsonWebTokenError') {
-      errorCode = 'INVALID_TOKEN';
-      errorMessage = 'Invalid token';
-    } else if (error.name === 'NotBeforeError') {
-      errorCode = 'TOKEN_NOT_ACTIVE';
-      errorMessage = 'Token not active';
-    }
-
-    return res.status(403).json({
-      error: errorMessage,
-      code: errorCode,
     });
   }
 }
@@ -360,39 +251,21 @@ export async function optionalAuth(req, res, next) {
   }
 
   try {
-    // Try to decode as JWT first
-    const decoded = jwt.decode(token, { complete: true });
+    // Try to verify with Secret (HS256)
+    const decoded = jwt.verify(token, SUPABASE_JWT_SECRET, {
+      algorithms: ['HS256'],
+      audience: 'authenticated',
+    });
 
-    if (!decoded || !decoded.header || !decoded.header.kid) {
-      // Try JWT userinfo endpoint for opaque tokens
-      try {
-        const response = await fetch(`https://${JWT_ISSUER_DOMAIN}/userinfo`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-
-        if (response.ok) {
-          const userInfo = await response.json();
-          req.user = userInfo;
-          req.userId = userInfo.sub;
-          logger.debug(
-            ` [Auth] Optional auth successful via userinfo: ${userInfo.sub}`,
-          );
-        }
-      } catch (userinfoError) {
-        logger.debug(
-          ' [Auth] Optional userinfo auth failed, continuing without authentication:',
-          userinfoError.message,
-        );
-      }
-    } else {
-      // Try JWT validation
-      const result = await authService.validateToken(token);
+    if (decoded) {
+      // Validate via AuthService (session logic)
+      const result = await authService.validateToken(token, req, decoded);
 
       if (result.valid) {
         req.user = result.payload;
         req.userId = result.payload.sub;
+        // Set req.auth for consistency with authenticateJWT
+        req.auth = { payload: result.payload };
         logger.debug(
           ` [Auth] Optional auth successful via JWT: ${result.payload.sub}`,
         );
@@ -495,7 +368,7 @@ export function requireAdmin(req, res, next) {
       req.user.role === 'admin';
 
     if (!hasAdminRole) {
-      logger.warn('� [AdminAuth] Admin access denied', {
+      logger.warn(' [AdminAuth] Admin access denied', {
         userId: req.user.sub,
         userMetadata,
         appMetadata,
@@ -513,7 +386,7 @@ export function requireAdmin(req, res, next) {
       });
     }
 
-    logger.info('� [AdminAuth] Admin access granted', {
+    logger.info(' [AdminAuth] Admin access granted', {
       userId: req.user.sub,
       role: userMetadata.role || appMetadata.role || 'admin',
       userAgent: req.get('User-Agent'),
@@ -521,7 +394,7 @@ export function requireAdmin(req, res, next) {
 
     next();
   } catch (error) {
-    logger.error('� [AdminAuth] Admin role check failed', {
+    logger.error(' [AdminAuth] Admin role check failed', {
       error: error.message,
       userId: req.user?.sub,
     });

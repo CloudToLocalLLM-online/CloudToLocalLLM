@@ -2,14 +2,13 @@
 -- This is the PostgreSQL-optimized version of schema.sql
 
 -- Enable required extensions
--- Enable required extensions
 -- pgcrypto not needed for gen_random_uuid() in Postgres 13+
 
--- Users table to cache Auth0 user profiles and manage local user data
+-- Users table to manage local user data (mirrors Supabase auth.users)
 CREATE TABLE IF NOT EXISTS users (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  auth0_id TEXT UNIQUE NOT NULL,  -- Auth0 user ID (sub claim)
   email TEXT UNIQUE NOT NULL,
+  jwt_id TEXT UNIQUE,
   name TEXT,
   nickname TEXT,
   picture TEXT,
@@ -22,12 +21,10 @@ CREATE TABLE IF NOT EXISTS users (
   metadata JSONB DEFAULT '{}'::jsonb
 );
 
--- Sessions table for managing Auth0-based authentication sessions
+-- Sessions table for managing authentication sessions
 CREATE TABLE IF NOT EXISTS user_sessions (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  auth0_access_token TEXT,  -- Store Auth0 access token
-  auth0_id_token TEXT,      -- Store Auth0 ID token
   session_token TEXT UNIQUE NOT NULL,  -- Our internal session token
   expires_at TIMESTAMPTZ NOT NULL,
   created_at TIMESTAMPTZ DEFAULT NOW(),
@@ -99,7 +96,6 @@ CREATE TABLE IF NOT EXISTS conversations (
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW(),
   metadata JSONB DEFAULT '{}'::jsonb
-  -- Note: user_id comes from Auth0, no foreign key constraint needed
 );
 
 -- Messages table for storing conversation messages
@@ -131,8 +127,8 @@ CREATE INDEX IF NOT EXISTS idx_api_usage_user_id ON api_usage(user_id);
 CREATE INDEX IF NOT EXISTS idx_api_usage_endpoint ON api_usage(endpoint);
 CREATE INDEX IF NOT EXISTS idx_api_usage_created_at ON api_usage(created_at);
 
-CREATE INDEX IF NOT EXISTS idx_users_auth0_id ON users(auth0_id);
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+CREATE INDEX IF NOT EXISTS idx_users_jwt_id ON users(jwt_id);
 CREATE INDEX IF NOT EXISTS idx_users_created_at ON users(created_at);
 
 CREATE INDEX IF NOT EXISTS idx_user_sessions_user_id ON user_sessions(user_id);

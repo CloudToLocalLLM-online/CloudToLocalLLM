@@ -31,6 +31,8 @@ class AppInitializationService extends ChangeNotifier {
 
   /// Handle authentication state changes
   void _onAuthStateChanged() {
+    appLogger.debug(
+        '[AppInit] _onAuthStateChanged called. isAuthenticated: ${_authService.isAuthenticated.value}, isInitialized: $_isInitialized, isInitializing: $_isInitializing');
     if (_authService.isAuthenticated.value &&
         !_isInitialized &&
         !_isInitializing) {
@@ -49,6 +51,8 @@ class AppInitializationService extends ChangeNotifier {
     if (_isInitializing || _isInitialized) return;
 
     _isInitializing = true;
+    appLogger
+        .debug('[AppInit] _isInitializing set to true, notifying listeners.');
     notifyListeners();
 
     try {
@@ -58,24 +62,33 @@ class AppInitializationService extends ChangeNotifier {
       // when this service is consumed by widgets that have access to context
 
       _isInitialized = true;
-      appLogger.debug('[AppInit] Service initialization completed');
+      appLogger.debug(
+          '[AppInit] Service initialization completed, _isInitialized set to true.');
     } catch (e) {
       appLogger.error('[AppInit] Service initialization failed', error: e);
     } finally {
       _isInitializing = false;
+      appLogger.debug(
+          '[AppInit] _isInitializing set to false, notifying listeners.');
       notifyListeners();
     }
   }
 
   /// Initialize services with context (called from widget)
   Future<void> initializeWithContext(BuildContext context) async {
+    appLogger.debug(
+        '[AppInit] initializeWithContext called. isAuthenticated: ${_authService.isAuthenticated.value}, isInitialized: $_isInitialized');
     if (!_authService.isAuthenticated.value || _isInitialized) return;
 
     try {
       appLogger.debug('[AppInit] Initializing services with context...');
 
       // Check if authenticated services are available before trying to access them
-      if (!context.mounted) return;
+      if (!context.mounted) {
+        appLogger.debug(
+            '[AppInit] Context not mounted, returning from initializeWithContext.');
+        return;
+      }
 
       ConnectionManagerService? connectionManager;
       DesktopClientDetectionService? clientDetection;

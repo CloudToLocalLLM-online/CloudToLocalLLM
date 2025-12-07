@@ -1,25 +1,32 @@
 /**
  * Authentication Routes for CloudToLocalLLM API Backend
  *
- * Provides JWT token validation, refresh, and revocation endpoints
- * with secure cookie handling and HTTPS enforcement.
+ * Provides JWT token validation and user information endpoints.
+ * Note: Authentication is primarily handled by Supabase.
  *
  * Requirements: 2.1, 2.2, 2.9, 2.10
  */
 
 import express from 'express';
+import rateLimit from 'express-rate-limit';
 import jwt from 'jsonwebtoken';
-import fetch from 'node-fetch';
 import logger from '../logger.js';
 import { authenticateJWT, extractUserId } from '../middleware/auth.js';
-import { logTokenRefresh, logLoginFailure, logLogout, logTokenRevoke } from '../services/auth-audit-service.js';
+import { logLogout, logTokenRevoke } from '../services/auth-audit-service.js';
 
 const router = express.Router();
 
-// JWT configuration
-const JWT_AUDIENCE = process.env.JWT_AUDIENCE || 'https://api.cloudtolocalllm.online';
-const JWT_CLIENT_ID = process.env.JWT_CLIENT_ID;
-const JWT_CLIENT_SECRET = process.env.JWT_CLIENT_SECRET;
+// Rate limiter for auth checks to prevent brute force/enumeration
+const authCheckLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // Limit each IP to 100 checks per 15 min
+  message: {
+    error: 'Too many auth checks',
+    message: 'Please try again later',
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
 
 // Token refresh configuration
 const TOKEN_REFRESH_WINDOW = parseInt(process.env.TOKEN_REFRESH_WINDOW) || 300; // 5 minutes before expiry
@@ -30,190 +37,19 @@ const TOKEN_REFRESH_WINDOW = parseInt(process.env.TOKEN_REFRESH_WINDOW) || 300; 
  *   post:
  *     summary: Refresh an expired or expiring JWT token
  *     description: |
- *       Exchanges a refresh token for a new access token. Supports both
- *       request body and secure cookie-based refresh tokens.
- *
-       **Validates: Requirements 2.1, 2.2**
-       - Validates JWT tokens on every protected request
-       - Implements token refresh mechanism for expired tokens
+ *       Placeholder for token refresh. Token refresh should be handled directly
+ *       via the Supabase client SDK.
  *     tags:
  *       - Authentication
- *     requestBody:
- *       required: false
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               refreshToken:
- *                 type: string
- *                 description: Refresh token (optional if using secure cookie)
- *           example:
- *             refreshToken: "refresh_eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
  *     responses:
- *       200:
- *         description: Token refreshed successfully
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 accessToken:
- *                   type: string
- *                   description: New JWT access token
- *                 tokenType:
- *                   type: string
- *                   example: Bearer
- *                 expiresIn:
- *                   type: integer
- *                   description: Token expiry in seconds
- *                 refreshToken:
- *                   type: string
- *                   description: New refresh token (if provided by JWT)
  *       400:
- *         description: Missing refresh token
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- *             example:
- *               error:
- *                 code: MISSING_REFRESH_TOKEN
- *                 message: Refresh token required
- *                 statusCode: 400
- *       401:
- *         description: Invalid or expired refresh token
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- *             example:
- *               error:
- *                 code: INVALID_REFRESH_TOKEN
- *                 message: Invalid refresh token format
- *                 statusCode: 401
- *       500:
- *         description: Token refresh failed
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- *             example:
- *               error:
- *                 code: TOKEN_REFRESH_ERROR
- *                 message: Token refresh failed
- *                 statusCode: 500
+ *         description: Operation not supported on backend
  */
-router.post('/token/refresh', async function(req, res) {
-  try {
-    const { refreshToken } = req.body;
-    const cookieRefreshToken = req.cookies?.refreshToken;
-    const token = refreshToken || cookieRefreshToken;
-
-    if (!token) {
-      logger.warn('[Auth] Token refresh attempted without refresh token');
-      return res.status(400).json({
-        error: 'Refresh token required',
-        code: 'MISSING_REFRESH_TOKEN',
-      });
-    }
-
-    logger.info('[Auth] Attempting to refresh token');
-
-    // Validate refresh token format
-    if (!token.startsWith('refresh_') && !token.match(/^[A-Za-z0-9_-]+$/)) {
-      logger.warn('[Auth] Invalid refresh token format');
-      return res.status(401).json({
-        error: 'Invalid refresh token format',
-        code: 'INVALID_REFRESH_TOKEN',
-        statusCode: 401,
-      });
-    }
-
-    // Exchange refresh token for new access token via JWT
-    const tokenResponse = await fetch(`https://${JWT_ISSUER_DOMAIN}/oauth/token`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        client_id: JWT_CLIENT_ID,
-        client_secret: JWT_CLIENT_SECRET,
-        audience: JWT_AUDIENCE,
-        grant_type: 'refresh_token',
-        refresh_token: token,
-      }),
-    });
-
-    if (!tokenResponse.ok) {
-      const errorData = await tokenResponse.json();
-      logger.warn('[Auth] JWT token refresh failed', {
-        status: tokenResponse.status,
-        error: errorData.error,
-      });
-
-      return res.status(401).json({
-        error: 'Token refresh failed',
-        code: 'TOKEN_REFRESH_FAILED',
-        details: errorData.error_description || 'Unable to refresh token',
-      });
-    }
-
-    const tokenData = await tokenResponse.json();
-
-    logger.info('[Auth] Token refreshed successfully');
-
-    // Log token refresh
-    logTokenRefresh({
-      userId: null, // User ID not available at this point
-      ipAddress: req.ip || req.connection.remoteAddress,
-      userAgent: req.get('User-Agent'),
-      details: {
-        endpoint: req.path,
-        method: req.method,
-        expiresIn: tokenData.expires_in,
-      },
-    }).catch((auditError) => {
-      logger.error('[Auth] Failed to log token refresh', {
-        error: auditError.message,
-      });
-    });
-
-    // Return new access token
-    res.json({
-      accessToken: tokenData.access_token,
-      tokenType: tokenData.token_type || 'Bearer',
-      expiresIn: tokenData.expires_in,
-      refreshToken: tokenData.refresh_token || token, // Use new refresh token if provided
-    });
-  } catch (error) {
-    logger.error('[Auth] Token refresh error', {
-      error: error.message,
-      stack: error.stack,
-    });
-
-    // Log failed token refresh
-    logLoginFailure({
-      userId: null,
-      ipAddress: req.ip || req.connection.remoteAddress,
-      userAgent: req.get('User-Agent'),
-      reason: error.message || 'Token refresh failed',
-      details: {
-        endpoint: req.path,
-        method: req.method,
-      },
-    }).catch((auditError) => {
-      logger.error('[Auth] Failed to log token refresh failure', {
-        error: auditError.message,
-      });
-    });
-
-    res.status(500).json({
-      error: 'Token refresh failed',
-      code: 'TOKEN_REFRESH_ERROR',
-      message: error.message,
-    });
-  }
+router.post('/token/refresh', authCheckLimiter, async function(req, res) {
+  return res.status(400).json({
+    error: 'Token refresh should be handled by Supabase client SDK',
+    code: 'USE_SUPABASE_CLIENT',
+  });
 });
 
 /**
@@ -226,7 +62,7 @@ router.post('/token/refresh', async function(req, res) {
  *       and user details. Does not require authentication.
  *
  *       **Validates: Requirements 2.1**
- *       - Validates JWT tokens from JWT on every protected request
+ *       - Validates JWT tokens on every protected request
  *     tags:
  *       - Authentication
  *     requestBody:
@@ -290,7 +126,7 @@ router.post('/token/refresh', async function(req, res) {
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.post('/token/validate', async function(req, res) {
+router.post('/token/validate', authCheckLimiter, async function(req, res) {
   try {
     const { token } = req.body;
     const authHeader = req.headers.authorization;
@@ -398,40 +234,8 @@ router.post('/token/validate', async function(req, res) {
 router.post('/logout', authenticateJWT, async function(req, res) {
   try {
     const userId = extractUserId(req);
-    const authHeader = req.headers.authorization;
-    const token = authHeader && authHeader.split(' ')[1];
 
     logger.info('[Auth] User logout initiated', { userId });
-
-    // Revoke token via JWT (if using JWT token revocation endpoint)
-    if (JWT_CLIENT_ID && JWT_CLIENT_SECRET) {
-      try {
-        const revokeResponse = await fetch(`https://${JWT_ISSUER_DOMAIN}/oauth/revoke`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            client_id: JWT_CLIENT_ID,
-            client_secret: JWT_CLIENT_SECRET,
-            token: token,
-          }),
-        });
-
-        if (revokeResponse.ok) {
-          logger.info('[Auth] Token revoked successfully via JWT', { userId });
-        } else {
-          logger.warn('[Auth] JWT token revocation failed', {
-            status: revokeResponse.status,
-          });
-        }
-      } catch (revokeError) {
-        logger.warn('[Auth] JWT token revocation error', {
-          error: revokeError.message,
-        });
-        // Continue with logout even if revocation fails
-      }
-    }
 
     // Clear refresh token cookie
     res.clearCookie('refreshToken', {
@@ -711,7 +515,7 @@ router.get('/me', authenticateJWT, async function(req, res) {
  *       500:
  *         $ref: '#/components/responses/ServerError'
  */
-router.post('/token/check-expiry', async function(req, res) {
+router.post('/token/check-expiry', authCheckLimiter, async function(req, res) {
   try {
     const { token } = req.body;
     const authHeader = req.headers.authorization;

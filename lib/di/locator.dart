@@ -3,47 +3,48 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:get_it/get_it.dart';
 
-import '../services/admin_data_flush_service.dart';
-import '../services/admin_service.dart';
-import '../services/app_initialization_service.dart';
-import '../services/auth_service.dart';
-import '../services/session_storage_service.dart';
-import '../services/connection_manager_service.dart';
-import '../auth/auth_provider.dart';
-import '../auth/providers/entra_auth_provider.dart';
-import '../services/desktop_client_detection_service.dart';
-import '../services/enhanced_user_tier_service.dart';
-import '../services/langchain_integration_service.dart';
-import '../services/langchain_ollama_service.dart';
-import '../services/langchain_prompt_service.dart';
-import '../services/langchain_rag_service.dart'
-    if (dart.library.html) '../services/langchain_rag_service_stub.dart';
-import '../services/llm_audit_service.dart';
-import '../services/llm_error_handler.dart';
-import '../services/llm_provider_manager.dart';
-import '../services/local_ollama_connection_service.dart';
-import '../services/ollama_service.dart';
-import '../services/provider_discovery_service.dart';
-import '../services/streaming_chat_service.dart';
-import '../services/streaming_proxy_service.dart';
-import '../services/tunnel_service.dart';
-import '../services/tunnel/tunnel_config_manager.dart';
-import '../services/unified_connection_service.dart';
-import '../services/user_container_service.dart';
-import '../services/web_download_prompt_service.dart'
-    if (dart.library.io) '../services/web_download_prompt_service_stub.dart';
-import '../services/settings_preference_service.dart';
-import '../services/settings_import_export_service.dart';
-import '../services/provider_configuration_manager.dart';
-import '../services/admin_center_service.dart';
-import '../services/theme_provider.dart';
-import '../services/platform_detection_service.dart';
-import '../services/platform_adapter.dart';
+import 'package:cloudtolocalllm/services/admin_data_flush_service.dart';
+import 'package:cloudtolocalllm/services/admin_service.dart';
+import 'package:cloudtolocalllm/services/app_initialization_service.dart';
+import 'package:cloudtolocalllm/services/auth_service.dart';
+import 'package:cloudtolocalllm/services/session_storage_service.dart';
+import 'package:cloudtolocalllm/services/connection_manager_service.dart';
+import 'package:cloudtolocalllm/auth/auth_provider.dart';
+import 'package:cloudtolocalllm/auth/providers/entra_auth_provider.dart';
+import 'package:cloudtolocalllm/services/desktop_client_detection_service.dart';
+import 'package:cloudtolocalllm/services/enhanced_user_tier_service.dart';
+import 'package:cloudtolocalllm/services/langchain_integration_service.dart';
+import 'package:cloudtolocalllm/services/langchain_ollama_service.dart';
+import 'package:cloudtolocalllm/services/langchain_prompt_service.dart';
+import 'package:cloudtolocalllm/services/langchain_rag_service.dart'
+    if (dart.library.html) 'package:cloudtolocalllm/services/langchain_rag_service_stub.dart';
+import 'package:cloudtolocalllm/services/llm_audit_service.dart';
+import 'package:cloudtolocalllm/services/llm_error_handler.dart';
+import 'package:cloudtolocalllm/services/llm_provider_manager.dart';
+import 'package:cloudtolocalllm/services/local_ollama_connection_service.dart';
+import 'package:cloudtolocalllm/services/ollama_service.dart';
+import 'package:cloudtolocalllm/services/provider_discovery_service.dart';
+import 'package:cloudtolocalllm/services/streaming_chat_service.dart';
+import 'package:cloudtolocalllm/services/streaming_proxy_service.dart';
+import 'package:cloudtolocalllm/services/tunnel_service.dart';
+import 'package:cloudtolocalllm/services/tunnel/tunnel_config_manager.dart';
+import 'package:cloudtolocalllm/services/unified_connection_service.dart';
+import 'package:cloudtolocalllm/services/user_container_service.dart';
+import 'package:cloudtolocalllm/services/web_download_prompt_service.dart'
+    if (dart.library.io) 'package:cloudtolocalllm/services/web_download_prompt_service_stub.dart';
+import 'package:cloudtolocalllm/services/settings_preference_service.dart';
+import 'package:cloudtolocalllm/services/settings_import_export_service.dart';
+import 'package:cloudtolocalllm/services/provider_configuration_manager.dart';
+import 'package:cloudtolocalllm/services/admin_center_service.dart';
+import 'package:cloudtolocalllm/services/theme_provider.dart';
+import 'package:cloudtolocalllm/services/platform_detection_service.dart';
+import 'package:cloudtolocalllm/services/platform_adapter.dart';
 
 final GetIt serviceLocator = GetIt.instance;
 
 bool _coreServicesRegistered = false;
 bool _authenticatedServicesRegistered = false;
+bool _isRegisteringAuthenticatedServices = false;
 
 /// Registers core services that are needed before authentication.
 /// These services don't require authentication tokens and can be safely
@@ -71,10 +72,6 @@ Future<void> setupCoreServices() async {
   print('[Locator] Registering AuthService...');
   final authService = AuthService(authProvider);
   serviceLocator.registerSingleton<AuthService>(authService);
-  print('[Locator] Initializing AuthService...');
-  await authService.init();
-  print('[Locator] AuthService initialized');
-
   // Local Ollama service - create but don't initialize until auth
   final localOllamaService = LocalOllamaConnectionService();
   serviceLocator.registerSingleton<LocalOllamaConnectionService>(
@@ -166,9 +163,16 @@ Future<void> setupCoreServices() async {
   serviceLocator.registerSingleton<EnhancedUserTierService>(
     enhancedUserTierService,
   );
+
   // Don't initialize yet - wait for auth token
 
   debugPrint('[ServiceLocator] Core services registered successfully');
+
+  // Initialize AuthService last, after all dependencies are registered
+  print('[Locator] Initializing AuthService...');
+  await authService.init();
+  print('[Locator] AuthService initialized');
+
   debugPrint('[ServiceLocator] ===== REGISTERING CORE SERVICES END =====');
 
   // Verify all core services are registered
@@ -244,167 +248,187 @@ void _verifyCoreServicesRegistered() {
 /// This prevents unnecessary initialization and improves security.
 Future<void> setupAuthenticatedServices() async {
   if (_authenticatedServicesRegistered) {
-    debugPrint('[ServiceLocator] Authenticated services already registered');
+    print(
+        '[ServiceLocator] Authenticated services already registered (Early Exit)');
     // Services are already registered, so we're done
     return;
   }
 
-  debugPrint(
-      '[ServiceLocator] ===== REGISTERING AUTHENTICATED SERVICES START =====');
-  print('[Locator] setupAuthenticatedServices called');
-
-  // Verify authentication before proceeding
-  final authService = serviceLocator.get<AuthService>();
-  debugPrint(
-      '[ServiceLocator] Checking auth state: ${authService.isAuthenticated.value}');
-  if (!authService.isAuthenticated.value) {
-    debugPrint(
-      '[ServiceLocator] Cannot register authenticated services - user not authenticated',
-    );
-    debugPrint(
-        '[ServiceLocator] ===== REGISTERING AUTHENTICATED SERVICES END (SKIPPED) =====');
+  if (_isRegisteringAuthenticatedServices) {
+    print(
+        '[ServiceLocator] Authenticated services registration already in progress (Race Condition Avoided)');
     return;
   }
 
-  // Verify token is available
-  final token = await authService.getAccessToken();
-  debugPrint(
-      '[ServiceLocator] Checking access token: ${token != null && token.isNotEmpty ? "PRESENT" : "MISSING"}');
-  if (token == null || token.isEmpty) {
+  _isRegisteringAuthenticatedServices = true;
+
+  try {
     debugPrint(
-      '[ServiceLocator] Cannot register authenticated services - no access token',
+        '[ServiceLocator] ===== REGISTERING AUTHENTICATED SERVICES START =====');
+    print('[Locator] setupAuthenticatedServices called (Entry Point)');
+
+    // Verify authentication before proceeding
+    print('[Locator] Getting AuthService from serviceLocator...');
+    final authService = serviceLocator.get<AuthService>();
+    print('[Locator] Got AuthService instance');
+
+    print('[Locator] Accessing isAuthenticated.value...');
+    // Verify token is available
+    final token = await authService.getAccessToken();
+    print(
+        '[ServiceLocator] Checking access token: ${token != null && token.isNotEmpty ? "PRESENT" : "MISSING"}');
+    if (token == null || token.isEmpty) {
+      print(
+        '[ServiceLocator] Cannot register authenticated services - no access token',
+      );
+      return;
+    }
+
+    print('[ServiceLocator] Registering authenticated services...');
+    _authenticatedServicesRegistered = true;
+
+    final localOllamaService =
+        serviceLocator.get<LocalOllamaConnectionService>();
+    final providerDiscoveryService =
+        serviceLocator.get<ProviderDiscoveryService>();
+    final enhancedUserTierService =
+        serviceLocator.get<EnhancedUserTierService>();
+    final webDownloadPromptService =
+        serviceLocator.get<WebDownloadPromptService>();
+
+    // Initialize enhanced user tier service now that we have auth
+    print('[ServiceLocator] Initializing EnhancedUserTierService...');
+    unawaited(enhancedUserTierService.initialize());
+
+    // Initialize web download prompt service
+    print('[ServiceLocator] Initializing WebDownloadPromptService...');
+    await webDownloadPromptService.initialize();
+
+    // Initialize LocalOllama service now that we have auth
+    print('[ServiceLocator] Initializing LocalOllamaConnectionService...');
+    await localOllamaService.initialize();
+
+    // LangChain Prompt Service is already initialized in constructor
+
+    // Provider Discovery Service doesn't need initialization - it's already set up
+
+    // Tunnel configuration manager - requires SharedPreferences
+    print('[ServiceLocator] Initializing TunnelConfigManager...');
+    final tunnelConfigManager = TunnelConfigManager();
+    await tunnelConfigManager.initialize();
+    serviceLocator.registerSingleton<TunnelConfigManager>(tunnelConfigManager);
+
+    // Tunnel service - requires authentication token
+    final tunnelService = TunnelService(authService: authService);
+    serviceLocator.registerSingleton<TunnelService>(tunnelService);
+
+    // Streaming proxy service - requires authentication token
+    final streamingProxyService =
+        StreamingProxyService(authService: authService);
+    serviceLocator.registerSingleton<StreamingProxyService>(
+      streamingProxyService,
     );
+
+    // Ollama service - requires authentication token
+    print('[ServiceLocator] Initializing OllamaService...');
+    final ollamaService = OllamaService(authService: authService);
+    await ollamaService.initialize();
+    serviceLocator.registerSingleton<OllamaService>(ollamaService);
+
+    // User container service - requires authentication token
+    final userContainerService = UserContainerService(authService: authService);
+    serviceLocator
+        .registerSingleton<UserContainerService>(userContainerService);
+
+    // LangChain integration service - requires authentication for provider access
+    print('[ServiceLocator] Initializing LangChainIntegrationService...');
+    final langchainIntegrationService = LangChainIntegrationService(
+      discoveryService: providerDiscoveryService,
+    );
+    await langchainIntegrationService.initializeProviders();
+    serviceLocator.registerSingleton<LangChainIntegrationService>(
+      langchainIntegrationService,
+    );
+
+    // LLM Provider Manager - requires authentication
+    print('[ServiceLocator] Initializing LLMProviderManager...');
+    final llmProviderManager = LLMProviderManager(
+      discoveryService: providerDiscoveryService,
+      langchainService: langchainIntegrationService,
+    );
+    await llmProviderManager.initialize();
+    serviceLocator.registerSingleton<LLMProviderManager>(llmProviderManager);
+
+    // Connection Manager - requires authentication for tunnel/cloud connections
+    final connectionManager = ConnectionManagerService(
+      localOllama: localOllamaService,
+      tunnelService: tunnelService,
+      authService: authService,
+      ollamaService: ollamaService,
+    );
+    await connectionManager.initialize();
+    serviceLocator
+        .registerSingleton<ConnectionManagerService>(connectionManager);
+
+    // LangChain Ollama service - requires connection manager (which requires auth)
+    final langchainOllamaService = LangChainOllamaService(
+      connectionManager: connectionManager,
+    );
+    await langchainOllamaService.initialize();
+    serviceLocator.registerSingleton<LangChainOllamaService>(
+      langchainOllamaService,
+    );
+
+    // LangChain RAG service - requires LangChain Ollama service
+    final langchainRagService = LangChainRAGService(
+      ollamaService: langchainOllamaService,
+    );
+    await langchainRagService.initialize();
+    serviceLocator.registerSingleton<LangChainRAGService>(langchainRagService);
+
+    // LLM Audit service - requires authentication
+    final llmAuditService = LLMAuditService(authService: authService);
+    await llmAuditService.initialize();
+    serviceLocator.registerSingleton<LLMAuditService>(llmAuditService);
+
+    // Streaming chat service - requires connection manager
+    final streamingChatService = StreamingChatService(
+      connectionManager,
+      authService,
+    );
+    serviceLocator
+        .registerSingleton<StreamingChatService>(streamingChatService);
+
+    // Unified connection service - requires connection manager
+    print('[ServiceLocator] Initializing UnifiedConnectionService...');
+    final unifiedConnectionService = UnifiedConnectionService();
+    unifiedConnectionService.setConnectionManager(connectionManager);
+    await unifiedConnectionService.initialize();
+    serviceLocator.registerSingleton<UnifiedConnectionService>(
+      unifiedConnectionService,
+    );
+
+    // Admin services - require authentication and admin privileges
+    final adminService = AdminService(authService: authService);
+    serviceLocator.registerSingleton<AdminService>(adminService);
+
+    final adminDataFlushService =
+        AdminDataFlushService(authService: authService);
+    serviceLocator.registerSingleton<AdminDataFlushService>(
+      adminDataFlushService,
+    );
+
+    // Admin center service - requires authentication
+    final adminCenterService = AdminCenterService(authService: authService);
+    serviceLocator.registerSingleton<AdminCenterService>(adminCenterService);
+
     debugPrint(
-        '[ServiceLocator] ===== REGISTERING AUTHENTICATED SERVICES END (SKIPPED) =====');
-    return;
+        '[ServiceLocator] Authenticated services registered successfully');
+    debugPrint(
+        '[ServiceLocator] ===== REGISTERING AUTHENTICATED SERVICES END =====');
+  } finally {
+    _isRegisteringAuthenticatedServices = false;
   }
-
-  debugPrint('[ServiceLocator] Registering authenticated services...');
-  _authenticatedServicesRegistered = true;
-
-  final localOllamaService = serviceLocator.get<LocalOllamaConnectionService>();
-  final providerDiscoveryService =
-      serviceLocator.get<ProviderDiscoveryService>();
-  final enhancedUserTierService = serviceLocator.get<EnhancedUserTierService>();
-  final webDownloadPromptService =
-      serviceLocator.get<WebDownloadPromptService>();
-
-  // Initialize enhanced user tier service now that we have auth
-  unawaited(enhancedUserTierService.initialize());
-
-  // Initialize web download prompt service
-  await webDownloadPromptService.initialize();
-
-  // Initialize LocalOllama service now that we have auth
-  await localOllamaService.initialize();
-
-  // LangChain Prompt Service is already initialized in constructor
-
-  // Provider Discovery Service doesn't need initialization - it's already set up
-
-  // Tunnel configuration manager - requires SharedPreferences
-  final tunnelConfigManager = TunnelConfigManager();
-  await tunnelConfigManager.initialize();
-  serviceLocator.registerSingleton<TunnelConfigManager>(tunnelConfigManager);
-
-  // Tunnel service - requires authentication token
-  final tunnelService = TunnelService(authService: authService);
-  serviceLocator.registerSingleton<TunnelService>(tunnelService);
-
-  // Streaming proxy service - requires authentication token
-  final streamingProxyService = StreamingProxyService(authService: authService);
-  serviceLocator.registerSingleton<StreamingProxyService>(
-    streamingProxyService,
-  );
-
-  // Ollama service - requires authentication token
-  final ollamaService = OllamaService(authService: authService);
-  await ollamaService.initialize();
-  serviceLocator.registerSingleton<OllamaService>(ollamaService);
-
-  // User container service - requires authentication token
-  final userContainerService = UserContainerService(authService: authService);
-  serviceLocator.registerSingleton<UserContainerService>(userContainerService);
-
-  // LangChain integration service - requires authentication for provider access
-  final langchainIntegrationService = LangChainIntegrationService(
-    discoveryService: providerDiscoveryService,
-  );
-  await langchainIntegrationService.initializeProviders();
-  serviceLocator.registerSingleton<LangChainIntegrationService>(
-    langchainIntegrationService,
-  );
-
-  // LLM Provider Manager - requires authentication
-  final llmProviderManager = LLMProviderManager(
-    discoveryService: providerDiscoveryService,
-    langchainService: langchainIntegrationService,
-  );
-  await llmProviderManager.initialize();
-  serviceLocator.registerSingleton<LLMProviderManager>(llmProviderManager);
-
-  // Connection Manager - requires authentication for tunnel/cloud connections
-  final connectionManager = ConnectionManagerService(
-    localOllama: localOllamaService,
-    tunnelService: tunnelService,
-    authService: authService,
-    ollamaService: ollamaService,
-  );
-  await connectionManager.initialize();
-  serviceLocator.registerSingleton<ConnectionManagerService>(connectionManager);
-
-  // LangChain Ollama service - requires connection manager (which requires auth)
-  final langchainOllamaService = LangChainOllamaService(
-    connectionManager: connectionManager,
-  );
-  await langchainOllamaService.initialize();
-  serviceLocator.registerSingleton<LangChainOllamaService>(
-    langchainOllamaService,
-  );
-
-  // LangChain RAG service - requires LangChain Ollama service
-  final langchainRagService = LangChainRAGService(
-    ollamaService: langchainOllamaService,
-  );
-  await langchainRagService.initialize();
-  serviceLocator.registerSingleton<LangChainRAGService>(langchainRagService);
-
-  // LLM Audit service - requires authentication
-  final llmAuditService = LLMAuditService(authService: authService);
-  await llmAuditService.initialize();
-  serviceLocator.registerSingleton<LLMAuditService>(llmAuditService);
-
-  // Streaming chat service - requires connection manager
-  final streamingChatService = StreamingChatService(
-    connectionManager,
-    authService,
-  );
-  serviceLocator.registerSingleton<StreamingChatService>(streamingChatService);
-
-  // Unified connection service - requires connection manager
-  final unifiedConnectionService = UnifiedConnectionService();
-  unifiedConnectionService.setConnectionManager(connectionManager);
-  await unifiedConnectionService.initialize();
-  serviceLocator.registerSingleton<UnifiedConnectionService>(
-    unifiedConnectionService,
-  );
-
-  // Admin services - require authentication and admin privileges
-  final adminService = AdminService(authService: authService);
-  serviceLocator.registerSingleton<AdminService>(adminService);
-
-  final adminDataFlushService = AdminDataFlushService(authService: authService);
-  serviceLocator.registerSingleton<AdminDataFlushService>(
-    adminDataFlushService,
-  );
-
-  // Admin center service - requires authentication
-  final adminCenterService = AdminCenterService(authService: authService);
-  serviceLocator.registerSingleton<AdminCenterService>(adminCenterService);
-
-  debugPrint('[ServiceLocator] Authenticated services registered successfully');
-  debugPrint(
-      '[ServiceLocator] ===== REGISTERING AUTHENTICATED SERVICES END =====');
 }
 
 /// Legacy function for backward compatibility.

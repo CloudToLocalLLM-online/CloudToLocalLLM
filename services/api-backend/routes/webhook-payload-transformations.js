@@ -20,7 +20,7 @@
 
 import express from 'express';
 import logger from '../logger.js';
-import { authenticateJWT } from '../middleware/auth-middleware.js';
+import { authenticateJWT } from '../middleware/auth.js';
 import WebhookPayloadTransformer from '../services/webhook-payload-transformer.js';
 
 const router = express.Router();

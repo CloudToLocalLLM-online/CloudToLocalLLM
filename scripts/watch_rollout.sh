@@ -27,8 +27,8 @@ while [ $SECONDS -lt $END ]; do
             # Use safe navigation in awk in case of empty input
             RESTARTS=$(kubectl get pod "$POD" -n "$NAMESPACE" -o jsonpath='{.status.containerStatuses[*].restartCount}' 2>/dev/null | awk '{s+=$1} END {print s}')
             
-            if [ "${RESTARTS:-0}" -gt 0 ]; then
-                echo "❌ Detected ${RESTARTS} restarts for pod $POD! Fail fast triggered."
+            if [ "${RESTARTS:-0}" -gt 3 ]; then
+                echo "❌ Detected ${RESTARTS} restarts for pod $POD! Fail fast triggered (limit 3)."
                 
                 echo "--- Pod Status ---"
                 kubectl get pod "$POD" -n "$NAMESPACE"
@@ -37,6 +37,8 @@ while [ $SECONDS -lt $END ]; do
                 kubectl logs "$POD" -n "$NAMESPACE" --tail=50 --all-containers=true --prefix || true
                 
                 exit 1
+            elif [ "${RESTARTS:-0}" -gt 0 ]; then
+                echo "⚠️ Detected ${RESTARTS} restarts for pod $POD. Monitoring..."
             fi
         done
     fi

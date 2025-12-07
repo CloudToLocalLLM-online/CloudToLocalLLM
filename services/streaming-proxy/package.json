@@ -1,6 +1,6 @@
 {
   "name": "cloudtolocalllm-tunnel-container",
-  "version": "1.0.0",
+  "version": "4.17.4",
   "description": "Simplified tunnel-aware container for CloudToLocalLLM using standard HTTP libraries",
   "main": "proxy-server.js",
   "type": "module",
@@ -38,6 +38,12 @@
     "uuid": "^13.0.0",
     "winston": "^3.18.3",
     "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "@types/jest": "^29.5.12",
+    "@types/node": "^22.10.2",
+    "@types/ws": "^8.5.13",
+    "typescript": "^5.7.2"
   },
   "engines": {
     "node": ">=22.0.0 <25.0.0"

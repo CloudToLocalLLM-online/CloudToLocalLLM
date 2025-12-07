@@ -1,11 +1,14 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
+import 'package:dio/dio.dart';
+
 import '../models/user_model.dart';
 import '../auth/auth_provider.dart';
 
 import 'connection_manager_service.dart';
 import '../di/locator.dart' as di;
+import '../config/app_config.dart';
 
 /// Provider-Agnostic Authentication Service
 class AuthService extends ChangeNotifier {
@@ -23,10 +26,7 @@ class AuthService extends ChangeNotifier {
 
   Future<void> init() async {
     print('[AuthService] init() called');
-    if (_initialized) {
-      print('[AuthService] Already initialized');
-      return;
-    }
+    if (_initialized) return;
     _initialized = true;
     await _initProvider();
     print('[AuthService] init() completed');
@@ -34,8 +34,8 @@ class AuthService extends ChangeNotifier {
 
   /// Initialize Auth Provider
   Future<void> _initProvider() async {
+    _isRestoringSession = true;
     try {
-      _isRestoringSession = true;
       _isLoading.value = true;
       notifyListeners();
 
@@ -75,6 +75,12 @@ class AuthService extends ChangeNotifier {
 
   Future<void> _handleAuthenticatedUser(UserModel user) async {
     if (_isAuthenticated.value) return;
+
+    // Register session
+    final token = await _authProvider.getAccessToken();
+    if (token != null) {
+      await _registerSession(token, user);
+    }
 
     _isAuthenticated.value = true;
     notifyListeners();
@@ -141,11 +147,10 @@ class AuthService extends ChangeNotifier {
     }
   }
 
-  /// Logout
   Future<void> logout() async {
-    _isLoading.value = true;
-    notifyListeners();
     try {
+      _isLoading.value = true;
+      notifyListeners();
       await _authProvider.logout();
     } finally {
       _isLoading.value = false;
@@ -166,12 +171,42 @@ class AuthService extends ChangeNotifier {
     return _authProvider.handleCallback(url: callbackUrl);
   }
 
-  @override
-  void dispose() {
-    _isAuthenticated.dispose();
-    _isLoading.dispose();
-    _areAuthenticatedServicesLoaded.dispose();
-    super.dispose();
+  // Session registration helper
+  Future<void> _registerSession(
+    String token,
+    UserModel user,
+  ) async {
+    try {
+      final dio = Dio();
+      // Ensure backend knows about this session
+      final response = await dio.post(
+        '${AppConfig.apiBaseUrl}/auth/sessions',
+        options: Options(
+          headers: {
+            'Authorization': 'Bearer $token',
+            'Content-Type': 'application/json',
+          },
+          validateStatus: (status) => status! < 500,
+        ),
+        data: {
+          'userId': user.id,
+          'token': token,
+          'jwtAccessToken': token,
+          'userProfile': {
+            'email': user.email,
+            'name': user.name,
+          },
+        },
+      );
+      if (response.statusCode != 200 && response.statusCode != 201) {
+        print(
+          '[AuthService] Warning: Session registration failed: ${response.statusCode}',
+        );
+      }
+    } catch (e) {
+      print('[AuthService] Register session error: $e');
+      // Non-blocking
+    }
   }
 
   void _completeSessionBootstrap() {

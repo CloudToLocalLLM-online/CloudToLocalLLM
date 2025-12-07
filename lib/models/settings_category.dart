@@ -104,6 +104,7 @@ class SettingsCategoryIds {
   static const String importExport = 'import_export';
   static const String premiumFeatures = 'premium_features';
   static const String adminCenter = 'admin_center';
+  static const String about = 'about';
 }
 
 /// Settings category visibility rules based on platform and user role
@@ -123,6 +124,7 @@ class CategoryVisibilityRules {
       case SettingsCategoryIds.account:
       case SettingsCategoryIds.privacy:
       case SettingsCategoryIds.importExport:
+      case SettingsCategoryIds.about:
         // Always visible on all platforms
         return true;
 
@@ -200,6 +202,8 @@ class SettingsCategoryMetadata {
         return priorityPremium;
       case SettingsCategoryIds.adminCenter:
         return priorityAdmin;
+      case SettingsCategoryIds.about:
+        return 100; // Show at the bottom
       default:
         return 999;
     }
@@ -226,6 +230,8 @@ class SettingsCategoryMetadata {
         return Icons.star;
       case SettingsCategoryIds.adminCenter:
         return Icons.admin_panel_settings;
+      case SettingsCategoryIds.about:
+        return Icons.info_outline;
       default:
         return Icons.settings;
     }
@@ -252,6 +258,8 @@ class SettingsCategoryMetadata {
         return 'Premium Features';
       case SettingsCategoryIds.adminCenter:
         return 'Admin Center';
+      case SettingsCategoryIds.about:
+        return 'About';
       default:
         return 'Settings';
     }
@@ -278,6 +286,8 @@ class SettingsCategoryMetadata {
         return 'Premium features and upgrades';
       case SettingsCategoryIds.adminCenter:
         return 'Administration and user management';
+      case SettingsCategoryIds.about:
+        return 'Version information and system details';
       default:
         return '';
     }

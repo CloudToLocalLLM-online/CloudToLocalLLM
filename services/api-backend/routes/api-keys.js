@@ -11,6 +11,7 @@
  */
 
 import express from 'express';
+import rateLimit from 'express-rate-limit';
 import logger from '../logger.js';
 import { authenticateJWT, extractUserId } from '../middleware/auth.js';
 import {
@@ -24,6 +25,18 @@ import {
 } from '../services/api-key-service.js';
 
 const router = express.Router();
+
+// Strict rate limiter for sensitive operations (key generation/rotation)
+const apiKeyOpsLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: 10, // Limit each IP to 10 key generations/rotations per hour
+  message: {
+    error: 'Too many API key operations',
+    message: 'Please try again after an hour',
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
 
 /**
  * POST /api-keys
@@ -52,7 +65,7 @@ const router = express.Router();
  *   "expiresAt": "ISO8601 or null"
  * }
  */
-router.post('/', authenticateJWT, async(req, res) => {
+router.post('/', apiKeyOpsLimiter, authenticateJWT, async(req, res) => {
   try {
     const userId = extractUserId(req);
     const { name, description, scopes, rateLimit, expiresIn } = req.body;
@@ -98,9 +111,10 @@ router.post('/', authenticateJWT, async(req, res) => {
       expiresIn: expiresIn || null,
     });
 
+    const { id: newKeyId } = apiKey;
     logger.info('[APIKeyRoutes] API key generated', {
       userId,
-      keyId: apiKey.id,
+      keyId: newKeyId,
       name,
     });
 
@@ -315,7 +329,7 @@ router.patch('/:keyId', authenticateJWT, async(req, res) => {
  *   "expiresAt": "ISO8601 or null"
  * }
  */
-router.post('/:keyId/rotate', authenticateJWT, async(req, res) => {
+router.post('/:keyId/rotate', apiKeyOpsLimiter, authenticateJWT, async(req, res) => {
   try {
     const userId = extractUserId(req);
     const { keyId } = req.params;

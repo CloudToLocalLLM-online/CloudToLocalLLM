@@ -19,51 +19,68 @@ The project utilizes a robust stack to achieve its goals:
         *   `api-backend`: Main API service (Express).
         *   `streaming-proxy`: Tunnel-aware container for streaming (Express, WS).
     *   **Observability:** OpenTelemetry, Sentry, Prometheus.
-    *   **Integrations:** Stripe (payments), Auth0 (auth), Ollama (LLM runtime).
+    *   **Integrations:** Stripe (payments), Supabase (auth), Ollama (LLM runtime).
 *   **Database:** PostgreSQL (backend), SQLite (local/backend).
 *   **Infrastructure:** Docker, Kubernetes (k8s), Docker Compose.
 *   **CI/CD:** GitHub Actions.
 
-## Development Environment and MCP Tools
+## Available Tools & Capabilities
 
-I am operating within Antigravity and have access to dedicated MCP (Model Context Protocol) servers. These servers provide a suite of powerful, specialized tools that allow me to perform advanced tasks.
+I have access to a wide range of specialized tools to assist with development, analysis, and creative tasks.
 
-### Available MCP Servers
-
-*   **Dart & Flutter MCP**:
-    *   **Project Management**: Create, analyze, and manage Dart/Flutter projects.
-    *   **Development Tools**: Connect to Dart Tooling Daemon, run tests, format code, and fix issues.
-    *   **Runtime Interaction**: Hot reload/restart, inspect widget trees, and view application logs.
-*   **GitHub MCP**:
-    *   **Repository Operations**: Search, read, and modify repositories, branches, and files.
-    *   **Issue & PR Management**: Create, list, and update issues and pull requests.
-    *   **Code Search**: Advanced code search capabilities across GitHub.
-*   **Sequential Thinking MCP**:
-    *   **Problem Solving**: Advanced tool for dynamic and reflective problem-solving, allowing for complex thought chains and hypothesis verification.
-
-## Development Plan
-
-To effectively contribute to the project, I will adhere to the following plan:
-
-1.  **Understand the Architecture:** I will respect the separation of concerns between the Flutter frontend, `api-backend`, and `streaming-proxy`.
-2.  **Follow Established Practices:** I will follow the project's existing development workflow, including testing (`jest` for backend, `flutter_test` for frontend) and documentation standards.
-3.  **Implement New Features:** I will implement new features as requested, ensuring they are well-tested and documented.
-4.  **Fix Bugs:** I will identify and fix bugs in the existing code, providing clear and concise bug reports.
-5.  **Improve Performance:** I will identify and address performance bottlenecks, particularly in the tunneling and streaming layers.
-6.  **Enhance Security:** I will identify and address security vulnerabilities, focusing on user isolation and secure tunneling.
-
-## Available Tools
-
-Here are some of the tools I can use to help with development:
-
-*   **`list_directory(path)`**: Lists the files and directories in a specified path.
-*   **`read_file(absolute_path)`**: Reads the content of a file.
-*   **`write_file(file_path, content)`**: Writes new content to a file, overwriting existing content.
-*   **`replace(file_path, old_string, new_string)`**: Replaces specific text within a file.
-*   **`run_shell_command(command)`**: Executes a shell command in the terminal.
-*   **`search_file_content(pattern, include)`**: Searches for a specific pattern within files.
+### Core File System & Shell
+*   **`list_directory(path)`**: Lists files and directories.
+*   **`read_file(path)`**: Reads file content.
+*   **`write_file(path, content)`**: Writes new content to a file.
+*   **`replace(path, old_string, new_string)`**: Performs precise text replacement within a file.
+*   **`search_file_content(pattern)`**: fast, grep-like search for patterns in files.
 *   **`glob(pattern)`**: Finds files matching a glob pattern.
-*   **`gh [COMMAND]`**: Interacts with the GitHub CLI.
+*   **`run_shell_command(command)`**: Executes shell commands. **Includes access to the GitHub CLI (`gh`)** for repository, issue, and PR management.
+
+### Planning & Knowledge
+*   **`codebase_investigator(objective)`**: Performs deep analysis of the codebase structure, architecture, and dependencies. Use this for complex inquiries.
+*   **`write_todos(todos)`**: Manages a dynamic task list to track progress on complex, multi-step operations.
+*   **`save_memory(fact)`**: Persists user preferences and important project facts across sessions.
+
+### Web & Research
+*   **`web_fetch(prompt)`**: Fetches and processes content from URLs (including localhost).
+*   **`google_web_search(query)`**: Performs Google searches for external documentation and solutions.
+*   **`pub_dev_search(query)`**: Searches for Dart/Flutter packages on pub.dev.
+
+### Dart & Flutter Development
+*   **Project & Dependency Management:**
+    *   `create_project`: Scaffolds new Dart/Flutter projects.
+    *   `pub`: Manages package dependencies (add, remove, get, upgrade).
+*   **Code Analysis & Quality:**
+    *   `analyze_files`: Runs static analysis.
+    *   `dart_fix`: Applies automated code fixes.
+    *   `dart_format`: Formats code to standard.
+    *   `run_tests`: Executes tests with advanced reporting.
+*   **Development Intelligence:**
+    *   `resolve_workspace_symbol`: symbol search.
+    *   `signature_help`, `hover`: Code introspection.
+*   **Runtime Interaction (requires running app):**
+    *   `launch_app`, `stop_app`: Manages application lifecycle.
+    *   `hot_reload`, `hot_restart`: Applies changes to running apps.
+    *   `connect_dart_tooling_daemon`: Connects to the Dart tooling daemon.
+    *   `get_app_logs`: Retrieves application logs.
+    *   `get_runtime_errors`: Checks for active runtime errors.
+*   **UI Inspection & Automation:**
+    *   `get_widget_tree`, `get_selected_widget`: Inspects the UI hierarchy.
+    *   `set_widget_selection_mode`: Enables interactive widget selection.
+    *   `flutter_driver`: Drives UI automation tests.
+*   **Device Management:**
+    *   `list_devices`: Shows available targets.
+    *   `list_running_apps`: Shows active sessions.
+
+### Image Generation & Editing (Nano Banana)
+*   **`generate_image`**: Generates images from text prompts with style control.
+*   **`edit_image`**: Modifies existing images based on text instructions.
+*   **`restore_image`**: Restores and enhances images (e.g., removing artifacts).
+*   **`generate_icon`**: Generates app icons, favicons, and UI elements.
+*   **`generate_pattern`**: Generates seamless patterns and textures.
+*   **`generate_story`**: Creates sequential visual stories or process guides.
+*   **`generate_diagram`**: Generates technical diagrams and flowcharts.
 
 ## User Preferences & Rules
 *   **Automation First**: Automate tasks whenever possible. Do not ask for manual user intervention unless absolutely required.

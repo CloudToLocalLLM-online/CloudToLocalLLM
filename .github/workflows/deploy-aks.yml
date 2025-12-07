@@ -1,72 +1,132 @@
 name: Deploy to Azure AKS
 
+permissions:
+  id-token: write
+
 on:
   push:
     branches:
-      - main
-    paths:
-      - "k8s/**"
-      - ".github/workflows/deploy-aks.yml"
-      - "services/**"
-      - "web/**"
-      - "lib/**"
-      - "pubspec.**"
-      - "config/docker/**"
-      - "scripts/**"
+      - cloud # Trigger on cloud branch pushes (requires external PAT/App)
+  repository_dispatch: # Trigger via repository_dispatch (accepts dynamic types like cloud-deploy-4.12.12)
   workflow_dispatch:
+    inputs:
+      version_tag:
+        description: "Version tag to deploy (optional, uses version.json if not provided)"
+        required: false
+        type: string
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  group: cloud-deployment # All cloud deployments share same concurrency group
+  cancel-in-progress: true # Cancel old deployment when new version arrives
 
 env:
   AZURE_RESOURCE_GROUP: cloudtolocalllm-rg
   AZURE_CLUSTER_NAME: cloudtolocalllm-aks
-  ACR_NAME: cloudtolocalllm
+  ACR_NAME: imrightguycloudtolocalllm
   # DOCKER_REGISTRY will be set dynamically to the ACR login server
   DOCKER_REGISTRY: ""
 
 jobs:
-  # Job to detect changes in specific paths
-  changes:
+  # Extract version info from branch or tag
+  extract_version:
     runs-on: ubuntu-latest
     outputs:
-      base: ${{ steps.filter.outputs.base }}
-      postgres: ${{ steps.filter.outputs.postgres }}
-      web: ${{ steps.filter.outputs.web }}
-      api: ${{ steps.filter.outputs.api }}
-      proxy: ${{ steps.filter.outputs.proxy }}
+      app_version: ${{ steps.parse.outputs.app_version }}
+      commit_sha: ${{ steps.parse.outputs.commit_sha }}
+      deploy_source: ${{ steps.parse.outputs.deploy_source }}
     steps:
       - uses: actions/checkout@v4
-      - uses: dorny/paths-filter@v2
-        id: filter
+
+      - name: Parse Version
+        id: parse
+        run: |
+          # Determine source: branch, tag, or manual
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ -n "${{ inputs.version_tag }}" ]; then
+            # Manual trigger with tag
+            TAG_NAME="${{ inputs.version_tag }}"
+            APP_VERSION=$(echo "$TAG_NAME" | sed -E 's/([0-9]+\.[0-9]+\.[0-9]+)-.*/\1/')
+            COMMIT_SHA=$(echo "$TAG_NAME" | sed -E 's/.*-([a-f0-9]+)$/\1/')
+            SOURCE="manual-tag"
+          elif [[ "${{ github.ref }}" == refs/tags/* ]]; then
+            # Tag push
+            TAG_NAME="${GITHUB_REF#refs/tags/}"
+            APP_VERSION=$(echo "$TAG_NAME" | sed -E 's/([0-9]+\.[0-9]+\.[0-9]+)-.*/\1/')
+            COMMIT_SHA=$(echo "$TAG_NAME" | sed -E 's/.*-([a-f0-9]+)$/\1/')
+            SOURCE="tag"
+          else
+            # Branch push (cloud branch)
+            APP_VERSION=$(jq -r '.version' assets/version.json)
+            COMMIT_SHA=$(git rev-parse --short HEAD)
+            SOURCE="cloud-branch"
+          fi
+
+          echo "app_version=$APP_VERSION" >> $GITHUB_OUTPUT
+          echo "commit_sha=$COMMIT_SHA" >> $GITHUB_OUTPUT
+          echo "deploy_source=$SOURCE" >> $GITHUB_OUTPUT
+
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "Cloud Deployment for v$APP_VERSION"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "Version: $APP_VERSION"
+          echo "Commit: $COMMIT_SHA"
+          echo "Source: $SOURCE"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+  # Job to detect changes in specific paths (compare against last cloud tag)
+  changes:
+    needs: extract_version
+    runs-on: ubuntu-latest
+    outputs:
+      base: ${{ steps.detect.outputs.base }}
+      postgres: ${{ steps.detect.outputs.postgres }}
+      web: ${{ steps.detect.outputs.web }}
+      api: ${{ steps.detect.outputs.api }}
+      proxy: ${{ steps.detect.outputs.proxy }}
+    steps:
+      - uses: actions/checkout@v4
         with:
-          filters: |
-            base:
-              - 'config/docker/Dockerfile.base'
-              - '.github/workflows/deploy-aks.yml'
-            postgres:
-              - 'config/docker/Dockerfile.postgres'
-              - 'config/docker/postgres-init.sh'
-              - 'config/docker/postgres-entrypoint.sh'
-              - '.github/workflows/deploy-aks.yml'
-            web:
-              - 'web/**'
-              - 'lib/**'
-              - 'pubspec.**'
-              - 'config/docker/Dockerfile.base'
-              - '.github/workflows/deploy-aks.yml'
-            api:
-              - 'services/api-backend/**'
-              - 'config/docker/Dockerfile.base'
-              - '.github/workflows/deploy-aks.yml'
-            proxy:
-              - 'services/streaming-proxy/**'
-              - 'config/docker/Dockerfile.base'
-              - '.github/workflows/deploy-aks.yml'
+          fetch-depth: 0
+
+      - name: Detect Service Changes
+        id: detect
+        run: |
+          # Find the previous cloud tag
+          PREV_TAG=$(git tag -l "*-cloud-*" --sort=-version:refname | head -2 | tail -1 || echo "")
+
+          if [ -z "$PREV_TAG" ]; then
+            echo "No previous tag found, building all services"
+            echo "base=true" >> $GITHUB_OUTPUT
+            echo "postgres=true" >> $GITHUB_OUTPUT
+            echo "web=true" >> $GITHUB_OUTPUT
+            echo "api=true" >> $GITHUB_OUTPUT
+            echo "proxy=true" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          echo "Comparing against previous tag: $PREV_TAG"
+
+          # Check for changes in each service (suppress grep output, only capture true/false)
+          BASE_CHANGED=$(git diff --name-only $PREV_TAG HEAD | grep -qE '^config/docker/Dockerfile\.base' && echo "true" || echo "false")
+          POSTGRES_CHANGED=$(git diff --name-only $PREV_TAG HEAD | grep -qE '^config/docker/(Dockerfile\.postgres|postgres-)' && echo "true" || echo "false")
+          WEB_CHANGED=$(git diff --name-only $PREV_TAG HEAD | grep -qE '^(web|lib|pubspec\.)' && echo "true" || echo "false")
+          API_CHANGED=$(git diff --name-only $PREV_TAG HEAD | grep -qE '^services/api-backend' && echo "true" || echo "false")
+          PROXY_CHANGED=$(git diff --name-only $PREV_TAG HEAD | grep -qE '^services/streaming-proxy' && echo "true" || echo "false")
+
+          echo "base=$BASE_CHANGED" >> $GITHUB_OUTPUT
+          echo "postgres=$POSTGRES_CHANGED" >> $GITHUB_OUTPUT
+          echo "web=$WEB_CHANGED" >> $GITHUB_OUTPUT
+          echo "api=$API_CHANGED" >> $GITHUB_OUTPUT
+          echo "proxy=$PROXY_CHANGED" >> $GITHUB_OUTPUT
+
+          echo "Change detection:"
+          echo "  Base: $BASE_CHANGED"
+          echo "  Postgres: $POSTGRES_CHANGED"
+          echo "  Web: $WEB_CHANGED"
+          echo "  API: $API_CHANGED"
+          echo "  Proxy: $PROXY_CHANGED"
 
   build_base:
-    needs: changes
+    needs: [extract_version, changes]
     if: ${{ !cancelled() && needs.changes.outputs.base == 'true' }}
     runs-on: ubuntu-latest
     steps:
@@ -74,7 +134,11 @@ jobs:
       - name: Azure Login
         uses: azure/login@v2
         with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      - name: Create Azure Resource Group if not exists
+        run: az group create --name ${{ env.AZURE_RESOURCE_GROUP }} --location eastus --query "properties.provisioningState" --output tsv
       - name: Setup ACR
         run: |
           # Create ACR if not exists
@@ -82,75 +146,118 @@ jobs:
           # Get Login Server
           echo "DOCKER_REGISTRY=$(az acr show --name ${{ env.ACR_NAME }} --query loginServer --output tsv)" >> $GITHUB_ENV
       - name: Docker Login to ACR
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ env.DOCKER_REGISTRY }}
-          username: ${{ secrets.AZURE_CLIENT_ID }}
-          password: ${{ secrets.AZURE_CLIENT_SECRET }}
+        run: |
+          # Get ACR admin credentials
+          ACR_USERNAME=$(az acr credential show --name ${{ env.ACR_NAME }} --query username --output tsv)
+          ACR_PASSWORD=$(az acr credential show --name ${{ env.ACR_NAME }} --query passwords[0].value --output tsv)
+          # Login to ACR
+          echo "$ACR_PASSWORD" | docker login ${{ env.DOCKER_REGISTRY }} --username "$ACR_USERNAME" --password-stdin
       - uses: docker/setup-buildx-action@v3
       - uses: docker/build-push-action@v5
         with:
           context: .
           file: config/docker/Dockerfile.base
           push: true
-          tags: ${{ env.DOCKER_REGISTRY }}/base:${{ github.sha }}
+          tags: |
+            ${{ env.DOCKER_REGISTRY }}/base:${{ needs.extract_version.outputs.app_version }}-base
+            ${{ env.DOCKER_REGISTRY }}/base:${{ needs.extract_version.outputs.commit_sha }}
+            ${{ env.DOCKER_REGISTRY }}/base:latest
           cache-from: type=registry,ref=${{ env.DOCKER_REGISTRY }}/base:latest
           cache-to: type=inline
 
   build_postgres:
-    needs: [changes, build_base]
-    if: ${{ !cancelled() && (needs.changes.outputs.postgres == 'true' || needs.changes.outputs.base == 'true') && (needs.build_base.result == 'success' || needs.build_base.result == 'skipped') }}
+    needs: [extract_version, changes, build_base]
+    if: ${{ !cancelled() && (needs.build_base.result == 'success' || needs.build_base.result == 'skipped') && needs.changes.outputs.postgres == 'true' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - name: Azure Login
         uses: azure/login@v2
         with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      - name: Create Azure Resource Group if not exists
+        run: az group create --name ${{ env.AZURE_RESOURCE_GROUP }} --location eastus --query "properties.provisioningState" --output tsv
       - name: Get ACR Login Server
         run: echo "DOCKER_REGISTRY=$(az acr show --name ${{ env.ACR_NAME }} --query loginServer --output tsv)" >> $GITHUB_ENV
       - name: Docker Login to ACR
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ env.DOCKER_REGISTRY }}
-          username: ${{ secrets.AZURE_CLIENT_ID }}
-          password: ${{ secrets.AZURE_CLIENT_SECRET }}
+        run: |
+          # Get ACR admin credentials
+          ACR_USERNAME=$(az acr credential show --name ${{ env.ACR_NAME }} --query username --output tsv)
+          ACR_PASSWORD=$(az acr credential show --name ${{ env.ACR_NAME }} --query passwords[0].value --output tsv)
+          # Login to ACR
+          echo "$ACR_PASSWORD" | docker login ${{ env.DOCKER_REGISTRY }} --username "$ACR_USERNAME" --password-stdin
       - uses: docker/setup-buildx-action@v3
       - uses: docker/build-push-action@v5
         with:
           context: .
           file: config/docker/Dockerfile.postgres
           push: true
-          tags: ${{ env.DOCKER_REGISTRY }}/postgres:${{ github.sha }}
+          tags: |
+            ${{ env.DOCKER_REGISTRY }}/postgres:${{ needs.extract_version.outputs.app_version }}-postgres
+            ${{ env.DOCKER_REGISTRY }}/postgres:${{ needs.extract_version.outputs.commit_sha }}
+            ${{ env.DOCKER_REGISTRY }}/postgres:latest
           build-args: |
             BASE_REGISTRY=${{ env.DOCKER_REGISTRY }}
           cache-from: type=registry,ref=${{ env.DOCKER_REGISTRY }}/postgres:latest
           cache-to: type=inline
 
   build_web:
-    needs: [changes, build_base]
-    if: ${{ !cancelled() && (needs.changes.outputs.web == 'true' || needs.changes.outputs.base == 'true') && (needs.build_base.result == 'success' || needs.build_base.result == 'skipped') }}
+    needs: [extract_version, changes, build_base]
+    if: ${{ !cancelled() && (needs.build_base.result == 'success' || needs.build_base.result == 'skipped') && needs.changes.outputs.web == 'true' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - name: Azure Login
         uses: azure/login@v2
         with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      - name: Create Azure Resource Group if not exists
+        run: az group create --name ${{ env.AZURE_RESOURCE_GROUP }} --location eastus --query "properties.provisioningState" --output tsv
       - name: Get ACR Login Server
         run: echo "DOCKER_REGISTRY=$(az acr show --name ${{ env.ACR_NAME }} --query loginServer --output tsv)" >> $GITHUB_ENV
       - name: Docker Login to ACR
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ env.DOCKER_REGISTRY }}
-          username: ${{ secrets.AZURE_CLIENT_ID }}
-          password: ${{ secrets.AZURE_CLIENT_SECRET }}
+        run: |
+          # Get ACR admin credentials
+          ACR_USERNAME=$(az acr credential show --name ${{ env.ACR_NAME }} --query username --output tsv)
+          ACR_PASSWORD=$(az acr credential show --name ${{ env.ACR_NAME }} --query passwords[0].value --output tsv)
+          # Login to ACR
+          echo "$ACR_PASSWORD" | docker login ${{ env.DOCKER_REGISTRY }} --username "$ACR_USERNAME" --password-stdin
       - uses: docker/setup-buildx-action@v3
-      - uses: subosito/flutter-action@v2
+      - name: Check if Flutter is already installed
+        id: flutter_check
+        run: |
+          if command -v flutter >/dev/null 2>&1; then
+            FLUTTER_VERSION=$(flutter --version | head -n1 || echo "unknown")
+            echo "Flutter is already installed: $FLUTTER_VERSION"
+            echo "flutter_installed=true" >> $GITHUB_OUTPUT
+          else
+            echo "Flutter not found, will install"
+            echo "flutter_installed=false" >> $GITHUB_OUTPUT
+          fi
+      - name: Install Flutter (if needed)
+        if: steps.flutter_check.outputs.flutter_installed != 'true'
+        uses: subosito/flutter-action@v2
         with:
           channel: "stable"
           cache: true
-      - run: flutter pub get && flutter build web --release --no-tree-shake-icons
+      - name: Build Flutter Web
+        run: |
+          flutter pub get
+          flutter build web --release --no-tree-shake-icons --base-href / --dart-define=FLUTTER_BUILD_NUMBER=${{ github.sha }}
+      - name: Apply Cache Busting to index.html
+        run: |
+          # Replace placeholder with actual build number (Git SHA)
+          sed -i "s|\$FLUTTER_BUILD_NUMBER|${{ github.sha }}|g" build/web/index.html
+          # Ensure base href is correctly set for root path
+          sed -i "s|\$FLUTTER_BASE_HREF|/|g" build/web/index.html
+      - name: Debug - Verify index.html cache busting
+        run: |
+          echo "Checking if cache-busting was applied:"
+          grep "flutter_bootstrap.js" build/web/index.html
       - name: Debug - List web build
         run: ls -R build/web || echo "build/web not found"
       - uses: docker/build-push-action@v5
@@ -158,78 +265,107 @@ jobs:
           context: .
           file: web/Dockerfile
           push: true
-          tags: ${{ env.DOCKER_REGISTRY }}/web:${{ github.sha }}
+          tags: |
+            ${{ env.DOCKER_REGISTRY }}/web:${{ needs.extract_version.outputs.app_version }}
+            ${{ env.DOCKER_REGISTRY }}/web:${{ needs.extract_version.outputs.commit_sha }}
+            ${{ env.DOCKER_REGISTRY }}/web:latest
           build-args: |
             BASE_REGISTRY=${{ env.DOCKER_REGISTRY }}
           cache-from: type=registry,ref=${{ env.DOCKER_REGISTRY }}/web:latest
           cache-to: type=inline
 
   build_api:
-    needs: [changes, build_base]
-    if: ${{ !cancelled() && (needs.changes.outputs.api == 'true' || needs.changes.outputs.base == 'true') && (needs.build_base.result == 'success' || needs.build_base.result == 'skipped') }}
+    needs: [extract_version, changes, build_base]
+    if: ${{ !cancelled() && (needs.build_base.result == 'success' || needs.build_base.result == 'skipped') && needs.changes.outputs.api == 'true' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - name: Azure Login
         uses: azure/login@v2
         with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      - name: Create Azure Resource Group if not exists
+        run: az group create --name ${{ env.AZURE_RESOURCE_GROUP }} --location eastus --query "properties.provisioningState" --output tsv
       - name: Get ACR Login Server
         run: echo "DOCKER_REGISTRY=$(az acr show --name ${{ env.ACR_NAME }} --query loginServer --output tsv)" >> $GITHUB_ENV
       - name: Docker Login to ACR
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ env.DOCKER_REGISTRY }}
-          username: ${{ secrets.AZURE_CLIENT_ID }}
-          password: ${{ secrets.AZURE_CLIENT_SECRET }}
+        run: |
+          # Get ACR admin credentials
+          ACR_USERNAME=$(az acr credential show --name ${{ env.ACR_NAME }} --query username --output tsv)
+          ACR_PASSWORD=$(az acr credential show --name ${{ env.ACR_NAME }} --query passwords[0].value --output tsv)
+          # Login to ACR
+          echo "$ACR_PASSWORD" | docker login ${{ env.DOCKER_REGISTRY }} --username "$ACR_USERNAME" --password-stdin
       - uses: docker/setup-buildx-action@v3
       - uses: docker/build-push-action@v5
         with:
           context: services/api-backend
           file: services/api-backend/Dockerfile
           push: true
-          tags: ${{ env.DOCKER_REGISTRY }}/api-backend:${{ github.sha }}
+          tags: |
+            ${{ env.DOCKER_REGISTRY }}/api-backend:${{ needs.extract_version.outputs.app_version }}-api
+            ${{ env.DOCKER_REGISTRY }}/api-backend:${{ needs.extract_version.outputs.commit_sha }}
+            ${{ env.DOCKER_REGISTRY }}/api-backend:latest
           build-args: |
             BASE_REGISTRY=${{ env.DOCKER_REGISTRY }}
           cache-from: type=registry,ref=${{ env.DOCKER_REGISTRY }}/api-backend:latest
           cache-to: type=inline
 
   build_proxy:
-    needs: [changes, build_base]
-    if: ${{ !cancelled() && (needs.changes.outputs.proxy == 'true' || needs.changes.outputs.base == 'true') && (needs.build_base.result == 'success' || needs.build_base.result == 'skipped') }}
+    needs: [extract_version, changes, build_base]
+    if: ${{ !cancelled() && (needs.build_base.result == 'success' || needs.build_base.result == 'skipped') && needs.changes.outputs.proxy == 'true' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - name: Azure Login
         uses: azure/login@v2
         with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      - name: Create Azure Resource Group if not exists
+        run: az group create --name ${{ env.AZURE_RESOURCE_GROUP }} --location eastus --query "properties.provisioningState" --output tsv
       - name: Get ACR Login Server
         run: echo "DOCKER_REGISTRY=$(az acr show --name ${{ env.ACR_NAME }} --query loginServer --output tsv)" >> $GITHUB_ENV
       - name: Docker Login to ACR
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ env.DOCKER_REGISTRY }}
-          username: ${{ secrets.AZURE_CLIENT_ID }}
-          password: ${{ secrets.AZURE_CLIENT_SECRET }}
+        run: |
+          # Get ACR admin credentials
+          ACR_USERNAME=$(az acr credential show --name ${{ env.ACR_NAME }} --query username --output tsv)
+          ACR_PASSWORD=$(az acr credential show --name ${{ env.ACR_NAME }} --query passwords[0].value --output tsv)
+          # Login to ACR
+          echo "$ACR_PASSWORD" | docker login ${{ env.DOCKER_REGISTRY }} --username "$ACR_USERNAME" --password-stdin
       - uses: docker/setup-buildx-action@v3
       - uses: docker/build-push-action@v5
         with:
           context: services/streaming-proxy
           file: services/streaming-proxy/Dockerfile
           push: true
-          tags: ${{ env.DOCKER_REGISTRY }}/streaming-proxy:${{ github.sha }}
+          tags: |
+            ${{ env.DOCKER_REGISTRY }}/streaming-proxy:${{ needs.extract_version.outputs.app_version }}-proxy
+            ${{ env.DOCKER_REGISTRY }}/streaming-proxy:${{ needs.extract_version.outputs.commit_sha }}
+            ${{ env.DOCKER_REGISTRY }}/streaming-proxy:latest
           build-args: |
             BASE_REGISTRY=${{ env.DOCKER_REGISTRY }}
           cache-from: type=registry,ref=${{ env.DOCKER_REGISTRY }}/streaming-proxy:latest
           cache-to: type=inline
 
   deploy_infrastructure:
-    # Run if any build job ran OR if k8s files changed
+    permissions:
+      id-token: write
+    # Run after image builds (or if they were skipped due to unchanged paths)
     needs:
-      [changes, build_base, build_postgres, build_web, build_api, build_proxy]
+      [
+        extract_version,
+        changes,
+        build_base,
+        build_postgres,
+        build_web,
+        build_api,
+        build_proxy,
+      ]
     if: |
-      !cancelled() && 
+      !cancelled() &&
       (needs.build_base.result == 'success' || needs.build_base.result == 'skipped') &&
       (needs.build_postgres.result == 'success' || needs.build_postgres.result == 'skipped') &&
       (needs.build_web.result == 'success' || needs.build_web.result == 'skipped') &&
@@ -237,13 +373,44 @@ jobs:
       (needs.build_proxy.result == 'success' || needs.build_proxy.result == 'skipped')
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
+      - uses: actions/checkout@v4
       - name: Azure Login
         uses: azure/login@v2
         with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      - name: Bootstrap Azure RG/ACR/Key Vault
+        run: |
+          chmod +x scripts/bootstrap-azure-infra.sh
+          scripts/bootstrap-azure-infra.sh "${{ env.AZURE_RESOURCE_GROUP }}" "eastus" "${{ env.ACR_NAME }}" "${{ secrets.AZURE_KEY_VAULT_NAME }}"
+      - name: Create AKS Cluster if not exists
+        run: |
+          if az aks show --resource-group ${{ env.AZURE_RESOURCE_GROUP }} --name ${{ env.AZURE_CLUSTER_NAME }} --query "name" --output tsv >/dev/null 2>&1; then
+            echo "✅ AKS cluster ${{ env.AZURE_CLUSTER_NAME }} already exists"
+            CLUSTER_STATE=$(az aks show --resource-group ${{ env.AZURE_RESOURCE_GROUP }} --name ${{ env.AZURE_CLUSTER_NAME }} --query "provisioningState" --output tsv)
+            echo "Cluster state: $CLUSTER_STATE"
+            if [ "$CLUSTER_STATE" != "Succeeded" ]; then
+              echo "⚠️  Warning: Cluster is not in Succeeded state"
+            fi
+          else
+            echo "AKS cluster ${{ env.AZURE_CLUSTER_NAME }} not found. Creating..."
+            az aks create \
+              --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
+              --name ${{ env.AZURE_CLUSTER_NAME }} \
+              --node-count 1 \
+              --enable-addons monitoring \
+              --enable-managed-identity \
+              --enable-oidc-issuer \
+              --enable-workload-identity \
+              --network-plugin azure \
+              --dns-service-ip 10.2.0.10 \
+              --service-cidr 10.2.0.0/24 \
+              --location eastus \
+              --generate-ssh-keys \
+              --attach-acr ${{ env.ACR_NAME }}
+            echo "✅ AKS cluster created successfully"
+          fi
 
       - name: Get AKS credentials
         uses: azure/aks-set-context@v3
@@ -251,21 +418,190 @@ jobs:
           resource-group: ${{ env.AZURE_RESOURCE_GROUP }}
           cluster-name: ${{ env.AZURE_CLUSTER_NAME }}
 
+      - name: Validate Required CLI Tools
+        run: |
+          set -e
+
+          echo "Validating required CLI tools (az, kubectl, jq)..."
+
+          missing=0
+          for cmd in az kubectl jq; do
+            if ! command -v "$cmd" >/dev/null 2>&1; then
+              echo "Error: required CLI tool '$cmd' is not installed or not in PATH"
+              missing=1
+            else
+              echo "Found $cmd: $(command -v "$cmd")"
+            fi
+          done
+
+          if [ "$missing" -ne 0 ]; then
+            echo "One or more required CLI tools are missing. Failing before deployment."
+            exit 1
+          fi
+
       - name: Setup ACR Integration
         run: |
           # Get Login Server (ACR assumed to exist or created in build steps)
           echo "DOCKER_REGISTRY=$(az acr show --name ${{ env.ACR_NAME }} --query loginServer --output tsv)" >> $GITHUB_ENV
 
+      - name: Configure Key Vault RBAC for AKS
+        continue-on-error: true
+        run: |
+          set -e
+          KV_NAME="${{ secrets.AZURE_KEY_VAULT_NAME }}"
+          if [ -z "$KV_NAME" ]; then
+            echo "Key Vault name not set, skipping RBAC configuration"
+            exit 0
+          fi
+          KV_ID=$(az keyvault show -g ${{ env.AZURE_RESOURCE_GROUP }} -n "$KV_NAME" --query id -o tsv 2>/dev/null || echo "")
+          if [ -z "$KV_ID" ]; then
+            echo "Key Vault not found, skipping RBAC configuration"
+            exit 0
+          fi
+          AKS_MI_ID=$(az aks show -g ${{ env.AZURE_RESOURCE_GROUP }} -n ${{ env.AZURE_CLUSTER_NAME }} --query identityProfile.kubeletidentity.objectId -o tsv 2>/dev/null || echo "")
+          if [ -z "$AKS_MI_ID" ]; then
+            AKS_MI_ID=$(az aks show -g ${{ env.AZURE_RESOURCE_GROUP }} -n ${{ env.AZURE_CLUSTER_NAME }} --query identity.principalId -o tsv 2>/dev/null || echo "")
+          fi
+          if [ -z "$AKS_MI_ID" ]; then
+            echo "AKS managed identity not found, skipping RBAC configuration"
+            exit 0
+          fi
+          echo "AKS Managed Identity Object ID: $AKS_MI_ID"
+
+          ROLE="Key Vault Secrets User"
+          COUNT=$(az role assignment list --assignee-object-id "$AKS_MI_ID" --scope "$KV_ID" --query "[?roleDefinitionName=='$ROLE'] | length(@)" -o tsv 2>/dev/null || echo "0")
+
+          if [ "$COUNT" = "0" ] || [ -z "$COUNT" ]; then
+            echo "Attempting to assign Key Vault RBAC role..."
+            # Use --assignee-object-id and --assignee-principal-type to avoid Graph API lookup
+            if az role assignment create \
+              --assignee-object-id "$AKS_MI_ID" \
+              --assignee-principal-type "ServicePrincipal" \
+              --role "$ROLE" \
+              --scope "$KV_ID" 2>&1; then
+              echo "✅ Successfully assigned Key Vault RBAC role"
+            else
+              echo "⚠️  WARNING: Could not assign Key Vault RBAC role (insufficient permissions)"
+              echo "    This may be okay if using Kubernetes secrets instead of Key Vault CSI"
+              echo "    To fix manually, grant 'Key Vault Secrets User' role to: $AKS_MI_ID"
+              exit 0
+            fi
+          else
+            echo "✅ Key Vault RBAC role already assigned"
+          fi
+
       - name: Ensure Namespace Exists
         run: |
           kubectl create namespace cloudtolocalllm --dry-run=client -o yaml | kubectl apply -f -
-
       - name: Setup Azure Key Vault and Secrets Store CSI Driver
         run: |
+          set -e
           # Install the Secrets Store CSI Driver and Azure Provider
-          helm repo add secrets-store-csi-driver https://kubernetes-sigs.github.io/secrets-store-csi-driver/charts
-          helm repo add csi-secrets-store-provider-azure https://azure.github.io/secrets-store-csi-driver-provider-azure/charts
-          helm upgrade --install csi-secrets-store secrets-store-csi-driver/secrets-store-csi-driver --namespace kube-system --set "providers.azure.enabled=true"
+          helm repo add secrets-store-csi-driver https://kubernetes-sigs.github.io/secrets-store-csi-driver/charts 2>/dev/null || true
+          helm repo add csi-secrets-store-provider-azure https://azure.github.io/secrets-store-csi-driver-provider-azure/charts 2>/dev/null || true
+          helm repo update
+
+          # Check if CSI driver is already installed and healthy
+          if helm status csi-secrets-store -n kube-system >/dev/null 2>&1; then
+            HELM_STATUS=$(helm status csi-secrets-store -n kube-system -o json | jq -r '.info.status' 2>/dev/null || echo "unknown")
+            if [ "$HELM_STATUS" = "deployed" ]; then
+              echo "✅ CSI Secret Store driver is already deployed and healthy"
+              echo "Skipping installation"
+              exit 0
+            else
+              echo "⚠️  CSI Secret Store driver exists but status is: $HELM_STATUS"
+              echo "Will attempt to fix..."
+            fi
+          else
+            echo "CSI Secret Store driver not found, will install"
+          fi
+
+          # Function to check and clear Helm locks
+          clear_helm_locks() {
+            local release_name="$1"
+            local namespace="$2"
+            
+            echo "Checking for Helm locks for release: $release_name in namespace: $namespace"
+            
+            # Check if release exists and is in pending state
+            local release_status=$(helm status "$release_name" -n "$namespace" 2>&1 || echo "not_found")
+            if echo "$release_status" | grep -q "pending"; then
+              echo "⚠️  Found pending Helm release, attempting to clear..."
+              # Try to rollback to clear the pending state
+              helm rollback "$release_name" -n "$namespace" 2>/dev/null || true
+              sleep 5
+            fi
+            
+            # Check for stuck releases and delete them if needed
+            local stuck_release=$(helm list -n "$namespace" --pending 2>/dev/null | grep "$release_name" || echo "")
+            if [ -n "$stuck_release" ]; then
+              echo "⚠️  Found stuck Helm release, attempting to uninstall..."
+              helm uninstall "$release_name" -n "$namespace" --ignore-not-found || true
+              sleep 5
+            fi
+          }
+
+          # Clear any existing locks for csi-secrets-store
+          clear_helm_locks "csi-secrets-store" "kube-system"
+
+          # Wait for any concurrent operations to complete
+          echo "Waiting for any concurrent Helm operations to complete..."
+          MAX_WAIT=120
+          WAITED=0
+          while [ $WAITED -lt $MAX_WAIT ]; do
+            if ! helm list -n kube-system --pending 2>/dev/null | grep -q "csi-secrets-store"; then
+              echo "✅ No pending operations detected"
+              break
+            fi
+            echo "Still waiting for pending operations... (${WAITED}s/${MAX_WAIT}s)"
+            sleep 5
+            WAITED=$((WAITED + 5))
+          done
+
+          if [ $WAITED -ge $MAX_WAIT ]; then
+            echo "⚠️  Timeout waiting for pending operations, attempting to force clear..."
+            helm uninstall csi-secrets-store -n kube-system --ignore-not-found || true
+            sleep 10
+          fi
+
+          # Install/upgrade with retry logic
+          RETRIES=5
+          for i in $(seq 1 $RETRIES); do
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+            echo "Attempt $i/$RETRIES: Installing CSI Secret Store driver..."
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+            
+            # Clear locks before each attempt
+            if [ $i -gt 1 ]; then
+              clear_helm_locks "csi-secrets-store" "kube-system"
+              sleep 10
+            fi
+            
+            if helm upgrade --install csi-secrets-store \
+              secrets-store-csi-driver/secrets-store-csi-driver \
+              --namespace kube-system \
+              --set "providers.azure.enabled=true" \
+              --wait \
+              --timeout 10m \
+              --atomic; then
+              echo "✅ CSI Secret Store driver installed successfully"
+              break
+            else
+              local exit_code=$?
+              echo "⚠️  Attempt $i failed with exit code: $exit_code"
+              
+              if [ $i -lt $RETRIES ]; then
+                echo "Waiting 15s before retry..."
+                sleep 15
+              else
+                echo "❌ Failed after $RETRIES attempts"
+                echo "Checking release status..."
+                helm status csi-secrets-store -n kube-system || true
+                helm list -n kube-system || true
+                exit 1
+              fi
+            fi
+          done
 
       - name: Create SecretProviderClass
         run: |
@@ -291,9 +627,6 @@ jobs:
                     objectName: JWT-SECRET
                     objectType: secret
                   - |
-                    objectName: AUTH0-CLIENT-SECRET
-                    objectType: secret
-                  - |
                     objectName: STRIPE-TEST-SECRET-KEY
                     objectType: secret
                   - |
@@ -302,70 +635,387 @@ jobs:
               tenantId: ${{ secrets.AZURE_TENANT_ID }}
           EOF
 
-      - name: Deploy Manifests
+      - name: Validate Required Secrets
+        env:
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          STRIPE_TEST_SECRET_KEY: ${{ secrets.STRIPE_TEST_SECRET_KEY }}
+          SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_TUNNEL_TOKEN: ${{ secrets.CLOUDFLARE_TUNNEL_TOKEN }}
+          SUPABASE_JWT_SECRET: ${{ secrets.SUPABASE_JWT_SECRET }}
         run: |
+          missing=0
+          check_secret() {
+            name="$1"
+            value="$2"
+            if [ -z "$value" ]; then
+              echo "Error: required secret $name is empty or not set"
+              missing=1
+            fi
+          }
+
+          check_secret POSTGRES_PASSWORD "$POSTGRES_PASSWORD"
+          check_secret JWT_SECRET "$JWT_SECRET"
+          check_secret STRIPE_TEST_SECRET_KEY "$STRIPE_TEST_SECRET_KEY"
+          check_secret SENTRY_DSN "$SENTRY_DSN"
+          check_secret CLOUDFLARE_API_TOKEN "$CLOUDFLARE_API_TOKEN"
+          check_secret CLOUDFLARE_TUNNEL_TOKEN "$CLOUDFLARE_TUNNEL_TOKEN"
+          check_secret SUPABASE_JWT_SECRET "$SUPABASE_JWT_SECRET"
+
+          if [ "$missing" -ne 0 ]; then
+            echo "One or more required secrets are missing. Failing before deployment."
+            exit 1
+          fi
+
+      - name: Seed Azure Key Vault from secrets
+        env:
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          STRIPE_TEST_SECRET_KEY: ${{ secrets.STRIPE_TEST_SECRET_KEY }}
+          CLOUDFLARE_TUNNEL_TOKEN: ${{ secrets.CLOUDFLARE_TUNNEL_TOKEN }}
+          SUPABASE_JWT_SECRET: ${{ secrets.SUPABASE_JWT_SECRET }}
+        run: |
+          set -e
+          KV_NAME="${{ secrets.AZURE_KEY_VAULT_NAME }}"
+          if [ -z "$KV_NAME" ]; then
+            exit 0
+          fi
+          ensure_kv_secret() {
+            local name="$1"
+            local value="$2"
+            if [ -z "$value" ]; then
+              return
+            fi
+            if az keyvault secret show --vault-name "$KV_NAME" --name "$name" >/dev/null 2>&1; then
+              return
+            fi
+            az keyvault secret set --vault-name "$KV_NAME" --name "$name" --value "$value" >/dev/null
+          }
+          ensure_kv_secret POSTGRES-PASSWORD "$POSTGRES_PASSWORD"
+          ensure_kv_secret JWT-SECRET "$JWT_SECRET"
+          ensure_kv_secret STRIPE-TEST-SECRET-KEY "$STRIPE_TEST_SECRET_KEY"
+          ensure_kv_secret CLOUDFLARE-TUNNEL-TOKEN "$CLOUDFLARE_TUNNEL_TOKEN"
+          ensure_kv_secret SUPABASE-JWT-SECRET "$SUPABASE_JWT_SECRET"
+
+      - name: Create/Update Secrets
+        env:
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          STRIPE_TEST_SECRET_KEY: ${{ secrets.STRIPE_TEST_SECRET_KEY }}
+          STRIPE_TEST_PUBLISHABLE_KEY: ${{ secrets.STRIPE_TEST_PUBLISHABLE_KEY }}
+          STRIPE_TEST_WEBHOOK_SECRET: ${{ secrets.STRIPE_TEST_WEBHOOK_SECRET }}
+          STRIPE_LIVE_SECRET_KEY: ${{ secrets.STRIPE_LIVE_SECRET_KEY }}
+          STRIPE_LIVE_PUBLISHABLE_KEY: ${{ secrets.STRIPE_LIVE_PUBLISHABLE_KEY }}
+          STRIPE_LIVE_WEBHOOK_SECRET: ${{ secrets.STRIPE_LIVE_WEBHOOK_SECRET }}
+          SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
+          CLOUDFLARE_DNS_TOKEN: ${{ secrets.CLOUDFLARE_DNS_TOKEN }}
+          CLOUDFLARE_TUNNEL_TOKEN: ${{ secrets.CLOUDFLARE_TUNNEL_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          SUPABASE_JWT_SECRET: ${{ secrets.SUPABASE_JWT_SECRET }}
+          ENTRA_ISSUER_URL: ${{ secrets.ENTRA_ISSUER_URL }}
+          ENTRA_CLIENT_ID: ${{ secrets.ENTRA_CLIENT_ID }}
+          ENTRA_TENANT_ID: ${{ secrets.ENTRA_TENANT_ID }}
+        run: |
+          # --- Create Kubernetes Secrets ---
+
+          # Get ACR Admin Credentials
+          ACR_ADMIN_USER=$(az acr credential show --name ${{ env.ACR_NAME }} --query username --output tsv)
+          ACR_ADMIN_PASS=$(az acr credential show --name ${{ env.ACR_NAME }} --query passwords[0].value --output tsv)
+
+          # Docker Registry Secret for ACR
+          kubectl create secret docker-registry regcred \
+            --docker-server=${{ env.DOCKER_REGISTRY }} \
+            --docker-username=$ACR_ADMIN_USER \
+            --docker-password=$ACR_ADMIN_PASS \
+            --docker-email=github-actions@cloudtolocalllm.online \
+            -n cloudtolocalllm --dry-run=client -o yaml | kubectl apply -f -
+
+          # App Secrets
+          kubectl create secret generic cloudtolocalllm-secrets \
+            --namespace cloudtolocalllm \
+            --from-literal=postgres-user=cloud_admin \
+            --from-literal=postgres-password="$POSTGRES_PASSWORD" \
+            --from-literal=jwt-secret="$JWT_SECRET" \
+            --from-literal=stripe-test-secret-key="$STRIPE_TEST_SECRET_KEY" \
+            --from-literal=stripe-test-publishable-key="$STRIPE_TEST_PUBLISHABLE_KEY" \
+            --from-literal=stripe-test-webhook-secret="$STRIPE_TEST_WEBHOOK_SECRET" \
+            --from-literal=stripe-live-secret-key="$STRIPE_LIVE_SECRET_KEY" \
+            --from-literal=stripe-live-publishable-key="$STRIPE_LIVE_PUBLISHABLE_KEY" \
+            --from-literal=stripe-live-webhook-secret="$STRIPE_LIVE_WEBHOOK_SECRET" \
+            --from-literal=sentry-dsn="$SENTRY_DSN" \
+            --from-literal=supabase-jwt-secret="$SUPABASE_JWT_SECRET" \
+            --from-literal=supabase-url="https://cvaqhvpbnemweqrojasm.supabase.co" \
+            --from-literal=entra-issuer-url="$ENTRA_ISSUER_URL" \
+            --from-literal=entra-client-id="$ENTRA_CLIENT_ID" \
+            --from-literal=entra-tenant-id="$ENTRA_TENANT_ID" \
+            --dry-run=client -o yaml | kubectl apply -f -
+
+          # Cloudflare Tunnel Secret
+          kubectl create secret generic tunnel-credentials \
+            --namespace cloudtolocalllm \
+            --from-literal=token="$CLOUDFLARE_TUNNEL_TOKEN" \
+            --dry-run=client -o yaml | kubectl apply -f -
+
+          # Streaming Proxy Secret
+          kubectl create secret generic streaming-proxy-secrets \
+            --namespace cloudtolocalllm \
+            --from-literal=SENTRY_DSN="$SENTRY_DSN" \
+            --from-literal=SUPABASE_JWT_SECRET="$SUPABASE_JWT_SECRET" \
+            --from-literal=SUPABASE_URL="https://cvaqhvpbnemweqrojasm.supabase.co" \
+            --dry-run=client -o yaml | kubectl apply -f -
+
+      - name: Deploy Manifests
+        env:
+          POSTGRES_BUILT: ${{ needs.changes.outputs.postgres }}
+          WEB_BUILT: ${{ needs.changes.outputs.web }}
+          API_BUILT: ${{ needs.changes.outputs.api }}
+          PROXY_BUILT: ${{ needs.changes.outputs.proxy }}
+          APP_VERSION: ${{ needs.extract_version.outputs.app_version }}
+          COMMIT_SHA: ${{ needs.extract_version.outputs.commit_sha }}
+        run: |
+          set -e  # Exit immediately on any error
+
+          # Use semantic version if service was built, otherwise use latest
+          [ "$POSTGRES_BUILT" = "true" ] && POSTGRES_TAG="${APP_VERSION}-postgres" || POSTGRES_TAG="latest"
+          [ "$WEB_BUILT" = "true" ] && WEB_TAG="${APP_VERSION}" || WEB_TAG="latest"
+          [ "$API_BUILT" = "true" ] && API_TAG="${APP_VERSION}-api" || API_TAG="latest"
+          [ "$PROXY_BUILT" = "true" ] && PROXY_TAG="${APP_VERSION}-proxy" || PROXY_TAG="latest"
+
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "Deployment Version: $APP_VERSION (from tag)"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "  Postgres: $POSTGRES_TAG"
+          echo "  Web:      $WEB_TAG"
+          echo "  API:      $API_TAG"
+          echo "  Proxy:    $PROXY_TAG"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo ""
+
           # Replace image registry in manifests
-          sed -i "s|cloudtolocalllm/postgres:latest|${{ env.DOCKER_REGISTRY }}/postgres:${{ github.sha }}|g" k8s/postgres-statefulset.yaml
-          sed -i "s|cloudtolocalllm/web:latest|${{ env.DOCKER_REGISTRY }}/web:${{ github.sha }}|g" k8s/web-deployment.yaml
-          sed -i "s|cloudtolocalllm/api-backend:latest|${{ env.DOCKER_REGISTRY }}/api-backend:${{ github.sha }}|g" k8s/api-backend-deployment.yaml
-          sed -i "s|cloudtolocalllm/streaming-proxy:latest|${{ env.DOCKER_REGISTRY }}/streaming-proxy:${{ github.sha }}|g" k8s/streaming-proxy-deployment.yaml
+          sed -i "s|cloudtolocalllm/postgres:latest|${{ env.DOCKER_REGISTRY }}/postgres:${POSTGRES_TAG}|g" k8s/postgres-statefulset.yaml
+          sed -i "s|cloudtolocalllm/web:latest|${{ env.DOCKER_REGISTRY }}/web:${WEB_TAG}|g" k8s/web-deployment.yaml
+          sed -i "s|cloudtolocalllm/api-backend:latest|${{ env.DOCKER_REGISTRY }}/api-backend:${API_TAG}|g" k8s/api-backend-deployment.yaml
+          sed -i "s|cloudtolocalllm/streaming-proxy:latest|${{ env.DOCKER_REGISTRY }}/streaming-proxy:${PROXY_TAG}|g" k8s/streaming-proxy-deployment.yaml
+
+          # Validate manifests with server-side dry-run before applying
+          echo "Validating Kubernetes manifests with server-side dry-run..."
+          kubectl apply --dry-run=server -f k8s/rbac.yaml
+          kubectl apply --dry-run=server -f k8s/configmap.yaml
+          kubectl apply --dry-run=server -f k8s/streaming-proxy-configmap.yaml
+          kubectl apply --dry-run=server -f k8s/postgres-statefulset.yaml
+          kubectl apply --dry-run=server -f k8s/cloudflared.yaml
+          kubectl apply --dry-run=server -f k8s/web-deployment.yaml
+          kubectl apply --dry-run=server -f k8s/api-backend-deployment.yaml
+          kubectl apply --dry-run=server -f k8s/streaming-proxy-deployment.yaml
 
           # Apply RBAC and ConfigMaps first
           kubectl apply -f k8s/rbac.yaml
           kubectl apply -f k8s/configmap.yaml
           kubectl apply -f k8s/streaming-proxy-configmap.yaml
 
-          # Apply Infrastructure
+          # ===== STEP 1: Deploy and wait for PostgreSQL (all services depend on it) =====
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "STEP 1: Deploying PostgreSQL (all services depend on this)"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
           kubectl apply -f k8s/postgres-statefulset.yaml
-          kubectl apply -f k8s/cloudflared.yaml
 
-          # Apply Services
-          kubectl apply -f k8s/web-deployment.yaml
-          kubectl apply -f k8s/api-backend-deployment.yaml
-          kubectl apply -f k8s/streaming-proxy-deployment.yaml
+          # Add annotation to force update
+          kubectl annotate statefulset postgres -n cloudtolocalllm \
+            deployment.kubernetes.io/revision="${{ github.sha }}" \
+            deployment.kubernetes.io/timestamp="$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            --overwrite
 
-          # Force roll out restart to pick up latest images and secrets
-          # Force delete postgres pod to ensure it picks up new spec (fix for stuck CrashLoopBackOff)
-          kubectl delete pod postgres-0 -n cloudtolocalllm --force --grace-period=0 || true
+          # Force delete postgres pod to ensure it picks up new spec (if it exists)
+          kubectl delete pod postgres-0 -n cloudtolocalllm --force --grace-period=0 2>/dev/null || true
           kubectl rollout restart statefulset/postgres -n cloudtolocalllm
-          kubectl rollout restart deployment/web -n cloudtolocalllm
-          kubectl rollout restart deployment/api-backend -n cloudtolocalllm
-          kubectl rollout restart deployment/streaming-proxy -n cloudtolocalllm
-          kubectl rollout restart deployment/cloudflared -n cloudtolocalllm
 
-          # Wait for Rollout to Complete (with Fail Fast)
+          # Wait for postgres to be ready before proceeding
+          echo "Waiting for PostgreSQL to be ready..."
           chmod +x scripts/watch_rollout.sh
           ./scripts/watch_rollout.sh cloudtolocalllm statefulset postgres
-          ./scripts/watch_rollout.sh cloudtolocalllm deployment web
+
+          echo "✅ PostgreSQL is ready"
+          echo ""
+
+          # ===== STEP 2: Deploy API Backend (depends on postgres) =====
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "STEP 2: Deploying API Backend (depends on postgres)"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+          kubectl apply -f k8s/api-backend-deployment.yaml
+
+          # Add annotation to force update
+          kubectl annotate deployment api-backend -n cloudtolocalllm \
+            deployment.kubernetes.io/revision="${{ github.sha }}" \
+            deployment.kubernetes.io/timestamp="$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            --overwrite
+
+          # Trigger rolling update
+          kubectl rollout restart deployment/api-backend -n cloudtolocalllm
+
+          echo "Waiting for API Backend to be ready..."
           ./scripts/watch_rollout.sh cloudtolocalllm deployment api-backend
+          echo "✅ API Backend is ready"
+          echo ""
+
+          # ===== STEP 3: Deploy Streaming Proxy (depends on api-backend) =====
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "STEP 3: Deploying Streaming Proxy (depends on api-backend)"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+          kubectl apply -f k8s/streaming-proxy-deployment.yaml
+
+          # Add annotation to force update
+          kubectl annotate deployment streaming-proxy -n cloudtolocalllm \
+            deployment.kubernetes.io/revision="${{ github.sha }}" \
+            deployment.kubernetes.io/timestamp="$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            --overwrite
+
+          # Trigger rolling update
+          kubectl rollout restart deployment/streaming-proxy -n cloudtolocalllm
+
+          echo "Waiting for Streaming Proxy to be ready..."
           ./scripts/watch_rollout.sh cloudtolocalllm deployment streaming-proxy
+          echo "✅ Streaming Proxy is ready"
+          echo ""
+
+          # ===== STEP 4: Deploy Web and Cloudflared (depend on api-backend and streaming) =====
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "STEP 4: Deploying Web Frontend and Cloudflared"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+          kubectl apply -f k8s/web-deployment.yaml
+          kubectl apply -f k8s/cloudflared.yaml
+
+          # Add annotations to force updates
+          kubectl annotate deployment web -n cloudtolocalllm \
+            deployment.kubernetes.io/revision="${{ github.sha }}" \
+            deployment.kubernetes.io/timestamp="$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            --overwrite
+
+          kubectl annotate deployment cloudflared -n cloudtolocalllm \
+            deployment.kubernetes.io/revision="${{ github.sha }}" \
+            deployment.kubernetes.io/timestamp="$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            --overwrite
+
+          # Trigger rolling updates
+          kubectl rollout restart deployment/web -n cloudtolocalllm
+          kubectl rollout restart deployment/cloudflared -n cloudtolocalllm
+
+          echo "Waiting for Web to be ready..."
+          ./scripts/watch_rollout.sh cloudtolocalllm deployment web
+          echo "✅ Web is ready"
+          echo ""
+
+          echo "✅ All services deployed successfully in dependency order:"
+          echo "   1. PostgreSQL"
+          echo "   2. API Backend"
+          echo "   3. Streaming Proxy"
+          echo "   4. Web + Cloudflared"
+
+      - name: Purge Cloudflare Cache
+        continue-on-error: true
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          set -e
+
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "Purging Cloudflare Cache"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+          # Get Zone ID for cloudtolocalllm.online (using scoped API token)
+          DOMAIN="cloudtolocalllm.online"
+          echo "Fetching Zone ID for: $DOMAIN"
+
+          ZONE_RESPONSE=$(curl -s -X GET "https://api.cloudflare.com/client/v4/zones?name=$DOMAIN" \
+            -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
+            -H "Content-Type: application/json")
+
+          ZONE_ID=$(echo "$ZONE_RESPONSE" | grep -o '"id":"[^"]*"' | head -1 | cut -d'"' -f4)
+
+          if [ -z "$ZONE_ID" ]; then
+            echo "❌ Failed to get Zone ID"
+            echo "Response: $ZONE_RESPONSE"
+            exit 1
+          fi
+
+          echo "✅ Zone ID: $ZONE_ID"
+          echo "✅ Using scoped API token (Zone Read + Cache Purge permissions only)"
+          echo ""
+
+          # Purge everything for the zone (covers all subdomains)
+          echo "Purging cache for entire zone (all domains)..."
+
+          RESPONSE=$(curl -s -X POST \
+            "https://api.cloudflare.com/client/v4/zones/${ZONE_ID}/purge_cache" \
+            -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
+            -H "Content-Type: application/json" \
+            --data '{"purge_everything": true}')
+
+          # Check if successful (note the space after colon in Cloudflare's response)
+          if echo "$RESPONSE" | grep -q '"success": true'; then
+            echo "✅ Cache purged successfully for all domains:"
+            echo "   - cloudtolocalllm.online"
+            echo "   - app.cloudtolocalllm.online"
+            echo "   - api.cloudtolocalllm.online"
+            echo ""
+            echo "✅ Users will now receive the latest deployed version"
+          else
+            echo "⚠️  Cache purge failed - deployment will continue"
+            echo "Response: $RESPONSE"
+            echo ""
+            echo "To fix this, update your Cloudflare API token permissions:"
+            echo "1. Go to https://dash.cloudflare.com/profile/api-tokens"
+            echo "2. Edit your API token"
+            echo "3. Add permission: Zone > Cache Purge > Purge"
+            echo "4. Update GitHub secret: gh secret set CLOUDFLARE_API_TOKEN"
+            echo ""
+            echo "For now, users may see cached content until it expires or they hard refresh (Ctrl+Shift+R)"
+          fi
 
       - name: Verify Cloudflare Tunnel
         run: |
-          echo "Waiting for Cloudflare Tunnel to be ready..."
+          set -e
+
+          echo "Waiting for Cloudflare Tunnel pod to be ready..."
           kubectl wait --for=condition=ready pod -l app=cloudflared -n cloudtolocalllm --timeout=300s
 
-          echo "Checking Tunnel Logs..."
-          # Retry checking logs for connection success message (increased to 24 attempts = 2 minutes)
+          echo "Checking Tunnel Logs for successful registration..."
+          start_ts=$(date +%s)
+          # Retry checking logs for connection success message (24 attempts = ~2 minutes)
           for i in {1..24}; do
             if kubectl logs -l app=cloudflared -n cloudtolocalllm | grep -q "Registered tunnel connection"; then
-              echo "Tunnel connection verified!"
+              elapsed=$(( $(date +%s) - start_ts ))
+              echo "Tunnel connection verified after ${elapsed}s."
               exit 0
             fi
-            echo "Attempt $i: Tunnel not yet registered, waiting 5s..."
+            echo "Attempt $i/24: Tunnel not yet registered, waiting 5s..."
             sleep 5
           done
-          echo "Tunnel verification failed. Dumping logs:"
-          kubectl logs -l app=cloudflared -n cloudtolocalllm
+
+          echo "Tunnel verification failed after 24 attempts (~2 minutes). Collecting diagnostics..."
+          echo "--- cloudflared pods ---"
+          kubectl get pods -l app=cloudflared -n cloudtolocalllm -o wide || true
+          echo "--- recent cloudflared logs ---"
+          kubectl logs -l app=cloudflared -n cloudtolocalllm --tail=200 || true
+          echo "--- describe cloudflared pods ---"
+          kubectl describe pod -l app=cloudflared -n cloudtolocalllm || true
           exit 1
 
       - name: Update Cloudflare DNS
+        if: false # DNS is already configured - only run if manual DNS changes are needed
         env:
-          CLOUDFLARE_DNS_TOKEN: ${{ secrets.CLOUDFLARE_DNS_TOKEN }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_TUNNEL_TOKEN: ${{ secrets.CLOUDFLARE_TUNNEL_TOKEN }}
         run: |
           set -x
           # --- Update Cloudflare DNS Records ---
+          # NOTE: DNS records are typically set up once and don't need updates on every deployment
+          # This step is disabled by default. Enable it if DNS changes are needed.
+
           ZONE_NAME="cloudtolocalllm.online"
           TUNNEL_ID="62da6c19-947b-4bf6-acad-100a73de4e0d"
           TUNNEL_CNAME="$TUNNEL_ID.cfargotunnel.com"
@@ -378,7 +1028,7 @@ jobs:
 
           echo "Fetching Zone ID for $ZONE_NAME..."
           ZONE_ID=$(curl -s -X GET "https://api.cloudflare.com/client/v4/zones?name=$ZONE_NAME" \
-            -H "Authorization: Bearer $CLOUDFLARE_DNS_TOKEN" \
+            -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
             -H "Content-Type: application/json" | jq -r '.result[0].id')
 
           if [ "$ZONE_ID" == "null" ] || [ -z "$ZONE_ID" ]; then
@@ -391,28 +1041,38 @@ jobs:
             local NAME=$1
             local CONTENT=$2
             local PROXIED=$3
-            
-            echo "Updating DNS record: $NAME -> $CONTENT (Proxied: $PROXIED)"
-            
-            # Check if record exists
-            local RECORD_JSON=$(curl -s -X GET "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/dns_records?type=CNAME&name=$NAME" \
-              -H "Authorization: Bearer $CLOUDFLARE_DNS_TOKEN" \
-              -H "Content-Type: application/json")
-            
-            local RECORD_ID=$(echo "$RECORD_JSON" | jq -r '.result[0].id')
-            
-            if [ "$RECORD_ID" != "null" ] && [ -n "$RECORD_ID" ]; then
-               # Update existing
-               local RESPONSE=$(curl -s -X PUT "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/dns_records/$RECORD_ID" \
-                 -H "Authorization: Bearer $CLOUDFLARE_DNS_TOKEN" \
-                 -H "Content-Type: application/json" \
-                 --data "{\"type\":\"CNAME\",\"name\":\"$NAME\",\"content\":\"$CONTENT\",\"proxied\":$PROXIED,\"ttl\":1}")
+            local FQDN
+
+            if [ "$NAME" = "@" ]; then
+              FQDN="$ZONE_NAME"
             else
-               # Create new
-               local RESPONSE=$(curl -s -X POST "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/dns_records" \
-                 -H "Authorization: Bearer $CLOUDFLARE_DNS_TOKEN" \
-                 -H "Content-Type: application/json" \
-                 --data "{\"type\":\"CNAME\",\"name\":\"$NAME\",\"content\":\"$CONTENT\",\"proxied\":$PROXIED,\"ttl\":1}")
+              FQDN="$NAME.$ZONE_NAME"
+            fi
+
+            local RECORD_JSON=$(curl -s -X GET "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/dns_records?type=CNAME&name=$FQDN" \
+              -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+              -H "Content-Type: application/json")
+
+            local RECORD_ID=$(echo "$RECORD_JSON" | jq -r '.result[0].id')
+            local CURRENT_CONTENT=$(echo "$RECORD_JSON" | jq -r '.result[0].content')
+
+            if [ "$CURRENT_CONTENT" = "$CONTENT" ]; then
+              echo "DNS record $FQDN already points to $CONTENT; no update required."
+              return 0
+            fi
+
+            echo "Updating DNS record: $FQDN -> $CONTENT (Proxied: $PROXIED)"
+
+            if [ "$RECORD_ID" != "null" ] && [ -n "$RECORD_ID" ]; then
+              curl -s -X PUT "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/dns_records/$RECORD_ID" \
+                -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+                -H "Content-Type: application/json" \
+                --data "{\"type\":\"CNAME\",\"name\":\"$FQDN\",\"content\":\"$CONTENT\",\"proxied\":$PROXIED,\"ttl\":1}" >/dev/null
+            else
+              curl -s -X POST "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/dns_records" \
+                -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+                -H "Content-Type: application/json" \
+                --data "{\"type\":\"CNAME\",\"name\":\"$FQDN\",\"content\":\"$CONTENT\",\"proxied\":$PROXIED,\"ttl\":1}" >/dev/null
             fi
           }
 
@@ -423,20 +1083,41 @@ jobs:
 
       - name: Check Health Endpoint
         run: |
+          set -e
+
           echo "Waiting for DNS propagation and service health..."
+          start_ts=$(date +%s)
+
           # Retry loop for 2 minutes
           for i in {1..24}; do
-            if curl -s -f https://app.cloudtolocalllm.online/health; then
-              echo "Health check passed!"
+            http_status=$(curl -s -o /dev/null -w "%{http_code}" https://app.cloudtolocalllm.online/health || echo "000")
+            if [ "$http_status" = "200" ]; then
+              elapsed=$(( $(date +%s) - start_ts ))
+              echo "Health check passed with HTTP 200 after ${elapsed}s!"
               exit 0
             fi
-            echo "Attempt $i: Health check failed, waiting 5s..."
+
+            echo "Attempt $i/24: Health check returned HTTP $http_status, waiting 5s..."
             sleep 5
           done
-          echo "Health check failed after 2 minutes. Dumping api-backend logs:"
-          kubectl get pods -n cloudtolocalllm
-          kubectl logs postgres-0 -n cloudtolocalllm --tail=50
-          kubectl describe pod postgres-0 -n cloudtolocalllm
-          kubectl logs -l app=api-backend -n cloudtolocalllm --tail=100
-          kubectl describe pod -l app=api-backend -n cloudtolocalllm
+
+          echo "Health check failed after 24 attempts (~2 minutes). Collecting diagnostics..."
+          kubectl get pods -n cloudtolocalllm || true
+          echo "--- postgres logs (tail 50) ---"
+          kubectl logs postgres-0 -n cloudtolocalllm --tail=50 || true
+          kubectl describe pod postgres-0 -n cloudtolocalllm || true
+          echo "--- api-backend logs (tail 100) ---"
+          kubectl logs -l app=api-backend -n cloudtolocalllm --tail=100 || true
+          kubectl describe pod -l app=api-backend -n cloudtolocalllm || true
           exit 1
+
+      - name: Deployment Summary
+        if: success()
+        run: |
+          echo "Deployment to Azure AKS completed successfully."
+          echo "Cluster: ${{ env.AZURE_CLUSTER_NAME }} (resource group: ${{ env.AZURE_RESOURCE_GROUP }})"
+          echo "Namespace: cloudtolocalllm"
+          echo "Images pulled from registry: ${{ env.DOCKER_REGISTRY }}"
+          echo "Public endpoints:"
+          echo "  - App:  https://app.cloudtolocalllm.online/"
+          echo "  - API:  https://api.cloudtolocalllm.online/"

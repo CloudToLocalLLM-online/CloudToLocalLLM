@@ -1,5 +1,5 @@
 # Node.js API backend
-# Node.js API backend
+# Force rebuild 2025-12-02
 ARG BASE_REGISTRY=cloudtolocalllm
 FROM ${BASE_REGISTRY}/base:latest
 WORKDIR /app

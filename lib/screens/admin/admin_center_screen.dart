@@ -163,7 +163,7 @@ class _AdminCenterScreenState extends State<AdminCenterScreen> {
 
       // Check if user email matches the authorized admin email
       // In the future, this will check against the admin_roles table in the database
-      final isAuthorized = userEmail == 'cmaltais@cloudtolocalllm.online';
+      final isAuthorized = userEmail == 'christopher.maltais@gmail.com';
 
       if (isAuthorized) {
         // Initialize admin service to load roles

@@ -4,7 +4,7 @@
 
 list(APPEND FLUTTER_PLUGIN_LIST
   app_links
-  flutter_secure_storage_x_windows
+  flutter_secure_storage_windows
   screen_retriever_windows
   sentry_flutter
   tray_manager

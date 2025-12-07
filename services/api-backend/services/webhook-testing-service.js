@@ -20,6 +20,13 @@ import logger from '../logger.js';
 import { getPool } from '../database/db-pool.js';
 import crypto from 'crypto';
 
+// Allow-list of domains/hosts for webhook testing
+// Change or extend these values to suit your trusted set
+const ALLOWED_WEBHOOK_HOSTS = [
+  'example.com',
+  'webhook.site',
+  // Add more allowed hostnames here
+];
 /**
  * Webhook Testing and Debugging Service
  *
@@ -200,6 +207,13 @@ export class WebhookTestingService {
       const url = new URL(webhookUrl);
       if (!['http:', 'https:'].includes(url.protocol)) {
         throw new Error('Invalid webhook URL protocol');
+      }
+
+      // SSRF protection: allow only approved hosts/domains
+      // Strip leading 'www.' if present
+      let hostname = url.hostname.replace(/^www\./, '');
+      if (!ALLOWED_WEBHOOK_HOSTS.includes(hostname)) {
+        throw new Error('Destination host not permitted for webhook testing: ' + hostname);
       }
 
       // Generate signature if secret provided

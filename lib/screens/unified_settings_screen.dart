@@ -18,6 +18,7 @@ import '../widgets/settings/desktop_settings_category.dart';
 import '../widgets/settings/mobile_settings_category.dart';
 import '../widgets/settings/admin_settings_category.dart';
 import '../widgets/settings/premium_settings_category.dart';
+import '../widgets/settings/about_settings_category.dart';
 import '../utils/responsive_layout.dart';
 import '../di/locator.dart' as di;
 import 'package:go_router/go_router.dart';
@@ -301,6 +302,22 @@ class _UnifiedSettingsScreenState extends State<UnifiedSettingsScreen> {
         contentBuilder: (context) => AdminSettingsCategory(
           categoryId: SettingsCategoryIds.adminCenter,
           isActive: _activeCategory == SettingsCategoryIds.adminCenter,
+        ),
+      ),
+      BaseSettingsCategory(
+        id: SettingsCategoryIds.about,
+        title: SettingsCategoryMetadata.getTitle(SettingsCategoryIds.about),
+        icon: SettingsCategoryMetadata.getIcon(SettingsCategoryIds.about),
+        description: SettingsCategoryMetadata.getDescription(
+          SettingsCategoryIds.about,
+        ),
+        priority: SettingsCategoryMetadata.getPriority(
+          SettingsCategoryIds.about,
+        ),
+        isVisible: true,
+        contentBuilder: (context) => AboutSettingsCategory(
+          categoryId: SettingsCategoryIds.about,
+          isActive: _activeCategory == SettingsCategoryIds.about,
         ),
       ),
     ];

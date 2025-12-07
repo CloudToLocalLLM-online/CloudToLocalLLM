@@ -6,7 +6,7 @@
 import express from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import rateLimit from 'express-rate-limit';
-import { authenticateJWT } from '../middleware/auth.js';
+import { authenticateComposite } from '../middleware/composite-auth.js';
 import { addTierInfo } from '../middleware/tier-check.js';
 import { TunnelLogger } from '../utils/logger.js';
 
@@ -82,11 +82,16 @@ const bridgeRegistrationLimiter = rateLimit({
 router.post(
   '/register',
   bridgeRegistrationLimiter,
-  authenticateJWT,
+  ...authenticateComposite,
   addTierInfo,
   (req, res) => {
     const { clientId, platform, version, capabilities } = req.body;
-    const userId = req.user.sub;
+    // Use req.userId which is populated by both JWT and API Key auth
+    const userId = req.userId || req.user?.sub;
+
+    if (!userId) {
+      return res.status(401).json({ error: 'User ID not found' });
+    }
     const bridgeId = uuidv4();
 
     if (!clientId || !platform || !version) {
@@ -145,9 +150,13 @@ router.post(
  * Get bridge status
  * GET /api/bridge/{bridgeId}/status
  */
-router.get('/:bridgeId/status', authenticateJWT, (req, res) => {
+router.get('/:bridgeId/status', ...authenticateComposite, (req, res) => {
   const { bridgeId } = req.params;
-  const userId = req.user.sub;
+  const userId = req.userId || req.user?.sub;
+
+  if (!userId) {
+    return res.status(401).json({ error: 'User ID not found' });
+  }
 
   const bridge = bridgeRegistrations.get(bridgeId);
   if (!bridge) {
@@ -197,10 +206,10 @@ router.get('/:bridgeId/status', authenticateJWT, (req, res) => {
 router.get(
   '/:bridgeId/poll',
   bridgePollingLimiter,
-  authenticateJWT,
+  ...authenticateComposite,
   (req, res) => {
     const { bridgeId } = req.params;
-    const userId = req.user.sub;
+    const userId = req.userId || req.user?.sub;
     const timeout = parseInt(req.query.timeout) || POLLING_TIMEOUT;
 
     const bridge = bridgeRegistrations.get(bridgeId);
@@ -272,10 +281,10 @@ router.get(
 router.post(
   '/:bridgeId/provider-status',
   bridgeProviderStatusLimiter,
-  authenticateJWT,
+  ...authenticateComposite,
   (req, res) => {
     const { bridgeId } = req.params;
-    const userId = req.user.sub;
+    const userId = req.userId || req.user?.sub;
     const { providers, timestamp } = req.body;
 
     const bridge = bridgeRegistrations.get(bridgeId);
@@ -312,9 +321,9 @@ router.post(
  * Submit response from desktop client
  * POST /api/bridge/{bridgeId}/response
  */
-router.post('/:bridgeId/response', authenticateJWT, (req, res) => {
+router.post('/:bridgeId/response', ...authenticateComposite, (req, res) => {
   const { bridgeId } = req.params;
-  const userId = req.user.sub;
+  const userId = req.userId || req.user?.sub;
   const { requestId, status, headers, body, error } = req.body;
 
   const bridge = bridgeRegistrations.get(bridgeId);
@@ -377,10 +386,10 @@ router.post('/:bridgeId/response', authenticateJWT, (req, res) => {
 router.post(
   '/:bridgeId/heartbeat',
   bridgeHeartbeatLimiter,
-  authenticateJWT,
+  ...authenticateComposite,
   (req, res) => {
     const { bridgeId } = req.params;
-    const userId = req.user.sub;
+    const userId = req.userId || req.user?.sub;
 
     const bridge = bridgeRegistrations.get(bridgeId);
     if (!bridge || bridge.userId !== userId) {

@@ -33,10 +33,12 @@ class ConnectionManagerService extends ChangeNotifier {
     _localOllama.addListener(_onConnectionChanged);
     _tunnelService.addListener(_onConnectionChanged);
     _authService.addListener(_onAuthChanged);
+    _ollamaService.addListener(_onConnectionChanged);
   }
 
   bool get hasLocalConnection => _localOllama.isConnected;
-  bool get hasCloudConnection => _tunnelService.isConnected;
+  bool get hasCloudConnection =>
+      kIsWeb ? _ollamaService.isConnected : _tunnelService.isConnected;
   bool get hasAnyConnection => hasLocalConnection || hasCloudConnection;
   String? get selectedModel => _selectedModel;
   List<String> get availableModels => _getAvailableModels();
@@ -108,7 +110,12 @@ class ConnectionManagerService extends ChangeNotifier {
       await _localOllama.initialize();
     }
     if (_authService.isAuthenticated.value) {
-      await _tunnelService.connect();
+      if (kIsWeb) {
+        // On web, we just need to verify the cloud connection
+        await _ollamaService.testConnection();
+      } else {
+        await _tunnelService.connect();
+      }
     }
     _autoSelectModel();
     notifyListeners();
@@ -165,8 +172,12 @@ class ConnectionManagerService extends ChangeNotifier {
   }
 
   void _onAuthChanged() {
-    if (_authService.isAuthenticated.value && !_tunnelService.isConnected) {
-      _tunnelService.connect();
+    if (_authService.isAuthenticated.value) {
+      if (kIsWeb) {
+        _ollamaService.testConnection();
+      } else if (!_tunnelService.isConnected) {
+        _tunnelService.connect();
+      }
     }
     notifyListeners();
   }
@@ -176,6 +187,7 @@ class ConnectionManagerService extends ChangeNotifier {
     _localOllama.removeListener(_onConnectionChanged);
     _tunnelService.removeListener(_onConnectionChanged);
     _authService.removeListener(_onAuthChanged);
+    _ollamaService.removeListener(_onConnectionChanged);
     _cloudStreamingService?.dispose();
     super.dispose();
   }

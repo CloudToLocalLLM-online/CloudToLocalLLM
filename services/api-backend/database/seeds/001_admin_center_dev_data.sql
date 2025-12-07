@@ -8,17 +8,16 @@
 -- TEST USERS
 -- ============================================================================
 -- Insert test users with different subscription tiers
--- Note: These users should already exist in the users table from Auth0
 
 -- Ensure test users exist (create if they don't)
-INSERT INTO users (auth0_id, email, name, email_verified, created_at, updated_at)
+INSERT INTO users (email, name, email_verified, created_at, updated_at)
 VALUES 
-  ('auth0|test_free_user', 'test.free@example.com', 'Free Tier User', true, NOW() - INTERVAL '90 days', NOW()),
-  ('auth0|test_premium_user', 'test.premium@example.com', 'Premium Tier User', true, NOW() - INTERVAL '60 days', NOW()),
-  ('auth0|test_enterprise_user', 'test.enterprise@example.com', 'Enterprise Tier User', true, NOW() - INTERVAL '120 days', NOW()),
-  ('auth0|test_trial_user', 'test.trial@example.com', 'Trial User', true, NOW() - INTERVAL '5 days', NOW()),
-  ('auth0|test_canceled_user', 'test.canceled@example.com', 'Canceled User', true, NOW() - INTERVAL '180 days', NOW())
-ON CONFLICT (auth0_id) DO NOTHING;
+  ('test.free@example.com', 'Free Tier User', true, NOW() - INTERVAL '90 days', NOW()),
+  ('test.premium@example.com', 'Premium Tier User', true, NOW() - INTERVAL '60 days', NOW()),
+  ('test.enterprise@example.com', 'Enterprise Tier User', true, NOW() - INTERVAL '120 days', NOW()),
+  ('test.trial@example.com', 'Trial User', true, NOW() - INTERVAL '5 days', NOW()),
+  ('test.canceled@example.com', 'Canceled User', true, NOW() - INTERVAL '180 days', NOW())
+ON CONFLICT (email) DO NOTHING;
 
 -- ============================================================================
 -- TEST SUBSCRIPTIONS
@@ -476,10 +475,10 @@ WHERE email = 'cmaltais@cloudtolocalllm.online'
 ON CONFLICT (user_id, role) DO UPDATE SET is_active = true;
 
 -- Insert test support admin
-INSERT INTO users (auth0_id, email, name, email_verified, created_at, updated_at)
+INSERT INTO users (email, name, email_verified, created_at, updated_at)
 VALUES 
-  ('auth0|test_support_admin', 'test.support@example.com', 'Support Admin', true, NOW() - INTERVAL '90 days', NOW())
-ON CONFLICT (auth0_id) DO NOTHING;
+  ('test.support@example.com', 'Support Admin', true, NOW() - INTERVAL '90 days', NOW())
+ON CONFLICT (email) DO NOTHING;
 
 INSERT INTO admin_roles (user_id, role, is_active, granted_by, granted_at)
 SELECT 
@@ -495,10 +494,10 @@ WHERE u.email = 'test.support@example.com'
 ON CONFLICT (user_id, role) DO UPDATE SET is_active = true;
 
 -- Insert test finance admin
-INSERT INTO users (auth0_id, email, name, email_verified, created_at, updated_at)
+INSERT INTO users (email, name, email_verified, created_at, updated_at)
 VALUES 
-  ('auth0|test_finance_admin', 'test.finance@example.com', 'Finance Admin', true, NOW() - INTERVAL '60 days', NOW())
-ON CONFLICT (auth0_id) DO NOTHING;
+  ('test.finance@example.com', 'Finance Admin', true, NOW() - INTERVAL '60 days', NOW())
+ON CONFLICT (email) DO NOTHING;
 
 INSERT INTO admin_roles (user_id, role, is_active, granted_by, granted_at)
 SELECT 
