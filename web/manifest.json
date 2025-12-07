@@ -4,7 +4,7 @@
     "start_url": ".",
     "display": "standalone",
     "background_color": "#181a20",
-    "theme_color": "#a777e3",
+    "theme_color": "#181a20",
     "description": "Manage and run powerful Large Language Models locally, orchestrated via a cloud interface.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,

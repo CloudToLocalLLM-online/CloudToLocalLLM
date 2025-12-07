@@ -32,6 +32,16 @@ class AuthService extends ChangeNotifier {
         ? (AppConfig.aadDomain ?? AppConfig.aadTenantId)
         : AppConfig.aadTenantId;
 
+    // Use custom domain for authority if provided, otherwise standard B2C or Entra pattern
+    // Pattern: https://<custom-domain>/<tenant-id>/<policy>/v2.0/
+    String? customDomainUrlWithTenantId;
+    if (isB2C &&
+        AppConfig.aadCustomDomain != null &&
+        AppConfig.aadPolicy != null) {
+      customDomainUrlWithTenantId =
+          "https://${AppConfig.aadCustomDomain}/${AppConfig.aadTenantId}/${AppConfig.aadPolicy}/v2.0/";
+    }
+
     final config = Config(
       tenant: tenant,
       clientId: AppConfig.aadClientId,
@@ -43,6 +53,7 @@ class AuthService extends ChangeNotifier {
       webUseRedirect: true,
       isB2C: isB2C,
       policy: AppConfig.aadPolicy,
+      customDomainUrlWithTenantId: customDomainUrlWithTenantId,
     );
     _oauth = AadOAuth(config);
   }
