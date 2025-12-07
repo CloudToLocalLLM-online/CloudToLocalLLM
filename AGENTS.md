@@ -8,6 +8,7 @@ This section outlines the operational rules and behavioral guidelines for using 
 
 Select the appropriate tool based on the specific requirements of the task:
 
+- **Sequential Thinking (`sequentialthinking`):** Use for dynamic and reflective problem-solving, breaking down complex problems, and planning with room for revision.
 - **Playwright (`playwright`):** Use for browser automation, end-to-end testing, web scraping, and verifying UI interactions.
 - **Context7 (`context7`):** Use for retrieving up-to-date documentation and code examples for libraries and frameworks. Always resolve the library ID first.
 - **n8n MCP (`n8n-mcp`):** Use for workflow automation, managing n8n executions, and integrating external services via n8n nodes.
@@ -29,7 +30,7 @@ Select the appropriate tool based on the specific requirements of the task:
 ### 4. Usage Hierarchy
 
 1. **Exploration:** Use `codebase_search` and `list_files` to understand the environment.
-2. **Planning:** Use internal reasoning to plan the steps.
+2. **Planning:** Use `sequentialthinking` for complex planning and design.
 3. **Execution:** Use specific MCP tools (`playwright`, `context7`, `n8n-mcp`) to execute the plan.
 4. **Verification:** Verify the output of each step.
 
