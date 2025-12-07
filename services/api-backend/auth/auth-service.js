@@ -17,17 +17,12 @@ import { DatabaseMigrator } from '../database/migrate.js';
 export class AuthService {
   constructor(config) {
     this.config = {
-      SUPABASE_URL: process.env.SUPABASE_URL,
+      ENTRA_JWKS_URI: process.env.ENTRA_JWKS_URI || 'https://auth.cloudtolocalllm.online/cloudtolocalllm.onmicrosoft.com/b2c_1_sign_up_in/discovery/v2.0/keys',
+      ENTRA_AUDIENCE: process.env.ENTRA_AUDIENCE || '1a72fdf6-4e48-4cb8-943b-a4a4ac513148',
       SESSION_TIMEOUT: parseInt(process.env.SESSION_TIMEOUT) || 3600000, // 1 hour
       MAX_SESSIONS_PER_USER: parseInt(process.env.MAX_SESSIONS_PER_USER) || 5,
       ...config,
     };
-
-    if (!this.config.SUPABASE_URL) {
-      throw new Error('SUPABASE_URL environment variable is required');
-    }
-
-    this.logger = new TunnelLogger('auth-service');
 
     // Use separate auth database if provided, otherwise fallback to main database
     this.authDbMigrator = config.authDbMigrator || null;
@@ -36,9 +31,9 @@ export class AuthService {
 
     this.initialized = false;
 
-    // Initialize JWKS client
+    // Initialize JWKS client for Entra ID (B2C)
     this.jwksClient = jwksClient({
-      jwksUri: `${this.config.SUPABASE_URL}/auth/v1/.well-known/jwks.json`,
+      jwksUri: this.config.ENTRA_JWKS_URI,
       cache: true,
       rateLimit: true,
       jwksRequestsPerMinute: 5,
@@ -60,7 +55,7 @@ export class AuthService {
       }
       this.initialized = true;
 
-      this.logger.info('Authentication service initialized (Supabase RS256)');
+      this.logger.info('Authentication service initialized (Entra ID RS256)');
 
       // Start session cleanup
       this.startSessionCleanup();
@@ -100,8 +95,8 @@ export class AuthService {
         this.logger.info('Using pre-validated token payload');
         payload = preValidatedPayload;
       } else {
-        // Full validation using Supabase JWKS (RS256)
-        this.logger.info('Starting full token validation (Supabase RS256)');
+        // Full validation using Entra ID JWKS (RS256)
+        this.logger.info('Starting full token validation (Entra ID RS256)');
 
         payload = await new Promise((resolve, reject) => {
           jwt.verify(
@@ -112,13 +107,18 @@ export class AuthService {
               if (err) {
                 reject(err);
               } else {
-                resolve(decoded);
+                // Verify Audience
+                if (decoded.aud !== this.config.ENTRA_AUDIENCE) {
+                  reject(new Error(`Invalid audience: expected ${this.config.ENTRA_AUDIENCE}, got ${decoded.aud}`));
+                } else {
+                  resolve(decoded);
+                }
               }
             }
           );
         });
 
-        this.logger.info('Token verification successful');
+        this.logger.info('Token verification successful (Audience verified)');
       }
 
       // Create or update session
@@ -160,7 +160,7 @@ export class AuthService {
    */
   async validateTokenForWebSocket(token) {
     try {
-      this.logger.info('Starting WebSocket token validation (Supabase RS256)');
+      this.logger.info('Starting WebSocket token validation (Entra ID RS256)');
 
       const verified = await new Promise((resolve, reject) => {
         jwt.verify(

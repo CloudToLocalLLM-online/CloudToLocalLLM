@@ -7,6 +7,10 @@ export interface AuthConfig {
   supabase: {
     url: string;
   };
+  entra: {
+    jwksUri: string;
+    audience: string;
+  };
   cache: {
     validationDuration: number; // milliseconds
     jwksDuration: number; // milliseconds
@@ -28,13 +32,17 @@ export interface AuthConfig {
 export function loadAuthConfig(): AuthConfig {
   const supabaseUrl = process.env.SUPABASE_URL;
 
-  if (!supabaseUrl) {
-    throw new Error('SUPABASE_URL environment variable is required');
-  }
+  // if (!supabaseUrl) {
+  //   throw new Error('SUPABASE_URL environment variable is required');
+  // }
 
   return {
     supabase: {
-      url: supabaseUrl,
+      url: supabaseUrl || 'unused',
+    },
+    entra: {
+      jwksUri: process.env.ENTRA_JWKS_URI || 'https://auth.cloudtolocalllm.online/cloudtolocalllm.onmicrosoft.com/b2c_1_sign_up_in/discovery/v2.0/keys',
+      audience: process.env.ENTRA_AUDIENCE || '1a72fdf6-4e48-4cb8-943b-a4a4ac513148',
     },
     cache: {
       validationDuration: parseInt(process.env.AUTH_CACHE_DURATION || '300000'), // 5 minutes
@@ -56,9 +64,10 @@ export function loadAuthConfig(): AuthConfig {
  * Validate authentication configuration
  */
 export function validateAuthConfig(config: AuthConfig): void {
-  if (!config.supabase.url) {
-    throw new Error('Supabase URL is required');
-  }
+  // Supabase URL check removed as we are migrating to Entra
+  // if (!config.supabase.url) {
+  //   throw new Error('Supabase URL is required');
+  // }
 
   if (config.cache.validationDuration < 0) {
     throw new Error('Validation cache duration must be positive');
@@ -84,6 +93,10 @@ export function getDefaultAuthConfig(): AuthConfig {
   return {
     supabase: {
       url: 'https://your-project.supabase.co',
+    },
+    entra: {
+      jwksUri: 'https://auth.cloudtolocalllm.online/cloudtolocalllm.onmicrosoft.com/b2c_1_sign_up_in/discovery/v2.0/keys',
+      audience: '1a72fdf6-4e48-4cb8-943b-a4a4ac513148',
     },
     cache: {
       validationDuration: 5 * 60 * 1000, // 5 minutes

@@ -2,25 +2,24 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import '../models/user_model.dart';
-import 'supabase_auth_service.dart';
+import '../auth/auth_provider.dart';
 
 import 'connection_manager_service.dart';
 import '../di/locator.dart' as di;
-import 'package:supabase_flutter/supabase_flutter.dart';
 
-/// Supabase-based Authentication Service with PostgreSQL Session Storage
+/// Provider-Agnostic Authentication Service
 class AuthService extends ChangeNotifier {
-  final SupabaseAuthService _supabaseAuthService;
+  final AuthProvider _authProvider;
   final ValueNotifier<bool> _isAuthenticated = ValueNotifier<bool>(false);
   final ValueNotifier<bool> _isLoading = ValueNotifier<bool>(false);
   final ValueNotifier<bool> _areAuthenticatedServicesLoaded =
       ValueNotifier<bool>(false);
   final Completer<void> _sessionBootstrapCompleter = Completer<void>();
-  UserModel? _currentUser;
+
   bool _initialized = false;
   bool _isRestoringSession = false;
 
-  AuthService(this._supabaseAuthService);
+  AuthService(this._authProvider);
 
   Future<void> init() async {
     print('[AuthService] init() called');
@@ -29,54 +28,43 @@ class AuthService extends ChangeNotifier {
       return;
     }
     _initialized = true;
-    await _initSupabase();
+    await _initProvider();
     print('[AuthService] init() completed');
   }
 
-  /// Initialize Supabase Auth
-  Future<void> _initSupabase() async {
+  /// Initialize Auth Provider
+  Future<void> _initProvider() async {
     try {
       _isRestoringSession = true;
       _isLoading.value = true;
       notifyListeners();
 
-      await _supabaseAuthService.initialize();
-      print('[AuthService] Supabase service initialized');
+      await _authProvider.initialize();
+      print('[AuthService] Provider initialized');
 
-      // Listen to Supabase auth state changes
-      _supabaseAuthService.authStateChanges.listen((AuthState state) async {
-        final event = state.event;
-        final session = state.session;
-
-        debugPrint('[AuthService] Supabase auth event: $event');
-
-        if (session != null) {
-          // Authenticated
-          debugPrint('[AuthService] User authenticated: ${session.user.email}');
-          await _handleAuthenticatedSession(session);
+      // Listen to auth state changes from provider
+      _authProvider.authStateChanges.listen((isAuthenticated) async {
+        print('[AuthService] Provider auth state changed: $isAuthenticated');
+        if (isAuthenticated) {
+          final user = _authProvider.currentUser;
+          if (user != null) {
+            await _handleAuthenticatedUser(user);
+          }
         } else {
-          // Logged out
-          debugPrint('[AuthService] User logged out');
-          await _clearStoredSession();
-          _isAuthenticated.value = false;
-          _areAuthenticatedServicesLoaded.value = false;
-          _currentUser = null;
-          _currentUser = null;
+          await _handleLogout();
         }
-        notifyListeners();
       });
 
-      // Check current session
-      final currentSession = Supabase.instance.client.auth.currentSession;
-      if (currentSession != null) {
-        print('[AuthService] Found current session, handling...');
-        await _handleAuthenticatedSession(currentSession);
-        print('[AuthService] Current session handled');
+      // Check initial state
+      final currentUser = _authProvider.currentUser;
+      if (currentUser != null) {
+        print('[AuthService] Found current user, handling...');
+        await _handleAuthenticatedUser(currentUser);
       } else {
-        print('[AuthService] No current session found');
+        print('[AuthService] No current user found');
       }
     } catch (e) {
-      debugPrint(' Failed to initialize Supabase Auth: $e');
+      debugPrint(' Failed to initialize Auth Provider: $e');
     } finally {
       _isRestoringSession = false;
       _isLoading.value = false;
@@ -85,29 +73,20 @@ class AuthService extends ChangeNotifier {
     }
   }
 
-  Future<void> _handleAuthenticatedSession(Session session) async {
+  Future<void> _handleAuthenticatedUser(UserModel user) async {
     if (_isAuthenticated.value) return;
 
-    final user = UserModel(
-      id: session.user.id,
-      email: session.user.email ?? '',
-      name: session.user.userMetadata?['full_name'] ??
-          session.user.email ??
-          'User',
-      picture: session.user.userMetadata?['avatar_url'],
-      emailVerified: session.user.emailConfirmedAt != null
-          ? DateTime.tryParse(session.user.emailConfirmedAt!)
-          : null,
-      updatedAt: DateTime.now(),
-      createdAt: DateTime.parse(session.user.createdAt),
-    );
-
-    _currentUser = user;
     _isAuthenticated.value = true;
     notifyListeners();
 
     await _loadAuthenticatedServices();
     print('[AuthService] Authenticated services loaded');
+  }
+
+  Future<void> _handleLogout() async {
+    _isAuthenticated.value = false;
+    _areAuthenticatedServicesLoaded.value = false;
+    notifyListeners();
   }
 
   /// Load authenticated services after authentication is confirmed
@@ -145,17 +124,17 @@ class AuthService extends ChangeNotifier {
   bool get isSessionBootstrapComplete => _sessionBootstrapCompleter.isCompleted;
   Future<void> get sessionBootstrapFuture => _sessionBootstrapCompleter.future;
   bool get isRestoringSession => _isRestoringSession;
-  UserModel? get currentUser => _currentUser;
+  UserModel? get currentUser => _authProvider.currentUser;
 
   // Platform detection
   bool get isWeb => kIsWeb;
 
-  /// Login with Google
-  Future<void> login({String? tenantId}) async {
+  /// Login
+  Future<void> login() async {
     _isLoading.value = true;
     notifyListeners();
     try {
-      await _supabaseAuthService.loginWithGoogle();
+      await _authProvider.login();
     } finally {
       _isLoading.value = false;
       notifyListeners();
@@ -167,41 +146,24 @@ class AuthService extends ChangeNotifier {
     _isLoading.value = true;
     notifyListeners();
     try {
-      await _supabaseAuthService.logout();
-      _isAuthenticated.value = false;
-      _areAuthenticatedServicesLoaded.value = false;
-      _currentUser = null;
+      await _authProvider.logout();
     } finally {
       _isLoading.value = false;
       notifyListeners();
     }
   }
 
-  // Legacy/Unused methods stubbed for compatibility if needed
-  Future<String?> getAccessToken() async =>
-      Supabase.instance.client.auth.currentSession?.accessToken;
+  Future<String?> getAccessToken() async => _authProvider.getAccessToken();
 
+  Future<void> updateDisplayName(String name) async {
+    // no-op for now unless provider supports it
+  }
+
+  /// Validates only if token exists (logic moved to provider ideally, but keeping signature)
   Future<String?> getValidatedAccessToken() async => getAccessToken();
 
-  Future<void> updateDisplayName(String name) async {}
   Future<bool> handleCallback({String? callbackUrl, String? code}) async {
-    if (code != null) {
-      try {
-        debugPrint('[AuthService] Exchanging code for session...');
-        final response =
-            await Supabase.instance.client.auth.exchangeCodeForSession(code);
-        debugPrint('[AuthService] Code exchange successful');
-        await _handleAuthenticatedSession(response.session);
-        return true;
-      } catch (e) {
-        debugPrint('[AuthService] Code exchange failed: $e');
-        return false;
-      }
-    }
-    // If no code is provided, we assume the session might be handled automatically
-    // or we are just verifying the state.
-    debugPrint('[AuthService] No code provided to handleCallback');
-    return _isAuthenticated.value;
+    return _authProvider.handleCallback(url: callbackUrl);
   }
 
   @override
@@ -216,10 +178,5 @@ class AuthService extends ChangeNotifier {
     if (!_sessionBootstrapCompleter.isCompleted) {
       _sessionBootstrapCompleter.complete();
     }
-  }
-
-  // Helper to clear session
-  Future<void> _clearStoredSession() async {
-    // Logic to clear any local session storage if needed
   }
 }

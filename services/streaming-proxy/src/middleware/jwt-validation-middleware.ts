@@ -35,9 +35,13 @@ interface CachedValidation {
   cachedAt: Date;
 }
 
-interface SupabaseConfig {
+interface AuthConfig {
   supabase: {
     url: string;
+  };
+  entra: {
+    jwksUri: string;
+    audience: string;
   };
 }
 
@@ -46,15 +50,15 @@ interface SupabaseConfig {
  * Validates JWT tokens from Supabase with caching using RS256
  */
 export class JWTValidationMiddleware implements AuthMiddleware {
-  private readonly config: SupabaseConfig;
+  private readonly config: AuthConfig;
   private readonly validationCache: Map<string, CachedValidation> = new Map();
   private readonly cacheDuration = 5 * 60 * 1000; // 5 minutes
   private readonly client: jwksClient.JwksClient;
 
-  constructor(config: SupabaseConfig) {
+  constructor(config: AuthConfig) {
     this.config = config;
     this.client = jwksClient({
-      jwksUri: `${config.supabase.url}/auth/v1/.well-known/jwks.json`,
+      jwksUri: config.entra.jwksUri,
       cache: true,
       rateLimit: true,
       jwksRequestsPerMinute: 5,
@@ -116,6 +120,18 @@ export class JWTValidationMiddleware implements AuthMiddleware {
           }
 
           const payload = decoded as JWTPayload;
+
+          // Entra Audience Check
+          if (payload.aud !== this.config.entra.audience) {
+            const result: TokenValidationResult = {
+              valid: false,
+              error: `Invalid audience: expected ${this.config.entra.audience}, got ${payload.aud}`,
+            };
+            this.cacheValidation(token, result);
+            resolve(result);
+            return;
+          }
+
           const result: TokenValidationResult = {
             valid: true,
             userId: payload.sub,
@@ -143,7 +159,7 @@ export class JWTValidationMiddleware implements AuthMiddleware {
    */
   async getUserContext(token: string): Promise<UserContext> {
     const validation = await this.validateToken(token);
-    
+
     if (!validation.valid || !validation.userId) {
       throw new Error('Invalid token - cannot extract user context');
     }
@@ -155,7 +171,7 @@ export class JWTValidationMiddleware implements AuthMiddleware {
 
     // Extract user tier from token claims
     const tier = this.extractUserTier(decoded);
-    
+
     // Extract permissions
     const permissions = this.extractPermissions(decoded);
 
@@ -232,9 +248,9 @@ export class JWTValidationMiddleware implements AuthMiddleware {
    */
   private extractUserTier(payload: JWTPayload): UserTier {
     // Check for tier in custom claims
-    const tier = payload['https://cloudtolocalllm.com/tier'] || 
-                 payload.tier || 
-                 payload['app_metadata']?.tier;
+    const tier = payload['https://cloudtolocalllm.com/tier'] ||
+      payload.tier ||
+      payload['app_metadata']?.tier;
 
     switch (tier?.toLowerCase()) {
       case 'premium':
@@ -250,10 +266,10 @@ export class JWTValidationMiddleware implements AuthMiddleware {
    * Extract permissions from token payload
    */
   private extractPermissions(payload: JWTPayload): string[] {
-    const permissions = payload.permissions || 
-                       payload['https://cloudtolocalllm.com/permissions'] ||
-                       [];
-    
+    const permissions = payload.permissions ||
+      payload['https://cloudtolocalllm.com/permissions'] ||
+      [];
+
     return Array.isArray(permissions) ? permissions : [];
   }
 

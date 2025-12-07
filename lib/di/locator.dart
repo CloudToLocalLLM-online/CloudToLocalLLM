@@ -6,10 +6,11 @@ import 'package:get_it/get_it.dart';
 import '../services/admin_data_flush_service.dart';
 import '../services/admin_service.dart';
 import '../services/app_initialization_service.dart';
-import '../services/supabase_auth_service.dart';
 import '../services/auth_service.dart';
 import '../services/session_storage_service.dart';
 import '../services/connection_manager_service.dart';
+import '../auth/auth_provider.dart';
+import '../auth/providers/entra_auth_provider.dart';
 import '../services/desktop_client_detection_service.dart';
 import '../services/enhanced_user_tier_service.dart';
 import '../services/langchain_integration_service.dart';
@@ -61,12 +62,14 @@ Future<void> setupCoreServices() async {
   serviceLocator
       .registerSingleton<SessionStorageService>(sessionStorageService);
 
-  // Supabase Auth service
-  final supabaseAuthService = SupabaseAuthService();
-  serviceLocator.registerSingleton<SupabaseAuthService>(supabaseAuthService);
+  // Entra Auth Provider (using MSAL)
+  final authProvider = EntraAuthProvider();
+  // Ensure we register base type if needed, but EntraAuthProvider is enough for AuthService construction if we define it dynamically
+  // or we can register generic AuthProvider
+  serviceLocator.registerSingleton<AuthProvider>(authProvider);
 
   print('[Locator] Registering AuthService...');
-  final authService = AuthService(supabaseAuthService);
+  final authService = AuthService(authProvider);
   serviceLocator.registerSingleton<AuthService>(authService);
   print('[Locator] Initializing AuthService...');
   await authService.init();
