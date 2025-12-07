@@ -17,6 +17,15 @@ class AppConfig {
   static const String githubReleasesUrl =
       'https://github.com/imrightguy/CloudToLocalLLM/releases/latest';
 
+  // Auth Configuration
+  static const String aadTenantId = "common";
+  static const String aadClientId = "1a72fdf6-4e48-4cb8-943b-a4a4ac513148";
+
+  // Azure AD B2C / External Identities Configuration
+  // If aadPolicy is set, auth will switch to B2C mode.
+  static const String? aadPolicy = "B2C_1_sign_up_in"; // Standard default
+  static const String? aadDomain = "cloudtolocalllm.online";
+
   // Sentry Configuration
   // Can be overridden at compile time using --dart-define=SENTRY_DSN=your_dsn
   static const String sentryDsn = String.fromEnvironment(
@@ -36,7 +45,7 @@ class AppConfig {
   // API Configuration
   static const String apiBaseUrl = 'https://api.cloudtolocalllm.online';
   static const Duration apiTimeout = Duration(seconds: 30);
-// Tunnel Configuration (SSH over WebSocket)
+  // Tunnel Configuration (SSH over WebSocket)
   static const String tunnelSshUrl =
       'wss://api.cloudtolocalllm.online:8080/ssh';
   static const String tunnelSshUrlDev =

@@ -26,23 +26,23 @@ class AuthService extends ChangeNotifier {
   late final AadOAuth _oauth;
 
   AuthService() {
-    // Configuration for Entra ID
-    // NOTE: These should ideally come from AppConfig, but for now we hardcode the structure
-    // based on the standard Entra pattern.
-    // Tenant ID and Client ID should be injected via --dart-define or AppConfig
-    // For this migration, we assume they are available in AppConfig or passed during build.
+    // Configuration for Entra ID (Standard or B2C)
+    final isB2C = AppConfig.aadPolicy != null;
+    final tenant = isB2C
+        ? (AppConfig.aadDomain ?? AppConfig.aadTenantId)
+        : AppConfig.aadTenantId;
 
     final config = Config(
-      tenant:
-          "42eebf0f-1c60-4408-b681-21fe4a4b4dc1", // Restored from previous step output
-      clientId:
-          "1a72fdf6-4e48-4cb8-943b-a4a4ac513148", // Restored from previous step output
+      tenant: tenant,
+      clientId: AppConfig.aadClientId,
       scope: "openid profile email offline_access",
       redirectUri: kIsWeb
           ? Uri.base.origin
           : "https://login.microsoftonline.com/common/oauth2/nativeclient",
       navigatorKey: navigatorKey,
       webUseRedirect: true,
+      isB2C: isB2C,
+      policy: AppConfig.aadPolicy,
     );
     _oauth = AadOAuth(config);
   }
@@ -182,7 +182,9 @@ class AuthService extends ChangeNotifier {
   }
 
   Future<void> _registerSession(
-      String token, Map<String, dynamic> claims) async {
+    String token,
+    Map<String, dynamic> claims,
+  ) async {
     try {
       final dio = Dio();
       // Ensure backend knows about this session
@@ -202,12 +204,13 @@ class AuthService extends ChangeNotifier {
           'userProfile': {
             'email': _currentUser?.email,
             'name': _currentUser?.name,
-          }
+          },
         },
       );
       if (response.statusCode != 200 && response.statusCode != 201) {
         print(
-            '[AuthService] Warning: Session registration failed: ${response.statusCode}');
+          '[AuthService] Warning: Session registration failed: ${response.statusCode}',
+        );
       }
     } catch (e) {
       print('[AuthService] Register session error: $e');
@@ -247,7 +250,8 @@ class AuthService extends ChangeNotifier {
     // aad_oauth handles this internally, but we keep this stub for compatibility
     // with existing deep link handling code until that is refactored.
     print(
-        '[AuthService] handleCallback called - processed internally by aad_oauth or unnecessary');
+      '[AuthService] handleCallback called - processed internally by aad_oauth or unnecessary',
+    );
     return true;
   }
 }
