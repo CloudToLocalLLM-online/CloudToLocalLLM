@@ -46,7 +46,7 @@ class EntraAuthProvider implements AuthProvider {
 
   final String _clientId = '1a72fdf6-4e48-4cb8-943b-a4a4ac513148';
   final String _authority =
-      'https://auth.cloudtolocalllm.online/cloudtolocalllm.onmicrosoft.com/b2c_1_sign_up_in';
+      'https://cloudtolocalllm.b2clogin.com/cloudtolocalllm.onmicrosoft.com/b2c_1_sign_up_in';
   final List<String> _scopes = [
     'https://cloudtolocalllm.onmicrosoft.com/api/read'
   ];
@@ -75,7 +75,7 @@ class EntraAuthProvider implements AuthProvider {
           'authority': _authority,
           'redirectUri': _redirectUri,
           'navigateToLoginRequestUrl': true,
-          'knownAuthorities': ['auth.cloudtolocalllm.online'],
+          'knownAuthorities': ['cloudtolocalllm.b2clogin.com'],
         },
         'cache': {
           'cacheLocation': 'localStorage',

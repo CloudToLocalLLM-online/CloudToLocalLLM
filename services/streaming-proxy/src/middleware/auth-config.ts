@@ -41,7 +41,7 @@ export function loadAuthConfig(): AuthConfig {
       url: supabaseUrl || 'unused',
     },
     entra: {
-      jwksUri: process.env.ENTRA_JWKS_URI || 'https://auth.cloudtolocalllm.online/cloudtolocalllm.onmicrosoft.com/b2c_1_sign_up_in/discovery/v2.0/keys',
+      jwksUri: process.env.ENTRA_JWKS_URI || 'https://cloudtolocalllm.b2clogin.com/cloudtolocalllm.onmicrosoft.com/b2c_1_sign_up_in/discovery/v2.0/keys',
       audience: process.env.ENTRA_AUDIENCE || '1a72fdf6-4e48-4cb8-943b-a4a4ac513148',
     },
     cache: {
@@ -95,7 +95,7 @@ export function getDefaultAuthConfig(): AuthConfig {
       url: 'https://your-project.supabase.co',
     },
     entra: {
-      jwksUri: 'https://auth.cloudtolocalllm.online/cloudtolocalllm.onmicrosoft.com/b2c_1_sign_up_in/discovery/v2.0/keys',
+      jwksUri: 'https://cloudtolocalllm.b2clogin.com/cloudtolocalllm.onmicrosoft.com/b2c_1_sign_up_in/discovery/v2.0/keys',
       audience: '1a72fdf6-4e48-4cb8-943b-a4a4ac513148',
     },
     cache: {

@@ -17,7 +17,7 @@ import { DatabaseMigratorPG } from '../database/migrate-pg.js';
 export class AuthService {
   constructor(config) {
     this.config = {
-      ENTRA_JWKS_URI: process.env.ENTRA_JWKS_URI || 'https://auth.cloudtolocalllm.online/cloudtolocalllm.onmicrosoft.com/b2c_1_sign_up_in/discovery/v2.0/keys',
+      ENTRA_JWKS_URI: process.env.ENTRA_JWKS_URI || 'https://cloudtolocalllm.b2clogin.com/cloudtolocalllm.onmicrosoft.com/b2c_1_sign_up_in/discovery/v2.0/keys',
       ENTRA_AUDIENCE: process.env.ENTRA_AUDIENCE || '1a72fdf6-4e48-4cb8-943b-a4a4ac513148',
       SESSION_TIMEOUT: parseInt(process.env.SESSION_TIMEOUT) || 3600000, // 1 hour
       MAX_SESSIONS_PER_USER: parseInt(process.env.MAX_SESSIONS_PER_USER) || 5,

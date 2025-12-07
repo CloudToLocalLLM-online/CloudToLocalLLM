@@ -22,7 +22,7 @@ window.cloudToLocalLLMConfig = {
   enableSentry: true,
 
   // Auth (SuperTokens)
-  authDomain: 'https://auth.cloudtolocalllm.online',
+  authDomain: 'https://cloudtolocalllm.b2clogin.com',
   appDomain: 'https://app.cloudtolocalllm.online'
 };
 
