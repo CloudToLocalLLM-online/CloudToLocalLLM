@@ -85,15 +85,7 @@ class EntraAuthProvider implements AuthProvider {
           'storeAuthStateInCookie': true,
         },
         'system': {
-          'allowNativeBroker': false,
-          'loggerOptions': {
-            'loggerCallback': (int level, String message, bool containsPii) {
-              if (containsPii) return;
-              debugPrint('[MSAL] [$level] $message');
-            },
-            'piiLoggingEnabled': false,
-            'logLevel': 3 // Verbose
-          }
+          'allowNativeBroker': false
         }
       }.jsify() as JSObject;
 
