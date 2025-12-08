@@ -142,6 +142,11 @@ spec:
                 secretKeyRef:
                   name: cloudtolocalllm-secrets
                   key: auth0-client-secret
+             - name: AUTH0_AUDIENCE
+               valueFrom:
+                 secretKeyRef:
+                   name: cloudtolocalllm-secrets
+                   key: auth0-audience
 
             # Admin Center Configuration
             - name: ADMIN_CENTER_ENABLED

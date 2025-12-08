@@ -41,7 +41,7 @@ export function loadAuthConfig(): AuthConfig {
       url: supabaseUrl || 'unused',
     },
     auth0: {
-      jwksUri: process.env.AUTH0_JWKS_URI || 'https://cloudtolocalllm.auth0.com/.well-known/jwks.json',
+      jwksUri: process.env.AUTH0_JWKS_URI || (process.env.AUTH0_ISSUER_URL ? `${process.env.AUTH0_ISSUER_URL}/.well-known/jwks.json` : 'https://cloudtolocalllm.auth0.com/.well-known/jwks.json'),
       audience: process.env.AUTH0_AUDIENCE || 'https://api.cloudtolocalllm.com',
     },
     cache: {
