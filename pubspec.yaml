@@ -66,7 +66,7 @@ dependencies:
 
   # Web interop for dart:js_interop
   web: ^1.0.0
-  app_links: ^6.4.1
+  app_links: ^7.0.0
   aad_oauth:
     path: packages/aad_oauth
 
