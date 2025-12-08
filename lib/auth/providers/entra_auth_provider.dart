@@ -44,7 +44,7 @@ class EntraAuthProvider implements AuthProvider {
   final _authStateController = StreamController<bool>.broadcast();
   UserModel? _currentUser;
 
-  final String _clientId = '1a72fdf6-4e48-4cb8-943b-a4a4ac513148';
+  final String _clientId = '4829629c-4ae8-42a5-9def-bd28fbfd6992';
   final String _authority =
       'https://cloudtolocalllm.b2clogin.com/cloudtolocalllm.onmicrosoft.com/B2X_1_cloudtolocalllm';
   final List<String> _scopes = [
