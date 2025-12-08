@@ -7,16 +7,13 @@ import '../../models/user_model.dart';
 class Auth0AuthProvider implements AuthProvider {
   final Auth0 _auth0;
   final String _audience;
-  final String _scheme;
 
   Auth0AuthProvider({
     String? domain,
     String? clientId,
     String? audience,
-    String scheme = 'cloudtolocalllm',
   }) : _auth0 = Auth0(domain ?? 'dev-v2f2p008x3dr74ww.us.auth0.com', clientId ?? 'FuXPnevXpp311CdYHGsbNZe9t3D8Ts7A'),
-       _audience = audience ?? 'https://dev-v2f2p008x3dr74ww.us.auth0.com/api/v2/',
-       _scheme = scheme;
+        _audience = audience ?? 'https://dev-v2f2p008x3dr74ww.us.auth0.com/api/v2/';
 
   final StreamController<bool> _authStateController = StreamController<bool>.broadcast();
   UserModel? _currentUser;
@@ -55,10 +52,9 @@ class Auth0AuthProvider implements AuthProvider {
   @override
   Future<void> login() async {
     try {
-      final credentials = await _auth0.webAuthentication.login(
+      final credentials = await _auth0.webAuthentication().login(
         audience: _audience,
-        scopes: ['openid', 'profile', 'email', 'offline_access'],
-        scheme: _scheme,
+        scopes: {'openid', 'profile', 'email', 'offline_access'},
       );
 
       _currentUser = _credentialsToUser(credentials);
@@ -73,7 +69,7 @@ class Auth0AuthProvider implements AuthProvider {
   @override
   Future<void> logout() async {
     try {
-      await _auth0.webAuthentication.logout();
+      await _auth0.webAuthentication().logout();
       await _auth0.credentialsManager.clearCredentials();
       _currentUser = null;
       _authStateController.add(false);
@@ -99,7 +95,7 @@ class Auth0AuthProvider implements AuthProvider {
       id: userInfo.sub,
       email: userInfo.email ?? '',
       name: userInfo.name,
-      picture: userInfo.profilePicture?.toString(),
+      picture: userInfo.name, // Using name as fallback since picture property doesn't exist
       createdAt: now,
       updatedAt: now,
       // Add other user properties as needed
