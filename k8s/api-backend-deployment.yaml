@@ -127,21 +127,21 @@ spec:
                 secretKeyRef:
                   name: cloudtolocalllm-secrets
                   key: supabase-url
-            - name: ENTRA_ISSUER_URL
+            - name: AUTH0_ISSUER_URL
               valueFrom:
                 secretKeyRef:
                   name: cloudtolocalllm-secrets
-                  key: entra-issuer-url
-            - name: ENTRA_CLIENT_ID
+                  key: auth0-issuer-url
+            - name: AUTH0_CLIENT_ID
               valueFrom:
                 secretKeyRef:
                   name: cloudtolocalllm-secrets
-                  key: entra-client-id
-            - name: ENTRA_TENANT_ID
+                  key: auth0-client-id
+            - name: AUTH0_CLIENT_SECRET
               valueFrom:
                 secretKeyRef:
                   name: cloudtolocalllm-secrets
-                  key: entra-tenant-id
+                  key: auth0-client-secret
 
             # Admin Center Configuration
             - name: ADMIN_CENTER_ENABLED

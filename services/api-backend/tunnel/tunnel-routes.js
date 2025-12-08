@@ -35,7 +35,7 @@ export function createTunnelRoutes(
   // Use provided auth service or create a new one (fallback)
   if (!authService) {
     authService = new AuthService({
-      ENTRA_ISSUER_URL: process.env.ENTRA_ISSUER_URL,
+      AUTH0_ISSUER_URL: process.env.AUTH0_ISSUER_URL,
     });
   }
 

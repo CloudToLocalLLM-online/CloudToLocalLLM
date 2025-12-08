@@ -11,7 +11,7 @@ import 'config/supabase_config.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'services/auth_service.dart';
 
-import 'auth/providers/entra_auth_provider.dart';
+import 'auth/providers/auth0_auth_provider.dart';
 import 'services/enhanced_user_tier_service.dart';
 import 'services/ollama_service.dart';
 import 'services/streaming_proxy_service.dart';
@@ -197,7 +197,7 @@ class _CloudToLocalLLMPrivacyAppState extends State<CloudToLocalLLMPrivacyApp> {
         // Authentication service with PostgreSQL session storage
         ChangeNotifierProvider(
           create: (_) {
-            final authProvider = EntraAuthProvider();
+            final authProvider = Auth0AuthProvider();
             final authService = AuthService(authProvider);
             unawaited(
                 authProvider.initialize()); // Initialize provider directly
