@@ -10,7 +10,7 @@ import 'package:cloudtolocalllm/services/auth_service.dart';
 import 'package:cloudtolocalllm/services/session_storage_service.dart';
 import 'package:cloudtolocalllm/services/connection_manager_service.dart';
 import 'package:cloudtolocalllm/auth/auth_provider.dart';
-import 'package:cloudtolocalllm/auth/providers/entra_auth_provider.dart';
+import 'package:cloudtolocalllm/auth/providers/auth0_auth_provider.dart';
 import 'package:cloudtolocalllm/services/desktop_client_detection_service.dart';
 import 'package:cloudtolocalllm/services/enhanced_user_tier_service.dart';
 import 'package:cloudtolocalllm/services/langchain_integration_service.dart';
@@ -63,8 +63,8 @@ Future<void> setupCoreServices() async {
   serviceLocator
       .registerSingleton<SessionStorageService>(sessionStorageService);
 
-  // Entra Auth Provider (using MSAL)
-  final authProvider = EntraAuthProvider();
+  // Auth0 Auth Provider
+  final authProvider = Auth0AuthProvider();
   // Ensure we register base type if needed, but EntraAuthProvider is enough for AuthService construction if we define it dynamically
   // or we can register generic AuthProvider
   serviceLocator.registerSingleton<AuthProvider>(authProvider);

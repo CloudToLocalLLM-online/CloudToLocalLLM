@@ -7,7 +7,7 @@ export interface AuthConfig {
   supabase: {
     url: string;
   };
-  entra: {
+  auth0: {
     jwksUri: string;
     audience: string;
   };
@@ -40,9 +40,9 @@ export function loadAuthConfig(): AuthConfig {
     supabase: {
       url: supabaseUrl || 'unused',
     },
-    entra: {
-      jwksUri: process.env.ENTRA_JWKS_URI || 'https://cloudtolocalllm.b2clogin.com/cloudtolocalllm.onmicrosoft.com/b2c_1_sign_up_in/discovery/v2.0/keys',
-      audience: process.env.ENTRA_AUDIENCE || '1a72fdf6-4e48-4cb8-943b-a4a4ac513148',
+    auth0: {
+      jwksUri: process.env.AUTH0_JWKS_URI || 'https://cloudtolocalllm.auth0.com/.well-known/jwks.json',
+      audience: process.env.AUTH0_AUDIENCE || 'https://api.cloudtolocalllm.com',
     },
     cache: {
       validationDuration: parseInt(process.env.AUTH_CACHE_DURATION || '300000'), // 5 minutes
@@ -94,9 +94,9 @@ export function getDefaultAuthConfig(): AuthConfig {
     supabase: {
       url: 'https://your-project.supabase.co',
     },
-    entra: {
-      jwksUri: 'https://cloudtolocalllm.b2clogin.com/cloudtolocalllm.onmicrosoft.com/b2c_1_sign_up_in/discovery/v2.0/keys',
-      audience: '1a72fdf6-4e48-4cb8-943b-a4a4ac513148',
+    auth0: {
+      jwksUri: 'https://cloudtolocalllm.auth0.com/.well-known/jwks.json',
+      audience: 'https://api.cloudtolocalllm.com',
     },
     cache: {
       validationDuration: 5 * 60 * 1000, // 5 minutes

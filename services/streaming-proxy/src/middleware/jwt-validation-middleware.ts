@@ -39,7 +39,7 @@ interface AuthConfig {
   supabase: {
     url: string;
   };
-  entra: {
+  auth0: {
     jwksUri: string;
     audience: string;
   };
@@ -58,7 +58,7 @@ export class JWTValidationMiddleware implements AuthMiddleware {
   constructor(config: AuthConfig) {
     this.config = config;
     this.client = jwksClient({
-      jwksUri: config.entra.jwksUri,
+      jwksUri: config.auth0.jwksUri,
       cache: true,
       rateLimit: true,
       jwksRequestsPerMinute: 5,
@@ -121,11 +121,11 @@ export class JWTValidationMiddleware implements AuthMiddleware {
 
           const payload = decoded as JWTPayload;
 
-          // Entra Audience Check
-          if (payload.aud !== this.config.entra.audience) {
+          // Auth0 Audience Check
+          if (payload.aud !== this.config.auth0.audience) {
             const result: TokenValidationResult = {
               valid: false,
-              error: `Invalid audience: expected ${this.config.entra.audience}, got ${payload.aud}`,
+              error: `Invalid audience: expected ${this.config.auth0.audience}, got ${payload.aud}`,
             };
             this.cacheValidation(token, result);
             resolve(result);
