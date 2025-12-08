@@ -10,12 +10,12 @@ class Auth0AuthProvider implements AuthProvider {
   final String _scheme;
 
   Auth0AuthProvider({
-    required String domain,
-    required String clientId,
-    required String audience,
+    String? domain,
+    String? clientId,
+    String? audience,
     String scheme = 'cloudtolocalllm',
-  }) : _auth0 = Auth0(domain, clientId),
-       _audience = audience,
+  }) : _auth0 = Auth0(domain ?? 'dev-v2f2p008x3dr74ww.us.auth0.com', clientId ?? 'FuXPnevXpp311CdYHGsbNZe9t3D8Ts7A'),
+       _audience = audience ?? 'https://dev-v2f2p008x3dr74ww.us.auth0.com/api/v2/',
        _scheme = scheme;
 
   final StreamController<bool> _authStateController = StreamController<bool>.broadcast();
@@ -31,7 +31,7 @@ class Auth0AuthProvider implements AuthProvider {
   Future<void> initialize() async {
     try {
       final credentials = await _auth0.credentialsManager.credentials();
-      if (credentials != null && !credentials.accessToken.isExpired) {
+      if (credentials != null && credentials.accessToken.isNotEmpty) {
         _currentUser = _credentialsToUser(credentials);
         _authStateController.add(true);
       } else {
@@ -94,11 +94,14 @@ class Auth0AuthProvider implements AuthProvider {
 
   UserModel _credentialsToUser(Credentials credentials) {
     final userInfo = credentials.user;
+    final now = DateTime.now();
     return UserModel(
       id: userInfo.sub,
       email: userInfo.email ?? '',
-      name: userInfo.name ?? '',
-      picture: userInfo.picture?.toString(),
+      name: userInfo.name,
+      picture: userInfo.profilePicture?.toString(),
+      createdAt: now,
+      updatedAt: now,
       // Add other user properties as needed
     );
   }
