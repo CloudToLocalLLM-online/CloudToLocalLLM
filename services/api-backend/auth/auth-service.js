@@ -17,8 +17,8 @@ import { DatabaseMigratorPG } from '../database/migrate-pg.js';
 export class AuthService {
   constructor(config) {
     this.config = {
-      ENTRA_JWKS_URI: process.env.ENTRA_JWKS_URI || 'https://cloudtolocalllm.b2clogin.com/cloudtolocalllm.onmicrosoft.com/b2c_1_sign_up_in/discovery/v2.0/keys',
-      ENTRA_AUDIENCE: process.env.ENTRA_AUDIENCE || '1a72fdf6-4e48-4cb8-943b-a4a4ac513148',
+      AUTH0_JWKS_URI: process.env.AUTH0_JWKS_URI || 'https://cloudtolocalllm.auth0.com/.well-known/jwks.json',
+      AUTH0_AUDIENCE: process.env.AUTH0_AUDIENCE || 'https://api.cloudtolocalllm.com',
       SESSION_TIMEOUT: parseInt(process.env.SESSION_TIMEOUT) || 3600000, // 1 hour
       MAX_SESSIONS_PER_USER: parseInt(process.env.MAX_SESSIONS_PER_USER) || 5,
       ...config,
@@ -46,9 +46,9 @@ export class AuthService {
 
     this.initialized = false;
 
-    // Initialize JWKS client for Entra ID (B2C)
+    // Initialize JWKS client for Auth0
     this.jwksClient = jwksClient({
-      jwksUri: this.config.ENTRA_JWKS_URI,
+      jwksUri: this.config.AUTH0_JWKS_URI,
       cache: true,
       rateLimit: true,
       jwksRequestsPerMinute: 5,
@@ -70,7 +70,7 @@ export class AuthService {
       }
       this.initialized = true;
 
-      this.logger.info('Authentication service initialized (Entra ID RS256/ES256)');
+      this.logger.info('Authentication service initialized (Auth0 RS256/ES256)');
 
       // Start session cleanup
       this.startSessionCleanup();
@@ -183,8 +183,8 @@ export class AuthService {
                 reject(err);
               } else {
                 // Verify Audience
-                if (decodedToken.aud !== this.config.ENTRA_AUDIENCE) {
-                  reject(new Error(`Invalid audience: expected ${this.config.ENTRA_AUDIENCE}, got ${decodedToken.aud}`));
+                if (decodedToken.aud !== this.config.AUTH0_AUDIENCE) {
+                  reject(new Error(`Invalid audience: expected ${this.config.AUTH0_AUDIENCE}, got ${decodedToken.aud}`));
                 } else {
                   resolve(decodedToken);
                 }
