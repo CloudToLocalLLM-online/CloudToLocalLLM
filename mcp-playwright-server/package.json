@@ -7,7 +7,7 @@
     "start": "node build/index.js"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^0.4.0",
+    "@modelcontextprotocol/sdk": "^1.24.3",
     "playwright": "^1.40.0",
     "zod": "^3.22.0"
   },
