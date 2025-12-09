@@ -713,9 +713,11 @@ jobs:
           CLOUDFLARE_TUNNEL_TOKEN: ${{ secrets.CLOUDFLARE_TUNNEL_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           SUPABASE_JWT_SECRET: ${{ secrets.SUPABASE_JWT_SECRET }}
-          ENTRA_ISSUER_URL: ${{ secrets.ENTRA_ISSUER_URL }}
-          ENTRA_CLIENT_ID: ${{ secrets.ENTRA_CLIENT_ID }}
-          ENTRA_TENANT_ID: ${{ secrets.ENTRA_TENANT_ID }}
+          AUTH0_DOMAIN: ${{ secrets.AUTH0_DOMAIN }}
+          AUTH0_AUDIENCE: ${{ secrets.AUTH0_AUDIENCE }}
+          AUTH0_CLIENT_ID: ${{ secrets.AUTH0_CLIENT_ID }}
+          AUTH0_CLIENT_SECRET: ${{ secrets.AUTH0_CLIENT_SECRET }}
+          AUTH0_ISSUER_URL: ${{ secrets.AUTH0_ISSUER_URL }}
         run: |
           # --- Create Kubernetes Secrets ---
 
@@ -746,9 +748,11 @@ jobs:
             --from-literal=sentry-dsn="$SENTRY_DSN" \
             --from-literal=supabase-jwt-secret="$SUPABASE_JWT_SECRET" \
             --from-literal=supabase-url="https://cvaqhvpbnemweqrojasm.supabase.co" \
-            --from-literal=entra-issuer-url="$ENTRA_ISSUER_URL" \
-            --from-literal=entra-client-id="$ENTRA_CLIENT_ID" \
-            --from-literal=entra-tenant-id="$ENTRA_TENANT_ID" \
+            --from-literal=auth0-domain="$AUTH0_DOMAIN" \
+            --from-literal=auth0-audience="$AUTH0_AUDIENCE" \
+            --from-literal=auth0-client-id="$AUTH0_CLIENT_ID" \
+            --from-literal=auth0-client-secret="$AUTH0_CLIENT_SECRET" \
+            --from-literal=auth0-issuer-url="$AUTH0_ISSUER_URL" \
             --dry-run=client -o yaml | kubectl apply -f -
 
           # Cloudflare Tunnel Secret
