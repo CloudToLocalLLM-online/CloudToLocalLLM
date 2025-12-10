@@ -1,8 +1,8 @@
 {
-  "web": "5.0.1",
-  "api": "5.0.1-api",
-  "postgres": "5.0.1-postgres",
-  "streaming_proxy": "5.0.1-proxy",
-  "base": "5.0.1-base",
-  "last_updated": "2025-12-10T17:20:48Z"
+  "web": "5.0.2",
+  "api": "5.0.2-api",
+  "postgres": "5.0.2-postgres",
+  "streaming_proxy": "5.0.2-proxy",
+  "base": "5.0.2-base",
+  "last_updated": "2025-12-10T17:30:13Z"
 }
