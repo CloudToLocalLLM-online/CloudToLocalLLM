@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 // Kilo Code CLI wrapper for AI-powered operations
-// Uses Grok API instead of Gemini
+// Uses KiloCode Gateway API
 
 const https = require('https');
 
@@ -32,23 +32,24 @@ const data = JSON.stringify({
 });
 
 const options = {
-  hostname: 'generativelanguage.googleapis.com',
+  hostname: 'api.kilocode.com',
   port: 443,
-  path: `/v1beta/models/gemini-2.5-flash:generateContent?key=${API_KEY}`,
+  path: '/v1/chat/completions',
   method: 'POST',
   headers: {
     'Content-Type': 'application/json',
+    'Authorization': `Bearer ${API_KEY}`,
     'Content-Length': data.length
   }
 };
 
 const req = https.request(options, (res) => {
   let body = '';
-  
+
   res.on('data', (chunk) => {
     body += chunk;
   });
-  
+
   res.on('end', () => {
     try {
       const response = JSON.parse(body);
