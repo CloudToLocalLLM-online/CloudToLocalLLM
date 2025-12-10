@@ -129,7 +129,7 @@ jobs:
   setup_acr:
     runs-on: ubuntu-latest
     outputs:
-      acr_login_server: ${{ steps.acr_setup.outputs.login_server }}
+      login_server: ${{ steps.acr_setup.outputs.login_server }}
     steps:
       - name: Azure Login
         uses: azure/login@v2
