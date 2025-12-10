@@ -31,23 +31,43 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
+      - name: Cache Ollama
+        uses: actions/cache@v4
+        with:
+          path: |
+            /usr/local/bin/ollama
+            ~/.ollama
+          key: ollama-${{ runner.os }}-v1
+
+      - name: Setup Ollama
+        run: |
+          # Install Ollama if not cached
+          if [ ! -f /usr/local/bin/ollama ]; then
+            curl -fsSL https://ollama.ai/install.sh | sh
+          fi
+          
+          # Start Ollama server
+          ollama serve &
+          sleep 5
+          
+          # Pull model if not cached
+          if ! ollama list | grep -q "llama3.2:1b"; then
+            ollama pull llama3.2:1b
+          fi
+
       - name: Setup Copilot CLI
-        env:
-          GITHUB_TOKEN: ${{ secrets.COPILOT_PAT }}
         run: |
           chmod +x scripts/copilot-cli.cjs
           sudo ln -sf "$(pwd)/scripts/copilot-cli.cjs" /usr/local/bin/copilot-cli
           
-          if [ -n "$GITHUB_TOKEN" ]; then
-            copilot-cli "Respond with just OK" && echo "✅ Copilot CLI test passed" || echo "⚠️  Copilot test failed"
-          fi
+          copilot-cli "Respond with just OK" && echo "✅ Copilot CLI test passed" || echo "⚠️  Copilot test failed"
           echo "✅ Copilot CLI ready"
 
       - name: Analyze Changes with Copilot
         id: analyze
-        env:
-          GITHUB_TOKEN: ${{ secrets.COPILOT_PAT }}
         run: |
+          ollama serve &
+          sleep 2
           chmod +x scripts/analyze-platforms.sh
           ./scripts/analyze-platforms.sh
 

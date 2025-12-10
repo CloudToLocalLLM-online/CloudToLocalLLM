@@ -4,13 +4,7 @@
 
 const https = require('https');
 
-const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
 const prompt = process.argv.slice(2).join(' ');
-
-if (!GITHUB_TOKEN) {
-  console.error('Error: GITHUB_TOKEN environment variable not set');
-  process.exit(1);
-}
 
 if (!prompt) {
   console.error('Usage: copilot-cli <prompt>');
@@ -18,22 +12,21 @@ if (!prompt) {
 }
 
 const data = JSON.stringify({
-  model: 'grok-code-fast-1',
+  model: 'llama3.2:1b',
   messages: [{
     role: 'user',
     content: prompt
-  }]
+  }],
+  stream: false
 });
 
 const options = {
-  hostname: 'api.github.com',
-  port: 443,
-  path: '/copilot/chat/completions',
+  hostname: 'localhost',
+  port: 11434,
+  path: '/api/chat',
   method: 'POST',
   headers: {
     'Content-Type': 'application/json',
-    'Authorization': `Bearer ${GITHUB_TOKEN}`,
-    'User-Agent': 'Copilot-CLI/1.0',
     'Content-Length': data.length
   }
 };
@@ -48,13 +41,10 @@ const makeRequest = (retryCount = 0) => {
     res.on('end', () => {
       try {
         const response = JSON.parse(body);
-        if (response.choices && response.choices.length > 0) {
-          console.log(response.choices[0].message.content);
-        } else if (res.statusCode === 503 && retryCount < 24) { // 24 retries * 5s delay = 120s = 2 minutes
-          console.log(`Received 503, retrying in 5 seconds... (Attempt ${retryCount + 1})`);
-          setTimeout(() => makeRequest(retryCount + 1), 5000);
+        if (response.message && response.message.content) {
+          console.log(response.message.content);
         } else {
-          console.error('Unexpected response format or max retries reached:', body);
+          console.error('Unexpected response format:', body);
           process.exit(1);
         }
       } catch (e) {

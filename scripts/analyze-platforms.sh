@@ -34,15 +34,7 @@ PROMPT="You are a semantic versioning and platform deployment expert. Analyze th
 # Call Copilot
 echo "Calling Copilot AI..."
 
-# Check for GITHUB_TOKEN
-API_KEY="$GITHUB_TOKEN"
-
-if [ -z "$API_KEY" ]; then
-    echo "❌ ERROR: GITHUB_TOKEN not set"
-    echo "Version bump REQUIRES Copilot AI analysis"
-    echo "Ensure the workflow has access to GITHUB_TOKEN"
-    exit 1
-fi
+# Using local Ollama, no API key needed
     set +e
     # Try to find copilot-cli in PATH or use local script
     if command -v copilot-cli >/dev/null 2>&1; then
