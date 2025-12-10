@@ -32,6 +32,8 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
       - name: Setup Copilot CLI
+        env:
+          GITHUB_TOKEN: ${{ secrets.COPILOT_PAT }}
         run: |
           chmod +x scripts/copilot-cli.cjs
           sudo ln -sf "$(pwd)/scripts/copilot-cli.cjs" /usr/local/bin/copilot-cli
@@ -44,7 +46,7 @@ jobs:
       - name: Analyze Changes with Copilot
         id: analyze
         env:
-          GITHUB_TOKEN: ${{ github.token }}
+          GITHUB_TOKEN: ${{ secrets.COPILOT_PAT }}
         run: |
           chmod +x scripts/analyze-platforms.sh
           ./scripts/analyze-platforms.sh

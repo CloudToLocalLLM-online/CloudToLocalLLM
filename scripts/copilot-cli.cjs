@@ -33,6 +33,7 @@ const options = {
   headers: {
     'Content-Type': 'application/json',
     'Authorization': `Bearer ${GITHUB_TOKEN}`,
+    'User-Agent': 'Copilot-CLI/1.0',
     'Content-Length': data.length
   }
 };
