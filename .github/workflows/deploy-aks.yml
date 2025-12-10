@@ -125,8 +125,40 @@ jobs:
           echo "  API: $API_CHANGED"
           echo "  Proxy: $PROXY_CHANGED"
 
+  # Job to setup ACR and retrieve login server
+  setup_acr:
+    runs-on: ubuntu-latest
+    outputs:
+      acr_login_server: ${{ steps.acr_setup.outputs.login_server }}
+    steps:
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      - name: Create Azure Resource Group if not exists
+        run: az group create --name ${{ env.AZURE_RESOURCE_GROUP }} --location eastus --query "properties.provisioningState" --output tsv
+      - name: Setup ACR
+        id: acr_setup
+        run: |
+          # Create ACR if not exists
+          az acr create --resource-group ${{ env.AZURE_RESOURCE_GROUP }} --name ${{ env.ACR_NAME }} --sku Basic --admin-enabled true --query "provisioningState" --output tsv
+          # Get Login Server and set as output
+          LOGIN_SERVER=$(az acr show --name ${{ env.ACR_NAME }} --query loginServer --output tsv)
+          echo "login_server=$LOGIN_SERVER" >> $GITHUB_OUTPUT
+          echo "DOCKER_REGISTRY=$LOGIN_SERVER" >> $GITHUB_ENV
+      - name: Docker Login to ACR
+        run: |
+          # Get ACR admin credentials
+          ACR_USERNAME=$(az acr credential show --name ${{ env.ACR_NAME }} --query username --output tsv)
+          ACR_PASSWORD=$(az acr credential show --name ${{ env.ACR_NAME }} --query passwords[0].value --output tsv)
+          # Login to ACR
+          echo "$ACR_PASSWORD" | docker login "${{ steps.acr_setup.outputs.login_server }}" --username "$ACR_USERNAME" --password-stdin
+
+
   build_base:
-    needs: [extract_version, changes]
+    needs: [extract_version, changes, setup_acr]
     if: ${{ !cancelled() && needs.changes.outputs.base == 'true' }}
     runs-on: ubuntu-latest
     steps:
@@ -137,21 +169,14 @@ jobs:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-      - name: Create Azure Resource Group if not exists
-        run: az group create --name ${{ env.AZURE_RESOURCE_GROUP }} --location eastus --query "properties.provisioningState" --output tsv
-      - name: Setup ACR
-        run: |
-          # Create ACR if not exists
-          az acr create --resource-group ${{ env.AZURE_RESOURCE_GROUP }} --name ${{ env.ACR_NAME }} --sku Basic --admin-enabled true
-          # Get Login Server
-          echo "DOCKER_REGISTRY=$(az acr show --name ${{ env.ACR_NAME }} --query loginServer --output tsv)" >> $GITHUB_ENV
+      # No need to create RG or ACR here, already done in setup_acr
       - name: Docker Login to ACR
         run: |
           # Get ACR admin credentials
           ACR_USERNAME=$(az acr credential show --name ${{ env.ACR_NAME }} --query username --output tsv)
           ACR_PASSWORD=$(az acr credential show --name ${{ env.ACR_NAME }} --query passwords[0].value --output tsv)
           # Login to ACR
-          echo "$ACR_PASSWORD" | docker login ${{ env.DOCKER_REGISTRY }} --username "$ACR_USERNAME" --password-stdin
+          echo "$ACR_PASSWORD" | docker login "${{ needs.setup_acr.outputs.login_server }}" --username "$ACR_USERNAME" --password-stdin
       - uses: docker/setup-buildx-action@v3
       - uses: docker/build-push-action@v5
         with:
@@ -159,14 +184,14 @@ jobs:
           file: config/docker/Dockerfile.base
           push: true
           tags: |
-            ${{ env.DOCKER_REGISTRY }}/base:${{ needs.extract_version.outputs.app_version }}-base
-            ${{ env.DOCKER_REGISTRY }}/base:${{ needs.extract_version.outputs.commit_sha }}
-            ${{ env.DOCKER_REGISTRY }}/base:latest
-          cache-from: type=registry,ref=${{ env.DOCKER_REGISTRY }}/base:latest
+            ${{ needs.setup_acr.outputs.login_server }}/base:${{ needs.extract_version.outputs.app_version }}-base
+            ${{ needs.setup_acr.outputs.login_server }}/base:${{ needs.extract_version.outputs.commit_sha }}
+            ${{ needs.setup_acr.outputs.login_server }}/base:latest
+          cache-from: type=registry,ref=${{ needs.setup_acr.outputs.login_server }}/base:latest
           cache-to: type=inline
 
   build_postgres:
-    needs: [extract_version, changes, build_base]
+    needs: [extract_version, changes, setup_acr]
     if: ${{ !cancelled() && (needs.build_base.result == 'success' || needs.build_base.result == 'skipped') && needs.changes.outputs.postgres == 'true' }}
     runs-on: ubuntu-latest
     steps:
@@ -177,17 +202,14 @@ jobs:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-      - name: Create Azure Resource Group if not exists
-        run: az group create --name ${{ env.AZURE_RESOURCE_GROUP }} --location eastus --query "properties.provisioningState" --output tsv
-      - name: Get ACR Login Server
-        run: echo "DOCKER_REGISTRY=$(az acr show --name ${{ env.ACR_NAME }} --query loginServer --output tsv)" >> $GITHUB_ENV
+      # No need to create RG or ACR here, already done in setup_acr
       - name: Docker Login to ACR
         run: |
           # Get ACR admin credentials
           ACR_USERNAME=$(az acr credential show --name ${{ env.ACR_NAME }} --query username --output tsv)
           ACR_PASSWORD=$(az acr credential show --name ${{ env.ACR_NAME }} --query passwords[0].value --output tsv)
           # Login to ACR
-          echo "$ACR_PASSWORD" | docker login ${{ env.DOCKER_REGISTRY }} --username "$ACR_USERNAME" --password-stdin
+          echo "$ACR_PASSWORD" | docker login "${{ needs.setup_acr.outputs.login_server }}" --username "$ACR_USERNAME" --password-stdin
       - uses: docker/setup-buildx-action@v3
       - uses: docker/build-push-action@v5
         with:
@@ -195,16 +217,16 @@ jobs:
           file: config/docker/Dockerfile.postgres
           push: true
           tags: |
-            ${{ env.DOCKER_REGISTRY }}/postgres:${{ needs.extract_version.outputs.app_version }}-postgres
-            ${{ env.DOCKER_REGISTRY }}/postgres:${{ needs.extract_version.outputs.commit_sha }}
-            ${{ env.DOCKER_REGISTRY }}/postgres:latest
+            ${{ needs.setup_acr.outputs.login_server }}/postgres:${{ needs.extract_version.outputs.app_version }}-postgres
+            ${{ needs.setup_acr.outputs.login_server }}/postgres:${{ needs.extract_version.outputs.commit_sha }}
+            ${{ needs.setup_acr.outputs.login_server }}/postgres:latest
           build-args: |
-            BASE_REGISTRY=${{ env.DOCKER_REGISTRY }}
-          cache-from: type=registry,ref=${{ env.DOCKER_REGISTRY }}/postgres:latest
+            BASE_REGISTRY=${{ needs.setup_acr.outputs.login_server }}
+          cache-from: type=registry,ref=${{ needs.setup_acr.outputs.login_server }}/postgres:latest
           cache-to: type=inline
 
   build_web:
-    needs: [extract_version, changes, build_base]
+    needs: [extract_version, changes, setup_acr]
     if: ${{ !cancelled() && (needs.build_base.result == 'success' || needs.build_base.result == 'skipped') && needs.changes.outputs.web == 'true' }}
     runs-on: ubuntu-latest
     steps:
@@ -215,17 +237,14 @@ jobs:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-      - name: Create Azure Resource Group if not exists
-        run: az group create --name ${{ env.AZURE_RESOURCE_GROUP }} --location eastus --query "properties.provisioningState" --output tsv
-      - name: Get ACR Login Server
-        run: echo "DOCKER_REGISTRY=$(az acr show --name ${{ env.ACR_NAME }} --query loginServer --output tsv)" >> $GITHUB_ENV
+      # No need to create RG or ACR here, already done in setup_acr
       - name: Docker Login to ACR
         run: |
           # Get ACR admin credentials
           ACR_USERNAME=$(az acr credential show --name ${{ env.ACR_NAME }} --query username --output tsv)
           ACR_PASSWORD=$(az acr credential show --name ${{ env.ACR_NAME }} --query passwords[0].value --output tsv)
           # Login to ACR
-          echo "$ACR_PASSWORD" | docker login ${{ env.DOCKER_REGISTRY }} --username "$ACR_USERNAME" --password-stdin
+          echo "$ACR_PASSWORD" | docker login "${{ needs.setup_acr.outputs.login_server }}" --username "$ACR_USERNAME" --password-stdin
       - uses: docker/setup-buildx-action@v3
       - name: Check if Flutter is already installed
         id: flutter_check
@@ -266,16 +285,16 @@ jobs:
           file: web/Dockerfile
           push: true
           tags: |
-            ${{ env.DOCKER_REGISTRY }}/web:${{ needs.extract_version.outputs.app_version }}
-            ${{ env.DOCKER_REGISTRY }}/web:${{ needs.extract_version.outputs.commit_sha }}
-            ${{ env.DOCKER_REGISTRY }}/web:latest
+            ${{ needs.setup_acr.outputs.login_server }}/web:${{ needs.extract_version.outputs.app_version }}
+            ${{ needs.setup_acr.outputs.login_server }}/web:${{ needs.extract_version.outputs.commit_sha }}
+            ${{ needs.setup_acr.outputs.login_server }}/web:latest
           build-args: |
-            BASE_REGISTRY=${{ env.DOCKER_REGISTRY }}
+            BASE_REGISTRY=${{ needs.setup_acr.outputs.login_server }}
           cache-from: type=registry,ref=${{ env.DOCKER_REGISTRY }}/web:latest
           cache-to: type=inline
 
   build_api:
-    needs: [extract_version, changes, build_base]
+    needs: [extract_version, changes, setup_acr]
     if: ${{ !cancelled() && (needs.build_base.result == 'success' || needs.build_base.result == 'skipped') && needs.changes.outputs.api == 'true' }}
     runs-on: ubuntu-latest
     steps:
@@ -286,17 +305,14 @@ jobs:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-      - name: Create Azure Resource Group if not exists
-        run: az group create --name ${{ env.AZURE_RESOURCE_GROUP }} --location eastus --query "properties.provisioningState" --output tsv
-      - name: Get ACR Login Server
-        run: echo "DOCKER_REGISTRY=$(az acr show --name ${{ env.ACR_NAME }} --query loginServer --output tsv)" >> $GITHUB_ENV
+      # No need to create RG or ACR here, already done in setup_acr
       - name: Docker Login to ACR
         run: |
           # Get ACR admin credentials
           ACR_USERNAME=$(az acr credential show --name ${{ env.ACR_NAME }} --query username --output tsv)
           ACR_PASSWORD=$(az acr credential show --name ${{ env.ACR_NAME }} --query passwords[0].value --output tsv)
           # Login to ACR
-          echo "$ACR_PASSWORD" | docker login ${{ env.DOCKER_REGISTRY }} --username "$ACR_USERNAME" --password-stdin
+          echo "$ACR_PASSWORD" | docker login "${{ needs.setup_acr.outputs.login_server }}" --username "$ACR_USERNAME" --password-stdin
       - uses: docker/setup-buildx-action@v3
       - uses: docker/build-push-action@v5
         with:
@@ -304,16 +320,16 @@ jobs:
           file: services/api-backend/Dockerfile
           push: true
           tags: |
-            ${{ env.DOCKER_REGISTRY }}/api-backend:${{ needs.extract_version.outputs.app_version }}-api
-            ${{ env.DOCKER_REGISTRY }}/api-backend:${{ needs.extract_version.outputs.commit_sha }}
-            ${{ env.DOCKER_REGISTRY }}/api-backend:latest
+            ${{ needs.setup_acr.outputs.login_server }}/api-backend:${{ needs.extract_version.outputs.app_version }}-api
+            ${{ needs.setup_acr.outputs.login_server }}/api-backend:${{ needs.extract_version.outputs.commit_sha }}
+            ${{ needs.setup_acr.outputs.login_server }}/api-backend:latest
           build-args: |
-            BASE_REGISTRY=${{ env.DOCKER_REGISTRY }}
+            BASE_REGISTRY=${{ needs.setup_acr.outputs.login_server }}
           cache-from: type=registry,ref=${{ env.DOCKER_REGISTRY }}/api-backend:latest
           cache-to: type=inline
 
   build_proxy:
-    needs: [extract_version, changes, build_base]
+    needs: [extract_version, changes, setup_acr]
     if: ${{ !cancelled() && (needs.build_base.result == 'success' || needs.build_base.result == 'skipped') && needs.changes.outputs.proxy == 'true' }}
     runs-on: ubuntu-latest
     steps:
@@ -324,17 +340,14 @@ jobs:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-      - name: Create Azure Resource Group if not exists
-        run: az group create --name ${{ env.AZURE_RESOURCE_GROUP }} --location eastus --query "properties.provisioningState" --output tsv
-      - name: Get ACR Login Server
-        run: echo "DOCKER_REGISTRY=$(az acr show --name ${{ env.ACR_NAME }} --query loginServer --output tsv)" >> $GITHUB_ENV
+      # No need to create RG or ACR here, already done in setup_acr
       - name: Docker Login to ACR
         run: |
           # Get ACR admin credentials
           ACR_USERNAME=$(az acr credential show --name ${{ env.ACR_NAME }} --query username --output tsv)
           ACR_PASSWORD=$(az acr credential show --name ${{ env.ACR_NAME }} --query passwords[0].value --output tsv)
           # Login to ACR
-          echo "$ACR_PASSWORD" | docker login ${{ env.DOCKER_REGISTRY }} --username "$ACR_USERNAME" --password-stdin
+          echo "$ACR_PASSWORD" | docker login "${{ needs.setup_acr.outputs.login_server }}" --username "$ACR_USERNAME" --password-stdin
       - uses: docker/setup-buildx-action@v3
       - uses: docker/build-push-action@v5
         with:
@@ -342,11 +355,11 @@ jobs:
           file: services/streaming-proxy/Dockerfile
           push: true
           tags: |
-            ${{ env.DOCKER_REGISTRY }}/streaming-proxy:${{ needs.extract_version.outputs.app_version }}-proxy
-            ${{ env.DOCKER_REGISTRY }}/streaming-proxy:${{ needs.extract_version.outputs.commit_sha }}
-            ${{ env.DOCKER_REGISTRY }}/streaming-proxy:latest
+            ${{ needs.setup_acr.outputs.login_server }}/streaming-proxy:${{ needs.extract_version.outputs.app_version }}-proxy
+            ${{ needs.setup_acr.outputs.login_server }}/streaming-proxy:${{ needs.extract_version.outputs.commit_sha }}
+            ${{ needs.setup_acr.outputs.login_server }}/streaming-proxy:latest
           build-args: |
-            BASE_REGISTRY=${{ env.DOCKER_REGISTRY }}
+            BASE_REGISTRY=${{ needs.setup_acr.outputs.login_server }}
           cache-from: type=registry,ref=${{ env.DOCKER_REGISTRY }}/streaming-proxy:latest
           cache-to: type=inline
 
@@ -358,6 +371,7 @@ jobs:
       [
         extract_version,
         changes,
+        setup_acr,
         build_base,
         build_postgres,
         build_web,
@@ -439,10 +453,7 @@ jobs:
             exit 1
           fi
 
-      - name: Setup ACR Integration
-        run: |
-          # Get Login Server (ACR assumed to exist or created in build steps)
-          echo "DOCKER_REGISTRY=$(az acr show --name ${{ env.ACR_NAME }} --query loginServer --output tsv)" >> $GITHUB_ENV
+
 
       - name: Configure Key Vault RBAC for AKS
         continue-on-error: true
@@ -727,7 +738,7 @@ jobs:
 
           # Docker Registry Secret for ACR
           kubectl create secret docker-registry regcred \
-            --docker-server=${{ env.DOCKER_REGISTRY }} \
+            --docker-server=${{ needs.setup_acr.outputs.login_server }} \
             --docker-username=$ACR_ADMIN_USER \
             --docker-password=$ACR_ADMIN_PASS \
             --docker-email=github-actions@cloudtolocalllm.online \
@@ -797,10 +808,10 @@ jobs:
           echo ""
 
           # Replace image registry in manifests
-          sed -i "s|cloudtolocalllm/postgres:latest|${{ env.DOCKER_REGISTRY }}/postgres:${POSTGRES_TAG}|g" k8s/postgres-statefulset.yaml
-          sed -i "s|cloudtolocalllm/web:latest|${{ env.DOCKER_REGISTRY }}/web:${WEB_TAG}|g" k8s/web-deployment.yaml
-          sed -i "s|cloudtolocalllm/api-backend:latest|${{ env.DOCKER_REGISTRY }}/api-backend:${API_TAG}|g" k8s/api-backend-deployment.yaml
-          sed -i "s|cloudtolocalllm/streaming-proxy:latest|${{ env.DOCKER_REGISTRY }}/streaming-proxy:${PROXY_TAG}|g" k8s/streaming-proxy-deployment.yaml
+          sed -i "s|cloudtolocalllm/postgres:latest|${{ needs.setup_acr.outputs.login_server }}/postgres:${POSTGRES_TAG}|g" k8s/postgres-statefulset.yaml
+          sed -i "s|cloudtolocalllm/web:latest|${{ needs.setup_acr.outputs.login_server }}/web:${WEB_TAG}|g" k8s/web-deployment.yaml
+          sed -i "s|cloudtolocalllm/api-backend:latest|${{ needs.setup_acr.outputs.login_server }}/api-backend:${API_TAG}|g" k8s/api-backend-deployment.yaml
+          sed -i "s|cloudtolocalllm/streaming-proxy:latest|${{ needs.setup_acr.outputs.login_server }}/streaming-proxy:${PROXY_TAG}|g" k8s/streaming-proxy-deployment.yaml
 
           # Validate manifests with server-side dry-run before applying
           echo "Validating Kubernetes manifests with server-side dry-run..."
