@@ -43,6 +43,8 @@ jobs:
 
       - name: Analyze Changes with Copilot
         id: analyze
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
         run: |
           chmod +x scripts/analyze-platforms.sh
           ./scripts/analyze-platforms.sh
