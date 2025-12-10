@@ -32,6 +32,7 @@ Integration & cross-component notes
 - MCP servers: repo includes `config/mcp` and a workspace `mcp.json`. VS Code may also use a user `mcp.json`. Avoid editing user-level files in commits; add or update workspace `mcp.json` when you intend the team to share MCP server definitions.
 
 AI-agent operational rules (must-follow)
+- **Kilo Code** uses `x-ai/grok-code-fast-1` model for code generation and analysis.
 - Use the `manage_todo_list` tool to claim, in-progress, and complete multi-step work. Update it as you progress.
 - Respect `.cursor/rules/` and other agent steering files before making changes.
 - Do not change unrelated files; keep edits minimal and scoped to the issue.

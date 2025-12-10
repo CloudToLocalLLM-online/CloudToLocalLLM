@@ -15,6 +15,10 @@ on:
         required: false
         type: string
 
+# Kilocode integration: Use Ollama for AI-assisted deployment analysis
+# Model: gemma2:2b (minimal CPU/RAM usage)
+# Local AI: Enabled for deployment planning and issue detection
+
 concurrency:
   group: cloud-deployment # All cloud deployments share same concurrency group
   cancel-in-progress: true # Cancel old deployment when new version arrives

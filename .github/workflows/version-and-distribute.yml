@@ -55,13 +55,13 @@ jobs:
             ollama pull llama3.2:1b
           fi
 
-      - name: Setup Copilot CLI
+      - name: Setup Kilocode CLI
         run: |
-          chmod +x scripts/copilot-cli.cjs
-          sudo ln -sf "$(pwd)/scripts/copilot-cli.cjs" /usr/local/bin/copilot-cli
-          
-          copilot-cli "Respond with just OK" && echo "✅ Copilot CLI test passed" || echo "⚠️  Copilot test failed"
-          echo "✅ Copilot CLI ready"
+          chmod +x scripts/kilocode-cli.cjs
+          sudo ln -sf "$(pwd)/scripts/kilocode-cli.cjs" /usr/local/bin/kilocode-cli
+
+          kilocode-cli "Respond with just OK" && echo "✅ Kilocode CLI test passed" || echo "⚠️  Kilocode test failed"
+          echo "✅ Kilocode CLI ready"
 
       - name: Install jq
         run: |
@@ -70,7 +70,7 @@ jobs:
           fi
           jq --version
 
-      - name: Analyze Changes with Copilot
+      - name: Analyze Changes with Kilocode
         id: analyze
         run: |
           chmod +x scripts/analyze-platforms.sh

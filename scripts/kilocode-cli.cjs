@@ -7,7 +7,7 @@ const http = require('http');
 const prompt = process.argv.slice(2).join(' ');
 
 if (!prompt) {
-  console.error('Usage: copilot-cli <prompt>');
+  console.error('Usage: kilocode-cli <prompt>');
   process.exit(1);
 }
 

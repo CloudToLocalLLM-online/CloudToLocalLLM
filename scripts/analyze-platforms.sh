@@ -36,13 +36,13 @@ echo "Calling Copilot AI..."
 
 # Using local Ollama, no API key needed
     set +e
-    # Try to find copilot-cli in PATH or use local script
-    if command -v copilot-cli >/dev/null 2>&1; then
-        RESPONSE=$(copilot-cli "$PROMPT" 2>&1)
+    # Try to find kilocode-cli in PATH or use local script
+    if command -v kilocode-cli >/dev/null 2>&1; then
+        RESPONSE=$(kilocode-cli "$PROMPT" 2>&1)
     else
         # Use local script path
         SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-        RESPONSE=$("${SCRIPT_DIR}/copilot-cli.cjs" "$PROMPT" 2>&1)
+        RESPONSE=$("${SCRIPT_DIR}/kilocode-cli.cjs" "$PROMPT" 2>&1)
     fi
     EXIT_CODE=$?
     set -e
