@@ -104,6 +104,10 @@ jobs:
           echo "Platform Distribution for v$NEW_VERSION"
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
+           # Push to cloud branch
+           echo "☁️  Pushing to cloud branch..."
+           chmod +x scripts/push-to-cloud-branch.sh
+           CLOUD_PUSH_PAT="${{ secrets.CLOUD_PUSH_PAT }}" ./scripts/push-to-cloud-branch.sh "$NEW_VERSION"
           # Push to cloud branch
           echo "☁️  Pushing to cloud branch..."
           chmod +x scripts/push-to-cloud-branch.sh

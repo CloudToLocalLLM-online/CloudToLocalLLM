@@ -42,6 +42,18 @@ if [ "$CURRENT_VERSION" != "$NEW_VERSION" ]; then
 fi
 
 echo "✅ Cloud branch created with version $NEW_VERSION"
+echo "✅ Cloud branch created with version $NEW_VERSION"
+
+# Configure git to use PAT for push operations if provided
+if [ -n "$CLOUD_PUSH_PAT" ]; then
+    echo "🔐 Using PAT for authenticated cloud branch push..."
+    git remote set-url origin "https://x-access-token:$CLOUD_PUSH_PAT@github.com/imrightguy/CloudToLocalLLM.git"
+    echo "✅ Remote URL configured with PAT authentication"
+else
+    echo "⚠️  No CLOUD_PUSH_PAT provided, using default authentication"
+fi
+
+# Push the cloud branch
 
 # Push the cloud branch
 echo "Pushing cloud branch to origin..."
