@@ -106,41 +106,29 @@ jobs:
           echo "Platform Distribution for v$NEW_VERSION"
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
-          # Push to cloud branch if needed
-          if [ "$NEEDS_CLOUD" = "true" ]; then
-            echo "☁️  Pushing to cloud branch..."
-            git checkout -B cloud
-            git push -f origin cloud
-            git tag "${NEW_VERSION}-cloud-${SHORT_SHA}" -f
-            git push origin "${NEW_VERSION}-cloud-${SHORT_SHA}" -f
-            echo "✅ Cloud: v${NEW_VERSION}-cloud-${SHORT_SHA}"
-          else
-            echo "⏭️  Cloud: No changes, skipping"
-          fi
+          # Push to cloud branch
+          echo "☁️  Pushing to cloud branch..."
+          git checkout -B cloud
+          git push -f origin cloud
+          git tag "${NEW_VERSION}-cloud-${SHORT_SHA}" -f
+          git push origin "${NEW_VERSION}-cloud-${SHORT_SHA}" -f
+          echo "✅ Cloud: v${NEW_VERSION}-cloud-${SHORT_SHA}"
 
-          # Push to desktop branch if needed
-          if [ "$NEEDS_DESKTOP" = "true" ]; then
-            echo "🖥️  Pushing to desktop branch..."
-            git checkout -B desktop main
-            git push -f origin desktop
-            git tag "${NEW_VERSION}-desktop-${SHORT_SHA}" -f
-            git push origin "${NEW_VERSION}-desktop-${SHORT_SHA}" -f
-            echo "✅ Desktop: v${NEW_VERSION}-desktop-${SHORT_SHA}"
-          else
-            echo "⏭️  Desktop: No changes, skipping"
-          fi
+          # Push to desktop branch
+          echo "🖥️  Pushing to desktop branch..."
+          git checkout -B desktop main
+          git push -f origin desktop
+          git tag "${NEW_VERSION}-desktop-${SHORT_SHA}" -f
+          git push origin "${NEW_VERSION}-desktop-${SHORT_SHA}" -f
+          echo "✅ Desktop: v${NEW_VERSION}-desktop-${SHORT_SHA}"
 
-          # Push to mobile branch if needed
-          if [ "$NEEDS_MOBILE" = "true" ]; then
-            echo "📱 Pushing to mobile branch..."
-            git checkout -B mobile main
-            git push -f origin mobile
-            git tag "${NEW_VERSION}-mobile-${SHORT_SHA}" -f
-            git push origin "${NEW_VERSION}-mobile-${SHORT_SHA}" -f
-            echo "✅ Mobile: v${NEW_VERSION}-mobile-${SHORT_SHA}"
-          else
-            echo "⏭️  Mobile: No changes, skipping"
-          fi
+          # Push to mobile branch
+          echo "📱 Pushing to mobile branch..."
+          git checkout -B mobile main
+          git push -f origin mobile
+          git tag "${NEW_VERSION}-mobile-${SHORT_SHA}" -f
+          git push origin "${NEW_VERSION}-mobile-${SHORT_SHA}" -f
+          echo "✅ Mobile: v${NEW_VERSION}-mobile-${SHORT_SHA}"
 
           # Return to main
           git checkout main
