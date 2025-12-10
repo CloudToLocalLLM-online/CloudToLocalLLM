@@ -105,28 +105,32 @@ version_compare() {
     local v1=$1
     local v2=$2
 
-    # Split versions into arrays
-    IFS='.' read -ra VER1 <<< "$v1"
-    IFS='.' read -ra VER2 <<< "$v2"
+    # Extract version components using cut (safer than IFS manipulation)
+    local MAJOR1=$(echo "$v1" | cut -d. -f1)
+    local MINOR1=$(echo "$v1" | cut -d. -f2)
+    local PATCH1=$(echo "$v1" | cut -d. -f3)
+    local MAJOR2=$(echo "$v2" | cut -d. -f1)
+    local MINOR2=$(echo "$v2" | cut -d. -f2)
+    local PATCH2=$(echo "$v2" | cut -d. -f3)
 
     # Compare major version
-    if [ "${VER1[0]}" -gt "${VER2[0]}" ]; then
+    if [ "$MAJOR1" -gt "$MAJOR2" ]; then
         return 1  # v1 > v2
-    elif [ "${VER1[0]}" -lt "${VER2[0]}" ]; then
+    elif [ "$MAJOR1" -lt "$MAJOR2" ]; then
         return 2  # v1 < v2
     fi
 
     # Compare minor version
-    if [ "${VER1[1]}" -gt "${VER2[1]}" ]; then
+    if [ "$MINOR1" -gt "$MINOR2" ]; then
         return 1  # v1 > v2
-    elif [ "${VER1[1]}" -lt "${VER2[1]}" ]; then
+    elif [ "$MINOR1" -lt "$MINOR2" ]; then
         return 2  # v1 < v2
     fi
 
     # Compare patch version
-    if [ "${VER1[2]}" -gt "${VER2[2]}" ]; then
+    if [ "$PATCH1" -gt "$PATCH2" ]; then
         return 1  # v1 > v2
-    elif [ "${VER1[2]}" -lt "${VER2[2]}" ]; then
+    elif [ "$PATCH1" -lt "$PATCH2" ]; then
         return 2  # v1 < v2
     fi
 
