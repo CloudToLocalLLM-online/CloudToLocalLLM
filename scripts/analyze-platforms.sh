@@ -34,13 +34,13 @@ PROMPT="You are a semantic versioning and platform deployment expert. Analyze th
 # Call Copilot
 echo "Calling Copilot AI..."
 
-# Check for GROK_API_KEY
-API_KEY="$GROK_API_KEY"
+# Check for GITHUB_TOKEN
+API_KEY="$GITHUB_TOKEN"
 
 if [ -z "$API_KEY" ]; then
-    echo "❌ ERROR: GROK_API_KEY not set"
+    echo "❌ ERROR: GITHUB_TOKEN not set"
     echo "Version bump REQUIRES Copilot AI analysis"
-    echo "Add the secret: gh secret set GROK_API_KEY"
+    echo "Ensure the workflow has access to GITHUB_TOKEN"
     exit 1
 fi
     set +e

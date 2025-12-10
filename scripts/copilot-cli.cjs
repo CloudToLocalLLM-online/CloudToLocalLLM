@@ -1,14 +1,14 @@
 #!/usr/bin/env node
 
-// Simple Copilot CLI wrapper for version analysis using Grok
+// Simple Copilot CLI wrapper for version analysis using GitHub Copilot
 
 const https = require('https');
 
-const GROK_API_KEY = process.env.GROK_API_KEY || process.env.GEMINI_API_KEY; // Fallback for migration
+const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
 const prompt = process.argv.slice(2).join(' ');
 
-if (!GROK_API_KEY) {
-  console.error('Error: GROK_API_KEY environment variable not set');
+if (!GITHUB_TOKEN) {
+  console.error('Error: GITHUB_TOKEN environment variable not set');
   process.exit(1);
 }
 
@@ -26,13 +26,13 @@ const data = JSON.stringify({
 });
 
 const options = {
-  hostname: 'api.x.ai',
+  hostname: 'api.github.com',
   port: 443,
-  path: '/v1/chat/completions',
+  path: '/copilot/chat/completions',
   method: 'POST',
   headers: {
     'Content-Type': 'application/json',
-    'Authorization': `Bearer ${GROK_API_KEY}`,
+    'Authorization': `Bearer ${GITHUB_TOKEN}`,
     'Content-Length': data.length
   }
 };

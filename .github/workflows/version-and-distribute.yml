@@ -32,24 +32,17 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
       - name: Setup Copilot CLI
-        env:
-          GROK_API_KEY: "${{ secrets.GROK_API_KEY || secrets.GEMINI_API_KEY }}"
         run: |
           chmod +x scripts/copilot-cli.cjs
           sudo ln -sf "$(pwd)/scripts/copilot-cli.cjs" /usr/local/bin/copilot-cli
           
-          # Use GROK_API_KEY
-          export GROK_API_KEY="${GROK_API_KEY}"
-          
-          if [ -n "$GROK_API_KEY" ]; then
+          if [ -n "$GITHUB_TOKEN" ]; then
             copilot-cli "Respond with just OK" && echo "✅ Copilot CLI test passed" || echo "⚠️  Copilot test failed"
           fi
           echo "✅ Copilot CLI ready"
 
       - name: Analyze Changes with Copilot
         id: analyze
-        env:
-          GROK_API_KEY: "${{ secrets.GROK_API_KEY || secrets.GEMINI_API_KEY }}"
         run: |
           chmod +x scripts/analyze-platforms.sh
           ./scripts/analyze-platforms.sh
