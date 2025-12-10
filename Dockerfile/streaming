@@ -22,9 +22,9 @@ RUN npm ci --omit=dev --ignore-scripts && \
 # Copy application code
 COPY services/streaming-proxy/ ./
 
-# Install Kilo Code CLI
-COPY scripts/kilocode-cli.cjs /usr/local/bin/kilocode-cli
-RUN chmod +x /usr/local/bin/kilocode-cli
+# Install Gemini CLI
+COPY scripts/gemini-cli.cjs /usr/local/bin/gemini-cli
+RUN chmod +x /usr/local/bin/gemini-cli
 
 # Set proper ownership
 RUN chown -R nodejs:nodejs /app

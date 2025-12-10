@@ -13,7 +13,7 @@ Select the appropriate tool based on the specific requirements of the task:
 - **Context7 (`context7`):** Use for retrieving up-to-date documentation and code examples for libraries and frameworks. Always resolve the library ID first.
 - **n8n MCP (`n8n-mcp`):** Use for workflow automation, managing n8n executions, and integrating external services via n8n nodes.
 
-**Note:** Refer to `.kilocode/rules/MCP-TOOLS.md` for detailed documentation and examples for each tool.
+**Note:** Refer to `.gemini/rules/MCP-TOOLS.md` for detailed documentation and examples for each tool.
 
 ### 2. Function Call Syntax
 

@@ -14,7 +14,7 @@ concurrency:
 
 jobs:
   analyze_and_distribute:
-    if: ${{ !contains(github.event.head_commit.message, '[skip ci]') && !contains(github.event.head_commit.message, '[no-version]') }}
+    if: "${{ !contains(github.event.head_commit.message, '[skip ci]') && !contains(github.event.head_commit.message, '[no-version]') }}"
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -24,52 +24,50 @@ jobs:
         with:
           fetch-depth: 50
           fetch-tags: true
-          token: ${{ secrets.PAT_TOKEN || secrets.GITHUB_TOKEN }}
+          token: "${{ secrets.PAT_TOKEN || secrets.GITHUB_TOKEN }}"
 
       - name: Configure Git
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-      - name: Setup Kilo Code CLI
+      - name: Setup Gemini CLI
         env:
-          KILOCODE_API_KEY: ${{ secrets.KILOCODE_API_KEY }}
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GEMINI_API_KEY: "${{ secrets.GEMINI_API_KEY }}"
         run: |
-          chmod +x scripts/kilocode-cli.cjs
-          sudo ln -sf "$(pwd)/scripts/kilocode-cli.cjs" /usr/local/bin/kilocode-cli
+          chmod +x scripts/gemini-cli.cjs
+          sudo ln -sf "$(pwd)/scripts/gemini-cli.cjs" /usr/local/bin/gemini-cli
           
-          # Use KILOCODE_API_KEY if available, otherwise fallback to GEMINI_API_KEY
-          export KILOCODE_API_KEY="${KILOCODE_API_KEY:-$GEMINI_API_KEY}"
+          # Use GEMINI_API_KEY
+          export GEMINI_API_KEY="${GEMINI_API_KEY}"
           
-          if [ -n "$KILOCODE_API_KEY" ]; then
-            kilocode-cli "Respond with just OK" && echo "✅ Kilo Code CLI test passed" || echo "⚠️  Kilo Code test failed"
+          if [ -n "$GEMINI_API_KEY" ]; then
+            gemini-cli "Respond with just OK" && echo "✅ Gemini CLI test passed" || echo "⚠️  Gemini test failed"
           fi
-          echo "✅ Kilo Code CLI ready"
+          echo "✅ Gemini CLI ready"
 
-      - name: Analyze Changes with Kilo Code
+      - name: Analyze Changes with Gemini
         id: analyze
         env:
-          KILOCODE_API_KEY: ${{ secrets.KILOCODE_API_KEY }}
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GEMINI_API_KEY: "${{ secrets.GEMINI_API_KEY }}"
         run: |
           chmod +x scripts/analyze-platforms.sh
           ./scripts/analyze-platforms.sh
 
       - name: Update Version Files
         env:
-          NEW_VERSION: ${{ steps.analyze.outputs.new_version }}
-          COMMIT_SHA: ${{ github.sha }}
+          NEW_VERSION: "${{ steps.analyze.outputs.new_version }}"
+          COMMIT_SHA: "${{ github.sha }}"
         run: |
           chmod +x scripts/update-all-versions.sh
           ./scripts/update-all-versions.sh "$NEW_VERSION" "$COMMIT_SHA"
 
       - name: Commit and Push to Platform Branches
         env:
-          NEW_VERSION: ${{ steps.analyze.outputs.new_version }}
-          NEEDS_CLOUD: ${{ steps.analyze.outputs.needs_cloud }}
-          NEEDS_DESKTOP: ${{ steps.analyze.outputs.needs_desktop }}
-          NEEDS_MOBILE: ${{ steps.analyze.outputs.needs_mobile }}
+          NEW_VERSION: "${{ steps.analyze.outputs.new_version }}"
+          NEEDS_CLOUD: "${{ steps.analyze.outputs.needs_cloud }}"
+          NEEDS_DESKTOP: "${{ steps.analyze.outputs.needs_desktop }}"
+          NEEDS_MOBILE: "${{ steps.analyze.outputs.needs_mobile }}"
         run: |
           SHORT_SHA=$(git rev-parse --short HEAD)
 
@@ -137,6 +135,6 @@ jobs:
               -H "Authorization: Bearer ${{ secrets.PAT_TOKEN || secrets.GITHUB_TOKEN }}" \
               -H "X-GitHub-Api-Version: 2022-11-28" \
               "https://api.github.com/repos/${{ github.repository }}/dispatches" \
-              -d "{\"event_type\":\"cloud-deploy-${NEW_VERSION}\",\"client_payload\":{\"version\":\"${NEW_VERSION}\",\"commit\":\"${SHORT_SHA}\"}}"
+              -d "{\"event_type\":\"cloud-deploy-${NEW_VERSION}\",\"client_payload\":{\"version\":\"${NEW_VERSION}\",\"commit\":\"${SHORT_SHA}\")"
             echo "✅ Cloud deployment triggered"
           fi

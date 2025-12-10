@@ -1,6 +1,6 @@
-# KiloCode Settings Copied for IntelliJ IDEA Community
+# Gemini Settings for IntelliJ IDEA Community
 
-This file contains the copied settings from VSCode KiloCode extension, adapted for setup in IntelliJ IDEA Community.
+This file contains the settings adapted for setup in IntelliJ IDEA Community.
 
 ## Development Guidelines
 
@@ -230,4 +230,4 @@ The MCP settings configured for the project:
 
 6. Follow the Development Guidelines above for coding standards and project structure.
 
-Note: KiloCode is a VSCode-specific extension. IntelliJ IDEA has its own AI and plugin ecosystem. The rules and guidelines have been copied for consistency.
+Note: Gemini CLI is the standard tool for this project. IntelliJ IDEA has its own AI and plugin ecosystem. The rules and guidelines have been copied for consistency.

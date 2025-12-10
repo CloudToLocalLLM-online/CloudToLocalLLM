@@ -1,4 +1,4 @@
-# Setting Up Kilo Code CLI for AI-Powered Versioning
+# Setting Up Gemini CLI for AI-Powered Versioning
 
 ## Get Your API Key
 
@@ -11,28 +11,28 @@
    - Select "Create API key in new project" (or existing project)
    - Copy the generated key
 
-3. **Configure Kilo Code**:
+3. **Configure Gemini**:
    Run the setup script to configure your environment:
    ```bash
-   ./scripts/setup-kilocode.sh 'your_api_key_here'
+   ./scripts/setup-gemini.sh 'your_api_key_here'
    ```
 
    Or manually add to GitHub Secrets:
    ```bash
-   gh secret set KILOCODE_API_KEY --body 'your_api_key_here'
+   gh secret set GEMINI_API_KEY --body 'your_api_key_here'
    ```
 
 4. **Verify**:
    ```bash
-   gh secret list | grep KILOCODE
-   # Should show: KILOCODE_API_KEY
+   gh secret list | grep GEMINI
+   # Should show: GEMINI_API_KEY
    ```
 
 ## Test Locally (Optional)
 
 ```bash
 # Export your key (if not using setup script)
-export KILOCODE_API_KEY='your_key_here'
+export GEMINI_API_KEY='your_key_here'
 
 # Test version analysis
 ./scripts/analyze-version-bump.sh
@@ -43,7 +43,7 @@ export KILOCODE_API_KEY='your_key_here'
 
 ## Fallback Behavior
 
-If `KILOCODE_API_KEY` is not set:
+If `GEMINI_API_KEY` is not set:
 - ✅ Workflow still works
 - ⚠️  Defaults to PATCH bump
 - ⚠️  No intelligent analysis
@@ -51,14 +51,14 @@ If `KILOCODE_API_KEY` is not set:
 
 ## Cost
 
-- **Kilo Code (via Gemini API)**: Free tier includes 60 requests/minute
+- **Gemini API**: Free tier includes 60 requests/minute
 - **Each version bump**: 1 API call
 - **Typical usage**: ~10-50 calls/month
 - **Cost**: $0 (within free tier)
 
 ## Privacy
 
-Kilo Code receives:
+Gemini receives:
 - ✅ Commit messages (public repo info)
 - ✅ Current version number
 - ❌ No source code
@@ -67,7 +67,7 @@ Kilo Code receives:
 
 ## Alternative: Manual Versioning
 
-If you prefer not to use Kilo Code:
+If you prefer not to use Gemini:
 
 ```bash
 # Disable version-bump workflow
@@ -93,4 +93,3 @@ If you hit limits:
 - Workflow falls back to PATCH bump
 - No deployment failure
 - Consider upgrading to paid tier
-
