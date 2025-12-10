@@ -25,7 +25,7 @@ echo "Changed files (last 5 commits):"
 echo "$CHANGED_FILES"
 echo ""
 
-# Prepare prompt for Gemini
+# Prepare prompt for Copilot
 COMMITS_ESCAPED=$(echo "$COMMITS" | sed 's/"/\"/g' | tr '\n' ' ')
 FILES_ESCAPED=$(echo "$CHANGED_FILES" | sed 's/"/\"/g' | tr '\n' ' ')
 
@@ -67,7 +67,7 @@ fi
         echo "Version bump REQUIRES successful Copilot analysis"
         exit 1
     fi
-        # Extract JSON from response (Gemini wraps in ```json ``` blocks)
+        # Extract JSON from response (Copilot returns JSON directly)
         # Remove markdown code blocks and extract multi-line JSON
         JSON_RESPONSE=$(echo "$RESPONSE" | sed '/```json/,/```/!d' | sed '/```/d' | tr -d '\n' | sed 's/  */ /g')
         
@@ -90,13 +90,13 @@ fi
         
         # If parsing failed, EXIT - no fallback
         if [ -z "$NEW_VERSION" ] || [ -z "$NEEDS_CLOUD" ]; then
-            echo "❌ ERROR: Failed to parse Gemini response"
+            echo "❌ ERROR: Failed to parse Copilot response"
             echo "Extracted JSON: $JSON_RESPONSE"
-            echo "Version bump REQUIRES valid Gemini analysis"
+            echo "Version bump REQUIRES valid Copilot analysis"
             exit 1
         fi
         
-        echo "✅ Gemini Analysis:"
+        echo "✅ Copilot Analysis:"
         echo "  New version: $NEW_VERSION"
         echo "  Cloud: $NEEDS_CLOUD"
         echo "  Desktop: $NEEDS_DESKTOP"
@@ -105,7 +105,7 @@ fi
 
 # Validate version format
 if ! echo "$NEW_VERSION" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+$'; then
-    echo "❌ ERROR: Invalid version format from Gemini: $NEW_VERSION"
+    echo "❌ ERROR: Invalid version format from Copilot: $NEW_VERSION"
     echo "Expected format: x.y.z (e.g., 4.5.0)"
     exit 1
 fi
