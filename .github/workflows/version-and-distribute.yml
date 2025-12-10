@@ -31,25 +31,25 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-      - name: Setup Gemini CLI
+      - name: Setup Copilot CLI
         env:
-          GEMINI_API_KEY: "${{ secrets.GEMINI_API_KEY }}"
+          GROK_API_KEY: "${{ secrets.GROK_API_KEY || secrets.GEMINI_API_KEY }}"
         run: |
-          chmod +x scripts/gemini-cli.cjs
-          sudo ln -sf "$(pwd)/scripts/gemini-cli.cjs" /usr/local/bin/gemini-cli
+          chmod +x scripts/copilot-cli.cjs
+          sudo ln -sf "$(pwd)/scripts/copilot-cli.cjs" /usr/local/bin/copilot-cli
           
-          # Use GEMINI_API_KEY
-          export GEMINI_API_KEY="${GEMINI_API_KEY}"
+          # Use GROK_API_KEY
+          export GROK_API_KEY="${GROK_API_KEY}"
           
-          if [ -n "$GEMINI_API_KEY" ]; then
-            gemini-cli "Respond with just OK" && echo "✅ Gemini CLI test passed" || echo "⚠️  Gemini test failed"
+          if [ -n "$GROK_API_KEY" ]; then
+            copilot-cli "Respond with just OK" && echo "✅ Copilot CLI test passed" || echo "⚠️  Copilot test failed"
           fi
-          echo "✅ Gemini CLI ready"
+          echo "✅ Copilot CLI ready"
 
-      - name: Analyze Changes with Gemini
+      - name: Analyze Changes with Copilot
         id: analyze
         env:
-          GEMINI_API_KEY: "${{ secrets.GEMINI_API_KEY }}"
+          GROK_API_KEY: "${{ secrets.GROK_API_KEY || secrets.GEMINI_API_KEY }}"
         run: |
           chmod +x scripts/analyze-platforms.sh
           ./scripts/analyze-platforms.sh
