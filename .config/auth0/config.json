@@ -87,8 +87,7 @@
                 "update:network_acls",
                 "delete:network_acls"
             ],
-            "expires_at": "2025-12-08T15:49:44.3396234-05:00",
-            "default_app_id": "dgrZR2k6L8G5lR19yLHx2z4lH8pMCxFV",
+            "expires_at": "2025-12-10T05:08:03.0996008-05:00",
             "client_id": ""
         }
     }
