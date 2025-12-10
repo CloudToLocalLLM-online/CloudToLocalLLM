@@ -26,9 +26,9 @@ const data = JSON.stringify({
 });
 
 const options = {
-  hostname: 'api.githubcopilot.com',
+  hostname: 'api.github.com',
   port: 443,
-  path: '/chat/completions',
+  path: '/copilot/chat/completions',
   method: 'POST',
   headers: {
     'Content-Type': 'application/json',

@@ -68,14 +68,7 @@ fi
         exit 1
     fi
         # Extract JSON from response (Copilot returns JSON directly)
-        # Remove markdown code blocks and extract multi-line JSON
-        JSON_RESPONSE=$(echo "$RESPONSE" | sed '/```json/,/```/!d' | sed '/```/d' | tr -d '\n' | sed 's/  */ /g')
-        
-        # If that didn't work, try simpler extraction
-        if [ -z "$JSON_RESPONSE" ] || ! echo "$JSON_RESPONSE" | jq . >/dev/null 2>&1; then
-            # Try to extract anything between first { and last }
-            JSON_RESPONSE=$(echo "$RESPONSE" | tr '\n' ' ' | sed 's/.*{\(.*\)}.*/{\1}/')
-        fi
+        JSON_RESPONSE="$RESPONSE"
         
         echo "DEBUG: Extracted JSON:"
         echo "$JSON_RESPONSE"
