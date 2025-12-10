@@ -1,5 +1,7 @@
 #!/bin/bash
 set -e
+# Load nvm if available
+[ -s "/home/rightguy/.nvm/nvm.sh" ] && source "/home/rightguy/.nvm/nvm.sh"
 
 # Analyze which platforms need updates using Kilocode AI
 # Outputs: new_version, needs_cloud, needs_desktop, needs_mobile
@@ -46,15 +48,15 @@ echo "Calling Kilocode AI..."
         SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
         RESPONSE=$("${SCRIPT_DIR}/kilocode-cli.cjs" "$PROMPT" 2>&1)
     fi
-    EXIT_CODE=$?
+        RESPONSE=/bin/bash: line 1: node: command not found
     set -e
-    
+
     echo "DEBUG: Kilocode exit code: $EXIT_CODE"
     echo "DEBUG: Kilocode response length: ${#RESPONSE}"
     echo "DEBUG: Kilocode response (first 1000 chars):"
     echo "${RESPONSE:0:1000}"
     echo ""
-    
+
     if [ $EXIT_CODE -ne 0 ] || [ -z "$RESPONSE" ]; then
         echo "❌ ERROR: Kilocode API call failed (exit code: $EXIT_CODE)"
         echo "Response: $RESPONSE"
@@ -63,18 +65,18 @@ echo "Calling Kilocode AI..."
     fi
         # Extract JSON from response (Kilocode returns JSON directly)
         JSON_RESPONSE="$RESPONSE"
-        
+
         echo "DEBUG: Extracted JSON:"
         echo "$JSON_RESPONSE"
         echo ""
-        
+
         # Parse with fallbacks
         NEW_VERSION=$(echo "$JSON_RESPONSE" | jq -r '.new_version // empty' 2>/dev/null || echo "")
         NEEDS_CLOUD=$(echo "$JSON_RESPONSE" | jq -r '.needs_cloud // empty' 2>/dev/null || echo "")
         NEEDS_DESKTOP=$(echo "$JSON_RESPONSE" | jq -r '.needs_desktop // empty' 2>/dev/null || echo "")
         NEEDS_MOBILE=$(echo "$JSON_RESPONSE" | jq -r '.needs_mobile // empty' 2>/dev/null || echo "")
         REASONING=$(echo "$JSON_RESPONSE" | jq -r '.reasoning // empty' 2>/dev/null || echo "")
-        
+
         # If parsing failed, EXIT - no fallback
         if [ -z "$NEW_VERSION" ] || [ -z "$NEEDS_CLOUD" ]; then
             echo "❌ ERROR: Failed to parse Kilocode response"
@@ -82,7 +84,7 @@ echo "Calling Kilocode AI..."
             echo "Version bump REQUIRES valid Kilocode analysis"
             exit 1
         fi
-        
+
         echo "✅ Kilocode Analysis:"
         echo "  New version: $NEW_VERSION"
         echo "  Cloud: $NEEDS_CLOUD"
