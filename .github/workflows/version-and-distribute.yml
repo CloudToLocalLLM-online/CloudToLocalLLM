@@ -106,11 +106,8 @@ jobs:
 
           # Push to cloud branch
           echo "☁️  Pushing to cloud branch..."
-          git checkout -B cloud
-          git push -f origin cloud
-          git tag "${NEW_VERSION}-cloud-${SHORT_SHA}" -f
-          git push origin "${NEW_VERSION}-cloud-${SHORT_SHA}" -f
-          echo "✅ Cloud: v${NEW_VERSION}-cloud-${SHORT_SHA}"
+          chmod +x scripts/push-to-cloud-branch.sh
+          ./scripts/push-to-cloud-branch.sh "$NEW_VERSION"
 
           # Push to desktop branch
           echo "🖥️  Pushing to desktop branch..."
