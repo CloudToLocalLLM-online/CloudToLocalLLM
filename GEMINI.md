@@ -47,7 +47,9 @@ I have access to a wide range of specialized tools to assist with development, a
 *   **`google_web_search(query)`**: Performs Google searches for external documentation and solutions.
 *   **`pub_dev_search(query)`**: Searches for Dart/Flutter packages on pub.dev.
 
-### Dart & Flutter Development
+### Dart & Flutter Development (MCP)
+I have access to a suite of powerful tools for Dart and Flutter development, enabling a seamless "Multi-platform Code Production" (MCP) workflow. These tools allow me to build, analyze, test, and interact with your applications in real-time.
+
 *   **Project & Dependency Management:**
     *   `create_project`: Scaffolds new Dart/Flutter projects.
     *   `pub`: Manages package dependencies (add, remove, get, upgrade).
@@ -59,6 +61,7 @@ I have access to a wide range of specialized tools to assist with development, a
 *   **Development Intelligence:**
     *   `resolve_workspace_symbol`: symbol search.
     *   `signature_help`, `hover`: Code introspection.
+    *   `get_active_location`: Retrieves the current cursor position in the connected editor.
 *   **Runtime Interaction (requires running app):**
     *   `launch_app`, `stop_app`: Manages application lifecycle.
     *   `hot_reload`, `hot_restart`: Applies changes to running apps.
