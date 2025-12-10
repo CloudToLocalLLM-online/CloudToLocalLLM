@@ -73,8 +73,6 @@ jobs:
       - name: Analyze Changes with Copilot
         id: analyze
         run: |
-          ollama serve &
-          sleep 2
           chmod +x scripts/analyze-platforms.sh
           ./scripts/analyze-platforms.sh
 
