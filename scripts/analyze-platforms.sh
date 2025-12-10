@@ -47,9 +47,8 @@ echo "Calling Kilocode AI..."
         # Use local script path
         SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
         RESPONSE=$("${SCRIPT_DIR}/kilocode-cli.cjs" "$PROMPT" 2>&1)
+        EXIT_CODE=0
     fi
-        RESPONSE=/bin/bash: line 1: node: command not found
-    set -e
 
     echo "DEBUG: Kilocode exit code: $EXIT_CODE"
     echo "DEBUG: Kilocode response length: ${#RESPONSE}"
