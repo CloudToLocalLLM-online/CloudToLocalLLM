@@ -31,7 +31,7 @@ echo "✅ API Key configured for this session."
 # Verify the key
 echo "Verifying API key with a test request..."
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-TEST_RESPONSE=$("${SCRIPT_DIR}/kilocode-cli.cjs" "Hello, are you working?" 2>&1)
+TEST_RESPONSE=$("${SCRIPT_DIR}/copilot-cli.cjs" "Hello, are you working?" 2>&1)
 EXIT_CODE=$?
 
 if [ $EXIT_CODE -eq 0 ] && [ -n "$TEST_RESPONSE" ]; then

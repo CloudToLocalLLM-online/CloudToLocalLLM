@@ -1,12 +1,12 @@
 #!/bin/bash
 
-# Setup script for Copilot CLI
+# Setup script for Kilocode CLI
 # Configures the API key and verifies the installation
 
 set -e
 
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "Copilot CLI Setup"
+echo "Kilocode CLI Setup"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
 # Check if API key is provided as argument
@@ -31,17 +31,17 @@ echo "✅ API Key configured for this session."
 # Verify the key
 echo "Verifying API key with a test request..."
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-TEST_RESPONSE=$("${SCRIPT_DIR}/copilot-cli.cjs" "Hello, are you working?" 2>&1)
+TEST_RESPONSE=$("${SCRIPT_DIR}/kilocode-cli.cjs" "Hello, are you working?" 2>&1)
 EXIT_CODE=$?
 
 if [ $EXIT_CODE -eq 0 ] && [ -n "$TEST_RESPONSE" ]; then
     echo "✅ Verification successful!"
     echo "Response from Ollama: ${TEST_RESPONSE:0:100}..."
-    
+
     echo ""
     echo "To persist this key, add the following to your shell profile (e.g., ~/.bashrc or ~/.zshrc):"
     echo "export OLLAMA_HOST='http://localhost:11434'"
-    
+
     echo ""
     echo "No secret needed for local Ollama"
 else

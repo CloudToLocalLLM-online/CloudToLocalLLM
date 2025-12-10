@@ -1,11 +1,11 @@
 #!/bin/bash
 set -e
 
-# Analyze which platforms need updates using Copilot AI
+# Analyze which platforms need updates using Kilocode AI
 # Outputs: new_version, needs_cloud, needs_desktop, needs_mobile
 
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "Analyzing Platform Changes with Copilot AI"
+echo "Analyzing Platform Changes with Kilocode AI"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
 # Get current version
@@ -25,14 +25,14 @@ echo "Changed files (last 5 commits):"
 echo "$CHANGED_FILES"
 echo ""
 
-# Prepare prompt for Copilot
+# Prepare prompt for Kilocode
 COMMITS_ESCAPED=$(echo "$COMMITS" | sed 's/"/\"/g' | tr '\n' ' ')
 FILES_ESCAPED=$(echo "$CHANGED_FILES" | sed 's/"/\"/g' | tr '\n' ' ')
 
 PROMPT="You are a semantic versioning and platform deployment expert. Analyze these changes and determine: 1) appropriate version bump, and 2) which platforms need deployment. Current version: $CURRENT_VERSION. Commits: $COMMITS_ESCAPED. Changed files: $FILES_ESCAPED. Version bump rules: BREAKING CHANGE means MAJOR (x.0.0). feat: means MINOR (0.x.0) ONLY if it adds significant NEW user-facing functionality to the Desktop or Mobile app. ALL other changes (backend improvements, infrastructure changes, provider swaps, enabling work, fixes, even if labeled feat) should be PATCH (0.0.x). Platform rules: Cloud platform needs update if changed files include: services/, k8s/, lib/, web/, .github/workflows/deploy-aks.yml. Desktop platform needs update if changed files include: lib/, pubspec.yaml (excluding web/). Mobile platform needs update if changed files include: lib/, pubspec.yaml (excluding web/). Respond with ONLY this exact JSON format: {\"bump_type\": \"major or minor or patch\", \"new_version\": \"x.y.z\", \"needs_cloud\": true or false, \"needs_desktop\": true or false, \"needs_mobile\": true or false, \"reasoning\": \"brief explanation\"}. No other text or formatting."
 
-# Call Copilot
-echo "Calling Copilot AI..."
+# Call Kilocode
+echo "Calling Kilocode AI..."
 
 # Using local Ollama, no API key needed
     set +e
@@ -47,19 +47,19 @@ echo "Calling Copilot AI..."
     EXIT_CODE=$?
     set -e
     
-    echo "DEBUG: Copilot exit code: $EXIT_CODE"
-    echo "DEBUG: Copilot response length: ${#RESPONSE}"
-    echo "DEBUG: Copilot response (first 1000 chars):"
+    echo "DEBUG: Kilocode exit code: $EXIT_CODE"
+    echo "DEBUG: Kilocode response length: ${#RESPONSE}"
+    echo "DEBUG: Kilocode response (first 1000 chars):"
     echo "${RESPONSE:0:1000}"
     echo ""
     
     if [ $EXIT_CODE -ne 0 ] || [ -z "$RESPONSE" ]; then
-        echo "❌ ERROR: Copilot API call failed (exit code: $EXIT_CODE)"
+        echo "❌ ERROR: Kilocode API call failed (exit code: $EXIT_CODE)"
         echo "Response: $RESPONSE"
-        echo "Version bump REQUIRES successful Copilot analysis"
+        echo "Version bump REQUIRES successful Kilocode analysis"
         exit 1
     fi
-        # Extract JSON from response (Copilot returns JSON directly)
+        # Extract JSON from response (Kilocode returns JSON directly)
         JSON_RESPONSE="$RESPONSE"
         
         echo "DEBUG: Extracted JSON:"
@@ -75,13 +75,13 @@ echo "Calling Copilot AI..."
         
         # If parsing failed, EXIT - no fallback
         if [ -z "$NEW_VERSION" ] || [ -z "$NEEDS_CLOUD" ]; then
-            echo "❌ ERROR: Failed to parse Copilot response"
+            echo "❌ ERROR: Failed to parse Kilocode response"
             echo "Extracted JSON: $JSON_RESPONSE"
-            echo "Version bump REQUIRES valid Copilot analysis"
+            echo "Version bump REQUIRES valid Kilocode analysis"
             exit 1
         fi
         
-        echo "✅ Copilot Analysis:"
+        echo "✅ Kilocode Analysis:"
         echo "  New version: $NEW_VERSION"
         echo "  Cloud: $NEEDS_CLOUD"
         echo "  Desktop: $NEEDS_DESKTOP"
@@ -90,7 +90,7 @@ echo "Calling Copilot AI..."
 
 # Validate version format
 if ! echo "$NEW_VERSION" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+$'; then
-    echo "❌ ERROR: Invalid version format from Copilot: $NEW_VERSION"
+    echo "❌ ERROR: Invalid version format from Kilocode: $NEW_VERSION"
     echo "Expected format: x.y.z (e.g., 4.5.0)"
     exit 1
 fi

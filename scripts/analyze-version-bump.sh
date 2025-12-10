@@ -2,14 +2,14 @@
 set -e
 set -o pipefail
 
-# Script to analyze commits and determine version bump using Copilot AI
+# Script to analyze commits and determine version bump using Kilocode AI
 # Outputs: new_version and bump_type to GITHUB_OUTPUT
 
 # Enable error tracing
 trap 'echo "Error on line $LINENO"' ERR
 
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "Analyzing Commits with Copilot AI"
+echo "Analyzing Commits with Kilocode AI"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
 # Get current version
@@ -31,7 +31,7 @@ echo "Commits to analyze:"
 echo "$COMMITS"
 echo ""
 
-# Prepare prompt for Copilot (escape special characters for JSON)
+# Prepare prompt for Kilocode (escape special characters for JSON)
 COMMITS_ESCAPED=$(echo "$COMMITS" | sed 's/"/\"/g' | tr '\n' ' ')
 
 PROMPT="You are a semantic versioning expert. Analyze these git commits and determine the appropriate version bump. Current version: $CURRENT_VERSION. Commits: $COMMITS_ESCAPED. Rules: BREAKING CHANGE or breaking: means MAJOR bump (x.0.0). feat: or feature: means MINOR bump (0.x.0) ONLY if it adds significant NEW user-facing functionality. Backend improvements, infrastructure changes, provider swaps (e.g., changing auth provider), enabling work, or fixes (even if labeled feat) should be PATCH (0.0.x) if they do not change the user experience. fix: or bugfix: means PATCH bump (0.0.x). chore:, docs:, style:, refactor:, test: means PATCH bump (0.0.x). If multiple types, use the highest priority (MAJOR > MINOR > PATCH). Respond with ONLY a JSON object with this exact format: {\"bump_type\": \"major or minor or patch\", \"new_version\": \"x.y.z\", \"reasoning\": \"brief explanation\"}. Do not include any other text, markdown, code blocks, or formatting. Only the raw JSON object."

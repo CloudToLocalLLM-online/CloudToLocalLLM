@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-// Simple Copilot CLI wrapper for version analysis using GitHub Copilot
+// Simple Kilocode CLI wrapper for version analysis using GitHub Copilot
 
 const http = require('http');
 
