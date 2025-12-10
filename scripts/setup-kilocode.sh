@@ -24,7 +24,7 @@ if [ -z "$API_KEY" ]; then
 fi
 
 # Export the key for the current session
-export KILOCODE_API_KEY="$API_KEY"
+export KILOCODE_API_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbnYiOiJwcm9kdWN0aW9uIiwia2lsb1VzZXJJZCI6Im9hdXRoL2dvb2dsZToxMDI1MDk0MzM1MzEzNDE1NDI1NTAiLCJhcGlUb2tlblBlcHBlciI6bnVsbCwidmVyc2lvbiI6MywiaWF0IjoxNzY1MzMwMDc0LCJleHAiOjE5MjMxMTgwNzR9.-aKR0OtweBGAP0Qe25qgM2csVqrF4zSBbUxbs8dxshg"
 echo ""
 echo "✅ API Key configured for this session."
 

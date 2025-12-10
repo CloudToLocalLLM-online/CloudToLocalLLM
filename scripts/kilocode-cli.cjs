@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 // Kilo Code CLI wrapper for AI-powered operations
-// Replaces the legacy gemini-cli
+// Uses Grok API instead of Gemini
 
 const https = require('https');
 
@@ -20,11 +20,15 @@ if (!prompt) {
 }
 
 const data = JSON.stringify({
-  contents: [{
-    parts: [{
-      text: prompt
-    }]
-  }]
+  messages: [
+    {
+      role: "user",
+      content: prompt
+    }
+  ],
+  model: "grok-code-fast-1",
+  stream: false,
+  temperature: 0
 });
 
 const options = {
@@ -48,8 +52,8 @@ const req = https.request(options, (res) => {
   res.on('end', () => {
     try {
       const response = JSON.parse(body);
-      if (response.candidates && response.candidates[0] && response.candidates[0].content) {
-        const text = response.candidates[0].content.parts[0].text;
+      if (response.choices && response.choices[0] && response.choices[0].message) {
+        const text = response.choices[0].message.content;
         console.log(text);
       } else {
         console.error('Unexpected response format:', body);
