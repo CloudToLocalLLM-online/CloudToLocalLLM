@@ -2,7 +2,7 @@
 
 // Simple Copilot CLI wrapper for version analysis using GitHub Copilot
 
-const https = require('https');
+const http = require('http');
 
 const prompt = process.argv.slice(2).join(' ');
 
@@ -32,7 +32,7 @@ const options = {
 };
 
 const makeRequest = (retryCount = 0) => {
-  const req = https.request(options, (res) => {
+  const req = http.request(options, (res) => {
     let body = '';
     res.on('data', (chunk) => {
       body += chunk;
