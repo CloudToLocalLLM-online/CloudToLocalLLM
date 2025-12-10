@@ -861,11 +861,14 @@ let dbMigrator = null;
 let authDbMigrator = null;
 
 async function initializeTunnelSystem() {
+  console.log('DEBUG: Starting initializeTunnelSystem function');
   logger.info('Starting initialization of tunnel system...');
   try {
+    console.log('DEBUG: About to initialize database pool');
     // Initialize centralized database connection pool (Requirement 17)
     logger.info('Initializing centralized database connection pool...');
     initializePool();
+    console.log('DEBUG: Database pool initialization completed');
     logger.info('Database connection pool initialized successfully');
 
     // Initialize application database
@@ -879,15 +882,24 @@ async function initializeTunnelSystem() {
     await dbMigrator.createMigrationsTable();
     await dbMigrator.applyInitialSchema();
 
+    console.log('DEBUG: About to run migrations if PostgreSQL');
     // Only run migrations for PostgreSQL (SQLite doesn't have migration files)
     if (dbType === 'postgresql') {
+      console.log('DEBUG: Running PostgreSQL migrations');
       await dbMigrator.migrate();
+      console.log('DEBUG: PostgreSQL migrations completed');
+    } else {
+      console.log('DEBUG: Skipping migrations for SQLite');
     }
 
+    console.log('DEBUG: Validating database schema');
     const validation = await dbMigrator.validateSchema();
+    console.log('DEBUG: Schema validation result:', validation);
     if (!validation.allValid) {
+      console.log('DEBUG: Schema validation failed:', validation.errors);
       throw new Error('Database schema validation failed');
     }
+    console.log('DEBUG: Schema validation passed');
 
     // Set dbMigrator for health endpoint now that it's initialized
     setDbMigrator(dbMigrator);
@@ -910,13 +922,17 @@ async function initializeTunnelSystem() {
       logger.info('Authentication database initialized successfully');
     }
 
+    console.log('DEBUG: About to initialize auth service');
     // Initialize auth service (optional - don't fail if it doesn't work)
     try {
+      console.log('DEBUG: Creating AuthService instance');
       authService = new AuthService({
         authDbMigrator, // Pass auth database connection to auth service
         dbMigrator, // Pass main database connection to auth service
       });
+      console.log('DEBUG: AuthService created, calling initialize');
       await authService.initialize();
+      console.log('DEBUG: AuthService initialized successfully');
       logger.info('Authentication service initialized successfully');
 
       // Register auth service with health check service
@@ -1053,6 +1069,8 @@ async function initializeTunnelSystem() {
 
     logger.info('Tunnel system initialized successfully');
   } catch (error) {
+    console.log('DEBUG: Failed to initialize tunnel system:', error.message);
+    console.log('DEBUG: Full error stack:', error.stack);
     logger.error('Failed to initialize tunnel system', {
       error: error.message,
       stack: error.stack,
