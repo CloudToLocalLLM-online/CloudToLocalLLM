@@ -29,7 +29,9 @@ echo ""
 COMMITS_ESCAPED=$(echo "$COMMITS" | sed 's/"/\"/g' | tr '\n' ' ')
 FILES_ESCAPED=$(echo "$CHANGED_FILES" | sed 's/"/\"/g' | tr '\n' ' ')
 
-PROMPT="You are a semantic versioning and platform deployment expert. Analyze these changes and determine: 1) appropriate version bump, and 2) which platforms need deployment. Current version: $CURRENT_VERSION. Commits: $COMMITS_ESCAPED. Changed files: $FILES_ESCAPED. Version bump rules: BREAKING CHANGE means MAJOR (x.0.0). feat: means MINOR (0.x.0) ONLY if it adds significant NEW user-facing functionality to the Desktop or Mobile app. ALL other changes (backend improvements, infrastructure changes, provider swaps, enabling work, fixes, even if labeled feat) should be PATCH (0.0.x). Platform rules: Cloud platform needs update if changed files include: services/, k8s/, lib/, web/, .github/workflows/deploy-aks.yml. Desktop platform needs update if changed files include: lib/, pubspec.yaml (excluding web/). Mobile platform needs update if changed files include: lib/, pubspec.yaml (excluding web/). Respond with ONLY this exact JSON format: {\"bump_type\": \"major or minor or patch\", \"new_version\": \"x.y.z\", \"needs_cloud\": true or false, \"needs_desktop\": true or false, \"needs_mobile\": true or false, \"reasoning\": \"brief explanation\"}. No other text or formatting."
+PROMPT="You are a semantic versioning and platform deployment expert. Analyze these changes and determine: 1) appropriate version bump, and 2) which platforms need deployment. Current version: $CURRENT_VERSION. The new version MUST be higher than $CURRENT_VERSION. Commits: $COMMITS_ESCAPED. Changed files: $FILES_ESCAPED. Version bump rules: BREAKING CHANGE means MAJOR (x.0.0). feat: means MINOR (0.x.0) ONLY if it adds significant NEW user-facing functionality to the Desktop or Mobile app. ALL other changes (backend improvements, infrastructure changes, provider swaps, enabling work, fixes, even if labeled feat) should be PATCH (0.0.x). Platform rules: Cloud platform needs update if changed files include: services/, k8s/, lib/, web/, .github/workflows/deploy-aks.yml. Desktop platform needs update if changed files include: lib/, pubspec.yaml (excluding web/). Mobile platform needs update if changed files include: lib/, pubspec.yaml (excluding web/). Respond with ONLY this exact JSON format: {\"bump_type\": \"major or minor or patch\", \"new_version\": \"x.y.z\", \"needs_cloud\": true or false, \"needs_desktop\": true or false, \"needs_mobile\": true or false, \"reasoning\": \"brief explanation\"}. No other text or formatting."
+
+echo "DEBUG: Kilocode prompt includes version requirement: 'The new version MUST be higher than $CURRENT_VERSION'"
 
 # Call Kilocode
 echo "Calling Kilocode AI..."
@@ -93,6 +95,58 @@ if ! echo "$NEW_VERSION" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+$'; then
     echo "❌ ERROR: Invalid version format from Kilocode: $NEW_VERSION"
     echo "Expected format: x.y.z (e.g., 4.5.0)"
     exit 1
+fi
+
+# Validate version is higher than current version
+echo "DEBUG: Validating version increment: $CURRENT_VERSION → $NEW_VERSION"
+
+# Function to compare semantic versions
+version_compare() {
+    local v1=$1
+    local v2=$2
+
+    # Split versions into arrays
+    IFS='.' read -ra VER1 <<< "$v1"
+    IFS='.' read -ra VER2 <<< "$v2"
+
+    # Compare major version
+    if [ "${VER1[0]}" -gt "${VER2[0]}" ]; then
+        return 1  # v1 > v2
+    elif [ "${VER1[0]}" -lt "${VER2[0]}" ]; then
+        return 2  # v1 < v2
+    fi
+
+    # Compare minor version
+    if [ "${VER1[1]}" -gt "${VER2[1]}" ]; then
+        return 1  # v1 > v2
+    elif [ "${VER1[1]}" -lt "${VER2[1]}" ]; then
+        return 2  # v1 < v2
+    fi
+
+    # Compare patch version
+    if [ "${VER1[2]}" -gt "${VER2[2]}" ]; then
+        return 1  # v1 > v2
+    elif [ "${VER1[2]}" -lt "${VER2[2]}" ]; then
+        return 2  # v1 < v2
+    fi
+
+    return 0  # v1 == v2
+}
+
+version_compare "$NEW_VERSION" "$CURRENT_VERSION"
+COMPARE_RESULT=$?
+
+if [ $COMPARE_RESULT -eq 2 ]; then
+    echo "❌ ERROR: New version ($NEW_VERSION) is NOT higher than current version ($CURRENT_VERSION)"
+    echo "Kilocode AI violated the requirement: 'The new version MUST be higher than $CURRENT_VERSION'"
+    echo "This indicates the AI prompt needs further refinement or the AI model has limitations"
+    exit 1
+elif [ $COMPARE_RESULT -eq 0 ]; then
+    echo "❌ ERROR: New version ($NEW_VERSION) is the SAME as current version ($CURRENT_VERSION)"
+    echo "Versions must always increase - this is a violation of semantic versioning"
+    exit 1
+else
+    echo "✅ Version validation passed: $CURRENT_VERSION → $NEW_VERSION"
 fi
 
 echo ""
