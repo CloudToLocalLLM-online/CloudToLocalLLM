@@ -127,6 +127,7 @@ jobs:
           git push -f origin mobile
           git tag "${NEW_VERSION}-mobile-${SHORT_SHA}" -f
           git push origin "${NEW_VERSION}-mobile-${SHORT_SHA}" -f
+
           echo "✅ Mobile: v${NEW_VERSION}-mobile-${SHORT_SHA}"
 
           # Return to main
