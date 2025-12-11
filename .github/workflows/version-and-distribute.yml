@@ -14,7 +14,7 @@ concurrency:
 
 jobs:
   analyze_and_distribute:
-    if: "${{ !contains(github.event.head_commit.message, '[skip ci]') && !contains(github.event.head_commit.message, '[no-version]') }}"
+    if: ${{ !contains(github.event.head_commit.message, '[skip ci]') && !contains(github.event.head_commit.message, '[no-version]') }}
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -112,6 +112,18 @@ jobs:
           echo "☁️  Pushing to cloud branch..."
           chmod +x scripts/push-to-cloud-branch.sh
           ./scripts/push-to-cloud-branch.sh "$NEW_VERSION"
+
+          # Trigger AKS deployment if cloud deployment is needed
+          if [ "$NEEDS_CLOUD" = "true" ]; then
+            echo "🚀 Triggering AKS deployment for cloud branch..."
+            curl -X POST \
+              -H "Authorization: token ${{ secrets.PAT_TOKEN || secrets.GITHUB_TOKEN }}" \
+              -H "Accept: application/vnd.github.v3+json" \
+              -H "Content-Type: application/json" \
+              https://api.github.com/repos/${{ github.repository }}/dispatches \
+              -d "{\"event_type\":\"cloud-deploy\",\"client_payload\":{\"version\":\"$NEW_VERSION\",\"branch\":\"cloud\"}}"
+            echo "✅ AKS deployment triggered"
+          fi
 
           # Push to desktop branch
           echo "🖥️  Pushing to desktop branch..."
