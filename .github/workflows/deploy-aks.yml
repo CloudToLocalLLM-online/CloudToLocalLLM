@@ -196,7 +196,7 @@ jobs:
 
   build_postgres:
     needs: [extract_version, changes, setup_acr]
-    if: ${{ !cancelled() && (needs.build_base.result == 'success' || needs.build_base.result == 'skipped') && needs.changes.outputs.postgres == 'true' }}
+    if: ${{ !cancelled() && (needs.build_base.result == 'success' || needs.build_base.result == 'skipped' || needs.changes.outputs.base != 'true') && needs.changes.outputs.postgres == 'true' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -231,7 +231,7 @@ jobs:
 
   build_web:
     needs: [extract_version, changes, setup_acr]
-    if: ${{ !cancelled() && (needs.build_base.result == 'success' || needs.build_base.result == 'skipped') && needs.changes.outputs.web == 'true' }}
+    if: ${{ !cancelled() && (needs.build_base.result == 'success' || needs.build_base.result == 'skipped' || needs.changes.outputs.base != 'true') && needs.changes.outputs.web == 'true' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -299,7 +299,7 @@ jobs:
 
   build_api:
     needs: [extract_version, changes, setup_acr]
-    if: ${{ !cancelled() && (needs.build_base.result == 'success' || needs.build_base.result == 'skipped') && needs.changes.outputs.api == 'true' }}
+    if: ${{ !cancelled() && (needs.build_base.result == 'success' || needs.build_base.result == 'skipped' || needs.changes.outputs.base != 'true') && needs.changes.outputs.api == 'true' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -334,7 +334,7 @@ jobs:
 
   build_proxy:
     needs: [extract_version, changes, setup_acr]
-    if: ${{ !cancelled() && (needs.build_base.result == 'success' || needs.build_base.result == 'skipped') && needs.changes.outputs.proxy == 'true' }}
+    if: ${{ !cancelled() && (needs.build_base.result == 'success' || needs.build_base.result == 'skipped' || needs.changes.outputs.base != 'true') && needs.changes.outputs.proxy == 'true' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -384,11 +384,11 @@ jobs:
       ]
     if: |
       !cancelled() &&
-      (needs.build_base.result == 'success' || needs.build_base.result == 'skipped') &&
-      (needs.build_postgres.result == 'success' || needs.build_postgres.result == 'skipped') &&
-      (needs.build_web.result == 'success' || needs.build_web.result == 'skipped') &&
-      (needs.build_api.result == 'success' || needs.build_api.result == 'skipped') &&
-      (needs.build_proxy.result == 'success' || needs.build_proxy.result == 'skipped')
+      (needs.build_base.result == 'success' || needs.build_base.result == 'skipped' || needs.changes.outputs.base != 'true') &&
+      (needs.build_postgres.result == 'success' || needs.build_postgres.result == 'skipped' || needs.changes.outputs.postgres != 'true') &&
+      (needs.build_web.result == 'success' || needs.build_web.result == 'skipped' || needs.changes.outputs.web != 'true') &&
+      (needs.build_api.result == 'success' || needs.build_api.result == 'skipped' || needs.changes.outputs.api != 'true') &&
+      (needs.build_proxy.result == 'success' || needs.build_proxy.result == 'skipped' || needs.changes.outputs.proxy != 'true')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
