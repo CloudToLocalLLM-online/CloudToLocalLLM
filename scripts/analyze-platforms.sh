@@ -31,54 +31,51 @@ echo ""
 COMMITS_ESCAPED=$(echo "$COMMITS" | sed 's/"/\"/g' | tr '\n' ' ')
 FILES_ESCAPED=$(echo "$CHANGED_FILES" | sed 's/"/\"/g' | tr '\n' ' ')
 
-PROMPT="You are a semantic versioning expert. Analyze these changes. Current: $CURRENT_VERSION. Commits: $COMMITS_ESCAPED. Changed: $FILES_ESCAPED. Rules: BREAKING=MAJOR(x.0.0). Feature=MINOR(0.x.0). Fix/Misc=PATCH(0.0.x). Cloud needs update if services/k8s/web/lib changed. Rules: Return ONLY valid JSON. No markdown. No reasoning text outside JSON. Escape quotes in values. Format: {\"bump_type\": \"major/minor/patch\", \"new_version\": \"x.y.z\", \"needs_cloud\": bool, \"needs_desktop\": bool, \"needs_mobile\": bool, \"reasoning\": \"txt\"}."
+PROMPT="You are a semantic versioning expert. Analyze these changes. Current: $CURRENT_VERSION. Commits: $COMMITS_ESCAPED. Changed: $FILES_ESCAPED. Rules: BREAKING=MAJOR(x.0.0). Feature=MINOR(0.x.0). Fix/Misc=PATCH(0.0.x). Cloud needs update if services/k8s/web/lib changed. Rules: Return ONLY valid JSON. No conversational text. Format: {\"bump_type\": \"major/minor/patch\", \"new_version\": \"x.y.z\", \"needs_cloud\": bool, \"needs_desktop\": bool, \"needs_mobile\": bool, \"reasoning\": \"txt\"}."
 
 echo "DEBUG: Kilocode prompt includes version requirement: 'The new version MUST be higher than $CURRENT_VERSION'"
 
-# Call Kilocode
-echo "Calling Kilocode AI..."
+# Get response from Kilocode
+set +e
+# Try to find kilocode-cli in PATH or use local script
+if command -v kilocode-cli >/dev/null 2>&1; then
+    RESPONSE=$(kilocode-cli "$PROMPT" 2>&1)
+    EXIT_CODE=$?
+else
+    # Use local script path
+    SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    RESPONSE=$("${SCRIPT_DIR}/kilocode-cli.cjs" "$PROMPT" 2>&1)
+    EXIT_CODE=$?
+fi
+set -e
 
-# Using local Ollama, no API key needed
-    set +e
-    # Try to find kilocode-cli in PATH or use local script
-    if command -v kilocode-cli >/dev/null 2>&1; then
-        RESPONSE=$(kilocode-cli "$PROMPT" 2>&1)
-        EXIT_CODE=$?
-    else
-        # Use local script path
-        SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-        RESPONSE=$("${SCRIPT_DIR}/kilocode-cli.cjs" "$PROMPT" 2>&1)
-        EXIT_CODE=$?
-    fi
+if [ $EXIT_CODE -ne 0 ]; then
+    echo "❌ ERROR: Kilocode analysis failed"
+    echo "$RESPONSE"
+    exit 1
+fi
 
-    echo "DEBUG: Kilocode exit code: $EXIT_CODE"
-    echo "DEBUG: Kilocode response length: ${#RESPONSE}"
-    echo "DEBUG: Kilocode response (first 1000 chars):"
-    echo "${RESPONSE:0:1000}"
-    echo ""
+echo "DEBUG: Kilocode response length: ${#RESPONSE}"
+echo "DEBUG: Kilocode response (first 1000 chars):"
+echo "${RESPONSE:0:1000}"
 
-    if [ $EXIT_CODE -ne 0 ] || [ -z "$RESPONSE" ]; then
-        echo "❌ ERROR: Kilocode API call failed (exit code: $EXIT_CODE)"
-        echo "Response: $RESPONSE"
-        echo "Version bump REQUIRES successful Kilocode analysis"
-        exit 1
-    fi
-        # Extract JSON from response (Kilocode returns JSON directly)
-        # Remove potential markdown code blocks
-        JSON_RESPONSE=$(echo "$RESPONSE" | sed 's/```json//g' | sed 's/```//g' | tr -d '\n')
+# Extract JSON from response (Kilocode returns JSON directly)
+# Flatten response to single line and remove non-JSON text
+ONE_LINE=$(echo "$RESPONSE" | tr '\n' ' ' | sed 's/```json//g' | sed 's/```//g')
+# Extract content between first { and last }
+JSON_RESPONSE=$(echo "$ONE_LINE" | sed 's/^[^\{]*//' | sed 's/[^\}]*$//')
 
-        # Fix specific hallucination of double closing quotes
-        JSON_RESPONSE=$(echo "$JSON_RESPONSE" | sed 's/""}/"}/g')
-        
-        # Basic repair for truncated JSON (missing closing brace)
-        if [[ "$JSON_RESPONSE" != *"}" ]]; then
-            echo "DEBUG: JSON appears truncated, appending closing brace"
-            JSON_RESPONSE="${JSON_RESPONSE}}"
-        fi
+# Fix specific hallucination of double closing quotes (common issue)
+JSON_RESPONSE=$(echo "$JSON_RESPONSE" | sed 's/""}/"}/g')
 
-        echo "DEBUG: Extracted JSON:"
-        echo "$JSON_RESPONSE"
-        echo ""
+# Basic repair for truncated JSON (missing closing brace)
+if [[ "$JSON_RESPONSE" != *"}" ]]; then
+    echo "DEBUG: JSON appears truncated, appending closing brace"
+    JSON_RESPONSE="${JSON_RESPONSE}}"
+fi        
+echo "DEBUG: Extracted JSON:"
+echo "$JSON_RESPONSE"
+echo ""
 
         # Parse with fallbacks
         NEW_VERSION=$(echo "$JSON_RESPONSE" | jq -r '.new_version // empty' 2>/dev/null || echo "")
