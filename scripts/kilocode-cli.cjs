@@ -32,7 +32,8 @@ const options = {
   headers: {
     'Content-Type': 'application/json',
     'Content-Length': data.length
-  }
+  },
+  timeout: 60000 // 60 seconds timeout
 };
 
 const makeRequest = (retryCount = 0) => {
@@ -66,6 +67,12 @@ const makeRequest = (retryCount = 0) => {
 
   req.on('error', (e) => {
     console.error('Request failed:', e.message);
+    process.exit(1);
+  });
+
+  req.on('timeout', () => {
+    console.error('Request timed out after 60 seconds');
+    req.destroy();
     process.exit(1);
   });
 
