@@ -45,11 +45,11 @@ jobs:
           if [ ! -f /usr/local/bin/ollama ]; then
             curl -fsSL https://ollama.ai/install.sh | sh
           fi
-          
+
           # Start Ollama server
           ollama serve &
           sleep 5
-          
+
           # Pull model if not cached
           if ! ollama list | grep -q "llama3.2:1b"; then
             ollama pull llama3.2:1b
@@ -121,7 +121,7 @@ jobs:
               -H "Accept: application/vnd.github.v3+json" \
               -H "Content-Type: application/json" \
               https://api.github.com/repos/${{ github.repository }}/dispatches \
-              -d "{\"event_type\":\"cloud-deploy\",\"client_payload\":{\"version\":\"$NEW_VERSION\",\"branch\":\"cloud\"}}"
+              -d "{\"event_type\":\"cloud-deploy-$NEW_VERSION\",\"client_payload\":{\"version\":\"$NEW_VERSION\",\"branch\":\"cloud\"}}"
             echo "✅ AKS deployment triggered"
           fi
 
