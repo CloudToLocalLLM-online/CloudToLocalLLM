@@ -169,8 +169,10 @@ version_compare() {
     return 0  # v1 == v2
 }
 
+set +e
 version_compare "$NEW_VERSION" "$CURRENT_VERSION"
 COMPARE_RESULT=$?
+set -e
 
 if [ $COMPARE_RESULT -eq 2 ]; then
     echo "❌ ERROR: New version ($NEW_VERSION) is NOT higher than current version ($CURRENT_VERSION)"
