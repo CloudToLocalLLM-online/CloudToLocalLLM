@@ -52,7 +52,7 @@ echo "DEBUG: Kilocode prompt includes version requirement: 'The new version MUST
 
 # Helper: Use provided Gemini API Key or env var
 export GEMINI_API_KEY="${GEMINI_API_KEY:-AIzaSyBKEd9x72rgm_DyRQK4DkT-fWT-R3H1miE}"
-MODEL="gemini-1.5-flash-latest"
+MODEL="gemini-2.5-flash"
 
 # Get response from Kilocode
 echo "DEBUG: Sending request to Kilocode AI (model: $MODEL)..."
