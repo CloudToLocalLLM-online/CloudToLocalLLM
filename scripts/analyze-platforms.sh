@@ -31,19 +31,24 @@ echo ""
 COMMITS_ESCAPED=$(echo "$COMMITS" | sed 's/"/\"/g' | tr '\n' ' ')
 FILES_ESCAPED=$(echo "$CHANGED_FILES" | sed 's/"/\"/g' | tr '\n' ' ')
 
-PROMPT="SYSTEM: You are a JSON generator. Output ONLY valid JSON. No text.
+PROMPT="SYSTEM: You are a JSON generator. Output ONLY valid JSON.
 INPUT: Current: $CURRENT_VERSION. Commits: $COMMITS_ESCAPED. Changed: $FILES_ESCAPED.
 RULES: 
-- Cloud triggers: services/, k8s/, web/, lib/
-- Desktop/Mobile triggers: lib/, pubspec.yaml
-- BREAKING=major, Feature=minor, Fix/CI/Chore=patch.
-- SEMVER MATH:
-  - If patch: $CURRENT_VERSION -> increment last number (e.g., 7.3.0 -> 7.3.1)
-  - If minor: $CURRENT_VERSION -> increment middle number (e.g., 7.3.0 -> 7.4.0)
-  - If major: $CURRENT_VERSION -> increment first number (e.g., 7.3.0 -> 8.0.0)
-- IMPORTANT: New version MUST be greater than $CURRENT_VERSION.
+1. REQUIRED FIELDS: bump_type, new_version, needs_cloud, needs_desktop, needs_mobile, reasoning.
+2. TRIGGERS:
+   - Cloud: services/, k8s/, web/, lib/, .github/
+   - Desktop/Mobile: lib/, pubspec.yaml
+3. BUMP TYPE:
+   - BREAKING CHANGE = major
+   - Feature = minor
+   - Fix, CI, Chore, Docs, Test = patch (Default)
+4. SEMVER MATH:
+   - patch: $CURRENT_VERSION -> increment last digit (e.g. 7.3.0->7.3.1)
+   - minor: $CURRENT_VERSION -> increment middle digit (e.g. 7.3.0->7.4.0)
+   - major: $CURRENT_VERSION -> increment first digit (e.g. 7.3.0->8.0.0)
+   - IMPORTANT: new_version MUST be > $CURRENT_VERSION.
 EXAMPLE:
-{\"bump_type\": \"patch\", \"new_version\": \"YOUR_CALCULATED_NEW_VERSION\", \"needs_cloud\": true, \"needs_desktop\": false, \"needs_mobile\": false, \"reasoning\": \"Bug fixes\"}
+{\"bump_type\": \"patch\", \"new_version\": \"7.3.1\", \"needs_cloud\": true, \"needs_desktop\": false, \"needs_mobile\": false, \"reasoning\": \"CI fixes are patch level\"}
 ACTUAL OUTPUT:"
 
 echo "DEBUG: Kilocode prompt includes version requirement: 'The new version MUST be higher than $CURRENT_VERSION'"
