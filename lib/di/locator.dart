@@ -11,6 +11,8 @@ import 'package:cloudtolocalllm/services/session_storage_service.dart';
 import 'package:cloudtolocalllm/services/connection_manager_service.dart';
 import 'package:cloudtolocalllm/auth/auth_provider.dart';
 import 'package:cloudtolocalllm/auth/providers/auth0_auth_provider.dart';
+import 'package:cloudtolocalllm/auth/providers/entra_auth_provider.dart';
+import 'package:cloudtolocalllm/auth/providers/supabase_auth_provider.dart';
 import 'package:cloudtolocalllm/services/desktop_client_detection_service.dart';
 import 'package:cloudtolocalllm/services/enhanced_user_tier_service.dart';
 import 'package:cloudtolocalllm/services/langchain_integration_service.dart';
@@ -39,6 +41,7 @@ import 'package:cloudtolocalllm/services/admin_center_service.dart';
 import 'package:cloudtolocalllm/services/theme_provider.dart';
 import 'package:cloudtolocalllm/services/platform_detection_service.dart';
 import 'package:cloudtolocalllm/services/platform_adapter.dart';
+import 'package:cloudtolocalllm/config/app_config.dart';
 
 final GetIt serviceLocator = GetIt.instance;
 
@@ -63,10 +66,24 @@ Future<void> setupCoreServices() async {
   serviceLocator
       .registerSingleton<SessionStorageService>(sessionStorageService);
 
-  // Auth0 Auth Provider
-  final authProvider = Auth0AuthProvider();
-  // Ensure we register base type if needed, but EntraAuthProvider is enough for AuthService construction if we define it dynamically
-  // or we can register generic AuthProvider
+  // Authentication Provider - Conditional Registration
+  AuthProvider authProvider;
+  switch (AppConfig.authProvider) {
+    case AuthProviderType.auth0:
+      debugPrint('[Locator] Using Auth0AuthProvider');
+      authProvider = Auth0AuthProvider();
+      break;
+    case AuthProviderType.entra:
+      debugPrint('[Locator] Using EntraAuthProvider');
+      authProvider = EntraAuthProvider();
+      break;
+    case AuthProviderType.supabase:
+      debugPrint('[Locator] Using SupabaseAuthProvider');
+      authProvider = SupabaseAuthProvider();
+      break;
+  }
+
+  // Register strictly as AuthProvider interface to enforce abstraction
   serviceLocator.registerSingleton<AuthProvider>(authProvider);
 
   print('[Locator] Registering AuthService...');

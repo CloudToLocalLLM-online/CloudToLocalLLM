@@ -1,6 +1,5 @@
 import 'dart:async';
 import '../models/user_model.dart';
-import 'package:flutter/foundation.dart';
 
 /// Abstract interface for authentication providers
 abstract class AuthProvider {
