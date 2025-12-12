@@ -36,8 +36,12 @@ INPUT: Current: $CURRENT_VERSION. Commits: $COMMITS_ESCAPED. Changed: $FILES_ESC
 RULES: 
 - Cloud triggers: services/, k8s/, web/, lib/
 - Desktop/Mobile triggers: lib/, pubspec.yaml
-- BREAKING=major, Feature=minor, Fix=patch.
-- IMPORTANT: You MUST INCREMENT the version number. New version MUST be greater than $CURRENT_VERSION.
+- BREAKING=major, Feature=minor, Fix/CI/Chore=patch.
+- SEMVER MATH:
+  - If patch: $CURRENT_VERSION -> increment last number (e.g., 7.3.0 -> 7.3.1)
+  - If minor: $CURRENT_VERSION -> increment middle number (e.g., 7.3.0 -> 7.4.0)
+  - If major: $CURRENT_VERSION -> increment first number (e.g., 7.3.0 -> 8.0.0)
+- IMPORTANT: New version MUST be greater than $CURRENT_VERSION.
 EXAMPLE:
 {\"bump_type\": \"patch\", \"new_version\": \"YOUR_CALCULATED_NEW_VERSION\", \"needs_cloud\": true, \"needs_desktop\": false, \"needs_mobile\": false, \"reasoning\": \"Bug fixes\"}
 ACTUAL OUTPUT:"
@@ -105,7 +109,6 @@ echo ""
         fi
 
         echo "✅ Kilocode Analysis:"
-        echo "  New version: $NEW_VERSION"
         echo "  Bump type: $BUMP_TYPE"
         echo "  New version: $NEW_VERSION"
         echo "  Cloud: $NEEDS_CLOUD"
