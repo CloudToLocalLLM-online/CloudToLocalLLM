@@ -51,8 +51,8 @@ jobs:
           sleep 5
 
           # Pull model if not cached
-          if ! ollama list | grep -q "llama3.2:1b"; then
-            ollama pull llama3.2:1b
+          if ! ollama list | grep -q "gemma2:2b"; then
+            ollama pull gemma2:2b
           fi
 
       - name: Setup Kilocode CLI
