@@ -31,7 +31,7 @@ echo ""
 COMMITS_ESCAPED=$(echo "$COMMITS" | sed 's/"/\"/g' | tr '\n' ' ')
 FILES_ESCAPED=$(echo "$CHANGED_FILES" | sed 's/"/\"/g' | tr '\n' ' ')
 
-PROMPT="You are a semantic versioning expert. Analyze these changes. Current: $CURRENT_VERSION. Commits: $COMMITS_ESCAPED. Changed: $FILES_ESCAPED. Rules: BREAKING=MAJOR(x.0.0). Feature=MINOR(0.x.0). Fix/Misc=PATCH(0.0.x). Cloud needs update if services/k8s/web/lib changed. Rules: Return ONLY valid JSON. No conversational text. Format: {\"bump_type\": \"major/minor/patch\", \"new_version\": \"x.y.z\", \"needs_cloud\": bool, \"needs_desktop\": bool, \"needs_mobile\": bool, \"reasoning\": \"txt\"}."
+PROMPT="ACT AS A JSON GENERATOR. Analyze changes. Current: $CURRENT_VERSION. Commits: $COMMITS_ESCAPED. Files: $FILES_ESCAPED. Rules: BREAKING=MAJOR(x.0.0), Feat=MINOR(0.x.0), Fix=PATCH(0.0.x). Cloud triggers: services/k8s/web/lib. OUTPUT STRICT JSON ONLY. NO MARKDOWN. NO TEXT. START WITH { END WITH }. Format: {\"bump_type\": \"major/minor/patch\", \"new_version\": \"x.y.z\", \"needs_cloud\": bool, \"needs_desktop\": bool, \"needs_mobile\": bool, \"reasoning\": \"txt\"}."
 
 echo "DEBUG: Kilocode prompt includes version requirement: 'The new version MUST be higher than $CURRENT_VERSION'"
 
@@ -84,10 +84,11 @@ echo ""
         NEEDS_MOBILE=$(echo "$JSON_RESPONSE" | jq -r '.needs_mobile // empty' 2>/dev/null || echo "")
         REASONING=$(echo "$JSON_RESPONSE" | jq -r '.reasoning // empty' 2>/dev/null || echo "")
 
-        # If parsing failed, EXIT - no fallback
+        # Strict validation - Fail if parsing fails
         if [ -z "$NEW_VERSION" ] || [ -z "$NEEDS_CLOUD" ]; then
             echo "❌ ERROR: Failed to parse Kilocode response"
             echo "Extracted JSON: $JSON_RESPONSE"
+            echo "Response (first 500 chars): ${RESPONSE:0:500}"
             echo "Version bump REQUIRES valid Kilocode analysis"
             exit 1
         fi
