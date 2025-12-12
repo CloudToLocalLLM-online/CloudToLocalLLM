@@ -1,7 +1,7 @@
 // Auth0 JavaScript Bridge for Flutter Web
 // Handles Auth0 authentication flow for web platform
 
-(function() {
+(function () {
   'use strict';
 
   // Configuration - should match Flutter Auth0AuthProvider
@@ -23,12 +23,16 @@
     }
 
     try {
-      auth0 = new window.auth0.Auth0SPAClient({
+      // Auth0 SPA JS v2 uses Auth0Client class
+      // options structure changed in v2: client_id -> clientId, and params moved to authorizationParams
+      auth0 = new window.auth0.Auth0Client({
         domain: AUTH0_DOMAIN,
-        client_id: AUTH0_CLIENT_ID,
-        audience: AUTH0_AUDIENCE,
-        redirect_uri: window.location.origin,
-        scope: 'openid profile email offline_access',
+        clientId: AUTH0_CLIENT_ID,
+        authorizationParams: {
+          audience: AUTH0_AUDIENCE,
+          redirect_uri: window.location.origin,
+          scope: 'openid profile email offline_access',
+        },
         cacheLocation: 'localstorage',
         useRefreshTokens: true,
       });
@@ -42,7 +46,7 @@
   }
 
   // Login function
-  window.auth0BridgeLogin = async function() {
+  window.auth0BridgeLogin = async function () {
     try {
       console.log('[Auth0 Bridge] Starting login process...');
 
@@ -73,7 +77,9 @@
 
       // Start the login flow
       await client.loginWithRedirect({
-        redirect_uri: window.location.origin,
+        authorizationParams: {
+          redirect_uri: window.location.origin,
+        },
         appState: {
           returnTo: window.location.pathname,
         },
@@ -94,7 +100,7 @@
   };
 
   // Handle redirect callback
-  window.auth0BridgeHandleRedirect = async function() {
+  window.auth0BridgeHandleRedirect = async function () {
     try {
       console.log('[Auth0 Bridge] Handling redirect callback...');
 
@@ -141,7 +147,7 @@
   };
 
   // Logout function
-  window.auth0BridgeLogout = async function() {
+  window.auth0BridgeLogout = async function () {
     try {
       console.log('[Auth0 Bridge] Starting logout process...');
 
@@ -151,7 +157,9 @@
       }
 
       await client.logout({
-        returnTo: window.location.origin,
+        logoutParams: {
+          returnTo: window.location.origin,
+        },
       });
 
       console.log('[Auth0 Bridge] Logout completed');
@@ -178,7 +186,7 @@
   };
 
   // Get current user
-  window.auth0BridgeGetUser = async function() {
+  window.auth0BridgeGetUser = async function () {
     try {
       const client = initializeAuth0();
       if (!client) return null;
@@ -191,7 +199,7 @@
   };
 
   // Get access token
-  window.auth0BridgeGetToken = async function() {
+  window.auth0BridgeGetToken = async function () {
     try {
       const client = initializeAuth0();
       if (!client) return null;
@@ -204,7 +212,7 @@
   };
 
   // Check if user is authenticated
-  window.auth0BridgeIsAuthenticated = async function() {
+  window.auth0BridgeIsAuthenticated = async function () {
     try {
       const client = initializeAuth0();
       if (!client) return false;
@@ -218,7 +226,7 @@
   };
 
   // Initialize on page load
-  document.addEventListener('DOMContentLoaded', function() {
+  document.addEventListener('DOMContentLoaded', function () {
     console.log('[Auth0 Bridge] Bridge loaded and ready');
 
     // Check if this is a redirect callback
