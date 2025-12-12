@@ -31,7 +31,15 @@ echo ""
 COMMITS_ESCAPED=$(echo "$COMMITS" | sed 's/"/\"/g' | tr '\n' ' ')
 FILES_ESCAPED=$(echo "$CHANGED_FILES" | sed 's/"/\"/g' | tr '\n' ' ')
 
-PROMPT="ACT AS A JSON GENERATOR. Analyze changes. Current: $CURRENT_VERSION. Commits: $COMMITS_ESCAPED. Files: $FILES_ESCAPED. Rules: BREAKING=MAJOR(x.0.0), Feat=MINOR(0.x.0), Fix=PATCH(0.0.x). Cloud triggers: services/k8s/web/lib. OUTPUT STRICT JSON ONLY. NO MARKDOWN. NO TEXT. START WITH { END WITH }. Format: {\"bump_type\": \"major/minor/patch\", \"new_version\": \"x.y.z\", \"needs_cloud\": bool, \"needs_desktop\": bool, \"needs_mobile\": bool, \"reasoning\": \"txt\"}."
+PROMPT="SYSTEM: You are a JSON generator. Output ONLY valid JSON. No text.
+INPUT: Current: $CURRENT_VERSION. Commits: $COMMITS_ESCAPED. Changed: $FILES_ESCAPED.
+RULES: 
+- Cloud triggers: services/, k8s/, web/, lib/
+- Desktop/Mobile triggers: lib/, pubspec.yaml
+- BREAKING=major, Feature=minor, Fix=patch.
+EXAMPLE:
+{\"bump_type\": \"patch\", \"new_version\": \"1.0.1\", \"needs_cloud\": true, \"needs_desktop\": false, \"needs_mobile\": false, \"reasoning\": \"Bug fixes\"}
+ACTUAL OUTPUT:"
 
 echo "DEBUG: Kilocode prompt includes version requirement: 'The new version MUST be higher than $CURRENT_VERSION'"
 
