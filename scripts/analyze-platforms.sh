@@ -52,7 +52,7 @@ echo "DEBUG: Kilocode prompt includes version requirement: 'The new version MUST
 
 # Helper: Use provided Gemini API Key or env var
 export GEMINI_API_KEY="${GEMINI_API_KEY:-AIzaSyBKEd9x72rgm_DyRQK4DkT-fWT-R3H1miE}"
-MODEL="gemini-2.5-flash"
+MODEL="gemini-2.0-flash"
 
 # Get response from Kilocode
 echo "DEBUG: Sending request to Kilocode AI (model: $MODEL)..."
@@ -83,10 +83,9 @@ echo "${RESPONSE:0:1000}"
 # Flatten response to single line and remove non-JSON text
 ONE_LINE=$(echo "$RESPONSE" | tr '\n' ' ' | sed 's/```json//g' | sed 's/```//g')
 # Extract content between first { and last }
-JSON_RESPONSE=$(echo "$ONE_LINE" | sed 's/^[^\{]*//' | sed 's/[^\}]*$//')
-
-# Fix specific hallucination of double closing quotes (common issue)
-JSON_RESPONSE=$(echo "$JSON_RESPONSE" | sed 's/""}/"}/g')
+# Extract content between first { and last }
+# Improved logic: Match from first { to last }, handling potential missing last } slightly better by NOT deleting everything if } is missing
+JSON_RESPONSE=$(echo "$ONE_LINE" | sed 's/^[^\{]*//' | sed 's/}[^}]*$/}/')
 
 # Basic repair for truncated JSON (missing closing brace)
 if [[ "$JSON_RESPONSE" != *"}" ]]; then
