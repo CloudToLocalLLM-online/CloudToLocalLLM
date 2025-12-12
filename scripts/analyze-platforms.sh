@@ -31,7 +31,7 @@ echo ""
 COMMITS_ESCAPED=$(echo "$COMMITS" | sed 's/"/\"/g' | tr '\n' ' ')
 FILES_ESCAPED=$(echo "$CHANGED_FILES" | sed 's/"/\"/g' | tr '\n' ' ')
 
-PROMPT="You are a semantic versioning and platform deployment expert. Analyze these changes and determine: 1) appropriate version bump, and 2) which platforms need deployment. Current version: $CURRENT_VERSION. The new version MUST be higher than $CURRENT_VERSION. Commits: $COMMITS_ESCAPED. Changed files: $FILES_ESCAPED. Version bump rules: BREAKING CHANGE means MAJOR (x.0.0). feat: means MINOR (0.x.0) ONLY if it adds significant NEW user-facing functionality to the Desktop or Mobile app. ALL other changes (backend improvements, infrastructure changes, provider swaps, enabling work, fixes, even if labeled feat) should be PATCH (0.0.x). Platform rules: Cloud platform needs update if changed files include: services/, k8s/, lib/, web/, .github/workflows/deploy-aks.yml. Desktop platform needs update if changed files include: lib/, pubspec.yaml (excluding web/). Mobile platform needs update if changed files include: lib/, pubspec.yaml (excluding web/). Respond with ONLY this exact JSON format: {\"bump_type\": \"major or minor or patch\", \"new_version\": \"x.y.z\", \"needs_cloud\": true or false, \"needs_desktop\": true or false, \"needs_mobile\": true or false, \"reasoning\": \"brief explanation\"}. No other text or formatting."
+PROMPT="You are a semantic versioning and platform deployment expert. Analyze these changes and determine: 1) appropriate version bump, and 2) which platforms need deployment. Current version: $CURRENT_VERSION. The new version MUST be higher than $CURRENT_VERSION. Commits: $COMMITS_ESCAPED. Changed files: $FILES_ESCAPED. Version bump rules: BREAKING CHANGE means MAJOR (x.0.0) - use EXTREMELY SPARINGLY, only if existing users will be broken. feat: means MINOR (0.x.0) ONLY if it adds significant NEW user-facing functionality to the Desktop or Mobile app. ALL other changes (backend improvements, infrastructure changes, provider swaps, enabling work, fixes, even if labeled feat) should be PATCH (0.0.x). If uncertain, prefer PATCH. Platform rules: Cloud platform needs update if changed files include: services/, k8s/, lib/, web/, .github/workflows/deploy-aks.yml. Desktop platform needs update if changed files include: lib/, pubspec.yaml (excluding web/). Mobile platform needs update if changed files include: lib/, pubspec.yaml (excluding web/). Respond with ONLY this exact JSON format: {\"bump_type\": \"major or minor or patch\", \"new_version\": \"x.y.z\", \"needs_cloud\": true or false, \"needs_desktop\": true or false, \"needs_mobile\": true or false, \"reasoning\": \"brief explanation\"}. No other text or formatting."
 
 echo "DEBUG: Kilocode prompt includes version requirement: 'The new version MUST be higher than $CURRENT_VERSION'"
 
@@ -43,11 +43,12 @@ echo "Calling Kilocode AI..."
     # Try to find kilocode-cli in PATH or use local script
     if command -v kilocode-cli >/dev/null 2>&1; then
         RESPONSE=$(kilocode-cli "$PROMPT" 2>&1)
+        EXIT_CODE=$?
     else
         # Use local script path
         SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
         RESPONSE=$("${SCRIPT_DIR}/kilocode-cli.cjs" "$PROMPT" 2>&1)
-        EXIT_CODE=0
+        EXIT_CODE=$?
     fi
 
     echo "DEBUG: Kilocode exit code: $EXIT_CODE"
@@ -63,7 +64,14 @@ echo "Calling Kilocode AI..."
         exit 1
     fi
         # Extract JSON from response (Kilocode returns JSON directly)
-        JSON_RESPONSE="$RESPONSE"
+        # Remove potential markdown code blocks
+        JSON_RESPONSE=$(echo "$RESPONSE" | sed 's/```json//g' | sed 's/```//g' | tr -d '\n')
+        
+        # Basic repair for truncated JSON (missing closing brace)
+        if [[ "$JSON_RESPONSE" != *"}" ]]; then
+            echo "DEBUG: JSON appears truncated, appending closing brace"
+            JSON_RESPONSE="${JSON_RESPONSE}}"
+        fi
 
         echo "DEBUG: Extracted JSON:"
         echo "$JSON_RESPONSE"
