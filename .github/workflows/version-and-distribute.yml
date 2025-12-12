@@ -31,30 +31,6 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-      - name: Cache Ollama
-        uses: actions/cache@v4
-        with:
-          path: |
-            /usr/local/bin/ollama
-            ~/.ollama
-          key: ollama-${{ runner.os }}-v1
-
-      - name: Setup Ollama
-        run: |
-          # Install Ollama if not cached
-          if [ ! -f /usr/local/bin/ollama ]; then
-            curl -fsSL https://ollama.ai/install.sh | sh
-          fi
-
-          # Start Ollama server
-          ollama serve &
-          sleep 5
-
-          # Pull model if not cached
-          if ! ollama list | grep -q "gemma2:2b"; then
-            ollama pull gemma2:2b
-          fi
-
       - name: Setup Kilocode CLI
         run: |
           chmod +x scripts/kilocode-cli.cjs
