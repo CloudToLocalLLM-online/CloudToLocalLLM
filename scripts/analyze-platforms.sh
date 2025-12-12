@@ -59,6 +59,7 @@ CRITICAL RULES:
 echo "DEBUG: Kilocode prompt includes version requirement: 'The new version MUST be higher than $CURRENT_VERSION'"
 
 # Get response from Kilocode
+echo "DEBUG: Sending request to Kilocode AI (model: gemma2:2b)..."
 set +e
 # Try to find kilocode-cli in PATH or use local script
 if command -v kilocode-cli >/dev/null 2>&1; then

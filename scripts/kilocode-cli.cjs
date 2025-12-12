@@ -17,7 +17,11 @@ const data = JSON.stringify({
     role: 'user',
     content: prompt
   }],
-  stream: false
+  stream: false,
+  options: {
+    num_predict: 1000,
+    temperature: 0.1
+  }
 });
 
 const options = {
