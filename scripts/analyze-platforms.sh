@@ -31,7 +31,7 @@ echo ""
 COMMITS_ESCAPED=$(echo "$COMMITS" | sed 's/"/\"/g' | tr '\n' ' ')
 FILES_ESCAPED=$(echo "$CHANGED_FILES" | sed 's/"/\"/g' | tr '\n' ' ')
 
-PROMPT="You are a semantic versioning and platform deployment expert. Analyze these changes and determine: 1) appropriate version bump, and 2) which platforms need deployment. Current version: $CURRENT_VERSION. The new version MUST be higher than $CURRENT_VERSION. Commits: $COMMITS_ESCAPED. Changed files: $FILES_ESCAPED. Version bump rules: BREAKING CHANGE means MAJOR (x.0.0) - use EXTREMELY SPARINGLY, only if existing users will be broken. feat: means MINOR (0.x.0) ONLY if it adds significant NEW user-facing functionality to the Desktop or Mobile app. ALL other changes (backend improvements, infrastructure changes, provider swaps, enabling work, fixes, even if labeled feat) should be PATCH (0.0.x). If uncertain, prefer PATCH. Platform rules: Cloud platform needs update if changed files include: services/, k8s/, lib/, web/, .github/workflows/deploy-aks.yml. Desktop platform needs update if changed files include: lib/, pubspec.yaml (excluding web/). Mobile platform needs update if changed files include: lib/, pubspec.yaml (excluding web/). Respond with ONLY this exact JSON format: {\"bump_type\": \"major or minor or patch\", \"new_version\": \"x.y.z\", \"needs_cloud\": true or false, \"needs_desktop\": true or false, \"needs_mobile\": true or false, \"reasoning\": \"brief explanation\"}. No other text or formatting."
+PROMPT="You are a semantic versioning expert. Analyze these changes. Current: $CURRENT_VERSION. Commits: $COMMITS_ESCAPED. Changed: $FILES_ESCAPED. Rules: BREAKING=MAJOR(x.0.0). Feature=MINOR(0.x.0). Fix/Misc=PATCH(0.0.x). Cloud needs update if services/k8s/web/lib changed. Rules: Return ONLY valid JSON. No markdown. No reasoning text outside JSON. Escape quotes in values. Format: {\"bump_type\": \"major/minor/patch\", \"new_version\": \"x.y.z\", \"needs_cloud\": bool, \"needs_desktop\": bool, \"needs_mobile\": bool, \"reasoning\": \"txt\"}."
 
 echo "DEBUG: Kilocode prompt includes version requirement: 'The new version MUST be higher than $CURRENT_VERSION'"
 
@@ -66,6 +66,9 @@ echo "Calling Kilocode AI..."
         # Extract JSON from response (Kilocode returns JSON directly)
         # Remove potential markdown code blocks
         JSON_RESPONSE=$(echo "$RESPONSE" | sed 's/```json//g' | sed 's/```//g' | tr -d '\n')
+
+        # Fix specific hallucination of double closing quotes
+        JSON_RESPONSE=$(echo "$JSON_RESPONSE" | sed 's/""}/"}/g')
         
         # Basic repair for truncated JSON (missing closing brace)
         if [[ "$JSON_RESPONSE" != *"}" ]]; then
