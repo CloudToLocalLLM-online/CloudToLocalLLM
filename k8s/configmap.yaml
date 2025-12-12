@@ -19,7 +19,7 @@ data:
   DB_HOST: "postgres.cloudtolocalllm.svc.cluster.local"
   DB_PORT: "5432"
   DB_NAME: "cloudtolocalllm"
-  DB_USER: "cloudtolocalllm"
+  DB_USER: "cloud_admin"
 
   # API configuration
   PORT: "8080"

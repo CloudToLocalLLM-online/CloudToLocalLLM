@@ -45,7 +45,17 @@ import express from 'express';
 import http from 'http';
 import winston from 'winston';
 import swaggerUi from 'swagger-ui-express';
-import { specs } from './swagger-config.js';
+// Temporarily disable swagger-jsdoc import due to Node.js v24 compatibility
+// import { specs } from './swagger-config.js';
+const specs = {
+  openapi: '3.0.0',
+  info: {
+    title: 'CloudToLocalLLM API Backend',
+    version: '2.0.0',
+    description: 'Comprehensive API for CloudToLocalLLM - Bridge cloud AI services with local models',
+  },
+  paths: {},
+};
 import {
   setupMiddlewarePipeline,
   getAuthMiddleware,

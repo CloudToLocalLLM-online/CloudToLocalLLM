@@ -20,6 +20,8 @@ class AuthService extends ChangeNotifier {
   final Completer<void> _sessionBootstrapCompleter = Completer<void>();
 
   bool _initialized = false;
+  bool _isInitializing = false;
+  Completer<void>? _initCompleter;
   bool _isRestoringSession = false;
 
   AuthService(this._authProvider);
@@ -27,9 +29,24 @@ class AuthService extends ChangeNotifier {
   Future<void> init() async {
     print('[AuthService] init() called');
     if (_initialized) return;
-    _initialized = true;
-    await _initProvider();
-    print('[AuthService] init() completed');
+    if (_isInitializing) {
+      return _initCompleter?.future ?? Future.value();
+    }
+
+    _isInitializing = true;
+    _initCompleter = Completer<void>();
+
+    try {
+      await _initProvider();
+      _initialized = true;
+      _initCompleter?.complete();
+      print('[AuthService] init() completed');
+    } catch (e) {
+      _initCompleter?.completeError(e);
+      rethrow;
+    } finally {
+      _isInitializing = false;
+    }
   }
 
   /// Initialize Auth Provider
@@ -213,5 +230,14 @@ class AuthService extends ChangeNotifier {
     if (!_sessionBootstrapCompleter.isCompleted) {
       _sessionBootstrapCompleter.complete();
     }
+  }
+
+  @override
+  void dispose() {
+    // Cancel any pending initialization
+    if (_isInitializing && !_initCompleter!.isCompleted) {
+      _initCompleter?.complete();
+    }
+    super.dispose();
   }
 }
