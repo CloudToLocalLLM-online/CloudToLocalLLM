@@ -37,8 +37,9 @@ RULES:
 - Cloud triggers: services/, k8s/, web/, lib/
 - Desktop/Mobile triggers: lib/, pubspec.yaml
 - BREAKING=major, Feature=minor, Fix=patch.
+- IMPORTANT: You MUST INCREMENT the version number. New version MUST be greater than $CURRENT_VERSION.
 EXAMPLE:
-{\"bump_type\": \"patch\", \"new_version\": \"1.0.1\", \"needs_cloud\": true, \"needs_desktop\": false, \"needs_mobile\": false, \"reasoning\": \"Bug fixes\"}
+{\"bump_type\": \"patch\", \"new_version\": \"YOUR_CALCULATED_NEW_VERSION\", \"needs_cloud\": true, \"needs_desktop\": false, \"needs_mobile\": false, \"reasoning\": \"Bug fixes\"}
 ACTUAL OUTPUT:"
 
 echo "DEBUG: Kilocode prompt includes version requirement: 'The new version MUST be higher than $CURRENT_VERSION'"
@@ -87,12 +88,12 @@ echo ""
 
         # Parse with fallbacks
         NEW_VERSION=$(echo "$JSON_RESPONSE" | jq -r '.new_version // empty' 2>/dev/null || echo "")
+        BUMP_TYPE=$(echo "$JSON_RESPONSE" | jq -r '.bump_type // empty' 2>/dev/null || echo "patch")
         NEEDS_CLOUD=$(echo "$JSON_RESPONSE" | jq -r '.needs_cloud // empty' 2>/dev/null || echo "")
         NEEDS_DESKTOP=$(echo "$JSON_RESPONSE" | jq -r '.needs_desktop // empty' 2>/dev/null || echo "")
         NEEDS_MOBILE=$(echo "$JSON_RESPONSE" | jq -r '.needs_mobile // empty' 2>/dev/null || echo "")
         REASONING=$(echo "$JSON_RESPONSE" | jq -r '.reasoning // empty' 2>/dev/null || echo "")
 
-        # Strict validation - Fail if parsing fails
         if [ -z "$NEW_VERSION" ] || [ -z "$NEEDS_CLOUD" ]; then
             echo "❌ ERROR: Failed to parse Kilocode response"
             echo "Extracted JSON: $JSON_RESPONSE"
@@ -102,6 +103,8 @@ echo ""
         fi
 
         echo "✅ Kilocode Analysis:"
+        echo "  New version: $NEW_VERSION"
+        echo "  Bump type: $BUMP_TYPE"
         echo "  New version: $NEW_VERSION"
         echo "  Cloud: $NEEDS_CLOUD"
         echo "  Desktop: $NEEDS_DESKTOP"
