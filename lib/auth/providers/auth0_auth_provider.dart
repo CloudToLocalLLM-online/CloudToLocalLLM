@@ -14,15 +14,23 @@ extension type Auth0Window._(JSObject _) implements JSObject {
   @JS('Auth0Bridge')
   external Auth0Bridge? get auth0Bridge;
   external set flutterAuthCallback(JSFunction callback);
+  external Location get location;
+}
+
+extension type Location._(JSObject _) implements JSObject {
+  external String get search;
 }
 
 /// The Auth0Bridge object exposed by auth0-bridge.js
 extension type Auth0Bridge._(JSObject _) implements JSObject {
   external void login();
   external void logout();
+  external JSPromise<AuthResult> handleRedirect();
+  external JSPromise<Auth0User?> getUser(); // Returns Auth0User or null
+  external JSPromise<JSString?> getToken(); // Returns token string or null
 }
 
-/// The result object passed to the flutterAuthCallback
+/// The result object passed to the flutterAuthCallback or returned by handleRedirect
 extension type AuthResult._(JSObject _) implements JSObject {
   external String get type;
   external Auth0User? get user;
@@ -110,6 +118,14 @@ class Auth0AuthProvider implements AuthProvider {
 
   @override
   Future<void> initialize() async {
+    if (kIsWeb) {
+      await _initializeWeb();
+    } else {
+      await _initializeNative();
+    }
+  }
+
+  Future<void> _initializeNative() async {
     try {
       final credentials = await _auth0.credentialsManager.credentials();
       if (credentials.accessToken.isNotEmpty) {
@@ -123,8 +139,86 @@ class Auth0AuthProvider implements AuthProvider {
     }
   }
 
+  Future<void> _initializeWeb() async {
+    try {
+      final auth0Bridge = _window.auth0Bridge;
+      if (auth0Bridge == null) {
+        debugPrint('Auth0Bridge not found. Ensure auth0-bridge.js is loaded.');
+        _authStateController.add(false);
+        return;
+      }
+
+      // Register callback immediately
+      _registerWebCallback();
+
+      // Check for redirect params in URL
+      final search = _window.location.search;
+      if (search.contains('code=') && search.contains('state=')) {
+        debugPrint(
+            '[Auth0AuthProvider] Detected code/state, handling redirect...');
+        try {
+          final result = await auth0Bridge.handleRedirect().toDart;
+          // The callback might handle this, but better to handle explicit return too
+          if (result.type == 'success' && result.user != null) {
+            _currentUser = _jsUserToUserModel(result.user!);
+            _authStateController.add(true);
+            return;
+          }
+        } catch (e) {
+          debugPrint('[Auth0AuthProvider] Redirect handling failed: $e');
+        }
+      }
+
+      // Check for existing session (persistence)
+      final user = await auth0Bridge.getUser().toDart;
+      if (user != null) {
+        debugPrint('[Auth0AuthProvider] Found existing web session');
+        _currentUser = _jsUserToUserModel(user);
+        _authStateController.add(true);
+      } else {
+        _authStateController.add(false);
+      }
+    } catch (e) {
+      debugPrint('[Auth0AuthProvider] Web init error: $e');
+      _authStateController.add(false);
+    }
+  }
+
+  void _registerWebCallback() {
+    // Set up the callback that JavaScript will call
+    _window.flutterAuthCallback = (AuthResult result) {
+      final type = result.type;
+      debugPrint('[Auth0AuthProvider] Received JS callback: $type');
+
+      if (type == 'success') {
+        final userData = result.user;
+        final accessToken = result.accessToken;
+
+        if (userData != null && accessToken != null) {
+          _currentUser = _jsUserToUserModel(userData);
+          _authStateController.add(true);
+        }
+      } else if (type == 'error') {
+        // Provide feedback if needed, but usually handled by promise/ui
+        debugPrint('Auth Callback Error: ${result.error}');
+      } else if (type == 'logout') {
+        _currentUser = null;
+        _authStateController.add(false);
+      }
+    }.toJS;
+  }
+
   @override
   Future<String?> getAccessToken() async {
+    if (kIsWeb) {
+      final bridge = _window.auth0Bridge;
+      if (bridge != null) {
+        final tokenJS = await bridge.getToken().toDart;
+        return tokenJS?.toDart;
+      }
+      return null;
+    }
+
     try {
       final credentials = await _auth0.credentialsManager.credentials();
       return credentials.accessToken;
@@ -157,51 +251,25 @@ class Auth0AuthProvider implements AuthProvider {
   }
 
   Future<void> _loginWithWebBridge() async {
-    final completer = Completer<void>();
+    // Callback is already registered in initialize, but we can register again or rely on it.
+    // However, login() here initiates a redirect. The promise won't complete until redirect logic implies.
+    // Actually, loginWithRedirect() returns Promise<void> but it redirects page, so it never technically completes in this session.
+    // So we just call it.
 
-    // Set up callback for JavaScript bridge
     if (kIsWeb) {
       try {
         final auth0Bridge = _window.auth0Bridge;
-
         if (auth0Bridge != null) {
-          // Set up the callback that JavaScript will call
-          _window.flutterAuthCallback = (AuthResult result) {
-            final type = result.type;
-
-            if (type == 'success') {
-              final userData = result.user;
-              final accessToken = result.accessToken;
-
-              if (userData != null && accessToken != null) {
-                _currentUser = _jsUserToUserModel(userData);
-                _authStateController.add(true);
-                completer.complete();
-              } else {
-                completer.completeError(AuthException.invalidCredentials());
-              }
-            } else if (type == 'error') {
-              final error = result.error ?? 'Unknown error';
-              completer.completeError(AuthException.network(error));
-            }
-          }.toJS;
-
-          // Call the login function
-          auth0Bridge.login();
+          auth0Bridge.login(); // This triggers redirect
+          // We don't complete here because page will reload.
         } else {
-          completer.completeError(AuthException.configuration(
-              'Auth0Bridge not found. Ensure auth0-bridge.js is loaded.'));
+          throw AuthException.configuration('Bridge not found');
         }
       } catch (e) {
-        completer.completeError(AuthException.network(
-            'Failed to initialize web authentication: $e'));
+        throw AuthException.network('Login init failed: $e');
       }
-    } else {
-      completer.completeError(AuthException.configuration(
-          'Web authentication called on non-web platform'));
     }
-
-    return completer.future;
+    // No return needed really as page redirects
   }
 
   UserModel _jsUserToUserModel(Auth0User jsUser) {

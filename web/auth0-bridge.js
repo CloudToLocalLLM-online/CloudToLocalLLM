@@ -118,31 +118,39 @@
 
       console.log('[Auth0 Bridge] Redirect handled successfully');
 
-      // Notify Flutter of success
+      const authResult = {
+        type: 'success',
+        user: user,
+        accessToken: token,
+        appState: result.appState,
+      };
+
+      // Notify Flutter of success (keep this for backward compat or listeners)
       if (window.flutterAuthCallback) {
-        window.flutterAuthCallback({
-          type: 'success',
-          user: user,
-          accessToken: token,
-          appState: result.appState,
-        });
+        window.flutterAuthCallback(authResult);
       }
 
-      // Redirect back to the app
+      // Redirect back to the app - clear URL params
       const returnTo = result.appState?.returnTo || '/';
       window.history.replaceState({}, document.title, returnTo);
+
+      return authResult;
 
     } catch (error) {
       console.error('[Auth0 Bridge] Redirect handling failed:', error);
 
+      const errorResult = {
+        type: 'error',
+        error: error.message || 'Redirect handling failed',
+        code: error.error || 'redirect_error',
+      };
+
       // Notify Flutter of the error
       if (window.flutterAuthCallback) {
-        window.flutterAuthCallback({
-          type: 'error',
-          error: error.message || 'Redirect handling failed',
-          code: error.error || 'redirect_error',
-        });
+        window.flutterAuthCallback(errorResult);
       }
+
+      throw error; // Re-throw so Dart can catch it if awaiting
     }
   };
 
