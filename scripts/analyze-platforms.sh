@@ -86,15 +86,17 @@ echo "DEBUG: Extracted JSON:"
 echo "$JSON_RESPONSE"
 echo ""
 
-        # Parse with fallbacks
-        NEW_VERSION=$(echo "$JSON_RESPONSE" | jq -r '.new_version // empty' 2>/dev/null || echo "")
-        BUMP_TYPE=$(echo "$JSON_RESPONSE" | jq -r '.bump_type // empty' 2>/dev/null || echo "patch")
-        NEEDS_CLOUD=$(echo "$JSON_RESPONSE" | jq -r '.needs_cloud // empty' 2>/dev/null || echo "")
-        NEEDS_DESKTOP=$(echo "$JSON_RESPONSE" | jq -r '.needs_desktop // empty' 2>/dev/null || echo "")
-        NEEDS_MOBILE=$(echo "$JSON_RESPONSE" | jq -r '.needs_mobile // empty' 2>/dev/null || echo "")
-        REASONING=$(echo "$JSON_RESPONSE" | jq -r '.reasoning // empty' 2>/dev/null || echo "")
+        # Parse without fallback to empty, so we capture 'false' correctly
+        NEW_VERSION=$(echo "$JSON_RESPONSE" | jq -r '.new_version')
+        BUMP_TYPE=$(echo "$JSON_RESPONSE" | jq -r '.bump_type')
+        NEEDS_CLOUD=$(echo "$JSON_RESPONSE" | jq -r '.needs_cloud')
+        NEEDS_DESKTOP=$(echo "$JSON_RESPONSE" | jq -r '.needs_desktop')
+        NEEDS_MOBILE=$(echo "$JSON_RESPONSE" | jq -r '.needs_mobile')
+        REASONING=$(echo "$JSON_RESPONSE" | jq -r '.reasoning')
 
-        if [ -z "$NEW_VERSION" ] || [ -z "$NEEDS_CLOUD" ]; then
+        # Strict validation - Fail if mandatory fields are null or empty
+        # Note: 'false' is a valid value for NEEDS_CLOUD, so we check for 'null' or empty
+        if [ "$NEW_VERSION" == "null" ] || [ -z "$NEW_VERSION" ] || [ "$NEEDS_CLOUD" == "null" ] || [ -z "$NEEDS_CLOUD" ]; then
             echo "❌ ERROR: Failed to parse Kilocode response"
             echo "Extracted JSON: $JSON_RESPONSE"
             echo "Response (first 500 chars): ${RESPONSE:0:500}"
