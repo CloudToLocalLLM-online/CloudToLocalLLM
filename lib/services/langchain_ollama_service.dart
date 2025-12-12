@@ -75,7 +75,7 @@ class LangChainOllamaService extends ChangeNotifier {
 
       // Initialize with default model
       try {
-        await _initializeChatModel('llama3.2');
+        await _initializeChatModel('gemma2:2b');
       } on StateError catch (e) {
         _error =
             'No connection available. Connect a desktop bridge to use cloud models.';
@@ -189,10 +189,10 @@ class LangChainOllamaService extends ChangeNotifier {
         } else {
           // Fallback to default models if none available
           _availableModels = [
+            'gemma2:2b',
+            'gemma2:9b',
             'llama3.2',
             'llama3.1',
-            'llama2',
-            'codellama',
             'mistral',
             'neural-chat',
           ];
@@ -200,10 +200,10 @@ class LangChainOllamaService extends ChangeNotifier {
       } else {
         // No connection available, use default models
         _availableModels = [
+          'gemma2:2b',
+          'gemma2:9b',
           'llama3.2',
           'llama3.1',
-          'llama2',
-          'codellama',
           'mistral',
           'neural-chat',
         ];

@@ -12,7 +12,7 @@ if (!prompt) {
 }
 
 const data = JSON.stringify({
-  model: 'llama3.2:1b',
+  model: 'gemma2:2b',
   messages: [{
     role: 'user',
     content: prompt
