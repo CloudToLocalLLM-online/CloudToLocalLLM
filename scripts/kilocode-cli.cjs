@@ -19,7 +19,7 @@ const data = JSON.stringify({
   }],
   stream: false,
   options: {
-    num_predict: 256,
+    num_predict: 128,
     temperature: 0.1
   }
 });

@@ -14,8 +14,8 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 CURRENT_VERSION=$(jq -r '.version' assets/version.json)
 echo "Current version: $CURRENT_VERSION"
 
-# Get recent commits
-COMMITS=$(git log --oneline --no-merges -10)
+# Get recent commits (limit to 3 for faster processing)
+COMMITS=$(git log --oneline --no-merges -3)
 echo ""
 echo "Recent commits:"
 echo "$COMMITS"
@@ -31,30 +31,22 @@ echo ""
 COMMITS_ESCAPED=$(echo "$COMMITS" | sed 's/"/\"/g' | tr '\n' ' ')
 FILES_ESCAPED=$(echo "$CHANGED_FILES" | sed 's/"/\"/g' | tr '\n' ' ')
 
-PROMPT="SYSTEM: You are a strict Semantic Versioning engine.
-INPUT: Current Version: $CURRENT_VERSION.
-COMMITS: $COMMITS_ESCAPED.
-FILES: $FILES_ESCAPED.
+PROMPT="Current version: $CURRENT_VERSION
+Recent commits: $COMMITS_ESCAPED
+Changed files: $FILES_ESCAPED
 
-CRITICAL RULES:
-1. IGNORE version numbers in commit messages (past history). Base calculation ONLY on Current Version: $CURRENT_VERSION.
-2. DETERMINE BUMP TYPE:
-   - Breaking Changes = major
-   - New Features = minor
-   - Fixes, CI, Chores, Docs = patch
-3. CALCULATE NEW VERSION:
-   - FOR PATCH: Increment LAST digit. (e.g., 7.3.0 -> 7.3.1). DO NOT bump middle digit.
-   - FOR MINOR: Increment MIDDLE digit. (e.g., 7.3.0 -> 7.4.0).
-4. REQUIRED JSON OUTPUT:
+Determine semantic version bump and platform needs. Output only valid JSON:
+
 {
   \"bump_type\": \"patch\" | \"minor\" | \"major\",
   \"new_version\": \"x.y.z\",
   \"needs_cloud\": boolean,
   \"needs_desktop\": boolean,
   \"needs_mobile\": boolean,
-  \"reasoning\": \"string\"
+  \"reasoning\": \"brief explanation\"
 }
-"
+
+Rules: Breaking=major, Features=minor, Fixes/Chores=patch. New version must be higher than $CURRENT_VERSION."
 
 echo "DEBUG: Kilocode prompt includes version requirement: 'The new version MUST be higher than $CURRENT_VERSION'"
 
