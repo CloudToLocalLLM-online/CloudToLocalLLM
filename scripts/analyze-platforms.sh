@@ -58,8 +58,15 @@ CRITICAL RULES:
 
 echo "DEBUG: Kilocode prompt includes version requirement: 'The new version MUST be higher than $CURRENT_VERSION'"
 
+# Ensure model exists locally
+MODEL="gemma2:2b"
+if ! ollama list | grep -q "$MODEL"; then
+    echo "⚠️  Model $MODEL not found locally. Pulling..."
+    ollama pull "$MODEL"
+fi
+
 # Get response from Kilocode
-echo "DEBUG: Sending request to Kilocode AI (model: gemma2:2b)..."
+echo "DEBUG: Sending request to Kilocode AI (model: $MODEL)..."
 set +e
 # Try to find kilocode-cli in PATH or use local script
 if command -v kilocode-cli >/dev/null 2>&1; then

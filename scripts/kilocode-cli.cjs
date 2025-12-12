@@ -43,6 +43,11 @@ const makeRequest = (retryCount = 0) => {
     });
 
     res.on('end', () => {
+      if (res.statusCode >= 400) {
+        console.error(`Ollama API Error (${res.statusCode}):`, body);
+        process.exit(1);
+      }
+
       try {
         const response = JSON.parse(body);
         if (response.message && response.message.content) {
