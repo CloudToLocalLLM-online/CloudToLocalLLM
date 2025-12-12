@@ -50,12 +50,9 @@ Rules: Breaking=major, Features=minor, Fixes/Chores=patch. New version must be h
 
 echo "DEBUG: Kilocode prompt includes version requirement: 'The new version MUST be higher than $CURRENT_VERSION'"
 
-# Ensure model exists locally
-MODEL="gemma2:2b"
-if ! ollama list | grep -q "$MODEL"; then
-    echo "⚠️  Model $MODEL not found locally. Pulling..."
-    ollama pull "$MODEL"
-fi
+# Helper: Use provided Gemini API Key or env var
+export GEMINI_API_KEY="${GEMINI_API_KEY:-AIzaSyBKEd9x72rgm_DyRQK4DkT-fWT-R3H1miE}"
+MODEL="gemini-1.5-flash"
 
 # Get response from Kilocode
 echo "DEBUG: Sending request to Kilocode AI (model: $MODEL)..."

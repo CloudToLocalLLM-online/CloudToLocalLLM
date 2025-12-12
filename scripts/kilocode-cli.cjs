@@ -2,32 +2,35 @@
 
 // Simple Kilocode CLI wrapper for version analysis using GitHub Copilot
 
-const http = require('http');
+const https = require('https');
 
 const prompt = process.argv.slice(2).join(' ');
+const apiKey = process.env.GEMINI_API_KEY;
 
 if (!prompt) {
   console.error('Usage: kilocode-cli <prompt>');
   process.exit(1);
 }
 
+if (!apiKey) {
+  console.error('Error: GEMINI_API_KEY environment variable is not set.');
+  process.exit(1);
+}
+
 const data = JSON.stringify({
-  model: 'gemma2:2b',
-  messages: [{
-    role: 'user',
-    content: prompt
+  contents: [{
+    parts: [{ text: prompt }]
   }],
-  stream: false,
-  options: {
-    num_predict: 128,
-    temperature: 0.1
+  generationConfig: {
+    temperature: 0.1,
+    maxOutputTokens: 256
   }
 });
 
 const options = {
-  hostname: 'localhost',
-  port: 11434,
-  path: '/api/chat',
+  hostname: 'generativelanguage.googleapis.com',
+  port: 443,
+  path: `/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
   method: 'POST',
   headers: {
     'Content-Type': 'application/json',
@@ -37,7 +40,7 @@ const options = {
 };
 
 const makeRequest = (retryCount = 0) => {
-  const req = http.request(options, (res) => {
+  const req = https.request(options, (res) => {
     let body = '';
     res.on('data', (chunk) => {
       body += chunk;
@@ -45,14 +48,14 @@ const makeRequest = (retryCount = 0) => {
 
     res.on('end', () => {
       if (res.statusCode >= 400) {
-        console.error(`Ollama API Error (${res.statusCode}):`, body);
+        console.error(`Gemini API Error (${res.statusCode}):`, body);
         process.exit(1);
       }
 
       try {
         const response = JSON.parse(body);
-        if (response.message && response.message.content) {
-          console.log(response.message.content);
+        if (response.candidates && response.candidates[0] && response.candidates[0].content && response.candidates[0].content.parts[0]) {
+          console.log(response.candidates[0].content.parts[0].text);
         } else {
           console.error('Unexpected response format:', body);
           process.exit(1);
@@ -71,7 +74,7 @@ const makeRequest = (retryCount = 0) => {
   });
 
   req.on('timeout', () => {
-    console.error('Request timed out after 60 seconds');
+    console.error('Request timed out after 180 seconds');
     req.destroy();
     process.exit(1);
   });
