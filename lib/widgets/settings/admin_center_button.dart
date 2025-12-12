@@ -343,6 +343,12 @@ class _MinimalAuthService extends ChangeNotifier implements AuthService {
   bool get isSessionBootstrapComplete => false;
 
   @override
+  bool get isRestoringSession => false;
+
+  @override
+  Future<void> updateDisplayName(String name) async {}
+
+  @override
   bool get isWeb => kIsWeb;
 
   @override

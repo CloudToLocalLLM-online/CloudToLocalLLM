@@ -1,23 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:cloudtolocalllm/screens/login_screen.dart';
-import 'package:cloudtolocalllm/services/theme_provider.dart';
+
 import 'package:cloudtolocalllm/services/platform_detection_service.dart';
-import 'package:cloudtolocalllm/services/platform_adapter.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group('Login Screen Platform Components Property Tests', () {
-    late ThemeProvider themeProvider;
-    late PlatformDetectionService platformService;
-    late PlatformAdapter platformAdapter;
-
-    setUp(() {
-      themeProvider = ThemeProvider();
-      platformService = PlatformDetectionService();
-      platformAdapter = PlatformAdapter(platformService);
-    });
+    setUp(() {});
 
     testWidgets(
       'Login screen renders without errors',

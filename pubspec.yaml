@@ -21,6 +21,7 @@ dependencies:
   provider: ^6.1.2
   jwt_decoder: ^2.0.1
   auth0_flutter: ^1.1.0
+  supabase_flutter: ^2.8.3
   shared_preferences: ^2.5.4
 
   # Error tracking
@@ -68,7 +69,7 @@ dependencies:
 
   # Web interop for dart:js_interop
   web: ^1.0.0
-  app_links: ^7.0.0
+  app_links: ^6.3.0
 
 dev_dependencies:
   sentry_dart_plugin: ^3.2.0

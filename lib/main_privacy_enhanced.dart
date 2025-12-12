@@ -3,7 +3,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
-import 'screens/loading_screen.dart';
 import 'config/theme.dart';
 import 'config/router.dart';
 import 'config/app_config.dart';
@@ -38,10 +37,12 @@ final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  await Supabase.initialize(
-    url: SupabaseConfig.url,
-    anonKey: SupabaseConfig.anonKey,
-  );
+  if (AppConfig.enableSupabase) {
+    await Supabase.initialize(
+      url: SupabaseConfig.url,
+      anonKey: SupabaseConfig.anonKey,
+    );
+  }
 
   // Initialize platform detection early
   final platformManager = PlatformServiceManager();
@@ -372,7 +373,21 @@ class _CloudToLocalLLMPrivacyAppState extends State<CloudToLocalLLMPrivacyApp> {
         themeMode: AppConfig.enableDarkMode ? ThemeMode.dark : ThemeMode.light,
         home: _isInitialized
             ? _buildMainApp()
-            : LoadingScreen(message: _initializationStatus),
+            : MaterialApp(
+                debugShowCheckedModeBanner: false,
+                home: Scaffold(
+                  body: Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const CircularProgressIndicator(),
+                        const SizedBox(height: 20),
+                        Text(_initializationStatus),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
       ),
     );
   }

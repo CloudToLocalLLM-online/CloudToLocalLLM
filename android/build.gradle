@@ -24,6 +24,17 @@ subprojects {
 }
 subprojects {
     project.evaluationDependsOn(':app')
+    
+    // Fix for "files have different roots" error on Windows when project and cache are on different drives
+    project.pluginManager.withPlugin('com.android.library') {
+        android {
+            testOptions {
+                unitTests.all {
+                    enabled = false
+                }
+            }
+        }
+    }
 }
 
 tasks.register("clean", Delete) {

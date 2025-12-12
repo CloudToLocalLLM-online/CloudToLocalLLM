@@ -39,6 +39,10 @@ class MockSessionStorageService extends SessionStorageService {
 // Mock AuthService
 class MockAuthService extends ChangeNotifier implements AuthService {
   @override
+  bool get isRestoringSession => false;
+  @override
+  Future<void> updateDisplayName(String name) async {}
+  @override
   UserModel? currentUser = UserModel(
     id: 'test-user-id',
     email: 'test@example.com',

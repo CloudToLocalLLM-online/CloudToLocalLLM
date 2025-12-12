@@ -10,6 +10,10 @@ import 'dart:math';
 // Simple mock AuthService for testing
 class _MockAuthService extends ChangeNotifier implements AuthService {
   @override
+  bool get isRestoringSession => false;
+  @override
+  Future<void> updateDisplayName(String name) async {}
+  @override
   ValueNotifier<bool> isAuthenticated = ValueNotifier(false);
 
   @override

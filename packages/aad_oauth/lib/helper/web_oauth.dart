@@ -1,10 +1,9 @@
-/// Microsoft identity platform authentication library.
-/// @nodoc
-@JS('aadOauth')
+@JS()
 library msauth;
 
 import 'dart:async';
 import 'dart:convert';
+import 'dart:js_interop';
 
 import 'package:aad_oauth/helper/core_oauth.dart';
 import 'package:aad_oauth/model/config.dart';
@@ -12,46 +11,26 @@ import 'package:aad_oauth/model/failure.dart';
 import 'package:aad_oauth/model/msalconfig.dart';
 import 'package:aad_oauth/model/token.dart';
 import 'package:dartz/dartz.dart';
-import 'package:js/js.dart';
-import 'dart:js_util';
 
-@JS('init')
-external void jsInit(MsalConfig config);
+@JS('aadOauth')
+external AadOauth get aadOauth;
 
-@JS('login')
-external void jsLogin(
-  bool refreshIfAvailable,
-  bool useRedirect,
-  void Function(dynamic) onSuccess,
-  void Function(dynamic) onError,
-);
-
-@JS('logout')
-external void jsLogout(
-  void Function() onSuccess,
-  void Function(dynamic) onError,
-  bool showPopup,
-);
-
-@JS('getAccessToken')
-external Object jsGetAccessToken();
-
-@JS('getIdToken')
-external Object jsGetIdToken();
-
-@JS('hasCachedAccountInformation')
-external bool jsHasCachedAccountInformation();
-
-@JS('refreshToken')
-external void jsRefreshToken(
-  void Function(dynamic) onSuccess,
-  void Function(dynamic) onError,
-);
+extension type AadOauth._(JSObject _) implements JSObject {
+  external void init(MsalConfig config);
+  external void login(bool refreshIfAvailable, bool useRedirect,
+      JSFunction onSuccess, JSFunction onError);
+  external void logout(
+      JSFunction onSuccess, JSFunction onError, bool showPopup);
+  external JSAny? getAccessToken();
+  external JSAny? getIdToken();
+  external bool hasCachedAccountInformation();
+  external void refreshToken(JSFunction onSuccess, JSFunction onError);
+}
 
 class WebOAuth extends CoreOAuth {
   final Config config;
   WebOAuth(this.config) {
-    jsInit(MsalConfig.construct(
+    aadOauth.init(MsalConfig.construct(
         tenant: config.tenant,
         policy: config.policy,
         clientId: config.clientId,
@@ -83,33 +62,44 @@ class WebOAuth extends CoreOAuth {
 
   @override
   Future<String?> getAccessToken() async {
-    return promiseToFuture(jsGetAccessToken());
+    final token = aadOauth.getAccessToken();
+    return (token as JSString?)?.toDart;
   }
 
   @override
   Future<String?> getIdToken() async {
-    return promiseToFuture(jsGetIdToken());
+    final token = aadOauth.getIdToken();
+    return (token as JSString?)?.toDart;
   }
 
   @override
   Future<bool> get hasCachedAccountInformation =>
-      Future<bool>.value(jsHasCachedAccountInformation());
+      Future<bool>.value(aadOauth.hasCachedAccountInformation());
 
   @override
   Future<Either<Failure, Token>> login(
       {bool refreshIfAvailable = false}) async {
     final completer = Completer<Either<Failure, Token>>();
 
-    jsLogin(
+    aadOauth.login(
       refreshIfAvailable,
       config.webUseRedirect,
-      allowInterop(
-          (value) => completer.complete(Right(Token(accessToken: value)))),
-      allowInterop((error) => completer.complete(Left(AadOauthFailure(
-            errorType: ErrorType.accessDeniedOrAuthenticationCanceled,
-            message:
-                'Access denied or authentication canceled. Error: ${error.toString()}',
-          )))),
+      ((JSAny value) {
+        String? tokenStr;
+        if (value.isA<JSString>()) {
+          tokenStr = (value as JSString).toDart;
+        }
+        // If not a string, we might want to handle it or just complete with null/empty if that's valid?
+        // Assuming string for now based on legacy logic.
+        completer.complete(Right(Token(accessToken: tokenStr)));
+      }).toJS,
+      ((JSAny error) {
+        completer.complete(Left(AadOauthFailure(
+          errorType: ErrorType.accessDeniedOrAuthenticationCanceled,
+          message:
+              'Access denied or authentication canceled. Error: ${error.toString()}',
+        )));
+      }).toJS,
     );
 
     return completer.future;
@@ -119,14 +109,21 @@ class WebOAuth extends CoreOAuth {
   Future<Either<Failure, Token>> refreshToken() {
     final completer = Completer<Either<Failure, Token>>();
 
-    jsRefreshToken(
-      allowInterop(
-          (value) => completer.complete(Right(Token(accessToken: value)))),
-      allowInterop((error) => completer.complete(Left(AadOauthFailure(
-            errorType: ErrorType.accessDeniedOrAuthenticationCanceled,
-            message:
-                'Access denied or authentication canceled. Error: ${error.toString()}',
-          )))),
+    aadOauth.refreshToken(
+      ((JSAny value) {
+        String? tokenStr;
+        if (value.isA<JSString>()) {
+          tokenStr = (value as JSString).toDart;
+        }
+        completer.complete(Right(Token(accessToken: tokenStr)));
+      }).toJS,
+      ((JSAny error) {
+        completer.complete(Left(AadOauthFailure(
+          errorType: ErrorType.accessDeniedOrAuthenticationCanceled,
+          message:
+              'Access denied or authentication canceled. Error: ${error.toString()}',
+        )));
+      }).toJS,
     );
 
     return completer.future;
@@ -136,14 +133,12 @@ class WebOAuth extends CoreOAuth {
   Future<void> logout({bool showPopup = true}) async {
     final completer = Completer<void>();
 
-    jsLogout(
-      allowInterop(completer.complete),
-      allowInterop((error) => completer.completeError(error)),
+    aadOauth.logout(
+      (() => completer.complete()).toJS,
+      ((JSAny error) => completer.completeError(error.toString())).toJS,
       showPopup,
     );
 
     return completer.future;
   }
 }
-
-CoreOAuth getOAuthConfig(Config config) => WebOAuth(config);

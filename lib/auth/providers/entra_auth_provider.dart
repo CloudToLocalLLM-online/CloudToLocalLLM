@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
-import 'package:web/web.dart' as web;
+
 import 'dart:js_interop';
 // import 'dart:js_interop.unsafe';
 import 'package:cloudtolocalllm/models/user_model.dart';
@@ -84,9 +84,7 @@ class EntraAuthProvider implements AuthProvider {
           'cacheLocation': 'localStorage',
           'storeAuthStateInCookie': true,
         },
-        'system': {
-          'allowNativeBroker': false
-        }
+        'system': {'allowNativeBroker': false}
       }.jsify() as JSObject;
 
       _msalInstance = PublicClientApplication(msalConfig);
@@ -120,12 +118,13 @@ class EntraAuthProvider implements AuthProvider {
   void _checkCurrentAccount() {
     if (_msalInstance == null) return;
     // Basic implementation: get first account
+    // Basic implementation: get first account
     final accounts = _msalInstance!.getAllAccounts();
     // This is a rough array check in JS interop
-    final accountsList = (accounts as JSArray<AccountInfo>);
+    final accountsList = (accounts as JSArray<AccountInfo>).toDart;
 
-    if (accountsList.length > 0) {
-      final account = accountsList.toDart[0];
+    if (accountsList.isNotEmpty) {
+      final account = accountsList[0];
       _updateUserFromAccount(account);
     }
   }
@@ -177,9 +176,9 @@ class EntraAuthProvider implements AuthProvider {
     try {
       // Need to find the account again
       final accounts = _msalInstance!.getAllAccounts();
-      final accountsList = (accounts as JSArray<AccountInfo>);
-      if (accountsList.length == 0) return null;
-      final account = accountsList.toDart[0];
+      final accountsList = (accounts as JSArray<AccountInfo>).toDart;
+      if (accountsList.isEmpty) return null;
+      final account = accountsList[0];
 
       final request =
           {'scopes': _scopes, 'account': account}.jsify() as JSObject;

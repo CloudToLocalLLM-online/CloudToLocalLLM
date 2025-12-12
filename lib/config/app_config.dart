@@ -59,6 +59,7 @@ class AppConfig {
   static const double tabletBreakpoint = 1024.0;
 
   // Feature Flags
+  static const bool enableSupabase = false;
   static const bool enableDarkMode = true;
   static const bool enableAnalytics = false; // Disabled for privacy
   static const bool enableDebugMode = true; // Enabled for v3.5.2 development

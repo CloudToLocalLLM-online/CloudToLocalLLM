@@ -69,7 +69,7 @@ export class JWTValidationMiddleware implements AuthMiddleware {
    * Get signing key from JWKS
    */
   private getKey(header: jwt.JwtHeader, callback: jwt.SigningKeyCallback) {
-    this.client.getSigningKey(header.kid, (err, key) => {
+    this.client.getSigningKey(header.kid, (err: Error | null, key?: jwksClient.SigningKey) => {
       if (err) {
         callback(err);
         return;
@@ -94,7 +94,7 @@ export class JWTValidationMiddleware implements AuthMiddleware {
         token,
         this.getKey.bind(this),
         { algorithms: ['RS256'] },
-        (err, decoded) => {
+        (err: jwt.VerifyErrors | null, decoded: string | jwt.JwtPayload | undefined) => {
           if (err) {
             let result: TokenValidationResult;
             if (err instanceof jwt.TokenExpiredError) {
