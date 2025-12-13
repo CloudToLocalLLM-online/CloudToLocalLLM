@@ -45,7 +45,7 @@ The CI/CD workflow automatically creates the signing configuration from GitHub S
 
 **Setup Instructions:**
 
-See [docs/ANDROID_BUILD_GUIDE.md](../docs/ANDROID_BUILD_GUIDE.md) for complete setup instructions.
+See  for complete setup instructions.
 
 ## Security Notes
 
@@ -139,4 +139,4 @@ flutter build apk --release
 
 - [Flutter Android Deployment](https://docs.flutter.dev/deployment/android)
 - [Android App Signing](https://developer.android.com/studio/publish/app-signing)
-- [Android Build Guide](../docs/ANDROID_BUILD_GUIDE.md)
+- 

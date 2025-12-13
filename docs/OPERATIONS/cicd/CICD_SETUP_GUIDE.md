@@ -154,7 +154,7 @@ Automatic on push to `main` branch (for cloud services only)
 ### Desktop Build Issues
 
 For detailed troubleshooting of desktop builds, see:
-- **[Build Troubleshooting Guide](BUILD_TROUBLESHOOTING.md)** - Comprehensive guide for build issues
+- **** - Comprehensive guide for build issues
 
 **Quick Fixes:**
 - **Build failed?** Re-run the workflow (often fixes transient issues)

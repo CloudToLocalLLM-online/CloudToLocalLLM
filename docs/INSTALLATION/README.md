@@ -10,9 +10,9 @@ This directory contains platform-specific installation guides for CloudToLocalLL
 - **[macOS Installation](MACOS.md)** - Coming soon
 
 ### 🚀 **Quick Start**
-- **[Prerequisites](PREREQUISITES.md)** - What you need before installing
-- **[First Time Setup](FIRST_TIME_SETUP.md)** - Getting started after installation
-- **[Troubleshooting](TROUBLESHOOTING.md)** - Common installation issues
+- **** - What you need before installing
+- **** - Getting started after installation
+- **** - Common installation issues
 
 ---
 
@@ -102,7 +102,7 @@ CloudToLocalLLM requires Ollama to run local AI models:
 ## 🆘 Need Help?
 
 ### 📚 **Documentation**
-- **[Troubleshooting Guide](TROUBLESHOOTING.md)** - Common installation issues
+- **** - Common installation issues
 - **[User Guide](../USER_DOCUMENTATION/USER_GUIDE.md)** - How to use CloudToLocalLLM
 - **[FAQ](../USER_DOCUMENTATION/SETUP_TROUBLESHOOTING_FAQ.md)** - Frequently asked questions
 

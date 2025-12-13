@@ -9,7 +9,7 @@ Welcome to the CloudToLocalLLM documentation! This directory contains comprehens
 - **[Linux Installation](INSTALLATION/LINUX.md)** - Ubuntu, Debian, Arch, and other distributions
 - **[Windows Installation](INSTALLATION/WINDOWS.md)** - Windows 10/11 desktop application
 - **[macOS Installation](INSTALLATION/MACOS.md)** - Coming soon (development preview available)
-- **[First Time Setup](USER_DOCUMENTATION/FIRST_TIME_SETUP.md)** - Getting started after installation
+- **** - Getting started after installation
 
 ### 👥 **User Guides**
 - **[User Guide](USER_DOCUMENTATION/USER_GUIDE.md)** - How to use CloudToLocalLLM
@@ -20,11 +20,14 @@ Welcome to the CloudToLocalLLM documentation! This directory contains comprehens
 ### 🏗️ Architecture Documentation
 - **[System Architecture](ARCHITECTURE/SYSTEM_ARCHITECTURE.md)** - Overall system design
 - **[Secure Tunnel & Web Interface Design](ARCHITECTURE/SECURE_TUNNEL_WEB_INTERFACE_DESIGN.md)** - Comprehensive design specification for core infrastructure components
-- **[Simplified Tunnel Architecture](ARCHITECTURE/SIMPLIFIED_TUNNEL_ARCHITECTURE.md)** - New streamlined tunnel system
-- **[Streaming Proxy Architecture](ARCHITECTURE/STREAMING_PROXY_ARCHITECTURE.md)** - Multi-tenant proxy system
-- **[Multi-Container Architecture](ARCHITECTURE/MULTI_CONTAINER_ARCHITECTURE.md)** - Container orchestration
+- **[Tunnel System](ARCHITECTURE/TUNNEL_SYSTEM.md)** - Secure tunnel management
 - **[System Tray Implementation](ARCHITECTURE/UNIFIED_FLUTTER_NATIVE_SYSTEM_TRAY.md)** - Desktop integration details
 - **[Unified Flutter Web](ARCHITECTURE/UNIFIED_FLUTTER_WEB.md)** - Web platform architecture
+- **[Architecture Codemap](ARCHITECTURE/architecture-codemap.md)** - Code organization and structure
+- **[Chisel Integration Plan](ARCHITECTURE/CHISEL_INTEGRATION_PLAN.md)** - Chisel tunnel integration
+- **[LangChain Integration Plan](ARCHITECTURE/LANGCHAIN_INTEGRATION_PLAN.md)** - AI framework integration
+- **[Tunnel Feature Analysis](ARCHITECTURE/TUNNEL_FEATURE_ANALYSIS.md)** - Tunnel system capabilities
+- **[Third Party Tunnel Evaluation](ARCHITECTURE/THIRD_PARTY_TUNNEL_EVALUATION.md)** - Alternative tunnel solutions
 
 ### 🔗 Tunnel Integration
 - **[Zrok Tunnel System](ARCHITECTURE/TUNNEL_ARCHITECTURE.md)** - Secure tunnel management with zrok
@@ -35,23 +38,32 @@ Welcome to the CloudToLocalLLM documentation! This directory contains comprehens
   - Troubleshooting and support
 
 ### 🚀 **Deployment & Operations**
+- **[Provider Infrastructure Guide](DEPLOYMENT/PROVIDER_INFRASTRUCTURE_GUIDE.md)** - Multi-cloud deployment options and current status
 - **[Deployment Overview](DEPLOYMENT/DEPLOYMENT_OVERVIEW.md)** - All deployment options and strategies
-- **[Scripts Overview](DEPLOYMENT/SCRIPTS_OVERVIEW.md)** - Comprehensive guide to deployment scripts
 - **[Complete Deployment Workflow](DEPLOYMENT/COMPLETE_DEPLOYMENT_WORKFLOW.md)** - End-to-end deployment process
 - **[Strict Deployment Policy](DEPLOYMENT/STRICT_DEPLOYMENT_POLICY.md)** - Zero-tolerance quality standards
+- **[Auth0 Migration Guide](DEPLOYMENT/AUTH0_MIGRATION_GUIDE.md)** - Authentication system migration
+- **[Docker Deployment](DEPLOYMENT/DOCKER_DEPLOYMENT.md)** - Container-based deployment
 - **[Self-Hosting Guide](OPERATIONS/SELF_HOSTING.md)** - Deploy your own instance
-- **[Infrastructure Guide](OPERATIONS/INFRASTRUCTURE_GUIDE.md)** - Server requirements and setup
-- **[Versioning Strategy](DEPLOYMENT/VERSIONING_STRATEGY.md)** - Version management approach
-- **[AWS Operations](ops/aws/README.md)** - AWS infrastructure and deployment
-- **[Kubernetes Operations](ops/kubernetes/README.md)** - Kubernetes deployment and management
-- **[CI/CD Operations](ops/cicd/README.md)** - CI/CD pipelines and workflows
+- **[Infrastructure Guide](OPERATIONS/INFRASTRUCTURE.md)** - Server requirements and setup
+- **[Disaster Recovery Strategy](OPERATIONS/DISASTER_RECOVERY_STRATEGY.md)** - Business continuity planning
+- **[AWS Operations](OPERATIONS/aws/README.md)** - AWS infrastructure and deployment
+- **[Kubernetes Operations](OPERATIONS/kubernetes/README.md)** - Kubernetes deployment and management
+- **[CI/CD Operations](OPERATIONS/cicd/README.md)** - CI/CD pipelines and workflows
 
 ### 👨‍💻 **Development**
 - **[Developer Onboarding](DEVELOPMENT/DEVELOPER_ONBOARDING.md)** - Get started with development
-- **[Development Workflow](development/DEVELOPMENT_WORKFLOW.md)** - Development tools and automation
+- **[Development Workflow](DEVELOPMENT/DEVELOPMENT_WORKFLOW.md)** - Development tools and automation
 - **[Building Guide](DEVELOPMENT/BUILDING_GUIDE.md)** - Build applications for all platforms
 - **[API Documentation](DEVELOPMENT/API_DOCUMENTATION.md)** - Technical API reference
-- **[Contribution Guidelines](development/CONTRIBUTING.md)** - How to contribute to the project
+- **[Contribution Guidelines](DEVELOPMENT/CONTRIBUTING.md)** - How to contribute to the project
+- **** - Android platform development
+- **[Linux Build Guide](DEVELOPMENT/LINUX_BUILD_GUIDE.md)** - Linux platform development
+- **[Build Scripts](DEVELOPMENT/BUILD_SCRIPTS.md)** - Automated build processes
+- **** - Common build issues
+- **[MCP Workflow and Rules](DEVELOPMENT/MCP_WORKFLOW_AND_RULES.md)** - Model Context Protocol integration
+- **[Gemini Setup](DEVELOPMENT/SETUP-GEMINI.md)** - Google Gemini AI integration
+- **[PAT Setup](DEVELOPMENT/SETUP-PAT.md)** - Personal Access Token configuration
 
 ### 🔧 **Backend Documentation**
 - **[Backend Overview](backend/README.md)** - Overview of backend services
@@ -60,9 +72,13 @@ Welcome to the CloudToLocalLLM documentation! This directory contains comprehens
 - **[Backend Operations](backend/ops/README.md)** - Backup, failover, and monitoring
 
 ### 📋 **Additional Resources**
+- **[API Documentation](API/)** - API reference and tier system
+- **[Testing Documentation](TESTING/)** - Testing strategies and guides
+- **[Security Documentation](SECURITY/)** - Security policies and audit reports
 - **[Release Notes](RELEASE/RELEASE_NOTES.md)** - Version history and changes
+- **[Versioning Documentation](VERSIONING/)** - Version management and build processes
 - **[Legal Documentation](LEGAL/)** - Privacy policy and terms of service
-- **[LangChain Integration](LANGCHAIN_INTEGRATION_PLAN.md)** - Advanced AI capabilities
+- **[Audit Reports](audit/)** - Documentation audit and cleanup reports
 - **[Archive](archive/README.md)** - Archived documentation and reports
 
 ## 📖 Documentation Standards
@@ -100,7 +116,7 @@ See our [Contribution Guidelines](development/CONTRIBUTING.md) for detailed info
 ### **🆕 New Users**
 1. **[Choose Installation Method](INSTALLATION/README.md)** - Pick your platform
 2. **[Install CloudToLocalLLM](INSTALLATION/)** - Follow platform-specific guide
-3. **[First Time Setup](USER_DOCUMENTATION/FIRST_TIME_SETUP.md)** - Configure your installation
+3. **** - Configure your installation
 4. **[User Guide](USER_DOCUMENTATION/USER_GUIDE.md)** - Learn how to use the application
 
 ### **🏠 Self-Hosters**
@@ -111,16 +127,17 @@ See our [Contribution Guidelines](development/CONTRIBUTING.md) for detailed info
 
 ### **👨‍💻 Developers**
 1. **[Developer Onboarding](DEVELOPMENT/DEVELOPER_ONBOARDING.md)** - Set up development environment
-2. **[Development Workflow](development/DEVELOPMENT_WORKFLOW.md)** - Learn the development process
+2. **[Development Workflow](DEVELOPMENT/DEVELOPMENT_WORKFLOW.md)** - Learn the development process
 3. **[Building Guide](DEVELOPMENT/BUILDING_GUIDE.md)** - Build for different platforms
 4. **[API Documentation](DEVELOPMENT/API_DOCUMENTATION.md)** - Technical API reference
-5. **[Contribution Guidelines](development/CONTRIBUTING.md)** - How to contribute
+5. **[Contribution Guidelines](DEVELOPMENT/CONTRIBUTING.md)** - How to contribute
 
 ### **🔧 System Administrators**
 1. **[Deployment Overview](DEPLOYMENT/DEPLOYMENT_OVERVIEW.md)** - Understand deployment options
-2. **[Kubernetes Operations](ops/kubernetes/README.md)** - Kubernetes deployment guide
-3. **[Infrastructure Guide](OPERATIONS/INFRASTRUCTURE_GUIDE.md)** - Server management
-4. **[Backend Operations](backend/ops/README.md)** - Backend maintenance
+2. **[Kubernetes Operations](OPERATIONS/kubernetes/README.md)** - Kubernetes deployment guide
+3. **[Infrastructure Guide](OPERATIONS/INFRASTRUCTURE.md)** - Server management
+4. **[AWS Operations](OPERATIONS/aws/README.md)** - AWS infrastructure management
+5. **[Backend Operations](backend/ops/README.md)** - Backend maintenance
 
 ### For Developers
 1. Review [System Architecture](ARCHITECTURE/SYSTEM_ARCHITECTURE.md)

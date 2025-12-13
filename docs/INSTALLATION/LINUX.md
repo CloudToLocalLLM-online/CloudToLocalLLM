@@ -373,11 +373,11 @@ rm -rf ~/.config/cloudtolocalllm
 
 - [Installation Overview](README.md)
 - [Windows Installation](WINDOWS.md)
-- [Prerequisites](PREREQUISITES.md)
-- [First Time Setup](FIRST_TIME_SETUP.md)
-- [Troubleshooting](TROUBLESHOOTING.md)
+- 
+- 
+- 
 - [User Guide](../USER_DOCUMENTATION/USER_GUIDE.md)
 
 ---
 
-*For additional help, see our [troubleshooting guide](TROUBLESHOOTING.md) or [open an issue](https://github.com/imrightguy/CloudToLocalLLM/issues).*
+*For additional help, see our  or [open an issue](https://github.com/imrightguy/CloudToLocalLLM/issues).*

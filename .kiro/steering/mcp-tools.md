@@ -95,6 +95,84 @@ The `dockerhub` server provides Docker Hub API access:
 
 Docker Hub tools are accessed with the `mcp_dockerhub_` prefix:
 
+## Playwright MCP Server
+
+Browser automation and end-to-end testing capabilities.
+
+### Configuration
+
+The Playwright MCP server is configured in `.kiro/settings/mcp.json`:
+
+```json
+{
+  "playwright": {
+    "command": "npx",
+    "args": [
+      "-y",
+      "@executeautomation/playwright-mcp-server"
+    ],
+    "env": {
+      "PLAYWRIGHT_HEADLESS": "true"
+    },
+    "disabled": false,
+    "autoApprove": [
+      "playwright_navigate",
+      "playwright_screenshot",
+      "playwright_click",
+      "playwright_fill",
+      "playwright_select",
+      "playwright_hover",
+      "playwright_evaluate",
+      "playwright_close",
+      "playwright_custom_user_agent",
+      "playwright_get_visible_text",
+      "playwright_console_logs",
+      "playwright_get_visible_html"
+    ]
+  }
+}
+```
+
+**Tools Available:** 11+ tools for browser automation
+
+### Playwright Tools
+
+1. **playwright_navigate** - Navigate to a URL
+2. **playwright_screenshot** - Take page screenshots
+3. **playwright_click** - Click elements
+4. **playwright_fill** - Fill form inputs
+5. **playwright_select** - Select dropdown options
+6. **playwright_hover** - Hover over elements
+7. **playwright_evaluate** - Execute JavaScript
+8. **playwright_close** - Close browser
+9. **playwright_custom_user_agent** - Set custom user agent
+10. **playwright_get_visible_text** - Extract page text
+11. **playwright_console_logs** - Get browser console logs
+12. **playwright_get_visible_html** - Get page HTML
+
+### Using Playwright Tools
+
+Primary test URL: https://app.cloudtolocalllm.online
+
+```javascript
+// Navigate to application
+mcp_playwright_playwright_navigate({ url: "https://app.cloudtolocalllm.online" })
+
+// Take screenshot for verification
+mcp_playwright_playwright_screenshot({ name: "homepage" })
+
+// Click elements and fill forms
+mcp_playwright_playwright_click({ selector: "#login-button" })
+mcp_playwright_playwright_fill({ selector: "#email", value: "test@example.com" })
+
+// Get page content
+mcp_playwright_playwright_get_visible_text()
+mcp_playwright_playwright_get_visible_html()
+
+// Close browser when done
+mcp_playwright_playwright_close()
+```
+
 ## Context7 MCP Server
 
 Up-to-date code documentation for libraries and frameworks.
@@ -256,23 +334,54 @@ Key dashboards for CloudToLocalLLM:
 
 ### Grafana MCP Server Tools
 
-Available tools through the Grafana MCP server:
-- `query_datasource` - Query metrics from datasources
-- `list_dashboards` - List all dashboards
-- `get_dashboard` - Get dashboard details
-- `create_dashboard` - Create new dashboard
-- `update_dashboard` - Update existing dashboard
-- `delete_dashboard` - Delete dashboard
-- `list_datasources` - List configured datasources
-- `get_datasource` - Get datasource details
-- `create_datasource` - Add new datasource
-- `update_datasource` - Update datasource configuration
-- `delete_datasource` - Remove datasource
-- `list_alerts` - List configured alerts
-- `get_alert` - Get alert details
-- `create_alert` - Create new alert
-- `update_alert` - Update alert configuration
-- `delete_alert` - Delete alert
+Available tools through the Grafana MCP server (100+ tools):
+- **Dashboards**: `search_dashboards`, `get_dashboard_by_uid`, `get_dashboard_summary`, `update_dashboard`, `get_dashboard_panel_queries`
+- **Datasources**: `list_datasources`, `get_datasource_by_uid`, `get_datasource_by_name`
+- **Prometheus**: `query_prometheus`, `list_prometheus_metric_names`, `list_prometheus_label_names`, `list_prometheus_label_values`
+- **Loki**: `query_loki_logs`, `query_loki_stats`, `list_loki_label_names`, `list_loki_label_values`
+- **Alerts**: `list_alert_rules`, `get_alert_rule_by_uid`, `create_alert_rule`, `update_alert_rule`, `delete_alert_rule`
+- **Annotations**: `get_annotations`, `create_annotation`, `update_annotation`, `patch_annotation`
+- **OnCall**: `list_oncall_schedules`, `get_current_oncall_users`, `list_oncall_teams`, `list_alert_groups`
+- **Incidents**: `list_incidents`, `get_incident`, `create_incident`, `add_activity_to_incident`
+- **Teams**: `list_teams`, `list_users_by_org`
+- **Monitoring**: `find_slow_requests`, `find_error_pattern_logs`, `get_assertions`
+
+### Using Grafana Tools
+
+Grafana tools are accessed with the `mcp_grafana_` prefix:
+
+```javascript
+// Query Prometheus metrics
+mcp_grafana_query_prometheus({
+  datasourceUid: "prometheus-uid",
+  expr: "up",
+  queryType: "instant",
+  startTime: "now-1h"
+})
+
+// Search dashboards
+mcp_grafana_search_dashboards({ query: "CloudToLocalLLM" })
+
+// Get dashboard details
+mcp_grafana_get_dashboard_by_uid({ uid: "dashboard-uid" })
+
+// Query Loki logs
+mcp_grafana_query_loki_logs({
+  datasourceUid: "loki-uid",
+  logql: '{app="cloudtolocalllm"}',
+  limit: 100
+})
+
+// List alert rules
+mcp_grafana_list_alert_rules({ limit: 50 })
+
+// Create incident
+mcp_grafana_create_incident({
+  title: "Service Outage",
+  severity: "high",
+  roomPrefix: "incident"
+})
+```
 
 ### Best Practices
 

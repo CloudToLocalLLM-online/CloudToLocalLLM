@@ -319,7 +319,7 @@ curl https://SERVICE_URL/health
 
 ## 📚 Additional Resources
 
-- [Complete Deployment Guide](../../docs/DEPLOYMENT/CLOUDRUN_DEPLOYMENT.md)
+- 
 - [Google Cloud Run Documentation](https://cloud.google.com/run/docs)
 - [Cloud Run Pricing Calculator](https://cloud.google.com/products/calculator)
 - [Best Practices Guide](https://cloud.google.com/run/docs/best-practices)
@@ -327,7 +327,7 @@ curl https://SERVICE_URL/health
 ## 🆘 Support
 
 For issues specific to CloudToLocalLLM Cloud Run deployment:
-1. Check the [troubleshooting section](../../docs/DEPLOYMENT/CLOUDRUN_DEPLOYMENT.md#monitoring-and-troubleshooting)
+1. Check the 
 2. Review service logs in Google Cloud Console
 3. Create an issue in the GitHub repository
 4. Consult the main project documentation

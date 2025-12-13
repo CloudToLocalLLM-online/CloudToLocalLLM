@@ -52,7 +52,7 @@ You can access the latest web deployment directly at: **[cloudtolocalllm.online]
 Comprehensive documentation is available in the `docs/` directory:
 
 *   **[User Guide](docs/USER_DOCUMENTATION/USER_GUIDE.md):** Detailed configuration and usage instructions.
-*   **[First Time Setup](docs/USER_DOCUMENTATION/FIRST_TIME_SETUP.md):** Walkthrough for your first run.
+*   **:** Walkthrough for your first run.
 *   **[Troubleshooting](docs/USER_DOCUMENTATION/USER_TROUBLESHOOTING_GUIDE.md):** Solutions for common issues.
 
 ## 🛠️ Development

@@ -45,11 +45,11 @@ This directory contains deployment documentation for CloudToLocalLLM. The projec
 ### **For New Deployments**
 1. Read [`DEPLOYMENT_OVERVIEW.md`](./DEPLOYMENT_OVERVIEW.md) → Understand deployment options
 2. Read [`COMPLETE_DEPLOYMENT_WORKFLOW.md`](./COMPLETE_DEPLOYMENT_WORKFLOW.md) → Execute deployment
-3. Reference [`KUBERNETES_QUICKSTART.md`](../../KUBERNETES_QUICKSTART.md) → DigitalOcean example
+3. Reference [`KUBERNETES_QUICKSTART.md`](../../k8s/README.md) → DigitalOcean example
 4. See [`k8s/README.md`](../../k8s/README.md) → Complete Kubernetes guide
 
 ### **For Kubernetes Deployment**
-- **Managed Kubernetes**: See [`KUBERNETES_QUICKSTART.md`](../../KUBERNETES_QUICKSTART.md) for DigitalOcean example
+- **Managed Kubernetes**: See [`KUBERNETES_QUICKSTART.md`](../../k8s/README.md) for DigitalOcean example
 - **Self-Hosted Kubernetes**: See [`KUBERNETES_SELF_HOSTED_GUIDE.md`](../../KUBERNETES_SELF_HOSTED_GUIDE.md) for on-premises deployment
 - **Any Kubernetes**: See [`k8s/README.md`](../../k8s/README.md) for platform-agnostic guide
 

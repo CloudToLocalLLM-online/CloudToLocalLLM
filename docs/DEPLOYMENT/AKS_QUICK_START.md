@@ -127,7 +127,7 @@ kubectl logs -n cloudtolocalllm <pod-name>
 
 ## Next Steps
 
-- [Full Setup Guide](./AKS_FIRST_TIME_SETUP.md) - Detailed instructions
+-  - Detailed instructions
 - [Deployment Plan](./AKS_DEPLOYMENT_FIX_PLAN.md) - Architecture details
 - [Script Documentation](../../scripts/README_AKS_DEPLOYMENT.md) - Advanced usage
 

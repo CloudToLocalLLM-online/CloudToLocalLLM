@@ -125,7 +125,7 @@ kubectl apply -f k8s/ingress-nginx.yaml
 - **Self-Hosted Kubernetes**: On-premises clusters, bare metal, or private cloud
 
 For detailed deployment instructions, see:
-- [Kubernetes Quick Start](../../KUBERNETES_QUICKSTART.md) - DigitalOcean example
+- [Kubernetes Quick Start](../../k8s/README.md) - DigitalOcean example
 - [Kubernetes README](../../k8s/README.md) - Complete Kubernetes deployment guide (platform-agnostic)
 - [Self-Hosted Kubernetes Guide](../../KUBERNETES_SELF_HOSTED_GUIDE.md) - For businesses deploying on-premises
 
@@ -178,10 +178,10 @@ For detailed information, see [Versioning Strategy](VERSIONING_STRATEGY.md).
 ### 🔧 **Operations**
 - [Self-Hosting Guide](../OPERATIONS/SELF_HOSTING.md)
 - [Infrastructure Guide](../OPERATIONS/INFRASTRUCTURE_GUIDE.md)
-- [Tunnel Troubleshooting](../OPERATIONS/TUNNEL_TROUBLESHOOTING.md)
+- 
 
 ### ☸️ **Kubernetes Deployment**
-- [Kubernetes Quick Start](../../KUBERNETES_QUICKSTART.md) - DigitalOcean Kubernetes example
+- [Kubernetes Quick Start](../../k8s/README.md) - DigitalOcean Kubernetes example
 - [Kubernetes README](../../k8s/README.md) - Complete Kubernetes deployment guide (works with any cluster)
 
 ### 🏗️ **Architecture**

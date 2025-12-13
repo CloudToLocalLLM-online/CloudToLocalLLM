@@ -2,11 +2,13 @@
 
 ## Frontend
 
-- **Flutter SDK**: 3.8+ (Dart 3.9.0+)
-- **State Management**: Provider pattern
+- **Flutter SDK**: 3.5+ (Dart 3.5.0+)
+- **State Management**: Provider pattern with GetIt dependency injection
 - **Routing**: go_router for navigation
 - **UI Framework**: Material Design with custom theming
 - **Platform Support**: Windows, Linux, Web (macOS in development)
+- **Authentication**: Auth0 with OIDC flows (auth provider agnostic)
+- **Error Tracking**: Sentry Flutter integration
 
 ## Backend Services
 
@@ -21,21 +23,34 @@
 - `provider` - State management
 - `go_router` - Declarative routing
 - `jwt_decoder` - Auth0 token handling
-- `flutter_secure_storage_x` - Secure credential storage
+- `auth0_flutter` - Auth0 authentication
+- `supabase_flutter` - Optional Supabase integration (auth provider agnostic)
+- `flutter_secure_storage` - Secure credential storage
 - `sqflite` / `sqflite_common_ffi` - Local database (desktop/web)
 - `shared_preferences` - Web-compatible storage
 - `window_manager` - Desktop window control
 - `tray_manager` - System tray integration
 - `dartssh2` - SSH tunneling
-- `langchain` / `langchain_ollama` - LangChain integration
+- `langchain` / `langchain_ollama` / `langchain_community` - LangChain integration
 - `get_it` - Dependency injection
 - `dio` - HTTP client with streaming
 - `web_socket_channel` - WebSocket support
+- `sentry_flutter` - Error tracking and performance monitoring
+- `web` - Web interop (replaces deprecated `js` package)
+- `app_links` - Deep linking support
+- `rxdart` - Reactive extensions for Dart
 
 ### Node.js
 - `@modelcontextprotocol/sdk` - MCP integration
+- `@aws-sdk/client-ce` - AWS Cost Explorer client
+- `@aws-sdk/client-cloudwatch` - AWS CloudWatch client
+- `@playwright/test` - End-to-end testing
 - `zod` - Schema validation
 - `jest` - Testing framework
+- `fast-check` - Property-based testing
+- `supertest` - HTTP testing
+- `jsonwebtoken` - JWT token handling
+- `dotenv` - Environment configuration
 
 ## Build System
 
@@ -97,10 +112,17 @@ npm test
 
 The development environment has the following CLI tools available:
 
-### Azure CLI (`az`)
-- Use for Azure resource management and operations
+### AWS CLI (`aws`)
+- Use for AWS resource management and operations
 - Authentication, resource queries, deployments
-- Prefer `az` commands over manual Azure portal operations
+- Prefer `aws` commands over manual AWS console operations
+- EKS cluster management, CloudFormation deployments
+- Cost monitoring and optimization
+
+### Azure CLI (`az`) - Legacy
+- Previously used for Azure resource management
+- Being phased out in favor of AWS infrastructure
+- Still available for migration tasks
 
 ### GitHub CLI (`gh`)
 - Use for GitHub operations (repos, issues, PRs, releases)
@@ -150,16 +172,18 @@ npx playwright install chromium
 **Best Practices:**
 - Use CLI tools for automation and scripting tasks
 - Leverage `gh` for release management and GitHub Actions
-- Use `az` for cloud infrastructure queries and management
+- Use `aws` for cloud infrastructure queries and management
 - Use Grafana for real-time monitoring and alerting
 - Use Playwright to verify deployments and test live applications
 - CLI tools provide better automation and reproducibility than manual operations
+- Monitor AWS costs using `scripts/aws/cost-monitoring.js`
 
 ## Database
 
 - **Desktop**: SQLite via sqflite_common_ffi
 - **Web**: IndexedDB via sqflite web implementation
 - **Cloud**: PostgreSQL (StatefulSet in Kubernetes)
+- **AWS**: RDS PostgreSQL or EKS-hosted PostgreSQL StatefulSet
 
 ## Deployment
 
@@ -170,6 +194,22 @@ npx playwright install chromium
 ```
 
 ### Cloud Infrastructure
+
+**AWS EKS Deployment:**
+```bash
+# Setup AWS OIDC provider for GitHub Actions
+.\scripts\aws\setup-oidc-provider.ps1
+
+# Deploy CloudFormation stacks
+aws cloudformation create-stack --stack-name cloudtolocalllm-vpc --template-body file://config/cloudformation/vpc-networking.yaml
+aws cloudformation create-stack --stack-name cloudtolocalllm-iam --template-body file://config/cloudformation/iam-roles.yaml
+aws cloudformation create-stack --stack-name cloudtolocalllm-eks --template-body file://config/cloudformation/eks-cluster.yaml
+
+# Deploy Kubernetes resources
+kubectl apply -f k8s/
+```
+
+**Legacy Azure AKS (being migrated):**
 ```bash
 # Build Docker images
 docker build -f config/docker/Dockerfile.web -t registry/app-web:latest .
@@ -186,3 +226,91 @@ kubectl apply -f k8s/
 - Meaningful variable and function names
 - Comments for complex logic
 - All new features require tests
+
+## AWS Infrastructure
+
+### EKS Deployment Architecture
+
+- **Cluster**: AWS EKS with Kubernetes 1.30
+- **Nodes**: t3.medium instances (cost-optimized for development)
+- **Networking**: VPC with private subnets, NAT gateways, Network Load Balancer
+- **Security**: OIDC authentication, IAM roles, private node groups
+- **Monitoring**: CloudWatch Container Insights, custom metrics
+
+### Infrastructure as Code
+
+**CloudFormation Templates:**
+- `config/cloudformation/vpc-networking.yaml` - VPC, subnets, security groups
+- `config/cloudformation/iam-roles.yaml` - IAM roles and policies
+- `config/cloudformation/eks-cluster.yaml` - EKS cluster and node groups
+
+**Deployment Order:**
+1. VPC and networking infrastructure
+2. IAM roles and OIDC provider
+3. EKS cluster and node groups
+4. Kubernetes resources (k8s/ directory)
+
+### Cost Optimization
+
+**Monthly Budget:** $300 (development environment)
+
+**Cost Monitoring:**
+```bash
+# Generate cost report
+node scripts/aws/cost-monitoring.js
+
+# Estimated costs:
+# - t3.medium (2 nodes): ~$60/month
+# - Network Load Balancer: ~$16/month
+# - EBS storage: ~$10/month
+# - Data transfer: ~$5/month
+# Total: ~$91/month (well within budget)
+```
+
+**Cost Controls:**
+- Auto-scaling node groups (min: 1, max: 5)
+- t3.medium instances (cost-effective)
+- Spot instances consideration for non-critical workloads
+- Resource requests/limits to prevent over-provisioning
+
+### Security Best Practices
+
+- **OIDC Authentication**: No long-lived AWS credentials in GitHub Actions
+- **Private Subnets**: EKS nodes not publicly accessible
+- **IAM Roles**: Least privilege access, service-specific roles
+- **Network Policies**: Kubernetes network segmentation
+- **Encryption**: At-rest and in-transit encryption
+- **Secrets Management**: Kubernetes secrets with encryption
+
+### Disaster Recovery
+
+**Backup Strategy:**
+```bash
+# Database backup
+./scripts/aws/backup-postgres.sh
+
+# Database restore
+./scripts/aws/restore-postgres.sh
+```
+
+**Recovery Procedures:**
+- Infrastructure recreation from CloudFormation templates
+- Database restoration from automated backups
+- Application deployment via GitHub Actions
+- DNS failover using Cloudflare
+
+### Migration from Azure
+
+**Status:** In progress - migrating from Azure AKS to AWS EKS
+
+**Migration Steps:**
+1. ✅ AWS infrastructure setup (CloudFormation templates)
+2. ✅ OIDC provider configuration
+3. ✅ GitHub Actions workflow updates
+4. 🔄 DNS migration to AWS load balancer
+5. ⏳ Azure resource decommissioning
+
+**Rollback Plan:**
+- Maintain Azure infrastructure during migration
+- DNS-based traffic switching
+- Automated rollback procedures

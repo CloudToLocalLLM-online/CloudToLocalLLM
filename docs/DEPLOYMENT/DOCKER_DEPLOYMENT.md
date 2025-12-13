@@ -391,7 +391,7 @@ For production deployments, **Kubernetes is recommended** over Docker Compose:
 - ✅ Supports both managed and self-hosted clusters
 
 **See:**
-- [Kubernetes Quick Start](../KUBERNETES_QUICKSTART.md) - DigitalOcean example
+- [Kubernetes Quick Start](../k8s/README.md) - DigitalOcean example
 - [Kubernetes README](../k8s/README.md) - Complete Kubernetes guide
 - [Self-Hosted Kubernetes Guide](../KUBERNETES_SELF_HOSTED_GUIDE.md) - For businesses
 

@@ -551,7 +551,7 @@ If you need to rotate the keystore:
 
 If you encounter issues:
 
-1. Check the [BUILD_TROUBLESHOOTING.md](BUILD_TROUBLESHOOTING.md) guide
+1. Check the  guide
 2. Review GitHub Actions logs for specific errors
 3. Test build locally to isolate CI/CD issues
 4. Open an issue with build logs and error messages

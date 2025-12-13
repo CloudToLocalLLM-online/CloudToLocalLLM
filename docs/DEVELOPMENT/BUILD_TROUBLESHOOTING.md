@@ -505,7 +505,7 @@ If you exceed free tier, consider:
 1. **Verify Android build is enabled**:
    - Check `.github/workflows/build-release.yml`
    - Ensure Android matrix entry is uncommented
-   - See [ANDROID_BUILD_GUIDE.md](ANDROID_BUILD_GUIDE.md) for setup
+   - See  for setup
 
 2. **Check GitHub Secrets**:
    - Verify all Android signing secrets are configured
@@ -577,7 +577,7 @@ If you exceed free tier, consider:
    - List aliases: `keytool -list -keystore release-keystore.jks`
 
 3. **Regenerate keystore** if corrupted:
-   - Create new keystore (see [ANDROID_BUILD_GUIDE.md](ANDROID_BUILD_GUIDE.md))
+   - Create new keystore (see )
    - Update GitHub Secrets with new values
 
 ### Issue: APK Won't Install on Device
@@ -698,7 +698,7 @@ If you exceed free tier, consider:
 ### Android Build Resources
 
 For detailed Android build setup and configuration:
-- [ANDROID_BUILD_GUIDE.md](ANDROID_BUILD_GUIDE.md) - Complete setup guide with secret configuration
+-  - Complete setup guide with secret configuration
 - [android/README.md](../android/README.md) - Local build instructions
 - [Flutter Android Deployment](https://docs.flutter.dev/deployment/android)
 - [Android App Signing](https://developer.android.com/studio/publish/app-signing)

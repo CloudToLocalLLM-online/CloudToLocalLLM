@@ -69,6 +69,13 @@ This directory contains all automation scripts for CloudToLocalLLM development, 
 ### Backup Scripts (`backup/`)
 - **full_backup.sh** - Comprehensive backup creation
 
+### Documentation & Validation Scripts
+- **validate-internal-links.js** - Validates internal markdown links across all documentation
+- **validate-organization.js** - Validates project organization and structure
+- **review-content-accuracy.js** - Reviews documentation content for accuracy
+- **fix-broken-links.js** - Fixes common broken link patterns
+- **fix-common-link-issues.js** - Addresses frequent link formatting issues
+
 ### Utility Scripts
 - **check_ssl_expiry.sh** - SSL certificate expiry monitoring
 - **health_check.sh** - System health monitoring
@@ -102,6 +109,21 @@ This directory contains all automation scripts for CloudToLocalLLM development, 
 
 # Lightweight VPS deployment
 ./scripts/deploy/update_and_deploy.sh
+```
+
+### Documentation Validation
+```bash
+# Validate all internal documentation links
+node scripts/validate-internal-links.js
+
+# Review content accuracy
+node scripts/review-content-accuracy.js
+
+# Fix common link issues
+node scripts/fix-common-link-issues.js
+
+# Validate project organization
+node scripts/validate-organization.js
 ```
 
 ### Maintenance

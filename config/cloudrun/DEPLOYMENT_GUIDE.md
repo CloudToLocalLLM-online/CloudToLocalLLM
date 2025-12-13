@@ -342,7 +342,7 @@ gcloud builds submit --config=cloudbuild.yaml .
 
 ## 📚 Additional Resources
 
-- **Complete Documentation**: [docs/DEPLOYMENT/CLOUDRUN_DEPLOYMENT.md](../../docs/DEPLOYMENT/CLOUDRUN_DEPLOYMENT.md)
+- **Complete Documentation**: 
 - **Cost Analysis**: [scripts/cloudrun/estimate-costs.sh](../../scripts/cloudrun/estimate-costs.sh)
 - **Health Monitoring**: [scripts/cloudrun/health-check.sh](../../scripts/cloudrun/health-check.sh)
 - **Google Cloud Run Docs**: https://cloud.google.com/run/docs

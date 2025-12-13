@@ -535,15 +535,15 @@ const PERFORMANCE_THRESHOLDS = {
 ## 📚 **Documentation Integration**
 
 ### **Cross-References**
-- **[Simplified Tunnel Architecture](SIMPLIFIED_TUNNEL_ARCHITECTURE.md)** - Current tunnel implementation
+- **** - Current tunnel implementation
 - **[System Architecture](SYSTEM_ARCHITECTURE.md)** - Overall system design
-- **[VPS Deployment Guide](../DEPLOYMENT/VPS_DEPLOYMENT.md)** - Deployment procedures
-- **[Security Best Practices](../OPERATIONS/SECURITY_GUIDE.md)** - Security guidelines
+- **** - Deployment procedures
+- **** - Security guidelines
 
 ### **API Documentation**
-- **[Tunnel API Reference](../DEVELOPMENT/TUNNEL_API.md)** - WebSocket API specification
-- **[Authentication API](../DEVELOPMENT/AUTH_API.md)** - Supabase Auth integration details
-- **[Web Interface API](../DEVELOPMENT/WEB_API.md)** - Frontend API documentation
+- **** - WebSocket API specification
+- **** - Supabase Auth integration details
+- **** - Frontend API documentation
 
 ---
 

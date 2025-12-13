@@ -8,7 +8,7 @@ This is the **ONE AND ONLY** deployment document for CloudToLocalLLM. Follow thi
 
 **Related Documentation:**
 - [System Architecture](../ARCHITECTURE/SYSTEM_ARCHITECTURE.md)
-- [Simplified Tunnel Architecture](../ARCHITECTURE/SIMPLIFIED_TUNNEL_ARCHITECTURE.md)
+- 
 - [Versioning Strategy](./VERSIONING_STRATEGY.md)
 
 ---

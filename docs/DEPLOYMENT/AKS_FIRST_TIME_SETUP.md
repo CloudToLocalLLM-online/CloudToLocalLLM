@@ -496,7 +496,7 @@ az role assignment list --scope $(az acr show --name cloudtolocalllm --query id 
 ### Get Help
 
 For more troubleshooting steps, see:
-- [AKS Troubleshooting Guide](./AKS_TROUBLESHOOTING.md)
+- 
 - [GitHub Issues](https://github.com/YOUR-USERNAME/CloudToLocalLLM/issues)
 - [Azure AKS Documentation](https://docs.microsoft.com/en-us/azure/aks/)
 
@@ -545,27 +545,27 @@ Now that your deployment is complete:
 1. **Configure Domain** (if using custom domain)
    - Update Cloudflare DNS records
    - Configure SSL certificates
-   - See: [DNS Configuration Guide](../OPERATIONS/DNS_CONFIGURATION.md)
+   - See: 
 
 2. **Set Up Monitoring**
    - Enable Azure Monitor
    - Configure alerts
-   - See: [Monitoring Guide](../OPERATIONS/MONITORING_SETUP.md)
+   - See: 
 
 3. **Configure Backups**
    - Set up database backups
    - Configure disaster recovery
-   - See: [Backup Guide](../OPERATIONS/BACKUP_STRATEGY.md)
+   - See: 
 
 4. **Security Hardening**
    - Review security best practices
    - Configure network policies
-   - See: [Security Guide](../SECURITY/SECURITY_BEST_PRACTICES.md)
+   - See: 
 
 5. **Performance Optimization**
    - Configure auto-scaling
    - Optimize resource requests/limits
-   - See: [Performance Guide](../OPERATIONS/PERFORMANCE_OPTIMIZATION.md)
+   - See: 
 
 ---
 

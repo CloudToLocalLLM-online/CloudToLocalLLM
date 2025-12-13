@@ -66,6 +66,14 @@ services/
 scripts/
 ├── powershell/             # Windows PowerShell scripts
 │   └── Deploy-CloudToLocalLLM.ps1  # Main deployment script
+├── aws/                    # AWS infrastructure scripts
+│   ├── setup-oidc-provider.ps1     # OIDC provider setup
+│   ├── setup-oidc-provider.sh      # OIDC provider setup (Linux)
+│   ├── verify-oidc-setup.ps1       # OIDC verification
+│   ├── cost-monitoring.js          # AWS cost monitoring
+│   ├── backup-postgres.sh          # Database backup
+│   ├── restore-postgres.sh         # Database restore
+│   └── README.md                   # AWS setup documentation
 ├── deploy/                 # Deployment automation
 ├── setup/                  # Environment setup scripts
 ├── tests/                  # Test automation scripts
@@ -105,6 +113,11 @@ k8s/
 config/
 ├── docker/                 # Dockerfiles for various services
 ├── kubernetes/             # Additional K8s configs
+├── cloudformation/         # AWS CloudFormation templates
+│   ├── vpc-networking.yaml # VPC and networking infrastructure
+│   ├── iam-roles.yaml      # IAM roles and policies
+│   ├── eks-cluster.yaml    # EKS cluster and node groups
+│   └── README.md           # CloudFormation documentation
 ├── nginx/                  # Nginx configurations
 ├── mcp/                    # Model Context Protocol configs
 └── *.template              # Environment templates
@@ -189,7 +202,7 @@ test/
 - Portable package: `cloudtolocalllm-{version}-portable.zip`
 - SHA256 checksums for verification
 
-### Cloud Deployment Pipeline (`deploy-aks.yml`)
+### Cloud Deployment Pipeline (`deploy-eks.yml`)
 
 **Triggers:**
 - Push to `main` branch (paths: `k8s/`, `services/`, `config/`, `lib/`, `web/`)
@@ -197,12 +210,13 @@ test/
 
 **Jobs:**
 1. **deploy**: 
+   - Authenticates to AWS using OIDC (no long-lived credentials)
    - Builds and pushes Docker images to Docker Hub
-   - Updates AKS deployments with new images
+   - Updates EKS deployments with new images
    - Purges Cloudflare cache
    - Waits for rollout completion
 2. **dns-validation**:
-   - Gets load balancer IP from AKS
+   - Gets load balancer IP from EKS
    - Configures Cloudflare DNS records
    - Enables SSL/TLS (Full mode)
    - Enables Always Use HTTPS
@@ -216,6 +230,12 @@ test/
 - https://app.cloudtolocalllm.online
 - https://api.cloudtolocalllm.online
 - https://auth.cloudtolocalllm.online
+
+### Legacy Azure Deployment Pipeline (`deploy-aks.yml`)
+
+**Status:** Being migrated to AWS EKS
+- Previously deployed to Azure AKS
+- Will be decommissioned after AWS migration
 
 ### Docker Image Pipeline (`build-images.yml`)
 
@@ -233,7 +253,12 @@ test/
 - `DOCKERHUB_USERNAME` - Docker Hub username
 - `DOCKERHUB_TOKEN` - Docker Hub access token
 
-**Azure:**
+**AWS:**
+- `AWS_ACCOUNT_ID` - AWS account ID
+- `AWS_REGION` - AWS region (us-east-1)
+- GitHub OIDC authentication (no long-lived credentials stored)
+
+**Azure (Legacy):**
 - `AZURE_CREDENTIALS` - Service principal credentials (JSON)
 - `AZURE_CLIENT_ID` - Azure client ID
 - `AZURE_TENANT_ID` - Azure tenant ID

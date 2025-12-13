@@ -394,7 +394,7 @@ rm .github-secrets-reference.txt
 ## Related Documentation
 
 - [AKS Deployment Fix Plan](../docs/DEPLOYMENT/AKS_DEPLOYMENT_FIX_PLAN.md) - Comprehensive plan and architecture
-- [AKS First Time Setup Guide](../docs/DEPLOYMENT/AKS_FIRST_TIME_SETUP.md) - Step-by-step guide for new users
+-  - Step-by-step guide for new users
 - [CI/CD Setup Guide](../docs/ops/cicd/CICD_SETUP_GUIDE.md) - GitHub Actions workflow documentation
 - [Azure Key Vault Setup](../k8s/AZURE_KEYVAULT_SETUP.md) - Key Vault integration guide
 

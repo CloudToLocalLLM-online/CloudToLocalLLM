@@ -70,7 +70,7 @@ The Simplified Tunnel System replaces the complex multi-layered tunnel architect
 [Web User] → [Cloud Proxy] → [WebSocket] → [Desktop Client] → [Local Ollama]
 ```
 
-For complete technical details, see [Simplified Tunnel Architecture](SIMPLIFIED_TUNNEL_ARCHITECTURE.md).
+For complete technical details, see .
 
 ---
 
