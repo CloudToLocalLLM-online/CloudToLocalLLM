@@ -1,16 +1,15 @@
 # ============================================================================
 # Runtime Dockerfile for CloudToLocalLLM Web Application
-# Uses artifacts from the Universal Builder
+# Uses Ubuntu base with nginx
 # ============================================================================
-ARG BASE_REGISTRY=cloudtolocalllm
-FROM ${BASE_REGISTRY}/base:latest
+FROM ubuntu:22.04
 
-# Switch to root to install Nginx
-USER root
+# Install nginx and create user
 RUN apt-get update && \
     apt-get install -y nginx && \
     rm -rf /var/lib/apt/lists/* && \
-    rm -rf /etc/nginx/conf.d/* /etc/nginx/sites-enabled/*
+    rm -rf /etc/nginx/conf.d/* /etc/nginx/sites-enabled/* && \
+    useradd -r -s /bin/false cloudtolocalllm
 
 # Configure Nginx
 COPY web/nginx-main.conf /etc/nginx/nginx.conf
