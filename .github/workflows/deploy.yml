@@ -296,11 +296,11 @@ jobs:
           sed -i "s|cloudtolocalllm/api-backend:latest|${LOGIN_SERVER}/api-backend:${NEW_VERSION}|g" k8s/api-backend-deployment.yaml
           sed -i "s|cloudtolocalllm/streaming-proxy:latest|${LOGIN_SERVER}/streaming-proxy:${NEW_VERSION}|g" k8s/streaming-proxy-deployment.yaml
           
-          # Apply core manifests (exclude cert-manager and monitoring files that need CRDs)
-          kubectl apply -f k8s/ || true
+          # Apply core manifests (exclude overlays, cert-manager, and monitoring files that need CRDs)
+          find k8s/ -maxdepth 1 -name "*.yaml" -not -name "*cert-manager*" -not -name "*servicemonitor*" -not -name "*issuer*" | xargs -I {} kubectl apply -f {}
           
-          # Apply core manifests individually to avoid CRD issues
-          find k8s/ -name "*.yaml" -not -name "*cert-manager*" -not -name "*servicemonitor*" -not -name "*issuer*" | xargs -I {} kubectl apply -f {}
+          # Apply utilities (exclude cert-manager and monitoring files)
+          find k8s/utilities/ -name "*.yaml" -not -name "*cert-manager*" -not -name "*servicemonitor*" -not -name "*issuer*" | xargs -I {} kubectl apply -f {}
           
           # Wait for rollout
           kubectl rollout status deployment/web -n cloudtolocalllm --timeout=600s
