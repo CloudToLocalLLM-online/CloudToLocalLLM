@@ -296,16 +296,30 @@ jobs:
           sed -i "s|cloudtolocalllm/api-backend:latest|${LOGIN_SERVER}/api-backend:${NEW_VERSION}|g" k8s/api-backend-deployment.yaml
           sed -i "s|cloudtolocalllm/streaming-proxy:latest|${LOGIN_SERVER}/streaming-proxy:${NEW_VERSION}|g" k8s/streaming-proxy-deployment.yaml
           
-          # Apply core manifests (exclude overlays, cert-manager, and monitoring files that need CRDs)
-          find k8s/ -maxdepth 1 -name "*.yaml" -not -name "*cert-manager*" -not -name "*servicemonitor*" -not -name "*issuer*" | xargs -I {} kubectl apply -f {}
+          # Apply RBAC and ConfigMaps first
+          kubectl apply -f k8s/rbac.yaml
+          kubectl apply -f k8s/configmap.yaml
+          kubectl apply -f k8s/streaming-proxy-configmap.yaml
           
-          # Apply utilities (exclude cert-manager and monitoring files)
-          find k8s/utilities/ -name "*.yaml" -not -name "*cert-manager*" -not -name "*servicemonitor*" -not -name "*issuer*" | xargs -I {} kubectl apply -f {}
+          # Deploy PostgreSQL (all services depend on it)
+          kubectl apply -f k8s/postgres-statefulset.yaml
+          kubectl rollout status statefulset/postgres -n cloudtolocalllm --timeout=600s
           
-          # Wait for rollout
-          kubectl rollout status deployment/web -n cloudtolocalllm --timeout=600s
+          # Deploy API Backend
+          kubectl apply -f k8s/api-backend-deployment.yaml
           kubectl rollout status deployment/api-backend -n cloudtolocalllm --timeout=600s
+          
+          # Deploy Streaming Proxy
+          kubectl apply -f k8s/streaming-proxy-deployment.yaml
           kubectl rollout status deployment/streaming-proxy -n cloudtolocalllm --timeout=600s
+          
+          # Deploy Web and Cloudflared
+          kubectl apply -f k8s/web-deployment.yaml
+          kubectl apply -f k8s/cloudflared.yaml
+          kubectl rollout status deployment/web -n cloudtolocalllm --timeout=600s
+          
+          # Apply utilities (exclude cert-manager and monitoring files that need CRDs)
+          find k8s/utilities/ -name "*.yaml" -not -name "*cert-manager*" -not -name "*servicemonitor*" -not -name "*issuer*" -exec kubectl apply -f {} \;
 
       - name: Verify Deployment
         run: |
