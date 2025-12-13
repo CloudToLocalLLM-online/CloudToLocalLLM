@@ -1,13 +1,12 @@
 # Node.js streaming proxy
-# Node.js streaming proxy
-ARG BASE_REGISTRY=cloudtolocalllm
-FROM ${BASE_REGISTRY}/base:latest
+FROM node:20-bullseye-slim
 WORKDIR /app
+
+# Create cloudtolocalllm user
+RUN useradd -r -s /bin/false cloudtolocalllm
 
 # Install deps using files in the build context (services/streaming-proxy as context)
 COPY package*.json ./
-# Switch to root to install dependencies if needed (though base has node/npm)
-USER root
 RUN npm ci --omit=dev --ignore-scripts && npm cache clean --force
 
 # Copy application source
