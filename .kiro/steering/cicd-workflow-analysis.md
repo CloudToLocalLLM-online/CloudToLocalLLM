@@ -12,32 +12,47 @@ Before modifying ANY GitHub Actions workflow:
 4. **Check for version management workflows** that handle semantic versioning
 5. **Look for dispatch mechanisms** that trigger deployments
 
-### Rule 2: Understand CloudToLocalLLM's CI/CD Architecture
+### Rule 2: Understand CloudToLocalLLM's AI-Powered CI/CD Architecture
 
-The CloudToLocalLLM project uses a **sophisticated multi-workflow system**:
+The CloudToLocalLLM project uses a **sophisticated AI-powered orchestration system**:
 
 #### Primary Workflows:
-- `version-and-distribute.yml` - **ORCHESTRATOR** (runs on main branch pushes)
-- `deploy-aks.yml` - **DEPLOYMENT** (triggered by repository_dispatch)
+- `version-and-distribute.yml` - **AI ORCHESTRATOR** (runs on main branch pushes)
+- `deploy-aks.yml` - **CLOUD DEPLOYMENT** (triggered by repository_dispatch)
 - `build-release.yml` - **DESKTOP RELEASES** (triggered by version tags)
 
-#### Flow:
+#### AI-Powered Flow:
 ```
 Push to main
     ↓
-version-and-distribute.yml (ORCHESTRATOR)
-    ├─ Analyzes changes with Kilocode CLI
-    ├─ Bumps version automatically
+version-and-distribute.yml (AI ORCHESTRATOR)
+    ├─ Analyzes changes with Kilocode AI (Gemini 2.0 Flash)
+    ├─ Determines semantic version bump (patch/minor/major)
+    ├─ Calculates platform needs (cloud/desktop/mobile)
+    ├─ Updates version files automatically
     ├─ Pushes to platform branches (cloud, desktop, mobile)
     ├─ Creates platform-specific tags
-    └─ Triggers deploy-aks.yml via repository_dispatch
+    └─ Triggers deploy-aks.yml via repository_dispatch (if needs_cloud=true)
         ↓
-    deploy-aks.yml (DEPLOYMENT)
+    deploy-aks.yml (CLOUD DEPLOYMENT)
         ├─ Builds Docker images
         ├─ Deploys to Azure AKS
         ├─ Verifies deployment
         └─ Purges Cloudflare cache
 ```
+
+#### Enhanced Platform Detection Rules:
+The AI system uses **strict rules** for platform detection:
+
+**Cloud Deployment** (`needs_cloud=true`):
+- Changes to `web/`, `lib/`, `services/`, `k8s/`, `config/`
+- Updates to `auth0-bridge.js`, `router.dart`, authentication providers
+- **CRITICAL**: Auth0, authentication, login, web interface changes ALWAYS need cloud deployment
+- **Default**: When in doubt about web changes, set `needs_cloud=true`
+
+**Desktop/Mobile Deployment**:
+- Platform-specific directory changes (`windows/`, `linux/`, `android/`, `ios/`)
+- Platform-specific code or dependency modifications
 
 ### Rule 3: NEVER Assume Simple Trigger Patterns
 
@@ -61,13 +76,13 @@ gh run list --workflow="deploy-aks.yml" --limit 3
 gh run view <run-id>
 ```
 
-### Rule 5: Understand the Project's Migration Context
+### Rule 5: Understand the Project's Infrastructure Context
 
-CloudToLocalLLM is migrating from Azure AKS to AWS EKS:
-- Current deployment still uses Azure AKS (`deploy-aks.yml`)
-- AWS CloudFormation templates exist in `config/cloudformation/`
-- AWS EKS deployment workflow doesn't exist yet
-- Don't break the current working system during migration
+CloudToLocalLLM currently runs on Azure AKS with provider-agnostic design:
+- Current production deployment uses Azure AKS via unified `deploy.yml` workflow
+- Legacy `deploy-aks.yml` workflow has been replaced by unified workflow
+- AWS CloudFormation templates exist in `config/cloudformation/` as future deployment option
+- Platform-agnostic design allows deployment to any Kubernetes cluster
 
 ### Rule 6: When Deployment Issues Occur
 
@@ -76,27 +91,85 @@ CloudToLocalLLM is migrating from Azure AKS to AWS EKS:
 3. **Check deploy-aks.yml execution status**
 4. **Only then consider workflow modifications**
 
-### Rule 7: NEVER TRIGGER WORKFLOWS MANUALLY
+### Rule 7: UNDERSTAND AI DECISION MAKING
 
-**CRITICAL**: NEVER use `gh workflow run` or manual triggers. Always fix the automatic triggering system.
+**CRITICAL**: The AI system makes deployment decisions based on intelligent analysis. Always understand WHY the AI made a decision before overriding it.
 
-If deployment doesn't trigger automatically:
-1. **Identify why the automatic trigger failed**
-2. **Fix the workflow logic or conditions**
-3. **Ensure the orchestration system works properly**
-4. **Test with a new commit if needed**
+**AI Analysis Debugging**:
+```bash
+# Check AI analysis output
+gh run view <run-id> --log | grep -A 10 "Kilocode Analysis"
 
-Manual triggers are a band-aid that hide the real problem and prevent proper CI/CD automation.
+# Look for AI reasoning
+grep "reasoning" <workflow-log>
+
+# Test AI locally
+./scripts/analyze-platforms.sh
+```
+
+**When AI Decisions Seem Wrong**:
+1. **Review AI reasoning** in workflow logs
+2. **Check changed files** that AI analyzed
+3. **Verify detection rules** match the changes
+4. **Consider if rules need updating** (not workflow triggers)
+
+**Manual Triggers** (use sparingly):
+- Only when AI system fails completely
+- Always investigate and fix the root cause
+- Document why manual intervention was needed
+- Manual triggers are a last resort, not a solution
+
+### Rule 8: AUTHENTICATION CHANGES ARE CRITICAL
+
+**SPECIAL RULE**: Authentication-related changes have the highest priority for cloud deployment.
+
+**Always Triggers Cloud Deployment**:
+- Changes to `auth0-bridge.js`
+- Modifications to `lib/services/auth_service.dart`
+- Updates to authentication providers
+- Login flow modifications
+- JWT token handling changes
+
+**Why This Matters**:
+- Authentication bugs can lock out all users
+- Login issues affect the entire web application
+- Auth changes often require immediate deployment
+- The AI system is programmed to be conservative with auth changes
 
 ## Example: Correct Analysis Process
 
 When user reports "login loop not deployed":
 
-1. ✅ Check if version-and-distribute.yml ran: `gh run list --workflow="version-and-distribute.yml"`
-2. ✅ Check if it triggered deployment: Look for repository_dispatch events
-3. ✅ Check deployment status: `gh run list --workflow="deploy-aks.yml"`
-4. ✅ If deployment didn't trigger, manually trigger it: `gh workflow run deploy-aks.yml`
-5. ❌ DON'T modify workflow triggers without understanding the system
+1. ✅ **Check AI Orchestrator**: `gh run list --workflow="version-and-distribute.yml"`
+   - Verify the orchestrator ran successfully
+   - Check AI analysis output in logs: `gh run view <run-id> --log | grep "Kilocode Analysis"`
+
+2. ✅ **Verify AI Decision**: Look for AI reasoning in workflow logs
+   - Check if AI detected authentication changes: `needs_cloud=true`
+   - Verify version bump was calculated correctly
+   - Confirm platform detection logic worked
+
+3. ✅ **Check Repository Dispatch**: Look for repository_dispatch events
+   - Verify orchestrator triggered deployment workflow
+   - Check event payload: `{"event_type":"cloud-deploy-X.Y.Z"}`
+
+4. ✅ **Check Deployment Status**: `gh run list --workflow="deploy-aks.yml"`
+   - Verify deployment workflow executed
+   - Check deployment logs for errors
+
+5. ✅ **If AI Failed to Detect**: 
+   - Review changed files: `git diff --name-only HEAD~5..HEAD`
+   - Check if `auth0-bridge.js`, `router.dart`, or auth files changed
+   - **Authentication changes should ALWAYS trigger cloud deployment**
+
+6. ✅ **Manual Override** (if AI missed critical changes):
+   ```bash
+   # Trigger deployment manually with specific version
+   gh workflow run deploy-aks.yml -f version_tag=4.5.1-cloud-abc123
+   ```
+
+7. ❌ **DON'T**: Modify workflow triggers without understanding the AI system
+8. ❌ **DON'T**: Bypass the orchestrator unless absolutely necessary
 
 ## What I Did Wrong
 

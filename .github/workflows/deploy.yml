@@ -1,0 +1,424 @@
+name: Unified Deployment Workflow
+
+on:
+  push:
+    branches:
+      - main
+    # Don't trigger on version bump commits
+    paths-ignore:
+      - 'docs/**'
+      - '*.md'
+      - '.gitignore'
+      - 'LICENSE'
+  workflow_dispatch:
+    inputs:
+      force_deployment:
+        description: "Force deployment even if no changes detected"
+        required: false
+        default: false
+        type: boolean
+      deployment_type:
+        description: "Override deployment type (cloud, desktop, mobile, all)"
+        required: false
+        default: "auto"
+        type: choice
+        options:
+          - auto
+          - cloud
+          - desktop
+          - mobile
+          - all
+
+# Prevent multiple deployments running simultaneously
+concurrency:
+  group: unified-deployment
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  id-token: write
+
+env:
+  # Azure AKS (Current Production Infrastructure)
+  AZURE_RESOURCE_GROUP: cloudtolocalllm-rg
+  AZURE_CLUSTER_NAME: cloudtolocalllm-aks
+  ACR_NAME: imrightguycloudtolocalllm
+
+jobs:
+  # AI Analysis and Version Management
+  ai_analysis:
+    if: ${{ !contains(github.event.head_commit.message, '[skip ci]') && !contains(github.event.head_commit.message, '[no-version]') }}
+    runs-on: ubuntu-latest
+    outputs:
+      new_version: ${{ steps.analyze.outputs.new_version }}
+      needs_cloud: ${{ steps.analyze.outputs.needs_cloud }}
+      needs_desktop: ${{ steps.analyze.outputs.needs_desktop }}
+      needs_mobile: ${{ steps.analyze.outputs.needs_mobile }}
+      reasoning: ${{ steps.analyze.outputs.reasoning }}
+      should_deploy: ${{ steps.decision.outputs.should_deploy }}
+    
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 50
+          fetch-tags: true
+          token: "${{ secrets.PAT_TOKEN || secrets.GITHUB_TOKEN }}"
+
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Setup Kilocode CLI
+        run: |
+          chmod +x scripts/kilocode-cli.cjs
+          sudo ln -sf "$(pwd)/scripts/kilocode-cli.cjs" /usr/local/bin/kilocode-cli
+          kilocode-cli "Respond with just OK" && echo "✅ Kilocode CLI test passed" || echo "⚠️  Kilocode test failed"
+          echo "✅ Kilocode CLI ready"
+
+      - name: Install jq
+        run: |
+          if ! command -v jq &> /dev/null; then
+            sudo apt-get update && sudo apt-get install -y jq
+          fi
+          jq --version
+
+      - name: AI Analysis with Kilocode
+        id: analyze
+        run: |
+          chmod +x scripts/analyze-platforms.sh
+          ./scripts/analyze-platforms.sh
+
+      - name: Make Deployment Decision
+        id: decision
+        env:
+          FORCE_DEPLOYMENT: ${{ github.event.inputs.force_deployment }}
+          DEPLOYMENT_TYPE: ${{ github.event.inputs.deployment_type }}
+          NEEDS_CLOUD: ${{ steps.analyze.outputs.needs_cloud }}
+          NEEDS_DESKTOP: ${{ steps.analyze.outputs.needs_desktop }}
+          NEEDS_MOBILE: ${{ steps.analyze.outputs.needs_mobile }}
+        run: |
+          # Determine if we should deploy
+          SHOULD_DEPLOY="false"
+          
+          # Force deployment if requested
+          if [ "$FORCE_DEPLOYMENT" = "true" ]; then
+            SHOULD_DEPLOY="true"
+            echo "🔧 Force deployment requested"
+          fi
+          
+          # Deploy if AI detected changes
+          if [ "$NEEDS_CLOUD" = "true" ] || [ "$NEEDS_DESKTOP" = "true" ] || [ "$NEEDS_MOBILE" = "true" ]; then
+            SHOULD_DEPLOY="true"
+            echo "🤖 AI detected changes requiring deployment"
+          fi
+          
+          # Override deployment type if specified
+          if [ "$DEPLOYMENT_TYPE" != "auto" ]; then
+            echo "🎯 Deployment type override: $DEPLOYMENT_TYPE"
+            case "$DEPLOYMENT_TYPE" in
+              "cloud")
+                echo "needs_cloud=true" >> $GITHUB_OUTPUT
+                echo "needs_desktop=false" >> $GITHUB_OUTPUT
+                echo "needs_mobile=false" >> $GITHUB_OUTPUT
+                ;;
+              "desktop")
+                echo "needs_cloud=false" >> $GITHUB_OUTPUT
+                echo "needs_desktop=true" >> $GITHUB_OUTPUT
+                echo "needs_mobile=false" >> $GITHUB_OUTPUT
+                ;;
+              "mobile")
+                echo "needs_cloud=false" >> $GITHUB_OUTPUT
+                echo "needs_desktop=false" >> $GITHUB_OUTPUT
+                echo "needs_mobile=true" >> $GITHUB_OUTPUT
+                ;;
+              "all")
+                echo "needs_cloud=true" >> $GITHUB_OUTPUT
+                echo "needs_desktop=true" >> $GITHUB_OUTPUT
+                echo "needs_mobile=true" >> $GITHUB_OUTPUT
+                ;;
+            esac
+            SHOULD_DEPLOY="true"
+          fi
+          
+          echo "should_deploy=$SHOULD_DEPLOY" >> $GITHUB_OUTPUT
+          
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "Deployment Decision Summary"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "Should Deploy: $SHOULD_DEPLOY"
+          echo "Cloud: ${NEEDS_CLOUD}"
+          echo "Desktop: ${NEEDS_DESKTOP}"
+          echo "Mobile: ${NEEDS_MOBILE}"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+      - name: Update Version Files
+        if: steps.decision.outputs.should_deploy == 'true'
+        env:
+          NEW_VERSION: "${{ steps.analyze.outputs.new_version }}"
+          COMMIT_SHA: "${{ github.sha }}"
+        run: |
+          chmod +x scripts/update-all-versions.sh
+          ./scripts/update-all-versions.sh "$NEW_VERSION" "$COMMIT_SHA"
+
+      - name: Commit Version Changes
+        if: steps.decision.outputs.should_deploy == 'true'
+        env:
+          NEW_VERSION: "${{ steps.analyze.outputs.new_version }}"
+        run: |
+          # Commit version changes to main
+          git add -A
+          if ! git diff --cached --quiet; then
+            git commit -m "chore: bump version to $NEW_VERSION [skip ci]"
+            git push origin main
+            
+            # Create version tag
+            git tag "v$NEW_VERSION" -f
+            git push origin "v$NEW_VERSION" -f
+            echo "✅ Version $NEW_VERSION committed and tagged"
+          else
+            echo "ℹ️  No version changes to commit"
+          fi
+
+  # Cloud Service Building (conditional) - Azure AKS
+  build_cloud_services:
+    needs: ai_analysis
+    if: ${{ needs.ai_analysis.outputs.should_deploy == 'true' && needs.ai_analysis.outputs.needs_cloud == 'true' }}
+    runs-on: ubuntu-latest
+    outputs:
+      login_server: ${{ steps.acr_setup.outputs.login_server }}
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          
+      - name: Setup ACR
+        id: acr_setup
+        run: |
+          # Create ACR if not exists
+          az acr create --resource-group ${{ env.AZURE_RESOURCE_GROUP }} --name ${{ env.ACR_NAME }} --sku Basic --admin-enabled true --query "provisioningState" --output tsv
+          # Get Login Server and set as output
+          LOGIN_SERVER=$(az acr show --name ${{ env.ACR_NAME }} --query loginServer --output tsv)
+          echo "login_server=$LOGIN_SERVER" >> $GITHUB_OUTPUT
+          
+      - name: Docker Login to ACR
+        run: |
+          # Get ACR admin credentials
+          ACR_USERNAME=$(az acr credential show --name ${{ env.ACR_NAME }} --query username --output tsv)
+          ACR_PASSWORD=$(az acr credential show --name ${{ env.ACR_NAME }} --query passwords[0].value --output tsv)
+          # Login to ACR
+          echo "$ACR_PASSWORD" | docker login "${{ steps.acr_setup.outputs.login_server }}" --username "$ACR_USERNAME" --password-stdin
+
+      - uses: docker/setup-buildx-action@v3
+      
+      - name: Build and Push Web Service
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: web/Dockerfile
+          push: true
+          tags: |
+            ${{ steps.acr_setup.outputs.login_server }}/web:${{ needs.ai_analysis.outputs.new_version }}
+            ${{ steps.acr_setup.outputs.login_server }}/web:latest
+          cache-from: type=registry,ref=${{ steps.acr_setup.outputs.login_server }}/web:latest
+          cache-to: type=inline
+
+      - name: Build and Push API Backend
+        uses: docker/build-push-action@v5
+        with:
+          context: services/api-backend
+          file: services/api-backend/Dockerfile
+          push: true
+          tags: |
+            ${{ steps.acr_setup.outputs.login_server }}/api-backend:${{ needs.ai_analysis.outputs.new_version }}
+            ${{ steps.acr_setup.outputs.login_server }}/api-backend:latest
+          cache-from: type=registry,ref=${{ steps.acr_setup.outputs.login_server }}/api-backend:latest
+          cache-to: type=inline
+
+      - name: Build and Push Streaming Proxy
+        uses: docker/build-push-action@v5
+        with:
+          context: services/streaming-proxy
+          file: services/streaming-proxy/Dockerfile
+          push: true
+          tags: |
+            ${{ steps.acr_setup.outputs.login_server }}/streaming-proxy:${{ needs.ai_analysis.outputs.new_version }}
+            ${{ steps.acr_setup.outputs.login_server }}/streaming-proxy:latest
+          cache-from: type=registry,ref=${{ steps.acr_setup.outputs.login_server }}/streaming-proxy:latest
+          cache-to: type=inline
+
+  # Cloud Deployment (conditional) - Azure AKS
+  deploy_cloud:
+    needs: [ai_analysis, build_cloud_services]
+    if: ${{ needs.ai_analysis.outputs.should_deploy == 'true' && needs.ai_analysis.outputs.needs_cloud == 'true' }}
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Get AKS credentials
+        uses: azure/aks-set-context@v3
+        with:
+          resource-group: ${{ env.AZURE_RESOURCE_GROUP }}
+          cluster-name: ${{ env.AZURE_CLUSTER_NAME }}
+
+      - name: Deploy to AKS
+        env:
+          NEW_VERSION: ${{ needs.ai_analysis.outputs.new_version }}
+          LOGIN_SERVER: ${{ needs.build_cloud_services.outputs.login_server }}
+        run: |
+          # Update image tags in manifests
+          sed -i "s|cloudtolocalllm/web:latest|${LOGIN_SERVER}/web:${NEW_VERSION}|g" k8s/web-deployment.yaml
+          sed -i "s|cloudtolocalllm/api-backend:latest|${LOGIN_SERVER}/api-backend:${NEW_VERSION}|g" k8s/api-backend-deployment.yaml
+          sed -i "s|cloudtolocalllm/streaming-proxy:latest|${LOGIN_SERVER}/streaming-proxy:${NEW_VERSION}|g" k8s/streaming-proxy-deployment.yaml
+          
+          # Apply manifests
+          kubectl apply -f k8s/
+          
+          # Wait for rollout
+          kubectl rollout status deployment/web -n cloudtolocalllm --timeout=600s
+          kubectl rollout status deployment/api-backend -n cloudtolocalllm --timeout=600s
+          kubectl rollout status deployment/streaming-proxy -n cloudtolocalllm --timeout=600s
+
+      - name: Verify Deployment
+        run: |
+          echo "Waiting for health check..."
+          for i in {1..24}; do
+            http_status=$(curl -s -o /dev/null -w "%{http_code}" https://app.cloudtolocalllm.online/health || echo "000")
+            if [ "$http_status" = "200" ]; then
+              echo "✅ Health check passed with HTTP 200"
+              exit 0
+            fi
+            echo "Attempt $i/24: Health check returned HTTP $http_status, waiting 5s..."
+            sleep 5
+          done
+          echo "❌ Health check failed after 2 minutes"
+          exit 1
+
+      - name: Purge Cloudflare Cache
+        continue-on-error: true
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          chmod +x scripts/cloudflare-cache-purge.sh
+          ./scripts/cloudflare-cache-purge.sh
+
+  # Desktop Build (conditional)
+  build_desktop:
+    needs: ai_analysis
+    if: ${{ needs.ai_analysis.outputs.should_deploy == 'true' && needs.ai_analysis.outputs.needs_desktop == 'true' }}
+    runs-on: windows-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.38.1"
+          channel: "stable"
+          cache: true
+
+      - name: Build Windows Desktop
+        run: |
+          flutter pub get
+          flutter build windows --release
+
+      - name: Create Windows Installer
+        run: |
+          # Use existing installer creation logic
+          pwsh scripts/powershell/Deploy-CloudToLocalLLM.ps1 -BuildOnly
+
+      - name: Upload Desktop Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-desktop-${{ needs.ai_analysis.outputs.new_version }}
+          path: |
+            dist/*.exe
+            dist/*.zip
+            dist/*.sha256
+
+  # Mobile Build (conditional - placeholder for future)
+  build_mobile:
+    needs: ai_analysis
+    if: ${{ needs.ai_analysis.outputs.should_deploy == 'true' && needs.ai_analysis.outputs.needs_mobile == 'true' }}
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Mobile Build Placeholder
+        run: |
+          echo "🚧 Mobile build not yet implemented"
+          echo "This job will be expanded when mobile deployment is needed"
+
+  # Deployment Summary
+  deployment_summary:
+    needs: [ai_analysis, deploy_cloud, build_desktop, build_mobile]
+    if: always() && needs.ai_analysis.outputs.should_deploy == 'true'
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Generate Deployment Summary
+        env:
+          NEW_VERSION: ${{ needs.ai_analysis.outputs.new_version }}
+          NEEDS_CLOUD: ${{ needs.ai_analysis.outputs.needs_cloud }}
+          NEEDS_DESKTOP: ${{ needs.ai_analysis.outputs.needs_desktop }}
+          NEEDS_MOBILE: ${{ needs.ai_analysis.outputs.needs_mobile }}
+          REASONING: ${{ needs.ai_analysis.outputs.reasoning }}
+          CLOUD_STATUS: ${{ needs.deploy_cloud.result }}
+          DESKTOP_STATUS: ${{ needs.build_desktop.result }}
+          MOBILE_STATUS: ${{ needs.build_mobile.result }}
+        run: |
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >> $GITHUB_STEP_SUMMARY
+          echo "# Unified Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Version:** $NEW_VERSION" >> $GITHUB_STEP_SUMMARY
+          echo "**AI Reasoning:** $REASONING" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## Platform Deployment Status" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          if [ "$NEEDS_CLOUD" = "true" ]; then
+            if [ "$CLOUD_STATUS" = "success" ]; then
+              echo "☁️ **Cloud (Azure AKS):** ✅ Deployed successfully" >> $GITHUB_STEP_SUMMARY
+              echo "   - Web: https://app.cloudtolocalllm.online" >> $GITHUB_STEP_SUMMARY
+              echo "   - API: https://api.cloudtolocalllm.online" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "☁️ **Cloud (Azure AKS):** ❌ Deployment failed" >> $GITHUB_STEP_SUMMARY
+            fi
+          else
+            echo "☁️ **Cloud (Azure AKS):** ⏭️ Skipped (no changes detected)" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          if [ "$NEEDS_DESKTOP" = "true" ]; then
+            if [ "$DESKTOP_STATUS" = "success" ]; then
+              echo "🖥️ **Desktop:** ✅ Built successfully" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "🖥️ **Desktop:** ❌ Build failed" >> $GITHUB_STEP_SUMMARY
+            fi
+          else
+            echo "🖥️ **Desktop:** ⏭️ Skipped (no changes detected)" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          if [ "$NEEDS_MOBILE" = "true" ]; then
+            echo "📱 **Mobile:** 🚧 Not yet implemented" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "📱 **Mobile:** ⏭️ Skipped (no changes detected)" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >> $GITHUB_STEP_SUMMARY

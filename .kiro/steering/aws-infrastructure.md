@@ -1,8 +1,37 @@
-# AWS Infrastructure Guidelines
+# Platform Infrastructure Guidelines
 
-## Overview
+## CRITICAL PLATFORM CONTEXT
 
-CloudToLocalLLM is migrating from Azure AKS to AWS EKS for improved cost efficiency and feature parity. This document outlines the AWS infrastructure patterns, security practices, and operational procedures.
+### Current Production Infrastructure: Azure AKS
+
+**CloudToLocalLLM is currently running on Azure AKS in production**:
+- **Resource Group**: `cloudtolocalllm-rg`
+- **Cluster**: `cloudtolocalllm-aks`
+- **Registry**: Azure Container Registry (ACR) `imrightguycloudtolocalllm`
+- **Status**: Active production deployment
+
+### Provider Agnostic Design
+
+**CloudToLocalLLM is designed to be provider agnostic**:
+- Can run on Azure AKS, AWS EKS, Google GKE, or any Kubernetes cluster
+- Uses standard Kubernetes manifests in `k8s/` directory
+- Container registry can be ACR, ECR, Docker Hub, or any OCI-compatible registry
+- Authentication providers are configurable (Auth0, Supabase, etc.)
+
+### Development Environment Context
+
+**Current development environment**: Windows with PowerShell
+- **Shell**: PowerShell (cmd)
+- **Platform**: Windows (win32)
+- **Script Execution**: 
+  - Use PowerShell for Windows-native scripts
+  - Use WSL for bash scripts when needed
+  - **Cannot make bash scripts executable directly in PowerShell**
+  - Use `wsl chmod +x script.sh` if bash script execution is needed
+
+## AWS Infrastructure (Future Option)
+
+CloudToLocalLLM CAN be deployed to AWS EKS as an alternative to Azure AKS. This document outlines the AWS deployment option for teams who prefer AWS infrastructure.
 
 ## Infrastructure Architecture
 
@@ -171,13 +200,13 @@ kubectl get pods -A
 
 ## Migration from Azure
 
-### Migration Status
+### AWS Deployment Status (Optional)
 
-- ✅ AWS infrastructure provisioned
-- ✅ OIDC authentication configured
-- ✅ GitHub Actions workflows updated
-- 🔄 DNS migration in progress
-- ⏳ Azure decommissioning pending
+- 📋 AWS infrastructure templates available
+- 📋 OIDC authentication patterns documented
+- 📋 GitHub Actions workflow examples provided
+- ⚠️ **Current production uses Azure AKS**
+- ⚠️ **AWS deployment is an alternative option, not a migration**
 
 ### Rollback Plan
 

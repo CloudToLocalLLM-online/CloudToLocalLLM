@@ -202,40 +202,37 @@ test/
 - Portable package: `cloudtolocalllm-{version}-portable.zip`
 - SHA256 checksums for verification
 
-### Cloud Deployment Pipeline (`deploy-eks.yml`)
+### Unified Cloud Deployment Pipeline (`deploy.yml`)
 
 **Triggers:**
 - Push to `main` branch (paths: `k8s/`, `services/`, `config/`, `lib/`, `web/`)
-- Manual workflow dispatch
+- Manual workflow dispatch with deployment type override
 
 **Jobs:**
-1. **deploy**: 
-   - Authenticates to AWS using OIDC (no long-lived credentials)
-   - Builds and pushes Docker images to Docker Hub
-   - Updates EKS deployments with new images
-   - Purges Cloudflare cache
+1. **ai_analysis**: AI-powered change analysis and version management
+2. **build_cloud_services**: Builds Docker images and pushes to Azure ACR
+3. **deploy_cloud**: 
+   - Authenticates to Azure using service principal
+   - Updates AKS deployments with new images
    - Waits for rollout completion
-2. **dns-validation**:
-   - Gets load balancer IP from EKS
-   - Configures Cloudflare DNS records
-   - Enables SSL/TLS (Full mode)
-   - Enables Always Use HTTPS
+   - Purges Cloudflare cache
+4. **deployment_summary**: Comprehensive status reporting
 
 **Deployed Services:**
-- Web app: `cloudtolocalllm/cloudtolocalllm-web:latest`
-- API backend: `cloudtolocalllm/cloudtolocalllm-api:latest`
+- Web app: `imrightguycloudtolocalllm.azurecr.io/web:latest`
+- API backend: `imrightguycloudtolocalllm.azurecr.io/api-backend:latest`
+- Streaming proxy: `imrightguycloudtolocalllm.azurecr.io/streaming-proxy:latest`
 
 **Domains:**
 - https://cloudtolocalllm.online
 - https://app.cloudtolocalllm.online
 - https://api.cloudtolocalllm.online
-- https://auth.cloudtolocalllm.online
 
 ### Legacy Azure Deployment Pipeline (`deploy-aks.yml`)
 
-**Status:** Being migrated to AWS EKS
-- Previously deployed to Azure AKS
-- Will be decommissioned after AWS migration
+**Status:** Replaced by unified deployment workflow
+- Previously used repository dispatch orchestration
+- Replaced by direct AI-powered unified workflow
 
 ### Docker Image Pipeline (`build-images.yml`)
 

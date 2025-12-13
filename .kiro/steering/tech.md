@@ -182,8 +182,8 @@ npx playwright install chromium
 
 - **Desktop**: SQLite via sqflite_common_ffi
 - **Web**: IndexedDB via sqflite web implementation
-- **Cloud**: PostgreSQL (StatefulSet in Kubernetes)
-- **AWS**: RDS PostgreSQL or EKS-hosted PostgreSQL StatefulSet
+- **Cloud**: PostgreSQL (StatefulSet in Azure AKS)
+- **Future Options**: Can be deployed to AWS RDS or any Kubernetes cluster
 
 ## Deployment
 
@@ -195,28 +195,25 @@ npx playwright install chromium
 
 ### Cloud Infrastructure
 
-**AWS EKS Deployment:**
+**Azure AKS Deployment (Current Production):**
 ```bash
-# Setup AWS OIDC provider for GitHub Actions
-.\scripts\aws\setup-oidc-provider.ps1
+# Azure authentication
+az login --service-principal -u $AZURE_CLIENT_ID -p $AZURE_CLIENT_SECRET --tenant $AZURE_TENANT_ID
 
-# Deploy CloudFormation stacks
-aws cloudformation create-stack --stack-name cloudtolocalllm-vpc --template-body file://config/cloudformation/vpc-networking.yaml
-aws cloudformation create-stack --stack-name cloudtolocalllm-iam --template-body file://config/cloudformation/iam-roles.yaml
-aws cloudformation create-stack --stack-name cloudtolocalllm-eks --template-body file://config/cloudformation/eks-cluster.yaml
+# Build and push Docker images to ACR
+az acr build --registry imrightguycloudtolocalllm --image web:latest .
+az acr build --registry imrightguycloudtolocalllm --image api-backend:latest ./services/api-backend
 
-# Deploy Kubernetes resources
+# Deploy to Azure AKS
+az aks get-credentials --resource-group cloudtolocalllm-rg --name cloudtolocalllm-aks
 kubectl apply -f k8s/
 ```
 
-**Legacy Azure AKS (being migrated):**
+**AWS EKS Deployment (Future Option):**
 ```bash
-# Build Docker images
-docker build -f config/docker/Dockerfile.web -t registry/app-web:latest .
-docker build -f services/api-backend/Dockerfile.prod -t registry/app-api:latest .
-
-# Deploy to Kubernetes
-kubectl apply -f k8s/
+# AWS CloudFormation templates available in config/cloudformation/
+# OIDC authentication patterns documented
+# Can be deployed when AWS migration is desired
 ```
 
 ## Code Style

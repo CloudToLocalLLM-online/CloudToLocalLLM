@@ -1,4 +1,4 @@
-# CloudToLocalLLM
+﻿# CloudToLocalLLM
 
 <div align="center">
 
@@ -29,6 +29,7 @@
 *   **⚡ Hybrid Architecture:** Seamlessly switch between local models when needed.
 *   **🔌 Extensible:** Integrated with LangChain for advanced AI workflows and vector store support.
 *   **📊 Monitoring:** Optional Sentry integration for error tracking and performance monitoring.
+*   **☁️ Cloud Infrastructure:** Deployed on Azure AKS with provider-agnostic design for future flexibility.
 
 ## 📋 Prerequisites
 
@@ -63,6 +64,7 @@ If you are a developer looking to contribute or build from source, follow these 
 *   **Frontend:** Flutter (Mobile, Desktop, Web)
 *   **Backend:** Node.js (Express.js)
 *   **AI Runtime:** Ollama / LM Studio (Local)
+*   **CI/CD:** AI-powered orchestration with Kilocode CLI & Gemini 2.0 Flash
 
 ### Build from Source
 
@@ -85,6 +87,24 @@ If you are a developer looking to contribute or build from source, follow these 
     ```
 
 For full developer details, see the **[Developer Onboarding Guide](docs/DEVELOPMENT/DEVELOPER_ONBOARDING.md)**.
+
+### AI-Powered CI/CD
+
+CloudToLocalLLM features an innovative **unified AI-powered CI/CD system** that automatically:
+*   Analyzes code changes using Kilocode CLI with Gemini 2.0 Flash
+*   Determines semantic version bumps (patch/minor/major)
+*   Calculates which platforms need updates (cloud/desktop/mobile)
+*   Deploys to multiple platforms in a single workflow execution
+
+**Key Features:**
+*   **Unified Workflow:** Single workflow handles analysis, building, and deployment
+*   **Intelligent Platform Detection:** AI determines if changes affect web, desktop, or mobile platforms
+*   **Authentication Priority:** Auth0 and login changes automatically trigger cloud deployments
+*   **Direct Deployment:** No intermediate orchestration or platform branches required
+*   **Comprehensive Status:** All deployment status visible in single workflow run
+*   **Manual Overrides:** Force deployment or override platform detection when needed
+
+See **[AI-Powered CI/CD Documentation](docs/DEVELOPMENT/AI_POWERED_CICD.md)** for detailed information.
 
 ## 🤝 Contributing
 
