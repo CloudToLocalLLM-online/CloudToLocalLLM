@@ -12,17 +12,15 @@
   - ✅ Create comprehensive unified deployment workflow documentation
   - _Requirements: 1.1, 1.2, 6.1_
 
-- [x] 1.1 Write property test for direct deployment triggering
+- [x] 1.1 Write property test for direct deployment triggering ✅ COMPLETED
+  - ✅ **Property 1: Direct Deployment Triggering**
+  - ✅ **Validates: Requirements 1.1**
 
-
-  - **Property 1: Direct Deployment Triggering**
-  - **Validates: Requirements 1.1**
-
-- [ ] 2. Integrate AI analysis and version management
-  - Migrate AI analysis logic from `scripts/analyze-platforms.sh` into workflow steps
-  - Implement version validation and semantic version bumping
-  - Add comprehensive error handling for AI analysis failures
-  - Implement retry logic with exponential backoff for AI service rate limits
+- [x] 2. Integrate AI analysis and version management ✅ COMPLETED
+  - ✅ Migrate AI analysis logic from `scripts/analyze-platforms.sh` into workflow steps
+  - ✅ Implement version validation and semantic version bumping
+  - ✅ Add comprehensive error handling for AI analysis failures
+  - ✅ Implement retry logic with exponential backoff for AI service rate limits
   - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5, 5.1, 5.2, 5.3_
 
 - [ ] 2.1 Write property test for AI version analysis accuracy
@@ -37,11 +35,19 @@
   - **Property 13: AI Retry Logic**
   - **Validates: Requirements 5.3**
 
-- [ ] 3. Implement conditional cloud service building
-  - Add cloud service change detection logic
-  - Implement conditional Docker image building for web, api-backend, streaming-proxy, postgres
-  - Optimize Docker build caching and parallel execution
-  - Add build performance monitoring and logging
+- [ ] **URGENT: Disable legacy workflow triggers to prevent duplicate deployments**
+  - **CRITICAL ISSUE**: Both old and new CI/CD systems are running simultaneously
+  - Disable `version-and-distribute.yml` main branch trigger (keep workflow for manual use)
+  - Disable `deploy-aks.yml` main branch trigger (keep workflow for manual use)  
+  - Ensure unified `deploy.yml` is the only workflow triggering on main branch pushes
+  - Test that unified workflow handles all deployment scenarios correctly
+  - _Requirements: 1.1, 3.5, 6.1_
+
+- [x] 3. Implement conditional cloud service building ✅ COMPLETED
+  - ✅ Add cloud service change detection logic
+  - ✅ Implement conditional Docker image building for web, api-backend, streaming-proxy
+  - ✅ Optimize Docker build caching and parallel execution
+  - ✅ Add build performance monitoring and logging
   - _Requirements: 4.2, 4.5_
 
 - [ ] 3.1 Write property test for file pattern deployment triggering
@@ -56,11 +62,11 @@
   - **Property 10: Documentation Skip Optimization**
   - **Validates: Requirements 8.3**
 
-- [ ] 4. Implement cloud deployment orchestration
-  - Add dependency-aware cloud service deployment (postgres → api → streaming-proxy → web)
-  - Implement Azure AKS deployment with health verification
-  - Add Cloudflare cache purging and DNS management
-  - Implement automated rollback mechanisms for failed deployments
+- [x] 4. Implement cloud deployment orchestration ✅ COMPLETED
+  - ✅ Add dependency-aware cloud service deployment (postgres → api → streaming-proxy → web)
+  - ✅ Implement Azure AKS deployment with health verification
+  - ✅ Add Cloudflare cache purging and DNS management
+  - ✅ Implement automated rollback mechanisms for failed deployments
   - _Requirements: 4.1, 4.3_
 
 - [ ] 4.1 Write property test for parallel service deployment
@@ -74,11 +80,11 @@
   - Implement GitHub release creation with artifacts
   - _Requirements: Future extensibility_
 
-- [ ] 6. Add comprehensive logging and status reporting
-  - Implement unified status reporting across all deployment types
-  - Add detailed logging for AI decisions and file pattern matching
-  - Add deployment performance metrics and monitoring
-  - Ensure all errors are visible in single workflow run
+- [x] 6. Add comprehensive logging and status reporting ✅ COMPLETED
+  - ✅ Implement unified status reporting across all deployment types
+  - ✅ Add detailed logging for AI decisions and file pattern matching
+  - ✅ Add deployment performance metrics and monitoring
+  - ✅ Ensure all errors are visible in single workflow run
   - _Requirements: 6.2, 6.3, 6.4, 6.5, 8.4_
 
 - [ ] 6.1 Write property test for status consolidation
@@ -93,11 +99,11 @@
   - **Property 14: Deployment Logging**
   - **Validates: Requirements 8.4**
 
-- [ ] 7. Implement performance optimizations
-  - Add efficient caching strategies for all build types
-  - Implement parallel execution where dependencies allow
-  - Optimize workflow execution time to meet performance requirements
-  - Add timeout handling and performance monitoring
+- [x] 7. Implement performance optimizations ✅ COMPLETED
+  - ✅ Add efficient caching strategies for all build types
+  - ✅ Implement parallel execution where dependencies allow
+  - ✅ Optimize workflow execution time to meet performance requirements
+  - ✅ Add timeout handling and performance monitoring
   - _Requirements: 4.1, 4.4_
 
 - [ ] 7.1 Write property test for performance requirements
@@ -108,11 +114,11 @@
   - **Property 6: Version Management Performance**
   - **Validates: Requirements 4.4**
 
-- [ ] 8. Implement branch management simplification
-  - Ensure deployment works directly from main branch
-  - Remove platform branch creation logic
-  - Implement simple semantic version tagging on main branch
-  - Add rollback mechanisms using main branch commits and version tags
+- [x] 8. Implement branch management simplification ✅ COMPLETED
+  - ✅ Ensure deployment works directly from main branch
+  - ✅ Remove platform branch creation logic (in unified workflow)
+  - ✅ Implement simple semantic version tagging on main branch
+  - ✅ Add rollback mechanisms using main branch commits and version tags
   - _Requirements: 7.1, 7.2, 7.3, 7.4, 7.5_
 
 - [ ] 8.1 Write property test for branch management simplification
@@ -134,20 +140,22 @@
   - Validate AI integration and decision making
   - Test deployment verification and rollback mechanisms
 
-- [ ] 11. Migration from existing workflows
-  - Create migration plan from current workflow system
-  - Update workflow triggers and remove repository dispatch mechanisms
-  - Test parallel operation during migration period
-  - Validate that new workflow handles all existing use cases
+- [ ] 11. **CRITICAL: Complete migration from legacy workflows** 
+  - **ISSUE**: Legacy workflows `version-and-distribute.yml` and `deploy-aks.yml` are still triggering on main branch
+  - **PROBLEM**: Duplicate CI/CD systems running simultaneously, causing confusion and resource waste
+  - Disable legacy workflow triggers while preserving unified workflow
+  - Validate that unified workflow handles all existing use cases
+  - Test complete migration with real deployment scenarios
   - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5_
 
 - [ ] 11.1 Write property test for workflow consolidation
   - **Property 2: Workflow Consolidation**
   - **Validates: Requirements 6.1**
 
-- [ ] 12. Clean up legacy workflows and automation
-  - Remove `version-and-distribute.yml` orchestrator workflow
-  - Remove `deploy-aks.yml` and `build-release.yml` workflows
+- [ ] 12. **CRITICAL: Clean up legacy workflows and automation**
+  - **PRIORITY**: Disable `version-and-distribute.yml` orchestrator workflow (currently triggering on main)
+  - **PRIORITY**: Disable `deploy-aks.yml` workflow (currently triggering via repository dispatch)
+  - Preserve `build-release.yml` for desktop releases (still needed)
   - Clean up platform branches (cloud, desktop, mobile) and related scripts
   - Remove repository dispatch mechanisms and related automation
   - _Requirements: 3.5_
