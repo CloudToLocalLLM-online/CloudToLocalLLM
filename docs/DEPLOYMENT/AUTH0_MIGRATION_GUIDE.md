@@ -98,6 +98,13 @@ class AuthConfig {
    - Handles web authentication flows
    - Manages token storage and refresh
 
+3. **Web Auth0 Bridge** (`web/auth0-bridge.js`):
+   - JavaScript bridge for Flutter web Auth0 integration
+   - Exposes Auth0Bridge global interface with proper function wrappers
+   - Handles Auth0 SPA SDK initialization and authentication flows
+   - Provides seamless interop between Flutter web and Auth0 JavaScript SDK
+   - **Recent Update**: Refactored global interface to use function wrappers for improved Flutter web interop
+
 ## Migration Steps
 
 ### 1. Auth0 Infrastructure Setup
@@ -123,6 +130,68 @@ class AuthConfig {
 - [ ] Verify user authentication
 - [ ] Test social logins (if enabled)
 - [ ] Validate API access with new tokens
+
+## Web Auth0 Bridge Implementation
+
+### JavaScript Bridge Architecture
+
+The `web/auth0-bridge.js` file provides a JavaScript bridge between Flutter web and the Auth0 SPA SDK:
+
+```javascript
+// Global interface with proper function wrappers
+window.Auth0Bridge = {
+  login: function() {
+    return window.auth0BridgeLogin();
+  },
+  logout: function() {
+    return window.auth0BridgeLogout();
+  },
+  getUser: function() {
+    return window.auth0BridgeGetUser();
+  },
+  getToken: function() {
+    return window.auth0BridgeGetToken();
+  },
+  isAuthenticated: function() {
+    return window.auth0BridgeIsAuthenticated();
+  },
+  handleRedirect: function() {
+    return window.auth0BridgeHandleRedirect();
+  },
+};
+```
+
+### Key Features
+
+- **Function Wrappers**: Uses proper function wrappers instead of direct references for better Flutter web interop
+- **Auth0 SPA SDK v2**: Compatible with Auth0 SPA JavaScript SDK v2.x
+- **Automatic Initialization**: Initializes Auth0 client on first use
+- **Session Management**: Handles existing session detection and token refresh
+- **Error Handling**: Comprehensive error handling with Flutter callback notifications
+- **Redirect Handling**: Manages OAuth callback flows and URL cleanup
+
+### Configuration
+
+The bridge is configured with Auth0 tenant settings:
+
+```javascript
+const AUTH0_DOMAIN = 'dev-v2f2p008x3dr74ww.us.auth0.com';
+const AUTH0_CLIENT_ID = 'FuXPnevXpp311CdYHGsbNZe9t3D8Ts7A';
+const AUTH0_AUDIENCE = 'https://dev-v2f2p008x3dr74ww.us.auth0.com/api/v2/';
+```
+
+### Flutter Integration
+
+Flutter web calls the bridge functions via JavaScript interop:
+
+```dart
+// Example Flutter web integration
+@JS('Auth0Bridge.login')
+external Future<void> auth0Login();
+
+@JS('Auth0Bridge.getUser')
+external Future<dynamic> auth0GetUser();
+```
 
 ## Key Differences: Entra ID vs Auth0
 

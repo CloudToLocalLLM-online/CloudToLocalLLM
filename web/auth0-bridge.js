@@ -130,9 +130,9 @@
         window.flutterAuthCallback(authResult);
       }
 
-      // Redirect back to the app - clear URL params
-      const returnTo = result.appState?.returnTo || '/';
-      window.history.replaceState({}, document.title, returnTo);
+      // Don't immediately clear URL params - let Flutter handle the redirect
+      // The Flutter callback screen will clear the params after processing
+      console.log('[Auth0 Bridge] Callback handled, letting Flutter manage navigation');
 
       return authResult;
 
@@ -237,22 +237,34 @@
   document.addEventListener('DOMContentLoaded', function () {
     console.log('[Auth0 Bridge] Bridge loaded and ready');
 
-    // Check if this is a redirect callback
+    // Don't automatically handle redirect - let Flutter handle it
+    // This prevents double processing of the callback
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.has('code') && urlParams.has('state')) {
-      console.log('[Auth0 Bridge] Detected redirect callback, handling...');
-      window.auth0BridgeHandleRedirect();
+      console.log('[Auth0 Bridge] Detected redirect callback parameters - waiting for Flutter to handle');
     }
   });
 
-  // Expose bridge functions globally
+  // Expose bridge functions globally with correct interface
   window.Auth0Bridge = {
-    login: window.auth0BridgeLogin,
-    logout: window.auth0BridgeLogout,
-    getUser: window.auth0BridgeGetUser,
-    getToken: window.auth0BridgeGetToken,
-    isAuthenticated: window.auth0BridgeIsAuthenticated,
-    handleRedirect: window.auth0BridgeHandleRedirect,
+    login: function() {
+      return window.auth0BridgeLogin();
+    },
+    logout: function() {
+      return window.auth0BridgeLogout();
+    },
+    getUser: function() {
+      return window.auth0BridgeGetUser();
+    },
+    getToken: function() {
+      return window.auth0BridgeGetToken();
+    },
+    isAuthenticated: function() {
+      return window.auth0BridgeIsAuthenticated();
+    },
+    handleRedirect: function() {
+      return window.auth0BridgeHandleRedirect();
+    },
   };
 
 })();

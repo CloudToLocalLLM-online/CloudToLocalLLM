@@ -353,17 +353,26 @@ class AppRouter {
                 ? stateUri.queryParameters
                 : baseUri.queryParameters;
 
-            final callbackUri = Uri(
-              path: '/callback',
-              queryParameters: paramsToUse,
-            );
-            print(
-              '[Router] Redirecting from ${state.matchedLocation} to: ${callbackUri.toString()}',
-            );
-            print(
-              '[Router] ===== REDIRECT DECISION: FORWARD TO /callback =====',
-            );
-            return callbackUri.toString();
+            // Validate that we have required callback parameters
+            if (paramsToUse.containsKey('code') ||
+                paramsToUse.containsKey('error')) {
+              final callbackUri = Uri(
+                path: '/callback',
+                queryParameters: paramsToUse,
+              );
+              print(
+                '[Router] Redirecting from ${state.matchedLocation} to: ${callbackUri.toString()}',
+              );
+              print(
+                '[Router] ===== REDIRECT DECISION: FORWARD TO /callback =====',
+              );
+              return callbackUri.toString();
+            } else {
+              print(
+                '[Router] DECISION: Invalid callback parameters detected, staying on current route',
+              );
+              return null;
+            }
           }
 
           // If we're on the callback route with callback parameters, allow processing
@@ -483,6 +492,17 @@ class AppRouter {
               '[Router] ===== REDIRECT DECISION: AUTHENTICATED -> HOME =====',
             );
             return '/';
+          }
+
+          // Prevent redirect loops by checking if we're already being redirected
+          if (isAuthenticated &&
+              state.matchedLocation == '/' &&
+              kIsWeb &&
+              !isAppSubdomain) {
+            print(
+              '[Router] DECISION: Authenticated user on marketing domain - allowing access',
+            );
+            return null;
           }
 
           // For desktop, require authentication (web auth handled in route builder)

@@ -101,8 +101,13 @@ CloudToLocalLLM/
 - **NativeTrayService**: System tray integration
 - **TunnelManagerService**: Connection management
 - **UnifiedConnectionService**: Platform-specific connections
-- **AuthService**: Authentication handling
+- **AuthService**: Authentication handling (with Auth0 web bridge for Flutter web)
 - **StreamingChatService**: Chat functionality with real-time streaming
+
+### **Web Platform Integration**
+- **Auth0 Bridge** (`web/auth0-bridge.js`): JavaScript bridge for seamless Auth0 authentication in Flutter web
+- **Unified Web Architecture**: Single Flutter codebase handles both marketing and application routes
+- **Platform Detection**: Automatic routing based on web vs desktop platform
 
 ---
 

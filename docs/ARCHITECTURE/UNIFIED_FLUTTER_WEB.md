@@ -106,6 +106,28 @@ redirect: (context, state) {
 },
 ```
 
+### Web Authentication Bridge
+
+For web platform authentication, the application uses a JavaScript bridge (`web/auth0-bridge.js`) that provides seamless integration between Flutter web and Auth0:
+
+```javascript
+// Auth0 Bridge provides standardized interface
+window.Auth0Bridge = {
+  login: function() { return window.auth0BridgeLogin(); },
+  logout: function() { return window.auth0BridgeLogout(); },
+  getUser: function() { return window.auth0BridgeGetUser(); },
+  getToken: function() { return window.auth0BridgeGetToken(); },
+  isAuthenticated: function() { return window.auth0BridgeIsAuthenticated(); },
+  handleRedirect: function() { return window.auth0BridgeHandleRedirect(); },
+};
+```
+
+**Key Features:**
+- Function wrapper pattern for improved Flutter web interop
+- Auth0 SPA SDK v2 compatibility
+- Automatic session detection and token refresh
+- OAuth callback handling with URL cleanup
+
 ## Implementation Details
 
 ### Marketing Screens
