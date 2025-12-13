@@ -41,16 +41,16 @@ spec:
           objectType: secret
           objectVersion: ""
           objectEncoding: base64
-    
-    # Create Kubernetes secret from Key Vault secret
-    secretObjects:
-      - secretName: cloudtolocalllm-wildcard-tls
-        type: kubernetes.io/tls
-        data:
-          - objectName: cloudtolocalllm-wildcard-tls
-            key: tls.crt
-          - objectName: cloudtolocalllm-wildcard-tls
-            key: tls.key
+  
+  # Create Kubernetes secret from Key Vault secret (moved to root level)
+  secretObjects:
+    - secretName: cloudtolocalllm-wildcard-tls
+      type: kubernetes.io/tls
+      data:
+        - objectName: cloudtolocalllm-wildcard-tls
+          key: tls.crt
+        - objectName: cloudtolocalllm-wildcard-tls
+          key: tls.key
 
 ---
 # CronJob to sync certificates FROM Kubernetes secrets TO Azure Key Vault
