@@ -4,10 +4,12 @@ permissions:
   id-token: write
 
 on:
-  push:
-    branches:
-      - cloud # Trigger on cloud branch pushes (requires external PAT/App)
-  repository_dispatch: # Trigger via repository_dispatch (accepts dynamic types like cloud-deploy-4.12.12)
+  # DISABLED: Cloud branch and repository_dispatch triggers disabled
+  # The unified deploy.yml workflow now handles all deployments directly from main branch
+  # push:
+  #   branches:
+  #     - cloud # Trigger on cloud branch pushes (requires external PAT/App)
+  # repository_dispatch: # Trigger via repository_dispatch (accepts dynamic types like cloud-deploy-4.12.12)
   workflow_dispatch:
     inputs:
       version_tag:

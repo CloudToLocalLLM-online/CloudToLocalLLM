@@ -1,10 +1,12 @@
 name: Version Analysis & Platform Distribution
 
 on:
-  push:
-    branches:
-      - main
-    # Don't trigger on version bump commits or platform branch merges
+  # DISABLED: Main branch trigger disabled to prevent duplicate deployments
+  # The unified deploy.yml workflow now handles main branch deployments
+  # push:
+  #   branches:
+  #     - main
+  #   # Don't trigger on version bump commits or platform branch merges
   workflow_dispatch:
 
 # Prevent multiple version bumps running simultaneously

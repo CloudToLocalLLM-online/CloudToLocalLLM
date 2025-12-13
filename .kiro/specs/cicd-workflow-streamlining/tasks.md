@@ -35,12 +35,12 @@
   - **Property 13: AI Retry Logic**
   - **Validates: Requirements 5.3**
 
-- [ ] **URGENT: Disable legacy workflow triggers to prevent duplicate deployments**
-  - **CRITICAL ISSUE**: Both old and new CI/CD systems are running simultaneously
-  - Disable `version-and-distribute.yml` main branch trigger (keep workflow for manual use)
-  - Disable `deploy-aks.yml` main branch trigger (keep workflow for manual use)  
-  - Ensure unified `deploy.yml` is the only workflow triggering on main branch pushes
-  - Test that unified workflow handles all deployment scenarios correctly
+- [x] **URGENT: Disable legacy workflow triggers to prevent duplicate deployments** ✅ COMPLETED
+  - ✅ **CRITICAL ISSUE RESOLVED**: Duplicate CI/CD systems no longer running simultaneously
+  - ✅ Disabled `version-and-distribute.yml` main branch trigger (workflow kept for manual use)
+  - ✅ Disabled `deploy-aks.yml` cloud branch and repository_dispatch triggers (workflow kept for manual use)  
+  - ✅ Ensured unified `deploy.yml` is the only workflow triggering on main branch pushes
+  - ✅ Unified workflow now handles all deployment scenarios without duplication
   - _Requirements: 1.1, 3.5, 6.1_
 
 - [x] 3. Implement conditional cloud service building ✅ COMPLETED
