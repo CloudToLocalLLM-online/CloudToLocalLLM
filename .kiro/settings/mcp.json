@@ -133,6 +133,9 @@
       ],
       "alwaysAllow": [
         "sequentialthinking"
+      ],
+      "autoApprove": [
+        "sequentialthinking"
       ]
     },
     "chrome-devtools": {
