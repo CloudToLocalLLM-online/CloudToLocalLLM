@@ -27,6 +27,13 @@ echo "Changed files (last 5 commits):"
 echo "$CHANGED_FILES"
 echo ""
 
+# Pre-analyze files to force cloud deployment for web-related changes
+FORCE_CLOUD=false
+if echo "$CHANGED_FILES" | grep -qE "(web/|lib/.*auth|lib/.*router|lib/config/|services/|k8s/|auth0-bridge|\.github/workflows/deploy-aks\.yml)"; then
+    FORCE_CLOUD=true
+    echo "🌐 DETECTED WEB-RELATED CHANGES - Cloud deployment will be forced"
+fi
+
 # Prepare prompt for Kilocode
 COMMITS_ESCAPED=$(echo "$COMMITS" | sed 's/"/\"/g' | tr '\n' ' ')
 FILES_ESCAPED=$(echo "$CHANGED_FILES" | sed 's/"/\"/g' | tr '\n' ' ')
@@ -46,7 +53,14 @@ Determine semantic version bump and platform needs. Output only valid JSON:
   \"reasoning\": \"brief explanation\"
 }
 
-Rules: Breaking=major, Features=minor, Fixes/Chores=patch. New version must be higher than $CURRENT_VERSION."
+Rules: 
+- Breaking=major, Features=minor, Fixes/Chores=patch
+- New version must be higher than $CURRENT_VERSION
+- needs_cloud=true if ANY of these files changed: web/, lib/, services/, k8s/, config/, .github/workflows/deploy-aks.yml, auth0-bridge.js, router.dart, auth providers, or any web-related functionality
+- needs_desktop=true if ANY of these changed: windows/, linux/, desktop-specific code, or Flutter desktop dependencies
+- needs_mobile=true if ANY of these changed: android/, ios/, mobile-specific code, or Flutter mobile dependencies
+- Auth0, authentication, login, web interface changes ALWAYS need cloud deployment
+- When in doubt about web changes, set needs_cloud=true"
 
 echo "DEBUG: Kilocode prompt includes version requirement: 'The new version MUST be higher than $CURRENT_VERSION'"
 
@@ -121,6 +135,14 @@ echo ""
         echo "  Desktop: $NEEDS_DESKTOP"
         echo "  Mobile: $NEEDS_MOBILE"
         echo "  Reasoning: $REASONING"
+
+        # Override cloud deployment if web-related files changed
+        if [ "$FORCE_CLOUD" = "true" ] && [ "$NEEDS_CLOUD" = "false" ]; then
+            echo "🔧 OVERRIDING: AI incorrectly set needs_cloud=false for web changes"
+            echo "   Web-related files detected, forcing needs_cloud=true"
+            NEEDS_CLOUD="true"
+            REASONING="$REASONING (OVERRIDE: Web-related files require cloud deployment)"
+        fi
 
 # Validate version format
 if ! echo "$NEW_VERSION" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+$'; then
