@@ -14,6 +14,14 @@ CloudToLocalLLM currently uses an overly complex AI-powered CI/CD orchestration 
 - **Deployment Pipeline**: The sequence of build, test, and deployment steps
 - **Version Management**: The automated system for semantic version bumping
 - **Build Matrix**: The configuration for building multiple platform variants
+- **Semantic Version**: Version numbering scheme following MAJOR.MINOR.PATCH format
+- **Conventional Commits**: Standardized commit message format for automated parsing
+- **Exponential Backoff**: Retry strategy with progressively longer delays between attempts
+- **Workflow Orchestration**: Coordination of multiple automated processes in sequence
+- **Azure AKS**: Azure Kubernetes Service, the current cloud deployment platform
+- **Code Changes**: Modifications to application source code, configuration, or infrastructure files
+- **Documentation Changes**: Modifications to documentation files, README files, or non-functional content
+- **Deployment-Relevant Files**: Files that affect application functionality, including web/, lib/, services/, k8s/, config/ directories
 
 ## Requirements
 
@@ -25,9 +33,9 @@ CloudToLocalLLM currently uses an overly complex AI-powered CI/CD orchestration 
 
 1. WHEN a developer pushes to the main branch THEN the system SHALL trigger deployment directly without intermediate orchestration workflows
 2. WHEN deployment is needed THEN the system SHALL use simple trigger patterns instead of repository dispatch events
-3. WHEN version management is required THEN the system SHALL use conventional commit parsing instead of AI analysis
-4. WHEN multiple services need deployment THEN the system SHALL build and deploy them in a single workflow
-5. WHEN deployment fails THEN the system SHALL provide clear error messages without complex debugging across multiple workflows
+3. WHEN version management is required THEN the CI/CD System SHALL use conventional commit parsing instead of AI Analysis
+4. WHEN multiple services need deployment THEN the CI/CD System SHALL build and deploy them in a single workflow
+5. WHEN deployment fails THEN the CI/CD System SHALL provide clear error messages without complex debugging across multiple workflows
 
 ### Requirement 2
 
@@ -35,11 +43,11 @@ CloudToLocalLLM currently uses an overly complex AI-powered CI/CD orchestration 
 
 #### Acceptance Criteria
 
-1. WHEN AI analyzes commits THEN the system SHALL consider both commit messages and file changes for version bump decisions
-2. WHEN breaking changes are detected by AI THEN the system SHALL increment the major version
-3. WHEN new features are detected by AI THEN the system SHALL increment the minor version
-4. WHEN bug fixes are detected by AI THEN the system SHALL increment the patch version
-5. WHEN AI analysis fails THEN the system SHALL fail the workflow and require manual intervention
+1. WHEN AI Analysis analyzes commits THEN the CI/CD System SHALL consider both commit messages and file changes for version bump decisions
+2. WHEN breaking changes are detected by AI Analysis THEN the Version Management SHALL increment the major version
+3. WHEN new features are detected by AI Analysis THEN the Version Management SHALL increment the minor version
+4. WHEN bug fixes are detected by AI Analysis THEN the Version Management SHALL increment the patch version
+5. WHEN AI Analysis fails THEN the CI/CD System SHALL fail the workflow and require manual intervention
 
 ### Requirement 3
 
@@ -47,11 +55,11 @@ CloudToLocalLLM currently uses an overly complex AI-powered CI/CD orchestration 
 
 #### Acceptance Criteria
 
-1. WHEN workflows are executed THEN the system SHALL use direct triggers instead of complex orchestration
-2. WHEN cloud deployment is needed THEN the system SHALL deploy directly without intermediate workflows
-3. WHEN deployment status is checked THEN the system SHALL provide status in a single workflow instead of multiple workflows
-4. WHEN troubleshooting is needed THEN the system SHALL have clear workflow dependencies without circular references
-5. WHEN maintenance is required THEN the system SHALL have fewer than 3 active workflows total for current cloud-only deployment
+1. WHEN workflows are executed THEN the CI/CD System SHALL use direct triggers instead of complex Workflow Orchestration
+2. WHEN cloud deployment is needed THEN the CI/CD System SHALL deploy directly without intermediate workflows
+3. WHEN deployment status is checked THEN the CI/CD System SHALL provide status in a single workflow instead of multiple workflows
+4. WHEN troubleshooting is needed THEN the CI/CD System SHALL have clear workflow dependencies without circular references
+5. WHEN maintenance is required THEN the CI/CD System SHALL have fewer than 3 active workflows total for current cloud-only deployment
 
 ### Requirement 4
 
@@ -59,9 +67,9 @@ CloudToLocalLLM currently uses an overly complex AI-powered CI/CD orchestration 
 
 #### Acceptance Criteria
 
-1. WHEN changes are pushed THEN the system SHALL complete deployment in under 15 minutes for typical changes
-2. WHEN builds are triggered THEN the system SHALL use efficient caching and parallel execution
-3. WHEN deployment orchestration runs THEN the system SHALL eliminate unnecessary waiting and coordination steps
+1. WHEN changes are pushed THEN the CI/CD System SHALL complete deployment in under 15 minutes for typical changes
+2. WHEN builds are triggered THEN the CI/CD System SHALL use efficient caching and parallel execution
+3. WHEN Deployment Pipeline runs THEN the CI/CD System SHALL eliminate unnecessary waiting and coordination steps
 4. WHEN version management executes THEN the system SHALL complete in under 2 minutes
 5. WHEN multiple services are deployed THEN the system SHALL deploy them concurrently where possible
 
@@ -107,8 +115,21 @@ CloudToLocalLLM currently uses an overly complex AI-powered CI/CD orchestration 
 
 #### Acceptance Criteria
 
-1. WHEN files in web/, lib/, services/, k8s/, config/ directories change THEN the system SHALL trigger cloud deployment
-2. WHEN authentication-related files change THEN the system SHALL always trigger cloud deployment
-3. WHEN only documentation or non-functional files change THEN the system SHALL skip deployment
-4. WHEN deployment decisions are made THEN the system SHALL log the file patterns that triggered deployment
-5. WHEN future platform support is added THEN the system SHALL extend file pattern matching for desktop and mobile builds
+1. WHEN Deployment-Relevant Files in web/, lib/, services/, k8s/, config/ directories change THEN the CI/CD System SHALL trigger cloud deployment
+2. WHEN authentication-related files change THEN the CI/CD System SHALL always trigger cloud deployment regardless of other factors
+3. WHEN only Documentation Changes occur without Code Changes THEN the CI/CD System SHALL skip deployment entirely
+4. WHEN deployment decisions are made THEN the CI/CD System SHALL log the file patterns that triggered or skipped deployment
+5. WHEN Documentation Changes are mixed with Code Changes THEN the CI/CD System SHALL trigger deployment based on the Code Changes
+6. WHEN future platform support is added THEN the CI/CD System SHALL extend file pattern matching for desktop and mobile builds
+
+### Requirement 9
+
+**User Story:** As a developer, I want documentation updates to be processed efficiently without triggering unnecessary deployments, so that documentation improvements don't consume deployment resources or delay actual code deployments.
+
+#### Acceptance Criteria
+
+1. WHEN changes affect only files in docs/, README.md, *.md files, or LICENSE THEN the CI/CD System SHALL skip all deployment activities
+2. WHEN Documentation Changes include files with extensions .md, .txt, .rst, or .adoc THEN the CI/CD System SHALL classify them as non-deployment changes
+3. WHEN AI Analysis processes Documentation Changes THEN the Version Management SHALL increment patch version for documentation-only releases
+4. WHEN Documentation Changes are detected THEN the CI/CD System SHALL complete processing in under 2 minutes without deployment steps
+5. WHEN mixed changes include both Documentation Changes and Code Changes THEN the CI/CD System SHALL process the Code Changes normally and include documentation updates in the same release

@@ -368,25 +368,33 @@ The project currently runs on Azure AKS with plans for future AWS migration:
 3. **Service Principal Auth**: Azure authentication via GitHub secrets
 4. **Future AWS Migration**: CloudFormation templates prepared for eventual migration
 
-## Migration to Unified Workflow
+## Migration to Unified Workflow - COMPLETED
 
 ### From Orchestrator to Unified System
 
-CloudToLocalLLM has evolved from a complex orchestrator-based system to a streamlined unified workflow:
+CloudToLocalLLM has successfully migrated from a complex orchestrator-based system to a streamlined unified workflow:
 
-**Previous System** (`version-and-distribute.yml` + `deploy-aks.yml`):
+**Previous System** (`version-and-distribute.yml` + `deploy-aks.yml`) - **DISABLED**:
 - Multiple workflows with repository dispatch coordination
 - Platform-specific branches (cloud, desktop, mobile)
 - Distributed status across multiple workflow runs
 - Complex debugging across workflow dependencies
+- **Status**: Main branch triggers disabled to prevent duplicate deployments
 
-**New Unified System** (`deploy.yml`):
+**New Unified System** (`deploy.yml`) - **ACTIVE**:
 - Single workflow handling all deployment logic
 - Direct deployment from main branch to Azure AKS
 - Consolidated status in single workflow run
 - Simplified debugging and maintenance
 - Azure Container Registry (ACR) for Docker images
 - Azure AKS for Kubernetes deployment
+- **Status**: Only workflow triggering on main branch pushes
+
+**Migration Status**: ✅ **COMPLETED**
+- Legacy orchestrator workflow disabled
+- Unified workflow handles all deployment scenarios
+- No duplicate CI/CD systems running
+- Complete consolidation achieved
 
 See **[Unified Deployment Workflow Documentation](../OPERATIONS/cicd/UNIFIED_DEPLOYMENT_WORKFLOW.md)** for complete technical details.
 

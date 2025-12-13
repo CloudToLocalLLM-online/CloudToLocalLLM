@@ -52,7 +52,18 @@ CloudToLocalLLM uses GitHub Actions for automated CI/CD pipelines. This document
 - **Easier Maintenance**: Single workflow to maintain instead of multiple coordinated workflows
 - **Direct Triggers**: No complex repository dispatch mechanisms required
 
-### 2. Legacy Azure AKS Deployment (`deploy-aks.yml`) - REPLACED
+### 2. Legacy Version & Distribution Orchestrator (`version-and-distribute.yml`) - DISABLED
+
+**Status**: Main branch trigger disabled to prevent duplicate deployments with unified workflow
+
+**Purpose**: Previously orchestrated AI analysis, version management, and platform-specific deployments
+
+**Current State**: 
+- Main branch trigger commented out and disabled
+- Workflow preserved for manual use if needed
+- All functionality migrated to unified `deploy.yml` workflow
+
+### 3. Legacy Azure AKS Deployment (`deploy-aks.yml`) - REPLACED
 
 **Status**: Replaced by the unified deployment workflow (`deploy.yml`)
 
@@ -100,7 +111,7 @@ ACR_NAME: imrightguycloudtolocalllm
 - `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_TUNNEL_TOKEN` - CDN and tunneling
 - `AUTH0_*` - Authentication provider credentials
 
-### 2. Build Release (`build-release.yml`)
+### 4. Build Release (`build-release.yml`)
 
 **Purpose**: Creates GitHub releases with desktop application binaries.
 
@@ -113,7 +124,7 @@ ACR_NAME: imrightguycloudtolocalllm
 - Portable packages (`.zip`)
 - SHA256 checksums for verification
 
-### 3. Build Images (`build-images.yml`)
+### 5. Build Images (`build-images.yml`)
 
 **Purpose**: Validates Docker image builds and Kubernetes manifests.
 
