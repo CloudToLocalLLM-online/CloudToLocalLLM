@@ -4,25 +4,30 @@
       "command": "npx",
       "args": [
         "-y",
-        "@executeautomation/playwright-mcp-server"
+        "@playwright/mcp@0.0.38"
       ],
-      "env": {
-        "PLAYWRIGHT_HEADLESS": "true"
-      },
-      "disabled": false,
-      "autoApprove": [
-        "playwright_navigate",
-        "playwright_screenshot",
-        "playwright_click",
-        "playwright_fill",
-        "playwright_select",
-        "playwright_hover",
-        "playwright_evaluate",
-        "playwright_close",
-        "playwright_custom_user_agent",
-        "playwright_get_visible_text",
-        "playwright_console_logs",
-        "playwright_get_visible_html"
+      "alwaysAllow": [
+        "browser_close",
+        "browser_resize",
+        "browser_console_messages",
+        "browser_handle_dialog",
+        "browser_evaluate",
+        "browser_file_upload",
+        "browser_fill_form",
+        "browser_install",
+        "browser_press_key",
+        "browser_type",
+        "browser_navigate",
+        "browser_navigate_back",
+        "browser_network_requests",
+        "browser_take_screenshot",
+        "browser_snapshot",
+        "browser_click",
+        "browser_drag",
+        "browser_hover",
+        "browser_select_option",
+        "browser_tabs",
+        "browser_wait_for"
       ]
     },
     "dockerhub": {
@@ -57,23 +62,17 @@
       ]
     },
     "context7": {
-      "command": "docker",
+      "command": "npx",
       "args": [
-        "mcp",
-        "gateway",
-        "run",
-        "--servers",
-        "context7"
+        "-y",
+        "@upstash/context7-mcp"
       ],
       "env": {
-        "LOCALAPPDATA": "C:\\Users\\rightguy\\AppData\\Local",
-        "ProgramData": "C:\\ProgramData",
-        "ProgramFiles": "C:\\Program Files"
+        "DEFAULT_MINIMUM_TOKENS": ""
       },
-      "disabled": false,
-      "autoApprove": [
-        "get-library-docs",
-        "resolve-library-id"
+      "alwaysAllow": [
+        "resolve-library-id",
+        "get-library-docs"
       ]
     },
     "grafana": {
@@ -112,15 +111,45 @@
         "delete_alert"
       ]
     },
+    "n8n-mcp": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "n8n-mcp@2.12.2"
+      ],
+      "env": {
+        "MCP_MODE": "stdio",
+        "LOG_LEVEL": "error",
+        "DISABLE_CONSOLE_OUTPUT": "true",
+        "N8N_API_URL": "https://api.n8n-mcp.com/mcp",
+        "N8N_API_KEY": "nmcp_8c599709d6c0b1c3cf826da8b2b966fa2e81d6bc3c18a34582c9e735fdc67a64"
+      }
+    },
     "sequentialthinking": {
       "command": "npx",
       "args": [
         "-y",
         "@modelcontextprotocol/server-sequential-thinking"
       ],
-      "disabled": false,
-      "autoApprove": [
+      "alwaysAllow": [
         "sequentialthinking"
+      ]
+    },
+    "chrome-devtools": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "chrome-devtools-mcp@latest"
+      ],
+      "alwaysAllow": [
+        "navigate_page",
+        "take_snapshot",
+        "click",
+        "wait_for",
+        "take_screenshot",
+        "list_console_messages",
+        "list_network_requests",
+        "evaluate_script"
       ]
     }
   }
