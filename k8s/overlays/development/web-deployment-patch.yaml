@@ -5,9 +5,13 @@ metadata:
 spec:
   # Development: 1 replica for cost optimization
   replicas: 1
+  selector:
+    matchLabels:
+      app: web
   template:
     metadata:
       labels:
+        app: web
         environment: development
     spec:
       containers:

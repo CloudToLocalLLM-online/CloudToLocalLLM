@@ -5,9 +5,13 @@ metadata:
 spec:
   # Staging: 2 replicas for availability
   replicas: 2
+  selector:
+    matchLabels:
+      app: api-backend
   template:
     metadata:
       labels:
+        app: api-backend
         environment: staging
     spec:
       containers:

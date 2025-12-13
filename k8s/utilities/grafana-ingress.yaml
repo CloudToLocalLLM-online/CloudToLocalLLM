@@ -15,7 +15,7 @@ spec:
         - grafana.cloudtolocalllm.online
       secretName: grafana-tls
   rules:
-    - host: grafana.cloudtolocalllmแด
+    - host: grafana.cloudtolocalllm.online
       http:
         paths:
           - path: /

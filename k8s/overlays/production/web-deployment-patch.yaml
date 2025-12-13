@@ -5,9 +5,13 @@ metadata:
 spec:
   # Production: 3 replicas for high availability
   replicas: 1
+  selector:
+    matchLabels:
+      app: web
   template:
     metadata:
       labels:
+        app: web
         environment: production
     spec:
       containers:

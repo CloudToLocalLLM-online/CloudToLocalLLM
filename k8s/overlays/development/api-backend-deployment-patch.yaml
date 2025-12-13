@@ -5,9 +5,13 @@ metadata:
 spec:
   # Development: 1 replica for cost optimization
   replicas: 1
+  selector:
+    matchLabels:
+      app: api-backend
   template:
     metadata:
       labels:
+        app: api-backend
         environment: development
     spec:
       containers:
