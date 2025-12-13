@@ -142,6 +142,14 @@ Install these extensions:
 - **Flutter Widget Snippets**: Helpful code snippets
 - **Bracket Pair Colorizer**: Better bracket visualization
 
+#### **Kiro IDE (Enhanced Development)**
+CloudToLocalLLM includes specialized Kiro IDE configuration with:
+- **Custom AI Assistant Modes**: Task-specific AI assistance for documentation, code review, testing, and refactoring
+- **MCP Tool Integration**: Browser automation, documentation lookup, and workflow automation
+- **Development Hooks**: Automated linting, commit management, and documentation sync
+
+See the [Kiro IDE Configuration Guide](KIRO_IDE_CONFIGURATION.md) for setup instructions.
+
 #### **Launch Configuration**
 The project includes `.vscode/launch.json` with pre-configured debug settings:
 - **Debug (Desktop)**: Run on desktop platform

@@ -49,12 +49,21 @@ graph TB
 - Updates `.kiro/settings/mcp.json` with Kilocode server
 - Configures environment variables (GEMINI_API_KEY)
 - Enables auto-approval for safe operations
+- Integrates multiple MCP servers (Playwright, Context7, N8N, Chrome DevTools)
 
-### 3. Kiro IDE Features
+### 3. Custom AI Assistant Modes
+- Documentation Specialist: Technical writing expert with file restrictions
+- Code Reviewer: Senior engineer for code quality analysis
+- Test Engineer: QA specialist for comprehensive testing
+- Code Simplifier: Refactoring expert with full access (Kilo Code integration)
+
+### 4. Kiro IDE Features
 - Auto-commit and push hooks
 - Flutter lint fix automation
 - Source documentation synchronization
 - Code quality analysis integration
+- Custom AI assistant modes for specialized development tasks
+- MCP tool integration for enhanced capabilities
 
 ## Implementation Steps
 
@@ -69,15 +78,21 @@ graph TB
    - Set environment variables
    - Configure auto-approval rules
 
-3. **Enable Kiro Features**
+3. **Configure Custom AI Modes**
+   - Deploy `temp_custom_modes.yaml` configuration
+   - Set up specialized AI assistant modes
+   - Configure file access restrictions per mode
+
+4. **Enable Kiro Features**
    - Verify hooks are executable
    - Test automation workflows
    - Ensure settings compatibility
 
-4. **Testing & Verification**
+5. **Testing & Verification**
    - Test MCP server connectivity
    - Verify tool execution
-   - Validate integration with existing features
+   - Validate custom mode functionality
+   - Test integration with existing features
 
 ## Benefits
 
@@ -85,3 +100,5 @@ graph TB
 - **Automated Workflows**: CI/CD analysis and version management
 - **Enhanced Productivity**: Integrated code quality and documentation tools
 - **Seamless Compatibility**: Full integration with Kiro IDE features
+- **Specialized AI Modes**: Task-specific AI assistants for different development phases
+- **Comprehensive Tool Integration**: Browser automation, documentation lookup, and workflow automation

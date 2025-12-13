@@ -1,5 +1,95 @@
 # MCP Tools Available
 
+## CRITICAL: Sequential Thinking MCP Server
+
+**ALWAYS USE FOR COMPLEX PROBLEMS**: The Sequential Thinking MCP server provides structured problem-solving capabilities that should be used for any complex analysis, debugging, or multi-step reasoning tasks.
+
+### Configuration
+
+The Sequential Thinking MCP server is configured in `.kiro/settings/mcp.json`:
+
+```json
+{
+  "sequentialthinking": {
+    "command": "uvx",
+    "args": [
+      "mcp-sequentialthinking"
+    ],
+    "disabled": false,
+    "autoApprove": [
+      "sequential_thinking"
+    ]
+  }
+}
+```
+
+**Tools Available:** 1 powerful tool for structured reasoning
+
+### Sequential Thinking Tool
+
+**sequentialthinking** - Structured step-by-step problem analysis and reasoning
+- Parameters: `thought` (string, required), `nextThoughtNeeded` (boolean, required), `thoughtNumber` (integer, required), `totalThoughts` (integer, required)
+- Optional: `isRevision` (boolean), `revisesThought` (integer), `branchFromThought` (integer), `branchId` (string), `needsMoreThoughts` (boolean)
+- Returns: Structured analysis with step-by-step reasoning that can adapt and evolve as understanding deepens
+
+### When to Use Sequential Thinking
+
+**MANDATORY for these scenarios:**
+- **CI/CD workflow analysis and debugging** - Understanding complex deployment pipelines
+- **Architecture decisions** - Evaluating system design choices
+- **Multi-step troubleshooting** - Debugging complex issues with multiple potential causes
+- **Infrastructure planning** - AWS/Azure deployment strategies
+- **Code refactoring decisions** - Large-scale code changes
+- **Performance optimization** - Analyzing bottlenecks and solutions
+- **Security analysis** - Evaluating security implications
+- **Migration planning** - Platform or technology migrations
+
+**Example Usage:**
+```javascript
+// For complex CI/CD issues - Start with initial analysis
+mcp_sequentialthinking_sequentialthinking({
+  thought: "I need to analyze why CloudToLocalLLM deployment pipeline is not triggering cloud deployments for authentication changes. Let me start by understanding the expected flow: auth0-bridge.js changes should be detected by version-and-distribute.yml AI orchestrator, which should then trigger deploy-aks.yml via repository_dispatch.",
+  nextThoughtNeeded: true,
+  thoughtNumber: 1,
+  totalThoughts: 5
+})
+
+// Continue with deeper analysis
+mcp_sequentialthinking_sequentialthinking({
+  thought: "Now I need to check the actual workflow execution logs to see if the AI orchestrator detected the auth changes and what decision it made about cloud deployment needs.",
+  nextThoughtNeeded: true,
+  thoughtNumber: 2,
+  totalThoughts: 5
+})
+
+// Architecture decisions with branching thoughts
+mcp_sequentialthinking_sequentialthinking({
+  thought: "For the Azure to AWS migration, I need to consider multiple approaches. Let me branch into evaluating the blue-green deployment strategy first.",
+  nextThoughtNeeded: true,
+  thoughtNumber: 3,
+  totalThoughts: 8,
+  branchFromThought: 2,
+  branchId: "blue-green-strategy"
+})
+```
+
+### Sequential Thinking Best Practices
+
+1. **Always start with Sequential Thinking** for complex problems before diving into specific tools
+2. **Provide comprehensive context** in the problem description
+3. **Include relevant constraints** (budget, time, technical limitations)
+4. **Specify the desired outcome** or decision needed
+5. **Use the analysis to guide subsequent tool usage**
+
+### Integration with Other MCP Tools
+
+Sequential Thinking should guide the use of other MCP tools:
+
+1. **Analysis Phase**: Use Sequential Thinking to understand the problem
+2. **Investigation Phase**: Use specific tools (Grafana, Docker Hub, etc.) based on the analysis
+3. **Implementation Phase**: Use Sequential Thinking to plan the solution
+4. **Validation Phase**: Use appropriate tools to verify the solution
+
 ## Docker Hub MCP Server
 
 Docker Hub API access for managing container repositories.

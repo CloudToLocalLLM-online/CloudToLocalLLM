@@ -236,10 +236,20 @@ For custom Kubernetes and DigitalOcean servers:
 4. **Environment Variables**: Keep sensitive tokens in environment variables, never in code
 5. **Error Handling**: Check MCP server status if tools fail
 
+## Kiro IDE Integration
+
+CloudToLocalLLM includes specialized configuration for Kiro IDE with custom AI assistant modes and enhanced MCP integration. See the [Kiro IDE Configuration Guide](KIRO_IDE_CONFIGURATION.md) for:
+
+- Custom AI assistant modes (Documentation Specialist, Code Reviewer, Test Engineer, Code Simplifier)
+- Enhanced MCP server configurations
+- Development workflow automation
+- Kilocode CLI integration
+
 ## Additional Resources
 
 - [MCP Protocol Specification](https://modelcontextprotocol.io/)
 - [MCP Servers Registry](https://github.com/modelcontextprotocol/servers)
 - [Cursor MCP Documentation](https://docs.cursor.com/)
 - [Browser Tools MCP](https://github.com/AgentDeskAI/browser-tools-mcp)
+- [Kiro IDE Configuration Guide](KIRO_IDE_CONFIGURATION.md)
 

@@ -65,6 +65,7 @@ If you are a developer looking to contribute or build from source, follow these 
 *   **Backend:** Node.js (Express.js)
 *   **AI Runtime:** Ollama / LM Studio (Local)
 *   **CI/CD:** AI-powered orchestration with Kilocode CLI & Gemini 2.0 Flash
+*   **Development:** Kiro IDE with custom AI modes and MCP tool integration
 
 ### Build from Source
 
