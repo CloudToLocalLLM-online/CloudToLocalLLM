@@ -168,6 +168,14 @@ class Auth0AuthProvider implements AuthProvider {
       debugPrint(
           '[Auth0AuthProvider] Starting login with redirect URL: $_redirectUrl');
 
+      // flutter_appauth doesn't support web, throw a clear error
+      if (kIsWeb) {
+        throw AuthException.configuration(
+          'flutter_appauth is not supported on web platform. '
+          'Please use auth0_flutter package instead.',
+        );
+      }
+
       final result = await _appAuth.authorizeAndExchangeCode(
         AuthorizationTokenRequest(
           _clientId,
