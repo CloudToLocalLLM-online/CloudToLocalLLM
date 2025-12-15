@@ -198,6 +198,41 @@
         "auth0_update_resource_server",
         "auth0_update_application"
       ]
+    },
+    "github": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-github"
+      ],
+      "env": {
+        "GITHUB_PERSONAL_ACCESS_TOKEN": "${GITHUB_TOKEN}"
+      },
+      "disabled": false,
+      "autoApprove": [
+        "create_issue",
+        "create_pull_request",
+        "get_issue",
+        "list_issues",
+        "update_issue",
+        "search_repositories",
+        "get_repository",
+        "list_commits",
+        "get_commit",
+        "create_branch",
+        "get_branch",
+        "list_branches",
+        "create_pull_request",
+        "get_pull_request",
+        "list_pull_requests",
+        "update_pull_request",
+        "merge_pull_request",
+        "list_workflows",
+        "get_workflow",
+        "trigger_workflow",
+        "list_workflow_runs",
+        "get_workflow_run"
+      ]
     }
   }
 }
