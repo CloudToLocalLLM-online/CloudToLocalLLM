@@ -52,7 +52,8 @@ const specs = {
   info: {
     title: 'CloudToLocalLLM API Backend',
     version: '2.0.0',
-    description: 'Comprehensive API for CloudToLocalLLM - Bridge cloud AI services with local models',
+    description:
+      'Comprehensive API for CloudToLocalLLM - Bridge cloud AI services with local models',
   },
   paths: {},
 };
@@ -125,9 +126,7 @@ import { createMonitoringRoutes } from './routes/monitoring.js';
 import { createConversationRoutes } from './routes/conversations.js';
 import { authenticateJWT } from './middleware/auth.js';
 import serviceVersionHandler from './routes/service-version.js';
-import {
-  addTierInfo,
-} from './middleware/tier-check.js';
+import { addTierInfo } from './middleware/tier-check.js';
 import { HealthCheckService } from './services/health-check.js';
 import {
   setDbMigrator,
@@ -419,7 +418,10 @@ registerRoutes('/user-activity', userActivityRoutes);
 registerRoutes('/user-deletion', userDeletionRoutes);
 // Note: versionedRoutes is a utility module, not a router - don't register it
 registerRoutes('/webhook-event-filters', webhookEventFiltersRoutes);
-registerRoutes('/webhook-payload-transformations', webhookPayloadTransformationsRoutes);
+registerRoutes(
+  '/webhook-payload-transformations',
+  webhookPayloadTransformationsRoutes,
+);
 registerRoutes('/webhook-rate-limiting', webhookRateLimitingRoutes);
 registerRoutes('/webhook-testing', webhookTestingRoutes);
 
@@ -442,24 +444,27 @@ registerRoutes('/user/tier', authenticateJWT, addTierInfo, ...userTierHandler);
 
 // Health check endpoints
 registerRoutes('/health', (req, res) => {
-  healthCheckService.getHealthStatus().then(healthStatus => {
-    let statusCode = 200;
-    if (healthStatus.status === 'unhealthy') {
-      statusCode = 503; // Service Unavailable
-    } else if (healthStatus.status === 'degraded') {
-      statusCode = 200; // Still return 200 but indicate degraded status
-    }
-    res.status(statusCode).json(healthStatus);
-  }).catch(error => {
-    logger.error('Health check endpoint error:', error);
-    res.status(503).json({
-      status: 'unhealthy',
-      timestamp: new Date().toISOString(),
-      service: 'cloudtolocalllm-api',
-      error: 'Health check failed',
-      message: error.message,
+  healthCheckService
+    .getHealthStatus()
+    .then((healthStatus) => {
+      let statusCode = 200;
+      if (healthStatus.status === 'unhealthy') {
+        statusCode = 503; // Service Unavailable
+      } else if (healthStatus.status === 'degraded') {
+        statusCode = 200; // Still return 200 but indicate degraded status
+      }
+      res.status(statusCode).json(healthStatus);
+    })
+    .catch((error) => {
+      logger.error('Health check endpoint error:', error);
+      res.status(503).json({
+        status: 'unhealthy',
+        timestamp: new Date().toISOString(),
+        service: 'cloudtolocalllm-api',
+        error: 'Health check failed',
+        message: error.message,
+      });
     });
-  });
 });
 
 // TEMPORARY DEBUG ENDPOINT
@@ -486,13 +491,20 @@ app.get('/debug-dump', async(req, res) => {
         debugInfo.usersColumns = columns.rows;
 
         // 2. Migration Check
-        const migrations = await client.query('SELECT * FROM schema_migrations ORDER BY applied_at DESC LIMIT 5');
+        const migrations = await client.query(
+          'SELECT * FROM schema_migrations ORDER BY applied_at DESC LIMIT 5',
+        );
         debugInfo.migrations = migrations.rows;
 
         // 3. UUID Generaton Test
         try {
-          const uuidResult = await client.query('SELECT gen_random_uuid() as val');
-          debugInfo.uuidGenTest = { success: true, value: uuidResult.rows[0].val };
+          const uuidResult = await client.query(
+            'SELECT gen_random_uuid() as val',
+          );
+          debugInfo.uuidGenTest = {
+            success: true,
+            value: uuidResult.rows[0].val,
+          };
         } catch (uuidError) {
           debugInfo.uuidGenTest = { success: false, error: uuidError.message };
         }
@@ -523,7 +535,6 @@ app.get('/debug-dump', async(req, res) => {
             detail: writeError.detail,
           };
         }
-
       } catch (e) {
         debugInfo.dbError = e.message;
       } finally {
@@ -580,15 +591,16 @@ registerRoutes('/queue/drain', authenticateJWT, queueDrainHandler);
 
 // WebSocket upgrade handling for SSH tunnel
 server.on('upgrade', (request, socket, head) => {
-  const pathname = new URL(request.url, `http://${request.headers.host}`).pathname;
+  const pathname = new URL(request.url, `http://${request.headers.host}`)
+    .pathname;
 
   if (pathname === '/ssh') {
     if (sshProxy && sshProxy.handleUpgrade) {
       logger.info('Received WebSocket upgrade request for /ssh', {
         url: request.url,
-        headers: Object.keys(request.headers)
+        headers: Object.keys(request.headers),
       });
-      
+
       try {
         sshProxy.handleUpgrade(request, socket, head);
       } catch (error) {
@@ -596,7 +608,9 @@ server.on('upgrade', (request, socket, head) => {
         socket.destroy();
       }
     } else {
-      logger.warn('SSH proxy not initialized or does not support WebSocket upgrade');
+      logger.warn(
+        'SSH proxy not initialized or does not support WebSocket upgrade',
+      );
       socket.destroy();
     }
   } else {
@@ -608,31 +622,19 @@ server.on('upgrade', (request, socket, head) => {
 // Streaming Proxy Management Endpoints
 
 // Start streaming proxy for user
-const proxyStartRoute = [
-  authenticateToken,
-  proxyStartHandler,
-];
+const proxyStartRoute = [authenticateToken, proxyStartHandler];
 registerRoutes('/proxy/start', ...proxyStartRoute);
 
 // Stop streaming proxy for user
-const proxyStopRoute = [
-  authenticateToken,
-  proxyStopHandler,
-];
+const proxyStopRoute = [authenticateToken, proxyStopHandler];
 registerRoutes('/proxy/stop', ...proxyStopRoute);
 
 // Provision streaming proxy for user (with test mode support)
-const proxyProvisionRoute = [
-  authenticateToken,
-  proxyProvisionHandler,
-];
+const proxyProvisionRoute = [authenticateToken, proxyProvisionHandler];
 registerRoutes('/streaming-proxy/provision', ...proxyProvisionRoute);
 
 // Get streaming proxy status
-const proxyStatusRoute = [
-  authenticateToken,
-  proxyStatusHandler,
-];
+const proxyStatusRoute = [authenticateToken, proxyStatusHandler];
 registerRoutes('/proxy/status', ...proxyStatusRoute);
 
 // Ollama proxy endpoints removed - using HTTP polling tunnel system instead
@@ -665,12 +667,10 @@ app.get('/conversations/', authenticateJWT, async(req, res) => {
     }
 
     if (!dbMigrator || !dbMigrator.pool) {
-      return res
-        .status(503)
-        .json({
-          error: 'Service Unavailable',
-          message: 'Database not initialized',
-        });
+      return res.status(503).json({
+        error: 'Service Unavailable',
+        message: 'Database not initialized',
+      });
     }
 
     const client = await dbMigrator.pool.connect();
@@ -689,12 +689,10 @@ app.get('/conversations/', authenticateJWT, async(req, res) => {
     }
   } catch (error) {
     logger.error('Failed to get conversations', { error: error.message });
-    res
-      .status(500)
-      .json({
-        error: 'Internal Server Error',
-        message: 'Failed to get conversations',
-      });
+    res.status(500).json({
+      error: 'Internal Server Error',
+      message: 'Failed to get conversations',
+    });
   }
 });
 
@@ -711,12 +709,10 @@ app.put('/conversations/:id', authenticateJWT, async(req, res) => {
     }
 
     if (!dbMigrator || !dbMigrator.pool) {
-      return res
-        .status(503)
-        .json({
-          error: 'Service Unavailable',
-          message: 'Database not initialized',
-        });
+      return res.status(503).json({
+        error: 'Service Unavailable',
+        message: 'Database not initialized',
+      });
     }
 
     const client = await dbMigrator.pool.connect();
@@ -817,12 +813,10 @@ app.put('/conversations/:id', authenticateJWT, async(req, res) => {
       error: error.message,
       conversationId: req.params.id,
     });
-    res
-      .status(500)
-      .json({
-        error: 'Internal Server Error',
-        message: 'Failed to update conversation',
-      });
+    res.status(500).json({
+      error: 'Internal Server Error',
+      message: 'Failed to update conversation',
+    });
   }
 });
 

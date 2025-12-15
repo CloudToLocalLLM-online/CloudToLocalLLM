@@ -5,6 +5,7 @@
 The RBAC middleware provides comprehensive role-based access control for the API backend. It enables permission validation before operations and supports multiple roles with granular permissions.
 
 **Validates: Requirements 2.3, 2.5**
+
 - Support role-based access control (RBAC) for admin operations
 - Validate user permissions before allowing operations
 
@@ -13,11 +14,13 @@ The RBAC middleware provides comprehensive role-based access control for the API
 The system defines the following roles:
 
 ### Admin Roles
+
 - **super_admin**: Full system access with all permissions
 - **support_admin**: Support team access (user management, sessions, audit logs)
 - **finance_admin**: Finance team access (payments, refunds, subscriptions)
 
 ### User Roles
+
 - **user**: Free tier user (basic tunnel operations)
 - **premium_user**: Premium tier user (advanced features)
 - **enterprise_user**: Enterprise tier user (all features)
@@ -27,6 +30,7 @@ The system defines the following roles:
 The system defines granular permissions for different operations:
 
 ### User Management
+
 - `view_users`: View user information
 - `edit_users`: Edit user profiles
 - `delete_users`: Delete user accounts
@@ -34,10 +38,12 @@ The system defines granular permissions for different operations:
 - `manage_user_tiers`: Manage user tier upgrades/downgrades
 
 ### Session Management
+
 - `view_sessions`: View user sessions
 - `terminate_sessions`: Terminate user sessions
 
 ### Tunnel Management
+
 - `create_tunnels`: Create new tunnels
 - `edit_tunnels`: Edit tunnel configuration
 - `delete_tunnels`: Delete tunnels
@@ -45,27 +51,32 @@ The system defines granular permissions for different operations:
 - `manage_tunnel_sharing`: Share tunnels with other users
 
 ### Proxy Management
+
 - `manage_proxy`: Manage proxy instances
 - `view_proxy_metrics`: View proxy metrics
 
 ### Payment and Billing
+
 - `view_payments`: View payment information
 - `process_refunds`: Process refunds
 - `view_subscriptions`: View subscription information
 - `edit_subscriptions`: Edit subscriptions
 
 ### Reporting and Analytics
+
 - `view_reports`: View reports
 - `export_reports`: Export reports
 - `view_audit_logs`: View audit logs
 
 ### System Configuration
+
 - `manage_system_config`: Manage system configuration
 - `view_system_metrics`: View system metrics
 - `manage_email_config`: Manage email configuration
 - `view_email_config`: View email configuration
 
 ### Webhook Management
+
 - `manage_webhooks`: Manage webhooks
 - `view_webhooks`: View webhooks
 
@@ -91,8 +102,9 @@ import { requirePermission, PERMISSIONS } from './middleware/rbac.js';
 import { authenticateJWT } from './middleware/auth.js';
 
 // Single permission
-router.get('/users', 
-  authenticateJWT, 
+router.get(
+  '/users',
+  authenticateJWT,
   requirePermission(PERMISSIONS.VIEW_USERS),
   (req, res) => {
     // Handle request
@@ -100,7 +112,8 @@ router.get('/users',
 );
 
 // Multiple permissions (all required)
-router.post('/users/:id/suspend',
+router.post(
+  '/users/:id/suspend',
   authenticateJWT,
   requirePermission([PERMISSIONS.EDIT_USERS, PERMISSIONS.SUSPEND_USERS]),
   (req, res) => {
@@ -109,12 +122,12 @@ router.post('/users/:id/suspend',
 );
 
 // Multiple permissions (any one required)
-router.get('/reports',
+router.get(
+  '/reports',
   authenticateJWT,
-  requirePermission(
-    [PERMISSIONS.VIEW_REPORTS, PERMISSIONS.EXPORT_REPORTS],
-    { requireAll: false }
-  ),
+  requirePermission([PERMISSIONS.VIEW_REPORTS, PERMISSIONS.EXPORT_REPORTS], {
+    requireAll: false,
+  }),
   (req, res) => {
     // Handle request
   }
@@ -126,10 +139,16 @@ router.get('/reports',
 Use the `requireRole` middleware to protect routes by role:
 
 ```javascript
-import { requireRole, requireAdmin, requireSuperAdmin, ROLES } from './middleware/rbac.js';
+import {
+  requireRole,
+  requireAdmin,
+  requireSuperAdmin,
+  ROLES,
+} from './middleware/rbac.js';
 
 // Require specific role
-router.get('/admin/dashboard',
+router.get(
+  '/admin/dashboard',
   authenticateJWT,
   requireRole(ROLES.SUPER_ADMIN),
   (req, res) => {
@@ -138,16 +157,13 @@ router.get('/admin/dashboard',
 );
 
 // Require any admin role
-router.get('/admin/users',
-  authenticateJWT,
-  requireAdmin(),
-  (req, res) => {
-    // Handle request
-  }
-);
+router.get('/admin/users', authenticateJWT, requireAdmin(), (req, res) => {
+  // Handle request
+});
 
 // Require super admin
-router.post('/admin/system/config',
+router.post(
+  '/admin/system/config',
   authenticateJWT,
   requireSuperAdmin(),
   (req, res) => {
@@ -156,9 +172,12 @@ router.post('/admin/system/config',
 );
 
 // Multiple roles (any one required)
-router.get('/admin/reports',
+router.get(
+  '/admin/reports',
   authenticateJWT,
-  requireRole([ROLES.SUPPORT_ADMIN, ROLES.FINANCE_ADMIN], { requireAll: false }),
+  requireRole([ROLES.SUPPORT_ADMIN, ROLES.FINANCE_ADMIN], {
+    requireAll: false,
+  }),
   (req, res) => {
     // Handle request
   }
@@ -178,14 +197,24 @@ if (hasPermission(req.userRoles, PERMISSIONS.VIEW_USERS)) {
 }
 
 // Check multiple permissions
-if (hasPermission(req.userRoles, [PERMISSIONS.EDIT_USERS, PERMISSIONS.SUSPEND_USERS])) {
+if (
+  hasPermission(req.userRoles, [
+    PERMISSIONS.EDIT_USERS,
+    PERMISSIONS.SUSPEND_USERS,
+  ])
+) {
   // User has all permissions
 }
 
 // Check any permission
 import { hasAnyPermission } from './middleware/rbac.js';
 
-if (hasAnyPermission(req.userRoles, [PERMISSIONS.VIEW_REPORTS, PERMISSIONS.EXPORT_REPORTS])) {
+if (
+  hasAnyPermission(req.userRoles, [
+    PERMISSIONS.VIEW_REPORTS,
+    PERMISSIONS.EXPORT_REPORTS,
+  ])
+) {
   // User has at least one permission
 }
 ```
@@ -244,6 +273,7 @@ When a route is protected with `requireRole`:
 ## Error Responses
 
 ### 401 Unauthorized
+
 ```json
 {
   "error": "Authentication required",
@@ -252,6 +282,7 @@ When a route is protected with `requireRole`:
 ```
 
 ### 403 Forbidden (Insufficient Permissions)
+
 ```json
 {
   "error": "Insufficient permissions",
@@ -261,6 +292,7 @@ When a route is protected with `requireRole`:
 ```
 
 ### 403 Forbidden (Insufficient Role)
+
 ```json
 {
   "error": "Insufficient role",
@@ -281,7 +313,8 @@ import { requirePermission, PERMISSIONS } from './middleware/rbac.js';
 const router = express.Router();
 
 // Get all users (requires view_users permission)
-router.get('/users',
+router.get(
+  '/users',
   authenticateJWT,
   requirePermission(PERMISSIONS.VIEW_USERS),
   async (req, res) => {
@@ -290,7 +323,8 @@ router.get('/users',
 );
 
 // Update user (requires edit_users permission)
-router.put('/users/:id',
+router.put(
+  '/users/:id',
   authenticateJWT,
   requirePermission(PERMISSIONS.EDIT_USERS),
   async (req, res) => {
@@ -299,7 +333,8 @@ router.put('/users/:id',
 );
 
 // Suspend user (requires both edit_users and suspend_users)
-router.post('/users/:id/suspend',
+router.post(
+  '/users/:id/suspend',
   authenticateJWT,
   requirePermission([PERMISSIONS.EDIT_USERS, PERMISSIONS.SUSPEND_USERS]),
   async (req, res) => {
@@ -320,7 +355,8 @@ import { requireRole, ROLES } from './middleware/rbac.js';
 const router = express.Router();
 
 // Finance dashboard (requires finance_admin role)
-router.get('/dashboard',
+router.get(
+  '/dashboard',
   authenticateJWT,
   requireRole(ROLES.FINANCE_ADMIN),
   async (req, res) => {
@@ -341,7 +377,8 @@ import { requirePermission, PERMISSIONS } from './middleware/rbac.js';
 const router = express.Router();
 
 // Create tunnel (requires create_tunnels permission)
-router.post('/tunnels',
+router.post(
+  '/tunnels',
   authenticateJWT,
   requirePermission(PERMISSIONS.CREATE_TUNNELS),
   async (req, res) => {
@@ -350,7 +387,8 @@ router.post('/tunnels',
 );
 
 // View tunnel (requires view_tunnels permission)
-router.get('/tunnels/:id',
+router.get(
+  '/tunnels/:id',
   authenticateJWT,
   requirePermission(PERMISSIONS.VIEW_TUNNELS),
   async (req, res) => {
@@ -359,7 +397,8 @@ router.get('/tunnels/:id',
 );
 
 // Share tunnel (requires manage_tunnel_sharing permission)
-router.post('/tunnels/:id/share',
+router.post(
+  '/tunnels/:id/share',
   authenticateJWT,
   requirePermission(PERMISSIONS.MANAGE_TUNNEL_SHARING),
   async (req, res) => {
@@ -379,6 +418,7 @@ npm test -- rbac.test.js
 ```
 
 Tests cover:
+
 - Permission checking (single and multiple)
 - Role checking (single and multiple)
 - Middleware behavior
@@ -388,21 +428,24 @@ Tests cover:
 ## Best Practices
 
 1. **Always authenticate before checking permissions**
+
    ```javascript
-   router.get('/protected',
-     authenticateJWT,  // Always first
+   router.get(
+     '/protected',
+     authenticateJWT, // Always first
      requirePermission(PERMISSIONS.VIEW_DATA),
      handler
    );
    ```
 
 2. **Use specific permissions, not just roles**
+
    ```javascript
    // Good: Specific permission
-   requirePermission(PERMISSIONS.VIEW_USERS)
-   
+   requirePermission(PERMISSIONS.VIEW_USERS);
+
    // Less ideal: Just checking role
-   requireRole(ROLES.SUPPORT_ADMIN)
+   requireRole(ROLES.SUPPORT_ADMIN);
    ```
 
 3. **Log permission denials for security**
@@ -420,19 +463,22 @@ Tests cover:
 ## Troubleshooting
 
 ### User roles not assigned
+
 - Check if user is authenticated
 - Verify Supabase Auth metadata is present
 - Check user tier is set correctly
 
 ### Permission denied unexpectedly
+
 - Check user roles: `console.log(req.userRoles)`
 - Verify permission is in role definition
 - Check middleware order (auth before RBAC)
 
 ### Super admin can't access endpoint
+
 - Verify super admin role is assigned
 - Check if endpoint requires specific permission
-- Super admin has all permissions (wildcard '*')
+- Super admin has all permissions (wildcard '\*')
 
 ## Integration with Existing Code
 
@@ -446,6 +492,7 @@ The RBAC middleware integrates seamlessly with existing authentication:
 ## Future Enhancements
 
 Potential improvements:
+
 - Dynamic permission loading from database
 - Permission caching for performance
 - Audit logging for permission changes

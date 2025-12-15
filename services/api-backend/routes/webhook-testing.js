@@ -65,7 +65,10 @@ router.post('/test/payload', authenticateJWT, (req, res) => {
       });
     }
 
-    const payload = webhookTestingService.generateTestPayload(eventType, customData || {});
+    const payload = webhookTestingService.generateTestPayload(
+      eventType,
+      customData || {},
+    );
 
     logger.info('[WebhookTesting] Test payload generated', {
       userId: req.user.sub,
@@ -121,7 +124,10 @@ router.post('/test/send', authenticateJWT, async(req, res) => {
     }
 
     // Generate test payload
-    const payload = webhookTestingService.generateTestPayload(eventType, customData || {});
+    const payload = webhookTestingService.generateTestPayload(
+      eventType,
+      customData || {},
+    );
 
     // Simulate delivery
     const result = await webhookTestingService.simulateWebhookDelivery(
@@ -235,7 +241,10 @@ router.get('/:webhookId/debug', authenticateJWT, async(req, res) => {
     const { webhookId } = req.params;
     const userId = req.user.sub;
 
-    const debugInfo = await webhookTestingService.getWebhookDebugInfo(webhookId, userId);
+    const debugInfo = await webhookTestingService.getWebhookDebugInfo(
+      webhookId,
+      userId,
+    );
 
     if (debugInfo.error) {
       return res.status(404).json({ error: debugInfo.error });
@@ -267,32 +276,39 @@ router.get('/:webhookId/debug', authenticateJWT, async(req, res) => {
  *   "delivery": { ... }
  * }
  */
-router.get('/deliveries/:deliveryId/details', authenticateJWT, async(req, res) => {
-  try {
-    const { deliveryId } = req.params;
-    const userId = req.user.sub;
+router.get(
+  '/deliveries/:deliveryId/details',
+  authenticateJWT,
+  async(req, res) => {
+    try {
+      const { deliveryId } = req.params;
+      const userId = req.user.sub;
 
-    const details = await webhookTestingService.getDeliveryDetails(deliveryId, userId);
+      const details = await webhookTestingService.getDeliveryDetails(
+        deliveryId,
+        userId,
+      );
 
-    if (details.error) {
-      return res.status(404).json({ error: details.error });
+      if (details.error) {
+        return res.status(404).json({ error: details.error });
+      }
+
+      logger.info('[WebhookTesting] Delivery details retrieved', {
+        userId,
+        deliveryId,
+      });
+
+      res.json({ delivery: details });
+    } catch (error) {
+      logger.error('[WebhookTesting] Failed to get delivery details', {
+        userId: req.user.sub,
+        deliveryId: req.params.deliveryId,
+        error: error.message,
+      });
+      res.status(500).json({ error: 'Failed to get delivery details' });
     }
-
-    logger.info('[WebhookTesting] Delivery details retrieved', {
-      userId,
-      deliveryId,
-    });
-
-    res.json({ delivery: details });
-  } catch (error) {
-    logger.error('[WebhookTesting] Failed to get delivery details', {
-      userId: req.user.sub,
-      deliveryId: req.params.deliveryId,
-      error: error.message,
-    });
-    res.status(500).json({ error: 'Failed to get delivery details' });
-  }
-});
+  },
+);
 
 /**
  * POST /api/webhooks/test/validate

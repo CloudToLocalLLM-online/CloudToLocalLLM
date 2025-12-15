@@ -171,12 +171,10 @@ export function createTunnelRoutes(
   router.get('/health/:userId', requireFeature('tunneling'), (req, res) => {
     const { userId } = req.params;
     if (userId !== req.userId) {
-      return res
-        .status(403)
-        .json({
-          error: 'Forbidden',
-          message: 'You can only check your own tunnel status.',
-        });
+      return res.status(403).json({
+        error: 'Forbidden',
+        message: 'You can only check your own tunnel status.',
+      });
     }
 
     if (!tunnelProxy) {

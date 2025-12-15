@@ -9,23 +9,25 @@ import { v4 as uuidv4 } from 'uuid';
 export class ProxyScalingService {
   constructor(db = null, logger = null) {
     this.db = db;
-    this.logger = logger || winston.createLogger({
-      level: process.env.LOG_LEVEL || 'info',
-      format: winston.format.combine(
-        winston.format.timestamp(),
-        winston.format.errors({ stack: true }),
-        winston.format.json(),
-      ),
-      defaultMeta: { service: 'proxy-scaling' },
-      transports: [
-        new winston.transports.Console({
-          format: winston.format.combine(
-            winston.format.timestamp(),
-            winston.format.simple(),
-          ),
-        }),
-      ],
-    });
+    this.logger =
+      logger ||
+      winston.createLogger({
+        level: process.env.LOG_LEVEL || 'info',
+        format: winston.format.combine(
+          winston.format.timestamp(),
+          winston.format.errors({ stack: true }),
+          winston.format.json(),
+        ),
+        defaultMeta: { service: 'proxy-scaling' },
+        transports: [
+          new winston.transports.Console({
+            format: winston.format.combine(
+              winston.format.timestamp(),
+              winston.format.simple(),
+            ),
+          }),
+        ],
+      });
 
     // In-memory tracking of scaling state
     this.scalingState = new Map(); // proxyId -> scaling state
@@ -368,7 +370,13 @@ export class ProxyScalingService {
    * @param {string} triggeredBy - Source of scaling trigger (auto, manual, admin)
    * @returns {Promise<Object>} Scaling event
    */
-  async executeScaling(proxyId, userId, newReplicaCount, reason, triggeredBy = 'manual') {
+  async executeScaling(
+    proxyId,
+    userId,
+    newReplicaCount,
+    reason,
+    triggeredBy = 'manual',
+  ) {
     if (!proxyId || !userId) {
       throw new Error('proxyId and userId are required');
     }
@@ -431,7 +439,12 @@ export class ProxyScalingService {
       // Trigger scaling callback if registered
       if (this.onScalingNeeded) {
         try {
-          await this.onScalingNeeded(proxyId, userId, newReplicaCount, scalingEvent);
+          await this.onScalingNeeded(
+            proxyId,
+            userId,
+            newReplicaCount,
+            scalingEvent,
+          );
         } catch (error) {
           this.logger.error('Error in scaling callback', {
             proxyId,
@@ -459,7 +472,12 @@ export class ProxyScalingService {
    * @param {number} durationMs - Duration of scaling operation
    * @returns {Promise<Object>} Updated scaling event
    */
-  async completeScalingEvent(eventId, status, errorMessage = null, durationMs = null) {
+  async completeScalingEvent(
+    eventId,
+    status,
+    errorMessage = null,
+    durationMs = null,
+  ) {
     if (!eventId) {
       throw new Error('eventId is required');
     }
@@ -595,9 +613,15 @@ export class ProxyScalingService {
       const metrics = metricsResult.rows;
 
       // Calculate statistics
-      const scaleUpCount = events.filter((e) => e.event_type === 'scale_up').length;
-      const scaleDownCount = events.filter((e) => e.event_type === 'scale_down').length;
-      const successfulCount = events.filter((e) => e.status === 'completed').length;
+      const scaleUpCount = events.filter(
+        (e) => e.event_type === 'scale_up',
+      ).length;
+      const scaleDownCount = events.filter(
+        (e) => e.event_type === 'scale_down',
+      ).length;
+      const successfulCount = events.filter(
+        (e) => e.status === 'completed',
+      ).length;
       const failedCount = events.filter((e) => e.status === 'failed').length;
 
       const avgLoadScore =
@@ -605,8 +629,10 @@ export class ProxyScalingService {
           ? metrics.reduce((sum, m) => sum + m.load_score, 0) / metrics.length
           : 0;
 
-      const maxLoadScore = metrics.length > 0 ? Math.max(...metrics.map((m) => m.load_score)) : 0;
-      const minLoadScore = metrics.length > 0 ? Math.min(...metrics.map((m) => m.load_score)) : 0;
+      const maxLoadScore =
+        metrics.length > 0 ? Math.max(...metrics.map((m) => m.load_score)) : 0;
+      const minLoadScore =
+        metrics.length > 0 ? Math.min(...metrics.map((m) => m.load_score)) : 0;
 
       return {
         proxyId,
@@ -648,23 +674,42 @@ export class ProxyScalingService {
       throw new Error('minReplicas must be a positive integer');
     }
 
-    if (!Number.isInteger(policy.maxReplicas) || policy.maxReplicas < policy.minReplicas) {
+    if (
+      !Number.isInteger(policy.maxReplicas) ||
+      policy.maxReplicas < policy.minReplicas
+    ) {
       throw new Error('maxReplicas must be >= minReplicas');
     }
 
-    if (typeof policy.targetCpuPercent !== 'number' || policy.targetCpuPercent < 0 || policy.targetCpuPercent > 100) {
+    if (
+      typeof policy.targetCpuPercent !== 'number' ||
+      policy.targetCpuPercent < 0 ||
+      policy.targetCpuPercent > 100
+    ) {
       throw new Error('targetCpuPercent must be between 0 and 100');
     }
 
-    if (typeof policy.targetMemoryPercent !== 'number' || policy.targetMemoryPercent < 0 || policy.targetMemoryPercent > 100) {
+    if (
+      typeof policy.targetMemoryPercent !== 'number' ||
+      policy.targetMemoryPercent < 0 ||
+      policy.targetMemoryPercent > 100
+    ) {
       throw new Error('targetMemoryPercent must be between 0 and 100');
     }
 
-    if (typeof policy.scaleUpThreshold !== 'number' || policy.scaleUpThreshold < 0 || policy.scaleUpThreshold > 100) {
+    if (
+      typeof policy.scaleUpThreshold !== 'number' ||
+      policy.scaleUpThreshold < 0 ||
+      policy.scaleUpThreshold > 100
+    ) {
       throw new Error('scaleUpThreshold must be between 0 and 100');
     }
 
-    if (typeof policy.scaleDownThreshold !== 'number' || policy.scaleDownThreshold < 0 || policy.scaleDownThreshold > 100) {
+    if (
+      typeof policy.scaleDownThreshold !== 'number' ||
+      policy.scaleDownThreshold < 0 ||
+      policy.scaleDownThreshold > 100
+    ) {
       throw new Error('scaleDownThreshold must be between 0 and 100');
     }
 
@@ -672,12 +717,20 @@ export class ProxyScalingService {
       throw new Error('scaleDownThreshold must be less than scaleUpThreshold');
     }
 
-    if (!Number.isInteger(policy.scaleUpCooldownSeconds) || policy.scaleUpCooldownSeconds < 0) {
+    if (
+      !Number.isInteger(policy.scaleUpCooldownSeconds) ||
+      policy.scaleUpCooldownSeconds < 0
+    ) {
       throw new Error('scaleUpCooldownSeconds must be a non-negative integer');
     }
 
-    if (!Number.isInteger(policy.scaleDownCooldownSeconds) || policy.scaleDownCooldownSeconds < 0) {
-      throw new Error('scaleDownCooldownSeconds must be a non-negative integer');
+    if (
+      !Number.isInteger(policy.scaleDownCooldownSeconds) ||
+      policy.scaleDownCooldownSeconds < 0
+    ) {
+      throw new Error(
+        'scaleDownCooldownSeconds must be a non-negative integer',
+      );
     }
   }
 
@@ -696,7 +749,11 @@ export class ProxyScalingService {
     const requestScore = Math.min((metrics.requestRate / 1000) * 100, 100);
 
     // Weights: CPU 40%, Memory 30%, Request Rate 20%, Error Rate 10%
-    const loadScore = cpuScore * 0.4 + memoryScore * 0.3 + requestScore * 0.2 + errorScore * 0.1;
+    const loadScore =
+      cpuScore * 0.4 +
+      memoryScore * 0.3 +
+      requestScore * 0.2 +
+      errorScore * 0.1;
 
     return Math.round(loadScore * 100) / 100;
   }

@@ -71,4 +71,3 @@ export async function serviceVersionHandler(req, res) {
 }
 
 export default serviceVersionHandler;
-

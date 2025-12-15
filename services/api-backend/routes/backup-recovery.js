@@ -20,42 +20,47 @@ const backupService = getBackupRecoveryService();
  * Create a full database backup
  * Admin only
  */
-router.post('/backup/create', authenticateJWT, requireAdmin, async(req, res) => {
-  const correlationId = req.correlationId || 'unknown';
+router.post(
+  '/backup/create',
+  authenticateJWT,
+  requireAdmin,
+  async(req, res) => {
+    const correlationId = req.correlationId || 'unknown';
 
-  try {
-    logger.info('🔵 [BackupRecovery] Creating full backup', {
-      correlationId,
-      userId: req.user?.sub,
-    });
+    try {
+      logger.info('🔵 [BackupRecovery] Creating full backup', {
+        correlationId,
+        userId: req.user?.sub,
+      });
 
-    const backup = await backupService.createFullBackup();
+      const backup = await backupService.createFullBackup();
 
-    logger.info('✅ [BackupRecovery] Backup created successfully', {
-      correlationId,
-      backupId: backup.backupId,
-      size: backup.size,
-    });
+      logger.info('✅ [BackupRecovery] Backup created successfully', {
+        correlationId,
+        backupId: backup.backupId,
+        size: backup.size,
+      });
 
-    res.status(201).json({
-      success: true,
-      backup,
-      message: 'Backup created successfully',
-    });
-  } catch (error) {
-    logger.error('🔴 [BackupRecovery] Failed to create backup', {
-      correlationId,
-      error: error.message,
-    });
+      res.status(201).json({
+        success: true,
+        backup,
+        message: 'Backup created successfully',
+      });
+    } catch (error) {
+      logger.error('🔴 [BackupRecovery] Failed to create backup', {
+        correlationId,
+        error: error.message,
+      });
 
-    res.status(500).json({
-      success: false,
-      error: 'Failed to create backup',
-      message: error.message,
-      correlationId,
-    });
-  }
-});
+      res.status(500).json({
+        success: false,
+        error: 'Failed to create backup',
+        message: error.message,
+        correlationId,
+      });
+    }
+  },
+);
 
 /**
  * GET /backup/list
@@ -99,182 +104,202 @@ router.get('/backup/list', authenticateJWT, requireAdmin, async(req, res) => {
  * Get backup metadata
  * Admin only
  */
-router.get('/backup/:backupId', authenticateJWT, requireAdmin, async(req, res) => {
-  const correlationId = req.correlationId || 'unknown';
-  const { backupId } = req.params;
+router.get(
+  '/backup/:backupId',
+  authenticateJWT,
+  requireAdmin,
+  async(req, res) => {
+    const correlationId = req.correlationId || 'unknown';
+    const { backupId } = req.params;
 
-  try {
-    logger.debug('📋 [BackupRecovery] Getting backup metadata', {
-      correlationId,
-      backupId,
-      userId: req.user?.sub,
-    });
+    try {
+      logger.debug('📋 [BackupRecovery] Getting backup metadata', {
+        correlationId,
+        backupId,
+        userId: req.user?.sub,
+      });
 
-    const backup = await backupService.getBackupMetadata(backupId);
+      const backup = await backupService.getBackupMetadata(backupId);
 
-    res.status(200).json({
-      success: true,
-      backup,
-      message: 'Backup metadata retrieved successfully',
-    });
-  } catch (error) {
-    logger.error('🔴 [BackupRecovery] Failed to get backup metadata', {
-      correlationId,
-      backupId,
-      error: error.message,
-    });
+      res.status(200).json({
+        success: true,
+        backup,
+        message: 'Backup metadata retrieved successfully',
+      });
+    } catch (error) {
+      logger.error('🔴 [BackupRecovery] Failed to get backup metadata', {
+        correlationId,
+        backupId,
+        error: error.message,
+      });
 
-    res.status(404).json({
-      success: false,
-      error: 'Backup not found',
-      message: error.message,
-      correlationId,
-    });
-  }
-});
+      res.status(404).json({
+        success: false,
+        error: 'Backup not found',
+        message: error.message,
+        correlationId,
+      });
+    }
+  },
+);
 
 /**
  * POST /backup/:backupId/verify
  * Verify backup integrity
  * Admin only
  */
-router.post('/backup/:backupId/verify', authenticateJWT, requireAdmin, async(req, res) => {
-  const correlationId = req.correlationId || 'unknown';
-  const { backupId } = req.params;
+router.post(
+  '/backup/:backupId/verify',
+  authenticateJWT,
+  requireAdmin,
+  async(req, res) => {
+    const correlationId = req.correlationId || 'unknown';
+    const { backupId } = req.params;
 
-  try {
-    logger.info('🔵 [BackupRecovery] Verifying backup', {
-      correlationId,
-      backupId,
-      userId: req.user?.sub,
-    });
+    try {
+      logger.info('🔵 [BackupRecovery] Verifying backup', {
+        correlationId,
+        backupId,
+        userId: req.user?.sub,
+      });
 
-    const verification = await backupService.verifyBackup(backupId);
+      const verification = await backupService.verifyBackup(backupId);
 
-    logger.info('✅ [BackupRecovery] Backup verified successfully', {
-      correlationId,
-      backupId,
-      verified: verification.verified,
-    });
+      logger.info('✅ [BackupRecovery] Backup verified successfully', {
+        correlationId,
+        backupId,
+        verified: verification.verified,
+      });
 
-    res.status(200).json({
-      success: true,
-      verification,
-      message: 'Backup verified successfully',
-    });
-  } catch (error) {
-    logger.error('🔴 [BackupRecovery] Backup verification failed', {
-      correlationId,
-      backupId,
-      error: error.message,
-    });
+      res.status(200).json({
+        success: true,
+        verification,
+        message: 'Backup verified successfully',
+      });
+    } catch (error) {
+      logger.error('🔴 [BackupRecovery] Backup verification failed', {
+        correlationId,
+        backupId,
+        error: error.message,
+      });
 
-    res.status(400).json({
-      success: false,
-      error: 'Backup verification failed',
-      message: error.message,
-      correlationId,
-    });
-  }
-});
+      res.status(400).json({
+        success: false,
+        error: 'Backup verification failed',
+        message: error.message,
+        correlationId,
+      });
+    }
+  },
+);
 
 /**
  * POST /backup/:backupId/restore
  * Restore database from backup
  * Admin only - requires confirmation
  */
-router.post('/backup/:backupId/restore', authenticateJWT, requireAdmin, async(req, res) => {
-  const correlationId = req.correlationId || 'unknown';
-  const { backupId } = req.params;
-  const { confirmed } = req.body;
+router.post(
+  '/backup/:backupId/restore',
+  authenticateJWT,
+  requireAdmin,
+  async(req, res) => {
+    const correlationId = req.correlationId || 'unknown';
+    const { backupId } = req.params;
+    const { confirmed } = req.body;
 
-  try {
-    if (!confirmed) {
-      return res.status(400).json({
+    try {
+      if (!confirmed) {
+        return res.status(400).json({
+          success: false,
+          error: 'Restoration requires confirmation',
+          message: 'Set confirmed: true to proceed with restoration',
+          correlationId,
+        });
+      }
+
+      logger.warn('🟡 [BackupRecovery] Starting database restoration', {
+        correlationId,
+        backupId,
+        userId: req.user?.sub,
+      });
+
+      const recovery = await backupService.restoreFromBackup(backupId);
+
+      logger.info('✅ [BackupRecovery] Database restored successfully', {
+        correlationId,
+        backupId,
+        recoveryId: recovery.recoveryId,
+        duration: recovery.duration,
+      });
+
+      res.status(200).json({
+        success: true,
+        recovery,
+        message: 'Database restored successfully',
+      });
+    } catch (error) {
+      logger.error('🔴 [BackupRecovery] Database restoration failed', {
+        correlationId,
+        backupId,
+        error: error.message,
+      });
+
+      res.status(500).json({
         success: false,
-        error: 'Restoration requires confirmation',
-        message: 'Set confirmed: true to proceed with restoration',
+        error: 'Database restoration failed',
+        message: error.message,
         correlationId,
       });
     }
-
-    logger.warn('🟡 [BackupRecovery] Starting database restoration', {
-      correlationId,
-      backupId,
-      userId: req.user?.sub,
-    });
-
-    const recovery = await backupService.restoreFromBackup(backupId);
-
-    logger.info('✅ [BackupRecovery] Database restored successfully', {
-      correlationId,
-      backupId,
-      recoveryId: recovery.recoveryId,
-      duration: recovery.duration,
-    });
-
-    res.status(200).json({
-      success: true,
-      recovery,
-      message: 'Database restored successfully',
-    });
-  } catch (error) {
-    logger.error('🔴 [BackupRecovery] Database restoration failed', {
-      correlationId,
-      backupId,
-      error: error.message,
-    });
-
-    res.status(500).json({
-      success: false,
-      error: 'Database restoration failed',
-      message: error.message,
-      correlationId,
-    });
-  }
-});
+  },
+);
 
 /**
  * DELETE /backup/:backupId
  * Delete a backup
  * Admin only
  */
-router.delete('/backup/:backupId', authenticateJWT, requireAdmin, async(req, res) => {
-  const correlationId = req.correlationId || 'unknown';
-  const { backupId } = req.params;
+router.delete(
+  '/backup/:backupId',
+  authenticateJWT,
+  requireAdmin,
+  async(req, res) => {
+    const correlationId = req.correlationId || 'unknown';
+    const { backupId } = req.params;
 
-  try {
-    logger.info('🔵 [BackupRecovery] Deleting backup', {
-      correlationId,
-      backupId,
-      userId: req.user?.sub,
-    });
+    try {
+      logger.info('🔵 [BackupRecovery] Deleting backup', {
+        correlationId,
+        backupId,
+        userId: req.user?.sub,
+      });
 
-    await backupService.deleteBackup(backupId);
+      await backupService.deleteBackup(backupId);
 
-    logger.info('✅ [BackupRecovery] Backup deleted successfully', {
-      correlationId,
-      backupId,
-    });
+      logger.info('✅ [BackupRecovery] Backup deleted successfully', {
+        correlationId,
+        backupId,
+      });
 
-    res.status(200).json({
-      success: true,
-      message: 'Backup deleted successfully',
-    });
-  } catch (error) {
-    logger.error('🔴 [BackupRecovery] Failed to delete backup', {
-      correlationId,
-      backupId,
-      error: error.message,
-    });
+      res.status(200).json({
+        success: true,
+        message: 'Backup deleted successfully',
+      });
+    } catch (error) {
+      logger.error('🔴 [BackupRecovery] Failed to delete backup', {
+        correlationId,
+        backupId,
+        error: error.message,
+      });
 
-    res.status(404).json({
-      success: false,
-      error: 'Backup not found',
-      message: error.message,
-      correlationId,
-    });
-  }
-});
+      res.status(404).json({
+        success: false,
+        error: 'Backup not found',
+        message: error.message,
+        correlationId,
+      });
+    }
+  },
+);
 
 export default router;

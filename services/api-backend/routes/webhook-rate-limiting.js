@@ -14,9 +14,7 @@ import express from 'express';
 import logger from '../logger.js';
 import { webhookRateLimiterService } from '../services/webhook-rate-limiter.js';
 import { authenticateJWT } from '../middleware/auth.js';
-import {
-  webhookRateLimitConfigMiddleware,
-} from '../middleware/webhook-rate-limiter.js';
+import { webhookRateLimitConfigMiddleware } from '../middleware/webhook-rate-limiter.js';
 
 const router = express.Router();
 
@@ -91,11 +89,12 @@ router.put(
         config,
       });
 
-      const updatedConfig = await webhookRateLimiterService.setWebhookRateLimitConfig(
-        webhookId,
-        userId,
-        config,
-      );
+      const updatedConfig =
+        await webhookRateLimiterService.setWebhookRateLimitConfig(
+          webhookId,
+          userId,
+          config,
+        );
 
       res.json({
         webhook_id: webhookId,

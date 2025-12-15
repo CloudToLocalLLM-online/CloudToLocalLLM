@@ -515,7 +515,7 @@ export class JWTValidator {
       this.cacheStats.totalValidations > 0
         ? (
           (this.cacheStats.hits / this.cacheStats.totalValidations) *
-          100
+            100
         ).toFixed(2)
         : 0;
 

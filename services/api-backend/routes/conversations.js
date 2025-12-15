@@ -349,7 +349,13 @@ VALUES($1, $2, $3, $4:: jsonb)
           await client.query(
             `INSERT INTO conversations(id, user_id, title, model, metadata)
 VALUES($1, $2, $3, $4, $5:: jsonb)`,
-            [conversationId, userId, newTitle, newModel, JSON.stringify(metadata || {})],
+            [
+              conversationId,
+              userId,
+              newTitle,
+              newModel,
+              JSON.stringify(metadata || {}),
+            ],
           );
         } else {
           // Update existing conversation

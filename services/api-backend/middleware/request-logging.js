@@ -18,8 +18,7 @@ import logger from '../logger.js';
 export function createRequestLoggingMiddleware() {
   return (req, res, next) => {
     // Generate or extract correlation ID
-    const correlationId =
-      req.headers['x-correlation-id'] || `req-${uuidv4()}`;
+    const correlationId = req.headers['x-correlation-id'] || `req-${uuidv4()}`;
     req.correlationId = correlationId;
 
     // Add correlation ID to response headers

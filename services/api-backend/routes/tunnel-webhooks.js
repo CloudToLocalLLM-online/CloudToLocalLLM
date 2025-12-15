@@ -95,7 +95,12 @@ router.post('/:tunnelId/webhooks', authenticateJWT, async(req, res) => {
       });
     }
 
-    const webhook = await webhookService.registerWebhook(userId, tunnelId, url, events);
+    const webhook = await webhookService.registerWebhook(
+      userId,
+      tunnelId,
+      url,
+      events,
+    );
 
     logger.info('[TunnelWebhookRoutes] Webhook registered', {
       webhookId: webhook.id,
@@ -177,7 +182,10 @@ router.get('/:tunnelId/webhooks', authenticateJWT, async(req, res) => {
     const limit = Math.min(parseInt(req.query.limit) || 50, 1000);
     const offset = Math.max(parseInt(req.query.offset) || 0, 0);
 
-    const webhooks = await webhookService.listWebhooks(userId, tunnelId, { limit, offset });
+    const webhooks = await webhookService.listWebhooks(userId, tunnelId, {
+      limit,
+      offset,
+    });
 
     logger.debug('[TunnelWebhookRoutes] Webhooks listed', {
       userId,
@@ -221,61 +229,65 @@ router.get('/:tunnelId/webhooks', authenticateJWT, async(req, res) => {
  * Authentication: Required (JWT)
  * Rate Limit: Standard (100 req/min)
  */
-router.get('/:tunnelId/webhooks/:webhookId', authenticateJWT, async(req, res) => {
-  try {
-    if (!req.user) {
-      return res.status(401).json({
-        error: 'Authentication required',
-        code: 'AUTH_REQUIRED',
-        message: 'Please authenticate to retrieve webhook',
+router.get(
+  '/:tunnelId/webhooks/:webhookId',
+  authenticateJWT,
+  async(req, res) => {
+    try {
+      if (!req.user) {
+        return res.status(401).json({
+          error: 'Authentication required',
+          code: 'AUTH_REQUIRED',
+          message: 'Please authenticate to retrieve webhook',
+        });
+      }
+
+      if (!webhookService) {
+        return res.status(503).json({
+          error: 'Service unavailable',
+          code: 'SERVICE_UNAVAILABLE',
+          message: 'Webhook service is not initialized',
+        });
+      }
+
+      const userId = req.user.sub;
+      const { webhookId } = req.params;
+
+      const webhook = await webhookService.getWebhookById(webhookId, userId);
+
+      logger.debug('[TunnelWebhookRoutes] Webhook retrieved', {
+        webhookId,
+        userId,
+      });
+
+      res.json({
+        success: true,
+        data: webhook,
+        timestamp: new Date().toISOString(),
+      });
+    } catch (error) {
+      logger.error('[TunnelWebhookRoutes] Error retrieving webhook', {
+        webhookId: req.params.webhookId,
+        userId: req.user?.sub,
+        error: error.message,
+      });
+
+      if (error.message === 'Webhook not found') {
+        return res.status(404).json({
+          error: 'Not found',
+          code: 'WEBHOOK_NOT_FOUND',
+          message: 'Webhook not found',
+        });
+      }
+
+      res.status(500).json({
+        error: 'Internal server error',
+        code: 'INTERNAL_ERROR',
+        message: 'Failed to retrieve webhook',
       });
     }
-
-    if (!webhookService) {
-      return res.status(503).json({
-        error: 'Service unavailable',
-        code: 'SERVICE_UNAVAILABLE',
-        message: 'Webhook service is not initialized',
-      });
-    }
-
-    const userId = req.user.sub;
-    const { webhookId } = req.params;
-
-    const webhook = await webhookService.getWebhookById(webhookId, userId);
-
-    logger.debug('[TunnelWebhookRoutes] Webhook retrieved', {
-      webhookId,
-      userId,
-    });
-
-    res.json({
-      success: true,
-      data: webhook,
-      timestamp: new Date().toISOString(),
-    });
-  } catch (error) {
-    logger.error('[TunnelWebhookRoutes] Error retrieving webhook', {
-      webhookId: req.params.webhookId,
-      userId: req.user?.sub,
-      error: error.message,
-    });
-
-    if (error.message === 'Webhook not found') {
-      return res.status(404).json({
-        error: 'Not found',
-        code: 'WEBHOOK_NOT_FOUND',
-        message: 'Webhook not found',
-      });
-    }
-
-    res.status(500).json({
-      error: 'Internal server error',
-      code: 'INTERNAL_ERROR',
-      message: 'Failed to retrieve webhook',
-    });
-  }
-});
+  },
+);
 
 /**
  * PUT /api/tunnels/:tunnelId/webhooks/:webhookId
@@ -295,70 +307,78 @@ router.get('/:tunnelId/webhooks/:webhookId', authenticateJWT, async(req, res) =>
  * Authentication: Required (JWT)
  * Rate Limit: Standard (100 req/min)
  */
-router.put('/:tunnelId/webhooks/:webhookId', authenticateJWT, async(req, res) => {
-  try {
-    if (!req.user) {
-      return res.status(401).json({
-        error: 'Authentication required',
-        code: 'AUTH_REQUIRED',
-        message: 'Please authenticate to update webhook',
+router.put(
+  '/:tunnelId/webhooks/:webhookId',
+  authenticateJWT,
+  async(req, res) => {
+    try {
+      if (!req.user) {
+        return res.status(401).json({
+          error: 'Authentication required',
+          code: 'AUTH_REQUIRED',
+          message: 'Please authenticate to update webhook',
+        });
+      }
+
+      if (!webhookService) {
+        return res.status(503).json({
+          error: 'Service unavailable',
+          code: 'SERVICE_UNAVAILABLE',
+          message: 'Webhook service is not initialized',
+        });
+      }
+
+      const userId = req.user.sub;
+      const { webhookId } = req.params;
+      const updateData = req.body;
+
+      const webhook = await webhookService.updateWebhook(
+        webhookId,
+        userId,
+        updateData,
+      );
+
+      logger.info('[TunnelWebhookRoutes] Webhook updated', {
+        webhookId,
+        userId,
+      });
+
+      res.json({
+        success: true,
+        data: webhook,
+        timestamp: new Date().toISOString(),
+      });
+    } catch (error) {
+      logger.error('[TunnelWebhookRoutes] Error updating webhook', {
+        webhookId: req.params.webhookId,
+        userId: req.user?.sub,
+        error: error.message,
+      });
+
+      if (error.message === 'Webhook not found') {
+        return res.status(404).json({
+          error: 'Not found',
+          code: 'WEBHOOK_NOT_FOUND',
+          message: 'Webhook not found',
+        });
+      }
+
+      if (error.message.includes('Invalid')) {
+        return res.status(400).json({
+          error: 'Bad request',
+          code: 'INVALID_REQUEST',
+          message: error.message,
+        });
+      }
+
+      res.status(500).json({
+        error: 'Internal server error',
+        code: 'INTERNAL_ERROR',
+        message: 'Failed to update webhook',
       });
     }
-
-    if (!webhookService) {
-      return res.status(503).json({
-        error: 'Service unavailable',
-        code: 'SERVICE_UNAVAILABLE',
-        message: 'Webhook service is not initialized',
-      });
-    }
-
-    const userId = req.user.sub;
-    const { webhookId } = req.params;
-    const updateData = req.body;
-
-    const webhook = await webhookService.updateWebhook(webhookId, userId, updateData);
-
-    logger.info('[TunnelWebhookRoutes] Webhook updated', {
-      webhookId,
-      userId,
-    });
-
-    res.json({
-      success: true,
-      data: webhook,
-      timestamp: new Date().toISOString(),
-    });
-  } catch (error) {
-    logger.error('[TunnelWebhookRoutes] Error updating webhook', {
-      webhookId: req.params.webhookId,
-      userId: req.user?.sub,
-      error: error.message,
-    });
-
-    if (error.message === 'Webhook not found') {
-      return res.status(404).json({
-        error: 'Not found',
-        code: 'WEBHOOK_NOT_FOUND',
-        message: 'Webhook not found',
-      });
-    }
-
-    if (error.message.includes('Invalid')) {
-      return res.status(400).json({
-        error: 'Bad request',
-        code: 'INVALID_REQUEST',
-        message: error.message,
-      });
-    }
-
-    res.status(500).json({
-      error: 'Internal server error',
-      code: 'INTERNAL_ERROR',
-      message: 'Failed to update webhook',
-    });
-  }
-});
+  },
+);
 
 /**
  * DELETE /api/tunnels/:tunnelId/webhooks/:webhookId
@@ -371,61 +391,65 @@ router.put('/:tunnelId/webhooks/:webhookId', authenticateJWT, async(req, res) =>
  * Authentication: Required (JWT)
  * Rate Limit: Standard (100 req/min)
  */
-router.delete('/:tunnelId/webhooks/:webhookId', authenticateJWT, async(req, res) => {
-  try {
-    if (!req.user) {
-      return res.status(401).json({
-        error: 'Authentication required',
-        code: 'AUTH_REQUIRED',
-        message: 'Please authenticate to delete webhook',
+router.delete(
+  '/:tunnelId/webhooks/:webhookId',
+  authenticateJWT,
+  async(req, res) => {
+    try {
+      if (!req.user) {
+        return res.status(401).json({
+          error: 'Authentication required',
+          code: 'AUTH_REQUIRED',
+          message: 'Please authenticate to delete webhook',
+        });
+      }
+
+      if (!webhookService) {
+        return res.status(503).json({
+          error: 'Service unavailable',
+          code: 'SERVICE_UNAVAILABLE',
+          message: 'Webhook service is not initialized',
+        });
+      }
+
+      const userId = req.user.sub;
+      const { webhookId } = req.params;
+
+      await webhookService.deleteWebhook(webhookId, userId);
+
+      logger.info('[TunnelWebhookRoutes] Webhook deleted', {
+        webhookId,
+        userId,
+      });
+
+      res.json({
+        success: true,
+        message: 'Webhook deleted successfully',
+        timestamp: new Date().toISOString(),
+      });
+    } catch (error) {
+      logger.error('[TunnelWebhookRoutes] Error deleting webhook', {
+        webhookId: req.params.webhookId,
+        userId: req.user?.sub,
+        error: error.message,
+      });
+
+      if (error.message === 'Webhook not found') {
+        return res.status(404).json({
+          error: 'Not found',
+          code: 'WEBHOOK_NOT_FOUND',
+          message: 'Webhook not found',
+        });
+      }
+
+      res.status(500).json({
+        error: 'Internal server error',
+        code: 'INTERNAL_ERROR',
+        message: 'Failed to delete webhook',
       });
     }
-
-    if (!webhookService) {
-      return res.status(503).json({
-        error: 'Service unavailable',
-        code: 'SERVICE_UNAVAILABLE',
-        message: 'Webhook service is not initialized',
-      });
-    }
-
-    const userId = req.user.sub;
-    const { webhookId } = req.params;
-
-    await webhookService.deleteWebhook(webhookId, userId);
-
-    logger.info('[TunnelWebhookRoutes] Webhook deleted', {
-      webhookId,
-      userId,
-    });
-
-    res.json({
-      success: true,
-      message: 'Webhook deleted successfully',
-      timestamp: new Date().toISOString(),
-    });
-  } catch (error) {
-    logger.error('[TunnelWebhookRoutes] Error deleting webhook', {
-      webhookId: req.params.webhookId,
-      userId: req.user?.sub,
-      error: error.message,
-    });
-
-    if (error.message === 'Webhook not found') {
-      return res.status(404).json({
-        error: 'Not found',
-        code: 'WEBHOOK_NOT_FOUND',
-        message: 'Webhook not found',
-      });
-    }
-
-    res.status(500).json({
-      error: 'Internal server error',
-      code: 'INTERNAL_ERROR',
-      message: 'Failed to delete webhook',
-    });
-  }
-});
+  },
+);
 
 /**
  * GET /api/tunnels/:tunnelId/webhooks/:webhookId/deliveries
@@ -442,68 +466,76 @@ router.delete('/:tunnelId/webhooks/:webhookId', authenticateJWT, async(req, res)
  * Authentication: Required (JWT)
  * Rate Limit: Standard (100 req/min)
  */
-router.get('/:tunnelId/webhooks/:webhookId/deliveries', authenticateJWT, async(req, res) => {
-  try {
-    if (!req.user) {
-      return res.status(401).json({
-        error: 'Authentication required',
-        code: 'AUTH_REQUIRED',
-        message: 'Please authenticate to retrieve delivery history',
+router.get(
+  '/:tunnelId/webhooks/:webhookId/deliveries',
+  authenticateJWT,
+  async(req, res) => {
+    try {
+      if (!req.user) {
+        return res.status(401).json({
+          error: 'Authentication required',
+          code: 'AUTH_REQUIRED',
+          message: 'Please authenticate to retrieve delivery history',
+        });
+      }
+
+      if (!webhookService) {
+        return res.status(503).json({
+          error: 'Service unavailable',
+          code: 'SERVICE_UNAVAILABLE',
+          message: 'Webhook service is not initialized',
+        });
+      }
+
+      const userId = req.user.sub;
+      const { webhookId } = req.params;
+      const limit = Math.min(parseInt(req.query.limit) || 50, 1000);
+      const offset = Math.max(parseInt(req.query.offset) || 0, 0);
+
+      const deliveries = await webhookService.getDeliveryHistory(
+        webhookId,
+        userId,
+        { limit, offset },
+      );
+
+      logger.debug('[TunnelWebhookRoutes] Delivery history retrieved', {
+        webhookId,
+        userId,
+        count: deliveries.length,
+      });
+
+      res.json({
+        success: true,
+        data: deliveries,
+        pagination: {
+          limit,
+          offset,
+        },
+        timestamp: new Date().toISOString(),
+      });
+    } catch (error) {
+      logger.error('[TunnelWebhookRoutes] Error retrieving delivery history', {
+        webhookId: req.params.webhookId,
+        userId: req.user?.sub,
+        error: error.message,
+      });
+
+      if (error.message === 'Webhook not found') {
+        return res.status(404).json({
+          error: 'Not found',
+          code: 'WEBHOOK_NOT_FOUND',
+          message: 'Webhook not found',
+        });
+      }
+
+      res.status(500).json({
+        error: 'Internal server error',
+        code: 'INTERNAL_ERROR',
+        message: 'Failed to retrieve delivery history',
       });
     }
-
-    if (!webhookService) {
-      return res.status(503).json({
-        error: 'Service unavailable',
-        code: 'SERVICE_UNAVAILABLE',
-        message: 'Webhook service is not initialized',
-      });
-    }
-
-    const userId = req.user.sub;
-    const { webhookId } = req.params;
-    const limit = Math.min(parseInt(req.query.limit) || 50, 1000);
-    const offset = Math.max(parseInt(req.query.offset) || 0, 0);
-
-    const deliveries = await webhookService.getDeliveryHistory(webhookId, userId, { limit, offset });
-
-    logger.debug('[TunnelWebhookRoutes] Delivery history retrieved', {
-      webhookId,
-      userId,
-      count: deliveries.length,
-    });
-
-    res.json({
-      success: true,
-      data: deliveries,
-      pagination: {
-        limit,
-        offset,
-      },
-      timestamp: new Date().toISOString(),
-    });
-  } catch (error) {
-    logger.error('[TunnelWebhookRoutes] Error retrieving delivery history', {
-      webhookId: req.params.webhookId,
-      userId: req.user?.sub,
-      error: error.message,
-    });
-
-    if (error.message === 'Webhook not found') {
-      return res.status(404).json({
-        error: 'Not found',
-        code: 'WEBHOOK_NOT_FOUND',
-        message: 'Webhook not found',
-      });
-    }
-
-    res.status(500).json({
-      error: 'Internal server error',
-      code: 'INTERNAL_ERROR',
-      message: 'Failed to retrieve delivery history',
-    });
-  }
-});
+  },
+);
 
 /**
  * GET /api/tunnels/:tunnelId/webhooks/:webhookId/deliveries/:deliveryId
@@ -517,58 +549,62 @@ router.get('/:tunnelId/webhooks/:webhookId/deliveries', authenticateJWT, async(r
  * Authentication: Required (JWT)
  * Rate Limit: Standard (100 req/min)
  */
-router.get('/:tunnelId/webhooks/:webhookId/deliveries/:deliveryId', authenticateJWT, async(req, res) => {
-  try {
-    if (!req.user) {
-      return res.status(401).json({
-        error: 'Authentication required',
-        code: 'AUTH_REQUIRED',
-        message: 'Please authenticate to retrieve delivery status',
+router.get(
+  '/:tunnelId/webhooks/:webhookId/deliveries/:deliveryId',
+  authenticateJWT,
+  async(req, res) => {
+    try {
+      if (!req.user) {
+        return res.status(401).json({
+          error: 'Authentication required',
+          code: 'AUTH_REQUIRED',
+          message: 'Please authenticate to retrieve delivery status',
+        });
+      }
+
+      if (!webhookService) {
+        return res.status(503).json({
+          error: 'Service unavailable',
+          code: 'SERVICE_UNAVAILABLE',
+          message: 'Webhook service is not initialized',
+        });
+      }
+
+      const { deliveryId } = req.params;
+
+      const delivery = await webhookService.getDeliveryStatus(deliveryId);
+
+      logger.debug('[TunnelWebhookRoutes] Delivery status retrieved', {
+        deliveryId,
+      });
+
+      res.json({
+        success: true,
+        data: delivery,
+        timestamp: new Date().toISOString(),
+      });
+    } catch (error) {
+      logger.error('[TunnelWebhookRoutes] Error retrieving delivery status', {
+        deliveryId: req.params.deliveryId,
+        userId: req.user?.sub,
+        error: error.message,
+      });
+
+      if (error.message === 'Delivery not found') {
+        return res.status(404).json({
+          error: 'Not found',
+          code: 'DELIVERY_NOT_FOUND',
+          message: 'Delivery not found',
+        });
+      }
+
+      res.status(500).json({
+        error: 'Internal server error',
+        code: 'INTERNAL_ERROR',
+        message: 'Failed to retrieve delivery status',
       });
     }
-
-    if (!webhookService) {
-      return res.status(503).json({
-        error: 'Service unavailable',
-        code: 'SERVICE_UNAVAILABLE',
-        message: 'Webhook service is not initialized',
-      });
-    }
-
-    const { deliveryId } = req.params;
-
-    const delivery = await webhookService.getDeliveryStatus(deliveryId);
-
-    logger.debug('[TunnelWebhookRoutes] Delivery status retrieved', {
-      deliveryId,
-    });
-
-    res.json({
-      success: true,
-      data: delivery,
-      timestamp: new Date().toISOString(),
-    });
-  } catch (error) {
-    logger.error('[TunnelWebhookRoutes] Error retrieving delivery status', {
-      deliveryId: req.params.deliveryId,
-      userId: req.user?.sub,
-      error: error.message,
-    });
-
-    if (error.message === 'Delivery not found') {
-      return res.status(404).json({
-        error: 'Not found',
-        code: 'DELIVERY_NOT_FOUND',
-        message: 'Delivery not found',
-      });
-    }
-
-    res.status(500).json({
-      error: 'Internal server error',
-      code: 'INTERNAL_ERROR',
-      message: 'Failed to retrieve delivery status',
-    });
-  }
-});
+  },
+);
 
 export default router;

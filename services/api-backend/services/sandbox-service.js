@@ -37,7 +37,8 @@ const logger = winston.createLogger({
  */
 export class SandboxService {
   constructor() {
-    this.isSandboxEnabled = process.env.SANDBOX_MODE === 'true' || process.env.NODE_ENV === 'sandbox';
+    this.isSandboxEnabled =
+      process.env.SANDBOX_MODE === 'true' || process.env.NODE_ENV === 'sandbox';
     this.sandboxDatabase = new Map();
     this.sandboxUsers = new Map();
     this.sandboxTunnels = new Map();
@@ -93,14 +94,16 @@ export class SandboxService {
           email: 'test@sandbox.local',
           jwtId: 'jwt|sandbox-test-1',
           tier: 'free',
-          token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ0ZXN0LXVzZXItMSIsImVtYWlsIjoidGVzdEBzYW5kYm94LmxvY2FsIiwiaWF0IjoxNjcwMDAwMDAwfQ.sandbox-token-1',
+          token:
+            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ0ZXN0LXVzZXItMSIsImVtYWlsIjoidGVzdEBzYW5kYm94LmxvY2FsIiwiaWF0IjoxNjcwMDAwMDAwfQ.sandbox-token-1',
         },
         {
           id: 'test-user-2',
           email: 'premium@sandbox.local',
           jwtId: 'jwt|sandbox-test-2',
           tier: 'premium',
-          token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ0ZXN0LXVzZXItMiIsImVtYWlsIjoicHJlbWl1bUBzYW5kYm94LmxvY2FsIiwiaWF0IjoxNjcwMDAwMDAwfQ.sandbox-token-2',
+          token:
+            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ0ZXN0LXVzZXItMiIsImVtYWlsIjoicHJlbWl1bUBzYW5kYm94LmxvY2FsIiwiaWF0IjoxNjcwMDAwMDAwfQ.sandbox-token-2',
         },
         {
           id: 'test-admin',
@@ -108,7 +111,8 @@ export class SandboxService {
           jwtId: 'jwt|sandbox-admin',
           tier: 'enterprise',
           role: 'admin',
-          token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ0ZXN0LWFkbWluIiwiZW1haWwiOiJhZG1pbkBzYW5kYm94LmxvY2FsIiwicm9sZSI6ImFkbWluIiwiaWF0IjoxNjcwMDAwMDAwfQ.sandbox-token-admin',
+          token:
+            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ0ZXN0LWFkbWluIiwiZW1haWwiOiJhZG1pbkBzYW5kYm94LmxvY2FsIiwicm9sZSI6ImFkbWluIiwiaWF0IjoxNjcwMDAwMDAwfQ.sandbox-token-admin',
         },
       ],
       apiKeys: [
@@ -261,15 +265,15 @@ export class SandboxService {
     let log = [...this.requestLog];
 
     if (options.userId) {
-      log = log.filter(entry => entry.userId === options.userId);
+      log = log.filter((entry) => entry.userId === options.userId);
     }
 
     if (options.method) {
-      log = log.filter(entry => entry.method === options.method);
+      log = log.filter((entry) => entry.method === options.method);
     }
 
     if (options.path) {
-      log = log.filter(entry => entry.path.includes(options.path));
+      log = log.filter((entry) => entry.path.includes(options.path));
     }
 
     if (options.limit) {

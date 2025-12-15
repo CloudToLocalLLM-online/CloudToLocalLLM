@@ -38,11 +38,16 @@ export class TunnelFailoverService {
       if (!this.pool) {
         throw new Error('Database pool not initialized');
       }
-      logger.info('[TunnelFailoverService] Tunnel failover service initialized');
+      logger.info(
+        '[TunnelFailoverService] Tunnel failover service initialized',
+      );
     } catch (error) {
-      logger.error('[TunnelFailoverService] Failed to initialize tunnel failover service', {
-        error: error.message,
-      });
+      logger.error(
+        '[TunnelFailoverService] Failed to initialize tunnel failover service',
+        {
+          error: error.message,
+        },
+      );
       throw error;
     }
   }
@@ -78,13 +83,18 @@ export class TunnelFailoverService {
       const endpoints = result.rows;
 
       // Filter healthy endpoints
-      const healthyEndpoints = endpoints.filter((e) => e.health_status === 'healthy');
+      const healthyEndpoints = endpoints.filter(
+        (e) => e.health_status === 'healthy',
+      );
 
       if (healthyEndpoints.length === 0) {
-        logger.warn('[TunnelFailoverService] No healthy endpoints available for tunnel', {
-          tunnelId,
-          totalEndpoints: endpoints.length,
-        });
+        logger.warn(
+          '[TunnelFailoverService] No healthy endpoints available for tunnel',
+          {
+            tunnelId,
+            totalEndpoints: endpoints.length,
+          },
+        );
 
         // Fallback: return highest priority endpoint even if unhealthy
         return endpoints[0];
@@ -204,10 +214,13 @@ export class TunnelFailoverService {
 
       return state;
     } catch (error) {
-      logger.error('[TunnelFailoverService] Failed to record endpoint failure', {
-        endpointId,
-        error: error.message,
-      });
+      logger.error(
+        '[TunnelFailoverService] Failed to record endpoint failure',
+        {
+          endpointId,
+          error: error.message,
+        },
+      );
       throw error;
     }
   }
@@ -230,10 +243,13 @@ export class TunnelFailoverService {
         });
       }
     } catch (error) {
-      logger.error('[TunnelFailoverService] Failed to record endpoint success', {
-        endpointId,
-        error: error.message,
-      });
+      logger.error(
+        '[TunnelFailoverService] Failed to record endpoint success',
+        {
+          endpointId,
+          error: error.message,
+        },
+      );
     }
   }
 
@@ -252,14 +268,20 @@ export class TunnelFailoverService {
         ['unhealthy', endpointId],
       );
 
-      logger.info('[TunnelFailoverService] Endpoint marked unhealthy in database', {
-        endpointId,
-      });
+      logger.info(
+        '[TunnelFailoverService] Endpoint marked unhealthy in database',
+        {
+          endpointId,
+        },
+      );
     } catch (error) {
-      logger.error('[TunnelFailoverService] Failed to mark endpoint unhealthy', {
-        endpointId,
-        error: error.message,
-      });
+      logger.error(
+        '[TunnelFailoverService] Failed to mark endpoint unhealthy',
+        {
+          endpointId,
+          error: error.message,
+        },
+      );
     }
   }
 
@@ -278,9 +300,12 @@ export class TunnelFailoverService {
         ['healthy', endpointId],
       );
 
-      logger.info('[TunnelFailoverService] Endpoint marked healthy in database', {
-        endpointId,
-      });
+      logger.info(
+        '[TunnelFailoverService] Endpoint marked healthy in database',
+        {
+          endpointId,
+        },
+      );
     } catch (error) {
       logger.error('[TunnelFailoverService] Failed to mark endpoint healthy', {
         endpointId,
@@ -312,10 +337,13 @@ export class TunnelFailoverService {
     }, this.recoveryCheckInterval);
 
     this.recoveryIntervals.set(endpointId, interval);
-    logger.debug('[TunnelFailoverService] Recovery checks started for endpoint', {
-      endpointId,
-      tunnelId,
-    });
+    logger.debug(
+      '[TunnelFailoverService] Recovery checks started for endpoint',
+      {
+        endpointId,
+        tunnelId,
+      },
+    );
   }
 
   /**
@@ -328,9 +356,12 @@ export class TunnelFailoverService {
     if (interval) {
       clearInterval(interval);
       this.recoveryIntervals.delete(endpointId);
-      logger.debug('[TunnelFailoverService] Recovery checks stopped for endpoint', {
-        endpointId,
-      });
+      logger.debug(
+        '[TunnelFailoverService] Recovery checks stopped for endpoint',
+        {
+          endpointId,
+        },
+      );
     }
   }
 
@@ -384,10 +415,13 @@ export class TunnelFailoverService {
 
       return false;
     } catch (error) {
-      logger.error('[TunnelFailoverService] Failed to check endpoint recovery', {
-        endpointId,
-        error: error.message,
-      });
+      logger.error(
+        '[TunnelFailoverService] Failed to check endpoint recovery',
+        {
+          endpointId,
+          error: error.message,
+        },
+      );
       return false;
     }
   }
@@ -471,8 +505,12 @@ export class TunnelFailoverService {
         };
       });
 
-      const healthyCount = endpoints.filter((e) => e.healthStatus === 'healthy').length;
-      const unhealthyCount = endpoints.filter((e) => e.healthStatus === 'unhealthy').length;
+      const healthyCount = endpoints.filter(
+        (e) => e.healthStatus === 'healthy',
+      ).length;
+      const unhealthyCount = endpoints.filter(
+        (e) => e.healthStatus === 'unhealthy',
+      ).length;
 
       return {
         tunnelId,
@@ -536,12 +574,15 @@ export class TunnelFailoverService {
 
       return endpoint;
     } catch (error) {
-      logger.error('[TunnelFailoverService] Failed to perform manual failover', {
-        tunnelId,
-        endpointId,
-        userId,
-        error: error.message,
-      });
+      logger.error(
+        '[TunnelFailoverService] Failed to perform manual failover',
+        {
+          tunnelId,
+          endpointId,
+          userId,
+          error: error.message,
+        },
+      );
       throw error;
     }
   }
@@ -564,10 +605,13 @@ export class TunnelFailoverService {
         endpointId,
       });
     } catch (error) {
-      logger.error('[TunnelFailoverService] Failed to reset endpoint failure count', {
-        endpointId,
-        error: error.message,
-      });
+      logger.error(
+        '[TunnelFailoverService] Failed to reset endpoint failure count',
+        {
+          endpointId,
+          error: error.message,
+        },
+      );
       throw error;
     }
   }

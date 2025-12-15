@@ -66,9 +66,7 @@ export class Transaction {
       this.state = TransactionState.ACTIVE;
 
       // Set isolation level and begin transaction
-      await this.client.query(
-        `BEGIN ISOLATION LEVEL ${this.isolationLevel}`,
-      );
+      await this.client.query(`BEGIN ISOLATION LEVEL ${this.isolationLevel}`);
 
       logger.debug('🟢 [Transaction] Transaction started', {
         transactionId: this.transactionId,
@@ -289,10 +287,7 @@ export class TransactionManager {
    * @param {Object} options - Transaction options
    * @returns {Promise<*>} Result from callback
    */
-  static async withTransaction(
-    callback,
-    options = {},
-  ) {
+  static async withTransaction(callback, options = {}) {
     const {
       isolationLevel = IsolationLevel.READ_COMMITTED,
       maxRetries = 3,
@@ -315,10 +310,13 @@ export class TransactionManager {
         // Commit transaction
         await transaction.commit();
 
-        logger.debug('✅ [TransactionManager] Transaction completed successfully', {
-          transactionId: transaction.transactionId,
-          attempt: attempt + 1,
-        });
+        logger.debug(
+          '✅ [TransactionManager] Transaction completed successfully',
+          {
+            transactionId: transaction.transactionId,
+            attempt: attempt + 1,
+          },
+        );
 
         return result;
       } catch (error) {
@@ -336,15 +334,15 @@ export class TransactionManager {
         }
 
         // Retry logic for serialization conflicts
-        if (
-          error.code === '40P01' &&
-          attempt < maxRetries
-        ) {
-          logger.warn('⚠️ [TransactionManager] Serialization conflict, retrying', {
-            attempt: attempt + 1,
-            maxRetries,
-            delay: `${retryDelay * attempt}ms`,
-          });
+        if (error.code === '40P01' && attempt < maxRetries) {
+          logger.warn(
+            '⚠️ [TransactionManager] Serialization conflict, retrying',
+            {
+              attempt: attempt + 1,
+              maxRetries,
+              delay: `${retryDelay * attempt}ms`,
+            },
+          );
 
           await new Promise((resolve) =>
             setTimeout(resolve, retryDelay * attempt),
@@ -429,11 +427,14 @@ export class TransactionManager {
 
         if (attempt < maxRetries - 1) {
           const delay = retryDelay * Math.pow(backoffMultiplier, attempt);
-          logger.warn('⚠️ [TransactionManager] Retrying transaction with backoff', {
-            attempt: attempt + 1,
-            maxRetries,
-            delay: `${delay}ms`,
-          });
+          logger.warn(
+            '⚠️ [TransactionManager] Retrying transaction with backoff',
+            {
+              attempt: attempt + 1,
+              maxRetries,
+              delay: `${delay}ms`,
+            },
+          );
 
           await new Promise((resolve) => setTimeout(resolve, delay));
         }

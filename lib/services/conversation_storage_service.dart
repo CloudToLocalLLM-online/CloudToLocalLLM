@@ -879,7 +879,7 @@ class ConversationStorageService {
 
     try {
       // Get current user from AuthService
-      final currentUser = _authService!.currentUser;
+      final currentUser = _authService.currentUser;
       if (currentUser == null) {
         debugPrint(
             '⚠️ [ConversationStorage] No current user available from AuthService');

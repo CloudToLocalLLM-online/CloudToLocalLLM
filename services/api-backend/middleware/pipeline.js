@@ -22,9 +22,15 @@ import { requestTimeoutMiddleware } from './request-timeout.js';
 import { authenticateJWT } from './auth.js';
 import { authorizeRBAC } from './rbac.js';
 import { addTierInfo } from './tier-check.js';
-import { createRequestQueuingMiddleware, createQueueStatusMiddleware } from './request-queuing.js';
+import {
+  createRequestQueuingMiddleware,
+  createQueueStatusMiddleware,
+} from './request-queuing.js';
 import { metricsCollectionMiddleware } from './metrics-collection.js';
-import { apiVersioningMiddleware, backwardCompatibilityMiddleware } from './api-versioning.js';
+import {
+  apiVersioningMiddleware,
+  backwardCompatibilityMiddleware,
+} from './api-versioning.js';
 import logger from '../logger.js';
 
 /**

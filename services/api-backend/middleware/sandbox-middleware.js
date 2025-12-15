@@ -68,7 +68,9 @@ export const sandboxLoggingMiddleware = (req, res, next) => {
       body: req.body,
     });
 
-    logger.debug(`Sandbox request logged: ${req.method} ${req.path} (${responseTime}ms)`);
+    logger.debug(
+      `Sandbox request logged: ${req.method} ${req.path} (${responseTime}ms)`,
+    );
 
     // Call original send
     return originalSend.call(this, data);
@@ -92,7 +94,9 @@ export const sandboxDataIsolationMiddleware = (req, res, next) => {
   // Add sandbox header to response
   res.set('X-Sandbox-Mode', 'true');
 
-  logger.debug(`Data isolation enabled for sandbox request: ${req.method} ${req.path}`);
+  logger.debug(
+    `Data isolation enabled for sandbox request: ${req.method} ${req.path}`,
+  );
 
   next();
 };
@@ -113,7 +117,9 @@ export const sandboxRateLimitMiddleware = (req, res, next) => {
     burstSize: config.rateLimits.burstSize,
   };
 
-  logger.debug(`Sandbox rate limits applied: ${config.rateLimits.requestsPerMinute} req/min`);
+  logger.debug(
+    `Sandbox rate limits applied: ${config.rateLimits.requestsPerMinute} req/min`,
+  );
 
   next();
 };

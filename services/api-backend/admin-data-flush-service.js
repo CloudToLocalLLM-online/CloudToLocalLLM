@@ -420,14 +420,11 @@ export class AdminDataFlushService {
         duration: operation.endTime - operation.startTime,
       });
 
-      logger.info(
-        ' [AdminFlush] Data flush operation completed successfully',
-        {
-          operationId,
-          duration: operation.endTime - operation.startTime,
-          results,
-        },
-      );
+      logger.info(' [AdminFlush] Data flush operation completed successfully', {
+        operationId,
+        duration: operation.endTime - operation.startTime,
+        results,
+      });
 
       return {
         success: true,

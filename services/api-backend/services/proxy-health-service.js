@@ -7,23 +7,25 @@ import winston from 'winston';
  */
 export class ProxyHealthService {
   constructor(logger = null) {
-    this.logger = logger || winston.createLogger({
-      level: process.env.LOG_LEVEL || 'info',
-      format: winston.format.combine(
-        winston.format.timestamp(),
-        winston.format.errors({ stack: true }),
-        winston.format.json(),
-      ),
-      defaultMeta: { service: 'proxy-health' },
-      transports: [
-        new winston.transports.Console({
-          format: winston.format.combine(
-            winston.format.timestamp(),
-            winston.format.simple(),
-          ),
-        }),
-      ],
-    });
+    this.logger =
+      logger ||
+      winston.createLogger({
+        level: process.env.LOG_LEVEL || 'info',
+        format: winston.format.combine(
+          winston.format.timestamp(),
+          winston.format.errors({ stack: true }),
+          winston.format.json(),
+        ),
+        defaultMeta: { service: 'proxy-health' },
+        transports: [
+          new winston.transports.Console({
+            format: winston.format.combine(
+              winston.format.timestamp(),
+              winston.format.simple(),
+            ),
+          }),
+        ],
+      });
 
     // Track proxy health status
     this.proxyHealthStatus = new Map(); // proxyId -> health status
@@ -32,11 +34,26 @@ export class ProxyHealthService {
     this.proxyMetrics = new Map(); // proxyId -> metrics data
 
     // Configuration
-    this.healthCheckIntervalMs = parseInt(process.env.PROXY_HEALTH_CHECK_INTERVAL || '30000', 10);
-    this.maxRecoveryAttempts = parseInt(process.env.PROXY_MAX_RECOVERY_ATTEMPTS || '3', 10);
-    this.recoveryBackoffMs = parseInt(process.env.PROXY_RECOVERY_BACKOFF || '5000', 10);
-    this.healthCheckTimeoutMs = parseInt(process.env.PROXY_HEALTH_CHECK_TIMEOUT || '5000', 10);
-    this.unhealthyThresholdMs = parseInt(process.env.PROXY_UNHEALTHY_THRESHOLD || '60000', 10);
+    this.healthCheckIntervalMs = parseInt(
+      process.env.PROXY_HEALTH_CHECK_INTERVAL || '30000',
+      10,
+    );
+    this.maxRecoveryAttempts = parseInt(
+      process.env.PROXY_MAX_RECOVERY_ATTEMPTS || '3',
+      10,
+    );
+    this.recoveryBackoffMs = parseInt(
+      process.env.PROXY_RECOVERY_BACKOFF || '5000',
+      10,
+    );
+    this.healthCheckTimeoutMs = parseInt(
+      process.env.PROXY_HEALTH_CHECK_TIMEOUT || '5000',
+      10,
+    );
+    this.unhealthyThresholdMs = parseInt(
+      process.env.PROXY_UNHEALTHY_THRESHOLD || '60000',
+      10,
+    );
 
     // Health check interval
     this.healthCheckInterval = null;
@@ -115,7 +132,10 @@ export class ProxyHealthService {
       // Execute health check with timeout
       const healthCheckPromise = healthCheckFn();
       const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Health check timeout')), this.healthCheckTimeoutMs),
+        setTimeout(
+          () => reject(new Error('Health check timeout')),
+          this.healthCheckTimeoutMs,
+        ),
       );
 
       const result = await Promise.race([healthCheckPromise, timeoutPromise]);

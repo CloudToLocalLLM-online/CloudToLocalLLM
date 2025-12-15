@@ -38,60 +38,70 @@ const logger = winston.createLogger({
  * Get recovery status for all services
  * Requires: Admin role
  */
-router.get('/status', authenticateJWT, createRequireAdminMiddleware(), (req, res) => {
-  try {
-    const statuses = errorRecoveryService.getAllRecoveryStatuses();
+router.get(
+  '/status',
+  authenticateJWT,
+  createRequireAdminMiddleware(),
+  (req, res) => {
+    try {
+      const statuses = errorRecoveryService.getAllRecoveryStatuses();
 
-    res.json({
-      status: 'success',
-      data: statuses,
-      timestamp: new Date().toISOString(),
-    });
-  } catch (error) {
-    logger.error('Error fetching recovery statuses:', error);
-    res.status(500).json({
-      status: 'error',
-      message: 'Failed to fetch recovery statuses',
-      error: error.message,
-      timestamp: new Date().toISOString(),
-    });
-  }
-});
+      res.json({
+        status: 'success',
+        data: statuses,
+        timestamp: new Date().toISOString(),
+      });
+    } catch (error) {
+      logger.error('Error fetching recovery statuses:', error);
+      res.status(500).json({
+        status: 'error',
+        message: 'Failed to fetch recovery statuses',
+        error: error.message,
+        timestamp: new Date().toISOString(),
+      });
+    }
+  },
+);
 
 /**
  * GET /error-recovery/status/:serviceName
  * Get recovery status for a specific service
  * Requires: Admin role
  */
-router.get('/status/:serviceName', authenticateJWT, createRequireAdminMiddleware(), (req, res) => {
-  try {
-    const { serviceName } = req.params;
+router.get(
+  '/status/:serviceName',
+  authenticateJWT,
+  createRequireAdminMiddleware(),
+  (req, res) => {
+    try {
+      const { serviceName } = req.params;
 
-    if (!serviceName) {
-      return res.status(400).json({
+      if (!serviceName) {
+        return res.status(400).json({
+          status: 'error',
+          message: 'Service name is required',
+          timestamp: new Date().toISOString(),
+        });
+      }
+
+      const status = errorRecoveryService.getRecoveryStatus(serviceName);
+
+      res.json({
+        status: 'success',
+        data: status,
+        timestamp: new Date().toISOString(),
+      });
+    } catch (error) {
+      logger.error('Error fetching recovery status:', error);
+      res.status(500).json({
         status: 'error',
-        message: 'Service name is required',
+        message: 'Failed to fetch recovery status',
+        error: error.message,
         timestamp: new Date().toISOString(),
       });
     }
-
-    const status = errorRecoveryService.getRecoveryStatus(serviceName);
-
-    res.json({
-      status: 'success',
-      data: status,
-      timestamp: new Date().toISOString(),
-    });
-  } catch (error) {
-    logger.error('Error fetching recovery status:', error);
-    res.status(500).json({
-      status: 'error',
-      message: 'Failed to fetch recovery status',
-      error: error.message,
-      timestamp: new Date().toISOString(),
-    });
-  }
-});
+  },
+);
 
 /**
  * POST /error-recovery/recover/:serviceName
@@ -99,66 +109,71 @@ router.get('/status/:serviceName', authenticateJWT, createRequireAdminMiddleware
  * Requires: Admin role
  * Body: { reason?: string }
  */
-router.post('/recover/:serviceName', authenticateJWT, createRequireAdminMiddleware(), async(req, res) => {
-  try {
-    const { serviceName } = req.params;
-    const { reason } = req.body;
-    const userId = req.auth?.payload.sub;
+router.post(
+  '/recover/:serviceName',
+  authenticateJWT,
+  createRequireAdminMiddleware(),
+  async(req, res) => {
+    try {
+      const { serviceName } = req.params;
+      const { reason } = req.body;
+      const userId = req.auth?.payload.sub;
 
-    if (!serviceName) {
-      return res.status(400).json({
-        status: 'error',
-        message: 'Service name is required',
+      if (!serviceName) {
+        return res.status(400).json({
+          status: 'error',
+          message: 'Service name is required',
+          timestamp: new Date().toISOString(),
+        });
+      }
+
+      logger.info(`Recovery initiated for service: ${serviceName}`, {
+        userId,
+        reason,
+      });
+
+      const result = await errorRecoveryService.executeRecovery(serviceName, {
+        initiatedBy: userId,
+        reason: reason || 'Manual intervention',
+      });
+
+      res.json({
+        status: 'success',
+        data: result,
         timestamp: new Date().toISOString(),
       });
-    }
+    } catch (error) {
+      logger.error('Error executing recovery:', error);
 
-    logger.info(`Recovery initiated for service: ${serviceName}`, {
-      userId,
-      reason,
-    });
+      // Check if error is due to recovery already in progress
+      if (error.message.includes('already in progress')) {
+        return res.status(409).json({
+          status: 'error',
+          message: 'Recovery already in progress for this service',
+          error: error.message,
+          timestamp: new Date().toISOString(),
+        });
+      }
 
-    const result = await errorRecoveryService.executeRecovery(serviceName, {
-      initiatedBy: userId,
-      reason: reason || 'Manual intervention',
-    });
+      // Check if error is due to no recovery procedure registered
+      if (error.message.includes('No recovery procedure')) {
+        return res.status(404).json({
+          status: 'error',
+          message: 'No recovery procedure registered for this service',
+          error: error.message,
+          timestamp: new Date().toISOString(),
+        });
+      }
 
-    res.json({
-      status: 'success',
-      data: result,
-      timestamp: new Date().toISOString(),
-    });
-  } catch (error) {
-    logger.error('Error executing recovery:', error);
-
-    // Check if error is due to recovery already in progress
-    if (error.message.includes('already in progress')) {
-      return res.status(409).json({
+      res.status(500).json({
         status: 'error',
-        message: 'Recovery already in progress for this service',
+        message: 'Failed to execute recovery procedure',
         error: error.message,
         timestamp: new Date().toISOString(),
       });
     }
-
-    // Check if error is due to no recovery procedure registered
-    if (error.message.includes('No recovery procedure')) {
-      return res.status(404).json({
-        status: 'error',
-        message: 'No recovery procedure registered for this service',
-        error: error.message,
-        timestamp: new Date().toISOString(),
-      });
-    }
-
-    res.status(500).json({
-      status: 'error',
-      message: 'Failed to execute recovery procedure',
-      error: error.message,
-      timestamp: new Date().toISOString(),
-    });
-  }
-});
+  },
+);
 
 /**
  * GET /error-recovery/history
@@ -166,138 +181,163 @@ router.post('/recover/:serviceName', authenticateJWT, createRequireAdminMiddlewa
  * Requires: Admin role
  * Query: { serviceName?: string, status?: string, limit?: number }
  */
-router.get('/history', authenticateJWT, createRequireAdminMiddleware(), (req, res) => {
-  try {
-    const { serviceName, status, limit } = req.query;
+router.get(
+  '/history',
+  authenticateJWT,
+  createRequireAdminMiddleware(),
+  (req, res) => {
+    try {
+      const { serviceName, status, limit } = req.query;
 
-    const options = {};
-    if (serviceName) {
-      options.serviceName = serviceName;
-    }
-    if (status) {
-      options.status = status;
-    }
-    if (limit) {
-      options.limit = parseInt(limit, 10);
-    }
+      const options = {};
+      if (serviceName) {
+        options.serviceName = serviceName;
+      }
+      if (status) {
+        options.status = status;
+      }
+      if (limit) {
+        options.limit = parseInt(limit, 10);
+      }
 
-    const history = errorRecoveryService.getRecoveryHistory(options);
+      const history = errorRecoveryService.getRecoveryHistory(options);
 
-    res.json({
-      status: 'success',
-      data: history,
-      count: history.length,
-      timestamp: new Date().toISOString(),
-    });
-  } catch (error) {
-    logger.error('Error fetching recovery history:', error);
-    res.status(500).json({
-      status: 'error',
-      message: 'Failed to fetch recovery history',
-      error: error.message,
-      timestamp: new Date().toISOString(),
-    });
-  }
-});
+      res.json({
+        status: 'success',
+        data: history,
+        count: history.length,
+        timestamp: new Date().toISOString(),
+      });
+    } catch (error) {
+      logger.error('Error fetching recovery history:', error);
+      res.status(500).json({
+        status: 'error',
+        message: 'Failed to fetch recovery history',
+        error: error.message,
+        timestamp: new Date().toISOString(),
+      });
+    }
+  },
+);
 
 /**
  * GET /error-recovery/metrics
  * Get recovery metrics
  * Requires: Admin role
  */
-router.get('/metrics', authenticateJWT, createRequireAdminMiddleware(), (req, res) => {
-  try {
-    const metrics = errorRecoveryService.getMetrics();
+router.get(
+  '/metrics',
+  authenticateJWT,
+  createRequireAdminMiddleware(),
+  (req, res) => {
+    try {
+      const metrics = errorRecoveryService.getMetrics();
 
-    res.json({
-      status: 'success',
-      data: metrics,
-      timestamp: new Date().toISOString(),
-    });
-  } catch (error) {
-    logger.error('Error fetching recovery metrics:', error);
-    res.status(500).json({
-      status: 'error',
-      message: 'Failed to fetch recovery metrics',
-      error: error.message,
-      timestamp: new Date().toISOString(),
-    });
-  }
-});
+      res.json({
+        status: 'success',
+        data: metrics,
+        timestamp: new Date().toISOString(),
+      });
+    } catch (error) {
+      logger.error('Error fetching recovery metrics:', error);
+      res.status(500).json({
+        status: 'error',
+        message: 'Failed to fetch recovery metrics',
+        error: error.message,
+        timestamp: new Date().toISOString(),
+      });
+    }
+  },
+);
 
 /**
  * GET /error-recovery/report
  * Get comprehensive recovery report
  * Requires: Admin role
  */
-router.get('/report', authenticateJWT, createRequireAdminMiddleware(), (req, res) => {
-  try {
-    const report = errorRecoveryService.getReport();
+router.get(
+  '/report',
+  authenticateJWT,
+  createRequireAdminMiddleware(),
+  (req, res) => {
+    try {
+      const report = errorRecoveryService.getReport();
 
-    res.json({
-      status: 'success',
-      data: report,
-      timestamp: new Date().toISOString(),
-    });
-  } catch (error) {
-    logger.error('Error generating recovery report:', error);
-    res.status(500).json({
-      status: 'error',
-      message: 'Failed to generate recovery report',
-      error: error.message,
-      timestamp: new Date().toISOString(),
-    });
-  }
-});
+      res.json({
+        status: 'success',
+        data: report,
+        timestamp: new Date().toISOString(),
+      });
+    } catch (error) {
+      logger.error('Error generating recovery report:', error);
+      res.status(500).json({
+        status: 'error',
+        message: 'Failed to generate recovery report',
+        error: error.message,
+        timestamp: new Date().toISOString(),
+      });
+    }
+  },
+);
 
 /**
  * DELETE /error-recovery/history
  * Clear recovery history
  * Requires: Admin role
  */
-router.delete('/history', authenticateJWT, createRequireAdminMiddleware(), (req, res) => {
-  try {
-    errorRecoveryService.clearHistory();
+router.delete(
+  '/history',
+  authenticateJWT,
+  createRequireAdminMiddleware(),
+  (req, res) => {
+    try {
+      errorRecoveryService.clearHistory();
 
-    res.json({
-      status: 'success',
-      message: 'Recovery history cleared',
-      timestamp: new Date().toISOString(),
-    });
-  } catch (error) {
-    logger.error('Error clearing recovery history:', error);
-    res.status(500).json({
-      status: 'error',
-      message: 'Failed to clear recovery history',
-      error: error.message,
-      timestamp: new Date().toISOString(),
-    });
-  }
-});
+      res.json({
+        status: 'success',
+        message: 'Recovery history cleared',
+        timestamp: new Date().toISOString(),
+      });
+    } catch (error) {
+      logger.error('Error clearing recovery history:', error);
+      res.status(500).json({
+        status: 'error',
+        message: 'Failed to clear recovery history',
+        error: error.message,
+        timestamp: new Date().toISOString(),
+      });
+    }
+  },
+);
 
 /**
  * POST /error-recovery/reset-metrics
  * Reset recovery metrics
  * Requires: Admin role
  */
-router.post('/reset-metrics', authenticateJWT, createRequireAdminMiddleware(), (req, res) => {
-  try {
-    errorRecoveryService.resetMetrics();
+router.post(
+  '/reset-metrics',
+  authenticateJWT,
+  createRequireAdminMiddleware(),
+  (req, res) => {
+    try {
+      errorRecoveryService.resetMetrics();
 
-    res.json({
-      status: 'success',
-      message: 'Recovery metrics reset',
-      timestamp: new Date().toISOString(),
-    });
-  } catch (error) {
-    logger.error('Error resetting recovery metrics:', error);
-    res.status(500).json({
-      status: 'error',
-      message: 'Failed to reset recovery metrics',
-      error: error.message,
-      timestamp: new Date().toISOString(),
-    });
-  }
-});
+      res.json({
+        status: 'success',
+        message: 'Recovery metrics reset',
+        timestamp: new Date().toISOString(),
+      });
+    } catch (error) {
+      logger.error('Error resetting recovery metrics:', error);
+      res.status(500).json({
+        status: 'error',
+        message: 'Failed to reset recovery metrics',
+        error: error.message,
+        timestamp: new Date().toISOString(),
+      });
+    }
+  },
+);
 
 export default router;

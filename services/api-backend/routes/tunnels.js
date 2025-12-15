@@ -916,7 +916,9 @@ router.put('/:id/config', authenticateJWT, async(req, res) => {
     const configUpdate = req.body;
 
     // Validate configuration
-    const { validateTunnelConfig } = await import('../utils/tunnel-config-validation.js');
+    const { validateTunnelConfig } = await import(
+      '../utils/tunnel-config-validation.js'
+    );
     const validation = validateTunnelConfig(configUpdate);
 
     if (!validation.isValid) {

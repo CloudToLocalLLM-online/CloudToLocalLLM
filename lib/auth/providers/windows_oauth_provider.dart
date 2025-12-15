@@ -6,7 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:jwt_decoder/jwt_decoder.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:app_links/app_links.dart';
+
 import 'package:crypto/crypto.dart';
 import 'package:http/http.dart' as http;
 import '../auth_provider.dart';
@@ -17,8 +17,7 @@ import '../../services/url_scheme_registration_service.dart';
 /// Uses manual browser launch and URL scheme callback handling
 class WindowsOAuthProvider implements AuthProvider {
   final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
-  late final AppLinks _appLinks; // Used for deep link handling
-  StreamSubscription<Uri>? _linkSubscription;
+  // late final AppLinks _appLinks; // Used for deep link handling
   Completer<Map<String, String>>? _authCompleter;
 
   // Auth0 configuration
@@ -41,9 +40,7 @@ class WindowsOAuthProvider implements AuthProvider {
             const String.fromEnvironment('AUTH0_AUDIENCE',
                 defaultValue: 'https://api.cloudtolocalllm.online'),
         _redirectUrl =
-            '${UrlSchemeRegistrationService.customScheme}://dev-v2f2p008x3dr74ww.us.auth0.com/windows/${UrlSchemeRegistrationService.customScheme}/callback' {
-    _appLinks = AppLinks();
-  }
+            '${UrlSchemeRegistrationService.customScheme}://dev-v2f2p008x3dr74ww.us.auth0.com/windows/${UrlSchemeRegistrationService.customScheme}/callback';
 
   final StreamController<bool> _authStateController =
       StreamController<bool>.broadcast();
@@ -429,7 +426,6 @@ class WindowsOAuthProvider implements AuthProvider {
   }
 
   void dispose() {
-    _linkSubscription?.cancel();
     _authStateController.close();
   }
 }

@@ -36,9 +36,12 @@ export class TunnelHealthService {
       }
       logger.info('[TunnelHealthService] Tunnel health service initialized');
     } catch (error) {
-      logger.error('[TunnelHealthService] Failed to initialize tunnel health service', {
-        error: error.message,
-      });
+      logger.error(
+        '[TunnelHealthService] Failed to initialize tunnel health service',
+        {
+          error: error.message,
+        },
+      );
       throw error;
     }
   }
@@ -51,9 +54,12 @@ export class TunnelHealthService {
    */
   startHealthChecks(tunnelId, intervalMs = 30000) {
     if (this.healthCheckIntervals.has(tunnelId)) {
-      logger.warn('[TunnelHealthService] Health checks already running for tunnel', {
-        tunnelId,
-      });
+      logger.warn(
+        '[TunnelHealthService] Health checks already running for tunnel',
+        {
+          tunnelId,
+        },
+      );
       return;
     }
 
@@ -135,7 +141,8 @@ export class TunnelHealthService {
       logger.debug('[TunnelHealthService] Health check completed for tunnel', {
         tunnelId,
         endpointCount: endpoints.length,
-        healthyCount: healthResults.filter((r) => r.healthStatus === 'healthy').length,
+        healthyCount: healthResults.filter((r) => r.healthStatus === 'healthy')
+          .length,
       });
 
       return {
@@ -299,10 +306,13 @@ export class TunnelHealthService {
       // Reset buffer
       this.metricsBuffer.delete(tunnelId);
     } catch (error) {
-      logger.error('[TunnelHealthService] Failed to flush metrics to database', {
-        tunnelId,
-        error: error.message,
-      });
+      logger.error(
+        '[TunnelHealthService] Failed to flush metrics to database',
+        {
+          tunnelId,
+          error: error.message,
+        },
+      );
       throw error;
     }
   }
@@ -333,7 +343,9 @@ export class TunnelHealthService {
       );
 
       const endpoints = endpointsResult.rows;
-      const healthyEndpoints = endpoints.filter((e) => e.health_status === 'healthy').length;
+      const healthyEndpoints = endpoints.filter(
+        (e) => e.health_status === 'healthy',
+      ).length;
 
       return {
         tunnelId,
@@ -355,11 +367,14 @@ export class TunnelHealthService {
         lastUpdated: tunnel.updated_at,
       };
     } catch (error) {
-      logger.error('[TunnelHealthService] Failed to get tunnel status summary', {
-        tunnelId,
-        userId,
-        error: error.message,
-      });
+      logger.error(
+        '[TunnelHealthService] Failed to get tunnel status summary',
+        {
+          tunnelId,
+          userId,
+          error: error.message,
+        },
+      );
       throw error;
     }
   }
@@ -398,11 +413,14 @@ export class TunnelHealthService {
         weight: endpoint.weight,
       }));
     } catch (error) {
-      logger.error('[TunnelHealthService] Failed to get endpoint health status', {
-        tunnelId,
-        userId,
-        error: error.message,
-      });
+      logger.error(
+        '[TunnelHealthService] Failed to get endpoint health status',
+        {
+          tunnelId,
+          userId,
+          error: error.message,
+        },
+      );
       throw error;
     }
   }
@@ -418,7 +436,9 @@ export class TunnelHealthService {
     try {
       const validStatuses = ['healthy', 'unhealthy', 'unknown'];
       if (!validStatuses.includes(healthStatus)) {
-        throw new Error(`Invalid health status. Must be one of: ${validStatuses.join(', ')}`);
+        throw new Error(
+          `Invalid health status. Must be one of: ${validStatuses.join(', ')}`,
+        );
       }
 
       await this.pool.query(
@@ -433,10 +453,13 @@ export class TunnelHealthService {
         healthStatus,
       });
     } catch (error) {
-      logger.error('[TunnelHealthService] Failed to update endpoint health status', {
-        endpointId,
-        error: error.message,
-      });
+      logger.error(
+        '[TunnelHealthService] Failed to update endpoint health status',
+        {
+          endpointId,
+          error: error.message,
+        },
+      );
       throw error;
     }
   }

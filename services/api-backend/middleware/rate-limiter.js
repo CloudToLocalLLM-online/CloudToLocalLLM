@@ -197,7 +197,12 @@ export class TunnelRateLimiter {
    * @param {Object} requestContext - Request context for logging
    * @returns {Object} Rate limit result
    */
-  checkRateLimit(userId, correlationId, exemptionResult = null, requestContext = {}) {
+  checkRateLimit(
+    userId,
+    correlationId,
+    exemptionResult = null,
+    requestContext = {},
+  ) {
     // Check if request is exempt from rate limiting
     if (exemptionResult && exemptionResult.exempt) {
       this.logger.debug('Request exempt from rate limiting', {
@@ -416,9 +421,20 @@ export class TunnelRateLimiter {
     rateLimitMetricsService.recordRequestAllowed({
       userId,
     });
-    rateLimitMetricsService.updateWindowUsage(userId, counts.windowRequests + 1, this.config.maxRequests);
-    rateLimitMetricsService.updateBurstUsage(userId, counts.burstRequests + 1, this.config.maxBurstRequests);
-    rateLimitMetricsService.updateConcurrentRequests(userId, counts.concurrentRequests + 1);
+    rateLimitMetricsService.updateWindowUsage(
+      userId,
+      counts.windowRequests + 1,
+      this.config.maxRequests,
+    );
+    rateLimitMetricsService.updateBurstUsage(
+      userId,
+      counts.burstRequests + 1,
+      this.config.maxBurstRequests,
+    );
+    rateLimitMetricsService.updateConcurrentRequests(
+      userId,
+      counts.concurrentRequests + 1,
+    );
 
     this.logger.debug('Rate limit check passed', {
       correlationId,
@@ -627,7 +643,12 @@ export function createTunnelRateLimitMiddleware(config = {}) {
       userAgent: req.get('user-agent'),
     };
 
-    const result = rateLimiter.checkRateLimit(userId, correlationId, exemptionResult, requestContext);
+    const result = rateLimiter.checkRateLimit(
+      userId,
+      correlationId,
+      exemptionResult,
+      requestContext,
+    );
 
     if (!result.allowed) {
       // Set rate limit headers

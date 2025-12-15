@@ -41,9 +41,12 @@ export class ProxyWebhookService {
       }
       logger.info('[ProxyWebhookService] Proxy webhook service initialized');
     } catch (error) {
-      logger.error('[ProxyWebhookService] Failed to initialize webhook service', {
-        error: error.message,
-      });
+      logger.error(
+        '[ProxyWebhookService] Failed to initialize webhook service',
+        {
+          error: error.message,
+        },
+      );
       throw error;
     }
   }
@@ -57,7 +60,12 @@ export class ProxyWebhookService {
    * @param {Array<string>} events - Events to subscribe to
    * @returns {Promise<Object>} Registered webhook
    */
-  async registerWebhook(userId, proxyId, url, events = ['proxy.status_changed']) {
+  async registerWebhook(
+    userId,
+    proxyId,
+    url,
+    events = ['proxy.status_changed'],
+  ) {
     const client = await this.pool.connect();
     try {
       await client.query('BEGIN');
@@ -78,7 +86,12 @@ export class ProxyWebhookService {
         throw new Error('At least one event must be specified');
       }
 
-      const validEvents = ['proxy.status_changed', 'proxy.created', 'proxy.deleted', 'proxy.metrics_updated'];
+      const validEvents = [
+        'proxy.status_changed',
+        'proxy.created',
+        'proxy.deleted',
+        'proxy.metrics_updated',
+      ];
       for (const event of events) {
         if (!validEvents.includes(event)) {
           throw new Error(`Invalid event type: ${event}`);
@@ -309,7 +322,9 @@ export class ProxyWebhookService {
       }
 
       // Delete webhook (cascades to deliveries and events)
-      await client.query('DELETE FROM proxy_webhooks WHERE id = $1', [webhookId]);
+      await client.query('DELETE FROM proxy_webhooks WHERE id = $1', [
+        webhookId,
+      ]);
 
       await client.query('COMMIT');
 
@@ -368,11 +383,20 @@ export class ProxyWebhookService {
 
       // Queue deliveries asynchronously
       for (const webhook of webhooks) {
-        this.queueWebhookDelivery(webhook.id, proxyId, userId, eventType, eventData).catch((error) => {
-          logger.error('[ProxyWebhookService] Failed to queue webhook delivery', {
-            webhookId: webhook.id,
-            error: error.message,
-          });
+        this.queueWebhookDelivery(
+          webhook.id,
+          proxyId,
+          userId,
+          eventType,
+          eventData,
+        ).catch((error) => {
+          logger.error(
+            '[ProxyWebhookService] Failed to queue webhook delivery',
+            {
+              webhookId: webhook.id,
+              error: error.message,
+            },
+          );
         });
       }
 
@@ -422,7 +446,15 @@ export class ProxyWebhookService {
       await client.query(
         `INSERT INTO proxy_webhook_deliveries (id, webhook_id, proxy_id, user_id, event_type, payload, status)
          VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-        [deliveryId, webhookId, proxyId, userId, eventType, JSON.stringify(payload), 'pending'],
+        [
+          deliveryId,
+          webhookId,
+          proxyId,
+          userId,
+          eventType,
+          JSON.stringify(payload),
+          'pending',
+        ],
       );
 
       await client.query('COMMIT');
@@ -474,7 +506,9 @@ export class ProxyWebhookService {
 
       // Skip if already delivered
       if (delivery.status === 'delivered') {
-        logger.debug('[ProxyWebhookService] Delivery already completed', { deliveryId });
+        logger.debug('[ProxyWebhookService] Delivery already completed', {
+          deliveryId,
+        });
         return;
       }
 
@@ -533,11 +567,21 @@ export class ProxyWebhookService {
           });
         } else {
           // Retry
-          this.scheduleRetry(deliveryId, delivery.attempt_count, statusCode, 'HTTP ' + statusCode);
+          this.scheduleRetry(
+            deliveryId,
+            delivery.attempt_count,
+            statusCode,
+            'HTTP ' + statusCode,
+          );
         }
       } catch (error) {
         // Network error, retry
-        this.scheduleRetry(deliveryId, delivery.attempt_count, null, error.message);
+        this.scheduleRetry(
+          deliveryId,
+          delivery.attempt_count,
+          null,
+          error.message,
+        );
       }
     } catch (error) {
       logger.error('[ProxyWebhookService] Failed to deliver webhook', {
@@ -562,7 +606,8 @@ export class ProxyWebhookService {
     const client = await this.pool.connect();
     try {
       const nextAttempt = attemptCount + 1;
-      const delaySeconds = this.retryDelays[Math.min(attemptCount, this.retryDelays.length - 1)];
+      const delaySeconds =
+        this.retryDelays[Math.min(attemptCount, this.retryDelays.length - 1)];
       const nextRetryAt = new Date(Date.now() + delaySeconds * 1000);
 
       await client.query(
@@ -570,7 +615,14 @@ export class ProxyWebhookService {
          SET status = $1, attempt_count = $2, http_status_code = $3, error_message = $4, 
              next_retry_at = $5, updated_at = NOW()
          WHERE id = $6`,
-        ['retrying', nextAttempt, httpStatusCode, errorMessage, nextRetryAt, deliveryId],
+        [
+          'retrying',
+          nextAttempt,
+          httpStatusCode,
+          errorMessage,
+          nextRetryAt,
+          deliveryId,
+        ],
       );
 
       logger.info('[ProxyWebhookService] Webhook retry scheduled', {

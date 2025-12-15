@@ -104,11 +104,7 @@ router.post(
 
       // Execute operation asynchronously
       bulkOperationsService
-        .executeBulkOperation(
-          operationId,
-          req.adminUser.id,
-          req.adminRoles[0],
-        )
+        .executeBulkOperation(operationId, req.adminUser.id, req.adminRoles[0])
         .catch((error) => {
           logger.error('🔴 [BulkOps] Async bulk operation failed', {
             operationId,

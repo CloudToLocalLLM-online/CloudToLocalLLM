@@ -35,14 +35,19 @@ export class WebhookRateLimiterService {
       if (!this.pool) {
         throw new Error('Database pool not initialized');
       }
-      logger.info('[WebhookRateLimiter] Webhook rate limiter service initialized');
+      logger.info(
+        '[WebhookRateLimiter] Webhook rate limiter service initialized',
+      );
 
       // Start cleanup interval for cache
       this.startCleanupInterval();
     } catch (error) {
-      logger.error('[WebhookRateLimiter] Failed to initialize rate limiter service', {
-        error: error.message,
-      });
+      logger.error(
+        '[WebhookRateLimiter] Failed to initialize rate limiter service',
+        {
+          error: error.message,
+        },
+      );
       throw error;
     }
   }
@@ -52,9 +57,12 @@ export class WebhookRateLimiterService {
    */
   startCleanupInterval() {
     // Clean up cache every 5 minutes
-    this.cleanupInterval = setInterval(() => {
-      this.cleanupCache();
-    }, 5 * 60 * 1000);
+    this.cleanupInterval = setInterval(
+      () => {
+        this.cleanupCache();
+      },
+      5 * 60 * 1000,
+    );
   }
 
   /**
@@ -301,7 +309,10 @@ export class WebhookRateLimiterService {
               ? 'day_limit_exceeded'
               : 'allowed',
         limits: {
-          per_minute: { current: minuteCount, max: config.rate_limit_per_minute },
+          per_minute: {
+            current: minuteCount,
+            max: config.rate_limit_per_minute,
+          },
           per_hour: { current: hourCount, max: config.rate_limit_per_hour },
           per_day: { current: dayCount, max: config.rate_limit_per_day },
         },
@@ -369,14 +380,16 @@ export class WebhookRateLimiterService {
           [webhookId, userId],
         );
 
-        return result.rows[0] || {
-          total_deliveries: 0,
-          successful_deliveries: 0,
-          failed_deliveries: 0,
-          minute_count: 0,
-          hour_count: 0,
-          day_count: 0,
-        };
+        return (
+          result.rows[0] || {
+            total_deliveries: 0,
+            successful_deliveries: 0,
+            failed_deliveries: 0,
+            minute_count: 0,
+            hour_count: 0,
+            day_count: 0,
+          }
+        );
       } finally {
         client.release();
       }

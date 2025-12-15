@@ -55,7 +55,6 @@ class Auth0AuthProvider implements AuthProvider {
   final String _domain;
   final String _clientId;
   final String _audience;
-  final String _redirectUrl;
 
   Auth0AuthProvider({
     String? domain,
@@ -69,9 +68,7 @@ class Auth0AuthProvider implements AuthProvider {
                 defaultValue: 'FuXPnevXpp311CdYHGsbNZe9t3D8Ts7A'),
         _audience = audience ??
             const String.fromEnvironment('AUTH0_AUDIENCE',
-                defaultValue: 'https://api.cloudtolocalllm.online'),
-        _redirectUrl =
-            '${UrlSchemeRegistrationService.customScheme}://dev-v2f2p008x3dr74ww.us.auth0.com/windows/${UrlSchemeRegistrationService.customScheme}/callback' {
+                defaultValue: 'https://api.cloudtolocalllm.online') {
     _appLinks = AppLinks();
     _auth0 = Auth0(_domain, _clientId);
   }
@@ -81,10 +78,10 @@ class Auth0AuthProvider implements AuthProvider {
   UserModel? _currentUser;
 
   // Auth0 endpoints
-  String get _authorizationEndpoint => 'https://$_domain/authorize';
-  String get _tokenEndpoint => 'https://$_domain/oauth/token';
+  // String get _authorizationEndpoint => 'https://$_domain/authorize';
+  // String get _tokenEndpoint => 'https://$_domain/oauth/token';
   // String get _userInfoEndpoint => 'https://$_domain/userinfo'; // Not used currently
-  String get _endSessionEndpoint => 'https://$_domain/v2/logout';
+  // String get _endSessionEndpoint => 'https://$_domain/v2/logout';
 
   @override
   Stream<bool> get authStateChanges => _authStateController.stream;
@@ -288,9 +285,9 @@ class Auth0AuthProvider implements AuthProvider {
       // Store new tokens
       await _secureStorage.write(
           key: 'access_token', value: credentials.accessToken);
-      if (credentials.idToken?.isNotEmpty == true) {
+      if (credentials.idToken.isNotEmpty == true) {
         await _secureStorage.write(key: 'id_token', value: credentials.idToken);
-        _currentUser = _idTokenToUser(credentials.idToken!);
+        _currentUser = _idTokenToUser(credentials.idToken);
       }
       if (credentials.refreshToken?.isNotEmpty == true) {
         await _secureStorage.write(

@@ -117,9 +117,12 @@ export class FailoverManager {
       // Start periodic health checks
       this.startHealthChecks();
 
-      logger.info('✅ [Failover] Database failover manager initialized successfully', {
-        state: this.failoverState,
-      });
+      logger.info(
+        '✅ [Failover] Database failover manager initialized successfully',
+        {
+          state: this.failoverState,
+        },
+      );
     } catch (error) {
       logger.error('🔴 [Failover] Failed to initialize failover manager', {
         error: error.message,
@@ -400,9 +403,9 @@ export class FailoverManager {
    */
   updateFailoverState() {
     const primaryHealthy = this.primaryHealthStatus.healthy;
-    const healthyStandbyCount = Array.from(this.standbyHealthStatus.values()).filter(
-      (s) => s.healthy,
-    ).length;
+    const healthyStandbyCount = Array.from(
+      this.standbyHealthStatus.values(),
+    ).filter((s) => s.healthy).length;
 
     if (primaryHealthy && healthyStandbyCount > 0) {
       this.failoverState = FailoverState.HEALTHY;
@@ -423,7 +426,10 @@ export class FailoverManager {
    * Start periodic health checks
    */
   startHealthChecks() {
-    const interval = parseInt(process.env.FAILOVER_HEALTH_CHECK_INTERVAL || '10000', 10);
+    const interval = parseInt(
+      process.env.FAILOVER_HEALTH_CHECK_INTERVAL || '10000',
+      10,
+    );
 
     this.healthCheckInterval = setInterval(async() => {
       try {
@@ -554,7 +560,10 @@ let failoverManager = null;
  * @param {Array} standbyConfigs - Array of standby configurations
  * @returns {Promise<FailoverManager>} Initialized failover manager
  */
-export async function initializeFailoverManager(primaryConfig, standbyConfigs = []) {
+export async function initializeFailoverManager(
+  primaryConfig,
+  standbyConfigs = [],
+) {
   if (failoverManager) {
     return failoverManager;
   }

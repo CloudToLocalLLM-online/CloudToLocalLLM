@@ -288,14 +288,20 @@ export async function getUserActivityLogs(userId, options = {}) {
  * @returns {Promise<number>} Total count of activity logs
  */
 export async function getUserActivityLogsCount(userId, options = {}) {
-  const { action = null, resourceType = null, startDate = null, endDate = null } = options;
+  const {
+    action = null,
+    resourceType = null,
+    startDate = null,
+    endDate = null,
+  } = options;
 
   if (!userId) {
     throw new Error('userId is required');
   }
 
   try {
-    let sql = 'SELECT COUNT(*) as count FROM user_activity_logs WHERE user_id = $1';
+    let sql =
+      'SELECT COUNT(*) as count FROM user_activity_logs WHERE user_id = $1';
     const params = [userId];
     let paramIndex = 2;
 
@@ -513,7 +519,12 @@ export async function getAllUserActivityLogs(options = {}) {
  * @returns {Promise<number>} Total count of activity logs
  */
 export async function getAllUserActivityLogsCount(options = {}) {
-  const { action = null, severity = null, startDate = null, endDate = null } = options;
+  const {
+    action = null,
+    severity = null,
+    startDate = null,
+    endDate = null,
+  } = options;
 
   try {
     let sql = 'SELECT COUNT(*) as count FROM user_activity_logs WHERE 1=1';

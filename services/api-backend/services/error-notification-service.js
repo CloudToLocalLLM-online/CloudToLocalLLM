@@ -73,7 +73,9 @@ export class ErrorNotificationService extends EventEmitter {
     // Configuration
     this.config = {
       enableNotifications: config.enableNotifications !== false,
-      notificationChannels: config.notificationChannels || [NotificationChannel.LOG],
+      notificationChannels: config.notificationChannels || [
+        NotificationChannel.LOG,
+      ],
       criticalErrorThreshold: config.criticalErrorThreshold || 5, // errors per minute
       notificationCooldown: config.notificationCooldown || 60000, // 1 minute
       maxNotificationQueueSize: config.maxNotificationQueueSize || 1000,
@@ -112,114 +114,130 @@ export class ErrorNotificationService extends EventEmitter {
    */
   _initializeDefaultHandlers() {
     // Log handler (always available)
-    this.registerNotificationHandler(NotificationChannel.LOG, async(notification) => {
-      logger.error('Critical error notification', {
-        errorId: notification.errorId,
-        category: notification.category,
-        severity: notification.severity,
-        message: notification.message,
-        timestamp: notification.timestamp,
-      });
-    });
+    this.registerNotificationHandler(
+      NotificationChannel.LOG,
+      async(notification) => {
+        logger.error('Critical error notification', {
+          errorId: notification.errorId,
+          category: notification.category,
+          severity: notification.severity,
+          message: notification.message,
+          timestamp: notification.timestamp,
+        });
+      },
+    );
 
     // Webhook handler (if configured)
     if (this.config.webhookUrl) {
-      this.registerNotificationHandler(NotificationChannel.WEBHOOK, async(notification) => {
-        try {
-          const response = await fetch(this.config.webhookUrl, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${this.config.webhookToken || ''}`,
-            },
-            body: JSON.stringify(notification),
-            timeout: 5000,
-          });
+      this.registerNotificationHandler(
+        NotificationChannel.WEBHOOK,
+        async(notification) => {
+          try {
+            const response = await fetch(this.config.webhookUrl, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${this.config.webhookToken || ''}`,
+              },
+              body: JSON.stringify(notification),
+              timeout: 5000,
+            });
 
-          if (!response.ok) {
-            throw new Error(`Webhook returned status ${response.status}`);
+            if (!response.ok) {
+              throw new Error(`Webhook returned status ${response.status}`);
+            }
+          } catch (error) {
+            logger.error('Failed to send webhook notification', {
+              error: error.message,
+              webhookUrl: this.config.webhookUrl,
+            });
+            throw error;
           }
-        } catch (error) {
-          logger.error('Failed to send webhook notification', {
-            error: error.message,
-            webhookUrl: this.config.webhookUrl,
-          });
-          throw error;
-        }
-      });
+        },
+      );
     }
 
     // Email handler (if configured)
     if (this.config.emailService) {
-      this.registerNotificationHandler(NotificationChannel.EMAIL, async(notification) => {
-        try {
-          await this.config.emailService.sendCriticalErrorNotification(notification);
-        } catch (error) {
-          logger.error('Failed to send email notification', {
-            error: error.message,
-          });
-          throw error;
-        }
-      });
+      this.registerNotificationHandler(
+        NotificationChannel.EMAIL,
+        async(notification) => {
+          try {
+            await this.config.emailService.sendCriticalErrorNotification(
+              notification,
+            );
+          } catch (error) {
+            logger.error('Failed to send email notification', {
+              error: error.message,
+            });
+            throw error;
+          }
+        },
+      );
     }
 
     // Slack handler (if configured)
     if (this.config.slackWebhook) {
-      this.registerNotificationHandler(NotificationChannel.SLACK, async(notification) => {
-        try {
-          const message = {
-            text: `🚨 Critical Error: ${notification.message}`,
-            attachments: [
-              {
-                color: this._getSeverityColor(notification.severity),
-                fields: [
-                  {
-                    title: 'Error ID',
-                    value: notification.errorId,
-                    short: true,
-                  },
-                  {
-                    title: 'Category',
-                    value: notification.category,
-                    short: true,
-                  },
-                  {
-                    title: 'Severity',
-                    value: notification.severity,
-                    short: true,
-                  },
-                  {
-                    title: 'Timestamp',
-                    value: notification.timestamp,
-                    short: true,
-                  },
-                  {
-                    title: 'Details',
-                    value: notification.details || 'N/A',
-                    short: false,
-                  },
-                ],
-              },
-            ],
-          };
+      this.registerNotificationHandler(
+        NotificationChannel.SLACK,
+        async(notification) => {
+          try {
+            const message = {
+              text: `🚨 Critical Error: ${notification.message}`,
+              attachments: [
+                {
+                  color: this._getSeverityColor(notification.severity),
+                  fields: [
+                    {
+                      title: 'Error ID',
+                      value: notification.errorId,
+                      short: true,
+                    },
+                    {
+                      title: 'Category',
+                      value: notification.category,
+                      short: true,
+                    },
+                    {
+                      title: 'Severity',
+                      value: notification.severity,
+                      short: true,
+                    },
+                    {
+                      title: 'Timestamp',
+                      value: notification.timestamp,
+                      short: true,
+                    },
+                    {
+                      title: 'Details',
+                      value: notification.details || 'N/A',
+                      short: false,
+                    },
+                  ],
+                },
+              ],
+            };
 
-          const response = await fetch(this.config.slackWebhook, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(message),
-            timeout: 5000,
-          });
+            const response = await fetch(this.config.slackWebhook, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(message),
+              timeout: 5000,
+            });
 
-          if (!response.ok) {
-            throw new Error(`Slack webhook returned status ${response.status}`);
+            if (!response.ok) {
+              throw new Error(
+                `Slack webhook returned status ${response.status}`,
+              );
+            }
+          } catch (error) {
+            logger.error('Failed to send Slack notification', {
+              error: error.message,
+            });
+            throw error;
           }
-        } catch (error) {
-          logger.error('Failed to send Slack notification', {
-            error: error.message,
-          });
-          throw error;
-        }
-      });
+        },
+      );
     }
   }
 
@@ -291,11 +309,14 @@ export class ErrorNotificationService extends EventEmitter {
       const shouldNotify = this._shouldSendNotification(category, severity);
 
       if (!shouldNotify) {
-        logger.debug('Error detected but notification not sent (cooldown or low severity)', {
-          errorId,
-          category,
-          severity,
-        });
+        logger.debug(
+          'Error detected but notification not sent (cooldown or low severity)',
+          {
+            errorId,
+            category,
+            severity,
+          },
+        );
         return {
           errorId,
           notificationSent: false,
@@ -356,7 +377,11 @@ export class ErrorNotificationService extends EventEmitter {
     if (message.includes('service') || name.includes('service')) {
       return ErrorCategory.SERVICE;
     }
-    if (message.includes('api') || message.includes('fetch') || message.includes('http')) {
+    if (
+      message.includes('api') ||
+      message.includes('fetch') ||
+      message.includes('http')
+    ) {
       return ErrorCategory.EXTERNAL_API;
     }
     if (message.includes('memory') || message.includes('resource')) {
@@ -378,7 +403,10 @@ export class ErrorNotificationService extends EventEmitter {
    */
   _determineSeverity(error, category) {
     // Critical categories
-    if (category === ErrorCategory.DATABASE || category === ErrorCategory.SYSTEM) {
+    if (
+      category === ErrorCategory.DATABASE ||
+      category === ErrorCategory.SYSTEM
+    ) {
       return ErrorSeverity.CRITICAL;
     }
 
@@ -395,7 +423,10 @@ export class ErrorNotificationService extends EventEmitter {
     }
 
     // Default based on category
-    if (category === ErrorCategory.AUTHENTICATION || category === ErrorCategory.SERVICE) {
+    if (
+      category === ErrorCategory.AUTHENTICATION ||
+      category === ErrorCategory.SERVICE
+    ) {
       return ErrorSeverity.HIGH;
     }
 
@@ -486,7 +517,9 @@ export class ErrorNotificationService extends EventEmitter {
    */
   async _sendNotification(notification) {
     const startTime = Date.now();
-    const channels = this.config.notificationChannels || [NotificationChannel.LOG];
+    const channels = this.config.notificationChannels || [
+      NotificationChannel.LOG,
+    ];
 
     for (const channel of channels) {
       try {
@@ -547,11 +580,14 @@ export class ErrorNotificationService extends EventEmitter {
     }
 
     const sum = this.metrics.notificationTimes.reduce((a, b) => a + b, 0);
-    this.metrics.averageNotificationTime = Math.round(sum / this.metrics.notificationTimes.length);
+    this.metrics.averageNotificationTime = Math.round(
+      sum / this.metrics.notificationTimes.length,
+    );
 
     // Keep only last 100 notification times for memory efficiency
     if (this.metrics.notificationTimes.length > 100) {
-      this.metrics.notificationTimes = this.metrics.notificationTimes.slice(-100);
+      this.metrics.notificationTimes =
+        this.metrics.notificationTimes.slice(-100);
     }
   }
 
@@ -567,11 +603,11 @@ export class ErrorNotificationService extends EventEmitter {
     let history = [...this.errorHistory];
 
     if (options.category) {
-      history = history.filter(h => h.category === options.category);
+      history = history.filter((h) => h.category === options.category);
     }
 
     if (options.severity) {
-      history = history.filter(h => h.severity === options.severity);
+      history = history.filter((h) => h.severity === options.severity);
     }
 
     if (options.limit) {
@@ -661,7 +697,9 @@ export class ErrorNotificationService extends EventEmitter {
 // Singleton instance
 export const errorNotificationService = new ErrorNotificationService({
   enableNotifications: process.env.ERROR_NOTIFICATIONS_ENABLED !== 'false',
-  notificationChannels: (process.env.ERROR_NOTIFICATION_CHANNELS || 'log').split(','),
+  notificationChannels: (
+    process.env.ERROR_NOTIFICATION_CHANNELS || 'log'
+  ).split(','),
   criticalErrorThreshold: parseInt(process.env.CRITICAL_ERROR_THRESHOLD || '5'),
   notificationCooldown: parseInt(process.env.NOTIFICATION_COOLDOWN || '60000'),
   webhookUrl: process.env.ERROR_NOTIFICATION_WEBHOOK_URL,

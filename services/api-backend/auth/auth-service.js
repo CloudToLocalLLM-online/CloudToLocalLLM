@@ -17,8 +17,11 @@ import { DatabaseMigratorPG } from '../database/migrate-pg.js';
 export class AuthService {
   constructor(config) {
     this.config = {
-      AUTH0_JWKS_URI: process.env.AUTH0_JWKS_URI || 'https://dev-v2f2p008x3dr74ww.us.auth0.com/.well-known/jwks.json',
-      AUTH0_AUDIENCE: process.env.AUTH0_AUDIENCE || 'https://api.cloudtolocalllm.online',
+      AUTH0_JWKS_URI:
+        process.env.AUTH0_JWKS_URI ||
+        'https://dev-v2f2p008x3dr74ww.us.auth0.com/.well-known/jwks.json',
+      AUTH0_AUDIENCE:
+        process.env.AUTH0_AUDIENCE || 'https://api.cloudtolocalllm.online',
       SESSION_TIMEOUT: parseInt(process.env.SESSION_TIMEOUT) || 3600000, // 1 hour
       MAX_SESSIONS_PER_USER: parseInt(process.env.MAX_SESSIONS_PER_USER) || 5,
       ...config,
@@ -70,7 +73,9 @@ export class AuthService {
       }
       this.initialized = true;
 
-      this.logger.info('Authentication service initialized (Auth0 RS256/ES256)');
+      this.logger.info(
+        'Authentication service initialized (Auth0 RS256/ES256)',
+      );
 
       // Start session cleanup
       this.startSessionCleanup();
@@ -119,7 +124,8 @@ export class AuthService {
         }
       } catch (err) {
         // Handle constraint violations
-        if (err.code === '23505') { // UNIQUE_VIOLATION
+        if (err.code === '23505') {
+          // UNIQUE_VIOLATION
           const wrapper = new Error('UNIQUE constraint failed: ' + err.detail);
           wrapper.code = 'SQLITE_CONSTRAINT'; // Mimic SQLite code for logic compatibility
           throw wrapper;
@@ -131,7 +137,6 @@ export class AuthService {
       if (!this.db.db) {
         await this.db.initialize();
       }
-
     }
   }
 
@@ -184,7 +189,11 @@ export class AuthService {
               } else {
                 // Verify Audience
                 if (decodedToken.aud !== this.config.AUTH0_AUDIENCE) {
-                  reject(new Error(`Invalid audience: expected ${this.config.AUTH0_AUDIENCE}, got ${decodedToken.aud}`));
+                  reject(
+                    new Error(
+                      `Invalid audience: expected ${this.config.AUTH0_AUDIENCE}, got ${decodedToken.aud}`,
+                    ),
+                  );
                 } else {
                   resolve(decodedToken);
                 }
@@ -373,9 +382,11 @@ export class AuthService {
       }
 
       throw new Error('Failed to create user record');
-
     } catch (error) {
-      this.logger.error('Failed to resolve user ID', { auth0Id, error: error.message });
+      this.logger.error('Failed to resolve user ID', {
+        auth0Id,
+        error: error.message,
+      });
       throw error;
     }
   }
@@ -390,7 +401,8 @@ export class AuthService {
     const expiresAt = new Date(tokenPayload.exp * 1000).toISOString();
     const ip = req.ip || req.socket?.remoteAddress;
     const userAgent = req.headers?.['user-agent'];
-    const nowFunc = process.env.DB_TYPE === 'postgresql' ? 'NOW()' : 'CURRENT_TIMESTAMP';
+    const nowFunc =
+      process.env.DB_TYPE === 'postgresql' ? 'NOW()' : 'CURRENT_TIMESTAMP';
 
     try {
       this.logger.info('Creating/updating session', {
@@ -448,7 +460,14 @@ export class AuthService {
         `INSERT INTO user_sessions (user_id, jwt_token_hash, expires_at, ip_address, user_agent${process.env.DB_TYPE === 'postgresql' ? ', session_token' : ''})
          VALUES (?, ?, ?, ?, ?${process.env.DB_TYPE === 'postgresql' ? ', ?' : ''})`,
         process.env.DB_TYPE === 'postgresql'
-          ? [userId, tokenHash, expiresAt, ip, userAgent, this.generateSessionId()]
+          ? [
+            userId,
+            tokenHash,
+            expiresAt,
+            ip,
+            userAgent,
+            this.generateSessionId(),
+          ]
           : [userId, tokenHash, expiresAt, ip, userAgent],
         'run',
       );
@@ -491,8 +510,9 @@ export class AuthService {
     } catch (error) {
       // Handle UNIQUE constraint violation
       if (
-        (error.code === 'SQLITE_CONSTRAINT' && error.message.includes('UNIQUE')) ||
-        (error.message.includes('UNIQUE constraint failed'))
+        (error.code === 'SQLITE_CONSTRAINT' &&
+          error.message.includes('UNIQUE')) ||
+        error.message.includes('UNIQUE constraint failed')
       ) {
         // Resolve logic again just in case
         const userId = await this.resolveUserId(auth0Id, tokenPayload);
@@ -697,14 +717,15 @@ export class AuthService {
       // PG uses 'details' (JSONB), SQLite uses 'metadata' (TEXT)
       // BUT schema.pg.sql says 'details' for audit_logs?
       // YES. schema.pg.sql: details JSONB. schema.sql: metadata TEXT.
-      const jsonColumnName = process.env.DB_TYPE === 'postgresql' ? 'details' : 'metadata';
+      const jsonColumnName =
+        process.env.DB_TYPE === 'postgresql' ? 'details' : 'metadata';
 
       await this.runQuery(
         `INSERT INTO audit_logs (action, resource_type, ${jsonColumnName}, user_id, ip_address, user_agent)
        VALUES (?, ?, ?, ?, ?, ? )`,
         [
           eventType, // action
-          category,  // resource_type
+          category, // resource_type
           metaStr,
           metadata.userId || null,
           metadata.ip || null,
@@ -747,9 +768,10 @@ export class AuthService {
   startSessionCleanup() {
     // Clean up expired sessions every 15 minutes
     setInterval(
-      async () => {
+      async() => {
         try {
-          const nowFunc = process.env.DB_TYPE === 'postgresql' ? 'NOW()' : 'datetime(\'now\')';
+          const nowFunc =
+            process.env.DB_TYPE === 'postgresql' ? 'NOW()' : 'datetime(\'now\')';
           // Clean up expired sessions
           const result = await this.runQuery(
             `UPDATE user_sessions SET is_active = 0
@@ -775,37 +797,47 @@ export class AuthService {
    */
   async getAuthStats() {
     try {
-      const nowFunc = process.env.DB_TYPE === 'postgresql' ? 'NOW()' : 'datetime(\'now\')';
+      const nowFunc =
+        process.env.DB_TYPE === 'postgresql' ? 'NOW()' : 'datetime(\'now\')';
 
       const activeSessions = await this.runQuery(
         'SELECT COUNT(*) as count FROM user_sessions WHERE is_active = 1',
-        [], 'get',
+        [],
+        'get',
       );
 
       const validSessions = await this.runQuery(
         `SELECT COUNT(*) as count FROM user_sessions WHERE expires_at > ${nowFunc}`,
-        [], 'get',
+        [],
+        'get',
       );
 
       const activeUsers = await this.runQuery(
         'SELECT COUNT(DISTINCT user_id) as count FROM user_sessions WHERE is_active = 1',
-        [], 'get',
+        [],
+        'get',
       );
 
       // PG specific interval syntax vs SQLite
-      const interval = process.env.DB_TYPE === 'postgresql' ? 'NOW() - INTERVAL \'24 HOURS\'' : 'datetime(\'now\', \'-24 hours\')';
-      const timestampColumn = process.env.DB_TYPE === 'postgresql' ? 'created_at' : 'timestamp';
+      const interval =
+        process.env.DB_TYPE === 'postgresql'
+          ? 'NOW() - INTERVAL \'24 HOURS\''
+          : 'datetime(\'now\', \'-24 hours\')';
+      const timestampColumn =
+        process.env.DB_TYPE === 'postgresql' ? 'created_at' : 'timestamp';
 
       const authEvents = await this.runQuery(
         `SELECT COUNT(*) as count FROM audit_logs
          WHERE event_category = 'authentication' AND ${timestampColumn} > ${interval}`,
-        [], 'get',
+        [],
+        'get',
       );
 
       const securityEvents = await this.runQuery(
         `SELECT COUNT(*) as count FROM audit_logs
          WHERE event_category = 'security' AND ${timestampColumn} > ${interval}`,
-        [], 'get',
+        [],
+        'get',
       );
 
       return {

@@ -20,7 +20,9 @@ const JWT_AUDIENCE = process.env.JWT_AUDIENCE || DEFAULT_JWT_AUDIENCE;
 const SUPABASE_JWT_SECRET = process.env.SUPABASE_JWT_SECRET;
 
 if (!SUPABASE_JWT_SECRET) {
-  logger.warn('[Auth] SUPABASE_JWT_SECRET is missing. JWT verification will fail.');
+  logger.warn(
+    '[Auth] SUPABASE_JWT_SECRET is missing. JWT verification will fail.',
+  );
 }
 
 // Use AuthService for extended validation/session management
@@ -91,9 +93,12 @@ export async function authenticateJWT(req, res, next) {
       });
     } catch (hs256Error) {
       // If HS256 fails, we'll try RS256 via AuthService below
-      logger.debug(' [Auth] HS256 verification failed, trying RS256 via AuthService', {
-        error: hs256Error.message,
-      });
+      logger.debug(
+        ' [Auth] HS256 verification failed, trying RS256 via AuthService',
+        {
+          error: hs256Error.message,
+        },
+      );
     }
 
     // 2. If HS256 succeeded, use the decoded payload
@@ -119,9 +124,12 @@ export async function authenticateJWT(req, res, next) {
       } catch (serviceError) {
         // If AuthService fails but token is valid HS256, we might still want to proceed
         // depending on strictness. For now, let's fall back to just the token payload.
-        logger.warn(' [Auth] AuthService session tracking failed for HS256 token', {
-          error: serviceError.message,
-        });
+        logger.warn(
+          ' [Auth] AuthService session tracking failed for HS256 token',
+          {
+            error: serviceError.message,
+          },
+        );
         req.user = decoded;
         req.userId = decoded.sub;
         req.auth = { payload: decoded };
@@ -150,7 +158,6 @@ export async function authenticateJWT(req, res, next) {
 
     logger.debug(` [Auth] User authenticated via RS256: ${result.payload.sub}`);
     next();
-
   } catch (error) {
     logger.warn(' [Auth] Token verification failed', {
       message: error.message,
@@ -302,7 +309,8 @@ export function authenticateContainer(req, res, next) {
   // 1. Check timestamp validity (e.g., within 5 minutes)
   const now = Date.now();
   const requestTime = new Date(timestamp).getTime();
-  if (isNaN(requestTime) || Math.abs(now - requestTime) > 300000) { // 5 minutes
+  if (isNaN(requestTime) || Math.abs(now - requestTime) > 300000) {
+    // 5 minutes
     return res.status(403).json({
       error: 'Invalid or expired timestamp',
       code: 'INVALID_TIMESTAMP',
@@ -317,7 +325,12 @@ export function authenticateContainer(req, res, next) {
     .digest('hex');
 
   // 3. Compare signatures
-  if (!crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expectedSignature))) {
+  if (
+    !crypto.timingSafeEqual(
+      Buffer.from(signature),
+      Buffer.from(expectedSignature),
+    )
+  ) {
     return res.status(403).json({
       error: 'Invalid signature',
       code: 'INVALID_SIGNATURE',

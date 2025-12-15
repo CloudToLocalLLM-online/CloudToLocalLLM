@@ -118,10 +118,7 @@ export const proxyProvisionHandler = async(req, res) => {
       },
     });
   } catch (error) {
-    logger.error(
-      `Failed to provision proxy for user ${req.user.sub}:`,
-      error,
-    );
+    logger.error(`Failed to provision proxy for user ${req.user.sub}:`, error);
     res.status(500).json({
       error: 'Failed to provision streaming proxy',
       message: error.message,
@@ -142,10 +139,7 @@ export const proxyStatusHandler = async(req, res) => {
 
     res.json(status);
   } catch (error) {
-    logger.error(
-      `Failed to get proxy status for user ${req.user.sub}:`,
-      error,
-    );
+    logger.error(`Failed to get proxy status for user ${req.user.sub}:`, error);
     res.status(500).json({
       error: 'Failed to get proxy status',
       message: error.message,

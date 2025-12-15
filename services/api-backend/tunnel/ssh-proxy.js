@@ -4,7 +4,6 @@
  */
 
 import { WebSocketServer, createWebSocketStream } from 'ws';
-import net from 'net';
 
 // import ssh2 from 'ssh2'; // Lazy loaded
 // const { Server: SSHServer } = ssh2;
@@ -59,13 +58,13 @@ export class SSHProxy {
    * Setup WebSocket server handlers
    */
   _setupWebSocketServer() {
-    this.wss.on('connection', (ws, request) => {
+    this.wss.on('connection', (ws, _request) => {
       this.logger.info('WebSocket connection established for SSH tunnel');
 
       // Handle WebSocket as SSH connection directly
       // Create a stream from the WebSocket that can be used by SSH server
       const wsStream = createWebSocketStream(ws);
-      
+
       // Emit the connection to the SSH server if it exists
       if (this.sshServer) {
         this.sshServer.emit('connection', wsStream);

@@ -4,7 +4,11 @@
  * Integrates with SystemLoadMonitor to provide dynamic rate limiting
  */
 
-import { TunnelLogger, ERROR_CODES, ErrorResponseBuilder } from '../utils/logger.js';
+import {
+  TunnelLogger,
+  ERROR_CODES,
+  ErrorResponseBuilder,
+} from '../utils/logger.js';
 import { SystemLoadMonitor } from '../services/system-load-monitor.js';
 
 /**
@@ -81,7 +85,9 @@ class AdaptiveUserTracker {
     const windowCutoff = new Date(now.getTime() - windowMs);
     const burstCutoff = new Date(now.getTime() - burstWindowMs);
 
-    this.requests = this.requests.filter((timestamp) => timestamp > windowCutoff);
+    this.requests = this.requests.filter(
+      (timestamp) => timestamp > windowCutoff,
+    );
     this.burstRequests = this.burstRequests.filter(
       (timestamp) => timestamp > burstCutoff,
     );
@@ -120,9 +126,12 @@ export class AdaptiveRateLimiter {
     });
 
     // Cleanup interval
-    this.cleanupInterval = setInterval(() => {
-      this.cleanup();
-    }, 5 * 60 * 1000); // 5 minutes
+    this.cleanupInterval = setInterval(
+      () => {
+        this.cleanup();
+      },
+      5 * 60 * 1000,
+    ); // 5 minutes
 
     this.logger.info('Adaptive rate limiter initialized', {
       baseWindowMs: this.config.baseWindowMs,
@@ -186,7 +195,9 @@ export class AdaptiveRateLimiter {
         burstRequests: counts.burstRequests,
         maxBurstRequests: adaptiveLimits.burstRequests,
         adaptiveMultiplier: adaptiveLimits.multiplier.toFixed(2),
-        systemLoad: this.systemLoadMonitor.currentMetrics.getLoadPercentage().toFixed(2),
+        systemLoad: this.systemLoadMonitor.currentMetrics
+          .getLoadPercentage()
+          .toFixed(2),
       });
 
       return {
@@ -213,7 +224,9 @@ export class AdaptiveRateLimiter {
         windowRequests: counts.windowRequests,
         maxRequests: adaptiveLimits.maxRequests,
         adaptiveMultiplier: adaptiveLimits.multiplier.toFixed(2),
-        systemLoad: this.systemLoadMonitor.currentMetrics.getLoadPercentage().toFixed(2),
+        systemLoad: this.systemLoadMonitor.currentMetrics
+          .getLoadPercentage()
+          .toFixed(2),
       });
 
       return {
@@ -323,7 +336,9 @@ export class AdaptiveRateLimiter {
    */
   cleanup() {
     const now = new Date();
-    const inactiveThreshold = new Date(now.getTime() - this.config.baseWindowMs * 2);
+    const inactiveThreshold = new Date(
+      now.getTime() - this.config.baseWindowMs * 2,
+    );
     const trackersToRemove = [];
 
     for (const [userId, tracker] of this.userTrackers.entries()) {
@@ -391,23 +406,29 @@ export function createAdaptiveRateLimitMiddleware(config = {}) {
       userAgent: req.get('user-agent'),
     };
 
-    const result = rateLimiter.checkRateLimit(userId, correlationId, requestContext);
+    const result = rateLimiter.checkRateLimit(
+      userId,
+      correlationId,
+      requestContext,
+    );
 
     if (!result.allowed) {
       // Set rate limit headers
       if (rateLimiter.config.includeHeaders) {
         res.set({
-          'X-RateLimit-Limit': result.limits?.window?.max || rateLimiter.config.baseMaxRequests,
+          'X-RateLimit-Limit':
+            result.limits?.window?.max || rateLimiter.config.baseMaxRequests,
           'X-RateLimit-Remaining': Math.max(
             0,
             (result.limits?.window?.max || rateLimiter.config.baseMaxRequests) -
-            (result.limits?.window?.current || 0),
+              (result.limits?.window?.current || 0),
           ),
           'X-RateLimit-Reset': new Date(
             Date.now() + result.retryAfter * 1000,
           ).toISOString(),
           'X-RateLimit-Adaptive': 'true',
-          'X-RateLimit-Adaptive-Multiplier': result.limits?.window?.multiplier || '1.0',
+          'X-RateLimit-Adaptive-Multiplier':
+            result.limits?.window?.multiplier || '1.0',
           'Retry-After': result.retryAfter,
         });
       }

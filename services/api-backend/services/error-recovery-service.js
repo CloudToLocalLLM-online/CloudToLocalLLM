@@ -72,7 +72,8 @@ export class ErrorRecoveryService {
 
     this.recoveryProcedures.set(serviceName, {
       procedure: config.procedure,
-      description: config.description || `Recovery procedure for ${serviceName}`,
+      description:
+        config.description || `Recovery procedure for ${serviceName}`,
       prerequisites: config.prerequisites || [],
       timeoutMs: config.timeoutMs || 30000,
       lastAttempt: null,
@@ -101,7 +102,9 @@ export class ErrorRecoveryService {
    */
   async executeRecovery(serviceName, options = {}) {
     if (!this.recoveryProcedures.has(serviceName)) {
-      throw new Error(`No recovery procedure registered for service: ${serviceName}`);
+      throw new Error(
+        `No recovery procedure registered for service: ${serviceName}`,
+      );
     }
 
     const procedure = this.recoveryProcedures.get(serviceName);
@@ -109,7 +112,9 @@ export class ErrorRecoveryService {
 
     // Check if already recovering
     if (status.isRecovering) {
-      throw new Error(`Recovery already in progress for service: ${serviceName}`);
+      throw new Error(
+        `Recovery already in progress for service: ${serviceName}`,
+      );
     }
 
     const startTime = Date.now();
@@ -149,11 +154,14 @@ export class ErrorRecoveryService {
 
       procedure.lastSuccess = new Date().toISOString();
 
-      logger.info(`Recovery procedure completed successfully for service: ${serviceName}`, {
-        recoveryId,
-        duration,
-        result,
-      });
+      logger.info(
+        `Recovery procedure completed successfully for service: ${serviceName}`,
+        {
+          recoveryId,
+          duration,
+          result,
+        },
+      );
 
       this._addToHistory({
         serviceName,
@@ -221,7 +229,10 @@ export class ErrorRecoveryService {
       fn(),
       new Promise((_, reject) =>
         setTimeout(
-          () => reject(new Error(`Recovery procedure timeout after ${timeoutMs}ms`)),
+          () =>
+            reject(
+              new Error(`Recovery procedure timeout after ${timeoutMs}ms`),
+            ),
           timeoutMs,
         ),
       ),
@@ -253,9 +264,11 @@ export class ErrorRecoveryService {
       recoveryCount: status.recoveryCount,
       successCount: status.successCount,
       failureCount: status.failureCount,
-      successRate: status.recoveryCount > 0
-        ? (status.successCount / status.recoveryCount * 100).toFixed(2) + '%'
-        : 'N/A',
+      successRate:
+        status.recoveryCount > 0
+          ? ((status.successCount / status.recoveryCount) * 100).toFixed(2) +
+            '%'
+          : 'N/A',
       description: procedure?.description || 'Unknown',
       prerequisites: procedure?.prerequisites || [],
       timestamp: new Date().toISOString(),
@@ -286,11 +299,11 @@ export class ErrorRecoveryService {
     let history = [...this.recoveryHistory];
 
     if (options.serviceName) {
-      history = history.filter(h => h.serviceName === options.serviceName);
+      history = history.filter((h) => h.serviceName === options.serviceName);
     }
 
     if (options.status) {
-      history = history.filter(h => h.status === options.status);
+      history = history.filter((h) => h.status === options.status);
     }
 
     if (options.limit) {
@@ -328,7 +341,9 @@ export class ErrorRecoveryService {
     }
 
     const sum = this.metrics.recoveryTimes.reduce((a, b) => a + b, 0);
-    this.metrics.averageRecoveryTime = Math.round(sum / this.metrics.recoveryTimes.length);
+    this.metrics.averageRecoveryTime = Math.round(
+      sum / this.metrics.recoveryTimes.length,
+    );
 
     // Keep only last 100 recovery times for memory efficiency
     if (this.metrics.recoveryTimes.length > 100) {
@@ -359,13 +374,18 @@ export class ErrorRecoveryService {
       timestamp: new Date().toISOString(),
       summary: {
         totalServices: statuses.length,
-        servicesRecovering: statuses.filter(s => s.isRecovering).length,
+        servicesRecovering: statuses.filter((s) => s.isRecovering).length,
         totalRecoveryAttempts: this.metrics.totalRecoveryAttempts,
         successfulRecoveries: this.metrics.successfulRecoveries,
         failedRecoveries: this.metrics.failedRecoveries,
-        successRate: this.metrics.totalRecoveryAttempts > 0
-          ? (this.metrics.successfulRecoveries / this.metrics.totalRecoveryAttempts * 100).toFixed(2) + '%'
-          : 'N/A',
+        successRate:
+          this.metrics.totalRecoveryAttempts > 0
+            ? (
+              (this.metrics.successfulRecoveries /
+                  this.metrics.totalRecoveryAttempts) *
+                100
+            ).toFixed(2) + '%'
+            : 'N/A',
         averageRecoveryTime: this.metrics.averageRecoveryTime + 'ms',
       },
       services: statuses,

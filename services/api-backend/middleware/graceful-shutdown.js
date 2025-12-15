@@ -17,10 +17,7 @@ import logger from '../logger.js';
  * @returns {Object} Shutdown manager with control methods
  */
 export function createGracefulShutdownManager(server, options = {}) {
-  const {
-    shutdownTimeoutMs = 10000,
-    onShutdown = null,
-  } = options;
+  const { shutdownTimeoutMs = 10000, onShutdown = null } = options;
 
   let isShuttingDown = false;
   const activeRequests = new Set();

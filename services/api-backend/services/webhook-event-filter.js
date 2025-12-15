@@ -56,7 +56,10 @@ export class WebhookEventFilter {
     }
 
     // Validate filter type
-    if (filterConfig.type && !['include', 'exclude'].includes(filterConfig.type)) {
+    if (
+      filterConfig.type &&
+      !['include', 'exclude'].includes(filterConfig.type)
+    ) {
       errors.push('Filter type must be "include" or "exclude"');
     }
 
@@ -68,7 +71,9 @@ export class WebhookEventFilter {
         for (let i = 0; i < filterConfig.eventPatterns.length; i++) {
           const pattern = filterConfig.eventPatterns[i];
           if (typeof pattern !== 'string' || pattern.trim().length === 0) {
-            errors.push(`Event pattern at index ${i} must be a non-empty string`);
+            errors.push(
+              `Event pattern at index ${i} must be a non-empty string`,
+            );
           }
           // Validate pattern format (simple validation)
           if (!this._isValidEventPattern(pattern)) {
@@ -80,12 +85,19 @@ export class WebhookEventFilter {
 
     // Validate property filters
     if (filterConfig.propertyFilters) {
-      if (typeof filterConfig.propertyFilters !== 'object' || Array.isArray(filterConfig.propertyFilters)) {
+      if (
+        typeof filterConfig.propertyFilters !== 'object' ||
+        Array.isArray(filterConfig.propertyFilters)
+      ) {
         errors.push('Property filters must be an object');
       } else {
-        for (const [key, value] of Object.entries(filterConfig.propertyFilters)) {
+        for (const [key, value] of Object.entries(
+          filterConfig.propertyFilters,
+        )) {
           if (!this._isValidPropertyFilter(value)) {
-            errors.push(`Invalid property filter for "${key}": ${JSON.stringify(value)}`);
+            errors.push(
+              `Invalid property filter for "${key}": ${JSON.stringify(value)}`,
+            );
           }
         }
       }
@@ -96,10 +108,16 @@ export class WebhookEventFilter {
       if (typeof filterConfig.rateLimit !== 'object') {
         errors.push('Rate limit must be an object');
       } else {
-        if (filterConfig.rateLimit.maxEvents !== undefined && typeof filterConfig.rateLimit.maxEvents !== 'number') {
+        if (
+          filterConfig.rateLimit.maxEvents !== undefined &&
+          typeof filterConfig.rateLimit.maxEvents !== 'number'
+        ) {
           errors.push('Rate limit maxEvents must be a number');
         }
-        if (filterConfig.rateLimit.windowSeconds !== undefined && typeof filterConfig.rateLimit.windowSeconds !== 'number') {
+        if (
+          filterConfig.rateLimit.windowSeconds !== undefined &&
+          typeof filterConfig.rateLimit.windowSeconds !== 'number'
+        ) {
           errors.push('Rate limit windowSeconds must be a number');
         }
       }
@@ -137,7 +155,14 @@ export class WebhookEventFilter {
     const { operator, value } = filter;
 
     // Validate operator
-    const validOperators = ['equals', 'contains', 'startsWith', 'endsWith', 'in', 'regex'];
+    const validOperators = [
+      'equals',
+      'contains',
+      'startsWith',
+      'endsWith',
+      'in',
+      'regex',
+    ];
     if (!validOperators.includes(operator)) {
       return false;
     }
@@ -156,7 +181,11 @@ export class WebhookEventFilter {
       }
     }
 
-    return typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean';
+    return (
+      typeof value === 'string' ||
+      typeof value === 'number' ||
+      typeof value === 'boolean'
+    );
   }
 
   /**
@@ -175,7 +204,9 @@ export class WebhookEventFilter {
       // Validate filter configuration
       const validation = this.validateFilterConfig(filterConfig);
       if (!validation.isValid) {
-        throw new Error(`Invalid filter configuration: ${validation.errors.join(', ')}`);
+        throw new Error(
+          `Invalid filter configuration: ${validation.errors.join(', ')}`,
+        );
       }
 
       // Verify webhook ownership
@@ -264,7 +295,9 @@ export class WebhookEventFilter {
       // Validate filter configuration
       const validation = this.validateFilterConfig(filterConfig);
       if (!validation.isValid) {
-        throw new Error(`Invalid filter configuration: ${validation.errors.join(', ')}`);
+        throw new Error(
+          `Invalid filter configuration: ${validation.errors.join(', ')}`,
+        );
       }
 
       // Verify webhook ownership
@@ -358,7 +391,10 @@ export class WebhookEventFilter {
 
     // Check event pattern matching
     if (filterConfig.eventPatterns && filterConfig.eventPatterns.length > 0) {
-      const eventMatches = this._matchesEventPattern(event.type, filterConfig.eventPatterns);
+      const eventMatches = this._matchesEventPattern(
+        event.type,
+        filterConfig.eventPatterns,
+      );
 
       if (filterType === 'include' && !eventMatches) {
         return false;
@@ -371,7 +407,9 @@ export class WebhookEventFilter {
 
     // Check property filters
     if (filterConfig.propertyFilters) {
-      for (const [key, filter] of Object.entries(filterConfig.propertyFilters)) {
+      for (const [key, filter] of Object.entries(
+        filterConfig.propertyFilters,
+      )) {
         const value = this._getNestedProperty(event, key);
 
         if (!this._matchesPropertyFilter(value, filter)) {

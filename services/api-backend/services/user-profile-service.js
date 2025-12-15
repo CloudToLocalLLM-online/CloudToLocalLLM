@@ -141,7 +141,12 @@ export class UserProfileService {
       // Validate and sanitize profile data
       const validation = validateAndSanitizeProfile(profileData.profile || {});
       if (!validation.valid) {
-        logValidationError('PUT /api/users/profile', userId, 'profile', validation.error);
+        logValidationError(
+          'PUT /api/users/profile',
+          userId,
+          'profile',
+          validation.error,
+        );
         throw new Error(validation.error);
       }
 
@@ -158,7 +163,8 @@ export class UserProfileService {
 
         // Update user basic info if provided
         if (sanitizedProfileData.profile) {
-          const { firstName, lastName, nickname, avatar } = sanitizedProfileData.profile;
+          const { firstName, lastName, nickname, avatar } =
+            sanitizedProfileData.profile;
           const fullName = [firstName, lastName].filter(Boolean).join(' ');
 
           const updateQuery = `
@@ -181,7 +187,10 @@ export class UserProfileService {
         }
 
         // Update preferences if provided
-        if (sanitizedProfileData.profile && sanitizedProfileData.profile.preferences) {
+        if (
+          sanitizedProfileData.profile &&
+          sanitizedProfileData.profile.preferences
+        ) {
           const preferencesQuery = `
             INSERT INTO user_preferences (user_id, preferences, created_at, updated_at)
             SELECT u.id, $1::jsonb, NOW(), NOW()
@@ -235,7 +244,12 @@ export class UserProfileService {
       // Validate and sanitize preferences
       const validation = validateAndSanitizePreferences(preferences);
       if (!validation.valid) {
-        logValidationError('PUT /api/users/preferences', userId, 'preferences', validation.error);
+        logValidationError(
+          'PUT /api/users/preferences',
+          userId,
+          'preferences',
+          validation.error,
+        );
         throw new Error(validation.error);
       }
 
@@ -294,11 +308,13 @@ export class UserProfileService {
         throw new Error('User not found');
       }
 
-      return result.rows[0].preferences || {
-        theme: 'light',
-        language: 'en',
-        notifications: true,
-      };
+      return (
+        result.rows[0].preferences || {
+          theme: 'light',
+          language: 'en',
+          notifications: true,
+        }
+      );
     } catch (error) {
       logger.error('[UserProfileService] Error retrieving preferences', {
         userId,
@@ -326,7 +342,12 @@ export class UserProfileService {
     // Validate URL format
     const urlValidation = validateUrl(avatarUrl, false);
     if (!urlValidation.valid) {
-      logValidationError('PUT /api/users/avatar', userId, 'avatarUrl', urlValidation.error);
+      logValidationError(
+        'PUT /api/users/avatar',
+        userId,
+        'avatarUrl',
+        urlValidation.error,
+      );
       throw new Error(urlValidation.error);
     }
 
@@ -362,18 +383,28 @@ export class UserProfileService {
    */
   _validateProfileData(profileData) {
     if (profileData.profile) {
-      const { firstName, lastName, nickname, avatar, preferences } = profileData.profile;
+      const { firstName, lastName, nickname, avatar, preferences } =
+        profileData.profile;
 
       // Validate names
-      if (firstName !== undefined && (typeof firstName !== 'string' || firstName.length > 100)) {
+      if (
+        firstName !== undefined &&
+        (typeof firstName !== 'string' || firstName.length > 100)
+      ) {
         throw new Error('Invalid first name');
       }
 
-      if (lastName !== undefined && (typeof lastName !== 'string' || lastName.length > 100)) {
+      if (
+        lastName !== undefined &&
+        (typeof lastName !== 'string' || lastName.length > 100)
+      ) {
         throw new Error('Invalid last name');
       }
 
-      if (nickname !== undefined && (typeof nickname !== 'string' || nickname.length > 100)) {
+      if (
+        nickname !== undefined &&
+        (typeof nickname !== 'string' || nickname.length > 100)
+      ) {
         throw new Error('Invalid nickname');
       }
 
@@ -416,7 +447,10 @@ export class UserProfileService {
     }
 
     if (preferences.language !== undefined) {
-      if (typeof preferences.language !== 'string' || preferences.language.length > 10) {
+      if (
+        typeof preferences.language !== 'string' ||
+        preferences.language.length > 10
+      ) {
         throw new Error('Invalid language');
       }
     }

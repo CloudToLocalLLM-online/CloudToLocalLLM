@@ -22,7 +22,10 @@
 import express from 'express';
 import { authenticateJWT } from '../middleware/auth.js';
 import { UserProfileService } from '../services/user-profile-service.js';
-import { validateAndSanitizeProfile, validateAndSanitizePreferences } from '../utils/input-validation.js';
+import {
+  validateAndSanitizeProfile,
+  validateAndSanitizePreferences,
+} from '../utils/input-validation.js';
 import logger from '../logger.js';
 
 const router = express.Router();
@@ -38,9 +41,12 @@ export async function initializeUserProfileService() {
     await userProfileService.initialize();
     logger.info('[UserProfileRoutes] User profile service initialized');
   } catch (error) {
-    logger.error('[UserProfileRoutes] Failed to initialize user profile service', {
-      error: error.message,
-    });
+    logger.error(
+      '[UserProfileRoutes] Failed to initialize user profile service',
+      {
+        error: error.message,
+      },
+    );
     throw error;
   }
 }
@@ -445,7 +451,10 @@ router.put('/avatar', authenticateJWT, async(req, res) => {
       });
     }
 
-    const updatedProfile = await userProfileService.updateUserAvatar(userId, avatarUrl);
+    const updatedProfile = await userProfileService.updateUserAvatar(
+      userId,
+      avatarUrl,
+    );
 
     logger.info('[UserProfile] Avatar updated', {
       userId,

@@ -43,20 +43,32 @@ export async function webhookRateLimiterMiddleware(req, res, next) {
 
     // Add rate limit headers to response
     res.set('X-RateLimit-Limit-Minute', rateLimitResult.limits.per_minute.max);
-    res.set('X-RateLimit-Remaining-Minute', Math.max(
-      0,
-      rateLimitResult.limits.per_minute.max - rateLimitResult.limits.per_minute.current,
-    ));
+    res.set(
+      'X-RateLimit-Remaining-Minute',
+      Math.max(
+        0,
+        rateLimitResult.limits.per_minute.max -
+          rateLimitResult.limits.per_minute.current,
+      ),
+    );
     res.set('X-RateLimit-Limit-Hour', rateLimitResult.limits.per_hour.max);
-    res.set('X-RateLimit-Remaining-Hour', Math.max(
-      0,
-      rateLimitResult.limits.per_hour.max - rateLimitResult.limits.per_hour.current,
-    ));
+    res.set(
+      'X-RateLimit-Remaining-Hour',
+      Math.max(
+        0,
+        rateLimitResult.limits.per_hour.max -
+          rateLimitResult.limits.per_hour.current,
+      ),
+    );
     res.set('X-RateLimit-Limit-Day', rateLimitResult.limits.per_day.max);
-    res.set('X-RateLimit-Remaining-Day', Math.max(
-      0,
-      rateLimitResult.limits.per_day.max - rateLimitResult.limits.per_day.current,
-    ));
+    res.set(
+      'X-RateLimit-Remaining-Day',
+      Math.max(
+        0,
+        rateLimitResult.limits.per_day.max -
+          rateLimitResult.limits.per_day.current,
+      ),
+    );
 
     // If rate limit exceeded, return 429
     if (!rateLimitResult.allowed) {

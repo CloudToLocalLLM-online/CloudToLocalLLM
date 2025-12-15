@@ -35,9 +35,12 @@ export class ProxyUsageService {
       }
       logger.info('[ProxyUsageService] Proxy usage service initialized');
     } catch (error) {
-      logger.error('[ProxyUsageService] Failed to initialize proxy usage service', {
-        error: error.message,
-      });
+      logger.error(
+        '[ProxyUsageService] Failed to initialize proxy usage service',
+        {
+          error: error.message,
+        },
+      );
       throw error;
     }
   }
@@ -58,10 +61,17 @@ export class ProxyUsageService {
    */
   async recordUsageEvent(proxyId, userId, eventType, eventData = {}) {
     try {
-      const validEventTypes = ['connection_start', 'connection_end', 'data_transfer', 'error'];
+      const validEventTypes = [
+        'connection_start',
+        'connection_end',
+        'data_transfer',
+        'error',
+      ];
 
       if (!validEventTypes.includes(eventType)) {
-        throw new Error(`Invalid event type. Must be one of: ${validEventTypes.join(', ')}`);
+        throw new Error(
+          `Invalid event type. Must be one of: ${validEventTypes.join(', ')}`,
+        );
       }
 
       const result = await this.pool.query(
@@ -147,7 +157,8 @@ export class ProxyUsageService {
         dataTransferredBytes: metrics.data_transferred_bytes,
         dataReceivedBytes: metrics.data_received_bytes,
         peakConcurrentConnections: metrics.peak_concurrent_connections,
-        averageConnectionDurationSeconds: metrics.average_connection_duration_seconds,
+        averageConnectionDurationSeconds:
+          metrics.average_connection_duration_seconds,
         errorCount: metrics.error_count,
         successCount: metrics.success_count,
       };
@@ -197,18 +208,22 @@ export class ProxyUsageService {
         dataTransferredBytes: metrics.data_transferred_bytes,
         dataReceivedBytes: metrics.data_received_bytes,
         peakConcurrentConnections: metrics.peak_concurrent_connections,
-        averageConnectionDurationSeconds: metrics.average_connection_duration_seconds,
+        averageConnectionDurationSeconds:
+          metrics.average_connection_duration_seconds,
         errorCount: metrics.error_count,
         successCount: metrics.success_count,
       }));
     } catch (error) {
-      logger.error('[ProxyUsageService] Failed to get proxy usage metrics range', {
-        proxyId,
-        userId,
-        startDate,
-        endDate,
-        error: error.message,
-      });
+      logger.error(
+        '[ProxyUsageService] Failed to get proxy usage metrics range',
+        {
+          proxyId,
+          userId,
+          startDate,
+          endDate,
+          error: error.message,
+        },
+      );
       throw error;
     }
   }
@@ -259,7 +274,8 @@ export class ProxyUsageService {
         totalDataReceivedBytes: aggregation.total_data_received_bytes,
         proxyCount: aggregation.proxy_count,
         peakConcurrentConnections: aggregation.peak_concurrent_connections,
-        averageConnectionDurationSeconds: aggregation.average_connection_duration_seconds,
+        averageConnectionDurationSeconds:
+          aggregation.average_connection_duration_seconds,
         totalErrorCount: aggregation.total_error_count,
         totalSuccessCount: aggregation.total_success_count,
       };
@@ -440,7 +456,8 @@ export class ProxyUsageService {
             totalDataTransferredBytes: row.total_data_transferred_bytes,
             totalDataReceivedBytes: row.total_data_received_bytes,
             peakConcurrentConnections: row.peak_concurrent_connections,
-            averageConnectionDurationSeconds: row.average_connection_duration_seconds,
+            averageConnectionDurationSeconds:
+              row.average_connection_duration_seconds,
             totalErrorCount: row.total_error_count,
             totalSuccessCount: row.total_success_count,
           })),
@@ -475,7 +492,8 @@ export class ProxyUsageService {
             totalDataTransferredBytes: row.total_data_transferred_bytes,
             totalDataReceivedBytes: row.total_data_received_bytes,
             peakConcurrentConnections: row.peak_concurrent_connections,
-            averageConnectionDurationSeconds: row.average_connection_duration_seconds,
+            averageConnectionDurationSeconds:
+              row.average_connection_duration_seconds,
             totalErrorCount: row.total_error_count,
             totalSuccessCount: row.total_success_count,
           })),
@@ -505,7 +523,12 @@ export class ProxyUsageService {
   async getBillingSummary(userId, userTier, periodStart, periodEnd) {
     try {
       // Get aggregated usage
-      const aggregation = await this.getUserUsageAggregation(userId, userTier, periodStart, periodEnd);
+      const aggregation = await this.getUserUsageAggregation(
+        userId,
+        userTier,
+        periodStart,
+        periodEnd,
+      );
 
       // Calculate billing based on tier
       let billingAmount = 0;
@@ -521,7 +544,10 @@ export class ProxyUsageService {
         };
       } else if (userTier === 'premium') {
         // Premium tier: $10/month + $0.01 per GB transferred
-        const dataTransferGB = (aggregation.totalDataTransferredBytes + aggregation.totalDataReceivedBytes) / (1024 * 1024 * 1024);
+        const dataTransferGB =
+          (aggregation.totalDataTransferredBytes +
+            aggregation.totalDataReceivedBytes) /
+          (1024 * 1024 * 1024);
         billingAmount = 10 + dataTransferGB * 0.01;
         breakdown = {
           baseCharge: 10,

@@ -26,14 +26,26 @@ const handler = {
           if (prop === 'safeSplice' && Array.isArray(args[0])) {
             return args[0].splice(args[1], args[2], ...args.slice(3));
           }
-          if (prop === 'safeForEach' && Array.isArray(args[0]) && typeof args[1] === 'function') {
+          if (
+            prop === 'safeForEach' &&
+            Array.isArray(args[0]) &&
+            typeof args[1] === 'function'
+          ) {
             args[0].forEach(args[1]);
             return args[0];
           }
-          if (prop === 'safeFilter' && Array.isArray(args[0]) && typeof args[1] === 'function') {
+          if (
+            prop === 'safeFilter' &&
+            Array.isArray(args[0]) &&
+            typeof args[1] === 'function'
+          ) {
             return args[0].filter(args[1]);
           }
-          if (prop === 'safeFind' && Array.isArray(args[0]) && typeof args[1] === 'function') {
+          if (
+            prop === 'safeFind' &&
+            Array.isArray(args[0]) &&
+            typeof args[1] === 'function'
+          ) {
             return args[0].find(args[1]);
           }
           if (prop === 'safeGet') {
@@ -164,16 +176,32 @@ const handler = {
           if (prop === 'safeReverse' && Array.isArray(args[0])) {
             return args[0].reverse();
           }
-          if (prop === 'safeSome' && Array.isArray(args[0]) && typeof args[1] === 'function') {
+          if (
+            prop === 'safeSome' &&
+            Array.isArray(args[0]) &&
+            typeof args[1] === 'function'
+          ) {
             return args[0].some(args[1]);
           }
-          if (prop === 'safeEvery' && Array.isArray(args[0]) && typeof args[1] === 'function') {
+          if (
+            prop === 'safeEvery' &&
+            Array.isArray(args[0]) &&
+            typeof args[1] === 'function'
+          ) {
             return args[0].every(args[1]);
           }
-          if (prop === 'safeReduce' && Array.isArray(args[0]) && typeof args[1] === 'function') {
+          if (
+            prop === 'safeReduce' &&
+            Array.isArray(args[0]) &&
+            typeof args[1] === 'function'
+          ) {
             return args[0].reduce(args[1], args[2]);
           }
-          if (prop === 'safeReduceRight' && Array.isArray(args[0]) && typeof args[1] === 'function') {
+          if (
+            prop === 'safeReduceRight' &&
+            Array.isArray(args[0]) &&
+            typeof args[1] === 'function'
+          ) {
             return args[0].reduceRight(args[1], args[2]);
           }
           if (prop === 'safeFill' && Array.isArray(args[0])) {
@@ -185,10 +213,17 @@ const handler = {
           if (prop === 'safeFlat' && Array.isArray(args[0])) {
             return args[0].flat(args[1]);
           }
-          if (prop === 'safeFlatMap' && Array.isArray(args[0]) && typeof args[1] === 'function') {
+          if (
+            prop === 'safeFlatMap' &&
+            Array.isArray(args[0]) &&
+            typeof args[1] === 'function'
+          ) {
             return args[0].flatMap(args[1]);
           }
-          if (prop === 'safeAt' && (Array.isArray(args[0]) || typeof args[0] === 'string')) {
+          if (
+            prop === 'safeAt' &&
+            (Array.isArray(args[0]) || typeof args[0] === 'string')
+          ) {
             return args[0].at(args[1]);
           }
           if (prop === 'safeWith' && Array.isArray(args[0])) {

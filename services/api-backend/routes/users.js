@@ -122,7 +122,11 @@ router.get('/tier', authenticateJWT, (req, res) => {
     );
 
     // Determine upgrade path
-    const tierHierarchy = [USER_TIERS.FREE, USER_TIERS.PREMIUM, USER_TIERS.ENTERPRISE];
+    const tierHierarchy = [
+      USER_TIERS.FREE,
+      USER_TIERS.PREMIUM,
+      USER_TIERS.ENTERPRISE,
+    ];
     const currentTierIndex = tierHierarchy.indexOf(userTier);
     const nextTier =
       currentTierIndex < tierHierarchy.length - 1
@@ -307,7 +311,11 @@ router.get('/tier/check/:feature', authenticateJWT, (req, res) => {
 
     // Find minimum tier required for this feature
     let minimumTier = null;
-    const tierHierarchy = [USER_TIERS.FREE, USER_TIERS.PREMIUM, USER_TIERS.ENTERPRISE];
+    const tierHierarchy = [
+      USER_TIERS.FREE,
+      USER_TIERS.PREMIUM,
+      USER_TIERS.ENTERPRISE,
+    ];
 
     for (const tier of tierHierarchy) {
       const tierFeatures = getTierFeatures(tier);
@@ -330,7 +338,9 @@ router.get('/tier/check/:feature', authenticateJWT, (req, res) => {
       response.upgrade = {
         requiredTier: minimumTier,
         message: getUpgradeMessage(userTier, feature),
-        upgradeUrl: process.env.UPGRADE_URL || 'https://app.cloudtolocalllm.online/upgrade',
+        upgradeUrl:
+          process.env.UPGRADE_URL ||
+          'https://app.cloudtolocalllm.online/upgrade',
       };
     }
 
@@ -445,7 +455,11 @@ router.get('/tier/tiers', (req, res) => {
       success: true,
       data: {
         tiers,
-        tierHierarchy: [USER_TIERS.FREE, USER_TIERS.PREMIUM, USER_TIERS.ENTERPRISE],
+        tierHierarchy: [
+          USER_TIERS.FREE,
+          USER_TIERS.PREMIUM,
+          USER_TIERS.ENTERPRISE,
+        ],
       },
     });
   } catch (error) {

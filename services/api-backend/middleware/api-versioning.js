@@ -7,8 +7,6 @@
  * Requirements: 12.4
  */
 
-
-
 /**
  * API version configuration
  * Defines supported versions and their status
@@ -78,8 +76,14 @@ export function apiVersioningMiddleware() {
       // Add deprecation headers if version is deprecated
       if (API_VERSIONS[version].status === 'deprecated') {
         res.set('Deprecation', 'true');
-        res.set('Sunset', new Date(API_VERSIONS[version].sunsetAt).toUTCString());
-        res.set('Warning', `299 - "API version ${version} is deprecated. Migrate to v2 before ${API_VERSIONS[version].sunsetAt}"`);
+        res.set(
+          'Sunset',
+          new Date(API_VERSIONS[version].sunsetAt).toUTCString(),
+        );
+        res.set(
+          'Warning',
+          `299 - "API version ${version} is deprecated. Migrate to v2 before ${API_VERSIONS[version].sunsetAt}"`,
+        );
       }
     } else {
       // No version in URL, use default

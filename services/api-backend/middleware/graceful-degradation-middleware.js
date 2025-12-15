@@ -34,7 +34,10 @@ const logger = winston.createLogger({
  * @param {Object} options - Configuration options
  * @returns {Function} - Express middleware
  */
-export function createGracefulDegradationMiddleware(serviceName, _options = {}) {
+export function createGracefulDegradationMiddleware(
+  serviceName,
+  _options = {},
+) {
   return (req, res, next) => {
     const status = gracefulDegradationService.getStatus(serviceName);
 
@@ -42,11 +45,17 @@ export function createGracefulDegradationMiddleware(serviceName, _options = {}) 
     req.degradationStatus = status;
 
     // If service is degraded and endpoint is critical, return error
-    if (status.isDegraded && gracefulDegradationService.isCriticalEndpoint(serviceName, req.path)) {
-      logger.warn(`Critical endpoint accessed during degradation: ${req.path}`, {
-        service: serviceName,
-        degradationReason: status.reason,
-      });
+    if (
+      status.isDegraded &&
+      gracefulDegradationService.isCriticalEndpoint(serviceName, req.path)
+    ) {
+      logger.warn(
+        `Critical endpoint accessed during degradation: ${req.path}`,
+        {
+          service: serviceName,
+          degradationReason: status.reason,
+        },
+      );
 
       return res.status(503).json({
         error: {
@@ -135,7 +144,11 @@ export function markServiceDegraded(req, res) {
     });
   }
 
-  gracefulDegradationService.markDegraded(serviceName, reason || 'Manual degradation', severity || 'warning');
+  gracefulDegradationService.markDegraded(
+    serviceName,
+    reason || 'Manual degradation',
+    severity || 'warning',
+  );
 
   const status = gracefulDegradationService.getStatus(serviceName);
   res.json({
@@ -207,8 +220,18 @@ export function resetAllDegradation(req, res) {
  * @param {Array} args - Arguments to pass to the function
  * @returns {Promise} - Result of primary or fallback function
  */
-export async function executeWithGracefulDegradation(serviceName, primaryFn, context = null, args = []) {
-  return gracefulDegradationService.executeWithFallback(serviceName, primaryFn, context, args);
+export async function executeWithGracefulDegradation(
+  serviceName,
+  primaryFn,
+  context = null,
+  args = [],
+) {
+  return gracefulDegradationService.executeWithFallback(
+    serviceName,
+    primaryFn,
+    context,
+    args,
+  );
 }
 
 /**
@@ -220,12 +243,16 @@ export function createReducedFunctionalityMiddleware(serviceName) {
   return (req, res, next) => {
     const status = gracefulDegradationService.getStatus(serviceName);
 
-    if (status.isDegraded && !gracefulDegradationService.isCriticalEndpoint(serviceName, req.path)) {
+    if (
+      status.isDegraded &&
+      !gracefulDegradationService.isCriticalEndpoint(serviceName, req.path)
+    ) {
       // Add reduced functionality info to request
-      req.reducedFunctionality = gracefulDegradationService.getReducedFunctionalityResponse(
-        serviceName,
-        req.path,
-      );
+      req.reducedFunctionality =
+        gracefulDegradationService.getReducedFunctionalityResponse(
+          serviceName,
+          req.path,
+        );
     }
 
     next();

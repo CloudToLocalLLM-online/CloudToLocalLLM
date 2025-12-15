@@ -239,7 +239,10 @@ export function validateName(name, maxLength = 100) {
   }
 
   if (!isValidLength(name, 0, maxLength)) {
-    return { valid: false, error: `Name must be between 0 and ${maxLength} characters` };
+    return {
+      valid: false,
+      error: `Name must be between 0 and ${maxLength} characters`,
+    };
   }
 
   // Check for potentially malicious patterns
@@ -301,7 +304,10 @@ export function validateTheme(theme) {
   const validThemes = ['light', 'dark'];
 
   if (!isOneOf(theme, validThemes)) {
-    return { valid: false, error: `Theme must be one of: ${validThemes.join(', ')}` };
+    return {
+      valid: false,
+      error: `Theme must be one of: ${validThemes.join(', ')}`,
+    };
   }
 
   return { valid: true };
@@ -320,7 +326,10 @@ export function validateLanguage(language, maxLength = 10) {
   }
 
   if (!isValidLength(language, 1, maxLength)) {
-    return { valid: false, error: `Language must be between 1 and ${maxLength} characters` };
+    return {
+      valid: false,
+      error: `Language must be between 1 and ${maxLength} characters`,
+    };
   }
 
   // Language codes should be alphanumeric with hyphens (e.g., en-US)
@@ -374,7 +383,9 @@ export function validatePreferences(preferences) {
 
   // Validate notifications if provided
   if (preferences.notifications !== undefined) {
-    const notificationsValidation = validateNotifications(preferences.notifications);
+    const notificationsValidation = validateNotifications(
+      preferences.notifications,
+    );
     if (!notificationsValidation.valid) {
       return notificationsValidation;
     }
@@ -417,7 +428,10 @@ export function validateProfile(profile) {
     }
 
     if (!isValidLength(profile.nickname, 0, 100)) {
-      return { valid: false, error: 'Nickname must be between 0 and 100 characters' };
+      return {
+        valid: false,
+        error: 'Nickname must be between 0 and 100 characters',
+      };
     }
   }
 
@@ -458,7 +472,11 @@ export function sanitizeInput(input, stringFields = []) {
   for (const [key, value] of Object.entries(input)) {
     if (stringFields.includes(key) && typeof value === 'string') {
       sanitized[key] = sanitizeString(value);
-    } else if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+    } else if (
+      typeof value === 'object' &&
+      value !== null &&
+      !Array.isArray(value)
+    ) {
       // Recursively sanitize nested objects
       sanitized[key] = sanitizeInput(value, stringFields);
     } else {
@@ -526,7 +544,13 @@ export function validateAndSanitizePreferences(preferences) {
  * @param {string} reason - Reason for validation failure
  * @param {Object} context - Additional context
  */
-export function logValidationError(endpoint, userId, field, reason, context = {}) {
+export function logValidationError(
+  endpoint,
+  userId,
+  field,
+  reason,
+  context = {},
+) {
   logger.warn('[InputValidation] Validation error', {
     endpoint,
     userId,
@@ -547,7 +571,12 @@ export function logValidationError(endpoint, userId, field, reason, context = {}
 export function validateInput(value, name, type) {
   // Handle uuid type check (string with specific format)
   if (type === 'uuid') {
-    if (typeof value !== 'string' || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value)) {
+    if (
+      typeof value !== 'string' ||
+      !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+        value,
+      )
+    ) {
       throw new Error(`Invalid ${name}: expected UUID`);
     }
     return;

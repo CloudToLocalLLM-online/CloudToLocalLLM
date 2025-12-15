@@ -8,12 +8,7 @@ import db from '../database/db-pool.js';
  */
 router.post('/', async(req, res) => {
   try {
-    const {
-      userId,
-      token,
-      expiresAt,
-      userProfile,
-    } = req.body;
+    const { userId, token, expiresAt, userProfile } = req.body;
 
     if (!userId || !token || !expiresAt) {
       return res

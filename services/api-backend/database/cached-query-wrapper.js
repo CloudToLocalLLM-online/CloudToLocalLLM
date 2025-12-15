@@ -37,7 +37,7 @@ function extractTableNames(queryText) {
   // Match FROM clause
   const fromMatch = trimmed.match(/FROM\s+(\w+)/gi);
   if (fromMatch) {
-    fromMatch.forEach(match => {
+    fromMatch.forEach((match) => {
       const tableName = match.replace(/FROM\s+/i, '').trim();
       if (tableName && !tables.includes(tableName)) {
         tables.push(tableName);
@@ -48,7 +48,7 @@ function extractTableNames(queryText) {
   // Match JOIN clauses
   const joinMatch = trimmed.match(/JOIN\s+(\w+)/gi);
   if (joinMatch) {
-    joinMatch.forEach(match => {
+    joinMatch.forEach((match) => {
       const tableName = match.replace(/JOIN\s+/i, '').trim();
       if (tableName && !tables.includes(tableName)) {
         tables.push(tableName);
@@ -57,7 +57,9 @@ function extractTableNames(queryText) {
   }
 
   // Match INSERT/UPDATE/DELETE
-  const mutationMatch = trimmed.match(/(?:INSERT INTO|UPDATE|DELETE FROM)\s+(\w+)/i);
+  const mutationMatch = trimmed.match(
+    /(?:INSERT INTO|UPDATE|DELETE FROM)\s+(\w+)/i,
+  );
   if (mutationMatch) {
     const tableName = mutationMatch[1];
     if (tableName && !tables.includes(tableName)) {
@@ -106,8 +108,8 @@ export async function executeCachedQuery(
   if (shouldCache && result) {
     const ttl = options.ttl || 5 * 60 * 1000; // 5 minutes default
     const tables = extractTableNames(queryText);
-    const dependencies = tables.map(table => `table:${table}`);
-    const tableNamesUpperCase = tables.map(t => t.toUpperCase());
+    const dependencies = tables.map((table) => `table:${table}`);
+    const tableNamesUpperCase = tables.map((t) => t.toUpperCase());
 
     cache.set(cacheKey, result, ttl, dependencies, tableNamesUpperCase);
 
@@ -177,7 +179,9 @@ export function wrapPoolWithCache(pool, options = {}) {
     );
   };
 
-  logger.info('🔵 [Cached Query Wrapper] Pool query method wrapped with caching');
+  logger.info(
+    '🔵 [Cached Query Wrapper] Pool query method wrapped with caching',
+  );
 
   return pool;
 }
@@ -212,7 +216,9 @@ export function wrapClientWithCache(client, options = {}) {
 export function invalidateCacheForTable(tableName) {
   const cache = getQueryCache();
   const count = cache.invalidateByTable(tableName);
-  logger.debug(`[Cached Query] Invalidated ${count} cache entries for table: ${tableName}`);
+  logger.debug(
+    `[Cached Query] Invalidated ${count} cache entries for table: ${tableName}`,
+  );
   return count;
 }
 

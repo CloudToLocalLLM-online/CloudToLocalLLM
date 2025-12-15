@@ -17,7 +17,11 @@ import logger from '../logger.js';
 export function createRequestValidationMiddleware() {
   return (req, res, next) => {
     // Skip validation for GET and HEAD requests
-    if (req.method === 'GET' || req.method === 'HEAD' || req.method === 'OPTIONS') {
+    if (
+      req.method === 'GET' ||
+      req.method === 'HEAD' ||
+      req.method === 'OPTIONS'
+    ) {
       return next();
     }
 
@@ -57,7 +61,8 @@ export function createRequestValidationMiddleware() {
       return res.status(415).json({
         error: 'Unsupported media type',
         code: 'UNSUPPORTED_MEDIA_TYPE',
-        message: 'Content-Type must be application/json or application/x-www-form-urlencoded',
+        message:
+          'Content-Type must be application/json or application/x-www-form-urlencoded',
         correlationId: req.correlationId,
       });
     }

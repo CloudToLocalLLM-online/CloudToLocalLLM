@@ -37,9 +37,12 @@ export async function initializeTunnelFailoverService() {
     await failoverService.initialize();
     logger.info('[TunnelFailoverRoutes] Tunnel failover service initialized');
   } catch (error) {
-    logger.error('[TunnelFailoverRoutes] Failed to initialize tunnel failover service', {
-      error: error.message,
-    });
+    logger.error(
+      '[TunnelFailoverRoutes] Failed to initialize tunnel failover service',
+      {
+        error: error.message,
+      },
+    );
     throw error;
   }
 }
@@ -61,59 +64,63 @@ export async function initializeTunnelFailoverService() {
  * Authentication: Required (JWT)
  * Rate Limit: Standard (100 req/min)
  */
-router.get('/:tunnelId/failover/endpoint', authenticateJWT, async(req, res) => {
-  try {
-    if (!req.user) {
-      return res.status(401).json({
-        error: 'Authentication required',
-        code: 'AUTH_REQUIRED',
-        message: 'Please authenticate to access tunnel endpoints',
+router.get(
+  '/:tunnelId/failover/endpoint',
+  authenticateJWT,
+  async(req, res) => {
+    try {
+      if (!req.user) {
+        return res.status(401).json({
+          error: 'Authentication required',
+          code: 'AUTH_REQUIRED',
+          message: 'Please authenticate to access tunnel endpoints',
+        });
+      }
+
+      if (!failoverService) {
+        return res.status(503).json({
+          error: 'Service unavailable',
+          code: 'SERVICE_UNAVAILABLE',
+          message: 'Tunnel failover service is not initialized',
+        });
+      }
+
+      const { tunnelId } = req.params;
+
+      const endpoint = await failoverService.selectEndpoint(tunnelId);
+
+      if (!endpoint) {
+        return res.status(404).json({
+          error: 'No endpoints available',
+          code: 'NO_ENDPOINTS',
+          message: 'No endpoints found for this tunnel',
+        });
+      }
+
+      res.json({
+        endpoint: {
+          id: endpoint.id,
+          url: endpoint.url,
+          priority: endpoint.priority,
+          weight: endpoint.weight,
+          healthStatus: endpoint.health_status,
+          lastHealthCheck: endpoint.last_health_check,
+        },
+      });
+    } catch (error) {
+      logger.error('[TunnelFailoverRoutes] Failed to get endpoint', {
+        tunnelId: req.params.tunnelId,
+        error: error.message,
+      });
+
+      res.status(500).json({
+        error: 'Failed to get endpoint',
+        code: 'ENDPOINT_SELECTION_FAILED',
+        message: error.message,
       });
     }
-
-    if (!failoverService) {
-      return res.status(503).json({
-        error: 'Service unavailable',
-        code: 'SERVICE_UNAVAILABLE',
-        message: 'Tunnel failover service is not initialized',
-      });
-    }
-
-    const { tunnelId } = req.params;
-
-    const endpoint = await failoverService.selectEndpoint(tunnelId);
-
-    if (!endpoint) {
-      return res.status(404).json({
-        error: 'No endpoints available',
-        code: 'NO_ENDPOINTS',
-        message: 'No endpoints found for this tunnel',
-      });
-    }
-
-    res.json({
-      endpoint: {
-        id: endpoint.id,
-        url: endpoint.url,
-        priority: endpoint.priority,
-        weight: endpoint.weight,
-        healthStatus: endpoint.health_status,
-        lastHealthCheck: endpoint.last_health_check,
-      },
-    });
-  } catch (error) {
-    logger.error('[TunnelFailoverRoutes] Failed to get endpoint', {
-      tunnelId: req.params.tunnelId,
-      error: error.message,
-    });
-
-    res.status(500).json({
-      error: 'Failed to get endpoint',
-      code: 'ENDPOINT_SELECTION_FAILED',
-      message: error.message,
-    });
-  }
-});
+  },
+);
 
 /**
  * GET /api/tunnels/:tunnelId/failover/status
@@ -220,7 +227,11 @@ router.post('/:tunnelId/failover/manual', authenticateJWT, async(req, res) => {
       });
     }
 
-    const endpoint = await failoverService.manualFailover(tunnelId, endpointId, userId);
+    const endpoint = await failoverService.manualFailover(
+      tunnelId,
+      endpointId,
+      userId,
+    );
 
     res.json({
       message: 'Manual failover triggered',
@@ -279,63 +290,67 @@ router.post('/:tunnelId/failover/manual', authenticateJWT, async(req, res) => {
  * Authentication: Required (JWT)
  * Rate Limit: Standard (100 req/min)
  */
-router.post('/:tunnelId/failover/record-failure', authenticateJWT, async(req, res) => {
-  try {
-    if (!req.user) {
-      return res.status(401).json({
-        error: 'Authentication required',
-        code: 'AUTH_REQUIRED',
-        message: 'Please authenticate to record endpoint failure',
-      });
-    }
+router.post(
+  '/:tunnelId/failover/record-failure',
+  authenticateJWT,
+  async(req, res) => {
+    try {
+      if (!req.user) {
+        return res.status(401).json({
+          error: 'Authentication required',
+          code: 'AUTH_REQUIRED',
+          message: 'Please authenticate to record endpoint failure',
+        });
+      }
 
-    if (!failoverService) {
-      return res.status(503).json({
-        error: 'Service unavailable',
-        code: 'SERVICE_UNAVAILABLE',
-        message: 'Tunnel failover service is not initialized',
-      });
-    }
+      if (!failoverService) {
+        return res.status(503).json({
+          error: 'Service unavailable',
+          code: 'SERVICE_UNAVAILABLE',
+          message: 'Tunnel failover service is not initialized',
+        });
+      }
 
-    const { tunnelId } = req.params;
-    const { endpointId, error } = req.body;
+      const { tunnelId } = req.params;
+      const { endpointId, error } = req.body;
 
-    if (!endpointId) {
-      return res.status(400).json({
-        error: 'Missing required field',
-        code: 'MISSING_ENDPOINT_ID',
-        message: 'endpointId is required',
-      });
-    }
+      if (!endpointId) {
+        return res.status(400).json({
+          error: 'Missing required field',
+          code: 'MISSING_ENDPOINT_ID',
+          message: 'endpointId is required',
+        });
+      }
 
-    const state = await failoverService.recordEndpointFailure(
-      endpointId,
-      tunnelId,
-      error || 'Unknown error',
-    );
-
-    res.json({
-      message: 'Endpoint failure recorded',
-      state: {
+      const state = await failoverService.recordEndpointFailure(
         endpointId,
-        failureCount: state.failureCount,
-        lastFailure: state.lastFailure,
-        isUnhealthy: state.isUnhealthy,
-      },
-    });
-  } catch (error) {
-    logger.error('[TunnelFailoverRoutes] Failed to record endpoint failure', {
-      tunnelId: req.params.tunnelId,
-      error: error.message,
-    });
+        tunnelId,
+        error || 'Unknown error',
+      );
 
-    res.status(500).json({
-      error: 'Failed to record endpoint failure',
-      code: 'RECORD_FAILURE_FAILED',
-      message: error.message,
-    });
-  }
-});
+      res.json({
+        message: 'Endpoint failure recorded',
+        state: {
+          endpointId,
+          failureCount: state.failureCount,
+          lastFailure: state.lastFailure,
+          isUnhealthy: state.isUnhealthy,
+        },
+      });
+    } catch (error) {
+      logger.error('[TunnelFailoverRoutes] Failed to record endpoint failure', {
+        tunnelId: req.params.tunnelId,
+        error: error.message,
+      });
+
+      res.status(500).json({
+        error: 'Failed to record endpoint failure',
+        code: 'RECORD_FAILURE_FAILED',
+        message: error.message,
+      });
+    }
+  },
+);
 
 /**
  * POST /api/tunnels/:tunnelId/failover/record-success
@@ -353,53 +368,57 @@ router.post('/:tunnelId/failover/record-failure', authenticateJWT, async(req, re
  * Authentication: Required (JWT)
  * Rate Limit: Standard (100 req/min)
  */
-router.post('/:tunnelId/failover/record-success', authenticateJWT, async(req, res) => {
-  try {
-    if (!req.user) {
-      return res.status(401).json({
-        error: 'Authentication required',
-        code: 'AUTH_REQUIRED',
-        message: 'Please authenticate to record endpoint success',
+router.post(
+  '/:tunnelId/failover/record-success',
+  authenticateJWT,
+  async(req, res) => {
+    try {
+      if (!req.user) {
+        return res.status(401).json({
+          error: 'Authentication required',
+          code: 'AUTH_REQUIRED',
+          message: 'Please authenticate to record endpoint success',
+        });
+      }
+
+      if (!failoverService) {
+        return res.status(503).json({
+          error: 'Service unavailable',
+          code: 'SERVICE_UNAVAILABLE',
+          message: 'Tunnel failover service is not initialized',
+        });
+      }
+
+      const { endpointId } = req.body;
+
+      if (!endpointId) {
+        return res.status(400).json({
+          error: 'Missing required field',
+          code: 'MISSING_ENDPOINT_ID',
+          message: 'endpointId is required',
+        });
+      }
+
+      await failoverService.recordEndpointSuccess(endpointId);
+
+      res.json({
+        message: 'Endpoint success recorded',
+        endpointId,
+      });
+    } catch (error) {
+      logger.error('[TunnelFailoverRoutes] Failed to record endpoint success', {
+        tunnelId: req.params.tunnelId,
+        error: error.message,
+      });
+
+      res.status(500).json({
+        error: 'Failed to record endpoint success',
+        code: 'RECORD_SUCCESS_FAILED',
+        message: error.message,
       });
     }
-
-    if (!failoverService) {
-      return res.status(503).json({
-        error: 'Service unavailable',
-        code: 'SERVICE_UNAVAILABLE',
-        message: 'Tunnel failover service is not initialized',
-      });
-    }
-
-    const { endpointId } = req.body;
-
-    if (!endpointId) {
-      return res.status(400).json({
-        error: 'Missing required field',
-        code: 'MISSING_ENDPOINT_ID',
-        message: 'endpointId is required',
-      });
-    }
-
-    await failoverService.recordEndpointSuccess(endpointId);
-
-    res.json({
-      message: 'Endpoint success recorded',
-      endpointId,
-    });
-  } catch (error) {
-    logger.error('[TunnelFailoverRoutes] Failed to record endpoint success', {
-      tunnelId: req.params.tunnelId,
-      error: error.message,
-    });
-
-    res.status(500).json({
-      error: 'Failed to record endpoint success',
-      code: 'RECORD_SUCCESS_FAILED',
-      message: error.message,
-    });
-  }
-});
+  },
+);
 
 /**
  * POST /api/tunnels/:tunnelId/failover/reset-failures
@@ -417,52 +436,56 @@ router.post('/:tunnelId/failover/record-success', authenticateJWT, async(req, re
  * Authentication: Required (JWT)
  * Rate Limit: Standard (100 req/min)
  */
-router.post('/:tunnelId/failover/reset-failures', authenticateJWT, async(req, res) => {
-  try {
-    if (!req.user) {
-      return res.status(401).json({
-        error: 'Authentication required',
-        code: 'AUTH_REQUIRED',
-        message: 'Please authenticate to reset endpoint failures',
+router.post(
+  '/:tunnelId/failover/reset-failures',
+  authenticateJWT,
+  async(req, res) => {
+    try {
+      if (!req.user) {
+        return res.status(401).json({
+          error: 'Authentication required',
+          code: 'AUTH_REQUIRED',
+          message: 'Please authenticate to reset endpoint failures',
+        });
+      }
+
+      if (!failoverService) {
+        return res.status(503).json({
+          error: 'Service unavailable',
+          code: 'SERVICE_UNAVAILABLE',
+          message: 'Tunnel failover service is not initialized',
+        });
+      }
+
+      const { endpointId } = req.body;
+
+      if (!endpointId) {
+        return res.status(400).json({
+          error: 'Missing required field',
+          code: 'MISSING_ENDPOINT_ID',
+          message: 'endpointId is required',
+        });
+      }
+
+      await failoverService.resetEndpointFailureCount(endpointId);
+
+      res.json({
+        message: 'Endpoint failure count reset',
+        endpointId,
+      });
+    } catch (error) {
+      logger.error('[TunnelFailoverRoutes] Failed to reset endpoint failures', {
+        tunnelId: req.params.tunnelId,
+        error: error.message,
+      });
+
+      res.status(500).json({
+        error: 'Failed to reset endpoint failures',
+        code: 'RESET_FAILURES_FAILED',
+        message: error.message,
       });
     }
-
-    if (!failoverService) {
-      return res.status(503).json({
-        error: 'Service unavailable',
-        code: 'SERVICE_UNAVAILABLE',
-        message: 'Tunnel failover service is not initialized',
-      });
-    }
-
-    const { endpointId } = req.body;
-
-    if (!endpointId) {
-      return res.status(400).json({
-        error: 'Missing required field',
-        code: 'MISSING_ENDPOINT_ID',
-        message: 'endpointId is required',
-      });
-    }
-
-    await failoverService.resetEndpointFailureCount(endpointId);
-
-    res.json({
-      message: 'Endpoint failure count reset',
-      endpointId,
-    });
-  } catch (error) {
-    logger.error('[TunnelFailoverRoutes] Failed to reset endpoint failures', {
-      tunnelId: req.params.tunnelId,
-      error: error.message,
-    });
-
-    res.status(500).json({
-      error: 'Failed to reset endpoint failures',
-      code: 'RESET_FAILURES_FAILED',
-      message: error.message,
-    });
-  }
-});
+  },
+);
 
 export default router;

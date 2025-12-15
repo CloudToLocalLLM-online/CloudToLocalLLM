@@ -79,7 +79,9 @@ export class GracefulDegradationService {
       retryConfig: config.retryConfig || { maxRetries: 3, backoffMs: 1000 },
     });
 
-    logger.info(`Service registered for degradation management: ${serviceName}`);
+    logger.info(
+      `Service registered for degradation management: ${serviceName}`,
+    );
   }
 
   /**
@@ -127,7 +129,9 @@ export class GracefulDegradationService {
       this.metrics.activeDegradations--;
       this.metrics.recoveries++;
 
-      const degradationDuration = Date.now() - (this.degradationStartTimes.get(serviceName) || Date.now());
+      const degradationDuration =
+        Date.now() -
+        (this.degradationStartTimes.get(serviceName) || Date.now());
       logger.info(`Service recovered: ${serviceName}`, {
         degradationDurationMs: degradationDuration,
         timestamp: new Date().toISOString(),
@@ -278,8 +282,9 @@ export class GracefulDegradationService {
   getMetrics() {
     return {
       ...this.metrics,
-      activeDegradedServices: Array.from(this.degradationStates.values())
-        .filter(state => state.isDegraded).length,
+      activeDegradedServices: Array.from(
+        this.degradationStates.values(),
+      ).filter((state) => state.isDegraded).length,
       timestamp: new Date().toISOString(),
     };
   }
@@ -300,7 +305,7 @@ export class GracefulDegradationService {
    */
   getReport() {
     const statuses = this.getAllStatuses();
-    const degradedServices = statuses.filter(s => s.isDegraded);
+    const degradedServices = statuses.filter((s) => s.isDegraded);
 
     return {
       timestamp: new Date().toISOString(),
@@ -311,8 +316,12 @@ export class GracefulDegradationService {
       metrics: this.getMetrics(),
       summary: {
         overallStatus: degradedServices.length === 0 ? 'healthy' : 'degraded',
-        criticalDegradations: degradedServices.filter(s => s.severity === 'critical').length,
-        warningDegradations: degradedServices.filter(s => s.severity === 'warning').length,
+        criticalDegradations: degradedServices.filter(
+          (s) => s.severity === 'critical',
+        ).length,
+        warningDegradations: degradedServices.filter(
+          (s) => s.severity === 'warning',
+        ).length,
       },
     };
   }

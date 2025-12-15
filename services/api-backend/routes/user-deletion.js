@@ -36,9 +36,12 @@ export async function initializeUserDeletionService() {
     await userDeletionService.initialize();
     logger.info('[UserDeletionRoutes] User deletion service initialized');
   } catch (error) {
-    logger.error('[UserDeletionRoutes] Failed to initialize user deletion service', {
-      error: error.message,
-    });
+    logger.error(
+      '[UserDeletionRoutes] Failed to initialize user deletion service',
+      {
+        error: error.message,
+      },
+    );
     throw error;
   }
 }
@@ -102,8 +105,10 @@ router.delete('/:id', authenticateJWT, async(req, res) => {
     }
 
     // Get deletion options from query params or body
-    const softDelete = req.query.softDelete !== 'false' && req.body.softDelete !== false;
-    const reason = req.body.reason || req.query.reason || 'User requested deletion';
+    const softDelete =
+      req.query.softDelete !== 'false' && req.body.softDelete !== false;
+    const reason =
+      req.body.reason || req.query.reason || 'User requested deletion';
 
     logger.info('[UserDeletion] Account deletion initiated', {
       userId,
@@ -301,7 +306,8 @@ router.get('/:id/deletion-status', authenticateJWT, async(req, res) => {
           isDeleted: true,
           ...deletionInfo,
           restorationDeadline: new Date(
-            new Date(deletionInfo.deletedAt).getTime() + 30 * 24 * 60 * 60 * 1000,
+            new Date(deletionInfo.deletedAt).getTime() +
+              30 * 24 * 60 * 60 * 1000,
           ).toISOString(),
         },
         timestamp: new Date().toISOString(),
@@ -371,7 +377,9 @@ router.post('/:id/permanent-delete', authenticateJWT, async(req, res) => {
     }
 
     // Check if user is admin (this would be checked via RBAC middleware in production)
-    const isAdmin = req.user.role === 'admin' || req.user.permissions?.includes('admin:delete');
+    const isAdmin =
+      req.user.role === 'admin' ||
+      req.user.permissions?.includes('admin:delete');
 
     if (!isAdmin) {
       logger.warn('[UserDeletion] Unauthorized permanent deletion attempt', {

@@ -152,10 +152,14 @@ export class RateLimitExemptionManager {
       this.config.exemptionTypes.AUTHENTICATION,
       (req) => {
         return (
-          (req.path === '/auth/login' || req.path === '/api/auth/login') ||
-          (req.path === '/auth/refresh' || req.path === '/api/auth/refresh') ||
-          (req.path === '/auth/logout' || req.path === '/api/auth/logout') ||
-          (req.path === '/auth/callback' || req.path === '/api/auth/callback')
+          req.path === '/auth/login' ||
+          req.path === '/api/auth/login' ||
+          req.path === '/auth/refresh' ||
+          req.path === '/api/auth/refresh' ||
+          req.path === '/auth/logout' ||
+          req.path === '/api/auth/logout' ||
+          req.path === '/auth/callback' ||
+          req.path === '/api/auth/callback'
         );
       },
       {
@@ -171,7 +175,8 @@ export class RateLimitExemptionManager {
       (req) => {
         // Only exempt if user has admin role
         return (
-          (req.path.startsWith('/admin') || req.path.startsWith('/api/admin')) &&
+          (req.path.startsWith('/admin') ||
+            req.path.startsWith('/api/admin')) &&
           req.userRole === 'admin'
         );
       },

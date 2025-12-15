@@ -50,8 +50,9 @@ export function createErrorNotificationMiddleware(_options = {}) {
     };
 
     // Detect and notify about critical error
-    errorNotificationService.detectAndNotify(error, context)
-      .catch(notificationError => {
+    errorNotificationService
+      .detectAndNotify(error, context)
+      .catch((notificationError) => {
         logger.error('Failed to process error notification', {
           error: notificationError.message,
           originalError: error.message,
@@ -111,7 +112,9 @@ export function createErrorNotificationStatusHandler() {
       const status = errorNotificationService.getStatus();
       res.json(status);
     } catch (error) {
-      logger.error('Error getting notification status', { error: error.message });
+      logger.error('Error getting notification status', {
+        error: error.message,
+      });
       res.status(500).json({
         error: 'Failed to get notification status',
         message: error.message,
@@ -266,7 +269,10 @@ export function createManualErrorNotificationHandler() {
         timestamp: new Date().toISOString(),
       };
 
-      const result = await errorNotificationService.detectAndNotify(error, context);
+      const result = await errorNotificationService.detectAndNotify(
+        error,
+        context,
+      );
 
       res.json({
         success: true,
@@ -275,7 +281,9 @@ export function createManualErrorNotificationHandler() {
         timestamp: new Date().toISOString(),
       });
     } catch (error) {
-      logger.error('Error sending manual notification', { error: error.message });
+      logger.error('Error sending manual notification', {
+        error: error.message,
+      });
       res.status(500).json({
         error: 'Failed to send manual notification',
         message: error.message,

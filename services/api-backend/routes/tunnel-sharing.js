@@ -35,9 +35,12 @@ export async function initializeTunnelSharingService() {
     await tunnelSharingService.initialize();
     logger.info('[TunnelSharingRoutes] Tunnel sharing service initialized');
   } catch (error) {
-    logger.error('[TunnelSharingRoutes] Failed to initialize tunnel sharing service', {
-      error: error.message,
-    });
+    logger.error(
+      '[TunnelSharingRoutes] Failed to initialize tunnel sharing service',
+      {
+        error: error.message,
+      },
+    );
     throw error;
   }
 }
@@ -123,7 +126,10 @@ router.post('/:id/shares', authenticateJWT, async(req, res) => {
       error: error.message,
     });
 
-    if (error.message.includes('not found') || error.message.includes('permission')) {
+    if (
+      error.message.includes('not found') ||
+      error.message.includes('permission')
+    ) {
       return res.status(404).json({
         error: 'Not found',
         code: 'TUNNEL_NOT_FOUND',
@@ -199,7 +205,10 @@ router.get('/:id/shares', authenticateJWT, async(req, res) => {
       error: error.message,
     });
 
-    if (error.message.includes('not found') || error.message.includes('permission')) {
+    if (
+      error.message.includes('not found') ||
+      error.message.includes('permission')
+    ) {
       return res.status(404).json({
         error: 'Not found',
         code: 'TUNNEL_NOT_FOUND',
@@ -226,71 +235,78 @@ router.get('/:id/shares', authenticateJWT, async(req, res) => {
  * Authentication: Required (JWT)
  * Rate Limit: Standard (100 req/min)
  */
-router.delete('/:id/shares/:sharedWithUserId', authenticateJWT, async(req, res) => {
-  try {
-    if (!req.user) {
-      return res.status(401).json({
-        error: 'Authentication required',
-        code: 'AUTH_REQUIRED',
-        message: 'Please authenticate to revoke tunnel access',
+router.delete(
+  '/:id/shares/:sharedWithUserId',
+  authenticateJWT,
+  async(req, res) => {
+    try {
+      if (!req.user) {
+        return res.status(401).json({
+          error: 'Authentication required',
+          code: 'AUTH_REQUIRED',
+          message: 'Please authenticate to revoke tunnel access',
+        });
+      }
+
+      if (!tunnelSharingService) {
+        return res.status(503).json({
+          error: 'Service unavailable',
+          code: 'SERVICE_UNAVAILABLE',
+          message: 'Tunnel sharing service is not initialized',
+        });
+      }
+
+      const userId = req.user.sub;
+      const { id: tunnelId, sharedWithUserId } = req.params;
+
+      const ipAddress = req.ip || req.connection.remoteAddress;
+      const userAgent = req.get('user-agent');
+
+      await tunnelSharingService.revokeTunnelAccess(
+        tunnelId,
+        userId,
+        sharedWithUserId,
+        ipAddress,
+        userAgent,
+      );
+
+      logger.info('[TunnelSharingRoutes] Tunnel access revoked', {
+        tunnelId,
+        userId,
+        sharedWithUserId,
+      });
+
+      res.json({
+        success: true,
+        message: 'Tunnel access revoked successfully',
+        timestamp: new Date().toISOString(),
+      });
+    } catch (error) {
+      logger.error('[TunnelSharingRoutes] Error revoking tunnel access', {
+        tunnelId: req.params.id,
+        userId: req.user?.sub,
+        error: error.message,
+      });
+
+      if (
+        error.message.includes('not found') ||
+        error.message.includes('permission')
+      ) {
+        return res.status(404).json({
+          error: 'Not found',
+          code: 'TUNNEL_NOT_FOUND',
+          message: error.message,
+        });
+      }
+
+      res.status(500).json({
+        error: 'Internal server error',
+        code: 'INTERNAL_ERROR',
+        message: 'Failed to revoke tunnel access',
       });
     }
-
-    if (!tunnelSharingService) {
-      return res.status(503).json({
-        error: 'Service unavailable',
-        code: 'SERVICE_UNAVAILABLE',
-        message: 'Tunnel sharing service is not initialized',
-      });
-    }
-
-    const userId = req.user.sub;
-    const { id: tunnelId, sharedWithUserId } = req.params;
-
-    const ipAddress = req.ip || req.connection.remoteAddress;
-    const userAgent = req.get('user-agent');
-
-    await tunnelSharingService.revokeTunnelAccess(
-      tunnelId,
-      userId,
-      sharedWithUserId,
-      ipAddress,
-      userAgent,
-    );
-
-    logger.info('[TunnelSharingRoutes] Tunnel access revoked', {
-      tunnelId,
-      userId,
-      sharedWithUserId,
-    });
-
-    res.json({
-      success: true,
-      message: 'Tunnel access revoked successfully',
-      timestamp: new Date().toISOString(),
-    });
-  } catch (error) {
-    logger.error('[TunnelSharingRoutes] Error revoking tunnel access', {
-      tunnelId: req.params.id,
-      userId: req.user?.sub,
-      error: error.message,
-    });
-
-    if (error.message.includes('not found') || error.message.includes('permission')) {
-      return res.status(404).json({
-        error: 'Not found',
-        code: 'TUNNEL_NOT_FOUND',
-        message: error.message,
-      });
-    }
-
-    res.status(500).json({
-      error: 'Internal server error',
-      code: 'INTERNAL_ERROR',
-      message: 'Failed to revoke tunnel access',
-    });
-  }
-});
+  },
+);
 
 /**
  * GET /api/tunnels/shared-with-me
@@ -329,7 +345,10 @@ router.get('/shared-with-me', authenticateJWT, async(req, res) => {
     const limit = Math.min(parseInt(req.query.limit) || 50, 1000);
     const offset = Math.max(parseInt(req.query.offset) || 0, 0);
 
-    const tunnels = await tunnelSharingService.getSharedTunnels(userId, { limit, offset });
+    const tunnels = await tunnelSharingService.getSharedTunnels(userId, {
+      limit,
+      offset,
+    });
 
     logger.debug('[TunnelSharingRoutes] Shared tunnels retrieved', {
       userId,
@@ -399,7 +418,11 @@ router.post('/:id/share-tokens', authenticateJWT, async(req, res) => {
 
     const userId = req.user.sub;
     const { id: tunnelId } = req.params;
-    const { permission = 'read', expiresInHours = 24, maxUses = null } = req.body;
+    const {
+      permission = 'read',
+      expiresInHours = 24,
+      maxUses = null,
+    } = req.body;
 
     const ipAddress = req.ip || req.connection.remoteAddress;
     const userAgent = req.get('user-agent');
@@ -432,7 +455,10 @@ router.post('/:id/share-tokens', authenticateJWT, async(req, res) => {
       error: error.message,
     });
 
-    if (error.message.includes('not found') || error.message.includes('permission')) {
+    if (
+      error.message.includes('not found') ||
+      error.message.includes('permission')
+    ) {
       return res.status(404).json({
         error: 'Not found',
         code: 'TUNNEL_NOT_FOUND',
@@ -508,7 +534,10 @@ router.get('/:id/share-tokens', authenticateJWT, async(req, res) => {
       error: error.message,
     });
 
-    if (error.message.includes('not found') || error.message.includes('permission')) {
+    if (
+      error.message.includes('not found') ||
+      error.message.includes('permission')
+    ) {
       return res.status(404).json({
         error: 'Not found',
         code: 'TUNNEL_NOT_FOUND',
@@ -535,64 +564,76 @@ router.get('/:id/share-tokens', authenticateJWT, async(req, res) => {
  * Authentication: Required (JWT)
  * Rate Limit: Standard (100 req/min)
  */
-router.delete('/:id/share-tokens/:tokenId', authenticateJWT, async(req, res) => {
-  try {
-    if (!req.user) {
-      return res.status(401).json({
-        error: 'Authentication required',
-        code: 'AUTH_REQUIRED',
-        message: 'Please authenticate to revoke share token',
+router.delete(
+  '/:id/share-tokens/:tokenId',
+  authenticateJWT,
+  async(req, res) => {
+    try {
+      if (!req.user) {
+        return res.status(401).json({
+          error: 'Authentication required',
+          code: 'AUTH_REQUIRED',
+          message: 'Please authenticate to revoke share token',
+        });
+      }
+
+      if (!tunnelSharingService) {
+        return res.status(503).json({
+          error: 'Service unavailable',
+          code: 'SERVICE_UNAVAILABLE',
+          message: 'Tunnel sharing service is not initialized',
+        });
+      }
+
+      const userId = req.user.sub;
+      const { tokenId } = req.params;
+
+      const ipAddress = req.ip || req.connection.remoteAddress;
+      const userAgent = req.get('user-agent');
+
+      await tunnelSharingService.revokeShareToken(
+        tokenId,
+        userId,
+        ipAddress,
+        userAgent,
+      );
+
+      logger.info('[TunnelSharingRoutes] Share token revoked', {
+        tokenId,
+        userId,
+      });
+
+      res.json({
+        success: true,
+        message: 'Share token revoked successfully',
+        timestamp: new Date().toISOString(),
+      });
+    } catch (error) {
+      logger.error('[TunnelSharingRoutes] Error revoking share token', {
+        tokenId: req.params.tokenId,
+        userId: req.user?.sub,
+        error: error.message,
+      });
+
+      if (
+        error.message.includes('not found') ||
+        error.message.includes('permission')
+      ) {
+        return res.status(404).json({
+          error: 'Not found',
+          code: 'TOKEN_NOT_FOUND',
+          message: error.message,
+        });
+      }
+
+      res.status(500).json({
+        error: 'Internal server error',
+        code: 'INTERNAL_ERROR',
+        message: 'Failed to revoke share token',
       });
     }
-
-    if (!tunnelSharingService) {
-      return res.status(503).json({
-        error: 'Service unavailable',
-        code: 'SERVICE_UNAVAILABLE',
-        message: 'Tunnel sharing service is not initialized',
-      });
-    }
-
-    const userId = req.user.sub;
-    const { tokenId } = req.params;
-
-    const ipAddress = req.ip || req.connection.remoteAddress;
-    const userAgent = req.get('user-agent');
-
-    await tunnelSharingService.revokeShareToken(tokenId, userId, ipAddress, userAgent);
-
-    logger.info('[TunnelSharingRoutes] Share token revoked', {
-      tokenId,
-      userId,
-    });
-
-    res.json({
-      success: true,
-      message: 'Share token revoked successfully',
-      timestamp: new Date().toISOString(),
-    });
-  } catch (error) {
-    logger.error('[TunnelSharingRoutes] Error revoking share token', {
-      tokenId: req.params.tokenId,
-      userId: req.user?.sub,
-      error: error.message,
-    });
-
-    if (error.message.includes('not found') || error.message.includes('permission')) {
-      return res.status(404).json({
-        error: 'Not found',
-        code: 'TOKEN_NOT_FOUND',
-        message: error.message,
-      });
-    }
-
-    res.status(500).json({
-      error: 'Internal server error',
-      code: 'INTERNAL_ERROR',
-      message: 'Failed to revoke share token',
-    });
-  }
-});
+  },
+);
 
 /**
  * GET /api/tunnels/:id/access-logs
@@ -632,10 +673,14 @@ router.get('/:id/access-logs', authenticateJWT, async(req, res) => {
     const limit = Math.min(parseInt(req.query.limit) || 50, 1000);
     const offset = Math.max(parseInt(req.query.offset) || 0, 0);
 
-    const logs = await tunnelSharingService.getTunnelAccessLogs(tunnelId, userId, {
-      limit,
-      offset,
-    });
+    const logs = await tunnelSharingService.getTunnelAccessLogs(
+      tunnelId,
+      userId,
+      {
+        limit,
+        offset,
+      },
+    );
 
     logger.debug('[TunnelSharingRoutes] Access logs retrieved', {
       tunnelId,
@@ -659,7 +704,10 @@ router.get('/:id/access-logs', authenticateJWT, async(req, res) => {
       error: error.message,
     });
 
-    if (error.message.includes('not found') || error.message.includes('permission')) {
+    if (
+      error.message.includes('not found') ||
+      error.message.includes('permission')
+    ) {
       return res.status(404).json({
         error: 'Not found',
         code: 'TUNNEL_NOT_FOUND',
@@ -691,87 +739,94 @@ router.get('/:id/access-logs', authenticateJWT, async(req, res) => {
  * Authentication: Required (JWT)
  * Rate Limit: Standard (100 req/min)
  */
-router.put('/:id/shares/:shareId/permission', authenticateJWT, async(req, res) => {
-  try {
-    if (!req.user) {
-      return res.status(401).json({
-        error: 'Authentication required',
-        code: 'AUTH_REQUIRED',
-        message: 'Please authenticate to update share permission',
+router.put(
+  '/:id/shares/:shareId/permission',
+  authenticateJWT,
+  async(req, res) => {
+    try {
+      if (!req.user) {
+        return res.status(401).json({
+          error: 'Authentication required',
+          code: 'AUTH_REQUIRED',
+          message: 'Please authenticate to update share permission',
+        });
+      }
+
+      if (!tunnelSharingService) {
+        return res.status(503).json({
+          error: 'Service unavailable',
+          code: 'SERVICE_UNAVAILABLE',
+          message: 'Tunnel sharing service is not initialized',
+        });
+      }
+
+      const userId = req.user.sub;
+      const { shareId } = req.params;
+      const { permission } = req.body;
+
+      if (!permission) {
+        return res.status(400).json({
+          error: 'Bad request',
+          code: 'INVALID_REQUEST',
+          message: 'permission is required',
+        });
+      }
+
+      const ipAddress = req.ip || req.connection.remoteAddress;
+      const userAgent = req.get('user-agent');
+
+      const updatedShare = await tunnelSharingService.updateSharePermission(
+        shareId,
+        userId,
+        permission,
+        ipAddress,
+        userAgent,
+      );
+
+      logger.info('[TunnelSharingRoutes] Share permission updated', {
+        shareId,
+        userId,
+        permission,
+      });
+
+      res.json({
+        success: true,
+        data: updatedShare,
+        timestamp: new Date().toISOString(),
+      });
+    } catch (error) {
+      logger.error('[TunnelSharingRoutes] Error updating share permission', {
+        shareId: req.params.shareId,
+        userId: req.user?.sub,
+        error: error.message,
+      });
+
+      if (
+        error.message.includes('not found') ||
+        error.message.includes('permission')
+      ) {
+        return res.status(404).json({
+          error: 'Not found',
+          code: 'SHARE_NOT_FOUND',
+          message: error.message,
+        });
+      }
+
+      if (error.message.includes('Invalid permission')) {
+        return res.status(400).json({
+          error: 'Bad request',
+          code: 'INVALID_PERMISSION',
+          message: error.message,
+        });
+      }
+
+      res.status(500).json({
+        error: 'Internal server error',
+        code: 'INTERNAL_ERROR',
+        message: 'Failed to update share permission',
       });
     }
-
-    if (!tunnelSharingService) {
-      return res.status(503).json({
-        error: 'Service unavailable',
-        code: 'SERVICE_UNAVAILABLE',
-        message: 'Tunnel sharing service is not initialized',
-      });
-    }
-
-    const userId = req.user.sub;
-    const { shareId } = req.params;
-    const { permission } = req.body;
-
-    if (!permission) {
-      return res.status(400).json({
-        error: 'Bad request',
-        code: 'INVALID_REQUEST',
-        message: 'permission is required',
-      });
-    }
-
-    const ipAddress = req.ip || req.connection.remoteAddress;
-    const userAgent = req.get('user-agent');
-
-    const updatedShare = await tunnelSharingService.updateSharePermission(
-      shareId,
-      userId,
-      permission,
-      ipAddress,
-      userAgent,
-    );
-
-    logger.info('[TunnelSharingRoutes] Share permission updated', {
-      shareId,
-      userId,
-      permission,
-    });
-
-    res.json({
-      success: true,
-      data: updatedShare,
-      timestamp: new Date().toISOString(),
-    });
-  } catch (error) {
-    logger.error('[TunnelSharingRoutes] Error updating share permission', {
-      shareId: req.params.shareId,
-      userId: req.user?.sub,
-      error: error.message,
-    });
-
-    if (error.message.includes('not found') || error.message.includes('permission')) {
-      return res.status(404).json({
-        error: 'Not found',
-        code: 'SHARE_NOT_FOUND',
-        message: error.message,
-      });
-    }
-
-    if (error.message.includes('Invalid permission')) {
-      return res.status(400).json({
-        error: 'Bad request',
-        code: 'INVALID_PERMISSION',
-        message: error.message,
-      });
-    }
-
-    res.status(500).json({
-      error: 'Internal server error',
-      code: 'INTERNAL_ERROR',
-      message: 'Failed to update share permission',
-    });
-  }
-});
+  },
+);
 
 export default router;

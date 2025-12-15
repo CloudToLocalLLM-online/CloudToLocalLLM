@@ -120,4 +120,3 @@ extension type MsalConfig._(JSObject _) implements JSObject {
     return map.jsify() as MsalConfig;
   }
 }
-

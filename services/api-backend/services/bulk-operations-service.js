@@ -34,7 +34,6 @@ class BulkOperationsService {
   async createBulkOperation(operationType, userIds, operationData) {
     const operationId = uuidv4();
 
-
     // Validate operation type
     const validTypes = ['tier_update', 'suspend', 'reactivate', 'delete'];
     if (!validTypes.includes(operationType)) {
@@ -287,7 +286,7 @@ class BulkOperationsService {
           newTier: tier,
         });
       } catch (error) {
-        await pool.query('ROLLBACK').catch(() => { });
+        await pool.query('ROLLBACK').catch(() => {});
         operation.failureCount++;
         results.errors.push({
           userId,
@@ -380,7 +379,7 @@ class BulkOperationsService {
         operation.successCount++;
         results.suspendedUsers.push(userId);
       } catch (error) {
-        await pool.query('ROLLBACK').catch(() => { });
+        await pool.query('ROLLBACK').catch(() => {});
         operation.failureCount++;
         results.errors.push({
           userId,
@@ -400,13 +399,7 @@ class BulkOperationsService {
    * Execute bulk reactivate
    * @private
    */
-  async _executeReactivate(
-    operation,
-    userIds,
-    adminUserId,
-    adminRole,
-    pool,
-  ) {
+  async _executeReactivate(operation, userIds, adminUserId, adminRole, pool) {
     const results = {
       operationId: operation.id,
       type: operation.type,
@@ -464,7 +457,7 @@ class BulkOperationsService {
         operation.successCount++;
         results.reactivatedUsers.push(userId);
       } catch (error) {
-        await pool.query('ROLLBACK').catch(() => { });
+        await pool.query('ROLLBACK').catch(() => {});
         operation.failureCount++;
         results.errors.push({
           userId,
@@ -547,7 +540,7 @@ class BulkOperationsService {
         operation.successCount++;
         results.deletedUsers.push(userId);
       } catch (error) {
-        await pool.query('ROLLBACK').catch(() => { });
+        await pool.query('ROLLBACK').catch(() => {});
         operation.failureCount++;
         results.errors.push({
           userId,
@@ -581,7 +574,9 @@ class BulkOperationsService {
       processedUsers: operation.processedUsers,
       successCount: operation.successCount,
       failureCount: operation.failureCount,
-      progress: Math.round((operation.processedUsers / operation.totalUsers) * 100),
+      progress: Math.round(
+        (operation.processedUsers / operation.totalUsers) * 100,
+      ),
       createdAt: operation.createdAt,
       startedAt: operation.startedAt,
       completedAt: operation.completedAt,

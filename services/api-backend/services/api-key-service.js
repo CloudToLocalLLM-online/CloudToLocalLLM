@@ -37,7 +37,10 @@ export async function generateApiKey(userId, name, options = {}) {
     const randomBytes = crypto.randomBytes(API_KEY_LENGTH);
     const apiKey = API_KEY_PREFIX + randomBytes.toString('hex');
     const keyPrefix = apiKey.substring(0, 8);
-    const keyHash = crypto.createHash(KEY_HASH_ALGORITHM).update(apiKey).digest('hex');
+    const keyHash = crypto
+      .createHash(KEY_HASH_ALGORITHM)
+      .update(apiKey)
+      .digest('hex');
 
     // Calculate expiry date if specified
     let expiresAt = null;
@@ -50,7 +53,16 @@ export async function generateApiKey(userId, name, options = {}) {
       `INSERT INTO api_keys (user_id, name, key_hash, key_prefix, description, scopes, rate_limit, expires_at)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
        RETURNING id, user_id, name, key_prefix, description, scopes, rate_limit, is_active, created_at, expires_at`,
-      [userId, name, keyHash, keyPrefix, description, scopes, rateLimit, expiresAt],
+      [
+        userId,
+        name,
+        keyHash,
+        keyPrefix,
+        description,
+        scopes,
+        rateLimit,
+        expiresAt,
+      ],
     );
 
     const keyRecord = result.rows[0];
@@ -102,7 +114,10 @@ export async function validateApiKey(apiKey) {
       return null;
     }
 
-    const keyHash = crypto.createHash(KEY_HASH_ALGORITHM).update(apiKey).digest('hex');
+    const keyHash = crypto
+      .createHash(KEY_HASH_ALGORITHM)
+      .update(apiKey)
+      .digest('hex');
 
     const result = await query(
       `SELECT id, user_id, name, scopes, rate_limit, is_active, expires_at, last_used_at
@@ -136,13 +151,17 @@ export async function validateApiKey(apiKey) {
       });
 
       // Mark as inactive
-      await query('UPDATE api_keys SET is_active = false WHERE id = $1', [keyRecord.id]);
+      await query('UPDATE api_keys SET is_active = false WHERE id = $1', [
+        keyRecord.id,
+      ]);
 
       return null;
     }
 
     // Update last_used_at
-    await query('UPDATE api_keys SET last_used_at = NOW() WHERE id = $1', [keyRecord.id]);
+    await query('UPDATE api_keys SET last_used_at = NOW() WHERE id = $1', [
+      keyRecord.id,
+    ]);
 
     // Log API key usage
     await logApiKeyAudit(keyRecord.id, keyRecord.user_id, 'used', {
@@ -310,7 +329,10 @@ export async function rotateApiKey(keyId, userId) {
     const randomBytes = crypto.randomBytes(API_KEY_LENGTH);
     const newApiKey = API_KEY_PREFIX + randomBytes.toString('hex');
     const keyPrefix = newApiKey.substring(0, 8);
-    const keyHash = crypto.createHash(KEY_HASH_ALGORITHM).update(newApiKey).digest('hex');
+    const keyHash = crypto
+      .createHash(KEY_HASH_ALGORITHM)
+      .update(newApiKey)
+      .digest('hex');
 
     // Create new key with reference to old key
     const newKeyResult = await client.query(
@@ -331,19 +353,31 @@ export async function rotateApiKey(keyId, userId) {
     );
 
     // Revoke old key
-    await client.query('UPDATE api_keys SET is_active = false WHERE id = $1', [keyId]);
+    await client.query('UPDATE api_keys SET is_active = false WHERE id = $1', [
+      keyId,
+    ]);
 
     // Log rotation
     await client.query(
       `INSERT INTO api_key_audit_logs (api_key_id, user_id, action, details)
        VALUES ($1, $2, $3, $4)`,
-      [keyId, userId, 'rotated', JSON.stringify({ rotatedToId: newKeyResult.rows[0].id })],
+      [
+        keyId,
+        userId,
+        'rotated',
+        JSON.stringify({ rotatedToId: newKeyResult.rows[0].id }),
+      ],
     );
 
     await client.query(
       `INSERT INTO api_key_audit_logs (api_key_id, user_id, action, details)
        VALUES ($1, $2, $3, $4)`,
-      [newKeyResult.rows[0].id, userId, 'created', JSON.stringify({ rotatedFromId: keyId })],
+      [
+        newKeyResult.rows[0].id,
+        userId,
+        'created',
+        JSON.stringify({ rotatedFromId: keyId }),
+      ],
     );
 
     await client.query('COMMIT');

@@ -43,63 +43,71 @@ export function initializeTunnelUsageRoutes(service) {
  * Response: 200 OK with usage metrics
  * Error: 400 Bad Request, 401 Unauthorized, 404 Not Found, 500 Internal Server Error
  */
-router.get('/tunnels/:tunnelId/usage/:date', authenticateJWT, async function(req, res) {
-  try {
-    const { tunnelId, date } = req.params;
-    const userId = req.user.sub;
+router.get(
+  '/tunnels/:tunnelId/usage/:date',
+  authenticateJWT,
+  async function(req, res) {
+    try {
+      const { tunnelId, date } = req.params;
+      const userId = req.user.sub;
 
-    // Validate inputs
-    validateInput(tunnelId, 'tunnelId', 'uuid');
-    validateInput(date, 'date', 'date');
+      // Validate inputs
+      validateInput(tunnelId, 'tunnelId', 'uuid');
+      validateInput(date, 'date', 'date');
 
-    logger.info('[TunnelUsageRoutes] Getting tunnel usage metrics', {
-      tunnelId,
-      date,
-      userId,
-    });
+      logger.info('[TunnelUsageRoutes] Getting tunnel usage metrics', {
+        tunnelId,
+        date,
+        userId,
+      });
 
-    const metrics = await usageService.getTunnelUsageMetrics(tunnelId, userId, date);
+      const metrics = await usageService.getTunnelUsageMetrics(
+        tunnelId,
+        userId,
+        date,
+      );
 
-    res.json({
-      success: true,
-      data: metrics,
-    });
-  } catch (error) {
-    logger.error('[TunnelUsageRoutes] Failed to get tunnel usage metrics', {
-      tunnelId: req.params.tunnelId,
-      date: req.params.date,
-      error: error.message,
-    });
+      res.json({
+        success: true,
+        data: metrics,
+      });
+    } catch (error) {
+      logger.error('[TunnelUsageRoutes] Failed to get tunnel usage metrics', {
+        tunnelId: req.params.tunnelId,
+        date: req.params.date,
+        error: error.message,
+      });
 
-    if (error.message === 'Tunnel not found') {
-      return res.status(404).json({
+      if (error.message === 'Tunnel not found') {
+        return res.status(404).json({
+          success: false,
+          error: {
+            code: 'TUNNEL_NOT_FOUND',
+            message: 'Tunnel not found',
+          },
+        });
+      }
+
+      if (error.message.includes('Invalid')) {
+        return res.status(400).json({
+          success: false,
+          error: {
+            code: 'INVALID_INPUT',
+            message: error.message,
+          },
+        });
+      }
+
+      res.status(500).json({
         success: false,
         error: {
-          code: 'TUNNEL_NOT_FOUND',
-          message: 'Tunnel not found',
+          code: 'INTERNAL_SERVER_ERROR',
+          message: 'Failed to get tunnel usage metrics',
         },
       });
     }
-
-    if (error.message.includes('Invalid')) {
-      return res.status(400).json({
-        success: false,
-        error: {
-          code: 'INVALID_INPUT',
-          message: error.message,
-        },
-      });
-    }
-
-    res.status(500).json({
-      success: false,
-      error: {
-        code: 'INTERNAL_SERVER_ERROR',
-        message: 'Failed to get tunnel usage metrics',
-      },
-    });
-  }
-});
+  },
+);
 
 /**
  * GET /tunnels/:tunnelId/usage
@@ -112,77 +120,89 @@ router.get('/tunnels/:tunnelId/usage/:date', authenticateJWT, async function(req
  * Response: 200 OK with usage metrics array
  * Error: 400 Bad Request, 401 Unauthorized, 404 Not Found, 500 Internal Server Error
  */
-router.get('/tunnels/:tunnelId/usage', authenticateJWT, async function(req, res) {
-  try {
-    const { tunnelId } = req.params;
-    const { startDate, endDate } = req.query;
-    const userId = req.user.sub;
+router.get(
+  '/tunnels/:tunnelId/usage',
+  authenticateJWT,
+  async function(req, res) {
+    try {
+      const { tunnelId } = req.params;
+      const { startDate, endDate } = req.query;
+      const userId = req.user.sub;
 
-    // Validate inputs
-    validateInput(tunnelId, 'tunnelId', 'uuid');
-    validateInput(startDate, 'startDate', 'date');
-    validateInput(endDate, 'endDate', 'date');
+      // Validate inputs
+      validateInput(tunnelId, 'tunnelId', 'uuid');
+      validateInput(startDate, 'startDate', 'date');
+      validateInput(endDate, 'endDate', 'date');
 
-    if (new Date(startDate) > new Date(endDate)) {
-      return res.status(400).json({
+      if (new Date(startDate) > new Date(endDate)) {
+        return res.status(400).json({
+          success: false,
+          error: {
+            code: 'INVALID_DATE_RANGE',
+            message: 'startDate must be before or equal to endDate',
+          },
+        });
+      }
+
+      logger.info('[TunnelUsageRoutes] Getting tunnel usage metrics range', {
+        tunnelId,
+        startDate,
+        endDate,
+        userId,
+      });
+
+      const metrics = await usageService.getTunnelUsageMetricsRange(
+        tunnelId,
+        userId,
+        startDate,
+        endDate,
+      );
+
+      res.json({
+        success: true,
+        data: metrics,
+      });
+    } catch (error) {
+      logger.error(
+        '[TunnelUsageRoutes] Failed to get tunnel usage metrics range',
+        {
+          tunnelId: req.params.tunnelId,
+          startDate: req.query.startDate,
+          endDate: req.query.endDate,
+          error: error.message,
+        },
+      );
+
+      if (error.message === 'Tunnel not found') {
+        return res.status(404).json({
+          success: false,
+          error: {
+            code: 'TUNNEL_NOT_FOUND',
+            message: 'Tunnel not found',
+          },
+        });
+      }
+
+      if (error.message.includes('Invalid')) {
+        return res.status(400).json({
+          success: false,
+          error: {
+            code: 'INVALID_INPUT',
+            message: error.message,
+          },
+        });
+      }
+
+      res.status(500).json({
         success: false,
         error: {
-          code: 'INVALID_DATE_RANGE',
-          message: 'startDate must be before or equal to endDate',
+          code: 'INTERNAL_SERVER_ERROR',
+          message: 'Failed to get tunnel usage metrics range',
         },
       });
     }
-
-    logger.info('[TunnelUsageRoutes] Getting tunnel usage metrics range', {
-      tunnelId,
-      startDate,
-      endDate,
-      userId,
-    });
-
-    const metrics = await usageService.getTunnelUsageMetricsRange(tunnelId, userId, startDate, endDate);
-
-    res.json({
-      success: true,
-      data: metrics,
-    });
-  } catch (error) {
-    logger.error('[TunnelUsageRoutes] Failed to get tunnel usage metrics range', {
-      tunnelId: req.params.tunnelId,
-      startDate: req.query.startDate,
-      endDate: req.query.endDate,
-      error: error.message,
-    });
-
-    if (error.message === 'Tunnel not found') {
-      return res.status(404).json({
-        success: false,
-        error: {
-          code: 'TUNNEL_NOT_FOUND',
-          message: 'Tunnel not found',
-        },
-      });
-    }
-
-    if (error.message.includes('Invalid')) {
-      return res.status(400).json({
-        success: false,
-        error: {
-          code: 'INVALID_INPUT',
-          message: error.message,
-        },
-      });
-    }
-
-    res.status(500).json({
-      success: false,
-      error: {
-        code: 'INTERNAL_SERVER_ERROR',
-        message: 'Failed to get tunnel usage metrics range',
-      },
-    });
-  }
-});
+  },
+);
 
 /**
  * GET /users/usage/report
@@ -308,7 +328,12 @@ router.get('/users/usage/billing', authenticateJWT, async function(req, res) {
       periodEnd,
     });
 
-    const billing = await usageService.getBillingSummary(userId, userTier, periodStart, periodEnd);
+    const billing = await usageService.getBillingSummary(
+      userId,
+      userTier,
+      periodStart,
+      periodEnd,
+    );
 
     res.json({
       success: true,
@@ -359,69 +384,93 @@ router.get('/users/usage/billing', authenticateJWT, async function(req, res) {
  * Response: 201 Created with event data
  * Error: 400 Bad Request, 401 Unauthorized, 404 Not Found, 500 Internal Server Error
  */
-router.post('/tunnels/:tunnelId/usage/events', authenticateJWT, async function(req, res) {
-  try {
-    const { tunnelId } = req.params;
-    const userId = req.user.sub;
-    const { eventType, connectionId, dataBytes, durationSeconds, errorMessage, ipAddress } = req.body;
+router.post(
+  '/tunnels/:tunnelId/usage/events',
+  authenticateJWT,
+  async function(req, res) {
+    try {
+      const { tunnelId } = req.params;
+      const userId = req.user.sub;
+      const {
+        eventType,
+        connectionId,
+        dataBytes,
+        durationSeconds,
+        errorMessage,
+        ipAddress,
+      } = req.body;
 
-    // Validate inputs
-    validateInput(tunnelId, 'tunnelId', 'uuid');
-    validateInput(eventType, 'eventType', 'string');
+      // Validate inputs
+      validateInput(tunnelId, 'tunnelId', 'uuid');
+      validateInput(eventType, 'eventType', 'string');
 
-    if (!['connection_start', 'connection_end', 'data_transfer', 'error'].includes(eventType)) {
-      return res.status(400).json({
+      if (
+        ![
+          'connection_start',
+          'connection_end',
+          'data_transfer',
+          'error',
+        ].includes(eventType)
+      ) {
+        return res.status(400).json({
+          success: false,
+          error: {
+            code: 'INVALID_EVENT_TYPE',
+            message:
+              'eventType must be one of: connection_start, connection_end, data_transfer, error',
+          },
+        });
+      }
+
+      logger.info('[TunnelUsageRoutes] Recording usage event', {
+        tunnelId,
+        userId,
+        eventType,
+      });
+
+      const event = await usageService.recordUsageEvent(
+        tunnelId,
+        userId,
+        eventType,
+        {
+          connectionId,
+          dataBytes: dataBytes || 0,
+          durationSeconds,
+          errorMessage,
+          ipAddress,
+        },
+      );
+
+      res.status(201).json({
+        success: true,
+        data: event,
+      });
+    } catch (error) {
+      logger.error('[TunnelUsageRoutes] Failed to record usage event', {
+        tunnelId: req.params.tunnelId,
+        eventType: req.body.eventType,
+        error: error.message,
+      });
+
+      if (error.message.includes('Invalid')) {
+        return res.status(400).json({
+          success: false,
+          error: {
+            code: 'INVALID_INPUT',
+            message: error.message,
+          },
+        });
+      }
+
+      res.status(500).json({
         success: false,
         error: {
-          code: 'INVALID_EVENT_TYPE',
-          message: 'eventType must be one of: connection_start, connection_end, data_transfer, error',
+          code: 'INTERNAL_SERVER_ERROR',
+          message: 'Failed to record usage event',
         },
       });
     }
-
-    logger.info('[TunnelUsageRoutes] Recording usage event', {
-      tunnelId,
-      userId,
-      eventType,
-    });
-
-    const event = await usageService.recordUsageEvent(tunnelId, userId, eventType, {
-      connectionId,
-      dataBytes: dataBytes || 0,
-      durationSeconds,
-      errorMessage,
-      ipAddress,
-    });
-
-    res.status(201).json({
-      success: true,
-      data: event,
-    });
-  } catch (error) {
-    logger.error('[TunnelUsageRoutes] Failed to record usage event', {
-      tunnelId: req.params.tunnelId,
-      eventType: req.body.eventType,
-      error: error.message,
-    });
-
-    if (error.message.includes('Invalid')) {
-      return res.status(400).json({
-        success: false,
-        error: {
-          code: 'INVALID_INPUT',
-          message: error.message,
-        },
-      });
-    }
-
-    res.status(500).json({
-      success: false,
-      error: {
-        code: 'INTERNAL_SERVER_ERROR',
-        message: 'Failed to record usage event',
-      },
-    });
-  }
-});
+  },
+);
 
 export default router;

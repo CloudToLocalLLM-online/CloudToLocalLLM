@@ -43,7 +43,8 @@ export class RequestQueueService {
    * @returns {boolean} True if request should be queued
    */
   shouldQueue(remainingRequests, maxRequests) {
-    const usagePercent = ((maxRequests - remainingRequests) / maxRequests) * 100;
+    const usagePercent =
+      ((maxRequests - remainingRequests) / maxRequests) * 100;
     return usagePercent >= this.queueThresholdPercent;
   }
 
@@ -189,7 +190,7 @@ export class RequestQueueService {
       return false;
     }
 
-    const index = queue.findIndex(entry => entry.id === queueEntryId);
+    const index = queue.findIndex((entry) => entry.id === queueEntryId);
     if (index === -1) {
       return false;
     }
@@ -277,9 +278,10 @@ export class RequestQueueService {
    */
   getHealthStatus() {
     const stats = this.getStatistics();
-    const avgQueueSize = stats.totalQueuesCount > 0
-      ? stats.currentQueuedRequests / stats.totalQueuesCount
-      : 0;
+    const avgQueueSize =
+      stats.totalQueuesCount > 0
+        ? stats.currentQueuedRequests / stats.totalQueuesCount
+        : 0;
 
     return {
       status: stats.currentQueuedRequests > 100 ? 'degraded' : 'healthy',

@@ -9,23 +9,25 @@ import { v4 as uuidv4 } from 'uuid';
 export class ProxyFailoverService {
   constructor(db = null, logger = null) {
     this.db = db;
-    this.logger = logger || winston.createLogger({
-      level: process.env.LOG_LEVEL || 'info',
-      format: winston.format.combine(
-        winston.format.timestamp(),
-        winston.format.errors({ stack: true }),
-        winston.format.json(),
-      ),
-      defaultMeta: { service: 'proxy-failover' },
-      transports: [
-        new winston.transports.Console({
-          format: winston.format.combine(
-            winston.format.timestamp(),
-            winston.format.simple(),
-          ),
-        }),
-      ],
-    });
+    this.logger =
+      logger ||
+      winston.createLogger({
+        level: process.env.LOG_LEVEL || 'info',
+        format: winston.format.combine(
+          winston.format.timestamp(),
+          winston.format.errors({ stack: true }),
+          winston.format.json(),
+        ),
+        defaultMeta: { service: 'proxy-failover' },
+        transports: [
+          new winston.transports.Console({
+            format: winston.format.combine(
+              winston.format.timestamp(),
+              winston.format.simple(),
+            ),
+          }),
+        ],
+      });
 
     // In-memory tracking
     this.failoverState = new Map(); // proxyId -> failover state
@@ -180,7 +182,15 @@ export class ProxyFailoverService {
           proxy_id, user_id, instance_name, instance_type, priority, weight, status
         ) VALUES ($1, $2, $3, $4, $5, $6, $7)
         RETURNING *`,
-        [proxyId, userId, instanceName, instanceType, priority, weight, 'unknown'],
+        [
+          proxyId,
+          userId,
+          instanceName,
+          instanceType,
+          priority,
+          weight,
+          'unknown',
+        ],
       );
 
       const instance = result.rows[0];
@@ -283,7 +293,12 @@ export class ProxyFailoverService {
 
       // Record metrics if provided
       if (Object.keys(metrics).length > 0) {
-        await this.recordInstanceMetrics(instanceId, currentInstance.proxy_id, currentInstance.user_id, metrics);
+        await this.recordInstanceMetrics(
+          instanceId,
+          currentInstance.proxy_id,
+          currentInstance.user_id,
+          metrics,
+        );
       }
 
       // Cache health status
@@ -437,9 +452,17 @@ export class ProxyFailoverService {
    * @param {string} reason - Reason for failover
    * @returns {Promise<Object>} Failover event
    */
-  async executeFailover(proxyId, userId, sourceInstanceId, targetInstanceId, reason) {
+  async executeFailover(
+    proxyId,
+    userId,
+    sourceInstanceId,
+    targetInstanceId,
+    reason,
+  ) {
     if (!proxyId || !userId || !sourceInstanceId || !targetInstanceId) {
-      throw new Error('proxyId, userId, sourceInstanceId, and targetInstanceId are required');
+      throw new Error(
+        'proxyId, userId, sourceInstanceId, and targetInstanceId are required',
+      );
     }
 
     try {
@@ -482,7 +505,13 @@ export class ProxyFailoverService {
       // Trigger failover callback if registered
       if (this.onFailoverNeeded) {
         try {
-          await this.onFailoverNeeded(proxyId, userId, sourceInstanceId, targetInstanceId, failoverEvent);
+          await this.onFailoverNeeded(
+            proxyId,
+            userId,
+            sourceInstanceId,
+            targetInstanceId,
+            failoverEvent,
+          );
         } catch (error) {
           this.logger.error('Error in failover callback', {
             proxyId,
@@ -513,7 +542,12 @@ export class ProxyFailoverService {
    * @param {number} durationMs - Duration of failover operation
    * @returns {Promise<Object>} Updated failover event
    */
-  async completeFailoverEvent(eventId, status, errorMessage = null, durationMs = null) {
+  async completeFailoverEvent(
+    eventId,
+    status,
+    errorMessage = null,
+    durationMs = null,
+  ) {
     if (!eventId) {
       throw new Error('eventId is required');
     }
@@ -686,22 +720,36 @@ export class ProxyFailoverService {
   validateFailoverConfig(config) {
     const validStrategies = ['priority', 'round_robin', 'least_connections'];
     if (!validStrategies.includes(config.failoverStrategy)) {
-      throw new Error(`failoverStrategy must be one of: ${validStrategies.join(', ')}`);
+      throw new Error(
+        `failoverStrategy must be one of: ${validStrategies.join(', ')}`,
+      );
     }
 
-    if (!Number.isInteger(config.healthCheckIntervalSeconds) || config.healthCheckIntervalSeconds < 1) {
+    if (
+      !Number.isInteger(config.healthCheckIntervalSeconds) ||
+      config.healthCheckIntervalSeconds < 1
+    ) {
       throw new Error('healthCheckIntervalSeconds must be a positive integer');
     }
 
-    if (!Number.isInteger(config.unhealthyThreshold) || config.unhealthyThreshold < 1) {
+    if (
+      !Number.isInteger(config.unhealthyThreshold) ||
+      config.unhealthyThreshold < 1
+    ) {
       throw new Error('unhealthyThreshold must be a positive integer');
     }
 
-    if (!Number.isInteger(config.healthyThreshold) || config.healthyThreshold < 1) {
+    if (
+      !Number.isInteger(config.healthyThreshold) ||
+      config.healthyThreshold < 1
+    ) {
       throw new Error('healthyThreshold must be a positive integer');
     }
 
-    if (!Number.isInteger(config.maxRecoveryAttempts) || config.maxRecoveryAttempts < 1) {
+    if (
+      !Number.isInteger(config.maxRecoveryAttempts) ||
+      config.maxRecoveryAttempts < 1
+    ) {
       throw new Error('maxRecoveryAttempts must be a positive integer');
     }
   }

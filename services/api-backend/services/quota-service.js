@@ -58,7 +58,9 @@ export class QuotaService {
       );
 
       if (result.rows.length === 0) {
-        throw new Error(`Quota definition not found for tier ${tier} and resource ${resourceType}`);
+        throw new Error(
+          `Quota definition not found for tier ${tier} and resource ${resourceType}`,
+        );
       }
 
       const row = result.rows[0];
@@ -177,7 +179,9 @@ export class QuotaService {
       );
 
       if (result.rows.length === 0) {
-        throw new Error(`Quota not found for user ${userId} and resource ${resourceType}`);
+        throw new Error(
+          `Quota not found for user ${userId} and resource ${resourceType}`,
+        );
       }
 
       const row = result.rows[0];
@@ -259,7 +263,9 @@ export class QuotaService {
       );
 
       if (quotaResult.rows.length === 0) {
-        throw new Error(`Quota not found for user ${userId} and resource ${resourceType}`);
+        throw new Error(
+          `Quota not found for user ${userId} and resource ${resourceType}`,
+        );
       }
 
       const quota = quotaResult.rows[0];
@@ -462,7 +468,9 @@ export class QuotaService {
       );
 
       if (result.rows.length === 0) {
-        throw new Error(`Quota not found for user ${userId} and resource ${resourceType}`);
+        throw new Error(
+          `Quota not found for user ${userId} and resource ${resourceType}`,
+        );
       }
 
       logger.info('[QuotaService] Quota reset', {

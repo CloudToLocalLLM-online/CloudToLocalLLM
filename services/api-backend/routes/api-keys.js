@@ -80,7 +80,10 @@ router.post('/', apiKeyOpsLimiter, authenticateJWT, async(req, res) => {
     }
 
     // Validate optional fields
-    if (scopes && (!Array.isArray(scopes) || !scopes.every((s) => typeof s === 'string'))) {
+    if (
+      scopes &&
+      (!Array.isArray(scopes) || !scopes.every((s) => typeof s === 'string'))
+    ) {
       return res.status(400).json({
         error: 'Invalid request',
         code: 'INVALID_SCOPES',
@@ -249,7 +252,9 @@ router.patch('/:keyId', authenticateJWT, async(req, res) => {
 
     // Validate updates
     const allowedFields = ['name', 'description', 'scopes', 'rateLimit'];
-    const invalidFields = Object.keys(updates).filter((field) => !allowedFields.includes(field));
+    const invalidFields = Object.keys(updates).filter(
+      (field) => !allowedFields.includes(field),
+    );
 
     if (invalidFields.length > 0) {
       return res.status(400).json({
@@ -259,7 +264,10 @@ router.patch('/:keyId', authenticateJWT, async(req, res) => {
       });
     }
 
-    if (updates.name && (typeof updates.name !== 'string' || updates.name.trim().length === 0)) {
+    if (
+      updates.name &&
+      (typeof updates.name !== 'string' || updates.name.trim().length === 0)
+    ) {
       return res.status(400).json({
         error: 'Invalid request',
         code: 'INVALID_NAME',
@@ -267,7 +275,11 @@ router.patch('/:keyId', authenticateJWT, async(req, res) => {
       });
     }
 
-    if (updates.scopes && (!Array.isArray(updates.scopes) || !updates.scopes.every((s) => typeof s === 'string'))) {
+    if (
+      updates.scopes &&
+      (!Array.isArray(updates.scopes) ||
+        !updates.scopes.every((s) => typeof s === 'string'))
+    ) {
       return res.status(400).json({
         error: 'Invalid request',
         code: 'INVALID_SCOPES',
@@ -275,7 +287,10 @@ router.patch('/:keyId', authenticateJWT, async(req, res) => {
       });
     }
 
-    if (updates.rateLimit && (typeof updates.rateLimit !== 'number' || updates.rateLimit < 1)) {
+    if (
+      updates.rateLimit &&
+      (typeof updates.rateLimit !== 'number' || updates.rateLimit < 1)
+    ) {
       return res.status(400).json({
         error: 'Invalid request',
         code: 'INVALID_RATE_LIMIT',
@@ -329,38 +344,43 @@ router.patch('/:keyId', authenticateJWT, async(req, res) => {
  *   "expiresAt": "ISO8601 or null"
  * }
  */
-router.post('/:keyId/rotate', apiKeyOpsLimiter, authenticateJWT, async(req, res) => {
-  try {
-    const userId = extractUserId(req);
-    const { keyId } = req.params;
+router.post(
+  '/:keyId/rotate',
+  apiKeyOpsLimiter,
+  authenticateJWT,
+  async(req, res) => {
+    try {
+      const userId = extractUserId(req);
+      const { keyId } = req.params;
 
-    const newKey = await rotateApiKey(keyId, userId);
+      const newKey = await rotateApiKey(keyId, userId);
 
-    logger.info('[APIKeyRoutes] API key rotated', {
-      userId,
-      oldKeyId: keyId,
-      newKeyId: newKey.id,
-    });
+      logger.info('[APIKeyRoutes] API key rotated', {
+        userId,
+        oldKeyId: keyId,
+        newKeyId: newKey.id,
+      });
 
-    res.json(newKey);
-  } catch (error) {
-    if (error.message.includes('not found')) {
-      return res.status(404).json({
-        error: 'API key not found',
-        code: 'NOT_FOUND',
+      res.json(newKey);
+    } catch (error) {
+      if (error.message.includes('not found')) {
+        return res.status(404).json({
+          error: 'API key not found',
+          code: 'NOT_FOUND',
+        });
+      }
+
+      logger.error('[APIKeyRoutes] Failed to rotate API key', {
+        error: error.message,
+      });
+
+      res.status(500).json({
+        error: 'Failed to rotate API key',
+        code: 'ROTATION_FAILED',
       });
     }
-
-    logger.error('[APIKeyRoutes] Failed to rotate API key', {
-      error: error.message,
-    });
-
-    res.status(500).json({
-      error: 'Failed to rotate API key',
-      code: 'ROTATION_FAILED',
-    });
-  }
-});
+  },
+);
 
 /**
  * POST /api-keys/:keyId/revoke

@@ -123,7 +123,11 @@ export function logoutAuditMiddleware() {
     // Override json method to intercept logout responses
     res.json = function(data) {
       // Check if this is a successful logout response
-      if (req.path === '/auth/logout' && res.statusCode === 200 && data.success) {
+      if (
+        req.path === '/auth/logout' &&
+        res.statusCode === 200 &&
+        data.success
+      ) {
         // Log logout
         logLogout({
           userId: req.user?.sub || req.userId,
@@ -250,10 +254,7 @@ export function sessionTimeoutAuditMiddleware() {
     // Override json method to intercept session timeout responses
     res.json = function(data) {
       // Check if this is a session timeout error
-      if (
-        res.statusCode === 401 &&
-        data.code === 'SESSION_TIMEOUT'
-      ) {
+      if (res.statusCode === 401 && data.code === 'SESSION_TIMEOUT') {
         // Log session timeout
         logSessionTimeout({
           userId: req.user?.sub || req.userId || null,
@@ -337,7 +338,11 @@ export function comprehensiveAuthAuditMiddleware() {
       }
 
       // Log logout
-      if (req.path === '/auth/logout' && res.statusCode === 200 && data.success) {
+      if (
+        req.path === '/auth/logout' &&
+        res.statusCode === 200 &&
+        data.success
+      ) {
         logLogout({
           userId: req.user?.sub || req.userId,
           ipAddress: req.ip || req.connection.remoteAddress,

@@ -81,16 +81,21 @@ async function sendToLoki(logs) {
       streams: Object.values(streams),
     };
 
-    const response = await fetch(`${logAggregationConfig.loki.url}/loki/api/v1/push`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
+    const response = await fetch(
+      `${logAggregationConfig.loki.url}/loki/api/v1/push`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
       },
-      body: JSON.stringify(payload),
-    });
+    );
 
     if (!response.ok) {
-      throw new Error(`Loki returned ${response.status}: ${response.statusText}`);
+      throw new Error(
+        `Loki returned ${response.status}: ${response.statusText}`,
+      );
     }
   } catch (error) {
     logger.error('Error sending logs to Loki', {
@@ -142,7 +147,9 @@ async function sendToELK(logs) {
     );
 
     if (!response.ok) {
-      throw new Error(`ELK returned ${response.status}: ${response.statusText}`);
+      throw new Error(
+        `ELK returned ${response.status}: ${response.statusText}`,
+      );
     }
 
     const result = await response.json();

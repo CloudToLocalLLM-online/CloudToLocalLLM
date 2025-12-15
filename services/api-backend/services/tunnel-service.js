@@ -67,7 +67,9 @@ export class TunnelService {
 
       // Validate tunnel name
       if (!name || typeof name !== 'string' || name.trim().length === 0) {
-        throw new Error('Tunnel name is required and must be a non-empty string');
+        throw new Error(
+          'Tunnel name is required and must be a non-empty string',
+        );
       }
 
       if (name.length > 255) {
@@ -335,7 +337,10 @@ export class TunnelService {
       // Update endpoints if provided
       if (endpoints !== undefined && Array.isArray(endpoints)) {
         // Delete existing endpoints
-        await client.query('DELETE FROM tunnel_endpoints WHERE tunnel_id = $1', [tunnelId]);
+        await client.query(
+          'DELETE FROM tunnel_endpoints WHERE tunnel_id = $1',
+          [tunnelId],
+        );
 
         // Add new endpoints
         for (const endpoint of endpoints) {
@@ -393,10 +398,18 @@ export class TunnelService {
    * @returns {Promise<Object>} Updated tunnel
    */
   async updateTunnelStatus(tunnelId, userId, status, ipAddress, userAgent) {
-    const validStatuses = ['created', 'connecting', 'connected', 'disconnected', 'error'];
+    const validStatuses = [
+      'created',
+      'connecting',
+      'connected',
+      'disconnected',
+      'error',
+    ];
 
     if (!validStatuses.includes(status)) {
-      throw new Error(`Invalid status. Must be one of: ${validStatuses.join(', ')}`);
+      throw new Error(
+        `Invalid status. Must be one of: ${validStatuses.join(', ')}`,
+      );
     }
 
     const client = await this.pool.connect();

@@ -60,16 +60,23 @@ router.post(
       }
 
       // Create transformation
-      const result = await transformer.createTransformation(webhookId, userId, transformConfig);
+      const result = await transformer.createTransformation(
+        webhookId,
+        userId,
+        transformConfig,
+      );
 
       res.status(201).json({
         success: true,
         data: result,
       });
     } catch (error) {
-      logger.error('[WebhookTransformationRoutes] Failed to create transformation', {
-        error: error.message,
-      });
+      logger.error(
+        '[WebhookTransformationRoutes] Failed to create transformation',
+        {
+          error: error.message,
+        },
+      );
 
       res.status(500).json({
         error: 'Failed to create transformation',
@@ -109,9 +116,12 @@ router.get(
         data: result,
       });
     } catch (error) {
-      logger.error('[WebhookTransformationRoutes] Failed to get transformation', {
-        error: error.message,
-      });
+      logger.error(
+        '[WebhookTransformationRoutes] Failed to get transformation',
+        {
+          error: error.message,
+        },
+      );
 
       res.status(500).json({
         error: 'Failed to get transformation',
@@ -149,16 +159,23 @@ router.put(
       }
 
       // Update transformation
-      const result = await transformer.updateTransformation(webhookId, userId, transformConfig);
+      const result = await transformer.updateTransformation(
+        webhookId,
+        userId,
+        transformConfig,
+      );
 
       res.status(200).json({
         success: true,
         data: result,
       });
     } catch (error) {
-      logger.error('[WebhookTransformationRoutes] Failed to update transformation', {
-        error: error.message,
-      });
+      logger.error(
+        '[WebhookTransformationRoutes] Failed to update transformation',
+        {
+          error: error.message,
+        },
+      );
 
       res.status(500).json({
         error: 'Failed to update transformation',
@@ -192,9 +209,12 @@ router.delete(
         message: 'Transformation deleted',
       });
     } catch (error) {
-      logger.error('[WebhookTransformationRoutes] Failed to delete transformation', {
-        error: error.message,
-      });
+      logger.error(
+        '[WebhookTransformationRoutes] Failed to delete transformation',
+        {
+          error: error.message,
+        },
+      );
 
       res.status(500).json({
         error: 'Failed to delete transformation',
@@ -225,9 +245,12 @@ router.post(
         errors: validation.errors,
       });
     } catch (error) {
-      logger.error('[WebhookTransformationRoutes] Failed to validate transformation', {
-        error: error.message,
-      });
+      logger.error(
+        '[WebhookTransformationRoutes] Failed to validate transformation',
+        {
+          error: error.message,
+        },
+      );
 
       res.status(500).json({
         error: 'Failed to validate transformation',
@@ -272,7 +295,10 @@ router.post(
       }
 
       // Apply transformation
-      const transformedPayload = transformer.transformPayload(payload, transformation);
+      const transformedPayload = transformer.transformPayload(
+        payload,
+        transformation,
+      );
 
       res.status(200).json({
         success: true,
@@ -280,9 +306,12 @@ router.post(
         transformedPayload,
       });
     } catch (error) {
-      logger.error('[WebhookTransformationRoutes] Failed to test transformation', {
-        error: error.message,
-      });
+      logger.error(
+        '[WebhookTransformationRoutes] Failed to test transformation',
+        {
+          error: error.message,
+        },
+      );
 
       res.status(500).json({
         error: 'Failed to test transformation',

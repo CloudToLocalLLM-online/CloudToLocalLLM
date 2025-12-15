@@ -196,7 +196,10 @@ export class LogRouter {
     const destinations = [];
 
     // Always log to console for info and above
-    if (this.config.infoToConsole && ['error', 'warn', 'info'].includes(level)) {
+    if (
+      this.config.infoToConsole &&
+      ['error', 'warn', 'info'].includes(level)
+    ) {
       destinations.push('console');
     }
 
@@ -293,10 +296,7 @@ export function getCorrelationId(req) {
 
   const headers = req.headers || {};
   return (
-    headers['x-correlation-id'] ||
-    headers['x-request-id'] ||
-    req.id ||
-    null
+    headers['x-correlation-id'] || headers['x-request-id'] || req.id || null
   );
 }
 

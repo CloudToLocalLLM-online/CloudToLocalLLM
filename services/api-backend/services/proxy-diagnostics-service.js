@@ -8,23 +8,25 @@ import winston from 'winston';
  */
 export class ProxyDiagnosticsService {
   constructor(logger = null) {
-    this.logger = logger || winston.createLogger({
-      level: process.env.LOG_LEVEL || 'info',
-      format: winston.format.combine(
-        winston.format.timestamp(),
-        winston.format.errors({ stack: true }),
-        winston.format.json(),
-      ),
-      defaultMeta: { service: 'proxy-diagnostics' },
-      transports: [
-        new winston.transports.Console({
-          format: winston.format.combine(
-            winston.format.timestamp(),
-            winston.format.simple(),
-          ),
-        }),
-      ],
-    });
+    this.logger =
+      logger ||
+      winston.createLogger({
+        level: process.env.LOG_LEVEL || 'info',
+        format: winston.format.combine(
+          winston.format.timestamp(),
+          winston.format.errors({ stack: true }),
+          winston.format.json(),
+        ),
+        defaultMeta: { service: 'proxy-diagnostics' },
+        transports: [
+          new winston.transports.Console({
+            format: winston.format.combine(
+              winston.format.timestamp(),
+              winston.format.simple(),
+            ),
+          }),
+        ],
+      });
 
     // Store diagnostic logs per proxy
     this.diagnosticLogs = new Map(); // proxyId -> array of log entries
@@ -34,9 +36,18 @@ export class ProxyDiagnosticsService {
 
     // Configuration
     this.maxLogsPerProxy = parseInt(process.env.PROXY_MAX_LOGS || '1000', 10);
-    this.maxErrorsPerProxy = parseInt(process.env.PROXY_MAX_ERRORS || '100', 10);
-    this.maxEventsPerProxy = parseInt(process.env.PROXY_MAX_EVENTS || '500', 10);
-    this.logRetentionMs = parseInt(process.env.PROXY_LOG_RETENTION || '3600000', 10); // 1 hour default
+    this.maxErrorsPerProxy = parseInt(
+      process.env.PROXY_MAX_ERRORS || '100',
+      10,
+    );
+    this.maxEventsPerProxy = parseInt(
+      process.env.PROXY_MAX_EVENTS || '500',
+      10,
+    );
+    this.logRetentionMs = parseInt(
+      process.env.PROXY_LOG_RETENTION || '3600000',
+      10,
+    ); // 1 hour default
   }
 
   /**
@@ -279,7 +290,11 @@ export class ProxyDiagnosticsService {
     const recentEvents = this.getEventHistory(proxyId, { limit: 50 });
 
     // Analyze diagnostics
-    const diagnosticStatus = this.analyzeDiagnostics(proxyId, recentErrors, recentLogs);
+    const diagnosticStatus = this.analyzeDiagnostics(
+      proxyId,
+      recentErrors,
+      recentLogs,
+    );
 
     return {
       proxyId,
@@ -317,7 +332,11 @@ export class ProxyDiagnosticsService {
     const recentEvents = this.getEventHistory(proxyId, { limit: 50 });
 
     // Generate troubleshooting suggestions
-    const suggestions = this.generateTroubleshootingSuggestions(proxyId, recentErrors, recentEvents);
+    const suggestions = this.generateTroubleshootingSuggestions(
+      proxyId,
+      recentErrors,
+      recentEvents,
+    );
 
     return {
       proxyId,
@@ -390,28 +409,40 @@ export class ProxyDiagnosticsService {
       if (message.includes('timeout') && !addedSuggestions.has('timeout')) {
         suggestions.push({
           issue: 'Timeout errors detected',
-          suggestion: 'Check network connectivity and increase timeout settings if needed',
+          suggestion:
+            'Check network connectivity and increase timeout settings if needed',
           severity: 'warning',
           frequency: count,
         });
         addedSuggestions.add('timeout');
-      } else if (message.includes('connection') && !addedSuggestions.has('connection')) {
+      } else if (
+        message.includes('connection') &&
+        !addedSuggestions.has('connection')
+      ) {
         suggestions.push({
           issue: 'Connection errors detected',
-          suggestion: 'Verify proxy endpoint is reachable and firewall rules are correct',
+          suggestion:
+            'Verify proxy endpoint is reachable and firewall rules are correct',
           severity: 'warning',
           frequency: count,
         });
         addedSuggestions.add('connection');
-      } else if (message.includes('memory') && !addedSuggestions.has('memory')) {
+      } else if (
+        message.includes('memory') &&
+        !addedSuggestions.has('memory')
+      ) {
         suggestions.push({
           issue: 'Memory-related errors detected',
-          suggestion: 'Consider increasing proxy memory allocation or restarting the proxy',
+          suggestion:
+            'Consider increasing proxy memory allocation or restarting the proxy',
           severity: 'critical',
           frequency: count,
         });
         addedSuggestions.add('memory');
-      } else if (message.includes('authentication') && !addedSuggestions.has('authentication')) {
+      } else if (
+        message.includes('authentication') &&
+        !addedSuggestions.has('authentication')
+      ) {
         suggestions.push({
           issue: 'Authentication errors detected',
           suggestion: 'Verify credentials and authentication configuration',
@@ -440,7 +471,9 @@ export class ProxyDiagnosticsService {
     }
 
     // Check for connection issues (case-insensitive)
-    const connectionErrors = errors.filter((e) => e.message.toLowerCase().includes('connection'));
+    const connectionErrors = errors.filter((e) =>
+      e.message.toLowerCase().includes('connection'),
+    );
     if (connectionErrors.length > 5) {
       issues.push({
         type: 'connection',
@@ -450,7 +483,9 @@ export class ProxyDiagnosticsService {
     }
 
     // Check for timeout issues (case-insensitive)
-    const timeoutErrors = errors.filter((e) => e.message.toLowerCase().includes('timeout'));
+    const timeoutErrors = errors.filter((e) =>
+      e.message.toLowerCase().includes('timeout'),
+    );
     if (timeoutErrors.length > 5) {
       issues.push({
         type: 'timeout',
@@ -460,7 +495,11 @@ export class ProxyDiagnosticsService {
     }
 
     // Check for resource issues (case-insensitive)
-    const resourceErrors = errors.filter((e) => e.message.toLowerCase().includes('memory') || e.message.toLowerCase().includes('resource'));
+    const resourceErrors = errors.filter(
+      (e) =>
+        e.message.toLowerCase().includes('memory') ||
+        e.message.toLowerCase().includes('resource'),
+    );
     if (resourceErrors.length > 3) {
       issues.push({
         type: 'resource',
@@ -538,7 +577,9 @@ export class ProxyDiagnosticsService {
     const logs = this.diagnosticLogs.get(proxyId);
     const cutoffTime = Date.now() - this.logRetentionMs;
 
-    const filteredLogs = logs.filter((log) => new Date(log.timestamp).getTime() > cutoffTime);
+    const filteredLogs = logs.filter(
+      (log) => new Date(log.timestamp).getTime() > cutoffTime,
+    );
 
     if (filteredLogs.length < logs.length) {
       this.diagnosticLogs.set(proxyId, filteredLogs);
@@ -557,8 +598,12 @@ export class ProxyDiagnosticsService {
       diagnostics: this.getDiagnostics(proxyId),
       troubleshooting: this.getTroubleshootingInfo(proxyId),
       allLogs: this.getDiagnosticLogs(proxyId, { limit: this.maxLogsPerProxy }),
-      allErrors: this.getErrorHistory(proxyId, { limit: this.maxErrorsPerProxy }),
-      allEvents: this.getEventHistory(proxyId, { limit: this.maxEventsPerProxy }),
+      allErrors: this.getErrorHistory(proxyId, {
+        limit: this.maxErrorsPerProxy,
+      }),
+      allEvents: this.getEventHistory(proxyId, {
+        limit: this.maxEventsPerProxy,
+      }),
     };
   }
 

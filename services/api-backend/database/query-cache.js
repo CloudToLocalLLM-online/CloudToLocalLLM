@@ -219,9 +219,10 @@ export class QueryCacheService {
    * @returns {Object} Cache statistics
    */
   getStats() {
-    const hitRate = this.metrics.hits + this.metrics.misses > 0
-      ? (this.metrics.hits / (this.metrics.hits + this.metrics.misses)) * 100
-      : 0;
+    const hitRate =
+      this.metrics.hits + this.metrics.misses > 0
+        ? (this.metrics.hits / (this.metrics.hits + this.metrics.misses)) * 100
+        : 0;
 
     return {
       size: this.cache.size,

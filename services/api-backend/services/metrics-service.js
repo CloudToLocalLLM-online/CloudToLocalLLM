@@ -355,7 +355,8 @@ export class MetricsService {
    * @param {Object} violationMetrics - Violation metrics
    */
   recordRateLimitViolation(violationMetrics) {
-    const { violationType = 'unknown', userTier = 'unknown' } = violationMetrics;
+    const { violationType = 'unknown', userTier = 'unknown' } =
+      violationMetrics;
 
     try {
       this.rateLimitViolations.inc({

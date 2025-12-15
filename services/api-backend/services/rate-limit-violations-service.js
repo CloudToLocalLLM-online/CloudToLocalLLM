@@ -206,10 +206,7 @@ export class RateLimitViolationsService {
    * @returns {Promise<Object>} User violation statistics
    */
   async getUserViolationStats(userId, options = {}) {
-    const {
-      startTime = null,
-      endTime = null,
-    } = options;
+    const { startTime = null, endTime = null } = options;
 
     try {
       let query = `
@@ -286,10 +283,7 @@ export class RateLimitViolationsService {
    * @returns {Promise<Object>} IP violation statistics
    */
   async getIpViolationStats(ipAddress, options = {}) {
-    const {
-      startTime = null,
-      endTime = null,
-    } = options;
+    const { startTime = null, endTime = null } = options;
 
     try {
       let query = `
@@ -366,11 +360,7 @@ export class RateLimitViolationsService {
    * @returns {Promise<Array>} Top violators
    */
   async getTopViolators(options = {}) {
-    const {
-      limit = 10,
-      startTime = null,
-      endTime = null,
-    } = options;
+    const { limit = 10, startTime = null, endTime = null } = options;
 
     try {
       let query = `
@@ -434,11 +424,7 @@ export class RateLimitViolationsService {
    * @returns {Promise<Array>} Top violating IPs
    */
   async getTopViolatingIps(options = {}) {
-    const {
-      limit = 10,
-      startTime = null,
-      endTime = null,
-    } = options;
+    const { limit = 10, startTime = null, endTime = null } = options;
 
     try {
       let query = `

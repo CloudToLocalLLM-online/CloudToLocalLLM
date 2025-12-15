@@ -36,9 +36,12 @@ export class TunnelSharingService {
       }
       logger.info('[TunnelSharingService] Tunnel sharing service initialized');
     } catch (error) {
-      logger.error('[TunnelSharingService] Failed to initialize tunnel sharing service', {
-        error: error.message,
-      });
+      logger.error(
+        '[TunnelSharingService] Failed to initialize tunnel sharing service',
+        {
+          error: error.message,
+        },
+      );
       throw error;
     }
   }
@@ -54,7 +57,14 @@ export class TunnelSharingService {
    * @param {string} userAgent - Client user agent
    * @returns {Promise<Object>} Tunnel share record
    */
-  async shareTunnel(tunnelId, ownerId, sharedWithUserId, permission = 'read', ipAddress, userAgent) {
+  async shareTunnel(
+    tunnelId,
+    ownerId,
+    sharedWithUserId,
+    permission = 'read',
+    ipAddress,
+    userAgent,
+  ) {
     const client = await this.pool.connect();
     try {
       await client.query('BEGIN');
@@ -62,7 +72,9 @@ export class TunnelSharingService {
       // Validate permission
       const validPermissions = ['read', 'write', 'admin'];
       if (!validPermissions.includes(permission)) {
-        throw new Error(`Invalid permission. Must be one of: ${validPermissions.join(', ')}`);
+        throw new Error(
+          `Invalid permission. Must be one of: ${validPermissions.join(', ')}`,
+        );
       }
 
       // Verify tunnel ownership
@@ -72,7 +84,9 @@ export class TunnelSharingService {
       );
 
       if (tunnelResult.rows.length === 0) {
-        throw new Error('Tunnel not found or you do not have permission to share it');
+        throw new Error(
+          'Tunnel not found or you do not have permission to share it',
+        );
       }
 
       // Verify shared_with_user exists
@@ -162,7 +176,13 @@ export class TunnelSharingService {
    * @param {string} userAgent - Client user agent
    * @returns {Promise<void>}
    */
-  async revokeTunnelAccess(tunnelId, ownerId, sharedWithUserId, ipAddress, userAgent) {
+  async revokeTunnelAccess(
+    tunnelId,
+    ownerId,
+    sharedWithUserId,
+    ipAddress,
+    userAgent,
+  ) {
     const client = await this.pool.connect();
     try {
       await client.query('BEGIN');
@@ -174,7 +194,9 @@ export class TunnelSharingService {
       );
 
       if (tunnelResult.rows.length === 0) {
-        throw new Error('Tunnel not found or you do not have permission to manage it');
+        throw new Error(
+          'Tunnel not found or you do not have permission to manage it',
+        );
       }
 
       // Revoke access
@@ -231,7 +253,9 @@ export class TunnelSharingService {
       );
 
       if (tunnelResult.rows.length === 0) {
-        throw new Error('Tunnel not found or you do not have permission to view shares');
+        throw new Error(
+          'Tunnel not found or you do not have permission to view shares',
+        );
       }
 
       const result = await this.pool.query(
@@ -309,7 +333,15 @@ export class TunnelSharingService {
    * @param {string} userAgent - Client user agent
    * @returns {Promise<Object>} Share token record
    */
-  async createShareToken(tunnelId, ownerId, permission = 'read', expiresInHours = 24, maxUses = null, ipAddress, userAgent) {
+  async createShareToken(
+    tunnelId,
+    ownerId,
+    permission = 'read',
+    expiresInHours = 24,
+    maxUses = null,
+    ipAddress,
+    userAgent,
+  ) {
     const client = await this.pool.connect();
     try {
       await client.query('BEGIN');
@@ -317,7 +349,9 @@ export class TunnelSharingService {
       // Validate permission
       const validPermissions = ['read', 'write', 'admin'];
       if (!validPermissions.includes(permission)) {
-        throw new Error(`Invalid permission. Must be one of: ${validPermissions.join(', ')}`);
+        throw new Error(
+          `Invalid permission. Must be one of: ${validPermissions.join(', ')}`,
+        );
       }
 
       // Verify tunnel ownership
@@ -327,7 +361,9 @@ export class TunnelSharingService {
       );
 
       if (tunnelResult.rows.length === 0) {
-        throw new Error('Tunnel not found or you do not have permission to create share tokens');
+        throw new Error(
+          'Tunnel not found or you do not have permission to create share tokens',
+        );
       }
 
       // Generate token
@@ -398,7 +434,9 @@ export class TunnelSharingService {
       );
 
       if (tokenResult.rows.length === 0) {
-        throw new Error('Token not found or you do not have permission to revoke it');
+        throw new Error(
+          'Token not found or you do not have permission to revoke it',
+        );
       }
 
       const tunnelId = tokenResult.rows[0].tunnel_id;
@@ -451,7 +489,9 @@ export class TunnelSharingService {
       );
 
       if (tunnelResult.rows.length === 0) {
-        throw new Error('Tunnel not found or you do not have permission to view tokens');
+        throw new Error(
+          'Tunnel not found or you do not have permission to view tokens',
+        );
       }
 
       const result = await this.pool.query(
@@ -552,7 +592,9 @@ export class TunnelSharingService {
       );
 
       if (tunnelResult.rows.length === 0) {
-        throw new Error('Tunnel not found or you do not have permission to view access logs');
+        throw new Error(
+          'Tunnel not found or you do not have permission to view access logs',
+        );
       }
 
       const result = await this.pool.query(
@@ -585,7 +627,13 @@ export class TunnelSharingService {
    * @param {string} userAgent - Client user agent
    * @returns {Promise<Object>} Updated share
    */
-  async updateSharePermission(shareId, ownerId, newPermission, ipAddress, userAgent) {
+  async updateSharePermission(
+    shareId,
+    ownerId,
+    newPermission,
+    ipAddress,
+    userAgent,
+  ) {
     const client = await this.pool.connect();
     try {
       await client.query('BEGIN');
@@ -593,7 +641,9 @@ export class TunnelSharingService {
       // Validate permission
       const validPermissions = ['read', 'write', 'admin'];
       if (!validPermissions.includes(newPermission)) {
-        throw new Error(`Invalid permission. Must be one of: ${validPermissions.join(', ')}`);
+        throw new Error(
+          `Invalid permission. Must be one of: ${validPermissions.join(', ')}`,
+        );
       }
 
       // Verify share ownership
@@ -603,7 +653,9 @@ export class TunnelSharingService {
       );
 
       if (shareResult.rows.length === 0) {
-        throw new Error('Share not found or you do not have permission to update it');
+        throw new Error(
+          'Share not found or you do not have permission to update it',
+        );
       }
 
       const tunnelId = shareResult.rows[0].tunnel_id;
@@ -618,7 +670,14 @@ export class TunnelSharingService {
       await client.query(
         `INSERT INTO tunnel_access_logs (tunnel_id, user_id, action, permission, ip_address, user_agent)
          VALUES ($1, $2, $3, $4, $5, $6)`,
-        [tunnelId, ownerId, 'update_permission', newPermission, ipAddress, userAgent],
+        [
+          tunnelId,
+          ownerId,
+          'update_permission',
+          newPermission,
+          ipAddress,
+          userAgent,
+        ],
       );
 
       await client.query('COMMIT');

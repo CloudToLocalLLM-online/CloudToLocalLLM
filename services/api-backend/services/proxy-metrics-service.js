@@ -34,9 +34,12 @@ export class ProxyMetricsService {
       }
       logger.info('[ProxyMetricsService] Proxy metrics service initialized');
     } catch (error) {
-      logger.error('[ProxyMetricsService] Failed to initialize proxy metrics service', {
-        error: error.message,
-      });
+      logger.error(
+        '[ProxyMetricsService] Failed to initialize proxy metrics service',
+        {
+          error: error.message,
+        },
+      );
       throw error;
     }
   }
@@ -55,7 +58,9 @@ export class ProxyMetricsService {
       const validEventTypes = ['request', 'error', 'connection', 'latency'];
 
       if (!validEventTypes.includes(eventType)) {
-        throw new Error(`Invalid event type. Must be one of: ${validEventTypes.join(', ')}`);
+        throw new Error(
+          `Invalid event type. Must be one of: ${validEventTypes.join(', ')}`,
+        );
       }
 
       const result = await this.pool.query(

@@ -9,7 +9,6 @@
 
 import express from 'express';
 
-
 /**
  * Create versioned health check endpoint
  * Shows how to implement version-specific handlers

@@ -299,7 +299,10 @@ export function authorizeRBAC(req, res, next) {
     const jwtRoles = req.user['https://cloudtolocalllm.online/roles'] || [];
 
     // Add admin roles if present
-    if (userMetadata.role === 'super_admin' || appMetadata.role === 'super_admin') {
+    if (
+      userMetadata.role === 'super_admin' ||
+      appMetadata.role === 'super_admin'
+    ) {
       userRoles.push(ROLES.SUPER_ADMIN);
     } else if (
       userMetadata.role === 'support_admin' ||

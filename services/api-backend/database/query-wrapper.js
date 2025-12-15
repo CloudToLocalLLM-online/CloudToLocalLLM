@@ -146,7 +146,9 @@ export function wrapPool(pool) {
     );
   };
 
-  logger.info('🔵 [Query Wrapper] Pool query method wrapped for performance tracking');
+  logger.info(
+    '🔵 [Query Wrapper] Pool query method wrapped for performance tracking',
+  );
 
   return pool;
 }

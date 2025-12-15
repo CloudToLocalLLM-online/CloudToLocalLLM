@@ -8,7 +8,7 @@ export default {
     'src/**/*.ts',
     '!src/**/*.test.ts',
     '!src/**/*.spec.ts',
-    '!src/**/index.ts'
+    '!src/**/index.ts',
   ],
   coveragePathIgnorePatterns: ['/node_modules/'],
   transform: {
@@ -16,12 +16,12 @@ export default {
       useESM: true,
       tsconfig: {
         module: 'ESNext',
-        target: 'ES2020'
-      }
-    }]
+        target: 'ES2020',
+      },
+    }],
   },
   extensionsToTreatAsEsm: ['.ts'],
   moduleNameMapper: {
-    '^(\\.{1,2}/.*)\\.js$': '$1'
-  }
+    '^(\\.{1,2}/.*)\\.js$': '$1',
+  },
 };

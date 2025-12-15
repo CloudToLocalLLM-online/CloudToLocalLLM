@@ -45,11 +45,13 @@ export class RetryService {
     }
 
     // Retry on network errors
-    if (error.code === 'ECONNREFUSED' ||
-        error.code === 'ECONNRESET' ||
-        error.code === 'ETIMEDOUT' ||
-        error.code === 'EHOSTUNREACH' ||
-        error.code === 'ENETUNREACH') {
+    if (
+      error.code === 'ECONNREFUSED' ||
+      error.code === 'ECONNRESET' ||
+      error.code === 'ETIMEDOUT' ||
+      error.code === 'EHOSTUNREACH' ||
+      error.code === 'ENETUNREACH'
+    ) {
       return true;
     }
 
@@ -73,7 +75,8 @@ export class RetryService {
    */
   calculateDelay(attemptNumber) {
     // Exponential backoff: initialDelay * (multiplier ^ attemptNumber)
-    const exponentialDelay = this.initialDelayMs * Math.pow(this.backoffMultiplier, attemptNumber);
+    const exponentialDelay =
+      this.initialDelayMs * Math.pow(this.backoffMultiplier, attemptNumber);
 
     // Cap at max delay
     const cappedDelay = Math.min(exponentialDelay, this.maxDelayMs);
@@ -90,7 +93,7 @@ export class RetryService {
    * @returns {Promise} - Resolves after the delay
    */
   sleep(ms) {
-    return new Promise(resolve => setTimeout(resolve, ms));
+    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
   /**
@@ -113,7 +116,8 @@ export class RetryService {
         if (attempt > 0) {
           this.metrics.retriedAttempts++;
           this.metrics.totalRetries += attempt;
-          this.metrics.averageRetries = this.metrics.totalRetries / this.metrics.retriedAttempts;
+          this.metrics.averageRetries =
+            this.metrics.totalRetries / this.metrics.retriedAttempts;
         }
 
         return result;
@@ -186,7 +190,10 @@ export class RetryManager {
    */
   getOrCreate(serviceName, options = {}) {
     if (!this.retryServices.has(serviceName)) {
-      this.retryServices.set(serviceName, new RetryService({ name: serviceName, ...options }));
+      this.retryServices.set(
+        serviceName,
+        new RetryService({ name: serviceName, ...options }),
+      );
     }
     return this.retryServices.get(serviceName);
   }

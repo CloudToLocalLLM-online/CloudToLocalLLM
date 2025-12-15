@@ -62,7 +62,8 @@ export const DEPRECATED_ENDPOINTS = {
 export const MIGRATION_GUIDES = {
   MIGRATION_V1_TO_V2: {
     title: 'Migrating from API v1 to v2',
-    description: 'Complete guide for migrating from CloudToLocalLLM API v1 to v2',
+    description:
+      'Complete guide for migrating from CloudToLocalLLM API v1 to v2',
     steps: [
       {
         step: 1,
@@ -97,7 +98,8 @@ const email = data.user.email;`,
       {
         step: 4,
         title: 'Test Thoroughly',
-        description: 'Test all API endpoints with v2 before deploying to production',
+        description:
+          'Test all API endpoints with v2 before deploying to production',
         resources: [
           'https://docs.cloudtolocalllm.online/api/v2',
           'https://api.cloudtolocalllm.online/api/docs',
@@ -227,9 +229,9 @@ export function getDeprecationHeaders(path) {
   }
 
   const headers = {
-    'Deprecation': 'true',
-    'Sunset': new Date(info.sunsetAt).toUTCString(),
-    'Warning': `299 - "${formatDeprecationWarning(path)}"`,
+    Deprecation: 'true',
+    Sunset: new Date(info.sunsetAt).toUTCString(),
+    Warning: `299 - "${formatDeprecationWarning(path)}"`,
   };
 
   if (info.replacedBy) {

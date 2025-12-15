@@ -9,25 +9,30 @@ This document describes the enhanced Express.js middleware pipeline for the Clou
 The order of middleware is critical for proper request handling. The pipeline is organized as follows:
 
 ### 1. Sentry Request Handler
+
 - **Purpose**: Error tracking and distributed tracing
 - **Must be first**: Captures all errors and traces
 - **Module**: `@sentry/node`
 
 ### 2. Sentry Tracing Handler
+
 - **Purpose**: Distributed tracing for request tracking
 - **Module**: `@sentry/node`
 
 ### 3. CORS Middleware
+
 - **Purpose**: Handle Cross-Origin Resource Sharing
 - **Handles**: Preflight OPTIONS requests
 - **Module**: `cors`
 
 ### 4. Helmet Security Headers
+
 - **Purpose**: Add security headers to responses
 - **Headers**: CSP, X-Frame-Options, X-Content-Type-Options, etc.
 - **Module**: `helmet`
 
 ### 5. Request Logging
+
 - **Purpose**: Log all incoming requests with correlation IDs
 - **Features**:
   - Generates unique correlation IDs
@@ -36,6 +41,7 @@ The order of middleware is critical for proper request handling. The pipeline is
 - **Module**: `middleware/request-logging.js`
 
 ### 6. Request Validation
+
 - **Purpose**: Validate request format and headers
 - **Checks**:
   - Content-Type validation
@@ -44,6 +50,7 @@ The order of middleware is critical for proper request handling. The pipeline is
 - **Module**: `middleware/request-validation.js`
 
 ### 7. Rate Limiting
+
 - **Purpose**: Protect against abuse and DDoS
 - **Features**:
   - Per-IP rate limiting
@@ -52,41 +59,49 @@ The order of middleware is critical for proper request handling. The pipeline is
 - **Module**: `express-rate-limit`
 
 ### 8. Body Parsing
+
 - **Purpose**: Parse request body
 - **Formats**: JSON, URL-encoded
 - **Limit**: 10MB
 - **Module**: `express`
 
 ### 9. Request Timeout
+
 - **Purpose**: Prevent long-running requests
 - **Default**: 30 seconds
 - **Response**: 408 Request Timeout
 - **Module**: `middleware/request-timeout.js`
 
 ### 10. Authentication (Selective)
+
 - **Purpose**: Validate JWT tokens
 - **Applied to**: Protected routes only
 - **Module**: `middleware/auth.js`
 
 ### 11. Authorization (Selective)
+
 - **Purpose**: Check user permissions
 - **Applied to**: Admin and tier-restricted routes
 - **Module**: `middleware/tier-check.js`
 
 ### 12. Compression (Optional)
+
 - **Purpose**: Compress response body
 - **Note**: Optional, can be added if compression package is installed
 
 ### 13. Error Handling
+
 - **Purpose**: Catch and format errors
 - **Module**: `@sentry/node` + custom error handler
 
 ## New Middleware Files
 
 ### request-logging.js
+
 Implements structured request/response logging with correlation IDs for distributed tracing.
 
 **Features**:
+
 - Generates unique correlation IDs (UUID format)
 - Preserves existing correlation IDs from headers
 - Logs request start and completion
@@ -94,47 +109,59 @@ Implements structured request/response logging with correlation IDs for distribu
 - Adds correlation ID to response headers
 
 **Usage**:
+
 ```javascript
 import { requestLoggingMiddleware } from './middleware/request-logging.js';
 app.use(requestLoggingMiddleware);
 ```
 
 ### request-validation.js
+
 Validates request format and headers before processing.
 
 **Features**:
+
 - Validates Content-Type header
 - Checks Authorization header format
 - Validates request body size
 - Skips validation for GET/HEAD/OPTIONS requests
 
 **Usage**:
+
 ```javascript
 import { requestValidationMiddleware } from './middleware/request-validation.js';
 app.use(requestValidationMiddleware);
 ```
 
 ### request-timeout.js
+
 Implements configurable request timeout handling.
 
 **Features**:
+
 - Configurable timeout (default: 30 seconds)
 - Graceful timeout response
 - Clears timeout on response completion
 - Skips WebSocket upgrades
 
 **Usage**:
+
 ```javascript
-import { requestTimeoutMiddleware, createRequestTimeoutMiddleware } from './middleware/request-timeout.js';
+import {
+  requestTimeoutMiddleware,
+  createRequestTimeoutMiddleware,
+} from './middleware/request-timeout.js';
 app.use(requestTimeoutMiddleware); // 30 second default
 // Or with custom timeout:
 app.use(createRequestTimeoutMiddleware(60000)); // 60 seconds
 ```
 
 ### graceful-shutdown.js
+
 Manages graceful shutdown with in-flight request completion.
 
 **Features**:
+
 - Tracks active connections
 - Waits for in-flight requests to complete
 - Configurable shutdown timeout
@@ -142,6 +169,7 @@ Manages graceful shutdown with in-flight request completion.
 - Prevents new connections during shutdown
 
 **Usage**:
+
 ```javascript
 import { setupGracefulShutdown } from './middleware/graceful-shutdown.js';
 const shutdownManager = setupGracefulShutdown(server, {
@@ -153,20 +181,27 @@ const shutdownManager = setupGracefulShutdown(server, {
 ```
 
 ### pipeline.js
+
 Centralized middleware pipeline configuration.
 
 **Features**:
+
 - Configures all middleware in correct order
 - Provides helper functions for auth middleware
 - Centralizes middleware configuration
 - Ensures consistent ordering across deployments
 
 **Usage**:
+
 ```javascript
 import { setupMiddlewarePipeline } from './middleware/pipeline.js';
 setupMiddlewarePipeline(app, {
-  corsOptions: { /* CORS config */ },
-  rateLimitOptions: { /* Rate limit config */ },
+  corsOptions: {
+    /* CORS config */
+  },
+  rateLimitOptions: {
+    /* Rate limit config */
+  },
   timeoutMs: 30000,
   enableCompression: true,
 });
@@ -175,9 +210,13 @@ setupMiddlewarePipeline(app, {
 ## Configuration
 
 ### CORS Configuration
+
 ```javascript
 const corsOptions = {
-  origin: ['https://app.cloudtolocalllm.online', 'https://cloudtolocalllm.online'],
+  origin: [
+    'https://app.cloudtolocalllm.online',
+    'https://cloudtolocalllm.online',
+  ],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Correlation-ID'],
@@ -187,6 +226,7 @@ const corsOptions = {
 ```
 
 ### Rate Limiting Configuration
+
 ```javascript
 const rateLimitOptions = {
   windowMs: 15 * 60 * 1000, // 15 minutes
@@ -196,6 +236,7 @@ const rateLimitOptions = {
 ```
 
 ### Request Timeout Configuration
+
 ```javascript
 const timeoutMs = 30000; // 30 seconds
 ```
@@ -228,6 +269,7 @@ Exit process
 ### Shutdown Timeout
 
 If in-flight requests don't complete within the timeout (default: 10 seconds), the server will:
+
 1. Log warning about remaining connections
 2. Force close remaining connections
 3. Exit process
@@ -255,6 +297,7 @@ The middleware pipeline includes comprehensive error handling:
 6. **Server Errors** (500): Internal server error
 
 All errors include:
+
 - Error code for programmatic handling
 - Human-readable message
 - Correlation ID for tracing
@@ -302,21 +345,25 @@ To test the middleware pipeline:
 ## Troubleshooting
 
 ### Requests timing out
+
 - Check if request processing is taking > 30 seconds
 - Increase timeout if needed: `timeoutMs: 60000`
 - Check for slow database queries or external API calls
 
 ### CORS errors
+
 - Verify origin is in allowed list
 - Check preflight OPTIONS request handling
 - Verify CORS headers in response
 
 ### Rate limiting issues
+
 - Check if IP is being rate limited
 - Verify rate limit configuration
-- Check X-RateLimit-* headers in response
+- Check X-RateLimit-\* headers in response
 
 ### Graceful shutdown not working
+
 - Verify SIGTERM/SIGINT handlers are registered
 - Check for long-running requests preventing shutdown
 - Increase shutdown timeout if needed

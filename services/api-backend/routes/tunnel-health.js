@@ -35,9 +35,12 @@ export async function initializeTunnelHealthService() {
     await tunnelHealthService.initialize();
     logger.info('[TunnelHealthRoutes] Tunnel health service initialized');
   } catch (error) {
-    logger.error('[TunnelHealthRoutes] Failed to initialize tunnel health service', {
-      error: error.message,
-    });
+    logger.error(
+      '[TunnelHealthRoutes] Failed to initialize tunnel health service',
+      {
+        error: error.message,
+      },
+    );
     throw error;
   }
 }
@@ -77,7 +80,10 @@ router.get('/:id/status', authenticateJWT, async(req, res) => {
     const userId = req.user.sub;
     const { id: tunnelId } = req.params;
 
-    const statusSummary = await tunnelHealthService.getTunnelStatusSummary(tunnelId, userId);
+    const statusSummary = await tunnelHealthService.getTunnelStatusSummary(
+      tunnelId,
+      userId,
+    );
 
     logger.debug('[TunnelHealthRoutes] Tunnel status retrieved', {
       tunnelId,
@@ -146,7 +152,10 @@ router.get('/:id/health', authenticateJWT, async(req, res) => {
     const userId = req.user.sub;
     const { id: tunnelId } = req.params;
 
-    const healthStatus = await tunnelHealthService.getEndpointHealthStatus(tunnelId, userId);
+    const healthStatus = await tunnelHealthService.getEndpointHealthStatus(
+      tunnelId,
+      userId,
+    );
 
     logger.debug('[TunnelHealthRoutes] Endpoint health status retrieved', {
       tunnelId,
@@ -232,7 +241,8 @@ router.post('/:id/health-check', authenticateJWT, async(req, res) => {
     }
 
     // Perform health check
-    const healthCheckResults = await tunnelHealthService.performHealthCheck(tunnelId);
+    const healthCheckResults =
+      await tunnelHealthService.performHealthCheck(tunnelId);
 
     logger.info('[TunnelHealthRoutes] Health check triggered', {
       tunnelId,

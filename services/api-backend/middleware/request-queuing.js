@@ -21,13 +21,19 @@ export function createRequestQueuingMiddleware(options = {}) {
 
   return async(req, res, next) => {
     // Skip queuing for certain request types
-    if (req.method === 'OPTIONS' || req.method === 'GET' || req.method === 'HEAD') {
+    if (
+      req.method === 'OPTIONS' ||
+      req.method === 'GET' ||
+      req.method === 'HEAD'
+    ) {
       return next();
     }
 
     // Get rate limit info from response headers (set by rate limiter)
     const rateLimitLimit = parseInt(req.get('X-RateLimit-Limit') || '100');
-    const rateLimitRemaining = parseInt(req.get('X-RateLimit-Remaining') || rateLimitLimit);
+    const rateLimitRemaining = parseInt(
+      req.get('X-RateLimit-Remaining') || rateLimitLimit,
+    );
 
     // Check if we should queue this request
     if (!queueService.shouldQueue(rateLimitRemaining, rateLimitLimit)) {
@@ -56,12 +62,15 @@ export function createRequestQueuingMiddleware(options = {}) {
 
     if (!queueResult.queued) {
       // Queue is full, reject request
-      logger.warn(`Request rejected - queue full for ${queueType} ${identifier}`, {
-        queueType,
-        identifier,
-        method: req.method,
-        path: req.path,
-      });
+      logger.warn(
+        `Request rejected - queue full for ${queueType} ${identifier}`,
+        {
+          queueType,
+          identifier,
+          method: req.method,
+          path: req.path,
+        },
+      );
 
       return res.status(429).json({
         error: 'Too many requests',
@@ -81,13 +90,16 @@ export function createRequestQueuingMiddleware(options = {}) {
       req.queuedDuration = result.queuedDuration;
       req.queuePosition = queueResult.position;
 
-      logger.debug(`Request processed from queue for ${queueType} ${identifier}`, {
-        queueType,
-        identifier,
-        queuedDuration: result.queuedDuration,
-        method: req.method,
-        path: req.path,
-      });
+      logger.debug(
+        `Request processed from queue for ${queueType} ${identifier}`,
+        {
+          queueType,
+          identifier,
+          queuedDuration: result.queuedDuration,
+          method: req.method,
+          path: req.path,
+        },
+      );
 
       // Add queue info to response headers
       res.set('X-Queue-Position', queueResult.position);
@@ -95,19 +107,23 @@ export function createRequestQueuingMiddleware(options = {}) {
 
       next();
     } catch (error) {
-      logger.error(`Error processing queued request for ${queueType} ${identifier}`, {
-        queueType,
-        identifier,
-        error: error.message,
-        method: req.method,
-        path: req.path,
-      });
+      logger.error(
+        `Error processing queued request for ${queueType} ${identifier}`,
+        {
+          queueType,
+          identifier,
+          error: error.message,
+          method: req.method,
+          path: req.path,
+        },
+      );
 
       if (error.message === 'QUEUE_TIMEOUT') {
         return res.status(504).json({
           error: 'Request timeout',
           code: 'QUEUE_TIMEOUT',
-          message: 'Your request was queued but timed out waiting for processing.',
+          message:
+            'Your request was queued but timed out waiting for processing.',
           correlationId: req.correlationId,
         });
       }

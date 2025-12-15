@@ -166,7 +166,14 @@ export async function logLoginSuccess(options = {}) {
  * @returns {Promise<Object>} Audit log entry
  */
 export async function logLoginFailure(options = {}) {
-  const { userId = null, email = null, ipAddress, userAgent, reason, details = {} } = options;
+  const {
+    userId = null,
+    email = null,
+    ipAddress,
+    userAgent,
+    reason,
+    details = {},
+  } = options;
 
   return logAuthEvent({
     userId,
@@ -293,7 +300,13 @@ export async function logSessionTimeout(options = {}) {
  * @returns {Promise<Array>} Audit log entries
  */
 export async function getAuthAuditLogs(userId, options = {}) {
-  const { limit = 50, offset = 0, eventType = null, startDate = null, endDate = null } = options;
+  const {
+    limit = 50,
+    offset = 0,
+    eventType = null,
+    startDate = null,
+    endDate = null,
+  } = options;
 
   try {
     let sql = `SELECT id, user_id, action, event_type, details, ip_address, user_agent, severity, created_at
@@ -351,7 +364,8 @@ export async function getAuthAuditLogsCount(userId, options = {}) {
   const { eventType = null, startDate = null, endDate = null } = options;
 
   try {
-    let sql = 'SELECT COUNT(*) as count FROM auth_audit_logs WHERE user_id = $1';
+    let sql =
+      'SELECT COUNT(*) as count FROM auth_audit_logs WHERE user_id = $1';
     const params = [userId];
     let paramIndex = 2;
 
@@ -523,7 +537,12 @@ export async function getAuthAuditLogsForAdmin(options = {}) {
  * @returns {Promise<number>} Total count of audit logs
  */
 export async function getAuthAuditLogsCountForAdmin(options = {}) {
-  const { eventType = null, severity = null, startDate = null, endDate = null } = options;
+  const {
+    eventType = null,
+    severity = null,
+    startDate = null,
+    endDate = null,
+  } = options;
 
   try {
     let sql = 'SELECT COUNT(*) as count FROM auth_audit_logs WHERE 1=1';

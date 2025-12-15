@@ -16,7 +16,11 @@ import { logger } from '../utils/logger.js';
  * @param {Object} options - Configuration options
  * @returns {Promise} - The result of the function
  */
-export async function executeWithRetryAndCircuitBreaker(serviceName, fn, options = {}) {
+export async function executeWithRetryAndCircuitBreaker(
+  serviceName,
+  fn,
+  options = {},
+) {
   const {
     retryConfig = {},
     circuitBreakerConfig = {},

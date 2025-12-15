@@ -8,23 +8,25 @@ import winston from 'winston';
 export class ProxyConfigService {
   constructor(db = null, logger = null) {
     this.db = db;
-    this.logger = logger || winston.createLogger({
-      level: process.env.LOG_LEVEL || 'info',
-      format: winston.format.combine(
-        winston.format.timestamp(),
-        winston.format.errors({ stack: true }),
-        winston.format.json(),
-      ),
-      defaultMeta: { service: 'proxy-config' },
-      transports: [
-        new winston.transports.Console({
-          format: winston.format.combine(
-            winston.format.timestamp(),
-            winston.format.simple(),
-          ),
-        }),
-      ],
-    });
+    this.logger =
+      logger ||
+      winston.createLogger({
+        level: process.env.LOG_LEVEL || 'info',
+        format: winston.format.combine(
+          winston.format.timestamp(),
+          winston.format.errors({ stack: true }),
+          winston.format.json(),
+        ),
+        defaultMeta: { service: 'proxy-config' },
+        transports: [
+          new winston.transports.Console({
+            format: winston.format.combine(
+              winston.format.timestamp(),
+              winston.format.simple(),
+            ),
+          }),
+        ],
+      });
 
     // Default configuration values
     this.defaultConfig = {
@@ -68,9 +70,16 @@ export class ProxyConfigService {
       retry_enabled: { type: 'boolean' },
       retry_max_attempts: { type: 'number', min: 1, max: 10 },
       retry_backoff_ms: { type: 'number', min: 100, max: 60000 },
-      logging_level: { type: 'enum', values: ['debug', 'info', 'warn', 'error'] },
+      logging_level: {
+        type: 'enum',
+        values: ['debug', 'info', 'warn', 'error'],
+      },
       metrics_collection_enabled: { type: 'boolean' },
-      metrics_collection_interval_seconds: { type: 'number', min: 1, max: 3600 },
+      metrics_collection_interval_seconds: {
+        type: 'number',
+        min: 1,
+        max: 3600,
+      },
       health_check_enabled: { type: 'boolean' },
       health_check_interval_seconds: { type: 'number', min: 1, max: 300 },
       health_check_timeout_seconds: { type: 'number', min: 1, max: 60 },
@@ -138,7 +147,11 @@ export class ProxyConfigService {
       }
 
       // Length validation for strings
-      if (rule.type === 'string' && rule.maxLength && value.length > rule.maxLength) {
+      if (
+        rule.type === 'string' &&
+        rule.maxLength &&
+        value.length > rule.maxLength
+      ) {
         errors.push({
           field: key,
           message: `${key} must be at most ${rule.maxLength} characters`,
@@ -279,7 +292,12 @@ export class ProxyConfigService {
    * @param {string} changeReason - Reason for the change
    * @returns {Promise<Object>} Updated configuration
    */
-  async updateProxyConfig(proxyId, userId, updates, changeReason = 'Manual update') {
+  async updateProxyConfig(
+    proxyId,
+    userId,
+    updates,
+    changeReason = 'Manual update',
+  ) {
     if (!proxyId || !userId) {
       throw new Error('proxyId and userId are required');
     }
@@ -378,7 +396,10 @@ export class ProxyConfigService {
     }
 
     try {
-      await this.db.query('DELETE FROM proxy_configurations WHERE proxy_id = $1', [proxyId]);
+      await this.db.query(
+        'DELETE FROM proxy_configurations WHERE proxy_id = $1',
+        [proxyId],
+      );
 
       this.logger.info('Proxy configuration deleted', { proxyId });
     } catch (error) {
@@ -429,7 +450,13 @@ export class ProxyConfigService {
    * @param {boolean} isDefault - Whether this is the default template
    * @returns {Promise<Object>} Created template
    */
-  async createConfigTemplate(name, userId, config, description = '', isDefault = false) {
+  async createConfigTemplate(
+    name,
+    userId,
+    config,
+    description = '',
+    isDefault = false,
+  ) {
     if (!name || !userId) {
       throw new Error('name and userId are required');
     }

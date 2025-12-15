@@ -88,7 +88,9 @@ export class DatabaseMigratorPG {
             END $$;
           `);
         } catch (repairError) {
-          this.logger.warn('Failed to repair schema_migrations sequence', { error: repairError.message });
+          this.logger.warn('Failed to repair schema_migrations sequence', {
+            error: repairError.message,
+          });
         }
 
         return;
@@ -114,14 +116,19 @@ export class DatabaseMigratorPG {
       // If we get a type constraint error, it might be due to sequence conflicts
       // Try to clean up and retry
       if (error.message.includes('pg_type_typname_nsp_index')) {
-        this.logger.warn('Detected type constraint conflict, attempting cleanup...', { error: error.message });
+        this.logger.warn(
+          'Detected type constraint conflict, attempting cleanup...',
+          { error: error.message },
+        );
         try {
           // Drop any conflicting sequences that might exist
           // WARNING: This is dangerous if the table exists! It strips the default value from the ID column.
           // await this.pool.query(`
           //   DROP SEQUENCE IF EXISTS schema_migrations_id_seq CASCADE;
           // `);
-          this.logger.info('Cleaned up conflicting sequence, retrying table creation...');
+          this.logger.info(
+            'Cleaned up conflicting sequence, retrying table creation...',
+          );
 
           // Retry table creation
           const sql = `
@@ -141,15 +148,20 @@ export class DatabaseMigratorPG {
           this.logger.info('Migrations table created after cleanup (PG)');
           return;
         } catch (cleanupError) {
-          this.logger.error('Failed to create migrations table even after cleanup', {
-            originalError: error.message,
-            cleanupError: cleanupError.message,
-          });
+          this.logger.error(
+            'Failed to create migrations table even after cleanup',
+            {
+              originalError: error.message,
+              cleanupError: cleanupError.message,
+            },
+          );
           throw cleanupError;
         }
       }
 
-      this.logger.error('Failed to create migrations table', { error: error.message });
+      this.logger.error('Failed to create migrations table', {
+        error: error.message,
+      });
       throw error;
     }
   }
@@ -226,10 +238,22 @@ export class DatabaseMigratorPG {
         await client.query(schemaSQL);
       } catch (sqlError) {
         // Ignore specific extension errors that might cause race conditions
-        if (sqlError.code === '23505' && sqlError.constraint === 'pg_extension_name_index') {
-          this.logger.warn('Ignored extension duplicate error during initial schema application', { error: sqlError.message });
-        } else if (sqlError.message && sqlError.message.includes('already exists')) {
-          this.logger.warn('Ignored "already exists" error during initial schema application', { error: sqlError.message });
+        if (
+          sqlError.code === '23505' &&
+          sqlError.constraint === 'pg_extension_name_index'
+        ) {
+          this.logger.warn(
+            'Ignored extension duplicate error during initial schema application',
+            { error: sqlError.message },
+          );
+        } else if (
+          sqlError.message &&
+          sqlError.message.includes('already exists')
+        ) {
+          this.logger.warn(
+            'Ignored "already exists" error during initial schema application',
+            { error: sqlError.message },
+          );
         } else {
           throw sqlError;
         }
@@ -250,7 +274,9 @@ export class DatabaseMigratorPG {
         );
         this.logger.info('Initial schema migration recorded (PG)', { version });
       } else {
-        this.logger.info('Initial schema migration already recorded (PG)', { version });
+        this.logger.info('Initial schema migration already recorded (PG)', {
+          version,
+        });
       }
 
       await client.query('COMMIT');
@@ -317,7 +343,9 @@ export class DatabaseMigratorPG {
       try {
         mkdirSync(migrationsDir, { recursive: true });
       } catch (error) {
-        this.logger.warn('Failed to create migrations directory', { error: error.message });
+        this.logger.warn('Failed to create migrations directory', {
+          error: error.message,
+        });
         return;
       }
       return;
@@ -364,7 +392,9 @@ export class DatabaseMigratorPG {
         this.logger.error(`Failed to apply migration ${migrationFile}`, {
           error: sqlError.message,
           migrationFile,
-          sqlPreview: migrationSQL.substring(0, 200) + (migrationSQL.length > 200 ? '...' : ''),
+          sqlPreview:
+            migrationSQL.substring(0, 200) +
+            (migrationSQL.length > 200 ? '...' : ''),
         });
         throw sqlError;
       }
@@ -393,7 +423,9 @@ export class DatabaseMigratorPG {
           [version, name, 'failed'],
         );
       } catch (recError) {
-        this.logger.warn('Failed to record migration failure', { error: recError.message });
+        this.logger.warn('Failed to record migration failure', {
+          error: recError.message,
+        });
       }
 
       this.logger.error('Failed to apply migration (PG)', {

@@ -140,7 +140,9 @@ export async function optionalApiKeyAuth(req, res, next) {
  * @returns {Function} Express middleware
  */
 export function requireApiKeyScope(requiredScopes) {
-  const scopes = Array.isArray(requiredScopes) ? requiredScopes : [requiredScopes];
+  const scopes = Array.isArray(requiredScopes)
+    ? requiredScopes
+    : [requiredScopes];
 
   return (req, res, next) => {
     if (!req.apiKey) {
@@ -207,7 +209,10 @@ export function apiKeyAuth(_options = {}) {
 
     // Add rate limit headers
     res.set('X-RateLimit-Limit', rateLimit.toString());
-    res.set('X-RateLimit-Remaining', Math.max(0, rateLimit - keyData.count).toString());
+    res.set(
+      'X-RateLimit-Remaining',
+      Math.max(0, rateLimit - keyData.count).toString(),
+    );
     res.set('X-RateLimit-Reset', (keyData.windowStart + windowMs).toString());
 
     if (keyData.count > rateLimit) {

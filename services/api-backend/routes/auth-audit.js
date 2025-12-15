@@ -222,78 +222,83 @@ router.get('/audit-logs/failed-attempts', authenticateJWT, async(req, res) => {
  * - Supports admin activity logging and audit trails
  * - Provides system-wide audit log retrieval
  */
-router.get('/admin/auth/audit-logs', authenticateJWT, requireAdmin, async(req, res) => {
-  try {
-    // Parse query parameters
-    let limit = parseInt(req.query.limit) || 100;
-    let offset = parseInt(req.query.offset) || 0;
-    const eventType = req.query.eventType || null;
-    const severity = req.query.severity || null;
-    const startDate = req.query.startDate || null;
-    const endDate = req.query.endDate || null;
+router.get(
+  '/admin/auth/audit-logs',
+  authenticateJWT,
+  requireAdmin,
+  async(req, res) => {
+    try {
+      // Parse query parameters
+      let limit = parseInt(req.query.limit) || 100;
+      let offset = parseInt(req.query.offset) || 0;
+      const eventType = req.query.eventType || null;
+      const severity = req.query.severity || null;
+      const startDate = req.query.startDate || null;
+      const endDate = req.query.endDate || null;
 
-    // Validate and constrain limit
-    if (limit < 1) {
-      limit = 1;
-    }
-    if (limit > 500) {
-      limit = 500;
-    }
+      // Validate and constrain limit
+      if (limit < 1) {
+        limit = 1;
+      }
+      if (limit > 500) {
+        limit = 500;
+      }
 
-    // Validate and constrain offset
-    if (offset < 0) {
-      offset = 0;
-    }
+      // Validate and constrain offset
+      if (offset < 0) {
+        offset = 0;
+      }
 
-    logger.info('[AuthAudit] Admin retrieving system-wide audit logs', {
-      adminUserId: req.user?.sub,
-      limit,
-      offset,
-      eventType,
-      severity,
-    });
-
-    // Get audit logs
-    const logs = await getAuthAuditLogsForAdmin({
-      limit,
-      offset,
-      eventType,
-      severity,
-      startDate,
-      endDate,
-    });
-
-    // Get total count
-    const total = await getAuthAuditLogsCountForAdmin({
-      eventType,
-      severity,
-      startDate,
-      endDate,
-    });
-
-    res.json({
-      success: true,
-      data: logs,
-      pagination: {
+      logger.info('[AuthAudit] Admin retrieving system-wide audit logs', {
+        adminUserId: req.user?.sub,
         limit,
         offset,
-        total,
-        hasMore: offset + limit < total,
-      },
-    });
-  } catch (error) {
-    logger.error('[AuthAudit] Failed to retrieve admin audit logs', {
-      error: error.message,
-      adminUserId: req.user?.sub,
-    });
+        eventType,
+        severity,
+      });
 
-    res.status(500).json({
-      error: 'Failed to retrieve audit logs',
-      code: 'ADMIN_AUDIT_LOG_RETRIEVAL_ERROR',
-      message: error.message,
-    });
-  }
-});
+      // Get audit logs
+      const logs = await getAuthAuditLogsForAdmin({
+        limit,
+        offset,
+        eventType,
+        severity,
+        startDate,
+        endDate,
+      });
+
+      // Get total count
+      const total = await getAuthAuditLogsCountForAdmin({
+        eventType,
+        severity,
+        startDate,
+        endDate,
+      });
+
+      res.json({
+        success: true,
+        data: logs,
+        pagination: {
+          limit,
+          offset,
+          total,
+          hasMore: offset + limit < total,
+        },
+      });
+    } catch (error) {
+      logger.error('[AuthAudit] Failed to retrieve admin audit logs', {
+        error: error.message,
+        adminUserId: req.user?.sub,
+      });
+
+      res.status(500).json({
+        error: 'Failed to retrieve audit logs',
+        code: 'ADMIN_AUDIT_LOG_RETRIEVAL_ERROR',
+        message: error.message,
+      });
+    }
+  },
+);
 
 /**
  * GET /admin/auth/audit-logs/failed-attempts
@@ -309,71 +314,79 @@ router.get('/admin/auth/audit-logs', authenticateJWT, requireAdmin, async(req, r
  * - Supports admin activity logging and audit trails
  * - Provides system-wide failed login attempt retrieval
  */
-router.get('/admin/auth/audit-logs/failed-attempts', authenticateJWT, requireAdmin, async(req, res) => {
-  try {
-    // Parse query parameters
-    let limit = parseInt(req.query.limit) || 100;
-    let offset = parseInt(req.query.offset) || 0;
-    const startDate = req.query.startDate || null;
-    const endDate = req.query.endDate || null;
+router.get(
+  '/admin/auth/audit-logs/failed-attempts',
+  authenticateJWT,
+  requireAdmin,
+  async(req, res) => {
+    try {
+      // Parse query parameters
+      let limit = parseInt(req.query.limit) || 100;
+      let offset = parseInt(req.query.offset) || 0;
+      const startDate = req.query.startDate || null;
+      const endDate = req.query.endDate || null;
 
-    // Validate and constrain limit
-    if (limit < 1) {
-      limit = 1;
-    }
-    if (limit > 500) {
-      limit = 500;
-    }
+      // Validate and constrain limit
+      if (limit < 1) {
+        limit = 1;
+      }
+      if (limit > 500) {
+        limit = 500;
+      }
 
-    // Validate and constrain offset
-    if (offset < 0) {
-      offset = 0;
-    }
+      // Validate and constrain offset
+      if (offset < 0) {
+        offset = 0;
+      }
 
-    logger.info('[AuthAudit] Admin retrieving all failed login attempts', {
-      adminUserId: req.user?.sub,
-      limit,
-      offset,
-    });
-
-    // Get failed login attempts
-    const logs = await getFailedLoginAttempts(null, {
-      limit,
-      offset,
-      startDate,
-      endDate,
-    });
-
-    // Get total count
-    const total = await getAuthAuditLogsCountForAdmin({
-      eventType: AUTH_EVENT_TYPES.FAILED_LOGIN,
-      startDate,
-      endDate,
-    });
-
-    res.json({
-      success: true,
-      data: logs,
-      pagination: {
+      logger.info('[AuthAudit] Admin retrieving all failed login attempts', {
+        adminUserId: req.user?.sub,
         limit,
         offset,
-        total,
-        hasMore: offset + limit < total,
-      },
-    });
-  } catch (error) {
-    logger.error('[AuthAudit] Failed to retrieve admin failed login attempts', {
-      error: error.message,
-      adminUserId: req.user?.sub,
-    });
+      });
 
-    res.status(500).json({
-      error: 'Failed to retrieve failed login attempts',
-      code: 'ADMIN_FAILED_ATTEMPTS_RETRIEVAL_ERROR',
-      message: error.message,
-    });
-  }
-});
+      // Get failed login attempts
+      const logs = await getFailedLoginAttempts(null, {
+        limit,
+        offset,
+        startDate,
+        endDate,
+      });
+
+      // Get total count
+      const total = await getAuthAuditLogsCountForAdmin({
+        eventType: AUTH_EVENT_TYPES.FAILED_LOGIN,
+        startDate,
+        endDate,
+      });
+
+      res.json({
+        success: true,
+        data: logs,
+        pagination: {
+          limit,
+          offset,
+          total,
+          hasMore: offset + limit < total,
+        },
+      });
+    } catch (error) {
+      logger.error(
+        '[AuthAudit] Failed to retrieve admin failed login attempts',
+        {
+          error: error.message,
+          adminUserId: req.user?.sub,
+        },
+      );
+
+      res.status(500).json({
+        error: 'Failed to retrieve failed login attempts',
+        code: 'ADMIN_FAILED_ATTEMPTS_RETRIEVAL_ERROR',
+        message: error.message,
+      });
+    }
+  },
+);
 
 /**
  * GET /admin/auth/audit-logs/summary
@@ -387,75 +400,85 @@ router.get('/admin/auth/audit-logs/failed-attempts', authenticateJWT, requireAdm
  * - Supports admin activity logging and audit trails
  * - Provides audit log summary statistics
  */
-router.get('/admin/auth/audit-logs/summary', authenticateJWT, requireAdmin, async(req, res) => {
-  try {
-    const startDate = req.query.startDate || null;
-    const endDate = req.query.endDate || null;
+router.get(
+  '/admin/auth/audit-logs/summary',
+  authenticateJWT,
+  requireAdmin,
+  async(req, res) => {
+    try {
+      const startDate = req.query.startDate || null;
+      const endDate = req.query.endDate || null;
 
-    logger.info('[AuthAudit] Admin retrieving audit logs summary', {
-      adminUserId: req.user?.sub,
-      startDate,
-      endDate,
-    });
-
-    // Get counts for each event type
-    const loginCount = await getAuthAuditLogsCountForAdmin({
-      eventType: AUTH_EVENT_TYPES.LOGIN,
-      startDate,
-      endDate,
-    });
-
-    const logoutCount = await getAuthAuditLogsCountForAdmin({
-      eventType: AUTH_EVENT_TYPES.LOGOUT,
-      startDate,
-      endDate,
-    });
-
-    const failedLoginCount = await getAuthAuditLogsCountForAdmin({
-      eventType: AUTH_EVENT_TYPES.FAILED_LOGIN,
-      startDate,
-      endDate,
-    });
-
-    const tokenRefreshCount = await getAuthAuditLogsCountForAdmin({
-      eventType: AUTH_EVENT_TYPES.TOKEN_REFRESH,
-      startDate,
-      endDate,
-    });
-
-    const sessionTimeoutCount = await getAuthAuditLogsCountForAdmin({
-      eventType: AUTH_EVENT_TYPES.SESSION_TIMEOUT,
-      startDate,
-      endDate,
-    });
-
-    res.json({
-      success: true,
-      summary: {
-        logins: loginCount,
-        logouts: logoutCount,
-        failedLogins: failedLoginCount,
-        tokenRefreshes: tokenRefreshCount,
-        sessionTimeouts: sessionTimeoutCount,
-        total: loginCount + logoutCount + failedLoginCount + tokenRefreshCount + sessionTimeoutCount,
-      },
-      dateRange: {
+      logger.info('[AuthAudit] Admin retrieving audit logs summary', {
+        adminUserId: req.user?.sub,
         startDate,
         endDate,
-      },
-    });
-  } catch (error) {
-    logger.error('[AuthAudit] Failed to retrieve audit logs summary', {
-      error: error.message,
-      adminUserId: req.user?.sub,
-    });
+      });
 
-    res.status(500).json({
-      error: 'Failed to retrieve audit logs summary',
-      code: 'AUDIT_LOG_SUMMARY_ERROR',
-      message: error.message,
-    });
-  }
-});
+      // Get counts for each event type
+      const loginCount = await getAuthAuditLogsCountForAdmin({
+        eventType: AUTH_EVENT_TYPES.LOGIN,
+        startDate,
+        endDate,
+      });
+
+      const logoutCount = await getAuthAuditLogsCountForAdmin({
+        eventType: AUTH_EVENT_TYPES.LOGOUT,
+        startDate,
+        endDate,
+      });
+
+      const failedLoginCount = await getAuthAuditLogsCountForAdmin({
+        eventType: AUTH_EVENT_TYPES.FAILED_LOGIN,
+        startDate,
+        endDate,
+      });
+
+      const tokenRefreshCount = await getAuthAuditLogsCountForAdmin({
+        eventType: AUTH_EVENT_TYPES.TOKEN_REFRESH,
+        startDate,
+        endDate,
+      });
+
+      const sessionTimeoutCount = await getAuthAuditLogsCountForAdmin({
+        eventType: AUTH_EVENT_TYPES.SESSION_TIMEOUT,
+        startDate,
+        endDate,
+      });
+
+      res.json({
+        success: true,
+        summary: {
+          logins: loginCount,
+          logouts: logoutCount,
+          failedLogins: failedLoginCount,
+          tokenRefreshes: tokenRefreshCount,
+          sessionTimeouts: sessionTimeoutCount,
+          total:
+            loginCount +
+            logoutCount +
+            failedLoginCount +
+            tokenRefreshCount +
+            sessionTimeoutCount,
+        },
+        dateRange: {
+          startDate,
+          endDate,
+        },
+      });
+    } catch (error) {
+      logger.error('[AuthAudit] Failed to retrieve audit logs summary', {
+        error: error.message,
+        adminUserId: req.user?.sub,
+      });
+
+      res.status(500).json({
+        error: 'Failed to retrieve audit logs summary',
+        code: 'AUDIT_LOG_SUMMARY_ERROR',
+        message: error.message,
+      });
+    }
+  },
+);
 
 export default router;

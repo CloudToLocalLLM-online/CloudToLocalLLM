@@ -55,8 +55,11 @@ export const RecoveryStatus = {
 export class BackupRecoveryService {
   constructor(options = {}) {
     this.backupDir = options.backupDir || process.env.BACKUP_DIR || './backups';
-    this.retentionDays = options.retentionDays || parseInt(process.env.BACKUP_RETENTION_DAYS || '30', 10);
-    this.maxBackups = options.maxBackups || parseInt(process.env.MAX_BACKUPS || '10', 10);
+    this.retentionDays =
+      options.retentionDays ||
+      parseInt(process.env.BACKUP_RETENTION_DAYS || '30', 10);
+    this.maxBackups =
+      options.maxBackups || parseInt(process.env.MAX_BACKUPS || '10', 10);
     this.compressionEnabled = options.compressionEnabled !== false;
     this.verificationEnabled = options.verificationEnabled !== false;
     this.backupMetadata = new Map();
@@ -75,9 +78,12 @@ export class BackupRecoveryService {
         backupDir: this.backupDir,
       });
     } catch (error) {
-      logger.error('🔴 [BackupRecovery] Failed to initialize backup directory', {
-        error: error.message,
-      });
+      logger.error(
+        '🔴 [BackupRecovery] Failed to initialize backup directory',
+        {
+          error: error.message,
+        },
+      );
       throw error;
     }
   }

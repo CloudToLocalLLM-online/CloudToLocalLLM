@@ -237,63 +237,69 @@ router.get('/quotas/summary', authenticateJWT, async function(req, res) {
  * Response: 200 OK with reset quota
  * Error: 400 Bad Request, 401 Unauthorized, 403 Forbidden, 404 Not Found, 500 Internal Server Error
  */
-router.post('/quotas/:resourceType/reset', authenticateJWT, authorizeRBAC, requireAdmin(), async function(req, res) {
-  try {
-    const { resourceType } = req.params;
-    const { userId } = req.body;
+router.post(
+  '/quotas/:resourceType/reset',
+  authenticateJWT,
+  authorizeRBAC,
+  requireAdmin(),
+  async function(req, res) {
+    try {
+      const { resourceType } = req.params;
+      const { userId } = req.body;
 
-    // Validate inputs
-    validateInput(resourceType, 'resourceType', 'string');
-    validateInput(userId, 'userId', 'uuid');
+      // Validate inputs
+      validateInput(resourceType, 'resourceType', 'string');
+      validateInput(userId, 'userId', 'uuid');
 
-    logger.info('[QuotaRoutes] Resetting quota', {
-      adminId: req.user.sub,
-      userId,
-      resourceType,
-    });
+      logger.info('[QuotaRoutes] Resetting quota', {
+        adminId: req.user.sub,
+        userId,
+        resourceType,
+      });
 
-    const quota = await quotaService.resetQuota(userId, resourceType);
+      const quota = await quotaService.resetQuota(userId, resourceType);
 
-    res.json({
-      success: true,
-      data: quota,
-    });
-  } catch (error) {
-    logger.error('[QuotaRoutes] Failed to reset quota', {
-      adminId: req.user.sub,
-      userId: req.body.userId,
-      resourceType: req.params.resourceType,
-      error: error.message,
-    });
+      res.json({
+        success: true,
+        data: quota,
+      });
+    } catch (error) {
+      logger.error('[QuotaRoutes] Failed to reset quota', {
+        adminId: req.user.sub,
+        userId: req.body.userId,
+        resourceType: req.params.resourceType,
+        error: error.message,
+      });
 
-    if (error.message.includes('not found')) {
-      return res.status(404).json({
+      if (error.message.includes('not found')) {
+        return res.status(404).json({
+          success: false,
+          error: {
+            code: 'QUOTA_NOT_FOUND',
+            message: 'Quota not found',
+          },
+        });
+      }
+
+      if (error.message.includes('Invalid')) {
+        return res.status(400).json({
+          success: false,
+          error: {
+            code: 'INVALID_INPUT',
+            message: error.message,
+          },
+        });
+      }
+
+      res.status(500).json({
         success: false,
         error: {
-          code: 'QUOTA_NOT_FOUND',
-          message: 'Quota not found',
+          code: 'INTERNAL_SERVER_ERROR',
+          message: 'Failed to reset quota',
         },
       });
     }
-
-    if (error.message.includes('Invalid')) {
-      return res.status(400).json({
-        success: false,
-        error: {
-          code: 'INVALID_INPUT',
-          message: error.message,
-        },
-      });
-    }
-
-    res.status(500).json({
-      success: false,
-      error: {
-        code: 'INTERNAL_SERVER_ERROR',
-        message: 'Failed to reset quota',
-      },
-    });
-  }
-});
+  },
+);
 
 export default router;

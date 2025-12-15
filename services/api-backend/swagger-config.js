@@ -15,7 +15,8 @@ const options = {
     info: {
       title: 'CloudToLocalLLM API Backend',
       version: '2.0.0',
-      description: 'Comprehensive API for CloudToLocalLLM - Bridge cloud AI services with local models',
+      description:
+        'Comprehensive API for CloudToLocalLLM - Bridge cloud AI services with local models',
       contact: {
         name: 'CloudToLocalLLM Team',
         url: 'https://cloudtolocalllm.online',
@@ -219,7 +220,15 @@ const options = {
                 },
                 category: {
                   type: 'string',
-                  enum: ['validation', 'authentication', 'authorization', 'not_found', 'rate_limit', 'server', 'service_unavailable'],
+                  enum: [
+                    'validation',
+                    'authentication',
+                    'authorization',
+                    'not_found',
+                    'rate_limit',
+                    'server',
+                    'service_unavailable',
+                  ],
                   description: 'Error category',
                 },
                 statusCode: {
@@ -301,7 +310,13 @@ const options = {
             },
             status: {
               type: 'string',
-              enum: ['created', 'connecting', 'connected', 'disconnected', 'error'],
+              enum: [
+                'created',
+                'connecting',
+                'connected',
+                'disconnected',
+                'error',
+              ],
               description: 'Current tunnel status',
             },
             endpoints: {

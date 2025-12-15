@@ -41,9 +41,12 @@ export class TunnelWebhookService {
       }
       logger.info('[TunnelWebhookService] Tunnel webhook service initialized');
     } catch (error) {
-      logger.error('[TunnelWebhookService] Failed to initialize webhook service', {
-        error: error.message,
-      });
+      logger.error(
+        '[TunnelWebhookService] Failed to initialize webhook service',
+        {
+          error: error.message,
+        },
+      );
       throw error;
     }
   }
@@ -57,7 +60,12 @@ export class TunnelWebhookService {
    * @param {Array<string>} events - Events to subscribe to
    * @returns {Promise<Object>} Registered webhook
    */
-  async registerWebhook(userId, tunnelId, url, events = ['tunnel.status_changed']) {
+  async registerWebhook(
+    userId,
+    tunnelId,
+    url,
+    events = ['tunnel.status_changed'],
+  ) {
     const client = await this.pool.connect();
     try {
       await client.query('BEGIN');
@@ -78,7 +86,12 @@ export class TunnelWebhookService {
         throw new Error('At least one event must be specified');
       }
 
-      const validEvents = ['tunnel.status_changed', 'tunnel.created', 'tunnel.deleted', 'tunnel.metrics_updated'];
+      const validEvents = [
+        'tunnel.status_changed',
+        'tunnel.created',
+        'tunnel.deleted',
+        'tunnel.metrics_updated',
+      ];
       for (const event of events) {
         if (!validEvents.includes(event)) {
           throw new Error(`Invalid event type: ${event}`);
@@ -309,7 +322,9 @@ export class TunnelWebhookService {
       }
 
       // Delete webhook (cascades to deliveries and events)
-      await client.query('DELETE FROM tunnel_webhooks WHERE id = $1', [webhookId]);
+      await client.query('DELETE FROM tunnel_webhooks WHERE id = $1', [
+        webhookId,
+      ]);
 
       await client.query('COMMIT');
 
@@ -368,11 +383,20 @@ export class TunnelWebhookService {
 
       // Queue deliveries asynchronously
       for (const webhook of webhooks) {
-        this.queueWebhookDelivery(webhook.id, tunnelId, userId, eventType, eventData).catch((error) => {
-          logger.error('[TunnelWebhookService] Failed to queue webhook delivery', {
-            webhookId: webhook.id,
-            error: error.message,
-          });
+        this.queueWebhookDelivery(
+          webhook.id,
+          tunnelId,
+          userId,
+          eventType,
+          eventData,
+        ).catch((error) => {
+          logger.error(
+            '[TunnelWebhookService] Failed to queue webhook delivery',
+            {
+              webhookId: webhook.id,
+              error: error.message,
+            },
+          );
         });
       }
 
@@ -405,7 +429,13 @@ export class TunnelWebhookService {
    * @param {Object} eventData - Event data
    * @returns {Promise<void>}
    */
-  async queueWebhookDelivery(webhookId, tunnelId, userId, eventType, eventData) {
+  async queueWebhookDelivery(
+    webhookId,
+    tunnelId,
+    userId,
+    eventType,
+    eventData,
+  ) {
     const client = await this.pool.connect();
     try {
       await client.query('BEGIN');
@@ -422,7 +452,15 @@ export class TunnelWebhookService {
       await client.query(
         `INSERT INTO tunnel_webhook_deliveries (id, webhook_id, tunnel_id, user_id, event_type, payload, status)
          VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-        [deliveryId, webhookId, tunnelId, userId, eventType, JSON.stringify(payload), 'pending'],
+        [
+          deliveryId,
+          webhookId,
+          tunnelId,
+          userId,
+          eventType,
+          JSON.stringify(payload),
+          'pending',
+        ],
       );
 
       await client.query('COMMIT');
@@ -466,7 +504,9 @@ export class TunnelWebhookService {
       );
 
       if (deliveryResult.rows.length === 0) {
-        logger.warn('[TunnelWebhookService] Delivery not found', { deliveryId });
+        logger.warn('[TunnelWebhookService] Delivery not found', {
+          deliveryId,
+        });
         return;
       }
 
@@ -474,7 +514,9 @@ export class TunnelWebhookService {
 
       // Skip if already delivered
       if (delivery.status === 'delivered') {
-        logger.debug('[TunnelWebhookService] Delivery already completed', { deliveryId });
+        logger.debug('[TunnelWebhookService] Delivery already completed', {
+          deliveryId,
+        });
         return;
       }
 
@@ -533,11 +575,21 @@ export class TunnelWebhookService {
           });
         } else {
           // Retry
-          this.scheduleRetry(deliveryId, delivery.attempt_count, statusCode, 'HTTP ' + statusCode);
+          this.scheduleRetry(
+            deliveryId,
+            delivery.attempt_count,
+            statusCode,
+            'HTTP ' + statusCode,
+          );
         }
       } catch (error) {
         // Network error, retry
-        this.scheduleRetry(deliveryId, delivery.attempt_count, null, error.message);
+        this.scheduleRetry(
+          deliveryId,
+          delivery.attempt_count,
+          null,
+          error.message,
+        );
       }
     } catch (error) {
       logger.error('[TunnelWebhookService] Failed to deliver webhook', {
@@ -562,7 +614,8 @@ export class TunnelWebhookService {
     const client = await this.pool.connect();
     try {
       const nextAttempt = attemptCount + 1;
-      const delaySeconds = this.retryDelays[Math.min(attemptCount, this.retryDelays.length - 1)];
+      const delaySeconds =
+        this.retryDelays[Math.min(attemptCount, this.retryDelays.length - 1)];
       const nextRetryAt = new Date(Date.now() + delaySeconds * 1000);
 
       await client.query(
@@ -570,7 +623,14 @@ export class TunnelWebhookService {
          SET status = $1, attempt_count = $2, http_status_code = $3, error_message = $4, 
              next_retry_at = $5, updated_at = NOW()
          WHERE id = $6`,
-        ['retrying', nextAttempt, httpStatusCode, errorMessage, nextRetryAt, deliveryId],
+        [
+          'retrying',
+          nextAttempt,
+          httpStatusCode,
+          errorMessage,
+          nextRetryAt,
+          deliveryId,
+        ],
       );
 
       logger.info('[TunnelWebhookService] Webhook retry scheduled', {

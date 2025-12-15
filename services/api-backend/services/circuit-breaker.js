@@ -93,7 +93,10 @@ export class CircuitBreaker {
 
     if (this.state === 'HALF_OPEN') {
       this.transitionTo('OPEN');
-    } else if (this.state === 'CLOSED' && this.failureCount >= this.failureThreshold) {
+    } else if (
+      this.state === 'CLOSED' &&
+      this.failureCount >= this.failureThreshold
+    ) {
       this.transitionTo('OPEN');
     }
   }

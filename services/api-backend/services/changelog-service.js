@@ -62,7 +62,9 @@ class ChangelogService {
         }
 
         // Match section headers (Added, Changed, Deprecated, Removed, Fixed, Security)
-        if (line.match(/^###\s+(Added|Changed|Deprecated|Removed|Fixed|Security)/)) {
+        if (
+          line.match(/^###\s+(Added|Changed|Deprecated|Removed|Fixed|Security)/)
+        ) {
           inChanges = true;
           currentChanges.push(line);
           continue;
@@ -219,7 +221,8 @@ class ChangelogService {
     return {
       totalVersions: entries.length,
       latestVersion: entries.length > 0 ? entries[0].version : null,
-      oldestVersion: entries.length > 0 ? entries[entries.length - 1].version : null,
+      oldestVersion:
+        entries.length > 0 ? entries[entries.length - 1].version : null,
       totalChanges: entries.reduce((sum, entry) => {
         return sum + entry.changes.filter((c) => c.match(/^-\s+/)).length;
       }, 0),

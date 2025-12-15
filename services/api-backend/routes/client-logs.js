@@ -13,7 +13,10 @@ async function ensureLogDirectory() {
     await fs.access(logDir, fs.constants.W_OK);
   } catch (error) {
     if (logDir !== '/tmp/logs') {
-      console.warn(`[ClientLogs] Failed to access configured log directory ${logDir}, falling back to /tmp/logs`, error.message);
+      console.warn(
+        `[ClientLogs] Failed to access configured log directory ${logDir}, falling back to /tmp/logs`,
+        error.message,
+      );
       logDir = '/tmp/logs';
       logFilePath = path.join(logDir, logFileName);
       await fs.mkdir(logDir, { recursive: true });

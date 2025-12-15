@@ -208,7 +208,8 @@ router.get('/:version', (req, res) => {
     // Validate version format
     if (!version.match(/^\d+\.\d+\.\d+/)) {
       return res.status(400).json({
-        error: 'Invalid version format. Expected semantic versioning (e.g., 2.0.0)',
+        error:
+          'Invalid version format. Expected semantic versioning (e.g., 2.0.0)',
       });
     }
 

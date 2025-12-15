@@ -213,7 +213,9 @@ export class WebhookTestingService {
       // Strip leading 'www.' if present
       let hostname = url.hostname.replace(/^www\./, '');
       if (!ALLOWED_WEBHOOK_HOSTS.includes(hostname)) {
-        throw new Error('Destination host not permitted for webhook testing: ' + hostname);
+        throw new Error(
+          'Destination host not permitted for webhook testing: ' + hostname,
+        );
       }
 
       // Generate signature if secret provided
@@ -224,7 +226,11 @@ export class WebhookTestingService {
       };
 
       if (secret) {
-        const signature = this.generateWebhookSignature(payload, secret, timestamp);
+        const signature = this.generateWebhookSignature(
+          payload,
+          secret,
+          timestamp,
+        );
         headers['X-Webhook-Signature'] = signature;
       }
 
@@ -319,7 +325,11 @@ export class WebhookTestingService {
    */
   validateWebhookSignature(signature, payload, secret, timestamp) {
     try {
-      const expectedSignature = this.generateWebhookSignature(payload, secret, timestamp);
+      const expectedSignature = this.generateWebhookSignature(
+        payload,
+        secret,
+        timestamp,
+      );
       const signatureBuf = Buffer.from(signature);
       const expectedBuf = Buffer.from(expectedSignature);
 
@@ -443,9 +453,14 @@ export class WebhookTestingService {
             failed: parseInt(stats.failed) || 0,
             pending: parseInt(stats.pending) || 0,
             averageDeliveryTime: parseFloat(stats.avg_delivery_time) || 0,
-            successRate: stats.total_deliveries > 0
-              ? ((parseInt(stats.successful) / parseInt(stats.total_deliveries)) * 100).toFixed(2)
-              : 0,
+            successRate:
+              stats.total_deliveries > 0
+                ? (
+                  (parseInt(stats.successful) /
+                      parseInt(stats.total_deliveries)) *
+                    100
+                ).toFixed(2)
+                : 0,
           },
         };
       } finally {

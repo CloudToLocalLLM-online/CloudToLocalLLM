@@ -34,16 +34,16 @@ const performanceMetrics = {
  * @returns {Object} Performance metrics configuration
  */
 export function initializeQueryTracking() {
-  const threshold = parseInt(
-    process.env.DB_SLOW_QUERY_THRESHOLD || '100',
-    10,
-  );
+  const threshold = parseInt(process.env.DB_SLOW_QUERY_THRESHOLD || '100', 10);
   performanceMetrics.slowQueryThreshold = threshold;
 
-  logger.info('🔵 [Query Performance] Initializing query performance tracking', {
-    slowQueryThreshold: `${threshold}ms`,
-    maxStoredQueries: 1000,
-  });
+  logger.info(
+    '🔵 [Query Performance] Initializing query performance tracking',
+    {
+      slowQueryThreshold: `${threshold}ms`,
+      maxStoredQueries: 1000,
+    },
+  );
 
   return {
     slowQueryThreshold: threshold,
@@ -294,10 +294,9 @@ export function analyzePerformance() {
       minTime: typeStats.minTime,
       maxTime: typeStats.maxTime,
       slowCount: typeStats.slowCount,
-      slowPercentage: (
-        (typeStats.slowCount / typeStats.count) *
-        100
-      ).toFixed(2),
+      slowPercentage: ((typeStats.slowCount / typeStats.count) * 100).toFixed(
+        2,
+      ),
     };
 
     // Generate recommendations

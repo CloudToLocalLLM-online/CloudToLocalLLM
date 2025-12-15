@@ -33,11 +33,16 @@ export class WebhookPayloadTransformer {
       if (!this.pool) {
         throw new Error('Database pool not initialized');
       }
-      logger.info('[WebhookPayloadTransformer] Payload transformer service initialized');
+      logger.info(
+        '[WebhookPayloadTransformer] Payload transformer service initialized',
+      );
     } catch (error) {
-      logger.error('[WebhookPayloadTransformer] Failed to initialize transformer service', {
-        error: error.message,
-      });
+      logger.error(
+        '[WebhookPayloadTransformer] Failed to initialize transformer service',
+        {
+          error: error.message,
+        },
+      );
       throw error;
     }
   }
@@ -56,19 +61,32 @@ export class WebhookPayloadTransformer {
     }
 
     // Validate transformation type
-    if (transformConfig.type && !['map', 'filter', 'enrich', 'custom'].includes(transformConfig.type)) {
-      errors.push('Transformation type must be "map", "filter", "enrich", or "custom"');
+    if (
+      transformConfig.type &&
+      !['map', 'filter', 'enrich', 'custom'].includes(transformConfig.type)
+    ) {
+      errors.push(
+        'Transformation type must be "map", "filter", "enrich", or "custom"',
+      );
     }
 
     // Validate mappings for map type
-    if (transformConfig.type === 'map' || (!transformConfig.type && transformConfig.mappings)) {
+    if (
+      transformConfig.type === 'map' ||
+      (!transformConfig.type && transformConfig.mappings)
+    ) {
       if (transformConfig.mappings) {
-        if (typeof transformConfig.mappings !== 'object' || Array.isArray(transformConfig.mappings)) {
+        if (
+          typeof transformConfig.mappings !== 'object' ||
+          Array.isArray(transformConfig.mappings)
+        ) {
           errors.push('Mappings must be an object');
         } else {
           for (const [key, value] of Object.entries(transformConfig.mappings)) {
             if (!this._isValidMapping(value)) {
-              errors.push(`Invalid mapping for "${key}": ${JSON.stringify(value)}`);
+              errors.push(
+                `Invalid mapping for "${key}": ${JSON.stringify(value)}`,
+              );
             }
           }
         }
@@ -76,7 +94,10 @@ export class WebhookPayloadTransformer {
     }
 
     // Validate filters for filter type
-    if (transformConfig.type === 'filter' || (!transformConfig.type && transformConfig.filters)) {
+    if (
+      transformConfig.type === 'filter' ||
+      (!transformConfig.type && transformConfig.filters)
+    ) {
       if (transformConfig.filters) {
         if (!Array.isArray(transformConfig.filters)) {
           errors.push('Filters must be an array');
@@ -84,7 +105,9 @@ export class WebhookPayloadTransformer {
           for (let i = 0; i < transformConfig.filters.length; i++) {
             const filter = transformConfig.filters[i];
             if (!this._isValidFilterRule(filter)) {
-              errors.push(`Invalid filter at index ${i}: ${JSON.stringify(filter)}`);
+              errors.push(
+                `Invalid filter at index ${i}: ${JSON.stringify(filter)}`,
+              );
             }
           }
         }
@@ -92,14 +115,24 @@ export class WebhookPayloadTransformer {
     }
 
     // Validate enrichments for enrich type
-    if (transformConfig.type === 'enrich' || (!transformConfig.type && transformConfig.enrichments)) {
+    if (
+      transformConfig.type === 'enrich' ||
+      (!transformConfig.type && transformConfig.enrichments)
+    ) {
       if (transformConfig.enrichments) {
-        if (typeof transformConfig.enrichments !== 'object' || Array.isArray(transformConfig.enrichments)) {
+        if (
+          typeof transformConfig.enrichments !== 'object' ||
+          Array.isArray(transformConfig.enrichments)
+        ) {
           errors.push('Enrichments must be an object');
         } else {
-          for (const [key, value] of Object.entries(transformConfig.enrichments)) {
+          for (const [key, value] of Object.entries(
+            transformConfig.enrichments,
+          )) {
             if (!this._isValidEnrichment(value)) {
-              errors.push(`Invalid enrichment for "${key}": ${JSON.stringify(value)}`);
+              errors.push(
+                `Invalid enrichment for "${key}": ${JSON.stringify(value)}`,
+              );
             }
           }
         }
@@ -108,7 +141,11 @@ export class WebhookPayloadTransformer {
 
     // Validate custom script for custom type
     if (transformConfig.type === 'custom') {
-      if (!transformConfig.script || typeof transformConfig.script !== 'string' || transformConfig.script.trim().length === 0) {
+      if (
+        !transformConfig.script ||
+        typeof transformConfig.script !== 'string' ||
+        transformConfig.script.trim().length === 0
+      ) {
         errors.push('Custom script must be a non-empty string');
       }
     }
@@ -139,11 +176,23 @@ export class WebhookPayloadTransformer {
 
     // Transform is optional but if provided must be valid
     if (transform) {
-      if (!['uppercase', 'lowercase', 'trim', 'json', 'base64', 'custom'].includes(transform.type)) {
+      if (
+        ![
+          'uppercase',
+          'lowercase',
+          'trim',
+          'json',
+          'base64',
+          'custom',
+        ].includes(transform.type)
+      ) {
         return false;
       }
 
-      if (transform.type === 'custom' && (!transform.fn || typeof transform.fn !== 'string')) {
+      if (
+        transform.type === 'custom' &&
+        (!transform.fn || typeof transform.fn !== 'string')
+      ) {
         return false;
       }
     }
@@ -168,7 +217,16 @@ export class WebhookPayloadTransformer {
       return false;
     }
 
-    const validOperators = ['equals', 'notEquals', 'contains', 'startsWith', 'endsWith', 'in', 'regex', 'exists'];
+    const validOperators = [
+      'equals',
+      'notEquals',
+      'contains',
+      'startsWith',
+      'endsWith',
+      'in',
+      'regex',
+      'exists',
+    ];
     if (!validOperators.includes(operator)) {
       return false;
     }
@@ -226,7 +284,9 @@ export class WebhookPayloadTransformer {
       // Validate transformation configuration
       const validation = this.validateTransformConfig(transformConfig);
       if (!validation.isValid) {
-        throw new Error(`Invalid transformation configuration: ${validation.errors.join(', ')}`);
+        throw new Error(
+          `Invalid transformation configuration: ${validation.errors.join(', ')}`,
+        );
       }
 
       // Verify webhook ownership
@@ -259,11 +319,14 @@ export class WebhookPayloadTransformer {
       return result.rows[0];
     } catch (error) {
       await client.query('ROLLBACK');
-      logger.error('[WebhookPayloadTransformer] Failed to create transformation', {
-        webhookId,
-        userId,
-        error: error.message,
-      });
+      logger.error(
+        '[WebhookPayloadTransformer] Failed to create transformation',
+        {
+          webhookId,
+          userId,
+          error: error.message,
+        },
+      );
       throw error;
     } finally {
       client.release();
@@ -315,7 +378,9 @@ export class WebhookPayloadTransformer {
       // Validate transformation configuration
       const validation = this.validateTransformConfig(transformConfig);
       if (!validation.isValid) {
-        throw new Error(`Invalid transformation configuration: ${validation.errors.join(', ')}`);
+        throw new Error(
+          `Invalid transformation configuration: ${validation.errors.join(', ')}`,
+        );
       }
 
       // Verify webhook ownership
@@ -347,11 +412,14 @@ export class WebhookPayloadTransformer {
       return result.rows[0];
     } catch (error) {
       await client.query('ROLLBACK');
-      logger.error('[WebhookPayloadTransformer] Failed to update transformation', {
-        webhookId,
-        userId,
-        error: error.message,
-      });
+      logger.error(
+        '[WebhookPayloadTransformer] Failed to update transformation',
+        {
+          webhookId,
+          userId,
+          error: error.message,
+        },
+      );
       throw error;
     } finally {
       client.release();
@@ -373,10 +441,13 @@ export class WebhookPayloadTransformer {
       );
 
       if (result.rowCount === 0) {
-        logger.warn('[WebhookPayloadTransformer] Transformation not found for deletion', {
-          webhookId,
-          userId,
-        });
+        logger.warn(
+          '[WebhookPayloadTransformer] Transformation not found for deletion',
+          {
+            webhookId,
+            userId,
+          },
+        );
       } else {
         logger.info('[WebhookPayloadTransformer] Transformation deleted', {
           webhookId,
@@ -384,11 +455,14 @@ export class WebhookPayloadTransformer {
         });
       }
     } catch (error) {
-      logger.error('[WebhookPayloadTransformer] Failed to delete transformation', {
-        webhookId,
-        userId,
-        error: error.message,
-      });
+      logger.error(
+        '[WebhookPayloadTransformer] Failed to delete transformation',
+        {
+          webhookId,
+          userId,
+          error: error.message,
+        },
+      );
       throw error;
     }
   }
@@ -427,7 +501,9 @@ export class WebhookPayloadTransformer {
       break;
 
     default:
-      logger.warn('[WebhookPayloadTransformer] Unknown transformation type', { transformType });
+      logger.warn('[WebhookPayloadTransformer] Unknown transformation type', {
+        transformType,
+      });
     }
 
     return result;
@@ -451,7 +527,10 @@ export class WebhookPayloadTransformer {
       const sourceValue = this._getNestedProperty(payload, mapping.source);
 
       if (mapping.transform) {
-        result[targetKey] = this._applyTransform(sourceValue, mapping.transform);
+        result[targetKey] = this._applyTransform(
+          sourceValue,
+          mapping.transform,
+        );
       } else {
         result[targetKey] = sourceValue;
       }
@@ -513,7 +592,10 @@ export class WebhookPayloadTransformer {
     try {
       // Create a safe function context
 
-      const transformFn = new Function('payload', `return (${script})(payload)`);
+      const transformFn = new Function(
+        'payload',
+        `return (${script})(payload)`,
+      );
       return transformFn(payload);
     } catch (error) {
       logger.error('[WebhookPayloadTransformer] Custom transformation failed', {
@@ -568,8 +650,10 @@ export class WebhookPayloadTransformer {
 
     case 'custom':
       try {
-
-        const transformFn = new Function('value', `return (${transform.fn})(value)`);
+        const transformFn = new Function(
+          'value',
+          `return (${transform.fn})(value)`,
+        );
         return transformFn(value);
       } catch (error) {
         logger.error('[WebhookPayloadTransformer] Custom transform failed', {
@@ -648,7 +732,6 @@ export class WebhookPayloadTransformer {
 
     case 'custom':
       try {
-
         const enrichFn = new Function(`return (${enrichment.value})()`);
         return enrichFn();
       } catch (error) {

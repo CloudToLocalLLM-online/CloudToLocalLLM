@@ -100,7 +100,10 @@ export class UserDeletionService {
           WHERE id = $2
         `;
 
-        const softDeleteResult = await client.query(softDeleteQuery, [reason, userUuid]);
+        const softDeleteResult = await client.query(softDeleteQuery, [
+          reason,
+          userUuid,
+        ]);
         cleanupStats.userDeleted = softDeleteResult.rowCount > 0;
 
         logger.info('[UserDeletion] User soft deleted', {
@@ -268,10 +271,13 @@ export class UserDeletionService {
 
       return result.rows[0].is_deleted === 'true';
     } catch (error) {
-      logger.error('[UserDeletionService] Error checking user deletion status', {
-        userId,
-        error: error.message,
-      });
+      logger.error(
+        '[UserDeletionService] Error checking user deletion status',
+        {
+          userId,
+          error: error.message,
+        },
+      );
       throw error;
     }
   }

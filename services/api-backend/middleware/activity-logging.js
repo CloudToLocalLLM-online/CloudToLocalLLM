@@ -9,7 +9,10 @@
  * - Implements activity audit logs
  */
 
-import { logUserActivity, ACTIVITY_ACTIONS } from '../services/user-activity-service.js';
+import {
+  logUserActivity,
+  ACTIVITY_ACTIONS,
+} from '../services/user-activity-service.js';
 import logger from '../logger.js';
 
 /**
@@ -159,7 +162,11 @@ export function activityLoggingMiddleware(req, res, next) {
   }
 
   // Extract resource information
-  const { resourceType, resourceId } = extractResourceInfo(req.method, req.path, req.body);
+  const { resourceType, resourceId } = extractResourceInfo(
+    req.method,
+    req.path,
+    req.body,
+  );
 
   // Get client IP address
   const ipAddress = req.ip || req.connection.remoteAddress || 'unknown';

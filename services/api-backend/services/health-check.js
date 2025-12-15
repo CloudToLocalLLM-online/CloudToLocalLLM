@@ -7,11 +7,13 @@ import winston from 'winston';
  */
 export class HealthCheckService {
   constructor(logger = null) {
-    this.logger = logger || winston.createLogger({
-      level: 'info',
-      format: winston.format.json(),
-      transports: [new winston.transports.Console()],
-    });
+    this.logger =
+      logger ||
+      winston.createLogger({
+        level: 'info',
+        format: winston.format.json(),
+        transports: [new winston.transports.Console()],
+      });
     this.dependencies = {
       database: null,
       cache: null,
@@ -60,7 +62,9 @@ export class HealthCheckService {
 
       return {
         status: validation.allValid ? 'healthy' : 'degraded',
-        message: validation.allValid ? 'Database is healthy' : 'Database schema validation failed',
+        message: validation.allValid
+          ? 'Database is healthy'
+          : 'Database schema validation failed',
         details: {
           allTablesValid: validation.allValid,
           validationResults: validation.results,
@@ -122,7 +126,10 @@ export class HealthCheckService {
         const result = await service.healthCheck();
         results[service.name] = result;
       } catch (error) {
-        this.logger.error(`Service health check failed for ${service.name}:`, error);
+        this.logger.error(
+          `Service health check failed for ${service.name}:`,
+          error,
+        );
         results[service.name] = {
           status: 'unhealthy',
           message: `Service health check failed: ${error.message}`,
@@ -148,7 +155,7 @@ export class HealthCheckService {
       const allStatuses = [
         databaseHealth.status,
         cacheHealth.status,
-        ...Object.values(servicesHealth).map(s => s.status),
+        ...Object.values(servicesHealth).map((s) => s.status),
       ];
 
       let overallStatus = 'healthy';
