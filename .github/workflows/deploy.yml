@@ -118,24 +118,24 @@ jobs:
             echo "🎯 Deployment type override: $DEPLOYMENT_TYPE"
             case "$DEPLOYMENT_TYPE" in
               "cloud")
-                echo "needs_cloud=true" >> $GITHUB_OUTPUT
-                echo "needs_desktop=false" >> $GITHUB_OUTPUT
-                echo "needs_mobile=false" >> $GITHUB_OUTPUT
+                NEEDS_CLOUD="true"
+                NEEDS_DESKTOP="false"
+                NEEDS_MOBILE="false"
                 ;;
               "desktop")
-                echo "needs_cloud=false" >> $GITHUB_OUTPUT
-                echo "needs_desktop=true" >> $GITHUB_OUTPUT
-                echo "needs_mobile=false" >> $GITHUB_OUTPUT
+                NEEDS_CLOUD="false"
+                NEEDS_DESKTOP="true"
+                NEEDS_MOBILE="false"
                 ;;
               "mobile")
-                echo "needs_cloud=false" >> $GITHUB_OUTPUT
-                echo "needs_desktop=false" >> $GITHUB_OUTPUT
-                echo "needs_mobile=true" >> $GITHUB_OUTPUT
+                NEEDS_CLOUD="false"
+                NEEDS_DESKTOP="false"
+                NEEDS_MOBILE="true"
                 ;;
               "all")
-                echo "needs_cloud=true" >> $GITHUB_OUTPUT
-                echo "needs_desktop=true" >> $GITHUB_OUTPUT
-                echo "needs_mobile=true" >> $GITHUB_OUTPUT
+                NEEDS_CLOUD="true"
+                NEEDS_DESKTOP="true"
+                NEEDS_MOBILE="true"
                 ;;
             esac
             SHOULD_DEPLOY="true"
