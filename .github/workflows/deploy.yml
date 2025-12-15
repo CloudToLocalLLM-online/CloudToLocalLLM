@@ -180,35 +180,76 @@ jobs:
             echo "ℹ️  No version changes to commit"
           fi
 
-  # Cloud Service Building (conditional) - Azure AKS
-  build_cloud_services:
+  # Detect changes in specific paths (compare against last cloud tag)
+  changes:
+    needs: ai_analysis
+    if: ${{ needs.ai_analysis.outputs.should_deploy == 'true' && needs.ai_analysis.outputs.needs_cloud == 'true' }}
+    runs-on: ubuntu-latest
+    outputs:
+      base: ${{ steps.detect.outputs.base }}
+      postgres: ${{ steps.detect.outputs.postgres }}
+      web: ${{ steps.detect.outputs.web }}
+      api: ${{ steps.detect.outputs.api }}
+      proxy: ${{ steps.detect.outputs.proxy }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Detect Service Changes
+        id: detect
+        run: |
+          # Find the previous cloud tag
+          PREV_TAG=$(git tag -l "*-cloud-*" --sort=-version:refname | head -2 | tail -1 || echo "")
+
+          if [ -z "$PREV_TAG" ]; then
+            echo "No previous tag found, building all services"
+            echo "base=true" >> $GITHUB_OUTPUT
+            echo "postgres=true" >> $GITHUB_OUTPUT
+            echo "web=true" >> $GITHUB_OUTPUT
+            echo "api=true" >> $GITHUB_OUTPUT
+            echo "proxy=true" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          echo "Comparing against previous tag: $PREV_TAG"
+
+          # Check for changes in each service (suppress grep output, only capture true/false)
+          BASE_CHANGED=$(git diff --name-only $PREV_TAG HEAD | grep -qE '^config/docker/Dockerfile\.base' && echo "true" || echo "false")
+          POSTGRES_CHANGED=$(git diff --name-only $PREV_TAG HEAD | grep -qE '^config/docker/(Dockerfile\.postgres|postgres-)' && echo "true" || echo "false")
+          WEB_CHANGED=$(git diff --name-only $PREV_TAG HEAD | grep -qE '^(web|lib|pubspec\.)' && echo "true" || echo "false")
+          API_CHANGED=$(git diff --name-only $PREV_TAG HEAD | grep -qE '^services/api-backend' && echo "true" || echo "false")
+          PROXY_CHANGED=$(git diff --name-only $PREV_TAG HEAD | grep -qE '^services/streaming-proxy' && echo "true" || echo "false")
+
+          echo "base=$BASE_CHANGED" >> $GITHUB_OUTPUT
+          echo "postgres=$POSTGRES_CHANGED" >> $GITHUB_OUTPUT
+          echo "web=$WEB_CHANGED" >> $GITHUB_OUTPUT
+          echo "api=$API_CHANGED" >> $GITHUB_OUTPUT
+          echo "proxy=$PROXY_CHANGED" >> $GITHUB_OUTPUT
+
+          echo "Change detection:"
+          echo "  Base: $BASE_CHANGED"
+          echo "  Postgres: $POSTGRES_CHANGED"
+          echo "  Web: $WEB_CHANGED"
+          echo "  API: $API_CHANGED"
+          echo "  Proxy: $PROXY_CHANGED"
+
+  # Setup ACR and retrieve login server
+  setup_acr:
     needs: ai_analysis
     if: ${{ needs.ai_analysis.outputs.should_deploy == 'true' && needs.ai_analysis.outputs.needs_cloud == 'true' }}
     runs-on: ubuntu-latest
     outputs:
       login_server: ${{ steps.acr_setup.outputs.login_server }}
-    
     steps:
-      - uses: actions/checkout@v4
-      
-      - name: Setup Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          channel: "stable"
-          cache: true
-          
-      - name: Build Flutter Web
-        run: |
-          flutter pub get
-          flutter build web --release
-      
       - name: Azure Login
         uses: azure/login@v2
         with:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-          
+      - name: Create Azure Resource Group if not exists
+        run: az group create --name ${{ env.AZURE_RESOURCE_GROUP }} --location eastus --query "properties.provisioningState" --output tsv
       - name: Setup ACR
         id: acr_setup
         run: |
@@ -217,7 +258,7 @@ jobs:
           # Get Login Server and set as output
           LOGIN_SERVER=$(az acr show --name ${{ env.ACR_NAME }} --query loginServer --output tsv)
           echo "login_server=$LOGIN_SERVER" >> $GITHUB_OUTPUT
-          
+          echo "DOCKER_REGISTRY=$LOGIN_SERVER" >> $GITHUB_ENV
       - name: Docker Login to ACR
         run: |
           # Get ACR admin credentials
@@ -226,48 +267,202 @@ jobs:
           # Login to ACR
           echo "$ACR_PASSWORD" | docker login "${{ steps.acr_setup.outputs.login_server }}" --username "$ACR_USERNAME" --password-stdin
 
+  build_base:
+    needs: [ai_analysis, changes, setup_acr]
+    if: ${{ !cancelled() && needs.changes.outputs.base == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      - name: Docker Login to ACR
+        run: |
+          ACR_USERNAME=$(az acr credential show --name ${{ env.ACR_NAME }} --query username --output tsv)
+          ACR_PASSWORD=$(az acr credential show --name ${{ env.ACR_NAME }} --query passwords[0].value --output tsv)
+          echo "$ACR_PASSWORD" | docker login "${{ needs.setup_acr.outputs.login_server }}" --username "$ACR_USERNAME" --password-stdin
       - uses: docker/setup-buildx-action@v3
-      
-      - name: Build and Push Web Service
-        uses: docker/build-push-action@v5
+      - uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: config/docker/Dockerfile.base
+          push: true
+          tags: |
+            ${{ needs.setup_acr.outputs.login_server }}/base:${{ needs.ai_analysis.outputs.new_version }}-base
+            ${{ needs.setup_acr.outputs.login_server }}/base:latest
+          cache-from: type=registry,ref=${{ needs.setup_acr.outputs.login_server }}/base:latest
+          cache-to: type=inline
+
+  build_postgres:
+    needs: [ai_analysis, changes, setup_acr, build_base]
+    if: ${{ !cancelled() && (needs.build_base.result == 'success' || needs.build_base.result == 'skipped' || needs.changes.outputs.base != 'true') && needs.changes.outputs.postgres == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      - name: Docker Login to ACR
+        run: |
+          ACR_USERNAME=$(az acr credential show --name ${{ env.ACR_NAME }} --query username --output tsv)
+          ACR_PASSWORD=$(az acr credential show --name ${{ env.ACR_NAME }} --query passwords[0].value --output tsv)
+          echo "$ACR_PASSWORD" | docker login "${{ needs.setup_acr.outputs.login_server }}" --username "$ACR_USERNAME" --password-stdin
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: config/docker/Dockerfile.postgres
+          push: true
+          tags: |
+            ${{ needs.setup_acr.outputs.login_server }}/postgres:${{ needs.ai_analysis.outputs.new_version }}-postgres
+            ${{ needs.setup_acr.outputs.login_server }}/postgres:latest
+          build-args: |
+            BASE_REGISTRY=${{ needs.setup_acr.outputs.login_server }}
+          cache-from: type=registry,ref=${{ needs.setup_acr.outputs.login_server }}/postgres:latest
+          cache-to: type=inline
+
+  build_web:
+    needs: [ai_analysis, changes, setup_acr, build_base]
+    if: ${{ !cancelled() && (needs.build_base.result == 'success' || needs.build_base.result == 'skipped' || needs.changes.outputs.base != 'true') && needs.changes.outputs.web == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      - name: Docker Login to ACR
+        run: |
+          ACR_USERNAME=$(az acr credential show --name ${{ env.ACR_NAME }} --query username --output tsv)
+          ACR_PASSWORD=$(az acr credential show --name ${{ env.ACR_NAME }} --query passwords[0].value --output tsv)
+          echo "$ACR_PASSWORD" | docker login "${{ needs.setup_acr.outputs.login_server }}" --username "$ACR_USERNAME" --password-stdin
+      - uses: docker/setup-buildx-action@v3
+      - name: Check if Flutter is already installed
+        id: flutter_check
+        run: |
+          if command -v flutter >/dev/null 2>&1; then
+            FLUTTER_VERSION=$(flutter --version | head -n1 || echo "unknown")
+            echo "Flutter is already installed: $FLUTTER_VERSION"
+            echo "flutter_installed=true" >> $GITHUB_OUTPUT
+          else
+            echo "Flutter not found, will install"
+            echo "flutter_installed=false" >> $GITHUB_OUTPUT
+          fi
+      - name: Install Flutter (if needed)
+        if: steps.flutter_check.outputs.flutter_installed != 'true'
+        uses: subosito/flutter-action@v2
+        with:
+          channel: "stable"
+          cache: true
+      - name: Build Flutter Web
+        run: |
+          flutter pub get
+          flutter build web --release --no-tree-shake-icons --base-href / --dart-define=FLUTTER_BUILD_NUMBER=${{ github.sha }}
+      - name: Apply Cache Busting to index.html
+        run: |
+          sed -i "s|\$FLUTTER_BUILD_NUMBER|${{ github.sha }}|g" build/web/index.html
+          sed -i "s|\$FLUTTER_BASE_HREF|/|g" build/web/index.html
+      - name: Debug - Verify index.html cache busting
+        run: |
+          echo "Checking if cache-busting was applied:"
+          grep "flutter_bootstrap.js" build/web/index.html
+      - name: Debug - List web build
+        run: ls -R build/web || echo "build/web not found"
+      - uses: docker/build-push-action@v5
         with:
           context: .
           file: web/Dockerfile
           push: true
           tags: |
-            ${{ steps.acr_setup.outputs.login_server }}/web:${{ needs.ai_analysis.outputs.new_version }}
-            ${{ steps.acr_setup.outputs.login_server }}/web:latest
-          cache-from: type=registry,ref=${{ steps.acr_setup.outputs.login_server }}/web:latest
+            ${{ needs.setup_acr.outputs.login_server }}/web:${{ needs.ai_analysis.outputs.new_version }}
+            ${{ needs.setup_acr.outputs.login_server }}/web:latest
+          build-args: |
+            BASE_REGISTRY=${{ needs.setup_acr.outputs.login_server }}
+          cache-from: type=registry,ref=${{ needs.setup_acr.outputs.login_server }}/web:latest
           cache-to: type=inline
 
-      - name: Build and Push API Backend
-        uses: docker/build-push-action@v5
+  build_api:
+    needs: [ai_analysis, changes, setup_acr, build_base]
+    if: ${{ !cancelled() && (needs.build_base.result == 'success' || needs.build_base.result == 'skipped' || needs.changes.outputs.base != 'true') && needs.changes.outputs.api == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      - name: Docker Login to ACR
+        run: |
+          ACR_USERNAME=$(az acr credential show --name ${{ env.ACR_NAME }} --query username --output tsv)
+          ACR_PASSWORD=$(az acr credential show --name ${{ env.ACR_NAME }} --query passwords[0].value --output tsv)
+          echo "$ACR_PASSWORD" | docker login "${{ needs.setup_acr.outputs.login_server }}" --username "$ACR_USERNAME" --password-stdin
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v5
         with:
           context: services/api-backend
           file: services/api-backend/Dockerfile
           push: true
           tags: |
-            ${{ steps.acr_setup.outputs.login_server }}/api-backend:${{ needs.ai_analysis.outputs.new_version }}
-            ${{ steps.acr_setup.outputs.login_server }}/api-backend:latest
-          cache-from: type=registry,ref=${{ steps.acr_setup.outputs.login_server }}/api-backend:latest
+            ${{ needs.setup_acr.outputs.login_server }}/api-backend:${{ needs.ai_analysis.outputs.new_version }}-api
+            ${{ needs.setup_acr.outputs.login_server }}/api-backend:latest
+          build-args: |
+            BASE_REGISTRY=${{ needs.setup_acr.outputs.login_server }}
+          cache-from: type=registry,ref=${{ needs.setup_acr.outputs.login_server }}/api-backend:latest
           cache-to: type=inline
 
-      - name: Build and Push Streaming Proxy
-        uses: docker/build-push-action@v5
+  build_proxy:
+    needs: [ai_analysis, changes, setup_acr, build_base]
+    if: ${{ !cancelled() && (needs.build_base.result == 'success' || needs.build_base.result == 'skipped' || needs.changes.outputs.base != 'true') && needs.changes.outputs.proxy == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      - name: Docker Login to ACR
+        run: |
+          ACR_USERNAME=$(az acr credential show --name ${{ env.ACR_NAME }} --query username --output tsv)
+          ACR_PASSWORD=$(az acr credential show --name ${{ env.ACR_NAME }} --query passwords[0].value --output tsv)
+          echo "$ACR_PASSWORD" | docker login "${{ needs.setup_acr.outputs.login_server }}" --username "$ACR_USERNAME" --password-stdin
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v5
         with:
           context: services/streaming-proxy
           file: services/streaming-proxy/Dockerfile
           push: true
           tags: |
-            ${{ steps.acr_setup.outputs.login_server }}/streaming-proxy:${{ needs.ai_analysis.outputs.new_version }}
-            ${{ steps.acr_setup.outputs.login_server }}/streaming-proxy:latest
-          cache-from: type=registry,ref=${{ steps.acr_setup.outputs.login_server }}/streaming-proxy:latest
+            ${{ needs.setup_acr.outputs.login_server }}/streaming-proxy:${{ needs.ai_analysis.outputs.new_version }}-proxy
+            ${{ needs.setup_acr.outputs.login_server }}/streaming-proxy:latest
+          build-args: |
+            BASE_REGISTRY=${{ needs.setup_acr.outputs.login_server }}
+          cache-from: type=registry,ref=${{ needs.setup_acr.outputs.login_server }}/streaming-proxy:latest
           cache-to: type=inline
 
   # Cloud Deployment (conditional) - Azure AKS
-  deploy_cloud:
-    needs: [ai_analysis, build_cloud_services]
-    if: ${{ needs.ai_analysis.outputs.should_deploy == 'true' && needs.ai_analysis.outputs.needs_cloud == 'true' }}
+  deploy_infrastructure:
+    permissions:
+      id-token: write
+    needs: [ai_analysis, changes, setup_acr, build_base, build_postgres, build_web, build_api, build_proxy]
+    if: |
+      !cancelled() &&
+      (needs.build_base.result == 'success' || needs.build_base.result == 'skipped' || needs.changes.outputs.base != 'true') &&
+      (needs.build_postgres.result == 'success' || needs.build_postgres.result == 'skipped' || needs.changes.outputs.postgres != 'true') &&
+      (needs.build_web.result == 'success' || needs.build_web.result == 'skipped' || needs.changes.outputs.web != 'true') &&
+      (needs.build_api.result == 'success' || needs.build_api.result == 'skipped' || needs.changes.outputs.api != 'true') &&
+      (needs.build_proxy.result == 'success' || needs.build_proxy.result == 'skipped' || needs.changes.outputs.proxy != 'true')
     runs-on: ubuntu-latest
     
     steps:
@@ -286,16 +481,112 @@ jobs:
           resource-group: ${{ env.AZURE_RESOURCE_GROUP }}
           cluster-name: ${{ env.AZURE_CLUSTER_NAME }}
 
-      - name: Deploy to AKS
-        env:
-          NEW_VERSION: ${{ needs.ai_analysis.outputs.new_version }}
-          LOGIN_SERVER: ${{ needs.build_cloud_services.outputs.login_server }}
+      - name: Ensure Namespace Exists
         run: |
-          # Update image tags in manifests
-          sed -i "s|cloudtolocalllm/web:latest|${LOGIN_SERVER}/web:${NEW_VERSION}|g" k8s/web-deployment.yaml
-          sed -i "s|cloudtolocalllm/api-backend:latest|${LOGIN_SERVER}/api-backend:${NEW_VERSION}|g" k8s/api-backend-deployment.yaml
-          sed -i "s|cloudtolocalllm/streaming-proxy:latest|${LOGIN_SERVER}/streaming-proxy:${NEW_VERSION}|g" k8s/streaming-proxy-deployment.yaml
-          
+          kubectl create namespace cloudtolocalllm --dry-run=client -o yaml | kubectl apply -f -
+
+      - name: Create/Update Secrets
+        env:
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          STRIPE_TEST_SECRET_KEY: ${{ secrets.STRIPE_TEST_SECRET_KEY }}
+          STRIPE_TEST_PUBLISHABLE_KEY: ${{ secrets.STRIPE_TEST_PUBLISHABLE_KEY }}
+          STRIPE_TEST_WEBHOOK_SECRET: ${{ secrets.STRIPE_TEST_WEBHOOK_SECRET }}
+          STRIPE_LIVE_SECRET_KEY: ${{ secrets.STRIPE_LIVE_SECRET_KEY }}
+          STRIPE_LIVE_PUBLISHABLE_KEY: ${{ secrets.STRIPE_LIVE_PUBLISHABLE_KEY }}
+          STRIPE_LIVE_WEBHOOK_SECRET: ${{ secrets.STRIPE_LIVE_WEBHOOK_SECRET }}
+          SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
+          CLOUDFLARE_DNS_TOKEN: ${{ secrets.CLOUDFLARE_DNS_TOKEN }}
+          CLOUDFLARE_TUNNEL_TOKEN: ${{ secrets.CLOUDFLARE_TUNNEL_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          SUPABASE_JWT_SECRET: ${{ secrets.SUPABASE_JWT_SECRET }}
+          AUTH0_DOMAIN: ${{ secrets.AUTH0_DOMAIN }}
+          AUTH0_AUDIENCE: ${{ secrets.AUTH0_AUDIENCE }}
+          AUTH0_CLIENT_ID: ${{ secrets.AUTH0_CLIENT_ID }}
+          AUTH0_CLIENT_SECRET: ${{ secrets.AUTH0_CLIENT_SECRET }}
+          AUTH0_ISSUER_URL: ${{ secrets.AUTH0_ISSUER_URL }}
+        run: |
+          # Get ACR Admin Credentials
+          ACR_ADMIN_USER=$(az acr credential show --name ${{ env.ACR_NAME }} --query username --output tsv)
+          ACR_ADMIN_PASS=$(az acr credential show --name ${{ env.ACR_NAME }} --query passwords[0].value --output tsv)
+
+          # Docker Registry Secret for ACR
+          kubectl create secret docker-registry regcred \
+            --docker-server=${{ needs.setup_acr.outputs.login_server }} \
+            --docker-username=$ACR_ADMIN_USER \
+            --docker-password=$ACR_ADMIN_PASS \
+            --docker-email=github-actions@cloudtolocalllm.online \
+            -n cloudtolocalllm --dry-run=client -o yaml | kubectl apply -f -
+
+          # App Secrets
+          kubectl create secret generic cloudtolocalllm-secrets \
+            --namespace cloudtolocalllm \
+            --from-literal=postgres-user=cloud_admin \
+            --from-literal=postgres-password="$POSTGRES_PASSWORD" \
+            --from-literal=jwt-secret="$JWT_SECRET" \
+            --from-literal=stripe-test-secret-key="$STRIPE_TEST_SECRET_KEY" \
+            --from-literal=stripe-test-publishable-key="$STRIPE_TEST_PUBLISHABLE_KEY" \
+            --from-literal=stripe-test-webhook-secret="$STRIPE_TEST_WEBHOOK_SECRET" \
+            --from-literal=stripe-live-secret-key="$STRIPE_LIVE_SECRET_KEY" \
+            --from-literal=stripe-live-publishable-key="$STRIPE_LIVE_PUBLISHABLE_KEY" \
+            --from-literal=stripe-live-webhook-secret="$STRIPE_LIVE_WEBHOOK_SECRET" \
+            --from-literal=sentry-dsn="$SENTRY_DSN" \
+            --from-literal=supabase-jwt-secret="$SUPABASE_JWT_SECRET" \
+            --from-literal=supabase-url="https://cvaqhvpbnemweqrojasm.supabase.co" \
+            --from-literal=auth0-domain="$AUTH0_DOMAIN" \
+            --from-literal=auth0-audience="$AUTH0_AUDIENCE" \
+            --from-literal=auth0-client-id="$AUTH0_CLIENT_ID" \
+            --from-literal=auth0-client-secret="$AUTH0_CLIENT_SECRET" \
+            --from-literal=auth0-issuer-url="$AUTH0_ISSUER_URL" \
+            --dry-run=client -o yaml | kubectl apply -f -
+
+          # Cloudflare Tunnel Secret
+          kubectl create secret generic tunnel-credentials \
+            --namespace cloudtolocalllm \
+            --from-literal=token="$CLOUDFLARE_TUNNEL_TOKEN" \
+            --dry-run=client -o yaml | kubectl apply -f -
+
+          # Streaming Proxy Secret
+          kubectl create secret generic streaming-proxy-secrets \
+            --namespace cloudtolocalllm \
+            --from-literal=SENTRY_DSN="$SENTRY_DSN" \
+            --from-literal=SUPABASE_JWT_SECRET="$SUPABASE_JWT_SECRET" \
+            --from-literal=SUPABASE_URL="https://cvaqhvpbnemweqrojasm.supabase.co" \
+            --dry-run=client -o yaml | kubectl apply -f -
+
+      - name: Deploy Manifests
+        env:
+          POSTGRES_BUILT: ${{ needs.changes.outputs.postgres }}
+          WEB_BUILT: ${{ needs.changes.outputs.web }}
+          API_BUILT: ${{ needs.changes.outputs.api }}
+          PROXY_BUILT: ${{ needs.changes.outputs.proxy }}
+          APP_VERSION: ${{ needs.ai_analysis.outputs.new_version }}
+          COMMIT_SHA: ${{ github.sha }}
+        run: |
+          set -e
+
+          # Use semantic version if service was built, otherwise use latest
+          [ "$POSTGRES_BUILT" = "true" ] && POSTGRES_TAG="${APP_VERSION}-postgres" || POSTGRES_TAG="latest"
+          [ "$WEB_BUILT" = "true" ] && WEB_TAG="${APP_VERSION}" || WEB_TAG="latest"
+          [ "$API_BUILT" = "true" ] && API_TAG="${APP_VERSION}-api" || API_TAG="latest"
+          [ "$PROXY_BUILT" = "true" ] && PROXY_TAG="${APP_VERSION}-proxy" || PROXY_TAG="latest"
+
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "Deployment Version: $APP_VERSION"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "  Postgres: $POSTGRES_TAG"
+          echo "  Web:      $WEB_TAG"
+          echo "  API:      $API_TAG"
+          echo "  Proxy:    $PROXY_TAG"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo ""
+
+          # Replace image registry in manifests
+          sed -i "s|cloudtolocalllm/postgres:latest|${{ needs.setup_acr.outputs.login_server }}/postgres:${POSTGRES_TAG}|g" k8s/postgres-statefulset.yaml
+          sed -i "s|cloudtolocalllm/web:latest|${{ needs.setup_acr.outputs.login_server }}/web:${WEB_TAG}|g" k8s/web-deployment.yaml
+          sed -i "s|cloudtolocalllm/api-backend:latest|${{ needs.setup_acr.outputs.login_server }}/api-backend:${API_TAG}|g" k8s/api-backend-deployment.yaml
+          sed -i "s|cloudtolocalllm/streaming-proxy:latest|${{ needs.setup_acr.outputs.login_server }}/streaming-proxy:${PROXY_TAG}|g" k8s/streaming-proxy-deployment.yaml
+
           # Validate manifests with server-side dry-run before applying
           echo "Validating Kubernetes manifests with server-side dry-run..."
           kubectl apply --dry-run=server -f k8s/rbac.yaml
@@ -306,7 +597,7 @@ jobs:
           kubectl apply --dry-run=server -f k8s/web-deployment.yaml
           kubectl apply --dry-run=server -f k8s/api-backend-deployment.yaml
           kubectl apply --dry-run=server -f k8s/streaming-proxy-deployment.yaml
-          
+
           # Apply RBAC and ConfigMaps first
           kubectl apply -f k8s/rbac.yaml
           kubectl apply -f k8s/configmap.yaml
@@ -485,7 +776,7 @@ jobs:
 
   # Deployment Summary
   deployment_summary:
-    needs: [ai_analysis, deploy_cloud, build_desktop, build_mobile]
+    needs: [ai_analysis, deploy_infrastructure, build_desktop, build_mobile]
     if: always() && needs.ai_analysis.outputs.should_deploy == 'true'
     runs-on: ubuntu-latest
     
@@ -497,7 +788,7 @@ jobs:
           NEEDS_DESKTOP: ${{ needs.ai_analysis.outputs.needs_desktop }}
           NEEDS_MOBILE: ${{ needs.ai_analysis.outputs.needs_mobile }}
           REASONING: ${{ needs.ai_analysis.outputs.reasoning }}
-          CLOUD_STATUS: ${{ needs.deploy_cloud.result }}
+          CLOUD_STATUS: ${{ needs.deploy_infrastructure.result }}
           DESKTOP_STATUS: ${{ needs.build_desktop.result }}
           MOBILE_STATUS: ${{ needs.build_mobile.result }}
         run: |
