@@ -58,11 +58,15 @@ Analyze changes and determine deployment needs. Output ONLY valid JSON:
   \"reasoning\": \"Conservative deployment for debugging changes\"
 }
 
-RULES:
-- DEFAULT: bump_type=none, semantic_version=$SEMANTIC_VERSION (no version increment for debugging)
-- PATCH: Only for user-visible bug fixes
-- MINOR: Only for new user-facing features  
-- MAJOR: Only for breaking user experience changes
+CRITICAL RULES FOR VERSION BUMPING:
+- DEFAULT: bump_type=none, semantic_version=$SEMANTIC_VERSION (NEVER increment for internal changes)
+- DEBUGGING/FIXES/CI/SECURITY: Always bump_type=none (keep same semantic version)
+- PATCH: ONLY for user-visible bug fixes that users will notice
+- MINOR: ONLY for new user-facing features that users will see
+- MAJOR: ONLY for breaking user experience changes
+- Internal changes, CI fixes, security patches, debugging = NO VERSION BUMP
+
+DEPLOYMENT RULES:
 - CORE CHANGES (main.dart, lib/services/, lib/models/) trigger ALL platforms
 - PLATFORM-SPECIFIC (web/, windows/, android/) trigger only that platform
 - Cloud: web/, services/, k8s/, auth changes
