@@ -173,7 +173,7 @@ class Auth0AuthProvider implements AuthProvider {
         scheme: UrlSchemeRegistrationService.customScheme,
       )
           .login(
-        scopes: ['openid', 'profile', 'email', 'offline_access'],
+        scopes: {'openid', 'profile', 'email', 'offline_access'},
         audience: _audience,
       );
 
