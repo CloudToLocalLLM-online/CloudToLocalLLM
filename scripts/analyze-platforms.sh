@@ -154,10 +154,10 @@ echo ""
             REASONING="$REASONING (OVERRIDE: Web-related files require cloud deployment)"
         fi
 
-# Validate version format
-if ! echo "$NEW_VERSION" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+$'; then
-    echo "❌ ERROR: Invalid version format from Kilocode: $NEW_VERSION"
-    echo "Expected format: x.y.z (e.g., 4.5.0)"
+# Validate version format (allow build metadata)
+if ! echo "$NEW_VERSION" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+(\+[0-9]+)?$'; then
+    echo "❌ ERROR: Invalid version format: $NEW_VERSION"
+    echo "Expected format: x.y.z or x.y.z+builddate (e.g., 4.5.0 or 4.5.0+202412151409)"
     exit 1
 fi
 
