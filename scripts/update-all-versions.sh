@@ -60,7 +60,14 @@ jq -n \
 # 3. Update pubspec.yaml
 echo "3. Updating pubspec.yaml..."
 # Flutter uses version+build format (e.g., 4.5.0+202512031420)
-sed -i "s/^version: .*/version: ${NEW_VERSION}+${BUILD_NUMBER}/" pubspec.yaml
+# Check if NEW_VERSION already has build metadata
+if [[ "$NEW_VERSION" == *"+"* ]]; then
+    # Version already has build metadata, use as-is
+    sed -i "s/^version: .*/version: ${NEW_VERSION}/" pubspec.yaml
+else
+    # Add build number to semantic version
+    sed -i "s/^version: .*/version: ${NEW_VERSION}+${BUILD_NUMBER}/" pubspec.yaml
+fi
 
 # 4. Update services/api-backend/package.json
 echo "4. Updating services/api-backend/package.json..."
