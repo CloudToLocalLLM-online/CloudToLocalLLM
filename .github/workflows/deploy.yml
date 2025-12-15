@@ -180,59 +180,7 @@ jobs:
             echo "ℹ️  No version changes to commit"
           fi
 
-  # Detect changes in specific paths (compare against last cloud tag)
-  changes:
-    needs: ai_analysis
-    if: ${{ needs.ai_analysis.outputs.should_deploy == 'true' && needs.ai_analysis.outputs.needs_cloud == 'true' }}
-    runs-on: ubuntu-latest
-    outputs:
-      base: ${{ steps.detect.outputs.base }}
-      postgres: ${{ steps.detect.outputs.postgres }}
-      web: ${{ steps.detect.outputs.web }}
-      api: ${{ steps.detect.outputs.api }}
-      proxy: ${{ steps.detect.outputs.proxy }}
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Detect Service Changes
-        id: detect
-        run: |
-          # Find the previous cloud tag
-          PREV_TAG=$(git tag -l "*-cloud-*" --sort=-version:refname | head -2 | tail -1 || echo "")
-
-          if [ -z "$PREV_TAG" ]; then
-            echo "No previous tag found, building all services"
-            echo "base=true" >> $GITHUB_OUTPUT
-            echo "postgres=true" >> $GITHUB_OUTPUT
-            echo "web=true" >> $GITHUB_OUTPUT
-            echo "api=true" >> $GITHUB_OUTPUT
-            echo "proxy=true" >> $GITHUB_OUTPUT
-            exit 0
-          fi
-
-          echo "Comparing against previous tag: $PREV_TAG"
-
-          # Check for changes in each service (suppress grep output, only capture true/false)
-          BASE_CHANGED=$(git diff --name-only $PREV_TAG HEAD | grep -qE '^config/docker/Dockerfile\.base' && echo "true" || echo "false")
-          POSTGRES_CHANGED=$(git diff --name-only $PREV_TAG HEAD | grep -qE '^config/docker/(Dockerfile\.postgres|postgres-)' && echo "true" || echo "false")
-          WEB_CHANGED=$(git diff --name-only $PREV_TAG HEAD | grep -qE '^(web|lib|pubspec\.)' && echo "true" || echo "false")
-          API_CHANGED=$(git diff --name-only $PREV_TAG HEAD | grep -qE '^services/api-backend' && echo "true" || echo "false")
-          PROXY_CHANGED=$(git diff --name-only $PREV_TAG HEAD | grep -qE '^services/streaming-proxy' && echo "true" || echo "false")
-
-          echo "base=$BASE_CHANGED" >> $GITHUB_OUTPUT
-          echo "postgres=$POSTGRES_CHANGED" >> $GITHUB_OUTPUT
-          echo "web=$WEB_CHANGED" >> $GITHUB_OUTPUT
-          echo "api=$API_CHANGED" >> $GITHUB_OUTPUT
-          echo "proxy=$PROXY_CHANGED" >> $GITHUB_OUTPUT
-
-          echo "Change detection:"
-          echo "  Base: $BASE_CHANGED"
-          echo "  Postgres: $POSTGRES_CHANGED"
-          echo "  Web: $WEB_CHANGED"
-          echo "  API: $API_CHANGED"
-          echo "  Proxy: $PROXY_CHANGED"
+  # Changes job removed - AI analysis already determines what needs to be built
 
   # Setup ACR and retrieve login server
   setup_acr:
@@ -268,8 +216,8 @@ jobs:
           echo "$ACR_PASSWORD" | docker login "${{ steps.acr_setup.outputs.login_server }}" --username "$ACR_USERNAME" --password-stdin
 
   build_base:
-    needs: [ai_analysis, changes, setup_acr]
-    if: ${{ !cancelled() && needs.changes.outputs.base == 'true' }}
+    needs: [ai_analysis, setup_acr]
+    if: ${{ !cancelled() && needs.ai_analysis.outputs.needs_cloud == 'true' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -297,8 +245,8 @@ jobs:
           cache-to: type=inline
 
   build_postgres:
-    needs: [ai_analysis, changes, setup_acr, build_base]
-    if: ${{ !cancelled() && (needs.build_base.result == 'success' || needs.build_base.result == 'skipped' || needs.changes.outputs.base != 'true') && needs.changes.outputs.postgres == 'true' }}
+    needs: [ai_analysis, setup_acr, build_base]
+    if: ${{ !cancelled() && needs.ai_analysis.outputs.needs_cloud == 'true' && (needs.build_base.result == 'success' || needs.build_base.result == 'skipped') }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -328,8 +276,8 @@ jobs:
           cache-to: type=inline
 
   build_web:
-    needs: [ai_analysis, changes, setup_acr, build_base]
-    if: ${{ !cancelled() && (needs.build_base.result == 'success' || needs.build_base.result == 'skipped' || needs.changes.outputs.base != 'true') && needs.changes.outputs.web == 'true' }}
+    needs: [ai_analysis, setup_acr, build_base]
+    if: ${{ !cancelled() && needs.ai_analysis.outputs.needs_cloud == 'true' && (needs.build_base.result == 'success' || needs.build_base.result == 'skipped') }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -390,8 +338,8 @@ jobs:
           cache-to: type=inline
 
   build_api:
-    needs: [ai_analysis, changes, setup_acr, build_base]
-    if: ${{ !cancelled() && (needs.build_base.result == 'success' || needs.build_base.result == 'skipped' || needs.changes.outputs.base != 'true') && needs.changes.outputs.api == 'true' }}
+    needs: [ai_analysis, setup_acr, build_base]
+    if: ${{ !cancelled() && needs.ai_analysis.outputs.needs_cloud == 'true' && (needs.build_base.result == 'success' || needs.build_base.result == 'skipped') }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -421,8 +369,8 @@ jobs:
           cache-to: type=inline
 
   build_proxy:
-    needs: [ai_analysis, changes, setup_acr, build_base]
-    if: ${{ !cancelled() && (needs.build_base.result == 'success' || needs.build_base.result == 'skipped' || needs.changes.outputs.base != 'true') && needs.changes.outputs.proxy == 'true' }}
+    needs: [ai_analysis, setup_acr, build_base]
+    if: ${{ !cancelled() && needs.ai_analysis.outputs.needs_cloud == 'true' && (needs.build_base.result == 'success' || needs.build_base.result == 'skipped') }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -455,14 +403,15 @@ jobs:
   deploy_infrastructure:
     permissions:
       id-token: write
-    needs: [ai_analysis, changes, setup_acr, build_base, build_postgres, build_web, build_api, build_proxy]
+    needs: [ai_analysis, setup_acr, build_base, build_postgres, build_web, build_api, build_proxy]
     if: |
       !cancelled() &&
-      (needs.build_base.result == 'success' || needs.build_base.result == 'skipped' || needs.changes.outputs.base != 'true') &&
-      (needs.build_postgres.result == 'success' || needs.build_postgres.result == 'skipped' || needs.changes.outputs.postgres != 'true') &&
-      (needs.build_web.result == 'success' || needs.build_web.result == 'skipped' || needs.changes.outputs.web != 'true') &&
-      (needs.build_api.result == 'success' || needs.build_api.result == 'skipped' || needs.changes.outputs.api != 'true') &&
-      (needs.build_proxy.result == 'success' || needs.build_proxy.result == 'skipped' || needs.changes.outputs.proxy != 'true')
+      needs.ai_analysis.outputs.needs_cloud == 'true' &&
+      (needs.build_base.result == 'success' || needs.build_base.result == 'skipped') &&
+      (needs.build_postgres.result == 'success' || needs.build_postgres.result == 'skipped') &&
+      (needs.build_web.result == 'success' || needs.build_web.result == 'skipped') &&
+      (needs.build_api.result == 'success' || needs.build_api.result == 'skipped') &&
+      (needs.build_proxy.result == 'success' || needs.build_proxy.result == 'skipped')
     runs-on: ubuntu-latest
     
     steps:
@@ -556,20 +505,17 @@ jobs:
 
       - name: Deploy Manifests
         env:
-          POSTGRES_BUILT: ${{ needs.changes.outputs.postgres }}
-          WEB_BUILT: ${{ needs.changes.outputs.web }}
-          API_BUILT: ${{ needs.changes.outputs.api }}
-          PROXY_BUILT: ${{ needs.changes.outputs.proxy }}
+          NEEDS_CLOUD: ${{ needs.ai_analysis.outputs.needs_cloud }}
           APP_VERSION: ${{ needs.ai_analysis.outputs.new_version }}
           COMMIT_SHA: ${{ github.sha }}
         run: |
           set -e
 
-          # Use semantic version if service was built, otherwise use latest
-          [ "$POSTGRES_BUILT" = "true" ] && POSTGRES_TAG="${APP_VERSION}-postgres" || POSTGRES_TAG="latest"
-          [ "$WEB_BUILT" = "true" ] && WEB_TAG="${APP_VERSION}" || WEB_TAG="latest"
-          [ "$API_BUILT" = "true" ] && API_TAG="${APP_VERSION}-api" || API_TAG="latest"
-          [ "$PROXY_BUILT" = "true" ] && PROXY_TAG="${APP_VERSION}-proxy" || PROXY_TAG="latest"
+          # Use semantic version tags for all services when cloud deployment is needed
+          POSTGRES_TAG="${APP_VERSION}-postgres"
+          WEB_TAG="${APP_VERSION}"
+          API_TAG="${APP_VERSION}-api"
+          PROXY_TAG="${APP_VERSION}-proxy"
 
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
           echo "Deployment Version: $APP_VERSION"
@@ -727,51 +673,183 @@ jobs:
           chmod +x scripts/cloudflare-cache-purge.sh
           ./scripts/cloudflare-cache-purge.sh
 
-  # Desktop Build (conditional) - TEMPORARILY DISABLED DUE TO FLUTTER WINDOWS BUILD ISSUES
+  # Desktop Build (conditional) - Enhanced with comprehensive monitoring and optimization
   build_desktop:
     needs: ai_analysis
-    if: false  # Disabled until Flutter Windows build issues are resolved
-    runs-on: windows-latest
+    if: ${{ needs.ai_analysis.outputs.should_deploy == 'true' && needs.ai_analysis.outputs.needs_desktop == 'true' }}
+    runs-on: windows-2022  # Use specific version for better stability
+    timeout-minutes: 45    # Increased timeout for comprehensive build process
     
     steps:
       - uses: actions/checkout@v4
       
-      - uses: subosito/flutter-action@v2
+      - name: System Resource Check
+        run: |
+          Write-Host "=== System Resources Before Build ===" -ForegroundColor Green
+          Get-ComputerInfo | Select-Object TotalPhysicalMemory, AvailablePhysicalMemory
+          Get-WmiObject -Class Win32_LogicalDisk | Select-Object DeviceID, Size, FreeSpace
+          Write-Host "======================================" -ForegroundColor Green
+
+      - name: Setup Flutter with Enhanced Caching
+        uses: subosito/flutter-action@v2
         with:
           channel: "stable"
           cache: true
+          cache-key: "flutter-${{ runner.os }}-${{ hashFiles('**/pubspec.lock') }}"
+          cache-path: ${{ runner.tool_cache }}/flutter
 
-      - name: Build Windows Desktop
-        timeout-minutes: 20
+      - name: Verify Flutter Installation
+        timeout-minutes: 5
         run: |
-          flutter pub get
-          echo "Configuring Windows build environment..."
+          Write-Host "=== Flutter Environment Verification ===" -ForegroundColor Green
+          flutter --version
+          flutter doctor -v
           flutter config --enable-windows-desktop
-          echo "Starting Windows build with optimizations..."
-          flutter build windows --release --no-tree-shake-icons --dart-define=FLUTTER_WEB_USE_SKIA=false
+          Write-Host "=========================================" -ForegroundColor Green
 
-      - name: Create Windows Installer
+      - name: Clean Previous Build Artifacts
+        timeout-minutes: 3
         run: |
-          # Simple build without the complex deployment script
-          if (-not (Test-Path "dist")) { New-Item -ItemType Directory -Path "dist" }
+          Write-Host "=== Cleaning Previous Build Artifacts ===" -ForegroundColor Green
+          if (Test-Path "build") { Remove-Item -Recurse -Force "build" }
+          if (Test-Path ".dart_tool") { Remove-Item -Recurse -Force ".dart_tool" }
+          flutter clean
+          Write-Host "==========================================" -ForegroundColor Green
+
+      - name: Install Dependencies with Progress Monitoring
+        timeout-minutes: 10
+        run: |
+          Write-Host "=== Installing Flutter Dependencies ===" -ForegroundColor Green
+          $stopwatch = [System.Diagnostics.Stopwatch]::StartNew()
           
-          # Copy built Windows app to dist
-          if (Test-Path "build/windows/x64/runner/Release") {
-            Copy-Item -Path "build/windows/x64/runner/Release" -Destination "dist/windows-release" -Recurse -Force
-            
-            # Create a simple zip package
-            $version = (Get-Content "pubspec.yaml" | Select-String "version:" | ForEach-Object { $_.ToString().Split(":")[1].Trim().Split("+")[0] })
-            Compress-Archive -Path "dist/windows-release/*" -DestinationPath "dist/cloudtolocalllm-$version-portable.zip" -Force
-            
-            # Generate SHA256 checksum
-            $hash = Get-FileHash "dist/cloudtolocalllm-$version-portable.zip" -Algorithm SHA256
-            "$($hash.Hash.ToLower())  cloudtolocalllm-$version-portable.zip" | Out-File "dist/cloudtolocalllm-$version-portable.zip.sha256" -Encoding ASCII
-            
-            Write-Host "✓ Created portable package: cloudtolocalllm-$version-portable.zip"
-          } else {
-            Write-Host "ERROR: Windows build output not found" -ForegroundColor Red
+          # Run flutter pub get with verbose output
+          flutter pub get --verbose
+          
+          $stopwatch.Stop()
+          Write-Host "Dependencies installed in $($stopwatch.Elapsed.TotalSeconds) seconds" -ForegroundColor Green
+          
+          # Verify dependencies
+          if (-not (Test-Path ".dart_tool/package_config.json")) {
+            Write-Host "ERROR: Dependencies not properly installed" -ForegroundColor Red
             exit 1
           }
+          Write-Host "=======================================" -ForegroundColor Green
+
+      - name: Pre-build Resource Check
+        run: |
+          Write-Host "=== Resources After Dependencies ===" -ForegroundColor Green
+          Get-ComputerInfo | Select-Object TotalPhysicalMemory, AvailablePhysicalMemory
+          Get-WmiObject -Class Win32_LogicalDisk | Select-Object DeviceID, Size, FreeSpace
+          Write-Host "====================================" -ForegroundColor Green
+
+      - name: Build Windows Desktop Application
+        timeout-minutes: 25
+        run: |
+          Write-Host "=== Starting Windows Desktop Build ===" -ForegroundColor Green
+          $stopwatch = [System.Diagnostics.Stopwatch]::StartNew()
+          
+          # Build with optimized flags and progress monitoring
+          try {
+            flutter build windows --release --verbose `
+              --split-debug-info=debug_info `
+              --dart-define=FLUTTER_WEB_USE_SKIA=false `
+              --dart-define=FLUTTER_BUILD_NUMBER=${{ github.sha }}
+            
+            $stopwatch.Stop()
+            Write-Host "Windows build completed in $($stopwatch.Elapsed.TotalSeconds) seconds" -ForegroundColor Green
+            
+            # Verify build output
+            if (-not (Test-Path "build/windows/x64/runner/Release")) {
+              Write-Host "ERROR: Build output directory not found" -ForegroundColor Red
+              exit 1
+            }
+            
+            # Check for main executable
+            if (-not (Test-Path "build/windows/x64/runner/Release/cloudtolocalllm.exe")) {
+              Write-Host "ERROR: Main executable not found" -ForegroundColor Red
+              Get-ChildItem "build/windows/x64/runner/Release" -Recurse
+              exit 1
+            }
+            
+            Write-Host "✅ Windows build successful" -ForegroundColor Green
+            
+          } catch {
+            Write-Host "ERROR during Windows build: $_" -ForegroundColor Red
+            
+            # Diagnostic information
+            Write-Host "=== Build Failure Diagnostics ===" -ForegroundColor Yellow
+            Get-ComputerInfo | Select-Object TotalPhysicalMemory, AvailablePhysicalMemory
+            Get-WmiObject -Class Win32_LogicalDisk | Select-Object DeviceID, Size, FreeSpace
+            
+            if (Test-Path "build") {
+              Write-Host "Build directory contents:" -ForegroundColor Yellow
+              Get-ChildItem "build" -Recurse -ErrorAction SilentlyContinue
+            }
+            
+            throw $_
+          }
+          Write-Host "======================================" -ForegroundColor Green
+
+      - name: Create Distribution Package
+        timeout-minutes: 5
+        run: |
+          Write-Host "=== Creating Distribution Package ===" -ForegroundColor Green
+          
+          # Create dist directory
+          if (-not (Test-Path "dist")) { 
+            New-Item -ItemType Directory -Path "dist" 
+          }
+          
+          # Verify build output exists
+          if (-not (Test-Path "build/windows/x64/runner/Release")) {
+            Write-Host "ERROR: Build output not found for packaging" -ForegroundColor Red
+            exit 1
+          }
+          
+          # Copy built Windows app to dist
+          Copy-Item -Path "build/windows/x64/runner/Release" -Destination "dist/windows-release" -Recurse -Force
+          
+          # Get version from pubspec.yaml
+          $version = "${{ needs.ai_analysis.outputs.new_version }}"
+          if (-not $version) {
+            $version = (Get-Content "pubspec.yaml" | Select-String "version:" | ForEach-Object { 
+              $_.ToString().Split(":")[1].Trim().Split("+")[0] 
+            })
+          }
+          
+          Write-Host "Creating package for version: $version" -ForegroundColor Green
+          
+          # Create portable zip package
+          $zipPath = "dist/cloudtolocalllm-$version-portable.zip"
+          Compress-Archive -Path "dist/windows-release/*" -DestinationPath $zipPath -Force
+          
+          # Verify zip was created
+          if (-not (Test-Path $zipPath)) {
+            Write-Host "ERROR: Failed to create zip package" -ForegroundColor Red
+            exit 1
+          }
+          
+          # Generate SHA256 checksum
+          $hash = Get-FileHash $zipPath -Algorithm SHA256
+          $checksumPath = "$zipPath.sha256"
+          "$($hash.Hash.ToLower())  cloudtolocalllm-$version-portable.zip" | Out-File $checksumPath -Encoding ASCII
+          
+          # Display package information
+          $zipInfo = Get-Item $zipPath
+          Write-Host "✅ Created portable package:" -ForegroundColor Green
+          Write-Host "   File: cloudtolocalllm-$version-portable.zip" -ForegroundColor Green
+          Write-Host "   Size: $([math]::Round($zipInfo.Length / 1MB, 2)) MB" -ForegroundColor Green
+          Write-Host "   SHA256: $($hash.Hash.ToLower())" -ForegroundColor Green
+          
+          Write-Host "===================================" -ForegroundColor Green
+
+      - name: Final Resource Check
+        if: always()
+        run: |
+          Write-Host "=== Final System Resources ===" -ForegroundColor Green
+          Get-ComputerInfo | Select-Object TotalPhysicalMemory, AvailablePhysicalMemory
+          Get-WmiObject -Class Win32_LogicalDisk | Select-Object DeviceID, Size, FreeSpace
+          Write-Host "===============================" -ForegroundColor Green
 
       - name: Upload Desktop Artifacts
         uses: actions/upload-artifact@v4
