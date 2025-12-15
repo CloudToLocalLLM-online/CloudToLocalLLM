@@ -109,15 +109,20 @@ purge_cache() {
         local http_code
         
         # Make the API call and capture both response and HTTP status
-        response=$(curl -s -w "\n%{http_code}" -X POST \
+        local temp_file=$(mktemp)
+        local http_code
+        
+        response=$(curl -s -w "%{http_code}" -X POST \
             "https://api.cloudflare.com/client/v4/zones/${zone_id}/purge_cache" \
             -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
             -H "Content-Type: application/json" \
-            --data '{"purge_everything": true}')
+            --data '{"purge_everything": true}' \
+            -o "$temp_file")
         
-        # Extract HTTP status code from response
-        http_code=$(echo "$response" | tail -n1)
-        response=$(echo "$response" | head -n -1)
+        # Extract HTTP status code and response body
+        http_code="$response"
+        response=$(cat "$temp_file")
+        rm -f "$temp_file"
         
         log_info "HTTP Status: $http_code"
 
@@ -129,14 +134,25 @@ purge_cache() {
             echo "Response: $response"
             
             # Check for specific error patterns
-            if echo "$response" | grep -q '"code":10000'; then
+            if [ "$http_code" = "401" ] || [ "$http_code" = "403" ]; then
+                log_error "Authentication failed (HTTP $http_code) - check CLOUDFLARE_API_TOKEN permissions"
+                log_error "Token needs 'Zone:Cache Purge' permission for zone: $DOMAIN"
+                break
+            elif [ "$http_code" = "400" ]; then
+                log_error "Bad request (HTTP $http_code) - check API parameters"
+                break
+            elif [ "$http_code" = "429" ]; then
+                log_warning "Rate limited (HTTP $http_code) - will retry"
+            elif echo "$response" | grep -q '"code":10000'; then
                 log_error "Authentication failed - check CLOUDFLARE_API_TOKEN"
                 break
             elif echo "$response" | grep -q '"code":6003'; then
                 log_error "Invalid zone ID or insufficient permissions"
                 break
+            elif [ -z "$response" ] && [ -z "$http_code" ]; then
+                log_error "No response from Cloudflare API - possible network issue"
             elif [ -z "$response" ]; then
-                log_error "Empty response - possible network or API issue"
+                log_error "Empty response body with HTTP $http_code"
             fi
 
             if [ $attempt -lt $MAX_RETRIES ]; then
@@ -186,11 +202,20 @@ purge_selective_urls() {
     log_info "Purging URLs: $url_list"
     
     local response
-    response=$(curl -s -X POST \
+    local temp_file=$(mktemp)
+    local http_code
+    
+    http_code=$(curl -s -w "%{http_code}" -X POST \
         "https://api.cloudflare.com/client/v4/zones/${zone_id}/purge_cache" \
         -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
         -H "Content-Type: application/json" \
-        --data "$payload")
+        --data "$payload" \
+        -o "$temp_file")
+    
+    response=$(cat "$temp_file")
+    rm -f "$temp_file"
+    
+    log_info "Selective purge HTTP Status: $http_code"
     
     if echo "$response" | grep -q '"success":true'; then
         log_success "Selective URL purge successful"
