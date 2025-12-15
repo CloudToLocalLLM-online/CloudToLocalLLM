@@ -805,6 +805,16 @@ jobs:
         run: |
           Write-Host "=== Creating Complete Release Assets ===" -ForegroundColor Green
           
+          # CRITICAL: Clean old build artifacts first
+          if (Test-Path "dist") {
+            Write-Host "Cleaning old build artifacts..." -ForegroundColor Yellow
+            Remove-Item -Recurse -Force "dist"
+          }
+          
+          # Get current version
+          $version = "${{ needs.ai_analysis.outputs.new_version }}"
+          Write-Host "Building for version: $version" -ForegroundColor Green
+          
           # Use the comprehensive build script that creates both ZIP and installer
           $buildScript = "scripts/powershell/Build-GitHubReleaseAssets.ps1"
           
@@ -827,12 +837,19 @@ jobs:
             & $buildScript -SkipBuild -SkipInstaller
           }
           
-          # Verify assets were created
+          # Verify ONLY current version assets were created
           if (Test-Path "dist/windows") {
-            Write-Host "Created assets:" -ForegroundColor Green
-            Get-ChildItem "dist/windows" | ForEach-Object {
+            Write-Host "Created assets for version $version:" -ForegroundColor Green
+            Get-ChildItem "dist/windows" | Where-Object { $_.Name -like "*$version*" } | ForEach-Object {
               $size = if ($_.Length) { "$([math]::Round($_.Length / 1MB, 2)) MB" } else { "N/A" }
-              Write-Host "  • $($_.Name) ($size)" -ForegroundColor Green
+              Write-Host "  ✅ $($_.Name) ($size)" -ForegroundColor Green
+            }
+            
+            # Check for old version files (should not exist)
+            $oldFiles = Get-ChildItem "dist/windows" | Where-Object { $_.Name -notlike "*$version*" }
+            if ($oldFiles) {
+              Write-Host "WARNING: Found old version files that will be excluded:" -ForegroundColor Yellow
+              $oldFiles | ForEach-Object { Write-Host "  ⚠️ $($_.Name)" -ForegroundColor Yellow }
             }
           } else {
             Write-Host "ERROR: No assets were created" -ForegroundColor Red
@@ -854,9 +871,9 @@ jobs:
         with:
           name: windows-desktop-${{ needs.ai_analysis.outputs.new_version }}
           path: |
-            dist/windows/*.zip
-            dist/windows/*.exe
-            dist/windows/*.sha256
+            dist/windows/*${{ needs.ai_analysis.outputs.new_version }}*.zip
+            dist/windows/*${{ needs.ai_analysis.outputs.new_version }}*.exe
+            dist/windows/*${{ needs.ai_analysis.outputs.new_version }}*.sha256
 
   # Mobile Build (conditional - placeholder for future)
   build_mobile:
