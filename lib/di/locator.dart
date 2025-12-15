@@ -55,9 +55,9 @@ bool _isRegisteringAuthenticatedServices = false;
 /// initialized during app bootstrap.
 Future<void> setupCoreServices() async {
   if (_coreServicesRegistered) {
+    debugPrint('[ServiceLocator] Core services already registered, skipping');
     return;
   }
-  _coreServicesRegistered = true;
 
   debugPrint('[ServiceLocator] ===== REGISTERING CORE SERVICES START =====');
   debugPrint('[ServiceLocator] Registering core services...');
@@ -69,27 +69,61 @@ Future<void> setupCoreServices() async {
 
   // Authentication Provider - Using platform-specific provider
   late AuthProvider authProvider;
-  debugPrint(
-      '[Locator] Platform detection: Platform.isWindows = ${Platform.isWindows}');
-  debugPrint(
-      '[Locator] Platform.operatingSystem = ${Platform.operatingSystem}');
 
-  if (Platform.isWindows) {
-    debugPrint('[Locator] ✓ Using WindowsOAuthProvider for Windows desktop');
-    authProvider = WindowsOAuthProvider();
-  } else {
-    debugPrint('[Locator] Using Auth0AuthProvider for other platforms');
+  try {
+    debugPrint('[Locator] Detecting platform...');
+
+    // Check if we're on web first
+    if (kIsWeb) {
+      debugPrint('[Locator] ✓ Web platform detected, using Auth0AuthProvider');
+      authProvider = Auth0AuthProvider();
+    } else {
+      // Only check Platform.isWindows if not on web
+      debugPrint(
+          '[Locator] Platform detection: Platform.isWindows = ${Platform.isWindows}');
+      debugPrint(
+          '[Locator] Platform.operatingSystem = ${Platform.operatingSystem}');
+
+      if (Platform.isWindows) {
+        debugPrint(
+            '[Locator] ✓ Using WindowsOAuthProvider for Windows desktop');
+        authProvider = WindowsOAuthProvider();
+      } else {
+        debugPrint('[Locator] Using Auth0AuthProvider for other platforms');
+        authProvider = Auth0AuthProvider();
+      }
+    }
+  } catch (e, stack) {
+    debugPrint('[Locator] ERROR during platform detection: $e');
+    debugPrint('[Locator] Stack trace: $stack');
+    // Fallback to Auth0 if platform detection fails
+    debugPrint('[Locator] Falling back to Auth0AuthProvider');
     authProvider = Auth0AuthProvider();
   }
 
   debugPrint('[Locator] Selected auth provider: ${authProvider.runtimeType}');
 
   // Register strictly as AuthProvider interface to enforce abstraction
-  serviceLocator.registerSingleton<AuthProvider>(authProvider);
+  try {
+    debugPrint('[Locator] Registering AuthProvider...');
+    serviceLocator.registerSingleton<AuthProvider>(authProvider);
+    debugPrint('[Locator] ✓ AuthProvider registered successfully');
+  } catch (e, stack) {
+    debugPrint('[Locator] ❌ CRITICAL ERROR registering AuthProvider: $e');
+    debugPrint('[Locator] Stack trace: $stack');
+    rethrow;
+  }
 
-  print('[Locator] Registering AuthService...');
-  final authService = AuthService(authProvider);
-  serviceLocator.registerSingleton<AuthService>(authService);
+  try {
+    print('[Locator] Registering AuthService...');
+    final authService = AuthService(authProvider);
+    serviceLocator.registerSingleton<AuthService>(authService);
+    debugPrint('[Locator] ✓ AuthService registered successfully');
+  } catch (e, stack) {
+    debugPrint('[Locator] ❌ CRITICAL ERROR registering AuthService: $e');
+    debugPrint('[Locator] Stack trace: $stack');
+    rethrow;
+  }
   // Local Ollama service - create but don't initialize until auth
   final localOllamaService = LocalOllamaConnectionService();
   serviceLocator.registerSingleton<LocalOllamaConnectionService>(
@@ -192,14 +226,26 @@ Future<void> setupCoreServices() async {
   debugPrint('[ServiceLocator] Core services registered successfully');
 
   // Initialize AuthService last, after all dependencies are registered
-  print('[Locator] Initializing AuthService...');
-  await authService.init();
-  print('[Locator] AuthService initialized');
+  try {
+    print('[Locator] Initializing AuthService...');
+    final authService = serviceLocator.get<AuthService>();
+    await authService.init();
+    print('[Locator] ✓ AuthService initialized successfully');
+  } catch (e, stack) {
+    debugPrint('[Locator] ❌ CRITICAL ERROR initializing AuthService: $e');
+    debugPrint('[Locator] Stack trace: $stack');
+    rethrow;
+  }
 
   debugPrint('[ServiceLocator] ===== REGISTERING CORE SERVICES END =====');
 
   // Verify all core services are registered
   _verifyCoreServicesRegistered();
+
+  // Only mark as registered if we got this far without exceptions
+  _coreServicesRegistered = true;
+  debugPrint(
+      '[ServiceLocator] Core services registration completed successfully');
 }
 
 /// Verify that all critical core services are registered
@@ -214,55 +260,50 @@ void _verifyCoreServicesRegistered() {
   ];
 
   debugPrint('[ServiceLocator] Verifying core services registration...');
+  bool allServicesRegistered = true;
+
   for (final serviceName in criticalServices) {
     try {
+      bool isRegistered = false;
       switch (serviceName) {
         case 'AuthService':
-          if (serviceLocator.isRegistered<AuthService>()) {
-            debugPrint('[ServiceLocator] ✓ $serviceName registered');
-          } else {
-            debugPrint('[ServiceLocator] ✗ $serviceName NOT registered');
-          }
+          isRegistered = serviceLocator.isRegistered<AuthService>();
           break;
         case 'ThemeProvider':
-          if (serviceLocator.isRegistered<ThemeProvider>()) {
-            debugPrint('[ServiceLocator] ✓ $serviceName registered');
-          } else {
-            debugPrint('[ServiceLocator] ✗ $serviceName NOT registered');
-          }
+          isRegistered = serviceLocator.isRegistered<ThemeProvider>();
           break;
         case 'ProviderConfigurationManager':
-          if (serviceLocator.isRegistered<ProviderConfigurationManager>()) {
-            debugPrint('[ServiceLocator] ✓ $serviceName registered');
-          } else {
-            debugPrint('[ServiceLocator] ✗ $serviceName NOT registered');
-          }
+          isRegistered =
+              serviceLocator.isRegistered<ProviderConfigurationManager>();
           break;
         case 'LocalOllamaConnectionService':
-          if (serviceLocator.isRegistered<LocalOllamaConnectionService>()) {
-            debugPrint('[ServiceLocator] ✓ $serviceName registered');
-          } else {
-            debugPrint('[ServiceLocator] ✗ $serviceName NOT registered');
-          }
+          isRegistered =
+              serviceLocator.isRegistered<LocalOllamaConnectionService>();
           break;
         case 'DesktopClientDetectionService':
-          if (serviceLocator.isRegistered<DesktopClientDetectionService>()) {
-            debugPrint('[ServiceLocator] ✓ $serviceName registered');
-          } else {
-            debugPrint('[ServiceLocator] ✗ $serviceName NOT registered');
-          }
+          isRegistered =
+              serviceLocator.isRegistered<DesktopClientDetectionService>();
           break;
         case 'AppInitializationService':
-          if (serviceLocator.isRegistered<AppInitializationService>()) {
-            debugPrint('[ServiceLocator] ✓ $serviceName registered');
-          } else {
-            debugPrint('[ServiceLocator] ✗ $serviceName NOT registered');
-          }
+          isRegistered =
+              serviceLocator.isRegistered<AppInitializationService>();
           break;
+      }
+
+      if (isRegistered) {
+        debugPrint('[ServiceLocator] ✓ $serviceName registered');
+      } else {
+        debugPrint('[ServiceLocator] ✗ $serviceName NOT registered');
+        allServicesRegistered = false;
       }
     } catch (e) {
       debugPrint('[ServiceLocator] Error checking $serviceName: $e');
+      allServicesRegistered = false;
     }
+  }
+
+  if (!allServicesRegistered) {
+    throw Exception('Critical core services failed to register properly');
   }
 }
 

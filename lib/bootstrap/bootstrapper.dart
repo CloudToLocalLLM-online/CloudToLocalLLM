@@ -20,10 +20,26 @@ class AppBootstrapper {
   AppBootstrapper();
 
   Future<AppBootstrapData> load() async {
-    await _initializeSqflite();
-    await setupServiceLocator();
+    try {
+      print('[Bootstrapper] Starting bootstrap process...');
 
-    return AppBootstrapData(isWeb: kIsWeb, supportsNativeShell: !kIsWeb);
+      print('[Bootstrapper] Initializing SQLite...');
+      await _initializeSqflite();
+      print('[Bootstrapper] SQLite initialized');
+
+      print('[Bootstrapper] Setting up service locator...');
+      await setupServiceLocator();
+      print('[Bootstrapper] Service locator setup completed');
+
+      print('[Bootstrapper] Bootstrap completed successfully');
+      return AppBootstrapData(isWeb: kIsWeb, supportsNativeShell: !kIsWeb);
+    } catch (e, stack) {
+      print('[Bootstrapper] ERROR during bootstrap: $e');
+      print('[Bootstrapper] Stack trace: $stack');
+
+      // Re-throw to let the caller handle it
+      rethrow;
+    }
   }
 
   Future<void> _initializeSqflite() async {
