@@ -70,12 +70,12 @@ get_zone_id() {
     local zone_name="$1"
 
     if [ -n "$CLOUDFLARE_ZONE_ID" ]; then
-        log_info "Using provided Zone ID: $CLOUDFLARE_ZONE_ID"
+        log_info "Using provided Zone ID: $CLOUDFLARE_ZONE_ID" >&2
         echo "$CLOUDFLARE_ZONE_ID"
         return 0
     fi
 
-    log_info "Fetching Zone ID for domain: $zone_name"
+    log_info "Fetching Zone ID for domain: $zone_name" >&2
 
     local response
     response=$(curl -s -X GET "https://api.cloudflare.com/client/v4/zones?name=$zone_name" \
@@ -86,13 +86,13 @@ get_zone_id() {
         local zone_id
         zone_id=$(echo "$response" | grep -o '"id":"[^"]*"' | head -1 | cut -d'"' -f4)
         if [ -n "$zone_id" ]; then
-            log_success "Zone ID retrieved: $zone_id"
+            log_success "Zone ID retrieved: $zone_id" >&2
             echo "$zone_id"
             return 0
         fi
     fi
 
-    log_error "Failed to retrieve Zone ID"
+    log_error "Failed to retrieve Zone ID" >&2
     echo "Response: $response" >&2
     return 1
 }
