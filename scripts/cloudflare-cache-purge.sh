@@ -107,24 +107,53 @@ purge_cache() {
 
         local response
         local http_code
+        local curl_exit_code
         
         # Make the API call and capture both response and HTTP status
         local temp_file=$(mktemp)
-        local http_code
+        local temp_headers=$(mktemp)
         
-        response=$(curl -s -w "%{http_code}" -X POST \
+        # Add debugging: show the exact curl command (without token)
+        log_info "Executing: curl -s -w '%{http_code}' -X POST 'https://api.cloudflare.com/client/v4/zones/${zone_id}/purge_cache' -H 'Authorization: Bearer [REDACTED]' -H 'Content-Type: application/json' --data '{\"purge_everything\": true}'"
+        
+        # Execute curl with better error handling
+        set +e  # Don't exit on curl failure
+        http_code=$(curl -s -w "%{http_code}" -X POST \
             "https://api.cloudflare.com/client/v4/zones/${zone_id}/purge_cache" \
             -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
             -H "Content-Type: application/json" \
             --data '{"purge_everything": true}' \
-            -o "$temp_file")
+            --dump-header "$temp_headers" \
+            -o "$temp_file" 2>&1)
+        curl_exit_code=$?
+        set -e  # Re-enable exit on error
         
-        # Extract HTTP status code and response body
-        http_code="$response"
-        response=$(cat "$temp_file")
-        rm -f "$temp_file"
+        # Read response body
+        response=$(cat "$temp_file" 2>/dev/null || echo "")
         
+        log_info "Curl exit code: $curl_exit_code"
         log_info "HTTP Status: $http_code"
+        
+        # Show response headers for debugging
+        if [ -f "$temp_headers" ]; then
+            log_info "Response headers:"
+            cat "$temp_headers" | head -10
+        fi
+        
+        # Clean up temp files
+        rm -f "$temp_file" "$temp_headers"
+        
+        # Check curl exit code first
+        if [ $curl_exit_code -ne 0 ]; then
+            log_error "Curl command failed with exit code $curl_exit_code"
+            log_error "This usually indicates a network, DNS, or connection issue"
+            if [ $attempt -lt $MAX_RETRIES ]; then
+                log_info "Retrying in $RETRY_DELAY seconds..."
+                sleep $RETRY_DELAY
+            fi
+            ((attempt++))
+            continue
+        fi
 
         if echo "$response" | grep -q '"success":true'; then
             log_success "Cache purge successful for zone $zone_id"
