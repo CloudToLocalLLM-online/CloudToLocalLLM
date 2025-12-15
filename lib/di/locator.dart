@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:get_it/get_it.dart';
@@ -11,8 +12,7 @@ import 'package:cloudtolocalllm/services/session_storage_service.dart';
 import 'package:cloudtolocalllm/services/connection_manager_service.dart';
 import 'package:cloudtolocalllm/auth/auth_provider.dart';
 import 'package:cloudtolocalllm/auth/providers/auth0_auth_provider.dart';
-import 'package:cloudtolocalllm/auth/providers/entra_auth_provider.dart';
-import 'package:cloudtolocalllm/auth/providers/supabase_auth_provider.dart';
+import 'package:cloudtolocalllm/auth/providers/windows_oauth_provider.dart';
 import 'package:cloudtolocalllm/services/desktop_client_detection_service.dart';
 import 'package:cloudtolocalllm/services/enhanced_user_tier_service.dart';
 import 'package:cloudtolocalllm/services/langchain_integration_service.dart';
@@ -41,7 +41,8 @@ import 'package:cloudtolocalllm/services/admin_center_service.dart';
 import 'package:cloudtolocalllm/services/theme_provider.dart';
 import 'package:cloudtolocalllm/services/platform_detection_service.dart';
 import 'package:cloudtolocalllm/services/platform_adapter.dart';
-import 'package:cloudtolocalllm/config/app_config.dart';
+import 'package:cloudtolocalllm/services/url_scheme_registration_service.dart';
+import 'package:cloudtolocalllm/models/provider_configuration.dart';
 
 final GetIt serviceLocator = GetIt.instance;
 
@@ -66,22 +67,22 @@ Future<void> setupCoreServices() async {
   serviceLocator
       .registerSingleton<SessionStorageService>(sessionStorageService);
 
-  // Authentication Provider - Conditional Registration
-  AuthProvider authProvider;
-  switch (AppConfig.authProvider) {
-    case AuthProviderType.auth0:
-      debugPrint('[Locator] Using Auth0AuthProvider');
-      authProvider = Auth0AuthProvider();
-      break;
-    case AuthProviderType.entra:
-      debugPrint('[Locator] Using EntraAuthProvider');
-      authProvider = EntraAuthProvider();
-      break;
-    case AuthProviderType.supabase:
-      debugPrint('[Locator] Using SupabaseAuthProvider');
-      authProvider = SupabaseAuthProvider();
-      break;
+  // Authentication Provider - Using platform-specific provider
+  late AuthProvider authProvider;
+  debugPrint(
+      '[Locator] Platform detection: Platform.isWindows = ${Platform.isWindows}');
+  debugPrint(
+      '[Locator] Platform.operatingSystem = ${Platform.operatingSystem}');
+
+  if (Platform.isWindows) {
+    debugPrint('[Locator] ✓ Using WindowsOAuthProvider for Windows desktop');
+    authProvider = WindowsOAuthProvider();
+  } else {
+    debugPrint('[Locator] Using Auth0AuthProvider for other platforms');
+    authProvider = Auth0AuthProvider();
   }
+
+  debugPrint('[Locator] Selected auth provider: ${authProvider.runtimeType}');
 
   // Register strictly as AuthProvider interface to enforce abstraction
   serviceLocator.registerSingleton<AuthProvider>(authProvider);
@@ -161,6 +162,11 @@ Future<void> setupCoreServices() async {
   final providerConfigurationManager = ProviderConfigurationManager();
   serviceLocator.registerSingleton<ProviderConfigurationManager>(
     providerConfigurationManager,
+  );
+
+  // URL scheme registration service - registers custom URL schemes for OAuth callbacks (Windows)
+  serviceLocator.registerSingleton<UrlSchemeRegistrationService>(
+    UrlSchemeRegistrationService(),
   );
 
   // Web download prompt service - can be created but won't do heavy work until auth
@@ -327,7 +333,12 @@ Future<void> setupAuthenticatedServices() async {
 
     // LangChain Prompt Service is already initialized in constructor
 
-    // Provider Discovery Service doesn't need initialization - it's already set up
+    // Initialize Provider Discovery Service and auto-configure discovered providers
+    print('[ServiceLocator] Initializing ProviderDiscoveryService...');
+    await _initializeProviderDiscoveryAndAutoConfig(
+      providerDiscoveryService,
+      serviceLocator.get<ProviderConfigurationManager>(),
+    );
 
     // Tunnel configuration manager - requires SharedPreferences
     print('[ServiceLocator] Initializing TunnelConfigManager...');
@@ -445,6 +456,118 @@ Future<void> setupAuthenticatedServices() async {
         '[ServiceLocator] ===== REGISTERING AUTHENTICATED SERVICES END =====');
   } finally {
     _isRegisteringAuthenticatedServices = false;
+  }
+}
+
+/// Initialize provider discovery and auto-configure discovered providers
+Future<void> _initializeProviderDiscoveryAndAutoConfig(
+  ProviderDiscoveryService discoveryService,
+  ProviderConfigurationManager configManager,
+) async {
+  try {
+    debugPrint('[ServiceLocator] Starting provider discovery scan...');
+
+    // Scan for available providers
+    final discoveredProviders = await discoveryService.scanForProviders();
+    debugPrint(
+        '[ServiceLocator] Found ${discoveredProviders.length} providers');
+
+    // Auto-configure discovered providers if not already configured
+    for (final providerInfo in discoveredProviders) {
+      final providerId = 'auto_${providerInfo.id}';
+
+      // Skip if already configured
+      if (configManager.isProviderConfigured(providerId)) {
+        debugPrint(
+            '[ServiceLocator] Provider ${providerInfo.name} already configured, skipping');
+        continue;
+      }
+
+      debugPrint('[ServiceLocator] Auto-configuring ${providerInfo.name}...');
+
+      try {
+        ProviderConfiguration? config;
+
+        switch (providerInfo.type) {
+          case ProviderType.ollama:
+            config = OllamaProviderConfiguration(
+              providerId: providerId,
+              baseUrl: providerInfo.baseUrl,
+              port: providerInfo.port,
+              timeout: const Duration(seconds: 60),
+              enableStreaming: true,
+              enableEmbeddings: true,
+              customSettings: {
+                'auto_configured': true,
+                'discovered_at': DateTime.now().toIso8601String(),
+                'version': providerInfo.version,
+                'models': providerInfo.availableModels,
+              },
+            );
+            break;
+
+          case ProviderType.lmStudio:
+            config = LMStudioProviderConfiguration(
+              providerId: providerId,
+              baseUrl: providerInfo.baseUrl,
+              port: providerInfo.port,
+              timeout: const Duration(seconds: 120),
+              enableStreaming: true,
+              customSettings: {
+                'auto_configured': true,
+                'discovered_at': DateTime.now().toIso8601String(),
+                'models': providerInfo.availableModels,
+              },
+            );
+            break;
+
+          case ProviderType.openAICompatible:
+            config = OpenAICompatibleProviderConfiguration(
+              providerId: providerId,
+              baseUrl: providerInfo.baseUrl,
+              port: providerInfo.port,
+              timeout: const Duration(seconds: 90),
+              requiresAuth: false,
+              enableStreaming: true,
+              customSettings: {
+                'auto_configured': true,
+                'discovered_at': DateTime.now().toIso8601String(),
+                'models': providerInfo.availableModels,
+              },
+            );
+            break;
+
+          case ProviderType.custom:
+            // Skip custom providers for auto-configuration
+            debugPrint(
+                '[ServiceLocator] Skipping custom provider ${providerInfo.name}');
+            continue;
+        }
+
+        if (config != null) {
+          await configManager.setConfiguration(config);
+          debugPrint(
+              '[ServiceLocator] ✓ Auto-configured ${providerInfo.name} as $providerId');
+
+          // Set Ollama as default provider if found and no preferred provider is set
+          if (providerInfo.type == ProviderType.ollama &&
+              configManager.preferredProviderId == null) {
+            await configManager.setPreferredProvider(providerId);
+            debugPrint('[ServiceLocator] ✓ Set Ollama as default provider');
+          }
+        }
+      } catch (e) {
+        debugPrint(
+            '[ServiceLocator] Failed to auto-configure ${providerInfo.name}: $e');
+      }
+    }
+
+    // Start periodic scanning for new providers
+    discoveryService.startPeriodicScanning();
+    debugPrint('[ServiceLocator] Started periodic provider scanning');
+  } catch (e) {
+    debugPrint(
+        '[ServiceLocator] Error during provider discovery initialization: $e');
   }
 }
 

@@ -81,22 +81,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.13.0"
-  auth0_flutter:
-    dependency: "direct main"
-    description:
-      name: auth0_flutter
-      sha256: "2498e3593326687ae37a0736ecaa005397bf27bc352e95a86ddf749a0aa5e3c9"
-      url: "https://pub.dev"
-    source: hosted
-    version: "1.14.0"
-  auth0_flutter_platform_interface:
-    dependency: transitive
-    description:
-      name: auth0_flutter_platform_interface
-      sha256: "4ec77a30eb5c464a7e5744c72ab380a1f073752de3a8542eb0c5c717053b4e71"
-      url: "https://pub.dev"
-    source: hosted
-    version: "1.14.0"
   beautiful_soup_dart:
     dependency: transitive
     description:
@@ -294,6 +278,22 @@ packages:
     description: flutter
     source: sdk
     version: "0.0.0"
+  flutter_appauth:
+    dependency: "direct main"
+    description:
+      name: flutter_appauth
+      sha256: "84e8753fe20864da241892823ff7dbd252baa34f1649d6feb48118e8ae829ed1"
+      url: "https://pub.dev"
+    source: hosted
+    version: "7.0.1"
+  flutter_appauth_platform_interface:
+    dependency: transitive
+    description:
+      name: flutter_appauth_platform_interface
+      sha256: "0959824b401f3ee209c869734252bd5d4d4aab804b019c03815c56e3b9a4bc34"
+      url: "https://pub.dev"
+    source: hosted
+    version: "7.0.1"
   flutter_driver:
     dependency: transitive
     description: flutter
@@ -467,7 +467,7 @@ packages:
     source: hosted
     version: "0.15.6"
   http:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: http
       sha256: "87721a4a50b19c7f1d49001e51409bddc46303966ce89a65af4f4e6004896412"

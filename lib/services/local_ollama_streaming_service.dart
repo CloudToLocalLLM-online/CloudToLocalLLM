@@ -66,7 +66,7 @@ class LocalOllamaStreamingService extends StreamingService {
       final stopwatch = Stopwatch()..start();
 
       // Test basic connectivity
-      final response = await _dio.get('/version',
+      final response = await _dio.get('/api/version',
           options: Options(headers: {'Accept': 'application/json'}));
 
       stopwatch.stop();
@@ -175,7 +175,7 @@ class LocalOllamaStreamingService extends StreamingService {
       debugPrint('[LocalOllamaStreaming] Starting stream for model: $model');
 
       final response = await _dio.post(
-        '/chat',
+        '/api/chat',
         data: requestBody,
         options: Options(
           headers: {
@@ -279,7 +279,7 @@ class LocalOllamaStreamingService extends StreamingService {
     }
 
     try {
-      final response = await _dio.get('/tags',
+      final response = await _dio.get('/api/tags',
           options: Options(headers: {'Accept': 'application/json'}));
 
       if (response.statusCode == 200) {
@@ -307,7 +307,7 @@ class LocalOllamaStreamingService extends StreamingService {
     _heartbeatTimer?.cancel();
     _heartbeatTimer = Timer.periodic(_config.heartbeatInterval, (_) async {
       try {
-        final response = await _dio.get('/version');
+        final response = await _dio.get('/api/version');
 
         if (response.statusCode != 200) {
           throw StreamingException(

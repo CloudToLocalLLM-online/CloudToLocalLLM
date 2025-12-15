@@ -21,9 +21,9 @@ public final class GeneratedPluginRegistrant {
       Log.e(TAG, "Error registering plugin app_links, com.llfbandit.app_links.AppLinksPlugin", e);
     }
     try {
-      flutterEngine.getPlugins().add(new com.auth0.auth0_flutter.Auth0FlutterPlugin());
+      flutterEngine.getPlugins().add(new io.crossingthestreams.flutterappauth.FlutterAppauthPlugin());
     } catch (Exception e) {
-      Log.e(TAG, "Error registering plugin auth0_flutter, com.auth0.auth0_flutter.Auth0FlutterPlugin", e);
+      Log.e(TAG, "Error registering plugin flutter_appauth, io.crossingthestreams.flutterappauth.FlutterAppauthPlugin", e);
     }
     try {
       flutterEngine.getPlugins().add(new net.jonhanson.flutter_native_splash.FlutterNativeSplashPlugin());

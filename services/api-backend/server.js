@@ -583,43 +583,25 @@ server.on('upgrade', (request, socket, head) => {
   const pathname = new URL(request.url, `http://${request.headers.host}`).pathname;
 
   if (pathname === '/ssh') {
-    if (sshProxy && sshProxy.sshServer) {
-      // Handle WebSocket upgrade for SSH tunnel
-      // The SSH server (ssh2) doesn't natively support WebSocket, so we need to bridge it
-      // We'll use the 'ws' library to handle the WebSocket connection and pipe it to the SSH server
-
-      // Note: This requires the 'ws' library to be imported and a WebSocket server to be attached
-      // Since we're using a custom implementation, we'll need to implement the WebSocket handling here
-      // or in the SSHProxy class.
-
-      // For now, let's log that we received an upgrade request
-      logger.info('Received WebSocket upgrade request for /ssh');
-
-      // In a real implementation, we would:
-      // 1. Authenticate the request (using the token in the query string)
-      // 2. Upgrade the connection to WebSocket
-      // 3. Create a stream from the WebSocket
-      // 4. Pass the stream to the SSH server as a connection
-
-      // Since ssh2.Server expects a raw TCP connection, we need to wrap the WebSocket
-      // into a stream that looks like a TCP socket.
-
-      // This implementation is complex and requires additional dependencies/setup.
-      // For this test, we'll assume the SSHProxy handles it if we pass the request.
-
-      if (sshProxy.handleUpgrade) {
+    if (sshProxy && sshProxy.handleUpgrade) {
+      logger.info('Received WebSocket upgrade request for /ssh', {
+        url: request.url,
+        headers: Object.keys(request.headers)
+      });
+      
+      try {
         sshProxy.handleUpgrade(request, socket, head);
-      } else {
-        logger.warn('SSHProxy does not support handleUpgrade');
+      } catch (error) {
+        logger.error('SSH WebSocket upgrade failed', { error: error.message });
         socket.destroy();
       }
     } else {
-      logger.warn('SSH proxy not initialized, rejecting upgrade');
+      logger.warn('SSH proxy not initialized or does not support WebSocket upgrade');
       socket.destroy();
     }
   } else {
     // Let other handlers handle it or destroy
-    // socket.destroy();
+    socket.destroy();
   }
 });
 

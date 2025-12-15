@@ -15,21 +15,6 @@ class WebSocketSSHSocket implements SSHSocket {
   bool _isClosed = false;
 
   WebSocketSSHSocket._(this._channel) {
-    // Listen for channel errors and completion
-    _channel.stream.listen(
-      null,
-      onError: (error) {
-        if (!_done.isCompleted) {
-          _done.completeError(error);
-        }
-      },
-      onDone: () {
-        if (!_done.isCompleted) {
-          _done.complete();
-        }
-      },
-    );
-
     // Mark as ready when WebSocket is connected
     _ready.complete();
   }
@@ -51,7 +36,19 @@ class WebSocketSSHSocket implements SSHSocket {
   }
 
   @override
-  Stream<Uint8List> get stream => _channel.stream.cast<Uint8List>();
+  Stream<Uint8List> get stream {
+    return _channel.stream.map<Uint8List>((data) {
+      if (data is Uint8List) {
+        return data;
+      } else if (data is List<int>) {
+        return Uint8List.fromList(data);
+      } else if (data is String) {
+        return Uint8List.fromList(data.codeUnits);
+      } else {
+        throw Exception('Unexpected data type: ${data.runtimeType}');
+      }
+    });
+  }
 
   @override
   StreamSink<List<int>> get sink {

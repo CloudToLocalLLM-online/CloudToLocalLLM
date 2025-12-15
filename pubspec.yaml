@@ -20,7 +20,7 @@ dependencies:
   # Authentication
   provider: ^6.1.2
   jwt_decoder: ^2.0.1
-  auth0_flutter: ^1.1.0
+  flutter_appauth: ^7.0.0
   supabase_flutter: ^2.8.3
   shared_preferences: ^2.5.4
 
@@ -29,6 +29,7 @@ dependencies:
 
   # HTTP and Web
   intl: ^0.20.2
+  http: ^1.2.2
 
   # Streaming and WebSocket support
   web_socket_channel: ^3.0.3

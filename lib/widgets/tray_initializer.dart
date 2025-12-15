@@ -44,7 +44,18 @@ class _TrayInitializerState extends State<TrayInitializer> {
 
   Future<void> _initializeTray(BuildContext context) async {
     try {
-      final connectionManager = context.read<ConnectionManagerService>();
+      // ConnectionManagerService is an authenticated service that may not be available yet
+      // Use Provider.of with listen: false to safely check if it's available
+      ConnectionManagerService? connectionManager;
+      try {
+        connectionManager =
+            Provider.of<ConnectionManagerService>(context, listen: false);
+      } catch (e) {
+        appLogger.info(
+            '[TrayInitializer] ConnectionManagerService not available yet (user not authenticated)');
+        connectionManager = null;
+      }
+
       final localOllama = context.read<LocalOllamaConnectionService>();
       final windowManager = WindowManagerService();
       final nativeTray = NativeTrayService();
@@ -52,7 +63,7 @@ class _TrayInitializerState extends State<TrayInitializer> {
       await windowManager.initialize();
 
       final initialized = await nativeTray.initialize(
-        connectionManager: connectionManager,
+        connectionManager: connectionManager, // Can be null initially
         localOllama: localOllama,
         onShowWindow: () => windowManager.showWindow(),
         onHideWindow: () => windowManager.hideToTray(),
@@ -73,6 +84,14 @@ class _TrayInitializerState extends State<TrayInitializer> {
         appLogger.warning(
           '[TrayInitializer] Native tray initialization reported failure',
         );
+      } else {
+        appLogger
+            .info('[TrayInitializer] Native tray initialized successfully');
+
+        // Set up a listener to update the tray when ConnectionManagerService becomes available
+        if (connectionManager == null) {
+          _setupConnectionManagerListener(context, nativeTray);
+        }
       }
     } catch (e, stackTrace) {
       appLogger.error(
@@ -81,6 +100,25 @@ class _TrayInitializerState extends State<TrayInitializer> {
         stackTrace: stackTrace,
       );
     }
+  }
+
+  /// Set up a listener to update the tray service when ConnectionManagerService becomes available
+  void _setupConnectionManagerListener(
+      BuildContext context, NativeTrayService nativeTray) {
+    // Check periodically if ConnectionManagerService becomes available
+    Timer.periodic(const Duration(seconds: 2), (timer) {
+      try {
+        final connectionManager =
+            Provider.of<ConnectionManagerService>(context, listen: false);
+        // ConnectionManagerService is available, update tray
+        appLogger.info(
+            '[TrayInitializer] ConnectionManagerService now available, updating tray');
+        nativeTray.updateConnectionManager(connectionManager);
+        timer.cancel();
+      } catch (e) {
+        // ConnectionManagerService still not available, continue checking
+      }
+    });
   }
 
   @override

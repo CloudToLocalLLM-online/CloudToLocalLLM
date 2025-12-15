@@ -45,7 +45,7 @@ class NativeTrayService with TrayListener {
 
   /// Initialize the native tray service
   Future<bool> initialize({
-    required ConnectionManagerService connectionManager,
+    ConnectionManagerService? connectionManager, // Made nullable
     required LocalOllamaConnectionService localOllama,
     void Function()? onShowWindow,
     void Function()? onHideWindow,
@@ -124,8 +124,10 @@ class NativeTrayService with TrayListener {
       // Add listener for tray events
       trayManager.addListener(this);
 
-      // Listen to connection manager status changes
-      _connectionManager!.addListener(_onTunnelStatusChanged);
+      // Listen to connection manager status changes (if available)
+      if (_connectionManager != null) {
+        _connectionManager!.addListener(_onTunnelStatusChanged);
+      }
       _localOllama!.addListener(_onTunnelStatusChanged);
 
       // Listen to streaming status events
@@ -187,12 +189,12 @@ class NativeTrayService with TrayListener {
 
   /// Get overall connection status from all services
   TrayConnectionStatus _getOverallConnectionStatus() {
-    if (_connectionManager == null || _localOllama == null) {
+    if (_localOllama == null) {
       return TrayConnectionStatus.disconnected;
     }
 
     final hasLocal = _localOllama!.isConnected;
-    final hasCloud = _connectionManager!.hasCloudConnection;
+    final hasCloud = _connectionManager?.hasCloudConnection ?? false;
     final isConnecting = _localOllama!.isConnecting;
 
     if (hasLocal && hasCloud) {
@@ -247,12 +249,12 @@ class NativeTrayService with TrayListener {
 
   /// Get tooltip text for connection status
   String _getTooltipText(TrayConnectionStatus status) {
-    if (_connectionManager == null || _localOllama == null) {
+    if (_localOllama == null) {
       return 'CloudToLocalLLM - Initializing';
     }
 
     final hasLocal = _localOllama!.isConnected;
-    final hasCloud = _connectionManager!.hasCloudConnection;
+    final hasCloud = _connectionManager?.hasCloudConnection ?? false;
     final localEndpoint = 'http://localhost:11434';
     final cloudEndpoint = 'Tunnel';
 
@@ -261,7 +263,7 @@ class NativeTrayService with TrayListener {
         return 'CloudToLocalLLM - All Connected\nLocal Ollama: $localEndpoint\nCloud Proxy: $cloudEndpoint';
       case TrayConnectionStatus.partiallyConnected:
         if (hasLocal && !hasCloud) {
-          return 'CloudToLocalLLM - Local Connected\nLocal Ollama: $localEndpoint\nCloud Proxy: Disconnected';
+          return 'CloudToLocalLLM - Local Connected\nLocal Ollama: $localEndpoint\nCloud Proxy: ${_connectionManager == null ? 'Not Available' : 'Disconnected'}';
         } else if (!hasLocal && hasCloud) {
           return 'CloudToLocalLLM - Cloud Connected\nLocal Ollama: Disconnected\nCloud Proxy: $cloudEndpoint';
         }
@@ -269,7 +271,7 @@ class NativeTrayService with TrayListener {
       case TrayConnectionStatus.connecting:
         return 'CloudToLocalLLM - Connecting...';
       case TrayConnectionStatus.disconnected:
-        return 'CloudToLocalLLM - Disconnected\nLocal Ollama: Disconnected\nCloud Proxy: Disconnected';
+        return 'CloudToLocalLLM - Disconnected\nLocal Ollama: Disconnected\nCloud Proxy: ${_connectionManager == null ? 'Not Available' : 'Disconnected'}';
     }
   }
 
@@ -280,7 +282,7 @@ class NativeTrayService with TrayListener {
 
       // Get current connection status for dynamic menu items
       String localStatus = 'Disconnected';
-      String cloudStatus = 'Disconnected';
+      String cloudStatus = 'Not Available';
 
       if (_localOllama?.isConnected == true) {
         localStatus = 'Connected';
@@ -288,10 +290,12 @@ class NativeTrayService with TrayListener {
         localStatus = 'Connecting...';
       }
 
-      if (_connectionManager?.hasCloudConnection == true) {
-        cloudStatus = 'Connected';
-      } else {
-        cloudStatus = 'Disconnected';
+      if (_connectionManager != null) {
+        if (_connectionManager!.hasCloudConnection) {
+          cloudStatus = 'Connected';
+        } else {
+          cloudStatus = 'Disconnected';
+        }
       }
 
       final menu = Menu(
@@ -438,5 +442,24 @@ class NativeTrayService with TrayListener {
     if (_isInitialized) {
       _onTunnelStatusChanged();
     }
+  }
+
+  /// Update the connection manager when it becomes available after authentication
+  void updateConnectionManager(ConnectionManagerService connectionManager) {
+    if (!_isInitialized) return;
+
+    appLogger.info('[NativeTray] Updating connection manager reference');
+
+    // Remove old listener if exists
+    if (_connectionManager != null) {
+      _connectionManager!.removeListener(_onTunnelStatusChanged);
+    }
+
+    // Set new connection manager and add listener
+    _connectionManager = connectionManager;
+    _connectionManager!.addListener(_onTunnelStatusChanged);
+
+    // Update tray status immediately
+    _onTunnelStatusChanged();
   }
 }

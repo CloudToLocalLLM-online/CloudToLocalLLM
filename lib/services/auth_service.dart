@@ -24,7 +24,10 @@ class AuthService extends ChangeNotifier {
   Completer<void>? _initCompleter;
   bool _isRestoringSession = false;
 
-  AuthService(this._authProvider);
+  AuthService(this._authProvider) {
+    debugPrint(
+        '[AuthService] Constructor called with provider: ${_authProvider.runtimeType}');
+  }
 
   Future<void> init() async {
     print('[AuthService] init() called');
@@ -154,6 +157,8 @@ class AuthService extends ChangeNotifier {
 
   /// Login
   Future<void> login() async {
+    debugPrint(
+        '[AuthService] login() called with provider: ${_authProvider.runtimeType}');
     _isLoading.value = true;
     notifyListeners();
     try {
@@ -197,7 +202,7 @@ class AuthService extends ChangeNotifier {
       final dio = Dio();
       // Ensure backend knows about this session
       final response = await dio.post(
-        '${AppConfig.apiBaseUrl}/auth/sessions',
+        '${AppConfig.apiBaseUrl}/api/auth/sessions',
         options: Options(
           headers: {
             'Authorization': 'Bearer $token',

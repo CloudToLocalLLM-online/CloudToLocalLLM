@@ -39,7 +39,8 @@
         "browser_close",
         "browser_network_requests",
         "browser_console_messages"
-      ]
+      ],
+      "disabled": false
     },
     "dockerhub": {
       "command": "docker",
@@ -55,7 +56,7 @@
         "ProgramData": "C:\\ProgramData",
         "ProgramFiles": "C:\\Program Files"
       },
-      "disabled": false,
+      "disabled": true,
       "autoApprove": [
         "checkRepository",
         "checkRepositoryTag",
@@ -82,6 +83,10 @@
         "DEFAULT_MINIMUM_TOKENS": ""
       },
       "alwaysAllow": [
+        "resolve-library-id",
+        "get-library-docs"
+      ],
+      "autoApprove": [
         "resolve-library-id",
         "get-library-docs"
       ]
@@ -164,7 +169,14 @@
         "list_console_messages",
         "list_network_requests",
         "evaluate_script"
-      ]
+      ],
+      "autoApprove": [
+        "navigate_page",
+        "take_snapshot",
+        "wait_for",
+        "take_screenshot"
+      ],
+      "disabled": true
     },
     "auth0": {
       "command": "npx",

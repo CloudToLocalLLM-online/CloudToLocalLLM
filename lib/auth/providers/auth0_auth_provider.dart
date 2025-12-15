@@ -1,54 +1,13 @@
 import 'dart:async';
+import 'dart:io';
+import 'package:flutter_appauth/flutter_appauth.dart';
+import 'package:app_links/app_links.dart';
 import 'package:flutter/foundation.dart';
-import 'package:auth0_flutter/auth0_flutter.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:jwt_decoder/jwt_decoder.dart';
 import '../auth_provider.dart';
 import '../../models/user_model.dart';
-
-import 'dart:js_interop';
-import 'package:web/web.dart' as web;
-
-// --- JS Interop Definitions ---
-
-/// Extension on the global Window to access Auth0Bridge
-extension type Auth0Window._(JSObject _) implements JSObject {
-  @JS('Auth0Bridge')
-  external Auth0Bridge? get auth0Bridge;
-  external set flutterAuthCallback(JSFunction callback);
-  external Location get location;
-}
-
-extension type Location._(JSObject _) implements JSObject {
-  external String get search;
-}
-
-/// The Auth0Bridge object exposed by auth0-bridge.js
-extension type Auth0Bridge._(JSObject _) implements JSObject {
-  external void login();
-  external void logout();
-  external JSPromise<AuthResult> handleRedirect();
-  external JSPromise<Auth0User?> getUser(); // Returns Auth0User or null
-  external JSPromise<JSString?> getToken(); // Returns token string or null
-}
-
-/// The result object passed to the flutterAuthCallback or returned by handleRedirect
-extension type AuthResult._(JSObject _) implements JSObject {
-  external String get type;
-  external Auth0User? get user;
-  external String? get accessToken;
-  external String? get error;
-}
-
-/// The user object returned by Auth0 SDK
-extension type Auth0User._(JSObject _) implements JSObject {
-  external String? get sub;
-  external String? get email;
-  external String? get name;
-  external String? get nickname;
-  external String? get picture;
-}
-
-// Helper to access the window as our custom type
-Auth0Window get _window => web.window as Auth0Window;
+import '../../services/url_scheme_registration_service.dart';
 
 /// Error types for authentication failures
 enum AuthErrorType {
@@ -84,30 +43,46 @@ class AuthException implements Exception {
       recoverySuggestion: 'Please check your application configuration');
 }
 
-/// Auth0 implementation of the authentication provider
+/// Auth0 implementation of the authentication provider using flutter_appauth
 class Auth0AuthProvider implements AuthProvider {
-  final Auth0 _auth0;
+  final FlutterAppAuth _appAuth = const FlutterAppAuth();
+  final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
+  late final AppLinks _appLinks;
+  StreamSubscription<Uri>? _linkSubscription;
+
+  // Auth0 configuration
+  final String _domain;
+  final String _clientId;
   final String _audience;
+  final String _redirectUrl;
 
   Auth0AuthProvider({
     String? domain,
     String? clientId,
     String? audience,
-  })  : _auth0 = Auth0(
-          domain ??
-              const String.fromEnvironment('AUTH0_DOMAIN',
-                  defaultValue: 'dev-v2f2p008x3dr74ww.us.auth0.com'),
-          clientId ??
-              const String.fromEnvironment('AUTH0_CLIENT_ID',
-                  defaultValue: 'FuXPnevXpp311CdYHGsbNZe9t3D8Ts7A'),
-        ),
+  })  : _domain = domain ??
+            const String.fromEnvironment('AUTH0_DOMAIN',
+                defaultValue: 'dev-v2f2p008x3dr74ww.us.auth0.com'),
+        _clientId = clientId ??
+            const String.fromEnvironment('AUTH0_CLIENT_ID',
+                defaultValue: 'FuXPnevXpp311CdYHGsbNZe9t3D8Ts7A'),
         _audience = audience ??
             const String.fromEnvironment('AUTH0_AUDIENCE',
-                defaultValue: 'https://api.cloudtolocalllm.online');
+                defaultValue: 'https://api.cloudtolocalllm.online'),
+        _redirectUrl =
+            '${UrlSchemeRegistrationService.customScheme}://dev-v2f2p008x3dr74ww.us.auth0.com/windows/${UrlSchemeRegistrationService.customScheme}/callback' {
+    _appLinks = AppLinks();
+  }
 
   final StreamController<bool> _authStateController =
       StreamController<bool>.broadcast();
   UserModel? _currentUser;
+
+  // Auth0 endpoints
+  String get _authorizationEndpoint => 'https://$_domain/authorize';
+  String get _tokenEndpoint => 'https://$_domain/oauth/token';
+  // String get _userInfoEndpoint => 'https://$_domain/userinfo'; // Not used currently
+  String get _endSessionEndpoint => 'https://$_domain/v2/logout';
 
   @override
   Stream<bool> get authStateChanges => _authStateController.stream;
@@ -117,186 +92,154 @@ class Auth0AuthProvider implements AuthProvider {
 
   @override
   Future<void> initialize() async {
-    if (kIsWeb) {
-      await _initializeWeb();
-    } else {
-      await _initializeNative();
-    }
-  }
-
-  Future<void> _initializeNative() async {
     try {
-      final credentials = await _auth0.credentialsManager.credentials();
-      if (credentials.accessToken.isNotEmpty) {
-        _currentUser = _credentialsToUser(credentials);
-        _authStateController.add(true);
-      } else {
-        _authStateController.add(false);
-      }
-    } catch (e) {
-      _authStateController.add(false);
-    }
-  }
-
-  Future<void> _initializeWeb() async {
-    try {
-      final auth0Bridge = _window.auth0Bridge;
-      if (auth0Bridge == null) {
-        debugPrint('Auth0Bridge not found. Ensure auth0-bridge.js is loaded.');
-        _authStateController.add(false);
-        return;
-      }
-
-      // Register callback immediately
-      _registerWebCallback();
-
-      // Check for redirect params in URL
-      final search = _window.location.search;
-      if (search.contains('code=') && search.contains('state=')) {
-        debugPrint(
-            '[Auth0AuthProvider] Detected code/state, handling redirect...');
-        try {
-          final result = await auth0Bridge.handleRedirect().toDart;
-          // The callback might handle this, but better to handle explicit return too
-          if (result.type == 'success' && result.user != null) {
-            _currentUser = _jsUserToUserModel(result.user!);
-            _authStateController.add(true);
-            return;
+      // Register URL scheme for Windows desktop OAuth callbacks
+      if (Platform.isWindows) {
+        final isRegistered =
+            await UrlSchemeRegistrationService.isSchemeRegistered();
+        if (!isRegistered) {
+          debugPrint(
+              '[Auth0AuthProvider] Registering URL scheme for OAuth callbacks...');
+          final registered =
+              await UrlSchemeRegistrationService.registerUrlScheme();
+          if (!registered) {
+            debugPrint(
+                '[Auth0AuthProvider] WARNING: Failed to register URL scheme. OAuth may not work.');
           }
-        } catch (e) {
-          debugPrint('[Auth0AuthProvider] Redirect handling failed: $e');
+        } else {
+          debugPrint('[Auth0AuthProvider] URL scheme already registered');
         }
+
+        // Listen for incoming URLs (OAuth callbacks)
+        _linkSubscription = _appLinks.uriLinkStream.listen(
+          (Uri uri) {
+            debugPrint('[Auth0AuthProvider] Received URL callback: $uri');
+            _handleIncomingUrl(uri);
+          },
+          onError: (err) {
+            debugPrint('[Auth0AuthProvider] URL link stream error: $err');
+          },
+        );
       }
 
-      // Check for existing session (persistence)
-      final user = await auth0Bridge.getUser().toDart;
-      if (user != null) {
-        debugPrint('[Auth0AuthProvider] Found existing web session');
-        _currentUser = _jsUserToUserModel(user);
-        _authStateController.add(true);
+      // Check for existing credentials
+      final accessToken = await _secureStorage.read(key: 'access_token');
+      final idToken = await _secureStorage.read(key: 'id_token');
+
+      if (accessToken != null && accessToken.isNotEmpty && idToken != null) {
+        // Check if tokens are still valid
+        if (!JwtDecoder.isExpired(accessToken) &&
+            !JwtDecoder.isExpired(idToken)) {
+          _currentUser = _idTokenToUser(idToken);
+          _authStateController.add(true);
+        } else {
+          // Tokens expired, try to refresh
+          final refreshToken = await _secureStorage.read(key: 'refresh_token');
+          if (refreshToken != null) {
+            await _refreshTokens(refreshToken);
+          } else {
+            _authStateController.add(false);
+          }
+        }
       } else {
         _authStateController.add(false);
       }
     } catch (e) {
-      debugPrint('[Auth0AuthProvider] Web init error: $e');
+      debugPrint('[Auth0AuthProvider] Initialize error: $e');
+      // No existing credentials
       _authStateController.add(false);
     }
-  }
-
-  void _registerWebCallback() {
-    // Set up the callback that JavaScript will call
-    _window.flutterAuthCallback = (AuthResult result) {
-      final type = result.type;
-      debugPrint('[Auth0AuthProvider] Received JS callback: $type');
-
-      if (type == 'success') {
-        final userData = result.user;
-        final accessToken = result.accessToken;
-
-        if (userData != null && accessToken != null) {
-          _currentUser = _jsUserToUserModel(userData);
-          _authStateController.add(true);
-        }
-      } else if (type == 'error') {
-        // Provide feedback if needed, but usually handled by promise/ui
-        debugPrint('Auth Callback Error: ${result.error}');
-      } else if (type == 'logout') {
-        _currentUser = null;
-        _authStateController.add(false);
-      }
-    }.toJS;
   }
 
   @override
   Future<String?> getAccessToken() async {
-    if (kIsWeb) {
-      final bridge = _window.auth0Bridge;
-      if (bridge != null) {
-        final tokenJS = await bridge.getToken().toDart;
-        return tokenJS?.toDart;
-      }
-      return null;
-    }
-
     try {
-      final credentials = await _auth0.credentialsManager.credentials();
-      return credentials.accessToken;
+      return await _secureStorage.read(key: 'access_token');
     } catch (e) {
+      debugPrint('[Auth0AuthProvider] Error getting access token: $e');
       return null;
     }
   }
 
   @override
   Future<void> login() async {
-    if (kIsWeb) {
-      // Use JavaScript bridge for web
-      return _loginWithWebBridge();
-    } else {
-      // Use native Auth0 SDK for desktop/mobile
-      try {
-        final credentials = await _auth0.webAuthentication().login(
-          audience: _audience,
-          scopes: {'openid', 'profile', 'email', 'offline_access'},
-        );
+    try {
+      debugPrint(
+          '[Auth0AuthProvider] Starting login with redirect URL: $_redirectUrl');
 
-        _currentUser = _credentialsToUser(credentials);
-        await _auth0.credentialsManager.storeCredentials(credentials);
-        _authStateController.add(true);
-      } catch (e) {
-        _authStateController.add(false);
-        throw _categorizeError(e);
-      }
-    }
-  }
+      final result = await _appAuth.authorizeAndExchangeCode(
+        AuthorizationTokenRequest(
+          _clientId,
+          _redirectUrl,
+          serviceConfiguration: AuthorizationServiceConfiguration(
+            authorizationEndpoint: _authorizationEndpoint,
+            tokenEndpoint: _tokenEndpoint,
+            endSessionEndpoint: _endSessionEndpoint,
+          ),
+          scopes: ['openid', 'profile', 'email', 'offline_access'],
+          additionalParameters: {
+            'audience': _audience,
+          },
+        ),
+      );
 
-  Future<void> _loginWithWebBridge() async {
-    // Callback is already registered in initialize, but we can register again or rely on it.
-    // However, login() here initiates a redirect. The promise won't complete until redirect logic implies.
-    // Actually, loginWithRedirect() returns Promise<void> but it redirects page, so it never technically completes in this session.
-    // So we just call it.
+      if (result != null) {
+        debugPrint('[Auth0AuthProvider] Login successful, storing tokens');
 
-    if (kIsWeb) {
-      try {
-        final auth0Bridge = _window.auth0Bridge;
-        if (auth0Bridge != null) {
-          auth0Bridge.login(); // This triggers redirect
-          // We don't complete here because page will reload.
-        } else {
-          throw AuthException.configuration('Bridge not found');
+        // Store tokens securely
+        await _secureStorage.write(
+            key: 'access_token', value: result.accessToken);
+        await _secureStorage.write(key: 'id_token', value: result.idToken);
+        if (result.refreshToken != null) {
+          await _secureStorage.write(
+              key: 'refresh_token', value: result.refreshToken);
         }
-      } catch (e) {
-        throw AuthException.network('Login init failed: $e');
+
+        // Parse user info from ID token
+        if (result.idToken?.isNotEmpty == true) {
+          _currentUser = _idTokenToUser(result.idToken!);
+          _authStateController.add(true);
+        } else {
+          throw AuthException.configuration('No ID token received');
+        }
+      } else {
+        throw AuthException.cancelled();
       }
+    } catch (e) {
+      debugPrint('[Auth0AuthProvider] Login error: $e');
+      _authStateController.add(false);
+      throw _categorizeError(e);
     }
-    // No return needed really as page redirects
-  }
-
-  UserModel _jsUserToUserModel(Auth0User jsUser) {
-    final sub = jsUser.sub ?? '';
-    final email = jsUser.email ?? '';
-    final name = jsUser.name ?? email;
-    final nickname = jsUser.nickname;
-    final picture = jsUser.picture;
-
-    final now = DateTime.now();
-    return UserModel(
-      id: sub,
-      email: email,
-      name: name,
-      nickname: nickname,
-      picture: picture,
-      createdAt: now,
-      updatedAt: now,
-    );
   }
 
   @override
   Future<void> logout() async {
     try {
-      await _auth0.webAuthentication().logout();
-      await _auth0.credentialsManager.clearCredentials();
+      // Clear stored tokens
+      await _secureStorage.delete(key: 'access_token');
+      await _secureStorage.delete(key: 'id_token');
+      await _secureStorage.delete(key: 'refresh_token');
+
       _currentUser = null;
       _authStateController.add(false);
+
+      // Optionally perform logout with Auth0 (opens browser)
+      try {
+        final idToken = await _secureStorage.read(key: 'id_token');
+        if (idToken != null) {
+          await _appAuth.endSession(EndSessionRequest(
+            idTokenHint: idToken,
+            postLogoutRedirectUrl: _redirectUrl,
+            serviceConfiguration: AuthorizationServiceConfiguration(
+              authorizationEndpoint: _authorizationEndpoint,
+              tokenEndpoint: _tokenEndpoint,
+              endSessionEndpoint: _endSessionEndpoint,
+            ),
+          ));
+        }
+      } catch (e) {
+        debugPrint('[Auth0AuthProvider] End session error (non-critical): $e');
+      }
     } catch (e) {
       // Even if logout fails, clear local state
       _currentUser = null;
@@ -331,22 +274,81 @@ class Auth0AuthProvider implements AuthProvider {
     }
   }
 
-  UserModel _credentialsToUser(Credentials credentials) {
-    final userInfo = credentials.user;
+  /// Parses user information from ID token
+  UserModel _idTokenToUser(String idToken) {
+    final payload = JwtDecoder.decode(idToken);
     final now = DateTime.now();
+
     return UserModel(
-      id: userInfo.sub,
-      email: userInfo.email ?? '',
-      name: userInfo.name,
-      picture: userInfo
-          .name, // Using name as fallback since picture property doesn't exist
+      id: payload['sub'] ?? '',
+      email: payload['email'] ?? '',
+      name: payload['name'] ?? payload['email'] ?? '',
+      nickname: payload['nickname'],
+      picture: payload['picture'],
       createdAt: now,
       updatedAt: now,
-      // Add other user properties as needed
     );
   }
 
+  /// Refreshes access token using refresh token
+  Future<void> _refreshTokens(String refreshToken) async {
+    try {
+      debugPrint('[Auth0AuthProvider] Refreshing tokens...');
+
+      final result = await _appAuth.token(TokenRequest(
+        _clientId,
+        _redirectUrl,
+        refreshToken: refreshToken,
+        serviceConfiguration: AuthorizationServiceConfiguration(
+          authorizationEndpoint: _authorizationEndpoint,
+          tokenEndpoint: _tokenEndpoint,
+          endSessionEndpoint: _endSessionEndpoint,
+        ),
+        scopes: ['openid', 'profile', 'email', 'offline_access'],
+        additionalParameters: {
+          'audience': _audience,
+        },
+      ));
+
+      if (result != null) {
+        debugPrint('[Auth0AuthProvider] Token refresh successful');
+
+        // Store new tokens
+        await _secureStorage.write(
+            key: 'access_token', value: result.accessToken);
+        if (result.idToken?.isNotEmpty == true) {
+          await _secureStorage.write(key: 'id_token', value: result.idToken);
+          _currentUser = _idTokenToUser(result.idToken!);
+        }
+        if (result.refreshToken?.isNotEmpty == true) {
+          await _secureStorage.write(
+              key: 'refresh_token', value: result.refreshToken);
+        }
+
+        _authStateController.add(true);
+      } else {
+        debugPrint('[Auth0AuthProvider] Token refresh failed - no result');
+        _authStateController.add(false);
+      }
+    } catch (e) {
+      debugPrint('[Auth0AuthProvider] Token refresh error: $e');
+      _authStateController.add(false);
+    }
+  }
+
+  /// Handles incoming URLs from OAuth callbacks
+  void _handleIncomingUrl(Uri uri) {
+    debugPrint('[Auth0AuthProvider] Processing OAuth callback URL: $uri');
+    // The auth0_flutter package should handle the callback automatically
+    // This is mainly for logging and debugging purposes
+    if (uri.scheme == UrlSchemeRegistrationService.customScheme) {
+      debugPrint(
+          '[Auth0AuthProvider] Received OAuth callback with custom scheme');
+    }
+  }
+
   void dispose() {
+    _linkSubscription?.cancel();
     _authStateController.close();
   }
 }

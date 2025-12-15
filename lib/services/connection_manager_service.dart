@@ -114,7 +114,13 @@ class ConnectionManagerService extends ChangeNotifier {
         // On web, we just need to verify the cloud connection
         await _ollamaService.testConnection();
       } else {
-        await _tunnelService.connect();
+        // Desktop: attempt tunnel connection, but don't fail if it doesn't work
+        try {
+          await _tunnelService.connect();
+        } catch (e) {
+          debugPrint('[ConnectionManager] Tunnel connection failed: $e');
+          // Continue without tunnel - direct API calls will still work
+        }
       }
     }
     _autoSelectModel();
@@ -135,8 +141,13 @@ class ConnectionManagerService extends ChangeNotifier {
     if (!kIsWeb) {
       await _localOllama.reconnect();
     }
-    if (!_tunnelService.isConnected) {
-      await _tunnelService.connect();
+    if (!kIsWeb && !_tunnelService.isConnected) {
+      try {
+        await _tunnelService.connect();
+      } catch (e) {
+        debugPrint('[ConnectionManager] Tunnel reconnection failed: $e');
+        // Continue without tunnel - direct API calls will still work
+      }
     }
     notifyListeners();
   }
@@ -176,7 +187,11 @@ class ConnectionManagerService extends ChangeNotifier {
       if (kIsWeb) {
         _ollamaService.testConnection();
       } else if (!_tunnelService.isConnected) {
-        _tunnelService.connect();
+        // Try to connect tunnel, but don't block on failure
+        _tunnelService.connect().catchError((e) {
+          debugPrint(
+              '[ConnectionManager] Tunnel connection failed on auth change: $e');
+        });
       }
     }
     notifyListeners();

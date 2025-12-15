@@ -49,12 +49,20 @@ import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:cloudtolocalllm/widgets/window_listener_widget.dart'
     if (dart.library.html) 'package:cloudtolocalllm/widgets/window_listener_widget_stub.dart';
 import 'package:cloudtolocalllm/config/navigator_key.dart';
+import 'dart:io' if (dart.library.html) 'dart:html';
 
 // navigatorKey is now imported from config/navigator_key.dart
 
-void main() async {
+void main(List<String> args) async {
   // Immediate logging to verify Dart entry point is reached
   print('----- DART MAIN START ----- v7.8.16');
+
+  // Handle command-line arguments (OAuth callback URLs)
+  if (args.isNotEmpty) {
+    print('[Main] Command-line arguments received: $args');
+    await _handleCommandLineArgs(args);
+    return; // Exit after handling callback
+  }
 
   // Flutter requires WidgetsFlutterBinding to be initialized first
   WidgetsFlutterBinding.ensureInitialized();
@@ -243,9 +251,16 @@ class _CloudToLocalLLMAppState extends State<CloudToLocalLLMApp> {
       print('[App] Bootstrap is null, showing loading screen');
       return MaterialApp(
         debugShowCheckedModeBanner: false,
+        theme: AppTheme.lightTheme,
+        darkTheme: AppTheme.darkTheme,
+        themeMode: ThemeMode.system,
         home: Scaffold(
+          backgroundColor:
+              Colors.grey[900], // Dark background for loading screen
           body: Center(
-            child: CircularProgressIndicator(),
+            child: CircularProgressIndicator(
+              valueColor: AlwaysStoppedAnimation<Color>(Colors.blue),
+            ),
           ),
         ),
       );
@@ -422,6 +437,39 @@ class _CloudToLocalLLMAppState extends State<CloudToLocalLLMApp> {
   }
 }
 
+/// Handles command-line arguments for OAuth callbacks
+/// When Windows launches a new instance with a callback URL, this function
+/// will send the URL to the existing instance and exit
+Future<void> _handleCommandLineArgs(List<String> args) async {
+  print('[Main] Handling command-line arguments: $args');
+
+  // Look for OAuth callback URL in arguments
+  String? callbackUrl;
+  for (final arg in args) {
+    if (arg.startsWith('com.cloudtolocalllm.app://')) {
+      callbackUrl = arg;
+      break;
+    }
+  }
+
+  if (callbackUrl != null) {
+    print('[Main] Found OAuth callback URL: $callbackUrl');
+
+    // Try to send the callback URL to the existing instance
+    // For now, we'll use a simple file-based approach
+    try {
+      final tempDir = Directory.systemTemp;
+      final callbackFile = File('${tempDir.path}/cloudtolocalllm_callback.txt');
+      await callbackFile.writeAsString(callbackUrl);
+      print('[Main] Wrote callback URL to temp file: ${callbackFile.path}');
+    } catch (e) {
+      print('[Main] Error writing callback file: $e');
+    }
+  }
+
+  print('[Main] Command-line handler exiting');
+}
+
 class _AppRouterHost extends StatefulWidget {
   const _AppRouterHost();
 
@@ -469,9 +517,16 @@ class _AppRouterHostState extends State<_AppRouterHost> {
     if (router == null) {
       return MaterialApp(
         debugShowCheckedModeBanner: false,
+        theme: AppTheme.lightTheme,
+        darkTheme: AppTheme.darkTheme,
+        themeMode: ThemeMode.system,
         home: Scaffold(
+          backgroundColor:
+              Colors.grey[900], // Dark background for loading screen
           body: Center(
-            child: CircularProgressIndicator(),
+            child: CircularProgressIndicator(
+              valueColor: AlwaysStoppedAnimation<Color>(Colors.blue),
+            ),
           ),
         ),
       );

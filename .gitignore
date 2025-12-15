@@ -32,6 +32,9 @@ test_output.txt
 test_output_v2.txt
 test_output*.txt
 
+# Sentry native crash reporting data
+.sentry-native/
+
 # Environment variables
 .env*
 .env.*.local

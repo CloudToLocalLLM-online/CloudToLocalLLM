@@ -167,7 +167,7 @@ class EnhancedUserTierService extends ChangeNotifier {
       }
 
       final response = await _dio.get(
-        '/user/tier', // Removed /api prefix since baseUrl is already api subdomain
+        '/api/user/tier', // Correct API path
         options: Options(headers: {
           'Authorization': 'Bearer $accessToken',
           'Content-Type': 'application/json',
@@ -257,7 +257,7 @@ class EnhancedUserTierService extends ChangeNotifier {
       }
 
       final response = await _dio.post(
-        '/container/allocate',
+        '/api/container/allocate',
         data: {
           'tier': _currentTier,
           'container_type': _isPremiumTier ? 'persistent' : 'ephemeral',
@@ -312,7 +312,7 @@ class EnhancedUserTierService extends ChangeNotifier {
       }
 
       final response = await _dio.post(
-        '/container/release',
+        '/api/container/release',
         data: {'container_id': _containerId},
         options: Options(headers: {
           'Authorization': 'Bearer $accessToken',

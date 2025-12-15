@@ -197,20 +197,29 @@ class ProviderDiscoveryService extends ChangeNotifier {
 
       final List<ProviderInfo> foundProviders = [];
 
-      // Scan for different provider types concurrently
-      final results = await Future.wait([
-        detectOllama(),
-        detectLMStudio(),
-        detectOpenAICompatible(),
-      ]);
+      // Always try to detect Ollama first
+      final ollamaProvider = await detectOllama();
 
-      // Collect all non-null results
-      for (final result in results) {
-        if (result != null) {
-          if (result is List<ProviderInfo>) {
-            foundProviders.addAll(result);
-          } else if (result is ProviderInfo) {
-            foundProviders.add(result);
+      if (ollamaProvider != null) {
+        foundProviders.add(ollamaProvider);
+        debugPrint(
+            'Ollama detected - skipping other provider detection to avoid errors');
+      } else {
+        // Only scan for other providers if Ollama is not available
+        debugPrint('Ollama not detected - scanning for alternative providers');
+        final results = await Future.wait([
+          detectLMStudio(),
+          detectOpenAICompatible(),
+        ]);
+
+        // Collect all non-null results
+        for (final result in results) {
+          if (result != null) {
+            if (result is List<ProviderInfo>) {
+              foundProviders.addAll(result);
+            } else if (result is ProviderInfo) {
+              foundProviders.add(result);
+            }
           }
         }
       }

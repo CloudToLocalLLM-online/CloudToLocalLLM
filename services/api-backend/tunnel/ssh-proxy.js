@@ -59,34 +59,27 @@ export class SSHProxy {
    * Setup WebSocket server handlers
    */
   _setupWebSocketServer() {
-    this.wss.on('connection', (ws) => {
+    this.wss.on('connection', (ws, request) => {
       this.logger.info('WebSocket connection established for SSH tunnel');
 
-      // Connect to local SSH server
-      const sshPort = this.config.sshPort || 2222;
-      const sshSocket = net.connect(sshPort, 'localhost');
-
+      // Handle WebSocket as SSH connection directly
+      // Create a stream from the WebSocket that can be used by SSH server
       const wsStream = createWebSocketStream(ws);
-
-      wsStream.pipe(sshSocket);
-      sshSocket.pipe(wsStream);
-
-      wsStream.on('error', (err) => {
-        this.logger.error('WebSocket stream error', { error: err.message });
-        sshSocket.destroy();
-      });
-
-      sshSocket.on('error', (err) => {
-        this.logger.error('SSH socket error', { error: err.message });
+      
+      // Emit the connection to the SSH server if it exists
+      if (this.sshServer) {
+        this.sshServer.emit('connection', wsStream);
+      } else {
+        this.logger.warn('SSH server not available, closing WebSocket');
         ws.close();
-      });
+      }
 
-      sshSocket.on('close', () => {
-        ws.close();
+      ws.on('error', (err) => {
+        this.logger.error('WebSocket error', { error: err.message });
       });
 
       ws.on('close', () => {
-        sshSocket.destroy();
+        this.logger.info('WebSocket connection closed');
       });
     });
   }
@@ -117,8 +110,6 @@ export class SSHProxy {
    */
   async start() {
     try {
-      const port = this.config.sshPort || 2222; // Use SSH default port range
-
       // Lazy load ssh2
       let ssh2;
       try {
@@ -129,7 +120,7 @@ export class SSHProxy {
       }
       const { Server: SSHServer } = ssh2.default || ssh2;
 
-      // Create SSH server
+      // Create SSH server (no listening port - WebSocket connections will be handled directly)
       this.sshServer = new SSHServer(
         {
           hostKeys: [], // We'll handle auth via JWT, not host keys
@@ -139,20 +130,8 @@ export class SSHProxy {
         },
       );
 
-      // Start SSH server
-      await new Promise((resolve, reject) => {
-        this.sshServer.listen(port, (err) => {
-          if (err) {
-            reject(err);
-          } else {
-            resolve();
-          }
-        });
-      });
-
       this.logger.info('SSHProxy started successfully', {
-        port,
-        type: 'SSH server',
+        type: 'SSH server (WebSocket mode)',
       });
     } catch (error) {
       this.logger.error('Failed to start SSHProxy', {
@@ -212,9 +191,8 @@ export class SSHProxy {
           return ctx.reject(['password']);
         }
 
-        // Verify token with AuthService - now accepts request object for logging
-        const _req = {}; // Placeholder for an unused request object
-        const result = await this.authService.validateToken(token, _req);
+        // Verify token with AuthService
+        const result = await this.authService.validateToken(token);
 
         if (!result.valid) {
           this.logger.warn('SSH auth invalid JWT token', {
