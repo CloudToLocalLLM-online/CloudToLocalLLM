@@ -413,6 +413,8 @@ jobs:
       (needs.build_api.result == 'success' || needs.build_api.result == 'skipped') &&
       (needs.build_proxy.result == 'success' || needs.build_proxy.result == 'skipped')
     runs-on: ubuntu-latest
+    outputs:
+      cache_purge_status: ${{ steps.cache_purge.outputs.cache_purge_status }}
     
     steps:
       - uses: actions/checkout@v4
@@ -666,12 +668,20 @@ jobs:
           exit 1
 
       - name: Purge Cloudflare Cache
+        id: cache_purge
         continue-on-error: true
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
         run: |
           chmod +x scripts/cloudflare-cache-purge.sh
-          ./scripts/cloudflare-cache-purge.sh
+          if ./scripts/cloudflare-cache-purge.sh; then
+            echo "cache_purge_status=success" >> $GITHUB_OUTPUT
+            echo "✅ Cloudflare cache purged successfully"
+          else
+            echo "cache_purge_status=failed" >> $GITHUB_OUTPUT
+            echo "❌ WARNING: Cloudflare cache purge failed - users may see stale content"
+            echo "::warning::Cloudflare cache purge failed after 3 attempts. Users may see cached content until cache expires naturally."
+          fi
 
   # Desktop Build (conditional) - Enhanced with comprehensive monitoring and optimization
   build_desktop:
@@ -996,6 +1006,7 @@ jobs:
           DESKTOP_STATUS: ${{ needs.build_desktop.result }}
           MOBILE_STATUS: ${{ needs.build_mobile.result }}
           RELEASE_STATUS: ${{ needs.create_release.result }}
+          CACHE_PURGE_STATUS: ${{ needs.deploy_infrastructure.outputs.cache_purge_status }}
         run: |
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >> $GITHUB_STEP_SUMMARY
           echo "# Unified Deployment Summary" >> $GITHUB_STEP_SUMMARY
@@ -1045,6 +1056,15 @@ jobs:
             echo "🚀 **GitHub Release:** ❌ Creation failed" >> $GITHUB_STEP_SUMMARY
           else
             echo "🚀 **GitHub Release:** ⏭️ Skipped (no successful builds)" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          # Cache purge status
+          if [ "$CACHE_PURGE_STATUS" = "success" ]; then
+            echo "🌐 **Cloudflare Cache:** ✅ Purged successfully" >> $GITHUB_STEP_SUMMARY
+          elif [ "$CACHE_PURGE_STATUS" = "failed" ]; then
+            echo "🌐 **Cloudflare Cache:** ⚠️ Purge failed - users may see stale content" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "🌐 **Cloudflare Cache:** ⏭️ Skipped (cloud deployment not run)" >> $GITHUB_STEP_SUMMARY
           fi
           
           echo "" >> $GITHUB_STEP_SUMMARY
