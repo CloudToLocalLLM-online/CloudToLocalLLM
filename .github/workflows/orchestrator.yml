@@ -1,0 +1,134 @@
+name: Deployment Orchestrator
+
+on:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - 'docs/**'
+      - '*.md'
+      - '.gitignore'
+      - 'LICENSE'
+  workflow_dispatch:
+    inputs:
+      force_deployment:
+        description: "Force deployment"
+        type: boolean
+        default: false
+      deployment_type:
+        description: "Target platform"
+        type: choice
+        default: "auto"
+        options:
+          - auto
+          - cloud
+          - desktop
+          - mobile
+          - all
+
+permissions:
+  contents: write
+  id-token: write
+
+jobs:
+  ai_analysis:
+    runs-on: ubuntu-latest
+    if: ${{ !contains(github.event.head_commit.message, '[skip ci]') && !contains(github.event.head_commit.message, '[no-version]') }}
+    outputs:
+      new_version: ${{ steps.analyze.outputs.new_version }}
+      docker_version: ${{ steps.docker_version.outputs.docker_version }}
+      do_cloud: ${{ steps.decision.outputs.needs_cloud }}
+      do_desktop: ${{ steps.decision.outputs.needs_desktop }}
+      do_mobile: ${{ steps.decision.outputs.needs_mobile }}
+      reasoning: ${{ steps.analyze.outputs.reasoning }}
+      should_deploy: ${{ steps.decision.outputs.should_deploy }}
+    
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 50
+          fetch-tags: true
+          token: "${{ secrets.PAT_TOKEN || secrets.GITHUB_TOKEN }}"
+
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: AI Analysis (Kilocode)
+        id: analyze
+        run: |
+          # Ensure scripts are executable
+          chmod +x scripts/kilocode-cli.cjs
+          sudo ln -sf "$(pwd)/scripts/kilocode-cli.cjs" /usr/local/bin/kilocode-cli
+          chmod +x scripts/analyze-platforms.sh
+          
+          # Run analysis
+          ./scripts/analyze-platforms.sh
+
+      - name: Create Docker-Safe Version
+        id: docker_version
+        run: |
+          VERSION="${{ steps.analyze.outputs.new_version }}"
+          DOCKER_VERSION=$(echo "$VERSION" | sed 's/+/-/g')
+          echo "docker_version=$DOCKER_OUTPUT" >> $GITHUB_OUTPUT
+
+      - name: Decision Logic
+        id: decision
+        env:
+          FORCE: ${{ inputs.force_deployment }}
+          TYPE: ${{ inputs.deployment_type }}
+          AI_CLOUD: ${{ steps.analyze.outputs.needs_cloud }}
+          AI_DESKTOP: ${{ steps.analyze.outputs.needs_desktop }}
+          AI_MOBILE: ${{ steps.analyze.outputs.needs_mobile }}
+        run: |
+          # Default to AI suggestions
+          CLOUD=$AI_CLOUD
+          DESKTOP=$AI_DESKTOP
+          MOBILE=$AI_MOBILE
+          DEPLOY="false"
+
+          if [ "$FORCE" == "true" ] || [ "$CLOUD" == "true" ] || [ "$DESKTOP" == "true" ] || [ "$MOBILE" == "true" ]; then
+            DEPLOY="true"
+          fi
+
+          # Handle overrides
+          if [ "$TYPE" == "cloud" ]; then CLOUD="true"; DESKTOP="false"; MOBILE="false"; DEPLOY="true"; fi
+          if [ "$TYPE" == "desktop" ]; then CLOUD="false"; DESKTOP="true"; MOBILE="false"; DEPLOY="true"; fi
+          if [ "$TYPE" == "mobile" ]; then CLOUD="false"; DESKTOP="false"; MOBILE="true"; DEPLOY="true"; fi
+          if [ "$TYPE" == "all" ]; then CLOUD="true"; DESKTOP="true"; MOBILE="true"; DEPLOY="true"; fi
+
+          echo "needs_cloud=$CLOUD" >> $GITHUB_OUTPUT
+          echo "needs_desktop=$DESKTOP" >> $GITHUB_OUTPUT
+          echo "needs_mobile=$MOBILE" >> $GITHUB_OUTPUT
+          echo "should_deploy=$DEPLOY" >> $GITHUB_OUTPUT
+
+      - name: Commit Version Bump
+        if: steps.decision.outputs.should_deploy == 'true'
+        env:
+          NEW_VERSION: ${{ steps.analyze.outputs.new_version }}
+        run: |
+          chmod +x scripts/update-all-versions.sh
+          ./scripts/update-all-versions.sh "$NEW_VERSION" "${{ github.sha }}"
+          
+          git add -A
+          if ! git diff --cached --quiet; then
+            git commit -m "chore: bump version to $NEW_VERSION [skip ci]"
+            git push origin main
+            git tag "v$NEW_VERSION" -f
+            git push origin "v$NEW_VERSION" -f
+          fi
+
+  # Call the Builder Workflow
+  trigger_build:
+    needs: ai_analysis
+    if: needs.ai_analysis.outputs.should_deploy == 'true'
+    uses: ./.github/workflows/build-release.yml
+    with:
+      version: ${{ needs.ai_analysis.outputs.new_version }}
+      docker_version: ${{ needs.ai_analysis.outputs.docker_version }}
+      do_cloud: ${{ needs.ai_analysis.outputs.do_cloud == 'true' }}
+      do_desktop: ${{ needs.ai_analysis.outputs.do_desktop == 'true' }}
+      do_mobile: ${{ needs.ai_analysis.outputs.do_mobile == 'true' }}
+      reasoning: ${{ needs.ai_analysis.outputs.reasoning }}
+    secrets: inherit
