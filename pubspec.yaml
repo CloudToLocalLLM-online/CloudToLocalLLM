@@ -20,7 +20,7 @@ dependencies:
   # Authentication
   provider: ^6.1.2
   jwt_decoder: ^2.0.1
-  flutter_appauth: ^7.0.0
+  auth0_flutter: ^1.4.0
   supabase_flutter: ^2.8.3
   shared_preferences: ^2.5.4
 

@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'dart:io';
-import 'package:flutter_appauth/flutter_appauth.dart';
+import 'package:auth0_flutter/auth0_flutter.dart';
 import 'package:app_links/app_links.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -44,9 +44,9 @@ class AuthException implements Exception {
       recoverySuggestion: 'Please check your application configuration');
 }
 
-/// Auth0 implementation of the authentication provider using flutter_appauth
+/// Auth0 implementation of the authentication provider using auth0_flutter
 class Auth0AuthProvider implements AuthProvider {
-  final FlutterAppAuth _appAuth = const FlutterAppAuth();
+  late final Auth0 _auth0;
   final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
   late final AppLinks _appLinks;
   StreamSubscription<Uri>? _linkSubscription;
@@ -73,6 +73,7 @@ class Auth0AuthProvider implements AuthProvider {
         _redirectUrl =
             '${UrlSchemeRegistrationService.customScheme}://dev-v2f2p008x3dr74ww.us.auth0.com/windows/${UrlSchemeRegistrationService.customScheme}/callback' {
     _appLinks = AppLinks();
+    _auth0 = Auth0(_domain, _clientId);
   }
 
   final StreamController<bool> _authStateController =
@@ -165,31 +166,15 @@ class Auth0AuthProvider implements AuthProvider {
   @override
   Future<void> login() async {
     try {
-      debugPrint(
-          '[Auth0AuthProvider] Starting login with redirect URL: $_redirectUrl');
+      debugPrint('[Auth0AuthProvider] Starting login');
 
-      // flutter_appauth doesn't support web, throw a clear error
-      if (kIsWeb) {
-        throw AuthException.configuration(
-          'flutter_appauth is not supported on web platform. '
-          'Please use auth0_flutter package instead.',
-        );
-      }
-
-      final result = await _appAuth.authorizeAndExchangeCode(
-        AuthorizationTokenRequest(
-          _clientId,
-          _redirectUrl,
-          serviceConfiguration: AuthorizationServiceConfiguration(
-            authorizationEndpoint: _authorizationEndpoint,
-            tokenEndpoint: _tokenEndpoint,
-            endSessionEndpoint: _endSessionEndpoint,
-          ),
-          scopes: ['openid', 'profile', 'email', 'offline_access'],
-          additionalParameters: {
-            'audience': _audience,
-          },
-        ),
+      final result = await _auth0
+          .webAuthentication(
+        scheme: UrlSchemeRegistrationService.customScheme,
+      )
+          .login(
+        scopes: ['openid', 'profile', 'email', 'offline_access'],
+        audience: _audience,
       );
 
       debugPrint('[Auth0AuthProvider] Login successful, storing tokens');
@@ -204,8 +189,8 @@ class Auth0AuthProvider implements AuthProvider {
       }
 
       // Parse user info from ID token
-      if (result.idToken?.isNotEmpty == true) {
-        _currentUser = _idTokenToUser(result.idToken!);
+      if (result.idToken.isNotEmpty) {
+        _currentUser = _idTokenToUser(result.idToken);
         _authStateController.add(true);
       } else {
         throw AuthException.configuration('No ID token received');
@@ -228,22 +213,15 @@ class Auth0AuthProvider implements AuthProvider {
       _currentUser = null;
       _authStateController.add(false);
 
-      // Optionally perform logout with Auth0 (opens browser)
+      // Perform logout with Auth0
       try {
-        final idToken = await _secureStorage.read(key: 'id_token');
-        if (idToken != null) {
-          await _appAuth.endSession(EndSessionRequest(
-            idTokenHint: idToken,
-            postLogoutRedirectUrl: _redirectUrl,
-            serviceConfiguration: AuthorizationServiceConfiguration(
-              authorizationEndpoint: _authorizationEndpoint,
-              tokenEndpoint: _tokenEndpoint,
-              endSessionEndpoint: _endSessionEndpoint,
-            ),
-          ));
-        }
+        await _auth0
+            .webAuthentication(
+              scheme: UrlSchemeRegistrationService.customScheme,
+            )
+            .logout();
       } catch (e) {
-        debugPrint('[Auth0AuthProvider] End session error (non-critical): $e');
+        debugPrint('[Auth0AuthProvider] Logout error (non-critical): $e');
       }
     } catch (e) {
       // Even if logout fails, clear local state
