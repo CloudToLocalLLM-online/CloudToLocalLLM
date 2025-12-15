@@ -55,7 +55,7 @@ import 'dart:io' if (dart.library.html) 'dart:html';
 
 void main(List<String> args) async {
   // Immediate logging to verify Dart entry point is reached
-  print('----- DART MAIN START ----- v7.8.18');
+  print('----- DART MAIN START ----- v7.8.19');
 
   // Handle command-line arguments (OAuth callback URLs)
   if (args.isNotEmpty) {
