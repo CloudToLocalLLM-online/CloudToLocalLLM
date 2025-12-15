@@ -48,6 +48,21 @@ validate_env() {
     fi
 
     log_info "Environment validation passed"
+    
+    # Test API token validity
+    log_info "Testing API token validity..."
+    local test_response
+    test_response=$(curl -s -X GET "https://api.cloudflare.com/client/v4/user/tokens/verify" \
+        -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
+        -H "Content-Type: application/json")
+    
+    if echo "$test_response" | grep -q '"success":true'; then
+        log_success "API token is valid"
+    else
+        log_error "API token validation failed"
+        echo "Response: $test_response"
+        exit 1
+    fi
 }
 
 # Get Zone ID
@@ -91,11 +106,20 @@ purge_cache() {
         log_info "Cache purge attempt $attempt/$MAX_RETRIES for zone: $zone_id"
 
         local response
-        response=$(curl -s -X POST \
+        local http_code
+        
+        # Make the API call and capture both response and HTTP status
+        response=$(curl -s -w "\n%{http_code}" -X POST \
             "https://api.cloudflare.com/client/v4/zones/${zone_id}/purge_cache" \
             -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
             -H "Content-Type: application/json" \
             --data '{"purge_everything": true}')
+        
+        # Extract HTTP status code from response
+        http_code=$(echo "$response" | tail -n1)
+        response=$(echo "$response" | head -n -1)
+        
+        log_info "HTTP Status: $http_code"
 
         if echo "$response" | grep -q '"success":true'; then
             log_success "Cache purge successful for zone $zone_id"
@@ -103,6 +127,17 @@ purge_cache() {
         else
             log_warning "Cache purge attempt $attempt failed"
             echo "Response: $response"
+            
+            # Check for specific error patterns
+            if echo "$response" | grep -q '"code":10000'; then
+                log_error "Authentication failed - check CLOUDFLARE_API_TOKEN"
+                break
+            elif echo "$response" | grep -q '"code":6003'; then
+                log_error "Invalid zone ID or insufficient permissions"
+                break
+            elif [ -z "$response" ]; then
+                log_error "Empty response - possible network or API issue"
+            fi
 
             if [ $attempt -lt $MAX_RETRIES ]; then
                 log_info "Retrying in $RETRY_DELAY seconds..."
@@ -113,8 +148,58 @@ purge_cache() {
         ((attempt++))
     done
 
+    # If purge_everything failed, try selective URL purging as fallback
+    log_warning "Purge everything failed, trying selective URL purging..."
+    if purge_selective_urls "$zone_id"; then
+        return 0
+    fi
+
     log_error "Cache purge failed after $MAX_RETRIES attempts"
     return 1
+}
+
+# Fallback: purge specific URLs instead of everything
+purge_selective_urls() {
+    local zone_id="$1"
+    local urls=()
+    
+    # Build list of URLs to purge
+    urls+=("https://$DOMAIN")
+    urls+=("https://$DOMAIN/")
+    for subdomain in "${SUBDOMAINS[@]}"; do
+        urls+=("https://$subdomain.$DOMAIN")
+        urls+=("https://$subdomain.$DOMAIN/")
+    done
+    
+    log_info "Attempting selective URL purging for ${#urls[@]} URLs"
+    
+    # Create JSON payload with URLs
+    local url_list=""
+    for url in "${urls[@]}"; do
+        if [ -n "$url_list" ]; then
+            url_list="$url_list,"
+        fi
+        url_list="$url_list\"$url\""
+    done
+    
+    local payload="{\"files\":[$url_list]}"
+    log_info "Purging URLs: $url_list"
+    
+    local response
+    response=$(curl -s -X POST \
+        "https://api.cloudflare.com/client/v4/zones/${zone_id}/purge_cache" \
+        -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
+        -H "Content-Type: application/json" \
+        --data "$payload")
+    
+    if echo "$response" | grep -q '"success":true'; then
+        log_success "Selective URL purge successful"
+        return 0
+    else
+        log_warning "Selective URL purge also failed"
+        echo "Response: $response"
+        return 1
+    fi
 }
 
 # Verify cache purge by checking response headers
