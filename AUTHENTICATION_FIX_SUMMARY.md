@@ -21,27 +21,20 @@
 - ✅ Backend will accept tokens and validate them successfully
 - ✅ All API calls will work: `/auth/sessions`, `/user/tier`, `/ollama/bridge/status`, etc.
 
-### 2. Service Worker Timeout Warning (MINOR)
-**Status**: ✅ FIXED
+### 2. Service Worker Management (REMOVED)
+**Status**: ✅ REMOVED - NOT NEEDED
 
-**Problem**: Flutter web app showing warning "prepareServiceWorker took more than 4000ms to resolve."
+**Why Removed**: Flutter web automatically manages service workers. The service worker initialization patch added unnecessary complexity without providing real value. Flutter's service worker handling is sufficient for the application's needs.
 
-**Root Cause**: Bug in Flutter's `flutter_bootstrap.js` - when service worker is already active, it returns `undefined` instead of resolving the promise, causing the promise chain to hang.
-
-**Solution**: Created `web/service-worker-init.js` patch that:
-- Overrides `navigator.serviceWorker.register()` 
-- Properly handles already-active service workers
-- Prevents hanging and timeout
-
-**Files Changed**:
-- `web/service-worker-init.js` - Created service worker initialization patch
-- `web/index.html` - Added script tag to load patch before flutter_bootstrap.js
-- `web/flutter_service_worker.js` - Enhanced with better error handling
+**Removed Files**:
+- `web/service-worker-init.js` - Deleted (unnecessary)
+- `web/index.html` - Removed service worker patch script tag
 
 **Impact**:
-- ✅ Service worker registration completes quickly
-- ✅ 4000ms timeout warning no longer appears
-- ✅ App loads faster
+- ✅ Simplified architecture
+- ✅ Reduced complexity
+- ✅ Fewer moving parts to maintain
+- ✅ Flutter handles service workers natively
 
 ## Deployment Instructions
 
@@ -71,9 +64,8 @@
 ### For Production Deployment
 
 1. **Update Web App**
-   - Deploy the updated `web/auth0-bridge.js`
-   - Deploy the new `web/service-worker-init.js`
-   - Deploy the updated `web/index.html`
+   - Deploy the updated `web/auth0-bridge.js` with correct audience
+   - Deploy the updated `web/index.html` (service worker patch removed)
 
 2. **Verify Backend Configuration**
    - Ensure `AUTH0_AUDIENCE` environment variable is set (or use default)
@@ -89,7 +81,6 @@
 
 ## Testing Checklist
 
-- [ ] Service worker loads without 4000ms timeout warning
 - [ ] Login completes successfully
 - [ ] App loads after login
 - [ ] `/user/tier` API call returns 200 (not 401)
