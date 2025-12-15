@@ -94,7 +94,7 @@ fi
 # 8. Update lib/main.dart version string
 echo "8. Updating lib/main.dart version string..."
 if [ -f "lib/main.dart" ]; then
-    sed -i "s/DART MAIN START ----- v[0-9]\+\.[0-9]\+\.[0-9]\+/DART MAIN START ----- v${NEW_VERSION}/g" lib/main.dart
+    sed -i "s/DART MAIN START ----- v[0-9]\+\.[0-9]\+\.[0-9]\+\(+[0-9]\+\)*/DART MAIN START ----- v${NEW_VERSION}/g" lib/main.dart
 fi
 
 # 9. Update SECURITY.md
