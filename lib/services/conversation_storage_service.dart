@@ -6,6 +6,15 @@ import '../models/message.dart';
 import '../config/app_config.dart';
 import 'auth_service.dart';
 
+/// Security exception for unauthorized access attempts
+class SecurityException implements Exception {
+  final String message;
+  SecurityException(this.message);
+  
+  @override
+  String toString() => 'SecurityException: $message';
+}
+
 // Conditional imports for desktop-only dependencies - NOT loaded on web
 import 'conversation_storage_service_desktop.dart'
     if (dart.library.html) 'conversation_storage_service_web.dart';
@@ -17,7 +26,8 @@ import 'conversation_storage_service_desktop.dart'
 /// - Desktop platform: Uses SQLite files in user documents directory (local storage)
 class ConversationStorageService {
   static const String _databaseName = 'cloudtolocalllm_conversations.db';
-  static const int _databaseVersion = 2; // Incremented for privacy enhancements
+  static const int _databaseVersion =
+      3; // Incremented for user isolation security fix
 
   // Table names
   static const String _conversationsTable = 'conversations';
@@ -148,10 +158,11 @@ class ConversationStorageService {
   /// Create database tables with privacy-focused schema
   Future<void> _createDatabase(Database db, int version) async {
     try {
-      // Create conversations table
+      // Create conversations table with user isolation
       await db.execute('''
         CREATE TABLE $_conversationsTable (
           id TEXT PRIMARY KEY,
+          user_id TEXT NOT NULL,
           title TEXT NOT NULL,
           model TEXT NOT NULL,
           created_at INTEGER NOT NULL,
@@ -161,11 +172,12 @@ class ConversationStorageService {
         )
       ''');
 
-      // Create messages table
+      // Create messages table with user isolation
       await db.execute('''
         CREATE TABLE $_messagesTable (
           id TEXT PRIMARY KEY,
           conversation_id TEXT NOT NULL,
+          user_id TEXT NOT NULL,
           role TEXT NOT NULL,
           content TEXT NOT NULL,
           model TEXT,
@@ -245,7 +257,7 @@ class ConversationStorageService {
     int newVersion,
   ) async {
     debugPrint(
-      '� [ConversationStorage] Upgrading database from v$oldVersion to v$newVersion',
+      '🔄 [ConversationStorage] Upgrading database from v$oldVersion to v$newVersion',
     );
 
     if (oldVersion < 2) {
@@ -272,11 +284,74 @@ class ConversationStorageService {
 
         await _insertDefaultPrivacySettings(db);
         debugPrint(
-          '� [ConversationStorage] Privacy enhancements added to database',
+          '🔒 [ConversationStorage] Privacy enhancements added to database',
         );
       } catch (e) {
-        debugPrint('� [ConversationStorage] Database upgrade failed: $e');
+        debugPrint('❌ [ConversationStorage] Database upgrade failed: $e');
         // Continue with existing schema if upgrade fails
+      }
+    }
+
+    if (oldVersion < 3) {
+      // CRITICAL SECURITY FIX: Add user isolation
+      try {
+        // Get current user ID for data migration
+        final currentUserId = await _getCurrentUserId();
+
+        // Add user_id column to conversations table
+        await db.execute(
+          'ALTER TABLE $_conversationsTable ADD COLUMN user_id TEXT',
+        );
+
+        // Add user_id column to messages table
+        await db.execute(
+          'ALTER TABLE $_messagesTable ADD COLUMN user_id TEXT',
+        );
+
+        // Migrate existing data to current user (or mark as orphaned)
+        if (currentUserId != null) {
+          await db.execute(
+            'UPDATE $_conversationsTable SET user_id = ? WHERE user_id IS NULL',
+            [currentUserId],
+          );
+          await db.execute(
+            'UPDATE $_messagesTable SET user_id = ? WHERE user_id IS NULL',
+            [currentUserId],
+          );
+          debugPrint(
+            '🔒 [ConversationStorage] Migrated existing data to user: $currentUserId',
+          );
+        } else {
+          // No current user - mark as orphaned for cleanup
+          await db.execute(
+            'UPDATE $_conversationsTable SET user_id = ? WHERE user_id IS NULL',
+            ['orphaned'],
+          );
+          await db.execute(
+            'UPDATE $_messagesTable SET user_id = ? WHERE user_id IS NULL',
+            ['orphaned'],
+          );
+          debugPrint(
+            '⚠️ [ConversationStorage] Marked existing data as orphaned (no current user)',
+          );
+        }
+
+        // Create indexes for user-based queries
+        await db.execute(
+          'CREATE INDEX IF NOT EXISTS idx_conversations_user_id ON $_conversationsTable (user_id)',
+        );
+        await db.execute(
+          'CREATE INDEX IF NOT EXISTS idx_messages_user_id ON $_messagesTable (user_id)',
+        );
+
+        debugPrint(
+          '🔒 [ConversationStorage] SECURITY FIX: User isolation added to database',
+        );
+      } catch (e) {
+        debugPrint(
+            '❌ [ConversationStorage] CRITICAL: User isolation upgrade failed: $e');
+        // This is a critical security issue - rethrow to prevent app from continuing
+        rethrow;
       }
     }
   }
@@ -316,7 +391,7 @@ class ConversationStorageService {
     }
   }
 
-  /// Load all conversations
+  /// Load all conversations for current user
   Future<List<Conversation>> loadConversations() async {
     if (_database == null) {
       if (kIsWeb) {
@@ -328,9 +403,19 @@ class ConversationStorageService {
     }
 
     try {
-      // Load conversations ordered by most recently updated
+      // Get current user ID for filtering
+      final currentUserId = await _getCurrentUserId();
+      if (currentUserId == null) {
+        debugPrint(
+            '⚠️ [ConversationStorage] No current user - returning empty list');
+        return [];
+      }
+
+      // Load conversations for current user only, ordered by most recently updated
       final conversationRows = await _database!.query(
         _conversationsTable,
+        where: 'user_id = ?',
+        whereArgs: [currentUserId],
         orderBy: 'updated_at DESC',
       );
 
@@ -342,11 +427,11 @@ class ConversationStorageService {
       }
 
       debugPrint(
-        '� [ConversationStorage] Loaded ${conversations.length} conversations',
+        '🔒 [ConversationStorage] Loaded ${conversations.length} conversations for user: $currentUserId',
       );
       return conversations;
     } catch (e) {
-      debugPrint('� [ConversationStorage] Error loading conversations: $e');
+      debugPrint('❌ [ConversationStorage] Error loading conversations: $e');
       return [];
     }
   }
@@ -395,32 +480,51 @@ class ConversationStorageService {
     }
 
     try {
+      // Get current user ID for validation
+      final currentUserId = await _getCurrentUserId();
+      if (currentUserId == null) {
+        throw StateError('Cannot delete conversation: No current user');
+      }
+
       await _database!.transaction((txn) async {
-        // Delete messages first (foreign key constraint)
+        // Security check: Verify conversation belongs to current user
+        final conversationCheck = await txn.query(
+          _conversationsTable,
+          where: 'id = ? AND user_id = ?',
+          whereArgs: [conversationId, currentUserId],
+        );
+        
+        if (conversationCheck.isEmpty) {
+          throw SecurityException(
+            'Access denied: Cannot delete conversation that does not belong to current user'
+          );
+        }
+
+        // Delete messages first (foreign key constraint) - filtered by user ID
         await txn.delete(
           _messagesTable,
-          where: 'conversation_id = ?',
-          whereArgs: [conversationId],
+          where: 'conversation_id = ? AND user_id = ?',
+          whereArgs: [conversationId, currentUserId],
         );
 
-        // Delete conversation
+        // Delete conversation - filtered by user ID
         await txn.delete(
           _conversationsTable,
-          where: 'id = ?',
-          whereArgs: [conversationId],
+          where: 'id = ? AND user_id = ?',
+          whereArgs: [conversationId, currentUserId],
         );
       });
 
       debugPrint(
-        '� [ConversationStorage] Deleted conversation: $conversationId',
+        '🔒 [ConversationStorage] Deleted conversation: $conversationId for user: $currentUserId',
       );
     } catch (e) {
-      debugPrint('� [ConversationStorage] Error deleting conversation: $e');
+      debugPrint('❌ [ConversationStorage] Error deleting conversation: $e');
       rethrow;
     }
   }
 
-  /// Clear all conversations
+  /// Clear all conversations for current user
   Future<void> clearAllConversations() async {
     if (kIsWeb) {
       // Web: Delete all conversations via API
@@ -437,14 +541,31 @@ class ConversationStorageService {
     }
 
     try {
+      // Get current user ID for filtering
+      final currentUserId = await _getCurrentUserId();
+      if (currentUserId == null) {
+        throw StateError('Cannot clear conversations: No current user');
+      }
+
       await _database!.transaction((txn) async {
-        await txn.delete(_messagesTable);
-        await txn.delete(_conversationsTable);
+        // Delete only messages for current user
+        await txn.delete(
+          _messagesTable,
+          where: 'user_id = ?',
+          whereArgs: [currentUserId],
+        );
+        
+        // Delete only conversations for current user
+        await txn.delete(
+          _conversationsTable,
+          where: 'user_id = ?',
+          whereArgs: [currentUserId],
+        );
       });
 
-      debugPrint('� [ConversationStorage] Cleared all conversations');
+      debugPrint('🔒 [ConversationStorage] Cleared all conversations for user: $currentUserId');
     } catch (e) {
-      debugPrint('� [ConversationStorage] Error clearing conversations: $e');
+      debugPrint('❌ [ConversationStorage] Error clearing conversations: $e');
       rethrow;
     }
   }
@@ -642,10 +763,17 @@ class ConversationStorageService {
     DatabaseExecutor txn,
     Conversation conversation,
   ) async {
+    // Get current user ID
+    final currentUserId = await _getCurrentUserId();
+    if (currentUserId == null) {
+      throw StateError('Cannot save conversation: No current user');
+    }
+
     await txn.insert(
         _conversationsTable,
         {
           'id': conversation.id,
+          'user_id': currentUserId,
           'title': conversation.title,
           'model': conversation.model,
           'created_at': conversation.createdAt.millisecondsSinceEpoch,
@@ -659,12 +787,19 @@ class ConversationStorageService {
     DatabaseExecutor txn,
     Conversation conversation,
   ) async {
+    // Get current user ID
+    final currentUserId = await _getCurrentUserId();
+    if (currentUserId == null) {
+      throw StateError('Cannot save messages: No current user');
+    }
+
     for (final message in conversation.messages) {
       await txn.insert(
           _messagesTable,
           {
             'id': message.id,
             'conversation_id': conversation.id,
+            'user_id': currentUserId,
             'role': message.role.name,
             'content': message.content,
             'model': message.model,
@@ -681,12 +816,22 @@ class ConversationStorageService {
     Map<String, dynamic> conversationRow,
   ) async {
     final conversationId = conversationRow['id'] as String;
+    final conversationUserId = conversationRow['user_id'] as String?;
 
-    // Load messages for this conversation
+    // Get current user ID for validation
+    final currentUserId = await _getCurrentUserId();
+
+    // Security check: Ensure conversation belongs to current user
+    if (conversationUserId != currentUserId) {
+      throw SecurityException(
+          'Access denied: Conversation belongs to different user');
+    }
+
+    // Load messages for this conversation (filtered by user ID for extra security)
     final messageRows = await _database!.query(
       _messagesTable,
-      where: 'conversation_id = ?',
-      whereArgs: [conversationId],
+      where: 'conversation_id = ? AND user_id = ?',
+      whereArgs: [conversationId, currentUserId],
       orderBy: 'timestamp ASC',
     );
 
@@ -723,6 +868,31 @@ class ConversationStorageService {
       error: row['error'] as String?,
       timestamp: DateTime.fromMillisecondsSinceEpoch(row['timestamp'] as int),
     );
+  }
+
+  /// Get current user ID from AuthService
+  Future<String?> _getCurrentUserId() async {
+    if (_authService == null) {
+      debugPrint('⚠️ [ConversationStorage] AuthService not available');
+      return null;
+    }
+
+    try {
+      // Get user info from AuthService
+      final userInfo = await _authService!.getUserInfo();
+      final userId = userInfo?['sub'] as String?;
+
+      if (userId == null) {
+        debugPrint(
+            '⚠️ [ConversationStorage] No user ID available from AuthService');
+        return null;
+      }
+
+      return userId;
+    } catch (e) {
+      debugPrint('❌ [ConversationStorage] Failed to get current user ID: $e');
+      return null;
+    }
   }
 
   /// Check if the service is properly initialized
@@ -778,22 +948,35 @@ class ConversationStorageService {
     }
   }
 
-  /// Get database statistics for privacy transparency
+  /// Get database statistics for privacy transparency (current user only)
   Future<Map<String, dynamic>> getDatabaseStats() async {
     if (!isInitialized) {
       throw StateError('Database not initialized');
     }
 
     try {
-      // Count conversations
+      // Get current user ID for filtering
+      final currentUserId = await _getCurrentUserId();
+      if (currentUserId == null) {
+        return {
+          'total_conversations': 0,
+          'total_messages': 0,
+          'database_size': 'No user logged in',
+          'last_updated': DateTime.now().toIso8601String(),
+        };
+      }
+
+      // Count conversations for current user only
       final conversationCount = await _database!.rawQuery(
-        'SELECT COUNT(*) as count FROM $_conversationsTable',
+        'SELECT COUNT(*) as count FROM $_conversationsTable WHERE user_id = ?',
+        [currentUserId],
       );
       final totalConversations = conversationCount.first['count'] as int;
 
-      // Count messages
+      // Count messages for current user only
       final messageCount = await _database!.rawQuery(
-        'SELECT COUNT(*) as count FROM $_messagesTable',
+        'SELECT COUNT(*) as count FROM $_messagesTable WHERE user_id = ?',
+        [currentUserId],
       );
       final totalMessages = messageCount.first['count'] as int;
 
