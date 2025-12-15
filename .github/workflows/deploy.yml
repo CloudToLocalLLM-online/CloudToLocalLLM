@@ -817,6 +817,8 @@ jobs:
 
       - name: Create Distribution Package with Installer
         timeout-minutes: 10
+        env:
+          BUILD_VERSION: ${{ needs.ai_analysis.outputs.new_version }}
         run: |
           Write-Host "=== Creating Complete Release Assets ===" -ForegroundColor Green
           
@@ -826,7 +828,7 @@ jobs:
             Remove-Item -Recurse -Force "dist"
           }
           
-          # Get current version
+          # Get current version from workflow
           $version = "${{ needs.ai_analysis.outputs.new_version }}"
           Write-Host "Building for version: $version" -ForegroundColor Green
           
@@ -840,16 +842,16 @@ jobs:
           
           Write-Host "Running comprehensive release assets builder..." -ForegroundColor Green
           
-          # Run the script with appropriate parameters
+          # Run the script with version parameter and appropriate flags
           try {
-            & $buildScript -SkipBuild -InstallInnoSetup
+            & $buildScript -SkipBuild -InstallInnoSetup -Version $version
             Write-Host "✅ Release assets created successfully" -ForegroundColor Green
           } catch {
             Write-Host "ERROR: Release assets creation failed: $($_.Exception.Message)" -ForegroundColor Red
             
             # Fallback: create just the portable ZIP if installer fails
             Write-Host "Attempting fallback to portable ZIP only..." -ForegroundColor Yellow
-            & $buildScript -SkipBuild -SkipInstaller
+            & $buildScript -SkipBuild -SkipInstaller -Version $version
           }
           
           # Verify ONLY current version assets were created

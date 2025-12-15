@@ -8,7 +8,8 @@ param(
     [switch]$SkipInstaller,
     [switch]$InstallInnoSetup,
     [switch]$Force,
-    [switch]$Help
+    [switch]$Help,
+    [string]$Version
 )
 
 # Import build environment utilities
@@ -33,23 +34,30 @@ $WindowsBuildDir = Join-Path $ProjectRoot "build\windows\x64\runner\Release"
 $WindowsOutputDir = Join-Path $OutputDir "windows"
 $InstallerScriptPath = Join-Path $ProjectRoot "build-tools\installers\windows\Basic.iss"
 
-# Get version from version manager
-$versionManagerPath = Join-Path $PSScriptRoot "version_manager.ps1"
-if (Test-Path $versionManagerPath) {
-    $Version = & $versionManagerPath get-semantic
-} else {
-    # Fallback to reading from pubspec.yaml
-    $pubspecPath = Join-Path $ProjectRoot "pubspec.yaml"
-    if (Test-Path $pubspecPath) {
-        $pubspecContent = Get-Content $pubspecPath
-        $versionLine = $pubspecContent | Where-Object { $_ -match "^version:" }
-        if ($versionLine) {
-            $Version = ($versionLine -split ":")[1].Trim() -replace "\+.*", ""
+# Get version - prioritize parameter, then environment variable, then version manager
+if (-not $Version) {
+    $Version = $env:BUILD_VERSION
+}
+
+if (-not $Version) {
+    # Get version from version manager
+    $versionManagerPath = Join-Path $PSScriptRoot "version_manager.ps1"
+    if (Test-Path $versionManagerPath) {
+        $Version = & $versionManagerPath get-semantic
+    } else {
+        # Fallback to reading from pubspec.yaml
+        $pubspecPath = Join-Path $ProjectRoot "pubspec.yaml"
+        if (Test-Path $pubspecPath) {
+            $pubspecContent = Get-Content $pubspecPath
+            $versionLine = $pubspecContent | Where-Object { $_ -match "^version:" }
+            if ($versionLine) {
+                $Version = ($versionLine -split ":")[1].Trim() -replace "\+.*", ""
+            } else {
+                $Version = "0.0.0"
+            }
         } else {
             $Version = "0.0.0"
         }
-    } else {
-        $Version = "0.0.0"
     }
 }
 
@@ -64,6 +72,7 @@ function Show-Help {
     Write-Host "  -SkipInstaller    Skip Windows installer creation"
     Write-Host "  -InstallInnoSetup Install Inno Setup if not found"
     Write-Host "  -Force            Force reinstall dependencies"
+    Write-Host "  -Version <string> Override version (defaults to version manager or pubspec.yaml)"
     Write-Host "  -Help             Show this help message"
     Write-Host ""
     Write-Host "This script creates all GitHub release assets:"
