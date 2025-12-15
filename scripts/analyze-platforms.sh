@@ -34,9 +34,9 @@ if echo "$CHANGED_FILES" | grep -qE "(web/|lib/.*auth|lib/.*router|lib/config/|s
     echo "🌐 DETECTED WEB-RELATED CHANGES - Cloud deployment will be forced"
 fi
 
-# Prepare prompt for Kilocode
-COMMITS_ESCAPED=$(echo "$COMMITS" | sed 's/"/\"/g' | tr '\n' ' ')
-FILES_ESCAPED=$(echo "$CHANGED_FILES" | sed 's/"/\"/g' | tr '\n' ' ')
+# Prepare prompt for Kilocode - properly escape for JSON
+COMMITS_ESCAPED=$(echo "$COMMITS" | sed 's/"/\\"/g' | sed 's/\\/\\\\/g' | tr '\n' ' ')
+FILES_ESCAPED=$(echo "$CHANGED_FILES" | sed 's/"/\\"/g' | sed 's/\\/\\\\/g' | tr '\n' ' ')
 
 # Get current semantic version (without build metadata)
 SEMANTIC_VERSION=$(echo "$CURRENT_VERSION" | cut -d'+' -f1)
@@ -47,42 +47,27 @@ Semantic version: $SEMANTIC_VERSION
 Recent commits: $COMMITS_ESCAPED
 Changed files: $FILES_ESCAPED
 
-Analyze changes and determine deployment needs. Output only valid JSON:
+Analyze changes and determine deployment needs. Output ONLY valid JSON:
 
 {
-  \"bump_type\": \"none\" | \"patch\" | \"minor\" | \"major\",
-  \"semantic_version\": \"x.y.z\",
-  \"needs_cloud\": boolean,
-  \"needs_desktop\": boolean,
-  \"needs_mobile\": boolean,
-  \"reasoning\": \"brief explanation\"
+  \"bump_type\": \"none\",
+  \"semantic_version\": \"$SEMANTIC_VERSION\",
+  \"needs_cloud\": true,
+  \"needs_desktop\": true,
+  \"needs_mobile\": false,
+  \"reasoning\": \"Conservative deployment for debugging changes\"
 }
 
-SMART DEPLOYMENT RULES:
-1. CORE CHANGES (trigger ALL platforms):
-   - main.dart or immediate dependencies
-   - lib/models/, lib/services/ (core business logic)
-   - pubspec.yaml (dependency changes)
-   - Authentication core (auth_service.dart, auth providers)
-
-2. PLATFORM-SPECIFIC CHANGES (trigger only that platform):
-   - web/ folder → only needs_cloud=true
-   - windows/, linux/ folders → only needs_desktop=true  
-   - android/, ios/ folders → only needs_mobile=true
-   - Platform-specific conditionally loaded code
-
-3. VERSION BUMPING (CONSERVATIVE - USER-FACING FEATURES ONLY):
-   - **DEFAULT**: bump_type=\"none\", semantic_version=\"$SEMANTIC_VERSION\"
-   - **PATCH**: Only for user-visible bug fixes (UI fixes, crash fixes)
-   - **MINOR**: Only for new user-facing features (new UI, new functionality)
-   - **MAJOR**: Only for breaking changes to user experience
-   - **NEVER BUMP FOR**: Internal refactoring, CI/CD changes, build fixes, security patches, performance improvements, code cleanup, debugging
-
-4. DEPLOYMENT DECISIONS:
-   - needs_cloud=true for: web/, services/, k8s/, auth changes, API changes
-   - needs_desktop=true for: windows/, linux/, desktop-specific code
-   - needs_mobile=true for: android/, ios/, mobile-specific code
-   - Core changes trigger ALL platforms"
+RULES:
+- DEFAULT: bump_type=none, semantic_version=$SEMANTIC_VERSION (no version increment for debugging)
+- PATCH: Only for user-visible bug fixes
+- MINOR: Only for new user-facing features  
+- MAJOR: Only for breaking user experience changes
+- CORE CHANGES (main.dart, lib/services/, lib/models/) trigger ALL platforms
+- PLATFORM-SPECIFIC (web/, windows/, android/) trigger only that platform
+- Cloud: web/, services/, k8s/, auth changes
+- Desktop: windows/, linux/, desktop code
+- Mobile: android/, ios/, mobile code"
 
 echo "DEBUG: Kilocode prompt includes version requirement: 'The new version MUST be higher than $CURRENT_VERSION'"
 
