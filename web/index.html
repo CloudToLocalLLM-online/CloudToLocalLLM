@@ -41,6 +41,9 @@
   <script src="https://cdn.auth0.com/js/auth0-spa-js/2.1/auth0-spa-js.production.js"></script>
   <script src="auth0-bridge.js"></script>
 
+  <!-- Service Worker Initialization Patch (must load before flutter_bootstrap.js) -->
+  <script src="service-worker-init.js"></script>
+
   <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport">
   <style id="splash-screen-style">
     html {

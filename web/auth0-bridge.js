@@ -7,7 +7,10 @@
   // Configuration - should match Flutter Auth0AuthProvider
   const AUTH0_DOMAIN = 'dev-v2f2p008x3dr74ww.us.auth0.com';
   const AUTH0_CLIENT_ID = 'FuXPnevXpp311CdYHGsbNZe9t3D8Ts7A';
-  const AUTH0_AUDIENCE = 'https://dev-v2f2p008x3dr74ww.us.auth0.com/api/v2/';
+  // CRITICAL: Audience must match backend AUTH0_AUDIENCE configuration
+  // Backend expects: https://api.cloudtolocalllm.online or https://api.cloudtolocalllm.com
+  // NOT the Auth0 Management API audience
+  const AUTH0_AUDIENCE = 'https://api.cloudtolocalllm.online';
 
   // Auth0 SDK instance
   let auth0 = null;
