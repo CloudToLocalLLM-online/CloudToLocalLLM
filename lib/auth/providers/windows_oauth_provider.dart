@@ -17,7 +17,7 @@ import '../../services/url_scheme_registration_service.dart';
 /// Uses manual browser launch and URL scheme callback handling
 class WindowsOAuthProvider implements AuthProvider {
   final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
-  late final AppLinks _appLinks;
+  late final AppLinks _appLinks; // Used for deep link handling
   StreamSubscription<Uri>? _linkSubscription;
   Completer<Map<String, String>>? _authCompleter;
 

@@ -63,7 +63,7 @@ class _TrayInitializerState extends State<TrayInitializer> {
       await windowManager.initialize();
 
       final initialized = await nativeTray.initialize(
-        connectionManager: connectionManager
+        connectionManager: connectionManager,
         localOllama: localOllama,
         onShowWindow: () => windowManager.showWindow(),
         onHideWindow: () => windowManager.hideToTray(),

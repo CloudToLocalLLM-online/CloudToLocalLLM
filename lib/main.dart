@@ -49,7 +49,8 @@ import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:cloudtolocalllm/widgets/window_listener_widget.dart'
     if (dart.library.html) 'package:cloudtolocalllm/widgets/window_listener_widget_stub.dart';
 import 'package:cloudtolocalllm/config/navigator_key.dart';
-import 'dart:io' if (dart.library.html) 'dart:html';
+import 'package:cloudtolocalllm/utils/platform_file_utils.dart'
+    if (dart.library.html) 'package:cloudtolocalllm/utils/platform_file_utils_web.dart';
 
 // navigatorKey is now imported from config/navigator_key.dart
 
@@ -459,11 +460,8 @@ Future<void> _handleCommandLineArgs(List<String> args) async {
     // For now, we'll use a simple file-based approach (desktop only)
     if (!kIsWeb) {
       try {
-        final tempDir = Directory.systemTemp;
-        final callbackFile =
-            File('${tempDir.path}/cloudtolocalllm_callback.txt');
-        await callbackFile.writeAsString(callbackUrl);
-        print('[Main] Wrote callback URL to temp file: ${callbackFile.path}');
+        await PlatformFileUtils.writeCallbackFile(callbackUrl);
+        print('[Main] Wrote callback URL to temp file');
       } catch (e) {
         print('[Main] Error writing callback file: $e');
       }

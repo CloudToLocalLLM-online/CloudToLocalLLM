@@ -183,27 +183,23 @@ class Auth0AuthProvider implements AuthProvider {
         ),
       );
 
-      if (result != null) {
-        debugPrint('[Auth0AuthProvider] Login successful, storing tokens');
+      debugPrint('[Auth0AuthProvider] Login successful, storing tokens');
 
-        // Store tokens securely
+      // Store tokens securely
+      await _secureStorage.write(
+          key: 'access_token', value: result.accessToken);
+      await _secureStorage.write(key: 'id_token', value: result.idToken);
+      if (result.refreshToken != null) {
         await _secureStorage.write(
-            key: 'access_token', value: result.accessToken);
-        await _secureStorage.write(key: 'id_token', value: result.idToken);
-        if (result.refreshToken != null) {
-          await _secureStorage.write(
-              key: 'refresh_token', value: result.refreshToken);
-        }
+            key: 'refresh_token', value: result.refreshToken);
+      }
 
-        // Parse user info from ID token
-        if (result.idToken?.isNotEmpty == true) {
-          _currentUser = _idTokenToUser(result.idToken!);
-          _authStateController.add(true);
-        } else {
-          throw AuthException.configuration('No ID token received');
-        }
+      // Parse user info from ID token
+      if (result.idToken?.isNotEmpty == true) {
+        _currentUser = _idTokenToUser(result.idToken!);
+        _authStateController.add(true);
       } else {
-        throw AuthException.cancelled();
+        throw AuthException.configuration('No ID token received');
       }
     } catch (e) {
       debugPrint('[Auth0AuthProvider] Login error: $e');
@@ -310,26 +306,21 @@ class Auth0AuthProvider implements AuthProvider {
         },
       ));
 
-      if (result != null) {
-        debugPrint('[Auth0AuthProvider] Token refresh successful');
+      debugPrint('[Auth0AuthProvider] Token refresh successful');
 
-        // Store new tokens
-        await _secureStorage.write(
-            key: 'access_token', value: result.accessToken);
-        if (result.idToken?.isNotEmpty == true) {
-          await _secureStorage.write(key: 'id_token', value: result.idToken);
-          _currentUser = _idTokenToUser(result.idToken!);
-        }
-        if (result.refreshToken?.isNotEmpty == true) {
-          await _secureStorage.write(
-              key: 'refresh_token', value: result.refreshToken);
-        }
-
-        _authStateController.add(true);
-      } else {
-        debugPrint('[Auth0AuthProvider] Token refresh failed - no result');
-        _authStateController.add(false);
+      // Store new tokens
+      await _secureStorage.write(
+          key: 'access_token', value: result.accessToken);
+      if (result.idToken?.isNotEmpty == true) {
+        await _secureStorage.write(key: 'id_token', value: result.idToken);
+        _currentUser = _idTokenToUser(result.idToken!);
       }
+      if (result.refreshToken?.isNotEmpty == true) {
+        await _secureStorage.write(
+            key: 'refresh_token', value: result.refreshToken);
+      }
+
+      _authStateController.add(true);
     } catch (e) {
       debugPrint('[Auth0AuthProvider] Token refresh error: $e');
       _authStateController.add(false);

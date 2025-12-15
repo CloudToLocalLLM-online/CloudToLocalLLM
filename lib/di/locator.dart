@@ -544,17 +544,15 @@ Future<void> _initializeProviderDiscoveryAndAutoConfig(
             continue;
         }
 
-        if (config != null) {
-          await configManager.setConfiguration(config);
-          debugPrint(
-              '[ServiceLocator] ✓ Auto-configured ${providerInfo.name} as $providerId');
+        await configManager.setConfiguration(config);
+        debugPrint(
+            '[ServiceLocator] ✓ Auto-configured ${providerInfo.name} as $providerId');
 
-          // Set Ollama as default provider if found and no preferred provider is set
-          if (providerInfo.type == ProviderType.ollama &&
-              configManager.preferredProviderId == null) {
-            await configManager.setPreferredProvider(providerId);
-            debugPrint('[ServiceLocator] ✓ Set Ollama as default provider');
-          }
+        // Set Ollama as default provider if found and no preferred provider is set
+        if (providerInfo.type == ProviderType.ollama &&
+            configManager.preferredProviderId == null) {
+          await configManager.setPreferredProvider(providerId);
+          debugPrint('[ServiceLocator] ✓ Set Ollama as default provider');
         }
       } catch (e) {
         debugPrint(
