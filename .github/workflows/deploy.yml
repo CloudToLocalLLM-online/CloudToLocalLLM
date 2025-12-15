@@ -839,7 +839,7 @@ jobs:
           
           # Verify ONLY current version assets were created
           if (Test-Path "dist/windows") {
-            Write-Host "Created assets for version $version:" -ForegroundColor Green
+            Write-Host "Created assets for version $version" -ForegroundColor Green
             Get-ChildItem "dist/windows" | Where-Object { $_.Name -like "*$version*" } | ForEach-Object {
               $size = if ($_.Length) { "$([math]::Round($_.Length / 1MB, 2)) MB" } else { "N/A" }
               Write-Host "  ✅ $($_.Name) ($size)" -ForegroundColor Green
