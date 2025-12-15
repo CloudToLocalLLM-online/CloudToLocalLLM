@@ -41,8 +41,8 @@ export function loadAuthConfig(): AuthConfig {
       url: supabaseUrl || 'unused',
     },
     auth0: {
-      jwksUri: process.env.AUTH0_JWKS_URI || (process.env.AUTH0_ISSUER_URL ? `${process.env.AUTH0_ISSUER_URL}/.well-known/jwks.json` : 'https://cloudtolocalllm.auth0.com/.well-known/jwks.json'),
-      audience: process.env.AUTH0_AUDIENCE || 'https://api.cloudtolocalllm.com',
+      jwksUri: process.env.AUTH0_JWKS_URI || (process.env.AUTH0_ISSUER_URL ? `${process.env.AUTH0_ISSUER_URL}/.well-known/jwks.json` : 'https://dev-v2f2p008x3dr74ww.us.auth0.com/.well-known/jwks.json'),
+      audience: process.env.AUTH0_AUDIENCE || 'https://api.cloudtolocalllm.online',
     },
     cache: {
       validationDuration: parseInt(process.env.AUTH_CACHE_DURATION || '300000'), // 5 minutes
@@ -95,8 +95,8 @@ export function getDefaultAuthConfig(): AuthConfig {
       url: 'https://your-project.supabase.co',
     },
     auth0: {
-      jwksUri: 'https://cloudtolocalllm.auth0.com/.well-known/jwks.json',
-      audience: 'https://api.cloudtolocalllm.com',
+      jwksUri: 'https://dev-v2f2p008x3dr74ww.us.auth0.com/.well-known/jwks.json',
+      audience: 'https://api.cloudtolocalllm.online',
     },
     cache: {
       validationDuration: 5 * 60 * 1000, // 5 minutes

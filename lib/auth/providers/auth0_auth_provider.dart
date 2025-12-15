@@ -103,8 +103,7 @@ class Auth0AuthProvider implements AuthProvider {
         ),
         _audience = audience ??
             const String.fromEnvironment('AUTH0_AUDIENCE',
-                defaultValue:
-                    'https://dev-v2f2p008x3dr74ww.us.auth0.com/api/v2/');
+                defaultValue: 'https://api.cloudtolocalllm.online');
 
   final StreamController<bool> _authStateController =
       StreamController<bool>.broadcast();

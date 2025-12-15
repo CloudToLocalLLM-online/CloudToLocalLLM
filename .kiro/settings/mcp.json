@@ -28,6 +28,17 @@
         "browser_select_option",
         "browser_tabs",
         "browser_wait_for"
+      ],
+      "autoApprove": [
+        "browser_navigate",
+        "browser_wait_for",
+        "browser_snapshot",
+        "browser_click",
+        "browser_take_screenshot",
+        "browser_evaluate",
+        "browser_close",
+        "browser_network_requests",
+        "browser_console_messages"
       ]
     },
     "dockerhub": {
@@ -153,6 +164,27 @@
         "list_console_messages",
         "list_network_requests",
         "evaluate_script"
+      ]
+    },
+    "auth0": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@auth0/auth0-mcp-server@latest",
+        "run"
+      ],
+      "disabled": false,
+      "autoApprove": [
+        "auth0_list_applications",
+        "auth0_get_application",
+        "auth0_list_apis",
+        "auth0_get_api",
+        "auth0_list_users",
+        "auth0_get_user",
+        "auth0_list_resource_servers",
+        "auth0_get_resource_server",
+        "auth0_update_resource_server",
+        "auth0_update_application"
       ]
     }
   }

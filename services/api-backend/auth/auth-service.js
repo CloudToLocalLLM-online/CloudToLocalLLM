@@ -17,8 +17,8 @@ import { DatabaseMigratorPG } from '../database/migrate-pg.js';
 export class AuthService {
   constructor(config) {
     this.config = {
-      AUTH0_JWKS_URI: process.env.AUTH0_JWKS_URI || 'https://cloudtolocalllm.auth0.com/.well-known/jwks.json',
-      AUTH0_AUDIENCE: process.env.AUTH0_AUDIENCE || 'https://api.cloudtolocalllm.com',
+      AUTH0_JWKS_URI: process.env.AUTH0_JWKS_URI || 'https://dev-v2f2p008x3dr74ww.us.auth0.com/.well-known/jwks.json',
+      AUTH0_AUDIENCE: process.env.AUTH0_AUDIENCE || 'https://api.cloudtolocalllm.online',
       SESSION_TIMEOUT: parseInt(process.env.SESSION_TIMEOUT) || 3600000, // 1 hour
       MAX_SESSIONS_PER_USER: parseInt(process.env.MAX_SESSIONS_PER_USER) || 5,
       ...config,
