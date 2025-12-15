@@ -873,9 +873,114 @@ jobs:
           echo "🚧 Mobile build not yet implemented"
           echo "This job will be expanded when mobile deployment is needed"
 
+  # Create GitHub Release with Artifacts
+  create_release:
+    needs: [ai_analysis, deploy_infrastructure, build_desktop, build_mobile]
+    if: |
+      always() && 
+      needs.ai_analysis.outputs.should_deploy == 'true' && 
+      (needs.deploy_infrastructure.result == 'success' || needs.build_desktop.result == 'success')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Download Desktop Artifacts
+        if: needs.build_desktop.result == 'success'
+        uses: actions/download-artifact@v4
+        with:
+          name: windows-desktop-${{ needs.ai_analysis.outputs.new_version }}
+          path: ./release-artifacts/
+      
+      - name: Prepare Release Assets
+        env:
+          NEW_VERSION: ${{ needs.ai_analysis.outputs.new_version }}
+        run: |
+          echo "Preparing release assets for version $NEW_VERSION"
+          
+          # Create release directory
+          mkdir -p release-assets
+          
+          # Copy desktop artifacts if they exist
+          if [ -d "./release-artifacts" ]; then
+            cp -r ./release-artifacts/* ./release-assets/
+            echo "✅ Desktop artifacts prepared"
+            ls -la ./release-assets/
+          fi
+          
+          # Generate release notes
+          cat > release-notes.md << EOF
+          # CloudToLocalLLM v$NEW_VERSION
+          
+          ## What's New
+          
+          This release includes the latest updates and improvements to CloudToLocalLLM.
+          
+          ## Downloads
+          
+          - **Windows Desktop**: Download the portable zip package below
+          - **Web Application**: Available at [app.cloudtolocalllm.online](https://app.cloudtolocalllm.online)
+          
+          ## Installation
+          
+          ### Windows Desktop
+          1. Download \`cloudtolocalllm-$NEW_VERSION-portable.zip\`
+          2. Extract to your desired location
+          3. Run \`cloudtolocalllm.exe\`
+          
+          ## Verification
+          
+          All packages include SHA256 checksums for verification.
+          
+          ---
+          
+          **Full Changelog**: https://github.com/imrightguy/CloudToLocalLLM/compare/v4.3.0...v$NEW_VERSION
+          EOF
+          
+          echo "✅ Release notes generated"
+
+      - name: Create GitHub Release
+        env:
+          NEW_VERSION: ${{ needs.ai_analysis.outputs.new_version }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "Creating GitHub release for version $NEW_VERSION"
+          
+          # Create the release
+          gh release create "v$NEW_VERSION" \
+            --title "CloudToLocalLLM v$NEW_VERSION" \
+            --notes-file release-notes.md \
+            --draft=false \
+            --prerelease=false
+          
+          echo "✅ GitHub release v$NEW_VERSION created"
+
+      - name: Upload Release Assets
+        if: success()
+        env:
+          NEW_VERSION: ${{ needs.ai_analysis.outputs.new_version }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "Uploading release assets..."
+          
+          # Upload all files in release-assets directory
+          if [ -d "./release-assets" ] && [ "$(ls -A ./release-assets)" ]; then
+            for file in ./release-assets/*; do
+              if [ -f "$file" ]; then
+                echo "Uploading $(basename "$file")..."
+                gh release upload "v$NEW_VERSION" "$file"
+              fi
+            done
+            echo "✅ All release assets uploaded"
+          else
+            echo "ℹ️ No release assets to upload"
+          fi
+
   # Deployment Summary
   deployment_summary:
-    needs: [ai_analysis, deploy_infrastructure, build_desktop, build_mobile]
+    needs: [ai_analysis, deploy_infrastructure, build_desktop, build_mobile, create_release]
     if: always() && needs.ai_analysis.outputs.should_deploy == 'true'
     runs-on: ubuntu-latest
     
@@ -890,6 +995,7 @@ jobs:
           CLOUD_STATUS: ${{ needs.deploy_infrastructure.result }}
           DESKTOP_STATUS: ${{ needs.build_desktop.result }}
           MOBILE_STATUS: ${{ needs.build_mobile.result }}
+          RELEASE_STATUS: ${{ needs.create_release.result }}
         run: |
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >> $GITHUB_STEP_SUMMARY
           echo "# Unified Deployment Summary" >> $GITHUB_STEP_SUMMARY
@@ -927,6 +1033,18 @@ jobs:
             echo "📱 **Mobile:** 🚧 Not yet implemented" >> $GITHUB_STEP_SUMMARY
           else
             echo "📱 **Mobile:** ⏭️ Skipped (no changes detected)" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Release status
+          if [ "$RELEASE_STATUS" = "success" ]; then
+            echo "🚀 **GitHub Release:** ✅ Created successfully" >> $GITHUB_STEP_SUMMARY
+            echo "   - Release: https://github.com/imrightguy/CloudToLocalLLM/releases/tag/v$NEW_VERSION" >> $GITHUB_STEP_SUMMARY
+          elif [ "$RELEASE_STATUS" = "failure" ]; then
+            echo "🚀 **GitHub Release:** ❌ Creation failed" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "🚀 **GitHub Release:** ⏭️ Skipped (no successful builds)" >> $GITHUB_STEP_SUMMARY
           fi
           
           echo "" >> $GITHUB_STEP_SUMMARY
