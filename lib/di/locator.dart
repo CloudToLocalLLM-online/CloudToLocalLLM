@@ -114,9 +114,10 @@ Future<void> setupCoreServices() async {
     rethrow;
   }
 
+  late final AuthService authService;
   try {
     print('[Locator] Registering AuthService...');
-    final authService = AuthService(authProvider);
+    authService = AuthService(authProvider);
     serviceLocator.registerSingleton<AuthService>(authService);
     debugPrint('[Locator] ✓ AuthService registered successfully');
   } catch (e, stack) {
