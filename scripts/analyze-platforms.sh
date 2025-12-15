@@ -38,29 +38,49 @@ fi
 COMMITS_ESCAPED=$(echo "$COMMITS" | sed 's/"/\"/g' | tr '\n' ' ')
 FILES_ESCAPED=$(echo "$CHANGED_FILES" | sed 's/"/\"/g' | tr '\n' ' ')
 
+# Get current semantic version (without build metadata)
+SEMANTIC_VERSION=$(echo "$CURRENT_VERSION" | cut -d'+' -f1)
+BUILD_DATE=$(date +%Y%m%d%H%M)
+
 PROMPT="Current version: $CURRENT_VERSION
+Semantic version: $SEMANTIC_VERSION
 Recent commits: $COMMITS_ESCAPED
 Changed files: $FILES_ESCAPED
 
-Determine semantic version bump and platform needs. Output only valid JSON:
+Analyze changes and determine deployment needs. Output only valid JSON:
 
 {
-  \"bump_type\": \"patch\" | \"minor\" | \"major\",
-  \"new_version\": \"x.y.z\",
+  \"bump_type\": \"none\" | \"patch\" | \"minor\" | \"major\",
+  \"semantic_version\": \"x.y.z\",
   \"needs_cloud\": boolean,
   \"needs_desktop\": boolean,
   \"needs_mobile\": boolean,
   \"reasoning\": \"brief explanation\"
 }
 
-Rules: 
-- Breaking=major, Features=minor, Fixes/Chores=patch
-- New version must be higher than $CURRENT_VERSION
-- needs_cloud=true if ANY of these files changed: web/, lib/, services/, k8s/, config/, .github/workflows/deploy-aks.yml, auth0-bridge.js, router.dart, auth providers, or any web-related functionality
-- needs_desktop=true if ANY of these changed: windows/, linux/, desktop-specific code, or Flutter desktop dependencies
-- needs_mobile=true if ANY of these changed: android/, ios/, mobile-specific code, or Flutter mobile dependencies
-- Auth0, authentication, login, web interface changes ALWAYS need cloud deployment
-- When in doubt about web changes, set needs_cloud=true"
+SMART DEPLOYMENT RULES:
+1. CORE CHANGES (trigger ALL platforms):
+   - main.dart or immediate dependencies
+   - lib/models/, lib/services/ (core business logic)
+   - pubspec.yaml (dependency changes)
+   - Authentication core (auth_service.dart, auth providers)
+
+2. PLATFORM-SPECIFIC CHANGES (trigger only that platform):
+   - web/ folder → only needs_cloud=true
+   - windows/, linux/ folders → only needs_desktop=true  
+   - android/, ios/ folders → only needs_mobile=true
+   - Platform-specific conditionally loaded code
+
+3. VERSION BUMPING:
+   - For debugging/fixes: bump_type=\"none\", semantic_version=\"$SEMANTIC_VERSION\"
+   - For real releases: Breaking=major, Features=minor, Bug fixes=patch
+   - If commits contain \"debug\", \"fix\", \"temp\", \"wip\" → bump_type=\"none\"
+
+4. DEPLOYMENT DECISIONS:
+   - needs_cloud=true for: web/, services/, k8s/, auth changes, API changes
+   - needs_desktop=true for: windows/, linux/, desktop-specific code
+   - needs_mobile=true for: android/, ios/, mobile-specific code
+   - Core changes trigger ALL platforms"
 
 echo "DEBUG: Kilocode prompt includes version requirement: 'The new version MUST be higher than $CURRENT_VERSION'"
 
@@ -111,20 +131,23 @@ echo "$JSON_RESPONSE"
 echo ""
 
         # Parse without fallback to empty, so we capture 'false' correctly
-        NEW_VERSION=$(echo "$JSON_RESPONSE" | jq -r '.new_version')
+        SEMANTIC_VERSION_NEW=$(echo "$JSON_RESPONSE" | jq -r '.semantic_version')
         BUMP_TYPE=$(echo "$JSON_RESPONSE" | jq -r '.bump_type')
         NEEDS_CLOUD=$(echo "$JSON_RESPONSE" | jq -r '.needs_cloud')
         NEEDS_DESKTOP=$(echo "$JSON_RESPONSE" | jq -r '.needs_desktop')
         NEEDS_MOBILE=$(echo "$JSON_RESPONSE" | jq -r '.needs_mobile')
         REASONING=$(echo "$JSON_RESPONSE" | jq -r '.reasoning')
 
+        # Build final version with build metadata
+        NEW_VERSION="${SEMANTIC_VERSION_NEW}+${BUILD_DATE}"
+
         # Strict validation - Fail if mandatory fields are null or empty
         # Note: 'false' is a valid value for NEEDS_CLOUD, so we check for 'null' or empty
-        if [ "$NEW_VERSION" == "null" ] || [ -z "$NEW_VERSION" ] || [ "$NEEDS_CLOUD" == "null" ] || [ -z "$NEEDS_CLOUD" ]; then
+        if [ "$SEMANTIC_VERSION_NEW" == "null" ] || [ -z "$SEMANTIC_VERSION_NEW" ] || [ "$NEEDS_CLOUD" == "null" ] || [ -z "$NEEDS_CLOUD" ]; then
             echo "❌ ERROR: Failed to parse Kilocode response"
             echo "Extracted JSON: $JSON_RESPONSE"
             echo "Response (first 500 chars): ${RESPONSE:0:500}"
-            echo "Version bump REQUIRES valid Kilocode analysis"
+            echo "Version analysis REQUIRES valid Kilocode response"
             exit 1
         fi
 
@@ -151,63 +174,73 @@ if ! echo "$NEW_VERSION" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+$'; then
     exit 1
 fi
 
-# Validate version is higher than current version
-echo "DEBUG: Validating version increment: $CURRENT_VERSION → $NEW_VERSION"
+# Validate version logic
+echo "DEBUG: Validating version logic: $CURRENT_VERSION → $NEW_VERSION (bump: $BUMP_TYPE)"
+echo "DEBUG: Semantic versions: $SEMANTIC_VERSION → $SEMANTIC_VERSION_NEW"
 
-# Function to compare semantic versions
-version_compare() {
-    local v1=$1
-    local v2=$2
-
-    # Extract version components using cut (safer than IFS manipulation)
-    local MAJOR1=$(echo "$v1" | cut -d. -f1)
-    local MINOR1=$(echo "$v1" | cut -d. -f2)
-    local PATCH1=$(echo "$v1" | cut -d. -f3)
-    local MAJOR2=$(echo "$v2" | cut -d. -f1)
-    local MINOR2=$(echo "$v2" | cut -d. -f2)
-    local PATCH2=$(echo "$v2" | cut -d. -f3)
-
-    # Compare major version
-    if [ "$MAJOR1" -gt "$MAJOR2" ]; then
-        return 1  # v1 > v2
-    elif [ "$MAJOR1" -lt "$MAJOR2" ]; then
-        return 2  # v1 < v2
+if [ "$BUMP_TYPE" = "none" ]; then
+    if [ "$SEMANTIC_VERSION_NEW" != "$SEMANTIC_VERSION" ]; then
+        echo "❌ ERROR: bump_type='none' but semantic version changed from $SEMANTIC_VERSION to $SEMANTIC_VERSION_NEW"
+        exit 1
     fi
-
-    # Compare minor version
-    if [ "$MINOR1" -gt "$MINOR2" ]; then
-        return 1  # v1 > v2
-    elif [ "$MINOR1" -lt "$MINOR2" ]; then
-        return 2  # v1 < v2
-    fi
-
-    # Compare patch version
-    if [ "$PATCH1" -gt "$PATCH2" ]; then
-        return 1  # v1 > v2
-    elif [ "$PATCH1" -lt "$PATCH2" ]; then
-        return 2  # v1 < v2
-    fi
-
-    return 0  # v1 == v2
-}
-
-set +e
-version_compare "$NEW_VERSION" "$CURRENT_VERSION"
-COMPARE_RESULT=$?
-set -e
-
-if [ $COMPARE_RESULT -eq 2 ]; then
-    echo "❌ ERROR: New version ($NEW_VERSION) is NOT higher than current version ($CURRENT_VERSION)"
-    echo "Kilocode AI violated the requirement: 'The new version MUST be higher than $CURRENT_VERSION'"
-    echo "This indicates the AI prompt needs further refinement or the AI model has limitations"
-    exit 1
-elif [ $COMPARE_RESULT -eq 0 ]; then
-    echo "❌ ERROR: New version ($NEW_VERSION) is the SAME as current version ($CURRENT_VERSION)"
-    echo "Versions must always increase - this is a violation of semantic versioning"
-    exit 1
+    echo "✅ No semantic version bump (debugging/fixes) - keeping $SEMANTIC_VERSION, updating build metadata"
 else
-    echo "✅ Version validation passed: $CURRENT_VERSION → $NEW_VERSION"
+    # Function to compare semantic versions (without build metadata)
+    version_compare() {
+        local v1=$1
+        local v2=$2
+
+        # Extract version components using cut (safer than IFS manipulation)
+        local MAJOR1=$(echo "$v1" | cut -d. -f1)
+        local MINOR1=$(echo "$v1" | cut -d. -f2)
+        local PATCH1=$(echo "$v1" | cut -d. -f3)
+        local MAJOR2=$(echo "$v2" | cut -d. -f1)
+        local MINOR2=$(echo "$v2" | cut -d. -f2)
+        local PATCH2=$(echo "$v2" | cut -d. -f3)
+
+        # Compare major version
+        if [ "$MAJOR1" -gt "$MAJOR2" ]; then
+            return 1  # v1 > v2
+        elif [ "$MAJOR1" -lt "$MAJOR2" ]; then
+            return 2  # v1 < v2
+        fi
+
+        # Compare minor version
+        if [ "$MINOR1" -gt "$MINOR2" ]; then
+            return 1  # v1 > v2
+        elif [ "$MINOR1" -lt "$MINOR2" ]; then
+            return 2  # v1 < v2
+        fi
+
+        # Compare patch version
+        if [ "$PATCH1" -gt "$PATCH2" ]; then
+            return 1  # v1 > v2
+        elif [ "$PATCH1" -lt "$PATCH2" ]; then
+            return 2  # v1 < v2
+        fi
+
+        return 0  # v1 == v2
+    }
+
+    set +e
+    version_compare "$SEMANTIC_VERSION_NEW" "$SEMANTIC_VERSION"
+    COMPARE_RESULT=$?
+    set -e
+
+    if [ $COMPARE_RESULT -eq 2 ]; then
+        echo "❌ ERROR: New semantic version ($SEMANTIC_VERSION_NEW) is NOT higher than current ($SEMANTIC_VERSION)"
+        echo "For version bumps, new semantic version must be higher than current"
+        exit 1
+    elif [ $COMPARE_RESULT -eq 0 ]; then
+        echo "❌ ERROR: New semantic version ($SEMANTIC_VERSION_NEW) is the SAME as current ($SEMANTIC_VERSION)"
+        echo "Use bump_type='none' for no semantic version change, or increment for releases"
+        exit 1
+    else
+        echo "✅ Semantic version validation passed: $SEMANTIC_VERSION → $SEMANTIC_VERSION_NEW"
+    fi
 fi
+
+echo "✅ Final version: $NEW_VERSION (semantic: $SEMANTIC_VERSION_NEW, build: $BUILD_DATE)"
 
 echo ""
 echo "✅ Final Decision:"

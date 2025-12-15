@@ -6,18 +6,18 @@ import '../models/message.dart';
 import '../config/app_config.dart';
 import 'auth_service.dart';
 
+// Conditional imports for desktop-only dependencies - NOT loaded on web
+import 'conversation_storage_service_desktop.dart'
+    if (dart.library.html) 'conversation_storage_service_web.dart';
+
 /// Security exception for unauthorized access attempts
 class SecurityException implements Exception {
   final String message;
   SecurityException(this.message);
-  
+
   @override
   String toString() => 'SecurityException: $message';
 }
-
-// Conditional imports for desktop-only dependencies - NOT loaded on web
-import 'conversation_storage_service_desktop.dart'
-    if (dart.library.html) 'conversation_storage_service_web.dart';
 
 /// Conversation storage service with platform-specific storage
 ///
@@ -493,11 +493,10 @@ class ConversationStorageService {
           where: 'id = ? AND user_id = ?',
           whereArgs: [conversationId, currentUserId],
         );
-        
+
         if (conversationCheck.isEmpty) {
           throw SecurityException(
-            'Access denied: Cannot delete conversation that does not belong to current user'
-          );
+              'Access denied: Cannot delete conversation that does not belong to current user');
         }
 
         // Delete messages first (foreign key constraint) - filtered by user ID
@@ -554,7 +553,7 @@ class ConversationStorageService {
           where: 'user_id = ?',
           whereArgs: [currentUserId],
         );
-        
+
         // Delete only conversations for current user
         await txn.delete(
           _conversationsTable,
@@ -563,7 +562,8 @@ class ConversationStorageService {
         );
       });
 
-      debugPrint('🔒 [ConversationStorage] Cleared all conversations for user: $currentUserId');
+      debugPrint(
+          '🔒 [ConversationStorage] Cleared all conversations for user: $currentUserId');
     } catch (e) {
       debugPrint('❌ [ConversationStorage] Error clearing conversations: $e');
       rethrow;
@@ -878,13 +878,18 @@ class ConversationStorageService {
     }
 
     try {
-      // Get user info from AuthService
-      final userInfo = await _authService!.getUserInfo();
-      final userId = userInfo?['sub'] as String?;
-
-      if (userId == null) {
+      // Get current user from AuthService
+      final currentUser = _authService!.currentUser;
+      if (currentUser == null) {
         debugPrint(
-            '⚠️ [ConversationStorage] No user ID available from AuthService');
+            '⚠️ [ConversationStorage] No current user available from AuthService');
+        return null;
+      }
+
+      final userId = currentUser.id;
+      if (userId.isEmpty) {
+        debugPrint(
+            '⚠️ [ConversationStorage] User ID is empty from AuthService');
         return null;
       }
 
