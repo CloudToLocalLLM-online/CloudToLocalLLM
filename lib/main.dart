@@ -456,14 +456,17 @@ Future<void> _handleCommandLineArgs(List<String> args) async {
     print('[Main] Found OAuth callback URL: $callbackUrl');
 
     // Try to send the callback URL to the existing instance
-    // For now, we'll use a simple file-based approach
-    try {
-      final tempDir = Directory.systemTemp;
-      final callbackFile = File('${tempDir.path}/cloudtolocalllm_callback.txt');
-      await callbackFile.writeAsString(callbackUrl);
-      print('[Main] Wrote callback URL to temp file: ${callbackFile.path}');
-    } catch (e) {
-      print('[Main] Error writing callback file: $e');
+    // For now, we'll use a simple file-based approach (desktop only)
+    if (!kIsWeb) {
+      try {
+        final tempDir = Directory.systemTemp;
+        final callbackFile =
+            File('${tempDir.path}/cloudtolocalllm_callback.txt');
+        await callbackFile.writeAsString(callbackUrl);
+        print('[Main] Wrote callback URL to temp file: ${callbackFile.path}');
+      } catch (e) {
+        print('[Main] Error writing callback file: $e');
+      }
     }
   }
 

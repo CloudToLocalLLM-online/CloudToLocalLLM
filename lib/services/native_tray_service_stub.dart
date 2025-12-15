@@ -19,7 +19,7 @@ class NativeTrayService with TrayListener {
   bool get isSupported => _isSupported;
 
   Future<bool> initialize({
-    required ConnectionManagerService connectionManager,
+    ConnectionManagerService? connectionManager,
     required LocalOllamaConnectionService localOllama,
     void Function()? onShowWindow,
     void Function()? onHideWindow,
@@ -30,6 +30,10 @@ class NativeTrayService with TrayListener {
     _isSupported = false;
     _isInitialized = false;
     return false;
+  }
+
+  void updateConnectionManager(ConnectionManagerService connectionManager) {
+    // Stub - no-op on web
   }
 
   void dispose() {}
