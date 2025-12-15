@@ -727,10 +727,10 @@ jobs:
           chmod +x scripts/cloudflare-cache-purge.sh
           ./scripts/cloudflare-cache-purge.sh
 
-  # Desktop Build (conditional)
+  # Desktop Build (conditional) - TEMPORARILY DISABLED DUE TO FLUTTER WINDOWS BUILD ISSUES
   build_desktop:
     needs: ai_analysis
-    if: ${{ needs.ai_analysis.outputs.should_deploy == 'true' && needs.ai_analysis.outputs.needs_desktop == 'true' }}
+    if: false  # Disabled until Flutter Windows build issues are resolved
     runs-on: windows-latest
     
     steps:
