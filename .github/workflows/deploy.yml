@@ -541,7 +541,7 @@ jobs:
       - name: Deploy Manifests
         env:
           NEEDS_CLOUD: ${{ needs.ai_analysis.outputs.needs_cloud }}
-          APP_VERSION: ${{ needs.ai_analysis.outputs.new_version }}
+          APP_VERSION: ${{ needs.ai_analysis.outputs.docker_version }}
           COMMIT_SHA: ${{ github.sha }}
         run: |
           set -e
