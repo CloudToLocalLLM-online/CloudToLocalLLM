@@ -71,10 +71,12 @@ SMART DEPLOYMENT RULES:
    - android/, ios/ folders → only needs_mobile=true
    - Platform-specific conditionally loaded code
 
-3. VERSION BUMPING:
-   - For debugging/fixes: bump_type=\"none\", semantic_version=\"$SEMANTIC_VERSION\"
-   - For real releases: Breaking=major, Features=minor, Bug fixes=patch
-   - If commits contain \"debug\", \"fix\", \"temp\", \"wip\" → bump_type=\"none\"
+3. VERSION BUMPING (CONSERVATIVE - USER-FACING FEATURES ONLY):
+   - **DEFAULT**: bump_type=\"none\", semantic_version=\"$SEMANTIC_VERSION\"
+   - **PATCH**: Only for user-visible bug fixes (UI fixes, crash fixes)
+   - **MINOR**: Only for new user-facing features (new UI, new functionality)
+   - **MAJOR**: Only for breaking changes to user experience
+   - **NEVER BUMP FOR**: Internal refactoring, CI/CD changes, build fixes, security patches, performance improvements, code cleanup, debugging
 
 4. DEPLOYMENT DECISIONS:
    - needs_cloud=true for: web/, services/, k8s/, auth changes, API changes
