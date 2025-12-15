@@ -800,58 +800,46 @@ jobs:
           }
           Write-Host "======================================" -ForegroundColor Green
 
-      - name: Create Distribution Package
-        timeout-minutes: 5
+      - name: Create Distribution Package with Installer
+        timeout-minutes: 10
         run: |
-          Write-Host "=== Creating Distribution Package ===" -ForegroundColor Green
+          Write-Host "=== Creating Complete Release Assets ===" -ForegroundColor Green
           
-          # Create dist directory
-          if (-not (Test-Path "dist")) { 
-            New-Item -ItemType Directory -Path "dist" 
-          }
+          # Use the comprehensive build script that creates both ZIP and installer
+          $buildScript = "scripts/powershell/Build-GitHubReleaseAssets.ps1"
           
-          # Verify build output exists
-          if (-not (Test-Path "build/windows/x64/runner/Release")) {
-            Write-Host "ERROR: Build output not found for packaging" -ForegroundColor Red
+          if (-not (Test-Path $buildScript)) {
+            Write-Host "ERROR: Build script not found: $buildScript" -ForegroundColor Red
             exit 1
           }
           
-          # Copy built Windows app to dist
-          Copy-Item -Path "build/windows/x64/runner/Release" -Destination "dist/windows-release" -Recurse -Force
+          Write-Host "Running comprehensive release assets builder..." -ForegroundColor Green
           
-          # Get version from pubspec.yaml
-          $version = "${{ needs.ai_analysis.outputs.new_version }}"
-          if (-not $version) {
-            $version = (Get-Content "pubspec.yaml" | Select-String "version:" | ForEach-Object { 
-              $_.ToString().Split(":")[1].Trim().Split("+")[0] 
-            })
+          # Run the script with appropriate parameters
+          try {
+            & $buildScript -SkipBuild -InstallInnoSetup
+            Write-Host "✅ Release assets created successfully" -ForegroundColor Green
+          } catch {
+            Write-Host "ERROR: Release assets creation failed: $($_.Exception.Message)" -ForegroundColor Red
+            
+            # Fallback: create just the portable ZIP if installer fails
+            Write-Host "Attempting fallback to portable ZIP only..." -ForegroundColor Yellow
+            & $buildScript -SkipBuild -SkipInstaller
           }
           
-          Write-Host "Creating package for version: $version" -ForegroundColor Green
-          
-          # Create portable zip package
-          $zipPath = "dist/cloudtolocalllm-$version-portable.zip"
-          Compress-Archive -Path "dist/windows-release/*" -DestinationPath $zipPath -Force
-          
-          # Verify zip was created
-          if (-not (Test-Path $zipPath)) {
-            Write-Host "ERROR: Failed to create zip package" -ForegroundColor Red
+          # Verify assets were created
+          if (Test-Path "dist/windows") {
+            Write-Host "Created assets:" -ForegroundColor Green
+            Get-ChildItem "dist/windows" | ForEach-Object {
+              $size = if ($_.Length) { "$([math]::Round($_.Length / 1MB, 2)) MB" } else { "N/A" }
+              Write-Host "  • $($_.Name) ($size)" -ForegroundColor Green
+            }
+          } else {
+            Write-Host "ERROR: No assets were created" -ForegroundColor Red
             exit 1
           }
           
-          # Generate SHA256 checksum
-          $hash = Get-FileHash $zipPath -Algorithm SHA256
-          $checksumPath = "$zipPath.sha256"
-          "$($hash.Hash.ToLower())  cloudtolocalllm-$version-portable.zip" | Out-File $checksumPath -Encoding ASCII
-          
-          # Display package information
-          $zipInfo = Get-Item $zipPath
-          Write-Host "✅ Created portable package:" -ForegroundColor Green
-          Write-Host "   File: cloudtolocalllm-$version-portable.zip" -ForegroundColor Green
-          Write-Host "   Size: $([math]::Round($zipInfo.Length / 1MB, 2)) MB" -ForegroundColor Green
-          Write-Host "   SHA256: $($hash.Hash.ToLower())" -ForegroundColor Green
-          
-          Write-Host "===================================" -ForegroundColor Green
+          Write-Host "=========================================" -ForegroundColor Green
 
       - name: Final Resource Check
         if: always()
@@ -866,8 +854,9 @@ jobs:
         with:
           name: windows-desktop-${{ needs.ai_analysis.outputs.new_version }}
           path: |
-            dist/*.zip
-            dist/*.sha256
+            dist/windows/*.zip
+            dist/windows/*.exe
+            dist/windows/*.sha256
 
   # Mobile Build (conditional - placeholder for future)
   build_mobile:
