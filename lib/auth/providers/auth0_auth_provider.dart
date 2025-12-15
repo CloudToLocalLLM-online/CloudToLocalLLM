@@ -7,7 +7,8 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:jwt_decoder/jwt_decoder.dart';
 import '../auth_provider.dart';
 import '../../models/user_model.dart';
-import '../../services/url_scheme_registration_service.dart';
+import '../../services/url_scheme_registration_service.dart'
+    if (dart.library.html) '../../services/url_scheme_registration_service_stub.dart';
 
 /// Error types for authentication failures
 enum AuthErrorType {
@@ -94,7 +95,7 @@ class Auth0AuthProvider implements AuthProvider {
   Future<void> initialize() async {
     try {
       // Register URL scheme for Windows desktop OAuth callbacks
-      if (Platform.isWindows) {
+      if (!kIsWeb && Platform.isWindows) {
         final isRegistered =
             await UrlSchemeRegistrationService.isSchemeRegistered();
         if (!isRegistered) {
