@@ -51,6 +51,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       new_version: ${{ steps.analyze.outputs.new_version }}
+      docker_version: ${{ steps.docker_version.outputs.docker_version }}
       needs_cloud: ${{ steps.decision.outputs.needs_cloud }}
       needs_desktop: ${{ steps.decision.outputs.needs_desktop }}
       needs_mobile: ${{ steps.decision.outputs.needs_mobile }}
@@ -164,6 +165,16 @@ jobs:
           echo "Mobile: ${NEEDS_MOBILE}"
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
+      - name: Create Docker-Safe Version
+        id: docker_version
+        env:
+          NEW_VERSION: "${{ steps.analyze.outputs.new_version }}"
+        run: |
+          # Replace + with - for Docker tag compatibility
+          DOCKER_VERSION=$(echo "$NEW_VERSION" | sed 's/+/-/g')
+          echo "docker_version=$DOCKER_VERSION" >> $GITHUB_OUTPUT
+          echo "Docker-safe version: $DOCKER_VERSION"
+
       - name: Update Version Files
         if: steps.decision.outputs.should_deploy == 'true'
         env:
@@ -261,7 +272,7 @@ jobs:
           file: config/docker/Dockerfile.base
           push: true
           tags: |
-            ${{ needs.setup_acr.outputs.login_server }}/base:${{ needs.ai_analysis.outputs.new_version }}-base
+            ${{ needs.setup_acr.outputs.login_server }}/base:${{ needs.ai_analysis.outputs.docker_version }}-base
             ${{ needs.setup_acr.outputs.login_server }}/base:latest
           cache-from: type=registry,ref=${{ needs.setup_acr.outputs.login_server }}/base:latest
           cache-to: type=inline
@@ -290,7 +301,7 @@ jobs:
           file: config/docker/Dockerfile.postgres
           push: true
           tags: |
-            ${{ needs.setup_acr.outputs.login_server }}/postgres:${{ needs.ai_analysis.outputs.new_version }}-postgres
+            ${{ needs.setup_acr.outputs.login_server }}/postgres:${{ needs.ai_analysis.outputs.docker_version }}-postgres
             ${{ needs.setup_acr.outputs.login_server }}/postgres:latest
           build-args: |
             BASE_REGISTRY=${{ needs.setup_acr.outputs.login_server }}
@@ -352,7 +363,7 @@ jobs:
           file: web/Dockerfile
           push: true
           tags: |
-            ${{ needs.setup_acr.outputs.login_server }}/web:${{ needs.ai_analysis.outputs.new_version }}
+            ${{ needs.setup_acr.outputs.login_server }}/web:${{ needs.ai_analysis.outputs.docker_version }}
             ${{ needs.setup_acr.outputs.login_server }}/web:latest
           build-args: |
             BASE_REGISTRY=${{ needs.setup_acr.outputs.login_server }}
@@ -383,7 +394,7 @@ jobs:
           file: services/api-backend/Dockerfile
           push: true
           tags: |
-            ${{ needs.setup_acr.outputs.login_server }}/api-backend:${{ needs.ai_analysis.outputs.new_version }}-api
+            ${{ needs.setup_acr.outputs.login_server }}/api-backend:${{ needs.ai_analysis.outputs.docker_version }}-api
             ${{ needs.setup_acr.outputs.login_server }}/api-backend:latest
           build-args: |
             BASE_REGISTRY=${{ needs.setup_acr.outputs.login_server }}
@@ -414,7 +425,7 @@ jobs:
           file: services/streaming-proxy/Dockerfile
           push: true
           tags: |
-            ${{ needs.setup_acr.outputs.login_server }}/streaming-proxy:${{ needs.ai_analysis.outputs.new_version }}-proxy
+            ${{ needs.setup_acr.outputs.login_server }}/streaming-proxy:${{ needs.ai_analysis.outputs.docker_version }}-proxy
             ${{ needs.setup_acr.outputs.login_server }}/streaming-proxy:latest
           build-args: |
             BASE_REGISTRY=${{ needs.setup_acr.outputs.login_server }}
