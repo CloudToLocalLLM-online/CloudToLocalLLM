@@ -742,9 +742,13 @@ jobs:
           cache: true
 
       - name: Build Windows Desktop
+        timeout-minutes: 20
         run: |
           flutter pub get
-          flutter build windows --release
+          echo "Configuring Windows build environment..."
+          flutter config --enable-windows-desktop
+          echo "Starting Windows build with optimizations..."
+          flutter build windows --release --no-tree-shake-icons --dart-define=FLUTTER_WEB_USE_SKIA=false
 
       - name: Create Windows Installer
         run: |
