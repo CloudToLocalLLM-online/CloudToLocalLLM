@@ -51,9 +51,9 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       new_version: ${{ steps.analyze.outputs.new_version }}
-      needs_cloud: ${{ steps.analyze.outputs.needs_cloud }}
-      needs_desktop: ${{ steps.analyze.outputs.needs_desktop }}
-      needs_mobile: ${{ steps.analyze.outputs.needs_mobile }}
+      needs_cloud: ${{ steps.decision.outputs.needs_cloud }}
+      needs_desktop: ${{ steps.decision.outputs.needs_desktop }}
+      needs_mobile: ${{ steps.decision.outputs.needs_mobile }}
       reasoning: ${{ steps.analyze.outputs.reasoning }}
       should_deploy: ${{ steps.decision.outputs.should_deploy }}
     
@@ -143,6 +143,11 @@ jobs:
           
           echo "should_deploy=$SHOULD_DEPLOY" >> $GITHUB_OUTPUT
           
+          # Always output final deployment decisions (after any overrides)
+          echo "needs_cloud=${NEEDS_CLOUD}" >> $GITHUB_OUTPUT
+          echo "needs_desktop=${NEEDS_DESKTOP}" >> $GITHUB_OUTPUT
+          echo "needs_mobile=${NEEDS_MOBILE}" >> $GITHUB_OUTPUT
+          
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
           echo "Deployment Decision Summary"
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
@@ -170,6 +175,16 @@ jobs:
           git add -A
           if ! git diff --cached --quiet; then
             git commit -m "chore: bump version to $NEW_VERSION [skip ci]"
+            
+            # Pull latest changes and rebase to handle concurrent updates
+            echo "Pulling latest changes before pushing..."
+            git pull --rebase origin main || {
+              echo "Rebase failed, attempting merge strategy..."
+              git rebase --abort 2>/dev/null || true
+              git pull origin main --no-rebase
+            }
+            
+            # Push changes
             git push origin main
             
             # Create version tag
