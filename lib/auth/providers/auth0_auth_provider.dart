@@ -278,33 +278,23 @@ class Auth0AuthProvider implements AuthProvider {
     try {
       debugPrint('[Auth0AuthProvider] Refreshing tokens...');
 
-      final result = await _appAuth.token(TokenRequest(
-        _clientId,
-        _redirectUrl,
+      // Use Auth0 SDK to refresh tokens
+      final credentials = await _auth0.api.renewCredentials(
         refreshToken: refreshToken,
-        serviceConfiguration: AuthorizationServiceConfiguration(
-          authorizationEndpoint: _authorizationEndpoint,
-          tokenEndpoint: _tokenEndpoint,
-          endSessionEndpoint: _endSessionEndpoint,
-        ),
-        scopes: ['openid', 'profile', 'email', 'offline_access'],
-        additionalParameters: {
-          'audience': _audience,
-        },
-      ));
+      );
 
       debugPrint('[Auth0AuthProvider] Token refresh successful');
 
       // Store new tokens
       await _secureStorage.write(
-          key: 'access_token', value: result.accessToken);
-      if (result.idToken?.isNotEmpty == true) {
-        await _secureStorage.write(key: 'id_token', value: result.idToken);
-        _currentUser = _idTokenToUser(result.idToken!);
+          key: 'access_token', value: credentials.accessToken);
+      if (credentials.idToken?.isNotEmpty == true) {
+        await _secureStorage.write(key: 'id_token', value: credentials.idToken);
+        _currentUser = _idTokenToUser(credentials.idToken!);
       }
-      if (result.refreshToken?.isNotEmpty == true) {
+      if (credentials.refreshToken?.isNotEmpty == true) {
         await _secureStorage.write(
-            key: 'refresh_token', value: result.refreshToken);
+            key: 'refresh_token', value: credentials.refreshToken);
       }
 
       _authStateController.add(true);
