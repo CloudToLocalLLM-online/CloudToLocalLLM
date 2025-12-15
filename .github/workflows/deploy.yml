@@ -748,15 +748,32 @@ jobs:
 
       - name: Create Windows Installer
         run: |
-          # Use existing installer creation logic
-          pwsh scripts/powershell/Deploy-CloudToLocalLLM.ps1 -BuildOnly
+          # Simple build without the complex deployment script
+          if (-not (Test-Path "dist")) { New-Item -ItemType Directory -Path "dist" }
+          
+          # Copy built Windows app to dist
+          if (Test-Path "build/windows/x64/runner/Release") {
+            Copy-Item -Path "build/windows/x64/runner/Release" -Destination "dist/windows-release" -Recurse -Force
+            
+            # Create a simple zip package
+            $version = (Get-Content "pubspec.yaml" | Select-String "version:" | ForEach-Object { $_.ToString().Split(":")[1].Trim().Split("+")[0] })
+            Compress-Archive -Path "dist/windows-release/*" -DestinationPath "dist/cloudtolocalllm-$version-portable.zip" -Force
+            
+            # Generate SHA256 checksum
+            $hash = Get-FileHash "dist/cloudtolocalllm-$version-portable.zip" -Algorithm SHA256
+            "$($hash.Hash.ToLower())  cloudtolocalllm-$version-portable.zip" | Out-File "dist/cloudtolocalllm-$version-portable.zip.sha256" -Encoding ASCII
+            
+            Write-Host "✓ Created portable package: cloudtolocalllm-$version-portable.zip"
+          } else {
+            Write-Host "ERROR: Windows build output not found" -ForegroundColor Red
+            exit 1
+          }
 
       - name: Upload Desktop Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: windows-desktop-${{ needs.ai_analysis.outputs.new_version }}
           path: |
-            dist/*.exe
             dist/*.zip
             dist/*.sha256
 
