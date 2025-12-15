@@ -14,6 +14,7 @@ import '../services/window_manager_service.dart'
 import '../utils/logger.dart';
 
 /// Ensures the native tray is configured once all required providers exist.
+/// Enhanced with improved error handling and resource monitoring.
 class TrayInitializer extends StatefulWidget {
   const TrayInitializer({
     required this.child,
