@@ -57,19 +57,26 @@ export class HealthCheckService {
         };
       }
 
-      // Perform a simple health check
-      const validation = await this.dependencies.database.validateSchema();
+      // Perform a simple ping (lightweight check) instead of full schema validation
+      // Schema validation is too heavy for frequent liveness probes
+      try {
+        if (this.dependencies.database.pool) {
+          // Postgres
+          await this.dependencies.database.pool.query('SELECT 1');
+        } else if (this.dependencies.database.db) {
+          // SQLite
+          await this.dependencies.database.db.get('SELECT 1');
+        } else {
+          throw new Error('Database connection not initialized');
+        }
 
-      return {
-        status: validation.allValid ? 'healthy' : 'degraded',
-        message: validation.allValid
-          ? 'Database is healthy'
-          : 'Database schema validation failed',
-        details: {
-          allTablesValid: validation.allValid,
-          validationResults: validation.results,
-        },
-      };
+        return {
+          status: 'healthy',
+          message: 'Database is healthy',
+        };
+      } catch (dbError) {
+        throw dbError;
+      }
     } catch (error) {
       this.logger.error('Database health check failed:', error);
       return {

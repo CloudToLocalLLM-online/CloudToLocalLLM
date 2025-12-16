@@ -770,6 +770,13 @@ export class AuthService {
     setInterval(
       async() => {
         try {
+          // Ensure DB is initialized before attempting cleanup
+          if ((process.env.DB_TYPE === 'postgresql' && !this.db.pool) ||
+              (process.env.DB_TYPE !== 'postgresql' && !this.db.db)) {
+            this.logger.warn('Skipping session cleanup - database not connected');
+            return;
+          }
+
           const nowFunc =
             process.env.DB_TYPE === 'postgresql' ? 'NOW()' : 'datetime(\'now\')';
           // Clean up expired sessions
@@ -785,7 +792,10 @@ export class AuthService {
             this.logger.info('Cleaned up expired sessions', { deletedCount });
           }
         } catch (error) {
-          this.logger.error('Session cleanup failed', { error: error.message });
+          this.logger.error('Session cleanup failed', {
+            error: error.message,
+            stack: error.stack
+          });
         }
       },
       15 * 60 * 1000,
