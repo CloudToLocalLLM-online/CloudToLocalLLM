@@ -126,6 +126,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           token: ${{ secrets.PAT_TOKEN || secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
 
       - name: Configure Git
         run: |
@@ -153,6 +154,7 @@ jobs:
           git add k8s/base/deployments/*.yaml
           if ! git diff --cached --quiet; then
             git commit -m "deploy(k8s): update images to $VERSION [skip ci]"
+            git pull --rebase origin main
             git push origin main
           fi
 
@@ -216,4 +218,4 @@ jobs:
             --title "CloudToLocalLLM v${{ inputs.version }}" \
             --notes "Automated release based on: ${{ inputs.reasoning }}" \
             --target main \
-            release-assets/*
+            $(find release-assets -maxdepth 1 -type f)
