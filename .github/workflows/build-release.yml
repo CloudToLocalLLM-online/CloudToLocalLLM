@@ -74,22 +74,35 @@ jobs:
         service: [base, postgres, web, api-backend, streaming-proxy]
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Azure Login
         uses: azure/login@v2
         with:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-      
+
       - name: Docker Login
         run: |
           ACR_USERNAME=$(az acr credential show --name ${{ env.ACR_NAME }} --query username --output tsv)
           ACR_PASSWORD=$(az acr credential show --name ${{ env.ACR_NAME }} --query passwords[0].value --output tsv)
           echo "$ACR_PASSWORD" | docker login "${{ needs.setup_acr.outputs.login_server }}" --username "$ACR_USERNAME" --password-stdin
-      
+
+      - name: Setup Flutter
+        if: matrix.service == 'web'
+        uses: subosito/flutter-action@v2
+        with:
+          channel: "stable"
+          cache: true
+
+      - name: Build Flutter Web
+        if: matrix.service == 'web'
+        run: |
+          flutter pub get
+          flutter build web --release --no-tree-shake-icons
+
       - uses: docker/setup-buildx-action@v3
-      
+
       - name: Build and Push ${{ matrix.service }}
         uses: docker/build-push-action@v5
         with:
@@ -113,7 +126,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           token: ${{ secrets.PAT_TOKEN || secrets.GITHUB_TOKEN }}
-      
+
       - name: Configure Git
         run: |
           git config user.name "github-actions[bot]"
@@ -125,13 +138,13 @@ jobs:
           # Here using sed to update image tags in base deployments
           REGISTRY="${{ needs.setup_acr.outputs.login_server }}"
           VERSION="${{ inputs.docker_version }}"
-          
+
           # Update web
           sed -i "s|image: .*/web:.*|image: $REGISTRY/web:$VERSION|g" k8s/base/deployments/web.yaml
-          
+
           # Update api-backend
           sed -i "s|image: .*/api-backend:.*|image: $REGISTRY/api-backend:$VERSION|g" k8s/base/deployments/api-backend.yaml
-          
+
           # Update streaming-proxy (if it has a deployment)
           # sed -i "s|image: .*/streaming-proxy:.*|image: $REGISTRY/streaming-proxy:$VERSION|g" k8s/base/deployments/streaming-proxy.yaml || true
 
@@ -152,26 +165,26 @@ jobs:
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
           channel: "stable"
           cache: true
-      
+
       - name: Install Dependencies
         run: flutter pub get
-        
+
       - name: Build Windows
         run: |
           flutter build windows --release --verbose --dart-define=FLUTTER_BUILD_NUMBER=${{ github.sha }}
-          
+
       - name: Create Installer
         shell: powershell
         run: |
           # Use existing script
           ./scripts/powershell/Build-GitHubReleaseAssets.ps1 -SkipBuild -InstallInnoSetup -Version "${{ inputs.version }}"
-          
+
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -187,14 +200,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Download Windows Artifacts
         if: needs.desktop_build.result == 'success'
         uses: actions/download-artifact@v4
         with:
           name: windows-desktop-${{ inputs.version }}
           path: release-assets/
-          
+
       - name: Create GitHub Release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
