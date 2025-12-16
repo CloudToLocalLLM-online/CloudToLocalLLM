@@ -144,7 +144,7 @@ jobs:
           sed -i "s|image: .*/web:.*|image: $REGISTRY/web:$VERSION|g" k8s/base/deployments/web.yaml
 
           # Update api-backend
-          sed -i "s|image: .*/api-backend:.*|image: $REGISTRY/api-backend:$VERSION|g" k8s/base/deployments/api-backend.yaml
+          sed -i "s|image: .*/api-backend:.*|image: $REGISTRY/api-backend:$VERSION-api-backend|g" k8s/base/deployments/api-backend.yaml
 
           # Update streaming-proxy (if it has a deployment)
           # sed -i "s|image: .*/streaming-proxy:.*|image: $REGISTRY/streaming-proxy:$VERSION|g" k8s/base/deployments/streaming-proxy.yaml || true

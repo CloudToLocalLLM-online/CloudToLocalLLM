@@ -424,7 +424,7 @@ async function runCommand() {
 
   let migrator;
   // Dynamic import for Postgres migrator to avoid issues if dependency is missing in some envs
-  if (process.env.DB_TYPE === 'postgres') {
+  if (process.env.DB_TYPE === 'postgres' || process.env.DB_TYPE === 'postgresql') {
     const { DatabaseMigratorPG } = await import('./migrate-pg.js');
     migrator = new DatabaseMigratorPG();
   } else {
@@ -436,39 +436,39 @@ async function runCommand() {
     await migrator.createMigrationsTable();
 
     switch (command) {
-    case 'init':
-      await migrator.applyInitialSchema();
-      // Run delta migrations if the migrator supports it
-      if (typeof migrator.migrate === 'function') {
-        console.log('Running delta migrations...');
-        await migrator.migrate();
+      case 'init':
+        await migrator.applyInitialSchema();
+        // Run delta migrations if the migrator supports it
+        if (typeof migrator.migrate === 'function') {
+          console.log('Running delta migrations...');
+          await migrator.migrate();
+        }
+        break;
+
+      case 'validate': {
+        const validation = await migrator.validateSchema();
+        console.log('Validation results:', validation);
+        break;
       }
-      break;
 
-    case 'validate': {
-      const validation = await migrator.validateSchema();
-      console.log('Validation results:', validation);
-      break;
-    }
-
-    case 'stats': {
-      if (typeof migrator.getDatabaseStats === 'function') {
-        const stats = await migrator.getDatabaseStats();
-        console.log('Database statistics:', stats);
-      } else {
-        console.log('Stats not supported for this database type.');
+      case 'stats': {
+        if (typeof migrator.getDatabaseStats === 'function') {
+          const stats = await migrator.getDatabaseStats();
+          console.log('Database statistics:', stats);
+        } else {
+          console.log('Stats not supported for this database type.');
+        }
+        break;
       }
-      break;
-    }
 
-    case 'status': {
-      const migrations = await migrator.getAppliedMigrations();
-      console.log('Applied migrations:', migrations);
-      break;
-    }
+      case 'status': {
+        const migrations = await migrator.getAppliedMigrations();
+        console.log('Applied migrations:', migrations);
+        break;
+      }
 
-    default:
-      console.log('Usage: node migrate.js [init|validate|stats|status]');
+      default:
+        console.log('Usage: node migrate.js [init|validate|stats|status]');
     }
   } catch (error) {
     console.error('Migration failed:', error.message);
