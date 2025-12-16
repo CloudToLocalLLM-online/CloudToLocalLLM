@@ -11,7 +11,11 @@ on:
         required: true
         type: string
         description: "Docker-safe version tag"
-      do_cloud:
+      do_managed:
+        required: false
+        type: boolean
+        default: false
+      do_local:
         required: false
         type: boolean
         default: false
@@ -42,7 +46,7 @@ jobs:
   # CLOUD INFRASTRUCTURE
   # ==================================================================================
   setup_acr:
-    if: inputs.do_cloud
+    if: inputs.do_managed || inputs.do_local
     runs-on: ubuntu-latest
     outputs:
       login_server: ${{ steps.acr_setup.outputs.login_server }}
@@ -63,7 +67,7 @@ jobs:
   # Parallel Build Jobs
   build_containers:
     needs: setup_acr
-    if: inputs.do_cloud
+    if: inputs.do_managed || inputs.do_local
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -100,50 +104,44 @@ jobs:
           cache-from: type=registry,ref=${{ needs.setup_acr.outputs.login_server }}/${{ matrix.service }}:latest
           cache-to: type=inline
 
-  deploy_k8s:
+  # Update Kubernetes Manifests (GitOps)
+  update_manifests:
     needs: [setup_acr, build_containers]
-    if: inputs.do_cloud
+    if: inputs.do_managed || inputs.do_local
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Azure Login
-        uses: azure/login@v2
         with:
-          client-id: ${{ secrets.AZURE_CLIENT_ID }}
-          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-      - name: Get AKS Credentials
-        uses: azure/aks-set-context@v3
-        with:
-          resource-group: ${{ env.AZURE_RESOURCE_GROUP }}
-          cluster-name: ${{ env.AZURE_CLUSTER_NAME }}
+          token: ${{ secrets.PAT_TOKEN || secrets.GITHUB_TOKEN }}
       
-      - name: Deploy to AKS
-        env:
-          APP_VERSION: ${{ inputs.docker_version }}
-          # Pass all secrets needed for k8s generation
-          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
-          JWT_SECRET: ${{ secrets.JWT_SECRET }}
-          STRIPE_TEST_SECRET_KEY: ${{ secrets.STRIPE_TEST_SECRET_KEY }}
-          STRIPE_TEST_PUBLISHABLE_KEY: ${{ secrets.STRIPE_TEST_PUBLISHABLE_KEY }}
-          STRIPE_TEST_WEBHOOK_SECRET: ${{ secrets.STRIPE_TEST_WEBHOOK_SECRET }}
-          STRIPE_LIVE_SECRET_KEY: ${{ secrets.STRIPE_LIVE_SECRET_KEY }}
-          STRIPE_LIVE_PUBLISHABLE_KEY: ${{ secrets.STRIPE_LIVE_PUBLISHABLE_KEY }}
-          STRIPE_LIVE_WEBHOOK_SECRET: ${{ secrets.STRIPE_LIVE_WEBHOOK_SECRET }}
-          SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
-          CLOUDFLARE_DNS_TOKEN: ${{ secrets.CLOUDFLARE_DNS_TOKEN }}
-          CLOUDFLARE_TUNNEL_TOKEN: ${{ secrets.CLOUDFLARE_TUNNEL_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          SUPABASE_JWT_SECRET: ${{ secrets.SUPABASE_JWT_SECRET }}
-          AUTH0_DOMAIN: ${{ secrets.AUTH0_DOMAIN }}
-          AUTH0_AUDIENCE: ${{ secrets.AUTH0_AUDIENCE }}
-          AUTH0_CLIENT_ID: ${{ secrets.AUTH0_CLIENT_ID }}
-          AUTH0_CLIENT_SECRET: ${{ secrets.AUTH0_CLIENT_SECRET }}
-          AUTH0_ISSUER_URL: ${{ secrets.AUTH0_ISSUER_URL }}
+      - name: Configure Git
         run: |
-          # (Logic copied from original deploy.yml to generate secrets and apply manifests)
-          # Simplified for brevity in this step - assumes scripts or direct kubectl commands
-          bash k8s/deploy.sh "${{ inputs.docker_version }}" "${{ needs.setup_acr.outputs.login_server }}"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Update Image Tags
+        run: |
+          # Install kustomize if needed or use sed
+          # Here using sed to update image tags in base deployments
+          REGISTRY="${{ needs.setup_acr.outputs.login_server }}"
+          VERSION="${{ inputs.docker_version }}"
+          
+          # Update web
+          sed -i "s|image: .*/web:.*|image: $REGISTRY/web:$VERSION|g" k8s/base/deployments/web.yaml
+          
+          # Update api-backend
+          sed -i "s|image: .*/api-backend:.*|image: $REGISTRY/api-backend:$VERSION|g" k8s/base/deployments/api-backend.yaml
+          
+          # Update streaming-proxy (if it has a deployment)
+          # sed -i "s|image: .*/streaming-proxy:.*|image: $REGISTRY/streaming-proxy:$VERSION|g" k8s/base/deployments/streaming-proxy.yaml || true
+
+      - name: Commit and Push
+        run: |
+          git add k8s/base/deployments/*.yaml
+          if ! git diff --cached --quiet; then
+            git commit -m "deploy(k8s): update images to $VERSION [skip ci]"
+            git push origin main
+          fi
 
   # ==================================================================================
   # DESKTOP BUILD
@@ -184,8 +182,8 @@ jobs:
   # RELEASE
   # ==================================================================================
   create_release:
-    needs: [deploy_k8s, desktop_build]
-    if: always() && (needs.deploy_k8s.result == 'success' || needs.desktop_build.result == 'success')
+    needs: [update_manifests, desktop_build]
+    if: always() && (needs.update_manifests.result == 'success' || needs.desktop_build.result == 'success' || inputs.do_mobile)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

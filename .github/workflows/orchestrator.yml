@@ -37,7 +37,8 @@ jobs:
     outputs:
       new_version: ${{ steps.analyze.outputs.new_version }}
       docker_version: ${{ steps.docker_version.outputs.docker_version }}
-      do_cloud: ${{ steps.decision.outputs.needs_cloud }}
+      do_managed: ${{ steps.decision.outputs.needs_managed }}
+      do_local: ${{ steps.decision.outputs.needs_local }}
       do_desktop: ${{ steps.decision.outputs.needs_desktop }}
       do_mobile: ${{ steps.decision.outputs.needs_mobile }}
       reasoning: ${{ steps.analyze.outputs.reasoning }}
@@ -78,27 +79,30 @@ jobs:
         env:
           FORCE: ${{ inputs.force_deployment }}
           TYPE: ${{ inputs.deployment_type }}
-          AI_CLOUD: ${{ steps.analyze.outputs.needs_cloud }}
+          AI_MANAGED: ${{ steps.analyze.outputs.needs_managed }}
+          AI_LOCAL: ${{ steps.analyze.outputs.needs_local }}
           AI_DESKTOP: ${{ steps.analyze.outputs.needs_desktop }}
           AI_MOBILE: ${{ steps.analyze.outputs.needs_mobile }}
         run: |
           # Default to AI suggestions
-          CLOUD=$AI_CLOUD
+          MANAGED=$AI_MANAGED
+          LOCAL=$AI_LOCAL
           DESKTOP=$AI_DESKTOP
           MOBILE=$AI_MOBILE
           DEPLOY="false"
 
-          if [ "$FORCE" == "true" ] || [ "$CLOUD" == "true" ] || [ "$DESKTOP" == "true" ] || [ "$MOBILE" == "true" ]; then
+          if [ "$FORCE" == "true" ] || [ "$MANAGED" == "true" ] || [ "$LOCAL" == "true" ] || [ "$DESKTOP" == "true" ] || [ "$MOBILE" == "true" ]; then
             DEPLOY="true"
           fi
 
-          # Handle overrides
-          if [ "$TYPE" == "cloud" ]; then CLOUD="true"; DESKTOP="false"; MOBILE="false"; DEPLOY="true"; fi
-          if [ "$TYPE" == "desktop" ]; then CLOUD="false"; DESKTOP="true"; MOBILE="false"; DEPLOY="true"; fi
-          if [ "$TYPE" == "mobile" ]; then CLOUD="false"; DESKTOP="false"; MOBILE="true"; DEPLOY="true"; fi
-          if [ "$TYPE" == "all" ]; then CLOUD="true"; DESKTOP="true"; MOBILE="true"; DEPLOY="true"; fi
+          # Handle overrides (map 'cloud' to managed for now)
+          if [ "$TYPE" == "cloud" ]; then MANAGED="true"; LOCAL="true"; DESKTOP="false"; MOBILE="false"; DEPLOY="true"; fi
+          if [ "$TYPE" == "desktop" ]; then MANAGED="false"; LOCAL="false"; DESKTOP="true"; MOBILE="false"; DEPLOY="true"; fi
+          if [ "$TYPE" == "mobile" ]; then MANAGED="false"; LOCAL="false"; DESKTOP="false"; MOBILE="true"; DEPLOY="true"; fi
+          if [ "$TYPE" == "all" ]; then MANAGED="true"; LOCAL="true"; DESKTOP="true"; MOBILE="true"; DEPLOY="true"; fi
 
-          echo "needs_cloud=$CLOUD" >> $GITHUB_OUTPUT
+          echo "needs_managed=$MANAGED" >> $GITHUB_OUTPUT
+          echo "needs_local=$LOCAL" >> $GITHUB_OUTPUT
           echo "needs_desktop=$DESKTOP" >> $GITHUB_OUTPUT
           echo "needs_mobile=$MOBILE" >> $GITHUB_OUTPUT
           echo "should_deploy=$DEPLOY" >> $GITHUB_OUTPUT
@@ -127,7 +131,8 @@ jobs:
     with:
       version: ${{ needs.ai_analysis.outputs.new_version }}
       docker_version: ${{ needs.ai_analysis.outputs.docker_version }}
-      do_cloud: ${{ needs.ai_analysis.outputs.do_cloud == 'true' }}
+      do_managed: ${{ needs.ai_analysis.outputs.do_managed == 'true' }}
+      do_local: ${{ needs.ai_analysis.outputs.do_local == 'true' }}
       do_desktop: ${{ needs.ai_analysis.outputs.do_desktop == 'true' }}
       do_mobile: ${{ needs.ai_analysis.outputs.do_mobile == 'true' }}
       reasoning: ${{ needs.ai_analysis.outputs.reasoning }}

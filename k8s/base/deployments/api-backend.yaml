@@ -1,20 +1,3 @@
-apiVersion: v1
-kind: Service
-metadata:
-  name: api-backend
-  namespace: cloudtolocalllm
-  labels:
-    app: api-backend
-    environment: development
-spec:
-  type: ClusterIP
-  ports:
-    - port: 8080
-      targetPort: 8080
-      name: http
-  selector:
-    app: api-backend
----
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -46,6 +29,167 @@ spec:
         runAsNonRoot: true
         runAsUser: 1001
         fsGroup: 1001
+      initContainers:
+        - name: db-migrate
+          image: cloudtolocalllm/api-backend:latest
+          imagePullPolicy: Always
+          command: ["npm", "run", "db:migrate"]
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1001
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            readOnlyRootFilesystem: false
+          env:
+            # Configuration from ConfigMap
+            - name: NODE_ENV
+              valueFrom:
+                configMapKeyRef:
+                  name: cloudtolocalllm-config
+                  key: NODE_ENV
+            - name: LOG_LEVEL
+              valueFrom:
+                configMapKeyRef:
+                  name: cloudtolocalllm-config
+                  key: LOG_LEVEL
+            - name: CLIENT_LOG_DIR
+              valueFrom:
+                configMapKeyRef:
+                  name: cloudtolocalllm-config
+                  key: CLIENT_LOG_DIR
+            - name: PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: cloudtolocalllm-config
+                  key: PORT
+            - name: DOMAIN
+              valueFrom:
+                configMapKeyRef:
+                  name: cloudtolocalllm-config
+                  key: DOMAIN
+            - name: DB_TYPE
+              valueFrom:
+                configMapKeyRef:
+                  name: cloudtolocalllm-config
+                  key: DB_TYPE
+            - name: DB_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: cloudtolocalllm-config
+                  key: DB_HOST
+            - name: DB_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: cloudtolocalllm-config
+                  key: DB_PORT
+            - name: DB_NAME
+              valueFrom:
+                configMapKeyRef:
+                  name: cloudtolocalllm-config
+                  key: DB_NAME
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: cloudtolocalllm-secrets
+                  key: postgres-user
+
+            # Secrets
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: cloudtolocalllm-secrets
+                  key: postgres-password
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: cloudtolocalllm-secrets
+                  key: jwt-secret
+            - name: SUPABASE_JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: cloudtolocalllm-secrets
+                  key: supabase-jwt-secret
+            - name: SUPABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: cloudtolocalllm-secrets
+                  key: supabase-url
+            - name: AUTH0_ISSUER_URL
+              valueFrom:
+                secretKeyRef:
+                  name: cloudtolocalllm-secrets
+                  key: auth0-issuer-url
+            - name: AUTH0_CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: cloudtolocalllm-secrets
+                  key: auth0-client-id
+            - name: AUTH0_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: cloudtolocalllm-secrets
+                  key: auth0-client-secret
+            - name: AUTH0_AUDIENCE
+              valueFrom:
+                secretKeyRef:
+                  name: cloudtolocalllm-secrets
+                  key: auth0-audience
+
+            # Admin Center Configuration
+            - name: ADMIN_CENTER_ENABLED
+              valueFrom:
+                configMapKeyRef:
+                  name: cloudtolocalllm-config
+                  key: ADMIN_CENTER_ENABLED
+            - name: ADMIN_EMAIL
+              valueFrom:
+                configMapKeyRef:
+                  name: cloudtolocalllm-config
+                  key: ADMIN_EMAIL
+
+            # Database Connection Pool
+            - name: DB_POOL_MAX
+              valueFrom:
+                configMapKeyRef:
+                  name: cloudtolocalllm-config
+                  key: DB_POOL_MAX
+            - name: DB_POOL_IDLE_TIMEOUT
+              valueFrom:
+                configMapKeyRef:
+                  name: cloudtolocalllm-config
+                  key: DB_POOL_IDLE_TIMEOUT
+            - name: DB_POOL_CONNECTION_TIMEOUT
+              valueFrom:
+                configMapKeyRef:
+                  name: cloudtolocalllm-config
+                  key: DB_POOL_CONNECTION_TIMEOUT
+
+            # Stripe API Keys (use test or live based on NODE_ENV)
+            - name: STRIPE_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: cloudtolocalllm-secrets
+                  key: stripe-test-secret-key
+            - name: STRIPE_PUBLISHABLE_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: cloudtolocalllm-secrets
+                  key: stripe-test-publishable-key
+            - name: STRIPE_WEBHOOK_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: cloudtolocalllm-secrets
+                  key: stripe-test-webhook-secret
+
+            # Sentry Configuration
+            - name: SENTRY_DSN
+              valueFrom:
+                secretKeyRef:
+                  name: cloudtolocalllm-secrets
+                  key: sentry-dsn
+                  optional: true
       containers:
         - name: api-backend
           image: cloudtolocalllm/api-backend:latest

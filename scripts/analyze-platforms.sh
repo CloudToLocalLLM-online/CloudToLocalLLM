@@ -4,7 +4,7 @@ set -e
 [ -s "/home/rightguy/.nvm/nvm.sh" ] && source "/home/rightguy/.nvm/nvm.sh"
 
 # Analyze which platforms need updates using Kilocode AI
-# Outputs: new_version, needs_cloud, needs_desktop, needs_mobile
+# Outputs: new_version, needs_managed, needs_local, needs_desktop, needs_mobile
 
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "Analyzing Platform Changes with Kilocode AI"
@@ -52,7 +52,8 @@ Analyze changes and determine deployment needs. Output ONLY valid JSON:
 {
   \"bump_type\": \"none\",
   \"semantic_version\": \"$SEMANTIC_VERSION\",
-  \"needs_cloud\": true,
+  \"needs_managed\": true,
+  \"needs_local\": true,
   \"needs_desktop\": true,
   \"needs_mobile\": false,
   \"reasoning\": \"Conservative deployment for debugging changes\"
@@ -69,7 +70,8 @@ CRITICAL RULES FOR VERSION BUMPING:
 DEPLOYMENT RULES:
 - CORE CHANGES (main.dart, lib/services/, lib/models/) trigger ALL platforms
 - PLATFORM-SPECIFIC (web/, windows/, android/) trigger only that platform
-- Cloud: web/, services/, k8s/, auth changes
+- Managed (SaaS): web/, services/, k8s/, auth changes (production cloud)
+- Local (On-Prem): web/, services/, k8s/, auth changes (docker desktop/local)
 - Desktop: windows/, linux/, desktop code
 - Mobile: android/, ios/, mobile code"
 
@@ -124,7 +126,8 @@ echo ""
         # Parse without fallback to empty, so we capture 'false' correctly
         SEMANTIC_VERSION_NEW=$(echo "$JSON_RESPONSE" | jq -r '.semantic_version')
         BUMP_TYPE=$(echo "$JSON_RESPONSE" | jq -r '.bump_type')
-        NEEDS_CLOUD=$(echo "$JSON_RESPONSE" | jq -r '.needs_cloud')
+        NEEDS_MANAGED=$(echo "$JSON_RESPONSE" | jq -r '.needs_managed')
+        NEEDS_LOCAL=$(echo "$JSON_RESPONSE" | jq -r '.needs_local')
         NEEDS_DESKTOP=$(echo "$JSON_RESPONSE" | jq -r '.needs_desktop')
         NEEDS_MOBILE=$(echo "$JSON_RESPONSE" | jq -r '.needs_mobile')
         REASONING=$(echo "$JSON_RESPONSE" | jq -r '.reasoning')
@@ -133,8 +136,8 @@ echo ""
         NEW_VERSION="${SEMANTIC_VERSION_NEW}+${BUILD_DATE}"
 
         # Strict validation - Fail if mandatory fields are null or empty
-        # Note: 'false' is a valid value for NEEDS_CLOUD, so we check for 'null' or empty
-        if [ "$SEMANTIC_VERSION_NEW" == "null" ] || [ -z "$SEMANTIC_VERSION_NEW" ] || [ "$NEEDS_CLOUD" == "null" ] || [ -z "$NEEDS_CLOUD" ]; then
+        # Note: 'false' is a valid value for NEEDS_MANAGED, so we check for 'null' or empty
+        if [ "$SEMANTIC_VERSION_NEW" == "null" ] || [ -z "$SEMANTIC_VERSION_NEW" ] || [ "$NEEDS_MANAGED" == "null" ] || [ -z "$NEEDS_MANAGED" ]; then
             echo "❌ ERROR: Failed to parse Kilocode response"
             echo "Extracted JSON: $JSON_RESPONSE"
             echo "Response (first 500 chars): ${RESPONSE:0:500}"
@@ -145,17 +148,23 @@ echo ""
         echo "✅ Kilocode Analysis:"
         echo "  Bump type: $BUMP_TYPE"
         echo "  New version: $NEW_VERSION"
-        echo "  Cloud: $NEEDS_CLOUD"
+        echo "  Managed: $NEEDS_MANAGED"
+        echo "  Local: $NEEDS_LOCAL"
         echo "  Desktop: $NEEDS_DESKTOP"
         echo "  Mobile: $NEEDS_MOBILE"
         echo "  Reasoning: $REASONING"
 
         # Override cloud deployment if web-related files changed
-        if [ "$FORCE_CLOUD" = "true" ] && [ "$NEEDS_CLOUD" = "false" ]; then
-            echo "🔧 OVERRIDING: AI incorrectly set needs_cloud=false for web changes"
-            echo "   Web-related files detected, forcing needs_cloud=true"
-            NEEDS_CLOUD="true"
-            REASONING="$REASONING (OVERRIDE: Web-related files require cloud deployment)"
+        if [ "$FORCE_CLOUD" = "true" ]; then
+            if [ "$NEEDS_MANAGED" = "false" ]; then
+                echo "🔧 OVERRIDING: AI incorrectly set needs_managed=false for web changes"
+                NEEDS_MANAGED="true"
+            fi
+            if [ "$NEEDS_LOCAL" = "false" ]; then
+                echo "🔧 OVERRIDING: AI incorrectly set needs_local=false for web changes"
+                NEEDS_LOCAL="true"
+            fi
+            REASONING="$REASONING (OVERRIDE: Web-related files require backend deployment)"
         fi
 
 # Validate version format (allow build metadata)
@@ -236,20 +245,23 @@ echo "✅ Final version: $NEW_VERSION (semantic: $SEMANTIC_VERSION_NEW, build: $
 echo ""
 echo "✅ Final Decision:"
 echo "  Version: $CURRENT_VERSION → $NEW_VERSION"
-echo "  Cloud: $NEEDS_CLOUD"
+echo "  Managed: $NEEDS_MANAGED"
+echo "  Local: $NEEDS_LOCAL"
 echo "  Desktop: $NEEDS_DESKTOP"
 echo "  Mobile: $NEEDS_MOBILE"
 
 # Output for GitHub Actions
 if [ -n "$GITHUB_OUTPUT" ]; then
     echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
-    echo "needs_cloud=$NEEDS_CLOUD" >> $GITHUB_OUTPUT
+    echo "needs_managed=$NEEDS_MANAGED" >> $GITHUB_OUTPUT
+    echo "needs_local=$NEEDS_LOCAL" >> $GITHUB_OUTPUT
     echo "needs_desktop=$NEEDS_DESKTOP" >> $GITHUB_OUTPUT
     echo "needs_mobile=$NEEDS_MOBILE" >> $GITHUB_OUTPUT
 else
     echo "Running locally - GITHUB_OUTPUT not set"
     echo "new_version=$NEW_VERSION"
-    echo "needs_cloud=$NEEDS_CLOUD"
+    echo "needs_managed=$NEEDS_MANAGED"
+    echo "needs_local=$NEEDS_LOCAL"
     echo "needs_desktop=$NEEDS_DESKTOP"
     echo "needs_mobile=$NEEDS_MOBILE"
 fi

@@ -421,7 +421,16 @@ export class DatabaseMigrator {
  */
 async function runCommand() {
   const command = process.argv[2];
-  const migrator = new DatabaseMigrator();
+
+  let migrator;
+  // Dynamic import for Postgres migrator to avoid issues if dependency is missing in some envs
+  if (process.env.DB_TYPE === 'postgres') {
+    const { DatabaseMigratorPG } = await import('./migrate-pg.js');
+    migrator = new DatabaseMigratorPG();
+  } else {
+    migrator = new DatabaseMigrator();
+  }
+
   try {
     await migrator.initialize();
     await migrator.createMigrationsTable();
@@ -429,6 +438,11 @@ async function runCommand() {
     switch (command) {
     case 'init':
       await migrator.applyInitialSchema();
+      // Run delta migrations if the migrator supports it
+      if (typeof migrator.migrate === 'function') {
+        console.log('Running delta migrations...');
+        await migrator.migrate();
+      }
       break;
 
     case 'validate': {
@@ -438,8 +452,12 @@ async function runCommand() {
     }
 
     case 'stats': {
-      const stats = await migrator.getDatabaseStats();
-      console.log('Database statistics:', stats);
+      if (typeof migrator.getDatabaseStats === 'function') {
+        const stats = await migrator.getDatabaseStats();
+        console.log('Database statistics:', stats);
+      } else {
+        console.log('Stats not supported for this database type.');
+      }
       break;
     }
 
@@ -456,7 +474,9 @@ async function runCommand() {
     console.error('Migration failed:', error.message);
     process.exit(1);
   } finally {
-    await migrator.close();
+    if (migrator) {
+      await migrator.close();
+    }
   }
 }
 

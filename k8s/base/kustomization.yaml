@@ -1,0 +1,17 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - namespace.yaml
+  - rbac.yaml
+  - network-policies.yaml
+  - configmaps/main-config.yaml
+  - configmaps/redis.yaml
+  - services/api-backend.yaml
+  - services/web.yaml
+  - services/postgres.yaml
+  - services/redis.yaml
+  - deployments/api-backend.yaml
+  - deployments/web.yaml
+  - deployments/postgres.yaml
+  - deployments/redis.yaml
