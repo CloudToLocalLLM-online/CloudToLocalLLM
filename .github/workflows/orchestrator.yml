@@ -5,10 +5,10 @@ on:
     branches:
       - main
     paths-ignore:
-      - 'docs/**'
-      - '*.md'
-      - '.gitignore'
-      - 'LICENSE'
+      - "docs/**"
+      - "*.md"
+      - ".gitignore"
+      - "LICENSE"
   workflow_dispatch:
     inputs:
       force_deployment:
@@ -43,7 +43,7 @@ jobs:
       do_mobile: ${{ steps.decision.outputs.needs_mobile }}
       reasoning: ${{ steps.analyze.outputs.reasoning }}
       should_deploy: ${{ steps.decision.outputs.should_deploy }}
-    
+
     steps:
       - uses: actions/checkout@v4
         with:
@@ -63,7 +63,7 @@ jobs:
           chmod +x scripts/kilocode-cli.cjs
           sudo ln -sf "$(pwd)/scripts/kilocode-cli.cjs" /usr/local/bin/kilocode-cli
           chmod +x scripts/analyze-platforms.sh
-          
+
           # Run analysis
           ./scripts/analyze-platforms.sh
 
@@ -72,7 +72,7 @@ jobs:
         run: |
           VERSION="${{ steps.analyze.outputs.new_version }}"
           DOCKER_VERSION=$(echo "$VERSION" | sed 's/+/-/g')
-          echo "docker_version=$DOCKER_OUTPUT" >> $GITHUB_OUTPUT
+          echo "docker_version=$DOCKER_VERSION" >> $GITHUB_OUTPUT
 
       - name: Decision Logic
         id: decision
@@ -114,7 +114,7 @@ jobs:
         run: |
           chmod +x scripts/update-all-versions.sh
           ./scripts/update-all-versions.sh "$NEW_VERSION" "${{ github.sha }}"
-          
+
           git add -A
           if ! git diff --cached --quiet; then
             git commit -m "chore: bump version to $NEW_VERSION [skip ci]"
