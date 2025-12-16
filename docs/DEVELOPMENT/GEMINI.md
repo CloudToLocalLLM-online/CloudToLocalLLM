@@ -1,6 +1,6 @@
 # Antigravity Agent Project Overview
 
-This document outlines the Antigravity code assistant's understanding of the project and its plan for contributing.
+This document outlines the Antigravity code assistant's understanding of the project, its capabilities, and its operating procedures.
 
 ## Project Goal
 
@@ -17,89 +17,97 @@ The project utilizes a robust stack to achieve its goals:
 *   **Backend (Node.js):**
     *   **Services:**
         *   `api-backend`: Main API service (Express).
-        *   `streaming-proxy`: Tunnel-aware container for streaming (Express, WS).
+        *   **streaming-proxy**: Tunnel-aware container for streaming (Express, WS).
     *   **Observability:** OpenTelemetry, Sentry, Prometheus.
     *   **Integrations:** Stripe (payments), Supabase (auth), Ollama (LLM runtime).
 *   **Database:** PostgreSQL (backend), SQLite (local/backend).
 *   **Infrastructure:** Docker, Kubernetes (k8s), Docker Compose.
 *   **CI/CD:** GitHub Actions.
 
+## Core Philosophy & Workflow
+
+I adhere to a strict "Think, then Act" philosophy to ensure safety and quality.
+
+### 1. Cognitive Architecture (`sequentialthinking`)
+For any task involving complexity, ambiguity, or multi-step reasoning, I **MUST** use the `sequentialthinking` tool.
+*   **Purpose:** To break down problems, generate hypotheses, plan steps, and revise strategies dynamically.
+*   **Usage:** I will use this *before* making significant code changes and *during* debugging to track my logic.
+
+### 2. Deep Analysis (`codebase_investigator`)
+I do not guess about the codebase. For any request that requires understanding system architecture, dependencies, or broad context, I **MUST** use `codebase_investigator`.
+*   **Purpose:** To map out relevant files, symbols, and relationships.
+*   **Usage:** This is my "Entry Point" for bug fixes and feature implementations.
+
+### 3. The MCP Loop
+1.  **Investigate:** Use `codebase_investigator` or `search_file_content` to understand the context.
+2.  **Plan:** Use `sequentialthinking` to formulate a safe and effective plan.
+3.  **Task Tracking:** Use `write_todos` to manage complex, multi-step execution.
+4.  **Implement:** Use engineering tools (`write_file`, `replace`, etc.) to make changes.
+5.  **Verify:** Use `analyze_files` and `run_tests` to prove correctness.
+
 ## Available Tools & Capabilities
 
-I have access to a wide range of specialized tools to assist with development, analysis, and creative tasks.
+I have access to a comprehensive suite of tools ("MCP Tools") to assist with development.
 
-### Core File System & Shell
-*   **`list_directory(path)`**: Lists files and directories.
+### Cognitive & Planning
+*   **`sequentialthinking`**: **(PRIMARY)** A reflective thinking tool for dynamic problem-solving and planning.
+*   **`codebase_investigator`**: **(PRIMARY)** Deep codebase analysis and architectural mapping.
+*   **`write_todos`**: Manages dynamic task lists for complex requests.
+*   **`save_memory`**: Persists user preferences and critical facts.
+
+### Core Engineering & File System
+*   **`search_file_content(pattern)`**: Fast, grep-like search (ripgrep) for patterns.
+*   **`glob(pattern)`**: efficient file finding by pattern.
 *   **`read_file(path)`**: Reads file content.
-*   **`write_file(path, content)`**: Writes new content to a file.
-*   **`replace(path, old_string, new_string)`**: Performs precise text replacement within a file.
-*   **`search_file_content(pattern)`**: fast, grep-like search for patterns in files.
-*   **`glob(pattern)`**: Finds files matching a glob pattern.
-*   **`run_shell_command(command)`**: Executes shell commands. **Includes access to the GitHub CLI (`gh`)** for repository, issue, and PR management.
-
-### Planning & Knowledge
-*   **`codebase_investigator(objective)`**: Performs deep analysis of the codebase structure, architecture, and dependencies. Use this for complex inquiries.
-*   **`write_todos(todos)`**: Manages a dynamic task list to track progress on complex, multi-step operations.
-*   **`save_memory(fact)`**: Persists user preferences and important project facts across sessions.
-
-### Web & Research
-*   **`web_fetch(prompt)`**: Fetches and processes content from URLs (including localhost).
-*   **`google_web_search(query)`**: Performs Google searches for external documentation and solutions.
-*   **`pub_dev_search(query)`**: Searches for Dart/Flutter packages on pub.dev.
+*   **`write_file(path, content)`**: Writes new content.
+*   **`replace(path, old, new)`**: Precise text replacement (requires unique context).
+*   **`list_directory(path)`**: Lists directory contents.
+*   **`run_shell_command(command)`**: Executes shell commands (PowerShell).
 
 ### Dart & Flutter Development (MCP)
-I have access to a suite of powerful tools for Dart and Flutter development, enabling a seamless "Multi-platform Code Production" (MCP) workflow. These tools allow me to build, analyze, test, and interact with your applications in real-time.
+I possess specialized tools for the full Flutter lifecycle:
 
-*   **Project & Dependency Management:**
-    *   `create_project`: Scaffolds new Dart/Flutter projects.
-    *   `pub`: Manages package dependencies (add, remove, get, upgrade).
-*   **Code Analysis & Quality:**
-    *   `analyze_files`: Runs static analysis.
-    *   `dart_fix`: Applies automated code fixes.
-    *   `dart_format`: Formats code to standard.
-    *   `run_tests`: Executes tests with advanced reporting.
-*   **Development Intelligence:**
-    *   `resolve_workspace_symbol`: symbol search.
-    *   `signature_help`, `hover`: Code introspection.
-    *   `get_active_location`: Retrieves the current cursor position in the connected editor.
-*   **Runtime Interaction (requires running app):**
-    *   `launch_app`, `stop_app`: Manages application lifecycle.
-    *   `hot_reload`, `hot_restart`: Applies changes to running apps.
-    *   `connect_dart_tooling_daemon`: Connects to the Dart tooling daemon.
-    *   `get_app_logs`: Retrieves application logs.
-    *   `get_runtime_errors`: Checks for active runtime errors.
-*   **UI Inspection & Automation:**
-    *   `get_widget_tree`, `get_selected_widget`: Inspects the UI hierarchy.
-    *   `set_widget_selection_mode`: Enables interactive widget selection.
-    *   `flutter_driver`: Drives UI automation tests.
-*   **Device Management:**
-    *   `list_devices`: Shows available targets.
-    *   `list_running_apps`: Shows active sessions.
+*   **Management:** `create_project`, `pub` (dependency management).
+*   **Quality:** `analyze_files` (static analysis), `dart_fix` (auto-fixes), `dart_format`.
+*   **Testing:** `run_tests` (The **ONLY** way I should run tests).
+*   **Runtime:** `launch_app`, `stop_app`, `hot_reload`, `hot_restart`, `get_app_logs`.
+*   **Inspection:** `get_widget_tree`, `get_selected_widget`, `flutter_driver`.
 
-### Image Generation & Editing (Nano Banana)
-*   **`generate_image`**: Generates images from text prompts with style control.
-*   **`edit_image`**: Modifies existing images based on text instructions.
-*   **`restore_image`**: Restores and enhances images (e.g., removing artifacts).
-*   **`generate_icon`**: Generates app icons, favicons, and UI elements.
-*   **`generate_pattern`**: Generates seamless patterns and textures.
-*   **`generate_story`**: Creates sequential visual stories or process guides.
-*   **`generate_diagram`**: Generates technical diagrams and flowcharts.
+### Web, Research & Documentation
+*   **`get-library-docs(id)`**: Fetches up-to-date documentation for libraries (Context7).
+*   **`resolve-library-id(name)`**: Resolves library names for documentation fetching.
+*   **`google_web_search`**: Searches the live web for information.
+*   **`web_fetch`**: Fetches content from specific URLs.
+*   **`pub_dev_search`**: Searches pub.dev for Dart packages.
+
+### Browser Automation (Playwright)
+I can launch and control a browser to interact with web applications:
+*   `browser_navigate`, `browser_click`, `browser_type`, `browser_evaluate`, `browser_take_screenshot`, etc.
+
+### GitHub Integration
+I can directly interact with the repository:
+*   `create_issue`, `create_pull_request`, `create_branch`, `push_files`, `search_issues`, etc.
+
+## Testing Best Practices
+
+Testing is mandatory for all code changes.
+
+1.  **Static Analysis First:** ALWAYS run `analyze_files` on modified paths *before* running tests. Fix lint errors first.
+2.  **Use `run_tests`:** Do not use `flutter test` in the shell. Use the `run_tests` tool which provides better output and control.
+3.  **Integration Tests:** Critical paths (like Login, Payments) must be covered by integration tests (`integration_test` package).
+4.  **Format & Fix:** Run `dart_format` and `dart_fix` before finalizing any task.
+5.  **No "Blind" Commits:** Ensure the code compiles and passes tests before committing.
 
 ## User Preferences & Rules
-*   **Automation First**: Automate tasks whenever possible. Do not ask for manual user intervention unless absolutely required.
-*   **Deployment**: Deployment to AKS is automated via GitHub Actions when pushing to the `main` branch.
-*   **Git Operations**: Always commit and push changes to the repository after completing a task. Do not ask for permission to perform git operations. Do not leave changes uncommitted.
-*   **Latest Stable Versions**: Always use the latest stable version for all dependencies, tools, and infrastructure (e.g., Kubernetes, Node.js, Flutter) unless explicitly pinned for compatibility. Avoid using older or deprecated versions.
-*   **Latest Tech Stack**: Always use the latest major versions of GitHub Actions, libraries, and tools. Deprecated versions are strictly forbidden. If a tool is deprecated, upgrade immediately.
-*   **NO ROOT EVER**: Containers must NEVER run as root. Always create and use a custom user (e.g., `cloudtolocalllm`). Root should only be used for package installation during the build phase.
-*   **Minimal Containers**: Use minimal, Fedora-based base images for all containers. Install only what is strictly necessary.
-
-
+*   **Automation First**: Automate tasks whenever possible.
+*   **Deployment**: Automated via GitHub Actions on push to `main`.
+*   **Git Operations**: Always commit changes. Use descriptive, "why"-focused messages.
+*   **Latest Tech**: Use latest stable versions of Flutter, Node.js, and K8s.
+*   **No Root**: Containers must run as non-root users.
+*   **Sequential Thinking**: If a task seems even slightly complex, use the `sequentialthinking` tool immediately.
 
 ## Lessons Learned & Project Structure Notes
 
-*   **Kustomize Structure:** The project uses a Kustomize overlay structure (`k8s/overlays/production/`) where patch files (e.g., `web-deployment-patch.yaml`) override base configurations. When modifying deployment settings like replica counts, ensure you check both the base `k8s/` files and the environment-specific overlays to avoid conflicting configurations.
-*   **File Management:** Avoid creating new files unless explicitly necessary. Modify existing files to achieve configuration changes.
-*   **Communication:** Be explicit when modifying "patch" files to avoid confusion about whether a new file is being created or an existing one is being edited.
-
-I will use these tools to carry out the development plan and assist with your requests.
+*   **Kustomize Structure:** The project uses a Kustomize overlay structure (`k8s/overlays/production/`). Check both base and overlays.
+*   **File Management:** Modify existing files when possible; avoid clutter.
+*   **Communication:** Be explicit about file paths and changes.
