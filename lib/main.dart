@@ -56,7 +56,7 @@ import 'package:cloudtolocalllm/utils/platform_file_utils.dart'
 
 void main(List<String> args) async {
   // Immediate logging to verify Dart entry point is reached
-  print('----- DART MAIN START ----- v7.10.9+202512161419');
+  print('----- DART MAIN START ----- v7.10.9+202512161549');
 
   // Handle command-line arguments (OAuth callback URLs)
   if (args.isNotEmpty) {
