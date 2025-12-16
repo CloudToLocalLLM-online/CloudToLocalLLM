@@ -70,8 +70,8 @@ CRITICAL RULES FOR VERSION BUMPING:
 DEPLOYMENT RULES:
 - CORE CHANGES (main.dart, lib/services/, lib/models/) trigger ALL platforms
 - PLATFORM-SPECIFIC (web/, windows/, android/) trigger only that platform
-- Managed (SaaS): web/, services/, k8s/, auth changes (production cloud)
-- Local (On-Prem): web/, services/, k8s/, auth changes (docker desktop/local)
+- Managed (SaaS): web/, services/ (including package-lock.json/dependencies), k8s/, auth changes (production cloud)
+- Local (On-Prem): web/, services/ (including package-lock.json/dependencies), k8s/, auth changes (docker desktop/local)
 - Desktop: windows/, linux/, desktop code
 - Mobile: android/, ios/, mobile code"
 
