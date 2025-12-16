@@ -257,6 +257,7 @@ if [ -n "$GITHUB_OUTPUT" ]; then
     echo "needs_local=$NEEDS_LOCAL" >> $GITHUB_OUTPUT
     echo "needs_desktop=$NEEDS_DESKTOP" >> $GITHUB_OUTPUT
     echo "needs_mobile=$NEEDS_MOBILE" >> $GITHUB_OUTPUT
+    echo "bump_type=$BUMP_TYPE" >> $GITHUB_OUTPUT
 else
     echo "Running locally - GITHUB_OUTPUT not set"
     echo "new_version=$NEW_VERSION"
@@ -264,4 +265,5 @@ else
     echo "needs_local=$NEEDS_LOCAL"
     echo "needs_desktop=$NEEDS_DESKTOP"
     echo "needs_mobile=$NEEDS_MOBILE"
+    echo "bump_type=$BUMP_TYPE"
 fi
