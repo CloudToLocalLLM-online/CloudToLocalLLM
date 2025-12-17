@@ -77,12 +77,6 @@ class Auth0AuthProvider implements AuthProvider {
       StreamController<bool>.broadcast();
   UserModel? _currentUser;
 
-  // Auth0 endpoints
-  // String get _authorizationEndpoint => 'https://$_domain/authorize';
-  // String get _tokenEndpoint => 'https://$_domain/oauth/token';
-  // String get _userInfoEndpoint => 'https://$_domain/userinfo'; // Not used currently
-  // String get _endSessionEndpoint => 'https://$_domain/v2/logout';
-
   @override
   Stream<bool> get authStateChanges => _authStateController.stream;
 
@@ -91,11 +85,14 @@ class Auth0AuthProvider implements AuthProvider {
 
   @override
   Future<void> initialize() async {
+    debugPrint('[Auth0AuthProvider] initialize() called');
     try {
       debugPrint('[Auth0AuthProvider] Initializing...');
 
       // Register URL scheme for Windows desktop OAuth callbacks
       if (!kIsWeb && Platform.isWindows) {
+        debugPrint(
+            '[Auth0AuthProvider] Checking Windows URL scheme registration');
         final isRegistered =
             await UrlSchemeRegistrationService.isSchemeRegistered();
         if (!isRegistered) {
@@ -114,7 +111,7 @@ class Auth0AuthProvider implements AuthProvider {
         );
       }
 
-      // 1. Check for existing tokens in storage
+      // Check for existing tokens in storage
       final accessToken = await _secureStorage.read(key: 'access_token');
       final idToken = await _secureStorage.read(key: 'id_token');
 
@@ -136,7 +133,7 @@ class Auth0AuthProvider implements AuthProvider {
         }
       }
 
-      // 2. Web session recovery (silent login)
+      // Web session recovery (silent login)
       if (kIsWeb) {
         debugPrint(
             '[Auth0AuthProvider] No valid tokens in storage, attempting silent auth (prompt=none)...');
@@ -186,6 +183,8 @@ class Auth0AuthProvider implements AuthProvider {
     if (result.idToken.isNotEmpty) {
       _currentUser = _idTokenToUser(result.idToken);
       _authStateController.add(true);
+      debugPrint(
+          '[Auth0AuthProvider] User authenticated: ${_currentUser?.email}');
     }
   }
 
@@ -202,7 +201,7 @@ class Auth0AuthProvider implements AuthProvider {
       debugPrint('[Auth0AuthProvider] Login successful');
       await _storeCredentials(result);
     } catch (e) {
-      debugPrint('[Auth0AuthProvider] Login error: $e');
+      debugPrint('[Auth0AuthProvider] Login error detail: $e');
       _authStateController.add(false);
       throw _categorizeError(e);
     }
@@ -221,31 +220,19 @@ class Auth0AuthProvider implements AuthProvider {
 
       // Perform logout with Auth0
       try {
-        // Check for supported platforms for auth0_flutter plugin
-        bool isPluginSupported = kIsWeb;
-        if (!kIsWeb) {
-          isPluginSupported =
-              Platform.isAndroid || Platform.isIOS || Platform.isMacOS;
-          // Windows has limited support but might use custom scheme, handled separately?
-          // Actually locator uses WindowsOAuthProvider for Windows, so this class shouldn't run on Windows usually.
-          // But if it does (fallback), we should be careful.
-        }
-
-        if (isPluginSupported) {
+        if (kIsWeb) {
+          await _auth0.webAuthentication().logout();
+        } else if (Platform.isAndroid || Platform.isIOS || Platform.isMacOS) {
           await _auth0
               .webAuthentication(
                 scheme: UrlSchemeRegistrationService.customScheme,
               )
               .logout();
-        } else {
-          debugPrint(
-              '[Auth0AuthProvider] Logout skipped: Not supported on this platform');
         }
       } catch (e) {
         debugPrint('[Auth0AuthProvider] Logout error (non-critical): $e');
       }
     } catch (e) {
-      // Even if logout fails, clear local state
       _currentUser = null;
       _authStateController.add(false);
       rethrow;
@@ -254,12 +241,9 @@ class Auth0AuthProvider implements AuthProvider {
 
   @override
   Future<bool> handleCallback({String? url}) async {
-    // Auth0 Flutter handles callback automatically
-    // This method is for compatibility with the interface
     return true;
   }
 
-  /// Categorizes raw errors into structured AuthExceptions
   AuthException _categorizeError(dynamic error) {
     final errorString = error.toString().toLowerCase();
 
@@ -278,7 +262,6 @@ class Auth0AuthProvider implements AuthProvider {
     }
   }
 
-  /// Parses user information from ID token
   UserModel _idTokenToUser(String idToken) {
     final payload = JwtDecoder.decode(idToken);
     final now = DateTime.now();
@@ -294,46 +277,22 @@ class Auth0AuthProvider implements AuthProvider {
     );
   }
 
-  /// Refreshes access token using refresh token
   Future<void> _refreshTokens(String refreshToken) async {
     try {
       debugPrint('[Auth0AuthProvider] Refreshing tokens...');
-
-      // Use Auth0 SDK to refresh tokens
       final credentials = await _auth0.api.renewCredentials(
         refreshToken: refreshToken,
       );
-
+      await _storeCredentials(credentials);
       debugPrint('[Auth0AuthProvider] Token refresh successful');
-
-      // Store new tokens
-      await _secureStorage.write(
-          key: 'access_token', value: credentials.accessToken);
-      if (credentials.idToken.isNotEmpty == true) {
-        await _secureStorage.write(key: 'id_token', value: credentials.idToken);
-        _currentUser = _idTokenToUser(credentials.idToken);
-      }
-      if (credentials.refreshToken?.isNotEmpty == true) {
-        await _secureStorage.write(
-            key: 'refresh_token', value: credentials.refreshToken);
-      }
-
-      _authStateController.add(true);
     } catch (e) {
       debugPrint('[Auth0AuthProvider] Token refresh error: $e');
       _authStateController.add(false);
     }
   }
 
-  /// Handles incoming URLs from OAuth callbacks
   void _handleIncomingUrl(Uri uri) {
     debugPrint('[Auth0AuthProvider] Processing OAuth callback URL: $uri');
-    // The auth0_flutter package should handle the callback automatically
-    // This is mainly for logging and debugging purposes
-    if (uri.scheme == UrlSchemeRegistrationService.customScheme) {
-      debugPrint(
-          '[Auth0AuthProvider] Received OAuth callback with custom scheme');
-    }
   }
 
   void dispose() {

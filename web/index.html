@@ -42,6 +42,7 @@
   <script>
     // Compatibility bridge for older versions of auth0_flutter that expect createAuth0Client
     window.createAuth0Client = function (options) {
+      console.log('[Auth0 Bridge] createAuth0Client called with options:', options);
       if (window.auth0 && window.auth0.Auth0Client) {
         return Promise.resolve(new window.auth0.Auth0Client(options));
       }
