@@ -96,15 +96,17 @@ extension type MsalConfig._(JSObject _) implements JSObject {
     if (state != null) map['state'] = state;
     if (prompt != null) map['prompt'] = prompt;
     if (codeChallenge != null) map['codeChallenge'] = codeChallenge;
-    if (codeChallengeMethod != null)
+    if (codeChallengeMethod != null) {
       map['codeChallengeMethod'] = codeChallengeMethod;
+    }
     if (nonce != null) map['nonce'] = nonce;
     if (tokenIdentifier != null) map['tokenIdentifier'] = tokenIdentifier;
     if (clientSecret != null) map['clientSecret'] = clientSecret;
     if (resource != null) map['resource'] = resource;
     if (isB2C != null) map['isB2C'] = isB2C;
-    if (customAuthorizationUrl != null)
+    if (customAuthorizationUrl != null) {
       map['customAuthorizationUrl'] = customAuthorizationUrl;
+    }
     if (customTokenUrl != null) map['customTokenUrl'] = customTokenUrl;
     if (loginHint != null) map['loginHint'] = loginHint;
     if (domainHint != null) map['domainHint'] = domainHint;
@@ -113,8 +115,9 @@ extension type MsalConfig._(JSObject _) implements JSObject {
     if (tokenUrl != null) map['tokenUrl'] = tokenUrl;
     if (cacheLocation != null) map['cacheLocation'] = cacheLocation;
     if (customParameters != null) map['customParameters'] = customParameters;
-    if (postLogoutRedirectUri != null)
+    if (postLogoutRedirectUri != null) {
       map['postLogoutRedirectUri'] = postLogoutRedirectUri;
+    }
     if (customDomainUrl != null) map['customDomainUrl'] = customDomainUrl;
 
     return map.jsify() as MsalConfig;
