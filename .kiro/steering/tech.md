@@ -12,21 +12,28 @@
 - **WebSocket**: web_socket_channel for real-time
 - **Database**: SQLite (desktop), IndexedDB (web), PostgreSQL (cloud)
 
-## Key Commands
+## Key Commands (Native WSL/Ubuntu)
 ```bash
 # Flutter
-flutter pub get && flutter run -d windows
-flutter build windows --release
+flutter pub get
+flutter run -d linux   # Primary development target
+flutter run -d chrome  # Web development
 
-# Node.js  
+# Node.js
 npm install && npm run dev
 ```
+
+## Platform-Specific Tools
+- **WSL (Ubuntu 24.04)**: Primary development environment.
+- **PowerShell**: Used *only* for Windows-native packaging and releases (see `scripts/powershell/`).
 
 ## CLI Tools Available
 - `aws` - AWS resource management
 - `gh` - GitHub operations (repos, releases, workflows)
 - `grafana` - Monitoring dashboards (GRAFANA_API_KEY required)
+- `sentry-cli` - Error monitoring and release tracking
+- `auth0` - Authentication management
 
-## Current Deployment
-- **Production**: Azure AKS (deploy.yml workflow)
-- **Future**: AWS EKS migration in progress
+## Infrastructure
+- **Production**: Azure AKS (managed via `deploy.yml`)
+- **Local Dev**: WSL2 with native Linux SDKs. Ollama (host) accessed via `localhost`.

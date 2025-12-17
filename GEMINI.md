@@ -49,19 +49,19 @@ This document provides the context, architectural understanding, and operational
 | `test/` | **Tests**. Flutter unit and widget tests. |
 | `infra/` | **Infrastructure as Code**. Terraform scripts. |
 
-## 4. Environment & Toolchain (WSL Hybrid)
+## 4. Environment & Toolchain (WSL Native)
 
-The project runs in a **WSL 2** environment with a mix of Linux-native and Windows-interop tools.
+The project runs in a native **WSL 2 (Ubuntu 24.04)** environment. All development tools are native to Linux except where host interop is required.
 
 | Tool | Type | Status | Notes |
 | :--- | :--- | :--- | :--- |
-| **Node.js** | Linux (NVM) | ✅ Ready | v24.11.1. Use `npm` / `node`. |
-| **Git** | Linux | ✅ Ready | v2.51.1. |
+| **Node.js** | Linux (NVM) | ✅ Ready | v22+. Use native `npm` / `node`. |
+| **Git** | Linux | ✅ Ready | v2.43+. Native bash hooks active. |
 | **Auth0 CLI** | Linux | ✅ Ready | v1.25.0. Tenant connected. |
 | **Sentry CLI**| Linux | ✅ Ready | v2.58.2. |
-| **Docker** | WSL Integration | ✅ Ready | Accessible via standard `docker` commands. |
-| **Ollama** | Windows Host | ⚠️ Network | Exists as `ollama.exe`. `localhost` networking may fail; use Host IP or `host.docker.internal`. |
-| **Flutter** | Windows Mount | ❌ **Broken** | Path points to `/mnt/c/...`. Script fails in WSL due to line endings. Use `flutter.exe` (interop) or install Linux SDK. |
+| **Docker** | WSL Integration | ✅ Ready | Docker Desktop interop enabled. |
+| **Ollama** | Windows Host | ✅ Ready | Host service proxied via `localhost`. |
+| **Flutter** | Linux Native | ✅ Ready | Linux SDK installed. Use native `flutter` command. |
 
 ## 5. Operational Guidelines
 

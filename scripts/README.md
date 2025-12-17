@@ -85,12 +85,13 @@ This directory contains all automation scripts for CloudToLocalLLM development, 
 - **update_documentation.sh** - Documentation maintenance
 - **verify_backups.sh** - Backup integrity verification
 
-## 🚀 Quick Start
+## 🚀 Quick Start (WSL Ubuntu 24.04 Native)
 
 ### Development Setup
 ```bash
-# Set up Flutter development environment (Windows)
-./scripts/powershell/flutter-setup.ps1
+# Set up Flutter development environment (Native Linux)
+# Note: Ensure you are running in WSL Ubuntu terminal
+./scripts/setup/setup_archlinux_flutter.sh # (Adjust for Ubuntu if needed)
 
 # Validate Docker development environment
 ./scripts/docker/validate_dev_environment.sh
@@ -160,19 +161,17 @@ node scripts/validate-organization.js
 
 ## 🔧 Platform Separation
 
-### Bash Scripts (Linux/WSL/VPS Operations)
-- All deployment scripts
-- Linux package building
-- SSL/certificate management
-- Server setup and maintenance
-- Docker operations
-- System monitoring and health checks
+### Bash Scripts (Primary: WSL/Linux/VPS)
+- **Primary Development**: Flutter run/build, Node.js development
+- **Deployment**: All CI/CD and VPS deployment workflows
+- **Packaging**: Linux package building (AppImage, Deb)
+- **SSL**: Certificate management and server setup
+- **Docker**: All containerized operations
 
-### PowerShell Scripts (Windows Operations)
-- Windows build environment setup
-- Windows package creation
-- Release asset management
-- Development utilities
+### PowerShell Scripts (Secondary: Windows Native)
+- **Windows Packaging**: Creating native Windows installers (.exe)
+- **Release Management**: Asset upload to GitHub releases
+- **Environment Migration**: Legacy Windows dev setup utilities
 
 ## 📋 Script Conventions
 

@@ -61,15 +61,15 @@ Comprehensive documentation is available in the `docs/` directory:
 If you are a developer looking to contribute or build from source, follow these steps.
 
 ### Tech Stack
-*   **Frontend:** Flutter (Mobile, Desktop, Web)
-*   **Backend:** Node.js (Express.js)
-*   **AI Runtime:** Ollama / LM Studio (Local)
+*   **Frontend:** Flutter (Linux, Windows, Web) - Developed natively in WSL2
+*   **Backend:** Node.js (Express.js) - Native Linux runtime
+*   **AI Runtime:** Ollama (Windows Host interop via `localhost`)
 *   **CI/CD:** AI-powered orchestration with Kilocode CLI & Gemini 2.0 Flash
-*   **Development:** Kiro IDE with custom AI modes and MCP tool integration
+*   **Development:** WSL Ubuntu 24.04 (Primary Terminal) & Kiro IDE
 
-### Build from Source
+### Build from Source (WSL Ubuntu 24.04)
 
-**Prerequisites:** [Flutter SDK](https://docs.flutter.dev/get-started/install) (3.5+), [Node.js](https://nodejs.org/) (22 LTS), and Git.
+**Prerequisites:** [Flutter Linux SDK](https://docs.flutter.dev/get-started/install/linux) (3.5+), [Node.js](https://nodejs.org/) (22 LTS), and Git.
 
 1.  **Clone the Repository:**
     ```bash
@@ -80,11 +80,14 @@ If you are a developer looking to contribute or build from source, follow these 
 2.  **Install Dependencies:**
     ```bash
     flutter pub get
+    (cd services/api-backend && npm install)
     ```
 
 3.  **Run the App:**
     ```bash
-    flutter run -d windows # or linux / chrome
+    flutter run -d linux   # Native Desktop
+    # or
+    flutter run -d chrome  # Web Interface
     ```
 
 For full developer details, see the **[Developer Onboarding Guide](docs/DEVELOPMENT/DEVELOPER_ONBOARDING.md)**.

@@ -19,9 +19,11 @@ A hook is configured to automatically manage git operations on file changes:
 - Prevent temporary files from being tracked (via .gitignore)
 
 ### Important Notes
-- Ensure `.gitignore` is properly configured to exclude temp files
-- The hook runs automatically - no manual intervention needed
-- Review `git status` output to verify staged changes
+- **Environment**: All git commands and hooks run natively in the **WSL Ubuntu** terminal.
+- **Git Hooks**: Managed via standard Linux git hooks in `.git/hooks/`.
+- Ensure `.gitignore` is properly configured to exclude temp files.
+- The hook runs automatically - no manual intervention needed.
+- Review `git status` output to verify staged changes.
 - Commit changes manually when ready: `git commit -m "message"`
 
 ### Temp Files to Exclude
