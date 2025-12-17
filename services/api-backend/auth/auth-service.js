@@ -182,21 +182,15 @@ export class AuthService {
           jwt.verify(
             token,
             this.getKey.bind(this),
-            { algorithms: ['RS256', 'ES256'] },
+            {
+              algorithms: ['RS256', 'ES256'],
+              audience: this.config.AUTH0_AUDIENCE,
+            },
             (err, decodedToken) => {
               if (err) {
                 reject(err);
               } else {
-                // Verify Audience
-                if (decodedToken.aud !== this.config.AUTH0_AUDIENCE) {
-                  reject(
-                    new Error(
-                      `Invalid audience: expected ${this.config.AUTH0_AUDIENCE}, got ${decodedToken.aud}`,
-                    ),
-                  );
-                } else {
-                  resolve(decodedToken);
-                }
+                resolve(decodedToken);
               }
             },
           );
@@ -263,7 +257,10 @@ export class AuthService {
         jwt.verify(
           token,
           this.getKey.bind(this),
-          { algorithms: ['RS256', 'ES256'] },
+          {
+            algorithms: ['RS256', 'ES256'],
+            audience: this.config.AUTH0_AUDIENCE,
+          },
           (err, decodedToken) => {
             if (err) {
               reject(err);
@@ -768,11 +765,11 @@ export class AuthService {
   startSessionCleanup() {
     // Clean up expired sessions every 15 minutes
     setInterval(
-      async() => {
+      async () => {
         try {
           // Ensure DB is initialized before attempting cleanup
           if ((process.env.DB_TYPE === 'postgresql' && !this.db.pool) ||
-              (process.env.DB_TYPE !== 'postgresql' && !this.db.db)) {
+            (process.env.DB_TYPE !== 'postgresql' && !this.db.db)) {
             this.logger.warn('Skipping session cleanup - database not connected');
             return;
           }

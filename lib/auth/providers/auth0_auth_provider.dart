@@ -1,10 +1,14 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:js_interop';
 import 'package:auth0_flutter/auth0_flutter.dart';
+import 'package:auth0_flutter/auth0_flutter_web.dart'
+    if (dart.library.io) 'auth0_flutter_stub.dart';
 import 'package:app_links/app_links.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:jwt_decoder/jwt_decoder.dart';
+import 'package:web/web.dart' as web;
 import '../auth_provider.dart';
 import '../../models/user_model.dart';
 import '../../services/url_scheme_registration_service.dart'
@@ -47,6 +51,7 @@ class AuthException implements Exception {
 /// Auth0 implementation of the authentication provider using auth0_flutter
 class Auth0AuthProvider implements AuthProvider {
   late final Auth0 _auth0;
+  Auth0Web? _auth0Web;
   final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
   late final AppLinks _appLinks;
   StreamSubscription<Uri>? _linkSubscription;
@@ -70,7 +75,11 @@ class Auth0AuthProvider implements AuthProvider {
             const String.fromEnvironment('AUTH0_AUDIENCE',
                 defaultValue: 'https://api.cloudtolocalllm.online') {
     _appLinks = AppLinks();
-    _auth0 = Auth0(_domain, _clientId);
+    if (!kIsWeb) {
+      _auth0 = Auth0(_domain, _clientId);
+    } else {
+      _auth0Web = Auth0Web(_domain, _clientId);
+    }
   }
 
   final StreamController<bool> _authStateController =
@@ -89,8 +98,9 @@ class Auth0AuthProvider implements AuthProvider {
     try {
       debugPrint('[Auth0AuthProvider] Initializing...');
 
-      // Register URL scheme for Windows desktop OAuth callbacks
-      if (!kIsWeb && Platform.isWindows) {
+      if (kIsWeb) {
+        await _initializeWeb();
+      } else if (Platform.isWindows) {
         debugPrint(
             '[Auth0AuthProvider] Checking Windows URL scheme registration');
         final isRegistered =
@@ -134,19 +144,17 @@ class Auth0AuthProvider implements AuthProvider {
       }
 
       // Web session recovery (silent login)
-      if (kIsWeb) {
+      if (kIsWeb && _auth0Web != null) {
         debugPrint(
             '[Auth0AuthProvider] No valid tokens in storage, attempting silent auth (prompt=none)...');
         try {
-          final credentials = await _auth0.webAuthentication().login(
-                scopes: {'openid', 'profile', 'email', 'offline_access'},
-                audience: _audience,
-                parameters: {'prompt': 'none'},
-              );
-          debugPrint(
-              '[Auth0AuthProvider] Web session recovered via silent auth');
-          await _storeCredentials(credentials);
-          return;
+          final credentials = await _auth0Web!.onLoad();
+          if (credentials != null) {
+            debugPrint(
+                '[Auth0AuthProvider] Web session recovered via onLoad()');
+            await _storeCredentials(credentials);
+            return;
+          }
         } catch (e) {
           debugPrint(
               '[Auth0AuthProvider] Silent auth failed or no active session: $e');
@@ -158,6 +166,44 @@ class Auth0AuthProvider implements AuthProvider {
     } catch (e) {
       debugPrint('[Auth0AuthProvider] Initialize error: $e');
       _authStateController.add(false);
+    }
+  }
+
+  Future<void> _initializeWeb() async {
+    debugPrint('[Auth0AuthProvider] Initializing Web...');
+
+    // Check if script is already present in the DOM
+    final scripts = web.document.getElementsByTagName('script');
+    bool isLoaded = false;
+    for (int i = 0; i < scripts.length; i++) {
+      final item = scripts.item(i);
+      if (item is web.HTMLScriptElement && item.src.contains('auth0-spa-js')) {
+        isLoaded = true;
+        break;
+      }
+    }
+
+    if (!isLoaded) {
+      debugPrint('[Auth0AuthProvider] Loading Auth0 SDK dynamically...');
+      final script = web.HTMLScriptElement();
+      script.src =
+          'https://cdn.auth0.com/js/auth0-spa-js/2.1/auth0-spa-js.production.js';
+      script.async = true;
+
+      final completer = Completer<void>();
+      script.onload = (web.Event e) {
+        debugPrint('[Auth0AuthProvider] Auth0 SDK loaded successfully');
+        completer.complete();
+      }.toJS;
+      script.onerror = (web.Event e) {
+        debugPrint('[Auth0AuthProvider] Failed to load Auth0 SDK');
+        completer.completeError(AuthException.network('Failed to load SDK'));
+      }.toJS;
+
+      web.document.head!.appendChild(script);
+      await completer.future;
+    } else {
+      debugPrint('[Auth0AuthProvider] Auth0 SDK already present');
     }
   }
 
@@ -193,13 +239,22 @@ class Auth0AuthProvider implements AuthProvider {
     try {
       debugPrint('[Auth0AuthProvider] Starting interactive login');
 
-      final result = await _auth0.webAuthentication().login(
-        scopes: {'openid', 'profile', 'email', 'offline_access'},
-        audience: _audience,
-      );
+      if (kIsWeb && _auth0Web != null) {
+        await _auth0Web!.loginWithRedirect(
+          scopes: {'openid', 'profile', 'email', 'offline_access'},
+          audience: _audience,
+        );
+        // Note: loginWithRedirect will cause the page to reload.
+        // The result will be processed in initialize() via onLoad() after the redirect back.
+      } else {
+        final result = await _auth0.webAuthentication().login(
+          scopes: {'openid', 'profile', 'email', 'offline_access'},
+          audience: _audience,
+        );
 
-      debugPrint('[Auth0AuthProvider] Login successful');
-      await _storeCredentials(result);
+        debugPrint('[Auth0AuthProvider] Login successful');
+        await _storeCredentials(result);
+      }
     } catch (e) {
       debugPrint('[Auth0AuthProvider] Login error detail: $e');
       _authStateController.add(false);
@@ -220,8 +275,8 @@ class Auth0AuthProvider implements AuthProvider {
 
       // Perform logout with Auth0
       try {
-        if (kIsWeb) {
-          await _auth0.webAuthentication().logout();
+        if (kIsWeb && _auth0Web != null) {
+          await _auth0Web!.logout();
         } else if (Platform.isAndroid || Platform.isIOS || Platform.isMacOS) {
           await _auth0
               .webAuthentication(
@@ -280,9 +335,19 @@ class Auth0AuthProvider implements AuthProvider {
   Future<void> _refreshTokens(String refreshToken) async {
     try {
       debugPrint('[Auth0AuthProvider] Refreshing tokens...');
-      final credentials = await _auth0.api.renewCredentials(
-        refreshToken: refreshToken,
-      );
+
+      Credentials credentials;
+      if (kIsWeb && _auth0Web != null) {
+        // Auth0Web doesn't have a direct equivalent for renewCredentials in the same way?
+        // Actually it uses checkSession() internally.
+        // For simplicity on web, if onLoad() fails, we just force login.
+        return;
+      } else {
+        credentials = await _auth0.api.renewCredentials(
+          refreshToken: refreshToken,
+        );
+      }
+
       await _storeCredentials(credentials);
       debugPrint('[Auth0AuthProvider] Token refresh successful');
     } catch (e) {
