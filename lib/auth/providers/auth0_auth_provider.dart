@@ -212,11 +212,24 @@ class Auth0AuthProvider implements AuthProvider {
 
       // Perform logout with Auth0
       try {
-        await _auth0
-            .webAuthentication(
-              scheme: UrlSchemeRegistrationService.customScheme,
-            )
-            .logout();
+        // Check for supported platforms for auth0_flutter plugin
+        bool isPluginSupported = kIsWeb;
+        if (!kIsWeb) {
+          isPluginSupported = Platform.isAndroid || Platform.isIOS || Platform.isMacOS;
+          // Windows has limited support but might use custom scheme, handled separately?
+          // Actually locator uses WindowsOAuthProvider for Windows, so this class shouldn't run on Windows usually.
+          // But if it does (fallback), we should be careful.
+        }
+
+        if (isPluginSupported) {
+          await _auth0
+              .webAuthentication(
+                scheme: UrlSchemeRegistrationService.customScheme,
+              )
+              .logout();
+        } else {
+           debugPrint('[Auth0AuthProvider] Logout skipped: Not supported on this platform');
+        }
       } catch (e) {
         debugPrint('[Auth0AuthProvider] Logout error (non-critical): $e');
       }

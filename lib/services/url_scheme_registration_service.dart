@@ -9,6 +9,7 @@ class UrlSchemeRegistrationService {
   /// Registers the custom URL scheme in Windows Registry
   /// This allows the OS to launch our app when Auth0 redirects to our custom scheme
   static Future<bool> registerUrlScheme() async {
+    if (kIsWeb) return false;
     if (!Platform.isWindows) {
       debugPrint(
           '[UrlSchemeRegistration] Not on Windows, skipping registration');
@@ -80,6 +81,7 @@ class UrlSchemeRegistrationService {
 
   /// Checks if the URL scheme is already registered
   static Future<bool> isSchemeRegistered() async {
+    if (kIsWeb) return true;
     if (!Platform.isWindows) {
       return true;
     }
@@ -102,6 +104,7 @@ class UrlSchemeRegistrationService {
 
   /// Unregisters the custom URL scheme (for cleanup)
   static Future<bool> unregisterUrlScheme() async {
+    if (kIsWeb) return true;
     if (!Platform.isWindows) {
       return true;
     }

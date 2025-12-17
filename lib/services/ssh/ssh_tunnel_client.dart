@@ -21,6 +21,7 @@ class SSHTunnelClient with ChangeNotifier {
   Timer? _reconnectTimer;
   int _reconnectAttempts = 0;
   String? _tunnelId; // SSH tunnel identifier
+  bool _isDisposed = false;
 
   SSHTunnelClient(this._config);
 
@@ -29,6 +30,7 @@ class SSHTunnelClient with ChangeNotifier {
 
   /// Connect to SSH server over WebSocket
   Future<void> connect() async {
+    if (_isDisposed) return;
     if (_isConnected) {
       debugPrint('[SSH] Already connected');
       return;
@@ -40,6 +42,7 @@ class SSHTunnelClient with ChangeNotifier {
 
   /// Internal connect method
   Future<void> _doConnect() async {
+    if (_isDisposed) return;
     if (_isConnected) return;
 
     try {
@@ -66,8 +69,15 @@ class SSHTunnelClient with ChangeNotifier {
       debugPrint(
           '[SSH] WebSocket URL: ${wsUri.toString().replaceAll(_config.authToken, '[REDACTED]')}');
 
+      if (_isDisposed) return;
+
       // Connect WebSocket
       final socket = await WebSocketSSHSocket.connect(wsUri);
+
+      if (_isDisposed) {
+        socket.close();
+        return;
+      }
 
       // Create SSH client with JWT as password
       _sshClient = SSHClient(
@@ -80,6 +90,11 @@ class SSHTunnelClient with ChangeNotifier {
 
       // Authenticate with server
       await _sshClient!.authenticated;
+
+      if (_isDisposed) {
+        _sshClient?.close();
+        return;
+      }
 
       debugPrint('[SSH] SSH authentication successful');
 
@@ -95,12 +110,16 @@ class SSHTunnelClient with ChangeNotifier {
       _isConnected = true;
       _reconnectAttempts = 0;
 
-      notifyListeners();
-      debugPrint('[SSH] Connection established');
+      if (!_isDisposed) {
+        notifyListeners();
+        debugPrint('[SSH] Connection established');
+      }
     } catch (e, stackTrace) {
-      debugPrint('[SSH] Connection failed: $e');
-      debugPrint('[SSH] Stack trace: $stackTrace');
-      _handleDisconnection();
+      if (!_isDisposed) {
+        debugPrint('[SSH] Connection failed: $e');
+        debugPrint('[SSH] Stack trace: $stackTrace');
+        _handleDisconnection();
+      }
       rethrow;
     }
   }
@@ -175,6 +194,7 @@ class SSHTunnelClient with ChangeNotifier {
 
   /// Handle disconnection
   void _handleDisconnection() {
+    if (_isDisposed) return;
     if (!_isConnected) return;
 
     _isConnected = false;
@@ -198,14 +218,16 @@ class SSHTunnelClient with ChangeNotifier {
     // Unregister asynchronously
     _unregisterFromServer();
 
-    notifyListeners();
-    debugPrint('[SSH] Disconnected, attempting reconnect...');
-
-    _reconnect();
+    if (!_isDisposed) {
+      notifyListeners();
+      debugPrint('[SSH] Disconnected, attempting reconnect...');
+      _reconnect();
+    }
   }
 
   /// Reconnect with exponential backoff
   void _reconnect() {
+    if (_isDisposed) return;
     if (_reconnectTimer?.isActive ?? false) return;
 
     final backoffTime = _getReconnectDelay();
@@ -215,7 +237,9 @@ class SSHTunnelClient with ChangeNotifier {
         '[SSH] Reconnecting in ${backoffTime.inSeconds} seconds (attempt $_reconnectAttempts)...');
 
     _reconnectTimer = Timer(backoffTime, () {
-      _doConnect();
+      if (!_isDisposed) {
+        _doConnect();
+      }
     });
   }
 
@@ -276,11 +300,14 @@ class SSHTunnelClient with ChangeNotifier {
     _tunnelPort = null;
     _tunnelId = null;
 
-    notifyListeners();
+    if (!_isDisposed) {
+      notifyListeners();
+    }
   }
 
   @override
   void dispose() {
+    _isDisposed = true;
     _reconnectTimer?.cancel();
     disconnect();
     super.dispose();

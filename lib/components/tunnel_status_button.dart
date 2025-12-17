@@ -9,45 +9,50 @@ class TunnelStatusButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<TunnelService>(
-      builder: (context, tunnelService, child) {
-        final state = tunnelService.state;
-        IconData icon;
-        Color color;
-        String tooltip;
+    TunnelService tunnelService;
+    try {
+      tunnelService = Provider.of<TunnelService>(context);
+    } catch (_) {
+      // If TunnelService is not found in the widget tree (e.g. during initialization),
+      // don't display the button.
+      return const SizedBox.shrink();
+    }
 
-        if (state.isConnected) {
-          icon = Icons.gpp_good;
-          color = Colors.green;
-          tooltip = 'Tunnel Connected';
-        } else if (state.isConnecting) {
-          icon = Icons.hourglass_empty;
-          color = Colors.orange;
-          tooltip = 'Tunnel Connecting';
-        } else {
-          icon = Icons.gpp_bad;
-          color = AppTheme.dangerColor;
-          tooltip = 'Tunnel Disconnected';
-        }
+    final state = tunnelService.state;
+    IconData icon;
+    Color color;
+    String tooltip;
 
-        return Positioned(
-          bottom: 16,
-          right: 16,
-          child: Tooltip(
-            message: tooltip,
-            child: FloatingActionButton(
-              onPressed: () {
-                showDialog(
-                  context: context,
-                  builder: (context) => const TunnelStatusDialog(),
-                );
-              },
-              backgroundColor: color,
-              child: Icon(icon, color: Colors.white),
-            ),
-          ),
-        );
-      },
+    if (state.isConnected) {
+      icon = Icons.gpp_good;
+      color = Colors.green;
+      tooltip = 'Tunnel Connected';
+    } else if (state.isConnecting) {
+      icon = Icons.hourglass_empty;
+      color = Colors.orange;
+      tooltip = 'Tunnel Connecting';
+    } else {
+      icon = Icons.gpp_bad;
+      color = AppTheme.dangerColor;
+      tooltip = 'Tunnel Disconnected';
+    }
+
+    return Positioned(
+      bottom: 16,
+      right: 16,
+      child: Tooltip(
+        message: tooltip,
+        child: FloatingActionButton(
+          onPressed: () {
+            showDialog(
+              context: context,
+              builder: (context) => const TunnelStatusDialog(),
+            );
+          },
+          backgroundColor: color,
+          child: Icon(icon, color: Colors.white),
+        ),
+      ),
     );
   }
 }
