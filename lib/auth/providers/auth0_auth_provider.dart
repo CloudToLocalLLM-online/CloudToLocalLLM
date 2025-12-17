@@ -194,11 +194,7 @@ class Auth0AuthProvider implements AuthProvider {
     try {
       debugPrint('[Auth0AuthProvider] Starting interactive login');
 
-      final result = await _auth0
-          .webAuthentication(
-        scheme: UrlSchemeRegistrationService.customScheme,
-      )
-          .login(
+      final result = await _auth0.webAuthentication().login(
         scopes: {'openid', 'profile', 'email', 'offline_access'},
         audience: _audience,
       );
