@@ -39,6 +39,15 @@
 
   <!-- Auth0 SPA SDK -->
   <script src="https://cdn.auth0.com/js/auth0-spa-js/2.1/auth0-spa-js.production.js"></script>
+  <script>
+    // Compatibility bridge for older versions of auth0_flutter that expect createAuth0Client
+    window.createAuth0Client = function (options) {
+      if (window.auth0 && window.auth0.Auth0Client) {
+        return Promise.resolve(new window.auth0.Auth0Client(options));
+      }
+      return Promise.reject(new Error('Auth0 SDK not loaded'));
+    };
+  </script>
   <!-- <script src="auth0-bridge.js"></script> -->
 
   <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport">
