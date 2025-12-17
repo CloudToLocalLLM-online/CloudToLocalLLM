@@ -8,7 +8,6 @@ This document provides the context, architectural understanding, and operational
 
 *   **Goal:** Secure, private, local AI with cloud convenience.
 *   **Status:** Active Development (Early Access).
-*   **Critical Awareness:** 🚨 **SECURITY ALERT:** See `CRITICAL_SECURITY_ISSUE_CONVERSATION_ISOLATION.md`. Database schemas currently lack user isolation for conversations.
 
 ## 2. Technical Architecture
 
