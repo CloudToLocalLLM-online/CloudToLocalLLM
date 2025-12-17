@@ -91,9 +91,12 @@ class Auth0AuthProvider implements AuthProvider {
 
   @override
   Future<void> initialize() async {
+    debugPrint('[Auth0AuthProvider] initialize() called');
     try {
       // Register URL scheme for Windows desktop OAuth callbacks
       if (!kIsWeb && Platform.isWindows) {
+        debugPrint(
+            '[Auth0AuthProvider] Checking Windows URL scheme registration');
         final isRegistered =
             await UrlSchemeRegistrationService.isSchemeRegistered();
         if (!isRegistered) {
@@ -110,6 +113,7 @@ class Auth0AuthProvider implements AuthProvider {
         }
 
         // Listen for incoming URLs (OAuth callbacks)
+        debugPrint('[Auth0AuthProvider] Setting up URL scheme listener');
         _linkSubscription = _appLinks.uriLinkStream.listen(
           (Uri uri) {
             debugPrint('[Auth0AuthProvider] Received URL callback: $uri');
@@ -122,29 +126,70 @@ class Auth0AuthProvider implements AuthProvider {
       }
 
       // Check for existing credentials
+      debugPrint(
+          '[Auth0AuthProvider] Checking SecureStorage for existing tokens...');
       final accessToken = await _secureStorage.read(key: 'access_token');
       final idToken = await _secureStorage.read(key: 'id_token');
 
+      debugPrint(
+          '[Auth0AuthProvider] Token status: accessToken=${accessToken != null ? "found" : "null"}, idToken=${idToken != null ? "found" : "null"}');
+
       if (accessToken != null && accessToken.isNotEmpty && idToken != null) {
         // Check if tokens are still valid
-        if (!JwtDecoder.isExpired(accessToken) &&
-            !JwtDecoder.isExpired(idToken)) {
+        final isAccessExpired = JwtDecoder.isExpired(accessToken);
+        final isIdExpired = JwtDecoder.isExpired(idToken);
+
+        debugPrint(
+            '[Auth0AuthProvider] Token validity: accessTokenExpired=$isAccessExpired, idTokenExpired=$isIdExpired');
+
+        if (!isAccessExpired && !isIdExpired) {
+          debugPrint(
+              '[Auth0AuthProvider] Tokens are valid, setting current user');
           _currentUser = _idTokenToUser(idToken);
           _authStateController.add(true);
+          return;
         } else {
           // Tokens expired, try to refresh
+          debugPrint(
+              '[Auth0AuthProvider] Tokens expired, attempting refresh...');
           final refreshToken = await _secureStorage.read(key: 'refresh_token');
+          debugPrint(
+              '[Auth0AuthProvider] Refresh token status: ${refreshToken != null ? "found" : "null"}');
           if (refreshToken != null) {
             await _refreshTokens(refreshToken);
-          } else {
-            _authStateController.add(false);
+            return;
           }
         }
-      } else {
-        _authStateController.add(false);
       }
-    } catch (e) {
-      debugPrint('[Auth0AuthProvider] Initialize error: $e');
+
+      // If we're on web and no tokens in storage, try silent session check
+      if (kIsWeb) {
+        debugPrint(
+            '[Auth0AuthProvider] Web platform: attempting silent session check via Auth0...');
+        try {
+          final credentials = await _auth0.webAuthentication().login(
+            parameters: {'prompt': 'none'},
+            scopes: {'openid', 'profile', 'email', 'offline_access'},
+            audience: _audience,
+          );
+
+          debugPrint(
+              '[Auth0AuthProvider] Silent login successful, storing credentials');
+          await _storeCredentials(credentials);
+          _currentUser = _idTokenToUser(credentials.idToken);
+          _authStateController.add(true);
+          return;
+        } catch (e) {
+          debugPrint(
+              '[Auth0AuthProvider] Silent login failed (expected if not logged in): $e');
+        }
+      }
+
+      debugPrint('[Auth0AuthProvider] No valid session found');
+      _authStateController.add(false);
+    } catch (e, stack) {
+      debugPrint('[Auth0AuthProvider] CRITICAL Initialize error: $e');
+      debugPrint('[Auth0AuthProvider] Stack: $stack');
       // No existing credentials
       _authStateController.add(false);
     }
@@ -163,7 +208,7 @@ class Auth0AuthProvider implements AuthProvider {
   @override
   Future<void> login() async {
     try {
-      debugPrint('[Auth0AuthProvider] Starting login');
+      debugPrint('[Auth0AuthProvider] Starting login flow...');
 
       final result = await _auth0
           .webAuthentication(
@@ -174,29 +219,40 @@ class Auth0AuthProvider implements AuthProvider {
         audience: _audience,
       );
 
-      debugPrint('[Auth0AuthProvider] Login successful, storing tokens');
+      debugPrint(
+          '[Auth0AuthProvider] Login successful, ID token length: ${result.idToken.length}');
 
-      // Store tokens securely
-      await _secureStorage.write(
-          key: 'access_token', value: result.accessToken);
-      await _secureStorage.write(key: 'id_token', value: result.idToken);
-      if (result.refreshToken != null) {
-        await _secureStorage.write(
-            key: 'refresh_token', value: result.refreshToken);
-      }
+      // Use helper to store credentials
+      await _storeCredentials(result);
 
       // Parse user info from ID token
       if (result.idToken.isNotEmpty) {
         _currentUser = _idTokenToUser(result.idToken);
+        debugPrint('[Auth0AuthProvider] User parsed: ${_currentUser?.email}');
         _authStateController.add(true);
       } else {
+        debugPrint('[Auth0AuthProvider] Error: No ID token received');
         throw AuthException.configuration('No ID token received');
       }
     } catch (e) {
-      debugPrint('[Auth0AuthProvider] Login error: $e');
+      debugPrint('[Auth0AuthProvider] Login error detail: $e');
       _authStateController.add(false);
       throw _categorizeError(e);
     }
+  }
+
+  /// Helper to store credentials securely
+  Future<void> _storeCredentials(Credentials credentials) async {
+    debugPrint('[Auth0AuthProvider] Storing tokens in SecureStorage...');
+    await _secureStorage.write(
+        key: 'access_token', value: credentials.accessToken);
+    await _secureStorage.write(key: 'id_token', value: credentials.idToken);
+    if (credentials.refreshToken != null) {
+      await _secureStorage.write(
+          key: 'refresh_token', value: credentials.refreshToken);
+      debugPrint('[Auth0AuthProvider] Refresh token stored');
+    }
+    debugPrint('[Auth0AuthProvider] Credentials storage complete');
   }
 
   @override
@@ -215,7 +271,8 @@ class Auth0AuthProvider implements AuthProvider {
         // Check for supported platforms for auth0_flutter plugin
         bool isPluginSupported = kIsWeb;
         if (!kIsWeb) {
-          isPluginSupported = Platform.isAndroid || Platform.isIOS || Platform.isMacOS;
+          isPluginSupported =
+              Platform.isAndroid || Platform.isIOS || Platform.isMacOS;
           // Windows has limited support but might use custom scheme, handled separately?
           // Actually locator uses WindowsOAuthProvider for Windows, so this class shouldn't run on Windows usually.
           // But if it does (fallback), we should be careful.
@@ -228,7 +285,8 @@ class Auth0AuthProvider implements AuthProvider {
               )
               .logout();
         } else {
-           debugPrint('[Auth0AuthProvider] Logout skipped: Not supported on this platform');
+          debugPrint(
+              '[Auth0AuthProvider] Logout skipped: Not supported on this platform');
         }
       } catch (e) {
         debugPrint('[Auth0AuthProvider] Logout error (non-critical): $e');

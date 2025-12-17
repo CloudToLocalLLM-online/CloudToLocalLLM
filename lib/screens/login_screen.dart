@@ -59,11 +59,13 @@ class _LoginScreenState extends State<LoginScreen> {
   void _onAuthStateChanged() {
     if (mounted) {
       final authService = context.read<AuthService>();
-      if (authService.isAuthenticated.value) {
-        debugPrint(' [Login] Auth state changed - user now authenticated');
-        debugPrint(
-          ' [Login] Redirecting to home after successful authentication',
-        );
+      final isAuthenticated = authService.isAuthenticated.value;
+      debugPrint(
+          ' [LoginScreen] _onAuthStateChanged: isAuthenticated=$isAuthenticated');
+
+      if (isAuthenticated) {
+        debugPrint(' [LoginScreen] User authenticated, redirecting to home');
+        // Use go('/') instead of pushing to avoid stacking screens
         context.go('/');
       }
     }
