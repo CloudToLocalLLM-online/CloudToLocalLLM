@@ -31,7 +31,7 @@ spec:
         fsGroup: 1001
       initContainers:
         - name: db-migrate
-          image: imrightguycloudtolocalllm.azurecr.io/api-backend:7.10.9-202512181745-api-backend
+          image: imrightguycloudtolocalllm.azurecr.io/api-backend:7.10.9-202512182335-api-backend
           imagePullPolicy: Always
           command: ["npm", "run", "db:migrate"]
           securityContext:
@@ -212,7 +212,7 @@ spec:
                   optional: true
       containers:
         - name: api-backend
-          image: imrightguycloudtolocalllm.azurecr.io/api-backend:7.10.9-202512181745-api-backend
+          image: imrightguycloudtolocalllm.azurecr.io/api-backend:7.10.9-202512182335-api-backend
           imagePullPolicy: Always
           ports:
             - containerPort: 8080
