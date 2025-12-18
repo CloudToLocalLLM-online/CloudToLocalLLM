@@ -39,7 +39,7 @@ spec:
         - name: regcred
       containers:
         - name: web
-          image: imrightguycloudtolocalllm.azurecr.io/web:7.10.9-202512181113
+          image: imrightguycloudtolocalllm.azurecr.io/web:7.10.9-202512181137
           imagePullPolicy: Always
           ports:
             - containerPort: 8080
