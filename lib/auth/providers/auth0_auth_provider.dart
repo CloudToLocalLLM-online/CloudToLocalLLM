@@ -8,11 +8,12 @@ import 'package:app_links/app_links.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:jwt_decoder/jwt_decoder.dart';
-import 'package:web/web.dart' as web;
 import '../auth_provider.dart';
 import '../../models/user_model.dart';
 import '../../services/url_scheme_registration_service.dart'
-    if (dart.library.html) '../../services/url_scheme_registration_service_stub.dart';
+    if (dart.library.js_interop) '../../services/url_scheme_registration_service_stub.dart';
+import 'auth0_web_script_helper_stub.dart'
+    if (dart.library.js_interop) 'auth0_web_script_helper_web.dart';
 
 /// Error types for authentication failures
 enum AuthErrorType {
@@ -171,40 +172,7 @@ class Auth0AuthProvider implements AuthProvider {
 
   Future<void> _initializeWeb() async {
     debugPrint('[Auth0AuthProvider] Initializing Web...');
-
-    // Check if script is already present in the DOM
-    final scripts = web.document.getElementsByTagName('script');
-    bool isLoaded = false;
-    for (int i = 0; i < scripts.length; i++) {
-      final item = scripts.item(i);
-      if (item is web.HTMLScriptElement && item.src.contains('auth0-spa-js')) {
-        isLoaded = true;
-        break;
-      }
-    }
-
-    if (!isLoaded) {
-      debugPrint('[Auth0AuthProvider] Loading Auth0 SDK dynamically...');
-      final script = web.HTMLScriptElement();
-      script.src =
-          'https://cdn.auth0.com/js/auth0-spa-js/2.1/auth0-spa-js.production.js';
-      script.async = true;
-
-      final completer = Completer<void>();
-      script.onload = (web.Event e) {
-        debugPrint('[Auth0AuthProvider] Auth0 SDK loaded successfully');
-        completer.complete();
-      }.toJS;
-      script.onerror = (web.Event e) {
-        debugPrint('[Auth0AuthProvider] Failed to load Auth0 SDK');
-        completer.completeError(AuthException.network('Failed to load SDK'));
-      }.toJS;
-
-      web.document.head!.appendChild(script);
-      await completer.future;
-    } else {
-      debugPrint('[Auth0AuthProvider] Auth0 SDK already present');
-    }
+    await loadAuth0Script();
   }
 
   @override
