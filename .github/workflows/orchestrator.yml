@@ -110,7 +110,7 @@ jobs:
           echo "should_deploy=$DEPLOY" >> $GITHUB_OUTPUT
 
       - name: Commit Version Bump
-        if: steps.decision.outputs.should_deploy == 'true' && steps.analyze.outputs.bump_type != 'none'
+        if: steps.decision.outputs.should_deploy == 'true'
         env:
           NEW_VERSION: ${{ steps.analyze.outputs.new_version }}
         run: |

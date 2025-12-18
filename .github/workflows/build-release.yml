@@ -95,6 +95,12 @@ jobs:
           channel: "stable"
           cache: true
 
+      - name: Update Versions
+        if: matrix.service == 'web'
+        run: |
+          chmod +x scripts/update-all-versions.sh
+          ./scripts/update-all-versions.sh "${{ inputs.version }}" "${{ github.sha }}"
+
       - name: Build Flutter Web
         if: matrix.service == 'web'
         run: |
@@ -173,6 +179,12 @@ jobs:
         with:
           channel: "stable"
           cache: true
+
+      - name: Update Versions
+        shell: bash
+        run: |
+          chmod +x scripts/update-all-versions.sh
+          ./scripts/update-all-versions.sh "${{ inputs.version }}" "${{ github.sha }}"
 
       - name: Install Dependencies
         run: flutter pub get
