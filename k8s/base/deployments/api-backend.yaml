@@ -94,6 +94,31 @@ spec:
                 secretKeyRef:
                   name: cloudtolocalllm-secrets
                   key: postgres-user
+            - name: AUTH_DB_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: cloudtolocalllm-config
+                  key: AUTH_DB_HOST
+            - name: AUTH_DB_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: cloudtolocalllm-config
+                  key: AUTH_DB_PORT
+            - name: AUTH_DB_NAME
+              valueFrom:
+                configMapKeyRef:
+                  name: cloudtolocalllm-config
+                  key: AUTH_DB_NAME
+            - name: AUTH_DB_USER
+              valueFrom:
+                configMapKeyRef:
+                  name: cloudtolocalllm-config
+                  key: AUTH_DB_USER
+            - name: AUTH_DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: cloudtolocalllm-secrets
+                  key: postgres-auth-password
 
             # Secrets
             - name: DB_PASSWORD
@@ -249,6 +274,31 @@ spec:
                 secretKeyRef:
                   name: cloudtolocalllm-secrets
                   key: postgres-user
+            - name: AUTH_DB_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: cloudtolocalllm-config
+                  key: AUTH_DB_HOST
+            - name: AUTH_DB_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: cloudtolocalllm-config
+                  key: AUTH_DB_PORT
+            - name: AUTH_DB_NAME
+              valueFrom:
+                configMapKeyRef:
+                  name: cloudtolocalllm-config
+                  key: AUTH_DB_NAME
+            - name: AUTH_DB_USER
+              valueFrom:
+                configMapKeyRef:
+                  name: cloudtolocalllm-config
+                  key: AUTH_DB_USER
+            - name: AUTH_DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: cloudtolocalllm-secrets
+                  key: postgres-auth-password
 
             # Secrets
             - name: DB_PASSWORD

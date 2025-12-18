@@ -55,6 +55,7 @@ spec:
           volumeMounts:
             - name: postgres-auth-data
               mountPath: /var/lib/postgresql/data
+              subPath: postgres-data
             - name: init-scripts-auth
               mountPath: /docker-entrypoint-initdb.d
           resources:
@@ -89,7 +90,7 @@ spec:
         name: postgres-auth-data
       spec:
         accessModes: ["ReadWriteOnce"]
-        storageClassName: do-block-storage
+        storageClassName: default
         resources:
           requests:
             storage: 5Gi  # Smaller storage for auth data only
