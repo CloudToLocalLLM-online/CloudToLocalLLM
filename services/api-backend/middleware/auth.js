@@ -54,7 +54,7 @@ async function ensureAuthServiceInitialized() {
 export async function syncSession(req, res, next) {
   try {
     await ensureAuthServiceInitialized();
-    
+
     // auth() middleware from express-oauth2-jwt-bearer populates req.auth
     const tokenPayload = req.auth.payload;
     const authHeader = req.headers['authorization'];
@@ -72,7 +72,7 @@ export async function syncSession(req, res, next) {
     // 1. Rigorous session integrity check against database
     // This allows for immediate token revocation via the is_active flag
     const isActive = await authService.isTokenActive(userId, token);
-    
+
     if (!isActive) {
       // If no active session found, we might want to auto-sync it if it's a fresh valid login
       // But per requirements, we want synchronized validation.
@@ -204,50 +204,6 @@ export function requireScope(requiredScope) {
   };
 }
 
-/**
- * Optional authentication middleware
- * Attaches user info if token is present and valid, but doesn't require it
- */
-export async function optionalAuth(req, res, next) {
-  const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1];
-
-  if (!token) {
-    // No token provided, continue without authentication
-    return next();
-  }
-
-  try {
-    // Try to verify with Secret (HS256)
-    const decoded = jwt.verify(token, SUPABASE_JWT_SECRET, {
-      algorithms: ['HS256'],
-      audience: 'authenticated',
-    });
-
-    if (decoded) {
-      // Validate via AuthService (session logic)
-      const result = await authService.validateToken(token, req, decoded);
-
-      if (result.valid) {
-        req.user = result.payload;
-        req.userId = result.payload.sub;
-        // Set req.auth for consistency with authenticateJWT
-        req.auth = { payload: result.payload };
-        logger.debug(
-          ` [Auth] Optional auth successful via JWT: ${result.payload.sub}`,
-        );
-      }
-    }
-  } catch (error) {
-    // Token verification failed, but that's okay for optional auth
-    logger.debug(
-      ' [Auth] Optional auth failed, continuing without authentication:',
-      error.message,
-    );
-  }
-
-  next();
-}
 
 /**
  * Container authentication middleware
