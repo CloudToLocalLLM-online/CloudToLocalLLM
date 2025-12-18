@@ -62,6 +62,10 @@ import {
   getAuthMiddleware,
 } from './middleware/pipeline.js';
 import { setupGracefulShutdown } from './middleware/graceful-shutdown.js';
+import {
+  standardCorsOptions,
+  getAllowedOrigins,
+} from './middleware/cors-config.js';
 
 import adminRoutes from './routes/admin.js';
 import adminUserRoutes from './routes/admin/users.js';
@@ -187,47 +191,9 @@ const app = express();
 // Use specific proxy configuration to avoid ERR_ERL_PERMISSIVE_TRUST_PROXY
 app.set('trust proxy', 1); // Trust first proxy (nginx)
 
-// CORS configuration
-const corsOptions = {
-  origin: function(origin, callback) {
-    const allowedOrigins = [
-      'https://app.cloudtolocalllm.online',
-      'https://cloudtolocalllm.online',
-      'https://docs.cloudtolocalllm.online',
-    ];
-    // Allow requests with no origin (like mobile apps or curl requests)
-    if (!origin || allowedOrigins.indexOf(origin) !== -1) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: [
-    'Content-Type',
-    'Authorization',
-    'X-Requested-With',
-    'Accept',
-    'Origin',
-    'X-Correlation-ID',
-  ],
-  exposedHeaders: [
-    'Content-Length',
-    'X-Requested-With',
-    'X-Correlation-ID',
-    'X-Response-Time',
-    'X-Token-Refresh-Suggested',
-    'X-Token-Expires-At',
-  ],
-  maxAge: 86400, // Cache preflight for 24 hours
-  preflightContinue: false,
-  optionsSuccessStatus: 204,
-};
-
 // Setup middleware pipeline with proper ordering
 setupMiddlewarePipeline(app, {
-  corsOptions,
+  corsOptions: standardCorsOptions,
   rateLimitOptions: {
     windowMs: 15 * 60 * 1000,
     max: 100,
