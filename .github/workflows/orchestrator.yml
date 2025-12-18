@@ -60,6 +60,8 @@ jobs:
 
       - name: AI Analysis (Kilocode)
         id: analyze
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: |
           # Ensure scripts are executable
           chmod +x scripts/kilocode-cli.cjs
