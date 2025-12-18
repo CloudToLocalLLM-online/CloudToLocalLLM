@@ -55,6 +55,9 @@ dependencies:
   # UUID generation
   uuid: ^4.5.2
 
+  # Encryption for local storage
+  encrypt: ^5.0.3
+
   # Crypto for PKCE
   crypto: ^3.0.7
 

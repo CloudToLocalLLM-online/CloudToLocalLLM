@@ -155,136 +155,39 @@ export class AuthService {
   }
 
   /**
-   * Validate JWT token
-   * @param {string} token - JWT token to validate
-   * @param {object} req - Request object
-   * @param {object} preValidatedPayload - Optional pre-validated payload
+   * Check if a token is valid and active in the database
+   * Used for synchronized session validation and revocation support
    */
-  async validateToken(token, req = {}, preValidatedPayload = null) {
+  async isTokenActive(userId, token) {
+    const tokenHash = this.hashToken(token);
     try {
-      let payload;
+      const session = await this.runQuery(
+        'SELECT is_active FROM user_sessions WHERE user_id = ? AND jwt_token_hash = ?',
+        [userId, tokenHash],
+        'get',
+      );
 
-      if (preValidatedPayload) {
-        this.logger.info('Using pre-validated token payload');
-        payload = preValidatedPayload;
-      } else {
-        // Decode header to check algorithm
-        const decoded = jwt.decode(token, { complete: true });
-        if (!decoded || !decoded.header) {
-          throw new Error('Invalid token structure');
-        }
-
-        const alg = decoded.header.alg;
-        this.logger.info(`Starting token validation (Alg: ${alg})`);
-
-        payload = await new Promise((resolve, reject) => {
-          // Asymmetric JWKS Validation (RS256, ES256)
-          jwt.verify(
-            token,
-            this.getKey.bind(this),
-            {
-              algorithms: ['RS256', 'ES256'],
-              audience: this.config.AUTH0_AUDIENCE,
-            },
-            (err, decodedToken) => {
-              if (err) {
-                reject(err);
-              } else {
-                resolve(decodedToken);
-              }
-            },
-          );
-        });
-
-        this.logger.info('Token verification successful (Audience verified)');
+      // If session exists, return its active status
+      if (session) {
+        return session.is_active === 1 || session.is_active === true;
       }
 
-      // Check if session exists/is valid
-      // const sessionToken = payload.session_id || payload.sub; // Use sub as fallback if needed
-
-      // In Supabase, the access token doesn't always contain the session_id unless configured.
-      // We will create/update our local session based on the validated token.
-
-      const session = await this.createOrUpdateSession(payload, token, req);
-
-      this.logger.info('Token validated successfully', {
-        userId: payload.sub,
-        sessionId: session.id,
-      });
-
-      return {
-        valid: true,
-        payload: payload,
-        session: session,
-      };
+      // If no session record exists, we might want to auto-create one if the JWT is valid
+      // But for strict revocation, we might require the session to be registered.
+      // Given the user wants "synchronized session validation", we'll return false
+      // or implement auto-registration if it's the first time we see this valid JWT.
+      return false;
     } catch (error) {
-      this.logger.warn(`Token validation failed: ${error.message}`, {
-        error: error.message,
-        ip: req.ip,
-      });
-
-      await this.logSecurityEvent('token_validation_failure', {
-        error: error.message,
-        ip: req.ip,
-        userAgent: req.headers?.['user-agent'],
-      });
-
-      return {
-        valid: false,
-        error: error.message,
-      };
+      this.logger.error('Failed to check token status', { userId, error: error.message });
+      return false;
     }
   }
 
   /**
-   * Validate JWT token for WebSocket connections (no session creation)
-   * @param {string} token - JWT token to validate
-   * @returns {Promise<Object>} Decoded token payload
+   * Synchronize session state from a validated JWT
    */
-  async validateTokenForWebSocket(token) {
-    try {
-      // Decode header to check algorithm
-      const decoded = jwt.decode(token, { complete: true });
-      if (!decoded || !decoded.header) {
-        throw new Error('Invalid token structure');
-      }
-
-      const alg = decoded.header.alg;
-      this.logger.info(`Starting WebSocket token validation (Alg: ${alg})`);
-
-      const verified = await new Promise((resolve, reject) => {
-        // Asymmetric JWKS Validation (RS256, ES256)
-        jwt.verify(
-          token,
-          this.getKey.bind(this),
-          {
-            algorithms: ['RS256', 'ES256'],
-            audience: this.config.AUTH0_AUDIENCE,
-          },
-          (err, decodedToken) => {
-            if (err) {
-              reject(err);
-            } else {
-              resolve(decodedToken);
-            }
-          },
-        );
-      });
-
-      this.logger.info('WebSocket token verification successful', {
-        userId: verified.sub,
-        exp: verified.exp,
-        iat: verified.iat,
-      });
-
-      return verified;
-    } catch (error) {
-      this.logger.warn('WebSocket token validation failed', {
-        error: error.message,
-      });
-
-      throw error;
-    }
+  async syncSession(tokenPayload, token, req) {
+    return this.createOrUpdateSession(tokenPayload, token, req);
   }
 
   /**

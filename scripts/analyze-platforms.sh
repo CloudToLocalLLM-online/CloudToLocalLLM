@@ -29,7 +29,7 @@ echo ""
 
 # Pre-analyze files to force cloud deployment for web-related changes
 FORCE_CLOUD=false
-if echo "$CHANGED_FILES" | grep -qE "(web/|lib/.*auth|lib/.*router|lib/config/|services/|k8s/|auth0-bridge|\.github/workflows/deploy-aks\.yml)"; then
+if echo "$CHANGED_FILES" | grep -qE "(web/|lib/.*auth|lib/.*router|lib/config/|services/|k8s/|\.github/workflows/deploy-aks\.yml)"; then
     FORCE_CLOUD=true
     echo "🌐 DETECTED WEB-RELATED CHANGES - Cloud deployment will be forced"
 fi

@@ -13,6 +13,8 @@ import '../../services/url_scheme_registration_service.dart'
     if (dart.library.js_interop) '../../services/url_scheme_registration_service_stub.dart';
 import 'auth0_web_script_helper_stub.dart'
     if (dart.library.js_interop) 'auth0_web_script_helper_web.dart';
+import '../../services/token_storage_service.dart';
+import '../../di/locator.dart' as di;
 
 /// Error types for authentication failures
 enum AuthErrorType {
@@ -52,7 +54,7 @@ class AuthException implements Exception {
 class Auth0AuthProvider implements AuthProvider {
   late final Auth0 _auth0;
   Auth0Web? _auth0Web;
-  final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
+  late final TokenStorageService _tokenStorage;
   late final AppLinks _appLinks;
   StreamSubscription<Uri>? _linkSubscription;
 
@@ -75,6 +77,7 @@ class Auth0AuthProvider implements AuthProvider {
             const String.fromEnvironment('AUTH0_AUDIENCE',
                 defaultValue: 'https://api.cloudtolocalllm.online') {
     _appLinks = AppLinks();
+    _tokenStorage = di.serviceLocator.get<TokenStorageService>();
     if (!kIsWeb) {
       _auth0 = Auth0(_domain, _clientId);
     } else {
@@ -121,12 +124,12 @@ class Auth0AuthProvider implements AuthProvider {
         );
       }
 
-      // Check for existing tokens in storage
-      final accessToken = await _secureStorage.read(key: 'access_token');
-      final idToken = await _secureStorage.read(key: 'id_token');
+      // Check for existing tokens in secure SQLite storage
+      final accessToken = await _tokenStorage.getToken('access_token');
+      final idToken = await _tokenStorage.getToken('id_token');
 
       if (accessToken != null && idToken != null) {
-        debugPrint('[Auth0AuthProvider] Found tokens in storage');
+        debugPrint('[Auth0AuthProvider] Found tokens in secure SQLite storage');
         if (!JwtDecoder.isExpired(accessToken) &&
             !JwtDecoder.isExpired(idToken)) {
           debugPrint('[Auth0AuthProvider] Tokens are valid, restoring session');
@@ -135,7 +138,7 @@ class Auth0AuthProvider implements AuthProvider {
           return;
         } else {
           debugPrint('[Auth0AuthProvider] Tokens expired, attempting refresh');
-          final refreshToken = await _secureStorage.read(key: 'refresh_token');
+          final refreshToken = await _tokenStorage.getToken('refresh_token');
           if (refreshToken != null) {
             await _refreshTokens(refreshToken);
             if (_currentUser != null) return;
@@ -177,7 +180,7 @@ class Auth0AuthProvider implements AuthProvider {
   @override
   Future<String?> getAccessToken() async {
     try {
-      return await _secureStorage.read(key: 'access_token');
+      return await _tokenStorage.getToken('access_token');
     } catch (e) {
       debugPrint('[Auth0AuthProvider] Error getting access token: $e');
       return null;
@@ -185,12 +188,11 @@ class Auth0AuthProvider implements AuthProvider {
   }
 
   Future<void> _storeCredentials(Credentials result) async {
-    debugPrint('[Auth0AuthProvider] Storing credentials');
-    await _secureStorage.write(key: 'access_token', value: result.accessToken);
-    await _secureStorage.write(key: 'id_token', value: result.idToken);
+    debugPrint('[Auth0AuthProvider] Storing credentials in secure SQLite');
+    await _tokenStorage.saveToken('access_token', result.accessToken);
+    await _tokenStorage.saveToken('id_token', result.idToken);
     if (result.refreshToken != null) {
-      await _secureStorage.write(
-          key: 'refresh_token', value: result.refreshToken);
+      await _tokenStorage.saveToken('refresh_token', result.refreshToken!);
     }
 
     if (result.idToken.isNotEmpty) {
@@ -233,9 +235,9 @@ class Auth0AuthProvider implements AuthProvider {
   Future<void> logout() async {
     try {
       // Clear stored tokens
-      await _secureStorage.delete(key: 'access_token');
-      await _secureStorage.delete(key: 'id_token');
-      await _secureStorage.delete(key: 'refresh_token');
+      await _tokenStorage.deleteToken('access_token');
+      await _tokenStorage.deleteToken('id_token');
+      await _tokenStorage.deleteToken('refresh_token');
 
       _currentUser = null;
       _authStateController.add(false);

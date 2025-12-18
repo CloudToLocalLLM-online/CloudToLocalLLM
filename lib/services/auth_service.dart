@@ -96,12 +96,6 @@ class AuthService extends ChangeNotifier {
   Future<void> _handleAuthenticatedUser(UserModel user) async {
     if (_isAuthenticated.value) return;
 
-    // Register session
-    final token = await _authProvider.getAccessToken();
-    if (token != null) {
-      await _registerSession(token, user);
-    }
-
     _isAuthenticated.value = true;
     notifyListeners();
 
@@ -191,44 +185,6 @@ class AuthService extends ChangeNotifier {
 
   Future<bool> handleCallback({String? callbackUrl, String? code}) async {
     return _authProvider.handleCallback(url: callbackUrl);
-  }
-
-  // Session registration helper
-  Future<void> _registerSession(
-    String token,
-    UserModel user,
-  ) async {
-    try {
-      final dio = Dio();
-      // Ensure backend knows about this session
-      final response = await dio.post(
-        '${AppConfig.apiBaseUrl}/api/auth/sessions',
-        options: Options(
-          headers: {
-            'Authorization': 'Bearer $token',
-            'Content-Type': 'application/json',
-          },
-          validateStatus: (status) => status! < 500,
-        ),
-        data: {
-          'userId': user.id,
-          'token': token,
-          'jwtAccessToken': token,
-          'userProfile': {
-            'email': user.email,
-            'name': user.name,
-          },
-        },
-      );
-      if (response.statusCode != 200 && response.statusCode != 201) {
-        print(
-          '[AuthService] Warning: Session registration failed: ${response.statusCode}',
-        );
-      }
-    } catch (e) {
-      print('[AuthService] Register session error: $e');
-      // Non-blocking
-    }
   }
 
   void _completeSessionBootstrap() {

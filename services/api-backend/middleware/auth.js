@@ -5,7 +5,7 @@
  * with user ID extraction utilities.
  */
 
-import jwt from 'jsonwebtoken';
+import { auth } from 'express-oauth2-jwt-bearer';
 import crypto from 'crypto';
 import Redis from 'ioredis';
 import { RedisStore } from 'rate-limit-redis';
@@ -15,19 +15,19 @@ import { AuthService } from '../auth/auth-service.js';
 import { logLoginFailure } from '../services/auth-audit-service.js';
 
 // JWT configuration
-const DEFAULT_JWT_AUDIENCE = 'https://api.cloudtolocalllm.online';
-const JWT_AUDIENCE = process.env.JWT_AUDIENCE || DEFAULT_JWT_AUDIENCE;
-const SUPABASE_JWT_SECRET = process.env.SUPABASE_JWT_SECRET;
+const AUTH0_DOMAIN = process.env.AUTH0_DOMAIN || 'dev-v2f2p008x3dr74ww.us.auth0.com';
+const AUTH0_AUDIENCE = process.env.AUTH0_AUDIENCE || 'https://api.cloudtolocalllm.online';
 
-if (!SUPABASE_JWT_SECRET) {
-  logger.warn(
-    '[Auth] SUPABASE_JWT_SECRET is missing. JWT verification will fail.',
-  );
-}
+// Rigorous JWT verification middleware using industry-standard library
+export const checkJwt = auth({
+  audience: AUTH0_AUDIENCE,
+  issuerBaseURL: `https://${AUTH0_DOMAIN}/`,
+  tokenSigningAlg: 'RS256',
+});
 
-// Use AuthService for extended validation/session management
+// Use AuthService for session synchronization and revocation checks
 const authService = new AuthService({
-  JWT_AUDIENCE,
+  AUTH0_AUDIENCE,
 });
 
 let authServiceInitialized = false;
@@ -48,149 +48,109 @@ async function ensureAuthServiceInitialized() {
 }
 
 /**
- * JWT Authentication Middleware
- * Validates JWT tokens and attaches user info to request
- *
- * Validates: Requirements 2.1, 2.2, 2.9, 2.10
- * - Validates JWT tokens from Supabase on every protected request
- * - Implements token refresh mechanism for expired tokens
- * - Implements token revocation for logout operations
- * - Enforces HTTPS for all authentication endpoints
+ * Synchronized Session Validation Middleware
+ * Checks the validated JWT against the database to handle revocation and session integrity
  */
-export async function authenticateJWT(req, res, next) {
-  // Check HTTPS enforcement in production
-  if (process.env.NODE_ENV === 'production' && req.protocol !== 'https') {
-    logger.warn(' [Auth] Non-HTTPS request to protected endpoint', {
-      protocol: req.protocol,
-      path: req.path,
-      ip: req.ip,
-    });
-
-    return res.status(403).json({
-      error: 'HTTPS required',
-      code: 'HTTPS_REQUIRED',
-      message: 'Protected endpoints require HTTPS',
-    });
-  }
-
-  const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1];
-
-  if (!token) {
-    return res.status(401).json({
-      error: 'Access token required',
-      code: 'MISSING_TOKEN',
-    });
-  }
-
+export async function syncSession(req, res, next) {
   try {
-    // 1. Try to verify with Secret (HS256) - Fast path for internal/legacy tokens
-    let decoded;
-    try {
-      decoded = jwt.verify(token, SUPABASE_JWT_SECRET, {
-        algorithms: ['HS256'],
-        audience: 'authenticated',
-      });
-    } catch (hs256Error) {
-      // If HS256 fails, we'll try RS256 via AuthService below
-      logger.debug(
-        ' [Auth] HS256 verification failed, trying RS256 via AuthService',
-        {
-          error: hs256Error.message,
-        },
-      );
-    }
-
-    // 2. If HS256 succeeded, use the decoded payload
-    if (decoded) {
-      // Check token expiry
-      const now = Math.floor(Date.now() / 1000);
-      const expiresIn = (decoded.exp || 0) - now;
-      const isExpiring = expiresIn <= 300;
-
-      // Ensure AuthService is initialized (for session tracking)
-      try {
-        await ensureAuthServiceInitialized();
-        // Use AuthService with pre-validated payload to create/update session
-        const result = await authService.validateToken(token, req, decoded);
-
-        if (result.valid) {
-          req.user = result.payload;
-          req.userId = result.payload.sub;
-          req.auth = { payload: result.payload };
-          req.tokenExpiring = isExpiring;
-          return next();
-        }
-      } catch (serviceError) {
-        // If AuthService fails but token is valid HS256, we might still want to proceed
-        // depending on strictness. For now, let's fall back to just the token payload.
-        logger.warn(
-          ' [Auth] AuthService session tracking failed for HS256 token',
-          {
-            error: serviceError.message,
-          },
-        );
-        req.user = decoded;
-        req.userId = decoded.sub;
-        req.auth = { payload: decoded };
-        req.tokenExpiring = isExpiring;
-        return next();
-      }
-    }
-
-    // 3. If HS256 failed (decoded is undefined), try full validation via AuthService (RS256)
     await ensureAuthServiceInitialized();
-    const result = await authService.validateToken(token, req);
+    
+    // auth() middleware from express-oauth2-jwt-bearer populates req.auth
+    const tokenPayload = req.auth.payload;
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1];
 
-    if (!result.valid) {
-      throw new Error(result.error || 'Token validation failed');
+    if (!tokenPayload || !token) {
+      return res.status(401).json({
+        error: 'Unauthorized',
+        message: 'No validated token payload found',
+      });
     }
 
-    // Success via RS256
-    const now = Math.floor(Date.now() / 1000);
-    const expiresIn = (result.payload.exp || 0) - now;
-    const isExpiring = expiresIn <= 300;
+    const userId = tokenPayload.sub;
 
-    req.user = result.payload;
-    req.userId = result.payload.sub;
-    req.auth = { payload: result.payload };
-    req.tokenExpiring = isExpiring;
+    // 1. Rigorous session integrity check against database
+    // This allows for immediate token revocation via the is_active flag
+    const isActive = await authService.isTokenActive(userId, token);
+    
+    if (!isActive) {
+      // If no active session found, we might want to auto-sync it if it's a fresh valid login
+      // But per requirements, we want synchronized validation.
+      // For now, let's auto-sync if it's the first time we see this valid JWT.
+      const session = await authService.syncSession(tokenPayload, token, req);
+      if (!session || !session.is_active) {
+        logger.warn(` [Auth] Access denied: Session revoked or inactive for user ${userId}`);
+        return res.status(401).json({
+          error: 'Unauthorized',
+          code: 'SESSION_REVOKED',
+          message: 'Your session has been revoked or is no longer active.',
+        });
+      }
+    } else {
+      // Update last activity for existing session
+      await authService.syncSession(tokenPayload, token, req);
+    }
 
-    logger.debug(` [Auth] User authenticated via RS256: ${result.payload.sub}`);
+    // Attach user info for convenience
+    req.user = tokenPayload;
+    req.userId = userId;
+
     next();
   } catch (error) {
-    logger.warn(' [Auth] Token verification failed', {
-      message: error.message,
-      code: error.code,
-      name: error.name,
-      ip: req.ip,
+    logger.error(' [Auth] Session synchronization failed', {
+      error: error.message,
+      userId: req.auth?.payload?.sub,
     });
-
-    // Log failed authentication attempt
-    logLoginFailure({
-      userId: null,
-      ipAddress: req.ip || req.connection.remoteAddress,
-      userAgent: req.get('User-Agent'),
-      reason: error.message || 'Token verification failed',
-      details: {
-        code: error.code || 'TOKEN_VERIFICATION_FAILED',
-        endpoint: req.path,
-        method: req.method,
-      },
-    }).catch((auditError) => {
-      logger.error('[Auth] Failed to log authentication failure', {
-        error: auditError.message,
-      });
-    });
-
-    const status = 401;
-    return res.status(status).json({
-      error: 'Invalid or expired token',
-      code: 'TOKEN_VERIFICATION_FAILED',
-      details: error.message,
-    });
+    next(error);
   }
 }
+
+/**
+ * Optional authentication middleware
+ * Attaches user info if token is present and valid, but doesn't require it
+ */
+export async function optionalAuth(req, res, next) {
+  const authHeader = req.headers['authorization'];
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return next();
+  }
+
+  // Use checkJwt but handle failure gracefully
+  checkJwt(req, res, (err) => {
+    if (err) {
+      logger.debug(' [Auth] Optional auth failed verification:', err.message);
+      return next();
+    }
+    // If JWT is valid, also try to sync/check session but don't block
+    syncSession(req, res, (syncErr) => {
+      if (syncErr) {
+        logger.debug(' [Auth] Optional auth session sync failed:', syncErr.message);
+      }
+      next();
+    });
+  });
+}
+
+/**
+ * Combined JWT Authentication Middleware
+ * Performs rigorous JWT verification AND synchronized session validation
+ */
+export const authenticateJWT = [
+  // 1. Enforce HTTPS in production
+  (req, res, next) => {
+    if (process.env.NODE_ENV === 'production' && req.get('x-forwarded-proto') !== 'https' && req.protocol !== 'https') {
+      return res.status(403).json({
+        error: 'HTTPS required',
+        code: 'HTTPS_REQUIRED',
+      });
+    }
+    next();
+  },
+  // 2. Rigorous JWT verification (Audience, Issuer, Signature)
+  checkJwt,
+  // 3. Synchronized session check (Revocation, Integrity, DB Sync)
+  syncSession
+];
 
 /**
  * Extract user ID from authenticated request

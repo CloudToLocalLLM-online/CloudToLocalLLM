@@ -4,116 +4,14 @@ import db from '../database/db-pool.js';
 
 /**
  * POST /auth/sessions
- * Create a new session for an authenticated user
+ * Legacy endpoint - now deprecated.
+ * Sessions are now automatically synchronized via authenticateJWT middleware.
  */
-router.post('/', async(req, res) => {
-  try {
-    const { userId, token, expiresAt, userProfile } = req.body;
-
-    if (!userId || !token || !expiresAt) {
-      return res
-        .status(400)
-        .json({ error: 'Missing required fields: userId, token, expiresAt' });
-    }
-
-    // First, ensure user exists in users table with JWT profile data
-    // Robust User Resolution Logic
-    // 1. Try to find user by jwt_id
-    let dbUserId;
-    const existingByJwt = await db.query(
-      'SELECT id FROM users WHERE jwt_id = $1',
-      [userId],
-    );
-
-    if (existingByJwt.rows.length > 0) {
-      dbUserId = existingByJwt.rows[0].id;
-      // Update user profile
-      await db.query(
-        `UPDATE users SET
-           email = $1, name = $2, nickname = $3, picture = $4,
-           email_verified = $5, locale = $6, updated_at = NOW()
-         WHERE id = $7`,
-        [
-          userProfile?.email || `${userId}@jwt.local`,
-          userProfile?.name || 'Unknown User',
-          userProfile?.nickname || null,
-          userProfile?.picture || null,
-          userProfile?.email_verified || false,
-          userProfile?.locale || null,
-          dbUserId,
-        ],
-      );
-    } else {
-      // 2. Try to find user by email (fallback for migration)
-      const email = userProfile?.email || `${userId}@jwt.local`;
-      const existingByEmail = await db.query(
-        'SELECT id FROM users WHERE email = $1',
-        [email],
-      );
-
-      if (existingByEmail.rows.length > 0) {
-        dbUserId = existingByEmail.rows[0].id;
-        // User exists but has no jwt_id (or different one?). Link current jwt_id.
-        await db.query(
-          `UPDATE users SET
-             jwt_id = $1, name = $2, nickname = $3, picture = $4,
-             email_verified = $5, locale = $6, updated_at = NOW()
-           WHERE id = $7`,
-          [
-            userId,
-            userProfile?.name || 'Unknown User',
-            userProfile?.nickname || null,
-            userProfile?.picture || null,
-            userProfile?.email_verified || false,
-            userProfile?.locale || null,
-            dbUserId,
-          ],
-        );
-      } else {
-        // 3. Create new user
-        const result = await db.query(
-          `INSERT INTO users (jwt_id, email, name, nickname, picture, email_verified, locale, created_at, updated_at)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), NOW())
-           RETURNING id`,
-          [
-            userId,
-            email,
-            userProfile?.name || 'Unknown User',
-            userProfile?.nickname || null,
-            userProfile?.picture || null,
-            userProfile?.email_verified || false,
-            userProfile?.locale || null,
-          ],
-        );
-        dbUserId = result.rows[0].id;
-      }
-    }
-
-    // dbUserId is already assigned in logic above
-
-    // Create session
-    const sessionResult = await db.query(
-      `INSERT INTO user_sessions (user_id, session_token, expires_at, created_at, last_activity)
-       VALUES ($1, $2, $3, NOW(), NOW())
-       ON CONFLICT (session_token)
-       DO UPDATE SET
-         last_activity = NOW(),
-         expires_at = EXCLUDED.expires_at,
-         user_id = EXCLUDED.user_id
-       RETURNING id`,
-      [dbUserId, token, expiresAt],
-    );
-
-    res.status(201).json({
-      id: sessionResult.rows[0].id,
-      token: token,
-      userId: dbUserId,
-      expiresAt: expiresAt,
-    });
-  } catch (error) {
-    console.error('Error creating session:', error);
-    res.status(500).json({ error: 'Failed to create session' });
-  }
+router.post('/', async (req, res) => {
+  res.status(410).json({
+    error: 'Gone',
+    message: 'This manual session registration endpoint is deprecated. Sessions are now handled automatically via JWT middleware.'
+  });
 });
 
 /**

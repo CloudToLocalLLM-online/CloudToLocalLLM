@@ -42,6 +42,7 @@ import 'package:cloudtolocalllm/services/theme_provider.dart';
 import 'package:cloudtolocalllm/services/platform_detection_service.dart';
 import 'package:cloudtolocalllm/services/platform_adapter.dart';
 import 'package:cloudtolocalllm/services/url_scheme_registration_service.dart';
+import 'package:cloudtolocalllm/services/token_storage_service.dart';
 import 'package:cloudtolocalllm/models/provider_configuration.dart';
 
 final GetIt serviceLocator = GetIt.instance;
@@ -66,6 +67,11 @@ Future<void> setupCoreServices() async {
   final sessionStorageService = SessionStorageService();
   serviceLocator
       .registerSingleton<SessionStorageService>(sessionStorageService);
+
+  // Token storage service for encrypted local persistence (SQLite)
+  final tokenStorageService = TokenStorageService();
+  await tokenStorageService.init();
+  serviceLocator.registerSingleton<TokenStorageService>(tokenStorageService);
 
   // Authentication Provider - Using platform-specific provider
   late AuthProvider authProvider;

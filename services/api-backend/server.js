@@ -406,7 +406,7 @@ app.all(
 );
 
 // User tier endpoint
-registerRoutes('/user/tier', authenticateJWT, addTierInfo, ...userTierHandler);
+registerRoutes('/user/tier', ...authenticateJWT, addTierInfo, ...userTierHandler);
 
 // Health check endpoints
 registerRoutes('/health', (req, res) => {
@@ -551,7 +551,7 @@ registerRoutes('/changelog', changelogRoutes);
 registerRoutes('/queue/status', queueStatusHandler);
 
 // Queue drain endpoint (for testing/debugging)
-registerRoutes('/queue/drain', authenticateJWT, queueDrainHandler);
+registerRoutes('/queue/drain', ...authenticateJWT, queueDrainHandler);
 
 // WebSocket bridge endpoints removed - using HTTP polling only
 
@@ -623,7 +623,7 @@ app.use((error, req, res, _next) => {
 });
 
 // Conversation routes - implemented directly due to router mounting issues
-app.get('/conversations/', authenticateJWT, async(req, res) => {
+app.get('/conversations/', ...authenticateJWT, async(req, res) => {
   try {
     const userId = req.auth?.payload?.sub || req.user?.sub;
     if (!userId) {
@@ -662,7 +662,7 @@ app.get('/conversations/', authenticateJWT, async(req, res) => {
   }
 });
 
-app.put('/conversations/:id', authenticateJWT, async(req, res) => {
+app.put('/conversations/:id', ...authenticateJWT, async(req, res) => {
   try {
     const userId = req.auth?.payload?.sub || req.user?.sub;
     const conversationId = req.params.id;
