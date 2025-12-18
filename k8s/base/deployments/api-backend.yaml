@@ -163,11 +163,6 @@ spec:
                   key: auth0-audience
 
             # Admin Center Configuration
-            - name: ADMIN_CENTER_ENABLED
-              valueFrom:
-                configMapKeyRef:
-                  name: cloudtolocalllm-config
-                  key: ADMIN_CENTER_ENABLED
             - name: ADMIN_EMAIL
               valueFrom:
                 configMapKeyRef:
@@ -343,11 +338,6 @@ spec:
                   key: auth0-audience
 
             # Admin Center Configuration
-            - name: ADMIN_CENTER_ENABLED
-              valueFrom:
-                configMapKeyRef:
-                  name: cloudtolocalllm-config
-                  key: ADMIN_CENTER_ENABLED
             - name: ADMIN_EMAIL
               valueFrom:
                 configMapKeyRef:

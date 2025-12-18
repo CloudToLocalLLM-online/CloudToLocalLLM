@@ -96,7 +96,6 @@ jobs:
           cache: true
 
       - name: Update Versions
-        if: matrix.service == 'web'
         run: |
           chmod +x scripts/update-all-versions.sh
           ./scripts/update-all-versions.sh "${{ inputs.version }}" "${{ github.sha }}"
@@ -159,7 +158,7 @@ jobs:
         run: |
           git add k8s/base/deployments/*.yaml
           if ! git diff --cached --quiet; then
-            git commit -m "deploy(k8s): update images to $VERSION [skip ci]"
+            git commit -m "deploy(k8s): update images to ${{ inputs.docker_version }} [skip ci]"
             git pull --rebase origin main
             git push origin main
           fi
