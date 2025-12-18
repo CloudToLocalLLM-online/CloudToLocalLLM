@@ -102,6 +102,12 @@ data:
       - hostname: api.cloudtolocalllm.online
         service: http://api-backend.cloudtolocalllm.svc.cluster.local:8080
       
+      # Argo CD UI
+      - hostname: argocd.cloudtolocalllm.online
+        service: https://argocd-server.argocd.svc.cluster.local:443
+        originRequest:
+          noTLSVerify: true
+
       # Root Domain - Web Frontend
       - hostname: cloudtolocalllm.online
         service: http://web.cloudtolocalllm.svc.cluster.local:8080
