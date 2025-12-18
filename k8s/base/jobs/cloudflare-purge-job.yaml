@@ -1,0 +1,70 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: cloudflare-cache-purge
+  namespace: cloudtolocalllm
+  annotations:
+    argocd.argoproj.io/hook: PostSync
+    argocd.argoproj.io/hook-delete-policy: HookSucceeded
+spec:
+  template:
+    spec:
+      containers:
+        - name: purge-cache
+          image: alpine:latest
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              apk add --no-cache curl grep
+              # The script is assumed to be mounted or we can inline the logic for simplicity
+              # Given we have the script in the repo, we could build an image or use a configmap
+              # For now, we'll inline the core curl command from scripts/cloudflare-cache-purge.sh
+              echo "Starting Cloudflare cache purge..."
+              
+              if [ -z "$CLOUDFLARE_API_TOKEN" ]; then
+                echo "Error: CLOUDFLARE_API_TOKEN not set"
+                exit 1
+              fi
+
+              # Fetch Zone ID if not provided
+              if [ -z "$CLOUDFLARE_ZONE_ID" ]; then
+                echo "Fetching Zone ID for $DOMAIN..."
+                ZONE_ID=$(curl -s -X GET "https://api.cloudflare.com/client/v4/zones?name=$DOMAIN" \
+                  -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+                  -H "Content-Type: application/json" | grep -o '"id":"[^"]*"' | head -1 | cut -d'"' -f4)
+              else
+                ZONE_ID=$CLOUDFLARE_ZONE_ID
+              fi
+
+              if [ -z "$ZONE_ID" ]; then
+                echo "Error: Could not retrieve Zone ID"
+                exit 1
+              fi
+
+              echo "Purging everything for Zone: $ZONE_ID"
+              HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" -X POST \
+                "https://api.cloudflare.com/client/v4/zones/${ZONE_ID}/purge_cache" \
+                -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
+                -H "Content-Type: application/json" \
+                --data '{"purge_everything": true}')
+
+              if [ "$HTTP_CODE" = "200" ]; then
+                echo "Successfully purged Cloudflare cache"
+              else
+                echo "Failed to purge cache. HTTP Status: $HTTP_CODE"
+                exit 1
+              fi
+          env:
+            - name: DOMAIN
+              valueFrom:
+                configMapKeyRef:
+                  name: cloudtolocalllm-config
+                  key: DOMAIN
+            - name: CLOUDFLARE_API_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: cloudtolocalllm-secrets
+                  key: cloudflare-api-token
+                  optional: true # Set to true to avoid crash if not yet configured
+      restartPolicy: Never
+  backoffLimit: 2

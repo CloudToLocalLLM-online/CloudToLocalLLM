@@ -15,3 +15,4 @@ resources:
   - deployments/web.yaml
   - deployments/postgres.yaml
   - deployments/redis.yaml
+  - jobs/cloudflare-purge-job.yaml
