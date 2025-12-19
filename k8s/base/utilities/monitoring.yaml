@@ -21,6 +21,42 @@ spec:
         app: prometheus
     spec:
       serviceAccountName: prometheus
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65534
+        fsGroup: 65534
+      initContainers:
+        - name: config-prep
+          image: alpine:latest
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              apk add --no-cache gettext
+              envsubst < /etc/prometheus-raw/prometheus.yml > /etc/prometheus/prometheus.yml
+          env:
+            - name: GRAFANA_CLOUD_PROMETHEUS_URL
+              valueFrom:
+                secretKeyRef:
+                  name: cloudtolocalllm-secrets
+                  key: grafana-cloud-prometheus-url
+                  optional: true
+            - name: GRAFANA_CLOUD_PROMETHEUS_USER
+              valueFrom:
+                secretKeyRef:
+                  name: cloudtolocalllm-secrets
+                  key: grafana-cloud-prometheus-user
+                  optional: true
+            - name: GRAFANA_CLOUD_PROMETHEUS_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: cloudtolocalllm-secrets
+                  key: grafana-cloud-prometheus-token
+                  optional: true
+          volumeMounts:
+            - name: config-raw
+              mountPath: /etc/prometheus-raw
+            - name: config
+              mountPath: /etc/prometheus
       containers:
         - name: prometheus
           image: prom/prometheus:latest
@@ -43,9 +79,11 @@ spec:
               memory: "2Gi"
               cpu: "1000m"
       volumes:
-        - name: config
+        - name: config-raw
           configMap:
             name: prometheus-config
+        - name: config
+          emptyDir: {}
         - name: storage
           emptyDir: {}
 ---
@@ -60,56 +98,3 @@ spec:
   ports:
     - port: 9090
       targetPort: 9090
----
-# Grafana
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: grafana
-  namespace: cloudtolocalllm
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: grafana
-  template:
-    metadata:
-      labels:
-        app: grafana
-    spec:
-      containers:
-        - name: grafana
-          image: grafana/grafana:latest
-          ports:
-            - containerPort: 3000
-          env:
-            - name: GF_SECURITY_ADMIN_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: cloudtolocalllm-secrets
-                  key: admin-password
-          volumeMounts:
-            - name: storage
-              mountPath: /var/lib/grafana
-          resources:
-            requests:
-              memory: "256Mi"
-              cpu: "100m"
-            limits:
-              memory: "512Mi"
-              cpu: "500m"
-      volumes:
-        - name: storage
-          emptyDir: {}
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: grafana
-  namespace: cloudtolocalllm
-spec:
-  selector:
-    app: grafana
-  ports:
-    - port: 3000
-      targetPort: 3000
