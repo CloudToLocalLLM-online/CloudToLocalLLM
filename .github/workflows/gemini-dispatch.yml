@@ -250,6 +250,7 @@ jobs:
         id: 'exec'
         env:
           GITHUB_TOKEN: '${{ steps.mint_identity_token.outputs.token || secrets.GITHUB_TOKEN }}'
+          GEMINI_API_KEY: '${{ secrets.GEMINI_API_KEY }}'
         run: |
           set -e
           CLEAN_JSON=$(sed -n '/{/,/}/p' gemini_output.json)

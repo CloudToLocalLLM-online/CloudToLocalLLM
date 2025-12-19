@@ -39,7 +39,10 @@ Commits:
 $COMMITS"
 
 # Get response from Gemini
-if command -v gemini-cli >/dev/null 2>&1; then
+if command -v gemini >/dev/null 2>&1; then
+    # Use the official gemini-cli if available
+    CHANGELOG_ENTRY=$(GEMINI_API_KEY="$GEMINI_API_KEY" gemini --yolo --prompt "$PROMPT")
+elif command -v gemini-cli >/dev/null 2>&1; then
     CHANGELOG_ENTRY=$(gemini-cli "$PROMPT")
 else
     SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
