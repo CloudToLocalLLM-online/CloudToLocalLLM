@@ -73,7 +73,7 @@ jobs:
       matrix:
         service: [base, postgres, web, api-backend, streaming-proxy]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Azure Login
         uses: azure/login@v2
@@ -128,7 +128,7 @@ jobs:
     if: inputs.do_managed || inputs.do_local
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           token: ${{ secrets.PAT_TOKEN || secrets.GITHUB_TOKEN }}
           fetch-depth: 0
@@ -171,7 +171,7 @@ jobs:
     runs-on: windows-2022
     timeout-minutes: 45
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
@@ -212,7 +212,7 @@ jobs:
     if: always() && (needs.update_manifests.result == 'success' || needs.desktop_build.result == 'success' || inputs.do_mobile)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Download Windows Artifacts
         if: needs.desktop_build.result == 'success'
