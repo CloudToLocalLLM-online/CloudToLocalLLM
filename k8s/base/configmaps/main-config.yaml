@@ -16,10 +16,14 @@ data:
 
   # Database configuration
   DB_TYPE: "postgresql"
-  DB_HOST: "postgres.cloudtolocalllm.svc.cluster.local"
+  DB_HOST: "postgres"
   DB_PORT: "5432"
   DB_NAME: "cloudtolocalllm"
   DB_USER: "cloud_admin"
+  AUTH_DB_HOST: "postgres-auth"
+  AUTH_DB_PORT: "5432"
+  AUTH_DB_NAME: "cloudtolocalllm_auth"
+  AUTH_DB_USER: "authuser"
 
   # API configuration
   PORT: "8080"
