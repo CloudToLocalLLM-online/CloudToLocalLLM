@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [7.13.1+202512191252] - 2025-12-19
+
+## 7.13.1+202512191252 (2025-12-19)
+
+### Bug Fixes
+
+*   **ci:** Trigger AKS deployment on main branch pushes (597c8eb)
+
 ## [7.13.1+202512191249] - 2025-12-19
 ## v7.13.1+202512191249 (2025-12-19)
 
