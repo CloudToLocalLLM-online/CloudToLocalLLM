@@ -36,6 +36,16 @@ on:
         type: string
         required: false
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  AZURE_RESOURCE_GROUP: cloudtolocalllm-rg
+  AZURE_CLUSTER_NAME: cloudtolocalllm-aks
+  ACR_NAME: imrightguycloudtolocalllm
+  # DOCKER_REGISTRY will be set dynamically in setup job if needed
+
 defaults:
   run:
     shell: "bash"
@@ -314,7 +324,7 @@ jobs:
             DO_DESKTOP=$(echo "$CLEAN_JSON" | jq -r '.do_desktop')
             DO_MOBILE=$(echo "$CLEAN_JSON" | jq -r '.do_mobile')
 
-            # Cloud Branch & Deployment
+            # Cloud Branch
             if [ "$DO_MANAGED" == "true" ]; then
                echo "☁️  Pushing to cloud branch..."
                if [ -f "scripts/push-to-cloud-branch.sh" ]; then
@@ -327,14 +337,6 @@ jobs:
                   git push origin "${NEW_VERSION}-cloud-${SHORT_SHA}" -f
                   git checkout main
                fi
-               
-               echo "🚀 Triggering AKS deployment..."
-               curl -X POST \
-                  -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-                  -H "Accept: application/vnd.github.v3+json" \
-                  -H "Content-Type: application/json" \
-                  "${{ github.api_url }}/repos/${{ github.repository }}/dispatches" \
-                  -d "{\"event_type\":\"cloud-deploy-$NEW_VERSION\",\"client_payload\":{\"version\":\"$NEW_VERSION\",\"branch\":\"cloud\"}}" || echo "⚠️ Failed to trigger dispatch"
             fi
 
             # Desktop Branch
@@ -359,41 +361,281 @@ jobs:
           fi
 
   # ==================================================================================
-  # 3. CI/CD PIPELINE (Deployment)
+  # 3. CHANGE DETECTION (Path-based)
   # ==================================================================================
-  deploy:
+  detect_changes:
     needs: [orchestrator]
-    if: always() && needs.orchestrator.outputs.should_deploy == 'true'
+    if: needs.orchestrator.outputs.should_deploy == 'true'
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      id-token: write
-    env:
-      AZURE_RESOURCE_GROUP: cloudtolocalllm-rg
-      ACR_NAME: imrightguycloudtolocalllm
+    outputs:
+      base: ${{ steps.detect.outputs.base }}
+      postgres: ${{ steps.detect.outputs.postgres }}
+      web: ${{ steps.detect.outputs.web }}
+      api: ${{ steps.detect.outputs.api }}
+      proxy: ${{ steps.detect.outputs.proxy }}
     steps:
       - uses: actions/checkout@v4
-      - name: Azure Login
-        uses: azure/login@v2
+        with:
+          fetch-depth: 0
+      - name: Detect Service Changes
+        id: detect
+        run: |
+          set -e
+          PREV_TAG=$(git tag -l "*-cloud-*" --sort=-version:refname | head -n 1 || echo "")
+          if [ -z "$PREV_TAG" ]; then
+            echo "base=true" >> $GITHUB_OUTPUT
+            echo "postgres=true" >> $GITHUB_OUTPUT
+            echo "web=true" >> $GITHUB_OUTPUT
+            echo "api=true" >> $GITHUB_OUTPUT
+            echo "proxy=true" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+          echo "Comparing against $PREV_TAG"
+          echo "base=$(git diff --name-only $PREV_TAG HEAD | grep -qE '^config/docker/Dockerfile\.base' && echo 'true' || echo 'false')" >> $GITHUB_OUTPUT
+          echo "postgres=$(git diff --name-only $PREV_TAG HEAD | grep -qE '^config/docker/Dockerfile\.postgres' && echo 'true' || echo 'false')" >> $GITHUB_OUTPUT
+          echo "web=$(git diff --name-only $PREV_TAG HEAD | grep -qE '^(web|lib|pubspec\.)' && echo 'true' || echo 'false')" >> $GITHUB_OUTPUT
+          echo "api=$(git diff --name-only $PREV_TAG HEAD | grep -qE '^services/api-backend' && echo 'true' || echo 'false')" >> $GITHUB_OUTPUT
+          echo "proxy=$(git diff --name-only $PREV_TAG HEAD | grep -qE '^services/streaming-proxy' && echo 'true' || echo 'false')" >> $GITHUB_OUTPUT
+
+  # ==================================================================================
+  # 4. INFRASTRUCTURE & BUILD
+  # ==================================================================================
+  infrastructure:
+    needs: [orchestrator, detect_changes]
+    if: needs.orchestrator.outputs.should_deploy == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    outputs:
+      login_server: ${{ steps.acr.outputs.login_server }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: azure/login@v2
         with:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-      - name: Setup ACR
+
+      - name: Bootstrap Azure Infra
         id: acr
         run: |
-          az acr create --resource-group ${{ env.AZURE_RESOURCE_GROUP }} --name ${{ env.ACR_NAME }} --sku Basic --admin-enabled true
-          echo "server=$(az acr show --name ${{ env.ACR_NAME }} --query loginServer --output tsv)" >> $GITHUB_OUTPUT
-      - name: Build & Release
+          set -e
+          chmod +x scripts/bootstrap-azure-infra.sh
+          ./scripts/bootstrap-azure-infra.sh "${{ env.AZURE_RESOURCE_GROUP }}" "eastus" "${{ env.ACR_NAME }}" "${{ secrets.AZURE_KEY_VAULT_NAME }}"
+
+          # Create AKS if not exists
+          if ! az aks show --resource-group ${{ env.AZURE_RESOURCE_GROUP }} --name ${{ env.AZURE_CLUSTER_NAME }} >/dev/null 2>&1; then
+            az aks create --resource-group ${{ env.AZURE_RESOURCE_GROUP }} --name ${{ env.AZURE_CLUSTER_NAME }} --node-count 1 --enable-managed-identity --attach-acr ${{ env.ACR_NAME }} --generate-ssh-keys
+          fi
+
+          echo "login_server=$(az acr show --name ${{ env.ACR_NAME }} --query loginServer --output tsv)" >> $GITHUB_OUTPUT
+
+      - name: Setup AKS Context & CSI
+        run: |
+          az aks get-credentials --resource-group ${{ env.AZURE_RESOURCE_GROUP }} --name ${{ env.AZURE_CLUSTER_NAME }} --overwrite-existing
+          kubectl create namespace cloudtolocalllm --dry-run=client -o yaml | kubectl apply -f -
+
+          # Secrets Store CSI setup (Helm)
+          helm repo add secrets-store-csi-driver https://kubernetes-sigs.github.io/secrets-store-csi-driver/charts --force-update
+          helm repo add csi-secrets-store-provider-azure https://azure.github.io/secrets-store-csi-driver-provider-azure/charts --force-update
+          helm upgrade --install csi-secrets-store secrets-store-csi-driver/secrets-store-csi-driver --namespace kube-system --set "providers.azure.enabled=true" --wait
+
+  build_base:
+    needs: [orchestrator, detect_changes, infrastructure]
+    if: needs.detect_changes.outputs.base == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      - name: Docker Login
+        run: |
+          ACR_USER=$(az acr credential show --name ${{ env.ACR_NAME }} --query username -o tsv)
+          ACR_PASS=$(az acr credential show --name ${{ env.ACR_NAME }} --query passwords[0].value -o tsv)
+          echo "$ACR_PASS" | docker login ${{ needs.infrastructure.outputs.login_server }} -u "$ACR_USER" --password-stdin
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: config/docker/Dockerfile.base
+          push: true
+          tags: |
+            ${{ needs.infrastructure.outputs.login_server }}/base:${{ needs.orchestrator.outputs.new_version }}-base
+            ${{ needs.infrastructure.outputs.login_server }}/base:latest
+          cache-from: type=registry,ref=${{ needs.infrastructure.outputs.login_server }}/base:latest
+          cache-to: type=inline
+
+  build_postgres:
+    needs: [orchestrator, detect_changes, infrastructure, build_base]
+    if: always() && needs.detect_changes.outputs.postgres == 'true' && (needs.build_base.result == 'success' || needs.build_base.result == 'skipped')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      - name: Docker Login
+        run: |
+          ACR_USER=$(az acr credential show --name ${{ env.ACR_NAME }} --query username -o tsv)
+          ACR_PASS=$(az acr credential show --name ${{ env.ACR_NAME }} --query passwords[0].value -o tsv)
+          echo "$ACR_PASS" | docker login ${{ needs.infrastructure.outputs.login_server }} -u "$ACR_USER" --password-stdin
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: config/docker/Dockerfile.postgres
+          push: true
+          tags: ${{ needs.infrastructure.outputs.login_server }}/postgres:${{ needs.orchestrator.outputs.new_version }}-postgres
+          build-args: BASE_REGISTRY=${{ needs.infrastructure.outputs.login_server }}
+
+  build_web:
+    needs: [orchestrator, detect_changes, infrastructure, build_base]
+    if: always() && needs.detect_changes.outputs.web == 'true' && (needs.build_base.result == 'success' || needs.build_base.result == 'skipped')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: "stable"
+          cache: true
+      - name: Build Web
+        run: |
+          flutter pub get
+          flutter build web --release --no-tree-shake-icons --base-href /
+      - uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      - name: Docker Login
+        run: |
+          ACR_USER=$(az acr credential show --name ${{ env.ACR_NAME }} --query username -o tsv)
+          ACR_PASS=$(az acr credential show --name ${{ env.ACR_NAME }} --query passwords[0].value -o tsv)
+          echo "$ACR_PASS" | docker login ${{ needs.infrastructure.outputs.login_server }} -u "$ACR_USER" --password-stdin
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: web/Dockerfile
+          push: true
+          tags: ${{ needs.infrastructure.outputs.login_server }}/web:${{ needs.orchestrator.outputs.new_version }}
+          build-args: BASE_REGISTRY=${{ needs.infrastructure.outputs.login_server }}
+
+  build_api:
+    needs: [orchestrator, detect_changes, infrastructure, build_base]
+    if: always() && needs.detect_changes.outputs.api == 'true' && (needs.build_base.result == 'success' || needs.build_base.result == 'skipped')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      - name: Docker Login
+        run: |
+          ACR_USER=$(az acr credential show --name ${{ env.ACR_NAME }} --query username -o tsv)
+          ACR_PASS=$(az acr credential show --name ${{ env.ACR_NAME }} --query passwords[0].value -o tsv)
+          echo "$ACR_PASS" | docker login ${{ needs.infrastructure.outputs.login_server }} -u "$ACR_USER" --password-stdin
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v5
+        with:
+          context: services/api-backend
+          file: services/api-backend/Dockerfile
+          push: true
+          tags: ${{ needs.infrastructure.outputs.login_server }}/api-backend:${{ needs.orchestrator.outputs.new_version }}-api
+          build-args: BASE_REGISTRY=${{ needs.infrastructure.outputs.login_server }}
+
+  build_proxy:
+    needs: [orchestrator, detect_changes, infrastructure, build_base]
+    if: always() && needs.detect_changes.outputs.proxy == 'true' && (needs.build_base.result == 'success' || needs.build_base.result == 'skipped')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      - name: Docker Login
+        run: |
+          ACR_USER=$(az acr credential show --name ${{ env.ACR_NAME }} --query username -o tsv)
+          ACR_PASS=$(az acr credential show --name ${{ env.ACR_NAME }} --query passwords[0].value -o tsv)
+          echo "$ACR_PASS" | docker login ${{ needs.infrastructure.outputs.login_server }} -u "$ACR_USER" --password-stdin
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v5
+        with:
+          context: services/streaming-proxy
+          file: services/streaming-proxy/Dockerfile
+          push: true
+          tags: ${{ needs.infrastructure.outputs.login_server }}/streaming-proxy:${{ needs.orchestrator.outputs.new_version }}-proxy
+          build-args: BASE_REGISTRY=${{ needs.infrastructure.outputs.login_server }}
+
+  # ==================================================================================
+  # 5. GITOPS PROMOTION
+  # ==================================================================================
+  promote:
+    needs:
+      [
+        orchestrator,
+        detect_changes,
+        infrastructure,
+        build_postgres,
+        build_web,
+        build_api,
+        build_proxy,
+      ]
+    if: always() && needs.orchestrator.outputs.should_deploy == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Update Manifests
+        env:
+          APP_VERSION: ${{ needs.orchestrator.outputs.new_version }}
+          LOGIN_SERVER: ${{ needs.infrastructure.outputs.login_server }}
+        run: |
+          set -e
+          cd k8s/overlays/managed
+          [ "${{ needs.detect_changes.outputs.postgres }}" == "true" ] && kustomize edit set image cloudtolocalllm/postgres=$LOGIN_SERVER/postgres:$APP_VERSION-postgres
+          [ "${{ needs.detect_changes.outputs.web }}" == "true" ] && kustomize edit set image cloudtolocalllm/web=$LOGIN_SERVER/web:$APP_VERSION
+          [ "${{ needs.detect_changes.outputs.api }}" == "true" ] && kustomize edit set image cloudtolocalllm/api-backend=$LOGIN_SERVER/api-backend:$APP_VERSION-api
+          [ "${{ needs.detect_changes.outputs.proxy }}" == "true" ] && kustomize edit set image cloudtolocalllm/streaming-proxy=$LOGIN_SERVER/streaming-proxy:$APP_VERSION-proxy
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add kustomization.yaml
+          if ! git diff --staged --quiet; then
+            git commit -m "chore(ops): update manifests for v$APP_VERSION [skip ci]"
+            git push origin main
+          fi
+
+      - name: Purge Cache
+        continue-on-error: true
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          ZONE_ID=$(curl -s -X GET "https://api.cloudflare.com/client/v4/zones?name=cloudtolocalllm.online" \
+            -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+            -H "Content-Type: application/json" | jq -r '.result[0].id')
+          if [ -n "$ZONE_ID" ]; then
+            curl -s -X POST "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/purge_cache" \
+              -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+              -H "Content-Type: application/json" \
+              --data '{"purge_everything": true}'
+          fi
+
+      - name: Create Release
         run: |
           VERSION="v${{ needs.orchestrator.outputs.new_version }}"
-          echo "Building $VERSION..."
-          # Use edit if release exists, otherwise create
           if gh release view "$VERSION" >/dev/null 2>&1; then
-            echo "Release $VERSION already exists. Updating..."
-            gh release edit "$VERSION" --title "Release $VERSION (Updated)" --notes "${{ needs.orchestrator.outputs.reasoning }}"
+            gh release edit "$VERSION" --notes "${{ needs.orchestrator.outputs.reasoning }}"
           else
-            echo "Creating new release $VERSION..."
             gh release create "$VERSION" --title "Release $VERSION" --notes "${{ needs.orchestrator.outputs.reasoning }}"
           fi
         env:
