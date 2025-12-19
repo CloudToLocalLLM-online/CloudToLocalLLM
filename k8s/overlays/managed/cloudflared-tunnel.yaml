@@ -108,6 +108,10 @@ data:
         originRequest:
           noTLSVerify: true
 
+      # Grafana UI
+      - hostname: grafana.cloudtolocalllm.online
+        service: http://grafana.cloudtolocalllm.svc.cluster.local:3000
+
       # Root Domain - Web Frontend
       - hostname: cloudtolocalllm.online
         service: http://web.cloudtolocalllm.svc.cluster.local:8080
