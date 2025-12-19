@@ -261,6 +261,7 @@ jobs:
           gcp_workload_identity_provider: '${{ vars.GCP_WIF_PROVIDER }}'
           gemini_api_key: '${{ secrets.GEMINI_API_KEY }}'
           gemini_cli_version: '${{ vars.GEMINI_CLI_VERSION }}'
+          gemini_debug: true
           gemini_model: '${{ vars.GEMINI_MODEL }}'
           use_gemini_code_assist: '${{ vars.GOOGLE_GENAI_USE_GCA }}'
           use_vertex_ai: '${{ vars.GOOGLE_GENAI_USE_VERTEXAI }}'
@@ -269,6 +270,11 @@ jobs:
             {
               "model": {
                 "response_mime_type": "application/json"
+              },
+              "telemetry": {
+                "enabled": true,
+                "target": "local",
+                "outfile": ".gemini/telemetry.log"
               },
               "tools": {
                 "core": [
@@ -324,6 +330,13 @@ jobs:
               "should_deploy": "string",
               "reasoning": "string"
             }
+
+      - name: 'Debug Orchestrator Output'
+        run: |
+          echo "::: Gemini Response :::"
+          echo "${{ steps.analysis.outputs.gemini_response }}"
+          echo "::: Gemini Errors :::"
+          echo "${{ steps.analysis.outputs.gemini_errors }}"
 
   # ==================================================================================
   # INLINE WORKFLOWS (Replaces separate files)
