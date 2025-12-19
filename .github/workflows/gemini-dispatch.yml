@@ -13,6 +13,28 @@ on:
     types: [submitted]
   pull_request_review_comment:
     types: [created]
+  workflow_dispatch:
+    inputs:
+      do_managed:
+        description: "Deploy to Cloud (Managed)"
+        type: boolean
+        default: false
+      do_local:
+        description: "Deploy to Local (Ollama)"
+        type: boolean
+        default: false
+      do_desktop:
+        description: "Build for Desktop"
+        type: boolean
+        default: false
+      do_mobile:
+        description: "Build for Mobile"
+        type: boolean
+        default: false
+      version_override:
+        description: "Override version (e.g. 1.2.3). Leave empty for auto."
+        type: string
+        required: false
 
 defaults:
   run:
@@ -120,7 +142,7 @@ jobs:
   # 2. PUSH ORCHESTRATOR (Automated Release Analysis)
   # ==================================================================================
   orchestrator:
-    if: github.event_name == 'push' && !contains(github.event.head_commit.message, '[skip ci]')
+    if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && !contains(github.event.head_commit.message, '[skip ci]')
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -152,6 +174,12 @@ jobs:
         id: "analysis"
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          IS_MANUAL: ${{ github.event_name == 'workflow_dispatch' }}
+          MANUAL_MANAGED: ${{ github.event.inputs.do_managed }}
+          MANUAL_LOCAL: ${{ github.event.inputs.do_local }}
+          MANUAL_DESKTOP: ${{ github.event.inputs.do_desktop }}
+          MANUAL_MOBILE: ${{ github.event.inputs.do_mobile }}
+          VERSION_OVERRIDE: ${{ github.event.inputs.version_override }}
         run: |
           set -e
 
@@ -238,13 +266,33 @@ jobs:
             sleep $SLEEP_TIME
           done
 
+          # 4. Handle Manual Overrides
+          if [ "$IS_MANUAL" == "true" ]; then
+            echo "🛠️  Applying manual overrides..."
+            # Use jq to update the JSON file with inputs
+            CLEAN_JSON=$(cat gemini_output.json)
+            [ -n "$MANUAL_MANAGED" ] && CLEAN_JSON=$(echo "$CLEAN_JSON" | jq ".do_managed = $MANUAL_MANAGED")
+            [ -n "$MANUAL_LOCAL" ] && CLEAN_JSON=$(echo "$CLEAN_JSON" | jq ".do_local = $MANUAL_LOCAL")
+            [ -n "$MANUAL_DESKTOP" ] && CLEAN_JSON=$(echo "$CLEAN_JSON" | jq ".do_desktop = $MANUAL_DESKTOP")
+            [ -n "$MANUAL_MOBILE" ] && CLEAN_JSON=$(echo "$CLEAN_JSON" | jq ".do_mobile = $MANUAL_MOBILE")
+            if [ -n "$VERSION_OVERRIDE" ]; then
+                CLEAN_JSON=$(echo "$CLEAN_JSON" | jq ".new_version = \"$VERSION_OVERRIDE\"")
+                CLEAN_JSON=$(echo "$CLEAN_JSON" | jq ".version_bump_needed = true")
+            fi
+            # Ensure should_deploy is true if any platform is selected
+            if [ "$MANUAL_MANAGED" == "true" ] || [ "$MANUAL_LOCAL" == "true" ] || [ "$MANUAL_DESKTOP" == "true" ] || [ "$MANUAL_MOBILE" == "true" ]; then
+                CLEAN_JSON=$(echo "$CLEAN_JSON" | jq ".should_deploy = true")
+            fi
+            echo "$CLEAN_JSON" > gemini_output.json
+          fi
+
           echo "::: Validated Gemini Output :::"
           cat gemini_output.json
 
       - name: "Execute Logic"
         id: "exec"
         env:
-          GITHUB_TOKEN: "${{ steps.mint_identity_token.outputs.token || secrets.GITHUB_TOKEN }}"
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GEMINI_API_KEY: "${{ secrets.GEMINI_API_KEY }}"
         run: |
           set -e
@@ -279,7 +327,7 @@ jobs:
                echo "☁️  Pushing to cloud branch..."
                if [ -f "scripts/push-to-cloud-branch.sh" ]; then
                   chmod +x scripts/push-to-cloud-branch.sh
-                  CLOUD_PUSH_PAT="${{ steps.mint_identity_token.outputs.token || secrets.GITHUB_TOKEN }}" ./scripts/push-to-cloud-branch.sh "$NEW_VERSION"
+                  CLOUD_PUSH_PAT="${{ secrets.GITHUB_TOKEN }}" ./scripts/push-to-cloud-branch.sh "$NEW_VERSION"
                else
                   git checkout -B cloud main
                   git push -f origin cloud
@@ -290,7 +338,7 @@ jobs:
                
                echo "🚀 Triggering AKS deployment..."
                curl -X POST \
-                  -H "Authorization: token ${{ steps.mint_identity_token.outputs.token || secrets.GITHUB_TOKEN }}" \
+                  -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
                   -H "Accept: application/vnd.github.v3+json" \
                   -H "Content-Type: application/json" \
                   "${{ github.api_url }}/repos/${{ github.repository }}/dispatches" \
