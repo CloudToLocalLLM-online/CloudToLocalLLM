@@ -207,7 +207,7 @@ jobs:
 
           while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
             # Run Gemini with strict environment
-            if gemini --yolo --model gemini-2.0-flash --output-format json "$(cat prompt.txt)" > gemini_output_raw.txt 2> gemini_stderr.log; then
+            if gemini --yolo --model gemini-1.5-flash --output-format json "$(cat prompt.txt)" > gemini_output_raw.txt 2> gemini_stderr.log; then
               
               # Extract JSON block
               sed -n '/{/,/}/p' gemini_output_raw.txt > gemini_output.json
