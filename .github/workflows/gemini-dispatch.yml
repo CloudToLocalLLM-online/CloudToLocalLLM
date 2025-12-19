@@ -154,7 +154,19 @@ jobs:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: |
           set -e
-          npm install -g @google/gemini-cli@latest
+          
+          # 1. Validation: Ensure API Key exists
+          if [ -z "$GEMINI_API_KEY" ]; then
+            echo "❌ Error: GEMINI_API_KEY is not set. Cannot proceed."
+            exit 1
+          fi
+
+          # 2. Setup: Install Gemini CLI
+          if ! command -v gemini &> /dev/null; then
+             echo "Installing Gemini CLI..."
+             npm install -g @google/gemini-cli@latest || (sleep 5 && npm install -g @google/gemini-cli@latest)
+          fi
+
           cat << 'EOF' > prompt.txt
           Analyze the following project state and determine the release strategy.
           1. Read 'assets/version.json' for the current version.
@@ -174,7 +186,46 @@ jobs:
             "reasoning": "string"
           }
           EOF
-          gemini --yolo --prompt "$(cat prompt.txt)" > gemini_output.json 2> gemini_stderr.log || true
+
+          # 3. Execution: Retry Mechanism with Backoff
+          echo "Running Gemini Analysis..."
+          MAX_RETRIES=3
+          RETRY_COUNT=0
+          SUCCESS=0
+          
+          while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+            if gemini --yolo --prompt "$(cat prompt.txt)" > gemini_output.json 2> gemini_stderr.log; then
+              # 4. Validation: Check if output is valid JSON
+              if jq empty gemini_output.json >/dev/null 2>&1; then
+                echo "✅ Gemini Analysis Successful (Attempt $((RETRY_COUNT+1)))"
+                SUCCESS=1
+                break
+              else
+                echo "⚠️  Attempt $((RETRY_COUNT+1)): Invalid JSON output."
+                cat gemini_stderr.log
+              fi
+            else
+               echo "⚠️  Attempt $((RETRY_COUNT+1)): Gemini CLI failed."
+               cat gemini_stderr.log
+            fi
+            
+            RETRY_COUNT=$((RETRY_COUNT+1))
+            if [ $RETRY_COUNT -lt $MAX_RETRIES ]; then
+              SLEEP_TIME=$((RETRY_COUNT * 5))
+              echo "Retrying in ${SLEEP_TIME}s..."
+              sleep $SLEEP_TIME
+            fi
+          done
+
+          if [ $SUCCESS -eq 0 ]; then
+            echo "❌ Critical Error: Gemini Analysis failed after $MAX_RETRIES attempts."
+            echo "::: Last Stderr :::"
+            cat gemini_stderr.log
+            echo "::: Last Stdout (if any) :::"
+            cat gemini_output.json || true
+            exit 1 # Fail fast
+          fi
+
           echo "::: Gemini Output :::"
           cat gemini_output.json
 
@@ -268,7 +319,7 @@ jobs:
       AZURE_RESOURCE_GROUP: cloudtolocalllm-rg
       ACR_NAME: imrightguycloudtolocalllm
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v4
       - name: Azure Login
         uses: azure/login@v2
         with:
