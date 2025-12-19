@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [7.13.2+202512191326] - 2025-12-19
+
+## v7.13.2+202512191326 (2025-12-19)
+
+### Chore
+*   Remove unused mcp server directories (cd02585)
+
 ## [7.13.2+202512191317] - 2025-12-19
 
 ## 7.13.2+202512191317
