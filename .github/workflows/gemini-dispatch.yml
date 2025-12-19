@@ -1,6 +1,9 @@
 name: '🔀 Gemini Dispatch'
 
 on:
+  push:
+    branches:
+      - 'main'
   pull_request_review_comment:
     types:
       - 'created'
@@ -24,7 +27,7 @@ defaults:
 
 jobs:
   debugger:
-    if: |-
+    if: |- 
       ${{ fromJSON(vars.GEMINI_DEBUG || vars.ACTIONS_STEP_DEBUG || false) }}
     runs-on: 'ubuntu-latest'
     permissions:
@@ -39,24 +42,26 @@ jobs:
           DEBUG_event__pull_request__author_association: '${{ github.event.pull_request.author_association }}'
           DEBUG_event__review__author_association: '${{ github.event.review.author_association }}'
           DEBUG_event: '${{ toJSON(github.event) }}'
-        run: |-
+        run: |- 
           env | grep '^DEBUG_'
 
+  # ==================================================================================
+  # ISSUE & PR DISPATCHER
+  # ==================================================================================
   dispatch:
-    # For PRs: only if not from a fork
-    # For issues: only on open/reopen
-    # For comments: only if user types @gemini-cli and is OWNER/MEMBER/COLLABORATOR
-    if: |-
-      (
-        github.event_name == 'pull_request' &&
-        github.event.pull_request.head.repo.fork == false
-      ) || (
-        github.event_name == 'issues' &&
-        contains(fromJSON('["opened", "reopened"]'), github.event.action)
-      ) || (
-        github.event.sender.type == 'User' &&
-        startsWith(github.event.comment.body || github.event.review.body || github.event.issue.body, '@gemini-cli') &&
-        contains(fromJSON('["OWNER", "MEMBER", "COLLABORATOR"]'), github.event.comment.author_association || github.event.review.author_association || github.event.issue.author_association)
+    if: |- 
+      github.event_name != 'push' && (
+        (
+          github.event_name == 'pull_request' &&
+          github.event.pull_request.head.repo.fork == false
+        ) || (
+          github.event_name == 'issues' &&
+          contains(fromJSON('["opened", "reopened"]'), github.event.action)
+        ) || (
+          github.event.sender.type == 'User' &&
+          startsWith(github.event.comment.body || github.event.review.body || github.event.issue.body, '@gemini-cli') &&
+          contains(fromJSON('["OWNER", "MEMBER", "COLLABORATOR"]'), github.event.comment.author_association || github.event.review.author_association || github.event.issue.author_association)
+        )
       )
     runs-on: 'ubuntu-latest'
     permissions:
@@ -71,7 +76,7 @@ jobs:
     steps:
       - name: 'Mint identity token'
         id: 'mint_identity_token'
-        if: |-
+        if: |- 
           ${{ vars.APP_ID }}
         uses: 'actions/create-github-app-token@a8d616148505b5069dccd32f177bb87d7f39123b' # ratchet:actions/create-github-app-token@v2
         with:
@@ -88,7 +93,7 @@ jobs:
           EVENT_TYPE: '${{ github.event_name }}.${{ github.event.action }}'
           REQUEST: '${{ github.event.comment.body || github.event.review.body || github.event.issue.body }}'
         with:
-          script: |
+          script: | 
             const eventType = process.env.EVENT_TYPE;
             const request = process.env.REQUEST;
             core.setOutput('request', request);
@@ -115,17 +120,17 @@ jobs:
         env:
           GITHUB_TOKEN: '${{ steps.mint_identity_token.outputs.token || secrets.GITHUB_TOKEN || github.token }}'
           ISSUE_NUMBER: '${{ github.event.pull_request.number || github.event.issue.number }}'
-          MESSAGE: |-
+          MESSAGE: |- 
             🤖 Hi @${{ github.actor }}, I've received your request, and I'm working on it now! You can track my progress [in the logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) for more details.
           REPOSITORY: '${{ github.repository }}'
-        run: |-
+        run: |- 
           gh issue comment "${ISSUE_NUMBER}" \
             --body "${MESSAGE}" \
             --repo "${REPOSITORY}"
 
   review:
     needs: 'dispatch'
-    if: |-
+    if: |- 
       ${{ needs.dispatch.outputs.command == 'review' }}
     uses: './.github/workflows/gemini-review.yml'
     permissions:
@@ -139,7 +144,7 @@ jobs:
 
   triage:
     needs: 'dispatch'
-    if: |-
+    if: |- 
       ${{ needs.dispatch.outputs.command == 'triage' }}
     uses: './.github/workflows/gemini-triage.yml'
     permissions:
@@ -153,7 +158,7 @@ jobs:
 
   invoke:
     needs: 'dispatch'
-    if: |-
+    if: |- 
       ${{ needs.dispatch.outputs.command == 'invoke' }}
     uses: './.github/workflows/gemini-invoke.yml'
     permissions:
@@ -171,7 +176,7 @@ jobs:
       - 'review'
       - 'triage'
       - 'invoke'
-    if: |-
+    if: |- 
       ${{ always() && !cancelled() && (failure() || needs.dispatch.outputs.command == 'fallthrough') }}
     runs-on: 'ubuntu-latest'
     permissions:
@@ -181,7 +186,7 @@ jobs:
     steps:
       - name: 'Mint identity token'
         id: 'mint_identity_token'
-        if: |-
+        if: |- 
           ${{ vars.APP_ID }}
         uses: 'actions/create-github-app-token@a8d616148505b5069dccd32f177bb87d7f39123b' # ratchet:actions/create-github-app-token@v2
         with:
@@ -195,10 +200,146 @@ jobs:
         env:
           GITHUB_TOKEN: '${{ steps.mint_identity_token.outputs.token || secrets.GITHUB_TOKEN || github.token }}'
           ISSUE_NUMBER: '${{ github.event.pull_request.number || github.event.issue.number }}'
-          MESSAGE: |-
+          MESSAGE: |- 
             🤖 I'm sorry @${{ github.actor }}, but I was unable to process your request. Please [see the logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) for more details.
           REPOSITORY: '${{ github.repository }}'
-        run: |-
+        run: |- 
           gh issue comment "${ISSUE_NUMBER}" \
             --body "${MESSAGE}" \
             --repo "${REPOSITORY}"
+
+  # ==================================================================================
+  # PUSH ORCHESTRATOR (Replaces orchestrator.yml)
+  # ==================================================================================
+  orchestrator:
+    if: github.event_name == 'push' && !contains(github.event.head_commit.message, '[skip ci]')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # Needed to push tags/commits
+      id-token: write
+    outputs:
+      new_version: ${{ steps.analysis.outputs.new_version }}
+      docker_version: ${{ steps.analysis.outputs.docker_version }}
+      do_managed: ${{ steps.analysis.outputs.do_managed }}
+      do_local: ${{ steps.analysis.outputs.do_local }}
+      do_desktop: ${{ steps.analysis.outputs.do_desktop }}
+      do_mobile: ${{ steps.analysis.outputs.do_mobile }}
+      run_tests: ${{ steps.analysis.outputs.run_tests }}
+      should_deploy: ${{ steps.analysis.outputs.should_deploy }}
+      reasoning: ${{ steps.analysis.outputs.reasoning }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 50
+          fetch-tags: true
+
+      - name: 'Mint identity token'
+        id: 'mint_identity_token'
+        if: |- 
+          ${{ vars.APP_ID }}
+        uses: 'actions/create-github-app-token@a8d616148505b5069dccd32f177bb87d7f39123b' # ratchet:actions/create-github-app-token@v2
+        with:
+          app-id: '${{ vars.APP_ID }}'
+          private-key: '${{ secrets.APP_PRIVATE_KEY }}'
+          permission-contents: 'write' # Needed for push
+
+      - name: 'Configure Git'
+        run: | 
+          git config user.name "gemini-cli[bot]"
+          git config user.email "gemini-cli[bot]@users.noreply.github.com"
+
+      - name: 'Run Gemini Orchestrator'
+        id: 'analysis'
+        uses: 'google-github-actions/run-gemini-cli@v0' # ratchet:exclude
+        env:
+          GITHUB_TOKEN: '${{ steps.mint_identity_token.outputs.token || secrets.GITHUB_TOKEN || github.token }}'
+          COMMIT_SHA: '${{ github.sha }}'
+        with:
+          gcp_location: '${{ vars.GOOGLE_CLOUD_LOCATION }}'
+          gcp_project_id: '${{ vars.GOOGLE_CLOUD_PROJECT }}'
+          gcp_service_account: '${{ vars.SERVICE_ACCOUNT_EMAIL }}'
+          gcp_workload_identity_provider: '${{ vars.GCP_WIF_PROVIDER }}'
+          gemini_api_key: '${{ secrets.GEMINI_API_KEY }}'
+          gemini_cli_version: '${{ vars.GEMINI_CLI_VERSION }}'
+          gemini_model: '${{ vars.GEMINI_MODEL }}'
+          use_gemini_code_assist: '${{ vars.GOOGLE_GENAI_USE_GCA }}'
+          use_vertex_ai: '${{ vars.GOOGLE_GENAI_USE_VERTEXAI }}'
+          workflow_name: 'gemini-orchestrator'
+          settings: |- 
+            {
+              "tools": {
+                "core": [
+                  "run_shell_command(cat)",
+                  "run_shell_command(ls)",
+                  "run_shell_command(grep)",
+                  "run_shell_command(git)",
+                  "read_file",
+                  "write_file",
+                  "replace"
+                ]
+              }
+            }
+          prompt: | 
+            You are the Release Orchestrator for the "CloudToLocalLLM" project. Your goal is to analyze changes, manage versioning, and decide which workflows to run.
+
+            PHASE 1: ANALYSIS
+            1. Read 'assets/version.json' to get the current version.
+            2. Run 'git log --oneline --no-merges -5' to see recent commits.
+            3. Run 'git diff --name-only HEAD~5..HEAD' to see changed files.
+            4. Analyze the changes to determine:
+               - The Next Semantic Version (following SemVer). 
+                 - Increment PATCH for fixes.
+                 - Increment MINOR for features.
+                 - Increment MAJOR for breaking changes.
+                 - Keep same version for internal/CI/chore changes.
+               - Which platforms need deployment? (managed, local, desktop, mobile).
+               - Should tests run? (almost always yes, unless only docs/readme changed).
+            
+            PHASE 2: EXECUTION
+            If the version needs to change:
+            1. Run 'chmod +x scripts/update-all-versions.sh'.
+            2. Run './scripts/update-all-versions.sh <NEW_VERSION> <COMMIT_SHA>'.
+            3. Run 'git add -A'.
+            4. Run 'git commit -m "chore: bump version to <NEW_VERSION> [skip ci]"'.
+            5. Run 'git push origin main'.
+            6. Run 'git tag "v<NEW_VERSION>" -f'.
+            7. Run 'git push origin "v<NEW_VERSION>" -f'.
+
+            PHASE 3: OUTPUT
+            You MUST set GitHub Action outputs for the next jobs using the 'run_shell_command' tool.
+            Format: echo "key=value" >> $GITHUB_OUTPUT
+
+            Required Outputs:
+            - new_version: The version string (e.g. 1.2.3+20240101).
+            - docker_version: The docker-safe version (e.g. 1.2.3-20240101).
+            - do_managed: 'true' or 'false'.
+            - do_local: 'true' or 'false'.
+            - do_desktop: 'true' or 'false'.
+            - do_mobile: 'true' or 'false'.
+            - run_tests: 'true' or 'false'.
+            - should_deploy: 'true' or 'false' (true if any do_* is true).
+            - reasoning: A short string explaining why.
+
+  # ==================================================================================
+  # WORKFLOWS
+  # ==================================================================================
+  tests:
+    needs: orchestrator
+    if: needs.orchestrator.outputs.run_tests == 'true'
+    uses: ./.github/workflows/test.yml
+    secrets: inherit
+
+  deploy:
+    needs: [orchestrator, tests]
+    # Run if deploy is needed AND tests passed (or were skipped, but orchestrator implies tests needed for deploy)
+    if: needs.orchestrator.outputs.should_deploy == 'true' && (needs.tests.result == 'success' || needs.tests.result == 'skipped')
+    uses: ./.github/workflows/build-release.yml
+    with:
+      version: ${{ needs.orchestrator.outputs.new_version }}
+      docker_version: ${{ needs.orchestrator.outputs.docker_version }}
+      do_managed: ${{ needs.orchestrator.outputs.do_managed == 'true' }}
+      do_local: ${{ needs.orchestrator.outputs.do_local == 'true' }}
+      do_desktop: ${{ needs.orchestrator.outputs.do_desktop == 'true' }}
+      do_mobile: ${{ needs.orchestrator.outputs.do_mobile == 'true' }}
+      reasoning: ${{ needs.orchestrator.outputs.reasoning }}
+    secrets: inherit
