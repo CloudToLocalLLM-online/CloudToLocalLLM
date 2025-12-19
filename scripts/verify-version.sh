@@ -16,11 +16,12 @@ PUBSPEC_VERSION=$(grep "^version: " pubspec.yaml | cut -d' ' -f2)
 SEMANTIC_PUBSPEC=$(echo "$PUBSPEC_VERSION" | cut -d'+' -f1)
 
 # Get version from api-backend package.json
-API_VERSION=$(jq -r '.version' services/api-backend/package.json)
+API_VERSION_RAW=$(jq -r '.version' services/api-backend/package.json)
+API_VERSION=$(echo "$API_VERSION_RAW" | cut -d'+' -f1)
 
 echo "  assets/version.json: $ASSETS_VERSION"
 echo "  pubspec.yaml:        $PUBSPEC_VERSION"
-echo "  api-backend:         $API_VERSION"
+echo "  api-backend:         $API_VERSION_RAW (semantic: $API_VERSION)"
 
 # Compare semantic parts
 if [ "$SEMANTIC_ASSETS" != "$SEMANTIC_PUBSPEC" ]; then
