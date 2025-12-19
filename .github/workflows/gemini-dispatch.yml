@@ -297,25 +297,41 @@ jobs:
           GEMINI_JSON: ${{ steps.analysis.outputs.gemini_response }}
           GITHUB_TOKEN: ${{ steps.mint_identity_token.outputs.token || secrets.GITHUB_TOKEN || github.token }}
         run: |
+          set -e
           echo "::: Raw Gemini Output :::"
           echo "$GEMINI_JSON"
           
+          if [ -z "$GEMINI_JSON" ]; then
+            echo "::error::Gemini response is empty. Check logs for API errors."
+            exit 1
+          fi
+
           # Strip markdown code blocks if present
           CLEAN_JSON=$(echo "$GEMINI_JSON" | sed -n '/{/,/}/p')
           echo "::: Cleaned JSON :::"
           echo "$CLEAN_JSON"
           
+          if ! echo "$CLEAN_JSON" | jq . >/dev/null 2>&1; then
+            echo "::error::Invalid JSON output from Gemini."
+            exit 1
+          fi
+
           # Extract values using jq
-          NEW_VERSION=$(echo "$CLEAN_JSON" | jq -r '.new_version')
-          DOCKER_VERSION=$(echo "$CLEAN_JSON" | jq -r '.docker_version')
-          DO_MANAGED=$(echo "$CLEAN_JSON" | jq -r '.do_managed')
-          DO_LOCAL=$(echo "$CLEAN_JSON" | jq -r '.do_local')
-          DO_DESKTOP=$(echo "$CLEAN_JSON" | jq -r '.do_desktop')
-          DO_MOBILE=$(echo "$CLEAN_JSON" | jq -r '.do_mobile')
-          RUN_TESTS=$(echo "$CLEAN_JSON" | jq -r '.run_tests')
-          SHOULD_DEPLOY=$(echo "$CLEAN_JSON" | jq -r '.should_deploy')
-          BUMP_NEEDED=$(echo "$CLEAN_JSON" | jq -r '.version_bump_needed')
-          REASONING=$(echo "$CLEAN_JSON" | jq -r '.reasoning')
+          NEW_VERSION=$(echo "$CLEAN_JSON" | jq -r '.new_version // empty')
+          DOCKER_VERSION=$(echo "$CLEAN_JSON" | jq -r '.docker_version // empty')
+          DO_MANAGED=$(echo "$CLEAN_JSON" | jq -r '.do_managed // "false"')
+          DO_LOCAL=$(echo "$CLEAN_JSON" | jq -r '.do_local // "false"')
+          DO_DESKTOP=$(echo "$CLEAN_JSON" | jq -r '.do_desktop // "false"')
+          DO_MOBILE=$(echo "$CLEAN_JSON" | jq -r '.do_mobile // "false"')
+          RUN_TESTS=$(echo "$CLEAN_JSON" | jq -r '.run_tests // "true"')
+          SHOULD_DEPLOY=$(echo "$CLEAN_JSON" | jq -r '.should_deploy // "false"')
+          BUMP_NEEDED=$(echo "$CLEAN_JSON" | jq -r '.version_bump_needed // "false"')
+          REASONING=$(echo "$CLEAN_JSON" | jq -r '.reasoning // "No reasoning provided"')
+
+          if [ -z "$NEW_VERSION" ]; then
+            echo "::error::Critical field 'new_version' missing from Gemini output."
+            exit 1
+          fi
 
           # Output for downstream jobs
           echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
@@ -333,10 +349,12 @@ jobs:
             chmod +x scripts/update-all-versions.sh
             ./scripts/update-all-versions.sh "$NEW_VERSION" "${{ github.sha }}"
             git add -A
-            git commit -m "chore: bump version to $NEW_VERSION [skip ci]"
-            git push origin main
-            git tag "v$NEW_VERSION" -f
-            git push origin "v$NEW_VERSION" -f
+            if ! git diff --cached --quiet; then
+              git commit -m "chore: bump version to $NEW_VERSION [skip ci]"
+              git push origin main
+              git tag "v$NEW_VERSION" -f
+              git push origin "v$NEW_VERSION" -f
+            fi
           fi
 
   # ==================================================================================
