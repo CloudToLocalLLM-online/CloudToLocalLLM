@@ -31,8 +31,13 @@ spec:
           command: ["/bin/sh", "-c"]
           args:
             - |
-              apk add --no-cache gettext
-              envsubst < /etc/prometheus-raw/prometheus.yml > /etc/prometheus/prometheus.yml
+              # Simple substitution using sed since envsubst is missing in base alpine
+              # We replace the placeholders with environment variable values
+              cat /etc/prometheus-raw/prometheus.yml \
+                | sed "s|\${GRAFANA_CLOUD_PROMETHEUS_URL}|$GRAFANA_CLOUD_PROMETHEUS_URL|g" \
+                | sed "s|\${GRAFANA_CLOUD_PROMETHEUS_USER}|$GRAFANA_CLOUD_PROMETHEUS_USER|g" \
+                | sed "s|\${GRAFANA_CLOUD_PROMETHEUS_TOKEN}|$GRAFANA_CLOUD_PROMETHEUS_TOKEN|g" \
+                > /etc/prometheus/prometheus.yml
           env:
             - name: GRAFANA_CLOUD_PROMETHEUS_URL
               valueFrom:
