@@ -250,64 +250,59 @@ jobs:
 
       - name: 'Run Gemini Orchestrator'
         id: 'analysis'
-        uses: 'google-github-actions/run-gemini-cli@v0' # ratchet:exclude
         env:
-          GITHUB_TOKEN: '${{ steps.mint_identity_token.outputs.token || secrets.GITHUB_TOKEN || github.token }}'
-          COMMIT_SHA: '${{ github.sha }}'
-        with:
-          gemini_api_key: '${{ secrets.GEMINI_API_KEY }}'
-          gemini_cli_version: '${{ vars.GEMINI_CLI_VERSION }}'
-          gemini_debug: true
-          workflow_name: 'gemini-orchestrator'
-          settings: |-
-            {
-              "tools": {
-                "core": [
-                  "run_shell_command(cat)",
-                  "run_shell_command(ls)",
-                  "run_shell_command(grep)",
-                  "run_shell_command(git)"
-                ]
-              }
-            }
-          prompt: |
-            Analyze the following project state and determine the release strategy.
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          COMMIT_SHA: ${{ github.sha }}
+        run: |
+          set -e
+          echo "Installing Gemini CLI..."
+          npm install -g @google/gemini-cli@latest
+          
+          echo "Running AI Analysis..."
+          cat << 'EOF' > prompt.txt
+          Analyze the following project state and determine the release strategy.
 
-            1. Read 'assets/version.json' for the current version.
-            2. Check 'git log --oneline --no-merges -5' for recent context.
-            3. Check 'git diff --name-only HEAD~1..HEAD' for changed files.
+          1. Read 'assets/version.json' for the current version.
+          2. Check 'git log --oneline --no-merges -5' for recent context.
+          3. Check 'git diff --name-only HEAD~1..HEAD' for changed files.
 
-            Return ONLY a valid JSON object with these keys:
-            {
-              "new_version": "string (next semantic version)",
-              "docker_version": "string (docker-safe version)",
-              "do_managed": "string (true/false)",
-              "do_local": "string (true/false)",
-              "do_desktop": "string (true/false)",
-              "do_mobile": "string (true/false)",
-              "run_tests": "string (true/false)",
-              "should_deploy": "string (true/false)",
-              "version_bump_needed": "string (true/false)",
-              "reasoning": "string"
-            }
+          Return ONLY a valid JSON object with these keys:
+          {
+            "new_version": "string (next semantic version)",
+            "docker_version": "string (docker-safe version)",
+            "do_managed": "true/false",
+            "do_local": "true/false",
+            "do_desktop": "true/false",
+            "do_mobile": "true/false",
+            "run_tests": "true/false",
+            "should_deploy": "true/false",
+            "version_bump_needed": "true/false",
+            "reasoning": "string"
+          }
+          EOF
+
+          # Run gemini and capture to file
+          gemini --yolo --prompt "$(cat prompt.txt)" > gemini_output.json 2> gemini_stderr.log || true
+          
+          echo "::: Raw Gemini Output :::"
+          cat gemini_output.json
+          echo "::: Gemini Errors :::"
+          cat gemini_stderr.log
 
       - name: 'Parse and Execute'
         id: 'exec'
         env:
-          GEMINI_JSON: ${{ steps.analysis.outputs.gemini_response }}
           GITHUB_TOKEN: ${{ steps.mint_identity_token.outputs.token || secrets.GITHUB_TOKEN || github.token }}
         run: |
           set -e
-          echo "::: Raw Gemini Output :::"
-          echo "$GEMINI_JSON"
           
-          if [ -z "$GEMINI_JSON" ]; then
-            echo "::error::Gemini response is empty. Check logs for API errors."
+          if [ ! -s gemini_output.json ]; then
+            echo "::error::Gemini output file is empty or missing."
             exit 1
           fi
 
-          # Strip markdown code blocks if present
-          CLEAN_JSON=$(echo "$GEMINI_JSON" | sed -n '/{/,/}/p')
+          # Strip markdown code blocks if the model included them
+          CLEAN_JSON=$(cat gemini_output.json | sed -n '/{/,/}/p')
           echo "::: Cleaned JSON :::"
           echo "$CLEAN_JSON"
           
