@@ -105,25 +105,27 @@ class Auth0AuthProvider implements AuthProvider {
 
       if (kIsWeb) {
         await _initializeWeb();
-      } else if (Platform.isWindows) {
-        debugPrint(
-            '[Auth0AuthProvider] Checking Windows URL scheme registration');
-        final isRegistered =
-            await UrlSchemeRegistrationService.isSchemeRegistered();
-        if (!isRegistered) {
+      } else {
+        if (defaultTargetPlatform == TargetPlatform.windows) {
           debugPrint(
-              '[Auth0AuthProvider] Registering URL scheme for OAuth callbacks...');
-          await UrlSchemeRegistrationService.registerUrlScheme();
-        }
+              '[Auth0AuthProvider] Checking Windows URL scheme registration');
+          final isRegistered =
+              await UrlSchemeRegistrationService.isSchemeRegistered();
+          if (!isRegistered) {
+            debugPrint(
+                '[Auth0AuthProvider] Registering URL scheme for OAuth callbacks...');
+            await UrlSchemeRegistrationService.registerUrlScheme();
+          }
 
-        _linkSubscription = _appLinks.uriLinkStream.listen(
-          (Uri uri) {
-            debugPrint('[Auth0AuthProvider] Received URL callback: $uri');
-            _handleIncomingUrl(uri);
-          },
-          onError: (err) =>
-              debugPrint('[Auth0AuthProvider] URL link stream error: $err'),
-        );
+          _linkSubscription = _appLinks.uriLinkStream.listen(
+            (Uri uri) {
+              debugPrint('[Auth0AuthProvider] Received URL callback: $uri');
+              _handleIncomingUrl(uri);
+            },
+            onError: (err) =>
+                debugPrint('[Auth0AuthProvider] URL link stream error: $err'),
+          );
+        }
       }
 
       // Check for existing session in PostgreSQL first
@@ -288,14 +290,20 @@ class Auth0AuthProvider implements AuthProvider {
 
       // Perform logout with Auth0
       try {
-        if (kIsWeb && _auth0Web != null) {
-          await _auth0Web!.logout();
-        } else if (Platform.isAndroid || Platform.isIOS || Platform.isMacOS) {
-          await _auth0
-              .webAuthentication(
-                scheme: UrlSchemeRegistrationService.customScheme,
-              )
-              .logout();
+        if (kIsWeb) {
+          if (_auth0Web != null) {
+            await _auth0Web!.logout();
+          }
+        } else {
+          if (defaultTargetPlatform == TargetPlatform.android ||
+              defaultTargetPlatform == TargetPlatform.iOS ||
+              defaultTargetPlatform == TargetPlatform.macOS) {
+            await _auth0
+                .webAuthentication(
+                  scheme: UrlSchemeRegistrationService.customScheme,
+                )
+                .logout();
+          }
         }
       } catch (e) {
         debugPrint('[Auth0AuthProvider] Logout error (non-critical): $e');

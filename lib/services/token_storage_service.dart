@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:path/path.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
@@ -33,7 +32,8 @@ class TokenStorageService {
       return;
     }
 
-    if (Platform.isWindows || Platform.isLinux) {
+    if (defaultTargetPlatform == TargetPlatform.windows ||
+        defaultTargetPlatform == TargetPlatform.linux) {
       sqfliteFfiInit();
       databaseFactory = databaseFactoryFfi;
     }
