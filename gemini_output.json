@@ -1,13 +1,13 @@
 ```json
 {
-  "new_version": "7.12.0",
-  "docker_version": "7.12.0",
-  "do_managed": true,
-  "do_local": true,
-  "do_desktop": true,
-  "do_mobile": true,
-  "should_deploy": true,
-  "version_bump_needed": true,
-  "reasoning": "The latest commit is a significant refactoring that removes SQLite and standardizes on PostgreSQL for both the client and backend. This is a substantial change affecting the entire stack, necessitating a minor version bump and a full deployment across all targets (managed, local, desktop, and mobile)."
+  "new_version": "7.12.1",
+  "docker_version": "7.12.1",
+  "do_managed": "true",
+  "do_local": "false",
+  "do_desktop": "false",
+  "do_mobile": "false",
+  "should_deploy": "true",
+  "version_bump_needed": "true",
+  "reasoning": "The recent commit is a fix to the Kubernetes (k8s) configuration, which warrants a patch version bump. This change only affects the managed deployment, so desktop, mobile, and local builds are not required."
 }
 ```
