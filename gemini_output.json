@@ -1,13 +1,13 @@
 ```json
 {
-  "new_version": "7.12.3",
-  "docker_version": "7.12.3",
+  "new_version": "7.12.4",
+  "docker_version": "7.12.4",
   "do_managed": "true",
-  "do_local": "true",
+  "do_local": "false",
   "do_desktop": "false",
   "do_mobile": "false",
   "should_deploy": "true",
   "version_bump_needed": "true",
-  "reasoning": "A bug fix was applied to the base Kubernetes configuration, which affects both managed and local deployments. This warrants a patch release from 7.12.2 to 7.12.3."
+  "reasoning": "The recent commits are fixes to the Kubernetes configuration, which warrants a patch release from 7.12.3 to 7.12.4. Since the changes are isolated to the Kubernetes manifests, only a managed deployment is required."
 }
 ```
