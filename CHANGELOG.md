@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [7.13.2+202512191352] - 2025-12-19
+## v7.13.2+202512191352
+
+### Bug Fixes
+
+*   Correct `actions/checkout` versions in Gemini workflows. (99e9b06)
+
 ## [7.13.2+202512191329] - 2025-12-19
 
 ## v7.13.2+202512191329 (2025-12-19)
