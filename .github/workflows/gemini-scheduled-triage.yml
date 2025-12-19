@@ -121,6 +121,7 @@ jobs:
                 "enabled": true,
                 "target": "local",
                 "outfile": ".gemini/telemetry.log"
+              }
             }
           prompt: "/gemini-scheduled-triage"
 
