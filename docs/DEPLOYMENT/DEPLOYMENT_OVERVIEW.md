@@ -171,6 +171,7 @@ For detailed information, see [Versioning Strategy](VERSIONING_STRATEGY.md).
 
 ### 📚 **Deployment Guides**
 - [Complete Deployment Workflow](COMPLETE_DEPLOYMENT_WORKFLOW.md)
+- [Cloud Run to Kubernetes Migration Investigation](CLOUD_RUN_TO_KUBERNETES_MIGRATION_INVESTIGATION.md)
 - [Strict Deployment Policy](STRICT_DEPLOYMENT_POLICY.md)
 - [VPS Quality Gates Specification](VPS_QUALITY_GATES_SPECIFICATION.md)
 - [Deployment Testing Guide](DEPLOYMENT_TESTING_GUIDE.md)

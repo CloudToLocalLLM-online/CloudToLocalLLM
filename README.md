@@ -55,6 +55,8 @@ Comprehensive documentation is available in the `docs/` directory:
 *   **[User Guide](docs/USER_DOCUMENTATION/USER_GUIDE.md):** Detailed configuration and usage instructions.
 *   **:** Walkthrough for your first run.
 *   **[Troubleshooting](docs/USER_DOCUMENTATION/USER_TROUBLESHOOTING_GUIDE.md):** Solutions for common issues.
+*   **[Deployment Guide](docs/DEPLOYMENT/DEPLOYMENT_OVERVIEW.md):** Comprehensive deployment options and strategies.
+*   **[Kubernetes Migration](KUBERNETES_MIGRATION_SUMMARY.md):** Cloud Run to Kubernetes migration investigation.
 
 ## 🛠️ Development
 
