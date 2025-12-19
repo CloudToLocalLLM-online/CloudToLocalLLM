@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:io';
 import 'package:auth0_flutter/auth0_flutter.dart';
 import 'package:auth0_flutter/auth0_flutter_web.dart'
     if (dart.library.io) 'auth0_flutter_stub.dart';

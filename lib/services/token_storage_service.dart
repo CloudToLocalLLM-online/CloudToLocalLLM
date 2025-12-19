@@ -1,22 +1,16 @@
 import 'package:flutter/foundation.dart';
-import 'package:path/path.dart';
-import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:encrypt/encrypt.dart' as encrypt;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'session_storage_service.dart';
 import '../di/locator.dart' as di;
 
 class TokenStorageService {
-  static Database? _database;
-  static const String _tableName = 'auth_tokens';
   static final _secureStorage = const FlutterSecureStorage();
   static encrypt.Encrypter? _encrypter;
   static encrypt.IV? _iv;
   SessionStorageService? _sessionStorage;
 
   Future<void> init() async {
-    if (_database != null) return;
-
     // Try to get SessionStorageService from locator
     try {
       _sessionStorage = di.serviceLocator.get<SessionStorageService>();
@@ -24,35 +18,6 @@ class TokenStorageService {
       debugPrint(
           '[TokenStorageService] SessionStorageService not found in locator');
     }
-
-    if (kIsWeb) {
-      // On web, we use flutter_secure_storage directly for tokens
-      // No SQLite initialization needed
-      await _initEncryption();
-      return;
-    }
-
-    if (defaultTargetPlatform == TargetPlatform.windows ||
-        defaultTargetPlatform == TargetPlatform.linux) {
-      sqfliteFfiInit();
-      databaseFactory = databaseFactoryFfi;
-    }
-
-    final dbPath = join(await getDatabasesPath(), 'auth_tokens.db');
-
-    _database = await openDatabase(
-      dbPath,
-      version: 1,
-      onCreate: (db, version) async {
-        await db.execute('''
-          CREATE TABLE $_tableName (
-            key TEXT PRIMARY KEY,
-            value TEXT NOT NULL,
-            updated_at TEXT NOT NULL
-          )
-        ''');
-      },
-    );
 
     await _initEncryption();
   }
@@ -68,7 +33,7 @@ class TokenStorageService {
     final key = encrypt.Key.fromBase64(keyStr);
     _encrypter = encrypt.Encrypter(encrypt.AES(key));
     _iv = encrypt.IV.fromLength(
-        16); // Static IV for simplicity in this context, or store per record
+        16); // Static IV for simplicity in this context
   }
 
   Future<void> saveToken(String key, String value) async {
@@ -88,27 +53,14 @@ class TokenStorageService {
       }
     }
 
-    if (kIsWeb) {
-      if (_encrypter == null) await init();
+    if (_encrypter == null) await init();
+    
+    try {
       final encrypted = _encrypter!.encrypt(value, iv: _iv);
       await _secureStorage.write(key: 'token_$key', value: encrypted.base64);
-      return;
+    } catch (e) {
+      debugPrint('[TokenStorageService] Failed to write to secure storage: $e');
     }
-
-    if (_database == null) await init();
-
-    final encrypted = _encrypter!.encrypt(value, iv: _iv);
-    final now = DateTime.now().toIso8601String();
-
-    await _database!.insert(
-      _tableName,
-      {
-        'key': key,
-        'value': encrypted.base64,
-        'updated_at': now,
-      },
-      conflictAlgorithm: ConflictAlgorithm.replace,
-    );
   }
 
   Future<String?> getToken(String key) async {
@@ -120,62 +72,28 @@ class TokenStorageService {
       if (key == 'refresh_token') return session.refreshToken;
     }
 
-    if (kIsWeb) {
-      if (_encrypter == null) await init();
+    if (_encrypter == null) await init();
+
+    try {
       final encryptedStr = await _secureStorage.read(key: 'token_$key');
       if (encryptedStr == null) return null;
-      try {
-        return _encrypter!.decrypt64(encryptedStr, iv: _iv);
-      } catch (e) {
-        debugPrint(
-            '[TokenStorageService] Decryption failed for key: $key - $e');
-        return null;
-      }
-    }
-
-    if (_database == null) await init();
-
-    final List<Map<String, dynamic>> maps = await _database!.query(
-      _tableName,
-      where: 'key = ?',
-      whereArgs: [key],
-    );
-
-    if (maps.isEmpty) return null;
-
-    final encryptedStr = maps.first['value'] as String;
-    try {
+      
       return _encrypter!.decrypt64(encryptedStr, iv: _iv);
     } catch (e) {
-      debugPrint('[TokenStorageService] Decryption failed for key: $key - $e');
+      debugPrint(
+          '[TokenStorageService] Decryption failed for key: $key - $e');
       return null;
     }
   }
 
   Future<void> deleteToken(String key) async {
-    if (kIsWeb) {
-      await _secureStorage.delete(key: 'token_$key');
-      return;
-    }
-
-    if (_database == null) await init();
-    await _database!.delete(
-      _tableName,
-      where: 'key = ?',
-      whereArgs: [key],
-    );
+    await _secureStorage.delete(key: 'token_$key');
   }
 
   Future<void> clearAll() async {
-    if (kIsWeb) {
-      // Clear known tokens
-      await _secureStorage.delete(key: 'token_access_token');
-      await _secureStorage.delete(key: 'token_id_token');
-      await _secureStorage.delete(key: 'token_refresh_token');
-      return;
-    }
-
-    if (_database == null) await init();
-    await _database!.delete(_tableName);
+    // Clear known tokens
+    await _secureStorage.delete(key: 'token_access_token');
+    await _secureStorage.delete(key: 'token_id_token');
+    await _secureStorage.delete(key: 'token_refresh_token');
   }
 }

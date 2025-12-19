@@ -60,7 +60,7 @@ jobs:
             SOURCE="tag"
           else
             # Branch push (cloud branch)
-            APP_VERSION=$(jq -r '.version' assets/version.json)
+            APP_VERSION=$(jq -r '.version' assets/version.json | tr '+' '-')
             COMMIT_SHA=$(git rev-parse --short HEAD)
             SOURCE="cloud-branch"
           fi

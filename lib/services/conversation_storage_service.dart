@@ -2,7 +2,6 @@ import 'package:flutter/foundation.dart';
 import 'package:dio/dio.dart';
 
 import '../models/conversation.dart';
-import '../models/message.dart';
 import '../config/app_config.dart';
 import 'auth_service.dart';
 
@@ -73,7 +72,6 @@ class ConversationStorageService {
 
         final conversations = <Conversation>[];
         for (final convData in conversationsData) {
-          final convId = convData['id'] as String;
           // Note: The /api/conversations endpoint currently returns partial info
           // We could fetch full details if needed, but for the list view this might suffice
           // or we can adapt based on backend response
@@ -276,6 +274,16 @@ class ConversationStorageService {
         'storage': 'PostgreSQL',
       },
     };
+  }
+
+  /// Set storage location preference (Stub for compatibility)
+  Future<void> setStorageLocation(String location) async {
+    debugPrint('[ConversationStorage] setStorageLocation($location) called - no-op in cloud-only mode');
+  }
+
+  /// Set encryption enabled preference (Stub for compatibility)
+  Future<void> setEncryptionEnabled(bool enabled) async {
+    debugPrint('[ConversationStorage] setEncryptionEnabled($enabled) called - no-op in cloud-only mode');
   }
 
   /// Close the service

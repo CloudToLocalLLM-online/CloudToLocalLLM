@@ -7,6 +7,7 @@ class Message {
   final String? model; // The LLM model used for assistant messages
   final MessageStatus status;
   final String? error; // Error message if status is error
+  final Map<String, dynamic>? metadata;
 
   const Message({
     required this.id,
@@ -16,16 +17,18 @@ class Message {
     this.model,
     this.status = MessageStatus.sent,
     this.error,
+    this.metadata,
   });
 
   /// Create a user message
-  factory Message.user({required String content, String? id}) {
+  factory Message.user({required String content, String? id, Map<String, dynamic>? metadata}) {
     return Message(
       id: id ?? _generateId(),
       content: content,
       role: MessageRole.user,
       timestamp: DateTime.now(),
       status: MessageStatus.sent,
+      metadata: metadata,
     );
   }
 
@@ -36,6 +39,7 @@ class Message {
     String? id,
     MessageStatus status = MessageStatus.sent,
     String? error,
+    Map<String, dynamic>? metadata,
   }) {
     return Message(
       id: id ?? _generateId(),
@@ -45,17 +49,19 @@ class Message {
       model: model,
       status: status,
       error: error,
+      metadata: metadata,
     );
   }
 
   /// Create a system message
-  factory Message.system({required String content, String? id}) {
+  factory Message.system({required String content, String? id, Map<String, dynamic>? metadata}) {
     return Message(
       id: id ?? _generateId(),
       content: content,
       role: MessageRole.system,
       timestamp: DateTime.now(),
       status: MessageStatus.sent,
+      metadata: metadata,
     );
   }
 
@@ -76,6 +82,7 @@ class Message {
     required String model,
     String? id,
     String content = '',
+    Map<String, dynamic>? metadata,
   }) {
     return Message(
       id: id ?? _generateId(),
@@ -84,6 +91,7 @@ class Message {
       timestamp: DateTime.now(),
       model: model,
       status: MessageStatus.streaming,
+      metadata: metadata,
     );
   }
 
@@ -103,6 +111,7 @@ class Message {
         orElse: () => MessageStatus.sent,
       ),
       error: json['error'],
+      metadata: json['metadata'],
     );
   }
 
@@ -116,6 +125,7 @@ class Message {
       'model': model,
       'status': status.name,
       'error': error,
+      'metadata': metadata,
     };
   }
 
@@ -128,6 +138,7 @@ class Message {
     String? model,
     MessageStatus? status,
     String? error,
+    Map<String, dynamic>? metadata,
   }) {
     return Message(
       id: id ?? this.id,
@@ -137,6 +148,7 @@ class Message {
       model: model ?? this.model,
       status: status ?? this.status,
       error: error ?? this.error,
+      metadata: metadata ?? this.metadata,
     );
   }
 
