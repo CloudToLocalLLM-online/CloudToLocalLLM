@@ -1,13 +1,13 @@
 ```json
 {
-  "new_version": "7.12.5",
-  "docker_version": "7.12.5",
+  "new_version": "7.13.0",
+  "docker_version": "7.13.0",
   "do_managed": true,
-  "do_local": false,
+  "do_local": true,
   "do_desktop": false,
   "do_mobile": false,
   "should_deploy": true,
   "version_bump_needed": true,
-  "reasoning": "The most recent commit is a fix for Kubernetes service name resolution, which is a patch-level change affecting the managed environment. This necessitates a new patch version and a deployment to apply the fix."
+  "reasoning": "A new feature (Grafana Cloud integration) and a subsequent fix have been committed since the last version bump. The changes affect the Kubernetes monitoring configuration, requiring a minor version bump and deployment to both managed and local environments."
 }
 ```
