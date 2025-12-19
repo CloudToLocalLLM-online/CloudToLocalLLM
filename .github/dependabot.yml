@@ -2,6 +2,10 @@ version: 2
 updates:
   # Enable version updates for npm
   - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "daily"
+  - package-ecosystem: "npm"
     directory: "/services/api-backend"
     schedule:
       interval: "daily"
@@ -12,6 +16,12 @@ updates:
 
   # Enable version updates for pub
   - package-ecosystem: "pub"
+    directory: "/"
+    schedule:
+      interval: "daily"
+
+  # Enable version updates for GitHub Actions
+  - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "daily"
