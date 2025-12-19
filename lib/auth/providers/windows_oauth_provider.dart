@@ -12,11 +12,14 @@ import 'package:http/http.dart' as http;
 import '../auth_provider.dart';
 import '../../models/user_model.dart';
 import '../../services/url_scheme_registration_service.dart';
+import '../../services/session_storage_service.dart';
+import '../../di/locator.dart' as di;
 
 /// Windows-specific OAuth implementation for Auth0
 /// Uses manual browser launch and URL scheme callback handling
 class WindowsOAuthProvider implements AuthProvider {
   final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
+  late final SessionStorageService _sessionStorage;
   // late final AppLinks _appLinks; // Used for deep link handling
   Completer<Map<String, String>>? _authCompleter;
 
@@ -40,7 +43,9 @@ class WindowsOAuthProvider implements AuthProvider {
             const String.fromEnvironment('AUTH0_AUDIENCE',
                 defaultValue: 'https://api.cloudtolocalllm.online'),
         _redirectUrl =
-            '${UrlSchemeRegistrationService.customScheme}://dev-v2f2p008x3dr74ww.us.auth0.com/windows/${UrlSchemeRegistrationService.customScheme}/callback';
+            '${UrlSchemeRegistrationService.customScheme}://dev-v2f2p008x3dr74ww.us.auth0.com/windows/${UrlSchemeRegistrationService.customScheme}/callback' {
+    _sessionStorage = di.serviceLocator.get<SessionStorageService>();
+  }
 
   final StreamController<bool> _authStateController =
       StreamController<bool>.broadcast();
@@ -80,7 +85,28 @@ class WindowsOAuthProvider implements AuthProvider {
         _startCallbackFileMonitoring();
       }
 
-      // Check for existing credentials
+      // Check for existing session in PostgreSQL first
+      final session = await _sessionStorage.getCurrentSession();
+      if (session != null && session.isValid) {
+        debugPrint('[WindowsOAuth] Found valid session in PostgreSQL');
+        if (session.accessToken != null && session.idToken != null) {
+          _currentUser = session.user;
+
+          // Update local storage with tokens from PostgreSQL
+          await _secureStorage.write(
+              key: 'access_token', value: session.accessToken!);
+          await _secureStorage.write(key: 'id_token', value: session.idToken!);
+          if (session.refreshToken != null) {
+            await _secureStorage.write(
+                key: 'refresh_token', value: session.refreshToken!);
+          }
+
+          _authStateController.add(true);
+          return;
+        }
+      }
+
+      // Check for existing credentials locally
       final accessToken = await _secureStorage.read(key: 'access_token');
       final idToken = await _secureStorage.read(key: 'id_token');
 
@@ -276,21 +302,7 @@ class WindowsOAuthProvider implements AuthProvider {
 
       if (response.statusCode == 200) {
         final tokenData = json.decode(response.body);
-
-        // Store tokens securely
-        await _secureStorage.write(
-            key: 'access_token', value: tokenData['access_token']);
-        await _secureStorage.write(
-            key: 'id_token', value: tokenData['id_token']);
-        if (tokenData['refresh_token'] != null) {
-          await _secureStorage.write(
-              key: 'refresh_token', value: tokenData['refresh_token']);
-        }
-
-        // Parse user info from ID token
-        _currentUser = _idTokenToUser(tokenData['id_token']);
-        _authStateController.add(true);
-
+        await _storeCredentials(tokenData);
         debugPrint('[WindowsOAuth] Login successful!');
       } else {
         throw Exception(
@@ -300,6 +312,47 @@ class WindowsOAuthProvider implements AuthProvider {
       debugPrint('[WindowsOAuth] Token exchange error: $e');
       _authStateController.add(false);
       rethrow;
+    }
+  }
+
+  Future<void> _storeCredentials(Map<String, dynamic> result) async {
+    debugPrint('[WindowsOAuth] Storing credentials');
+
+    final accessToken = result['access_token'] as String;
+    final idToken = result['id_token'] as String;
+    final refreshToken = result['refresh_token'] as String?;
+
+    if (idToken.isNotEmpty) {
+      _currentUser = _idTokenToUser(idToken);
+
+      // Create session in PostgreSQL
+      try {
+        final session = await _sessionStorage.createSession(
+          user: _currentUser!,
+          accessToken: accessToken,
+        );
+        debugPrint(
+            '[WindowsOAuth] Session created in PostgreSQL: ${session.token}');
+
+        // Sync tokens to PostgreSQL
+        await _sessionStorage.syncTokens(
+          sessionToken: session.token,
+          accessToken: accessToken,
+          idToken: idToken,
+          refreshToken: refreshToken,
+        );
+      } catch (e) {
+        debugPrint('[WindowsOAuth] Failed to sync session to PostgreSQL: $e');
+      }
+
+      _authStateController.add(true);
+    }
+
+    // Still store locally as fallback/cache
+    await _secureStorage.write(key: 'access_token', value: accessToken);
+    await _secureStorage.write(key: 'id_token', value: idToken);
+    if (refreshToken != null) {
+      await _secureStorage.write(key: 'refresh_token', value: refreshToken);
     }
   }
 
@@ -320,21 +373,7 @@ class WindowsOAuthProvider implements AuthProvider {
 
       if (response.statusCode == 200) {
         final tokenData = json.decode(response.body);
-
-        // Store new tokens
-        await _secureStorage.write(
-            key: 'access_token', value: tokenData['access_token']);
-        if (tokenData['id_token'] != null) {
-          await _secureStorage.write(
-              key: 'id_token', value: tokenData['id_token']);
-          _currentUser = _idTokenToUser(tokenData['id_token']);
-        }
-        if (tokenData['refresh_token'] != null) {
-          await _secureStorage.write(
-              key: 'refresh_token', value: tokenData['refresh_token']);
-        }
-
-        _authStateController.add(true);
+        await _storeCredentials(tokenData);
         debugPrint('[WindowsOAuth] Token refresh successful');
       } else {
         debugPrint(

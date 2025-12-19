@@ -1,14 +1,12 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
-import 'package:dio/dio.dart';
 
 import '../models/user_model.dart';
 import '../auth/auth_provider.dart';
 
 import 'connection_manager_service.dart';
 import '../di/locator.dart' as di;
-import '../config/app_config.dart';
 
 /// Provider-Agnostic Authentication Service
 class AuthService extends ChangeNotifier {

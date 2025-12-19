@@ -11,10 +11,13 @@ import '../config/app_config.dart';
 class SessionStorageService {
   final String _baseUrl = AppConfig.apiBaseUrl;
   final Dio _dio = Dio();
+  SessionModel? _currentSession;
 
   SessionStorageService() {
     _setupDio();
   }
+
+  SessionModel? get currentSession => _currentSession;
 
   void _setupDio() {
     _dio.options.baseUrl = _baseUrl;
@@ -22,71 +25,68 @@ class SessionStorageService {
     _dio.options.receiveTimeout = AppConfig.apiTimeout;
   }
 
-  /// Create a new session for an authenticated user
+  /// Create or retrieve a session for an authenticated user
   Future<SessionModel> createSession({
     required UserModel user,
+    String? accessToken,
   }) async {
-    // Generate a unique session token
-    final token = _generateSessionToken();
-    final expiresAt =
-        DateTime.now().add(const Duration(hours: 24)); // 24 hour sessions
-
-    final sessionData = {
-      'userId': user.id,
-      'token': token,
-      'expiresAt': expiresAt.toIso8601String(),
-      'userProfile': {
-        'email': user.email,
-        'name': user.name,
-        'nickname': user.nickname,
-        'picture': user.picture,
-        'email_verified': user.emailVerified != null,
-        'email_verified_at': user.emailVerified?.toIso8601String(),
-      },
-    };
-
-    try {
-      final response = await _dio.post(
-        '/auth/sessions',
-        data: sessionData,
-        options: Options(headers: {'Content-Type': 'application/json'}),
-      );
-
-      if (response.statusCode == 201) {
-        final responseData = response.data;
-        final session = SessionModel(
-          id: responseData['id'],
-          userId: user.id,
-          token: token,
-          expiresAt: expiresAt,
-          user: user,
+    // If we have an access token, use the new /current endpoint which auto-syncs
+    if (accessToken != null) {
+      try {
+        final response = await _dio.get(
+          '/auth/sessions/current',
+          options: Options(headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer $accessToken',
+          }),
         );
 
-        // Store session token locally
-        await _storeSessionToken(token);
+        if (response.statusCode == 200) {
+          final responseData = response.data;
+          final session = SessionModel(
+            id: responseData['session']['id'],
+            userId: responseData['user']['id'],
+            token: responseData['session']['token'],
+            accessToken: responseData['session']['jwtAccessToken'],
+            idToken: responseData['session']['jwtIdToken'],
+            refreshToken: responseData['session']['refreshToken'],
+            expiresAt: DateTime.parse(responseData['session']['expiresAt']),
+            user: user,
+            createdAt: DateTime.parse(responseData['session']['createdAt']),
+            lastActivity:
+                DateTime.parse(responseData['session']['lastActivity']),
+          );
 
-        return session;
-      } else {
-        throw Exception('Failed to create session: ${response.statusCode}');
+          // Store session token locally
+          await _storeSessionToken(session.token);
+          _currentSession = session;
+
+          return session;
+        }
+      } catch (e) {
+        debugPrint(' Failed to create session via /current: $e');
       }
-    } catch (e) {
-      debugPrint(' Failed to create session: $e');
-      // Return a local session for now if API is unavailable
-      final session = SessionModel(
-        id: _generateId(),
-        userId: user.id,
-        token: token,
-        expiresAt: expiresAt,
-        user: user,
-        createdAt: DateTime.now(),
-        lastActivity: DateTime.now(),
-      );
-
-      // Still store locally even if API fails
-      await _storeSessionToken(token);
-
-      return session;
     }
+
+    // Fallback to local session generation if API is unavailable or fails
+    final token = _generateSessionToken();
+    final expiresAt = DateTime.now().add(const Duration(hours: 24));
+
+    final session = SessionModel(
+      id: _generateId(),
+      userId: user.id,
+      token: token,
+      expiresAt: expiresAt,
+      user: user,
+      createdAt: DateTime.now(),
+      lastActivity: DateTime.now(),
+    );
+
+    // Still store locally even if API fails
+    await _storeSessionToken(token);
+    _currentSession = session;
+
+    return session;
   }
 
   /// Get current valid session (if any)
@@ -160,23 +160,69 @@ class SessionStorageService {
           updatedAt: DateTime.now(), // API should provide this
         );
 
-        return SessionModel(
+        final session = SessionModel(
           id: responseData['session']['id'],
           userId: responseData['user']['id'],
           token: token,
+          accessToken: responseData['session']['jwtAccessToken'],
+          idToken: responseData['session']['jwtIdToken'],
+          refreshToken: responseData['session']['refreshToken'],
           expiresAt: DateTime.parse(responseData['session']['expiresAt']),
           user: user,
           createdAt: DateTime.parse(responseData['session']['createdAt']),
           lastActivity: DateTime.parse(responseData['session']['lastActivity']),
         );
+
+        _currentSession = session;
+        return session;
       } else if (response.statusCode == 404) {
+        _currentSession = null;
         return null; // Session not found or expired
       } else {
+        _currentSession = null;
         throw Exception('Failed to validate session: ${response.statusCode}');
       }
     } catch (e) {
       debugPrint(' Failed to validate session: $e');
+      _currentSession = null;
       return null;
+    }
+  }
+
+  /// Update tokens for the current session in PostgreSQL
+  Future<void> syncTokens({
+    required String sessionToken,
+    String? accessToken,
+    String? idToken,
+    String? refreshToken,
+  }) async {
+    try {
+      final response = await _dio.put(
+        '/auth/sessions/tokens',
+        data: {
+          'sessionToken': sessionToken,
+          'accessToken': accessToken,
+          'idToken': idToken,
+          'refreshToken': refreshToken,
+        },
+        options: Options(headers: {'Content-Type': 'application/json'}),
+      );
+
+      if (response.statusCode == 200) {
+        debugPrint(' Tokens synchronized with PostgreSQL');
+        if (_currentSession != null && _currentSession!.token == sessionToken) {
+          _currentSession = _currentSession!.copyWith(
+            accessToken: accessToken,
+            idToken: idToken,
+            refreshToken: refreshToken,
+          );
+        }
+      } else {
+        throw Exception('Failed to sync tokens: ${response.statusCode}');
+      }
+    } catch (e) {
+      debugPrint(' Failed to sync tokens with PostgreSQL: $e');
+      rethrow;
     }
   }
 

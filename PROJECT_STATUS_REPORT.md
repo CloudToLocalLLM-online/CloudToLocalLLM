@@ -21,13 +21,16 @@ CloudToLocalLLM is a cross-platform Flutter application providing hybrid AI arch
 ## Recent Achievements
 
 ### Authentication System Resolution ✅
-**Date**: December 14, 2025  
+**Date**: December 15, 2025  
 **Status**: COMPLETE
 
-**Issue**: Post-login API authentication failures causing 401 errors
-**Root Cause**: Auth0 audience mismatch between frontend and backend
-**Solution**: Updated frontend Auth0 configuration to use correct audience
-**Impact**: All API endpoints now functional, users can access full application features
+**Issue**: Web crash due to uninitialized SQLite database and fragmented token storage.
+**Root Cause**: `sqflite` not supported on Web; tokens stored locally on Desktop but remotely on Web.
+**Solution**: 
+- Unified token storage architecture to use centralized PostgreSQL backend for both Web and Desktop.
+- Refactored `SessionStorageService` and `TokenStorageService` to act as proxies to the remote database.
+- Implemented conditional Auth Provider registration (Auth0 vs Entra ID) based on user settings.
+**Impact**: Improved reliability on Web, unified session management across platforms, and support for enterprise auth providers.
 
 ### Documentation Consolidation ✅
 **Date**: December 15, 2025  

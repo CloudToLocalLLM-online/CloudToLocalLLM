@@ -4,6 +4,7 @@ class SettingsPreferenceService {
   static const String _proModeKey = 'settings_pro_mode';
   static const String _themeKey = 'settings_theme';
   static const String _languageKey = 'settings_language';
+  static const String _authProviderKey = 'settings_auth_provider';
 
   // Privacy Settings
   static const String _analyticsKey = 'settings_analytics_enabled';
@@ -70,6 +71,22 @@ class SettingsPreferenceService {
     }
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_languageKey, language);
+  }
+
+  // Auth Provider Preference
+  /// Get the saved auth provider preference ('auth0' or 'entra')
+  Future<String> getAuthProvider() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_authProviderKey) ?? 'auth0';
+  }
+
+  /// Save the auth provider preference
+  Future<void> setAuthProvider(String provider) async {
+    if (!['auth0', 'entra'].contains(provider)) {
+      throw ArgumentError('Invalid auth provider: $provider');
+    }
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_authProviderKey, provider);
   }
 
   // Privacy Settings

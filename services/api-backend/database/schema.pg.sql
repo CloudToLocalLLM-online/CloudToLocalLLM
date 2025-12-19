@@ -26,6 +26,9 @@ CREATE TABLE IF NOT EXISTS user_sessions (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   session_token TEXT UNIQUE NOT NULL,  -- Our internal session token
+  jwt_access_token TEXT,               -- Auth0 Access Token
+  jwt_id_token TEXT,                   -- Auth0 ID Token
+  refresh_token TEXT,                  -- Auth0 Refresh Token
   expires_at TIMESTAMPTZ NOT NULL,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   last_activity TIMESTAMPTZ DEFAULT NOW(),

@@ -5,7 +5,6 @@ import 'package:auth0_flutter/auth0_flutter_web.dart'
     if (dart.library.io) 'auth0_flutter_stub.dart';
 import 'package:app_links/app_links.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:jwt_decoder/jwt_decoder.dart';
 import '../auth_provider.dart';
 import '../../models/user_model.dart';
@@ -14,6 +13,7 @@ import '../../services/url_scheme_registration_service.dart'
 import 'auth0_web_script_helper_stub.dart'
     if (dart.library.js_interop) 'auth0_web_script_helper_web.dart';
 import '../../services/token_storage_service.dart';
+import '../../services/session_storage_service.dart';
 import '../../di/locator.dart' as di;
 
 /// Error types for authentication failures
@@ -55,6 +55,7 @@ class Auth0AuthProvider implements AuthProvider {
   late final Auth0 _auth0;
   Auth0Web? _auth0Web;
   late final TokenStorageService _tokenStorage;
+  late final SessionStorageService _sessionStorage;
   late final AppLinks _appLinks;
   StreamSubscription<Uri>? _linkSubscription;
 
@@ -78,6 +79,7 @@ class Auth0AuthProvider implements AuthProvider {
                 defaultValue: 'https://api.cloudtolocalllm.online') {
     _appLinks = AppLinks();
     _tokenStorage = di.serviceLocator.get<TokenStorageService>();
+    _sessionStorage = di.serviceLocator.get<SessionStorageService>();
     if (!kIsWeb) {
       _auth0 = Auth0(_domain, _clientId);
     } else {
@@ -124,7 +126,27 @@ class Auth0AuthProvider implements AuthProvider {
         );
       }
 
-      // Check for existing tokens in secure SQLite storage
+      // Check for existing session in PostgreSQL first
+      final session = await _sessionStorage.getCurrentSession();
+      if (session != null && session.isValid) {
+        debugPrint('[Auth0AuthProvider] Found valid session in PostgreSQL');
+        if (session.accessToken != null && session.idToken != null) {
+          _currentUser = session.user;
+
+          // Update local storage with tokens from PostgreSQL
+          await _tokenStorage.saveToken('access_token', session.accessToken!);
+          await _tokenStorage.saveToken('id_token', session.idToken!);
+          if (session.refreshToken != null) {
+            await _tokenStorage.saveToken(
+                'refresh_token', session.refreshToken!);
+          }
+
+          _authStateController.add(true);
+          return;
+        }
+      }
+
+      // Fallback to local storage if PostgreSQL session is not available
       final accessToken = await _tokenStorage.getToken('access_token');
       final idToken = await _tokenStorage.getToken('id_token');
 
@@ -188,18 +210,40 @@ class Auth0AuthProvider implements AuthProvider {
   }
 
   Future<void> _storeCredentials(Credentials result) async {
-    debugPrint('[Auth0AuthProvider] Storing credentials in secure SQLite');
+    debugPrint('[Auth0AuthProvider] Storing credentials');
+
+    if (result.idToken.isNotEmpty) {
+      _currentUser = _idTokenToUser(result.idToken);
+
+      // Create session in PostgreSQL
+      try {
+        final session = await _sessionStorage.createSession(
+          user: _currentUser!,
+          accessToken: result.accessToken,
+        );
+        debugPrint(
+            '[Auth0AuthProvider] Session created in PostgreSQL: ${session.token}');
+
+        // Sync tokens to PostgreSQL
+        await _sessionStorage.syncTokens(
+          sessionToken: session.token,
+          accessToken: result.accessToken,
+          idToken: result.idToken,
+          refreshToken: result.refreshToken,
+        );
+      } catch (e) {
+        debugPrint(
+            '[Auth0AuthProvider] Failed to sync session to PostgreSQL: $e');
+      }
+
+      _authStateController.add(true);
+    }
+
+    // Still store locally as fallback/cache
     await _tokenStorage.saveToken('access_token', result.accessToken);
     await _tokenStorage.saveToken('id_token', result.idToken);
     if (result.refreshToken != null) {
       await _tokenStorage.saveToken('refresh_token', result.refreshToken!);
-    }
-
-    if (result.idToken.isNotEmpty) {
-      _currentUser = _idTokenToUser(result.idToken);
-      _authStateController.add(true);
-      debugPrint(
-          '[Auth0AuthProvider] User authenticated: ${_currentUser?.email}');
     }
   }
 

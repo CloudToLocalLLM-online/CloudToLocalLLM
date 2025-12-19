@@ -5,6 +5,9 @@ class SessionModel {
   final String id;
   final String userId;
   final String token;
+  final String? accessToken;
+  final String? idToken;
+  final String? refreshToken;
   final DateTime expiresAt;
   final UserModel user;
   final DateTime createdAt;
@@ -15,6 +18,9 @@ class SessionModel {
     required this.id,
     required this.userId,
     required this.token,
+    this.accessToken,
+    this.idToken,
+    this.refreshToken,
     required this.expiresAt,
     required this.user,
     DateTime? createdAt,
@@ -33,6 +39,9 @@ class SessionModel {
     String? id,
     String? userId,
     String? token,
+    String? accessToken,
+    String? idToken,
+    String? refreshToken,
     DateTime? expiresAt,
     UserModel? user,
     DateTime? createdAt,
@@ -43,6 +52,9 @@ class SessionModel {
       id: id ?? this.id,
       userId: userId ?? this.userId,
       token: token ?? this.token,
+      accessToken: accessToken ?? this.accessToken,
+      idToken: idToken ?? this.idToken,
+      refreshToken: refreshToken ?? this.refreshToken,
       expiresAt: expiresAt ?? this.expiresAt,
       user: user ?? this.user,
       createdAt: createdAt ?? this.createdAt,

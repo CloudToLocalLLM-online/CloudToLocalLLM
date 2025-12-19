@@ -1,6 +1,7 @@
 import express from 'express';
 const router = express.Router();
 import db from '../database/db-pool.js';
+import { authenticateJWT } from '../middleware/auth.js';
 
 /**
  * POST /auth/sessions
@@ -15,6 +16,65 @@ router.post('/', async (req, res) => {
 });
 
 /**
+ * GET /auth/sessions/current
+ * Get current session for the authenticated user
+ */
+router.get('/current', authenticateJWT, async (req, res) => {
+  try {
+    const userId = req.userId;
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1];
+
+    if (!token) {
+      return res.status(401).json({ error: 'No token provided' });
+    }
+
+    // The syncSession middleware already ensured the session exists
+    const result = await db.query(
+      `SELECT s.id, s.session_token, s.expires_at,
+              s.jwt_access_token, s.jwt_id_token, s.refresh_token,
+              s.created_at, s.last_activity, s.is_active,
+              u.id as user_id, u.jwt_id, u.email, u.name, u.nickname, u.picture
+       FROM user_sessions s
+       JOIN users u ON s.user_id = u.id
+       WHERE u.jwt_id = $1 AND s.is_active = true AND s.expires_at > NOW()
+       ORDER BY s.last_activity DESC LIMIT 1`,
+      [req.user.sub],
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Session not found' });
+    }
+
+    const session = result.rows[0];
+
+    res.json({
+      session: {
+        id: session.id,
+        token: session.session_token,
+        expiresAt: session.expires_at,
+        jwtAccessToken: session.jwt_access_token,
+        jwtIdToken: session.jwt_id_token,
+        refreshToken: session.refresh_token,
+        createdAt: session.created_at,
+        lastActivity: session.last_activity,
+        isActive: session.is_active,
+      },
+      user: {
+        id: session.jwt_id,
+        email: session.email,
+        name: session.name,
+        nickname: session.nickname,
+        picture: session.picture,
+      },
+    });
+  } catch (error) {
+    console.error('Error getting current session:', error);
+    res.status(500).json({ error: 'Failed to get current session' });
+  }
+});
+
+/**
  * GET /auth/sessions/validate/:token
  * Validate a session token and return session data
  */
@@ -24,6 +84,7 @@ router.get('/validate/:token', async(req, res) => {
 
     const result = await db.query(
       `SELECT s.id, s.session_token, s.expires_at,
+              s.jwt_access_token, s.jwt_id_token, s.refresh_token,
               s.created_at, s.last_activity, s.is_active,
               u.id as user_id, u.jwt_id, u.email, u.name, u.nickname, u.picture
        FROM user_sessions s
@@ -51,6 +112,7 @@ router.get('/validate/:token', async(req, res) => {
         expiresAt: session.expires_at,
         jwtAccessToken: session.jwt_access_token,
         jwtIdToken: session.jwt_id_token,
+        refreshToken: session.refresh_token,
         createdAt: session.created_at,
         lastActivity: session.last_activity,
         isActive: session.is_active,
@@ -66,6 +128,40 @@ router.get('/validate/:token', async(req, res) => {
   } catch (error) {
     console.error('Error validating session:', error);
     res.status(500).json({ error: 'Failed to validate session' });
+  }
+});
+
+/**
+ * PUT /auth/sessions/tokens
+ * Update tokens for the current session
+ */
+router.put('/tokens', async (req, res) => {
+  try {
+    const { sessionToken, accessToken, idToken, refreshToken } = req.body;
+
+    if (!sessionToken) {
+      return res.status(400).json({ error: 'Session token is required' });
+    }
+
+    const result = await db.query(
+      `UPDATE user_sessions 
+       SET jwt_access_token = $1, 
+           jwt_id_token = $2, 
+           refresh_token = $3,
+           last_activity = NOW()
+       WHERE session_token = $4 AND is_active = true
+       RETURNING id`,
+      [accessToken, idToken, refreshToken, sessionToken],
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Session not found or inactive' });
+    }
+
+    res.json({ message: 'Tokens updated successfully' });
+  } catch (error) {
+    console.error('Error updating session tokens:', error);
+    res.status(500).json({ error: 'Failed to update session tokens' });
   }
 });
 

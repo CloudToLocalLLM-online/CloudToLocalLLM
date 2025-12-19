@@ -13,6 +13,7 @@ import 'package:cloudtolocalllm/services/connection_manager_service.dart';
 import 'package:cloudtolocalllm/auth/auth_provider.dart';
 import 'package:cloudtolocalllm/auth/providers/auth0_auth_provider.dart';
 import 'package:cloudtolocalllm/auth/providers/windows_oauth_provider.dart';
+import 'package:cloudtolocalllm/auth/providers/entra_auth_provider.dart';
 import 'package:cloudtolocalllm/services/desktop_client_detection_service.dart';
 import 'package:cloudtolocalllm/services/enhanced_user_tier_service.dart';
 import 'package:cloudtolocalllm/services/langchain_integration_service.dart';
@@ -63,6 +64,13 @@ Future<void> setupCoreServices() async {
   debugPrint('[ServiceLocator] ===== REGISTERING CORE SERVICES START =====');
   debugPrint('[ServiceLocator] Registering core services...');
 
+  // Settings preference service - manages user preferences
+  // Register this early as other services (like AuthProvider) may need it
+  final settingsPreferenceService = SettingsPreferenceService();
+  serviceLocator.registerSingleton<SettingsPreferenceService>(
+    settingsPreferenceService,
+  );
+
   // Session storage service for PostgreSQL session management
   final sessionStorageService = SessionStorageService();
   serviceLocator
@@ -79,24 +87,35 @@ Future<void> setupCoreServices() async {
   try {
     debugPrint('[Locator] Detecting platform...');
 
-    // Check if we're on web first
-    if (kIsWeb) {
-      debugPrint('[Locator] ✓ Web platform detected, using Auth0AuthProvider');
-      authProvider = Auth0AuthProvider();
-    } else {
-      // Only check Platform.isWindows if not on web
-      debugPrint(
-          '[Locator] Platform detection: Platform.isWindows = ${Platform.isWindows}');
-      debugPrint(
-          '[Locator] Platform.operatingSystem = ${Platform.operatingSystem}');
+    // Check user preference for auth provider
+    final authProviderType = await settingsPreferenceService.getAuthProvider();
+    debugPrint('[Locator] Auth provider preference: $authProviderType');
 
-      if (Platform.isWindows) {
+    if (authProviderType == 'entra') {
+      debugPrint('[Locator] ✓ Using EntraAuthProvider as per user settings');
+      authProvider = EntraAuthProvider();
+    } else {
+      // Default to Auth0-based providers
+      // Check if we're on web first
+      if (kIsWeb) {
         debugPrint(
-            '[Locator] ✓ Using WindowsOAuthProvider for Windows desktop');
-        authProvider = WindowsOAuthProvider();
-      } else {
-        debugPrint('[Locator] Using Auth0AuthProvider for other platforms');
+            '[Locator] ✓ Web platform detected, using Auth0AuthProvider');
         authProvider = Auth0AuthProvider();
+      } else {
+        // Only check Platform.isWindows if not on web
+        debugPrint(
+            '[Locator] Platform detection: Platform.isWindows = ${Platform.isWindows}');
+        debugPrint(
+            '[Locator] Platform.operatingSystem = ${Platform.operatingSystem}');
+
+        if (Platform.isWindows) {
+          debugPrint(
+              '[Locator] ✓ Using WindowsOAuthProvider for Windows desktop');
+          authProvider = WindowsOAuthProvider();
+        } else {
+          debugPrint('[Locator] Using Auth0AuthProvider for other platforms');
+          authProvider = Auth0AuthProvider();
+        }
       }
     }
   } catch (e, stack) {
@@ -169,12 +188,6 @@ Future<void> setupCoreServices() async {
   );
   serviceLocator.registerSingleton<AppInitializationService>(
     appInitializationService,
-  );
-
-  // Settings preference service - manages user preferences
-  final settingsPreferenceService = SettingsPreferenceService();
-  serviceLocator.registerSingleton<SettingsPreferenceService>(
-    settingsPreferenceService,
   );
 
   // Settings import/export service - handles settings backup/restore
