@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [7.13.2+202512191357] - 2025-12-19
+## v7.13.2+202512191357
+
+### Bug Fixes
+
+*   **ci:** Grant write permissions to invoke job in dispatch workflow (7b861e5)
+
 ## [7.13.2+202512191356] - 2025-12-19
 ## v7.13.2+202512191356
 
