@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [7.13.2+202512191329] - 2025-12-19
+
+## v7.13.2+202512191329 (2025-12-19)
+
+### Chore
+*   ci: disable auto-deploy to aks on push (3c521f8)
+
 ## [7.13.2+202512191326] - 2025-12-19
 
 ## v7.13.2+202512191326 (2025-12-19)
