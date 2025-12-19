@@ -248,358 +248,179 @@ jobs:
           git config user.name "gemini-cli[bot]"
           git config user.email "gemini-cli[bot]@users.noreply.github.com"
 
-            - name: 'Run Gemini Orchestrator'
+      - name: 'Run Gemini Orchestrator'
+        id: 'analysis'
+        uses: 'google-github-actions/run-gemini-cli@v0' # ratchet:exclude
+        env:
+          GITHUB_TOKEN: '${{ steps.mint_identity_token.outputs.token || secrets.GITHUB_TOKEN || github.token }}'
+          COMMIT_SHA: '${{ github.sha }}'
+        with:
+          gemini_api_key: '${{ secrets.GEMINI_API_KEY }}'
+          gemini_cli_version: '${{ vars.GEMINI_CLI_VERSION }}'
+          gemini_debug: true
+          workflow_name: 'gemini-orchestrator'
+          settings: |-
+            {
+              "tools": {
+                "core": [
+                  "run_shell_command(cat)",
+                  "run_shell_command(ls)",
+                  "run_shell_command(grep)",
+                  "run_shell_command(git)"
+                ]
+              }
+            }
+          prompt: |
+            Analyze the following project state and determine the release strategy.
 
-              id: 'analysis'
+            1. Read 'assets/version.json' for the current version.
+            2. Check 'git log --oneline --no-merges -5' for recent context.
+            3. Check 'git diff --name-only HEAD~1..HEAD' for changed files.
 
-              uses: 'google-github-actions/run-gemini-cli@v0' # ratchet:exclude
+            Return ONLY a valid JSON object with these keys:
+            {
+              "new_version": "string (next semantic version)",
+              "docker_version": "string (docker-safe version)",
+              "do_managed": "string (true/false)",
+              "do_local": "string (true/false)",
+              "do_desktop": "string (true/false)",
+              "do_mobile": "string (true/false)",
+              "run_tests": "string (true/false)",
+              "should_deploy": "string (true/false)",
+              "version_bump_needed": "string (true/false)",
+              "reasoning": "string"
+            }
 
-              env:
+      - name: 'Parse and Execute'
+        id: 'exec'
+        env:
+          GEMINI_JSON: ${{ steps.analysis.outputs.gemini_response }}
+          GITHUB_TOKEN: ${{ steps.mint_identity_token.outputs.token || secrets.GITHUB_TOKEN || github.token }}
+        run: |
+          echo "::: Raw Gemini Output :::"
+          echo "$GEMINI_JSON"
+          
+          # Strip markdown code blocks if present
+          CLEAN_JSON=$(echo "$GEMINI_JSON" | sed -n '/{/,/}/p')
+          echo "::: Cleaned JSON :::"
+          echo "$CLEAN_JSON"
+          
+          # Extract values using jq
+          NEW_VERSION=$(echo "$CLEAN_JSON" | jq -r '.new_version')
+          DOCKER_VERSION=$(echo "$CLEAN_JSON" | jq -r '.docker_version')
+          DO_MANAGED=$(echo "$CLEAN_JSON" | jq -r '.do_managed')
+          DO_LOCAL=$(echo "$CLEAN_JSON" | jq -r '.do_local')
+          DO_DESKTOP=$(echo "$CLEAN_JSON" | jq -r '.do_desktop')
+          DO_MOBILE=$(echo "$CLEAN_JSON" | jq -r '.do_mobile')
+          RUN_TESTS=$(echo "$CLEAN_JSON" | jq -r '.run_tests')
+          SHOULD_DEPLOY=$(echo "$CLEAN_JSON" | jq -r '.should_deploy')
+          BUMP_NEEDED=$(echo "$CLEAN_JSON" | jq -r '.version_bump_needed')
+          REASONING=$(echo "$CLEAN_JSON" | jq -r '.reasoning')
 
-                GITHUB_TOKEN: '${{ steps.mint_identity_token.outputs.token || secrets.GITHUB_TOKEN || github.token }}'
+          # Output for downstream jobs
+          echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
+          echo "docker_version=$DOCKER_VERSION" >> $GITHUB_OUTPUT
+          echo "do_managed=$DO_MANAGED" >> $GITHUB_OUTPUT
+          echo "do_local=$DO_LOCAL" >> $GITHUB_OUTPUT
+          echo "do_desktop=$DO_DESKTOP" >> $GITHUB_OUTPUT
+          echo "do_mobile=$DO_MOBILE" >> $GITHUB_OUTPUT
+          echo "run_tests=$RUN_TESTS" >> $GITHUB_OUTPUT
+          echo "should_deploy=$SHOULD_DEPLOY" >> $GITHUB_OUTPUT
+          echo "reasoning=$REASONING" >> $GITHUB_OUTPUT
 
-                COMMIT_SHA: '${{ github.sha }}'
+          # Execute version bump if needed
+          if [ "$BUMP_NEEDED" == "true" ]; then
+            chmod +x scripts/update-all-versions.sh
+            ./scripts/update-all-versions.sh "$NEW_VERSION" "${{ github.sha }}"
+            git add -A
+            git commit -m "chore: bump version to $NEW_VERSION [skip ci]"
+            git push origin main
+            git tag "v$NEW_VERSION" -f
+            git push origin "v$NEW_VERSION" -f
+          fi
 
-              with:
-
-                gemini_api_key: '${{ secrets.GEMINI_API_KEY }}'
-
-                gemini_cli_version: '${{ vars.GEMINI_CLI_VERSION }}'
-
-                gemini_debug: true
-
-                workflow_name: 'gemini-orchestrator'
-
-                settings: |-
-
-                  {
-
-                    "tools": {
-
-                      "core": [
-
-                        "run_shell_command(cat)",
-
-                        "run_shell_command(ls)",
-
-                        "run_shell_command(grep)",
-
-                        "run_shell_command(git)"
-
-                      ]
-
-                    }
-
-                  }
-
-                prompt: |
-
-                  Analyze the following project state and determine the release strategy.
-
+  # ==================================================================================
+  # INLINE WORKFLOWS (Replaces separate files)
+  # ==================================================================================
+  tests:
+    needs: orchestrator
+    if: needs.orchestrator.outputs.run_tests == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
       
-
-                  1. Read 'assets/version.json' for the current version.
-
-                  2. Check 'git log --oneline --no-merges -5' for recent context.
-
-                  3. Check 'git diff --name-only HEAD~1..HEAD' for changed files.
-
-      
-
-                  Return ONLY a valid JSON object with these keys:
-
-                  {
-
-                    "new_version": "string (next semantic version)",
-
-                    "docker_version": "string (docker-safe version)",
-
-                    "do_managed": "string (true/false)",
-
-                    "do_local": "string (true/false)",
-
-                    "do_desktop": "string (true/false)",
-
-                    "do_mobile": "string (true/false)",
-
-                    "run_tests": "string (true/false)",
-
-                    "should_deploy": "string (true/false)",
-
-                    "version_bump_needed": "string (true/false)",
-
-                    "reasoning": "string"
-
-                  }
-
-      
-
-            - name: 'Parse and Execute'
-
-              id: 'exec'
-
-              env:
-
-                GEMINI_JSON: ${{ steps.analysis.outputs.gemini_response }}
-
-                GITHUB_TOKEN: ${{ steps.mint_identity_token.outputs.token || secrets.GITHUB_TOKEN || github.token }}
-
-              run: |
-
-                echo "::: Raw Gemini Output :::"
-
-                echo "$GEMINI_JSON"
-
-                
-
-                # Strip markdown code blocks if present
-
-                CLEAN_JSON=$(echo "$GEMINI_JSON" | sed -n '/{/,/}/p')
-
-                echo "::: Cleaned JSON :::"
-
-                echo "$CLEAN_JSON"
-
-                
-
-                # Extract values using jq
-
-                NEW_VERSION=$(echo "$CLEAN_JSON" | jq -r '.new_version')
-
-                DOCKER_VERSION=$(echo "$CLEAN_JSON" | jq -r '.docker_version')
-
-                DO_MANAGED=$(echo "$CLEAN_JSON" | jq -r '.do_managed')
-
-                DO_LOCAL=$(echo "$CLEAN_JSON" | jq -r '.do_local')
-
-                DO_DESKTOP=$(echo "$CLEAN_JSON" | jq -r '.do_desktop')
-
-                DO_MOBILE=$(echo "$CLEAN_JSON" | jq -r '.do_mobile')
-
-                RUN_TESTS=$(echo "$CLEAN_JSON" | jq -r '.run_tests')
-
-                SHOULD_DEPLOY=$(echo "$CLEAN_JSON" | jq -r '.should_deploy')
-
-                BUMP_NEEDED=$(echo "$CLEAN_JSON" | jq -r '.version_bump_needed')
-
-                REASONING=$(echo "$CLEAN_JSON" | jq -r '.reasoning')
-
-      
-
-                # Output for downstream jobs
-
-                echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
-
-                echo "docker_version=$DOCKER_VERSION" >> $GITHUB_OUTPUT
-
-                echo "do_managed=$DO_MANAGED" >> $GITHUB_OUTPUT
-
-                echo "do_local=$DO_LOCAL" >> $GITHUB_OUTPUT
-
-                echo "do_desktop=$DO_DESKTOP" >> $GITHUB_OUTPUT
-
-                echo "do_mobile=$DO_MOBILE" >> $GITHUB_OUTPUT
-
-                echo "run_tests=$RUN_TESTS" >> $GITHUB_OUTPUT
-
-                echo "should_deploy=$SHOULD_DEPLOY" >> $GITHUB_OUTPUT
-
-                echo "reasoning=$REASONING" >> $GITHUB_OUTPUT
-
-      
-
-                # Execute version bump if needed
-
-                if [ "$BUMP_NEEDED" == "true" ]; then
-
-                  chmod +x scripts/update-all-versions.sh
-
-                  ./scripts/update-all-versions.sh "$NEW_VERSION" "${{ github.sha }}"
-
-                  git add -A
-
-                  git commit -m "chore: bump version to $NEW_VERSION [skip ci]"
-
-                  git push origin main
-
-                  git tag "v$NEW_VERSION" -f
-
-                              git push origin "v$NEW_VERSION" -f
-
-                            fi
-
-                  
-
-                    # ==================================================================================
-
-                    # INLINE WORKFLOWS (Replaces separate files)
-
-                    # ==================================================================================
-
-                    tests:
-
-                      needs: orchestrator
-
-                      if: needs.orchestrator.outputs.run_tests == 'true'
-
-                      runs-on: ubuntu-latest
-
-                      steps:
-
-                        - uses: actions/checkout@v6
-
-                        
-
-                        # Node Tests
-
-                        - name: Use Node.js
-
-                          uses: actions/setup-node@v6
-
-                          with:
-
-                            node-version: '20'
-
-                            cache: 'npm'
-
-                        - name: Install root dependencies
-
-                          run: npm ci || echo "npm ci failed, trying npm install" && npm install --no-package-lock || true
-
-                        - name: Run root tests
-
-                          run: npm test || echo "Tests failed but continuing for now"
-
-                  
-
-                        # Flutter Tests
-
-                        - uses: subosito/flutter-action@v2
-
-                          with:
-
-                            channel: 'stable'
-
-                            cache: true
-
-                        - run: flutter pub get
-
-                        - run: flutter test
-
-                  
-
-                    deploy:
-
-                      needs: [orchestrator, tests]
-
-                      if: needs.orchestrator.outputs.should_deploy == 'true' && (needs.tests.result == 'success' || needs.tests.result == 'skipped')
-
-                      runs-on: ubuntu-latest
-
-                      permissions:
-
-                        contents: write
-
-                        id-token: write
-
-                      env:
-
-                        AZURE_RESOURCE_GROUP: cloudtolocalllm-rg
-
-                        AZURE_CLUSTER_NAME: cloudtolocalllm-aks
-
-                        ACR_NAME: imrightguycloudtolocalllm
-
-                        VERSION: ${{ needs.orchestrator.outputs.new_version }}
-
-                        DOCKER_VERSION: ${{ needs.orchestrator.outputs.docker_version }}
-
-                      steps:
-
-                        - uses: actions/checkout@v6
-
-                  
-
-                        # Setup and Build Containers (Summary)
-
-                        - name: Azure Login
-
-                          uses: azure/login@v2
-
-                          with:
-
-                            client-id: ${{ secrets.AZURE_CLIENT_ID }}
-
-                            tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-
-                            subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-
-                  
-
-                        - name: Setup ACR
-
-                          id: acr_setup
-
-                          if: needs.orchestrator.outputs.do_managed == 'true' || needs.orchestrator.outputs.do_local == 'true'
-
-                          run: |
-
-                            az acr create --resource-group ${{ env.AZURE_RESOURCE_GROUP }} --name ${{ env.ACR_NAME }} --sku Basic --admin-enabled true
-
-                            LOGIN_SERVER=$(az acr show --name ${{ env.ACR_NAME }} --query loginServer --output tsv)
-
-                            echo "login_server=$LOGIN_SERVER" >> $GITHUB_OUTPUT
-
-                  
-
-                        - name: Docker Login
-
-                          if: steps.acr_setup.outputs.login_server != ''
-
-                          run: |
-
-                            ACR_USERNAME=$(az acr credential show --name ${{ env.ACR_NAME }} --query username --output tsv)
-
-                            ACR_PASSWORD=$(az acr credential show --name ${{ env.ACR_NAME }} --query passwords[0].value --output tsv)
-
-                            echo "$ACR_PASSWORD" | docker login "${{ steps.acr_setup.outputs.login_server }}" --username "$ACR_USERNAME" --password-stdin
-
-                  
-
-                        - name: Build and Push Containers
-
-                          if: steps.acr_setup.outputs.login_server != ''
-
-                          run: |
-
-                            LOGIN_SERVER="${{ steps.acr_setup.outputs.login_server }}"
-
-                            for service in base postgres web api-backend streaming-proxy; do
-
-                              echo "Building $service..."
-
-                              # (Build logic abbreviated for brevity, but same as build-release.yml)
-
-                            done
-
-                  
-
-                        - name: Create GitHub Release
-
-                          env:
-
-                            GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-                          run: |
-
-                            gh release create "v${{ env.VERSION }}" \
-
-                              --title "CloudToLocalLLM v${{ env.VERSION }}" \
-
-                              --notes "Automated release based on: ${{ needs.orchestrator.outputs.reasoning }}" \
-
-                              --target main
-
-                  
-
-      
+      # Node Tests
+      - name: Use Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - name: Install root dependencies
+        run: npm ci || echo "npm ci failed, trying npm install" && npm install --no-package-lock || true
+      - name: Run root tests
+        run: npm test || echo "Tests failed but continuing for now"
+
+      # Flutter Tests
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+      - run: flutter pub get
+      - run: flutter test
+
+  deploy:
+    needs: [orchestrator, tests]
+    if: needs.orchestrator.outputs.should_deploy == 'true' && (needs.tests.result == 'success' || needs.tests.result == 'skipped')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      id-token: write
+    env:
+      AZURE_RESOURCE_GROUP: cloudtolocalllm-rg
+      AZURE_CLUSTER_NAME: cloudtolocalllm-aks
+      ACR_NAME: imrightguycloudtolocalllm
+      VERSION: ${{ needs.orchestrator.outputs.new_version }}
+      DOCKER_VERSION: ${{ needs.orchestrator.outputs.docker_version }}
+    steps:
+      - uses: actions/checkout@v6
+
+      # Setup and Build Containers (Summary)
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Setup ACR
+        id: acr_setup
+        if: needs.orchestrator.outputs.do_managed == 'true' || needs.orchestrator.outputs.do_local == 'true'
+        run: |
+          az acr create --resource-group ${{ env.AZURE_RESOURCE_GROUP }} --name ${{ env.ACR_NAME }} --sku Basic --admin-enabled true
+          LOGIN_SERVER=$(az acr show --name ${{ env.ACR_NAME }} --query loginServer --output tsv)
+          echo "login_server=$LOGIN_SERVER" >> $GITHUB_OUTPUT
+
+      - name: Docker Login
+        if: steps.acr_setup.outputs.login_server != ''
+        run: |
+          ACR_USERNAME=$(az acr credential show --name ${{ env.ACR_NAME }} --query username --output tsv)
+          ACR_PASSWORD=$(az acr credential show --name ${{ env.ACR_NAME }} --query passwords[0].value --output tsv)
+          echo "$ACR_PASSWORD" | docker login "${{ steps.acr_setup.outputs.login_server }}" --username "$ACR_USERNAME" --password-stdin
+
+      - name: Build and Push Containers
+        if: steps.acr_setup.outputs.login_server != ''
+        run: |
+          LOGIN_SERVER="${{ steps.acr_setup.outputs.login_server }}"
+          for service in base postgres web api-backend streaming-proxy; do
+            echo "Building $service..."
+            # (Build logic abbreviated for brevity, but same as build-release.yml)
+          done
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "v${{ env.VERSION }}" \
+            --title "CloudToLocalLLM v${{ env.VERSION }}" \
+            --notes "Automated release based on: ${{ needs.orchestrator.outputs.reasoning }}" \
+            --target main
