@@ -99,7 +99,7 @@ CloudToLocalLLM is a cross-platform Flutter application providing hybrid AI arch
 
 ### AI-Powered Orchestration ✅
 **Workflow**: `version-and-distribute.yml`
-- **AI Engine**: Kilocode AI (Gemini 2.0 Flash)
+- **AI Engine**: Gemini AI (Gemini 2.0 Flash)
 - **Capabilities**: Semantic versioning, platform detection, automated deployment
 - **Status**: Operational and reliable
 

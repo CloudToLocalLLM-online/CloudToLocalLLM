@@ -8,7 +8,7 @@ CloudToLocalLLM currently uses an overly complex AI-powered CI/CD orchestration 
 
 - **CI/CD System**: The continuous integration and continuous deployment automation system
 - **Orchestrator Workflow**: The main workflow that coordinates version management and deployment triggers
-- **AI Analysis**: The Kilocode/Gemini-powered system that analyzes commits and determines version bumps
+- **AI Analysis**: The Gemini/Gemini-powered system that analyzes commits and determines version bumps
 - **Platform Branches**: Separate git branches for cloud, desktop, and mobile deployments
 - **Repository Dispatch**: GitHub API mechanism for triggering workflows programmatically
 - **Deployment Pipeline**: The sequence of build, test, and deployment steps

@@ -144,7 +144,7 @@ E:\dev\CloudToLocalLLM\
 **Jobs:**
 
 1.  **`ai_analysis`:**
-    *   **Tool:** Custom scripts (Kilocode) or AI analysis.
+    *   **Tool:** Custom scripts (Gemini) or AI analysis.
     *   **Action:** Analyzes changes in the codebase (Flutter, Node.js, `k8s/`) to determine what has changed and which product variants (managed/local, cloud/desktop/mobile) need updates.
     *   **Outputs:** `new_version`, `docker_version`, `do_managed`, `do_local`, `do_desktop`, `do_mobile`, `reasoning`.
     *   **Action:** Commits version bumps and Git tags (e.g., `v7.12.0`) back to the repository.

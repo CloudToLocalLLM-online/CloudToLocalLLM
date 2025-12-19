@@ -64,7 +64,7 @@ If you are a developer looking to contribute or build from source, follow these 
 *   **Frontend:** Flutter (Linux, Windows, Web) - Developed natively in WSL2
 *   **Backend:** Node.js (Express.js) - Native Linux runtime
 *   **AI Runtime:** Ollama (Windows Host interop via `localhost`)
-*   **CI/CD:** AI-powered orchestration with Kilocode CLI & Gemini 2.0 Flash
+*   **CI/CD:** AI-powered orchestration with Gemini CLI & Gemini 2.0 Flash
 *   **Development:** WSL Ubuntu 24.04 (Primary Terminal) & Kiro IDE
 
 ### Build from Source (WSL Ubuntu 24.04)
@@ -95,7 +95,7 @@ For full developer details, see the **[Developer Onboarding Guide](docs/DEVELOPM
 ### AI-Powered CI/CD
 
 CloudToLocalLLM features an innovative **unified AI-powered CI/CD system** that automatically:
-*   Analyzes code changes using Kilocode CLI with Gemini 2.0 Flash
+*   Analyzes code changes using Gemini CLI with Gemini 2.0 Flash
 *   Determines semantic version bumps (patch/minor/major)
 *   Calculates which platforms need updates (cloud/desktop/mobile)
 *   Deploys to multiple platforms in a single workflow execution

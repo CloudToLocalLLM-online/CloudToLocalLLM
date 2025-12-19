@@ -3,11 +3,11 @@ set -e
 # Load nvm if available
 [ -s "/home/rightguy/.nvm/nvm.sh" ] && source "/home/rightguy/.nvm/nvm.sh"
 
-# Analyze which platforms need updates using Kilocode AI
+# Analyze which platforms need updates using Gemini AI
 # Outputs: new_version, needs_managed, needs_local, needs_desktop, needs_mobile
 
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "Analyzing Platform Changes with Kilocode AI"
+echo "Analyzing Platform Changes with Gemini AI"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
 # Get current version
@@ -34,7 +34,7 @@ if echo "$CHANGED_FILES" | grep -qE "(web/|lib/.*auth|lib/.*router|lib/config/|s
     echo "🌐 DETECTED WEB-RELATED CHANGES - Cloud deployment will be forced"
 fi
 
-# Prepare prompt for Kilocode - properly escape for JSON
+# Prepare prompt for Gemini - properly escape for JSON
 COMMITS_ESCAPED=$(echo "$COMMITS" | sed 's/"/\\"/g' | sed 's/\\/\\\\/g' | tr '\n' ' ')
 FILES_ESCAPED=$(echo "$CHANGED_FILES" | sed 's/"/\\"/g' | sed 's/\\/\\\\/g' | tr '\n' ' ')
 
@@ -75,38 +75,38 @@ DEPLOYMENT RULES:
 - Desktop: windows/, linux/, desktop code
 - Mobile: android/, ios/, mobile code"
 
-echo "DEBUG: Kilocode prompt includes version requirement: 'The new version MUST be higher than $CURRENT_VERSION'"
+echo "DEBUG: Gemini prompt includes version requirement: 'The new version MUST be higher than $CURRENT_VERSION'"
 
 # Helper: Use provided Gemini API Key or env var
 export GEMINI_API_KEY="${GEMINI_API_KEY}"
 MODEL="gemini-3-flash" 
 
-# Get response from Kilocode
-echo "DEBUG: Sending request to Kilocode AI (model: $MODEL)..."
+# Get response from Gemini
+echo "DEBUG: Sending request to Gemini AI (model: $MODEL)..."
 set +e
-# Try to find kilocode-cli in PATH or use local script
-if command -v kilocode-cli >/dev/null 2>&1; then
-    RESPONSE=$(kilocode-cli "$PROMPT" 2>&1)
+# Try to find gemini-cli in PATH or use local script
+if command -v gemini-cli >/dev/null 2>&1; then
+    RESPONSE=$(gemini-cli "$PROMPT" 2>&1)
     EXIT_CODE=$?
 else
     # Use local script path
     SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-    RESPONSE=$("${SCRIPT_DIR}/kilocode-cli.cjs" "$PROMPT" 2>&1)
+    RESPONSE=$("${SCRIPT_DIR}/gemini-cli.cjs" "$PROMPT" 2>&1)
     EXIT_CODE=$?
 fi
 set -e
 
 if [ $EXIT_CODE -ne 0 ]; then
-    echo "❌ ERROR: Kilocode analysis failed"
+    echo "❌ ERROR: Gemini analysis failed"
     echo "$RESPONSE"
     exit 1
 fi
 
-echo "DEBUG: Kilocode response length: ${#RESPONSE}"
-echo "DEBUG: Kilocode response (first 1000 chars):"
+echo "DEBUG: Gemini response length: ${#RESPONSE}"
+echo "DEBUG: Gemini response (first 1000 chars):"
 echo "${RESPONSE:0:1000}"
 
-# Extract JSON from response (Kilocode returns JSON directly)
+# Extract JSON from response (Gemini returns JSON directly)
 # Flatten response to single line and remove non-JSON text
 ONE_LINE=$(echo "$RESPONSE" | tr '\n' ' ' | sed 's/```json//g' | sed 's/```//g')
 # Extract content between first { and last }
@@ -138,14 +138,14 @@ echo ""
         # Strict validation - Fail if mandatory fields are null or empty
         # Note: 'false' is a valid value for NEEDS_MANAGED, so we check for 'null' or empty
         if [ "$SEMANTIC_VERSION_NEW" == "null" ] || [ -z "$SEMANTIC_VERSION_NEW" ] || [ "$NEEDS_MANAGED" == "null" ] || [ -z "$NEEDS_MANAGED" ]; then
-            echo "❌ ERROR: Failed to parse Kilocode response"
+            echo "❌ ERROR: Failed to parse Gemini response"
             echo "Extracted JSON: $JSON_RESPONSE"
             echo "Response (first 500 chars): ${RESPONSE:0:500}"
-            echo "Version analysis REQUIRES valid Kilocode response"
+            echo "Version analysis REQUIRES valid Gemini response"
             exit 1
         fi
 
-        echo "✅ Kilocode Analysis:"
+        echo "✅ Gemini Analysis:"
         echo "  Bump type: $BUMP_TYPE"
         echo "  New version: $NEW_VERSION"
         echo "  Managed: $NEEDS_MANAGED"

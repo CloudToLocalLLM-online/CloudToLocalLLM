@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-// Simple Kilocode CLI wrapper for version analysis using GitHub Copilot
+// Simple Gemini CLI wrapper for version analysis using GitHub Copilot
 
 const https = require('https');
 
@@ -8,7 +8,7 @@ const prompt = process.argv.slice(2).join(' ');
 const apiKey = process.env.GEMINI_API_KEY;
 
 if (!prompt) {
-  console.error('Usage: kilocode-cli <prompt>');
+  console.error('Usage: gemini-cli <prompt>');
   process.exit(1);
 }
 

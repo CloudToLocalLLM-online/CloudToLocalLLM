@@ -243,7 +243,7 @@ CloudToLocalLLM includes specialized configuration for Kiro IDE with custom AI a
 - Custom AI assistant modes (Documentation Specialist, Code Reviewer, Test Engineer, Code Simplifier)
 - Enhanced MCP server configurations
 - Development workflow automation
-- Kilocode CLI integration
+- Gemini CLI integration
 
 ## Additional Resources
 

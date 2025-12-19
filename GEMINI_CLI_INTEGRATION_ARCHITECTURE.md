@@ -1,35 +1,35 @@
-# Kilocode Integration Architecture
+# Gemini Integration Architecture
 
 ## Overview
 
-This document outlines the integration of Kilocode extension configurations, settings, and functionalities into the Kiro IDE environment, with full MCP (Model Context Protocol) tool support.
+This document outlines the integration of Gemini extension configurations, settings, and functionalities into the Kiro IDE environment, with full MCP (Model Context Protocol) tool support.
 
 ## Current Architecture
 
 ```mermaid
 graph TB
-    A[Kiro IDE] --> B[Kilocode Extension]
+    A[Kiro IDE] --> B[Gemini Extension]
     B --> C[MCP Servers]
     C --> D[Playwright Server]
     C --> E[DockerHub Server]
     C --> F[Context7 Server]
     C --> G[Grafana Server]
-    B --> H[Kilocode CLI]
+    B --> H[Gemini CLI]
 ```
 
 ## Proposed Integration
 
 ```mermaid
 graph TB
-    A[Kiro IDE] --> B[Kilocode Extension]
+    A[Kiro IDE] --> B[Gemini Extension]
     B --> C[MCP Gateway]
     C --> D[Existing MCP Servers]
     D --> D1[Playwright]
     D --> D2[DockerHub]
     D --> D3[Context7]
     D --> D4[Grafana]
-    C --> E[Kilocode MCP Server]
-    E --> F[Kilocode CLI Wrapper]
+    C --> E[Gemini MCP Server]
+    E --> F[Gemini CLI Wrapper]
     F --> G[Gemini 2.0 Flash API]
     B --> H[Kiro Hooks & Settings]
     H --> I[Auto-commit hooks]
@@ -39,14 +39,14 @@ graph TB
 
 ## Integration Components
 
-### 1. MCP Server for Kilocode CLI
-- Wraps the existing `kilocode-cli.cjs` as an MCP tool
+### 1. MCP Server for Gemini CLI
+- Wraps the existing `gemini-cli.cjs` as an MCP tool
 - Provides AI-powered code analysis capabilities
 - Enables semantic version analysis and platform detection
 - Supports automated commit message generation
 
 ### 2. Enhanced MCP Configuration
-- Updates `.kiro/settings/mcp.json` with Kilocode server
+- Updates `.kiro/settings/mcp.json` with Gemini server
 - Configures environment variables (GEMINI_API_KEY)
 - Enables auto-approval for safe operations
 - Integrates multiple MCP servers (Playwright, Context7, N8N, Chrome DevTools)
@@ -55,7 +55,7 @@ graph TB
 - Documentation Specialist: Technical writing expert with file restrictions
 - Code Reviewer: Senior engineer for code quality analysis
 - Test Engineer: QA specialist for comprehensive testing
-- Code Simplifier: Refactoring expert with full access (Kilo Code integration)
+- Code Simplifier: Refactoring expert with full access (Gemini integration)
 
 ### 4. Kiro IDE Features
 - Auto-commit and push hooks
@@ -67,7 +67,7 @@ graph TB
 
 ## Implementation Steps
 
-1. **Create Kilocode MCP Server**
+1. **Create Gemini MCP Server**
    - Bootstrap TypeScript MCP server project
    - Implement tool for code analysis
    - Add version bump analysis tool
@@ -96,7 +96,7 @@ graph TB
 
 ## Benefits
 
-- **Unified AI Assistance**: Access Kilocode's AI capabilities through MCP
+- **Unified AI Assistance**: Access Gemini's AI capabilities through MCP
 - **Automated Workflows**: CI/CD analysis and version management
 - **Enhanced Productivity**: Integrated code quality and documentation tools
 - **Seamless Compatibility**: Full integration with Kiro IDE features

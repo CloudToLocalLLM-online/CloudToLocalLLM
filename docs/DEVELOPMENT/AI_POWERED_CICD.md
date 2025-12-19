@@ -2,7 +2,7 @@
 
 ## Overview
 
-CloudToLocalLLM uses an innovative **unified AI-powered CI/CD system** that consolidates analysis, building, and deployment into a single intelligent workflow. This system leverages **Kilocode CLI** with **Gemini 2.0 Flash** to make intelligent decisions about when and where to deploy changes, eliminating the complexity of orchestrated workflows while maintaining sophisticated deployment logic.
+CloudToLocalLLM uses an innovative **unified AI-powered CI/CD system** that consolidates analysis, building, and deployment into a single intelligent workflow. This system leverages **Gemini CLI** with **Gemini 2.0 Flash** to make intelligent decisions about when and where to deploy changes, eliminating the complexity of orchestrated workflows while maintaining sophisticated deployment logic.
 
 ## Architecture
 
@@ -15,7 +15,7 @@ CloudToLocalLLM uses an innovative **unified AI-powered CI/CD system** that cons
    - Replaces the previous orchestrator-based system
 
 2. **AI Analysis Engine** (Integrated)
-   - Uses Kilocode CLI with Gemini 2.0 Flash
+   - Uses Gemini CLI with Gemini 2.0 Flash
    - Analyzes commits and file changes within the unified workflow
    - Determines platform deployment needs and version bumps
    - Provides intelligent deployment decisions with reasoning
@@ -33,7 +33,7 @@ sequenceDiagram
     participant Dev as Developer
     participant Main as main branch
     participant Deploy as deploy.yml (Unified)
-    participant AI as Kilocode AI
+    participant AI as Gemini AI
     participant Build as Multi-Platform Builds
     participant Cloud as Azure AKS
 
@@ -49,13 +49,13 @@ sequenceDiagram
 
 ## AI Analysis System
 
-### Kilocode CLI Integration
+### Gemini CLI Integration
 
 **Installation**:
 ```bash
 # The CLI is automatically set up in GitHub Actions
-chmod +x scripts/kilocode-cli.cjs
-sudo ln -sf "$(pwd)/scripts/kilocode-cli.cjs" /usr/local/bin/kilocode-cli
+chmod +x scripts/gemini-cli.cjs
+sudo ln -sf "$(pwd)/scripts/gemini-cli.cjs" /usr/local/bin/gemini-cli
 ```
 
 **Configuration**:
@@ -277,7 +277,7 @@ gh run list --workflow="deploy.yml" --limit 5
 gh run view <run-id>
 
 # Check AI analysis output
-gh run view <run-id> --log | grep "Kilocode Analysis"
+gh run view <run-id> --log | grep "Gemini Analysis"
 
 # Check deployment decision summary
 gh run view <run-id> --log | grep "Deployment Decision Summary" -A 10
@@ -302,8 +302,8 @@ gh run view <run-id> --log | grep "Unified Deployment Summary" -A 20
 # Run analysis locally
 ./scripts/analyze-platforms.sh
 
-# Test Kilocode CLI
-kilocode-cli "Analyze this change: fix auth login loop"
+# Test Gemini CLI
+gemini-cli "Analyze this change: fix auth login loop"
 
 # Check environment
 echo $GEMINI_API_KEY

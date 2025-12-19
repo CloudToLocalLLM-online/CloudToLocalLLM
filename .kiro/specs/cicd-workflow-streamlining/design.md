@@ -72,7 +72,7 @@ graph TD
 #### 2. AI Analysis Engine (Enhanced)
 - **Purpose**: Intelligent decision making for versions and deployments
 - **Components**:
-  - Kilocode CLI integration
+  - Gemini CLI integration
   - Gemini 2.0 Flash model
   - File change analysis
   - Commit message parsing

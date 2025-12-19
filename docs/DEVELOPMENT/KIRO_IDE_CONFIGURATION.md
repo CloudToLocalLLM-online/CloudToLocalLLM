@@ -55,7 +55,7 @@ The project includes pre-configured custom modes in `temp_custom_modes.yaml` tha
 **Usage**: Specialized for creating and maintaining test suites, debugging test failures.
 
 #### 4. Code Simplifier (`code-simplifier`)
-**Purpose**: Expert refactoring specialist (Kilo Code integration)
+**Purpose**: Expert refactoring specialist (Gemini integration)
 
 **Capabilities**:
 - Code complexity reduction
@@ -147,9 +147,9 @@ The project includes several automation hooks in `.kiro/hooks/`:
 - Updates API documentation
 - Maintains documentation consistency
 
-### Kilocode CLI Integration
+### Gemini CLI Integration
 
-The project integrates with Kilocode CLI for AI-powered development assistance:
+The project integrates with Gemini CLI for AI-powered development assistance:
 
 **Features**:
 - Semantic version analysis
@@ -157,7 +157,7 @@ The project integrates with Kilocode CLI for AI-powered development assistance:
 - Automated commit message generation
 - Code change impact analysis
 
-**Configuration**: See `KILOCODE_INTEGRATION_ARCHITECTURE.md` for detailed setup
+**Configuration**: See `GEMINI_CLI_INTEGRATION_ARCHITECTURE.md` for detailed setup
 
 ## Best Practices
 
