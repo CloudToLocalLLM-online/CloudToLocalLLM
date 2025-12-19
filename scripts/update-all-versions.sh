@@ -120,6 +120,11 @@ if [ -f "lib/config/app_config.dart" ]; then
     sed -i "s/static const String appVersion = '.*';/static const String appVersion = '${NEW_VERSION}';/" lib/config/app_config.dart
 fi
 
+# 11. Generate Changelog
+echo "11. Generating Changelog..."
+chmod +x scripts/generate-changelog.sh
+./scripts/generate-changelog.sh "$NEW_VERSION"
+
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "✅ All Version References Updated"
@@ -136,5 +141,6 @@ echo "  ✅ README.md → updated badges"
 echo "  ✅ docs/VERSIONING.md → updated examples"
 echo "  ✅ SECURITY.md → added new version row"
 echo "  ✅ lib/config/app_config.dart → $NEW_VERSION"
+echo "  ✅ CHANGELOG.md → prepended new version entry"
 echo ""
 

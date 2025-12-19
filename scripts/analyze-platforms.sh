@@ -135,6 +135,20 @@ echo ""
         # Build final version with build metadata
         NEW_VERSION="${SEMANTIC_VERSION_NEW}+${BUILD_DATE}"
 
+        # VERIFY IF TAG ALREADY EXISTS AND AUTO-INCREMENT IF NEEDED
+        echo "DEBUG: Checking if tag v$SEMANTIC_VERSION_NEW already exists..."
+        if git rev-parse "v$SEMANTIC_VERSION_NEW" >/dev/null 2>&1; then
+            echo "⚠️  WARNING: Tag v$SEMANTIC_VERSION_NEW already exists! Attempting auto-increment..."
+            
+            # Basic auto-increment logic for patch version
+            IFS='.' read -r major minor patch <<< "$SEMANTIC_VERSION_NEW"
+            NEW_PATCH=$((patch + 1))
+            SEMANTIC_VERSION_NEW="$major.$minor.$NEW_PATCH"
+            NEW_VERSION="${SEMANTIC_VERSION_NEW}+${BUILD_DATE}"
+            echo "✅ Auto-incremented to v$SEMANTIC_VERSION_NEW"
+            REASONING="$REASONING (Auto-incremented to avoid tag conflict)"
+        fi
+
         # Strict validation - Fail if mandatory fields are null or empty
         # Note: 'false' is a valid value for NEEDS_MANAGED, so we check for 'null' or empty
         if [ "$SEMANTIC_VERSION_NEW" == "null" ] || [ -z "$SEMANTIC_VERSION_NEW" ] || [ "$NEEDS_MANAGED" == "null" ] || [ -z "$NEEDS_MANAGED" ]; then
