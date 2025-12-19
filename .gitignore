@@ -186,3 +186,6 @@ azure-config-*.json
 # Cloudflare credentials (DO NOT COMMIT - contains API keys)
 .cloudflare-credentials.json
 .aider*
+
+.gemini/
+gha-creds-*.json
