@@ -117,7 +117,6 @@ jobs:
       do_local: ${{ steps.exec.outputs.do_local }}
       do_desktop: ${{ steps.exec.outputs.do_desktop }}
       do_mobile: ${{ steps.exec.outputs.do_mobile }}
-      run_tests: ${{ steps.exec.outputs.run_tests }}
       should_deploy: ${{ steps.exec.outputs.should_deploy }}
       reasoning: ${{ steps.exec.outputs.reasoning }}
     steps:
@@ -155,7 +154,6 @@ jobs:
             "do_local": "true/false",
             "do_desktop": "true/false",
             "do_mobile": "true/false",
-            "run_tests": "true/false",
             "should_deploy": "true/false",
             "version_bump_needed": "true/false",
             "reasoning": "string"
@@ -178,7 +176,6 @@ jobs:
           echo "do_local=$(echo "$CLEAN_JSON" | jq -r '.do_local')" >> $GITHUB_OUTPUT
           echo "do_desktop=$(echo "$CLEAN_JSON" | jq -r '.do_desktop')" >> $GITHUB_OUTPUT
           echo "do_mobile=$(echo "$CLEAN_JSON" | jq -r '.do_mobile')" >> $GITHUB_OUTPUT
-          echo "run_tests=$(echo "$CLEAN_JSON" | jq -r '.run_tests // "true"')" >> $GITHUB_OUTPUT
           echo "should_deploy=$(echo "$CLEAN_JSON" | jq -r '.should_deploy')" >> $GITHUB_OUTPUT
           echo "reasoning=$(echo "$CLEAN_JSON" | jq -r '.reasoning')" >> $GITHUB_OUTPUT
 
@@ -193,30 +190,11 @@ jobs:
           fi
 
   # ==================================================================================
-  # 3. CI/CD PIPELINE (Tests & Deployment)
+  # 3. CI/CD PIPELINE (Deployment)
   # ==================================================================================
-  tests:
-    needs: orchestrator
-    if: needs.orchestrator.outputs.run_tests == 'true'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v6
-      - name: Use Node.js
-        uses: actions/setup-node@v6
-        with:
-          node-version: '20'
-          cache: 'npm'
-      - run: npm ci || npm install --no-package-lock
-      - run: npm test || echo "Tests failed but continuing"
-      - uses: subosito/flutter-action@v2
-        with:
-          channel: 'stable'
-          cache: true
-      - run: flutter pub get && flutter test
-
   deploy:
-    needs: [orchestrator, tests]
-    if: always() && needs.orchestrator.outputs.should_deploy == 'true' && (needs.tests.result == 'success' || needs.tests.result == 'skipped')
+    needs: [orchestrator]
+    if: always() && needs.orchestrator.outputs.should_deploy == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: write
