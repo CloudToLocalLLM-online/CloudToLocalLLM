@@ -1,3 +1,4 @@
+```json
 {
   "new_version": "7.13.3",
   "docker_version": "7.13.3",
@@ -9,3 +10,4 @@
   "version_bump_needed": "true",
   "reasoning": "The latest commit is a fix to a Kubernetes service definition for Prometheus, which only impacts the managed deployment environment. This warrants a patch version bump. No frontend or application code was changed, so desktop and mobile releases are not required."
 }
+```

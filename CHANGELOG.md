@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [7.13.3] - 2025-12-19
+### 7.13.3 - 2025-12-19
+
+#### Bug Fixes
+*   **k8s:** Resolved invalid `targetPort` in Prometheus service.
+*   **CI:** Passed `GEMINI_API_KEY` to logic execution and updated changelog generator.
+
+#### Refactoring
+*   **CI:** Enforced strict error handling and removed fallbacks in Gemini workflows.
+
 ## [7.13.2+202512191357] - 2025-12-19
 ## v7.13.2+202512191357
 
