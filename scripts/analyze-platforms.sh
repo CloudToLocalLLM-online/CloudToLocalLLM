@@ -194,10 +194,16 @@ echo "DEBUG: Semantic versions: $SEMANTIC_VERSION â†’ $SEMANTIC_VERSION_NEW
 
 if [ "$BUMP_TYPE" = "none" ]; then
     if [ "$SEMANTIC_VERSION_NEW" != "$SEMANTIC_VERSION" ]; then
-        echo "âŒ ERROR: bump_type='none' but semantic version changed from $SEMANTIC_VERSION to $SEMANTIC_VERSION_NEW"
-        exit 1
+        # Check if this was an intentional auto-increment from our conflict check
+        if [[ "$REASONING" == *"(Auto-incremented to avoid tag conflict)"* ]]; then
+            echo "✅ Semantic version incremented to avoid tag conflict (even though bump_type is 'none')"
+        else
+            echo "❌ ERROR: bump_type='none' but semantic version changed from $SEMANTIC_VERSION to $SEMANTIC_VERSION_NEW"
+            exit 1
+        fi
+    else
+        echo "✅ No semantic version bump (debugging/fixes) - keeping $SEMANTIC_VERSION, updating build metadata"
     fi
-    echo "âœ… No semantic version bump (debugging/fixes) - keeping $SEMANTIC_VERSION, updating build metadata"
 else
     # Function to compare semantic versions (without build metadata)
     version_compare() {
