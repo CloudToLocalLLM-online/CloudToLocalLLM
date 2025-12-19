@@ -230,14 +230,15 @@ jobs:
           }
           EOF
 
-          # 3. Strict Execution Loop (Fail Fast on unrecoverable errors)
+          # 3. Strict Execution Loop
           echo "🚀 Executing Gemini Analysis..."
           MAX_RETRIES=3
           RETRY_COUNT=0
+          MODEL="gemini-1.5-flash"
 
           while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
-            # Run Gemini with strict environment
-            if gemini --debug --yolo --model gemini-1.5-flash --output-format json "$(cat prompt.txt)" > gemini_output_raw.txt 2> gemini_stderr.log; then
+            echo "Attempt $((RETRY_COUNT+1)) using $MODEL..."
+            if gemini --debug --yolo --model "$MODEL" --output-format json "$(cat prompt.txt)" > gemini_output_raw.txt 2> gemini_stderr.log; then
               
               # Extract JSON block
               sed -n '/{/,/}/p' gemini_output_raw.txt > gemini_output.json
@@ -248,24 +249,23 @@ jobs:
                 break
               else
                 echo "⚠️  Attempt $((RETRY_COUNT+1)) failed: Invalid JSON response."
+                cat gemini_output_raw.txt
               fi
             else
                echo "⚠️  Attempt $((RETRY_COUNT+1)) failed: CLI Execution Error."
+               cat gemini_stderr.log
+               # Try switching model on retry just in case
+               MODEL="gemini-1.5-flash-8b"
             fi
             
             RETRY_COUNT=$((RETRY_COUNT+1))
             if [ $RETRY_COUNT -eq $MAX_RETRIES ]; then
               echo "❌ CRITICAL FAILURE: Gemini Analysis failed after $MAX_RETRIES attempts."
-              echo "::: Stderr :::"
-              cat gemini_stderr.log
-              echo "::: Raw Output :::"
-              cat gemini_output_raw.txt
               exit 1
             fi
             
-            SLEEP_TIME=$((RETRY_COUNT * 5))
-            echo "Retrying in ${SLEEP_TIME}s..."
-            sleep $SLEEP_TIME
+            echo "Retrying in 5s..."
+            sleep 5
           done
 
           # 4. Handle Manual Overrides
