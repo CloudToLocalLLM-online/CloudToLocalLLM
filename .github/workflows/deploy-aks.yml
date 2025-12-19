@@ -4,10 +4,6 @@ permissions:
   id-token: write
 
 on:
-  push:
-    branches:
-      - main
-      - cloud # Trigger on cloud branch pushes (requires external PAT/App)
   repository_dispatch: # Trigger via repository_dispatch (accepts dynamic types like cloud-deploy-4.12.12)
   workflow_dispatch:
     inputs:
