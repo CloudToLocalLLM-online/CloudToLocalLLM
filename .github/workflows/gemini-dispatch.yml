@@ -158,6 +158,7 @@ jobs:
           # 1. Credential Setup & Debug
           if [ -n "$GEMINI_API_KEY" ]; then
             echo "✅ GEMINI_API_KEY found in secrets (length: ${#GEMINI_API_KEY})"
+            export GEMINI_API_KEY="$GEMINI_API_KEY"
             export GOOGLE_API_KEY="$GEMINI_API_KEY"
           else
             echo "❌ Error: GEMINI_API_KEY secret is missing or empty."
@@ -202,8 +203,8 @@ jobs:
           SUCCESS=0
           
           while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
-            # Run Gemini, capture both stdout and stderr
-            if gemini --yolo --prompt "$(cat prompt.txt)" > gemini_output_raw.txt 2> gemini_stderr.log; then
+            # Run Gemini with explicit inline env var
+            if GEMINI_API_KEY="$GEMINI_API_KEY" gemini --yolo --prompt "$(cat prompt.txt)" > gemini_output_raw.txt 2> gemini_stderr.log; then
               
               # 4. Sanitation: Extract JSON
               # Try to find JSON block, fallback to raw if not found
