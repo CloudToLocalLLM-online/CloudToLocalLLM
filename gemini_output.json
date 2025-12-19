@@ -1,13 +1,13 @@
 ```json
 {
-  "new_version": "7.11.2",
-  "docker_version": "7.11.2",
-  "do_managed": "false",
-  "do_local": "false",
-  "do_desktop": "true",
-  "do_mobile": "true",
-  "should_deploy": "true",
-  "version_bump_needed": "true",
-  "reasoning": "The recent commit is a bug fix affecting the Flutter application's authentication logic. This requires a patch bump to version 7.11.2 and a new release for desktop and mobile clients. No backend or infrastructure changes were detected, so no server-side deployments are necessary."
+  "new_version": "7.12.0",
+  "docker_version": "7.12.0",
+  "do_managed": true,
+  "do_local": true,
+  "do_desktop": true,
+  "do_mobile": true,
+  "should_deploy": true,
+  "version_bump_needed": true,
+  "reasoning": "The latest commit is a significant refactoring that removes SQLite and standardizes on PostgreSQL for both the client and backend. This is a substantial change affecting the entire stack, necessitating a minor version bump and a full deployment across all targets (managed, local, desktop, and mobile)."
 }
 ```
