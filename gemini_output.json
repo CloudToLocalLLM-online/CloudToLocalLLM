@@ -1,14 +1,13 @@
 ```json
 {
-  "new_version": "7.11.1",
-  "docker_version": "7.11.1",
-  "do_managed": true,
-  "do_local": false,
-  "do_desktop": false,
-  "do_mobile": false,
-  "run_tests": true,
-  "should_deploy": true,
-  "version_bump_needed": true,
-  "reasoning": "The recent changes are all fixes to the CI/CD pipeline, which do not affect the core application logic but are important for the development and deployment process. This warrants a patch release to ensure the pipeline changes are deployed and tracked. Since only CI/CD configuration files were modified, a full build and test cycle is recommended to validate the integrity of the updated pipeline, but no new features or bug fixes for the application itself are included."
+  "new_version": "7.11.2",
+  "docker_version": "7.11.2",
+  "do_managed": "false",
+  "do_local": "false",
+  "do_desktop": "true",
+  "do_mobile": "true",
+  "should_deploy": "true",
+  "version_bump_needed": "true",
+  "reasoning": "The recent commit is a bug fix affecting the Flutter application's authentication logic. This requires a patch bump to version 7.11.2 and a new release for desktop and mobile clients. No backend or infrastructure changes were detected, so no server-side deployments are necessary."
 }
 ```
