@@ -152,26 +152,20 @@ jobs:
         id: 'analysis'
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-          GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
         run: |
           set -e
           
-          # 1. Credential Resolution
-          if [ -z "$GEMINI_API_KEY" ] && [ -n "$GOOGLE_API_KEY" ]; then
-            echo "ℹ️  GEMINI_API_KEY not found, falling back to GOOGLE_API_KEY..."
-            export GEMINI_API_KEY="$GOOGLE_API_KEY"
-          fi
-
-          # 2. Validation: Ensure API Key exists
-          if [ -z "$GEMINI_API_KEY" ]; then
-            echo "❌ Error: Neither GEMINI_API_KEY nor GOOGLE_API_KEY secrets are set."
-            echo "   Please verify your GitHub Repository Secrets."
-            exit 1
+          # 1. Credential Setup & Debug
+          if [ -n "$GEMINI_API_KEY" ]; then
+            echo "✅ GEMINI_API_KEY found in secrets (length: ${#GEMINI_API_KEY})"
+            export GOOGLE_API_KEY="$GEMINI_API_KEY"
           else
-            echo "✅ API Key detected."
+            echo "❌ Error: GEMINI_API_KEY secret is missing or empty."
+            echo "   Available secrets: $(env | grep -i api_key | awk -F= '{print $1}' | tr '\n' ' ')"
+            exit 1
           fi
 
-          # 3. Setup: Tools
+          # 2. Setup: Tools
           if ! command -v jq &> /dev/null; then
             sudo apt-get update && sudo apt-get install -y jq
           fi
