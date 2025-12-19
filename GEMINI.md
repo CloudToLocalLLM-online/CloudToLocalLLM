@@ -71,6 +71,13 @@ The project runs in a native **WSL 2 (Ubuntu 24.04)** environment. All developme
 3.  **Execute:** Use `write_file` or `replace` to modify code. **Always** prefer `replace` for surgical edits to avoid overwriting unrelated code.
 4.  **Verify:** Run tests or static analysis if applicable.
 
+### WSL & PowerShell Integration (Enhanced)
+*   **Direct Execution**: Execute complex shell scripts or Linux-native tools directly via WSL from PowerShell using `wsl -d Ubuntu-24.04 bash -c "command"`.
+*   **Tool Integration**: Use Linux utilities (sed, jq, grep, find) to supplement PowerShell for tasks like line-ending normalization (`sed -i 's/\r$//'`) or complex JSON processing.
+*   **Path Translation**: Use `wslpath` for translating between Windows and Linux file paths when passing arguments to WSL commands.
+*   **Consistent Environment**: Ensure environment variables (like `GEMINI_API_KEY`) are correctly exported or passed into the WSL environment for consistent tool behavior.
+*   **Cross-Platform Builds**: Use WSL-native `flutter` and `npm` for builds to ensure binary compatibility and standard line endings (LF).
+
 ### Git & Deployment Workflow (CRITICAL)
 *   **Git Rule:** **ALWAYS** `git pull --rebase` before creating a commit. This minimizes merge conflicts and maintains a clean history.
 *   **GitOps / Argo CD:**
