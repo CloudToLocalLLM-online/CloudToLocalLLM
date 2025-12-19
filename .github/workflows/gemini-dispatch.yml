@@ -424,180 +424,182 @@ jobs:
 
                   git tag "v$NEW_VERSION" -f
 
-                  git push origin "v$NEW_VERSION" -f
+                              git push origin "v$NEW_VERSION" -f
 
-                fi
+                            fi
 
-      
+                  
 
-        # ==================================================================================
+                    # ==================================================================================
 
-        # INLINE WORKFLOWS (Replaces separate files)
+                    # INLINE WORKFLOWS (Replaces separate files)
 
-        # ==================================================================================
+                    # ==================================================================================
 
-        tests:
+                    tests:
 
-          needs: orchestrator
+                      needs: orchestrator
 
-          if: needs.orchestrator.outputs.run_tests == 'true'
+                      if: needs.orchestrator.outputs.run_tests == 'true'
 
-          runs-on: ubuntu-latest
+                      runs-on: ubuntu-latest
 
-          steps:
+                      steps:
 
-            - uses: actions/checkout@v6
+                        - uses: actions/checkout@v6
 
-            
+                        
 
-            # Node Tests
+                        # Node Tests
 
-            - name: Use Node.js
+                        - name: Use Node.js
 
-              uses: actions/setup-node@v6
+                          uses: actions/setup-node@v6
 
-              with:
+                          with:
 
-                node-version: '20'
+                            node-version: '20'
 
-                cache: 'npm'
+                            cache: 'npm'
 
-            - name: Install root dependencies
+                        - name: Install root dependencies
 
-              run: npm ci || echo "npm ci failed, trying npm install" && npm install --no-package-lock || true
+                          run: npm ci || echo "npm ci failed, trying npm install" && npm install --no-package-lock || true
 
-            - name: Run root tests
+                        - name: Run root tests
 
-              run: npm test || echo "Tests failed but continuing for now"
+                          run: npm test || echo "Tests failed but continuing for now"
 
-      
+                  
 
-            # Flutter Tests
+                        # Flutter Tests
 
-            - uses: subosito/flutter-action@v2
+                        - uses: subosito/flutter-action@v2
 
-              with:
+                          with:
 
-                channel: 'stable'
+                            channel: 'stable'
 
-                cache: true
+                            cache: true
 
-            - run: flutter pub get
+                        - run: flutter pub get
 
-            - run: flutter test
+                        - run: flutter test
 
-      
+                  
 
-        deploy:
+                    deploy:
 
-          needs: [orchestrator, tests]
+                      needs: [orchestrator, tests]
 
-          if: needs.orchestrator.outputs.should_deploy == 'true' && (needs.tests.result == 'success' || needs.tests.result == 'skipped')
+                      if: needs.orchestrator.outputs.should_deploy == 'true' && (needs.tests.result == 'success' || needs.tests.result == 'skipped')
 
-          runs-on: ubuntu-latest
+                      runs-on: ubuntu-latest
 
-          permissions:
+                      permissions:
 
-            contents: write
+                        contents: write
 
-            id-token: write
+                        id-token: write
 
-          env:
+                      env:
 
-            AZURE_RESOURCE_GROUP: cloudtolocalllm-rg
+                        AZURE_RESOURCE_GROUP: cloudtolocalllm-rg
 
-            AZURE_CLUSTER_NAME: cloudtolocalllm-aks
+                        AZURE_CLUSTER_NAME: cloudtolocalllm-aks
 
-            ACR_NAME: imrightguycloudtolocalllm
+                        ACR_NAME: imrightguycloudtolocalllm
 
-            VERSION: ${{ needs.orchestrator.outputs.new_version }}
+                        VERSION: ${{ needs.orchestrator.outputs.new_version }}
 
-            DOCKER_VERSION: ${{ needs.orchestrator.outputs.docker_version }}
+                        DOCKER_VERSION: ${{ needs.orchestrator.outputs.docker_version }}
 
-          steps:
+                      steps:
 
-            - uses: actions/checkout@v6
+                        - uses: actions/checkout@v6
 
-      
+                  
 
-            # Setup and Build Containers (Summary)
+                        # Setup and Build Containers (Summary)
 
-            - name: Azure Login
+                        - name: Azure Login
 
-              uses: azure/login@v2
+                          uses: azure/login@v2
 
-              with:
+                          with:
 
-                client-id: ${{ secrets.AZURE_CLIENT_ID }}
+                            client-id: ${{ secrets.AZURE_CLIENT_ID }}
 
-                tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+                            tenant-id: ${{ secrets.AZURE_TENANT_ID }}
 
-                subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+                            subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
-      
+                  
 
-            - name: Setup ACR
+                        - name: Setup ACR
 
-              id: acr_setup
+                          id: acr_setup
 
-              if: needs.orchestrator.outputs.do_managed == 'true' || needs.orchestrator.outputs.do_local == 'true'
+                          if: needs.orchestrator.outputs.do_managed == 'true' || needs.orchestrator.outputs.do_local == 'true'
 
-              run: |
+                          run: |
 
-                az acr create --resource-group ${{ env.AZURE_RESOURCE_GROUP }} --name ${{ env.ACR_NAME }} --sku Basic --admin-enabled true
+                            az acr create --resource-group ${{ env.AZURE_RESOURCE_GROUP }} --name ${{ env.ACR_NAME }} --sku Basic --admin-enabled true
 
-                LOGIN_SERVER=$(az acr show --name ${{ env.ACR_NAME }} --query loginServer --output tsv)
+                            LOGIN_SERVER=$(az acr show --name ${{ env.ACR_NAME }} --query loginServer --output tsv)
 
-                echo "login_server=$LOGIN_SERVER" >> $GITHUB_OUTPUT
+                            echo "login_server=$LOGIN_SERVER" >> $GITHUB_OUTPUT
 
-      
+                  
 
-            - name: Docker Login
+                        - name: Docker Login
 
-              if: steps.acr_setup.outputs.login_server != ''
+                          if: steps.acr_setup.outputs.login_server != ''
 
-              run: |
+                          run: |
 
-                ACR_USERNAME=$(az acr credential show --name ${{ env.ACR_NAME }} --query username --output tsv)
+                            ACR_USERNAME=$(az acr credential show --name ${{ env.ACR_NAME }} --query username --output tsv)
 
-                ACR_PASSWORD=$(az acr credential show --name ${{ env.ACR_NAME }} --query passwords[0].value --output tsv)
+                            ACR_PASSWORD=$(az acr credential show --name ${{ env.ACR_NAME }} --query passwords[0].value --output tsv)
 
-                echo "$ACR_PASSWORD" | docker login "${{ steps.acr_setup.outputs.login_server }}" --username "$ACR_USERNAME" --password-stdin
+                            echo "$ACR_PASSWORD" | docker login "${{ steps.acr_setup.outputs.login_server }}" --username "$ACR_USERNAME" --password-stdin
 
-      
+                  
 
-            - name: Build and Push Containers
+                        - name: Build and Push Containers
 
-              if: steps.acr_setup.outputs.login_server != ''
+                          if: steps.acr_setup.outputs.login_server != ''
 
-              run: |
+                          run: |
 
-                LOGIN_SERVER="${{ steps.acr_setup.outputs.login_server }}"
+                            LOGIN_SERVER="${{ steps.acr_setup.outputs.login_server }}"
 
-                for service in base postgres web api-backend streaming-proxy; do
+                            for service in base postgres web api-backend streaming-proxy; do
 
-                  echo "Building $service..."
+                              echo "Building $service..."
 
-                  # (Build logic abbreviated for brevity, but same as build-release.yml)
+                              # (Build logic abbreviated for brevity, but same as build-release.yml)
 
-                done
+                            done
 
-      
+                  
 
-            - name: Create GitHub Release
+                        - name: Create GitHub Release
 
-              env:
+                          env:
 
-                GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+                            GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-              run: |
+                          run: |
 
-                gh release create "v${{ env.VERSION }}" \
+                            gh release create "v${{ env.VERSION }}" \
 
-                  --title "CloudToLocalLLM v${{ env.VERSION }}" \
+                              --title "CloudToLocalLLM v${{ env.VERSION }}" \
 
-                  --notes "Automated release based on: ${{ needs.orchestrator.outputs.reasoning }}" \
+                              --notes "Automated release based on: ${{ needs.orchestrator.outputs.reasoning }}" \
 
-                  --target main
+                              --target main
+
+                  
 
       
