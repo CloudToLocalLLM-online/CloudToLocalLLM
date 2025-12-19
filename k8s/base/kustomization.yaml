@@ -7,18 +7,23 @@ resources:
   - network-policies.yaml
   - configmaps/main-config.yaml
   - configmaps/redis.yaml
-  - services/api-backend.yaml
-  - services/web.yaml
-  - services/postgres.yaml
   - services/redis.yaml
+  - services/streaming-proxy.yaml
   - deployments/api-backend.yaml
   - deployments/web.yaml
   - deployments/postgres.yaml
   - deployments/redis.yaml
+  - deployments/streaming-proxy.yaml
+  - deployments/streaming-proxy-hpa.yaml
+  - deployments/streaming-proxy-secret.yaml
+  - configmaps/main-config.yaml
+  - configmaps/redis.yaml
+  - configmaps/streaming-proxy-configmap.yaml
   - jobs/cloudflare-purge-job.yaml
   - alertmanager-config.yaml
   - prometheus-config.yaml
   - utilities/monitoring.yaml
   - utilities/blackbox-exporter.yaml
   - utilities/coturn.yaml
+  - utilities/streaming-proxy-servicemonitor.yaml
   - postgres-auth-statefulset.yaml

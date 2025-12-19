@@ -1,4 +1,4 @@
-name: '🔀 Gemini Dispatch'
+name: "🔀 Gemini Dispatch"
 
 on:
   push:
@@ -16,42 +16,42 @@ on:
 
 defaults:
   run:
-    shell: 'bash'
+    shell: "bash"
 
 jobs:
   # ==================================================================================
   # 1. CORE DISPATCHER (Issues, PR Comments, Reviews)
   # ==================================================================================
   dispatch:
-    if: |- 
+    if: |-
       github.event_name != 'push' && (
         (github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork == false) ||
         (github.event_name == 'issues') ||
         (github.event.sender.type == 'User' && startsWith(github.event.comment.body || github.event.review.body || github.event.issue.body, '@gemini-cli'))
       )
-    runs-on: 'ubuntu-latest'
+    runs-on: "ubuntu-latest"
     permissions:
-      contents: 'read'
-      issues: 'write'
-      pull-requests: 'write'
+      contents: "read"
+      issues: "write"
+      pull-requests: "write"
     outputs:
-      command: '${{ steps.extract_command.outputs.command }}'
-      additional_context: '${{ steps.extract_command.outputs.additional_context }}'
+      command: "${{ steps.extract_command.outputs.command }}"
+      additional_context: "${{ steps.extract_command.outputs.additional_context }}"
     steps:
-      - name: 'Mint identity token'
-        id: 'mint_identity_token'
+      - name: "Mint identity token"
+        id: "mint_identity_token"
         if: vars.APP_ID != ''
-        uses: 'actions/create-github-app-token@a8d616148505b5069dccd32f177bb87d7f39123b'
+        uses: "actions/create-github-app-token@a8d616148505b5069dccd32f177bb87d7f39123b"
         with:
-          app-id: '${{ vars.APP_ID }}'
-          private-key: '${{ secrets.APP_PRIVATE_KEY }}'
+          app-id: "${{ vars.APP_ID }}"
+          private-key: "${{ secrets.APP_PRIVATE_KEY }}"
 
-      - name: 'Extract command'
-        id: 'extract_command'
-        uses: 'actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea'
+      - name: "Extract command"
+        id: "extract_command"
+        uses: "actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea"
         env:
-          EVENT_TYPE: '${{ github.event_name }}.${{ github.event.action }}'
-          REQUEST: '${{ github.event.comment.body || github.event.review.body || github.event.issue.body }}'
+          EVENT_TYPE: "${{ github.event_name }}.${{ github.event.action }}"
+          REQUEST: "${{ github.event.comment.body || github.event.review.body || github.event.issue.body }}"
         with:
           script: |
             const eventType = process.env.EVENT_TYPE;
@@ -67,10 +67,10 @@ jobs:
               core.setOutput('additional_context', request.replace(/^@gemini-cli/, '').trim());
             } else core.setOutput('command', 'fallthrough');
 
-      - name: 'Acknowledge'
+      - name: "Acknowledge"
         if: steps.extract_command.outputs.command != 'fallthrough'
         env:
-          GITHUB_TOKEN: '${{ steps.mint_identity_token.outputs.token || secrets.GITHUB_TOKEN }}'
+          GITHUB_TOKEN: "${{ steps.mint_identity_token.outputs.token || secrets.GITHUB_TOKEN }}"
         run: |
           gh issue comment "${{ github.event.pull_request.number || github.event.issue.number }}" \
             --body "🤖 Received your request! Tracking progress [here](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})" \
@@ -80,40 +80,40 @@ jobs:
   review:
     needs: dispatch
     if: needs.dispatch.outputs.command == 'review'
-    uses: './.github/workflows/gemini-review.yml'
+    uses: "./.github/workflows/gemini-review.yml"
     permissions:
-      contents: 'read'
-      id-token: 'write'
-      issues: 'write'
-      pull-requests: 'write'
+      contents: "read"
+      id-token: "write"
+      issues: "write"
+      pull-requests: "write"
     with:
-      additional_context: '${{ needs.dispatch.outputs.additional_context }}'
+      additional_context: "${{ needs.dispatch.outputs.additional_context }}"
     secrets: inherit
 
   triage:
     needs: dispatch
     if: needs.dispatch.outputs.command == 'triage'
-    uses: './.github/workflows/gemini-triage.yml'
+    uses: "./.github/workflows/gemini-triage.yml"
     permissions:
-      contents: 'read'
-      id-token: 'write'
-      issues: 'write'
-      pull-requests: 'write'
+      contents: "read"
+      id-token: "write"
+      issues: "write"
+      pull-requests: "write"
     with:
-      additional_context: '${{ needs.dispatch.outputs.additional_context }}'
+      additional_context: "${{ needs.dispatch.outputs.additional_context }}"
     secrets: inherit
 
   invoke:
     needs: dispatch
     if: needs.dispatch.outputs.command == 'invoke'
-    uses: './.github/workflows/gemini-invoke.yml'
+    uses: "./.github/workflows/gemini-invoke.yml"
     permissions:
-      contents: 'write'
-      id-token: 'write'
-      issues: 'write'
-      pull-requests: 'write'
+      contents: "write"
+      id-token: "write"
+      issues: "write"
+      pull-requests: "write"
     with:
-      additional_context: '${{ needs.dispatch.outputs.additional_context }}'
+      additional_context: "${{ needs.dispatch.outputs.additional_context }}"
     secrets: inherit
 
   # ==================================================================================
@@ -140,21 +140,21 @@ jobs:
           fetch-depth: 50
           fetch-tags: true
 
-      - name: 'Mint identity token'
-        id: 'mint_identity_token'
+      - name: "Mint identity token"
+        id: "mint_identity_token"
         if: vars.APP_ID != ''
-        uses: 'actions/create-github-app-token@a8d616148505b5069dccd32f177bb87d7f39123b'
+        uses: "actions/create-github-app-token@a8d616148505b5069dccd32f177bb87d7f39123b"
         with:
-          app-id: '${{ vars.APP_ID }}'
-          private-key: '${{ secrets.APP_PRIVATE_KEY }}'
+          app-id: "${{ vars.APP_ID }}"
+          private-key: "${{ secrets.APP_PRIVATE_KEY }}"
 
-      - name: 'Run Analysis'
-        id: 'analysis'
+      - name: "Run Analysis"
+        id: "analysis"
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: |
           set -e
-          
+
           # 1. Strict Credential Validation
           if [ -z "$GEMINI_API_KEY" ]; then
             echo "❌ CRITICAL FAILURE: GEMINI_API_KEY is not set. Deployment cannot proceed without AI analysis."
@@ -171,11 +171,20 @@ jobs:
              npm install -g @google/gemini-cli@latest
           fi
 
-          cat << 'EOF' > prompt.txt
+          # 2.5 context: Current Tags
+          echo "🏷️  Fetching repository tags..."
+          EXISTING_TAGS=$(git tag --sort=-v:refname | head -n 10 | tr '\n' ',' | sed 's/,$//')
+          echo "Existing Tags: $EXISTING_TAGS"
+
+          cat << EOF > prompt.txt
           Analyze the following project state and determine the release strategy.
           1. Read 'assets/version.json' for the current version.
           2. Check 'git log --oneline --no-merges -5' for recent context.
           3. Check 'git diff --name-only HEAD~1..HEAD' for changed files.
+          4. EXISTING REPOSITORY TAGS: $EXISTING_TAGS
+
+          CRITICAL: Your 'new_version' MUST NOT exist in the EXISTING REPOSITORY TAGS. 
+          If the next logical semantic version is already a tag, you MUST increment the patch version until you find a unique version.
 
           Return ONLY a valid JSON object with these keys:
           {
@@ -195,10 +204,10 @@ jobs:
           echo "🚀 Executing Gemini Analysis..."
           MAX_RETRIES=3
           RETRY_COUNT=0
-          
+
           while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
             # Run Gemini with strict environment
-            if gemini --yolo --prompt "$(cat prompt.txt)" > gemini_output_raw.txt 2> gemini_stderr.log; then
+            if gemini --yolo --model gemini-1.5-flash --prompt "$(cat prompt.txt)" > gemini_output_raw.txt 2> gemini_stderr.log; then
               
               # Extract JSON block
               sed -n '/{/,/}/p' gemini_output_raw.txt > gemini_output.json
@@ -232,11 +241,11 @@ jobs:
           echo "::: Validated Gemini Output :::"
           cat gemini_output.json
 
-      - name: 'Execute Logic'
-        id: 'exec'
+      - name: "Execute Logic"
+        id: "exec"
         env:
-          GITHUB_TOKEN: '${{ steps.mint_identity_token.outputs.token || secrets.GITHUB_TOKEN }}'
-          GEMINI_API_KEY: '${{ secrets.GEMINI_API_KEY }}'
+          GITHUB_TOKEN: "${{ steps.mint_identity_token.outputs.token || secrets.GITHUB_TOKEN }}"
+          GEMINI_API_KEY: "${{ secrets.GEMINI_API_KEY }}"
         run: |
           set -e
           CLEAN_JSON=$(sed -n '/{/,/}/p' gemini_output.json)
@@ -337,7 +346,15 @@ jobs:
           echo "server=$(az acr show --name ${{ env.ACR_NAME }} --query loginServer --output tsv)" >> $GITHUB_OUTPUT
       - name: Build & Release
         run: |
-          echo "Building v${{ needs.orchestrator.outputs.new_version }}"...
-          gh release create "v${{ needs.orchestrator.outputs.new_version }}" --title "Release v${{ needs.orchestrator.outputs.new_version }}" --notes "${{ needs.orchestrator.outputs.reasoning }}"
+          VERSION="v${{ needs.orchestrator.outputs.new_version }}"
+          echo "Building $VERSION..."
+          # Use edit if release exists, otherwise create
+          if gh release view "$VERSION" >/dev/null 2>&1; then
+            echo "Release $VERSION already exists. Updating..."
+            gh release edit "$VERSION" --title "Release $VERSION (Updated)" --notes "${{ needs.orchestrator.outputs.reasoning }}"
+          else
+            echo "Creating new release $VERSION..."
+            gh release create "$VERSION" --title "Release $VERSION" --notes "${{ needs.orchestrator.outputs.reasoning }}"
+          fi
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -91,7 +91,7 @@ if ! command -v gemini >/dev/null 2>&1; then
 fi
 
 set +e
-RESPONSE=$(gemini --yolo --prompt "$PROMPT" 2>&1)
+RESPONSE=$(gemini --yolo --model gemini-1.5-flash --prompt "$PROMPT" 2>&1)
 EXIT_CODE=$?
 set -e
 
@@ -134,19 +134,31 @@ echo ""
         # Build final version with build metadata
         NEW_VERSION="${SEMANTIC_VERSION_NEW}+${BUILD_DATE}"
 
-        # VERIFY IF TAG ALREADY EXISTS AND AUTO-INCREMENT IF NEEDED
-        echo "DEBUG: Checking if tag v$SEMANTIC_VERSION_NEW already exists..."
-        if git rev-parse "v$SEMANTIC_VERSION_NEW" >/dev/null 2>&1; then
-            echo "âš ï¸  WARNING: Tag v$SEMANTIC_VERSION_NEW already exists! Attempting auto-increment..."
-            
-            # Basic auto-increment logic for patch version
-            IFS='.' read -r major minor patch <<< "$SEMANTIC_VERSION_NEW"
-            NEW_PATCH=$((patch + 1))
-            SEMANTIC_VERSION_NEW="$major.$minor.$NEW_PATCH"
-            NEW_VERSION="${SEMANTIC_VERSION_NEW}+${BUILD_DATE}"
-            echo "âœ… Auto-incremented to v$SEMANTIC_VERSION_NEW"
-            REASONING="$REASONING (Auto-incremented to avoid tag conflict)"
-        fi
+# Tag verification and unique version generation
+function get_unique_version() {
+    local base_version_with_build=$1
+    local base_semantic_version=$(echo "$base_version_with_build" | cut -d'+' -f1)
+    local build_metadata=$(echo "$base_version_with_build" | cut -d'+' -f2)
+    local current_check_semantic=$base_semantic_version
+    local iter=0
+    
+    while git rev-parse "v$current_check_semantic" >/dev/null 2>&1 || gh release view "v$current_check_semantic" >/dev/null 2>&1; do
+        iter=$((iter + 1))
+        # Split version and increment patch
+        IFS='.' read -r major minor patch <<< "$base_semantic_version"
+        # Handle cases where patch might have metadata or be complex, though we expect semantic
+        patch=$(echo "$patch" | grep -oE '^[0-9]+')
+        current_check_semantic="$major.$minor.$((patch + iter))"
+        echo "âš ï¸  WARNING: Tag v$current_check_semantic already exists! Attempting auto-increment..."
+        REASONING="$REASONING (Auto-incremented to avoid tag conflict)"
+    done
+    echo "${current_check_semantic}+${build_metadata}"
+}
+
+# Apply unique versioning
+NEW_VERSION=$(get_unique_version "$NEW_VERSION")
+SEMANTIC_VERSION_NEW=$(echo "$NEW_VERSION" | cut -d'+' -f1)
+echo "✅ Final Unique Version: $NEW_VERSION"
 
         # Strict validation - Fail if mandatory fields are null or empty
         # Note: 'false' is a valid value for NEEDS_MANAGED, so we check for 'null' or empty

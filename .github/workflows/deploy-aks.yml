@@ -157,7 +157,6 @@ jobs:
           # Login to ACR
           echo "$ACR_PASSWORD" | docker login "${{ steps.acr_setup.outputs.login_server }}" --username "$ACR_USERNAME" --password-stdin
 
-
   build_base:
     needs: [extract_version, changes, setup_acr]
     if: ${{ !cancelled() && needs.changes.outputs.base == 'true' }}
@@ -453,8 +452,6 @@ jobs:
             echo "One or more required CLI tools are missing. Failing before deployment."
             exit 1
           fi
-
-
 
       - name: Configure Key Vault RBAC for AKS
         continue-on-error: true
@@ -799,122 +796,41 @@ jobs:
           [ "$PROXY_BUILT" = "true" ] && PROXY_TAG="${APP_VERSION}-proxy" || PROXY_TAG="latest"
 
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-          echo "Deployment Version: $APP_VERSION (from tag)"
+          echo "Deployment Version Details"
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
           echo "  Postgres: $POSTGRES_TAG"
           echo "  Web:      $WEB_TAG"
           echo "  API:      $API_TAG"
           echo "  Proxy:    $PROXY_TAG"
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-          echo ""
 
-          # Replace image registry in manifests
-          sed -i "s|cloudtolocalllm/postgres:latest|${{ needs.setup_acr.outputs.login_server }}/postgres:${POSTGRES_TAG}|g" k8s/postgres-statefulset.yaml
-          sed -i "s|cloudtolocalllm/web:latest|${{ needs.setup_acr.outputs.login_server }}/web:${WEB_TAG}|g" k8s/web-deployment.yaml
-          sed -i "s|cloudtolocalllm/api-backend:latest|${{ needs.setup_acr.outputs.login_server }}/api-backend:${API_TAG}|g" k8s/api-backend-deployment.yaml
-          sed -i "s|cloudtolocalllm/streaming-proxy:latest|${{ needs.setup_acr.outputs.login_server }}/streaming-proxy:${PROXY_TAG}|g" k8s/streaming-proxy-deployment.yaml
+          # Update images using Kustomize
+          cd k8s/overlays/managed
+          kustomize edit set image cloudtolocalllm/postgres=${{ needs.setup_acr.outputs.login_server }}/postgres:${POSTGRES_TAG}
+          kustomize edit set image cloudtolocalllm/web=${{ needs.setup_acr.outputs.login_server }}/web:${WEB_TAG}
+          kustomize edit set image cloudtolocalllm/api-backend=${{ needs.setup_acr.outputs.login_server }}/api-backend:${API_TAG}
+          kustomize edit set image cloudtolocalllm/streaming-proxy=${{ needs.setup_acr.outputs.login_server }}/streaming-proxy:${PROXY_TAG}
+          cd ../../..
 
-          # Validate manifests with server-side dry-run before applying
-          echo "Validating Kubernetes manifests with server-side dry-run..."
-          kubectl apply --dry-run=server -f k8s/rbac.yaml
-          kubectl apply --dry-run=server -f k8s/configmap.yaml
-          kubectl apply --dry-run=server -f k8s/streaming-proxy-configmap.yaml
-          kubectl apply --dry-run=server -f k8s/postgres-statefulset.yaml
-          kubectl apply --dry-run=server -f k8s/cloudflared.yaml
-          kubectl apply --dry-run=server -f k8s/web-deployment.yaml
-          kubectl apply --dry-run=server -f k8s/api-backend-deployment.yaml
-          kubectl apply --dry-run=server -f k8s/streaming-proxy-deployment.yaml
+          # Validate manifests with server-side dry-run
+          echo "Validating Kubernetes manifests with Kustomize dry-run..."
+          kubectl apply -k k8s/overlays/managed --dry-run=server
 
-          # Apply RBAC and ConfigMaps first
-          kubectl apply -f k8s/rbac.yaml
-          kubectl apply -f k8s/configmap.yaml
-          kubectl apply -f k8s/streaming-proxy-configmap.yaml
+          # Deploy all manifests using Kustomize
+          kubectl apply -k k8s/overlays/managed
 
-          # ===== STEP 1: Deploy and wait for PostgreSQL (all services depend on it) =====
-          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-          echo "STEP 1: Deploying PostgreSQL (all services depend on this)"
-          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          # Add annotations to force updates (K8s doesn't always restart on image tag update if it stayed "latest")
+          for deploy in api-backend web streaming-proxy cloudflared; do
+            kubectl annotate deployment $deploy -n cloudtolocalllm \
+              deployment.kubernetes.io/revision="${{ github.sha }}" \
+              deployment.kubernetes.io/timestamp="$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+              --overwrite || echo "Deployment $deploy not found or not ready yet"
+          done
 
-          kubectl apply -f k8s/postgres-statefulset.yaml
-
-          # Add annotation to force update
           kubectl annotate statefulset postgres -n cloudtolocalllm \
             deployment.kubernetes.io/revision="${{ github.sha }}" \
             deployment.kubernetes.io/timestamp="$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
-            --overwrite
-
-          # Force delete postgres pod to ensure it picks up new spec (if it exists)
-          kubectl delete pod postgres-0 -n cloudtolocalllm --force --grace-period=0 2>/dev/null || true
-          kubectl rollout restart statefulset/postgres -n cloudtolocalllm
-
-          # Wait for postgres to be ready before proceeding
-          echo "Waiting for PostgreSQL to be ready..."
-          chmod +x scripts/watch_rollout.sh
-          ./scripts/watch_rollout.sh cloudtolocalllm statefulset postgres
-
-          echo "✅ PostgreSQL is ready"
-          echo ""
-
-          # ===== STEP 2: Deploy API Backend (depends on postgres) =====
-          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-          echo "STEP 2: Deploying API Backend (depends on postgres)"
-          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-
-          kubectl apply -f k8s/api-backend-deployment.yaml
-
-          # Add annotation to force update
-          kubectl annotate deployment api-backend -n cloudtolocalllm \
-            deployment.kubernetes.io/revision="${{ github.sha }}" \
-            deployment.kubernetes.io/timestamp="$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
-            --overwrite
-
-          # Trigger rolling update
-          kubectl rollout restart deployment/api-backend -n cloudtolocalllm
-
-          echo "Waiting for API Backend to be ready..."
-          ./scripts/watch_rollout.sh cloudtolocalllm deployment api-backend
-          echo "✅ API Backend is ready"
-          echo ""
-
-          # ===== STEP 3: Deploy Streaming Proxy (depends on api-backend) =====
-          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-          echo "STEP 3: Deploying Streaming Proxy (depends on api-backend)"
-          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-
-          kubectl apply -f k8s/streaming-proxy-deployment.yaml
-
-          # Add annotation to force update
-          kubectl annotate deployment streaming-proxy -n cloudtolocalllm \
-            deployment.kubernetes.io/revision="${{ github.sha }}" \
-            deployment.kubernetes.io/timestamp="$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
-            --overwrite
-
-          # Trigger rolling update
-          kubectl rollout restart deployment/streaming-proxy -n cloudtolocalllm
-
-          echo "Waiting for Streaming Proxy to be ready..."
-          ./scripts/watch_rollout.sh cloudtolocalllm deployment streaming-proxy
-          echo "✅ Streaming Proxy is ready"
-          echo ""
-
-          # ===== STEP 4: Deploy Web and Cloudflared (depend on api-backend and streaming) =====
-          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-          echo "STEP 4: Deploying Web Frontend and Cloudflared"
-          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-
-          kubectl apply -f k8s/web-deployment.yaml
-          kubectl apply -f k8s/cloudflared.yaml
-
-          # Add annotations to force updates
-          kubectl annotate deployment web -n cloudtolocalllm \
-            deployment.kubernetes.io/revision="${{ github.sha }}" \
-            deployment.kubernetes.io/timestamp="$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
-            --overwrite
-
-          kubectl annotate deployment cloudflared -n cloudtolocalllm \
-            deployment.kubernetes.io/revision="${{ github.sha }}" \
-            deployment.kubernetes.io/timestamp="$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
-            --overwrite
+            --overwrite || echo "StatefulSet postgres not found"
 
           # Trigger rolling updates
           kubectl rollout restart deployment/web -n cloudtolocalllm
