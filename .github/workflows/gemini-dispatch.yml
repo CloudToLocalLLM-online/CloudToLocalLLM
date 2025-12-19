@@ -334,6 +334,9 @@ jobs:
     # Run if deploy is needed AND tests passed (or were skipped, but orchestrator implies tests needed for deploy)
     if: needs.orchestrator.outputs.should_deploy == 'true' && (needs.tests.result == 'success' || needs.tests.result == 'skipped')
     uses: ./.github/workflows/build-release.yml
+    permissions:
+      contents: write
+      id-token: write
     with:
       version: ${{ needs.orchestrator.outputs.new_version }}
       docker_version: ${{ needs.orchestrator.outputs.docker_version }}
