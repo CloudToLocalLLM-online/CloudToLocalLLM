@@ -77,23 +77,22 @@ DEPLOYMENT RULES:
 
 echo "DEBUG: Gemini prompt includes version requirement: 'The new version MUST be higher than $CURRENT_VERSION'"
 
-# Helper: Use provided Gemini API Key or env var
-export GEMINI_API_KEY="${GEMINI_API_KEY}"
-MODEL="gemini-3-flash" 
+# Helper: Enforce GEMINI_API_KEY
+if [ -z "$GEMINI_API_KEY" ]; then
+    echo "❌ ERROR: GEMINI_API_KEY is not set."
+    exit 1
+fi
 
 # Get response from Gemini
-echo "DEBUG: Sending request to Gemini AI (model: $MODEL)..."
-set +e
-# Try to find gemini-cli in PATH or use local script
-if command -v gemini-cli >/dev/null 2>&1; then
-    RESPONSE=$(gemini-cli "$PROMPT" 2>&1)
-    EXIT_CODE=$?
-else
-    # Use local script path
-    SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-    RESPONSE=$("${SCRIPT_DIR}/gemini-cli.cjs" "$PROMPT" 2>&1)
-    EXIT_CODE=$?
+echo "🚀 Sending request to Gemini AI..."
+if ! command -v gemini >/dev/null 2>&1; then
+    echo "❌ ERROR: 'gemini' command not found."
+    exit 1
 fi
+
+set +e
+RESPONSE=$(gemini --yolo --prompt "$PROMPT" 2>&1)
+EXIT_CODE=$?
 set -e
 
 if [ $EXIT_CODE -ne 0 ]; then

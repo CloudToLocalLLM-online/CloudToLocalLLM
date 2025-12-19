@@ -37,62 +37,55 @@ COMMITS_ESCAPED=$(echo "$COMMITS" | sed 's/"/\"/g' | tr '\n' ' ')
 PROMPT="You are a semantic versioning expert. Analyze these git commits and determine the appropriate version bump. Current version: $CURRENT_VERSION. Commits: $COMMITS_ESCAPED. Rules: BREAKING CHANGE or breaking: means MAJOR bump (x.0.0). feat: or feature: means MINOR bump (0.x.0) ONLY if it adds significant NEW user-facing functionality. Backend improvements, infrastructure changes, provider swaps (e.g., changing auth provider), enabling work, or fixes (even if labeled feat) should be PATCH (0.0.x) if they do not change the user experience. fix: or bugfix: means PATCH bump (0.0.x). chore:, docs:, style:, refactor:, test: means PATCH bump (0.0.x). If multiple types, use the highest priority (MAJOR > MINOR > PATCH). Respond with ONLY a JSON object with this exact format: {\"bump_type\": \"major or minor or patch\", \"new_version\": \"x.y.z\", \"reasoning\": \"brief explanation\"}. Do not include any other text, markdown, code blocks, or formatting. Only the raw JSON object."
 
 # Call Gemini
-echo "Calling Gemini AI to analyze commits..."
+echo "🚀 Calling Gemini AI to analyze commits..."
 
-# Check for GEMINI_API_KEY
-API_KEY="$GEMINI_API_KEY"
-
-if [ -z "$API_KEY" ]; then
-    echo "âš ï¸  GEMINI_API_KEY not set, falling back to patch bump"
-    # Parse current version
-    IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT_VERSION"
-    PATCH=$((PATCH + 1))
-    NEW_VERSION="${MAJOR}.${MINOR}.${PATCH}"
-    BUMP_TYPE="patch"
-else
-    # Call Gemini and capture both stdout and stderr
-    set +e  # Temporarily disable exit on error
-    
-    # Try to find gemini-cli in PATH or use local script
-    if command -v gemini-cli >/dev/null 2>&1; then
-        RESPONSE=$(gemini-cli "$PROMPT" 2>&1)
-    else
-        SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-        RESPONSE=$("${SCRIPT_DIR}/gemini-cli.cjs" "$PROMPT" 2>&1)
-    fi
-    
-    EXIT_CODE=$?
-    set -e  # Re-enable exit on error
-    
-    echo "Gemini CLI exit code: $EXIT_CODE"
-    echo "Gemini response (first 500 chars): ${RESPONSE:0:500}"
-    
-    if [ $EXIT_CODE -ne 0 ] || [ -z "$RESPONSE" ]; then
-        echo "âš ï¸  Gemini CLI failed with exit code: $EXIT_CODE"
-        echo "Falling back to patch bump"
-        
-        # Parse current version
-        IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT_VERSION"
-        PATCH=$((PATCH + 1))
-        NEW_VERSION="${MAJOR}.${MINOR}.${PATCH}"
-        BUMP_TYPE="patch"
-        REASONING="Gemini call failed, defaulting to patch"
-    else
-        # Try to extract JSON from response (Gemini might add extra text)
-        JSON_RESPONSE=$(echo "$RESPONSE" | grep -o '{.*}' | head -1 || echo "$RESPONSE")
-        
-        # Extract values from JSON response
-        BUMP_TYPE=$(echo "$JSON_RESPONSE" | jq -r '.bump_type // "patch"' 2>/dev/null || echo "patch")
-        NEW_VERSION=$(echo "$JSON_RESPONSE" | jq -r '.new_version // "'$CURRENT_VERSION'"' 2>/dev/null || echo "$CURRENT_VERSION")
-        REASONING=$(echo "$JSON_RESPONSE" | jq -r '.reasoning // "Auto-generated"' 2>/dev/null || echo "Auto-generated")
-        
-        echo ""
-        echo "âœ… Gemini Analysis:"
-        echo "  Bump type: $BUMP_TYPE"
-        echo "  New version: $NEW_VERSION"
-        echo "  Reasoning: $REASONING"
-    fi
+# Enforce GEMINI_API_KEY
+if [ -z "$GEMINI_API_KEY" ]; then
+    echo "❌ ERROR: GEMINI_API_KEY is not set. Strict mode requires credentials."
+    exit 1
 fi
+
+if ! command -v gemini >/dev/null 2>&1; then
+    echo "❌ ERROR: 'gemini' command not found."
+    exit 1
+fi
+
+# Call Gemini and capture both stdout and stderr
+set +e
+RESPONSE=$(gemini --yolo --prompt "$PROMPT" 2>&1)
+EXIT_CODE=$?
+set -e
+
+if [ $EXIT_CODE -ne 0 ] || [ -z "$RESPONSE" ]; then
+    echo "❌ CRITICAL FAILURE: Gemini CLI failed with exit code: $EXIT_CODE"
+    echo "$RESPONSE"
+    exit 1
+fi
+
+# Extract JSON from response
+JSON_RESPONSE=$(echo "$RESPONSE" | sed -n '/{/,/}/p')
+
+if ! echo "$JSON_RESPONSE" | jq empty >/dev/null 2>&1; then
+    echo "❌ CRITICAL FAILURE: Invalid JSON response from Gemini."
+    echo "$RESPONSE"
+    exit 1
+fi
+
+# Extract values from JSON response
+BUMP_TYPE=$(echo "$JSON_RESPONSE" | jq -r '.bump_type')
+NEW_VERSION=$(echo "$JSON_RESPONSE" | jq -r '.new_version')
+REASONING=$(echo "$JSON_RESPONSE" | jq -r '.reasoning')
+
+if [ "$BUMP_TYPE" == "null" ] || [ "$NEW_VERSION" == "null" ]; then
+    echo "❌ CRITICAL FAILURE: Missing required fields in Gemini response."
+    exit 1
+fi
+
+echo ""
+echo "✅ Gemini Analysis:"
+echo "  Bump type: $BUMP_TYPE"
+echo "  New version: $NEW_VERSION"
+echo "  Reasoning: $REASONING"
 
 # Validate and fallback if Gemini gave invalid version
 if ! echo "$NEW_VERSION" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+$'; then

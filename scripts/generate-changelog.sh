@@ -39,15 +39,20 @@ Commits:
 $COMMITS"
 
 # Get response from Gemini
-if command -v gemini >/dev/null 2>&1; then
-    # Use the official gemini-cli if available
-    CHANGELOG_ENTRY=$(GEMINI_API_KEY="$GEMINI_API_KEY" gemini --yolo --prompt "$PROMPT")
-elif command -v gemini-cli >/dev/null 2>&1; then
-    CHANGELOG_ENTRY=$(gemini-cli "$PROMPT")
-else
-    SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-    CHANGELOG_ENTRY=$("${SCRIPT_DIR}/gemini-cli.cjs" "$PROMPT")
+if ! command -v gemini >/dev/null 2>&1; then
+    echo "❌ CRITICAL FAILURE: 'gemini' command not found. Ensure @google/gemini-cli is installed in the CI environment."
+    exit 1
 fi
+
+echo "🚀 Requesting changelog from Gemini AI..."
+CHANGELOG_ENTRY=$(gemini --yolo --prompt "$PROMPT")
+
+if [ -z "$CHANGELOG_ENTRY" ]; then
+    echo "❌ CRITICAL FAILURE: Gemini AI returned an empty response. Cannot generate changelog."
+    exit 1
+fi
+
+echo "✅ Received response from Gemini."
 
 # Clean up the response (remove code blocks if any)
 CHANGELOG_ENTRY=$(echo "$CHANGELOG_ENTRY" | sed 's/```markdown//g' | sed 's/```//g')

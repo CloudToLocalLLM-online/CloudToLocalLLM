@@ -155,25 +155,20 @@ jobs:
         run: |
           set -e
           
-          # 1. Credential Setup & Debug
-          if [ -n "$GEMINI_API_KEY" ]; then
-            echo "✅ GEMINI_API_KEY found in secrets (length: ${#GEMINI_API_KEY})"
-            export GEMINI_API_KEY="$GEMINI_API_KEY"
-            export GOOGLE_API_KEY="$GEMINI_API_KEY"
-          else
-            echo "❌ Error: GEMINI_API_KEY secret is missing or empty."
-            echo "   Available secrets: $(env | grep -i api_key | awk -F= '{print $1}' | tr '\n' ' ')"
+          # 1. Strict Credential Validation
+          if [ -z "$GEMINI_API_KEY" ]; then
+            echo "❌ CRITICAL FAILURE: GEMINI_API_KEY is not set. Deployment cannot proceed without AI analysis."
             exit 1
           fi
 
-          # 2. Setup: Tools
+          # 2. Tool Verification
           if ! command -v jq &> /dev/null; then
             sudo apt-get update && sudo apt-get install -y jq
           fi
 
           if ! command -v gemini &> /dev/null; then
-             echo "Installing Gemini CLI..."
-             npm install -g @google/gemini-cli@latest || (sleep 5 && npm install -g @google/gemini-cli@latest)
+             echo "📦 Installing @google/gemini-cli..."
+             npm install -g @google/gemini-cli@latest
           fi
 
           cat << 'EOF' > prompt.txt
@@ -196,54 +191,45 @@ jobs:
           }
           EOF
 
-          # 3. Execution: Retry Mechanism with Backoff
-          echo "Running Gemini Analysis..."
+          # 3. Strict Execution Loop (Fail Fast on unrecoverable errors)
+          echo "🚀 Executing Gemini Analysis..."
           MAX_RETRIES=3
           RETRY_COUNT=0
-          SUCCESS=0
           
           while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
-            # Run Gemini with explicit inline env var
-            if GEMINI_API_KEY="$GEMINI_API_KEY" gemini --yolo --prompt "$(cat prompt.txt)" > gemini_output_raw.txt 2> gemini_stderr.log; then
+            # Run Gemini with strict environment
+            if gemini --yolo --prompt "$(cat prompt.txt)" > gemini_output_raw.txt 2> gemini_stderr.log; then
               
-              # 4. Sanitation: Extract JSON
-              # Try to find JSON block, fallback to raw if not found
+              # Extract JSON block
               sed -n '/{/,/}/p' gemini_output_raw.txt > gemini_output.json
               
-              if [ ! -s gemini_output.json ]; then
-                 cp gemini_output_raw.txt gemini_output.json
-              fi
-
-              # 5. Validation: Check if output is valid JSON
-              if jq empty gemini_output.json >/dev/null 2>&1; then
-                echo "✅ Gemini Analysis Successful (Attempt $((RETRY_COUNT+1)))"
-                SUCCESS=1
+              # Validation: Fail if empty or invalid JSON
+              if [ -s gemini_output.json ] && jq empty gemini_output.json >/dev/null 2>&1; then
+                echo "✅ Gemini Analysis Successful."
                 break
               else
-                echo "⚠️  Attempt $((RETRY_COUNT+1)): Invalid JSON output."
-                echo "--- Raw Output ---"
-                cat gemini_output_raw.txt
-                echo "--- End ---"
+                echo "⚠️  Attempt $((RETRY_COUNT+1)) failed: Invalid JSON response."
               fi
             else
-               echo "⚠️  Attempt $((RETRY_COUNT+1)): Gemini CLI failed."
-               cat gemini_stderr.log
+               echo "⚠️  Attempt $((RETRY_COUNT+1)) failed: CLI Execution Error."
             fi
             
             RETRY_COUNT=$((RETRY_COUNT+1))
-            if [ $RETRY_COUNT -lt $MAX_RETRIES ]; then
-              SLEEP_TIME=$((RETRY_COUNT * 5))
-              echo "Retrying in ${SLEEP_TIME}s..."
-              sleep $SLEEP_TIME
+            if [ $RETRY_COUNT -eq $MAX_RETRIES ]; then
+              echo "❌ CRITICAL FAILURE: Gemini Analysis failed after $MAX_RETRIES attempts."
+              echo "::: Stderr :::"
+              cat gemini_stderr.log
+              echo "::: Raw Output :::"
+              cat gemini_output_raw.txt
+              exit 1
             fi
+            
+            SLEEP_TIME=$((RETRY_COUNT * 5))
+            echo "Retrying in ${SLEEP_TIME}s..."
+            sleep $SLEEP_TIME
           done
 
-          if [ $SUCCESS -eq 0 ]; then
-            echo "❌ Critical Error: Gemini Analysis failed after $MAX_RETRIES attempts."
-            exit 1 # Fail fast
-          fi
-
-          echo "::: Gemini Output :::"
+          echo "::: Validated Gemini Output :::"
           cat gemini_output.json
 
       - name: 'Execute Logic'
