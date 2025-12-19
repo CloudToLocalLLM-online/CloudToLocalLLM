@@ -27,7 +27,7 @@ defaults:
 
 jobs:
   debugger:
-    if: |- 
+    if: |-
       ${{ fromJSON(vars.GEMINI_DEBUG || vars.ACTIONS_STEP_DEBUG || false) }}
     runs-on: 'ubuntu-latest'
     permissions:
@@ -42,14 +42,14 @@ jobs:
           DEBUG_event__pull_request__author_association: '${{ github.event.pull_request.author_association }}'
           DEBUG_event__review__author_association: '${{ github.event.review.author_association }}'
           DEBUG_event: '${{ toJSON(github.event) }}'
-        run: |- 
+        run: |-
           env | grep '^DEBUG_'
 
   # ==================================================================================
   # ISSUE & PR DISPATCHER
   # ==================================================================================
   dispatch:
-    if: |- 
+    if: |-
       github.event_name != 'push' && (
         (
           github.event_name == 'pull_request' &&
@@ -76,7 +76,7 @@ jobs:
     steps:
       - name: 'Mint identity token'
         id: 'mint_identity_token'
-        if: |- 
+        if: |-
           ${{ vars.APP_ID }}
         uses: 'actions/create-github-app-token@a8d616148505b5069dccd32f177bb87d7f39123b' # ratchet:actions/create-github-app-token@v2
         with:
@@ -93,7 +93,7 @@ jobs:
           EVENT_TYPE: '${{ github.event_name }}.${{ github.event.action }}'
           REQUEST: '${{ github.event.comment.body || github.event.review.body || github.event.issue.body }}'
         with:
-          script: | 
+          script: |
             const eventType = process.env.EVENT_TYPE;
             const request = process.env.REQUEST;
             core.setOutput('request', request);
@@ -120,17 +120,17 @@ jobs:
         env:
           GITHUB_TOKEN: '${{ steps.mint_identity_token.outputs.token || secrets.GITHUB_TOKEN || github.token }}'
           ISSUE_NUMBER: '${{ github.event.pull_request.number || github.event.issue.number }}'
-          MESSAGE: |- 
+          MESSAGE: |-
             🤖 Hi @${{ github.actor }}, I've received your request, and I'm working on it now! You can track my progress [in the logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) for more details.
           REPOSITORY: '${{ github.repository }}'
-        run: |- 
+        run: |-
           gh issue comment "${ISSUE_NUMBER}" \
             --body "${MESSAGE}" \
             --repo "${REPOSITORY}"
 
   review:
     needs: 'dispatch'
-    if: |- 
+    if: |-
       ${{ needs.dispatch.outputs.command == 'review' }}
     uses: './.github/workflows/gemini-review.yml'
     permissions:
@@ -144,7 +144,7 @@ jobs:
 
   triage:
     needs: 'dispatch'
-    if: |- 
+    if: |-
       ${{ needs.dispatch.outputs.command == 'triage' }}
     uses: './.github/workflows/gemini-triage.yml'
     permissions:
@@ -158,7 +158,7 @@ jobs:
 
   invoke:
     needs: 'dispatch'
-    if: |- 
+    if: |-
       ${{ needs.dispatch.outputs.command == 'invoke' }}
     uses: './.github/workflows/gemini-invoke.yml'
     permissions:
@@ -176,7 +176,7 @@ jobs:
       - 'review'
       - 'triage'
       - 'invoke'
-    if: |- 
+    if: |-
       ${{ always() && !cancelled() && (failure() || needs.dispatch.outputs.command == 'fallthrough') }}
     runs-on: 'ubuntu-latest'
     permissions:
@@ -186,7 +186,7 @@ jobs:
     steps:
       - name: 'Mint identity token'
         id: 'mint_identity_token'
-        if: |- 
+        if: |-
           ${{ vars.APP_ID }}
         uses: 'actions/create-github-app-token@a8d616148505b5069dccd32f177bb87d7f39123b' # ratchet:actions/create-github-app-token@v2
         with:
@@ -200,10 +200,10 @@ jobs:
         env:
           GITHUB_TOKEN: '${{ steps.mint_identity_token.outputs.token || secrets.GITHUB_TOKEN || github.token }}'
           ISSUE_NUMBER: '${{ github.event.pull_request.number || github.event.issue.number }}'
-          MESSAGE: |- 
+          MESSAGE: |-
             🤖 I'm sorry @${{ github.actor }}, but I was unable to process your request. Please [see the logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) for more details.
           REPOSITORY: '${{ github.repository }}'
-        run: |- 
+        run: |-
           gh issue comment "${ISSUE_NUMBER}" \
             --body "${MESSAGE}" \
             --repo "${REPOSITORY}"
@@ -235,7 +235,7 @@ jobs:
 
       - name: 'Mint identity token'
         id: 'mint_identity_token'
-        if: |- 
+        if: |-
           ${{ vars.APP_ID }}
         uses: 'actions/create-github-app-token@a8d616148505b5069dccd32f177bb87d7f39123b' # ratchet:actions/create-github-app-token@v2
         with:
@@ -244,7 +244,7 @@ jobs:
           permission-contents: 'write' # Needed for push
 
       - name: 'Configure Git'
-        run: | 
+        run: |
           git config user.name "gemini-cli[bot]"
           git config user.email "gemini-cli[bot]@users.noreply.github.com"
 
@@ -265,7 +265,7 @@ jobs:
           use_gemini_code_assist: '${{ vars.GOOGLE_GENAI_USE_GCA }}'
           use_vertex_ai: '${{ vars.GOOGLE_GENAI_USE_VERTEXAI }}'
           workflow_name: 'gemini-orchestrator'
-          settings: |- 
+          settings: |-
             {
               "tools": {
                 "core": [
@@ -279,7 +279,7 @@ jobs:
                 ]
               }
             }
-          prompt: | 
+          prompt: |
             You are the Release Orchestrator for the "CloudToLocalLLM" project. Your goal is to analyze changes, manage versioning, and decide which workflows to run.
 
             PHASE 1: ANALYSIS
