@@ -320,6 +320,8 @@ jobs:
             - should_deploy: 'true' or 'false' (true if any do_* is true).
             - reasoning: A short string explaining why.
 
+            IMPORTANT: Your FINAL response MUST be ONLY a JSON object containing these keys. Do not include any other text or formatting.
+
   # ==================================================================================
   # INLINE WORKFLOWS (Replaces separate files)
   # ==================================================================================
