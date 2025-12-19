@@ -70,7 +70,7 @@ spec:
             - name: CLOUDFLARE_API_TOKEN
               valueFrom:
                 secretKeyRef:
-                  name: cloudtolocalllm-secrets
-                  key: cloudflare-api-token
+                  name: cloudflare-cache-secrets
+                  key: api-token
       restartPolicy: Never
   backoffLimit: 2
