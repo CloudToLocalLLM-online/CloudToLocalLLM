@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [7.13.2+202512191317] - 2025-12-19
+
+## 7.13.2+202512191317
+
+### Refactoring
+
+*   Removed SQLite dependency and migrated to PostgreSQL-only. This change simplifies the codebase and improves maintainability.
+
+### Chore
+
+*   Fixed CI versioning to ensure accurate version reporting during builds.
+
 ## [7.13.1+202512191252] - 2025-12-19
 
 ## 7.13.1+202512191252 (2025-12-19)
