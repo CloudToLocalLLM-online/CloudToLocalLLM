@@ -1,13 +1,13 @@
 ```json
 {
-  "new_version": "7.12.4",
-  "docker_version": "7.12.4",
-  "do_managed": "true",
-  "do_local": "false",
-  "do_desktop": "false",
-  "do_mobile": "false",
-  "should_deploy": "true",
-  "version_bump_needed": "true",
-  "reasoning": "The recent commits are fixes to the Kubernetes configuration, which warrants a patch release from 7.12.3 to 7.12.4. Since the changes are isolated to the Kubernetes manifests, only a managed deployment is required."
+  "new_version": "7.12.5",
+  "docker_version": "7.12.5",
+  "do_managed": true,
+  "do_local": false,
+  "do_desktop": false,
+  "do_mobile": false,
+  "should_deploy": true,
+  "version_bump_needed": true,
+  "reasoning": "The most recent commit is a fix for Kubernetes service name resolution, which is a patch-level change affecting the managed environment. This necessitates a new patch version and a deployment to apply the fix."
 }
 ```
