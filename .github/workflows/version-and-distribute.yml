@@ -36,6 +36,8 @@ jobs:
           ./scripts/verify-version.sh
 
       - name: Setup Gemini CLI
+        env:
+          GEMINI_API_KEY: "${{ secrets.GEMINI_API_KEY }}"
         run: |
           chmod +x scripts/gemini-cli.cjs
           sudo ln -sf "$(pwd)/scripts/gemini-cli.cjs" /usr/local/bin/gemini-cli
@@ -52,6 +54,8 @@ jobs:
 
       - name: Analyze Changes with Gemini
         id: analyze
+        env:
+          GEMINI_API_KEY: "${{ secrets.GEMINI_API_KEY }}"
         run: |
           chmod +x scripts/analyze-platforms.sh
           ./scripts/analyze-platforms.sh
@@ -60,6 +64,7 @@ jobs:
         env:
           NEW_VERSION: "${{ steps.analyze.outputs.new_version }}"
           COMMIT_SHA: "${{ github.sha }}"
+          GEMINI_API_KEY: "${{ secrets.GEMINI_API_KEY }}"
         run: |
           chmod +x scripts/update-all-versions.sh
           ./scripts/update-all-versions.sh "$NEW_VERSION" "$COMMIT_SHA"
