@@ -8,13 +8,13 @@ spec:
   source:
     repoURL: https://github.com/imrightguy/CloudToLocalLLM
     targetRevision: main
-    path: k8s/overlays/managed
+    path: k8s/apps/managed
+    directory:
+      include: 'argo-apps.yaml'
   destination:
     server: https://kubernetes.default.svc
-    namespace: cloudtolocalllm
+    namespace: argocd
   syncPolicy:
     automated:
       prune: true
       selfHeal: true
-    syncOptions:
-      - CreateNamespace=true

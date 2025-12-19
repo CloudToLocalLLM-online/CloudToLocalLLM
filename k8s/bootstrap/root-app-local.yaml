@@ -8,22 +8,13 @@ spec:
   source:
     repoURL: https://github.com/imrightguy/CloudToLocalLLM
     targetRevision: main
-    path: k8s/overlays/local
-    kustomize:
-      patches:
-        - target:
-            kind: Ingress
-            name: local-ingress
-          patch: |-
-            - op: replace
-              path: /spec/rules/0/host
-              value: localhost # Default for local, can be overridden by user
+    path: k8s/apps/local
+    directory:
+      include: 'argo-apps.yaml'
   destination:
     server: https://kubernetes.default.svc
-    namespace: cloudtolocalllm
+    namespace: argocd
   syncPolicy:
     automated:
       prune: true
       selfHeal: true
-    syncOptions:
-      - CreateNamespace=true

@@ -1,0 +1,153 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: cloudtolocalllm-infra
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/imrightguy/CloudToLocalLLM
+    targetRevision: main
+    path: k8s/apps/managed/infrastructure
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: cloudtolocalllm
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: cloudtolocalllm-postgres
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/imrightguy/CloudToLocalLLM
+    targetRevision: main
+    path: k8s/apps/managed/postgres
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: cloudtolocalllm
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: cloudtolocalllm-redis
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/imrightguy/CloudToLocalLLM
+    targetRevision: main
+    path: k8s/apps/managed/redis
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: cloudtolocalllm
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: cloudtolocalllm-api
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/imrightguy/CloudToLocalLLM
+    targetRevision: main
+    path: k8s/apps/managed/api-backend
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: cloudtolocalllm
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: cloudtolocalllm-web
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/imrightguy/CloudToLocalLLM
+    targetRevision: main
+    path: k8s/apps/managed/web-frontend
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: cloudtolocalllm
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: cloudtolocalllm-monitoring
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/imrightguy/CloudToLocalLLM
+    targetRevision: main
+    path: k8s/apps/managed/monitoring
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: cloudtolocalllm
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: cloudtolocalllm-utilities
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/imrightguy/CloudToLocalLLM
+    targetRevision: main
+    path: k8s/apps/managed/utilities
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: cloudtolocalllm
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: cloudtolocalllm-ingress
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/imrightguy/CloudToLocalLLM
+    targetRevision: main
+    path: k8s/apps/managed/ingress-cloudflared
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: cloudtolocalllm
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
