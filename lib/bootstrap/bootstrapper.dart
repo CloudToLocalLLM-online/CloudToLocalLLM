@@ -3,8 +3,6 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 
 import '../di/locator.dart';
-import '../main_sqflite_init.dart'
-    if (dart.library.html) '../main_sqflite_init_stub.dart';
 
 /// Data returned by [AppBootstrapper] after the core environment is ready.
 class AppBootstrapData {
@@ -23,10 +21,6 @@ class AppBootstrapper {
     try {
       print('[Bootstrapper] Starting bootstrap process...');
 
-      print('[Bootstrapper] Initializing SQLite...');
-      await _initializeSqflite();
-      print('[Bootstrapper] SQLite initialized');
-
       print('[Bootstrapper] Setting up service locator...');
       await setupServiceLocator();
       print('[Bootstrapper] Service locator setup completed');
@@ -39,12 +33,6 @@ class AppBootstrapper {
 
       // Re-throw to let the caller handle it
       rethrow;
-    }
-  }
-
-  Future<void> _initializeSqflite() async {
-    if (!kIsWeb) {
-      initSqflite();
     }
   }
 }

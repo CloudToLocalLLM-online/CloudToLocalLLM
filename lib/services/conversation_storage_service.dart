@@ -6,10 +6,6 @@ import '../models/message.dart';
 import '../config/app_config.dart';
 import 'auth_service.dart';
 
-// Conditional imports for desktop-only dependencies - NOT loaded on web
-import 'conversation_storage_service_desktop.dart'
-    if (dart.library.html) 'conversation_storage_service_web.dart';
-
 /// Security exception for unauthorized access attempts
 class SecurityException implements Exception {
   final String message;
@@ -19,25 +15,12 @@ class SecurityException implements Exception {
   String toString() => 'SecurityException: $message';
 }
 
-/// Conversation storage service with platform-specific storage
+/// Conversation storage service using cloud API exclusively
 ///
-/// STORAGE STRATEGY:
-/// - Web platform: Uses PostgreSQL database via API (cloud storage)
-/// - Desktop platform: Uses SQLite files in user documents directory (local storage)
+/// All data is stored in PostgreSQL via the backend API.
 class ConversationStorageService {
-  static const String _databaseName = 'cloudtolocalllm_conversations.db';
-  static const int _databaseVersion =
-      3; // Incremented for user isolation security fix
-
-  // Table names
-  static const String _conversationsTable = 'conversations';
-  static const String _messagesTable = 'messages';
-  static const String _settingsTable = 'user_settings';
-
   final AuthService? _authService;
-  Database? _database;
   bool _isInitialized = false;
-  bool _encryptionEnabled = false;
   final Dio _dio = Dio();
 
   ConversationStorageService({AuthService? authService})
@@ -51,553 +34,33 @@ class ConversationStorageService {
     _dio.options.receiveTimeout = AppConfig.apiTimeout;
   }
 
-  /// Initialize the storage service with platform-specific database factory
+  /// Initialize the storage service
   Future<void> initialize() async {
     if (_isInitialized) {
-      debugPrint('� [ConversationStorage] Already initialized, skipping');
+      debugPrint('[ConversationStorage] Already initialized, skipping');
       return;
     }
 
     try {
-      // Initialize sqflite for different platforms
-      if (kIsWeb) {
-        // For web platform, use the default factory (IndexedDB)
-        // No additional initialization needed - sqflite automatically uses IndexedDB
-        debugPrint('� [ConversationStorage] Using IndexedDB for web platform');
-        debugPrint(
-          '� [ConversationStorage] Privacy: Data stored in browser IndexedDB only',
-        );
-      } else {
-        // For desktop/mobile platforms, sqflite automatically uses SQLite
-        debugPrint(
-          '� [ConversationStorage] Using SQLite FFI for desktop platform',
-        );
-        debugPrint(
-          '� [ConversationStorage] Privacy: Data stored in local SQLite file only',
-        );
-      }
-
-      if (kIsWeb) {
-        // Web platform: Use PostgreSQL via API - skip local database
-        _isInitialized = true;
-        debugPrint(
-            '[ConversationStorage] Web platform initialized (using cloud storage)');
-      } else {
-        // Desktop platform: Use local SQLite
-        await _initializeDatabase();
-        _isInitialized = true;
-        debugPrint(
-            '[ConversationStorage] Desktop platform initialized (using local storage)');
-      }
+      debugPrint('[ConversationStorage] Initializing cloud storage (PostgreSQL)');
+      _isInitialized = true;
+      debugPrint('[ConversationStorage] Service initialized');
     } catch (e, stackTrace) {
       debugPrint('[ConversationStorage] Failed to initialize: $e');
       debugPrint('[ConversationStorage] Stack trace: $stackTrace');
-      // On desktop/mobile, database is critical - rethrow
-      if (!kIsWeb) {
-        rethrow;
-      }
-      // Web can continue without local database (uses API)
-      _isInitialized = true;
+      _isInitialized = true; // Still allow app to load, API calls will handle errors
     }
   }
 
-  /// Initialize the database with enhanced privacy features
-  Future<void> _initializeDatabase() async {
-    try {
-      final databasePath = await _getDatabasePath();
-      debugPrint('� [ConversationStorage] Database path: $databasePath');
-
-      _database = await openDatabase(
-        databasePath,
-        version: _databaseVersion,
-        onCreate: _createDatabase,
-        onUpgrade: _upgradeDatabase,
-        singleInstance: true,
-      );
-
-      debugPrint('� [ConversationStorage] Database opened successfully');
-    } catch (e) {
-      debugPrint('� [ConversationStorage] Database initialization failed: $e');
-      rethrow;
-    }
-  }
-
-  /// Get the database file path with platform-specific handling
-  Future<String> _getDatabasePath() async {
-    if (kIsWeb) {
-      // For web, use a simple path (IndexedDB will be used internally)
-      // sqflite automatically uses IndexedDB on web, no file path needed
-      return _databaseName;
-    }
-
-    try {
-      // For desktop/mobile, use app documents directory
-      final documentsDirectory = await getApplicationDocumentsDirectory();
-      final appDirectory = Directory(
-        join(documentsDirectory.path, 'CloudToLocalLLM'),
-      );
-
-      // Create directory if it doesn't exist
-      if (!await appDirectory.exists()) {
-        await appDirectory.create(recursive: true);
-        debugPrint(
-          '� [ConversationStorage] Created app directory: ${appDirectory.path}',
-        );
-      }
-
-      return join(appDirectory.path, _databaseName);
-    } catch (e) {
-      debugPrint(
-        '� [ConversationStorage] Failed to get documents directory: $e',
-      );
-      // Fallback to current directory
-      return _databaseName;
-    }
-  }
-
-  /// Create database tables with privacy-focused schema
-  Future<void> _createDatabase(Database db, int version) async {
-    try {
-      // Create conversations table with user isolation
-      await db.execute('''
-        CREATE TABLE $_conversationsTable (
-          id TEXT PRIMARY KEY,
-          user_id TEXT NOT NULL,
-          title TEXT NOT NULL,
-          model TEXT NOT NULL,
-          created_at INTEGER NOT NULL,
-          updated_at INTEGER NOT NULL,
-          is_encrypted INTEGER DEFAULT 0,
-          storage_location TEXT DEFAULT 'local'
-        )
-      ''');
-
-      // Create messages table with user isolation
-      await db.execute('''
-        CREATE TABLE $_messagesTable (
-          id TEXT PRIMARY KEY,
-          conversation_id TEXT NOT NULL,
-          user_id TEXT NOT NULL,
-          role TEXT NOT NULL,
-          content TEXT NOT NULL,
-          model TEXT,
-          status TEXT NOT NULL,
-          error TEXT,
-          timestamp INTEGER NOT NULL,
-          is_encrypted INTEGER DEFAULT 0,
-          FOREIGN KEY (conversation_id) REFERENCES $_conversationsTable (id) ON DELETE CASCADE
-        )
-      ''');
-
-      // Create user settings table for privacy preferences
-      await db.execute('''
-        CREATE TABLE $_settingsTable (
-          key TEXT PRIMARY KEY,
-          value TEXT NOT NULL,
-          updated_at INTEGER NOT NULL
-        )
-      ''');
-
-      // Create indexes for better performance
-      await db.execute('''
-        CREATE INDEX idx_messages_conversation_id ON $_messagesTable (conversation_id)
-      ''');
-
-      await db.execute('''
-        CREATE INDEX idx_conversations_updated_at ON $_conversationsTable (updated_at DESC)
-      ''');
-
-      await db.execute('''
-        CREATE INDEX idx_settings_key ON $_settingsTable (key)
-      ''');
-
-      // Insert default privacy settings
-      await _insertDefaultPrivacySettings(db);
-
-      debugPrint(
-        '� [ConversationStorage] Database tables created with privacy features',
-      );
-    } catch (e) {
-      debugPrint(
-        '� [ConversationStorage] Failed to create database tables: $e',
-      );
-      rethrow;
-    }
-  }
-
-  /// Insert default privacy settings
-  Future<void> _insertDefaultPrivacySettings(Database db) async {
-    final now = DateTime.now().millisecondsSinceEpoch;
-
-    await db.insert(_settingsTable, {
-      'key': 'storage_location',
-      'value': 'local_only',
-      'updated_at': now,
-    });
-
-    await db.insert(_settingsTable, {
-      'key': 'cloud_sync_enabled',
-      'value': 'false',
-      'updated_at': now,
-    });
-
-    await db.insert(_settingsTable, {
-      'key': 'data_retention_days',
-      'value': '365',
-      'updated_at': now,
-    });
-
-    debugPrint('� [ConversationStorage] Default privacy settings inserted');
-  }
-
-  /// Upgrade database schema
-  Future<void> _upgradeDatabase(
-    Database db,
-    int oldVersion,
-    int newVersion,
-  ) async {
-    debugPrint(
-      '🔄 [ConversationStorage] Upgrading database from v$oldVersion to v$newVersion',
-    );
-
-    if (oldVersion < 2) {
-      // Add privacy columns to existing tables
-      try {
-        await db.execute(
-          'ALTER TABLE $_conversationsTable ADD COLUMN is_encrypted INTEGER DEFAULT 0',
-        );
-        await db.execute(
-          'ALTER TABLE $_conversationsTable ADD COLUMN storage_location TEXT DEFAULT "local"',
-        );
-        await db.execute(
-          'ALTER TABLE $_messagesTable ADD COLUMN is_encrypted INTEGER DEFAULT 0',
-        );
-
-        // Create settings table if it doesn't exist
-        await db.execute('''
-          CREATE TABLE IF NOT EXISTS $_settingsTable (
-            key TEXT PRIMARY KEY,
-            value TEXT NOT NULL,
-            updated_at INTEGER NOT NULL
-          )
-        ''');
-
-        await _insertDefaultPrivacySettings(db);
-        debugPrint(
-          '🔒 [ConversationStorage] Privacy enhancements added to database',
-        );
-      } catch (e) {
-        debugPrint('❌ [ConversationStorage] Database upgrade failed: $e');
-        // Continue with existing schema if upgrade fails
-      }
-    }
-
-    if (oldVersion < 3) {
-      // CRITICAL SECURITY FIX: Add user isolation
-      try {
-        // Get current user ID for data migration
-        final currentUserId = await _getCurrentUserId();
-
-        // Add user_id column to conversations table
-        await db.execute(
-          'ALTER TABLE $_conversationsTable ADD COLUMN user_id TEXT',
-        );
-
-        // Add user_id column to messages table
-        await db.execute(
-          'ALTER TABLE $_messagesTable ADD COLUMN user_id TEXT',
-        );
-
-        // Migrate existing data to current user (or mark as orphaned)
-        if (currentUserId != null) {
-          await db.execute(
-            'UPDATE $_conversationsTable SET user_id = ? WHERE user_id IS NULL',
-            [currentUserId],
-          );
-          await db.execute(
-            'UPDATE $_messagesTable SET user_id = ? WHERE user_id IS NULL',
-            [currentUserId],
-          );
-          debugPrint(
-            '🔒 [ConversationStorage] Migrated existing data to user: $currentUserId',
-          );
-        } else {
-          // No current user - mark as orphaned for cleanup
-          await db.execute(
-            'UPDATE $_conversationsTable SET user_id = ? WHERE user_id IS NULL',
-            ['orphaned'],
-          );
-          await db.execute(
-            'UPDATE $_messagesTable SET user_id = ? WHERE user_id IS NULL',
-            ['orphaned'],
-          );
-          debugPrint(
-            '⚠️ [ConversationStorage] Marked existing data as orphaned (no current user)',
-          );
-        }
-
-        // Create indexes for user-based queries
-        await db.execute(
-          'CREATE INDEX IF NOT EXISTS idx_conversations_user_id ON $_conversationsTable (user_id)',
-        );
-        await db.execute(
-          'CREATE INDEX IF NOT EXISTS idx_messages_user_id ON $_messagesTable (user_id)',
-        );
-
-        debugPrint(
-          '🔒 [ConversationStorage] SECURITY FIX: User isolation added to database',
-        );
-      } catch (e) {
-        debugPrint(
-            '❌ [ConversationStorage] CRITICAL: User isolation upgrade failed: $e');
-        // This is a critical security issue - rethrow to prevent app from continuing
-        rethrow;
-      }
-    }
-  }
-
-  /// Save a list of conversations
+  /// Save a list of conversations (Bulk update via individual API calls)
   Future<void> saveConversations(List<Conversation> conversations) async {
-    if (kIsWeb) {
-      // Web: Save each conversation via API
-      await _saveConversationsViaAPI(conversations);
-      return;
-    }
-
-    // Desktop: Use local SQLite
-    if (_database == null) {
-      throw StateError('Database not initialized');
-    }
-
-    try {
-      await _database!.transaction((txn) async {
-        // Clear existing data
-        await txn.delete(_messagesTable);
-        await txn.delete(_conversationsTable);
-
-        // Insert conversations and messages
-        for (final conversation in conversations) {
-          await _insertConversation(txn, conversation);
-          await _insertMessages(txn, conversation);
-        }
-      });
-
-      debugPrint(
-        '� [ConversationStorage] Saved ${conversations.length} conversations',
-      );
-    } catch (e) {
-      debugPrint('� [ConversationStorage] Error saving conversations: $e');
-      rethrow;
+    for (final conversation in conversations) {
+      await saveConversation(conversation);
     }
   }
 
-  /// Load all conversations for current user
+  /// Load all conversations for current user from API
   Future<List<Conversation>> loadConversations() async {
-    if (_database == null) {
-      if (kIsWeb) {
-        debugPrint(
-            '[ConversationStorage] Database not available on web, returning empty list');
-        return []; // Return empty list on web if database failed to initialize
-      }
-      throw StateError('Database not initialized');
-    }
-
-    try {
-      // Get current user ID for filtering
-      final currentUserId = await _getCurrentUserId();
-      if (currentUserId == null) {
-        debugPrint(
-            '⚠️ [ConversationStorage] No current user - returning empty list');
-        return [];
-      }
-
-      // Load conversations for current user only, ordered by most recently updated
-      final conversationRows = await _database!.query(
-        _conversationsTable,
-        where: 'user_id = ?',
-        whereArgs: [currentUserId],
-        orderBy: 'updated_at DESC',
-      );
-
-      final conversations = <Conversation>[];
-
-      for (final row in conversationRows) {
-        final conversation = await _loadConversationWithMessages(row);
-        conversations.add(conversation);
-      }
-
-      debugPrint(
-        '🔒 [ConversationStorage] Loaded ${conversations.length} conversations for user: $currentUserId',
-      );
-      return conversations;
-    } catch (e) {
-      debugPrint('❌ [ConversationStorage] Error loading conversations: $e');
-      return [];
-    }
-  }
-
-  /// Save a single conversation (update or insert)
-  Future<void> saveConversation(Conversation conversation) async {
-    if (_database == null) {
-      throw StateError('Database not initialized');
-    }
-
-    try {
-      await _database!.transaction((txn) async {
-        await _insertConversation(txn, conversation);
-
-        // Delete existing messages for this conversation
-        await txn.delete(
-          _messagesTable,
-          where: 'conversation_id = ?',
-          whereArgs: [conversation.id],
-        );
-
-        // Insert updated messages
-        await _insertMessages(txn, conversation);
-      });
-
-      debugPrint(
-        '� [ConversationStorage] Saved conversation: ${conversation.title}',
-      );
-    } catch (e) {
-      debugPrint('� [ConversationStorage] Error saving conversation: $e');
-      rethrow;
-    }
-  }
-
-  /// Delete a conversation
-  Future<void> deleteConversation(String conversationId) async {
-    if (kIsWeb) {
-      // Web: Delete via API
-      await _deleteConversationViaAPI(conversationId);
-      return;
-    }
-
-    // Desktop: Use local SQLite
-    if (_database == null) {
-      throw StateError('Database not initialized');
-    }
-
-    try {
-      // Get current user ID for validation
-      final currentUserId = await _getCurrentUserId();
-      if (currentUserId == null) {
-        throw StateError('Cannot delete conversation: No current user');
-      }
-
-      await _database!.transaction((txn) async {
-        // Security check: Verify conversation belongs to current user
-        final conversationCheck = await txn.query(
-          _conversationsTable,
-          where: 'id = ? AND user_id = ?',
-          whereArgs: [conversationId, currentUserId],
-        );
-
-        if (conversationCheck.isEmpty) {
-          throw SecurityException(
-              'Access denied: Cannot delete conversation that does not belong to current user');
-        }
-
-        // Delete messages first (foreign key constraint) - filtered by user ID
-        await txn.delete(
-          _messagesTable,
-          where: 'conversation_id = ? AND user_id = ?',
-          whereArgs: [conversationId, currentUserId],
-        );
-
-        // Delete conversation - filtered by user ID
-        await txn.delete(
-          _conversationsTable,
-          where: 'id = ? AND user_id = ?',
-          whereArgs: [conversationId, currentUserId],
-        );
-      });
-
-      debugPrint(
-        '🔒 [ConversationStorage] Deleted conversation: $conversationId for user: $currentUserId',
-      );
-    } catch (e) {
-      debugPrint('❌ [ConversationStorage] Error deleting conversation: $e');
-      rethrow;
-    }
-  }
-
-  /// Clear all conversations for current user
-  Future<void> clearAllConversations() async {
-    if (kIsWeb) {
-      // Web: Delete all conversations via API
-      final conversations = await _loadConversationsViaAPI();
-      for (final conv in conversations) {
-        await _deleteConversationViaAPI(conv.id);
-      }
-      return;
-    }
-
-    // Desktop: Use local SQLite
-    if (_database == null) {
-      throw StateError('Database not initialized');
-    }
-
-    try {
-      // Get current user ID for filtering
-      final currentUserId = await _getCurrentUserId();
-      if (currentUserId == null) {
-        throw StateError('Cannot clear conversations: No current user');
-      }
-
-      await _database!.transaction((txn) async {
-        // Delete only messages for current user
-        await txn.delete(
-          _messagesTable,
-          where: 'user_id = ?',
-          whereArgs: [currentUserId],
-        );
-
-        // Delete only conversations for current user
-        await txn.delete(
-          _conversationsTable,
-          where: 'user_id = ?',
-          whereArgs: [currentUserId],
-        );
-      });
-
-      debugPrint(
-          '🔒 [ConversationStorage] Cleared all conversations for user: $currentUserId');
-    } catch (e) {
-      debugPrint('❌ [ConversationStorage] Error clearing conversations: $e');
-      rethrow;
-    }
-  }
-
-  // ========== API Helper Methods for Web Platform ==========
-
-  /// Get authentication headers for API requests
-  Future<Map<String, String>> _getAuthHeaders() async {
-    if (_authService == null) {
-      throw StateError('AuthService not available');
-    }
-
-    final token = await _authService.getValidatedAccessToken();
-    debugPrint(
-        '[ConversationStorage] Got token: ${token != null ? "YES (${token.length} chars)" : "NO"}');
-
-    if (token == null) {
-      debugPrint(
-          '[ConversationStorage] Auth service authenticated: ${_authService.isAuthenticated}');
-      throw StateError('No access token available');
-    }
-
-    final headers = {
-      'Authorization': 'Bearer $token',
-      'Content-Type': 'application/json',
-    };
-    debugPrint('[ConversationStorage] Headers: ${headers.keys.join(", ")}');
-    return headers;
-  }
-
-  /// Load conversations from API (web platform)
-  Future<List<Conversation>> _loadConversationsViaAPI() async {
     try {
       final headers = await _getAuthHeaders();
 
@@ -610,12 +73,21 @@ class ConversationStorageService {
 
         final conversations = <Conversation>[];
         for (final convData in conversationsData) {
-          // Load full conversation with messages
           final convId = convData['id'] as String;
-          final fullConv = await _loadConversationViaAPI(convId);
-          if (fullConv != null) {
-            conversations.add(fullConv);
-          }
+          // Note: The /api/conversations endpoint currently returns partial info
+          // We could fetch full details if needed, but for the list view this might suffice
+          // or we can adapt based on backend response
+          
+          // Reconstructing conversation from basic info
+          conversations.add(Conversation.fromJson({
+            'id': convData['id'],
+            'title': convData['title'],
+            'model': convData['model'],
+            'createdAt': convData['created_at'],
+            'updatedAt': convData['updated_at'],
+            'metadata': convData['metadata'] ?? {},
+            'messages': [], // Messages will be loaded when selecting a conversation
+          }));
         }
 
         debugPrint(
@@ -635,8 +107,8 @@ class ConversationStorageService {
     }
   }
 
-  /// Load a single conversation with messages from API
-  Future<Conversation?> _loadConversationViaAPI(String conversationId) async {
+  /// Fetch full conversation with messages
+  Future<Conversation?> loadConversationWithMessages(String conversationId) async {
     try {
       final headers = await _getAuthHeaders();
 
@@ -670,32 +142,29 @@ class ConversationStorageService {
       return null;
     } catch (e) {
       debugPrint(
-          '[ConversationStorage] Error loading conversation from API: $e');
+          '[ConversationStorage] Error loading conversation detail from API: $e');
       return null;
     }
   }
 
-  /// Save conversations via API (web platform)
-  Future<void> _saveConversationsViaAPI(
-      List<Conversation> conversations) async {
-    for (final conversation in conversations) {
-      await _saveConversationViaAPI(conversation);
-    }
-  }
-
-  /// Save a single conversation via API (web platform)
-  Future<void> _saveConversationViaAPI(Conversation conversation) async {
+  /// Save a single conversation via API (update or insert)
+  Future<void> saveConversation(Conversation conversation) async {
     try {
       final headers = await _getAuthHeaders();
 
       final body = {
         'title': conversation.title,
+        'model': conversation.model,
+        'metadata': conversation.metadata,
         'messages': conversation.messages
             .map((m) => {
                   'role': m.role.name,
                   'content': m.content,
                   'model': m.model,
                   'timestamp': m.timestamp.toIso8601String(),
+                  'status': m.status.name,
+                  'error': m.error,
+                  'metadata': m.metadata,
                 })
             .toList(),
       };
@@ -708,36 +177,19 @@ class ConversationStorageService {
           '[ConversationStorage] Saved conversation via API: ${conversation.title}',
         );
       } else {
-        // Try POST if PUT fails (conversation doesn't exist yet)
-        final postBody = {
-          'title': conversation.title,
-          'model': conversation.model ?? 'default',
-          'messages': conversation.messages
-              .map((m) => {
-                    'role': m.role.name,
-                    'content': m.content,
-                    'model': m.model,
-                    'timestamp': m.timestamp.toIso8601String(),
-                  })
-              .toList(),
-        };
-
-        final postResponse = await _dio.post('/api/conversations',
-            data: postBody, options: Options(headers: headers));
-
-        if (postResponse.statusCode != 201) {
-          throw Exception(
-              'Failed to save conversation: ${postResponse.statusCode}');
-        }
+        throw Exception('Failed to save conversation: ${response.statusCode}');
       }
     } catch (e) {
       debugPrint('[ConversationStorage] Error saving conversation via API: $e');
-      // Do not rethrow, to prevent app crash on startup when not logged in
+      // Rethrow if authenticated, otherwise ignore to prevent crash on startup
+      if (_authService?.isAuthenticated.value == true) {
+        rethrow;
+      }
     }
   }
 
-  /// Delete conversation via API (web platform)
-  Future<void> _deleteConversationViaAPI(String conversationId) async {
+  /// Delete a conversation via API
+  Future<void> deleteConversation(String conversationId) async {
     try {
       final headers = await _getAuthHeaders();
 
@@ -754,365 +206,81 @@ class ConversationStorageService {
     } catch (e) {
       debugPrint(
           '[ConversationStorage] Error deleting conversation via API: $e');
-      // Do not rethrow
+      rethrow;
     }
   }
 
-  /// Insert a conversation into the database
-  Future<void> _insertConversation(
-    DatabaseExecutor txn,
-    Conversation conversation,
-  ) async {
-    // Get current user ID
-    final currentUserId = await _getCurrentUserId();
-    if (currentUserId == null) {
-      throw StateError('Cannot save conversation: No current user');
-    }
-
-    await txn.insert(
-        _conversationsTable,
-        {
-          'id': conversation.id,
-          'user_id': currentUserId,
-          'title': conversation.title,
-          'model': conversation.model,
-          'created_at': conversation.createdAt.millisecondsSinceEpoch,
-          'updated_at': conversation.updatedAt.millisecondsSinceEpoch,
-        },
-        conflictAlgorithm: ConflictAlgorithm.replace);
-  }
-
-  /// Insert messages for a conversation
-  Future<void> _insertMessages(
-    DatabaseExecutor txn,
-    Conversation conversation,
-  ) async {
-    // Get current user ID
-    final currentUserId = await _getCurrentUserId();
-    if (currentUserId == null) {
-      throw StateError('Cannot save messages: No current user');
-    }
-
-    for (final message in conversation.messages) {
-      await txn.insert(
-          _messagesTable,
-          {
-            'id': message.id,
-            'conversation_id': conversation.id,
-            'user_id': currentUserId,
-            'role': message.role.name,
-            'content': message.content,
-            'model': message.model,
-            'status': message.status.name,
-            'error': message.error,
-            'timestamp': message.timestamp.millisecondsSinceEpoch,
-          },
-          conflictAlgorithm: ConflictAlgorithm.replace);
-    }
-  }
-
-  /// Load a conversation with its messages
-  Future<Conversation> _loadConversationWithMessages(
-    Map<String, dynamic> conversationRow,
-  ) async {
-    final conversationId = conversationRow['id'] as String;
-    final conversationUserId = conversationRow['user_id'] as String?;
-
-    // Get current user ID for validation
-    final currentUserId = await _getCurrentUserId();
-
-    // Security check: Ensure conversation belongs to current user
-    if (conversationUserId != currentUserId) {
-      throw SecurityException(
-          'Access denied: Conversation belongs to different user');
-    }
-
-    // Load messages for this conversation (filtered by user ID for extra security)
-    final messageRows = await _database!.query(
-      _messagesTable,
-      where: 'conversation_id = ? AND user_id = ?',
-      whereArgs: [conversationId, currentUserId],
-      orderBy: 'timestamp ASC',
-    );
-
-    final messages = messageRows.map((row) => _messageFromRow(row)).toList();
-
-    return Conversation(
-      id: conversationId,
-      title: conversationRow['title'] as String,
-      model: conversationRow['model'] as String,
-      messages: messages,
-      createdAt: DateTime.fromMillisecondsSinceEpoch(
-        conversationRow['created_at'] as int,
-      ),
-      updatedAt: DateTime.fromMillisecondsSinceEpoch(
-        conversationRow['updated_at'] as int,
-      ),
-    );
-  }
-
-  /// Create a Message from database row
-  Message _messageFromRow(Map<String, dynamic> row) {
-    return Message(
-      id: row['id'] as String,
-      role: MessageRole.values.firstWhere(
-        (role) => role.name == row['role'],
-        orElse: () => MessageRole.user,
-      ),
-      content: row['content'] as String,
-      model: row['model'] as String?,
-      status: MessageStatus.values.firstWhere(
-        (status) => status.name == row['status'],
-        orElse: () => MessageStatus.sent,
-      ),
-      error: row['error'] as String?,
-      timestamp: DateTime.fromMillisecondsSinceEpoch(row['timestamp'] as int),
-    );
-  }
-
-  /// Get current user ID from AuthService
-  Future<String?> _getCurrentUserId() async {
-    if (_authService == null) {
-      debugPrint('⚠️ [ConversationStorage] AuthService not available');
-      return null;
-    }
-
+  /// Clear all conversations for current user
+  Future<void> clearAllConversations() async {
     try {
-      // Get current user from AuthService
-      final currentUser = _authService.currentUser;
-      if (currentUser == null) {
-        debugPrint(
-            '⚠️ [ConversationStorage] No current user available from AuthService');
-        return null;
+      final conversations = await loadConversations();
+      for (final conv in conversations) {
+        await deleteConversation(conv.id);
       }
-
-      final userId = currentUser.id;
-      if (userId.isEmpty) {
-        debugPrint(
-            '⚠️ [ConversationStorage] User ID is empty from AuthService');
-        return null;
-      }
-
-      return userId;
+      debugPrint('[ConversationStorage] Cleared all conversations');
     } catch (e) {
-      debugPrint('❌ [ConversationStorage] Failed to get current user ID: $e');
-      return null;
+      debugPrint('[ConversationStorage] Error clearing conversations: $e');
+      rethrow;
     }
+  }
+
+  // ========== API Helper Methods ==========
+
+  /// Get authentication headers for API requests
+  Future<Map<String, String>> _getAuthHeaders() async {
+    if (_authService == null) {
+      throw StateError('AuthService not available');
+    }
+
+    final token = await _authService.getAccessToken();
+    if (token == null) {
+      throw SecurityException('No access token available');
+    }
+
+    return {
+      'Authorization': 'Bearer $token',
+      'Content-Type': 'application/json',
+    };
   }
 
   /// Check if the service is properly initialized
-  bool get isInitialized =>
-      kIsWeb ? _isInitialized : (_isInitialized && _database != null);
+  bool get isInitialized => _isInitialized;
 
-  /// Get current storage location setting
-  Future<String> getStorageLocation() async {
-    if (!isInitialized) {
-      throw StateError('Database not initialized');
-    }
-
-    try {
-      final result = await _database!.query(
-        _settingsTable,
-        where: 'key = ?',
-        whereArgs: ['storage_location'],
-      );
-
-      if (result.isNotEmpty) {
-        return result.first['value'] as String;
-      }
-      return 'local_only'; // Default
-    } catch (e) {
-      debugPrint('� [ConversationStorage] Failed to get storage location: $e');
-      return 'local_only'; // Safe default
-    }
-  }
-
-  /// Update storage location setting
-  Future<void> setStorageLocation(String location) async {
-    if (!isInitialized) {
-      throw StateError('Database not initialized');
-    }
-
-    try {
-      await _database!.insert(
-          _settingsTable,
-          {
-            'key': 'storage_location',
-            'value': location,
-            'updated_at': DateTime.now().millisecondsSinceEpoch,
-          },
-          conflictAlgorithm: ConflictAlgorithm.replace);
-      debugPrint(
-        '� [ConversationStorage] Storage location updated to: $location',
-      );
-    } catch (e) {
-      debugPrint(
-        '� [ConversationStorage] Failed to update storage location: $e',
-      );
-      rethrow;
-    }
-  }
-
-  /// Get database statistics for privacy transparency (current user only)
+  /// Get database statistics (API-based)
   Future<Map<String, dynamic>> getDatabaseStats() async {
-    if (!isInitialized) {
-      throw StateError('Database not initialized');
-    }
-
-    try {
-      // Get current user ID for filtering
-      final currentUserId = await _getCurrentUserId();
-      if (currentUserId == null) {
-        return {
-          'total_conversations': 0,
-          'total_messages': 0,
-          'database_size': 'No user logged in',
-          'last_updated': DateTime.now().toIso8601String(),
-        };
-      }
-
-      // Count conversations for current user only
-      final conversationCount = await _database!.rawQuery(
-        'SELECT COUNT(*) as count FROM $_conversationsTable WHERE user_id = ?',
-        [currentUserId],
-      );
-      final totalConversations = conversationCount.first['count'] as int;
-
-      // Count messages for current user only
-      final messageCount = await _database!.rawQuery(
-        'SELECT COUNT(*) as count FROM $_messagesTable WHERE user_id = ?',
-        [currentUserId],
-      );
-      final totalMessages = messageCount.first['count'] as int;
-
-      // Get database file size (approximate)
-      String databaseSize = 'Unknown';
-      try {
-        final dbPath = await _getDatabasePath();
-        if (!kIsWeb) {
-          final file = File(dbPath);
-          if (await file.exists()) {
-            final bytes = await file.length();
-            databaseSize = _formatBytes(bytes);
-          }
-        } else {
-          databaseSize = 'Cloud Storage (PostgreSQL)';
-        }
-      } catch (e) {
-        debugPrint('� [ConversationStorage] Failed to get database size: $e');
-      }
-
-      return {
-        'total_conversations': totalConversations,
-        'total_messages': totalMessages,
-        'database_size': databaseSize,
-        'last_updated': DateTime.now().toIso8601String(),
-      };
-    } catch (e) {
-      debugPrint('� [ConversationStorage] Failed to get database stats: $e');
-      rethrow;
-    }
+    final conversations = await loadConversations();
+    return {
+      'total_conversations': conversations.length,
+      'storage_type': 'PostgreSQL Cloud Storage',
+      'last_updated': DateTime.now().toIso8601String(),
+    };
   }
 
   /// Export all conversations for backup
   Future<Map<String, dynamic>> exportConversations() async {
-    if (!isInitialized) {
-      throw StateError('Database not initialized');
-    }
-
-    try {
-      final conversations = await loadConversations();
-
-      return {
-        'conversations': conversations.map((c) => c.toJson()).toList(),
-        'export_metadata': {
-          'export_timestamp': DateTime.now().toIso8601String(),
-          'total_conversations': conversations.length,
-          'total_messages': conversations.fold<int>(
-            0,
-            (sum, conv) => sum + conv.messages.length,
-          ),
-          'database_version': _databaseVersion,
-        },
-      };
-    } catch (e) {
-      debugPrint('� [ConversationStorage] Failed to export conversations: $e');
-      rethrow;
-    }
-  }
-
-  /// Format bytes to human readable string
-  String _formatBytes(int bytes) {
-    if (bytes < 1024) return '$bytes B';
-    if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
-    if (bytes < 1024 * 1024 * 1024) {
-      return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
-    }
-    return '${(bytes / (1024 * 1024 * 1024)).toStringAsFixed(1)} GB';
-  }
-
-  /// Enable encryption for stored conversations
-  Future<void> setEncryptionEnabled(bool enabled) async {
-    if (!isInitialized) {
-      throw StateError('Database not initialized');
-    }
-
-    try {
-      _encryptionEnabled = enabled;
-
-      // Update encryption setting in database
-      await _database!.insert(
-          _settingsTable,
-          {
-            'key': 'encryption_enabled',
-            'value': enabled ? 'true' : 'false',
-            'updated_at': DateTime.now().millisecondsSinceEpoch,
-          },
-          conflictAlgorithm: ConflictAlgorithm.replace);
-
-      debugPrint(
-        '� [ConversationStorage] Encryption ${enabled ? 'enabled' : 'disabled'}',
-      );
-    } catch (e) {
-      debugPrint('� [ConversationStorage] Failed to set encryption: $e');
-      rethrow;
-    }
-  }
-
-  /// Get current encryption status
-  Future<bool> isEncryptionEnabled() async {
-    if (!isInitialized) {
-      return false;
-    }
-
-    try {
-      final result = await _database!.query(
-        _settingsTable,
-        where: 'key = ?',
-        whereArgs: ['encryption_enabled'],
-        limit: 1,
-      );
-
-      if (result.isNotEmpty) {
-        final value = result.first['value'] as String;
-        _encryptionEnabled = value == 'true';
-        return _encryptionEnabled;
+    final conversations = await loadConversations();
+    final fullConversations = <Map<String, dynamic>>[];
+    
+    for (final conv in conversations) {
+      final fullConv = await loadConversationWithMessages(conv.id);
+      if (fullConv != null) {
+        fullConversations.add(fullConv.toJson());
       }
-
-      return false;
-    } catch (e) {
-      debugPrint(
-        '� [ConversationStorage] Failed to get encryption status: $e',
-      );
-      return false;
     }
+
+    return {
+      'conversations': fullConversations,
+      'export_metadata': {
+        'export_timestamp': DateTime.now().toIso8601String(),
+        'total_conversations': fullConversations.length,
+        'storage': 'PostgreSQL',
+      },
+    };
   }
 
-  /// Close the database connection
+  /// Close the service
   Future<void> dispose() async {
-    await _database?.close();
-    _database = null;
     _isInitialized = false;
-    debugPrint('� [ConversationStorage] Service disposed');
+    debugPrint('[ConversationStorage] Service disposed');
   }
 }

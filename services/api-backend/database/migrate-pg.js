@@ -207,31 +207,8 @@ export class DatabaseMigratorPG {
     try {
       await client.query('BEGIN');
 
-      // Convert SQLite schema.sql to PG: run a PG variant if provided, otherwise attempt minor-compatible SQL
       const schemaPathPG = join(__dirname, 'schema.pg.sql');
-      let schemaSQL;
-      try {
-        schemaSQL = readFileSync(schemaPathPG, 'utf8');
-      } catch {
-        // Fallback to SQLite schema with manual adjustments (id GUIDs -> UUIDs, DATETIME -> TIMESTAMPTZ)
-        const sqliteSchema = readFileSync(
-          join(__dirname, 'schema.sql'),
-          'utf8',
-        );
-        schemaSQL = sqliteSchema
-          .replaceAll('DATETIME', 'TIMESTAMPTZ')
-          .replaceAll('INTEGER DEFAULT 1', 'BOOLEAN DEFAULT TRUE')
-          .replaceAll(
-            'TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(16))))',
-            'UUID PRIMARY KEY DEFAULT gen_random_uuid()',
-          )
-          .replaceAll(
-            'metadata TEXT, -- JSON as text in SQLite',
-            'metadata JSONB',
-          );
-        // pgcrypto not needed for gen_random_uuid() in Postgres 13+
-      }
-
+      const schemaSQL = readFileSync(schemaPathPG, 'utf8');
       const checksum = this.calculateChecksum(schemaSQL);
 
       try {

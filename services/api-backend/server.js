@@ -117,7 +117,6 @@ import webhookTestingRoutes from './routes/webhook-testing.js';
 // SSH tunnel integration
 import { SSHProxy } from './tunnel/ssh-proxy.js';
 import { AuthService } from './auth/auth-service.js';
-import { DatabaseMigrator } from './database/migrate.js';
 import { DatabaseMigratorPG } from './database/migrate-pg.js';
 import { AuthDatabaseMigratorPG } from './database/migrate-auth-pg.js';
 import { initializePool } from './database/db-pool.js';
@@ -824,25 +823,18 @@ async function initializeTunnelSystem() {
     logger.info('Database connection pool initialized successfully');
 
     // Initialize application database
-    const dbType = process.env.DB_TYPE || 'sqlite';
-    dbMigrator =
-      dbType === 'postgresql'
-        ? new DatabaseMigratorPG()
-        : new DatabaseMigrator();
+    const dbType = process.env.DB_TYPE || 'postgresql';
+    dbMigrator = new DatabaseMigratorPG();
 
     await dbMigrator.initialize();
     await dbMigrator.createMigrationsTable();
     await dbMigrator.applyInitialSchema();
 
-    console.log('DEBUG: About to run migrations if PostgreSQL');
-    // Only run migrations for PostgreSQL (SQLite doesn't have migration files)
-    if (dbType === 'postgresql') {
-      console.log('DEBUG: Running PostgreSQL migrations');
-      await dbMigrator.migrate();
-      console.log('DEBUG: PostgreSQL migrations completed');
-    } else {
-      console.log('DEBUG: Skipping migrations for SQLite');
-    }
+    console.log('DEBUG: About to run migrations');
+    // Run PostgreSQL migrations
+    console.log('DEBUG: Running PostgreSQL migrations');
+    await dbMigrator.migrate();
+    console.log('DEBUG: PostgreSQL migrations completed');
 
     console.log('DEBUG: Validating database schema');
     const validation = await dbMigrator.validateSchema();

@@ -7,7 +7,6 @@ import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 import jwksClient from 'jwks-rsa';
 import { TunnelLogger } from '../utils/logger.js';
-import { DatabaseMigrator } from '../database/migrate.js';
 import { DatabaseMigratorPG } from '../database/migrate-pg.js';
 
 /**
@@ -32,19 +31,13 @@ export class AuthService {
     this.authDbMigrator = config.authDbMigrator || null;
     this.mainDbMigrator = config.dbMigrator || null;
 
-    // Determine which database implementation to use
+    // Default to Postgres
     if (this.authDbMigrator) {
       this.db = this.authDbMigrator;
     } else if (this.mainDbMigrator) {
       this.db = this.mainDbMigrator;
     } else {
-      // Fallback based on environment
-      const dbType = process.env.DB_TYPE || 'sqlite';
-      if (dbType === 'postgresql') {
-        this.db = new DatabaseMigratorPG();
-      } else {
-        this.db = new DatabaseMigrator();
-      }
+      this.db = new DatabaseMigratorPG();
     }
 
     this.initialized = false;
@@ -88,55 +81,45 @@ export class AuthService {
   }
 
   /**
-   * Helper to execute queries on either SQLite or Postgres
+   * Helper to execute queries on Postgres
    * Handles parameter conversion (? -> $n) and standardized return format
    */
   async runQuery(sql, params = [], type = 'all') {
-    if (process.env.DB_TYPE === 'postgresql') {
-      // Postgres implementation
-      // Convert ? to $1, $2, etc. (Naive replacement, assumes no ? in strings)
-      let paramCount = 0;
-      const pgSql = sql.replace(/\?/g, () => {
-        paramCount++;
-        return `$${paramCount}`;
-      });
+    // Convert ? to $1, $2, etc. (Naive replacement, assumes no ? in strings)
+    let paramCount = 0;
+    const pgSql = sql.replace(/\?/g, () => {
+      paramCount++;
+      return `$${paramCount}`;
+    });
 
-      // Special handling for INSERT to get lastID
-      let finalSql = pgSql;
-      if (type === 'run' && sql.trim().toUpperCase().startsWith('INSERT')) {
-        finalSql += ' RETURNING id';
-      }
+    // Special handling for INSERT to get lastID
+    let finalSql = pgSql;
+    if (type === 'run' && sql.trim().toUpperCase().startsWith('INSERT')) {
+      finalSql += ' RETURNING id';
+    }
 
-      try {
-        const result = await this.db.pool.query(finalSql, params);
+    try {
+      const result = await this.db.pool.query(finalSql, params);
 
-        if (type === 'run') {
-          // Emulate SQLite 'run' output
-          return {
-            lastID: result.rows.length > 0 ? result.rows[0].id : null,
-            changes: result.rowCount,
-            rows: result.rows, // Keep rows for flexibility
-          };
-        } else if (type === 'get') {
-          return result.rows[0];
-        } else {
-          return result.rows;
-        }
-      } catch (err) {
-        // Handle constraint violations
-        if (err.code === '23505') {
-          // UNIQUE_VIOLATION
-          const wrapper = new Error('UNIQUE constraint failed: ' + err.detail);
-          wrapper.code = 'SQLITE_CONSTRAINT'; // Mimic SQLite code for logic compatibility
-          throw wrapper;
-        }
-        throw err;
+      if (type === 'run') {
+        return {
+          lastID: result.rows.length > 0 ? result.rows[0].id : null,
+          changes: result.rowCount,
+          rows: result.rows,
+        };
+      } else if (type === 'get') {
+        return result.rows[0];
+      } else {
+        return result.rows;
       }
-    } else {
-      // SQLite implementation
-      if (!this.db.db) {
-        await this.db.initialize();
+    } catch (err) {
+      // Handle unique constraint violations
+      if (err.code === '23505') {
+        const wrapper = new Error('UNIQUE constraint failed: ' + err.detail);
+        wrapper.code = 'UNIQUE_VIOLATION';
+        throw wrapper;
       }
+      throw err;
     }
   }
 
@@ -167,15 +150,10 @@ export class AuthService {
         'get',
       );
 
-      // If session exists, return its active status
       if (session) {
         return session.is_active === 1 || session.is_active === true;
       }
 
-      // If no session record exists, we might want to auto-create one if the JWT is valid
-      // But for strict revocation, we might require the session to be registered.
-      // Given the user wants "synchronized session validation", we'll return false
-      // or implement auto-registration if it's the first time we see this valid JWT.
       return false;
     } catch (error) {
       this.logger.error('Failed to check token status', { userId, error: error.message });
@@ -191,16 +169,125 @@ export class AuthService {
   }
 
   /**
+   * Validate JWT token
+   */
+  async validateToken(token, req = {}, preValidatedPayload = null) {
+    try {
+      let payload;
+
+      if (preValidatedPayload) {
+        this.logger.info('Using pre-validated token payload');
+        payload = preValidatedPayload;
+      } else {
+        const decoded = jwt.decode(token, { complete: true });
+        if (!decoded || !decoded.header) {
+          throw new Error('Invalid token structure');
+        }
+
+        const alg = decoded.header.alg;
+        this.logger.info(`Starting token validation (Alg: ${alg})`);
+
+        payload = await new Promise((resolve, reject) => {
+          jwt.verify(
+            token,
+            this.getKey.bind(this),
+            { algorithms: ['RS256', 'ES256'] },
+            (err, decodedToken) => {
+              if (err) {
+                reject(err);
+              } else {
+                if (decodedToken.aud !== this.config.AUTH0_AUDIENCE) {
+                  reject(
+                    new Error(
+                      `Invalid audience: expected ${this.config.AUTH0_AUDIENCE}, got ${decodedToken.aud}`,
+                    ),
+                  );
+                } else {
+                  resolve(decodedToken);
+                }
+              }
+            },
+          );
+        });
+
+        this.logger.info('Token verification successful (Audience verified)');
+      }
+
+      const session = await this.createOrUpdateSession(payload, token, req);
+
+      this.logger.info('Token validated successfully', {
+        userId: payload.sub,
+        sessionId: session.id,
+      });
+
+      return {
+        valid: true,
+        payload: payload,
+        session: session,
+      };
+    } catch (error) {
+      this.logger.warn(`Token validation failed: ${error.message}`, {
+        error: error.message,
+        ip: req.ip,
+      });
+
+      await this.logSecurityEvent('token_validation_failure', {
+        error: error.message,
+        ip: req.ip,
+        userAgent: req.headers?.['user-agent'],
+      });
+
+      return {
+        valid: false,
+        error: error.message,
+      };
+    }
+  }
+
+  /**
+   * Validate JWT token for WebSocket connections
+   */
+  async validateTokenForWebSocket(token) {
+    try {
+      const decoded = jwt.decode(token, { complete: true });
+      if (!decoded || !decoded.header) {
+        throw new Error('Invalid token structure');
+      }
+
+      const verified = await new Promise((resolve, reject) => {
+        jwt.verify(
+          token,
+          this.getKey.bind(this),
+          { algorithms: ['RS256', 'ES256'] },
+          (err, decodedToken) => {
+            if (err) {
+              reject(err);
+            } else {
+              resolve(decodedToken);
+            }
+          },
+        );
+      });
+
+      this.logger.info('WebSocket token verification successful', {
+        userId: verified.sub,
+        exp: verified.exp,
+      });
+
+      return verified;
+    } catch (error) {
+      this.logger.warn('WebSocket token validation failed', {
+        error: error.message,
+      });
+
+      throw error;
+    }
+  }
+
+  /**
    * Resolve internal user ID from Auth0 ID
-   * Handles difference between SQLite (uses Auth0 ID) and Postgres (uses UUID)
    */
   async resolveUserId(auth0Id, userInfo = {}) {
-    // For SQLite, we just use the Auth0 ID directly
-    if (!process.env.DB_TYPE || process.env.DB_TYPE === 'sqlite') {
-      return auth0Id;
-    }
-
-    // For PostgreSQL, we must map to a UUID in the users table
     try {
       // 1. Try to find existing user
       const existingUser = await this.runQuery(
@@ -210,10 +297,10 @@ export class AuthService {
       );
 
       if (existingUser) {
-        return existingUser.id; // Return the UUID
+        return existingUser.id;
       }
 
-      // 2. Try to find user by email (backfill scenario)
+      // 2. Try to find user by email
       const userEmail = userInfo.email || `${auth0Id}@placeholder.local`;
       const existingByEmail = await this.runQuery(
         'SELECT id FROM users WHERE email = ?',
@@ -227,7 +314,6 @@ export class AuthService {
           email: userEmail,
         });
 
-        // Link the jwt_id to the existing user
         await this.runQuery(
           `UPDATE users SET 
              jwt_id = ?, 
@@ -252,7 +338,7 @@ export class AuthService {
         return existingByEmail.id;
       }
 
-      // 3. User doesn't exist by ID or Email, create new user
+      // 3. Create new user
       this.logger.info('Creating new user record for Auth0 ID', { auth0Id });
 
       const newUser = await this.runQuery(
@@ -271,14 +357,7 @@ export class AuthService {
       );
 
       if (newUser && newUser.rows && newUser.rows.length > 0) {
-        const newId = newUser.rows[0].id;
-        this.logger.info('Created new user', { userId: newId });
-        return newId;
-      }
-
-      // Fallback for drivers that don't return rows on insert (shouldn't happen with pg driver but good safety)
-      if (newUser && newUser.lastID) {
-        return newUser.lastID;
+        return newUser.rows[0].id;
       }
 
       throw new Error('Failed to create user record');
@@ -297,27 +376,11 @@ export class AuthService {
   async createOrUpdateSession(tokenPayload, token, req) {
     const auth0Id = tokenPayload.sub;
     const tokenHash = this.hashToken(token);
-    // Convert to SQLite-compatible datetime string
     const expiresAt = new Date(tokenPayload.exp * 1000).toISOString();
     const ip = req.ip || req.socket?.remoteAddress;
     const userAgent = req.headers?.['user-agent'];
-    const nowFunc =
-      process.env.DB_TYPE === 'postgresql' ? 'NOW()' : 'CURRENT_TIMESTAMP';
 
     try {
-      this.logger.info('Creating/updating session', {
-        auth0Id,
-        tokenHashLength: tokenHash.length,
-        expiresAt,
-        ip,
-        userAgent: userAgent?.substring(0, 100),
-      });
-
-      // Ensure database is initialized
-      if (!this.db.pool && !this.db.db) {
-        await this.db.initialize();
-      }
-
       // Resolve the internal User ID
       const userId = await this.resolveUserId(auth0Id, tokenPayload);
 
@@ -328,159 +391,81 @@ export class AuthService {
         'get',
       );
 
-      this.logger.info('Session lookup result', {
-        existingSessionId: existingSession?.id,
-        hasExistingSession: !!existingSession,
-      });
-
       if (existingSession) {
-        this.logger.info('Updating existing session', {
-          sessionId: existingSession.id,
-        });
-
         await this.runQuery(
-          `UPDATE user_sessions SET last_activity = ${nowFunc}, expires_at = ? WHERE id = ?`,
+          `UPDATE user_sessions SET last_activity = NOW(), expires_at = ? WHERE id = ?`,
           [expiresAt, existingSession.id],
           'run',
         );
-
-        this.logger.info('Session updated successfully');
-        existingSession.last_activity = new Date();
-        existingSession.expires_at = expiresAt;
         return existingSession;
       }
 
-      this.logger.info('Creating new session');
-
-      // Clean up old sessions for user
+      // Clean up old sessions
       await this.cleanupUserSessions(userId);
 
       // Create new session
       const result = await this.runQuery(
-        `INSERT INTO user_sessions (user_id, jwt_token_hash, expires_at, ip_address, user_agent${process.env.DB_TYPE === 'postgresql' ? ', session_token' : ''})
-         VALUES (?, ?, ?, ?, ?${process.env.DB_TYPE === 'postgresql' ? ', ?' : ''})`,
-        process.env.DB_TYPE === 'postgresql'
-          ? [
-            userId,
-            tokenHash,
-            expiresAt,
-            ip,
-            userAgent,
-            this.generateSessionId(),
-          ]
-          : [userId, tokenHash, expiresAt, ip, userAgent],
+        `INSERT INTO user_sessions (user_id, jwt_token_hash, expires_at, ip_address, user_agent, session_token)` +
+         `VALUES (?, ?, ?, ?, ?, ?)`,
+        [
+          userId,
+          tokenHash,
+          expiresAt,
+          ip,
+          userAgent,
+          this.generateSessionId(),
+        ],
         'run',
       );
 
-      // Get the created session
-      let session;
-      if (result.lastID) {
-        session = await this.runQuery(
-          'SELECT * FROM user_sessions WHERE id = ?',
-          [result.lastID],
-          'get',
-        );
-      } else {
-        session = await this.runQuery(
-          'SELECT * FROM user_sessions WHERE user_id = ? AND jwt_token_hash = ?',
-          [userId, tokenHash],
-          'get',
-        );
-      }
+      const session = await this.runQuery(
+        'SELECT * FROM user_sessions WHERE user_id = ? AND jwt_token_hash = ?',
+        [userId, tokenHash],
+        'get',
+      );
 
       if (!session) {
         throw new Error('Failed to retrieve created session');
       }
 
-      // Log session creation
       await this.logAuditEvent('session_created', 'authentication', {
         userId,
         sessionId: session.id,
         ip,
-        userAgent,
-      });
-
-      this.logger.info('Session created', {
-        userId,
-        sessionId: session.id,
-        expiresAt,
       });
 
       return session;
     } catch (error) {
-      // Handle UNIQUE constraint violation
-      if (
-        (error.code === 'SQLITE_CONSTRAINT' &&
-          error.message.includes('UNIQUE')) ||
-        error.message.includes('UNIQUE constraint failed')
-      ) {
-        // Resolve logic again just in case
+      if (error.code === 'UNIQUE_VIOLATION') {
         const userId = await this.resolveUserId(auth0Id, tokenPayload);
-
-        this.logger.info(
-          'UNIQUE constraint violation - attempting to find and update existing session',
-          { userId },
+        const existingSession = await this.runQuery(
+          'SELECT * FROM user_sessions WHERE user_id = ? AND jwt_token_hash = ?',
+          [userId, tokenHash],
+          'get',
         );
-
-        try {
-          const existingSession = await this.runQuery(
-            'SELECT * FROM user_sessions WHERE user_id = ? AND jwt_token_hash = ?',
-            [userId, tokenHash],
-            'get',
-          );
-
-          if (existingSession) {
-            await this.runQuery(
-              `UPDATE user_sessions SET last_activity = ${nowFunc}, expires_at = ? WHERE id = ?`,
-              [expiresAt, existingSession.id],
-              'run',
-            );
-            return existingSession;
-          }
-        } catch (retryError) {
-          this.logger.error('Failed to handle UNIQUE constraint violation', {
-            originalError: error.message,
-            retryError: retryError.message,
-          });
-        }
+        if (existingSession) return existingSession;
       }
-
-      this.logger.error('Failed to create/update session', {
-        auth0Id,
-        error: error.message,
-      });
       throw error;
     }
   }
 
-  /**
-   * Get session by ID
-   */
   async getSession(sessionId) {
     try {
       const result = await this.runQuery(
-        `SELECT * FROM user_sessions
-         WHERE id = ? AND is_active = 1 AND expires_at > ${process.env.DB_TYPE === 'postgresql' ? 'NOW()' : 'datetime(\'now\')'}`,
+        `SELECT * FROM user_sessions` +
+         `
+         WHERE id = ? AND is_active = 1 AND expires_at > NOW()`,
         [sessionId],
         'get',
       );
-
       return result || null;
     } catch (error) {
-      this.logger.error('Failed to get session', {
-        sessionId,
-        error: error.message,
-      });
       return null;
     }
   }
 
-  /**
-   * Invalidate session
-   */
   async invalidateSession(sessionId, reason = 'logout') {
     try {
-      // Get user_id before updating
       const session = await this.runQuery(
         'SELECT user_id FROM user_sessions WHERE id = ?',
         [sessionId],
@@ -488,47 +473,26 @@ export class AuthService {
       );
 
       if (session) {
-        // Update session to inactive
         await this.runQuery(
           'UPDATE user_sessions SET is_active = 0 WHERE id = ?',
           [sessionId],
           'run',
         );
-
-        const userId = session.user_id;
-
-        // Log session invalidation
         await this.logAuditEvent('session_invalidated', 'authentication', {
-          userId,
+          userId: session.user_id,
           sessionId,
           reason,
         });
-
-        this.logger.info('Session invalidated', {
-          userId,
-          sessionId,
-          reason,
-        });
-
         return true;
       }
-
       return false;
     } catch (error) {
-      this.logger.error('Failed to invalidate session', {
-        sessionId,
-        error: error.message,
-      });
       return false;
     }
   }
 
-  /**
-   * Clean up old sessions for user
-   */
   async cleanupUserSessions(userId) {
     try {
-      // Get active sessions count
       const countResult = await this.runQuery(
         'SELECT COUNT(*) as count FROM user_sessions WHERE user_id = ? AND is_active = 1',
         [userId],
@@ -536,96 +500,42 @@ export class AuthService {
       );
 
       const activeCount = parseInt(countResult.count);
-
       if (activeCount >= this.config.MAX_SESSIONS_PER_USER) {
-        // Remove oldest sessions
-        const sessionsToRemove =
-          activeCount - this.config.MAX_SESSIONS_PER_USER + 1;
-
+        const sessionsToRemove = activeCount - this.config.MAX_SESSIONS_PER_USER + 1;
         const subQuery = `
           SELECT id FROM user_sessions
           WHERE user_id = ? AND is_active = 1
           ORDER BY last_activity ASC
           LIMIT ?
         `;
-
         await this.runQuery(
-          `UPDATE user_sessions
-           SET is_active = 0
-           WHERE id IN (${subQuery})`,
+          `UPDATE user_sessions SET is_active = 0 WHERE id IN (${subQuery})`,
           [userId, sessionsToRemove],
           'run',
         );
-
-        this.logger.info('Cleaned up old sessions', {
-          userId,
-          removedSessions: sessionsToRemove,
-        });
       }
     } catch (error) {
-      this.logger.error('Failed to cleanup user sessions', {
-        userId,
-        error: error.message,
-      });
+      this.logger.error('Failed to cleanup user sessions', { userId, error: error.message });
     }
   }
 
-  /**
-   * Check user permissions
-   */
   async checkPermissions(userId, resource, action) {
-    // For now, implement basic permission checking
-    // This can be extended with more sophisticated RBAC
-
-    try {
-      // Get user roles from token or database
-      // For MVP, all authenticated users have basic permissions
-      const allowedActions = ['connect', 'send_request', 'receive_response'];
-
-      if (allowedActions.includes(action)) {
-        return true;
-      }
-
-      // Log permission denial
-      await this.logSecurityEvent('permission_denied', {
-        userId,
-        resource,
-        action,
-      });
-
-      return false;
-    } catch (error) {
-      this.logger.error('Permission check failed', {
-        userId,
-        resource,
-        action,
-        error: error.message,
-      });
-      return false;
-    }
+    const allowedActions = ['connect', 'send_request', 'receive_response'];
+    if (allowedActions.includes(action)) return true;
+    await this.logSecurityEvent('permission_denied', { userId, resource, action });
+    return false;
   }
 
-  /**
-   * Log audit event
-   */
   async logAuditEvent(eventType, category, metadata = {}) {
     try {
-      // Create valid JSON string for metadata
       const metaStr = JSON.stringify(metadata);
-
-      // Determine column name for JSON metadata based on DB type
-      // PG uses 'details' (JSONB), SQLite uses 'metadata' (TEXT)
-      // BUT schema.pg.sql says 'details' for audit_logs?
-      // YES. schema.pg.sql: details JSONB. schema.sql: metadata TEXT.
-      const jsonColumnName =
-        process.env.DB_TYPE === 'postgresql' ? 'details' : 'metadata';
-
       await this.runQuery(
-        `INSERT INTO audit_logs (action, resource_type, ${jsonColumnName}, user_id, ip_address, user_agent)
-       VALUES (?, ?, ?, ?, ?, ? )`,
+        `INSERT INTO audit_logs (action, resource_type, details, user_id, ip_address, user_agent)` +
+         `
+         VALUES (?, ?, ?, ?, ?, ?)`,
         [
-          eventType, // action
-          category, // resource_type
+          eventType,
+          category,
           metaStr,
           metadata.userId || null,
           metadata.ip || null,
@@ -634,121 +544,48 @@ export class AuthService {
         'run',
       );
     } catch (error) {
-      this.logger.error(`Failed to log audit event: ${error.message}`, {
-        eventType,
-        error: error.message,
-      });
+      this.logger.error(`Failed to log audit event: ${error.message}`);
     }
   }
 
-  /**
-   * Log security event
-   */
   async logSecurityEvent(eventType, metadata = {}) {
     return this.logAuditEvent(eventType, 'security', metadata);
   }
 
-  /**
-   * Hash token for storage
-   */
   hashToken(token) {
     return crypto.createHash('sha256').update(token).digest('hex');
   }
 
-  /**
-   * Generate session ID (fallback for SQLite)
-   */
   generateSessionId() {
     return crypto.randomBytes(16).toString('hex');
   }
 
-  /**
-   * Start periodic session cleanup
-   */
   startSessionCleanup() {
-    // Clean up expired sessions every 15 minutes
-    setInterval(
-      async () => {
-        try {
-          // Ensure DB is initialized before attempting cleanup
-          if ((process.env.DB_TYPE === 'postgresql' && !this.db.pool) ||
-            (process.env.DB_TYPE !== 'postgresql' && !this.db.db)) {
-            this.logger.warn('Skipping session cleanup - database not connected');
-            return;
-          }
-
-          const nowFunc =
-            process.env.DB_TYPE === 'postgresql' ? 'NOW()' : 'datetime(\'now\')';
-          // Clean up expired sessions
-          const result = await this.runQuery(
-            `UPDATE user_sessions SET is_active = 0
-             WHERE expires_at < ${nowFunc} AND is_active = 1`,
-            [],
-            'run',
-          );
-
-          const deletedCount = result.changes || 0;
-          if (deletedCount > 0) {
-            this.logger.info('Cleaned up expired sessions', { deletedCount });
-          }
-        } catch (error) {
-          this.logger.error('Session cleanup failed', {
-            error: error.message,
-            stack: error.stack
-          });
+    setInterval(async () => {
+      try {
+        if (!this.db.pool) return;
+        const result = await this.runQuery(
+          `UPDATE user_sessions SET is_active = 0 WHERE expires_at < NOW() AND is_active = 1`,
+          [],
+          'run',
+        );
+        if (result.changes > 0) {
+          this.logger.info('Cleaned up expired sessions', { count: result.changes });
         }
-      },
-      15 * 60 * 1000,
-    ); // 15 minutes
+      } catch (error) {
+        this.logger.error('Session cleanup failed', { error: error.message });
+      }
+    }, 15 * 60 * 1000);
   }
 
-  /**
-   * Get authentication statistics
-   */
   async getAuthStats() {
     try {
-      const nowFunc =
-        process.env.DB_TYPE === 'postgresql' ? 'NOW()' : 'datetime(\'now\')';
-
-      const activeSessions = await this.runQuery(
-        'SELECT COUNT(*) as count FROM user_sessions WHERE is_active = 1',
-        [],
-        'get',
-      );
-
-      const validSessions = await this.runQuery(
-        `SELECT COUNT(*) as count FROM user_sessions WHERE expires_at > ${nowFunc}`,
-        [],
-        'get',
-      );
-
-      const activeUsers = await this.runQuery(
-        'SELECT COUNT(DISTINCT user_id) as count FROM user_sessions WHERE is_active = 1',
-        [],
-        'get',
-      );
-
-      // PG specific interval syntax vs SQLite
-      const interval =
-        process.env.DB_TYPE === 'postgresql'
-          ? 'NOW() - INTERVAL \'24 HOURS\''
-          : 'datetime(\'now\', \'-24 hours\')';
-      const timestampColumn =
-        process.env.DB_TYPE === 'postgresql' ? 'created_at' : 'timestamp';
-
-      const authEvents = await this.runQuery(
-        `SELECT COUNT(*) as count FROM audit_logs
-         WHERE event_category = 'authentication' AND ${timestampColumn} > ${interval}`,
-        [],
-        'get',
-      );
-
-      const securityEvents = await this.runQuery(
-        `SELECT COUNT(*) as count FROM audit_logs
-         WHERE event_category = 'security' AND ${timestampColumn} > ${interval}`,
-        [],
-        'get',
-      );
+      const activeSessions = await this.runQuery('SELECT COUNT(*) as count FROM user_sessions WHERE is_active = 1', [], 'get');
+      const validSessions = await this.runQuery('SELECT COUNT(*) as count FROM user_sessions WHERE expires_at > NOW()', [], 'get');
+      const activeUsers = await this.runQuery('SELECT COUNT(DISTINCT user_id) as count FROM user_sessions WHERE is_active = 1', [], 'get');
+      const interval = 'NOW() - INTERVAL \'24 HOURS\''
+      const authEvents = await this.runQuery(`SELECT COUNT(*) as count FROM audit_logs WHERE resource_type = 'authentication' AND created_at > ${interval}`, [], 'get');
+      const securityEvents = await this.runQuery(`SELECT COUNT(*) as count FROM audit_logs WHERE resource_type = 'security' AND created_at > ${interval}`, [], 'get');
 
       return {
         active_sessions: activeSessions?.count || 0,
@@ -758,17 +595,11 @@ export class AuthService {
         security_events_24h: securityEvents?.count || 0,
       };
     } catch (error) {
-      this.logger.error('Failed to get auth stats', { error: error.message });
       return {};
     }
   }
 
-  /**
-   * Close authentication service
-   */
   async close() {
-    if (this.db) {
-      await this.db.close();
-    }
+    if (this.db) await this.db.close();
   }
 }
