@@ -267,6 +267,9 @@ jobs:
           workflow_name: 'gemini-orchestrator'
           settings: |-
             {
+              "model": {
+                "response_mime_type": "application/json"
+              },
               "tools": {
                 "core": [
                   "run_shell_command(cat)",
@@ -306,21 +309,21 @@ jobs:
             7. Run 'git push origin "v<NEW_VERSION>" -f'.
 
             PHASE 3: OUTPUT
-            You MUST set GitHub Action outputs for the next jobs using the 'run_shell_command' tool.
-            Format: echo "key=value" >> $GITHUB_OUTPUT
+            You MUST return ONLY a JSON object with the following keys. 
+            DO NOT use markdown formatting. DO NOT include any text outside the JSON.
 
-            Required Outputs:
-            - new_version: The version string (e.g. 1.2.3+20240101).
-            - docker_version: The docker-safe version (e.g. 1.2.3-20240101).
-            - do_managed: 'true' or 'false'.
-            - do_local: 'true' or 'false'.
-            - do_desktop: 'true' or 'false'.
-            - do_mobile: 'true' or 'false'.
-            - run_tests: 'true' or 'false'.
-            - should_deploy: 'true' or 'false' (true if any do_* is true).
-            - reasoning: A short string explaining why.
-
-            IMPORTANT: Your FINAL response MUST be ONLY a JSON object containing these keys. Do not include any other text or formatting.
+            Expected JSON structure:
+            {
+              "new_version": "string",
+              "docker_version": "string",
+              "do_managed": "string",
+              "do_local": "string",
+              "do_desktop": "string",
+              "do_mobile": "string",
+              "run_tests": "string",
+              "should_deploy": "string",
+              "reasoning": "string"
+            }
 
   # ==================================================================================
   # INLINE WORKFLOWS (Replaces separate files)
