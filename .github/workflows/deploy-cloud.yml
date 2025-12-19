@@ -60,7 +60,7 @@ jobs:
           ACR_PASSWORD=$(az acr credential show --name ${{ env.ACR_NAME }} --query passwords[0].value --output tsv)
           echo "$ACR_PASSWORD" | docker login "${{ needs.setup_acr.outputs.login_server }}" --username "$ACR_USERNAME" --password-stdin
       - uses: docker/setup-buildx-action@v3
-      - uses: docker/build-push-action@v5
+      - uses: docker/build-push-action@v6
         with:
           context: .
           file: config/docker/Dockerfile.base
