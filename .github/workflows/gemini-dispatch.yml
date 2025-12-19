@@ -202,6 +202,56 @@ jobs:
             git add -A
             git commit -m "chore: bump version to $(echo "$CLEAN_JSON" | jq -r '.new_version') [skip ci]"
             git push origin main && git tag "v$(echo "$CLEAN_JSON" | jq -r '.new_version')" -f && git push origin --tags -f
+
+            # --- Platform Distribution ---
+            NEW_VERSION=$(echo "$CLEAN_JSON" | jq -r '.new_version')
+            SHORT_SHA=$(git rev-parse --short HEAD)
+            DO_MANAGED=$(echo "$CLEAN_JSON" | jq -r '.do_managed')
+            DO_DESKTOP=$(echo "$CLEAN_JSON" | jq -r '.do_desktop')
+            DO_MOBILE=$(echo "$CLEAN_JSON" | jq -r '.do_mobile')
+
+            # Cloud Branch & Deployment
+            if [ "$DO_MANAGED" == "true" ]; then
+               echo "☁️  Pushing to cloud branch..."
+               if [ -f "scripts/push-to-cloud-branch.sh" ]; then
+                  chmod +x scripts/push-to-cloud-branch.sh
+                  CLOUD_PUSH_PAT="${{ steps.mint_identity_token.outputs.token || secrets.GITHUB_TOKEN }}" ./scripts/push-to-cloud-branch.sh "$NEW_VERSION"
+               else
+                  git checkout -B cloud main
+                  git push -f origin cloud
+                  git tag "${NEW_VERSION}-cloud-${SHORT_SHA}" -f
+                  git push origin "${NEW_VERSION}-cloud-${SHORT_SHA}" -f
+                  git checkout main
+               fi
+               
+               echo "🚀 Triggering AKS deployment..."
+               curl -X POST \
+                  -H "Authorization: token ${{ steps.mint_identity_token.outputs.token || secrets.GITHUB_TOKEN }}" \
+                  -H "Accept: application/vnd.github.v3+json" \
+                  -H "Content-Type: application/json" \
+                  "${{ github.api_url }}/repos/${{ github.repository }}/dispatches" \
+                  -d "{\"event_type\":\"cloud-deploy-$NEW_VERSION\",\"client_payload\":{\"version\":\"$NEW_VERSION\",\"branch\":\"cloud\"}}" || echo "⚠️ Failed to trigger dispatch"
+            fi
+
+            # Desktop Branch
+            if [ "$DO_DESKTOP" == "true" ]; then
+               echo "🖥️  Pushing to desktop branch..."
+               git checkout -B desktop main
+               git push -f origin desktop
+               git tag "${NEW_VERSION}-desktop-${SHORT_SHA}" -f
+               git push origin "${NEW_VERSION}-desktop-${SHORT_SHA}" -f
+               git checkout main
+            fi
+
+            # Mobile Branch
+            if [ "$DO_MOBILE" == "true" ]; then
+               echo "📱 Pushing to mobile branch..."
+               git checkout -B mobile main
+               git push -f origin mobile
+               git tag "${NEW_VERSION}-mobile-${SHORT_SHA}" -f
+               git push origin "${NEW_VERSION}-mobile-${SHORT_SHA}" -f
+               git checkout main
+            fi
           fi
 
   # ==================================================================================
