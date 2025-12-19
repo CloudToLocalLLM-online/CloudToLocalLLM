@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: blackbox-exporter
-          image: vrijbergen/blackbox-exporter:latest
+          image: prom/blackbox-exporter:latest
           ports:
             - containerPort: 9115
           resources:

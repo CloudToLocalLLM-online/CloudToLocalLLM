@@ -16,3 +16,8 @@ resources:
   - deployments/postgres.yaml
   - deployments/redis.yaml
   - jobs/cloudflare-purge-job.yaml
+  - ../alertmanager-config.yaml
+  - ../utilities/monitoring.yaml
+  - ../utilities/blackbox-exporter.yaml
+  - ../utilities/coturn.yaml
+  - ../postgres-auth-statefulset.yaml

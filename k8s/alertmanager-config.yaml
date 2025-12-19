@@ -7,10 +7,11 @@ data:
   alertmanager.yml: |
     global:
       resolve_timeout: 5m
-      slack_api_url: '${SLACK_WEBHOOK_URL}'
-      smtp_smarthost: '${SMTP_HOST}:${SMTP_PORT}'
-      smtp_auth_username: '${SMTP_USERNAME}'
-      smtp_auth_password: '${SMTP_PASSWORD}'
+      # Note: These values should be provided via alertmanager-secrets
+      # Alertmanager does not support environment variable substitution in the config file directly
+      # unless using a startup script or sidecar. Using placeholders.
+      slack_api_url: 'http://placeholder-slack-webhook'
+      smtp_smarthost: 'localhost:25'
       smtp_from: 'alerts@cloudtolocalllm.online'
     
     # Alert routing configuration
@@ -173,31 +174,31 @@ spec:
             - name: SLACK_WEBHOOK_URL
               valueFrom:
                 secretKeyRef:
-                  name: alertmanager-secrets
+                  name: cloudtolocalllm-secrets
                   key: slack-webhook-url
                   optional: true
             - name: SMTP_HOST
               valueFrom:
                 secretKeyRef:
-                  name: alertmanager-secrets
+                  name: cloudtolocalllm-secrets
                   key: smtp-host
                   optional: true
             - name: SMTP_PORT
               valueFrom:
                 secretKeyRef:
-                  name: alertmanager-secrets
+                  name: cloudtolocalllm-secrets
                   key: smtp-port
                   optional: true
             - name: SMTP_USERNAME
               valueFrom:
                 secretKeyRef:
-                  name: alertmanager-secrets
+                  name: cloudtolocalllm-secrets
                   key: smtp-username
                   optional: true
             - name: SMTP_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: alertmanager-secrets
+                  name: cloudtolocalllm-secrets
                   key: smtp-password
                   optional: true
           volumeMounts:

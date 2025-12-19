@@ -86,7 +86,7 @@ spec:
             - name: GF_SECURITY_ADMIN_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: grafana-secret
+                  name: cloudtolocalllm-secrets
                   key: admin-password
           volumeMounts:
             - name: storage
