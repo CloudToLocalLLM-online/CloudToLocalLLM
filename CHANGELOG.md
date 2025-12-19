@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [7.14.0] - 2025-12-19
+
+## 7.14.0 - 2025-12-19
+
+### Features
+* **k8s:** Separated workloads into individual Argo CD applications.
+
 ## [7.13.3] - 2025-12-19
 ### 7.13.3 - 2025-12-19
 
