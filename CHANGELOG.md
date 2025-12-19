@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [7.13.2+202512191356] - 2025-12-19
+## v7.13.2+202512191356
+
+### Bug Fixes
+
+*   **ci:** Resolve permission and config issues in gemini workflows (a0953ee)
+
 ## [7.13.2+202512191352] - 2025-12-19
 ## v7.13.2+202512191352
 
