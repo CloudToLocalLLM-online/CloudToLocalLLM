@@ -1,13 +1,13 @@
 ```json
 {
-  "new_version": "7.12.1",
-  "docker_version": "7.12.1",
+  "new_version": "7.12.2",
+  "docker_version": "7-12-2",
   "do_managed": "true",
   "do_local": "false",
   "do_desktop": "false",
   "do_mobile": "false",
   "should_deploy": "true",
   "version_bump_needed": "true",
-  "reasoning": "The recent commit is a fix to the Kubernetes (k8s) configuration, which warrants a patch version bump. This change only affects the managed deployment, so desktop, mobile, and local builds are not required."
+  "reasoning": "The recent commits include fixes to the Kubernetes deployment configuration, warranting a patch release. The changes are confined to the 'k8s/' directory, so only the managed deployment ('do_managed') is affected and needs to be updated."
 }
 ```
