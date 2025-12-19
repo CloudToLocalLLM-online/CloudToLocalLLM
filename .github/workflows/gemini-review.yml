@@ -71,6 +71,9 @@ jobs:
               "model": {
                 "maxSessionTurns": 25
               },
+              "output": {
+                 "format": "json"
+              },
               "telemetry": {
                 "enabled": true,
                 "target": "local",
