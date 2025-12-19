@@ -21,4 +21,3 @@ resources:
   - utilities/blackbox-exporter.yaml
   - utilities/coturn.yaml
   - postgres-auth-statefulset.yaml
-  - ../postgres-auth-statefulset.yaml
