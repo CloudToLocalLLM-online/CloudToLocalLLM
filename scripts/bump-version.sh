@@ -8,7 +8,7 @@ VERSION_FILE="assets/version.json"
 BUMP_TYPE="${1:-patch}"  # Default to patch bump
 
 if [ ! -f "$VERSION_FILE" ]; then
-    echo "❌ Version file not found: $VERSION_FILE"
+    echo "âŒ Version file not found: $VERSION_FILE"
     exit 1
 fi
 
@@ -34,7 +34,7 @@ case "$BUMP_TYPE" in
         PATCH=$((PATCH + 1))
         ;;
     *)
-        echo "❌ Invalid bump type: $BUMP_TYPE (must be: major, minor, or patch)"
+        echo "âŒ Invalid bump type: $BUMP_TYPE (must be: major, minor, or patch)"
         exit 1
         ;;
 esac
@@ -60,7 +60,7 @@ cat > "$VERSION_FILE" <<EOF
 }
 EOF
 
-echo "✅ Version bumped to $NEW_VERSION"
+echo "âœ… Version bumped to $NEW_VERSION"
 echo ""
 echo "Version file updated: $VERSION_FILE"
 echo ""

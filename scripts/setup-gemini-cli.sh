@@ -5,9 +5,9 @@
 
 set -e
 
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”"
 echo "Gemini CLI Setup"
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”"
 
 # Check if API key is provided as argument
 if [ -n "$1" ]; then
@@ -19,14 +19,14 @@ else
 fi
 
 if [ -z "$API_KEY" ]; then
-    echo "❌ Error: API Key cannot be empty."
+    echo "âŒ Error: API Key cannot be empty."
     exit 1
 fi
 
 # Export the key for the current session
 export OLLAMA_HOST="http://localhost:11434"
 echo ""
-echo "✅ API Key configured for this session."
+echo "âœ… API Key configured for this session."
 
 # Verify the key
 echo "Verifying API key with a test request..."
@@ -35,7 +35,7 @@ TEST_RESPONSE=$("${SCRIPT_DIR}/gemini-cli.cjs" "Hello, are you working?" 2>&1)
 EXIT_CODE=$?
 
 if [ $EXIT_CODE -eq 0 ] && [ -n "$TEST_RESPONSE" ]; then
-    echo "✅ Verification successful!"
+    echo "âœ… Verification successful!"
     echo "Response from Ollama: ${TEST_RESPONSE:0:100}..."
 
     echo ""
@@ -45,7 +45,7 @@ if [ $EXIT_CODE -eq 0 ] && [ -n "$TEST_RESPONSE" ]; then
     echo ""
     echo "No secret needed for local Ollama"
 else
-    echo "❌ Verification failed."
+    echo "âŒ Verification failed."
     echo "Exit code: $EXIT_CODE"
     echo "Response: $TEST_RESPONSE"
     exit 1

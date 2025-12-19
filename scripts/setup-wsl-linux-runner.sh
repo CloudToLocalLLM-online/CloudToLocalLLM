@@ -94,12 +94,12 @@ else
     exit 1
 fi
 
-echo -e "${GREEN}✓ Dependencies installed${NC}"
+echo -e "${GREEN}âœ“ Dependencies installed${NC}"
 
 # Install Flutter
 echo -e "${CYAN}Checking Flutter installation...${NC}"
 if command -v flutter &> /dev/null; then
-    echo -e "${GREEN}✓ Flutter is already installed${NC}"
+    echo -e "${GREEN}âœ“ Flutter is already installed${NC}"
     flutter --version
 else
     echo -e "${CYAN}Installing Flutter SDK...${NC}"
@@ -125,7 +125,7 @@ else
     # Enable Linux desktop
     "$FLUTTER_HOME/bin/flutter" config --enable-linux-desktop
     
-    echo -e "${GREEN}✓ Flutter installed${NC}"
+    echo -e "${GREEN}âœ“ Flutter installed${NC}"
 fi
 
 # Run flutter doctor to verify
@@ -185,7 +185,7 @@ echo -e "${CYAN}Configuring runner...${NC}"
     --unattended
 
 if [ $? -eq 0 ]; then
-    echo -e "${GREEN}✓ Runner configured successfully${NC}"
+    echo -e "${GREEN}âœ“ Runner configured successfully${NC}"
 else
     echo -e "${RED}ERROR: Runner configuration failed${NC}"
     exit 1
@@ -199,7 +199,7 @@ if systemctl --version &> /dev/null; then
     echo -e "${CYAN}Using systemd service...${NC}"
     sudo ./svc.sh install
     sudo ./svc.sh start
-    echo -e "${GREEN}✓ Runner service installed and started${NC}"
+    echo -e "${GREEN}âœ“ Runner service installed and started${NC}"
 else
     echo -e "${YELLOW}Systemd not available. Runner can be started manually with:${NC}"
     echo "  cd $RUNNER_DIR && ./run.sh"

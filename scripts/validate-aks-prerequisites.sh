@@ -87,30 +87,30 @@ done
 # Helper functions
 log_info() {
     if [[ "$VERBOSE" == "true" ]]; then
-        echo -e "${BLUE}ℹ${NC} $1"
+        echo -e "${BLUE}â„¹${NC} $1"
     fi
 }
 
 log_success() {
-    echo -e "${GREEN}✓${NC} $1"
+    echo -e "${GREEN}âœ“${NC} $1"
     CHECKS_PASSED=$((CHECKS_PASSED + 1))
 }
 
 log_warning() {
-    echo -e "${YELLOW}⚠${NC} $1"
+    echo -e "${YELLOW}âš ${NC} $1"
     CHECKS_WARNING=$((CHECKS_WARNING + 1))
 }
 
 log_error() {
-    echo -e "${RED}✗${NC} $1"
+    echo -e "${RED}âœ—${NC} $1"
     CHECKS_FAILED=$((CHECKS_FAILED + 1))
 }
 
 log_section() {
     echo ""
-    echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo -e "${BLUE}â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”${NC}"
     echo -e "${BLUE}$1${NC}"
-    echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo -e "${BLUE}â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”${NC}"
     echo ""
 }
 
@@ -450,29 +450,29 @@ generate_summary() {
     
     echo ""
     echo "Results:"
-    echo -e "  ${GREEN}✓ Passed:${NC}  $CHECKS_PASSED"
-    echo -e "  ${YELLOW}⚠ Warning:${NC} $CHECKS_WARNING"
-    echo -e "  ${RED}✗ Failed:${NC}  $CHECKS_FAILED"
+    echo -e "  ${GREEN}âœ“ Passed:${NC}  $CHECKS_PASSED"
+    echo -e "  ${YELLOW}âš  Warning:${NC} $CHECKS_WARNING"
+    echo -e "  ${RED}âœ— Failed:${NC}  $CHECKS_FAILED"
     echo -e "  Total:    $total_checks"
     echo ""
     
     if [[ $CHECKS_FAILED -eq 0 ]]; then
         if [[ $CHECKS_WARNING -eq 0 ]]; then
-            echo -e "${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-            echo -e "${GREEN}✓ All checks passed! Ready for deployment.${NC}"
-            echo -e "${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+            echo -e "${GREEN}â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”${NC}"
+            echo -e "${GREEN}âœ“ All checks passed! Ready for deployment.${NC}"
+            echo -e "${GREEN}â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”${NC}"
             return 0
         else
-            echo -e "${YELLOW}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-            echo -e "${YELLOW}⚠ All critical checks passed, but there are warnings.${NC}"
+            echo -e "${YELLOW}â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”${NC}"
+            echo -e "${YELLOW}âš  All critical checks passed, but there are warnings.${NC}"
             echo -e "${YELLOW}  Deployment may proceed, but review warnings above.${NC}"
-            echo -e "${YELLOW}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+            echo -e "${YELLOW}â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”${NC}"
             return 0
         fi
     else
-        echo -e "${RED}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-        echo -e "${RED}✗ Validation failed! Fix errors before deployment.${NC}"
-        echo -e "${RED}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+        echo -e "${RED}â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”${NC}"
+        echo -e "${RED}âœ— Validation failed! Fix errors before deployment.${NC}"
+        echo -e "${RED}â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”${NC}"
         return 1
     fi
 }

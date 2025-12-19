@@ -8,9 +8,9 @@ set -o pipefail
 # Enable error tracing
 trap 'echo "Error on line $LINENO"' ERR
 
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”"
 echo "Analyzing Commits with Gemini AI"
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”"
 
 # Get current version
 CURRENT_VERSION=$(jq -r '.version' assets/version.json)
@@ -43,7 +43,7 @@ echo "Calling Gemini AI to analyze commits..."
 API_KEY="$GEMINI_API_KEY"
 
 if [ -z "$API_KEY" ]; then
-    echo "⚠️  GEMINI_API_KEY not set, falling back to patch bump"
+    echo "âš ï¸  GEMINI_API_KEY not set, falling back to patch bump"
     # Parse current version
     IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT_VERSION"
     PATCH=$((PATCH + 1))
@@ -68,7 +68,7 @@ else
     echo "Gemini response (first 500 chars): ${RESPONSE:0:500}"
     
     if [ $EXIT_CODE -ne 0 ] || [ -z "$RESPONSE" ]; then
-        echo "⚠️  Gemini CLI failed with exit code: $EXIT_CODE"
+        echo "âš ï¸  Gemini CLI failed with exit code: $EXIT_CODE"
         echo "Falling back to patch bump"
         
         # Parse current version
@@ -87,7 +87,7 @@ else
         REASONING=$(echo "$JSON_RESPONSE" | jq -r '.reasoning // "Auto-generated"' 2>/dev/null || echo "Auto-generated")
         
         echo ""
-        echo "✅ Gemini Analysis:"
+        echo "âœ… Gemini Analysis:"
         echo "  Bump type: $BUMP_TYPE"
         echo "  New version: $NEW_VERSION"
         echo "  Reasoning: $REASONING"
@@ -96,7 +96,7 @@ fi
 
 # Validate and fallback if Gemini gave invalid version
 if ! echo "$NEW_VERSION" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+$'; then
-    echo "⚠️  Invalid version from Gemini: $NEW_VERSION"
+    echo "âš ï¸  Invalid version from Gemini: $NEW_VERSION"
     echo "Calculating fallback..."
     
     IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT_VERSION"
@@ -120,7 +120,7 @@ if ! echo "$NEW_VERSION" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+$'; then
 fi
 
 echo ""
-echo "✅ Version Decision:"
+echo "âœ… Version Decision:"
 echo "  Current: $CURRENT_VERSION"
 echo "  New:     $NEW_VERSION"
 echo "  Type:    $BUMP_TYPE"

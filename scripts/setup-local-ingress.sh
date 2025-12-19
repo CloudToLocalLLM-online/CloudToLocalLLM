@@ -24,5 +24,5 @@ kubectl wait --namespace ingress-nginx \
   --selector=app.kubernetes.io/component=controller \
   --timeout=300s
 
-echo "✅ Nginx Ingress Controller installed successfully!"
+echo "âœ… Nginx Ingress Controller installed successfully!"
 echo "You can now apply the local overlay using: kubectl apply -k k8s/overlays/local"

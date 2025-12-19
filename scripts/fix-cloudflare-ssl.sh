@@ -7,7 +7,7 @@ set -e
 
 # Check if CLOUDFLARE_API_TOKEN is set
 if [ -z "$CLOUDFLARE_API_TOKEN" ]; then
-    echo "❌ Error: CLOUDFLARE_API_TOKEN environment variable is not set"
+    echo "âŒ Error: CLOUDFLARE_API_TOKEN environment variable is not set"
     echo "Please set it with: export CLOUDFLARE_API_TOKEN=your_token"
     exit 1
 fi
@@ -15,7 +15,7 @@ fi
 CF_API_TOKEN="$CLOUDFLARE_API_TOKEN"
 ZONE_NAME="cloudtolocalllm.online"
 
-echo "🔧 Fixing Cloudflare SSL mode for $ZONE_NAME..."
+echo "ðŸ”§ Fixing Cloudflare SSL mode for $ZONE_NAME..."
 
 # Get Zone ID
 CF_ZONE_ID=$(curl -s -X GET "https://api.cloudflare.com/client/v4/zones?name=$ZONE_NAME" \
@@ -23,7 +23,7 @@ CF_ZONE_ID=$(curl -s -X GET "https://api.cloudflare.com/client/v4/zones?name=$ZO
   -H "Content-Type: application/json" | jq -r '.result[0].id')
 
 if [ "$CF_ZONE_ID" = "null" ] || [ -z "$CF_ZONE_ID" ]; then
-    echo "❌ Unable to determine Cloudflare Zone ID"
+    echo "âŒ Unable to determine Cloudflare Zone ID"
     exit 1
 fi
 
@@ -38,15 +38,15 @@ RESPONSE=$(curl -s -X PATCH "https://api.cloudflare.com/client/v4/zones/$CF_ZONE
 
 SUCCESS=$(echo "$RESPONSE" | jq -r '.success')
 if [ "$SUCCESS" = "true" ]; then
-    echo "✅ Cloudflare SSL mode changed to 'flexible' successfully!"
+    echo "âœ… Cloudflare SSL mode changed to 'flexible' successfully!"
     echo ""
     echo "This allows:"
-    echo "  - Visitors → Cloudflare: HTTPS (secure)"
-    echo "  - Cloudflare → Origin: HTTP (no TLS required on origin)"
+    echo "  - Visitors â†’ Cloudflare: HTTPS (secure)"
+    echo "  - Cloudflare â†’ Origin: HTTP (no TLS required on origin)"
     echo ""
     echo "The 500 error should now be resolved. Please wait a few seconds and try accessing the site again."
 else
-    echo "❌ Failed to change SSL mode"
+    echo "âŒ Failed to change SSL mode"
     echo "$RESPONSE" | jq '.errors'
     exit 1
 fi

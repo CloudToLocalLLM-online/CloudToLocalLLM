@@ -11,7 +11,7 @@ KEY_VAULT_NAME="${AZURE_KEY_VAULT_NAME:-cloudtolocalllm-kv}"
 LOCATION="${AZURE_LOCATION:-eastus}"
 SUBSCRIPTION_ID="${AZURE_SUBSCRIPTION_ID}"
 
-echo "🔐 Setting up Azure Key Vault certificate sync..."
+echo "ðŸ” Setting up Azure Key Vault certificate sync..."
 
 # Get or create subscription ID
 if [ -z "$SUBSCRIPTION_ID" ]; then
@@ -20,7 +20,7 @@ fi
 
 # Create Key Vault if it doesn't exist
 if ! az keyvault show --name "$KEY_VAULT_NAME" --resource-group "$RESOURCE_GROUP" &>/dev/null 2>&1; then
-    echo "📦 Creating Azure Key Vault: $KEY_VAULT_NAME"
+    echo "ðŸ“¦ Creating Azure Key Vault: $KEY_VAULT_NAME"
     az keyvault create \
         --name "$KEY_VAULT_NAME" \
         --resource-group "$RESOURCE_GROUP" \
@@ -28,21 +28,21 @@ if ! az keyvault show --name "$KEY_VAULT_NAME" --resource-group "$RESOURCE_GROUP
         --enabled-for-deployment true \
         --enabled-for-template-deployment true \
         --enabled-for-disk-encryption true
-    echo "✅ Key Vault created"
+    echo "âœ… Key Vault created"
 else
-    echo "✅ Key Vault already exists"
+    echo "âœ… Key Vault already exists"
 fi
 
 # Get service principal for AKS (or create one)
 echo ""
-echo "📋 Setting up access for certificate sync..."
+echo "ðŸ“‹ Setting up access for certificate sync..."
 
 # Option 1: Use existing service principal (from azure-dns-config secret)
 # Get client ID from existing secret
 CLIENT_ID=$(kubectl get secret azure-dns-config -n cert-manager -o jsonpath='{.data.client-id}' | base64 -d 2>/dev/null || echo "")
 
 if [ -z "$CLIENT_ID" ]; then
-    echo "⚠️  Azure service principal not found. Please provide credentials:"
+    echo "âš ï¸  Azure service principal not found. Please provide credentials:"
     read -p "Azure Client ID: " CLIENT_ID
     read -p "Azure Client Secret: " CLIENT_SECRET
     read -p "Azure Tenant ID: " TENANT_ID
@@ -52,7 +52,7 @@ else
 fi
 
 # Grant access to Key Vault
-echo "🔑 Granting access to Key Vault..."
+echo "ðŸ”‘ Granting access to Key Vault..."
 az keyvault set-policy \
     --name "$KEY_VAULT_NAME" \
     --object-id "$(az ad sp show --id "$CLIENT_ID" --query id -o tsv 2>/dev/null || echo "")" \
@@ -65,9 +65,9 @@ az keyvault set-policy \
     --certificate-permissions get list import
 
 echo ""
-echo "✅ Azure Key Vault setup complete!"
+echo "âœ… Azure Key Vault setup complete!"
 echo ""
-echo "📋 Next steps:"
+echo "ðŸ“‹ Next steps:"
 echo ""
 echo "1. Install Azure CSI Secret Store Driver:"
 echo "   kubectl apply -f https://raw.githubusercontent.com/Azure/secrets-store-csi-driver-provider-azure/master/deployment/secrets-store-csi-driver.yaml"
@@ -79,5 +79,5 @@ echo "   kubectl apply -f k8s/azure-keyvault-csi-driver.yaml"
 echo ""
 echo "4. Certificates will automatically sync from Kubernetes secrets to Key Vault every 6 hours"
 echo ""
-echo "✅ Certificates will be available in Key Vault: $KEY_VAULT_NAME"
+echo "âœ… Certificates will be available in Key Vault: $KEY_VAULT_NAME"
 

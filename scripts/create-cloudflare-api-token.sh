@@ -7,7 +7,7 @@ set -e
 # 2. Purge cache
 
 if [ -z "$CLOUDFLARE_API_KEY" ]; then
-    echo "❌ CLOUDFLARE_API_KEY not set"
+    echo "âŒ CLOUDFLARE_API_KEY not set"
     echo ""
     echo "Please run:"
     echo "  export CLOUDFLARE_API_KEY='your_global_api_key'"
@@ -17,13 +17,13 @@ if [ -z "$CLOUDFLARE_API_KEY" ]; then
 fi
 
 if [ -z "$CLOUDFLARE_EMAIL" ]; then
-    echo "❌ CLOUDFLARE_EMAIL not set"
+    echo "âŒ CLOUDFLARE_EMAIL not set"
     exit 1
 fi
 
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”"
 echo "Creating Scoped Cloudflare API Token"
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”"
 echo ""
 
 # Get Zone ID first
@@ -38,12 +38,12 @@ ZONE_RESPONSE=$(curl -s -X GET "https://api.cloudflare.com/client/v4/zones?name=
 ZONE_ID=$(echo "$ZONE_RESPONSE" | grep -o '"id":"[^"]*"' | head -1 | cut -d'"' -f4)
 
 if [ -z "$ZONE_ID" ]; then
-    echo "❌ Failed to get Zone ID"
+    echo "âŒ Failed to get Zone ID"
     echo "Response: $ZONE_RESPONSE"
     exit 1
 fi
 
-echo "✅ Zone ID: $ZONE_ID"
+echo "âœ… Zone ID: $ZONE_ID"
 echo ""
 
 # Create API token with minimal permissions
@@ -89,15 +89,15 @@ if echo "$RESPONSE" | grep -q '"success": true'; then
     TOKEN=$(echo "$RESPONSE" | grep -o '"value":"[^"]*"' | head -1 | cut -d'"' -f4)
     TOKEN_ID=$(echo "$RESPONSE" | grep -o '"id":"[^"]*"' | head -1 | cut -d'"' -f4)
     
-    echo "✅ API Token created successfully!"
+    echo "âœ… API Token created successfully!"
     echo ""
-    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo "â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”"
     echo "Token Details:"
-    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo "â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”"
     echo "Token ID: $TOKEN_ID"
     echo "Token Value: $TOKEN"
     echo ""
-    echo "⚠️  IMPORTANT: Save this token now! You won't be able to see it again."
+    echo "âš ï¸  IMPORTANT: Save this token now! You won't be able to see it again."
     echo ""
     echo "To add it to GitHub secrets, run:"
     echo "  gh secret set CLOUDFLARE_API_TOKEN --body '$TOKEN'"
@@ -120,10 +120,10 @@ if echo "$RESPONSE" | grep -q '"success": true'; then
   "scoped_token_permissions": "Zone Read + Cache Purge for cloudtolocalllm.online only"
 }
 EOF
-        echo "✅ Credentials file updated"
+        echo "âœ… Credentials file updated"
     fi
 else
-    echo "❌ Failed to create API token"
+    echo "âŒ Failed to create API token"
     echo "Response: $RESPONSE"
     exit 1
 fi

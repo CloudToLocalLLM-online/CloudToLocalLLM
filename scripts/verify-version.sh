@@ -4,7 +4,7 @@ set -e
 # Verify version consistency across files
 # Usage: ./verify-version.sh
 
-echo "🔍 Verifying version consistency..."
+echo "ðŸ” Verifying version consistency..."
 
 # Get version from assets/version.json
 ASSETS_VERSION=$(jq -r '.version' assets/version.json)
@@ -24,13 +24,13 @@ echo "  api-backend:         $API_VERSION"
 
 # Compare semantic parts
 if [ "$SEMANTIC_ASSETS" != "$SEMANTIC_PUBSPEC" ]; then
-    echo "❌ ERROR: Semantic version mismatch between assets/version.json and pubspec.yaml"
+    echo "âŒ ERROR: Semantic version mismatch between assets/version.json and pubspec.yaml"
     exit 1
 fi
 
 if [ "$SEMANTIC_ASSETS" != "$API_VERSION" ]; then
-    echo "❌ ERROR: Semantic version mismatch between assets/version.json and api-backend/package.json"
+    echo "âŒ ERROR: Semantic version mismatch between assets/version.json and api-backend/package.json"
     exit 1
 fi
 
-echo "✅ Version consistency verified"
+echo "âœ… Version consistency verified"

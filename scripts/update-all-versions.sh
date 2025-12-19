@@ -12,13 +12,13 @@ BUILD_DATE=$(date -u +%Y-%m-%dT%H:%M:%SZ)
 BUILD_TIMESTAMP=$(date +"%Y-%m-%d %H:%M:%S")
 
 if [ -z "$NEW_VERSION" ]; then
-    echo "❌ Usage: $0 <new-version> <commit-sha>"
+    echo "âŒ Usage: $0 <new-version> <commit-sha>"
     exit 1
 fi
 
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”"
 echo "Updating All Version References"
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”"
 echo "New version: $NEW_VERSION"
 echo "Commit SHA: $SHORT_SHA"
 echo ""
@@ -126,21 +126,21 @@ chmod +x scripts/generate-changelog.sh
 ./scripts/generate-changelog.sh "$NEW_VERSION"
 
 echo ""
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "✅ All Version References Updated"
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”"
+echo "âœ… All Version References Updated"
+echo "â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”"
 echo ""
 echo "Files updated:"
-echo "  ✅ assets/version.json → $NEW_VERSION"
-echo "  ✅ assets/component-versions.json → all services"
-echo "  ✅ pubspec.yaml → ${NEW_VERSION}+${BUILD_NUMBER}"
-echo "  ✅ services/api-backend/package.json → $NEW_VERSION"
-echo "  ✅ services/streaming-proxy/package.json → $NEW_VERSION"
-echo "  ✅ lib/main.dart → v${NEW_VERSION}"
-echo "  ✅ README.md → updated badges"
-echo "  ✅ docs/VERSIONING.md → updated examples"
-echo "  ✅ SECURITY.md → added new version row"
-echo "  ✅ lib/config/app_config.dart → $NEW_VERSION"
-echo "  ✅ CHANGELOG.md → prepended new version entry"
+echo "  âœ… assets/version.json â†’ $NEW_VERSION"
+echo "  âœ… assets/component-versions.json â†’ all services"
+echo "  âœ… pubspec.yaml â†’ ${NEW_VERSION}+${BUILD_NUMBER}"
+echo "  âœ… services/api-backend/package.json â†’ $NEW_VERSION"
+echo "  âœ… services/streaming-proxy/package.json â†’ $NEW_VERSION"
+echo "  âœ… lib/main.dart â†’ v${NEW_VERSION}"
+echo "  âœ… README.md â†’ updated badges"
+echo "  âœ… docs/VERSIONING.md â†’ updated examples"
+echo "  âœ… SECURITY.md â†’ added new version row"
+echo "  âœ… lib/config/app_config.dart â†’ $NEW_VERSION"
+echo "  âœ… CHANGELOG.md â†’ prepended new version entry"
 echo ""
 

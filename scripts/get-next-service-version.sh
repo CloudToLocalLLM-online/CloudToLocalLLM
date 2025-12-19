@@ -34,7 +34,7 @@ fi
 
 >&2 echo "Latest existing version: $LATEST_TAG"
 
-# Strip service suffix if present (e.g., "4.4.0-api" → "4.4.0")
+# Strip service suffix if present (e.g., "4.4.0-api" â†’ "4.4.0")
 BASE_VERSION=$(echo "$LATEST_TAG" | sed 's/-[a-z]*$//')
 
 # Parse version

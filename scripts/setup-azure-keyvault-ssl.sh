@@ -10,7 +10,7 @@ KEY_VAULT_NAME="cloudtolocalllm-kv"
 DOMAIN="cloudtolocalllm.online"
 SUBSCRIPTION_ID="${AZURE_SUBSCRIPTION_ID}"
 
-echo "🔐 Setting up Azure Key Vault for SSL certificate management..."
+echo "ðŸ” Setting up Azure Key Vault for SSL certificate management..."
 
 # Create Key Vault if it doesn't exist
 if ! az keyvault show --name "$KEY_VAULT_NAME" --resource-group "$RESOURCE_GROUP" &>/dev/null; then
@@ -22,13 +22,13 @@ if ! az keyvault show --name "$KEY_VAULT_NAME" --resource-group "$RESOURCE_GROUP
         --enabled-for-deployment true \
         --enabled-for-template-deployment true \
         --enabled-for-disk-encryption true
-    echo "✅ Key Vault created"
+    echo "âœ… Key Vault created"
 else
-    echo "✅ Key Vault already exists"
+    echo "âœ… Key Vault already exists"
 fi
 
 echo ""
-echo "📋 Next steps for Azure-managed SSL certificates:"
+echo "ðŸ“‹ Next steps for Azure-managed SSL certificates:"
 echo ""
 echo "Option 1: Import existing certificate to Key Vault"
 echo "  az keyvault certificate import \\"
@@ -44,5 +44,5 @@ echo "Option 3: Use cert-manager with Azure DNS-01 challenge"
 echo "  - Configure cert-manager to use Azure DNS for validation"
 echo "  - Certificates stored in Kubernetes secrets"
 echo ""
-echo "✅ Azure Key Vault ready for SSL certificate management"
+echo "âœ… Azure Key Vault ready for SSL certificate management"
 

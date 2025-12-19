@@ -64,26 +64,26 @@ done
 
 # Helper functions
 log_info() {
-    echo -e "${BLUE}ℹ${NC} $1"
+    echo -e "${BLUE}â„¹${NC} $1"
 }
 
 log_success() {
-    echo -e "${GREEN}✓${NC} $1"
+    echo -e "${GREEN}âœ“${NC} $1"
 }
 
 log_warning() {
-    echo -e "${YELLOW}⚠${NC} $1"
+    echo -e "${YELLOW}âš ${NC} $1"
 }
 
 log_error() {
-    echo -e "${RED}✗${NC} $1"
+    echo -e "${RED}âœ—${NC} $1"
 }
 
 log_section() {
     echo ""
-    echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo -e "${BLUE}â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”${NC}"
     echo -e "${BLUE}$1${NC}"
-    echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo -e "${BLUE}â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”${NC}"
     echo ""
 }
 
@@ -227,24 +227,24 @@ collect_secrets() {
     log_info "The following secrets will be configured in GitHub:"
     echo ""
     echo "Azure Configuration (from $CONFIG_FILE):"
-    echo "  ✓ AZURE_CLIENT_ID"
-    echo "  ✓ AZURE_TENANT_ID"
-    echo "  ✓ AZURE_SUBSCRIPTION_ID"
-    echo "  ✓ AZURE_KEY_VAULT_NAME"
+    echo "  âœ“ AZURE_CLIENT_ID"
+    echo "  âœ“ AZURE_TENANT_ID"
+    echo "  âœ“ AZURE_SUBSCRIPTION_ID"
+    echo "  âœ“ AZURE_KEY_VAULT_NAME"
     echo ""
     echo "Application Secrets (will prompt if not set as env vars):"
-    echo "  • POSTGRES_PASSWORD (auto-generated if empty)"
-    echo "  • JWT_SECRET (auto-generated if empty)"
-    echo "  • STRIPE_TEST_SECRET_KEY (required)"
-    echo "  • STRIPE_TEST_PUBLISHABLE_KEY (optional)"
-    echo "  • STRIPE_TEST_WEBHOOK_SECRET (optional)"
-    echo "  • STRIPE_LIVE_SECRET_KEY (optional)"
-    echo "  • STRIPE_LIVE_PUBLISHABLE_KEY (optional)"
-    echo "  • STRIPE_LIVE_WEBHOOK_SECRET (optional)"
-    echo "  • SENTRY_DSN (optional)"
-    echo "  • CLOUDFLARE_DNS_TOKEN (required)"
-    echo "  • CLOUDFLARE_TUNNEL_TOKEN (required)"
-    echo "  • SUPABASE_JWT_SECRET (required)"
+    echo "  â€¢ POSTGRES_PASSWORD (auto-generated if empty)"
+    echo "  â€¢ JWT_SECRET (auto-generated if empty)"
+    echo "  â€¢ STRIPE_TEST_SECRET_KEY (required)"
+    echo "  â€¢ STRIPE_TEST_PUBLISHABLE_KEY (optional)"
+    echo "  â€¢ STRIPE_TEST_WEBHOOK_SECRET (optional)"
+    echo "  â€¢ STRIPE_LIVE_SECRET_KEY (optional)"
+    echo "  â€¢ STRIPE_LIVE_PUBLISHABLE_KEY (optional)"
+    echo "  â€¢ STRIPE_LIVE_WEBHOOK_SECRET (optional)"
+    echo "  â€¢ SENTRY_DSN (optional)"
+    echo "  â€¢ CLOUDFLARE_DNS_TOKEN (required)"
+    echo "  â€¢ CLOUDFLARE_TUNNEL_TOKEN (required)"
+    echo "  â€¢ SUPABASE_JWT_SECRET (required)"
     echo ""
     
     if [[ "$NON_INTERACTIVE" != "true" ]]; then
@@ -420,17 +420,17 @@ generate_summary() {
     log_section "Configuration Complete"
     
     echo ""
-    echo -e "${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-    echo -e "${GREEN}✓ GitHub Secrets Setup Complete!${NC}"
-    echo -e "${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo -e "${GREEN}â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”${NC}"
+    echo -e "${GREEN}âœ“ GitHub Secrets Setup Complete!${NC}"
+    echo -e "${GREEN}â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”${NC}"
     echo ""
     echo "Repository: $GITHUB_REPO"
     echo ""
     echo "Azure Configuration:"
-    echo "  • Subscription: $AZURE_SUBSCRIPTION_ID"
-    echo "  • Tenant: $AZURE_TENANT_ID"
-    echo "  • Service Principal: $AZURE_CLIENT_ID"
-    echo "  • Key Vault: $AZURE_KEY_VAULT_NAME"
+    echo "  â€¢ Subscription: $AZURE_SUBSCRIPTION_ID"
+    echo "  â€¢ Tenant: $AZURE_TENANT_ID"
+    echo "  â€¢ Service Principal: $AZURE_CLIENT_ID"
+    echo "  â€¢ Key Vault: $AZURE_KEY_VAULT_NAME"
     echo ""
     echo "Next Steps:"
     echo "  1. Push code to main branch:"
@@ -469,7 +469,7 @@ Application Secrets:
   SUPABASE_JWT_SECRET: [redacted]
   SENTRY_DSN: ${SENTRY_DSN:-[not set]}
 
-⚠️  IMPORTANT: Keep this file secure and never commit it to version control!
+âš ï¸  IMPORTANT: Keep this file secure and never commit it to version control!
 EOF
     
     log_info "Secrets reference saved to: $secrets_file"
@@ -488,7 +488,7 @@ main() {
     validate_secrets
     generate_summary
     
-    log_success "All done! 🎉"
+    log_success "All done! ðŸŽ‰"
 }
 
 # Run main function

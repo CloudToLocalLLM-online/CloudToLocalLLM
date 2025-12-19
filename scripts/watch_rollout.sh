@@ -13,7 +13,7 @@ END=$((SECONDS+TIMEOUT))
 while [ $SECONDS -lt $END ]; do
     # Check rollout status
     if kubectl rollout status "$TYPE/$NAME" -n "$NAMESPACE" --timeout=1s >/dev/null 2>&1; then
-        echo "✅ $TYPE/$NAME successfully rolled out."
+        echo "âœ… $TYPE/$NAME successfully rolled out."
         exit 0
     fi
 
@@ -28,7 +28,7 @@ while [ $SECONDS -lt $END ]; do
             RESTARTS=$(kubectl get pod "$POD" -n "$NAMESPACE" -o jsonpath='{.status.containerStatuses[*].restartCount}' 2>/dev/null | awk '{s+=$1} END {print s}')
             
             if [ "${RESTARTS:-0}" -gt 3 ]; then
-                echo "❌ Detected ${RESTARTS} restarts for pod $POD! Fail fast triggered (limit 3)."
+                echo "âŒ Detected ${RESTARTS} restarts for pod $POD! Fail fast triggered (limit 3)."
                 
                 echo "--- Pod Status ---"
                 kubectl get pod "$POD" -n "$NAMESPACE"
@@ -38,7 +38,7 @@ while [ $SECONDS -lt $END ]; do
                 
                 exit 1
             elif [ "${RESTARTS:-0}" -gt 0 ]; then
-                echo "⚠️ Detected ${RESTARTS} restarts for pod $POD. Monitoring..."
+                echo "âš ï¸ Detected ${RESTARTS} restarts for pod $POD. Monitoring..."
             fi
         done
     fi
@@ -46,5 +46,5 @@ while [ $SECONDS -lt $END ]; do
     sleep 5
 done
 
-echo "❌ Timeout waiting for rollout of $TYPE/$NAME"
+echo "âŒ Timeout waiting for rollout of $TYPE/$NAME"
 exit 1

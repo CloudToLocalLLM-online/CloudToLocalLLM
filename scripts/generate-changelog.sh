@@ -6,16 +6,16 @@ set -e
 
 NEW_VERSION="$1"
 if [ -z "$NEW_VERSION" ]; then
-    echo "❌ Usage: $0 <new-version>"
+    echo "âŒ Usage: $0 <new-version>"
     exit 1
 fi
 
 # Get the latest tag
 LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
 
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”"
 echo "Generating Changelog for v$NEW_VERSION"
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”"
 
 if [ -z "$LAST_TAG" ]; then
     echo "No previous tag found. Getting all commits..."
@@ -77,4 +77,4 @@ fi
 
 mv $TEMP_FILE CHANGELOG.md
 
-echo "✅ CHANGELOG.md updated successfully"
+echo "âœ… CHANGELOG.md updated successfully"

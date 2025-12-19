@@ -8,7 +8,7 @@ set -e
 #   ./scripts/test-cloudflare-cache-purge.sh
 
 if [ -z "$CLOUDFLARE_API_KEY" ]; then
-    echo "❌ CLOUDFLARE_API_KEY not set"
+    echo "âŒ CLOUDFLARE_API_KEY not set"
     echo ""
     echo "To get your API key:"
     echo "1. Go to: https://dash.cloudflare.com/profile/api-tokens"
@@ -23,14 +23,14 @@ if [ -z "$CLOUDFLARE_API_KEY" ]; then
 fi
 
 if [ -z "$CLOUDFLARE_EMAIL" ]; then
-    echo "❌ CLOUDFLARE_EMAIL not set"
+    echo "âŒ CLOUDFLARE_EMAIL not set"
     echo "Please run: export CLOUDFLARE_EMAIL='your_email_here'"
     exit 1
 fi
 
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”"
 echo "Testing Cloudflare Cache Purge"
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”"
 echo ""
 
 # Get Zone ID for cloudtolocalllm.online
@@ -44,9 +44,9 @@ ZONE_RESPONSE=$(curl -s -X GET "https://api.cloudflare.com/client/v4/zones?name=
 
 if echo "$ZONE_RESPONSE" | grep -q '"success":true'; then
     ZONE_ID=$(echo "$ZONE_RESPONSE" | grep -o '"id":"[^"]*"' | head -1 | cut -d'"' -f4)
-    echo "✅ Zone ID: $ZONE_ID"
+    echo "âœ… Zone ID: $ZONE_ID"
 else
-    echo "❌ Failed to get Zone ID"
+    echo "âŒ Failed to get Zone ID"
     echo "Response: $ZONE_RESPONSE"
     exit 1
 fi
@@ -63,14 +63,14 @@ RESPONSE=$(curl -s -X POST \
 
 echo ""
 if echo "$RESPONSE" | grep -q '"success": true'; then
-    echo "✅ Cache purged successfully for all domains:"
+    echo "âœ… Cache purged successfully for all domains:"
     echo "   - cloudtolocalllm.online"
     echo "   - app.cloudtolocalllm.online"
     echo "   - api.cloudtolocalllm.online"
     echo ""
-    echo "✅ Test PASSED! The credentials work."
+    echo "âœ… Test PASSED! The credentials work."
 else
-    echo "❌ Cache purge failed"
+    echo "âŒ Cache purge failed"
     echo "Response: $RESPONSE"
     echo ""
     echo "Common issues:"

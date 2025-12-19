@@ -23,17 +23,17 @@ if echo "$RESPONSE" | grep -q '"success":true'; then
     ZONE_ID=$(echo "$RESPONSE" | grep -o '"id":"[^"]*"' | head -1 | cut -d'"' -f4)
     
     if [ -n "$ZONE_ID" ]; then
-        echo "✅ Zone ID found: $ZONE_ID"
+        echo "âœ… Zone ID found: $ZONE_ID"
         echo ""
         echo "To add as GitHub secret, run:"
         echo "  gh secret set CLOUDFLARE_ZONE_ID --body '$ZONE_ID'"
     else
-        echo "⚠️  Zone ID not found in response"
+        echo "âš ï¸  Zone ID not found in response"
         echo "Response: $RESPONSE"
         exit 1
     fi
 else
-    echo "❌ Failed to fetch Zone ID"
+    echo "âŒ Failed to fetch Zone ID"
     echo "Response: $RESPONSE"
     exit 1
 fi

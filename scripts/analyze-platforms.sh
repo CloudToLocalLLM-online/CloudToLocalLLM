@@ -6,9 +6,9 @@ set -e
 # Analyze which platforms need updates using Gemini AI
 # Outputs: new_version, needs_managed, needs_local, needs_desktop, needs_mobile
 
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”"
 echo "Analyzing Platform Changes with Gemini AI"
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”"
 
 # Get current version
 CURRENT_VERSION=$(jq -r '.version' assets/version.json)
@@ -31,7 +31,7 @@ echo ""
 FORCE_CLOUD=false
 if echo "$CHANGED_FILES" | grep -qE "(web/|lib/.*auth|lib/.*router|lib/config/|services/|k8s/|\.github/workflows/deploy-aks\.yml)"; then
     FORCE_CLOUD=true
-    echo "🌐 DETECTED WEB-RELATED CHANGES - Cloud deployment will be forced"
+    echo "ðŸŒ DETECTED WEB-RELATED CHANGES - Cloud deployment will be forced"
 fi
 
 # Prepare prompt for Gemini - properly escape for JSON
@@ -97,7 +97,7 @@ fi
 set -e
 
 if [ $EXIT_CODE -ne 0 ]; then
-    echo "❌ ERROR: Gemini analysis failed"
+    echo "âŒ ERROR: Gemini analysis failed"
     echo "$RESPONSE"
     exit 1
 fi
@@ -138,28 +138,28 @@ echo ""
         # VERIFY IF TAG ALREADY EXISTS AND AUTO-INCREMENT IF NEEDED
         echo "DEBUG: Checking if tag v$SEMANTIC_VERSION_NEW already exists..."
         if git rev-parse "v$SEMANTIC_VERSION_NEW" >/dev/null 2>&1; then
-            echo "⚠️  WARNING: Tag v$SEMANTIC_VERSION_NEW already exists! Attempting auto-increment..."
+            echo "âš ï¸  WARNING: Tag v$SEMANTIC_VERSION_NEW already exists! Attempting auto-increment..."
             
             # Basic auto-increment logic for patch version
             IFS='.' read -r major minor patch <<< "$SEMANTIC_VERSION_NEW"
             NEW_PATCH=$((patch + 1))
             SEMANTIC_VERSION_NEW="$major.$minor.$NEW_PATCH"
             NEW_VERSION="${SEMANTIC_VERSION_NEW}+${BUILD_DATE}"
-            echo "✅ Auto-incremented to v$SEMANTIC_VERSION_NEW"
+            echo "âœ… Auto-incremented to v$SEMANTIC_VERSION_NEW"
             REASONING="$REASONING (Auto-incremented to avoid tag conflict)"
         fi
 
         # Strict validation - Fail if mandatory fields are null or empty
         # Note: 'false' is a valid value for NEEDS_MANAGED, so we check for 'null' or empty
         if [ "$SEMANTIC_VERSION_NEW" == "null" ] || [ -z "$SEMANTIC_VERSION_NEW" ] || [ "$NEEDS_MANAGED" == "null" ] || [ -z "$NEEDS_MANAGED" ]; then
-            echo "❌ ERROR: Failed to parse Gemini response"
+            echo "âŒ ERROR: Failed to parse Gemini response"
             echo "Extracted JSON: $JSON_RESPONSE"
             echo "Response (first 500 chars): ${RESPONSE:0:500}"
             echo "Version analysis REQUIRES valid Gemini response"
             exit 1
         fi
 
-        echo "✅ Gemini Analysis:"
+        echo "âœ… Gemini Analysis:"
         echo "  Bump type: $BUMP_TYPE"
         echo "  New version: $NEW_VERSION"
         echo "  Managed: $NEEDS_MANAGED"
@@ -171,11 +171,11 @@ echo ""
         # Override cloud deployment if web-related files changed
         if [ "$FORCE_CLOUD" = "true" ]; then
             if [ "$NEEDS_MANAGED" = "false" ]; then
-                echo "🔧 OVERRIDING: AI incorrectly set needs_managed=false for web changes"
+                echo "ðŸ”§ OVERRIDING: AI incorrectly set needs_managed=false for web changes"
                 NEEDS_MANAGED="true"
             fi
             if [ "$NEEDS_LOCAL" = "false" ]; then
-                echo "🔧 OVERRIDING: AI incorrectly set needs_local=false for web changes"
+                echo "ðŸ”§ OVERRIDING: AI incorrectly set needs_local=false for web changes"
                 NEEDS_LOCAL="true"
             fi
             REASONING="$REASONING (OVERRIDE: Web-related files require backend deployment)"
@@ -183,21 +183,21 @@ echo ""
 
 # Validate version format (allow build metadata)
 if ! echo "$NEW_VERSION" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+(\+[0-9]+)?$'; then
-    echo "❌ ERROR: Invalid version format: $NEW_VERSION"
+    echo "âŒ ERROR: Invalid version format: $NEW_VERSION"
     echo "Expected format: x.y.z or x.y.z+builddate (e.g., 4.5.0 or 4.5.0+202412151409)"
     exit 1
 fi
 
 # Validate version logic
-echo "DEBUG: Validating version logic: $CURRENT_VERSION → $NEW_VERSION (bump: $BUMP_TYPE)"
-echo "DEBUG: Semantic versions: $SEMANTIC_VERSION → $SEMANTIC_VERSION_NEW"
+echo "DEBUG: Validating version logic: $CURRENT_VERSION â†’ $NEW_VERSION (bump: $BUMP_TYPE)"
+echo "DEBUG: Semantic versions: $SEMANTIC_VERSION â†’ $SEMANTIC_VERSION_NEW"
 
 if [ "$BUMP_TYPE" = "none" ]; then
     if [ "$SEMANTIC_VERSION_NEW" != "$SEMANTIC_VERSION" ]; then
-        echo "❌ ERROR: bump_type='none' but semantic version changed from $SEMANTIC_VERSION to $SEMANTIC_VERSION_NEW"
+        echo "âŒ ERROR: bump_type='none' but semantic version changed from $SEMANTIC_VERSION to $SEMANTIC_VERSION_NEW"
         exit 1
     fi
-    echo "✅ No semantic version bump (debugging/fixes) - keeping $SEMANTIC_VERSION, updating build metadata"
+    echo "âœ… No semantic version bump (debugging/fixes) - keeping $SEMANTIC_VERSION, updating build metadata"
 else
     # Function to compare semantic versions (without build metadata)
     version_compare() {
@@ -242,23 +242,23 @@ else
     set -e
 
     if [ $COMPARE_RESULT -eq 2 ]; then
-        echo "❌ ERROR: New semantic version ($SEMANTIC_VERSION_NEW) is NOT higher than current ($SEMANTIC_VERSION)"
+        echo "âŒ ERROR: New semantic version ($SEMANTIC_VERSION_NEW) is NOT higher than current ($SEMANTIC_VERSION)"
         echo "For version bumps, new semantic version must be higher than current"
         exit 1
     elif [ $COMPARE_RESULT -eq 0 ]; then
-        echo "❌ ERROR: New semantic version ($SEMANTIC_VERSION_NEW) is the SAME as current ($SEMANTIC_VERSION)"
+        echo "âŒ ERROR: New semantic version ($SEMANTIC_VERSION_NEW) is the SAME as current ($SEMANTIC_VERSION)"
         echo "Use bump_type='none' for no semantic version change, or increment for releases"
         exit 1
     else
-        echo "✅ Semantic version validation passed: $SEMANTIC_VERSION → $SEMANTIC_VERSION_NEW"
+        echo "âœ… Semantic version validation passed: $SEMANTIC_VERSION â†’ $SEMANTIC_VERSION_NEW"
     fi
 fi
 
-echo "✅ Final version: $NEW_VERSION (semantic: $SEMANTIC_VERSION_NEW, build: $BUILD_DATE)"
+echo "âœ… Final version: $NEW_VERSION (semantic: $SEMANTIC_VERSION_NEW, build: $BUILD_DATE)"
 
 echo ""
-echo "✅ Final Decision:"
-echo "  Version: $CURRENT_VERSION → $NEW_VERSION"
+echo "âœ… Final Decision:"
+echo "  Version: $CURRENT_VERSION â†’ $NEW_VERSION"
 echo "  Managed: $NEEDS_MANAGED"
 echo "  Local: $NEEDS_LOCAL"
 echo "  Desktop: $NEEDS_DESKTOP"
