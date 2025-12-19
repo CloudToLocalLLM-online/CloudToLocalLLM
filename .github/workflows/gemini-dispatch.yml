@@ -60,14 +60,6 @@ jobs:
       command: "${{ steps.extract_command.outputs.command }}"
       additional_context: "${{ steps.extract_command.outputs.additional_context }}"
     steps:
-      - name: "Mint identity token"
-        id: "mint_identity_token"
-        if: vars.APP_ID != ''
-        uses: "actions/create-github-app-token@a8d616148505b5069dccd32f177bb87d7f39123b"
-        with:
-          app-id: "${{ vars.APP_ID }}"
-          private-key: "${{ secrets.APP_PRIVATE_KEY }}"
-
       - name: "Extract command"
         id: "extract_command"
         uses: "actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea"
@@ -92,7 +84,7 @@ jobs:
       - name: "Acknowledge"
         if: steps.extract_command.outputs.command != 'fallthrough'
         env:
-          GITHUB_TOKEN: "${{ steps.mint_identity_token.outputs.token || secrets.GITHUB_TOKEN }}"
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           gh issue comment "${{ github.event.pull_request.number || github.event.issue.number }}" \
             --body "🤖 Received your request! Tracking progress [here](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})" \
