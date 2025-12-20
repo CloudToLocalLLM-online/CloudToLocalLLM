@@ -193,7 +193,7 @@ jobs:
             git config user.name "github-actions[bot]"
             git config user.email "github-actions[bot]@users.noreply.github.com"
             chmod +x scripts/update-all-versions.sh
-            ./scripts/update-all-versions.sh "$(echo "$GEMINI_OUTPUT" | jq -r '.new_version')" "2e91e3f49339b9980faacdf01de3ace42548176a"
+            ./scripts/update-all-versions.sh "$(echo "$GEMINI_OUTPUT" | jq -r '.new_version')" "${{ github.sha }}"
             git add -A
             git commit -m "chore: bump version to $(echo "$GEMINI_OUTPUT" | jq -r '.new_version') [skip ci]"
             git push origin main

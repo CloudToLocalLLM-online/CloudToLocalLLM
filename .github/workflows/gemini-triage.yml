@@ -65,7 +65,14 @@ jobs:
           ISSUE_BODY: "${{ github.event.issue.body }}"
           AVAILABLE_LABELS: "${{ steps.get_labels.outputs.available_labels }}"
         run: |
-          if ! npx -y @google/gemini-cli@latest --yolo --output-format json "Analyze this GitHub issue and assign appropriate labels from the list. Labels: $AVAILABLE_LABELS. Issue Title: $ISSUE_TITLE. Issue Body: $ISSUE_BODY. Return ONLY a valid JSON object with a field 'labels' (array of strings, ALL STRINGS MUST BE QUOTED)." > raw_output.json 2> gemini_error.log; then
+          PROMPT="Analyze this GitHub issue and assign appropriate labels from the list: $AVAILABLE_LABELS. 
+          Title: $ISSUE_TITLE. 
+          Body: $ISSUE_BODY. 
+          Return ONLY a valid JSON object.
+          Example: {\"labels\": [\"bug\", \"priority: low\"]}
+          Do NOT include any text outside the JSON object. ALL strings MUST be double-quoted."
+          
+          if ! npx -y @google/gemini-cli@latest --yolo --output-format json "$PROMPT" > raw_output.json 2> gemini_error.log; then
             echo "::error::Gemini CLI failed"
             cat gemini_error.log
             exit 1
