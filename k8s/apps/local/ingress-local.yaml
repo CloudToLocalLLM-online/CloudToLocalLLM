@@ -1,19 +1,17 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: cloudtolocalllm-local
+  name: cloudtolocalllm-ingress-local
   namespace: argocd
 spec:
   project: default
   source:
     repoURL: https://github.com/imrightguy/CloudToLocalLLM
     targetRevision: main
-    path: k8s/apps/local
-    directory:
-
+    path: k8s/apps/local/ingress-local
   destination:
     server: https://kubernetes.default.svc
-    namespace: argocd
+    namespace: cloudtolocalllm
   syncPolicy:
     automated:
       prune: true
