@@ -34,7 +34,7 @@
     "@opentelemetry/auto-instrumentations-node": "^0.62.1",
     "@opentelemetry/exporter-trace-otlp-http": "^0.203.0",
     "@opentelemetry/sdk-node": "^0.203.0",
-    "@sentry/node": "^10.29.0",
+    "@sentry/node": "^10.32.0",
     "cors": "^2.8.5",
     "dockerode": "^4.0.2",
     "dotenv": "^16.3.1",
