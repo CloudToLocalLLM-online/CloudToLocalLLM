@@ -1,4 +1,4 @@
-name: "🔎 Gemini Review"
+name: "🔎 KiloCode Review"
 
 on:
   workflow_call:
@@ -18,6 +18,7 @@ defaults:
 
 jobs:
   review:
+    if: false
     runs-on: "ubuntu-latest"
     timeout-minutes: 7
     permissions:
@@ -41,17 +42,17 @@ jobs:
       - name: "Checkout repository"
         uses: "actions/checkout@v4"
 
-      - name: "Run Gemini pull request review"
-        id: "gemini_pr_review"
+      - name: "Run KiloCode pull request review"
+        id: "kilocode_pr_review"
         env:
-          GEMINI_API_KEY: "${{ secrets.GEMINI_API_KEY }}"
+          KILOCODE_API_KEY: "${{ secrets.KILOCODE_API_KEY }}"
           GITHUB_TOKEN: "${{ steps.mint_identity_token.outputs.token || secrets.GITHUB_TOKEN || github.token }}"
           ISSUE_TITLE: "${{ github.event.pull_request.title || github.event.issue.title }}"
           ISSUE_BODY: "${{ github.event.pull_request.body || github.event.issue.body }}"
           ADDITIONAL_CONTEXT: "${{ inputs.additional_context }}"
         run: |
-          mkdir -p .gemini
-          cat > .gemini/settings.json <<EOF
+          mkdir -p .kilocode
+          cat > .kilocode/settings.json <<EOF
           {
             "model": { "maxSessionTurns": 25 },
             "output": { "format": "json" },
@@ -70,8 +71,9 @@ jobs:
             }
           }
           EOF
-          if ! npx -y @google/gemini-cli@latest --yolo --output-format json "Please review this pull request. Title: $ISSUE_TITLE. Body: $ISSUE_BODY. Context: $ADDITIONAL_CONTEXT." > raw_output.json 2> gemini_error.log; then
-            echo "::error::Gemini CLI failed"
-            cat gemini_error.log
+          chmod +x scripts/kilocode-cli.cjs
+          if ! ./scripts/kilocode-cli.cjs "Please review this pull request. Title: $ISSUE_TITLE. Body: $ISSUE_BODY. Context: $ADDITIONAL_CONTEXT." --output-format json > raw_output.json 2> kilocode_error.log; then
+            echo "::error::KiloCode CLI failed"
+            cat kilocode_error.log
             exit 1
           fi

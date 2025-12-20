@@ -1,4 +1,4 @@
-name: "🔀 Gemini Dispatch"
+name: "🔀 KiloCode Dispatch"
 
 on:
   push:
@@ -47,12 +47,7 @@ defaults:
 
 jobs:
   dispatch:
-    if: |-
-      (github.event_name == 'push' && !contains(github.event.head_commit.message || '', '[skip ci]')) ||
-      (github.event_name == 'workflow_dispatch') ||
-      (github.event_name == 'issues') ||
-      (github.event_name == 'pull_request') ||
-      (github.event_name == 'issue_comment' && startsWith(github.event.comment.body || '', '@gemini-cli'))
+    if: false
     runs-on: "ubuntu-latest"
     permissions:
       contents: "read"
@@ -80,17 +75,17 @@ jobs:
               core.setOutput('command', 'review');
             } else if (['issues.opened', 'issues.reopened'].includes(eventType)) {
               core.setOutput('command', 'triage');
-            } else if (request.startsWith("@gemini-cli /review")) {
+            } else if (request.startsWith("@kilocode-cli /review")) {
               core.setOutput('command', 'review');
-              core.setOutput('additional_context', request.replace(/^@gemini-cli \/review/, '').trim());
-            } else if (request.startsWith("@gemini-cli /triage")) {
+              core.setOutput('additional_context', request.replace(/^@kilocode-cli \/review/, '').trim());
+            } else if (request.startsWith("@kilocode-cli /triage")) {
               core.setOutput('command', 'triage');
-            } else if (request.startsWith("@gemini-cli /deploy")) {
+            } else if (request.startsWith("@kilocode-cli /deploy")) {
               core.setOutput('command', 'deploy');
-              core.setOutput('additional_context', request.replace(/^@gemini-cli \/deploy/, '').trim());
-            } else if (request.startsWith("@gemini-cli")) {
+              core.setOutput('additional_context', request.replace(/^@kilocode-cli \/deploy/, '').trim());
+            } else if (request.startsWith("@kilocode-cli")) {
               core.setOutput('command', 'invoke');
-              core.setOutput('additional_context', request.replace(/^@gemini-cli/, '').trim());
+              core.setOutput('additional_context', request.replace(/^@kilocode-cli/, '').trim());
             } else {
               core.setOutput('command', 'fallthrough');
             }
@@ -99,7 +94,7 @@ jobs:
   review:
     needs: dispatch
     if: needs.dispatch.outputs.command == 'review'
-    uses: "./.github/workflows/gemini-review.yml"
+    uses: "./.github/workflows/kilocode-review.yml"
     permissions:
       contents: "read"
       id-token: "write"
@@ -112,7 +107,7 @@ jobs:
   triage:
     needs: dispatch
     if: needs.dispatch.outputs.command == 'triage'
-    uses: "./.github/workflows/gemini-triage.yml"
+    uses: "./.github/workflows/kilocode-triage.yml"
     permissions:
       contents: "read"
       id-token: "write"
@@ -125,7 +120,7 @@ jobs:
   invoke:
     needs: dispatch
     if: needs.dispatch.outputs.command == 'invoke'
-    uses: "./.github/workflows/gemini-invoke.yml"
+    uses: "./.github/workflows/kilocode-invoke.yml"
     permissions:
       contents: "write"
       id-token: "write"
@@ -160,43 +155,44 @@ jobs:
       - name: "Run Analysis"
         id: "analysis"
         env:
-          GEMINI_API_KEY: "${{ secrets.GEMINI_API_KEY }}"
+          KILOCODE_API_KEY: "${{ secrets.KILOCODE_API_KEY }}"
         run: |
-          # Use npx to run the latest CLI directly
-          if ! npx -y @google/gemini-cli@latest --yolo --output-format json "Analyze the following project state and determine the release strategy. Return ONLY a valid JSON object with fields: new_version, docker_version, do_managed, do_local, do_desktop, do_mobile, should_deploy, reasoning, version_bump_needed. Context: Version=$(cat assets/version.json), Changes=$(git diff --name-only HEAD~1), Log=$(git log -n 5 --oneline)" > raw_output.json 2> gemini_error.log; then
-            echo "::error::Gemini CLI failed"
-            cat gemini_error.log
+          # Use kilocode-cli to run analysis
+          chmod +x scripts/kilocode-cli.cjs
+          if ! ./scripts/kilocode-cli.cjs "Analyze the following project state and determine the release strategy. Return ONLY a valid JSON object with fields: new_version, docker_version, do_managed, do_local, do_desktop, do_mobile, should_deploy, reasoning, version_bump_needed. Context: Version=$(cat assets/version.json), Changes=$(git diff --name-only HEAD~1), Log=$(git log -n 5 --oneline)" --output-format json > raw_output.json 2> kilocode_error.log; then
+            echo "::error::KiloCode CLI failed"
+            cat kilocode_error.log
             exit 1
           fi
           # Extract response and clean JSON
           CLEAN_JSON=$(cat raw_output.json | jq -r '.response' | sed -n '/{/,/}/p')
-          echo "gemini_output<<EOF" >> $GITHUB_OUTPUT
+          echo "kilocode_output<<EOF" >> $GITHUB_OUTPUT
           echo "$CLEAN_JSON" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
 
       - name: "Execute Logic"
         id: "exec"
         env:
-          GEMINI_OUTPUT: "${{ steps.analysis.outputs.gemini_output }}"
-          GEMINI_API_KEY: "${{ secrets.GEMINI_API_KEY }}"
+          KILOCODE_OUTPUT: "${{ steps.analysis.outputs.kilocode_output }}"
+          KILOCODE_API_KEY: "${{ secrets.KILOCODE_API_KEY }}"
         run: |
           set -e
-          echo "new_version=$(echo "$GEMINI_OUTPUT" | jq -r '.new_version')" >> $GITHUB_OUTPUT
-          echo "docker_version=$(echo "$GEMINI_OUTPUT" | jq -r '.docker_version')" >> $GITHUB_OUTPUT
-          echo "do_managed=$(echo "$GEMINI_OUTPUT" | jq -r '.do_managed')" >> $GITHUB_OUTPUT
-          echo "do_local=$(echo "$GEMINI_OUTPUT" | jq -r '.do_local')" >> $GITHUB_OUTPUT
-          echo "do_desktop=$(echo "$GEMINI_OUTPUT" | jq -r '.do_desktop')" >> $GITHUB_OUTPUT
-          echo "do_mobile=$(echo "$GEMINI_OUTPUT" | jq -r '.do_mobile')" >> $GITHUB_OUTPUT
-          echo "should_deploy=$(echo "$GEMINI_OUTPUT" | jq -r '.should_deploy')" >> $GITHUB_OUTPUT
-          echo "reasoning=$(echo "$GEMINI_OUTPUT" | jq -r '.reasoning')" >> $GITHUB_OUTPUT
+          echo "new_version=$(echo "$KILOCODE_OUTPUT" | jq -r '.new_version')" >> $GITHUB_OUTPUT
+          echo "docker_version=$(echo "$KILOCODE_OUTPUT" | jq -r '.docker_version')" >> $GITHUB_OUTPUT
+          echo "do_managed=$(echo "$KILOCODE_OUTPUT" | jq -r '.do_managed')" >> $GITHUB_OUTPUT
+          echo "do_local=$(echo "$KILOCODE_OUTPUT" | jq -r '.do_local')" >> $GITHUB_OUTPUT
+          echo "do_desktop=$(echo "$KILOCODE_OUTPUT" | jq -r '.do_desktop')" >> $GITHUB_OUTPUT
+          echo "do_mobile=$(echo "$KILOCODE_OUTPUT" | jq -r '.do_mobile')" >> $GITHUB_OUTPUT
+          echo "should_deploy=$(echo "$KILOCODE_OUTPUT" | jq -r '.should_deploy')" >> $GITHUB_OUTPUT
+          echo "reasoning=$(echo "$KILOCODE_OUTPUT" | jq -r '.reasoning')" >> $GITHUB_OUTPUT
 
-          if [ "$(echo "$GEMINI_OUTPUT" | jq -r '.version_bump_needed')" == "true" ]; then
+          if [ "$(echo "$KILOCODE_OUTPUT" | jq -r '.version_bump_needed')" == "true" ]; then
             git config user.name "github-actions[bot]"
             git config user.email "github-actions[bot]@users.noreply.github.com"
             chmod +x scripts/update-all-versions.sh
-            ./scripts/update-all-versions.sh "$(echo "$GEMINI_OUTPUT" | jq -r '.new_version')" "${{ github.sha }}"
+            ./scripts/update-all-versions.sh "$(echo "$KILOCODE_OUTPUT" | jq -r '.new_version')" "${{ github.sha }}"
             git add -A
-            git commit -m "chore: bump version to $(echo "$GEMINI_OUTPUT" | jq -r '.new_version') [skip ci]"
+            git commit -m "chore: bump version to $(echo "$KILOCODE_OUTPUT" | jq -r '.new_version') [skip ci]"
             git push origin main
           fi
 

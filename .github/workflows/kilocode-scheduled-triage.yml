@@ -1,4 +1,4 @@
-name: "📋 Gemini Scheduled Issue Triage"
+name: "📋 KiloCode Scheduled Issue Triage"
 
 on:
   schedule:
@@ -27,6 +27,7 @@ defaults:
 
 jobs:
   triage:
+    if: false
     runs-on: "ubuntu-latest"
     timeout-minutes: 7
     permissions:
@@ -86,53 +87,54 @@ jobs:
           ISSUE_COUNT="$(echo "${ISSUES}" | jq 'length')"
           echo "✅ Found ${ISSUE_COUNT} issue(s) to triage! 🎯"
 
-      - name: "Run Gemini Issue Analysis"
-        id: "gemini_issue_analysis"
+      - name: "Run KiloCode Issue Analysis"
+        id: "kilocode_issue_analysis"
         if: |-
           ${{ steps.find_issues.outputs.issues_to_triage != '[]' }}
         env:
-          GEMINI_API_KEY: "${{ secrets.GEMINI_API_KEY }}"
+          KILOCODE_API_KEY: "${{ secrets.KILOCODE_API_KEY }}"
           ISSUES_TO_TRIAGE: "${{ steps.find_issues.outputs.issues_to_triage }}"
           AVAILABLE_LABELS: "${{ steps.get_labels.outputs.available_labels }}"
         run: |
           # Loop through issues one by one for maximum robustness
           RESULTS="[]"
           echo "🔍 Triaging issues one by one..."
-          
+
           # Use jq to get issues safely
           ISSUES_JSON=$(echo "$ISSUES_TO_TRIAGE" | jq -c '.[]')
-          
+
           while IFS= read -r ISSUE; do
             NUMBER=$(echo "$ISSUE" | jq -r '.number')
             TITLE=$(echo "$ISSUE" | jq -r '.title')
             echo "🎯 Triaging issue #$NUMBER: $TITLE"
-            
-            PROMPT="You are a GitHub issue triager. Available labels: $AVAILABLE_LABELS. 
-            Triage issue #$NUMBER. Title: $TITLE. 
+
+            PROMPT="You are a GitHub issue triager. Available labels: $AVAILABLE_LABELS.
+            Triage issue #$NUMBER. Title: $TITLE.
             Return ONLY a valid JSON object: {\"labels_to_set\": [\"label1\", \"label2\"]}. ALL strings must be double-quoted."
-            
-            if ! RESPONSE_RAW=$(npx -y @google/gemini-cli@latest --yolo --model gemini-1.5-pro --output-format json "$PROMPT" 2>cli_error.log); then
+
+            chmod +x scripts/kilocode-cli.cjs
+            if ! RESPONSE_RAW=$(./scripts/kilocode-cli.cjs "$PROMPT" --output-format json 2>cli_error.log); then
               echo "⚠️ Failed to triage #$NUMBER"
               cat cli_error.log
               continue
             fi
-            
+
             # Extract labels safely
             LABELS=$(echo "$RESPONSE_RAW" | jq -r '.response' | sed -n '/{/,/}/p' | jq -c '.labels_to_set // []' || echo "[]")
             RESULTS=$(echo "$RESULTS" | jq -c ". + [{\"issue_number\": $NUMBER, \"labels_to_set\": $LABELS}]")
-            
+
           done <<< "$ISSUES_JSON"
-          
+
           echo "triaged_issues<<EOF" >> $GITHUB_OUTPUT
           echo "$RESULTS" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
 
-      - name: "Parse Gemini output"
+      - name: "Parse KiloCode output"
         id: "parse_output"
         run: |
            # Use output from previous step directly
            echo "triaged_issues<<EOF" >> $GITHUB_OUTPUT
-           echo '${{ steps.gemini_issue_analysis.outputs.triaged_issues }}' >> $GITHUB_OUTPUT
+           echo '${{ steps.kilocode_issue_analysis.outputs.triaged_issues }}' >> $GITHUB_OUTPUT
            echo "EOF" >> $GITHUB_OUTPUT
 
   label:
