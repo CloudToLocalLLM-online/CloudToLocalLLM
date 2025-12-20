@@ -17,11 +17,23 @@ async function makeKiloCodeRequest(prompt, options = {}) {
 
   // For testing: return mock responses based on prompt content
   if (prompt.includes('Analyze the following project state')) {
+    // Parse current version from prompt
+    const versionMatch = prompt.match(/Version=([^,\s]+)/);
+    let currentVersion = "7.0.0"; // default
+    if (versionMatch) {
+      currentVersion = versionMatch[1].replace(/"/g, '');
+    }
+
+    // Increment patch version
+    const versionParts = currentVersion.split('.');
+    const patch = parseInt(versionParts[2] || 0) + 1;
+    const newVersion = `${versionParts[0]}.${versionParts[1]}.${patch}`;
+
     // Mock deployment analysis response
     return {
       response: JSON.stringify({
-        new_version: "7.0.0",
-        docker_version: "7.0.0",
+        new_version: newVersion,
+        docker_version: newVersion,
         do_managed: true,
         do_local: false,
         do_desktop: false,
