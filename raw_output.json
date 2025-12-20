@@ -1,0 +1,55 @@
+{
+  "session_id": "b4058a53-a22d-491e-aaaf-defbb319e833",
+  "response": "```json\n{\n  \"new_version\": \"7.14.1\",\n  \"docker_version\": \"7.14.1-202512200000\",\n  \"do_managed\": true,\n  \"do_local\": true,\n  \"do_desktop\": false,\n  \"do_mobile\": false,\n  \"should_deploy\": true,\n  \"reasoning\": \"The previous deployment attempt of v7.14.0 failed and was rolled back due to a missing Docker image. The latest commits are fixes to the CI/CD pipeline and Kubernetes configuration to resolve this issue. A patch bump to v7.14.1 is required to create a new, traceable release that incorporates these fixes. The deployment should target the Kubernetes-managed environments (local and managed). No changes were made to the desktop or mobile application code, so no new client releases are necessary.\",\n  \"version_bump_needed\": true\n}\n```",
+  "stats": {
+    "models": {
+      "gemini-2.5-flash-lite": {
+        "api": {
+          "totalRequests": 1,
+          "totalErrors": 0,
+          "totalLatencyMs": 2925
+        },
+        "tokens": {
+          "prompt": 3340,
+          "candidates": 182,
+          "total": 3940,
+          "cached": 0,
+          "thoughts": 418,
+          "tool": 0
+        }
+      },
+      "gemini-2.5-pro": {
+        "api": {
+          "totalRequests": 1,
+          "totalErrors": 0,
+          "totalLatencyMs": 15151
+        },
+        "tokens": {
+          "prompt": 13788,
+          "candidates": 203,
+          "total": 15572,
+          "cached": 12210,
+          "thoughts": 1581,
+          "tool": 0
+        }
+      }
+    },
+    "tools": {
+      "totalCalls": 0,
+      "totalSuccess": 0,
+      "totalFail": 0,
+      "totalDurationMs": 0,
+      "totalDecisions": {
+        "accept": 0,
+        "reject": 0,
+        "modify": 0,
+        "auto_accept": 0
+      },
+      "byName": {}
+    },
+    "files": {
+      "totalLinesAdded": 0,
+      "totalLinesRemoved": 0
+    }
+  }
+}
