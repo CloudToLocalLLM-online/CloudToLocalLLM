@@ -16,8 +16,6 @@ resources:
   - deployments/streaming-proxy.yaml
   - deployments/streaming-proxy-hpa.yaml
   - deployments/streaming-proxy-secret.yaml
-  - configmaps/main-config.yaml
-  - configmaps/redis.yaml
   - configmaps/streaming-proxy-configmap.yaml
   - jobs/cloudflare-purge-job.yaml
   - alertmanager-config.yaml
