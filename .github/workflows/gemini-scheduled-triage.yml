@@ -101,10 +101,10 @@ jobs:
           gcp_service_account: "${{ vars.SERVICE_ACCOUNT_EMAIL }}"
           gcp_workload_identity_provider: "${{ vars.GCP_WIF_PROVIDER }}"
           gemini_api_key: "${{ secrets.GEMINI_API_KEY }}"
-          gemini_cli_version: "0.20.2"
+          google_api_key: "${{ secrets.GEMINI_API_KEY }}"
+          gemini_cli_version: "0.18.4"
           gemini_debug: false
           gemini_model: "gemini-1.5-flash"
-          google_api_key: "${{ secrets.GOOGLE_API_KEY }}"
           use_gemini_code_assist: "${{ vars.GOOGLE_GENAI_USE_GCA }}"
           use_vertex_ai: "${{ vars.GOOGLE_GENAI_USE_VERTEXAI }}"
           upload_artifacts: "${{ vars.UPLOAD_ARTIFACTS }}"

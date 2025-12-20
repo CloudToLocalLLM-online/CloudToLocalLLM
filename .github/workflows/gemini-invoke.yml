@@ -56,57 +56,11 @@ jobs:
           gcp_service_account: "${{ vars.SERVICE_ACCOUNT_EMAIL }}"
           gcp_workload_identity_provider: "${{ vars.GCP_WIF_PROVIDER }}"
           gemini_api_key: "${{ secrets.GEMINI_API_KEY }}"
-          gemini_cli_version: "0.20.2"
+          google_api_key: "${{ secrets.GEMINI_API_KEY }}"
+          gemini_cli_version: "0.18.4"
           gemini_debug: false
           gemini_model: "gemini-1.5-flash"
-          google_api_key: "${{ secrets.GOOGLE_API_KEY }}"
           use_gemini_code_assist: "${{ vars.GOOGLE_GENAI_USE_GCA }}"
           use_vertex_ai: false
           upload_artifacts: false
           workflow_name: "gemini-invoke"
-          settings: |-
-            {
-              "model": {
-                "maxSessionTurns": 25
-              },
-              "output": {
-                "format": "json"
-              },
-              "mcpServers": {
-                "github": {
-                  "command": "docker",
-                  "args": [
-                    "run",
-                    "-i",
-                    "--rm",
-                    "-e",
-                    "GITHUB_PERSONAL_ACCESS_TOKEN",
-                    "ghcr.io/github/github-mcp-server:v0.18.0"
-                  ],
-                  "includeTools": [
-                    "add_issue_comment",
-                    "get_issue",
-                    "get_issue_comments",
-                    "list_issues",
-                    "search_issues",
-                    "create_pull_request",
-                    "pull_request_read",
-                    "list_pull_requests",
-                    "search_pull_requests",
-                    "create_branch",
-                    "create_or_update_file",
-                    "delete_file",
-                    "fork_repository",
-                    "get_commit",
-                    "get_file_contents",
-                    "list_commits",
-                    "push_files",
-                    "search_code"
-                  ],
-                  "env": {
-                    "GITHUB_PERSONAL_ACCESS_TOKEN": "${GITHUB_TOKEN}"
-                  }
-                }
-              }
-            }
-          prompt: "/gemini-invoke"
