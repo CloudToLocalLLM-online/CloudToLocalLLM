@@ -270,6 +270,7 @@ jobs:
           docker push ${{ env.ACR_NAME }}.azurecr.io/base:main-${{ github.sha }}
 
   build_images:
+    name: Build ${{ matrix.service }}
     needs: [orchestrator, detect_changes, infrastructure, build_base]
     strategy:
       fail-fast: false
