@@ -307,7 +307,7 @@ jobs:
           - service: proxy
             file: config/docker/Dockerfile.streaming-proxy
             name: streaming-proxy
-    if: ${{ (needs.build_base.result == 'success' || needs.build_base.result == 'skipped') && contains(needs.detect_changes.outputs.changes, matrix.service) }}
+    if: (needs.build_base.result == 'success' || needs.build_base.result == 'skipped') && contains(needs.detect_changes.outputs.changes, matrix.service)
     runs-on: ubuntu-latest
     permissions:
       id-token: write
