@@ -1,20 +1,20 @@
 {
-  "session_id": "b4058a53-a22d-491e-aaaf-defbb319e833",
-  "response": "```json\n{\n  \"new_version\": \"7.14.1\",\n  \"docker_version\": \"7.14.1-202512200000\",\n  \"do_managed\": true,\n  \"do_local\": true,\n  \"do_desktop\": false,\n  \"do_mobile\": false,\n  \"should_deploy\": true,\n  \"reasoning\": \"The previous deployment attempt of v7.14.0 failed and was rolled back due to a missing Docker image. The latest commits are fixes to the CI/CD pipeline and Kubernetes configuration to resolve this issue. A patch bump to v7.14.1 is required to create a new, traceable release that incorporates these fixes. The deployment should target the Kubernetes-managed environments (local and managed). No changes were made to the desktop or mobile application code, so no new client releases are necessary.\",\n  \"version_bump_needed\": true\n}\n```",
+  "session_id": "fe3ebc30-aa14-452a-87af-d407c3d020b9",
+  "response": "```json\n{\n  \"new_version\": \"7.14.2\",\n  \"docker_version\": \"7.14.2\",\n  \"do_managed\": true,\n  \"do_local\": true,\n  \"do_desktop\": false,\n  \"do_mobile\": false,\n  \"should_deploy\": true,\n  \"reasoning\": \"The commit history indicates a bug fix for the streaming-proxy's Dockerfile and several CI/CD improvements. This warrants a patch version bump from 7.14.1 to 7.14.2. The change affects a core backend service, requiring a new Docker image build and deployment to managed and local environments. No changes were made to the client-side applications (desktop, mobile), so they do not need a new release.\",\n  \"version_bump_needed\": true\n}\n```",
   "stats": {
     "models": {
       "gemini-2.5-flash-lite": {
         "api": {
           "totalRequests": 1,
           "totalErrors": 0,
-          "totalLatencyMs": 2925
+          "totalLatencyMs": 3379
         },
         "tokens": {
-          "prompt": 3340,
-          "candidates": 182,
-          "total": 3940,
+          "prompt": 3293,
+          "candidates": 200,
+          "total": 3856,
           "cached": 0,
-          "thoughts": 418,
+          "thoughts": 363,
           "tool": 0
         }
       },
@@ -22,14 +22,14 @@
         "api": {
           "totalRequests": 1,
           "totalErrors": 0,
-          "totalLatencyMs": 15151
+          "totalLatencyMs": 9443
         },
         "tokens": {
-          "prompt": 13788,
-          "candidates": 203,
-          "total": 15572,
+          "prompt": 13741,
+          "candidates": 185,
+          "total": 14849,
           "cached": 12210,
-          "thoughts": 1581,
+          "thoughts": 923,
           "tool": 0
         }
       }

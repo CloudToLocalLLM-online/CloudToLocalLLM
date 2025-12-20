@@ -2,6 +2,35 @@
 
 All notable changes to this project will be documented in this file.
 
+## [7.14.2] - 2025-12-20
+# 7.14.2
+
+### Features
+
+*   **(gemini)** Enable manual platform selection for builds in CI workflows. (ef980c8)
+*   **(gemini)** Standardize Gemini CLI output to JSON in GitHub workflows for better parsing and reliability. (59c1422)
+
+### Bug Fixes
+
+*   **(ci)** Repaired numerous GitHub Actions workflows to resolve cascading failures in triage, deployment, and Gemini CLI integration. This includes fixing YAML validation, environment variable propagation, permissions, and command invocation logic. (8875a14, 6fb2495, 1d871ed, ff14ae9, 80e16d1, c2e4cd3, b167c43, 55c52c0, 2e91e3f, 18d8176, 4deb995, 0e78968, c17036b, 4b5b29b, 762452b, 76f34b6, 6c8d15a)
+*   **(gemini)** Addressed multiple issues with Gemini CLI integration, including reverting to more stable model versions (gemini-1.5-flash), correcting JSON syntax, and removing problematic tool configurations to prevent command errors. (02187f5, 4b8f943, ee2e5ce, a33eaa9, 62286fc)
+*   **(k8s)** Updated the web deployment to v7.14.0 to resolve a critical container loading issue. (f5258e9)
+*   **(k8s)** Rolled back the web image temporarily to mitigate a missing image error during deployment. (94969b0)
+*   **(k8s)** Removed duplicate resources in the base `kustomization.yaml` to prevent validation errors. (ebcc87f)
+*   **(docker)** Correctly implemented `COPY <<EOF` syntax for inline scripts within the streaming-proxy Dockerfile to ensure proper execution. (422bc31)
+
+### Refactoring
+
+*   **(ci)** Consolidated all backend service builds into a single, efficient matrix job in the CI pipeline. (ef050df)
+*   **(ci)** Standardized and simplified Gemini CLI workflow configurations for improved readability and maintenance. (673433f)
+*   **(ops)** Unified all deployment logic into a central `gemini-dispatch` workflow, deleting the redundant `deploy-aks.yml` and transitioning to a pure GitOps model with manual triggers. (ff9d394, 1e4aef8)
+*   **(ci)** Refactored CI workflows to improve Kustomize integration and create a more robust versioning strategy. (befa4af)
+
+### Chore
+
+*   Numerous improvements to CI/CD pipeline stability, including fixes for safety parser rejections, enhanced logging, and more resilient workflow dispatching logic. (e4b5b3b, 83b87c1, 3dd988f, 1304183, c83ef10, f6fd3d4, eb1048c, a2ad36e, 6ccea5a, 9d60926, 92db73a, 0937968)
+*   Bump version to 7.14.1. (ff6d1ac)
+
 ## [7.14.1] - 2025-12-20
 # Changelog - v7.14.1
 
