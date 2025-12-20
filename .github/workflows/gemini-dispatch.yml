@@ -162,7 +162,7 @@ jobs:
         uses: "google-github-actions/run-gemini-cli@v0"
         with:
           gemini_api_key: "${{ secrets.GEMINI_API_KEY }}"
-          gemini_cli_version: "latest"
+          gemini_cli_version: "0.1.25"
           gemini_model: "gemini-1.5-flash"
           gemini_debug: false
           prompt: |-
@@ -174,14 +174,6 @@ jobs:
             5. Manual Inputs: Managed=${{ github.event.inputs.do_managed || false }}, Local=${{ github.event.inputs.do_local || false }}, Desktop=${{ github.event.inputs.do_desktop || false }}, Mobile=${{ github.event.inputs.do_mobile || false }}, Override=${{ github.event.inputs.version_override || 'None' }}
 
             Return ONLY a valid JSON object.
-          settings: |-
-            {
-              "tools": {
-                "core": [
-                  "run_shell_command(.*)"
-                ]
-              }
-            }
 
       - name: "Execute Logic"
         id: "exec"
