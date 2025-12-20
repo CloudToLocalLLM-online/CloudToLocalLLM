@@ -226,7 +226,8 @@ jobs:
             echo "base=true" >> $GITHUB_OUTPUT
             CHANGES='["postgres", "web", "api", "proxy"]'
             # Convert JSON array to comma-separated string for GitHub Actions
-            CHANGES_CSV=$(echo "$CHANGES" | jq -r 'join(",")')
+            # Remove brackets and quotes from JSON array
+            CHANGES_CSV=$(echo "$CHANGES" | sed 's/\[//' | sed 's/\]//' | sed 's/"//g' | sed 's/ //g')
             echo "changes=$CHANGES_CSV" >> $GITHUB_OUTPUT
             exit 0
           fi
