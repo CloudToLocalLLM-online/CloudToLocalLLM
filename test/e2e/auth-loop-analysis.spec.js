@@ -1,9 +1,9 @@
 // CloudToLocalLLM v3.10.0 Authentication Loop Analysis Test
 // Comprehensive E2E test to analyze and verify the login loop race condition fix
 
-const { test, expect } = require('@playwright/test');
-const fs = require('fs');
-const path = require('path');
+import { test, expect } from '@playwright/test';
+import fs from 'fs';
+import path from 'path';
 
 // Test configuration
 const CONFIG = {
@@ -74,7 +74,7 @@ test.describe('CloudToLocalLLM v3.10.0 Authentication Loop Analysis', () => {
         location: msg.location(),
       };
       testReport.consoleLogs.push(logEntry);
-      
+
       // Log our specific debug messages
       if (msg.text().includes('') || msg.text().includes('')) {
         console.log(`[DEBUG] ${logEntry.timestamp}: ${msg.text()}`);
@@ -99,7 +99,7 @@ test.describe('CloudToLocalLLM v3.10.0 Authentication Loop Analysis', () => {
     // Generate comprehensive test report
     testReport.endTime = new Date().toISOString();
     testReport.duration = new Date(testReport.endTime) - new Date(testReport.startTime);
-    
+
     // Save test report
     const reportPath = path.join('test-results', `auth-loop-analysis-${Date.now()}.json`);
     fs.writeFileSync(reportPath, JSON.stringify(testReport, null, 2));
@@ -110,10 +110,10 @@ test.describe('CloudToLocalLLM v3.10.0 Authentication Loop Analysis', () => {
 
   test('Analyze authentication flow and detect login loops', async () => {
     console.log(`Starting authentication loop analysis for ${CONFIG.DEPLOYMENT_URL}`);
-    
+
     // Step 1: Navigate to deployment
     testReport.events.push({ timestamp: new Date().toISOString(), event: 'NAVIGATE_TO_APP' });
-    
+
     try {
       await page.goto(CONFIG.DEPLOYMENT_URL, { waitUntil: 'networkidle' });
       await page.screenshot({ path: 'test-results/01-initial-load.png' });
@@ -128,12 +128,12 @@ test.describe('CloudToLocalLLM v3.10.0 Authentication Loop Analysis', () => {
     try {
       const versionResponse = await page.request.get(`${CONFIG.DEPLOYMENT_URL}/version.json`);
       const versionData = await versionResponse.json();
-      
+
       if (versionData.version === '3.10.0') {
-        testReport.events.push({ 
-          timestamp: new Date().toISOString(), 
+        testReport.events.push({
+          timestamp: new Date().toISOString(),
           event: 'VERSION_VERIFIED',
-          data: versionData 
+          data: versionData
         });
       } else {
         testReport.issues.push(`Unexpected version: ${versionData.version}, expected 3.10.0`);
@@ -145,12 +145,12 @@ test.describe('CloudToLocalLLM v3.10.0 Authentication Loop Analysis', () => {
     // Step 3: Check if already authenticated
     const currentUrl = page.url();
     if (!currentUrl.includes('/login')) {
-      testReport.events.push({ 
-        timestamp: new Date().toISOString(), 
+      testReport.events.push({
+        timestamp: new Date().toISOString(),
         event: 'ALREADY_AUTHENTICATED',
-        url: currentUrl 
+        url: currentUrl
       });
-      
+
       // Try to logout first
       try {
         await page.click('button:has-text("Logout")', { timeout: 5000 });
@@ -163,7 +163,7 @@ test.describe('CloudToLocalLLM v3.10.0 Authentication Loop Analysis', () => {
 
     // Step 4: Locate and click login button
     testReport.events.push({ timestamp: new Date().toISOString(), event: 'LOCATE_LOGIN_BUTTON' });
-    
+
     await page.screenshot({ path: 'test-results/02-login-page.png' });
     testReport.screenshots.push('02-login-page.png');
 
@@ -173,34 +173,34 @@ test.describe('CloudToLocalLLM v3.10.0 Authentication Loop Analysis', () => {
     // Step 5: Start authentication flow monitoring
     const authStartTime = Date.now();
     testReport.timings.authStart = authStartTime;
-    
+
     testReport.events.push({ timestamp: new Date().toISOString(), event: 'CLICK_LOGIN_BUTTON' });
-    
+
     // Monitor for redirect loops
     let redirectCount = 0;
     const redirectUrls = [];
-    
+
     const redirectMonitor = setInterval(() => {
       const currentUrl = page.url();
       if (redirectUrls[redirectUrls.length - 1] !== currentUrl) {
         redirectUrls.push(currentUrl);
         redirectCount++;
-        
+
         console.log(`[REDIRECT ${redirectCount}] ${currentUrl}`);
-        
+
         // Check for loop pattern
         if (redirectCount > CONFIG.MAX_REDIRECTS) {
           testReport.result = 'INFINITE_LOOP_DETECTED';
           testReport.issues.push(`Infinite loop detected: ${redirectCount} redirects`);
           clearInterval(redirectMonitor);
         }
-        
+
         // Check for specific loop pattern (login -> callback -> login)
         if (redirectUrls.length >= 3) {
           const lastThree = redirectUrls.slice(-3);
-          if (lastThree[0].includes('/login') && 
-              lastThree[1].includes('/callback') && 
-              lastThree[2].includes('/login')) {
+          if (lastThree[0].includes('/login') &&
+            lastThree[1].includes('/callback') &&
+            lastThree[2].includes('/login')) {
             testReport.result = 'LOGIN_CALLBACK_LOOP_DETECTED';
             testReport.issues.push('Classic login-callback loop pattern detected');
             clearInterval(redirectMonitor);
@@ -212,11 +212,11 @@ test.describe('CloudToLocalLLM v3.10.0 Authentication Loop Analysis', () => {
     // Click login button and handle JWT flow
     try {
       await loginButton.click();
-      
+
       // Wait for JWT redirect or popup
       await page.waitForURL('**/authorize**', { timeout: 10000 });
       testReport.events.push({ timestamp: new Date().toISOString(), event: 'AUTH_REDIRECT' });
-      
+
       await page.screenshot({ path: 'test-results/03-jwt-page.png' });
       testReport.screenshots.push('03-jwt-page.png');
 
@@ -226,7 +226,7 @@ test.describe('CloudToLocalLLM v3.10.0 Authentication Loop Analysis', () => {
           await page.fill('input[name="email"]', CONFIG.JWT_TEST_EMAIL);
           await page.fill('input[name="password"]', CONFIG.JWT_TEST_PASSWORD);
           await page.click('button[type="submit"]');
-          
+
           testReport.events.push({ timestamp: new Date().toISOString(), event: 'AUTH_CREDENTIALS_SUBMITTED' });
         } catch (error) {
           testReport.issues.push(`JWT form interaction failed: ${error.message}`);
@@ -237,45 +237,45 @@ test.describe('CloudToLocalLLM v3.10.0 Authentication Loop Analysis', () => {
       await page.waitForURL('**/callback**', { timeout: 15000 });
       const callbackTime = Date.now();
       testReport.timings.callbackReached = callbackTime;
-      
-      testReport.events.push({ 
-        timestamp: new Date().toISOString(), 
+
+      testReport.events.push({
+        timestamp: new Date().toISOString(),
         event: 'CALLBACK_REACHED',
-        timeFromAuthStart: callbackTime - authStartTime 
+        timeFromAuthStart: callbackTime - authStartTime
       });
-      
+
       await page.screenshot({ path: 'test-results/04-callback-processing.png' });
       testReport.screenshots.push('04-callback-processing.png');
 
       // Monitor callback processing with our fix delays
       const callbackStartTime = Date.now();
-      
+
       // Wait for the 100ms delay from our fix
       await page.waitForTimeout(150); // Wait slightly longer than our fix delay
-      
+
       // Check for successful navigation to home
       try {
-        await page.waitForURL(url => !url.includes('/callback') && !url.includes('/login'), { 
-          timeout: 5000 
+        await page.waitForURL(url => !url.includes('/callback') && !url.includes('/login'), {
+          timeout: 5000
         });
-        
+
         const successTime = Date.now();
         testReport.timings.authComplete = successTime;
         testReport.timings.callbackProcessingTime = successTime - callbackStartTime;
-        
-        testReport.events.push({ 
-          timestamp: new Date().toISOString(), 
+
+        testReport.events.push({
+          timestamp: new Date().toISOString(),
           event: 'AUTH_SUCCESS',
           finalUrl: page.url(),
           totalTime: successTime - authStartTime,
           callbackProcessingTime: successTime - callbackStartTime
         });
-        
+
         testReport.result = 'SUCCESS';
-        
+
         await page.screenshot({ path: 'test-results/05-auth-success.png' });
         testReport.screenshots.push('05-auth-success.png');
-        
+
       } catch (error) {
         testReport.issues.push(`Failed to navigate away from callback: ${error.message}`);
         testReport.result = 'CALLBACK_STUCK';
@@ -289,29 +289,29 @@ test.describe('CloudToLocalLLM v3.10.0 Authentication Loop Analysis', () => {
     }
 
     // Step 6: Analyze console logs for our debug messages
-    const authLogs = testReport.consoleLogs.filter(log => 
+    const authLogs = testReport.consoleLogs.filter(log =>
       log.text.includes('') || log.text.includes('')
     );
-    
-    testReport.events.push({ 
-      timestamp: new Date().toISOString(), 
+
+    testReport.events.push({
+      timestamp: new Date().toISOString(),
       event: 'ANALYZE_DEBUG_LOGS',
       debugLogCount: authLogs.length,
       debugLogs: authLogs
     });
 
     // Check for specific fix indicators
-    const callbackSuccessLog = authLogs.find(log => 
+    const callbackSuccessLog = authLogs.find(log =>
       log.text.includes('Authentication successful, redirecting to home')
     );
-    
-    const routerAllowLog = authLogs.find(log => 
+
+    const routerAllowLog = authLogs.find(log =>
       log.text.includes('Allowing access to protected route')
     );
-    
+
     if (callbackSuccessLog && routerAllowLog) {
-      testReport.events.push({ 
-        timestamp: new Date().toISOString(), 
+      testReport.events.push({
+        timestamp: new Date().toISOString(),
         event: 'FIX_INDICATORS_FOUND',
         callbackSuccess: callbackSuccessLog,
         routerAllow: routerAllowLog

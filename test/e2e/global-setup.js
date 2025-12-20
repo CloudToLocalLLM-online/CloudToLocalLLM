@@ -1,19 +1,25 @@
-// CloudToLocalLLM v3.10.0 Global Test Setup
-// Prepares environment for authentication loop analysis
+/**
+ * CloudToLocalLLM v3.10.0 Global Test Setup
+ * Prepares environment for authentication loop analysis
+ */
 
-const fs = require('fs');
-const path = require('path');
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 async function globalSetup(config) {
   console.log(' CloudToLocalLLM v3.10.0 Authentication Loop Analysis Setup');
   console.log('================================================================');
-  
+
   // Create test results directory
   const testResultsDir = 'test-results';
   if (!fs.existsSync(testResultsDir)) {
     fs.mkdirSync(testResultsDir, { recursive: true });
   }
-  
+
   // Create subdirectories for artifacts
   const subdirs = ['screenshots', 'videos', 'traces', 'reports', 'artifacts'];
   subdirs.forEach(subdir => {
@@ -22,23 +28,64 @@ async function globalSetup(config) {
       fs.mkdirSync(dirPath, { recursive: true });
     }
   });
-  
+
+  // --- Auth0 Test User Creation ---
+  let testUser = null;
+  // Dynamic import to handle optional dependency
+  let auth0Manager = null;
+
+  try {
+    // We need to construct the URL for dynamic import
+    const scriptPath = path.resolve(__dirname, '../../services/api-backend/scripts/auth0-test-user-manager.js');
+    if (fs.existsSync(scriptPath)) {
+      auth0Manager = await import(scriptPath);
+    } else {
+      console.log(`[WARN] Auth0 User Manager script not found at ${scriptPath}`);
+    }
+  } catch (e) {
+    console.log('[WARN] Failed to load Auth0 User Manager:', e.message);
+  }
+
+  if (process.env.AUTH0_CLIENT_ID && process.env.AUTH0_CLIENT_SECRET && auth0Manager) {
+    console.log('\n Creating Ephemeral Test User...');
+    try {
+      // Create a specialized e2e-test user
+      testUser = await auth0Manager.createTestUser('e2e-user');
+
+      // Set environment variables for the test run
+      process.env.JWT_TEST_EMAIL = testUser.email;
+      process.env.JWT_TEST_PASSWORD = testUser.password;
+
+      // Save to file for other processes/tests to access if needed
+      fs.writeFileSync(
+        path.join(testResultsDir, 'user-config.json'),
+        JSON.stringify(testUser, null, 2)
+      );
+      console.log(`  User created: ${testUser.email}`);
+    } catch (error) {
+      console.error('  Failed to create test user:', error.message);
+      console.log('  Falling back to manual credentials if provided.');
+    }
+  } else {
+    console.log('\n Skipping automatic test user creation (Missing credentials or script)');
+  }
+
   // Validate environment variables
   const requiredEnvVars = ['DEPLOYMENT_URL'];
   const optionalEnvVars = ['JWT_TEST_EMAIL', 'JWT_TEST_PASSWORD'];
-  
-  console.log('\n� Environment Configuration:');
+
+  console.log('\n Environment Configuration:');
   console.log('==============================');
-  
+
   requiredEnvVars.forEach(envVar => {
     if (process.env[envVar]) {
       console.log(` ${envVar}: ${process.env[envVar]}`);
     } else {
       console.log(` ${envVar}: NOT SET (required)`);
-      throw new Error(`Required environment variable ${envVar} is not set`);
+      console.log(' [WARN] DEPLOYMENT_URL not set. Tests might fail.');
     }
   });
-  
+
   optionalEnvVars.forEach(envVar => {
     if (process.env[envVar]) {
       console.log(` ${envVar}: ****** (set)`);
@@ -46,47 +93,49 @@ async function globalSetup(config) {
       console.log(`  ${envVar}: NOT SET (optional - will skip JWT form interaction)`);
     }
   });
-  
+
   // Validate deployment URL accessibility
   console.log('\n Deployment Validation:');
   console.log('=========================');
-  
-  try {
-    const deploymentUrl = process.env.DEPLOYMENT_URL;
-    console.log(`Testing connectivity to: ${deploymentUrl}`);
-    
-    // Simple fetch to check if deployment is accessible
-    const response = await fetch(deploymentUrl);
-    if (response.ok) {
-      console.log(` Deployment accessible (HTTP ${response.status})`);
-      
-      // Check version endpoint
-      try {
-        const versionResponse = await fetch(`${deploymentUrl}/version.json`);
-        if (versionResponse.ok) {
-          const versionData = await versionResponse.json();
-          console.log(` Version endpoint accessible: v${versionData.version}`);
-          
-          if (versionData.version === '3.10.0') {
-            console.log(` Correct version deployed (3.10.0)`);
+
+  if (process.env.DEPLOYMENT_URL) {
+    try {
+      const deploymentUrl = process.env.DEPLOYMENT_URL;
+      console.log(`Testing connectivity to: ${deploymentUrl}`);
+
+      // Simple fetch to check if deployment is accessible
+      const response = await fetch(deploymentUrl);
+      if (response.ok) {
+        console.log(` Deployment accessible (HTTP ${response.status})`);
+
+        // Check version endpoint
+        try {
+          const versionResponse = await fetch(`${deploymentUrl}/version.json`);
+          if (versionResponse.ok) {
+            const versionData = await versionResponse.json();
+            console.log(` Version endpoint accessible: v${versionData.version}`);
+
+            if (versionData.version === '3.10.0') {
+              console.log(` Correct version deployed (3.10.0)`);
+            } else {
+              console.log(`  Unexpected version: ${versionData.version} (expected 3.10.0)`);
+            }
           } else {
-            console.log(`  Unexpected version: ${versionData.version} (expected 3.10.0)`);
+            console.log(`  Version endpoint not accessible (HTTP ${versionResponse.status})`);
           }
-        } else {
-          console.log(`  Version endpoint not accessible (HTTP ${versionResponse.status})`);
+        } catch (error) {
+          console.log(`  Version check failed: ${error.message}`);
         }
-      } catch (error) {
-        console.log(`  Version check failed: ${error.message}`);
+      } else {
+        console.log(` Deployment not accessible (HTTP ${response.status})`);
+        console.log(' [WARN] Deployment not accessible');
       }
-    } else {
-      console.log(` Deployment not accessible (HTTP ${response.status})`);
-      throw new Error(`Deployment at ${deploymentUrl} is not accessible`);
+    } catch (error) {
+      console.log(` Deployment validation failed: ${error.message}`);
+      console.log(' [WARN] Deployment validation exception');
     }
-  } catch (error) {
-    console.log(` Deployment validation failed: ${error.message}`);
-    throw new Error(`Cannot access deployment: ${error.message}`);
   }
-  
+
   // Create test configuration summary
   const testConfig = {
     timestamp: new Date().toISOString(),
@@ -95,6 +144,7 @@ async function globalSetup(config) {
     hasJWTCredentials: !!(process.env.JWT_TEST_EMAIL && process.env.JWT_TEST_PASSWORD),
     testEnvironment: process.env.CI ? 'CI' : 'LOCAL',
     browsers: config.projects.map(p => p.name),
+    generatedTestUser: testUser ? testUser.email : null,
     expectedFeatures: [
       'Login loop race condition fix',
       '100ms callback processing delay',
@@ -103,36 +153,21 @@ async function globalSetup(config) {
       'Debug logging for authentication flow',
     ],
   };
-  
+
   fs.writeFileSync(
     path.join(testResultsDir, 'test-config.json'),
     JSON.stringify(testConfig, null, 2)
   );
-  
+
   console.log('\n Test Configuration:');
   console.log('======================');
   console.log(`Test Environment: ${testConfig.testEnvironment}`);
   console.log(`JWT Credentials: ${testConfig.hasJWTCredentials ? 'Available' : 'Not Available'}`);
+  console.log(`Generated User: ${testConfig.generatedTestUser || 'None'}`);
   console.log(`Browsers: ${testConfig.browsers.join(', ')}`);
-  
-  console.log('\n Test Objectives:');
-  console.log('===================');
-  console.log('1. Verify no infinite redirect loops between /login and /callback');
-  console.log('2. Confirm 100ms delay implementation is working');
-  console.log('3. Validate authentication state synchronization');
-  console.log('4. Capture detailed debugging information');
-  console.log('5. Analyze network requests and console logs');
-  console.log('6. Generate comprehensive test report');
-  
-  console.log('\n� Known Issues to Test:');
-  console.log('========================');
-  console.log('- Race condition between auth state setting and router checks');
-  console.log('- Infinite loops: login → JWT → callback → login');
-  console.log('- Authentication state not propagating before navigation');
-  console.log('- Token exchange or profile loading failures');
-  
+
   console.log('\n Setup Complete - Ready to run authentication loop analysis');
   console.log('==============================================================\n');
 }
 
-module.exports = globalSetup;
+export default globalSetup;

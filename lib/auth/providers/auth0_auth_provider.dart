@@ -254,9 +254,12 @@ class Auth0AuthProvider implements AuthProvider {
       debugPrint('[Auth0AuthProvider] Starting interactive login');
 
       if (kIsWeb && _auth0Web != null) {
+        final redirectUrl = Uri.base.origin;
+        debugPrint('[Auth0AuthProvider] Using redirect URL: $redirectUrl');
         await _auth0Web!.loginWithRedirect(
           scopes: {'openid', 'profile', 'email', 'offline_access'},
           audience: _audience,
+          redirectUrl: redirectUrl,
         );
         // Note: loginWithRedirect will cause the page to reload.
         // The result will be processed in initialize() via onLoad() after the redirect back.
