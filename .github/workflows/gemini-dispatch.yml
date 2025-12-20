@@ -291,8 +291,8 @@ jobs:
           docker push ${{ env.ACR_NAME }}.azurecr.io/postgres:main-${{ github.sha }}
 
   build_web:
-    needs: [orchestrator, detect_changes, infrastructure]
-    if: needs.detect_changes.outputs.web == 'true'
+    needs: [orchestrator, detect_changes, infrastructure, build_base]
+    if: (needs.build_base.result == 'success' || needs.build_base.result == 'skipped') && needs.detect_changes.outputs.web == 'true'
     runs-on: ubuntu-latest
     permissions:
       id-token: write
@@ -312,8 +312,8 @@ jobs:
           docker push ${{ env.ACR_NAME }}.azurecr.io/web:main-${{ github.sha }}
 
   build_api:
-    needs: [orchestrator, detect_changes, infrastructure]
-    if: needs.detect_changes.outputs.api == 'true'
+    needs: [orchestrator, detect_changes, infrastructure, build_base]
+    if: (needs.build_base.result == 'success' || needs.build_base.result == 'skipped') && needs.detect_changes.outputs.api == 'true'
     runs-on: ubuntu-latest
     permissions:
       id-token: write
@@ -333,8 +333,8 @@ jobs:
           docker push ${{ env.ACR_NAME }}.azurecr.io/api-backend:main-${{ github.sha }}
 
   build_proxy:
-    needs: [orchestrator, detect_changes, infrastructure]
-    if: needs.detect_changes.outputs.proxy == 'true'
+    needs: [orchestrator, detect_changes, infrastructure, build_base]
+    if: (needs.build_base.result == 'success' || needs.build_base.result == 'skipped') && needs.detect_changes.outputs.proxy == 'true'
     runs-on: ubuntu-latest
     permissions:
       id-token: write
