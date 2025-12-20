@@ -14,7 +14,7 @@ RUN addgroup -g 1001 -S appuser && \
 WORKDIR /app
 
 # Create simple HTTP client script for testing tunnel connectivity
-COPY <<EOF test-tunnel.js
+COPY <<'EOF' test-tunnel.js
 const http = require('http');
 const https = require('https');
 
@@ -61,7 +61,7 @@ req.end();
 EOF
 
 # Create health check script
-COPY <<EOF health-check.js
+COPY <<'EOF' health-check.js
 const http = require('http');
 
 // Simple health check that verifies container is running
