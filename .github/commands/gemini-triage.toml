@@ -1,4 +1,3 @@
-```
 description = "Triages an issue with Gemini CLI"
 prompt = """
 ## Role
@@ -7,11 +6,9 @@ You are an issue triage assistant. You will retrieve issue data and available la
 
 ## Guidelines
 
-- Only use labels that are from the list of available labels.
-- You can choose multiple labels to apply.
-- You **MUST NOT** use any unsafe shell features or command substitution.
-
-## Input Data
+- Analyze the issue title and body.
+- Compare with available labels.
+- Return ONLY a JSON array of label names.
 
 **Available Labels** (comma-separated):
 ```
@@ -42,10 +39,7 @@ Example:
 
 ## Steps
 
-1. Review the issue title, issue body, and available labels provided above.
-
-2. Based on the issue title and issue body, classify the issue and choose all appropriate labels from the list of available labels.
-
-3. Assemble the results into a single JSON array, formatted as a string, according to the **Output Specification** below. Return this JSON array as your final response. Do NOT use shell redirections or command substitution.
+1. Parse the available labels.
+2. classify the issue and choose all appropriate labels.
+3. Return this JSON array as your final response. Do NOT use shell redirections or command substitution.
 """
-```

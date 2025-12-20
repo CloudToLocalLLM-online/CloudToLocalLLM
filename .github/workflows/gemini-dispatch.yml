@@ -9,10 +9,6 @@ on:
     types: [opened, reopened]
   issue_comment:
     types: [created]
-  pull_request_review:
-    types: [submitted]
-  pull_request_review_comment:
-    types: [created]
   workflow_dispatch:
     inputs:
       do_managed:
@@ -37,7 +33,7 @@ on:
         required: false
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
   cancel-in-progress: true
 
 env:
@@ -50,9 +46,6 @@ defaults:
     shell: "bash"
 
 jobs:
-  # ==================================================================================
-  # 1. CORE DISPATCHER (Issues, PR Comments, Reviews)
-  # ==================================================================================
   dispatch:
     if: |-
       (github.event_name == 'push' && !contains(github.event.head_commit.message || '', '[skip ci]')) ||
@@ -69,24 +62,16 @@ jobs:
       command: "${{ steps.extract_command.outputs.command }}"
       additional_context: "${{ steps.extract_command.outputs.additional_context }}"
     steps:
-      - name: "Mint identity token"
-        id: "mint_identity_token"
-        if: vars.APP_ID != ''
-        uses: "actions/create-github-app-token@a8d616148505b5069dccd32f177bb87d7f39123b"
-        with:
-          app-id: "${{ vars.APP_ID }}"
-          private-key: "${{ secrets.APP_PRIVATE_KEY }}"
-
       - name: "Extract command"
         id: "extract_command"
         uses: "actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea"
         env:
           EVENT_TYPE: "${{ github.event_name }}.${{ github.event.action }}"
-          REQUEST: "${{ github.event.comment.body || github.event.review.body || github.event.issue.body }}"
+          REQUEST: "${{ github.event.comment.body || github.event.review.body || github.event.issue.body || '' }}"
         with:
           script: |
             const eventType = process.env.EVENT_TYPE;
-            const request = process.env.REQUEST || '';
+            const request = (process.env.REQUEST || '').trim();
             const eventName = context.eventName;
 
             if (eventName === 'push' || eventName === 'workflow_dispatch') {
@@ -109,15 +94,6 @@ jobs:
             } else {
               core.setOutput('command', 'fallthrough');
             }
-
-      - name: "Acknowledge"
-        if: steps.extract_command.outputs.command != 'fallthrough' && (github.event.pull_request.number || github.event.issue.number)
-        env:
-          GITHUB_TOKEN: "${{ steps.mint_identity_token.outputs.token || secrets.GITHUB_TOKEN }}"
-        run: |
-          gh issue comment "${{ github.event.pull_request.number || github.event.issue.number }}" \
-            --body "🤖 Received your request! Tracking progress [here](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})" \
-            --repo "${{ github.repository }}"
 
   # Sub-Dispatch Tasks
   review:
@@ -159,9 +135,6 @@ jobs:
       additional_context: "${{ needs.dispatch.outputs.additional_context }}"
     secrets: inherit
 
-  # ==================================================================================
-  # 2. ORCHESTRATOR (Automated Release Analysis) - Refactored to Action
-  # ==================================================================================
   orchestrator:
     needs: [dispatch]
     if: needs.dispatch.outputs.command == 'deploy'
@@ -184,14 +157,6 @@ jobs:
           fetch-depth: 50
           fetch-tags: true
 
-      - name: "Mint identity token"
-        id: "mint_identity_token"
-        if: vars.APP_ID != ''
-        uses: "actions/create-github-app-token@a8d616148505b5069dccd32f177bb87d7f39123b"
-        with:
-          app-id: "${{ vars.APP_ID }}"
-          private-key: "${{ secrets.APP_PRIVATE_KEY }}"
-
       - name: "Run Analysis"
         id: "analysis"
         uses: "google-github-actions/run-gemini-cli@v0"
@@ -202,24 +167,13 @@ jobs:
           gemini_debug: "${{ fromJSON(vars.GEMINI_DEBUG || vars.ACTIONS_STEP_DEBUG || false) }}"
           prompt: |-
             Analyze the following project state and determine the release strategy.
-            1. Read 'assets/version.json' for the current version.
-            2. Check 'git log --oneline --no-merges -5' for recent context.
-            3. Check 'git diff --name-only HEAD~1..HEAD' for changed files.
-            4. Command Context: "${{ needs.dispatch.outputs.additional_context }}"
-            5. Manual Inputs: Managed=${{ github.event.inputs.do_managed || false }}, Local=${{ github.event.inputs.do_local || false }}, Desktop=${{ github.event.inputs.do_desktop || false }}, Mobile=${{ github.event.inputs.do_mobile || false }}, Override=${{ github.event.inputs.version_override || '' }}
+            1. Current version (assets/version.json)
+            2. Recent Context (git log)
+            3. Changed Files (git diff)
+            4. Command Context: "${{ needs.dispatch.outputs.additional_context || 'None' }}"
+            5. Manual Inputs: Managed=${{ github.event.inputs.do_managed || false }}, Local=${{ github.event.inputs.do_local || false }}, Desktop=${{ github.event.inputs.do_desktop || false }}, Mobile=${{ github.event.inputs.do_mobile || false }}, Override=${{ github.event.inputs.version_override || 'None' }}
 
-            Return ONLY a valid JSON object with these keys:
-            {
-              "new_version": "string (next semantic version)",
-              "docker_version": "string (docker-safe version)",
-              "do_managed": "true/false",
-              "do_local": "true/false",
-              "do_desktop": "true/false",
-              "do_mobile": "true/false",
-              "should_deploy": "true/false",
-              "version_bump_needed": "true/false",
-              "reasoning": "string"
-            }
+            Return ONLY a valid JSON object.
           settings: |-
             {
               "tools": {
@@ -235,16 +189,10 @@ jobs:
       - name: "Execute Logic"
         id: "exec"
         env:
-          GITHUB_TOKEN: "${{ steps.mint_identity_token.outputs.token || secrets.GITHUB_TOKEN }}"
           GEMINI_OUTPUT: "${{ steps.analysis.outputs.gemini_output }}"
         run: |
           set -e
-          echo "::: Gemini Output :::"
-          echo "$GEMINI_OUTPUT"
-
-          # Clean JSON in case of wrapper text
           CLEAN_JSON=$(echo "$GEMINI_OUTPUT" | sed -n '/{/,/}/p')
-
           echo "new_version=$(echo "$CLEAN_JSON" | jq -r '.new_version')" >> $GITHUB_OUTPUT
           echo "docker_version=$(echo "$CLEAN_JSON" | jq -r '.docker_version')" >> $GITHUB_OUTPUT
           echo "do_managed=$(echo "$CLEAN_JSON" | jq -r '.do_managed')" >> $GITHUB_OUTPUT
@@ -255,60 +203,15 @@ jobs:
           echo "reasoning=$(echo "$CLEAN_JSON" | jq -r '.reasoning')" >> $GITHUB_OUTPUT
 
           if [ "$(echo "$CLEAN_JSON" | jq -r '.version_bump_needed')" == "true" ]; then
-            git config user.name "gemini-cli[bot]"
-            git config user.email "gemini-cli[bot]@users.noreply.github.com"
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
             chmod +x scripts/update-all-versions.sh
             ./scripts/update-all-versions.sh "$(echo "$CLEAN_JSON" | jq -r '.new_version')" "${{ github.sha }}"
             git add -A
             git commit -m "chore: bump version to $(echo "$CLEAN_JSON" | jq -r '.new_version') [skip ci]"
-            git push origin main && git tag "v$(echo "$CLEAN_JSON" | jq -r '.new_version')" -f && git push origin --tags -f
-
-            # --- Platform Distribution ---
-            NEW_VERSION=$(echo "$CLEAN_JSON" | jq -r '.new_version')
-            SHORT_SHA=$(git rev-parse --short HEAD)
-            DO_MANAGED=$(echo "$CLEAN_JSON" | jq -r '.do_managed')
-            DO_DESKTOP=$(echo "$CLEAN_JSON" | jq -r '.do_desktop')
-            DO_MOBILE=$(echo "$CLEAN_JSON" | jq -r '.do_mobile')
-
-            # Cloud Branch
-            if [ "$DO_MANAGED" == "true" ]; then
-               echo "☁️  Pushing to cloud branch..."
-               if [ -f "scripts/push-to-cloud-branch.sh" ]; then
-                  chmod +x scripts/push-to-cloud-branch.sh
-                  CLOUD_PUSH_PAT="${{ env.GITHUB_TOKEN }}" ./scripts/push-to-cloud-branch.sh "$NEW_VERSION"
-               else
-                  git checkout -B cloud main
-                  git push -f origin cloud
-                  git tag "${NEW_VERSION}-cloud-${SHORT_SHA}" -f
-                  git push origin "${NEW_VERSION}-cloud-${SHORT_SHA}" -f
-                  git checkout main
-               fi
-            fi
-
-            # Desktop Branch
-            if [ "$DO_DESKTOP" == "true" ]; then
-               echo "🖥️  Pushing to desktop branch..."
-               git checkout -B desktop main
-               git push -f origin desktop
-               git tag "${NEW_VERSION}-desktop-${SHORT_SHA}" -f
-               git push origin "${NEW_VERSION}-desktop-${SHORT_SHA}" -f
-               git checkout main
-            fi
-
-            # Mobile Branch
-            if [ "$DO_MOBILE" == "true" ]; then
-               echo "📱 Pushing to mobile branch..."
-               git checkout -B mobile main
-               git push -f origin mobile
-               git tag "${NEW_VERSION}-mobile-${SHORT_SHA}" -f
-               git push origin "${NEW_VERSION}-mobile-${SHORT_SHA}" -f
-               git checkout main
-            fi
+            git push origin main
           fi
 
-  # ==================================================================================
-  # 3. CHANGE DETECTION (Path-based)
-  # ==================================================================================
   detect_changes:
     needs: [orchestrator]
     if: needs.orchestrator.outputs.should_deploy == 'true'
@@ -336,16 +239,12 @@ jobs:
             echo "proxy=true" >> $GITHUB_OUTPUT
             exit 0
           fi
-          echo "Comparing against $PREV_TAG"
           echo "base=$(git diff --name-only $PREV_TAG HEAD | grep -qE '^config/docker/Dockerfile\.base' && echo 'true' || echo 'false')" >> $GITHUB_OUTPUT
           echo "postgres=$(git diff --name-only $PREV_TAG HEAD | grep -qE '^config/docker/Dockerfile\.postgres' && echo 'true' || echo 'false')" >> $GITHUB_OUTPUT
           echo "web=$(git diff --name-only $PREV_TAG HEAD | grep -qE '^(web|lib|pubspec\.)' && echo 'true' || echo 'false')" >> $GITHUB_OUTPUT
           echo "api=$(git diff --name-only $PREV_TAG HEAD | grep -qE '^services/api-backend' && echo 'true' || echo 'false')" >> $GITHUB_OUTPUT
           echo "proxy=$(git diff --name-only $PREV_TAG HEAD | grep -qE '^services/streaming-proxy' && echo 'true' || echo 'false')" >> $GITHUB_OUTPUT
 
-  # ==================================================================================
-  # 4. INFRASTRUCTURE & BUILD
-  # ==================================================================================
   infrastructure:
     needs: [orchestrator, detect_changes]
     if: needs.orchestrator.outputs.should_deploy == 'true'
@@ -353,8 +252,6 @@ jobs:
     permissions:
       id-token: write
       contents: read
-    outputs:
-      login_server: ${{ steps.acr.outputs.login_server }}
     steps:
       - uses: actions/checkout@v4
       - uses: azure/login@v2
@@ -362,30 +259,6 @@ jobs:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-
-      - name: Bootstrap Azure Infra
-        id: acr
-        run: |
-          set -e
-          chmod +x scripts/bootstrap-azure-infra.sh
-          ./scripts/bootstrap-azure-infra.sh "${{ env.AZURE_RESOURCE_GROUP }}" "eastus" "${{ env.ACR_NAME }}" "${{ secrets.AZURE_KEY_VAULT_NAME }}"
-
-          # Create AKS if not exists
-          if ! az aks show --resource-group ${{ env.AZURE_RESOURCE_GROUP }} --name ${{ env.AZURE_CLUSTER_NAME }} >/dev/null 2>&1; then
-            az aks create --resource-group ${{ env.AZURE_RESOURCE_GROUP }} --name ${{ env.AZURE_CLUSTER_NAME }} --node-count 1 --enable-managed-identity --attach-acr ${{ env.ACR_NAME }} --generate-ssh-keys
-          fi
-
-          echo "login_server=$(az acr show --name ${{ env.ACR_NAME }} --query loginServer --output tsv)" >> $GITHUB_OUTPUT
-
-      - name: Setup AKS Context & CSI
-        run: |
-          az aks get-credentials --resource-group ${{ env.AZURE_RESOURCE_GROUP }} --name ${{ env.AZURE_CLUSTER_NAME }} --overwrite-existing
-          kubectl create namespace cloudtolocalllm --dry-run=client -o yaml | kubectl apply -f -
-
-          # Secrets Store CSI setup (Helm)
-          helm repo add secrets-store-csi-driver https://kubernetes-sigs.github.io/secrets-store-csi-driver/charts --force-update
-          helm repo add csi-secrets-store-provider-azure https://azure.github.io/secrets-store-csi-driver-provider-azure/charts --force-update
-          helm upgrade --install csi-secrets-store secrets-store-csi-driver/secrets-store-csi-driver --namespace kube-system --set "providers.azure.enabled=true" --wait
 
   build_base:
     needs: [orchestrator, detect_changes, infrastructure]
@@ -393,139 +266,35 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: azure/login@v2
-        with:
-          client-id: ${{ secrets.AZURE_CLIENT_ID }}
-          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-      - name: Docker Login
-        run: |
-          ACR_USER=$(az acr credential show --name ${{ env.ACR_NAME }} --query username -o tsv)
-          ACR_PASS=$(az acr credential show --name ${{ env.ACR_NAME }} --query passwords[0].value -o tsv)
-          echo "$ACR_PASS" | docker login ${{ needs.infrastructure.outputs.login_server }} -u "$ACR_USER" --password-stdin
-      - uses: docker/setup-buildx-action@v3
-      - uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: config/docker/Dockerfile.base
-          push: true
-          tags: |
-            ${{ needs.infrastructure.outputs.login_server }}/base:${{ needs.orchestrator.outputs.new_version }}-base
-            ${{ needs.infrastructure.outputs.login_server }}/base:latest
-          cache-from: type=registry,ref=${{ needs.infrastructure.outputs.login_server }}/base:latest
-          cache-to: type=inline
 
   build_postgres:
     needs: [orchestrator, detect_changes, infrastructure, build_base]
-    if: always() && needs.detect_changes.outputs.postgres == 'true' && (needs.build_base.result == 'success' || needs.build_base.result == 'skipped')
+    if: always() && needs.detect_changes.outputs.postgres == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: azure/login@v2
-        with:
-          client-id: ${{ secrets.AZURE_CLIENT_ID }}
-          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-      - name: Docker Login
-        run: |
-          ACR_USER=$(az acr credential show --name ${{ env.ACR_NAME }} --query username -o tsv)
-          ACR_PASS=$(az acr credential show --name ${{ env.ACR_NAME }} --query passwords[0].value -o tsv)
-          echo "$ACR_PASS" | docker login ${{ needs.infrastructure.outputs.login_server }} -u "$ACR_USER" --password-stdin
-      - uses: docker/setup-buildx-action@v3
-      - uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: config/docker/Dockerfile.postgres
-          push: true
-          tags: ${{ needs.infrastructure.outputs.login_server }}/postgres:${{ needs.orchestrator.outputs.new_version }}-postgres
-          build-args: BASE_REGISTRY=${{ needs.infrastructure.outputs.login_server }}
 
   build_web:
     needs: [orchestrator, detect_changes, infrastructure, build_base]
-    if: always() && needs.detect_changes.outputs.web == 'true' && (needs.build_base.result == 'success' || needs.build_base.result == 'skipped')
+    if: always() && needs.detect_changes.outputs.web == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: subosito/flutter-action@v2
-        with:
-          channel: "stable"
-          cache: true
-      - name: Build Web
-        run: |
-          flutter pub get
-          flutter build web --release --no-tree-shake-icons --base-href /
-      - uses: azure/login@v2
-        with:
-          client-id: ${{ secrets.AZURE_CLIENT_ID }}
-          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-      - name: Docker Login
-        run: |
-          ACR_USER=$(az acr credential show --name ${{ env.ACR_NAME }} --query username -o tsv)
-          ACR_PASS=$(az acr credential show --name ${{ env.ACR_NAME }} --query passwords[0].value -o tsv)
-          echo "$ACR_PASS" | docker login ${{ needs.infrastructure.outputs.login_server }} -u "$ACR_USER" --password-stdin
-      - uses: docker/setup-buildx-action@v3
-      - uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: web/Dockerfile
-          push: true
-          tags: ${{ needs.infrastructure.outputs.login_server }}/web:${{ needs.orchestrator.outputs.new_version }}
-          build-args: BASE_REGISTRY=${{ needs.infrastructure.outputs.login_server }}
 
   build_api:
     needs: [orchestrator, detect_changes, infrastructure, build_base]
-    if: always() && needs.detect_changes.outputs.api == 'true' && (needs.build_base.result == 'success' || needs.build_base.result == 'skipped')
+    if: always() && needs.detect_changes.outputs.api == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: azure/login@v2
-        with:
-          client-id: ${{ secrets.AZURE_CLIENT_ID }}
-          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-      - name: Docker Login
-        run: |
-          ACR_USER=$(az acr credential show --name ${{ env.ACR_NAME }} --query username -o tsv)
-          ACR_PASS=$(az acr credential show --name ${{ env.ACR_NAME }} --query passwords[0].value -o tsv)
-          echo "$ACR_PASS" | docker login ${{ needs.infrastructure.outputs.login_server }} -u "$ACR_USER" --password-stdin
-      - uses: docker/setup-buildx-action@v3
-      - uses: docker/build-push-action@v5
-        with:
-          context: services/api-backend
-          file: services/api-backend/Dockerfile
-          push: true
-          tags: ${{ needs.infrastructure.outputs.login_server }}/api-backend:${{ needs.orchestrator.outputs.new_version }}-api
-          build-args: BASE_REGISTRY=${{ needs.infrastructure.outputs.login_server }}
 
   build_proxy:
     needs: [orchestrator, detect_changes, infrastructure, build_base]
-    if: always() && needs.detect_changes.outputs.proxy == 'true' && (needs.build_base.result == 'success' || needs.build_base.result == 'skipped')
+    if: always() && needs.detect_changes.outputs.proxy == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: azure/login@v2
-        with:
-          client-id: ${{ secrets.AZURE_CLIENT_ID }}
-          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-      - name: Docker Login
-        run: |
-          ACR_USER=$(az acr credential show --name ${{ env.ACR_NAME }} --query username -o tsv)
-          ACR_PASS=$(az acr credential show --name ${{ env.ACR_NAME }} --query passwords[0].value -o tsv)
-          echo "$ACR_PASS" | docker login ${{ needs.infrastructure.outputs.login_server }} -u "$ACR_USER" --password-stdin
-      - uses: docker/setup-buildx-action@v3
-      - uses: docker/build-push-action@v5
-        with:
-          context: services/streaming-proxy
-          file: services/streaming-proxy/Dockerfile
-          push: true
-          tags: ${{ needs.infrastructure.outputs.login_server }}/streaming-proxy:${{ needs.orchestrator.outputs.new_version }}-proxy
-          build-args: BASE_REGISTRY=${{ needs.infrastructure.outputs.login_server }}
 
-  # ==================================================================================
-  # 5. GITOPS PROMOTION
-  # ==================================================================================
   promote:
     needs:
       [
@@ -541,48 +310,3 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Update Manifests
-        env:
-          APP_VERSION: ${{ needs.orchestrator.outputs.new_version }}
-          LOGIN_SERVER: ${{ needs.infrastructure.outputs.login_server }}
-        run: |
-          set -e
-          cd k8s/overlays/managed
-          [ "${{ needs.detect_changes.outputs.postgres }}" == "true" ] && kustomize edit set image cloudtolocalllm/postgres=$LOGIN_SERVER/postgres:$APP_VERSION-postgres
-          [ "${{ needs.detect_changes.outputs.web }}" == "true" ] && kustomize edit set image cloudtolocalllm/web=$LOGIN_SERVER/web:$APP_VERSION
-          [ "${{ needs.detect_changes.outputs.api }}" == "true" ] && kustomize edit set image cloudtolocalllm/api-backend=$LOGIN_SERVER/api-backend:$APP_VERSION-api
-          [ "${{ needs.detect_changes.outputs.proxy }}" == "true" ] && kustomize edit set image cloudtolocalllm/streaming-proxy=$LOGIN_SERVER/streaming-proxy:$APP_VERSION-proxy
-
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add kustomization.yaml
-          if ! git diff --staged --quiet; then
-            git commit -m "chore(ops): update manifests for v$APP_VERSION [skip ci]"
-            git push origin main
-          fi
-
-      - name: Purge Cache
-        continue-on-error: true
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-        run: |
-          ZONE_ID=$(curl -s -X GET "https://api.cloudflare.com/client/v4/zones?name=cloudtolocalllm.online" \
-            -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
-            -H "Content-Type: application/json" | jq -r '.result[0].id')
-          if [ -n "$ZONE_ID" ]; then
-            curl -s -X POST "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/purge_cache" \
-              -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
-              -H "Content-Type: application/json" \
-              --data '{"purge_everything": true}'
-          fi
-
-      - name: Create Release
-        run: |
-          VERSION="v${{ needs.orchestrator.outputs.new_version }}"
-          if gh release view "$VERSION" >/dev/null 2>&1; then
-            gh release edit "$VERSION" --notes "${{ needs.orchestrator.outputs.reasoning }}"
-          else
-            gh release create "$VERSION" --title "Release $VERSION" --notes "${{ needs.orchestrator.outputs.reasoning }}"
-          fi
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
