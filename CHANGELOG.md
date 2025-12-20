@@ -2,6 +2,25 @@
 
 All notable changes to this project will be documented in this file.
 
+## [7.14.3] - 2025-12-20
+# Changelog
+
+## [7.14.3] - 2025-12-20
+
+### Features
+- **(test)** Add automated Auth0 test user suite and fix redirect URI. (5de36fd)
+- **(gemini)** Enable manual platform selection for builds. (ef980c8)
+
+### Bug Fixes
+- **(ci)** A series of fixes to improve the robustness and reliability of GitHub Actions workflows, including resolving matrix syntax issues, simplifying conditional logic, fixing Gemini CLI versioning and API key propagation, and repairing deployment and triage processes. (593f833, 8e2b466, b5554d3, 454245b, 8f663ea, 76f34b6, 6c8d15a, 6fb2495, 1d871ed, ff14ae9, 80e16d1, c2e4cd3, b167c43, 55c52c0, 2e91e3f, 18d8176, 4deb995, 0e78968, c17036b, c61f910, a34854a, 4b5b29b, 673433f, 762452b, 8875a14)
+- **(docker)** Disable variable interpolation in heredocs and update `COPY` syntax for inline scripts in the streaming-proxy to prevent unintended expansions. (447e994, 422bc31)
+- **(k8s)** Update web deployment to v7.14.0, remove duplicate resources in base kustomization, and temporarily roll back the web image to resolve loading issues. (f5258e9, ebcc87f, 94969b0)
+
+### Chore
+- **(ops)** Transition to a pure GitOps model with manual triggers, unifying the dispatch entry point and consolidating deployment workflows for improved resilience and maintainability. (1e4aef8, c83ef10, 1304183, ff9d394, f6fd3d4)
+- **(ci)** Improve CI configuration by adding descriptive names to matrix jobs, ensuring base builds run first, and consolidating service builds. (29b9f68, 92db73a, ef050df)
+- A series of fixes to address Gemini CLI safety parser rejections, model 404 errors, and workflow startup failures, including adding safety guards and cleaning up temporary files. (e4b5b3b, 3dd988f, eb1048c, a2ad36e, 6ccea5a, 83b87c1, 9d60926)
+
 ## [7.14.2] - 2025-12-20
 # 7.14.2
 
