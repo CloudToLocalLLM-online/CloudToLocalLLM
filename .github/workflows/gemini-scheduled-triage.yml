@@ -95,13 +95,13 @@ jobs:
           ISSUES_TO_TRIAGE: "${{ steps.find_issues.outputs.issues_to_triage }}"
           AVAILABLE_LABELS: "${{ steps.get_labels.outputs.available_labels }}"
         run: |
-          # Use npx to run the latest CLI directly with a custom prompt
-          if ! npx -y @google/gemini-cli@latest --yolo --output-format json "Analyze these GitHub issues and assign appropriate labels from the following list: $AVAILABLE_LABELS. Issues: $ISSUES_TO_TRIAGE. Return ONLY a valid JSON array of objects, where each object has: 'issue_number' (integer), 'labels_to_set' (array of strings), and 'explanation' (string)." > raw_output.json 2> gemini_error.log; then
+          # Use npx to run the latest CLI directly with a very strict custom prompt
+          if ! npx -y @google/gemini-cli@latest --yolo --output-format json "Analyze these GitHub issues and assign appropriate labels from the following list: $AVAILABLE_LABELS. Issues: $ISSUES_TO_TRIAGE. Return ONLY a valid JSON array of objects. Do NOT include any text outside the JSON. Each object MUST have: 'issue_number' (integer), 'labels_to_set' (array of strings, ALL STRINGS MUST BE QUOTED), and 'explanation' (string)." > raw_output.json 2> gemini_error.log; then
             echo "::error::Gemini CLI failed"
             cat gemini_error.log
             exit 1
           fi
-          # Extract response and clean JSON (handling both array and object wrapping)
+          # Extract response and clean JSON
           CLEAN_JSON=$(cat raw_output.json | jq -r '.response' | sed -n '/\[/,/\]/p')
           if [ -z "$CLEAN_JSON" ]; then
             CLEAN_JSON=$(cat raw_output.json | jq -r '.response' | sed -n '/{/,/}/p')
@@ -113,7 +113,6 @@ jobs:
       - name: "Parse Gemini output"
         id: "parse_output"
         run: |
-           # Use output from previous step directly
            echo "triaged_issues<<EOF" >> $GITHUB_OUTPUT
            echo "${{ steps.gemini_issue_analysis.outputs.triaged_issues }}" >> $GITHUB_OUTPUT
            echo "EOF" >> $GITHUB_OUTPUT
@@ -124,9 +123,7 @@ jobs:
       - "triage"
     if: |-
       needs.triage.outputs.available_labels != '' &&
-      needs.triage.outputs.available_labels != '[]' &&
-      needs.triage.outputs.triaged_issues != '' &&
-      needs.triage.outputs.triaged_issues != '[]'
+      needs.triage.outputs.triaged_issues != ''
     permissions:
       contents: "read"
       issues: "write"
