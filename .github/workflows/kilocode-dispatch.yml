@@ -60,6 +60,8 @@ jobs:
       command: "${{ steps.extract_command.outputs.command }}"
       additional_context: "${{ steps.extract_command.outputs.additional_context }}"
       start_time: "${{ steps.extract_command.outputs.start_time }}"
+      start_time_formatted: "${{ steps.format_time.outputs.start_time_formatted }}"
+      start_time_formatted: "${{ steps.format_time.outputs.start_time_formatted }}"
     steps:
       - name: "Extract command"
         id: "extract_command"
