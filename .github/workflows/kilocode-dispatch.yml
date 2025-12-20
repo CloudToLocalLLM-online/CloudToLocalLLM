@@ -40,7 +40,7 @@ env:
   AZURE_RESOURCE_GROUP: cloudtolocalllm-rg
   AZURE_CLUSTER_NAME: cloudtolocalllm-aks
   ACR_NAME: imrightguycloudtolocalllm
-  WORKFLOW_START_TIME: ${{ format('{0:yyyy-MM-ddTHH:mm:ssZ}', github.event.repository.created_at) }}
+  # This is a dummy comment to force re-evaluation of the workflow file
   SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
   SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
   DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
@@ -59,6 +59,7 @@ jobs:
     outputs:
       command: "${{ steps.extract_command.outputs.command }}"
       additional_context: "${{ steps.extract_command.outputs.additional_context }}"
+      start_time: "${{ steps.extract_command.outputs.start_time }}"
     steps:
       - name: "Extract command"
         id: "extract_command"
@@ -71,6 +72,8 @@ jobs:
             const eventType = process.env.EVENT_TYPE;
             const request = (process.env.REQUEST || '').trim();
             const eventName = context.eventName;
+
+            core.setOutput('start_time', new Date().toISOString());
 
             if (eventName === 'push' || eventName === 'workflow_dispatch') {
               core.setOutput('command', 'deploy');
@@ -503,5 +506,5 @@ jobs:
             Trigger: ${{ github.event_name }}
             Branch: ${{ github.ref_name }}
             SHA: ${{ github.sha }}
-            Started: ${{ env.WORKFLOW_START_TIME }}
+            Started: ${{ needs.dispatch.outputs.start_time }}
           SLACK_FOOTER: "GitHub Actions"
