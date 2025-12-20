@@ -206,7 +206,7 @@ jobs:
             2. Check 'git log --oneline --no-merges -5' for recent context.
             3. Check 'git diff --name-only HEAD~1..HEAD' for changed files.
             4. Command Context: "${{ needs.dispatch.outputs.additional_context }}"
-            5. Manual Inputs: Managed=${{ github.event.inputs.do_managed }}, Local=${{ github.event.inputs.do_local }}, Desktop=${{ github.event.inputs.do_desktop }}, Mobile=${{ github.event.inputs.do_mobile }}, Override=${{ github.event.inputs.version_override }}
+            5. Manual Inputs: Managed=${{ github.event.inputs.do_managed || false }}, Local=${{ github.event.inputs.do_local || false }}, Desktop=${{ github.event.inputs.do_desktop || false }}, Mobile=${{ github.event.inputs.do_mobile || false }}, Override=${{ github.event.inputs.version_override || '' }}
 
             Return ONLY a valid JSON object with these keys:
             {
