@@ -269,9 +269,31 @@ jobs:
           docker push ${{ env.ACR_NAME }}.azurecr.io/base:latest
           docker push ${{ env.ACR_NAME }}.azurecr.io/base:main-${{ github.sha }}
 
-  build_postgres:
+  build_images:
     needs: [orchestrator, detect_changes, infrastructure, build_base]
-    if: (needs.build_base.result == 'success' || needs.build_base.result == 'skipped') && needs.detect_changes.outputs.postgres == 'true'
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - service: postgres
+            file: config/docker/Dockerfile.postgres
+            name: postgres
+            extra_args: "--build-arg BASE_REGISTRY=${{ env.ACR_NAME }}.azurecr.io"
+          - service: web
+            file: config/docker/Dockerfile.web
+            name: web
+            extra_args: ""
+          - service: api
+            file: config/docker/Dockerfile.api-backend
+            name: api-backend
+            extra_args: ""
+          - service: proxy
+            file: config/docker/Dockerfile.streaming-proxy
+            name: streaming-proxy
+            extra_args: ""
+    if: |
+      (needs.build_base.result == 'success' || needs.build_base.result == 'skipped') &&
+      needs.detect_changes.outputs[matrix.service] == 'true'
     runs-on: ubuntu-latest
     permissions:
       id-token: write
@@ -283,75 +305,14 @@ jobs:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-      - name: Build and Push Postgres
+      - name: Build and Push ${{ matrix.service }}
         run: |
           az acr login --name ${{ env.ACR_NAME }}
-          docker build -f config/docker/Dockerfile.postgres --build-arg BASE_REGISTRY=${{ env.ACR_NAME }}.azurecr.io -t ${{ env.ACR_NAME }}.azurecr.io/postgres:latest -t ${{ env.ACR_NAME }}.azurecr.io/postgres:main-${{ github.sha }} .
-          docker push ${{ env.ACR_NAME }}.azurecr.io/postgres:latest
-          docker push ${{ env.ACR_NAME }}.azurecr.io/postgres:main-${{ github.sha }}
-
-  build_web:
-    needs: [orchestrator, detect_changes, infrastructure, build_base]
-    if: (needs.build_base.result == 'success' || needs.build_base.result == 'skipped') && needs.detect_changes.outputs.web == 'true'
-    runs-on: ubuntu-latest
-    permissions:
-      id-token: write
-      contents: read
-    steps:
-      - uses: actions/checkout@v4
-      - uses: azure/login@v2
-        with:
-          client-id: ${{ secrets.AZURE_CLIENT_ID }}
-          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-      - name: Build and Push Web
-        run: |
-          az acr login --name ${{ env.ACR_NAME }}
-          docker build -f config/docker/Dockerfile.web -t ${{ env.ACR_NAME }}.azurecr.io/web:latest -t ${{ env.ACR_NAME }}.azurecr.io/web:main-${{ github.sha }} .
-          docker push ${{ env.ACR_NAME }}.azurecr.io/web:latest
-          docker push ${{ env.ACR_NAME }}.azurecr.io/web:main-${{ github.sha }}
-
-  build_api:
-    needs: [orchestrator, detect_changes, infrastructure, build_base]
-    if: (needs.build_base.result == 'success' || needs.build_base.result == 'skipped') && needs.detect_changes.outputs.api == 'true'
-    runs-on: ubuntu-latest
-    permissions:
-      id-token: write
-      contents: read
-    steps:
-      - uses: actions/checkout@v4
-      - uses: azure/login@v2
-        with:
-          client-id: ${{ secrets.AZURE_CLIENT_ID }}
-          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-      - name: Build and Push API
-        run: |
-          az acr login --name ${{ env.ACR_NAME }}
-          docker build -f config/docker/Dockerfile.api-backend -t ${{ env.ACR_NAME }}.azurecr.io/api-backend:latest -t ${{ env.ACR_NAME }}.azurecr.io/api-backend:main-${{ github.sha }} .
-          docker push ${{ env.ACR_NAME }}.azurecr.io/api-backend:latest
-          docker push ${{ env.ACR_NAME }}.azurecr.io/api-backend:main-${{ github.sha }}
-
-  build_proxy:
-    needs: [orchestrator, detect_changes, infrastructure, build_base]
-    if: (needs.build_base.result == 'success' || needs.build_base.result == 'skipped') && needs.detect_changes.outputs.proxy == 'true'
-    runs-on: ubuntu-latest
-    permissions:
-      id-token: write
-      contents: read
-    steps:
-      - uses: actions/checkout@v4
-      - uses: azure/login@v2
-        with:
-          client-id: ${{ secrets.AZURE_CLIENT_ID }}
-          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-      - name: Build and Push Proxy
-        run: |
-          az acr login --name ${{ env.ACR_NAME }}
-          docker build -f config/docker/Dockerfile.streaming-proxy -t ${{ env.ACR_NAME }}.azurecr.io/streaming-proxy:latest -t ${{ env.ACR_NAME }}.azurecr.io/streaming-proxy:main-${{ github.sha }} .
-          docker push ${{ env.ACR_NAME }}.azurecr.io/streaming-proxy:latest
-          docker push ${{ env.ACR_NAME }}.azurecr.io/streaming-proxy:main-${{ github.sha }}
+          docker build -f ${{ matrix.file }} ${{ matrix.extra_args }} \
+            -t ${{ env.ACR_NAME }}.azurecr.io/${{ matrix.name }}:latest \
+            -t ${{ env.ACR_NAME }}.azurecr.io/${{ matrix.name }}:main-${{ github.sha }} .
+          docker push ${{ env.ACR_NAME }}.azurecr.io/${{ matrix.name }}:latest
+          docker push ${{ env.ACR_NAME }}.azurecr.io/${{ matrix.name }}:main-${{ github.sha }}
 
   promote:
     needs:
@@ -359,10 +320,7 @@ jobs:
         orchestrator,
         detect_changes,
         infrastructure,
-        build_postgres,
-        build_web,
-        build_api,
-        build_proxy,
+        build_images,
       ]
     if: always() && needs.orchestrator.outputs.should_deploy == 'true'
     runs-on: ubuntu-latest
