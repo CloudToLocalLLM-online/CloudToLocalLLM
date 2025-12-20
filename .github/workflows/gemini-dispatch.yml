@@ -162,7 +162,7 @@ jobs:
         uses: "google-github-actions/run-gemini-cli@v0"
         with:
           gemini_api_key: "${{ secrets.GEMINI_API_KEY }}"
-          gemini_cli_version: "0.1.22"
+          gemini_cli_version: "0.20.2"
           gemini_model: "gemini-1.5-flash"
           gemini_debug: false
           prompt: |-
