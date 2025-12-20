@@ -95,36 +95,36 @@ jobs:
           ISSUES_TO_TRIAGE: "${{ steps.find_issues.outputs.issues_to_triage }}"
           AVAILABLE_LABELS: "${{ steps.get_labels.outputs.available_labels }}"
         run: |
-          # Use npx to run gemini-1.5-pro with a very strict custom prompt
-          PROMPT="You are a precise GitHub issue triager.
-          TASK: Assign labels from the list below to the provided issues.
-          AVAILABLE LABELS: $AVAILABLE_LABELS
-          ISSUES TO TRIAGE: $ISSUES_TO_TRIAGE
+          # Loop through issues one by one for maximum robustness
+          RESULTS="[]"
+          echo "🔍 Triaging issues one by one..."
           
-          OUTPUT FORMAT:
-          - Return ONLY a valid JSON array of objects.
-          - Each object MUST represent one issue and have exactly these two fields:
-            1. \"issue_number\": (integer)
-            2. \"labels_to_set\": (array of strings)
-          - EVERY string in the array MUST be enclosed in double quotes.
-          - Do NOT include 'explanation' or any other fields.
-          - Do NOT include any markdown formatting like \`\`\`json.
+          # Use jq to get numbers and titles
+          ISSUES_JSON=$(echo "$ISSUES_TO_TRIAGE" | jq -c '.[]')
           
-          VALID JSON EXAMPLE:
-          [
-            {\"issue_number\": 176, \"labels_to_set\": [\"qa\", \"testing\"]},
-            {\"issue_number\": 175, \"labels_to_set\": [\"backend\", \"test\"]}
-          ]"
+          while IFS= read -r ISSUE; do
+            NUMBER=$(echo "$ISSUE" | jq -r '.number')
+            TITLE=$(echo "$ISSUE" | jq -r '.title')
+            echo "🎯 Triaging issue #$NUMBER: $TITLE"
+            
+            PROMPT="Triage this GitHub issue. 
+            Labels: $AVAILABLE_LABELS. 
+            Issue #$NUMBER Title: $TITLE. 
+            Return ONLY a valid JSON object: {\"labels_to_set\": [\"label1\", \"label2\"]}"
+            
+            if ! RESPONSE_RAW=$(npx -y @google/gemini-cli@latest --yolo --output-format json "$PROMPT" 2>/dev/null); then
+              echo "⚠️ Failed to triage #$NUMBER"
+              continue
+            fi
+            
+            # Extract labels and add to results
+            LABELS=$(echo "$RESPONSE_RAW" | jq -r '.response' | sed -n '/{/,/}/p' | jq -c '.labels_to_set // []')
+            RESULTS=$(echo "$RESULTS" | jq -c ". + [{\"issue_number\": $NUMBER, \"labels_to_set\": $LABELS}]")
+            
+          done <<< "$ISSUES_JSON"
           
-          if ! npx -y @google/gemini-cli@latest --yolo --model gemini-1.5-pro --output-format json "$PROMPT" > raw_output.json 2> gemini_error.log; then
-            echo "::error::Gemini CLI failed"
-            cat gemini_error.log
-            exit 1
-          fi
-          # Extract response and clean JSON
-          CLEAN_JSON=$(cat raw_output.json | jq -r '.response' | sed -n '/\[/,/\]/p')
           echo "triaged_issues<<EOF" >> $GITHUB_OUTPUT
-          echo "$CLEAN_JSON" >> $GITHUB_OUTPUT
+          echo "$RESULTS" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
 
       - name: "Parse Gemini output"
