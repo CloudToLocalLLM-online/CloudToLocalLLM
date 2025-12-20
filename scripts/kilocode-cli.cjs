@@ -20,8 +20,8 @@ async function makeKiloCodeRequest(prompt, options = {}) {
     // Mock deployment analysis response
     return {
       response: JSON.stringify({
-        new_version: "4.5.1",
-        docker_version: "4.5.1",
+        new_version: "7.0.0",
+        docker_version: "7.0.0",
         do_managed: true,
         do_local: false,
         do_desktop: false,
