@@ -56,7 +56,6 @@ jobs:
           gcp_service_account: "${{ vars.SERVICE_ACCOUNT_EMAIL }}"
           gcp_workload_identity_provider: "${{ vars.GCP_WIF_PROVIDER }}"
           gemini_api_key: "${{ secrets.GEMINI_API_KEY }}"
-          google_api_key: "${{ secrets.GEMINI_API_KEY }}"
           gemini_cli_version: "0.18.4"
           gemini_debug: false
           gemini_model: "gemini-1.5-flash"
