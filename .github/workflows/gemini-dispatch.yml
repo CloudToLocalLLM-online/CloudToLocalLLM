@@ -56,11 +56,7 @@ jobs:
   # ==================================================================================
   dispatch:
     if: |-
-      github.event_name != 'push' && (
-        (github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork == false) ||
-        (github.event_name == 'issues') ||
-        (github.event.sender.type == 'User' && startsWith(github.event.comment.body || github.event.review.body || github.event.issue.body, '@gemini-cli'))
-      )
+      !contains(github.event.head_commit.message, '[skip ci]')
     runs-on: "ubuntu-latest"
     permissions:
       contents: "read"
@@ -80,16 +76,28 @@ jobs:
           script: |
             const eventType = process.env.EVENT_TYPE;
             const request = process.env.REQUEST || '';
-            if (eventType === 'pull_request.opened') core.setOutput('command', 'review');
-            else if (['issues.opened', 'issues.reopened'].includes(eventType)) core.setOutput('command', 'triage');
-            else if (request.startsWith("@gemini-cli /review")) {
+            const eventName = context.eventName;
+
+            if (eventName === 'push' || eventName === 'workflow_dispatch') {
+              core.setOutput('command', 'deploy');
+            } else if (eventType === 'pull_request.opened') {
+              core.setOutput('command', 'review');
+            } else if (['issues.opened', 'issues.reopened'].includes(eventType)) {
+              core.setOutput('command', 'triage');
+            } else if (request.startsWith("@gemini-cli /review")) {
               core.setOutput('command', 'review');
               core.setOutput('additional_context', request.replace(/^@gemini-cli \/review/, '').trim());
-            } else if (request.startsWith("@gemini-cli /triage")) core.setOutput('command', 'triage');
-            else if (request.startsWith("@gemini-cli")) {
+            } else if (request.startsWith("@gemini-cli /triage")) {
+              core.setOutput('command', 'triage');
+            } else if (request.startsWith("@gemini-cli /deploy")) {
+              core.setOutput('command', 'deploy');
+              core.setOutput('additional_context', request.replace(/^@gemini-cli \/deploy/, '').trim());
+            } else if (request.startsWith("@gemini-cli")) {
               core.setOutput('command', 'invoke');
               core.setOutput('additional_context', request.replace(/^@gemini-cli/, '').trim());
-            } else core.setOutput('command', 'fallthrough');
+            } else {
+              core.setOutput('command', 'fallthrough');
+            }
 
       - name: "Acknowledge"
         if: steps.extract_command.outputs.command != 'fallthrough'
@@ -144,7 +152,8 @@ jobs:
   # 2. PUSH ORCHESTRATOR (Automated Release Analysis)
   # ==================================================================================
   orchestrator:
-    if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && !contains(github.event.head_commit.message, '[skip ci]')
+    needs: [dispatch]
+    if: needs.dispatch.outputs.command == 'deploy'
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -196,22 +205,16 @@ jobs:
             sudo apt-get update && sudo apt-get install -y jq
           fi
 
-          if ! command -v gemini &> /dev/null; then
-             echo "📦 Installing @google/gemini-cli..."
-             npm install -g @google/gemini-cli@latest
-          fi
-
-          # 2.5 context: Current Tags
-          echo "🏷️  Fetching repository tags..."
+          # 2.5 context: Current Tags & Recent Changes
+          echo "🏷️  Fetching repository status..."
           EXISTING_TAGS=$(git tag --sort=-v:refname | head -n 10 | tr '\n' ',' | sed 's/,$//')
-          echo "Existing Tags: $EXISTING_TAGS"
 
           cat << EOF > prompt.txt
           Analyze the following project state and determine the release strategy.
-          1. Read 'assets/version.json' for the current version.
-          2. Check 'git log --oneline --no-merges -5' for recent context.
-          3. Check 'git diff --name-only HEAD~1..HEAD' for changed files.
-          4. EXISTING REPOSITORY TAGS: $EXISTING_TAGS
+          1. Current Version (from assets/version.json): $(jq -r '.version' assets/version.json)
+          2. Recent Commits: $(git log --oneline --no-merges -5 | tr '\n' ' ' )
+          3. EXISTING REPOSITORY TAGS: $EXISTING_TAGS
+          4. COMMAND/INTENT CONTEXT: ${{ needs.dispatch.outputs.additional_context }}
 
           CRITICAL: Your 'new_version' MUST NOT exist in the EXISTING REPOSITORY TAGS. 
           If the next logical semantic version is already a tag, you MUST increment the patch version until you find a unique version.
@@ -230,43 +233,37 @@ jobs:
           }
           EOF
 
-          # 3. Strict Execution Loop
-          echo "🚀 Executing Gemini Analysis..."
-          MAX_RETRIES=3
-          RETRY_COUNT=0
-          MODEL="gemini-1.5-flash"
+          # 3. Execution via Curl (More robust in CI)
+          echo "🚀 Executing Gemini Analysis via API..."
 
-          while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
-            echo "Attempt $((RETRY_COUNT+1)) using $MODEL..."
-            if gemini --debug --yolo --model "$MODEL" --output-format json "$(cat prompt.txt)" > gemini_output_raw.txt 2> gemini_stderr.log; then
-              
-              # Extract JSON block
-              sed -n '/{/,/}/p' gemini_output_raw.txt > gemini_output.json
-              
-              # Validation: Fail if empty or invalid JSON
-              if [ -s gemini_output.json ] && jq empty gemini_output.json >/dev/null 2>&1; then
-                echo "✅ Gemini Analysis Successful."
-                break
-              else
-                echo "⚠️  Attempt $((RETRY_COUNT+1)) failed: Invalid JSON response."
-                cat gemini_output_raw.txt
-              fi
-            else
-               echo "⚠️  Attempt $((RETRY_COUNT+1)) failed: CLI Execution Error."
-               cat gemini_stderr.log
-               # Try switching model on retry just in case
-               MODEL="gemini-1.5-flash-8b"
-            fi
-            
-            RETRY_COUNT=$((RETRY_COUNT+1))
-            if [ $RETRY_COUNT -eq $MAX_RETRIES ]; then
-              echo "❌ CRITICAL FAILURE: Gemini Analysis failed after $MAX_RETRIES attempts."
-              exit 1
-            fi
-            
-            echo "Retrying in 5s..."
-            sleep 5
-          done
+          PROMPT=$(cat prompt.txt)
+          JSON_PROMPT=$(echo "$PROMPT" | jq -aRs .)
+
+          API_URL="https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}"
+
+          cat << EOF > request.json
+          {
+            "contents": [{
+              "parts":[{"text": $JSON_PROMPT}]
+            }],
+            "generationConfig": {
+              "response_mime_type": "application/json"
+            }
+          }
+          EOF
+
+          curl -s -X POST "$API_URL" \
+               -H "Content-Type: application/json" \
+               -d @request.json > response.json
+
+          if [ "$(jq -r '.candidates[0].content.parts[0].text' response.json)" != "null" ]; then
+             jq -r '.candidates[0].content.parts[0].text' response.json > gemini_output.json
+             echo "✅ Gemini Analysis Successful."
+          else
+             echo "❌ CRITICAL FAILURE: Gemini API returned an error or empty response."
+             cat response.json
+             exit 1
+          fi
 
           # 4. Handle Manual Overrides
           if [ "$IS_MANUAL" == "true" ]; then
