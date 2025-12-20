@@ -61,7 +61,6 @@ jobs:
       additional_context: "${{ steps.extract_command.outputs.additional_context }}"
       start_time: "${{ steps.extract_command.outputs.start_time }}"
       start_time_formatted: "${{ steps.format_time.outputs.start_time_formatted }}"
-      start_time_formatted: "${{ steps.format_time.outputs.start_time_formatted }}"
     steps:
       - name: "Extract command"
         id: "extract_command"
@@ -97,6 +96,10 @@ jobs:
             } else {
               core.setOutput('command', 'fallthrough');
             }
+
+      - name: "Format start time"
+        id: "format_time"
+        run: echo "start_time_formatted=$(date -u -d @${{ github.event.repository.created_at }} +'%Y-%m-%dT%H:%M:%SZ')" >> $GITHUB_OUTPUT
 
   # Sub-Dispatch Tasks
   review:
