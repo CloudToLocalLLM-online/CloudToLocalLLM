@@ -100,7 +100,7 @@ jobs:
             }
 
       - name: "Acknowledge"
-        if: steps.extract_command.outputs.command != 'fallthrough'
+        if: steps.extract_command.outputs.command != 'fallthrough' && (github.event.pull_request.number || github.event.issue.number)
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
