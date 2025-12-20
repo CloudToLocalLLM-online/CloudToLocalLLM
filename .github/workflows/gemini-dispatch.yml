@@ -178,6 +178,7 @@ jobs:
         id: "exec"
         env:
           GEMINI_OUTPUT: "${{ steps.analysis.outputs.gemini_output }}"
+          GEMINI_API_KEY: "${{ secrets.GEMINI_API_KEY }}"
         run: |
           set -e
           echo "new_version=$(echo "$GEMINI_OUTPUT" | jq -r '.new_version')" >> $GITHUB_OUTPUT
