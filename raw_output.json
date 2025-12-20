@@ -1,35 +1,35 @@
 {
-  "session_id": "6453c0a8-c89a-4d72-baa9-d2d00f109541",
-  "response": "```json\n{\n  \"new_version\": \"7.14.4\",\n  \"docker_version\": \"7.14.4\",\n  \"do_managed\": false,\n  \"do_local\": true,\n  \"do_desktop\": false,\n  \"do_mobile\": false,\n  \"should_deploy\": true,\n  \"reasoning\": \"A patch version bump is required from 7.14.3 to 7.14.4 to incorporate the new 'feat(test)' and 'fix(ci)' commits, which occurred after the previous version bump. The Kubernetes configuration changes for the local environment and the new features/fixes warrant a deployment of the local services. No new desktop or mobile client releases are indicated by these backend/CI changes.\",\n  \"version_bump_needed\": true\n}\n```",
+  "session_id": "bb4fb05d-a16a-4514-82bd-9a7f159a4c33",
+  "response": "```json\n{\n  \"new_version\": \"7.15.0\",\n  \"docker_version\": \"7.15.0\",\n  \"do_managed\": false,\n  \"do_local\": true,\n  \"do_desktop\": false,\n  \"do_mobile\": false,\n  \"should_deploy\": true,\n  \"reasoning\": \"A new feature (feat) was introduced in commit 7ef0705, warranting a minor version bump to 7.15.0. The changes are confined to the 'local' Kubernetes profile, so only a 'local' deployment is required. No application code changes necessitate new desktop or mobile builds.\",\n  \"version_bump_needed\": true\n}\n```",
   "stats": {
     "models": {
       "gemini-2.5-flash-lite": {
         "api": {
           "totalRequests": 1,
           "totalErrors": 0,
-          "totalLatencyMs": 2737
+          "totalLatencyMs": 3671
         },
         "tokens": {
-          "prompt": 3422,
-          "candidates": 213,
-          "total": 4025,
+          "prompt": 3337,
+          "candidates": 174,
+          "total": 3910,
           "cached": 0,
-          "thoughts": 390,
+          "thoughts": 399,
           "tool": 0
         }
       },
-      "gemini-2.5-flash": {
+      "gemini-2.5-pro": {
         "api": {
           "totalRequests": 1,
           "totalErrors": 0,
-          "totalLatencyMs": 15491
+          "totalLatencyMs": 11689
         },
         "tokens": {
-          "prompt": 13870,
-          "candidates": 173,
-          "total": 17074,
+          "prompt": 13785,
+          "candidates": 160,
+          "total": 15093,
           "cached": 0,
-          "thoughts": 3031,
+          "thoughts": 1148,
           "tool": 0
         }
       }

@@ -2,6 +2,34 @@
 
 All notable changes to this project will be documented in this file.
 
+## [7.15.0] - 2025-12-20
+# Changelog for v7.15.0
+
+This release focuses on significant CI/CD enhancements, Kubernetes configuration improvements, and robust testing additions. Key features include the integration of `ingress-cloudflared` for local development and a new automated test suite for Auth0 user management.
+
+## Features
+
+- **(k8s)** Add `ingress-cloudflared` to the local development profile for easier and more secure local testing (7ef0705).
+- **(test)** Implement an automated Auth0 test user suite to improve authentication reliability and fix a redirect URI issue (5de36fd).
+
+## Bug Fixes
+
+- **(ci)** Repaired and enhanced numerous GitHub Actions workflows, resolving issues with matrix syntax, conditional logic, and Gemini CLI integration. This includes fixes for YAML validation, environment variable propagation, and robust error handling during triage and deployment (593f833, 8e2b466, b5554d3, 454245b, 8f663ea, 6fb2495, 1d871ed, ff14ae9, 80e16d1, c2e4cd3, b167c43, 55c52c0, 2e91e3f, 18d8176, 4deb995, 0e78968, c17036b, c61f910, a34854a, 4b5b29b, 673433f, 762452b, 8875a14).
+- **(docker)** Corrected Dockerfile scripts for the `streaming-proxy` by disabling variable interpolation in heredocs and using the `COPY <<EOF` syntax for inline scripts (447e994, 422bc31).
+- **(k8s)** Rolled back the web image to a stable version to address a missing image issue and updated the web deployment to resolve a critical loading problem (94969b0, f5258e9).
+- **(k8s)** Removed duplicate resources from the base `kustomization.yaml` to clean up the Kubernetes configuration (ebcc87f).
+
+## Refactoring
+
+- **(k8s)** Split the monolithic `argo-apps.yaml` into individual application manifests for better maintainability and clarity within the GitOps structure (a5d5407).
+
+## Chore
+
+- **(ops)** Unified the dispatch entry point for workflows and refactored orchestrator analysis to use `curl` for improved reliability (c83ef10).
+- **(ops)** Addressed and fixed failures in the Acknowledge step for `push` events (f6fd3d4).
+- **(ci)** Consolidated service builds into a single matrix job and ensured the base image build runs first, streamlining the CI pipeline (ef050df, 92db73a).
+- **(ci)** Improved safety guards, concurrency logic, and error parsing for various workflow dispatches to prevent startup failures (9d60926, 83b87c1, 6ccea5a, a2ad36e, 3dd988f, eb1048c, e4b5b3b).
+
 ## [7.14.4] - 2025-12-20
 # Changelog for v7.14.4
 
