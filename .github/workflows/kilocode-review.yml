@@ -75,7 +75,10 @@ jobs:
           EOF
           chmod +x scripts/kilocode-cli.cjs
           echo "🔄 Starting KiloCode PR review..."
-          if ! ./scripts/kilocode-cli.cjs "Please review this pull request. Title: $ISSUE_TITLE. Body: $ISSUE_BODY. Context: $ADDITIONAL_CONTEXT." --output-format json > raw_output.json 2> kilocode_error.log; then
+          TITLE_ESCAPED=$(echo "$ISSUE_TITLE" | sed 's/\"/\\\\\"/g')
+          BODY_ESCAPED=$(echo "$ISSUE_BODY" | sed 's/\"/\\\\\"/g')
+          CONTEXT_ESCAPED=$(echo "$ADDITIONAL_CONTEXT" | sed 's/\"/\\\\\"/g')
+          if ! ./scripts/kilocode-cli.cjs "Please review this pull request. Title: $TITLE_ESCAPED. Body: $BODY_ESCAPED. Context: $CONTEXT_ESCAPED." --output-format json > raw_output.json 2> kilocode_error.log; then
             echo "::error::KiloCode CLI failed"
             echo "📝 Error details:"
             cat kilocode_error.log

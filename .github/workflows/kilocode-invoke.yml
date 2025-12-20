@@ -72,7 +72,10 @@ jobs:
           EOF
           chmod +x scripts/kilocode-cli.cjs
           echo "🔄 Starting KiloCode CLI execution..."
-          if ! ./scripts/kilocode-cli.cjs "TITLE: $TITLE. DESCRIPTION: $DESCRIPTION. CONTEXT: $ADDITIONAL_CONTEXT. Please assist with the request." --output-format json > raw_output.json 2> kilocode_error.log; then
+          TITLE_ESCAPED=$(echo "$TITLE" | sed 's/\"/\\\\\"/g')
+          DESC_ESCAPED=$(echo "$DESCRIPTION" | sed 's/\"/\\\\\"/g')
+          CONTEXT_ESCAPED=$(echo "$ADDITIONAL_CONTEXT" | sed 's/\"/\\\\\"/g')
+          if ! ./scripts/kilocode-cli.cjs "TITLE: $TITLE_ESCAPED. DESCRIPTION: $DESC_ESCAPED. CONTEXT: $CONTEXT_ESCAPED. Please assist with the request." --output-format json > raw_output.json 2> kilocode_error.log; then
             echo "::error::KiloCode CLI failed"
             echo "📝 Error details:"
             cat kilocode_error.log
