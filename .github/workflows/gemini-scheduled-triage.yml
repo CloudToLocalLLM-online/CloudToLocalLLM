@@ -90,45 +90,32 @@ jobs:
         id: "gemini_issue_analysis"
         if: |-
           ${{ steps.find_issues.outputs.issues_to_triage != '[]' }}
-        uses: "google-github-actions/run-gemini-cli@v0" # ratchet:exclude
         env:
-          GITHUB_TOKEN: "" # Do not pass any auth token here since this runs on untrusted inputs
+          GEMINI_API_KEY: "${{ secrets.GEMINI_API_KEY }}"
           ISSUES_TO_TRIAGE: "${{ steps.find_issues.outputs.issues_to_triage }}"
-          REPOSITORY: "${{ github.repository }}"
           AVAILABLE_LABELS: "${{ steps.get_labels.outputs.available_labels }}"
-        with:
-          gcp_location: "${{ vars.GOOGLE_CLOUD_LOCATION }}"
-          gcp_project_id: "${{ vars.GOOGLE_CLOUD_PROJECT }}"
-          gcp_service_account: "${{ vars.SERVICE_ACCOUNT_EMAIL }}"
-          gcp_workload_identity_provider: "${{ vars.GCP_WIF_PROVIDER }}"
-          gemini_api_key: "${{ secrets.GEMINI_API_KEY }}"
-          google_api_key: "${{ secrets.GEMINI_API_KEY }}"
-          gemini_cli_version: "0.21.3"
-          gemini_debug: false
-          gemini_model: "gemini-1.5-flash"
-          gcp_token_format: ""
-          prompt: "/gemini-scheduled-triage"
+        run: |
+          # Use npx to run the latest CLI directly with a custom prompt
+          if ! npx -y @google/gemini-cli@latest --yolo --output-format json "Analyze these GitHub issues and assign appropriate labels from the following list: $AVAILABLE_LABELS. Issues: $ISSUES_TO_TRIAGE. Return ONLY a valid JSON array of objects, where each object has: 'issue_number' (integer), 'labels_to_set' (array of strings), and 'explanation' (string)." > raw_output.json 2> gemini_error.log; then
+            echo "::error::Gemini CLI failed"
+            cat gemini_error.log
+            exit 1
+          fi
+          # Extract response and clean JSON (handling both array and object wrapping)
+          CLEAN_JSON=$(cat raw_output.json | jq -r '.response' | sed -n '/\[/,/\]/p')
+          if [ -z "$CLEAN_JSON" ]; then
+            CLEAN_JSON=$(cat raw_output.json | jq -r '.response' | sed -n '/{/,/}/p')
+          fi
+          echo "triaged_issues<<EOF" >> $GITHUB_OUTPUT
+          echo "$CLEAN_JSON" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
 
       - name: "Parse Gemini output"
         id: "parse_output"
-        if: |-
-          ${{ steps.gemini_issue_analysis.outcome == 'success' }}
-        env:
-          GEMINI_OUTPUT: "${{ steps.gemini_issue_analysis.outputs.gemini_output }}"
         run: |
-           # Try to extract JSON array
-           CLEAN_JSON=$(echo "$GEMINI_OUTPUT" | sed -n '/\[/,/\]/p')
-           # If empty, try object
-           if [ -z "$CLEAN_JSON" ]; then
-             CLEAN_JSON=$(echo "$GEMINI_OUTPUT" | sed -n '/{/,/}/p')
-           fi
-           # If still empty, use raw
-           if [ -z "$CLEAN_JSON" ]; then
-             CLEAN_JSON="$GEMINI_OUTPUT"
-           fi
-           
+           # Use output from previous step directly
            echo "triaged_issues<<EOF" >> $GITHUB_OUTPUT
-           echo "$CLEAN_JSON" >> $GITHUB_OUTPUT
+           echo "${{ steps.gemini_issue_analysis.outputs.triaged_issues }}" >> $GITHUB_OUTPUT
            echo "EOF" >> $GITHUB_OUTPUT
 
   label:

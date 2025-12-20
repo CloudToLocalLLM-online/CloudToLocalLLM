@@ -163,19 +163,16 @@ jobs:
           GEMINI_API_KEY: "${{ secrets.GEMINI_API_KEY }}"
         run: |
           # Use npx to run the latest CLI directly
-          if ! npx -y @google/gemini-cli@latest --yolo --output-format json "Analyze the following project state and determine the release strategy. Return ONLY a valid JSON object with fields: new_version, docker_version, do_managed, do_local, do_desktop, do_mobile, should_deploy, reasoning, version_bump_needed. Context: Version=$(cat assets/version.json), Changes=$(git diff --name-only HEAD~1), Log=$(git log -n 5 --oneline)" > gemini_output.json 2> gemini_error.log; then
+          if ! npx -y @google/gemini-cli@latest --yolo --output-format json "Analyze the following project state and determine the release strategy. Return ONLY a valid JSON object with fields: new_version, docker_version, do_managed, do_local, do_desktop, do_mobile, should_deploy, reasoning, version_bump_needed. Context: Version=$(cat assets/version.json), Changes=$(git diff --name-only HEAD~1), Log=$(git log -n 5 --oneline)" > raw_output.json 2> gemini_error.log; then
             echo "::error::Gemini CLI failed"
             cat gemini_error.log
-            # Check for error report
-            REPORT=$(grep -o "/tmp/gemini-client-error-.*\.json" gemini_error.log | head -n 1)
-            if [ -n "$REPORT" ] && [ -f "$REPORT" ]; then
-              echo "--- ERROR REPORT START ---"
-              cat "$REPORT"
-              echo "--- ERROR REPORT END ---"
-            fi
             exit 1
           fi
-          echo "gemini_output=$(cat gemini_output.json | jq -c .)" >> $GITHUB_OUTPUT
+          # Extract response and clean JSON
+          CLEAN_JSON=$(cat raw_output.json | jq -r '.response' | sed -n '/{/,/}/p')
+          echo "gemini_output<<EOF" >> $GITHUB_OUTPUT
+          echo "$CLEAN_JSON" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
 
       - name: "Execute Logic"
         id: "exec"
@@ -183,17 +180,16 @@ jobs:
           GEMINI_OUTPUT: "${{ steps.analysis.outputs.gemini_output }}"
         run: |
           set -e
-          CLEAN_JSON=$(echo "$GEMINI_OUTPUT" | sed -n '/{/,/}/p')
-          echo "new_version=$(echo "$CLEAN_JSON" | jq -r '.new_version')" >> $GITHUB_OUTPUT
-          echo "docker_version=$(echo "$CLEAN_JSON" | jq -r '.docker_version')" >> $GITHUB_OUTPUT
-          echo "do_managed=$(echo "$CLEAN_JSON" | jq -r '.do_managed')" >> $GITHUB_OUTPUT
-          echo "do_local=$(echo "$CLEAN_JSON" | jq -r '.do_local')" >> $GITHUB_OUTPUT
-          echo "do_desktop=$(echo "$CLEAN_JSON" | jq -r '.do_desktop')" >> $GITHUB_OUTPUT
-          echo "do_mobile=$(echo "$CLEAN_JSON" | jq -r '.do_mobile')" >> $GITHUB_OUTPUT
-          echo "should_deploy=$(echo "$CLEAN_JSON" | jq -r '.should_deploy')" >> $GITHUB_OUTPUT
-          echo "reasoning=$(echo "$CLEAN_JSON" | jq -r '.reasoning')" >> $GITHUB_OUTPUT
+          echo "new_version=$(echo "$GEMINI_OUTPUT" | jq -r '.new_version')" >> $GITHUB_OUTPUT
+          echo "docker_version=$(echo "$GEMINI_OUTPUT" | jq -r '.docker_version')" >> $GITHUB_OUTPUT
+          echo "do_managed=$(echo "$GEMINI_OUTPUT" | jq -r '.do_managed')" >> $GITHUB_OUTPUT
+          echo "do_local=$(echo "$GEMINI_OUTPUT" | jq -r '.do_local')" >> $GITHUB_OUTPUT
+          echo "do_desktop=$(echo "$GEMINI_OUTPUT" | jq -r '.do_desktop')" >> $GITHUB_OUTPUT
+          echo "do_mobile=$(echo "$GEMINI_OUTPUT" | jq -r '.do_mobile')" >> $GITHUB_OUTPUT
+          echo "should_deploy=$(echo "$GEMINI_OUTPUT" | jq -r '.should_deploy')" >> $GITHUB_OUTPUT
+          echo "reasoning=$(echo "$GEMINI_OUTPUT" | jq -r '.reasoning')" >> $GITHUB_OUTPUT
 
-          if [ "$(echo "$CLEAN_JSON" | jq -r '.version_bump_needed')" == "true" ]; then
+          if [ "$(echo "$GEMINI_OUTPUT" | jq -r '.version_bump_needed')" == "true" ]; then
             git config user.name "github-actions[bot]"
             git config user.email "github-actions[bot]@users.noreply.github.com"
             chmod +x scripts/update-all-versions.sh

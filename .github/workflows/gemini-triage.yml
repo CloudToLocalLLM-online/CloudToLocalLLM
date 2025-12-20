@@ -59,37 +59,28 @@ jobs:
         id: "gemini_analysis"
         if: |-
           ${{ steps.get_labels.outputs.available_labels != '' }}
-        uses: "google-github-actions/run-gemini-cli@v0" # ratchet:exclude
         env:
-          GITHUB_TOKEN: "" # Do NOT pass any auth tokens here since this runs on untrusted inputs
+          GEMINI_API_KEY: "${{ secrets.GEMINI_API_KEY }}"
           ISSUE_TITLE: "${{ github.event.issue.title }}"
           ISSUE_BODY: "${{ github.event.issue.body }}"
           AVAILABLE_LABELS: "${{ steps.get_labels.outputs.available_labels }}"
-        with:
-          gcp_location: "${{ vars.GOOGLE_CLOUD_LOCATION }}"
-          gcp_project_id: "${{ vars.GOOGLE_CLOUD_PROJECT }}"
-          gcp_service_account: "${{ vars.SERVICE_ACCOUNT_EMAIL }}"
-          gcp_workload_identity_provider: "${{ vars.GCP_WIF_PROVIDER }}"
-          gemini_api_key: "${{ secrets.GEMINI_API_KEY }}"
-          gemini_cli_version: "0.21.3"
-          gemini_debug: false
-          gemini_model: "gemini-1.5-flash"
-          gcp_token_format: ""
-          use_gemini_code_assist: "${{ vars.GOOGLE_GENAI_USE_GCA }}"
-          use_vertex_ai: false
-          upload_artifacts: false
-          workflow_name: "gemini-triage"
-          prompt: "/gemini-triage"
+        run: |
+          if ! npx -y @google/gemini-cli@latest --yolo --output-format json "Analyze this GitHub issue and assign appropriate labels from the list. Labels: $AVAILABLE_LABELS. Issue Title: $ISSUE_TITLE. Issue Body: $ISSUE_BODY. Return ONLY a valid JSON object with a field 'labels' (array of strings)." > raw_output.json 2> gemini_error.log; then
+            echo "::error::Gemini CLI failed"
+            cat gemini_error.log
+            exit 1
+          fi
+          CLEAN_JSON=$(cat raw_output.json | jq -r '.response' | sed -n '/{/,/}/p')
+          echo "gemini_output<<EOF" >> $GITHUB_OUTPUT
+          echo "$CLEAN_JSON" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
 
       - name: "Parse Gemini output"
         id: "parse_output"
         if: |-
           ${{ steps.gemini_analysis.outcome == 'success' }}
-        env:
-          GEMINI_OUTPUT: "${{ steps.gemini_analysis.outputs.gemini_output }}"
         run: |
-           CLEAN_JSON=$(echo "$GEMINI_OUTPUT" | sed -n '/{/,/}/p')
-           LABELS=$(echo "$CLEAN_JSON" | jq -r '.labels | join(",")')
+           LABELS=$(echo "${{ steps.gemini_analysis.outputs.gemini_output }}" | jq -r '.labels | join(",")')
            echo "labels=$LABELS" >> $GITHUB_OUTPUT
 
   label:

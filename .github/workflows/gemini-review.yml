@@ -42,60 +42,36 @@ jobs:
         uses: "actions/checkout@v4"
 
       - name: "Run Gemini pull request review"
-        uses: "google-github-actions/run-gemini-cli@v0" # ratchet:exclude
         id: "gemini_pr_review"
         env:
+          GEMINI_API_KEY: "${{ secrets.GEMINI_API_KEY }}"
           GITHUB_TOKEN: "${{ steps.mint_identity_token.outputs.token || secrets.GITHUB_TOKEN || github.token }}"
-          GITHUB_PERSONAL_ACCESS_TOKEN: "${{ steps.mint_identity_token.outputs.token || secrets.GITHUB_TOKEN || github.token }}"
           ISSUE_TITLE: "${{ github.event.pull_request.title || github.event.issue.title }}"
           ISSUE_BODY: "${{ github.event.pull_request.body || github.event.issue.body }}"
-          PULL_REQUEST_NUMBER: "${{ github.event.pull_request.number || github.event.issue.number }}"
-          REPOSITORY: "${{ github.repository }}"
           ADDITIONAL_CONTEXT: "${{ inputs.additional_context }}"
-        with:
-          gcp_location: "${{ vars.GOOGLE_CLOUD_LOCATION }}"
-          gcp_project_id: "${{ vars.GOOGLE_CLOUD_PROJECT }}"
-          gcp_service_account: "${{ vars.SERVICE_ACCOUNT_EMAIL }}"
-          gcp_workload_identity_provider: "${{ vars.GCP_WIF_PROVIDER }}"
-          gemini_api_key: "${{ secrets.GEMINI_API_KEY }}"
-          gemini_cli_version: "0.21.3"
-          gemini_debug: false
-          gemini_model: "gemini-1.5-flash"
-          gcp_token_format: ""
-          google_api_key: "${{ secrets.GOOGLE_API_KEY }}"
-          use_gemini_code_assist: "${{ vars.GOOGLE_GENAI_USE_GCA }}"
-          use_vertex_ai: false
-          upload_artifacts: false
-          workflow_name: "gemini-review"
-          settings: |-
-            {
-              "model": {
-                "maxSessionTurns": 25
-              },
-              "output": {
-                 "format": "json"
-              },
-              "mcpServers": {
-                "github": {
-                  "command": "docker",
-                  "args": [
-                    "run",
-                    "-i",
-                    "--rm",
-                    "-e",
-                    "GITHUB_PERSONAL_ACCESS_TOKEN",
-                    "ghcr.io/github/github-mcp-server:v0.18.0"
-                  ],
-                  "includeTools": [
-                    "add_comment_to_pending_review",
-                    "create_pending_pull_request_review",
-                    "pull_request_read",
-                    "submit_pending_pull_request_review"
-                  ],
-                  "env": {
-                    "GITHUB_PERSONAL_ACCESS_TOKEN": "${GITHUB_TOKEN}"
-                  }
+        run: |
+          mkdir -p .gemini
+          cat > .gemini/settings.json <<EOF
+          {
+            "model": { "maxSessionTurns": 25 },
+            "output": { "format": "json" },
+            "mcpServers": {
+              "github": {
+                "command": "docker",
+                "args": [
+                  "run", "-i", "--rm",
+                  "-e", "GITHUB_PERSONAL_ACCESS_TOKEN",
+                  "ghcr.io/github/github-mcp-server:v0.18.0"
+                ],
+                "env": {
+                  "GITHUB_PERSONAL_ACCESS_TOKEN": "$GITHUB_TOKEN"
                 }
               }
             }
-          prompt: "/gemini-review"
+          }
+          EOF
+          if ! npx -y @google/gemini-cli@latest --yolo --output-format json "Please review this pull request. Title: $ISSUE_TITLE. Body: $ISSUE_BODY. Context: $ADDITIONAL_CONTEXT." > raw_output.json 2> gemini_error.log; then
+            echo "::error::Gemini CLI failed"
+            cat gemini_error.log
+            exit 1
+          fi
