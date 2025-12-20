@@ -1,35 +1,35 @@
 {
-  "session_id": "355abd51-e8c6-4c75-ba33-e5f369854fa0",
-  "response": "```json\n{\n  \"new_version\": \"7.14.3\",\n  \"docker_version\": \"7.14.3\",\n  \"do_managed\": true,\n  \"do_local\": true,\n  \"do_desktop\": true,\n  \"do_mobile\": true,\n  \"should_deploy\": true,\n  \"reasoning\": \"A user-facing authentication fix (auth0 redirect uri) was introduced in commit 5de36fd. This change impacts the Flutter client (mobile, desktop) and the api-backend service. Although the commit is marked as 'feat(test)', the content is a critical bug fix, warranting a patch release to 7.14.3. A coordinated deployment is required across all platforms to ensure authentication remains functional.\",\n  \"version_bump_needed\": true\n}\n```",
+  "session_id": "6453c0a8-c89a-4d72-baa9-d2d00f109541",
+  "response": "```json\n{\n  \"new_version\": \"7.14.4\",\n  \"docker_version\": \"7.14.4\",\n  \"do_managed\": false,\n  \"do_local\": true,\n  \"do_desktop\": false,\n  \"do_mobile\": false,\n  \"should_deploy\": true,\n  \"reasoning\": \"A patch version bump is required from 7.14.3 to 7.14.4 to incorporate the new 'feat(test)' and 'fix(ci)' commits, which occurred after the previous version bump. The Kubernetes configuration changes for the local environment and the new features/fixes warrant a deployment of the local services. No new desktop or mobile client releases are indicated by these backend/CI changes.\",\n  \"version_bump_needed\": true\n}\n```",
   "stats": {
     "models": {
       "gemini-2.5-flash-lite": {
         "api": {
           "totalRequests": 1,
           "totalErrors": 0,
-          "totalLatencyMs": 3838
+          "totalLatencyMs": 2737
         },
         "tokens": {
-          "prompt": 3416,
-          "candidates": 182,
-          "total": 3996,
+          "prompt": 3422,
+          "candidates": 213,
+          "total": 4025,
           "cached": 0,
-          "thoughts": 398,
+          "thoughts": 390,
           "tool": 0
         }
       },
-      "gemini-2.5-pro": {
+      "gemini-2.5-flash": {
         "api": {
           "totalRequests": 1,
           "totalErrors": 0,
-          "totalLatencyMs": 13192
+          "totalLatencyMs": 15491
         },
         "tokens": {
-          "prompt": 13864,
-          "candidates": 181,
-          "total": 15342,
+          "prompt": 13870,
+          "candidates": 173,
+          "total": 17074,
           "cached": 0,
-          "thoughts": 1297,
+          "thoughts": 3031,
           "tool": 0
         }
       }

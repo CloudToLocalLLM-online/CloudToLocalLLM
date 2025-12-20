@@ -2,6 +2,27 @@
 
 All notable changes to this project will be documented in this file.
 
+## [7.14.4] - 2025-12-20
+# Changelog for v7.14.4
+
+## Features
+* **(test)**: Added an automated test suite for Auth0 user management and corrected the Auth0 redirect URI to enhance authentication reliability. (5de36fd)
+
+## Bug Fixes
+* **(ci)**: Repaired and stabilized multiple GitHub Actions workflows by addressing issues with Gemini CLI versions, API key propagation, YAML validation, conditional logic, and deployment triage. This includes standardizing the CLI version, ensuring correct permissions, and improving the robustness of triage loops. (8875a14, 673433f, 762452b, 4b5b29b, a34854a, c61f910, c17036b, 0e78968, 4deb995, 18d8176, 2e91e3f, 55c52c0, b167c43, c2e4cd3, 80e16d1, ff14ae9, 1d871ed, 6fb2495)
+* **(ci)**: Fixed build matrix logic by reverting to separate jobs, correcting conditional expressions, and resolving context issues with build arguments. (593f833, 8e2b466, b5554d3, 454245b, 8f663ea, 6c8d15a, 76f34b6)
+* **(docker)**: Resolved an issue with variable interpolation in heredocs for the `streaming-proxy` by disabling it and using `COPY <<EOF` syntax for inline scripts. (447e994, 422bc31)
+* **(k8s)**: Updated the web deployment to v7.14.0, resolving a critical loading issue. Also removed duplicate resources from the base `kustomization.yaml` and temporarily reverted a web image due to a missing build. (f5258e9, ebcc87f, 94969b0)
+
+## Refactoring
+* **(k8s)**: Split the monolithic `argo-apps.yaml` into individual application manifests for better organization and management within Argo CD. (a5d5407)
+
+## Chore
+* **(ops)**: Consolidated the deployment process into a unified `gemini-dispatch` workflow, deleting the redundant `deploy-aks.yml`. (ff9d394)
+* **(ops)**: Improved the resilience of the workflow orchestrator with better error logging and refactored analysis steps. (1304183, c83ef10)
+* **(ci)**: Enhanced CI job organization by consolidating service builds into a single matrix job and adding descriptive naming. (ef050df, 29b9f68)
+* **(ci)**: Added safety guards and simplified logic for workflow dispatch to prevent startup failures. (a2ad36e, 6ccea5a, 83b87c1, 9d60926, 3dd988f)
+
 ## [7.14.3] - 2025-12-20
 # Changelog
 
