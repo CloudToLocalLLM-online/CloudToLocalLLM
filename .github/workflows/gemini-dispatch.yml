@@ -206,10 +206,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       base: ${{ steps.detect.outputs.base }}
-      postgres: ${{ steps.detect.outputs.postgres }}
-      web: ${{ steps.detect.outputs.web }}
-      api: ${{ steps.detect.outputs.api }}
-      proxy: ${{ steps.detect.outputs.proxy }}
+      changes: ${{ steps.detect.outputs.changes }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -219,19 +216,41 @@ jobs:
         run: |
           set -e
           PREV_TAG=$(git tag -l "*-cloud-*" --sort=-version:refname | head -n 1 || echo "")
+          
+          # Initialize JSON array for changes
+          CHANGES="[]"
+          
+          # Helper to add service to changes array
+          add_change() {
+            CHANGES=$(echo "$CHANGES" | jq --arg s "$1" '. + [$s]')
+          }
+
           if [ -z "$PREV_TAG" ]; then
             echo "base=true" >> $GITHUB_OUTPUT
-            echo "postgres=true" >> $GITHUB_OUTPUT
-            echo "web=true" >> $GITHUB_OUTPUT
-            echo "api=true" >> $GITHUB_OUTPUT
-            echo "proxy=true" >> $GITHUB_OUTPUT
+            CHANGES='["postgres", "web", "api", "proxy"]'
+            echo "changes=$CHANGES" >> $GITHUB_OUTPUT
             exit 0
           fi
+          
           echo "base=$(git diff --name-only $PREV_TAG HEAD | grep -qE '^config/docker/Dockerfile\.base' && echo 'true' || echo 'false')" >> $GITHUB_OUTPUT
-          echo "postgres=$(git diff --name-only $PREV_TAG HEAD | grep -qE '^config/docker/Dockerfile\.postgres' && echo 'true' || echo 'false')" >> $GITHUB_OUTPUT
-          echo "web=$(git diff --name-only $PREV_TAG HEAD | grep -qE '^(web|lib|pubspec\.)' && echo 'true' || echo 'false')" >> $GITHUB_OUTPUT
-          echo "api=$(git diff --name-only $PREV_TAG HEAD | grep -qE '^services/api-backend' && echo 'true' || echo 'false')" >> $GITHUB_OUTPUT
-          echo "proxy=$(git diff --name-only $PREV_TAG HEAD | grep -qE '^services/streaming-proxy' && echo 'true' || echo 'false')" >> $GITHUB_OUTPUT
+          
+          if git diff --name-only $PREV_TAG HEAD | grep -qE '^config/docker/Dockerfile\.postgres'; then
+            add_change "postgres"
+          fi
+          
+          if git diff --name-only $PREV_TAG HEAD | grep -qE '^(web|lib|pubspec\.)'; then
+            add_change "web"
+          fi
+          
+          if git diff --name-only $PREV_TAG HEAD | grep -qE '^services/api-backend'; then
+            add_change "api"
+          fi
+          
+          if git diff --name-only $PREV_TAG HEAD | grep -qE '^services/streaming-proxy'; then
+            add_change "proxy"
+          fi
+          
+          echo "changes=$CHANGES" >> $GITHUB_OUTPUT
 
   infrastructure:
     needs: [orchestrator, detect_changes]
@@ -288,7 +307,7 @@ jobs:
           - service: proxy
             file: config/docker/Dockerfile.streaming-proxy
             name: streaming-proxy
-    if: ${{ (needs.build_base.result == 'success' || needs.build_base.result == 'skipped') && needs.detect_changes.outputs[matrix.service] == 'true' }}
+    if: ${{ (needs.build_base.result == 'success' || needs.build_base.result == 'skipped') && contains(fromJson(needs.detect_changes.outputs.changes), matrix.service) }}
     runs-on: ubuntu-latest
     permissions:
       id-token: write
@@ -350,24 +369,26 @@ jobs:
 
       - name: Update Deployments
         run: |
+          CHANGES='${{ needs.detect_changes.outputs.changes }}'
+          
           # API Backend
-          if [ "${{ needs.detect_changes.outputs.api }}" == "true" ]; then
+          if echo "$CHANGES" | grep -q "api"; then
             kubectl set image deployment/api-backend api-backend=${{ env.ACR_NAME }}.azurecr.io/api-backend:main-${{ github.sha }} -n cloudtolocalllm
             kubectl set image deployment/api-backend db-migrate=${{ env.ACR_NAME }}.azurecr.io/api-backend:main-${{ github.sha }} -n cloudtolocalllm
           fi
 
           # Web
-          if [ "${{ needs.detect_changes.outputs.web }}" == "true" ]; then
+          if echo "$CHANGES" | grep -q "web"; then
             kubectl set image deployment/web web=${{ env.ACR_NAME }}.azurecr.io/web:main-${{ github.sha }} -n cloudtolocalllm
           fi
 
           # Streaming Proxy
-          if [ "${{ needs.detect_changes.outputs.proxy }}" == "true" ]; then
+          if echo "$CHANGES" | grep -q "proxy"; then
              kubectl set image deployment/streaming-proxy streaming-proxy=${{ env.ACR_NAME }}.azurecr.io/streaming-proxy:main-${{ github.sha }} -n cloudtolocalllm
           fi
 
           # Postgres (Optional - commented out for safety)
-          # if [ "${{ needs.detect_changes.outputs.postgres }}" == "true" ]; then
+          # if echo "$CHANGES" | grep -q "postgres"; then
           #   kubectl set image statefulset/postgres postgres=${{ env.ACR_NAME }}.azurecr.io/postgres:main-${{ github.sha }} -n cloudtolocalllm
           # fi
 
