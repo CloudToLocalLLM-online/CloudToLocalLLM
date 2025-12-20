@@ -225,22 +225,13 @@ jobs:
           set -x
           PREV_TAG=$(git tag -l "*-cloud-*" --sort=-version:refname | head -n 1 || echo "")
 
-          # Initialize JSON array for changes
-          CHANGES="[]"
-
-          # Helper to add service to changes array
-          add_change() {
-            CHANGES=$(echo "$CHANGES" | jq --arg s "$1" '. + [$s]')
-          }
+          # Initialize comma-separated string for changes
+          CHANGES=""
 
           if [ -z "$PREV_TAG" ]; then
             echo "No previous tag found. Deploying all."
             echo "base=true" >> $GITHUB_OUTPUT
-            CHANGES='["postgres", "web", "api", "proxy"]'
-            # Convert JSON array to comma-separated string for GitHub Actions
-            # Remove brackets and quotes from JSON array
-            CHANGES_CSV=$(echo "$CHANGES" | sed 's/\[//' | sed 's/\]//' | sed 's/"//g' | sed 's/ //g')
-            echo "changes=$CHANGES_CSV" >> $GITHUB_OUTPUT
+            echo "changes=postgres,web,api,proxy" >> $GITHUB_OUTPUT
             exit 0
           fi
 
@@ -256,6 +247,15 @@ jobs:
           else
              echo "base=false" >> $GITHUB_OUTPUT
           fi
+
+          # Helper to add service to changes string
+          add_change() {
+            if [ -z "$CHANGES" ]; then
+              CHANGES="$1"
+            else
+              CHANGES="$CHANGES,$1"
+            fi
+          }
 
           if echo "$DIFF_FILES" | grep -qE '^config/docker/Dockerfile\.postgres'; then
             add_change "postgres"
@@ -458,53 +458,6 @@ jobs:
 
           kubectl rollout status deployment/api-backend -n cloudtolocalllm --timeout=300s || echo "API rollout failed or timed out"
           kubectl rollout status deployment/web -n cloudtolocalllm --timeout=300s || echo "Web rollout failed or timed out"
-
-  # Notification Job
-  notify:
-    needs: [dispatch, review, triage, invoke, orchestrator, detect_changes, infrastructure, build_base, build_postgres, build_web, build_api, build_proxy, promote]
-    if: always()
-    runs-on: ubuntu-latest
-    steps:
-      - name: Setup workflow status
-        id: workflow_status
-        run: |
-          # Determine overall workflow status
-          if [[
-            "${{ needs.dispatch.result }}" != "success" ||
-            "${{ needs.orchestrator.result }}" != "success" && "${{ needs.orchestrator.result }}" != "skipped" ||
-            "${{ needs.detect_changes.result }}" != "success" && "${{ needs.detect_changes.result }}" != "skipped" ||
-            "${{ needs.infrastructure.result }}" != "success" && "${{ needs.infrastructure.result }}" != "skipped" ||
-            "${{ needs.build_base.result }}" != "success" && "${{ needs.build_base.result }}" != "skipped" ||
-            "${{ needs.build_postgres.result }}" != "success" && "${{ needs.build_postgres.result }}" != "skipped" ||
-            "${{ needs.build_web.result }}" != "success" && "${{ needs.build_web.result }}" != "skipped" ||
-            "${{ needs.build_api.result }}" != "success" && "${{ needs.build_api.result }}" != "skipped" ||
-            "${{ needs.build_proxy.result }}" != "success" && "${{ needs.build_proxy.result }}" != "skipped" ||
-            "${{ needs.promote.result }}" != "success" && "${{ needs.promote.result }}" != "skipped"
-          ]]; then
-            echo "status=failure" >> $GITHUB_OUTPUT
-            echo "color=danger" >> $GITHUB_OUTPUT
-            echo "emoji=❌" >> $GITHUB_OUTPUT
-          else
-            echo "status=success" >> $GITHUB_OUTPUT
-            echo "color=good" >> $GITHUB_OUTPUT
-            echo "emoji=✅" >> $GITHUB_OUTPUT
-          fi
-
-      - name: Send Slack notification
-        if: env.SLACK_WEBHOOK_URL != ''
-        uses: rtCamp/action-slack-notify@v2
-        env:
-          SLACK_WEBHOOK: ${{ env.SLACK_WEBHOOK_URL }}
-          SLACK_COLOR: ${{ steps.workflow_status.outputs.color }}
-          SLACK_TITLE: "${{ steps.workflow_status.outputs.emoji }} KiloCode Dispatch Workflow"
-          SLACK_MESSAGE: |
-            Workflow: ${{ github.workflow }}
-            Status: ${{ steps.workflow_status.outputs.status }}
-            Trigger: ${{ github.event_name }}
-            Branch: ${{ github.ref_name }}
-            SHA: ${{ github.sha }}
-            Started: ${{ env.WORKFLOW_START_TIME }}
-          SLACK_FOOTER: "GitHub Actions"
 
   # Notification Job
   notify:
