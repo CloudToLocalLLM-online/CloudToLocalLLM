@@ -162,9 +162,9 @@ jobs:
         uses: "google-github-actions/run-gemini-cli@v0"
         with:
           gemini_api_key: "${{ secrets.GEMINI_API_KEY }}"
-          gemini_cli_version: "0.21.3"
-          gemini_model: "gemini-1.5-flash-latest"
-          gemini_debug: "${{ fromJSON(vars.GEMINI_DEBUG || vars.ACTIONS_STEP_DEBUG || false) }}"
+          gemini_cli_version: "latest"
+          gemini_model: "gemini-1.5-flash"
+          gemini_debug: false
           prompt: |-
             Analyze the following project state and determine the release strategy.
             1. Current version (assets/version.json)
@@ -178,10 +178,7 @@ jobs:
             {
               "tools": {
                 "core": [
-                  "run_shell_command(git)",
-                  "run_shell_command(cat)",
-                  "run_shell_command(ls)",
-                  "run_shell_command(jq)"
+                  "run_shell_command(.*)"
                 ]
               }
             }

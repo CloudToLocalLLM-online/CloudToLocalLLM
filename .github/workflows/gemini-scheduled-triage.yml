@@ -101,37 +101,14 @@ jobs:
           gcp_service_account: "${{ vars.SERVICE_ACCOUNT_EMAIL }}"
           gcp_workload_identity_provider: "${{ vars.GCP_WIF_PROVIDER }}"
           gemini_api_key: "${{ secrets.GEMINI_API_KEY }}"
-          gemini_cli_version: "0.21.3"
-          gemini_debug: "${{ fromJSON(vars.GEMINI_DEBUG || vars.ACTIONS_STEP_DEBUG || false) }}"
-          gemini_model: "gemini-1.5-flash-latest"
+          gemini_cli_version: "latest"
+          gemini_debug: false
+          gemini_model: "gemini-1.5-flash"
           google_api_key: "${{ secrets.GOOGLE_API_KEY }}"
           use_gemini_code_assist: "${{ vars.GOOGLE_GENAI_USE_GCA }}"
           use_vertex_ai: "${{ vars.GOOGLE_GENAI_USE_VERTEXAI }}"
           upload_artifacts: "${{ vars.UPLOAD_ARTIFACTS }}"
           workflow_name: "gemini-scheduled-triage"
-          settings: |-
-            {
-              "model": {
-                "maxSessionTurns": 25
-              },
-              "output": {
-                "format": "json"
-              },
-              "telemetry": {
-                "enabled": true,
-                "target": "local",
-                "outfile": ".gemini/telemetry.log"
-              },
-              "tools": {
-                "core": [
-                  "run_shell_command(printenv)",
-                  "run_shell_command(ls)",
-                  "run_shell_command(cat)",
-                  "run_shell_command(git)",
-                  "run_shell_command(jq)"
-                ]
-              }
-            }
           prompt: "/gemini-scheduled-triage"
 
       - name: "Parse Gemini output"
