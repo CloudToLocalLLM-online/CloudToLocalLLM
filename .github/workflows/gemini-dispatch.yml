@@ -264,36 +264,106 @@ jobs:
     needs: [orchestrator, detect_changes, infrastructure]
     if: needs.detect_changes.outputs.base == 'true'
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
     steps:
       - uses: actions/checkout@v4
+      - uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      - name: Build and Push Base
+        run: |
+          az acr login --name ${{ env.ACR_NAME }}
+          docker build -f config/docker/Dockerfile.base -t ${{ env.ACR_NAME }}.azurecr.io/base:latest -t ${{ env.ACR_NAME }}.azurecr.io/base:main-${{ github.sha }} .
+          docker push ${{ env.ACR_NAME }}.azurecr.io/base:latest
+          docker push ${{ env.ACR_NAME }}.azurecr.io/base:main-${{ github.sha }}
 
   build_postgres:
     needs: [orchestrator, detect_changes, infrastructure, build_base]
-    if: always() && needs.detect_changes.outputs.postgres == 'true'
+    if: (needs.build_base.result == 'success' || needs.build_base.result == 'skipped') && needs.detect_changes.outputs.postgres == 'true'
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
     steps:
       - uses: actions/checkout@v4
+      - uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      - name: Build and Push Postgres
+        run: |
+          az acr login --name ${{ env.ACR_NAME }}
+          docker build -f config/docker/Dockerfile.postgres --build-arg BASE_REGISTRY=${{ env.ACR_NAME }}.azurecr.io -t ${{ env.ACR_NAME }}.azurecr.io/postgres:latest -t ${{ env.ACR_NAME }}.azurecr.io/postgres:main-${{ github.sha }} .
+          docker push ${{ env.ACR_NAME }}.azurecr.io/postgres:latest
+          docker push ${{ env.ACR_NAME }}.azurecr.io/postgres:main-${{ github.sha }}
 
   build_web:
-    needs: [orchestrator, detect_changes, infrastructure, build_base]
-    if: always() && needs.detect_changes.outputs.web == 'true'
+    needs: [orchestrator, detect_changes, infrastructure]
+    if: needs.detect_changes.outputs.web == 'true'
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
     steps:
       - uses: actions/checkout@v4
+      - uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      - name: Build and Push Web
+        run: |
+          az acr login --name ${{ env.ACR_NAME }}
+          docker build -f config/docker/Dockerfile.web -t ${{ env.ACR_NAME }}.azurecr.io/web:latest -t ${{ env.ACR_NAME }}.azurecr.io/web:main-${{ github.sha }} .
+          docker push ${{ env.ACR_NAME }}.azurecr.io/web:latest
+          docker push ${{ env.ACR_NAME }}.azurecr.io/web:main-${{ github.sha }}
 
   build_api:
-    needs: [orchestrator, detect_changes, infrastructure, build_base]
-    if: always() && needs.detect_changes.outputs.api == 'true'
+    needs: [orchestrator, detect_changes, infrastructure]
+    if: needs.detect_changes.outputs.api == 'true'
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
     steps:
       - uses: actions/checkout@v4
+      - uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      - name: Build and Push API
+        run: |
+          az acr login --name ${{ env.ACR_NAME }}
+          docker build -f config/docker/Dockerfile.api-backend -t ${{ env.ACR_NAME }}.azurecr.io/api-backend:latest -t ${{ env.ACR_NAME }}.azurecr.io/api-backend:main-${{ github.sha }} .
+          docker push ${{ env.ACR_NAME }}.azurecr.io/api-backend:latest
+          docker push ${{ env.ACR_NAME }}.azurecr.io/api-backend:main-${{ github.sha }}
 
   build_proxy:
-    needs: [orchestrator, detect_changes, infrastructure, build_base]
-    if: always() && needs.detect_changes.outputs.proxy == 'true'
+    needs: [orchestrator, detect_changes, infrastructure]
+    if: needs.detect_changes.outputs.proxy == 'true'
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
     steps:
       - uses: actions/checkout@v4
+      - uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      - name: Build and Push Proxy
+        run: |
+          az acr login --name ${{ env.ACR_NAME }}
+          docker build -f config/docker/Dockerfile.streaming-proxy -t ${{ env.ACR_NAME }}.azurecr.io/streaming-proxy:latest -t ${{ env.ACR_NAME }}.azurecr.io/streaming-proxy:main-${{ github.sha }} .
+          docker push ${{ env.ACR_NAME }}.azurecr.io/streaming-proxy:latest
+          docker push ${{ env.ACR_NAME }}.azurecr.io/streaming-proxy:main-${{ github.sha }}
 
   promote:
     needs:
@@ -308,5 +378,51 @@ jobs:
       ]
     if: always() && needs.orchestrator.outputs.should_deploy == 'true'
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
     steps:
       - uses: actions/checkout@v4
+      - uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      - name: Set up kubelogin for non-interactive login
+        uses: azure/use-kubelogin@v1
+        with:
+          kubelogin-version: 'v0.0.25'
+
+      - name: Get AKS Credentials
+        uses: azure/aks-set-context@v3
+        with:
+          resource-group: ${{ env.AZURE_RESOURCE_GROUP }}
+          cluster-name: ${{ env.AZURE_CLUSTER_NAME }}
+          admin: 'false'
+          use-kubelogin: 'true'
+
+      - name: Update Deployments
+        run: |
+          # API Backend
+          if [ "${{ needs.detect_changes.outputs.api }}" == "true" ]; then
+            kubectl set image deployment/api-backend api-backend=${{ env.ACR_NAME }}.azurecr.io/api-backend:main-${{ github.sha }} -n cloudtolocalllm
+            kubectl set image deployment/api-backend db-migrate=${{ env.ACR_NAME }}.azurecr.io/api-backend:main-${{ github.sha }} -n cloudtolocalllm
+          fi
+
+          # Web
+          if [ "${{ needs.detect_changes.outputs.web }}" == "true" ]; then
+            kubectl set image deployment/web web=${{ env.ACR_NAME }}.azurecr.io/web:main-${{ github.sha }} -n cloudtolocalllm
+          fi
+
+          # Streaming Proxy
+          if [ "${{ needs.detect_changes.outputs.proxy }}" == "true" ]; then
+             kubectl set image deployment/streaming-proxy streaming-proxy=${{ env.ACR_NAME }}.azurecr.io/streaming-proxy:main-${{ github.sha }} -n cloudtolocalllm
+          fi
+
+          # Postgres (Optional - commented out for safety)
+          # if [ "${{ needs.detect_changes.outputs.postgres }}" == "true" ]; then
+          #   kubectl set image statefulset/postgres postgres=${{ env.ACR_NAME }}.azurecr.io/postgres:main-${{ github.sha }} -n cloudtolocalllm
+          # fi
+
+          kubectl rollout status deployment/api-backend -n cloudtolocalllm --timeout=300s || echo "API rollout failed or timed out"
+          kubectl rollout status deployment/web -n cloudtolocalllm --timeout=300s || echo "Web rollout failed or timed out"
