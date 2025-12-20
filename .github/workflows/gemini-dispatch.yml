@@ -159,22 +159,23 @@ jobs:
 
       - name: "Run Analysis"
         id: "analysis"
-        uses: "google-github-actions/run-gemini-cli@v0"
-        with:
-          gemini_api_key: "${{ secrets.GEMINI_API_KEY }}"
-          gemini_cli_version: "0.21.3"
-          gemini_model: "gemini-1.5-flash"
-          gemini_debug: false
-          gcp_token_format: ""
-          prompt: |-
-            Analyze the following project state and determine the release strategy.
-            1. Current version (assets/version.json)
-            2. Recent Context (git log)
-            3. Changed Files (git diff)
-            4. Command Context: "${{ needs.dispatch.outputs.additional_context || 'None' }}"
-            5. Manual Inputs: Managed=${{ github.event.inputs.do_managed || false }}, Local=${{ github.event.inputs.do_local || false }}, Desktop=${{ github.event.inputs.do_desktop || false }}, Mobile=${{ github.event.inputs.do_mobile || false }}, Override=${{ github.event.inputs.version_override || 'None' }}
-
-            Return ONLY a valid JSON object.
+        env:
+          GEMINI_API_KEY: "${{ secrets.GEMINI_API_KEY }}"
+        run: |
+          # Use npx to run the latest CLI directly
+          if ! npx -y @google/gemini-cli@latest --yolo --output-format json "Analyze the following project state and determine the release strategy. Return ONLY a valid JSON object with fields: new_version, docker_version, do_managed, do_local, do_desktop, do_mobile, should_deploy, reasoning, version_bump_needed. Context: Version=$(cat assets/version.json), Changes=$(git diff --name-only HEAD~1), Log=$(git log -n 5 --oneline)" > gemini_output.json 2> gemini_error.log; then
+            echo "::error::Gemini CLI failed"
+            cat gemini_error.log
+            # Check for error report
+            REPORT=$(grep -o "/tmp/gemini-client-error-.*\.json" gemini_error.log | head -n 1)
+            if [ -n "$REPORT" ] && [ -f "$REPORT" ]; then
+              echo "--- ERROR REPORT START ---"
+              cat "$REPORT"
+              echo "--- ERROR REPORT END ---"
+            fi
+            exit 1
+          fi
+          echo "gemini_output=$(cat gemini_output.json | jq -c .)" >> $GITHUB_OUTPUT
 
       - name: "Execute Logic"
         id: "exec"
