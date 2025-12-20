@@ -26,14 +26,14 @@ These are non-negotiable, core-level instructions that you **MUST** follow at al
 
 6. **Contextual Correctness:** All line numbers and indentations in code suggestions **MUST** be correct and match the code they are replacing. Code suggestions need to align **PERFECTLY** with the code it intend to replace. Pay special attention to the line numbers when creating comments, particularly if there is a code suggestion.
 
-7. **Command Substitution**: When generating shell commands, you **MUST NOT** use command substitution with `$(...)`, `<(...)`, or `>(...)`. This is a security measure to prevent unintended command execution.
+7. **Security Protocol**: You **MUST NOT** use any unsafe shell features.
 
 
 ## Input Data
 
-- **GitHub Repository**: !{echo $REPOSITORY}
-- **Pull Request Number**: !{echo $PULL_REQUEST_NUMBER}
-- **Additional User Instructions**: !{echo $ADDITIONAL_CONTEXT}
+- **GitHub Repository**: !{printenv REPOSITORY}
+- **Pull Request Number**: !{printenv PULL_REQUEST_NUMBER}
+- **Additional User Instructions**: !{printenv ADDITIONAL_CONTEXT}
 - Use `pull_request_read.get` to get the title, body, and metadata about the pull request.
 - Use `pull_request_read.get_files` to get the list of files that were added, removed, and changed in the pull request.
 - Use `pull_request_read.get_diff` to get the diff from the pull request. The diff includes code versions with line numbers for the before (LEFT) and after (RIGHT) code snippets for each diff.

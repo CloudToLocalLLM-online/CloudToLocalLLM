@@ -44,7 +44,6 @@ env:
   AZURE_RESOURCE_GROUP: cloudtolocalllm-rg
   AZURE_CLUSTER_NAME: cloudtolocalllm-aks
   ACR_NAME: imrightguycloudtolocalllm
-  # DOCKER_REGISTRY will be set dynamically in setup job if needed
 
 defaults:
   run:
@@ -56,7 +55,11 @@ jobs:
   # ==================================================================================
   dispatch:
     if: |-
-      !contains(github.event.head_commit.message, '[skip ci]')
+      github.event_name != 'push' && github.event_name != 'workflow_dispatch' && (
+        (github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork == false) ||
+        (github.event_name == 'issues') ||
+        (github.event.sender.type == 'User' && startsWith(github.event.comment.body || github.event.review.body || github.event.issue.body, '@gemini-cli'))
+      ) || (github.event_name == 'push' && !contains(github.event.head_commit.message, '[skip ci]')) || (github.event_name == 'workflow_dispatch')
     runs-on: "ubuntu-latest"
     permissions:
       contents: "read"
@@ -66,6 +69,14 @@ jobs:
       command: "${{ steps.extract_command.outputs.command }}"
       additional_context: "${{ steps.extract_command.outputs.additional_context }}"
     steps:
+      - name: "Mint identity token"
+        id: "mint_identity_token"
+        if: vars.APP_ID != ''
+        uses: "actions/create-github-app-token@a8d616148505b5069dccd32f177bb87d7f39123b"
+        with:
+          app-id: "${{ vars.APP_ID }}"
+          private-key: "${{ secrets.APP_PRIVATE_KEY }}"
+
       - name: "Extract command"
         id: "extract_command"
         uses: "actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea"
@@ -102,7 +113,7 @@ jobs:
       - name: "Acknowledge"
         if: steps.extract_command.outputs.command != 'fallthrough' && (github.event.pull_request.number || github.event.issue.number)
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: "${{ steps.mint_identity_token.outputs.token || secrets.GITHUB_TOKEN }}"
         run: |
           gh issue comment "${{ github.event.pull_request.number || github.event.issue.number }}" \
             --body "🤖 Received your request! Tracking progress [here](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})" \
@@ -140,7 +151,7 @@ jobs:
     if: needs.dispatch.outputs.command == 'invoke'
     uses: "./.github/workflows/gemini-invoke.yml"
     permissions:
-      contents: "write"
+      contents: "read"
       id-token: "write"
       issues: "write"
       pull-requests: "write"
@@ -149,7 +160,7 @@ jobs:
     secrets: inherit
 
   # ==================================================================================
-  # 2. PUSH ORCHESTRATOR (Automated Release Analysis)
+  # 2. ORCHESTRATOR (Automated Release Analysis) - Refactored to Action
   # ==================================================================================
   orchestrator:
     needs: [dispatch]
@@ -183,119 +194,57 @@ jobs:
 
       - name: "Run Analysis"
         id: "analysis"
-        env:
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-          IS_MANUAL: ${{ github.event_name == 'workflow_dispatch' }}
-          MANUAL_MANAGED: ${{ github.event.inputs.do_managed }}
-          MANUAL_LOCAL: ${{ github.event.inputs.do_local }}
-          MANUAL_DESKTOP: ${{ github.event.inputs.do_desktop }}
-          MANUAL_MOBILE: ${{ github.event.inputs.do_mobile }}
-          VERSION_OVERRIDE: ${{ github.event.inputs.version_override }}
-        run: |
-          set -e
+        uses: "google-github-actions/run-gemini-cli@v0"
+        with:
+          gemini_api_key: "${{ secrets.GEMINI_API_KEY }}"
+          gemini_cli_version: "0.21.3"
+          gemini_model: "gemini-1.5-flash-latest"
+          gemini_debug: "${{ fromJSON(vars.GEMINI_DEBUG || vars.ACTIONS_STEP_DEBUG || false) }}"
+          prompt: |-
+            Analyze the following project state and determine the release strategy.
+            1. Read 'assets/version.json' for the current version.
+            2. Check 'git log --oneline --no-merges -5' for recent context.
+            3. Check 'git diff --name-only HEAD~1..HEAD' for changed files.
+            4. Command Context: "${{ needs.dispatch.outputs.additional_context }}"
+            5. Manual Inputs: Managed=${{ github.event.inputs.do_managed }}, Local=${{ github.event.inputs.do_local }}, Desktop=${{ github.event.inputs.do_desktop }}, Mobile=${{ github.event.inputs.do_mobile }}, Override=${{ github.event.inputs.version_override }}
 
-          # 1. Strict Credential Validation
-          if [ -z "$GEMINI_API_KEY" ]; then
-            echo "❌ CRITICAL FAILURE: GEMINI_API_KEY is not set. Deployment cannot proceed without AI analysis."
-            exit 1
-          fi
-
-          # 2. Tool Verification
-          if ! command -v jq &> /dev/null; then
-            sudo apt-get update && sudo apt-get install -y jq
-          fi
-
-          # 2.5 context: Current Tags & Recent Changes
-          echo "🏷️  Fetching repository status..."
-          EXISTING_TAGS=$(git tag --sort=-v:refname | head -n 10 | tr '\n' ',' | sed 's/,$//')
-
-          cat << EOF > prompt.txt
-          Analyze the following project state and determine the release strategy.
-          1. Current Version (from assets/version.json): $(jq -r '.version' assets/version.json)
-          2. Recent Commits: $(git log --oneline --no-merges -5 | tr '\n' ' ' )
-          3. EXISTING REPOSITORY TAGS: $EXISTING_TAGS
-          4. COMMAND/INTENT CONTEXT: ${{ needs.dispatch.outputs.additional_context }}
-
-          CRITICAL: Your 'new_version' MUST NOT exist in the EXISTING REPOSITORY TAGS. 
-          If the next logical semantic version is already a tag, you MUST increment the patch version until you find a unique version.
-
-          Return ONLY a valid JSON object with these keys:
-          {
-            "new_version": "string (next semantic version)",
-            "docker_version": "string (docker-safe version)",
-            "do_managed": "true/false",
-            "do_local": "true/false",
-            "do_desktop": "true/false",
-            "do_mobile": "true/false",
-            "should_deploy": "true/false",
-            "version_bump_needed": "true/false",
-            "reasoning": "string"
-          }
-          EOF
-
-          # 3. Execution via Curl (More robust in CI)
-          echo "🚀 Executing Gemini Analysis via API..."
-
-          PROMPT=$(cat prompt.txt)
-          JSON_PROMPT=$(echo "$PROMPT" | jq -aRs .)
-
-          API_URL="https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}"
-
-          cat << EOF > request.json
-          {
-            "contents": [{
-              "parts":[{"text": $JSON_PROMPT}]
-            }],
-            "generationConfig": {
-              "response_mime_type": "application/json"
+            Return ONLY a valid JSON object with these keys:
+            {
+              "new_version": "string (next semantic version)",
+              "docker_version": "string (docker-safe version)",
+              "do_managed": "true/false",
+              "do_local": "true/false",
+              "do_desktop": "true/false",
+              "do_mobile": "true/false",
+              "should_deploy": "true/false",
+              "version_bump_needed": "true/false",
+              "reasoning": "string"
             }
-          }
-          EOF
-
-          curl -s -X POST "$API_URL" \
-               -H "Content-Type: application/json" \
-               -d @request.json > response.json
-
-          if [ "$(jq -r '.candidates[0].content.parts[0].text' response.json)" != "null" ]; then
-             jq -r '.candidates[0].content.parts[0].text' response.json > gemini_output.json
-             echo "✅ Gemini Analysis Successful."
-          else
-             echo "❌ CRITICAL FAILURE: Gemini API returned an error or empty response."
-             cat response.json
-             exit 1
-          fi
-
-          # 4. Handle Manual Overrides
-          if [ "$IS_MANUAL" == "true" ]; then
-            echo "🛠️  Applying manual overrides..."
-            # Use jq to update the JSON file with inputs
-            CLEAN_JSON=$(cat gemini_output.json)
-            [ -n "$MANUAL_MANAGED" ] && CLEAN_JSON=$(echo "$CLEAN_JSON" | jq ".do_managed = $MANUAL_MANAGED")
-            [ -n "$MANUAL_LOCAL" ] && CLEAN_JSON=$(echo "$CLEAN_JSON" | jq ".do_local = $MANUAL_LOCAL")
-            [ -n "$MANUAL_DESKTOP" ] && CLEAN_JSON=$(echo "$CLEAN_JSON" | jq ".do_desktop = $MANUAL_DESKTOP")
-            [ -n "$MANUAL_MOBILE" ] && CLEAN_JSON=$(echo "$CLEAN_JSON" | jq ".do_mobile = $MANUAL_MOBILE")
-            if [ -n "$VERSION_OVERRIDE" ]; then
-                CLEAN_JSON=$(echo "$CLEAN_JSON" | jq ".new_version = \"$VERSION_OVERRIDE\"")
-                CLEAN_JSON=$(echo "$CLEAN_JSON" | jq ".version_bump_needed = true")
-            fi
-            # Ensure should_deploy is true if any platform is selected
-            if [ "$MANUAL_MANAGED" == "true" ] || [ "$MANUAL_LOCAL" == "true" ] || [ "$MANUAL_DESKTOP" == "true" ] || [ "$MANUAL_MOBILE" == "true" ]; then
-                CLEAN_JSON=$(echo "$CLEAN_JSON" | jq ".should_deploy = true")
-            fi
-            echo "$CLEAN_JSON" > gemini_output.json
-          fi
-
-          echo "::: Validated Gemini Output :::"
-          cat gemini_output.json
+          settings: |-
+            {
+              "tools": {
+                "core": [
+                  "run_shell_command(git)",
+                  "run_shell_command(cat)",
+                  "run_shell_command(ls)",
+                  "run_shell_command(jq)"
+                ]
+              }
+            }
 
       - name: "Execute Logic"
         id: "exec"
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GEMINI_API_KEY: "${{ secrets.GEMINI_API_KEY }}"
+          GITHUB_TOKEN: "${{ steps.mint_identity_token.outputs.token || secrets.GITHUB_TOKEN }}"
+          GEMINI_OUTPUT: "${{ steps.analysis.outputs.gemini_output }}"
         run: |
           set -e
-          CLEAN_JSON=$(sed -n '/{/,/}/p' gemini_output.json)
+          echo "::: Gemini Output :::"
+          echo "$GEMINI_OUTPUT"
+
+          # Clean JSON in case of wrapper text
+          CLEAN_JSON=$(echo "$GEMINI_OUTPUT" | sed -n '/{/,/}/p')
+
           echo "new_version=$(echo "$CLEAN_JSON" | jq -r '.new_version')" >> $GITHUB_OUTPUT
           echo "docker_version=$(echo "$CLEAN_JSON" | jq -r '.docker_version')" >> $GITHUB_OUTPUT
           echo "do_managed=$(echo "$CLEAN_JSON" | jq -r '.do_managed')" >> $GITHUB_OUTPUT
@@ -326,7 +275,7 @@ jobs:
                echo "☁️  Pushing to cloud branch..."
                if [ -f "scripts/push-to-cloud-branch.sh" ]; then
                   chmod +x scripts/push-to-cloud-branch.sh
-                  CLOUD_PUSH_PAT="${{ secrets.GITHUB_TOKEN }}" ./scripts/push-to-cloud-branch.sh "$NEW_VERSION"
+                  CLOUD_PUSH_PAT="${{ env.GITHUB_TOKEN }}" ./scripts/push-to-cloud-branch.sh "$NEW_VERSION"
                else
                   git checkout -B cloud main
                   git push -f origin cloud
