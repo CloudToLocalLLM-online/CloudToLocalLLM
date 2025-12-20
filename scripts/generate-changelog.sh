@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-# Generate CHANGELOG.md using Gemini AI based on git commits
+# Generate CHANGELOG.md using KiloCode AI based on git commits
 # Usage: ./generate-changelog.sh <new-version>
 
 NEW_VERSION="$1"
@@ -44,16 +44,16 @@ if ! command -v npx >/dev/null 2>&1; then
     exit 1
 fi
 
-echo "🚀 Requesting changelog from Gemini AI..."
-# Use npx to run the CLI directly without global installation
-CHANGELOG_ENTRY=$(npx -y @google/gemini-cli@latest --yolo --output-format text "$PROMPT")
+echo "🚀 Requesting changelog from KiloCode AI..."
+# Use kilocode-cli to generate the changelog
+CHANGELOG_ENTRY=$(./scripts/kilocode-cli.cjs "$PROMPT" --output-format text)
 
 if [ -z "$CHANGELOG_ENTRY" ]; then
-    echo "❌ CRITICAL FAILURE: Gemini AI returned an empty response. Cannot generate changelog."
+    echo "❌ CRITICAL FAILURE: KiloCode AI returned an empty response. Cannot generate changelog."
     exit 1
 fi
 
-echo "✅ Received response from Gemini."
+echo "✅ Received response from KiloCode."
 
 # Clean up the response (remove code blocks if any)
 CHANGELOG_ENTRY=$(echo "$CHANGELOG_ENTRY" | sed 's/```markdown//g' | sed 's/```//g')

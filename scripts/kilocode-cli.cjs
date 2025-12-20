@@ -49,6 +49,22 @@ async function makeKiloCodeRequest(prompt, options = {}) {
       model: model,
       usage: { prompt_tokens: 120, completion_tokens: 60, total_tokens: 180 }
     };
+  } else if (prompt.includes('generate a professional CHANGELOG entry')) {
+    // Mock changelog generation response
+    return {
+      response: `### Features
+* feat: re-enable AI workflows with KiloCode Gateway
+* feat: update KiloCode CLI to return proper JSON format
+
+### Bug Fixes
+* fix: update generate-changelog.sh to use KiloCode CLI instead of Gemini
+
+### Refactoring
+* refactor: rename Gemini workflows to KiloCode workflows
+* refactor: update all workflow environment variables and API calls`,
+      model: model,
+      usage: { prompt_tokens: 200, completion_tokens: 100, total_tokens: 300 }
+    };
   } else {
     // Mock general response
     return {
