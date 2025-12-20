@@ -99,7 +99,7 @@ jobs:
 
       - name: "Format start time"
         id: "format_time"
-        run: echo "start_time_formatted=$(date -u -d @${{ github.event.repository.created_at }} +'%Y-%m-%dT%H:%M:%SZ')" >> $GITHUB_OUTPUT
+        run: echo "start_time_formatted=$(date -u -d '${{ github.event.repository.created_at }}' +'%Y-%m-%dT%H:%M:%SZ')" >> $GITHUB_OUTPUT
 
   # Sub-Dispatch Tasks
   review:
