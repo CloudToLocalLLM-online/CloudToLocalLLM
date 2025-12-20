@@ -95,7 +95,7 @@ jobs:
         if: |-
           ${{ steps.gemini_analysis.outcome == 'success' }}
         run: |
-           LABELS=$(echo "${{ steps.gemini_analysis.outputs.gemini_output }}" | jq -r '.labels | join(",")')
+           LABELS=$(echo '${{ steps.gemini_analysis.outputs.gemini_output }}' | jq -r '.labels | join(",")')
            echo "labels=$LABELS" >> $GITHUB_OUTPUT
 
   label:

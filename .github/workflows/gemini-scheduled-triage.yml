@@ -99,7 +99,7 @@ jobs:
           RESULTS="[]"
           echo "🔍 Triaging issues one by one..."
           
-          # Use jq to get numbers and titles
+          # Use jq to get issues safely
           ISSUES_JSON=$(echo "$ISSUES_TO_TRIAGE" | jq -c '.[]')
           
           while IFS= read -r ISSUE; do
@@ -107,18 +107,18 @@ jobs:
             TITLE=$(echo "$ISSUE" | jq -r '.title')
             echo "🎯 Triaging issue #$NUMBER: $TITLE"
             
-            PROMPT="Triage this GitHub issue. 
-            Labels: $AVAILABLE_LABELS. 
-            Issue #$NUMBER Title: $TITLE. 
-            Return ONLY a valid JSON object: {\"labels_to_set\": [\"label1\", \"label2\"]}"
+            PROMPT="You are a GitHub issue triager. Available labels: $AVAILABLE_LABELS. 
+            Triage issue #$NUMBER. Title: $TITLE. 
+            Return ONLY a valid JSON object: {\"labels_to_set\": [\"label1\", \"label2\"]}. ALL strings must be double-quoted."
             
-            if ! RESPONSE_RAW=$(npx -y @google/gemini-cli@latest --yolo --output-format json "$PROMPT" 2>/dev/null); then
+            if ! RESPONSE_RAW=$(npx -y @google/gemini-cli@latest --yolo --model gemini-1.5-pro --output-format json "$PROMPT" 2>cli_error.log); then
               echo "⚠️ Failed to triage #$NUMBER"
+              cat cli_error.log
               continue
             fi
             
-            # Extract labels and add to results
-            LABELS=$(echo "$RESPONSE_RAW" | jq -r '.response' | sed -n '/{/,/}/p' | jq -c '.labels_to_set // []')
+            # Extract labels safely
+            LABELS=$(echo "$RESPONSE_RAW" | jq -r '.response' | sed -n '/{/,/}/p' | jq -c '.labels_to_set // []' || echo "[]")
             RESULTS=$(echo "$RESULTS" | jq -c ". + [{\"issue_number\": $NUMBER, \"labels_to_set\": $LABELS}]")
             
           done <<< "$ISSUES_JSON"
@@ -130,8 +130,9 @@ jobs:
       - name: "Parse Gemini output"
         id: "parse_output"
         run: |
+           # Use output from previous step directly
            echo "triaged_issues<<EOF" >> $GITHUB_OUTPUT
-           echo "${{ steps.gemini_issue_analysis.outputs.triaged_issues }}" >> $GITHUB_OUTPUT
+           echo '${{ steps.gemini_issue_analysis.outputs.triaged_issues }}' >> $GITHUB_OUTPUT
            echo "EOF" >> $GITHUB_OUTPUT
 
   label:
