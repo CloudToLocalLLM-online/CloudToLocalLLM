@@ -39,13 +39,14 @@ Commits:
 $COMMITS"
 
 # Get response from Gemini
-if ! command -v gemini >/dev/null 2>&1; then
-    echo "❌ CRITICAL FAILURE: 'gemini' command not found. Ensure @google/gemini-cli is installed in the CI environment."
+if ! command -v npx >/dev/null 2>&1; then
+    echo "❌ CRITICAL FAILURE: 'npx' command not found. Ensure Node.js and npm are installed."
     exit 1
 fi
 
 echo "🚀 Requesting changelog from Gemini AI..."
-CHANGELOG_ENTRY=$(gemini --yolo --prompt "$PROMPT")
+# Use npx to run the CLI directly without global installation
+CHANGELOG_ENTRY=$(npx -y @google/gemini-cli@latest --yolo --output-format text "$PROMPT")
 
 if [ -z "$CHANGELOG_ENTRY" ]; then
     echo "❌ CRITICAL FAILURE: Gemini AI returned an empty response. Cannot generate changelog."
