@@ -170,7 +170,7 @@ jobs:
         run: |
           # Use kilocode-cli to run analysis
           chmod +x scripts/kilocode-cli.cjs
-          if ! ./scripts/kilocode-cli.cjs "Analyze the following project state and determine the release strategy. Return ONLY a valid JSON object with fields: new_version, docker_version, do_managed, do_local, do_desktop, do_mobile, should_deploy, reasoning, version_bump_needed. Context: Version=$(cat assets/version.json), Changes=$(git diff --name-only HEAD~1), Log=$(git log -n 5 --oneline)" --output-format json > raw_output.json 2> kilocode_error.log; then
+          if ! ./scripts/kilocode-cli.cjs "Analyze the following project state and determine the release strategy. Return ONLY a valid JSON object with fields: new_version, docker_version, do_managed, do_local, do_desktop, do_mobile, should_deploy, reasoning, version_bump_needed. Context: Version=$(cat assets/version.json | jq -r '.version'), Changes=$(git diff --name-only HEAD~1), Log=$(git log -n 5 --oneline)" --output-format json > raw_output.json 2> kilocode_error.log; then
             echo "::error::KiloCode CLI failed"
             cat kilocode_error.log
             exit 1
