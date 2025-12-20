@@ -65,14 +65,22 @@ jobs:
           ISSUE_BODY: "${{ github.event.issue.body }}"
           AVAILABLE_LABELS: "${{ steps.get_labels.outputs.available_labels }}"
         run: |
-          PROMPT="Analyze this GitHub issue and assign appropriate labels from the list: $AVAILABLE_LABELS. 
-          Title: $ISSUE_TITLE. 
-          Body: $ISSUE_BODY. 
-          Return ONLY a valid JSON object.
-          Example: {\"labels\": [\"bug\", \"priority: low\"]}
-          Do NOT include any text outside the JSON object. ALL strings MUST be double-quoted."
+          PROMPT="You are a precise GitHub issue triager.
+          TASK: Assign labels from the list below to the provided issue.
+          AVAILABLE LABELS: $AVAILABLE_LABELS
+          ISSUE TITLE: $ISSUE_TITLE
+          ISSUE BODY: $ISSUE_BODY
           
-          if ! npx -y @google/gemini-cli@latest --yolo --output-format json "$PROMPT" > raw_output.json 2> gemini_error.log; then
+          OUTPUT FORMAT:
+          - Return ONLY a valid JSON object with exactly one field:
+            \"labels\": (array of strings)
+          - EVERY string in the array MUST be enclosed in double quotes.
+          - Do NOT include any other fields or markdown formatting.
+          
+          VALID JSON EXAMPLE:
+          {\"labels\": [\"bug\", \"priority: low\"]}"
+          
+          if ! npx -y @google/gemini-cli@latest --yolo --model gemini-1.5-pro --output-format json "$PROMPT" > raw_output.json 2> gemini_error.log; then
             echo "::error::Gemini CLI failed"
             cat gemini_error.log
             exit 1
