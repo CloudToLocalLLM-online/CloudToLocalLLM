@@ -55,11 +55,11 @@ jobs:
   # ==================================================================================
   dispatch:
     if: |-
-      github.event_name != 'push' && github.event_name != 'workflow_dispatch' && (
-        (github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork == false) ||
-        (github.event_name == 'issues') ||
-        (github.event.sender.type == 'User' && startsWith(github.event.comment.body || github.event.review.body || github.event.issue.body, '@gemini-cli'))
-      ) || (github.event_name == 'push' && !contains(github.event.head_commit.message, '[skip ci]')) || (github.event_name == 'workflow_dispatch')
+      (github.event_name == 'push' && !contains(github.event.head_commit.message, '[skip ci]')) ||
+      (github.event_name == 'workflow_dispatch') ||
+      (github.event_name == 'issues') ||
+      (github.event_name == 'pull_request') ||
+      (github.event_name == 'issue_comment' && startsWith(github.event.comment.body, '@gemini-cli'))
     runs-on: "ubuntu-latest"
     permissions:
       contents: "read"
