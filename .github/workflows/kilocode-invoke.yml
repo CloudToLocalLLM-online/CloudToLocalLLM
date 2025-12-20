@@ -16,6 +16,9 @@ defaults:
   run:
     shell: "bash"
 
+env:
+  SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
+
 jobs:
   invoke:
     runs-on: "ubuntu-latest"
@@ -68,9 +71,16 @@ jobs:
           }
           EOF
           chmod +x scripts/kilocode-cli.cjs
+          echo "🔄 Starting KiloCode CLI execution..."
           if ! ./scripts/kilocode-cli.cjs "TITLE: $TITLE. DESCRIPTION: $DESCRIPTION. CONTEXT: $ADDITIONAL_CONTEXT. Please assist with the request." --output-format json > raw_output.json 2> kilocode_error.log; then
             echo "::error::KiloCode CLI failed"
+            echo "📝 Error details:"
             cat kilocode_error.log
+            echo "::group::Debug Information"
+            echo "Environment:"
+            env | sort
+            echo "::endgroup::"
             exit 1
           fi
+          echo "✅ KiloCode CLI completed successfully"
           # No specific output needed for invoke other than it finishing successfully

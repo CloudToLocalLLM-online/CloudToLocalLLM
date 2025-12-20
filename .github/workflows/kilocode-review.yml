@@ -16,6 +16,9 @@ defaults:
   run:
     shell: "bash"
 
+env:
+  SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
+
 jobs:
   review:
     runs-on: "ubuntu-latest"
@@ -71,8 +74,15 @@ jobs:
           }
           EOF
           chmod +x scripts/kilocode-cli.cjs
+          echo "🔄 Starting KiloCode PR review..."
           if ! ./scripts/kilocode-cli.cjs "Please review this pull request. Title: $ISSUE_TITLE. Body: $ISSUE_BODY. Context: $ADDITIONAL_CONTEXT." --output-format json > raw_output.json 2> kilocode_error.log; then
             echo "::error::KiloCode CLI failed"
+            echo "📝 Error details:"
             cat kilocode_error.log
+            echo "::group::Debug Information"
+            echo "Environment:"
+            env | sort
+            echo "::endgroup::"
             exit 1
           fi
+          echo "✅ KiloCode PR review completed successfully"

@@ -25,6 +25,9 @@ defaults:
   run:
     shell: "bash"
 
+env:
+  SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
+
 jobs:
   triage:
     runs-on: "ubuntu-latest"
@@ -112,11 +115,17 @@ jobs:
             Return ONLY a valid JSON object: {\"labels_to_set\": [\"label1\", \"label2\"]}. ALL strings must be double-quoted."
 
             chmod +x scripts/kilocode-cli.cjs
+            echo "🔄 Triaging issue #$NUMBER with KiloCode..."
             if ! RESPONSE_RAW=$(./scripts/kilocode-cli.cjs "$PROMPT" --output-format json 2>cli_error.log); then
               echo "⚠️ Failed to triage #$NUMBER"
+              echo "📝 Error details:"
               cat cli_error.log
+              echo "::group::Debug Information for Issue #$NUMBER"
+              echo "Prompt: $PROMPT"
+              echo "::endgroup::"
               continue
             fi
+            echo "✅ Successfully triaged issue #$NUMBER"
 
             # Extract labels safely
             LABELS=$(echo "$RESPONSE_RAW" | jq -r '.response' | sed -n '/{/,/}/p' | jq -c '.labels_to_set // []' || echo "[]")

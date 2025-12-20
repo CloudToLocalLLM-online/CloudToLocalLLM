@@ -16,6 +16,9 @@ defaults:
   run:
     shell: "bash"
 
+env:
+  SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
+
 jobs:
   triage:
     runs-on: "ubuntu-latest"
@@ -81,11 +84,18 @@ jobs:
           {\"labels\": [\"bug\", \"priority: low\"]}"
 
           chmod +x scripts/kilocode-cli.cjs
+          echo "🔄 Starting KiloCode issue analysis..."
           if ! ./scripts/kilocode-cli.cjs "$PROMPT" --output-format json > raw_output.json 2> kilocode_error.log; then
             echo "::error::KiloCode CLI failed"
+            echo "📝 Error details:"
             cat kilocode_error.log
+            echo "::group::Debug Information"
+            echo "Environment:"
+            env | sort
+            echo "::endgroup::"
             exit 1
           fi
+          echo "✅ KiloCode issue analysis completed successfully"
           CLEAN_JSON=$(cat raw_output.json | jq -r '.response' | sed -n '/{/,/}/p')
           echo "kilocode_output<<EOF" >> $GITHUB_OUTPUT
           echo "$CLEAN_JSON" >> $GITHUB_OUTPUT
