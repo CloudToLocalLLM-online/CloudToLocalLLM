@@ -278,19 +278,15 @@ jobs:
           - service: postgres
             file: config/docker/Dockerfile.postgres
             name: postgres
-            extra_args: "--build-arg BASE_REGISTRY=${{ env.ACR_NAME }}.azurecr.io"
           - service: web
             file: config/docker/Dockerfile.web
             name: web
-            extra_args: ""
           - service: api
             file: config/docker/Dockerfile.api-backend
             name: api-backend
-            extra_args: ""
           - service: proxy
             file: config/docker/Dockerfile.streaming-proxy
             name: streaming-proxy
-            extra_args: ""
     if: |
       (needs.build_base.result == 'success' || needs.build_base.result == 'skipped') &&
       needs.detect_changes.outputs[matrix.service] == 'true'
@@ -308,7 +304,13 @@ jobs:
       - name: Build and Push ${{ matrix.service }}
         run: |
           az acr login --name ${{ env.ACR_NAME }}
-          docker build -f ${{ matrix.file }} ${{ matrix.extra_args }} \
+          
+          EXTRA_ARGS=""
+          if [ "${{ matrix.service }}" == "postgres" ]; then
+            EXTRA_ARGS="--build-arg BASE_REGISTRY=${{ env.ACR_NAME }}.azurecr.io"
+          fi
+          
+          docker build -f ${{ matrix.file }} $EXTRA_ARGS \
             -t ${{ env.ACR_NAME }}.azurecr.io/${{ matrix.name }}:latest \
             -t ${{ env.ACR_NAME }}.azurecr.io/${{ matrix.name }}:main-${{ github.sha }} .
           docker push ${{ env.ACR_NAME }}.azurecr.io/${{ matrix.name }}:latest
