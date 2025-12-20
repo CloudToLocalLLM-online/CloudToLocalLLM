@@ -50,59 +50,6 @@ defaults:
     shell: "bash"
 
 jobs:
-  validate-workflow:
-    name: Validate Workflow Configuration
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Validate workflow files
-        uses: docker://ghcr.io/github/github-workflow-linter:latest
-        with:
-          args: ".github/workflows/*.yml"
-
-      - name: Check for deprecated actions
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const fs = require('fs');
-            const yaml = require('js-yaml');
-            
-            // Read all workflow files
-            const workflowDir = '.github/workflows';
-            const files = fs.readdirSync(workflowDir).filter(f => f.endsWith('.yml'));
-            
-            let deprecatedFound = false;
-            
-            files.forEach(file => {
-              const content = fs.readFileSync(`${workflowDir}/${file}`, 'utf8');
-              const workflow = yaml.load(content);
-              
-              // Check for deprecated actions
-              const checkJobs = (jobs) => {
-                Object.values(jobs).forEach(job => {
-                  if (job.steps) {
-                    job.steps.forEach(step => {
-                      if (step.uses && step.uses.includes('@v1')) {
-                        console.log(`⚠️ Deprecated action found in ${file}: ${step.uses}`);
-                        deprecatedFound = true;
-                      }
-                    });
-                  }
-                });
-              };
-              
-              if (workflow.jobs) {
-                checkJobs(workflow.jobs);
-              }
-            });
-            
-            if (deprecatedFound) {
-              core.setFailed('Deprecated actions found. Please update to latest versions.');
-            }
-
-jobs:
   dispatch:
     runs-on: "ubuntu-latest"
     permissions:
@@ -511,6 +458,53 @@ jobs:
 
           kubectl rollout status deployment/api-backend -n cloudtolocalllm --timeout=300s || echo "API rollout failed or timed out"
           kubectl rollout status deployment/web -n cloudtolocalllm --timeout=300s || echo "Web rollout failed or timed out"
+
+  # Notification Job
+  notify:
+    needs: [dispatch, review, triage, invoke, orchestrator, detect_changes, infrastructure, build_base, build_postgres, build_web, build_api, build_proxy, promote]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup workflow status
+        id: workflow_status
+        run: |
+          # Determine overall workflow status
+          if [[
+            "${{ needs.dispatch.result }}" != "success" ||
+            "${{ needs.orchestrator.result }}" != "success" && "${{ needs.orchestrator.result }}" != "skipped" ||
+            "${{ needs.detect_changes.result }}" != "success" && "${{ needs.detect_changes.result }}" != "skipped" ||
+            "${{ needs.infrastructure.result }}" != "success" && "${{ needs.infrastructure.result }}" != "skipped" ||
+            "${{ needs.build_base.result }}" != "success" && "${{ needs.build_base.result }}" != "skipped" ||
+            "${{ needs.build_postgres.result }}" != "success" && "${{ needs.build_postgres.result }}" != "skipped" ||
+            "${{ needs.build_web.result }}" != "success" && "${{ needs.build_web.result }}" != "skipped" ||
+            "${{ needs.build_api.result }}" != "success" && "${{ needs.build_api.result }}" != "skipped" ||
+            "${{ needs.build_proxy.result }}" != "success" && "${{ needs.build_proxy.result }}" != "skipped" ||
+            "${{ needs.promote.result }}" != "success" && "${{ needs.promote.result }}" != "skipped"
+          ]]; then
+            echo "status=failure" >> $GITHUB_OUTPUT
+            echo "color=danger" >> $GITHUB_OUTPUT
+            echo "emoji=❌" >> $GITHUB_OUTPUT
+          else
+            echo "status=success" >> $GITHUB_OUTPUT
+            echo "color=good" >> $GITHUB_OUTPUT
+            echo "emoji=✅" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Send Slack notification
+        if: env.SLACK_WEBHOOK_URL != ''
+        uses: rtCamp/action-slack-notify@v2
+        env:
+          SLACK_WEBHOOK: ${{ env.SLACK_WEBHOOK_URL }}
+          SLACK_COLOR: ${{ steps.workflow_status.outputs.color }}
+          SLACK_TITLE: "${{ steps.workflow_status.outputs.emoji }} KiloCode Dispatch Workflow"
+          SLACK_MESSAGE: |
+            Workflow: ${{ github.workflow }}
+            Status: ${{ steps.workflow_status.outputs.status }}
+            Trigger: ${{ github.event_name }}
+            Branch: ${{ github.ref_name }}
+            SHA: ${{ github.sha }}
+            Started: ${{ env.WORKFLOW_START_TIME }}
+          SLACK_FOOTER: "GitHub Actions"
 
   # Notification Job
   notify:
