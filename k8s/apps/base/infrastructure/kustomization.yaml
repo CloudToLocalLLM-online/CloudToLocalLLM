@@ -1,6 +1,6 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
-  - ../../../base/namespace.yaml
-  - ../../../base/rbac.yaml
-  - ../../../base/network-policies.yaml
+  - https://github.com/imrightguy/CloudToLocalLLM/k8s/base/namespace.yaml?ref=main
+  - https://github.com/imrightguy/CloudToLocalLLM/k8s/base/rbac.yaml?ref=main
+  - https://github.com/imrightguy/CloudToLocalLLM/k8s/base/network-policies.yaml?ref=main

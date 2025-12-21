@@ -1,6 +1,6 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
-  - ../../../base/deployments/api-backend.yaml
-  - ../../../base/services/api-backend.yaml
-  - ../../../base/configmaps/main-config.yaml
+  - https://github.com/imrightguy/CloudToLocalLLM/k8s/base/deployments/api-backend.yaml?ref=main
+  - https://github.com/imrightguy/CloudToLocalLLM/k8s/base/services/api-backend.yaml?ref=main
+  - https://github.com/imrightguy/CloudToLocalLLM/k8s/base/configmaps/main-config.yaml?ref=main

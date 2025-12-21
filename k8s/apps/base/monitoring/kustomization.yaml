@@ -1,6 +1,6 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
-  - ../../../base/utilities/monitoring.yaml
-  - ../../../base/prometheus-config.yaml
-  - ../../../base/alertmanager-config.yaml
+  - https://github.com/imrightguy/CloudToLocalLLM/k8s/base/utilities/monitoring.yaml?ref=main
+  - https://github.com/imrightguy/CloudToLocalLLM/k8s/base/prometheus-config.yaml?ref=main
+  - https://github.com/imrightguy/CloudToLocalLLM/k8s/base/alertmanager-config.yaml?ref=main
