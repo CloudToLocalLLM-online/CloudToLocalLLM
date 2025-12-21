@@ -69,8 +69,8 @@ data:
           - target_label: __address__
             replacement: blackbox-exporter:9115
 
- argocd-alerts.yml: |
-   # Prometheus Alert Rules for ArgoCD
+  argocd-alerts.yml: |
+    # Prometheus Alert Rules for ArgoCD
    #
    # Defines alerts for ArgoCD health and application sync status:
    # - ArgoCD server availability
