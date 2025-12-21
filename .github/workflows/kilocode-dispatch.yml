@@ -445,18 +445,18 @@ jobs:
 
           # API Backend
           if echo "$CHANGES" | grep -q "api"; then
-            kubectl set image deployment/api-backend api-backend=${{ env.ACR_NAME }}.azurecr.io/api-backend:main-${{ github.sha }} -n cloudtolocalllm
-            kubectl set image deployment/api-backend db-migrate=${{ env.ACR_NAME }}.azurecr.io/api-backend:main-${{ github.sha }} -n cloudtolocalllm
+            kubectl set image deployment/api-backend api-backend=${{ env.ACR_NAME }}.azurecr.io/api-backend:main-${{ github.sha }} -n cloudtolocalllm || echo "API Backend deployment not found, skipping image update"
+            kubectl set image deployment/api-backend db-migrate=${{ env.ACR_NAME }}.azurecr.io/api-backend:main-${{ github.sha }} -n cloudtolocalllm || echo "API Backend deployment not found, skipping migration image update"
           fi
 
           # Web
           if echo "$CHANGES" | grep -q "web"; then
-            kubectl set image deployment/web web=${{ env.ACR_NAME }}.azurecr.io/web:main-${{ github.sha }} -n cloudtolocalllm
+            kubectl set image deployment/web web=${{ env.ACR_NAME }}.azurecr.io/web:main-${{ github.sha }} -n cloudtolocalllm || echo "Web deployment not found, skipping image update"
           fi
 
           # Streaming Proxy
           if echo "$CHANGES" | grep -q "proxy"; then
-             kubectl set image deployment/streaming-proxy streaming-proxy=${{ env.ACR_NAME }}.azurecr.io/streaming-proxy:main-${{ github.sha }} -n cloudtolocalllm
+             kubectl set image deployment/streaming-proxy streaming-proxy=${{ env.ACR_NAME }}.azurecr.io/streaming-proxy:main-${{ github.sha }} -n cloudtolocalllm || echo "Streaming Proxy deployment not found, skipping image update"
           fi
 
           # Postgres (Optional - commented out for safety)
@@ -464,8 +464,8 @@ jobs:
           #   kubectl set image statefulset/postgres postgres=${{ env.ACR_NAME }}.azurecr.io/postgres:main-${{ github.sha }} -n cloudtolocalllm
           # fi
 
-          kubectl rollout status deployment/api-backend -n cloudtolocalllm --timeout=300s || echo "API rollout failed or timed out"
-          kubectl rollout status deployment/web -n cloudtolocalllm --timeout=300s || echo "Web rollout failed or timed out"
+          kubectl rollout status deployment/api-backend -n cloudtolocalllm --timeout=300s || echo "API rollout failed, timed out, or not yet created"
+          kubectl rollout status deployment/web -n cloudtolocalllm --timeout=300s || echo "Web rollout failed, timed out, or not yet created"
 
   # Notification Job
   notify:
