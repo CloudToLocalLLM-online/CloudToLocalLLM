@@ -4,5 +4,3 @@ resources:
   - ../deployments/postgres.yaml
   - ../services/postgres.yaml
   - ../postgres-auth-statefulset.yaml
-  - ../services/postgres-auth.yaml
-  - ../configmaps/postgres-auth-init-scripts.yaml
