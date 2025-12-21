@@ -4,7 +4,7 @@ metadata:
   name: web
   namespace: cloudtolocalllm
   annotations:
-    argocd.argoproj.io/sync-wave: "20"
+    argocd.argoproj.io/sync-wave: "10"
   labels:
     app: web
     environment: development
@@ -24,26 +24,6 @@ spec:
         app: web
         environment: development
     spec:
-      initContainers:
-        - name: wait-for-db
-          image: busybox:1.36
-          command:
-            [
-              "sh",
-              "-c",
-              "until nc -z $DB_HOST $DB_PORT; do echo waiting for db; sleep 2; done;",
-            ]
-          env:
-            - name: DB_HOST
-              valueFrom:
-                configMapKeyRef:
-                  name: cloudtolocalllm-config
-                  key: DB_HOST
-            - name: DB_PORT
-              valueFrom:
-                configMapKeyRef:
-                  name: cloudtolocalllm-config
-                  key: DB_PORT
       affinity:
         podAntiAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:
@@ -59,6 +39,17 @@ spec:
       serviceAccountName: web-sa
       imagePullSecrets:
         - name: regcred
+      initContainers:
+        - name: wait-for-api
+          image: alpine:latest
+          command:
+            - sh
+            - -c
+            - |
+              until nc -z api-backend 8080; do
+                echo "Waiting for api-backend..."
+                sleep 2
+              done
       containers:
         - name: web
           image: imrightguycloudtolocalllm.azurecr.io/web:7.10.9-202512190353

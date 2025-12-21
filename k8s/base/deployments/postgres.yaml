@@ -4,7 +4,7 @@ metadata:
   name: postgres
   namespace: cloudtolocalllm
   annotations:
-    argocd.argoproj.io/sync-wave: "0"
+    argocd.argoproj.io/sync-wave: "1"
   labels:
     app: postgres
     environment: development
@@ -73,7 +73,7 @@ spec:
                 - sh
                 - -c
                 - export PGPASSWORD=$POSTGRES_PASSWORD; pg_isready -U $POSTGRES_USER -d $POSTGRES_DB
-            initialDelaySeconds: 10
+            initialDelaySeconds: 15
             periodSeconds: 5
             timeoutSeconds: 3
             failureThreshold: 30
