@@ -1,0 +1,54 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cloudtolocalllm-config
+data:
+  # Staging-specific domain configuration
+  DOMAIN: "staging.cloudtolocalllm.online"
+  WEB_DOMAIN: "staging-app.cloudtolocalllm.online"
+  API_DOMAIN: "staging-api.cloudtolocalllm.online"
+
+  # Staging environment settings
+  NODE_ENV: "staging"
+  LOG_LEVEL: "info"
+  CLIENT_LOG_DIR: "/tmp/logs"
+
+  # Database configuration (staging)
+  DB_TYPE: "postgresql"
+  DB_HOST: "postgres.cloudtolocalllm-staging.svc.cluster.local"
+  DB_PORT: "5432"
+  DB_NAME: "cloudtolocalllm_staging"
+  DB_USER: "cloudtolocalllm_staging"
+
+  # API configuration
+  PORT: "8080"
+  API_PORT: "8080"
+
+  # Auth0 Configuration (staging/test)
+  AUTH0_DOMAIN: "dev-v2f2p008x3dr74ww.us.auth0.com"
+  AUTH0_AUDIENCE: "https://staging-api.cloudtolocalllm.online"
+  AUTH0_CLIENT_ID: "FuXPnevXpp311CdYHGsbNZe9t3D8Ts7A"
+
+  # Admin Center Configuration
+  ADMIN_CENTER_ENABLED: "true"
+  ADMIN_EMAIL: "staging@cloudtolocalllm.online"
+
+  # Database Connection Pool (moderate for staging)
+  DB_POOL_MAX: "25"
+  DB_POOL_IDLE_TIMEOUT: "600000"
+  DB_POOL_CONNECTION_TIMEOUT: "30000"
+
+  # Kubernetes cluster configuration
+  CLUSTER_NAME: "cloudtolocalllm-eks"
+  CLUSTER_REGION: "us-east-1"
+  NAMESPACE: "cloudtolocalllm-staging"
+
+  # Logging and monitoring
+  LOG_FORMAT: "json"
+  ENABLE_METRICS: "true"
+  METRICS_PORT: "9090"
+
+  # Staging-specific settings
+  ENABLE_DEBUG_ENDPOINTS: "false"
+  ENABLE_MOCK_DATA: "false"
+  CACHE_TTL: "600"
