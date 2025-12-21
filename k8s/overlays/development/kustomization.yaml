@@ -4,11 +4,8 @@ kind: Kustomization
 namespace: cloudtolocalllm-dev
 
 resources:
-  - ../../api-backend-deployment.yaml
-  - ../../web-deployment.yaml
-  - ../../configmap.yaml
+  - ../../base
   - ../../secrets.yaml
-  - ../../postgres-statefulset.yaml
   - ../../ingress-aws-nlb.yaml
   - ../../rbac.yaml
   - ../../network-policies.yaml

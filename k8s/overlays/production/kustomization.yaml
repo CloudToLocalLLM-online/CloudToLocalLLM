@@ -4,17 +4,9 @@ kind: Kustomization
 namespace: cloudtolocalllm
 
 resources:
-  - ../../api-backend-deployment.yaml
-  - ../../web-deployment.yaml
-  - ../../configmap.yaml
-  - ../../postgres-statefulset.yaml
-  - ../../cloudflared.yaml
+  - ../../base
   - ../../rbac.yaml
   - ../../network-policies.yaml
-  - ../../streaming-proxy-deployment.yaml
-  - ../../streaming-proxy-service.yaml
-  - ../../streaming-proxy-configmap.yaml
-  - ../../streaming-proxy-secret.yaml
 
 # Production environment patches
 patches:
