@@ -12,11 +12,9 @@ data:
         cluster: cloudtolocalllm-aks
         namespace: cloudtolocalllm
 
-    # Rule files
     rule_files:
       - /etc/prometheus/argocd-alerts.yml
 
-    # Grafana Cloud Remote Write Configuration
     remote_write:
       - url: "${GRAFANA_CLOUD_PROMETHEUS_URL}"
         basic_auth:
@@ -70,125 +68,14 @@ data:
             replacement: blackbox-exporter:9115
 
   argocd-alerts.yml: |
-    # Prometheus Alert Rules for ArgoCD
-   #
-   # Defines alerts for ArgoCD health and application sync status:
-   # - ArgoCD server availability
-   # - Application sync status
-   # - Application health status
-   # - Sync operation failures
-
-   groups:
-     - name: argocd_server_alerts
-       interval: 30s
-       rules:
-         # ArgoCD server down
-         - alert: ArgoCDServerDown
-           expr: up{job="argocd-server"} == 0
-           for: 2m
-           labels:
-             severity: critical
-             component: argocd
-             category: availability
-           annotations:
-             summary: "ArgoCD server is down"
-             description: "ArgoCD server has been unavailable for more than 2 minutes"
-             impact: "GitOps deployments are not possible. Application updates blocked."
-             action: "Check ArgoCD server pods. Review logs. Restart if necessary."
-             runbook_url: "https://argo-cd.readthedocs.io/en/stable/operator-manual/health/"
-
-         # ArgoCD server high error rate
-         - alert: ArgoCDServerHighErrorRate
-           expr: rate(argocd_server_grpc_requests_total{grpc_code=~"Unknown|Internal|Unavailable"}[5m]) / rate(argocd_server_grpc_requests_total[5m]) > 0.1
-           for: 5m
-           labels:
-             severity: warning
-             component: argocd
-             category: availability
-           annotations:
-             summary: "High error rate in ArgoCD server"
-             description: "ArgoCD server error rate is {{ $value | humanizePercentage }}% (threshold: 10%)"
-             impact: "GitOps operations experiencing failures"
-             action: "Check ArgoCD server logs. Review cluster connectivity."
-
-     - name: argocd_app_sync_alerts
-       interval: 30s
-       rules:
-         # Applications out of sync
-         - alert: ArgoCDAppsOutOfSync
-           expr: argocd_app_sync_status{status="OutOfSync"} > 0
-           for: 10m
-           labels:
-             severity: warning
-             component: argocd
-             category: sync
-           annotations:
-             summary: "ArgoCD applications are out of sync"
-             description: "{{ $value }} applications are out of sync with their Git repositories"
-             impact: "Applications may be running outdated code or configurations"
-             action: "Review out-of-sync applications. Sync manually or investigate sync issues."
-
-         # Applications with sync errors
-         - alert: ArgoCDAppsSyncFailed
-           expr: increase(argocd_app_sync_total{phase="Error"}[10m]) > 0
-           for: 5m
-           labels:
-             severity: critical
-             component: argocd
-             category: sync
-           annotations:
-             summary: "ArgoCD application sync failures"
-             description: "Applications have failed to sync in the last 10 minutes"
-             impact: "CRITICAL: Application deployments are failing"
-             action: "URGENT: Check sync error details. Review Git repository access. Fix configuration issues."
-
-     - name: argocd_app_health_alerts
-       interval: 30s
-       rules:
-         # Unhealthy applications
-         - alert: ArgoCDAppsUnhealthy
-           expr: argocd_app_health_status{status=~"Degraded|Missing"} > 0
-           for: 5m
-           labels:
-             severity: critical
-             component: argocd
-             category: health
-           annotations:
-             summary: "ArgoCD applications are unhealthy"
-             description: "{{ $value }} applications are in degraded or missing state"
-             impact: "CRITICAL: Applications are not functioning properly"
-             action: "URGENT: Check application health status. Review pod statuses and logs. Fix deployment issues."
-
-         # Applications in progressing state too long
-         - alert: ArgoCDAppsStuckProgressing
-           expr: argocd_app_health_status{status="Progressing"} > 0
-           for: 30m
-           labels:
-             severity: warning
-             component: argocd
-             category: health
-           annotations:
-             summary: "ArgoCD applications stuck in progressing state"
-             description: "Applications have been in progressing state for more than 30 minutes"
-             impact: "Application deployments may be hanging"
-             action: "Check deployment progress. Review resource constraints. Investigate stuck operations."
-
-      - job_name: 'argocd-server'
-        kubernetes_sd_configs:
-          - role: service
-            namespaces:
-              names:
-                - argocd
-        relabel_configs:
-          - source_labels: [__meta_kubernetes_service_name]
-            action: keep
-            regex: argocd-server
-          - source_labels: [__address__]
-            action: replace
-            regex: ([^:]+)(?::\d+)?
-            replacement: $1:8083
-            target_label: __address__
-          - source_labels: [__meta_kubernetes_namespace]
-            target_label: namespace
-          - source_labels: [__meta_kubernetes_service_name]
-            target_label: service
+    groups:
+      - name: argocd_server_alerts
+        interval: 30s
+        rules:
+          - alert: ArgoCDServerDown
+            expr: up{job="argocd-server"} == 0
+            for: 2m
+            labels:
+              severity: critical
+            annotations:
+              summary: "ArgoCD server is down"
