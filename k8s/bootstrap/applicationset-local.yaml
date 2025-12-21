@@ -31,9 +31,6 @@ spec:
           - name: ingress-cloudflared
             path: k8s/apps/local/ingress-cloudflared
             wave: "25"
-          - name: ingress-local
-            path: k8s/apps/local/ingress-local
-            wave: "30"
   template:
     metadata:
       name: '{{name}}'
