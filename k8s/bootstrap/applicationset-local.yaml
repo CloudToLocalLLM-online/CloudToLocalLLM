@@ -45,17 +45,16 @@ spec:
         repoURL: https://github.com/imrightguy/CloudToLocalLLM
         targetRevision: main
         path: '{{path}}'
+        kustomize:
+          buildOptions: --load-restrictor LoadRestrictionsNone
       destination:
         server: https://kubernetes.default.svc
         namespace: cloudtolocalllm
-            syncPolicy:
-              automated:
-                prune: true
-                selfHeal: true
-              syncOptions:
-                - CreateNamespace=true
-                - RespectIgnoreDifferences=true
-                - ApplyOutOfSyncOnly=true
-            kustomize:
-              buildOptions: --load-restrictor LoadRestrictionsNone
-      
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        syncOptions:
+          - CreateNamespace=true
+          - RespectIgnoreDifferences=true
+          - ApplyOutOfSyncOnly=true
