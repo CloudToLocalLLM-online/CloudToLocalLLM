@@ -8,10 +8,7 @@ spec:
   source:
     repoURL: https://github.com/imrightguy/CloudToLocalLLM
     targetRevision: main
-    path: k8s/bootstrap
-    directory:
-      include: 'applicationset-local.yaml'
-
+    path: k8s/apps/local
   destination:
     server: https://kubernetes.default.svc
     namespace: argocd
