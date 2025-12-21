@@ -48,11 +48,14 @@ spec:
       destination:
         server: https://kubernetes.default.svc
         namespace: cloudtolocalllm
-      syncPolicy:
-        automated:
-          prune: true
-          selfHeal: true
-        syncOptions:
-          - CreateNamespace=true
-          - RespectIgnoreDifferences=true
-          - ApplyOutOfSyncOnly=true
+            syncPolicy:
+              automated:
+                prune: true
+                selfHeal: true
+              syncOptions:
+                - CreateNamespace=true
+                - RespectIgnoreDifferences=true
+                - ApplyOutOfSyncOnly=true
+            kustomize:
+              buildOptions: --load-restrictor LoadRestrictionsNone
+      
