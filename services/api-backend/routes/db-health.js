@@ -16,12 +16,12 @@ export const dbHealthHandler = async(req, res) => {
       });
     }
 
-        // Perform a simple health check
-        const validation = await dbMigrator.validateSchema();
-        const dbType = process.env.DB_TYPE || 'postgresql';
-    
-        res.json({
-          status: validation.allValid ? 'healthy' : 'degraded',      database_type: dbType,
+    // Perform a simple health check
+    const validation = await dbMigrator.validateSchema();
+    const dbType = process.env.DB_TYPE || 'postgresql';
+
+    res.json({
+      status: validation.allValid ? 'healthy' : 'degraded',      database_type: dbType,
       schema_validation: validation.results,
       all_tables_valid: validation.allValid,
       timestamp: new Date().toISOString(),

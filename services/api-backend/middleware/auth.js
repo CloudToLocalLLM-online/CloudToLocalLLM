@@ -12,7 +12,6 @@ import { RedisStore } from 'rate-limit-redis';
 import rateLimit from 'express-rate-limit';
 import logger from '../logger.js';
 import { AuthService } from '../auth/auth-service.js';
-import { logLoginFailure } from '../services/auth-audit-service.js';
 
 // JWT configuration
 const AUTH0_DOMAIN = process.env.AUTH0_DOMAIN || 'dev-v2f2p008x3dr74ww.us.auth0.com';
@@ -149,7 +148,7 @@ export const authenticateJWT = [
   // 2. Rigorous JWT verification (Audience, Issuer, Signature)
   checkJwt,
   // 3. Synchronized session check (Revocation, Integrity, DB Sync)
-  syncSession
+  syncSession,
 ];
 
 /**

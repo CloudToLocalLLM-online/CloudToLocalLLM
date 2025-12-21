@@ -393,7 +393,7 @@ export class AuthService {
 
       if (existingSession) {
         await this.runQuery(
-          `UPDATE user_sessions SET last_activity = NOW(), expires_at = ? WHERE id = ?`,
+          'UPDATE user_sessions SET last_activity = NOW(), expires_at = ? WHERE id = ?',
           [expiresAt, existingSession.id],
           'run',
         );
@@ -404,9 +404,9 @@ export class AuthService {
       await this.cleanupUserSessions(userId);
 
       // Create new session
-      const result = await this.runQuery(
-        `INSERT INTO user_sessions (user_id, jwt_token_hash, expires_at, ip_address, user_agent, session_token)` +
-         `VALUES (?, ?, ?, ?, ?, ?)`,
+      await this.runQuery(
+        'INSERT INTO user_sessions (user_id, jwt_token_hash, expires_at, ip_address, user_agent, session_token)' +
+         'VALUES (?, ?, ?, ?, ?, ?)',
         [
           userId,
           tokenHash,
@@ -443,7 +443,9 @@ export class AuthService {
           [userId, tokenHash],
           'get',
         );
-        if (existingSession) return existingSession;
+        if (existingSession) {
+          return existingSession;
+        }
       }
       throw error;
     }
@@ -452,14 +454,14 @@ export class AuthService {
   async getSession(sessionId) {
     try {
       const result = await this.runQuery(
-        `SELECT * FROM user_sessions` +
+        'SELECT * FROM user_sessions' +
          `
          WHERE id = ? AND is_active = 1 AND expires_at > NOW()`,
         [sessionId],
         'get',
       );
       return result || null;
-    } catch (error) {
+    } catch {
       return null;
     }
   }
@@ -486,7 +488,7 @@ export class AuthService {
         return true;
       }
       return false;
-    } catch (error) {
+    } catch {
       return false;
     }
   }
@@ -521,7 +523,9 @@ export class AuthService {
 
   async checkPermissions(userId, resource, action) {
     const allowedActions = ['connect', 'send_request', 'receive_response'];
-    if (allowedActions.includes(action)) return true;
+    if (allowedActions.includes(action)) {
+      return true;
+    }
     await this.logSecurityEvent('permission_denied', { userId, resource, action });
     return false;
   }
@@ -530,7 +534,7 @@ export class AuthService {
     try {
       const metaStr = JSON.stringify(metadata);
       await this.runQuery(
-        `INSERT INTO audit_logs (action, resource_type, details, user_id, ip_address, user_agent)` +
+        'INSERT INTO audit_logs (action, resource_type, details, user_id, ip_address, user_agent)' +
          `
          VALUES (?, ?, ?, ?, ?, ?)`,
         [
@@ -561,11 +565,13 @@ export class AuthService {
   }
 
   startSessionCleanup() {
-    setInterval(async () => {
+    setInterval(async() => {
       try {
-        if (!this.db.pool) return;
+        if (!this.db.pool) {
+          return;
+        }
         const result = await this.runQuery(
-          `UPDATE user_sessions SET is_active = 0 WHERE expires_at < NOW() AND is_active = 1`,
+          'UPDATE user_sessions SET is_active = 0 WHERE expires_at < NOW() AND is_active = 1',
           [],
           'run',
         );
@@ -583,7 +589,7 @@ export class AuthService {
       const activeSessions = await this.runQuery('SELECT COUNT(*) as count FROM user_sessions WHERE is_active = 1', [], 'get');
       const validSessions = await this.runQuery('SELECT COUNT(*) as count FROM user_sessions WHERE expires_at > NOW()', [], 'get');
       const activeUsers = await this.runQuery('SELECT COUNT(DISTINCT user_id) as count FROM user_sessions WHERE is_active = 1', [], 'get');
-      const interval = 'NOW() - INTERVAL \'24 HOURS\''
+      const interval = 'NOW() - INTERVAL \'24 HOURS\'';
       const authEvents = await this.runQuery(`SELECT COUNT(*) as count FROM audit_logs WHERE resource_type = 'authentication' AND created_at > ${interval}`, [], 'get');
       const securityEvents = await this.runQuery(`SELECT COUNT(*) as count FROM audit_logs WHERE resource_type = 'security' AND created_at > ${interval}`, [], 'get');
 
@@ -594,12 +600,14 @@ export class AuthService {
         auth_events_24h: authEvents?.count || 0,
         security_events_24h: securityEvents?.count || 0,
       };
-    } catch (error) {
+    } catch {
       return {};
     }
   }
 
   async close() {
-    if (this.db) await this.db.close();
+    if (this.db) {
+      await this.db.close();
+    }
   }
 }

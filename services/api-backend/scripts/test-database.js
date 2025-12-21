@@ -83,7 +83,7 @@ async function testDatabase() {
 
     // Test JSONB operations
     const { rows: jsonTest } = await migrator.pool.query(
-      'SELECT \'{\"test\": true}\'::jsonb as test_json',
+      'SELECT \'{"test": true}\'::jsonb as test_json',
     );
     console.log(` ✅ JSONB support: ${JSON.stringify(jsonTest[0].test_json)}`);
 

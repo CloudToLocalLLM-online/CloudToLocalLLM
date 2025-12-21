@@ -8,10 +8,10 @@ import { authenticateJWT } from '../middleware/auth.js';
  * Legacy endpoint - now deprecated.
  * Sessions are now automatically synchronized via authenticateJWT middleware.
  */
-router.post('/', async (req, res) => {
+router.post('/', async(req, res) => {
   res.status(410).json({
     error: 'Gone',
-    message: 'This manual session registration endpoint is deprecated. Sessions are now handled automatically via JWT middleware.'
+    message: 'This manual session registration endpoint is deprecated. Sessions are now handled automatically via JWT middleware.',
   });
 });
 
@@ -19,9 +19,8 @@ router.post('/', async (req, res) => {
  * GET /auth/sessions/current
  * Get current session for the authenticated user
  */
-router.get('/current', authenticateJWT, async (req, res) => {
+router.get('/current', authenticateJWT, async(req, res) => {
   try {
-    const userId = req.userId;
     const authHeader = req.headers['authorization'];
     const token = authHeader && authHeader.split(' ')[1];
 
@@ -135,7 +134,7 @@ router.get('/validate/:token', async(req, res) => {
  * PUT /auth/sessions/tokens
  * Update tokens for the current session
  */
-router.put('/tokens', async (req, res) => {
+router.put('/tokens', async(req, res) => {
   try {
     const { sessionToken, accessToken, idToken, refreshToken } = req.body;
 

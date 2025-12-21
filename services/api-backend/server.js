@@ -64,7 +64,6 @@ import {
 import { setupGracefulShutdown } from './middleware/graceful-shutdown.js';
 import {
   standardCorsOptions,
-  getAllowedOrigins,
 } from './middleware/cors-config.js';
 
 import adminRoutes from './routes/admin.js';
@@ -823,7 +822,6 @@ async function initializeTunnelSystem() {
     logger.info('Database connection pool initialized successfully');
 
     // Initialize application database
-    const dbType = process.env.DB_TYPE || 'postgresql';
     dbMigrator = new DatabaseMigratorPG();
 
     await dbMigrator.initialize();

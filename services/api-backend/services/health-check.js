@@ -59,24 +59,20 @@ export class HealthCheckService {
 
       // Perform a simple ping (lightweight check) instead of full schema validation
       // Schema validation is too heavy for frequent liveness probes
-      try {
-        if (this.dependencies.database.pool) {
-          // Postgres
-          await this.dependencies.database.pool.query('SELECT 1');
-        } else if (this.dependencies.database.db) {
-          // SQLite
-          await this.dependencies.database.db.get('SELECT 1');
-        } else {
-          throw new Error('Database connection not initialized');
-        }
-
-        return {
-          status: 'healthy',
-          message: 'Database is healthy',
-        };
-      } catch (dbError) {
-        throw dbError;
+      if (this.dependencies.database.pool) {
+        // Postgres
+        await this.dependencies.database.pool.query('SELECT 1');
+      } else if (this.dependencies.database.db) {
+        // SQLite
+        await this.dependencies.database.db.get('SELECT 1');
+      } else {
+        throw new Error('Database connection not initialized');
       }
+
+      return {
+        status: 'healthy',
+        message: 'Database is healthy',
+      };
     } catch (error) {
       this.logger.error('Database health check failed:', error);
       return {
