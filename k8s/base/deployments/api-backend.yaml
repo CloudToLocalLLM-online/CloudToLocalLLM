@@ -3,6 +3,8 @@ kind: Deployment
 metadata:
   name: api-backend
   namespace: cloudtolocalllm
+  annotations:
+    argocd.argoproj.io/sync-wave: "5"
   labels:
     app: api-backend
     environment: development

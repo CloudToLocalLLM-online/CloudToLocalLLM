@@ -3,6 +3,8 @@ kind: StatefulSet
 metadata:
   name: postgres
   namespace: cloudtolocalllm
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
   labels:
     app: postgres
     environment: development
