@@ -1,8 +1,17 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
-  - ../../base/postgres
+  - https://github.com/imrightguy/CloudToLocalLLM/k8s/apps/base/postgres?ref=main
 patches:
-  - path: ../../../overlays/local/env-patch.yaml
-  - path: ../../../overlays/local/resource-patch.yaml
-  - path: ../../../overlays/local/storage-patch.yaml
+  - patch: |-
+      apiVersion: apps/v1
+      kind: StatefulSet
+      metadata:
+        name: postgres
+        namespace: cloudtolocalllm
+      spec:
+        volumeClaimTemplates:
+        - metadata:
+            name: postgres-data
+          spec:
+            storageClassName: hostpath
