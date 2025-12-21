@@ -36,6 +36,8 @@ kind: Deployment
 metadata:
   name: streaming-proxy
   namespace: cloudtolocalllm
+  annotations:
+    argocd.argoproj.io/sync-wave: "15"
   labels:
     app: streaming-proxy
     tier: backend
@@ -66,6 +68,15 @@ spec:
         runAsNonRoot: true
         runAsUser: 1000
         fsGroup: 1000
+      initContainers:
+        - name: wait-for-redis
+          image: busybox:1.36
+          command:
+            [
+              "sh",
+              "-c",
+              "until nc -z redis-tunnel-state 6379; do echo waiting for redis; sleep 2; done;",
+            ]
       containers:
         - name: streaming-proxy
           image: cloudtolocalllm/streaming-proxy:latest
@@ -121,6 +132,17 @@ spec:
               path: /health
               port: http
               scheme: HTTP
+
+          # Readiness probe - checks if container is ready to handle traffic
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+              scheme: HTTP
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 3
 
           # Volume mounts
           volumeMounts:

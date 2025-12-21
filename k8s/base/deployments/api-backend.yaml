@@ -4,7 +4,7 @@ metadata:
   name: api-backend
   namespace: cloudtolocalllm
   annotations:
-    argocd.argoproj.io/sync-wave: "5"
+    argocd.argoproj.io/sync-wave: "10"
   labels:
     app: api-backend
     environment: development
@@ -32,6 +32,35 @@ spec:
         runAsUser: 1001
         fsGroup: 1001
       initContainers:
+        - name: wait-for-db
+          image: busybox:1.36
+          command:
+            [
+              "sh",
+              "-c",
+              "until nc -z $DB_HOST $DB_PORT; do echo waiting for db; sleep 2; done; until nc -z $AUTH_DB_HOST $AUTH_DB_PORT; do echo waiting for auth db; sleep 2; done;",
+            ]
+          env:
+            - name: DB_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: cloudtolocalllm-config
+                  key: DB_HOST
+            - name: DB_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: cloudtolocalllm-config
+                  key: DB_PORT
+            - name: AUTH_DB_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: cloudtolocalllm-config
+                  key: AUTH_DB_HOST
+            - name: AUTH_DB_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: cloudtolocalllm-config
+                  key: AUTH_DB_PORT
         - name: db-migrate
           image: imrightguycloudtolocalllm.azurecr.io/api-backend:7.10.9-202512190353-api-backend
           imagePullPolicy: Always

@@ -4,7 +4,7 @@ metadata:
   name: web
   namespace: cloudtolocalllm
   annotations:
-    argocd.argoproj.io/sync-wave: "10"
+    argocd.argoproj.io/sync-wave: "20"
   labels:
     app: web
     environment: development
@@ -24,6 +24,26 @@ spec:
         app: web
         environment: development
     spec:
+      initContainers:
+        - name: wait-for-db
+          image: busybox:1.36
+          command:
+            [
+              "sh",
+              "-c",
+              "until nc -z $DB_HOST $DB_PORT; do echo waiting for db; sleep 2; done;",
+            ]
+          env:
+            - name: DB_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: cloudtolocalllm-config
+                  key: DB_HOST
+            - name: DB_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: cloudtolocalllm-config
+                  key: DB_PORT
       affinity:
         podAntiAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:

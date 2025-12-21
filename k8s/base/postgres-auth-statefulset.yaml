@@ -6,7 +6,7 @@ metadata:
   labels:
     app: postgres-auth
 spec:
-  type: ClusterIP  # Only accessible within cluster, not exposed externally
+  type: ClusterIP # Only accessible within cluster, not exposed externally
   ports:
     - port: 5432
       targetPort: 5432
@@ -19,6 +19,8 @@ kind: StatefulSet
 metadata:
   name: postgres-auth
   namespace: cloudtolocalllm
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
 spec:
   serviceName: postgres-auth
   replicas: 1
@@ -93,7 +95,7 @@ spec:
         storageClassName: default
         resources:
           requests:
-            storage: 5Gi  # Smaller storage for auth data only
+            storage: 5Gi # Smaller storage for auth data only
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -107,4 +109,3 @@ data:
     -- This database contains only authentication-related tables:
     -- - user_sessions
     -- - auth_audit_logs
-
