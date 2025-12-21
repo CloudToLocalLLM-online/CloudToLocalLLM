@@ -1,7 +1,7 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
-  - ./shared/app_base/postgres
+  - https://github.com/imrightguy/CloudToLocalLLM.git//k8s/base/postgres?ref=main
 patches:
   - patch: |-
       apiVersion: apps/v1
