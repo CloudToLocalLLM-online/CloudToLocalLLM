@@ -1,6 +1,6 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
-  - https://github.com/imrightguy/CloudToLocalLLM/k8s/base/deployments/postgres.yaml?ref=main
-  - https://github.com/imrightguy/CloudToLocalLLM/k8s/base/services/postgres.yaml?ref=main
-  - https://github.com/imrightguy/CloudToLocalLLM/k8s/base/postgres-auth-statefulset.yaml?ref=main
+  - https://raw.githubusercontent.com/imrightguy/CloudToLocalLLM/main/k8s/base/deployments/postgres.yaml
+  - https://raw.githubusercontent.com/imrightguy/CloudToLocalLLM/main/k8s/base/services/postgres.yaml
+  - https://raw.githubusercontent.com/imrightguy/CloudToLocalLLM/main/k8s/base/postgres-auth-statefulset.yaml
