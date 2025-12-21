@@ -46,7 +46,7 @@ spec:
             - sh
             - -c
             - |
-              until nc -z api-backend 8080; do
+              until nc -z api-backend.cloudtolocalllm.svc.cluster.local 8080; do
                 echo "Waiting for api-backend..."
                 sleep 2
               done
