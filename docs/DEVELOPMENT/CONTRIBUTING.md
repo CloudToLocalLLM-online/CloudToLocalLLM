@@ -105,12 +105,13 @@ lib/
 ## 📝 **Contribution Workflow**
 
 ### **1. Before You Start**
-- 🔍 **Check Existing Issues**: Avoid duplicate work
-- 💬 **Discuss Major Changes**: Use GitHub Discussions
-- 📖 **Read Documentation**: Understand the architecture
-- 🎯 **Follow Roadmap**: Align with project priorities
+- 📖 **Universal Documentation-First Methodology**: **ALL** contributions MUST begin with a review of relevant project documentation and `.kiro/steering/` files. Understand the specific git workflows, CI/CD guidelines, and architectural structures defined for the project.
+- 🔍 **Check Existing Issues**: Avoid duplicate work.
+- 💬 **Discuss Major Changes**: Use GitHub Discussions.
+- 🎯 **Follow Roadmap**: Align with project priorities.
 
 ### **2. Development Process**
+- 🧠 **Structured Reasoning**: For complex changes, contributors are encouraged (and Kilocode is mandated) to use a systematic reasoning framework (like Sequential Thinking) to break down problems and verify solutions.
 
 #### **Create a Branch**
 ```bash

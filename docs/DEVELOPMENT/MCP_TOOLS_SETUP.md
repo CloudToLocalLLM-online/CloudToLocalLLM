@@ -8,9 +8,14 @@ MCP tools provide specialized capabilities for interacting with external service
 
 ## Configured MCP Servers
 
-> **Note**: Browser automation is handled by Cursor's integrated browser tools (browser_navigate, browser_snapshot, etc.), so separate browser MCP servers are not needed.
+> **Mandatory Framework**: The **Sequential Thinking** MCP server is the primary framework for all complex development tasks. It must be used in conjunction with a **documentation-first methodology** to ensure systematic analysis.
 
-### 1. GitHub (`github`)
+### 1. Sequential Thinking (`sequentialthinking`)
+- **Purpose**: Primary framework for systematic reasoning, complex problem-solving, and iterative analysis.
+- **Package**: `@modelcontextprotocol/server-sequential-thinking`
+- **Mandate**: **REQUIRED** for all multi-step tasks and architectural decisions.
+
+### 2. GitHub (`github`)
 - **Purpose**: GitHub repository and CI/CD management
 - **Package**: `@modelcontextprotocol/server-github`
 - **Capabilities**:
@@ -107,6 +112,31 @@ MCP tools provide specialized capabilities for interacting with external service
   - Store memories
   - Retrieve memories
   - Search memories
+
+### 10. Sentry (`sentry`)
+- **Purpose**: Production error monitoring and detailed debugging.
+- **Server**: `mcp-server-sentry`
+- **Capabilities**: Retrieve and analyze Sentry issues, stacktraces, and error patterns.
+
+### 11. n8n-mcp (`n8n-mcp`)
+- **Purpose**: Automation workflow management and node documentation.
+- **Package**: `n8n-mcp`
+- **Capabilities**: List nodes, get documentation, search properties, and validate workflows.
+
+### 12. Context7 (`context7`)
+- **Purpose**: Up-to-date documentation and code examples for libraries.
+- **Package**: `@upstash/context7-mcp`
+- **Capabilities**: Resolve library IDs and retrieve deep documentation.
+
+### 13. Playwright (`playwright`)
+- **Purpose**: Browser automation and end-to-end testing.
+- **Package**: `@playwright/mcp`
+- **Capabilities**: Full browser interaction and snapshotting.
+
+### 14. Auth0 (`auth0`)
+- **Purpose**: Identity and Access Management (IAM) operations.
+- **Package**: `@auth0/auth0-mcp-server`
+- **Capabilities**: Manage users, applications, and APIs.
 
 ## Required CLI Tools
 
@@ -230,11 +260,12 @@ For custom Kubernetes and DigitalOcean servers:
 
 ## Best Practices
 
-1. **Use MCP Tools Over CLI**: Prefer MCP tools when available for better integration and error handling
-2. **Atomic Operations**: Execute one MCP tool call at a time
-3. **Schema Adherence**: Always check tool schemas before use
-4. **Environment Variables**: Keep sensitive tokens in environment variables, never in code
-5. **Error Handling**: Check MCP server status if tools fail
+1.  **Documentation-First Methodology**: Always review project documentation (`docs/`) and steering rules (`.kiro/steering/`) before tool execution.
+2.  **Sequential Thinking Primary**: Use the `sequentialthinking` tool as the foundation for all complex tasks to ensure systematic reasoning.
+3.  **Use MCP Tools Over CLI**: Prefer MCP tools when available for better integration and structured output.
+4.  **Atomic Operations**: Execute one tool at a time and wait for success before proceeding.
+5.  **Schema Adherence**: Strictly follow the input schema for all tool calls.
+6.  **Kilocode Identity**: All development actions must align with the technical excellence and architectural standards defined for Kilocode.
 
 ## Kiro IDE Integration
 

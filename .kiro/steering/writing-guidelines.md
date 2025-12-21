@@ -1,4 +1,12 @@
-# Writing Guidelines
+# Writing Guidelines & Documentation-First Methodology
+
+## Documentation-First Requirement
+
+**ALL development and technical tasks MUST adhere to a Documentation-First methodology.**
+
+1.  **Review Before Execution**: Relevant documentation and steering files must be reviewed before any tool execution.
+2.  **Pre-Code Documentation Updates**: Appropriate documentation updates MUST precede code changes. This ensures that the technical design and requirements are clarified and recorded before implementation begins.
+3.  **Single Source of Truth**: Documentation must always reflect the current and intended state of the project.
 
 ## File Writing Best Practices
 

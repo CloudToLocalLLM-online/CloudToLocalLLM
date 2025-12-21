@@ -4,13 +4,15 @@ This document outlines the rules and standard operating procedures for utilizing
 
 ## I. General Principles
 
-1.  **Prioritize MCP Tools**: When an MCP tool offers a more direct, powerful, or integrated solution compared to a standard tool, it should be the preferred choice. For example, use `mcp-webresearch` for Google searches instead of attempting to parse results via `curl`.
-2.  **Atomic Operations**: Each MCP tool call is an atomic step. I will execute one tool at a time and wait for a successful response before proceeding to the next action.
-3.  **Schema Adherence**: Before using any MCP tool, I will consult its input schema to ensure all required arguments are correctly formatted and provided.
+1.  **Universal Documentation-First Methodology**: **ALL** tasks (simple or complex) MUST begin with a review of relevant project documentation and `.kiro/steering/` files. This ensures all actions as Kilocode align with the specific git workflows, CI/CD guidelines, and architectural structures defined in the project.
+2.  **Mandatory Primary Framework**: The `sequentialthinking` MCP is the **MANDATORY** primary framework for every complex task. It must be used to ensure systematic reasoning, iterative analysis, and self-correction.
+3.  **Minimize External Steering**: By autonomously applying the documentation-first methodology and the sequential thinking framework, Kilocode minimizes the need for external steering while maintaining technical excellence.
+4.  **Atomic Operations**: Each tool call is an atomic step. Execute one tool at a time and wait for a successful response.
+5.  **Schema Adherence**: Always consult the tool's input schema to ensure correct formatting and parameter usage.
 
 ## II. Focus and Task Management
 
-1.  **Task Progress Checklist**: For every task, I will maintain and update a `task_progress` checklist. This breaks down complex tasks into manageable steps, provides a clear roadmap, and allows for transparent progress tracking.
+1.  **Task Progress Checklist**: For every task, maintain and update a `task_progress` checklist (or `update_todo_list`). This ensures a clear roadmap and transparent progress tracking.
 2.  **Single-Minded Execution**: I will focus on completing one step or sub-task at a time, as defined in the `task_progress` checklist. I will avoid context switching or attempting to address multiple unrelated issues simultaneously.
 3.  **Regular Re-evaluation**: Periodically, I will re-evaluate the current task and its progress against the overall objective. If the current approach is not leading to the desired outcome, I will pause, analyze, and adjust the strategy.
 4.  **Proactive Clarification**: If I encounter any ambiguity, missing information, or unclear instructions, I will immediately use `ask_followup_question` to seek clarification from the user. I will not make assumptions that could lead to incorrect or inefficient work.
@@ -24,17 +26,23 @@ For any request that requires multiple steps, changes to several files, or a seq
 
 ### Task Management Workflow:
 
-1.  **Planning Phase (PLAN MODE)**:
-    *   **Action**: When in `PLAN MODE`, I will gather information using available tools (e.g., `read_file`, `search_files`) and ask clarifying questions using `ask_followup_question`.
-    *   **Tool**: `plan_mode_respond`
-    *   **Action**: I will present a detailed plan to the user using `plan_mode_respond`, including a `task_progress` checklist.
+1.  **Documentation-First Phase (UNIVERSAL)**:
+    *   **Action**: Review relevant documentation in `docs/` and `.kiro/steering/` **BEFORE** any tool execution.
+    *   **Preemptive Updates**: Appropriate documentation updates **MUST precede code changes**. This ensures the design and requirements are clarified first.
+    *   **Tool**: `read_file`, `list_files`, `codebase_search`, `write_to_file`, `apply_diff`.
+    *   **Action**: Explicitly reference the documentation reviewed and updated in the initial analysis to maintain a cohesive source of truth.
 
-2.  **Complex Reasoning & Analysis**:
-    *   **Condition**: For tasks requiring deep analysis, architectural decisions, or complex problem-solving (especially when using models like Gemini).
-    *   **Tool**: `sequentialthinking`
-    *   **Action**: I will use the `sequentialthinking` tool to break down the problem, hypothesize solutions, and self-correct before proceeding with execution. This ensures a logical and well-thought-out approach.
+2.  **Planning Phase (PLAN/ARCHITECT MODE)**:
+    *   **Action**: Gather information and ask clarifying questions using `ask_followup_question`.
+    *   **Tool**: `plan_mode_respond` or `update_todo_list`.
+    *   **Action**: Present a detailed plan, including a task checklist.
 
-3.  **Execution Cycle (ACT MODE)**:
+3.  **Reasoning & Analysis Framework (MANDATORY for Complex Tasks)**:
+    *   **Condition**: Required for all complex problems, architectural decisions, or systematic debugging.
+    *   **Tool**: `sequentialthinking`.
+    *   **Action**: Break down the problem, hypothesize solutions, and iteratively verify assumptions. Use this as the primary framework for all technical problem-solving.
+
+4.  **Execution Cycle (ACT/CODE MODE)**:
     *   **Action**: Once the user approves the plan and switches to `ACT MODE`, I will execute the steps outlined in the `task_progress` checklist.
     *   **Tool**: Any available tool (standard or MCP)
     *   **Action**: I will perform the necessary actions to complete each step, updating the `task_progress` checklist with each tool call.

@@ -1,4 +1,20 @@
-# General Development Rules
+# General Development Rules (Kilocode Standards)
+
+## Mandatory Methodology: Documentation-First
+
+**ALL development tasks MUST begin with a review and update of relevant documentation before code execution.**
+
+- **Context Acquisition**: Review `docs/` and `.kiro/steering/` files relevant to the task.
+- **Preemptive Documentation**: Appropriate documentation updates MUST precede or accompany code changes to ensure a single, cohesive source of truth.
+- **Technical Excellence**: All actions as Kilocode must align with defined git workflows, CI/CD guidelines, and architectural structures.
+
+## Primary Framework: Sequential Thinking
+
+**The Sequential Thinking MCP is the MANDATORY primary framework for all complex tasks.**
+
+- **Scope**: Required for complex problem-solving, systematic debugging, architectural tasks, and multi-component analysis.
+- **Workflow**: Initialize the framework to break down the problem, hypothesize solutions, and iteratively verify assumptions.
+- **Analysis Before Action**: Ensure systematic reasoning is applied before committing to tool-based implementation.
 
 ## Code Changes
 
@@ -10,7 +26,7 @@
 
 - Never delete or modify files without explicit user request.
 - When refactoring, preserve backward compatibility when possible.
-- Update documentation when making architectural changes.
+- Update documentation when making architectural changes or implementing new features.
 
 ## Security
 
