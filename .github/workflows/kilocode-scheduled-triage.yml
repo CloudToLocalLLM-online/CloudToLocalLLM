@@ -116,7 +116,7 @@ jobs:
 
             chmod +x scripts/kilocode-cli.cjs
             echo "🔄 Triaging issue #$NUMBER with KiloCode..."
-            if ! RESPONSE_RAW=$(./scripts/kilocode-cli.cjs "$PROMPT" --output-format json 2>cli_error.log); then
+            if ! RESPONSE_RAW=$(./scripts/kilocode-cli.cjs "$PROMPT" --json 2>cli_error.log); then
               echo "⚠️ Failed to triage #$NUMBER"
               echo "📝 Error details:"
               cat cli_error.log
@@ -127,9 +127,16 @@ jobs:
             fi
             echo "✅ Successfully triaged issue #$NUMBER"
 
-            # Extract labels safely
-            LABELS=$(echo "$RESPONSE_RAW" | jq -r '.response' | sed -n '/{/,/}/p' | jq -c '.labels_to_set // []' || echo "[]")
-            RESULTS=$(echo "$RESULTS" | jq -c ". + [{\"issue_number\": $NUMBER, \"labels_to_set\": $LABELS}]")
+            # Extract labels safely. We handle potential non-JSON noise from the AI.
+            LABELS=$(echo "$RESPONSE_RAW" | sed -n '/{/,/}/p' | jq -c '.labels_to_set' 2>/dev/null || echo "[]")
+            
+            # Ensure LABELS is a valid JSON array
+            if [[ ! "$LABELS" =~ ^\[.*\]$ ]]; then
+              LABELS="[]"
+            fi
+
+            # Safely append to RESULTS using --argjson to prevent shell parsing/syntax issues
+            RESULTS=$(echo "$RESULTS" | jq -c --argjson num "$NUMBER" --argjson labs "$LABELS" '. + [{"issue_number": $num, "labels_to_set": $labs}]')
 
           done <<< "$ISSUES_JSON"
 
@@ -140,10 +147,10 @@ jobs:
       - name: "Parse KiloCode output"
         id: "parse_output"
         run: |
-           # Use output from previous step directly
-           echo "triaged_issues<<EOF" >> $GITHUB_OUTPUT
-           echo '${{ steps.kilocode_issue_analysis.outputs.triaged_issues }}' >> $GITHUB_OUTPUT
-           echo "EOF" >> $GITHUB_OUTPUT
+          # Use output from previous step directly
+          echo "triaged_issues<<EOF" >> $GITHUB_OUTPUT
+          echo '${{ steps.kilocode_issue_analysis.outputs.triaged_issues }}' >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
 
   label:
     runs-on: "ubuntu-latest"

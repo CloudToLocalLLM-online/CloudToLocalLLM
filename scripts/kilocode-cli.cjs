@@ -167,6 +167,8 @@ async function main() {
     } else if (arg === '--temperature' && i + 1 < args.length) {
       options.temperature = parseFloat(args[i + 1]);
       i++;
+    } else if (arg === '--json') {
+      options.jsonOnly = true;
     }
   }
 
@@ -180,6 +182,18 @@ async function main() {
         model: response.model || options.model,
         usage: response.usage || {}
       }));
+    } else if (options.outputFormat === 'json-only' || options.jsonOnly) {
+      // Return only the AI response, attempting to parse it as JSON if possible to ensure validity
+      try {
+        const jsonMatch = response.response.match(/\{[\s\S]*\}|\[[\s\S]*\]/);
+        if (jsonMatch) {
+          console.log(jsonMatch[0]);
+        } else {
+          console.log(response.response);
+        }
+      } catch (e) {
+        console.log(response.response);
+      }
     } else {
       console.log(response.response);
     }
