@@ -259,6 +259,7 @@ class Auth0AuthProvider implements AuthProvider {
         await _auth0Web!.loginWithRedirect(
           scopes: {'openid', 'profile', 'email', 'offline_access'},
           audience: _audience,
+          redirectUri: redirectUrl.toString(),
         );
         // Note: loginWithRedirect will cause the page to reload.
         // The result will be processed in initialize() via onLoad() after the redirect back.

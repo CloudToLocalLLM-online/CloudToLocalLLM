@@ -5,6 +5,6 @@ class Auth0Web {
 
   Future<Credentials?> onLoad() async => null;
   Future<void> loginWithRedirect(
-      {Set<String>? scopes, String? audience}) async {}
+      {Set<String>? scopes, String? audience, String? redirectUri}) async {}
   Future<void> logout() async {}
 }
