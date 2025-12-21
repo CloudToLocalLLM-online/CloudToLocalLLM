@@ -14,8 +14,15 @@ import logger from '../logger.js';
 import { AuthService } from '../auth/auth-service.js';
 
 // JWT configuration
-const AUTH0_DOMAIN = process.env.AUTH0_DOMAIN || 'dev-v2f2p008x3dr74ww.us.auth0.com';
-const AUTH0_AUDIENCE = process.env.AUTH0_AUDIENCE || 'https://api.cloudtolocalllm.online';
+const AUTH0_DOMAIN = process.env.AUTH0_DOMAIN;
+const AUTH0_AUDIENCE = process.env.AUTH0_AUDIENCE;
+
+if (!AUTH0_DOMAIN || !AUTH0_AUDIENCE) {
+  const missing = [];
+  if (!AUTH0_DOMAIN) missing.push('AUTH0_DOMAIN');
+  if (!AUTH0_AUDIENCE) missing.push('AUTH0_AUDIENCE');
+  throw new Error(`CRITICAL: Missing required Auth0 environment variables: ${missing.join(', ')}. Hardcoded fallbacks are strictly forbidden for security.`);
+}
 
 // Rigorous JWT verification middleware using industry-standard library
 export const checkJwt = auth({

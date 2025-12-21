@@ -33,17 +33,15 @@ class WindowsOAuthProvider implements AuthProvider {
     String? domain,
     String? clientId,
     String? audience,
-  })  : _domain = domain ??
-            const String.fromEnvironment('AUTH0_DOMAIN',
-                defaultValue: 'dev-v2f2p008x3dr74ww.us.auth0.com'),
-        _clientId = clientId ??
-            const String.fromEnvironment('AUTH0_CLIENT_ID',
-                defaultValue: 'FuXPnevXpp311CdYHGsbNZe9t3D8Ts7A'),
-        _audience = audience ??
-            const String.fromEnvironment('AUTH0_AUDIENCE',
-                defaultValue: 'https://api.cloudtolocalllm.online'),
+  })  : _domain = domain ?? const String.fromEnvironment('AUTH0_DOMAIN'),
+        _clientId = clientId ?? const String.fromEnvironment('AUTH0_CLIENT_ID'),
+        _audience = audience ?? const String.fromEnvironment('AUTH0_AUDIENCE'),
         _redirectUrl =
-            '${UrlSchemeRegistrationService.customScheme}://dev-v2f2p008x3dr74ww.us.auth0.com/windows/${UrlSchemeRegistrationService.customScheme}/callback' {
+            '${UrlSchemeRegistrationService.customScheme}://${domain ?? const String.fromEnvironment('AUTH0_DOMAIN')}/windows/${UrlSchemeRegistrationService.customScheme}/callback' {
+    if (_domain.isEmpty || _clientId.isEmpty || _audience.isEmpty) {
+      throw Exception(
+          'CRITICAL: Missing required Auth0 environment variables for Windows provider. Zero-fallback policy in effect.');
+    }
     _sessionStorage = di.serviceLocator.get<SessionStorageService>();
   }
 

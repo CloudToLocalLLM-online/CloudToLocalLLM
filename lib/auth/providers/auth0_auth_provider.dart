@@ -67,15 +67,17 @@ class Auth0AuthProvider implements AuthProvider {
     String? domain,
     String? clientId,
     String? audience,
-  })  : _domain = domain ??
-            const String.fromEnvironment('AUTH0_DOMAIN',
-                defaultValue: 'dev-v2f2p008x3dr74ww.us.auth0.com'),
-        _clientId = clientId ??
-            const String.fromEnvironment('AUTH0_CLIENT_ID',
-                defaultValue: 'FuXPnevXpp311CdYHGsbNZe9t3D8Ts7A'),
-        _audience = audience ??
-            const String.fromEnvironment('AUTH0_AUDIENCE',
-                defaultValue: 'https://api.cloudtolocalllm.online') {
+  })  : _domain = domain ?? const String.fromEnvironment('AUTH0_DOMAIN'),
+        _clientId = clientId ?? const String.fromEnvironment('AUTH0_CLIENT_ID'),
+        _audience = audience ?? const String.fromEnvironment('AUTH0_AUDIENCE') {
+    if (_domain.isEmpty || _clientId.isEmpty || _audience.isEmpty) {
+      final missing = <String>[];
+      if (_domain.isEmpty) missing.add('AUTH0_DOMAIN');
+      if (_clientId.isEmpty) missing.add('AUTH0_CLIENT_ID');
+      if (_audience.isEmpty) missing.add('AUTH0_AUDIENCE');
+      throw AuthException.configuration(
+          'Missing required Auth0 environment variables: ${missing.join(', ')}. Zero-fallback policy in effect.');
+    }
     _appLinks = AppLinks();
     _tokenStorage = di.serviceLocator.get<TokenStorageService>();
     _sessionStorage = di.serviceLocator.get<SessionStorageService>();
@@ -259,7 +261,6 @@ class Auth0AuthProvider implements AuthProvider {
         await _auth0Web!.loginWithRedirect(
           scopes: {'openid', 'profile', 'email', 'offline_access'},
           audience: _audience,
-          redirectUri: redirectUrl.toString(),
         );
         // Note: loginWithRedirect will cause the page to reload.
         // The result will be processed in initialize() via onLoad() after the redirect back.

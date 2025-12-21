@@ -32,17 +32,35 @@ export interface AuthConfig {
 export function loadAuthConfig(): AuthConfig {
   const supabaseUrl = process.env.SUPABASE_URL;
 
-  // if (!supabaseUrl) {
-  //   throw new Error('SUPABASE_URL environment variable is required');
-  // }
+  const auth0Audience = process.env.AUTH0_AUDIENCE;
+  const auth0Domain = process.env.AUTH0_DOMAIN;
+  const auth0IssuerUrl = process.env.AUTH0_ISSUER_URL;
+
+  // Derive JWKS URI with no hardcoded fallback
+  const auth0JwksUri =
+    process.env.AUTH0_JWKS_URI ||
+    (auth0IssuerUrl ? `${auth0IssuerUrl}/.well-known/jwks.json` : null) ||
+    (auth0Domain ? `https://${auth0Domain}/.well-known/jwks.json` : null);
+
+  if (!auth0Audience || !auth0JwksUri) {
+    const missing = [];
+    if (!auth0Audience) missing.push('AUTH0_AUDIENCE');
+    if (!auth0JwksUri)
+      missing.push('AUTH0_JWKS_URI (or AUTH0_DOMAIN/AUTH0_ISSUER_URL)');
+    throw new Error(
+      `CRITICAL: Missing Auth0 configuration: ${missing.join(
+        ', '
+      )}. Zero-fallback policy in effect.`
+    );
+  }
 
   return {
     supabase: {
       url: supabaseUrl || 'unused',
     },
     auth0: {
-      jwksUri: process.env.AUTH0_JWKS_URI || (process.env.AUTH0_ISSUER_URL ? `${process.env.AUTH0_ISSUER_URL}/.well-known/jwks.json` : 'https://dev-v2f2p008x3dr74ww.us.auth0.com/.well-known/jwks.json'),
-      audience: process.env.AUTH0_AUDIENCE || 'https://api.cloudtolocalllm.online',
+      jwksUri: auth0JwksUri,
+      audience: auth0Audience,
     },
     cache: {
       validationDuration: parseInt(process.env.AUTH_CACHE_DURATION || '300000'), // 5 minutes
@@ -90,26 +108,6 @@ export function validateAuthConfig(config: AuthConfig): void {
  * Get default authentication configuration
  */
 export function getDefaultAuthConfig(): AuthConfig {
-  return {
-    supabase: {
-      url: 'https://your-project.supabase.co',
-    },
-    auth0: {
-      jwksUri: 'https://dev-v2f2p008x3dr74ww.us.auth0.com/.well-known/jwks.json',
-      audience: 'https://api.cloudtolocalllm.online',
-    },
-    cache: {
-      validationDuration: 5 * 60 * 1000, // 5 minutes
-      jwksDuration: 60 * 60 * 1000, // 1 hour
-    },
-    bruteForce: {
-      threshold: 5,
-      window: 5 * 60 * 1000, // 5 minutes
-      blockDuration: 60 * 60 * 1000, // 1 hour
-    },
-    audit: {
-      maxHistorySize: 10000,
-      retentionDays: 90,
-    },
-  };
+  // Return configuration based on environment without fallbacks
+  return loadAuthConfig();
 }

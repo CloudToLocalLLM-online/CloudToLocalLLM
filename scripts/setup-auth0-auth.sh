@@ -11,17 +11,25 @@ echo ""
 
 # Prompt for Auth0 configuration
 read -p "Enter your Auth0 Domain (e.g., your-tenant.auth0.com): " AUTH0_DOMAIN
+if [[ -z "$AUTH0_DOMAIN" ]]; then echo "Error: Auth0 Domain is required." && exit 1; fi
+
 read -p "Enter your Auth0 Client ID: " AUTH0_CLIENT_ID
-read -p "Enter your Auth0 Client Secret: " AUTH0_CLIENT_SECRET
+if [[ -z "$AUTH0_CLIENT_ID" ]]; then echo "Error: Auth0 Client ID is required." && exit 1; fi
+
+read -p "Enter your Auth0 Client Secret (optional for SPA): " AUTH0_CLIENT_SECRET
+
+read -p "Enter your Auth0 Audience (default: https://api.cloudtolocalllm.online): " AUTH0_AUDIENCE
+AUTH0_AUDIENCE=${AUTH0_AUDIENCE:-https://api.cloudtolocalllm.online}
 
 # Construct Issuer URL
 AUTH0_ISSUER_URL="https://$AUTH0_DOMAIN/"
 
 echo ""
 echo "--------------------------------------------------"
-echo "Configuration Details:"
+echo "Configuration Details (Zero-Hardcode Enforcement):"
 echo "Domain: $AUTH0_DOMAIN"
 echo "Client ID: $AUTH0_CLIENT_ID"
+echo "Audience: $AUTH0_AUDIENCE"
 echo "Issuer URL: $AUTH0_ISSUER_URL"
 echo "--------------------------------------------------"
 
@@ -32,6 +40,7 @@ AUTH0_DOMAIN=$AUTH0_DOMAIN
 AUTH0_CLIENT_ID=$AUTH0_CLIENT_ID
 AUTH0_CLIENT_SECRET=$AUTH0_CLIENT_SECRET
 AUTH0_ISSUER_URL=$AUTH0_ISSUER_URL
+AUTH0_AUDIENCE=$AUTH0_AUDIENCE
 EOF
 
 # Update GitHub Secrets
@@ -53,6 +62,9 @@ if command -v gh &> /dev/null; then
 
         echo "Setting AUTH0_DOMAIN..."
         echo "$AUTH0_DOMAIN" | gh secret set AUTH0_DOMAIN -R "$REPO_OWNER/$REPO_NAME"
+
+        echo "Setting AUTH0_AUDIENCE..."
+        echo "$AUTH0_AUDIENCE" | gh secret set AUTH0_AUDIENCE -R "$REPO_OWNER/$REPO_NAME"
 
         # Optional: Delete old Entra secrets
         echo "Removing old ENTRA secrets..."
