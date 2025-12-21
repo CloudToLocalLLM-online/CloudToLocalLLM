@@ -439,6 +439,98 @@ jobs:
           admin: "false"
           use-kubelogin: "true"
 
+      - name: Create/Update Secrets
+        env:
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          STRIPE_TEST_SECRET_KEY: ${{ secrets.STRIPE_TEST_SECRET_KEY }}
+          STRIPE_TEST_PUBLISHABLE_KEY: ${{ secrets.STRIPE_TEST_PUBLISHABLE_KEY }}
+          STRIPE_TEST_WEBHOOK_SECRET: ${{ secrets.STRIPE_TEST_WEBHOOK_SECRET }}
+          STRIPE_LIVE_SECRET_KEY: ${{ secrets.STRIPE_LIVE_SECRET_KEY }}
+          STRIPE_LIVE_PUBLISHABLE_KEY: ${{ secrets.STRIPE_LIVE_PUBLISHABLE_KEY }}
+          STRIPE_LIVE_WEBHOOK_SECRET: ${{ secrets.STRIPE_LIVE_WEBHOOK_SECRET }}
+          SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
+          CLOUDFLARE_DNS_TOKEN: ${{ secrets.CLOUDFLARE_DNS_TOKEN }}
+          CLOUDFLARE_TUNNEL_TOKEN: ${{ secrets.CLOUDFLARE_TUNNEL_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          SUPABASE_JWT_SECRET: ${{ secrets.SUPABASE_JWT_SECRET }}
+          AUTH0_DOMAIN: ${{ secrets.AUTH0_DOMAIN }}
+          AUTH0_AUDIENCE: ${{ secrets.AUTH0_AUDIENCE }}
+          AUTH0_CLIENT_ID: ${{ secrets.AUTH0_CLIENT_ID }}
+          AUTH0_CLIENT_SECRET: ${{ secrets.AUTH0_CLIENT_SECRET }}
+          AUTH0_ISSUER_URL: ${{ secrets.AUTH0_ISSUER_URL }}
+        run: |
+          # Get ACR Admin Credentials
+          ACR_ADMIN_USER=$(az acr credential show --name ${{ env.ACR_NAME }} --query username --output tsv)
+          ACR_ADMIN_PASS=$(az acr credential show --name ${{ env.ACR_NAME }} --query passwords[0].value --output tsv)
+          LOGIN_SERVER="${{ env.ACR_NAME }}.azurecr.io"
+
+          # Docker Registry Secret for ACR
+          kubectl create secret docker-registry regcred \
+            --docker-server=$LOGIN_SERVER \
+            --docker-username=$ACR_ADMIN_USER \
+            --docker-password=$ACR_ADMIN_PASS \
+            --docker-email=github-actions@cloudtolocalllm.online \
+            -n cloudtolocalllm --dry-run=client -o yaml | kubectl apply -f -
+
+          # App Secrets
+          kubectl create secret generic cloudtolocalllm-secrets \
+            --namespace cloudtolocalllm \
+            --from-literal=postgres-user=cloud_admin \
+            --from-literal=postgres-password="$POSTGRES_PASSWORD" \
+            --from-literal=jwt-secret="$JWT_SECRET" \
+            --from-literal=stripe-test-secret-key="$STRIPE_TEST_SECRET_KEY" \
+            --from-literal=stripe-test-publishable-key="$STRIPE_TEST_PUBLISHABLE_KEY" \
+            --from-literal=stripe-test-webhook-secret="$STRIPE_TEST_WEBHOOK_SECRET" \
+            --from-literal=stripe-live-secret-key="$STRIPE_LIVE_SECRET_KEY" \
+            --from-literal=stripe-live-publishable-key="$STRIPE_LIVE_PUBLISHABLE_KEY" \
+            --from-literal=stripe-live-webhook-secret="$STRIPE_LIVE_WEBHOOK_SECRET" \
+            --from-literal=sentry-dsn="$SENTRY_DSN" \
+            --from-literal=supabase-jwt-secret="$SUPABASE_JWT_SECRET" \
+            --from-literal=supabase-url="https://cvaqhvpbnemweqrojasm.supabase.co" \
+            --from-literal=auth0-domain="$AUTH0_DOMAIN" \
+            --from-literal=auth0-audience="$AUTH0_AUDIENCE" \
+            --from-literal=auth0-client-id="$AUTH0_CLIENT_ID" \
+            --from-literal=auth0-client-secret="$AUTH0_CLIENT_SECRET" \
+            --from-literal=auth0-issuer-url="$AUTH0_ISSUER_URL" \
+            --from-literal=postgres-auth-password="$POSTGRES_PASSWORD" \
+            --from-literal=admin-password="$POSTGRES_PASSWORD" \
+            --dry-run=client -o yaml | kubectl apply -f -
+
+          # Cloudflare Tunnel Secret
+          kubectl create secret generic tunnel-credentials \
+            --namespace cloudtolocalllm \
+            --from-literal=token="$CLOUDFLARE_TUNNEL_TOKEN" \
+            --dry-run=client -o yaml | kubectl apply -f -
+
+          # Streaming Proxy Secret
+          kubectl create secret generic streaming-proxy-secrets \
+            --namespace cloudtolocalllm \
+            --from-literal=SENTRY_DSN="$SENTRY_DSN" \
+            --from-literal=SUPABASE_JWT_SECRET="$SUPABASE_JWT_SECRET" \
+            --from-literal=SUPABASE_URL="https://cvaqhvpbnemweqrojasm.supabase.co" \
+            --dry-run=client -o yaml | kubectl apply -f -
+
+      - name: Update Kustomizations in Git (GitOps)
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          
+          TAG="main-${{ github.sha }}"
+          
+          # Update API Backend tag
+          sed -i "s|newTag: .*|newTag: $TAG-api-backend|g" k8s/apps/local/api-backend/kustomization.yaml
+          
+          # Update Web tag
+          sed -i "s|newTag: .*|newTag: $TAG|g" k8s/apps/local/web-frontend/kustomization.yaml
+          
+          git add k8s/apps/local/
+          if ! git diff --cached --quiet; then
+            git commit -m "GitOps: update image tags to $TAG [skip ci]"
+            git pull --rebase origin main
+            git push origin main
+          fi
+
       - name: Update Deployments
         run: |
           CHANGES='${{ needs.detect_changes.outputs.changes }}'
