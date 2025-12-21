@@ -33,7 +33,7 @@ on:
         required: false
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.sha }}
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.event.issue.number || github.sha }}
   cancel-in-progress: true
 
 env:
@@ -175,10 +175,17 @@ jobs:
         id: "analysis"
         env:
           KILOCODE_API_KEY: "${{ secrets.KILOCODE_API_KEY }}"
+          INPUTS_JSON: ${{ toJSON(inputs) }}
         run: |
+          # Construct override context if inputs exist
+          OVERRIDES=""
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+             OVERRIDES="User Overrides: $(echo "$INPUTS_JSON")"
+          fi
+
           # Use kilocode-cli to run analysis
           chmod +x scripts/kilocode-cli.cjs
-          if ! ./scripts/kilocode-cli.cjs "Analyze the following project state and determine the release strategy. Return ONLY a valid JSON object with fields: new_version, docker_version, do_managed, do_local, do_desktop, do_mobile, should_deploy, reasoning, version_bump_needed. Context: Version=$(cat assets/version.json | jq -r '.version' | sed 's/\"/\\\\\"/g'), Changes=$(git diff --name-only HEAD~1 | sed 's/\"/\\\\\"/g'), Log=$(git log -n 5 --oneline | sed 's/\"/\\\\\"/g')" --output-format json > raw_output.json 2> kilocode_error.log; then
+          if ! ./scripts/kilocode-cli.cjs "Analyze the following project state and determine the release strategy. Return ONLY a valid JSON object with fields: new_version, docker_version, do_managed, do_local, do_desktop, do_mobile, should_deploy, reasoning, version_bump_needed. Context: Version=$(cat assets/version.json | jq -r '.version' | sed 's/\"/\\\\\"/g'), Changes=$(git diff --name-only HEAD~1 | sed 's/\"/\\\\\"/g'), Log=$(git log -n 5 --oneline | sed 's/\"/\\\\\"/g'). $OVERRIDES" --output-format json > raw_output.json 2> kilocode_error.log; then
             echo "::error::KiloCode CLI failed"
             cat kilocode_error.log
             exit 1
