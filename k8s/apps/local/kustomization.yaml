@@ -36,6 +36,12 @@ resources:
   # Cloudflared Tunnel
   - overlays/managed/cloudflared-tunnel.yaml
 
+images:
+  - name: imrightguycloudtolocalllm.azurecr.io/api-backend
+    newTag: 7.10.9-202512190353-api-backend
+  - name: imrightguycloudtolocalllm.azurecr.io/web
+    newTag: 7.10.9-202512190353
+
 patches:
   # API Backend Patches
   - patch: |-
@@ -113,7 +119,11 @@ patches:
         - metadata:
             name: postgres-data
           spec:
-            storageClassName: hostpath
+            accessModes: ["ReadWriteOnce"]
+            storageClassName: default
+            resources:
+              requests:
+                storage: 10Gi
   - patch: |-
       apiVersion: apps/v1
       kind: StatefulSet
@@ -125,4 +135,9 @@ patches:
         - metadata:
             name: redis-data
           spec:
-            storageClassName: hostpath
+            accessModes: ["ReadWriteOnce"]
+            storageClassName: default
+            resources:
+              requests:
+                storage: 1Gi
+
