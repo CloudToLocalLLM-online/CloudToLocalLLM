@@ -115,25 +115,9 @@ jobs:
         id: "exec"
         run: echo "should_deploy=true" >> $GITHUB_OUTPUT
 
-  detect_changes:
+  build_base:
     needs: [orchestrator]
     if: needs.orchestrator.outputs.should_deploy == 'true'
-    runs-on: ubuntu-latest
-    outputs:
-      changes: ${{ steps.detect.outputs.changes }}
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      - name: Detect Service Changes
-        id: detect
-        run: |
-          CHANGES="base,web,api,proxy,postgres" 
-          echo "changes=$CHANGES" >> $GITHUB_OUTPUT
-
-  build_base:
-    needs: [orchestrator, detect_changes]
-    if: contains(needs.detect_changes.outputs.changes, 'base')
     runs-on: ubuntu-latest
     permissions:
       id-token: write
@@ -154,8 +138,8 @@ jobs:
           docker push ${{ env.ACR_NAME }}.azurecr.io/base:main-${{ github.sha }}
 
   build_postgres:
-    needs: [orchestrator, detect_changes, build_base]
-    if: contains(needs.detect_changes.outputs.changes, 'postgres')
+    needs: [orchestrator, build_base]
+    if: needs.orchestrator.outputs.should_deploy == 'true'
     runs-on: ubuntu-latest
     permissions:
       id-token: write
@@ -176,8 +160,8 @@ jobs:
           docker push ${{ env.ACR_NAME }}.azurecr.io/postgres:main-${{ github.sha }}
 
   build_web:
-    needs: [orchestrator, detect_changes, build_base]
-    if: contains(needs.detect_changes.outputs.changes, 'web')
+    needs: [orchestrator]
+    if: needs.orchestrator.outputs.should_deploy == 'true'
     runs-on: ubuntu-latest
     permissions:
       id-token: write
@@ -198,8 +182,8 @@ jobs:
           docker push ${{ env.ACR_NAME }}.azurecr.io/web:main-${{ github.sha }}
 
   build_api:
-    needs: [orchestrator, detect_changes, build_base]
-    if: contains(needs.detect_changes.outputs.changes, 'api')
+    needs: [orchestrator]
+    if: needs.orchestrator.outputs.should_deploy == 'true'
     runs-on: ubuntu-latest
     permissions:
       id-token: write
@@ -220,8 +204,8 @@ jobs:
           docker push ${{ env.ACR_NAME }}.azurecr.io/api-backend:main-${{ github.sha }}
 
   build_proxy:
-    needs: [orchestrator, detect_changes, build_base]
-    if: contains(needs.detect_changes.outputs.changes, 'proxy')
+    needs: [orchestrator]
+    if: needs.orchestrator.outputs.should_deploy == 'true'
     runs-on: ubuntu-latest
     permissions:
       id-token: write
