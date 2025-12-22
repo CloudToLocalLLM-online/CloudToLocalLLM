@@ -290,7 +290,7 @@ jobs:
           path: build/app/outputs/bundle/release/app-release.aab
 
   # Stage 4: Promotion & Sync
-  promote_and_sync:
+  promote_to_gitops:
     needs: [build_web, build_api, build_proxy, build_postgres]
     if: always() && inputs.mode == 'deploy'
     runs-on: ubuntu-latest
@@ -326,31 +326,3 @@ jobs:
           else
             echo "No changes to promote"
           fi
-
-      - name: Install Argo CD CLI
-        run: |
-          curl -sSL -o argocd-linux-amd64 https://github.com/argoproj/argo-cd/releases/latest/download/argocd-linux-amd64
-          install -m 555 argocd-linux-amd64 /usr/local/bin/argocd
-          rm argocd-linux-amd64
-
-      - name: Trigger Argo CD Sync
-        env:
-          ARGOCD_SERVER: ${{ secrets.ARGOCD_SERVER }}
-          ARGOCD_AUTH_TOKEN: ${{ secrets.ARGOCD_AUTH_TOKEN }}
-        run: |
-          if [ -z "$ARGOCD_SERVER" ] || [ -z "$ARGOCD_AUTH_TOKEN" ]; then
-            echo "⚠️ Argo CD credentials not found. Skipping immediate sync."
-            exit 0
-          fi
-          
-          echo "🔄 Triggering sync for cloudtolocalllm-services..."
-          
-          # Login not needed with token
-          argocd app sync cloudtolocalllm-services \
-            --auth-token $ARGOCD_AUTH_TOKEN \
-            --server $ARGOCD_SERVER \
-            --grpc-web \
-            --prune \
-            --timeout 300
-          
-          echo "✅ Sync triggered successfully"
