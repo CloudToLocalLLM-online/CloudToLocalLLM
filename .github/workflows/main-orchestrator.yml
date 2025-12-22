@@ -132,6 +132,7 @@ jobs:
     outputs:
       deploy_now: ${{ steps.orchestrate.outputs.should_deploy }}
       new_version: ${{ steps.orchestrate.outputs.new_version }}
+      do_bump: ${{ steps.orchestrate.outputs.do_bump }}
       do_desktop: ${{ steps.orchestrate.outputs.do_desktop }}
       do_mobile: ${{ steps.orchestrate.outputs.do_mobile }}
     steps:
@@ -176,27 +177,13 @@ jobs:
           # Export outputs explicitly - ensure strings
           echo "should_deploy=$SHOULD_DEPLOY" >> $GITHUB_OUTPUT
           echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
+          echo "do_bump=$BUMP_NEEDED" >> $GITHUB_OUTPUT
           echo "do_desktop=$DO_DESKTOP" >> $GITHUB_OUTPUT
           echo "do_mobile=$DO_MOBILE" >> $GITHUB_OUTPUT
 
+          # Version bumping now handled by build-pipeline.yml
           if [ "$BUMP_NEEDED" == "true" ]; then
-            echo "Bumping version to $NEW_VERSION"
-            git config user.name "github-actions[bot]"
-            git config user.email "github-actions[bot]@users.noreply.github.com"
-            
-            # Proper JSON update using jq
-            tmp=$(mktemp)
-            jq --arg v "$NEW_VERSION" '.version = $v' assets/version.json > "$tmp" && mv "$tmp" assets/version.json
-            
-            # Use script if available
-            if [ -f scripts/update-all-versions.sh ]; then
-                chmod +x scripts/update-all-versions.sh
-                ./scripts/update-all-versions.sh "$NEW_VERSION" "${{ github.sha }}"
-            fi
-            
-            git add -A
-            git commit -m "chore: bump version to $NEW_VERSION"
-            git push origin main
+             echo "::notice::Version bump needed. Delegating to build pipeline."
           fi
 
       - name: "Debug Orchestration"
@@ -220,4 +207,6 @@ jobs:
       do_mobile: ${{ needs.orchestrator.outputs.do_mobile == 'true' }}
       sha: ${{ github.sha }}
       promote_gitops: true
+      do_bump: ${{ needs.orchestrator.outputs.do_bump == 'true' }}
+      new_version: ${{ needs.orchestrator.outputs.new_version }}
     secrets: inherit
