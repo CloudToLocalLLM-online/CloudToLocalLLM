@@ -45,8 +45,8 @@ if ! command -v npx >/dev/null 2>&1; then
 fi
 
 echo "🚀 Requesting changelog from KiloCode AI..."
-# Use kilocode-cli to generate the changelog
-CHANGELOG_ENTRY=$(./scripts/kilocode-cli.cjs "$PROMPT" --output-format text)
+# Use ai-agent to generate the changelog
+CHANGELOG_ENTRY=$(./scripts/ai-agent.cjs "$PROMPT" --output-format text)
 
 if [ -z "$CHANGELOG_ENTRY" ]; then
     echo "❌ CRITICAL FAILURE: KiloCode AI returned an empty response. Cannot generate changelog."
