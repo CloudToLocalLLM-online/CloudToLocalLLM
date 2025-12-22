@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [7.0.43] - 2025-12-22
+### Features
+* feat: re-enable AI workflows with KiloCode Gateway
+* feat: update KiloCode CLI to return proper JSON format
+
+### Bug Fixes
+* fix: update generate-changelog.sh to use KiloCode CLI instead of Gemini
+
+### Refactoring
+* refactor: rename Gemini workflows to KiloCode workflows
+* refactor: update all workflow environment variables and API calls
+
 ## [7.0.42] - 2025-12-22
 ### Features
 * feat: re-enable AI workflows with KiloCode Gateway
