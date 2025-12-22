@@ -165,11 +165,9 @@ jobs:
             fi
           fi
 
-          # Extract response
-          CLEAN_JSON=$(cat raw_output.json | jq -r '.response' | sed -n '/{/,/}/p')
-          echo "ai_output<<EOF" >> $GITHUB_OUTPUT
-          echo "$CLEAN_JSON" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
+          # Extract response and ensure it's a single-line clean JSON
+          CLEAN_JSON=$(cat raw_output.json | jq -c '.response | fromjson')
+          echo "ai_output=$CLEAN_JSON" >> $GITHUB_OUTPUT
 
       - name: "Execute Logic & Version Bump"
         id: "exec"
@@ -218,6 +216,10 @@ jobs:
             git commit -m "chore: bump version to $NEW_VERSION"
             git push origin main
           fi
+
+      - name: "Debug GITHUB_OUTPUT"
+        run: |
+          cat $GITHUB_OUTPUT
 
       - name: "Debug Outputs"
         run: |
