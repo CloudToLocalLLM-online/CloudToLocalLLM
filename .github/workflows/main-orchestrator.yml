@@ -61,11 +61,17 @@ jobs:
         uses: "actions/github-script@v7"
         env:
           EVENT_TYPE: "${{ github.event_name }}.${{ github.event.action }}"
-          REQUEST: "${{ github.event.comment.body || github.event.review.body || github.event.issue.body || '' }}"
+          # Explicitly check for existence of properties to satisfy IDE/linters
+          COMMENT_BODY: "${{ github.event.comment.body }}"
+          REVIEW_BODY: "${{ github.event.review.body }}"
+          ISSUE_BODY: "${{ github.event.issue.body }}"
         with:
           script: |
             const eventType = process.env.EVENT_TYPE;
-            const request = (process.env.REQUEST || '').trim();
+            const commentBody = process.env.COMMENT_BODY;
+            const reviewBody = process.env.REVIEW_BODY;
+            const issueBody = process.env.ISSUE_BODY;
+            const request = (commentBody || reviewBody || issueBody || '').trim();
             const eventName = context.eventName;
 
             if (eventName === 'push' || eventName === 'workflow_dispatch') {
@@ -123,10 +129,10 @@ jobs:
       contents: write
       id-token: write
     outputs:
-      should_deploy: ${{ steps.exec.outputs.should_deploy }}
-      new_version: ${{ steps.exec.outputs.new_version }}
-      do_desktop: ${{ steps.exec.outputs.do_desktop }}
-      do_mobile: ${{ steps.exec.outputs.do_mobile }}
+      should_deploy: ${{ steps.orchestrate.outputs.should_deploy }}
+      new_version: ${{ steps.orchestrate.outputs.new_version }}
+      do_desktop: ${{ steps.orchestrate.outputs.do_desktop }}
+      do_mobile: ${{ steps.orchestrate.outputs.do_mobile }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -134,11 +140,12 @@ jobs:
           fetch-depth: 50
           fetch-tags: true
 
-      - name: "Run AI Analysis"
-        id: "analysis"
+      - name: "Orchestration Logic"
+        id: "orchestrate"
         env:
           KILOCODE_API_KEY: "${{ secrets.KILOCODE_API_KEY }}"
         run: |
+          set -e
           chmod +x scripts/ai-agent.cjs
 
           # Gather context
@@ -147,56 +154,29 @@ jobs:
 
           if [[ "$COMMIT_MSG" == *"chore: bump version"* ]]; then
             echo "::notice::Detected version bump commit. Skipping analysis and enforcing deployment."
-            # Create a synthetic JSON response that triggers deployment but NO bump
-            # We assume if we just bumped, we want to deploy the current version
-            echo '{"response": "{\"should_deploy\": true, \"version_bump_needed\": false, \"new_version\": \"'$VERSION'\", \"do_desktop\": true, \"do_mobile\": true, \"reasoning\": \"Version bump commit detected. Proceeding to deploy.\"}"}' > raw_output.json
+            # Enforce deploy without further bump
+            RESPONSE='{"should_deploy": true, "version_bump_needed": false, "new_version": "'$VERSION'", "do_desktop": true, "do_mobile": true}'
           else
-            CHANGES=$(git diff --name-only HEAD~1 | tr '\n' ',' || echo "none")
-            LOG=$(git log -n 5 --oneline | tr '\n' ';')
-            
-            PROMPT="Analyze the following project state and determine the release strategy. Return ONLY a valid JSON object with fields: new_version, docker_version, do_managed, do_local, do_desktop, do_mobile, should_deploy, reasoning, version_bump_needed. Context: Version=$VERSION, Changes=$CHANGES, Log=$LOG"
-            
-            # Run CLI
-            if ! ./scripts/ai-agent.cjs "$PROMPT" --output-format json > raw_output.json 2> ai_error.log; then
-              echo "::warning::AI Agent failed, falling back to basic deployment"
-              cat ai_error.log
-              # Fallback JSON
-              echo '{"response": "{\"should_deploy\": true, \"version_bump_needed\": false, \"new_version\": \"'$VERSION'\", \"do_desktop\": true, \"do_mobile\": true}"}' > raw_output.json
+            ./scripts/ai-agent.cjs "Analyze the latest changes and decide if a release is needed. Current version is $VERSION. Commit message: $COMMIT_MSG" > raw_output.json
+            if [ $? -ne 0 ]; then
+              echo "::error::AI Agent failed to run."
+              exit 1
             fi
+            RESPONSE=$(jq -r '.response' raw_output.json)
           fi
 
-          # Extract response and ensure it's a single-line clean JSON
-          jq -c '.response | fromjson' raw_output.json > clean_response.json
-          echo "ai_output=$(cat clean_response.json)" >> $GITHUB_OUTPUT
+          # Parse outputs - Ensure we handle potential nulls/missing fields
+          SHOULD_DEPLOY=$(echo "$RESPONSE" | jq -r '.should_deploy // true')
+          NEW_VERSION=$(echo "$RESPONSE" | jq -r '.new_version // "'$VERSION'"')
+          BUMP_NEEDED=$(echo "$RESPONSE" | jq -r '.version_bump_needed // false')
+          DO_DESKTOP=$(echo "$RESPONSE" | jq -r '.do_desktop // true')
+          DO_MOBILE=$(echo "$RESPONSE" | jq -r '.do_mobile // true')
 
-      - name: "Execute Logic & Version Bump"
-        id: "exec"
-        env:
-          AI_OUTPUT: "${{ steps.analysis.outputs.ai_output }}"
-        run: |
-          set -e
-
-          # Parse outputs
-          SHOULD_DEPLOY=$(echo "$AI_OUTPUT" | jq -r '.should_deploy')
-          NEW_VERSION=$(echo "$AI_OUTPUT" | jq -r '.new_version')
-          BUMP_NEEDED=$(echo "$AI_OUTPUT" | jq -r '.version_bump_needed')
-          DO_DESKTOP=$(echo "$AI_OUTPUT" | jq -r '.do_desktop // true')
-          DO_MOBILE=$(echo "$AI_OUTPUT" | jq -r '.do_mobile // true')
-
-          echo "should_deploy=$(echo $SHOULD_DEPLOY | xargs)" >> $GITHUB_OUTPUT
-          echo "new_version=$(echo $NEW_VERSION | xargs)" >> $GITHUB_OUTPUT
-
-          # Override inputs if provided manually via workflow_dispatch
-          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
-             echo "do_desktop=${{ github.event.inputs.do_desktop || 'true' }}" >> $GITHUB_OUTPUT
-             echo "do_mobile=${{ github.event.inputs.do_mobile || 'true' }}" >> $GITHUB_OUTPUT
-          else
-             # Use portable xargs for trimming
-             FINAL_DESKTOP=$(echo "$DO_DESKTOP" | xargs)
-             FINAL_MOBILE=$(echo "$DO_MOBILE" | xargs)
-             echo "do_desktop=$FINAL_DESKTOP" >> $GITHUB_OUTPUT
-             echo "do_mobile=$FINAL_MOBILE" >> $GITHUB_OUTPUT
-          fi
+          # Export outputs explicitly - ensure strings
+          echo "should_deploy=$SHOULD_DEPLOY" >> $GITHUB_OUTPUT
+          echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
+          echo "do_desktop=$DO_DESKTOP" >> $GITHUB_OUTPUT
+          echo "do_mobile=$DO_MOBILE" >> $GITHUB_OUTPUT
 
           if [ "$BUMP_NEEDED" == "true" ]; then
             echo "Bumping version to $NEW_VERSION"
@@ -214,27 +194,20 @@ jobs:
             fi
             
             git add -A
-            # Remove skip ci to trigger "every push" as requested, but we'll use GitOps SHA for building
             git commit -m "chore: bump version to $NEW_VERSION"
             git push origin main
           fi
 
-      - name: "Debug GITHUB_OUTPUT"
+      - name: "Debug Orchestration"
         if: always()
         run: |
-          echo "=== CONTENT OF GITHUB_OUTPUT ==="
-          cat "$GITHUB_OUTPUT" || echo "File not found or empty"
-          echo "=== END CONTENT ==="
           echo "=== JOB CONTEXT OUTPUTS ==="
-          echo '${{ toJSON(steps.exec.outputs) }}'
+          echo '${{ toJSON(steps.orchestrate.outputs) }}'
           echo "=== END JOB CONTEXT ==="
-
-      - name: "Debug Outputs"
-        run: |
-          echo "Should Deploy: ${{ steps.exec.outputs.should_deploy }}"
-          echo "New Version: ${{ steps.exec.outputs.new_version }}"
-          echo "Do Desktop: ${{ steps.exec.outputs.do_desktop }}"
-          echo "Do Mobile: ${{ steps.exec.outputs.do_mobile }}"
+          echo "Should Deploy: ${{ steps.orchestrate.outputs.should_deploy }}"
+          echo "New Version: ${{ steps.orchestrate.outputs.new_version }}"
+          echo "Do Desktop: ${{ steps.orchestrate.outputs.do_desktop }}"
+          echo "Do Mobile: ${{ steps.orchestrate.outputs.do_mobile }}"
 
   build_and_push:
     needs: orchestrator
