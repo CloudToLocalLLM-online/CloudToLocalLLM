@@ -208,46 +208,46 @@ jobs:
       sha: ${{ github.sha }}
     secrets: inherit
 
-promote_to_gitops:
-  needs: [build_and_push, orchestrator]
-  if: always() && needs.orchestrator.outputs.deploy_now == 'true' && (needs.build_and_push.result == 'success' || needs.build_and_push.result == 'skipped')
-  runs-on: ubuntu-latest
-  permissions:
-    contents: write
-  steps:
-    - uses: actions/checkout@v4
-      with:
-        token: ${{ secrets.PAT_TOKEN }}
-        ref: main # Always promote on main
-        fetch-depth: 0
+  promote_to_gitops:
+    needs: [build_and_push, orchestrator]
+    if: always() && needs.orchestrator.outputs.deploy_now == 'true' && (needs.build_and_push.result == 'success' || needs.build_and_push.result == 'skipped')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.PAT_TOKEN }}
+          ref: main # Always promote on main
+          fetch-depth: 0
 
-    - name: Promote to Argo CD (GitOps)
-      run: |
-        git config user.name "github-actions[bot]"
-        git config user.email "github-actions[bot]@users.noreply.github.com"
+      - name: Promote to Argo CD (GitOps)
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
 
-        SHA="${{ github.sha }}"
-        TAG="main-${SHA}"
+          SHA="${{ github.sha }}"
+          TAG="main-${SHA}"
 
-        echo "Promoting version $TAG..."
+          echo "Promoting version $TAG..."
 
-        # Update Kustomize image tags
-        sed -i "s|newTag: .*|newTag: $TAG-api-backend|g" k8s/apps/managed/api-backend/kustomization.yaml
-        sed -i "s|newTag: .*|newTag: $TAG|g" k8s/apps/managed/web-frontend/kustomization.yaml
+          # Update Kustomize image tags
+          sed -i "s|newTag: .*|newTag: $TAG-api-backend|g" k8s/apps/managed/api-backend/kustomization.yaml
+          sed -i "s|newTag: .*|newTag: $TAG|g" k8s/apps/managed/web-frontend/kustomization.yaml
 
-        # Attempt to update streaming proxy if present
-        if grep -r "streaming-proxy" k8s/apps/managed/ > /dev/null; then
-           sed -i "s|newTag: .*streaming-proxy.*|newTag: $TAG-streaming-proxy|g" $(grep -r "streaming-proxy" k8s/apps/managed/ -l)
-        else
-           echo "Streaming proxy tag not found in kustomization"
-        fi
+          # Attempt to update streaming proxy if present
+          if grep -r "streaming-proxy" k8s/apps/managed/ > /dev/null; then
+             sed -i "s|newTag: .*streaming-proxy.*|newTag: $TAG-streaming-proxy|g" $(grep -r "streaming-proxy" k8s/apps/managed/ -l)
+          else
+             echo "Streaming proxy tag not found in kustomization"
+          fi
 
-        git add k8s/apps/managed/
-        if ! git diff --cached --quiet; then
-          git commit -m "chore(deploy): promote version $TAG [skip ci]"
-          git pull --rebase origin main
-          git push origin main
-          echo "✅ Successfully promoted version $TAG to Argo CD"
-        else
-          echo "No changes to promote"
-        fi
+          git add k8s/apps/managed/
+          if ! git diff --cached --quiet; then
+            git commit -m "chore(deploy): promote version $TAG [skip ci]"
+            git pull --rebase origin main
+            git push origin main
+            echo "✅ Successfully promoted version $TAG to Argo CD"
+          else
+            echo "No changes to promote"
+          fi
