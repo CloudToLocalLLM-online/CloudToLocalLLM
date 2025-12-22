@@ -1,4 +1,4 @@
-name: "🔀 KiloCode Dispatch"
+name: "🔀 Main Orchestrator"
 
 on:
   push:
@@ -74,17 +74,17 @@ jobs:
               core.setOutput('command', 'review');
             } else if (['issues.opened', 'issues.reopened'].includes(eventType)) {
               core.setOutput('command', 'triage');
-            } else if (request.startsWith("@kilocode-cli /review")) {
+            } else if (request.startsWith("@ai-agent /review")) {
               core.setOutput('command', 'review');
-              core.setOutput('additional_context', request.replace(/^@kilocode-cli \/review/, '').trim());
-            } else if (request.startsWith("@kilocode-cli /triage")) {
+              core.setOutput('additional_context', request.replace(/^@ai-agent \/review/, '').trim());
+            } else if (request.startsWith("@ai-agent /triage")) {
               core.setOutput('command', 'triage');
-            } else if (request.startsWith("@kilocode-cli /deploy")) {
+            } else if (request.startsWith("@ai-agent /deploy")) {
               core.setOutput('command', 'deploy');
-              core.setOutput('additional_context', request.replace(/^@kilocode-cli \/deploy/, '').trim());
-            } else if (request.startsWith("@kilocode-cli")) {
+              core.setOutput('additional_context', request.replace(/^@ai-agent \/deploy/, '').trim());
+            } else if (request.startsWith("@ai-agent")) {
               core.setOutput('command', 'invoke');
-              core.setOutput('additional_context', request.replace(/^@kilocode-cli/, '').trim());
+              core.setOutput('additional_context', request.replace(/^@ai-agent/, '').trim());
             } else {
               core.setOutput('command', 'fallthrough');
             }
@@ -93,7 +93,7 @@ jobs:
   review:
     needs: dispatch
     if: needs.dispatch.outputs.command == 'review'
-    uses: "./.github/workflows/kilocode-review.yml"
+    uses: "./.github/workflows/ai-review.yml"
     with:
       additional_context: "${{ needs.dispatch.outputs.additional_context }}"
     secrets: inherit
@@ -101,7 +101,7 @@ jobs:
   triage:
     needs: dispatch
     if: needs.dispatch.outputs.command == 'triage'
-    uses: "./.github/workflows/kilocode-triage.yml"
+    uses: "./.github/workflows/ai-triage.yml"
     with:
       additional_context: "${{ needs.dispatch.outputs.additional_context }}"
     secrets: inherit
@@ -109,9 +109,8 @@ jobs:
   invoke:
     needs: dispatch
     if: needs.dispatch.outputs.command == 'invoke'
-    uses: "./.github/workflows/kilocode-invoke.yml"
+    uses: "./.github/workflows/ai-task.yml"
     with:
-      mode: "invoke"
       additional_context: "${{ needs.dispatch.outputs.additional_context }}"
     secrets: inherit
 
@@ -135,12 +134,12 @@ jobs:
           fetch-depth: 50
           fetch-tags: true
 
-      - name: "Run Analysis (KiloCode CLI)"
+      - name: "Run AI Analysis"
         id: "analysis"
         env:
           KILOCODE_API_KEY: "${{ secrets.KILOCODE_API_KEY }}"
         run: |
-          chmod +x scripts/kilocode-cli.cjs
+          chmod +x scripts/ai-agent.cjs
           
           # Gather context
           VERSION=$(cat assets/version.json | jq -r '.version' || echo "7.0.0")
@@ -158,9 +157,9 @@ jobs:
             PROMPT="Analyze the following project state and determine the release strategy. Return ONLY a valid JSON object with fields: new_version, docker_version, do_managed, do_local, do_desktop, do_mobile, should_deploy, reasoning, version_bump_needed. Context: Version=$VERSION, Changes=$CHANGES, Log=$LOG"
             
             # Run CLI
-            if ! ./scripts/kilocode-cli.cjs "$PROMPT" --output-format json > raw_output.json 2> kilocode_error.log; then
-              echo "::warning::KiloCode CLI failed, falling back to basic deployment"
-              cat kilocode_error.log
+            if ! ./scripts/ai-agent.cjs "$PROMPT" --output-format json > raw_output.json 2> ai_error.log; then
+              echo "::warning::AI Agent failed, falling back to basic deployment"
+              cat ai_error.log
               # Fallback JSON
               echo '{"response": "{\"should_deploy\": true, \"version_bump_needed\": false, \"new_version\": \"'$VERSION'\", \"do_desktop\": true, \"do_mobile\": true}"}' > raw_output.json
             fi
@@ -168,23 +167,23 @@ jobs:
           
           # Extract response
           CLEAN_JSON=$(cat raw_output.json | jq -r '.response' | sed -n '/{/,/}/p')
-          echo "kilocode_output<<EOF" >> $GITHUB_OUTPUT
+          echo "ai_output<<EOF" >> $GITHUB_OUTPUT
           echo "$CLEAN_JSON" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
 
       - name: "Execute Logic & Version Bump"
         id: "exec"
         env:
-          KILOCODE_OUTPUT: "${{ steps.analysis.outputs.kilocode_output }}"
+          AI_OUTPUT: "${{ steps.analysis.outputs.ai_output }}"
         run: |
           set -e
           
           # Parse outputs
-          SHOULD_DEPLOY=$(echo "$KILOCODE_OUTPUT" | jq -r '.should_deploy')
-          NEW_VERSION=$(echo "$KILOCODE_OUTPUT" | jq -r '.new_version')
-          BUMP_NEEDED=$(echo "$KILOCODE_OUTPUT" | jq -r '.version_bump_needed')
-          DO_DESKTOP=$(echo "$KILOCODE_OUTPUT" | jq -r '.do_desktop // true')
-          DO_MOBILE=$(echo "$KILOCODE_OUTPUT" | jq -r '.do_mobile // true')
+          SHOULD_DEPLOY=$(echo "$AI_OUTPUT" | jq -r '.should_deploy')
+          NEW_VERSION=$(echo "$AI_OUTPUT" | jq -r '.new_version')
+          BUMP_NEEDED=$(echo "$AI_OUTPUT" | jq -r '.version_bump_needed')
+          DO_DESKTOP=$(echo "$AI_OUTPUT" | jq -r '.do_desktop // true')
+          DO_MOBILE=$(echo "$AI_OUTPUT" | jq -r '.do_mobile // true')
           
           echo "should_deploy=$SHOULD_DEPLOY" >> $GITHUB_OUTPUT
           echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
@@ -222,9 +221,8 @@ jobs:
   deploy:
     needs: orchestrator
     if: needs.orchestrator.outputs.should_deploy == 'true'
-    uses: "./.github/workflows/kilocode-invoke.yml"
+    uses: "./.github/workflows/build-pipeline.yml"
     with:
-      mode: "deploy"
       do_desktop: ${{ needs.orchestrator.outputs.do_desktop == 'true' }}
       do_mobile: ${{ needs.orchestrator.outputs.do_mobile == 'true' }}
       sha: ${{ github.sha }}

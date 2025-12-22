@@ -1,0 +1,74 @@
+name: "🤖 AI Task Execution"
+
+on:
+  workflow_call:
+    inputs:
+      additional_context:
+        type: "string"
+        description: "Context for AI Agent"
+        required: false
+
+jobs:
+  execute_task:
+    runs-on: "ubuntu-latest"
+    permissions:
+      contents: "write"
+      id-token: "write"
+      issues: "write"
+      pull-requests: "write"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.PAT_TOKEN }}
+      - name: "Mint identity token"
+        id: "mint_identity_token"
+        if: |-
+          ${{ vars.APP_ID }}
+        uses: "actions/create-github-app-token@a8d616148505b5069dccd32f177bb87d7f39123b"
+        with:
+          app-id: "${{ vars.APP_ID }}"
+          private-key: "${{ secrets.APP_PRIVATE_KEY }}"
+          permission-contents: "write"
+          permission-issues: "write"
+          permission-pull-requests: "write"
+
+      - name: "Run AI Agent"
+        id: "run_ai_agent"
+        env:
+          AI_API_KEY: "${{ secrets.KILOCODE_API_KEY }}" # Keeping secret name for compatibility
+          GITHUB_TOKEN: "${{ steps.mint_identity_token.outputs.token || secrets.GITHUB_TOKEN || github.token }}"
+          TITLE: "${{ github.event.pull_request.title || github.event.issue.title }}"
+          DESCRIPTION: "${{ github.event.pull_request.body || github.event.issue.body }}"
+          ADDITIONAL_CONTEXT: "${{ inputs.additional_context }}"
+        run: |
+          mkdir -p .ai-agent
+          cat > .ai-agent/settings.json <<EOF
+          {
+            "model": { "maxSessionTurns": 25 },
+            "output": { "format": "json" },
+            "mcpServers": {
+              "github": {
+                "command": "docker",
+                "args": [
+                  "run", "-i", "--rm",
+                  "-e", "GITHUB_PERSONAL_ACCESS_TOKEN",
+                  "ghcr.io/github/github-mcp-server:v0.18.0"
+                ],
+                "env": {
+                  "GITHUB_PERSONAL_ACCESS_TOKEN": "$GITHUB_TOKEN"
+                }
+              }
+            }
+          }
+          EOF
+          chmod +x scripts/ai-agent.cjs
+          echo "🔄 Starting AI Agent execution..."
+          TITLE_ESCAPED=$(echo "$TITLE" | sed 's/"/\"/g')
+          DESC_ESCAPED=$(echo "$DESCRIPTION" | sed 's/"/\"/g')
+          CONTEXT_ESCAPED=$(echo "$ADDITIONAL_CONTEXT" | sed 's/"/\"/g')
+          if ! ./scripts/ai-agent.cjs "TITLE: $TITLE_ESCAPED. DESCRIPTION: $DESC_ESCAPED. CONTEXT: $CONTEXT_ESCAPED. Please assist with the request." --output-format json > raw_output.json 2> ai_error.log; then
+            echo "::error::AI Agent failed"
+            cat ai_error.log
+            exit 1
+          fi
+          echo "✅ AI Agent completed successfully"

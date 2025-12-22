@@ -1,31 +1,23 @@
-name: "▶️ KiloCode Invoke"
+name: "🏭 Build & Deploy Pipeline"
 
 on:
   workflow_call:
     inputs:
-      mode:
-        description: "Execution mode: 'invoke' (default) or 'deploy'"
-        type: string
-        default: "invoke"
       do_desktop:
-        description: "Build for Desktop (deploy mode)"
+        description: "Build for Desktop"
         type: boolean
         default: true
       do_mobile:
-        description: "Build for Mobile (deploy mode)"
+        description: "Build for Mobile"
         type: boolean
         default: true
       sha:
         description: "Commit SHA to deploy"
         type: string
         required: false
-      additional_context:
-        type: "string"
-        description: "Context for KiloCode CLI"
-        required: false
 
 concurrency:
-  group: "${{ github.workflow }}-${{ inputs.mode }}-${{ inputs.sha || github.sha }}"
+  group: "${{ github.workflow }}-${{ inputs.sha || github.sha }}"
   cancel-in-progress: false
 
 env:
@@ -35,8 +27,6 @@ env:
   SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
   SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
   DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
-  ARGOCD_SERVER: ${{ secrets.ARGOCD_SERVER }}
-  ARGOCD_AUTH_TOKEN: ${{ secrets.ARGOCD_AUTH_TOKEN }}
 
 defaults:
   run:
@@ -44,80 +34,11 @@ defaults:
 
 jobs:
   # ============================================================================
-  # MODE: INVOKE (KiloCode CLI)
-  # ============================================================================
-  invoke_cli:
-    if: inputs.mode == 'invoke'
-    runs-on: "ubuntu-latest"
-    permissions:
-      contents: "write"
-      id-token: "write"
-      issues: "write"
-      pull-requests: "write"
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          token: ${{ secrets.PAT_TOKEN }}
-      - name: "Mint identity token"
-        id: "mint_identity_token"
-        if: |-
-          ${{ vars.APP_ID }}
-        uses: "actions/create-github-app-token@a8d616148505b5069dccd32f177bb87d7f39123b"
-        with:
-          app-id: "${{ vars.APP_ID }}"
-          private-key: "${{ secrets.APP_PRIVATE_KEY }}"
-          permission-contents: "write"
-          permission-issues: "write"
-          permission-pull-requests: "write"
-
-      - name: "Run KiloCode CLI"
-        id: "run_kilocode"
-        env:
-          KILOCODE_API_KEY: "${{ secrets.KILOCODE_API_KEY }}"
-          GITHUB_TOKEN: "${{ steps.mint_identity_token.outputs.token || secrets.GITHUB_TOKEN || github.token }}"
-          TITLE: "${{ github.event.pull_request.title || github.event.issue.title }}"
-          DESCRIPTION: "${{ github.event.pull_request.body || github.event.issue.body }}"
-          ADDITIONAL_CONTEXT: "${{ inputs.additional_context }}"
-        run: |
-          mkdir -p .kilocode
-          cat > .kilocode/settings.json <<EOF
-          {
-            "model": { "maxSessionTurns": 25 },
-            "output": { "format": "json" },
-            "mcpServers": {
-              "github": {
-                "command": "docker",
-                "args": [
-                  "run", "-i", "--rm",
-                  "-e", "GITHUB_PERSONAL_ACCESS_TOKEN",
-                  "ghcr.io/github/github-mcp-server:v0.18.0"
-                ],
-                "env": {
-                  "GITHUB_PERSONAL_ACCESS_TOKEN": "$GITHUB_TOKEN"
-                }
-              }
-            }
-          }
-          EOF
-          chmod +x scripts/kilocode-cli.cjs
-          echo "🔄 Starting KiloCode CLI execution..."
-          TITLE_ESCAPED=$(echo "$TITLE" | sed 's/"/\"/g')
-          DESC_ESCAPED=$(echo "$DESCRIPTION" | sed 's/"/\"/g')
-          CONTEXT_ESCAPED=$(echo "$ADDITIONAL_CONTEXT" | sed 's/"/\"/g')
-          if ! ./scripts/kilocode-cli.cjs "TITLE: $TITLE_ESCAPED. DESCRIPTION: $DESC_ESCAPED. CONTEXT: $CONTEXT_ESCAPED. Please assist with the request." --output-format json > raw_output.json 2> kilocode_error.log; then
-            echo "::error::KiloCode CLI failed"
-            cat kilocode_error.log
-            exit 1
-          fi
-          echo "✅ KiloCode CLI completed successfully"
-
-  # ============================================================================
-  # MODE: DEPLOY (Execute Builds & Sync)
+  # BUILD STAGE
   # ============================================================================
   
   # Stage 1: Base Image
   build_base:
-    if: inputs.mode == 'deploy'
     runs-on: ubuntu-latest
     permissions:
       id-token: write
@@ -239,7 +160,7 @@ jobs:
 
   # Stage 3: Client Builds (Parallel)
   build_desktop:
-    if: inputs.mode == 'deploy' && inputs.do_desktop == true
+    if: inputs.do_desktop == true
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -264,7 +185,7 @@ jobs:
           path: build/linux/x64/release/bundle/
 
   build_mobile:
-    if: inputs.mode == 'deploy' && inputs.do_mobile == true
+    if: inputs.do_mobile == true
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -292,7 +213,7 @@ jobs:
   # Stage 4: Promotion & Sync
   promote_to_gitops:
     needs: [build_web, build_api, build_proxy, build_postgres]
-    if: always() && inputs.mode == 'deploy'
+    if: always()
     runs-on: ubuntu-latest
     permissions:
       contents: write
