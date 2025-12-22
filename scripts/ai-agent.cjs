@@ -3,11 +3,11 @@
 const https = require('https');
 const http = require('http');
 
-// KiloCode API configuration
-const KILOCODE_API_BASE = process.env.KILOCODE_API_BASE || 'https://api.kilocode.com'; // Configurable API endpoint
-const KILOCODE_API_KEY = process.env.KILOCODE_API_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbnYiOiJwcm9kdWN0aW9uIiwia2lsb1VzZXJJZCI6ImUyNGFjNjUwLTY2MzgtNGJmMi1hMjM0LTc0ODdlMmVkYTJmYyIsImFwaVRva2VuUGVwcGVyIjpudWxsLCJ2ZXJzaW9uIjozLCJpYXQiOjE3NjYyNTkwMDcsImV4cCI6MTkyNDA0NzAwN30.vnJ8IN5FRK_AVqCqc7PjCkW5otyZf1_n9kqYTk6Dscs';
+// AI API configuration
+const AI_API_BASE = process.env.AI_API_BASE || 'https://api.kilocode.com'; // Configurable API endpoint
+const AI_API_KEY = process.env.AI_API_KEY || process.env.KILOCODE_API_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbnYiOiJwcm9kdWN0aW9uIiwia2lsb1VzZXJJZCI6ImUyNGFjNjUwLTY2MzgtNGJmMi1hMjM0LTc0ODdlMmVkYTJmYyIsImFwaVRva2VuUGVwcGVyIjpudWxsLCJ2ZXJzaW9uIjozLCJpYXQiOjE3NjYyNTkwMDcsImV4cCI6MTkyNDA0NzAwN30.vnJ8IN5FRK_AVqCqc7PjCkW5otyZf1_n9kqYTk6Dscs';
 
-async function makeKiloCodeRequest(prompt, options = {}) {
+async function makeAIRequest(prompt, options = {}) {
   const {
     model = 'grok-code-fast-1',
     outputFormat = 'json',
@@ -65,14 +65,14 @@ async function makeKiloCodeRequest(prompt, options = {}) {
     // Mock changelog generation response
     return {
       response: `### Features
-* feat: re-enable AI workflows with KiloCode Gateway
-* feat: update KiloCode CLI to return proper JSON format
+* feat: re-enable AI workflows with AI Agent Gateway
+* feat: update AI Agent CLI to return proper JSON format
 
 ### Bug Fixes
-* fix: update generate-changelog.sh to use KiloCode CLI instead of Gemini
+* fix: update generate-changelog.sh to use AI Agent CLI instead of Gemini
 
 ### Refactoring
-* refactor: rename Gemini workflows to KiloCode workflows
+* refactor: rename Gemini workflows to AI Agent workflows
 * refactor: update all workflow environment variables and API calls`,
       model: model,
       usage: { prompt_tokens: 200, completion_tokens: 100, total_tokens: 300 }
@@ -80,7 +80,7 @@ async function makeKiloCodeRequest(prompt, options = {}) {
   } else {
     // Mock general response
     return {
-      response: `Mock KiloCode response to: ${prompt.substring(0, 50)}...`,
+      response: `Mock AI Agent response to: ${prompt.substring(0, 50)}...`,
       model: model,
       usage: { prompt_tokens: 50, completion_tokens: 25, total_tokens: 75 }
     };
@@ -97,7 +97,7 @@ async function makeKiloCodeRequest(prompt, options = {}) {
       temperature
     });
 
-    const url = new URL('/v1/chat/completions', KILOCODE_API_BASE);
+    const url = new URL('/v1/chat/completions', AI_API_BASE);
     const requestOptions = {
       hostname: url.hostname,
       port: url.port || (url.protocol === 'https:' ? 443 : 80),
@@ -105,7 +105,7 @@ async function makeKiloCodeRequest(prompt, options = {}) {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${KILOCODE_API_KEY}`,
+        'Authorization': `Bearer ${AI_API_KEY}`,
         'Content-Length': Buffer.byteLength(postData)
       }
     };
@@ -145,7 +145,7 @@ async function main() {
   const args = process.argv.slice(2);
 
   if (args.length === 0) {
-    console.error('Usage: kilocode-cli "Your prompt here" [--model grok-code-fast-1] [--output-format json]');
+    console.error('Usage: ai-agent "Your prompt here" [--model grok-code-fast-1] [--output-format json]');
     process.exit(1);
   }
 
@@ -173,7 +173,7 @@ async function main() {
   }
 
   try {
-    const response = await makeKiloCodeRequest(prompt, options);
+    const response = await makeAIRequest(prompt, options);
 
     if (options.outputFormat === 'json') {
       // For workflows, return the expected format with 'response' field
@@ -210,4 +210,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { makeKiloCodeRequest };
+module.exports = { makeAIRequest };

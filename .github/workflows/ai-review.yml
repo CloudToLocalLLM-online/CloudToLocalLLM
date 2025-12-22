@@ -1,4 +1,4 @@
-name: "🔎 KiloCode Review"
+name: "🔎 AI Code Review"
 
 on:
   workflow_call:
@@ -46,17 +46,17 @@ jobs:
         with:
           token: ${{ secrets.PAT_TOKEN }}
 
-      - name: "Run KiloCode pull request review"
-        id: "kilocode_pr_review"
+      - name: "Run AI pull request review"
+        id: "ai_pr_review"
         env:
-          KILOCODE_API_KEY: "${{ secrets.KILOCODE_API_KEY }}"
+          AI_API_KEY: "${{ secrets.KILOCODE_API_KEY }}"
           GITHUB_TOKEN: "${{ steps.mint_identity_token.outputs.token || secrets.GITHUB_TOKEN || github.token }}"
           ISSUE_TITLE: "${{ github.event.pull_request.title || github.event.issue.title }}"
           ISSUE_BODY: "${{ github.event.pull_request.body || github.event.issue.body }}"
           ADDITIONAL_CONTEXT: "${{ inputs.additional_context }}"
         run: |
-          mkdir -p .kilocode
-          cat > .kilocode/settings.json <<EOF
+          mkdir -p .ai-agent
+          cat > .ai-agent/settings.json <<EOF
           {
             "model": { "maxSessionTurns": 25 },
             "output": { "format": "json" },
@@ -75,19 +75,19 @@ jobs:
             }
           }
           EOF
-          chmod +x scripts/kilocode-cli.cjs
-          echo "🔄 Starting KiloCode PR review..."
+          chmod +x scripts/ai-agent.cjs
+          echo "🔄 Starting AI PR review..."
           TITLE_ESCAPED=$(echo "$ISSUE_TITLE" | sed 's/\"/\\\\\"/g')
           BODY_ESCAPED=$(echo "$ISSUE_BODY" | sed 's/\"/\\\\\"/g')
           CONTEXT_ESCAPED=$(echo "$ADDITIONAL_CONTEXT" | sed 's/\"/\\\\\"/g')
-          if ! ./scripts/kilocode-cli.cjs "Please review this pull request. Title: $TITLE_ESCAPED. Body: $BODY_ESCAPED. Context: $CONTEXT_ESCAPED." --output-format json > raw_output.json 2> kilocode_error.log; then
-            echo "::error::KiloCode CLI failed"
+          if ! ./scripts/ai-agent.cjs "Please review this pull request. Title: $TITLE_ESCAPED. Body: $BODY_ESCAPED. Context: $CONTEXT_ESCAPED." --output-format json > raw_output.json 2> ai_error.log; then
+            echo "::error::AI Agent CLI failed"
             echo "📝 Error details:"
-            cat kilocode_error.log
+            cat ai_error.log
             echo "::group::Debug Information"
             echo "Environment:"
             env | sort
             echo "::endgroup::"
             exit 1
           fi
-          echo "✅ KiloCode PR review completed successfully"
+          echo "✅ AI PR review completed successfully"

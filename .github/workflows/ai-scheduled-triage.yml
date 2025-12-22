@@ -1,4 +1,4 @@
-name: "📋 KiloCode Scheduled Issue Triage"
+name: "📋 AI Scheduled Issue Triage"
 
 on:
   schedule:
@@ -8,13 +8,13 @@ on:
       - "main"
       - "release/**/*"
     paths:
-      - ".github/workflows/kilocode-scheduled-triage.yml"
+      - ".github/workflows/ai-scheduled-triage.yml"
   push:
     branches:
       - "main"
       - "release/**/*"
     paths:
-      - ".github/workflows/kilocode-scheduled-triage.yml"
+      - ".github/workflows/ai-scheduled-triage.yml"
   workflow_dispatch:
 
 concurrency:
@@ -89,12 +89,12 @@ jobs:
           ISSUE_COUNT="$(echo "${ISSUES}" | jq 'length')"
           echo "✅ Found ${ISSUE_COUNT} issue(s) to triage! 🎯"
 
-      - name: "Run KiloCode Issue Analysis"
-        id: "kilocode_issue_analysis"
+      - name: "Run AI Issue Analysis"
+        id: "ai_issue_analysis"
         if: |-
           ${{ steps.find_issues.outputs.issues_to_triage != '[]' }}
         env:
-          KILOCODE_API_KEY: "${{ secrets.KILOCODE_API_KEY }}"
+          AI_API_KEY: "${{ secrets.KILOCODE_API_KEY }}"
           ISSUES_TO_TRIAGE: "${{ steps.find_issues.outputs.issues_to_triage }}"
           AVAILABLE_LABELS: "${{ steps.get_labels.outputs.available_labels }}"
         run: |
@@ -114,9 +114,9 @@ jobs:
             Triage issue #$NUMBER. Title: $TITLE.
             Return ONLY a valid JSON object: {\"labels_to_set\": [\"label1\", \"label2\"]}. ALL strings must be double-quoted."
 
-            chmod +x scripts/kilocode-cli.cjs
-            echo "🔄 Triaging issue #$NUMBER with KiloCode..."
-            if ! RESPONSE_RAW=$(./scripts/kilocode-cli.cjs "$PROMPT" --json 2>cli_error.log); then
+            chmod +x scripts/ai-agent.cjs
+            echo "🔄 Triaging issue #$NUMBER with AI Agent..."
+            if ! RESPONSE_RAW=$(./scripts/ai-agent.cjs "$PROMPT" --json 2>cli_error.log); then
               echo "⚠️ Failed to triage #$NUMBER"
               echo "📝 Error details:"
               cat cli_error.log
@@ -144,12 +144,12 @@ jobs:
           echo "$RESULTS" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
 
-      - name: "Parse KiloCode output"
+      - name: "Parse AI output"
         id: "parse_output"
         run: |
           # Use output from previous step directly
           echo "triaged_issues<<EOF" >> $GITHUB_OUTPUT
-          echo '${{ steps.kilocode_issue_analysis.outputs.triaged_issues }}' >> $GITHUB_OUTPUT
+          echo '${{ steps.ai_issue_analysis.outputs.triaged_issues }}' >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
 
   label:
