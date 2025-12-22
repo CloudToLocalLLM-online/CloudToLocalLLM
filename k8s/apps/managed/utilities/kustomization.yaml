@@ -1,6 +1,6 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
-  - ../../base/utilities
+  - ../../../deployments/app_base/utilities
 patches:
-  - path: ../../../overlays/managed/env-patch.yaml
+  - path: ../../../deployments/overlays/managed/env-patch.yaml
