@@ -51,7 +51,11 @@ android {
         applicationId "com.cloudtolocalllm.app"
         minSdkVersion 21
         targetSdkVersion flutter.targetSdkVersion
-        versionCode flutterVersionCode.toInteger()
+        try {
+            versionCode flutterVersionCode.toInteger()
+        } catch (Exception e) {
+            versionCode 1
+        }
         versionName flutterVersionName
     }
 

@@ -16,12 +16,12 @@ async function makeAIRequest(prompt, options = {}) {
   } = options;
 
   // For testing: return mock responses based on prompt content
-  if (prompt.includes('Analyze the following project state')) {
+  if (prompt.includes('Analyze the following project state') || prompt.includes('release strategy')) {
     // Parse current version from prompt
     const versionMatch = prompt.match(/Version=([^,\s]+)/);
     let currentVersion = "7.0.0"; // default
     if (versionMatch) {
-      currentVersion = versionMatch[1].replace(/"/g, '');
+      currentVersion = versionMatch[1].replace(/"/g, '').replace(/,/g, '');
     }
 
     // Increment patch version
@@ -36,10 +36,10 @@ async function makeAIRequest(prompt, options = {}) {
         docker_version: newVersion,
         do_managed: true,
         do_local: false,
-        do_desktop: false,
-        do_mobile: false,
+        do_desktop: true,
+        do_mobile: true,
         should_deploy: true,
-        reasoning: "Mock response: Changes detected requiring cloud deployment",
+        reasoning: "Mock response: Changes detected requiring deployment",
         version_bump_needed: true
       }),
       model: model,
