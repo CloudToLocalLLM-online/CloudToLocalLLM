@@ -123,10 +123,10 @@ jobs:
       contents: write
       id-token: write
     outputs:
-      should_deploy: "${{ steps.exec.outputs.should_deploy }}"
-      new_version: "${{ steps.exec.outputs.new_version }}"
-      do_desktop: "${{ steps.exec.outputs.do_desktop }}"
-      do_mobile: "${{ steps.exec.outputs.do_mobile }}"
+      should_deploy: ${{ steps.exec.outputs.should_deploy }}
+      new_version: ${{ steps.exec.outputs.new_version }}
+      do_desktop: ${{ steps.exec.outputs.do_desktop }}
+      do_mobile: ${{ steps.exec.outputs.do_mobile }}
     steps:
       - uses: actions/checkout@v4
         with:
