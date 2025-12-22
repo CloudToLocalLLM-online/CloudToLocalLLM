@@ -210,12 +210,15 @@ jobs:
           echo "Do Mobile: ${{ steps.orchestrate.outputs.do_mobile }}"
 
   build_and_push:
-    name: "🚀 Build & Push Images (Diagnostic)"
+    name: "🚀 Build & Push Images"
     needs: orchestrator
     if: needs.orchestrator.outputs.deploy_now == 'true'
-    runs-on: ubuntu-latest
-    steps:
-      - run: echo "Build job correctly triggered with output deploy_now=${{ needs.orchestrator.outputs.deploy_now }}"
+    uses: imrightguy/CloudToLocalLLM/.github/workflows/build-pipeline.yml@main
+    with:
+      do_desktop: ${{ needs.orchestrator.outputs.do_desktop == 'true' }}
+      do_mobile: ${{ needs.orchestrator.outputs.do_mobile == 'true' }}
+      sha: ${{ github.sha }}
+    secrets: inherit
 
   promote_to_gitops:
     needs: [orchestrator, build_and_push]
