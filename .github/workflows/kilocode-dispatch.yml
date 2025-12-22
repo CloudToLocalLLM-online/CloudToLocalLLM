@@ -151,15 +151,12 @@ jobs:
     outputs:
       new_version: ${{ steps.exec.outputs.new_version }}
       docker_version: ${{ steps.exec.outputs.docker_version }}
-      do_managed: ${{ steps.exec.outputs.do_managed }}
-      do_local: ${{ steps.exec.outputs.do_local }}
-      do_desktop: ${{ steps.exec.outputs.do_desktop }}
-      do_mobile: ${{ steps.exec.outputs.do_mobile }}
       should_deploy: ${{ steps.exec.outputs.should_deploy }}
       reasoning: ${{ steps.exec.outputs.reasoning }}
     steps:
       - uses: actions/checkout@v4
         with:
+          token: ${{ secrets.PAT_TOKEN }}
           fetch-depth: 50
           fetch-tags: true
 
@@ -418,9 +415,11 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       id-token: write
-      contents: read
+      contents: write
     steps:
       - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.PAT_TOKEN }}
       - uses: azure/login@v2
         with:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}

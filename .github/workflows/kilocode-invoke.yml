@@ -29,6 +29,8 @@ jobs:
       pull-requests: "write"
     steps:
       - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.PAT_TOKEN }}
       - name: "Mint identity token"
         id: "mint_identity_token"
         if: |-
