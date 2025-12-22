@@ -19,14 +19,6 @@ on:
         description: "Promote to GitOps (ArgoCD)"
         type: boolean
         default: false
-      do_bump:
-        description: "Bump version in repo"
-        type: boolean
-        default: false
-      new_version:
-        description: "New version string"
-        type: string
-        default: ""
   workflow_dispatch:
     inputs:
       do_desktop:
@@ -45,14 +37,6 @@ on:
         description: "Promote to GitOps (ArgoCD)"
         type: boolean
         default: false
-      do_bump:
-        description: "Bump version in repo"
-        type: boolean
-        default: false
-      new_version:
-        description: "New version string"
-        type: string
-        default: ""
 
 concurrency:
   group: "${{ github.workflow }}-${{ inputs.sha || github.sha }}-build"
@@ -78,35 +62,6 @@ jobs:
   # ============================================================================
   # BUILD STAGE
   # ============================================================================
-
-  # Stage 0: Version Bump (Optional, parallel with builds but commits back)
-  bump_version:
-    if: inputs.do_bump == true
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          token: ${{ secrets.PAT_TOKEN }}
-          fetch-depth: 0
-
-      - name: Configure Git
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-
-      - name: Apply Version Updates
-        run: |
-          chmod +x scripts/update-all-versions.sh
-          # We use the SHA of the commit we checked out
-          ./scripts/update-all-versions.sh "${{ inputs.new_version }}" "${{ inputs.sha || github.sha }}"
-
-      - name: Commit and Push
-        run: |
-          git add -A
-          git commit -m "chore: bump version to ${{ inputs.new_version }}"
-          git push origin main
 
   # Stage 1: Base Image
   build_base:
@@ -173,11 +128,7 @@ jobs:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-      - name: Apply Version Updates
-        if: inputs.do_bump == true && inputs.new_version != ''
-        run: |
-          chmod +x scripts/update-all-versions.sh
-          ./scripts/update-all-versions.sh "${{ inputs.new_version }}" "${{ inputs.sha || github.sha }}"
+
       - name: Build and Push Web
         run: |
           az acr login --name ${{ env.ACR_NAME }}
@@ -202,11 +153,7 @@ jobs:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-      - name: Apply Version Updates
-        if: inputs.do_bump == true && inputs.new_version != ''
-        run: |
-          chmod +x scripts/update-all-versions.sh
-          ./scripts/update-all-versions.sh "${{ inputs.new_version }}" "${{ inputs.sha || github.sha }}"
+
       - name: Build and Push API
         run: |
           az acr login --name ${{ env.ACR_NAME }}
@@ -231,11 +178,7 @@ jobs:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-      - name: Apply Version Updates
-        if: inputs.do_bump == true && inputs.new_version != ''
-        run: |
-          chmod +x scripts/update-all-versions.sh
-          ./scripts/update-all-versions.sh "${{ inputs.new_version }}" "${{ inputs.sha || github.sha }}"
+
       - name: Build and Push Proxy
         run: |
           az acr login --name ${{ env.ACR_NAME }}
@@ -260,11 +203,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev liblzma-dev libsecret-1-dev libcurl4-openssl-dev libssl-dev libayatana-appindicator3-dev
-      - name: Apply Version Updates
-        if: inputs.do_bump == true && inputs.new_version != ''
-        run: |
-          chmod +x scripts/update-all-versions.sh
-          ./scripts/update-all-versions.sh "${{ inputs.new_version }}" "${{ inputs.sha || github.sha }}"
+
       - name: Build Linux Desktop
         run: |
           flutter pub get
@@ -291,11 +230,7 @@ jobs:
         with:
           java-version: "21"
           distribution: "temurin"
-      - name: Apply Version Updates
-        if: inputs.do_bump == true && inputs.new_version != ''
-        run: |
-          chmod +x scripts/update-all-versions.sh
-          ./scripts/update-all-versions.sh "${{ inputs.new_version }}" "${{ inputs.sha || github.sha }}"
+
       - name: Build Android App Bundle
         run: |
           flutter pub get
