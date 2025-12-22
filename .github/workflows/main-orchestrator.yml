@@ -140,7 +140,7 @@ jobs:
           KILOCODE_API_KEY: "${{ secrets.KILOCODE_API_KEY }}"
         run: |
           chmod +x scripts/ai-agent.cjs
-          
+
           # Gather context
           VERSION=$(cat assets/version.json | jq -r '.version' || echo "7.0.0")
           COMMIT_MSG=$(git log -1 --pretty=%B)
@@ -164,7 +164,7 @@ jobs:
               echo '{"response": "{\"should_deploy\": true, \"version_bump_needed\": false, \"new_version\": \"'$VERSION'\", \"do_desktop\": true, \"do_mobile\": true}"}' > raw_output.json
             fi
           fi
-          
+
           # Extract response
           CLEAN_JSON=$(cat raw_output.json | jq -r '.response' | sed -n '/{/,/}/p')
           echo "ai_output<<EOF" >> $GITHUB_OUTPUT
@@ -177,24 +177,24 @@ jobs:
           AI_OUTPUT: "${{ steps.analysis.outputs.ai_output }}"
         run: |
           set -e
-          
+
           # Parse outputs
           SHOULD_DEPLOY=$(echo "$AI_OUTPUT" | jq -r '.should_deploy')
           NEW_VERSION=$(echo "$AI_OUTPUT" | jq -r '.new_version')
           BUMP_NEEDED=$(echo "$AI_OUTPUT" | jq -r '.version_bump_needed')
           DO_DESKTOP=$(echo "$AI_OUTPUT" | jq -r '.do_desktop // true')
           DO_MOBILE=$(echo "$AI_OUTPUT" | jq -r '.do_mobile // true')
-          
-          echo "should_deploy=$SHOULD_DEPLOY" >> $GITHUB_OUTPUT
-          echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
-          
+
+          echo "should_deploy=$(echo $SHOULD_DEPLOY | xargs)" >> $GITHUB_OUTPUT
+          echo "new_version=$(echo $NEW_VERSION | xargs)" >> $GITHUB_OUTPUT
+
           # Override inputs if provided manually via workflow_dispatch
           if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
              echo "do_desktop=${{ github.event.inputs.do_desktop }}" >> $GITHUB_OUTPUT
              echo "do_mobile=${{ github.event.inputs.do_mobile }}" >> $GITHUB_OUTPUT
           else
-             echo "do_desktop=$DO_DESKTOP" >> $GITHUB_OUTPUT
-             echo "do_mobile=$DO_MOBILE" >> $GITHUB_OUTPUT
+             echo "do_desktop=$(echo $DO_DESKTOP | xargs)" >> $GITHUB_OUTPUT
+             echo "do_mobile=$(echo $DO_MOBILE | xargs)" >> $GITHUB_OUTPUT
           fi
 
           if [ "$BUMP_NEEDED" == "true" ]; then
@@ -227,8 +227,8 @@ jobs:
 
   build_and_push:
     needs: orchestrator
-    if: ${{ needs.orchestrator.outputs.should_deploy == 'true' }}
-    uses: "./.github/workflows/build-pipeline.yml"
+    if: needs.orchestrator.outputs.should_deploy == 'true'
+    uses: ./.github/workflows/build-pipeline.yml
     with:
       do_desktop: ${{ needs.orchestrator.outputs.do_desktop == 'true' }}
       do_mobile: ${{ needs.orchestrator.outputs.do_mobile == 'true' }}
@@ -236,7 +236,7 @@ jobs:
     secrets: inherit
 
   promote_to_gitops:
-    needs: [build_and_push]
+    needs: [orchestrator, build_and_push]
     if: always() && needs.orchestrator.outputs.should_deploy == 'true' && (needs.build_and_push.result == 'success' || needs.build_and_push.result == 'skipped')
     runs-on: ubuntu-latest
     permissions:
@@ -246,19 +246,19 @@ jobs:
         with:
           token: ${{ secrets.PAT_TOKEN }}
           ref: main # Always promote on main
-      
+
       - name: Promote to Argo CD (GitOps)
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          
+
           SHA="${{ github.sha }}"
           TAG="main-${SHA}"
-          
+
           # Update Kustomize image tags
           sed -i "s|newTag: .*|newTag: $TAG-api-backend|g" k8s/apps/managed/api-backend/kustomization.yaml
           sed -i "s|newTag: .*|newTag: $TAG|g" k8s/apps/managed/web-frontend/kustomization.yaml
-          
+
           # Attempt to update streaming proxy if present
           grep -r "streaming-proxy" k8s/apps/managed/ && sed -i "s|newTag: .*streaming-proxy.*|newTag: $TAG-streaming-proxy|g" $(grep -r "streaming-proxy" k8s/apps/managed/ -l) || echo "Streaming proxy tag not found in kustomization"
 
