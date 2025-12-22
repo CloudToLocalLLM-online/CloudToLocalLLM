@@ -3,24 +3,51 @@ name: "▶️ KiloCode Invoke"
 on:
   workflow_call:
     inputs:
+      mode:
+        description: "Execution mode: 'invoke' (default) or 'deploy'"
+        type: string
+        default: "invoke"
+      do_desktop:
+        description: "Build for Desktop (deploy mode)"
+        type: boolean
+        default: true
+      do_mobile:
+        description: "Build for Mobile (deploy mode)"
+        type: boolean
+        default: true
+      sha:
+        description: "Commit SHA to deploy"
+        type: string
+        required: false
       additional_context:
         type: "string"
-        description: "Any additional context from the request"
+        description: "Context for KiloCode CLI"
         required: false
 
 concurrency:
-  group: "${{ github.workflow }}-invoke-${{ github.event_name }}-${{ github.event.pull_request.number || github.event.issue.number }}"
+  group: "${{ github.workflow }}-${{ inputs.mode }}-${{ inputs.sha || github.sha }}"
   cancel-in-progress: false
+
+env:
+  AZURE_RESOURCE_GROUP: cloudtolocalllm-rg
+  AZURE_CLUSTER_NAME: cloudtolocalllm-aks
+  ACR_NAME: imrightguycloudtolocalllm
+  SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
+  SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+  DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+  ARGOCD_SERVER: ${{ secrets.ARGOCD_SERVER }}
+  ARGOCD_AUTH_TOKEN: ${{ secrets.ARGOCD_AUTH_TOKEN }}
 
 defaults:
   run:
     shell: "bash"
 
-env:
-  SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
-
 jobs:
-  invoke:
+  # ============================================================================
+  # MODE: INVOKE (KiloCode CLI)
+  # ============================================================================
+  invoke_cli:
+    if: inputs.mode == 'invoke'
     runs-on: "ubuntu-latest"
     permissions:
       contents: "write"
@@ -35,7 +62,7 @@ jobs:
         id: "mint_identity_token"
         if: |-
           ${{ vars.APP_ID }}
-        uses: "actions/create-github-app-token@a8d616148505b5069dccd32f177bb87d7f39123b" # ratchet:actions/create-github-app-token@v2
+        uses: "actions/create-github-app-token@a8d616148505b5069dccd32f177bb87d7f39123b"
         with:
           app-id: "${{ vars.APP_ID }}"
           private-key: "${{ secrets.APP_PRIVATE_KEY }}"
@@ -74,18 +101,256 @@ jobs:
           EOF
           chmod +x scripts/kilocode-cli.cjs
           echo "🔄 Starting KiloCode CLI execution..."
-          TITLE_ESCAPED=$(echo "$TITLE" | sed 's/\"/\\\\\"/g')
-          DESC_ESCAPED=$(echo "$DESCRIPTION" | sed 's/\"/\\\\\"/g')
-          CONTEXT_ESCAPED=$(echo "$ADDITIONAL_CONTEXT" | sed 's/\"/\\\\\"/g')
+          TITLE_ESCAPED=$(echo "$TITLE" | sed 's/"/\\"/g')
+          DESC_ESCAPED=$(echo "$DESCRIPTION" | sed 's/"/\\"/g')
+          CONTEXT_ESCAPED=$(echo "$ADDITIONAL_CONTEXT" | sed 's/"/\\"/g')
           if ! ./scripts/kilocode-cli.cjs "TITLE: $TITLE_ESCAPED. DESCRIPTION: $DESC_ESCAPED. CONTEXT: $CONTEXT_ESCAPED. Please assist with the request." --output-format json > raw_output.json 2> kilocode_error.log; then
             echo "::error::KiloCode CLI failed"
-            echo "📝 Error details:"
             cat kilocode_error.log
-            echo "::group::Debug Information"
-            echo "Environment:"
-            env | sort
-            echo "::endgroup::"
             exit 1
           fi
           echo "✅ KiloCode CLI completed successfully"
-          # No specific output needed for invoke other than it finishing successfully
+
+  # ============================================================================
+  # MODE: DEPLOY (Build & Sync)
+  # ============================================================================
+  
+  # Stage 1: Base Image
+  build_base:
+    if: inputs.mode == 'deploy'
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.sha || github.sha }}
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      - name: Build and Push Base
+        run: |
+          az acr login --name ${{ env.ACR_NAME }}
+          SHA="${{ inputs.sha || github.sha }}"
+          docker build -f config/docker/Dockerfile.base -t ${{ env.ACR_NAME }}.azurecr.io/base:latest -t ${{ env.ACR_NAME }}.azurecr.io/base:main-${SHA} .
+          docker push ${{ env.ACR_NAME }}.azurecr.io/base:latest
+          docker push ${{ env.ACR_NAME }}.azurecr.io/base:main-${SHA}
+
+  # Stage 2: Concurrent Service Builds
+  build_postgres:
+    needs: [build_base]
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.sha || github.sha }}
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      - name: Build and Push Postgres
+        run: |
+          az acr login --name ${{ env.ACR_NAME }}
+          SHA="${{ inputs.sha || github.sha }}"
+          docker build -f config/docker/Dockerfile.postgres --build-arg BASE_REGISTRY=${{ env.ACR_NAME }}.azurecr.io -t ${{ env.ACR_NAME }}.azurecr.io/postgres:latest -t ${{ env.ACR_NAME }}.azurecr.io/postgres:main-${SHA} .
+          docker push ${{ env.ACR_NAME }}.azurecr.io/postgres:latest
+          docker push ${{ env.ACR_NAME }}.azurecr.io/postgres:main-${SHA}
+
+  build_web:
+    needs: [build_base]
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.sha || github.sha }}
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      - name: Build and Push Web
+        run: |
+          az acr login --name ${{ env.ACR_NAME }}
+          SHA="${{ inputs.sha || github.sha }}"
+          docker build -f config/docker/Dockerfile.web -t ${{ env.ACR_NAME }}.azurecr.io/web:latest -t ${{ env.ACR_NAME }}.azurecr.io/web:main-${SHA} .
+          docker push ${{ env.ACR_NAME }}.azurecr.io/web:latest
+          docker push ${{ env.ACR_NAME }}.azurecr.io/web:main-${SHA}
+
+  build_api:
+    needs: [build_base]
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.sha || github.sha }}
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      - name: Build and Push API
+        run: |
+          az acr login --name ${{ env.ACR_NAME }}
+          SHA="${{ inputs.sha || github.sha }}"
+          docker build -f config/docker/Dockerfile.api-backend -t ${{ env.ACR_NAME }}.azurecr.io/api-backend:latest -t ${{ env.ACR_NAME }}.azurecr.io/api-backend:main-${SHA} .
+          docker push ${{ env.ACR_NAME }}.azurecr.io/api-backend:latest
+          docker push ${{ env.ACR_NAME }}.azurecr.io/api-backend:main-${SHA}
+
+  build_proxy:
+    needs: [build_base]
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.sha || github.sha }}
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      - name: Build and Push Proxy
+        run: |
+          az acr login --name ${{ env.ACR_NAME }}
+          SHA="${{ inputs.sha || github.sha }}"
+          docker build -f config/docker/Dockerfile.streaming-proxy -t ${{ env.ACR_NAME }}.azurecr.io/streaming-proxy:latest -t ${{ env.ACR_NAME }}.azurecr.io/streaming-proxy:main-${SHA} .
+          docker push ${{ env.ACR_NAME }}.azurecr.io/streaming-proxy:latest
+          docker push ${{ env.ACR_NAME }}.azurecr.io/streaming-proxy:main-${SHA}
+
+  # Stage 3: Client Builds (Parallel)
+  build_desktop:
+    if: inputs.mode == 'deploy' && inputs.do_desktop == true
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.sha || github.sha }}
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.x'
+          channel: 'stable'
+      - name: Install Linux dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev liblzma-dev libsecret-1-dev
+      - name: Build Linux Desktop
+        run: |
+          flutter pub get
+          flutter build linux --release
+      - name: Upload Linux Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: desktop-linux
+          path: build/linux/x64/release/bundle/
+
+  build_mobile:
+    if: inputs.mode == 'deploy' && inputs.do_mobile == true
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.sha || github.sha }}
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.x'
+          channel: 'stable'
+      - name: Set up JDK 21
+        uses: actions/setup-java@v3
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+      - name: Build Android App Bundle
+        run: |
+          flutter pub get
+          flutter build appbundle --release
+      - name: Upload Android Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: mobile-android
+          path: build/app/outputs/bundle/release/app-release.aab
+
+  # Stage 4: Promotion & Sync
+  promote_and_sync:
+    needs: [build_web, build_api, build_proxy, build_postgres]
+    if: always() && inputs.mode == 'deploy'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.PAT_TOKEN }}
+          ref: main # Always promote on main
+      
+      - name: Promote to Argo CD (GitOps)
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          
+          SHA="${{ inputs.sha || github.sha }}"
+          TAG="main-${SHA}"
+          
+          # Update Kustomize image tags
+          sed -i "s|newTag: .*|newTag: $TAG-api-backend|g" k8s/apps/managed/api-backend/kustomization.yaml
+          sed -i "s|newTag: .*|newTag: $TAG|g" k8s/apps/managed/web-frontend/kustomization.yaml
+          
+          # Attempt to update streaming proxy if present
+          grep -r "streaming-proxy" k8s/apps/managed/ && sed -i "s|newTag: .*streaming-proxy.*|newTag: $TAG-streaming-proxy|g" $(grep -r "streaming-proxy" k8s/apps/managed/ -l) || echo "Streaming proxy tag not found in kustomization"
+
+          git add k8s/apps/managed/
+          if ! git diff --cached --quiet; then
+            git commit -m "chore(deploy): promote version $TAG [skip ci]"
+            git pull --rebase origin main
+            git push origin main
+            echo "✅ Successfully promoted version $TAG to Argo CD"
+          else
+            echo "No changes to promote"
+          fi
+
+      - name: Install Argo CD CLI
+        run: |
+          curl -sSL -o argocd-linux-amd64 https://github.com/argoproj/argo-cd/releases/latest/download/argocd-linux-amd64
+          install -m 555 argocd-linux-amd64 /usr/local/bin/argocd
+          rm argocd-linux-amd64
+
+      - name: Trigger Argo CD Sync
+        env:
+          ARGOCD_SERVER: ${{ secrets.ARGOCD_SERVER }}
+          ARGOCD_AUTH_TOKEN: ${{ secrets.ARGOCD_AUTH_TOKEN }}
+        run: |
+          if [ -z "$ARGOCD_SERVER" ] || [ -z "$ARGOCD_AUTH_TOKEN" ]; then
+            echo "⚠️ Argo CD credentials not found. Skipping immediate sync."
+            exit 0
+          fi
+          
+          echo "🔄 Triggering sync for cloudtolocalllm-services..."
+          
+          # Login not needed with token
+          argocd app sync cloudtolocalllm-services \
+            --auth-token $ARGOCD_AUTH_TOKEN \
+            --server $ARGOCD_SERVER \
+            --grpc-web \
+            --prune \
+            --timeout 300
+          
+          echo "✅ Sync triggered successfully"

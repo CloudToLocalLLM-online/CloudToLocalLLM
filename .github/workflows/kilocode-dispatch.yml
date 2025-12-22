@@ -37,12 +37,8 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  AZURE_RESOURCE_GROUP: cloudtolocalllm-rg
-  AZURE_CLUSTER_NAME: cloudtolocalllm-aks
-  ACR_NAME: imrightguycloudtolocalllm
+  # Secrets needed for sub-workflows are passed via 'secrets: inherit'
   SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
-  SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-  DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
 
 defaults:
   run:
@@ -58,7 +54,6 @@ jobs:
     outputs:
       command: "${{ steps.extract_command.outputs.command }}"
       additional_context: "${{ steps.extract_command.outputs.additional_context }}"
-      start_time: "${{ steps.extract_command.outputs.start_time }}"
       do_desktop: "${{ github.event.inputs.do_desktop || 'true' }}"
       do_mobile: "${{ github.event.inputs.do_mobile || 'true' }}"
     steps:
@@ -73,8 +68,6 @@ jobs:
             const eventType = process.env.EVENT_TYPE;
             const request = (process.env.REQUEST || '').trim();
             const eventName = context.eventName;
-
-            core.setOutput('start_time', new Date().toISOString());
 
             if (eventName === 'push' || eventName === 'workflow_dispatch') {
               core.setOutput('command', 'deploy');
@@ -97,240 +90,39 @@ jobs:
               core.setOutput('command', 'fallthrough');
             }
 
-  orchestrator:
-    needs: [dispatch]
+  # Sub-Dispatch Tasks
+  review:
+    needs: dispatch
+    if: needs.dispatch.outputs.command == 'review'
+    uses: "./.github/workflows/kilocode-review.yml"
+    with:
+      additional_context: "${{ needs.dispatch.outputs.additional_context }}"
+    secrets: inherit
+
+  triage:
+    needs: dispatch
+    if: needs.dispatch.outputs.command == 'triage'
+    uses: "./.github/workflows/kilocode-triage.yml"
+    with:
+      additional_context: "${{ needs.dispatch.outputs.additional_context }}"
+    secrets: inherit
+
+  invoke:
+    needs: dispatch
+    if: needs.dispatch.outputs.command == 'invoke'
+    uses: "./.github/workflows/kilocode-invoke.yml"
+    with:
+      mode: "invoke"
+      additional_context: "${{ needs.dispatch.outputs.additional_context }}"
+    secrets: inherit
+
+  deploy:
+    needs: dispatch
     if: needs.dispatch.outputs.command == 'deploy'
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      id-token: write
-    outputs:
-      should_deploy: ${{ steps.exec.outputs.should_deploy }}
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          token: ${{ secrets.PAT_TOKEN }}
-          fetch-depth: 50
-      - name: "Simple Orchestration"
-        id: "exec"
-        run: echo "should_deploy=true" >> $GITHUB_OUTPUT
-
-  # STAGE 1: Base Image Build
-  build_base:
-    needs: [orchestrator]
-    if: needs.orchestrator.outputs.should_deploy == 'true'
-    runs-on: ubuntu-latest
-    permissions:
-      id-token: write
-      contents: read
-    steps:
-      - uses: actions/checkout@v4
-      - name: Azure Login
-        uses: azure/login@v2
-        with:
-          client-id: ${{ secrets.AZURE_CLIENT_ID }}
-          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-      - name: Build and Push Base
-        run: |
-          az acr login --name ${{ env.ACR_NAME }}
-          docker build -f config/docker/Dockerfile.base -t ${{ env.ACR_NAME }}.azurecr.io/base:latest -t ${{ env.ACR_NAME }}.azurecr.io/base:main-${{ github.sha }} .
-          docker push ${{ env.ACR_NAME }}.azurecr.io/base:latest
-          docker push ${{ env.ACR_NAME }}.azurecr.io/base:main-${{ github.sha }}
-
-  # STAGE 2: Concurrent Service Builds (Depend on build_base)
-  build_postgres:
-    needs: [orchestrator, build_base]
-    if: needs.orchestrator.outputs.should_deploy == 'true'
-    runs-on: ubuntu-latest
-    permissions:
-      id-token: write
-      contents: read
-    steps:
-      - uses: actions/checkout@v4
-      - name: Azure Login
-        uses: azure/login@v2
-        with:
-          client-id: ${{ secrets.AZURE_CLIENT_ID }}
-          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-      - name: Build and Push Postgres
-        run: |
-          az acr login --name ${{ env.ACR_NAME }}
-          docker build -f config/docker/Dockerfile.postgres --build-arg BASE_REGISTRY=${{ env.ACR_NAME }}.azurecr.io -t ${{ env.ACR_NAME }}.azurecr.io/postgres:latest -t ${{ env.ACR_NAME }}.azurecr.io/postgres:main-${{ github.sha }} .
-          docker push ${{ env.ACR_NAME }}.azurecr.io/postgres:latest
-          docker push ${{ env.ACR_NAME }}.azurecr.io/postgres:main-${{ github.sha }}
-
-  build_web:
-    needs: [orchestrator, build_base]
-    if: needs.orchestrator.outputs.should_deploy == 'true'
-    runs-on: ubuntu-latest
-    permissions:
-      id-token: write
-      contents: read
-    steps:
-      - uses: actions/checkout@v4
-      - name: Azure Login
-        uses: azure/login@v2
-        with:
-          client-id: ${{ secrets.AZURE_CLIENT_ID }}
-          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-      - name: Build and Push Web
-        run: |
-          az acr login --name ${{ env.ACR_NAME }}
-          docker build -f config/docker/Dockerfile.web -t ${{ env.ACR_NAME }}.azurecr.io/web:latest -t ${{ env.ACR_NAME }}.azurecr.io/web:main-${{ github.sha }} .
-          docker push ${{ env.ACR_NAME }}.azurecr.io/web:latest
-          docker push ${{ env.ACR_NAME }}.azurecr.io/web:main-${{ github.sha }}
-
-  build_api:
-    needs: [orchestrator, build_base]
-    if: needs.orchestrator.outputs.should_deploy == 'true'
-    runs-on: ubuntu-latest
-    permissions:
-      id-token: write
-      contents: read
-    steps:
-      - uses: actions/checkout@v4
-      - name: Azure Login
-        uses: azure/login@v2
-        with:
-          client-id: ${{ secrets.AZURE_CLIENT_ID }}
-          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-      - name: Build and Push API
-        run: |
-          az acr login --name ${{ env.ACR_NAME }}
-          docker build -f config/docker/Dockerfile.api-backend -t ${{ env.ACR_NAME }}.azurecr.io/api-backend:latest -t ${{ env.ACR_NAME }}.azurecr.io/api-backend:main-${{ github.sha }} .
-          docker push ${{ env.ACR_NAME }}.azurecr.io/api-backend:latest
-          docker push ${{ env.ACR_NAME }}.azurecr.io/api-backend:main-${{ github.sha }}
-
-  build_proxy:
-    needs: [orchestrator, build_base]
-    if: needs.orchestrator.outputs.should_deploy == 'true'
-    runs-on: ubuntu-latest
-    permissions:
-      id-token: write
-      contents: read
-    steps:
-      - uses: actions/checkout@v4
-      - name: Azure Login
-        uses: azure/login@v2
-        with:
-          client-id: ${{ secrets.AZURE_CLIENT_ID }}
-          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-      - name: Build and Push Proxy
-        run: |
-          az acr login --name ${{ env.ACR_NAME }}
-          docker build -f config/docker/Dockerfile.streaming-proxy -t ${{ env.ACR_NAME }}.azurecr.io/streaming-proxy:latest -t ${{ env.ACR_NAME }}.azurecr.io/streaming-proxy:main-${{ github.sha }} .
-          docker push ${{ env.ACR_NAME }}.azurecr.io/streaming-proxy:latest
-          docker push ${{ env.ACR_NAME }}.azurecr.io/streaming-proxy:main-${{ github.sha }}
-
-  # Concurrent Client Builds (Independent of Cloud Base)
-  build_desktop:
-    needs: [dispatch, orchestrator]
-    if: needs.orchestrator.outputs.should_deploy == 'true' && needs.dispatch.outputs.do_desktop == 'true'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: subosito/flutter-action@v2
-        with:
-          flutter-version: '3.x'
-          channel: 'stable'
-      - name: Install Linux dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev liblzma-dev libsecret-1-dev
-      - name: Build Linux Desktop
-        run: |
-          flutter pub get
-          flutter build linux --release
-      - name: Upload Linux Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: desktop-linux
-          path: build/linux/x64/release/bundle/
-
-  build_mobile:
-    needs: [dispatch, orchestrator]
-    if: needs.orchestrator.outputs.should_deploy == 'true' && needs.dispatch.outputs.do_mobile == 'true'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: subosito/flutter-action@v2
-        with:
-          flutter-version: '3.x'
-          channel: 'stable'
-      - name: Set up JDK 21
-        uses: actions/setup-java@v3
-        with:
-          java-version: '21'
-          distribution: 'temurin'
-      - name: Build Android App Bundle
-        run: |
-          flutter pub get
-          flutter build appbundle --release
-      - name: Upload Android Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: mobile-android
-          path: build/app/outputs/bundle/release/app-release.aab
-
-  promote:
-    needs: [build_web, build_api, build_proxy, build_postgres]
-    if: always()
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          token: ${{ secrets.PAT_TOKEN }}
-      
-      - name: Promote to Argo CD (GitOps)
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          
-          TAG="main-${{ github.sha }}"
-          
-          # Update Kustomize image tags
-          sed -i "s|newTag: .*|newTag: $TAG-api-backend|g" k8s/apps/managed/api-backend/kustomization.yaml
-          sed -i "s|newTag: .*|newTag: $TAG|g" k8s/apps/managed/web-frontend/kustomization.yaml
-          
-          # Attempt to update streaming proxy if present (best effort)
-          grep -r "streaming-proxy" k8s/apps/managed/ && sed -i "s|newTag: .*streaming-proxy.*|newTag: $TAG-streaming-proxy|g" $(grep -r "streaming-proxy" k8s/apps/managed/ -l)
-
-          git add k8s/apps/managed/
-          if ! git diff --cached --quiet; then
-            git commit -m "chore(deploy): promote version $TAG [skip ci]"
-            git pull --rebase origin main
-            git push origin main
-            echo "✅ Successfully promoted version $TAG to Argo CD"
-          else
-            echo "No changes to promote"
-          fi
-
-  notify:
-    needs: [promote, build_desktop, build_mobile]
-    if: always()
-    runs-on: ubuntu-latest
-    steps:
-      - name: Determine Status
-        id: status
-        run: |
-          if [ "${{ needs.promote.result }}" == "success" ]; then
-             echo "emoji=✅" >> $GITHUB_OUTPUT
-             echo "status=Success" >> $GITHUB_OUTPUT
-          else
-             echo "emoji=❌" >> $GITHUB_OUTPUT
-             echo "status=Failure" >> $GITHUB_OUTPUT
-          fi
-      - name: Send Slack notification
-        if: env.SLACK_WEBHOOK_URL != ''
-        uses: rtCamp/action-slack-notify@v2
-        env:
-          SLACK_WEBHOOK: ${{ env.SLACK_WEBHOOK_URL }}
-          SLACK_TITLE: "${{ steps.status.outputs.emoji }} Deployment Status"
-          SLACK_MESSAGE: "Deploy ${{ steps.status.outputs.status }} - SHA: ${{ github.sha }}"
+    uses: "./.github/workflows/kilocode-invoke.yml"
+    with:
+      mode: "deploy"
+      do_desktop: ${{ needs.dispatch.outputs.do_desktop == 'true' }}
+      do_mobile: ${{ needs.dispatch.outputs.do_mobile == 'true' }}
+      sha: ${{ github.sha }}
+    secrets: inherit
