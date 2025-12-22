@@ -199,7 +199,7 @@ jobs:
           echo "New Version: ${{ steps.orchestrate.outputs.new_version }}"
           echo "Do Desktop: ${{ steps.orchestrate.outputs.do_desktop }}"
 
-  build_and_push:
+  build_artifacts:
     needs: orchestrator
     if: needs.orchestrator.outputs.deploy_now == 'true'
     uses: "./.github/workflows/build-pipeline.yml"
@@ -209,8 +209,8 @@ jobs:
     secrets: inherit
 
   promote_to_gitops:
-    needs: [build_and_push, orchestrator]
-    if: always() && needs.orchestrator.outputs.deploy_now == 'true' && (needs.build_and_push.result == 'success' || needs.build_and_push.result == 'skipped')
+    needs: [build_artifacts, orchestrator]
+    if: always() && needs.orchestrator.outputs.deploy_now == 'true' && (needs.build_artifacts.result == 'success' || needs.build_artifacts.result == 'skipped')
     runs-on: ubuntu-latest
     permissions:
       contents: write
