@@ -218,9 +218,16 @@ jobs:
             git push origin main
           fi
 
-  deploy:
+      - name: "Debug Outputs"
+        run: |
+          echo "Should Deploy: ${{ steps.exec.outputs.should_deploy }}"
+          echo "New Version: ${{ steps.exec.outputs.new_version }}"
+          echo "Do Desktop: ${{ steps.exec.outputs.do_desktop }}"
+          echo "Do Mobile: ${{ steps.exec.outputs.do_mobile }}"
+
+  build_and_push:
     needs: orchestrator
-    if: needs.orchestrator.outputs.should_deploy == 'true'
+    if: ${{ needs.orchestrator.outputs.should_deploy == 'true' }}
     uses: "./.github/workflows/build-pipeline.yml"
     with:
       do_desktop: ${{ needs.orchestrator.outputs.do_desktop == 'true' }}
@@ -229,8 +236,8 @@ jobs:
     secrets: inherit
 
   promote_to_gitops:
-    needs: [deploy]
-    if: always() && needs.orchestrator.outputs.should_deploy == 'true' && (needs.deploy.result == 'success' || needs.deploy.result == 'skipped')
+    needs: [build_and_push]
+    if: always() && needs.orchestrator.outputs.should_deploy == 'true' && (needs.build_and_push.result == 'success' || needs.build_and_push.result == 'skipped')
     runs-on: ubuntu-latest
     permissions:
       contents: write
