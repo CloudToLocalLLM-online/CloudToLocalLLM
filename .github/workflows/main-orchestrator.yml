@@ -165,13 +165,13 @@ jobs:
             fi
           fi
 
-          # Parse outputs
+           # Parse outputs and sanitize
           CLEAN_RESPONSE=$(jq -c '.response | fromjson' raw_output.json)
-          SHOULD_DEPLOY=$(echo "$CLEAN_RESPONSE" | jq -r '.should_deploy // true')
-          NEW_VERSION=$(echo "$CLEAN_RESPONSE" | jq -r '.new_version // "'$VERSION'"')
-          BUMP_NEEDED=$(echo "$CLEAN_RESPONSE" | jq -r '.version_bump_needed // false')
-          DO_DESKTOP=$(echo "$CLEAN_RESPONSE" | jq -r '.do_desktop // true')
-          DO_MOBILE=$(echo "$CLEAN_RESPONSE" | jq -r '.do_mobile // true')
+          SHOULD_DEPLOY=$(echo "$CLEAN_RESPONSE" | jq -r '.should_deploy // true' | xargs)
+          NEW_VERSION=$(echo "$CLEAN_RESPONSE" | jq -r '.new_version // "'$VERSION'"' | xargs)
+          BUMP_NEEDED=$(echo "$CLEAN_RESPONSE" | jq -r '.version_bump_needed // false' | xargs)
+          DO_DESKTOP=$(echo "$CLEAN_RESPONSE" | jq -r '.do_desktop // true' | xargs)
+          DO_MOBILE=$(echo "$CLEAN_RESPONSE" | jq -r '.do_mobile // true' | xargs)
 
           # Export outputs explicitly - ensure strings
           echo "should_deploy=$SHOULD_DEPLOY" >> $GITHUB_OUTPUT
@@ -213,8 +213,8 @@ jobs:
   build_and_push:
     name: "🚀 Build & Push Images"
     needs: orchestrator
-    if: needs.orchestrator.outputs.deploy_now == 'true'
-    uses: imrightguy/CloudToLocalLLM/.github/workflows/build-pipeline.yml@main
+    if: contains(needs.orchestrator.outputs.deploy_now, 'true')
+    uses: ./.github/workflows/build-pipeline.yml
     with:
       do_desktop: ${{ needs.orchestrator.outputs.do_desktop == 'true' }}
       do_mobile: ${{ needs.orchestrator.outputs.do_mobile == 'true' }}
