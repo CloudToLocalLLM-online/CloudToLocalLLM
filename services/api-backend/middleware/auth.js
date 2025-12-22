@@ -19,8 +19,12 @@ const AUTH0_AUDIENCE = process.env.AUTH0_AUDIENCE;
 
 if (!AUTH0_DOMAIN || !AUTH0_AUDIENCE) {
   const missing = [];
-  if (!AUTH0_DOMAIN) missing.push('AUTH0_DOMAIN');
-  if (!AUTH0_AUDIENCE) missing.push('AUTH0_AUDIENCE');
+  if (!AUTH0_DOMAIN) {
+    missing.push('AUTH0_DOMAIN');
+  }
+  if (!AUTH0_AUDIENCE) {
+    missing.push('AUTH0_AUDIENCE');
+  }
   throw new Error(`CRITICAL: Missing required Auth0 environment variables: ${missing.join(', ')}. Hardcoded fallbacks are strictly forbidden for security.`);
 }
 

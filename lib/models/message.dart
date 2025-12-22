@@ -21,7 +21,8 @@ class Message {
   });
 
   /// Create a user message
-  factory Message.user({required String content, String? id, Map<String, dynamic>? metadata}) {
+  factory Message.user(
+      {required String content, String? id, Map<String, dynamic>? metadata}) {
     return Message(
       id: id ?? _generateId(),
       content: content,
@@ -54,7 +55,8 @@ class Message {
   }
 
   /// Create a system message
-  factory Message.system({required String content, String? id, Map<String, dynamic>? metadata}) {
+  factory Message.system(
+      {required String content, String? id, Map<String, dynamic>? metadata}) {
     return Message(
       id: id ?? _generateId(),
       content: content,

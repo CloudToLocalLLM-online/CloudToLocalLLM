@@ -41,13 +41,15 @@ class ConversationStorageService {
     }
 
     try {
-      debugPrint('[ConversationStorage] Initializing cloud storage (PostgreSQL)');
+      debugPrint(
+          '[ConversationStorage] Initializing cloud storage (PostgreSQL)');
       _isInitialized = true;
       debugPrint('[ConversationStorage] Service initialized');
     } catch (e, stackTrace) {
       debugPrint('[ConversationStorage] Failed to initialize: $e');
       debugPrint('[ConversationStorage] Stack trace: $stackTrace');
-      _isInitialized = true; // Still allow app to load, API calls will handle errors
+      _isInitialized =
+          true; // Still allow app to load, API calls will handle errors
     }
   }
 
@@ -75,7 +77,7 @@ class ConversationStorageService {
           // Note: The /api/conversations endpoint currently returns partial info
           // We could fetch full details if needed, but for the list view this might suffice
           // or we can adapt based on backend response
-          
+
           // Reconstructing conversation from basic info
           conversations.add(Conversation.fromJson({
             'id': convData['id'],
@@ -84,7 +86,8 @@ class ConversationStorageService {
             'createdAt': convData['created_at'],
             'updatedAt': convData['updated_at'],
             'metadata': convData['metadata'] ?? {},
-            'messages': [], // Messages will be loaded when selecting a conversation
+            'messages':
+                [], // Messages will be loaded when selecting a conversation
           }));
         }
 
@@ -106,7 +109,8 @@ class ConversationStorageService {
   }
 
   /// Fetch full conversation with messages
-  Future<Conversation?> loadConversationWithMessages(String conversationId) async {
+  Future<Conversation?> loadConversationWithMessages(
+      String conversationId) async {
     try {
       final headers = await _getAuthHeaders();
 
@@ -258,7 +262,7 @@ class ConversationStorageService {
   Future<Map<String, dynamic>> exportConversations() async {
     final conversations = await loadConversations();
     final fullConversations = <Map<String, dynamic>>[];
-    
+
     for (final conv in conversations) {
       final fullConv = await loadConversationWithMessages(conv.id);
       if (fullConv != null) {
@@ -278,12 +282,14 @@ class ConversationStorageService {
 
   /// Set storage location preference (Stub for compatibility)
   Future<void> setStorageLocation(String location) async {
-    debugPrint('[ConversationStorage] setStorageLocation($location) called - no-op in cloud-only mode');
+    debugPrint(
+        '[ConversationStorage] setStorageLocation($location) called - no-op in cloud-only mode');
   }
 
   /// Set encryption enabled preference (Stub for compatibility)
   Future<void> setEncryptionEnabled(bool enabled) async {
-    debugPrint('[ConversationStorage] setEncryptionEnabled($enabled) called - no-op in cloud-only mode');
+    debugPrint(
+        '[ConversationStorage] setEncryptionEnabled($enabled) called - no-op in cloud-only mode');
   }
 
   /// Close the service

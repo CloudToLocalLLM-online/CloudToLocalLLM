@@ -32,8 +32,7 @@ class TokenStorageService {
 
     final key = encrypt.Key.fromBase64(keyStr);
     _encrypter = encrypt.Encrypter(encrypt.AES(key));
-    _iv = encrypt.IV.fromLength(
-        16); // Static IV for simplicity in this context
+    _iv = encrypt.IV.fromLength(16); // Static IV for simplicity in this context
   }
 
   Future<void> saveToken(String key, String value) async {
@@ -54,7 +53,7 @@ class TokenStorageService {
     }
 
     if (_encrypter == null) await init();
-    
+
     try {
       final encrypted = _encrypter!.encrypt(value, iv: _iv);
       await _secureStorage.write(key: 'token_$key', value: encrypted.base64);
@@ -77,11 +76,10 @@ class TokenStorageService {
     try {
       final encryptedStr = await _secureStorage.read(key: 'token_$key');
       if (encryptedStr == null) return null;
-      
+
       return _encrypter!.decrypt64(encryptedStr, iv: _iv);
     } catch (e) {
-      debugPrint(
-          '[TokenStorageService] Decryption failed for key: $key - $e');
+      debugPrint('[TokenStorageService] Decryption failed for key: $key - $e');
       return null;
     }
   }

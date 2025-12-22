@@ -1,10 +1,10 @@
 {
-    "install_id": "9cd49876-e495-4829-8298-3586db981ab5",
-    "default_tenant": "dev-2370uxjwncpjwtqo.us.auth0.com",
+    "install_id": "f65bb117-e256-4971-acbf-7b4ff6f032fd",
+    "default_tenant": "dev-vivn1fcgzi0c2czy.us.auth0.com",
     "tenants": {
-        "dev-2370uxjwncpjwtqo.us.auth0.com": {
-            "name": "dev-2370uxjwncpjwtqo",
-            "domain": "dev-2370uxjwncpjwtqo.us.auth0.com",
+        "dev-vivn1fcgzi0c2czy.us.auth0.com": {
+            "name": "dev-vivn1fcgzi0c2czy",
+            "domain": "dev-vivn1fcgzi0c2czy.us.auth0.com",
             "scopes": [
                 "openid",
                 "offline_access",
@@ -85,9 +85,13 @@
                 "read:network_acls",
                 "create:network_acls",
                 "update:network_acls",
-                "delete:network_acls"
+                "delete:network_acls",
+                "read:token_exchange_profiles",
+                "create:token_exchange_profiles",
+                "update:token_exchange_profiles",
+                "delete:token_exchange_profiles"
             ],
-            "expires_at": "2025-12-10T05:08:03.0996008-05:00",
+            "expires_at": "2025-12-22T08:00:50.169301241-05:00",
             "client_id": ""
         }
     }

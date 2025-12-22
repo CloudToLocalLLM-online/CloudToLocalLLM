@@ -124,14 +124,16 @@ class AuthService extends ChangeNotifier {
       print('[AuthService] Calling setupAuthenticatedServices...');
       await di.setupAuthenticatedServices();
       print('[AuthService] setupAuthenticatedServices returned');
-      
+
       // Verify they were actually registered before setting the flag
-      final registered = di.serviceLocator.isRegistered<ConnectionManagerService>();
+      final registered =
+          di.serviceLocator.isRegistered<ConnectionManagerService>();
       if (registered) {
         _areAuthenticatedServicesLoaded.value = true;
         notifyListeners();
       } else {
-        debugPrint('[AuthService] setupAuthenticatedServices returned but ConnectionManagerService is not registered');
+        debugPrint(
+            '[AuthService] setupAuthenticatedServices returned but ConnectionManagerService is not registered');
       }
     } catch (e) {
       debugPrint(
