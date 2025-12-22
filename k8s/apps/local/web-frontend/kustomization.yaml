@@ -4,7 +4,7 @@ resources:
   - ./shared/base/web-frontend
 images:
   - name: imrightguycloudtolocalllm.azurecr.io/web
-    newTag: 7.10.9-202512190353
+    newTag: main-d88878e9d56713c64b9e1d86026b49c3e618fa4b
 patches:
   - patch: |-
       apiVersion: apps/v1
