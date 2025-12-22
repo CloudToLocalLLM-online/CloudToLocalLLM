@@ -16,7 +16,7 @@ async function makeAIRequest(prompt, options = {}) {
   } = options;
 
   // For testing: return mock responses based on prompt content
-  if (prompt.includes('Analyze the following project state') || prompt.includes('release strategy')) {
+  if (prompt.includes('Analyze the following project state') || prompt.includes('release strategy') || prompt.includes('Analyze the latest changes')) {
     // Parse current version from prompt
     const versionMatch = prompt.match(/Version=([^,\s]+)/);
     let currentVersion = "7.0.0"; // default
