@@ -157,7 +157,7 @@ jobs:
             # Enforce deploy without further bump - wrap in 'response' to match AI output
             echo '{"response": "{\"should_deploy\": true, \"version_bump_needed\": false, \"new_version\": \"'$VERSION'\", \"do_desktop\": true, \"do_mobile\": true}"}' > raw_output.json
           else
-            ./scripts/ai-agent.cjs "Analyze the latest changes and decide if a release is needed. Current version is $VERSION. Commit message: $COMMIT_MSG" --output-format json > raw_output.json
+            ./scripts/ai-agent.cjs "Analyze the latest changes and decide if a release is needed. Version=$VERSION. Commit message: $COMMIT_MSG" --output-format json > raw_output.json
             if [ $? -ne 0 ]; then
               echo "::error::AI Agent failed to run."
               exit 1

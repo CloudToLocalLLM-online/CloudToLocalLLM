@@ -18,10 +18,10 @@ async function makeAIRequest(prompt, options = {}) {
   // For testing: return mock responses based on prompt content
   if (prompt.includes('Analyze the following project state') || prompt.includes('release strategy') || prompt.includes('Analyze the latest changes')) {
     // Parse current version from prompt
-    const versionMatch = prompt.match(/Version=([^,\s]+)/);
+    const versionMatch = prompt.match(/Version=([^,\s]+)/) || prompt.match(/version is ([^,\s]+)/i);
     let currentVersion = "7.0.0"; // default
     if (versionMatch) {
-      currentVersion = versionMatch[1].replace(/"/g, '').replace(/,/g, '');
+      currentVersion = versionMatch[1].replace(/"/g, '').replace(/,/g, '').replace(/\.$/, '');
     }
 
     // Increment patch version
