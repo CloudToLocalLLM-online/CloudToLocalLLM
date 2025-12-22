@@ -234,3 +234,26 @@ jobs:
             --ref main
 
           echo "Build pipeline triggered successfully."
+
+  promote_to_gitops:
+    needs: [build_and_push]
+    if: always() && needs.orchestrator.outputs.should_deploy == 'true' && (needs.build_and_push.result == 'success' || needs.build_and_push.result == 'skipped')
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Trigger Build Pipeline
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "Triggering build-pipeline.yml..."
+          gh workflow run build-pipeline.yml \
+            -f do_desktop=${{ needs.orchestrator.outputs.do_desktop }} \
+            -f do_mobile=${{ needs.orchestrator.outputs.do_mobile }} \
+            -f sha=${{ github.sha }} \
+            -f promote_gitops=true \
+            --ref main
+
+          echo "Build pipeline triggered successfully."

@@ -1,4 +1,4 @@
-name: "Build & Deploy Pipeline"
+name: "🏭 Build & Deploy Pipeline"
 
 on:
   workflow_call:
