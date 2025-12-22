@@ -31,7 +31,7 @@ on:
         required: false
 
 concurrency:
-  group: "${{ github.workflow }}-${{ inputs.sha || github.sha }}"
+  group: "${{ github.workflow }}-${{ inputs.sha || github.sha }}-build"
   cancel-in-progress: false
 
 env:
