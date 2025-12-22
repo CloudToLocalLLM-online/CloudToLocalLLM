@@ -431,7 +431,7 @@ jobs:
           kubelogin-version: "v0.0.25"
 
       - name: Get AKS Credentials
-        uses: azure/aks-set-context@v3
+        uses: azure/aks-set-context@v4
         with:
           resource-group: ${{ env.AZURE_RESOURCE_GROUP }}
           cluster-name: ${{ env.AZURE_CLUSTER_NAME }}
