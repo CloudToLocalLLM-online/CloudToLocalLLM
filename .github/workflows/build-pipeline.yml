@@ -15,6 +15,10 @@ on:
         description: "Commit SHA to deploy"
         type: string
         required: false
+      promote_gitops:
+        description: "Promote to GitOps (ArgoCD)"
+        type: boolean
+        default: false
   workflow_dispatch:
     inputs:
       do_desktop:
