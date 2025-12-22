@@ -7,36 +7,20 @@ on:
         description: "Build for Desktop"
         type: boolean
         default: true
-      do_mobile:
-        description: "Build for Mobile"
-        type: boolean
-        default: true
       sha:
         description: "Commit SHA to deploy"
         type: string
         required: false
-      promote_gitops:
-        description: "Promote to GitOps (ArgoCD)"
-        type: boolean
-        default: false
   workflow_dispatch:
     inputs:
       do_desktop:
         description: "Build for Desktop"
         type: boolean
         default: true
-      do_mobile:
-        description: "Build for Mobile"
-        type: boolean
-        default: true
       sha:
         description: "Commit SHA to deploy"
         type: string
         required: false
-      promote_gitops:
-        description: "Promote to GitOps (ArgoCD)"
-        type: boolean
-        default: false
 
 concurrency:
   group: "${{ github.workflow }}-${{ inputs.sha || github.sha }}-build"
@@ -55,10 +39,6 @@ defaults:
     shell: "bash"
 
 jobs:
-  # ============================================================================
-  # BUILD STAGE
-  # ============================================================================
-
   # ============================================================================
   # BUILD STAGE
   # ============================================================================
@@ -188,7 +168,7 @@ jobs:
           docker push ${{ env.ACR_NAME }}.azurecr.io/streaming-proxy:main-${SHA}
 
   # Stage 3: Client Builds (Parallel)
-  build_desktop:
+  build_linux:
     if: inputs.do_desktop == true
     runs-on: ubuntu-latest
     steps:
@@ -214,9 +194,9 @@ jobs:
           name: desktop-linux
           path: build/linux/x64/release/bundle/
 
-  build_mobile:
-    if: inputs.do_mobile == true
-    runs-on: ubuntu-latest
+  build_windows:
+    if: inputs.do_desktop == true
+    runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
         with:
@@ -225,63 +205,14 @@ jobs:
         with:
           flutter-version: "3.x"
           channel: "stable"
-      - name: Set up JDK 21
-        uses: actions/setup-java@v3
-        with:
-          java-version: "21"
-          distribution: "temurin"
-
-      - name: Build Android App Bundle
-        run: |
-          flutter pub get
-          flutter build appbundle --release
-      - name: Upload Android Artifact
+      - name: Configure Windows
+        run: flutter config --enable-windows-desktop
+      - name: Get dependencies
+        run: flutter pub get
+      - name: Build Windows
+        run: flutter build windows --release --no-tree-shake-icons
+      - name: Upload Windows Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: mobile-android
-          path: build/app/outputs/bundle/release/app-release.aab
-
-  # Stage 4: Promotion (Optional)
-  promote:
-    needs: [build_api, build_web, build_proxy]
-    if: inputs.promote_gitops == true
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          token: ${{ secrets.PAT_TOKEN }}
-          ref: main # Always promote on main
-          fetch-depth: 0
-
-      - name: Promote to Argo CD (GitOps)
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-
-          SHA="${{ inputs.sha || github.sha }}"
-          TAG="main-${SHA}"
-
-          echo "Promoting version $TAG..."
-
-          # Update Kustomize image tags
-          sed -i "s|newTag: .*|newTag: $TAG-api-backend|g" k8s/apps/managed/api-backend/kustomization.yaml
-          sed -i "s|newTag: .*|newTag: $TAG|g" k8s/apps/managed/web-frontend/kustomization.yaml
-
-          # Attempt to update streaming proxy if present
-          if grep -r "streaming-proxy" k8s/apps/managed/ > /dev/null; then
-             sed -i "s|newTag: .*streaming-proxy.*|newTag: $TAG-streaming-proxy|g" $(grep -r "streaming-proxy" k8s/apps/managed/ -l)
-          else
-             echo "Streaming proxy tag not found in kustomization"
-          fi
-
-          git add k8s/apps/managed/
-          if ! git diff --cached --quiet; then
-            git commit -m "chore(deploy): promote version $TAG [skip ci]"
-            git pull --rebase origin main
-            git push origin main
-            echo "✅ Successfully promoted version $TAG to Argo CD"
-          else
-            echo "No changes to promote"
-          fi
+          name: desktop-windows
+          path: build/windows/x64/runner/Release/

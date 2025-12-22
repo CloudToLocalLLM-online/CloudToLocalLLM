@@ -23,10 +23,6 @@ on:
         description: "Build for Desktop"
         type: boolean
         default: true
-      do_mobile:
-        description: "Build for Mobile"
-        type: boolean
-        default: true
       version_override:
         description: "Override version (e.g. 1.2.3). Leave empty for auto."
         type: string
@@ -46,7 +42,7 @@ defaults:
 jobs:
   dispatch:
     runs-on: "ubuntu-latest"
-    if: "${{ !contains(github.event.head_commit.message, 'chore: bump version') }}"
+    if: "${{ !contains(github.event.head_commit.message, 'chore: bump version') && !contains(github.event.head_commit.message, 'chore(deploy): promote version') }}"
     permissions:
       contents: "read"
       issues: "write"
@@ -55,7 +51,6 @@ jobs:
       command: "${{ steps.extract_command.outputs.command }}"
       additional_context: "${{ steps.extract_command.outputs.additional_context }}"
       do_desktop: "${{ github.event.inputs.do_desktop || 'true' }}"
-      do_mobile: "${{ github.event.inputs.do_mobile || 'true' }}"
     steps:
       - name: "Extract command"
         id: "extract_command"
@@ -133,7 +128,6 @@ jobs:
       deploy_now: ${{ steps.orchestrate.outputs.should_deploy }}
       new_version: ${{ steps.orchestrate.outputs.new_version }}
       do_desktop: ${{ steps.orchestrate.outputs.do_desktop }}
-      do_mobile: ${{ steps.orchestrate.outputs.do_mobile }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -156,7 +150,7 @@ jobs:
           if [[ "$COMMIT_MSG" == *"chore: bump version"* ]]; then
             echo "::notice::Detected version bump commit. Skipping analysis and enforcing deployment."
             # Enforce deploy without further bump - wrap in 'response' to match AI output
-            echo '{"response": "{\"should_deploy\": true, \"version_bump_needed\": false, \"new_version\": \"'$VERSION'\", \"do_desktop\": true, \"do_mobile\": true}"}' > raw_output.json
+            echo '{"response": "{\"should_deploy\": true, \"version_bump_needed\": false, \"new_version\": \"'$VERSION'\", \"do_desktop\": true}"}' > raw_output.json
           else
             ./scripts/ai-agent.cjs "Analyze the latest changes and decide if a release is needed. Version=$VERSION. Commit message: $COMMIT_MSG" --output-format json > raw_output.json
             if [ $? -ne 0 ]; then
@@ -171,15 +165,13 @@ jobs:
           NEW_VERSION=$(echo "$CLEAN_RESPONSE" | jq -r '.new_version // "'$VERSION'"' | xargs)
           BUMP_NEEDED=$(echo "$CLEAN_RESPONSE" | jq -r '.version_bump_needed // false' | xargs)
           DO_DESKTOP=$(echo "$CLEAN_RESPONSE" | jq -r '.do_desktop // true' | xargs)
-          DO_MOBILE=$(echo "$CLEAN_RESPONSE" | jq -r '.do_mobile // true' | xargs)
 
           # Export outputs explicitly - ensure strings
           echo "should_deploy=$SHOULD_DEPLOY" >> $GITHUB_OUTPUT
           echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
           echo "do_desktop=$DO_DESKTOP" >> $GITHUB_OUTPUT
-          echo "do_mobile=$DO_MOBILE" >> $GITHUB_OUTPUT
 
-          # Version bumping now handled by build-pipeline.yml
+          # Version bumping
           if [ "$BUMP_NEEDED" == "true" ]; then
             echo "Bumping version to $NEW_VERSION"
             git config user.name "github-actions[bot]"
@@ -203,57 +195,59 @@ jobs:
       - name: "Debug Orchestration"
         if: always()
         run: |
-          echo "=== JOB CONTEXT OUTPUTS ==="
-          echo '${{ toJSON(steps.orchestrate.outputs) }}'
-          echo "=== END JOB CONTEXT ==="
           echo "Should Deploy: ${{ steps.orchestrate.outputs.should_deploy }}"
           echo "New Version: ${{ steps.orchestrate.outputs.new_version }}"
           echo "Do Desktop: ${{ steps.orchestrate.outputs.do_desktop }}"
-          echo "Do Mobile: ${{ steps.orchestrate.outputs.do_mobile }}"
 
   build_and_push:
-    name: "🚀 Build & Push Images"
     needs: orchestrator
-    if: contains(needs.orchestrator.outputs.deploy_now, 'true')
-    runs-on: ubuntu-latest
-    permissions:
-      actions: write
-      contents: read
-    steps:
-      - uses: actions/checkout@v4
-      - name: Trigger Build Pipeline
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          echo "Triggering build-pipeline.yml..."
-          gh workflow run build-pipeline.yml \
-            -f do_desktop=${{ needs.orchestrator.outputs.do_desktop }} \
-            -f do_mobile=${{ needs.orchestrator.outputs.do_mobile }} \
-            -f sha=${{ github.sha }} \
-            -f promote_gitops=true \
-            --ref main
+    if: needs.orchestrator.outputs.deploy_now == 'true'
+    uses: "./.github/workflows/build-pipeline.yml"
+    with:
+      do_desktop: ${{ needs.orchestrator.outputs.do_desktop == 'true' }}
+      sha: ${{ github.sha }}
+    secrets: inherit
 
-          echo "Build pipeline triggered successfully."
+promote_to_gitops:
+  needs: [build_and_push, orchestrator]
+  if: always() && needs.orchestrator.outputs.deploy_now == 'true' && (needs.build_and_push.result == 'success' || needs.build_and_push.result == 'skipped')
+  runs-on: ubuntu-latest
+  permissions:
+    contents: write
+  steps:
+    - uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.PAT_TOKEN }}
+        ref: main # Always promote on main
+        fetch-depth: 0
 
-  promote_to_gitops:
-    needs: [build_and_push]
-    if: always() && needs.orchestrator.outputs.should_deploy == 'true' && (needs.build_and_push.result == 'success' || needs.build_and_push.result == 'skipped')
-    runs-on: ubuntu-latest
-    permissions:
-      actions: write
-      contents: read
-    steps:
-      - uses: actions/checkout@v4
-      - name: Trigger Build Pipeline
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          echo "Triggering build-pipeline.yml..."
-          gh workflow run build-pipeline.yml \
-            -f do_desktop=${{ needs.orchestrator.outputs.do_desktop }} \
-            -f do_mobile=${{ needs.orchestrator.outputs.do_mobile }} \
-            -f sha=${{ github.sha }} \
-            -f promote_gitops=true \
-            --ref main
+    - name: Promote to Argo CD (GitOps)
+      run: |
+        git config user.name "github-actions[bot]"
+        git config user.email "github-actions[bot]@users.noreply.github.com"
 
-          echo "Build pipeline triggered successfully."
+        SHA="${{ github.sha }}"
+        TAG="main-${SHA}"
+
+        echo "Promoting version $TAG..."
+
+        # Update Kustomize image tags
+        sed -i "s|newTag: .*|newTag: $TAG-api-backend|g" k8s/apps/managed/api-backend/kustomization.yaml
+        sed -i "s|newTag: .*|newTag: $TAG|g" k8s/apps/managed/web-frontend/kustomization.yaml
+
+        # Attempt to update streaming proxy if present
+        if grep -r "streaming-proxy" k8s/apps/managed/ > /dev/null; then
+           sed -i "s|newTag: .*streaming-proxy.*|newTag: $TAG-streaming-proxy|g" $(grep -r "streaming-proxy" k8s/apps/managed/ -l)
+        else
+           echo "Streaming proxy tag not found in kustomization"
+        fi
+
+        git add k8s/apps/managed/
+        if ! git diff --cached --quiet; then
+          git commit -m "chore(deploy): promote version $TAG [skip ci]"
+          git pull --rebase origin main
+          git push origin main
+          echo "✅ Successfully promoted version $TAG to Argo CD"
+        else
+          echo "No changes to promote"
+        fi
