@@ -208,7 +208,7 @@ jobs:
             git push origin main
           fi
 
-dispatch:
+  deploy:
     needs: orchestrator
     if: needs.orchestrator.outputs.should_deploy == 'true'
     uses: "./.github/workflows/kilocode-invoke.yml"
