@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [7.0.13] - 2025-12-22
+### Features
+* feat: re-enable AI workflows with AI Agent Gateway
+* feat: update AI Agent CLI to return proper JSON format
+
+### Bug Fixes
+* fix: update generate-changelog.sh to use AI Agent CLI instead of Gemini
+
+### Refactoring
+* refactor: rename Gemini workflows to AI Agent workflows
+* refactor: update all workflow environment variables and API calls
+
 ## [7.0.12] - 2025-12-22
 ### Features
 * feat: re-enable AI workflows with AI Agent Gateway
