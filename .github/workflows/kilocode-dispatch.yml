@@ -128,8 +128,29 @@ jobs:
       - name: Detect Service Changes
         id: detect
         run: |
-          CHANGES="web,api" 
+          CHANGES="web,api,proxy,postgres" 
           echo "changes=$CHANGES" >> $GITHUB_OUTPUT
+
+  build_postgres:
+    needs: [orchestrator, detect_changes]
+    if: contains(needs.detect_changes.outputs.changes, 'postgres')
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      - name: Build and Push Postgres
+        run: |
+          az acr login --name ${{ env.ACR_NAME }}
+          docker build -f config/docker/Dockerfile.postgres --build-arg BASE_REGISTRY=${{ env.ACR_NAME }}.azurecr.io -t ${{ env.ACR_NAME }}.azurecr.io/postgres:latest -t ${{ env.ACR_NAME }}.azurecr.io/postgres:main-${{ github.sha }} .
+          docker push ${{ env.ACR_NAME }}.azurecr.io/postgres:latest
+          docker push ${{ env.ACR_NAME }}.azurecr.io/postgres:main-${{ github.sha }}
 
   build_web:
     needs: [orchestrator, detect_changes]
@@ -173,6 +194,27 @@ jobs:
           docker push ${{ env.ACR_NAME }}.azurecr.io/api-backend:latest
           docker push ${{ env.ACR_NAME }}.azurecr.io/api-backend:main-${{ github.sha }}
 
+  build_proxy:
+    needs: [orchestrator, detect_changes]
+    if: contains(needs.detect_changes.outputs.changes, 'proxy')
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      - name: Build and Push Proxy
+        run: |
+          az acr login --name ${{ env.ACR_NAME }}
+          docker build -f config/docker/Dockerfile.streaming-proxy -t ${{ env.ACR_NAME }}.azurecr.io/streaming-proxy:latest -t ${{ env.ACR_NAME }}.azurecr.io/streaming-proxy:main-${{ github.sha }} .
+          docker push ${{ env.ACR_NAME }}.azurecr.io/streaming-proxy:latest
+          docker push ${{ env.ACR_NAME }}.azurecr.io/streaming-proxy:main-${{ github.sha }}
+
   build_desktop:
     needs: [dispatch, orchestrator]
     if: needs.orchestrator.outputs.should_deploy == 'true' && needs.dispatch.outputs.do_desktop == 'true'
@@ -207,10 +249,10 @@ jobs:
         with:
           flutter-version: '3.x'
           channel: 'stable'
-      - name: Set up JDK 17
+      - name: Set up JDK 21
         uses: actions/setup-java@v3
         with:
-          java-version: '17'
+          java-version: '21'
           distribution: 'temurin'
       - name: Build Android App Bundle
         run: |
@@ -223,7 +265,7 @@ jobs:
           path: build/app/outputs/bundle/release/app-release.aab
 
   promote:
-    needs: [build_web, build_api]
+    needs: [build_web, build_api, build_proxy, build_postgres]
     if: always()
     runs-on: ubuntu-latest
     permissions:
@@ -244,6 +286,9 @@ jobs:
           sed -i "s|newTag: .*|newTag: $TAG-api-backend|g" k8s/apps/managed/api-backend/kustomization.yaml
           sed -i "s|newTag: .*|newTag: $TAG|g" k8s/apps/managed/web-frontend/kustomization.yaml
           
+          # Attempt to update streaming proxy if present (best effort)
+          grep -r "streaming-proxy" k8s/apps/managed/ && sed -i "s|newTag: .*streaming-proxy.*|newTag: $TAG-streaming-proxy|g" $(grep -r "streaming-proxy" k8s/apps/managed/ -l)
+
           git add k8s/apps/managed/
           if ! git diff --cached --quiet; then
             git commit -m "chore(deploy): promote version $TAG [skip ci]"
