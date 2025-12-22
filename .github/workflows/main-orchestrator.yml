@@ -217,8 +217,14 @@ jobs:
           fi
 
       - name: "Debug GITHUB_OUTPUT"
+        if: always()
         run: |
-          cat $GITHUB_OUTPUT
+          echo "=== CONTENT OF GITHUB_OUTPUT ==="
+          cat "$GITHUB_OUTPUT" || echo "File not found or empty"
+          echo "=== END CONTENT ==="
+          echo "=== JOB CONTEXT OUTPUTS ==="
+          echo '${{ toJSON(steps.exec.outputs) }}'
+          echo "=== END JOB CONTEXT ==="
 
       - name: "Debug Outputs"
         run: |
