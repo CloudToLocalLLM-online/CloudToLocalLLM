@@ -40,7 +40,6 @@ env:
   AZURE_RESOURCE_GROUP: cloudtolocalllm-rg
   AZURE_CLUSTER_NAME: cloudtolocalllm-aks
   ACR_NAME: imrightguycloudtolocalllm
-  # This is a dummy comment to force re-evaluation of the workflow file
   SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
   SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
   DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
@@ -60,11 +59,10 @@ jobs:
       command: "${{ steps.extract_command.outputs.command }}"
       additional_context: "${{ steps.extract_command.outputs.additional_context }}"
       start_time: "${{ steps.extract_command.outputs.start_time }}"
-      start_time_formatted: "${{ steps.format_time.outputs.start_time_formatted }}"
     steps:
       - name: "Extract command"
         id: "extract_command"
-        uses: "actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea"
+        uses: "actions/github-script@v6"
         env:
           EVENT_TYPE: "${{ github.event_name }}.${{ github.event.action }}"
           REQUEST: "${{ github.event.comment.body || github.event.review.body || github.event.issue.body || '' }}"
@@ -97,20 +95,11 @@ jobs:
               core.setOutput('command', 'fallthrough');
             }
 
-      - name: "Format start time"
-        id: "format_time"
-        run: echo "start_time_formatted=$(date -u -d '${{ github.event.repository.created_at }}' +'%Y-%m-%dT%H:%M:%SZ')" >> $GITHUB_OUTPUT
-
   # Sub-Dispatch Tasks
   review:
     needs: dispatch
     if: needs.dispatch.outputs.command == 'review'
     uses: "./.github/workflows/kilocode-review.yml"
-    permissions:
-      contents: "read"
-      id-token: "write"
-      issues: "write"
-      pull-requests: "write"
     with:
       additional_context: "${{ needs.dispatch.outputs.additional_context }}"
     secrets: inherit
@@ -119,11 +108,6 @@ jobs:
     needs: dispatch
     if: needs.dispatch.outputs.command == 'triage'
     uses: "./.github/workflows/kilocode-triage.yml"
-    permissions:
-      contents: "read"
-      id-token: "write"
-      issues: "write"
-      pull-requests: "write"
     with:
       additional_context: "${{ needs.dispatch.outputs.additional_context }}"
     secrets: inherit
@@ -132,11 +116,6 @@ jobs:
     needs: dispatch
     if: needs.dispatch.outputs.command == 'invoke'
     uses: "./.github/workflows/kilocode-invoke.yml"
-    permissions:
-      contents: "write"
-      id-token: "write"
-      issues: "write"
-      pull-requests: "write"
     with:
       additional_context: "${{ needs.dispatch.outputs.additional_context }}"
     secrets: inherit
@@ -149,75 +128,24 @@ jobs:
       contents: write
       id-token: write
     outputs:
-      new_version: ${{ steps.exec.outputs.new_version }}
-      docker_version: ${{ steps.exec.outputs.docker_version }}
       should_deploy: ${{ steps.exec.outputs.should_deploy }}
-      reasoning: ${{ steps.exec.outputs.reasoning }}
     steps:
       - uses: actions/checkout@v4
         with:
           token: ${{ secrets.PAT_TOKEN }}
           fetch-depth: 50
-          fetch-tags: true
 
-      - name: Cache Docker layers
-        uses: actions/cache@v3
-        with:
-          path: /tmp/.buildx-cache
-          key: ${{ runner.os }}-buildx-${{ github.sha }}
-          restore-keys: |
-            ${{ runner.os }}-buildx-
-
-      - name: "Run Analysis"
-        id: "analysis"
-        env:
-          KILOCODE_API_KEY: "${{ secrets.KILOCODE_API_KEY }}"
-        run: |
-          # Use kilocode-cli to run analysis
-          chmod +x scripts/kilocode-cli.cjs
-          if ! ./scripts/kilocode-cli.cjs "Analyze the following project state and determine the release strategy. Return ONLY a valid JSON object with fields: new_version, docker_version, do_managed, do_local, do_desktop, do_mobile, should_deploy, reasoning, version_bump_needed. Context: Version=$(cat assets/version.json | jq -r '.version' | sed 's/\"/\\\\\"/g'), Changes=$(git diff --name-only HEAD~1 | sed 's/\"/\\\\\"/g'), Log=$(git log -n 5 --oneline | sed 's/\"/\\\\\"/g')" --output-format json > raw_output.json 2> kilocode_error.log; then
-            echo "::error::KiloCode CLI failed"
-            cat kilocode_error.log
-            exit 1
-          fi
-          # Extract response and clean JSON
-          CLEAN_JSON=$(cat raw_output.json | jq -r '.response' | sed -n '/{/,/}/p')
-          echo "kilocode_output<<EOF" >> $GITHUB_OUTPUT
-          echo "$CLEAN_JSON" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
-
-      - name: "Execute Logic"
+      # Simplified logic: Always deploy on push to main
+      - name: "Simple Orchestration"
         id: "exec"
-        env:
-          KILOCODE_OUTPUT: "${{ steps.analysis.outputs.kilocode_output }}"
-          KILOCODE_API_KEY: "${{ secrets.KILOCODE_API_KEY }}"
         run: |
-          set -e
-          echo "new_version=$(echo "$KILOCODE_OUTPUT" | jq -r '.new_version')" >> $GITHUB_OUTPUT
-          echo "docker_version=$(echo "$KILOCODE_OUTPUT" | jq -r '.docker_version')" >> $GITHUB_OUTPUT
-          echo "do_managed=$(echo "$KILOCODE_OUTPUT" | jq -r '.do_managed')" >> $GITHUB_OUTPUT
-          echo "do_local=$(echo "$KILOCODE_OUTPUT" | jq -r '.do_local')" >> $GITHUB_OUTPUT
-          echo "do_desktop=$(echo "$KILOCODE_OUTPUT" | jq -r '.do_desktop')" >> $GITHUB_OUTPUT
-          echo "do_mobile=$(echo "$KILOCODE_OUTPUT" | jq -r '.do_mobile')" >> $GITHUB_OUTPUT
-          echo "should_deploy=$(echo "$KILOCODE_OUTPUT" | jq -r '.should_deploy')" >> $GITHUB_OUTPUT
-          echo "reasoning=$(echo "$KILOCODE_OUTPUT" | jq -r '.reasoning')" >> $GITHUB_OUTPUT
-
-          if [ "$(echo "$KILOCODE_OUTPUT" | jq -r '.version_bump_needed')" == "true" ]; then
-            git config user.name "github-actions[bot]"
-            git config user.email "github-actions[bot]@users.noreply.github.com"
-            chmod +x scripts/update-all-versions.sh
-            ./scripts/update-all-versions.sh "$(echo "$KILOCODE_OUTPUT" | jq -r '.new_version')" "${{ github.sha }}"
-            git add -A
-            git commit -m "chore: bump version to $(echo "$KILOCODE_OUTPUT" | jq -r '.new_version') [skip ci]"
-            git push origin main
-          fi
+          echo "should_deploy=true" >> $GITHUB_OUTPUT
 
   detect_changes:
     needs: [orchestrator]
     if: needs.orchestrator.outputs.should_deploy == 'true'
     runs-on: ubuntu-latest
     outputs:
-      base: ${{ steps.detect.outputs.base }}
       changes: ${{ steps.detect.outputs.changes }}
     steps:
       - uses: actions/checkout@v4
@@ -226,120 +154,12 @@ jobs:
       - name: Detect Service Changes
         id: detect
         run: |
-          set -e
-          set -x
-          PREV_TAG=$(git tag -l "*-cloud-*" --sort=-version:refname | head -n 1 || echo "")
-
-          # Initialize comma-separated string for changes
-          CHANGES=""
-
-          if [ -z "$PREV_TAG" ]; then
-            echo "No previous tag found. Deploying all."
-            echo "base=true" >> $GITHUB_OUTPUT
-            echo "changes=postgres,web,api,proxy" >> $GITHUB_OUTPUT
-            exit 0
-          fi
-
-          echo "Comparing HEAD against $PREV_TAG"
-
-          # Capture changes in a variable to avoid pipe exit code issues
-          DIFF_FILES=$(git diff --name-only $PREV_TAG HEAD)
-          echo "Diff:"
-          echo "$DIFF_FILES"
-
-          if echo "$DIFF_FILES" | grep -qE '^config/docker/Dockerfile\.base'; then
-             echo "base=true" >> $GITHUB_OUTPUT
-          else
-             echo "base=false" >> $GITHUB_OUTPUT
-          fi
-
-          # Helper to add service to changes string
-          add_change() {
-            if [ -z "$CHANGES" ]; then
-              CHANGES="$1"
-            else
-              CHANGES="$CHANGES,$1"
-            fi
-          }
-
-          if echo "$DIFF_FILES" | grep -qE '^config/docker/Dockerfile\.postgres'; then
-            add_change "postgres"
-          fi
-
-          if echo "$DIFF_FILES" | grep -qE '^(web|lib|pubspec\.)'; then
-            add_change "web"
-          fi
-
-          if echo "$DIFF_FILES" | grep -qE '^services/api-backend'; then
-            add_change "api"
-          fi
-
-          if echo "$DIFF_FILES" | grep -qE '^services/streaming-proxy'; then
-            add_change "proxy"
-          fi
-
+          CHANGES="web,api" # Default to building main components
           echo "changes=$CHANGES" >> $GITHUB_OUTPUT
 
-  infrastructure:
-    needs: [orchestrator, detect_changes]
-    if: needs.orchestrator.outputs.should_deploy == 'true'
-    runs-on: ubuntu-latest
-    permissions:
-      id-token: write
-      contents: read
-    steps:
-      - uses: actions/checkout@v4
-      - uses: azure/login@v2
-        with:
-          client-id: ${{ secrets.AZURE_CLIENT_ID }}
-          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-
-  build_base:
-    needs: [orchestrator, detect_changes, infrastructure]
-    if: needs.detect_changes.outputs.base == 'true'
-    runs-on: ubuntu-latest
-    permissions:
-      id-token: write
-      contents: read
-    steps:
-      - uses: actions/checkout@v4
-      - uses: azure/login@v2
-        with:
-          client-id: ${{ secrets.AZURE_CLIENT_ID }}
-          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-      - name: Build and Push Base
-        run: |
-          az acr login --name ${{ env.ACR_NAME }}
-          docker build -f config/docker/Dockerfile.base -t ${{ env.ACR_NAME }}.azurecr.io/base:latest -t ${{ env.ACR_NAME }}.azurecr.io/base:main-${{ github.sha }} .
-          docker push ${{ env.ACR_NAME }}.azurecr.io/base:latest
-          docker push ${{ env.ACR_NAME }}.azurecr.io/base:main-${{ github.sha }}
-
-  build_postgres:
-    needs: [orchestrator, detect_changes, infrastructure, build_base]
-    if: (needs.build_base.result == 'success' || needs.build_base.result == 'skipped') && contains(needs.detect_changes.outputs.changes, 'postgres')
-    runs-on: ubuntu-latest
-    permissions:
-      id-token: write
-      contents: read
-    steps:
-      - uses: actions/checkout@v4
-      - uses: azure/login@v2
-        with:
-          client-id: ${{ secrets.AZURE_CLIENT_ID }}
-          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-      - name: Build and Push Postgres
-        run: |
-          az acr login --name ${{ env.ACR_NAME }}
-          docker build -f config/docker/Dockerfile.postgres --build-arg BASE_REGISTRY=${{ env.ACR_NAME }}.azurecr.io -t ${{ env.ACR_NAME }}.azurecr.io/postgres:latest -t ${{ env.ACR_NAME }}.azurecr.io/postgres:main-${{ github.sha }} .
-          docker push ${{ env.ACR_NAME }}.azurecr.io/postgres:latest
-          docker push ${{ env.ACR_NAME }}.azurecr.io/postgres:main-${{ github.sha }}
-
   build_web:
-    needs: [orchestrator, detect_changes, infrastructure, build_base]
-    if: (needs.build_base.result == 'success' || needs.build_base.result == 'skipped') && contains(needs.detect_changes.outputs.changes, 'web')
+    needs: [orchestrator, detect_changes]
+    if: contains(needs.detect_changes.outputs.changes, 'web')
     runs-on: ubuntu-latest
     permissions:
       id-token: write
@@ -359,8 +179,8 @@ jobs:
           docker push ${{ env.ACR_NAME }}.azurecr.io/web:main-${{ github.sha }}
 
   build_api:
-    needs: [orchestrator, detect_changes, infrastructure, build_base]
-    if: (needs.build_base.result == 'success' || needs.build_base.result == 'skipped') && contains(needs.detect_changes.outputs.changes, 'api')
+    needs: [orchestrator, detect_changes]
+    if: contains(needs.detect_changes.outputs.changes, 'api')
     runs-on: ubuntu-latest
     permissions:
       id-token: write
@@ -379,228 +199,57 @@ jobs:
           docker push ${{ env.ACR_NAME }}.azurecr.io/api-backend:latest
           docker push ${{ env.ACR_NAME }}.azurecr.io/api-backend:main-${{ github.sha }}
 
-  build_proxy:
-    needs: [orchestrator, detect_changes, infrastructure, build_base]
-    if: (needs.build_base.result == 'success' || needs.build_base.result == 'skipped') && contains(needs.detect_changes.outputs.changes, 'proxy')
-    runs-on: ubuntu-latest
-    permissions:
-      id-token: write
-      contents: read
-    steps:
-      - uses: actions/checkout@v4
-      - uses: azure/login@v2
-        with:
-          client-id: ${{ secrets.AZURE_CLIENT_ID }}
-          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-      - name: Build and Push Proxy
-        run: |
-          az acr login --name ${{ env.ACR_NAME }}
-          docker build -f config/docker/Dockerfile.streaming-proxy -t ${{ env.ACR_NAME }}.azurecr.io/streaming-proxy:latest -t ${{ env.ACR_NAME }}.azurecr.io/streaming-proxy:main-${{ github.sha }} .
-          docker push ${{ env.ACR_NAME }}.azurecr.io/streaming-proxy:latest
-          docker push ${{ env.ACR_NAME }}.azurecr.io/streaming-proxy:main-${{ github.sha }}
-
   promote:
-    needs:
-      [
-        orchestrator,
-        detect_changes,
-        infrastructure,
-        build_postgres,
-        build_web,
-        build_api,
-        build_proxy,
-      ]
-    if: always() && needs.orchestrator.outputs.should_deploy == 'true'
+    needs: [build_web, build_api]
+    if: always()
     runs-on: ubuntu-latest
     permissions:
-      id-token: write
       contents: write
     steps:
       - uses: actions/checkout@v4
         with:
           token: ${{ secrets.PAT_TOKEN }}
-      - uses: azure/login@v2
-        with:
-          client-id: ${{ secrets.AZURE_CLIENT_ID }}
-          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-      - name: Set up kubelogin for non-interactive login
-        uses: azure/use-kubelogin@v1
-        with:
-          kubelogin-version: "v0.0.25"
-
-      - name: Get AKS Credentials
-        uses: azure/aks-set-context@v3
-        with:
-          resource-group: ${{ env.AZURE_RESOURCE_GROUP }}
-          cluster-name: ${{ env.AZURE_CLUSTER_NAME }}
-          admin: "false"
-          use-kubelogin: "true"
-
-      - name: Create/Update Secrets
-        env:
-          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
-          JWT_SECRET: ${{ secrets.JWT_SECRET }}
-          STRIPE_TEST_SECRET_KEY: ${{ secrets.STRIPE_TEST_SECRET_KEY }}
-          STRIPE_TEST_PUBLISHABLE_KEY: ${{ secrets.STRIPE_TEST_PUBLISHABLE_KEY }}
-          STRIPE_TEST_WEBHOOK_SECRET: ${{ secrets.STRIPE_TEST_WEBHOOK_SECRET }}
-          STRIPE_LIVE_SECRET_KEY: ${{ secrets.STRIPE_LIVE_SECRET_KEY }}
-          STRIPE_LIVE_PUBLISHABLE_KEY: ${{ secrets.STRIPE_LIVE_PUBLISHABLE_KEY }}
-          STRIPE_LIVE_WEBHOOK_SECRET: ${{ secrets.STRIPE_LIVE_WEBHOOK_SECRET }}
-          SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
-          CLOUDFLARE_DNS_TOKEN: ${{ secrets.CLOUDFLARE_DNS_TOKEN }}
-          CLOUDFLARE_TUNNEL_TOKEN: ${{ secrets.CLOUDFLARE_TUNNEL_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          SUPABASE_JWT_SECRET: ${{ secrets.SUPABASE_JWT_SECRET }}
-          AUTH0_DOMAIN: ${{ secrets.AUTH0_DOMAIN }}
-          AUTH0_AUDIENCE: ${{ secrets.AUTH0_AUDIENCE }}
-          AUTH0_CLIENT_ID: ${{ secrets.AUTH0_CLIENT_ID }}
-          AUTH0_CLIENT_SECRET: ${{ secrets.AUTH0_CLIENT_SECRET }}
-          AUTH0_ISSUER_URL: ${{ secrets.AUTH0_ISSUER_URL }}
-        run: |
-          # Get ACR Admin Credentials
-          ACR_ADMIN_USER=$(az acr credential show --name ${{ env.ACR_NAME }} --query username --output tsv)
-          ACR_ADMIN_PASS=$(az acr credential show --name ${{ env.ACR_NAME }} --query passwords[0].value --output tsv)
-          LOGIN_SERVER="${{ env.ACR_NAME }}.azurecr.io"
-
-          # Docker Registry Secret for ACR
-          kubectl create secret docker-registry regcred \
-            --docker-server=$LOGIN_SERVER \
-            --docker-username=$ACR_ADMIN_USER \
-            --docker-password=$ACR_ADMIN_PASS \
-            --docker-email=github-actions@cloudtolocalllm.online \
-            -n cloudtolocalllm --dry-run=client -o yaml | kubectl apply -f -
-
-          # App Secrets
-          kubectl create secret generic cloudtolocalllm-secrets \
-            --namespace cloudtolocalllm \
-            --from-literal=postgres-user=cloud_admin \
-            --from-literal=postgres-password="$POSTGRES_PASSWORD" \
-            --from-literal=jwt-secret="$JWT_SECRET" \
-            --from-literal=stripe-test-secret-key="$STRIPE_TEST_SECRET_KEY" \
-            --from-literal=stripe-test-publishable-key="$STRIPE_TEST_PUBLISHABLE_KEY" \
-            --from-literal=stripe-test-webhook-secret="$STRIPE_TEST_WEBHOOK_SECRET" \
-            --from-literal=stripe-live-secret-key="$STRIPE_LIVE_SECRET_KEY" \
-            --from-literal=stripe-live-publishable-key="$STRIPE_LIVE_PUBLISHABLE_KEY" \
-            --from-literal=stripe-live-webhook-secret="$STRIPE_LIVE_WEBHOOK_SECRET" \
-            --from-literal=sentry-dsn="$SENTRY_DSN" \
-            --from-literal=supabase-jwt-secret="$SUPABASE_JWT_SECRET" \
-            --from-literal=supabase-url="https://cvaqhvpbnemweqrojasm.supabase.co" \
-            --from-literal=auth0-domain="$AUTH0_DOMAIN" \
-            --from-literal=auth0-audience="$AUTH0_AUDIENCE" \
-            --from-literal=auth0-client-id="$AUTH0_CLIENT_ID" \
-            --from-literal=auth0-client-secret="$AUTH0_CLIENT_SECRET" \
-            --from-literal=auth0-issuer-url="$AUTH0_ISSUER_URL" \
-            --from-literal=postgres-auth-password="$POSTGRES_PASSWORD" \
-            --from-literal=admin-password="$POSTGRES_PASSWORD" \
-            --dry-run=client -o yaml | kubectl apply -f -
-
-          # Cloudflare Tunnel Secret
-          kubectl create secret generic tunnel-credentials \
-            --namespace cloudtolocalllm \
-            --from-literal=token="$CLOUDFLARE_TUNNEL_TOKEN" \
-            --dry-run=client -o yaml | kubectl apply -f -
-
-          # Streaming Proxy Secret
-          kubectl create secret generic streaming-proxy-secrets \
-            --namespace cloudtolocalllm \
-            --from-literal=SENTRY_DSN="$SENTRY_DSN" \
-            --from-literal=SUPABASE_JWT_SECRET="$SUPABASE_JWT_SECRET" \
-            --from-literal=SUPABASE_URL="https://cvaqhvpbnemweqrojasm.supabase.co" \
-            --dry-run=client -o yaml | kubectl apply -f -
-
-      - name: Update Kustomizations in Git (GitOps)
+      
+      - name: Promote to Argo CD (GitOps)
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           
           TAG="main-${{ github.sha }}"
           
-          # Update API Backend tag
-          sed -i "s|newTag: .*|newTag: $TAG-api-backend|g" k8s/apps/local/api-backend/kustomization.yaml
+          # Update Kustomize image tags
+          sed -i "s|newTag: .*|newTag: $TAG-api-backend|g" k8s/apps/managed/api-backend/kustomization.yaml
+          sed -i "s|newTag: .*|newTag: $TAG|g" k8s/apps/managed/web-frontend/kustomization.yaml
           
-          # Update Web tag
-          sed -i "s|newTag: .*|newTag: $TAG|g" k8s/apps/local/web-frontend/kustomization.yaml
-          
-          git add k8s/apps/local/
+          git add k8s/apps/managed/
           if ! git diff --cached --quiet; then
-            git commit -m "GitOps: update image tags to $TAG [skip ci]"
+            git commit -m "chore(deploy): promote version $TAG [skip ci]"
             git pull --rebase origin main
             git push origin main
+            echo "✅ Successfully promoted version $TAG to Argo CD"
+          else
+            echo "No changes to promote"
           fi
 
-      - name: Update Deployments
-        run: |
-          CHANGES='${{ needs.detect_changes.outputs.changes }}'
-
-          # API Backend
-          if echo "$CHANGES" | grep -q "api"; then
-            kubectl set image deployment/api-backend api-backend=${{ env.ACR_NAME }}.azurecr.io/api-backend:main-${{ github.sha }} -n cloudtolocalllm || echo "API Backend deployment not found, skipping image update"
-            kubectl set image deployment/api-backend db-migrate=${{ env.ACR_NAME }}.azurecr.io/api-backend:main-${{ github.sha }} -n cloudtolocalllm || echo "API Backend deployment not found, skipping migration image update"
-          fi
-
-          # Web
-          if echo "$CHANGES" | grep -q "web"; then
-            kubectl set image deployment/web web=${{ env.ACR_NAME }}.azurecr.io/web:main-${{ github.sha }} -n cloudtolocalllm || echo "Web deployment not found, skipping image update"
-          fi
-
-          # Streaming Proxy
-          if echo "$CHANGES" | grep -q "proxy"; then
-             kubectl set image deployment/streaming-proxy streaming-proxy=${{ env.ACR_NAME }}.azurecr.io/streaming-proxy:main-${{ github.sha }} -n cloudtolocalllm || echo "Streaming Proxy deployment not found, skipping image update"
-          fi
-
-          # Postgres (Optional - commented out for safety)
-          # if echo "$CHANGES" | grep -q "postgres"; then
-          #   kubectl set image statefulset/postgres postgres=${{ env.ACR_NAME }}.azurecr.io/postgres:main-${{ github.sha }} -n cloudtolocalllm
-          # fi
-
-          kubectl rollout status deployment/api-backend -n cloudtolocalllm --timeout=300s || echo "API rollout failed, timed out, or not yet created"
-          kubectl rollout status deployment/web -n cloudtolocalllm --timeout=300s || echo "Web rollout failed, timed out, or not yet created"
-
-  # Notification Job
   notify:
-    needs: [dispatch, review, triage, invoke, orchestrator, detect_changes, infrastructure, build_base, build_postgres, build_web, build_api, build_proxy, promote]
+    needs: [promote]
     if: always()
     runs-on: ubuntu-latest
     steps:
-      - name: Setup workflow status
-        id: workflow_status
+      - name: Determine Status
+        id: status
         run: |
-          # Determine overall workflow status
-          if [[
-            "${{ needs.dispatch.result }}" != "success" ||
-            "${{ needs.orchestrator.result }}" != "success" && "${{ needs.orchestrator.result }}" != "skipped" ||
-            "${{ needs.detect_changes.result }}" != "success" && "${{ needs.detect_changes.result }}" != "skipped" ||
-            "${{ needs.infrastructure.result }}" != "success" && "${{ needs.infrastructure.result }}" != "skipped" ||
-            "${{ needs.build_base.result }}" != "success" && "${{ needs.build_base.result }}" != "skipped" ||
-            "${{ needs.build_postgres.result }}" != "success" && "${{ needs.build_postgres.result }}" != "skipped" ||
-            "${{ needs.build_web.result }}" != "success" && "${{ needs.build_web.result }}" != "skipped" ||
-            "${{ needs.build_api.result }}" != "success" && "${{ needs.build_api.result }}" != "skipped" ||
-            "${{ needs.build_proxy.result }}" != "success" && "${{ needs.build_proxy.result }}" != "skipped" ||
-            "${{ needs.promote.result }}" != "success" && "${{ needs.promote.result }}" != "skipped"
-          ]]; then
-            echo "status=failure" >> $GITHUB_OUTPUT
-            echo "color=danger" >> $GITHUB_OUTPUT
-            echo "emoji=❌" >> $GITHUB_OUTPUT
+          if [ "${{ needs.promote.result }}" == "success" ]; then
+             echo "emoji=✅" >> $GITHUB_OUTPUT
+             echo "status=Success" >> $GITHUB_OUTPUT
           else
-            echo "status=success" >> $GITHUB_OUTPUT
-            echo "color=good" >> $GITHUB_OUTPUT
-            echo "emoji=✅" >> $GITHUB_OUTPUT
+             echo "emoji=❌" >> $GITHUB_OUTPUT
+             echo "status=Failure" >> $GITHUB_OUTPUT
           fi
-
       - name: Send Slack notification
         if: env.SLACK_WEBHOOK_URL != ''
         uses: rtCamp/action-slack-notify@v2
         env:
           SLACK_WEBHOOK: ${{ env.SLACK_WEBHOOK_URL }}
-          SLACK_COLOR: ${{ steps.workflow_status.outputs.color }}
-          SLACK_TITLE: "${{ steps.workflow_status.outputs.emoji }} KiloCode Dispatch Workflow"
-          SLACK_MESSAGE: |
-            Workflow: ${{ github.workflow }}
-            Status: ${{ steps.workflow_status.outputs.status }}
-            Trigger: ${{ github.event_name }}
-            Branch: ${{ github.ref_name }}
-            SHA: ${{ github.sha }}
-            Started: ${{ needs.dispatch.outputs.start_time }}
-          SLACK_FOOTER: "GitHub Actions"
+          SLACK_TITLE: "${{ steps.status.outputs.emoji }} Deployment Status"
+          SLACK_MESSAGE: "Deploy ${{ steps.status.outputs.status }} - SHA: ${{ github.sha }}"
