@@ -37,7 +37,6 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  # Secrets needed for sub-workflows are passed via 'secrets: inherit'
   SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
 
 defaults:
@@ -116,13 +115,106 @@ jobs:
       additional_context: "${{ needs.dispatch.outputs.additional_context }}"
     secrets: inherit
 
-  deploy:
+  # Orchestrator Job: Analyzes project state and decides on release strategy
+  orchestrator:
     needs: dispatch
     if: needs.dispatch.outputs.command == 'deploy'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      id-token: write
+    outputs:
+      should_deploy: ${{ steps.exec.outputs.should_deploy }}
+      new_version: ${{ steps.exec.outputs.new_version }}
+      do_desktop: ${{ steps.exec.outputs.do_desktop }}
+      do_mobile: ${{ steps.exec.outputs.do_mobile }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.PAT_TOKEN }}
+          fetch-depth: 50
+          fetch-tags: true
+
+      - name: "Run Analysis (KiloCode CLI)"
+        id: "analysis"
+        env:
+          KILOCODE_API_KEY: "${{ secrets.KILOCODE_API_KEY }}"
+        run: |
+          chmod +x scripts/kilocode-cli.cjs
+          
+          # Gather context
+          VERSION=$(cat assets/version.json | jq -r '.version')
+          CHANGES=$(git diff --name-only HEAD~1 | tr '\n' ',' || echo "none")
+          LOG=$(git log -n 5 --oneline | tr '\n' ';')
+          
+          PROMPT="Analyze the following project state and determine the release strategy. Return ONLY a valid JSON object with fields: new_version, docker_version, do_managed, do_local, do_desktop, do_mobile, should_deploy, reasoning, version_bump_needed. Context: Version=$VERSION, Changes=$CHANGES, Log=$LOG"
+          
+          # Run CLI
+          if ! ./scripts/kilocode-cli.cjs "$PROMPT" --output-format json > raw_output.json 2> kilocode_error.log; then
+            echo "::warning::KiloCode CLI failed, falling back to basic deployment"
+            cat kilocode_error.log
+            # Fallback JSON
+            echo '{"response": "{\"should_deploy\": true, \"version_bump_needed\": false, \"new_version\": \"'$VERSION'\", \"do_desktop\": true, \"do_mobile\": true}"}' > raw_output.json
+          fi
+          
+          # Extract response
+          CLEAN_JSON=$(cat raw_output.json | jq -r '.response' | sed -n '/{/,/}/p')
+          echo "kilocode_output<<EOF" >> $GITHUB_OUTPUT
+          echo "$CLEAN_JSON" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: "Execute Logic & Version Bump"
+        id: "exec"
+        env:
+          KILOCODE_OUTPUT: "${{ steps.analysis.outputs.kilocode_output }}"
+        run: |
+          set -e
+          
+          # Parse outputs
+          SHOULD_DEPLOY=$(echo "$KILOCODE_OUTPUT" | jq -r '.should_deploy')
+          NEW_VERSION=$(echo "$KILOCODE_OUTPUT" | jq -r '.new_version')
+          BUMP_NEEDED=$(echo "$KILOCODE_OUTPUT" | jq -r '.version_bump_needed')
+          DO_DESKTOP=$(echo "$KILOCODE_OUTPUT" | jq -r '.do_desktop // true')
+          DO_MOBILE=$(echo "$KILOCODE_OUTPUT" | jq -r '.do_mobile // true')
+          
+          echo "should_deploy=$SHOULD_DEPLOY" >> $GITHUB_OUTPUT
+          echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
+          
+          # Override inputs if provided manually via workflow_dispatch
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+             echo "do_desktop=${{ needs.dispatch.outputs.do_desktop }}" >> $GITHUB_OUTPUT
+             echo "do_mobile=${{ needs.dispatch.outputs.do_mobile }}" >> $GITHUB_OUTPUT
+          else
+             echo "do_desktop=$DO_DESKTOP" >> $GITHUB_OUTPUT
+             echo "do_mobile=$DO_MOBILE" >> $GITHUB_OUTPUT
+          fi
+
+          if [ "$BUMP_NEEDED" == "true" ]; then
+            echo "Bumping version to $NEW_VERSION"
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            
+            # Use existing script if available, or just update version.json
+            if [ -f scripts/update-all-versions.sh ]; then
+                chmod +x scripts/update-all-versions.sh
+                ./scripts/update-all-versions.sh "$NEW_VERSION" "${{ github.sha }}"
+            else
+                # Fallback: basic update
+                echo "{"version": "$NEW_VERSION"}" > assets/version.json
+            fi
+            
+            git add -A
+            git commit -m "chore: bump version to $NEW_VERSION [skip ci]"
+            git push origin main
+          fi
+
+  deploy:
+    needs: orchestrator
+    if: needs.orchestrator.outputs.should_deploy == 'true'
     uses: "./.github/workflows/kilocode-invoke.yml"
     with:
       mode: "deploy"
-      do_desktop: ${{ needs.dispatch.outputs.do_desktop == 'true' }}
-      do_mobile: ${{ needs.dispatch.outputs.do_mobile == 'true' }}
+      do_desktop: ${{ needs.orchestrator.outputs.do_desktop == 'true' }}
+      do_mobile: ${{ needs.orchestrator.outputs.do_mobile == 'true' }}
       sha: ${{ github.sha }}
     secrets: inherit
