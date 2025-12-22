@@ -190,11 +190,12 @@ jobs:
 
           # Override inputs if provided manually via workflow_dispatch
           if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
-             echo "do_desktop=${{ github.event.inputs.do_desktop }}" >> $GITHUB_OUTPUT
-             echo "do_mobile=${{ github.event.inputs.do_mobile }}" >> $GITHUB_OUTPUT
+             echo "do_desktop=${{ github.event.inputs.do_desktop || 'true' }}" >> $GITHUB_OUTPUT
+             echo "do_mobile=${{ github.event.inputs.do_mobile || 'true' }}" >> $GITHUB_OUTPUT
           else
-             echo "do_desktop=$(echo $DO_DESKTOP | xargs)" >> $GITHUB_OUTPUT
-             echo "do_mobile=$(echo $DO_MOBILE | xargs)" >> $GITHUB_OUTPUT
+             # Ensure we output strings "true" or "false"
+             if [[ "$DO_DESKTOP" == "true" ]]; then echo "do_desktop=true" >> $GITHUB_OUTPUT; else echo "do_desktop=false" >> $GITHUB_OUTPUT; fi
+             if [[ "$DO_MOBILE" == "true" ]]; then echo "do_mobile=true" >> $GITHUB_OUTPUT; else echo "do_mobile=false" >> $GITHUB_OUTPUT; fi
           fi
 
           if [ "$BUMP_NEEDED" == "true" ]; then
