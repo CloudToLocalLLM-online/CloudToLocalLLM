@@ -29,6 +29,10 @@ on:
         description: "Commit SHA to deploy"
         type: string
         required: false
+      promote_gitops:
+        description: "Promote to GitOps (ArgoCD)"
+        type: boolean
+        default: false
 
 concurrency:
   group: "${{ github.workflow }}-${{ inputs.sha || github.sha }}-build"
@@ -223,3 +227,48 @@ jobs:
         with:
           name: mobile-android
           path: build/app/outputs/bundle/release/app-release.aab
+
+  # Stage 4: Promotion (Optional)
+  promote:
+    needs: [build_api, build_web, build_proxy]
+    if: inputs.promote_gitops == true
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.PAT_TOKEN }}
+          ref: main # Always promote on main
+          fetch-depth: 0
+
+      - name: Promote to Argo CD (GitOps)
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          SHA="${{ inputs.sha || github.sha }}"
+          TAG="main-${SHA}"
+
+          echo "Promoting version $TAG..."
+
+          # Update Kustomize image tags
+          sed -i "s|newTag: .*|newTag: $TAG-api-backend|g" k8s/apps/managed/api-backend/kustomization.yaml
+          sed -i "s|newTag: .*|newTag: $TAG|g" k8s/apps/managed/web-frontend/kustomization.yaml
+
+          # Attempt to update streaming proxy if present
+          if grep -r "streaming-proxy" k8s/apps/managed/ > /dev/null; then
+             sed -i "s|newTag: .*streaming-proxy.*|newTag: $TAG-streaming-proxy|g" $(grep -r "streaming-proxy" k8s/apps/managed/ -l)
+          else
+             echo "Streaming proxy tag not found in kustomization"
+          fi
+
+          git add k8s/apps/managed/
+          if ! git diff --cached --quiet; then
+            git commit -m "chore(deploy): promote version $TAG [skip ci]"
+            git pull --rebase origin main
+            git push origin main
+            echo "✅ Successfully promoted version $TAG to Argo CD"
+          else
+            echo "No changes to promote"
+          fi
