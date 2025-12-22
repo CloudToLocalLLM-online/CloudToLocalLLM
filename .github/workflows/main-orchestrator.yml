@@ -129,7 +129,7 @@ jobs:
       contents: write
       id-token: write
     outputs:
-      should_deploy: ${{ steps.orchestrate.outputs.should_deploy }}
+      deploy_now: ${{ steps.orchestrate.outputs.should_deploy }}
       new_version: ${{ steps.orchestrate.outputs.new_version }}
       do_desktop: ${{ steps.orchestrate.outputs.do_desktop }}
       do_mobile: ${{ steps.orchestrate.outputs.do_mobile }}
@@ -211,8 +211,8 @@ jobs:
 
   build_and_push:
     needs: orchestrator
-    if: ${{ needs.orchestrator.outputs.should_deploy == 'true' }}
-    uses: ./.github/workflows/build-pipeline.yml
+    if: ${{ needs.orchestrator.outputs.deploy_now == 'true' }}
+    uses: imrightguy/CloudToLocalLLM/.github/workflows/build-pipeline.yml@main
     with:
       do_desktop: ${{ needs.orchestrator.outputs.do_desktop == 'true' }}
       do_mobile: ${{ needs.orchestrator.outputs.do_mobile == 'true' }}
@@ -221,7 +221,7 @@ jobs:
 
   promote_to_gitops:
     needs: [orchestrator, build_and_push]
-    if: always() && needs.orchestrator.outputs.should_deploy == 'true' && (needs.build_and_push.result == 'success' || needs.build_and_push.result == 'skipped')
+    if: always() && needs.orchestrator.outputs.deploy_now == 'true' && (needs.build_and_push.result == 'success' || needs.build_and_push.result == 'skipped')
     runs-on: ubuntu-latest
     permissions:
       contents: write
