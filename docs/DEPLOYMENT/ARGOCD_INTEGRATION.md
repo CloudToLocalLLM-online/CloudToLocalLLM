@@ -1,6 +1,6 @@
 # Argo CD Integration & GitOps Workflow
 
-This document describes the modernized CI/CD pipeline using GitHub Actions for Continuous Integration (CI) and Argo CD for Continuous Deployment (CD).
+This document describes the modernized CI/CD pipeline using GitHub Actions for Continuous Integration (CI) and Argo CD for Continuous Deployment (CD) on Azure AKS.
 
 ## Overview
 
@@ -14,9 +14,10 @@ The pipeline has been optimized to leverage GitOps principles:
 Located in `.github/workflows/ci-cd.yml`.
 
 - **Trigger**: Push to `main`.
+- **Registry**: Azure Container Registry (ACR) - `imrightguycloudtolocalllm.azurecr.io`
 - **Steps**:
     1.  **Build**: Creates Docker images for `api-backend` and `web-frontend`.
-    2.  **Push**: Uploads images to the container registry (e.g., DigitalOcean or GHCR).
+    2.  **Push**: Uploads images to ACR.
     3.  **Promote**: Uses `kustomize` to update the `images` tag in `k8s/apps/managed/<app>/kustomization.yaml` with the new commit SHA.
     4.  **Commit**: Pushes the updated manifests back to the `main` branch.
 
