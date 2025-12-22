@@ -115,6 +115,7 @@ jobs:
         id: "exec"
         run: echo "should_deploy=true" >> $GITHUB_OUTPUT
 
+  # STAGE 1: Base Image Build
   build_base:
     needs: [orchestrator]
     if: needs.orchestrator.outputs.should_deploy == 'true'
@@ -137,6 +138,7 @@ jobs:
           docker push ${{ env.ACR_NAME }}.azurecr.io/base:latest
           docker push ${{ env.ACR_NAME }}.azurecr.io/base:main-${{ github.sha }}
 
+  # STAGE 2: Concurrent Service Builds (Depend on build_base)
   build_postgres:
     needs: [orchestrator, build_base]
     if: needs.orchestrator.outputs.should_deploy == 'true'
@@ -160,7 +162,7 @@ jobs:
           docker push ${{ env.ACR_NAME }}.azurecr.io/postgres:main-${{ github.sha }}
 
   build_web:
-    needs: [orchestrator]
+    needs: [orchestrator, build_base]
     if: needs.orchestrator.outputs.should_deploy == 'true'
     runs-on: ubuntu-latest
     permissions:
@@ -182,7 +184,7 @@ jobs:
           docker push ${{ env.ACR_NAME }}.azurecr.io/web:main-${{ github.sha }}
 
   build_api:
-    needs: [orchestrator]
+    needs: [orchestrator, build_base]
     if: needs.orchestrator.outputs.should_deploy == 'true'
     runs-on: ubuntu-latest
     permissions:
@@ -204,7 +206,7 @@ jobs:
           docker push ${{ env.ACR_NAME }}.azurecr.io/api-backend:main-${{ github.sha }}
 
   build_proxy:
-    needs: [orchestrator]
+    needs: [orchestrator, build_base]
     if: needs.orchestrator.outputs.should_deploy == 'true'
     runs-on: ubuntu-latest
     permissions:
@@ -225,6 +227,7 @@ jobs:
           docker push ${{ env.ACR_NAME }}.azurecr.io/streaming-proxy:latest
           docker push ${{ env.ACR_NAME }}.azurecr.io/streaming-proxy:main-${{ github.sha }}
 
+  # Concurrent Client Builds (Independent of Cloud Base)
   build_desktop:
     needs: [dispatch, orchestrator]
     if: needs.orchestrator.outputs.should_deploy == 'true' && needs.dispatch.outputs.do_desktop == 'true'
