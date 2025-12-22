@@ -7,7 +7,7 @@ set -e
 NEW_VERSION="$1"
 COMMIT_SHA="$2"
 SHORT_SHA="${COMMIT_SHA:0:8}"
-BUILD_NUMBER=$(date +%Y%m%d%H%M)
+BUILD_NUMBER=$(git rev-list --count HEAD 2>/dev/null || echo "1")
 BUILD_DATE=$(date -u +%Y-%m-%dT%H:%M:%SZ)
 BUILD_TIMESTAMP=$(date +"%Y-%m-%d %H:%M:%S")
 

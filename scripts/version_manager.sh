@@ -590,15 +590,15 @@ get_build_number() {
     fi
 }
 
-# Generate new build number based on current timestamp (YYYYMMDDHHMM format)
+# Generate new build number based on git commit count
 generate_build_number() {
-    date +"%Y%m%d%H%M"
+    git rev-list --count HEAD 2>/dev/null || echo "1"
 }
 
-# Increment build number - generates actual timestamp for immediate use
+# Increment build number - generates actual commit count for immediate use
 # For deployment workflows that need immediate valid version numbers
 increment_build_number() {
-    # Generate actual timestamp for immediate use in deployment
+    # Generate commit count for immediate use in deployment
     generate_build_number
 }
 
