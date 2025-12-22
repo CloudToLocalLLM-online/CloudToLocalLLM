@@ -1,6 +1,6 @@
 {
   "name": "cloudtolocalllm-tunnel-container",
-  "version": "7.0.52",
+  "version": "7.0.53",
   "description": "Simplified tunnel-aware container for CloudToLocalLLM using standard HTTP libraries",
   "main": "proxy-server.js",
   "type": "module",
