@@ -15,6 +15,20 @@ on:
         description: "Commit SHA to deploy"
         type: string
         required: false
+  workflow_dispatch:
+    inputs:
+      do_desktop:
+        description: "Build for Desktop"
+        type: boolean
+        default: true
+      do_mobile:
+        description: "Build for Mobile"
+        type: boolean
+        default: true
+      sha:
+        description: "Commit SHA to deploy"
+        type: string
+        required: false
 
 concurrency:
   group: "${{ github.workflow }}-${{ inputs.sha || github.sha }}"
