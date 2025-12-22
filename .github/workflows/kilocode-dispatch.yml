@@ -144,17 +144,26 @@ jobs:
           
           # Gather context
           VERSION=$(cat assets/version.json | jq -r '.version' || echo "7.0.0")
-          CHANGES=$(git diff --name-only HEAD~1 | tr '\n' ',' || echo "none")
-          LOG=$(git log -n 5 --oneline | tr '\n' ';')
-          
-          PROMPT="Analyze the following project state and determine the release strategy. Return ONLY a valid JSON object with fields: new_version, docker_version, do_managed, do_local, do_desktop, do_mobile, should_deploy, reasoning, version_bump_needed. Context: Version=$VERSION, Changes=$CHANGES, Log=$LOG"
-          
-          # Run CLI
-          if ! ./scripts/kilocode-cli.cjs "$PROMPT" --output-format json > raw_output.json 2> kilocode_error.log; then
-            echo "::warning::KiloCode CLI failed, falling back to basic deployment"
-            cat kilocode_error.log
-            # Fallback JSON
-            echo '{"response": "{\"should_deploy\": true, \"version_bump_needed\": false, \"new_version\": \"'$VERSION'\", \"do_desktop\": true, \"do_mobile\": true}"}' > raw_output.json
+          COMMIT_MSG=$(git log -1 --pretty=%B)
+
+          if [[ "$COMMIT_MSG" == *"chore: bump version"* ]]; then
+            echo "::notice::Detected version bump commit. Skipping analysis and enforcing deployment."
+            # Create a synthetic JSON response that triggers deployment but NO bump
+            # We assume if we just bumped, we want to deploy the current version
+            echo '{"response": "{\"should_deploy\": true, \"version_bump_needed\": false, \"new_version\": \"'$VERSION'\", \"do_desktop\": true, \"do_mobile\": true, \"reasoning\": \"Version bump commit detected. Proceeding to deploy.\"}"}' > raw_output.json
+          else
+            CHANGES=$(git diff --name-only HEAD~1 | tr '\n' ',' || echo "none")
+            LOG=$(git log -n 5 --oneline | tr '\n' ';')
+            
+            PROMPT="Analyze the following project state and determine the release strategy. Return ONLY a valid JSON object with fields: new_version, docker_version, do_managed, do_local, do_desktop, do_mobile, should_deploy, reasoning, version_bump_needed. Context: Version=$VERSION, Changes=$CHANGES, Log=$LOG"
+            
+            # Run CLI
+            if ! ./scripts/kilocode-cli.cjs "$PROMPT" --output-format json > raw_output.json 2> kilocode_error.log; then
+              echo "::warning::KiloCode CLI failed, falling back to basic deployment"
+              cat kilocode_error.log
+              # Fallback JSON
+              echo '{"response": "{\"should_deploy\": true, \"version_bump_needed\": false, \"new_version\": \"'$VERSION'\", \"do_desktop\": true, \"do_mobile\": true}"}' > raw_output.json
+            fi
           fi
           
           # Extract response
