@@ -128,11 +128,33 @@ jobs:
       - name: Detect Service Changes
         id: detect
         run: |
-          CHANGES="web,api,proxy,postgres" 
+          CHANGES="base,web,api,proxy,postgres" 
           echo "changes=$CHANGES" >> $GITHUB_OUTPUT
 
-  build_postgres:
+  build_base:
     needs: [orchestrator, detect_changes]
+    if: contains(needs.detect_changes.outputs.changes, 'base')
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      - name: Build and Push Base
+        run: |
+          az acr login --name ${{ env.ACR_NAME }}
+          docker build -f config/docker/Dockerfile.base -t ${{ env.ACR_NAME }}.azurecr.io/base:latest -t ${{ env.ACR_NAME }}.azurecr.io/base:main-${{ github.sha }} .
+          docker push ${{ env.ACR_NAME }}.azurecr.io/base:latest
+          docker push ${{ env.ACR_NAME }}.azurecr.io/base:main-${{ github.sha }}
+
+  build_postgres:
+    needs: [orchestrator, detect_changes, build_base]
     if: contains(needs.detect_changes.outputs.changes, 'postgres')
     runs-on: ubuntu-latest
     permissions:
@@ -140,7 +162,8 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@v4
-      - uses: azure/login@v2
+      - name: Azure Login
+        uses: azure/login@v2
         with:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
@@ -153,7 +176,7 @@ jobs:
           docker push ${{ env.ACR_NAME }}.azurecr.io/postgres:main-${{ github.sha }}
 
   build_web:
-    needs: [orchestrator, detect_changes]
+    needs: [orchestrator, detect_changes, build_base]
     if: contains(needs.detect_changes.outputs.changes, 'web')
     runs-on: ubuntu-latest
     permissions:
@@ -161,7 +184,8 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@v4
-      - uses: azure/login@v2
+      - name: Azure Login
+        uses: azure/login@v2
         with:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
@@ -174,7 +198,7 @@ jobs:
           docker push ${{ env.ACR_NAME }}.azurecr.io/web:main-${{ github.sha }}
 
   build_api:
-    needs: [orchestrator, detect_changes]
+    needs: [orchestrator, detect_changes, build_base]
     if: contains(needs.detect_changes.outputs.changes, 'api')
     runs-on: ubuntu-latest
     permissions:
@@ -182,7 +206,8 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@v4
-      - uses: azure/login@v2
+      - name: Azure Login
+        uses: azure/login@v2
         with:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
@@ -195,7 +220,7 @@ jobs:
           docker push ${{ env.ACR_NAME }}.azurecr.io/api-backend:main-${{ github.sha }}
 
   build_proxy:
-    needs: [orchestrator, detect_changes]
+    needs: [orchestrator, detect_changes, build_base]
     if: contains(needs.detect_changes.outputs.changes, 'proxy')
     runs-on: ubuntu-latest
     permissions:
@@ -203,7 +228,8 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@v4
-      - uses: azure/login@v2
+      - name: Azure Login
+        uses: azure/login@v2
         with:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
