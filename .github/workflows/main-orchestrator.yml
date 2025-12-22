@@ -166,8 +166,8 @@ jobs:
           fi
 
           # Extract response and ensure it's a single-line clean JSON
-          CLEAN_JSON=$(cat raw_output.json | jq -c '.response | fromjson')
-          echo "ai_output=$CLEAN_JSON" >> $GITHUB_OUTPUT
+          jq -c '.response | fromjson' raw_output.json > clean_response.json
+          echo "ai_output=$(cat clean_response.json)" >> $GITHUB_OUTPUT
 
       - name: "Execute Logic & Version Bump"
         id: "exec"
@@ -191,8 +191,11 @@ jobs:
              echo "do_desktop=${{ github.event.inputs.do_desktop || 'true' }}" >> $GITHUB_OUTPUT
              echo "do_mobile=${{ github.event.inputs.do_mobile || 'true' }}" >> $GITHUB_OUTPUT
           else
-             echo "do_desktop=$(echo $DO_DESKTOP | xargs)" >> $GITHUB_OUTPUT
-             echo "do_mobile=$(echo $DO_MOBILE | xargs)" >> $GITHUB_OUTPUT
+             # Use portable xargs for trimming
+             FINAL_DESKTOP=$(echo "$DO_DESKTOP" | xargs)
+             FINAL_MOBILE=$(echo "$DO_MOBILE" | xargs)
+             echo "do_desktop=$FINAL_DESKTOP" >> $GITHUB_OUTPUT
+             echo "do_mobile=$FINAL_MOBILE" >> $GITHUB_OUTPUT
           fi
 
           if [ "$BUMP_NEEDED" == "true" ]; then
