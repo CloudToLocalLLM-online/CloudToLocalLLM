@@ -228,7 +228,9 @@ jobs:
 
   build_and_push:
     needs: orchestrator
-    if: needs.orchestrator.outputs.should_deploy == 'true' || needs.orchestrator.outputs.should_deploy == true
+    if: |
+      always() && 
+      (needs.orchestrator.outputs.should_deploy == 'true' || needs.orchestrator.outputs.should_deploy == true)
     uses: ./.github/workflows/build-pipeline.yml
     with:
       do_desktop: ${{ needs.orchestrator.outputs.do_desktop == 'true' }}
