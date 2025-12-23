@@ -1,32 +1,12 @@
 name: "🔀 Main Orchestrator"
 
 on:
-  push:
-    branches: [main]
   pull_request:
     types: [opened, reopened, synchronize]
   issues:
     types: [opened, reopened]
   issue_comment:
     types: [created]
-  workflow_dispatch:
-    inputs:
-      do_managed:
-        description: "Deploy to Cloud (Managed)"
-        type: boolean
-        default: false
-      do_local:
-        description: "Deploy to Local (Ollama)"
-        type: boolean
-        default: false
-      do_desktop:
-        description: "Build for Desktop"
-        type: boolean
-        default: true
-      version_override:
-        description: "Override version (e.g. 1.2.3). Leave empty for auto."
-        type: string
-        required: false
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.sha }}
@@ -49,14 +29,12 @@ jobs:
     outputs:
       command: "${{ steps.extract_command.outputs.command }}"
       additional_context: "${{ steps.extract_command.outputs.additional_context }}"
-      do_desktop: "${{ github.event.inputs.do_desktop || 'true' }}"
     steps:
       - name: "Extract command"
         id: "extract_command"
         uses: "actions/github-script@v7"
         env:
           EVENT_TYPE: "${{ github.event_name }}.${{ github.event.action }}"
-          # Explicitly check for existence of properties to satisfy IDE/linters
           COMMENT_BODY: "${{ github.event.comment.body }}"
           REVIEW_BODY: "${{ github.event.review.body }}"
           ISSUE_BODY: "${{ github.event.issue.body }}"
@@ -67,11 +45,8 @@ jobs:
             const reviewBody = process.env.REVIEW_BODY;
             const issueBody = process.env.ISSUE_BODY;
             const request = (commentBody || reviewBody || issueBody || '').trim();
-            const eventName = context.eventName;
 
-            if (eventName === 'push' || eventName === 'workflow_dispatch') {
-              core.setOutput('command', 'deploy');
-            } else if (eventType === 'pull_request.opened') {
+            if (eventType === 'pull_request.opened') {
               core.setOutput('command', 'review');
             } else if (['issues.opened', 'issues.reopened'].includes(eventType)) {
               core.setOutput('command', 'triage');
@@ -80,9 +55,6 @@ jobs:
               core.setOutput('additional_context', request.replace(/^@ai-agent \/review/, '').trim());
             } else if (request.startsWith("@ai-agent /triage")) {
               core.setOutput('command', 'triage');
-            } else if (request.startsWith("@ai-agent /deploy")) {
-              core.setOutput('command', 'deploy');
-              core.setOutput('additional_context', request.replace(/^@ai-agent \/deploy/, '').trim());
             } else if (request.startsWith("@ai-agent")) {
               core.setOutput('command', 'invoke');
               core.setOutput('additional_context', request.replace(/^@ai-agent/, '').trim());
@@ -113,101 +85,4 @@ jobs:
     uses: "./.github/workflows/ai-task.yml"
     with:
       additional_context: "${{ needs.dispatch.outputs.additional_context }}"
-    secrets: inherit
-
-  # Orchestrator Job: Analyzes project state and decides on release strategy
-  orchestrator:
-    needs: dispatch
-    if: needs.dispatch.outputs.command == 'deploy'
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      id-token: write
-    outputs:
-      deploy_now: ${{ steps.orchestrate.outputs.should_deploy }}
-      new_version: ${{ steps.orchestrate.outputs.new_version }}
-      do_desktop: ${{ steps.orchestrate.outputs.do_desktop }}
-      bump_needed: ${{ steps.orchestrate.outputs.bump_needed }}
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          token: ${{ secrets.PAT_TOKEN }}
-          fetch-depth: 50
-          fetch-tags: true
-
-      - name: "Orchestration Logic"
-        id: "orchestrate"
-        env:
-          KILOCODE_API_KEY: "${{ secrets.KILOCODE_API_KEY }}"
-        run: |
-          set -e
-          chmod +x scripts/ai-agent.cjs
-
-          # Gather context
-          VERSION=$(cat assets/version.json | jq -r '.version' || echo "7.0.0")
-          COMMIT_MSG=$(git log -1 --pretty=%B)
-
-          if [[ "$COMMIT_MSG" == *"chore: bump version"* ]]; then
-            echo "::notice::Detected version bump commit. Skipping analysis and enforcing deployment."
-            # Enforce deploy without further bump - wrap in 'response' to match AI output
-            echo '{"response": "{\"should_deploy\": true, \"version_bump_needed\": false, \"new_version\": \"'$VERSION'\", \"do_desktop\": true}"}' > raw_output.json
-          else
-            ./scripts/ai-agent.cjs "Analyze the latest changes and decide if a release is needed. Version=$VERSION. Commit message: $COMMIT_MSG" --output-format json > raw_output.json
-            if [ $? -ne 0 ]; then
-              echo "::error::AI Agent failed to run."
-              exit 1
-            fi
-          fi
-
-           # Parse outputs and sanitize
-          CLEAN_RESPONSE=$(jq -c '.response | fromjson' raw_output.json)
-          SHOULD_DEPLOY=$(echo "$CLEAN_RESPONSE" | jq -r '.should_deploy // true' | xargs)
-          NEW_VERSION=$(echo "$CLEAN_RESPONSE" | jq -r '.new_version // "'$VERSION'"' | xargs)
-          BUMP_NEEDED=$(echo "$CLEAN_RESPONSE" | jq -r '.version_bump_needed // false' | xargs)
-          DO_DESKTOP=$(echo "$CLEAN_RESPONSE" | jq -r '.do_desktop // true' | xargs)
-
-          # Export outputs explicitly - ensure strings
-          echo "should_deploy=$SHOULD_DEPLOY" >> $GITHUB_OUTPUT
-          echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
-          echo "do_desktop=$DO_DESKTOP" >> $GITHUB_OUTPUT
-          echo "bump_needed=$BUMP_NEEDED" >> $GITHUB_OUTPUT
-
-          # Version bumping
-          if [ "$BUMP_NEEDED" == "true" ]; then
-            echo "Bumping version to $NEW_VERSION"
-            git config user.name "github-actions[bot]"
-            git config user.email "github-actions[bot]@users.noreply.github.com"
-            
-            # Proper JSON update using jq
-            tmp=$(mktemp)
-            jq --arg v "$NEW_VERSION" '.version = $v' assets/version.json > "$tmp" && mv "$tmp" assets/version.json
-            
-            # Use script if available
-            if [ -f scripts/update-all-versions.sh ]; then
-                chmod +x scripts/update-all-versions.sh
-                ./scripts/update-all-versions.sh "$NEW_VERSION" "${{ github.sha }}"
-            fi
-            
-            git add -A
-            git commit -m "chore: bump version to $NEW_VERSION"
-            git push origin main
-          fi
-
-      - name: "Debug Orchestration"
-        if: always()
-        run: |
-          echo "Should Deploy: ${{ steps.orchestrate.outputs.should_deploy }}"
-          echo "New Version: ${{ steps.orchestrate.outputs.new_version }}"
-          echo "Do Desktop: ${{ steps.orchestrate.outputs.do_desktop }}"
-
-  build_artifacts:
-    needs: orchestrator
-    if: needs.orchestrator.outputs.deploy_now == 'true'
-    uses: "./.github/workflows/build-pipeline.yml"
-    with:
-      do_desktop: ${{ needs.orchestrator.outputs.do_desktop == 'true' }}
-      sha: ${{ github.sha }}
-      promote: true
-      create_release: ${{ needs.orchestrator.outputs.bump_needed == 'true' }}
-      version: ${{ needs.orchestrator.outputs.new_version }}
     secrets: inherit

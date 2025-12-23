@@ -1,28 +1,8 @@
 name: "🏭 Build Pipeline"
 
 on:
-  workflow_call:
-    inputs:
-      do_desktop:
-        description: "Build for Desktop"
-        type: boolean
-        default: true
-      sha:
-        description: "Commit SHA to deploy"
-        type: string
-        required: false
-      promote:
-        description: "Promote to Argo CD (GitOps)"
-        type: boolean
-        default: false
-      create_release:
-        description: "Create GitHub Release"
-        type: boolean
-        default: false
-      version:
-        description: "Version for release (e.g. 1.2.3)"
-        type: string
-        required: false
+  push:
+    branches: [main]
   workflow_dispatch:
     inputs:
       do_desktop:
@@ -36,13 +16,13 @@ on:
       promote:
         description: "Promote to Argo CD (GitOps)"
         type: boolean
-        default: false
+        default: true
       create_release:
         description: "Create GitHub Release"
         type: boolean
         default: false
-      version:
-        description: "Version for release (e.g. 1.2.3)"
+      version_override:
+        description: "Override version (e.g. 1.2.3). Leave empty for auto."
         type: string
         required: false
 
@@ -63,12 +43,86 @@ defaults:
     shell: "bash"
 
 jobs:
-  # ============================================================================
+  # ============================================================================ 
+  # ORCHESTRATION STAGE
+  # ============================================================================ 
+  orchestrate:
+    if: "${{ !contains(github.event.head_commit.message, 'chore: bump version') && !contains(github.event.head_commit.message, 'chore(deploy): promote version') }}"
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      id-token: write
+    outputs:
+      should_deploy: ${{ steps.orchestrate.outputs.should_deploy }}
+      new_version: ${{ steps.orchestrate.outputs.new_version }}
+      do_desktop: ${{ steps.orchestrate.outputs.do_desktop }}
+      bump_needed: ${{ steps.orchestrate.outputs.bump_needed }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.PAT_TOKEN }}
+          fetch-depth: 50
+          fetch-tags: true
+
+      - name: "Orchestration Logic"
+        id: "orchestrate"
+        env:
+          KILOCODE_API_KEY: "${{ secrets.KILOCODE_API_KEY }}"
+        run: |
+          set -e
+          chmod +x scripts/ai-agent.cjs
+
+          # Gather context
+          VERSION=$(cat assets/version.json | jq -r '.version' || echo "7.0.0")
+          COMMIT_MSG=$(git log -1 --pretty=%B)
+
+          if [ -n "${{ github.event.inputs.version_override }}" ]; then
+             echo "::notice::Manual version override: ${{ github.event.inputs.version_override }}"
+             echo '{"response": "{\"should_deploy\": true, \"version_bump_needed\": true, \"new_version\": \"${{ github.event.inputs.version_override }}\", \"do_desktop\": true}"}' > raw_output.json
+          else
+             ./scripts/ai-agent.cjs "Analyze the latest changes and decide if a release is needed. Version=$VERSION. Commit message: $COMMIT_MSG" --output-format json > raw_output.json
+          fi
+
+           # Parse outputs and sanitize
+          CLEAN_RESPONSE=$(jq -c '.response | fromjson' raw_output.json)
+          SHOULD_DEPLOY=$(echo "$CLEAN_RESPONSE" | jq -r '.should_deploy // true' | xargs)
+          NEW_VERSION=$(echo "$CLEAN_RESPONSE" | jq -r '.new_version // "'$VERSION'"' | xargs)
+          BUMP_NEEDED=$(echo "$CLEAN_RESPONSE" | jq -r '.version_bump_needed // false' | xargs)
+          DO_DESKTOP=$(echo "$CLEAN_RESPONSE" | jq -r '.do_desktop // true' | xargs)
+
+          # Export outputs explicitly
+          echo "should_deploy=$SHOULD_DEPLOY" >> $GITHUB_OUTPUT
+          echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
+          echo "do_desktop=$DO_DESKTOP" >> $GITHUB_OUTPUT
+          echo "bump_needed=$BUMP_NEEDED" >> $GITHUB_OUTPUT
+
+          # Version bumping
+          if [ "$BUMP_NEEDED" == "true" ]; then
+            echo "Bumping version to $NEW_VERSION"
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            
+            tmp=$(mktemp)
+            jq --arg v "$NEW_VERSION" '.version = $v' assets/version.json > "$tmp" && mv "$tmp" assets/version.json
+            
+            if [ -f scripts/update-all-versions.sh ]; then
+                chmod +x scripts/update-all-versions.sh
+                ./scripts/update-all-versions.sh "$NEW_VERSION" "${{ github.sha }}"
+            fi
+            
+            git add -A
+            git commit -m "chore: bump version to $NEW_VERSION"
+            git push origin main
+          fi
+
+  # ============================================================================ 
   # BUILD STAGE
-  # ============================================================================
+  # ============================================================================ 
 
   # Stage 1: Base Image
   build_base:
+    needs: orchestrate
+    if: needs.orchestrate.outputs.should_deploy == 'true'
     runs-on: ubuntu-latest
     permissions:
       id-token: write
@@ -92,9 +146,13 @@ jobs:
           docker push ${{ env.ACR_NAME }}.azurecr.io/base:main-${SHA}
 
   # Stage 2: Concurrent Service Builds
-  build_postgres:
-    needs: [build_base]
+  build_services:
+    needs: [orchestrate, build_base]
+    if: needs.orchestrate.outputs.should_deploy == 'true'
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service: [postgres, web, api-backend, streaming-proxy]
     permissions:
       id-token: write
       contents: read
@@ -108,92 +166,37 @@ jobs:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-      - name: Build and Push Postgres
+      - name: Build and Push Service
         run: |
           az acr login --name ${{ env.ACR_NAME }}
           SHA="${{ inputs.sha || github.sha }}"
-          docker build -f config/docker/Dockerfile.postgres --build-arg BASE_REGISTRY=${{ env.ACR_NAME }}.azurecr.io -t ${{ env.ACR_NAME }}.azurecr.io/postgres:latest -t ${{ env.ACR_NAME }}.azurecr.io/postgres:main-${SHA} .
-          docker push ${{ env.ACR_NAME }}.azurecr.io/postgres:latest
-          docker push ${{ env.ACR_NAME }}.azurecr.io/postgres:main-${SHA}
+          SERVICE="${{ matrix.service }}"
+          DOCKERFILE="config/docker/Dockerfile.$SERVICE"
+          
+          # Fix for naming inconsistencies
+          IMAGE_NAME="$SERVICE"
+          if [[ "$SERVICE" == "api-backend" ]]; then IMAGE_NAME="api-backend"; fi
+          if [[ "$SERVICE" == "streaming-proxy" ]]; then IMAGE_NAME="streaming-proxy"; fi
+          
+          # Check if service-specific dockerfile exists in root or config/docker
+          if [ ! -f "$DOCKERFILE" ]; then
+             if [ -f "services/$SERVICE/Dockerfile.prod" ]; then
+                DOCKERFILE="services/$SERVICE/Dockerfile.prod"
+             fi
+          fi
 
-  build_web:
-    needs: [build_base]
-    runs-on: ubuntu-latest
-    permissions:
-      id-token: write
-      contents: read
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ inputs.sha || github.sha }}
-      - name: Azure Login
-        uses: azure/login@v2
-        with:
-          client-id: ${{ secrets.AZURE_CLIENT_ID }}
-          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-
-      - name: Build and Push Web
-        run: |
-          az acr login --name ${{ env.ACR_NAME }}
-          SHA="${{ inputs.sha || github.sha }}"
-          docker build -f config/docker/Dockerfile.web -t ${{ env.ACR_NAME }}.azurecr.io/web:latest -t ${{ env.ACR_NAME }}.azurecr.io/web:main-${SHA} .
-          docker push ${{ env.ACR_NAME }}.azurecr.io/web:latest
-          docker push ${{ env.ACR_NAME }}.azurecr.io/web:main-${SHA}
-
-  build_api:
-    needs: [build_base]
-    runs-on: ubuntu-latest
-    permissions:
-      id-token: write
-      contents: read
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ inputs.sha || github.sha }}
-      - name: Azure Login
-        uses: azure/login@v2
-        with:
-          client-id: ${{ secrets.AZURE_CLIENT_ID }}
-          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-
-      - name: Build and Push API
-        run: |
-          az acr login --name ${{ env.ACR_NAME }}
-          SHA="${{ inputs.sha || github.sha }}"
-          docker build -f config/docker/Dockerfile.api-backend -t ${{ env.ACR_NAME }}.azurecr.io/api-backend:latest -t ${{ env.ACR_NAME }}.azurecr.io/api-backend:main-${SHA} .
-          docker push ${{ env.ACR_NAME }}.azurecr.io/api-backend:latest
-          docker push ${{ env.ACR_NAME }}.azurecr.io/api-backend:main-${SHA}
-
-  build_proxy:
-    needs: [build_base]
-    runs-on: ubuntu-latest
-    permissions:
-      id-token: write
-      contents: read
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ inputs.sha || github.sha }}
-      - name: Azure Login
-        uses: azure/login@v2
-        with:
-          client-id: ${{ secrets.AZURE_CLIENT_ID }}
-          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-
-      - name: Build and Push Proxy
-        run: |
-          az acr login --name ${{ env.ACR_NAME }}
-          SHA="${{ inputs.sha || github.sha }}"
-          docker build -f config/docker/Dockerfile.streaming-proxy -t ${{ env.ACR_NAME }}.azurecr.io/streaming-proxy:latest -t ${{ env.ACR_NAME }}.azurecr.io/streaming-proxy:main-${SHA} .
-          docker push ${{ env.ACR_NAME }}.azurecr.io/streaming-proxy:latest
-          docker push ${{ env.ACR_NAME }}.azurecr.io/streaming-proxy:main-${SHA}
+          docker build -f "$DOCKERFILE" \
+            --build-arg BASE_REGISTRY=${{ env.ACR_NAME }}.azurecr.io \
+            -t ${{ env.ACR_NAME }}.azurecr.io/$IMAGE_NAME:latest \
+            -t ${{ env.ACR_NAME }}.azurecr.io/$IMAGE_NAME:main-${SHA} .
+          
+          docker push ${{ env.ACR_NAME }}.azurecr.io/$IMAGE_NAME:latest
+          docker push ${{ env.ACR_NAME }}.azurecr.io/$IMAGE_NAME:main-${SHA}
 
   # Stage 3: Client Builds (Parallel)
   build_linux:
-    if: inputs.do_desktop == true
+    needs: orchestrate
+    if: needs.orchestrate.outputs.should_deploy == 'true' && needs.orchestrate.outputs.do_desktop == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -212,18 +215,16 @@ jobs:
         run: |
           flutter pub get
           flutter build linux --release
-          # Create tar.gz
           tar -czf CloudToLocalLLM-Linux-Portable.tar.gz -C build/linux/x64/release/bundle .
       - name: Upload Linux Artifact
         uses: actions/upload-artifact@v4
         with:
           name: desktop-linux
-          path: |
-            build/linux/x64/release/bundle/
-            *.tar.gz
+          path: "*.tar.gz"
 
   build_windows:
-    if: inputs.do_desktop == true
+    needs: orchestrate
+    if: needs.orchestrate.outputs.should_deploy == 'true' && needs.orchestrate.outputs.do_desktop == 'true'
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
@@ -240,21 +241,18 @@ jobs:
       - name: Build Windows
         run: |
           flutter build windows --release --no-tree-shake-icons
-          # Create ZIP
           Compress-Archive -Path build\windows\x64\runner\Release\* -DestinationPath CloudToLocalLLM-Windows-Portable.zip -Force
         shell: pwsh
       - name: Upload Windows Artifact
         uses: actions/upload-artifact@v4
         with:
           name: desktop-windows
-          path: |
-            build/windows/x64/runner/Release/
-            *.zip
+          path: "*.zip"
 
   # Stage 4: Promotion
   promote_to_gitops:
-    needs: [build_base, build_postgres, build_web, build_api, build_proxy]
-    if: inputs.promote == true
+    needs: [orchestrate, build_services]
+    if: needs.orchestrate.outputs.should_deploy == 'true' && (github.event.inputs.promote != 'false')
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -262,7 +260,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           token: ${{ secrets.PAT_TOKEN }}
-          ref: main # Always promote on main
+          ref: main
           fetch-depth: 0
 
       - name: Promote to Argo CD (GitOps)
@@ -273,17 +271,11 @@ jobs:
           SHA="${{ inputs.sha || github.sha }}"
           TAG="main-${SHA}"
 
-          echo "Promoting version $TAG..."
-
-          # Update Kustomize image tags
           sed -i "s|newTag: .*|newTag: $TAG-api-backend|g" k8s/apps/managed/api-backend/kustomization.yaml
           sed -i "s|newTag: .*|newTag: $TAG|g" k8s/apps/managed/web-frontend/kustomization.yaml
 
-          # Attempt to update streaming proxy if present
           if grep -r "streaming-proxy" k8s/apps/managed/ > /dev/null; then
              sed -i "s|newTag: .*streaming-proxy.*|newTag: $TAG-streaming-proxy|g" $(grep -r "streaming-proxy" k8s/apps/managed/ -l)
-          else
-             echo "Streaming proxy tag not found in kustomization"
           fi
 
           git add k8s/apps/managed/
@@ -291,15 +283,12 @@ jobs:
             git commit -m "chore(deploy): promote version $TAG [skip ci]"
             git pull --rebase origin main
             git push origin main
-            echo "✅ Successfully promoted version $TAG to Argo CD"
-          else
-            echo "No changes to promote"
           fi
 
   # Stage 5: Release
   create_release:
-    needs: [build_linux, build_windows, promote_to_gitops]
-    if: always() && inputs.create_release == true && (needs.promote_to_gitops.result == 'success' || needs.promote_to_gitops.result == 'skipped')
+    needs: [orchestrate, build_linux, build_windows, promote_to_gitops]
+    if: always() && needs.orchestrate.outputs.bump_needed == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -315,14 +304,11 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
         with:
-          tag_name: v${{ inputs.version }}
-          name: Release v${{ inputs.version }}
+          tag_name: v${{ needs.orchestrate.outputs.new_version }}
+          name: Release v${{ needs.orchestrate.outputs.new_version }}
           body: |
-            ## CloudToLocalLLM v${{ inputs.version }}
-            
-            Build artifacts for version ${{ inputs.version }}.
-            
-            ### SHA: ${{ inputs.sha || github.sha }}
+            ## CloudToLocalLLM v${{ needs.orchestrate.outputs.new_version }}
+            Build artifacts for version ${{ needs.orchestrate.outputs.new_version }}.
           draft: false
           prerelease: false
           files: |
