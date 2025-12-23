@@ -1,4 +1,4 @@
-name: "🏭 Build Pipeline"
+name: "Build Pipeline"
 
 on:
   push:
@@ -30,11 +30,6 @@ defaults:
     shell: "bash"
 
 jobs:
-  # =============================================================================
-  # BUILD STAGE
-  # =============================================================================
-
-  # Stage 1: Base Image
   build_base:
     runs-on: ubuntu-latest
     permissions:
@@ -56,7 +51,6 @@ jobs:
           docker push ${{ env.ACR_NAME }}.azurecr.io/base:latest
           docker push ${{ env.ACR_NAME }}.azurecr.io/base:main-${SHA}
 
-  # Stage 2: Concurrent Service Builds
   build_services:
     needs: [build_base]
     runs-on: ubuntu-latest
@@ -80,22 +74,15 @@ jobs:
           SHA="${{ github.sha }}"
           SERVICE="${{ matrix.service }}"
           DOCKERFILE="config/docker/Dockerfile.$SERVICE"
-          
           if [ ! -f "$DOCKERFILE" ]; then
              if [ -f "services/$SERVICE/Dockerfile.prod" ]; then
                 DOCKERFILE="services/$SERVICE/Dockerfile.prod"
              fi
           fi
-
-          docker build -f "$DOCKERFILE" \
-            --build-arg BASE_REGISTRY=${{ env.ACR_NAME }}.azurecr.io \
-            -t ${{ env.ACR_NAME }}.azurecr.io/$SERVICE:latest \
-            -t ${{ env.ACR_NAME }}.azurecr.io/$SERVICE:main-${SHA} .
-          
+          docker build -f "$DOCKERFILE" --build-arg BASE_REGISTRY=${{ env.ACR_NAME }}.azurecr.io -t ${{ env.ACR_NAME }}.azurecr.io/$SERVICE:latest -t ${{ env.ACR_NAME }}.azurecr.io/$SERVICE:main-${SHA} .
           docker push ${{ env.ACR_NAME }}.azurecr.io/$SERVICE:latest
           docker push ${{ env.ACR_NAME }}.azurecr.io/$SERVICE:main-${SHA}
 
-  # Stage 3: Client Builds
   build_linux:
     runs-on: ubuntu-latest
     steps:
@@ -142,7 +129,6 @@ jobs:
           name: desktop-windows
           path: "*.zip"
 
-  # Stage 4: Promotion (GitOps)
   promote_to_gitops:
     needs: [build_services]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
@@ -173,7 +159,6 @@ jobs:
             git push origin main
           fi
 
-  # Stage 5: Create Release (if it's a version bump commit)
   create_release:
     needs: [build_linux, build_windows, promote_to_gitops]
     if: always() && (contains(github.event.head_commit.message, 'chore: bump version') || startsWith(github.ref, 'refs/tags/v'))
