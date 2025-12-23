@@ -93,7 +93,7 @@ jobs:
 
   orchestrate:
     needs: dispatch
-    if: needs.dispatch.outputs.command == 'orchestrate' && !contains(github.event.head_commit.message, 'chore: bump version') && !contains(github.event.head_commit.message, 'chore(deploy): promote version')
+    if: ${{ needs.dispatch.outputs.command == 'orchestrate' && !contains(github.event.head_commit.message, 'version') }}
     runs-on: ubuntu-latest
     permissions:
       contents: write
