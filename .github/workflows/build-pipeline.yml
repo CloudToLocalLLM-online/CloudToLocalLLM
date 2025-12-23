@@ -325,8 +325,9 @@ jobs:
             ### SHA: ${{ inputs.sha || github.sha }}
           draft: false
           prerelease: false
-                    files: |
-                      desktop-windows/*.zip
-                      desktop-linux/*.tar.gz          generate_release_notes: true
+          files: |
+            desktop-windows/*.zip
+            desktop-linux/*.tar.gz
+          generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
