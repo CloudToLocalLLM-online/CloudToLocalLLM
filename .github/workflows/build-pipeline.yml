@@ -3,10 +3,37 @@ name: "Build Pipeline"
 on:
   push:
     branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: build-pipeline-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  AZURE_RESOURCE_GROUP: cloudtolocalllm-rg
+  AZURE_CLUSTER_NAME: cloudtolocalllm-aks
+  ACR_NAME: imrightguycloudtolocalllm
+  SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
 
 jobs:
   build_base:
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
     steps:
       - uses: actions/checkout@v4
-      - run: echo "Base Build Placeholder"
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      - name: Build and Push Base
+        run: |
+          az acr login --name ${{ env.ACR_NAME }}
+          SHA="${{ github.sha }}"
+          docker build -f config/docker/Dockerfile.base -t ${{ env.ACR_NAME }}.azurecr.io/base:latest -t ${{ env.ACR_NAME }}.azurecr.io/base:main-${SHA} .
+          docker push ${{ env.ACR_NAME }}.azurecr.io/base:latest
+          docker push ${{ env.ACR_NAME }}.azurecr.io/base:main-${SHA}
+        shell: bash
