@@ -1,4 +1,4 @@
-name: "Main Orchestrator"
+name: Main Orchestrator
 
 on:
   push:
@@ -19,22 +19,22 @@ env:
 
 defaults:
   run:
-    shell: "bash"
+    shell: bash
 
 jobs:
   dispatch:
-    runs-on: "ubuntu-latest"
+    runs-on: ubuntu-latest
     permissions:
-      contents: "read"
-      issues: "write"
-      pull-requests: "write"
+      contents: read
+      issues: write
+      pull-requests: write
     outputs:
-      command: "${{ steps.extract_command.outputs.command }}"
-      additional_context: "${{ steps.extract_command.outputs.additional_context }}"
+      command: ${{ steps.extract_command.outputs.command }}
+      additional_context: ${{ steps.extract_command.outputs.additional_context }}
     steps:
-      - name: "Extract command"
-        id: "extract_command"
-        uses: "actions/github-script@v7"
+      - name: Extract command
+        id: extract_command
+        uses: actions/github-script@v7
         env:
           EVENT_TYPE: "${{ github.event_name }}.${{ github.event.action }}"
           COMMENT_BODY: "${{ github.event.comment.body }}"
@@ -72,31 +72,31 @@ jobs:
 
   review:
     needs: dispatch
-    if: needs.dispatch.outputs.command == 'review'
-    uses: "./.github/workflows/ai-review.yml"
+    if: ${{ needs.dispatch.outputs.command == 'review' }}
+    uses: ./.github/workflows/ai-review.yml
     with:
-      additional_context: "${{ needs.dispatch.outputs.additional_context }}"
+      additional_context: ${{ needs.dispatch.outputs.additional_context }}
     secrets: inherit
 
   triage:
     needs: dispatch
-    if: needs.dispatch.outputs.command == 'triage'
-    uses: "./.github/workflows/ai-triage.yml"
+    if: ${{ needs.dispatch.outputs.command == 'triage' }}
+    uses: ./.github/workflows/ai-triage.yml
     with:
-      additional_context: "${{ needs.dispatch.outputs.additional_context }}"
+      additional_context: ${{ needs.dispatch.outputs.additional_context }}
     secrets: inherit
 
   invoke:
     needs: dispatch
-    if: needs.dispatch.outputs.command == 'invoke'
-    uses: "./.github/workflows/ai-task.yml"
+    if: ${{ needs.dispatch.outputs.command == 'invoke' }}
+    uses: ./.github/workflows/ai-task.yml
     with:
-      additional_context: "${{ needs.dispatch.outputs.additional_context }}"
+      additional_context: ${{ needs.dispatch.outputs.additional_context }}
     secrets: inherit
 
   orchestrate:
     needs: dispatch
-    if: needs.dispatch.outputs.command == 'orchestrate' && !contains(github.event.head_commit.message, 'chore: bump version') && !contains(github.event.head_commit.message, 'chore(deploy): promote version')
+    if: ${{ needs.dispatch.outputs.command == 'orchestrate' && !contains(github.event.head_commit.message, 'chore: bump version') && !contains(github.event.head_commit.message, 'chore(deploy): promote version') }}
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -107,9 +107,9 @@ jobs:
           fetch-depth: 50
           fetch-tags: true
 
-      - name: "Orchestration Logic"
+      - name: Orchestration Logic
         env:
-          KILOCODE_API_KEY: "${{ secrets.KILOCODE_API_KEY }}"
+          KILOCODE_API_KEY: ${{ secrets.KILOCODE_API_KEY }}
         run: |
           set -e
           chmod +x scripts/ai-agent.cjs
