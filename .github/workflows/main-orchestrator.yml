@@ -105,6 +105,7 @@ jobs:
           fetch-tags: true
 
       - name: Orchestration Logic
+        shell: bash
         env:
           KILOCODE_API_KEY: ${{ secrets.KILOCODE_API_KEY }}
         run: |
