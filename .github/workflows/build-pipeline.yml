@@ -41,151 +41,29 @@ jobs:
           docker push ${{ env.ACR_NAME }}.azurecr.io/base:latest
           docker push ${{ env.ACR_NAME }}.azurecr.io/base:main-${SHA}
 
-  build_api:
+  promote_to_gitops:
     needs: [build_base]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     permissions:
-      id-token: write
-      contents: read
+      contents: write
     steps:
       - uses: actions/checkout@v4
-      - name: Azure Login
-        uses: azure/login@v2
         with:
-          client-id: ${{ secrets.AZURE_CLIENT_ID }}
-          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-      - name: Build and Push API
+          token: ${{ secrets.PAT_TOKEN }}
+          ref: main
+          fetch-depth: 0
+      - name: Promote to Argo CD
         run: |
-          az acr login --name ${{ env.ACR_NAME }}
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
           SHA="${{ github.sha }}"
-          docker build -f services/api-backend/Dockerfile.prod --build-arg BASE_REGISTRY=${{ env.ACR_NAME }}.azurecr.io -t ${{ env.ACR_NAME }}.azurecr.io/api-backend:latest -t ${{ env.ACR_NAME }}.azurecr.io/api-backend:main-${SHA} .
-          docker push ${{ env.ACR_NAME }}.azurecr.io/api-backend:latest
-          docker push ${{ env.ACR_NAME }}.azurecr.io/api-backend:main-${SHA}
-
-  build_web:
-    needs: [build_base]
-    runs-on: ubuntu-latest
-    permissions:
-      id-token: write
-      contents: read
-    steps:
-      - uses: actions/checkout@v4
-      - name: Azure Login
-        uses: azure/login@v2
-        with:
-          client-id: ${{ secrets.AZURE_CLIENT_ID }}
-          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-      - name: Build and Push Web
-        run: |
-          az acr login --name ${{ env.ACR_NAME }}
-          SHA="${{ github.sha }}"
-          docker build -f config/docker/Dockerfile.web -t ${{ env.ACR_NAME }}.azurecr.io/web:latest -t ${{ env.ACR_NAME }}.azurecr.io/web:main-${SHA} .
-          docker push ${{ env.ACR_NAME }}.azurecr.io/web:latest
-          docker push ${{ env.ACR_NAME }}.azurecr.io/web:main-${SHA}
-
-  build_linux:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Setup Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          flutter-version: "3.x"
-          channel: stable
-      - name: Install Linux dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev liblzma-dev libsecret-1-dev libcurl4-openssl-dev libssl-dev libayatana-appindicator3-dev
-      - name: Build Linux Desktop
-        run: |
-          flutter pub get
-          flutter build linux --release
-          tar -czf CloudToLocalLLM-Linux-Portable.tar.gz -C build/linux/x64/release/bundle .
-      - name: Upload Linux Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: desktop-linux
-          path: "*.tar.gz"
-
-  build_windows:
-    runs-on: windows-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Setup Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          flutter-version: "3.x"
-          channel: stable
-      - name: Build Windows
-        run: |
-          flutter config --enable-windows-desktop
-          flutter pub get
-          flutter build windows --release --no-tree-shake-icons
-          Compress-Archive -Path build\windows\x64\runner\Release\* -DestinationPath CloudToLocalLLM-Windows-Portable.zip -Force
-        shell: pwsh
-      - name: Upload Windows Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: desktop-windows
-          path: "*.zip"
-
-promote_to_gitops:
-  needs: [build_api, build_web]
-  if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-  runs-on: ubuntu-latest
-  permissions:
-    contents: write
-  steps:
-    - uses: actions/checkout@v4
-      with:
-        token: ${{ secrets.PAT_TOKEN }}
-        ref: main
-        fetch-depth: 0
-    - name: Promote to Argo CD
-      run: |
-        git config user.name "github-actions[bot]"
-        git config user.email "github-actions[bot]@users.noreply.github.com"
-        SHA="${{ github.sha }}"
-        TAG="main-${SHA}"
-        sed -i "s|newTag: .*|newTag: $TAG-api-backend|g" k8s/apps/managed/api-backend/kustomization.yaml
-        sed -i "s|newTag: .*|newTag: $TAG|g" k8s/apps/managed/web-frontend/kustomization.yaml
-        if grep -r "streaming-proxy" k8s/apps/managed/ > /dev/null;
-           then
-             sed -i "s|newTag: .*streaming-proxy.*|newTag: $TAG-streaming-proxy|g" $(grep -r "streaming-proxy" k8s/apps/managed/ -l)
-        fi
-        git add k8s/apps/managed/
-        if ! git diff --cached --quiet;
-          then
+          TAG="main-${SHA}"
+          sed -i "s|newTag: .*|newTag: $TAG-api-backend|g" k8s/apps/managed/api-backend/kustomization.yaml
+          sed -i "s|newTag: .*|newTag: $TAG|g" k8s/apps/managed/web-frontend/kustomization.yaml
+          git add k8s/apps/managed/
+          if ! git diff --cached --quiet; then
             git commit -m "chore(deploy): promote version $TAG [skip ci]"
             git pull --rebase origin main
             git push origin main
-        fi
-
-create_release:
-  needs: [build_linux, build_windows, promote_to_gitops]
-  if: ${{ always() && (contains(github.event.head_commit.message, 'chore: bump version') || startsWith(github.ref, 'refs/tags/v')) }}
-  runs-on: ubuntu-latest
-  permissions:
-    contents: write
-  steps:
-    - uses: actions/checkout@v4
-    - name: Get Version
-      id: get_version
-      run: |
-        VERSION=$(cat assets/version.json | jq -r '.version')
-        echo "version=$VERSION" >> $GITHUB_OUTPUT
-    - name: Download Artifacts
-      uses: actions/download-artifact@v4
-    - name: Create Release
-      uses: softprops/action-gh-release@v1
-      with:
-        tag_name: v${{ steps.get_version.outputs.version }}
-        name: Release v${{ steps.get_version.outputs.version }}
-        files: |
-          desktop-windows/*.zip
-          desktop-linux/*.tar.gz
-        generate_release_notes: true
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          fi
