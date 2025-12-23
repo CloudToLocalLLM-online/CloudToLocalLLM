@@ -1,4 +1,4 @@
-name: "🏭 Build Pipeline"
+name: "Build Pipeline"
 
 on:
   push:
@@ -16,7 +16,7 @@ on:
         default: true
 
 concurrency:
-  group: "${{ github.workflow }}-${{ github.ref }}-build"
+  group: "${{ github.workflow }}${{ github.ref }}-build"
   cancel-in-progress: false
 
 env:
@@ -30,9 +30,9 @@ defaults:
     shell: "bash"
 
 jobs:
-  # ============================================================================ 
+  # ============================================================================
   # BUILD STAGE
-  # ============================================================================ 
+  # ============================================================================
 
   # Stage 1: Base Image
   build_base:
@@ -100,14 +100,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: subosito/flutter-action@v2
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
         with:
           flutter-version: "3.x"
           channel: "stable"
-      - name: Build Linux Desktop
+      - name: Install Linux dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev liblzma-dev libsecret-1-dev libcurl4-openssl-dev libssl-dev libayatana-appindicator3-dev
+      - name: Build Linux Desktop
+        run: |
           flutter pub get
           flutter build linux --release
           tar -czf CloudToLocalLLM-Linux-Portable.tar.gz -C build/linux/x64/release/bundle .
@@ -121,7 +124,8 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: subosito/flutter-action@v2
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
         with:
           flutter-version: "3.x"
           channel: "stable"
