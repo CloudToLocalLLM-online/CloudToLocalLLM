@@ -70,7 +70,6 @@ jobs:
               core.setOutput('command', 'fallthrough');
             }
 
-  # Sub-Dispatch Tasks
   review:
     needs: dispatch
     if: needs.dispatch.outputs.command == 'review'
