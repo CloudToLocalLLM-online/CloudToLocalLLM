@@ -94,12 +94,10 @@ jobs:
         with:
           flutter-version: "3.x"
           channel: stable
-      - name: Install Linux dependencies
+      - name: Build Linux Desktop
         run: |
           sudo apt-get update
           sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev liblzma-dev libsecret-1-dev libcurl4-openssl-dev libssl-dev libayatana-appindicator3-dev
-      - name: Build Linux Desktop
-        run: |
           flutter pub get
           flutter build linux --release
           tar -czf CloudToLocalLLM-Linux-Portable.tar.gz -C build/linux/x64/release/bundle .
@@ -160,3 +158,30 @@ jobs:
             git pull --rebase origin main
             git push origin main
           fi
+
+  create_release:
+    needs: [build_linux, build_windows, promote_to_gitops]
+    if: ${{ always() && (contains(github.event.head_commit.message, 'chore: bump version') || startsWith(github.ref, 'refs/tags/v')) }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Get Version
+        id: get_version
+        run: |
+          VERSION=$(cat assets/version.json | jq -r '.version')
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+      - name: Download Artifacts
+        uses: actions/download-artifact@v4
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v${{ steps.get_version.outputs.version }}
+          name: Release v${{ steps.get_version.outputs.version }}
+          files: |
+            desktop-windows/*.zip
+            desktop-linux/*.tar.gz
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
