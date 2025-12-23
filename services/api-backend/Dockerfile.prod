@@ -6,23 +6,7 @@
 # Use custom Fedora base (cloudtolocalllm/base:latest)
 FROM cloudtolocalllm/base:latest
 
-# Switch to root to install Node.js
-USER root
-# Install NVM and Node.js 24
-# We need to install as the cloudtolocalllm user to match the builder
-USER cloudtolocalllm
-ENV NVM_DIR=/home/cloudtolocalllm/.nvm
-RUN curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash && \
-    . "$NVM_DIR/nvm.sh" && \
-    nvm install 24 && \
-    nvm alias default 24 && \
-    nvm use default && \
-    ln -s $(dirname $(nvm which default)) /home/cloudtolocalllm/node-bin
-
-# Add Node.js to PATH
-ENV PATH="/home/cloudtolocalllm/node-bin:$PATH"
-
-# Switch back to root for directory setup if needed, but we are already cloudtolocalllm below
+# Switch to root to ensure directory setup
 USER root
 
 # Create isolated data directories

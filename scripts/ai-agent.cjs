@@ -15,79 +15,7 @@ async function makeAIRequest(prompt, options = {}) {
     temperature = 0.7
   } = options;
 
-  // For testing: return mock responses based on prompt content
-  if (prompt.includes('Analyze the following project state') || prompt.includes('release strategy') || prompt.includes('Analyze the latest changes')) {
-    // Parse current version from prompt
-    const versionMatch = prompt.match(/Version=([^,\s]+)/) || prompt.match(/version is ([^,\s]+)/i);
-    let currentVersion = "7.0.0"; // default
-    if (versionMatch) {
-      currentVersion = versionMatch[1].replace(/"/g, '').replace(/,/g, '').replace(/\.$/, '');
-    }
-
-    // Increment patch version
-    const versionParts = currentVersion.split('.');
-    const patch = parseInt(versionParts[2] || 0) + 1;
-    const newVersion = `${versionParts[0]}.${versionParts[1]}.${patch}`;
-
-    // Mock deployment analysis response
-    return {
-      response: JSON.stringify({
-        new_version: newVersion,
-        docker_version: newVersion,
-        do_managed: true,
-        do_local: false,
-        do_desktop: true,
-        do_mobile: true,
-        should_deploy: true,
-        reasoning: "Mock response: Changes detected requiring deployment",
-        version_bump_needed: true
-      }),
-      model: model,
-      usage: { prompt_tokens: 100, completion_tokens: 50, total_tokens: 150 }
-    };
-  } else if (prompt.includes('triage issue') || prompt.includes('assign labels')) {
-    // Mock triage response
-    return {
-      response: JSON.stringify({
-        labels_to_set: ["bug", "priority: high"]
-      }),
-      model: model,
-      usage: { prompt_tokens: 80, completion_tokens: 30, total_tokens: 110 }
-    };
-  } else if (prompt.includes('review this pull request')) {
-    // Mock PR review response
-    return {
-      response: "Mock PR review: Code looks good, minor suggestions for improvement.",
-      model: model,
-      usage: { prompt_tokens: 120, completion_tokens: 60, total_tokens: 180 }
-    };
-  } else if (prompt.includes('generate a professional CHANGELOG entry')) {
-    // Mock changelog generation response
-    return {
-      response: `### Features
-* feat: re-enable AI workflows with AI Agent Gateway
-* feat: update AI Agent CLI to return proper JSON format
-
-### Bug Fixes
-* fix: update generate-changelog.sh to use AI Agent CLI instead of Gemini
-
-### Refactoring
-* refactor: rename Gemini workflows to AI Agent workflows
-* refactor: update all workflow environment variables and API calls`,
-      model: model,
-      usage: { prompt_tokens: 200, completion_tokens: 100, total_tokens: 300 }
-    };
-  } else {
-    // Mock general response
-    return {
-      response: `Mock AI Agent response to: ${prompt.substring(0, 50)}...`,
-      model: model,
-      usage: { prompt_tokens: 50, completion_tokens: 25, total_tokens: 75 }
-    };
-  }
-
-  // Original API call code (commented out for testing)
-  /*
+  // Perform real API call
   return new Promise((resolve, reject) => {
     const postData = JSON.stringify({
       prompt,
@@ -138,7 +66,6 @@ async function makeAIRequest(prompt, options = {}) {
     req.write(postData);
     req.end();
   });
-  */
 }
 
 async function main() {
