@@ -16,7 +16,7 @@ on:
         default: true
 
 concurrency:
-  group: ${{ github.workflow }}${{ github.ref }}-build
+  group: ${{ github.workflow }}-${{ github.ref }}-build
   cancel-in-progress: false
 
 env:
@@ -24,6 +24,10 @@ env:
   AZURE_CLUSTER_NAME: cloudtolocalllm-aks
   ACR_NAME: imrightguycloudtolocalllm
   SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
+
+defaults:
+  run:
+    shell: bash
 
 jobs:
   build_base:
@@ -40,7 +44,6 @@ jobs:
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
       - name: Build and Push Base
-        shell: bash
         run: |
           az acr login --name ${{ env.ACR_NAME }}
           SHA="${{ github.sha }}"
@@ -63,7 +66,6 @@ jobs:
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
       - name: Build and Push API
-        shell: bash
         run: |
           az acr login --name ${{ env.ACR_NAME }}
           SHA="${{ github.sha }}"
@@ -86,7 +88,6 @@ jobs:
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
       - name: Build and Push Web
-        shell: bash
         run: |
           az acr login --name ${{ env.ACR_NAME }}
           SHA="${{ github.sha }}"
@@ -140,57 +141,59 @@ jobs:
           name: desktop-windows
           path: "*.zip"
 
-  promote_to_gitops:
-    needs: [build_api, build_web]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          token: ${{ secrets.PAT_TOKEN }}
-          ref: main
-          fetch-depth: 0
-      - name: Promote to Argo CD
-        shell: bash
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          SHA="${{ github.sha }}"
-          TAG="main-${SHA}"
-          sed -i "s|newTag: .*|newTag: $TAG-api-backend|g" k8s/apps/managed/api-backend/kustomization.yaml
-          sed -i "s|newTag: .*|newTag: $TAG|g" k8s/apps/managed/web-frontend/kustomization.yaml
-          git add k8s/apps/managed/
-          if ! git diff --cached --quiet; then
-            git commit -m "chore(deploy): promote version $TAG [skip ci]"
-            git pull --rebase origin main
-            git push origin main
-          fi
+promote_to_gitops:
+  needs: [build_api, build_web]
+  if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+  runs-on: ubuntu-latest
+  permissions:
+    contents: write
+  steps:
+    - uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.PAT_TOKEN }}
+        ref: main
+        fetch-depth: 0
+    - name: Promote to Argo CD
+      run: |
+        git config user.name "github-actions[bot]"
+        git config user.email "github-actions[bot]@users.noreply.github.com"
+        SHA="${{ github.sha }}"
+        TAG="main-${SHA}"
+        sed -i "s|newTag: .*|newTag: $TAG-api-backend|g" k8s/apps/managed/api-backend/kustomization.yaml
+        sed -i "s|newTag: .*|newTag: $TAG|g" k8s/apps/managed/web-frontend/kustomization.yaml
+        if grep -r "streaming-proxy" k8s/apps/managed/ > /dev/null; then
+           sed -i "s|newTag: .*streaming-proxy.*|newTag: $TAG-streaming-proxy|g" $(grep -r "streaming-proxy" k8s/apps/managed/ -l)
+        fi
+        git add k8s/apps/managed/
+        if ! git diff --cached --quiet; then
+          git commit -m "chore(deploy): promote version $TAG [skip ci]"
+          git pull --rebase origin main
+          git push origin main
+        fi
 
-  create_release:
-    needs: [build_linux, build_windows, promote_to_gitops]
-    if: always() && (contains(github.event.head_commit.message, 'chore: bump version') || startsWith(github.ref, 'refs/tags/v'))
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    steps:
-      - uses: actions/checkout@v4
-      - name: Get Version
-        id: get_version
-        run: |
-          VERSION=$(cat assets/version.json | jq -r '.version')
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
-      - name: Download Artifacts
-        uses: actions/download-artifact@v4
-      - name: Create Release
-        uses: softprops/action-gh-release@v1
-        with:
-          tag_name: v${{ steps.get_version.outputs.version }}
-          name: Release v${{ steps.get_version.outputs.version }}
-          files: |
-            desktop-windows/*.zip
-            desktop-linux/*.tar.gz
-          generate_release_notes: true
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+create_release:
+  needs: [build_linux, build_windows, promote_to_gitops]
+  if: always() && (contains(github.event.head_commit.message, 'chore: bump version') || startsWith(github.ref, 'refs/tags/v'))
+  runs-on: ubuntu-latest
+  permissions:
+    contents: write
+  steps:
+    - uses: actions/checkout@v4
+    - name: Get Version
+      id: get_version
+      run: |
+        VERSION=$(cat assets/version.json | jq -r '.version')
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+    - name: Download Artifacts
+      uses: actions/download-artifact@v4
+    - name: Create Release
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: v${{ steps.get_version.outputs.version }}
+        name: Release v${{ steps.get_version.outputs.version }}
+        files: |
+          desktop-windows/*.zip
+          desktop-linux/*.tar.gz
+        generate_release_notes: true
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -18,6 +18,10 @@ concurrency:
 env:
   SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
 
+defaults:
+  run:
+    shell: bash
+
 jobs:
   dispatch:
     runs-on: ubuntu-latest
@@ -105,7 +109,6 @@ jobs:
           fetch-tags: true
 
       - name: Orchestration Logic
-        shell: bash
         env:
           KILOCODE_API_KEY: ${{ secrets.KILOCODE_API_KEY }}
         run: |
