@@ -15,6 +15,14 @@ on:
         description: "Promote to Argo CD (GitOps)"
         type: boolean
         default: false
+      create_release:
+        description: "Create GitHub Release"
+        type: boolean
+        default: false
+      version:
+        description: "Version for release (e.g. 1.2.3)"
+        type: string
+        required: false
   workflow_dispatch:
     inputs:
       do_desktop:
@@ -29,6 +37,14 @@ on:
         description: "Promote to Argo CD (GitOps)"
         type: boolean
         default: false
+      create_release:
+        description: "Create GitHub Release"
+        type: boolean
+        default: false
+      version:
+        description: "Version for release (e.g. 1.2.3)"
+        type: string
+        required: false
 
 concurrency:
   group: "${{ github.workflow }}-${{ inputs.sha || github.sha }}-build"
@@ -218,12 +234,18 @@ jobs:
       - name: Get dependencies
         run: flutter pub get
       - name: Build Windows
-        run: flutter build windows --release --no-tree-shake-icons
+        run: |
+          flutter build windows --release --no-tree-shake-icons
+          # Create ZIP
+          Compress-Archive -Path build\windows\x64\runner\Release\* -DestinationPath CloudToLocalLLM-Windows-Portable.zip -Force
+        shell: pwsh
       - name: Upload Windows Artifact
         uses: actions/upload-artifact@v4
         with:
           name: desktop-windows
-          path: build/windows/x64/runner/Release/
+          path: |
+            build/windows/x64/runner/Release/
+            *.zip
 
   # Stage 4: Promotion
   promote_to_gitops:
@@ -269,3 +291,39 @@ jobs:
           else
             echo "No changes to promote"
           fi
+
+  # Stage 5: Release
+  create_release:
+    needs: [build_linux, build_windows, promote_to_gitops]
+    if: always() && inputs.create_release == true && (needs.promote_to_gitops.result == 'success' || needs.promote_to_gitops.result == 'skipped')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.sha || github.sha }}
+          fetch-depth: 0
+
+      - name: Download Artifacts
+        uses: actions/download-artifact@v4
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v${{ inputs.version }}
+          name: Release v${{ inputs.version }}
+          body: |
+            ## CloudToLocalLLM v${{ inputs.version }}
+            
+            Build artifacts for version ${{ inputs.version }}.
+            
+            ### SHA: ${{ inputs.sha || github.sha }}
+          draft: false
+          prerelease: false
+          files: |
+            desktop-windows/*.zip
+            desktop-linux/*
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

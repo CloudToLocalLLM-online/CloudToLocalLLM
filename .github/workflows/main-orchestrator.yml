@@ -127,6 +127,7 @@ jobs:
       deploy_now: ${{ steps.orchestrate.outputs.should_deploy }}
       new_version: ${{ steps.orchestrate.outputs.new_version }}
       do_desktop: ${{ steps.orchestrate.outputs.do_desktop }}
+      bump_needed: ${{ steps.orchestrate.outputs.bump_needed }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -169,6 +170,7 @@ jobs:
           echo "should_deploy=$SHOULD_DEPLOY" >> $GITHUB_OUTPUT
           echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
           echo "do_desktop=$DO_DESKTOP" >> $GITHUB_OUTPUT
+          echo "bump_needed=$BUMP_NEEDED" >> $GITHUB_OUTPUT
 
           # Version bumping
           if [ "$BUMP_NEEDED" == "true" ]; then
@@ -206,4 +208,6 @@ jobs:
       do_desktop: ${{ needs.orchestrator.outputs.do_desktop == 'true' }}
       sha: ${{ github.sha }}
       promote: true
+      create_release: ${{ needs.orchestrator.outputs.bump_needed == 'true' }}
+      version: ${{ needs.orchestrator.outputs.new_version }}
     secrets: inherit
