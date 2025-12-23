@@ -4,10 +4,10 @@ on:
   push:
     branches: [main]
     paths-ignore:
-      - 'assets/version.json'
-      - 'pubspec.yaml'
-      - 'package.json'
-      - 'k8s/**'
+      - "assets/version.json"
+      - "pubspec.yaml"
+      - "package.json"
+      - "k8s/**"
   pull_request:
     types: [opened, reopened, synchronize]
   issues:
@@ -29,7 +29,7 @@ defaults:
 jobs:
   dispatch:
     runs-on: ubuntu-latest
-    if: ${{ !contains(github.event.head_commit.message, 'version') && !contains(github.event.head_commit.message, 'promote') }}
+    if: "${{ github.actor != 'github-actions[bot]' && !startsWith(github.event.head_commit.message, 'chore: bump version') && !startsWith(github.event.head_commit.message, 'chore(deploy): promote') }}"
     permissions:
       contents: read
       issues: write
@@ -123,7 +123,7 @@ jobs:
           COMMIT_MSG=$(git log -1 --pretty=%B)
 
           ./scripts/ai-agent.cjs "Analyze the latest changes and decide if a release is needed. Version=$VERSION. Commit message: $COMMIT_MSG" --output-format json > raw_output.json
-          
+
           CLEAN_RESPONSE=$(jq -c '.response | fromjson' raw_output.json)
           BUMP_NEEDED=$(echo "$CLEAN_RESPONSE" | jq -r '.version_bump_needed // false' | xargs)
           NEW_VERSION=$(echo "$CLEAN_RESPONSE" | jq -r '.new_version // "'$VERSION'"' | xargs)
