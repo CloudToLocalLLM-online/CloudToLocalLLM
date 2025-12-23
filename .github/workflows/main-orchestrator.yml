@@ -72,7 +72,7 @@ jobs:
 
   review:
     needs: dispatch
-    if: ${{ needs.dispatch.outputs.command == 'review' }}
+    if: needs.dispatch.outputs.command == 'review'
     uses: ./.github/workflows/ai-review.yml
     with:
       additional_context: ${{ needs.dispatch.outputs.additional_context }}
@@ -80,7 +80,7 @@ jobs:
 
   triage:
     needs: dispatch
-    if: ${{ needs.dispatch.outputs.command == 'triage' }}
+    if: needs.dispatch.outputs.command == 'triage'
     uses: ./.github/workflows/ai-triage.yml
     with:
       additional_context: ${{ needs.dispatch.outputs.additional_context }}
@@ -88,7 +88,7 @@ jobs:
 
   invoke:
     needs: dispatch
-    if: ${{ needs.dispatch.outputs.command == 'invoke' }}
+    if: needs.dispatch.outputs.command == 'invoke'
     uses: ./.github/workflows/ai-task.yml
     with:
       additional_context: ${{ needs.dispatch.outputs.additional_context }}

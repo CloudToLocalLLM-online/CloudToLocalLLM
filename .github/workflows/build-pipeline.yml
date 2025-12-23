@@ -3,7 +3,17 @@ name: "Build Pipeline"
 on:
   push:
     branches: [main]
+    tags: ["v*"]
   workflow_dispatch:
+    inputs:
+      do_desktop:
+        description: "Build for Desktop"
+        type: boolean
+        default: true
+      promote:
+        description: "Promote to Argo CD (GitOps)"
+        type: boolean
+        default: true
 
 concurrency:
   group: build-pipeline-${{ github.ref }}
@@ -94,10 +104,12 @@ jobs:
         with:
           flutter-version: "3.x"
           channel: stable
-      - name: Build Linux Desktop
+      - name: Install Linux dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev liblzma-dev libsecret-1-dev libcurl4-openssl-dev libssl-dev libayatana-appindicator3-dev
+      - name: Build Linux Desktop
+        run: |
           flutter pub get
           flutter build linux --release
           tar -czf CloudToLocalLLM-Linux-Portable.tar.gz -C build/linux/x64/release/bundle .
@@ -131,7 +143,7 @@ jobs:
 
   promote_to_gitops:
     needs: [build_api, build_web]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -161,7 +173,7 @@ jobs:
 
   create_release:
     needs: [build_linux, build_windows, promote_to_gitops]
-    if: ${{ always() && (contains(github.event.head_commit.message, 'chore: bump version') || startsWith(github.ref, 'refs/tags/v')) }}
+    if: ${{ always() && (startsWith(github.ref, 'refs/tags/v') || contains(github.event.head_commit.message, 'version')) }}
     runs-on: ubuntu-latest
     permissions:
       contents: write
