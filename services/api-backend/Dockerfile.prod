@@ -30,9 +30,11 @@ WORKDIR /api
 RUN mkdir -p /api/data /api/logs && \
     chown -R cloudtolocalllm:cloudtolocalllm /api
 
-# Copy artifacts (node_modules + code) from local filesystem
-# Ensure ownership by cloudtolocalllm
-COPY --chown=cloudtolocalllm:cloudtolocalllm services/api-backend/node_modules ./node_modules
+# Copy package files and install production dependencies
+COPY --chown=cloudtolocalllm:cloudtolocalllm services/api-backend/package*.json ./
+RUN npm install --omit=dev
+
+# Copy application source
 COPY --chown=cloudtolocalllm:cloudtolocalllm services/api-backend/ .
 
 # Switch to non-root user
