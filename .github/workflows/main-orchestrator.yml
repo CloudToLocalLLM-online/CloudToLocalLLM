@@ -3,6 +3,11 @@ name: "🔀 Main Orchestrator"
 on:
   push:
     branches: [main]
+    paths-ignore:
+      - 'assets/version.json'
+      - 'pubspec.yaml'
+      - 'package.json'
+      - 'k8s/**'
   pull_request:
     types: [opened, reopened, synchronize]
   issues:
@@ -24,6 +29,7 @@ defaults:
 jobs:
   dispatch:
     runs-on: ubuntu-latest
+    if: ${{ !contains(github.event.head_commit.message, 'version') && !contains(github.event.head_commit.message, 'promote') }}
     permissions:
       contents: read
       issues: write
@@ -72,7 +78,7 @@ jobs:
 
   review:
     needs: dispatch
-    if: needs.dispatch.outputs.command == 'review'
+    if: ${{ needs.dispatch.outputs.command == 'review' }}
     uses: ./.github/workflows/ai-review.yml
     with:
       additional_context: ${{ needs.dispatch.outputs.additional_context }}
@@ -80,7 +86,7 @@ jobs:
 
   triage:
     needs: dispatch
-    if: needs.dispatch.outputs.command == 'triage'
+    if: ${{ needs.dispatch.outputs.command == 'triage' }}
     uses: ./.github/workflows/ai-triage.yml
     with:
       additional_context: ${{ needs.dispatch.outputs.additional_context }}
@@ -88,7 +94,7 @@ jobs:
 
   invoke:
     needs: dispatch
-    if: needs.dispatch.outputs.command == 'invoke'
+    if: ${{ needs.dispatch.outputs.command == 'invoke' }}
     uses: ./.github/workflows/ai-task.yml
     with:
       additional_context: ${{ needs.dispatch.outputs.additional_context }}
@@ -96,7 +102,7 @@ jobs:
 
   orchestrate:
     needs: dispatch
-    if: ${{ needs.dispatch.outputs.command == 'orchestrate' && !contains(github.event.head_commit.message, 'version') }}
+    if: ${{ needs.dispatch.outputs.command == 'orchestrate' }}
     runs-on: ubuntu-latest
     permissions:
       contents: write
