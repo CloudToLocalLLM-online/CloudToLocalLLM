@@ -212,11 +212,15 @@ jobs:
         run: |
           flutter pub get
           flutter build linux --release
+          # Create tar.gz
+          tar -czf CloudToLocalLLM-Linux-Portable.tar.gz -C build/linux/x64/release/bundle .
       - name: Upload Linux Artifact
         uses: actions/upload-artifact@v4
         with:
           name: desktop-linux
-          path: build/linux/x64/release/bundle/
+          path: |
+            build/linux/x64/release/bundle/
+            *.tar.gz
 
   build_windows:
     if: inputs.do_desktop == true
@@ -321,9 +325,8 @@ jobs:
             ### SHA: ${{ inputs.sha || github.sha }}
           draft: false
           prerelease: false
-          files: |
-            desktop-windows/*.zip
-            desktop-linux/*
-          generate_release_notes: true
+                    files: |
+                      desktop-windows/*.zip
+                      desktop-linux/*.tar.gz          generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
