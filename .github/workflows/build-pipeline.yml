@@ -1,4 +1,4 @@
-name: "Build Pipeline"
+name: "🏭 Build Pipeline"
 
 on:
   push:
@@ -16,7 +16,7 @@ on:
         default: true
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}-build
+  group: ${{ github.workflow }}${{ github.ref }}-build
   cancel-in-progress: false
 
 env:
@@ -162,7 +162,7 @@ jobs:
           sed -i "s|newTag: .*|newTag: $TAG-api-backend|g" k8s/apps/managed/api-backend/kustomization.yaml
           sed -i "s|newTag: .*|newTag: $TAG|g" k8s/apps/managed/web-frontend/kustomization.yaml
           git add k8s/apps/managed/
-          if ! git diff --cached --quiet;
+          if ! git diff --cached --quiet; then
             git commit -m "chore(deploy): promote version $TAG [skip ci]"
             git pull --rebase origin main
             git push origin main
