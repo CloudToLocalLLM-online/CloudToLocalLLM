@@ -1,4 +1,4 @@
-name: "🔀 Main Orchestrator"
+name: "Main Orchestrator"
 
 on:
   push:
