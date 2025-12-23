@@ -15,6 +15,10 @@ env:
   ACR_NAME: imrightguycloudtolocalllm
   SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
 
+defaults:
+  run:
+    shell: bash
+
 jobs:
   build_base:
     runs-on: ubuntu-latest
@@ -36,7 +40,6 @@ jobs:
           docker build -f config/docker/Dockerfile.base -t ${{ env.ACR_NAME }}.azurecr.io/base:latest -t ${{ env.ACR_NAME }}.azurecr.io/base:main-${SHA} .
           docker push ${{ env.ACR_NAME }}.azurecr.io/base:latest
           docker push ${{ env.ACR_NAME }}.azurecr.io/base:main-${SHA}
-        shell: bash
 
   build_api:
     needs: [build_base]
@@ -59,7 +62,6 @@ jobs:
           docker build -f services/api-backend/Dockerfile.prod --build-arg BASE_REGISTRY=${{ env.ACR_NAME }}.azurecr.io -t ${{ env.ACR_NAME }}.azurecr.io/api-backend:latest -t ${{ env.ACR_NAME }}.azurecr.io/api-backend:main-${SHA} .
           docker push ${{ env.ACR_NAME }}.azurecr.io/api-backend:latest
           docker push ${{ env.ACR_NAME }}.azurecr.io/api-backend:main-${SHA}
-        shell: bash
 
   build_web:
     needs: [build_base]
@@ -82,7 +84,6 @@ jobs:
           docker build -f config/docker/Dockerfile.web -t ${{ env.ACR_NAME }}.azurecr.io/web:latest -t ${{ env.ACR_NAME }}.azurecr.io/web:main-${SHA} .
           docker push ${{ env.ACR_NAME }}.azurecr.io/web:latest
           docker push ${{ env.ACR_NAME }}.azurecr.io/web:main-${SHA}
-        shell: bash
 
   build_linux:
     runs-on: ubuntu-latest
@@ -129,3 +130,62 @@ jobs:
         with:
           name: desktop-windows
           path: "*.zip"
+
+promote_to_gitops:
+  needs: [build_api, build_web]
+  if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+  runs-on: ubuntu-latest
+  permissions:
+    contents: write
+  steps:
+    - uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.PAT_TOKEN }}
+        ref: main
+        fetch-depth: 0
+    - name: Promote to Argo CD
+      run: |
+        git config user.name "github-actions[bot]"
+        git config user.email "github-actions[bot]@users.noreply.github.com"
+        SHA="${{ github.sha }}"
+        TAG="main-${SHA}"
+        sed -i "s|newTag: .*|newTag: $TAG-api-backend|g" k8s/apps/managed/api-backend/kustomization.yaml
+        sed -i "s|newTag: .*|newTag: $TAG|g" k8s/apps/managed/web-frontend/kustomization.yaml
+        if grep -r "streaming-proxy" k8s/apps/managed/ > /dev/null;
+           then
+             sed -i "s|newTag: .*streaming-proxy.*|newTag: $TAG-streaming-proxy|g" $(grep -r "streaming-proxy" k8s/apps/managed/ -l)
+        fi
+        git add k8s/apps/managed/
+        if ! git diff --cached --quiet;
+          then
+            git commit -m "chore(deploy): promote version $TAG [skip ci]"
+            git pull --rebase origin main
+            git push origin main
+        fi
+
+create_release:
+  needs: [build_linux, build_windows, promote_to_gitops]
+  if: ${{ always() && (contains(github.event.head_commit.message, 'chore: bump version') || startsWith(github.ref, 'refs/tags/v')) }}
+  runs-on: ubuntu-latest
+  permissions:
+    contents: write
+  steps:
+    - uses: actions/checkout@v4
+    - name: Get Version
+      id: get_version
+      run: |
+        VERSION=$(cat assets/version.json | jq -r '.version')
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+    - name: Download Artifacts
+      uses: actions/download-artifact@v4
+    - name: Create Release
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: v${{ steps.get_version.outputs.version }}
+        name: Release v${{ steps.get_version.outputs.version }}
+        files: |
+          desktop-windows/*.zip
+          desktop-linux/*.tar.gz
+        generate_release_notes: true
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
