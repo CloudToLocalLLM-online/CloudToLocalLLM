@@ -25,10 +25,6 @@ env:
   ACR_NAME: imrightguycloudtolocalllm
   SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
 
-defaults:
-  run:
-    shell: bash
-
 jobs:
   build_base:
     runs-on: ubuntu-latest
@@ -44,6 +40,7 @@ jobs:
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
       - name: Build and Push Base
+        shell: bash
         run: |
           az acr login --name ${{ env.ACR_NAME }}
           SHA="${{ github.sha }}"
@@ -51,12 +48,9 @@ jobs:
           docker push ${{ env.ACR_NAME }}.azurecr.io/base:latest
           docker push ${{ env.ACR_NAME }}.azurecr.io/base:main-${SHA}
 
-  build_services:
+  build_api:
     needs: [build_base]
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        service: [postgres, web, api-backend, streaming-proxy]
     permissions:
       id-token: write
       contents: read
@@ -68,20 +62,37 @@ jobs:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-      - name: Build and Push Service
+      - name: Build and Push API
+        shell: bash
         run: |
           az acr login --name ${{ env.ACR_NAME }}
           SHA="${{ github.sha }}"
-          SERVICE="${{ matrix.service }}"
-          DOCKERFILE="config/docker/Dockerfile.$SERVICE"
-          if [ ! -f "$DOCKERFILE" ]; then
-             if [ -f "services/$SERVICE/Dockerfile.prod" ]; then
-                DOCKERFILE="services/$SERVICE/Dockerfile.prod"
-             fi
-          fi
-          docker build -f "$DOCKERFILE" --build-arg BASE_REGISTRY=${{ env.ACR_NAME }}.azurecr.io -t ${{ env.ACR_NAME }}.azurecr.io/$SERVICE:latest -t ${{ env.ACR_NAME }}.azurecr.io/$SERVICE:main-${SHA} .
-          docker push ${{ env.ACR_NAME }}.azurecr.io/$SERVICE:latest
-          docker push ${{ env.ACR_NAME }}.azurecr.io/$SERVICE:main-${SHA}
+          docker build -f services/api-backend/Dockerfile.prod --build-arg BASE_REGISTRY=${{ env.ACR_NAME }}.azurecr.io -t ${{ env.ACR_NAME }}.azurecr.io/api-backend:latest -t ${{ env.ACR_NAME }}.azurecr.io/api-backend:main-${SHA} .
+          docker push ${{ env.ACR_NAME }}.azurecr.io/api-backend:latest
+          docker push ${{ env.ACR_NAME }}.azurecr.io/api-backend:main-${SHA}
+
+  build_web:
+    needs: [build_base]
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      - name: Build and Push Web
+        shell: bash
+        run: |
+          az acr login --name ${{ env.ACR_NAME }}
+          SHA="${{ github.sha }}"
+          docker build -f config/docker/Dockerfile.web -t ${{ env.ACR_NAME }}.azurecr.io/web:latest -t ${{ env.ACR_NAME }}.azurecr.io/web:main-${SHA} .
+          docker push ${{ env.ACR_NAME }}.azurecr.io/web:latest
+          docker push ${{ env.ACR_NAME }}.azurecr.io/web:main-${SHA}
 
   build_linux:
     runs-on: ubuntu-latest
@@ -130,8 +141,8 @@ jobs:
           path: "*.zip"
 
   promote_to_gitops:
-    needs: [build_services]
-    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+    needs: [build_api, build_web]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -142,6 +153,7 @@ jobs:
           ref: main
           fetch-depth: 0
       - name: Promote to Argo CD
+        shell: bash
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
@@ -149,9 +161,6 @@ jobs:
           TAG="main-${SHA}"
           sed -i "s|newTag: .*|newTag: $TAG-api-backend|g" k8s/apps/managed/api-backend/kustomization.yaml
           sed -i "s|newTag: .*|newTag: $TAG|g" k8s/apps/managed/web-frontend/kustomization.yaml
-          if grep -r "streaming-proxy" k8s/apps/managed/ > /dev/null; then
-             sed -i "s|newTag: .*streaming-proxy.*|newTag: $TAG-streaming-proxy|g" $(grep -r "streaming-proxy" k8s/apps/managed/ -l)
-          fi
           git add k8s/apps/managed/
           if ! git diff --cached --quiet; then
             git commit -m "chore(deploy): promote version $TAG [skip ci]"
@@ -161,7 +170,7 @@ jobs:
 
   create_release:
     needs: [build_linux, build_windows, promote_to_gitops]
-    if: ${{ always() && (contains(github.event.head_commit.message, 'chore: bump version') || startsWith(github.ref, 'refs/tags/v')) }}
+    if: always() && (contains(github.event.head_commit.message, 'chore: bump version') || startsWith(github.ref, 'refs/tags/v'))
     runs-on: ubuntu-latest
     permissions:
       contents: write
