@@ -16,7 +16,7 @@ on:
         default: true
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}-build
+  group: "build-pipeline-${{ github.ref }}"
   cancel-in-progress: false
 
 env:
