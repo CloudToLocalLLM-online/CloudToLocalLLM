@@ -4,7 +4,7 @@ resources:
   - ../../../deployments/app_base/api-backend
 images:
   - name: imrightguycloudtolocalllm.azurecr.io/api-backend
-    newTag: main-814bd16f3f5277eeb1aa02e076b7a84581f4fdba-api-backend
+    newTag: main-2de9fe80e26665bd13e2a221fce5476cb95ccd58-api-backend
 patches:
   - path: ../../../deployments/overlays/managed/env-patch.yaml
   - path: ../../../deployments/overlays/managed/scaling.yaml
