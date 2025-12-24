@@ -116,6 +116,7 @@ jobs:
       - name: Orchestration Logic
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GH_TOKEN: ${{ secrets.PAT_TOKEN }}
         run: |
           set -e
           VERSION=$(cat assets/version.json | jq -r '.version' || echo "7.0.0")
@@ -143,4 +144,14 @@ jobs:
             git add -A
             git commit -m "chore: bump version to $NEW_VERSION"
             git push origin main
+
+            echo "Triggering build for bumped version on main..."
+            gh api repos/${{ github.repository }}/dispatches \
+              -f event_type=orchestrator-build \
+              -f client_payload[ref]=refs/heads/main
+          else
+            echo "Triggering build for current ref..."
+            gh api repos/${{ github.repository }}/dispatches \
+              -f event_type=orchestrator-build \
+              -f client_payload[ref]=${{ github.ref }}
           fi
