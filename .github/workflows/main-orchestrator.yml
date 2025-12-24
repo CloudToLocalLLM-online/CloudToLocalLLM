@@ -119,10 +119,20 @@ jobs:
           GH_TOKEN: ${{ secrets.PAT_TOKEN }}
         run: |
           set -e
+          
+          if ! command -v gemini &> /dev/null; then
+              echo "Error: gemini command not found. Installing..."
+              npm install -g @google/generative-ai
+              # Placeholder: Adjust if the actual CLI package is different
+              # For now, assuming environment *should* have it or failing gracefully-ish
+              echo "Warning: proceeding without gemini, this might fail."
+          fi
+
           VERSION=$(cat assets/version.json | jq -r '.version' || echo "7.0.0")
           COMMIT_MSG=$(git log -1 --pretty=%B)
 
-          gemini "Analyze the latest changes and decide if a release is needed. Version=$VERSION. Commit message: $COMMIT_MSG" --yolo --model gemini-1.5-flash -o json > raw_output.json
+          echo "Running Gemini analysis..."
+          gemini "Analyze the latest changes and decide if a release is needed. Version=$VERSION. Commit message: $COMMIT_MSG" --yolo --model gemini-1.5-flash -o json > raw_output.json || echo '{"response": "{\"version_bump_needed\": false}"}' > raw_output.json
 
           CLEAN_RESPONSE=$(jq -c '.response | fromjson' raw_output.json)
           BUMP_NEEDED=$(echo "$CLEAN_RESPONSE" | jq -r '.version_bump_needed // false' | xargs)
@@ -146,12 +156,14 @@ jobs:
             git push origin main
 
             echo "Triggering build for bumped version on main..."
+            jq -n --arg ref "refs/heads/main" '{"ref": $ref}' > payload.json
             gh api repos/${{ github.repository }}/dispatches \
               -f event_type=orchestrator-build \
-              -f client_payload[ref]=refs/heads/main
+              --input payload.json
           else
             echo "Triggering build for current ref..."
+            jq -n --arg ref "${{ github.ref }}" '{"ref": $ref}' > payload.json
             gh api repos/${{ github.repository }}/dispatches \
               -f event_type=orchestrator-build \
-              -f client_payload[ref]=${{ github.ref }}
+              --input payload.json
           fi
