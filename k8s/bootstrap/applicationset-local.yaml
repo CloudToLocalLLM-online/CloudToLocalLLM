@@ -17,7 +17,7 @@ spec:
             path: k8s/apps/local/redis
             wave: "1"
           - name: api-backend
-            path: k8s/apps/local/api-backend
+            path: k8s/apps/local/api-backend/shared/base
             wave: "5"
           - name: web-frontend
             path: k8s/apps/local/web-frontend
