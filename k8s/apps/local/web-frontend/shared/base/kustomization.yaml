@@ -4,6 +4,5 @@ kind: Kustomization
 # Only include resources specific to web-frontend application
 resources:
   - rbac.yaml
-  - network-policies.yaml
   - services/web.yaml
   - deployments/web.yaml
