@@ -6,6 +6,5 @@ resources:
   - namespace.yaml
   - rbac.yaml
   - network-policies.yaml
-  - configmaps/main-config.yaml
   - services/web.yaml
   - deployments/web.yaml
