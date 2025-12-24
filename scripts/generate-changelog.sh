@@ -1,21 +1,21 @@
 #!/bin/bash
 set -e
 
-# Generate CHANGELOG.md using KiloCode AI based on git commits
+# Generate CHANGELOG.md using Gemini AI based on git commits
 # Usage: ./generate-changelog.sh <new-version>
 
 NEW_VERSION="$1"
 if [ -z "$NEW_VERSION" ]; then
-    echo "âŒ Usage: $0 <new-version>"
+    echo "❌ Usage: $0 <new-version>"
     exit 1
 fi
 
 # Get the latest tag
 LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
 
-echo "â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "Generating Changelog for v$NEW_VERSION"
-echo "â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
 if [ -z "$LAST_TAG" ]; then
     echo "No previous tag found. Getting all commits..."
@@ -39,21 +39,21 @@ Commits:
 $COMMITS"
 
 # Get response from Gemini
-if ! command -v npx >/dev/null 2>&1; then
-    echo "❌ CRITICAL FAILURE: 'npx' command not found. Ensure Node.js and npm are installed."
+if ! command -v gemini >/dev/null 2>&1; then
+    echo "❌ CRITICAL FAILURE: 'gemini' command not found. Ensure the Gemini CLI is installed and in your PATH."
     exit 1
 fi
 
-echo "🚀 Requesting changelog from KiloCode AI..."
-# Use ai-agent to generate the changelog
-CHANGELOG_ENTRY=$(./scripts/ai-agent.cjs "$PROMPT" --output-format text)
+echo "🚀 Requesting changelog from Gemini AI..."
+# Use gemini CLI to generate the changelog
+CHANGELOG_ENTRY=$(gemini "$PROMPT" --yolo --model gemini-1.5-flash)
 
 if [ -z "$CHANGELOG_ENTRY" ]; then
-    echo "❌ CRITICAL FAILURE: KiloCode AI returned an empty response. Cannot generate changelog."
+    echo "❌ CRITICAL FAILURE: Gemini AI returned an empty response. Cannot generate changelog."
     exit 1
 fi
 
-echo "✅ Received response from KiloCode."
+echo "✅ Received response from Gemini."
 
 # Clean up the response (remove code blocks if any)
 CHANGELOG_ENTRY=$(echo "$CHANGELOG_ENTRY" | sed 's/```markdown//g' | sed 's/```//g')
@@ -86,4 +86,4 @@ fi
 
 mv $TEMP_FILE CHANGELOG.md
 
-echo "âœ… CHANGELOG.md updated successfully"
+echo "✅ CHANGELOG.md updated successfully"

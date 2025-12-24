@@ -94,7 +94,7 @@ jobs:
         if: |-
           ${{ steps.find_issues.outputs.issues_to_triage != '[]' }}
         env:
-          AI_API_KEY: "${{ secrets.KILOCODE_API_KEY }}"
+          GEMINI_API_KEY: "${{ secrets.GEMINI_API_KEY }}"
           ISSUES_TO_TRIAGE: "${{ steps.find_issues.outputs.issues_to_triage }}"
           AVAILABLE_LABELS: "${{ steps.get_labels.outputs.available_labels }}"
         run: |
@@ -114,9 +114,8 @@ jobs:
             Triage issue #$NUMBER. Title: $TITLE.
             Return ONLY a valid JSON object: {\"labels_to_set\": [\"label1\", \"label2\"]}. ALL strings must be double-quoted."
 
-            chmod +x scripts/ai-agent.cjs
-            echo "🔄 Triaging issue #$NUMBER with AI Agent..."
-            if ! RESPONSE_RAW=$(./scripts/ai-agent.cjs "$PROMPT" --json 2>cli_error.log); then
+            echo "🔄 Triaging issue #$NUMBER with Gemini AI..."
+            if ! RESPONSE_RAW=$(gemini "$PROMPT" --yolo --model gemini-1.5-flash -o json | jq -r '.response' 2>cli_error.log); then
               echo "⚠️ Failed to triage #$NUMBER"
               echo "📝 Error details:"
               cat cli_error.log

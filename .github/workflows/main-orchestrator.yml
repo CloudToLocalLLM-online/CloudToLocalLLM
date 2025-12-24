@@ -115,14 +115,13 @@ jobs:
 
       - name: Orchestration Logic
         env:
-          KILOCODE_API_KEY: ${{ secrets.KILOCODE_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: |
           set -e
-          chmod +x scripts/ai-agent.cjs
           VERSION=$(cat assets/version.json | jq -r '.version' || echo "7.0.0")
           COMMIT_MSG=$(git log -1 --pretty=%B)
 
-          ./scripts/ai-agent.cjs "Analyze the latest changes and decide if a release is needed. Version=$VERSION. Commit message: $COMMIT_MSG" --output-format json > raw_output.json
+          gemini "Analyze the latest changes and decide if a release is needed. Version=$VERSION. Commit message: $COMMIT_MSG" --yolo --model gemini-1.5-flash -o json > raw_output.json
 
           CLEAN_RESPONSE=$(jq -c '.response | fromjson' raw_output.json)
           BUMP_NEEDED=$(echo "$CLEAN_RESPONSE" | jq -r '.version_bump_needed // false' | xargs)

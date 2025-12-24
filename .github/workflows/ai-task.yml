@@ -35,7 +35,7 @@ jobs:
       - name: "Run AI Agent"
         id: "run_ai_agent"
         env:
-          AI_API_KEY: "${{ secrets.KILOCODE_API_KEY }}" # Keeping secret name for compatibility
+          GEMINI_API_KEY: "${{ secrets.GEMINI_API_KEY }}"
           GITHUB_TOKEN: "${{ steps.mint_identity_token.outputs.token || secrets.GITHUB_TOKEN || github.token }}"
           TITLE: "${{ github.event.pull_request.title || github.event.issue.title }}"
           DESCRIPTION: "${{ github.event.pull_request.body || github.event.issue.body }}"
@@ -61,12 +61,11 @@ jobs:
             }
           }
           EOF
-          chmod +x scripts/ai-agent.cjs
           echo "🔄 Starting AI Agent execution..."
           TITLE_ESCAPED=$(echo "$TITLE" | sed 's/"/\"/g')
           DESC_ESCAPED=$(echo "$DESCRIPTION" | sed 's/"/\"/g')
           CONTEXT_ESCAPED=$(echo "$ADDITIONAL_CONTEXT" | sed 's/"/\"/g')
-          if ! ./scripts/ai-agent.cjs "TITLE: $TITLE_ESCAPED. DESCRIPTION: $DESC_ESCAPED. CONTEXT: $CONTEXT_ESCAPED. Please assist with the request." --output-format json > raw_output.json 2> ai_error.log; then
+          if ! gemini "TITLE: $TITLE_ESCAPED. DESCRIPTION: $DESC_ESCAPED. CONTEXT: $CONTEXT_ESCAPED. Please assist with the request." --yolo --model gemini-1.5-flash -o json > raw_output.json 2> ai_error.log; then
             echo "::error::AI Agent failed"
             cat ai_error.log
             exit 1

@@ -63,7 +63,7 @@ jobs:
         if: |-
           ${{ steps.get_labels.outputs.available_labels != '' }}
         env:
-          AI_API_KEY: "${{ secrets.KILOCODE_API_KEY }}"
+          GEMINI_API_KEY: "${{ secrets.GEMINI_API_KEY }}"
           ISSUE_TITLE: "${{ github.event.issue.title }}"
           ISSUE_BODY: "${{ github.event.issue.body }}"
           AVAILABLE_LABELS: "${{ steps.get_labels.outputs.available_labels }}"
@@ -83,9 +83,8 @@ jobs:
           VALID JSON EXAMPLE:
           {\"labels\": [\"bug\", \"priority: low\"]}"
 
-          chmod +x scripts/ai-agent.cjs
           echo "🔄 Starting AI issue analysis..."
-          if ! ./scripts/ai-agent.cjs "$PROMPT" --output-format json > raw_output.json 2> ai_error.log; then
+          if ! gemini "$PROMPT" --yolo --model gemini-1.5-flash -o json > raw_output.json 2> ai_error.log; then
             echo "::error::AI Agent CLI failed"
             echo "📝 Error details:"
             cat ai_error.log
@@ -106,8 +105,8 @@ jobs:
         if: |-
           ${{ steps.ai_analysis.outcome == 'success' }}
         run: |
-           LABELS=$(echo '${{ steps.ai_analysis.outputs.ai_output }}' | jq -r '.labels | join(",")')
-           echo "labels=$LABELS" >> $GITHUB_OUTPUT
+          LABELS=$(echo '${{ steps.ai_analysis.outputs.ai_output }}' | jq -r '.labels | join(",")')
+          echo "labels=$LABELS" >> $GITHUB_OUTPUT
 
   label:
     runs-on: "ubuntu-latest"
