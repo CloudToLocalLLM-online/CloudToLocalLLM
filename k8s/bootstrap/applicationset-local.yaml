@@ -20,7 +20,7 @@ spec:
             path: k8s/apps/local/api-backend/shared/base
             wave: "5"
           - name: web-frontend
-            path: k8s/apps/local/web-frontend
+            path: k8s/apps/local/web-frontend/shared/base
             wave: "10"
           - name: monitoring
             path: k8s/apps/local/monitoring
