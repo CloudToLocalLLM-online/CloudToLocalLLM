@@ -10,7 +10,3 @@ resources:
   - secrets/acr-credentials.yaml
   - services/api-backend.yaml
   - deployments/api-backend-standardized.yaml
-
-# Use patches to customize resources
-patchesStrategicMerge:
-  - argocd-application-patch.yaml
