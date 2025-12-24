@@ -120,23 +120,22 @@ jobs:
         run: |
           set -e
           
-          if ! command -v gemini &> /dev/null; then
-              echo "Error: gemini command not found. Installing..."
-              npm install -g @google/generative-ai
-              # Placeholder: Adjust if the actual CLI package is different
-              # For now, assuming environment *should* have it or failing gracefully-ish
-              echo "Warning: proceeding without gemini, this might fail."
-          fi
-
           VERSION=$(cat assets/version.json | jq -r '.version' || echo "7.0.0")
           COMMIT_MSG=$(git log -1 --pretty=%B)
+          
+          BUMP_NEEDED="false"
+          NEW_VERSION="$VERSION"
 
-          echo "Running Gemini analysis..."
-          gemini "Analyze the latest changes and decide if a release is needed. Version=$VERSION. Commit message: $COMMIT_MSG" --yolo --model gemini-1.5-flash -o json > raw_output.json || echo '{"response": "{\"version_bump_needed\": false}"}' > raw_output.json
-
-          CLEAN_RESPONSE=$(jq -c '.response | fromjson' raw_output.json)
-          BUMP_NEEDED=$(echo "$CLEAN_RESPONSE" | jq -r '.version_bump_needed // false' | xargs)
-          NEW_VERSION=$(echo "$CLEAN_RESPONSE" | jq -r '.new_version // "'$VERSION'"' | xargs)
+          if command -v gemini &> /dev/null; then
+              echo "Running Gemini analysis..."
+              gemini "Analyze the latest changes and decide if a release is needed. Version=$VERSION. Commit message: $COMMIT_MSG" --yolo --model gemini-1.5-flash -o json > raw_output.json || echo '{"response": "{\"version_bump_needed\": false}"}' > raw_output.json
+              
+              CLEAN_RESPONSE=$(jq -c '.response | fromjson' raw_output.json)
+              BUMP_NEEDED=$(echo "$CLEAN_RESPONSE" | jq -r '.version_bump_needed // false' | xargs)
+              NEW_VERSION=$(echo "$CLEAN_RESPONSE" | jq -r '.new_version // "'$VERSION'"' | xargs)
+          else
+              echo "Warning: gemini command not found. Skipping intelligent analysis."
+          fi
 
           if [ "$BUMP_NEEDED" == "true" ]; then
             echo "Bumping version to $NEW_VERSION"
@@ -156,14 +155,20 @@ jobs:
             git push origin main
 
             echo "Triggering build for bumped version on main..."
-            jq -n --arg ref "refs/heads/main" '{"ref": $ref}' > payload.json
-            gh api repos/${{ github.repository }}/dispatches \
-              -f event_type=orchestrator-build \
-              --input payload.json
+            # Construct full payload with client_payload wrapper
+            jq -n \
+              --arg event "orchestrator-build" \
+              --arg ref "refs/heads/main" \
+              '{event_type: $event, client_payload: {ref: $ref}}' > payload.json
+              
+            gh api repos/${{ github.repository }}/dispatches --input payload.json
           else
             echo "Triggering build for current ref..."
-            jq -n --arg ref "${{ github.ref }}" '{"ref": $ref}' > payload.json
-            gh api repos/${{ github.repository }}/dispatches \
-              -f event_type=orchestrator-build \
-              --input payload.json
+            # Construct full payload with client_payload wrapper
+            jq -n \
+              --arg event "orchestrator-build" \
+              --arg ref "${{ github.ref }}" \
+              '{event_type: $event, client_payload: {ref: $ref}}' > payload.json
+              
+            gh api repos/${{ github.repository }}/dispatches --input payload.json
           fi
