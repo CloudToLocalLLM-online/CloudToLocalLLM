@@ -182,7 +182,7 @@ class DownloadScreen extends StatelessWidget {
               Expanded(
                 child: ElevatedButton.icon(
                   onPressed: () => _downloadFile(
-                    'https://github.com/imrightguy/CloudToLocalLLM/releases/latest/download/CloudToLocalLLM-Windows-${AppConfig.appVersion}-Setup.exe',
+                    'https://github.com/CloudToLocalLLM-online/CloudToLocalLLM/releases/latest/download/CloudToLocalLLM-Windows-${AppConfig.appVersion}-Setup.exe',
                     'CloudToLocalLLM-Windows-${AppConfig.appVersion}-Setup.exe',
                     context,
                   ),
@@ -199,7 +199,7 @@ class DownloadScreen extends StatelessWidget {
               Expanded(
                 child: ElevatedButton.icon(
                   onPressed: () => _downloadFile(
-                    'https://github.com/imrightguy/CloudToLocalLLM/releases/latest/download/cloudtolocalllm-${AppConfig.appVersion}-portable.zip',
+                    'https://github.com/CloudToLocalLLM-online/CloudToLocalLLM/releases/latest/download/cloudtolocalllm-${AppConfig.appVersion}-portable.zip',
                     'cloudtolocalllm-${AppConfig.appVersion}-portable.zip',
                     context,
                   ),
@@ -321,7 +321,7 @@ sudo snap connect cloudtolocalllm:system-observe''',
       child: _buildInstallationSection(
         'Installation',
         '''# Download from GitHub releases
-wget https://github.com/imrightguy/CloudToLocalLLM/releases/latest/download/cloudtolocalllm_${AppConfig.appVersion}_amd64.deb
+wget https://github.com/CloudToLocalLLM-online/CloudToLocalLLM/releases/latest/download/cloudtolocalllm_${AppConfig.appVersion}_amd64.deb
 
 # Install with dpkg
 sudo dpkg -i cloudtolocalllm_${AppConfig.appVersion}_amd64.deb
@@ -341,7 +341,7 @@ sudo apt-get install -f''',
       child: _buildInstallationSection(
         'Download and Run',
         '''# Download AppImage from GitHub releases
-wget https://github.com/imrightguy/CloudToLocalLLM/releases/latest/download/cloudtolocalllm-${AppConfig.appVersion}-x86_64.AppImage
+wget https://github.com/CloudToLocalLLM-online/CloudToLocalLLM/releases/latest/download/cloudtolocalllm-${AppConfig.appVersion}-x86_64.AppImage
 
 # Make executable
 chmod +x cloudtolocalllm-${AppConfig.appVersion}-x86_64.AppImage
@@ -381,7 +381,7 @@ pamac install cloudtolocalllm''',
       child: _buildInstallationSection(
         'Download and Install',
         '''# Download pre-built binary from GitHub releases
-wget https://github.com/imrightguy/CloudToLocalLLM/releases/latest/download/cloudtolocalllm-${AppConfig.appVersion}-x86_64.tar.gz
+wget https://github.com/CloudToLocalLLM-online/CloudToLocalLLM/releases/latest/download/cloudtolocalllm-${AppConfig.appVersion}-x86_64.tar.gz
 
 # Extract to local directory
 tar -xzf cloudtolocalllm-${AppConfig.appVersion}-x86_64.tar.gz

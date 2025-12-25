@@ -21,7 +21,7 @@ if (!(Get-Command gh -ErrorAction SilentlyContinue)) {
     Write-Host "Install it from: https://cli.github.com/" -ForegroundColor Yellow
     Write-Host ""
     Write-Host "Or set secrets manually at:" -ForegroundColor Yellow
-    Write-Host "https://github.com/imrightguy/CloudToLocalLLM/settings/secrets/actions" -ForegroundColor White
+    Write-Host "https://github.com/CloudToLocalLLM-online/CloudToLocalLLM/settings/secrets/actions" -ForegroundColor White
     exit 1
 }
 
@@ -37,7 +37,7 @@ Write-Host "✓ Authenticated with GitHub" -ForegroundColor Green
 Write-Host ""
 
 # Repository
-$repo = "imrightguy/CloudToLocalLLM"
+$repo = "CloudToLocalLLM-online/CloudToLocalLLM"
 Write-Host "Repository: $repo" -ForegroundColor Cyan
 Write-Host ""
 

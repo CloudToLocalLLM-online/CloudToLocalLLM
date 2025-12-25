@@ -27,13 +27,13 @@
   <screenshots>
     <screenshot type="default">
       <caption>Main application window</caption>
-      <image>https://raw.githubusercontent.com/imrightguy/CloudToLocalLLM/main/docs/app_screenshots/main-window.png</image>
+      <image>https://raw.githubusercontent.com/CloudToLocalLLM-online/CloudToLocalLLM/main/docs/app_screenshots/main-window.png</image>
     </screenshot>
   </screenshots>
   
-  <url type="homepage">https://github.com/imrightguy/CloudToLocalLLM</url>
-  <url type="bugtracker">https://github.com/imrightguy/CloudToLocalLLM/issues</url>
-  <url type="help">https://github.com/imrightguy/CloudToLocalLLM/blob/main/README.md</url>
+  <url type="homepage">https://github.com/CloudToLocalLLM-online/CloudToLocalLLM</url>
+  <url type="bugtracker">https://github.com/CloudToLocalLLM-online/CloudToLocalLLM/issues</url>
+  <url type="help">https://github.com/CloudToLocalLLM-online/CloudToLocalLLM/blob/main/README.md</url>
   
   <developer_name>CloudToLocalLLM Contributors</developer_name>
   

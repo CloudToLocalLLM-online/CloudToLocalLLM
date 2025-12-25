@@ -93,7 +93,7 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://github.com/imrightguy/CloudToLocalLLM
+    repoURL: https://github.com/CloudToLocalLLM-online/CloudToLocalLLM
     targetRevision: main
     path: k8s/apps/local/api-backend/shared/base
   destination:
@@ -252,7 +252,7 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://github.com/imrightguy/CloudToLocalLLM
+    repoURL: https://github.com/CloudToLocalLLM-online/CloudToLocalLLM
     targetRevision: main
     path: k8s/apps/local/api-backend/shared/base
   destination:

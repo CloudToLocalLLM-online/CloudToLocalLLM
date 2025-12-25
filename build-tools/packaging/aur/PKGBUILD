@@ -15,8 +15,8 @@ optdepends=(
 )
 provides=('cloudtolocalllm')
 conflicts=('cloudtolocalllm-git' 'cloudtolocalllm-bin')
-source=("https://github.com/imrightguy/CloudToLocalLLM/releases/download/v${pkgver}/cloudtolocalllm-${pkgver}-x86_64.AppImage"
-        "https://github.com/imrightguy/CloudToLocalLLM/releases/download/v${pkgver}/cloudtolocalllm-${pkgver}-x86_64.AppImage.sha256")
+source=("https://github.com/CloudToLocalLLM-online/CloudToLocalLLM/releases/download/v${pkgver}/cloudtolocalllm-${pkgver}-x86_64.AppImage"
+        "https://github.com/CloudToLocalLLM-online/CloudToLocalLLM/releases/download/v${pkgver}/cloudtolocalllm-${pkgver}-x86_64.AppImage.sha256")
 sha256sums=('SKIP'  # Will be updated by build script
             'SKIP') # Will be updated by build script
 noextract=("cloudtolocalllm-${pkgver}-x86_64.AppImage")

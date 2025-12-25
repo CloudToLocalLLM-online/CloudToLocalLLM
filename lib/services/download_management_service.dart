@@ -7,7 +7,7 @@ import '../config/app_config.dart';
 /// Service for managing download links, tracking, and validation
 class DownloadManagementService extends ChangeNotifier {
   static const String _githubApiUrl =
-      'https://api.github.com/repos/imrightguy/CloudToLocalLLM';
+      'https://api.github.com/repos/CloudToLocalLLM-online/CloudToLocalLLM';
   static const String _githubReleasesUrl = '$_githubApiUrl/releases';
 
   // Cache for GitHub release data

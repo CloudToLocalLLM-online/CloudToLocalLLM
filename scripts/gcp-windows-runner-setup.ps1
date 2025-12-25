@@ -14,7 +14,7 @@ $VM_NAME = "github-runner-windows-$(Get-Date -Format yyyyMMddHHmmss)"
 $MACHINE_TYPE = "e2-medium"
 $IMAGE_FAMILY = "windows-2019"
 $IMAGE_PROJECT = "windows-cloud"
-$GITHUB_RUNNER_ORG_URL = "https://github.com/imrightguy/CloudToLocalLLM" # e.g., https://github.com/imrightguy
+$GITHUB_RUNNER_ORG_URL = "https://github.com/CloudToLocalLLM-online/CloudToLocalLLM" # e.g., https://github.com/CloudToLocalLLM-online
 $GITHUB_RUNNER_TOKEN = "BOBH5XEA7XJPPTNW2CYI7F3IUR2RG" # Obtain from GitHub -> Settings -> Actions -> Runners -> New runner
 
 # --- Startup Script for the VM (PowerShell) ---

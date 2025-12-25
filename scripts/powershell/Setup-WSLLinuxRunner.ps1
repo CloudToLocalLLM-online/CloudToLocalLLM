@@ -77,5 +77,5 @@ Write-Host "  • Set up GitHub Actions runner" -ForegroundColor White
 Write-Host "  • Configure runner service" -ForegroundColor White
 Write-Host ""
 Write-Host "You'll need a runner registration token from:" -ForegroundColor Yellow
-Write-Host "  https://github.com/imrightguy/CloudToLocalLLM/settings/actions/runners/new" -ForegroundColor Cyan
+Write-Host "  https://github.com/CloudToLocalLLM-online/CloudToLocalLLM/settings/actions/runners/new" -ForegroundColor Cyan
 

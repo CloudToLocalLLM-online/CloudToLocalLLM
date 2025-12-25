@@ -13,9 +13,9 @@ class AppConfig {
   static const String appUrl = 'https://app.cloudtolocalllm.online';
   static const String adminCenterUrl = 'https://admin.cloudtolocalllm.online';
   static const String githubUrl =
-      'https://github.com/imrightguy/CloudToLocalLLM';
+      'https://github.com/CloudToLocalLLM-online/CloudToLocalLLM';
   static const String githubReleasesUrl =
-      'https://github.com/imrightguy/CloudToLocalLLM/releases/latest';
+      'https://github.com/CloudToLocalLLM-online/CloudToLocalLLM/releases/latest';
 
   // Auth Configuration
   static const String aadTenantId = "common";

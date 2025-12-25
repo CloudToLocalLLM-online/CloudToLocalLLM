@@ -5,7 +5,7 @@
 [CmdletBinding()]
 param(
     [Parameter(Mandatory=$false)]
-    [string]$GitHubRepo = "https://github.com/imrightguy/CloudToLocalLLM",
+    [string]$GitHubRepo = "https://github.com/CloudToLocalLLM-online/CloudToLocalLLM",
     
     [Parameter(Mandatory=$false)]
     [string]$RunnerLabels = "windows,self-hosted",

@@ -176,7 +176,7 @@ export SUPABASE_JWT_SECRET="your-secret"
 
 ```bash
 # Clone repository
-git clone https://github.com/yourusername/CloudToLocalLLM.git
+git clone https://github.com/CloudToLocalLLM-online/CloudToLocalLLM.git
 cd CloudToLocalLLM
 
 # Make scripts executable
@@ -404,8 +404,8 @@ rm .github-secrets-reference.txt
 
 For issues or questions:
 - 📖 [Documentation](../docs/README.md)
-- 💬 [GitHub Discussions](https://github.com/YOUR-USERNAME/CloudToLocalLLM/discussions)
-- 🐛 [Report Issues](https://github.com/YOUR-USERNAME/CloudToLocalLLM/issues)
+- 💬 [GitHub Discussions](https://github.com/CloudToLocalLLM-online/CloudToLocalLLM/discussions)
+- 🐛 [Report Issues](https://github.com/CloudToLocalLLM-online/CloudToLocalLLM/issues)
 
 ---
 

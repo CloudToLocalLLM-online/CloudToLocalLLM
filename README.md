@@ -41,7 +41,7 @@ To use CloudToLocalLLM locally, you only need one thing:
 ## 📥 Download & Install
 
 ### Windows & Linux
-1.  Go to the **[Latest Releases](https://github.com/imrightguy/CloudToLocalLLM/releases/latest)** page.
+1.  Go to the **[Latest Releases](https://github.com/CloudToLocalLLM-online/CloudToLocalLLM/releases/latest)** page.
 2.  Download the installer or executable for your operating system (`.exe` for Windows, `.AppImage` or `.deb` for Linux).
 3.  Run the installer and launch the application.
 
@@ -73,7 +73,7 @@ If you are a developer looking to contribute or build from source, follow these 
 
 1.  **Clone the Repository:**
     ```bash
-    git clone https://github.com/imrightguy/CloudToLocalLLM.git
+    git clone https://github.com/CloudToLocalLLM-online/CloudToLocalLLM.git
     cd CloudToLocalLLM
     ```
 
@@ -112,7 +112,7 @@ See **[AI-Powered CI/CD Documentation](docs/DEVELOPMENT/AI_POWERED_CICD.md)** fo
 
 ## 🤝 Contributing
 
-We welcome contributions! Please read our **[Contributing Guidelines](docs/DEVELOPMENT/CONTRIBUTING.md)** and check the [Issues](https://github.com/imrightguy/CloudToLocalLLM/issues) tab.
+We welcome contributions! Please read our **[Contributing Guidelines](docs/DEVELOPMENT/CONTRIBUTING.md)** and check the [Issues](https://github.com/CloudToLocalLLM-online/CloudToLocalLLM/issues) tab.
 
 ## 📄 License
 
@@ -122,6 +122,6 @@ This project is licensed under the **MIT License**. See the [LICENSE](LICENSE) f
 
 <div align="center">
 
-**[Website](https://cloudtolocalllm.online)** • **[GitHub](https://github.com/imrightguy/CloudToLocalLLM)**
+**[Website](https://cloudtolocalllm.online)** • **[GitHub](https://github.com/CloudToLocalLLM-online/CloudToLocalLLM)**
 
 </div>

@@ -63,7 +63,7 @@ create_test_files() {
     cat > "$TEST_DIR/readme_lf.md" << 'EOF'
 # CloudToLocalLLM
 
-[![Version](https://img.shields.io/badge/version-4.0.32-blue.svg)](https://github.com/imrightguy/CloudToLocalLLM)
+[![Version](https://img.shields.io/badge/version-4.0.32-blue.svg)](https://github.com/CloudToLocalLLM-online/CloudToLocalLLM)
 
 Test file with LF line endings.
 EOF
@@ -72,7 +72,7 @@ EOF
     cat > "$TEST_DIR/readme_crlf.md" << 'EOF'
 # CloudToLocalLLM
 
-[![Version](https://img.shields.io/badge/version-4.0.32-blue.svg)](https://github.com/imrightguy/CloudToLocalLLM)
+[![Version](https://img.shields.io/badge/version-4.0.32-blue.svg)](https://github.com/CloudToLocalLLM-online/CloudToLocalLLM)
 
 Test file with CRLF line endings.
 EOF
@@ -80,13 +80,13 @@ EOF
     sed -i 's/$/\r/' "$TEST_DIR/readme_crlf.md"
 
     # File without final newline
-    printf "# CloudToLocalLLM\n\n[![Version](https://img.shields.io/badge/version-4.0.32-blue.svg)](https://github.com/imrightguy/CloudToLocalLLM)\n\nTest file without final newline." > "$TEST_DIR/readme_no_final_newline.md"
+    printf "# CloudToLocalLLM\n\n[![Version](https://img.shields.io/badge/version-4.0.32-blue.svg)](https://github.com/CloudToLocalLLM-online/CloudToLocalLLM)\n\nTest file without final newline." > "$TEST_DIR/readme_no_final_newline.md"
 
     # File with Unicode characters
     cat > "$TEST_DIR/readme_unicode.md" << 'EOF'
 # CloudToLocalLLM 🚀
 
-[![Version](https://img.shields.io/badge/version-4.0.32-blue.svg)](https://github.com/imrightguy/CloudToLocalLLM)
+[![Version](https://img.shields.io/badge/version-4.0.32-blue.svg)](https://github.com/CloudToLocalLLM-online/CloudToLocalLLM)
 
 Test file with Unicode: ✅ 🔒 📝 🌟
 Special characters: àáâãäåæçèéêë
@@ -97,7 +97,7 @@ EOF
     {
         echo "# CloudToLocalLLM"
         echo ""
-        echo "[![Version](https://img.shields.io/badge/version-4.0.32-blue.svg)](https://github.com/imrightguy/CloudToLocalLLM)"
+        echo "[![Version](https://img.shields.io/badge/version-4.0.32-blue.svg)](https://github.com/CloudToLocalLLM-online/CloudToLocalLLM)"
         echo ""
         for i in {1..1000}; do
             echo "Line $i: This is a test line with some content to make the file larger."

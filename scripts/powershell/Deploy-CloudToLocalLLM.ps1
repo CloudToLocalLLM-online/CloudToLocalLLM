@@ -210,7 +210,7 @@ Choose the appropriate package for your system:
 ## Checksums
 SHA256 checksums are provided for all packages to verify integrity.
 
-**Full Changelog**: https://github.com/imrightguy/CloudToLocalLLM/compare/v$($currentVersion.Split('.')[0]).$($currentVersion.Split('.')[1]).$([int]$currentVersion.Split('.')[2] - 1)...v$currentVersion
+**Full Changelog**: https://github.com/CloudToLocalLLM-online/CloudToLocalLLM/compare/v$($currentVersion.Split('.')[0]).$($currentVersion.Split('.')[1]).$([int]$currentVersion.Split('.')[2] - 1)...v$currentVersion
 "@
 
         # Create and push tag
@@ -303,7 +303,7 @@ SHA256 checksums are provided for all packages to verify integrity.
 
         $ghArgs = @(
             "release", "create", $tagName,
-            "--repo", "imrightguy/CloudToLocalLLM",
+            "--repo", "CloudToLocalLLM-online/CloudToLocalLLM",
             "--title", $releaseName,
             "--notes-file", $releaseNotesFile
         )
@@ -322,7 +322,7 @@ SHA256 checksums are provided for all packages to verify integrity.
         Remove-Item $releaseNotesFile -ErrorAction SilentlyContinue
 
         Write-Host "? GitHub release created successfully!"
-        Write-Host "? Release URL: https://github.com/imrightguy/CloudToLocalLLM/releases/tag/$tagName"
+        Write-Host "? Release URL: https://github.com/CloudToLocalLLM-online/CloudToLocalLLM/releases/tag/$tagName"
         Write-Host "? Uploaded $($assets.Count) assets to the release"
 
     } catch {

@@ -47,7 +47,7 @@ echo "âœ… Cloud branch created with version $NEW_VERSION"
 # Configure git to use PAT for push operations if provided
 if [ -n "$CLOUD_PUSH_PAT" ]; then
     echo "ðŸ” Using PAT for authenticated cloud branch push..."
-    git remote set-url origin "https://x-access-token:$CLOUD_PUSH_PAT@github.com/imrightguy/CloudToLocalLLM.git"
+    git remote set-url origin "https://x-access-token:$CLOUD_PUSH_PAT@github.com/CloudToLocalLLM-online/CloudToLocalLLM.git"
     echo "âœ… Remote URL configured with PAT authentication"
 else
     echo "âš ï¸  No CLOUD_PUSH_PAT provided, using default authentication"

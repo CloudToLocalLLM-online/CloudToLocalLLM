@@ -62,7 +62,7 @@ function New-TestFiles {
     $contentLF = @"
 # CloudToLocalLLM
 
-[![Version](https://img.shields.io/badge/version-4.0.32-blue.svg)](https://github.com/imrightguy/CloudToLocalLLM)
+[![Version](https://img.shields.io/badge/version-4.0.32-blue.svg)](https://github.com/CloudToLocalLLM-online/CloudToLocalLLM)
 
 Test file with LF line endings.
 "@
@@ -76,7 +76,7 @@ Test file with LF line endings.
     $contentNoNewline = @"
 # CloudToLocalLLM
 
-[![Version](https://img.shields.io/badge/version-4.0.32-blue.svg)](https://github.com/imrightguy/CloudToLocalLLM)
+[![Version](https://img.shields.io/badge/version-4.0.32-blue.svg)](https://github.com/CloudToLocalLLM-online/CloudToLocalLLM)
 
 Test file without final newline.
 "@
@@ -84,9 +84,9 @@ Test file without final newline.
 
     # File with Unicode characters
     $contentUnicode = @"
-# CloudToLocalLLM 
+# CloudToLocalLLM
 
-[![Version](https://img.shields.io/badge/version-4.0.32-blue.svg)](https://github.com/imrightguy/CloudToLocalLLM)
+[![Version](https://img.shields.io/badge/version-4.0.32-blue.svg)](https://github.com/CloudToLocalLLM-online/CloudToLocalLLM)
 
 Test file with Unicode:  �  �
 Special characters: àáâãäåæçèéêë
@@ -98,7 +98,7 @@ Mathematical symbols: ∑ ∏ ∫ ∆ ∇
     $contentLarge = @"
 # CloudToLocalLLM
 
-[![Version](https://img.shields.io/badge/version-4.0.32-blue.svg)](https://github.com/imrightguy/CloudToLocalLLM)
+[![Version](https://img.shields.io/badge/version-4.0.32-blue.svg)](https://github.com/CloudToLocalLLM-online/CloudToLocalLLM)
 
 "@
     for ($i = 1; $i -le 1000; $i++) {

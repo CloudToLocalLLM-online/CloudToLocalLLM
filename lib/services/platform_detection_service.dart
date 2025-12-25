@@ -233,7 +233,7 @@ class PlatformDetectionService extends ChangeNotifier {
           description:
               'Recommended for most users. Includes automatic updates and system integration.',
           downloadUrl:
-              'https://github.com/imrightguy/CloudToLocalLLM/releases/latest/download/CloudToLocalLLM-Windows-${AppConfig.appVersion}-Setup.exe',
+              'https://github.com/CloudToLocalLLM-online/CloudToLocalLLM/releases/latest/download/CloudToLocalLLM-Windows-${AppConfig.appVersion}-Setup.exe',
           fileSize: '~10 MB',
           installationType: 'exe',
           isRecommended: true,
@@ -246,7 +246,7 @@ class PlatformDetectionService extends ChangeNotifier {
           name: 'Portable ZIP',
           description: 'No installation required. Extract and run directly.',
           downloadUrl:
-              'https://github.com/imrightguy/CloudToLocalLLM/releases/latest/download/cloudtolocalllm-${AppConfig.appVersion}-portable.zip',
+              'https://github.com/CloudToLocalLLM-online/CloudToLocalLLM/releases/latest/download/cloudtolocalllm-${AppConfig.appVersion}-portable.zip',
           fileSize: '~12 MB',
           installationType: 'zip',
           requirements: ['Windows 10 or later'],
@@ -324,7 +324,7 @@ class PlatformDetectionService extends ChangeNotifier {
           description:
               'Portable application that runs on any Linux distribution. No installation required.',
           downloadUrl:
-              'https://github.com/imrightguy/CloudToLocalLLM/releases/latest/download/cloudtolocalllm-${AppConfig.appVersion}-x86_64.AppImage',
+              'https://github.com/CloudToLocalLLM-online/CloudToLocalLLM/releases/latest/download/cloudtolocalllm-${AppConfig.appVersion}-x86_64.AppImage',
           fileSize: '~48 MB',
           installationType: 'appimage',
           isRecommended: true,
@@ -335,7 +335,7 @@ class PlatformDetectionService extends ChangeNotifier {
           description:
               'Native package for Ubuntu, Debian, and derivatives with proper dependency management.',
           downloadUrl:
-              'https://github.com/imrightguy/CloudToLocalLLM/releases/latest/download/cloudtolocalllm_${AppConfig.appVersion}_amd64.deb',
+              'https://github.com/CloudToLocalLLM-online/CloudToLocalLLM/releases/latest/download/cloudtolocalllm_${AppConfig.appVersion}_amd64.deb',
           fileSize: '~44 MB',
           installationType: 'deb',
           requirements: [
@@ -442,7 +442,7 @@ class PlatformDetectionService extends ChangeNotifier {
           description:
               'Standard macOS installer with drag-and-drop installation.',
           downloadUrl:
-              'https://github.com/imrightguy/CloudToLocalLLM/releases/latest/download/cloudtolocalllm-${AppConfig.appVersion}-macos.dmg',
+              'https://github.com/CloudToLocalLLM-online/CloudToLocalLLM/releases/latest/download/cloudtolocalllm-${AppConfig.appVersion}-macos.dmg',
           fileSize: '~50 MB',
           installationType: 'dmg',
           isRecommended: true,
