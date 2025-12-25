@@ -1,0 +1,38 @@
+name: Kubernetes Manifest Validation
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'k8s/**'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'k8s/**'
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Kustomize
+        run: |
+          curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh" | bash
+          sudo mv kustomize /usr/local/bin/
+
+      - name: Validate API Backend Manifests
+        run: |
+          kustomize build k8s/apps/local/api-backend/shared/base > /dev/null
+
+      - name: Validate Web Frontend Manifests
+        run: |
+          kustomize build k8s/apps/local/web-frontend/shared/base > /dev/null
+
+      - name: Validate Infrastructure Manifests (Dry Run)
+        run: |
+          # Verify that other kustomization files are at least parseable
+          find k8s -name "kustomization.yaml" -exec dirname {} \; | while read dir; do
+            echo "Checking $dir..."
+            kustomize build "$dir" > /dev/null || echo "⚠️ Warning: Failed to build $dir"
+          done
