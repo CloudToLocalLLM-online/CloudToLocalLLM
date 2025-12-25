@@ -21,7 +21,6 @@ dependencies:
   provider: ^6.1.2
   jwt_decoder: ^2.0.1
   auth0_flutter: ^1.5.0
-  supabase_flutter: ^2.8.3
   shared_preferences: ^2.5.4
 
   # Error tracking
@@ -75,6 +74,7 @@ dependencies:
 
   meta: any
   package_info_plus: ^9.0.0
+  supabase_flutter: 2.8.3
 
 dev_dependencies:
   sentry_dart_plugin: ^3.2.0

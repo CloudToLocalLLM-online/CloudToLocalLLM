@@ -58,6 +58,15 @@ I do not guess about the codebase. For any request that requires understanding s
 
 This section serves as the definitive guide for using the Multi-Context Protocol (MCP) tools available to the agent.
 
+### 0. Tool Usage Mandate (CRITICAL)
+
+**I MUST use the MCP tools listed below religiously and preferentially over shell commands or manual methods.**
+
+*   **Browser:** ALWAYS use `browser_*` tools for web interaction, testing, or scraping. Never assume a "headless" state prevents full interaction.
+*   **Flutter:** ALWAYS use the specific Flutter tools (`run_tests`, `launch_app`, `get_widget_tree`) instead of `run_shell_command` with `flutter` args.
+*   **GitHub:** ALWAYS use the GitHub integration tools for issues, PRs, and file operations instead of `git` CLI where equivalent functionality exists.
+*   **Reasoning:** ALWAYS use `sequentialthinking` for planning.
+
 ### 1. Tool Inventory & Capability Mapping
 
 #### System & File Operations
@@ -80,13 +89,14 @@ This section serves as the definitive guide for using the Multi-Context Protocol
 *   **Refactoring:** `dart_fix` (auto-apply fixes), `dart_format`.
 *   **Testing:** `run_tests` (The **ONLY** approved way to run tests).
 *   **Runtime:** `launch_app`, `stop_app`, `hot_reload`, `hot_restart`, `get_app_logs`, `list_devices`.
-*   **Inspection:** `get_widget_tree`, `get_selected_widget`, `flutter_driver` (integration testing).
+*   **Runtime Inspection:** `list_running_apps`, `connect_dart_tooling_daemon`, `get_runtime_errors`, `set_widget_selection_mode`, `get_active_location`.
+*   **UI Inspection:** `get_widget_tree`, `get_selected_widget`, `flutter_driver` (integration testing).
 
 #### GitHub Integration
-*   **Code:** `get_file_contents`, `push_files` (direct commit), `create_or_update_file`, `delete_file`.
-*   **PRs:** `list_pull_requests`, `create_pull_request`, `update_pull_request`, `merge_pull_request`, `pull_request_read`, `pull_request_review_write`.
-*   **Issues:** `list_issues`, `issue_read`, `issue_write`, `add_issue_comment`.
-*   **Search:** `search_code`, `search_issues`, `search_repositories`.
+*   **Code:** `get_file_contents`, `push_files` (direct commit), `create_or_update_file`.
+*   **PRs:** `list_pull_requests`, `create_pull_request`, `update_pull_request`, `merge_pull_request`, `get_pull_request`, `create_pull_request_review`.
+*   **Issues:** `list_issues`, `get_issue`, `create_issue`, `update_issue`, `add_issue_comment`.
+*   **Search:** `search_code`, `search_issues`, `search_repositories`, `search_users`.
 
 #### Web & Research
 *   `google_web_search`: Live web queries.
@@ -94,13 +104,11 @@ This section serves as the definitive guide for using the Multi-Context Protocol
 *   `get-library-docs` / `resolve-library-id`: Fetch specific library documentation.
 *   `pub_dev_search`: Find Dart packages.
 
-#### Browser Automation
-*   **Control:** `navigate_page`, `click`, `fill`, `take_screenshot`, `evaluate_script`.
-*   **Debugging:** `get_console_message`, `get_network_request`, `performance_analyze_insight`.
-
-#### Creative & Generation
-*   **Nano Banana:** `generate_image`, `edit_image`, `restore_image`, `generate_icon`, `generate_diagram`.
-*   **Jules:** `start_new_jules_task` (async task offloading).
+#### Browser Automation (Playwright)
+*   **Navigation:** `browser_navigate`, `browser_navigate_back`, `browser_tabs`.
+*   **Interaction:** `browser_click`, `browser_fill_form`, `browser_type`, `browser_drag`, `browser_hover`, `browser_select_option`, `browser_press_key`.
+*   **Inspection:** `browser_take_screenshot`, `browser_snapshot` (accessibility tree), `browser_console_messages`, `browser_network_requests`.
+*   **Advanced:** `browser_evaluate` (run JS), `browser_wait_for`, `browser_handle_dialog`, `browser_file_upload`.
 
 ### 2. Usage Protocols & Best Practices
 
@@ -113,16 +121,25 @@ This section serves as the definitive guide for using the Multi-Context Protocol
 #### Testing Standards
 1.  **Static Analysis:** Run `analyze_files` on modified paths *before* running tests. Fix lint errors first.
 2.  **Test Execution:** ALWAYS use `run_tests`. Do not use shell `flutter test`.
-3.  **Verification:** Ensure code compiles and passes tests before "completing" a task.
+3.  **Browser Testing:** Use `browser_*` tools for E2E scenarios.
+4.  **Verification:** Ensure code compiles and passes tests before "completing" a task.
 
 #### Git Operations
 1.  **Tool Priority:** Use GitHub MCP tools (`create_pull_request`, `push_files`) over shell commands for remote operations.
 2.  **Local Status:** Use `run_shell_command` for `git status`, `git diff` to understand local state.
 3.  **Atomic Commits:** Make small, logical commits with descriptive messages.
 
+#### CLI & Shell Strategy
+*   **WSL First:** Prefer running commands in WSL (`wsl -d Ubuntu-24.04 bash -c '...'`) over PowerShell for standard dev tools (`git`, `gh`, `npm`, `flutter`, `sentry-cli`, `auth0`).
+*   **Path Translation:** Use `wslpath` to translate Windows paths to WSL paths (e.g., when providing file arguments to Linux tools).
+*   **Node.js Management:** Use `nvm` inside WSL to ensure backend compatibility.
+*   **Output Control:** Redirect verbose output to files to save tokens and avoid overflow.
+*   **Environment Sync:** Ensure consistent environment variables across PowerShell and WSL sessions.
+*   **Error Checking:** Always verify command exit codes and handle failures gracefully.
+
 #### Tool Constraints
 *   **Shell:** Do not use `nano`, `vim`, or interactive commands.
-*   **Browser:** Close pages (`close_page`) after use to free resources.
+*   **Browser:** Close pages (`browser_close`) after use to free resources.
 *   **Images:** Respect requested counts and styles strictly.
 
 ### 3. Workflow Integration

@@ -55,8 +55,9 @@ The project runs in a native **WSL 2 (Ubuntu 24.04)** environment. All developme
 
 | Tool | Type | Status | Notes |
 | :--- | :--- | :--- | :--- |
-| **Node.js** | Linux (NVM) | ✅ Ready | v22+. Use native `npm` / `node`. |
+| **Node.js** | Linux (NVM) | ✅ Ready | v22+. Managed via `nvm`. Use native `npm`. |
 | **Git** | Linux | ✅ Ready | v2.43+. Native bash hooks active. |
+| **GH CLI** | Linux | ✅ Ready | v2.40+. GitHub CLI for PRs/Issues. |
 | **Auth0 CLI** | Linux | ✅ Ready | v1.25.0. Tenant connected. |
 | **Sentry CLI**| Linux | ✅ Ready | v2.58.2. |
 | **Docker** | WSL Integration | ✅ Ready | Docker Desktop interop enabled. |
@@ -71,12 +72,33 @@ The project runs in a native **WSL 2 (Ubuntu 24.04)** environment. All developme
 3.  **Execute:** Use `write_file` or `replace` to modify code. **Always** prefer `replace` for surgical edits to avoid overwriting unrelated code.
 4.  **Verify:** Run tests or static analysis if applicable.
 
-### WSL & PowerShell Integration (Enhanced)
-*   **Direct Execution**: Execute complex shell scripts or Linux-native tools directly via WSL from PowerShell using `wsl -d Ubuntu-24.04 bash -c "command"`.
-*   **Tool Integration**: Use Linux utilities (sed, jq, grep, find) to supplement PowerShell for tasks like line-ending normalization (`sed -i 's/\r$//'`) or complex JSON processing.
-*   **Path Translation**: Use `wslpath` for translating between Windows and Linux file paths when passing arguments to WSL commands.
-*   **Consistent Environment**: Ensure environment variables (like `GEMINI_API_KEY`) are correctly exported or passed into the WSL environment for consistent tool behavior.
-*   **Cross-Platform Builds**: Use WSL-native `flutter` and `npm` for builds to ensure binary compatibility and standard line endings (LF).
+### CLI Tool & Environment Guidelines
+
+#### CLI Tool Guidelines
+*   **Define Tool Scope:** Identify if the tool is Linux-native (preferred: `gh`, `sentry-cli`, `auth0`, `nvm`) or Windows-native.
+*   **Specify Execution Context:** Explicitly choose between WSL (`wsl -d Ubuntu-24.04`) or PowerShell based on the tool.
+*   **Node.js Management:** Always use `nvm` within WSL to ensure the correct Node.js version is active for backend services.
+*   **Mandate Output Redirection:** For verbose commands, redirect stdout/stderr to files or null to prevent token overflow.
+*   **Enforce Error Code Checking:** Always check exit codes (`$?` in sh, `$LASTEXITCODE` in PS) after execution.
+
+#### WSL Integration (Primary)
+*   **Prioritize Native WSL Commands:** Use Linux versions of tools (`git`, `gh`, `npm`, `flutter`, `sentry-cli`, `auth0`) within WSL for consistency and performance.
+*   **Direct Execution:** Execute complex shell scripts or Linux-native tools via `wsl -d Ubuntu-24.04 bash -c '...'`.
+*   **Path Translation:** Employ `wslpath` for cross-path translation (e.g., converting `C:\Users\...` to `/mnt/c/Users/...`) when passing Windows paths to WSL tools.
+*   **Consistent Environment:** Verify environment variables are correctly exported or passed to the WSL session to ensure consistent behavior across environments.
+*   **Tool Integration:** Leverage Linux utilities (`sed`, `jq`, `grep`, `find`) for text processing even within PowerShell workflows by invoking them via WSL.
+*   **Cross-Platform Builds:** Use WSL-native `flutter` and `npm` for builds to ensure binary compatibility and standard line endings (LF).
+
+#### PowerShell Fallback (Secondary)
+*   **Windows-Native Tools:** Use PowerShell only for tools that strictly require Windows (e.g., host-level configuration, specific `.exe` installers).
+*   **Syntax Documentation:** Document specific PowerShell syntax used for clarity.
+*   **Context Verification:** Verify the PowerShell execution context (Admin vs. User) before running system-modifying commands.
+
+### Secret Management & Recovery (CRITICAL)
+*   **Never Overwrite blindly:** Do not replace missing secrets with placeholders if they represent external infrastructure (e.g., Cloudflare Tunnels, API Keys).
+*   **Verify External State:** Before creating new resources (tunnels, databases), check if a "missing" local secret actually corresponds to an *existing* live resource.
+*   **Prefer Recovery:** Always attempt to recover credentials (via APIs, CLI, or user prompt) before generating new ones.
+*   **User Confirmation:** Explicitly ask the user before performing destructive actions (like deleting/replacing a tunnel) that affect external DNS or connectivity.
 
 ### Git & Deployment Workflow (CRITICAL)
 *   **Git Rule:** **ALWAYS** `git pull --rebase` before creating a commit. This minimizes merge conflicts and maintains a clean history.

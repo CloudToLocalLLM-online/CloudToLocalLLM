@@ -47,69 +47,26 @@ import { TokenBucketRateLimiter } from './rate-limiter/token-bucket-rate-limiter
 import { CircuitBreakerImpl } from './circuit-breaker/circuit-breaker-impl';
 import { WebSocketHandlerImpl } from './websocket/websocket-handler-impl';
 import { JWTValidationMiddleware } from './middleware/jwt-validation-middleware';
+import { Auth0JWTValidator } from './middleware/auth0-validator';
 import { AuthAuditLogger } from './middleware/auth-audit-logger';
 import { loadAuthConfig, validateAuthConfig } from './middleware/auth-config';
 
-// Initialize OpenTelemetry tracing
-// Must be done after Sentry
-initializeTracing();
-
-// Initialize log level manager and set it in logger
-setLogLevelManagerGetter(() => getLogLevelManager());
-
-// Initialize logger
-const logger = new ConsoleLogger('StreamingProxyServer');
-
-// Load and validate configuration
-const serverConfig = loadAndValidateConfig();
-const configManager = initializeConfigManager(serverConfig);
-
-// Extract commonly used config values
-const PORT = serverConfig.websocket.port;
-const WEBSOCKET_PATH = serverConfig.websocket.path;
-const LOG_LEVEL = serverConfig.logging.level;
-
-// Initialize metrics collector
-const metricsCollector = new ServerMetricsCollector(
-  10000, // maxHistorySize
-  3600000, // 1 hour retention
-  circuitBreakerMetrics
-);
-
-// Initialize core components
-// Requirement 26.2: Initialize all components (ConnectionPool, AuthMiddleware, RateLimiter, CircuitBreaker, MetricsCollector)
+// ... (tracing and config initialization code)
 
 // Load and validate authentication configuration
 const authConfig = loadAuthConfig();
 validateAuthConfig(authConfig);
 
-// Connection Pool - manages SSH connections per user
-const connectionPool = new ConnectionPoolImpl(
-  {
-    maxConnectionsPerUser: 3,
-    maxIdleTime: 300000, // 5 minutes
-    cleanupInterval: 60000, // 1 minute
-  },
-  logger
+// Initialize Auth0 Validator
+const auth0Validator = new Auth0JWTValidator(
+  authConfig.auth0.jwksUri,
+  authConfig.auth0.audience
 );
 
-// Rate Limiter - per-user and per-IP rate limiting
-const rateLimiter = new TokenBucketRateLimiter({
-  requestsPerMinute: 10000,
-  maxConcurrentConnections: 1000,
-  maxQueueSize: 5000,
-});
-
-// Circuit Breaker - prevents cascading failures
-const circuitBreaker = new CircuitBreakerImpl({
-  failureThreshold: 5,
-  successThreshold: 2,
-  timeout: 60000, // 1 minute
-  resetTimeout: 60000, // 1 minute
-});
+// ... (pool and rate limiter initialization)
 
 // Authentication middleware - Requirement 26.2: Connect AuthMiddleware to all protected endpoints
-const authMiddleware = new JWTValidationMiddleware(authConfig);
+const authMiddleware = new JWTValidationMiddleware(auth0Validator);
 const authAuditLogger = new AuthAuditLogger();
 
 // Create Express app

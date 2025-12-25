@@ -4,9 +4,6 @@
  */
 
 export interface AuthConfig {
-  supabase: {
-    url: string;
-  };
   auth0: {
     jwksUri: string;
     audience: string;
@@ -30,8 +27,6 @@ export interface AuthConfig {
  * Load authentication configuration from environment variables
  */
 export function loadAuthConfig(): AuthConfig {
-  const supabaseUrl = process.env.SUPABASE_URL;
-
   const auth0Audience = process.env.AUTH0_AUDIENCE;
   const auth0Domain = process.env.AUTH0_DOMAIN;
   const auth0IssuerUrl = process.env.AUTH0_ISSUER_URL;
@@ -55,9 +50,6 @@ export function loadAuthConfig(): AuthConfig {
   }
 
   return {
-    supabase: {
-      url: supabaseUrl || 'unused',
-    },
     auth0: {
       jwksUri: auth0JwksUri,
       audience: auth0Audience,
@@ -82,11 +74,6 @@ export function loadAuthConfig(): AuthConfig {
  * Validate authentication configuration
  */
 export function validateAuthConfig(config: AuthConfig): void {
-  // Supabase URL check removed as we are migrating to Entra
-  // if (!config.supabase.url) {
-  //   throw new Error('Supabase URL is required');
-  // }
-
   if (config.cache.validationDuration < 0) {
     throw new Error('Validation cache duration must be positive');
   }

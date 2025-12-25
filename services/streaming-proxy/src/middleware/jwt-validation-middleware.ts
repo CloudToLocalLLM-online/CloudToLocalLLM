@@ -13,13 +13,7 @@ import {
   AuthEvent,
 } from '../interfaces/auth-middleware';
 import jwt from 'jsonwebtoken';
-import jwksClient from 'jwks-rsa';
-
-interface JWTHeader {
-  alg: string;
-  typ: string;
-  kid: string;
-}
+import { JWTValidator } from './jwt-validator.interface';
 
 interface JWTPayload {
   sub: string;
@@ -35,48 +29,16 @@ interface CachedValidation {
   cachedAt: Date;
 }
 
-interface AuthConfig {
-  supabase: {
-    url: string;
-  };
-  auth0: {
-    jwksUri: string;
-    audience: string;
-  };
-}
-
 /**
- * JWT Validation Middleware
- * Validates JWT tokens from Supabase with caching using RS256
+ * JWT Validation Middleware with Strategy Pattern
  */
 export class JWTValidationMiddleware implements AuthMiddleware {
-  private readonly config: AuthConfig;
+  private readonly validator: JWTValidator;
   private readonly validationCache: Map<string, CachedValidation> = new Map();
   private readonly cacheDuration = 5 * 60 * 1000; // 5 minutes
-  private readonly client: jwksClient.JwksClient;
 
-  constructor(config: AuthConfig) {
-    this.config = config;
-    this.client = jwksClient({
-      jwksUri: config.auth0.jwksUri,
-      cache: true,
-      rateLimit: true,
-      jwksRequestsPerMinute: 5,
-    });
-  }
-
-  /**
-   * Get signing key from JWKS
-   */
-  private getKey(header: jwt.JwtHeader, callback: jwt.SigningKeyCallback) {
-    this.client.getSigningKey(header.kid, (err: Error | null, key?: jwksClient.SigningKey) => {
-      if (err) {
-        callback(err);
-        return;
-      }
-      const signingKey = key?.getPublicKey();
-      callback(null, signingKey);
-    });
+  constructor(validator: JWTValidator) {
+    this.validator = validator;
   }
 
   /**
@@ -89,60 +51,15 @@ export class JWTValidationMiddleware implements AuthMiddleware {
       return cached.result;
     }
 
-    return new Promise((resolve) => {
-      jwt.verify(
-        token,
-        this.getKey.bind(this),
-        { algorithms: ['RS256'] },
-        (err: jwt.VerifyErrors | null, decoded: string | jwt.JwtPayload | undefined) => {
-          if (err) {
-            let result: TokenValidationResult;
-            if (err instanceof jwt.TokenExpiredError) {
-              const decodedToken = jwt.decode(token) as JWTPayload;
-              result = {
-                valid: false,
-                error: 'Token expired',
-                userId: decodedToken?.sub,
-                expiresAt: decodedToken?.exp ? new Date(decodedToken.exp * 1000) : undefined,
-              };
-            } else {
-              result = {
-                valid: false,
-                error: err.message,
-              };
-            }
-            // Cache invalid results too (except expired which are distinct)
-            if (err.name !== 'TokenExpiredError') {
-              this.cacheValidation(token, result);
-            }
-            resolve(result);
-            return;
-          }
+    const result = await this.validator.validateToken(token);
 
-          const payload = decoded as JWTPayload;
-
-          // Auth0 Audience Check
-          if (payload.aud !== this.config.auth0.audience) {
-            const result: TokenValidationResult = {
-              valid: false,
-              error: `Invalid audience: expected ${this.config.auth0.audience}, got ${payload.aud}`,
-            };
-            this.cacheValidation(token, result);
-            resolve(result);
-            return;
-          }
-
-          const result: TokenValidationResult = {
-            valid: true,
-            userId: payload.sub,
-            expiresAt: new Date(payload.exp * 1000),
-          };
-
-          this.cacheValidation(token, result);
-          resolve(result);
-        }
-      );
-    });
+    // Cache the result
+    if (result.valid || result.error === 'Token expired') {
+       // Optional: decide if you want to cache expired tokens
+    }
+    
+    this.cacheValidation(token, result);
+    return result;
   }
 
   /**

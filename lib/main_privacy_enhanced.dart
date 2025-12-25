@@ -9,6 +9,7 @@ import 'config/app_config.dart';
 import 'config/supabase_config.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'services/auth_service.dart';
+import 'auth/auth_provider_factory.dart';
 
 import 'auth/providers/auth0_auth_provider.dart';
 import 'services/enhanced_user_tier_service.dart';
@@ -37,7 +38,8 @@ final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  if (AppConfig.enableSupabase) {
+  // Conditionally initialize Supabase if it is the active provider or if specifically enabled
+  if (AppConfig.authProvider == AuthProviderType.supabase || AppConfig.enableSupabase) {
     await Supabase.initialize(
       url: SupabaseConfig.url,
       anonKey: SupabaseConfig.anonKey,
@@ -198,7 +200,7 @@ class _CloudToLocalLLMPrivacyAppState extends State<CloudToLocalLLMPrivacyApp> {
         // Authentication service with PostgreSQL session storage
         ChangeNotifierProvider(
           create: (_) {
-            final authProvider = Auth0AuthProvider();
+            final authProvider = AuthProviderFactory.create();
             final authService = AuthService(authProvider);
             unawaited(
                 authProvider.initialize()); // Initialize provider directly

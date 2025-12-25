@@ -138,4 +138,5 @@ class AppConfig {
 /// Supported Authentication Providers
 enum AuthProviderType {
   auth0,
+  supabase,
 }

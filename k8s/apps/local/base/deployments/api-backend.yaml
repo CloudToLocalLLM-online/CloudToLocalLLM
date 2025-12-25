@@ -142,16 +142,6 @@ spec:
                 secretKeyRef:
                   name: cloudtolocalllm-secrets
                   key: jwt-secret
-            - name: SUPABASE_JWT_SECRET
-              valueFrom:
-                secretKeyRef:
-                  name: cloudtolocalllm-secrets
-                  key: supabase-jwt-secret
-            - name: SUPABASE_URL
-              valueFrom:
-                secretKeyRef:
-                  name: cloudtolocalllm-secrets
-                  key: supabase-url
             - name: AUTH0_ISSUER_URL
               valueFrom:
                 secretKeyRef:
@@ -317,16 +307,6 @@ spec:
                 secretKeyRef:
                   name: cloudtolocalllm-secrets
                   key: jwt-secret
-            - name: SUPABASE_JWT_SECRET
-              valueFrom:
-                secretKeyRef:
-                  name: cloudtolocalllm-secrets
-                  key: supabase-jwt-secret
-            - name: SUPABASE_URL
-              valueFrom:
-                secretKeyRef:
-                  name: cloudtolocalllm-secrets
-                  key: supabase-url
             - name: AUTH0_ISSUER_URL
               valueFrom:
                 secretKeyRef:

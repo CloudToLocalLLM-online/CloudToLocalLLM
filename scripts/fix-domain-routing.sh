@@ -9,8 +9,8 @@ set -e
 # Configuration
 ARGOCD_NAMESPACE="argocd"
 CLOUDTOLOCLLM_NAMESPACE="cloudtolocalllm"
-LOG_FILE="/var/log/fix-domain-routing.log"
-BACKUP_DIR="/backup/domain-routing-$(date +%Y%m%d_%H%M%S)"
+LOG_FILE="./fix-domain-routing.log"
+BACKUP_DIR="./backup/domain-routing-$(date +%Y%m%d_%H%M%S)"
 DATE=$(date '+%Y-%m-%d %H:%M:%S')
 
 # Colors for output

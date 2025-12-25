@@ -11,4 +11,4 @@ Categories=Development;Utility;Network;
 Keywords=AI;LLM;Ollama;OpenAI;Machine Learning;
 StartupNotify=true
 StartupWMClass=CloudToLocalLLM
-MimeType=x-scheme-handler/io.supabase.flutterquickstart;
+MimeType=x-scheme-handler/cloudtolocalllm;

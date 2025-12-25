@@ -9,8 +9,8 @@ set -e
 # Configuration
 ARGOCD_NAMESPACE="argocd"
 CLOUDTOLOCLLM_NAMESPACE="cloudtolocalllm"
-LOG_FILE="/var/log/domain-routing-diagnostic.log"
-REPORT_FILE="/tmp/domain-routing-report-$(date +%Y%m%d_%H%M%S).json"
+LOG_FILE="./domain-routing-diagnostic.log"
+REPORT_FILE="./domain-routing-report.json"
 DATE=$(date '+%Y-%m-%d %H:%M:%S')
 
 # Domain configuration
