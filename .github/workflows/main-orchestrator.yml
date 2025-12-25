@@ -119,6 +119,12 @@ jobs:
         run: |
           set -e
           
+          # Ensure local gemini CLI is usable
+          if [ -f scripts/gemini-cli.cjs ]; then
+            chmod +x scripts/gemini-cli.cjs
+            sudo ln -sf "$(pwd)/scripts/gemini-cli.cjs" /usr/local/bin/gemini
+          fi
+
           VERSION=$(cat assets/version.json | jq -r '.version' || echo "7.0.0")
           COMMIT_MSG=$(git log -1 --pretty=%B)
           
