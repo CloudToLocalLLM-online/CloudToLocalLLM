@@ -1,5 +1,5 @@
-# ArgoCD Server High Availability Configuration
-# Enhanced for CloudToLocalLLM deployment stability
+# ArgoCD Server Single-Instance Configuration
+# Optimized for CloudToLocalLLM resource efficiency
 
 apiVersion: apps/v1
 kind: Deployment
@@ -10,7 +10,7 @@ metadata:
     app.kubernetes.io/name: argocd-server
     app.kubernetes.io/part-of: argocd
 spec:
-  replicas: 3
+  replicas: 1
   selector:
     matchLabels:
       app.kubernetes.io/name: argocd-server
@@ -22,7 +22,7 @@ spec:
       serviceAccountName: argocd-server
       containers:
       - name: argocd-server
-        image: argoproj/argocd:v2.8.0
+        image: quay.io/argoproj/argocd:v3.2.2
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 8080
@@ -31,22 +31,13 @@ spec:
         - containerPort: 8083
           name: https
           protocol: TCP
-        - containerPort: 8084
-          name: metrics
-          protocol: TCP
         env:
         - name: ARGOCD_SERVER_MAX_CONCURRENT_REQUESTS
-          value: "100"
+          value: "50"
         - name: ARGOCD_SERVER_GRPC_MAX_SIZE
           value: "104857600"  # 100MB
-        - name: ARGOCD_SERVER_ENABLE_GRPC_WEB
-          value: "true"
         - name: ARGOCD_SERVER_ENABLE_GZIP
           value: "true"
-        - name: ARGOCD_SERVER_REQUEST_TIMEOUT
-          value: "60s"
-        - name: ARGOCD_SERVER_GZIP_COMPRESSION_LEVEL
-          value: "1"
         command:
         - argocd-server
         - --staticassets
@@ -55,16 +46,6 @@ spec:
         - argocd-redis:6379
         - --insecure
         - --enable-proxy-extension
-        - --enable-gzip
-        - --grpc-web
-        - --grpc-web-root-path-prefix
-        - /
-        - --access-token-max-age-minutes
-        - "60"
-        - --user-session-ttl
-        - "24h"
-        - --rootpath
-        - /argocd
         - --loglevel
         - info
         - --logformat
@@ -87,10 +68,10 @@ spec:
           failureThreshold: 3
         resources:
           requests:
-            memory: "512Mi"
-            cpu: "250m"
+            memory: "128Mi"
+            cpu: "10m"
           limits:
-            memory: "1Gi"
+            memory: "512Mi"
             cpu: "500m"
         volumeMounts:
         - mountPath: /app/config/ssl
@@ -100,47 +81,6 @@ spec:
           name: tmp
         - name: argocd-repo-server-tls
           mountPath: /app/config/shared
-      - name: argocd-metrics
-        image: argoproj/argocd:v2.8.0
-        imagePullPolicy: IfNotPresent
-        command:
-        - argocd-metrics
-        - --redis
-        - argocd-redis:6379
-        - --loglevel
-        - info
-        - --logformat
-        - text
-        ports:
-        - containerPort: 8083
-          name: metrics
-          protocol: TCP
-        livenessProbe:
-          httpGet:
-            path: /healthz
-            port: 8083
-          initialDelaySeconds: 30
-          periodSeconds: 10
-          timeoutSeconds: 5
-          failureThreshold: 3
-        readinessProbe:
-          httpGet:
-            path: /healthz
-            port: 8083
-          initialDelaySeconds: 5
-          periodSeconds: 5
-          timeoutSeconds: 3
-          failureThreshold: 3
-        resources:
-          requests:
-            memory: "64Mi"
-            cpu: "50m"
-          limits:
-            memory: "128Mi"
-            cpu: "100m"
-        volumeMounts:
-        - mountPath: /tmp
-          name: tmp
       volumes:
       - name: argocd-server-tls
         secret:
@@ -151,12 +91,8 @@ spec:
       - name: tmp
         emptyDir: {}
   strategy:
-    type: RollingUpdate
-    rollingUpdate:
-      maxSurge: 1
-      maxUnavailable: 0
+    type: Recreate
 ---
-# ArgoCD Server Service with Load Balancer
 apiVersion: v1
 kind: Service
 metadata:
@@ -179,7 +115,6 @@ spec:
   selector:
     app.kubernetes.io/name: argocd-server
 ---
-# ArgoCD Server Metrics Service
 apiVersion: v1
 kind: Service
 metadata:
@@ -197,7 +132,6 @@ spec:
   selector:
     app.kubernetes.io/name: argocd-server
 ---
-# ArgoCD Server Headless Service for internal communication
 apiVersion: v1
 kind: Service
 metadata:
