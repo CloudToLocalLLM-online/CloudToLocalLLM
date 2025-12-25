@@ -30,7 +30,7 @@ defaults:
 
 jobs:
   build_base:
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     permissions:
       id-token: write
       contents: read
@@ -54,7 +54,7 @@ jobs:
 
   build_api:
     needs: [build_base]
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     permissions:
       id-token: write
       contents: read
@@ -78,7 +78,7 @@ jobs:
 
   build_web:
     needs: [build_base]
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     permissions:
       id-token: write
       contents: read
@@ -101,7 +101,7 @@ jobs:
           docker push ${{ env.ACR_NAME }}.azurecr.io/web:main-${SHA}
 
   build_linux:
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     steps:
       - uses: actions/checkout@v4
         with:
@@ -127,7 +127,7 @@ jobs:
           path: "*.tar.gz"
 
   build_windows:
-    runs-on: windows-latest
+    runs-on: blacksmith-4vcpu-windows-2025
     steps:
       - uses: actions/checkout@v4
         with:
@@ -153,7 +153,7 @@ jobs:
   promote_to_gitops:
     needs: [build_api, build_web]
     if: ${{ (github.event_name == 'push' || github.event_name == 'repository_dispatch') && github.ref == 'refs/heads/main' }}
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     permissions:
       contents: write
     steps:
@@ -183,7 +183,7 @@ jobs:
   create_release:
     needs: [build_linux, build_windows, promote_to_gitops]
     if: ${{ always() && (startsWith(github.ref, 'refs/tags/v') || contains(github.event.head_commit.message, 'version')) }}
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     permissions:
       contents: write
     steps:
