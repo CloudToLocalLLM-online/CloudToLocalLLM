@@ -44,7 +44,7 @@ spec:
         livenessProbe:
           httpGet:
             path: /healthz
-            port: 8081
+            port: 8085
           initialDelaySeconds: 30
           periodSeconds: 10
           timeoutSeconds: 5
@@ -52,14 +52,14 @@ spec:
         readinessProbe:
           httpGet:
             path: /healthz
-            port: 8081
+            port: 8085
           initialDelaySeconds: 5
           periodSeconds: 5
           timeoutSeconds: 3
           failureThreshold: 3
         resources:
           requests:
-            memory: "128Mi"
+            memory: "256Mi"
             cpu: "10m"
           limits:
             memory: "512Mi"
@@ -67,8 +67,12 @@ spec:
         volumeMounts:
         - mountPath: /tmp
           name: tmp
+        - mountPath: /tmp/cache
+          name: repo-cache
       volumes:
       - name: tmp
+        emptyDir: {}
+      - name: repo-cache
         emptyDir: {}
   strategy:
     type: Recreate

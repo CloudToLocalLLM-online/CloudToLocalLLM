@@ -49,6 +49,8 @@ spec:
         - "300"
         - --sync-timeout
         - "600"
+        - --metrics-port
+        - "8084"
         ports:
         - containerPort: 8082
           name: grpc
@@ -59,7 +61,7 @@ spec:
         livenessProbe:
           httpGet:
             path: /healthz
-            port: 8082
+            port: 8084
           initialDelaySeconds: 30
           periodSeconds: 10
           timeoutSeconds: 5
@@ -67,14 +69,14 @@ spec:
         readinessProbe:
           httpGet:
             path: /healthz
-            port: 8082
+            port: 8084
           initialDelaySeconds: 5
           periodSeconds: 5
           timeoutSeconds: 3
           failureThreshold: 3
         resources:
           requests:
-            memory: "128Mi"
+            memory: "256Mi"
             cpu: "10m"
           limits:
             memory: "1Gi"
