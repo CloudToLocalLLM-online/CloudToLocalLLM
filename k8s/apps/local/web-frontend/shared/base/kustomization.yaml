@@ -3,5 +3,5 @@ kind: Kustomization
 
 # Only include resources specific to web-frontend application
 resources:
-  - services/web.yaml
   - deployments/web.yaml
+  - services/web.yaml
