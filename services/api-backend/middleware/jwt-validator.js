@@ -145,11 +145,12 @@ export class JWTValidator {
     const key = 'default';
     if (!this.authServices.has(key)) {
       const authService = new AuthService({
-        SUPABASE_URL: process.env.SUPABASE_URL,
+        AUTH_ISSUER_URL: process.env.AUTH0_ISSUER_URL || process.env.AUTH_ISSUER_URL,
+        AUTH_AUDIENCE: process.env.AUTH0_AUDIENCE || process.env.AUTH_AUDIENCE,
       });
 
       this.authServices.set(key, authService);
-      this.logger.debug('Created AuthService (Supabase)');
+      this.logger.debug('Created provider-agnostic AuthService');
     }
 
     return this.authServices.get(key);

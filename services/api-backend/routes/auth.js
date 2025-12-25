@@ -2,7 +2,7 @@
  * Authentication Routes for CloudToLocalLLM API Backend
  *
  * Provides JWT token validation and user information endpoints.
- * Note: Authentication is primarily handled by Supabase.
+ * Note: Authentication is handled by provider-agnostic JWT validation (e.g., Auth0).
  *
  * Requirements: 2.1, 2.2, 2.9, 2.10
  */
@@ -38,7 +38,7 @@ const TOKEN_REFRESH_WINDOW = parseInt(process.env.TOKEN_REFRESH_WINDOW) || 300; 
  *     summary: Refresh an expired or expiring JWT token
  *     description: |
  *       Placeholder for token refresh. Token refresh should be handled directly
- *       via the Supabase client SDK.
+ *       via the identity provider client SDK.
  *     tags:
  *       - Authentication
  *     responses:
@@ -47,8 +47,8 @@ const TOKEN_REFRESH_WINDOW = parseInt(process.env.TOKEN_REFRESH_WINDOW) || 300; 
  */
 router.post('/token/refresh', authCheckLimiter, async function(req, res) {
   return res.status(400).json({
-    error: 'Token refresh should be handled by Supabase client SDK',
-    code: 'USE_SUPABASE_CLIENT',
+    error: 'Token refresh should be handled by the identity provider client SDK',
+    code: 'USE_AUTH_PROVIDER_SDK',
   });
 });
 
@@ -392,7 +392,7 @@ router.post('/session/revoke', authenticateJWT, async function(req, res) {
  *       extracted from the JWT token.
  *
  *       **Validates: Requirements 2.1**
- *       - Validates JWT tokens from JWT on every protected request
+ *       - Validates JWT tokens on every protected request
  *     tags:
  *       - Authentication
  *     security:

@@ -30,8 +30,7 @@ Welcome to the CloudToLocalLLM documentation! This directory contains comprehens
 - **[Third Party Tunnel Evaluation](ARCHITECTURE/THIRD_PARTY_TUNNEL_EVALUATION.md)** - Alternative tunnel solutions
 
 ### 🔗 Tunnel Integration
-- **[Zrok Tunnel System](ARCHITECTURE/TUNNEL_ARCHITECTURE.md)** - Secure tunnel management with zrok
-  - Automatic fallback hierarchy
+- **[Tunnel System](ARCHITECTURE/TUNNEL_SYSTEM.md)** - Secure tunnel management with Cloudflare
   - Platform abstraction patterns
   - Supabase Auth JWT validation integration
   - Cross-platform compatibility
@@ -67,7 +66,6 @@ Welcome to the CloudToLocalLLM documentation! This directory contains comprehens
 
 ### 🔧 **Backend Documentation**
 - **[Backend Overview](backend/README.md)** - Overview of backend services
-- **[API Guides](backend/api/README.md)** - Versioning, deprecation, and error codes
 - **[Feature Implementations](backend/features/README.md)** - Detailed feature guides
 - **[Backend Operations](backend/ops/README.md)** - Backup, failover, and monitoring
 
@@ -157,7 +155,7 @@ See our [Contribution Guidelines](development/CONTRIBUTING.md) for detailed info
 ### Common Issues
 - **Installation Problems**: Check [Installation Guide](INSTALLATION/README.md)
 - **Connection Issues**: See [Troubleshooting Guide](USER_DOCUMENTATION/USER_TROUBLESHOOTING_GUIDE.md)
-- **Tunnel Problems**: Review connection fallback hierarchy and zrok configuration
+- **Tunnel Problems**: Review connection fallback hierarchy and tunnel configuration
 - **Performance Issues**: Monitor connection status and tunnel health
 
 ### Support Channels
