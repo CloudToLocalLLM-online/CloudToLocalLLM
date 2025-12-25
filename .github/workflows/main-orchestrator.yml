@@ -131,16 +131,31 @@ jobs:
           BUMP_NEEDED="false"
           NEW_VERSION="$VERSION"
 
-          if command -v gemini &> /dev/null; then
-              echo "Running Gemini analysis..."
-              gemini "Analyze the latest changes and decide if a release is needed. Version=$VERSION. Commit message: $COMMIT_MSG" --yolo --model gemini-1.5-flash -o json > raw_output.json || echo '{"response": "{\"version_bump_needed\": false}"}' > raw_output.json
-              
-              # Strip markdown code blocks if present
-              sed -i 's/```json//g; s/```//g' raw_output.json
-              
-              CLEAN_RESPONSE=$(jq -c '.response | fromjson' raw_output.json)
-              BUMP_NEEDED=$(echo "$CLEAN_RESPONSE" | jq -r '.version_bump_needed // false' | xargs)
-              NEW_VERSION=$(echo "$CLEAN_RESPONSE" | jq -r '.new_version // "'$VERSION'"' | xargs)
+                    if command -v gemini &> /dev/null; then
+
+                        echo "Running Gemini analysis..."
+
+                        gemini "Analyze the latest changes and decide if a release is needed. Version=$VERSION. Commit message: $COMMIT_MSG. Respond ONLY with a JSON object like {\"version_bump_needed\": boolean, \"new_version\": \"string\"}." --yolo --model gemini-1.5-flash -o json > raw_output.json || echo '{"response": "{\"version_bump_needed\": false}"}' > raw_output.json
+
+                        
+
+                        # Debug: show raw output
+
+                        cat raw_output.json
+
+                        
+
+                        # Extract only the JSON part using sed
+
+                        CLEAN_RESPONSE=$(jq -r '.response' raw_output.json | sed -n '/{/,/}/p')
+
+                        echo "Cleaned response: $CLEAN_RESPONSE"
+
+                        
+
+                        BUMP_NEEDED=$(echo "$CLEAN_RESPONSE" | jq -r '.version_bump_needed // false' | xargs)
+
+                        NEW_VERSION=$(echo "$CLEAN_RESPONSE" | jq -r '.new_version // "'$VERSION'"' | xargs)
           else
               echo "Warning: gemini command not found. Skipping intelligent analysis."
           fi
