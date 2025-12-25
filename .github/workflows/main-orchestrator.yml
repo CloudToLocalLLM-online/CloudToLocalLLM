@@ -145,9 +145,14 @@ jobs:
 
                         
 
-                        # Extract only the JSON part using sed
+                        # Extract only the JSON part directly from the file (handling Markdown)
 
-                        CLEAN_RESPONSE=$(jq -r '.response' raw_output.json | sed -n '/{/,/}/p')
+                        CLEAN_RESPONSE=$(cat raw_output.json | sed -n '/^{/,/^}/p')
+                        
+                        # Fallback if sed returns empty (e.g. plain JSON or inline)
+                        if [ -z "$CLEAN_RESPONSE" ]; then
+                           CLEAN_RESPONSE=$(cat raw_output.json | sed 's/```json//g' | sed 's/```//g')
+                        fi
 
                         echo "Cleaned response: $CLEAN_RESPONSE"
 
