@@ -27,7 +27,7 @@ defaults:
 
 jobs:
   dispatch:
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     if: "${{ github.actor != 'github-actions[bot]' && !startsWith(github.event.head_commit.message, 'chore: bump version') && !startsWith(github.event.head_commit.message, 'chore(deploy): promote') }}"
     permissions:
       contents: read
@@ -102,7 +102,7 @@ jobs:
   orchestrate:
     needs: dispatch
     if: ${{ needs.dispatch.outputs.command == 'orchestrate' }}
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     permissions:
       contents: write
     steps:

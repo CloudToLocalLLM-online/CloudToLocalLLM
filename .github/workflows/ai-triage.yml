@@ -21,7 +21,7 @@ env:
 
 jobs:
   triage:
-    runs-on: "ubuntu-latest"
+    runs-on: "blacksmith-4vcpu-ubuntu-2404"
     timeout-minutes: 7
     outputs:
       available_labels: "${{ steps.get_labels.outputs.available_labels }}"
@@ -109,7 +109,7 @@ jobs:
           echo "labels=$LABELS" >> $GITHUB_OUTPUT
 
   label:
-    runs-on: "ubuntu-latest"
+    runs-on: "blacksmith-4vcpu-ubuntu-2404"
     needs:
       - "triage"
     if: |-
