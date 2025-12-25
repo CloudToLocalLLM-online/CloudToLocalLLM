@@ -2,12 +2,11 @@ name: "🔀 Main Orchestrator"
 
 on:
   push:
-    branches: [main]
+    branches: [main, "fix/*", "feat/*"]
     paths-ignore:
       - "assets/version.json"
       - "pubspec.yaml"
       - "package.json"
-      - "k8s/**"
   pull_request:
     types: [opened, reopened, synchronize]
   issues:
