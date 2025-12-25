@@ -24,87 +24,118 @@ The project utilizes a robust stack to achieve its goals:
 *   **Infrastructure:** Docker, Kubernetes (k8s), Docker Compose.
 *   **CI/CD:** GitHub Actions.
 
-## Core Philosophy & Workflow
+## Core Philosophy & Workflow: The Sequential Thinking Mandate
 
-I adhere to a strict "Think, then Act" philosophy to ensure safety and quality.
+I adhere to a strict "Think, then Act" philosophy, now reinforced by a mandatory **Sequential Thinking Protocol** for all complex tasks.
 
-### 1. Cognitive Architecture (`sequentialthinking`)
-For any task involving complexity, ambiguity, or multi-step reasoning, I **MUST** use the `sequentialthinking` tool.
-*   **Purpose:** To break down problems, generate hypotheses, plan steps, and revise strategies dynamically.
-*   **Usage:** I will use this *before* making significant code changes and *during* debugging to track my logic.
+### 1. The Sequential Thinking Protocol (`sequentialthinking`)
+For any task involving complexity, ambiguity, debugging, or multi-step reasoning, I **MUST** use the `sequentialthinking` tool to structure my cognitive process.
+
+**Protocol Checklist:**
+*   **Define explicit steps:** Break down the problem into granular, actionable phases.
+*   **Document intermediate states:** Record the system state before and after each logical step.
+*   **Validate each step:** Prove that the current step succeeded before moving to the next.
+*   **Measure progress:** Track how far along the plan I am.
+*   **Log outcomes:** Explicitly state the result of each action (Success/Failure/Unexpected).
+*   **Iterate on findings:** If a step reveals new information, loop back and adjust the plan.
+*   **Refine logic:** Continuously improve the approach based on observed reality.
+*   **Prioritize clarity:** Ensure the thought process is transparent and understandable.
+*   **Ensure reproducibility:** The path to the solution must be repeatable.
 
 ### 2. Deep Analysis (`codebase_investigator`)
 I do not guess about the codebase. For any request that requires understanding system architecture, dependencies, or broad context, I **MUST** use `codebase_investigator`.
 *   **Purpose:** To map out relevant files, symbols, and relationships.
 *   **Usage:** This is my "Entry Point" for bug fixes and feature implementations.
 
-### 3. The MCP Loop
+### 3. The MCP Loop (Enhanced)
 1.  **Investigate:** Use `codebase_investigator` or `search_file_content` to understand the context.
-2.  **Plan:** Use `sequentialthinking` to formulate a safe and effective plan.
+2.  **Plan:** Use `sequentialthinking` to formulate a safe and effective plan, adhering to the checklist above.
 3.  **Task Tracking:** Use `write_todos` to manage complex, multi-step execution.
 4.  **Implement:** Use engineering tools (`write_file`, `replace`, etc.) to make changes.
 5.  **Verify:** Use `analyze_files` and `run_tests` to prove correctness.
 
-## Available Tools & Capabilities
+## MCP Tool Operating Manual
 
-I have access to a comprehensive suite of tools ("MCP Tools") to assist with development.
+This section serves as the definitive guide for using the Multi-Context Protocol (MCP) tools available to the agent.
 
-### Cognitive & Planning
-*   **`sequentialthinking`**: **(PRIMARY)** A reflective thinking tool for dynamic problem-solving and planning.
-*   **`codebase_investigator`**: **(PRIMARY)** Deep codebase analysis and architectural mapping.
-*   **`write_todos`**: Manages dynamic task lists for complex requests.
-*   **`save_memory`**: Persists user preferences and critical facts.
+### 1. Tool Inventory & Capability Mapping
 
-### Core Engineering & File System
-*   **`search_file_content(pattern)`**: Fast, grep-like search (ripgrep) for patterns.
-*   **`glob(pattern)`**: efficient file finding by pattern.
-*   **`read_file(path)`**: Reads file content.
-*   **`write_file(path, content)`**: Writes new content.
-*   **`replace(path, old, new)`**: Precise text replacement (requires unique context).
-*   **`list_directory(path)`**: Lists directory contents.
-*   **`run_shell_command(command)`**: Executes shell commands (PowerShell).
+#### System & File Operations
+*   `list_directory`: Lists files/folders. *Usage: Explore directory structure.*
+*   `read_file`: Reads file content. *Usage: Read single files. Respects limits.*
+*   `search_file_content`: Fast regex search (ripgrep). *Usage: Find code patterns.*
+*   `glob`: Find files by pattern. *Usage: Locate specific file types.*
+*   `replace`: Surgical text replacement. *Usage: Edit code. Requires unique context.*
+*   `write_file`: Overwrite/create files. *Usage: Create new files or full rewrites.*
+*   `run_shell_command`: Execute shell commands. *Usage: Run scripts, build tools.*
 
-### Dart & Flutter Development (MCP)
-I possess specialized tools for the full Flutter lifecycle:
+#### Memory & Cognition
+*   `sequentialthinking`: **(MANDATORY)** For complex logic and planning.
+*   `save_memory`: Store user preferences/facts. *Usage: Long-term personalization.*
+*   `delegate_to_agent`: Hand off tasks to sub-agents. *Usage: Deep analysis (`codebase_investigator`).*
 
-*   **Management:** `create_project`, `pub` (dependency management).
-*   **Quality:** `analyze_files` (static analysis), `dart_fix` (auto-fixes), `dart_format`.
-*   **Testing:** `run_tests` (The **ONLY** way I should run tests).
-*   **Runtime:** `launch_app`, `stop_app`, `hot_reload`, `hot_restart`, `get_app_logs`.
-*   **Inspection:** `get_widget_tree`, `get_selected_widget`, `flutter_driver`.
+#### Flutter & Dart Engineering
+*   **Management:** `create_project`, `pub` (add/remove deps).
+*   **Analysis:** `analyze_files` (lint), `resolve_workspace_symbol`, `hover`, `signature_help`.
+*   **Refactoring:** `dart_fix` (auto-apply fixes), `dart_format`.
+*   **Testing:** `run_tests` (The **ONLY** approved way to run tests).
+*   **Runtime:** `launch_app`, `stop_app`, `hot_reload`, `hot_restart`, `get_app_logs`, `list_devices`.
+*   **Inspection:** `get_widget_tree`, `get_selected_widget`, `flutter_driver` (integration testing).
 
-### Web, Research & Documentation
-*   **`get-library-docs(id)`**: Fetches up-to-date documentation for libraries (Context7).
-*   **`resolve-library-id(name)`**: Resolves library names for documentation fetching.
-*   **`google_web_search`**: Searches the live web for information.
-*   **`web_fetch`**: Fetches content from specific URLs.
-*   **`pub_dev_search`**: Searches pub.dev for Dart packages.
+#### GitHub Integration
+*   **Code:** `get_file_contents`, `push_files` (direct commit), `create_or_update_file`, `delete_file`.
+*   **PRs:** `list_pull_requests`, `create_pull_request`, `update_pull_request`, `merge_pull_request`, `pull_request_read`, `pull_request_review_write`.
+*   **Issues:** `list_issues`, `issue_read`, `issue_write`, `add_issue_comment`.
+*   **Search:** `search_code`, `search_issues`, `search_repositories`.
 
-### Browser Automation (Playwright)
-I can launch and control a browser to interact with web applications:
-*   `browser_navigate`, `browser_click`, `browser_type`, `browser_evaluate`, `browser_take_screenshot`, etc.
+#### Web & Research
+*   `google_web_search`: Live web queries.
+*   `web_fetch`: Scrape/read web pages.
+*   `get-library-docs` / `resolve-library-id`: Fetch specific library documentation.
+*   `pub_dev_search`: Find Dart packages.
 
-### GitHub Integration
-I can directly interact with the repository:
-*   `create_issue`, `create_pull_request`, `create_branch`, `push_files`, `search_issues`, etc.
+#### Browser Automation
+*   **Control:** `navigate_page`, `click`, `fill`, `take_screenshot`, `evaluate_script`.
+*   **Debugging:** `get_console_message`, `get_network_request`, `performance_analyze_insight`.
 
-## Testing Best Practices
+#### Creative & Generation
+*   **Nano Banana:** `generate_image`, `edit_image`, `restore_image`, `generate_icon`, `generate_diagram`.
+*   **Jules:** `start_new_jules_task` (async task offloading).
 
-Testing is mandatory for all code changes.
+### 2. Usage Protocols & Best Practices
 
-1.  **Static Analysis First:** ALWAYS run `analyze_files` on modified paths *before* running tests. Fix lint errors first.
-2.  **Use `run_tests`:** Do not use `flutter test` in the shell. Use the `run_tests` tool which provides better output and control.
-3.  **Integration Tests:** Critical paths (like Login, Payments) must be covered by integration tests (`integration_test` package).
-4.  **Format & Fix:** Run `dart_format` and `dart_fix` before finalizing any task.
-5.  **No "Blind" Commits:** Ensure the code compiles and passes tests before committing.
+#### General Rules
+1.  **Verify First:** Never assume file existence or content. Use `list_directory` and `read_file` before acting.
+2.  **Surgical Edits:** Prefer `replace` over `write_file` for existing files to preserve context.
+3.  **No Hallucinations:** If a tool fails, report it. Do not invent successful outputs.
+4.  **Security:** Never output or commit API keys/secrets. Use `read_file` to check `.env` templates, not actual `.env` files if possible.
 
-## User Preferences & Rules
-*   **Automation First**: Automate tasks whenever possible.
-*   **Deployment**: Automated via GitHub Actions on push to `main`.
-*   **Git Operations**: Always commit changes. Use descriptive, "why"-focused messages.
-*   **Latest Tech**: Use latest stable versions of Flutter, Node.js, and K8s.
-*   **No Root**: Containers must run as non-root users.
-*   **Sequential Thinking**: If a task seems even slightly complex, use the `sequentialthinking` tool immediately.
+#### Testing Standards
+1.  **Static Analysis:** Run `analyze_files` on modified paths *before* running tests. Fix lint errors first.
+2.  **Test Execution:** ALWAYS use `run_tests`. Do not use shell `flutter test`.
+3.  **Verification:** Ensure code compiles and passes tests before "completing" a task.
+
+#### Git Operations
+1.  **Tool Priority:** Use GitHub MCP tools (`create_pull_request`, `push_files`) over shell commands for remote operations.
+2.  **Local Status:** Use `run_shell_command` for `git status`, `git diff` to understand local state.
+3.  **Atomic Commits:** Make small, logical commits with descriptive messages.
+
+#### Tool Constraints
+*   **Shell:** Do not use `nano`, `vim`, or interactive commands.
+*   **Browser:** Close pages (`close_page`) after use to free resources.
+*   **Images:** Respect requested counts and styles strictly.
+
+### 3. Workflow Integration
+
+The standard operating loop is:
+1.  **Context Loading:** `save_memory` check + `read_file` (docs/configs).
+2.  **Investigation:** `delegate_to_agent` (deep) or `search_file_content` (quick).
+3.  **Planning (Sequential):** Use `sequentialthinking` to Build the Plan.
+    *   Define explicit steps.
+    *   Prioritize clarity and reproducibility.
+4.  **Action:** `write_file` / `replace` / `run_shell_command`.
+5.  **Validation:** `dart_format` -> `analyze_files` -> `run_tests`.
+6.  **Iteration:** Log outcomes, refine logic, and repeat if necessary.
 
 ## Lessons Learned & Project Structure Notes
 

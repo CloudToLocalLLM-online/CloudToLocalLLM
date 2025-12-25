@@ -67,7 +67,7 @@ The project runs in a native **WSL 2 (Ubuntu 24.04)** environment. All developme
 
 ### Core Philosophy: "Think, then Act"
 1.  **Investigate:** Do not guess. Use `list_directory`, `read_file`, or `search_file_content` to confirm file locations and contents.
-2.  **Plan:** For complex tasks, use `write_todos` to break down the work.
+2.  **Plan (Sequential Thinking):** For any complex task, you **MUST** use the `sequentialthinking` tool. Refer to the **Sequential Thinking Mandate** in `docs/DEVELOPMENT/GEMINI.md` for the explicit protocol (Define steps, Validate, Measure, Log, Iterate).
 3.  **Execute:** Use `write_file` or `replace` to modify code. **Always** prefer `replace` for surgical edits to avoid overwriting unrelated code.
 4.  **Verify:** Run tests or static analysis if applicable.
 
