@@ -1,0 +1,200 @@
+# ArgoCD Repository Server Optimized Configuration
+# Enhanced for CloudToLocalLLM deployment performance and caching
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: argocd-repo-server
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: argocd-repo-server
+    app.kubernetes.io/part-of: argocd
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: argocd-repo-server
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: argocd-repo-server
+    spec:
+      serviceAccountName: argocd-repo-server
+      containers:
+      - name: argocd-repo-server
+        image: argoproj/argocd:v2.8.0
+        imagePullPolicy: IfNotPresent
+        command:
+        - argocd-repo-server
+        - --redis
+        - argocd-redis:6379
+        - --loglevel
+        - info
+        - --logformat
+        - text
+        - --parallelismlimit
+        - "10"
+        - --timeout
+        - "60"
+        - --cache-expiration
+        - "20m"
+        - --kubectl-parallelism-limit
+        - "10"
+        - --repo-cache-expiration
+        - "20m"
+        - --repo-cache-root
+        - /tmp/cache
+        - --repo-server-timeout-seconds
+        - "60"
+        - --repo-server-metrics-port
+        - "8084"
+        ports:
+        - containerPort: 8081
+          name: grpc
+          protocol: TCP
+        - containerPort: 8084
+          name: metrics
+          protocol: TCP
+        env:
+        - name: ARGOCD_REPO_SERVER_PARALLELISM
+          value: "10"
+        - name: ARGOCD_REPO_SERVER_TIMEOUT
+          value: "60"
+        - name: ARGOCD_REPO_SERVER_CACHE_EXPIRATION
+          value: "20m"
+        - name: ARGOCD_REPO_SERVER_KUBECTL_PARALLELISM_LIMIT
+          value: "10"
+        - name: ARGOCD_REPO_SERVER_REPO_CACHE_EXPIRATION
+          value: "20m"
+        - name: ARGOCD_REPO_SERVER_REPO_CACHE_ROOT
+          value: "/tmp/cache"
+        - name: ARGOCD_REPO_SERVER_TIMEOUT_SECONDS
+          value: "60"
+        - name: ARGOCD_REPO_SERVER_METRICS_PORT
+          value: "8084"
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 8081
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /healthz
+            port: 8081
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+        volumeMounts:
+        - mountPath: /tmp
+          name: tmp
+        - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+          name: argocd-repo-server-token
+          readOnly: true
+        - mountPath: /tmp/cache
+          name: repo-cache
+      - name: argocd-repo-server-metrics
+        image: argoproj/argocd:v2.8.0
+        imagePullPolicy: IfNotPresent
+        command:
+        - argocd-repo-server
+        - --metrics
+        - --redis
+        - argocd-redis:6379
+        - --loglevel
+        - info
+        - --logformat
+        - text
+        ports:
+        - containerPort: 8084
+          name: metrics
+          protocol: TCP
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 8084
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /healthz
+            port: 8084
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "50m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+        volumeMounts:
+        - mountPath: /tmp
+          name: tmp
+      volumes:
+      - name: tmp
+        emptyDir: {}
+      - name: argocd-repo-server-token
+        secret:
+          secretName: argocd-repo-server-token
+      - name: repo-cache
+        emptyDir: {}
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+---
+# ArgoCD Repository Server Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: argocd-repo-server
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: argocd-repo-server
+    app.kubernetes.io/part-of: argocd
+spec:
+  ports:
+  - name: grpc
+    port: 8081
+    protocol: TCP
+    targetPort: 8081
+  - name: metrics
+    port: 8084
+    protocol: TCP
+    targetPort: 8084
+  selector:
+    app.kubernetes.io/name: argocd-repo-server
+---
+# ArgoCD Repository Server Metrics Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: argocd-repo-server-metrics
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: argocd-repo-server-metrics
+    app.kubernetes.io/part-of: argocd
+spec:
+  ports:
+  - name: metrics
+    port: 8084
+    protocol: TCP
+    targetPort: 8084
+  selector:
+    app.kubernetes.io/name: argocd-repo-server

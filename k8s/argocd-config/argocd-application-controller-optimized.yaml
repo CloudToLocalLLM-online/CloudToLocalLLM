@@ -1,0 +1,207 @@
+# ArgoCD Application Controller Optimized Configuration
+# Enhanced for CloudToLocalLLM deployment performance and stability
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: argocd-application-controller
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: argocd-application-controller
+    app.kubernetes.io/part-of: argocd
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: argocd-application-controller
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: argocd-application-controller
+    spec:
+      serviceAccountName: argocd-application-controller
+      containers:
+      - name: argocd-application-controller
+        image: argoproj/argocd:v2.8.0
+        imagePullPolicy: IfNotPresent
+        command:
+        - argocd-application-controller
+        - --operation-processors
+        - "10"
+        - --repo-server-timeout
+        - "60"
+        - --status-processors
+        - "20"
+        - --kubectl-parallelism-limit
+        - "10"
+        - --app-resync
+        - "1800"  # 30 minutes
+        - --redis
+        - argocd-redis:6379
+        - --loglevel
+        - info
+        - --logformat
+        - text
+        - --enable-cache
+        - --cache-expiration
+        - "20m"
+        - --self-heal-timeout-seconds
+        - "300"
+        - --sync-timeout-seconds
+        - "600"
+        - --parallelismlimit
+        - "10"
+        ports:
+        - containerPort: 8082
+          name: grpc
+          protocol: TCP
+        - containerPort: 8084
+          name: metrics
+          protocol: TCP
+        env:
+        - name: ARGOCD_CONTROLLER_REPLICAS
+          value: "2"
+        - name: ARGOCD_CONTROLLER_WORKERS
+          value: "20"
+        - name: ARGOCD_CONTROLLER_APP_RESYNC
+          value: "1800"  # 30 minutes
+        - name: ARGOCD_CONTROLLER_OPERATION_PROCESSORS
+          value: "10"
+        - name: ARGOCD_CONTROLLER_STATUS_PROCESSORS
+          value: "20"
+        - name: ARGOCD_CONTROLLER_KUBECTL_PARALLELISM_LIMIT
+          value: "10"
+        - name: ARGOCD_CONTROLLER_REPO_SERVER_TIMEOUT
+          value: "60"
+        - name: ARGOCD_CONTROLLER_ENABLE_CACHE
+          value: "true"
+        - name: ARGOCD_CONTROLLER_CACHE_EXPIRATION
+          value: "20m"
+        - name: ARGOCD_CONTROLLER_SELF_HEAL_TIMEOUT
+          value: "300"
+        - name: ARGOCD_CONTROLLER_SYNC_TIMEOUT
+          value: "600"
+        - name: ARGOCD_CONTROLLER_PARALLELISM_LIMIT
+          value: "10"
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 8082
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /healthz
+            port: 8082
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+        resources:
+          requests:
+            memory: "1Gi"
+            cpu: "500m"
+          limits:
+            memory: "2Gi"
+            cpu: "1000m"
+        volumeMounts:
+        - mountPath: /tmp
+          name: tmp
+        - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+          name: argocd-application-controller-token
+          readOnly: true
+      - name: argocd-application-controller-metrics
+        image: argoproj/argocd:v2.8.0
+        imagePullPolicy: IfNotPresent
+        command:
+        - argocd-application-controller
+        - --metrics
+        - --redis
+        - argocd-redis:6379
+        - --loglevel
+        - info
+        - --logformat
+        - text
+        ports:
+        - containerPort: 8084
+          name: metrics
+          protocol: TCP
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 8084
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /healthz
+            port: 8084
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "50m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+        volumeMounts:
+        - mountPath: /tmp
+          name: tmp
+      volumes:
+      - name: tmp
+        emptyDir: {}
+      - name: argocd-application-controller-token
+        secret:
+          secretName: argocd-application-controller-token
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+---
+# ArgoCD Application Controller Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: argocd-application-controller
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: argocd-application-controller
+    app.kubernetes.io/part-of: argocd
+spec:
+  ports:
+  - name: grpc
+    port: 8082
+    protocol: TCP
+    targetPort: 8082
+  - name: metrics
+    port: 8084
+    protocol: TCP
+    targetPort: 8084
+  selector:
+    app.kubernetes.io/name: argocd-application-controller
+---
+# ArgoCD Application Controller Metrics Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: argocd-application-controller-metrics
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: argocd-application-controller-metrics
+    app.kubernetes.io/part-of: argocd
+spec:
+  ports:
+  - name: metrics
+    port: 8084
+    protocol: TCP
+    targetPort: 8084
+  selector:
+    app.kubernetes.io/name: argocd-application-controller
