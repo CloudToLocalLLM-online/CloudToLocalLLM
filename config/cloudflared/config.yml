@@ -1,0 +1,11 @@
+tunnel: 2845c04e-db4f-49cc-aba9-bd9e5820e30b
+credentials-file: /etc/cloudflared/creds.json
+
+ingress:
+  - hostname: app.cloudtolocalllm.online
+    service: http://web:80
+  - hostname: api.cloudtolocalllm.online
+    service: http://api-backend:3000
+  - hostname: cloudtolocalllm.online
+    service: http://web:80
+  - service: http_status:404

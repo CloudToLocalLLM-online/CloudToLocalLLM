@@ -179,6 +179,18 @@ services:
       - cloudtolocalllm
     entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew --quiet --webroot -w /var/www/certbot; sleep 12h & wait $${!}; done;'"
 
+  # Cloudflare Tunnel
+  tunnel:
+    image: cloudflare/cloudflared:latest
+    restart: unless-stopped
+    command: tunnel run
+    environment:
+      - TUNNEL_TOKEN=eyJhIjoiMzVmYTA5OTI5ZTY1NmM0ZTk2ZTRhYTc5OTA5ZDExYjciLCJ0IjoiMjg0NWMwNGUtZGI0Zi00OWNjLWFiYTktYmQ5ZTU4MjBlMzBiIiwicyI6Ik5vRkJSYzIzcU4yUlgveWIyNjJxSDhadlhNRHBvNEgxL1d6VlRvb0VhQlhDamN0bFJsQW5rWEVjV0ZBYlQzWUJXTS91eUhTUVdPNkJCaHBFZHhqQnpBPT0ifQ==
+    volumes:
+      - ./config/cloudflared/config.yml:/etc/cloudflared/config.yml
+    networks:
+      - cloudtolocalllm
+
 networks:
   cloudtolocalllm:
     name: cloudtolocalllm_network
