@@ -25,6 +25,12 @@ spec:
       - name: argocd-application-controller
         image: quay.io/argoproj/argocd:v3.2.2
         imagePullPolicy: IfNotPresent
+        env:
+        - name: REDIS_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: argocd-redis
+              key: auth
         command:
         - argocd-application-controller
         - --operation-processors
@@ -77,7 +83,7 @@ spec:
         resources:
           requests:
             memory: "256Mi"
-            cpu: "10m"
+            cpu: "50m"
           limits:
             memory: "1Gi"
             cpu: "500m"

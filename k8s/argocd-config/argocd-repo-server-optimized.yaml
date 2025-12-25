@@ -24,6 +24,12 @@ spec:
       - name: argocd-repo-server
         image: quay.io/argoproj/argocd:v3.2.2
         imagePullPolicy: IfNotPresent
+        env:
+        - name: REDIS_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: argocd-redis
+              key: auth
         command:
         - argocd-repo-server
         - --redis
@@ -60,7 +66,7 @@ spec:
         resources:
           requests:
             memory: "256Mi"
-            cpu: "10m"
+            cpu: "50m"
           limits:
             memory: "512Mi"
             cpu: "500m"
