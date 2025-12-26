@@ -2,6 +2,41 @@
 
 All notable changes to this project will be documented in this file.
 
+## [7.14.30] - 2025-12-26
+## v7.14.30 (2024-10-27)
+
+### Features
+
+*   Add cloudflare tunnel configuration and service ([0e9d558](https://github.com/example/example/commit/0e9d558))
+*   Add script to fix Azure OIDC subject mismatch ([b92761b](https://github.com/example/example/commit/b92761b))
+*   (464e7d9) gemini-1.5-flash
+
+### Bug Fixes
+
+*   Correct az login flags and set subscription separately ([22f4771](https://github.com/example/example/commit/22f4771))
+*   Convert gemini-cli.cjs to unix line endings ([11d1c33](https://github.com/example/example/commit/11d1c33))
+*   Debug workflow validity ([8f8ce1d](https://github.com/example/example/commit/8f8ce1d))
+*   Ensure generate-changelog.sh is executable and LF normalized ([368e6e9](https://github.com/example/example/commit/368e6e9))
+*   Fallback to ubuntu-latest to debug runner issue ([46c26b1](https://github.com/example/example/commit/46c26b1))
+*   Fetch OIDC token manually for az login ([4ae8ea7](https://github.com/example/example/commit/4ae8ea7))
+*   Force LF line endings for shell scripts ([e06627d](https://github.com/example/example/commit/e06627d))
+*   Isolate workflow failure by removing sub-workflows ([173078b](https://github.com/example/example/commit/173078b))
+*   Join az login command to single line to fix retry action args ([d48c2d5](https://github.com/example/example/commit/d48c2d5))
+*   Make Cloudflare DNS token optional in validation to prevent blocking ([925898e](https://github.com/example/example/commit/925898e))
+*   Migrate build pipeline to standard runners and update tokens ([7ba02f8](https://github.com/example/example/commit/7ba02f8))
+*   Move json cleanup to cli script and simplify workflows ([640ace9](https://github.com/example/example/commit/640ace9))
+*   Replace retry action with shell loop for az login to access OIDC token ([578d2b5](https://github.com/example/example/commit/578d2b5))
+*   Restore connectivity and optimize resources ([41f66c9](https://github.com/example/example/commit/41f66c9))
+*   Restore orchestration logic with simplified json handling ([cb5efae](https://github.com/example/example/commit/cb5efae))
+*   Robust json extraction from gemini output in orchestrator ([5e09273](https://github.com/example/example/commit/5e09273))
+*   Solve NOAUTH and manifestation timeouts ([a86d9c3](https://github.com/example/example/commit/a86d9c3))
+*   Stabilize GHA workflows and enforce fail-fast Gemini integration ([6ba2703](https://github.com/example/example/commit/6ba2703))
+*   Stabilize workflows by standardizing gemini CLI usage and JSON parsing ([f19c239](https://github.com/example/example/commit/f19c239))
+*   Use GITHUB_TOKEN for checkout to enable push ([9fde24b](https://github.com/example/example/commit/9fde24b))
+*   Use GITHUB_TOKEN for dispatch to resolve 403 ([542f9bf](https://github.com/example/example/commit/542f9bf))
+*   Use python for robust json extraction in workflows ([8e75bb5](https://github.com/example/example/commit/8e75bb5))
+*   Use standard azure/login@v
+
 ## [7.14.29] - 2025-12-26
 ## v7.14.29 (2024-10-27)
 
