@@ -59,6 +59,8 @@ data:
           - targets:
             - https://api.cloudtolocalllm.online/health
             - https://app.cloudtolocalllm.online/
+            - https://argocd.cloudtolocalllm.online/
+            - https://grafana.cloudtolocalllm.online/
         relabel_configs:
           - source_labels: [__address__]
             target_label: __param_target
@@ -79,3 +81,21 @@ data:
               severity: critical
             annotations:
               summary: "ArgoCD server is down"
+
+          - alert: DomainDown
+            expr: probe_success == 0
+            for: 1m
+            labels:
+              severity: critical
+            annotations:
+              summary: "Domain {{ $labels.instance }} is down"
+              description: "Blackbox probe failed for {{ $labels.instance }}"
+
+          - alert: SlowDomainResponse
+            expr: probe_duration_seconds > 5
+            for: 3m
+            labels:
+              severity: warning
+            annotations:
+              summary: "Slow response for {{ $labels.instance }}"
+              description: "Domain {{ $labels.instance }} response time is > 5s"

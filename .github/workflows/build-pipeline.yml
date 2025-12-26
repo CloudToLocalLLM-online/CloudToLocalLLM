@@ -263,8 +263,22 @@ jobs:
           SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
         run: |
           # Use envsubst to replace placeholders in k8s/secrets.yaml and apply to cluster
-          # This ensures secrets are created dynamically without being stored in the repo
           envsubst < k8s/secrets.yaml | kubectl apply -f -
+
+      - name: Deploy Optimized Cloudflare Tunnel
+        run: |
+          # Calculate SHA of ConfigMap to trigger rolling restart if config changed
+          CONFIG_MAP_YAML=$(sed -n '/apiVersion: v1/,/---/p' k8s/deployments/overlays/managed/cloudflared-tunnel.yaml | grep -v "---")
+          export CLOUDFLARED_CONFIG_SHA=$(echo "$CONFIG_MAP_YAML" | shasum -a 256 | cut -d' ' -f1)
+          
+          # Use envsubst to inject the SHA into the Deployment and apply
+          envsubst < k8s/deployments/overlays/managed/cloudflared-tunnel.yaml | kubectl apply -f -
+
+      - name: Deploy Monitoring Configuration
+        run: |
+          # Ensure monitoring configurations (Prometheus/Alertmanager) are up to date
+          kubectl apply -f k8s/deployments/base/prometheus-config.yaml
+          kubectl apply -f k8s/deployments/base/alertmanager-config.yaml
 
   promote_to_gitops:
     needs: [build_api, build_web, deploy_secrets]
