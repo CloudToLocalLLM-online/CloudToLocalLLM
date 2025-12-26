@@ -76,30 +76,6 @@ jobs:
               core.setOutput('command', 'fallthrough');
             }
 
-  review:
-    needs: dispatch
-    if: ${{ needs.dispatch.outputs.command == 'review' }}
-    uses: ./.github/workflows/ai-review.yml
-    with:
-      additional_context: ${{ needs.dispatch.outputs.additional_context }}
-    secrets: inherit
-
-  triage:
-    needs: dispatch
-    if: ${{ needs.dispatch.outputs.command == 'triage' }}
-    uses: ./.github/workflows/ai-triage.yml
-    with:
-      additional_context: ${{ needs.dispatch.outputs.additional_context }}
-    secrets: inherit
-
-  invoke:
-    needs: dispatch
-    if: ${{ needs.dispatch.outputs.command == 'invoke' }}
-    uses: ./.github/workflows/ai-task.yml
-    with:
-      additional_context: ${{ needs.dispatch.outputs.additional_context }}
-    secrets: inherit
-
   orchestrate:
     needs: dispatch
     if: ${{ needs.dispatch.outputs.command == 'orchestrate' }}
