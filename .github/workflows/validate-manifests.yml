@@ -13,13 +13,26 @@ on:
 jobs:
   validate:
     runs-on: blacksmith-4vcpu-ubuntu-2404
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
 
+      - name: Cache Kustomize
+        id: cache-kustomize
+        uses: actions/cache@v4
+        with:
+          path: /usr/local/bin/kustomize
+          key: ${{ runner.os }}-kustomize-v5
+
       - name: Install Kustomize
-        run: |
-          curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh" | bash
-          sudo mv kustomize /usr/local/bin/
+        if: steps.cache-kustomize.outputs.cache-hit != 'true'
+        uses: nick-fields/retry-action@v2
+        with:
+          timeout_minutes: 2
+          max_attempts: 3
+          command: |
+            curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh" | bash
+            sudo mv kustomize /usr/local/bin/
 
       - name: Validate API Backend Manifests
         run: |

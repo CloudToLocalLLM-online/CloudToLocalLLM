@@ -8,9 +8,9 @@ set -o pipefail
 # Enable error tracing
 trap 'echo "Error on line $LINENO"' ERR
 
-echo "â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”"
+echo "â” â” â” â” â” â” â” â” â” â” â” â” â” â” â” â” â” â” â” â” â” â” â” â” â” â” â” â” â” â” â” â” â” â” â” â” â” â” â” â” â” â” â” â” â” â” â” â” â” â” â” â” "
 echo "Analyzing Commits with Gemini AI"
-echo "â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”"
+echo "â” â” â” â” â” â” â” â” â” â” â” â” â” â” â” â” â” â” â” â” â” â” â” â” â” â” â” â” â” â” â” â” â” â” â” â” â” â” â” â” â” â” â” â” â” â” â” â” â” â” â” â” "
 
 # Get current version
 CURRENT_VERSION=$(jq -r '.version' assets/version.json)
@@ -87,29 +87,11 @@ echo "  Bump type: $BUMP_TYPE"
 echo "  New version: $NEW_VERSION"
 echo "  Reasoning: $REASONING"
 
-# Validate and fallback if Gemini gave invalid version
+# Validate version format
 if ! echo "$NEW_VERSION" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+$'; then
-    echo "âš ï¸  Invalid version from Gemini: $NEW_VERSION"
-    echo "Calculating fallback..."
-    
-    IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT_VERSION"
-    
-    case "$BUMP_TYPE" in
-        major)
-            MAJOR=$((MAJOR + 1))
-            MINOR=0
-            PATCH=0
-            ;;
-        minor)
-            MINOR=$((MINOR + 1))
-            PATCH=0
-            ;;
-        *)
-            PATCH=$((PATCH + 1))
-            ;;
-    esac
-    
-    NEW_VERSION="${MAJOR}.${MINOR}.${PATCH}"
+    echo "❌ CRITICAL FAILURE: Invalid version format from Gemini: $NEW_VERSION"
+    echo "Strict mode requires valid AI output. Terminating."
+    exit 1
 fi
 
 echo ""

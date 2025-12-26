@@ -28,6 +28,7 @@ defaults:
 jobs:
   dispatch:
     runs-on: blacksmith-4vcpu-ubuntu-2404
+    timeout-minutes: 5
     if: "${{ github.actor != 'github-actions[bot]' && !startsWith(github.event.head_commit.message, 'chore: bump version') && !startsWith(github.event.head_commit.message, 'chore(deploy): promote') }}"
     permissions:
       contents: read
@@ -103,6 +104,7 @@ jobs:
     needs: dispatch
     if: ${{ needs.dispatch.outputs.command == 'orchestrate' }}
     runs-on: blacksmith-4vcpu-ubuntu-2404
+    timeout-minutes: 15
     permissions:
       contents: write
     steps:
@@ -131,38 +133,34 @@ jobs:
           BUMP_NEEDED="false"
           NEW_VERSION="$VERSION"
 
-                    if command -v gemini &> /dev/null; then
+          if ! command -v gemini &> /dev/null; then
+              echo "❌ ERROR: gemini command not found. Strict orchestration requires Gemini."
+              exit 1
+          fi
 
-                        echo "Running Gemini analysis..."
+          echo "Running Gemini analysis..."
+          # FAIL FAST: Removed fallback logic. If Gemini fails, script fails.
+          gemini "Analyze the latest changes and decide if a release is needed. Version=$VERSION. Commit message: $COMMIT_MSG. Respond ONLY with a JSON object like {\"version_bump_needed\": boolean, \"new_version\": \"string\"}." --yolo --model gemini-1.5-flash -o json > raw_output.json
 
-                        gemini "Analyze the latest changes and decide if a release is needed. Version=$VERSION. Commit message: $COMMIT_MSG. Respond ONLY with a JSON object like {\"version_bump_needed\": boolean, \"new_version\": \"string\"}." --yolo --model gemini-1.5-flash -o json > raw_output.json || echo '{"response": "{\"version_bump_needed\": false}"}' > raw_output.json
+          # Debug: show raw output
+          cat raw_output.json
 
-                        
+          # Extract only the JSON part directly from the file (handling Markdown)
+          CLEAN_RESPONSE=$(cat raw_output.json | sed -n '/^{/,/^}/p')
+          
+          # Fallback if sed returns empty (e.g. plain JSON or inline)
+          if [ -z "$CLEAN_RESPONSE" ]; then
+             CLEAN_RESPONSE=$(cat raw_output.json | sed 's/```json//g' | sed 's/```//g')
+          fi
 
-                        # Debug: show raw output
+          echo "Cleaned response: $CLEAN_RESPONSE"
 
-                        cat raw_output.json
+          BUMP_NEEDED=$(echo "$CLEAN_RESPONSE" | jq -r '.version_bump_needed' | xargs)
+          NEW_VERSION=$(echo "$CLEAN_RESPONSE" | jq -r '.new_version' | xargs)
 
-                        
-
-                        # Extract only the JSON part directly from the file (handling Markdown)
-
-                        CLEAN_RESPONSE=$(cat raw_output.json | sed -n '/^{/,/^}/p')
-                        
-                        # Fallback if sed returns empty (e.g. plain JSON or inline)
-                        if [ -z "$CLEAN_RESPONSE" ]; then
-                           CLEAN_RESPONSE=$(cat raw_output.json | sed 's/```json//g' | sed 's/```//g')
-                        fi
-
-                        echo "Cleaned response: $CLEAN_RESPONSE"
-
-                        
-
-                        BUMP_NEEDED=$(echo "$CLEAN_RESPONSE" | jq -r '.version_bump_needed // false' | xargs)
-
-                        NEW_VERSION=$(echo "$CLEAN_RESPONSE" | jq -r '.new_version // "'$VERSION'"' | xargs)
-          else
-              echo "Warning: gemini command not found. Skipping intelligent analysis."
+          if [ "$BUMP_NEEDED" == "null" ] || [ "$NEW_VERSION" == "null" ]; then
+              echo "❌ ERROR: Gemini returned null values or invalid JSON. Strict orchestration failed."
+              exit 1
           fi
 
           if [ "$BUMP_NEEDED" == "true" ]; then
@@ -180,7 +178,23 @@ jobs:
             
             git add -A
             git commit -m "chore: bump version to $NEW_VERSION"
-            git push origin main
+            
+            # Robust push with retry
+            MAX_RETRIES=5
+            COUNT=0
+            while [ $COUNT -lt $MAX_RETRIES ]; do
+              if git push origin main; then
+                break
+              fi
+              COUNT=$((COUNT + 1))
+              echo "Push failed, retrying ($COUNT/$MAX_RETRIES)..."
+              git pull --rebase origin main
+              sleep 5
+            done
+            if [ $COUNT -eq $MAX_RETRIES ]; then
+              echo "❌ ERROR: Failed to push version bump after $MAX_RETRIES attempts."
+              exit 1
+            fi
 
             echo "Triggering build for bumped version on main..."
             # Construct full payload with client_payload wrapper

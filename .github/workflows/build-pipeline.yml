@@ -29,8 +29,45 @@ defaults:
     shell: bash
 
 jobs:
-  build_base:
+  validate_prerequisites:
     runs-on: blacksmith-4vcpu-ubuntu-2404
+    timeout-minutes: 10
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Azure Login
+        uses: nick-fields/retry-action@v2
+        with:
+          timeout_minutes: 2
+          max_attempts: 3
+          command: |
+            az login --service-principal \
+              --client-id ${{ secrets.AZURE_CLIENT_ID }} \
+              --tenant-id ${{ secrets.AZURE_TENANT_ID }} \
+              --subscription-id ${{ secrets.AZURE_SUBSCRIPTION_ID }} \
+              --federated-token $ACTIONS_ID_TOKEN_REQUEST_TOKEN
+      - name: Validate Prerequisites
+        run: |
+          chmod +x scripts/validate-aks-prerequisites.sh
+          ./scripts/validate-aks-prerequisites.sh
+        env:
+          AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+          AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+          AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          AZURE_KEY_VAULT_NAME: ${{ secrets.AZURE_KEY_VAULT_NAME }}
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          STRIPE_TEST_SECRET_KEY: ${{ secrets.STRIPE_TEST_SECRET_KEY }}
+          CLOUDFLARE_DNS_TOKEN: ${{ secrets.CLOUDFLARE_DNS_TOKEN }}
+          CLOUDFLARE_TUNNEL_TOKEN: ${{ secrets.CLOUDFLARE_TUNNEL_TOKEN }}
+          SUPABASE_JWT_SECRET: ${{ secrets.SUPABASE_JWT_SECRET }}
+
+  build_base:
+    needs: [validate_prerequisites]
+    runs-on: blacksmith-4vcpu-ubuntu-2404
+    timeout-minutes: 20
     permissions:
       id-token: write
       contents: read
@@ -39,22 +76,36 @@ jobs:
         with:
           ref: ${{ github.event.client_payload.ref || github.ref }}
       - name: Azure Login
-        uses: azure/login@v2
+        uses: nick-fields/retry-action@v2
         with:
-          client-id: ${{ secrets.AZURE_CLIENT_ID }}
-          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          timeout_minutes: 2
+          max_attempts: 3
+          command: |
+            az login --service-principal \
+              --client-id ${{ secrets.AZURE_CLIENT_ID }} \
+              --tenant-id ${{ secrets.AZURE_TENANT_ID }} \
+              --subscription-id ${{ secrets.AZURE_SUBSCRIPTION_ID }} \
+              --federated-token $ACTIONS_ID_TOKEN_REQUEST_TOKEN
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: az acr login
+        run: az acr login --name ${{ env.ACR_NAME }}
       - name: Build and Push Base
-        run: |
-          az acr login --name ${{ env.ACR_NAME }}
-          SHA="${{ github.sha }}"
-          docker build -f config/docker/Dockerfile.base -t ${{ env.ACR_NAME }}.azurecr.io/base:latest -t ${{ env.ACR_NAME }}.azurecr.io/base:main-${SHA} .
-          docker push ${{ env.ACR_NAME }}.azurecr.io/base:latest
-          docker push ${{ env.ACR_NAME }}.azurecr.io/base:main-${SHA}
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: config/docker/Dockerfile.base
+          push: true
+          tags: |
+            ${{ env.ACR_NAME }}.azurecr.io/base:latest
+            ${{ env.ACR_NAME }}.azurecr.io/base:main-${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
   build_api:
     needs: [build_base]
     runs-on: blacksmith-4vcpu-ubuntu-2404
+    timeout-minutes: 20
     permissions:
       id-token: write
       contents: read
@@ -63,22 +114,38 @@ jobs:
         with:
           ref: ${{ github.event.client_payload.ref || github.ref }}
       - name: Azure Login
-        uses: azure/login@v2
+        uses: nick-fields/retry-action@v2
         with:
-          client-id: ${{ secrets.AZURE_CLIENT_ID }}
-          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          timeout_minutes: 2
+          max_attempts: 3
+          command: |
+            az login --service-principal \
+              --client-id ${{ secrets.AZURE_CLIENT_ID }} \
+              --tenant-id ${{ secrets.AZURE_TENANT_ID }} \
+              --subscription-id ${{ secrets.AZURE_SUBSCRIPTION_ID }} \
+              --federated-token $ACTIONS_ID_TOKEN_REQUEST_TOKEN
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: az acr login
+        run: az acr login --name ${{ env.ACR_NAME }}
       - name: Build and Push API
-        run: |
-          az acr login --name ${{ env.ACR_NAME }}
-          SHA="${{ github.sha }}"
-          docker build -f services/api-backend/Dockerfile.prod --build-arg BASE_REGISTRY=${{ env.ACR_NAME }}.azurecr.io -t ${{ env.ACR_NAME }}.azurecr.io/api-backend:latest -t ${{ env.ACR_NAME }}.azurecr.io/api-backend:main-${SHA} .
-          docker push ${{ env.ACR_NAME }}.azurecr.io/api-backend:latest
-          docker push ${{ env.ACR_NAME }}.azurecr.io/api-backend:main-${SHA}
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: services/api-backend/Dockerfile.prod
+          build-args: |
+            BASE_REGISTRY=${{ env.ACR_NAME }}.azurecr.io
+          push: true
+          tags: |
+            ${{ env.ACR_NAME }}.azurecr.io/api-backend:latest
+            ${{ env.ACR_NAME }}.azurecr.io/api-backend:main-${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
   build_web:
     needs: [build_base]
     runs-on: blacksmith-4vcpu-ubuntu-2404
+    timeout-minutes: 20
     permissions:
       id-token: write
       contents: read
@@ -87,21 +154,36 @@ jobs:
         with:
           ref: ${{ github.event.client_payload.ref || github.ref }}
       - name: Azure Login
-        uses: azure/login@v2
+        uses: nick-fields/retry-action@v2
         with:
-          client-id: ${{ secrets.AZURE_CLIENT_ID }}
-          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          timeout_minutes: 2
+          max_attempts: 3
+          command: |
+            az login --service-principal \
+              --client-id ${{ secrets.AZURE_CLIENT_ID }} \
+              --tenant-id ${{ secrets.AZURE_TENANT_ID }} \
+              --subscription-id ${{ secrets.AZURE_SUBSCRIPTION_ID }} \
+              --federated-token $ACTIONS_ID_TOKEN_REQUEST_TOKEN
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: az acr login
+        run: az acr login --name ${{ env.ACR_NAME }}
       - name: Build and Push Web
-        run: |
-          az acr login --name ${{ env.ACR_NAME }}
-          SHA="${{ github.sha }}"
-          docker build -f config/docker/Dockerfile.web -t ${{ env.ACR_NAME }}.azurecr.io/web:latest -t ${{ env.ACR_NAME }}.azurecr.io/web:main-${SHA} .
-          docker push ${{ env.ACR_NAME }}.azurecr.io/web:latest
-          docker push ${{ env.ACR_NAME }}.azurecr.io/web:main-${SHA}
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: config/docker/Dockerfile.web
+          push: true
+          tags: |
+            ${{ env.ACR_NAME }}.azurecr.io/web:latest
+            ${{ env.ACR_NAME }}.azurecr.io/web:main-${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
   build_linux:
+    needs: [validate_prerequisites]
     runs-on: blacksmith-4vcpu-ubuntu-2404
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
         with:
@@ -111,13 +193,23 @@ jobs:
         with:
           flutter-version: "3.x"
           channel: stable
+          cache: true
       - name: Install Linux dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev liblzma-dev libsecret-1-dev libcurl4-openssl-dev libssl-dev libayatana-appindicator3-dev
+        uses: nick-fields/retry-action@v2
+        with:
+          timeout_minutes: 5
+          max_attempts: 3
+          command: |
+            sudo apt-get update
+            sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev liblzma-dev libsecret-1-dev libcurl4-openssl-dev libssl-dev libayatana-appindicator3-dev
+      - name: Flutter Pub Get
+        uses: nick-fields/retry-action@v2
+        with:
+          timeout_minutes: 5
+          max_attempts: 3
+          command: flutter pub get
       - name: Build Linux Desktop
         run: |
-          flutter pub get
           flutter build linux --release
           tar -czf CloudToLocalLLM-Linux-Portable.tar.gz -C build/linux/x64/release/bundle .
       - name: Upload Linux Artifact
@@ -127,7 +219,9 @@ jobs:
           path: "*.tar.gz"
 
   build_windows:
+    needs: [validate_prerequisites]
     runs-on: blacksmith-4vcpu-windows-2025
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
         with:
@@ -137,13 +231,14 @@ jobs:
         with:
           flutter-version: "3.x"
           channel: stable
+          cache: true
       - name: Build Windows
+        shell: pwsh
         run: |
           flutter config --enable-windows-desktop
           flutter pub get
           flutter build windows --release --no-tree-shake-icons
           Compress-Archive -Path build\windows\x64\runner\Release\* -DestinationPath CloudToLocalLLM-Windows-Portable.zip -Force
-        shell: pwsh
       - name: Upload Windows Artifact
         uses: actions/upload-artifact@v4
         with:
@@ -154,6 +249,7 @@ jobs:
     needs: [build_api, build_web]
     if: ${{ (github.event_name == 'push' || github.event_name == 'repository_dispatch') && github.ref == 'refs/heads/main' }}
     runs-on: blacksmith-4vcpu-ubuntu-2404
+    timeout-minutes: 10
     permissions:
       contents: write
     steps:
@@ -163,27 +259,33 @@ jobs:
           ref: main
           fetch-depth: 0
       - name: Promote to Argo CD
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          SHA="${{ github.sha }}"
-          TAG="main-${SHA}"
-          sed -i "s|newTag: .*|newTag: $TAG-api-backend|g" k8s/apps/managed/api-backend/kustomization.yaml
-          sed -i "s|newTag: .*|newTag: $TAG|g" k8s/apps/managed/web-frontend/kustomization.yaml
-          if grep -r "streaming-proxy" k8s/apps/managed/ > /dev/null; then
-             sed -i "s|newTag: .*streaming-proxy.*|newTag: $TAG-streaming-proxy|g" $(grep -r "streaming-proxy" k8s/apps/managed/ -l)
-          fi
-          git add k8s/apps/managed/
-          if ! git diff --cached --quiet; then
-            git commit -m "chore(deploy): promote version $TAG [skip ci]"
-            git pull --rebase origin main
-            git push origin main
-          fi
+        uses: nick-fields/retry-action@v2
+        with:
+          timeout_minutes: 5
+          max_attempts: 5
+          retry_on: error
+          command: |
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            SHA="${{ github.sha }}"
+            TAG="main-${SHA}"
+            sed -i "s|newTag: .*|newTag: $TAG-api-backend|g" k8s/apps/managed/api-backend/kustomization.yaml
+            sed -i "s|newTag: .*|newTag: $TAG|g" k8s/apps/managed/web-frontend/kustomization.yaml
+            if grep -r "streaming-proxy" k8s/apps/managed/ > /dev/null; then
+               sed -i "s|newTag: .*streaming-proxy.*|newTag: $TAG-streaming-proxy|g" $(grep -r "streaming-proxy" k8s/apps/managed/ -l)
+            fi
+            git add k8s/apps/managed/
+            if ! git diff --cached --quiet; then
+              git commit -m "chore(deploy): promote version $TAG [skip ci]"
+              git pull --rebase origin main
+              git push origin main
+            fi
 
   create_release:
     needs: [build_linux, build_windows, promote_to_gitops]
     if: ${{ always() && (startsWith(github.ref, 'refs/tags/v') || contains(github.event.head_commit.message, 'version')) }}
     runs-on: blacksmith-4vcpu-ubuntu-2404
+    timeout-minutes: 15
     permissions:
       contents: write
     steps:

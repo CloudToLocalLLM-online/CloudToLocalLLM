@@ -6,9 +6,9 @@ set -e
 # Analyze which platforms need updates using Gemini AI
 # Outputs: new_version, needs_managed, needs_local, needs_desktop, needs_mobile
 
-echo "â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”"
+echo "â” â” â” â” â” â” â” â” â” â” â” â” â” â” â” â” â” â” â” â” â” â” â” â” â” â” â” â” â” â” â” â” â” â” â” â” â” â” â” â” â” â” â” â” â” â” â” â” â” â” â” â” "
 echo "Analyzing Platform Changes with Gemini AI"
-echo "â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”"
+echo "â” â” â” â” â” â” â” â” â” â” â” â” â” â” â” â” â” â” â” â” â” â” â” â” â” â” â” â” â” â” â” â” â” â” â” â” â” â” â” â” â” â” â” â” â” â” â” â” â” â” â” â” "
 
 # Get current version
 CURRENT_VERSION=$(jq -r '.version' assets/version.json)
@@ -31,7 +31,7 @@ echo ""
 FORCE_CLOUD=false
 if echo "$CHANGED_FILES" | grep -qE "(web/|lib/.*auth|lib/.*router|lib/config/|services/|k8s/|\.github/workflows/deploy-aks\.yml)"; then
     FORCE_CLOUD=true
-    echo "ðŸŒ DETECTED WEB-RELATED CHANGES - Cloud deployment will be forced"
+    echo "ðŸŒ  DETECTED WEB-RELATED CHANGES - Cloud deployment will be forced"
 fi
 
 # Prepare prompt for Gemini - properly escape for JSON
@@ -75,8 +75,6 @@ DEPLOYMENT RULES:
 - Desktop: windows/, linux/, desktop code
 - Mobile: android/, ios/, mobile code"
 
-echo "DEBUG: Gemini prompt includes version requirement: 'The new version MUST be higher than $CURRENT_VERSION'"
-
 # Helper: Enforce GEMINI_API_KEY
 if [ -z "$GEMINI_API_KEY" ]; then
     echo "❌ ERROR: GEMINI_API_KEY is not set."
@@ -96,190 +94,63 @@ EXIT_CODE=$?
 set -e
 
 if [ $EXIT_CODE -ne 0 ]; then
-    echo "âŒ ERROR: Gemini analysis failed"
+    echo "❌ CRITICAL FAILURE: Gemini analysis failed"
     echo "$RESPONSE"
     exit 1
 fi
 
-echo "DEBUG: Gemini response length: ${#RESPONSE}"
-echo "DEBUG: Gemini response (first 1000 chars):"
-echo "${RESPONSE:0:1000}"
+# Extract JSON from response
+JSON_RESPONSE=$(echo "$RESPONSE" | sed -n '/{/,/}/p')
 
-# Extract JSON from response (Gemini returns JSON directly)
-# Flatten response to single line and remove non-JSON text
-ONE_LINE=$(echo "$RESPONSE" | tr '\n' ' ' | sed 's/```json//g' | sed 's/```//g')
-# Extract content between first { and last }
-# Extract content between first { and last }
-# Improved logic: Match from first { to last }, handling potential missing last } slightly better by NOT deleting everything if } is missing
-JSON_RESPONSE=$(echo "$ONE_LINE" | sed 's/^[^\{]*//' | sed 's/}[^}]*$/}/')
-
-# Basic repair for truncated JSON (missing closing brace)
-if [[ "$JSON_RESPONSE" != *"}" ]]; then
-    echo "DEBUG: JSON appears truncated, appending closing brace"
-    JSON_RESPONSE="${JSON_RESPONSE}}"
-fi        
-echo "DEBUG: Extracted JSON:"
-echo "$JSON_RESPONSE"
-echo ""
-
-        # Parse without fallback to empty, so we capture 'false' correctly
-        SEMANTIC_VERSION_NEW=$(echo "$JSON_RESPONSE" | jq -r '.semantic_version')
-        BUMP_TYPE=$(echo "$JSON_RESPONSE" | jq -r '.bump_type')
-        NEEDS_MANAGED=$(echo "$JSON_RESPONSE" | jq -r '.needs_managed')
-        NEEDS_LOCAL=$(echo "$JSON_RESPONSE" | jq -r '.needs_local')
-        NEEDS_DESKTOP=$(echo "$JSON_RESPONSE" | jq -r '.needs_desktop')
-        NEEDS_MOBILE=$(echo "$JSON_RESPONSE" | jq -r '.needs_mobile')
-        REASONING=$(echo "$JSON_RESPONSE" | jq -r '.reasoning')
-
-        # Build final version with build metadata
-        NEW_VERSION="${SEMANTIC_VERSION_NEW}+${BUILD_DATE}"
-
-# Tag verification and unique version generation
-function get_unique_version() {
-    local base_version_with_build=$1
-    local base_semantic_version=$(echo "$base_version_with_build" | cut -d'+' -f1)
-    local build_metadata=$(echo "$base_version_with_build" | cut -d'+' -f2)
-    local current_check_semantic=$base_semantic_version
-    local iter=0
-    
-    while git rev-parse "v$current_check_semantic" >/dev/null 2>&1 || gh release view "v$current_check_semantic" >/dev/null 2>&1; do
-        iter=$((iter + 1))
-        # Split version and increment patch
-        IFS='.' read -r major minor patch <<< "$base_semantic_version"
-        # Handle cases where patch might have metadata or be complex, though we expect semantic
-        patch=$(echo "$patch" | grep -oE '^[0-9]+')
-        current_check_semantic="$major.$minor.$((patch + iter))"
-        echo "âš ï¸  WARNING: Tag v$current_check_semantic already exists! Attempting auto-increment..."
-        REASONING="$REASONING (Auto-incremented to avoid tag conflict)"
-    done
-    echo "${current_check_semantic}+${build_metadata}"
-}
-
-# Apply unique versioning
-NEW_VERSION=$(get_unique_version "$NEW_VERSION")
-SEMANTIC_VERSION_NEW=$(echo "$NEW_VERSION" | cut -d'+' -f1)
-echo "✅ Final Unique Version: $NEW_VERSION"
-
-        # Strict validation - Fail if mandatory fields are null or empty
-        # Note: 'false' is a valid value for NEEDS_MANAGED, so we check for 'null' or empty
-        if [ "$SEMANTIC_VERSION_NEW" == "null" ] || [ -z "$SEMANTIC_VERSION_NEW" ] || [ "$NEEDS_MANAGED" == "null" ] || [ -z "$NEEDS_MANAGED" ]; then
-            echo "âŒ ERROR: Failed to parse Gemini response"
-            echo "Extracted JSON: $JSON_RESPONSE"
-            echo "Response (first 500 chars): ${RESPONSE:0:500}"
-            echo "Version analysis REQUIRES valid Gemini response"
-            exit 1
-        fi
-
-        echo "âœ… Gemini Analysis:"
-        echo "  Bump type: $BUMP_TYPE"
-        echo "  New version: $NEW_VERSION"
-        echo "  Managed: $NEEDS_MANAGED"
-        echo "  Local: $NEEDS_LOCAL"
-        echo "  Desktop: $NEEDS_DESKTOP"
-        echo "  Mobile: $NEEDS_MOBILE"
-        echo "  Reasoning: $REASONING"
-
-        # Override cloud deployment if web-related files changed
-        if [ "$FORCE_CLOUD" = "true" ]; then
-            if [ "$NEEDS_MANAGED" = "false" ]; then
-                echo "ðŸ”§ OVERRIDING: AI incorrectly set needs_managed=false for web changes"
-                NEEDS_MANAGED="true"
-            fi
-            if [ "$NEEDS_LOCAL" = "false" ]; then
-                echo "ðŸ”§ OVERRIDING: AI incorrectly set needs_local=false for web changes"
-                NEEDS_LOCAL="true"
-            fi
-            REASONING="$REASONING (OVERRIDE: Web-related files require backend deployment)"
-        fi
-
-# Validate version format (allow build metadata)
-if ! echo "$NEW_VERSION" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+(\+[0-9]+)?$'; then
-    echo "âŒ ERROR: Invalid version format: $NEW_VERSION"
-    echo "Expected format: x.y.z or x.y.z+builddate (e.g., 4.5.0 or 4.5.0+202412151409)"
+if ! echo "$JSON_RESPONSE" | jq empty >/dev/null 2>&1; then
+    echo "❌ CRITICAL FAILURE: Invalid JSON response from Gemini."
+    echo "$RESPONSE"
     exit 1
 fi
 
-# Validate version logic
-echo "DEBUG: Validating version logic: $CURRENT_VERSION â†’ $NEW_VERSION (bump: $BUMP_TYPE)"
-echo "DEBUG: Semantic versions: $SEMANTIC_VERSION â†’ $SEMANTIC_VERSION_NEW"
+# Parse without fallback
+SEMANTIC_VERSION_NEW=$(echo "$JSON_RESPONSE" | jq -r '.semantic_version')
+BUMP_TYPE=$(echo "$JSON_RESPONSE" | jq -r '.bump_type')
+NEEDS_MANAGED=$(echo "$JSON_RESPONSE" | jq -r '.needs_managed')
+NEEDS_LOCAL=$(echo "$JSON_RESPONSE" | jq -r '.needs_local')
+NEEDS_DESKTOP=$(echo "$JSON_RESPONSE" | jq -r '.needs_desktop')
+NEEDS_MOBILE=$(echo "$JSON_RESPONSE" | jq -r '.needs_mobile')
+REASONING=$(echo "$JSON_RESPONSE" | jq -r '.reasoning')
 
-if [ "$BUMP_TYPE" = "none" ]; then
-    if [ "$SEMANTIC_VERSION_NEW" != "$SEMANTIC_VERSION" ]; then
-        # Check if this was an intentional auto-increment from our conflict check
-        if [[ "$REASONING" == *"(Auto-incremented to avoid tag conflict)"* ]]; then
-            echo "✅ Semantic version incremented to avoid tag conflict (even though bump_type is 'none')"
-        else
-            echo "❌ ERROR: bump_type='none' but semantic version changed from $SEMANTIC_VERSION to $SEMANTIC_VERSION_NEW"
-            exit 1
-        fi
-    else
-        echo "✅ No semantic version bump (debugging/fixes) - keeping $SEMANTIC_VERSION, updating build metadata"
-    fi
-else
-    # Function to compare semantic versions (without build metadata)
-    version_compare() {
-        local v1=$1
-        local v2=$2
+# Build final version with build metadata
+NEW_VERSION="${SEMANTIC_VERSION_NEW}+${BUILD_DATE}"
 
-        # Extract version components using cut (safer than IFS manipulation)
-        local MAJOR1=$(echo "$v1" | cut -d. -f1)
-        local MINOR1=$(echo "$v1" | cut -d. -f2)
-        local PATCH1=$(echo "$v1" | cut -d. -f3)
-        local MAJOR2=$(echo "$v2" | cut -d. -f1)
-        local MINOR2=$(echo "$v2" | cut -d. -f2)
-        local PATCH2=$(echo "$v2" | cut -d. -f3)
+# FAIL FAST: Removed auto-increment conflict logic.
+# If the version already exists, the build will naturally fail downstream, 
+# or we could check it here and fail early.
 
-        # Compare major version
-        if [ "$MAJOR1" -gt "$MAJOR2" ]; then
-            return 1  # v1 > v2
-        elif [ "$MAJOR1" -lt "$MAJOR2" ]; then
-            return 2  # v1 < v2
-        fi
-
-        # Compare minor version
-        if [ "$MINOR1" -gt "$MINOR2" ]; then
-            return 1  # v1 > v2
-        elif [ "$MINOR1" -lt "$MINOR2" ]; then
-            return 2  # v1 < v2
-        fi
-
-        # Compare patch version
-        if [ "$PATCH1" -gt "$PATCH2" ]; then
-            return 1  # v1 > v2
-        elif [ "$PATCH1" -lt "$PATCH2" ]; then
-            return 2  # v1 < v2
-        fi
-
-        return 0  # v1 == v2
-    }
-
-    set +e
-    version_compare "$SEMANTIC_VERSION_NEW" "$SEMANTIC_VERSION"
-    COMPARE_RESULT=$?
-    set -e
-
-    if [ $COMPARE_RESULT -eq 2 ]; then
-        echo "âŒ ERROR: New semantic version ($SEMANTIC_VERSION_NEW) is NOT higher than current ($SEMANTIC_VERSION)"
-        echo "For version bumps, new semantic version must be higher than current"
+if git rev-parse "v$SEMANTIC_VERSION_NEW" >/dev/null 2>&1 || gh release view "v$SEMANTIC_VERSION_NEW" >/dev/null 2>&1; then
+    if [ "$BUMP_TYPE" != "none" ]; then
+        echo "❌ CRITICAL FAILURE: Tag v$SEMANTIC_VERSION_NEW already exists. AI produced a conflicting version."
         exit 1
-    elif [ $COMPARE_RESULT -eq 0 ]; then
-        echo "âŒ ERROR: New semantic version ($SEMANTIC_VERSION_NEW) is the SAME as current ($SEMANTIC_VERSION)"
-        echo "Use bump_type='none' for no semantic version change, or increment for releases"
-        exit 1
-    else
-        echo "âœ… Semantic version validation passed: $SEMANTIC_VERSION â†’ $SEMANTIC_VERSION_NEW"
     fi
 fi
 
-echo "âœ… Final version: $NEW_VERSION (semantic: $SEMANTIC_VERSION_NEW, build: $BUILD_DATE)"
+# Strict validation
+if [ "$SEMANTIC_VERSION_NEW" == "null" ] || [ -z "$SEMANTIC_VERSION_NEW" ] || [ "$NEEDS_MANAGED" == "null" ]; then
+    echo "❌ CRITICAL FAILURE: Failed to parse required fields from Gemini response"
+    exit 1
+fi
 
-echo ""
-echo "âœ… Final Decision:"
-echo "  Version: $CURRENT_VERSION â†’ $NEW_VERSION"
+echo "âœ… Gemini Analysis:"
+echo "  Bump type: $BUMP_TYPE"
+echo "  New version: $NEW_VERSION"
 echo "  Managed: $NEEDS_MANAGED"
 echo "  Local: $NEEDS_LOCAL"
 echo "  Desktop: $NEEDS_DESKTOP"
 echo "  Mobile: $NEEDS_MOBILE"
+echo "  Reasoning: $REASONING"
+
+# Validate version format
+if ! echo "$NEW_VERSION" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+(\+[0-9]+)?$'; then
+    echo "❌ CRITICAL FAILURE: Invalid version format: $NEW_VERSION"
+    exit 1
+fi
 
 # Output for GitHub Actions
 if [ -n "$GITHUB_OUTPUT" ]; then
