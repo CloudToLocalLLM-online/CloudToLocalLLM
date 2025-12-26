@@ -42,7 +42,7 @@ jobs:
           permission-pull-requests: "write"
 
       - name: "Checkout repository"
-        uses: "actions/checkout@v4"
+        uses: "actions/checkout@v6"
         with:
           token: ${{ secrets.PAT_TOKEN }}
 
