@@ -262,10 +262,48 @@ jobs:
           STRIPE_LIVE_WEBHOOK_SECRET: ${{ secrets.STRIPE_LIVE_WEBHOOK_SECRET }}
           SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
         run: |
-          # Use envsubst to replace placeholders in k8s/secrets.yaml and apply to cluster
-          # Specify exact variables to avoid accidental corruption
-          VARS='$POSTGRES_USER,$POSTGRES_PASSWORD,$JWT_SECRET,$AUTH0_DOMAIN,$AUTH0_AUDIENCE,$AUTH0_CLIENT_ID,$AUTH0_CLIENT_SECRET,$STRIPE_TEST_SECRET_KEY,$STRIPE_TEST_PUBLISHABLE_KEY,$STRIPE_TEST_WEBHOOK_SECRET,$STRIPE_LIVE_SECRET_KEY,$STRIPE_LIVE_PUBLISHABLE_KEY,$STRIPE_LIVE_WEBHOOK_SECRET,$SENTRY_DSN'
-          envsubst "$VARS" < k8s/secrets.yaml | kubectl apply -f -
+          # Use jq to construct a valid Kubernetes Secret JSON to ensure proper character escaping
+          # This resolves "found unknown escape character" errors common with envsubst
+          jq -n \
+            --arg postgres_user "$POSTGRES_USER" \
+            --arg postgres_password "$POSTGRES_PASSWORD" \
+            --arg jwt_secret "$JWT_SECRET" \
+            --arg auth0_domain "$AUTH0_DOMAIN" \
+            --arg auth0_audience "$AUTH0_AUDIENCE" \
+            --arg auth0_client_id "$AUTH0_CLIENT_ID" \
+            --arg auth0_client_secret "$AUTH0_CLIENT_SECRET" \
+            --arg stripe_test_secret_key "$STRIPE_TEST_SECRET_KEY" \
+            --arg stripe_test_publishable_key "$STRIPE_TEST_PUBLISHABLE_KEY" \
+            --arg stripe_test_webhook_secret "$STRIPE_TEST_WEBHOOK_SECRET" \
+            --arg stripe_live_secret_key "$STRIPE_LIVE_SECRET_KEY" \
+            --arg stripe_live_publishable_key "$STRIPE_LIVE_PUBLISHABLE_KEY" \
+            --arg stripe_live_webhook_secret "$STRIPE_LIVE_WEBHOOK_SECRET" \
+            --arg sentry_dsn "$SENTRY_DSN" \
+            '{
+              apiVersion: "v1",
+              kind: "Secret",
+              metadata: {
+                name: "cloudtolocalllm-secrets",
+                namespace: "cloudtolocalllm"
+              },
+              type: "Opaque",
+              stringData: {
+                "postgres-user": $postgres_user,
+                "postgres-password": $postgres_password,
+                "jwt-secret": $jwt_secret,
+                "auth0-domain": $auth0_domain,
+                "auth0-audience": $auth0_audience,
+                "auth0-client-id": $auth0_client_id,
+                "auth0-client-secret": $auth0_client_secret,
+                "stripe-test-secret-key": $stripe_test_secret_key,
+                "stripe-test-publishable-key": $stripe_test_publishable_key,
+                "stripe-test-webhook-secret": $stripe_test_webhook_secret,
+                "stripe-live-secret-key": $stripe_live_secret_key,
+                "stripe-live-publishable-key": $stripe_live_publishable_key,
+                "stripe-live-webhook-secret": $stripe_live_webhook_secret,
+                "sentry-dsn": $sentry_dsn
+              }
+            }' | kubectl apply -f -
 
       - name: Deploy Optimized Cloudflare Tunnel
         run: |
