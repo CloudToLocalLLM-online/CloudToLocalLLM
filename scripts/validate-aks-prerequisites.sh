@@ -372,7 +372,7 @@ validate_github_secrets() {
         "POSTGRES_PASSWORD:PostgreSQL Password"
         "JWT_SECRET:JWT Secret"
         "STRIPE_TEST_SECRET_KEY:Stripe Test Secret Key"
-        "CLOUDFLARE_DNS_TOKEN:Cloudflare DNS Token":false
+        "CLOUDFLARE_DNS_TOKEN:Cloudflare DNS Token"
         "CLOUDFLARE_TUNNEL_TOKEN:Cloudflare Tunnel Token"
         "SUPABASE_JWT_SECRET:Supabase JWT Secret"
     )
@@ -390,7 +390,7 @@ validate_github_secrets() {
     # Check required secrets
     for secret_pair in "${required_secrets[@]}"; do
         IFS=: read -r secret_name secret_desc <<< "$secret_pair"
-        check_env_var "$secret_name" "$secret_desc" true
+        case "$secret_name" in CLOUDFLARE_DNS_TOKEN) check_env_var "$secret_name" "$secret_desc" false ;; *) check_env_var "$secret_name" "$secret_desc" true ;; esac
     done
     
     # Check optional secrets
