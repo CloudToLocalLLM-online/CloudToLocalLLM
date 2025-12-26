@@ -2,6 +2,61 @@
 
 All notable changes to this project will be documented in this file.
 
+## [7.14.32] - 2025-12-26
+# Changelog
+
+## 7.14.32 (2024-11-02)
+
+### Features
+*   **(ops):** Add script to fix Azure OIDC subject mismatch (b92761b)
+*   **(infra):** Add cloudflare tunnel configuration and service (0e9d558)
+
+### Bug Fixes
+*   Sanitize credentials and refine sync script (db3815e)
+*   **(ci):** Correctly handle optional cloudflare token in validation script (dc2beb1)
+*   **(ci):** Make Cloudflare DNS token optional in validation to prevent blocking (925898e)
+*   **(ci):** Use standard azure/login@v2 action for authentication (027ae8f)
+*   **(ci):** Fetch OIDC token manually for az login (4ae8ea7)
+*   **(ci):** Correct az login flags and set subscription separately (22f4771)
+*   **(ci):** Replace retry action with shell loop for az login to access OIDC token (578d2b5)
+*   **(ci):** Join az login command to single line to fix retry action args (d48c2d5)
+*   **(ci):** Migrate build pipeline to standard runners and update tokens (7ba02f8)
+*   **(ci):** Use GITHUB_TOKEN for checkout to enable push (9fde24b)
+*   **(ci):** Use GITHUB_TOKEN for dispatch to resolve 403 (542f9bf)
+*   **(ci):** Convert gemini-cli.cjs to unix line endings (11d1c33)
+*   **(ci):** Restore orchestration logic with simplified json handling (cb5efae)
+*   **(ci):** Isolate workflow failure by removing sub-workflows (173078b)
+*   **(ci):** Debug workflow validity (8f8ce1d)
+*   **(ci):** Fallback to ubuntu-latest to debug runner issue (46c26b1)
+*   **(ci):** Move json cleanup to cli script and simplify workflows (640ace9)
+*   **(ci):** Use python for robust json extraction in workflows (8e75bb5)
+*   **(ci):** Stabilize workflows by standardizing gemini CLI usage and JSON parsing (f19c239)
+*   **(ci):** Stabilize GHA workflows and enforce fail-fast Gemini integration (6ba2703)
+*   **(scripts):** Ensure generate-changelog.sh is executable and LF normalized (368e6e9)
+*   **(scripts):** Force LF line endings for shell scripts (e06627d)
+*   **(ci):** Robust json extraction from gemini output in orchestrator (5e09273)
+*   **(argocd):** Solve NOAUTH and manifestation timeouts (a86d9c3)
+*   **(gitops):** De-duplicate resources between infrastructure and api-backend (e50e5c7)
+*   **(argocd):** Restore connectivity and optimize resources (41f66c9)
+*   Fix gemini-1.5-flash (ccf2cd3)
+*   Fix (e635c16)
+
+### Documentation
+*   Archive stray task reports from codebase to docs/archive/tasks/ (5826a4c)
+*   Restructure documentation and unify agent context (bf829f5)
+*   Update operational rules and add manifests (54b7a5b)
+
+### Chore
+*   Bump version to 7.14.31 (3053fa7)
+*   Bump version to 7.14.30 (ab60407)
+*   Bump version to 7.14.29 (6396fa9)
+*   **(ci):** Broaden dependabot commit exclusion in main orchestrator (d8f17bf)
+*   Enforce LF line endings and normalize (59dab96)
+*   Bump version to 7.14.28 (d295a6a)
+*   Bump version to 7.14.27 (b7e7a0e)
+*   **(ci):** Remove validation workflow and add emoji to build pipeline (f70d23c)
+*   **(ci):** Fix incorrect action name for retry action (e857d6
+
 ## [7.14.31] - 2025-12-26
 ## 7.14.31 (2024-02-29)
 
