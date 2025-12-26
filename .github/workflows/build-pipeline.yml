@@ -16,7 +16,7 @@ on:
 
 concurrency:
   group: build-pipeline-${{ github.ref }}-build
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 env:
   AZURE_RESOURCE_GROUP: cloudtolocalllm-rg

@@ -15,7 +15,7 @@ on:
     types: [created]
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.sha }}
+  group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 env:
@@ -29,11 +29,18 @@ jobs:
   dispatch:
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    if: "${{ github.actor != 'github-actions[bot]' && github.actor != 'dependabot[bot]' && !startsWith(github.event.head_commit.message, 'chore: bump version') && !startsWith(github.event.head_commit.message, 'chore(deploy): promote') && !startsWith(github.event.head_commit.message, 'chore(deps') && !startsWith(github.event.head_commit.message, 'build(deps') }}"
+    if: >-
+      github.actor != 'github-actions[bot]' && 
+      github.actor != 'dependabot[bot]' && 
+      !startsWith(github.event.head_commit.message, 'chore: bump version') && 
+      !startsWith(github.event.head_commit.message, 'chore(deploy): promote') && 
+      !startsWith(github.event.head_commit.message, 'chore(deps') && 
+      !startsWith(github.event.head_commit.message, 'build(deps')
     permissions:
       contents: read
       issues: write
       pull-requests: write
+      actions: write
     outputs:
       command: ${{ steps.extract_command.outputs.command }}
       additional_context: ${{ steps.extract_command.outputs.additional_context }}
@@ -76,6 +83,23 @@ jobs:
               core.setOutput('command', 'fallthrough');
             }
 
+      - name: Kill Previous Orchestrator Builds
+        if: steps.extract_command.outputs.command == 'orchestrate'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "Checking for active Build Pipeline runs on ${{ github.ref }}..."
+          BRANCH=$(echo "${{ github.ref }}" | sed -e 's|^refs/heads/||' -e 's|^refs/pull/||')
+          
+          # List and cancel in-progress runs of the Build Pipeline
+          # We use "🚀 Build Pipeline" as the workflow name
+          RUNS=$(gh run list --workflow "🚀 Build Pipeline" --branch "$BRANCH" --status in_progress --json databaseId --jq '.[].databaseId')
+          
+          for RUN_ID in $RUNS; do
+            echo "Cancelling previous Build Pipeline run: $RUN_ID"
+            gh run cancel "$RUN_ID" || echo "Failed to cancel run $RUN_ID"
+          done
+
   orchestrate:
     needs: dispatch
     if: ${{ needs.dispatch.outputs.command == 'orchestrate' }}
@@ -97,7 +121,6 @@ jobs:
         run: |
           set -e
           
-          # Ensure local gemini CLI is usable
           if [ -f scripts/gemini-cli.cjs ]; then
             chmod +x scripts/gemini-cli.cjs
             sudo ln -sf "$(pwd)/scripts/gemini-cli.cjs" /usr/local/bin/gemini
@@ -115,15 +138,9 @@ jobs:
           fi
 
           echo "Running Gemini analysis..."
-          # FAIL FAST: Removed fallback logic. If Gemini fails, script fails.
           gemini "Analyze the latest changes and decide if a release is needed. Version=$VERSION. Commit message: $COMMIT_MSG. Respond ONLY with a JSON object like {\"version_bump_needed\": boolean, \"new_version\": \"string\"}." > raw_output.json
 
-          # Debug: show raw output
-          cat raw_output.json
-
-          # Output is now cleaned by the CLI script
           CLEAN_RESPONSE=$(cat raw_output.json)
-
           echo "Cleaned response: $CLEAN_RESPONSE"
 
           BUMP_NEEDED=$(echo "$CLEAN_RESPONSE" | jq -r '.version_bump_needed' | xargs)
@@ -150,7 +167,6 @@ jobs:
             git add -A
             git commit -m "chore: bump version to $NEW_VERSION"
             
-            # Robust push with retry
             MAX_RETRIES=5
             COUNT=0
             while [ $COUNT -lt $MAX_RETRIES ]; do
@@ -168,7 +184,6 @@ jobs:
             fi
 
             echo "Triggering build for bumped version on main..."
-            # Construct full payload with client_payload wrapper
             jq -n \
               --arg event "orchestrator-build" \
               --arg ref "refs/heads/main" \
@@ -177,7 +192,6 @@ jobs:
             gh api repos/${{ github.repository }}/dispatches --input payload.json
           else
             echo "Triggering build for current ref..."
-            # Construct full payload with client_payload wrapper
             jq -n \
               --arg event "orchestrator-build" \
               --arg ref "${{ github.ref }}" \
