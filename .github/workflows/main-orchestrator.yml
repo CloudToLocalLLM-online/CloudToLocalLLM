@@ -49,7 +49,7 @@ jobs:
 
       - name: Extract command
         id: extract_command
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         env:
           EVENT_TYPE: "${{ github.event_name }}.${{ github.event.action }}"
           COMMENT_BODY: "${{ github.event.comment.body }}"
