@@ -107,9 +107,6 @@ data:
       # Argo CD UI (Optimized for internal connectivity)
       - hostname: argocd.cloudtolocalllm.online
         service: http://argocd-server.argocd.svc.cluster.local:80
-        originRequest:
-          noTLSVerify: true
-          httpHostHeader: argocd.cloudtolocalllm.online
 
       # Grafana UI
       - hostname: grafana.cloudtolocalllm.online
