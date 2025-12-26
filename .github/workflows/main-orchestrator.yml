@@ -145,8 +145,8 @@ jobs:
           # Debug: show raw output
           cat raw_output.json
 
-          # Extract JSON object using Python for robustness
-          CLEAN_RESPONSE=$(python3 -c "import sys, re; content = sys.stdin.read(); match = re.search(r'\{.*\}', content, re.DOTALL); print(match.group(0) if match else '')" < raw_output.json)
+          # Output is now cleaned by the CLI script
+          CLEAN_RESPONSE=$(cat raw_output.json)
           
           # Fallback: if empty, try just reading the file (if it was pure JSON)
           if [ -z "$CLEAN_RESPONSE" ]; then

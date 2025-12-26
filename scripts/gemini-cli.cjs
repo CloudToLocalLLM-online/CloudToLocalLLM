@@ -56,7 +56,10 @@ const makeRequest = (retryCount = 0) => {
       try {
         const response = JSON.parse(body);
         if (response.candidates && response.candidates[0] && response.candidates[0].content && response.candidates[0].content.parts[0]) {
-          console.log(response.candidates[0].content.parts[0].text);
+          let text = response.candidates[0].content.parts[0].text;
+          // Clean markdown code blocks
+          text = text.replace(/```json/g, '').replace(/```/g, '').trim();
+          console.log(text);
         } else {
           console.error('Unexpected response format:', body);
           process.exit(1);

@@ -102,7 +102,7 @@ jobs:
             exit 1
           fi
           echo "✅ AI issue analysis completed successfully"
-          CLEAN_JSON=$(python3 -c "import sys, re; content = sys.stdin.read(); match = re.search(r'\{.*\}', content, re.DOTALL); print(match.group(0) if match else '')" < raw_output.json)
+          CLEAN_JSON=$(cat raw_output.json)
           echo "ai_output<<EOF" >> $GITHUB_OUTPUT
           echo "$CLEAN_JSON" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
